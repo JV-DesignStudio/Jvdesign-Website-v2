@@ -1118,3 +1118,365 @@ var STEPS = [
   onApply: function() { startRace(); }
 },
 ];
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i; renderStep(); updateProgress();
+  var items = document.querySelectorAll('.si');
+  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+  document.getElementById('navPrev').disabled = (i === 0);
+  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
+  toast(STEPS[i].title);
+}
+
+function renderStep() {
+  var s = STEPS[currentStep];
+  var body = document.getElementById('stepBody');
+  var html = '<div class="step-tag">' + s.tag + '</div><div class="step-title">' + s.title + '</div><div class="step-intro">' + s.intro + '</div>';
+  (s.boxes || []).forEach(function(b) { html += '<div class="box ' + b.t + '">' + b.tx + '</div>'; });
+  html += s.html ? s.html() : '';
+  if (s.tasks) {
+    html += '<div class="task-list">' + s.tasks.map(function(t) {
+      var done = stepDone[currentStep];
+      return '<div class="task-item' + (done ? ' done' : '') + '"><div class="task-dot"></div>' + t + '</div>';
+    }).join('') + '</div>';
+  }
+  if (!s.html || !s.html().includes('run-btn')) {
+    html += '<button class="run-btn" onclick="applyStep(' + currentStep + ')">▶ Apply to Car</button>';
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.si').forEach(function(el, i) { el.classList.toggle('active', i === currentStep); });
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true; renderStep(); updateProgress();
+}
+
+function updateProgress() {
+  var done = stepDone.filter(Boolean).length;
+  var pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progCt').textContent = done + ' / 16 steps';
+  document.querySelectorAll('.si').forEach(function(el, i) {
+    el.classList.toggle('done', stepDone[i]);
+    el.classList.toggle('active', i === currentStep);
+    var sn = el.querySelector('.sn');
+    if (sn) sn.textContent = stepDone[i] ? '\u2713' : (i + 1);
+  });
+}
+
+function quickBuild() {
+  P.carName = 'INFERNO'; P.bodyStyle = 'drift'; P.primaryCol = '#e8333a'; P.accentCol = '#f5c842';
+  P.engineType = 'v8'; P.wheelStyle = '5spoke'; P.wheelCol = '#1a1a1a';
+  P.frontWing = 'low'; P.rearSpoiler = 'high'; P.rearWingAngle = 25;
+  P.sideSkirts = 'wide'; P.exhaustType = 'quad'; P.rollCage = 'standard';
+  P.headlightStyle = 'led'; P.liveryStyle = 'flames'; P.liveryCol = '#f5c842';
+  P.carNumber = 13; P.tintWindows = true; P.brakeCalipers = '#f5c842';
+  P.bodyWidth = 2.0; P.bodyHeight = 0.5; P.wheelBase = 2.6;
+  activated = false;
+  if (particles) { scene.remove(particles); particles = null; }
+  buildCar();
+  sout('\u26A1 Quick build: INFERNO is ready. Press Race at Step 16!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+  toast('Quick build: INFERNO loaded!');
+}
+
+window._builderGetState = function() { return { params: Object.assign({}, P), step: currentStep }; };
+window._builderApplyState = function(s) {
+  if (s.params) Object.assign(P, s.params);
+  if (typeof s.step === 'number') currentStep = s.step;
+  activated = false;
+  if (particles) { scene.remove(particles); particles = null; }
+  buildCar(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+  if (window.builderScheduleAutoSave) builderScheduleAutoSave();
+};
+
+function toast(m) {
+  var t = document.getElementById('carToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'carToast';
+    t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(10,10,15,.92);border:1px solid rgba(232,51,58,.35);padding:8px 22px;font-family:Bebas Neue,sans-serif;font-size:.9rem;letter-spacing:.06em;color:var(--acc-lt);border-radius:8px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  t.textContent = m;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(function() { t.style.opacity = '0'; }, 1800);
+}
+
+function randomCar() {
+  var rnd = function(mn, mx) { return Math.round((mn + Math.random() * (mx - mn)) * 10) / 10; };
+  var pick = function(arr) { return arr[Math.floor(Math.random() * arr.length)]; };
+  var rHex = function() { return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'); };
+  Object.assign(P, {
+    carName: 'R-' + Math.round(100 + Math.random() * 900),
+    bodyStyle: pick(['formula','muscle','offroad','drift']),
+    primaryCol: rHex(), accentCol: rHex(),
+    engineType: pick(['inline4','v6','v8','v12','electric']),
+    wheelStyle: pick(['5spoke','multisplit','rally','slick']),
+    wheelCol: rHex(),
+    frontWing: pick(['none','low','medium','high']),
+    rearSpoiler: pick(['none','low','medium','high','massive']),
+    rearWingAngle: Math.round(Math.random() * 45),
+    sideSkirts: pick(['none','standard','wide']),
+    exhaustType: pick(['single','dual','quad','sidepipes']),
+    rollCage: pick(['none','standard','full']),
+    headlightStyle: pick(['round','rectangular','led','none']),
+    liveryStyle: pick(['none','stripes','flames','tribal']),
+    liveryCol: rHex(),
+    carNumber: Math.round(1 + Math.random() * 98),
+    tintWindows: Math.random() > 0.5,
+    brakeCalipers: rHex(),
+    bodyWidth: rnd(1.4, 2.4), bodyHeight: rnd(0.4, 1.0),
+  });
+  activated = false;
+  if (particles) { scene.remove(particles); particles = null; }
+  buildCar(); updateStats(); syncRightBar(); toast('Random car generated!');
+  if (window.builderTrack) builderTrack('random_build');
+}
+
+function downloadPNG() {
+  resize(); renderer.render(scene, camera);
+  var a = document.createElement('a');
+  a.href = renderer.domElement.toDataURL('image/png');
+  a.download = (P.carName || 'car').toLowerCase().replace(/\s+/g, '-') + '.png';
+  a.click(); toast('\uD83D\uDCF8 PNG saved!');
+  if (window.builderTrack) builderTrack('export', { format: 'png' });
+}
+
+function openProfileCard() {
+  var s = computeStats();
+  var modal = document.getElementById('modalOverlay');
+  var content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  content.innerHTML = '<div style="text-align:center;padding:10px">' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:var(--acc-lt);letter-spacing:.08em;margin-bottom:4px">' + (P.carName || 'UNNAMED') + '</div>' +
+    '<div style="font-family:JetBrains Mono,monospace;font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px">' + P.bodyStyle.toUpperCase() + ' \u00B7 ' + P.engineType.toUpperCase() + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">' +
+    '<div style="background:rgba(232,51,58,.08);border:1px solid rgba(232,51,58,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.45rem;color:var(--muted);text-transform:uppercase">Speed</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:var(--acc-lt)">' + s.speed + '</div></div>' +
+    '<div style="background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.45rem;color:var(--muted);text-transform:uppercase">Accel</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fb923c">' + s.accel + '</div></div>' +
+    '<div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.45rem;color:var(--muted);text-transform:uppercase">Handling</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:var(--green)">' + s.handling + '</div></div>' +
+    '<div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.45rem;color:var(--muted);text-transform:uppercase">Style</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:var(--purple)">' + s.style + '</div></div>' +
+    '</div>' +
+    '<div style="font-size:.65rem;color:var(--muted);line-height:1.6">' + P.wheelStyle + ' wheels \u00B7 ' + P.frontWing + ' front \u00B7 ' + P.rearSpoiler + ' rear<br>' + P.liveryStyle + ' livery #' + P.carNumber + ' \u00B7 ' + P.rollCage + ' cage</div>' +
+    '<div style="margin-top:12px;display:flex;gap:6px;justify-content:center">' +
+    '<button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button>' +
+    '<button onclick="downloadPNG();closeModal()" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">\uD83D\uDCF8 Save PNG</button>' +
+    '</div></div>';
+  modal.classList.add('open');
+}
+
+function downloadOBJ() {
+  if (!carGroup) { toast('Build your car first!'); return; }
+  if (window.builderTrack) builderTrack('export', { format: 'obj' });
+  carGroup.updateMatrixWorld(true);
+  var name = (P.carName && P.carName !== 'UNNAMED' ? P.carName : 'car').replace(/\s+/g, '-').toLowerCase();
+  sout('\u23F3 Preparing OBJ export\u2026');
+  var obj = '# ' + P.carName + ', JV Race Car Builder\n# jvdesignstudio.co.uk\nmtllib ' + name + '-car.mtl\n';
+  var mtl = '# Materials for ' + P.carName + '\n# jvdesignstudio.co.uk\n';
+  var matMap = {}, matIdx = 0, vOff = 1, meshIdx = 0;
+  carGroup.traverse(function(node) {
+    if (!node.isMesh) return;
+    var col = node.material.color ? node.material.color : new THREE.Color(0x888888);
+    var hex = col.getHexString();
+    if (!matMap[hex]) {
+      var mName = 'm' + (matIdx++);
+      matMap[hex] = mName;
+      mtl += '\nnewmtl ' + mName + '\nKd ' + col.r.toFixed(4) + ' ' + col.g.toFixed(4) + ' ' + col.b.toFixed(4) + '\nKa 0.05 0.05 0.05\nKs 0.2 0.2 0.2\nNs 25\n';
+      if (node.material.transparent) mtl += 'd ' + (node.material.opacity != null ? node.material.opacity : 1).toFixed(4) + '\n';
+    }
+    var g = node.geometry.clone();
+    g.applyMatrix4(node.matrixWorld);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    var pos = g.attributes.position, nor = g.attributes.normal, idx = g.index, n = pos.count;
+    obj += '\ng mesh' + (meshIdx++) + '\nusemtl ' + matMap[hex] + '\n';
+    for (var i = 0; i < n; i++) obj += 'v ' + pos.getX(i).toFixed(5) + ' ' + pos.getY(i).toFixed(5) + ' ' + pos.getZ(i).toFixed(5) + '\n';
+    for (var i = 0; i < n; i++) obj += 'vn ' + nor.getX(i).toFixed(5) + ' ' + nor.getY(i).toFixed(5) + ' ' + nor.getZ(i).toFixed(5) + '\n';
+    if (idx) {
+      for (var i = 0; i < idx.count; i += 3) {
+        var a = idx.getX(i) + vOff, b = idx.getX(i+1) + vOff, c = idx.getX(i+2) + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    } else {
+      for (var i = 0; i < n; i += 3) {
+        var a = i + vOff, b = i+1 + vOff, c = i+2 + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    }
+    vOff += n;
+  });
+  var objBlob = new Blob([obj], { type: 'text/plain' });
+  var objUrl = URL.createObjectURL(objBlob);
+  var la = document.createElement('a');
+  la.href = objUrl; la.download = name + '-car.obj'; la.click();
+  URL.revokeObjectURL(objUrl);
+  setTimeout(function() {
+    var mtlBlob = new Blob([mtl], { type: 'text/plain' });
+    var mtlUrl = URL.createObjectURL(mtlBlob);
+    var lb = document.createElement('a');
+    lb.href = mtlUrl; lb.download = name + '-car.mtl'; lb.click();
+    URL.revokeObjectURL(mtlUrl);
+  }, 300);
+  sout('\u2705 ' + name + '-car.obj + .mtl downloaded!');
+}
+
+function exportGLB() {
+  var group = carGroup;
+  if (!group) { toast('Build something first!'); return; }
+  if (typeof THREE.GLTFExporter === 'undefined') { toast('GLTF exporter still loading...'); return; }
+  var exporter = new THREE.GLTFExporter();
+  exporter.parse(group, function(result) {
+    var blob = new Blob([result], { type: 'application/octet-stream' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (P.carName || 'car').toLowerCase().replace(/\s+/g, '-') + '.glb';
+    a.click(); URL.revokeObjectURL(a.href);
+    toast('GLB exported!');
+  }, { binary: true });
+}
+
+function getSaves() { try { return JSON.parse(localStorage.getItem('carSaves') || '{}'); } catch(e) { return {}; } }
+function setSaves(s) { localStorage.setItem('carSaves', JSON.stringify(s)); }
+
+function openSaveModal() {
+  var modal = document.getElementById('modalOverlay');
+  var content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  content.innerHTML = '<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-lt);margin-bottom:12px">Save Car</h2><input type="text" id="carSaveName" placeholder="Name your car..." style="width:100%;padding:8px 12px;background:var(--bg3);border:1px solid rgba(232,51,58,.3);border-radius:7px;color:var(--acc-lt);font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.06em;outline:none;margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Cancel</button><button onclick="doCarSave()" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">Save</button></div>';
+  modal.classList.add('open');
+  setTimeout(function() { var inp = document.getElementById('carSaveName'); if (inp) inp.focus(); }, 100);
+}
+
+function openLoadModal() {
+  var modal = document.getElementById('modalOverlay');
+  var content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  var sv = getSaves(), ks = Object.keys(sv);
+  var h = '';
+  if (!ks.length) h = '<p style="color:var(--muted);font-size:.8rem;padding:8px 0">No saved cars yet.</p>';
+  else h = '<div style="max-height:180px;overflow-y:auto;margin-bottom:12px">' + ks.map(function(k) {
+    var d = new Date(sv[k].date).toLocaleDateString();
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s" onmouseover="this.style.background=\'rgba(232,51,58,.05)\'" onmouseout="this.style.background=\'transparent\'" onclick="doCarLoad(\'' + k.replace(/'/g, "\\'") + '\')"><div><div style="font-size:.82rem;color:var(--text)">' + k + '</div><div style="font-family:JetBrains Mono,monospace;font-size:.55rem;color:var(--muted)">' + d + '</div></div><button onclick="event.stopPropagation();doCarDel(\'' + k.replace(/'/g, "\\'") + '\')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:.9rem;padding:2px 5px">\u2715</button></div>';
+  }).join('') + '</div>';
+  content.innerHTML = '<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-lt);margin-bottom:12px">Load Car</h2>' + h + '<div style="display:flex;justify-content:flex-end"><button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button></div>';
+  modal.classList.add('open');
+}
+
+function closeModal() { var modal = document.getElementById('modalOverlay'); if (modal) modal.classList.remove('open'); }
+
+function doCarSave() {
+  var inp = document.getElementById('carSaveName');
+  if (!inp) return;
+  var n = inp.value.trim();
+  if (!n) return;
+  var sv = getSaves();
+  sv[n] = { params: Object.assign({}, P), step: currentStep, date: Date.now() };
+  setSaves(sv); closeModal();
+  if (window.builderTrack) builderTrack('save');
+  toast('Car saved!');
+}
+
+function doCarLoad(n) {
+  var sv = getSaves();
+  if (!sv[n]) return;
+  Object.assign(P, sv[n].params);
+  currentStep = sv[n].step || 0;
+  activated = false;
+  if (particles) { scene.remove(particles); particles = null; }
+  closeModal(); buildCar(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+  toast('Loaded: ' + n);
+}
+
+function doCarDel(n) {
+  var sv = getSaves(); delete sv[n]; setSaves(sv); openLoadModal();
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < STEPS.length - 1) go(currentStep + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) go(currentStep - 1); }
+  if (e.key === 'Escape') closeModal();
+});
+
+function init() {
+  var listEl = document.getElementById('stepList');
+  STEPS.forEach(function(s, i) {
+    var item = document.createElement('div');
+    item.className = 'si' + (i === 0 ? ' active' : '');
+    item.innerHTML = '<div class="sn">' + (i + 1) + '</div><div class="sl">' + s.title + '</div>';
+    item.onclick = function() { go(i); };
+    listEl.appendChild(item);
+  });
+  document.getElementById('navPrev').disabled = true;
+  document.getElementById('navNext').disabled = false;
+  buildCar(); renderStep(); updateStats(); updateSpecCard(); syncRightBar();
+  var modal = document.getElementById('modalOverlay');
+  if (modal) modal.addEventListener('click', function(e) { if (e.target === e.currentTarget) closeModal(); });
+}
+
+init();
+</script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="../cookie-consent.js"></script>
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/" target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener noreferrer">Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">&copy; 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+var footerRevealObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+            var parent = entry.target.parentElement;
+            var siblings = Array.prototype.slice.call(parent.querySelectorAll('.reveal'));
+            var idx = siblings.indexOf(entry.target);
+            setTimeout(function() { entry.target.classList.add('visible'); }, Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(function(el) { footerRevealObserver.observe(el); });
+setTimeout(function() { document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) { el.classList.add('visible'); }); }, 2000);
+})();
+</script>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+
+<script>
+window.BQ={"key":"jvds-race-car-builder","name":"Race Car Builder","profileId":"race-car-builder","quiz":[{"q":"What does <strong>downforce</strong> do to a race car?","opts":["Makes it fly","Pushes the car into the track for more grip","Makes it lighter","Increases top speed"],"a":1,"why":"Downforce pushes the car onto the track, increasing tyre grip and allowing faster cornering."},{"q":"What is a <strong>V12 engine</strong>?","opts":["12 engines in a row","12 cylinders arranged in a V layout","12 wheels on the car","12 gears in the gearbox"],"a":1,"why":"A V12 has 12 cylinders in two banks of six, arranged in a V shape, producing smooth high-revving power."},{"q":"Why are Formula 1 cars so <strong>low to the ground</strong>?","opts":["To save material","To reduce drag and lower the centre of gravity","To look cool","Because drivers are short"],"a":1,"why":"A low centre of gravity reduces body roll in corners, and low clearance creates ground effect downforce."},{"q":"What do <strong>slick tyres</strong> do?","opts":["Make the car slide more","Maximise grip on dry surfaces by increasing the contact patch","Work better in rain","Reduce fuel consumption"],"a":1,"why":"Slick tyres have no tread pattern, giving the largest possible rubber contact area on dry tarmac."},{"q":"What is a <strong>roll cage</strong> for?","opts":["To make the car heavier","To improve aerodynamics","Protects the driver in a rollover crash","Holds the engine in place"],"a":2,"why":"A roll cage is a reinforced structure that prevents the cabin from crushing if the car flips over."}]};
+</script>
+<script src="../player-profile.js"></script>
+<script src="builder-quiz.js"></script>
+<script src="builder-extras.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"Race Car Builder Design Your Own Race Car","description":"Design and build your own 3D race car step by step. Choose body style, engine, wheels, aero parts and livery then race it. Ages 10+. Free.","url":"https://jvdesignstudio.co.uk/workshops/race-car-builder.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
+</script>
+</body>
+</html>

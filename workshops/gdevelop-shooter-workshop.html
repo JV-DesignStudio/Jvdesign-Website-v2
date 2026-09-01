@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#00bfa5">
+<script src="../analytics-loader.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Shooter — Build a Shooter in GDevelop | JVDesignStudio</title>
+<meta name="description" content="Build a Space Shooter in GDevelop! A free parent & child workshop. Bullets, spawning, waves. No coding needed. Ages 8+.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/gdevelop-shooter-workshop.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/gdevelop-shooter-workshop.html">
+<meta property="og:title" content="Space Shooter — Build a Shooter in GDevelop | JVDesignStudio">
+<meta property="og:description" content="Build a Space Shooter in GDevelop. Free parent & child workshop, no coding needed. Ages 8+.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/og/gdevelop-shooter-workshop.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/gdevelop-shooter-workshop.png">
+<link rel="icon" href="../logo.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>:root{--accent:#00bfa5;--accent2:#00e5a0;--green:#06d6a0;--teal:#4dd9e0;--asphalt:#2a2d3a;--xp-gold:#ffd166;--xp-glow:rgba(255,209,102,.3)}.event-cond{color:#00bfa5;font-weight:700}.event-act{color:#ff9800;font-weight:700}.obj-name{color:#4dd9e0;font-weight:600}.var-name{color:#ffd166;font-weight:600}</style>
+<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-workshop.css">
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+ counts or game-over states to a screen reader; this gives every page one
+ place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies downloads"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ /* Restore saved theme before first paint of the toggle icon */
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
+</header>
+<script>
+(function(){
+ /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+<div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#00bfa5,#00e5a0,#00bfa5,#00e5a0)"><span>🎮 My First GDevelop Game · Episode 4 of 6 · <a href="my-first-gdevelop-game.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span></div>
+<section class="hero" id="main-content"><div class="hero-inner">
+<div class="hero-badge">🚀 Episode 4 · Intermediate · No Coding Needed</div>
+<h1>Space Shooter<br><em>Blast the Aliens</em></h1>
+<p class="hero-sub">Build a space shooter with enemy waves, power-ups and score tracking. Learn about spawning objects, timers and creating increasing difficulty.</p>
+<div class="hero-pills"><span class="pill p-age">👶 Ages 8+</span><span class="pill p-time">⏱️ ~1.5 Hours</span><span class="pill p-tool">🎮 GDevelop</span><span class="pill p-free">✓ Free</span></div>
+<div class="skills-strip"><span class="skill-tag"><span>🔫</span> Shooting</span><span class="skill-tag"><span>🔄</span> Spawning</span><span class="skill-tag"><span>⏱️</span> Timers</span><span class="skill-tag"><span>📈</span> Difficulty</span><span class="skill-tag"><span>💎</span> Power-ups</span><span class="skill-tag"><span>🏆</span> Score</span></div>
+<div class="hero-btns"><a href="#step-1" class="btn-start">🚀 Let's Build! Start Step 1</a><a href="my-first-gdevelop-game.html" class="btn-outline">← All Episodes</a></div>
+</div></section>
+<div class="xp-wrap"><div class="xp-bar"><div class="xp-icon">⭐</div><div class="xp-label" id="xpLabel">0 XP</div><div class="xp-track"><div class="xp-fill" id="xpFill"></div></div><div class="xp-level" id="xpLevel">Level 1</div><div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div></div></div>
+<div class="progress-wrap"><div class="progress-header"><span class="progress-label">Your Progress</span><span class="progress-count" id="progressCount">0 / 8 steps</span></div><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="step-dots" id="stepDots"></div></div>
+<main class="workshop">
+
+<div class="step-card open active-step" id="step-1" data-step="1"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-teal">1</div><div class="step-title-wrap"><div class="step-emoji">🎮</div><div class="step-title">Set Up the Player Ship</div><div class="step-blurb">Create the scene and add the player spaceship</div></div><span class="step-status ss-active">Active</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Create a new scene with a spaceship the player can move left, right, up and down.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Create a new scene <strong>"Game"</strong>. Add a Sprite object <strong>"Player"</strong> shaped like a spaceship.</span></li>
+<li><span class="num-badge">2</span><span>Events: On key pressed, change X/Y position to move the ship.</span></li>
+<li><span class="num-badge">3</span><span>Add a dark background (set background color to black or dark blue).</span></li>
+</ul>
+<div class="quiz-gate" id="quiz-1" data-step="1" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">How do you move the player up and down in a top-down shooter?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Change the Y position with Up/Down keys</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Use the Platformer Character behavior</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Add a Bounce on edges behavior</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(1)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-2" data-step="2"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-green">2</div><div class="step-title-wrap"><div class="step-emoji">🔫</div><div class="step-title">Add Shooting</div><div class="step-blurb">Create bullets that fire when the player presses Space</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Create a bullet object that spawns at the player's position and moves upward.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Add a Sprite object <strong>"Bullet"</strong>. Paint a small yellow/white projectile.</span></li>
+<li><span class="num-badge">2</span><span>Add event: Condition <strong>"Key pressed: Space"</strong>. Actions: <strong>"Create object Bullet at position of Player"</strong>, then <strong>"Add force to Bullet: X=0, Y=-400"</strong>.</span></li>
+<li><span class="num-badge">3</span><span>Add event: Condition <strong>"Bullet Y position &lt; -20"</strong>. Action: <strong>"Delete Bullet"</strong> (remove off-screen bullets).</span></li>
+</ul>
+<div class="callout tip"><div class="callout-icon">💡</div><div>To prevent holding Space and firing hundreds of bullets, add a timer. Create event: Condition <strong>"Timer "ShootCooldown" &gt; 0.2"</strong>. Put the shoot action inside it, then reset the timer.</div></div>
+<div class="code-challenge" id="cc-2" data-step="2"><div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Event Challenge</div><div class="cc-xp-badge">+20 XP</div></div><div class="cc-prompt">What two actions are needed when the player fires a bullet?</div><div class="cc-code-area">1. <input class="cc-blank" data-a="Q3JlYXRlJTIwb2JqZWN0" placeholder="Action 1: Create..." size="20"> <span class="obj-name">Bullet</span> at position of <span class="obj-name">Player</span>
+2. <input class="cc-blank" data-a="QWRkJTIwZm9yY2UlMjB0byUyMEJ1bGxldA==" placeholder="Action 2: Add..." size="16"> X=0, Y=-400</div><button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Events</button><div class="cc-feedback"></div><div class="cc-hint">💡 Hint: First create the bullet at the ship, then give it upward force.</div></div>
+<div class="quiz-gate" id="quiz-2" data-step="2" data-k="Mg=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">Why do we delete bullets that go off-screen?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>To prevent the game from slowing down with too many objects</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Bullets disappear automatically</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>GDevelop has a limit of 10 objects</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(2)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-3" data-step="3"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-yellow">3</div><div class="step-title-wrap"><div class="step-emoji">👾</div><div class="step-title">Add Enemy Spawning</div><div class="step-blurb">Create enemies that appear at the top and drift downward</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Use a timer to spawn enemy objects at random positions at the top of the screen.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Add Sprite object <strong>"Enemy"</strong>. Paint a red alien shape.</span></li>
+<li><span class="num-badge">2</span><span>Add event: Condition <strong>"Repeat every 1.5 seconds"</strong>. Action: <strong>"Create Enemy at position (Random(0 to 800), -30)"</strong>.</span></li>
+<li><span class="num-badge">3</span><span>Add event: Condition <strong>"Always"</strong>. Action: <strong>"Change Enemy Y position: Add 100"</strong> (makes them drift down).</span></li>
+<li><span class="num-badge">4</span><span>Add event: Condition <strong>"Enemy Y position &gt; 620"</strong>. Action: <strong>"Delete Enemy"</strong>.</span></li>
+</ul>
+<div class="tf-round" id="tf-3" data-step="3"><div class="tf-header"><div class="tf-icon">⚡</div><div class="tf-title">True or False?</div><div class="tf-xp-badge">+15 XP</div></div>
+<div class="tf-item" data-a="dHJ1ZQ=="><div class="tf-statement">"Repeat every 1.5 seconds" creates a new enemy every 1.5 seconds.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+<div class="tf-item" data-a="ZmFsc2U="><div class="tf-statement">Setting Y to -30 puts the enemy at the bottom of the screen.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+<button class="tf-check-btn" onclick="checkTF(this)">⚡ Check All</button><div class="tf-feedback"></div></div>
+<div class="quiz-gate" id="quiz-3" data-step="3" data-k="MA=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">What does "Create object" do vs "Add force"?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Create makes a new instance; force makes it move</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>They do the same thing</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Create makes it move; force makes a new one</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(3)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-4" data-step="4"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-pink">4</div><div class="step-title-wrap"><div class="step-emoji">💥</div><div class="step-title">Bullet-Enemy Collision</div><div class="step-blurb">Destroy enemies when bullets hit them</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Detect when a bullet hits an enemy, delete both and add to score.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Create variable <strong>"Score"</strong> = 0.</span></li>
+<li><span class="num-badge">2</span><span>Add event: Condition <strong>"Bullet is in collision with Enemy"</strong>. Actions: <strong>"Delete Bullet"</strong>, <strong>"Delete Enemy"</strong>, <strong>"Change Score: Add 1"</strong>.</span></li>
+</ul>
+<div class="callout tip"><div class="callout-icon">💡</div><div>Want explosions? Before deleting the enemy, create a "Explosion" sprite at the enemy's position and delete it after 0.3 seconds using a timer!</div></div>
+<div class="quiz-gate" id="quiz-4" data-step="4" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">Why do we delete BOTH the bullet and the enemy on collision?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>The bullet should be spent and the enemy destroyed</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>GDevelop crashes if you don't</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The bullet passes through enemies</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(4)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-5" data-step="5"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-purple">5</div><div class="step-title-wrap"><div class="step-emoji">📈</div><div class="step-title">Wave System &amp; Difficulty</div><div class="step-blurb">Make the game harder over time with enemy waves</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Track waves and increase enemy speed and spawn rate as waves progress.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Create variables: <strong>"Wave"</strong> = 1, <strong>"EnemySpeed"</strong> = 100, <strong>"SpawnRate"</strong> = 1.5.</span></li>
+<li><span class="num-badge">2</span><span>Event: Condition <strong>"Score = Wave × 5"</strong>. Actions: <strong>"Change Wave: Add 1"</strong>, <strong>"Change EnemySpeed: Add 20"</strong>, <strong>"Change SpawnRate: Subtract 0.1"</strong> (min 0.3).</span></li>
+<li><span class="num-badge">3</span><span>Use EnemySpeed in the "Always" event that moves enemies downward.</span></li>
+<li><span class="num-badge">4</span><span>Use SpawnRate in the "Repeat every" timer event.</span></li>
+</ul>
+<div class="code-challenge" id="cc-5" data-step="5"><div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Event Challenge</div><div class="cc-xp-badge">+20 XP</div></div><div class="cc-prompt">Fill in the blanks to increase difficulty when the player earns enough points:</div><div class="cc-code-area"><span class="event-cond">Condition:</span> <span class="var-name">Score</span> = <span class="var-name">Wave</span> <input class="cc-blank" data-a="w5glMjA1" placeholder="??" size="3"> 5
+<span class="event-act">Action:</span> Change <span class="var-name">Wave</span>: Add <input class="cc-blank" data-a="MQ==" placeholder="?" size="3"></div><button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Events</button><div class="cc-feedback"></div><div class="cc-hint">💡 Hint: Multiply Wave by 5 to set the score threshold. Then add 1 to Wave.</div></div>
+<div class="quiz-gate" id="quiz-5" data-step="5" data-k="Mg=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">What happens to the SpawnRate as waves increase?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It gets smaller, meaning enemies spawn more frequently</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>It gets bigger, meaning enemies spawn less often</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It stays the same</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(5)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-6" data-step="6"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-red">6</div><div class="step-title-wrap"><div class="step-emoji">💎</div><div class="step-title">Power-Ups</div><div class="step-blurb">Add collectible power-ups that help the player</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Create a power-up that temporarily makes the player shoot faster or wider.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Add Sprite object <strong>"PowerUp"</strong>. Paint a blue/green gem.</span></li>
+<li><span class="num-badge">2</span><span>Event: Condition <strong>"Repeat every 10 seconds"</strong>. Action: <strong>"Create PowerUp at random position at top"</strong>.</span></li>
+<li><span class="num-badge">3</span><span>Event: Condition <strong>"Player collides with PowerUp"</strong>. Actions: <strong>"Delete PowerUp"</strong>, <strong>"Change variable ShootSpeed: Set to 0.1"</strong> (faster shooting).</span></li>
+<li><span class="num-badge">4</span><span>Add a timer event that resets ShootSpeed after 5 seconds.</span></li>
+</ul>
+<div class="quiz-gate" id="quiz-6" data-step="6" data-k="MA=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">How do you make a power-up effect wear off after a few seconds?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Use a timer event to reset the variable after a delay</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Power-ups last forever</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Delete the power-up object</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(6)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-7" data-step="7"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-orange">7</div><div class="step-title-wrap"><div class="step-emoji">💔</div><div class="step-title">Lives &amp; Game Over</div><div class="step-blurb">Add lives and detect when the player is hit</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Give the player 3 lives. Lose a life when an enemy reaches the bottom. Game over at zero.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Create variable <strong>"Lives"</strong> = 3. Add a Text object <strong>"LivesText"</strong> to display it.</span></li>
+<li><span class="num-badge">2</span><span>Event: Condition <strong>"Enemy Y position &gt; 620"</strong> (before deleting). Action: <strong>"Change Lives: Subtract 1"</strong>.</span></li>
+<li><span class="num-badge">3</span><span>Event: Condition <strong>"Lives &lt; 1"</strong>. Action: <strong>"Change scene to GameOver"</strong>.</span></li>
+</ul>
+<div class="quiz-gate" id="quiz-7" data-step="7" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">Why check "Lives &lt; 1" instead of "Lives = 0"?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>It catches cases where lives might skip past zero</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>GDevelop doesn't have an equals operator</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It makes the game easier</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(7)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-8" data-step="8"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-teal">8</div><div class="step-title-wrap"><div class="step-emoji">🎉</div><div class="step-title">Test &amp; Play!</div><div class="step-blurb">Run the full shooter and blast some aliens</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Test shooting, enemy waves, power-ups, lives and game over.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Click <strong>Play</strong>. Test movement, shooting and collision.</span></li>
+<li><span class="num-badge">2</span><span>Watch the waves get harder. Try to reach wave 3!</span></li>
+</ul>
+<div class="callout fun"><div class="callout-icon">🎉</div><div>You've built a complete space shooter with waves, power-ups and difficulty scaling! These patterns appear in hundreds of arcade games.</div></div>
+<div class="quiz-gate" id="quiz-8" data-step="8" data-k="MA=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Final Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">What GDevelop concept lets you create multiple copies of an object dynamically?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Create object (in an event)</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Duplicate (in the editor)</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Copy and paste</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(8)">🎉 I Finished the Shooter Workshop!</button></div>
+</div></div>
+
+<div class="finish-banner" id="finishBanner"><div class="confetti-row">🎉🚀👾🎊💎</div><div class="finish-title">You Built a Space Shooter!</div><p class="finish-sub">Amazing! You've learned spawning, wave systems, power-ups and difficulty scaling. These are core game design patterns. Now try Episode 5!</p>
+<div class="final-stats"><div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div><div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div><div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div><div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div></div>
+<a href="gdevelop-pointclick-workshop.html" class="next-ep-btn">🧩 Episode 5: Point & Click →</a>
+<a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.15);border:1px solid rgba(255,209,102,.3);color:#ffd166;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 22px;border-radius:12px;text-decoration:none;margin-top:12px">⭐ View My Progress</a>
+</div>
+
+</main>
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+  // Failsafe: if observer never fires (blocked JS earlier, stalled), show content anyway after 2s
+  setTimeout(() => document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible')), 2000);
+})();
+</script>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+<script src="../player-profile.js"></script><script src="../tracks.js"></script>
+<script>
+const TOTAL=8;const STORAGE_KEY='jvds-gdevelop-shooter-v1';let completed=new Set();let xp=0;let level=1;let streak=0;let bestStreak=0;let totalQuizzes=0;let correctFirst=0;const XP_PER_LEVEL=100;const XP_QUIZ=15;const XP_CODE=20;const XP_STREAK_BONUS=5;
+function _dec(el,k){var e=el.dataset[k];if(e!==undefined){try{return decodeURIComponent(atob(e));}catch(_){return '';}}return k==='a'?(el.dataset.answer||''):(el.dataset.correct||'');}function _answers(el){return _dec(el,'a').split('|');}function _canon(el){return _answers(el)[0];}function _match(el,val){var v=val.trim().toLowerCase();return _answers(el).some(function(a){return a.trim().toLowerCase()===v;});}function _key(el){return parseInt(_dec(el,'k'),10);}function _shuffleQuiz(){document.querySelectorAll('.quiz-options').forEach(function(o){var k=[].slice.call(o.children);for(var i=k.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=k[i];k[i]=k[j];k[j]=t;}k.forEach(function(c){o.appendChild(c);});var L=['A','B','C','D','E'];o.querySelectorAll('.opt-letter').forEach(function(l,i){l.textContent=L[i]||'';});});}function _initKbd(){function act(el){return function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}};}document.querySelectorAll('.quiz-opt').forEach(function(o){o.setAttribute('role','button');o.setAttribute('tabindex','0');o.addEventListener('keydown',act(o));});document.querySelectorAll('.step-header').forEach(function(h){h.setAttribute('role','button');h.setAttribute('tabindex','0');h.addEventListener('keydown',act(h));});}
+function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({completed:[...completed],total:TOTAL,xp,level,streak,bestStreak,totalQuizzes,correctFirst,quizzesPassed:[...document.querySelectorAll('.quiz-gate.passed')].map(q=>q.id),challengesPassed:[...document.querySelectorAll('.code-challenge.passed')].map(c=>c.id)}));}catch(e){}}function loadProgress(){try{const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!data)return;if(data.xp){xp=data.xp;level=data.level||1;streak=data.streak||0;bestStreak=data.bestStreak||0;totalQuizzes=data.totalQuizzes||0;correctFirst=data.correctFirst||0;}if(data.completed&&data.completed.length){data.completed.forEach(n=>{completed.add(n);const card=document.getElementById('step-'+n);if(!card)return;card.classList.remove('active-step','open','locked');card.classList.add('completed');card.querySelector('.step-status').className='step-status ss-done';card.querySelector('.step-status').textContent='✓ Done';card.querySelector('.step-body').style.display='none';});const next=getActiveStep();if(next<=TOTAL){const nc=document.getElementById('step-'+next);if(nc){nc.classList.remove('locked');nc.classList.add('active-step','open');nc.querySelector('.step-status').className='step-status ss-active';nc.querySelector('.step-status').textContent='Current';}}if(data.completed.length===TOTAL)document.getElementById('finishBanner').classList.add('show');}if(data.quizzesPassed)data.quizzesPassed.forEach(id=>{const q=document.getElementById(id);if(q){q.classList.add('passed');q.querySelector('.quiz-next-btn').classList.add('show');q.querySelector('.quiz-submit').style.display='none';q.querySelectorAll('.quiz-opt').forEach(o=>o.classList.add('disabled'));}});if(data.challengesPassed)data.challengesPassed.forEach(id=>{const c=document.getElementById(id);if(c){c.classList.add('passed');c.querySelector('.cc-check-btn').disabled=true;c.querySelectorAll('.cc-blank').forEach(b=>{b.value=_canon(b);b.disabled=true;b.classList.add('correct');});}});updateXpDisplay();}catch(e){}}function getActiveStep(){for(let i=1;i<=TOTAL;i++){if(!completed.has(i))return i;}return TOTAL;}function buildDots(){const c=document.getElementById('stepDots');c.innerHTML='';for(let i=1;i<=TOTAL;i++){const d=document.createElement('div');d.className='step-dot'+(completed.has(i)?' done':(i===getActiveStep()?' active':''));d.textContent=i;d.onclick=()=>{const el=document.getElementById('step-'+i);if(el&&!el.classList.contains('locked'))el.scrollIntoView({behavior:'smooth',block:'start'});};c.appendChild(d);}}function updateProgress(){const n=completed.size;document.getElementById('progressCount').textContent=n+' / '+TOTAL+' steps';document.getElementById('progressFill').style.width=(n/TOTAL*100)+'%';buildDots();}function updateXpDisplay(){const xpInLevel=xp%XP_PER_LEVEL;document.getElementById('xpLabel').textContent=xp+' XP';document.getElementById('xpFill').style.width=(xpInLevel/XP_PER_LEVEL*100)+'%';document.getElementById('xpLevel').textContent='Level '+level;document.getElementById('streakCount').textContent=streak;document.getElementById('xpStreak').classList.toggle('hot',streak>=3);}function awardXp(amount,label){const oldLevel=level;xp+=amount;level=Math.floor(xp/XP_PER_LEVEL)+1;updateXpDisplay();document.getElementById('xpLabel').classList.add('xp-pop');setTimeout(()=>document.getElementById('xpLabel').classList.remove('xp-pop'),400);showXpToast('+'+amount+' XP'+(label?' · '+label:''));if(streak>=3)streakFx(streak);if(level>oldLevel)setTimeout(()=>showLevelUp(level),600);saveProgress();}function streakFx(s){const tier=Math.min(Math.floor(s/3),4);const anchor=document.getElementById('xpLabel');if(!anchor)return;const r=anchor.getBoundingClientRect();const n=3+tier*2;for(let i=0;i<n;i++){const p=document.createElement('span');p.textContent='✨';const angle=Math.random()*Math.PI*2,dist=20+Math.random()*30;p.style.cssText='position:fixed;left:'+(r.left+r.width/2)+'px;top:'+(r.top+r.height/2)+'px;font-size:'+(12+tier)+'px;pointer-events:none;z-index:9999;--dx:'+(Math.cos(angle)*dist).toFixed(1)+'px;--dy:'+(Math.sin(angle)*dist).toFixed(1)+'px;animation:streakPop .55s ease-out forwards;';document.body.appendChild(p);setTimeout(()=>p.remove(),570);}if(tier>=2){document.body.classList.add('streak-shake');setTimeout(()=>document.body.classList.remove('streak-shake'),300);}}function showXpToast(text){const existing=document.querySelector('.xp-toast');if(existing)existing.remove();const t=document.createElement('div');t.className='xp-toast';t.textContent=text;document.body.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},2000);}function showLevelUp(lvl){const overlay=document.createElement('div');overlay.className='levelup-overlay';overlay.innerHTML='<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level '+lvl+'!</div><div class="lvl-sub">Keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';document.body.appendChild(overlay);overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});}
+function selectQuizOpt(el){const gate=el.closest('.quiz-gate')||el.closest('.predict-challenge');if(!gate||gate.classList.contains('passed'))return;gate.querySelectorAll('.quiz-opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');const submitBtn=gate.querySelector('.quiz-submit');if(submitBtn)submitBtn.classList.add('show');}function checkQuiz(btn){const gate=btn.closest('.quiz-gate');const selected=gate.querySelector('.quiz-opt.selected');if(!selected)return;const correct=_key(gate);const chosenIdx=parseInt(selected.dataset.idx);const fb=gate.querySelector('.quiz-feedback');totalQuizzes++;if(chosenIdx===correct){selected.classList.add('correct');fb.className='quiz-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Correct!</span>';gate.classList.add('passed');btn.style.display='none';gate.querySelector('.quiz-next-btn').classList.add('show');gate.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;let bonus=XP_QUIZ;let label='Quiz';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak';}awardXp(bonus,label);}else{selected.classList.add('wrong');fb.className='quiz-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Try again!</span>';streak=0;updateXpDisplay();setTimeout(()=>{selected.classList.remove('wrong','selected');fb.classList.remove('show');},1500);}saveProgress();}function checkCodeChallenge(btn){const challenge=btn.closest('.code-challenge');const blanks=challenge.querySelectorAll('.cc-blank');const fb=challenge.querySelector('.cc-feedback');const hint=challenge.querySelector('.cc-hint');let allCorrect=true;blanks.forEach(b=>{if(_match(b,b.value)){b.classList.remove('wrong');b.classList.add('correct');}else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}});if(allCorrect){fb.className='cc-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect!</span>';challenge.classList.add('passed');btn.disabled=true;blanks.forEach(b=>{b.value=_canon(b);b.disabled=true;});hint.classList.remove('show');streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;let bonus=XP_CODE;let label='Challenge';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak';}awardXp(bonus,label);}else{fb.className='cc-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Try again.</span>';hint.classList.add('show');streak=0;updateXpDisplay();totalQuizzes++;}saveProgress();}
+function pickTF(btn,value){const item=btn.closest('.tf-item');item.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');btn.dataset.picked=value;}function checkTF(btn){const round=btn.closest('.tf-round');const items=round.querySelectorAll('.tf-item');const fb=round.querySelector('.tf-feedback');let allAnswered=true,allCorrect=true;items.forEach(item=>{const selected=item.querySelector('.tf-btn.selected');if(!selected){allAnswered=false;return;}const correct=_dec(item,'a').trim().toLowerCase();const picked=selected.dataset.picked;item.classList.add('answered');if(picked===correct){selected.classList.add('correct-answer');}else{selected.classList.add('wrong-answer');allCorrect=false;}});if(!allAnswered){fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️</span><span>Answer all first!</span>';return;}if(allCorrect){fb.className='tf-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>All correct!</span>';round.classList.add('passed');btn.disabled=true;streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;let bonus=XP_QUIZ,label='T/F';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak';}awardXp(bonus,label);}else{fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Not all correct.</span>';streak=0;updateXpDisplay();totalQuizzes++;setTimeout(()=>{items.forEach(item=>{item.classList.remove('answered');item.querySelectorAll('.tf-btn').forEach(b=>{b.classList.remove('selected','correct-answer','wrong-answer');});});fb.classList.remove('show');},2500);}saveProgress();}
+function completeStep(n){completed.add(n);const card=document.getElementById('step-'+n);card.classList.remove('active-step','open');card.classList.add('completed');card.querySelector('.step-status').className='step-status ss-done';card.querySelector('.step-status').textContent='✓ Done';card.querySelector('.step-body').style.display='none';const next=document.getElementById('step-'+(n+1));if(next){next.classList.remove('locked');next.classList.add('active-step','open');next.querySelector('.step-status').className='step-status ss-active';next.querySelector('.step-status').textContent='Current';setTimeout(()=>next.scrollIntoView({behavior:'smooth',block:'start'}),150);}if(completed.size===TOTAL){document.getElementById('finishBanner').classList.add('show');document.getElementById('finalXp').textContent=xp;document.getElementById('finalLevel').textContent=level;document.getElementById('finalStreak').textContent=bestStreak;document.getElementById('finalAccuracy').textContent=totalQuizzes?Math.round(correctFirst/totalQuizzes*100)+'%':'0%';setTimeout(()=>document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}),200);if(typeof playerProfile!=='undefined'){playerProfile.markWorkshopCompleted('gdevelop-shooter-workshop',80);}}updateProgress();saveProgress();}function toggleStep(header){const card=header.closest('.step-card');if(card.classList.contains('locked'))return;const body=card.querySelector('.step-body');const isOpen=card.classList.contains('open');card.classList.toggle('open',!isOpen);body.style.display=isOpen?'none':'block';}
+_shuffleQuiz();_initKbd();loadProgress();updateProgress();updateXpDisplay();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course","name":"Space Shooter — Build a Shooter in GDevelop","description":"Build a Space Shooter in GDevelop! A free parent & child workshop. Bullets, spawning, waves. No coding needed. Ages 8+.","url":"https://jvdesignstudio.co.uk/workshops/gdevelop-shooter-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
+</script>
+</body>
+</html>

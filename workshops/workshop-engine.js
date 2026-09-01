@@ -22,6 +22,7 @@ var streak = 0;
 var bestStreak = 0;
 var totalQuizzes = 0;
 var correctFirst = 0;
+var workshopStartTime = Date.now();
 
 var XP_PER_LEVEL = 100;
 var XP_QUIZ = 15;
@@ -375,7 +376,13 @@ function completeStep(n) {
     showFinish();
     setTimeout(function(){ document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}); }, 200);
     if (typeof playerProfile !== 'undefined') {
-      playerProfile.markWorkshopCompleted(PROFILE_ID, 75);
+      playerProfile.markWorkshopCompleted(PROFILE_ID);
+      // Track time spent in this workshop session (minutes)
+      var elapsed = Math.round((Date.now() - workshopStartTime) / 60000);
+      if (elapsed > 0) {
+        playerProfile.state.totalPlayTime = (playerProfile.state.totalPlayTime || 0) + elapsed;
+        playerProfile.saveProfile();
+      }
     }
   }
   updateProgress();

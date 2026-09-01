@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#ff004d"><script src="../analytics-loader.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build a Match-3 Game in Pico-8 | Free Workshop for Kids | JVDesignStudio</title>
+<meta name="description" content="Build a Match-3 puzzle game in Pico-8! A free parent & child workshop. Swap gems, create combos, race the clock with real Lua code. Ages 9+.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/pico8-match3-workshop.html"><meta name="robots" content="index, follow">
+<meta property="og:type" content="website"><meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/pico8-match3-workshop.html"><meta property="og:title" content="Build a Match-3 Game in Pico-8 | Free Workshop for Kids | JVDesignStudio"><meta property="og:description" content="Build a Match-3 game in Pico-8. Free parent & child workshop, no experience needed. Ages 9+."><meta property="og:image" content="https://jvdesignstudio.co.uk/og/pico8-match3-workshop.png"><meta property="og:site_name" content="JVDesignStudio"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/pico8-match3-workshop.png">
+<link rel="icon" href="../logo.png" type="image/png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>:root{--accent:#ff004d;--accent2:#ff5577;--green:#06d6a0;--teal:#4dd9e0;--asphalt:#2a2d3a;--xp-gold:#ffd166;--xp-glow:rgba(255,209,102,.3);}.print-btn{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;padding:10px 18px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(232,234,242,.6);cursor:pointer;text-decoration:none}.print-btn:hover{background:rgba(255,255,255,.09);color:var(--text)}</style>
+<link rel="stylesheet" href="../style-shared.css"><link rel="stylesheet" href="../style-workshop.css">
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+ counts or game-over states to a screen reader; this gives every page one
+ place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies downloads"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ /* Restore saved theme before first paint of the toggle icon */
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
+</header>
+<script>
+(function(){
+ /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#ff004d,#ff7700,#ff004d,#ff7700)">
+  <span>🎮 My First Pico-8 Game · Episode 5 of 6 · <a href="my-first-pico8-game.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span>
+</div>
+
+<section class="hero" id="main-content">
+  <div class="hero-inner">
+    <div class="hero-badge">🧩 Episode 5 · Advanced · Builds on Episodes 1-4</div>
+    <h1>Gem Crusher!<br><em>Match-3</em></h1>
+    <p class="hero-sub">Swap gems to create matches of three or more, build combo chains and race against the clock. Learn grid algorithms and animation sequences.</p>
+    <div class="hero-pills"><span class="pill p-age">👶 Ages 9+</span><span class="pill p-time">⏱️ ~2 Hours</span><span class="pill p-tool">🎮 Pico-8</span><span class="pill p-free">✓ Free</span></div>
+    <div class="skills-strip"><span class="skill-tag"><span>🔄</span> Swap</span><span class="skill-tag"><span>✨</span> Combos</span><span class="skill-tag"><span>⏱️</span> Timer</span><span class="skill-tag"><span>🎬</span> Animation</span><span class="skill-tag"><span>📊</span> Grid Logic</span></div>
+    <div class="hero-btns"><a href="#step-1" class="btn-start">🧩 Let's Build! Start Step 1</a><a href="my-first-pico8-game.html" class="btn-outline">← All Episodes</a><a href="javascript:window.print()" class="print-btn">🖨️ Print Guide</a></div>
+  </div>
+</section>
+
+<div class="xp-wrap"><div class="xp-bar"><div class="xp-icon">⭐</div><div class="xp-label" id="xpLabel">0 XP</div><div class="xp-track"><div class="xp-fill" id="xpFill"></div></div><div class="xp-level" id="xpLevel">Level 1</div><div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div></div></div>
+<div class="progress-wrap"><div class="progress-header"><span class="progress-label">Your Progress</span><span class="progress-count" id="progressCount">0 / 10 steps</span></div><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="step-dots" id="stepDots"></div></div>
+
+<main class="workshop">
+
+  <div class="step-card open active-step" id="step-1" data-step="1">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-red">1</div><div class="step-title-wrap"><div class="step-emoji">📦</div><div class="step-title">Create the Gem Grid</div><div class="step-blurb">Set up an 8x8 grid of random coloured gems</div></div><span class="step-status ss-active">Active</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Create an 8x8 grid where each cell holds a gem type (1-5) and draw them as coloured squares.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create <strong>grid={}</strong> as an 8x8 2D table. Fill with random values 1-5 using <strong>flr(rnd(5))+1</strong>.</span></li>
+        <li><span class="num-badge">2</span><span>Each gem type maps to a colour: 1=red(8), 2=blue(12), 3=green(11), 4=yellow(10), 5=pink(14).</span></li>
+        <li><span class="num-badge">3</span><span>Draw each gem as a filled rectangle with a darker border for a polished look.</span></li>
+      </ul>
+      <div class="blocks-wrap"><div class="blocks-label">📝 Match-3 - Grid Setup</div>
+<div class="blocks-body"><span class="pico-kw">function</span> <span class="pico-fn">_init</span>()
+  g=<span class="pico-num">14</span> <span class="pico-cmt">-- gem size</span>
+  cols={<span class="pico-num">8</span>,<span class="pico-num">12</span>,<span class="pico-num">11</span>,<span class="pico-num">10</span>,<span class="pico-num">14</span>}
+  grid={}
+  <span class="pico-kw">for</span> y=<span class="pico-num">1</span>,<span class="pico-num">8</span> <span class="pico-kw">do</span>
+    grid[y]={}
+    <span class="pico-kw">for</span> x=<span class="pico-num">1</span>,<span class="pico-num">8</span> <span class="pico-kw">do</span>
+      grid[y][x]=<span class="pico-fn">flr</span>(<span class="pico-fn">rnd</span>(<span class="pico-num">5</span>))+<span class="pico-num">1</span>
+    <span class="pico-kw">end</span>
+  <span class="pico-kw">end</span>
+<span class="pico-kw">end</span>
+
+<span class="pico-kw">function</span> <span class="pico-fn">draw_gem</span>(x,y,t)
+  <span class="pico-kw">local</span> c=cols[t]
+  <span class="pico-kw">local</span> px=x*g+<span class="pico-num">20</span>
+  <span class="pico-kw">local</span> py=y*g+<span class="pico-num">20</span>
+  <span class="pico-fn">rectfill</span>(px,py,px+g-<span class="pico-num">2</span>,py+g-<span class="pico-num">2</span>,c)
+<span class="pico-kw">end</span></div></div>
+
+      <div class="quiz-gate" id="quiz-1" data-step="1" data-k="MQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">What does <strong>flr(rnd(5))+1</strong> produce?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>A random number from 0 to 4</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>A random whole number from 1 to 5</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>A random number from 1 to 10</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(1)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card locked" id="step-2" data-step="2">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-green">2</div><div class="step-title-wrap"><div class="step-emoji">👆</div><div class="step-title">Cursor &amp; Selection</div><div class="step-blurb">Move a cursor and select gems to swap</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Add a cursor that moves with arrow keys and selects gems with Z button.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create <strong>cx=1</strong>, <strong>cy=1</strong> for cursor position. Draw as a flashing outline.</span></li>
+        <li><span class="num-badge">2</span><span>Use <strong>btnp()</strong> for movement. Track <strong>sel_x</strong>, <strong>sel_y</strong> for first selected gem.</span></li>
+        <li><span class="num-badge">3</span><span>On second Z press, check if adjacent and swap if valid.</span></li>
+      </ul>
+      <div class="quiz-gate" id="quiz-2" data-step="2" data-k="Mg==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Two gems can only be swapped if they are...</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Adjacent (next to each other horizontally or vertically)</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Anywhere on the grid</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The same colour</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(2)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card locked" id="step-3" data-step="3">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-yellow">3</div><div class="step-title-wrap"><div class="step-emoji">🔄</div><div class="step-title">Swap Gems</div><div class="step-blurb">Implement the swap animation and logic</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Swap two adjacent gems and animate them sliding into each other's positions.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create a swap function: <strong>swap(x1,y1,x2,y2)</strong> that swaps grid values.</span></li>
+        <li><span class="num-badge">2</span><span>Check adjacency: <strong>abs(x1-x2)+abs(y1-y2)==1</strong>.</span></li>
+        <li><span class="num-badge">3</span><span>After swap, check for matches. If none, swap back.</span></li>
+      </ul>
+      <div class="code-challenge" id="cc-3" data-step="3">
+        <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+        <div class="cc-prompt">Fill in the blanks to swap two gems in the grid:</div>
+        <div class="cc-code-area"><span class="pico-kw">function</span> <span class="pico-fn">swap</span>(x1,y1,x2,y2)
+  <span class="pico-kw">local</span> temp=grid[y1][x1]
+  grid[y1][x1]=grid[y2][<input class="cc-blank" data-a="eDI=" placeholder="???" size="4">]
+  grid[y2][x2]=temp
+<span class="pico-kw">end</span></div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: We need to put x1 into the second line to complete the three-way swap.</div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-3" data-step="3" data-k="Mw==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why do we swap back if no match is found?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Because invalid moves shouldn't count in a match-3 game</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>To prevent the game from crashing</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It's a Pico-8 requirement</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(3)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card locked" id="step-4" data-step="4">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-pink">4</div><div class="step-title-wrap"><div class="step-emoji">✨</div><div class="step-title">Match Detection</div><div class="step-blurb">Find horizontal and vertical matches of 3+</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Scan the grid for horizontal and vertical lines of 3 or more matching gems.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Horizontal: for each row, check if grid[y][x]==grid[y][x+1]==grid[y][x+2].</span></li>
+        <li><span class="num-badge">2</span><span>Vertical: for each column, check grid[y][x]==grid[y+1][x]==grid[y+2][x].</span></li>
+        <li><span class="num-badge">3</span><span>Store matched positions in a table and return the count.</span></li>
+      </ul>
+      <div class="tf-round" id="tf-4" data-step="4">
+        <div class="tf-header"><div class="tf-icon">⚡</div><div class="tf-title">True or False?</div><div class="tf-xp-badge">+15 XP</div></div>
+        <div class="tf-item" data-a="dHJ1ZQ=="><div class="tf-statement">A match of 4 gems is valid in match-3 (it still counts as a match).</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+        <div class="tf-item" data-a="ZmFsc2U="><div class="tf-statement">We only need to check horizontal matches, not vertical.</div><div class="tf-btns"><button class="tf-btn" onclick="pickTF(this,'true')">True</button><button class="tf-btn" onclick="pickTF(this,'false')">False</button></div></div>
+        <button class="tf-check-btn" onclick="checkTF(this)">⚡ Check All</button>
+        <div class="tf-feedback"></div>
+      </div>
+
+      <div class="quiz-gate" id="quiz-4" data-step="4" data-k="NA==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">How do we check for a horizontal match of 3 at position (x, y)?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Check if grid[y][x]==grid[y][x+1]==grid[y][x+2]</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Check if grid[y][x]==grid[y+1][x]</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Check if grid[y][x] is not 0</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(4)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card locked" id="step-5" data-step="5">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-purple">5</div><div class="step-title-wrap"><div class="step-emoji">💥</div><div class="step-title">Remove Matches &amp; Score</div><div class="step-blurb">Clear matched gems and add points</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Remove matched gems from the grid, add score, and trigger gravity to fill gaps.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Set matched gem positions to 0 (empty).</span></li>
+        <li><span class="num-badge">2</span><span>Score: 3 match = 30 pts, 4 match = 60 pts, 5 match = 100 pts.</span></li>
+        <li><span class="num-badge">3</span><span>Play a sound effect for each match.</span></li>
+      </ul>
+      <div class="quiz-gate" id="quiz-5" data-step="5" data-k="NQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">What happens to matched gems after they're removed?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>They become 0 (empty) and gravity fills the gaps</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>They stay as 0 forever</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>They become a new random gem</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(5)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card locked" id="step-6" data-step="6">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-teal">6</div><div class="step-title-wrap"><div class="step-emoji">⬇️</div><div class="step-title">Gravity: Gems Fall Down</div><div class="step-blurb">Make gems fall into empty spaces below them</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>After matches are cleared, make remaining gems fall downward to fill empty spaces.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>For each column, scan from bottom to top. If a cell is 0, find the nearest gem above and move it down.</span></li>
+        <li><span class="num-badge">2</span><span>Fill remaining top cells with new random gems.</span></li>
+        <li><span class="num-badge">3</span><span>After gravity, check for new matches (chain reactions).</span></li>
+      </ul>
+      <div class="concept-fill" id="cf-6" data-step="6">
+        <div class="cf-header"><div class="cf-icon">✏️</div><div class="cf-title">Fill in the Blanks</div><div class="cf-xp-badge">+15 XP</div></div>
+        <div class="cf-sentence">After gems fall, we need to check for <input class="cf-blank" data-a="Y2hhaW4=" placeholder="??????" size="8"> reactions where new matches form automatically from the falling gems.</div>
+        <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
+        <div class="cf-feedback"></div>
+      </div>
+      <div class="quiz-gate" id="quiz-6" data-step="6" data-k="Ng==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">Why do we scan columns from bottom to top for gravity?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Because gems fall downward, so we need to process the lowest empty spaces first</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>It's faster</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Lua requires it</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(6)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card locked" id="step-7" data-step="7">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-orange">7</div><div class="step-title-wrap"><div class="step-emoji">⏱️</div><div class="step-title">Add Timer</div><div class="step-blurb">Race against the clock to get the highest score</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Add a 90-second countdown timer. Game ends when time runs out.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create <strong>timer=90</strong>. Decrease by 1/30 each frame (1 second at 30fps).</span></li>
+        <li><span class="num-badge">2</span><span>Display timer at top of screen. Flash red when under 10 seconds.</span></li>
+        <li><span class="num-badge">3</span><span>When timer hits 0, show final score and "press z to restart".</span></li>
+      </ul>
+      <div class="quiz-gate" id="quiz-7" data-step="7" data-k="Nw==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">If the game runs at 30fps, how do we decrease the timer by 1 each second?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>timer = timer - 1/30 each frame</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>timer = timer - 1 each frame</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>timer = timer - 30 each frame</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(7)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card locked" id="step-8" data-step="8">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-green">8</div><div class="step-title-wrap"><div class="step-emoji">✨</div><div class="step-title">Combo System</div><div class="step-blurb">Award bonus points for chain reactions</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Track combo chains: each successive match without player input earns more points.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create <strong>combo=0</strong>. Increment each time gravity causes a new match.</span></li>
+        <li><span class="num-badge">2</span><span>Score multiplier: <strong>base_score * (combo+1)</strong>.</span></li>
+        <li><span class="num-badge">3</span><span>Display "COMBO x2!", "COMBO x3!" etc. on screen.</span></li>
+      </ul>
+      <div class="code-challenge" id="cc-8" data-step="8">
+        <div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
+        <div class="cc-prompt">Fill in the blanks to calculate combo bonus score:</div>
+        <div class="cc-code-area">total_score = base_score * (combo + <input class="cc-blank" data-a="MQ==" placeholder="?" size="3">)</div>
+        <button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button>
+        <div class="cc-feedback"></div>
+        <div class="cc-hint">💡 Hint: When combo is 0 (no chain), the multiplier should be 1 (no bonus).</div>
+      </div>
+      <div class="quiz-gate" id="quiz-8" data-step="8" data-k="OA==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">What is a "combo" in match-3 games?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>When gems falling from gravity create new matches without player input</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>When the player matches 5 gems at once</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>When the timer runs out</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(8)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card locked" id="step-9" data-step="9">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-purple">9</div><div class="step-title-wrap"><div class="step-emoji">🎬</div><div class="step-title">Animations</div><div class="step-blurb">Add smooth swap and match animations</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Add smooth tweening for gem swaps and a flash effect when gems match.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Store animation state: <strong>anim_t</strong> (0-1), <strong>anim_from</strong>, <strong>anim_to</strong>.</span></li>
+        <li><span class="num-badge">2</span><span>Interpolate position: <strong>x = lerp(from, to, t)</strong> during animation.</span></li>
+        <li><span class="num-badge">3</span><span>Flash matched gems white for 5 frames before removing.</span></li>
+      </ul>
+      <div class="predict-challenge" id="pred-9" data-step="9" data-k="MQ==">
+        <div class="pc-header"><div class="pc-icon">🔮</div><div class="pc-title">Predict What Happens</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="pc-scenario">The player swaps two gems. A match of 3 is found. What happens in order?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Swap animation, match flash, gems removed, gravity, check for new matches</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Gems removed immediately, no animation</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Gravity happens first, then matching</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkPredict(this)">🔮 Check Prediction</button>
+      </div>
+      <div class="quiz-gate" id="quiz-9" data-step="9" data-k="OQ==">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">What does <strong>lerp(a, b, t)</strong> do?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Linearly interpolates between a and b based on t (0=a, 1=b)</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Multiplies a by b</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Rounds a to the nearest b</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(9)">✅ Correct! Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card locked" id="step-10" data-step="10">
+    <div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-red">10</div><div class="step-title-wrap"><div class="step-emoji">🎉</div><div class="step-title">Title Screen &amp; Polish</div><div class="step-blurb">Add title screen, sound effects and final touches</div></div><span class="step-status ss-todo">Locked</span></div>
+    <div class="step-body">
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Add a title screen, high score tracking, sound effects and visual polish.</p></div></div>
+      <ul class="steps-list">
+        <li><span class="num-badge">1</span><span>Create title screen with animated gems and "GEM CRUSHER" title.</span></li>
+        <li><span class="num-badge">2</span><span>Save high score to Pico-8 cart data using <strong>dset()</strong>.</span></li>
+        <li><span class="num-badge">3</span><span>Add sfx for matching, combo chains, game over and timer warning.</span></li>
+      </ul>
+      <div class="quiz-gate" id="quiz-10" data-step="10" data-k="MTA=">
+        <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Final Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
+        <div class="quiz-question">What Pico-8 function saves data that persists between game sessions?</div>
+        <div class="quiz-options">
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>dset() / dget()</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>save()</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>poke()</span></div>
+        </div>
+        <div class="quiz-feedback"></div>
+        <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
+        <button class="quiz-next-btn" onclick="completeStep(10)">🎉 I Finished the Match-3 Workshop!</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="finish-banner" id="finishBanner">
+    <div class="confetti-row">🎉🧩✨💎⏱️</div>
+    <div class="finish-title">You Built a Match-3 Game!</div>
+    <p class="finish-sub">Amazing, you've made a real puzzle game with gem swapping, combos, gravity and a timer. Now try the final episode!</p>
+    <div class="final-stats">
+      <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div>
+      <div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div>
+    </div>
+    <a href="pico8-platformer-workshop.html" class="next-ep-btn">🎮 Episode 6: Platformer →</a>
+    <div class="support-prompt"><p class="support-prompt-text">This workshop was <strong>free</strong> and took many hours to build. If it helped you learn something new, consider supporting the project.</p><a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener noreferrer" class="support-btn">&#9749; Support on Ko-fi</a></div>
+  </div>
+
+</main>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+  // Failsafe: if observer never fires (blocked JS earlier, stalled), show content anyway after 2s
+  setTimeout(() => document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible')), 2000);
+})();
+</script>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+<script src="../player-profile.js"></script><script src="../tracks.js"></script>
+<script>
+const TOTAL=10;const STORAGE_KEY='jvds-pico8-match3-v1';
+let completed=new Set();let xp=0;let level=1;let streak=0;let bestStreak=0;let totalQuizzes=0;let correctFirst=0;
+const XP_PER_LEVEL=100;const XP_QUIZ=15;const XP_CODE=20;const XP_STREAK_BONUS=5;
+function _dec(el,k){var e=el.dataset[k];if(e!==undefined){try{return decodeURIComponent(atob(e));}catch(_){return '';}}return k==='a'?(el.dataset.answer||''):(el.dataset.correct||'');}
+function _answers(el){return _dec(el,'a').split('|');}_canon=function(el){return _answers(el)[0];};
+function _match(el,val){var v=val.trim().toLowerCase();return _answers(el).some(function(a){return a.trim().toLowerCase()===v;});}
+function _key(el){return parseInt(_dec(el,'k'),10);}
+function _shuffleQuiz(){document.querySelectorAll('.quiz-options').forEach(function(o){var k=[].slice.call(o.children);for(var i=k.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=k[i];k[i]=k[j];k[j]=t;}k.forEach(function(c){o.appendChild(c);});var L=['A','B','C','D','E'];o.querySelectorAll('.opt-letter').forEach(function(l,i){l.textContent=L[i]||'';});});}
+function _initKbd(){function act(el){return function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}};}document.querySelectorAll('.quiz-opt').forEach(function(o){o.setAttribute('role','button');o.setAttribute('tabindex','0');o.addEventListener('keydown',act(o));});document.querySelectorAll('.step-header').forEach(function(h){h.setAttribute('role','button');h.setAttribute('tabindex','0');h.addEventListener('keydown',act(h));});}
+function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({completed:[...completed],total:TOTAL,xp,level,streak,bestStreak,totalQuizzes,correctFirst,quizzesPassed:[...document.querySelectorAll('.quiz-gate.passed')].map(q=>q.id),challengesPassed:[...document.querySelectorAll('.code-challenge.passed')].map(c=>c.id)}));}catch(e){}}
+function loadProgress(){try{const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!data)return;if(data.xp){xp=data.xp;level=data.level||1;streak=data.streak||0;bestStreak=data.bestStreak||0;totalQuizzes=data.totalQuizzes||0;correctFirst=data.correctFirst||0;}if(data.completed&&data.completed.length){data.completed.forEach(n=>{completed.add(n);const card=document.getElementById('step-'+n);if(!card)return;card.classList.remove('active-step','open','locked');card.classList.add('completed');card.querySelector('.step-status').className='step-status ss-done';card.querySelector('.step-status').textContent='✓ Done';card.querySelector('.step-body').style.display='none';});const next=getActiveStep();if(next<=TOTAL){const nc=document.getElementById('step-'+next);if(nc){nc.classList.remove('locked');nc.classList.add('active-step','open');nc.querySelector('.step-status').className='step-status ss-active';nc.querySelector('.step-status').textContent='Current';}}if(data.completed.length===TOTAL)document.getElementById('finishBanner').classList.add('show');}if(data.quizzesPassed)data.quizzesPassed.forEach(id=>{const q=document.getElementById(id);if(q){q.classList.add('passed');q.querySelector('.quiz-next-btn').classList.add('show');q.querySelector('.quiz-submit').style.display='none';q.querySelectorAll('.quiz-opt').forEach(o=>o.classList.add('disabled'));}});if(data.challengesPassed)data.challengesPassed.forEach(id=>{const c=document.getElementById(id);if(c){c.classList.add('passed');c.querySelector('.cc-check-btn').disabled=true;c.querySelectorAll('.cc-blank').forEach(b=>{b.value=_canon(b);b.disabled=true;b.classList.add('correct');});}});updateXpDisplay();}catch(e){}}
+function getActiveStep(){for(let i=1;i<=TOTAL;i++){if(!completed.has(i))return i;}return TOTAL;}
+function buildDots(){const c=document.getElementById('stepDots');c.innerHTML='';for(let i=1;i<=TOTAL;i++){const d=document.createElement('div');d.className='step-dot'+(completed.has(i)?' done':(i===getActiveStep()?' active':''));d.textContent=i;d.onclick=()=>{const el=document.getElementById('step-'+i);if(el&&!el.classList.contains('locked'))el.scrollIntoView({behavior:'smooth',block:'start'});};c.appendChild(d);}}
+function updateProgress(){const n=completed.size;document.getElementById('progressCount').textContent=n+' / '+TOTAL+' steps';document.getElementById('progressFill').style.width=(n/TOTAL*100)+'%';buildDots();}
+function updateXpDisplay(){const xpInLevel=xp%XP_PER_LEVEL;document.getElementById('xpLabel').textContent=xp+' XP';document.getElementById('xpFill').style.width=(xpInLevel/XP_PER_LEVEL*100)+'%';document.getElementById('xpLevel').textContent='Level '+level;document.getElementById('streakCount').textContent=streak;document.getElementById('xpStreak').classList.toggle('hot',streak>=3);}
+function awardXp(amount,label){const oldLevel=level;xp+=amount;level=Math.floor(xp/XP_PER_LEVEL)+1;updateXpDisplay();document.getElementById('xpLabel').classList.add('xp-pop');setTimeout(()=>document.getElementById('xpLabel').classList.remove('xp-pop'),400);showXpToast('+'+amount+' XP'+(label?' · '+label:''));if(streak>=3)streakFx(streak);if(level>oldLevel)setTimeout(()=>showLevelUp(level),600);saveProgress();}
+function streakFx(s){const tier=Math.min(Math.floor(s/3),4);const anchor=document.getElementById('xpLabel');if(!anchor)return;const r=anchor.getBoundingClientRect();const n=3+tier*2;for(let i=0;i<n;i++){const p=document.createElement('span');p.textContent='✨';const angle=Math.random()*Math.PI*2,dist=20+Math.random()*30;p.style.cssText='position:fixed;left:'+(r.left+r.width/2)+'px;top:'+(r.top+r.height/2)+'px;font-size:'+(12+tier)+'px;pointer-events:none;z-index:9999;--dx:'+(Math.cos(angle)*dist).toFixed(1)+'px;--dy:'+(Math.sin(angle)*dist).toFixed(1)+'px;animation:streakPop .55s ease-out forwards;';document.body.appendChild(p);setTimeout(()=>p.remove(),570);}if(tier>=2){document.body.classList.add('streak-shake');setTimeout(()=>document.body.classList.remove('streak-shake'),300);}}
+function showXpToast(text){const existing=document.querySelector('.xp-toast');if(existing)existing.remove();const t=document.createElement('div');t.className='xp-toast';t.textContent=text;document.body.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},2000);}
+function showLevelUp(lvl){const overlay=document.createElement('div');overlay.className='levelup-overlay';overlay.innerHTML='<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level '+lvl+'!</div><div class="lvl-sub">You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';document.body.appendChild(overlay);overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});}
+function selectQuizOpt(el){const gate=el.closest('.quiz-gate')||el.closest('.predict-challenge');if(!gate||gate.classList.contains('passed'))return;gate.querySelectorAll('.quiz-opt').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');const submitBtn=gate.querySelector('.quiz-submit');if(submitBtn)submitBtn.classList.add('show');}
+function checkQuiz(btn){const gate=btn.closest('.quiz-gate');const selected=gate.querySelector('.quiz-opt.selected');if(!selected)return;const correct=_key(gate);const chosenIdx=parseInt(selected.dataset.idx);const fb=gate.querySelector('.quiz-feedback');totalQuizzes++;if(chosenIdx===correct){selected.classList.add('correct');fb.className='quiz-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>That\'s right! Great job.</span>';gate.classList.add('passed');btn.style.display='none';gate.querySelector('.quiz-next-btn').classList.add('show');gate.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;let bonus=XP_QUIZ;let label='Quiz correct';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{selected.classList.add('wrong');fb.className='quiz-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite, try again!</span>';streak=0;updateXpDisplay();setTimeout(()=>{selected.classList.remove('wrong','selected');fb.classList.remove('show');},1500);}saveProgress();}
+function checkCodeChallenge(btn){const challenge=btn.closest('.code-challenge');const blanks=challenge.querySelectorAll('.cc-blank');const fb=challenge.querySelector('.cc-feedback');const hint=challenge.querySelector('.cc-hint');let allCorrect=true;blanks.forEach(b=>{if(_match(b,b.value)){b.classList.remove('wrong');b.classList.add('correct');}else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}});if(allCorrect){fb.className='cc-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';challenge.classList.add('passed');btn.disabled=true;blanks.forEach(b=>{b.value=_canon(b);b.disabled=true;});hint.classList.remove('show');streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;let bonus=XP_CODE;let label='Code challenge';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{fb.className='cc-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Some answers aren\'t quite right, check the highlighted blanks and try again.</span>';hint.classList.add('show');streak=0;updateXpDisplay();totalQuizzes++;}saveProgress();}
+function checkConceptFill(btn){const wrap=btn.closest('.concept-fill');const blanks=wrap.querySelectorAll('.cf-blank');const fb=wrap.querySelector('.cf-feedback');let allCorrect=true;blanks.forEach(b=>{if(_match(b,b.value)){b.classList.remove('wrong');b.classList.add('correct');}else{b.classList.remove('correct');b.classList.add('wrong');allCorrect=false;}});if(allCorrect){fb.className='cf-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Perfect!</span>';wrap.classList.add('passed');btn.disabled=true;blanks.forEach(b=>{b.value=_canon(b);b.disabled=true;});streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;let bonus=XP_QUIZ;let label='Concept fill';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{fb.className='cf-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Some blanks aren\'t right, try again!</span>';streak=0;updateXpDisplay();totalQuizzes++;}saveProgress();}
+function pickTF(btn,value){const item=btn.closest('.tf-item');item.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');btn.dataset.picked=value;}
+function checkTF(btn){const round=btn.closest('.tf-round');const items=round.querySelectorAll('.tf-item');const fb=round.querySelector('.tf-feedback');let allAnswered=true,allCorrect=true;items.forEach(item=>{const selected=item.querySelector('.tf-btn.selected');if(!selected){allAnswered=false;return;}const correct=_dec(item,'a').trim().toLowerCase();const picked=selected.dataset.picked;item.classList.add('answered');if(picked===correct){selected.classList.add('correct-answer');}else{selected.classList.add('wrong-answer');item.querySelectorAll('.tf-btn').forEach(b=>{if(b.dataset.picked!==picked&&b.textContent.toLowerCase()===correct)b.classList.add('correct-answer');});allCorrect=false;}});if(!allAnswered){fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">⚠️</span><span>Answer all statements first!</span>';return;}if(allCorrect){fb.className='tf-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>All correct! Nice one.</span>';round.classList.add('passed');btn.disabled=true;streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;totalQuizzes++;let bonus=XP_QUIZ;let label='True/False';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{fb.className='tf-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Not all correct, try again next time.</span>';streak=0;updateXpDisplay();totalQuizzes++;setTimeout(()=>{items.forEach(item=>{item.classList.remove('answered');item.querySelectorAll('.tf-btn').forEach(b=>{b.classList.remove('selected','correct-answer','wrong-answer');});});fb.classList.remove('show');},2500);}saveProgress();}
+function checkPredict(btn){const challenge=btn.closest('.predict-challenge');const selected=challenge.querySelector('.quiz-opt.selected');if(!selected)return;const correct=_key(challenge);const chosenIdx=parseInt(selected.dataset.idx);const fb=challenge.querySelector('.quiz-feedback');totalQuizzes++;if(chosenIdx===correct){selected.classList.add('correct');fb.className='quiz-feedback correct show';fb.innerHTML='<span class="fb-icon">✅</span><span>Great prediction!</span>';challenge.classList.add('passed');btn.style.display='none';challenge.querySelectorAll('.quiz-opt').forEach(o=>{if(!o.classList.contains('correct'))o.classList.add('disabled');});streak++;if(streak>bestStreak)bestStreak=streak;correctFirst++;let bonus=XP_QUIZ;let label='Prediction';if(streak>=3){bonus+=XP_STREAK_BONUS;label+=' + streak bonus';}awardXp(bonus,label);}else{selected.classList.add('wrong');fb.className='quiz-feedback wrong show';fb.innerHTML='<span class="fb-icon">❌</span><span>Not quite, try again!</span>';streak=0;updateXpDisplay();setTimeout(()=>{selected.classList.remove('wrong','selected');fb.classList.remove('show');},1500);}saveProgress();}
+function completeStep(n){completed.add(n);const card=document.getElementById('step-'+n);card.classList.remove('active-step','open');card.classList.add('completed');card.querySelector('.step-status').className='step-status ss-done';card.querySelector('.step-status').textContent='✓ Done';card.querySelector('.step-body').style.display='none';const next=document.getElementById('step-'+(n+1));if(next){next.classList.remove('locked');next.classList.add('active-step','open');next.querySelector('.step-status').className='step-status ss-active';next.querySelector('.step-status').textContent='Current';setTimeout(()=>next.scrollIntoView({behavior:'smooth',block:'start'}),150);}if(completed.size===TOTAL){document.getElementById('finishBanner').classList.add('show');document.getElementById('finalXp').textContent=xp;document.getElementById('finalLevel').textContent=level;document.getElementById('finalStreak').textContent=bestStreak;document.getElementById('finalAccuracy').textContent=totalQuizzes?Math.round(correctFirst/totalQuizzes*100)+'%':'0%';setTimeout(()=>document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}),200);if(typeof playerProfile!=='undefined'){playerProfile.markWorkshopCompleted('pico8-match3-workshop',95);}}updateProgress();saveProgress();}
+function toggleStep(header){const card=header.closest('.step-card');if(card.classList.contains('locked'))return;const body=card.querySelector('.step-body');const isOpen=card.classList.contains('open');card.classList.toggle('open',!isOpen);body.style.display=isOpen?'none':'block';}
+_shuffleQuiz();_initKbd();loadProgress();updateProgress();updateXpDisplay();
+</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Course","name":"Build a Match-3 Game in Pico-8","description":"Build a Match-3 puzzle game in Pico-8! A free parent & child workshop. Swap gems, create combos, race the clock with real Lua code. Ages 9+.","url":"https://jvdesignstudio.co.uk/workshops/pico8-match3-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}</script>
+</body>
+</html>

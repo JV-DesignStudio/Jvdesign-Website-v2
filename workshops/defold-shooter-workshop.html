@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#FF9800"><script src="../analytics-loader.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Space Shooter in Defold | Free Defold Workshop for Kids | JVDesignStudio</title>
+<meta name="description" content="Build a space shooter in Defold! A free workshop. Learn bullet spawning, enemy waves, power-ups and particle effects with Lua scripting. Ages 10+.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/defold-shooter-workshop.html">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website"><meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/defold-shooter-workshop.html"><meta property="og:title" content="Space Shooter in Defold | Free Defold Workshop"><meta property="og:description" content="Build a space shooter in Defold. Free workshop, no experience needed. Ages 10+."><meta property="og:image" content="https://jvdesignstudio.co.uk/og/defold-shooter-workshop.png"><meta property="og:site_name" content="JVDesignStudio"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/defold-shooter-workshop.png">
+<link rel="icon" href="../logo.png" type="image/png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>:root{--accent:#FF9800;--accent2:#FFB74D;--green:#06d6a0;--teal:#4dd9e0;--asphalt:#2a2d3a;--xp-gold:#ffd166;--xp-glow:rgba(255,209,102,.3)}.defold-keyword{color:#42A5F5;font-weight:700}.defold-func{color:#66BB6A;font-weight:700}.defold-string{color:#FFB74D}.defold-comment{color:rgba(240,234,214,.35);font-style:italic}.defold-num{color:#EF5350}.print-btn{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;padding:10px 18px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(232,234,242,.6);cursor:pointer;text-decoration:none}.print-btn:hover{background:rgba(255,255,255,.09)}@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.step-body{display:block!important}.blocks-body{white-space:pre-wrap}}</style>
+<link rel="stylesheet" href="../style-shared.css"><link rel="stylesheet" href="../style-workshop.css">
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+</head>
+<body>
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
+ counts or game-over states to a screen reader; this gives every page one
+ place to do it. Call JVDS.announce('...') from anywhere. -->
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ /* Clearing first makes repeat messages ("Correct" twice) announce again. */
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies downloads"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ /* Restore saved theme before first paint of the toggle icon */
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
+</header>
+<script>
+(function(){
+ /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+})();
+</script>
+<!-- /BUILD:nav-content -->
+
+<div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#FF9800,#FFB74D,#FF9800,#F57C00)"><span>🎮 My First Defold Game · Episode 4 of 6 · <a href="my-first-defold-game.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span></div>
+
+<section class="hero" id="main-content"><div class="hero-inner">
+<div class="hero-badge">🚀 Episode 4 · Bullets · Spawning · Waves</div>
+<h1>Space Shooter<br><em>Vertical Shooter in Defold</em></h1>
+<p class="hero-sub">Build a vertical space shooter with bullet spawning, enemy waves, power-ups and particle effects. Learn factory spawning and dynamic creation!</p>
+<div class="hero-pills"><span class="pill p-age">👶 Ages 10+</span><span class="pill p-time">⏱️ ~1.5 Hours</span><span class="pill p-tool">🎮 Defold</span><span class="pill p-free">✓ Free</span></div>
+<div class="skills-strip"><span class="skill-tag"><span>🔫</span> Factory Spawning</span><span class="skill-tag"><span>🌊</span> Wave System</span><span class="skill-tag"><span>💥</span> Particles</span><span class="skill-tag"><span>⚡</span> Power-ups</span><span class="skill-tag"><span>📦</span> Dynamic Objects</span><span class="skill-tag"><span>🔄</span> Object Pooling</span></div>
+<div class="hero-btns"><a href="#step-1" class="btn-start">🚀 Let's Build! Start Step 1</a><a href="my-first-defold-game.html" class="btn-outline">← All Episodes</a><a href="javascript:window.print()" class="print-btn">🖨️ Print Guide</a></div>
+</div></section>
+
+<div class="xp-wrap"><div class="xp-bar"><div class="xp-icon">⭐</div><div class="xp-label" id="xpLabel">0 XP</div><div class="xp-track"><div class="xp-fill" id="xpFill"></div></div><div class="xp-level" id="xpLevel">Level 1</div><div class="xp-streak" id="xpStreak"><span class="fire">🔥</span><span id="streakCount">0</span></div></div></div>
+<div class="progress-wrap"><div class="progress-header"><span class="progress-label">Your Progress</span><span class="progress-count" id="progressCount">0 / 10 steps</span></div><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="step-dots" id="stepDots"></div></div>
+
+<main class="workshop">
+
+<div class="step-card open active-step" id="step-1" data-step="1"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-orange">1</div><div class="step-title-wrap"><div class="step-emoji">🚀</div><div class="step-title">Player Ship Movement</div><div class="step-blurb">Move the ship left, right and forward</div></div><span class="step-status ss-active">Active</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Create a player ship that moves left/right with A/D and forward with W.</p></div></div>
+<div class="blocks-wrap"><div class="blocks-label">📜 player.script — Ship Movement</div><div class="blocks-body"><span class="defold-keyword">function</span> <span class="defold-func">init</span>(self)
+    self.speed = <span class="defold-num">300</span>
+    self.move_dir = <span class="defold-func">vmath.vector3</span>(<span class="defold-num">0</span>, <span class="defold-num">0</span>, <span class="defold-num">0</span>)
+    self.bounds_x = <span class="defold-num">480</span>
+    self.bounds_y = <span class="defold-num">300</span>
+<span class="defold-keyword">end</span>
+
+<span class="defold-keyword">function</span> <span class="defold-func">update</span>(self, dt)
+    <span class="defold-keyword">local</span> pos = <span class="defold-func">go.get_position</span>()
+    pos = pos + self.move_dir * self.speed * dt
+
+    <span class="defold-comment">-- Clamp to screen bounds</span>
+    pos.x = <span class="defold-func">math.max</span>(-self.bounds_x,
+        <span class="defold-func">math.min</span>(self.bounds_x, pos.x))
+    pos.y = <span class="defold-func">math.max</span>(-self.bounds_y,
+        <span class="defold-func">math.min</span>(self.bounds_y, pos.y))
+
+    <span class="defold-func">go.set_position</span>(pos)
+<span class="defold-keyword">end</span>
+
+<span class="defold-keyword">function</span> <span class="defold-func">on_input</span>(self, action_id, action)
+    self.move_dir = <span class="defold-func">vmath.vector3</span>(<span class="defold-num">0</span>, <span class="defold-num">0</span>, <span class="defold-num">0</span>)
+    <span class="defold-keyword">if</span> action_id == <span class="defold-func">hash</span>(<span class="defold-string">"right"</span>) <span class="defold-keyword">then</span> self.move_dir.x = <span class="defold-num">1</span>
+    <span class="defold-keyword">elseif</span> action_id == <span class="defold-func">hash</span>(<span class="defold-string">"left"</span>) <span class="defold-keyword">then</span> self.move_dir.x = -<span class="defold-num">1</span>
+    <span class="defold-keyword">elseif</span> action_id == <span class="defold-func">hash</span>(<span class="defold-string">"up"</span>) <span class="defold-keyword">then</span> self.move_dir.y = <span class="defold-num">1</span>
+    <span class="defold-keyword">elseif</span> action_id == <span class="defold-func">hash</span>(<span class="defold-string">"down"</span>) <span class="defold-keyword">then</span> self.move_dir.y = -<span class="defold-num">1</span>
+    <span class="defold-keyword">end</span>
+<span class="defold-keyword">end</span></div></div>
+<div class="quiz-gate" id="quiz-1" data-step="1" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">What does <strong>math.max()</strong> and <strong>math.min()</strong> do together?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>They clamp a value between a minimum and maximum</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>They calculate the distance between two points</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>They generate random numbers</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(1)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-2" data-step="2"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-green">2</div><div class="step-title-wrap"><div class="step-emoji">🏭</div><div class="step-title">Factory Spawning</div><div class="step-blurb">Dynamically create bullets with factories</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Use Defold's factory component to spawn bullet game objects when the player shoots.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Create a <strong>"bullet.collection"</strong> with a sprite and script. This is your bullet prefab.</span></li>
+<li><span class="num-badge">2</span><span>Add a <strong>Factory</strong> component to the player game object pointing to bullet.collection.</span></li>
+<li><span class="num-badge">3</span><span>Use <strong>factory.create()</strong> to spawn bullets dynamically:</span></li>
+</ul>
+<div class="blocks-wrap"><div class="blocks-label">📜 player.script — Shooting</div><div class="blocks-body"><span class="defold-keyword">function</span> <span class="defold-func">init</span>(self)
+    self.shoot_timer = <span class="defold-num">0</span>
+    self.shoot_delay = <span class="defold-num">0.15</span>  <span class="defold-comment">-- seconds between shots</span>
+<span class="defold-keyword">end</span>
+
+<span class="defold-keyword">function</span> <span class="defold-func">update</span>(self, dt)
+    self.shoot_timer = self.shoot_timer - dt
+<span class="defold-keyword">end</span>
+
+<span class="defold-keyword">function</span> <span class="defold-func">on_input</span>(self, action_id, action)
+    <span class="defold-keyword">if</span> action_id == <span class="defold-func">hash</span>(<span class="defold-string">"shoot"</span>) <span class="defold-keyword">and</span> action.pressed <span class="defold-keyword">then</span>
+        <span class="defold-keyword">if</span> self.shoot_timer <= <span class="defold-num">0</span> <span class="defold-keyword">then</span>
+            self.shoot_timer = self.shoot_delay
+            <span class="defold-keyword">local</span> pos = <span class="defold-func">go.get_position</span>()
+            <span class="defold-comment">-- Spawn bullet at ship position</span>
+            <span class="defold-func">factory.create</span>(
+                <span class="defold-func">hash</span>(<span class="defold-string">"/player#bullet_factory"</span>),
+                <span class="defold-func">vmath.vector3</span>(pos.x, pos.y + <span class="defold-num">30</span>, <span class="defold-num">0</span>)
+            )
+        <span class="defold-keyword">end</span>
+    <span class="defold-keyword">end</span>
+<span class="defold-keyword">end</span></div></div>
+<div class="callout tip"><div class="callout-icon">💡</div><div><strong>factory.create()</strong> spawns a new instance of a collection. The factory component must be attached to the game object that calls it.</div></div>
+<div class="code-challenge" id="cc-2" data-step="2"><div class="cc-header"><div class="cc-icon">💻</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div><div class="cc-prompt">Fill in the blanks to spawn a bullet:</div><div class="cc-code-area">
+<span class="defold-func">factory.create</span>(
+    <span class="defold-func">hash</span>(<span class="defold-string">"<input class="cc-blank" data-a="L3BsYXllciNiX2J1bGxldF9mYWN0b3J5" placeholder="????????????????????" size="24">"</span>),
+    <span class="defold-func">vmath.vector3</span>(pos.x, pos.y + <span class="defold-num">30</span>, <span class="defold-num">0</span>)
+)</div><button class="cc-check-btn" onclick="checkCodeChallenge(this)">🔍 Check Code</button><div class="cc-feedback"></div><div class="cc-hint">💡 Hint: The factory path includes the game object ID and factory component name.</div></div>
+<div class="quiz-gate" id="quiz-2" data-step="2" data-k="Mg=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">What component must a game object have to use <strong>factory.create()</strong>?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>A factory component</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>A sprite component</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>A script component</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(2)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-3" data-step="3"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-yellow">3</div><div class="step-title-wrap"><div class="step-emoji">💫</div><div class="step-title">Bullet Movement</div><div class="step-blurb">Make bullets fly upward and self-destruct</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Create a bullet script that moves upward and deletes itself when off screen.</p></div></div>
+<div class="blocks-wrap"><div class="blocks-label">📜 bullet.script</div><div class="blocks-body"><span class="defold-keyword">function</span> <span class="defold-func">init</span>(self)
+    self.speed = <span class="defold-num">600</span>
+<span class="defold-keyword">end</span>
+
+<span class="defold-keyword">function</span> <span class="defold-func">update</span>(self, dt)
+    <span class="defold-keyword">local</span> pos = <span class="defold-func">go.get_position</span>()
+    pos.y = pos.y + self.speed * dt
+
+    <span class="defold-comment">-- Delete if off screen</span>
+    <span class="defold-keyword">if</span> pos.y > <span class="defold-num">400</span> <span class="defold-keyword">then</span>
+        <span class="defold-func">go.delete</span>()
+        <span class="defold-keyword">return</span>
+    <span class="defold-keyword">end</span>
+
+    <span class="defold-func">go.set_position</span>(pos)
+<span class="defold-keyword">end</span></div></div>
+<div class="quiz-gate" id="quiz-3" data-step="3" data-k="Mw=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">Why do bullets need to delete themselves with <strong>go.delete()</strong>?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>To prevent the game from running out of memory creating too many objects</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>To make the game look better</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>To increase the score</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(3)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-4" data-step="4"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-pink">4</div><div class="step-title-wrap"><div class="step-emoji">👾</div><div class="step-title">Enemy Spawning</div><div class="step-blurb">Create enemies that appear in waves</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Spawn enemies in waves with increasing difficulty using a wave system.</p></div></div>
+<div class="blocks-wrap"><div class="blocks-label">📜 spawner.script — Wave System</div><div class="blocks-body"><span class="defold-keyword">function</span> <span class="defold-func">init</span>(self)
+    self.wave = <span class="defold-num">1</span>
+    self.enemies_per_wave = <span class="defold-num">5</span>
+    self.spawn_timer = <span class="defold-num">0</span>
+    self.spawn_interval = <span class="defold-num">1.0</span>
+    self.spawned = <span class="defold-num">0</span>
+<span class="defold-keyword">end</span>
+
+<span class="defold-keyword">function</span> <span class="defold-func">update</span>(self, dt)
+    self.spawn_timer = self.spawn_timer + dt
+    <span class="defold-keyword">if</span> self.spawn_timer >= self.spawn_interval
+    <span class="defold-keyword">and</span> self.spawned < self.enemies_per_wave <span class="defold-keyword">then</span>
+        self.spawn_timer = <span class="defold-num">0</span>
+        self.spawned = self.spawned + <span class="defold-num">1</span>
+
+        <span class="defold-comment">-- Random x position at top of screen</span>
+        <span class="defold-keyword">local</span> x = <span class="defold-func">math.random</span>(-<span class="defold-num">400</span>, <span class="defold-num">400</span>)
+        <span class="defold-func">factory.create</span>(
+            <span class="defold-func">hash</span>(<span class="defold-string">"/spawner#enemy_factory"</span>),
+            <span class="defold-func">vmath.vector3</span>(x, <span class="defold-num">380</span>, <span class="defold-num">0</span>)
+        )
+    <span class="defold-keyword">end</span>
+
+    <span class="defold-comment">-- Start next wave when all enemies spawned</span>
+    <span class="defold-keyword">if</span> self.spawned >= self.enemies_per_wave <span class="defold-keyword">then</span>
+        self.wave = self.wave + <span class="defold-num">1</span>
+        self.spawned = <span class="defold-num">0</span>
+        self.enemies_per_wave = self.enemies_per_wave + <span class="defold-num">2</span>
+        self.spawn_interval = self.spawn_interval * <span class="defold-num">0.9</span>
+    <span class="defold-keyword">end</span>
+<span class="defold-keyword">end</span></div></div>
+<div class="quiz-gate" id="quiz-4" data-step="4" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">How does the wave system make the game harder over time?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>More enemies per wave and faster spawn rate</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Fewer enemies but they move faster</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The screen gets smaller</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(4)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-5" data-step="5"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-teal">5</div><div class="step-title-wrap"><div class="step-emoji">💥</div><div class="step-title">Bullet-Enemy Collision</div><div class="step-blurb">Destroy enemies when hit by bullets</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Detect when a bullet hits an enemy and destroy both, awarding points.</p></div></div>
+<div class="blocks-wrap"><div class="blocks-label">📜 enemy.script — Hit Detection</div><div class="blocks-body"><span class="defold-keyword">function</span> <span class="defold-func">on_message</span>(self, message_id, message, sender)
+    <span class="defold-keyword">if</span> message_id == <span class="defold-func">hash</span>(<span class="defold-string">"take_damage"</span>) <span class="defold-keyword">then</span>
+        self.health = self.health - message.amount
+        <span class="defold-keyword">if</span> self.health <= <span class="defold-num">0</span> <span class="defold-keyword">then</span>
+            <span class="defold-comment">-- Spawn explosion particle</span>
+            <span class="defold-func">factory.create</span>(
+                <span class="defold-func">hash</span>(<span class="defold-string">"/spawner#explosion_factory"</span>),
+                <span class="defold-func">go.get_position</span>()
+            )
+            <span class="defold-func">msg.post</span>(<span class="defold-string">"/hud"</span>, <span class="defold-string">"add_score"</span>,
+                { value = <span class="defold-num">100</span> })
+            <span class="defold-func">go.delete</span>()
+        <span class="defold-keyword">end</span>
+    <span class="defold-keyword">end</span>
+<span class="defold-keyword">end</span></div></div>
+<div class="quiz-gate" id="quiz-5" data-step="5" data-k="Mg=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">What message does the bullet send to the enemy when they collide?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>"take_damage"</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>"hit"</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>"destroy"</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(5)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-6" data-step="6"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-purple">6</div><div class="step-title-wrap"><div class="step-emoji">⚡</div><div class="step-title">Power-ups</div><div class="step-blurb">Collect power-ups for temporary abilities</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Create power-up items that fall from destroyed enemies and give the player temporary abilities.</p></div></div>
+<div class="blocks-wrap"><div class="blocks-label">📜 powerup.script</div><div class="blocks-body"><span class="defold-keyword">function</span> <span class="defold-func">init</span>(self)
+    self.speed = <span class="defold-num">150</span>
+    self.type = <span class="defold-string">"spread"</span>  <span class="defold-comment">-- or "speed", "shield"</span>
+<span class="defold-keyword">end</span>
+
+<span class="defold-keyword">function</span> <span class="defold-func">update</span>(self, dt)
+    <span class="defold-keyword">local</span> pos = <span class="defold-func">go.get_position</span>()
+    pos.y = pos.y - self.speed * dt
+    <span class="defold-keyword">if</span> pos.y < -<span class="defold-num">400</span> <span class="defold-keyword">then</span> <span class="defold-func">go.delete</span>() <span class="defold-keyword">end</span>
+    <span class="defold-func">go.set_position</span>(pos)
+<span class="defold-keyword">end</span>
+
+<span class="defold-keyword">function</span> <span class="defold-func">on_message</span>(self, message_id, message, sender)
+    <span class="defold-keyword">if</span> message_id == <span class="defold-func">hash</span>(<span class="defold-string">"contact_point_response"</span>) <span class="defold-keyword">then</span>
+        <span class="defold-keyword">if</span> message.other_group == <span class="defold-func">hash</span>(<span class="defold-string">"player"</span>) <span class="defold-keyword">then</span>
+            <span class="defold-func">msg.post</span>(<span class="defold-string">"/player"</span>, <span class="defold-string">"activate_powerup"</span>,
+                { type = self.type })
+            <span class="defold-func">go.delete</span>()
+        <span class="defold-keyword">end</span>
+    <span class="defold-keyword">end</span>
+<span class="defold-keyword">end</span></div></div>
+<div class="quiz-gate" id="quiz-6" data-step="6" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">How do power-ups give the player abilities?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>By sending a message to the player script to change behaviour</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>By modifying the player's collection file</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>By restarting the game</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(6)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-7" data-step="7"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-orange">7</div><div class="step-title-wrap"><div class="step-emoji">🎆</div><div class="step-title">Particle Effects</div><div class="step-blurb">Add explosions and thruster effects</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Create particle effects for explosions when enemies are destroyed and engine trails.</p></div></div>
+<div class="blocks-wrap"><div class="blocks-label">📄 Particle Effect Configuration</div><div class="blocks-body"><span class="defold-comment">-- Defold particle effects are configured in .particlefx files</span>
+<span class="defold-comment">-- Key properties:</span>
+<span class="defold-comment">--   rate: particles per second</span>
+<span class="defold-comment">--   lifetime: how long each particle lives</span>
+<span class="defold-comment">--   spread: random angle variation</span>
+<span class="defold-comment">--   size: start/end size</span>
+<span class="defold-comment">--   color: start/end colour (for fade effects)</span></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Create a <strong>"explosion.particlefx"</strong> file in Defold.</span></li>
+<li><span class="num-badge">2</span><span>Set emitter rate to 50, lifetime to 0.5, spread to 360 degrees.</span></li>
+<li><span class="num-badge">3</span><span>Animate from bright orange to transparent for a fire effect.</span></li>
+<li><span class="num-badge">4</span><span>Play it when an enemy is destroyed:</span></li>
+</ul>
+<div class="blocks-wrap"><div class="blocks-label">📜 Playing Particle Effects</div><div class="blocks-body"><span class="defold-comment">-- In the enemy script on death:</span>
+<span class="defold-func">particlefx.play</span>(
+    <span class="defold-func">go.get_id</span>(),
+    <span class="defold-func">hash</span>(<span class="defold-string">"explosion"</span>)
+)</div></div>
+<div class="quiz-gate" id="quiz-7" data-step="7" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">What does <strong>particlefx.play()</strong> do?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>Starts playing a particle effect on a game object</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Plays a sound effect</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>Spawns a new game object</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(7)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-8" data-step="8"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-blue">8</div><div class="step-title-wrap"><div class="step-emoji">🎯</div><div class="step-title">Enemy Bullet Patterns</div><div class="step-blurb">Enemies that shoot back</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Give enemies the ability to shoot bullets at the player on a timer.</p></div></div>
+<div class="blocks-wrap"><div class="blocks-label">📜 enemy.script — Enemy Shooting</div><div class="blocks-body"><span class="defold-keyword">function</span> <span class="defold-func">init</span>(self)
+    self.shoot_timer = <span class="defold-func">math.random</span>(<span class="defold-num">1</span>, <span class="defold-num">3</span>)
+    self.can_shoot = <span class="defold-keyword">true</span>
+<span class="defold-keyword">end</span>
+
+<span class="defold-keyword">function</span> <span class="defold-func">update</span>(self, dt)
+    <span class="defold-comment">-- Existing movement code...</span>
+
+    <span class="defold-keyword">if</span> self.can_shoot <span class="defold-keyword">then</span>
+        self.shoot_timer = self.shoot_timer - dt
+        <span class="defold-keyword">if</span> self.shoot_timer <= <span class="defold-num">0</span> <span class="defold-keyword">then</span>
+            self.shoot_timer = <span class="defold-func">math.random</span>(<span class="defold-num">2</span>, <span class="defold-num">4</span>)
+            <span class="defold-func">factory.create</span>(
+                <span class="defold-func">hash</span>(<span class="defold-string">"/spawner#enemy_bullet_factory"</span>),
+                <span class="defold-func">go.get_position</span>()
+            )
+        <span class="defold-keyword">end</span>
+    <span class="defold-keyword">end</span>
+<span class="defold-keyword">end</span></div></div>
+<div class="quiz-gate" id="quiz-8" data-step="8" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">Why use <strong>math.random()</strong> for the shoot timer?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>To make enemies shoot at different intervals for variety</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>To make the game easier</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>To save memory</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(8)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-9" data-step="9"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-red">9</div><div class="step-title-wrap"><div class="step-emoji">🎵</div><div class="step-title">Sound &amp; Music</div><div class="step-blurb">Add background music and sound effects</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Add background music, shooting sounds, explosion sounds and power-up jingles.</p></div></div>
+<div class="blocks-wrap"><div class="blocks-label">📜 Adding Audio</div><div class="blocks-body"><span class="defold-comment">-- Play looping background music</span>
+<span class="defold-func">sound.play</span>(<span class="defold-func">hash</span>(<span class="defold-string">"/sounds/bgm#sound"</span>), {
+    gain = <span class="defold-num">0.5</span>
+})
+
+<span class="defold-comment">-- Play one-shot SFX</span>
+<span class="defold-func">sound.play</span>(<span class="defold-func">hash</span>(<span class="defold-string">"/sounds/laser#sound"</span>))
+<span class="defold-func">sound.play</span>(<span class="defold-func">hash</span>(<span class="defold-string">"/sounds/explosion#sound"</span>))</div></div>
+<div class="quiz-gate" id="quiz-9" data-step="9" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">What is the difference between a sound and a sound component?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>A sound is the audio data, a sound component plays it in the game world</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>They are the same thing</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>A sound component is for music only</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(9)">✅ Correct! Next Step →</button></div>
+</div></div>
+
+<div class="step-card locked" id="step-10" data-step="10"><div class="step-header" onclick="toggleStep(this)"><div class="step-num sn-green">10</div><div class="step-title-wrap"><div class="step-emoji">🎉</div><div class="step-title">Polish &amp; Game Over</div><div class="step-blurb">Add lives, game over screen and final touches</div></div><span class="step-status ss-todo">Locked</span></div><div class="step-body">
+<div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Add a lives system, game over detection and a restart option.</p></div></div>
+<ul class="steps-list">
+<li><span class="num-badge">1</span><span>Add a lives counter. Player loses a life when hit by enemy bullets.</span></li>
+<li><span class="num-badge">2</span><span>When lives reach 0, show game over screen with final score.</span></li>
+<li><span class="num-badge">3</span><span>Add a "Press SPACE to restart" option that reloads the collection.</span></li>
+</ul>
+<div class="blocks-wrap"><div class="blocks-label">📜 Game Over + Restart</div><div class="blocks-body"><span class="defold-comment">-- When player dies:</span>
+<span class="defold-keyword">if</span> self.lives <= <span class="defold-num">0</span> <span class="defold-keyword">then</span>
+    self.state = <span class="defold-string">"gameover"</span>
+    <span class="defold-func">msg.post</span>(<span class="defold-string">"/hud"</span>, <span class="defold-string">"game_over"</span>)
+<span class="defold-keyword">end</span>
+
+<span class="defold-comment">-- To restart:</span>
+<span class="defold-func">msg.post</span>(<span class="defold-string">"@system:</span><span class="defold-string">",</span> <span class="defold-string">"reload"</span>,
+    { level = <span class="defold-func">go.get_level()</span> })</div></div>
+<div class="callout fun"><div class="callout-icon">🎉</div><div>Congratulations! You've built a complete space shooter with factory spawning, enemy waves, bullets, power-ups, particles and sound!</div></div>
+<div class="quiz-gate" id="quiz-10" data-step="10" data-k="MQ=="><div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Final Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div><div class="quiz-question">What Defold message restarts the current level?</div><div class="quiz-options"><div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>"reload" to @system</span></div><div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>"restart" to the level</span></div><div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>"reset" to the game object</span></div></div><div class="quiz-feedback"></div><button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button><button class="quiz-next-btn" onclick="completeStep(10)">🎉 I Finished the Space Shooter Workshop!</button></div>
+</div></div>
+
+<div class="finish-banner" id="finishBanner"><div class="confetti-row">🎉🚀💥🎊🏆</div><div class="finish-title">You Built a Space Shooter!</div><p class="finish-sub">Amazing, you've made a complete space shooter with factory spawning, enemy waves, bullets, power-ups, particles and sound!</p><div class="final-stats"><div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div><div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div><div class="final-stat"><div class="stat-val" id="finalStreak">0</div><div class="stat-label">Best Streak</div></div><div class="final-stat"><div class="stat-val" id="finalAccuracy">0%</div><div class="stat-label">Accuracy</div></div></div><a href="defold-puzzle-workshop.html" class="next-ep-btn">🧩 Episode 5: Puzzle Match →</a><a href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.15);border:1px solid rgba(255,209,102,.3);color:#ffd166;font-family:'Fredoka',cursive;font-size:.9rem;padding:10px 22px;border-radius:12px;text-decoration:none;margin-top:12px">⭐ View My Progress</a></div>
+
+</main>
+
+<!-- BUILD:footer-content -->
+<footer class="site-footer">
+    <div class="footer-inner">
+        <div>
+            <div class="footer-logo">JVDesignStudio</div>
+            <div class="footer-tagline">Books · Games · Creative Adventures</div>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/games">Play — Games</a>
+            <a href="/workshop">Learn — Workshops</a>
+            <a href="/dev-tools">Make — Tools</a>
+            <a href="/about">Studio</a>
+            <a href="/parents">For Parents</a>
+            <a href="/me.html">Profile</a>
+            <a href="/contact">Contact</a>
+            <a href="/sitemap">Sitemap</a>
+        </nav>
+        <nav class="footer-socials" aria-label="Social">
+            <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@JV_DesignStudio"    target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://joshhyyy.itch.io/"                   target="_blank" rel="noopener noreferrer">Itch.io</a>
+            <a href="https://buymeacoffee.com/jv_designstudio"    target="_blank" rel="noopener noreferrer">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/jvdesignstudio"            target="_blank" rel="noopener noreferrer">Ko-fi</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+        </nav>
+        <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+    </div>
+</footer>
+<script>
+(function () {
+const footerRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const parent = entry.target.parentElement;
+            const siblings = [...parent.querySelectorAll('.reveal')];
+            const idx = siblings.indexOf(entry.target);
+            setTimeout(() => entry.target.classList.add('visible'), Math.min(idx * 80, 400));
+            footerRevealObserver.unobserve(entry.target);
+        }
+    });
+}, { threshold: 0 });
+document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(el));
+  // Failsafe: if observer never fires (blocked JS earlier, stalled), show content anyway after 2s
+  setTimeout(() => document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible')), 2000);
+})();
+</script>
+<noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-content -->
+<script src="../player-profile.js"></script><script src="../tracks.js"></script>
+<script>
+const TOTAL=10,STORAGE_KEY='jvds-defold-shooter-v2';let completed=new Set,xp=0,level=1,streak=0,bestStreak=0,totalQuizzes=0,correctFirst=0;const XP_PER_LEVEL=100,XP_QUIZ=15,XP_CODE=20,XP_STREAK_BONUS=5;function _dec(e,t){var a=e.dataset[t];return void 0!==a?function(){try{return decodeURIComponent(atob(a))}catch(e){return""}}():"a"===t?e.dataset.answer||"":e.dataset.correct||""}function _answers(e){return _dec(e,"a").split("|")}function _canon(e){return _answers(e)[0]}function _match(e,t){var a=t.trim().toLowerCase();return _answers(e).some(function(e){return e.trim().toLowerCase()===a})}function _key(e){return parseInt(_dec(e,"k"),10)}function _shuffleQuiz(){document.querySelectorAll(".quiz-options").forEach(function(e){var t=[].slice.call(e.children);for(var a=t.length-1;a>0;a--){var o=Math.floor(Math.random()*(a+1)),n=t[a];t[a]=t[o];t[o]=n}t.forEach(function(t){e.appendChild(t)});var l=["A","B","C","D","E"];e.querySelectorAll(".opt-letter").forEach(function(e,t){e.textContent=l[t]||""})})}function _initKbd(){function act(e){return function(t){("Enter"===t.key||" "===t.key)&&(t.preventDefault(),e.click())}}document.querySelectorAll(".quiz-opt").forEach(function(e){e.setAttribute("role","button"),e.setAttribute("tabindex","0"),e.addEventListener("keydown",act(e))});document.querySelectorAll(".step-header").forEach(function(e){e.setAttribute("role","button"),e.setAttribute("tabindex","0"),e.addEventListener("keydown",act(e))})}function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({completed:[...completed],total:TOTAL,xp,level,streak,bestStreak,totalQuizzes,correctFirst,quizzesPassed:[...document.querySelectorAll(".quiz-gate.passed")].map(e=>e.id),challengesPassed:[...document.querySelectorAll(".code-challenge.passed")].map(e=>e.id)}))}catch(e){}}function loadProgress(){try{var e=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");if(!e)return;if(e.xp){xp=e.xp;level=e.level||1;streak=e.streak||0;bestStreak=e.bestStreak||0;totalQuizzes=e.totalQuizzes||0;correctFirst=e.correctFirst||0}if(e.completed&&e.completed.length){e.completed.forEach(function(t){completed.add(t);var a=document.getElementById("step-"+t);a&&(a.classList.remove("active-step","open","locked"),a.classList.add("completed"),a.querySelector(".step-status").className="step-status ss-done",a.querySelector(".step-status").textContent="✓ Done",a.querySelector(".step-body").style.display="none")});var t=getActiveStep();t<=TOTAL&&(a=document.getElementById("step-"+t))&&(a.classList.remove("locked"),a.classList.add("active-step","open"),a.querySelector(".step-status").className="step-status ss-active",a.querySelector(".step-status").textContent="Current");e.completed.length===TOTAL&&document.getElementById("finishBanner").classList.add("show")}e.quizzesPassed&&e.quizzesPassed.forEach(function(e){var t=document.getElementById(e);t&&(t.classList.add("passed"),t.querySelector(".quiz-next-btn").classList.add("show"),t.querySelector(".quiz-submit").style.display="none",t.querySelectorAll(".quiz-opt").forEach(function(e){e.classList.add("disabled")}))});e.challengesPassed&&e.challengesPassed.forEach(function(e){var t=document.getElementById(e);t&&(t.classList.add("passed"),t.querySelector(".cc-check-btn").disabled=!0,t.querySelectorAll(".cc-blank").forEach(function(e){e.value=_canon(e);e.disabled=!0,e.classList.add("correct")}))});updateXpDisplay()}catch(e){}}function getActiveStep(){for(var e=1;e<=TOTAL;e++)if(!completed.has(e))return e;return TOTAL}function buildDots(){var e=document.getElementById("stepDots");e.innerHTML="";for(var t=1;t<=TOTAL;t++){var a=document.createElement("div");a.className="step-dot"+(completed.has(t)?" done":t===getActiveStep()?" active":"");a.textContent=t;a.onclick=function(e){return function(){var t=document.getElementById("step-"+e);t&&!t.classList.contains("locked")&&t.scrollIntoView({behavior:"smooth",block:"start"})}}(t),e.appendChild(a)}}function updateProgress(){var e=completed.size;document.getElementById("progressCount").textContent=e+" / "+TOTAL+" steps";document.getElementById("progressFill").style.width=e/TOTAL*100+"%";buildDots()}function updateXpDisplay(){var e=xp%XP_PER_LEVEL;document.getElementById("xpLabel").textContent=xp+" XP";document.getElementById("xpFill").style.width=e/XP_PER_LEVEL*100+"%";document.getElementById("xpLevel").textContent="Level "+level;document.getElementById("streakCount").textContent=streak;document.getElementById("xpStreak").classList.toggle("hot",streak>=3)}function awardXp(e,t){var a=level;xp+=e;level=Math.floor(xp/XP_PER_LEVEL)+1;updateXpDisplay();document.getElementById("xpLabel").classList.add("xp-pop");setTimeout(()=>document.getElementById("xpLabel").classList.remove("xp-pop"),400);showXpToast("+"+e+" XP"+(t?" · "+t:""));streak>=3&&streakFx(streak);level>a&&setTimeout(()=>showLevelUp(level),600);saveProgress()}function streakFx(e){var t=Math.min(Math.floor(e/3),4),a=document.getElementById("xpLabel");if(!a)return;var o=a.getBoundingClientRect(),n=3+2*t;for(var l=0;l<n;l++){var s=document.createElement("span");s.textContent="✨";var r=Math.random()*Math.PI*2,d=20+30*Math.random();s.style.cssText="position:fixed;left:"+(o.left+o.width/2)+"px;top:"+(o.top+o.height/2)+"px;font-size:"+(12+t)+"px;pointer-events:none;z-index:9999;--dx:"+(Math.cos(r)*d).toFixed(1)+"px;--dy:"+(Math.sin(r)*d).toFixed(1)+"px;animation:streakPop .55s ease-out forwards;";document.body.appendChild(s);setTimeout(()=>s.remove(),570)}t>=2&&(document.body.classList.add("streak-shake"),setTimeout(()=>document.body.classList.remove("streak-shake"),300))}function showXpToast(e){var t=document.querySelector(".xp-toast");t&&t.remove();var a=document.createElement("div");a.className="xp-toast";a.textContent=e;document.body.appendChild(a);setTimeout(()=>{a.classList.add("out");setTimeout(()=>a.remove(),300)},2e3)}function showLevelUp(e){var t=document.createElement("div");t.className="levelup-overlay";t.innerHTML='<div class="levelup-card"><div class="lvl-icon">🏆</div><div class="lvl-title">Level '+e+'!</div><div class="lvl-sub">You\'re doing amazing!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';document.body.appendChild(t);t.addEventListener("click",e=>{e.target===t&&t.remove()})}function selectQuizOpt(e){var t=e.closest(".quiz-gate");if(!t||t.classList.contains("passed"))return;t.querySelectorAll(".quiz-opt").forEach(e=>e.classList.remove("selected"));e.classList.add("selected");var a=t.querySelector(".quiz-submit");a&&a.classList.add("show")}function checkQuiz(e){var t=e.closest(".quiz-gate"),a=t.querySelector(".quiz-opt.selected");if(!a)return;var o=_key(t),n=parseInt(a.dataset.idx),l=t.querySelector(".quiz-feedback");totalQuizzes++;n===o?(a.classList.add("correct"),l.className="quiz-feedback correct show",l.innerHTML='<span class="fb-icon">✅</span><span>Correct!</span>',t.classList.add("passed"),e.style.display="none",t.querySelector(".quiz-next-btn").classList.add("show"),t.querySelectorAll(".quiz-opt").forEach(e=>{e.classList.contains("correct")||e.classList.add("disabled")}),streak++,streak>bestStreak&&(bestStreak=streak),correctFirst++,awardXp(XP_QUIZ,"Quiz")):(a.classList.add("wrong"),l.className="quiz-feedback wrong show",l.innerHTML='<span class="fb-icon">❌</span><span>Try again!</span>',streak=0,updateXpDisplay(),setTimeout(()=>{a.classList.remove("wrong","selected");l.classList.remove("show")},1500));saveProgress()}function checkCodeChallenge(e){var t=e.closest(".code-challenge"),a=t.querySelectorAll(".cc-blank"),o=t.querySelector(".cc-feedback"),n=t.querySelector(".cc-hint"),l=!0;a.forEach(e=>{_match(e,e.value)?(e.classList.remove("wrong"),e.classList.add("correct")):(e.classList.remove("correct"),e.classList.add("wrong"),l=!1)});l?(o.className="cc-feedback correct show",o.innerHTML='<span class="fb-icon">✅</span><span>Perfect!</span>',t.classList.add("passed"),e.disabled=!0,a.forEach(e=>{e.value=_canon(e);e.disabled=!0}),n.classList.remove("show"),streak++,streak>bestStreak&&(bestStreak=streak),correctFirst++,totalQuizzes++,awardXp(XP_CODE,"Code")):(o.className="cc-feedback wrong show",o.innerHTML='<span class="fb-icon">❌</span><span>Try again.</span>',n.classList.add("show"),streak=0,updateXpDisplay(),totalQuizzes++);saveProgress()}function completeStep(e){completed.add(e);var t=document.getElementById("step-"+e);t.classList.remove("active-step","open");t.classList.add("completed");t.querySelector(".step-status").className="step-status ss-done";t.querySelector(".step-status").textContent="✓ Done";t.querySelector(".step-body").style.display="none";var a=document.getElementById("step-"+(e+1));a&&(a.classList.remove("locked"),a.classList.add("active-step","open"),a.querySelector(".step-status").className="step-status ss-active",a.querySelector(".step-status").textContent="Current",setTimeout(()=>a.scrollIntoView({behavior:"smooth",block:"start"}),150));completed.size===TOTAL&&(document.getElementById("finishBanner").classList.add("show"),document.getElementById("finalXp").textContent=xp,document.getElementById("finalLevel").textContent=level,document.getElementById("finalStreak").textContent=bestStreak,document.getElementById("finalAccuracy").textContent=totalQuizzes?Math.round(correctFirst/totalQuizzes*100)+"%":"0%",setTimeout(()=>document.getElementById("finishBanner").scrollIntoView({behavior:"smooth",block:"start"}),200),typeof playerProfile!="undefined"&&playerProfile.markWorkshopCompleted("defold-shooter-workshop",85));updateProgress();saveProgress()}function toggleStep(e){var t=e.closest(".step-card");if(t.classList.contains("locked"))return;var a=t.querySelector(".step-body"),o=t.classList.contains("open");t.classList.toggle("open",!o);a.style.display=o?"none":"block"}_shuffleQuiz();_initKbd();loadProgress();updateProgress();updateXpDisplay();
+</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Course","name":"Space Shooter in Defold","description":"Build a space shooter in Defold! Learn bullet spawning, enemy waves, power-ups and particle effects. Ages 10+.","url":"https://jvdesignstudio.co.uk/workshops/defold-shooter-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}</script>
+</body>
+</html>

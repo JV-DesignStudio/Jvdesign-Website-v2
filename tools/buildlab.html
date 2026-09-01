@@ -204,7 +204,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
   }
 
   /* Tools in drawer: bigger touch targets */
-  .mob-tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .mob-tools-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
   .mob-tool-btn{
     display:flex;flex-direction:column;align-items:center;gap:4px;
     padding:14px 8px;border-radius:12px;
@@ -487,7 +487,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
   <div id="viewport">
     <div class="crosshair"></div>
     <div class="vp-toast" id="toast"></div>
-    <div class="vp-hint" id="vpHint">Drag: orbit &nbsp;&nbsp; Scroll: zoom &nbsp;&nbsp; Right-drag: pan &nbsp;&nbsp; Click: place block</div>
+    <div class="vp-hint" id="vpHint">Right-drag: orbit &nbsp;&nbsp; Scroll: zoom &nbsp;&nbsp; Middle-drag: pan &nbsp;&nbsp; Click: place</div>
 
     <!-- SKETCH CANVAS OVERLAY -->
     <canvas id="sketchCanvas" style="display:none;position:absolute;top:0;left:0;cursor:crosshair;"></canvas>
@@ -544,6 +544,19 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
         <div class="stat-item"><div class="stat-val" id="blockCount">0</div><div class="stat-lab">Blocks</div></div>
         <div class="stat-item"><div class="stat-val" id="colourCount">0</div><div class="stat-lab">Colours</div></div>
         <div class="stat-item"><div class="stat-val" id="shapeCount">0</div><div class="stat-lab">Shapes</div></div>
+      </div>
+      <div class="prop-row" style="margin-top:8px;">
+        <div class="prop-label">Snap Grid</div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <select onchange="setGridSize(this.value)" style="flex:1;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:.75rem;font-family:'Inter',sans-serif;">
+            <option value="0.25">0.25 (Fine)</option>
+            <option value="0.5">0.5</option>
+            <option value="1" selected>1 (Default)</option>
+            <option value="2">2 (Coarse)</option>
+            <option value="0">Off</option>
+          </select>
+          <span id="gridSizeVal" style="font-size:.7rem;color:var(--accent2);font-weight:700;min-width:24px;">1</span>
+        </div>
       </div>
     </div>
 
@@ -602,6 +615,22 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
         <div class="prop-label">Roughness</div>
         <input type="range" class="prop-slider" id="propRoughness" min="0" max="1" step="0.1" value="0.5" oninput="updateMaterial('roughness',this.value)">
         <div class="prop-val" id="propRoughnessVal">0.5</div>
+      </div>
+      <div class="prop-row">
+        <div class="prop-label">Opacity</div>
+        <input type="range" class="prop-slider" id="propOpacity" min="0" max="1" step="0.1" value="1" oninput="updateMaterial('opacity',this.value)">
+        <div class="prop-val" id="propOpacityVal">1.0</div>
+      </div>
+      <div class="prop-row">
+        <div class="prop-label">Presets</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          <button class="action-btn btn-secondary" style="flex:0 0 auto;padding:4px 8px;font-size:.65rem;margin:0;" onclick="applyPreset('metal')">&#x1F947; Metal</button>
+          <button class="action-btn btn-secondary" style="flex:0 0 auto;padding:4px 8px;font-size:.65rem;margin:0;" onclick="applyPreset('glass')">&#x1F48E; Glass</button>
+          <button class="action-btn btn-secondary" style="flex:0 0 auto;padding:4px 8px;font-size:.65rem;margin:0;" onclick="applyPreset('wood')">&#x1F332; Wood</button>
+          <button class="action-btn btn-secondary" style="flex:0 0 auto;padding:4px 8px;font-size:.65rem;margin:0;" onclick="applyPreset('plastic')">&#x1F4A0; Plastic</button>
+          <button class="action-btn btn-secondary" style="flex:0 0 auto;padding:4px 8px;font-size:.65rem;margin:0;" onclick="applyPreset('rubber')">&#x26AA; Rubber</button>
+          <button class="action-btn btn-secondary" style="flex:0 0 auto;padding:4px 8px;font-size:.65rem;margin:0;" onclick="applyPreset('stone')">&#x1FAA8; Stone</button>
+        </div>
       </div>
       <button class="action-btn btn-warn" onclick="duplicateSelected()">?? Duplicate</button>
       <button class="action-btn btn-secondary" style="color:#e94560;border-color:rgba(233,69,96,.3);" onclick="deleteSelected()">??? Delete</button>
@@ -676,6 +705,18 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
       </div>
       <button class="action-btn btn-secondary" style="font-size:.8rem;" onclick="groupSelectedBlocks()">&#x1F4CB; Group Selected</button>
       <button class="action-btn btn-secondary" style="font-size:.8rem;" onclick="ungroupAll()">&#x1F500; Ungroup All</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
+      <div class="panel-title">Mirror</div>
+      <div style="display:flex;gap:4px;margin-bottom:8px;">
+        <button class="action-btn btn-secondary mirror-axis-btn active" data-axis="x" onclick="setMirrorAxis('x')" style="flex:1;padding:5px;font-size:.7rem;">X</button>
+        <button class="action-btn btn-secondary mirror-axis-btn" data-axis="y" onclick="setMirrorAxis('y')" style="flex:1;padding:5px;font-size:.7rem;">Y</button>
+        <button class="action-btn btn-secondary mirror-axis-btn" data-axis="z" onclick="setMirrorAxis('z')" style="flex:1;padding:5px;font-size:.7rem;">Z</button>
+      </div>
+      <button class="action-btn btn-secondary" style="font-size:.8rem;" onclick="mirrorSelected()">&#x1F504; Mirror Selected</button>
     </div>
 
     <div class="divider"></div>
@@ -760,22 +801,28 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
     </div>
     <div class="mob-tools-grid">
       <button class="mob-tool-btn active" data-mob-tool="add" onclick="mobSetTool('add')">
-        <span class="ico">?</span>Add
+        <span class="ico">&#x2795;</span>Add
       </button>
       <button class="mob-tool-btn" data-mob-tool="paint" onclick="mobSetTool('paint')">
-        <span class="ico">??</span>Paint
+        <span class="ico">&#x1F3A8;</span>Paint
       </button>
       <button class="mob-tool-btn" data-mob-tool="move" onclick="mobSetTool('move')">
-        <span class="ico">?</span>Move
+        <span class="ico">&#x270B;</span>Move
       </button>
       <button class="mob-tool-btn" data-mob-tool="resize" onclick="mobSetTool('resize')">
-        <span class="ico">?</span>Resize
+        <span class="ico">&#x1F504;</span>Resize
       </button>
       <button class="mob-tool-btn" data-mob-tool="delete" onclick="mobSetTool('delete')">
-        <span class="ico">???</span>Delete
+        <span class="ico">&#x1F5D1;&#xFE0F;</span>Delete
       </button>
       <button class="mob-tool-btn" data-mob-tool="select" onclick="mobSetTool('select')">
-        <span class="ico">???</span>Select
+        <span class="ico">&#x1F446;</span>Select
+      </button>
+      <button class="mob-tool-btn" data-mob-tool="sketch" onclick="mobSetTool('sketch')">
+        <span class="ico">&#x270F;&#xFE0F;</span>Sketch
+      </button>
+      <button class="mob-tool-btn" data-mob-tool="voxelpaint" onclick="mobSetTool('voxelpaint')">
+        <span class="ico">&#x1F3A8;</span>Voxel
       </button>
     </div>
   </div>
@@ -871,9 +918,38 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
       <div class="mob-prop-row">
         <div class="mob-prop-label">Move Up / Down</div>
         <div class="mob-prop-ud">
-          <button onclick="moveBlockY(1)">? Up</button>
+          <button onclick="moveBlockY(1)">&#x25B2; Up</button>
           <div class="mob-prop-val" id="mobPropYVal" style="min-width:32px;text-align:center;">0</div>
-          <button onclick="moveBlockY(-1)">? Down</button>
+          <button onclick="moveBlockY(-1)">&#x25BC; Down</button>
+        </div>
+      </div>
+      <div class="mob-prop-row">
+        <div class="mob-prop-label">Metallic</div>
+        <input type="range" class="mob-prop-slider" id="mobPropMetallic" min="0" max="1" step="0.1" value="0"
+               oninput="updateMaterial('metallic',this.value);document.getElementById('propMetallic').value=this.value;">
+        <div class="mob-prop-val" id="mobPropMetallicVal">0</div>
+      </div>
+      <div class="mob-prop-row">
+        <div class="mob-prop-label">Roughness</div>
+        <input type="range" class="mob-prop-slider" id="mobPropRoughness" min="0" max="1" step="0.1" value="0.5"
+               oninput="updateMaterial('roughness',this.value);document.getElementById('propRoughness').value=this.value;">
+        <div class="mob-prop-val" id="mobPropRoughnessVal">0.5</div>
+      </div>
+      <div class="mob-prop-row">
+        <div class="mob-prop-label">Opacity</div>
+        <input type="range" class="mob-prop-slider" id="mobPropOpacity" min="0" max="1" step="0.1" value="1"
+               oninput="updateMaterial('opacity',this.value);document.getElementById('propOpacity').value=this.value;">
+        <div class="mob-prop-val" id="mobPropOpacityVal">1.0</div>
+      </div>
+      <div class="mob-prop-row">
+        <div class="mob-prop-label">Presets</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+          <button onclick="applyPreset('metal')" style="padding:4px 8px;font-size:.65rem;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;">&#x1F947; Metal</button>
+          <button onclick="applyPreset('glass')" style="padding:4px 8px;font-size:.65rem;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;">&#x1F48E; Glass</button>
+          <button onclick="applyPreset('wood')" style="padding:4px 8px;font-size:.65rem;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;">&#x1F332; Wood</button>
+          <button onclick="applyPreset('plastic')" style="padding:4px 8px;font-size:.65rem;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;">&#x1F4A0; Plastic</button>
+          <button onclick="applyPreset('rubber')" style="padding:4px 8px;font-size:.65rem;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;">&#x26AA; Rubber</button>
+          <button onclick="applyPreset('stone')" style="padding:4px 8px;font-size:.65rem;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;">&#x1FAA8; Stone</button>
         </div>
       </div>
       <div class="mob-action-grid" style="margin-top:4px;">
@@ -889,9 +965,21 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
       <span>?? Save &amp; Build</span>
       <button class="mob-drawer-close" onclick="mobClose()">? Done</button>
     </div>
-    <div class="mob-action-grid" style="grid-template-columns:1fr 1fr;margin-bottom:14px;">
-      <button class="mob-action-btn" style="background:rgba(124,58,237,.18);color:#c4b5fd;border:1px solid rgba(124,58,237,.4);" onclick="undo()">?? Undo</button>
-      <button class="mob-action-btn" style="background:rgba(124,58,237,.18);color:#c4b5fd;border:1px solid rgba(124,58,237,.4);" onclick="redo()">?? Redo</button>
+    <div class="mob-action-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:14px;">
+      <button class="mob-action-btn" style="background:rgba(124,58,237,.18);color:#c4b5fd;border:1px solid rgba(124,58,237,.4);" onclick="undo()">&#x21A9; Undo</button>
+      <button class="mob-action-btn" style="background:rgba(124,58,237,.18);color:#c4b5fd;border:1px solid rgba(124,58,237,.4);" onclick="redo()">&#x21AA; Redo</button>
+      <button class="mob-action-btn" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);" onclick="mobCopy()">&#x1F4CB; Copy</button>
+    </div>
+    <div class="mob-action-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:14px;">
+      <button class="mob-action-btn" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);" onclick="mobPaste()">&#x1F4DD; Paste</button>
+      <button class="mob-action-btn" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);" onclick="duplicateSelectedBlocks()">&#x2398; Dupl</button>
+      <button class="mob-action-btn" style="background:rgba(233,69,96,.12);color:var(--accent);border:1px solid rgba(233,69,96,.3);" onclick="mirrorSelected()">&#x1F504; Mirror</button>
+    </div>
+    <div class="mob-action-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;margin-bottom:14px;">
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--accent3);border:1px solid rgba(0,212,170,.25);font-size:.6rem;padding:6px 2px;" onclick="setCameraView('front');mobClose()">&#x1F535; Front</button>
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--accent3);border:1px solid rgba(0,212,170,.25);font-size:.6rem;padding:6px 2px;" onclick="setCameraView('right');mobClose()">&#x1F535; Right</button>
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--accent3);border:1px solid rgba(0,212,170,.25);font-size:.6rem;padding:6px 2px;" onclick="setCameraView('top');mobClose()">&#x1F535; Top</button>
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--accent3);border:1px solid rgba(0,212,170,.25);font-size:.6rem;padding:6px 2px;" onclick="frameAll();mobClose()">&#x1F50D; Fit</button>
     </div>
     <div class="mob-action-grid" style="margin-bottom:16px;">
       <button class="mob-action-btn" style="background:var(--accent);color:white;" onclick="openNameModal()">?? Name It</button>
@@ -1008,7 +1096,12 @@ let camTheta = 0.6, camPhi = 0.8, camDist = 18;
 let camTarget = new THREE.Vector3(0, 1, 0);
 
 // Grid & snap
-const GRID = 1;
+let GRID = 1;
+function setGridSize(val) {
+  GRID = parseFloat(val);
+  document.getElementById('gridSizeVal').textContent = GRID > 0 ? GRID : 'Off';
+  toast('Grid snap: ' + (GRID > 0 ? GRID : 'Off'));
+}
 const COLOURS = [
   '#e94560','#f5a623','#f9f900','#00d4aa','#5bc0f8',
   '#9b59b6','#ff6b6b','#ffd93d','#6bcb77','#4d96ff',
@@ -1165,15 +1258,22 @@ function makeGeometry(shape, w, h, d) {
     case 'sphere':   return new THREE.SphereGeometry(Math.min(w,h,d)*0.5, 16, 12);
     case 'cone':     return new THREE.ConeGeometry(w*0.5, h, 12);
     case 'wedge': {
-      // Custom wedge via BufferGeometry
+      // Proper wedge geometry (like Roblox WedgePart)
+      // Back=full height, front=bottom only, top slopes from back-top to front-bottom
       const hw=w/2, hh=h/2, hd=d/2;
       const verts = new Float32Array([
-        -hw,-hh,-hd,  hw,-hh,-hd,  hw,hh,-hd,  -hw,hh,-hd, // back face (rect)
-        -hw,-hh, hd,  hw,-hh, hd,                            // front bottom edge
+        -hw,-hh,-hd,  hw,-hh,-hd,  hw,hh,-hd,  -hw,hh,-hd,  // 0-3: back face
+        -hw,-hh, hd,  hw,-hh, hd                              // 4-5: front bottom
       ]);
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-      geo.setIndex([0,2,1, 0,3,2, 0,4,5, 0,5,1, 0,1,5, 0,5,4, 2,3,5, 3,4,5, 1,2,5]);
+      geo.setIndex([
+        3,2,0,  2,1,0,    // back face (2 tris)
+        0,1,4,  1,5,4,    // bottom face (2 tris)
+        0,4,3,  4,5,3,    // left face (2 tris) - fixed winding
+        1,2,5,  2,3,5,    // right face (2 tris) - fixed winding
+        3,5,2              // top slope (1 tri)
+      ]);
       geo.computeVertexNormals();
       return geo;
     }
@@ -1199,7 +1299,7 @@ function addBlock(x, y, z, w=1, h=1, d=1, colour=currentColour, shape=currentSha
   mesh.rotation.set(rotX * Math.PI / 180, rot * Math.PI / 180, rotZ * Math.PI / 180);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  mesh.userData = { w, h, d, colour, shape, rot, rotX: rotX||0, rotZ: rotZ||0, isBlock: true };
+  mesh.userData = { w, h, d, colour, shape, rot, rotX: rotX||0, rotZ: rotZ||0, isBlock: true, blockId: 'b_' + Math.random().toString(36).slice(2,9) };
   scene.add(mesh);
   blocks.push(mesh);
   updateStats();
@@ -1280,11 +1380,14 @@ function selectBlock(mesh) {
     // Update material sliders
     if (mesh.material) {
       const metallic = mesh.material.metalness || 0;
-      const roughness = mesh.material.roughness || 0.5;
+      const roughness = mesh.material.roughness !== undefined ? mesh.material.roughness : 0.5;
+      const opacity = mesh.userData.opacity !== undefined ? mesh.userData.opacity : 1;
       document.getElementById('propMetallic').value = metallic;
       document.getElementById('propMetallicVal').textContent = metallic.toFixed(1);
       document.getElementById('propRoughness').value = roughness;
       document.getElementById('propRoughnessVal').textContent = roughness.toFixed(1);
+      document.getElementById('propOpacity').value = opacity;
+      document.getElementById('propOpacityVal').textContent = opacity.toFixed(1);
     }
   }
 
@@ -1375,9 +1478,10 @@ function selectAllBlocks() {
 function deleteSelectedBlocks() {
   if (selectedBlocks.length === 0) return;
   pushHistory();
+  const count = selectedBlocks.length;
   [...selectedBlocks].forEach(b => deleteBlock(b));
   selectedBlocks = [];
-  toast('Deleted ' + selectedBlocks.length + ' blocks');
+  toast('Deleted ' + count + ' blocks');
 }
 
 function duplicateSelectedBlocks() {
@@ -1785,13 +1889,36 @@ function setupEvents() {
       if (currentTool === 'add') updateGhost();
     } else if (e.touches.length === 2) {
       touchMoved = true;
-      const dist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      camDist = Math.max(3, Math.min(60, camDist - (dist - lastTouchDist) * 0.05));
-      lastTouchDist = dist;
-      updateCamera();
+      const t0 = e.touches[0], t1 = e.touches[1];
+      const newDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+      const midX = (t0.clientX + t1.clientX) / 2;
+      const midY = (t0.clientY + t1.clientY) / 2;
+
+      // Detect pan vs pinch: if distance change is small, it's a pan
+      if (lastTouchDist > 0 && Math.abs(newDist - lastTouchDist) < 15) {
+        // Pan: move camera target
+        const pdx = midX - ((t0.clientX + t1.clientX) / 2 - (t0.clientX - lastTouchX + t1.clientX - lastTouchX) / 2);
+        // Simpler: track midpoint delta
+        if (window._lastMidX !== undefined) {
+          const panDx = midX - window._lastMidX;
+          const panDy = midY - window._lastMidY;
+          const right = new THREE.Vector3();
+          camera.getWorldDirection(new THREE.Vector3());
+          right.crossVectors(camera.getWorldDirection(new THREE.Vector3()), new THREE.Vector3(0,1,0)).normalize();
+          camTarget.addScaledVector(right, -panDx * 0.015);
+          camTarget.y += panDy * 0.015;
+          updateCamera();
+        }
+        window._lastMidX = midX;
+        window._lastMidY = midY;
+      } else {
+        // Pinch: zoom
+        camDist = Math.max(3, Math.min(60, camDist - (newDist - lastTouchDist) * 0.05));
+        window._lastMidX = undefined;
+        window._lastMidY = undefined;
+        updateCamera();
+      }
+      lastTouchDist = newDist;
     }
   }, { passive: false });
 
@@ -2096,8 +2223,7 @@ function updateStats() {
 }
 
 function clearAll(silent=false) {
-  // User-initiated clears are undoable; internal clears (silent) are part of a
-  // larger action that pushes its own history entry.
+  if (!silent && blocks.length && !confirm('Delete all ' + blocks.length + ' blocks? You can undo with Ctrl+Z.')) return;
   if (!silent && blocks.length) pushHistory();
   [...blocks].forEach(b => {
     scene.remove(b);
@@ -2145,7 +2271,10 @@ function saveToSlot(idx) {
       z: b.position.z,
       w: b.userData.w||1, h: b.userData.h||1, d: b.userData.d||1,
       colour: b.userData.colour, shape: b.userData.shape, rot: b.userData.rot||0,
-      rotX: b.userData.rotX||0, rotZ: b.userData.rotZ||0
+      rotX: b.userData.rotX||0, rotZ: b.userData.rotZ||0,
+      m: b.material ? (b.material.metalness||0) : 0,
+      r: b.material ? (b.material.roughness ?? 0.55) : 0.55,
+      o: b.userData.opacity !== undefined ? b.userData.opacity : 1
     }))
   };
   setSlots(slots);
@@ -2161,7 +2290,19 @@ function loadSlot(idx) {
   pushHistory();
   clearAll(true);
   buildName = slot.name;
-  slot.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ));
+  slot.blocks.forEach(b => {
+    const mesh = addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
+    if (mesh && mesh.material) {
+      if (b.m !== undefined) mesh.material.metalness = b.m;
+      if (b.r !== undefined) mesh.material.roughness = b.r;
+      if (b.o !== undefined) {
+        mesh.material.transparent = b.o < 1;
+        mesh.material.opacity = b.o;
+        mesh.material.needsUpdate = true;
+        mesh.userData.opacity = b.o;
+      }
+    }
+  });
   toast('Loaded: ' + buildName);
 }
 
@@ -2309,14 +2450,14 @@ function exportRBXM() {
   }
 
   // Build parts, organizing grouped blocks into nested Models
-  const groupedIndices = new Set();
+  const groupedBlockIds = new Set();
   let groupParts = '';
   groups.forEach((g, gi) => {
     const innerParts = [];
-    g.blockIndices.forEach(idx => {
-      const mesh = blocks[idx];
-      if (!mesh) return;
-      groupedIndices.add(idx);
+    // Resolve blockIds to meshes
+    const groupMeshes = g.blockIds.map(id => blocks.find(b => b.userData.blockId === id)).filter(Boolean);
+    groupMeshes.forEach(mesh => {
+      groupedBlockIds.add(mesh.userData.blockId);
       const d = mesh.userData;
       const w = d.w || 1, h = d.h || 1, depth = d.d || 1;
       const px = mesh.position.x.toFixed(3);
@@ -2352,7 +2493,7 @@ function exportRBXM() {
           <Color3 name="Color"><R>${rgb.r.toFixed(6)}</R><G>${rgb.g.toFixed(6)}</G><B>${rgb.b.toFixed(6)}</B></Color3>
           <BrickColor name="BrickColor">${brick}</BrickColor>
           <bool name="Anchored">true</bool><bool name="CastShadow">true</bool>
-          <float name="Reflectance">0</float><float name="Transparency">0</float>
+          <float name="Reflectance">${(d.m || 0).toFixed(2)}</float><float name="Transparency">${(1 - (d.o !== undefined ? d.o : 1)).toFixed(2)}</float>
           <token name="Shape">${shapeToken}</token>
           <string name="Material">SmoothPlastic</string>
         </Properties>
@@ -2369,7 +2510,7 @@ function exportRBXM() {
 
   let parts = '';
   blocks.forEach((mesh, i) => {
-    if (groupedIndices.has(i)) return; // skip grouped parts (already in group XML)
+    if (groupedBlockIds.has(mesh.userData.blockId)) return; // skip grouped parts
     const d = mesh.userData;
     const w = d.w || 1, h = d.h || 1, depth = d.d || 1;
     const px = mesh.position.x.toFixed(3);
@@ -2406,7 +2547,7 @@ function exportRBXM() {
         <Color3 name="Color"><R>${rgb.r.toFixed(6)}</R><G>${rgb.g.toFixed(6)}</G><B>${rgb.b.toFixed(6)}</B></Color3>
         <BrickColor name="BrickColor">${brick}</BrickColor>
         <bool name="Anchored">true</bool><bool name="CastShadow">true</bool>
-        <float name="Reflectance">0</float><float name="Transparency">0</float>
+        <float name="Reflectance">${(d.m || 0).toFixed(2)}</float><float name="Transparency">${(1 - (d.o !== undefined ? d.o : 1)).toFixed(2)}</float>
         <token name="Shape">${shapeToken}</token>
         <string name="Material">SmoothPlastic</string>
       </Properties>
@@ -2817,12 +2958,55 @@ function updateMaterial(prop, val) {
   if (prop === 'metallic') {
     selectedBlock.material.metalness = val;
     document.getElementById('propMetallicVal').textContent = val.toFixed(1);
+    const mp = document.getElementById('mobPropMetallicVal'); if (mp) mp.textContent = val.toFixed(1);
   } else if (prop === 'roughness') {
     selectedBlock.material.roughness = val;
     document.getElementById('propRoughnessVal').textContent = val.toFixed(1);
+    const mp = document.getElementById('mobPropRoughnessVal'); if (mp) mp.textContent = val.toFixed(1);
+  } else if (prop === 'opacity') {
+    selectedBlock.material.transparent = val < 1;
+    selectedBlock.material.opacity = val;
+    selectedBlock.userData.opacity = val;
+    document.getElementById('propOpacityVal').textContent = val.toFixed(1);
+    const mp = document.getElementById('mobPropOpacityVal'); if (mp) mp.textContent = val.toFixed(1);
   }
   selectedBlock.material.needsUpdate = true;
   renderer.render(scene, camera);
+}
+
+const PRESETS = {
+  metal:   { metalness: 1,   roughness: 0.2, opacity: 1 },
+  glass:   { metalness: 0,   roughness: 0,   opacity: 0.3 },
+  wood:    { metalness: 0,   roughness: 0.8, opacity: 1 },
+  plastic: { metalness: 0,   roughness: 0.4, opacity: 1 },
+  rubber:  { metalness: 0,   roughness: 1,   opacity: 1 },
+  stone:   { metalness: 0,   roughness: 0.9, opacity: 1 },
+};
+
+function applyPreset(name) {
+  if (!selectedBlock || !selectedBlock.material) { toast('Select a block first'); return; }
+  const p = PRESETS[name];
+  if (!p) return;
+  pushHistory('material');
+  selectedBlock.material.metalness = p.metalness;
+  selectedBlock.material.roughness = p.roughness;
+  selectedBlock.material.transparent = p.opacity < 1;
+  selectedBlock.material.opacity = p.opacity;
+  selectedBlock.userData.opacity = p.opacity;
+  selectedBlock.material.needsUpdate = true;
+  // Sync sliders
+  document.getElementById('propMetallic').value = p.metalness;
+  document.getElementById('propMetallicVal').textContent = p.metalness.toFixed(1);
+  document.getElementById('propRoughness').value = p.roughness;
+  document.getElementById('propRoughnessVal').textContent = p.roughness.toFixed(1);
+  document.getElementById('propOpacity').value = p.opacity;
+  document.getElementById('propOpacityVal').textContent = p.opacity.toFixed(1);
+  // Mobile sync
+  const mm = document.getElementById('mobPropMetallic'); if (mm) mm.value = p.metalness;
+  const mr = document.getElementById('mobPropRoughness'); if (mr) mr.value = p.roughness;
+  const mo = document.getElementById('mobPropOpacity'); if (mo) mo.value = p.opacity;
+  renderer.render(scene, camera);
+  toast('Applied ' + name + ' preset');
 }
 
 // -------------------------------------------------------
@@ -3051,17 +3235,17 @@ let animationStartTime = 0;
 
 function recordKeyframe() {
   if (!selectedBlock) { toast('Select a block first'); return; }
-  const blockId = blocks.indexOf(selectedBlock);
-  if (blockId === -1) return;
+  const id = selectedBlock.userData.blockId;
+  if (!id) return;
 
-  if (!animationData[blockId]) {
-    animationData[blockId] = [];
+  if (!animationData[id]) {
+    animationData[id] = [];
   }
 
-  const currentTime = animationData[blockId].length === 0 ? 0 :
-    animationData[blockId][animationData[blockId].length - 1].time + 500;
+  const currentTime = animationData[id].length === 0 ? 0 :
+    animationData[id][animationData[id].length - 1].time + 500;
 
-  animationData[blockId].push({
+  animationData[id].push({
     time: currentTime,
     position: selectedBlock.position.clone(),
     rotation: selectedBlock.rotation.clone(),
@@ -3069,7 +3253,7 @@ function recordKeyframe() {
   });
 
   renderKeyframeList();
-  toast(`? Keyframe recorded at ${currentTime}ms`);
+  toast('Keyframe recorded at ' + currentTime + 'ms');
 }
 
 function playAnimation() {
@@ -3083,8 +3267,9 @@ function playAnimation() {
     const elapsed = Date.now() - animationStartTime;
     const progress = Math.min(elapsed / duration, 1);
 
-    blocks.forEach((mesh, blockId) => {
-      const keyframes = animationData[blockId];
+    blocks.forEach((mesh) => {
+      const id = mesh.userData.blockId;
+      const keyframes = animationData[id];
       if (!keyframes || keyframes.length === 0) return;
 
       for (let i = 0; i < keyframes.length - 1; i++) {
@@ -3129,9 +3314,10 @@ function renderKeyframeList() {
   if (!container) return;
 
   let html = '';
-  Object.entries(animationData).forEach(([blockId, keyframes]) => {
-    const meshName = 'Block ' + (parseInt(blockId) + 1);
-    html += `<div>${meshName}: ${keyframes.length} keyframes</div>`;
+  Object.entries(animationData).forEach(([id, keyframes]) => {
+    const mesh = blocks.find(b => b.userData.blockId === id);
+    const meshName = mesh ? 'Block (' + (mesh.userData.shape || 'box') + ')' : 'Deleted block';
+    html += '<div>' + meshName + ': ' + keyframes.length + ' keyframes</div>';
   });
 
   container.innerHTML = html || '<div style="text-align:center;padding:10px;color:var(--muted);">No keyframes recorded</div>';
@@ -3170,7 +3356,10 @@ function addToAssetLibrary() {
       shape: b.userData.shape,
       rot: b.userData.rot,
       rotX: b.userData.rotX||0,
-      rotZ: b.userData.rotZ||0
+      rotZ: b.userData.rotZ||0,
+      m: b.material ? (b.material.metalness||0) : 0,
+      r: b.material ? (b.material.roughness ?? 0.55) : 0.55,
+      o: b.userData.opacity !== undefined ? b.userData.opacity : 1
     })),
     timestamp: Date.now()
   };
@@ -3188,7 +3377,19 @@ function loadAssetFromLibrary(idx) {
   pushHistory();
   clearAll(true);
   buildName = asset.name;
-  asset.blocks.forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ));
+  asset.blocks.forEach(b => {
+    const mesh = addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
+    if (mesh && mesh.material) {
+      if (b.m !== undefined) mesh.material.metalness = b.m;
+      if (b.r !== undefined) mesh.material.roughness = b.r;
+      if (b.o !== undefined && b.o < 1) {
+        mesh.material.transparent = true;
+        mesh.material.opacity = b.o;
+        mesh.material.needsUpdate = true;
+        mesh.userData.opacity = b.o;
+      }
+    }
+  });
   toast('Loaded: ' + asset.name);
 }
 
@@ -3236,26 +3437,26 @@ function clearAssetLibrary() {
 // -------------------------------------------------------
 // GROUPING / HIERARCHY
 // -------------------------------------------------------
-let groups = []; // [{name: string, blockIndices: [idx, ...]}]
+let groups = []; // [{name: string, blockIds: [id, ...]}]
 
 function groupSelectedBlocks() {
   if (selectedBlocks.length < 2) { toast('Select 2+ blocks to group'); return; }
   pushHistory();
   const name = prompt('Group name:', 'Group ' + (groups.length + 1));
   if (!name) return;
-  const indices = selectedBlocks.map(b => blocks.indexOf(b)).filter(i => i >= 0);
-  groups.push({ name, blockIndices: indices });
+  const blockIds = selectedBlocks.map(b => b.userData.blockId).filter(Boolean);
+  groups.push({ name, blockIds });
   renderGroupsList();
-  toast('Grouped ' + indices.length + ' blocks as "' + name + '"');
+  toast('Grouped ' + blockIds.length + ' blocks as "' + name + '"');
 }
 
 function ungroupBlock(mesh) {
   for (let i = groups.length - 1; i >= 0; i--) {
     const g = groups[i];
-    const idx = g.blockIndices.indexOf(blocks.indexOf(mesh));
+    const idx = g.blockIds.indexOf(mesh.userData.blockId);
     if (idx >= 0) {
-      g.blockIndices.splice(idx, 1);
-      if (g.blockIndices.length === 0) groups.splice(i, 1);
+      g.blockIds.splice(idx, 1);
+      if (g.blockIds.length === 0) groups.splice(i, 1);
       renderGroupsList();
       toast('Removed from group "' + g.name + '"');
       return;
@@ -3275,8 +3476,8 @@ function moveGroup(groupIdx, dx, dy, dz) {
   const g = groups[groupIdx];
   if (!g) return;
   pushHistory('moveGroup');
-  g.blockIndices.forEach(idx => {
-    const mesh = blocks[idx];
+  g.blockIds.forEach(id => {
+    const mesh = blocks.find(b => b.userData.blockId === id);
     if (mesh) {
       mesh.position.x += dx;
       mesh.position.y += dy;
@@ -3295,9 +3496,12 @@ function renderGroupsList() {
   }
   el.innerHTML = '';
   groups.forEach((g, i) => {
+    // Resolve blockIds to current blocks (handles deletions gracefully)
+    g.blockIds = g.blockIds.filter(id => blocks.some(b => b.userData.blockId === id));
+    if (g.blockIds.length === 0) return; // skip empty groups
     const div = document.createElement('div');
     div.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:4px;';
-    div.innerHTML = `<span style="flex:1;font-size:.7rem;color:var(--text);cursor:pointer;" onclick="highlightGroup(${i})">${g.name} (${g.blockIndices.length})</span>
+    div.innerHTML = `<span style="flex:1;font-size:.7rem;color:var(--text);cursor:pointer;" onclick="highlightGroup(${i})">${g.name} (${g.blockIds.length})</span>
       <button onclick="moveGroup(${i},0,1,0)" style="font-size:.6rem;padding:2px 4px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:3px;color:var(--text);cursor:pointer;">&#x25B2;</button>
       <button onclick="moveGroup(${i},0,-1,0)" style="font-size:.6rem;padding:2px 4px;background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:3px;color:var(--text);cursor:pointer;">&#x25BC;</button>`;
     el.appendChild(div);
@@ -3308,11 +3512,82 @@ function highlightGroup(idx) {
   const g = groups[idx];
   if (!g) return;
   deselectBlock();
-  selectedBlocks = g.blockIndices.map(i => blocks[i]).filter(Boolean);
+  selectedBlocks = g.blockIds.map(id => blocks.find(b => b.userData.blockId === id)).filter(Boolean);
   selectedBlock = selectedBlocks[0] || null;
   updateMultiHighlights();
   if (selectedBlock) selectBlock(selectedBlock);
   toast('Group "' + g.name + '" selected');
+}
+
+// -------------------------------------------------------
+// MIRROR / SYMMETRY
+// -------------------------------------------------------
+let mirrorAxis = 'x'; // 'x', 'y', or 'z'
+
+function setMirrorAxis(axis) {
+  mirrorAxis = axis;
+  document.querySelectorAll('.mirror-axis-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector('.mirror-axis-btn[data-axis="'+axis+'"]');
+  if (btn) btn.classList.add('active');
+  toast('Mirror axis: ' + axis.toUpperCase());
+}
+
+function mirrorSelected() {
+  if (selectedBlocks.length === 0) { toast('Select blocks to mirror'); return; }
+  pushHistory();
+  const newBlocks = [];
+  selectedBlocks.forEach(b => {
+    const d = b.userData;
+    let mx = b.position.x, my = b.position.y, mz = b.position.z;
+    if (mirrorAxis === 'x') mx = -mx;
+    else if (mirrorAxis === 'y') my = -my + d.h;
+    else if (mirrorAxis === 'z') mz = -mz;
+    let mrot = d.rot || 0, mrotX = d.rotX || 0, mrotZ = d.rotZ || 0;
+    if (mirrorAxis === 'x') { mrot = -mrot; mrotZ = -mrotZ; }
+    else if (mirrorAxis === 'z') { mrot = -mrot; mrotX = -mrotX; }
+    else if (mirrorAxis === 'y') { mrotX = -mrotX; mrotZ = -mrotZ; }
+    const m = addBlock(mx, my - d.h/2, mz, d.w, d.h, d.d, d.colour, d.shape, ((mrot % 360) + 360) % 360, ((mrotX % 360) + 360) % 360, ((mrotZ % 360) + 360) % 360);
+    if (m && m.material && b.material) {
+      m.material.metalness = b.material.metalness;
+      m.material.roughness = b.material.roughness;
+      if (b.userData.opacity !== undefined && b.userData.opacity < 1) {
+        m.material.transparent = true;
+        m.material.opacity = b.userData.opacity;
+        m.material.needsUpdate = true;
+        m.userData.opacity = b.userData.opacity;
+      }
+    }
+    newBlocks.push(m);
+  });
+  selectedBlocks = newBlocks;
+  updateMultiHighlights();
+  toast('Mirrored ' + newBlocks.length + ' blocks across ' + mirrorAxis.toUpperCase() + ' axis');
+}
+
+// Mobile copy/paste (no keyboard needed)
+function mobCopy() {
+  if (selectedBlocks.length === 0) { toast('Select blocks first'); return; }
+  clipboard = selectedBlocks.map(b => ({
+    x: b.position.x, y: b.position.y - (b.userData.h||1)/2, z: b.position.z,
+    w: b.userData.w, h: b.userData.h, d: b.userData.d,
+    colour: b.userData.colour, shape: b.userData.shape,
+    rot: b.userData.rot, rotX: b.userData.rotX, rotZ: b.userData.rotZ
+  }));
+  toast('Copied ' + clipboard.length + ' blocks');
+}
+
+function mobPaste() {
+  if (clipboard.length === 0) { toast('Nothing to paste'); return; }
+  pushHistory();
+  deselectBlock();
+  selectedBlocks = [];
+  clipboard.forEach(b => {
+    const m = addBlock(b.x + 2, b.y, b.z + 2, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
+    selectedBlocks.push(m);
+  });
+  selectedBlock = selectedBlocks[0];
+  updateMultiHighlights();
+  toast('Pasted ' + clipboard.length + ' blocks');
 }
 
 // Insert asset without clearing
@@ -3347,7 +3622,10 @@ function encodeBuildData() {
     s: SHARE_SHAPE_CODES[b.userData.shape] || 'b',
     r: b.userData.rot || 0,
     rx: b.userData.rotX || 0,
-    rz: b.userData.rotZ || 0
+    rz: b.userData.rotZ || 0,
+    mt: +(b.material ? b.material.metalness : 0).toFixed(2),
+    rh: +(b.material ? b.material.roughness : 0.55).toFixed(2),
+    op: +(b.userData.opacity !== undefined ? b.userData.opacity : 1).toFixed(2)
   }));
 }
 
@@ -3359,7 +3637,10 @@ function decodeBuildData(arr) {
     shape: SHARE_CODE_SHAPES[b.s] || 'box',
     rot: b.r || 0,
     rotX: b.rx || 0,
-    rotZ: b.rz || 0
+    rotZ: b.rz || 0,
+    metalness: b.mt !== undefined ? b.mt : 0,
+    roughness: b.rh !== undefined ? b.rh : 0.55,
+    opacity: b.op !== undefined ? b.op : 1
   }));
 }
 
@@ -3370,9 +3651,18 @@ function shareBuild() {
   const b64 = btoa(unescape(encodeURIComponent(payload)))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const url = location.origin + location.pathname + '#b=' + b64;
+
+  if (url.length > 8000) {
+    toast('Build too large to share (' + data.length + ' blocks). Save to a slot instead.');
+    return;
+  }
+  if (data.length > 150) {
+    toast('Large build (' + data.length + ' blocks) - link may break on some apps');
+  }
+
   const fallback = () => prompt('Copy this link to share your build:', url);
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(() => toast('?? Share link copied!')).catch(fallback);
+    navigator.clipboard.writeText(url).then(() => toast('Share link copied!')).catch(fallback);
   } else {
     fallback();
   }
@@ -3390,7 +3680,19 @@ function loadFromHash() {
   buildName = data.n || 'Shared Build';
   const nameInput = document.getElementById('buildNameInput');
   if (nameInput) nameInput.value = buildName;
-  decodeBuildData(data.b).forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ));
+  decodeBuildData(data.b).forEach(b => {
+    const mesh = addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
+    if (mesh && mesh.material) {
+      mesh.material.metalness = b.metalness || 0;
+      mesh.material.roughness = b.roughness !== undefined ? b.roughness : 0.55;
+      if (b.opacity !== undefined && b.opacity < 1) {
+        mesh.material.transparent = true;
+        mesh.material.opacity = b.opacity;
+        mesh.material.needsUpdate = true;
+        mesh.userData.opacity = b.opacity;
+      }
+    }
+  });
   history.replaceState(null, '', location.pathname); // clean URL once loaded
   return true;
 }
@@ -3412,7 +3714,19 @@ function restoreAutosave() {
     buildName = d.name || buildName;
     const nameInput = document.getElementById('buildNameInput');
     if (nameInput) nameInput.value = buildName;
-    decodeBuildData(d.blocks).forEach(b => addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ));
+    decodeBuildData(d.blocks).forEach(b => {
+      const mesh = addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
+      if (mesh && mesh.material) {
+        mesh.material.metalness = b.metalness || 0;
+        mesh.material.roughness = b.roughness !== undefined ? b.roughness : 0.55;
+        if (b.opacity !== undefined && b.opacity < 1) {
+          mesh.material.transparent = true;
+          mesh.material.opacity = b.opacity;
+          mesh.material.needsUpdate = true;
+          mesh.userData.opacity = b.opacity;
+        }
+      }
+    });
     return true;
   } catch (e) { return false; }
 }
@@ -3559,20 +3873,18 @@ if (document.readyState === 'loading') {
   };
 
   function syncMobProps() {
-    // Mirror selected block props to mob sliders
     var pp = document.getElementById('propPanel');
     var hasBlock = pp && pp.style.display !== 'none';
     document.getElementById('mob-no-selection').style.display = hasBlock ? 'none' : '';
     document.getElementById('mob-prop-controls').style.display = hasBlock ? '' : 'none';
     if (!hasBlock) return;
-    // Don't sync sliders for imported meshes, they're locked
     if (selectedBlock && selectedBlock.userData.isImported) return;
-    ['W','H','D','Rot'].forEach(function(prop){
+    ['W','H','D','Rot','RotX','RotZ'].forEach(function(prop){
       var src = document.getElementById('prop'+prop);
       var dst = document.getElementById('mobProp'+prop);
       var val = document.getElementById('mobProp'+prop+'Val');
       if (src && dst) { dst.value = src.value; }
-      if (val) { val.textContent = src.value + (prop==='Rot'?'':''); }
+      if (val && src) { val.textContent = src.value; }
     });
     var yv = document.getElementById('propYVal');
     var myv = document.getElementById('mobPropYVal');
@@ -3750,21 +4062,59 @@ window.clearSketch = function() {
 
 window.convertSketch = function() {
   if (sketchPoints.length < 3) {
-    toast('?? Draw more points to create a shape');
+    toast('Draw more points to create a shape');
     return;
   }
   pushHistory('sketch');
 
-  // Simple approach: create blocks along the sketch path with extrusion
-  const step = Math.max(1, Math.floor(sketchPoints.length / 20)); // Sample points
-  for (let i = 0; i < sketchPoints.length; i += step) {
-    const p = sketchPoints[i];
-    const x = (p.x - sketchCtx.canvas.width / 2) / 100;
-    const z = (p.y - sketchCtx.canvas.height / 2) / 100;
-    addBlock(x, 0, z, 0.5, sketchExtrude, 0.5, currentColour, 'box');
+  // Convert sketch points to grid coordinates
+  const cw = sketchCtx.canvas.width / 2;
+  const ch = sketchCtx.canvas.height / 2;
+  const scale = 100; // pixels per unit
+  const gridStep = 0.5; // block size
+  const poly = sketchPoints.map(p => ({
+    x: Math.round((p.x - cw) / scale / gridStep) * gridStep,
+    y: Math.round((p.y - ch) / scale / gridStep) * gridStep
+  }));
+
+  // Find bounding box
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  poly.forEach(p => {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  });
+
+  // Scanline fill: for each row, find polygon intersections and fill between pairs
+  let blockCount = 0;
+  for (let y = minY; y <= maxY; y += gridStep) {
+    const intersections = [];
+    for (let i = 0; i < poly.length; i++) {
+      const j = (i + 1) % poly.length;
+      const p1 = poly[i], p2 = poly[j];
+      if ((p1.y <= y && p2.y > y) || (p2.y <= y && p1.y > y)) {
+        const xIntersect = p1.x + (y - p1.y) / (p2.y - p1.y) * (p2.x - p1.x);
+        intersections.push(xIntersect);
+      }
+    }
+    intersections.sort((a, b) => a - b);
+    for (let k = 0; k < intersections.length - 1; k += 2) {
+      const x1 = intersections[k], x2 = intersections[k + 1];
+      for (let x = x1; x <= x2; x += gridStep) {
+        addBlock(
+          Math.round(x / gridStep) * gridStep,
+          0,
+          Math.round(y / gridStep) * gridStep,
+          gridStep, sketchExtrude, gridStep,
+          currentColour, 'box'
+        );
+        blockCount++;
+      }
+    }
   }
 
-  toast('? 3D shape created from sketch!');
+  toast('Created ' + blockCount + ' blocks from sketch!');
   exitSketchMode();
   setTool('add');
 };
