@@ -9316,6 +9316,7 @@ function sceneMemory(data) {
                                 const speedBonus = timeSecs < parTime ? Math.round((parTime - timeSecs) * 20) : 0;
                                 const wrongFlips = Math.max(0, _moves - PAIRS);
                                 const finalScore = Math.max(50, Math.round(PAIRS * 1000 - wrongFlips * 40 + speedBonus) + _streakBonus);
+                                this.score = finalScore;
                                 liveConfig._score = finalScore;
                                 const prev = liveConfig._memBest || 0;
                                 const isNew = finalScore > prev;
@@ -9523,6 +9524,7 @@ function sceneWaveSurvival(data) {
             if (this._wsCursors.left.isDown  || touchInput.left)  actor.body.setVelocityX(-this._wsSPD);
             if (this._wsCursors.right.isDown || touchInput.right) actor.body.setVelocityX(this._wsSPD);
             if (Phaser.Input.Keyboard.JustDown(this._wsSpace) || touchInput.fire) this._wsShoot();
+            if (touchInput.fire) touchInput.fire = false;
 
             // Shield gfx
             const shieldGfx = this._wsShieldGfx;
@@ -11740,6 +11742,7 @@ function sceneShooter(data) {
                 this.lastFired=time+liveConfig.fireCooldown;
                 GameAudio.play('shoot');
             }
+            if (touchInput.fire) touchInput.fire = false;
             // ── Enemy AI movement ─────────────────────────────────────────────
             const ai = liveConfig.enemyAI || 'classic';
             const ax = this.actor ? this.actor.x : GW/2;
@@ -13489,6 +13492,7 @@ function sceneInvaders(data) {
                 _fire(0); _ppMultishot(_fire);
                 this.lastFired=time+liveConfig.fireCooldown; GameAudio.play('shoot');
             }
+            if (touchInput.fire) touchInput.fire = false;
             if (this.shootTimer && this.shootTimer.delay !== liveConfig.spawnDelay) this.shootTimer.delay = liveConfig.spawnDelay;
             this.bullets.getChildren().forEach(b=>{ if(b.y<-20) b.destroy(); });
             this.eBullets.getChildren().forEach(b=>{ if(b.y>GH+20) b.destroy(); });
@@ -14636,6 +14640,7 @@ function sceneRoguelike(data) {
                     const dx=best.x-this.actor.x,dy=best.y-this.actor.y,m=Math.sqrt(dx*dx+dy*dy)||1;
                     this._fireBullet(dx/m,dy/m);
                 }
+                touchInput.fire = false;
             }
 
             // Enemy AI, chase + boss behaviour + typed movement
@@ -14961,6 +14966,7 @@ function sceneAsteroids(data) {
                 _fire(0); _ppMultishot(_fire);
                 this.lastFired=time+cd; GameAudio.play('shoot');
             }
+            if (touchInput.fire) touchInput.fire = false;
             this.bullets.getChildren().forEach(b=>{ if(b.x<-20||b.x>GW+20||b.y<-20||b.y>GH+20) b.destroy(); });
             this._saucerBullets.getChildren().forEach(b=>{ if(b.x<-20||b.x>GW+20||b.y<-20||b.y>GH+20) b.destroy(); });
             this._syncPuLabels();
@@ -15799,7 +15805,7 @@ function sceneRacing(data) {
                 const score=Math.max(1,10000-Math.floor(this._bestLap/100));
                 this.score=score;
                 this.time.delayedCall(2000,()=>{
-                    if(typeof showGameOver==='function') showGameOver(score, data.genre);
+                    if(typeof showVictory==='function') showVictory(score);
                 });
             }
         }
@@ -20251,6 +20257,7 @@ function sceneBeatEmUp(data) {
                     }
                 } else { p1.setVelocityX(0); p1.state='idle'; }
                 if (Phaser.Input.Keyboard.JustDown(k.p1Lt)||touchInput.fire) this._doAttack(p1,p2,'light');
+                if (touchInput.fire) touchInput.fire = false;
                 if (Phaser.Input.Keyboard.JustDown(k.p1Hv)) this._doAttack(p1,p2,'heavy');
                 if (Phaser.Input.Keyboard.JustDown(k.p1Sp)) this._doAttack(p1,p2,'special');
             }
