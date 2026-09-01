@@ -65,12 +65,12 @@ async function scenario(name, fn) {
     await page.waitForSelector('#navToggle', { visible: true });
     const expandedBefore = await page.$eval('#navToggle', el => el.getAttribute('aria-expanded'));
     await page.click('#navToggle');
-    await page.waitForFunction(() => document.getElementById('mobileNav').classList.contains('open'));
+    await page.waitForFunction(() => document.getElementById('mainNav').classList.contains('open'));
     const expandedOpen = await page.$eval('#navToggle', el => el.getAttribute('aria-expanded'));
 
     // A second tap must CLOSE it (catches double-bound handlers: open→instantly shut)
     await page.click('#navToggle');
-    await page.waitForFunction(() => !document.getElementById('mobileNav').classList.contains('open'));
+    await page.waitForFunction(() => !document.getElementById('mainNav').classList.contains('open'));
     const expandedAfter = await page.$eval('#navToggle', el => el.getAttribute('aria-expanded'));
 
     record('nav opens on tap', expandedBefore === 'false' && expandedOpen === 'true',
@@ -80,7 +80,7 @@ async function scenario(name, fn) {
     // Escape key also closes
     await page.click('#navToggle');
     await page.keyboard.press('Escape');
-    await page.waitForFunction(() => !document.getElementById('mobileNav').classList.contains('open'));
+    await page.waitForFunction(() => !document.getElementById('mainNav').classList.contains('open'));
     record('nav closes on Escape', true);
 
     record('no uncaught JS errors on homepage', jsErrors.length === 0, jsErrors.slice(0, 2).join(' | '));

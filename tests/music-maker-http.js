@@ -165,6 +165,7 @@ function check(name, ok, detail) {
   /* ── restore known-good state, then transport semantics ── */
   await page.reload({ waitUntil: 'networkidle2' });
   await new Promise(r => setTimeout(r, 300));
+  await page.evaluate(() => { const hm = document.getElementById('helpModal'); if (hm) hm.classList.remove('open'); });
   await page.click('#btnPlay');
   await new Promise(r => setTimeout(r, 500));
   const whilePlaying = await page.evaluate(() => ({

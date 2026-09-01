@@ -36,10 +36,12 @@ const server = http.createServer((req, res) => {
     hamburgerSingleBound: true
   }));
   // hamburger toggle works (the old double-bind bug)
-  await page.click('#jvdsNavToggle');
-  const navOpened = await page.evaluate(() => document.getElementById('jvdsMobileNav').classList.contains('open'));
-  await page.click('#jvdsNavToggle');
-  const navClosed = await page.evaluate(() => !document.getElementById('jvdsMobileNav').classList.contains('open'));
+  await page.setViewport({ width: 390, height: 780 });
+  await new Promise(r => setTimeout(r, 200));
+  await page.evaluate(() => document.getElementById('jvdsNavToggle').click());
+  const navOpened = await page.evaluate(() => document.getElementById('jvdsNavLinks').classList.contains('open'));
+  await page.evaluate(() => document.getElementById('jvdsNavToggle').click());
+  const navClosed = await page.evaluate(() => !document.getElementById('jvdsNavLinks').classList.contains('open'));
 
   console.log('checks:', JSON.stringify(checks));
   console.log('hamburger opens:', navOpened, '| closes:', navClosed);
