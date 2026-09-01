@@ -52,6 +52,12 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
 .btn.teal{background:var(--teal);box-shadow:0 5px 0 var(--teal-dk);}
 .best{font-size:.85rem;opacity:.8;}
 .hidden{display:none!important;}
+.hud-row2{display:flex;gap:8px;justify-content:center;margin:4px 0 8px;flex-wrap:wrap;}
+.combo-pill,.power-pill{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:4px 12px;font-size:.75rem;font-weight:700;color:var(--beige);display:none;}
+.combo-pill.show{display:inline-block;background:rgba(255,210,63,.2);border-color:rgba(255,210,63,.4);color:#ffd23f;}
+.power-pill.show{display:inline-block;background:rgba(0,200,120,.2);border-color:rgba(0,200,120,.4);color:#00c878;}
+.power-pill.shield{border-color:rgba(100,200,255,.4);color:#64c8ff;}
+.power-pill.slowmo{border-color:rgba(200,100,255,.4);color:#c864ff;}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <!-- Game System Integration -->
@@ -72,6 +78,7 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
     <div class="stat"><div class="label">Score</div><div class="val" id="score">0</div></div>
     <div class="stat"><div class="label">Length</div><div class="val" id="len">3</div></div><div class="stat"><div class="label">Best</div><div class="val" id="best">0</div></div>
   </div>
+  <div class="hud-row2"><span class="combo-pill" id="comboPill">x1 Combo</span><span class="power-pill" id="powerPill"></span></div>
   <div id="goldBar" style="height:4px;background:linear-gradient(90deg,#ffd23f,#ff8c00);border-radius:4px;width:0%;margin:6px auto 0;max-width:420px;transition:width .1s linear;display:none"></div><canvas id="board" width="420" height="420"></canvas>
   <div class="pad">
     <div class="sp"></div><button data-dir="up">▲</button><div class="sp"></div>
@@ -107,6 +114,9 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
   let snake,dir,nextDir,food,score,running,tickT,speed;
   let paused=false, pauseOverlay=null, goldInt=null;
   let golden=false,goldenTimer=null,apples=0;
+  let powers={shield:false,slowmo:false,magnet:false};
+  let powerTimer=null;
+  let combo=0, comboTimer=0;
   let best=+(localStorage.getItem('nibbleQuestBest')||0);
   const fx=new AudioEffects(0.6);
   let muted=localStorage.getItem('nibbleMuted')==='1';
@@ -131,7 +141,7 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
   function togglePause(){ if(!running&&!paused) return; if(paused){ paused=false; running=true; if(pauseOverlay) pauseOverlay.style.display='none'; document.getElementById('pauseBtn').textContent='⏸'; tickT=setTimeout(step,speed); return; } if(!running) return; paused=true; running=false; clearTimeout(tickT); clearInterval(goldInt); document.getElementById('pauseBtn').textContent='▶'; if(!pauseOverlay){ pauseOverlay=document.createElement('div'); pauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(5,18,15,.93);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:60;text-align:center;padding:24px'; pauseOverlay.innerHTML='<div style="font-size:2rem">⏸ Paused</div><button id="resumeBtn" class="btn teal">▶ Resume</button>'; document.body.appendChild(pauseOverlay); pauseOverlay.querySelector('#resumeBtn').addEventListener('click', togglePause); } else pauseOverlay.style.display='flex'; }
   function reset(){
     snake=[{x:9,y:10},{x:8,y:10},{x:7,y:10}];dir={x:1,y:0};nextDir={x:1,y:0};
-    score=0;speed=140;running=true;
+    score=0;speed=140;running=true;combo=0;comboTimer=0;powers={shield:false,slowmo:false,magnet:false};powerFood=null;clearInterval(powerTimer);document.getElementById('comboPill').className='combo-pill';document.getElementById('powerPill').className='power-pill';
     if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running||paused)return false;running=false;clearTimeout(tickT);clearInterval(goldInt);return true;},resume:()=>{if(!running&&!paused){running=true;tickT=setTimeout(step,speed);}}});scoreEl.textContent=0;document.getElementById('len').textContent='3';apples=0;golden=false;clearInterval(goldInt);document.getElementById('goldBar').style.display='none';placeFood();
   }
   function setDir(nx,ny){
@@ -153,24 +163,54 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
     if(Math.abs(dx)>Math.abs(dy))setDir(dx>0?1:-1,0);else setDir(0,dy>0?1:-1);
   },{passive:true});
 
+function activatePower(ptype){
+    if(ptype==='shield'||ptype==='slowmo'||ptype==='magnet'){
+      if(powerTimer)clearTimeout(powerTimer);
+      powers={shield:false,slowmo:false,magnet:false};
+      powers[ptype]=true;
+      const pill=document.getElementById('powerPill');
+      pill.textContent={shield:'\uD83D\uDEE1\uFE0F Shield',slowmo:'\uD83D\uDC0C Slow-Mo',magnet:'\uD83E\uDDF2 Magnet'}[ptype];
+      pill.className='power-pill show '+ptype;
+      powerTimer=setTimeout(()=>{powers[ptype]=false;pill.classList.remove('show');},8000);
+    }
+  }
   function step(){
     if(!running)return;
+    if(powers.magnet && food){
+      const dx=snake[0].x-food.x, dy=snake[0].y-food.y;
+      const dist=Math.abs(dx)+Math.abs(dy);
+      if(dist>1 && dist<6){
+        if(Math.abs(dx)>Math.abs(dy)) food.x+=dx>0?1:-1;
+        else food.y+=dy>0?1:-1;
+        food.x=Math.max(0,Math.min(food.x,GRID-1));
+        food.y=Math.max(0,Math.min(food.y,GRID-1));
+      }
+    }
     dir=nextDir;
     const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
-    if(head.x<0||head.y<0||head.x>=GRID||head.y>=GRID||snake.some(s=>s.x===head.x&&s.y===head.y))return end();
+    if(head.x<0||head.y<0||head.x>=GRID||head.y>=GRID||snake.some(s=>s.x===head.x&&s.y===head.y)){if(powers.shield){powers.shield=false;document.getElementById('powerPill').className='power-pill';return;}return end();}
     snake.unshift(head);
+    if(powerFood && head.x===powerFood.x && head.y===powerFood.y){
+      activatePower(powerFood.ptype);
+      const pos=foodScreenPos();
+      ParticleSystem.burst(pos.x,pos.y,'\u2728',6);
+      fx.playPowerup();
+      powerFood=null;
+    }
     if(head.x===food.x&&head.y===food.y){
       const pos=foodScreenPos();
       if(golden){
-        score+=30;speed=Math.max(55,speed-3.5);fx.playCombo(4); updateGoldBar(true);
+        score+=Math.round(30*(powers.multiplier?2:1));speed=Math.max(55,speed-3.5);fx.playCombo(4); updateGoldBar(true);
         ParticleSystem.burst(pos.x,pos.y,'⭐',8);
       }else{
-        score+=10;speed=Math.max(55,speed-1.5);fx.playSuccess(600+Math.min(snake.length*8,500)); updateGoldBar(false);
+        score+=Math.round(10*(powers.multiplier?2:1));speed=Math.max(55,speed-1.5);fx.playSuccess(600+Math.min(snake.length*8,500)); updateGoldBar(false);
         ParticleSystem.burst(pos.x,pos.y,'✨',4);
       }
-      scoreEl.textContent=score;document.getElementById('len').textContent=snake.length;placeFood();
+      combo++;comboTimer=2;const comboPill=document.getElementById('comboPill');if(combo>=3){comboPill.className='combo-pill show';comboPill.textContent='x'+combo+' Combo!';}scoreEl.textContent=score;document.getElementById('len').textContent=snake.length;placeFood();
     }
     else snake.pop();
+    if(comboTimer>0){comboTimer-=speed/1000;if(comboTimer<=0){combo=0;document.getElementById('comboPill').className='combo-pill';}}
+    if(powers.slowmo) speed=Math.max(speed,120);
     draw();
     tickT=setTimeout(step,speed);
   }
@@ -190,6 +230,14 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.7rem,6vw,2.4rem);margin:6px 0
       ctx.restore();
     }else{
       ctx.fillText('🍎',food.x*CELL+CELL/2,food.y*CELL+CELL/2+1);
+    }
+    if(powerFood){
+      const pulse=0.7+0.3*Math.sin(performance.now()*0.008);
+      ctx.save();ctx.globalAlpha=pulse;
+      ctx.shadowColor='#00c878';ctx.shadowBlur=12;
+      ctx.font=(CELL*0.85)+'px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(powerFood.emoji,powerFood.x*CELL+CELL/2,powerFood.y*CELL+CELL/2+1);
+      ctx.restore();
     }
     // snake
     snake.forEach((s,i)=>{
