@@ -1002,6 +1002,15 @@ window.JVDS.announce = function (msg) {
     <div id="dailyChallenge" class="jvds-daily"></div>
     <button type="button" class="dc-go" data-fresh="daily">�-�&nbsp;Play toward today’s goal</button>
 
+    <!-- VOID STORY -->
+    <div id="voidStory" class="void-story" style="display:none;background:linear-gradient(135deg,rgba(80,0,160,.15),rgba(20,10,40,.3));border:1px solid rgba(155,111,209,.25);border-radius:16px;padding:18px 20px;margin:14px 0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-family:Fredoka,cursive;font-size:1rem;font-weight:700;color:#c084fc">📖 The Void is Spreading</div>
+        <span id="storyChapter" style="font-size:.7rem;color:rgba(192,132,252,.6);letter-spacing:.08em">Chapter 1</span>
+      </div>
+      <div id="storyFragments" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+
     <div class="tiles">
       <div class="tile xp"><b id="stXP">0</b><span>Total XP</span></div>
       <div class="tile streak"><b id="stStreak">0</b><span>Streak</span></div>
@@ -1296,6 +1305,30 @@ window.JVDS.announce = function (msg) {
     return idx;
   }
 
+  function renderVoidStory() {
+    const storyEl = document.getElementById('voidStory');
+    if (!storyEl || !window.VoidStory) return;
+    const fragments = VoidStory.getFragments();
+    if (fragments.length === 0) { storyEl.style.display = 'none'; return; }
+    storyEl.style.display = 'block';
+    const chapter = VoidStory.getCurrentChapter();
+    document.getElementById('storyChapter').textContent = 'Chapter ' + chapter + ' / 5';
+    const fragEl = document.getElementById('storyFragments');
+    fragEl.innerHTML = '';
+    fragments.forEach(function(f) {
+      const d = document.createElement('div');
+      d.style.cssText = 'margin-bottom:10px;padding:10px;background:rgba(155,111,209,.08);border-left:3px solid rgba(192,132,252,.4);border-radius:0 8px 8px 0';
+      d.innerHTML = '<div style="font-size:.75rem;font-weight:700;color:#c084fc;margin-bottom:3px">' + f.title + '</div><div style="font-size:.8rem;color:rgba(240,234,214,.7);line-height:1.5">' + f.text + '</div>';
+      fragEl.appendChild(d);
+    });
+    if (VoidStory.isSecretUnlocked()) {
+      const secret = document.createElement('div');
+      secret.style.cssText = 'margin-top:12px;padding:12px;background:linear-gradient(135deg,rgba(255,215,0,.1),rgba(155,111,209,.15));border:1px solid rgba(255,215,0,.3);border-radius:10px;text-align:center';
+      secret.innerHTML = '<div style="font-size:1.2rem;margin-bottom:4px">🔓</div><div style="font-size:.85rem;font-weight:700;color:#ffd700">The 26th Game Unlocked!</div><div style="font-size:.75rem;color:rgba(240,234,214,.6);margin-top:4px">Complete the story to play the secret game.</div>';
+      fragEl.appendChild(secret);
+    }
+  }
+
   function renderExplore(played) {
     var wrapEl = document.getElementById('exploreWrap');
     if (!wrapEl || !GAMES.length) return;
@@ -1392,6 +1425,8 @@ window.JVDS.announce = function (msg) {
 
     if (window.DailyChallenge) DailyChallenge.render('dailyChallenge');
     if (window.WeeklyChallenge) WeeklyChallenge.render('weeklyChallenge', { shout: celebrate });
+    // Render Void Story
+    if (window.VoidStory) renderVoidStory();
 
     renderExplore(played);
     renderContinue(played);
