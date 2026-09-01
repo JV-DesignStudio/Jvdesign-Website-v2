@@ -4949,8 +4949,9 @@ score += bumper.pts;
  <div class="go-score" id="goScore">Score: 0</div>
  <div id="goStoryMsg" style="display:none;font-size:.72rem;color:var(--muted);text-align:center;margin:4px 0 0;font-style:italic;line-height:1.4;max-width:260px;"></div>
  <div class="go-time" id="goTime" style="display:none;"></div>
- <div class="go-newbest" id="goNewBest" style="display:none;">🏆 New Best!</div>
- <div id="goPrevBest" style="display:none;font-size:.68rem;color:var(--muted);margin-top:2px;"></div>
+  <div class="go-newbest" id="goNewBest" style="display:none;">🏆 New Best!</div>
+  <div id="goStreakBadge" style="display:none;font-size:.85rem;font-weight:800;color:#f59e0b;margin:4px 0;text-align:center;font-family:'Fredoka',sans-serif;">🔥 1-day streak!</div>
+  <div id="goPrevBest" style="display:none;font-size:.68rem;color:var(--muted);margin-top:2px;"></div>
  <!-- Initials entry -->
  <div class="go-name-row" id="goNameRow">
  <div class="go-name-label">Enter Your Initials</div>
@@ -5392,7 +5393,9 @@ score += bumper.pts;
 <div id="playerBar">
  <span class="pb-title" id="pbTitle">🎮</span>
  <button onclick="toggleFullscreen()" title="Fullscreen">⛶ Full</button>
- <button onclick="_goRemixShared()" title="Load this game into your own editor">🎨 Remix This</button>
+ <button onclick="_showTodayBoard()" title="See today's scores from friends">🏁 Board</button>
+ <button onclick="_showStreakHistory()" title="Your Daily Challenge streak">🔥 Streak</button>
+ <button onclick="_goRemixShared()" title="Load this game into your own editor">🎨 Remix</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -17690,6 +17693,17 @@ function showGameOver(score) {
         goEl.classList.add('show');
         document.body.classList.add('overlay-active');
         _a11yTrapFocus(goEl);
+        // Daily streak badge on game-over screen
+        try {
+            if (liveConfig._dailySeed) {
+                const s = _getDailyStreak ? _getDailyStreak() : {streak:0};
+                const streakEl = document.getElementById('goStreakBadge');
+                if (streakEl && s.streak > 0) {
+                    streakEl.textContent = '🔥 ' + s.streak + '-day streak!';
+                    streakEl.style.display = 'block';
+                } else if (streakEl) streakEl.style.display = 'none';
+            }
+        } catch(_e) {}
         // Only auto-focus initials on non-touch devices, on mobile, focus()
         // triggers the keyboard which obscures the game-over screen.
         const _isTouch = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;
@@ -18373,7 +18387,7 @@ function updateTouchLayout(genre) {
 
     // Joystick zone: hide for tap-only genres, Tower Defense, Pinball, Rhythm, and Snake
     // Snake uses swipe, the joystick zone intercepts swipe-start events and breaks steering
-    const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE','PINBALL','RHYTHM','CLICKER','MEMORY','BREAKER','SNAKE'].includes(genre);
+    const showLR = !['RUNNER','FLAPPY','PONG','DEFENSE','PINBALL','RHYTHM','CLICKER','MEMORY','BREAKER','SNAKE','PUZZLE'].includes(genre);
     const showUp   = ['SHOOTER','PLATFORMER','RUNNER','FLAPPY','PONG','SNAKE','ASTEROIDS','ROGUELIKE','BEAT','RACING','HOPPER','DEFENSE'].includes(genre);
     const showFire = ['SHOOTER','INVADERS','PONG','ASTEROIDS','ROGUELIKE','RUNNER','PLATFORMER','BEAT','RACING','DEFENSE','WAVESURVIVAL'].includes(genre);
 
@@ -19254,7 +19268,7 @@ async function generateShareLink() {
         let enc = await _compressPayload(JSON.stringify(payload));
         let longUrl = _shareBaseUrl() + '?game=' + enc;
         // If URL is too long (>2KB breaks some apps), strip the level map and retry
-        if (longUrl.length > 2000 && payload.map) {
+        if (longUrl.length > 1500 && payload.map) {
             payload.map = null;
             enc = await _compressPayload(JSON.stringify(payload));
             longUrl = _shareBaseUrl() + '?game=' + enc;
@@ -19274,7 +19288,7 @@ async function generateRemixLink() {
         let payload = _buildSharePayload(d);
         let enc = await _compressPayload(JSON.stringify(payload));
         let longUrl = _shareBaseUrl() + '?remix=' + enc;
-        if (longUrl.length > 2000 && payload.map) {
+        if (longUrl.length > 1500 && payload.map) {
             payload.map = null;
             enc = await _compressPayload(JSON.stringify(payload));
             longUrl = _shareBaseUrl() + '?remix=' + enc;
@@ -19898,7 +19912,7 @@ function sceneHopper(data) {
             _sceneTickBase(this, this.score || 0);
         }
 
-        shutdown() { _updateLandscapeNudge(false); }
+        shutdown() { _updateLandscapeNudge(false); this._enemyTimer && this._enemyTimer.remove(false); }
     };
 }
 
