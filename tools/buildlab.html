@@ -22,6 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <style>
 /* -- JVDS Site Nav -- */
 
@@ -564,6 +565,9 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 
     <div class="panel-section" id="propPanel" style="display:none;">
       <div class="panel-title">Selected Block</div>
+      <div class="prop-row">
+        <input type="text" id="propBlockName" class="prop-input" placeholder="Block name" maxlength="32" oninput="updateBlockName(this.value)" style="font-size:.75rem;padding:5px 8px;">
+      </div>
       <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;">
         <button class="gizmo-btn active" data-mode="translate" onclick="setGizmoMode('translate')" style="flex:1;padding:6px 8px;font-size:.75rem;background:var(--accent-dk);border:1px solid var(--accent);border-radius:4px;cursor:pointer;transition:0.2s;" title="G - Move">?? Move</button>
         <button class="gizmo-btn" data-mode="rotate" onclick="setGizmoMode('rotate')" style="flex:1;padding:6px 8px;font-size:.75rem;background:var(--panel3);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:0.2s;" title="R - Rotate">?? Rotate</button>
@@ -1016,6 +1020,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 
 <!-- Hidden file inputs for import -->
 <input type="file" id="importOBJInput" accept=".obj" style="display:none" onchange="handleImportOBJ(this)">
+<input type="file" id="importGLTFInput" accept=".glb,.gltf" style="display:none" onchange="handleImportGLTF(this)">
 <input type="file" id="importRBLXInput" accept=".rbxm,.xml" style="display:none" onchange="handleImportRBLX(this)">
 
 <!-- MODAL: Name -->
@@ -1333,6 +1338,10 @@ function selectBlock(mesh) {
 
   const pp = document.getElementById('propPanel');
   pp.style.display = 'block';
+
+  // Populate block name
+  const nameInput = document.getElementById('propBlockName');
+  if (nameInput) nameInput.value = mesh.userData.blockName || '';
 
   if (mesh.userData.isImported) {
     // Imported OBJ, disable all sliders, show info label
@@ -2495,7 +2504,7 @@ function exportRBXM() {
           <bool name="Anchored">true</bool><bool name="CastShadow">true</bool>
           <float name="Reflectance">${(d.m || 0).toFixed(2)}</float><float name="Transparency">${(1 - (d.o !== undefined ? d.o : 1)).toFixed(2)}</float>
           <token name="Shape">${shapeToken}</token>
-          <string name="Material">SmoothPlastic</string>
+          <string name="Material">${d.robloxMaterial || 'SmoothPlastic'}</string>
         </Properties>
       </Item>`);
     });
@@ -2536,7 +2545,7 @@ function exportRBXM() {
     parts += `
     <Item class="Part" referent="RBX${i}">
       <Properties>
-        <string name="Name">${buildName.replace(/[<>&"]/g,'')} Part ${i+1}</string>
+        <string name="Name">${d.blockName || (buildName + ' Part ' + (i+1))}</string>
         <CoordinateFrame name="CFrame">
           <X>${px}</X><Y>${py}</Y><Z>${pz}</Z>
           <R00>${rr00.toFixed(6)}</R00><R01>${rr01.toFixed(6)}</R01><R02>${rr02.toFixed(6)}</R02>
@@ -2549,7 +2558,7 @@ function exportRBXM() {
         <bool name="Anchored">true</bool><bool name="CastShadow">true</bool>
         <float name="Reflectance">${(d.m || 0).toFixed(2)}</float><float name="Transparency">${(1 - (d.o !== undefined ? d.o : 1)).toFixed(2)}</float>
         <token name="Shape">${shapeToken}</token>
-        <string name="Material">SmoothPlastic</string>
+        <string name="Material">${d.robloxMaterial || 'SmoothPlastic'}</string>
       </Properties>
     </Item>`;
   });
@@ -2782,6 +2791,89 @@ function handleImportOBJ(input) {
 }
 
 // -------------------------------------------------------
+// IMPORT GLTF/GLB
+// -------------------------------------------------------
+function triggerImportGLTF() {
+  document.getElementById('importGLTFInput').value = '';
+  document.getElementById('importGLTFInput').click();
+}
+
+function handleImportGLTF(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  if (!THREE.GLTFLoader) {
+    toast('GLTFLoader not loaded - check connection');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const loader = new THREE.GLTFLoader();
+    loader.parse(e.target.result, '', function(gltf) {
+      clearAll(true);
+      let importedCount = 0;
+
+      gltf.scene.traverse(function(child) {
+        if (child.isMesh) {
+          child.material = new THREE.MeshStandardMaterial({
+            color: child.material.color || new THREE.Color(currentColour),
+            roughness: child.material.roughness !== undefined ? child.material.roughness : 0.55,
+            metalness: child.material.metalness || 0,
+            transparent: child.material.transparent || false,
+            opacity: child.material.opacity !== undefined ? child.material.opacity : 1,
+          });
+          child.castShadow = true;
+          child.receiveShadow = true;
+
+          // Calculate bounding box for sizing
+          const box = new THREE.Box3().setFromObject(child);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+
+          child.userData = {
+            isBlock: true,
+            isImported: true,
+            shape: 'gltf',
+            colour: '#' + child.material.color.getHexString(),
+            w: size.x || 1,
+            h: size.y || 1,
+            d: size.z || 1,
+            rot: 0,
+            rotX: 0,
+            rotZ: 0,
+            blockName: child.name || '',
+            blockId: 'b_' + Math.random().toString(36).slice(2,9)
+          };
+
+          // Position relative to origin
+          child.position.copy(center);
+          scene.add(child);
+          blocks.push(child);
+          importedCount++;
+        }
+      });
+
+      if (importedCount === 0) {
+        toast('No meshes found in GLTF file');
+        return;
+      }
+
+      buildName = file.name.replace(/\.(glb|gltf)$/i, '').replace(/_/g, ' ');
+      const nameInput = document.getElementById('buildNameInput');
+      if (nameInput) nameInput.value = buildName;
+
+      updateStats();
+      toast('Imported ' + importedCount + ' mesh' + (importedCount > 1 ? 'es' : '') + ' from ' + file.name);
+    }, function(error) {
+      console.error('GLTF parse error:', error);
+      toast('Failed to parse GLTF file');
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// -------------------------------------------------------
 // IMPORT RBLX
 // -------------------------------------------------------
 function triggerImportRBLX() {
@@ -2951,6 +3043,11 @@ function resetLighting() {
 // -------------------------------------------------------
 // MATERIAL SYSTEM
 // -------------------------------------------------------
+function updateBlockName(val) {
+  if (!selectedBlock) return;
+  selectedBlock.userData.blockName = val;
+}
+
 function updateMaterial(prop, val) {
   if (!selectedBlock || !selectedBlock.material) return;
   pushHistory('material');
@@ -2975,12 +3072,12 @@ function updateMaterial(prop, val) {
 }
 
 const PRESETS = {
-  metal:   { metalness: 1,   roughness: 0.2, opacity: 1 },
-  glass:   { metalness: 0,   roughness: 0,   opacity: 0.3 },
-  wood:    { metalness: 0,   roughness: 0.8, opacity: 1 },
-  plastic: { metalness: 0,   roughness: 0.4, opacity: 1 },
-  rubber:  { metalness: 0,   roughness: 1,   opacity: 1 },
-  stone:   { metalness: 0,   roughness: 0.9, opacity: 1 },
+  metal:   { metalness: 1,   roughness: 0.2, opacity: 1, robloxMat: 'Metal' },
+  glass:   { metalness: 0,   roughness: 0,   opacity: 0.3, robloxMat: 'Glass' },
+  wood:    { metalness: 0,   roughness: 0.8, opacity: 1, robloxMat: 'Wood' },
+  plastic: { metalness: 0,   roughness: 0.4, opacity: 1, robloxMat: 'Plastic' },
+  rubber:  { metalness: 0,   roughness: 1,   opacity: 1, robloxMat: 'Rubber' },
+  stone:   { metalness: 0,   roughness: 0.9, opacity: 1, robloxMat: 'Rock' },
 };
 
 function applyPreset(name) {
@@ -2993,6 +3090,7 @@ function applyPreset(name) {
   selectedBlock.material.transparent = p.opacity < 1;
   selectedBlock.material.opacity = p.opacity;
   selectedBlock.userData.opacity = p.opacity;
+  selectedBlock.userData.robloxMaterial = p.robloxMat;
   selectedBlock.material.needsUpdate = true;
   // Sync sliders
   document.getElementById('propMetallic').value = p.metalness;
@@ -3027,7 +3125,10 @@ function captureState() {
       colour: b.userData.colour, shape: b.userData.shape, rot: b.userData.rot||0,
       rotX: b.userData.rotX||0, rotZ: b.userData.rotZ||0,
       metalness: b.material ? (b.material.metalness||0) : 0.1,
-      roughness: b.material ? (b.material.roughness ?? 0.55) : 0.55
+      roughness: b.material ? (b.material.roughness ?? 0.55) : 0.55,
+      opacity: b.userData.opacity !== undefined ? b.userData.opacity : 1,
+      blockName: b.userData.blockName || '',
+      robloxMat: b.userData.robloxMaterial || ''
     };
   });
 }
@@ -3049,19 +3150,47 @@ function pushHistory(key) {
 
 function restoreState(records) {
   deselectBlock();
-  [...blocks].forEach(b => {
+
+  // Separate imported vs native records
+  const importedRecords = records.filter(r => r.imported);
+  const nativeRecords = records.filter(r => !r.imported);
+
+  // Remove native blocks that are no longer needed
+  const nativeBlocks = blocks.filter(b => !b.userData.isImported);
+  while (blocks.length > importedRecords.length + nativeRecords.length) {
+    const b = blocks.find(bl => !bl.userData.isImported);
+    if (!b) break;
     scene.remove(b);
-    // Keep imported meshes alive  history snapshots reference them
+    b.geometry.dispose();
+    b.material.dispose();
+    blocks = blocks.filter(bl => bl !== b);
+  }
+
+  // Rebuild native blocks (lightweight: reuse geometry types, update props)
+  // Remove all native blocks first
+  nativeBlocks.forEach(b => {
+    scene.remove(b);
     if (!b.userData.isImported) { b.geometry.dispose(); b.material.dispose(); }
   });
-  blocks = [];
-  records.forEach(r => {
-    if (r.imported) { scene.add(r.mesh); blocks.push(r.mesh); }
-    else {
-      const m = addBlock(r.x, r.y, r.z, r.w, r.h, r.d, r.colour, r.shape, r.rot, r.rotX, r.rotZ);
-      if (m.material) { m.material.metalness = r.metalness; m.material.roughness = r.roughness; }
+  blocks = blocks.filter(b => b.userData.isImported);
+
+  // Add back from records
+  nativeRecords.forEach(r => {
+    const m = addBlock(r.x, r.y, r.z, r.w, r.h, r.d, r.colour, r.shape, r.rot, r.rotX, r.rotZ);
+    if (m.material) {
+      m.material.metalness = r.metalness !== undefined ? r.metalness : 0.1;
+      m.material.roughness = r.roughness !== undefined ? r.roughness : 0.55;
     }
+    if (r.opacity !== undefined && r.opacity < 1) {
+      m.material.transparent = true;
+      m.material.opacity = r.opacity;
+      m.material.needsUpdate = true;
+      m.userData.opacity = r.opacity;
+    }
+    if (r.blockName) m.userData.blockName = r.blockName;
+    if (r.robloxMat) m.userData.robloxMaterial = r.robloxMat;
   });
+
   updateStats();
   requestRender();
 }
