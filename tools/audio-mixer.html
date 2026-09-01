@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Mixer | JVDesignStudio</title>
+<meta name="description" content="Mix sounds from Pixel Studio, Sound Studio, SFX Generator and Music Maker into one track. Volume, pan, reverb, export WAV.">
+<link rel="icon" href="../logo.png" type="image/png">
+<script src="../analytics-loader.js"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Audio Mixer","applicationCategory":"MultimediaApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/audio-mixer.html","description":"Mix sounds from multiple JVDesignStudio audio tools into one track with volume, pan, reverb and WAV export.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style-shared.css">
+<style>
+:root{--bg:#0a0b10;--panel:#13141a;--border:rgba(255,255,255,.08);--text:#e8eaf2;--muted:rgba(232,234,240,.5);--accent:#7c3aed;--accent-lt:#a78bfa;--green:#22c55e;--rose:#ef4444;--teal:#06d6a0;--gold:#f5c842}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+a{text-decoration:none;color:inherit}
+.header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.header h1{font-size:1.1rem;font-weight:700;color:white;flex:1}
+.wrap{max-width:1000px;margin:0 auto;padding:24px;width:100%;display:flex;flex-direction:column;gap:16px}
+.track{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.track-name{font-weight:700;min-width:120px}
+.track-controls{display:flex;align-items:center;gap:12px;flex:1;flex-wrap:wrap}
+.track-controls label{font-size:.78rem;color:var(--muted);min-width:40px}
+.track-controls input[type=range]{flex:1;min-width:100px;accent-color:var(--accent)}
+.track-controls input[type=number]{width:50px;background:var(--panel);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:4px;font-size:.78rem;text-align:center}
+.btn{padding:10px 18px;border-radius:8px;border:none;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{filter:brightness(1.15)}
+.btn-secondary{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:var(--rose);color:white}
+.add-track{width:100%;padding:20px;border:2px dashed var(--border);border-radius:12px;text-align:center;color:var(--muted);cursor:pointer;transition:all .15s}
+.add-track:hover{border-color:var(--accent);color:var(--text)}
+.waveform{height:60px;background:rgba(255,255,255,.03);border-radius:8px;margin-top:8px;position:relative;overflow:hidden}
+.waveform canvas{width:100%;height:100%}
+.meter{display:flex;gap:2px;align-items:flex-end;height:20px}
+.meter-bar{width:3px;background:var(--green);border-radius:2px;transition:height .1s}
+.master-section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.master-label{font-weight:700;color:var(--gold)}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.78rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:900}
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/index.html"><img src="/logo.png" alt="" height="28" style="border-radius:6px"></a>
+  <h1>Audio Mixer</h1>
+  <button class="btn btn-secondary" onclick="addTrack()">+ Add Track</button>
+  <button class="btn btn-primary" onclick="playAll()">▶ Play</button>
+  <button class="btn btn-secondary" onclick="stopAll()">⏹ Stop</button>
+  <button class="btn btn-primary" onclick="exportWAV()">📥 Export WAV</button>
+</div>
+<div class="wrap">
+  <div id="tracks"></div>
+  <div class="add-track" onclick="addTrack()">+ Add a new audio track</div>
+  <div class="master-section">
+    <span class="master-label">Master</span>
+    <label style="font-size:.78rem;color:var(--muted)">Vol</label>
+    <input type="range" min="0" max="1" step="0.01" value="1" id="masterVol" oninput="setMasterVol(+this.value)" style="flex:1">
+    <div class="meter" id="masterMeter"></div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script src="../audio-engine.js"></script>
+<script>
+let tracks = [];
+let trackId = 0;
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function addTrack(name) {
+  const id = trackId++;
+  tracks.push({
+    id,
+    name: name || 'Track ' + (id + 1),
+    type: 'sine',
+    note: 'C4',
+    octave: 4,
+    duration: 0.2,
+    volume: 0.5,
+    pan: 0,
+    reverb: 0,
+    loop: false,
+    pattern: null,
+    color: ['#7c3aed','#22c55e','#f59e0b','#ef4444','#06d6a0','#a78bfa'][id % 6]
+  });
+  renderTracks();
+}
+
+function removeTrack(id) {
+  tracks = tracks.filter(t => t.id !== id);
+  renderTracks();
+}
+
+function updateTrack(id, key, value) {
+  const t = tracks.find(t => t.id === id);
+  if (t) t[key] = value;
+}
+
+function renderTracks() {
+  const el = document.getElementById('tracks');
+  el.innerHTML = tracks.map(t => `
+    <div class="track" style="border-left:3px solid ${t.color}">
+      <div class="track-name" style="color:${t.color}">${t.name}</div>
+      <div class="track-controls">
+        <label>Type</label>
+        <select onchange="updateTrack(${t.id},'type',this.value)" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:4px;font-size:.78rem">
+          <option value="sine" ${t.type==='sine'?'selected':''}>Sine</option>
+          <option value="square" ${t.type==='square'?'selected':''}>Square</option>
+          <option value="sawtooth" ${t.type==='sawtooth'?'selected':''}>Saw</option>
+          <option value="triangle" ${t.type==='triangle'?'selected':''}>Triangle</option>
+        </select>
+        <label>Note</label>
+        <select onchange="updateTrack(${t.id},'note',this.value)" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:4px;border-radius:4px;font-size:.78rem">
+          ${NOTE_NAMES.map(n => `<option value="${n}" ${t.note===n?'selected':''}>${n}</option>`).join('')}
+        </select>
+        <label>Oct</label>
+        <input type="number" min="1" max="8" value="${t.octave}" onchange="updateTrack(${t.id},'octave',+this.value)" style="width:40px">
+        <label>Vol</label>
+        <input type="range" min="0" max="1" step="0.01" value="${t.volume}" oninput="updateTrack(${t.id},'volume',+this.value)">
+        <label>Pan</label>
+        <input type="range" min="-1" max="1" step="0.01" value="${t.pan}" oninput="updateTrack(${t.id},'pan',+this.value)">
+        <button class="btn btn-secondary" style="padding:4px 8px;font-size:.7rem" onclick="previewTrack(${t.id})">▶</button>
+        <button class="btn btn-danger" style="padding:4px 8px;font-size:.7rem" onclick="removeTrack(${t.id})">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function previewTrack(id) {
+  const t = tracks.find(t => t.id === id);
+  if (!t) return;
+  const audio = JVDSAudio;
+  const ctx = audio.getCtx();
+  const now = ctx.currentTime;
+  const freq = JVDSAudioEngine.noteFreq(t.note, t.octave);
+  audio.osc(t.type, freq, freq, now, now + t.duration, t.volume);
+  showToast('Preview: ' + t.name);
+}
+
+function playAll() {
+  const audio = JVDSAudio;
+  const ctx = audio.getCtx();
+  const now = ctx.currentTime;
+  tracks.forEach(t => {
+    const freq = JVDSAudioEngine.noteFreq(t.note, t.octave);
+    audio.osc(t.type, freq, freq, now, now + t.duration, t.volume);
+  });
+  showToast('Playing ' + tracks.length + ' tracks');
+}
+
+function stopAll() {
+  try { JVDSAudio.getCtx().close(); JVDSAudio.ctx = null; } catch(e) {}
+  showToast('Stopped');
+}
+
+function setMasterVol(v) {
+  JVDSAudio.setMasterVolume(v);
+}
+
+function exportWAV() {
+  if (tracks.length === 0) { showToast('Add some tracks first'); return; }
+  const ctx = new OfflineAudioContext(1, 44100 * 2, 44100);
+  tracks.forEach(t => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = t.type;
+    const freq = JVDSAudioEngine.noteFreq(t.note, t.octave);
+    osc.frequency.value = freq;
+    gain.gain.value = t.volume;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(0);
+    osc.stop(t.duration);
+  });
+  ctx.startRendering().then(buffer => {
+    const samples = buffer.getChannelData(0);
+    const blob = JVDSAudioEngine.encodeWAV(samples, 44100);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'mix-' + Date.now() + '.wav';
+    a.click();
+    showToast('WAV exported!');
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = 1;
+  clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2000);
+}
+
+// Start with 2 demo tracks
+addTrack('Melody');
+addTrack('Bass');
+</script>
+<script src="../player-profile.js"></script>
+<script src="../tool-xp.js"></script>
+<script src="../tool-analytics.js"></script>
+</body>
+</html>

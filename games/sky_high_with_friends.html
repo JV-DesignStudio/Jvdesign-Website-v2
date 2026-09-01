@@ -199,16 +199,16 @@
   }
   /* ID specificity would beat .overlay.hidden — keep hide working */
   #menu.overlay.hidden { display: none; }
+  #menu.overlay { display: flex; flex-direction: column; justify-content: space-between; padding: calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom)); gap: 12px; }
+  #menu.overlay.hidden { display: none !important; }
   .menu-top {
-    position: absolute;
-    top: calc(10px + env(safe-area-inset-top));
-    left: 12px;
-    right: 12px;
+    position: static;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     pointer-events: none;
     z-index: 3;
+    flex-shrink: 0;
   }
   .mchips { display: flex; flex-direction: row; gap: 6px; align-items: center; }
   .mchip {
@@ -242,21 +242,23 @@
   .menu-topright .panel-gear { position: static; }
 
   .menu-title-wrap {
-    position: absolute;
-    top: calc(74px + env(safe-area-inset-top));
-    left: 12px;
-    right: 12px;
+    position: static;
     text-align: center;
     pointer-events: none;
     z-index: 2;
+    margin: 6px 0 4px;
+    text-wrap: balance;
   }
   .menu-title-wrap .game-title {
-    font-size: clamp(26px, 8.5vw, 40px);
+    font-size: clamp(28px, 8.5vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.02;
     background: linear-gradient(90deg, var(--accent), var(--accent-2));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    text-shadow: 0 5px 16px rgba(10,6,23,0.65);
+    text-shadow: 0 4px 14px rgba(10,6,23,0.55);
   }
   .title-under {
     display: flex;
@@ -266,11 +268,19 @@
     margin-top: 8px;
   }
 
+  .menu-corner-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    pointer-events: none;
+    z-index: 3;
+    margin: 4px 0;
+  }
+  .menu-corner-grid .corner-btn { pointer-events: auto; }
   .corner-btn {
-    position: absolute;
-    width: 60px;
-    height: 60px;
-    border-radius: 18px;
+    width: 100%;
+    height: 64px;
+    border-radius: 16px;
     background: var(--ui-bg);
     border: 1px solid var(--ui-stroke);
     color: var(--ui-text);
@@ -279,7 +289,7 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
-    font-size: 22px;
+    font-size: 20px;
     cursor: pointer;
     pointer-events: auto;
     z-index: 3;
@@ -288,22 +298,25 @@
     touch-action: manipulation;
   }
   .corner-btn span {
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 800;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
-    opacity: 0.7;
+    opacity: 0.65;
   }
-  .corner-btn:hover { background: rgba(30,22,54,0.85); }
-  .corner-btn:active { transform: scale(0.9); }
-  .corner-btn.l1 { left: calc(10px + env(safe-area-inset-left)); top: 41%; }
-  .corner-btn.l2 { left: calc(10px + env(safe-area-inset-left)); top: calc(41% + 74px); }
-  .corner-btn.r1 { right: calc(10px + env(safe-area-inset-right)); top: 41%; }
-  .corner-btn.r2 { right: calc(10px + env(safe-area-inset-right)); top: calc(41% + 74px); }
+  @media (hover:hover) { .corner-btn:hover { background: rgba(30,22,54,0.85); } }
+  .corner-btn:active { transform: scale(0.96); }
+  @media (min-width: 768px) {
+    .menu-corner-grid { display: contents; }
+    .corner-btn { position: absolute; width: 60px; height: 60px; border-radius: 18px; font-size: 22px; }
+    .corner-btn.l1 { left: calc(10px + env(safe-area-inset-left)); top: 41%; }
+    .corner-btn.l2 { left: calc(10px + env(safe-area-inset-left)); top: calc(41% + 74px); }
+    .corner-btn.r1 { right: calc(10px + env(safe-area-inset-right)); top: 41%; }
+    .corner-btn.r2 { right: calc(10px + env(safe-area-inset-right)); top: calc(41% + 74px); }
+  }
 
   .menu-bottom {
-    position: absolute;
-    bottom: calc(12px + env(safe-area-inset-bottom));
+    position: static;
     left: 16px;
     right: 16px;
     display: flex;
@@ -1058,6 +1071,11 @@
 
 /* ══════════════════════════════════════════════════════════ */
 
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
 /* ── MOBILE PATCH ── */
 @media(max-width:480px){
   .hud{font-size:.72rem;padding:8px 10px;}
@@ -1183,10 +1201,12 @@
     </div>
   </div>
 
-  <button class="corner-btn l1 menu-anim" id="shop-btn" aria-label="Open shop" style="animation-delay:.3s">🛍️<span>Shop</span></button>
-  <button class="corner-btn l2 menu-anim" id="missions-btn" aria-label="View daily missions" style="animation-delay:.34s">📋<span>Missions</span></button>
-  <button class="corner-btn r1 menu-anim" id="weekly-btn" aria-label="Weekly challenge" style="animation-delay:.3s">🗓️<span>Weekly</span></button>
-  <button class="corner-btn r2 menu-anim" id="ach-btn" aria-label="View achievements" style="animation-delay:.34s">🏆<span>Awards</span></button>
+  <div class="menu-corner-grid">
+    <button class="corner-btn l1 menu-anim" id="shop-btn" aria-label="Open shop" style="animation-delay:.3s">🛍️<span>Shop</span></button>
+    <button class="corner-btn r1 menu-anim" id="weekly-btn" aria-label="Weekly challenge" style="animation-delay:.3s">🗓️<span>Weekly</span></button>
+    <button class="corner-btn l2 menu-anim" id="missions-btn" aria-label="View daily missions" style="animation-delay:.34s">📋<span>Missions</span></button>
+    <button class="corner-btn r2 menu-anim" id="ach-btn" aria-label="View achievements" style="animation-delay:.34s">🏆<span>Awards</span></button>
+  </div>
 
   <div class="menu-bottom">
     <div class="char-label menu-anim" style="animation-delay:.14s">Your jumper</div>
@@ -1391,7 +1411,7 @@
    Version lives in /version.json (single source of truth) and is stamped
    here by release.mjs — `node release.mjs --notes "..."` does a full release.
    ============================================================================ */
-const GAME_VERSION = { v: '2.2', code: 8, date: '2026-09-01', codename: '' };
+const GAME_VERSION = { v: '2.2', code: 9, date: '2026-09-01', codename: '' };
 const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
 
 const canvas = document.getElementById('game');
