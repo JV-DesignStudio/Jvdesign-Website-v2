@@ -1171,6 +1171,9 @@ window.JVDS.announce = function (msg) {
     </div>
 
     <!-- Game Canvas -->
+    <div class="danger-pulse left" id="dangerLeft"></div>
+    <div class="danger-pulse right" id="dangerRight"></div>
+    <div class="combo-bar" id="comboBar"><div class="combo-bar-fill" id="comboBarFill"></div></div>
     <div id="game-area">
         <div class="game-starfield" id="game-starfield"></div>
         <div id="hud-controls">
@@ -1523,7 +1526,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     const puState = {
         shield:     { active:false, timer:null },
         speed:      { active:false, timer:null },
-        magnet:     { active:false, timer:null, radius:160 },
+        magnet:     { active:false, timer:null, radius:280 },
         multiplier: { active:false, timer:null, factor:3 },
         slowMotion: { active:false, timer:null },
     };
@@ -2148,14 +2151,32 @@ document.addEventListener('DOMContentLoaded',()=>{
     /* ══════════════════════════════════════
        OBJECT SPAWNING
     ══════════════════════════════════════ */
+    // Spawn director: guarantees fair pacing
+    let spawnDirector = { collectibles: 0, obstacles: 0, lastType: null };
     function weightedRandom(favorObstacles=false) {
+        // Director: enforce minimum collectibles between obstacles
+        if(favorObstacles && spawnDirector.collectibles < 2) {
+            // Force a collectible
+            const colls = SPAWN_DEFS.filter(d => d.isCollectible);
+            return colls[Math.floor(Math.random() * colls.length)];
+        }
+        if(spawnDirector.obstacles >= 3 && spawnDirector.collectibles < 2) {
+            const colls = SPAWN_DEFS.filter(d => d.isCollectible);
+            return colls[Math.floor(Math.random() * colls.length)];
+        }
+        // Normal weighted selection
         const weight = d => favorObstacles && d.isObstacle ? d.weight * 3 : d.weight;
         const total = SPAWN_DEFS.reduce((s,d) => s + weight(d), 0);
         let r = Math.random() * total;
         for (const def of SPAWN_DEFS) {
             r -= weight(def);
-            if (r < 0) return def;
+            if (r < 0) {
+                if(def.isObstacle) { spawnDirector.obstacles++; spawnDirector.collectibles = 0; }
+                else { spawnDirector.collectibles++; spawnDirector.obstacles = 0; }
+                return def;
+            }
         }
+        spawnDirector.collectibles++;
         return SPAWN_DEFS[0];
     }
 
@@ -2194,6 +2215,58 @@ document.addEventListener('DOMContentLoaded',()=>{
         const oCX = obj.x  + obj.w/2,   oCY = obj.y  + obj.h/2,   oR = obj.w  * 0.38;
         const dx = pCX - oCX, dy = pCY - oCY;
         return (dx*dx + dy*dy) < (pR+oR)*(pR+oR);
+    }
+
+    /* Danger indicator - shows when obstacles are close to player */
+    function updateDangerIndicator() {
+        const left = document.getElementById('dangerLeft');
+        const right = document.getElementById('dangerRight');
+        if (!left || !right) return;
+        let nearLeft = false, nearRight = false;
+        const px = playerX + playerW/2;
+        for (const obj of objects) {
+            if (!obj.def.isObstacle) continue;
+            const oy = obj.y + obj.h/2;
+            if (oy > playerY - 80 && oy < playerY + playerH + 40) {
+                if (obj.x + obj.w/2 < px) nearLeft = true;
+                if (obj.x + obj.w/2 > px) nearRight = true;
+            }
+        }
+        left.classList.toggle('active', nearLeft);
+        right.classList.toggle('active', nearRight);
+    }
+
+    /* Speed lines - visual feedback for scroll speed */
+    let speedLineTimer = 0;
+    function updateSpeedLines(f) {
+        const speedRatio = SCROLL_SPEED / BASE_SCROLL_SPEED;
+        if (speedRatio < 1.5) return; // only show at higher speeds
+        speedLineTimer += f;
+        const interval = Math.max(3, 12 - Math.floor(speedRatio * 2));
+        if (speedLineTimer >= interval) {
+            speedLineTimer = 0;
+            const line = document.createElement('div');
+            line.className = 'speed-line';
+            line.style.left = (Math.random() * gameArea.clientWidth) + 'px';
+            line.style.height = (20 + speedRatio * 15) + 'px';
+            line.style.animationDuration = (0.8 / speedRatio) + 's';
+            gameArea.appendChild(line);
+            setTimeout(() => line.remove(), 1200);
+        }
+    }
+
+    /* Combo decay bar */
+    function updateComboBar() {
+        const bar = document.getElementById('comboBar');
+        const fill = document.getElementById('comboBarFill');
+        if (!bar || !fill) return;
+        if (comboCount >= 3) {
+            bar.classList.add('active');
+            const pct = Math.max(0, (comboTimer / COMBO_WINDOW) * 100);
+            fill.style.width = pct + '%';
+        } else {
+            bar.classList.remove('active');
+        }
     }
 
     /* ══════════════════════════════════════
@@ -2243,7 +2316,7 @@ document.addEventListener('DOMContentLoaded',()=>{
             if (isMagnet && def.isCollectible && !obj.element.classList.contains('collected')) {
                 const dist = Math.hypot(pCX - (obj.x+obj.w/2), pCY - (obj.y+obj.h/2));
                 if (dist < puState.magnet.radius && dist > 1) {
-                    const force = 0.07 * (puState.magnet.radius - dist) * f;
+                    const force = 0.14 * (puState.magnet.radius - dist) * f;
                     const nx = (pCX - (obj.x+obj.w/2)) / dist;
                     const ny = (pCY - (obj.y+obj.h/2)) / dist;
                     obj.x += nx * force;
@@ -2348,8 +2421,17 @@ document.addEventListener('DOMContentLoaded',()=>{
         }
     }
 
+    let dashCooldown = 0;
+    let dashActive = false;
+    let dashTimer = 0;
     function updatePlayerMovement(f) {
         f = f || 1;
+        // Dash cooldown
+        if (dashCooldown > 0) dashCooldown -= f;
+        if (dashActive) {
+            dashTimer -= f;
+            if (dashTimer <= 0) dashActive = false;
+        }
         let dx = 0;
         if (keysPressed['arrowleft'] || keysPressed['a']) dx -= 1;
         if (keysPressed['arrowright'] || keysPressed['d']) dx += 1;
@@ -2366,6 +2448,9 @@ document.addEventListener('DOMContentLoaded',()=>{
         if (gameActive && !gamePaused) {
             updatePlayerMovement(f);
             updateObjects(f);
+            updateDangerIndicator();
+            updateSpeedLines(f);
+            updateComboBar();
         }
         gameLoopId = requestAnimationFrame(gameLoop);
     }
