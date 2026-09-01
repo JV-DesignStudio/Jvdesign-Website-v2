@@ -128,6 +128,11 @@ const bird = { x: 0, y: 0, vy: 0, rot: 0, wing: 0 };
 let pipes = [];
 let clouds = [];
 let particles = [];
+let collectibles = [];
+let powerUps = [];
+let activePowers = {shield:false,slowmo:false};
+let powerTimer = null;
+let combo = 0, comboTimer = 0;
 
 let state = 'idle';        // idle | playing | dead
 let score = 0, best = 0;
@@ -136,13 +141,15 @@ let pipeSpeed = 165;
 let pipeGap = 0;
 let spawnDist = 0;
 let distSinceSpawn = 0;
+const pipeMargin = 46;
 let startedAt = 0;
 let flashT = 0, shakeT = 0, shakeMag = 0;
 
 function reset() {
   birdR = Math.max(14, Math.min(20, W * 0.045));
   bird.x = W * 0.30; bird.y = H * 0.42; bird.vy = 0; bird.rot = 0; bird.wing = 0;
-  pipes = []; particles = [];
+  pipes = []; particles = []; collectibles = []; powerUps = []; combo = 0; comboTimer = 0;
+  activePowers = {shield:false,slowmo:false}; if(powerTimer)clearTimeout(powerTimer);
   score = 0;
   streak = 0;
   pipeSpeed = 165;
@@ -162,13 +169,24 @@ function makeClouds() {
 }
 
 function spawnPipe() {
-  const margin = 46;
+  // margin defined as pipeMargin
   const minTop = margin;
   const maxTop = H - GROUND_H - pipeGap - margin;
   const top = minTop + Math.random() * Math.max(20, maxTop - minTop);
   pipes.push({ x: W + 40, top: top, gap: pipeGap, scored: false });
 }
 
+function activatePower(type) {
+  if (type === "shield") {
+    activePowers.shield = true;
+    if (powerTimer) clearTimeout(powerTimer);
+    powerTimer = setTimeout(() => { activePowers.shield = false; }, 10000);
+  } else if (type === "slowmo") {
+    activePowers.slowmo = true;
+    if (powerTimer) clearTimeout(powerTimer);
+    powerTimer = setTimeout(() => { activePowers.slowmo = false; }, 8000);
+  }
+}
 function flap() {
   if (state !== 'playing') return;
   bird.vy = FLAP_V;
@@ -268,23 +286,78 @@ function update(dt) {
   if (bird.wing > 0) bird.wing = Math.max(0, bird.wing - dt * 5);
 
   // difficulty ramp
-  pipeSpeed = 165 + Math.min(score * 4.5, 130);
+  let baseSpeed = 165 + Math.min(score * 4.5, 130);
+  if (activePowers.slowmo) baseSpeed *= 0.55;
+  pipeSpeed = baseSpeed;
+  pipeGap = Math.max(H * 0.18, H * 0.30 - score * 1.2);
 
   // spawn pipes by distance
   distSinceSpawn += pipeSpeed * dt;
-  if (distSinceSpawn >= spawnDist) { distSinceSpawn = 0; spawnPipe(); }
+  if (distSinceSpawn >= spawnDist) { distSinceSpawn = 0; spawnPipe();
+    if (Math.random() < 0.6 && pipes.length > 0) {
+      const lastP = pipes[pipes.length-1];
+      const gapCenter = lastP.top + lastP.gap/2;
+      const fy = gapCenter + (Math.random()-0.5) * lastP.gap * 0.4;
+      collectibles.push({x: W + 40 + lastP.gap/2, y: fy, type: Math.random()<0.15?"power":"fish", collected:false});
+    }
+    if (score > 10 && Math.random() < 0.1) {
+      const py = 46 + Math.random() * (H - GROUND_H - 92);
+      const ptypes = ["shield","slowmo"];
+      powerUps.push({x: W + 40, y: py, type: ptypes[Math.floor(Math.random()*ptypes.length)]});
+    }
+  }
+
+  for (let i = collectibles.length - 1; i >= 0; i--) {
+    const c = collectibles[i];
+    c.x -= pipeSpeed * dt;
+    if (c.x < -30) { collectibles.splice(i,1); continue; }
+    if (!c.collected) {
+      const dx = bird.x - c.x, dy = bird.y - c.y;
+      if (Math.hypot(dx,dy) < birdR + 12) {
+        c.collected = true;
+        if (c.type === "power") {
+          activatePower("shield");
+          audioEffects.playPowerup();
+          ParticleSystem.burst(c.x, c.y, "star", 6);
+        } else {
+          const mult = activePowers.slowmo ? 2 : 1;
+          score += 3 * mult;
+          audioEffects.playTap(1100);
+          ParticleSystem.burst(c.x, c.y, "coin", 4);
+        }
+        const hud=document.getElementById("scoreHud"); hud.textContent = score;
+      }
+    }
+  }
+  for (let i = powerUps.length - 1; i >= 0; i--) {
+    const p = powerUps[i];
+    p.x -= pipeSpeed * dt;
+    if (p.x < -30) { powerUps.splice(i,1); continue; }
+    const dx = bird.x - p.x, dy = bird.y - p.y;
+    if (Math.hypot(dx,dy) < birdR + 16) {
+      activatePower(p.type);
+      audioEffects.playPowerup();
+      ParticleSystem.burst(p.x, p.y, p.type==="shield"?"shield":"clock", 6);
+      powerUps.splice(i,1);
+    }
+  }
+  if (comboTimer > 0) { comboTimer -= dt; if (comboTimer <= 0) combo = 0; }
 
   // move pipes + scoring + collision
   for (let i = pipes.length - 1; i >= 0; i--) {
     const p = pipes[i];
     p.x -= pipeSpeed * dt;
     if (!p.scored && p.x + PIPE_W < bird.x - birdR) {
-      p.scored = true; score++;
+      p.scored = true;
       const gapCenter = p.top + p.gap / 2;
       const perfect = Math.abs(bird.y - gapCenter) < p.gap * 0.22;
-      if (perfect) { streak++; if (streak >= 3) score++; } else { streak = 0; }
+      if (perfect) { combo++; comboTimer = 2.5; streak++; } else { combo = 0; streak = 0; }
+      const mult = combo >= 10 ? 3 : combo >= 5 ? 2 : combo >= 3 ? 1.5 : 1;
+      const pts = Math.round(1 * mult);
+      score += pts;
       const streakPill = document.getElementById('streakPill');
-      if (streak >= 2) { streakPill.style.display = ''; document.getElementById('streakHud').textContent = streak; }
+      if (combo >= 3) { streakPill.style.display = ''; document.getElementById('streakHud').textContent = "x" + combo + " (" + mult + "x)"; }
+      else if (streak >= 2) { streakPill.style.display = ''; document.getElementById('streakHud').textContent = streak; }
       else streakPill.style.display = 'none';
       const hud=document.getElementById('scoreHud'); hud.textContent = score; hud.animate([{transform:'scale(1.14)'},{transform:'scale(1)'}],{duration:140,easing:'ease-out'});
       audioEffects.playSuccess(880 + Math.min(score, 20) * 20);
@@ -341,6 +414,26 @@ function draw() {
   // bubble clusters
   clouds.forEach(c => drawCloud(c.x, c.y, c.s));
 
+  // collectibles
+  collectibles.forEach(c => {
+    if (c.collected) return;
+    ctx.save();
+    ctx.font = (c.type==="power"?"20":"16") + "px serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    if (c.type === "power") { ctx.shadowColor = "#ffd700"; ctx.shadowBlur = 12; }
+    ctx.fillText(c.type==="power"?"🌟":"🐟", c.x, c.y);
+    ctx.restore();
+  });
+  // power-ups
+  powerUps.forEach(p => {
+    ctx.save();
+    ctx.font = "18px serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.shadowColor = p.type==="shield"?"#64c8ff":"#c864ff";
+    ctx.shadowBlur = 10;
+    ctx.fillText(p.type==="shield"?"🛡️":"⏳", p.x, p.y);
+    ctx.restore();
+  });
   // pipes
   pipes.forEach(p => drawPipe(p));
 
