@@ -9,6 +9,7 @@
 
 
 
+
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
     <meta name="robots" content="index, follow">
@@ -3061,11 +3062,12 @@ function applyTinSkin(){
 }
 
 // ══ SECTION BUTTONS ══
-document.getElementById('bakeryBtn').addEventListener('click',()=>{renderHelpers(document.getElementById('bakeryBody'));document.getElementById('bakeryModal').classList.add('show');});
+function btnTap(id,fn){var el=document.getElementById(id);if(!el)return;el.addEventListener('pointerdown',fn);el.addEventListener('click',fn);}
+btnTap('bakeryBtn',()=>{renderHelpers(document.getElementById('bakeryBody'));document.getElementById('bakeryModal').classList.add('show');});
 function openQuests(){renderQuests(document.getElementById('questsBody'));document.getElementById('questsModal').classList.add('show');}
-document.getElementById('questsBtn').addEventListener('click',openQuests);
-document.getElementById('questChip').addEventListener('click',openQuests);
-document.getElementById('achBtn').addEventListener('click',()=>{
+btnTap('questsBtn',openQuests);
+btnTap('questChip',openQuests);
+btnTap('achBtn',()=>{
   const achList=document.getElementById('achList'); achList.innerHTML='';
   document.getElementById('achTitle').innerHTML='Little <em>Goals</em> · '+vault.achievements.filter(id=>id.startsWith('bt_')).length+'/'+ACHIEVEMENTS.length;
   ACHIEVEMENTS.forEach(a=>{
@@ -3077,7 +3079,7 @@ document.getElementById('achBtn').addEventListener('click',()=>{
   renderSecretList();
   document.getElementById('achModal').classList.add('show');
 });
-document.getElementById('moreBtn').addEventListener('click',()=>{renderStats(document.getElementById('moreStats'));renderBackups();initVolumeSliders();document.getElementById('appVersion').textContent=`Biscuit Tin v${APP.version} · build ${APP.build} · “${APP.codename}”`;document.getElementById('moreModal').classList.add('show');});
+btnTap('moreBtn',()=>{renderStats(document.getElementById('moreStats'));renderBackups();initVolumeSliders();document.getElementById('appVersion').textContent=`Biscuit Tin v${APP.version} · build ${APP.build} · “${APP.codename}”`;document.getElementById('moreModal').classList.add('show');});
 
 // ══ DEV REPORT: one-tap balance snapshot for playtest feedback ══
 function buildDevReport(){
@@ -3126,7 +3128,7 @@ function copyDevReport(){
     navigator.clipboard.writeText(txt).then(()=>showToast('📋 Dev report copied — paste it in the feedback chat!')).catch(fallback);
   } else fallback();
 }
-document.getElementById('devReportBtn').addEventListener('click',copyDevReport);
+btnTap('devReportBtn',copyDevReport);
 
 // ══ COLLECTIONS ══
 function renderCollections(){
@@ -3179,13 +3181,13 @@ function renderCollections(){
     document.getElementById('collectionsBody').appendChild(wl);
   }
 }
-document.getElementById('collectionsBtn').addEventListener('click',()=>{
+btnTap('collectionsBtn',()=>{
   renderCollections();
   document.getElementById('collectionsModal').classList.add('show');
 });
 
 // ══ LIFETIME STATS SCREEN ══
-document.getElementById('statsBtn').addEventListener('click',()=>{
+btnTap('statsBtn',()=>{
   renderLifetimeStats();
   document.getElementById('statsModal').classList.add('show');
 });
@@ -3308,8 +3310,8 @@ function importSave(){
   try{localStorage.setItem(VAULT_KEY,JSON.stringify(obj));}catch(e){showToast('❌ Could not write the save');return;}
   location.reload();
 }
-document.getElementById('exportSaveBtn').addEventListener('click',exportSave);
-document.getElementById('importSaveBtn').addEventListener('click',importSave);
+btnTap('exportSaveBtn',exportSave);
+btnTap('importSaveBtn',importSave);
 
 // ══ CHARACTER SPRITES ══
 // If real art exists at chars/{lumo,ember,pip,echo}.png it replaces the
@@ -3520,8 +3522,8 @@ function renderStyle(){
   });
 }
 function openStyle(){renderStyle();document.getElementById('styleModal').classList.add('show');}
-document.getElementById('styleBtn').addEventListener('click',openStyle);
-document.getElementById('styleNavBtn').addEventListener('click',openStyle);
+btnTap('styleBtn',openStyle);
+btnTap('styleNavBtn',openStyle);
 applyBg();
 
 // ══ SECRET TRIGGERS ══
@@ -3560,7 +3562,7 @@ document.addEventListener('pointerdown',()=>{lastAnyTap=Date.now();},true);
   if(today.getFullYear()>first.getFullYear()&&today.getMonth()===first.getMonth()&&today.getDate()===first.getDate())awardSecret('s_anniversary');
 })();
 
-document.getElementById('skinBtn').addEventListener('click',()=>{
+btnTap('skinBtn',()=>{
   vault.btTinSkin=vault.btTinSkin==='starlit'?'golden':'starlit';
   applyTinSkin(); saveVault();
   showToast(vault.btTinSkin==='starlit'?'🌌 Starlit Tin equipped':'✨ Golden Tin equipped');
@@ -3597,12 +3599,12 @@ function maybeStartTutorial(){
   if(vault.btTutorialDone||bv().lifetime>=50||bv().clicks>=20)return;
   showTut(0);
 }
-document.getElementById('tutNext').addEventListener('click',()=>{
+btnTap('tutNext',()=>{
   document.getElementById('tutorialModal').classList.remove('show');
   if(tutStep<TUT_STEPS.length-1) setTimeout(()=>showTut(tutStep+1),300);
   else {vault.btTutorialDone=true;saveVault();}
 });
-document.getElementById('tutSkip').addEventListener('click',()=>{
+btnTap('tutSkip',()=>{
   document.getElementById('tutorialModal').classList.remove('show');
   vault.btTutorialDone=true;saveVault();
 });
@@ -3747,8 +3749,8 @@ function resolveGamble(bet){
   if(amount>0)grantTreasureBiscuits(amount,window.innerWidth/2,window.innerHeight/2,bet);
   else updateHUD();
 }
-document.getElementById('gambleSafe').addEventListener('click',()=>resolveGamble(false));
-document.getElementById('gambleBet').addEventListener('click',()=>resolveGamble(true));
+btnTap('gambleSafe',()=>resolveGamble(false));
+btnTap('gambleBet',()=>resolveGamble(true));
 // Tapping the dim backdrop counts as taking the safe crumbs.
 document.getElementById('gambleModal').addEventListener('click',e=>{
   if(e.target===e.currentTarget&&gambleCtx)resolveGamble(false);
@@ -3787,7 +3789,7 @@ function renderCabinet(){
   document.getElementById('goldenBatchBtn').onclick=goldenBatch;
   document.getElementById('harvestBtn').onclick=harvestButter;
 }
-document.getElementById('butterChip').addEventListener('click',()=>{renderCabinet();document.getElementById('cabinetModal').classList.add('show');});
+btnTap('butterChip',()=>{renderCabinet();document.getElementById('cabinetModal').classList.add('show');});
 setInterval(()=>{if(modalShown('cabinetModal'))renderCabinet();},1000);
 
 function updateRegularChip(){
@@ -3912,16 +3914,6 @@ setInterval(spawnBgCookie,900);
 for(let i=0;i<8;i++)spawnBgCookie(true);
 setTimeout(maybeRain,10000); setInterval(maybeRain,55000);
 checkDailyBonus(); checkAchievements();
-
-// ══ GLOBAL POINTER FALLBACK ══
-// Some Android WebViews fail to synthesise click from touch.
-// Catch pointerdown on any button/chip/row and fire click.
-document.addEventListener('pointerdown',function(e){
-  var el=e.target.closest('button,.bb-btn,.char-seat,.quest-chip,.helper-row,.upgrade-row,.prestige-badge,.modal-close,[data-close]');
-  if(!el)return;
-  if(el.id==='tinBtn')return;
-  el.click();
-},true);
 
 
 </script>
