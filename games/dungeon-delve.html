@@ -781,11 +781,16 @@ function revealFog(pos) {
 // ══════════════════════════════════════════════════════════════════
 // RENDER MAP
 // ══════════════════════════════════════════════════════════════════
+let lastMapRender = '';
 function renderMap() {
   const wrap = $('map-wrap');
   const tileSize = Math.min(48, (window.innerWidth-40)/MAP_W);
   wrap.style.gridTemplateColumns = `repeat(${MAP_W}, ${tileSize}px)`;
   wrap.style.gridTemplateRows = `repeat(${MAP_H}, ${tileSize}px)`;
+  // Only rebuild if map state changed
+  const mapKey = JSON.stringify({px:playerPos.x,py:playerPos.y,fog:fogMap.flat().join(''),monsters:dungeon.monsters.map(m=>m.x+','+m.y+','+m.hp).join(',')});
+  if (mapKey === lastMapRender) return;
+  lastMapRender = mapKey;
   wrap.innerHTML = '';
   for (let y=0;y<MAP_H;y++) for (let x=0;x<MAP_W;x++) {
     const div = document.createElement('div');
