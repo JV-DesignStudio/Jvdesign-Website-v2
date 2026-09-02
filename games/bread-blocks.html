@@ -6,7 +6,7 @@
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
 <meta name="theme-color" content="#7cb342">
-<script src="../analytics-loader.js"></script>
+<script defer src="../analytics-loader.js"></script>
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/bread-blocks.html">
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -18,8 +18,8 @@
 <meta property="og:image" content="https://jvdesignstudio.co.uk/og/bread-blocks.png">
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/bread-blocks.png">
 <meta name="twitter:card" content="summary_large_image">
-<script src="../game-system.js"></script>
-<script src="../audio-effects.js"></script>
+<script defer src="../game-system.js"></script>
+<script defer src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -96,6 +96,7 @@ canvas { display: block; border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0
     <div class="pills">
       <div class="pill">SCORE <b id="scoreHud">0</b></div>
       <div class="pill">LEVEL <b id="levelHud">1</b></div>
+      <div class="pill">HOLD <canvas id="holdCanvas" width="48" height="36"></canvas></div>
       <div class="pill">NEXT <canvas id="nextCanvas" width="48" height="36"></canvas></div>
     </div>
     <button class="home-btn" onclick="location.href='mobile-games.html'">🏠</button>
@@ -168,12 +169,12 @@ const nctx = nextCanvas.getContext('2d');
 let grid = [];
 let state = 'menu';
 let score = 0, lines = 0, level = 1, best = 0, combo = 0;
-let piece = null, nextPiece = null;
+let piece = null, nextPiece = null, holdPiece = null;
 let dropTime = 0, dropInterval = 800;
 let startTime = 0;
-let clearingRows = [];   // rows mid flash animation; drops pause while set
+let clearingRows = [];
 let flashT = 0;
-let lastTime = performance.now();   // rAF clock (declared early: autoPause's resume writes it)
+let lastTime = performance.now();
 
 function initGrid() {
   grid = [];
@@ -253,6 +254,26 @@ function hardDrop() {
   placePiece();
 }
 
+function holdCurrentPiece() {
+  if (!piece || clearingRows.length) return;
+  if (holdPiece) {
+    // Swap current with held
+    const temp = holdPiece;
+    holdPiece = { shape: piece.shape, color: piece.color };
+    piece = temp;
+    piece.x = Math.floor(W / 2) - 1;
+    piece.y = 0;
+    if (collision(piece.x, piece.y)) { endGame(); return; }
+  } else {
+    // Hold current, get next
+    holdPiece = { shape: piece.shape, color: piece.color };
+    newPiece();
+  }
+  drawNext();
+  drawHold();
+  audioEffects.playTap(500);
+}
+
 function ghostY() {
   let y = piece.y;
   while (!collision(piece.x, y + 1)) y++;
@@ -306,7 +327,7 @@ function checkLines() {
     ParticleSystem.confetti(px, py, 16);
     ScreenShake.shake(container, 9, 300);
   } else {
-    floatText('+' + pts + (combo > 1 ? '  COMBO �-' + combo : ''), full.length >= 2);
+    floatText('+' + pts + (combo > 1 ? '  COMBO �-' + combo : ''), full.length >= 2);
     audioEffects.playSuccess(700 + full.length * 120);
     if (combo > 1) audioEffects.playCombo(combo);
     ParticleSystem.burst(px, py, '✨', 4 + full.length * 3);
@@ -411,6 +432,22 @@ function drawNext() {
       if (s[r][c]) nctx.fillRect(ox + c * cell, oy + r * cell, cell - 1, cell - 1);
 }
 
+function drawHold() {
+  const holdCanvas = document.getElementById('holdCanvas');
+  if (!holdCanvas) return;
+  const hctx = holdCanvas.getContext('2d');
+  hctx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
+  if (!holdPiece) return;
+  const s = holdPiece.shape;
+  const cell = 10;
+  const ox = (holdCanvas.width - s[0].length * cell) / 2;
+  const oy = (holdCanvas.height - s.length * cell) / 2;
+  hctx.fillStyle = holdPiece.color;
+  for (let r = 0; r < s.length; r++)
+    for (let c = 0; c < s[r].length; c++)
+      if (s[r][c]) hctx.fillRect(ox + c * cell, oy + r * cell, cell - 1, cell - 1);
+}
+
 function startGame() {
   document.getElementById('startModal').classList.remove('show');
   document.getElementById('overModal').classList.remove('show');
@@ -503,6 +540,7 @@ window.addEventListener('keydown', (e) => {
     case 'ArrowUp': case 'KeyZ': e.preventDefault(); tryRotate(); break;
     case 'ArrowDown': e.preventDefault(); softDrop(); break;
     case 'Space': e.preventDefault(); hardDrop(); break;
+    case 'KeyC': case 'ShiftLeft': e.preventDefault(); holdCurrentPiece(); break;
   }
 });
 
@@ -518,6 +556,6 @@ best = gameSystem.state.highScore || 0;
 document.getElementById('bestStart').textContent = best;
 document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
 </script>
-<script src="../cookie-consent.js"></script>
+<script defer src="../cookie-consent.js"></script>
 </body>
 </html>
