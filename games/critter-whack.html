@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="../analytics-loader.js"></script>
+<script defer src="../analytics-loader.js"></script>
 <style>
 :root{--beige:#F0EAD6;--tan:#D2B48C;--rose:#BC4749;--rose-dk:#9b3a3c;--teal:#70A3A7;--teal-dk:#4e7d80;--charcoal:#403B33;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -117,7 +117,7 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <!-- Game System Integration -->
-<script src="../game-system.js"></script>
+<script defer src="../game-system.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 </head>
 <body>
@@ -150,7 +150,7 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
   <p>Critters pop from holes, tap them to score! Bombs üí£ cost a life. Survive endless waves of increasing difficulty. Special critters give bonus points!</p>
   <div class="coins-display">üí∞ <span id="coinsStart">0</span> coins</div>
   <div class="start-btns">
-    <button class="btn" id="startBtn">‚-∂ Start Game</button>
+    <button class="btn" id="startBtn">ÔøΩ-ÔøΩ Start Game</button>
     <button class="btn sm teal" id="shopBtn">üî® Hammers</button>
     <button class="btn sm teal" id="achBtn">üèÜ Achievements</button>
   </div>
@@ -346,6 +346,7 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
   function setLives(){livesEl.textContent=lives>0?'‚ù§'.repeat(lives):'üíÄ';document.body.classList.toggle('low-lives',lives===1&&running);}
   function getMulti(){return streak>=10?5:streak>=5?3:streak>=3?2:1;}
   let comboTimerPct=0,comboTimerInterval=null;
+  let feverMode=false,feverTimer=null;
   function updateStreak(){
     clearInterval(comboTimerInterval);
     const bar=document.getElementById('comboTimer');
@@ -363,6 +364,12 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
     document.body.appendChild(el);
     requestAnimationFrame(()=>{el.style.opacity='0';el.style.transform='translate(-50%,-80%) scale(1.3)';});
     setTimeout(()=>el.remove(),600);
+  }
+  function activateFever(){
+    feverMode=true;
+    document.body.style.background='radial-gradient(circle at 50% 0%,#8a2be2,#4a148c 60%,#1a0a2e)';
+    showToast('üî•','FEVER MODE!','x3 points for 10 seconds!');
+    feverTimer=setTimeout(()=>{feverMode=false;document.body.style.background='';},10000);
   }
   function shake(n=8){const x=(Math.random()-.5)*n,y=(Math.random()-.5)*n;board.style.transform=`translate(${x}px,${y}px)`;setTimeout(()=>{board.style.transform='';},50);}
   function addP(x,y,emoji,n=5){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=3+Math.random()*4;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,emoji,life:1});}}
@@ -402,11 +409,13 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
 
     streak++;totalWhacked++;crittersWhackedThisWave++;
     if(streak>bestStreak)bestStreak=streak;
-    const multi=getMulti();
+    // Fever mode: activate at streak 15
+    if(streak===15&&!feverMode){activateFever();}
+    const multi=getMulti()*(feverMode?3:1);
     const total=pts*multi;
     score+=total;coinsEarned+=Math.max(1,Math.floor(total/10));
     scoreEl.textContent=score;scoreEl.classList.remove('score-pop');void scoreEl.offsetWidth;scoreEl.classList.add('score-pop');
-    addF(cx,cy,'+'+total+(multi>1?' x'+multi:''),multi>=3?'#ff6b6b':'#FFD700');
+    addF(cx,cy,'+'+total+(multi>1?' x'+multi:''),feverMode?'#ff00ff':multi>=3?'#ff6b6b':'#FFD700');
     updateStreak();shake(4);
     cell.c.classList.remove('up');cell.c.classList.add('bonk','hit');
     setTimeout(()=>{cell.c.classList.remove('bonk','hit');},160);
@@ -524,18 +533,18 @@ h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,6vw,2.6rem);margin:8px 0
   function togglePause(){
     if(!running)return;
     running=false;clearTimeout(popTimer);clearTimeout(tickTimer);stopAmbient();clearInterval(comboTimerInterval);
-    document.getElementById('pauseBtn').textContent='‚-∂';
+    document.getElementById('pauseBtn').textContent='ÔøΩ-ÔøΩ';
     if(!pauseOverlay){
       pauseOverlay=document.createElement('div');
       pauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)';
-      pauseOverlay.innerHTML='<div style="text-align:center;color:white;font-family:Fredoka,cursive"><div style="font-size:2rem;margin-bottom:12px">‚è∏ PAUSED</div><button onclick="togglePause()" style="font-family:Fredoka,cursive;font-size:1.1rem;padding:10px 28px;border:none;border-radius:12px;background:#4e7d80;color:white;cursor:pointer">‚-∂ RESUME</button></div>';
+      pauseOverlay.innerHTML='<div style="text-align:center;color:white;font-family:Fredoka,cursive"><div style="font-size:2rem;margin-bottom:12px">‚è∏ PAUSED</div><button onclick="togglePause()" style="font-family:Fredoka,cursive;font-size:1.1rem;padding:10px 28px;border:none;border-radius:12px;background:#4e7d80;color:white;cursor:pointer">ÔøΩ-ÔøΩ RESUME</button></div>';
       document.body.appendChild(pauseOverlay);
     }
   }
   function startGame(){
     initAudio();
     score=0;lives=3+(upgrades.extralife||0);wave=1;timeLeft=WAVE_TIME+(upgrades.slowtime||0)*3;running=true;
-    streak=0;bestStreak=0;totalWhacked=0;totalMissed=0;totalSpawned=0;
+    streak=0;bestStreak=0;totalWhacked=0;totalMissed=0;totalSpawned=0;feverMode=false;clearTimeout(feverTimer);document.body.style.background='';
     bombsHitThisWave=0;crittersWhackedThisWave=0;crittersSpawnedThisWave=0;
     coinsEarned=0;sessionAchs=[];particles.forEach(p=>{if(p.el){p.el.remove();pPool.push(p.el);}});floaters.forEach(f=>{if(f.el){f.el.remove();fPool.push(f.el);}});particles=[];floaters=[];
     scoreEl.textContent=0;waveEl.textContent=1;timeEl.textContent=WAVE_TIME;setLives();updateStreak();
@@ -601,6 +610,6 @@ window.addEventListener('beforeunload', () => {
   gameSystem.saveState();
 });
 </script>
-<script src="../cookie-consent.js"></script>
+<script defer src="../cookie-consent.js"></script>
 </body>
 </html>
