@@ -17,9 +17,9 @@
 <meta name="twitter:description" content="A neon rhythm runner. Tap the falling tiles, keep your combo alive, climb the levels.">
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="manifest" href="../manifest.json">
-<script src="../analytics-loader.js"></script>
-<script src="../game-system.js"></script>
-<script src="../audio-effects.js"></script>
+<script defer src="../analytics-loader.js"></script>
+<script defer src="../game-system.js"></script>
+<script defer src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -345,7 +345,7 @@ function renderLives() {
 function updateHud() {
   document.getElementById('levelVal').textContent = S.level;
   document.getElementById('scoreVal').textContent = S.score;
-  document.getElementById('comboVal').textContent = S.combo + (S.combo >= 2 ? 'Ã-' : '');
+  document.getElementById('comboVal').textContent = S.combo + (S.combo >= 2 ? 'ï¿½-' : '');
   document.getElementById('lvlFill').style.width = (S.tilesCleared / S.tilesForLevel * 100) + '%';
 }
 
@@ -465,6 +465,12 @@ function registerHit(tile, perfect) {
 
   if (tile.type === 'gold') { judge('GOLD! +' + pts, '#ffd24a'); ParticleSystem.burst(tileCenterX(tile), fieldTopOffset() + hitY(), 'â­', 8); }
   else judge(perfect ? 'PERFECT +' + pts : 'Good +' + pts, perfect ? '#3cff8f' : '#00e5ff');
+  // Lane glow effect on hit
+  const laneEl = document.querySelectorAll('.hit-pads span')[tile.lane];
+  if (laneEl) {
+    laneEl.classList.add('pulse');
+    setTimeout(() => laneEl.classList.remove('pulse'), 150);
+  }
 
   audioEffects.playTap(500 + Math.min(S.combo, 20) * 40);
   if (perfect) audioEffects.playSuccess(900 + Math.min(S.combo, 15) * 30);
@@ -472,6 +478,10 @@ function registerHit(tile, perfect) {
     audioEffects.playCombo(S.combo / 5);
     ScreenShake.shake(field, 5, 150);
     gameSystem.unlockAchievement('combo10');
+    // Visual burst at combo milestones
+    for (let i = 0; i < 4; i++) {
+      ParticleSystem.burst(tileCenterX(tile) + (Math.random()-0.5)*100, fieldTopOffset() + hitY() + (Math.random()-0.5)*60, 'âœ¨', 4);
+    }
   }
 
   updateHud();
@@ -603,20 +613,35 @@ function mDrum(t, kind) {
 }
 function mScheduleStep(step, t) {
   const s16 = step % 16;
-  // Kick pattern: kick on 1 and 3, open hat on 2 and 4
-  if (s16 % 4 === 0) mDrum(t, 'kick');
-  if (s16 % 4 === 2) mDrum(t, 'kick');
-  if (s16 % 2 === 1) mDrum(t, 'hat');
+  const level = S.level || 1;
+  // Evolving drum pattern based on level
+  if (level < 3) {
+    // Simple: kick on 1 and 3
+    if (s16 % 4 === 0) mDrum(t, 'kick');
+  } else if (level < 6) {
+    // Medium: kick on 1 and 3, hat on off-beats
+    if (s16 % 4 === 0) mDrum(t, 'kick');
+    if (s16 % 4 === 2) mDrum(t, 'kick');
+    if (s16 % 2 === 1) mDrum(t, 'hat');
+  } else {
+    // Hard: driving pattern
+    if (s16 % 4 === 0) mDrum(t, 'kick');
+    if (s16 % 4 === 2) mDrum(t, 'kick');
+    if (s16 % 2 === 1) mDrum(t, 'hat');
+    if (s16 % 8 === 0) mDrum(t, 'kick'); // extra kick on 1
+  }
   // Driving bass
   const b = MUSIC.bass[s16 % 8]; if (b) mNote(b, t, 0.22, 'triangle', 0.18);
-  // Arp on every section, not just B
-  const a = MUSIC.arp[s16 % 8]; if (a) mNote(a, t, 0.13, 'square', 0.035);
+  // Arp intensity scales with level
+  const a = MUSIC.arp[s16 % 8]; if (a) mNote(a, t, 0.13, 'square', 0.03 + Math.min(level * 0.005, 0.02));
   // Pad chord on every 8 steps (every 2 seconds)
   if (s16 % 8 === 0) {
     MUSIC.pad.forEach((f, i) => {
       mNote(f, t + i*0.01, 1.8, 'sine', 0.025);
     });
   }
+  // Extra percussion at high levels
+  if (level >= 8 && s16 % 4 === 1) mDrum(t, 'hat');
 }
 function musicStart() {
   if (musicMuted()) return;
@@ -711,7 +736,7 @@ function gameOver() {
   document.getElementById('howBox').style.display = 'none';
   document.getElementById('modalStats').style.display = 'flex';
   document.getElementById('mScore').textContent = S.score;
-  document.getElementById('mCombo').textContent = S.bestCombo + 'Ã-';
+  document.getElementById('mCombo').textContent = S.bestCombo + 'ï¿½-';
   document.getElementById('mLevel').textContent = S.level;
   document.getElementById('mXp').textContent = xp;
   document.getElementById('modalBtn').textContent = 'Play Again';
@@ -726,7 +751,7 @@ window.addEventListener('beforeunload', () => {
 renderLives();
 updateHud();
 </script>
-<script src="../cookie-consent.js"></script>
-<script src="../game-mute.js"></script>
+<script defer src="../cookie-consent.js"></script>
+<script defer src="../game-mute.js"></script>
 </body>
 </html>
