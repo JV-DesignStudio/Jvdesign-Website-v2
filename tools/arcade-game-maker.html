@@ -309,6 +309,11 @@ textarea{height:56px;resize:none;font-family:'JetBrains Mono',monospace;font-siz
 #studioRoot.genre-RHYTHM     .bp-card[data-genre~="RHYTHM"]{display:block;}
 #studioRoot.genre-DEFENSE    .bp-card[data-genre~="DEFENSE"]{display:block;}
 #studioRoot.genre-PINBALL    .bp-card[data-genre~="PINBALL"]{display:block;}
+#studioRoot.genre-ROGUELIKE  .bp-card[data-genre~="ROGUELIKE"]{display:block;}
+#studioRoot.genre-CLICKER    .bp-card[data-genre~="CLICKER"]{display:block;}
+#studioRoot.genre-MEMORY     .bp-card[data-genre~="MEMORY"]{display:block;}
+#studioRoot.genre-WAVESURVIVAL .bp-card[data-genre~="WAVESURVIVAL"]{display:block;}
+#studioRoot.genre-PAPERTOSS  .bp-card[data-genre~="PAPERTOSS"]{display:block;}
 .bp-card[data-genre~="ALL"]{display:block!important;}
 
 /* ASSETS */
@@ -1700,6 +1705,7 @@ input[type=range]::-moz-range-track{height:5px;background:rgba(255,255,255,.1);b
  <option value="CLICKER">Clicker</option>
  <option value="MEMORY">Memory</option>
  <option value="WAVESURVIVAL">Wave Survival</option>
+ <option value="PAPERTOSS">Paper Toss</option>
  </select>
  <div id="genre-desc" class="genre-desc"></div>
  </div>
@@ -5838,16 +5844,64 @@ const _ACH_TOAST = {
 // NOTE: _achUnlock is defined ONCE, later in this file (with localStorage
 // persistence). Do not re-declare it here — the duplicate silently won.
 
-const fallbackLevel = [
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,
-    0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+const fallbackLevels = [
+    // Level 1: Classic - flat ground with floating platforms
+    [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,
+        0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    ],
+    // Level 2: Staircase - platforms climb upward
+    [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1
+    ],
+    // Level 3: Gaps - ground with dangerous gaps
+    [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        1,1,1,1,0,0,1,1,1,0,0,1,1,1,0,0,1,1,1,1
+    ],
+    // Level 4: Platforms - scattered floating platforms
+    [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,1,1,1,0,0,0,0,0,0,1,1,1,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1,1,0,0,
+        0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,
+        0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    ],
+    // Level 5: Tower - tall platforms to climb
+    [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,
+        0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1
+    ]
 ];
+const fallbackLevel = fallbackLevels[Math.floor(Math.random() * fallbackLevels.length)];
 
 // Snapshot of factory defaults, used to delta-encode share payloads
 const _lcDefaults = JSON.parse(JSON.stringify(liveConfig));
@@ -7329,8 +7383,9 @@ const _GENRE_DESCS = {
     CLICKER:      'Click the target to score, buy upgrades and rack up millions!',
     MEMORY:       'Flip cards and find matching pairs before time runs out.',
     WAVESURVIVAL: 'Survive endless waves of enemies, how long can you last?',
+    PAPERTOSS:    'Toss paper balls into the bin, watch the wind, score big!',
 };
-const _GENRE_ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'🥊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮',CLICKER:'👆',MEMORY:'🃏',WAVESURVIVAL:'🌊'};
+const _GENRE_ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'🥊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮',CLICKER:'👆',MEMORY:'🃏',WAVESURVIVAL:'🌊',PAPERTOSS:'🏀'};
 
 // Format the controls hint text, wraps recognised key tokens in styled <kbd> badges
 function _formatControlsHint(text) {
@@ -7690,6 +7745,11 @@ function _aiBuildGame(desc) {
     else if (d.match(/rogue|dungeon|explore.*room/))                  _aiSelectGenre('ROGUELIKE');
     else if (d.match(/beat.*up|punch|kick|fight/))                    _aiSelectGenre('BEAT');
     else if (d.match(/break|brick|ball.*paddle/))                     _aiSelectGenre('BREAKER');
+    else if (d.match(/click|tap|idle|earn|upgrade.*shop/))            _aiSelectGenre('CLICKER');
+    else if (d.match(/memory|card|match.*pair|flip.*card/))           _aiSelectGenre('MEMORY');
+    else if (d.match(/wave.*surviv|endless.*enemy|horde/))            _aiSelectGenre('WAVESURVIVAL');
+    else if (d.match(/hop|bounce.*up|doodle|spring/))                 _aiSelectGenre('HOPPER');
+    else if (d.match(/paper.*toss|throw|bin|basket|wind/))            _aiSelectGenre('PAPERTOSS');
     if      (d.match(/fast|quick|speedy|rapid|zoom/))  { liveConfig.speed = 360; }
     else if (d.match(/slow|chill|relax|easy|gentle/))  { liveConfig.speed = 130; }
     else                                                { liveConfig.speed = 220; }
@@ -8103,7 +8163,7 @@ function getPayload() {
 // ── PHASER ENGINE ─────────────────────────────────────────────────────────────
 // Per-genre world size — set by _launchPhaserGame before each Phaser boot
 let GW = 640, GH = 400;
-const GENRE_DIMS = { FLAPPY:{w:400,h:640}, HOPPER:{w:400,h:640}, DODGE:{w:400,h:640}, RHYTHM:{w:400,h:640}, PINBALL:{w:400,h:640}, MEMORY:{w:400,h:640}, CLICKER:{w:400,h:640}, SNAKE:{w:400,h:640} };
+const GENRE_DIMS = { FLAPPY:{w:400,h:640}, HOPPER:{w:400,h:640}, DODGE:{w:400,h:640}, RHYTHM:{w:400,h:640}, PINBALL:{w:400,h:640}, MEMORY:{w:400,h:640}, CLICKER:{w:400,h:640}, SNAKE:{w:400,h:640}, PAPERTOSS:{w:400,h:640} };
 
 // Convert a data URL to a Blob Object URL for reliable loading in Phaser's XHR loader.
 // Phaser 3's ImageFile runs data URLs through XHR → Blob → ObjectURL internally,
@@ -8355,11 +8415,13 @@ function _closeWelcome() {
 }
 
 function _loadQuickStart() {
-    // Load a quick-start preset: Shooter game with default settings
+    // Load a quick-start preset using the currently selected genre
     if (typeof onGenreChange === 'function') {
         const genreSelect = document.getElementById('genreMode');
         if (genreSelect) {
-            genreSelect.value = 'SHOOTER';
+            // Use whatever genre is currently selected, default to SHOOTER if none
+            const currentGenre = genreSelect.value || 'SHOOTER';
+            genreSelect.value = currentGenre;
             genreSelect.dispatchEvent(new Event('change'));
         }
     }
