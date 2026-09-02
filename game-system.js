@@ -1562,7 +1562,12 @@ const VoidStory = {
   load() {
     try {
       const raw = localStorage.getItem(this.STORAGE_KEY);
-      return raw ? JSON.parse(raw) : { fragments: [], corruption: 0, gamesPlayed: new Set() };
+      if (!raw) return { fragments: [], corruption: 0, gamesPlayed: new Set() };
+      const data = JSON.parse(raw);
+      // Convert gamesPlayed array back to Set
+      if (Array.isArray(data.gamesPlayed)) data.gamesPlayed = new Set(data.gamesPlayed);
+      else data.gamesPlayed = new Set();
+      return data;
     } catch (e) { return { fragments: [], corruption: 0, gamesPlayed: new Set() }; }
   },
   
