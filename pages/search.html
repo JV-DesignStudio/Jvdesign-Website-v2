@@ -229,16 +229,12 @@
 
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
-<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
- counts or game-over states to a screen reader; this gives every page one
- place to do it. Call JVDS.announce('...') from anywhere. -->
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script>
 window.JVDS = window.JVDS || {};
 window.JVDS.announce = function (msg) {
  var el = document.getElementById('jvds-announce');
  if (!el || !msg) return;
- /* Clearing first makes repeat messages ("Correct" twice) announce again. */
  el.textContent = '';
  setTimeout(function () { el.textContent = String(msg); }, 60);
 };
@@ -251,11 +247,13 @@ window.JVDS.announce = function (msg) {
  </a>
  <nav class="main-nav" id="mainNav" aria-label="Main">
  <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
- <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
- <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies"><span aria-hidden="true">🛠️</span> Create</a>
+ <a href="/books" class="nav-link" data-page="books"><span aria-hidden="true">📚</span> Read</a>
  <a href="/downloads" class="nav-link" data-page="downloads"><span aria-hidden="true">📦</span> Downloads</a>
- <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
- <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ <a href="/about" class="nav-link" data-page="about press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> Parents</a>
+ <a href="/search" class="nav-link nav-link--icon" data-page="search" aria-label="Search"><span aria-hidden="true">🔍</span></a>
  </nav>
  <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
  <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
@@ -264,7 +262,6 @@ window.JVDS.announce = function (msg) {
 </div>
 <script>
 (function(){
- /* Restore saved theme before first paint of the toggle icon */
  if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
  var b = document.getElementById('themeToggle');
  if (!b) return;
@@ -288,13 +285,21 @@ window.JVDS.announce = function (msg) {
 </header>
 <script>
 (function(){
- /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
  var seg = location.pathname.split('/').pop() || 'index.html';
  var page = seg.replace(/\.html$/, '');
  document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
  var pages = (a.getAttribute('data-page')||'').split(/\s+/);
  if(pages.indexOf(page) !== -1) a.classList.add('active');
  });
+ if(!document.querySelector('.main-nav .nav-link.active')){
+   var section = /\/tools\//.test(location.pathname) ? 'dev-tools'
+               : /\/workshops\//.test(location.pathname) ? 'workshop'
+               : /\/games\//.test(location.pathname) ? 'games'
+               : /\/books\//.test(location.pathname) ? 'books' : null;
+   if(section) document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+     if((a.getAttribute('data-page')||'').split(/\s+/).indexOf(section)!==-1) a.classList.add('active');
+   });
+ }
  var btn = document.getElementById('navToggle');
  var nav = document.getElementById('mainNav');
  if (!btn || !nav) return;
@@ -326,6 +331,19 @@ window.JVDS.announce = function (msg) {
             <span class="tag-chip" onclick="quickSearch('ages 6',this)">🧒 Ages 6-10</span>
             <span class="tag-chip" onclick="quickSearch('guide',this)">💻 Guides</span>
             <span class="tag-chip" onclick="quickSearch('coming soon',this)">⏳ Coming Soon</span>
+        </div>
+        <div class="filter-row" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px;">
+            <button class="filter-type-btn" onclick="filterType('Workshop',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(196,71,73,0.3);background:rgba(196,71,73,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">🎓 Workshops</button>
+            <button class="filter-type-btn" onclick="filterType('Game',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(233,69,96,0.3);background:rgba(233,69,96,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">🎮 Games</button>
+            <button class="filter-type-btn" onclick="filterType('Tool',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(124,58,237,0.3);background:rgba(124,58,237,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">🛠️ Tools</button>
+            <button class="filter-type-btn" onclick="filterType('Book',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(107,79,160,0.3);background:rgba(107,79,160,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">📚 Books</button>
+            <span style="width:1px;height:24px;background:rgba(240,234,214,0.15);margin:0 4px;align-self:center;"></span>
+            <button class="filter-engine-btn" onclick="filterEngine('Godot',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(71,140,191,0.3);background:rgba(71,140,191,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">Godot</button>
+            <button class="filter-engine-btn" onclick="filterEngine('Unity',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(91,192,248,0.3);background:rgba(91,192,248,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">Unity</button>
+            <button class="filter-engine-btn" onclick="filterEngine('Unreal',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(232,196,26,0.3);background:rgba(232,196,26,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">Unreal</button>
+            <button class="filter-engine-btn" onclick="filterEngine('Scratch',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(255,119,0,0.3);background:rgba(255,119,0,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">Scratch</button>
+            <button class="filter-engine-btn" onclick="filterEngine('Python',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(75,138,46,0.3);background:rgba(75,138,46,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">Python</button>
+            <button class="filter-engine-btn" onclick="filterEngine('Roblox',this)" style="padding:6px 14px;border-radius:999px;border:1.5px solid rgba(0,180,255,0.3);background:rgba(0,180,255,0.08);color:#f0ead6;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.2s;">Roblox</button>
         </div>
     </div>
 </section>
@@ -401,252 +419,202 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 <script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
+<script src="/content-data.js"></script>
+<script src="/content-loader.js"></script>
 <script>
-const ALL_PROJECTS = [
-    { title:"Lumo and the Grumble-Grit", cat:"Book", emoji:"🦊", color:"linear-gradient(135deg,#2a2838,#3d3952)", badge:"✨ New", badgeColor:"#6b4fa0", url:"../books/lumo_and_the_grumble_grit.html", desc:"A purple fox learns quiet courage while carrying the Grumble-Grit, a story about invisible struggles, resilience, and a different kind of strength. Free PDF.", tags:["Ages 4-8","Free PDF","Resilience","Anxiety"], keywords:"lumo fox purple grumble grit resilience chronic pain anxiety invisible struggle quiet courage picture book free pdf" },
-    { title:"Echo and the Mountain of Choices", cat:"Book", emoji:"🦎", color:"linear-gradient(135deg,#2a3f58,#3a5270)", badge:"Coming Soon", badgeColor:"#8aaac0", url:"../books/Echo_and_the_mountain_of_choice.html", desc:"A pink-gilled axolotl climbs a mountain one small try at a time, resilience, courage, and discovering that big things are just small things stacked together.", tags:["Ages 5-8","Coming Soon","Resilience","Axolotl"], keywords:"echo axolotl mountain choices resilience try small steps coming soon picture book pink gilled shelly snail" },
-    { title:"Elara and the Wire-Web Key", cat:"Book", emoji:"🔮", color:"linear-gradient(135deg,#1a0030,#2d0050)", badge:"Book", badgeColor:"#BC4749", url:"../books/Elara.html", desc:"Elara's tablet opens a portal to the Wire-Web, a vivid digital world. A story about online safety, passwords, and trusting your instincts.", tags:["Ages 5-9","Online Safety","Digital Literacy","Cyber"], keywords:"elara wire web key online safety internet digital literacy cyber password snatcher picture book tablet portal" },
-    { title:"Stardust's Cosmic Adventure", cat:"Book", emoji:"✨", color:"linear-gradient(135deg,#0a0a2e,#2d1b4e)", badge:"Book", badgeColor:"#BC4749", url:"../books/Stardust.html", desc:"A tiny speck of stardust discovers it is part of something enormous. A lyrical bedtime picture book about belonging, wonder, and the science of stars.", tags:["Ages 4-8","Space","Bedtime","Astronomy"], keywords:"stardust cosmic space astronomy stars adventure picture book dreaming bedtime universe belonging" },
-    { title:"Pip and The Great Dark", cat:"Book", emoji:"🐢", color:"linear-gradient(135deg,#0d1b2a,#162032)", badge:"Book", badgeColor:"#BC4749", url:"../books/Pip_and_the_night_sky.html", desc:"Pip is a turtle brave in the day but afraid at night. With his father and the Brave Light lantern, he discovers the Great Dark hides something wonderful.", tags:["Ages 4-8","Bedtime","Fear of Dark","Courage"], keywords:"pip turtle night sky dark fear stars wonder gentle picture book bedtime brave light lantern courage" },
-    { title:"Candy Kingdom Adventure", cat:"Tabletop RPG", emoji:"🍬", color:"linear-gradient(135deg,#fff0f7,#ffe0ef)", badge:"Free PDF", badgeColor:"#e91e8c", url:"../games/candy_kingdom.html", desc:"A sweet tabletop RPG for ages 6-10. Six candy heroes, a simple 1d6 system, and one mischievous villain to outwit.", tags:["Ages 6-10","Free","Tabletop RPG","Print & Play"], keywords:"candy kingdom adventure tabletop rpg dice heroes gummy knight peppermint free print play ages 6 children family" },
-    { title:"Cozy Creatures: Snuggle Pile", cat:"Tabletop Game", emoji:"🐾", color:"#F0EAD6", badge:"Free Rulebook", badgeColor:"#4e7d80", url:"../games/cozy_creatures.html", desc:"A cooperative tabletop card game for 1-4 players. Cosy, strategic, and full of adorable creatures trying to build the perfect snuggle pile.", tags:["1-4 Players","Cooperative","Ages 6+","Free"], keywords:"cozy creatures snuggle pile card game cooperative tabletop strategy cute adorable family warm comfort" },
-    { title:"Call of the Cards", cat:"Tabletop Game", emoji:"🃏", color:"linear-gradient(135deg,#403B33,#5a5449)", badge:"Free Playtest", badgeColor:"#4e7d80", url:"../games/call_of_the_cards.html", desc:"A fast-paced two-player fantasy card game with tight strategic play. Free playtest version available.", tags:["2 Players","Fantasy","Free Playtest","Strategy"], keywords:"call of the cards fantasy card game two player prototype strategy deck hand attack mana" },
-    { title:"Arcane Citadel", cat:"Web Game", emoji:"🏰", color:"linear-gradient(135deg,#0e0a1a,#1a0a30)", badge:"Play Now", badgeColor:"#7700cc", url:"../games/arcane_citadel_page.html", desc:"Dark fantasy tower-defence roguelite. Defend the Citadel through escalating waves, chain lightning, and boss fights. Free in your browser.", tags:["Browser Game","Free","Tower Defence","Roguelite"], keywords:"arcane citadel tower defence roguelite spell mage browser game free wave boss chain lightning fire ice frost shop upgrade" },
-    { title:"VoidRush", cat:"Web Game", emoji:"🚀", color:"linear-gradient(135deg,#03000f,#0a0025,#150040)", badge:"✨ New", badgeColor:"#6600ff", url:"../games/voidrush.html", desc:"Neon cyberpunk endless space runner. Collect fuel, dodge obstacles, and outrun the Void Entity, a creature of tentacles and glowing eyes, before it swallows you.", tags:["Browser Game","Free","Space","Endless Runner"], keywords:"voidrush void rush space runner neon cyberpunk endless fuel ship lanes void entity tentacles browser game free" },
-    { title:"Echo's Fruit Catch!", cat:"Web Game", emoji:"🦎", color:"linear-gradient(180deg,#87CEEB,#c8efaa)", badge:"✨ New · Ages 3-8", badgeColor:"#3a7d44", url:"../games/echo_fruit_catch.html", desc:"Help Echo the axolotl catch falling fruit and dodge rocks! A bright, cheerful free browser game for young children ages 3-8. Tilt your phone to play.", tags:["Browser Game","Free","Ages 3-8","Kids"], keywords:"echo fruit catch axolotl kids game children fruit rocks browser game free young ages 3 8 tilt phone catch dodge" },
-    { title:"Gem Match", cat:"Web Game", emoji:"💎", color:"linear-gradient(135deg,#2a2720,#403B33)", badge:"Play Now", badgeColor:"#BC4749", url:"../games/gem_match.html", desc:"Match-3 puzzle game with a global leaderboard. Swap gems, chain combos, hit fever mode, and beat the board in 2 minutes.", tags:["Browser Game","Free","Match-3","Leaderboard"], keywords:"gem match puzzle game browser play match three swap combo bomb wild score free leaderboard fever cascade 2 minutes" },
-    { title:"Cozy Cafe Match", cat:"Web Game", emoji:"☕", color:"linear-gradient(135deg,#FBF4E8,#F4B6C2)", badge:"New!", badgeColor:"#E48BA0", url:"../games/cozy-cafe-match-game.html", desc:"A gentle match-3 puzzle with no timer and no rush. Match snacks, fill cravings, and sip your tea. Cozy art, soft music, zero pressure.", tags:["Browser Game","Free","Match-3","Cozy","Relaxing"], keywords:"cozy cafe match three puzzle relaxing no timer no rush snacks tea cravings gentle calm wholesome browser game free pastel match-3" },
-    { title:"Stardust Collector", cat:"Web Game", emoji:"🌟", color:"linear-gradient(135deg,#0e0036,#1a0050)", badge:"Play Now", badgeColor:"#4e7d80", url:"../games/stardust_collection.html", desc:"Endless space runner in your browser. Collect stardust, dodge hazards, grab power-ups, build combos.", tags:["Browser Game","Free","Space","Endless Runner"], keywords:"stardust collector game browser play space runner endless dodge combo stars power up shield magnet multiplier" },
-    { title:"Godot 4 Beginner's Guide", cat:"Technical Guide", emoji:"⚙️", color:"linear-gradient(135deg,#1e1e2e,#252535)", badge:"Free PDF", badgeColor:"#403B33", url:"../workshops/godot_tutorial.html", desc:"Build your first 2D game from scratch using Godot 4 and GDScript. Covers nodes, scenes, movement, signals and more.", tags:["Free","Beginner","Godot 4","GDScript"], keywords:"godot tutorial platformer beginner gdscript 2d game development guide free pdf nodes scenes signals movement engine" },
-    { title:"Learn, How It Was Made", cat:"Technical Guide", emoji:"🔧", color:"linear-gradient(135deg,#1a1830,#2a1840)", badge:"Articles", badgeColor:"#7a6a9b", url:"../workshops/learn.html", desc:"Behind-the-scenes breakdowns of how every game, book, and this website were built from scratch. Game dev, book making, design process, and tutorials.", tags:["Game Dev","Book Making","Design","Tutorials"], keywords:"learn how it was made behind the scenes arcane citadel voidrush gem match lumo tutorial process code javascript html css game dev book making design website building" },
-    { title:"Free Creativity Kit", cat:"Freebie", emoji:"🎨", color:"linear-gradient(135deg,#e8a838,#d4903a)", badge:"Free!", badgeColor:"#c47f00", url:"../books/colouring-book.html", desc:"Printable colouring pages and activity sheets featuring JVDesignStudio characters. Free to download, no email required.", tags:["Free","Printable","All Ages","Colouring"], keywords:"free colouring coloring activity kit printable download creativity pages children no email axolotl characters" },
-    { title:"Printable Activity Pack", cat:"Freebie", emoji:"✏️", color:"linear-gradient(135deg,#fff4e0,#ffe8c8)", badge:"New!", badgeColor:"#c47f00", url:"../books/activity-pack.html", desc:"Word search, spiral maze, connect-the-dots star and a design-your-own-character page. Free, printable, no sign-up.", tags:["Free","Printable","Ages 5+","Puzzles"], keywords:"free printable activity pack word search maze connect the dots design your own character puzzles kids no email" },
-    { title:"GDScript & Godot 4 Cheat Sheet", cat:"Freebie", emoji:"⌨️", color:"linear-gradient(135deg,#1e1e2e,#252535)", badge:"New!", badgeColor:"#9b6bff", url:"../workshops/gdscript-cheatsheet.html", desc:"Printable one-page reference covering variables, functions, signals, common nodes and handy code snippets for Godot 4.", tags:["Free","Printable","GDScript","Godot 4"], keywords:"gdscript godot 4 cheat sheet reference printable variables functions signals nodes snippets free pdf" },
-    { title:"Unity & C# Cheat Sheet", cat:"Freebie", emoji:"🎮", color:"linear-gradient(135deg,#0d1b2a,#16273b)", badge:"New!", badgeColor:"#7dd3fc", url:"../workshops/unity-cheatsheet.html", desc:"Printable one-page reference covering variables, the MonoBehaviour lifecycle, events, input handling, common components and handy code snippets for Unity.", tags:["Free","Printable","Unity","C#"], keywords:"unity c# cheat sheet reference printable variables monobehaviour lifecycle events input components coroutines snippets free pdf" },
-    { title:"Unreal Engine Cheat Sheet", cat:"Freebie", emoji:"🏰", color:"linear-gradient(135deg,#180808,#241010)", badge:"New!", badgeColor:"#ff9b8a", url:"../workshops/unreal-cheatsheet.html", desc:"Printable one-page reference covering Blueprint basics, C++ variables, flow control, events, Enhanced Input and actor/component patterns.", tags:["Free","Printable","Unreal","Blueprints"], keywords:"unreal engine cheat sheet reference printable blueprints c++ variables flow control events enhanced input actors components timers free pdf" },
-    { title:"Free Downloads", cat:"Freebie", emoji:"⬇️", color:"linear-gradient(135deg,#b8956a,#a07040)", badge:"Free!", badgeColor:"#c47f00", url:"freebies.html", desc:"All free downloads in one place, PDFs, activity kits, game rules and more. No email required.", tags:["Free","Downloads","All Ages"], keywords:"free downloads pdf books games activity kits no email freebies all" },
-    { title:"Dev Log", cat:"Dev Log", emoji:"📓", color:"linear-gradient(135deg,#403B33,#5a5449)", badge:"14 Posts", badgeColor:"#4e7d80", url:"devlog.html", desc:"14 posts covering every book, game and studio decision, the real behind-the-scenes of building JVDesignStudio.", tags:["Behind the Scenes","Dev Log","Blog"], keywords:"dev log devlog behind scenes blog updates books games process studio journal voidrush echo arcane citadel gem match pip lumo" },
-    { title:"Next Book Projects", cat:"Dev Log", emoji:"�-�️", color:"linear-gradient(135deg,#2a3f58,#3a5270)", badge:"In Progress", badgeColor:"#4e7d80", url:"../books/next_book_projects.html", desc:"Live progress tracker for upcoming books, The Seed That Waited, The Fox Who Forgot How to Play, Where Do Worries Go at Night, and more.", tags:["Behind the Scenes","Upcoming","Dev Log"], keywords:"next book projects development coming soon dev log progress tracker seed waited fox forgot play worries night crab" },
-    { title:"About J. Valentine", cat:"About", emoji:"✨", color:"linear-gradient(135deg,var(--teal-dk),#3a6060)", badge:"About", badgeColor:"#4e7d80", url:"about.html", desc:"The story behind JVDesignStudio, values, timeline, and the person behind every page and every game.", tags:["About","J. Valentine","Studio"], keywords:"about j valentine studio designer author biography who jvdesignstudio uk books games" },
-    { title:"Press & Media Kit", cat:"Press", emoji:"📋", color:"linear-gradient(135deg,#f5f0e8,#e8d8c0)", badge:"Press", badgeColor:"#403B33", url:"press.html", desc:"Official bios, book and game summaries, brand colours, typography, and media contact for journalists, educators and collaborators.", tags:["Press","Media","Educators","Journalists"], keywords:"press kit media bio official brand colours typography journalist educator reviewer collaborator contact j valentine" },
-    { title:"Lumo's Firefly Shooter", cat:"Game", emoji:"🦊✨", color:"linear-gradient(135deg,#1c1a2e,#2a2838)", badge:"New!", badgeColor:"#6b4fa0", url:"../games/lumo_firefly_night.html", desc:"Shoot coloured fireflies to make matches and clear the board. Special bubbles, power-ups and chain drops. Free to play.", tags:["Browser Game","Ages 6+","Free","Bubble Shooter"], keywords:"lumo firefly shooter bubble match hex grid free browser game" },
-    { title:"PiP's Star Connect", cat:"Game", emoji:"⭐🌟", color:"linear-gradient(135deg,#060d18,#0a1a35)", badge:"New!", badgeColor:"#3a7bc8", url:"../games/pip_star_connect.html", desc:"Tap the stars in order to draw constellations in the night sky, just like PiP!", tags:["Browser Game","Ages 4+","Free","Puzzle"], keywords:"pip star connect constellation tap order draw night sky puzzle free" },
-    { title:"Crypt Crawlers", cat:"Game", emoji:"⚔️💀", color:"linear-gradient(135deg,#1a0a2e,#3d0070)", badge:"Web Game", badgeColor:"#7c00d4", url:"../games/crypt-crawlers.html", desc:"Descend into the crypt, battle monsters and find your way out. A browser-based dungeon crawler in pure JavaScript.", tags:["Browser Game","Ages 10+","Free","Dungeon Crawler"], keywords:"crypt crawlers dungeon crawler monsters battle javascript browser game free" },
-    { title:"JavaScript Platformer Builder", cat:"Course", emoji:"🕹️", color:"linear-gradient(135deg,#0a0f00,#181e00)", badge:"Live Builder", badgeColor:"#c8b200", url:"../workshops/js-platformer-builder.html", desc:"Fill in gravity, jump force, enemies and health, watch your Mario-style platformer update live in the browser. 10 steps.", tags:["JavaScript","Ages 11+","Free","Live Builder","Game Dev"], keywords:"javascript platformer builder mario game live browser fill values gravity jump free beginner" },
-    { title:"Race Builder", cat:"Course", emoji:"🏎️", color:"linear-gradient(135deg,#0a0900,#1a1500)", badge:"Live Builder", badgeColor:"#f5c400", url:"../workshops/race-builder.html", desc:"Build a top-down JavaScript racing game step by step. Design your car, add AI rivals, set laps, boost pads and a finish line. 10 steps, live preview.", tags:["JavaScript","Ages 11+","Free","Live Builder","Racing","Game Dev"], keywords:"race builder top down car racer javascript rivals boost pads laps finish line live browser 10 steps free beginner" },
-    { title:"Zombie Survivor Blueprint", cat:"Course", emoji:"🧟", color:"linear-gradient(135deg,#050a06,#0a1a0a)", badge:"Live Builder", badgeColor:"#16a34a", url:"../workshops/unreal-zombie-survivor.html", desc:"Build a zombie wave survival game in Unreal Engine 5 using Blueprints. AI hordes, weapons, barricades, wave escalation and a score system. 30 steps.", tags:["Unreal","Blueprints","UE5","Free","Live Builder","Survival","Game Dev"], keywords:"unreal zombie survivor blueprint wave survival ai horde weapons barricades score ue5 blueprints 30 steps live preview free" },
-    { title:"Racing Blueprint", cat:"Course", emoji:"🏎️", color:"linear-gradient(135deg,#08070a,#1a1500)", badge:"Live Builder", badgeColor:"#e8c41a", url:"../workshops/racing-blueprint.html", desc:"Wire Unreal Blueprints to build a complete racing game, car physics, rivals, lap counter, boost pads and a finish line. Live preview.", tags:["Unreal","Blueprints","UE5","Free","Live Builder","Racing","Game Dev"], keywords:"unreal racing blueprint car physics rivals lap counter boost pads finish line ue5 blueprints live preview free" },
-    { title:"Blueprint Clicker", cat:"Course", emoji:"�-�️", color:"linear-gradient(135deg,#08070a,#1a0e00)", badge:"Live Builder", badgeColor:"#e05a1e", url:"../workshops/unreal-clicker-builder.html", desc:"Learn Blueprints by building a clicker game, coins, upgrades, idle income and unlockable content. The gentlest entry to UE5. 25 steps.", tags:["Unreal","Blueprints","UE5","Free","Live Builder","Clicker","Beginner"], keywords:"unreal blueprint clicker coins upgrades idle income unlockable ue5 blueprints 25 steps beginner live preview free" },
-    { title:"Arena Fighter Blueprint", cat:"Course", emoji:"🥊", color:"linear-gradient(135deg,#0a0005,#1a000f)", badge:"Live Builder", badgeColor:"#e8312b", url:"../workshops/unreal-fighter-workshop.html", desc:"Wire Blueprints to build a local 2-player fighting game, characters, attacks, health bars, knockback and a round system. Live preview.", tags:["Unreal","Blueprints","UE5","Free","Live Builder","Fighting","2-Player"], keywords:"unreal arena fighter blueprint 2 player fighting game characters attacks health bars knockback round system ue5 live preview free" },
-    { title:"Python Game Builder", cat:"Course", emoji:"🐍", color:"linear-gradient(135deg,#0d0f0a,#131a0a)", badge:"Live Builder", badgeColor:"#4b8a2e", url:"../workshops/python-game-builder.html", desc:"Write real Python step by step and watch your dodge-and-collect game run live. No downloads, no setup. 10 steps.", tags:["Python","Ages 11+","Free","Live Builder","Game Dev"], keywords:"python game builder dodge collect live preview browser steps free beginner" },
-    { title:"Unity 3D Platformer Builder", cat:"Course", emoji:"🧊", color:"linear-gradient(135deg,#07080a,#0d1520)", badge:"Live Builder", badgeColor:"#5bc0f8", url:"../workshops/unity-3d-platformer.html", desc:"Build a complete 3D platformer in Unity using C#. CharacterController, 3D physics, camera, lighting, collectibles, hazards, checkpoints and scene management. 25 steps, live isometric preview.", tags:["C#","Unity 3D","Ages 11+","Free","Live Builder"], keywords:"unity 3d platformer builder c# csharp charactercontroller physics camera lighting coins hazards checkpoint moving platforms spring scene management 25 steps live browser free beginner" },
-    { title:"MUGEN Workshop", cat:"Course", emoji:"⚔", color:"linear-gradient(135deg,#0a0005,#1a0008)", badge:"Full Course", badgeColor:"#c0392b", url:"../workshops/mugen-workshop.html", desc:"Three-part course covering MUGEN basics, Fighter Factory 3, and custom stage creation. Includes 10 downloadable files.", tags:["MUGEN","Ages 12+","Free","Fighting Game"], keywords:"mugen fighting game character workshop fighter factory stage sprite free course" },
-    { title:"Add Your Own Stage to MUGEN", cat:"Course", emoji:"★", color:"linear-gradient(135deg,#1a0a2e,#2a1550)", badge:"Beginner Lesson", badgeColor:"#9b6bff", url:"../workshops/add-your-own-stage.html", desc:"A beginner's 7-step walkthrough for building your first MUGEN stage from scratch. Parallax layers, animated torch, plus a free starter pack with .def config and placeholder art.", tags:["MUGEN","Beginner","Free","Starter Pack","Lesson"], keywords:"mugen stage beginner lesson add your own fighter factory def sff sprite parallax delta animated torch starter pack tutorial free course fighting game background" },
-    { title:"C++ Tower Defence Builder", cat:"Course", emoji:"🏰", color:"linear-gradient(135deg,#0a1020,#141830)", badge:"Live Builder", badgeColor:"#4a9eff", url:"../workshops/cpp-tower-defence-builder.html", desc:"Build a full tower defence game step by step in C++ style code, grid, towers, enemies, waves, upgrades, boss scaling. 20 steps, live preview in the browser.", tags:["C++","Ages 11+","Free","Live Builder","Tower Defence"], keywords:"c++ cpp tower defence builder grid towers enemies waves upgrades sniper splash slow boss game live browser 20 steps free beginner" },
-    { title:"GML Shooter Trainer", cat:"Course", emoji:"🎯", color:"linear-gradient(135deg,#0a1a08,#14200c)", badge:"Live Builder", badgeColor:"#3ddc84", url:"../workshops/gml_shooter_trainer_project.html", desc:"Write real GML-style code in a live editor and watch your top-down shooter respond. 12 levels from movement to enemies, health and scoring.", tags:["GML","GameMaker","Ages 11+","Free","Live Builder"], keywords:"gml gamemaker shooter trainer top down code editor live 12 levels movement health score enemies browser free beginner" },
-    { title:"Space Rocket Builder", cat:"Course", emoji:"🛸", color:"linear-gradient(135deg,#07090f,#0d1a2e)", badge:"3D Builder", badgeColor:"#e8543a", url:"../workshops/rocket-builder.html", desc:"Design and launch your own 3D rocket, choose the nosecone, body, fins, side boosters, engine cluster and payload fairing. 15 interactive steps, full touch support.", tags:["Three.js","3D Builder","Ages 10+","Free","Live Builder"], keywords:"space rocket builder 3d threejs nosecone fins boosters engine cluster payload fairing launch 15 steps touch mobile free" },
-    { title:"Sci-Fi Runner Builder", cat:"Course", emoji:"🚀", color:"linear-gradient(135deg,#04111d,#0a1e33)", badge:"Live Builder", badgeColor:"#38bdf8", url:"../workshops/sci-fi-runner-builder.html", desc:"Build an endless sci-fi runner with lane-based movement, scrolling starfield, pickups and difficulty ramping. 10-step interactive builder.", tags:["JavaScript","Ages 11+","Free","Live Builder","Endless Runner"], keywords:"sci fi runner builder endless lane movement starfield shield star pickups difficulty 10 steps javascript live browser free" },
-    { title:"Build Space Invaders in Godot 4", cat:"Course", emoji:"👾", color:"linear-gradient(135deg,#050c1a,#0a1428)", badge:"Tutorial", badgeColor:"#3ddc84", url:"../workshops/space_invaders_tutorial.html", desc:"Build a complete Space Invaders clone in Godot 4 from scratch. 11 chapters covering enemies, shooting, lives, scoring and waves.", tags:["Godot 4","Ages 10+","Free","Tutorial"], keywords:"space invaders godot 4 build tutorial enemies waves shooting score lives free" },
-    { title:"Roblox Creator Journey", cat:"Course", emoji:"🎭", color:"linear-gradient(135deg,#001a3a,#002b6b)", badge:"Course", badgeColor:"#f97316", url:"../workshops/roblox-creator-journey.html", desc:"Step-by-step guide to building t-shirts, clothing and 3D accessories in Roblox Studio using free tools.", tags:["Roblox","Ages 12+","Free","3D Design"], keywords:"roblox creator 3d accessories clothing studio onshape free course beginner" },
-    { title:"Godot 4 Starter Templates", cat:"Course", emoji:"📦", color:"linear-gradient(135deg,#0a1628,#1a2640)", badge:"Free Download", badgeColor:"#478cbf", url:"../workshops/godot_templates.html", desc:"Four complete Godot 4 projects, Platformer, Asteroids, Space Invaders, Tower Defence. Download, open and start building.", tags:["Godot 4","Ages 10+","Free","Templates","Download"], keywords:"godot 4 templates starter projects platformer asteroids space invaders tower defence free download" },
-    { title:"The Learning Lab", cat:"Game", emoji:"🧪", color:"linear-gradient(135deg,#0d0d12,#12101e)", badge:"Free", badgeColor:"#3EC9A7", url:"../workshops/learning-lab.html", desc:"Sixteen free browser mini-games covering Computing, Maths, English, Science, Geography, History, Music, Art, Space and more. Learn by playing, no login, no download.", tags:["Educational","Ages 6+","Free","Browser"], keywords:"learning lab educational games computing maths english science geography history music art space nature health inventions logic memory number bonds times tables browser free ages 6 12" },
-    { title:"Quiz Quest", cat:"Game", emoji:"🏆", color:"linear-gradient(135deg,#1a1200,#3a2800)", badge:"Free Game", badgeColor:"#d4a017", url:"../games/millionaire-quiz.html", desc:"Who Wants to Be a Millionaire-style quiz game playable right in the browser. Lifelines, escalating difficulty and that iconic tension, free, no download needed.", tags:["Quiz","Browser Game","Ages 8+","Free"], keywords:"quiz quest millionaire who wants to be a millionaire game browser lifelines free trivia questions escalating difficulty" },
-    { title:"Drum Pad", cat:"Tool", emoji:"🥁", color:"linear-gradient(135deg,#1a0a0b,#2d1012)", badge:"Free Tool", badgeColor:"#BC4749", url:"../tools/drum-pad.html", desc:"A fun browser drum machine with 7 instrument kits, drum kit, piano, bass, brass, game SFX, nature and silly sounds. Tap pads, use keyboard shortcuts, record a loop and download your music.", tags:["Free","Tool","Music","Sound","Ages 5+","Browser"], keywords:"drum pad music beat maker instrument piano bass brass sfx nature silly sounds loop recorder keyboard download audio kids fun" },
-    { title:"Arcade Game Maker", cat:"Tool", emoji:"🕹️", color:"linear-gradient(135deg,#05030f,#100820)", badge:"Free Tool", badgeColor:"#7c3aed", url:"../tools/arcade-game-maker.html", desc:"Build and play your own browser arcade game, no code, no downloads. 21 game types including shooters, platformers, rhythm, snake, and roguelikes. Share with one link.", tags:["Free","Tool","No Code","Browser","Ages 10+"], keywords:"arcade game maker build play browser no code shooter platformer rhythm snake roguelike pong fighter share link free tool" },
-    { title:"QuestLog, Turn Your Work Into an RPG", cat:"Tool", emoji:"⚔️", color:"linear-gradient(135deg,#08070f,#14102a)", badge:"Free App", badgeColor:"#7c3aed", url:"../tools/quest-board-page.html", desc:"QuestLog, a free browser RPG productivity app. Turn projects, tasks and daily habits into quests. Earn XP, level up, defeat boss quests. No account. Works on any device.", tags:["Free","Tool","Productivity","RPG"], keywords:"questlog quest board rpg task tracker productivity xp level up boss quests no account free works any device" },
-    { title:"Barrel Blast! Godot Workshop", cat:"Workshop", emoji:"🛢️", color:"linear-gradient(135deg,#1a0a00,#3a1800)", badge:"Free Workshop", badgeColor:"#f97316", url:"../workshops/barrel-blast-workshop.html", desc:"Build a Donkey Kong-style barrel-rolling game in Godot from scratch. Platforms, barrels, enemies and a timer. Free beginner workshop.", tags:["Godot","Free","Workshop","Ages 10+","Beginner"], keywords:"barrel blast donkey kong godot workshop beginner platforms barrels enemies timer free build game" },
-    { title:"Fairy Survivors! Godot Workshop", cat:"Workshop", emoji:"🧚", color:"linear-gradient(135deg,#0a001a,#200030)", badge:"Free Workshop", badgeColor:"#a855f7", url:"../workshops/fairy-survivors-guide.html", desc:"Build a Vampire Survivors-style game in Godot, waves of enemies, XP pickups, level-up choices and scaling difficulty. Free beginner workshop.", tags:["Godot","Free","Workshop","Ages 10+","Survivors"], keywords:"fairy survivors vampire survivors godot workshop beginner enemies xp pickups level up choices scaling difficulty free build game" },
-    { title:"Zoom Zoom! Godot Racing Workshop", cat:"Workshop", emoji:"🏎️", color:"linear-gradient(135deg,#0a0800,#1e1600)", badge:"Free Workshop", badgeColor:"#f5c842", url:"../workshops/godot-racing-workshop.html", desc:"Build a top-down racing game in Godot with your child. No experience needed, start from zero and drive your car in 8 fun steps. Parent and child friendly.", tags:["Godot","Free","Workshop","Ages 8+","Racing","Parent & Child"], keywords:"zoom zoom racing godot workshop top down car parent child beginner 8 steps free build game" },
-    { title:"Jump Jump! Mario-Style Godot Workshop", cat:"Workshop", emoji:"🍄", color:"linear-gradient(135deg,#0a0500,#201000)", badge:"Free Workshop", badgeColor:"#e8543a", url:"../workshops/jump-jump-mario-workshop.html", desc:"Build a Mario-style platformer in Godot, jump on enemies, collect coins, create levels. Free beginner workshop.", tags:["Godot","Free","Workshop","Ages 10+","Platformer"], keywords:"jump jump mario style godot platformer workshop enemies coins levels beginner free build game" },
-    { title:"Bang Bang! Godot Shooter Workshop", cat:"Workshop", emoji:"💥", color:"linear-gradient(135deg,#0a0500,#1a0800)", badge:"Free Workshop", badgeColor:"#ef4444", url:"../workshops/nuclear-throne-guide.html", desc:"Build a Nuclear Throne-inspired top-down shooter in Godot, weapons, enemies, rooms, roguelike progression. Free workshop.", tags:["Godot","Free","Workshop","Ages 10+","Shooter","Roguelike"], keywords:"bang bang nuclear throne godot shooter workshop top down weapons enemies rooms roguelike progression free build game" },
-    { title:"Pixel Quest! Zelda-Style Godot Workshop", cat:"Workshop", emoji:"�-�️", color:"linear-gradient(135deg,#001a00,#003300)", badge:"Free Workshop", badgeColor:"#22c55e", url:"../workshops/pixel-quest-workshop.html", desc:"Build a Zelda-style adventure game in Godot, top-down movement, sword combat, puzzles and dungeons. Free beginner workshop.", tags:["Godot","Free","Workshop","Ages 10+","Adventure","Zelda"], keywords:"pixel quest zelda style godot adventure workshop top down sword combat puzzles dungeons beginner free build game" },
-    { title:"Security Shift Blueprint (FNAF)", cat:"Workshop", emoji:"🔦", color:"linear-gradient(135deg,#0a0500,#1a1000)", badge:"Live Builder", badgeColor:"#f97316", url:"../workshops/fnaf-blueprint.html", desc:"Build a Five Nights at Freddy's style survival game step by step, power system, animatronic AI, camera feeds, doors and a night timer. Ages 13+.", tags:["Unreal","Blueprints","Free","Ages 13+","FNAF","Horror"], keywords:"fnaf five nights freddy security shift blueprint survival power system animatronic ai camera doors night timer ages 13 free" },
-    { title:"Learn Hub", cat:"Learn", emoji:"🎓", color:"linear-gradient(135deg,#0d1117,#1a2230)", badge:"Free", badgeColor:"#4e7d80", url:"learn-hub.html", desc:"All learning resources in one place, game dev courses, workshops, tutorials, interactive builders. Godot, JavaScript, Python, Unity, Unreal, MUGEN and more.", tags:["Free","Learning","Game Dev","All Ages"], keywords:"learn hub game dev courses workshops tutorials builders godot javascript python unity unreal mugen all ages free" },
-    { title:"Tiny Learners", cat:"Learn", emoji:"🌱", color:"linear-gradient(135deg,#fff8ee,#ffeee0)", badge:"Free", badgeColor:"#f97316", url:"../workshops/tiny-learners.html", desc:"Gentle learning games and creative activities designed for younger children. Kind, colourful and completely free.", tags:["Free","Ages 4-8","Educational","Young Children"], keywords:"tiny learners young children early learning games activities creative ages 4 8 gentle colourful free" },
-    { title:"Bitmap Font Maker", cat:"Tool", emoji:"🔤", color:"linear-gradient(135deg,#0a0a14,#16162a)", badge:"Free Tool", badgeColor:"#7c3aed", url:"../tools/bitmap-font-maker.html", desc:"Design pixel bitmap fonts in your browser. Draw characters, preview text live, export PNG spritesheet and JSON atlas. Free game dev tool.", tags:["Free","Tool","Pixel Art","Fonts"], keywords:"bitmap font maker pixel font design draw characters export png spritesheet json atlas game dev tool free" },
-    { title:"Character Designer", cat:"Tool", emoji:"🧑‍🎨", color:"linear-gradient(135deg,#0f0a14,#1e1428)", badge:"Free Tool", badgeColor:"#7c3aed", url:"../tools/character-designer.html", desc:"Design and customise game characters for free in your browser with the JVDesignStudio Character Creator.", tags:["Free","Tool","Characters","Game Dev"], keywords:"character designer creator customise game characters browser free tool" },
-    { title:"Colour Palette Generator", cat:"Tool", emoji:"🎨", color:"linear-gradient(135deg,#1a0f1a,#2a1a2a)", badge:"Free Tool", badgeColor:"#e91e8c", url:"../tools/colour-palette.html", desc:"Generate beautiful game-ready colour palettes instantly with this free browser tool by JVDesignStudio.", tags:["Free","Tool","Colour","Design"], keywords:"colour palette generator color game ready palettes instant browser tool free design" },
-    { title:"Game Idea Generator", cat:"Tool", emoji:"💡", color:"linear-gradient(135deg,#1a1400,#2a2200)", badge:"Free Tool", badgeColor:"#f5c400", url:"../tools/game-idea-generator.html", desc:"Stuck on what game to make? Spin the wheel and get a random game idea, genre, theme, twist and mechanic. Free tool for game developers of all ages.", tags:["Free","Tool","Brainstorm","Game Dev"], keywords:"game idea generator spin wheel random genre theme twist mechanic brainstorm free tool developers" },
-    { title:"Game Logo Maker", cat:"Tool", emoji:"🏷️", color:"linear-gradient(135deg,#0a0a18,#181830)", badge:"Free Tool", badgeColor:"#3a7bc8", url:"../tools/game-logo-maker.html", desc:"Design your game logo in your browser. Pick a style, type your title, customise colours and effects, and download as PNG. Free game dev tool.", tags:["Free","Tool","Logo","Branding"], keywords:"game logo maker design style title colours effects download png branding free tool" },
-    { title:"GDD Builder", cat:"Tool", emoji:"📄", color:"linear-gradient(135deg,#0a0f0a,#141e14)", badge:"Free Tool", badgeColor:"#4e7d80", url:"../tools/gdd-builder.html", desc:"Plan your game design document for free with the JVDesignStudio GDD Builder.", tags:["Free","Tool","Planning","Game Dev"], keywords:"gdd builder game design document plan template free tool game dev" },
-    { title:"Level Designer", cat:"Tool", emoji:"🧱", color:"linear-gradient(135deg,#0a0e14,#141e2a)", badge:"Free Tool", badgeColor:"#478cbf", url:"../tools/level-designer.html", desc:"Design 2D platformer levels on a tile grid for free with the JVDesignStudio Level Designer.", tags:["Free","Tool","Level Design","2D"], keywords:"level designer 2d platformer tile grid design free tool game dev" },
-    { title:"Procedural Map Generator", cat:"Tool", emoji:"�-�️", color:"linear-gradient(135deg,#08120a,#102418)", badge:"Free Tool", badgeColor:"#22c55e", url:"../tools/map-generator.html", desc:"Generate dungeon, world and island maps in your browser. Adjustable seed, rooms, biomes. Export PNG or JSON tilemap for Godot and Unity. Free game dev tool.", tags:["Free","Tool","Procedural","Maps"], keywords:"procedural map generator dungeon world island maps seed rooms biomes export png json tilemap godot unity free tool" },
-    { title:"Music Maker", cat:"Tool", emoji:"🎵", color:"linear-gradient(135deg,#140a1e,#241436)", badge:"Free Tool", badgeColor:"#a855f7", url:"../tools/music-maker.html", desc:"Create beats, melodies and full tracks right in your browser. A free studio-style music maker for producers and game developers.", tags:["Free","Tool","Music","Audio"], keywords:"music maker beats melodies tracks daw studio creator browser free tool audio" },
-    { title:"Particle Designer", cat:"Tool", emoji:"✨", color:"linear-gradient(135deg,#0a0e1c,#141e36)", badge:"Free Tool", badgeColor:"#38bdf8", url:"../tools/particle-designer.html", desc:"Design particle effects in your browser. Save effects, edit curves & gradients, use sprite textures, record video, and export real Godot & Unity files. Free dev tool.", tags:["Free","Tool","VFX","Game Dev"], keywords:"particle designer effects fire smoke sparks magic export json godot unity free dev tool vfx curves gradient texture save video webm recorder" },
-    { title:"Pixel Studio", cat:"Tool", emoji:"�-�️", color:"linear-gradient(135deg,#0a0a0a,#1a1a1a)", badge:"Free Tool", badgeColor:"#e8543a", url:"../tools/pixel-studio.html", desc:"Draw and animate pixel art for free in your browser with the JVDesignStudio Pixel Studio.", tags:["Free","Tool","Pixel Art","Animation"], keywords:"pixel studio draw animate pixel art browser free tool sprite editor" },
-    { title:"SFX Generator", cat:"Tool", emoji:"🔊", color:"linear-gradient(135deg,#1a0a0a,#2a1414)", badge:"Free Tool", badgeColor:"#ef4444", url:"../tools/sfx-generator.html", desc:"Create custom sound effects for your game in one click, free in your browser with JVDesignStudio.", tags:["Free","Tool","Sound","Game Dev"], keywords:"sfx generator sound effects one click game browser free tool audio" },
-    { title:"Sound Studio", cat:"Tool", emoji:"🎚️", color:"linear-gradient(135deg,#0a141a,#14282a)", badge:"Free Tool", badgeColor:"#3ddc84", url:"../tools/sound-studio.html", desc:"Make 16-bit music and sound effects for free in your browser with JVDesignStudio Sound Studio.", tags:["Free","Tool","Music","8-bit"], keywords:"sound studio 16 bit music sound effects browser free tool retro chiptune" },
-    { title:"Sprite Animator", cat:"Tool", emoji:"🏃", color:"linear-gradient(135deg,#140a18,#241430)", badge:"Free Tool", badgeColor:"#9b6bff", url:"../tools/sprite-animator.html", desc:"Upload a spritesheet, set frame size, preview your animation live in the browser. Export frame data as JSON for Godot or Unity. Free game dev tool.", tags:["Free","Tool","Animation","Sprites"], keywords:"sprite animator spritesheet frame size preview animation export json godot unity free tool" },
-    { title:"Story Editor", cat:"Tool", emoji:"�-", color:"linear-gradient(135deg,#140e0a,#241c14)", badge:"Free Tool", badgeColor:"#f97316", url:"../tools/story-editor.html", desc:"Write branching dialogue and story trees for your game with the free JVDesignStudio Story Editor.", tags:["Free","Tool","Writing","Narrative"], keywords:"story editor branching dialogue story trees narrative game free tool writing" },
-    { title:"Trading Card Designer", cat:"Tool", emoji:"🃏", color:"linear-gradient(135deg,#0a0a14,#1a1a2e)", badge:"Free Tool", badgeColor:"#4e7d80", url:"../tools/trading-card-designer.html", desc:"Design custom trading cards for your game characters and items. Choose a template, fill in stats, upload art, and export as a PNG. Free browser tool.", tags:["Free","Tool","Cards","Design"], keywords:"trading card designer custom cards characters items template stats upload art export png free browser tool" },
-    { title:"Biscuit Tin Clicker", cat:"Web Game", emoji:"🍪", color:"linear-gradient(135deg,#2a1c10,#3d2a18)", badge:"Play Now", badgeColor:"#c47f00", url:"../games/cozy-biscuit-clicker.html", desc:"Play Biscuit Tin Clicker, a cosy free browser clicker game by JVDesignStudio. Click, upgrade, repeat.", tags:["Browser Game","Free","Clicker","Cozy"], keywords:"biscuit tin clicker cosy cozy click upgrade idle browser game free" },
-    { title:"Dungeon Delve", cat:"Web Game", emoji:"�-�️", color:"linear-gradient(135deg,#0a0a0a,#1c1010)", badge:"Play Now", badgeColor:"#BC4749", url:"../games/dungeon-delve.html", desc:"Play Dungeon Delve, a free browser dungeon crawler by JVDesignStudio. Explore, fight, survive.", tags:["Browser Game","Free","Dungeon Crawler","Hack & Slash"], keywords:"dungeon delve hack slash adventure crawler explore fight survive browser game free" },
-    { title:"Little Steps, A Cosmic Journey", cat:"Web Game", emoji:"🌌", color:"linear-gradient(135deg,#03000f,#10072a)", badge:"Play Now", badgeColor:"#6600ff", url:"../games/little_steps.html", desc:"Little Steps, a cosmic endless runner. Choose your path through the void.", tags:["Browser Game","Free","Endless Runner","Space"], keywords:"little steps cosmic journey endless runner space void path browser game free" },
-    { title:"Sky High With Friends", cat:"Web Game", emoji:"🐙", color:"linear-gradient(180deg,#87CEEB,#c8efaa)", badge:"Play Now", badgeColor:"#3a7d44", url:"../games/sky_high_with_friends.html", desc:"Play Sky High With Friends, a fun free browser game by JVDesignStudio.", tags:["Browser Game","Free","Kids","Adventure"], keywords:"sky high squirt friends fun browser game free kids adventure" },
-    { title:"Roar's Tiger Smash", cat:"Web Game", emoji:"🐯", color:"linear-gradient(135deg,#1a0e00,#2a1800)", badge:"Play Now", badgeColor:"#f97316", url:"../games/tiger_smash.html", desc:"A brick breaker starring Roar the Tiger. Unlock paddles and balls with unique abilities, collect coins across the Sky High With Friends universe.", tags:["Browser Game","Free","Brick Breaker","Arcade"], keywords:"roar tiger smash brick breaker paddles balls abilities coins sky high squirt universe browser game free" },
-    { title:"Zoom Zoom! Part 2, Loops, Health & Explosions", cat:"Workshop", emoji:"🏎️", color:"linear-gradient(135deg,#0a0800,#1e1600)", badge:"Free Workshop", badgeColor:"#f5c842", url:"../workshops/godot-racing-workshop-2.html", desc:"Part 2 of the Zoom Zoom Godot racing workshop! Build a loop track, add checkpoints, lap counters, health, explosions, repair pickups and an AI opponent.", tags:["Godot","Free","Workshop","Ages 8+","Racing"], keywords:"zoom zoom part 2 racing godot workshop loop track checkpoints lap counter health explosions repair pickups ai opponent free build game" },
-    { title:"Night Watch! FNAF-Style Horror Workshop", cat:"Workshop", emoji:"🔦", color:"linear-gradient(135deg,#0a0500,#1a1000)", badge:"Free Workshop", badgeColor:"#ef4444", url:"../workshops/night-watch-workshop.html", desc:"Build a Five Nights at Freddy's-style game in Godot! Camera switching, animatronic AI, doors, power meter, and jump scares. Free beginner workshop.", tags:["Godot","Free","Workshop","Ages 10+","Horror","FNAF"], keywords:"night watch fnaf five nights freddy godot workshop camera switching animatronic ai doors power meter jump scares free build game" },
-    { title:"Night Watch! Part 2, More Animatronics & Multiple Nights", cat:"Workshop", emoji:"🔦", color:"linear-gradient(135deg,#0a0500,#1a1000)", badge:"Free Workshop", badgeColor:"#ef4444", url:"../workshops/night-watch-part2-workshop.html", desc:"Part 2 of the FNAF-style Godot workshop! Add Bonnie, Chica & Foxy, multiple nights, a main menu, audio cues, hallway lights, and a death screen. Free beginner workshop.", tags:["Godot","Free","Workshop","Ages 10+","Horror","FNAF"], keywords:"night watch part 2 fnaf bonnie chica foxy multiple nights main menu audio cues hallway lights death screen godot workshop free build game" },
-    { title:"My First Video Game", cat:"Workshop", emoji:"🎮", color:"linear-gradient(135deg,#001a00,#003300)", badge:"Free Workshop", badgeColor:"#22c55e", url:"../workshops/my-first-video-game.html", desc:"6 free parent & child Godot workshops. Build a racing game, platformer, shooter, survivors game, Donkey Kong clone and Zelda adventure. No experience needed. Ages 5+.", tags:["Godot","Free","Workshop","Ages 5+","Parent & Child"], keywords:"my first video game godot workshops parent child racing platformer shooter survivors donkey kong zelda adventure beginner free" },
-    { title:"MUGEN AI Workshop", cat:"Workshop", emoji:"�-", color:"linear-gradient(135deg,#0a0005,#1a0008)", badge:"Free Workshop", badgeColor:"#c0392b", url:"../workshops/mugen-ai-workshop.html", desc:"MUGEN AI Workshop, learn to build fighting game characters with AI tools and JVDesignStudio.", tags:["MUGEN","Free","Workshop","AI","Fighting Game"], keywords:"mugen ai workshop fighting game characters ai tools free build" },
-    { title:"OpenRCT2 Python Modding", cat:"Workshop", emoji:"🎢", color:"linear-gradient(135deg,#0a1a14,#142a24)", badge:"Free Workshop", badgeColor:"#22c55e", url:"../workshops/openrct2-modding-builder.html", desc:"Learn to mod OpenRCT2 with Python. Add custom shops, new menu items, and stall upgrades step by step with a live park preview. Ages 11+. Free.", tags:["Python","Free","Workshop","Ages 11+","OpenRCT2"], keywords:"openrct2 python modding shops menu items stall upgrades live park preview rollercoaster tycoon free workshop" },
-    { title:"OpenRCT2 Swim Rescue", cat:"Workshop", emoji:"🏊", color:"linear-gradient(135deg,#001a2a,#00304a)", badge:"Free Workshop", badgeColor:"#3a7bc8", url:"../workshops/openrct2-swim-rescue.html", desc:"Write a real OpenRCT2 plugin in JavaScript, detect when guests fall into water and save them before they drown. 10 steps, live simulation. Ages 11+. Free.", tags:["JavaScript","Free","Workshop","Ages 11+","OpenRCT2"], keywords:"openrct2 swim rescue javascript plugin guests water drown live simulation rollercoaster tycoon 10 steps free workshop" },
-    { title:"Pirate Cannon Forge", cat:"Workshop", emoji:"💣", color:"linear-gradient(135deg,#1a1000,#2a1c00)", badge:"Free Workshop", badgeColor:"#e8543a", url:"../workshops/pirate-cannon-builder.html", desc:"Build a pirate cannon game in your browser with this free game dev workshop from JVDesignStudio.", tags:["Free","Workshop","Pirates","Browser"], keywords:"pirate cannon forge build browser game dev workshop free pirates" },
-    { title:"Pirate Ship Shipyard", cat:"Workshop", emoji:"🏴‍☠️", color:"linear-gradient(135deg,#0a1018,#16202e)", badge:"Free Workshop", badgeColor:"#3a7bc8", url:"../workshops/pirate-ship-builder.html", desc:"Build and sail a pirate ship in this free browser game from JVDesignStudio.", tags:["Free","Workshop","Pirates","Browser"], keywords:"pirate ship shipyard build sail browser game free workshop pirates" },
-    { title:"Steampunk Airship Dockyard", cat:"Workshop", emoji:"🎈", color:"linear-gradient(135deg,#1a1408,#2a2010)", badge:"Free Workshop", badgeColor:"#c47f00", url:"../workshops/steampunk-airship-builder.html", desc:"Build and fly a steampunk airship in this free browser game from JVDesignStudio.", tags:["Free","Workshop","Steampunk","Browser"], keywords:"steampunk airship dockyard build fly browser game free workshop" },
-    { title:"Castle Siege Blueprint", cat:"Workshop", emoji:"🏯", color:"linear-gradient(135deg,#0a0a0a,#1c1c1c)", badge:"Live Builder", badgeColor:"#9ca3af", url:"../workshops/castle-siege-blueprint.html", desc:"Castle Siege Blueprint, design your own castle defence game with this free game dev tool.", tags:["Free","Workshop","Live Builder","Strategy"], keywords:"castle siege blueprint castle defence design free game dev tool workshop brawler" },
-    { title:"Nuclear Blueprint", cat:"Workshop", emoji:"☢️", color:"linear-gradient(135deg,#0a0500,#1a0800)", badge:"Live Builder", badgeColor:"#ef4444", url:"../workshops/nuclear-blueprint.html", desc:"Nuclear-style game blueprint, design a top-down survival game with this free guide.", tags:["Free","Workshop","Live Builder","Roguelite"], keywords:"nuclear blueprint top down survival roguelite design free guide workshop" },
-    { title:"BuildLab", cat:"Tool", emoji:"🧱", color:"linear-gradient(135deg,#001a3a,#002b6b)", badge:"Free Tool", badgeColor:"#f97316", url:"../tools/buildlab.html", desc:"BuildLab is a free 3D block builder in your browser. Place, paint and resize blocks, then export to Roblox Studio, OBJ or GLTF, or share your build with a link.", tags:["3D Builder","Roblox","Free","Browser App"], keywords:"buildlab block builder 3d builder roblox model maker voxel free browser tool obj gltf export" },
-    { title:"Unity 2D Platformer Builder", cat:"Course", emoji:"🟦", color:"linear-gradient(135deg,#07080a,#0d1520)", badge:"Live Builder", badgeColor:"#5bc0f8", url:"../workshops/unity-2d-platformer.html", desc:"Build a 2D platformer in Unity from scratch. Learn C#, Rigidbody2D, collisions, animations, scene management, and more, 10 steps, live preview, complete beginner. Free.", tags:["C#","Unity","Ages 11+","Free","Live Builder"], keywords:"unity 2d platformer builder c# csharp rigidbody2d collisions animations scene management 10 steps live preview free beginner" },
-    { title:"Unity Top-Down Shooter Builder", cat:"Course", emoji:"🔫", color:"linear-gradient(135deg,#07080a,#0d1520)", badge:"Live Builder", badgeColor:"#5bc0f8", url:"../workshops/unity-top-down-shooter.html", desc:"Build a top-down shooter in Unity from scratch. Learn C#, MonoBehaviour, Input, Instantiate, collisions, and coroutines, 10 steps, live preview, complete beginner. Free.", tags:["C#","Unity","Ages 11+","Free","Live Builder"], keywords:"unity top down shooter builder c# csharp monobehaviour input instantiate collisions coroutines 10 steps live preview free beginner" },
-    { title:"Unreal 2D Platformer Blueprint", cat:"Course", emoji:"🎮", color:"linear-gradient(135deg,#08070a,#1a1500)", badge:"Live Builder", badgeColor:"#e8c41a", url:"../workshops/unreal-2d-platformer.html", desc:"Build a 2D platformer in Unreal Engine using Blueprints. Connect nodes step by step, unlock features, play live in browser. Free interactive course.", tags:["Unreal","Blueprints","UE5","Free","Live Builder","Platformer"], keywords:"unreal 2d platformer blueprint connect nodes unlock features live browser free interactive course ue5" },
-    { title:"Unreal Blueprint Top-Down Shooter", cat:"Course", emoji:"🔫", color:"linear-gradient(135deg,#08070a,#1a000f)", badge:"Live Builder", badgeColor:"#e8312b", url:"../workshops/unreal-blueprint-shooter.html", desc:"Build a Nuclear Throne-style top-down shooter in Unreal Engine 5 using Blueprints. Connect nodes, type values, unlock the game, 30 steps, fully interactive.", tags:["Unreal","Blueprints","UE5","Free","Live Builder","Shooter"], keywords:"unreal blueprint top down shooter nuclear throne connect nodes type values unlock 30 steps interactive ue5 free" },
-    { title:"Unreal Top-Down Shooter (C++)", cat:"Course", emoji:"⚙️", color:"linear-gradient(135deg,#0a1020,#141830)", badge:"Live Builder", badgeColor:"#4a9eff", url:"../workshops/unreal-top-down-shooter.html", desc:"Build a Nuclear Throne-style top-down shooter in Unreal Engine 5. Learn C++, Actors, Enhanced Input, collision, AI, HUD, and more, 25 steps, live preview, complete beginner.", tags:["C++","Unreal","UE5","Ages 11+","Free","Live Builder"], keywords:"unreal top down shooter c++ cpp actors enhanced input collision ai hud 25 steps live preview free beginner ue5" }
-];
-
-let activeChip = null;
-function renderAll(list, query){
-    const grid = document.getElementById('resultsGrid');
-    const empty = document.getElementById('emptyState');
-    const header = document.getElementById('resultsHeader');
-    grid.innerHTML='';
-    if(list.length===0){grid.style.display='none';empty.classList.add('show');}
-    else{grid.style.display='';empty.classList.remove('show');}
-    const countEl = document.getElementById('resultsCount');
-    if(countEl) {
-        if(query) countEl.innerHTML = `Found <span>${list.length}</span> result${list.length!==1?'s':''} for "<strong>${query}</strong>"`;
-        else countEl.innerHTML = `Showing all <span>${list.length}</span> projects`;
-    }
-    list.forEach(p=>{
-        const card = document.createElement('a');
-        card.href = p.url;
-        card.className = 'result-card';
-        card.innerHTML = `
-            <div class="rc-thumb" style="background:${p.color};">${p.emoji}<span class="rc-badge" style="background:${p.badgeColor};">${p.badge}</span></div>
-            <div class="rc-body">
-                <div class="rc-cat">${p.cat}</div>
-                <div class="rc-title">${p.title}</div>
-                <div class="rc-desc">${p.desc}</div>
-                <div class="rc-tags">${p.tags.map(t=>`<span class="rc-tag">${t}</span>`).join('')}</div>
-                <span class="rc-cta">View Project →</span>
-            </div>`;
-        grid.appendChild(card);
-    });
-}
-
-function doSearch(){
-    const q = document.getElementById('searchInput').value.toLowerCase().trim();
-    document.getElementById('clearBtn').classList.toggle('visible', q.length>0);
-    if(!q){renderAll(ALL_PROJECTS,'');return;}
-    // Searching pools the curated showcase with the full-site index, so
-    // every workshop, game, tool and guide is findable — while the default
-    // view stays a friendly curated grid rather than a 250-card wall.
-    const pool = ALL_PROJECTS.concat(window.SITE_INDEX || []);
-    const seen = new Set();
-    const results = pool.filter(p=>{
-        const u = p.url.replace(/^(\.\.\/)+/,'');
-        if(seen.has(u)) return false; seen.add(u);
-        return p.title.toLowerCase().includes(q)||
-            p.desc.toLowerCase().includes(q)||
-            p.keywords.toLowerCase().includes(q)||
-            p.tags.some(t=>t.toLowerCase().includes(q))||
-            p.cat.toLowerCase().includes(q)
-        ;
-    });
-    renderAll(results, q);
-}
-
-function quickSearch(term, chip){
-    document.querySelectorAll('.tag-chip').forEach(c=>c.classList.remove('active'));
-    if(chip){chip.classList.add('active');}
-    document.getElementById('searchInput').value = term;
-    doSearch();
-}
-
-/* ── FULL-SITE INDEX AUGMENTATION ─────────────────────────────────────────
-   ALL_PROJECTS above is the curated showcase shown by default. The generated
-   search-index.json (every public page, built alongside the sitemap) is kept
-   in window.SITE_INDEX and pooled into results only when the user types a
-   query — so search covers the whole site without turning the landing view
-   into a wall of cards. */
 (function(){
-    const CAT_STYLE = {
-        'games':     { cat:'Game',    emoji:'🎮', color:'linear-gradient(135deg,#0a0a1a,#1a1035)', badgeColor:'#4e7d80' },
-        'workshops': { cat:'Course',  emoji:'🎓', color:'linear-gradient(135deg,#0a1628,#1a2640)', badgeColor:'#c47f00' },
-        'books':     { cat:'Book',    emoji:'📚', color:'linear-gradient(135deg,#2a2838,#3d3952)', badgeColor:'#6b4fa0' },
-        'tools':     { cat:'Tool',    emoji:'🛠️', color:'linear-gradient(135deg,#0a0a0c,#18101e)', badgeColor:'#7c3aed' },
-        'pages':     { cat:'Page',    emoji:'📄', color:'linear-gradient(135deg,#1a1a24,#2a2838)', badgeColor:'#5a5449' }
+    var C = window.JVDS_CONTENT || {};
+    var catColors = {
+        'Workshop': { color:'linear-gradient(135deg,#0a1628,#1a2640)', badgeColor:'#c47f00', emoji:'🎓' },
+        'Game':     { color:'linear-gradient(135deg,#0a0a1a,#1a1035)', badgeColor:'#e94560', emoji:'🎮' },
+        'Tool':     { color:'linear-gradient(135deg,#0a0a0c,#18101e)', badgeColor:'#7c3aed', emoji:'🛠️' },
+        'Book':     { color:'linear-gradient(135deg,#2a2838,#3d3952)', badgeColor:'#6b4fa0', emoji:'📚' },
+        'Path':     { color:'linear-gradient(135deg,#1a1400,#2a2200)', badgeColor:'#f5c400', emoji:'🗺️' }
     };
-    const norm = u => u.replace(/^(\.\.\/)+/,'').replace(/^\//,'');
-    const known = new Set(ALL_PROJECTS.map(p=>norm(p.url)));
-    window.SITE_INDEX = [];
-    fetch('../search-index.json').then(r=>r.ok?r.json():Promise.reject()).then(idx=>{
-        const extra = (idx.pages||[]).filter(p=>!known.has(p.url)).map(p=>{
-            const parts = p.url.split('/');
-            const style = CAT_STYLE[parts[0]] || CAT_STYLE['pages'];
-            const fileName = (parts[parts.length-1]||'').replace(/\.html$/,'').replace(/-/g,' ');
-            return {
-                title: p.title || fileName,
-                cat: style.cat,
-                emoji: style.emoji,
-                color: style.color,
-                badge: style.cat,
-                badgeColor: style.badgeColor,
-                url: '../' + p.url,
-                desc: p.desc || ('Part of the free JVDesignStudio collection — ' + fileName + '.'),
-                tags: [style.cat, parts.length>1?parts[0]:'site'],
-                keywords: (p.title+' '+p.desc+' '+p.url).toLowerCase()
-            };
+
+    function buildSearchIndex(){
+        var items = [];
+        (C.workshops||[]).forEach(function(w){
+            items.push({
+                title:w.title, cat:'Workshop', emoji:'🎓',
+                color:catColors.Workshop.color, badge:'Workshop', badgeColor:catColors.Workshop.badgeColor,
+                url:w.url, desc:w.desc, tags:[w.engine,w.difficulty,w.ageRange].filter(Boolean),
+                keywords:((w.title||'')+' '+(w.desc||'')+' '+(w.tags||[]).join(' ')+' '+(w.engine||'')).toLowerCase(),
+                engine:w.engine, difficulty:w.difficulty, ageRange:w.ageRange
+            });
         });
-        window.SITE_INDEX = extra;
-        // If the user already typed something, refresh results with the wider pool
-        if(document.getElementById('searchInput').value.trim()) doSearch();
-    }).catch(()=>{ /* index unavailable — curated list still works */ });
-}())
-function clearSearch(){
-    document.getElementById('searchInput').value='';
-    document.getElementById('clearBtn').classList.remove('visible');
-    document.querySelectorAll('.tag-chip').forEach(c=>c.classList.remove('active'));
-    renderAll(ALL_PROJECTS,'');
-}
-
-document.getElementById('searchInput').addEventListener('input', doSearch);
-
-/* ── Dark mode toggle ── */
-function toggleTheme() {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('jvds-theme', isDark ? 'light' : 'dark');
-    const btn = document.getElementById('themeToggle');
-    if (btn) btn.textContent = isDark ? '🌙' : '☀️';
-}
-
-// Focus search on load
-window.addEventListener('DOMContentLoaded',()=>{
-    // Restore theme
-    const saved = localStorage.getItem('jvds-theme');
-    if (saved === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        const btn = document.getElementById('themeToggle');
-        if (btn) btn.textContent = '☀️';
+        (C.games||[]).forEach(function(g){
+            items.push({
+                title:g.title, cat:'Game', emoji:g.emoji||'🎮',
+                color:catColors.Game.color, badge:'Game', badgeColor:catColors.Game.badgeColor,
+                url:g.url, desc:g.desc, tags:[g.category,g.kids?'Kids':'',g.age||''].filter(Boolean),
+                keywords:((g.title||'')+' '+(g.desc||'')+' '+(g.tag||'')+' '+(g.character||'')).toLowerCase(),
+                category:g.category, character:g.character
+            });
+        });
+        (C.tools||[]).forEach(function(t){
+            items.push({
+                title:t.title, cat:'Tool', emoji:'🛠️',
+                color:catColors.Tool.color, badge:'Tool', badgeColor:catColors.Tool.badgeColor,
+                url:t.url, desc:t.desc, tags:[t.category].concat(t.tags||[]).slice(0,3),
+                keywords:((t.title||'')+' '+(t.desc||'')+' '+(t.tags||[]).join(' ')).toLowerCase(),
+                category:t.category
+            });
+        });
+        (C.books||[]).forEach(function(b){
+            items.push({
+                title:b.title, cat:'Book', emoji:b.emoji||'📚',
+                color:catColors.Book.color, badge:b.status==='coming-soon'?'Coming Soon':'Book', badgeColor:catColors.Book.badgeColor,
+                url:b.url, desc:b.desc, tags:[b.theme,b.ageRange].filter(Boolean),
+                keywords:((b.title||'')+' '+(b.desc||'')+' '+(b.theme||'')+' '+(b.character||'')).toLowerCase(),
+                character:b.character
+            });
+        });
+        return items;
     }
-    // Scroll reveal
-    const revealObs = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-                revealObs.unobserve(entry.target);
-            }
+
+    var ALL = buildSearchIndex();
+
+    var activeType = null, activeEngine = null;
+
+    function renderAll(list, query){
+        var grid = document.getElementById('resultsGrid');
+        var empty = document.getElementById('emptyState');
+        var countEl = document.getElementById('resultsCount');
+        grid.innerHTML = '';
+        if(list.length===0){grid.style.display='none';empty.classList.add('show');}
+        else{grid.style.display='';empty.classList.remove('show');}
+        if(countEl){
+            if(query) countEl.innerHTML = 'Found <span>'+list.length+'</span> result'+(list.length!==1?'s':'')+' for "<strong>'+query+'</strong>"';
+            else countEl.innerHTML = 'Showing all <span>'+list.length+'</span> projects';
+        }
+        list.forEach(function(p){
+            var card = document.createElement('a');
+            card.href = p.url;
+            card.className = 'result-card';
+            card.innerHTML =
+                '<div class="rc-thumb" style="background:'+p.color+';">'+p.emoji+'<span class="rc-badge" style="background:'+p.badgeColor+';">'+p.badge+'</span></div>'+
+                '<div class="rc-body">'+
+                    '<div class="rc-cat">'+p.cat+'</div>'+
+                    '<div class="rc-title">'+p.title+'</div>'+
+                    '<div class="rc-desc">'+p.desc+'</div>'+
+                    '<div class="rc-tags">'+p.tags.map(function(t){return '<span class="rc-tag">'+t+'</span>';}).join('')+'</div>'+
+                    '<span class="rc-cta">View Project →</span>'+
+                '</div>';
+            grid.appendChild(card);
         });
-    }, { threshold: 0.06 });
-    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
-    renderAll(ALL_PROJECTS,'');
-    const params = new URLSearchParams(window.location.search);
-    const q = params.get('q');
-    if(q){document.getElementById('searchInput').value=q;doSearch();}
-    else document.getElementById('searchInput').focus();
-});
+    }
+
+    function doSearch(){
+        var q = document.getElementById('searchInput').value.toLowerCase().trim();
+        document.getElementById('clearBtn').classList.toggle('visible', q.length>0);
+        var pool = ALL;
+        if(window.SITE_INDEX) pool = pool.concat(window.SITE_INDEX);
+        if(!q && !activeType && !activeEngine){renderAll(ALL,'');return;}
+        var seen = {};
+        var results = pool.filter(function(p){
+            var u = p.url.replace(/^(\.\.\/)+/,'');
+            if(seen[u]) return false; seen[u]=1;
+            if(activeType && p.cat !== activeType) return false;
+            if(activeEngine && (!p.engine || p.engine !== activeEngine)) return false;
+            if(!q) return true;
+            return p.title.toLowerCase().indexOf(q)!==-1||
+                p.desc.toLowerCase().indexOf(q)!==-1||
+                p.keywords.toLowerCase().indexOf(q)!==-1||
+                p.tags.some(function(t){return t.toLowerCase().indexOf(q)!==-1;})||
+                p.cat.toLowerCase().indexOf(q)!==-1;
+        });
+        renderAll(results, q);
+    }
+
+    function quickSearch(term, chip){
+        document.querySelectorAll('.tag-chip').forEach(function(c){c.classList.remove('active');});
+        if(chip) chip.classList.add('active');
+        document.getElementById('searchInput').value = term;
+        doSearch();
+    }
+
+    window.quickSearch = quickSearch;
+
+    function filterType(type, btn){
+        if(activeType === type){ activeType = null; btn.classList.remove('active'); }
+        else {
+            document.querySelectorAll('.filter-type-btn').forEach(function(b){b.classList.remove('active');});
+            activeType = type;
+            btn.classList.add('active');
+        }
+        doSearch();
+    }
+
+    function filterEngine(engine, btn){
+        if(activeEngine === engine){ activeEngine = null; btn.classList.remove('active'); }
+        else {
+            document.querySelectorAll('.filter-engine-btn').forEach(function(b){b.classList.remove('active');});
+            activeEngine = engine;
+            btn.classList.add('active');
+        }
+        doSearch();
+    }
+
+    window.filterType = filterType;
+    window.filterEngine = filterEngine;
+
+    function clearSearch(){
+        document.getElementById('searchInput').value='';
+        document.getElementById('clearBtn').classList.remove('visible');
+        document.querySelectorAll('.tag-chip,.filter-type-btn,.filter-engine-btn').forEach(function(c){c.classList.remove('active');});
+        activeType = null; activeEngine = null;
+        renderAll(ALL,'');
+    }
+    window.clearSearch = clearSearch;
+
+    /* Full-site index augmentation */
+    (function(){
+        var CAT_STYLE = {
+            'games':     { cat:'Game',    emoji:'🎮', color:'linear-gradient(135deg,#0a0a1a,#1a1035)', badgeColor:'#4e7d80' },
+            'workshops': { cat:'Workshop',emoji:'🎓', color:'linear-gradient(135deg,#0a1628,#1a2640)', badgeColor:'#c47f00' },
+            'books':     { cat:'Book',    emoji:'📚', color:'linear-gradient(135deg,#2a2838,#3d3952)', badgeColor:'#6b4fa0' },
+            'tools':     { cat:'Tool',    emoji:'🛠️', color:'linear-gradient(135deg,#0a0a0c,#18101e)', badgeColor:'#7c3aed' },
+            'pages':     { cat:'Page',    emoji:'📄', color:'linear-gradient(135deg,#1a1a24,#2a2838)', badgeColor:'#5a5449' }
+        };
+        var norm = function(u){return u.replace(/^(\.\.\/)+/,'').replace(/^\//,'');};
+        var known = {};
+        ALL.forEach(function(p){known[norm(p.url)]=1;});
+        window.SITE_INDEX = [];
+        fetch('/search-index.json').then(function(r){return r.ok?r.json():Promise.reject();}).then(function(idx){
+            window.SITE_INDEX = (idx.pages||[]).filter(function(p){return !known[p.url];}).map(function(p){
+                var parts = p.url.split('/');
+                var style = CAT_STYLE[parts[0]] || CAT_STYLE['pages'];
+                var fileName = (parts[parts.length-1]||'').replace(/\.html$/,'').replace(/-/g,' ');
+                return {
+                    title: p.title || fileName, cat: style.cat, emoji: style.emoji,
+                    color: style.color, badge: style.cat, badgeColor: style.badgeColor,
+                    url: '/' + p.url, desc: p.desc || 'Part of the free JVDesignStudio collection.',
+                    tags: [style.cat], keywords: (p.title+' '+p.desc+' '+p.url).toLowerCase()
+                };
+            });
+            if(document.getElementById('searchInput').value.trim()) doSearch();
+        }).catch(function(){});
+    })();
+
+    document.getElementById('searchInput').addEventListener('input', doSearch);
+
+    window.addEventListener('DOMContentLoaded', function(){
+        var saved = localStorage.getItem('jvds-theme');
+        if(saved==='dark'){document.documentElement.setAttribute('data-theme','dark');}
+        var revealObs = new IntersectionObserver(function(entries){
+            entries.forEach(function(entry){
+                if(entry.isIntersecting){entry.target.classList.add('visible');revealObs.unobserve(entry.target);}
+            });
+        },{threshold:0.06});
+        document.querySelectorAll('.reveal').forEach(function(el){revealObs.observe(el);});
+        renderAll(ALL,'');
+        var params = new URLSearchParams(window.location.search);
+        var q = params.get('q');
+        if(q){document.getElementById('searchInput').value=q;doSearch();}
+        else document.getElementById('searchInput').focus();
+    });
+})();
 </script>
 
 </body>

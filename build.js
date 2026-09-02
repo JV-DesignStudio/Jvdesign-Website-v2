@@ -20,6 +20,11 @@ fs.readdirSync(PARTIALS).forEach(f => {
     partials[f.replace('.html', '')] = fs.readFileSync(path.join(PARTIALS, f), 'utf8');
 });
 
+// Unified nav: map nav-tools to nav-content so all pages get the same nav
+if (partials['nav-tools'] && partials['nav-content']) {
+    partials['nav-tools'] = partials['nav-content'];
+}
+
 function makeMarkerRegex(name) {
     return new RegExp(`<!--\\s*BUILD:${name}\\s*-->[\\s\\S]*?<!--\\s*/BUILD:${name}\\s*-->`, 'g');
 }

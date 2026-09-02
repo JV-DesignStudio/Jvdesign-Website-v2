@@ -41,16 +41,12 @@
 
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
-<!-- Shared live region. Nothing on the site announced quiz results, XP, filter
- counts or game-over states to a screen reader; this gives every page one
- place to do it. Call JVDS.announce('...') from anywhere. -->
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <script>
 window.JVDS = window.JVDS || {};
 window.JVDS.announce = function (msg) {
  var el = document.getElementById('jvds-announce');
  if (!el || !msg) return;
- /* Clearing first makes repeat messages ("Correct" twice) announce again. */
  el.textContent = '';
  setTimeout(function () { el.textContent = String(msg); }, 60);
 };
@@ -63,11 +59,13 @@ window.JVDS.announce = function (msg) {
  </a>
  <nav class="main-nav" id="mainNav" aria-label="Main">
  <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
- <a href="/workshop" class="nav-link" data-page="workshop learn-hub"><span aria-hidden="true">🎓</span> Learn</a>
- <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies"><span aria-hidden="true">🛠️</span> Make</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies"><span aria-hidden="true">🛠️</span> Create</a>
+ <a href="/books" class="nav-link" data-page="books"><span aria-hidden="true">📚</span> Read</a>
  <a href="/downloads" class="nav-link" data-page="downloads"><span aria-hidden="true">📦</span> Downloads</a>
- <a href="/about" class="nav-link" data-page="about books press videos"><span aria-hidden="true">🏛️</span> Studio</a>
- <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> For Parents</a>
+ <a href="/about" class="nav-link" data-page="about press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> Parents</a>
+ <a href="/search" class="nav-link nav-link--icon" data-page="search" aria-label="Search"><span aria-hidden="true">🔍</span></a>
  </nav>
  <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
  <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
@@ -76,7 +74,6 @@ window.JVDS.announce = function (msg) {
 </div>
 <script>
 (function(){
- /* Restore saved theme before first paint of the toggle icon */
  if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
  var b = document.getElementById('themeToggle');
  if (!b) return;
@@ -100,13 +97,21 @@ window.JVDS.announce = function (msg) {
 </header>
 <script>
 (function(){
- /* Active nav: works for both clean URLs (/workshop) and legacy (/pages/workshop.html) */
  var seg = location.pathname.split('/').pop() || 'index.html';
  var page = seg.replace(/\.html$/, '');
  document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
  var pages = (a.getAttribute('data-page')||'').split(/\s+/);
  if(pages.indexOf(page) !== -1) a.classList.add('active');
  });
+ if(!document.querySelector('.main-nav .nav-link.active')){
+   var section = /\/tools\//.test(location.pathname) ? 'dev-tools'
+               : /\/workshops\//.test(location.pathname) ? 'workshop'
+               : /\/games\//.test(location.pathname) ? 'games'
+               : /\/books\//.test(location.pathname) ? 'books' : null;
+   if(section) document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+     if((a.getAttribute('data-page')||'').split(/\s+/).indexOf(section)!==-1) a.classList.add('active');
+   });
+ }
  var btn = document.getElementById('navToggle');
  var nav = document.getElementById('mainNav');
  if (!btn || !nav) return;

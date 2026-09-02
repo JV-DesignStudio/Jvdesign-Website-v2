@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v14
-const CACHE='jvds-v14';
+// JVDesignStudio Service Worker v15
+const CACHE='jvds-v15';
 const CORE=[
   '/',
   '/index.html',
@@ -9,6 +9,8 @@ const CORE=[
   '/style-workshop.css',
   '/workshop-enhancements.js',
   '/cookie-consent.js',
+  '/content-data.js',
+  '/content-loader.js',
   '/logo.png',
   '/workshop',
   '/pages/workshop.html',

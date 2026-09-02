@@ -227,51 +227,87 @@ footer a{color:var(--muted)}footer a:hover{color:var(--text)}
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <!-- BUILD:nav-tools -->
-<header class="jvds-site-nav" id="jvdsSiteNav">
-    <div class="jvds-nav-inner">
-        <a href="/" class="jvds-nav-logo">
-            <img src="/logo.png" alt="JVDesignStudio" onerror="this.style.display='none'">
-            JVDesignStudio
-        </a>
-        <nav class="jvds-nav-links" id="jvdsNavLinks">
-            <a href="/" data-page="index">Home</a>
-            <a href="/games" data-page="games">🎮 Games</a>
-            <a href="/books" data-page="books">📚 Books</a>
-            <a href="/learn-hub" data-page="learn-hub">🎓 Learn</a>
-            <a href="/workshop" data-page="workshop">🔧 Workshop</a>
-            <a href="/dev-tools" data-page="dev-tools">🛠️ Tools</a>
-            <a href="/freebies" data-page="freebies">🎁 Freebies</a>
-            <a href="/downloads" data-page="downloads">📦 Downloads</a>
-            <a href="/workshops/my-progress.html" data-page="my-progress">📊 Progress</a>
-            <a href="/about" data-page="about">About</a>
-            <a href="/search" data-page="search" aria-label="Search">🔍</a>
-        </nav>
-        <button class="jvds-nav-toggle" id="jvdsNavToggle" aria-label="Open menu" aria-expanded="false" aria-controls="jvdsNavLinks">☰</button>
-    </div>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script>
+window.JVDS = window.JVDS || {};
+window.JVDS.announce = function (msg) {
+ var el = document.getElementById('jvds-announce');
+ if (!el || !msg) return;
+ el.textContent = '';
+ setTimeout(function () { el.textContent = String(msg); }, 60);
+};
+</script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+ <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+ <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+ <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress"><span aria-hidden="true">🎓</span> Learn</a>
+ <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies"><span aria-hidden="true">🛠️</span> Create</a>
+ <a href="/books" class="nav-link" data-page="books"><span aria-hidden="true">📚</span> Read</a>
+ <a href="/downloads" class="nav-link" data-page="downloads"><span aria-hidden="true">📦</span> Downloads</a>
+ <a href="/about" class="nav-link" data-page="about press videos"><span aria-hidden="true">🏛️</span> Studio</a>
+ <a href="/parents" class="nav-link" data-page="parents"><span aria-hidden="true">👨‍👩‍👧</span> Parents</a>
+ <a href="/search" class="nav-link nav-link--icon" data-page="search" aria-label="Search"><span aria-hidden="true">🔍</span></a>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
+ <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+<script>
+(function(){
+ if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+ var b = document.getElementById('themeToggle');
+ if (!b) return;
+ function paint(){
+ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+ }
+ b.addEventListener('click', function(){
+ var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+ if (dark) {
+ document.documentElement.removeAttribute('data-theme');
+ localStorage.setItem('jvds-theme', 'light');
+ } else {
+ document.documentElement.setAttribute('data-theme', 'dark');
+ localStorage.setItem('jvds-theme', 'dark');
+ }
+ paint();
+ });
+ paint();
+})();
+</script>
 </header>
 <script>
 (function(){
-    var seg = location.pathname.split('/').pop() || 'index.html';
-    var page = seg.replace(/\.html$/, '');
-    var links = document.querySelectorAll('.jvds-nav-links a[data-page]');
-    var matched = false;
-    links.forEach(function(a){ if(a.getAttribute('data-page') === page){ a.classList.add('active'); matched = true; } });
-    if(!matched){
-        var section = /\/tools\//.test(location.pathname) ? 'dev-tools'
-                    : /\/workshops\//.test(location.pathname) ? 'workshop'
-                    : /\/games\//.test(location.pathname) ? 'games'
-                    : /\/books\//.test(location.pathname) ? 'books' : null;
-        if(section) links.forEach(function(a){ if(a.getAttribute('data-page') === section) a.classList.add('active'); });
-    }
-    var btn = document.getElementById('jvdsNavToggle');
-    var nav = document.getElementById('jvdsNavLinks');
-    if(!btn || !nav) return;
-    function openNav()  { nav.classList.add('open');    btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
-    function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu');  btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
-    nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
-    document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+ var seg = location.pathname.split('/').pop() || 'index.html';
+ var page = seg.replace(/\.html$/, '');
+ document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+ var pages = (a.getAttribute('data-page')||'').split(/\s+/);
+ if(pages.indexOf(page) !== -1) a.classList.add('active');
+ });
+ if(!document.querySelector('.main-nav .nav-link.active')){
+   var section = /\/tools\//.test(location.pathname) ? 'dev-tools'
+               : /\/workshops\//.test(location.pathname) ? 'workshop'
+               : /\/games\//.test(location.pathname) ? 'games'
+               : /\/books\//.test(location.pathname) ? 'books' : null;
+   if(section) document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
+     if((a.getAttribute('data-page')||'').split(/\s+/).indexOf(section)!==-1) a.classList.add('active');
+   });
+ }
+ var btn = document.getElementById('navToggle');
+ var nav = document.getElementById('mainNav');
+ if (!btn || !nav) return;
+ function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
+ function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
+ btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
+ nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
+ document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
+ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
 })();
 </script>
 <!-- /BUILD:nav-tools -->
