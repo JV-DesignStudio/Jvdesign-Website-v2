@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#ff7700">
-<script src="../analytics-loader.js"></script>
+<script defer src="../analytics-loader.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My First Browser Game Ep 4: Snake | JVDesignStudio</title>
 <meta name="description" content="Build Snake in JavaScript with grid ticks, an input queue and mobile touch controls. Free interactive workshop.">
@@ -30,18 +30,10 @@
 .code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
 @media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
 @media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
-
-.code-block{background:#070a0e;border:1px solid rgba(255,255,255,.08);border-radius:11px;overflow:hidden;margin:14px 0}
-.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
-.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:rgba(232,234,242,.4);margin-left:4px}
-.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.75rem;line-height:1.75;overflow-x:auto;white-space:pre;color:#d6deeb;margin:0}
-@media(max-width:600px){.code-pre{font-size:.66rem;white-space:pre-wrap;word-break:break-word}}
-@media print{.site-header,.series-strip,.progress-wrap,.xp-wrap,.step-card.locked,.quiz-gate,.code-challenge,.concept-fill,.finish-banner,.site-footer,.hero-btns,.print-btn,.skills-strip{display:none!important}.hero{padding:16px 0 10px;border:none}.step-card{border:1px solid #ccc;break-inside:avoid;margin-bottom:12px}.step-body{display:block!important}h1,h3,.step-title,.finish-title{color:#111}.hero-sub,.step-blurb,.big-goal-text p{color:#444}}
 </style>
 <link rel="stylesheet" href="../style-shared.css">
 <link rel="stylesheet" href="../style-workshop.css">
-<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
+<style>body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}</style>
 </head>
 <body>
 
@@ -179,6 +171,9 @@ window.JVDS.announce = function (msg) {
 
 <main class="workshop">
 
+  <div class="callout info" style="margin:0 0 16px;border-left:3px solid #60a5fa"><div class="callout-icon">🌐</div><div><strong>How to run:</strong> Open the HTML file in your browser — double-click it or drag it into Chrome!</div></div>
+
+
   <div class="callout info" style="margin:0 0 20px">
     <div class="callout-icon">🧩</div>
     <div><strong>Need the game setup?</strong> Each episode builds a new game on the same JavaScript skeleton, the <code>&lt;canvas&gt;</code>, the 2D <code>ctx</code>, the <code>draw()</code> function and the <code>requestAnimationFrame</code> loop. If you're starting here or need that boilerplate, grab it in one click: <a href="js-flappy-workshop.html#step-1" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Episode 1 full template →</a> · <a href="js-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">JS Cheatsheet →</a></div>
@@ -222,21 +217,6 @@ function loop(t) {
     draw();
     requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);let snake = [{x:12,y:12},{x:11,y:12},{x:10,y:12}];
-let dir = {x:1, y:0};
-let lastTick = 0;
-
-function loop(t) {
-    if (t - lastTick &gt; 120) {
-        lastTick = t;
-        const head = { x: snake[0].x + dir.x,
-                       y: snake[0].y + dir.y };
-        snake.unshift(head);
-        snake.pop();
-    }
-    draw();
-    requestAnimationFrame(loop);
-}
 requestAnimationFrame(loop);</pre>
   </div>
 
@@ -246,48 +226,6 @@ requestAnimationFrame(loop);</pre>
         <div class="code-block" style="margin:12px 16px 16px">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">snake.html</span></div>
           <pre class="code-pre">&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-&lt;meta charset="UTF-8"&gt;
-&lt;style&gt;
-  body { display:flex; flex-direction:column; align-items:center; gap:10px;
-         background:#0d1117; font-family:system-ui, sans-serif; padding:16px; }
-  canvas { background:#0a0e14; border:2px solid #1e2733; border-radius:8px; touch-action:none; }
-&lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-&lt;canvas id="game" width="500" height="500"&gt;&lt;/canvas&gt;
-&lt;script&gt;
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const CELL = 20;                 // 25 x 25 grid of 20px cells
-
-let snake = [{x:12,y:12}, {x:11,y:12}, {x:10,y:12}];
-let dir = {x:1, y:0};
-let lastTick = 0;
-
-function draw() {
-  ctx.clearRect(0, 0, 500, 500);
-  ctx.fillStyle = "#33d17a";
-  snake.forEach(function(c) {
-    ctx.fillRect(c.x*CELL + 1, c.y*CELL + 1, CELL-2, CELL-2);
-  });
-}
-
-function loop(t) {
-  if (t - lastTick &gt; 120) {          // one grid step every 120ms
-    lastTick = t;
-    const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
-    snake.unshift(head);
-    snake.pop();
-  }
-  draw();
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-&lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;&lt;!DOCTYPE html&gt;
 &lt;html&gt;
 &lt;head&gt;
 &lt;meta charset="UTF-8"&gt;
@@ -401,21 +339,6 @@ while (inputQueue.length) {
         dir = want;
         break;                      // one turn per tick
     }
-}let inputQueue = [];
-
-document.addEventListener("keydown", function(e) {
-    const map = { ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1},
-                  ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0} };
-    if (map[e.key]) inputQueue.push(map[e.key]);
-});
-
-// at each tick, before moving:
-while (inputQueue.length) {
-    const want = inputQueue.shift();
-    if (want.x !== -dir.x || want.y !== -dir.y) {
-        dir = want;
-        break;                      // one turn per tick
-    }
 }</pre>
   </div>
 
@@ -428,14 +351,10 @@ while (inputQueue.length) {
         <div class="cc-prompt">Take one valid direction per tick from the queue:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">snake.html</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">const want = inputQueue.const want = inputQueue.<input class="cc-blank" data-a="c2hpZnQ=" placeholder="Answer..." size="6">();
-if (want.x !== ();
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">const want = inputQueue.<input class="cc-blank" data-a="c2hpZnQ=" placeholder="Answer..." size="6">();
 if (want.x !== <input class="cc-blank" data-a="LWRpci54" placeholder="Type here..." size="7"> || want.y !== -dir.y) {
     dir = want;
-     || want.y !== -dir.y) {
-    dir = want;
     <input class="cc-blank" data-a="YnJlYWs=" placeholder="Answer..." size="6">;
-};
 }</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">�-� Check My Code</button>
@@ -486,21 +405,6 @@ if (want.x !== <input class="cc-blank" data-a="LWRpci54" placeholder="Type here.
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">snake.html</span></div>
     <pre class="code-pre">function spawnFood() {
-    while (true) {
-        const f = { x: Math.floor(Math.random() * 25),
-                    y: Math.floor(Math.random() * 25) };
-        const onSnake = snake.some(c =&gt; c.x === f.x &amp;&amp; c.y === f.y);
-        if (!onSnake) return f;
-    }
-}
-let food = spawnFood();
-
-// in the tick:
-snake.unshift(head);
-if (head.x === food.x &amp;&amp; head.y === food.y)
-    food = spawnFood();          // grew, no pop
-else
-    snake.pop();function spawnFood() {
     while (true) {
         const f = { x: Math.floor(Math.random() * 25),
                     y: Math.floor(Math.random() * 25) };
@@ -582,17 +486,6 @@ if (wrapMode) {
 }
 
 if (snake.some(c =&gt; c.x === head.x &amp;&amp; c.y === head.y))
-    dead = true;const wrapMode = document.getElementById("wrap").checked;
-
-if (wrapMode) {
-    head.x = (head.x + 25) % 25;
-    head.y = (head.y + 25) % 25;
-} else if (head.x &lt; 0 || head.x &gt; 24 ||
-           head.y &lt; 0 || head.y &gt; 24) {
-    dead = true;
-}
-
-if (snake.some(c =&gt; c.x === head.x &amp;&amp; c.y === head.y))
     dead = true;</pre>
   </div>
 
@@ -605,7 +498,7 @@ if (snake.some(c =&gt; c.x === head.x &amp;&amp; c.y === head.y))
         <div class="cc-prompt">Wrap the head across the edges in one line per axis:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">snake.html</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">head.x = (head.x + head.x = (head.x + <input class="cc-blank" data-a="MjU=" placeholder="..." size="4">) % ) % <input class="cc-blank" data-a="MjU=" placeholder="..." size="4">;;</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">head.x = (head.x + <input class="cc-blank" data-a="MjU=" placeholder="..." size="4">) % 25;</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">�-� Check My Code</button>
         <div class="cc-feedback"></div>
@@ -655,20 +548,6 @@ if (snake.some(c =&gt; c.x === head.x &amp;&amp; c.y === head.y))
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">snake.html</span></div>
     <pre class="code-pre">let touchStart = null;
-canvas.addEventListener("touchstart", function(e) {
-    touchStart = { x: e.touches[0].clientX,
-                   y: e.touches[0].clientY };
-    e.preventDefault();
-});
-canvas.addEventListener("touchend", function(e) {
-    if (!touchStart) return;
-    const dx = e.changedTouches[0].clientX - touchStart.x;
-    const dy = e.changedTouches[0].clientY - touchStart.y;
-    if (Math.abs(dx) &gt; Math.abs(dy))
-        inputQueue.push({ x: dx &gt; 0 ? 1 : -1, y: 0 });
-    else
-        inputQueue.push({ x: 0, y: dy &gt; 0 ? 1 : -1 });
-});let touchStart = null;
 canvas.addEventListener("touchstart", function(e) {
     touchStart = { x: e.touches[0].clientX,
                    y: e.touches[0].clientY };
@@ -745,13 +624,6 @@ snake.forEach(function(c, i) {
     const light = 55 - Math.min(35, i * 1.5);
     ctx.fillStyle = "hsl(155, 70%, " + light + "%)";
     ctx.fillRect(c.x * 20 + 1, c.y * 20 + 1, 18, 18);
-});const tickTime = Math.max(60, 120 - snake.length * 2);
-
-// gradient body while drawing (i = segment index):
-snake.forEach(function(c, i) {
-    const light = 55 - Math.min(35, i * 1.5);
-    ctx.fillStyle = "hsl(155, 70%, " + light + "%)";
-    ctx.fillRect(c.x * 20 + 1, c.y * 20 + 1, 18, 18);
 });</pre>
   </div>
 
@@ -764,7 +636,7 @@ snake.forEach(function(c, i) {
         <div class="cc-prompt">Speed up with length, with a floor:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">snake.html</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">const tickTime = Math.const tickTime = Math.<input class="cc-blank" data-a="bWF4" placeholder="Input..." size="4">(60, 120 - snake.(60, 120 - snake.<input class="cc-blank" data-a="bGVuZ3Ro" placeholder="Type here..." size="7"> * 2); * 2);</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">const tickTime = Math.<input class="cc-blank" data-a="bWF4" placeholder="Input..." size="4">(60, 120 - snake.<input class="cc-blank" data-a="bGVuZ3Ro" placeholder="Type here..." size="7"> * 2);</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">�-� Check My Code</button>
         <div class="cc-feedback"></div>
@@ -945,159 +817,22 @@ reset();
 requestAnimationFrame(loop);
 &lt;/script&gt;
 &lt;/body&gt;
-&lt;/html&gt;&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-&lt;meta charset="UTF-8"&gt;
-&lt;title&gt;Pixel Hunter - Snake&lt;/title&gt;
-&lt;style&gt;
-  body { display:flex; flex-direction:column; align-items:center; gap:12px;
-         background:#0d1117; color:#e8eaf2; font-family:system-ui, sans-serif; padding:16px; }
-  canvas { background:#0a0e14; border:2px solid #1e2733; border-radius:8px; touch-action:none; }
-  .row { display:flex; gap:16px; align-items:center; font-size:.95rem; }
-  label { display:flex; gap:6px; align-items:center; cursor:pointer; }
-&lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;h2&gt;🐍 Pixel Hunter&lt;/h2&gt;
-  &lt;div class="row"&gt;
-    &lt;span&gt;Score: &lt;b id="score"&gt;0&lt;/b&gt;&lt;/span&gt;
-    &lt;span&gt;Best: &lt;b id="best"&gt;0&lt;/b&gt;&lt;/span&gt;
-    &lt;label&gt;&lt;input type="checkbox" id="wrap"&gt; Wrap-around walls&lt;/label&gt;
-  &lt;/div&gt;
-  &lt;canvas id="game" width="500" height="500"&gt;&lt;/canvas&gt;
-  &lt;div class="row"&gt;Arrow keys / swipe to move · Space to restart&lt;/div&gt;
-
-&lt;script&gt;
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const CELL = 20, GRID = 25;
-
-let snake, dir, inputQueue, food, dead, lastTick, score, best;
-best = Number(localStorage.getItem("snakeBest") || 0);
-document.getElementById("best").textContent = best;
-
-function reset() {
-  snake = [{x:12,y:12}, {x:11,y:12}, {x:10,y:12}];
-  dir = {x:1, y:0};
-  inputQueue = [];
-  dead = false;
-  lastTick = 0;
-  score = 0;
-  food = spawnFood();
-  updateScore();
-}
-
-function spawnFood() {
-  while (true) {
-    const f = { x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID) };
-    const onSnake = snake.some(c =&gt; c.x === f.x &amp;&amp; c.y === f.y);
-    if (!onSnake) return f;
-  }
-}
-
-function updateScore() {
-  score = snake.length - 3;
-  document.getElementById("score").textContent = score;
-}
-
-// --- input: keyboard + touch both feed the SAME queue ---
-document.addEventListener("keydown", function(e) {
-  if (e.key === " " &amp;&amp; dead) { reset(); return; }
-  const map = { ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1},
-                ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0} };
-  if (map[e.key]) inputQueue.push(map[e.key]);
-});
-
-let touchStart = null;
-canvas.addEventListener("touchstart", function(e) {
-  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  e.preventDefault();
-});
-canvas.addEventListener("touchend", function(e) {
-  if (!touchStart) return;
-  const dx = e.changedTouches[0].clientX - touchStart.x;
-  const dy = e.changedTouches[0].clientY - touchStart.y;
-  if (Math.abs(dx) &gt; Math.abs(dy)) inputQueue.push({ x: dx &gt; 0 ? 1 : -1, y: 0 });
-  else                              inputQueue.push({ x: 0, y: dy &gt; 0 ? 1 : -1 });
-  touchStart = null;
-});
-
-function step() {
-  // one valid turn per tick
-  while (inputQueue.length) {
-    const want = inputQueue.shift();
-    if (want.x !== -dir.x || want.y !== -dir.y) { dir = want; break; }
-  }
-
-  const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
-  const wrapMode = document.getElementById("wrap").checked;
-
-  if (wrapMode) {
-    head.x = (head.x + GRID) % GRID;
-    head.y = (head.y + GRID) % GRID;
-  } else if (head.x &lt; 0 || head.x &gt; GRID-1 || head.y &lt; 0 || head.y &gt; GRID-1) {
-    dead = true; return;
-  }
-
-  if (snake.some(c =&gt; c.x === head.x &amp;&amp; c.y === head.y)) { dead = true; return; }
-
-  snake.unshift(head);
-  if (head.x === food.x &amp;&amp; head.y === food.y) { food = spawnFood(); updateScore(); }
-  else snake.pop();
-}
-
-function draw(t) {
-  ctx.clearRect(0, 0, 500, 500);
-
-  // pulsing food
-  const r = 8 + Math.sin(t/150) * 2;
-  ctx.fillStyle = "#ff5470";
-  ctx.beginPath();
-  ctx.arc(food.x*CELL + CELL/2, food.y*CELL + CELL/2, r, 0, Math.PI*2);
-  ctx.fill();
-
-  // gradient body
-  snake.forEach(function(c, i) {
-    const light = 55 - Math.min(35, i*1.5);
-    ctx.fillStyle = "hsl(155, 70%, " + light + "%)";
-    ctx.fillRect(c.x*CELL + 1, c.y*CELL + 1, CELL-2, CELL-2);
-  });
-
-  if (dead) {
-    ctx.fillStyle = "rgba(0,0,0,.6)";
-    ctx.fillRect(0, 0, 500, 500);
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 34px system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText("Game Over", 250, 235);
-    ctx.font = "18px system-ui";
-    ctx.fillText("Score " + score + " · press Space", 250, 270);
-  }
-}
-
-function loop(t) {
-  const tickTime = Math.max(60, 120 - snake.length*2);
-  if (!dead &amp;&amp; t - lastTick &gt; tickTime) {
-    lastTick = t;
-    step();
-    if (dead &amp;&amp; score &gt; best) {
-      best = score;
-      localStorage.setItem("snakeBest", best);
-      document.getElementById("best").textContent = best;
-    }
-  }
-  draw(t);
-  requestAnimationFrame(loop);
-}
-
-reset();
-requestAnimationFrame(loop);
-&lt;/script&gt;
-&lt;/body&gt;
 &lt;/html&gt;</pre>
     </div>
   </details>
+
+  <div class="callout info" style="margin:20px 0;border-left:3px solid #60a5fa;background:rgba(96,165,250,.08)">
+    <div class="callout-icon">🎓</div>
+    <div><strong>What you just learned:</strong>
+      <ul style="margin:6px 0 0 16px;padding:0">
+        <li>Grid-based tick movement inside a <code>requestAnimationFrame</code> loop</li>
+        <li>Input queue to fix the classic Snake reversal bug (queue one turn per tick)</li>
+        <li>Food spawning that avoids the snake body using <code>Array.some()</code></li>
+        <li>Wrap-around walls with modular arithmetic: <code>(x + 25) % 25</code></li>
+        <li>Touch swipe detection for mobile play, feeding the same input queue as keyboard</li>
+      </ul>
+    </div>
+  </div>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">
@@ -1171,10 +906,10 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 </script>
 <noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
-<script src="/cookie-consent.js"></script>
+<script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
-<script src="../player-profile.js"></script>
+<script defer src="../player-profile.js"></script>
 <script>
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-js-snake-v2';
@@ -1184,7 +919,7 @@ window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-js-snake-v2';
 window.WORKSHOP_PROFILE_ID='js-snake-workshop';
 </script>
-<script src="workshop-engine.js"></script>
+<script defer src="workshop-engine.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Course","name":"My First Browser Game Ep 4: Snake","description":"Build Snake in JavaScript with grid ticks, an input queue and mobile touch controls. Free interactive workshop.","url":"https://jvdesignstudio.co.uk/workshops/js-snake-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT1H30M"}}
 

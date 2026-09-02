@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#ff7700">
-<script src="../analytics-loader.js"></script>
+<script defer src="../analytics-loader.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My First C++ Game Ep 1: Pong | JVDesignStudio</title>
 <meta name="description" content="Learn C++ game programming by building Pong with SFML. Free interactive workshop with quizzes, code challenges and XP.">
@@ -179,6 +179,9 @@ window.JVDS.announce = function (msg) {
 
 <main class="workshop">
 
+  <div class="callout warn" style="margin:0 0 16px;border-left:3px solid #f59e0b"><div class="callout-icon">🔧</div><div><strong>Stuck?</strong><br>• <strong>SFML not found</strong> → Check your compile command includes <code>-lsfml-graphics -lsfml-window -lsfml-system</code><br>• <strong>Window does not appear</strong> → Make sure SFML DLLs are in the same folder as your .exe<br>• <strong>Font not found</strong> → Download a .ttf font and put it in your project folder</div></div>
+
+
   <div class="callout warn" style="margin:0 0 16px">
     <div class="callout-icon">⚠️</div>
     <div><strong>Heads up: SFML 3 renamed a few things.</strong> The install step gives you <strong>SFML 3</strong> today, but the short snippets in the steps below are written in the classic SFML 2 style. The differences are small and mechanical: <code>sf::VideoMode({800, 500})sf::VideoMode({800, 500})</code> (curly braces), the new event loop <code>while (const std::optional e = window.pollEvent())while (const std::optional e = window.pollEvent())</code> with <code>e-&gt;is&lt;sf::Event::Closed&gt;()e-&gt;is&lt;sf::Event::Closed&gt;()</code>, <code>sf::Keyboard::Key::Leftsf::Keyboard::Key::Left</code> (add <code>::Key::Key</code>), and <code>setPosition({x, y})setPosition({x, y})</code> / <code>move({dx, dy})move({dx, dy})</code> (curly braces). The <strong>✅ complete finished code</strong> at the bottom of this page is full SFML 3 and compiles on a fresh install, use it as your reference.</div>
@@ -209,22 +212,6 @@ window.JVDS.announce = function (msg) {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">#include &lt;SFML/Graphics.hpp&gt;
-#include &lt;optional&gt;
-
-int main() {
-    sf::RenderWindow window(sf::VideoMode({800, 500}), "C++ Pong");
-    window.setFramerateLimit(60);
-
-    while (window.isOpen()) {
-        while (const std::optional event = window.pollEvent())
-            if (event-&gt;is&lt;sf::Event::Closed&gt;())
-                window.close();
-
-        window.clear(sf::Color(15, 18, 32));
-        window.display();
-    }
-    return 0;
-}#include &lt;SFML/Graphics.hpp&gt;
 #include &lt;optional&gt;
 
 int main() {
@@ -297,21 +284,6 @@ int main() {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">sf::RectangleShape paddle1(sf::Vector2f(14, 90));
-paddle1.setPosition({20, 205});
-paddle1.setFillColor(sf::Color::White);
-
-sf::RectangleShape paddle2 = paddle1;
-paddle2.setPosition({766, 205});
-
-// inside the loop, before drawing:
-float speed = 6.f;
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))    paddle1.move({0, -speed});
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))    paddle1.move({0,  speed});
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))   paddle2.move({0, -speed});
-if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) paddle2.move({0,  speed});
-
-window.draw(paddle1);
-window.draw(paddle2);sf::RectangleShape paddle1(sf::Vector2f(14, 90));
 paddle1.setPosition({20, 205});
 paddle1.setFillColor(sf::Color::White);
 
@@ -403,16 +375,6 @@ float dt = clock.restart().asSeconds();
 ball.move({bvx * dt, bvy * dt});
 
 if (ball.getPosition().y &lt;= 0 || ball.getPosition().y + 14 &gt;= 500)
-    bvy = -bvy;sf::CircleShape ball(7);
-ball.setPosition({393, 243});
-float bvx = 300.f, bvy = 180.f;
-sf::Clock clock;
-
-// in the loop:
-float dt = clock.restart().asSeconds();
-ball.move({bvx * dt, bvy * dt});
-
-if (ball.getPosition().y &lt;= 0 || ball.getPosition().y + 14 &gt;= 500)
     bvy = -bvy;</pre>
   </div><div class="callout tip"><div class="callout-icon">💡</div><div>Per-frame movement (Java/Python episodes) is fine for learning; <strong>velocity �- dt</strong> is what real engines do. You just learned the difference.</div></div>
 
@@ -481,18 +443,6 @@ if (b.findIntersection(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
     float padCentre  = paddle2.getPosition().y + 45;
     float ballCentre = ball.getPosition().y + 7;
     bvy = (ballCentre - padCentre) * 5.f;
-}sf::FloatRect b = ball.getGlobalBounds();
-if (b.findIntersection(paddle1.getGlobalBounds()) &amp;&amp; bvx &lt; 0) {
-    bvx = -bvx * 1.05f;
-    float padCentre  = paddle1.getPosition().y + 45;
-    float ballCentre = ball.getPosition().y + 7;
-    bvy = (ballCentre - padCentre) * 5.f;
-}
-if (b.findIntersection(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
-    bvx = -bvx * 1.05f;
-    float padCentre  = paddle2.getPosition().y + 45;
-    float ballCentre = ball.getPosition().y + 7;
-    bvy = (ballCentre - padCentre) * 5.f;
 }</pre>
   </div>
 
@@ -505,7 +455,7 @@ if (b.findIntersection(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
         <div class="cc-prompt">Detect the ball hitting paddle 1:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (b.if (b.<input class="cc-blank" data-a="ZmluZEludGVyc2VjdGlvbg==" placeholder="????????????????" size="17">(paddle1.(paddle1.<input class="cc-blank" data-a="Z2V0R2xvYmFsQm91bmRz" placeholder="Enter text..." size="16">()) &amp;&amp; bvx &lt; ()) &amp;&amp; bvx &lt; <input class="cc-blank" data-a="MA==" placeholder="?" size="4">)
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (b.if (b.<input class="cc-blank" data-a="ZmluZEludGVyc2VjdGlvbg==" placeholder="????????????????" size="17">(paddle1.(paddle1.<input class="cc-blank" data-a="Z2V0R2xvYmFsQm91bmRz" placeholder="Enter text..." size="16">()) &amp;&amp; bvx &lt; ()) &amp;&amp; bvx &lt; <input class="cc-blank" data-a="MA==" placeholder="..." size="4">)
     bvx = -bvx * 1.05f;)
     bvx = -bvx * 1.05f;</pre>
         </div>
@@ -557,16 +507,6 @@ if (b.findIntersection(paddle2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">sf::Font font;
-if (!font.openFromFile("arial.ttf")) return 1;
-sf::Text scoreText(font, "0   0", 48);
-scoreText.setPosition({330, 20});
-int s1 = 0, s2 = 0;
-
-// scoring:
-float bx = ball.getPosition().x;
-if (bx &lt; -20)  { s2++; ball.setPosition({393, 243}); bvx = 300;  bvy = 180; }
-if (bx &gt; 820)  { s1++; ball.setPosition({393, 243}); bvx = -300; bvy = 180; }
-scoreText.setString(std::to_string(s1) + "   " + std::to_string(s2));sf::Font font;
 if (!font.openFromFile("arial.ttf")) return 1;
 sf::Text scoreText(font, "0   0", 48);
 scoreText.setPosition({330, 20});
@@ -633,16 +573,6 @@ scoreText.setString(std::to_string(s1) + "   " + std::to_string(s2));</pre>
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">pong.cpp</span></div>
     <pre class="code-pre">bool vsComputer = true;
-float aiSpeed = 5.f, deadZone = 18.f;
-
-if (vsComputer) {
-    float padCentre  = paddle2.getPosition().y + 45;
-    float ballCentre = ball.getPosition().y + 7;
-    if (padCentre &lt; ballCentre - deadZone) paddle2.move({0,  aiSpeed});
-    if (padCentre &gt; ballCentre + deadZone) paddle2.move({0, -aiSpeed});
-}
-
-bool gameOver = (s1 == 7 || s2 == 7);bool vsComputer = true;
 float aiSpeed = 5.f, deadZone = 18.f;
 
 if (vsComputer) {
@@ -776,88 +706,22 @@ int main() {
         }
         window.display();
     }
-}// Complete C++ Pong for SFML 3. Build with:
-//   g++ pong.cpp -o pong -lsfml-graphics -lsfml-window -lsfml-system
-#include &lt;SFML/Graphics.hpp&gt;
-#include &lt;optional&gt;
-#include &lt;cstdlib&gt;
-#include &lt;string&gt;
-
-int main() {
-    sf::RenderWindow window(sf::VideoMode({800, 500}), "C++ Pong");
-    window.setFramerateLimit(60);
-
-    sf::RectangleShape p1({14.f, 90.f});
-    sf::RectangleShape p2({14.f, 90.f});
-    sf::RectangleShape ball({14.f, 14.f});
-    p1.setPosition({20.f, 205.f});
-    p2.setPosition({766.f, 205.f});
-
-    float bx = 393, by = 243, bvx = 300, bvy = 180;
-    int p1Score = 0, p2Score = 0;
-
-    // Score text needs a font. Point this at any .ttf on your system.
-    sf::Font font;
-    bool haveFont = font.openFromFile("C:/Windows/Fonts/arial.ttf");
-
-    auto serve = [&amp;](int dir) {
-        bx = 393; by = 243;
-        bvx = 300.f * dir;
-        bvy = (std::rand() % 2 == 0) ? 180.f : -180.f;
-    };
-    serve((std::rand() % 2 == 0) ? 1 : -1);
-
-    sf::Clock clock;
-    while (window.isOpen()) {
-        while (const std::optional event = window.pollEvent())
-            if (event-&gt;is&lt;sf::Event::Closed&gt;())
-                window.close();
-
-        float dt = clock.restart().asSeconds();
-
-        // paddles: W/S and Up/Down, speed in pixels per second
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))    p1.move({0.f, -360.f * dt});
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))    p1.move({0.f,  360.f * dt});
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))   p2.move({0.f, -360.f * dt});
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) p2.move({0.f,  360.f * dt});
-        auto clampY = [](sf::RectangleShape&amp; p) {
-            float y = p.getPosition().y;
-            if (y &lt; 0) p.setPosition({p.getPosition().x, 0.f});
-            if (y &gt; 410) p.setPosition({p.getPosition().x, 410.f});
-        };
-        clampY(p1); clampY(p2);
-
-        // ball: velocity is pixels per second, scaled by dt so speed stays the same at any frame rate
-        bx += bvx * dt; by += bvy * dt;
-        if (by &lt;= 0 || by + 14 &gt;= 500) bvy = -bvy;
-        ball.setPosition({bx, by});
-
-        sf::FloatRect br = ball.getGlobalBounds();
-        if (br.findIntersection(p1.getGlobalBounds()) &amp;&amp; bvx &lt; 0) {
-            bvx = -bvx + 60.f;
-            bvy = (((by + 7) - (p1.getPosition().y + 45)) / 7.f) * 60.f;
-        }
-        if (br.findIntersection(p2.getGlobalBounds()) &amp;&amp; bvx &gt; 0) {
-            bvx = -(bvx + 60.f);
-            bvy = (((by + 7) - (p2.getPosition().y + 45)) / 7.f) * 60.f;
-        }
-        if (bvx &gt; 720.f) bvx = 720.f; if (bvx &lt; -720.f) bvx = -720.f;
-
-        if (bx &lt; 0)   { p2Score++; serve(-1); }
-        if (bx &gt; 800) { p1Score++; serve(1); }
-
-        window.clear(sf::Color(12, 14, 24));
-        window.draw(p1); window.draw(p2); window.draw(ball);
-        if (haveFont) {
-            sf::Text s(font, std::to_string(p1Score) + "   " + std::to_string(p2Score), 40);
-            s.setPosition({360.f, 20.f});
-            window.draw(s);
-        }
-        window.display();
-    }
 }</pre>
     </div>
   </details>
+
+  <div class="callout info" style="margin:20px 0;border-left:3px solid #60a5fa;background:rgba(96,165,250,.08)">
+    <div class="callout-icon">🎓</div>
+    <div><strong>What you just learned:</strong>
+      <ul style="margin:6px 0 0 16px;padding:0">
+        <li>Setting up a C++ compiler and SFML library, then compiling and linking a game</li>
+        <li>Creating sf::RectangleShape and sf::CircleShape objects with positions and colours</li>
+        <li>Real-time keyboard input with <code>sf::Keyboard::isKeyPressed()</code> for held keys</li>
+        <li>Delta-time movement with <code>sf::Clock</code> for frame-rate-independent speed</li>
+        <li>Paddle-spin rebound physics and a flawed-on-purpose AI opponent</li>
+      </ul>
+    </div>
+  </div>
 
   <!-- FINISH BANNER -->
   <div class="finish-banner" id="finishBanner">
@@ -931,10 +795,10 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 </script>
 <noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
-<script src="/cookie-consent.js"></script>
+<script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
-<script src="../player-profile.js"></script>
+<script defer src="../player-profile.js"></script>
 <script>
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-cpp-pong-v2';
@@ -944,7 +808,7 @@ window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-cpp-pong-v2';
 window.WORKSHOP_PROFILE_ID='cpp-pong-workshop';
 </script>
-<script src="workshop-engine.js"></script>
+<script defer src="workshop-engine.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Course","name":"My First C++ Game Ep 1: Pong","description":"Learn C++ game programming by building Pong with SFML. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/cpp-pong-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#ff7700">
-<script src="../analytics-loader.js"></script>
+<script defer src="../analytics-loader.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My First C++ Game Ep 7: Tower Defence Part 2 | JVDesignStudio</title>
 <meta name="description" content="Finish your C++ tower defence: bullets, waves, upgrades and a boss. Free interactive workshop finale.">
@@ -179,6 +179,9 @@ window.JVDS.announce = function (msg) {
 
 <main class="workshop">
 
+  <div class="callout info" style="margin:0 0 16px;border-left:3px solid #60a5fa"><div class="callout-icon">💻</div><div><strong>How to run:</strong> Save, compile and run: <code>g++ game.cpp -o game -lsfml-graphics -lsfml-window -lsfml-system && ./game</code></div></div>
+
+
   <div class="callout warn" style="margin:0 0 16px">
     <div class="callout-icon">⚠️</div>
     <div><strong>Heads up: SFML 3 renamed a few things.</strong> The install step gives you <strong>SFML 3</strong> today, but the short snippets in the steps below are written in the classic SFML 2 style. The differences are small and mechanical: <code>sf::VideoMode({800, 500})sf::VideoMode({800, 500})</code> (curly braces), the new event loop <code>while (const std::optional e = window.pollEvent())while (const std::optional e = window.pollEvent())</code> with <code>e-&gt;is&lt;sf::Event::Closed&gt;()e-&gt;is&lt;sf::Event::Closed&gt;()</code>, <code>sf::Keyboard::Key::Leftsf::Keyboard::Key::Left</code> (add <code>::Key::Key</code>), and <code>setPosition({x, y})setPosition({x, y})</code> / <code>move({dx, dy})move({dx, dy})</code> (curly braces). The <strong>✅ complete finished code</strong> at the bottom of this page is full SFML 3 and compiles on a fresh install, use it as your reference.</div>
@@ -213,24 +216,6 @@ window.JVDS.announce = function (msg) {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
     <pre class="code-pre">struct Bullet {
-    sf::Vector2f pos;
-    Enemy* target;
-    float speed = 340;
-    int damage;
-};
-
-std::vector&lt;Bullet&gt; bullets;
-
-for (auto&amp; t : towers) {
-    t.cooldown -= dt;
-    if (t.cooldown &lt;= 0) {
-        Enemy* target = nearestInRange(t, enemies);
-        if (target) {
-            bullets.push_back({ t.pos, target, 340, t.damage });
-            t.cooldown = 0.7f;
-        }
-    }
-}struct Bullet {
     sf::Vector2f pos;
     Enemy* target;
     float speed = 340;
@@ -320,22 +305,6 @@ for (auto&amp; t : towers) {
     }
 }
 bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
-    [](const Bullet&amp; b){ return b.dead; }), bullets.end());for (auto&amp; b : bullets) {
-    if (!b.target-&gt;alive) { b.dead = true; continue; }
-    sf::Vector2f d = b.target-&gt;pos - b.pos;
-    float len = std::sqrt(d.x*d.x + d.y*d.y);
-    if (len &lt; 8.f) {
-        b.target-&gt;hp -= b.damage;
-        if (b.target-&gt;hp &lt;= 0) {
-            b.target-&gt;alive = false;
-            gold += b.target-&gt;bounty;
-        }
-        b.dead = true;
-    } else {
-        b.pos += (d / len) * b.speed * dt;
-    }
-}
-bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
     [](const Bullet&amp; b){ return b.dead; }), bullets.end());</pre>
   </div>
 
@@ -350,7 +319,7 @@ bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">b.target-&gt;hp -= b.b.target-&gt;hp -= b.<input class="cc-blank" data-a="ZGFtYWdl" placeholder="Type here..." size="7">;
 if (b.target-&gt;hp &lt;= ;
-if (b.target-&gt;hp &lt;= <input class="cc-blank" data-a="MA==" placeholder="?" size="4">) {
+if (b.target-&gt;hp &lt;= <input class="cc-blank" data-a="MA==" placeholder="..." size="4">) {
     b.target-&gt;alive = false;
     gold += b.target-&gt;) {
     b.target-&gt;alive = false;
@@ -426,27 +395,6 @@ if (toSpawn == 0 &amp;&amp; enemiesCleared(enemies)) {
         toSpawn--;
         spawnGap = 0.8f;
     }
-}int wave = 0, toSpawn = 0;
-float spawnGap = 0, rest = 3;
-
-if (toSpawn == 0 &amp;&amp; enemiesCleared(enemies)) {
-    rest -= dt;
-    if (rest &lt;= 0) {
-        wave++;
-        toSpawn = 4 + wave * 2;
-        rest = 5;
-    }
-} else if (toSpawn &gt; 0) {
-    spawnGap -= dt;
-    if (spawnGap &lt;= 0) {
-        Enemy e;
-        e.pos = path[0];
-        e.hp = 20 + wave * 8;
-        e.speed = 70 + wave * 4;
-        enemies.push_back(e);
-        toSpawn--;
-        spawnGap = 0.8f;
-    }
 }</pre>
   </div>
 
@@ -456,7 +404,7 @@ if (toSpawn == 0 &amp;&amp; enemiesCleared(enemies)) {
           <div class="cf-title">Fill in the Blanks</div>
           <div class="cf-xp-badge">+15 XP</div>
         </div>
-        <div class="cf-sentence">Wave n spawns 4 + n�-<input class="cf-blank" data-a="Mg==" placeholder="?" size="4"> enemies with a <input class="cf-blank" data-a="MC44" placeholder="Input..." size="4"> second gap between them, followed by a <input class="cf-blank" data-a="NQ==" placeholder="?" size="4"> second rest before the next wave.</div>
+        <div class="cf-sentence">Wave n spawns 4 + n�-<input class="cf-blank" data-a="Mg==" placeholder="..." size="4"> enemies with a <input class="cf-blank" data-a="MC44" placeholder="Input..." size="4"> second gap between them, followed by a <input class="cf-blank" data-a="NQ==" placeholder="..." size="4"> second rest before the next wave.</div>
         <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
         <div class="cf-feedback"></div>
       </div>
@@ -511,14 +459,6 @@ if (gold &gt;= cost &amp;&amp; t.level &lt; 3) {
     t.damage += 4;
     t.range  += 25;
     t.cooldown *= 0.8f;    // faster firing
-}// on right-click near tower t:
-int cost = 40 * t.level;
-if (gold &gt;= cost &amp;&amp; t.level &lt; 3) {
-    gold -= cost;
-    t.level++;
-    t.damage += 4;
-    t.range  += 25;
-    t.cooldown *= 0.8f;    // faster firing
 }</pre>
   </div>
 
@@ -533,7 +473,7 @@ if (gold &gt;= cost &amp;&amp; t.level &lt; 3) {
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">tower.cpp</span></div>
           <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">t.level++;
 t.damage += t.level++;
-t.damage += <input class="cc-blank" data-a="NA==" placeholder="?" size="4">;
+t.damage += <input class="cc-blank" data-a="NA==" placeholder="..." size="4">;
 t.range  += ;
 t.range  += <input class="cc-blank" data-a="MjU=" placeholder="..." size="4">;
 t.cooldown *= ;
@@ -602,21 +542,6 @@ if (wave == 10 &amp;&amp; toSpawn == 1) {     // last spawn = the boss
 
 // boss escape = instant loss:
 if (e.isBoss &amp;&amp; e.wp &gt;= (int)path.size())
-    lives = 0;// add to the Enemy struct: bool isBoss = false;
-
-if (wave == 10 &amp;&amp; toSpawn == 1) {     // last spawn = the boss
-    Enemy boss;
-    boss.pos = path[0];
-    boss.hp = 600;  boss.maxHp = 600;
-    boss.speed = 40;
-    boss.bounty = 200;
-    boss.isBoss = true;
-    enemies.push_back(boss);
-    toSpawn = 0;
-}
-
-// boss escape = instant loss:
-if (e.isBoss &amp;&amp; e.wp &gt;= (int)path.size())
     lives = 0;</pre>
   </div>
 
@@ -626,7 +551,7 @@ if (e.isBoss &amp;&amp; e.wp &gt;= (int)path.size())
           <div class="cf-title">Fill in the Blanks</div>
           <div class="cf-xp-badge">+15 XP</div>
         </div>
-        <div class="cf-sentence">The boss has <input class="cf-blank" data-a="NjAw" placeholder="Input..." size="4"> hp but only speed 40, a slow <input class="cf-blank" data-a="dGFuaw==" placeholder="Text..." size="5">. If it escapes, lives drops instantly to <input class="cf-blank" data-a="MA==" placeholder="?" size="4">.</div>
+        <div class="cf-sentence">The boss has <input class="cf-blank" data-a="NjAw" placeholder="Input..." size="4"> hp but only speed 40, a slow <input class="cf-blank" data-a="dGFuaw==" placeholder="Text..." size="5">. If it escapes, lives drops instantly to <input class="cf-blank" data-a="MA==" placeholder="..." size="4">.</div>
         <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
         <div class="cf-feedback"></div>
       </div>
@@ -862,160 +787,6 @@ int main() {
         }
         window.display();
     }
-}// Complete C++ Tower Defence (Parts 1 + 2) for SFML 3. Build:
-//   g++ tower.cpp -o tower -lsfml-graphics -lsfml-window -lsfml-system
-#include &lt;SFML/Graphics.hpp&gt;
-#include &lt;optional&gt;
-#include &lt;vector&gt;
-#include &lt;cmath&gt;
-#include &lt;string&gt;
-#include &lt;algorithm&gt;
-
-struct Enemy { sf::Vector2f pos; float speed; int hp, maxHp, bounty; int wp; bool alive; bool isBoss = false; };
-struct Tower { sf::Vector2f pos; float range; int damage; float cooldown; };
-struct Bullet { sf::Vector2f pos; Enemy* target; float speed; int damage; bool dead; };
-
-int main() {
-    sf::RenderWindow window(sf::VideoMode({800, 600}), "C++ Tower Defence");
-    window.setFramerateLimit(60);
-
-    std::vector&lt;sf::Vector2f&gt; path = {
-        {-20, 120}, {300, 120}, {300, 320}, {560, 320}, {560, 120}, {820, 120}
-    };
-
-    std::vector&lt;Enemy&gt; enemies; enemies.reserve(4096);   // reserve so Enemy* stays valid
-    std::vector&lt;Tower&gt; towers;
-    std::vector&lt;Bullet&gt; bullets;
-    int gold = 150, health = 20, wave = 0, toSpawn = 0;
-    float spawnGap = 0, rest = 3.f;
-    bool won = false, lost = false;
-    const int MAX_WAVE = 5, TOWER_COST = 50;
-
-    auto nearPath = [&amp;](float x, float y, float r) {
-        for (size_t i = 0; i + 1 &lt; path.size(); i++) {
-            sf::Vector2f a = path[i], b = path[i+1];
-            sf::Vector2f ab = b - a, ap = sf::Vector2f(x,y) - a;
-            float t = (ab.x*ap.x + ab.y*ap.y) / (ab.x*ab.x + ab.y*ab.y);
-            t = std::max(0.f, std::min(1.f, t));
-            sf::Vector2f c = a + ab * t;
-            float dx = x - c.x, dy = y - c.y;
-            if (std::sqrt(dx*dx + dy*dy) &lt; r) return true;
-        }
-        return false;
-    };
-    auto nearest = [&amp;](Tower&amp; t) -&gt; Enemy* {
-        Enemy* best = nullptr; float bd = t.range;
-        for (auto&amp; e : enemies) {
-            if (!e.alive) continue;
-            float dx = e.pos.x - t.pos.x, dy = e.pos.y - t.pos.y;
-            float d = std::sqrt(dx*dx + dy*dy);
-            if (d &lt; bd) { bd = d; best = &amp;e; }
-        }
-        return best;
-    };
-
-    sf::Clock clock;
-    while (window.isOpen()) {
-        float dt = clock.restart().asSeconds();
-        if (dt &gt; 0.05f) dt = 0.05f;
-
-        while (const std::optional event = window.pollEvent()) {
-            if (event-&gt;is&lt;sf::Event::Closed&gt;()) window.close();
-            if (const auto* m = event-&gt;getIf&lt;sf::Event::MouseButtonPressed&gt;()) {
-                if (m-&gt;button == sf::Mouse::Button::Left &amp;&amp; !won &amp;&amp; !lost) {
-                    int gx = (m-&gt;position.x / 40) * 40, gy = (m-&gt;position.y / 40) * 40;
-                    float cx = gx + 20.f, cy = gy + 20.f;
-                    if (!nearPath(cx, cy, 30.f) &amp;&amp; gold &gt;= TOWER_COST) {
-                        towers.push_back({ {cx, cy}, 110.f, 5, 0.f });
-                        gold -= TOWER_COST;
-                    }
-                }
-            }
-        }
-
-        if (!won &amp;&amp; !lost) {
-            // wave director
-            bool cleared = true;
-            for (auto&amp; e : enemies) if (e.alive) cleared = false;
-            if (toSpawn == 0 &amp;&amp; cleared) {
-                rest -= dt;
-                if (rest &lt;= 0) {
-                    wave++;
-                    if (wave &gt; MAX_WAVE) won = true;
-                    else { toSpawn = 4 + wave * 2; rest = 3.f; }
-                }
-            } else if (toSpawn &gt; 0) {
-                spawnGap -= dt;
-                if (spawnGap &lt;= 0) {
-                    bool boss = (wave == MAX_WAVE &amp;&amp; toSpawn == 1);
-                    int hp = boss ? 200 : (16 + wave * 4);
-                    enemies.push_back({ path[0], boss ? 45.f : 70.f, hp, hp, boss ? 60 : 8, 1, true });
-                    toSpawn--; spawnGap = 0.8f;
-                }
-            }
-
-            // enemies
-            for (auto&amp; e : enemies) {
-                if (!e.alive) continue;
-                if (e.wp &gt;= (int)path.size()) { e.alive = false; if (--health &lt;= 0) lost = true; continue; }
-                sf::Vector2f d = path[e.wp] - e.pos;
-                float len = std::sqrt(d.x*d.x + d.y*d.y);
-                if (len &lt; 4.f) { e.wp++; }
-                else e.pos += d / len * e.speed * dt;
-            }
-
-            // towers fire
-            for (auto&amp; t : towers) {
-                t.cooldown -= dt;
-                if (t.cooldown &lt;= 0) {
-                    Enemy* target = nearest(t);
-                    if (target) { bullets.push_back({ t.pos, target, 340.f, t.damage, false }); t.cooldown = 0.7f; }
-                }
-            }
-            // bullets home
-            for (auto&amp; b : bullets) {
-                if (!b.target-&gt;alive) { b.dead = true; continue; }
-                sf::Vector2f d = b.target-&gt;pos - b.pos;
-                float len = std::sqrt(d.x*d.x + d.y*d.y);
-                if (len &lt; 8.f) {
-                    b.target-&gt;hp -= b.damage;
-                    if (b.target-&gt;hp &lt;= 0) { b.target-&gt;alive = false; gold += b.target-&gt;bounty; }
-                    b.dead = true;
-                } else b.pos += d / len * b.speed * dt;
-            }
-            bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
-                [](const Bullet&amp; b){ return b.dead; }), bullets.end());
-        }
-
-        // draw
-        window.clear(sf::Color(24, 40, 28));
-        for (size_t i = 0; i + 1 &lt; path.size(); i++) {
-            sf::Vector2f a = path[i], b = path[i+1], d = b - a;
-            float len = std::sqrt(d.x*d.x + d.y*d.y);
-            sf::RectangleShape seg({len, 36.f});
-            seg.setPosition(a);
-            seg.setOrigin({0.f, 18.f});
-            seg.setRotation(sf::radians(std::atan2(d.y, d.x)));
-            seg.setFillColor(sf::Color(70, 62, 48));
-            window.draw(seg);
-        }
-        for (auto&amp; t : towers) {
-            sf::CircleShape rng(t.range); rng.setOrigin({t.range, t.range}); rng.setPosition(t.pos);
-            rng.setFillColor(sf::Color(96, 165, 250, 24)); window.draw(rng);
-            sf::RectangleShape r({30.f, 30.f}); r.setOrigin({15.f, 15.f}); r.setPosition(t.pos);
-            r.setFillColor(sf::Color(96, 165, 250)); window.draw(r);
-        }
-        for (auto&amp; e : enemies) if (e.alive) {
-            sf::CircleShape c(12.f); c.setOrigin({12.f, 12.f}); c.setPosition(e.pos);
-            c.setFillColor(e.maxHp &gt; 100 ? sf::Color(200, 60, 200) : sf::Color(230, 80, 70));
-            window.draw(c);
-        }
-        for (auto&amp; b : bullets) {
-            sf::CircleShape c(4.f); c.setOrigin({4.f, 4.f}); c.setPosition(b.pos);
-            c.setFillColor(sf::Color(250, 204, 21)); window.draw(c);
-        }
-        window.display();
-    }
 }</pre>
     </div>
   </details>
@@ -1092,10 +863,10 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 </script>
 <noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
-<script src="/cookie-consent.js"></script>
+<script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
-<script src="../player-profile.js"></script>
+<script defer src="../player-profile.js"></script>
 <script>
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-cpp-tower-part2-v2';
@@ -1105,7 +876,7 @@ window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-cpp-tower-part2-v2';
 window.WORKSHOP_PROFILE_ID='cpp-tower-part2-workshop';
 </script>
-<script src="workshop-engine.js"></script>
+<script defer src="workshop-engine.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Course","name":"My First C++ Game Ep 7: Tower Defence Part 2","description":"Finish your C++ tower defence: bullets, waves, upgrades and a boss. Free interactive workshop finale.","url":"https://jvdesignstudio.co.uk/workshops/cpp-tower-part2-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
 

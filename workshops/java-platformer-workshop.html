@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#ff7700">
-<script src="../analytics-loader.js"></script>
+<script defer src="../analytics-loader.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My First Java Game Ep 1: Simple Platformer | JVDesignStudio</title>
 <meta name="description" content="Learn Java by building a platformer with jumping, gravity and platforms. Free interactive workshop with quizzes, code challenges and XP.">
@@ -132,7 +132,7 @@ window.JVDS.announce = function (msg) {
 
 <section class="hero" id="main-content">
   <div class="hero-inner">
-    <div class="hero-badge">?? Episode 1 � Beginner � No Java Experience Needed</div>
+    <div class="hero-badge">🟩 Episode 1 � Beginner � No Java Experience Needed</div>
     <h1>Jump Into Java!<br><em>Simple Platformer</em></h1>
     <p class="hero-sub">Build your first real Java game: a player square that runs, jumps with gravity, and lands on platforms. You will learn classes, the game loop, keyboard input and collision, the foundations of every game you will ever make.</p>
     <div class="hero-pills">
@@ -179,6 +179,9 @@ window.JVDS.announce = function (msg) {
 
 <main class="workshop">
 
+  <div class="callout warn" style="margin:0 0 16px;border-left:3px solid #f59e0b"><div class="callout-icon">🔧</div><div><strong>Stuck?</strong><br>• <strong>class not found</strong> → Make sure your file name matches the class name exactly (capital letters matter!)<br>• <strong>cannot find symbol</strong> → Check you imported <code>javax.swing.*</code> and <code>java.awt.*</code><br>• <strong>No window appears</strong> → Run from command line, not an IDE debugger</div></div>
+
+
   <!-- STEP 1 -->
   <div class="step-card open active-step" id="step-1" data-step="1">
     <div class="step-header" onclick="toggleStep(this)">
@@ -214,17 +217,6 @@ public class Main {
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
-}import javax.swing.*;
-
-public class Main {
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("My Java Game");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(new GamePanel());
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-    }
 }</pre>
   </div><div class="callout parent"><div class="callout-icon">?????</div><div><strong>Parent note:</strong> Everything used in this series is <strong>free</strong> and built into Java, no game engine or extra libraries to install. If <strong>java -version</strong> prints a version number in a terminal, the JDK is installed correctly.</div></div>
 
@@ -234,39 +226,6 @@ public class Main {
         <div class="code-block" style="margin:12px 16px 16px">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
           <pre class="code-pre">// The starting template every game in this series uses.
-// Save as Main.java, then run:  javac Main.java   and   java Main
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-
-public class Main {
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("My Java Game");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(new GamePanel());
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-    }
-}
-
-class GamePanel extends JPanel implements ActionListener {
-    Timer timer = new Timer(16, this);         // ~60 FPS
-    public GamePanel() {
-        setPreferredSize(new Dimension(800, 480));
-        setBackground(new Color(25, 30, 60));   // night sky
-        timer.start();
-    }
-    public void actionPerformed(ActionEvent e) {
-        update();                               // move everything
-        repaint();                              // then draw everything
-    }
-    void update() { /* movement goes here */ }
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        // drawing goes here
-    }
-}// The starting template every game in this series uses.
 // Save as Main.java, then run:  javac Main.java   and   java Main
 import javax.swing.*;
 import java.awt.*;
@@ -381,30 +340,6 @@ public class GamePanel extends JPanel implements ActionListener {
         super.paintComponent(g);
         // drawing goes here soon
     }
-}import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-
-public class GamePanel extends JPanel implements ActionListener {
-    Timer timer = new Timer(16, this);   // ~60 FPS
-
-    public GamePanel() {
-        setPreferredSize(new Dimension(800, 480));
-        setBackground(new Color(25, 30, 60)); // night sky
-        timer.start();
-    }
-
-    public void actionPerformed(ActionEvent e) {
-        update();    // move everything
-        repaint();   // then draw everything
-    }
-
-    void update() { /* movement goes here soon */ }
-
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        // drawing goes here soon
-    }
 }</pre>
   </div><div class="callout tip"><div class="callout-icon">??</div><div><strong>update() then repaint()</strong> is the classic game loop: move first, draw second. Every game in this series uses this exact pattern.</div></div>
 
@@ -453,30 +388,6 @@ public class GamePanel extends JPanel implements ActionListener {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java (additions)</span></div>
     <pre class="code-pre">    int px = 100, py = 380;          // player position
-    int pw = 34, ph = 44;            // player size
-    int speed = 5;
-    boolean leftHeld, rightHeld;
-
-    void update() {
-        if (leftHeld)  px -= speed;
-        if (rightHeld) px += speed;
-    }
-
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        g.setColor(new Color(255, 119, 0));
-        g.fillRect(px, py, pw, ph);
-    }
-
-    public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = true;
-        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = true;
-    }
-    public void keyReleased(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = false;
-        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = false;
-    }
-    public void keyTyped(KeyEvent e) {}    int px = 100, py = 380;          // player position
     int pw = 34, ph = 44;            // player size
     int speed = 5;
     boolean leftHeld, rightHeld;
@@ -590,30 +501,6 @@ g.fillRect(<input class="cc-blank" data-a="cHg=" placeholder="..." size="4">, py
             vy = -16;         // launch upward!
             onGround = false;
         }
-    }    int vy = 0;
-    boolean onGround = false;
-
-    void update() {
-        if (leftHeld)  px -= speed;
-        if (rightHeld) px += speed;
-
-        vy += 1;          // gravity accelerates you down
-        py += vy;         // apply velocity
-
-        // temporary floor at the bottom of the window
-        if (py + ph &gt;= 480) {
-            py = 480 - ph;
-            vy = 0;
-            onGround = true;
-        }
-    }
-
-    public void keyPressed(KeyEvent e) {
-        // ... existing arrow keys ...
-        if (e.getKeyCode() == KeyEvent.VK_UP &amp;&amp; onGround) {
-            vy = -16;         // launch upward!
-            onGround = false;
-        }
     }</pre>
   </div><div class="callout tip"><div class="callout-icon">??</div><div>Bigger gravity (+2) feels heavy and snappy; a stronger jump (-20) floats higher. Play with the numbers until it feels like <em>your</em> game.</div></div>
 
@@ -694,29 +581,6 @@ g.fillRect(<input class="cc-blank" data-a="cHg=" placeholder="..." size="4">, py
 
     // in paintComponent:
     //   g.setColor(new Color(6, 214, 160));
-    //   for (Rectangle plat : platforms) g.fillRect(plat.x, plat.y, plat.width, plat.height);    Rectangle[] platforms = {
-        new Rectangle(0, 440, 800, 40),     // ground
-        new Rectangle(150, 340, 140, 16),
-        new Rectangle(380, 260, 140, 16),
-        new Rectangle(610, 180, 140, 16)
-    };
-
-    void update() {
-        // ... movement + gravity from before ...
-        onGround = false;
-        Rectangle player = new Rectangle(px, py, pw, ph);
-        for (Rectangle plat : platforms) {
-            if (player.intersects(plat) &amp;&amp; vy &gt;= 0
-                &amp;&amp; py + ph - vy &lt;= plat.y) {
-                py = plat.y - ph;   // snap on top
-                vy = 0;
-                onGround = true;
-            }
-        }
-    }
-
-    // in paintComponent:
-    //   g.setColor(new Color(6, 214, 160));
     //   for (Rectangle plat : platforms) g.fillRect(plat.x, plat.y, plat.width, plat.height);</pre>
   </div>
 
@@ -733,7 +597,7 @@ g.fillRect(<input class="cc-blank" data-a="cHg=" placeholder="..." size="4">, py
     py = plat.y - (plat) &amp;&amp; vy &gt;= 0) {
     py = plat.y - <input class="cc-blank" data-a="cGg=" placeholder="..." size="4">;   // stand on top
     vy = ;   // stand on top
-    vy = <input class="cc-blank" data-a="MA==" placeholder="?" size="4">;
+    vy = <input class="cc-blank" data-a="MA==" placeholder="..." size="4">;
     onGround = true;
 };
     onGround = true;
@@ -812,31 +676,6 @@ g.fillRect(<input class="cc-blank" data-a="cHg=" placeholder="..." size="4">, py
             g.setFont(new Font("Arial", Font.BOLD, 48));
             g.drawString("YOU WIN!", 290, 240);
         }
-    }    java.util.List&lt;Rectangle&gt; coins = new java.util.ArrayList&lt;&gt;(java.util.List.of(
-        new Rectangle(205, 300, 18, 18),
-        new Rectangle(435, 220, 18, 18),
-        new Rectangle(665, 140, 18, 18)));
-    int score = 0;
-
-    void update() {
-        // ... previous code ...
-        coins.removeIf(c -&gt; {
-            if (new Rectangle(px, py, pw, ph).intersects(c)) { score += 10; return true; }
-            return false;
-        });
-    }
-
-    protected void paintComponent(Graphics g) {
-        // ... player + platforms ...
-        g.setColor(new Color(255, 209, 102));
-        for (Rectangle c : coins) g.fillRect(c.x, c.y, c.width, c.height);
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.BOLD, 18));
-        g.drawString("Score: " + score, 16, 26);
-        if (coins.isEmpty()) {
-            g.setFont(new Font("Arial", Font.BOLD, 48));
-            g.drawString("YOU WIN!", 290, 240);
-        }
     }</pre>
   </div><div class="callout tip"><div class="callout-icon">??</div><div>Want more? Add a falling-off-screen respawn (<strong>if (py &gt; 480) px = 100;</strong>), more platforms, or a timer to beat. This is YOUR game now.</div></div>
 
@@ -876,120 +715,6 @@ g.fillRect(<input class="cc-blank" data-a="cHg=" placeholder="..." size="4">, py
     <div class="code-block" style="margin:12px 16px 16px">
       <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">Main.java</span></div>
       <pre class="code-pre">// Complete Java platformer. Both classes are in one file so it runs with:
-//     javac Main.java   then   java Main
-// In the workshop you put GamePanel in its own GamePanel.java, which works too.
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-
-public class Main {
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("My Java Game");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(new GamePanel());
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-    }
-}
-
-class GamePanel extends JPanel implements ActionListener, KeyListener {
-    Timer timer = new Timer(16, this);          // ~60 FPS
-
-    int px = 100, py = 380;                      // player position
-    int pw = 34, ph = 44;                        // player size
-    int speed = 5, vy = 0;
-    boolean leftHeld, rightHeld, onGround;
-    boolean won = false;
-    int score = 0;
-
-    Rectangle[] platforms = {
-        new Rectangle(0, 440, 800, 40),          // ground
-        new Rectangle(150, 340, 140, 16),
-        new Rectangle(380, 260, 140, 16),
-        new Rectangle(610, 180, 140, 16)
-    };
-    java.util.List&lt;Rectangle&gt; coins = new java.util.ArrayList&lt;&gt;(java.util.List.of(
-        new Rectangle(205, 300, 18, 18),
-        new Rectangle(435, 220, 18, 18),
-        new Rectangle(665, 140, 18, 18)));
-
-    public GamePanel() {
-        setPreferredSize(new Dimension(800, 480));
-        setBackground(new Color(25, 30, 60));
-        addKeyListener(this);
-        setFocusable(true);
-        timer.start();
-    }
-
-    public void actionPerformed(ActionEvent e) {
-        update();
-        repaint();
-    }
-
-    void update() {
-        if (won) return;
-
-        if (leftHeld)  px -= speed;
-        if (rightHeld) px += speed;
-        if (px &lt; 0) px = 0;
-        if (px + pw &gt; 800) px = 800 - pw;
-
-        vy += 1;                                 // gravity
-        py += vy;
-
-        onGround = false;
-        Rectangle player = new Rectangle(px, py, pw, ph);
-        for (Rectangle plat : platforms) {
-            if (player.intersects(plat) &amp;&amp; vy &gt;= 0 &amp;&amp; py + ph - vy &lt;= plat.y) {
-                py = plat.y - ph;                // snap on top
-                vy = 0;
-                onGround = true;
-            }
-        }
-
-        coins.removeIf(c -&gt; {
-            if (new Rectangle(px, py, pw, ph).intersects(c)) { score += 10; return true; }
-            return false;
-        });
-        if (coins.isEmpty()) won = true;
-    }
-
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        g.setColor(new Color(6, 214, 160));
-        for (Rectangle plat : platforms) g.fillRect(plat.x, plat.y, plat.width, plat.height);
-
-        g.setColor(new Color(255, 209, 102));
-        for (Rectangle c : coins) g.fillRect(c.x, c.y, c.width, c.height);
-
-        g.setColor(new Color(255, 119, 0));
-        g.fillRect(px, py, pw, ph);
-
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.BOLD, 18));
-        g.drawString("Score: " + score, 16, 26);
-
-        if (won) {
-            g.setFont(new Font("Arial", Font.BOLD, 56));
-            g.drawString("YOU WIN!", 250, 250);
-        }
-    }
-
-    public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = true;
-        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = true;
-        if (e.getKeyCode() == KeyEvent.VK_UP &amp;&amp; onGround) {
-            vy = -16;
-            onGround = false;
-        }
-    }
-    public void keyReleased(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_LEFT)  leftHeld = false;
-        if (e.getKeyCode() == KeyEvent.VK_RIGHT) rightHeld = false;
-    }
-    public void keyTyped(KeyEvent e) {}
-}// Complete Java platformer. Both classes are in one file so it runs with:
 //     javac Main.java   then   java Main
 // In the workshop you put GamePanel in its own GamePanel.java, which works too.
 import javax.swing.*;
@@ -1179,10 +904,10 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 </script>
 <noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
-<script src="/cookie-consent.js"></script>
+<script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
-<script src="../player-profile.js"></script>
+<script defer src="../player-profile.js"></script>
 <script>
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-java-platformer-v2';
@@ -1192,7 +917,7 @@ window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-java-platformer-v2';
 window.WORKSHOP_PROFILE_ID='java-platformer-workshop';
 </script>
-<script src="workshop-engine.js"></script>
+<script defer src="workshop-engine.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Course","name":"My First Java Game Ep 1: Simple Platformer","description":"Learn Java by building a platformer with jumping, gravity and platforms. Free interactive workshop with quizzes, code challenges and XP.","url":"https://jvdesignstudio.co.uk/workshops/java-platformer-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT2H"}}
 

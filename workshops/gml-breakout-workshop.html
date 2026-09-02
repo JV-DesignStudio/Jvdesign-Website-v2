@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#ff7700">
-<script src="../analytics-loader.js"></script>
+<script defer src="../analytics-loader.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My First GameMaker Game Ep 3: Breakout | JVDesignStudio</title>
 <meta name="description" content="Build Breakout in GameMaker with instance spawning, particles and screen shake. Free interactive workshop.">
@@ -179,6 +179,9 @@ window.JVDS.announce = function (msg) {
 
 <main class="workshop">
 
+  <div class="callout info" style="margin:0 0 16px;border-left:3px solid #60a5fa"><div class="callout-icon">💻</div><div><strong>How to run:</strong> Open GameMaker, load your project, and press F5 to run!</div></div>
+
+
   <div class="callout info" style="margin:0 0 20px">
     <div class="callout-icon">🧩</div>
     <div><strong>Need the game setup?</strong> Each episode builds a new game on the same GameMaker setup: a room, objects, and their Create / Step / Draw events. New here or need a refresher? <a href="gml-pong-workshop.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">Episode 1 setup →</a> · <a href="gml-cheatsheet.html" style="color:#bdd8ff;text-decoration:underline;font-weight:600">GML Cheatsheet →</a></div>
@@ -209,10 +212,6 @@ window.JVDS.announce = function (msg) {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_paddle · Step</span></div>
     <pre class="code-pre">x = clamp(mouse_x, 55, room_width - 55);
-
-// obj_ball · Step:
-if (x &lt; 8 || x &gt; room_width - 8)  hspeed = -hspeed;
-if (y &lt; 8)                        vspeed = -vspeed;x = clamp(mouse_x, 55, room_width - 55);
 
 // obj_ball · Step:
 if (x &lt; 8 || x &gt; room_width - 8)  hspeed = -hspeed;
@@ -273,15 +272,6 @@ if (y &lt; 8)                        vspeed = -vspeed;</pre>
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_game · Create</span></div>
     <pre class="code-pre">var colors = [c_red, c_orange, c_yellow, c_lime, c_aqua];
-
-for (var r = 0; r &lt; 5; r++) {
-    for (var c = 0; c &lt; 10; c++) {
-        var b = instance_create_layer(
-            c * 68 + 44, r * 26 + 60, "Instances", obj_brick);
-        b.image_blend = colors[r];
-        b.points = (5 - r) * 10;
-    }
-}var colors = [c_red, c_orange, c_yellow, c_lime, c_aqua];
 
 for (var r = 0; r &lt; 5; r++) {
     for (var c = 0; c &lt; 10; c++) {
@@ -362,15 +352,6 @@ if (vspeed &gt; 0) {
     vspeed = -vspeed;
     hspeed = (x - other.x) / 12;
     if (hspeed == 0) hspeed = 1;
-}vspeed = -vspeed;
-global.score += other.points;
-with (other) instance_destroy();
-
-/// Collision with obj_paddle:
-if (vspeed &gt; 0) {
-    vspeed = -vspeed;
-    hspeed = (x - other.x) / 12;
-    if (hspeed == 0) hspeed = 1;
 }</pre>
   </div>
 
@@ -380,7 +361,7 @@ if (vspeed &gt; 0) {
           <div class="cf-title">Fill in the Blanks</div>
           <div class="cf-xp-badge">+15 XP</div>
         </div>
-        <div class="cf-sentence">The <input class="cf-blank" data-a="d2l0aA==" placeholder="Text..." size="5"> statement runs code as another instance, here destroying the brick the ball touched. The paddle bounce is guarded by vspeed &gt; <input class="cf-blank" data-a="MA==" placeholder="?" size="4">.</div>
+        <div class="cf-sentence">The <input class="cf-blank" data-a="d2l0aA==" placeholder="Text..." size="5"> statement runs code as another instance, here destroying the brick the ball touched. The paddle bounce is guarded by vspeed &gt; <input class="cf-blank" data-a="MA==" placeholder="..." size="4">.</div>
         <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
         <div class="cf-feedback"></div>
       </div>
@@ -429,16 +410,6 @@ if (vspeed &gt; 0) {
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_game · Create (particles)</span></div>
     <pre class="code-pre">global.ps = part_system_create();
-global.pt_spark = part_type_create();
-part_type_shape(global.pt_spark, pt_shape_square);
-part_type_size(global.pt_spark, 0.08, 0.14, -0.005, 0);
-part_type_speed(global.pt_spark, 2, 5, -0.1, 0);
-part_type_direction(global.pt_spark, 0, 359, 0, 0);
-part_type_life(global.pt_spark, 20, 35);
-
-// on brick death (in the collision event):
-part_particles_create(global.ps, other.x, other.y,
-                      global.pt_spark, 12);global.ps = part_system_create();
 global.pt_spark = part_type_create();
 part_type_shape(global.pt_spark, pt_shape_square);
 part_type_size(global.pt_spark, 0.08, 0.14, -0.005, 0);
@@ -506,16 +477,6 @@ part_particles_create(global.ps, other.x, other.y,
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_game · Step</span></div>
     <pre class="code-pre">if (shake &gt; 0) {
-    shake -= 0.3;
-    var cam = view_camera[0];
-    // static vars capture the camera's resting position once, so the
-    // wobble always offsets FROM there instead of overwriting it
-    static base_x = camera_get_view_x(cam);
-    static base_y = camera_get_view_y(cam);
-    camera_set_view_pos(cam,
-        base_x + random_range(-shake, shake),
-        base_y + random_range(-shake, shake));
-}if (shake &gt; 0) {
     shake -= 0.3;
     var cam = view_camera[0];
     // static vars capture the camera's resting position once, so the
@@ -597,16 +558,6 @@ part_particles_create(global.ps, other.x, other.y,
       </ul><div class="code-block">
     <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">obj_game · Step</span></div>
     <pre class="code-pre">if (instance_number(obj_brick) == 0) {
-    room_goto(rm_win);
-}
-
-/// serve delay, obj_ball Create:
-hspeed = 0; vspeed = 0;
-alarm[0] = 60;              // fires in 1 second
-
-/// obj_ball · Alarm 0 event:
-hspeed = choose(-4, 4);
-vspeed = -4;if (instance_number(obj_brick) == 0) {
     room_goto(rm_win);
 }
 
@@ -721,10 +672,10 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 </script>
 <noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
-<script src="/cookie-consent.js"></script>
+<script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 
-<script src="../player-profile.js"></script>
+<script defer src="../player-profile.js"></script>
 <script>
 window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-gml-breakout-v2';
@@ -734,7 +685,7 @@ window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-gml-breakout-v2';
 window.WORKSHOP_PROFILE_ID='gml-breakout-workshop';
 </script>
-<script src="workshop-engine.js"></script>
+<script defer src="workshop-engine.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"Course","name":"My First GameMaker Game Ep 3: Breakout","description":"Build Breakout in GameMaker with instance spawning, particles and screen shake. Free interactive workshop.","url":"https://jvdesignstudio.co.uk/workshops/gml-breakout-workshop.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"offers":{"@type":"Offer","category":"Free","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"hasCourseInstance":{"@type":"CourseInstance","courseMode":"online","courseWorkload":"PT45M"}}
 
