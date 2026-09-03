@@ -2972,8 +2972,8 @@ score += bumper.pts; <span class="c-comment">// 100-200</span></pre>
  </div>
  </div>
  <div class="form-group">
- <label>Particle Count <span id="particleCountVal">12</span></label>
- <input type="range" aria-label="Particle Count" min="4" max="30" value="12" oninput="liveConfig.particleCount=+this.value;document.getElementById('particleCountVal').textContent=this.value;">
+  <label>Particle Count <span id="particleCountVal">8</span></label>
+  <input type="range" aria-label="Particle Count" min="4" max="16" value="8" oninput="liveConfig.particleCount=+this.value;document.getElementById('particleCountVal').textContent=this.value;">
  </div>
  <div class="form-group">
  <label>Particle Size</label>
@@ -3875,7 +3875,7 @@ score += bumper.pts; <span class="c-comment">// 100-200</span></pre>
  </div>
  <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;margin-bottom:6px;">
  <div style="font-size:.68rem;color:var(--fg);">💥 Particle Burst</div>
- <input type="range" aria-label="Particle Burst Count" min="4" max="24" value="10" id="juiceBurstSlider" style="width:72px;" oninput="liveConfig.juiceBurstCount=+this.value;this.nextElementSibling.textContent=this.value+' pts';" title="Particle count">
+  <input type="range" aria-label="Particle Burst Count" min="4" max="16" value="8" id="juiceBurstSlider" style="width:72px;" oninput="liveConfig.juiceBurstCount=+this.value;this.nextElementSibling.textContent=this.value+' pts';" title="Particle count">
  <span style="font-size:.6rem;color:var(--muted);min-width:30px;">10 pts</span>
  <label class="toggle-switch" style="grid-column:span 3;justify-self:start;margin-top:2px;"><input type="checkbox" id="juiceBurstToggle" checked onchange="liveConfig.juiceBurst=this.checked;"><span class="toggle-knob"></span></label>
  </div>
@@ -5508,7 +5508,7 @@ const liveConfig = {
     juiceEnabled:   true,
     juiceShake:     true,  juiceShakeIntensity: 3,  juiceShakeDuration: 140,
     juiceHitStop:   true,  juiceHitStopMs: 30,
-    juiceBurst:     true,  juiceBurstCount: 10,
+    juiceBurst:     true,  juiceBurstCount: 8,
     juiceChroma:    true,
     juiceZoom:      false, juiceZoomScale: 1.06,
     juiceComboFlash:true,
@@ -5546,7 +5546,7 @@ const liveConfig = {
     // ── Particle System ───────────────────────────────────────────
     particleStyle: 'burst',
     particleColor: 'purple',
-    particleCount: 12,
+    particleCount: 8,
     particleSize: 'medium',
     trailEffect: false,
     // ── Rhythm game ───────────────────────────────────────────────────
@@ -7750,6 +7750,7 @@ function _aiBuildGame(desc) {
     else if (d.match(/wave.*surviv|endless.*enemy|horde/))            _aiSelectGenre('WAVESURVIVAL');
     else if (d.match(/hop|bounce.*up|doodle|spring/))                 _aiSelectGenre('HOPPER');
     else if (d.match(/paper.*toss|throw|bin|basket|wind/))            _aiSelectGenre('PAPERTOSS');
+    else { _aiSelectGenre('SHOOTER'); showToast('🤔 Couldn\'t match a genre — loaded Shooter as a starting point. Pick a genre below to change!'); }
     if      (d.match(/fast|quick|speedy|rapid|zoom/))  { liveConfig.speed = 360; }
     else if (d.match(/slow|chill|relax|easy|gentle/))  { liveConfig.speed = 130; }
     else                                                { liveConfig.speed = 220; }
@@ -9262,7 +9263,7 @@ function sceneClicker(data) {
                     showToast('💰 JACKPOT! 100,000 coins, you win!');
                     GameAudio.play('levelup');
                     _chromaFlash(1.0);
-                    for(let i=0;i<4;i++) this.time.delayedCall(i*200, ()=>_spawnParticles(this, GW/2, CLICK_Y, {count:30,style:'burst'}));
+                    for(let i=0;i<3;i++) this.time.delayedCall(i*200, ()=>_spawnParticles(this, GW/2, CLICK_Y, {count:10,style:'burst'}));
                     this.time.delayedCall(1800, ()=>showVictory(_pts));
                 }
                 // Gold rush: update desc in case cooldown changed
@@ -10189,9 +10190,11 @@ function _burst(x, y, color, count) {
 }
 
 /** Flash the game canvas bright (CSS filter, works across all renderers) */
+let _cachedCanvas = null;
 function _chromaFlash(intensity) {
     if (!liveConfig.juiceEnabled || !liveConfig.juiceChroma) return;
-    const canvas = document.querySelector('#gameWrap canvas');
+    if (!_cachedCanvas || !_cachedCanvas.isConnected) _cachedCanvas = document.querySelector('#gameWrap canvas');
+    const canvas = _cachedCanvas;
     if (!canvas) return;
     const bright = intensity !== undefined ? (1 + intensity) : 1.9;
     canvas.style.transition = 'filter 0ms';
@@ -10203,6 +10206,7 @@ function _chromaFlash(intensity) {
 }
 
 /** Quick zoom-in-out pulse */
+let _zoomTween = null;
 function _zoomPulse(scale, duration) {
     if (!liveConfig.juiceEnabled || !liveConfig.juiceZoom) return;
     const sc = _activeScene;
@@ -10210,7 +10214,8 @@ function _zoomPulse(scale, duration) {
     const s  = scale    !== undefined ? scale    : (liveConfig.juiceZoomScale || 1.06);
     const ms = duration !== undefined ? duration : 130;
     const cam = sc.cameras.main;
-    sc.tweens.add({ targets: cam, zoom: s, duration: ms/2, ease: 'Quad.easeOut',
+    if (_zoomTween && _zoomTween.isPlaying()) _zoomTween.stop();
+    _zoomTween = sc.tweens.add({ targets: cam, zoom: s, duration: ms/2, ease: 'Quad.easeOut',
         yoyo: true, onComplete: () => { cam.zoom = liveConfig.cameraZoom || 1; } });
 }
 
@@ -10255,9 +10260,9 @@ function _juiceHit(x, y) {
 function _juicePreset(preset) {
     const presets = {
         off:     { juiceEnabled:false, juiceShake:false, juiceHitStop:false, juiceBurst:false, juiceChroma:false, juiceZoom:false, juiceComboFlash:false },
-        subtle:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:2, juiceHitStop:false, juiceBurst:true, juiceBurstCount:6, juiceChroma:false, juiceZoom:false, juiceComboFlash:false },
-        arcade:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:3, juiceHitStop:true,  juiceHitStopMs:30, juiceBurst:true, juiceBurstCount:10, juiceChroma:true, juiceZoom:false, juiceComboFlash:true },
-        insane:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:18, juiceHitStop:true, juiceHitStopMs:90, juiceBurst:true, juiceBurstCount:20, juiceChroma:true, juiceZoom:true, juiceZoomScale:1.12, juiceComboFlash:true }
+        subtle:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:2, juiceHitStop:false, juiceBurst:true, juiceBurstCount:5, juiceChroma:false, juiceZoom:false, juiceComboFlash:false },
+        arcade:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:3, juiceHitStop:true,  juiceHitStopMs:30, juiceBurst:true, juiceBurstCount:8, juiceChroma:true, juiceZoom:false, juiceComboFlash:true },
+        insane:  { juiceEnabled:true,  juiceShake:true,  juiceShakeIntensity:18, juiceHitStop:true, juiceHitStopMs:90, juiceBurst:true, juiceBurstCount:14, juiceChroma:true, juiceZoom:true, juiceZoomScale:1.12, juiceComboFlash:true }
     };
     const p = presets[preset]; if (!p) return;
     Object.assign(liveConfig, p);
