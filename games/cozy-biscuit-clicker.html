@@ -13,6 +13,7 @@
 
 
 
+
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html">
     <meta name="robots" content="index, follow">
@@ -1547,8 +1548,8 @@ const ACC_EMOJIS={none:'',glasses:'👓',bow_tie:'🎀',flower_pin:'🌷',scarf:
 // ══ VERSION (keep in sync with android/app/build.gradle — see RELEASE.md §3,
 //    and add every release to RELEASES.md so the history stays) ══
 const APP={
-  version:'2.0.5',
-  build:16,
+  version:'2.0.6',
+  build:17,
   codename:'Hobnob',
 };
 
@@ -1874,7 +1875,7 @@ function rainCharBiscuits(emoji,color){
 // ══ CHARACTER TAPS ══
 document.querySelectorAll('.char-seat').forEach(el=>{
   let pressTimer,longPressed=false;
-  el.addEventListener('click',()=>{
+  el.addEventListener('pointerdown',()=>{
     if(longPressed){longPressed=false;return;}
     Sfx.init();
     const id=el.dataset.char;
@@ -1998,7 +1999,7 @@ function renderHelpers(el){
       }
     }
     row.innerHTML=`<div class="helper-emoji">${h.emoji}</div><div class="helper-body"><div class="helper-name">${h.name}${isFeatured?' <span style="font-size:10px;color:#E8A830;font-weight:800">⭐ FEATURED</span>':''}${showN>1?` <span style="font-size:11px;color:var(--mint-deep);font-weight:800">+${showN}</span>`:''}</div><div class="helper-desc">${chLocked?'⚔️ Challenge season — hiring disabled':(h.desc+' · '+(eff>=1?fmt(eff):eff.toFixed(1))+'/sec each'+(helperMilestones(h.id).length?' · 🏅+'+Math.round((helperMsBoost(h.id)-1)*100)+'%':'')+(showN>1?` · <span style="font-weight:800;color:var(--mint-deep)">+${fmt(bundleGain)}/sec total</span>`:''))}</div>${msBar}</div><div class="helper-right"><div class="helper-count">${cnt}</div><div class="helper-cost ${canAfford?'':'too-much'}">🍪 ${fmt(showCost)}</div></div>`;
-    row.addEventListener('click',e=>{
+    row.addEventListener('pointerdown',e=>{
       if(activeChallenge()==='nohelpers'){showToast('⚔️ Bare Bake season — the ovens are yours alone!');return;}
       const budget2=Math.floor(bv().total);
       const q2=bulkCost(h,bv().helpers[h.id]||0,buyQty,budget2);
@@ -2028,7 +2029,7 @@ function renderUpgrades(el){
       const canAfford=Math.floor(bv().total)>=cost;
       const row=document.createElement('div'); row.className='upgrade-row '+(canAfford?'affordable':'cant-afford');
       row.innerHTML=`<div class="upgrade-emoji">${up.emoji}</div><div class="upgrade-body"><div class="upgrade-name">${up.name} <span style="font-size:10px;color:var(--mint-deep);font-weight:800">REPEATABLE</span></div><div class="upgrade-desc">${up.desc}</div></div><div class="upgrade-cost ${canAfford?'':'too-much'}">🍪 ${fmt(cost)}</div>${lvl>0?`<div class="upgrade-lvl">Lv ${lvl}</div>`:''}`;
-      row.addEventListener('click',e=>{
+      row.addEventListener('pointerdown',e=>{
         if(!bv().repeatUpgrades)bv().repeatUpgrades={};
         const curLvl=bv().repeatUpgrades[up.id]||0;
         const curCost=Math.floor(up.cost*Math.pow(up.costMult,curLvl));
@@ -2042,7 +2043,7 @@ function renderUpgrades(el){
       const bought=bv().upgrades.includes(up.id),canAfford=!bought&&Math.floor(bv().total)>=up.cost;
       const row=document.createElement('div'); row.className='upgrade-row '+(bought?'bought':canAfford?'affordable':'cant-afford');
       row.innerHTML=`<div class="upgrade-emoji">${up.emoji}</div><div class="upgrade-body"><div class="upgrade-name">${up.name}</div><div class="upgrade-desc">${up.desc}</div></div><div class="upgrade-cost ${(!bought&&!canAfford)?'too-much':''}">🍪 ${fmt(up.cost)}</div>${bought?'<div class="upgrade-tick">✅</div>':''}`;
-      if(!bought)row.addEventListener('click',e=>{
+      if(!bought)row.addEventListener('pointerdown',e=>{
         if(Math.floor(bv().total)<up.cost)return;
         bv().total-=up.cost; bv().upgrades.push(up.id);
         Sfx.sfxPurchase(); buyFx(e.clientX,e.clientY);
@@ -2151,7 +2152,7 @@ function renderDaily(el){
   } else {
     const btn=document.createElement('button');
     btn.textContent=canClaim?'🎁 Claim Reward!':'Keep baking...';    btn.style.cssText=`width:100%;background:${canClaim?'linear-gradient(135deg,var(--sun),#E8A830)':'var(--cream-deep)'};border:none;border-radius:100px;padding:11px;font-family:Fraunces,serif;font-size:15px;font-weight:700;color:var(--cocoa);cursor:${canClaim?'pointer':'default'};opacity:${canClaim?1:.5};box-shadow:${canClaim?'0 4px 12px rgba(245,199,106,.4)':'none'}`;
-    btn.addEventListener('click',()=>{
+    btn.addEventListener('pointerdown',()=>{
       if(!canClaim)return;
       if(!bv().dailyChallenge)bv().dailyChallenge={date:ch.today,progress:0,claimed:false};
       const dc2=bv().dailyChallenge;
@@ -2168,7 +2169,7 @@ function renderDaily(el){
   adReset.type='button';
   adReset.className='ad-reset';
   adReset.textContent='▶ Not feeling it? Watch an ad & reset';
-  adReset.addEventListener('click',()=>watchAdReset('Daily challenge',resetDailyChallenge));
+  adReset.addEventListener('pointerdown',()=>watchAdReset('Daily challenge',resetDailyChallenge));
   card.appendChild(adReset);
 
   const howTitle=document.createElement('div');
@@ -2260,7 +2261,7 @@ function renderStats(el){
     b.className='focus-chip'+(on?' on':unlocked?'':' locked');
     b.textContent=CHARACTERS[cid].emoji+' '+(CREW_ABILITIES[cid].name.split(' · ')[0]);
     b.title=CREW_ABILITIES[cid].desc;
-    b.addEventListener('click',()=>toggleCrew(cid));
+    b.addEventListener('pointerdown',()=>toggleCrew(cid));
     rowEl.appendChild(b);
   });
   focus.appendChild(rowEl); el.appendChild(focus);
@@ -2314,7 +2315,7 @@ function renderStats(el){
     const lv=starLv(p.id),maxed=lv>=p.max;
     const card=document.createElement('div'); card.className='perk-card'+(maxed?' maxed':'');
     card.innerHTML=`<div class="perk-name">${p.emoji} ${p.name}</div><div class="perk-desc">${p.desc}</div><div class="perk-lvl">${maxed?'✓ Mastered':'Lv '+lv+'/'+p.max+' · buy for ⭐'+p.cost}</div>`;
-    card.addEventListener('click',()=>buyStarPerk(p.id));
+    card.addEventListener('pointerdown',()=>buyStarPerk(p.id));
     grid.appendChild(card);
   });
   // Challenge chips
@@ -2327,13 +2328,13 @@ function renderStats(el){
     b.style.display='block';
     b.innerHTML=(armed?'⚔️ ':'')+c.emoji+' <b>'+c.name+'</b>'+(locked?'<br>🔒 Season 3+':(activeChallenge()&&c.id!==activeChallenge()?'<br>(another armed)':''))+'<br><span style="font-weight:700">'+c.desc+'</span>';
     b.title=c.desc+'\nReward: '+c.reward;
-    b.addEventListener('click',()=>{
+    b.addEventListener('pointerdown',()=>{
       if(locked){showToast('⚔️ Challenges unlock when you start Season 3!');return;}
       armChallenge(c.id);
     });
     chalRow.appendChild(b);
   });
-  document.getElementById('prestigeBtn')?.addEventListener('click',doPrestige);
+  document.getElementById('prestigeBtn')?.addEventListener('pointerdown',doPrestige);
 
   // ── Your Data ──
   const data=document.createElement('div');
@@ -2359,13 +2360,13 @@ function renderStats(el){
     </div>`;
   el.appendChild(data);
   // Delegated handlers for JSON export/import (replaces inline onclick)
-  el.querySelector('#exportJsonBtn').addEventListener('click',()=>{
+  el.querySelector('#exportJsonBtn').addEventListener('pointerdown',()=>{
     const d=JSON.stringify({__v:APP.version,ts:Date.now(),vault:vault},null,2);
     const b=new Blob([d],{type:'application/json'});const u=URL.createObjectURL(b);
     const a=document.createElement('a');a.href=u;a.download='biscuit-tin-save-v'+APP.version+'.json';a.click();URL.revokeObjectURL(u);
     showToast('💾 Save exported!','achievement');
   });
-  el.querySelector('#importJsonBtn').addEventListener('click',()=>{
+  el.querySelector('#importJsonBtn').addEventListener('pointerdown',()=>{
     const inp=document.createElement('input');inp.type='file';inp.accept='.json';
     inp.onchange=e=>{
       const f=e.target.files[0];if(!f)return;
@@ -2476,7 +2477,7 @@ function checkOffline(){
   document.getElementById('offlineModal').classList.add('show');
   saveVault();
 }
-document.getElementById('offlineCollect').addEventListener('click',()=>{
+document.getElementById('offlineCollect').addEventListener('pointerdown',()=>{
   document.getElementById('offlineModal').classList.remove('show'); updateHUD(); popCount();
 });
 
@@ -2559,7 +2560,7 @@ function attachTinHandlers(){
   // Do NOT call preventDefault() — doing so on Android suppresses click synthesis for other buttons
   tinBtn.addEventListener('pointerdown',e=>{onTap(e);});
   tinBtn.addEventListener('touchstart',e=>{onTap(e);},{passive:true});
-  tinBtn.addEventListener('click',onTap);
+  tinBtn.addEventListener('pointerdown',onTap);
   // If welcome/tutorial is covering the tin, any tap on the overlay should also count as a bake + dismiss
   ['welcomeModal','tutorialModal'].forEach(id=>{
     const m=document.getElementById(id);
@@ -2582,7 +2583,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 else attachTinHandlers();
 
 const audioBtn=document.getElementById('audioBtn');
-audioBtn.addEventListener('click',()=>{
+audioBtn.addEventListener('pointerdown',()=>{
   Sfx.init();
   if(Sfx.isMusicPlaying()){Sfx.stopMusic();audioBtn.classList.remove('active-audio');}
   else{Sfx.startMusic();audioBtn.classList.add('active-audio');}
@@ -2602,12 +2603,12 @@ function refreshSettingBtns(){
 }
 Sfx.setSfx(vault.sfxOn!==false);
 refreshSettingBtns();
-sfxBtn.addEventListener('click',()=>{
+sfxBtn.addEventListener('pointerdown',()=>{
   vault.sfxOn=!(vault.sfxOn!==false);
   Sfx.setSfx(vault.sfxOn); saveVault(); refreshSettingBtns();
   if(vault.sfxOn){Sfx.init();Sfx.sfxTap();}
 });
-hapticBtn.addEventListener('click',()=>{
+hapticBtn.addEventListener('pointerdown',()=>{
   vault.haptic=!(vault.haptic!==false);
   saveVault(); refreshSettingBtns();
   if(vault.haptic)doHaptic(true);
@@ -2623,7 +2624,7 @@ function initVolumeSliders(){
   s.addEventListener('input',()=>{vault.sfxVol=+s.value;Sfx.setVolumes(m.value/100,s.value/100);saveVault();});
 }
 function AudioStartMusic(){Sfx.init();Sfx.startMusic();audioBtn.classList.add('active-audio');vault.musicOn=true;}
-document.getElementById('resetBtn').addEventListener('click',()=>{
+document.getElementById('resetBtn').addEventListener('pointerdown',()=>{
   if(!confirm('Reset your bakery? This wipes ALL Biscuit Tin progress on this device: biscuits, helpers, quests, story, secrets and prestige bonuses. Purchased styles, hats and accessories are kept.'))return;
   if(!confirm('Really sure? There is no undo. (Tip: export a save code first if you might regret this.)'))return;
   vault.biscuit={total:0,lifetime:0,clicks:0,helpers:{},upgrades:[],repeatUpgrades:{},charTaps:{fox:0,tiger:0,turtle:0,axolotl:0},helpersOwned:0,prestige:0,prestigeBonus:1,lastSave:Date.now()};
@@ -2634,19 +2635,19 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 });
 
 // ══ BUY QUANTITY SELECTOR ══
-document.querySelectorAll('.qty-btn').forEach(b=>b.addEventListener('click',()=>{
+document.querySelectorAll('.qty-btn').forEach(b=>b.addEventListener('pointerdown',()=>{
   document.querySelectorAll('.qty-btn').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
   buyQty=b.dataset.q==='max'?'max':parseInt(b.dataset.q,10);
   renderHelpers(document.getElementById('bakeryBody'));
 }));
 
-document.getElementById('upgBtn').addEventListener('click',()=>{
+document.getElementById('upgBtn').addEventListener('pointerdown',()=>{
   renderUpgrades(document.getElementById('upgradesBody'));
   document.getElementById('upgradesModal').classList.add('show');
 });
 
-document.getElementById('shareBtn').addEventListener('click',()=>{
+document.getElementById('shareBtn').addEventListener('pointerdown',()=>{
   const gameUrl='https://jvdesignstudio.co.uk/games/cozy-biscuit-clicker.html';
   const text=`🍪 Biscuit Tin, Cozy Clicker\n${fmt(Math.floor(bv().lifetime))} biscuits baked · ${bv().clicks||0} taps\n⭐ Season ${(bv().prestige||0)+1} · x${(bv().prestigeBonus||1).toFixed(1)} bonus\n🏆 ${vault.achievements.filter(id=>id.startsWith('bt_')).length}/${ACHIEVEMENTS.length} goals\n\nPlay free at ${gameUrl}`;
   if(navigator.share)navigator.share({title:'Biscuit Tin',text,url:gameUrl}).catch(()=>{});
@@ -2654,8 +2655,8 @@ document.getElementById('shareBtn').addEventListener('click',()=>{
   else showToast('Sharing not available');
 });
 
-document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click',e=>e.target.closest('.modal-backdrop').classList.remove('show')));
-document.querySelectorAll('.modal-backdrop').forEach(bd=>bd.addEventListener('click',e=>{if(e.target===bd)bd.classList.remove('show');}));
+document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('pointerdown',e=>e.target.closest('.modal-backdrop').classList.remove('show')));
+document.querySelectorAll('.modal-backdrop').forEach(bd=>bd.addEventListener('pointerdown',e=>{if(e.target===bd)bd.classList.remove('show');}));
 document.addEventListener('keydown',e=>{
   if(e.key!=='Escape')return;
   const open=document.querySelectorAll('.modal-backdrop.show');
@@ -2719,7 +2720,7 @@ function renderQuests(el){
     list.appendChild(row);
   });
   el.appendChild(list);
-  list.querySelectorAll('.quest-claim').forEach(b=>b.addEventListener('click',()=>claimQuest(b.dataset.q)));
+  list.querySelectorAll('.quest-claim').forEach(b=>b.addEventListener('pointerdown',()=>claimQuest(b.dataset.q)));
   renderSecretQuests(el);
   renderStory(el);
 }
@@ -2761,7 +2762,7 @@ function renderJournal(el){
     list.appendChild(row);
   }
   el.appendChild(list);
-  list.querySelectorAll('.journal-claim').forEach(b=>b.addEventListener('click',()=>{
+  list.querySelectorAll('.journal-claim').forEach(b=>b.addEventListener('pointerdown',()=>{
     const i=parseInt(b.dataset.j,10);
     if(journalPoints()<i||claimed.includes(i))return;
     claimed.push(i);
@@ -2899,7 +2900,7 @@ function renderCrewQuests(el){
     list.appendChild(row);
   });
   el.appendChild(list);
-  list.querySelectorAll('[data-cq]').forEach(b=>b.addEventListener('click',()=>claimCrewQuest(b.dataset.cq)));
+  list.querySelectorAll('[data-cq]').forEach(b=>b.addEventListener('pointerdown',()=>claimCrewQuest(b.dataset.cq)));
 }
 
 // ══ WEEKLY CHALLENGE ══
@@ -2935,7 +2936,7 @@ function renderWeekly(el){
     const btn=document.createElement('button');
     btn.textContent=canClaim?'🎁 Claim Weekly Reward!':'Keep going...';
     btn.style.cssText=`width:100%;background:${canClaim?'linear-gradient(135deg,var(--lavender),#A98FD0)':'#E4DCF2'};border:none;border-radius:100px;padding:10px;font-family:Fraunces,serif;font-size:14px;font-weight:700;color:var(--cocoa);cursor:${canClaim?'pointer':'default'};opacity:${canClaim?1:.55}`;
-    btn.addEventListener('click',()=>{
+    btn.addEventListener('pointerdown',()=>{
       if(!canClaim)return;
       if(!bv().weeklyChallenge||bv().weeklyChallenge.week!==wk.week)return;
       bv().weeklyChallenge.claimed=true;
@@ -2950,7 +2951,7 @@ function renderWeekly(el){
   adReset.className='ad-reset';
   adReset.style.marginTop='8px';
   adReset.textContent='▶ Watch an ad & reroll this week';
-  adReset.addEventListener('click',()=>watchAdReset('Weekly challenge',resetWeeklyChallenge));
+  adReset.addEventListener('pointerdown',()=>watchAdReset('Weekly challenge',resetWeeklyChallenge));
   card.appendChild(adReset);
   el.appendChild(card);
 }
@@ -3027,7 +3028,7 @@ function renderSecretQuests(el){
     wrap.appendChild(row);
   }
   el.appendChild(wrap);
-  const cb=document.getElementById('claimWhisper'); if(cb)cb.addEventListener('click',claimSecretQuest);
+  const cb=document.getElementById('claimWhisper'); if(cb)cb.addEventListener('pointerdown',claimSecretQuest);
 }
 
 // ══ STORY: OPENING THE CAFE ══
@@ -3065,7 +3066,7 @@ function applyTinSkin(){
 }
 
 // ══ SECTION BUTTONS ══
-function btnTap(id,fn){var el=document.getElementById(id);if(!el)return;var mx=0,my=0,timer=null;el.addEventListener('pointerdown',function(e){mx=e.clientX;my=e.clientY;clearTimeout(timer);timer=setTimeout(function(){fn(e);},180);});el.addEventListener('pointermove',function(e){if(Math.abs(e.clientX-mx)>10||Math.abs(e.clientY-my)>10)clearTimeout(timer);});el.addEventListener('click',fn);}
+function btnTap(id,fn){var el=document.getElementById(id);if(!el)return;var mx=0,my=0,timer=null;el.addEventListener('pointerdown',function(e){mx=e.clientX;my=e.clientY;clearTimeout(timer);timer=setTimeout(function(){fn(e);},180);});el.addEventListener('pointermove',function(e){if(Math.abs(e.clientX-mx)>10||Math.abs(e.clientY-my)>10)clearTimeout(timer);});el.addEventListener('pointerdown',fn);}
 btnTap('bakeryBtn',()=>{renderHelpers(document.getElementById('bakeryBody'));document.getElementById('bakeryModal').classList.add('show');});
 function openQuests(){renderQuests(document.getElementById('questsBody'));document.getElementById('questsModal').classList.add('show');}
 btnTap('questsBtn',openQuests);
@@ -3237,7 +3238,7 @@ function renderLifetimeStats(){
   setTimeout(()=>{
     const btn=document.getElementById('statsExportBtn');
     if(!btn||btn._bound)return; btn._bound=true;
-    btn.addEventListener('click',()=>{
+    btn.addEventListener('pointerdown',()=>{
       const days2=Math.max(1,Math.ceil((Date.now()-(bv().firstPlayTs||Date.now()))/86400000));
       const txt=[
         `🍪 Biscuit Tin — v${APP.version} build ${APP.build} "${APP.codename}"`,
@@ -3275,7 +3276,7 @@ function renderBackups(){
     const b=document.createElement('button');
     b.type='button'; b.className='bb-btn';
     b.innerHTML='<span class="bb-icon">🕘</span>'+ageH+'h ago';
-    b.addEventListener('click',()=>{
+    b.addEventListener('pointerdown',()=>{
       if(!confirm('Restore this backup? Your CURRENT bakery will be replaced by the one from '+ageH+' hours ago.'))return;
       try{
         localStorage.setItem(VAULT_KEY,JSON.stringify(snap.data));
@@ -3439,7 +3440,7 @@ function renderStyle(){
     const eq=(vault.btBg||'cream')===t.id;
     const card=document.createElement('div'); card.className='bg-card'+(eq?' equipped':'');
     card.innerHTML=`<div class="bg-swatch" style="background:${t.css}"></div><div class="bg-name">${t.name}</div><div class="bg-price">${eq?'Equipped ✓':owned?'Tap to equip':'🍪 '+fmt(t.cost)}</div>`;
-    card.addEventListener('click',e=>{
+    card.addEventListener('pointerdown',e=>{
       if(!owned){
         if(Math.floor(bv().total)<t.cost){showToast('Not enough biscuits yet!');return;}
         bv().total-=t.cost; ownedBgs().push(t.id);
@@ -3460,7 +3461,7 @@ function renderStyle(){
     const eq=curTrail===tr.id;
     const card=document.createElement('div'); card.className='hat-card'+(eq?' equipped':'');
     card.innerHTML=`<div class="hat-emoji">${TRAIL_ICON[tr.id]}</div><div class="hat-name">${tr.name}</div><div class="hat-price">${eq?'Active':owned?'Equip':'🍪 '+fmt(tr.cost)}</div>`;
-    card.addEventListener('click',e=>{
+    card.addEventListener('pointerdown',e=>{
       if(!owned){
         if(Math.floor(bv().total)<tr.cost){showToast('Not enough biscuits yet!');return;}
         bv().total-=tr.cost; ownedTrails().push(tr.id);
@@ -3476,7 +3477,7 @@ function renderStyle(){
   CREW_ORDER.forEach(cid=>{
     const b=document.createElement('button'); b.className='char-tab'+(styleChar===cid?' active':'');
     b.textContent=CHARACTERS[cid].emoji+' '+CHARACTERS[cid].name;
-    b.addEventListener('click',()=>{styleChar=cid;renderStyle();});
+    b.addEventListener('pointerdown',()=>{styleChar=cid;renderStyle();});
     tabs.appendChild(b);
   });
   const grid=document.getElementById('hatGrid'); grid.innerHTML='';
@@ -3489,7 +3490,7 @@ function renderStyle(){
     const emoji=hh.id==='none'?'✖️':HAT_EMOJIS[hh.id];
     const card=document.createElement('div'); card.className='hat-card'+(eq?' equipped':'')+(dateLocked?' locked':'');
     card.innerHTML=`<div class="hat-emoji">${emoji}</div><div class="hat-name">${hh.name}</div><div class="hat-price">${eq?'Wearing':owned?'Equip':dateLocked?hh.dateLabel:hh.quest?'Quest: '+hh.quest:'🍪 '+fmt(hh.cost)}</div>`;
-    card.addEventListener('click',e=>{
+    card.addEventListener('pointerdown',e=>{
       if(!owned){
         if(dateLocked){showToast('🍬 '+hh.dateLabel+'!');return;}
         if(hh.quest){showToast('🎁 Finish '+hh.quest+"'s crew quests to unlock this!");return;}
@@ -3512,7 +3513,7 @@ function renderStyle(){
     const emoji=aa.id==='none'?'✖️':ACC_EMOJIS[aa.id];
     const card=document.createElement('div'); card.className='hat-card'+(eq?' equipped':'');
     card.innerHTML=`<div class="hat-emoji">${emoji}</div><div class="hat-name">${aa.name}</div><div class="hat-price">${eq?'Wearing':owned?'Equip':'🍪 '+fmt(aa.cost)}</div>`;
-    card.addEventListener('click',e=>{
+    card.addEventListener('pointerdown',e=>{
       if(!owned){
         if(Math.floor(bv().total)<aa.cost){showToast('Not enough biscuits yet!');return;}
         bv().total-=aa.cost; ownedAccs().push(aa.id);
@@ -3755,7 +3756,7 @@ function resolveGamble(bet){
 btnTap('gambleSafe',()=>resolveGamble(false));
 btnTap('gambleBet',()=>resolveGamble(true));
 // Tapping the dim backdrop counts as taking the safe crumbs.
-document.getElementById('gambleModal').addEventListener('click',e=>{
+document.getElementById('gambleModal').addEventListener('pointerdown',e=>{
   if(e.target===e.currentTarget&&gambleCtx)resolveGamble(false);
 });
 scheduleTreasure();
@@ -3786,7 +3787,7 @@ function renderCabinet(){
     const btn=document.createElement('button');btn.type='button';
     btn.className='feed-btn'+(fed?' fed':'');
     btn.innerHTML=CHARACTERS[cid].emoji+'<br>'+CHARACTERS[cid].name+(fed?'<br><span style="color:var(--mint-deep)">fed ✓</span>':'');
-    btn.addEventListener('click',()=>feedFriend(cid));
+    btn.addEventListener('pointerdown',()=>feedFriend(cid));
     grid.appendChild(btn);
   });
   document.getElementById('goldenBatchBtn').onclick=goldenBatch;
@@ -3817,7 +3818,7 @@ function renderRegular(){
   const old=body.querySelector('#regDoneBtn');if(old)old.remove();
   if(r.ready&&!r.claimed){
     const b=document.createElement('button');b.type='button';b.id='regDoneBtn';b.className='offline-collect-btn';b.style.width='100%';b.textContent='Collect the thanks! 🍪';
-    b.addEventListener('click',()=>{claimRegular();renderRegular();});
+    b.addEventListener('pointerdown',()=>{claimRegular();renderRegular();});
     body.appendChild(b);
   }
   const adReset=document.createElement('button');
@@ -3825,10 +3826,10 @@ function renderRegular(){
   adReset.className='ad-reset';
   adReset.style.marginTop=r.ready?'8px':'12px';
   adReset.textContent='▶ Prefer a different customer? Watch an ad & reroll';
-  adReset.addEventListener('click',()=>watchAdReset('Today\'s Regular',()=>{resetRegularOrder();renderRegular();}));
+  adReset.addEventListener('pointerdown',()=>watchAdReset('Today\'s Regular',()=>{resetRegularOrder();renderRegular();}));
   body.appendChild(adReset);
 }
-document.getElementById('regularChip').addEventListener('click',()=>{renderRegular();document.getElementById('regularModal').classList.add('show');});
+document.getElementById('regularChip').addEventListener('pointerdown',()=>{renderRegular();document.getElementById('regularModal').classList.add('show');});
 
 // Noticeboard: rotate every 45s; tap to flip manually.
 paintNotice();
