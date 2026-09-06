@@ -4,7 +4,7 @@
 > four development phases. Work has continued far past this point (games/workshop
 > correctness audits, 7 studio apps, GA4, secrets, etc.) and is **not** reflected here.
 > For the current, actively-maintained record see [`pages/devlog.html`](../pages/devlog.html)
-> (the public dev log) and [`tools/dev-board.html`](../tools/dev-board.html) (internal
+> (the public dev log) and the private Studio reference maintained outside this repository (internal
 > status snapshot). Kept for historical reference, not deleted, but treat nothing
 > below as current.
 

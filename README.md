@@ -23,6 +23,8 @@ Image assets live at the project root alongside the pages that use them.
 
 ## Build
 
+Use Node 24 (see `.nvmrc`) and run `npm ci` before the checks. `npm run validate:public` prevents internal Studio planning artifacts from entering the public website. The working board and audit evidence are maintained separately from this repository; only completed public-facing changes belong in the Dev Log.
+
 The nav and footer are defined once in `partials/` and synced into every page via marker comments (`<!-- BUILD:name --> ... <!-- /BUILD:name -->`):
 
 ```bash
