@@ -258,6 +258,97 @@
     obs.observe(hero);
   }
 
+  // ── LEARNING MAP ────────────────────────────────────────────────────────────
+  function initLearningMap() {
+    if (document.querySelector('.lesson-map')) return;
+
+    var stepCards = document.querySelectorAll('.step-card[id^="step-"]');
+    var builder = document.querySelector('.main-layout .steps-panel, .main-layout .game-panel, .layout .steps-col, .layout .game-col');
+    var progress = document.querySelector('.progress-wrap');
+    var xp = document.querySelector('.xp-wrap');
+    if (!stepCards.length && !builder) return;
+
+    var total = window.WORKSHOP_TOTAL || stepCards.length || 0;
+    var active = 1;
+    stepCards.forEach(function (card, idx) {
+      if (card.classList.contains('active-step') || card.classList.contains('open')) active = idx + 1;
+    });
+
+    var title = document.querySelector('h1');
+    var cleanTitle = title ? title.textContent.replace(/\s+/g, ' ').trim() : 'this workshop';
+    var map = document.createElement('section');
+    map.className = 'lesson-map';
+    map.setAttribute('aria-label', 'Workshop learning path');
+
+    var totalText = total ? total + ' guided steps' : 'guided build';
+    var mode = builder ? 'Interactive builder' : 'Step-by-step workshop';
+    map.innerHTML =
+      '<div class="lesson-map-card">' +
+        '<div class="lesson-map-kicker">' + mode + '</div>' +
+        '<div class="lesson-map-title">Build, test, then unlock the next piece.</div>' +
+        '<div class="lesson-map-text">' + cleanTitle + ' is designed as a visible path: make one working part, prove you understand it, then keep moving.</div>' +
+      '</div>' +
+      '<div class="lesson-map-card lesson-map-step">' +
+        '<div class="lesson-map-num">1</div><div class="lesson-map-small">Build<span>Follow the action list</span></div>' +
+      '</div>' +
+      '<div class="lesson-map-card lesson-map-step">' +
+        '<div class="lesson-map-num">2</div><div class="lesson-map-small">Check<span>Answer or test it</span></div>' +
+      '</div>' +
+      '<div class="lesson-map-card lesson-map-step">' +
+        '<div class="lesson-map-num">3</div><div class="lesson-map-small">Unlock<span>' + totalText + '</span></div>' +
+      '</div>';
+
+    var anchor = progress || xp || document.querySelector('.hero');
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(map, anchor.nextSibling);
+    }
+
+    if (stepCards.length) {
+      stepCards.forEach(function (card, idx) {
+        var header = card.querySelector('.step-header');
+        if (!header) return;
+        header.setAttribute('aria-label', 'Step ' + (idx + 1) + ' of ' + total + '. Open this step.');
+      });
+    }
+
+    document.documentElement.style.setProperty('--workshop-active-step', active);
+  }
+
+  // ── BLUEPRINT COACH ─────────────────────────────────────────────────────────
+  function initBlueprintCoach() {
+    if (document.querySelector('.blueprint-coach')) return;
+
+    var hasBlueprintSurface = document.querySelector('.bp-outer, .bp-canvas-wrap');
+    var hasBuilderShell = document.querySelector('.main-layout, .layout');
+    if (!hasBlueprintSurface || !hasBuilderShell) return;
+
+    var coach = document.createElement('section');
+    coach.className = 'blueprint-coach';
+    coach.setAttribute('aria-label', 'Blueprint workshop guide');
+    coach.innerHTML =
+      '<div class="blueprint-coach-card blueprint-coach-lead">' +
+        '<div class="blueprint-coach-kicker">Blueprint build loop</div>' +
+        '<strong>Wire the graph, apply the feature, then test the game.</strong>' +
+        '<span>Each step should feel like Unreal: connect the nodes, apply the change and check the live preview before moving on.</span>' +
+      '</div>' +
+      '<div class="blueprint-coach-card"><b>Read pins</b><span>Outputs on the right connect to inputs on the left.</span></div>' +
+      '<div class="blueprint-coach-card"><b>Type values</b><span>Click value fields and enter the exact number or label asked for.</span></div>' +
+      '<div class="blueprint-coach-card"><b>Test preview</b><span>After applying a step, look for the visible change in the game.</span></div>';
+
+    var anchor = document.querySelector('.lesson-map') || document.querySelector('.xp-wrap') || document.querySelector('.hero');
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(coach, anchor.nextSibling);
+    }
+
+    document.querySelectorAll('.task-list').forEach(function (list) {
+      list.setAttribute('aria-label', 'Blueprint wiring checklist');
+    });
+
+    document.querySelectorAll('.bp-canvas-wrap, .bp-outer').forEach(function (wrap) {
+      if (!wrap.hasAttribute('tabindex')) wrap.setAttribute('tabindex', '0');
+    });
+  }
+
   // ── PROGRESS PERSISTENCE ─────────────────────────────────────────────────────
   function saveStep(n) {
     try {
@@ -354,6 +445,8 @@
     initTeacherMode();
     initStuckSections();
     initStickyProgress();
+    initLearningMap();
+    initBlueprintCoach();
     initResetButton();
     patchCompleteStep();
     // Restore after buildDots() has run (it's called at DOMContentLoaded inline)

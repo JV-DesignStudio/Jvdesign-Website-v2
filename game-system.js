@@ -329,7 +329,7 @@ class GameSystem {
         id: 'level10',
         name: '📈 Rising Star',
         description: 'Reach level 10',
-        icon: '-ƒ--',
+        icon: '📈',
         unlocked: false
       },
       // Global cross-game achievements
@@ -659,6 +659,7 @@ class GameUI {
      overlay so there is always an explicit way back in. */
   static autoPause(handlers) {
     let overlay = null;
+    let paused = false;
     function showResume() {
       if (overlay || typeof document === 'undefined' || !document.body) return;
       overlay = document.createElement('div');
@@ -672,18 +673,33 @@ class GameUI {
     function pause() {
       let hid = false;
       try { hid = typeof handlers.pause === 'function' ? handlers.pause() : true; } catch (e) {}
-      if (hid !== false) showResume();
+      if (hid !== false) { paused = true; showResume(); }
     }
     function resume() {
       if (overlay) { overlay.remove(); overlay = null; }
       try { if (typeof handlers.resume === 'function') handlers.resume(); } catch (e) {}
+      paused = false;
     }
+    const controller = { pause, resume, toggle: () => paused ? resume() : pause() };
+    GameUI._autoPauseController = controller;
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') pause();
       });
+      if (!GameUI._autoPauseEventBound) {
+        document.addEventListener('gs-toggle-pause', function () {
+          if (GameUI._autoPauseController) {
+            GameUI._autoPauseController.toggle();
+            return;
+          }
+          // Keep older standalone games compatible while they migrate to autoPause.
+          const legacyToggle = window.togglePause || window.pauseGame || window.toggleLumoPause;
+          if (typeof legacyToggle === 'function') legacyToggle();
+        });
+        GameUI._autoPauseEventBound = true;
+      }
     }
-    return { pause: pause, resume: resume };
+    return controller;
   }
 
   static updateHUD(stats) {
@@ -1504,10 +1520,43 @@ if (typeof document !== 'undefined') {
     // Hide on tiny learners pages where controls would confuse? Keep visible but respect reduced-motion
     try{ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) bar.style.opacity='.9'; }catch(e){}
   }
+  function initArcadeMenu(){
+    if(document.getElementById('arcade-menu')) return;
+    if(!GameSystem.lastInstance) return;
+    var root=document.createElement('div');
+    root.id='arcade-menu'; root.className='arcade-menu';
+    root.innerHTML='<a class="arcade-menu-brand" href="../pages/games.html">JVDS <span>ARCADE</span></a>'+
+      '<button class="arcade-menu-trigger" type="button" aria-expanded="false" aria-controls="arcade-menu-panel">☰ Menu</button>'+
+      '<div class="arcade-menu-panel" id="arcade-menu-panel" hidden role="menu">'+
+        '<div class="arcade-menu-title">'+GameSystem.lastInstance.gameName+'</div>'+
+        '<button type="button" data-arcade-action="pause" role="menuitem">⏸ Pause / Resume</button>'+
+        '<button type="button" data-arcade-action="restart" role="menuitem">↻ Restart run</button>'+
+        '<button type="button" data-arcade-action="sound" role="menuitem">🔊 Sound</button>'+
+        '<button type="button" data-arcade-action="fullscreen" role="menuitem">⛶ Fullscreen</button>'+
+        '<a href="../pages/games.html" role="menuitem">← Back to Arcade</a>'+ 
+      '</div>';
+    document.body.appendChild(root);
+    var trigger=root.querySelector('.arcade-menu-trigger'), panel=root.querySelector('.arcade-menu-panel');
+    function close(){ trigger.setAttribute('aria-expanded','false'); panel.hidden=true; }
+    trigger.addEventListener('click',function(){ var open=trigger.getAttribute('aria-expanded')==='true'; trigger.setAttribute('aria-expanded',String(!open)); panel.hidden=open; });
+    root.addEventListener('click',function(e){
+      var action=e.target.closest('[data-arcade-action]'); if(!action) return;
+      if(action.dataset.arcadeAction==='pause') document.dispatchEvent(new CustomEvent('gs-toggle-pause'));
+      if(action.dataset.arcadeAction==='sound') { var sound=document.getElementById('gs-mute-btn')||document.getElementById('muteBtn'); if(sound) sound.click(); }
+      if(action.dataset.arcadeAction==='fullscreen') { var fs=document.getElementById('btn-fullscreen')||document.getElementById('fsToggleBtn'); if(fs) fs.click(); else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }
+      if(action.dataset.arcadeAction==='restart') {
+        var restart=window.restartGame||window.startGame2||window.startGame;
+        if(typeof restart==='function') restart();
+        else { var again=document.getElementById('againBtn')||document.getElementById('retry-btn')||document.getElementById('btnRetry'); if(again) again.click(); }
+      }
+      close();
+    });
+    document.addEventListener('click',function(e){ if(!root.contains(e.target)) close(); });
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function(){ initFullscreenToggle(); initMutePauseChrome(); });
+    document.addEventListener('DOMContentLoaded', function(){ initFullscreenToggle(); initMutePauseChrome(); initArcadeMenu(); });
   } else {
-    initFullscreenToggle(); initMutePauseChrome();
+    initFullscreenToggle(); initMutePauseChrome(); initArcadeMenu();
   }
 })();
 

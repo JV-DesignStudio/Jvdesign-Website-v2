@@ -3124,283 +3124,354 @@ window.JVDS_CONTENT = {
   "tools": [
     {
       "id": "pixel-studio",
-      "title": "Pixel Studio. Draw and Animate Pixel Art in Your Browser",
-      "desc": "A full pixel art editor with layers, animation frames, onion skinning, mirror mode, undo/redo, fill bucket, line and rect tools, 32-colour palette, GIF / spritesheet / project-file export, and autosave. Installable as an app and works offline. Mobile and tablet ready.",
-      "category": "Art & Design",
+      "title": "Pixel Studio",
+      "desc": "Draw and animate pixel art with layers, frames, onion skinning, mirror mode, autosave and GIF / spritesheet export.",
+      "category": "Make Art",
       "tags": [
         "Pixel Art",
         "Animation",
-        "GIF Export",
-        "Installable",
-        "Touch Support"
+        "Export"
       ],
       "comingSoon": false,
       "url": "/tools/pixel-studio.html"
     },
     {
-      "id": "sound-studio",
-      "title": "Sound Studio. 16-Bit Chiptune and SFX Creator",
-      "desc": "Lightweight step sequencer for chiptune melodies and retro sound effects. Square, saw, triangle, sine waveforms. ADSR envelopes, bit crush, reverb. Quick setup, perfect for game effects. Export as WAV.",
-      "category": "General",
-      "tags": [
-        "Chiptune",
-        "SFX Creation",
-        "WAV Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/sound-studio.html"
-    },
-    {
-      "id": "buildlab",
-      "title": "BuildLab. Design Roblox-Style 3D Models in Your Browser",
-      "desc": "A SketchUp-style 3D block builder. Place, paint, resize and rotate blocks, cylinders, spheres and more. Save your builds, share them with a link, and export as OBJ, GLTF or Roblox .rbxm. Full touch support.",
-      "category": "General",
-      "tags": [
-        "Three.js",
-        "3D Builder",
-        "Share Links",
-        "Touch Support"
-      ],
-      "comingSoon": false,
-      "url": "/tools/buildlab.html"
-    },
-    {
-      "id": "gdd-builder",
-      "title": "GDD Builder. Plan Your Game Design Document",
-      "desc": "Fill in 9 structured sections concept, characters, gameplay rules, art style, sound, timeline and more. Live cover preview, progress tracker, save to browser, and export as PDF.",
-      "category": "General",
-      "tags": [
-        "Game Design",
-        "PDF Export",
-        "Save &amp; Load"
-      ],
-      "comingSoon": false,
-      "url": "/tools/gdd-builder.html"
-    },
-    {
-      "id": "level-designer",
-      "title": "Level Designer. Build 2D Platformer Levels on a Tile Grid",
-      "desc": "Draw levels tile by tile with 32 tile types across 7 categories terrain, hazards, enemies, pickups, decor and more. 4 layers, draw/fill/rect/line tools, export as PNG with watermark or JSON for Godot and Unity.",
-      "category": "General",
-      "tags": [
-        "Level Design",
-        "PNG &amp; JSON Export",
-        "Touch Support"
-      ],
-      "comingSoon": false,
-      "url": "/tools/level-designer.html"
-    },
-    {
-      "id": "sfx-generator",
-      "title": "SFX Studio. Create Custom Sound Effects for Your Game",
-      "desc": "A powerful sound design tool for creating unique sound effects. Customize pitch, reverb, bit-crush and distortion then download a WAV file ready for Godot or Unity.",
-      "category": "General",
-      "tags": [
-        "Web Audio",
-        "72 Sounds",
-        "WAV Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/sfx-generator.html"
-    },
-    {
-      "id": "drum-pad",
-      "title": "Drum Pad. Tap Beats & Make Music",
-      "desc": "A fun browser drum machine with 7 instrument kits drum kit, piano, bass, brass, game SFX, nature sounds and silly effects. Tap pads, use keyboard shortcuts, record a loop.",
-      "category": "General",
-      "tags": [
-        "7 Kits",
-        "84 Sounds",
-        "Loop Recorder",
-        "Keyboard Support"
-      ],
-      "comingSoon": false,
-      "url": "/tools/drum-pad.html"
-    },
-    {
       "id": "character-designer",
-      "title": "Character Designer. Template-based Character Creation",
-      "desc": "Design game characters with 4 templates (Humanoid, Creature, Chibi, Top-Down) and 25+ archetypes. Customize parts, colors, and poses. Save presets, use smart randomizer, batch generate characters. Export as spritesheet, GIF, PNG, or JSON.",
-      "category": "General",
+      "title": "Character Designer",
+      "desc": "Build characters from templates, customise parts, pose them, save presets and export spritesheets, GIFs, PNGs or JSON.",
+      "category": "Make Art",
       "tags": [
-        "4 Templates",
-        "Export Ready",
-        "Batch Generate"
+        "Characters",
+        "Sprites",
+        "Batch"
       ],
       "comingSoon": false,
       "url": "/tools/character-designer.html"
     },
     {
-      "id": "story-editor",
-      "title": "Story Editor. Write Branching Dialogue and Story Trees for Your Game",
-      "desc": "A node-based dialogue editor for RPG conversations and branching narratives. Add characters, write dialogue nodes, choice nodes and endings, connect them visually, preview the full story, and export as JSON for Godot or Unity. 4 save slots. Touch friendly.",
-      "category": "General",
-      "tags": [
-        "Dialogue",
-        "Branching Story",
-        "JSON Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/story-editor.html"
-    },
-    {
-      "id": "colour-palette",
-      "title": "Colour Palette Generator. Build a Game-Ready Colour Scheme in Seconds",
-      "desc": "12 game mood presets from Retro 8-bit to Dark Dungeon. Lock colours you love, shuffle the rest, adjust saturation and brightness. Preview applied to real game mockups. Export as CSS variables, hex array, JSON, or GDScript for Godot.",
-      "category": "General",
-      "tags": [
-        "Colour",
-        "CSS · Godot",
-        "Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/colour-palette.html"
-    },
-    {
-      "id": "quest-board-page",
-      "title": "Quest Board. QuestLog RPG Task Tracker",
-      "desc": "A free browser-based RPG productivity app. Turn projects, tasks, and daily habits into quests. Earn XP, level up, defeat boss quests, track self-care, import your calendar. No account needed all data stays on your device.",
-      "category": "General",
-      "tags": [
-        "Productivity",
-        "RPG",
-        "PWA",
-        "Free"
-      ],
-      "comingSoon": false,
-      "url": "/tools/quest-board-page.html"
-    },
-    {
-      "id": "icon-generator",
-      "title": "Quest Board Icon Generator",
-      "desc": "Generate custom pixel-style icons for your Quest Board RPG quests. Pick a shape and colour, preview it live, and download PNGs sized for the icons/ folder. No sign-up needed.",
-      "category": "General",
-      "tags": [
-        "Pixel Art",
-        "Icons",
-        "Free"
-      ],
-      "comingSoon": false,
-      "url": "/tools/icon-generator.html"
-    },
-    {
-      "id": "arcade-game-maker-landing",
-      "title": "Arcade Game Maker. Build &amp; Play Your Own Browser Game",
-      "desc": "Pick a Shooter or Platformer template, dial in speed and gravity, paste a tile map from the Level Designer, then hit Run. Save locally or copy a share link so anyone can play your game instantly no installs.",
-      "category": "General",
-      "tags": [
-        "Phaser 3",
-        "Shooter &amp; Platformer",
-        "Share Link"
-      ],
-      "comingSoon": false,
-      "url": "/tools/arcade-game-maker-landing.html"
-    },
-    {
-      "id": "music-maker",
-      "title": "Music Maker. Make Full Tracks in Your Browser",
-      "desc": "A BandLab-style music studio with a 16/32-step beat sequencer, piano roll melody editor, synth with 8 presets and full ADSR envelope. Save tracks to your browser, play live keys with your keyboard, and export a real WAV file ready to drop into your game.",
-      "category": "General",
-      "tags": [
-        "Beat Sequencer",
-        "Piano Roll",
-        "WAV Export",
-        "Save &amp; Load"
-      ],
-      "comingSoon": false,
-      "url": "/tools/music-maker.html"
-    },
-    {
-      "id": "particle-designer",
-      "title": "Particle Designer. Build Custom VFX from Scratch",
-      "desc": "Create custom particles from blank or choose from 8 presets (Fire, Smoke, Sparks, Magic, Snow, Explosion, Rain, Leaves). Curve editors, colour gradients, sprite textures, undo/redo and a save library. Export real Godot .tres scenes, Unity importer scripts, video (WebM) or shareable links.",
-      "category": "General",
-      "tags": [
-        "Custom Create",
-        "9 Presets",
-        "Godot + Unity",
-        "Save Library"
-      ],
-      "comingSoon": false,
-      "url": "/tools/particle-designer.html"
-    },
-    {
-      "id": "bitmap-font-maker",
-      "title": "Bitmap Font Maker. Draw Pixel Fonts for Your Game",
-      "desc": "Draw every character on a pixel grid (5×7 up to 16×16), preview your text live with colour and scale controls, then export as a PNG spritesheet, JSON atlas, or BMFont-compatible XML ready to drop into Godot, Unity or Phaser.",
-      "category": "General",
-      "tags": [
-        "Pixel Font",
-        "PNG Spritesheet",
-        "BMFont XML"
-      ],
-      "comingSoon": false,
-      "url": "/tools/bitmap-font-maker.html"
-    },
-    {
-      "id": "map-generator",
-      "title": "Map Generator. Procedural + Manual Editing",
-      "desc": "Generate three map types: Dungeons (BSP, rooms, enemies, loot), World Maps (Perlin biomes, cities, dungeons), Islands (beaches, forests, villages). Then manually edit with place, erase, and pick tools. Adjustable from seed. Export PNG or JSON tilemap.",
-      "category": "General",
-      "tags": [
-        "Procedural Gen",
-        "Manual Edit",
-        "PNG · JSON Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/map-generator.html"
-    },
-    {
-      "id": "game-idea-generator",
-      "title": "Game Idea Generator. Instant Random Game Concepts",
-      "desc": "Stuck on what to make? Hit the button and get a fully-formed random game concept genre, theme, core mechanic and a twist all combined. Great for game jams, school projects or just breaking creative block.",
-      "category": "General",
-      "tags": [
-        "Game Jam",
-        "Random",
-        "Brainstorm"
-      ],
-      "comingSoon": false,
-      "url": "/tools/game-idea-generator.html"
-    },
-    {
       "id": "sprite-animator",
-      "title": "Sprite Animator. Preview Spritesheet Animations Live",
-      "desc": "Upload any spritesheet PNG, set your frame size, pick which frames to include, dial in the FPS and watch your animation loop in real time. Drag and drop support. Export frame data as JSON for Godot or Unity, or save selected frames as a new sheet.",
-      "category": "General",
+      "title": "Sprite Animator",
+      "desc": "Upload a spritesheet, choose frames, preview animation timing live and export frame data for your engine.",
+      "category": "Make Art",
       "tags": [
         "Spritesheet",
-        "Frame Preview",
-        "JSON Export"
+        "Preview",
+        "JSON"
       ],
       "comingSoon": false,
       "url": "/tools/sprite-animator.html"
     },
     {
-      "id": "trading-card-designer",
-      "title": "Trading Card Designer. Create Cards for Your Game Characters",
-      "desc": "Design full trading cards like a Pokémon card pick a template (Classic, RPG, Sci-Fi, Dark, Cute…), choose type and rarity, upload artwork or use an emoji, fill in name, HP, stats with visual bars and flavour text. Export as PNG.",
-      "category": "General",
+      "id": "bitmap-font-maker",
+      "title": "Bitmap Font Maker",
+      "desc": "Draw pixel fonts character by character, preview text and export spritesheets, atlases or BMFont XML.",
+      "category": "Make Art",
       "tags": [
-        "6 Templates",
-        "6 Rarities",
-        "PNG Export"
+        "Fonts",
+        "Atlas",
+        "BMFont"
+      ],
+      "comingSoon": false,
+      "url": "/tools/bitmap-font-maker.html"
+    },
+    {
+      "id": "trading-card-designer",
+      "title": "Trading Card Designer",
+      "desc": "Create character cards with templates, rarities, stats, uploaded art and PNG export.",
+      "category": "Make Art",
+      "tags": [
+        "Cards",
+        "Stats",
+        "PNG"
       ],
       "comingSoon": false,
       "url": "/tools/trading-card-designer.html"
     },
     {
       "id": "game-logo-maker",
-      "title": "Game Logo Maker. Design Your Game Title Screen Logo",
-      "desc": "Type your game title, pick from 9 style presets (Fantasy, Pixel, Neon, Retro Arcade, Horror, Sci-Fi, Pirate, Grunge, Cute), choose a font, colour and effects like glow, outline, gradient and scanlines. Export at multiple canvas sizes including itch.io and Steam.",
-      "category": "General",
+      "title": "Game Logo Maker",
+      "desc": "Design a title logo with presets, fonts, outlines, glow, gradients and export sizes for stores and splash screens.",
+      "category": "Make Art",
       "tags": [
-        "9 Style Presets",
-        "8 Fonts",
-        "PNG Export"
+        "Logo",
+        "Branding",
+        "PNG"
       ],
-      "comingSoon": true,
+      "comingSoon": false,
       "url": "/tools/game-logo-maker.html"
+    },
+    {
+      "id": "music-maker",
+      "title": "Music Maker",
+      "desc": "Compose full tracks with a beat sequencer, piano roll, synth presets, save/load and WAV export.",
+      "category": "Make Audio",
+      "tags": [
+        "Sequencer",
+        "Piano Roll",
+        "WAV"
+      ],
+      "comingSoon": false,
+      "url": "/tools/music-maker.html"
+    },
+    {
+      "id": "sound-studio",
+      "title": "Sound Studio",
+      "desc": "Create 16-bit chiptune melodies and retro effects with waveforms, envelopes, bit crush and reverb.",
+      "category": "Make Audio",
+      "tags": [
+        "Chiptune",
+        "SFX",
+        "WAV"
+      ],
+      "comingSoon": false,
+      "url": "/tools/sound-studio.html"
+    },
+    {
+      "id": "sfx-generator",
+      "title": "SFX Studio",
+      "desc": "Generate arcade, puzzle, platformer and RPG sound effects, tune the sound, then download game-ready WAV files.",
+      "category": "Make Audio",
+      "tags": [
+        "Sound FX",
+        "Packs",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/tools/sfx-generator.html"
+    },
+    {
+      "id": "drum-pad",
+      "title": "Drum Pad",
+      "desc": "Tap beats, switch kits, use keyboard shortcuts and record loops for quick rhythm ideas.",
+      "category": "Make Audio",
+      "tags": [
+        "Beats",
+        "Kits",
+        "Loops"
+      ],
+      "comingSoon": false,
+      "url": "/tools/drum-pad.html"
+    },
+    {
+      "id": "buildlab",
+      "title": "BuildLab",
+      "desc": "Make Roblox-style 3D block models with shapes, paint, transforms, touch support and OBJ / GLTF / RBXM export.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D Models",
+        "Roblox",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/tools/buildlab.html"
+    },
+    {
+      "id": "level-designer",
+      "title": "Level Designer",
+      "desc": "Draw 2D platformer levels on a tile grid with layers, fill tools, hazards, pickups and PNG / JSON export.",
+      "category": "Build Worlds",
+      "tags": [
+        "Levels",
+        "Tile Grid",
+        "JSON"
+      ],
+      "comingSoon": false,
+      "url": "/tools/level-designer.html"
+    },
+    {
+      "id": "map-generator",
+      "title": "Map Generator",
+      "desc": "Generate dungeons, worlds and islands from a seed, edit by hand and export PNG or JSON tilemaps.",
+      "category": "Build Worlds",
+      "tags": [
+        "Procedural",
+        "Worlds",
+        "Tilemaps"
+      ],
+      "comingSoon": false,
+      "url": "/tools/map-generator.html"
+    },
+    {
+      "id": "tileset-builder",
+      "title": "Tileset Builder",
+      "desc": "Plan reusable tiles and export a compact tileset for your level workflow.",
+      "category": "Build Worlds",
+      "tags": [
+        "Tiles",
+        "Canvas",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/tools/tileset-builder.html"
+    },
+    {
+      "id": "particle-designer",
+      "title": "Particle Designer",
+      "desc": "Design fire, smoke, sparks, magic and other VFX with curves, gradients and engine-friendly exports.",
+      "category": "Build Worlds",
+      "tags": [
+        "VFX",
+        "Godot",
+        "Unity"
+      ],
+      "comingSoon": false,
+      "url": "/tools/particle-designer.html"
+    },
+    {
+      "id": "gdd-builder",
+      "title": "GDD Builder",
+      "desc": "Fill out a structured game design document with progress tracking, browser saves and PDF export.",
+      "category": "Plan & Write",
+      "tags": [
+        "Game Design",
+        "PDF",
+        "Save"
+      ],
+      "comingSoon": false,
+      "url": "/tools/gdd-builder.html"
+    },
+    {
+      "id": "game-idea-generator",
+      "title": "Game Idea Generator",
+      "desc": "Spin up game-jam prompts with genre, theme, mechanic and twist when you need a fast creative spark.",
+      "category": "Plan & Write",
+      "tags": [
+        "Ideas",
+        "Game Jam",
+        "Random"
+      ],
+      "comingSoon": false,
+      "url": "/tools/game-idea-generator.html"
+    },
+    {
+      "id": "story-editor",
+      "title": "Story Editor",
+      "desc": "Create branching dialogue, character nodes, choices, endings, visual story links and JSON exports.",
+      "category": "Plan & Write",
+      "tags": [
+        "Dialogue",
+        "Story",
+        "JSON"
+      ],
+      "comingSoon": false,
+      "url": "/tools/story-editor.html"
+    },
+    {
+      "id": "dialogue-tree-builder",
+      "title": "Dialogue Tree Builder",
+      "desc": "Sketch a playable conversation tree with canvas-based links and exportable story structure.",
+      "category": "Plan & Write",
+      "tags": [
+        "Dialogue",
+        "Nodes",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/tools/dialogue-tree-builder.html"
+    },
+    {
+      "id": "design-worksheet",
+      "title": "Design Worksheets",
+      "desc": "Plan core ideas, audience, mechanics and scope before building.",
+      "category": "Plan & Write",
+      "tags": [
+        "Planning",
+        "Worksheet",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/tools/design-worksheet.html"
+    },
+    {
+      "id": "store-page-builder",
+      "title": "Store Page Builder",
+      "desc": "Draft store page copy, feature lists and release messaging for a game project.",
+      "category": "Plan & Write",
+      "tags": [
+        "Launch",
+        "Copy",
+        "Planning"
+      ],
+      "comingSoon": false,
+      "url": "/tools/store-page-builder.html"
+    },
+    {
+      "id": "arcade-game-maker-landing",
+      "title": "Arcade Game Maker",
+      "desc": "Build and play a browser game from templates, tune physics, paste level maps and share a playable link.",
+      "category": "Build & Ship",
+      "tags": [
+        "Game Maker",
+        "Phaser",
+        "Share"
+      ],
+      "comingSoon": false,
+      "url": "/tools/arcade-game-maker-landing.html"
+    },
+    {
+      "id": "screenshot-generator",
+      "title": "Screenshot Generator",
+      "desc": "Create polished screenshots and promo images for game pages or posts.",
+      "category": "Build & Ship",
+      "tags": [
+        "Screenshots",
+        "Promo",
+        "Canvas"
+      ],
+      "comingSoon": false,
+      "url": "/tools/screenshot-generator.html"
+    },
+    {
+      "id": "code-snippet-generator",
+      "title": "Code Snippet Generator",
+      "desc": "Create starter snippets for common game-dev patterns and copy them into your project.",
+      "category": "Build & Ship",
+      "tags": [
+        "Code",
+        "Starter",
+        "Helper"
+      ],
+      "comingSoon": false,
+      "url": "/tools/code-snippet-generator.html"
+    },
+    {
+      "id": "error-guide",
+      "title": "Error Guide",
+      "desc": "Look up common beginner bugs and get plain-language fixes.",
+      "category": "Build & Ship",
+      "tags": [
+        "Debugging",
+        "Guide",
+        "Beginner"
+      ],
+      "comingSoon": false,
+      "url": "/tools/error-guide.html"
+    },
+    {
+      "id": "quest-board-page",
+      "title": "QuestLog",
+      "desc": "Turn projects, habits and daily work into quests with XP, boss tasks and local browser saves.",
+      "category": "Build & Ship",
+      "tags": [
+        "Productivity",
+        "RPG",
+        "PWA"
+      ],
+      "comingSoon": false,
+      "url": "/tools/quest-board-page.html"
+    },
+    {
+      "id": "icon-generator",
+      "title": "Icon Generator",
+      "desc": "Generate Quest Board-style pixel icons and download ready-sized PNGs.",
+      "category": "Build & Ship",
+      "tags": [
+        "Icons",
+        "Pixel",
+        "PNG"
+      ],
+      "comingSoon": false,
+      "url": "/tools/icon-generator.html"
     }
   ],
   "books": [
@@ -3750,10 +3821,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-05T16:07:22.181Z",
+    "generated": "2026-09-06T20:01:22.041Z",
     "workshops": 181,
     "games": 25,
-    "tools": 20,
+    "tools": 27,
     "books": 5,
     "engines": {
       "Blender": 9,
@@ -3777,8 +3848,11 @@ window.JVDS_CONTENT = {
       "Unreal": 10
     },
     "toolCategories": {
-      "Art & Design": 1,
-      "General": 20
+      "Make Art": 6,
+      "Make Audio": 4,
+      "Build Worlds": 5,
+      "Plan & Write": 6,
+      "Build & Ship": 6
     }
   }
 };

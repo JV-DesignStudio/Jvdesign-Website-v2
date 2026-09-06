@@ -38,10 +38,18 @@ const server = http.createServer((req, res) => {
   // hamburger toggle works (the old double-bind bug)
   await page.setViewport({ width: 390, height: 780 });
   await new Promise(r => setTimeout(r, 200));
-  await page.evaluate(() => document.getElementById('jvdsNavToggle').click());
-  const navOpened = await page.evaluate(() => document.getElementById('jvdsNavLinks').classList.contains('open'));
-  await page.evaluate(() => document.getElementById('jvdsNavToggle').click());
-  const navClosed = await page.evaluate(() => !document.getElementById('jvdsNavLinks').classList.contains('open'));
+  await page.evaluate(() => document.getElementById('navToggle').click());
+  const navOpened = await page.evaluate(() => {
+    const nav = document.getElementById('mainNav');
+    const btn = document.getElementById('navToggle');
+    return nav.classList.contains('open') && btn.getAttribute('aria-expanded') === 'true';
+  });
+  await page.evaluate(() => document.getElementById('navToggle').click());
+  const navClosed = await page.evaluate(() => {
+    const nav = document.getElementById('mainNav');
+    const btn = document.getElementById('navToggle');
+    return !nav.classList.contains('open') && btn.getAttribute('aria-expanded') === 'false';
+  });
 
   console.log('checks:', JSON.stringify(checks));
   console.log('hamburger opens:', navOpened, '| closes:', navClosed);

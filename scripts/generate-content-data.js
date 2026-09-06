@@ -222,13 +222,23 @@ function generateTools() {
     const slug = file.replace('.html', '');
 
     // Determine category from surrounding context
-    const before = html.substring(Math.max(0, match.index - 500), match.index);
+    const before = html.substring(0, match.index);
     let category = 'General';
-    if (before.includes('data-category="art"')) category = 'Art & Design';
-    else if (before.includes('data-category="audio"')) category = 'Audio';
-    else if (before.includes('data-category="3d"')) category = '3D & Models';
-    else if (before.includes('data-category="game"')) category = 'Game Dev';
-    else if (before.includes('data-category="planning"')) category = 'Planning';
+    const categoryMatches = [...before.matchAll(/<div class="tool-category" data-category="([^"]+)"/g)];
+    const categoryKey = categoryMatches.length ? categoryMatches[categoryMatches.length - 1][1] : '';
+    const categoryLabels = {
+      'make art': 'Make Art',
+      'make audio': 'Make Audio',
+      'build worlds': 'Build Worlds',
+      'plan & write': 'Plan & Write',
+      'build & ship': 'Build & Ship',
+      art: 'Art & Design',
+      audio: 'Audio',
+      '3d': '3D & Models',
+      game: 'Game Dev',
+      planning: 'Planning'
+    };
+    if (categoryLabels[categoryKey]) category = categoryLabels[categoryKey];
 
     // Check if coming soon
     const isComingSoon = html.substring(match.index, match.index + match[0].length + 200).includes('Coming Soon');
