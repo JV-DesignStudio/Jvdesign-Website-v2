@@ -21,199 +21,42 @@
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.googletagmanager.com">
+<link rel="preconnect" href="https://www.google-analytics.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-/* â”€â”€ JVDS Site Nav â”€â”€ */
+<link rel="preload" href="../style-tool-story-editor.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="../style-tool-story-editor.css?v=17"></noscript>
 
-:root{
-  --bg:#0d1117;--panel:#161c27;--panel2:#1c2535;--panel3:#232f45;
-  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
-  --accent:#6366f1;--accent2:#f59e0b;--accent3:#10b981;--accent4:#ef4444;
-  --text:#e8edf8;--muted:#8b93a0;
-  --node-dialogue:#1e3a5f;--node-choice:#2d1f4e;--node-end:#3a1a1a;--node-start:#1a3a1a;
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;touch-action:none;user-select:none;}
-body{display:flex;flex-direction:column;}
-
-/* â”€â”€ APP â”€â”€ */
-#app{flex:1;display:flex;min-height:0;}
-
-/* â”€â”€ LEFT PANEL â”€â”€ */
-#left-panel{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;z-index:10;}
-
-/* â”€â”€ CANVAS â”€â”€ */
-#canvas-area{flex:1;min-width:0;position:relative;overflow:hidden;background:var(--bg);}
-#canvas-area::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;}
-#story-canvas{position:absolute;top:0;left:0;width:0;height:0;overflow:visible;}
-
-/* â”€â”€ RIGHT PANEL â”€â”€ */
-#right-panel{width:260px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:10;}
-#right-panel-scroll{flex:1;overflow-y:auto;}
-
-/* â”€â”€ PANEL COMMON â”€â”€ */
-.ps{padding:10px;}
-.pt{font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
-.pdiv{height:1px;background:var(--border);margin:2px 0;}
-
-/* â”€â”€ NODES LIST â”€â”€ */
-.node-list{flex:1;overflow-y:auto;min-height:120px;}
-.node-list-item{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
-.node-list-item:hover{background:rgba(255,255,255,.03);}
-.node-list-item.on{background:rgba(99,102,241,.1);border-left:3px solid var(--accent);}
-.nli-icon{font-size:.85rem;flex-shrink:0;}
-.nli-name{font-size:.6rem;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.nli-type{font-size:.48rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
-
-/* â”€â”€ ADD BUTTONS â”€â”€ */
-.add-btns{display:flex;flex-direction:column;gap:4px;padding:8px;}
-.add-btn{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:8px;border:1px dashed var(--border2);background:transparent;cursor:pointer;font-size:.65rem;color:var(--muted);transition:all .12s;font-family:'Inter',sans-serif;width:100%;text-align:left;}
-.add-btn:hover{color:var(--text);}
-.add-btn.dialogue:hover{border-color:#6366f1;background:rgba(99,102,241,.06);}
-.add-btn.choice:hover{border-color:#8b5cf6;background:rgba(139,92,246,.06);}
-.add-btn.end:hover{border-color:#ef4444;background:rgba(239,68,68,.06);}
-.add-btn .ab-ico{font-size:1rem;}
-
-/* â”€â”€ CHARACTERS â”€â”€ */
-.char-list{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;}
-.char-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,.02);cursor:pointer;transition:all .12s;}
-.char-item:hover{background:rgba(255,255,255,.05);}
-.char-item.on{background:rgba(99,102,241,.1);border-color:var(--accent);}
-.ci-avatar{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.75rem;flex-shrink:0;}
-.ci-name{font-size:.62rem;font-weight:600;flex:1;}
-.ci-del{font-size:.6rem;color:var(--muted);background:transparent;border:none;cursor:pointer;padding:2px 4px;}
-.ci-del:hover{color:var(--accent4);}
-.add-char-row{display:flex;gap:4px;margin-top:5px;}
-.add-char-input{flex:1;padding:4px 7px;border-radius:5px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.62rem;font-family:'Inter',sans-serif;outline:none;}
-.add-char-btn{padding:4px 8px;border-radius:5px;border:none;background:var(--accent);color:white;cursor:pointer;font-size:.6rem;font-family:'Inter',sans-serif;}
-
-/* â”€â”€ ACTION BUTTONS â”€â”€ */
-.ab{width:100%;padding:7px 8px;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:600;margin-bottom:4px;transition:all .12s;}
-.ab-p{background:var(--accent);color:white;}
-.ab-p:hover{filter:brightness(1.1);}
-.ab-s{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--border2);}
-.ab-s:hover{background:rgba(255,255,255,.09);}
-.ab-g{background:var(--accent3);color:#000;}
-.ab-g:hover{filter:brightness(1.1);}
-.ab-r{background:rgba(239,68,68,.1);color:var(--accent4);border:1px solid rgba(239,68,68,.3);}
-
-/* â”€â”€ CANVAS NODES â”€â”€ */
-.story-node{position:absolute;border-radius:12px;border:2px solid rgba(255,255,255,.12);cursor:grab;transition:box-shadow .15s;min-width:180px;max-width:220px;touch-action:none;}
-.story-node:active{cursor:grabbing;}
-.story-node.selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.25);}
-.story-node.type-start{background:var(--node-start);border-color:rgba(16,185,129,.3);}
-.story-node.type-dialogue{background:var(--node-dialogue);border-color:rgba(99,102,241,.25);}
-.story-node.type-choice{background:var(--node-choice);border-color:rgba(139,92,246,.25);}
-.story-node.type-end{background:var(--node-end);border-color:rgba(239,68,68,.25);}
-.node-header{display:flex;align-items:center;gap:6px;padding:7px 10px 5px;border-bottom:1px solid rgba(255,255,255,.08);}
-.node-type-badge{font-size:.42rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;}
-.badge-start{background:rgba(16,185,129,.2);color:#10b981;}
-.badge-dialogue{background:rgba(99,102,241,.2);color:#818cf8;}
-.badge-choice{background:rgba(139,92,246,.2);color:#a78bfa;}
-.badge-end{background:rgba(239,68,68,.2);color:#f87171;}
-.node-char{font-size:.7rem;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.node-body{padding:7px 10px;}
-.node-text{font-size:.65rem;color:rgba(255,255,255,.75);line-height:1.5;max-height:56px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;}
-.node-choices{display:flex;flex-direction:column;gap:3px;margin-top:6px;}
-.node-choice-item{font-size:.58rem;color:rgba(255,255,255,.6);padding:3px 7px;border-radius:5px;background:rgba(255,255,255,.06);border-left:2px solid rgba(139,92,246,.4);}
-.node-footer{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-top:1px solid rgba(255,255,255,.06);}
-.node-id{font-size:.45rem;color:var(--muted);}
-.node-connect-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;border:2px solid rgba(255,255,255,.1);transition:all .12s;}
-.node-connect-dot:hover{background:var(--accent);border-color:var(--accent);transform:scale(1.3);}
-.node-connect-dot.out{background:rgba(99,102,241,.4);border-color:var(--accent);}
-
-/* â”€â”€ EDIT PANEL â”€â”€ */
-.edit-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:.72rem;line-height:1.7;}
-.field{margin-bottom:12px;}
-.field label{display:block;font-size:.55rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
-.field input,.field textarea,.field select{width:100%;padding:7px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-family:'Inter',sans-serif;font-size:.78rem;outline:none;resize:vertical;transition:border-color .15s;}
-.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);}
-.field textarea{min-height:70px;line-height:1.6;}
-.choices-edit{display:flex;flex-direction:column;gap:5px;margin-bottom:6px;}
-.choice-edit-row{display:flex;gap:4px;align-items:center;}
-.choice-edit-row input{flex:1;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.72rem;font-family:'Inter',sans-serif;outline:none;}
-.choice-edit-row input:focus{border-color:var(--accent);}
-.choice-connects-to{font-size:.55rem;color:var(--muted);padding:3px 6px;border-radius:5px;background:var(--panel2);white-space:nowrap;flex-shrink:0;}
-.del-choice{width:20px;height:20px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.65rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
-.del-choice:hover{color:var(--accent4);}
-.add-choice-btn{font-size:.6rem;padding:4px 8px;border-radius:5px;border:1px dashed var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'Inter',sans-serif;transition:all .12s;display:flex;align-items:center;gap:4px;}
-.add-choice-btn:hover{border-color:var(--accent);color:var(--accent);}
-.connects-to-list{display:flex;flex-direction:column;gap:3px;}
-.connect-item{display:flex;align-items:center;gap:5px;padding:4px 7px;border-radius:6px;background:var(--panel3);font-size:.6rem;}
-.connect-item select{flex:1;padding:2px 5px;border-radius:4px;border:1px solid var(--border2);background:var(--panel2);color:var(--text);font-size:.6rem;outline:none;}
-.connect-item button{width:18px;height:18px;border-radius:3px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:.6rem;}
-.choice-block{margin-bottom:8px;padding:4px 4px 6px;border:1px solid var(--border);border-radius:7px;}
-.cond-row{display:flex;gap:3px;align-items:center;margin-top:3px;}
-.node-tag{font-size:.42rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:1px 5px;border-radius:4px;flex-shrink:0;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.fx-chip{font-size:.58rem;padding:2px 7px;border-radius:10px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;cursor:default;white-space:nowrap;}
-.pv-vars{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border2);}
-
-/* â”€â”€ SVG ARROWS â”€â”€ */
-#arrow-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;}
-
-/* â”€â”€ TOOLBAR â”€â”€ */
-#toolbar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;background:rgba(22,28,39,.95);border:1px solid var(--border2);border-radius:12px;padding:6px 10px;z-index:20;backdrop-filter:blur(12px);}
-.toolbar-btn{padding:5px 10px;border-radius:7px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;font-size:.6rem;font-family:'Fredoka',cursive;font-weight:600;transition:all .12s;white-space:nowrap;}
-.toolbar-btn:hover{background:rgba(255,255,255,.06);color:var(--text);}
-.toolbar-btn.on{background:rgba(99,102,241,.15);border-color:var(--accent);color:var(--accent);}
-
-/* â”€â”€ PREVIEW MODAL â”€â”€ */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center;}
-.modal-overlay.open{display:flex;}
-.modal{background:var(--panel2);border:1px solid var(--border2);border-radius:16px;padding:20px;width:min(480px,94vw);max-height:80vh;display:flex;flex-direction:column;}
-.modal h3{font-family:'Fredoka',cursive;font-size:1.1rem;color:var(--accent2);margin-bottom:14px;flex-shrink:0;}
-.preview-scene{flex:1;overflow-y:auto;background:var(--bg);border-radius:10px;padding:14px;}
-.preview-char-name{font-family:'Fredoka',cursive;font-size:.9rem;color:var(--accent2);margin-bottom:4px;}
-.preview-text{font-size:.82rem;line-height:1.7;color:var(--text);margin-bottom:12px;}
-.preview-choices{display:flex;flex-direction:column;gap:6px;}
-.preview-choice{padding:8px 14px;border-radius:9px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;font-size:.78rem;color:var(--text);transition:all .12s;text-align:left;font-family:'Inter',sans-serif;}
-.preview-choice:hover{background:rgba(99,102,241,.15);border-color:var(--accent);}
-.preview-end{font-family:'Fredoka',cursive;font-size:.85rem;color:var(--muted);text-align:center;padding:16px;}
-.modal-btns{display:flex;gap:8px;margin-top:12px;flex-shrink:0;}
-.m-btn{flex:1;padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.85rem;}
-.m-ok{background:var(--accent);color:white;}
-.m-cancel{background:rgba(255,255,255,.08);color:var(--text);}
-
-/* â”€â”€ BOTTOM BAR (mobile) â”€â”€ */
-#bottom-bar{display:none;flex-direction:column;background:var(--panel);border-top:1px solid var(--border2);flex-shrink:0;}
-.bb-tabs{display:flex;}
-.bb-tab{flex:1;padding:5px 2px;font-size:.52rem;text-align:center;cursor:pointer;color:var(--muted);border:none;background:transparent;border-bottom:2px solid transparent;font-family:'Inter',sans-serif;}
-.bb-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
-.bb-content{padding:6px 8px;overflow-x:auto;}
-.bb-panel{display:none;gap:6px;align-items:flex-start;}
-.bb-panel.on{display:flex;}
-
-/* â”€â”€ SAVE SLOTS â”€â”€ */
-.slot-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px;}
-.save-slot{border-radius:8px;border:1px dashed var(--border2);background:transparent;cursor:pointer;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:all .12s;padding:5px;width:100%;font-family:'Inter',sans-serif;}
-.save-slot:hover{border-color:var(--accent3);background:rgba(16,185,129,.04);}
-.save-slot.filled{border-style:solid;border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.04);}
-.ss-name{font-size:.52rem;font-weight:700;color:var(--text);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:90px;}
-.ss-meta{font-size:.44rem;color:var(--muted);text-align:center;}
-.ss-empty{font-size:.55rem;color:var(--muted);}
-
-/* TOAST */
-#toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent2);padding:5px 14px;border-radius:7px;font-size:.7rem;z-index:900;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
-
-::-webkit-scrollbar{width:3px;height:3px;}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px;}
-
-@media(max-width:699px){
-  #left-panel,#right-panel{display:none!important;}
-  #bottom-bar{display:flex!important;}
-  #toolbar{bottom:60px;}
-}
-@media(min-width:700px) and (max-width:999px){
-  #left-panel{width:180px;}
-  #right-panel{width:210px;}
-}
-@media(min-width:700px){#bottom-bar{display:none!important;}}
-</style>
-<style>.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}</style>
  <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Story Editor","description":"Node-based dialogue editor for branching RPG conversations. Write, connect, preview and export as JSON for Godot or Unity. Free, no install.","url":"https://jvdesignstudio.co.uk/tools/story-editor.html","applicationCategory":"DesignApplication","operatingSystem":"Web Browser","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"author":{"@type":"Person","name":"J. Valentine"}}
 </script>
-<link rel="stylesheet" href="../style-shared.css">
+<link rel="stylesheet" href="../style-shared.css?v=17">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://jvdesignstudio.co.uk/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Tools",
+      "item": "https://jvdesignstudio.co.uk/dev-tools"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Story Editor",
+      "item": "https://jvdesignstudio.co.uk/tools/story-editor.html"
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <a href="#app" class="skip-link">Skip to main content</a>
@@ -221,24 +64,24 @@ body{display:flex;flex-direction:column;}
 <!-- BUILD:nav-tools -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-<script>
-window.JVDS = window.JVDS || {};
-window.JVDS.announce = function (msg) {
- var el = document.getElementById('jvds-announce');
- if (!el || !msg) return;
- el.textContent = '';
- setTimeout(function () { el.textContent = String(msg); }, 60);
-};
-</script>
+<script src="/nav.js?v=17" defer></script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
- <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
  <span class="logo-name">JVDesignStudio</span>
  </a>
  <nav class="main-nav" id="mainNav" aria-label="Main">
- <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
- <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress"><span aria-hidden="true">🎓</span> Learn</a>
+  <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+  <div class="nav-dropdown">
+  <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress" aria-haspopup="true" aria-expanded="false" id="learnDropdownBtn"><span aria-hidden="true">🎓</span> Learn ▾</a>
+  <div class="nav-dropdown-menu" role="menu" aria-labelledby="learnDropdownBtn">
+    <a href="/workshops/tiny-learners.html" role="menuitem">🌟 Tiny Learners <small>Ages 4-6</small></a>
+    <a href="/workshops/learning-lab.html" role="menuitem">🧪 Learning Lab <small>Ages 7-12</small></a>
+    <a href="/workshops/learn.html" role="menuitem">🚀 Teen Learn <small>Ages 13+</small></a>
+    <a href="/workshops/my-progress.html" role="menuitem">📊 My Progress</a>
+  </div>
+  </div>
  <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies"><span aria-hidden="true">🛠️</span> Create</a>
  <a href="/books" class="nav-link" data-page="books"><span aria-hidden="true">📚</span> Read</a>
  <a href="/downloads" class="nav-link" data-page="downloads"><span aria-hidden="true">📦</span> Downloads</a>
@@ -247,61 +90,10 @@ window.JVDS.announce = function (msg) {
  <a href="/search" class="nav-link nav-link--icon" data-page="search" aria-label="Search"><span aria-hidden="true">🔍</span></a>
  </nav>
  <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
- <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
  <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
 </div>
-<script>
-(function(){
- if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
- var b = document.getElementById('themeToggle');
- if (!b) return;
- function paint(){
- b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
- }
- b.addEventListener('click', function(){
- var dark = document.documentElement.getAttribute('data-theme') === 'dark';
- if (dark) {
- document.documentElement.removeAttribute('data-theme');
- localStorage.setItem('jvds-theme', 'light');
- } else {
- document.documentElement.setAttribute('data-theme', 'dark');
- localStorage.setItem('jvds-theme', 'dark');
- }
- paint();
- });
- paint();
-})();
-</script>
 </header>
-<script>
-(function(){
- var seg = location.pathname.split('/').pop() || 'index.html';
- var page = seg.replace(/\.html$/, '');
- document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
- var pages = (a.getAttribute('data-page')||'').split(/\s+/);
- if(pages.indexOf(page) !== -1) a.classList.add('active');
- });
- if(!document.querySelector('.main-nav .nav-link.active')){
-   var section = /\/tools\//.test(location.pathname) ? 'dev-tools'
-               : /\/workshops\//.test(location.pathname) ? 'workshop'
-               : /\/games\//.test(location.pathname) ? 'games'
-               : /\/books\//.test(location.pathname) ? 'books' : null;
-   if(section) document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-     if((a.getAttribute('data-page')||'').split(/\s+/).indexOf(section)!==-1) a.classList.add('active');
-   });
- }
- var btn = document.getElementById('navToggle');
- var nav = document.getElementById('mainNav');
- if (!btn || !nav) return;
- function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
- function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
- btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
- nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
- document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
- document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
-</script>
 <!-- /BUILD:nav-tools -->
 
 <section id="app">
@@ -313,7 +105,7 @@ window.JVDS.announce = function (msg) {
  <div class="add-btns" style="padding:0;">
  <button class="add-btn dialogue" onclick="addNode('dialogue')"><span class="ab-ico">💬</span> Dialogue, character speaks</button>
  <button class="add-btn choice" onclick="addNode('choice')"><span class="ab-ico">🎲</span> Choice, player decides</button>
- <button class="add-btn end" onclick="addNode('end')"><span class="ab-ico">ðŸ</span> End, story finishes</button>
+ <button class="add-btn end" onclick="addNode('end')"><span class="ab-ico">🏁</span> End, story finishes</button>
  </div>
  </div>
  <div class="pdiv"></div>
@@ -357,15 +149,15 @@ window.JVDS.announce = function (msg) {
  <button class="ab" style="flex:1;margin-bottom:0;background:#478cbf;color:white;box-shadow:0 2px 0 #35688f;" onclick="exportGodot()" title="Download a ready-to-attach Godot .gd file">âš™ Godot</button>
  <button class="ab" style="flex:1;margin-bottom:0;background:#6b7f95;color:white;box-shadow:0 2px 0 #4e6076;" onclick="exportUnity()" title="Download a Unity .cs script with your story embedded">🎐 Unity</button>
  </div>
- <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;" onclick="sendToGameMaker()">🎮ï¸ 🎮 🎮 Send to Game Maker</button>
- <a class="ab" href="arcade-game-maker.html" style="display:block;background:#16a34a;color:white;box-shadow:0 2px 0 #15803d;text-decoration:none;box-sizing:border-box;">â†© Back to Game Maker</a>
+ <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;" onclick="sendToGameMaker()">🎮️ 🎮 🎮 Send to Game Maker</button>
+ <a class="ab" href="arcade-game-maker.html" style="display:block;background:#16a34a;color:white;box-shadow:0 2px 0 #15803d;text-decoration:none;box-sizing:border-box;">↩ Back to Game Maker</a>
  <div class="pt" style="margin-top:6px;">Story Name</div>
  <input type="text" id="storyNameInput" value="My Story" maxlength="32" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.65rem;font-family:'Inter',sans-serif;outline:none;margin-bottom:6px;" oninput="storyName=this.value;markDirty()">
  <div class="pt">Saved Stories</div>
  <div style="font-size:.48rem;color:var(--muted);margin-bottom:4px;">Tap empty = save · Tap filled = load · Long-press = overwrite</div>
  <div class="slot-grid" id="saveSlots"></div>
  <button class="ab ab-s" onclick="newPage()">🆕 New Page</button>
- <button class="ab ab-r" onclick="clearStory()">ðŸ-‘ Clear All</button>
+ <button class="ab ab-r" onclick="clearStory()">🧹 Clear All</button>
  </div>
  </div>
 
@@ -406,7 +198,7 @@ window.JVDS.announce = function (msg) {
  <div class="bb-panel on" id="bb0">
  <button class="add-btn dialogue" onclick="addNode('dialogue')" style="flex-shrink:0;"><span class="ab-ico">💬</span>Dialogue</button>
  <button class="add-btn choice" onclick="addNode('choice')" style="flex-shrink:0;"><span class="ab-ico">🎲</span>Choice</button>
- <button class="add-btn end" onclick="addNode('end')" style="flex-shrink:0;"><span class="ab-ico">ðŸ</span>End</button>
+ <button class="add-btn end" onclick="addNode('end')" style="flex-shrink:0;"><span class="ab-ico">🏁</span>End</button>
  <button class="toolbar-btn" onclick="toggleConnectMode()" style="flex-shrink:0;">🔗 Connect</button>
  </div>
  <div class="bb-panel" id="bb1">
@@ -434,7 +226,7 @@ window.JVDS.announce = function (msg) {
     <a href="/downloads">📦 Downloads</a>
     <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Support</a>
 </footer>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>window.addEventListener('load',function(){if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
 <script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-tools -->
 
@@ -496,7 +288,7 @@ let nextId = 1;
 let vars = [];     // [{name:'gold', start:0} | {name:'has_key', start:false}]
 let runVars = {};  // live values during Preview
 
-// â”€â”€ Conditions & effects (all values numeric internally; a flag is 0/1) â”€â”€
+// ── Conditions & effects (all values numeric internally; a flag is 0/1) ──
 const evalCond = (c, V) => {
   if (!c || !c.v) return true;
   const cur = Number(V[c.v] ?? 0), val = Number(c.val ?? 0);
@@ -534,7 +326,7 @@ const tagColour = t => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 
 function charAvatar(ch, size) {
   const s = size || 18;
   if (ch && ch.img) return `<img src="${ch.img}" alt="" style="width:${s}px;height:${s}px;border-radius:${Math.round(s / 3)}px;object-fit:cover;flex-shrink:0;display:block;">`;
-  return `<span style="font-size:${s >= 22 ? '1.3rem' : '.85rem'};line-height:${s}px;">${(ch && ch.emoji) || 'â“'}</span>`;
+  return `<span style="font-size:${s >= 22 ? '1.3rem' : '.85rem'};line-height:${s}px;">${(ch && ch.emoji) || '✔'}</span>`;
 }
 
 const CHAR_COLOURS = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#f97316','#14b8a6'];
@@ -720,13 +512,13 @@ function createNodeEl(node) {
   el.style.top  = node.y + 'px';
   el.dataset.id = node.id;
 
-  const ch = chars.find(c=>c.name===node.char) || {colour:'#64748b',emoji:'â“'};
+  const ch = chars.find(c=>c.name===node.char) || {colour:'#64748b',emoji:'✔'};
   const typeLabels = {start:'Start',dialogue:'Dialogue',choice:'Choice',end:'End'};
   const badgeClass = {start:'badge-start',dialogue:'badge-dialogue',choice:'badge-choice',end:'badge-end'};
 
   let choicesHTML = '';
   if (node.type === 'choice' && node.choices.length) {
-    choicesHTML = `<div class="node-choices">${node.choices.map(c=>`<div class="node-choice-item">â†³ ${c.cond&&c.cond.v?'❓ ':''}${esc(c.text)||'…'}${c.fx&&c.fx.length?' ⚡':''}</div>`).join('')}</div>`;
+    choicesHTML = `<div class="node-choices">${node.choices.map(c=>`<div class="node-choice-item">↗ ${c.cond&&c.cond.v?'❓ ':''}${esc(c.text)||'…'}${c.fx&&c.fx.length?' ⚡':''}</div>`).join('')}</div>`;
   }
   const tagChip = node.tag ? `<span class="node-tag" title="${esc(node.tag)}" style="background:${tagColour(node.tag)}26;color:${tagColour(node.tag)};border:1px solid ${tagColour(node.tag)}66;">${esc(node.tag)}</span>` : '';
   const fxBadge = (node.fx && node.fx.length) ? `<span class="node-id" style="color:#a5b4fc;" title="On-enter effects">⚡${node.fx.length}</span>` : '';
@@ -997,7 +789,7 @@ function buildEditPanel() {
       </div>
       ${typeSpecific}
       ${nodeFxHTML}
-      <button class="ab ab-r" style="margin-top:6px;" onclick="deleteNode('${node.id}')">ðŸ-‘ Delete Node</button>
+      <button class="ab ab-r" style="margin-top:6px;" onclick="deleteNode('${node.id}')">🧹 Delete Node</button>
     </div>
   `);
 }
@@ -1028,7 +820,7 @@ function updateChoice(i, field, value) {
   softRefresh(node);
 }
 
-// â”€â”€ CHOICE CONDITIONS & EFFECTS â”€â”€
+// ── CHOICE CONDITIONS & EFFECTS ──
 function updateChoiceCond(i, f, v) {
   const node = nodes.find(n=>n.id===selectedNode);
   if (!node || !node.choices[i]) return;
@@ -1076,7 +868,7 @@ function removeChoiceFx(i, fi) {
   markDirty(); buildEditPanel(); softRefresh(node);
 }
 
-// â”€â”€ NODE ON-ENTER EFFECTS â”€â”€
+// ── NODE ON-ENTER EFFECTS ──
 function updateNodeFx(i, f, v) {
   const node = nodes.find(n=>n.id===selectedNode);
   if (!node || !node.fx?.[i]) return;
@@ -1293,7 +1085,7 @@ function renderNodeList() {
   const list = document.getElementById('nodeList');
   list.innerHTML = '';
   const q = (document.getElementById('nodeSearch')?.value || '').trim().toLowerCase();
-  const icons = {start:'🟢',dialogue:'💬',choice:'🎲',end:'ðŸ'};
+  const icons = {start:'🟢',dialogue:'💬',choice:'🎲',end:'🏁'};
   nodes.forEach(node=>{
     if (q && ![node.char,node.text,node.type,node.tag].join(' ').toLowerCase().includes(q)) return;
     const el=document.createElement('div');
@@ -1312,12 +1104,12 @@ function renderCharList() {
   chars.forEach((c,i)=>{
     const el=document.createElement('div');
     el.className='char-item';
-    el.innerHTML=`<div class="ci-avatar" style="background:${safeColour(c.colour)}22;overflow:hidden;">${c.img?`<img src="${c.img}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`:c.emoji}</div><span class="ci-name" style="color:${safeColour(c.colour)}">${esc(c.name)}</span><button class="ci-del" title="Set portrait" onclick="pickPortrait(${i})">ðŸ-¼</button><button class="ci-del" title="Remove character" onclick="removeChar(${i})">âœ•</button>`;
+    el.innerHTML=`<div class="ci-avatar" style="background:${safeColour(c.colour)}22;overflow:hidden;">${c.img?`<img src="${c.img}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`:c.emoji}</div><span class="ci-name" style="color:${safeColour(c.colour)}">${esc(c.name)}</span><button class="ci-del" title="Set portrait" onclick="pickPortrait(${i})">🖼</button><button class="ci-del" title="Remove character" onclick="removeChar(${i})">âœ•</button>`;
     list.appendChild(el);
   });
 }
 
-// â”€â”€ PORTRAITS â”€â”€
+// ── PORTRAITS ──
 function pickPortrait(i){
   const inp=document.createElement('input');
   inp.type='file'; inp.accept='image/*';
@@ -1351,7 +1143,7 @@ function fileToAvatar(file,cb){
   r.readAsDataURL(file);
 }
 
-// â”€â”€ VARIABLES UI â”€â”€
+// ── VARIABLES UI ──
 function renderVarList(){
   const list=document.getElementById('varList');
   if(!list) return;
@@ -1566,7 +1358,7 @@ function exportJSON() {
   showToast('JSON exported!');
 }
 
-// â”€â”€ IMPORT â”€â”€
+// ── IMPORT ──
 function importJSON(){ document.getElementById('importFile').click(); }
 function handleImportFile(input){
   const f=input.files && input.files[0];
@@ -1597,7 +1389,7 @@ function handleImportFile(input){
   r.readAsText(f);
 }
 
-// â”€â”€ SHARE LINK (plays on story-player.html) â”€â”€
+// ── SHARE LINK (plays on story-player.html) ──
 function copyPlayLink(){
   if(!nodes.length){showToast('Nothing to play yet!');return;}
   const json=snapshot();
@@ -1610,7 +1402,7 @@ function copyPlayLink(){
   } else prompt('Copy this link:',url);
 }
 
-// â”€â”€ SCRIPT EXPORT â”€â”€
+// ── SCRIPT EXPORT ──
 function exportScript() {
   let script=`STORY: ${storyName}\nCreated with JVDesignStudio Story Editor — jvdesignstudio.co.uk\n${'='.repeat(50)}\n`;
   if(vars.length){
@@ -1651,7 +1443,7 @@ function exportScript() {
   showToast('Script exported!');
 }
 
-// â”€â”€ GODOT EXPORT (attachable .gd runtime with the story embedded) â”€â”€
+// ── GODOT EXPORT (attachable .gd runtime with the story embedded) ──
 function numericVars(){ // flags become 0/1 for cross-engine consistency
   return vars.map(v=>({name:v.name,start:Number(v.start===false?0:(v.start===true?1:v.start))||0}));
 }
@@ -1761,7 +1553,7 @@ func choose(option: Dictionary) -> String:
   showToast('Godot script exported!');
 }
 
-// â”€â”€ UNITY EXPORT (C# class with JsonUtility runtime embedded) â”€â”€
+// ── UNITY EXPORT (C# class with JsonUtility runtime embedded) ──
 function exportUnity(){
   if(!nodes.length){showToast('Add some nodes first!');return;}
   const data={
@@ -2021,7 +1813,7 @@ function bbTab(i,btn) {
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // MODAL / TOAST
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// â”€â”€ Welcome modal (once per device, localStorage seen-key, dark-panel style) â”€â”€
+// ── Welcome modal (once per device, localStorage seen-key, dark-panel style) ──
 const STORY_WELCOME_KEY='jvds_story_editor_seen_v1';
 function closeStoryWelcome(){ try{localStorage.setItem(STORY_WELCOME_KEY,'1');}catch{} closeModal('storyWelcomeModal'); }
 function maybeShowStoryWelcome(){ try{if(localStorage.getItem(STORY_WELCOME_KEY)==='1') return;}catch{} const m=document.getElementById('storyWelcomeModal'); if(m) m.classList.add('open'); }

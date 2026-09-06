@@ -21,7 +21,27 @@ const { execFileSync } = require('child_process');
 const ROOT = __dirname;
 const BASE = 'https://jvdesignstudio.co.uk';
 const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue', 'scripts', 'docs', 'arcade-app', 'questlog-pwa']);
-const EXCLUDE_FILES = new Set(['games/game-template.html']); // dev templates w/o robots meta
+const EXCLUDE_FILES = new Set(['games/game-template.html', 'offline.html', 'games/cozy-biscuit-clicker.pre-app.bak.html']); // dev templates w/o robots meta + offline (noindex handled separately)
+const PRIORITY_MAP = {
+  // Hub pages — higher crawl priority
+  '/': 1.0,
+  '/workshop': 0.9, '/games': 0.9, '/books': 0.9, '/dev-tools': 0.8, '/freebies': 0.8, '/downloads': 0.8,
+  '/about': 0.7, '/parents': 0.6, '/contact': 0.5, '/arcade': 0.7
+};
+const LOW_PRIORITY_SUFFIX = ['privacy-policy', 'terms-of-service', 'arcade-privacy', 'biscuit-tin-privacy', 'cozy-cafe-privacy', 'game-maker-privacy', 'pocket-crew-privacy', 'questlog-privacy', 'sky-high-squirt-privacy'];
+
+// Map filesystem path to clean canonical URL
+function toCleanUrl(rel) {
+  if (rel === 'index.html') return '/';
+  if (rel === 'pages/') return '/'; // safety
+  if (rel.startsWith('pages/')) {
+    const base = rel.replace(/^pages\//, '').replace(/\.html$/, '');
+    return '/' + base;
+  }
+  // Exclude any .bak.html that slipped through
+  if (rel.endsWith('.bak.html')) return null;
+  return '/' + rel;
+}
 
 function walk(dir) {
   let out = [];
@@ -61,12 +81,21 @@ for (const fp of walk(ROOT)) {
   if (robotsNoindex(html)) continue;
 
   const date = lastMod[rel] || new Date(fs.statSync(fp).mtime).toISOString().slice(0, 10);
-  const isHome = rel === 'index.html';
+  const clean = toCleanUrl(rel);
+  if (!clean) continue; // excluded (e.g. .bak.html)
+  const isHome = clean === '/';
+  let priority = PRIORITY_MAP[clean] || (clean.startsWith('/workshops/') || clean.startsWith('/tools/') || clean.startsWith('/games/') ? '0.5' : '0.5');
+  if (LOW_PRIORITY_SUFFIX.some(s => clean.includes(s))) priority = '0.3';
+  if (isHome) priority = '1.0';
+  // Extract og:image for image sitemap
+  const ogMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+  const image = ogMatch ? ogMatch[1].trim() : null;
   rows.push({
-    loc: `${BASE}/${rel}`,
+    loc: `${BASE}${clean}`,
     lastmod: date,
     changefreq: isHome ? 'weekly' : 'monthly',
-    priority: isHome ? '1.0' : '0.5',
+    priority: String(priority),
+    image: image && image.startsWith('http') ? image : null,
   });
 }
 
@@ -74,13 +103,14 @@ rows.sort((a, b) => a.loc.localeCompare(b.loc));
 
 const xml =
   `<?xml version="1.0" encoding="UTF-8"?>\n` +
-  `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+  `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n` +
   rows.map(r =>
     `  <url>\n` +
     `    <loc>${r.loc}</loc>\n` +
     `    <lastmod>${r.lastmod}</lastmod>\n` +
     `    <changefreq>${r.changefreq}</changefreq>\n` +
     `    <priority>${r.priority}</priority>\n` +
+    (r.image ? `    <image:image><image:loc>${r.image}</image:loc></image:image>\n` : '') +
     `  </url>`
   ).join('\n') + '\n' +
   `</urlset>\n`;

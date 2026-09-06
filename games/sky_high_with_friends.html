@@ -10,1104 +10,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
 <title>Sky High With Friends | JVDesignStudio</title>
-<style>
-
-  /* ============================================================
-     SKY HIGH WITH FRIENDS, v2.0
-     ============================================================ */
-
-  :root {
-    --ui-bg: rgba(20, 14, 38, 0.78);
-    --ui-bg-solid: #1a1140;
-    --ui-bg-dark: #0d0726;
-    --ui-stroke: rgba(255, 255, 255, 0.18);
-    --ui-text: #fdf6e3;
-    --accent: #ffd23f;
-    --accent-2: #ff7eb9;
-    --accent-3: #5cdbff;
-    --locked: #4a3d6b;
-    --owned: #4caf50;
-    --equipped: #ffd23f;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html, body {
-    height: 100%;
-    background: #0a0617;
-    color: var(--ui-text);
-    font-family: 'Fredoka', 'Inter', 'Trebuchet MS', sans-serif;
-    overflow: hidden;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  #wrap {
-    position: fixed;
-    inset: 0;
-    display: grid;
-    place-items: center;
-  }
-
-  /* Fullscreen: the canvas IS the viewport. W/H in JS track it. */
-  #game {
-    display: block;
-    background: #87ceeb;
-    touch-action: none;
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-  }
-
-  .hud {
-    display: none;
-    position: fixed;
-    top: calc(14px + env(safe-area-inset-top));
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 12px;
-    z-index: 5;
-    pointer-events: none;
-  }
-  .hud .pill {
-    background: rgba(20, 14, 38, 0.88);
-    border: 1px solid var(--ui-stroke);
-    border-radius: 999px;
-    padding: 8px 16px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    font-size: 14px;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
-  }
-  .hud .pill .label { opacity: 0.6; font-weight: 500; margin-right: 6px; font-size: 11px; text-transform: uppercase; }
-  .hud .pill.coins { color: var(--accent); }
-
-  /* Pause button lives in the HUD row; only exists while a run is live */
-  .hud .pill.hud-btn {
-    pointer-events: auto;
-    cursor: pointer;
-    display: none;
-    padding: 8px 13px;
-    font-size: 15px;
-    line-height: 1;
-    transition: background 0.1s, transform 0.1s;
-  }
-  .hud .pill.hud-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.12); }
-  body[data-mode="playing"] .hud .pill.hud-btn { display: block; }
-
-  .overlay {
-    position: fixed;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    background: radial-gradient(ellipse at center, rgba(10,6,23,0.55), rgba(10,6,23,0.9));
-    z-index: 10;
-    pointer-events: auto;
-    overflow-y: auto;
-    padding: 20px;
-  }
-  .overlay.hidden { display: none; }
-  .overlay:not(.hidden) { animation: overlayIn 0.22s ease both; }
-  @keyframes overlayIn { from { opacity: 0; } }
-
-
-  .panel {
-    background: linear-gradient(180deg, var(--ui-bg-solid), var(--ui-bg-dark));
-    border: 1px solid var(--ui-stroke);
-    border-radius: 18px;
-    padding: 28px 32px;
-    text-align: center;
-    max-width: 460px;
-    width: 100%;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
-  }
-  .panel.shop-panel {
-    max-width: 540px;
-    text-align: left;
-  }
-  .panel h1 {
-    font-size: 30px;
-    margin-bottom: 4px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    letter-spacing: 0.5px;
-    text-align: center;
-  }
-
-  /* â”€â”€ Menu juice â”€â”€ */
-  /* â”€â”€ Loading screen â”€â”€ */
-  #loading {
-    position: fixed;
-    inset: 0;
-    z-index: 600;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(180deg, #0a0617, #120a2b);
-    transition: opacity 0.35s ease;
-  }
-  #loading.gone { opacity: 0; pointer-events: none; }
-  #loading.hide { display: none; }
-  .loading-inner { text-align: center; }
-  .loading-pet {
-    font-size: 54px;
-    display: inline-block;
-    animation: introBounce 0.9s cubic-bezier(.35,0,.65,1) infinite alternate;
-  }
-  .loading-title {
-    font-family: 'Fredoka', sans-serif;
-    font-weight: 700;
-    font-size: clamp(26px, 8vw, 36px);
-    margin: 10px 0 26px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .loading-bar {
-    width: 210px;
-    height: 8px;
-    margin: 0 auto;
-    background: rgba(255,255,255,0.1);
-    border-radius: 999px;
-    overflow: hidden;
-  }
-  .loading-fill {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, var(--accent-3), var(--accent));
-    border-radius: 999px;
-    transition: width 0.18s ease;
-  }
-  .loading-pct {
-    margin-top: 10px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    opacity: 0.5;
-  }
-
-  /* â”€â”€ Main menu: full-screen scene â”€â”€ */
-  #menu.overlay {
-    display: block;
-    padding: 0;
-    background: linear-gradient(180deg, rgba(10,6,23,0.9) 0%, rgba(10,6,23,0.55) 42%, rgba(10,6,23,0.12) 78%, rgba(10,6,23,0.05) 100%);
-  }
-  /* ID specificity would beat .overlay.hidden — keep hide working */
-  #menu.overlay.hidden { display: none; }
-  #menu.overlay { display: flex; flex-direction: column; justify-content: space-between; padding: calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom)); gap: 12px; }
-  #menu.overlay.hidden { display: none !important; }
-  .menu-top {
-    position: static;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    pointer-events: none;
-    z-index: 3;
-    flex-shrink: 0;
-  }
-  .mchips { display: flex; flex-direction: row; gap: 6px; align-items: center; }
-  .mchip {
-    background: rgba(20, 14, 38, 0.88);
-    border: 1px solid var(--ui-stroke);
-    border-radius: 999px;
-    padding: 5px 13px;
-    font-weight: 800;
-    font-size: 13px;
-    pointer-events: auto;
-    white-space: nowrap;
-  }
-  .mini-xp {
-    width: 96px;
-    height: 5px;
-    background: rgba(0,0,0,0.45);
-    border-radius: 999px;
-    overflow: hidden;
-    margin-top: 2px;
-    border: 1px solid var(--ui-stroke);
-  }
-  .mini-xp-fill {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, var(--accent-3), var(--accent));
-    border-radius: 999px;
-    transition: width 0.6s cubic-bezier(.2,.8,.4,1);
-  }
-  .mini-xp-text { font-size: 8px; opacity: 0.5; letter-spacing: 0.5px; }
-  .menu-topright { display: flex; gap: 8px; align-items: center; pointer-events: auto; }
-  .menu-topright .panel-gear { position: static; }
-
-  .menu-title-wrap {
-    position: static;
-    text-align: center;
-    pointer-events: none;
-    z-index: 2;
-    margin: 6px 0 4px;
-    text-wrap: balance;
-  }
-  .menu-title-wrap .game-title {
-    font-size: clamp(28px, 8.5vw, 42px);
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    line-height: 1.02;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: 0 4px 14px rgba(10,6,23,0.55);
-  }
-  .title-under {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 7px;
-    margin-top: 8px;
-  }
-
-  .menu-corner-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    pointer-events: none;
-    z-index: 3;
-    margin: 4px 0;
-  }
-  .menu-corner-grid .corner-btn { pointer-events: auto; }
-  .corner-btn {
-    width: 100%;
-    height: 64px;
-    border-radius: 16px;
-    background: var(--ui-bg);
-    border: 1px solid var(--ui-stroke);
-    color: var(--ui-text);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    font-size: 20px;
-    cursor: pointer;
-    pointer-events: auto;
-    z-index: 3;
-    transition: transform 0.12s, background 0.12s;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-  .corner-btn span {
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.6px;
-    text-transform: uppercase;
-    opacity: 0.65;
-  }
-  @media (hover:hover) { .corner-btn:hover { background: rgba(30,22,54,0.85); } }
-  .corner-btn:active { transform: scale(0.96); }
-  @media (min-width: 768px) {
-    .menu-corner-grid { display: contents; }
-    .corner-btn { position: absolute; width: 60px; height: 60px; border-radius: 18px; font-size: 22px; }
-    .corner-btn.l1 { left: calc(10px + env(safe-area-inset-left)); top: 41%; }
-    .corner-btn.l2 { left: calc(10px + env(safe-area-inset-left)); top: calc(41% + 74px); }
-    .corner-btn.r1 { right: calc(10px + env(safe-area-inset-right)); top: 41%; }
-    .corner-btn.r2 { right: calc(10px + env(safe-area-inset-right)); top: calc(41% + 74px); }
-  }
-
-  .menu-bottom {
-    position: static;
-    left: 16px;
-    right: 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 7px;
-    pointer-events: none;
-    z-index: 3;
-  }
-  .menu-bottom > * { pointer-events: auto; }
-  .menu-bottom .char-label { margin: 0; }
-  .menu-bottom .char-unlock-hint { margin-bottom: 2px; }
-  .menu-hint { font-size: 11px; opacity: 0.55; text-align: center; pointer-events: none !important; }
-  .menu-hint .key { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: 10px; }
-  .keys-hint { display: none; }
-  @media (pointer: fine) { .keys-hint { display: inline; } .touch-hint { display: none; } }
-  .hidden-soft { position: absolute; left: -9999px; }
-
-  /* HUD is play/pause-only (menu has its own chips). High-specificity +
-     late placement so nothing in the cascade can resurrect it. */
-  html body .hud { display: none; }
-  html body[data-mode="playing"] .hud,
-  html body[data-mode="paused"] .hud { display: flex; }
-
-  /* â”€â”€ Intro / splash â”€â”€ */
-  #intro {
-    position: fixed;
-    inset: 0;
-    z-index: 500;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(180deg, rgba(10,6,23,0.95), rgba(10,6,23,0.8));
-    cursor: pointer;
-    transition: opacity 0.35s ease;
-  }
-  #intro.gone { opacity: 0; pointer-events: none; }
-  #intro.hide { display: none; }
-  .intro-inner { text-align: center; animation: introIn 0.6s cubic-bezier(.2,1.2,.3,1) both; }
-  @keyframes introIn { from { opacity: 0; transform: scale(0.88) translateY(12px); } }
-  .intro-pet {
-    font-size: 64px;
-    display: inline-block;
-    animation: introBounce 1.05s cubic-bezier(.35,0,.65,1) infinite alternate;
-    
-  }
-  @keyframes introBounce {
-    from { transform: translateY(0) scale(1.08, 0.92); }
-    to   { transform: translateY(-28px) scale(0.94, 1.06); }
-  }
-  .intro-title {
-    font-family: 'Fredoka', sans-serif;
-    font-weight: 700;
-    font-size: clamp(38px, 12vw, 54px);
-    line-height: 1.02;
-    margin-top: 8px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: 0 5px 16px rgba(10,6,23,0.65);
-  }
-  .intro-tap {
-    margin-top: 28px;
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 2.5px;
-    text-transform: uppercase;
-    color: var(--accent-3);
-    animation: tapPulse 1.4s ease-in-out infinite;
-  }
-  @keyframes tapPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-  .intro-studio {
-    position: absolute;
-    bottom: calc(20px + env(safe-area-inset-bottom));
-    left: 0; right: 0;
-    text-align: center;
-    font-size: 11px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.38);
-  }
-
-  /* FTUE */
-  #ftue { position: fixed; inset: 0; z-index: 450; display: grid; place-items: center; background: rgba(10,6,23,0.82); }
-  #ftue.hidden { display: none; }
-  .ftue-card { background: var(--ui-bg-solid); border: 1px solid var(--ui-stroke); border-radius: 20px; padding: 22px 18px; width: min(360px, 90vw); text-align: center; }
-  .ftue-title { font-family: 'Fredoka', sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 14px; }
-  .ftue-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; text-align: left; }
-  .ftue-step { display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid var(--ui-stroke); border-radius: 12px; padding: 10px 12px; }
-  .ftue-icon { font-size: 20px; width: 28px; text-align: center; }
-
-  /* Daily wheel */
-  #daily-wheel { position: fixed; inset: 0; z-index: 460; display: grid; place-items: center; background: rgba(10,6,23,0.85); }
-  #daily-wheel.hidden { display: none; }
-  .wheel-card { background: var(--ui-bg-solid); border: 1px solid var(--ui-stroke); border-radius: 20px; padding: 22px 18px; width: min(340px, 90vw); text-align: center; }
-  .wheel-title { font-family: 'Fredoka', sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 12px; }
-  #wheel-canvas { display: block; margin: 0 auto 12px; max-width: 100%; }
-  .wheel-reward { font-size: 16px; font-weight: 700; margin-top: 8px; min-height: 24px; color: var(--accent); }
-
-  /* Big primary Play button */
-  .btn.play-big {
-    width: 100%;
-    padding: 15px 32px;
-    font-size: 20px;
-    margin: 0 0 2px;
-    animation: fadeUp 0.5s cubic-bezier(.2,.9,.3,1.15) 0.08s both;
-  }
-
-  /* Settings gear pinned to the panel corner */
-  .panel-gear {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--ui-stroke);
-    font-size: 18px;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: background 0.15s, transform 0.15s;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-  .panel-gear:hover { background: rgba(255,255,255,0.12); }
-  .panel-gear:active { transform: scale(0.88); }
-
-  /* "Your jumper" mini-label */
-  .char-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    opacity: 0.5;
-    text-align: center;
-    margin: 10px 0 6px;
-  }
-
-  .game-title {
-    font-size: clamp(30px, 9vw, 40px) !important;
-    animation: titleIn 0.6s cubic-bezier(.2,1.4,.3,1) both, titleFloat 3.2s ease-in-out 0.6s infinite alternate;
-    text-shadow: 0 4px 14px rgba(10,6,23,0.6);
-  }
-  @keyframes titleIn { from { opacity: 0; transform: translateY(-20px) scale(0.8); } }
-  @keyframes titleFloat { from { transform: translateY(0); } to { transform: translateY(-4px); } }
-  .tagline { margin-bottom: 14px !important; }
-
-  .menu-anim { animation: fadeUp 0.5s cubic-bezier(.2,.9,.3,1.15) both; }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } }
-
-  /* XP bar shimmer */
-  .xp-fill { position: relative; overflow: hidden; }
-  .xp-fill::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.55) 50%, transparent 75%);
-    transform: translateX(-110%);
-    animation: xpShine 2.6s ease-in-out 1s infinite;
-  }
-  @keyframes xpShine { 55%, 100% { transform: translateX(110%); } }
-
-  /* Play button shine sweep */
-  #play-btn { position: relative; overflow: hidden; }
-  #play-btn::after {
-    content: '';
-    position: absolute;
-    top: 0; left: -70%;
-    width: 45%; height: 100%;
-    background: linear-gradient(105deg, transparent, rgba(255,255,255,0.5), transparent);
-    transform: skewX(-20deg);
-    animation: shine 3.4s ease-in-out 1.4s infinite;
-    pointer-events: none;
-  }
-  @keyframes shine { 0% { left: -70%; } 50%, 100% { left: 140%; } }
-
-  /* HUD pill pulse (coin pickup, milestone) */
-  .hud .pill.pulse { animation: pillPulse 0.32s cubic-bezier(.2,.9,.3,1.4); }
-  @keyframes pillPulse { 40% { transform: scale(1.16); } }
-
-  /* Character preview canvases inside select chips */
-  .char-btn canvas { display: block; width: 52px; height: 52px; }
-  .shop-char-select .char-btn { width: 56px; height: 56px; }
-  .shop-char-select .char-btn canvas { width: 44px; height: 44px; }
-  .char-btn.active canvas { animation: chipBob 1.6s ease-in-out infinite; }
-  @keyframes chipBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-  .panel h2 {
-    font-size: 22px;
-    margin-bottom: 12px;
-    text-align: center;
-  }
-  .panel p { opacity: 0.75; font-size: 14px; line-height: 1.5; margin-bottom: 18px; text-align: center; }
-
-  .char-row {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin: 18px 0 10px;
-  }
-  .char-btn {
-    width: 64px;
-    height: 64px;
-    border-radius: 14px;
-    border: 2px solid transparent;
-    background: rgba(255,255,255,0.06);
-    cursor: pointer;
-    font-size: 32px;
-    display: grid;
-    place-items: center;
-    transition: transform 0.15s, border-color 0.15s, background 0.15s;
-    position: relative;
-  }
-  .char-btn:hover:not(.locked) { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
-  .char-btn.active {
-    border-color: var(--accent);
-    background: rgba(255, 210, 63, 0.15);
-    box-shadow: 0 0 20px rgba(255, 210, 63, 0.3);
-  }
-  .char-btn.locked {
-    cursor: not-allowed;
-    opacity: 0.4;
-    filter: grayscale(0.8);
-  }
-  .char-btn .lock {
-    position: absolute;
-    bottom: -2px;
-    right: -2px;
-    background: var(--locked);
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 2px 5px;
-    border-radius: 6px;
-    border: 1px solid rgba(0,0,0,0.4);
-  }
-  .char-name {
-    font-size: 13px;
-    opacity: 0.8;
-    margin-bottom: 4px;
-    height: 16px;
-    text-align: center;
-  }
-  .char-unlock-hint {
-    font-size: 11px;
-    color: var(--accent-3);
-    height: 14px;
-    margin-bottom: 14px;
-    text-align: center;
-  }
-
-  .btn {
-    background: linear-gradient(180deg, var(--accent), #f0a500);
-    color: #2a1a00;
-    border: none;
-    padding: 14px 32px;
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: 16px;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    text-transform: uppercase;
-    box-shadow: 0 6px 0 #a86f00, 0 10px 20px rgba(0,0,0,0.3);
-    transition: transform 0.1s, box-shadow 0.1s;
-  }
-  .btn:hover { transform: translateY(-1px); }
-  .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #a86f00, 0 5px 10px rgba(0,0,0,0.3); }
-  .btn.secondary {
-    background: linear-gradient(180deg, #6b4ba8, #483078);
-    color: #fff;
-    box-shadow: 0 6px 0 #2e1a4e, 0 10px 20px rgba(0,0,0,0.3);
-  }
-  .btn.secondary:active { box-shadow: 0 3px 0 #2e1a4e, 0 5px 10px rgba(0,0,0,0.3); }
-  .btn.danger {
-    background: linear-gradient(180deg, #ef5350, #b71c1c);
-    color: #fff;
-    box-shadow: 0 6px 0 #7f1010, 0 10px 20px rgba(0,0,0,0.3);
-  }
-  .btn.danger:active { box-shadow: 0 3px 0 #7f1010, 0 5px 10px rgba(0,0,0,0.3); }
-  .btn.blue {
-    background: linear-gradient(180deg, var(--accent-3), #0288d1);
-    color: #04222e;
-    box-shadow: 0 6px 0 #01579b, 0 10px 20px rgba(0,0,0,0.3);
-  }
-  .btn.blue:active { box-shadow: 0 3px 0 #01579b, 0 5px 10px rgba(0,0,0,0.3); }
-  .btn.gold {
-    background: linear-gradient(180deg, var(--accent), #f0a500);
-    color: #2a1a00;
-    box-shadow: 0 6px 0 #a86f00, 0 10px 20px rgba(0,0,0,0.3);
-  }
-  .btn.gold:active { box-shadow: 0 3px 0 #a86f00, 0 5px 10px rgba(0,0,0,0.3); }
-
-  /* Daily missions */
-  .mission-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--ui-stroke);
-    border-radius: 12px;
-  }
-  .mission-row.done { border-color: var(--owned); background: rgba(76, 175, 80, 0.08); }
-  .mission-reward {
-    font-size: 11px;
-    color: var(--accent);
-    background: rgba(255, 210, 63, 0.12);
-    padding: 2px 8px;
-    border-radius: 999px;
-    margin-left: 4px;
-  }
-  .mission-bar {
-    height: 6px;
-    background: rgba(0,0,0,0.4);
-    border-radius: 999px;
-    overflow: hidden;
-    margin-top: 6px;
-  }
-  .mission-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent-3), var(--accent));
-    border-radius: 999px;
-  }
-
-  .btn-row {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 8px;
-  }
-
-  .stats {
-    display: flex;
-    gap: 24px;
-    justify-content: center;
-    margin: 18px 0;
-  }
-  .stat .v { font-size: 28px; font-weight: 800; color: var(--accent); }
-  .stat .l { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
-
-  /* XP bar */
-  .xp-bar-wrap { margin: 14px 0 4px; }
-  .xp-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-  .xp-row span:first-child { color: var(--accent-3); }
-  .xp-row span:last-child  { color: var(--accent); }
-  .xp-bar {
-    height: 8px;
-    background: rgba(0,0,0,0.4);
-    border-radius: 999px;
-    overflow: hidden;
-    border: 1px solid var(--ui-stroke);
-  }
-  .xp-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent-3), var(--accent));
-    border-radius: 999px;
-    transition: width 0.6s cubic-bezier(.2,.8,.4,1);
-    box-shadow: 0 0 8px rgba(255, 210, 63, 0.5);
-  }
-  .xp-text {
-    font-size: 10px;
-    opacity: 0.6;
-    text-align: center;
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  /* Streak badge */
-  .streak-badge {
-    display: inline-block;
-    margin-top: 12px;
-    padding: 6px 14px;
-    background: rgba(255, 87, 34, 0.15);
-    border: 1px solid rgba(255, 87, 34, 0.4);
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #ff7043;
-  }
-  .streak-badge.zero { display: none; }
-
-  .daily-mod-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 8px;
-    padding: 6px 14px;
-    background: rgba(255, 210, 63, 0.15);
-    border: 1px solid rgba(255, 210, 63, 0.4);
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .daily-mod-badge .dm-name { color: var(--accent); }
-
-  /* New best banner */
-  .newbest-banner {
-    display: none;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    color: #2a1a00;
-    font-weight: 800;
-    font-size: 14px;
-    padding: 8px 16px;
-    border-radius: 999px;
-    margin: 0 auto 12px;
-    width: fit-content;
-    letter-spacing: 1px;
-    animation: newbestpulse 1.2s ease-in-out infinite;
-    box-shadow: 0 4px 20px rgba(255, 210, 63, 0.5);
-  }
-  @keyframes newbestpulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-  }
-
-  .controls-hint {
-    margin-top: 16px;
-    font-size: 12px;
-    opacity: 0.55;
-    line-height: 1.6;
-    text-align: center;
-  }
-  .key { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 11px; }
-
-  /* â”€â”€ CONTROLS â”€â”€
-     Mobile is tilt-first (Doodle Jump style): no on-screen buttons. A silent
-     drag-anywhere fallback and desktop keyboard remain. */
-
-  /* ----- Shop ----- */
-  .shop-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--ui-stroke);
-  }
-  .shop-header h1 { text-align: left; font-size: 24px; }
-  .shop-coins {
-    background: rgba(255, 210, 63, 0.15);
-    border: 1px solid rgba(255, 210, 63, 0.4);
-    color: var(--accent);
-    padding: 8px 16px;
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: 14px;
-  }
-
-  .shop-tabs {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 16px;
-  }
-  .shop-tab {
-    flex: 1;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--ui-stroke);
-    color: var(--ui-text);
-    padding: 10px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: all 0.15s;
-  }
-  .shop-tab:hover { background: rgba(255,255,255,0.1); }
-  .shop-tab.active {
-    background: rgba(255, 210, 63, 0.15);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .shop-char-select {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-    margin-bottom: 16px;
-    padding: 10px;
-    background: rgba(0,0,0,0.25);
-    border-radius: 10px;
-  }
-  .shop-char-select .char-btn { width: 48px; height: 48px; font-size: 24px; }
-
-  .shop-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    max-height: 280px;
-    overflow-y: auto;
-    padding: 4px 4px 4px 0;
-  }
-  .shop-grid::-webkit-scrollbar { width: 6px; }
-  .shop-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-
-  .shop-item {
-    background: rgba(255,255,255,0.05);
-    border: 2px solid var(--ui-stroke);
-    border-radius: 12px;
-    padding: 12px 8px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.15s;
-    position: relative;
-  }
-  .shop-item:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
-  .shop-item:active { transform: scale(0.95); }
-  .shop-item.owned { border-color: var(--owned); }
-  .shop-item.equipped {
-    border-color: var(--equipped);
-    background: rgba(255, 210, 63, 0.1);
-    box-shadow: 0 0 16px rgba(255, 210, 63, 0.25);
-  }
-  .shop-item.locked { cursor: not-allowed; opacity: 0.5; }
-  .shop-item.cant-afford { opacity: 0.7; }
-
-  .shop-item-preview {
-    width: 56px;
-    height: 56px;
-    margin: 0 auto 8px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-  }
-  .shop-item-preview canvas {
-    width: 56px !important;
-    height: 56px !important;
-    display: block;
-  }
-  .shop-item-name {
-    font-size: 11px;
-    font-weight: 700;
-    margin-bottom: 4px;
-    line-height: 1.2;
-    min-height: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .shop-item-price {
-    font-size: 11px;
-    color: var(--accent);
-    font-weight: 800;
-  }
-  .shop-item-status {
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    display: inline-block;
-  }
-  .shop-item.owned .shop-item-status { background: var(--owned); color: #fff; }
-  .shop-item.equipped .shop-item-status { background: var(--equipped); color: #2a1a00; }
-  .shop-item.locked .shop-item-status { background: var(--locked); color: #fff; }
-
-  /* Run modifier badge (shown under the HUD while a modified run is live) */
-  .runmod-badge {
-    position: fixed;
-    top: calc(56px + env(safe-area-inset-top));
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(92, 219, 255, 0.12);
-    border: 1px solid rgba(92, 219, 255, 0.45);
-    color: var(--accent-3);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 4px 12px;
-    border-radius: 999px;
-    z-index: 6;
-    pointer-events: none;
-    white-space: nowrap;
-  }
-  .runmod-badge.hidden { display: none; }
-
-  /* Modifier chooser cards */
-  .mod-cards { display: flex; gap: 12px; margin: 6px 0 4px; }
-  .mod-card {
-    flex: 1;
-    background: rgba(255,255,255,0.05);
-    border: 2px solid var(--ui-stroke);
-    border-radius: 16px;
-    padding: 18px 10px;
-    cursor: pointer;
-    text-align: center;
-    transition: transform 0.12s, border-color 0.12s, background 0.12s;
-  }
-  .mod-card:hover { background: rgba(255,255,255,0.09); transform: translateY(-2px); }
-  .mod-card:active { transform: scale(0.96); }
-  .mod-card.todays { border-color: var(--accent); }
-  .mod-card .m-icon { font-size: 32px; display: block; margin-bottom: 8px; }
-  .mod-card .m-name { font-weight: 800; font-size: 14px; margin-bottom: 5px; }
-  .mod-card.todays .m-name { color: var(--accent); }
-  .mod-card .m-desc { font-size: 11px; opacity: 0.7; line-height: 1.4; }
-  .mod-card .m-tag {
-    display: inline-block;
-    margin-top: 8px;
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    background: rgba(255, 210, 63, 0.15);
-    color: var(--accent);
-    padding: 2px 8px;
-    border-radius: 999px;
-  }
-
-  /* Upgrade rows in the shop */
-  .upg-list { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
-  .upg-list::-webkit-scrollbar { width: 6px; }
-  .upg-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-  .upg-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--ui-stroke);
-    border-radius: 14px;
-    padding: 12px 14px;
-  }
-  .upg-icon { font-size: 26px; flex-shrink: 0; }
-  .upg-info { flex: 1; min-width: 0; }
-  .upg-name { font-size: 13px; font-weight: 800; }
-  .upg-desc { font-size: 11px; opacity: 0.65; margin-top: 2px; }
-  .upg-pips { margin-top: 6px; display: flex; gap: 4px; }
-  .upg-pip { width: 14px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.14); }
-  .upg-pip.on { background: var(--accent); box-shadow: 0 0 6px rgba(255, 210, 63, 0.5); }
-  .upg-buy {
-    flex-shrink: 0;
-    background: linear-gradient(180deg, var(--accent), #f0a500);
-    color: #2a1a00;
-    border: none;
-    padding: 9px 14px;
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: 12px;
-    cursor: pointer;
-    box-shadow: 0 4px 0 #a86f00;
-    transition: transform 0.1s, box-shadow 0.1s;
-  }
-  .upg-buy:active { transform: translateY(2px); box-shadow: 0 2px 0 #a86f00; }
-  .upg-buy.maxed { background: var(--owned); box-shadow: 0 4px 0 #2e6b31; cursor: default; }
-  .upg-buy.cant { filter: grayscale(0.6); opacity: 0.75; }
-
-  /* Panel entrance: every overlay pop feels intentional */
-  .overlay:not(.hidden) .panel { animation: panelIn 0.3s cubic-bezier(.2,.9,.3,1.15); }
-  @keyframes panelIn {
-    from { opacity: 0; transform: translateY(26px) scale(0.96); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  .toast {
-    position: fixed;
-    top: calc(60px + env(safe-area-inset-top)); /* below the HUD pills, not under them */
-    left: 50%;
-    transform: translateX(-50%) translateY(-100px);
-    background: var(--ui-bg-solid);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    padding: 12px 24px;
-    border-radius: 999px;
-    font-weight: 700;
-    z-index: 100;
-    transition: transform 0.4s cubic-bezier(.2,1.5,.5,1);
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    pointer-events: none; /* never steal taps from the HUD underneath */
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* ----- Settings ----- */
-  .setting-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--ui-stroke);
-  }
-  .setting-row:last-of-type { border-bottom: none; }
-  .setting-label { font-size: 14px; font-weight: 600; }
-  .toggle-btn {
-    background: var(--owned);
-    color: #fff;
-    border: none;
-    padding: 8px 18px;
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: 13px;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    min-width: 60px;
-    transition: all 0.15s;
-  }
-  .toggle-btn.off { background: #555; }
-  .toggle-btn.danger { background: #d32f2f; }
-  .seg-row { display: flex; gap: 6px; }
-  .seg-btn { background: rgba(255,255,255,0.08); border: 1px solid var(--ui-stroke); color: var(--ui-text); padding: 6px 12px; border-radius: 999px; font-weight: 800; font-size: 12px; cursor: pointer; transition: all 0.15s; }
-  .seg-btn.active { background: var(--accent); color: #2a1a00; border-color: var(--accent); }
-  /* Touch buttons for controls=buttons */
-  #touchBtns { position: fixed; bottom: calc(10px + env(safe-area-inset-bottom)); left: 0; right: 0; display: none; justify-content: space-between; padding: 0 14px; pointer-events: none; z-index: 6; }
-  #touchBtns.show { display: flex; }
-  .tbtn { width: 72px; height: 72px; border-radius: 18px; background: rgba(20,14,38,0.65); border: 1px solid var(--ui-stroke); color: #fff; font-size: 26px; display: grid; place-items: center; pointer-events: auto; touch-action: none; user-select: none; }
-  .toggle-btn.danger:hover { background: #f44336; }
-  .btn.small {
-    padding: 10px 16px;
-    font-size: 12px;
-    box-shadow: 0 4px 0 #2e1a4e, 0 6px 12px rgba(0,0,0,0.3);
-  }
-  .btn.small:active { box-shadow: 0 2px 0 #2e1a4e, 0 3px 8px rgba(0,0,0,0.3); transform: translateY(2px); }
-
-  #continue-row { margin-bottom: 12px; }
-  #continue-row .btn { width: 100%; padding: 15px; font-size: 16px; }
-
-  .version-row {
-    text-align: center;
-    font-size: 11px;
-    opacity: 0.45;
-    padding-top: 14px;
-    letter-spacing: 0.5px;
-  }
-  /* ----- Achievements ----- */
-  .ach-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 340px;
-    overflow-y: auto;
-    padding-right: 4px;
-  }
-  .ach-grid::-webkit-scrollbar { width: 6px; }
-  .ach-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-  .ach-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--ui-stroke);
-    border-radius: 12px;
-    transition: all 0.15s;
-  }
-  .ach-item.earned {
-    border-color: var(--accent);
-    background: rgba(255, 210, 63, 0.08);
-  }
-  .ach-item.locked { opacity: 0.45; }
-  .ach-icon {
-    font-size: 26px;
-    width: 40px;
-    text-align: center;
-    flex-shrink: 0;
-  }
-  .ach-item.locked .ach-icon { filter: grayscale(1); }
-  .ach-info { flex: 1; }
-  .ach-name { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
-  .ach-item.earned .ach-name { color: var(--accent); }
-  .ach-desc { font-size: 11px; opacity: 0.65; }
-  .ach-check { font-size: 18px; flex-shrink: 0; }
-
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-
-/* â”€â”€ Reduced motion â”€â”€ */
-@media (prefers-reduced-motion: reduce){
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-}
-
-/* â”€â”€ MOBILE PATCH â”€â”€ */
-@media(max-width:480px){
-  .hud{font-size:.72rem;padding:8px 10px;}
-  .pill{padding:4px 8px;font-size:.68rem;}
-  .shop-grid{grid-template-columns:1fr 1fr !important;}
-  .shop-item-name{font-size:.72rem;}
-  .shop-item-price{font-size:.68rem;}
-  .menu-title-wrap h2{font-size:1.4rem;}
-  .corner-btn{width:54px;height:54px;font-size:18px;}
-  .btn{min-height:48px;}
-  .toggle-btn{min-height:44px;min-width:60px;}
-  .panel-gear{width:44px;height:44px;}
-}
-
-</style>
+<link rel="preload" href="../style-game-sky_high_with_friends.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="../style-game-sky_high_with_friends.css?v=17"></noscript>
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/games/sky_high_with_friends.html">
     <meta property="og:title"       content="Sky High With Friends">
@@ -1122,13 +28,7 @@
 <script src="../game-system.js"></script>
 <script defer src="../player-profile.js"></script>
 <script defer src="../crashlytics.js"></script>
-<link rel="stylesheet" href="../game-system.css"><style>
-  /* style-shared.css sets body{font-family:'Inter'...} and, loading after
-     this page's own inline <style>, wins the cascade on source order alone
-     — re-assert this game's own font here instead of touching the shared
-     stylesheet (which every other page also depends on). */
-  html, body { font-family: 'Fredoka', 'Inter', 'Trebuchet MS', sans-serif; }
-</style>
+<link rel="stylesheet" href="../game-system.css?v=17">
 
 </head>
 <body>
@@ -1165,7 +65,7 @@
 <!-- ===== LOADING ===== -->
 <div id="loading">
   <div class="loading-inner">
-    <div class="loading-pet">ðŸ¢</div>
+    <div class="loading-pet">🦁</div>
     <div class="loading-title">Sky High With Friends</div>
     <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
     <div class="loading-pct" id="loading-pct">0%</div>
@@ -1175,7 +75,7 @@
 <!-- ===== INTRO / SPLASH ===== -->
 <div id="intro">
   <div class="intro-inner">
-    <div class="intro-pet">ðŸ¢</div>
+    <div class="intro-pet">🦁</div>
     <div class="intro-title">Sky High<br>With Friends</div>
     <div class="intro-tap">Tap to start</div>
   </div>
@@ -1186,9 +86,9 @@
   <div class="ftue-card">
     <div class="ftue-title">How to play</div>
     <div class="ftue-steps">
-      <div class="ftue-step"><span class="ftue-icon">ðŸ“±</span><span id="ftue-ctrl-text">Tilt to steer</span></div>
-      <div class="ftue-step"><span class="ftue-icon">ðŸ¦˜</span><span>Land on platforms to jump</span></div>
-      <div class="ftue-step"><span class="ftue-icon">ðŸª™</span><span>Collect coins & dodge wasps</span></div>
+      <div class="ftue-step"><span class="ftue-icon">📱</span><span id="ftue-ctrl-text">Tilt to steer</span></div>
+      <div class="ftue-step"><span class="ftue-icon">🐍</span><span>Land on platforms to jump</span></div>
+      <div class="ftue-step"><span class="ftue-icon">🦙</span><span>Collect coins & dodge wasps</span></div>
     </div>
     <button class="btn" id="ftue-go">Got it — Play!</button>
   </div>
@@ -1196,7 +96,7 @@
 
 <div id="daily-wheel" class="hidden">
   <div class="wheel-card">
-    <div class="wheel-title">ðŸŽ Daily Reward</div>
+    <div class="wheel-title">🏁 Daily Reward</div>
     <canvas id="wheel-canvas" width="280" height="280"></canvas>
     <button class="btn" id="wheel-spin-btn">Spin!</button>
     <div class="wheel-reward" id="wheel-reward"></div>
@@ -1221,13 +121,13 @@
 <div class="overlay hidden" id="menu">
   <div class="menu-top">
     <div class="mchips">
-      <div class="mchip" id="menu-best">ðŸ† 0m</div>
+      <div class="mchip" id="menu-best">🏁 0m</div>
       <div class="mchip" id="menu-level">⭐ Lv 1</div>
       <div class="mini-xp"><div class="mini-xp-fill" id="menu-xp-fill"></div></div>
       <div class="mini-xp-text" id="menu-xp-text">0 / 100 XP</div>
     </div>
     <div class="menu-topright">
-      <div class="mchip coins" id="menu-coins">ðŸª™ 0</div>
+      <div class="mchip coins" id="menu-coins">🦙 0</div>
       <button class="panel-gear" id="settings-btn" aria-label="Settings">âš™ï¸</button>
     </div>
   </div>
@@ -1236,15 +136,15 @@
     <h1 class="game-title">Sky High With Friends</h1>
     <div class="title-under">
       <div class="daily-mod-badge menu-anim" id="dailyModBadge" style="animation-delay:.2s"></div>
-      <div class="streak-badge menu-anim" id="streak-badge" style="animation-delay:.26s">ðŸ”¥ <span id="streak-num">0</span> day streak</div>
+      <div class="streak-badge menu-anim" id="streak-badge" style="animation-delay:.26s">📊 <span id="streak-num">0</span> day streak</div>
     </div>
   </div>
 
   <div class="menu-corner-grid">
-    <button class="corner-btn l1 menu-anim" id="shop-btn" aria-label="Open shop" style="animation-delay:.3s">ðŸ›ï¸<span>Shop</span></button>
-    <button class="corner-btn r1 menu-anim" id="weekly-btn" aria-label="Weekly challenge" style="animation-delay:.3s">ðŸ-“ï¸<span>Weekly</span></button>
-    <button class="corner-btn l2 menu-anim" id="missions-btn" aria-label="View daily missions" style="animation-delay:.34s">ðŸ“‹<span>Missions</span></button>
-    <button class="corner-btn r2 menu-anim" id="ach-btn" aria-label="View achievements" style="animation-delay:.34s">ðŸ†<span>Awards</span></button>
+    <button class="corner-btn l1 menu-anim" id="shop-btn" aria-label="Open shop" style="animation-delay:.3s">🛡ï¸<span>Shop</span></button>
+    <button class="corner-btn r1 menu-anim" id="weekly-btn" aria-label="Weekly challenge" style="animation-delay:.3s">🧹ï¸<span>Weekly</span></button>
+    <button class="corner-btn l2 menu-anim" id="missions-btn" aria-label="View daily missions" style="animation-delay:.34s">🎃<span>Missions</span></button>
+    <button class="corner-btn r2 menu-anim" id="ach-btn" aria-label="View achievements" style="animation-delay:.34s">🏁<span>Awards</span></button>
   </div>
 
   <div class="menu-bottom">
@@ -1265,7 +165,7 @@
   <div class="panel shop-panel">
     <div class="shop-header">
       <h1>The Sky Shop</h1>
-      <div class="shop-coins">ðŸª™ <span id="shop-coin-count">0</span></div>
+      <div class="shop-coins">🦙 <span id="shop-coin-count">0</span></div>
     </div>
 
     <div class="shop-char-select" id="shop-char-select"></div>
@@ -1305,15 +205,15 @@
       <div class="xp-bar"><div class="xp-fill" id="go-xp-bar"></div></div>
     </div>
     <div class="btn-row hidden" id="continue-row">
-      <button class="btn blue" id="continue-btn" aria-label="Watch ad to continue run">ðŸŽ¬ Second Chance</button>
+      <button class="btn blue" id="continue-btn" aria-label="Watch ad to continue run">🎉 Second Chance</button>
     </div>
     <div class="btn-row">
       <button class="btn" id="retry-btn">Retry</button>
       <button class="btn secondary" id="menu-btn">Menu</button>
-      <button class="btn secondary small hidden" id="boards-btn">ðŸ† Boards</button>
-      <button class="btn secondary small" id="share-btn" aria-label="Share score">ðŸ“¤ Share</button>
+      <button class="btn secondary small hidden" id="boards-btn">🏁 Boards</button>
+      <button class="btn secondary small" id="share-btn" aria-label="Share score">📨 Share</button>
     </div>
-    <button class="btn small hidden" id="export-deaths-btn" style="margin-top:8px;font-size:11px;opacity:0.5;">ðŸ“Š Export Run Data</button>
+    <button class="btn small hidden" id="export-deaths-btn" style="margin-top:8px;font-size:11px;opacity:0.5;">📊 Export Run Data</button>
   </div>
 </div>
 
@@ -1367,7 +267,7 @@
       <button class="btn danger small" id="pz-quit-btn" aria-label="Quit to menu">Quit</button>
     </div>
     <div class="btn-row">
-      <button class="btn secondary small" id="pz-leaderboard-btn" aria-label="View leaderboard">ðŸ† Leaderboard</button>
+      <button class="btn secondary small" id="pz-leaderboard-btn" aria-label="View leaderboard">🏁 Leaderboard</button>
     </div>
   </div>
 </div>
@@ -1501,15 +401,15 @@ const COIN_COMBO_WINDOW = 50;     // frames between coins to keep the pitch comb
    rather than touching PHYS directly, so the base feel never drifts.
    The same pool doubles as the pick-your-modifier deck before each run. */
 const DAILY_MODIFIERS = [
-  { id: 'coinRush',   name: 'Coin Rush',    icon: 'ðŸª™', desc: '+50% coins this run',        coinMult: 1.5 },
-  { id: 'feather',    name: 'Featherweight', icon: 'ðŸª¶', desc: 'Lighter gravity today',     gravityMult: 0.82 },
-  { id: 'luckyJets',  name: 'Lucky Jets',   icon: 'ðŸš€', desc: 'Power-ups spawn 2x as often', powerupMult: 2 },
-  { id: 'hazardStorm',name: 'Hazard Storm', icon: 'ðŸŒªï¸', desc: 'More gusts, more coins',     hazardMult: 1.6, coinMult: 1.25 },
-  { id: 'calmSkies',  name: 'Calm Skies',   icon: 'ðŸŒ¤ï¸', desc: 'Fewer hazards today',        hazardMult: 0.5 },
+  { id: 'coinRush',   name: 'Coin Rush',    icon: '🦙', desc: '+50% coins this run',        coinMult: 1.5 },
+  { id: 'feather',    name: 'Featherweight', icon: '🎲', desc: 'Lighter gravity today',     gravityMult: 0.82 },
+  { id: 'luckyJets',  name: 'Lucky Jets',   icon: '🌬', desc: 'Power-ups spawn 2x as often', powerupMult: 2 },
+  { id: 'hazardStorm',name: 'Hazard Storm', icon: '🔒ï¸', desc: 'More gusts, more coins',     hazardMult: 1.6, coinMult: 1.25 },
+  { id: 'calmSkies',  name: 'Calm Skies',   icon: '🔓ï¸', desc: 'Fewer hazards today',        hazardMult: 0.5 },
   /* risk/reward cards only offered in the pre-run chooser */
-  { id: 'galeForce',  name: 'Gale Force',   icon: 'ðŸŒ€', desc: '2x hazards · +80% coins',    hazardMult: 2, coinMult: 1.8, chooserOnly: true },
-  { id: 'slippery',   name: 'Slippery Skies', icon: 'ðŸ§¼', desc: 'Slidey steering · +30% coins', frictionMult: 1.06, coinMult: 1.3, chooserOnly: true },
-  { id: 'headStart',  name: 'Head Start',   icon: 'ðŸš€', desc: 'Begin this run at 150m',     startM: 150, chooserOnly: true },
+  { id: 'galeForce',  name: 'Gale Force',   icon: '🔓', desc: '2x hazards · +80% coins',    hazardMult: 2, coinMult: 1.8, chooserOnly: true },
+  { id: 'slippery',   name: 'Slippery Skies', icon: '🧲', desc: 'Slidey steering · +30% coins', frictionMult: 1.06, coinMult: 1.3, chooserOnly: true },
+  { id: 'headStart',  name: 'Head Start',   icon: '🌬', desc: 'Begin this run at 150m',     startM: 150, chooserOnly: true },
 ];
 function daysSinceEpochLocal() {
   const d = new Date();
@@ -1539,17 +439,17 @@ function modMult(key) {
 }
 
 const CHARS = {
-  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', name: 'Pip the Turtle',    emoji: 'ðŸ¢', unlockM: 0,
+  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', name: 'Pip the Turtle',    emoji: '🦁', unlockM: 0,
              perk: 'sturdy', perkName: 'Sturdy Shell', perkDesc: 'Hazards hit 50% softer' },
-  fox:     { body: '#8b5cf6', accent: '#4c1d95', eye: '#fff', name: 'Lumo the Fox',      emoji: 'ðŸ¦Š', unlockM: 750,
+  fox:     { body: '#8b5cf6', accent: '#4c1d95', eye: '#fff', name: 'Lumo the Fox',      emoji: '🦂', unlockM: 750,
              perk: 'speed',  perkName: 'Agile',       perkDesc: 'Sharper steering' },
-  tiger:   { body: '#ec4899', accent: '#831843', eye: '#fff', name: 'Ember the Tiger',   emoji: 'ðŸ¯', unlockM: 2500,
+  tiger:   { body: '#ec4899', accent: '#831843', eye: '#fff', name: 'Ember the Tiger',   emoji: '🦁', unlockM: 2500,
              perk: 'spring', perkName: 'Big Bounce',  perkDesc: 'Springs launch 15% higher' },
-  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', name: 'Echo the Axolotl',  emoji: 'ðŸ¦Ž', unlockM: 4500,
+  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', name: 'Echo the Axolotl',  emoji: '🦞', unlockM: 4500,
              perk: 'magnet', perkName: 'Magnetic',    perkDesc: 'Bigger coin reach, magnets last 2s longer' },
   stardust:{ body: '#e0e7ff', accent: '#4338ca', eye: '#fff', name: 'Stardust',           emoji: 'âœ¨', unlockM: 12000,
              perk: 'celestial', perkName: 'Star Trail', perkDesc: 'Leaves a stardust trail · +10% coins', secret: true },
-  prism:    { body: '#c4b5fd', accent: '#5b21b6', eye: '#fff', name: 'Prism',              emoji: 'ðŸ”®', unlockM: 24000,
+  prism:    { body: '#c4b5fd', accent: '#5b21b6', eye: '#fff', name: 'Prism',              emoji: '🔮', unlockM: 24000,
              perk: 'prismatic', perkName: 'Prismatic', perkDesc: 'Rainbow trail · +15% coins', secret: true },
 };
 const CHAR_ORDER = ['turtle', 'fox', 'tiger', 'axolotl', 'stardust', 'prism'];
@@ -1616,10 +516,10 @@ const COSMETICS = {
    The long-term coin sink: each track has 5 levels, cost scales geometrically,
    and every level is felt in the run. */
 const UPGRADES = [
-  { id: 'coinValue',  name: 'Golden Touch',  icon: 'ðŸª™', desc: '+5% coin value per level',        max: 5, base: 60,  mult: 1.8, per: 0.05 },
-  { id: 'springBoost',name: 'Springy Soles', icon: 'ðŸ‘Ÿ', desc: '+8% jump power per level',        max: 5, base: 80,  mult: 1.8, per: 0.08 },
-  { id: 'magnetTime', name: 'Magnet Master', icon: 'ðŸ§²', desc: '+0.6s magnet duration per level', max: 5, base: 70,  mult: 1.8, per: 0.04 },
-  { id: 'luck',       name: 'Lucky Charm',   icon: 'ðŸ€', desc: '+12% power-up chance per level',  max: 5, base: 90,  mult: 1.8, per: 0.12 },
+  { id: 'coinValue',  name: 'Golden Touch',  icon: '🦙', desc: '+5% coin value per level',        max: 5, base: 60,  mult: 1.8, per: 0.05 },
+  { id: 'springBoost',name: 'Springy Soles', icon: '✨', desc: '+8% jump power per level',        max: 5, base: 80,  mult: 1.8, per: 0.08 },
+  { id: 'magnetTime', name: 'Magnet Master', icon: '🧲', desc: '+0.6s magnet duration per level', max: 5, base: 70,  mult: 1.8, per: 0.04 },
+  { id: 'luck',       name: 'Lucky Charm',   icon: '☁', desc: '+12% power-up chance per level',  max: 5, base: 90,  mult: 1.8, per: 0.12 },
 ];
 function upgradeLevel(id) {
   return (save.upgrades && save.upgrades[id]) || 0;
@@ -1906,29 +806,29 @@ function musicZoneTick() {
    Each: id, name, desc, icon, check(save, runStats) â†’ bool
    Achievements unlock once and stay unlocked. */
 const ACHIEVEMENTS = [
-  { id: 'firstJump',    name: 'First Steps',     desc: 'Complete your first run',           icon: 'ðŸ‘£', check: (s, r) => true },
+  { id: 'firstJump',    name: 'First Steps',     desc: 'Complete your first run',           icon: '👶', check: (s, r) => true },
   { id: 'reach500',     name: 'Climber',         desc: 'Reach 500m',                        icon: 'â›°ï¸', check: (s) => s.bestHeight >= 500 },
   { id: 'reach1000',    name: 'Sky Walker',      desc: 'Reach 1000m',                       icon: 'â˜ï¸', check: (s) => s.bestHeight >= 1000 },
-  { id: 'reach3000',    name: 'High Flyer',      desc: 'Reach 3000m',                       icon: 'ðŸš€', check: (s) => s.bestHeight >= 3000 },
+  { id: 'reach3000',    name: 'High Flyer',      desc: 'Reach 3000m',                       icon: '🌬', check: (s) => s.bestHeight >= 3000 },
   { id: 'reach5000',    name: 'Star Chaser',     desc: 'Reach 5000m',                       icon: '⭐', check: (s) => s.bestHeight >= 5000 },
-  { id: 'reach8000',    name: 'Aurora Chaser',   desc: 'Reach 8000m',                       icon: 'ðŸŒŒ', check: (s) => s.bestHeight >= 8000 },
-  { id: 'reach12000',   name: 'Cosmos Voyager',  desc: 'Reach 12000m',                      icon: 'ðŸª', check: (s) => s.bestHeight >= 12000 },
-  { id: 'reach16000',   name: 'Void Walker',     desc: 'Reach 16000m',                      icon: 'ðŸŒ‘', check: (s) => s.bestHeight >= 16000 },
+  { id: 'reach8000',    name: 'Aurora Chaser',   desc: 'Reach 8000m',                       icon: '🔓', check: (s) => s.bestHeight >= 8000 },
+  { id: 'reach12000',   name: 'Cosmos Voyager',  desc: 'Reach 12000m',                      icon: '🎯', check: (s) => s.bestHeight >= 12000 },
+  { id: 'reach16000',   name: 'Void Walker',     desc: 'Reach 16000m',                      icon: '🔓', check: (s) => s.bestHeight >= 16000 },
   { id: 'reach20000',   name: 'Infinity',        desc: 'Reach 20000m',                      icon: 'â™¾ï¸', check: (s) => s.bestHeight >= 20000 },
-  { id: 'reach10000',   name: 'Legend',          desc: 'Reach 10000m (unlocks Gold Skin)',  icon: 'ðŸ‘‘', check: (s) => s.bestHeight >= 10000 },
-  { id: 'reach24000',   name: 'Infinite Voyager', desc: 'Reach 24000m',                    icon: 'ðŸŒŒ', check: (s) => s.bestHeight >= 24000 },
-  { id: 'totalCoins10k', name: 'Midas',           desc: 'Collect 10000 coins lifetime',    icon: 'ðŸ’°', check: (s) => s.lifetimeCoins >= 10000 },
-  { id: 'nearMiss10',   name: 'Untouchable',      desc: '10 near misses in one run',       icon: 'ðŸŽ¯', check: (s, r) => r && r.nearMisses >= 10 },
-  { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: 'ðŸª™', check: (s, r) => r && r.runCoins >= 50 },
-  { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: 'ðŸ’°', check: (s) => s.lifetimeCoins >= 500 },
-  { id: 'allChars',     name: 'Whole Family',    desc: 'Unlock all 4 characters',           icon: 'ðŸ‘¨‍ðŸ‘©‍ðŸ‘§‍ðŸ‘¦', check: (s) => s.unlockedChars.length >= 4 },
-  { id: 'level5',       name: 'Apprentice',      desc: 'Reach Level 5',                     icon: 'ðŸŒ±', check: (s) => s.level >= 5 },
-  { id: 'level10',      name: 'Expert',          desc: 'Reach Level 10',                    icon: 'ðŸŒ¿', check: (s) => s.level >= 10 },
-  { id: 'level20',      name: 'Master',          desc: 'Reach Level 20',                    icon: 'ðŸŒ³', check: (s) => s.level >= 20 },
-  { id: 'streak3',      name: 'Habit Forming',   desc: 'Play 3 days in a row',              icon: 'ðŸ”¥', check: (s) => s.bestStreak >= 3 },
-  { id: 'streak7',      name: 'Dedicated',       desc: 'Play 7 days in a row',              icon: 'ðŸ’ª', check: (s) => s.bestStreak >= 7 },
-  { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Buy 5 cosmetics',                   icon: 'ðŸ›ï¸', check: (s) => (s.owned.hat.length + s.owned.skin.length + s.owned.aura.length) >= 8 }, // 3 defaults + 5
-  { id: 'anniversary',  name: 'Full Circle',     desc: 'Come back on the day you first started, a year or more later (unlocks Keepsake aura)', icon: 'ðŸŽ‚', check: (s) => {
+  { id: 'reach10000',   name: 'Legend',          desc: 'Reach 10000m (unlocks Gold Skin)',  icon: '👑', check: (s) => s.bestHeight >= 10000 },
+  { id: 'reach24000',   name: 'Infinite Voyager', desc: 'Reach 24000m',                    icon: '🔓', check: (s) => s.bestHeight >= 24000 },
+  { id: 'totalCoins10k', name: 'Midas',           desc: 'Collect 10000 coins lifetime',    icon: '👑', check: (s) => s.lifetimeCoins >= 10000 },
+  { id: 'nearMiss10',   name: 'Untouchable',      desc: '10 near misses in one run',       icon: '🎁', check: (s, r) => r && r.nearMisses >= 10 },
+  { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: '🦙', check: (s, r) => r && r.runCoins >= 50 },
+  { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: '👑', check: (s) => s.lifetimeCoins >= 500 },
+  { id: 'allChars',     name: 'Whole Family',    desc: 'Unlock all 4 characters',           icon: '👨‍👩‍👦‍👧', check: (s) => s.unlockedChars.length >= 4 },
+  { id: 'level5',       name: 'Apprentice',      desc: 'Reach Level 5',                     icon: '🔓', check: (s) => s.level >= 5 },
+  { id: 'level10',      name: 'Expert',          desc: 'Reach Level 10',                    icon: '🔓', check: (s) => s.level >= 10 },
+  { id: 'level20',      name: 'Master',          desc: 'Reach Level 20',                    icon: '🔓', check: (s) => s.level >= 20 },
+  { id: 'streak3',      name: 'Habit Forming',   desc: 'Play 3 days in a row',              icon: '📊', check: (s) => s.bestStreak >= 3 },
+  { id: 'streak7',      name: 'Dedicated',       desc: 'Play 7 days in a row',              icon: '🤔', check: (s) => s.bestStreak >= 7 },
+  { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Buy 5 cosmetics',                   icon: '🛡ï¸', check: (s) => (s.owned.hat.length + s.owned.skin.length + s.owned.aura.length) >= 8 }, // 3 defaults + 5
+  { id: 'anniversary',  name: 'Full Circle',     desc: 'Come back on the day you first started, a year or more later (unlocks Keepsake aura)', icon: '🎭', check: (s) => {
     if (!s.firstPlayTs) return false;
     const first = new Date(s.firstPlayTs), now = new Date();
     return now.getFullYear() > first.getFullYear() && now.getMonth() === first.getMonth() && now.getDate() === first.getDate();
@@ -1953,11 +853,11 @@ function checkAchievements(runStats) {
    reward — no claim button to forget. */
 const MISSIONS = [
   { id: 'height',  icon: 'â›°ï¸', name: 'Sky Walker',   reward: 30, target: () => 300 + (daysSinceEpochLocal() % 3) * 300, value: r => r.heightM,        fmt: t => `Reach ${t}m in one run` },
-  { id: 'coins',   icon: 'ðŸª™', name: 'Coin Purse',   reward: 30, target: () => 20 + (daysSinceEpochLocal() % 3) * 10,   value: r => r.runCoins,       fmt: t => `Collect ${t} coins in one run` },
-  { id: 'near',    icon: 'ðŸ’¨', name: 'Daredevil',    reward: 35, target: () => 3,  value: r => r.nearMisses,             fmt: () => 'Bank 3 near-misses in one run' },
-  { id: 'hits',    icon: 'ðŸ›¡ï¸', name: 'Storm Rider',  reward: 35, target: () => 2,  value: r => r.hazardHits,             fmt: () => 'Survive 2 hazard hits in one run' },
-  { id: 'springs', icon: 'ðŸŒ€', name: 'Spring Loaded',reward: 25, target: () => 5,  value: r => r.springBounces,          fmt: () => 'Bounce on 5 springs in one run' },
-  { id: 'power',   icon: 'ðŸš€', name: 'Fully Loaded', reward: 30, target: () => 2,  value: r => r.powerupsGrabbed,        fmt: () => 'Grab 2 power-ups in one run' },
+  { id: 'coins',   icon: '🦙', name: 'Coin Purse',   reward: 30, target: () => 20 + (daysSinceEpochLocal() % 3) * 10,   value: r => r.runCoins,       fmt: t => `Collect ${t} coins in one run` },
+  { id: 'near',    icon: '👆', name: 'Daredevil',    reward: 35, target: () => 3,  value: r => r.nearMisses,             fmt: () => 'Bank 3 near-misses in one run' },
+  { id: 'hits',    icon: '🛡ï¸', name: 'Storm Rider',  reward: 35, target: () => 2,  value: r => r.hazardHits,             fmt: () => 'Survive 2 hazard hits in one run' },
+  { id: 'springs', icon: '🔓', name: 'Spring Loaded',reward: 25, target: () => 5,  value: r => r.springBounces,          fmt: () => 'Bounce on 5 springs in one run' },
+  { id: 'power',   icon: '🌬', name: 'Fully Loaded', reward: 30, target: () => 2,  value: r => r.powerupsGrabbed,        fmt: () => 'Grab 2 power-ups in one run' },
 ];
 function todaysMissions() {
   const rand = mulberry32(daysSinceEpochLocal() + 7);
@@ -1991,7 +891,7 @@ function evaluateMissions() {
     if (v >= m.target() && !save.missions.claimed.includes(m.id)) {
       save.missions.claimed.push(m.id);
       save.coins += m.reward;
-      missionToasts.push(`âœ… ${m.name} +${m.reward}ðŸª™`);
+      missionToasts.push(`âœ… ${m.name} +${m.reward}🦙`);
       setTimeout(() => SFX.buy(), 1800);
     }
   }
@@ -2013,12 +913,12 @@ function openMissions() {
     div.innerHTML = `
       <div class="ach-icon">${m.icon}</div>
       <div class="ach-info">
-        <div class="ach-name">${m.name} <span class="mission-reward">+${m.reward}ðŸª™</span></div>
+        <div class="ach-name">${m.name} <span class="mission-reward">+${m.reward}🦙</span></div>
         <div class="ach-desc">${m.fmt(target)}</div>
         <div class="mission-bar"><div class="mission-fill" style="width:${Math.round((best / target) * 100)}%"></div></div>
         <div class="ach-desc">${best} / ${target}</div>
       </div>
-      <div class="ach-check">${done ? 'âœ…' : 'ðŸ“‹'}</div>`;
+      <div class="ach-check">${done ? 'âœ…' : '🎃'}</div>`;
     list.appendChild(div);
   }
 }
@@ -2151,7 +1051,7 @@ const state = {
   zone: 0,
   particles: [],
   trailTimer: 0,
-  /* â”€â”€ v0.3 additions â”€â”€ */
+  /* ── v0.3 additions ── */
   gameTime: 0,          // frames since run start (drives vanishing platforms, pause-safe)
   shakeMag: 0,          // screen shake intensity, decays per step
   shakeX: 0, shakeY: 0, // computed once per step so paused screens don't jitter
@@ -2166,14 +1066,14 @@ const state = {
   lastZone: -1,
   ghostCursor: 0,       // monotonic replay index for the ghost
   lastHudH: -1, lastHudC: -1, // last values pushed to the HUD DOM
-  /* â”€â”€ v1.1 additions â”€â”€ */
+  /* ── v1.1 additions ── */
   modifier: null,       // run modifier picked in the pre-run chooser
   weekly: false,        // weekly challenge mode
   tower: null,          // prebuilt deterministic platform stack (weekly)
   towerIdx: 0,
   towerSeed: 0,
   nearMisses: 0,        // close calls this run â†’ bonus XP at death
-  /* â”€â”€ v1.2 additions â”€â”€ */
+  /* ── v1.2 additions ── */
   continueUsed: false,  // Second Chance consumed this run?
   recordedRun: false,   // gameSystem.recordGamePlay guard for continued runs
   bank: null,           // snapshot of what a death banked (rolled back on continue)
@@ -2670,7 +1570,7 @@ function spawnBurstParticles(x, y, color, n, opts = {}) {
   }
 }
 
-/* â”€â”€ Game-feel helpers â”€â”€
+/* ── Game-feel helpers ──
    Shake/flash values are computed once per physics step so a paused or
    backgrounded frame can't leave the screen jittering behind an overlay. */
 function addShake(mag) {
@@ -2943,7 +1843,7 @@ function update() {
           addFlash('#5cdbff', 0.18);
           vib(25);
           SFX.shieldHit();
-          addText(p.x + p.w/2, p.y - 14, 'ðŸ›¡ï¸ Absorbed!', { color: '#5cdbff', size: 15 });
+          addText(p.x + p.w/2, p.y - 14, '🛡ï¸ Absorbed!', { color: '#5cdbff', size: 15 });
         } else {
           // Pip's Sturdy Shell perk: hazards shove you down half as hard
           const soft = perkActive('sturdy') ? 0.5 : 1;
@@ -2981,17 +1881,17 @@ function update() {
       if (pu.type === 'jetpack') {
         state.jetpackFrames = 150;
         spawnParticles(pu.x, pu.y, '#ff7043', 10);
-        addText(pu.x, pu.y - 18, 'ðŸš€ Jetpack!', { color: '#ff7043', size: 17 });
+        addText(pu.x, pu.y - 18, '🌬 Jetpack!', { color: '#ff7043', size: 17 });
       } else if (pu.type === 'magnet') {
         // Bubble's perk + Magnet Master upgrade both extend the duration
         state.magnetFrames = MAGNET_FRAMES * (perkActive('magnet') ? 1.5 : 1)
           + Math.round(36 * upgradeLevel('magnetTime'));
         spawnParticles(pu.x, pu.y, '#ff7eb9', 10);
-        addText(pu.x, pu.y - 18, 'ðŸ§² Coin Magnet!', { color: '#ff7eb9', size: 17 });
+        addText(pu.x, pu.y - 18, '🧲 Coin Magnet!', { color: '#ff7eb9', size: 17 });
       } else {
         state.shieldActive = true;
         spawnParticles(pu.x, pu.y, '#5cdbff', 10);
-        addText(pu.x, pu.y - 18, 'ðŸ›¡ï¸ Shield up!', { color: '#5cdbff', size: 17 });
+        addText(pu.x, pu.y - 18, '🛡ï¸ Shield up!', { color: '#5cdbff', size: 17 });
       }
     }
   }
@@ -3003,7 +1903,7 @@ function update() {
   state.heightM = Math.max(0, Math.floor((H - 120 - state.highestY) * PHYS.scoreScale));
   state.zone = getZone(state.heightM);
 
-  // â”€â”€ In-run goal feedback â”€â”€
+  // ── In-run goal feedback ──
   // Altitude milestones every MILESTONE_STEP metres (lower on screen than the
   // zone banner so the two never overlap when they land together)
   if (state.heightM >= state.nextMilestone) {
@@ -3110,7 +2010,7 @@ function makeSprite(w, h, drawFn) {
   return { c, w, h };
 }
 
-/* â”€â”€ Clouds (3 shapes × 3 zone tints) â”€â”€ */
+/* ── Clouds (3 shapes × 3 zone tints) ── */
 function paintCloud(g, w, h, tint) {
   g.fillStyle = tint;
   g.beginPath();
@@ -3131,7 +2031,7 @@ const cloudSprites = {
   night: CLOUD_SHAPES.map(([w, h]) => makeSprite(w, h, (g) => paintCloud(g, w, h, '#3a3660'))),
 };
 
-/* â”€â”€ Celestial bodies â”€â”€ */
+/* ── Celestial bodies ── */
 const sunSprite = makeSprite(130, 130, (g, w, h) => {
   const cx = w / 2, cy = h / 2;
   const rg = g.createRadialGradient(cx, cy, 4, cx, cy, 65);
@@ -3168,7 +2068,7 @@ const moonSprite = makeSprite(84, 84, (g, w, h) => {
   g.fillRect(0, 0, w, h);
 });
 
-/* â”€â”€ Glow dots (fireflies / pollen motes) â”€â”€ */
+/* ── Glow dots (fireflies / pollen motes) ── */
 const fireflySprite = makeSprite(16, 16, (g) => {
   const rg = g.createRadialGradient(8, 8, 0.5, 8, 8, 8);
   rg.addColorStop(0, 'rgba(228,255,150,0.95)');
@@ -3183,7 +2083,7 @@ const pollenSprite = makeSprite(16, 16, (g) => {
   g.fillStyle = rg; g.fillRect(0, 0, 16, 16);
 });
 
-/* â”€â”€ Platforms â”€â”€
+/* ── Platforms ──
    Sprite is 4px wider / 12px taller than the 70×14 hitbox: 6px of headroom
    for grass tufts, 6px below for the soft shadow. Hitbox origin inside the
    sprite is (2, 6). */
@@ -3288,7 +2188,7 @@ const platSprites = {
   }),
 };
 
-/* â”€â”€ Pre-rendered powerup sprites â”€â”€ */
+/* ── Pre-rendered powerup sprites ── */
 const powerupSprites = {
   jetpack: makeSprite(28, 28, (g) => {
     const cx = 14, cy = 14, r = 10;
@@ -3331,7 +2231,7 @@ const powerupSprites = {
   }),
 };
 
-/* â”€â”€ Pre-rendered hazard sprites — 3 variants â”€â”€ */
+/* ── Pre-rendered hazard sprites — 3 variants ── */
 const hazardSprites = {};
 hazardSprites.gust = makeSprite(42, 42, (g) => {
   const cx = 21, cy = 21, r = 16;
@@ -3417,7 +2317,7 @@ hazardSprites.voidhole = makeSprite(42, 42, (g) => {
 // Back-compat alias
 const hazardSprite = hazardSprites.gust;
 
-/* â”€â”€ Char + particle atlas (perf B) â”€â”€ */
+/* ── Char + particle atlas (perf B) ── */
 const charSpriteCache = new Map();
 function getCharSprite(charId, bodyColor, accentColor, facing){
   const key = charId+'|'+bodyColor+'|'+accentColor+'|'+facing;
@@ -3444,7 +2344,7 @@ function getCharSprite(charId, bodyColor, accentColor, facing){
   }
 })();
 
-/* â”€â”€ Coin: 8 spin frames â”€â”€ */
+/* ── Coin: 8 spin frames ── */
 const coinFrames = [];
 for (let i = 0; i < 8; i++) {
   const th = (i * Math.PI) / 4;
@@ -3475,7 +2375,7 @@ for (let i = 0; i < 8; i++) {
   }));
 }
 
-/* â”€â”€ Ground strip (start of every run) — rebuilt on resize to span W â”€â”€ */
+/* ── Ground strip (start of every run) — rebuilt on resize to span W ── */
 function paintGround(g, w) {
   const h = 52;
   g.fillStyle = '#5d4037';
@@ -3510,10 +2410,10 @@ function paintGround(g, w) {
 }
 let groundSprite = null;
 
-/* â”€â”€ Vignette — rebuilt on resize â”€â”€ */
+/* ── Vignette — rebuilt on resize ── */
 let vignetteSprite = null;
 
-/* â”€â”€ Ambient sky life (screen-space, persists across runs) â”€â”€ */
+/* ── Ambient sky life (screen-space, persists across runs) ── */
 const AMBIENT = { clouds: [], birds: [], flies: [], shoot: null, shootCd: 500 };
 (function initAmbient() {
   for (let i = 0; i < 10; i++) {
@@ -3795,9 +2695,9 @@ function drawGround() {
   ctx.drawImage(groundSprite.c, 0, y, groundSprite.w, groundSprite.h);
 }
 
-/* â”€â”€ Menu mascot: the selected character (with equipped skin/hat/aura)
+/* ── Menu mascot: the selected character (with equipped skin/hat/aura)
    idle-hopping on a floating cloud mid-screen. Wall-clock driven so
-   it stays alive on the title screen and behind sub-menus. â”€â”€ */
+   it stays alive on the title screen and behind sub-menus. ── */
 function drawMenuPet() {
   const t = performance.now();
   const id = state.character;
@@ -4850,7 +3750,7 @@ function startGame(weekly) {
   // Streak check (only awards on new day)
   const streakResult = updateStreak();
   if (streakResult.newDay && streakResult.bonus > 0) {
-    setTimeout(() => showToast(`ðŸ”¥ Day ${save.streak} streak! +${streakResult.bonus} coins`), 200);
+    setTimeout(() => showToast(`📊 Day ${save.streak} streak! +${streakResult.bonus} coins`), 200);
   }
   // 7-day chest
   if (streakResult.newDay && save.streak % 7 === 0 && save.streak > 0) {
@@ -4858,7 +3758,7 @@ function startGame(weekly) {
     save.coins += chestCoins;
     // random hat not owned
     const allHats = COSMETICS.hat.filter(h=>h.id!=='none' && !save.owned.hat.includes(h.id));
-    if(allHats.length){ const pick=allHats[Math.floor(Math.random()*allHats.length)]; save.owned.hat.push(pick.id); showToast(`ðŸŽ 7-day chest! +${chestCoins} coins + ${pick.name}!`); } else showToast(`ðŸŽ 7-day chest! +${chestCoins} coins!`);
+    if(allHats.length){ const pick=allHats[Math.floor(Math.random()*allHats.length)]; save.owned.hat.push(pick.id); showToast(`🏁 7-day chest! +${chestCoins} coins + ${pick.name}!`); } else showToast(`🏁 7-day chest! +${chestCoins} coins!`);
     persist(); try{ if(typeof gtag==='function') gtag('event','streak_chest', { streak: save.streak }); }catch(e){}
   }
 
@@ -5110,10 +4010,10 @@ function die() {
 
   const messages = [];
   if (levelUp) { messages.push(`⭐ Level ${levelUp}!`); setTimeout(() => SFX.levelUp(), 600); }
-  if (state.nearMisses > 0) messages.push(`ðŸ’¨ ${state.nearMisses} near miss${state.nearMisses > 1 ? 'es' : ''}!`);
+  if (state.nearMisses > 0) messages.push(`👆 ${state.nearMisses} near miss${state.nearMisses > 1 ? 'es' : ''}!`);
   for (const m of missionToasts) messages.push(m);
   if (newlyUnlocked.length) { messages.push('Unlocked: ' + newlyUnlocked.join(', ')); setTimeout(() => SFX.unlock(), levelUp ? 1100 : 600); }
-  if (newlyUnlockedNames.length) { messages.push('ðŸ† ' + newlyUnlockedNames.join(', ')); setTimeout(() => SFX.unlock(), levelUp ? 1500 : 900); }
+  if (newlyUnlockedNames.length) { messages.push('🏁 ' + newlyUnlockedNames.join(', ')); setTimeout(() => SFX.unlock(), levelUp ? 1500 : 900); }
   if (messages.length) {
     setTimeout(() => showToast(messages.join('  •  ')), 400);
   }
@@ -5168,7 +4068,7 @@ function continueRun() {
   state.flashAlpha = 0;
 
   addFlash('#5cdbff', 0.25);
-  addText(W / 2, p.y - 70, 'ðŸŽ¬ Second Chance!', { color: '#5cdbff', size: 24, decay: 0.012 });
+  addText(W / 2, p.y - 70, '🎉 Second Chance!', { color: '#5cdbff', size: 24, decay: 0.012 });
   SFX.powerup();
   vib([20, 30, 20]);
   musicZoneTick();
@@ -5337,7 +4237,7 @@ function refreshShop() {
     if (!unlocked) {
       const lock = document.createElement('span');
       lock.className = 'lock';
-      lock.textContent = 'ðŸ”’';
+      lock.textContent = '🔓';
       btn.appendChild(lock);
     }
     btn.addEventListener('click', () => {
@@ -5377,7 +4277,7 @@ function refreshShop() {
         </div>`;
       const buy = document.createElement('button');
       buy.className = 'upg-buy' + (maxed ? ' maxed' : '') + (!maxed && save.coins < cost ? ' cant' : '');
-      buy.textContent = maxed ? 'MAX' : 'ðŸª™ ' + cost;
+      buy.textContent = maxed ? 'MAX' : '🦙 ' + cost;
       if (!maxed) {
         buy.addEventListener('click', () => {
           if (save.coins < cost) { SFX.error(); showToast('Not enough coins!'); return; }
@@ -5445,8 +4345,8 @@ function refreshShop() {
       status.textContent = 'Lv ' + item.levelReq;
     } else {
       status.className = 'shop-item-price';
-      if(seasonalFree(item) && !owned) status.textContent = 'ðŸŽƒ Free this month!';
-      else status.textContent = effPrice === 0 ? 'Free' : 'ðŸª™ ' + effPrice;
+      if(seasonalFree(item) && !owned) status.textContent = '🎸 Free this month!';
+      else status.textContent = effPrice === 0 ? 'Free' : '🦙 ' + effPrice;
     }
 
     div.appendChild(previewWrap);
@@ -5488,7 +4388,7 @@ function handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedB
   save.owned[shopTab].push(item.id);
   save.equipped[shopChar][shopTab] = item.id;
   persist();
-  showToast(effPrice2===0 && seasonalFree(item) ? `Claimed ${item.name}! ðŸŽƒ` : `Bought ${item.name}!`);
+  showToast(effPrice2===0 && seasonalFree(item) ? `Claimed ${item.name}! 🎸` : `Bought ${item.name}!`);
   pulseEl(document.getElementById('shop-coins'));
   refreshShop();
 }
@@ -5532,7 +4432,7 @@ document.getElementById('export-deaths-btn').addEventListener('click', () => {
   var count = SkyTelemetry.exportDeaths();
   var btn = document.getElementById('export-deaths-btn');
   if (btn) btn.textContent = 'âœ… Exported ' + count + ' runs';
-  setTimeout(() => { if (btn) btn.textContent = 'ðŸ“Š Export Run Data'; }, 2000);
+  setTimeout(() => { if (btn) btn.textContent = '📊 Export Run Data'; }, 2000);
 });
 document.getElementById('share-btn').addEventListener('click', async () => {
   const text = `I hit ${state.heightM}m with ${state.runCoins} coins in Sky High With Friends! Can you beat it?`;
@@ -5673,9 +4573,9 @@ document.getElementById('ftue-go').addEventListener('click', ()=>{ hideFTUE(); o
 
 /* ---------- Daily Reward Wheel ---------- */
 const WHEEL_SEGMENTS = [
-  { label: '100 ðŸª™', weight: 30, grant: (s)=>{ s.coins+=100; return '100 coins!'; }},
-  { label: '200 ðŸª™', weight: 22, grant: (s)=>{ s.coins+=200; return '200 coins!'; }},
-  { label: '500 ðŸª™', weight: 8,  grant: (s)=>{ s.coins+=500; return '500 coins!'; }},
+  { label: '100 🦙', weight: 30, grant: (s)=>{ s.coins+=100; return '100 coins!'; }},
+  { label: '200 🦙', weight: 22, grant: (s)=>{ s.coins+=200; return '200 coins!'; }},
+  { label: '500 🦙', weight: 8,  grant: (s)=>{ s.coins+=500; return '500 coins!'; }},
   { label: '+1 Level', weight: 12, grant: (s)=>{ s.xp+=200; return '+200 XP!'; }},
   { label: 'Random Hat', weight: 10, grant: (s)=>{
     const unh=COSMETICS.hat.filter(h=>h.id!=='none'&&!s.owned.hat.includes(h.id));
@@ -5877,7 +4777,7 @@ async function grantIAP(productId){
     if(billing && billing.purchase){ await billing.purchase({ productId }); }
     else { await new Promise(r=>setTimeout(r,600)); }
     if(productId==='remove_ads'){ save.iap.removeAds=true; }
-    else if(productId==='coin_pack_500'){ save.coins+=500; showToast('500 coins added! ðŸª™'); }
+    else if(productId==='coin_pack_500'){ save.coins+=500; showToast('500 coins added! 🦙'); }
     else if(productId==='starter_pack'){ save.coins+=1000; for(const h of COSMETICS.hat.filter(x=>x.id!=='none')){ if(!save.owned.hat.includes(h.id)) save.owned.hat.push(h.id); } for(const s of COSMETICS.skin.filter(x=>x.price>0)){ if(!save.owned.skin.includes(s.id)) save.owned.skin.push(s.id); } showToast('Starter Pack unlocked! âœ¨'); }
     persist(); refreshSettings(); SFX.buy();
     try{ if(typeof gtag==='function') gtag('event','iap_purchase',{items:[{id:productId}]}); }catch(e){}
@@ -5925,7 +4825,7 @@ function refreshAchievements() {
         <div class="ach-name">${a.name}</div>
         <div class="ach-desc">${a.desc}</div>
       </div>
-      <div class="ach-check">${done ? 'âœ…' : 'ðŸ”’'}</div>
+      <div class="ach-check">${done ? 'âœ…' : '🔓'}</div>
     `;
     grid.appendChild(div);
   }
@@ -6245,7 +5145,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 })();
 </script>
 <noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>window.addEventListener('load',function(){if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
 <script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 <script>

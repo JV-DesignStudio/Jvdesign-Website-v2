@@ -42,7 +42,7 @@ const ALL_PAGES = htmlFiles(ROOT);
 const WORKSHOP_PAGES = ALL_PAGES.filter(p => p.startsWith('workshops/'));
 
 /* ── 1. NAV LABELS (static) ── */
-const CANON_MAIN = ['Home', '🎮 Games', '📚 Books', '🎓 Learn', '🔧 Workshop', '🛠️ Tools', '🎁 Freebies', '📦 Downloads', '📊 Progress'];
+const CANON_MAIN = ['🎮 Play', '🎓 Learn ▾', '🌟 Tiny Learners Ages 4-6', '🧪 Learning Lab Ages 7-12', '🚀 Teen Learn Ages 13+', '📊 My Progress', '🛠️ Create', '📚 Read', '📦 Downloads', '🏛️ Studio', '👨‍👩‍👧 Parents', '🔍'];
 const CANON_STRIP = ['🏠 Home', '🎮 Games', '📚 Books', '🎓 Learn', '🔧 Workshop', '🛠️ Tools', '🎁 Freebies'];
 function linkLabels(seg) {
   const out = [];
@@ -199,7 +199,8 @@ async function checkPages(base) {
         driven++;
         const drive = await page.evaluate((solveSrc, total) => {
           const out = { failures: [] };
-          const solve = eval(solveSrc);
+          // test harness only — SOLVE is a trusted template string defined above, not user input
+          const solve = Function('"use strict"; return (' + solveSrc + ')')();
           for (let s = 1; s <= total; s++) {
             const card = document.getElementById('step-' + s) || document.querySelector(`.step-card[data-step="${s}"]`);
             if (!card) { out.failures.push(`step ${s}: card missing`); continue; }
@@ -226,7 +227,8 @@ async function checkPages(base) {
         for (let i = 0; i < shape.total; i++) {
           const res = await page.evaluate((solveSrc, i, hasGo, idxVar) => {
             const out = { failures: [] };
-            const solve = eval(solveSrc);
+            // test harness only — SOLVE is trusted
+            const solve = Function('"use strict"; return (' + solveSrc + ')')();
             try {
               if (hasGo) goStep(i);
               else { if (idxVar === 'cur') cur = i; else currentStep = i; renderStep(); }

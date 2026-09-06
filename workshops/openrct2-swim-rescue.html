@@ -13,227 +13,94 @@
 <meta name="description" content="Write a real OpenRCT2 plugin in JavaScript detect when guests fall into water and save them before they drown. 13 steps, live simulation. Ages 11+. Free.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://www.googletagmanager.com">
+<link rel="preconnect" href="https://www.google-analytics.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script defer src="../analytics-loader.js"></script>
-<style>
-body{background:#0a0b10;color:#e8eaf2;min-height:100vh;overflow-x:hidden}
-/* -- Site footer -- */
-.footer-socials{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;}
-.footer-socials a{font-size:0.82rem;font-weight:600;color:rgba(240,234,214,0.55);padding:4px 9px;border-radius:6px;text-decoration:none;transition:color 0.15s,background 0.15s;}
-.footer-socials a:hover{color:#F0EAD6;background:rgba(255,255,255,0.07);}
-
-
-  :root {
-  --bg:#04090f; --bg2:#080f1a; --bg3:#0d1624;
-  --border:rgba(255,255,255,.07);
-  --text:#cce4f7; --muted:rgba(204,228,247,.4);
-  --blue:#38bdf8; --blue-lt:#7dd3fc; --blue-dk:#0369a1;
-  --wave:#0ea5e9; --water:#0c4a6e; --water-lt:#075985;
-  --sand:#c8a96e; --sand-lt:#e8c98e;
-  --green:#22c55e; --green-lt:#4ade80;
-  --red:#ef4444; --red-lt:#fca5a5;
-  --gold:#f5c842; --purple:#a78bfa;
-}
-
-/* HEADER */
-.btn-back{font-size:.8rem;font-weight:700;color:var(--muted);padding:6px 14px;border-radius:8px;border:1px solid var(--border);transition:color .15s,border-color .15s}
-.btn-back:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
-@media(max-width:860px){.btn-back{display:none}.nav-toggle{display:block!important}}
-
-/* HERO */
-.hero{padding:44px 24px 36px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
-.hero-dots{position:absolute;inset:0;background-image:radial-gradient(rgba(56,189,248,.06) 1px,transparent 1px);background-size:26px 26px;mask-image:radial-gradient(ellipse 80% 100% at 50% 0%,black,transparent)}
-@media(max-width:700px){.hero-inner{grid-template-columns:1fr}}
-.hero-tag{font-family:'JetBrains Mono',monospace;font-size:.63rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:10px}
-.hero-title{font-family:'Bebas Neue',cursive;font-size:clamp(2.2rem,6vw,3.8rem);line-height:.95;letter-spacing:.03em;color:white;margin-bottom:12px}
-.hero-title .hl{color:var(--blue)}
-.pill{font-family:'JetBrains Mono',monospace;font-size:.6rem;padding:4px 10px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase}
-.pill.b{border-color:rgba(56,189,248,.3);color:var(--blue-lt);background:rgba(56,189,248,.07)}
-.hero-cta{background:var(--blue);color:#04090f;font-family:'Bebas Neue',cursive;font-size:1.05rem;letter-spacing:.1em;padding:11px 26px;border-radius:10px;box-shadow:0 4px 0 var(--blue-dk);transition:transform .12s,filter .15s;display:inline-block;margin-top:16px}
-.hero-cta:hover{filter:brightness(1.1);transform:translateY(-2px)}
-.hero-preview{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:16px 18px;min-width:200px}
-.hero-preview-title{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:10px}
-.hero-stat{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:.8rem}
-.hero-stat:last-child{border-bottom:none}
-.hero-stat-label{color:var(--muted);font-size:.72rem}
-.hero-stat-val{font-family:'Bebas Neue',cursive;font-size:.95rem;letter-spacing:.05em;color:var(--blue-lt)}
-
-/* MAIN LAYOUT */
-.main-layout{display:grid;grid-template-columns:1fr 400px;max-width:1400px;margin:0 auto;min-height:calc(100vh - 60px)}
-@media(max-width:960px){.main-layout{grid-template-columns:1fr}}
-
-/* STEPS */
-.steps-panel{border-right:1px solid var(--border)}
-.steps-tabs{display:flex;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border);background:var(--bg2)}
-.steps-tabs::-webkit-scrollbar{display:none}
-.tab-btn{flex-shrink:0;padding:12px 11px;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
-.tab-btn:hover{color:var(--text)}
-.tab-btn.active{color:var(--blue-lt);border-bottom-color:var(--blue)}
-.tab-btn.done::before{content:"✅ ";color:var(--green-lt)}
-@media(max-width:960px){.step-body{max-height:none;overflow-y:visible}}
-@media(max-width:680px){.step-body{padding:18px 14px}}
-.step-num{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:5px}
-.step-intro{font-size:.88rem;color:var(--muted);line-height:1.75;margin-bottom:18px}
-.step-intro strong{color:var(--text)}
-
-/* BOXES */
-.box{border-radius:10px;padding:10px 14px;margin:10px 0;font-size:.8rem;line-height:1.6;display:flex;gap:9px;align-items:flex-start}
-.box-concept{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.18);color:rgba(204,228,247,.75)}
-.box-concept::before{content:"💡";flex-shrink:0}
-.box-tip{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.18);color:rgba(204,228,247,.75)}
-.box-tip::before{content:"✅";flex-shrink:0}
-.box-warn{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);color:rgba(204,228,247,.8)}
-.box-warn::before{content:"⚠️";flex-shrink:0}
-.box-rescue{background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.22);color:rgba(204,228,247,.8)}
-.box-rescue::before{content:"🔧";flex-shrink:0}
-
-/* CODE */
-.code-area{margin:14px 0}
-.code-area-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
-.live-badge{color:var(--blue-lt);font-size:.56rem;padding:2px 7px;border-radius:4px;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2)}
-.code-block{background:#02070e;border:1px solid rgba(56,189,248,.1);border-radius:11px;overflow:hidden}
-.code-block-header{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.02)}
-.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.code-fname{font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--muted);margin-left:4px}
-.code-pre{padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:.72rem;line-height:1.8;overflow-x:auto;white-space:pre}
-
-/* Syntax */
-.ck{color:#38bdf8}.cs{color:#86efac}.cn{color:#fbbf24}.cc{color:#3a5a3a}.cf{color:#c084fc}.cg{color:#4ade80}.co{color:#fb923c}.cy{color:#f5c842}.cr{color:#f87171}
-
-/* BLANKS */
-.blank{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#04090f;background:var(--blue);border:none;border-radius:5px;padding:2px 7px;width:var(--w,80px);text-align:center;outline:none;vertical-align:middle;transition:background .2s,box-shadow .2s}
-.blank:focus{background:var(--blue-lt);box-shadow:0 0 0 3px rgba(56,189,248,.35)}
-.blank-select{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#04090f;background:var(--blue);border:none;border-radius:5px;padding:2px 8px;vertical-align:middle;outline:none;cursor:pointer;transition:background .2s}
-.blank-select:focus{background:var(--blue-lt)}
-
-/* RUN BTN */
-.run-btn{width:100%;margin-top:12px;padding:13px;background:var(--blue);color:#04090f;font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:.1em;border:none;border-radius:10px;cursor:pointer;box-shadow:0 4px 0 var(--blue-dk);transition:transform .1s,filter .15s;display:flex;align-items:center;justify-content:center;gap:7px}
-.run-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
-.run-btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--blue-dk)}
-
-/* NAV */
-.step-nav{display:flex;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
-.btn-prev,.btn-next{flex:1;padding:11px;border-radius:8px;font-family:'Nunito',sans-serif;font-size:.84rem;font-weight:800;cursor:pointer;border:none;transition:background .15s}
-.btn-prev{background:rgba(255,255,255,.05);color:var(--muted)}
-.btn-prev:hover:not(:disabled){background:rgba(255,255,255,.1);color:var(--text)}
-.btn-next{background:rgba(56,189,248,.11);color:var(--blue-lt);border:1px solid rgba(56,189,248,.2)}
-.btn-next:hover:not(:disabled){background:rgba(56,189,248,.2)}
-.btn-prev:disabled,.btn-next:disabled{opacity:.3;cursor:default}
-
-/* SIM PANEL */
-.game-panel{background:var(--bg);display:flex;flex-direction:column;position:sticky;top:60px;height:calc(100vh - 60px)}
-@media(max-width:960px){.game-panel{position:static;height:auto;border-top:1px solid var(--border)}}
-.game-top{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.game-top-title{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.game-live{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--blue-lt)}
-.live-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:blink 2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-.sim-wrap{flex:1;position:relative;overflow:hidden;padding:10px}
-canvas{width:100%;border-radius:10px;box-shadow:0 0 0 1px rgba(255,255,255,.06),0 8px 40px rgba(0,0,0,.8);display:block}
-
-/* LOG */
-.event-log{background:var(--bg2);border-top:1px solid var(--border);padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:.62rem;height:80px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;flex-shrink:0}
-.log-line{color:var(--muted);transition:color .3s}
-.log-line.rescue{color:var(--green-lt)}
-.log-line.drown{color:var(--red-lt)}
-.log-line.warn{color:var(--gold)}
-.log-line.info{color:var(--blue-lt)}
-
-/* PROGRESS */
-.progress-strip{background:var(--bg2);border-top:1px solid var(--border);padding:9px 20px;display:flex;align-items:center;gap:14px;max-width:1400px;margin:0 auto;width:100%;position:sticky;bottom:0;z-index:50}
-.prog-label{font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue-lt);flex-shrink:0}
-.prog-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:999px;transition:width .4s ease}
-.prog-dots{display:flex;gap:5px;flex-shrink:0}
-.prog-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.1);transition:all .3s}
-.prog-dot.done{background:var(--green)}.prog-dot.active{background:var(--blue);transform:scale(1.3)}
-
-/* STATS STRIP */
-.stats-strip{display:flex;gap:0;border-top:1px solid var(--border);flex-shrink:0}
-.stat-box{flex:1;padding:8px 12px;border-right:1px solid var(--border);text-align:center}
-.stat-box:last-child{border-right:none}
-.stat-val{font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:.05em}
-.stat-lbl{font-family:'JetBrains Mono',monospace;font-size:.52rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:1px}
-
-/* MORE */
-.more-section{padding:52px 24px;max-width:1400px;margin:0 auto}
-.more-title{font-family:'Bebas Neue',cursive;font-size:1.9rem;letter-spacing:.04em;color:white;margin-bottom:20px}
-.more-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
-.more-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:17px 19px;display:flex;flex-direction:column;gap:7px;transition:border-color .2s,transform .2s}
-.more-card:hover{border-color:rgba(255,255,255,.15);transform:translateY(-3px)}
-.more-icon{font-size:1.5rem}
-.more-tag{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.more-name{font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:.04em;color:white}
-.more-cta{font-size:.76rem;font-weight:700;margin-top:auto}
-footer{background:var(--bg2);border-top:1px solid var(--border);padding:22px;text-align:center;color:var(--muted);font-size:.76rem}
-footer a{color:var(--muted)}footer a:hover{color:var(--text)}
-
-
-.progress-track2{height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden}
-.progress-fill2{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:4px;transition:width .5s ease;width:0%}
-
-.step-header2{padding:20px 24px 16px;display:flex;align-items:flex-start;gap:16px;cursor:pointer;user-select:none}
-.step-num2{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:1.3rem;flex-shrink:0;transition:all .2s}
-.sn-blue{background:rgba(56,189,248,.18);color:var(--blue-lt);border:2px solid rgba(56,189,248,.3)}
-.sn-gold{background:rgba(245,200,66,.15);color:var(--gold);border:2px solid rgba(245,200,66,.25)}
-.sn-wave{background:rgba(14,165,233,.15);color:var(--wave);border:2px solid rgba(14,165,233,.25)}
-.step-emoji2{font-size:1.4rem;margin-bottom:2px}
-.step-title2{font-family:'Bebas Neue',cursive;font-size:1.25rem;color:white;line-height:1.2}
-.step-blurb2{font-size:.82rem;color:var(--muted);margin-top:3px;line-height:1.5}
-.step-body2{padding:0 24px 24px;display:none}
-
-.quiz-title2{font-family:'Bebas Neue',cursive;font-size:1.05rem;color:#fff}
-
-/* -- CODE CHALLENGE -- */
-
-/* -- CONCEPT FILL -- */
-
-/* -- TRUE/FALSE -- */
-
-/* -- ORDER CHALLENGE -- */
-
-/* -- PREDICT CHALLENGE -- */
-
-/* -- FINISH BANNER -- */
-</style>
+<link rel="preload" href="../style-workshop-openrct2-swim-rescue.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="../style-workshop-openrct2-swim-rescue.css?v=17"></noscript>
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/workshops/openrct2-swim-rescue.html">
     <meta property="og:title"       content="OpenRCT2 Swim Rescue Save Your Guests with JavaScript | JVDesignStudio">
     <meta property="og:description" content="Write a real OpenRCT2 plugin in JavaScript detect when guests fall into water and save them before they drown. 13 steps, live simulation. Ages 11+. Free.">
-    <meta property="og:image"       content="https://jvdesignstudio.co.uk/Saving%20guests.png">
+    <meta property="og:image"       content="https://jvdesignstudio.co.uk/saving-guests.png">
     <meta property="og:site_name"   content="JVDesignStudio">
     <meta name="twitter:card"        content="summary_large_image">
     <meta name="twitter:title"       content="OpenRCT2 Swim Rescue Save Your Guests with JavaScript | JVDesignStudio">
     <meta name="twitter:description" content="Write a real OpenRCT2 plugin in JavaScript detect when guests fall into water and save them before they drown. 13 steps, live simulation. Ages 11+. Free.">
-    <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/Saving%20guests.png">
-<style>.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}</style>
-<link rel="stylesheet" href="../style-shared.css">
-<link rel="stylesheet" href="../style-workshop.css">
+    <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/saving-guests.png">
+
+<link rel="stylesheet" href="../style-shared.css?v=17">
+<link rel="stylesheet" href="../style-workshop.css?v=17">
   <script defer src="../player-profile.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Course",
+  "name": "OpenRCT2 Swim Rescue Save Your Guests with JavaScript",
+  "description": "Write a real OpenRCT2 plugin in JavaScript detect when guests fall into water and save them before they drown. 13 steps, live simulation. Ages 11+. Free.",
+  "provider": {
+    "@type": "Organization",
+    "name": "JVDesignStudio",
+    "url": "https://jvdesignstudio.co.uk"
+  },
+  "url": "https://jvdesignstudio.co.uk/workshops/openrct2-swim-rescue.html",
+  "isAccessibleForFree": true,
+  "educationalLevel": "Beginner",
+  "inLanguage": "en"
+}
+</script>
+<script defer src="../workshop-enhancements.js?v=17"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://jvdesignstudio.co.uk/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Workshop",
+      "item": "https://jvdesignstudio.co.uk/workshop"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "OpenRCT2 Swim Rescue Save Your Guests with JavaScript",
+      "item": "https://jvdesignstudio.co.uk/workshops/openrct2-swim-rescue.html"
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-<script>
-window.JVDS = window.JVDS || {};
-window.JVDS.announce = function (msg) {
- var el = document.getElementById('jvds-announce');
- if (!el || !msg) return;
- el.textContent = '';
- setTimeout(function () { el.textContent = String(msg); }, 60);
-};
-</script>
+<script src="/nav.js?v=17" defer></script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
- <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
  <span class="logo-name">JVDesignStudio</span>
  </a>
  <nav class="main-nav" id="mainNav" aria-label="Main">
- <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
- <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress"><span aria-hidden="true">🎓</span> Learn</a>
+  <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+  <div class="nav-dropdown">
+  <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress" aria-haspopup="true" aria-expanded="false" id="learnDropdownBtn"><span aria-hidden="true">🎓</span> Learn ▾</a>
+  <div class="nav-dropdown-menu" role="menu" aria-labelledby="learnDropdownBtn">
+    <a href="/workshops/tiny-learners.html" role="menuitem">🌟 Tiny Learners <small>Ages 4-6</small></a>
+    <a href="/workshops/learning-lab.html" role="menuitem">🧪 Learning Lab <small>Ages 7-12</small></a>
+    <a href="/workshops/learn.html" role="menuitem">🚀 Teen Learn <small>Ages 13+</small></a>
+    <a href="/workshops/my-progress.html" role="menuitem">📊 My Progress</a>
+  </div>
+  </div>
  <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies"><span aria-hidden="true">🛠️</span> Create</a>
  <a href="/books" class="nav-link" data-page="books"><span aria-hidden="true">📚</span> Read</a>
  <a href="/downloads" class="nav-link" data-page="downloads"><span aria-hidden="true">📦</span> Downloads</a>
@@ -242,61 +109,10 @@ window.JVDS.announce = function (msg) {
  <a href="/search" class="nav-link nav-link--icon" data-page="search" aria-label="Search"><span aria-hidden="true">🔍</span></a>
  </nav>
  <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
- <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
  <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
 </div>
-<script>
-(function(){
- if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
- var b = document.getElementById('themeToggle');
- if (!b) return;
- function paint(){
- b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
- }
- b.addEventListener('click', function(){
- var dark = document.documentElement.getAttribute('data-theme') === 'dark';
- if (dark) {
- document.documentElement.removeAttribute('data-theme');
- localStorage.setItem('jvds-theme', 'light');
- } else {
- document.documentElement.setAttribute('data-theme', 'dark');
- localStorage.setItem('jvds-theme', 'dark');
- }
- paint();
- });
- paint();
-})();
-</script>
 </header>
-<script>
-(function(){
- var seg = location.pathname.split('/').pop() || 'index.html';
- var page = seg.replace(/\.html$/, '');
- document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
- var pages = (a.getAttribute('data-page')||'').split(/\s+/);
- if(pages.indexOf(page) !== -1) a.classList.add('active');
- });
- if(!document.querySelector('.main-nav .nav-link.active')){
-   var section = /\/tools\//.test(location.pathname) ? 'dev-tools'
-               : /\/workshops\//.test(location.pathname) ? 'workshop'
-               : /\/games\//.test(location.pathname) ? 'games'
-               : /\/books\//.test(location.pathname) ? 'books' : null;
-   if(section) document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-     if((a.getAttribute('data-page')||'').split(/\s+/).indexOf(section)!==-1) a.classList.add('active');
-   });
- }
- var btn = document.getElementById('navToggle');
- var nav = document.getElementById('mainNav');
- if (!btn || !nav) return;
- function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
- function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
- btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
- nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
- document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
- document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
-</script>
 <!-- /BUILD:nav-content -->
 
 <section id="main-content" role="main" class="hero">
@@ -382,36 +198,7 @@ window.JVDS.announce = function (msg) {
   <div class="prog-dots" id="progDots"></div>
 </div>
 
-<style>
-.dl-section{max-width:1400px;margin:0 auto;padding:48px 24px 0}
-.dl-title{font-family:'Bebas Neue',cursive;font-size:1.9rem;letter-spacing:.04em;color:white;margin-bottom:6px}
-.dl-sub{font-size:.85rem;color:var(--muted);margin-bottom:24px;line-height:1.6}
-.dl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.dl-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s,transform .2s}
-.dl-card:hover{border-color:rgba(56,189,248,.3);transform:translateY(-2px)}
-.dl-card-head{padding:16px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-.dl-icon{font-size:1.6rem;flex-shrink:0}
-.dl-card-name{font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:.04em;color:white}
-.dl-card-version{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--blue-lt);background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);padding:2px 8px;border-radius:4px;margin-left:auto;flex-shrink:0}
-.dl-card-body{padding:14px 20px}
-.dl-card-desc{font-size:.8rem;color:var(--muted);line-height:1.65;margin-bottom:14px}
-.dl-features{display:flex;flex-direction:column;gap:5px;margin-bottom:16px}
-.dl-feature{font-size:.75rem;color:rgba(204,228,247,.65);display:flex;align-items:center;gap:7px}
-.dl-feature::before{content:"?";color:var(--green-lt);font-weight:700;flex-shrink:0}
-.dl-code-preview{background:#02070e;border:1px solid rgba(56,189,248,.1);border-radius:8px;padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:.62rem;line-height:1.7;color:rgba(204,228,247,.6);margin-bottom:14px;overflow-x:auto;white-space:pre}
-.dl-actions{display:flex;gap:8px}
-.dl-btn{flex:1;padding:10px;border-radius:8px;font-family:'Bebas Neue',cursive;font-size:.9rem;letter-spacing:.08em;text-align:center;cursor:pointer;border:none;transition:filter .15s,transform .1s;display:block;text-decoration:none}
-.dl-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
-.dl-btn-primary{background:var(--blue);color:#04090f;box-shadow:0 3px 0 var(--blue-dk)}
-.dl-btn-secondary{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border)}
-.dl-btn-secondary:hover{background:rgba(255,255,255,.1);color:var(--text)}
-.dl-install{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.15);border-radius:10px;padding:14px 18px;margin-top:20px}
-.dl-install-title{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:10px}
-.dl-install-steps{display:flex;flex-direction:column;gap:7px}
-.dl-install-step{font-size:.78rem;color:var(--muted);display:flex;gap:10px;align-items:flex-start;line-height:1.5}
-.dl-install-num{font-family:'Bebas Neue',cursive;font-size:.9rem;color:var(--blue-lt);flex-shrink:0;width:16px}
-.dl-install-step code{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--blue-lt);background:rgba(56,189,248,.1);padding:1px 5px;border-radius:3px}
-</style>
+
 
 <section class="dl-section">
   <div class="dl-title">📥 Download the Plugin</div>
@@ -721,7 +508,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 })();
 </script>
 <noscript><style>.reveal{opacity:1!important;transform:none!important}</style></noscript>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>window.addEventListener('load',function(){if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
 <script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-content -->
 

@@ -1,13 +1,15 @@
 (function(){
   var CONSENT_KEY = 'jvds-cookie-consent';
+  var MAX_AGE = 365 * 24 * 60 * 60;
 
   /* UK GDPR requires withdrawing consent to be as easy as giving it. Before this,
      the choice was stored once and the banner never returned, with no control
      anywhere to change it. Any page can now offer a "Cookie settings" link:
        <a href="#" onclick="JVDSCookies.reopen();return false">Cookie settings</a> */
   window.JVDSCookies = {
-    status: function(){ return localStorage.getItem(CONSENT_KEY) || 'unset'; },
+    status: function(){ return readCookie(CONSENT_KEY) || 'unset'; },
     reopen: function(){
+      document.cookie = CONSENT_KEY + '=;path=/;max-age=0';
       localStorage.removeItem(CONSENT_KEY);
       if(typeof gtag === 'function'){ gtag('consent','update',{analytics_storage:'denied'}); }
       if(document.getElementById('cookie-banner')) return;
@@ -15,7 +17,15 @@
     }
   };
 
-  var saved = localStorage.getItem(CONSENT_KEY);
+  function readCookie(name){
+    var m = document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+  function writeCookie(name, value, maxAge){
+    document.cookie = name+'='+encodeURIComponent(value)+';path=/;max-age='+maxAge+';SameSite=Lax;Secure';
+  }
+
+  var saved = readCookie(CONSENT_KEY) || localStorage.getItem(CONSENT_KEY);
   if(saved === 'accepted'){ grant(); return; }
   if(saved === 'declined'){ return; }
 
@@ -60,13 +70,15 @@
   }
 
   document.getElementById('cookie-accept').addEventListener('click', function(){
-    localStorage.setItem(CONSENT_KEY, 'accepted');
+    writeCookie(CONSENT_KEY, 'accepted', MAX_AGE);
+    localStorage.removeItem(CONSENT_KEY);
     grant();
     dismiss();
   });
 
   document.getElementById('cookie-decline').addEventListener('click', function(){
-    localStorage.setItem(CONSENT_KEY, 'declined');
+    writeCookie(CONSENT_KEY, 'declined', MAX_AGE);
+    localStorage.removeItem(CONSENT_KEY);
     dismiss();
   });
 

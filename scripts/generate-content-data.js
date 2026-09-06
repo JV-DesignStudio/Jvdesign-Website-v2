@@ -268,7 +268,7 @@ function generateBooks() {
       ageRange: '4-8',
       character: 'Lumo',
       emoji: '🦊',
-      cover: 'Lumo Front Cover Concept V001.webp',
+      cover: 'lumo-front-cover-concept-v001.webp',
       desc: 'A purple fox learns that carrying something heavy doesn\'t mean stopping — it means finding a quieter kind of strong.',
       status: 'published',
       url: '/books/lumo_and_the_grumble_grit.html'
@@ -280,7 +280,7 @@ function generateBooks() {
       ageRange: '3-7',
       character: 'Pip',
       emoji: '🐢',
-      cover: 'PIP Cover.webp',
+      cover: 'pip-cover.webp',
       desc: 'A small tortoise afraid of the night sky discovers that the dark holds wonder, not just danger.',
       status: 'published',
       url: '/books/Pip_and_the_night_sky.html'
@@ -292,7 +292,7 @@ function generateBooks() {
       ageRange: '5-8',
       character: 'Echo',
       emoji: '🦎',
-      cover: 'Axo Adventure.webp',
+      cover: 'axo-adventure.webp',
       desc: 'An axolotl climbs a mountain one small try at a time — a story about resilience and thinking differently.',
       status: 'coming-soon',
       url: '/books/Echo_and_the_mountain_of_choice.html'
@@ -316,7 +316,7 @@ function generateBooks() {
       ageRange: '2-6',
       character: 'Stardust',
       emoji: '✨',
-      cover: 'Front Cover Concept.webp',
+      cover: 'front-cover-concept.webp',
       desc: 'A magical journey through the cosmos sparking wonder, curiosity, and a sense of belonging in the universe.',
       status: 'published',
       url: '/books/Stardust.html'

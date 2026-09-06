@@ -24,181 +24,64 @@
 <link rel="icon" href="../logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.googletagmanager.com">
+<link rel="preconnect" href="https://www.google-analytics.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#08080f;--panel:#0f0f1e;--panel2:#161628;--panel3:#1e1e38;
-  --border:rgba(255,255,255,.05);--border2:rgba(255,255,255,.11);
-  --accent:#f472b6;--accent2:#f59e0b;--accent3:#10b981;--accent4:#7c3aed;
-  --text:#f0f0ff;--muted:#8b93a0;--dim:#2a2a4a;
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;overflow:hidden;}
-body{display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;}
-
-.hdr{height:46px;background:rgba(8,8,18,.98);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0;}
-.hdr-logo{display:flex;align-items:center;gap:8px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--text);text-decoration:none;}
-.hdr-logo img{height:26px;width:auto;flex-shrink:0;border-radius:5px;}
-.hdr-title{font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;color:var(--accent);}
-.hdr-back{font-size:.6rem;font-weight:700;color:var(--muted);padding:4px 10px;border-radius:7px;border:1px solid var(--border2);text-decoration:none;}
-
-#app{flex:1;display:flex;min-height:0;overflow:hidden;}
-
-/* UPLOAD / PREVIEW */
-#left{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
-#preview-area{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:var(--bg);}
-
-/* checkerboard bg */
-#preview-area::before{content:'';position:absolute;inset:0;background-image:repeating-conic-gradient(#1a1a2e 0% 25%,#0d0d18 0% 50%);background-size:16px 16px;opacity:.6;pointer-events:none;}
-
-#preview-canvas{position:relative;z-index:1;image-rendering:pixelated;image-rendering:crisp-edges;border:2px solid var(--border2);border-radius:4px;}
-
-.upload-prompt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:2;pointer-events:none;}
-.upload-prompt.hidden{display:none;}
-.upload-icon{font-size:3rem;opacity:.4;}
-.upload-text{font-size:.75rem;color:var(--muted);text-align:center;line-height:1.6;}
-.upload-btn-label{padding:9px 24px;border-radius:9px;background:var(--accent);color:#000;font-family:'Fredoka',cursive;font-size:.9rem;font-weight:700;cursor:pointer;pointer-events:all;transition:filter .12s;}
-.upload-btn-label:hover{filter:brightness(1.1);}
-
-/* playback controls */
-#playback-bar{height:52px;background:var(--panel);border-top:1px solid var(--border2);display:flex;align-items:center;gap:10px;padding:0 14px;flex-shrink:0;}
-.pb-btn{width:34px;height:34px;border-radius:8px;border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0;}
-.pb-play{background:var(--accent);color:#000;}
-.pb-play:hover{filter:brightness(1.1);}
-.pb-prev,.pb-next{background:var(--panel3);color:var(--text);border:1px solid var(--border2);}
-.pb-prev:hover,.pb-next:hover{background:var(--dim);}
-.pb-loop{background:transparent;color:var(--muted);border:1px solid var(--border2);font-size:.7rem;padding:0 10px;width:auto;}
-.pb-loop.on{background:rgba(244,114,182,.15);border-color:var(--accent);color:var(--accent);}
-.pb-label{font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
-.pb-val{font-size:.85rem;color:var(--accent2);font-weight:700;min-width:28px;text-align:center;}
-.fps-slider{accent-color:var(--accent);width:80px;cursor:pointer;}
-.frame-counter{font-size:.7rem;color:var(--muted);margin-left:auto;}
-.frame-counter span{color:var(--accent);}
-.zoom-btns{display:flex;gap:3px;}
-.z-btn{width:26px;height:26px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.z-btn:hover{color:var(--text);background:var(--panel3);}
-
-/* bg toggle */
-.bg-toggle{display:flex;gap:4px;}
-.bg-opt{width:20px;height:20px;border-radius:4px;border:2px solid transparent;cursor:pointer;}
-.bg-opt.on{border-color:var(--accent);}
-
-/* SIDEBAR */
-#sidebar{width:280px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
-.sa-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:10004;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px;}
-.sa-overlay.open{display:flex;}
-.sa-box{background:var(--panel);border:1px solid var(--border2);border-radius:14px;padding:22px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;}
-.sa-title{font-family:'Fredoka',cursive;font-size:1.2rem;color:var(--accent4);margin-bottom:6px;}
-.sa-lead{font-size:.68rem;color:var(--muted);line-height:1.7;margin-bottom:16px;}
-.sa-sec{font-size:.48rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
-.sa-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px;list-style:none;margin:0;padding:0;}
-.sa-steps li{background:rgba(255,255,255,.03);border-left:3px solid var(--accent3);border-radius:0 8px 8px 0;padding:9px 11px;font-size:.62rem;line-height:1.6;color:var(--text);}
-.sa-steps b{color:var(--accent3);display:block;font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
-.sa-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
-.sa-btn{padding:7px 16px;border-radius:7px;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;font-size:.75rem;font-weight:600;}
-.sa-btn.primary{background:var(--accent4);color:#fff;border-color:transparent;}
-.sa-btn:hover{filter:brightness(1.15);}
-.sb-section{padding:12px;border-bottom:1px solid var(--border2);}
-#sb-sticky{position:sticky;bottom:0;margin-top:auto;background:var(--panel);border-top:1px solid var(--border2);padding:8px 10px;box-shadow:0 -8px 14px rgba(0,0,0,.45);z-index:6;display:flex;flex-direction:column;gap:5px;}
-#sb-sticky .exp-btn{margin:0;}
-.sb-title{font-size:.5rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
-.ctrl-row{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
-.ctrl-row label{font-size:.55rem;color:var(--muted);display:flex;justify-content:space-between;}
-.ctrl-row label span{color:var(--accent2);font-weight:700;}
-.ctrl-row input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;}
-.ctrl-row-h{display:flex;gap:6px;margin-bottom:8px;min-width:0;}
-.ctrl-row-h label{flex:1;min-width:0;}
-.ctrl-row-h input[type=number]{min-width:0;width:100%;}
-.ctrl-row-h input[type=number]{flex:1;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:7px;font-size:.7rem;font-family:inherit;}
-.ctrl-row-h label{font-size:.55rem;color:var(--muted);display:flex;align-items:center;gap:4px;}
-.icon-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:.65rem;font-family:inherit;transition:all .1s;}
-.icon-btn:hover{color:var(--text);background:var(--panel3);}
-.icon-btn.primary{background:var(--accent4);color:white;border-color:var(--accent4);}
-.dtool.on{background:rgba(244,114,182,.2);color:var(--accent);border-color:var(--accent);}
-#preview-canvas.drawing{cursor:crosshair;}
-
-/* Frame strip */
-#frame-strip-wrap{flex:1;overflow-y:auto;padding:8px;}
-.strip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:4px;}
-.frame-thumb{border-radius:6px;border:2px solid var(--border2);overflow:hidden;cursor:pointer;position:relative;aspect-ratio:1;background:var(--panel2);transition:all .1s;display:flex;align-items:center;justify-content:center;}
-.frame-thumb:hover{border-color:rgba(255,255,255,.3);}
-.frame-thumb.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
-.frame-thumb.disabled{opacity:.35;}
-.frame-thumb canvas{image-rendering:pixelated;max-width:100%;max-height:100%;}
-.frame-num{position:absolute;bottom:2px;right:3px;font-size:.4rem;color:rgba(255,255,255,.5);}
-.frame-x{position:absolute;top:2px;right:2px;width:12px;height:12px;border-radius:50%;background:rgba(239,68,68,.8);color:white;font-size:.45rem;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;}
-
-/* export */
-.export-btns{padding:10px 12px;border-top:1px solid var(--border2);display:flex;flex-direction:column;gap:6px;}
-.exp-btn{padding:8px;border-radius:8px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-size:.82rem;font-weight:600;transition:all .12s;}
-.exp-gif{background:var(--accent);color:#000;}
-.exp-json{background:var(--accent4);color:white;}
-.exp-png{background:var(--accent3);color:#000;}
-
-/* project + restore */
-.proj-row{display:flex;gap:4px;margin-top:6px;}
-.kbd-hint{font-size:.52rem;color:var(--muted);line-height:1.7;padding:7px 12px;border-top:1px solid var(--border2);}
-.restore-banner{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;background:var(--panel2);border:1px solid var(--accent);border-radius:9px;padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:.65rem;color:var(--text);}
-.restore-banner.hidden{display:none;}
-.restore-banner .icon-btn{padding:4px 10px;font-size:.6rem;flex-shrink:0;}
-
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--accent);color:var(--accent);padding:6px 16px;border-radius:8px;font-size:.72rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;}
-
-@media(max-width:700px){
-  #sidebar{width:100%;max-height:42vh;border-left:none;border-top:1px solid var(--border2);}
-  #app{flex-direction:column;}
-  #preview-area{min-height:180px;}
-  #playback-bar{flex-wrap:wrap;height:auto;min-height:44px;padding:6px 10px;gap:6px;}
-  .frame-counter{margin-left:0;width:100%;text-align:center;}
-}
-
-/* â”€â”€ Header consolidation: second bar slimmed to save VH (auto-injected) â”€â”€ */
-.jvds-site-nav + .site-header,
-.jvds-site-nav + .hdr,
-.jvds-site-nav + header.site-header,
-.jvds-site-nav + header.hdr {
-  height:36px !important;
-  min-height:36px !important;
-  padding:0 10px !important;
-}
-.jvds-site-nav + .site-header .site-logo img,
-.jvds-site-nav + .hdr .hdr-logo img { display:none !important; }
-@media(pointer:coarse){
-  .tb,.bb-tb,.tool-btn,.shape-btn,.char-btn,.tb-btn,.sw,.bb-sw,.colour-swatch,.seq-cell,.loop-dot,.pad,.kit-btn,button {
-    min-height:32px;
-  }
-  .seq-cell{ height:36px !important; min-height:36px !important; }
-  .z-btn,.lb{ min-width:32px; min-height:32px; }
-}
-
-</style>
-<link rel="stylesheet" href="../style-shared.css">
+<link rel="preload" href="../style-tool-sprite-animator.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="../style-tool-sprite-animator.css?v=17"></noscript>
+<link rel="stylesheet" href="../style-shared.css?v=17">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Sprite Animator","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/sprite-animator.html","description":"Preview spritesheet animations live with playback controls.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://jvdesignstudio.co.uk/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Tools",
+      "item": "https://jvdesignstudio.co.uk/dev-tools"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Sprite Animator",
+      "item": "https://jvdesignstudio.co.uk/tools/sprite-animator.html"
+    }
+  ]
+}
 </script>
 </head>
 <body>
 <!-- BUILD:nav-tools -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-<script>
-window.JVDS = window.JVDS || {};
-window.JVDS.announce = function (msg) {
- var el = document.getElementById('jvds-announce');
- if (!el || !msg) return;
- el.textContent = '';
- setTimeout(function () { el.textContent = String(msg); }, 60);
-};
-</script>
+<script src="/nav.js?v=17" defer></script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
- <img src="/logo.png" alt="JVDesignStudio" fetchpriority="high" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
  <span class="logo-name">JVDesignStudio</span>
  </a>
  <nav class="main-nav" id="mainNav" aria-label="Main">
- <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
- <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress"><span aria-hidden="true">🎓</span> Learn</a>
+  <a href="/games" class="nav-link" data-page="games"><span aria-hidden="true">🎮</span> Play</a>
+  <div class="nav-dropdown">
+  <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress" aria-haspopup="true" aria-expanded="false" id="learnDropdownBtn"><span aria-hidden="true">🎓</span> Learn ▾</a>
+  <div class="nav-dropdown-menu" role="menu" aria-labelledby="learnDropdownBtn">
+    <a href="/workshops/tiny-learners.html" role="menuitem">🌟 Tiny Learners <small>Ages 4-6</small></a>
+    <a href="/workshops/learning-lab.html" role="menuitem">🧪 Learning Lab <small>Ages 7-12</small></a>
+    <a href="/workshops/learn.html" role="menuitem">🚀 Teen Learn <small>Ages 13+</small></a>
+    <a href="/workshops/my-progress.html" role="menuitem">📊 My Progress</a>
+  </div>
+  </div>
  <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies"><span aria-hidden="true">🛠️</span> Create</a>
  <a href="/books" class="nav-link" data-page="books"><span aria-hidden="true">📚</span> Read</a>
  <a href="/downloads" class="nav-link" data-page="downloads"><span aria-hidden="true">📦</span> Downloads</a>
@@ -207,61 +90,10 @@ window.JVDS.announce = function (msg) {
  <a href="/search" class="nav-link nav-link--icon" data-page="search" aria-label="Search"><span aria-hidden="true">🔍</span></a>
  </nav>
  <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;">🦊 <span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">🔥 0</span></a>
- <script>(function(){try{var p=JSON.parse(localStorage.getItem('jvds-profile')||localStorage.getItem('jvds_player_profile')||'null');var xp=0,lv=1,st=0;if(p){xp=p.xp||p.totalXP||0;lv=p.level||Math.floor(xp/100)+1||1;st=p.streak||p.bestStreak||0;}else{xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0;lv=Math.floor(xp/100)+1;st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0;}var chip=document.getElementById('navProfileChip');if(chip){chip.style.display='flex';document.getElementById('navProfileLevel').textContent='Lv '+lv;document.getElementById('navProfileStreak').textContent='🔥 '+st;}}catch(e){}})();</script>
  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
  <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
 </div>
-<script>
-(function(){
- if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
- var b = document.getElementById('themeToggle');
- if (!b) return;
- function paint(){
- b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
- }
- b.addEventListener('click', function(){
- var dark = document.documentElement.getAttribute('data-theme') === 'dark';
- if (dark) {
- document.documentElement.removeAttribute('data-theme');
- localStorage.setItem('jvds-theme', 'light');
- } else {
- document.documentElement.setAttribute('data-theme', 'dark');
- localStorage.setItem('jvds-theme', 'dark');
- }
- paint();
- });
- paint();
-})();
-</script>
 </header>
-<script>
-(function(){
- var seg = location.pathname.split('/').pop() || 'index.html';
- var page = seg.replace(/\.html$/, '');
- document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
- var pages = (a.getAttribute('data-page')||'').split(/\s+/);
- if(pages.indexOf(page) !== -1) a.classList.add('active');
- });
- if(!document.querySelector('.main-nav .nav-link.active')){
-   var section = /\/tools\//.test(location.pathname) ? 'dev-tools'
-               : /\/workshops\//.test(location.pathname) ? 'workshop'
-               : /\/games\//.test(location.pathname) ? 'games'
-               : /\/books\//.test(location.pathname) ? 'books' : null;
-   if(section) document.querySelectorAll('.main-nav .nav-link[data-page]').forEach(function(a){
-     if((a.getAttribute('data-page')||'').split(/\s+/).indexOf(section)!==-1) a.classList.add('active');
-   });
- }
- var btn = document.getElementById('navToggle');
- var nav = document.getElementById('mainNav');
- if (!btn || !nav) return;
- function openNav() { nav.classList.add('open'); btn.textContent = '✕'; btn.setAttribute('aria-label','Close menu'); btn.setAttribute('aria-expanded','true'); }
- function closeNav() { nav.classList.remove('open'); btn.textContent = '☰'; btn.setAttribute('aria-label','Open menu'); btn.setAttribute('aria-expanded','false'); }
- btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
- nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
- document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) closeNav(); });
- document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
-})();
-</script>
 <!-- /BUILD:nav-tools -->
 <header class="hdr">
   <a href="../index.html" class="hdr-logo"><img width="1088" height="960" loading="lazy" src="../logo.png" alt="JV"><span>JVDesignStudio</span></a>
@@ -276,7 +108,7 @@ window.JVDS.announce = function (msg) {
   <div id="left">
     <div id="preview-area">
       <div class="upload-prompt" id="uploadPrompt">
-        <div class="upload-icon">ðŸ-¼ï¸</div>
+        <div class="upload-icon">🖼️</div>
         <div class="upload-text">Upload a spritesheet PNG to get started.<br>Works with transparent backgrounds too.</div>
         <label class="upload-btn-label" for="fileInput">Upload Spritesheet</label>
       </div>
@@ -294,7 +126,7 @@ window.JVDS.announce = function (msg) {
       <button class="pb-btn pb-next" onclick="nextFrame()" title="Next frame">â-¶|</button>
       <button class="pb-btn pb-loop on" id="loopBtn" onclick="toggleLoop()">💾</button>
       <button class="pb-btn pb-loop" id="onionBtn" onclick="toggleOnion()" title="Onion skin, ghost of previous/next frame">⏩</button>
-      <button class="pb-btn pb-loop" id="drawBtn" onclick="toggleDrawMode()" title="Draw mode, edit pixels on the current frame">âœï¸</button>
+      <button class="pb-btn pb-loop" id="drawBtn" onclick="toggleDrawMode()" title="Draw mode, edit pixels on the current frame">✏️</button>
       <div class="pb-label">FPS</div>
       <div class="pb-val" id="fpsVal">12</div>
       <input type="range" class="fps-slider" min="1" max="60" value="12" id="fpsSlider" oninput="setFps(this.value)">
@@ -333,10 +165,10 @@ window.JVDS.announce = function (msg) {
       <div class="sb-title">Pixel Editing</div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
         <input type="color" id="drawColor" value="#f472b6" style="width:34px;height:30px;border:1px solid var(--border2);border-radius:6px;background:var(--panel2);cursor:pointer;padding:2px;">
-        <button class="icon-btn dtool on" id="dt-pencil" onclick="setDrawTool('pencil')" title="Pencil">âœï¸</button>
+        <button class="icon-btn dtool on" id="dt-pencil" onclick="setDrawTool('pencil')" title="Pencil">✏️</button>
         <button class="icon-btn dtool" id="dt-eraser" onclick="setDrawTool('eraser')" title="Eraser">🧹</button>
         <button class="icon-btn dtool" id="dt-picker" onclick="setDrawTool('picker')" title="Eyedropper">💉</button>
-        <button class="icon-btn" onclick="undoDraw()" title="Undo last stroke">â†©ï¸</button>
+        <button class="icon-btn" onclick="undoDraw()" title="Undo last stroke">↩ï¸</button>
       </div>
       <div style="font-size:.55rem;color:var(--muted);line-height:1.5;">Draw straight onto the preview. Edits apply to the sheet, so they show in every export.</div>
     </div>
@@ -363,7 +195,7 @@ window.JVDS.announce = function (msg) {
         <button class="icon-btn" onclick="selectAll()">âœ“ All</button>
         <button class="icon-btn" onclick="selectNone()">âœ- None</button>
         <button class="icon-btn" onclick="invertSelection()">âŸ² Invert</button>
-        <button class="icon-btn" onclick="reverseOrder()">â†» Rev</button>
+        <button class="icon-btn" onclick="reverseOrder()">→ Rev</button>
       </div>
       <div class="ctrl-row">
         <label>Range:</label>
@@ -371,11 +203,11 @@ window.JVDS.announce = function (msg) {
           <input type="number" id="rangeStart" min="1" placeholder="From" style="width:50%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 6px;border-radius:5px;">
           <input type="number" id="rangeEnd" min="1" placeholder="To" style="width:50%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:5px 6px;border-radius:5px;">
         </div>
-        <button class="icon-btn" style="width:100%;margin-top:4px;" onclick="selectRange()">ðŸ“ Select Range</button>
+        <button class="icon-btn" style="width:100%;margin-top:4px;" onclick="selectRange()">📋 Select Range</button>
       </div>
       <div style="margin-top:8px;display:flex;gap:4px;">
         <button class="icon-btn" style="flex:1;background:rgba(244,114,182,.2);color:var(--accent);" onclick="duplicateSelected()">📋 Dup</button>
-        <button class="icon-btn" style="flex:1;background:rgba(239,68,68,.2);color:#ef4444;" onclick="deleteSelected()">ðŸ-‘ï¸ Del</button>
+        <button class="icon-btn" style="flex:1;background:rgba(239,68,68,.2);color:#ef4444;" onclick="deleteSelected()">🧹️ Del</button>
       </div>
     </div>
 
@@ -456,7 +288,7 @@ const canvas=id('preview-canvas');
 const ctx=canvas.getContext('2d');
 ctx.imageSmoothingEnabled=false;
 
-// â”€â”€ LOAD â”€â”€
+// ── LOAD ──
 function loadSheet(input){
   const file=input.files[0];if(!file) return;
   if(!file.type.startsWith('image/')){toast('That file is not an image');return;}
@@ -535,7 +367,7 @@ function autoDetect(){
   toast(`Auto-detected: ${bestW}×${bestH} frames (${frames.length} total)`);
 }
 
-// â”€â”€ STRIP â”€â”€
+// ── STRIP ──
 function buildStrip(){
   const grid=id('stripGrid');
   grid.innerHTML='';
@@ -661,7 +493,7 @@ function updateActiveFrames(){
   drawFrame();
 }
 
-// â”€â”€ PLAYBACK â”€â”€
+// ── PLAYBACK ──
 function drawFrame(){
   if(!sheetImg||activeFrames.length===0){ctx.clearRect(0,0,canvas.width,canvas.height);return;}
   const fi=activeFrames[currentFrame]??0;
@@ -728,7 +560,7 @@ function setFps(v){fps=+v;id('fpsVal').textContent=v;markDirty();}
 function setZoom(v){zoom=Math.min(16,Math.max(1,v));id('zoomVal').textContent=zoom+'×';drawFrame();markDirty();}
 function setBg(m){bgMode=m;document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===m));drawFrame();markDirty();}
 
-// â”€â”€ EXPORT â”€â”€
+// ── EXPORT ──
 function exportJSON(){
   if(!sheetImg||frames.length===0){toast('No sheet loaded');return;}
   const data=manifestJSON(
@@ -759,7 +591,7 @@ function exportSheet(){
   });
 }
 
-// â”€â”€ ZIP / ENGINE EXPORT â”€â”€
+// ── ZIP / ENGINE EXPORT ──
 function frameName(i){return 'frame_'+String(i).padStart(3,'0');}
 
 function loadJSZip(){
@@ -955,7 +787,7 @@ Exported ${activeFrames.length} frames @ ${fps} FPS, loop ${looping?'on':'off'}.
   }
 }
 
-// â”€â”€ PROJECT SAVE / LOAD / AUTOSAVE â”€â”€
+// ── PROJECT SAVE / LOAD / AUTOSAVE ──
 const LS_PROJECT='jvds_sprite_anim',LS_AUTOSAVE='jvds_sprite_anim_auto';
 
 function serializeProject(){
@@ -1091,14 +923,14 @@ function discardAutosave(){
 }
 window.addEventListener('beforeunload',()=>{if(projectDirty)autoSave();});
 
-// â”€â”€ ONION SKIN â”€â”€
+// ── ONION SKIN ──
 function toggleOnion(){
   onionSkin=!onionSkin;
   id('onionBtn').classList.toggle('on',onionSkin);
   drawFrame();
 }
 
-// â”€â”€ PIXEL EDITING â”€â”€
+// ── PIXEL EDITING ──
 function toggleDrawMode(){
   drawMode=!drawMode;
   id('drawBtn').classList.toggle('on',drawMode);
@@ -1196,7 +1028,7 @@ canvas.addEventListener('pointerup',e=>{
   markDirty();
 });
 
-// â”€â”€ EXPORT GIF â”€â”€
+// ── EXPORT GIF ──
 let _gifencModule=null;
 function exportGIF(){
   if(!sheetImg||activeFrames.length===0){toast('No frames to export');return;}
@@ -1242,7 +1074,7 @@ function exportGIF(){
   });
 }
 
-// â”€â”€ IMPORT FROM PIXEL STUDIO â”€â”€
+// ── IMPORT FROM PIXEL STUDIO ──
 function importFromPixelStudio(){
   const raw=localStorage.getItem('jvds_pixel');
   if(!raw){toast('No Pixel Studio project found, open Pixel Studio and hit Save first');return;}
@@ -1285,7 +1117,7 @@ function importFromPixelStudio(){
   toast(`Imported ${count} frame${count!==1?'s':''} from Pixel Studio 🎨`);
 }
 
-// â”€â”€ KEYBOARD SHORTCUTS â”€â”€
+// ── KEYBOARD SHORTCUTS ──
 function copySpriteShareLink(){
   try{
     const data={w:frameW,h:frameH,fps,sheetName};
@@ -1342,7 +1174,7 @@ function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;c
     <a href="/downloads">📦 Downloads</a>
     <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Support</a>
 </footer>
-<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+<script>window.addEventListener('load',function(){if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
 <script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-tools -->
 <script defer src="../player-profile.js"></script>

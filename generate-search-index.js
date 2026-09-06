@@ -28,7 +28,7 @@ function walk(dir) {
 const entries = [];
 for (const fp of walk(ROOT)) {
   const rel = path.relative(ROOT, fp).replace(/\\/g, '/');
-  if (SKIP_FILES.has(rel) || rel.startsWith('quest-board')) continue;
+  if (SKIP_FILES.has(rel) || rel.startsWith('quest-board') || rel.includes('.bak.')) continue;
   const src = fs.readFileSync(fp, 'utf8');
   if (/name="robots"\s+content="[^"]*noindex/i.test(src)) continue;
   const titleM = src.match(/<title>([^<]+)<\/title>/i);

@@ -2916,7 +2916,7 @@ window.JVDS_CONTENT = {
       "tag": "Bubble Shooter",
       "emoji": "",
       "category": "Puzzle",
-      "cover": "Lumo Concept V004.webp",
+      "cover": "lumo-concept-v004.webp",
       "bg": "linear-gradient(135deg,#1c1a2e,#2a2838,#1e2818)",
       "desc": "Shoot coloured fireflies to make matches and clear the board. Special bubbles, power-ups, and satisfying chain drops.",
       "kids": false,
@@ -2944,7 +2944,7 @@ window.JVDS_CONTENT = {
       "tag": "Tower Defence",
       "emoji": "",
       "category": "Strategy",
-      "cover": "Arcane Promo.webp",
+      "cover": "arcane-promo.webp",
       "bg": "linear-gradient(135deg,#0a0a1a,#1a1035)",
       "desc": "Place towers, cast spells, and survive endless enemy waves. Chain lightning, a roguelite shop, and a minimap.",
       "kids": false,
@@ -2986,7 +2986,7 @@ window.JVDS_CONTENT = {
       "tag": "Dungeon Crawler",
       "emoji": "",
       "category": "Action",
-      "cover": "Crypt crawlers.webp",
+      "cover": "crypt-crawlers.webp",
       "bg": "linear-gradient(135deg,#1a0a0a,#2e1010)",
       "desc": "Descend into the crypt, battle monsters, and find your way out. A browser-based dungeon crawler in pure JavaScript.",
       "kids": false,
@@ -3042,7 +3042,7 @@ window.JVDS_CONTENT = {
       "tag": "Arcade",
       "emoji": "",
       "category": "Action",
-      "cover": "Stardust_Collection_prototype image.webp",
+      "cover": "stardust-collection-prototype-image.webp",
       "bg": "linear-gradient(135deg,#050018,#120040)",
       "desc": "Pilot your star, sweep up glittering stardust, and weave past hazards in this quick arcade mini-game.",
       "kids": false,
@@ -3112,7 +3112,7 @@ window.JVDS_CONTENT = {
       "tag": "Catch Game · Tilt to Play",
       "emoji": "",
       "category": "Chill",
-      "cover": "Axo Fruit Catch.webp",
+      "cover": "axo-fruit-catch.webp",
       "bg": "linear-gradient(180deg,#87CEEB,#c8efaa)",
       "desc": "Help Echo the axolotl catch falling fruit and dodge rocks. Tilt your phone to steer bright, cheerful, and very forgiving.",
       "kids": true,
@@ -3327,7 +3327,7 @@ window.JVDS_CONTENT = {
     {
       "id": "bitmap-font-maker",
       "title": "Bitmap Font Maker. Draw Pixel Fonts for Your Game",
-      "desc": "Draw every character on a pixel grid (5�-7 up to 16�-16), preview your text live with colour and scale controls, then export as a PNG spritesheet, JSON atlas, or BMFont-compatible XML ready to drop into Godot, Unity or Phaser.",
+      "desc": "Draw every character on a pixel grid (5×7 up to 16×16), preview your text live with colour and scale controls, then export as a PNG spritesheet, JSON atlas, or BMFont-compatible XML ready to drop into Godot, Unity or Phaser.",
       "category": "General",
       "tags": [
         "Pixel Font",
@@ -3411,7 +3411,7 @@ window.JVDS_CONTENT = {
       "ageRange": "4-8",
       "character": "Lumo",
       "emoji": "🦊",
-      "cover": "Lumo Front Cover Concept V001.webp",
+      "cover": "lumo-front-cover-concept-v001.webp",
       "desc": "A purple fox learns that carrying something heavy doesn't mean stopping — it means finding a quieter kind of strong.",
       "status": "published",
       "url": "/books/lumo_and_the_grumble_grit.html"
@@ -3423,7 +3423,7 @@ window.JVDS_CONTENT = {
       "ageRange": "3-7",
       "character": "Pip",
       "emoji": "🐢",
-      "cover": "PIP Cover.webp",
+      "cover": "pip-cover.webp",
       "desc": "A small tortoise afraid of the night sky discovers that the dark holds wonder, not just danger.",
       "status": "published",
       "url": "/books/Pip_and_the_night_sky.html"
@@ -3435,7 +3435,7 @@ window.JVDS_CONTENT = {
       "ageRange": "5-8",
       "character": "Echo",
       "emoji": "🦎",
-      "cover": "Axo Adventure.webp",
+      "cover": "axo-adventure.webp",
       "desc": "An axolotl climbs a mountain one small try at a time — a story about resilience and thinking differently.",
       "status": "coming-soon",
       "url": "/books/Echo_and_the_mountain_of_choice.html"
@@ -3459,7 +3459,7 @@ window.JVDS_CONTENT = {
       "ageRange": "2-6",
       "character": "Stardust",
       "emoji": "✨",
-      "cover": "Front Cover Concept.webp",
+      "cover": "front-cover-concept.webp",
       "desc": "A magical journey through the cosmos sparking wonder, curiosity, and a sense of belonging in the universe.",
       "status": "published",
       "url": "/books/Stardust.html"
@@ -3750,7 +3750,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-02T12:36:18.289Z",
+    "generated": "2026-09-05T16:07:22.181Z",
     "workshops": 181,
     "games": 25,
     "tools": 20,

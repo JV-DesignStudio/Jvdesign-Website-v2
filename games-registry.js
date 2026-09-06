@@ -126,7 +126,7 @@ window.JVDS_GAMES = [
     "title": "Lumo's Firefly Shooter",
     "tag": "Bubble Shooter",
     "emoji": "",
-    "cover": "Lumo Concept V004.webp",
+    "cover": "lumo-concept-v004.webp",
     "bg": "linear-gradient(135deg,#1c1a2e,#2a2838,#1e2818)",
     "kids": false,
     "desc": "Shoot coloured fireflies to make matches and clear the board. Special bubbles, power-ups, and satisfying chain drops."
@@ -150,7 +150,7 @@ window.JVDS_GAMES = [
     "title": "Arcane Citadel",
     "tag": "Tower Defence",
     "emoji": "",
-    "cover": "Arcane Promo.webp",
+    "cover": "arcane-promo.webp",
     "bg": "linear-gradient(135deg,#0a0a1a,#1a1035)",
     "kids": false,
     "desc": "Place towers, cast spells, and survive endless enemy waves. Chain lightning, a roguelite shop, and a minimap."
@@ -186,7 +186,7 @@ window.JVDS_GAMES = [
     "title": "Crypt Crawlers",
     "tag": "Dungeon Crawler",
     "emoji": "",
-    "cover": "Crypt crawlers.webp",
+    "cover": "crypt-crawlers.webp",
     "bg": "linear-gradient(135deg,#1a0a0a,#2e1010)",
     "kids": false,
     "desc": "Descend into the crypt, battle monsters, and find your way out. A browser-based dungeon crawler in pure JavaScript."
@@ -234,7 +234,7 @@ window.JVDS_GAMES = [
     "title": "Stardust Collector",
     "tag": "Arcade",
     "emoji": "",
-    "cover": "Stardust_Collection_prototype image.webp",
+    "cover": "stardust-collection-prototype-image.webp",
     "bg": "linear-gradient(135deg,#050018,#120040)",
     "kids": false,
     "desc": "Pilot your star, sweep up glittering stardust, and weave past hazards in this quick arcade mini-game."
@@ -294,7 +294,7 @@ window.JVDS_GAMES = [
     "title": "Echo's Fruit Catch!",
     "tag": "Catch Game · Tilt to Play",
     "emoji": "",
-    "cover": "Axo Fruit Catch.webp",
+    "cover": "axo-fruit-catch.webp",
     "bg": "linear-gradient(180deg,#87CEEB,#c8efaa)",
     "kids": true,
     "age": "Ages 3-8",

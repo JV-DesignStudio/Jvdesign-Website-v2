@@ -11,7 +11,7 @@ const path = require('path');
 
 const ROOT     = __dirname;
 const PARTIALS = path.join(ROOT, 'partials');
-const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy']);
+const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', 'docs', 'questlog-pwa', 'arcade-app', 'og', 'social-posts', 'scripts', '.github', '.continue']);
 
 // Load all partials once
 const partials = {};
