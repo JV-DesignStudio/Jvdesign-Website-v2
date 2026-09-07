@@ -6,35 +6,36 @@ const hubPath = path.join(root, 'pages', 'dev-tools.html');
 let html = fs.readFileSync(hubPath, 'utf8');
 
 html = html
-  .replace(/content="60 tools for game devs\.[^"]+"/g, 'content="40+ browser tools and guides for game devs. Draw sprites, make music, design levels, write dialogue, plan your game and find quick engine references."')
-  .replace(/content="60 tools for game developers\.[^"]+"/g, 'content="40+ tools and guides for game developers. Pixel art, music, 3D models, level design, SFX, character design and more."')
-  .replace(/content="60 free browser-based tools for game developers\.[^"]+"/g, 'content="40+ free browser-based tools and guides for game developers. Pixel art, music, 3D models, level design, SFX, character design and more."')
+  .replace(/content="60 tools for game devs\.[^"]+"/g, 'content="Workshop companion tools and developer utilities for game devs. Follow tutorials, draw sprites, make audio, design levels, build prototypes and export assets in your browser."')
+  .replace(/content="60 tools for game developers\.[^"]+"/g, 'content="Workshop companion tools and developer utilities for game developers. Follow tutorials, draw sprites, make audio, design levels, build prototypes and export assets."')
+  .replace(/content="40\+ tools and guides for game developers\.[^"]+"/g, 'content="Workshop companion tools and developer utilities for game developers. Follow tutorials, draw sprites, make audio, design levels, build prototypes and export assets."')
+  .replace(/content="60 free browser-based tools for game developers\.[^"]+"/g, 'content="Free workshop companion tools and developer utilities for game developers. Follow tutorials, draw sprites, make audio, design levels, build prototypes and export assets."')
   .replace('<div class="hero-stat-num">30</div>', '<div class="hero-stat-num">40+</div>')
   .replace('<div class="stat-number">30+</div>', '<div class="stat-number">40+</div>');
 
 const tools = [
-  ['Make Art', '🎨', [
-    ['Pixel Studio', 'Draw and animate pixel art with layers, frames, onion skinning, mirror mode, autosave and GIF / spritesheet export.', '../tools/pixel-studio.html', '../PixelStudioCover.webp', ['Pixel Art', 'Animation', 'Export']],
+  ['Asset Pipeline', '🎨', [
+    ['Pixel Studio', 'Create production-ready pixel art with layers, frames, onion skinning, mirror mode, autosave and GIF / spritesheet export.', '../tools/pixel-studio.html', '../PixelStudioCover.webp', ['Pixel Art', 'Animation', 'Export']],
     ['Character Designer', 'Build characters from templates, customise parts, pose them, save presets and export spritesheets, GIFs, PNGs or JSON.', '../tools/character-designer.html', '../CharacterCreatorCover.webp', ['Characters', 'Sprites', 'Batch']],
     ['Sprite Animator', 'Upload a spritesheet, choose frames, preview animation timing live and export frame data for your engine.', '../tools/sprite-animator.html', null, ['Spritesheet', 'Preview', 'JSON']],
     ['Bitmap Font Maker', 'Draw pixel fonts character by character, preview text and export spritesheets, atlases or BMFont XML.', '../tools/bitmap-font-maker.html', null, ['Fonts', 'Atlas', 'BMFont']],
     ['Trading Card Designer', 'Create character cards with templates, rarities, stats, uploaded art and PNG export.', '../tools/trading-card-designer.html', '../CardMakerCoverImage.webp', ['Cards', 'Stats', 'PNG']],
     ['Game Logo Maker', 'Design a title logo with presets, fonts, outlines, glow, gradients and export sizes for stores and splash screens.', '../tools/game-logo-maker.html', null, ['Logo', 'Branding', 'PNG']]
   ]],
-  ['Make Audio', '🎵', [
-    ['Music Maker', 'Compose full tracks with a beat sequencer, piano roll, synth presets, save/load and WAV export.', '../tools/music-maker.html', null, ['Sequencer', 'Piano Roll', 'WAV']],
+  ['Audio Pipeline', '🎵', [
+    ['Music Maker', 'Build loopable tracks and backing music with a beat sequencer, piano roll, synth presets, save/load and WAV export.', '../tools/music-maker.html', null, ['Sequencer', 'Piano Roll', 'WAV']],
     ['Sound Studio', 'Create 16-bit chiptune melodies and retro effects with waveforms, envelopes, bit crush and reverb.', '../tools/sound-studio.html', '../SoundStudioCover.webp', ['Chiptune', 'SFX', 'WAV']],
-    ['SFX Studio', 'Generate arcade, puzzle, platformer and RPG sound effects, tune the sound, then download game-ready WAV files.', '../tools/sfx-generator.html', '../SFXStudioCover.webp', ['Sound FX', 'Packs', 'Export']],
+    ['SFX Studio', 'Generate one-shot game sound effects for arcade, puzzle, platformer and RPG projects, tune the sound, then export game-ready WAV files.', '../tools/sfx-generator.html', '../SFXStudioCover.webp', ['Sound FX', 'Packs', 'Export']],
     ['Drum Pad', 'Tap beats, switch kits, use keyboard shortcuts and record loops for quick rhythm ideas.', '../tools/drum-pad.html', '../DrumPadDevToolCoverImage.webp', ['Beats', 'Kits', 'Loops']]
   ]],
-  ['Build Worlds', '🧱', [
+  ['Level & World Data', '🧱', [
     ['BuildLab', 'Make Roblox-style 3D block models with shapes, paint, transforms, touch support and OBJ / GLTF / RBXM export.', '../tools/buildlab.html', '../BlockBuilderCover.webp', ['3D Models', 'Roblox', 'Export']],
     ['Level Designer', 'Draw 2D platformer levels on a tile grid with layers, fill tools, hazards, pickups and PNG / JSON export.', '../tools/level-designer.html', '../LevelDesignCover.webp', ['Levels', 'Tile Grid', 'JSON']],
     ['Map Generator', 'Generate dungeons, worlds and islands from a seed, edit by hand and export PNG or JSON tilemaps.', '../tools/map-generator.html', '../MapStudioImage.webp', ['Procedural', 'Worlds', 'Tilemaps']],
     ['Tileset Builder', 'Plan reusable tiles and export a compact tileset for your level workflow.', '../tools/tileset-builder.html', null, ['Tiles', 'Canvas', 'Export']],
     ['Particle Designer', 'Design fire, smoke, sparks, magic and other VFX with curves, gradients and engine-friendly exports.', '../tools/particle-designer.html', '../ParticleDesignCoverImage.webp', ['VFX', 'Godot', 'Unity']]
   ]],
-  ['Plan & Write', '📋', [
+  ['Design Docs & Narrative', '📋', [
     ['GDD Builder', 'Fill out a structured game design document with progress tracking, browser saves and PDF export.', '../tools/gdd-builder.html', '../GDDCover.webp', ['Game Design', 'PDF', 'Save']],
     ['Game Idea Generator', 'Spin up game-jam prompts with genre, theme, mechanic and twist when you need a fast creative spark.', '../tools/game-idea-generator.html', '../GameIdeaCoverImage.webp', ['Ideas', 'Game Jam', 'Random']],
     ['Story Editor', 'Create branching dialogue, character nodes, choices, endings, visual story links and JSON exports.', '../tools/story-editor.html', '../StodyEditorCover.webp', ['Dialogue', 'Story', 'JSON']],
@@ -42,14 +43,21 @@ const tools = [
     ['Design Worksheets', 'Plan core ideas, audience, mechanics and scope before building.', '../tools/design-worksheet.html', null, ['Planning', 'Worksheet', 'Export']],
     ['Store Page Builder', 'Draft store page copy, feature lists and release messaging for a game project.', '../tools/store-page-builder.html', null, ['Launch', 'Copy', 'Planning']]
   ]],
-  ['Build & Ship', '🚀', [
-    ['Arcade Game Maker', 'Build and play a browser game from templates, tune physics, paste level maps and share a playable link.', '../tools/arcade-game-maker-landing.html', '../ArcadeMakerCoverImage.webp', ['Game Maker', 'Phaser', 'Share']],
+  ['Prototype, Debug & Ship', '🚀', [
+    ['Arcade Game Maker', 'Prototype browser games from templates, tune physics, import art/audio/levels and share a playable build.', '../tools/arcade-game-maker.html', '../ArcadeMakerCoverImage.webp', ['Game Maker', 'Phaser', 'Share']],
     ['Screenshot Generator', 'Create polished screenshots and promo images for game pages or posts.', '../tools/screenshot-generator.html', null, ['Screenshots', 'Promo', 'Canvas']],
     ['Code Snippet Generator', 'Create starter snippets for common game-dev patterns and copy them into your project.', '../tools/code-snippet-generator.html', null, ['Code', 'Starter', 'Helper']],
     ['Error Guide', 'Look up common beginner bugs and get plain-language fixes.', '../tools/error-guide.html', null, ['Debugging', 'Guide', 'Beginner']],
-    ['QuestLog', 'Turn projects, habits and daily work into quests with XP, boss tasks and local browser saves.', '../tools/quest-board-page.html', null, ['Productivity', 'RPG', 'PWA']],
+    ['Project Tracker', 'Track game tasks, workshop follow-ups, assets, bugs and polish passes with a lightweight local project board.', '../tools/project-tracker.html', null, ['Tasks', 'Bugs', 'Planning']],
     ['Icon Generator', 'Generate Quest Board-style pixel icons and download ready-sized PNGs.', '../tools/icon-generator.html', null, ['Icons', 'Pixel', 'PNG']]
   ]]
+];
+
+const developerWorkflow = [
+  ['Asset exports', 'PNG, GIF, spritesheet, atlas and BMFont outputs for art and UI pipelines.'],
+  ['Game data', 'JSON level, map, dialogue and character data that can move into real projects.'],
+  ['Audio outputs', 'WAV loops, SFX and rhythm sketches for fast prototype feedback.'],
+  ['Build support', 'Prototype templates, snippets, error help, store copy and task tracking.']
 ];
 
 const references = [
@@ -62,6 +70,25 @@ const references = [
   ['Asset Packs', '../tools/asset-packs.html'], ['Certificate Generator', '../tools/certificate.html'], ['Parent & Teacher Guide', '../tools/parent-guide.html'],
   ['Colour Palette Library', '../tools/colour-palettes.html'], ['Story Player', '../tools/story-player.html'], ['Roblox Builder Move Note', '../tools/roblox-builder.html']
 ];
+
+const workshopCompanions = [
+  { title: 'Scratch starter workshops', href: '../workshops/scratch-platformer-workshop.html', desc: 'Use the Scratch guide first, then make sprites and simple art for platformer, maze, clicker and catch lessons.', tools: ['Scratch Blocks', 'Pixel Studio', 'Game Idea Generator'] },
+  { title: 'Python game workshops', href: '../workshops/python-game-builder.html', desc: 'Keep the Pygame reference open while building dodgers, mazes, breakout games and platformers.', tools: ['Python Pygame', 'Pixel Studio', 'SFX Studio'] },
+  { title: 'Browser game workshops', href: '../workshops/my-first-browser-game.html', desc: 'Move from canvas basics into playable prototypes with art, levels and arcade-ready audio.', tools: ['JavaScript Canvas', 'Arcade Game Maker', 'Level Designer'] },
+  { title: 'Roblox creator workshops', href: '../workshops/roblox-creator-journey.html', desc: 'Plan a Roblox idea, build blocky models, and keep Lua help nearby during obby, tycoon and simulator sessions.', tools: ['BuildLab', 'Roblox Lua', 'GDD Builder'] },
+  { title: 'Unity, Unreal and engine lessons', href: '../workshops/unity-cheatsheet.html', desc: 'Use engine references with planning, audio and visual tools while shaping a more production-style project.', tools: ['Unity C#', 'Unreal Engine 5', 'Sound Studio'] },
+  { title: '15-minute prototype sessions', href: '../workshops/my-first-video-game.html', desc: 'Start with an idea, assemble art and sound, then turn the workshop outcome into something playable fast.', tools: ['Game Idea Generator', 'Arcade Game Maker', 'SFX Studio'] }
+];
+
+function workshopCompanionCard(item) {
+  return '<a href="' + item.href + '" class="workshop-map-card reveal">' +
+    '<span class="workshop-map-label">Workshop path</span>' +
+    '<h3>' + item.title + '</h3>' +
+    '<p>' + item.desc + '</p>' +
+    '<div class="workshop-map-tools">' + item.tools.map(label => '<span class="workshop-chip">' + label + '</span>').join('') + '</div>' +
+    '<span class="workshop-map-cta">Open workshop →</span>' +
+    '</a>';
+}
 
 function card(tool, category) {
   const [title, desc, href, image, tags] = tool;
@@ -103,18 +130,35 @@ ${items.map(item => card(item, category)).join('\n')}
 }).join('\n\n    ');
 
 const referenceMarkup = references.map(([label, href]) => `<a href="${href}" class="reference-pill">${label}</a>`).join('\n            ');
+const developerWorkflowMarkup = developerWorkflow.map(([title, desc]) => '<div class="dev-workflow-card reveal"><span>' + title + '</span><p>' + desc + '</p></div>').join('\n        ');
+const workshopCompanionMarkup = workshopCompanions.map(workshopCompanionCard).join('\n    ');
 
 const replacement = `<!-- TOOLS GRID -->
 <section class="tools-section">
     <div class="section-header reveal">
-        <span class="section-eyebrow">🔧 Creator Toolbox</span>
-        <h2 class="section-title">Pick What You Need Right Now</h2>
-        <p class="section-sub">Start with a flagship creator tool, then jump into quick guides and cheat sheets when you need help with a specific engine.</p>
+        <span class="section-eyebrow">🧰 Game Development Toolbox</span>
+        <h2 class="section-title">Build assets, data, prototypes and shipping materials</h2>
+        <p class="section-sub">A practical shelf of browser-based development tools for making game assets, level data, audio, design docs, prototype builds, debugging help and launch materials.</p>
+    </div>
+
+    <div class="dev-workflow-grid" aria-label="Development workflow outputs">
+        ${developerWorkflowMarkup}
     </div>
 
     <div class="tool-search-wrap">
-        <input type="text" id="toolSearch" placeholder="Search by tool, export, engine, or task..." oninput="filterToolsBySearch(this.value)">
+        <input type="text" id="toolSearch" placeholder="Search exports, formats, engines, assets, bugs or tasks..." oninput="filterToolsBySearch(this.value)">
         <div id="searchResults" class="search-results" hidden></div>
+    </div>
+
+    <div class="workshop-map reveal" aria-labelledby="workshopCompanionMapTitle">
+        <div class="workshop-map-head">
+            <span class="section-eyebrow">🧭 Workshop Companion Map</span>
+            <h2 id="workshopCompanionMapTitle" class="section-title">Start with the class, then open the matching tools</h2>
+            <p class="section-sub">Each path points learners toward the tools that help them follow along, make assets, solve problems and keep building after the workshop ends.</p>
+        </div>
+        <div class="workshop-map-grid">
+    ${workshopCompanionMarkup}
+        </div>
     </div>
 
     <div class="tool-filters" aria-label="Tool categories">
@@ -125,9 +169,9 @@ const replacement = `<!-- TOOLS GRID -->
 
     <div class="reference-library reveal">
         <div>
-            <span class="section-eyebrow">📚 Quick References</span>
-            <h2 class="section-title">Cheat Sheets, Guides & Extras</h2>
-            <p class="section-sub">These are lighter resources rather than full editors, so they now live together where they are easier to scan.</p>
+            <span class="section-eyebrow">🧩 Engine References & Developer Cheatsheets</span>
+            <h2 class="section-title">Cheatsheets, starters and quick references</h2>
+            <p class="section-sub">Keep engine syntax, starter files, shortcuts and support references close while you build.</p>
         </div>
         <div class="reference-grid">
             ${referenceMarkup}

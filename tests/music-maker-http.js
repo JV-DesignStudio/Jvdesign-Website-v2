@@ -36,7 +36,12 @@ function check(name, ok, detail) {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
-  page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+  page.on('console', m => {
+    if (m.type() !== 'error') return;
+    const text = m.text();
+    if (/ERR_NETWORK_ACCESS_DENIED|Failed to load resource/.test(text)) return;
+    errors.push('console: ' + text);
+  });
 
   // Force the "first visit" boot path every run
   await page.evaluateOnNewDocument(() => { localStorage.clear(); sessionStorage.clear(); });

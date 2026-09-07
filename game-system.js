@@ -242,6 +242,10 @@ class GameSystem {
     let ms = duration;
     if (!(typeof ms === 'number' && ms > 0 && ms < MAX_RUN)) {
       ms = Math.min(Math.max(now - this._runStart, 0), MAX_RUN);
+    } else if (ms < 3600) {
+      // Legacy titles passed elapsed seconds while newer titles pass ms.
+      // Treat short numeric durations as seconds at this shared boundary.
+      ms *= 1000;
     }
     this._runStart = now;
 
@@ -1538,7 +1542,6 @@ if (typeof document !== 'undefined') {
   }
   function initArcadeMenu(){
     if(document.getElementById('arcade-menu')) return;
-    if(!GameSystem.lastInstance) return;
     var game=GameSystem.lastInstance;
     document.body.classList.add('arcade-game-page');
     // Give common legacy lifecycle screens one shared styling hook. Their
@@ -1564,22 +1567,24 @@ if (typeof document !== 'undefined') {
     if(start) legacy.start=function(){ start.click(); };
     if(sound) legacy.sound=function(){ sound.click(); };
     if(help) legacy.help=function(){ help.click(); };
-    game.registerArcadeActions(legacy);
+    if(game) game.registerArcadeActions(legacy);
     var root=document.createElement('div');
     root.id='arcade-menu'; root.className='arcade-menu';
     root.innerHTML='<a class="arcade-menu-brand" href="../pages/games.html">JVDS <span>ARCADE</span></a>'+
       '<button class="arcade-menu-trigger" type="button" aria-expanded="false" aria-controls="arcade-menu-panel">☰ Menu</button>'+
       '<div class="arcade-menu-panel" id="arcade-menu-panel" hidden role="menu">'+
-        '<div class="arcade-menu-title">'+GameSystem.lastInstance.gameName+'</div>'+
+        '<div class="arcade-menu-title">'+(game ? game.gameName : document.title.split('|')[0].trim())+'</div>'+
         '<button type="button" data-arcade-action="pause" role="menuitem">⏸ Pause / Resume</button>'+
         '<button type="button" data-arcade-action="restart" role="menuitem">↻ Restart run</button>'+ 
         '<button type="button" data-arcade-action="sound" role="menuitem">🔊 Sound</button>'+ 
         '<button type="button" data-arcade-action="help" role="menuitem">? How to play</button>'+ 
         '<button type="button" data-arcade-action="fullscreen" role="menuitem">⛶ Fullscreen</button>'+ 
+        '<button type="button" data-arcade-action="share" role="menuitem">↗ Share game</button>'+
         '<a href="../pages/games.html" role="menuitem">← Back to Arcade</a>'+ 
       '</div>';
     document.body.appendChild(root);
     var trigger=root.querySelector('.arcade-menu-trigger'), panel=root.querySelector('.arcade-menu-panel');
+    if(!game) root.querySelectorAll('[data-arcade-action="pause"],[data-arcade-action="restart"],[data-arcade-action="sound"],[data-arcade-action="help"]').forEach(function(item){ item.hidden=true; });
     function close(){ trigger.setAttribute('aria-expanded','false'); panel.hidden=true; }
     trigger.addEventListener('click',function(){ var open=trigger.getAttribute('aria-expanded')==='true'; trigger.setAttribute('aria-expanded',String(!open)); panel.hidden=open; });
     document.addEventListener('keydown',function(e){
@@ -1595,6 +1600,14 @@ if (typeof document !== 'undefined') {
       if(action.dataset.arcadeAction==='pause') document.dispatchEvent(new CustomEvent('gs-toggle-pause'));
       if(action.dataset.arcadeAction==='sound') { var sound=document.getElementById('gs-mute-btn')||document.getElementById('muteBtn'); if(sound) sound.click(); }
       if(action.dataset.arcadeAction==='fullscreen') { var fs=document.getElementById('btn-fullscreen')||document.getElementById('fsToggleBtn'); if(fs) fs.click(); else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }
+      if(action.dataset.arcadeAction==='share') {
+        var shareData={title:document.title, text:'Play '+(game ? game.gameName : document.title.split('|')[0].trim())+' on JVDS Arcade', url:window.location.href};
+        if(navigator.share) navigator.share(shareData).catch(function(){});
+        else if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(window.location.href).then(function(){
+          var announce=document.getElementById('jvds-announce'); if(announce) announce.textContent='Game link copied to clipboard.';
+        }).catch(function(){});
+        else window.prompt('Copy this game link:',window.location.href);
+      }
       if(action.dataset.arcadeAction==='restart') {
         var restart=window.restartGame||window.startGame2||window.startGame;
         if(typeof restart==='function') restart();

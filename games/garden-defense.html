@@ -38,7 +38,7 @@
 
 <div class="top">
   <h1 class="brand"><span class="bug">🐛✨</span> Lumo's Garden Defense</h1>
-  <a class="back" href="../pages/games.html">← Games</a>
+  <a class="back" href="../pages/games.html">← Back to Arcade</a>
 </div>
 
 <div class="stage">
@@ -46,9 +46,9 @@
     <div class="pill sun" id="sunPill">☀️ <span id="sunV">150</span><small>Sun</small></div>
     <div class="wavebar"><i id="waveFill"></i><span id="waveLbl">Wave 1 / 10</span></div>
     <div class="pill" style="color:#3c6231">🍃 <span id="guardsV">5</span><small>Guards</small></div>
-    <button class="icon-btn" id="speedBtn" title="Game speed">1×</button>
-    <button class="icon-btn" id="pauseBtn" title="Pause">⏸</button>
-    <button class="icon-btn" id="soundBtn" title="Sound">🔊</button>
+    <button class="icon-btn" id="speedBtn" title="Game speed" aria-label="Game speed: normal">1×</button>
+    <button class="icon-btn" id="pauseBtn" title="Pause" aria-label="Pause game">⏸</button>
+    <button class="icon-btn" id="soundBtn" title="Sound" aria-label="Sound on">🔊</button>
   </div>
 
   <div class="picker" id="picker"></div>
@@ -77,6 +77,16 @@
       <div>🍄 <b>Boom Shroom</b><em>3×3 blast</em></div>
     </div>
     <button class="btn" id="startBtn">Plant &amp; Defend 🌱</button>
+  </div>
+</div>
+
+<!-- BETWEEN-WAVE UPGRADES -->
+<div class="screen hidden" id="upgradeScreen">
+  <div class="panel upgrade-panel">
+    <div class="big">🌿</div>
+    <h2>Choose a garden upgrade</h2>
+    <p>The next wave is coming. Pick one way to strengthen your garden.</p>
+    <div class="upgrade-grid" id="upgradeGrid"></div>
   </div>
 </div>
 
@@ -147,14 +157,23 @@
   // ---- state ----
   let grid, pests, shots, suns, guards, sun, waveIdx, score, running, paused, endless,
       selected, spawnQ, betweenTimer, lastT, stats, achUnlocked, pickerEls={},
-      floats, deaths, streak, lastKillT, speedMult=1, hoverCell=null, victoryShown;
+      floats, deaths, streak, lastKillT, speedMult=1, hoverCell=null, victoryShown,
+      upgradeOpen, upgradeChoices, upgrades;
+
+  const UPGRADES=[
+    {id:'sun',icon:'☀️',title:'Sunny Soil',desc:'Sunflowers produce 20% more sun.',apply:()=>{upgrades.sun++;}},
+    {id:'quick',icon:'⚡',title:'Quick Roots',desc:'All plant cooldowns are 15% faster.',apply:()=>{upgrades.quick++;}},
+    {id:'guard',icon:'🛡️',title:'Guard Rally',desc:'Restore one lost garden guard.',apply:()=>{const i=guards.indexOf(false);if(i>=0)guards[i]=true;else sun+=75;}},
+    {id:'combo',icon:'🔥',title:'Bright Banners',desc:'All pest defeats score 10% more points.',apply:()=>{upgrades.combo++;}}
+  ];
 
   function reset(){
     grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
     pests=[]; shots=[]; suns=[]; floats=[]; deaths=[];
     guards=Array(ROWS).fill(true);
     sun=150; waveIdx=0; score=0; running=true; paused=false; endless=false; victoryShown=false;
-    selected=null; spawnQ=[]; betweenTimer=2.2; lastT=performance.now();
+    selected=null; spawnQ=[]; betweenTimer=2.2; lastT=performance.now(); upgradeOpen=false; upgradeChoices=[];
+    upgrades={sun:0,quick:0,combo:0};
     stats={killed:0,placed:0,bestBoom:0,sunCollected:0,bestStreak:0};
     achUnlocked=[]; streak=0; lastKillT=-99; hoverCell=null;
     window.__gdWaveClock=0;
@@ -213,13 +232,19 @@
     pickerEls={};
     PICK_ORDER.forEach((k,i)=>{
       const d=PLANTS[k];
-      const el=document.createElement('div');
+      const el=document.createElement('button');
+      el.type='button';
+      el.setAttribute('aria-label',d.name+' plant, costs '+d.cost+' sun');
+      el.setAttribute('aria-pressed','false');
       el.className='seed'; el.dataset.k=k;
       el.innerHTML=`<span class="key">${i+1}</span><div class="ic">${d.ic}</div><div class="cost">☀️${d.cost}</div><div class="cd" style="display:none"></div>`;
       el.onclick=()=>selectPlant(k);
       p.appendChild(el); pickerEls[k]=el;
     });
-    const sh=document.createElement('div');
+    const sh=document.createElement('button');
+    sh.type='button';
+    sh.setAttribute('aria-label','Shovel, remove a plant');
+    sh.setAttribute('aria-pressed','false');
     sh.className='seed shovel'; sh.dataset.k='shovel';
     sh.innerHTML=`<div class="ic">🧹</div><div class="cost">Dig</div>`;
     sh.onclick=()=>selectPlant('shovel');
@@ -232,7 +257,10 @@
       if(cooldowns[k]>0) return;
     }
     selected = (selected===k)?null:k;
-    for(const id in pickerEls) pickerEls[id].classList.toggle('sel', id===selected);
+    for(const id in pickerEls){
+      pickerEls[id].classList.toggle('sel', id===selected);
+      pickerEls[id].setAttribute('aria-pressed', id===selected ? 'true' : 'false');
+    }
     beep('tap');
   }
 
@@ -286,11 +314,11 @@
 
   function placePlant(k,row,col){
     const d=PLANTS[k];
-    sun-=d.cost; cooldowns[k]=window.__gdFastCd?0.3:d.cd;
+    sun-=d.cost; cooldowns[k]=window.__gdFastCd?0.3:d.cd/((upgrades.quick||0)*.15+1);
     stats.placed++;
     if(!achUnlocked.includes('gd_firstBloom')){achUnlocked.push('gd_firstBloom');gs.unlockAchievement('gd_firstBloom');}
     if(d.boom){
-      cooldowns[k]=d.cd;
+      cooldowns[k]=d.cd/((upgrades.quick||0)*.15+1);
       boomBlast(row,col);
     } else {
       grid[row][col]={type:k,hp:d.hp,maxHp:d.hp,fireT:d.fire?d.fire*Math.random():0,prodT:d.produce||0,pop:1,recoil:0,sway:Math.random()*6};
@@ -361,7 +389,7 @@
   let skySunTimer=3;
   function update(dt){
     // cooldowns
-    for(const k in cooldowns) if(cooldowns[k]>0) cooldowns[k]=Math.max(0,cooldowns[k]-dt);
+    for(const k in cooldowns) if(cooldowns[k]>0) cooldowns[k]=Math.max(0,cooldowns[k]-dt*(1+(upgrades.quick||0)*.15));
     updatePickerCD();
 
     // wave management
@@ -372,7 +400,10 @@
       }
     } else if(pests.length===0){
       betweenTimer-=dt;
-      if(betweenTimer<=0){ betweenTimer=4.5; startWave(); }
+      if(betweenTimer<=0){
+        if(waveIdx>0 && !upgradeOpen){ showUpgrade(); }
+        else if(!upgradeOpen){ betweenTimer=4.5; startWave(); }
+      }
     }
 
     // sky sun
@@ -395,7 +426,7 @@
       const d=PLANTS[pl.type];
       if(d.produce){
         pl.prodT-=dt;
-        if(pl.prodT<=0){ pl.prodT=d.produce; spawnPlantSun(c*CELL+CELL/2, r*CH+CH*0.5); }
+        if(pl.prodT<=0){ pl.prodT=d.produce/((upgrades.sun||0)*.2+1); spawnPlantSun(c*CELL+CELL/2, r*CH+CH*0.5); }
       }
       if(d.fire){
         const ahead=pests.some(z=>z.row===r && z.x>c*CELL);
@@ -477,7 +508,7 @@
     lastKillT=nowS;
     stats.bestStreak=Math.max(stats.bestStreak,streak);
     if(streak>=5 && !achUnlocked.includes('gd_streak5')){achUnlocked.push('gd_streak5');gs.unlockAchievement('gd_streak5');}
-    const mult=1+Math.min(streak-1,4)*0.25;
+    const mult=(1+Math.min(streak-1,4)*0.25)*(1+(upgrades.combo||0)*.1);
     const pts=Math.round(z.pts*mult);
     score+=pts; stats.killed++;
     let gsBonus=0;
@@ -513,9 +544,11 @@
       const y=r*CH;
       // Base stripe with subtle vertical gradient per row
       const lg=ctx.createLinearGradient(0,y,0,y+CH);
-      if(r%2===0){ lg.addColorStop(0,'#7ec960'); lg.addColorStop(0.5,'#72b854'); lg.addColorStop(1,'#6aad4a'); }
-      else       { lg.addColorStop(0,'#72b854'); lg.addColorStop(0.5,'#68ad4c'); lg.addColorStop(1,'#5ea044'); }
+      if(r%2===0){ lg.addColorStop(0,'#91d474'); lg.addColorStop(0.5,'#84c866'); lg.addColorStop(1,'#78ba58'); }
+      else       { lg.addColorStop(0,'#86ca68'); lg.addColorStop(0.5,'#79bc5b'); lg.addColorStop(1,'#6eae50'); }
       ctx.fillStyle=lg; ctx.fillRect(0,y,BW,CH);
+      ctx.strokeStyle='rgba(255,255,220,.22)'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(0,y+3); ctx.lineTo(BW,y+3); ctx.stroke();
 
       // Subtle soil edge at bottom of each row
       ctx.fillStyle='rgba(90,60,30,0.08)';
@@ -708,9 +741,19 @@
       // Shadow
       ctx.fillStyle='rgba(0,0,0,0.1)';
       ctx.beginPath(); ctx.ellipse(z.x,y+24*big,16*big,5*big,0,0,Math.PI*2); ctx.fill();
+      // High-contrast target plate keeps pests readable over the lawn.
+      ctx.save();
+      ctx.globalAlpha=.92;
+      ctx.fillStyle=z.boss?'#32143d':'#fff7d6';
+      ctx.strokeStyle=z.boss?'#f0a3ff':'#b43d35';
+      ctx.lineWidth=z.boss?6:4;
+      ctx.beginPath(); ctx.arc(z.x,y,40*big,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.restore();
       // Pest body
       ctx.save(); ctx.translate(z.x,y); ctx.scale(-big*chewSq,big*(2-chewSq));
-      ctx.font='68px serif'; ctx.fillText(z.ic,0,4);
+      ctx.shadowColor='rgba(30,20,10,.7)'; ctx.shadowBlur=7;
+      ctx.font='76px serif'; ctx.lineWidth=5; ctx.strokeStyle='rgba(38,27,18,.9)';
+      ctx.strokeText(z.ic,0,4); ctx.fillText(z.ic,0,4);
       ctx.restore();
       // Hit flash ring
       if(z.hitT>0){
@@ -719,13 +762,15 @@
       }
       // HP bar
       if(z.hp<z.maxHp && !z.boss){
-        const bx=z.x-CELL*0.3, by=y-CH*0.34, bw=CELL*0.6, bh=8;
-        ctx.fillStyle='rgba(0,0,0,0.25)';
+        const bx=z.x-CELL*0.3, by=y-CH*0.34, bw=CELL*0.6, bh=14;
+        ctx.fillStyle='rgba(31,24,16,0.72)';
         roundRect(bx,by,bw,bh,4); ctx.fill();
         const pct=Math.max(0,z.hp/z.maxHp);
-        const hc=z.slowT>0?'#7fd0ff':'#ff6b5e';
+        const hc=z.slowT>0?'#48a9e8':'#e74444';
         ctx.fillStyle=hc;
         roundRect(bx,by,bw*pct,bh,4); ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=1;
+        roundRect(bx,by,bw,bh,4); ctx.stroke();
       }
     }
 
@@ -845,10 +890,31 @@
       else cd.style.display='none';
     }
   }
+  function showUpgrade(){
+    upgradeOpen=true; paused=true;
+    const gridEl=document.getElementById('upgradeGrid');
+    upgradeChoices=[...UPGRADES].sort(()=>Math.random()-.5).slice(0,3);
+    gridEl.innerHTML='';
+    upgradeChoices.forEach((u,i)=>{
+      const b=document.createElement('button'); b.type='button'; b.className='upgrade-choice';
+      b.innerHTML=`<span class="upgrade-icon">${u.icon}</span><strong>${u.title}</strong><span>${u.desc}</span>`;
+      b.onclick=()=>chooseUpgrade(i); gridEl.appendChild(b);
+    });
+    document.getElementById('upgradeScreen').classList.remove('hidden');
+    gdAnnounce('Choose a garden upgrade before wave '+(waveIdx+1)+'.');
+  }
+  function chooseUpgrade(index){
+    const u=upgradeChoices[index]; if(!u) return;
+    u.apply(); upgradeOpen=false; paused=false; betweenTimer=1.2; lastT=performance.now();
+    document.getElementById('upgradeScreen').classList.add('hidden');
+    flashHint(u.title+' chosen! '+u.desc);
+    updateHUD();
+  }
   function togglePause(){
-    if(!running) return;
+    if(!running || upgradeOpen) return;
     paused=!paused;
     document.getElementById('pauseBtn').textContent=paused?'▶':'⏸';
+    document.getElementById('pauseBtn').setAttribute('aria-label',paused?'Resume game':'Pause game');
     if(!paused) lastT=performance.now();
   }
 
@@ -936,9 +1002,10 @@
   document.getElementById('againBtn').onclick=begin;
   document.getElementById('endlessBtn').onclick=keepGoing;
   document.getElementById('pauseBtn').onclick=togglePause;
-  document.getElementById('speedBtn').onclick=function(){ speedMult=speedMult===1?2:1; this.textContent=speedMult+'×'; beep('tap'); };
+  document.getElementById('speedBtn').onclick=function(){ speedMult=speedMult===1?2:1; this.textContent=speedMult+'×'; this.setAttribute('aria-label','Game speed: '+(speedMult===1?'normal':'fast')); beep('tap'); };
   document.getElementById('soundBtn').textContent=soundOn?'🔊':'🔇';
-  document.getElementById('soundBtn').onclick=function(){ soundOn=!soundOn; this.textContent=soundOn?'🔊':'🔇'; localStorage.setItem('soundEnabled',soundOn?'true':'false'); };
+  document.getElementById('soundBtn').setAttribute('aria-label',soundOn?'Sound on':'Sound off');
+  document.getElementById('soundBtn').onclick=function(){ soundOn=!soundOn; this.textContent=soundOn?'🔊':'🔇'; this.setAttribute('aria-label',soundOn?'Sound on':'Sound off'); localStorage.setItem('soundEnabled',soundOn?'true':'false'); };
 
   // expose for integration script + lightweight read-only debug snapshot
   window.__gd={

@@ -2247,6 +2247,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/roblox-battle-workshop.html"
     },
     {
+      "id": "roblox-collapse-obby-workshop",
+      "title": "World Collapse! Build a Glitch Obby in Roblox Studio",
+      "desc": "Build a Roblox obby where the world crumbles behind you! 30-second collapse, coins, enemies, trampolines, time-freeze and a boss level. Free parent & child workshop. Ages 7+.",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "obby"
+      ],
+      "steps": 0,
+      "themeColor": "#ff3b30",
+      "cover": null,
+      "url": "/workshops/roblox-collapse-obby-workshop.html"
+    },
+    {
       "id": "scratch-clicker-workshop",
       "title": "Click Frenzy! Build an Idle Clicker Game in Scratch",
       "desc": "Build an idle clicker game in Scratch! A free parent & child workshop. Click for coins, buy upgrades and unlock auto-earners. Ages 8+.",
@@ -3125,8 +3141,8 @@ window.JVDS_CONTENT = {
     {
       "id": "pixel-studio",
       "title": "Pixel Studio",
-      "desc": "Draw and animate pixel art with layers, frames, onion skinning, mirror mode, autosave and GIF / spritesheet export.",
-      "category": "Make Art",
+      "desc": "Create production-ready pixel art with layers, frames, onion skinning, mirror mode, autosave and GIF / spritesheet export.",
+      "category": "General",
       "tags": [
         "Pixel Art",
         "Animation",
@@ -3139,7 +3155,7 @@ window.JVDS_CONTENT = {
       "id": "character-designer",
       "title": "Character Designer",
       "desc": "Build characters from templates, customise parts, pose them, save presets and export spritesheets, GIFs, PNGs or JSON.",
-      "category": "Make Art",
+      "category": "General",
       "tags": [
         "Characters",
         "Sprites",
@@ -3152,7 +3168,7 @@ window.JVDS_CONTENT = {
       "id": "sprite-animator",
       "title": "Sprite Animator",
       "desc": "Upload a spritesheet, choose frames, preview animation timing live and export frame data for your engine.",
-      "category": "Make Art",
+      "category": "General",
       "tags": [
         "Spritesheet",
         "Preview",
@@ -3165,7 +3181,7 @@ window.JVDS_CONTENT = {
       "id": "bitmap-font-maker",
       "title": "Bitmap Font Maker",
       "desc": "Draw pixel fonts character by character, preview text and export spritesheets, atlases or BMFont XML.",
-      "category": "Make Art",
+      "category": "General",
       "tags": [
         "Fonts",
         "Atlas",
@@ -3178,7 +3194,7 @@ window.JVDS_CONTENT = {
       "id": "trading-card-designer",
       "title": "Trading Card Designer",
       "desc": "Create character cards with templates, rarities, stats, uploaded art and PNG export.",
-      "category": "Make Art",
+      "category": "General",
       "tags": [
         "Cards",
         "Stats",
@@ -3191,7 +3207,7 @@ window.JVDS_CONTENT = {
       "id": "game-logo-maker",
       "title": "Game Logo Maker",
       "desc": "Design a title logo with presets, fonts, outlines, glow, gradients and export sizes for stores and splash screens.",
-      "category": "Make Art",
+      "category": "General",
       "tags": [
         "Logo",
         "Branding",
@@ -3203,8 +3219,8 @@ window.JVDS_CONTENT = {
     {
       "id": "music-maker",
       "title": "Music Maker",
-      "desc": "Compose full tracks with a beat sequencer, piano roll, synth presets, save/load and WAV export.",
-      "category": "Make Audio",
+      "desc": "Build loopable tracks and backing music with a beat sequencer, piano roll, synth presets, save/load and WAV export.",
+      "category": "General",
       "tags": [
         "Sequencer",
         "Piano Roll",
@@ -3217,7 +3233,7 @@ window.JVDS_CONTENT = {
       "id": "sound-studio",
       "title": "Sound Studio",
       "desc": "Create 16-bit chiptune melodies and retro effects with waveforms, envelopes, bit crush and reverb.",
-      "category": "Make Audio",
+      "category": "General",
       "tags": [
         "Chiptune",
         "SFX",
@@ -3229,8 +3245,8 @@ window.JVDS_CONTENT = {
     {
       "id": "sfx-generator",
       "title": "SFX Studio",
-      "desc": "Generate arcade, puzzle, platformer and RPG sound effects, tune the sound, then download game-ready WAV files.",
-      "category": "Make Audio",
+      "desc": "Generate one-shot game sound effects for arcade, puzzle, platformer and RPG projects, tune the sound, then export game-ready WAV files.",
+      "category": "General",
       "tags": [
         "Sound FX",
         "Packs",
@@ -3243,7 +3259,7 @@ window.JVDS_CONTENT = {
       "id": "drum-pad",
       "title": "Drum Pad",
       "desc": "Tap beats, switch kits, use keyboard shortcuts and record loops for quick rhythm ideas.",
-      "category": "Make Audio",
+      "category": "General",
       "tags": [
         "Beats",
         "Kits",
@@ -3256,7 +3272,7 @@ window.JVDS_CONTENT = {
       "id": "buildlab",
       "title": "BuildLab",
       "desc": "Make Roblox-style 3D block models with shapes, paint, transforms, touch support and OBJ / GLTF / RBXM export.",
-      "category": "Build Worlds",
+      "category": "General",
       "tags": [
         "3D Models",
         "Roblox",
@@ -3269,7 +3285,7 @@ window.JVDS_CONTENT = {
       "id": "level-designer",
       "title": "Level Designer",
       "desc": "Draw 2D platformer levels on a tile grid with layers, fill tools, hazards, pickups and PNG / JSON export.",
-      "category": "Build Worlds",
+      "category": "General",
       "tags": [
         "Levels",
         "Tile Grid",
@@ -3282,7 +3298,7 @@ window.JVDS_CONTENT = {
       "id": "map-generator",
       "title": "Map Generator",
       "desc": "Generate dungeons, worlds and islands from a seed, edit by hand and export PNG or JSON tilemaps.",
-      "category": "Build Worlds",
+      "category": "General",
       "tags": [
         "Procedural",
         "Worlds",
@@ -3295,7 +3311,7 @@ window.JVDS_CONTENT = {
       "id": "tileset-builder",
       "title": "Tileset Builder",
       "desc": "Plan reusable tiles and export a compact tileset for your level workflow.",
-      "category": "Build Worlds",
+      "category": "General",
       "tags": [
         "Tiles",
         "Canvas",
@@ -3308,7 +3324,7 @@ window.JVDS_CONTENT = {
       "id": "particle-designer",
       "title": "Particle Designer",
       "desc": "Design fire, smoke, sparks, magic and other VFX with curves, gradients and engine-friendly exports.",
-      "category": "Build Worlds",
+      "category": "General",
       "tags": [
         "VFX",
         "Godot",
@@ -3321,7 +3337,7 @@ window.JVDS_CONTENT = {
       "id": "gdd-builder",
       "title": "GDD Builder",
       "desc": "Fill out a structured game design document with progress tracking, browser saves and PDF export.",
-      "category": "Plan & Write",
+      "category": "General",
       "tags": [
         "Game Design",
         "PDF",
@@ -3334,7 +3350,7 @@ window.JVDS_CONTENT = {
       "id": "game-idea-generator",
       "title": "Game Idea Generator",
       "desc": "Spin up game-jam prompts with genre, theme, mechanic and twist when you need a fast creative spark.",
-      "category": "Plan & Write",
+      "category": "General",
       "tags": [
         "Ideas",
         "Game Jam",
@@ -3347,7 +3363,7 @@ window.JVDS_CONTENT = {
       "id": "story-editor",
       "title": "Story Editor",
       "desc": "Create branching dialogue, character nodes, choices, endings, visual story links and JSON exports.",
-      "category": "Plan & Write",
+      "category": "General",
       "tags": [
         "Dialogue",
         "Story",
@@ -3360,7 +3376,7 @@ window.JVDS_CONTENT = {
       "id": "dialogue-tree-builder",
       "title": "Dialogue Tree Builder",
       "desc": "Sketch a playable conversation tree with canvas-based links and exportable story structure.",
-      "category": "Plan & Write",
+      "category": "General",
       "tags": [
         "Dialogue",
         "Nodes",
@@ -3373,7 +3389,7 @@ window.JVDS_CONTENT = {
       "id": "design-worksheet",
       "title": "Design Worksheets",
       "desc": "Plan core ideas, audience, mechanics and scope before building.",
-      "category": "Plan & Write",
+      "category": "General",
       "tags": [
         "Planning",
         "Worksheet",
@@ -3386,7 +3402,7 @@ window.JVDS_CONTENT = {
       "id": "store-page-builder",
       "title": "Store Page Builder",
       "desc": "Draft store page copy, feature lists and release messaging for a game project.",
-      "category": "Plan & Write",
+      "category": "General",
       "tags": [
         "Launch",
         "Copy",
@@ -3396,23 +3412,23 @@ window.JVDS_CONTENT = {
       "url": "/tools/store-page-builder.html"
     },
     {
-      "id": "arcade-game-maker-landing",
+      "id": "arcade-game-maker",
       "title": "Arcade Game Maker",
-      "desc": "Build and play a browser game from templates, tune physics, paste level maps and share a playable link.",
-      "category": "Build & Ship",
+      "desc": "Prototype browser games from templates, tune physics, import art/audio/levels and share a playable build.",
+      "category": "General",
       "tags": [
         "Game Maker",
         "Phaser",
         "Share"
       ],
       "comingSoon": false,
-      "url": "/tools/arcade-game-maker-landing.html"
+      "url": "/tools/arcade-game-maker.html"
     },
     {
       "id": "screenshot-generator",
       "title": "Screenshot Generator",
       "desc": "Create polished screenshots and promo images for game pages or posts.",
-      "category": "Build & Ship",
+      "category": "General",
       "tags": [
         "Screenshots",
         "Promo",
@@ -3425,7 +3441,7 @@ window.JVDS_CONTENT = {
       "id": "code-snippet-generator",
       "title": "Code Snippet Generator",
       "desc": "Create starter snippets for common game-dev patterns and copy them into your project.",
-      "category": "Build & Ship",
+      "category": "General",
       "tags": [
         "Code",
         "Starter",
@@ -3438,7 +3454,7 @@ window.JVDS_CONTENT = {
       "id": "error-guide",
       "title": "Error Guide",
       "desc": "Look up common beginner bugs and get plain-language fixes.",
-      "category": "Build & Ship",
+      "category": "General",
       "tags": [
         "Debugging",
         "Guide",
@@ -3448,23 +3464,23 @@ window.JVDS_CONTENT = {
       "url": "/tools/error-guide.html"
     },
     {
-      "id": "quest-board-page",
-      "title": "QuestLog",
-      "desc": "Turn projects, habits and daily work into quests with XP, boss tasks and local browser saves.",
-      "category": "Build & Ship",
+      "id": "project-tracker",
+      "title": "Project Tracker",
+      "desc": "Track game tasks, workshop follow-ups, assets, bugs and polish passes with a lightweight local project board.",
+      "category": "General",
       "tags": [
-        "Productivity",
-        "RPG",
-        "PWA"
+        "Tasks",
+        "Bugs",
+        "Planning"
       ],
       "comingSoon": false,
-      "url": "/tools/quest-board-page.html"
+      "url": "/tools/project-tracker.html"
     },
     {
       "id": "icon-generator",
       "title": "Icon Generator",
       "desc": "Generate Quest Board-style pixel icons and download ready-sized PNGs.",
-      "category": "Build & Ship",
+      "category": "General",
       "tags": [
         "Icons",
         "Pixel",
@@ -3821,8 +3837,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-06T20:01:22.041Z",
-    "workshops": 181,
+    "generated": "2026-09-07T13:11:26.188Z",
+    "workshops": 182,
     "games": 25,
     "tools": 27,
     "books": 5,
@@ -3841,18 +3857,14 @@ window.JVDS_CONTENT = {
       "OpenRCT2": 3,
       "PICO-8": 6,
       "Python": 9,
-      "Roblox": 9,
+      "Roblox": 10,
       "Scratch": 7,
       "TinkerCAD": 9,
       "Unity": 9,
       "Unreal": 10
     },
     "toolCategories": {
-      "Make Art": 6,
-      "Make Audio": 4,
-      "Build Worlds": 5,
-      "Plan & Write": 6,
-      "Build & Ship": 6
+      "General": 27
     }
   }
 };

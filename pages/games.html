@@ -108,6 +108,153 @@
 <script defer src="../daily-challenge.js"></script>
 <script>(function(){function r(){try{if(window.DailyChallenge)DailyChallenge.render('dailyChallengeGames');}catch(e){}} if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',r); else r();})();</script>
 
+<!-- PLAY DISCOVERY -->
+<section class="play-discovery" aria-labelledby="playDiscoveryTitle">
+    <div class="play-discovery-head">
+        <div>
+            <span class="section-tag">✦ Your Arcade</span>
+            <h2 id="playDiscoveryTitle">Pick up where you left off</h2>
+            <p id="playDiscoveryIntro">Fast picks for a spare minute, a longer session, or your next high score.</p>
+        </div>
+        <a class="play-discovery-all" href="#games">Browse all games <span aria-hidden="true">↓</span></a>
+    </div>
+    <div class="continue-games" id="continueGames" hidden>
+        <div class="continue-heading">
+            <span>Jump back in</span>
+            <small>Saved on this device</small>
+        </div>
+        <div class="continue-grid" id="continueGrid"></div>
+    </div>
+    <div class="quick-play" aria-label="Quick game picks">
+        <a class="quick-play-card quick-play-card--teal" href="#games" data-discovery-filter="all">
+            <span class="quick-play-icon" aria-hidden="true">⚡</span>
+            <span><strong>Quick Play</strong><small>Pick a game in seconds</small></span>
+            <span class="quick-play-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="quick-play-card quick-play-card--rose" href="#games" data-discovery-filter="puzzle">
+            <span class="quick-play-icon" aria-hidden="true">🧩</span>
+            <span><strong>Relax &amp; match</strong><small>Puzzles and cosy play</small></span>
+            <span class="quick-play-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="quick-play-card quick-play-card--gold" href="#games" data-discovery-filter="arcade">
+            <span class="quick-play-icon" aria-hidden="true">🎯</span>
+            <span><strong>Beat your best</strong><small>Arcade and action runs</small></span>
+            <span class="quick-play-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="quick-play-card quick-play-card--violet" href="#littlePlayers">
+            <span class="quick-play-icon" aria-hidden="true">🌈</span>
+            <span><strong>Play together</strong><small>Gentle picks for little players</small></span>
+            <span class="quick-play-arrow" aria-hidden="true">→</span>
+        </a>
+    </div>
+    <div class="featured-games" aria-labelledby="featuredGamesTitle">
+        <div class="featured-heading">
+            <span id="featuredGamesTitle">Featured picks</span>
+            <small>Good places to start</small>
+        </div>
+        <div class="featured-grid">
+            <a class="featured-card featured-card--garden" href="../games/garden-defense.html">
+                <span class="featured-art" aria-hidden="true">🌻</span>
+                <span class="featured-copy"><strong>Lumo's Garden Defense</strong><small>Build a garden · 10-20 min</small></span>
+                <span class="featured-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="featured-card featured-card--bubble" href="../games/bubble-pop-galaxy.html">
+                <span class="featured-art" aria-hidden="true">🫧</span>
+                <span class="featured-copy"><strong>Bubble Pop Galaxy</strong><small>Relaxing puzzle · 5-10 min</small></span>
+                <span class="featured-arrow" aria-hidden="true">→</span>
+            </a>
+            <a class="featured-card featured-card--neon" href="../games/neon-tiles.html">
+                <span class="featured-art" aria-hidden="true">🎵</span>
+                <span class="featured-copy"><strong>Neon Tiles</strong><small>Fast rhythm run · 2-5 min</small></span>
+                <span class="featured-arrow" aria-hidden="true">→</span>
+            </a>
+        </div>
+    </div>
+</section>
+<script>
+(function(){
+    function ready(fn){ document.readyState !== 'loading' ? fn() : document.addEventListener('DOMContentLoaded', fn); }
+    function readState(card){
+        var file = (card.getAttribute('href') || '').split('/').pop().replace(/\.html$/, '');
+        var aliases = { 'garden-defense':'garden-defense', 'pips-bakery-empire':'bakery-empire', 'cozy-biscuit-clicker':'biscuit-clicker', 'gem_match':'gem-match', 'paper-toss-deluxe':'paper-toss', 'echos-flight':'echo-flight', 'lumo_firefly_night':'lumo-firefly', 'voidrush':'void-rush', 'sky_high_with_friends':'sky-high-squirt', 'pip_star_connect':'star-connect' };
+        var ids = [aliases[file] || file, file];
+        for(var i=0;i<ids.length;i++){
+            try { var raw = localStorage.getItem('jvds_game_' + ids[i]); if(raw) return JSON.parse(raw); } catch(e){}
+        }
+        return null;
+    }
+    function statText(state){
+        if(!state) return 'New game';
+        var best = Number(state.highScore || 0);
+        var plays = Number(state.gamesPlayed || 0);
+        if(best > 0 && plays > 0) return 'Best ' + best.toLocaleString() + ' · ' + plays + (plays === 1 ? ' play' : ' plays');
+        return plays ? plays + (plays === 1 ? ' play' : ' plays') : 'New game';
+    }
+    var GAME_INFO = {
+        'garden-defense':['Medium','10-20 min','Tap'], 'bubble-pop-galaxy':['Easy','5-10 min','Tap'], 'neon-tiles':['Medium','2-5 min','Tap'],
+        'pips-bakery-empire':['Easy','5+ min','Tap'], 'paper-toss-deluxe':['Medium','2-5 min','Flick'], 'echos-flight':['Medium','2-5 min','Tap'],
+        'pastry-match':['Easy','5-10 min','Tap'], 'dough-dash':['Medium','2-5 min','Tap'], 'gem_match':['Medium','5-10 min','Tap'],
+        'voidrush':['Hard','2-5 min','Keyboard / Tap'], 'little_steps':['Easy','5-10 min','Keyboard'], 'sky_high_with_friends':['Medium','5-10 min','Tap'],
+        'critter-whack-page':['Easy','2-5 min','Tap'], 'nibble-quest-page':['Medium','5-10 min','Keyboard'], 'stack-attack-page':['Medium','2-5 min','Tap'],
+        'millionaire-quiz':['Medium','5-10 min','Tap'], 'star-chef':['Medium','5-10 min','Tap'], 'cozy-cafe-match-game':['Easy','10-20 min','Tap']
+    };
+    function addGameInfo(card){
+        var file = (card.getAttribute('href') || '').split('/').pop().replace(/\.html$/, '');
+        var info = GAME_INFO[file] || ['Easy','5-10 min','Tap'];
+        var body = card.querySelector('.game-body');
+        if(!body || body.querySelector('.game-info')) return;
+        var meta = document.createElement('span');
+        meta.className = 'game-info';
+        meta.textContent = info[0] + ' · ' + info[1] + ' · ' + info[2];
+        body.insertBefore(meta, body.querySelector('.game-desc') || body.querySelector('.game-cta'));
+        card.setAttribute('aria-label', card.querySelector('.game-title').textContent + '. ' + info[0] + ' difficulty, ' + info[1] + ', ' + info[2] + ' controls.');
+    }
+    ready(function(){
+        var cards = [].slice.call(document.querySelectorAll('.games-grid .game-card'));
+        var continueGrid = document.getElementById('continueGrid');
+        var continueWrap = document.getElementById('continueGames');
+        if(!cards.length) return;
+        var played = cards.map(function(card){ return { card:card, state:readState(card) }; })
+            .filter(function(item){ return item.state && Number(item.state.gamesPlayed || 0) > 0; })
+            .sort(function(a,b){ return new Date(b.state.lastPlayed || 0) - new Date(a.state.lastPlayed || 0); });
+        if(played.length && continueGrid && continueWrap){
+            played.slice(0, 4).forEach(function(item){
+                var clone = item.card.cloneNode(true);
+                clone.classList.remove('reveal');
+                clone.classList.add('continue-card');
+                var body = clone.querySelector('.game-body');
+                var cta = clone.querySelector('.game-cta');
+                if(body && cta){
+                    var stat = document.createElement('span');
+                    stat.className = 'game-stat';
+                    stat.textContent = statText(item.state);
+                    body.insertBefore(stat, cta);
+                    cta.textContent = 'Continue playing →';
+                }
+                continueGrid.appendChild(clone);
+            });
+            continueWrap.hidden = false;
+            document.getElementById('playDiscoveryIntro').textContent = 'Your recent games are ready, with a few fresh picks underneath.';
+        }
+        cards.forEach(function(card){
+            var state = readState(card), body = card.querySelector('.game-body'), cta = card.querySelector('.game-cta');
+            addGameInfo(card);
+            if(!body || !cta || body.querySelector('.game-stat')) return;
+            var stat = document.createElement('span');
+            stat.className = 'game-stat';
+            stat.textContent = statText(state);
+            body.insertBefore(stat, cta);
+        });
+        document.querySelectorAll('[data-discovery-filter]').forEach(function(link){
+            link.addEventListener('click', function(){
+                var chip = document.querySelector('.game-chip[data-filter="' + link.getAttribute('data-discovery-filter') + '"]');
+                if(chip) chip.click();
+            });
+        });
+    });
+})();
+</script>
+
 <!-- INSTALL THE ARCADE -->
 <style>
     .arcade-cta{max-width:1000px;margin:0 auto 8px;padding:0 20px;}
@@ -223,9 +370,9 @@
 <section class="games-section" id="games">
     <div class="section-header reveal">
         <span class="section-tag">✦ Browser Games</span>
-        <h2 class="section-title">All Games</h2>
+        <h2 class="section-title">Choose Your Next Game</h2>
         <p style="color:rgba(240,234,214,0.75);margin-top:10px;font-size:1rem;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;">
-            Click any card to play instantly.
+            Filter by mood, find a new favourite, and play instantly in your browser.
         </p>
     </div>
 
@@ -241,6 +388,21 @@
     .game-card.filter-hidden{display:none;}
     </style>
 
+    <div class="game-tools" role="search" aria-label="Find a game">
+        <label class="game-search">
+            <span aria-hidden="true">⌕</span>
+            <input type="search" id="gameSearch" placeholder="Search games" autocomplete="off">
+        </label>
+        <label class="game-sort">
+            <span class="sr-only">Sort games</span>
+            <select id="gameSort" aria-label="Sort games">
+                <option value="featured">Featured order</option>
+                <option value="az">Name A-Z</option>
+                <option value="za">Name Z-A</option>
+            </select>
+        </label>
+        <span class="game-result-count" id="gameResultCount" aria-live="polite"></span>
+    </div>
     <div class="game-filters" id="gameFilters" role="group" aria-label="Filter games by category">
         <button type="button" class="game-chip active" data-filter="all" aria-pressed="true">All <span class="chip-count"></span></button>
         <button type="button" class="game-chip" data-filter="puzzle" aria-pressed="false">🧩 Puzzle &amp; Match <span class="chip-count"></span></button>
@@ -284,10 +446,17 @@
                 if(span) span.textContent = '(' + (counts[f]||0) + ')';
             });
             var emptyMsg = document.getElementById('gameFilterEmpty');
+            var search = document.getElementById('gameSearch');
+            var sort = document.getElementById('gameSort');
+            var resultCount = document.getElementById('gameResultCount');
+            cards.forEach(function(card, index){ card.setAttribute('data-catalogue-order', index); });
             function apply(filter){
                 var shown = 0;
+                var query = search ? search.value.trim().toLowerCase() : '';
                 cards.forEach(function(card){
-                    var match = filter === 'all' || card.getAttribute('data-cat') === filter;
+                    var categoryMatch = filter === 'all' || card.getAttribute('data-cat') === filter;
+                    var searchMatch = !query || card.textContent.toLowerCase().indexOf(query) !== -1;
+                    var match = categoryMatch && searchMatch;
                     card.classList.toggle('filter-hidden', !match);
                     if(match) shown++;
                 });
@@ -297,13 +466,29 @@
                     chip.setAttribute('aria-pressed', on ? 'true' : 'false');
                 });
                 if(emptyMsg) emptyMsg.hidden = shown !== 0;
+                if(resultCount) resultCount.textContent = shown + (shown === 1 ? ' game' : ' games');
+            }
+            function reorder(mode){
+                var sorted = cards.slice().sort(function(a,b){
+                    if(mode === 'featured') return Number(a.dataset.catalogueOrder) - Number(b.dataset.catalogueOrder);
+                    var aa = (a.querySelector('.game-title') || a).textContent.trim().toLowerCase();
+                    var bb = (b.querySelector('.game-title') || b).textContent.trim().toLowerCase();
+                    return mode === 'za' ? bb.localeCompare(aa) : aa.localeCompare(bb);
+                });
+                sorted.forEach(function(card){ card.parentNode.appendChild(card); });
             }
             document.getElementById('gameFilters').addEventListener('click', function(e){
                 var chip = e.target.closest('.game-chip');
                 if(chip) apply(chip.getAttribute('data-filter'));
             });
+            if(search) search.addEventListener('input', function(){
+                var active = document.querySelector('.game-chip.active');
+                apply(active ? active.getAttribute('data-filter') : 'all');
+            });
+            if(sort) sort.addEventListener('change', function(){ reorder(sort.value); });
             var resetBtn = emptyMsg && emptyMsg.querySelector('.game-filter-reset');
             if(resetBtn) resetBtn.addEventListener('click', function(){ apply('all'); });
+            apply('all');
         });
     })();
     </script>
@@ -994,7 +1179,7 @@
 </section>
 
 <!-- YOUNGER KIDS SECTION -->
-<section class="kids-section">
+<section class="kids-section" id="littlePlayers">
     <div class="section-header reveal">
         <span class="section-tag" style="background:var(--rose);">✦ Ages 3-8</span>
         <h2 class="section-title" style="color:var(--charcoal);">Little Players</h2>
@@ -1231,6 +1416,7 @@ body { display: flex; flex-direction: column; }
 body > * { order: 2; }
 body > .site-header { order: -4; }
 body > .page-hero { order: -3; }
+body > .play-discovery { order: -2; }
 body > .games-section { order: -1; }
 body > .arcade-cta { order: 4; }
 body > .progress-section { order: 5; }

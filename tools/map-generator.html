@@ -95,22 +95,22 @@
 <header class="hdr">
   <a href="../index.html" class="hdr-logo"><img width="1088" height="960" loading="lazy" src="../logo.png" alt="JV"><span>JVDesignStudio</span></a>
   <div class="hdr-title">Map Generator <span>NEW</span></div>
-  <a href="../pages/dev-tools.html" class="hdr-back">â† Tools</a>
+  <a href="../pages/dev-tools.html" class="hdr-back">← Tools</a>
 </header>
 
-<div id="app">
+<main id="main-content"><div id="app">
   <div id="map-wrap">
     <canvas id="map-canvas"></canvas>
     <div class="restore-bar" id="restoreBar">💾 Previous session found
       <button class="restore-yes" onclick="restoreAutosave();id('restoreBar').style.display='none'">Restore</button>
-      <button onclick="dismissRestore()">âœ•</button>
+      <button onclick="dismissRestore()">✕</button>
     </div>
-    <div class="spinner" id="spinner"><div class="spinner-inner">âŸ³</div></div>
+    <div class="spinner" id="spinner"><div class="spinner-inner">↻</div></div>
     <div class="map-overlay">
       <button class="map-overlay-btn" onclick="generate()">→ Regenerate</button>
       <button class="map-overlay-btn" onclick="randomSeed()">📦 Random Seed</button>
-      <button class="map-overlay-btn" onclick="zoomIn()">ï¼‹ Zoom</button>
-      <button class="map-overlay-btn" onclick="zoomOut()">ï¼ Zoom</button>
+      <button class="map-overlay-btn" onclick="zoomIn()">+ Zoom</button>
+      <button class="map-overlay-btn" onclick="zoomOut()">− Zoom</button>
     </div>
   </div>
 
@@ -181,8 +181,8 @@
       <div class="ctrl-section">
         <div class="ctrl-section-title">✏ Edit Mode</div>
         <div class="mini-btns">
-          <button class="mini-btn" onclick="undo()" title="Ctrl+Z">â†¶ Undo</button>
-          <button class="mini-btn" onclick="redo()" title="Ctrl+Y">â†· Redo</button>
+          <button class="mini-btn" onclick="undo()" title="Ctrl+Z">↶ Undo</button>
+          <button class="mini-btn" onclick="redo()" title="Ctrl+Y">↷ Redo</button>
           <button class="mini-btn" onclick="copyShareLink()" title="Copy a link to this seed">🔗 Share</button>
         </div>
         <div style="display:flex;gap:4px;margin-bottom:8px;">
@@ -245,7 +245,7 @@
     </div>
     <div style="font-size:.68rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;margin-bottom:14px;">Press <kbd style="padding:1px 5px;border:1px solid var(--border2);border-radius:4px;background:var(--panel3);">?</kbd> to reopen. Seed is in URL — share it.</div>
     <div class="modal-btns">
-      <button class="m-ok" onclick="closeMapWelcome()">Generate map âœ“</button>
+      <button class="m-ok" onclick="closeMapWelcome()">Generate map ✓</button>
       <button class="m-cancel" onclick="closeMapWelcome()">Got it</button>
     </div>
   </div>
@@ -255,6 +255,7 @@
 
 <script>
 function id(x){return document.getElementById(x);}
+function escapeHtml(value){return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 
 let currentMode='dungeon';
 let currentMap=null;
@@ -759,7 +760,7 @@ function loadMap(i) {
     for (let i = 0; i < len; i++) currentMap.map[i] = s.tiles[i];
     render(currentMap);
   }
-  toast('Loaded: ' + s.name);
+  toast('Loaded: ' + (s.name || 'Saved map'));
 }
 
 function deleteMap(i, e) {
@@ -781,9 +782,9 @@ function renderSavedMaps() {
   if (!savedMaps.length) { el.innerHTML = '<div style="text-align:center;padding:8px;color:var(--muted);">No saved maps</div>'; return; }
   el.innerHTML = savedMaps.map((s, i) =>
     '<div onclick="loadMap(' + i + ')" style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--panel2);border-radius:6px;cursor:pointer;margin-bottom:4px;border:1px solid var(--border);">' +
-    '<span style="flex:1;font-size:.6rem;color:var(--text);">' + s.name + '</span>' +
-    '<span style="font-size:.5rem;color:var(--muted);">' + s.mode + '</span>' +
-    '<button onclick="deleteMap(' + i + ',event)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.6rem;">âœ•</button>' +
+    '<span style="flex:1;font-size:.6rem;color:var(--text);">' + escapeHtml(s.name || 'Saved map') + '</span>' +
+    '<span style="font-size:.5rem;color:var(--muted);">' + escapeHtml(s.mode || '') + '</span>' +
+    '<button onclick="deleteMap(' + i + ',event)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.6rem;">✕</button>' +
     '</div>'
   ).join('');
 }
