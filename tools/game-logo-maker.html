@@ -170,6 +170,7 @@
       <h3>Export</h3>
       <button class="exp-btn exp-png" onclick="exportPNG(false)">📄 Download PNG (with BG)</button>
       <button class="exp-btn exp-trans" onclick="exportPNG(true)">📄 Download PNG (transparent)</button>
+      <button class="exp-btn exp-grey" onclick="exportSVG()">📐 Download SVG</button>
       <button class="exp-btn exp-grey" onclick="copyPNG()">📋 Copy to Clipboard</button>
     </div>
 
@@ -665,6 +666,28 @@ async function copyPNG(){
     await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
     toast('Copied to clipboard!');
   }catch(e){toast('Clipboard blocked — use Download instead');}
+}
+
+function exportSVG() {
+  const base = (id('titleText').value || 'game').replace(/\s+/g, '_').toLowerCase();
+  // Render at 2× for crisp raster inside the SVG wrapper
+  const scale = 2;
+  const tmp = document.createElement('canvas');
+  tmp.width  = CW * scale;
+  tmp.height = CH * scale;
+  const tctx = tmp.getContext('2d');
+  tctx.scale(scale, scale);
+  paint(tctx, CW, CH, false); // full render including background
+  const dataURL = tmp.toDataURL('image/png');
+  const title   = id('titleText').value || 'Game Logo';
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"`,
+    `  viewBox="0 0 ${CW} ${CH}" width="${CW}" height="${CH}">`,
+    `  <title>${title.replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</title>`,
+    `  <image href="${dataURL}" x="0" y="0" width="${CW}" height="${CH}" preserveAspectRatio="xMidYMid meet"/>`,
+    `</svg>`
+  ].join('\n');
+  dl(new Blob([svg], { type: 'image/svg+xml' }), `logo_${base}.svg`);
 }
 
 function dl(blob,name){

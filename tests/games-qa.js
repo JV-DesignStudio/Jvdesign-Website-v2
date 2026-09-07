@@ -19,6 +19,7 @@ for (const file of files) {
   const duplicateIds = ids.filter((id, i) => ids.indexOf(id) !== i && !id.includes('${'));
   check(/<title>[^<]+<\/title>/i.test(html), file, 'missing page title');
   check(/<meta[^>]+name=["']viewport["']/i.test(html), file, 'missing viewport metadata');
+  check(!/user-scalable\s*=\s*no|maxim(?:um)?-scale\s*=\s*1/i.test(html), file, 'viewport disables user zoom');
   if (hasSystem) {
     check(/game-system\.css/i.test(html), file, 'loads game-system.js without game-system.css');
     check((html.match(/serviceWorker\.register/g) || []).length <= 1, file, 'registers the service worker more than once');
@@ -58,16 +59,22 @@ async function browserSmoke() {
   let browser;
   try {
     browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
-    for (const width of [1280, 390]) for (const file of files) {
+    const viewports = [
+      { name: 'phone portrait', width: 390, height: 844, isMobile: true },
+      { name: 'phone landscape', width: 844, height: 390, isMobile: true },
+      { name: 'tablet', width: 768, height: 1024, isMobile: true },
+      { name: 'desktop', width: 1280, height: 900, isMobile: false }
+    ];
+    for (const viewport of viewports) for (const file of files) {
       const page = await browser.newPage();
       const errors = [];
       page.on('pageerror', e => errors.push(e.message));
-      await page.setViewport({ width, height: width === 390 ? 844 : 900, isMobile: width === 390 });
+      await page.setViewport(viewport);
       try {
         await page.goto(`http://localhost:${port}/games/${file}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
         if (/game-system\.js/i.test(fs.readFileSync(path.join(GAME_DIR, file), 'utf8'))) await page.waitForSelector('#arcade-menu', { timeout: 7000 });
-        check(errors.length === 0, `${file} @ ${width}px`, `browser errors: ${errors.slice(0, 2).join(' | ')}`);
-      } catch (e) { failures.push(`${file} @ ${width}px: ${e.message}`); }
+        check(errors.length === 0, `${file} @ ${viewport.name}`, `browser errors: ${errors.slice(0, 2).join(' | ')}`);
+      } catch (e) { failures.push(`${file} @ ${viewport.name}: ${e.message}`); }
       finally { await page.close(); }
     }
     console.log('  [PASS] desktop/mobile browser smoke');

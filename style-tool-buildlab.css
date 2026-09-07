@@ -9,11 +9,8 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
 
-/* Hide site header - use nav bar instead */
-.site-header{display:none;}
-
 /* -- MAIN LAYOUT -- */
-#app{display:grid;grid-template-columns:220px 1fr 200px;height:calc(100vh - 52px - 36px);height:calc(100dvh - 52px - 36px);}
+#app{display:grid;grid-template-columns:220px 1fr 200px;height:calc(100vh - 68px - 32px);height:calc(100dvh - 68px - 32px);}
 
 /* -- LEFT PANEL -- */
 #left-panel{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
@@ -49,6 +46,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 /* -- VIEWPORT -- */
 #viewport{position:relative;overflow:hidden;background:#1a1a2e;}
 #viewport canvas{display:block;}
+.buildlab-status{position:absolute;top:14px;left:14px;z-index:8;display:flex;align-items:center;gap:10px;max-width:min(420px,calc(100% - 28px));padding:9px 12px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(12,14,30,.78);box-shadow:0 12px 34px rgba(0,0,0,.32);backdrop-filter:blur(12px);font-size:.76rem;line-height:1.2;color:rgba(255,255,255,.76);pointer-events:none;}
+.buildlab-status strong{font-family:'Fredoka',cursive;font-size:.94rem;color:#fff;}
+.buildlab-status span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.engine-error-panel{position:absolute;top:50%;left:50%;z-index:9;transform:translate(-50%,-50%);width:min(420px,calc(100% - 32px));padding:24px;border:1px solid rgba(233,69,96,.45);border-radius:20px;background:linear-gradient(145deg,rgba(22,33,62,.96),rgba(15,18,38,.96));box-shadow:0 28px 80px rgba(0,0,0,.46);text-align:center;}
+.engine-error-panel strong{display:block;margin-bottom:8px;font-family:'Fredoka',cursive;font-size:1.45rem;color:var(--accent2);}
+.engine-error-panel span{display:block;margin-bottom:18px;color:rgba(255,255,255,.76);line-height:1.45;}
+.engine-error-panel button{border:0;border-radius:999px;background:var(--accent);color:#fff;font-family:'Fredoka',cursive;font-weight:700;padding:10px 18px;cursor:pointer;box-shadow:0 4px 0 #9b1a30;}
+.engine-error .crosshair{display:none;}
 .vp-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:.68rem;color:rgba(255,255,255,.25);letter-spacing:.05em;pointer-events:none;white-space:nowrap;}
 .vp-toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(15,15,30,.95);border:1px solid var(--accent);border-radius:8px;padding:7px 18px;font-size:.8rem;font-weight:700;color:var(--accent2);pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
 .vp-toast.show{opacity:1;}
@@ -117,16 +122,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 
 /* -- RESPONSIVE -- */
 @media(pointer: coarse){
-  /* Hide the duplicate site-header on mobile - jvds nav is enough */
-  .site-header{display:none;}
-  .site-footer{display:none;}
+  .site-footer,.jvds-tools-footer{display:none;}
 
   /* Full viewport, panels hidden by default */
   html,body{overflow:hidden;}
   #app{
     display:flex;flex-direction:column;
-    height:calc(100vh - 54px); /* 54px = jvds nav */
-    height:calc(100dvh - 54px);
+    height:calc(100vh - 68px);
+    height:calc(100dvh - 68px);
     position:relative;
   }
   #left-panel,#right-panel{display:none !important;}
@@ -254,10 +257,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 }
 /* Force mobile layout on narrow screens regardless of pointer */
 @media(max-width: 600px){
+  .site-header .header-inner{max-width:100%;padding-inline:10px;gap:6px;}
+  .site-header .logo-link{gap:6px;font-size:1rem;min-width:0;}
+  .site-header .logo-name{display:none;}
+  .site-header .theme-toggle,.site-header .nav-toggle{padding-inline:8px;}
   #app{
     display:flex;flex-direction:column;
-    height:calc(100vh - 54px);
-    height:calc(100dvh - 54px);
+    height:calc(100vh - 68px);
+    height:calc(100dvh - 68px);
     position:relative;
   }
   #left-panel,#right-panel{display:none !important;}
@@ -268,27 +275,15 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 @media(pointer: fine){
   .mob-toolbar,.mob-drawer{display:none !important;}
 }
-
-
-
-/* -- JVDS Site Nav -- */
-
-/* â”€â”€ Header consolidation: second bar slimmed to save VH (auto-injected) â”€â”€ */
-.jvds-site-nav + .site-header,
-.jvds-site-nav + .hdr,
-.jvds-site-nav + header.site-header,
-.jvds-site-nav + header.hdr {
-  height:36px !important;
-  min-height:36px !important;
-  padding:0 10px !important;
-}
-.jvds-site-nav + .site-header .site-logo img,
-.jvds-site-nav + .hdr .hdr-logo img { display:none !important; }
+/* Touch target safety */
 @media(pointer:coarse){
   .tb,.bb-tb,.tool-btn,.shape-btn,.char-btn,.tb-btn,.sw,.bb-sw,.colour-swatch,.seq-cell,.loop-dot,.pad,.kit-btn,button {
     min-height:32px;
   }
   .seq-cell{ height:36px !important; min-height:36px !important; }
   .z-btn,.lb{ min-width:32px; min-height:32px; }
+  .buildlab-status{top:10px;left:10px;right:10px;max-width:none;border-radius:16px;font-size:.68rem;}
+  .buildlab-status strong{font-size:.84rem;}
 }
-.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap}
+.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
+.skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap;}

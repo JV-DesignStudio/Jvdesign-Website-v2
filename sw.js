@@ -1,6 +1,5 @@
-// JVDesignStudio Service Worker v18 — trimmed CORE + ignoreSearch for ?v bust (bumped 2026-09-07: board-tracks version)
-const CACHE='jvds-v18';
-const CACHE_VERSION='v18';
+// JVDesignStudio Service Worker v19 — isolated caches and exact asset versions.
+const CACHE='jvds-v19';
 const CORE=[
   '/',
   '/offline.html',
@@ -22,57 +21,56 @@ self.addEventListener('install',e=>{
 self.addEventListener('activate',e=>{
   e.waitUntil(
     caches.keys()
-      .then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+      // CacheStorage is shared by every app on this origin. Only retire our
+      // numbered website caches, never another worker's offline data.
+      .then(keys=>Promise.all(keys.filter(k=>/^jvds-v\d+$/.test(k)&&k!==CACHE).map(k=>caches.delete(k))))
       .then(()=>self.clients.claim())
   );
 });
 
+async function remember(cache,request,response){
+  if(response.ok){
+    try { await cache.put(request,response.clone()); }
+    catch(err){ console.warn('[SW] Cache write failed',err); }
+  }
+  return response;
+}
+
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   const url=new URL(e.request.url);
-  if(url.hostname.includes('google-analytics')||url.hostname.includes('googletagmanager')||url.hostname.includes('doubleclick')) return;
-  if(e.request.headers.has('range')) return;
-  if(url.protocol==='chrome-extension:') return;
+  if(url.origin!==self.location.origin||e.request.headers.has('range'))return;
 
-  // Network-first for HTML (always get latest app)
-  if(url.pathname.endsWith('.html')||url.pathname==='/'){
-    e.respondWith(
-      fetch(e.request)
-        .then(res=>{ if(res.ok) caches.open(CACHE).then(c=>c.put(e.request,res.clone())); return res; })
-        .catch(()=>caches.match(e.request).then(r=>r||caches.match('/offline.html')))
-    );
+  const cachePromise=caches.open(CACHE);
+  // Navigation mode also covers extensionless routes and directory URLs.
+  if(e.request.mode==='navigate'||url.pathname.endsWith('.html')||url.pathname==='/'){
+    e.respondWith(cachePromise.then(async cache=>{
+      try { return await remember(cache,e.request,await fetch(e.request)); }
+      catch(err){
+        return await cache.match(e.request)||await cache.match('/offline.html')||
+          new Response('Offline',{status:503,headers:{'Content-Type':'text/plain'}});
+      }
+    }));
     return;
   }
 
-  // Stale-while-revalidate for CSS/JS (serve fast, update in background) — ignore ?v= cache-bust param
   if(url.pathname.endsWith('.css')||url.pathname.endsWith('.js')){
-    e.respondWith(
-      caches.open(CACHE).then(cache=>{
-        return cache.match(e.request, {ignoreSearch:true}).then(cached=>{
-          const fetchPromise=fetch(e.request).then(res=>{
-            if(res.ok)cache.put(e.request,res.clone());
-            return res;
-          }).catch(()=> cached || new Response('',{status:504,statusText:'Offline'}));
-          return cached||fetchPromise;
-        });
-      })
-    );
+    // Keep background refresh alive even after a cached response is delivered.
+    // A new ?v= URL must never match an older asset version.
+    const refresh=cachePromise.then(async cache=>{
+      try { return await remember(cache,e.request,await fetch(e.request)); }
+      catch(err){ return await cache.match(e.request)||new Response('',{status:504,statusText:'Offline'}); }
+    });
+    e.waitUntil(refresh.then(()=>{}));
+    e.respondWith(cachePromise.then(async cache=>await cache.match(e.request)||refresh));
     return;
   }
 
-  // Cache-first for static assets (icons, images, fonts) — bounded, no opaque analytics
-  e.respondWith(
-    caches.match(e.request).then(cached=>{
-      if(cached)return cached;
-      return fetch(e.request).then(res=>{
-        // Only cache successful, same-origin GETs; avoid opaque/analytics
-        if(res.ok && res.type==='basic') caches.open(CACHE).then(c=>c.put(e.request,res.clone()));
-        return res;
-      }).catch(()=>{
-        // Only return offline.html for navigations; otherwise 504 to avoid MIME mismatch
-        if(e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html')) return caches.match('/offline.html');
-        return new Response('',{status:504,statusText:'Offline'});
-      });
-    })
-  );
+  // Read only this website's cache, rather than every cache on the origin.
+  e.respondWith(cachePromise.then(async cache=>{
+    const cached=await cache.match(e.request);
+    if(cached)return cached;
+    try { return await remember(cache,e.request,await fetch(e.request)); }
+    catch(err){ return new Response('',{status:504,statusText:'Offline'}); }
+  }));
 });

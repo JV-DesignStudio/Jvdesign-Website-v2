@@ -52,6 +52,7 @@
   <h1>Store Page Builder</h1>
   <button class="btn btn-primary" onclick="exportHTML()">📥 Export HTML</button>
   <button class="btn btn-secondary" onclick="copyBBCode()">📋 Copy BBCode</button>
+  <button class="btn btn-secondary" onclick="downloadBBCode()">⬇ Download BBCode</button>
 </div>
 <div class="wrap">
   <div class="preview-area">
@@ -180,18 +181,39 @@ function exportHTML() {
   showToast('HTML exported!');
 }
 
-function copyBBCode() {
-  const title = document.getElementById('gameTitle').value || 'My Game';
-  const desc = document.getElementById('description').value || '';
-  const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean);
-  const itchUrl = document.getElementById('itchUrl').value;
-  
-  let bb = '[h1]' + title + '[/h1]\n\n';
+function buildBBCode() {
+  const title    = document.getElementById('gameTitle').value || 'My Game';
+  const tagline  = document.getElementById('tagline').value || '';
+  const desc     = document.getElementById('description').value || '';
+  const tags     = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean);
+  const steamUrl = document.getElementById('steamUrl').value;
+  const itchUrl  = document.getElementById('itchUrl').value;
+
+  let bb = '[h1]' + title + '[/h1]\n';
+  if (tagline) bb += '[i]' + tagline + '[/i]\n';
+  bb += '\n';
   if (desc) bb += desc + '\n\n';
   if (tags.length) bb += '[b]Tags:[/b] ' + tags.join(', ') + '\n\n';
-  if (itchUrl) bb += '[url=' + itchUrl + ']Buy on itch.io[/url]\n';
-  
-  navigator.clipboard.writeText(bb).then(() => showToast('BBCode copied!')).catch(() => prompt('Copy:', bb));
+  if (steamUrl) bb += '[url=' + steamUrl + ']🎮 View on Steam[/url]\n';
+  if (itchUrl)  bb += '[url=' + itchUrl  + ']🎮 Buy on itch.io[/url]\n';
+  return bb.trimEnd();
+}
+
+function copyBBCode() {
+  const bb = buildBBCode();
+  navigator.clipboard.writeText(bb).then(() => showToast('BBCode copied!')).catch(() => prompt('Copy this BBCode:', bb));
+}
+
+function downloadBBCode() {
+  const title = document.getElementById('gameTitle').value || 'my-game';
+  const bb = buildBBCode();
+  const blob = new Blob([bb], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = title.replace(/\s+/g, '-').toLowerCase() + '-steam.txt';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  showToast('BBCode downloaded!');
 }
 
 function showToast(msg) {

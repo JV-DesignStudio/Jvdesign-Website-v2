@@ -99,6 +99,13 @@
   <p>Tap the pads, make some noise! Use keyboard keys too.</p>
 </section>
 
+<div class="also-try" style="width:min(960px,calc(100% - 32px));margin:0 auto 12px;padding:10px 20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+  <span style="color:var(--muted);font-size:.82rem;flex-shrink:0;">More audio tools:</span>
+  <a href="sfx-generator.html" style="color:var(--accent);font-size:.82rem;font-weight:700;text-decoration:none;">🔊 SFX Generator</a>
+  <a href="music-maker.html" style="color:var(--accent);font-size:.82rem;font-weight:700;text-decoration:none;">🎵 Music Maker</a>
+  <a href="sound-studio.html" style="color:var(--accent);font-size:.82rem;font-weight:700;text-decoration:none;">🎛️ Sound Studio</a>
+</div>
+
 <div class="kit-bar" id="kitBar"></div>
 
 <div class="pad-area">
@@ -120,7 +127,8 @@
   <button class="ctrl-btn" id="playBtn" style="display:none">â-¶ Play Loop</button>
   <button class="ctrl-btn" id="clearBtn" style="display:none">âœ• Clear</button>
   <button class="ctrl-btn" id="saveBtn" style="display:none">💾 Save Pattern</button>
-  <button class="ctrl-btn" id="captureBtn">🎩ï¸ Capture Audio</button>
+  <button class="ctrl-btn" id="captureBtn">🎤 Capture Audio</button>
+  <button class="ctrl-btn" id="exportWavBtn" onclick="exportWAV(2)" title="Render 2 bars of your step-sequencer pattern as a WAV file">⬇ Export WAV</button>
 </div>
 
 <section class="adv-section" id="advSection" hidden>
@@ -210,8 +218,10 @@
 let ctx = null;
 let masterGain = null;
 let streamDest = null;
+let _offCtx = null, _offDest = null; // set during WAV offline render
 
 function getCtx() {
+  if (_offCtx) return _offCtx;
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     masterGain = ctx.createGain();
@@ -223,7 +233,7 @@ function getCtx() {
   if (ctx.state === 'suspended') ctx.resume();
   return ctx;
 }
-function getDest() { getCtx(); return masterGain; }
+function getDest() { getCtx(); return _offDest || masterGain; }
 
 // ── NOISE BUFFER CACHE ─────────────────────────────────────────
 // Rebuilding a noise AudioBuffer on every hit causes GC churn on mobile,
@@ -231,29 +241,29 @@ function getDest() { getCtx(); return masterGain; }
 const _bufCache = new Map();
 function whiteNoise(c, secs) {
   const key = 'w' + Math.round(secs * 1000);
-  if (_bufCache.has(key)) return _bufCache.get(key);
+  if (!_offCtx && _bufCache.has(key)) return _bufCache.get(key);
   const b = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * secs)), c.sampleRate);
   const d = b.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  _bufCache.set(key, b);
+  if (!_offCtx) _bufCache.set(key, b);
   return b;
 }
 function decayNoise(c, secs, pow) {
   const key = 'd' + Math.round(secs * 1000) + '_' + pow;
-  if (_bufCache.has(key)) return _bufCache.get(key);
+  if (!_offCtx && _bufCache.has(key)) return _bufCache.get(key);
   const b = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * secs)), c.sampleRate);
   const d = b.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, pow);
-  _bufCache.set(key, b);
+  if (!_offCtx) _bufCache.set(key, b);
   return b;
 }
 function fadeNoise(c, secs) {
   const key = 'f' + Math.round(secs * 1000);
-  if (_bufCache.has(key)) return _bufCache.get(key);
+  if (!_offCtx && _bufCache.has(key)) return _bufCache.get(key);
   const b = c.createBuffer(1, Math.max(1, Math.floor(c.sampleRate * secs)), c.sampleRate);
   const d = b.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-  _bufCache.set(key, b);
+  if (!_offCtx) _bufCache.set(key, b);
   return b;
 }
 
@@ -1356,6 +1366,79 @@ captureBtn.addEventListener('click', () => {
     mediaRecorder.stop();
   }
 });
+
+// ── WAV EXPORT ─────────────────────────────────────────────────
+function audioBufferToWav(buf) {
+  const nCh = buf.numberOfChannels, len = buf.length, sr = buf.sampleRate;
+  const ab = new ArrayBuffer(44 + len * nCh * 2);
+  const v = new DataView(ab);
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, 'RIFF'); v.setUint32(4, 36 + len * nCh * 2, true);
+  str(8, 'WAVE'); str(12, 'fmt '); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, nCh, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * nCh * 2, true);
+  v.setUint16(32, nCh * 2, true); v.setUint16(34, 16, true);
+  str(36, 'data'); v.setUint32(40, len * nCh * 2, true);
+  let off = 44;
+  for (let i = 0; i < len; i++) {
+    for (let c = 0; c < nCh; c++) {
+      const s = Math.max(-1, Math.min(1, buf.getChannelData(c)[i]));
+      v.setInt16(off, s < 0 ? s * 32768 : s * 32767, true);
+      off += 2;
+    }
+  }
+  return ab;
+}
+
+async function exportWAV(bars = 2) {
+  const hasHits = pattern.some(step => step.length > 0);
+  if (!hasHits) { showToast('Add some beats to the sequencer first!'); return; }
+
+  const bpm = parseInt(bpmRange.value, 10) || 120;
+  const swing = (parseInt(swingRange.value, 10) || 0) / 100;
+  const stepBaseS = (60 / bpm) / 4; // 16th note duration
+  const stepDurs = Array.from({ length: BPM_STEPS }, (_, s) =>
+    stepBaseS * (s % 2 === 0 ? 1 + swing : 1 - swing));
+
+  const totalSteps = bars * BPM_STEPS;
+  let totalDur = 0;
+  for (let s = 0; s < totalSteps; s++) totalDur += stepDurs[s % BPM_STEPS];
+  totalDur += 0.6; // tail for last sounds to decay
+
+  const SR = 44100;
+  const offCtx = new OfflineAudioContext(2, Math.ceil(totalDur * SR), SR);
+  const offGain = offCtx.createGain();
+  offGain.gain.value = 1.0;
+  offGain.connect(offCtx.destination);
+
+  // Route all play functions through the offline context
+  _offCtx = offCtx; _offDest = offGain;
+  let t = 0.05;
+  for (let i = 0; i < totalSteps; i++) {
+    const step = i % BPM_STEPS;
+    pattern[step].forEach(h => {
+      const kit = KITS[h.kit];
+      if (kit && kit.pads[h.idx]) kit.pads[h.idx].fn(t);
+    });
+    t += stepDurs[step];
+  }
+  _offCtx = null; _offDest = null; // restore before async render
+
+  showToast('Rendering WAV…');
+  try {
+    const buffer = await offCtx.startRendering();
+    const wavData = audioBufferToWav(buffer);
+    const blob = new Blob([wavData], { type: 'audio/wav' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `drum-beat-${bpm}bpm-${bars}bars.wav`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    showToast('WAV downloaded! 🎵');
+  } catch (e) {
+    showToast('WAV export failed — try a different browser');
+  }
+}
 
 // ── INIT ───────────────────────────────────────────────────────
 renderPads();

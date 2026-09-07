@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Neon Tiles | JVDesignStudio</title>
 <meta name="description" content="A neon rhythm runner. Tap the falling tiles in four lanes, keep your combo alive, dodge the traps and climb the levels. Free to play by JVDesignStudio.">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/neon-tiles.html">
@@ -29,7 +29,7 @@
 <div class="wrap">
   <div class="header">
     <div class="title">⚡ Neon Tiles</div>
-    <button class="home-btn" onclick="location.href='../pages/games.html'">🏠</button>
+    <button class="home-btn" aria-label="Back to Arcade" title="Back to Arcade" onclick="location.href='../pages/games.html'">🏠</button>
   </div>
 
   <div class="stats">
@@ -50,6 +50,7 @@
     <div class="hit-pads"><span style="--pad:#7c5cff"><i><b>D</b></i></span><span style="--pad:#34d399"><i><b>F</b></i></span><span style="--pad:#f472b6"><i><b>J</b></i></span><span style="--pad:#60a5fa"><i><b>K</b></i></span></div>
     <div class="hit-zone" id="hitZone"></div>
     <div class="judge" id="judge"></div>
+    <div class="pause-overlay" id="pauseOverlay" hidden role="status" aria-live="polite"><strong>Paused</strong><span>Press Space or use the Arcade menu to resume</span></div>
     <div class="countdown" id="countdown" style="display:none"><div class="countdown-num" id="cdNum">3</div></div>
   </div>
 </div>
@@ -105,6 +106,7 @@ const S = {
   spawnMs:900,        // ms between spawns
   trapChance:0,       // introduced at higher levels
   goldChance:0.08,
+  paused:false,
 };
 
 /* ═══════════════ LEVEL CONFIG ═══════════════ */
@@ -180,6 +182,7 @@ function spawnTile() {
 /* ═══════════════ INPUT ═══════════════ */
 const LANE_KEYS = { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3 };
 window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); togglePause(); return; }
   if (!S.running) return;
   const lane = LANE_KEYS[e.code];
   if (lane === undefined) return;
@@ -308,6 +311,7 @@ function tileCenterX(tile) { return field.getBoundingClientRect().left + tile.la
 /* ═══════════════ LOOP ═══════════════ */
 function loop(t) {
   if (!S.running) return;
+  if (S.paused) { rafId = requestAnimationFrame(loop); return; }
   const dt = Math.min(t - lastT, 50);
   lastT = t;
 
@@ -466,13 +470,14 @@ function musicStop() {
 // hide music from the page while it's backgrounded
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') musicStop();
-  else if (S.running) musicStart();
+  else if (S.running && !S.paused) musicStart();
 });
 
 /* ═══════════════ FLOW ═══════════════ */
 function startGame() {
   document.getElementById('modal').classList.remove('show');
-  S.running = false; S.score = 0; S.combo = 0; S.bestCombo = 0; S.lives = 3;
+  S.running = false; S.paused = false; S.score = 0; S.combo = 0; S.bestCombo = 0; S.lives = 3;
+  document.getElementById('pauseOverlay').hidden = true;
   applyLevel(1);
   clearTiles();
   renderLives();
@@ -483,6 +488,14 @@ function startGame() {
     lastT = performance.now();
     rafId = requestAnimationFrame(loop);
   });
+}
+
+function togglePause() {
+  if (!S.running) return;
+  S.paused = !S.paused;
+  document.getElementById('pauseOverlay').hidden = !S.paused;
+  if (S.paused) musicStop();
+  else { lastT = performance.now(); musicStart(); }
 }
 
 function countdown(n, done) {
@@ -512,6 +525,8 @@ function levelUp() {
 
 function gameOver() {
   S.running = false;
+  S.paused = false;
+  document.getElementById('pauseOverlay').hidden = true;
   musicStop();
   cancelAnimationFrame(rafId);
   clearTiles();

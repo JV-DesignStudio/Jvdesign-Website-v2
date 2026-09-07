@@ -7,7 +7,8 @@
  *  - Resolves relative refs against each file's own directory.
  *  - Resolves root-absolute refs ("/foo") against the repo root.
  *  - Skips external (http/mailto/tel/data/js), anchors, and query-only refs.
- *  - Strips <script> blocks first, so JS-built paths (e.g. '../badge-'+id+'.png')
+ *  - Strips script bodies but preserves their opening tags, so external script
+ *    sources are checked while JS-built paths (e.g. '../badge-'+id+'.png')
  *    are never flagged.
  *
  * Exit code 1 if any broken links are found, so it can gate a build / hook / CI.
@@ -37,7 +38,7 @@ let refCount = 0;
 
 for (const filePath of walk(ROOT)) {
   let c = fs.readFileSync(filePath, 'utf8');
-  c = c.replace(/<script[\s\S]*?<\/script>/gi, ' '); // ignore JS-built paths
+  c = c.replace(/(<script\b[^>]*>)[\s\S]*?<\/script\s*>/gi, '$1'); // keep script src, ignore JS-built paths
   const dir = path.dirname(filePath);
   for (const m of c.matchAll(/(?:href|src)="([^"]+)"/g)) {
     let ref = m[1];

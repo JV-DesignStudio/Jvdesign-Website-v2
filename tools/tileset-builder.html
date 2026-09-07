@@ -53,6 +53,7 @@
   <button class="btn btn-secondary" onclick="importTiles()">📋 Import Tiles</button>
   <button class="btn btn-primary" onclick="exportPNG()">📥 Export PNG</button>
   <button class="btn btn-primary" onclick="exportJSON()">📥 Export JSON</button>
+  <button class="btn btn-secondary" onclick="exportTiled()">🗺 Export Tiled (.tsj)</button>
   <input type="file" id="importInput" accept="image/*" multiple style="display:none" onchange="handleImport(this)">
 </div>
 <div class="wrap">
@@ -228,6 +229,35 @@ function exportJSON() {
   a.download = 'tileset.json';
   a.click();
   showToast('JSON atlas exported!');
+}
+
+function exportTiled() {
+  if (!tiles.length) { showToast('Add some tiles first'); return; }
+  const ts   = parseInt(document.getElementById('tileSize').value) || 16;
+  const cols = parseInt(document.getElementById('cols').value) || 8;
+  const rows = Math.ceil(tiles.length / cols);
+  const tsj = {
+    columns:      cols,
+    image:        'tileset.png',
+    imageheight:  rows  * ts,
+    imagewidth:   cols  * ts,
+    margin:       0,
+    name:         'tileset',
+    spacing:      0,
+    tilecount:    tiles.length,
+    tiledversion: '1.10.2',
+    tileheight:   ts,
+    tilewidth:    ts,
+    type:         'tileset',
+    version:      '1.10'
+  };
+  const blob = new Blob([JSON.stringify(tsj, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tileset.tsj';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  showToast('Tiled .tsj exported! Pair with tileset.png in your project.');
 }
 
 function showToast(msg) {

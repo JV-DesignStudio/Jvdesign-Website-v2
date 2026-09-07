@@ -2,6 +2,57 @@
 
 Current working tracker for public website changes that need a durable handoff.
 
+## 2026-09-07 Tool-By-Tool QA Pass
+
+Status: in progress. BuildLab and Bitmap Font Maker first passes are complete; continue with the next queued tool.
+
+Approach:
+- Work one tool at a time instead of doing a broad toolbox sweep.
+- For each tool, check duplicate nav/header chrome, footer placement, broken or corrupted symbols, the main interaction, achievement/learning feedback and mobile layout.
+- Avoid global symbol replacement. Some question marks are intentional coding blanks, so encoding cleanup should happen page-by-page.
+- Add focused smoke tests where a tool has complex interaction or layout risk.
+
+BuildLab pass:
+- Removed the extra local header so BuildLab uses the same shared site nav as the rest of the site.
+- Removed the duplicate skip link.
+- Stopped the BuildLab stylesheet from hiding `.site-header`, which could hide the real shared nav.
+- Removed the old corrupted "header consolidation" hack from the BuildLab stylesheet.
+- Added an in-canvas BuildLab status badge so the tool still has a clear identity without a second nav.
+- Added graceful 3D engine startup handling. If Three.js, TransformControls or WebGL fail, learners now see a clear restart/help state instead of a dead viewport.
+- Added a focused BuildLab smoke test for phone and desktop checks.
+- `node scripts/tool-smoke-buildlab.cjs` passed across phone and desktop viewports.
+- `node validate-links.js` passed: 7039 internal references checked, 0 broken.
+
+Bitmap Font Maker pass:
+- Removed the extra local `.hdr` header so the page uses the same shared site nav as the rest of the site.
+- Added a compact "Pixel font workshop" workflow strip: choose glyph, draw pixels, preview/export.
+- Added clearer accessible labels to the icon-only toolbar buttons.
+- Removed a duplicate `?` keyboard handler that called a missing `showToast()` function.
+- Removed the old header-consolidation CSS hack from the tool stylesheet.
+- Added a focused Bitmap Font Maker smoke test for phone and desktop checks.
+- `node scripts/tool-smoke-bitmap-font-maker.cjs` passed across phone and desktop viewports.
+- Corrupted-symbol scan was clean for `tools/bitmap-font-maker.html` and `style-tool-bitmap-font-maker.css`.
+- Follow-up `node validate-links.js` passed: 7036 internal references checked, 0 broken.
+
+Tool queue from first scan:
+- `tools/buildlab.html` - first pass complete.
+- `tools/bitmap-font-maker.html` - first pass complete.
+- `tools/character-designer.html` - likely duplicate local header.
+- `tools/gdd-builder.html` - duplicate local header and several corrupted text symbols.
+- `tools/icon-generator.html` - likely duplicate local header.
+- `tools/level-designer.html` - likely duplicate local header.
+- `tools/drum-pad.html` - corrupted text symbols found in scan.
+- `tools/game-idea-generator.html` - corrupted text symbols found in scan.
+- `tools/glossary.html` - corrupted text symbols found in scan.
+- `tools/game-logo-maker.html` - corrupted text symbols found in scan.
+
+Art tool consolidation direction:
+- Merge candidate: `tools/character-designer.html`, `tools/pixel-studio.html`, `tools/sprite-animator.html` and possibly `tools/sprite-sheet-animator.html` should become one guided sprite/character studio with modes for Character, Pixel Edit, Animate and Export.
+- Merge candidate: `tools/level-designer.html`, `tools/tileset-builder.html` and parts of `tools/map-generator.html` can become a world/level studio later, but only after the sprite/character merge because it is bigger and has play-mode logic.
+- Keep separate: `tools/bitmap-font-maker.html` should remain its own tool because font creation has a different workflow and export target.
+- Keep separate: `tools/game-logo-maker.html`, `tools/icon-generator.html`, `tools/trading-card-designer.html` and `tools/particle-designer.html` should stay as focused asset generators unless a later pass creates a shared "Brand/UI assets" hub.
+- Dev Tools page should eventually show studios first, then smaller focused generators underneath, so learners choose by outcome instead of seeing too many overlapping art tools.
+
 ## 2026-09-06 Workshop UX Pass
 
 Status: in progress, broad shared uplift complete with focused Unreal Blueprint polish added.

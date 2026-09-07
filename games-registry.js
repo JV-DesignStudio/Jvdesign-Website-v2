@@ -9,7 +9,10 @@ window.JVDS_GAMES = [
     "cover": "GardenDefenseCover.webp",
     "bg": "linear-gradient(160deg,#8fd07a,#4e7d40)",
     "kids": false,
-    "desc": "Plant sunflowers, sprouts and frost buds, harvest sunlight and hold back the garden pests across 10 waves — then chase high scores in Endless Mode."
+    "desc": "Plant sunflowers, sprouts and frost buds, harvest sunlight and hold back the garden pests across 10 waves — then chase high scores in Endless Mode.",
+    "difficulty": "Medium",
+    "session": "10–20 min",
+    "controls": "Tap to place plants"
   },
   {
     "id": "bubble-pop",
@@ -21,7 +24,10 @@ window.JVDS_GAMES = [
     "cover": "BubblePopCover.webp",
     "bg": "radial-gradient(circle at 30% 30%,#2a2450,#0c0a1a)",
     "kids": false,
-    "desc": "A cosmic collapse puzzle. Pop groups, trigger cascades, hit level targets and spawn bombs before your moves run out."
+    "desc": "A cosmic collapse puzzle. Pop groups, trigger cascades, hit level targets and spawn bombs before your moves run out.",
+    "difficulty": "Easy to learn",
+    "session": "5–10 min",
+    "controls": "Tap or press Enter"
   },
   {
     "id": "neon-tiles",
@@ -33,7 +39,10 @@ window.JVDS_GAMES = [
     "cover": "NeonTilesCover.webp",
     "bg": "linear-gradient(160deg,#05060f,#1a1240)",
     "kids": false,
-    "desc": "Tap falling tiles across four lanes, nail the timing for perfects, chain combos, dodge traps and climb the levels."
+    "desc": "Tap falling tiles across four lanes, nail the timing for perfects, chain combos, dodge traps and climb the levels.",
+    "difficulty": "Medium",
+    "session": "2–5 min",
+    "controls": "Tap or D F J K"
   },
   {
     "id": "bakery-empire",
