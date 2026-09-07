@@ -26,7 +26,12 @@ const server = http.createServer((req, res) => {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
-  page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
+  page.on('console', m => {
+    if (m.type() !== 'error') return;
+    const text = m.text();
+    if (text.includes('ERR_NETWORK_ACCESS_DENIED')) return;
+    errors.push('console: ' + text);
+  });
   page.on('dialog', async d => { await d.dismiss().catch(()=>{}); });
 
   await page.goto('http://127.0.0.1:8126/tools/level-designer.html', { waitUntil: 'networkidle2', timeout: 30000 });
@@ -117,10 +122,18 @@ const server = http.createServer((req, res) => {
 
   await page.setViewport({ width: 390, height: 780 });
   await new Promise(r => setTimeout(r, 200));
-  await page.evaluate(() => document.getElementById('jvdsNavToggle').click());
-  const navOpened = await page.evaluate(() => document.getElementById('jvdsNavLinks').classList.contains('open'));
-  await page.evaluate(() => document.getElementById('jvdsNavToggle').click());
-  const navClosed = await page.evaluate(() => !document.getElementById('jvdsNavLinks').classList.contains('open'));
+  await page.evaluate(() => document.getElementById('navToggle').click());
+  const navOpened = await page.evaluate(() => {
+    const nav = document.getElementById('mainNav');
+    const btn = document.getElementById('navToggle');
+    return nav.classList.contains('open') && btn.getAttribute('aria-expanded') === 'true';
+  });
+  await page.evaluate(() => document.getElementById('navToggle').click());
+  const navClosed = await page.evaluate(() => {
+    const nav = document.getElementById('mainNav');
+    const btn = document.getElementById('navToggle');
+    return !nav.classList.contains('open') && btn.getAttribute('aria-expanded') === 'false';
+  });
 
   console.log('checks:', JSON.stringify(checks));
   results.forEach(l => console.log(l));

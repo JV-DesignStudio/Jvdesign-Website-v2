@@ -47,7 +47,7 @@
     </script><link rel="stylesheet" href="../style-shared.css?v=17">
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
-<link rel="stylesheet" href="../game-system.css?v=17">
+<link rel="stylesheet" href="../game-system.css?v=18">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Gem Match","url":"https://jvdesignstudio.co.uk/games/gem_match.html","description":"Two-minute match-3 with bombs, wilds, fever mode, cascading combos, and a global leaderboard.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/GemMatchCover.webp"}</script>
 </head>
 <body>
@@ -289,7 +289,7 @@ const SWAP_CLASS = {right:'swap-r',left:'swap-l',down:'swap-d',up:'swap-u'};
 let board = [], score = 0, shownScore = 0;
 let timeLeft = DURATION, timerID = null, scoreRafID = null;
 let bestScore = +localStorage.getItem('gmBest')||0;
-let sel = -1, busy = false, gameOn = false;
+let sel = -1, busy = false, gameOn = false, arcadePaused = false;
 let chain = 0, maxChain = 0, matchTally = 0, bombTally = 0, wildTally = 0;
 let fever = false, hintID = null, soundOn = true;
 
@@ -459,13 +459,13 @@ function addInput(){
   boardEl.addEventListener('click',onClick);
   let tx,ty,ti;
   boardEl.addEventListener('touchstart',e=>{
-    if(!gameOn||busy) return;
+    if(!gameOn||busy||arcadePaused) return;
     const t=e.touches[0],el=document.elementFromPoint(t.clientX,t.clientY);
     if(el?.classList.contains('cell')){ tx=t.clientX;ty=t.clientY;ti=+el.dataset.index; }
     e.preventDefault();
   },{passive:false});
   boardEl.addEventListener('touchend',e=>{
-    if(!gameOn||busy||ti==null) return;
+    if(!gameOn||busy||arcadePaused||ti==null) return;
     const t=e.changedTouches[0];
     const dx=t.clientX-tx,dy=t.clientY-ty;
     if(Math.max(Math.abs(dx),Math.abs(dy))<13){ pick(ti); }
@@ -478,7 +478,7 @@ function addInput(){
 }
 
 function onClick(e){
-  if(!gameOn||busy) return;
+  if(!gameOn||busy||arcadePaused) return;
   const c=e.target.closest('.cell');
   if(c) pick(+c.dataset.index);
 }
@@ -915,7 +915,7 @@ function init(){
   if(scoreRafID){cancelAnimationFrame(scoreRafID);scoreRafID=null;}
   score=0;shownScore=0;timeLeft=DURATION;
   chain=0;maxChain=0;matchTally=0;bombTally=0;wildTally=0;
-  sel=-1;busy=false;fever=false;gameOn=true;
+  sel=-1;busy=false;fever=false;arcadePaused=false;gameOn=true;
   boardEl.classList.remove('fever-board','shake');
   boardGlow.classList.remove('fever');
   scoreCard.classList.remove('fever');
@@ -1003,6 +1003,16 @@ function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 // -- GAME SYSTEM INTEGRATION --
 const gameSystem = new GameSystem('gem-match', 'Gem Match', 'pip');
 const soundManager = new SoundManager(gameSystem);
+const gemPause = GameUI.autoPause({
+  pause: () => { if (!gameOn) return false; arcadePaused = true; gameOn = false; return true; },
+  resume: () => { arcadePaused = false; gameOn = true; }
+});
+JVDSArcade.register({
+  start: init,
+  restart: init,
+  pause: () => arcadePaused ? gemPause.resume() : gemPause.pause(),
+  sound: () => $('sndBtn').click()
+});
 
 // Score ? XP + score-tier achievements, handled reactively by the engine
 // (replaces the two setInterval pollers this used to copy-paste).

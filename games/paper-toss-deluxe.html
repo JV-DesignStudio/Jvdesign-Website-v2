@@ -20,7 +20,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <script src="../game-system.js"></script>
 <script src="../audio-effects.js"></script>
-<link rel="stylesheet" href="../game-system.css?v=17">
+<link rel="stylesheet" href="../game-system.css?v=18">
 <link rel="preload" href="../style-game-paper-toss-deluxe.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-game-paper-toss-deluxe.css?v=17"></noscript>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Paper Toss Deluxe","url":"https://jvdesignstudio.co.uk/games/paper-toss-deluxe.html","description":"Flick paper into the bin across 20 levels of wind and distance. Simple to pick up, tricky to master.","genre":"Action","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/PaperTossCover.webp"}</script>
@@ -146,6 +146,7 @@ let particles = [];
 let shakeT = 0;
 let resultText = null; // {txt,color,t,x,y}
 let startedAt = 0;
+let arcadePaused = false;
 
 function reset() {
   score = 0; level = 1; lives = 3; hits = 0; combo = 0;
@@ -174,6 +175,7 @@ function startGame() {
   document.getElementById('overModal').classList.remove('show');
   resize();
   reset();
+  arcadePaused = false;
   state = 'ready';
   startedAt = performance.now();
 }
@@ -297,6 +299,7 @@ function loop(now) {
 }
 
 function update(dt) {
+  if (arcadePaused) return;
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 900*dt; p.life -= dt;
@@ -524,6 +527,12 @@ document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed
 document.getElementById('bestHud').textContent = best;
 reset();
 requestAnimationFrame(loop);
+
+GameUI.autoPause({
+  pause: () => { if (state === 'idle' || state === 'dead') return false; arcadePaused = true; return true; },
+  resume: () => { arcadePaused = false; }
+});
+JVDSArcade.register({ start: startGame, restart: startGame });
 
 window.addEventListener('beforeunload', () => { gameSystem.saveState(); });
 </script>

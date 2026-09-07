@@ -8,7 +8,10 @@ Status: in progress, broad shared uplift complete with focused Unreal Blueprint 
 
 Scope covered:
 - Workshop overview page now has a clear "choose your path" section before the full library.
+- Workshop overview page now has a dedicated finder with search and quick category jumps for Scratch, Roblox, Godot, Unity, Unreal, Minecraft, Builders and Downloads.
 - Workshop overview filters now announce what they are showing.
+- Workshop overview filters now combine format, learner age and search text, then hide empty sections so the page is easier to scan.
+- Workshop overview cards have a more consistent shared treatment across article cards, course cards and download cards.
 - Shared workshop pages now get an automatic learning map: Build, Check, Unlock.
 - Standard step-card workshops have clearer active, completed and locked visual states.
 - Quiz, code challenge and true/false controls have stronger spacing and mobile touch targets.
@@ -25,12 +28,16 @@ Files changed:
 - `style-workshop.css`
 - `workshop-enhancements.js`
 - `workshops/racing-blueprint.html`
+- `scripts/workshop-responsive-smoke.cjs`
 
 Validation:
 - `node validate-workshops.js` passed: 39/39 standard workshops and 22/22 builder-style workshops valid.
 - `node validate-links.js` passed: 5228 internal references checked, 0 broken.
-- `node validate-css.js` could not run because the local Puppeteer Chrome binary is missing.
-- `node validate-js.js` could not run for the same missing Puppeteer Chrome binary.
+- Puppeteer Chrome was restored to the local cache for browser validation.
+- Focused workshop responsive smoke test added for the overview and representative Unreal Blueprint pages.
+- Focused smoke test now checks the Workshop finder/search behavior as well as layout overflow.
+- `node scripts/workshop-responsive-smoke.cjs` passed: 7 pages across 3 viewports.
+- `node validate-css.js` and `node validate-contrast.js` were able to launch but the broad sweeps hung without useful output; use the focused smoke test for this pass.
 
 Remaining follow-up:
 - Run browser-based CSS and JS validation after installing or restoring Puppeteer Chrome.

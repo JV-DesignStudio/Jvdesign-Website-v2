@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
  * tests/arcade-game-maker-smoke.js — headless smoke for the Arcade Game Maker.
- * Verifies 21 genres can compile, boot Phaser without JS errors, and
+ * Verifies core genres can compile, boot Phaser without JS errors, and
  * that critical patches (haptics, storage quota, sprite validation, daily streak)
  * are present. Run: node tests/arcade-game-maker-smoke.js
  */
@@ -34,7 +34,12 @@ function record(name, ok, detail){ results.push({name,ok,detail}); console.log((
   const page = await browser.newPage();
   const jsErrors=[];
   page.on('pageerror', e=> jsErrors.push(e.message));
-  page.on('console', m=>{ if(m.type()==='error') jsErrors.push(m.text()); });
+  page.on('console', m=>{
+    if(m.type() !== 'error') return;
+    const text = m.text();
+    if(text.includes('ERR_NETWORK_ACCESS_DENIED')) return;
+    jsErrors.push(text);
+  });
 
   console.log('\n▸ arcade game maker loads clean');
   await page.setViewport({width:1280,height:900});

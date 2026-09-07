@@ -140,6 +140,24 @@ function createServer() {
           if (consoleErrors.length) {
             failures.push(`${pagePath} ${vp.name}: console errors: ${consoleErrors.slice(0, 2).join(' | ')}`);
           }
+
+          if (pagePath === '/pages/workshop.html') {
+            const finder = await page.evaluate(async () => {
+              const input = document.getElementById('workshopSearch');
+              const result = document.getElementById('filterResult');
+              if (!input || !result) return { ok: false, reason: 'missing finder controls' };
+              input.value = 'unreal';
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              await new Promise(resolve => setTimeout(resolve, 50));
+              const visibleCards = [...document.querySelectorAll('.article-card, .course-card, .ws-dl-card')]
+                .filter(card => card.style.display !== 'none').length;
+              return {
+                ok: visibleCards > 0 && result.textContent.toLowerCase().includes('unreal'),
+                reason: `${visibleCards} visible search results; message: ${result.textContent}`
+              };
+            });
+            if (!finder.ok) failures.push(`${pagePath} ${vp.name}: finder search failed (${finder.reason})`);
+          }
         } catch (err) {
           failures.push(`${pagePath} ${vp.name}: ${err.message}`);
         } finally {

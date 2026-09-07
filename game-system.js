@@ -17,6 +17,11 @@ class GameSystem {
     // Lets AudioEffects (audio-effects.js) find the active game's sound
     // settings without every game having to pass its instance around.
     GameSystem.lastInstance = this;
+    if (typeof window !== 'undefined' && !window.JVDSArcade) {
+      window.JVDSArcade = {
+        register: actions => GameSystem.lastInstance && GameSystem.lastInstance.registerArcadeActions(actions)
+      };
+    }
 
     this.state = this.loadState() || {
       score: 0,
@@ -42,6 +47,17 @@ class GameSystem {
     this.state.gameCharacter = gameCharacter;
 
     this.achievements = this.defineAchievements();
+    this.arcadeActions = {};
+  }
+
+  // Games can opt into the shared Arcade shell without exposing their
+  // internal state or forcing the shell to guess function names.
+  registerArcadeActions(actions) {
+    if (!actions || typeof actions !== 'object') return this.arcadeActions;
+    Object.keys(actions).forEach(name => {
+      if (typeof actions[name] === 'function') this.arcadeActions[name] = actions[name];
+    });
+    return this.arcadeActions;
   }
 
   /* ── STATE MANAGEMENT ── */
@@ -1523,6 +1539,32 @@ if (typeof document !== 'undefined') {
   function initArcadeMenu(){
     if(document.getElementById('arcade-menu')) return;
     if(!GameSystem.lastInstance) return;
+    var game=GameSystem.lastInstance;
+    document.body.classList.add('arcade-game-page');
+    // Give common legacy lifecycle screens one shared styling hook. Their
+    // contents remain game-specific, but their presentation is now unified.
+    ['#startModal','#startScreen','#menu','#screen-start','#screen-gameover','#gameover','#overModal','#endScreen','#screen-dead'].forEach(function(selector){
+      document.querySelectorAll(selector).forEach(function(el){ el.classList.add('arcade-lifecycle-screen'); });
+    });
+    function button(selectors){
+      for(var i=0;i<selectors.length;i++){
+        var el=document.querySelector(selectors[i]);
+        if(el) return el;
+      }
+      return null;
+    }
+    // Register existing game controls behind the shared contract while older
+    // games are migrated. New games should call JVDSArcade.register directly.
+    var legacy={};
+    var restart=button(['#againBtn','#btnAgain','#btnRetry','#retry-btn','#play-again','#go-restart','#sc-continue']);
+    var start=button(['#startBtn','#btnStart','#play-btn','#modalBtn','#start-game']);
+    var sound=button(['#muteBtn','#sndBtn','#sound-toggle','#audio-toggle','#sfx-btn']);
+    var help=button(['#helpBtn','#btnHelp','#howto-btn','#howToHeader']);
+    if(restart) legacy.restart=function(){ restart.click(); };
+    if(start) legacy.start=function(){ start.click(); };
+    if(sound) legacy.sound=function(){ sound.click(); };
+    if(help) legacy.help=function(){ help.click(); };
+    game.registerArcadeActions(legacy);
     var root=document.createElement('div');
     root.id='arcade-menu'; root.className='arcade-menu';
     root.innerHTML='<a class="arcade-menu-brand" href="../pages/games.html">JVDS <span>ARCADE</span></a>'+
@@ -1530,17 +1572,26 @@ if (typeof document !== 'undefined') {
       '<div class="arcade-menu-panel" id="arcade-menu-panel" hidden role="menu">'+
         '<div class="arcade-menu-title">'+GameSystem.lastInstance.gameName+'</div>'+
         '<button type="button" data-arcade-action="pause" role="menuitem">⏸ Pause / Resume</button>'+
-        '<button type="button" data-arcade-action="restart" role="menuitem">↻ Restart run</button>'+
-        '<button type="button" data-arcade-action="sound" role="menuitem">🔊 Sound</button>'+
-        '<button type="button" data-arcade-action="fullscreen" role="menuitem">⛶ Fullscreen</button>'+
+        '<button type="button" data-arcade-action="restart" role="menuitem">↻ Restart run</button>'+ 
+        '<button type="button" data-arcade-action="sound" role="menuitem">🔊 Sound</button>'+ 
+        '<button type="button" data-arcade-action="help" role="menuitem">? How to play</button>'+ 
+        '<button type="button" data-arcade-action="fullscreen" role="menuitem">⛶ Fullscreen</button>'+ 
         '<a href="../pages/games.html" role="menuitem">← Back to Arcade</a>'+ 
       '</div>';
     document.body.appendChild(root);
     var trigger=root.querySelector('.arcade-menu-trigger'), panel=root.querySelector('.arcade-menu-panel');
     function close(){ trigger.setAttribute('aria-expanded','false'); panel.hidden=true; }
     trigger.addEventListener('click',function(){ var open=trigger.getAttribute('aria-expanded')==='true'; trigger.setAttribute('aria-expanded',String(!open)); panel.hidden=open; });
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape') close();
+      if((e.key==='m'||e.key==='M') && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement && document.activeElement.tagName)){
+        var open=trigger.getAttribute('aria-expanded')==='true'; trigger.setAttribute('aria-expanded',String(!open)); panel.hidden=open;
+      }
+    });
     root.addEventListener('click',function(e){
       var action=e.target.closest('[data-arcade-action]'); if(!action) return;
+      var game=GameSystem.lastInstance, custom=game && game.arcadeActions && game.arcadeActions[action.dataset.arcadeAction];
+      if(typeof custom==='function') { custom(); close(); return; }
       if(action.dataset.arcadeAction==='pause') document.dispatchEvent(new CustomEvent('gs-toggle-pause'));
       if(action.dataset.arcadeAction==='sound') { var sound=document.getElementById('gs-mute-btn')||document.getElementById('muteBtn'); if(sound) sound.click(); }
       if(action.dataset.arcadeAction==='fullscreen') { var fs=document.getElementById('btn-fullscreen')||document.getElementById('fsToggleBtn'); if(fs) fs.click(); else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }
