@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pick Your Path — JV Design Studio</title>
+  <meta name="description" content="Find the perfect workshop or game for you. Tell us who you are and we'll point you in the right direction.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://jvdesignstudio.co.uk/pick-your-path">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --bg:        #F0EAD6;
+      --bg2:       #ffffff;
+      --charcoal:  #403B33;
+      --charcoal-lt: #5a5449;
+      --rose:      #BC4749;
+      --rose-dk:   #9b3a3c;
+      --teal:      #70A3A7;
+      --teal-dk:   #4e7d80;
+      --tan:       #D2B48C;
+      --card-bg:   #ffffff;
+      --card-shadow: rgba(64,59,51,0.10);
+      --card-hover: rgba(64,59,51,0.16);
+      --text:      #403B33;
+      --muted:     #5a5449;
+    }
+    [data-theme="dark"] {
+      --bg:        #1a1814;
+      --bg2:       #242018;
+      --card-bg:   #2a2620;
+      --card-shadow: rgba(0,0,0,0.3);
+      --card-hover: rgba(0,0,0,0.5);
+      --text:      #F0EAD6;
+      --muted:     rgba(240,234,214,0.7);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── Nav placeholder ── */
+    #site-header-placeholder { min-height: 68px; }
+
+    /* ── Main layout ── */
+    .page-wrap {
+      flex: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 24px 80px;
+      width: 100%;
+    }
+
+    /* ── Progress bar ── */
+    .progress-bar {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+    .progress-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: rgba(64,59,51,0.2);
+      transition: background 0.3s;
+    }
+    .progress-dot.active   { background: var(--rose); }
+    .progress-dot.complete { background: var(--teal-dk); }
+
+    /* ── Step panels ── */
+    .step { display: none; animation: fadeIn 0.35s ease; }
+    .step.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .step-eyebrow {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--rose);
+      text-align: center; margin-bottom: 12px;
+    }
+    .step-title {
+      font-family: 'Fredoka', cursive;
+      font-size: clamp(2rem, 6vw, 3rem);
+      font-weight: 700; color: var(--text);
+      text-align: center; line-height: 1.1;
+      margin-bottom: 10px;
+    }
+    .step-subtitle {
+      font-size: 1rem; color: var(--muted);
+      text-align: center; line-height: 1.65;
+      max-width: 480px; margin: 0 auto 40px;
+    }
+
+    /* ── Choice cards ── */
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    .choice-card {
+      background: var(--card-bg);
+      border: 2px solid transparent;
+      border-radius: 20px;
+      padding: 28px 20px 22px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      box-shadow: 0 4px 20px var(--card-shadow);
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .choice-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 14px 32px var(--card-hover);
+      border-color: var(--rose);
+    }
+    .choice-card.selected {
+      border-color: var(--teal-dk);
+      background: color-mix(in srgb, var(--teal-dk) 8%, var(--card-bg));
+    }
+    .choice-emoji { font-size: 2.8rem; line-height: 1; }
+    .choice-label {
+      font-size: 1rem; font-weight: 800; color: var(--text);
+      line-height: 1.2;
+    }
+    .choice-sub {
+      font-size: 0.78rem; color: var(--muted); line-height: 1.4;
+    }
+
+    /* ── Results ── */
+    .result-header {
+      text-align: center; margin-bottom: 40px;
+    }
+    .result-header .big-emoji {
+      font-size: 4rem; display: block; margin-bottom: 16px;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 18px;
+      margin-bottom: 40px;
+    }
+    .result-card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px var(--card-shadow);
+      display: flex; flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 2px solid transparent;
+    }
+    .result-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 32px var(--card-hover);
+    }
+    .result-card.featured { border-color: var(--rose); }
+
+    .rc-thumb {
+      height: 100px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.8rem;
+      position: relative;
+    }
+    .rc-badge {
+      position: absolute; top: 8px; right: 8px;
+      font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em;
+      text-transform: uppercase; color: white;
+      padding: 3px 9px; border-radius: 999px;
+    }
+    .rc-body { padding: 16px 18px 20px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .rc-tag  { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--teal-dk); }
+    .rc-title { font-size: 1rem; font-weight: 800; color: var(--text); line-height: 1.2; }
+    .rc-desc  { font-size: 0.8rem; color: var(--muted); line-height: 1.5; flex: 1; }
+    .rc-cta   { font-size: 0.82rem; font-weight: 700; color: var(--rose); margin-top: 8px; }
+    .result-card:hover .rc-cta { opacity: 0.75; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--rose); color: white; font-weight: 700;
+      border-radius: 14px; padding: 14px 32px; font-size: 1rem;
+      box-shadow: 0 4px 0 var(--rose-dk);
+      transition: transform 0.15s, box-shadow 0.15s;
+      cursor: pointer; border: none; font-family: inherit;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--rose-dk); }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.88rem; font-weight: 600; color: var(--muted);
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      padding: 8px 16px; border-radius: 10px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover { background: rgba(64,59,51,0.08); color: var(--text); }
+
+    .nav-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 36px;
+    }
+    .all-paths-link {
+      display: block; text-align: center;
+      font-size: 0.88rem; color: var(--muted); margin-top: 24px;
+    }
+    .all-paths-link a { color: var(--teal-dk); font-weight: 600; }
+    .all-paths-link a:hover { text-decoration: underline; }
+
+    /* ── Step 1 two-column for wide ── */
+    @media (min-width: 680px) {
+      .choice-grid.two-col { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ── Footer placeholder ── */
+    #site-footer-placeholder { margin-top: auto; }
+  </style>
+  <link rel="stylesheet" href="/style-shared.css?v=17">
+</head>
+<body>
+
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script src="/nav.js?v=18" defer></script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+ <nav class="main-nav" id="mainNav" aria-label="Main">
+  <a href="/games" class="nav-link" data-page="games">Play</a>
+  <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress">Learn</a>
+  <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies">Create</a>
+  <a href="/books" class="nav-link" data-page="books">Read</a>
+  <div class="nav-dropdown">
+   <button class="nav-link nav-dropdown-btn" aria-haspopup="true" aria-expanded="false" id="moreDropdownBtn">More ▾</button>
+   <div class="nav-dropdown-menu" role="menu" aria-labelledby="moreDropdownBtn">
+    <a href="/parents" role="menuitem">For Parents</a>
+    <a href="/about" role="menuitem">About the Studio</a>
+    <a href="/downloads" role="menuitem">Downloads</a>
+    <a href="/search" role="menuitem">Search</a>
+   </div>
+  </div>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;"><span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">0</span></a>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+</header>
+<!-- /BUILD:nav-content -->
+
+<main class="page-wrap">
+
+  <!-- Progress dots (3 steps: Who, Focus, Results) -->
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-dot active" id="dot0"></div>
+    <div class="progress-dot" id="dot1"></div>
+    <div class="progress-dot" id="dot2"></div>
+  </div>
+
+  <!-- ── STEP 1: Who are you? ── -->
+  <div class="step active" id="step0">
+    <p class="step-eyebrow">Step 1 of 2</p>
+    <h1 class="step-title">Who's learning today? 👋</h1>
+    <p class="step-subtitle">Pick the one that fits best — we'll find the right place to start.</p>
+
+    <div class="choice-grid two-col">
+      <div class="choice-card" onclick="pickWho('tiny')" data-who="tiny">
+        <span class="choice-emoji">🐣</span>
+        <span class="choice-label">Tiny Learner</span>
+        <span class="choice-sub">Ages 5–7<br>Bright, curious, just starting out</span>
+      </div>
+      <div class="choice-card" onclick="pickWho('explorer')" data-who="explorer">
+        <span class="choice-emoji">🔭</span>
+        <span class="choice-label">Explorer</span>
+        <span class="choice-sub">Ages 8–11<br>Ready to build real things</span>
+      </div>
+      <div class="choice-card" onclick="pickWho('teen')" data-who="teen">
+        <span class="choice-emoji">⚡</span>
+        <span class="choice-label">Teen Creator</span>
+        <span class="choice-sub">Ages 12+<br>Serious about making games</span>
+      </div>
+      <div class="choice-card" onclick="pickWho('adult')" data-who="adult">
+        <span class="choice-emoji">🧑‍🏫</span>
+        <span class="choice-label">Educator / Parent</span>
+        <span class="choice-sub">Here to help someone else learn</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: What do you want to do? ── -->
+  <div class="step" id="step1">
+    <p class="step-eyebrow">Step 2 of 2</p>
+    <h2 class="step-title" id="step1Title">What sounds fun?</h2>
+    <p class="step-subtitle">Pick one to start with — you can explore others any time.</p>
+
+    <div class="choice-grid" id="focusGrid">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-ghost" onclick="goStep(0)">← Back</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Results ── -->
+  <div class="step" id="step2">
+    <div class="result-header">
+      <span class="big-emoji" id="resultEmoji">🚀</span>
+      <p class="step-eyebrow">Your Path</p>
+      <h2 class="step-title" id="resultTitle">Here's where to start</h2>
+      <p class="step-subtitle" id="resultSub">Picked just for you — jump straight in, no sign-up needed.</p>
+    </div>
+
+    <div class="result-grid" id="resultGrid">
+      <!-- Populated by JS -->
+    </div>
+
+    <div style="text-align:center;">
+      <button class="btn-ghost" onclick="goStep(0)">← Start over</button>
+    </div>
+    <p class="all-paths-link">Want to browse everything? <a href="/workshop">View all workshops →</a> or <a href="/games">play all games →</a></p>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">JVDesignStudio</div>
+      <div class="footer-tagline">Books · Games · Creative Adventures</div>
+    </div>
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/books">Books</a>
+      <a href="/games">Games</a>
+      <a href="/workshop">Workshop</a>
+      <a href="/dev-tools">Dev Tools</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+    <nav class="footer-socials">
+      <a href="https://www.instagram.com/jv_design.studio/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://www.youtube.com/@JV_DesignStudio" target="_blank" rel="noopener">YouTube</a>
+      <a href="https://joshhyyy.itch.io/" target="_blank" rel="noopener">Itch.io</a>
+      <a href="https://ko-fi.com/jvdesignstudio" target="_blank" rel="noopener">Ko-fi</a>
+      <a href="/pages/privacy-policy.html">Privacy Policy</a>
+    </nav>
+    <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
+  </div>
+</footer>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ─── DATA ─────────────────────────────────────── */
+  var WHO_FOCUS = {
+    tiny: {
+      title: "What do you want to explore? 🌟",
+      options: [
+        { emoji:"🎮", label:"Play a game",    sub:"Simple browser games built for little ones", key:"tiny-play" },
+        { emoji:"📚", label:"Read a story",   sub:"Picture books with big feelings", key:"tiny-book" },
+        { emoji:"🎨", label:"Make something", sub:"Mini creative activities and colouring", key:"tiny-make" },
+      ]
+    },
+    explorer: {
+      title: "What do you want to build? 🛠️",
+      options: [
+        { emoji:"🕹️", label:"A browser game",  sub:"JavaScript — start making games today", key:"explorer-js" },
+        { emoji:"⚙️", label:"A Godot game",    sub:"Free game engine, beginner-friendly", key:"explorer-godot" },
+        { emoji:"🐍", label:"Learn Python",    sub:"Code a real game with Python", key:"explorer-python" },
+        { emoji:"🎮", label:"Play first",      sub:"Try some games before building", key:"explorer-play" },
+      ]
+    },
+    teen: {
+      title: "What are you building next? 🔥",
+      options: [
+        { emoji:"🏰", label:"A full Godot game", sub:"2D platformer to advanced mechanics", key:"teen-godot" },
+        { emoji:"🎭", label:"Roblox worlds",     sub:"3D design and accessory creation", key:"teen-roblox" },
+        { emoji:"👾", label:"Unreal Engine",     sub:"Blueprints, shooters, fighters", key:"teen-unreal" },
+        { emoji:"🤺", label:"MUGEN fighters",    sub:"Build your own fighting game characters", key:"teen-mugen" },
+      ]
+    },
+    adult: {
+      title: "What brings you here? 🏫",
+      options: [
+        { emoji:"📖", label:"Use in a classroom",   sub:"Workshop guides built for screen-share teaching", key:"adult-class" },
+        { emoji:"🏠", label:"Home learning",         sub:"Work through workshops at your own pace", key:"adult-home" },
+        { emoji:"📚", label:"Find books for a child", sub:"Children's picture books on big topics", key:"adult-books" },
+        { emoji:"🎲", label:"Family-friendly games", sub:"Free browser games for all ages", key:"adult-games" },
+      ]
+    }
+  };
+
+  var RESULTS = {
+    'tiny-play': {
+      emoji: "🎮", title: "Games for Tiny Learners", sub: "Bright, cheerful, very forgiving — perfect for little hands.",
+      cards: [
+        { emoji:"🦎🍎", bg:"linear-gradient(135deg,#87CEEB,#c8efaa)", tag:"Ages 3–8", title:"Echo's Fruit Catch", desc:"Tilt your phone to catch fruit. Simple, colourful, and impossible to lose (well, almost).", href:"/echo_fruit_catch", cta:"Play Now →", badge:"Fan Favourite", badgeColor:"#3a7d44", featured:true },
+        { emoji:"🐢🌟", bg:"linear-gradient(135deg,#060d18,#0d1b2a)", tag:"Ages 4+", title:"PiP's Star Connect", desc:"Tap the stars in order to draw constellations in the night sky just like PiP!", href:"/pip_star_connect", cta:"Play Now →" },
+        { emoji:"☕🍰", bg:"linear-gradient(135deg,#FBF4E8,#F4B6C2)", tag:"All Ages", title:"Cozy Cafe Match", desc:"A gentle match-3 with no timer and no rush. Match snacks, fill cravings.", href:"/cozy-cafe-match-game", cta:"Play Now →" },
+      ]
+    },
+    'tiny-book': {
+      emoji: "📚", title: "Picture Books for Little Ones", sub: "Stories about big feelings, written just right for ages 3–8.",
+      cards: [
+        { emoji:"🦊", bg:"linear-gradient(135deg,#2d1b4e,#4a3270)", tag:"Ages 4–8 · Anxiety", title:"Lumo & the Grumble-Grit", desc:"A purple fox learns that resting is its own kind of brave. About resilience and invisible struggles.", href:"/lumo_and_the_grumble_grit", cta:"Read the Book →", badge:"New!", badgeColor:"#6b4fa0", featured:true },
+        { emoji:"🐢", bg:"linear-gradient(135deg,#060d18,#0d1b2a)", tag:"Ages 3–7 · Fear", title:"Pip & The Great Dark", desc:"A timid turtle takes one small step toward the night sky. About fear and being brave anyway.", href:"/Pip_and_the_night_sky", cta:"Read the Book →" },
+        { emoji:"✨", bg:"linear-gradient(135deg,#03010f,#0e0036)", tag:"Ages 2–6 · Belonging", title:"Stardust's Cosmic Adventure", desc:"A little star finds their place in the universe. Gentle, short, and full of warmth.", href:"/Stardust", cta:"Read the Book →" },
+      ]
+    },
+    'tiny-make': {
+      emoji: "🎨", title: "Creative Stuff for Little Makers", sub: "Printable activities and free goodies — no account needed.",
+      cards: [
+        { emoji:"🖍️", bg:"linear-gradient(135deg,#e8a838,#f5c84a)", tag:"Free Download", title:"Free Creativity Kit", desc:"Printable colouring pages and fun activities to enjoy at home — completely free.", href:"/colouring-book", cta:"Download Free →", badge:"Free!", badgeColor:"#c47f00", featured:true },
+        { emoji:"📦", bg:"linear-gradient(135deg,#403B33,#6a5e52)", tag:"Free Stuff", title:"All Free Downloads", desc:"Stickers, activity packs, wallpapers — everything in one place, all free.", href:"/downloads", cta:"Browse →" },
+        { emoji:"📚", bg:"linear-gradient(135deg,#060d18,#0d1b2a)", tag:"All books", title:"Story Books", desc:"All of the JV Design Studio picture books — big feelings, curious characters.", href:"/books", cta:"See All Books →" },
+      ]
+    },
+    'explorer-js': {
+      emoji: "🕹️", title: "Build a Browser Game in JavaScript", sub: "No software to install. Start building in your browser right now.",
+      cards: [
+        { emoji:"🕹️", bg:"linear-gradient(135deg,#0a0f00,#181e00)", tag:"JavaScript · Live Builder", title:"JavaScript Platformer", desc:"Build a side-scrolling platformer from scratch — moving platforms, coins, and a finish line.", href:"/js-platformer-builder", cta:"Start Building →", badge:"Start Here", badgeColor:"#BC4749", featured:true },
+        { emoji:"🏎️", bg:"linear-gradient(135deg,#0a0900,#2a2000)", tag:"JavaScript · 10 Steps", title:"Race Builder", desc:"Code a top-down racing game with obstacles, a timer, and a finish line.", href:"/race-builder", cta:"Start Racing →" },
+        { emoji:"🐍", bg:"linear-gradient(135deg,#0d0f0a,#131a0a)", tag:"Python · Live Builder", title:"Python Game Builder", desc:"If you've done JS and want more, Python is the natural next step.", href:"/python-game-builder", cta:"Try Python →" },
+      ]
+    },
+    'explorer-godot': {
+      emoji: "⚙️", title: "Make Games in Godot 4", sub: "Free, beginner-friendly, and used by real indie studios.",
+      cards: [
+        { emoji:"⚙️", bg:"linear-gradient(135deg,#0a1628,#1a2640)", tag:"Godot 4 · Game Engine", title:"Build Your First Platformer", desc:"8 modules from installation to a finished, exportable 2D platformer. Free PDF included.", href:"/godot_tutorial", cta:"Start Guide →", badge:"Best Starting Point", badgeColor:"#478cbf", featured:true },
+        { emoji:"👾", bg:"linear-gradient(135deg,#050c1a,#0a1428)", tag:"Godot 4 · Space Game", title:"Build Space Invaders", desc:"A complete Space Invaders clone — enemies, shooting, lives, scoring, and waves.", href:"/space_invaders_tutorial", cta:"Start Tutorial →" },
+        { emoji:"📦", bg:"linear-gradient(135deg,#403B33,#6a5e52)", tag:"Free Templates", title:"Godot 4 Starter Templates", desc:"4 complete, ready-to-open Godot projects: Platformer, Asteroids, Space Invaders, Tower Defence.", href:"/godot_templates", cta:"Download Free →" },
+      ]
+    },
+    'explorer-python': {
+      emoji: "🐍", title: "Learn Python Through Games", sub: "Real code, real game — no boring exercises.",
+      cards: [
+        { emoji:"🐍", bg:"linear-gradient(135deg,#0d0f0a,#131a0a)", tag:"Python · Live Builder", title:"Python Game Builder", desc:"Build a complete Python game step by step — right in your browser, no install needed.", href:"/python-game-builder", cta:"Start Building →", badge:"Start Here", badgeColor:"#c49a20", featured:true },
+        { emoji:"🕹️", bg:"linear-gradient(135deg,#0a0f00,#181e00)", tag:"JavaScript · Easier Start", title:"JavaScript Platformer", desc:"Never coded before? Start with JavaScript — it's a gentler on-ramp before Python.", href:"/js-platformer-builder", cta:"Try This First →" },
+        { emoji:"⚙️", bg:"linear-gradient(135deg,#0a1628,#1a2640)", tag:"Godot 4 · Visual Scripting", title:"Build Your First Platformer", desc:"Prefer a game engine? Godot 4 is free and has a beginner-friendly scripting language.", href:"/godot_tutorial", cta:"Try Godot →" },
+      ]
+    },
+    'explorer-play': {
+      emoji: "🎮", title: "Games for Explorers", sub: "All free, all in your browser — no downloads, no sign-ups.",
+      cards: [
+        { emoji:"🦊✨", bg:"linear-gradient(135deg,#1c1a2e,#2a2838)", tag:"Bubble Shooter", title:"Lumo's Firefly Shooter", desc:"Shoot coloured fireflies to make matches and clear the board. Power-ups, special bubbles, chain drops.", href:"/lumo_firefly_night", cta:"Play Now →", badge:"Fan Favourite", badgeColor:"#6b4fa0", featured:true },
+        { emoji:"🏰⚡", bg:"linear-gradient(135deg,#0a0a1a,#1a1035)", tag:"Tower Defence", title:"Arcane Citadel", desc:"Place towers, cast spells, survive endless waves. Chain lightning and a roguelite shop.", href:"/arcane_citadel_page", cta:"Play Now →" },
+        { emoji:"💎🔥", bg:"linear-gradient(135deg,#1a0a2e,#2e1060)", tag:"Match-3", title:"Gem Match", desc:"2-minute match-3 with bombs, wilds, fever mode, and cascading combos.", href:"/gem_match", cta:"Play Now →" },
+      ]
+    },
+    'teen-godot': {
+      emoji: "⚙️", title: "Godot 4 — Advanced Path", sub: "From beginner platformer to full game mechanics.",
+      cards: [
+        { emoji:"⚙️", bg:"linear-gradient(135deg,#0a1628,#1a2640)", tag:"Godot 4 · Foundation", title:"Build Your First Platformer", desc:"8 modules from installation to a finished, exportable 2D platformer. This is the foundation.", href:"/godot_tutorial", cta:"Start Guide →", badge:"Start Here", badgeColor:"#478cbf", featured:true },
+        { emoji:"👾", bg:"linear-gradient(135deg,#050c1a,#0a1428)", tag:"Godot 4 · Arcade", title:"Build Space Invaders", desc:"Enemy patterns, waves, shooting, and lives — a complete arcade game from scratch.", href:"/space_invaders_tutorial", cta:"Start Tutorial →" },
+        { emoji:"📦", bg:"linear-gradient(135deg,#403B33,#6a5e52)", tag:"Free Templates", title:"Godot 4 Starter Templates", desc:"4 ready-to-open Godot projects to pull apart and learn from.", href:"/godot_templates", cta:"Download Free →" },
+      ]
+    },
+    'teen-roblox': {
+      emoji: "🎭", title: "Build in Roblox Studio", sub: "3D worlds, accessories, and Lua scripting.",
+      cards: [
+        { emoji:"🎭", bg:"linear-gradient(135deg,#001a3a,#002b6b)", tag:"Roblox · 3D & Accessories", title:"Roblox Creator Journey", desc:"Design 3D environments, create wearable accessories, and script your first game logic in Lua.", href:"/roblox-creator-journey", cta:"Start Journey →", badge:"Start Here", badgeColor:"#f97316", featured:true },
+        { emoji:"⚙️", bg:"linear-gradient(135deg,#0a1628,#1a2640)", tag:"Godot 4 · Alternative", title:"Try Godot Instead", desc:"Prefer open-source? Godot 4 is free forever and used by real indie devs.", href:"/godot_tutorial", cta:"Try Godot →" },
+        { emoji:"🕹️", bg:"linear-gradient(135deg,#0a0f00,#181e00)", tag:"JavaScript · Web Games", title:"JavaScript Platformer", desc:"Want to build browser games? JavaScript is the fastest way to publish something playable.", href:"/js-platformer-builder", cta:"Try JavaScript →" },
+      ]
+    },
+    'teen-unreal': {
+      emoji: "👾", title: "Unreal Engine 5 — Blueprints", sub: "Visual scripting, no C++ required.",
+      cards: [
+        { emoji:"🧟", bg:"linear-gradient(135deg,#050a06,#0a1a0a)", tag:"UE5 · 30 Steps", title:"Zombie Survivor", desc:"Build a top-down zombie survival game in UE5 Blueprints. AI enemies, waves, health, and scoring.", href:"/unreal-zombie-survivor", cta:"Start Building →", badge:"Start Here", badgeColor:"#16a34a", featured:true },
+        { emoji:"🏁", bg:"linear-gradient(135deg,#08070a,#1a1500)", tag:"UE5 · Racing", title:"Racing Blueprint", desc:"A vehicle racing game with track design, lap timing, and opponent AI.", href:"/racing-blueprint", cta:"Start Building →" },
+        { emoji:"🥊", bg:"linear-gradient(135deg,#0a0005,#1a000f)", tag:"UE5 · 2-Player", title:"Arena Fighter", desc:"2-player local fighting game with Blueprint-driven combat and custom moves.", href:"/unreal-fighter-workshop", cta:"Start Building →" },
+      ]
+    },
+    'teen-mugen': {
+      emoji: "⚔️", title: "MUGEN — Build a Fighting Game", sub: "Create characters, stages, and your own roster.",
+      cards: [
+        { emoji:"★", bg:"linear-gradient(135deg,#0a0a0c,#1a0a30)", tag:"MUGEN · 7 Steps", title:"Add Your Own Stage", desc:"The first step: build and import a custom stage into M.U.G.E.N. Seven beginner-friendly steps.", href:"/add-your-own-stage", cta:"Start Lesson →", badge:"Start Here", badgeColor:"#9b6bff", featured:true },
+        { emoji:"⚔", bg:"linear-gradient(135deg,#0a0005,#1a0008)", tag:"MUGEN · Full Course", title:"Build Your Own Fighter", desc:"Create a complete fighting game — character sprites, moves, AI, and a playable roster.", href:"/mugen-workshop", cta:"Start Course →" },
+        { emoji:"🥊", bg:"linear-gradient(135deg,#0a0005,#1a000f)", tag:"UE5 · Alternative", title:"UE5 Arena Fighter", desc:"Prefer modern tools? Build a 2-player fighter in Unreal Engine 5 Blueprints.", href:"/unreal-fighter-workshop", cta:"Try This Instead →" },
+      ]
+    },
+    'adult-class': {
+      emoji: "🏫", title: "Ready-Made Workshop Guides", sub: "Built for screen-share teaching — each step is self-contained.",
+      cards: [
+        { emoji:"⚙️", bg:"linear-gradient(135deg,#0a1628,#1a2640)", tag:"Godot 4 · All Ages", title:"Build Your First Platformer", desc:"8 modular sessions — pause and continue any time. No prior coding needed for students.", href:"/godot_tutorial", cta:"View Guide →", badge:"Most Used in Class", badgeColor:"#478cbf", featured:true },
+        { emoji:"🕹️", bg:"linear-gradient(135deg,#0a0f00,#181e00)", tag:"JavaScript · Browser", title:"JavaScript Platformer", desc:"No install needed. Students open the page and start coding — ideal for school computers.", href:"/js-platformer-builder", cta:"View Guide →" },
+        { emoji:"🏰", bg:"linear-gradient(135deg,#403B33,#6a5e52)", tag:"All Workshops", title:"Browse All Courses", desc:"Godot, JavaScript, Python, Unreal, Roblox, MUGEN — all free, all screen-share ready.", href:"/workshop", cta:"Browse All →" },
+      ]
+    },
+    'adult-home': {
+      emoji: "🏠", title: "Home Learning Path", sub: "Go at your own pace — every course is self-paced and free.",
+      cards: [
+        { emoji:"⚙️", bg:"linear-gradient(135deg,#0a1628,#1a2640)", tag:"Godot 4 · Beginner", title:"Build Your First Platformer", desc:"The most structured course — 8 clear modules with a free PDF guide. Great for independent learners.", href:"/godot_tutorial", cta:"Start Here →", badge:"Best for Home", badgeColor:"#478cbf", featured:true },
+        { emoji:"🕹️", bg:"linear-gradient(135deg,#0a0f00,#181e00)", tag:"JavaScript · Ages 8+", title:"JavaScript Platformer", desc:"Build a browser game with zero software — just open the page and start. Youngest-friendly option.", href:"/js-platformer-builder", cta:"Try This →" },
+        { emoji:"📦", bg:"linear-gradient(135deg,#403B33,#6a5e52)", tag:"Free Download", title:"Godot 4 Starter Templates", desc:"Download complete Godot 4 projects — open them, play them, pull them apart.", href:"/godot_templates", cta:"Download Free →" },
+      ]
+    },
+    'adult-books': {
+      emoji: "📚", title: "Children's Books by Topic", sub: "Picture books about big feelings — honest, kind, and beautifully illustrated.",
+      cards: [
+        { emoji:"🦊", bg:"linear-gradient(135deg,#2d1b4e,#4a3270)", tag:"Ages 4–8 · Anxiety", title:"Lumo & the Grumble-Grit", desc:"A purple fox learns that rest is its own kind of brave. For children carrying invisible things.", href:"/lumo_and_the_grumble_grit", cta:"Read the Book →", badge:"New!", badgeColor:"#6b4fa0", featured:true },
+        { emoji:"🐢", bg:"linear-gradient(135deg,#060d18,#0d1b2a)", tag:"Ages 3–7 · Fear", title:"Pip & The Great Dark", desc:"A turtle learns that one small step is enough. For children afraid of the dark or the unknown.", href:"/Pip_and_the_night_sky", cta:"Read the Book →" },
+        { emoji:"🔮", bg:"linear-gradient(135deg,#1a0030,#2d0050)", tag:"Ages 4–8 · Online Safety", title:"Elara & the Wire-Web Key", desc:"A gentle introduction to online safety — passwords, strangers, and digital kindness.", href:"/Elara", cta:"Read the Book →" },
+      ]
+    },
+    'adult-games': {
+      emoji: "🎲", title: "Games for the Whole Family", sub: "All free, all in the browser — no downloads, no accounts.",
+      cards: [
+        { emoji:"🦎🍎", bg:"linear-gradient(135deg,#87CEEB,#c8efaa)", tag:"Ages 3–8 · Tilt to play", title:"Echo's Fruit Catch", desc:"Tilt your phone to catch falling fruit — colourful, forgiving, and loved by little ones.", href:"/echo_fruit_catch", cta:"Play Now →", badge:"Great for Little Ones", badgeColor:"#3a7d44", featured:true },
+        { emoji:"☕🍰", bg:"linear-gradient(135deg,#FBF4E8,#F4B6C2)", tag:"All Ages · Relaxing", title:"Cozy Cafe Match", desc:"A gentle match-3 with no timer. Perfect for a quiet afternoon.", href:"/cozy-cafe-match-game", cta:"Play Now →" },
+        { emoji:"🎮", bg:"linear-gradient(135deg,#403B33,#6a5e52)", tag:"All Games", title:"Browse All Games", desc:"Browser games for all ages — from tiny learner puzzles to teen-level tower defence.", href:"/games", cta:"See All Games →" },
+      ]
+    }
+  };
+
+  /* ─── STATE ─────────────────────────────────────── */
+  var state = { who: null, focus: null };
+  var currentStep = 0;
+
+  /* ─── HELPERS ───────────────────────────────────── */
+  function goStep(n) {
+    document.getElementById('step' + currentStep).classList.remove('active');
+    currentStep = n;
+    document.getElementById('step' + currentStep).classList.add('active');
+    updateProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateProgress() {
+    [0,1,2].forEach(function(i) {
+      var dot = document.getElementById('dot' + i);
+      dot.classList.remove('active', 'complete');
+      if (i < currentStep) dot.classList.add('complete');
+      else if (i === currentStep) dot.classList.add('active');
+    });
+  }
+
+  /* ─── STEP 1: Pick who ───────────────────────────── */
+  window.pickWho = function(who) {
+    state.who = who;
+    var data = WHO_FOCUS[who];
+    document.getElementById('step1Title').textContent = data.title;
+    var grid = document.getElementById('focusGrid');
+    grid.innerHTML = '';
+    data.options.forEach(function(opt) {
+      var div = document.createElement('div');
+      div.className = 'choice-card';
+      div.innerHTML =
+        '<span class="choice-emoji">' + opt.emoji + '</span>' +
+        '<span class="choice-label">' + opt.label + '</span>' +
+        '<span class="choice-sub">' + opt.sub + '</span>';
+      div.addEventListener('click', function() { pickFocus(opt.key); });
+      grid.appendChild(div);
+    });
+    goStep(1);
+  };
+
+  /* ─── STEP 2: Pick focus ─────────────────────────── */
+  window.pickFocus = function(key) {
+    state.focus = key;
+    var data = RESULTS[key];
+    if (!data) return;
+
+    document.getElementById('resultEmoji').textContent = data.emoji;
+    document.getElementById('resultTitle').textContent = data.title;
+    document.getElementById('resultSub').textContent   = data.sub;
+
+    var grid = document.getElementById('resultGrid');
+    grid.innerHTML = '';
+    data.cards.forEach(function(card) {
+      var a = document.createElement('a');
+      a.className = 'result-card' + (card.featured ? ' featured' : '');
+      a.href = card.href;
+      var badgeHtml = card.badge
+        ? '<span class="rc-badge" style="background:' + card.badgeColor + '">' + card.badge + '</span>'
+        : '';
+      a.innerHTML =
+        '<div class="rc-thumb" style="background:' + card.bg + '">' +
+          '<span>' + card.emoji + '</span>' +
+          badgeHtml +
+        '</div>' +
+        '<div class="rc-body">' +
+          '<div class="rc-tag">' + card.tag + '</div>' +
+          '<div class="rc-title">' + card.title + '</div>' +
+          '<div class="rc-desc">' + card.desc + '</div>' +
+          '<div class="rc-cta">' + card.cta + '</div>' +
+        '</div>';
+      grid.appendChild(a);
+    });
+
+    goStep(2);
+  };
+
+  /* ─── Restore saved theme ────────────────────────── */
+  (function() {
+    try {
+      var t = localStorage.getItem('jvds-theme');
+      if (t) document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {}
+  })();
+
+})();
+</script>
+</body>
+</html>

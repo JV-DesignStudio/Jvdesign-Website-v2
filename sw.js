@@ -1,5 +1,6 @@
-// JVDesignStudio Service Worker v17 — trimmed CORE + ignoreSearch for ?v bust
-const CACHE='jvds-v17';
+// JVDesignStudio Service Worker v18 — trimmed CORE + ignoreSearch for ?v bust (bumped 2026-09-07: board-tracks version)
+const CACHE='jvds-v18';
+const CACHE_VERSION='v18';
 const CORE=[
   '/',
   '/offline.html',
@@ -51,7 +52,7 @@ self.addEventListener('fetch',e=>{
           const fetchPromise=fetch(e.request).then(res=>{
             if(res.ok)cache.put(e.request,res.clone());
             return res;
-          }).catch(()=> cached || caches.match('/offline.html'));
+          }).catch(()=> cached || new Response('',{status:504,statusText:'Offline'}));
           return cached||fetchPromise;
         });
       })
@@ -67,7 +68,11 @@ self.addEventListener('fetch',e=>{
         // Only cache successful, same-origin GETs; avoid opaque/analytics
         if(res.ok && res.type==='basic') caches.open(CACHE).then(c=>c.put(e.request,res.clone()));
         return res;
-      }).catch(()=>caches.match('/offline.html'));
+      }).catch(()=>{
+        // Only return offline.html for navigations; otherwise 504 to avoid MIME mismatch
+        if(e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html')) return caches.match('/offline.html');
+        return new Response('',{status:504,statusText:'Offline'});
+      });
     })
   );
 });

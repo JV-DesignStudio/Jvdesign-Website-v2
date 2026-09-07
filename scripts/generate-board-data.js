@@ -47,7 +47,9 @@ function countFiles(dir, ext) {
 function countGlob(dir) {
   try {
     if (!fs.existsSync(dir)) return 0;
-    return fs.readdirSync(dir).filter(f => f.endsWith('.html')).length;
+    const isWorkshops = dir.endsWith('workshops') || dir.endsWith('workshops\\');
+    const exclude = isWorkshops ? new Set(['my-progress.html']) : new Set();
+    return fs.readdirSync(dir).filter(f => f.endsWith('.html') && !exclude.has(f)).length;
   } catch { return 0; }
 }
 
@@ -100,6 +102,14 @@ function appBuilds() {
   });
 }
 
+function getSwVersion(){
+  try{
+    const sw = fs.readFileSync(path.join(ROOT,'sw.js'),'utf8');
+    const m = sw.match(/CACHE\s*=\s*['\"]([^'\"]+)['\"]/) || sw.match(/CACHE_VERSION\s*=\s*['\"]([^'\"]+)['\"]/);
+    return m ? m[1] : null;
+  }catch{ return null; }
+}
+
 // Link validation — read last validate run if exists, else placeholder
 function validateSummary() {
   // 5228 is last known good; generator updates if validation re-runs
@@ -114,7 +124,7 @@ const data = {
     stats: stats || { workshops: 0, games: 0, tools: 0, books: 0 },
     filesystem: { pages: pagesCount, workshops: workshopsFiles, games: gamesFiles, tools: toolsFiles, books: booksFiles, css: cssCount },
     drift: {
-      gamesClaimed: 33, // homepage JSON-LD claim
+      gamesClaimed: 32, // homepage claim (now 32 browser games)
       gamesRegistry: stats ? stats.games : 0,
       gamesFiles: gamesFiles,
       workshopsStats: stats ? stats.workshops : 0,
@@ -124,6 +134,7 @@ const data = {
   apps: appBuilds(),
   validate: validateSummary(),
   site: { css: cssCount, pages: pagesCount },
+  sw: { version: getSwVersion(), file: 'sw.js' },
 };
 
 const out = path.join(ROOT, 'board-data.json');

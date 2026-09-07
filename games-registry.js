@@ -299,5 +299,89 @@ window.JVDS_GAMES = [
     "kids": true,
     "age": "Ages 3-8",
     "desc": "Help Echo the axolotl catch falling fruit and dodge rocks. Tilt your phone to steer bright, cheerful, and very forgiving."
+  },
+  {
+    "id": "call-of-cards",
+    "cat": "Strategy",
+    "file": "call_of_the_cards.html",
+    "title": "Call of the Cards: Quest for the Crown",
+    "tag": "Card Strategy",
+    "emoji": "🃏",
+    "cover": "call-of-the-cards.webp",
+    "bg": "linear-gradient(135deg,#1a1a2e,#2a2a4a)",
+    "kids": false,
+    "desc": "Strategic tabletop card game of bluffing, alliances and adventure. Build your deck and claim the crown."
+  },
+  {
+    "id": "candy-kingdom",
+    "cat": "Puzzle",
+    "file": "candy_kingdom.html",
+    "title": "Candy Kingdom Adventure",
+    "tag": "Match-3",
+    "emoji": "🍬",
+    "cover": "CandyKingdomP.webp",
+    "bg": "linear-gradient(135deg,#ff8fab,#ffb3d9)",
+    "kids": false,
+    "desc": "Sweet match-3 puzzle adventure. Match candies, clear levels and explore the Candy Kingdom."
+  },
+  {
+    "id": "biscuit-clicker",
+    "cat": "Chill",
+    "file": "cozy-biscuit-clicker.html",
+    "title": "Biscuit Tin Clicker",
+    "tag": "Clicker · Idle",
+    "emoji": "🍪",
+    "cover": "biscuit-tin-clicker.webp",
+    "bg": "linear-gradient(135deg,#f4a460,#c9936b)",
+    "kids": false,
+    "desc": "Cosy clicker — tap biscuits, buy upgrades and fill your tin. Idle earnings while away."
+  },
+  {
+    "id": "cozy-cafe-match",
+    "cat": "Puzzle",
+    "file": "cozy-cafe-match-game.html",
+    "title": "Cozy Cafe Match",
+    "tag": "Match-3",
+    "emoji": "☕",
+    "cover": "CozyCafeCover.webp",
+    "bg": "linear-gradient(135deg,#d4a5e0,#e8d5f2)",
+    "kids": false,
+    "desc": "Cozy match-3 puzzle game. Match pastries, serve customers and build your cafe."
+  },
+  {
+    "id": "cozy-creatures",
+    "cat": "Chill",
+    "file": "cozy_creatures.html",
+    "title": "Cozy Creatures: The Ultimate Snuggle",
+    "tag": "Kids · Gentle",
+    "emoji": "🧸",
+    "cover": "cozy-creatures.webp",
+    "bg": "linear-gradient(135deg,#a8d8ea,#ffffd2)",
+    "kids": true,
+    "desc": "Gentle kids game — snuggle, play and explore with cozy creatures. Ages 3-8."
+  },
+  {
+    "id": "millionaire-quiz",
+    "cat": "Puzzle",
+    "file": "millionaire-quiz.html",
+    "title": "Quiz Quest",
+    "tag": "Trivia · Quiz",
+    "emoji": "❓",
+    "cover": "GemMatchCover.webp",
+    "bg": "linear-gradient(135deg,#0a0a1a,#1a1035)",
+    "kids": false,
+    "desc": "Millionaire-style trivia quiz. Answer questions, climb the ladder and win the crown."
+  },
+  {
+    "id": "sky-high-friends",
+    "cat": "Action",
+    "file": "sky_high_with_friends.html",
+    "title": "Sky High With Friends",
+    "tag": "Multiplayer · Action",
+    "emoji": "🎈",
+    "cover": "SkyHighCover.webp",
+    "bg": "linear-gradient(135deg,#87CEEB,#1a1a2e)",
+    "kids": false,
+    "desc": "Multiplayer sky-high adventure. Bounce, climb and race friends to the top."
   }
 ];
