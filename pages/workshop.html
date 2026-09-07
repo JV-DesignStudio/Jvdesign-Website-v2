@@ -3088,5 +3088,167 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 })();
 </script>
 
+
+<!-- ══════════════════════════════════════════════════════════════════
+     Topic sections collapse by default
+     ──────────────────────────────────────────────────────────────────
+     This page stacks 14 topic blocks (Scratch, Roblox, Godot, Unity, Unreal,
+     Python, MUGEN...) one after another, each up to 5,590px tall. On a 390px
+     phone that made the page 56,720px, about 67 screens, with most courses
+     effectively unreachable.
+
+     Each topic is now a collapsible panel: heading, one-line description and a
+     count, opening on tap. The first two stay open so the page still looks
+     alive on arrival, and searching or filtering opens everything so the finder
+     always sees the whole catalogue.
+
+     Cards stay in the DOM throughout, so search, filters and crawlers are
+     unaffected. Collapsing uses `hidden` on the grid rather than the inline
+     display property, which applyFilters() owns.
+     ══════════════════════════════════════════════════════════════════ -->
+<style>
+/* A class selector like .courses-grid{display:grid} outranks the UA rule for
+   the hidden attribute, so collapsing needs to be explicit. */
+.ws-section > [hidden] { display: none !important; }
+.ws-section-head.ws-toggle {
+    cursor: pointer; position: relative; padding-right: 56px;
+    border-radius: 14px; transition: background .15s;
+}
+.ws-section-head.ws-toggle:hover { background: rgba(112,163,167,.10); }
+.ws-section-head.ws-toggle:focus-visible { outline: 3px solid var(--teal-dk, #4e7d80); outline-offset: 3px; }
+.ws-sec-count {
+    display: inline-block; margin-left: 10px; padding: 3px 11px; border-radius: 999px;
+    font-size: .72rem; font-weight: 800; letter-spacing: .03em; white-space: nowrap;
+    background: rgba(112,163,167,.18); color: var(--teal-dk, #4e7d80);
+}
+[data-theme="dark"] .ws-sec-count { background: rgba(112,163,167,.24); color: #a9d4d7; }
+.ws-chevron {
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%) rotate(0deg);
+    width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem; line-height: 1; color: var(--teal-dk, #4e7d80);
+    transition: transform .2s ease; pointer-events: none;
+}
+.ws-section-head.ws-open .ws-chevron { transform: translateY(-50%) rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .ws-chevron { transition: none; } }
+</style>
+<script>
+(function () {
+  var OPEN_BY_DEFAULT = 2;
+  var CARD_SEL = '.article-card, .course-card, .ws-dl-card';
+
+  function panels() {
+    return [].slice.call(document.querySelectorAll('.ws-section')).map(function (sec) {
+      var head = sec.querySelector('.ws-section-head');
+      var body = head ? head.nextElementSibling : null;
+      if (!head || !body) return null;
+      return { sec: sec, head: head, body: body, count: sec.querySelectorAll(CARD_SEL).length };
+    }).filter(function (p) { return p && p.count > 0; });
+  }
+
+  /* While someone searches or filters they want the whole catalogue open. */
+  function finderActive() {
+    var q = document.getElementById('workshopSearch');
+    if (q && q.value.trim()) return true;
+    var actives = document.querySelectorAll('[data-format].active, [data-age].active');
+    for (var i = 0; i < actives.length; i++) {
+      var d = actives[i].dataset || {};
+      if ((d.format && d.format !== 'all') || (d.age && d.age !== 'all')) return true;
+    }
+    return false;
+  }
+
+  function setOpen(p, open) {
+    p.body.hidden = !open;
+    p.head.classList.toggle('ws-open', open);
+    p.head.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  var list = panels();
+  if (!list.length) return;
+
+  list.forEach(function (p, i) {
+    var id = 'ws-panel-' + i;
+    p.body.id = id;
+
+    p.head.classList.add('ws-toggle');
+    p.head.setAttribute('role', 'button');
+    p.head.setAttribute('tabindex', '0');
+    p.head.setAttribute('aria-controls', id);
+
+    var count = document.createElement('span');
+    count.className = 'ws-sec-count';
+    count.textContent = p.count + (p.count === 1 ? ' workshop' : ' workshops');
+    var target = p.head.querySelector('h2, h3, .ws-section-title') || p.head;
+    target.appendChild(count);
+
+    var chev = document.createElement('span');
+    chev.className = 'ws-chevron';
+    chev.setAttribute('aria-hidden', 'true');
+    chev.textContent = '⌄';
+    p.head.appendChild(chev);
+
+    setOpen(p, i < OPEN_BY_DEFAULT);
+
+    function toggle() {
+      var nowOpen = p.body.hidden;
+      setOpen(p, nowOpen);
+      if (nowOpen && window.JVDS && window.JVDS.announce) {
+        window.JVDS.announce('Opened ' + p.count + ' workshops');
+      }
+    }
+    p.head.addEventListener('click', toggle);
+    p.head.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
+
+  /* Keep the finder authoritative: any search or filter opens everything. */
+  var wasActive = false;
+  function syncToFinder() {
+    var active = finderActive();
+    if (active === wasActive) return;
+    wasActive = active;
+    list.forEach(function (p, i) { setOpen(p, active ? true : i < OPEN_BY_DEFAULT); });
+  }
+  ['input', 'change', 'click'].forEach(function (evt) {
+    document.addEventListener(evt, function (e) {
+      if (!e.target.closest) return;
+      if (e.target.closest('.ws-finder, .ws-filter-bar, #workshopSearch, [data-format], [data-age]')) {
+        setTimeout(syncToFinder, 0);
+      }
+    }, true);
+  });
+
+  /* A deep link to a collapsed topic must open it. */
+  function openFromHash() {
+    if (!location.hash) return;
+    var t = document.querySelector(location.hash);
+    if (!t) return;
+    var p = list.filter(function (x) { return x.sec.contains(t) || x.sec === t; })[0];
+    if (p) setOpen(p, true);
+  }
+  window.addEventListener('hashchange', openFromHash);
+  openFromHash();
+})();
+</script>
+
+<style>
+/* ── ws-reorder ──
+   The finder sat 2,867px down on a phone, behind the hero, the pathfinder and
+   the live demo, and the first course card was at 5,951px. Search should be the
+   first thing a visitor can reach on a catalogue this size. Reordering with
+   flex order rather than moving markup keeps the document order intact for
+   crawlers and screen readers that follow source order, and avoids touching
+   deeply nested sections by hand. */
+body { display: flex; flex-direction: column; }
+body > * { order: 2; }
+body > .site-header { order: -4; }
+body > .ws-hero { order: -3; }
+body > .ws-finder { order: -2; }
+body > .ws-filter-bar { order: -1; }
+body > .ws-pathfinder { order: 6; }
+body > .ws-live-section { order: 7; }
+body > .site-footer, body > footer { order: 10; }
+</style>
 </body>
 </html>
