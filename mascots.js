@@ -6,7 +6,15 @@ const MASCOT_CFG = {
   stardust: { name:'Stardust', img:'/assets/mascots/stardust.png', color:'#FFD23C', pillar:'Read' },
 };
 function getGuide(){ try{ return localStorage.getItem('jvds_guide'); }catch(e){ return null; } }
-function setGuide(id){ try{ localStorage.setItem('jvds_guide', id); }catch(e){} }
+function setGuide(id){
+  try{
+    localStorage.setItem('jvds_guide', id);
+    // GA4 — guide affinity (quick-win analytics)
+    try{ if(window.gtag) gtag('event','guide_choose', {guide:id}); }catch(e){}
+    try{ if(window.ga4Analytics && ga4Analytics.track) ga4Analytics.track('guide_choose', {guide:id}); }catch(e){}
+    try{ if(window.JVDSAnalytics) JVDSAnalytics.guide = id; }catch(e){}
+  }catch(e){}
+}
 // Mascot speech rotator — picks a random friendly line on load
 const MASCOT_LINES = {
   lumo: [

@@ -53,6 +53,18 @@ function countGlob(dir) {
   } catch { return 0; }
 }
 
+function mascotsKPI(){
+  try{
+    const dir = path.join(ROOT, 'assets', 'mascots');
+    if(!fs.existsSync(dir)) return null;
+    const files = fs.readdirSync(dir);
+    const guides = 5; // Lumo, Ember, Echo, Pip, Stardust
+    const thumbs = files.filter(f=>f.endsWith('.webp')||f.endsWith('.avif')).length;
+    const sheets = files.filter(f=>f.includes('sheet')).length;
+    const total = files.length;
+    return { guides, thumbs, sheets, total, dir:'assets/mascots' };
+  }catch{ return null; }
+}
 function countCss() {
   try {
     return fs.readdirSync(ROOT).filter(f => f.startsWith('style-') && f.endsWith('.css')).length;
@@ -116,6 +128,7 @@ function validateSummary() {
   return { refs: 5228, broken: 0, lastRun: new Date().toISOString().slice(0,10) };
 }
 
+const mascots = mascotsKPI();
 const data = {
   generated: new Date().toISOString(),
   sitemap: { urls: sitemapCount, lastmod: lastModSitemap() },
@@ -132,6 +145,7 @@ const data = {
     }
   },
   apps: appBuilds(),
+  mascots,
   validate: validateSummary(),
   site: { css: cssCount, pages: pagesCount },
   sw: { version: getSwVersion(), file: 'sw.js' },
