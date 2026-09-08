@@ -28,7 +28,7 @@ function listen(){return new Promise(r=>server.listen(port, r));}
     const errors=[];
     page.on('pageerror', e=>errors.push('pageerror: '+e.message));
     page.on('console', msg=>{ if(msg.type()==='error' && !/ERR_NETWORK_ACCESS_DENIED|Failed to load resource/.test(msg.text())) errors.push('console: '+msg.text()); });
-    await page.goto(`http://127.0.0.1:${port}/tools/project-tracker.html`, {waitUntil:'domcontentloaded', timeout:15000});
+    await page.goto(`http://127.0.0.1:${port}/tools/quest-board.html`, {waitUntil:'domcontentloaded', timeout:15000});
     await new Promise(resolve => setTimeout(resolve, 1000));
     const data = await page.evaluate(() => ({
       title: document.title,

@@ -295,6 +295,7 @@
     <h2>Learning Adventures</h2>
     <p>Tap a game to start! Each one takes about 2 minutes. Earn stars and collect stickers!</p>
   </div>
+  <div class="activity-guide">Start with Counting, Colours or Shapes, then explore the other adventures when your little learner is ready.</div>
   <div class="activities-grid" id="actGrid"></div>
 </section>
 
@@ -616,7 +617,7 @@ function initDraw(){
   function sizeCanvas(){
     const dpr = Math.min(window.devicePixelRatio||1, 2);
     const imgData = drawCtx ? drawCtx.getImageData(0,0,canvas.width,canvas.height) : null;
-    const w=wrap.clientWidth||640;
+    const w=Math.max(280, Math.min(wrap.clientWidth||640, window.innerWidth - 40));
     const h=Math.min(420, Math.max(280, w*0.55));
     canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr);
     canvas.style.width=w+'px'; canvas.style.height=h+'px';
@@ -1904,5 +1905,43 @@ window.wthAnswer = wthAnswer;
 </script>
 
 <script defer src="workshop-track.js"></script>
-</body>
+<script>
+(function(){
+  function addParentControls(){
+    document.querySelectorAll('.parents-section').forEach(function(section){
+      if(section.previousElementSibling && section.previousElementSibling.classList.contains('parent-toggle')) return;
+      var button=document.createElement('button');
+      button.className='parent-toggle'; button.type='button'; button.setAttribute('aria-expanded','false');
+      button.innerHTML='For adults: view the learning goals <span aria-hidden="true">+</span>';
+      section.parentNode.insertBefore(button,section);
+      button.addEventListener('click',function(){
+        var open=section.classList.toggle('is-open'); button.setAttribute('aria-expanded',String(open));
+        button.querySelector('span').textContent=open?'-':'+';
+      });
+    });
+  }
+  function enhanceCards(){
+    document.querySelectorAll('.act-card').forEach(function(card){
+      if(card.dataset.enhanced) return; card.dataset.enhanced='true';
+      card.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click();} });
+      var label=card.querySelector('.act-title'); if(!label) return;
+      var status=document.createElement('span'); status.className='card-status';
+      status.textContent=card.querySelector('.act-btn') && card.querySelector('.act-btn').textContent.indexOf('Again')>=0?'In progress':'Start here';
+      label.parentNode.insertBefore(status,label);
+    });
+    document.querySelectorAll('.subject-card').forEach(function(card){
+      if(card.dataset.stateEnhanced) return; card.dataset.stateEnhanced='true';
+      var badges=card.querySelector('.illustrated-card-badges');
+      if(badges){ var status=document.createElement('span'); status.className='card-status'; status.textContent='Start here'; badges.insertBefore(status,badges.firstChild); }
+      card.addEventListener('focus',function(){card.classList.add('keyboard-focus');});
+      card.addEventListener('blur',function(){card.classList.remove('keyboard-focus');});
+    });
+  }
+  function init(){
+    addParentControls(); enhanceCards();
+    ['actGrid','tierBeginner','tierIntermediate','tierAdvanced'].forEach(function(id){var el=document.getElementById(id);if(el)new MutationObserver(enhanceCards).observe(el,{childList:true,subtree:true});});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script></body>
 </html>

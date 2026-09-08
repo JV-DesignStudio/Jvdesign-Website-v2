@@ -3,228 +3,1040 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D Builders — Design Rockets, Robots, Ships & Airships | JVDesignStudio</title>
-<meta name="description" content="Free interactive 3D builders for kids and teens. Design rockets, robots, pirate ships and steampunk airships in your browser. No downloads, no accounts. Ages 8+.">
-<meta name="keywords" content="3D builder, rocket builder, robot builder, pirate ship, airship, three.js, browser game, free, kids, teens, game design">
+<title>3D Builders | JVDesignStudio</title>
+<meta name="description" content="Free interactive 3D builders for kids and teens. Design rockets, robots, pirate ships, airships, race cars, submarines, castles and more in your browser. No downloads, no accounts.">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/pages/3d-builders.html">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jvdesignstudio.co.uk/pages/3d-builders.html">
-<meta property="og:title" content="3D Builders — Design Rockets, Robots, Ships & Airships">
-<meta property="og:description" content="Free interactive 3D builders. Design rockets, robots, pirate ships and steampunk airships in your browser.">
+<meta property="og:title" content="3D Builders — Design in the Third Dimension">
+<meta property="og:description" content="10 free interactive 3D builders. Rockets, robots, ships, airships, race cars, submarines and more — all in your browser.">
 <meta property="og:image" content="https://jvdesignstudio.co.uk/RocketBuilder.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://www.googletagmanager.com">
-<link rel="preconnect" href="https://www.google-analytics.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
-<link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
-<link rel="preload" href="../style-3d-builders.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="../style-3d-builders.css?v=17"></noscript>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ──────────────────────────────────── */
+:root {
+  --bg:        #07080d;
+  --bg-2:      #0e1018;
+  --surface:   #131520;
+  --surface-2: #1c1f2e;
+  --border:    rgba(255,255,255,0.07);
+  --border-hi: rgba(255,255,255,0.13);
+  --text-1:    #eeeaf8;
+  --text-2:    #8b8fb8;
+  --text-3:    #52566e;
+  --accent:    #e8543a;
+  --accent-dim:rgba(232,84,58,0.15);
+}
+
+/* ─── RESET ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+/* ─── NAV ─────────────────────────────────────── */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(7,8,13,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+.site-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-brand {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--accent);
+  margin-right: 6px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.nav-sep { color: var(--text-3); font-size: .9rem; }
+.nav-crumb {
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--text-2);
+  padding: 5px 10px;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.nav-crumb:hover { background: var(--surface-2); color: var(--text-1); }
+.nav-crumb.active { color: var(--accent); }
+.nav-spacer { flex: 1; }
+.nav-back {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: border-color .15s, color .15s, background .15s;
+  white-space: nowrap;
+}
+.nav-back:hover {
+  border-color: var(--border-hi);
+  color: var(--text-1);
+  background: var(--surface);
+}
+
+/* ─── HERO ────────────────────────────────────── */
+.hero {
+  position: relative;
+  min-height: 540px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 80px 24px 60px;
+}
+#starfield {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.hero-glow {
+  position: absolute;
+  top: -120px;
+  left: -80px;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(ellipse at center, rgba(232,84,58,0.13) 0%, transparent 65%);
+  z-index: 1;
+  pointer-events: none;
+}
+.hero-glow-2 {
+  position: absolute;
+  bottom: -200px;
+  right: -100px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(ellipse at center, rgba(56,189,248,0.08) 0%, transparent 65%);
+  z-index: 1;
+  pointer-events: none;
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+.hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+}
+.hero h1 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(3rem, 8vw, 7.5rem);
+  line-height: 1.0;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  color: var(--text-1);
+  margin-bottom: 24px;
+}
+.hero h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: var(--text-2);
+  max-width: 560px;
+  line-height: 1.65;
+  margin-bottom: 36px;
+}
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.pill {
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hi);
+  color: var(--text-2);
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+/* ─── MARQUEE ─────────────────────────────────── */
+.marquee-wrap {
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+  padding: 14px 0;
+}
+.marquee-track {
+  display: flex;
+  gap: 0;
+  width: max-content;
+  animation: marquee 32s linear infinite;
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track:hover { animation-play-state: paused; }
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 32px;
+  font-family: 'Syne', sans-serif;
+  font-size: .9rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.marquee-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ─── STATS BAR ───────────────────────────────── */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+.stat-cell {
+  padding: 32px 24px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+.stat-cell:last-child { border-right: none; }
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.2rem, 4vw, 3rem);
+  letter-spacing: -0.04em;
+  color: var(--text-1);
+  line-height: 1;
+}
+.stat-label {
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 6px;
+}
+
+/* ─── SECTION HEADER ──────────────────────────── */
+.section-header {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 64px 24px 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.section-header h2 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+  line-height: 1.1;
+}
+.section-header p {
+  font-size: .9rem;
+  color: var(--text-2);
+  max-width: 300px;
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* ─── BUILDER GRID ────────────────────────────── */
+.builders-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+/* ─── BUILDER CARD ────────────────────────────── */
+.bcard {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color .25s, box-shadow .25s, transform .2s;
+  position: relative;
+}
+.bcard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--ca, var(--accent));
+  opacity: 0;
+  transition: opacity .25s;
+}
+.bcard:hover {
+  border-color: rgba(var(--ca-rgb, 232,84,58), .36);
+  box-shadow: 0 16px 48px rgba(var(--ca-rgb, 232,84,58), .14),
+              0 0 0 1px rgba(var(--ca-rgb, 232,84,58), .12);
+  transform: translateY(-3px);
+}
+.bcard:hover::before { opacity: 1; }
+
+.bcard-thumb {
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: var(--bg-2);
+}
+.bcard-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .4s ease;
+}
+.bcard:hover .bcard-thumb img { transform: scale(1.04); }
+
+.bcard-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+}
+
+.bcard-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.bcard-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-bottom: 10px;
+}
+.bcard-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+.bcard-desc {
+  font-size: .85rem;
+  color: var(--text-2);
+  line-height: 1.55;
+  margin-bottom: 16px;
+  flex: 1;
+}
+.bcard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+.bcard-steps {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: rgba(var(--ca-rgb, 232,84,58), .9);
+  font-variant-numeric: tabular-nums;
+}
+.bcard-cta {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--ca, var(--accent));
+  transition: gap .15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.bcard:hover .bcard-cta { gap: 8px; }
+.bcard-cta::after { content: '→'; }
+
+/* ─── FEATURES ────────────────────────────────── */
+.features-section {
+  background: var(--bg-2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 64px 24px;
+}
+.features-inner { max-width: 1200px; margin: 0 auto; }
+.features-heading {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+.features-sub {
+  font-size: .9rem;
+  color: var(--text-2);
+  margin-bottom: 40px;
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 28px 32px;
+}
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.feature-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.feature-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: .88rem;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+.feature-desc {
+  font-size: .8rem;
+  color: var(--text-3);
+  line-height: 1.5;
+}
+
+/* ─── CTA ─────────────────────────────────────── */
+.cta-section {
+  padding: 100px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cta-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse at center, rgba(232,84,58,0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cta-section h2 {
+  position: relative;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  letter-spacing: -0.04em;
+  color: var(--text-1);
+  margin-bottom: 16px;
+}
+.cta-section p {
+  position: relative;
+  font-size: 1rem;
+  color: var(--text-2);
+  max-width: 440px;
+  margin: 0 auto 36px;
+  line-height: 1.6;
+}
+.cta-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  padding: 14px 32px;
+  border-radius: 10px;
+  transition: background .2s, transform .2s, box-shadow .2s;
+  box-shadow: 0 8px 32px rgba(232,84,58,.3);
+}
+.cta-btn:hover {
+  background: #d44230;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(232,84,58,.4);
+}
+
+/* ─── FOOTER ──────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+footer a {
+  font-size: .85rem;
+  color: var(--text-3);
+  transition: color .15s;
+}
+footer a:hover { color: var(--text-2); }
+.footer-copy {
+  width: 100%;
+  text-align: center;
+  font-size: .78rem;
+  color: var(--text-3);
+  margin-top: 8px;
+}
+
+/* ─── RESPONSIVE ──────────────────────────────── */
+@media (max-width: 700px) {
+  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .stat-cell:nth-child(2) { border-right: none; }
+  .section-header { padding: 48px 20px 28px; }
+  .section-header p { text-align: left; }
+  .builders-grid { grid-template-columns: 1fr; padding: 0 20px 60px; }
+  .hero { padding: 60px 20px 48px; min-height: 440px; }
+}
+@media (max-width: 480px) {
+  .stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── REDUCED MOTION ──────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+  .bcard, .bcard-thumb img, .cta-btn { transition: none; }
+}
+</style>
 </head>
 <body>
 
+<!-- NAV -->
+<nav class="site-nav">
+  <div class="site-nav-inner">
+    <a href="../index.html" class="nav-brand">JVDesignStudio</a>
+    <span class="nav-sep">›</span>
+    <a href="workshop.html" class="nav-crumb">Workshop</a>
+    <span class="nav-sep">›</span>
+    <span class="nav-crumb active">3D Builders</span>
+    <div class="nav-spacer"></div>
+    <a href="workshop.html#3d-builders" class="nav-back">← Back to Workshop</a>
+  </div>
+</nav>
+
+<!-- HERO -->
 <section class="hero">
-  <div class="hero-tag">Free · Browser-Based · No Downloads</div>
-  <h1>Design in <em>3D</em>. Launch, Sail & Fly.</h1>
-  <p class="hero-sub">Four interactive builders where you design real 3D creations — rockets, robots, pirate ships and steampunk airships — then export, share and play.</p>
-  <div class="hero-pills">
-    <span class="pill pill-age">Ages 8+</span>
-    <span class="pill pill-free">100% Free</span>
-    <span class="pill pill-browser">Runs in Browser</span>
+  <canvas id="starfield"></canvas>
+  <div class="hero-glow"></div>
+  <div class="hero-glow-2"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">10 Interactive Builders · Free · No Downloads</div>
+    <h1>Design in <em>3D.</em></h1>
+    <p class="hero-sub">Build rockets, robots, pirate ships, airships, race cars, submarines, castles and more — all live in your browser. Design it, colour it, export it.</p>
+    <div class="hero-pills">
+      <span class="pill">Ages 8+</span>
+      <span class="pill">100% Free</span>
+      <span class="pill">Runs in Browser</span>
+      <span class="pill">Three.js Powered</span>
+    </div>
   </div>
 </section>
 
-<div class="stats-bar">
-  <div class="stat"><div class="stat-num">10</div><div class="stat-label">Builders</div></div>
-  <div class="stat"><div class="stat-num">165+</div><div class="stat-label">Steps</div></div>
-  <div class="stat"><div class="stat-num">30+</div><div class="stat-label">Presets</div></div>
-  <div class="stat"><div class="stat-num">4</div><div class="stat-label">Export Formats</div></div>
+<!-- MARQUEE -->
+<div class="marquee-wrap" aria-hidden="true">
+  <div class="marquee-track">
+    <!-- first copy -->
+    <span class="marquee-item"><span class="marquee-dot"></span>Rocket Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Robot Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Pirate Ship Shipyard</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Steampunk Airship Dockyard</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Race Car Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Submarine Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Castle Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Space Station Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Fairy Tale Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Phone Stand Builder</span>
+    <!-- duplicate for seamless loop -->
+    <span class="marquee-item"><span class="marquee-dot"></span>Rocket Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Robot Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Pirate Ship Shipyard</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Steampunk Airship Dockyard</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Race Car Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Submarine Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Castle Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Space Station Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Fairy Tale Builder</span>
+    <span class="marquee-item"><span class="marquee-dot"></span>Phone Stand Builder</span>
+  </div>
 </div>
 
-<section class="builders">
-  <div class="builders-grid">
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-cell">
+    <div class="stat-num" data-target="10">0</div>
+    <div class="stat-label">Builders</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num" data-target="165" data-suffix="+">0</div>
+    <div class="stat-label">Total Steps</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num" data-target="30" data-suffix="+">0</div>
+    <div class="stat-label">Colour Presets</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-num" data-target="4">0</div>
+    <div class="stat-label">Export Formats</div>
+  </div>
+</div>
 
-    <a href="../workshops/rocket-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <img width="400" height="225" loading="lazy" decoding="async" src="../RocketBuilder.webp" alt="Rocket Builder - 3D rocket designer" onerror="this.onerror=null;this.src='https://placehold.co/400x225/07090f/e8543a?text=Rocket+Builder'">
-        <span class="builder-badge" style="background:rgba(232,84,58,.9);color:#fff">3D Builder</span>
-      </div>
-      <div class="builder-body">
-        <div class="builder-emoji">🚀</div>
-        <div class="builder-name">Rocket Builder</div>
-        <div class="builder-desc">Design your own launch vehicle — nosecone, body, fins, boosters, engines and more. 17 steps, live 3D preview, launch animation.</div>
-        <div class="builder-meta"><span>17 Steps</span><span>Three.js</span><span>OBJ + GLB</span></div>
-        <div class="builder-cta">Build a Rocket →</div>
-      </div>
-    </a>
+<!-- BUILDERS GRID -->
+<div class="section-header">
+  <h2>Choose Your Builder</h2>
+  <p>Pick any builder below and start creating. No account needed.</p>
+</div>
 
-    <a href="../workshops/robot-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <picture><source srcset="../CharacterCreatorCover.avif" type="image/avif"><source srcset="../CharacterCreatorCover.webp" type="image/webp"><img width="400" height="225" loading="lazy" decoding="async" src="../CharacterCreatorCover.webp" alt="Robot Builder - 3D robot designer" onerror="this.onerror=null;this.src='https://placehold.co/400x225/070b12/38bdf8?text=Robot+Builder'"></picture>
-        <span class="builder-badge" style="background:rgba(56,189,248,.9);color:#07101a">3D Builder</span>
-      </div>
-      <div class="builder-body">
-        <div class="builder-emoji">✨</div>
-        <div class="builder-name">Robot Builder</div>
-        <div class="builder-desc">Build a custom robot — head, body, arms, legs, weapons, backpack and chest reactor. 16 steps, stat bars, activation animation, profile card.</div>
-        <div class="builder-meta"><span>16 Steps</span><span>Three.js</span><span>OBJ + GLB</span></div>
-        <div class="builder-cta">Build a Robot →</div>
-      </div>
-    </a>
+<div class="builders-grid">
 
-    <a href="../workshops/pirate-ship-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <img width="400" height="225" loading="lazy" decoding="async" src="../Ship.webp" alt="Pirate Ship Builder - 3D ship designer" onerror="this.onerror=null;this.src='https://placehold.co/400x225/0a1628/d4a843?text=Pirate+Ship'">
-        <span class="builder-badge" style="background:rgba(212,168,67,.9);color:#0a1628">3D Builder</span>
+  <a href="../workshops/rocket-builder.html" class="bcard" style="--ca:#e8543a;--ca-rgb:232,84,58">
+    <div class="bcard-thumb">
+      <img width="400" height="225" loading="eager" decoding="async"
+        src="../RocketBuilder.webp"
+        alt="Rocket Builder — design and launch your own 3D rocket"
+        onerror="this.onerror=null;this.src='https://placehold.co/400x225/0e0c0b/e8543a?text=Rocket+Builder'">
+      <span class="bcard-badge" style="background:rgba(232,84,58,.9);color:#fff">3D Builder</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">🚀</div>
+      <div class="bcard-name">Rocket Builder</div>
+      <div class="bcard-desc">Design your own launch vehicle — nosecone, body, fins, boosters, engines and more. Live 3D preview with launch animation.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">17 Steps</span>
+        <span class="bcard-cta">Build a Rocket</span>
       </div>
-      <div class="builder-body">
-        <div class="builder-emoji">🏴‍☠️</div>
-        <div class="builder-name">Pirate Ship Shipyard</div>
-        <div class="builder-desc">Design a full pirate vessel — hull, masts, sails, cannons, figurehead, flags and more. 22 steps, animated water, set-sail animation.</div>
-        <div class="builder-meta"><span>22 Steps</span><span>Three.js</span><span>OBJ + GLB</span></div>
-        <div class="builder-cta">Build a Ship →</div>
-      </div>
-    </a>
+    </div>
+  </a>
 
-    <a href="../workshops/steampunk-airship-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <img width="400" height="225" loading="lazy" decoding="async" src="../steampunkship-400w.webp" srcset="../steampunkship-400w.webp 400w, ../steampunkship-800w.webp 800w" sizes="(max-width:600px) 100vw, 400px" alt="Steampunk Airship Builder - 3D airship designer" onerror="this.onerror=null;this.src='https://placehold.co/400x225/1a1610/c8a84e?text=Airship+Builder'">
-        <span class="builder-badge" style="background:rgba(200,168,78,.9);color:#1a1610">3D Builder</span>
+  <a href="../workshops/robot-builder.html" class="bcard" style="--ca:#38bdf8;--ca-rgb:56,189,248">
+    <div class="bcard-thumb">
+      <picture>
+        <source srcset="../CharacterCreatorCover.avif" type="image/avif">
+        <source srcset="../CharacterCreatorCover.webp" type="image/webp">
+        <img width="400" height="225" loading="lazy" decoding="async"
+          src="../CharacterCreatorCover.webp"
+          alt="Robot Builder — design a custom 3D robot"
+          onerror="this.onerror=null;this.src='https://placehold.co/400x225/070b12/38bdf8?text=Robot+Builder'">
+      </picture>
+      <span class="bcard-badge" style="background:rgba(56,189,248,.9);color:#07101a">3D Builder</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">🤖</div>
+      <div class="bcard-name">Robot Builder</div>
+      <div class="bcard-desc">Build a custom robot — head, torso, arms, legs, weapons and chest reactor. Stat bars, profile card, and activation animation.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">16 Steps</span>
+        <span class="bcard-cta">Build a Robot</span>
       </div>
-      <div class="builder-body">
-        <div class="builder-emoji">🛩️</div>
-        <div class="builder-name">Steampunk Airship Dockyard</div>
-        <div class="builder-desc">Craft a steampunk airship — hull, balloon, gondola, engines, propellers, wings, weapons and more. 20 steps, guided + sandbox mode.</div>
-        <div class="builder-meta"><span>20 Steps</span><span>Three.js</span><span>OBJ + GLB</span></div>
-        <div class="builder-cta">Build an Airship →</div>
-      </div>
-    </a>
+    </div>
+  </a>
 
-    <a href="../workshops/race-car-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <img width="400" height="225" loading="lazy" decoding="async" src="../RacingBluePrint-400w.webp" srcset="../RacingBluePrint-400w.webp 400w, ../RacingBluePrint-800w.webp 800w" sizes="(max-width:600px) 100vw, 400px" alt="Race Car Builder - 3D car designer" onerror="this.onerror=null;this.src='https://placehold.co/400x225/0a0a0f/e8333a?text=Race+Car+Builder'">
-        <span class="builder-badge" style="background:rgba(232,51,58,.9);color:#fff">3D Builder</span>
+  <a href="../workshops/pirate-ship-builder.html" class="bcard" style="--ca:#d4a843;--ca-rgb:212,168,67">
+    <div class="bcard-thumb">
+      <img width="400" height="225" loading="lazy" decoding="async"
+        src="../Ship.webp"
+        alt="Pirate Ship Shipyard — design a full 3D pirate vessel"
+        onerror="this.onerror=null;this.src='https://placehold.co/400x225/0a1628/d4a843?text=Pirate+Ship'">
+      <span class="bcard-badge" style="background:rgba(212,168,67,.9);color:#0a1628">3D Builder</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">🏴‍☠️</div>
+      <div class="bcard-name">Pirate Ship Shipyard</div>
+      <div class="bcard-desc">Design a full pirate vessel — hull, masts, sails, cannons, figurehead, flags and more. Animated water and set-sail sequence.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">22 Steps</span>
+        <span class="bcard-cta">Build a Ship</span>
       </div>
-      <div class="builder-body">
-        <div class="builder-emoji">🏎️</div>
-        <div class="builder-name">Race Car Builder</div>
-        <div class="builder-desc">Design your own race car — body style, engine, wheels, aero, livery, exhaust and more. 16 steps, live 3D preview, race animation.</div>
-        <div class="builder-meta"><span>16 Steps</span><span>Three.js</span><span>OBJ + GLB</span></div>
-        <div class="builder-cta">Build a Car →</div>
-      </div>
-    </a>
+    </div>
+  </a>
 
-    <a href="../workshops/submarine-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <img width="400" height="225" loading="lazy" decoding="async" src="../Scifirunner-400w.webp" srcset="../Scifirunner-400w.webp 400w, ../Scifirunner-800w.webp 800w" sizes="(max-width:600px) 100vw, 400px" alt="Submarine Builder - 3D submarine designer" onerror="this.onerror=null;this.src='https://placehold.co/400x225/040e1a/0ea5e9?text=Submarine+Builder'">
-        <span class="builder-badge" style="background:rgba(14,165,233,.9);color:#fff">3D Builder</span>
+  <a href="../workshops/steampunk-airship-builder.html" class="bcard" style="--ca:#c8a84e;--ca-rgb:200,168,78">
+    <div class="bcard-thumb">
+      <img width="400" height="225" loading="lazy" decoding="async"
+        src="../steampunkship-400w.webp"
+        srcset="../steampunkship-400w.webp 400w, ../steampunkship-800w.webp 800w"
+        sizes="(max-width:600px) 100vw, 400px"
+        alt="Steampunk Airship Dockyard — design a 3D steampunk airship"
+        onerror="this.onerror=null;this.src='https://placehold.co/400x225/1a1610/c8a84e?text=Airship+Builder'">
+      <span class="bcard-badge" style="background:rgba(200,168,78,.9);color:#1a1610">3D Builder</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">🛩️</div>
+      <div class="bcard-name">Steampunk Airship Dockyard</div>
+      <div class="bcard-desc">Craft a steampunk airship — hull, balloon, gondola, engines, propellers, wings and weapons. Guided mode and free-build sandbox.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">20 Steps</span>
+        <span class="bcard-cta">Build an Airship</span>
       </div>
-      <div class="builder-body">
-        <div class="builder-emoji">🤿</div>
-        <div class="builder-name">Submarine Builder</div>
-        <div class="builder-desc">Design a submarine — hull, conning tower, periscope, propeller, torpedoes and more. 16 steps, underwater dive animation.</div>
-        <div class="builder-meta"><span>16 Steps</span><span>Three.js</span><span>OBJ + GLB</span></div>
-        <div class="builder-cta">Build a Sub →</div>
-      </div>
-    </a>
+    </div>
+  </a>
 
-    <a href="../workshops/castle-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <img width="400" height="225" loading="lazy" decoding="async" src="../Dungeondelve-400w.webp" srcset="../Dungeondelve-400w.webp 400w, ../Dungeondelve-800w.webp 800w" sizes="(max-width:600px) 100vw, 400px" alt="Castle Builder - 3D fortress designer" onerror="this.onerror=null;this.src='https://placehold.co/400x225/0f0d0a/c9a84c?text=Castle+Builder'">
-        <span class="builder-badge" style="background:rgba(201,168,76,.9);color:#0f0d0a">3D Builder</span>
+  <a href="../workshops/race-car-builder.html" class="bcard" style="--ca:#e8333a;--ca-rgb:232,51,58">
+    <div class="bcard-thumb">
+      <img width="400" height="225" loading="lazy" decoding="async"
+        src="../RacingBluePrint-400w.webp"
+        srcset="../RacingBluePrint-400w.webp 400w, ../RacingBluePrint-800w.webp 800w"
+        sizes="(max-width:600px) 100vw, 400px"
+        alt="Race Car Builder — design your own 3D race car"
+        onerror="this.onerror=null;this.src='https://placehold.co/400x225/0a0a0f/e8333a?text=Race+Car+Builder'">
+      <span class="bcard-badge" style="background:rgba(232,51,58,.9);color:#fff">3D Builder</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">🏎️</div>
+      <div class="bcard-name">Race Car Builder</div>
+      <div class="bcard-desc">Design your own race car — body style, engine, wheels, aero package, livery and exhaust. Live 3D preview with race animation.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">16 Steps</span>
+        <span class="bcard-cta">Build a Car</span>
       </div>
-      <div class="builder-body">
-        <div class="builder-emoji">🏰</div>
-        <div class="builder-name">Castle Builder</div>
-        <div class="builder-desc">Design a medieval fortress — walls, towers, gates, moat, drawbridge and more. 16 steps, torch lighting animation.</div>
-        <div class="builder-meta"><span>16 Steps</span><span>Three.js</span><span>OBJ + GLB</span></div>
-        <div class="builder-cta">Build a Castle →</div>
-      </div>
-    </a>
+    </div>
+  </a>
 
-    <a href="../workshops/space-station-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <img width="400" height="225" loading="lazy" decoding="async" src="../godot-templates-400w.webp" srcset="../godot-templates-400w.webp 400w, ../godot-templates-800w.webp 800w" sizes="(max-width:600px) 100vw, 400px" alt="Space Station Builder - 3D orbital station designer" onerror="this.onerror=null;this.src='https://placehold.co/400x225/06040f/a78bfa?text=Space+Station'">
-        <span class="builder-badge" style="background:rgba(167,139,250,.9);color:#06040f">3D Builder</span>
+  <a href="../workshops/submarine-builder.html" class="bcard" style="--ca:#0ea5e9;--ca-rgb:14,165,233">
+    <div class="bcard-thumb">
+      <img width="400" height="225" loading="lazy" decoding="async"
+        src="../Scifirunner-400w.webp"
+        srcset="../Scifirunner-400w.webp 400w, ../Scifirunner-800w.webp 800w"
+        sizes="(max-width:600px) 100vw, 400px"
+        alt="Submarine Builder — design a 3D submarine"
+        onerror="this.onerror=null;this.src='https://placehold.co/400x225/040e1a/0ea5e9?text=Submarine+Builder'">
+      <span class="bcard-badge" style="background:rgba(14,165,233,.9);color:#fff">3D Builder</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">🤿</div>
+      <div class="bcard-name">Submarine Builder</div>
+      <div class="bcard-desc">Design a submarine — hull, conning tower, periscope, propeller, torpedoes and more. 16 steps with an underwater dive animation.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">16 Steps</span>
+        <span class="bcard-cta">Build a Sub</span>
       </div>
-      <div class="builder-body">
-        <div class="builder-emoji">🛰️</div>
-        <div class="builder-name">Space Station Builder</div>
-        <div class="builder-desc">Design an orbital station — modules, solar panels, docking ports, antennas and more. 16 steps, Earth backdrop.</div>
-        <div class="builder-meta"><span>16 Steps</span><span>Three.js</span><span>OBJ + GLB</span></div>
-        <div class="builder-cta">Build a Station →</div>
-      </div>
-    </a>
+    </div>
+  </a>
 
-    <a href="../workshops/fairy-tale-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <img width="400" height="225" loading="lazy" decoding="async" src="../cozy-creatures.jpg" alt="Fairy Tale Builder - 3D cottage designer" onerror="this.onerror=null;this.src='https://placehold.co/400x225/0f0818/e879f9?text=Fairy+Tale+Builder'">
-        <span class="builder-badge" style="background:rgba(232,121,249,.9);color:#0f0818">3D Builder</span>
+  <a href="../workshops/castle-builder.html" class="bcard" style="--ca:#c9a84c;--ca-rgb:201,168,76">
+    <div class="bcard-thumb">
+      <img width="400" height="225" loading="lazy" decoding="async"
+        src="../Dungeondelve-400w.webp"
+        srcset="../Dungeondelve-400w.webp 400w, ../Dungeondelve-800w.webp 800w"
+        sizes="(max-width:600px) 100vw, 400px"
+        alt="Castle Builder — design a 3D medieval fortress"
+        onerror="this.onerror=null;this.src='https://placehold.co/400x225/0f0d0a/c9a84c?text=Castle+Builder'">
+      <span class="bcard-badge" style="background:rgba(201,168,76,.9);color:#0f0d0a">3D Builder</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">🏰</div>
+      <div class="bcard-name">Castle Builder</div>
+      <div class="bcard-desc">Design a medieval fortress — walls, towers, gates, moat, drawbridge and more. 16 steps with torch-light atmosphere.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">16 Steps</span>
+        <span class="bcard-cta">Build a Castle</span>
       </div>
-      <div class="builder-body">
-        <div class="builder-emoji">🏠</div>
-        <div class="builder-name">Fairy Tale Builder</div>
-        <div class="builder-desc">Design a whimsical cottage — roof, garden, towers, lanterns, fairy lights and more. 16 steps, firefly animation.</div>
-        <div class="builder-meta"><span>16 Steps</span><span>Three.js</span><span>OBJ + GLB</span></div>
-        <div class="builder-cta">Build a Cottage →</div>
-      </div>
-    </a>
+    </div>
+  </a>
 
-    <a href="../workshops/phone-stand-builder.html" class="builder-card">
-      <div class="builder-thumb">
-        <img width="400" height="225" loading="lazy" decoding="async" src="../BlockBuilderCover-400w.webp" srcset="../BlockBuilderCover-400w.webp 400w, ../BlockBuilderCover-800w.webp 800w" sizes="(max-width:600px) 100vw, 400px" alt="Phone Stand Builder - 3D printable phone stand" onerror="this.onerror=null;this.src='https://placehold.co/400x225/f8f9fa/22c55e?text=Phone+Stand+Builder'">
-        <span class="builder-badge" style="background:rgba(34,197,94,.9);color:#fff">3D Printable</span>
+  <a href="../workshops/space-station-builder.html" class="bcard" style="--ca:#a78bfa;--ca-rgb:167,139,250">
+    <div class="bcard-thumb">
+      <img width="400" height="225" loading="lazy" decoding="async"
+        src="../godot-templates-400w.webp"
+        srcset="../godot-templates-400w.webp 400w, ../godot-templates-800w.webp 800w"
+        sizes="(max-width:600px) 100vw, 400px"
+        alt="Space Station Builder — design a 3D orbital station"
+        onerror="this.onerror=null;this.src='https://placehold.co/400x225/06040f/a78bfa?text=Space+Station'">
+      <span class="bcard-badge" style="background:rgba(167,139,250,.9);color:#06040f">3D Builder</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">🛰️</div>
+      <div class="bcard-name">Space Station Builder</div>
+      <div class="bcard-desc">Design an orbital station — modules, solar panels, docking ports, antennas and more. Earth backdrop, 16 steps.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">16 Steps</span>
+        <span class="bcard-cta">Build a Station</span>
       </div>
-      <div class="builder-body">
-        <div class="builder-emoji">📱</div>
-        <div class="builder-name">Phone Stand Builder</div>
-        <div class="builder-desc">Design a 3D-printable phone stand — angle, grip, cable slot, brand text. 14 steps, STL export for 3D printing.</div>
-        <div class="builder-meta"><span>14 Steps</span><span>Three.js</span><span>STL + OBJ + GLB</span></div>
-        <div class="builder-cta">Build a Stand →</div>
-      </div>
-    </a>
+    </div>
+  </a>
 
+  <a href="../workshops/fairy-tale-builder.html" class="bcard" style="--ca:#e879f9;--ca-rgb:232,121,249">
+    <div class="bcard-thumb">
+      <img width="400" height="225" loading="lazy" decoding="async"
+        src="../cozy-creatures.jpg"
+        alt="Fairy Tale Builder — design a 3D whimsical cottage"
+        onerror="this.onerror=null;this.src='https://placehold.co/400x225/0f0818/e879f9?text=Fairy+Tale+Builder'">
+      <span class="bcard-badge" style="background:rgba(232,121,249,.9);color:#0f0818">3D Builder</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">🏠</div>
+      <div class="bcard-name">Fairy Tale Builder</div>
+      <div class="bcard-desc">Design a whimsical cottage — roof, garden, towers, lanterns and fairy lights. 16 steps with a firefly evening animation.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">16 Steps</span>
+        <span class="bcard-cta">Build a Cottage</span>
+      </div>
+    </div>
+  </a>
+
+  <a href="../workshops/phone-stand-builder.html" class="bcard" style="--ca:#22c55e;--ca-rgb:34,197,94">
+    <div class="bcard-thumb">
+      <img width="400" height="225" loading="lazy" decoding="async"
+        src="../BlockBuilderCover-400w.webp"
+        srcset="../BlockBuilderCover-400w.webp 400w, ../BlockBuilderCover-800w.webp 800w"
+        sizes="(max-width:600px) 100vw, 400px"
+        alt="Phone Stand Builder — design a 3D-printable phone stand"
+        onerror="this.onerror=null;this.src='https://placehold.co/400x225/061209/22c55e?text=Phone+Stand+Builder'">
+      <span class="bcard-badge" style="background:rgba(34,197,94,.9);color:#fff">3D Printable</span>
+    </div>
+    <div class="bcard-body">
+      <div class="bcard-emoji">📱</div>
+      <div class="bcard-name">Phone Stand Builder</div>
+      <div class="bcard-desc">Design a 3D-printable phone stand — angle, grip, cable slot, branded text. 14 steps with STL export for your printer.</div>
+      <div class="bcard-footer">
+        <span class="bcard-steps">14 Steps · STL Export</span>
+        <span class="bcard-cta">Build a Stand</span>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+<!-- FEATURES -->
+<section class="features-section">
+  <div class="features-inner">
+    <h2 class="features-heading">Every Builder Includes</h2>
+    <p class="features-sub">The same toolkit ships with every builder — no hunting for features.</p>
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="feature-icon">📊</div>
+        <div class="feature-name">Live Stats</div>
+        <div class="feature-desc">Your creation's stats update in real-time as you build each step</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🎲</div>
+        <div class="feature-name">Random Build</div>
+        <div class="feature-desc">One click generates a completely random creation for instant inspiration</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">💾</div>
+        <div class="feature-name">Save &amp; Load</div>
+        <div class="feature-desc">Save your builds locally and reload them in any future session</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📸</div>
+        <div class="feature-name">PNG Screenshot</div>
+        <div class="feature-desc">Export your creation as a high-quality image to share anywhere</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📦</div>
+        <div class="feature-name">3D Export</div>
+        <div class="feature-desc">Download as OBJ, MTL or GLB for Blender, Unity or Godot</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🔗</div>
+        <div class="feature-name">Share Links</div>
+        <div class="feature-desc">Generate a URL that encodes your entire build — share with one link</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-name">Colour Presets</div>
+        <div class="feature-desc">Quick livery schemes — or build your own palette with colour pickers</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🃏</div>
+        <div class="feature-name">Profile Cards</div>
+        <div class="feature-desc">Generate a trading-card-style image with your stats and creation</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">⌨️</div>
+        <div class="feature-name">Keyboard Shortcuts</div>
+        <div class="feature-desc">Arrow keys, Ctrl+Z undo, F for fullscreen — build without your mouse</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🏅</div>
+        <div class="feature-name">Badges &amp; Progress</div>
+        <div class="feature-desc">Earn badges as you complete builders and track your overall progress</div>
+      </div>
+    </div>
   </div>
 </section>
 
-<section class="features">
-  <h2>Every Builder Includes</h2>
-  <div class="features-grid">
-    <div class="feature"><div class="feature-icon">📊</div><div class="feature-name">Live Stats</div><div class="feature-desc">See your creation's stats update in real-time as you build</div></div>
-    <div class="feature"><div class="feature-icon">🎲</div><div class="feature-name">Random Build</div><div class="feature-desc">Generate random creations with one click for instant inspiration</div></div>
-    <div class="feature"><div class="feature-icon">💾</div><div class="feature-name">Save & Load</div><div class="feature-desc">Save your builds locally and load them anytime</div></div>
-    <div class="feature"><div class="feature-icon">📸</div><div class="feature-name">PNG Screenshot</div><div class="feature-desc">Export your creation as a high-quality image</div></div>
-    <div class="feature"><div class="feature-icon">📦</div><div class="feature-name">3D Export</div><div class="feature-desc">Download as OBJ, MTL or GLB for use in Blender, game engines</div></div>
-    <div class="feature"><div class="feature-icon">✨</div><div class="feature-name">Share Links</div><div class="feature-desc">Generate a URL that encodes your build to share with friends</div></div>
-    <div class="feature"><div class="feature-icon">🎨</div><div class="feature-name">Livery Presets</div><div class="feature-desc">Quick colour schemes — or pick your own with custom colour pickers</div></div>
-    <div class="feature"><div class="feature-icon">🃏</div><div class="feature-name">Profile Cards</div><div class="feature-desc">Generate a trading-card-style image with stats and your creation</div></div>
-    <div class="feature"><div class="feature-icon">⌨️</div><div class="feature-name">Keyboard Shortcuts</div><div class="feature-desc">Navigate with arrow keys, Ctrl+Z undo, F for fullscreen</div></div>
-    <div class="feature"><div class="feature-icon">🏅</div><div class="feature-name">Badges & Progress</div><div class="feature-desc">Earn badges for completing builders and track your progress</div></div>
-  </div>
-</section>
-
-<section class="cta">
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-glow"></div>
   <h2>Ready to Build?</h2>
-  <p>Pick a builder above and start creating. No sign-up, no downloads — just open and build.</p>
-  <a href="../workshops/rocket-builder.html" class="cta-btn">🚀 Start with the Rocket Builder</a>
+  <p>Pick any builder above. No sign-up, no downloads — just open a tab and start creating in 3D.</p>
+  <a href="../workshops/rocket-builder.html" class="cta-btn">🚀 Start with Rocket Builder</a>
 </section>
 
+<!-- FOOTER -->
 <footer>
   <a href="../index.html">Home</a>
   <a href="workshop.html">Workshop</a>
   <a href="games.html">Games</a>
   <a href="dev-tools.html">Tools</a>
   <a href="about.html">About</a>
-  <p style="margin-top:10px">© 2026 JVDesignStudio. All rights reserved.</p>
+  <p class="footer-copy">© 2026 JVDesignStudio. All rights reserved.</p>
 </footer>
 
+<!-- SCRIPTS -->
 <script defer src="../analytics-loader.js"></script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script defer src="../cookie-consent.js"></script>
 
+<!-- Starfield Canvas -->
+<script>
+(function() {
+  var canvas = document.getElementById('starfield');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var stars = [];
+  var W, H;
+
+  function resize() {
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+  }
+
+  function init() {
+    stars = [];
+    var count = Math.floor((W * H) / 6000);
+    for (var i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.2 + 0.2,
+        a: Math.random(),
+        speed: Math.random() * 0.004 + 0.002,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+  }
+
+  var frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    frame++;
+    for (var i = 0; i < stars.length; i++) {
+      var s = stars[i];
+      var alpha = 0.3 + 0.5 * Math.sin(frame * s.speed + s.phase);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(200,210,255,' + alpha + ')';
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', function() { resize(); init(); });
+  resize();
+  init();
+  draw();
+})();
+</script>
+
+<!-- Count-up Stats -->
+<script>
+(function() {
+  var nums = document.querySelectorAll('.stat-num[data-target]');
+  var started = false;
+
+  function countUp(el, target, suffix) {
+    var start = 0;
+    var duration = 1200;
+    var startTime = null;
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      var progress = Math.min((timestamp - startTime) / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var current = Math.floor(eased * target);
+      el.textContent = current + (suffix || '');
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting && !started) {
+        started = true;
+        nums.forEach(function(el) {
+          countUp(el, parseInt(el.dataset.target, 10), el.dataset.suffix || '');
+        });
+        observer.disconnect();
+      }
+    });
+  }, { threshold: 0.3 });
+
+  if (nums.length) observer.observe(nums[0].closest('.stats-bar') || nums[0]);
+})();
+</script>
+
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"CollectionPage","name":"3D Builders — Design Rockets, Robots, Ships, Airships, Cars & More","description":"Free interactive 3D builders for kids and teens. Design rockets, robots, pirate ships, airships, race cars, submarines, castles, space stations, cottages and phone stands in your browser.","url":"https://jvdesignstudio.co.uk/pages/3d-builders.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"hasPart":[{"@type":"Course","name":"Rocket Builder","url":"https://jvdesignstudio.co.uk/workshops/rocket-builder.html"},{"@type":"Course","name":"Robot Builder","url":"https://jvdesignstudio.co.uk/workshops/robot-builder.html"},{"@type":"Course","name":"Pirate Ship Shipyard","url":"https://jvdesignstudio.co.uk/workshops/pirate-ship-builder.html"},{"@type":"Course","name":"Steampunk Airship Dockyard","url":"https://jvdesignstudio.co.uk/workshops/steampunk-airship-builder.html"},{"@type":"Course","name":"Race Car Builder","url":"https://jvdesignstudio.co.uk/workshops/race-car-builder.html"},{"@type":"Course","name":"Submarine Builder","url":"https://jvdesignstudio.co.uk/workshops/submarine-builder.html"},{"@type":"Course","name":"Castle Builder","url":"https://jvdesignstudio.co.uk/workshops/castle-builder.html"},{"@type":"Course","name":"Space Station Builder","url":"https://jvdesignstudio.co.uk/workshops/space-station-builder.html"},{"@type":"Course","name":"Fairy Tale Builder","url":"https://jvdesignstudio.co.uk/workshops/fairy-tale-builder.html"},{"@type":"Course","name":"Phone Stand Builder","url":"https://jvdesignstudio.co.uk/workshops/phone-stand-builder.html"}]}
+{"@context":"https://schema.org","@type":"CollectionPage","name":"3D Builders — Design in the Third Dimension","description":"Free interactive 3D builders for kids and teens. Design rockets, robots, pirate ships, airships, race cars, submarines, castles, space stations, cottages and phone stands in your browser.","url":"https://jvdesignstudio.co.uk/pages/3d-builders.html","provider":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"isAccessibleForFree":true,"hasPart":[{"@type":"Course","name":"Rocket Builder","url":"https://jvdesignstudio.co.uk/workshops/rocket-builder.html"},{"@type":"Course","name":"Robot Builder","url":"https://jvdesignstudio.co.uk/workshops/robot-builder.html"},{"@type":"Course","name":"Pirate Ship Shipyard","url":"https://jvdesignstudio.co.uk/workshops/pirate-ship-builder.html"},{"@type":"Course","name":"Steampunk Airship Dockyard","url":"https://jvdesignstudio.co.uk/workshops/steampunk-airship-builder.html"},{"@type":"Course","name":"Race Car Builder","url":"https://jvdesignstudio.co.uk/workshops/race-car-builder.html"},{"@type":"Course","name":"Submarine Builder","url":"https://jvdesignstudio.co.uk/workshops/submarine-builder.html"},{"@type":"Course","name":"Castle Builder","url":"https://jvdesignstudio.co.uk/workshops/castle-builder.html"},{"@type":"Course","name":"Space Station Builder","url":"https://jvdesignstudio.co.uk/workshops/space-station-builder.html"},{"@type":"Course","name":"Fairy Tale Builder","url":"https://jvdesignstudio.co.uk/workshops/fairy-tale-builder.html"},{"@type":"Course","name":"Phone Stand Builder","url":"https://jvdesignstudio.co.uk/workshops/phone-stand-builder.html"}]}
 </script>
 </body>
 </html>

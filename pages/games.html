@@ -114,7 +114,7 @@
         <div>
             <span class="section-tag">✦ Your Arcade</span>
             <h2 id="playDiscoveryTitle">Pick up where you left off</h2>
-            <p id="playDiscoveryIntro">Fast picks for a spare minute, a longer session, or your next high score.</p>
+            <p id="playDiscoveryIntro">A hand-picked collection of browser games, with the strongest titles up front.</p>
         </div>
         <a class="play-discovery-all" href="#games">Browse all games <span aria-hidden="true">↓</span></a>
     </div>
@@ -211,6 +211,24 @@
     }
     ready(function(){
         var cards = [].slice.call(document.querySelectorAll('.games-grid .game-card'));
+        // Standalone apps and non-arcade pages have their own homes. Keeping
+        // them out of this grid prevents duplicate downloads and protects the
+        // browse experience from unfinished or mismatched entries.
+        var excludedFromGames = {
+            'cozy-biscuit-clicker': true,
+            'cozy-cafe-match-game': true,
+            'sky_high_with_friends': true,
+            'millionaire-quiz': true,
+            'cozy_creatures': true,
+            'candy_kingdom': true
+        };
+        cards = cards.filter(function(card){
+            var file = (card.getAttribute('href') || '').split('/').pop();
+            var basename = file.replace(/\.html$/, '');
+            if (!excludedFromGames[basename]) return true;
+            card.remove();
+            return false;
+        });
         var continueGrid = document.getElementById('continueGrid');
         var continueWrap = document.getElementById('continueGames');
         if(!cards.length) return;
@@ -372,7 +390,7 @@
         <span class="section-tag">✦ Browser Games</span>
         <h2 class="section-title">Choose Your Next Game</h2>
         <p style="color:rgba(240,234,214,0.75);margin-top:10px;font-size:1rem;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;">
-            Filter by mood, find a new favourite, and play instantly in your browser.
+            A curated collection of games to play instantly in your browser. Start with a featured pick, or filter by the kind of session you want.
         </p>
     </div>
 
@@ -404,7 +422,9 @@
         <span class="game-result-count" id="gameResultCount" aria-live="polite"></span>
     </div>
     <div class="game-filters" id="gameFilters" role="group" aria-label="Filter games by category">
-        <button type="button" class="game-chip active" data-filter="all" aria-pressed="true">All <span class="chip-count"></span></button>
+        <button type="button" class="game-chip active" data-filter="picks" aria-pressed="true">✦ Staff picks <span class="chip-count"></span></button>
+        <button type="button" class="game-chip" data-filter="all" aria-pressed="false">All games <span class="chip-count"></span></button>
+        <button type="button" class="game-chip" data-filter="experimental" aria-pressed="false">🧪 Experiments <span class="chip-count"></span></button>
         <button type="button" class="game-chip" data-filter="puzzle" aria-pressed="false">🧩 Puzzle &amp; Match <span class="chip-count"></span></button>
         <button type="button" class="game-chip" data-filter="arcade" aria-pressed="false">🎯 Arcade &amp; Action <span class="chip-count"></span></button>
         <button type="button" class="game-chip" data-filter="runner" aria-pressed="false">🏃 Runner <span class="chip-count"></span></button>
@@ -424,6 +444,15 @@
             idle:     ['pips-bakery-empire','cozy-biscuit-clicker'],
             brain:    ['millionaire-quiz','star-chef']
         };
+        var PICK_ORDER = ['garden-defense','bubble-pop-galaxy','neon-tiles','arcane_citadel_page','voidrush','gem_match','pips-bakery-empire','crypt-crawlers'];
+        var PICKS = {};
+        PICK_ORDER.forEach(function(file, index){ PICKS[file] = index; });
+        var EXPERIMENTS = {
+            'stardust_collection': true,
+            'tiger_smash': true,
+            'little_steps': true,
+            'call_of_the_cards': true
+        };
         function catOf(basename){
             for(var c in CAT){ if(CAT[c].indexOf(basename) !== -1) return c; }
             return 'other';
@@ -436,8 +465,31 @@
             cards.forEach(function(card){
                 var m = (card.getAttribute('href')||'').match(/([^\/]+)\.html/);
                 var cat = catOf(m ? m[1] : '');
+                var basename = m ? m[1] : '';
                 card.setAttribute('data-cat', cat);
+                card.setAttribute('data-pick', Object.prototype.hasOwnProperty.call(PICKS, basename) ? 'true' : 'false');
+                card.setAttribute('data-status', card.getAttribute('data-pick') === 'true' ? 'featured' : (EXPERIMENTS[basename] ? 'experimental' : 'complete'));
+                if(card.getAttribute('data-pick') === 'true'){
+                    var thumb = card.querySelector('.game-thumb');
+                    if(thumb && !thumb.querySelector('.staff-pick')){
+                        var badge = document.createElement('span');
+                        badge.className = 'game-badge staff-pick';
+                        badge.textContent = 'Staff pick';
+                        thumb.appendChild(badge);
+                    }
+                }
+                if(card.getAttribute('data-status') === 'experimental'){
+                    var expThumb = card.querySelector('.game-thumb');
+                    if(expThumb && !expThumb.querySelector('.experimental')){
+                        var expBadge = document.createElement('span');
+                        expBadge.className = 'game-badge experimental';
+                        expBadge.textContent = 'Experiment';
+                        expThumb.appendChild(expBadge);
+                    }
+                }
                 counts[cat] = (counts[cat]||0) + 1;
+                if(card.getAttribute('data-pick') === 'true') counts.picks = (counts.picks||0) + 1;
+                if(card.getAttribute('data-status') === 'experimental') counts.experimental = (counts.experimental||0) + 1;
             });
             var chips = [].slice.call(document.querySelectorAll('.game-chip'));
             chips.forEach(function(chip){
@@ -454,7 +506,10 @@
                 var shown = 0;
                 var query = search ? search.value.trim().toLowerCase() : '';
                 cards.forEach(function(card){
-                    var categoryMatch = filter === 'all' || card.getAttribute('data-cat') === filter;
+                    var categoryMatch = filter === 'all' ||
+                        (filter === 'picks' ? card.getAttribute('data-pick') === 'true' :
+                        filter === 'experimental' ? card.getAttribute('data-status') === 'experimental' :
+                        card.getAttribute('data-cat') === filter);
                     var searchMatch = !query || card.textContent.toLowerCase().indexOf(query) !== -1;
                     var match = categoryMatch && searchMatch;
                     card.classList.toggle('filter-hidden', !match);
@@ -470,7 +525,11 @@
             }
             function reorder(mode){
                 var sorted = cards.slice().sort(function(a,b){
-                    if(mode === 'featured') return Number(a.dataset.catalogueOrder) - Number(b.dataset.catalogueOrder);
+                    if(mode === 'featured'){
+                        var ap = Object.prototype.hasOwnProperty.call(PICKS, a.getAttribute('href').split('/').pop().replace(/\.html$/, '')) ? PICKS[a.getAttribute('href').split('/').pop().replace(/\.html$/, '')] : 999;
+                        var bp = Object.prototype.hasOwnProperty.call(PICKS, b.getAttribute('href').split('/').pop().replace(/\.html$/, '')) ? PICKS[b.getAttribute('href').split('/').pop().replace(/\.html$/, '')] : 999;
+                        return ap - bp || Number(a.dataset.catalogueOrder) - Number(b.dataset.catalogueOrder);
+                    }
                     var aa = (a.querySelector('.game-title') || a).textContent.trim().toLowerCase();
                     var bb = (b.querySelector('.game-title') || b).textContent.trim().toLowerCase();
                     return mode === 'za' ? bb.localeCompare(aa) : aa.localeCompare(bb);
@@ -488,7 +547,8 @@
             if(sort) sort.addEventListener('change', function(){ reorder(sort.value); });
             var resetBtn = emptyMsg && emptyMsg.querySelector('.game-filter-reset');
             if(resetBtn) resetBtn.addEventListener('click', function(){ apply('all'); });
-            apply('all');
+            reorder('featured');
+            apply('picks');
         });
     })();
     </script>

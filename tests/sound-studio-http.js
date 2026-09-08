@@ -54,12 +54,12 @@ let failures = 0;
     clientWidth: document.documentElement.clientWidth,
     badText: /⭐\?|\? Play|\? Help|\? Workshop|\? WAV|\? Back|\? Project|\? Stop|\? Undo|\? Redo|\?\?/.test(document.body.innerText)
   }));
-  check('title loads', initial.title.includes('Sound Studio'), initial.title);
+  check('title loads', initial.title.includes('Audio Studio'), initial.title);
   check('single skip link', initial.skipLinks === 1, String(initial.skipLinks));
   check('main target exists', initial.main);
   check('play label clean', initial.play === '▶ Play', initial.play);
   check('transport labels clean', !/[?] Play|[?] WAV|[?] Back|[?] Project/.test(initial.transport), initial.transport.slice(0,120));
-  check('welcome title clean', initial.welcome === '🎛️ Welcome to Sound Studio', initial.welcome);
+  check('welcome title clean', initial.welcome === '🎛️ Welcome to Audio Studio', initial.welcome);
   check('tracks render', initial.tracks >= 1, String(initial.tracks));
   check('sequencer cells render', initial.cells >= 8, String(initial.cells));
   check('export and handoff functions exist', initial.exportFn && initial.gameMakerFn && initial.shareFn);

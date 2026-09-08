@@ -359,17 +359,29 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
         var norm = function(u){return u.replace(/^(\.\.\/)+/,'').replace(/^\//,'');};
         var known = {};
         ALL.forEach(function(p){known[norm(p.url)]=1;});
+        var inferEngine = function(p){
+            var haystack = ((p.url||'')+' '+(p.title||'')+' '+(p.desc||'')).toLowerCase();
+            if(haystack.indexOf('godot')!==-1||haystack.indexOf('gdscript')!==-1) return 'Godot';
+            if(haystack.indexOf('unity')!==-1||haystack.indexOf('c#')!==-1) return 'Unity';
+            if(haystack.indexOf('unreal')!==-1||haystack.indexOf('blueprint')!==-1) return 'Unreal';
+            if(haystack.indexOf('scratch')!==-1) return 'Scratch';
+            if(haystack.indexOf('python')!==-1||haystack.indexOf('pygame')!==-1) return 'Python';
+            if(haystack.indexOf('roblox')!==-1||haystack.indexOf('lua')!==-1) return 'Roblox';
+            return '';
+        };
         window.SITE_INDEX = [];
         fetch('/search-index.json').then(function(r){return r.ok?r.json():Promise.reject();}).then(function(idx){
             window.SITE_INDEX = (idx.pages||[]).filter(function(p){return !known[p.url];}).map(function(p){
                 var parts = p.url.split('/');
                 var style = CAT_STYLE[parts[0]] || CAT_STYLE['pages'];
                 var fileName = (parts[parts.length-1]||'').replace(/\.html$/,'').replace(/-/g,' ');
+                var engine = inferEngine(p);
                 return {
                     title: p.title || fileName, cat: style.cat, emoji: style.emoji,
                     color: style.color, badge: style.cat, badgeColor: style.badgeColor,
                     url: '/' + p.url, desc: p.desc || 'Part of the free JVDesignStudio collection.',
-                    tags: [style.cat], keywords: (p.title+' '+p.desc+' '+p.url).toLowerCase()
+                    tags: [style.cat, engine].filter(Boolean), keywords: (p.title+' '+p.desc+' '+p.url).toLowerCase(),
+                    engine: engine
                 };
             });
             if(document.getElementById('searchInput').value.trim()) doSearch();

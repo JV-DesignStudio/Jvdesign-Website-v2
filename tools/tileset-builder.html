@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tileset Builder | JVDesignStudio</title>
-<link rel="canonical" href="https://jvdesignstudio.co.uk/tools/tileset-builder.html">
+<title>World Builder: Tileset Mode | JVDesignStudio</title>
+<link rel="canonical" href="https://jvdesignstudio.co.uk/tools/level-designer.html">
+<meta name="robots" content="noindex, follow">
 <meta name="description" content="Combine tiles into reusable tilesets for Godot, Unity and Phaser. Auto-generate atlas JSON with frame coordinates.">
 <link rel="icon" href="../logo.png" type="image/png">
 <script defer src="../analytics-loader.js"></script>
@@ -49,11 +50,12 @@
 <body>
 <div class="header">
   <a href="/index.html" aria-label="Home"><img src="/logo.png" alt="JVDesignStudio" height="28" width="28" style="border-radius:6px"></a>
-  <h1>Tileset Builder</h1>
+  <h1>World Builder: Tileset Mode</h1>
   <button class="btn btn-secondary" onclick="importTiles()">📋 Import Tiles</button>
   <button class="btn btn-primary" onclick="exportPNG()">📥 Export PNG</button>
   <button class="btn btn-primary" onclick="exportJSON()">📥 Export JSON</button>
   <button class="btn btn-secondary" onclick="exportTiled()">🗺 Export Tiled (.tsj)</button>
+  <button class="btn btn-secondary" onclick="exportGodot()" title="Godot 4 TileSet resource — place tileset.tres + tileset.png in the same res:// folder">🎮 Godot TileSet (.tres)</button>
   <input type="file" id="importInput" accept="image/*" multiple style="display:none" onchange="handleImport(this)">
 </div>
 <div class="wrap">
@@ -258,6 +260,39 @@ function exportTiled() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   showToast('Tiled .tsj exported! Pair with tileset.png in your project.');
+}
+
+function exportGodot() {
+  if (!tiles.length) { showToast('Add some tiles first'); return; }
+  const ts   = parseInt(document.getElementById('tileSize').value) || 16;
+  const cols = parseInt(document.getElementById('cols').value) || 8;
+  // List every tile as atlas_col:atlas_row/0 = 0 (Godot 4 TileSetAtlasSource notation)
+  const tileEntries = tiles.map((tile, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    return c + ':' + r + '/0 = 0';
+  }).join('\r\n');
+  const tres = [
+    '[gd_resource type="TileSet" load_steps=3 format=3]',
+    '',
+    '[ext_resource type="Texture2D" path="res://tileset.png" id="1_tex"]',
+    '',
+    '[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_0"]',
+    'texture = ExtResource("1_tex")',
+    'texture_region_size = Vector2i(' + ts + ', ' + ts + ')',
+    tileEntries,
+    '',
+    '[resource]',
+    'tile_size = Vector2i(' + ts + ', ' + ts + ')',
+    '0 = SubResource("TileSetAtlasSource_0")',
+    ''
+  ].join('\r\n');
+  const blob = new Blob([tres], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tileset.tres';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  showToast('Godot TileSet .tres exported! Drop into res:// alongside tileset.png');
 }
 
 function showToast(msg) {

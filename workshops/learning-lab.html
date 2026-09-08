@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -176,6 +176,7 @@
       <span class="hero-pill">📈 XP &amp; Levels</span>
       <span class="hero-pill">📱 Works on Mobile</span>
     </div>
+    <a class="hero-start-btn" href="#subjects">Choose a game <span aria-hidden="true">&#8595;</span></a>
   </div>
   <div class="hero-divider"></div>
 </main>
@@ -245,7 +246,7 @@
 </section>
 
 <!-- --- SUBJECT PICKER --- -->
-<section class="subjects-section">
+<section class="subjects-section" id="subjects">
   <div class="section-label">🎯 Choose a Subject</div>
   <h2 class="section-title">Pick Your Guide</h2>
   <p class="section-sub">Tap a character to open their game. Progress and XP are saved automatically.</p>
@@ -4315,5 +4316,43 @@ if (location.hash) {
 
 
 <script defer src="workshop-track.js"></script>
-</body>
+<script>
+(function(){
+  function addParentControls(){
+    document.querySelectorAll('.parents-section').forEach(function(section){
+      if(section.previousElementSibling && section.previousElementSibling.classList.contains('parent-toggle')) return;
+      var button=document.createElement('button');
+      button.className='parent-toggle'; button.type='button'; button.setAttribute('aria-expanded','false');
+      button.innerHTML='For adults: view the learning goals <span aria-hidden="true">+</span>';
+      section.parentNode.insertBefore(button,section);
+      button.addEventListener('click',function(){
+        var open=section.classList.toggle('is-open'); button.setAttribute('aria-expanded',String(open));
+        button.querySelector('span').textContent=open?'-':'+';
+      });
+    });
+  }
+  function enhanceCards(){
+    document.querySelectorAll('.act-card').forEach(function(card){
+      if(card.dataset.enhanced) return; card.dataset.enhanced='true';
+      card.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();card.click();} });
+      var label=card.querySelector('.act-title'); if(!label) return;
+      var status=document.createElement('span'); status.className='card-status';
+      status.textContent=card.querySelector('.act-btn') && card.querySelector('.act-btn').textContent.indexOf('Again')>=0?'In progress':'Start here';
+      label.parentNode.insertBefore(status,label);
+    });
+    document.querySelectorAll('.subject-card').forEach(function(card){
+      if(card.dataset.stateEnhanced) return; card.dataset.stateEnhanced='true';
+      var badges=card.querySelector('.illustrated-card-badges');
+      if(badges){ var status=document.createElement('span'); status.className='card-status'; status.textContent='Start here'; badges.insertBefore(status,badges.firstChild); }
+      card.addEventListener('focus',function(){card.classList.add('keyboard-focus');});
+      card.addEventListener('blur',function(){card.classList.remove('keyboard-focus');});
+    });
+  }
+  function init(){
+    addParentControls(); enhanceCards();
+    ['actGrid','tierBeginner','tierIntermediate','tierAdvanced'].forEach(function(id){var el=document.getElementById(id);if(el)new MutationObserver(enhanceCards).observe(el,{childList:true,subtree:true});});
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script></body>
 </html>
