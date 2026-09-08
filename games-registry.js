@@ -135,7 +135,7 @@ window.JVDS_GAMES = [
     "title": "Lumo's Firefly Shooter",
     "tag": "Bubble Shooter",
     "emoji": "",
-    "cover": "lumo-concept-v004.webp",
+    "cover": "LumoFireflyCover.webp",
     "bg": "linear-gradient(135deg,#1c1a2e,#2a2838,#1e2818)",
     "kids": false,
     "desc": "Shoot coloured fireflies to make matches and clear the board. Special bubbles, power-ups, and satisfying chain drops."
@@ -376,7 +376,7 @@ window.JVDS_GAMES = [
     "title": "Quiz Quest",
     "tag": "Trivia · Quiz",
     "emoji": "❓",
-    "cover": "GemMatchCover.webp",
+    "cover": "QuizQuestCover.webp",
     "bg": "linear-gradient(135deg,#0a0a1a,#1a1035)",
     "kids": false,
     "desc": "Millionaire-style trivia quiz. Answer questions, climb the ladder and win the crown."

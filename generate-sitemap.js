@@ -87,9 +87,27 @@ for (const fp of walk(ROOT)) {
   let priority = PRIORITY_MAP[clean] || (clean.startsWith('/workshops/') || clean.startsWith('/tools/') || clean.startsWith('/games/') ? '0.5' : '0.5');
   if (LOW_PRIORITY_SUFFIX.some(s => clean.includes(s))) priority = '0.3';
   if (isHome) priority = '1.0';
-  // Extract og:image for image sitemap
+  // Extract og:image for image sitemap — prefer .webp variant if exists on disk to save payload
   const ogMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
-  const image = ogMatch ? ogMatch[1].trim() : null;
+  let image = ogMatch ? ogMatch[1].trim() : null;
+  if(image && image.startsWith(BASE)){
+    const relImg = image.slice(BASE.length).replace(/^\//,'');
+    const ext = path.extname(relImg).toLowerCase();
+    if(ext==='.jpg' || ext==='.jpeg' || ext==='.png'){
+      const webpRel = relImg.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+      if(fs.existsSync(path.join(ROOT, webpRel))) image = BASE + '/' + webpRel.replace(/\\/g,'/');
+      else {
+        // also try .avif before falling back
+        const avifRel = relImg.replace(/\.(jpg|jpeg|png)$/i, '.avif');
+        if(fs.existsSync(path.join(ROOT, avifRel))) image = BASE + '/' + avifRel.replace(/\\/g,'/');
+      }
+    }
+  }
+  // Fallback for tools without og:image — prevents blank social unfurl
+  if(!image && clean.startsWith('/tools/')){
+    const fallback = fs.existsSync(path.join(ROOT,'og/hub-devtools.png')) ? BASE+'/og/hub-devtools.png' : null;
+    if(fallback) image = fallback;
+  }
   rows.push({
     loc: `${BASE}${clean}`,
     lastmod: date,

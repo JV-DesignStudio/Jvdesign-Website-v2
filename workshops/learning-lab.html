@@ -751,9 +751,9 @@ function markDone(id, score){
   if(score > PROGRESS[id].best) PROGRESS[id].best = score;
   // Track last played subject
   PROGRESS._lastPlayed = id;
-  // Award XP proportional to score
+  // Award XP proportional to score — normalized to percentage so 12/12 == 100/100 == 50 XP
   const subj=SUBJECTS.find(s=>s.id===id);
-  const maxScore=subj?subj.maxScore:100;
+  const maxScore=subj?subj.maxScore:12;
   const xpEarned=Math.max(5, Math.round((score/maxScore)*50));
   PROGRESS._xp=(PROGRESS._xp||0)+xpEarned;
   saveProg(PROGRESS);
@@ -4230,13 +4230,14 @@ function buildNature(body,s){
 // ------------------------------------------------------
 //  DAILY CHALLENGE
 // ------------------------------------------------------
+function _hashDateToIdxLL(len){ const d=new Date(); const n=d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate(); let h=n; h=((h>>>16)^h)*0x45d9f3b; h=((h>>>16)^h)*0x45d9f3b; h=(h>>>16)^h; return Math.abs(h)%len; }
 function scrollToDaily(){
-  const dayIdx = new Date().getDate() % SUBJECTS.length;
+  const dayIdx = _hashDateToIdxLL(SUBJECTS.length);
   const s = SUBJECTS[dayIdx];
   openGame(s.id);
 }
 (function initDailyBadge(){
-  const dayIdx = new Date().getDate() % SUBJECTS.length;
+  const dayIdx = _hashDateToIdxLL(SUBJECTS.length);
   const s = SUBJECTS[dayIdx];
   const el = document.getElementById('dailyBadge');
   if(el) el.textContent = `\uD83C\uDF1F Today: ${s.emoji} ${s.subject}`;
@@ -4248,19 +4249,44 @@ function scrollToDaily(){
 let _activeFilter = 'all';
 function filterSubject(subj, el){
   _activeFilter = subj;
+  try{ localStorage.setItem('jvds_lab_filter', subj); }catch(e){}
+  const url=new URL(location.href); if(subj==='all') url.searchParams.delete('subject'); else url.searchParams.set('subject', subj); history.replaceState(null,'',url);
   document.querySelectorAll('.helper-btn').forEach(b => b.classList.remove('active'));
-  if(el) el.classList.add('active');
+  if(el) el.classList.add('active'); else { const btn=[...document.querySelectorAll('.helper-btn')].find(b=> (b.textContent||'').includes(subj) || b.getAttribute('onclick')?.includes("'"+subj+"'")); if(btn) btn.classList.add('active'); }
   const cards = document.querySelectorAll('.subject-card[data-subject]');
+  let visibleCount=0;
   cards.forEach(card => {
     const cardSubj = card.dataset.subject || '';
-    card.style.display = (subj === 'all' || cardSubj === subj) ? '' : 'none';
+    const show = (subj === 'all' || cardSubj === subj);
+    card.style.display = show ? '' : 'none';
+    card.classList.toggle('is-hidden', !show);
+    if(show) visibleCount++;
   });
   // Show/hide tier labels based on whether they have visible cards
   document.querySelectorAll('.tier-section').forEach(tier => {
-    const visibleCards = tier.querySelectorAll('.subject-card:not([style*="display: none"])');
+    const visibleCards = tier.querySelectorAll('.subject-card:not(.is-hidden)');
     tier.style.display = visibleCards.length ? '' : 'none';
   });
+  // Empty state
+  let emptyEl=document.getElementById('filterEmpty');
+  if(visibleCount===0){
+    if(!emptyEl){ emptyEl=document.createElement('div'); emptyEl.id='filterEmpty'; emptyEl.style.cssText='text-align:center;padding:24px;color:rgba(255,255,255,.6);font-family:Inter,sans-serif'; emptyEl.innerHTML='No games in this subject — <button onclick="filterSubject(\'all\', document.querySelector(\'.helper-btn.all\'))" style="color:#3EC9A7;background:none;border:none;cursor:pointer;text-decoration:underline">try All Subjects</button>'; document.querySelector('.subjects-section').appendChild(emptyEl); }
+    emptyEl.style.display='block';
+  } else if(emptyEl) emptyEl.style.display='none';
+  // Update counts on helper buttons
+  document.querySelectorAll('.helper-btn').forEach(b=>{
+    const m=b.getAttribute('onclick')?.match(/'([^']+)'/); if(!m) return; const s=m[1]; if(s==='all') return;
+    const cnt=[...cards].filter(c=>c.dataset.subject===s).length;
+    let badge=b.querySelector('.filter-count'); if(!badge){ badge=document.createElement('span'); badge.className='filter-count'; badge.style.cssText='margin-left:6px;background:rgba(255,255,255,.12);padding:2px 6px;border-radius:999px;font-size:.65rem'; b.appendChild(badge); } badge.textContent=cnt;
+  });
 }
+(function restoreLabFilter(){
+  try{
+    const params=new URLSearchParams(location.search); const q=params.get('subject');
+    const saved= q || localStorage.getItem('jvds_lab_filter');
+    if(saved && saved!=='all'){ _activeFilter=saved; setTimeout(()=>filterSubject(saved,null),0); }
+  }catch(e){}
+})();
 
 // ------------------------------------------------------
 //  NAV + INIT

@@ -68,6 +68,13 @@ walk(ROOT).forEach(filePath => {
 
     src = dedupeSkipLinks(src);
 
+    // Perf: convert render-blocking style-shared.css to preload pattern across all pages
+    // Turns <link rel="stylesheet" href="...style-shared.css"> into preload onload version to avoid render block
+    src = src.replace(/<link\s+rel="stylesheet"\s+href="([^"]*style-shared\.css[^"]*)"\s*\/?>/gi, (m, href) => {
+        if (src.includes(`href="${href}" as="style"`)) return m; // already preload
+        return `<link rel="preload" href="${href}" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="${href}"></noscript>`;
+    });
+
     if (src !== original) {
         fs.writeFileSync(filePath, src, 'utf8');
         console.log('  updated:', path.relative(ROOT, filePath));

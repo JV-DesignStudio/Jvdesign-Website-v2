@@ -42,11 +42,21 @@ for (const filePath of walk(ROOT)) {
   const dir = path.dirname(filePath);
   for (const m of c.matchAll(/(?:href|src)="([^"]+)"/g)) {
     let ref = m[1];
-    if (/^(https?:|mailto:|tel:|data:|javascript:|#|\/\/)/i.test(ref)) continue;
-    if (ref.includes('${') || ref.includes('{{')) continue; // template-literal / mustache paths, not static
+    if (/^(https?:|mailto:|tel:|data:|javascript:|about:|#|\/\/)/i.test(ref)) continue;
+    if (ref.includes('${') || ref.includes('{{') || ref.includes('{') || ref.includes('}')) continue; // template-literal / mustache paths, not static
     const clean = ref.split('#')[0].split('?')[0];
     if (!clean) continue;                 // pure anchor / query
-    if (!path.extname(clean)) continue;   // dir-style link, skip (no reliable target)
+    // Extensionless site routes like /games or /workshop are clean URLs — check .html + /index.html variants
+    if (!path.extname(clean)) {
+      const tryPaths = [clean + '.html', path.join(clean, 'index.html'), path.join(clean, clean.split('/').pop() + '.html')];
+      // special case: pages/ style — /games maps to pages/games.html
+      const pagesVariant = path.join(ROOT, 'pages', clean.replace(/^\//,'') + '.html');
+      const candidates = tryPaths.map(p => p.startsWith('/') ? path.join(ROOT, p) : path.resolve(dir, p)).concat(pagesVariant);
+      if (candidates.some(p => fs.existsSync(p))) { refCount++; continue; }
+      // also allow clean "/" root
+      if (clean === '/' || clean === '') { refCount++; continue; }
+      // if none exist, fall through to broken handling via first candidate
+    }
     refCount++;
     // Percent-decoding: browsers resolve "muguen-cover.webp" to the file
     // "muguen-cover.webp" on disk, so decode before checking existence.

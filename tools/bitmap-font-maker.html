@@ -29,7 +29,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="preload" href="../style-tool-bitmap-font-maker.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-tool-bitmap-font-maker.css?v=17"></noscript>
-<link rel="stylesheet" href="../style-shared.css?v=17">
+<link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Bitmap Font Maker","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/bitmap-font-maker.html","description":"Draw pixel fonts for your game. Export as PNG or JSON for Godot, Unity and Phaser.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
 </script>
@@ -179,7 +179,7 @@
     <div class="exp-btns">
       <button class="exp-btn ep-png" onclick="exportPNG()">📄 PNG Spritesheet</button>
       <button class="exp-btn ep-json" onclick="exportJSON()">{ } JSON Atlas</button>
-      <button class="exp-btn ep-xml" onclick="exportXML()">🆕 BMFont XML</button>
+      <button class="exp-btn ep-xml" onclick="exportXML()" title="Downloads .fnt + PNG as a ZIP — ready for Unity, Godot, Phaser, LibGDX">📦 BMFont Bundle</button>
       <button class="exp-btn ep-save" onclick="saveFont()">💾 Save to Browser</button>
       <button class="exp-btn ep-save" onclick="copyFontShareLink()" style="background:var(--accent2);color:#000;">🔗 Share Link</button>
     </div>
@@ -196,7 +196,7 @@
       <div>🎨 <strong>Draw</strong> — pick a char, draw with pen/erase/fill, D/E/F keys</div>
       <div>↔ <strong>Shift</strong> — nudge glyph, copy/paste between chars</div>
       <div>🗑️ <strong>Preview</strong> — type any text, tweak scale/spacing/ink</div>
-      <div>💾 <strong>Export</strong> — PNG spritesheet, JSON atlas, BMFont XML, share link</div>
+      <div>💾 <strong>Export</strong> — PNG spritesheet, JSON atlas, BMFont Bundle (.fnt + PNG zip), share link</div>
     </div>
     <div style="font-size:.68rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;margin-bottom:14px;">Press <kbd style="padding:1px 5px;border:1px solid var(--border2);border-radius:4px;background:var(--panel3);">?</kbd> to reopen. Grid sizes 5×7 to 16×16.</div>
     <div class="modal-btns">
@@ -587,17 +587,85 @@ function exportJSON(){
   setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('JSON atlas downloaded!');
 }
 
-function exportXML(){
+// ── BMFont helpers ──
+function _buildBMFontPNGCanvas(){
   const PAD=1,COLS=16,CW=GW+PAD*2,CH=GH+PAD*2;
-  let xml=`<?xml version="1.0"?>\n<font>\n  <info face="BitmapFont" size="${GH}" bold="0" italic="0"/>\n  <common lineHeight="${GH+2}" base="${GH}" scaleW="${COLS*CW}" scaleH="${Math.ceil(ALL_CHARS.length/COLS)*CH}" pages="1"/>\n  <pages><page id="0" file="bitmap_font.png"/></pages>\n  <chars count="${ALL_CHARS.length}">\n`;
+  const ROWS=Math.ceil(ALL_CHARS.length/COLS);
+  const off=document.createElement('canvas');
+  off.width=COLS*CW;off.height=ROWS*CH;
+  const oc=off.getContext('2d');
+  oc.imageSmoothingEnabled=false;
+  const ink=id('inkCol').value;
+  ALL_CHARS.split('').forEach((c,i)=>{
+    const arr=fontData[c.charCodeAt(0)];
+    if(!arr) return;
+    const col=i%COLS,row=Math.floor(i/COLS);
+    const bx=col*CW+PAD,by=row*CH+PAD;
+    for(let r=0;r<GH;r++) for(let c2=0;c2<GW;c2++){
+      if(arr[r*GW+c2]){oc.fillStyle=ink;oc.fillRect(bx+c2,by+r,1,1);}
+    }
+  });
+  return{canvas:off,PAD,COLS,CW,CH,ROWS};
+}
+function _buildBMFontXML(PAD,COLS,CW,CH,ROWS){
+  let xml=`<?xml version="1.0"?>\n<font>\n`;
+  xml+=`  <info face="BitmapFont" size="${GH}" bold="0" italic="0" charset="" unicode="1" stretchH="100" smooth="0" aa="1" padding="0,0,0,0" spacing="${PAD},${PAD}"/>\n`;
+  xml+=`  <common lineHeight="${GH+2}" base="${GH}" scaleW="${COLS*CW}" scaleH="${ROWS*CH}" pages="1" packed="0"/>\n`;
+  xml+=`  <pages>\n    <page id="0" file="bitmap_font.png"/>\n  </pages>\n`;
+  xml+=`  <chars count="${ALL_CHARS.length}">\n`;
   ALL_CHARS.split('').forEach((c,i)=>{
     const col=i%COLS,row=Math.floor(i/COLS);
     xml+=`    <char id="${c.charCodeAt(0)}" x="${col*CW+PAD}" y="${row*CH+PAD}" width="${GW}" height="${GH}" xoffset="0" yoffset="0" xadvance="${GW+1}" page="0" chnl="15"/>\n`;
   });
   xml+=`  </chars>\n</font>`;
-  const blob=new Blob([xml],{type:'text/xml'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bitmap_font.fnt';a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('BMFont XML downloaded!');
+  return xml;
+}
+function _loadJSZip(cb){
+  if(typeof JSZip!=='undefined'){cb();return;}
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  s.onload=cb;s.onerror=()=>cb(true);
+  document.head.appendChild(s);
+}
+const BMFONT_README=`BMFont export — JVDesignStudio Bitmap Font Maker
+https://jvdesignstudio.co.uk/tools/bitmap-font-maker.html
+
+Files included:
+  bitmap_font.png   Spritesheet (${16} chars per row, your ink colour, transparent BG)
+  bitmap_font.fnt   BMFont XML descriptor
+
+Engine setup:
+  Godot 4    : Import bitmap_font.png first, then open bitmap_font.fnt — Godot auto-links them.
+  Unity      : Place both files in Assets/, select bitmap_font.fnt, set Texture to bitmap_font.
+  LibGDX     : new BitmapFont(Gdx.files.internal("bitmap_font.fnt"), Gdx.files.internal("bitmap_font.png"), false);
+  Phaser 3   : this.load.bitmapFont('font', 'bitmap_font.png', 'bitmap_font.fnt');
+  Haxe/OpenFL: BitmapFont.loadFromFile('bitmap_font.fnt');
+`;
+function exportXML(){
+  const {canvas,PAD,COLS,CW,CH,ROWS}=_buildBMFontPNGCanvas();
+  const xml=_buildBMFontXML(PAD,COLS,CW,CH,ROWS);
+  _loadJSZip(err=>{
+    if(err||typeof JSZip==='undefined'){
+      // fallback: download .fnt only
+      const blob=new Blob([xml],{type:'text/xml'});
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bitmap_font.fnt';a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+      toast('BMFont .fnt downloaded — also export PNG!');
+      return;
+    }
+    canvas.toBlob(pngBlob=>{
+      const zip=new JSZip();
+      zip.file('bitmap_font.png',pngBlob);
+      zip.file('bitmap_font.fnt',xml);
+      zip.file('README.txt',BMFONT_README);
+      zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}}).then(zipBlob=>{
+        const a=document.createElement('a');a.href=URL.createObjectURL(zipBlob);
+        a.download='bitmap_font_bmfont.zip';a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+        toast('BMFont bundle downloaded! (.fnt + PNG + README)');
+      });
+    });
+  });
 }
 
 function copyFontShareLink(){
