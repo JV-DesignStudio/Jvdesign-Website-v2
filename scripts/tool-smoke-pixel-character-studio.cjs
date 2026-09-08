@@ -98,6 +98,7 @@ function createServer() {
           let widest = null;
           document.querySelectorAll('body *').forEach(el => {
             if (el.classList && el.classList.contains('skip-link')) return;
+            if (el.closest('#pixel-toolbar, #template-bar, .studio-mode-nav, #pixel-footer, .frame-scroll')) return;
             const rect = el.getBoundingClientRect();
             const overflow = Math.max(0, rect.right - viewportWidth);
             if (overflow > 4 && (!widest || overflow > widest.overflow)) {

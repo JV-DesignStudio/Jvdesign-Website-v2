@@ -4,7 +4,7 @@ Current working tracker for public website changes that need a durable handoff.
 
 ## 2026-09-07 Tool-By-Tool QA Pass
 
-Status: in progress. BuildLab and Bitmap Font Maker first passes are complete; continue with the next queued tool.
+Status: in progress. BuildLab, Bitmap Font Maker, Pixel Character Studio, GDD Builder and Icon Generator first passes are complete; continue with the next queued tool.
 
 Approach:
 - Work one tool at a time instead of doing a broad toolbox sweep.
@@ -34,12 +34,51 @@ Bitmap Font Maker pass:
 - Corrupted-symbol scan was clean for `tools/bitmap-font-maker.html` and `style-tool-bitmap-font-maker.css`.
 - Follow-up `node validate-links.js` passed: 7036 internal references checked, 0 broken.
 
+Pixel Character Studio merge pass:
+- Rebranded `tools/character-designer.html` as Pixel Character Studio while keeping the existing URL so old links continue to work.
+- Removed the extra local tool header so the merged studio uses the shared site nav only.
+- Added a clear mode strip: Design, Pixel edit, Animate and Export.
+- Updated the welcome flow to explain the merged journey instead of just character creation.
+- Updated `pages/dev-tools.html` so Pixel Character Studio is the main art pipeline card.
+- Repositioned Pixel Studio and Sprite Animator as Classic specialist fallbacks on the Dev Tools page.
+- Added Classic bridge strips to `tools/pixel-studio.html` and `tools/sprite-animator.html` that point learners into Pixel Character Studio.
+- Removed duplicate local headers and stale header-consolidation CSS hacks from the Classic Pixel Studio and Sprite Animator pages.
+- Added a focused Pixel Character Studio smoke test for phone and desktop checks.
+- `node scripts/tool-smoke-pixel-character-studio.cjs` passed across phone and desktop viewports.
+- Follow-up `node validate-links.js` passed: 7048 internal references checked, 0 broken.
+- Added `node scripts/art-tools-consolidation-smoke.cjs` for the full art merge flow.
+- `node scripts/art-tools-consolidation-smoke.cjs` passed: Dev Tools, Pixel Character Studio, Pixel Studio Classic and Sprite Animator Classic across phone and desktop viewports.
+- Corrupted-symbol scan was clean for the merged studio, both Classic pages and `pages/dev-tools.html`.
+- Follow-up `node validate-links.js` passed: 7047 internal references checked, 0 broken.
+
+GDD Builder pass:
+- Removed the extra skip link and duplicate local `.site-header`.
+- Removed the stale header-consolidation CSS hack and the tool-specific `.site-header` override that fought the shared nav.
+- Replaced visible corrupted hero/action/section-toggle strings with safe labels/entities.
+- Replaced corrupted generated check/delete/toast strings with safer text/entities.
+- Added a focused GDD Builder smoke test for phone and desktop checks.
+- `node scripts/tool-smoke-gdd-builder.cjs` passed across phone and desktop viewports.
+- Follow-up `node validate-links.js` passed: 7043 internal references checked, 0 broken.
+
+Icon Generator pass:
+- Removed the extra skip link and duplicate local `.hdr` header.
+- Added a compact "App icon workshop" brief with the learner flow: Shape, Palette, Style and Export.
+- Removed the stray question-mark symbol from the reset action.
+- Removed stale header-consolidation CSS and duplicate skip-link CSS.
+- Added local mobile shared-nav sizing so the tool does not overflow on phones.
+- Added a focused Icon Generator smoke test for phone and desktop checks.
+- `node scripts/tool-smoke-icon-generator.cjs` passed across phone and desktop viewports.
+- Corrupted-symbol scan was clean for `tools/icon-generator.html` and `style-tool-icon-generator.css`.
+- Follow-up `node validate-links.js` passed: 7040 internal references checked, 0 broken.
+
 Tool queue from first scan:
 - `tools/buildlab.html` - first pass complete.
 - `tools/bitmap-font-maker.html` - first pass complete.
-- `tools/character-designer.html` - likely duplicate local header.
-- `tools/gdd-builder.html` - duplicate local header and several corrupted text symbols.
-- `tools/icon-generator.html` - likely duplicate local header.
+- `tools/character-designer.html` - first pass complete as Pixel Character Studio.
+- `tools/pixel-studio.html` - repositioned as Pixel Studio Classic with bridge to Pixel Character Studio.
+- `tools/sprite-animator.html` - repositioned as Sprite Animator Classic with bridge to Pixel Character Studio.
+- `tools/gdd-builder.html` - first pass complete.
+- `tools/icon-generator.html` - first pass complete.
 - `tools/level-designer.html` - likely duplicate local header.
 - `tools/drum-pad.html` - corrupted text symbols found in scan.
 - `tools/game-idea-generator.html` - corrupted text symbols found in scan.
