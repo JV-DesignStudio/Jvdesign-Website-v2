@@ -52,18 +52,25 @@ node F:/Website/studio-workspace/board-keeper.cjs --claim A46 --agent "your-agen
 # -> Claimed A46 -> in_progress by your-agent-name   (you own it)
 # -> Cannot claim A46: status=in_progress (already taken) -> pick another backlog ID
 
-# 3. Do the work, verify acceptance checks, update tasks.json:
-#    set status to verified_local or done + fill evidence field
+# 3. Do the work, verify acceptance checks, then request human review:
+#    set status to human_review (agents stop here , you must approve)
+node F:/Website/studio-workspace/board-keeper.cjs --request-review A46
+# or edit tasks.json status to human_review/verified_local, then:
 
 # 4. Rebuild the visible board
 node F:/Website/studio-workspace/board-keeper.cjs --sync
-# rewrites SHIPPED/IN_PROGRESS/BACKLOG + lastUpdated
+# rewrites SHIPPED/HUMAN_REVIEW/IN_PROGRESS/BACKLOG + lastUpdated
 
-# 5. To abandon
+# 5. Human review , only you can approve (👁 lane)
+node F:/Website/studio-workspace/board-keeper.cjs --approve A46 --agent "josh"
+# -> Approved A46 -> done by josh (Human Review -> Shipped)
+# To send back: node F:/Website/studio-workspace/board-keeper.cjs --reject A46 --status in_progress
+
+# 6. To abandon
 node F:/Website/studio-workspace/board-keeper.cjs --release A46 --status backlog
 ```
 
-**Rules:** update `tasks.json` evidence/status before `--sync`; never mark `done` until published/verified; update `pages/devlog.html` for visitor-facing milestones (detailed defects stay in private board docs).
+**Rules:** update `tasks.json` evidence/status before `--sync`; **never mark `done` , only you approve via `--approve`** in the 👁 Human Review lane (`F:/Website/studio-workspace/board/index.html:27`, 7 awaiting now A02,A03,A04,A05,A53,A54,A57). `SHIPPED` is only truly done (16). Agents stop at `human_review`/`verified_local`. Update `pages/devlog.html` only after you approve.
 
 Current snapshot (2026-09-08, `CLAIM_GUIDE.md`): **In Progress (3)** A01 validation, A12 headers/offline, A47 tools QA; **Verified local (6)** A02,A03,A04,A53,A54,A57; **Done (16)** A33-A52; **Backlog (32)** next A05/A06/A07/A08/A41/A44/A46/A55/A56… Full list is `tasks.json` and filterable in `board/index.html`.
 
@@ -73,7 +80,7 @@ File: `F:/Website/studio-workspace/board-keeper.cjs:1`
 
 - **Is not a chat model** , deterministic Node script. The `board-keeper` sub-agent entry in `.opencode/opencode.json:7` uses `qwen2.5-coder:7b` only to *enforce* the protocol, not to watch files with AI.
 - **Hooks:** `.opencode/opencode.json:3` `pre_tool` + `post_tool` both run `node F:/Website/studio-workspace/board-keeper.cjs --check` , every OpenCode tool call prints `tasks.json` counts, `board lastUpdated`, `IN_PROGRESS`/`BACKLOG` ids, and `DRIFT` warnings automatically, no user prompt needed.
-- **Scheduled task:** `JVDS Board Keeper` (via `board-keeper-tick.ps1` + `install-board-keeper-task.ps1`) runs `--check` every 5min and `--sync` if drift.
+- **Scheduled task:** `JVDS Board Keeper` (via `board-keeper-tick.ps1` + `install-board-keeper-task.ps1`) runs `--check` every 10min + daily 1pm and `--sync` if drift.
 - **Extra guards on --sync:** counts em-dashes in public files (`check-dashes.cjs`), warns about critical `P1 done/verified_local` tasks missing from `pages/devlog.html` (`promote-to-devlog.cjs`), and `newsletter.html` ↔ `devlog.html` cross-link.
 
 If `--check` reports `DRIFT`, run `--sync` after fixing `tasks.json`. If `--claim` fails, choose a different `backlog` ID , don't force-write `tasks.json`.
