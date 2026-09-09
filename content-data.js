@@ -3237,27 +3237,27 @@ window.JVDS_CONTENT = {
   ],
   "tools": [
     {
-      "id": "pixel-studio",
-      "title": "Pixel Studio",
-      "desc": "Create production-ready pixel art with layers, frames, onion skinning, mirror mode, autosave and GIF / spritesheet export.",
+      "id": "easy-pixel-art",
+      "title": "Easy Pixel Art",
+      "desc": "Super easy 8×8-32×32 pixel art for beginners - big pixels, 16 colours, one-tap draw, undo and instant PNG export. No account.",
       "category": "General",
       "tags": [
+        "Beginner",
         "Pixel Art",
-        "Animation",
-        "Export"
+        "Easy"
       ],
       "comingSoon": false,
-      "url": "/tools/pixel-studio.html"
+      "url": "/tools/easy-pixel-art.html"
     },
     {
       "id": "character-designer",
-      "title": "Character Designer",
-      "desc": "Build characters from templates, customise parts, pose them, save presets and export spritesheets, GIFs, PNGs or JSON.",
+      "title": "Pixel Character Studio",
+      "desc": "Design characters from templates, pixel-edit, animate frames and export spritesheets, GIFs, PNGs or JSON - the merged first-creation workflow.",
       "category": "General",
       "tags": [
         "Characters",
-        "Sprites",
-        "Batch"
+        "Animation",
+        "Export"
       ],
       "comingSoon": false,
       "url": "/tools/character-designer.html"
@@ -3818,7 +3818,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-09T12:45:51.180Z",
+    "generated": "2026-09-09T12:54:44.583Z",
     "workshops": 182,
     "games": 32,
     "tools": 18,

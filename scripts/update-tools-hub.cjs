@@ -15,8 +15,8 @@ html = html
 
 const tools = [
   ['Asset Pipeline', '🎨', [
-    ['Pixel Studio', 'Create production-ready pixel art with layers, frames, onion skinning, mirror mode, autosave and GIF / spritesheet export.', '../tools/pixel-studio.html', '../PixelStudioCover.webp', ['Pixel Art', 'Animation', 'Export'], ['PNG','GIF','Spritesheet','JSON']],
-    ['Character Designer', 'Build characters from templates, customise parts, pose them, save presets and export spritesheets, GIFs, PNGs or JSON.', '../tools/character-designer.html', '../CharacterCreatorCover.webp', ['Characters', 'Sprites', 'Batch'], ['PNG','Spritesheet','GIF','JSON']],
+    ['Easy Pixel Art', 'Super easy 8×8–32×32 pixel art for beginners — big pixels, 16 colours, one-tap draw, undo and instant PNG export. No account.', '../tools/easy-pixel-art.html', '../PixelStudioCover.webp', ['Beginner', 'Pixel Art', 'Easy'], ['PNG','Share','8×8','16×16']],
+    ['Pixel Character Studio', 'Design characters from templates, pixel-edit, animate frames and export spritesheets, GIFs, PNGs or JSON — the merged first-creation workflow.', '../tools/character-designer.html', '../CharacterCreatorCover.webp', ['Characters', 'Animation', 'Export'], ['PNG','GIF','Spritesheet','JSON']],
     ['Sprite Animator', 'Upload a spritesheet, choose frames, preview animation timing live and export frame data for your engine.', '../tools/sprite-animator.html', null, ['Spritesheet', 'Preview', 'JSON'], ['GIF','PNG','JSON','ZIP']],
     ['Bitmap Font Maker', 'Draw pixel fonts character by character, preview text and export spritesheets, atlases or BMFont XML.', '../tools/bitmap-font-maker.html', null, ['Fonts', 'Atlas', 'BMFont'], ['PNG','JSON','BMFont','ZIP']],
     ['Trading Card Designer', 'Create character cards with templates, rarities, stats, uploaded art and PNG export.', '../tools/trading-card-designer.html', '../CardMakerCoverImage.webp', ['Cards', 'Stats', 'PNG'], ['PNG','Print','JSON']],
