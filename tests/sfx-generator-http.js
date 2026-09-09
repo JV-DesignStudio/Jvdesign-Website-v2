@@ -7,7 +7,7 @@ const ROOT = path.resolve(__dirname, '..');
 const PORT = process.env.SFX_PORT || 8127;
 const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.webmanifest':'application/manifest+json','.json':'application/json','.webp':'image/webp'};
 const results = [];
-function record(name, ok, detail='') { results.push({name, ok, detail}); console.log((ok ? 'PASS ' : 'FAIL ') + name + (detail ? ' — ' + detail : '')); }
+function record(name, ok, detail='') { results.push({name, ok, detail}); console.log((ok ? 'PASS ' : 'FAIL ') + name + (detail ? ' , ' + detail : '')); }
 
 const server = http.createServer((req, res) => {
   let p = path.join(ROOT, decodeURIComponent(req.url.split('?')[0]));

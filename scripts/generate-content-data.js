@@ -279,7 +279,7 @@ function generateBooks() {
       character: 'Lumo',
       emoji: '🦊',
       cover: 'lumo-front-cover-concept-v001.webp',
-      desc: 'A purple fox learns that carrying something heavy doesn\'t mean stopping — it means finding a quieter kind of strong.',
+      desc: 'A purple fox learns that carrying something heavy doesn\'t mean stopping , it means finding a quieter kind of strong.',
       status: 'published',
       url: '/books/lumo_and_the_grumble_grit.html'
     },
@@ -303,7 +303,7 @@ function generateBooks() {
       character: 'Echo',
       emoji: '🦎',
       cover: 'axo-adventure.webp',
-      desc: 'An axolotl climbs a mountain one small try at a time — a story about resilience and thinking differently.',
+      desc: 'An axolotl climbs a mountain one small try at a time , a story about resilience and thinking differently.',
       status: 'coming-soon',
       url: '/books/Echo_and_the_mountain_of_choice.html'
     },
@@ -348,7 +348,7 @@ function generateCharacters() {
       emoji: '🦊',
       color: '#6b4fa0',
       colorName: 'Purple',
-      desc: 'A quiet fox who carries the Grumble-Grit — a heavy stone representing invisible struggles. Lumo teaches that strength isn\'t about never struggling, but about finding quieter ways to keep going.',
+      desc: 'A quiet fox who carries the Grumble-Grit , a heavy stone representing invisible struggles. Lumo teaches that strength isn\'t about never struggling, but about finding quieter ways to keep going.',
       books: ['lumo-and-the-grumble-grit'],
       games: ['garden-defense', 'lumo-firefly', 'lumo-dash'],
       tools: []

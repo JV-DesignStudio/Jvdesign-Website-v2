@@ -6,10 +6,10 @@ vector fallback, nothing breaks.
 
 Required filenames (lowercase):
 
-- `lumo.png`  — the purple fox
-- `ember.png` — the pink tiger
-- `pip.png`   — the turtle
-- `echo.png`  — the axolotl
+- `lumo.png`  , the purple fox
+- `ember.png` , the pink tiger
+- `pip.png`   , the turtle
+- `echo.png`  , the axolotl
 
 Requirements:
 - Front pose, standing, whole body visible

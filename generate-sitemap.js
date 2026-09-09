@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /*
- * generate-sitemap.js — regenerate sitemap.xml from the actual pages on disk.
+ * generate-sitemap.js , regenerate sitemap.xml from the actual pages on disk.
  *
  * Rules:
  *  - Walks every .html file (same ignore list as build.js).
  *  - A page is included ONLY if its <meta name="robots"> does not say "noindex".
- *    (So mobile-games, pitch, 404, etc. are excluded automatically — no manual list.)
+ *    (So mobile-games, pitch, 404, etc. are excluded automatically , no manual list.)
  *  - Plus an explicit EXCLUDE set for dev templates that carry no robots meta.
  *  - <lastmod> comes from each file's last git commit date (accurate + automatic),
  *    falling back to filesystem mtime for files not yet committed.
@@ -23,7 +23,7 @@ const BASE = 'https://jvdesignstudio.co.uk';
 const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue', 'scripts', 'docs', 'arcade-app', 'questlog-pwa']);
 const EXCLUDE_FILES = new Set(['games/game-template.html', 'offline.html', 'games/cozy-biscuit-clicker.pre-app.bak.html', 'tools/project-tracker.html', 'tools/dev-board.html']); // dev templates w/o robots meta + offline (noindex handled separately) + robots.txt disallowed
 const PRIORITY_MAP = {
-  // Hub pages — higher crawl priority
+  // Hub pages , higher crawl priority
   '/': 1.0,
   '/workshop': 0.9, '/games': 0.9, '/books': 0.9, '/dev-tools': 0.8, '/freebies': 0.8, '/downloads': 0.8,
   '/about': 0.7, '/parents': 0.6, '/contact': 0.5, '/arcade': 0.7
@@ -62,7 +62,7 @@ function gitLastModMap() {
       if (line.startsWith('C:')) cur = line.slice(2).trim();
       else if (line.trim() && cur && !(line in map)) map[line.trim()] = cur; // first (newest) wins
     }
-  } catch (e) { /* not a git repo / git missing — fall back to mtime */ }
+  } catch (e) { /* not a git repo / git missing , fall back to mtime */ }
   return map;
 }
 
@@ -87,7 +87,7 @@ for (const fp of walk(ROOT)) {
   let priority = PRIORITY_MAP[clean] || (clean.startsWith('/workshops/') || clean.startsWith('/tools/') || clean.startsWith('/games/') ? '0.5' : '0.5');
   if (LOW_PRIORITY_SUFFIX.some(s => clean.includes(s))) priority = '0.3';
   if (isHome) priority = '1.0';
-  // Extract og:image for image sitemap — prefer .webp variant if exists on disk to save payload
+  // Extract og:image for image sitemap , prefer .webp variant if exists on disk to save payload
   const ogMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
   let image = ogMatch ? ogMatch[1].trim() : null;
   if(image && image.startsWith(BASE)){
@@ -103,7 +103,7 @@ for (const fp of walk(ROOT)) {
       }
     }
   }
-  // Fallback for tools without og:image — prevents blank social unfurl
+  // Fallback for tools without og:image , prevents blank social unfurl
   if(!image && clean.startsWith('/tools/')){
     const fallback = fs.existsSync(path.join(ROOT,'og/hub-devtools.png')) ? BASE+'/og/hub-devtools.png' : null;
     if(fallback) image = fallback;

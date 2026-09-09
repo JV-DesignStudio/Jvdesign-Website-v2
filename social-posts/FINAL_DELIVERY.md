@@ -125,13 +125,13 @@ All captions include:
 
 ## 💡 What Makes These Graphics Stand Out
 
-1. **Brand-Aligned** — Colors and fonts match actual JVDesignStudio site
-2. **Information-Rich** — Each graphic tells a complete story
-3. **Action-Oriented** — Clear CTAs in every post
-4. **Visually Hierarchical** — Important info stands out
-5. **Scalable** — SVG format looks perfect at any size
-6. **Mobile-Optimized** — 1080×1350px is Instagram's sweet spot
-7. **Hashtag-Ready** — Footer tags included and optimized
+1. **Brand-Aligned** , Colors and fonts match actual JVDesignStudio site
+2. **Information-Rich** , Each graphic tells a complete story
+3. **Action-Oriented** , Clear CTAs in every post
+4. **Visually Hierarchical** , Important info stands out
+5. **Scalable** , SVG format looks perfect at any size
+6. **Mobile-Optimized** , 1080×1350px is Instagram's sweet spot
+7. **Hashtag-Ready** , Footer tags included and optimized
 
 ---
 

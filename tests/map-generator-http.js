@@ -19,7 +19,7 @@ const server = http.createServer((req,res)=>{
 });
 function listen(){return new Promise(resolve=>server.listen(port, resolve));}
 let failures=0;
-function check(name, ok, detail=''){ console.log((ok?'PASS ':'FAIL ')+name+(detail?' — '+detail:'')); if(!ok) failures++; }
+function check(name, ok, detail=''){ console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:'')); if(!ok) failures++; }
 (async()=>{
   await listen();
   const browser = await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox']});

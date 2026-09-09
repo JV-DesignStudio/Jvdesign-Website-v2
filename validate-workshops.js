@@ -30,7 +30,7 @@ const CONVERTED = [
 // rockets, racing games, Unity/Unreal/GML/C++/Python/OpenRCT2 builders).
 // They're single continuous step-by-step designers navigated with go(i)/
 // renderStep(), not the checkbox-driven toggleStep()/completeStep() pattern
-// the other 39 boot.dev-style workshops use — that's a real, intentional
+// the other 39 boot.dev-style workshops use , that's a real, intentional
 // difference in how they track progress, not a missing feature. Checking
 // them against the checkbox pattern produced a permanent false-positive
 // "Missing Functions" list that drowned out real regressions in the noise.
@@ -54,7 +54,7 @@ CONVERTED.forEach(file => {
 
     if (isBuilder) {
       // Different completion mechanisms per builder (some use go()/
-      // renderStep(), some don't) — not worth a second brittle heuristic.
+      // renderStep(), some don't) , not worth a second brittle heuristic.
       // The one thing every workshop on this site needs regardless of
       // style is somewhere to persist progress; still flag a builder
       // that's missing even that.

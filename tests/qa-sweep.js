@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* qa-sweep.js — measures weight, timing, DOM size, requests, console/page errors
+/* qa-sweep.js , measures weight, timing, DOM size, requests, console/page errors
    and inline-script bloat across key site pages. Ground truth for the audit. */
 const http = require('http');
 const fs = require('fs');

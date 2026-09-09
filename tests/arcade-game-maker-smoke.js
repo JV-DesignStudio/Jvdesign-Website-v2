@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * tests/arcade-game-maker-smoke.js — headless smoke for the Arcade Game Maker.
+ * tests/arcade-game-maker-smoke.js , headless smoke for the Arcade Game Maker.
  * Verifies core genres can compile, boot Phaser without JS errors, and
  * that critical patches (haptics, storage quota, sprite validation, daily streak)
  * are present. Run: node tests/arcade-game-maker-smoke.js
@@ -17,7 +17,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
   '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };
 
 const results = [];
-function record(name, ok, detail){ results.push({name,ok,detail}); console.log((ok?'  ✓ ':'  ✗ ')+name+(detail?' — '+detail:'')); }
+function record(name, ok, detail){ results.push({name,ok,detail}); console.log((ok?'  ✓ ':'  ✗ ')+name+(detail?' , '+detail:'')); }
 
 (async()=>{
   const server = http.createServer((req,res)=>{
@@ -58,7 +58,7 @@ function record(name, ok, detail){ results.push({name,ok,detail}); console.log((
   const drVal = await page.evaluate(()=>{ try{ return document.documentElement.innerHTML.includes('const DR = 12'); }catch(e){return false} });
   record('joystick deadzone tuned to 12', drVal);
 
-  // Test 3 genres boot (SHOOTER, PLATFORMER, SNAKE) — compile+boot must not throw
+  // Test 3 genres boot (SHOOTER, PLATFORMER, SNAKE) , compile+boot must not throw
   for(const genre of ['SHOOTER','PLATFORMER','SNAKE']){
     console.log(`\n▸ boot ${genre}`);
     jsErrors.length=0;
@@ -75,12 +75,12 @@ function record(name, ok, detail){ results.push({name,ok,detail}); console.log((
     const hasCanvas = await page.evaluate(()=> !!document.querySelector('#game-container canvas'));
     record(`${genre} boots canvas`, hasCanvas);
     record(`${genre} no JS errors`, jsErrors.length===0, jsErrors.slice(0,1).join(' | '));
-    // Reset for next genre — wait >700ms debounce window
+    // Reset for next genre , wait >700ms debounce window
     await page.evaluate(()=>{ try{ if(window.currentPhaserGame) window.currentPhaserGame.destroy(true); }catch(e){} try{ document.getElementById('game-container').innerHTML=''; }catch(e){} });
     await new Promise(r=>setTimeout(r,900));
   }
 
-  // Sprite validator — uploading a fake large file should toast and reject
+  // Sprite validator , uploading a fake large file should toast and reject
   console.log('\n▸ sprite validator');
   const hasValidator = await page.evaluate(()=> typeof _applySpriteDataUrl==='function' && /kb/.test(_applySpriteDataUrl.toString()));
   record('sprite validator with KB feedback', hasValidator);

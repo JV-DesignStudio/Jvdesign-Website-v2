@@ -9,7 +9,7 @@
       icons/level-designer-maskable-512.png   maskable, art inside safe zone
 
   Art: a chunky 2x2 tile grid (grass / ground / stone / coin) with the blue
-  player standing on it and an amber selection outline — the editor's own
+  player standing on it and an amber selection outline , the editor's own
   palette. Maskable adds ~14% padding so Android can crop to any shape.
 
   Re-run after changing the art:

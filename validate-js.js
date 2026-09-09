@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * validate-js.js — loads every page in a real browser and fails on dead JavaScript.
+ * validate-js.js , loads every page in a real browser and fails on dead JavaScript.
  *
  * This exists because of the corruption that shipped in commit 299c0fb. A build
  * transform parsed inline <script> content as HTML, truncating every line at a

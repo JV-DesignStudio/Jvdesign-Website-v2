@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * scripts/make-featured-links.js — real share-links for the landing gallery.
+ * scripts/make-featured-links.js , real share-links for the landing gallery.
  *
  * Each featured game becomes a byte-compatible ?game= (play) / ?remix= link
  * that tools/arcade-game-maker.html decodes natively. Wire format must match
@@ -125,7 +125,7 @@ for (const [key, cfg] of Object.entries(GAMES)) {
   for (const mode of ['play', 'remix']) {
     const url = mode === 'play' ? playUrl : remixUrl;
     const re = new RegExp('href="#"([^>]*data-game="' + key + '"[^>]*data-mode="' + mode + '")');
-    if (!re.test(html)) throw new Error(`landing anchor not found for ${key}/${mode} — was the gallery markup changed?`);
+    if (!re.test(html)) throw new Error(`landing anchor not found for ${key}/${mode} , was the gallery markup changed?`);
     html = html.replace(re, () => `href="${url}"$1`);
     patched++;
   }

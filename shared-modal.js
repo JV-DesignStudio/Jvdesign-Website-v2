@@ -1,5 +1,5 @@
 /* ============================================================
-   shared-modal.js — JVDesignStudio
+   shared-modal.js , JVDesignStudio
    Standard welcome modal + toast component.
    Include after style-shared.css in tool pages.
    ============================================================ */

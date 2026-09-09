@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * generate-search-index.js — crawls every public HTML page and writes
+ * generate-search-index.js , crawls every public HTML page and writes
  * search-index.json (url, title, description) for pages/search.html to merge
  * with its curated ALL_PROJECTS list. Noindex pages are excluded, same rule
  * as generate-sitemap.js. Run: npm run build:sitemap (runs both).

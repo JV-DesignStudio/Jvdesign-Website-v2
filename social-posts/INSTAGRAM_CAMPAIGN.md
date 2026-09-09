@@ -173,12 +173,12 @@ Workflows that work. Tools that connect. Creation that flows.
 Making game sounds just got 10x faster.
 
 6 Genre-Specific Sound Packs:
-🕹️ Arcade — Retro beeps and boops
-🧩 Puzzle — Clicks and satisfying tones
-⚔️ Adventure — Epic orchestral hits
-🍄 Platformer — Jumps, coins, power-ups
-🏎️ Racing — Engines and crashes
-🐉 RPG — Magic, spells, dungeons
+🕹️ Arcade , Retro beeps and boops
+🧩 Puzzle , Clicks and satisfying tones
+⚔️ Adventure , Epic orchestral hits
+🍄 Platformer , Jumps, coins, power-ups
+🏎️ Racing , Engines and crashes
+🐉 RPG , Magic, spells, dungeons
 
 What You Get:
 ✓ Complete sound collections for each genre

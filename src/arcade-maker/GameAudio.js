@@ -1,4 +1,4 @@
-﻿// GameAudio.js — extracted from tools/arcade-game-maker.html for Vite module split.
+﻿// GameAudio.js , extracted from tools/arcade-game-maker.html for Vite module split.
 // This is the complete audio engine: Web Audio API SFX synthesis, music, and buffers.
 // Import: import { GameAudio } from './GameAudio.js';
 

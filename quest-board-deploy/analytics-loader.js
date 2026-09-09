@@ -1,4 +1,4 @@
-/* analytics-loader.js — single source of truth for GA4 bootstrap.
+/* analytics-loader.js , single source of truth for GA4 bootstrap.
  *
  * Replaces the two inline <script> tags that were previously pasted into the
  * <head> of every page. Preserves the exact original behaviour and ordering:
@@ -9,7 +9,7 @@
  *
  * cookie-consent.js flips analytics_storage to 'granted' on user accept.
  *
- * To change the property, edit GA_MEASUREMENT_ID here — one place, not 248 pages.
+ * To change the property, edit GA_MEASUREMENT_ID here , one place, not 248 pages.
  */
 (function () {
   var GA_MEASUREMENT_ID = 'G-3JBXCCNY4C';

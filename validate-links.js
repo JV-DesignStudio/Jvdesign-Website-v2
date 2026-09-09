@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * validate-links.js — internal link integrity check for the whole site.
+ * validate-links.js , internal link integrity check for the whole site.
  * Walks every .html file (same ignore list as build.js), extracts href/src
  * references, and verifies each local target actually exists on disk.
  *
@@ -46,10 +46,10 @@ for (const filePath of walk(ROOT)) {
     if (ref.includes('${') || ref.includes('{{') || ref.includes('{') || ref.includes('}')) continue; // template-literal / mustache paths, not static
     const clean = ref.split('#')[0].split('?')[0];
     if (!clean) continue;                 // pure anchor / query
-    // Extensionless site routes like /games or /workshop are clean URLs — check .html + /index.html variants
+    // Extensionless site routes like /games or /workshop are clean URLs , check .html + /index.html variants
     if (!path.extname(clean)) {
       const tryPaths = [clean + '.html', path.join(clean, 'index.html'), path.join(clean, clean.split('/').pop() + '.html')];
-      // special case: pages/ style — /games maps to pages/games.html
+      // special case: pages/ style , /games maps to pages/games.html
       const pagesVariant = path.join(ROOT, 'pages', clean.replace(/^\//,'') + '.html');
       const candidates = tryPaths.map(p => p.startsWith('/') ? path.join(ROOT, p) : path.resolve(dir, p)).concat(pagesVariant);
       if (candidates.some(p => fs.existsSync(p))) { refCount++; continue; }
@@ -61,7 +61,7 @@ for (const filePath of walk(ROOT)) {
     // Percent-decoding: browsers resolve "muguen-cover.webp" to the file
     // "muguen-cover.webp" on disk, so decode before checking existence.
     let decoded = clean;
-    try { decoded = decodeURIComponent(clean); } catch (e) { /* malformed escape — check as-is */ }
+    try { decoded = decodeURIComponent(clean); } catch (e) { /* malformed escape , check as-is */ }
     const target = decoded.startsWith('/') ? path.join(ROOT, decoded) : path.resolve(dir, decoded);
     if (!fs.existsSync(target)) {
       const rel = path.relative(ROOT, filePath).replace(/\\/g, '/');

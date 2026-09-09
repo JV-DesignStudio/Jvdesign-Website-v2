@@ -16,8 +16,8 @@ const CHAR_FIXES = new Map();
 // Build the map: for each target character, compute its UTF-8 bytes,
 // then create the corrupted 3-char version
 const targets = [
-  ['\u2014', [0xE2, 0x80, 0x94]],  // em dash —
-  ['\u2013', [0xE2, 0x80, 0x93]],  // en dash –
+  ['\u2014', [0xE2, 0x80, 0x94]],  // em dash -
+  ['\u2013', [0xE2, 0x80, 0x93]],  // en dash -
   ['\u2018', [0xE2, 0x80, 0x98]],  // left single quote '
   ['\u2019', [0xE2, 0x80, 0x99]],  // right single quote '
   ['\u201C', [0xE2, 0x80, 0x9C]],  // left double quote "

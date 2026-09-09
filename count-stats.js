@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * count-stats.js — Count actual games, books, and workshops on the site
+ * count-stats.js , Count actual games, books, and workshops on the site
  *
  * Run from the root of the site folder:
  *   node count-stats.js
  *
  * Outputs the real numbers to paste into your homepage hero copy,
- * "Who Makes This?" section, and feature cards — so they all match.
+ * "Who Makes This?" section, and feature cards , so they all match.
  *
  * Uses filename patterns that match the current site structure.
  * Review the PATTERNS section below and adjust if you rename files.
@@ -109,7 +109,7 @@ const TOOL_PATTERNS = [
 const tools = allFiles.filter(f => TOOL_PATTERNS.some(p => p.test(f.name)));
 
 /* ─── Output ─────────────────────────────────────────────────────────── */
-console.log('\n📊  JV Design Studio — Site Statistics\n');
+console.log('\n📊  JV Design Studio , Site Statistics\n');
 console.log(`   Total HTML files: ${allFiles.length}`);
 console.log(`\n   🎮  Games (playable):      ${games.length}`);
 games.forEach(f => console.log(`      - ${f.name}`));

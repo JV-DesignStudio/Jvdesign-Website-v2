@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * tests/smoke.js — behavioral smoke tests (headless Chrome via Puppeteer).
+ * tests/smoke.js , behavioral smoke tests (headless Chrome via Puppeteer).
  *
  * Catches regressions that static validators can't see, e.g. double-bound
  * event handlers (the dead mobile-nav bug) or progress writes silently
@@ -30,7 +30,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 const results = [];
 function record(name, ok, detail) {
   results.push({ name, ok, detail });
-  console.log((ok ? '  ✓ ' : '  ✗ ') + name + (detail ? ' — ' + detail : ''));
+  console.log((ok ? '  ✓ ' : '  ✗ ') + name + (detail ? ' , ' + detail : ''));
 }
 async function scenario(name, fn) {
   console.log('\n▸ ' + name);

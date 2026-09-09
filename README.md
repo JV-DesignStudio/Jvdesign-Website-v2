@@ -1,6 +1,6 @@
 # JVDesignStudio Website v2
 
-The source for [jvdesignstudio.co.uk](https://jvdesignstudio.co.uk/) — children's picture books, browser games, tabletop games and free creative downloads, plus a handful of dev tools and workshop pages.
+The source for [jvdesignstudio.co.uk](https://jvdesignstudio.co.uk/) , children's picture books, browser games, tabletop games and free creative downloads, plus a handful of dev tools and workshop pages.
 
 Static HTML/CSS/JS, no framework, no build step required to view pages directly in a browser.
 
@@ -42,7 +42,7 @@ When adding a new page, remember to:
 
 ---
 
-## Sub-project: QuestLog — RPG Task Tracker
+## Sub-project: QuestLog , RPG Task Tracker
 
 This repo also bundles the source for **QuestLog**, a separate free RPG-style task tracker app, deployed independently to Netlify.
 
@@ -73,7 +73,7 @@ node make-app-bundle.js   # public app + PWA assets → quest-board-deploy/
 ```
 
 Both scripts resolve paths via `__dirname`, so they run from any working directory.
-Never hand-edit `quest-board.html` or anything in `quest-board-deploy/` — changes get
+Never hand-edit `quest-board.html` or anything in `quest-board-deploy/` , changes get
 overwritten on the next build; edit the tracker or `questlog-pwa/` sources instead.
 
 Deploy: drag `quest-board-deploy/` into Netlify (or push and let auto-deploy pick it up).

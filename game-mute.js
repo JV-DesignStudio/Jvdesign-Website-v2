@@ -1,4 +1,4 @@
-/* game-mute.js — a mute control for games that never had one.
+/* game-mute.js , a mute control for games that never had one.
  *
  * Seven games used audio with no way to silence it. That matters on a children's
  * site: a parent handing over a phone, a child playing in a classroom, or anyone

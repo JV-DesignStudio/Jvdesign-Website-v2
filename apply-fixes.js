@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * apply-fixes.js — JV Design Studio site-wide automated patches
+ * apply-fixes.js , JV Design Studio site-wide automated patches
  *
  * Run from the root of the site folder:
  *   node apply-fixes.js [--dry-run]
@@ -67,7 +67,7 @@ function applyPatches(original, filePath) {
   );
   if (canonFix !== src) src = canonFix;
 
-  /* ── 3. Google Fonts — add display=swap if missing ── */
+  /* ── 3. Google Fonts , add display=swap if missing ── */
   const fontFix = src.replace(
     /(href="https:\/\/fonts\.googleapis\.com\/css2\?[^"]+)(?<!&display=swap)(?<!display=swap)(")/g,
     (m, href, quote) => {
@@ -93,7 +93,7 @@ function applyPatches(original, filePath) {
   );
   if (cookieFix !== src) src = cookieFix;
 
-  // Variant B: "We use to understand" — word missing entirely
+  // Variant B: "We use to understand" , word missing entirely
   const cookieFix2 = src.replace(
     /We use\s+to understand how people use this site/gi,
     (m) => {
@@ -160,7 +160,7 @@ const files  = walkHTML(SITE_ROOT);
 let   total  = 0;
 let   changed = 0;
 
-console.log(`\n🛠️  JV Design Studio — Site-Wide Fix Script`);
+console.log(`\n🛠️  JV Design Studio , Site-Wide Fix Script`);
 console.log(`   Root: ${SITE_ROOT}`);
 console.log(`   Mode: ${DRY_RUN ? '🔍 DRY RUN (no files written)' : '✍️  WRITING CHANGES'}`);
 console.log(`   Files found: ${files.length}\n`);

@@ -77,6 +77,56 @@
   ]
 }
 </script>
+
+<style>
+/* ── Lumo builder tip strip ─────────────── */
+.hdr-step-chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Nunito', sans-serif;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .05em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(var(--ca-rgb, 255,255,255), .12);
+  border: 1px solid rgba(var(--ca-rgb, 255,255,255), .25);
+  color: rgba(255,255,255,.85);
+  margin-left: 10px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.lumo-builder-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 16px;
+  background: rgba(var(--ca-rgb,139,92,246), .07);
+  border-bottom: 1px solid rgba(var(--ca-rgb,139,92,246), .18);
+  position: relative;
+  font-size: .8rem;
+  line-height: 1.45;
+  color: rgba(255,255,255,.65);
+}
+.lumo-builder-bar strong { color: rgba(255,255,255,.9); }
+.lumo-builder-bar svg { flex-shrink: 0; margin-top: 1px; }
+.lumo-bar-dismiss {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.3);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color .2s;
+}
+.lumo-bar-dismiss:hover { color: rgba(255,255,255,.7); }
+</style>
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -105,11 +155,30 @@
   <header class="hdr">
     <h1 class="logo">🛰️ Space Station Builder</h1>
     <div class="hdr-right">
-      <a href="../pages/workshop.html" class="back-link">🎓 Workshop</a>
+      <a href="../pages/workshop.html" class="back-link">🎓 Workshop</a><a href="../pages/3d-builders.html" class="back-link" style="margin-left:8px">🏗️ All Builders</a>
       <button class="quick-btn" onclick="randomStation()" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764">🎲 Random</button>
       <button class="quick-btn" onclick="quickBuild()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 3px 0 #1e3a5f">⚡ Quick Build</button>
     </div>
   </header>
+  <!-- ── Lumo Tip Bar ── -->
+  <div class="lumo-builder-bar" id="lumoBar" style="--ca-rgb:167,139,250">
+    <svg viewBox="0 0 80 90" width="26" height="29" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M20 52 Q10 80 15 88 H65 Q70 80 60 52 Q50 60 40 60 Q30 60 20 52Z" fill="#12102a"/>
+      <ellipse cx="40" cy="36" rx="16" ry="17" fill="#8B5CF6"/>
+      <polygon points="24,22 19,8 30,18" fill="#7C3AED"/>
+      <polygon points="56,22 61,8 50,18" fill="#7C3AED"/>
+      <ellipse cx="40" cy="40" rx="10" ry="8" fill="#DDD6FE"/>
+      <ellipse cx="35" cy="34" rx="3.5" ry="4" fill="#1e1a40"/>
+      <ellipse cx="45" cy="34" rx="3.5" ry="4" fill="#1e1a40"/>
+      <circle cx="36" cy="33" r="1.2" fill="#fff"/>
+      <circle cx="46" cy="33" r="1.2" fill="#fff"/>
+      <ellipse cx="40" cy="39" rx="2" ry="1.4" fill="#7C3AED"/>
+    </svg>
+    <span><strong style="color:#a78bfa">Lumo says:</strong> <strong>Solar panel span</strong> makes the station look imposing. Add the <strong>Earth backdrop</strong> in the last step for a stunning finish!</span>
+    <button class="lumo-bar-dismiss" aria-label="Dismiss tip" onclick="(function(){try{sessionStorage.setItem('lumo-bar-space-station-builder','1')}catch(e){}document.getElementById('lumoBar').remove()})()">✕</button>
+  </div>
+  <script>try{if(sessionStorage.getItem('lumo-bar-space-station-builder')){var b=document.getElementById('lumoBar');if(b)b.remove();}}catch(e){}</script>
+  <!-- ── /Lumo Tip Bar ── -->
 
   <div id="sidebar">
     <div class="prog-section">
@@ -138,11 +207,11 @@
       <div class="vhint" id="sceneHint">Drag to orbit · Scroll to zoom</div>
       <div class="dims" id="dimsOverlay">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.06em;color:#fff;margin-bottom:2px" id="sName">UNNAMED</div>
-        <div>Style&nbsp;&nbsp;<span id="sStyle">—</span></div>
-        <div>Modules<span id="sModules">—</span></div>
-        <div>Solar&nbsp;&nbsp;<span id="sSolar">—</span></div>
-        <div>Dock&nbsp;&nbsp;<span id="sDock">—</span></div>
-        <div>Crew&nbsp;&nbsp;&nbsp;<span id="sCrew">—</span></div>
+        <div>Style&nbsp;&nbsp;<span id="sStyle">-</span></div>
+        <div>Modules<span id="sModules">-</span></div>
+        <div>Solar&nbsp;&nbsp;<span id="sSolar">-</span></div>
+        <div>Dock&nbsp;&nbsp;<span id="sDock">-</span></div>
+        <div>Crew&nbsp;&nbsp;&nbsp;<span id="sCrew">-</span></div>
       </div>
     </div>
     <div class="obar" id="obar" aria-live="polite">🛰️ Name your station to start building</div>
@@ -843,30 +912,30 @@ function swatchRow(id, colours, currentVal, onChange) {
 
 const FACTS = {
   stationName: "The International Space Station has been continuously occupied since November 2000. Over 270 people from 21 countries have visited.",
-  moduleCount: "The ISS has 16 pressurized modules — each one a self-contained lab that took years to design and build.",
-  moduleLength: "The ISS modules are roughly 6.7 metres long and 4.4 metres in diameter — about the size of a school bus.",
+  moduleCount: "The ISS has 16 pressurized modules , each one a self-contained lab that took years to design and build.",
+  moduleLength: "The ISS modules are roughly 6.7 metres long and 4.4 metres in diameter , about the size of a school bus.",
   moduleRadius: "The Zvezda service module is 2.9m in radius. Bigger modules mean more room for experiments and crew.",
   moduleStyle: "Cylindrical modules are structurally stronger in vacuum. Box modules are easier to outfit internally.",
   solarPanelCount: "The ISS solar arrays span 73 metres, larger than a Boeing 777 wingspan. They generate 75-90 kilowatts.",
   solarPanelSize: "Each ISS solar panel wing is 34m long. They track the Sun automatically as the station orbits.",
   dockingPortCount: "The ISS has multiple docking adapters: PMA-2, IDA-2, IDA-3, and the Russian Zvezda port.",
   antennaCount: "The ISS uses S-band, Ku-band, and L-band antennas for voice, data, and video communication with Earth.",
-  cupolaSize: "The ISS Cupola has 7 windows and gives astronauts a 360° view — essential for robotics and docking.",
-  trussLength: "The ISS main truss (ITS) is 108.5 metres long — longer than a football field.",
+  cupolaSize: "The ISS Cupola has 7 windows and gives astronauts a 360° view , essential for robotics and docking.",
+  trussLength: "The ISS main truss (ITS) is 108.5 metres long , longer than a football field.",
   radiatorCount: "The ISS has 6 ammonia-based thermal control radiators that dissipate waste heat into space.",
   crewCapacity: "The ISS typically hosts 6-7 crew members. During crew rotations, up to 13 people may be aboard.",
   rotatingRing: "No real station has a rotating ring yet, but concepts like Nautilus-X propose artificial gravity rings.",
-  ringRadius: "A 30m radius ring spinning at 4 RPM would produce roughly 0.5g — enough to prevent bone loss.",
+  ringRadius: "A 30m radius ring spinning at 4 RPM would produce roughly 0.5g , enough to prevent bone loss.",
 };
 
 const STEPS = [
 /* 1 */ {
   title: 'Name Your Station',
-  tag: 'STEP 01 — IDENTITY',
+  tag: 'STEP 01 , IDENTITY',
   intro: `Every space station needs a name. <strong>International Space Station</strong>. <strong>Mir</strong>. <strong>Tiangong</strong>. <strong>Skylab</strong>. What will your orbital outpost be called?`,
   boxes: [
     { t:'box-c', tx:'Station names often reflect ambition or origin. Mir means "peace" in Russian. Tiangong means "heavenly palace" in Chinese. Skylab was literally a lab in the sky.' },
-    { t:'box-t', tx:'Keep it under 14 characters — it looks best on the spec overlay and profile card.' },
+    { t:'box-t', tx:'Keep it under 14 characters , it looks best on the spec overlay and profile card.' },
   ],
   tasks: ['Enter a station name', 'Press Apply to lock it in'],
   html() { return `<input class="name-input" id="stationName" maxlength="16" placeholder="E.G. ARCADIA" value="${P.stationName==='Arcadia'?'':P.stationName}">`; },
@@ -875,10 +944,10 @@ const STEPS = [
 
 /* 2 */ {
   title: 'Module Style',
-  tag: 'STEP 02 — STRUCTURE',
+  tag: 'STEP 02 , STRUCTURE',
   intro: `Modules are the core building blocks of your station. <strong>Cylinders</strong> are pressure-optimized (like real ISS modules). <strong>Box</strong> modules are easier to outfit and give a more futuristic look.`,
   boxes: [
-    { t:'box-c', tx:'Real space station modules are cylindrical because a cylinder distributes internal pressure evenly. The ISS uses Unity, Destiny, Columbus, Kibo — all cylinders.' },
+    { t:'box-c', tx:'Real space station modules are cylindrical because a cylinder distributes internal pressure evenly. The ISS uses Unity, Destiny, Columbus, Kibo , all cylinders.' },
     { t:'box-t', tx:'Cylinders look authentic. Boxes look sci-fi. Pick your vibe.' },
   ],
   tasks: ['Choose a module shape'],
@@ -894,7 +963,7 @@ const STEPS = [
 
 /* 3 */ {
   title: 'Module Count',
-  tag: 'STEP 03 — SCALE',
+  tag: 'STEP 03 , SCALE',
   intro: `How many modules will your station have? More modules = more labs, more crew space, more capability. But also more mass to launch and maintain.`,
   boxes: [
     { t:'box-c', tx:'The ISS has 16 pressurized modules from 5 space agencies. Mir had 7. Tiangong currently has 3. Each module is launched separately and assembled in orbit.' },
@@ -914,7 +983,7 @@ const STEPS = [
 
 /* 4 */ {
   title: 'Module Size',
-  tag: 'STEP 04 — DIMENSIONS',
+  tag: 'STEP 04 , DIMENSIONS',
   intro: `Set the length and radius of each module. <strong>Longer</strong> modules hold more equipment. <strong>Wider</strong> modules give more internal volume for crew.`,
   boxes: [
     { t:'box-c', tx:'The ISS Destiny lab is 6.7m long and 4.4m in diameter. Columbus is 6.7m × 4.5m. Kibo is the largest at 11.2m × 4.4m with an external porch.' },
@@ -940,11 +1009,11 @@ const STEPS = [
 
 /* 5 */ {
   title: 'Body Colour',
-  tag: 'STEP 05 — LIVERY',
-  intro: `The primary colour of your station modules. White reflects sunlight and keeps modules cool. Silver is modern. Dark colours absorb heat — fine for deep-space stations.`,
+  tag: 'STEP 05 , LIVERY',
+  intro: `The primary colour of your station modules. White reflects sunlight and keeps modules cool. Silver is modern. Dark colours absorb heat , fine for deep-space stations.`,
   boxes: [
     { t:'box-c', tx:'ISS modules are white or silver to reflect solar radiation. White paint keeps the internal temperature manageable. Real thermal control is critical in space.' },
-    { t:'box-t', tx:'Pick a bold colour — you\'ll add accent colours next.' },
+    { t:'box-t', tx:'Pick a bold colour , you\'ll add accent colours next.' },
   ],
   tasks: ['Choose a primary colour'],
   html() {
@@ -956,7 +1025,7 @@ const STEPS = [
 
 /* 6 */ {
   title: 'Accent Colour',
-  tag: 'STEP 06 — CONTRAST',
+  tag: 'STEP 06 , CONTRAST',
   intro: `The accent colour appears on connector bands, the truss, and the rotating ring. A contrasting accent makes your station look designed and professional.`,
   boxes: [
     { t:'box-t', tx:'Classic combos: white modules + blue accents (ISS). Silver + gold (Tiangong). White + red (Mir). Purple is a popular sci-fi choice.' },
@@ -971,10 +1040,10 @@ const STEPS = [
 
 /* 7 */ {
   title: 'Solar Panels',
-  tag: 'STEP 07 — POWER',
+  tag: 'STEP 07 , POWER',
   intro: `Solar panels are your station\'s lifeline. They convert sunlight into electricity. More panels = more power for experiments, life support, and communications.`,
   boxes: [
-    { t:'box-c', tx:'The ISS solar arrays span 73 metres — larger than a Boeing 777 wingspan. They generate 75-90 kilowatts, enough to power 40 homes. The panels track the Sun as the station orbits.' },
+    { t:'box-c', tx:'The ISS solar arrays span 73 metres , larger than a Boeing 777 wingspan. They generate 75-90 kilowatts, enough to power 40 homes. The panels track the Sun as the station orbits.' },
     { t:'box-t', tx:'4 panels is a good starting point. 8 panels gives you serious power reserves.' },
   ],
   tasks: ['Set panel count and size'],
@@ -998,8 +1067,8 @@ const STEPS = [
 
 /* 8 */ {
   title: 'Docking Ports',
-  tag: 'STEP 08 — ACCESS',
-  intro: `Docking ports allow spacecraft to connect to your station. Crew Dragon, Soyuz, Cargo ships — they all need a port to attach to.`,
+  tag: 'STEP 08 , ACCESS',
+  intro: `Docking ports allow spacecraft to connect to your station. Crew Dragon, Soyuz, Cargo ships , they all need a port to attach to.`,
   boxes: [
     { t:'box-c', tx:'The ISS has multiple docking ports: the Russian Zvezda aft port, Harmony forward and zenith ports, and the PMA adapters for Dragon and Starliner.' },
     { t:'box-t', tx:'2-3 ports is realistic. 6 ports means your station is a busy orbital hub.' },
@@ -1018,8 +1087,8 @@ const STEPS = [
 
 /* 9 */ {
   title: 'Antennas',
-  tag: 'STEP 09 — COMMUNICATIONS',
-  intro: `Antennas keep your station connected to Earth. Voice, video, telemetry, science data — it all flows through these. More antennas = more bandwidth.`,
+  tag: 'STEP 09 , COMMUNICATIONS',
+  intro: `Antennas keep your station connected to Earth. Voice, video, telemetry, science data , it all flows through these. More antennas = more bandwidth.`,
   boxes: [
     { t:'box-c', tx:'The ISS uses S-band for voice, Ku-band for high-speed data and video, and L-band for navigation. The main high-gain antenna can transmit at 300 Mbps.' },
   ],
@@ -1037,8 +1106,8 @@ const STEPS = [
 
 /* 10 */ {
   title: 'Cupola',
-  tag: 'STEP 10 — OBSERVATION',
-  intro: `The cupola is an observation dome — a multi-windowed dome that gives crew a panoramic view of Earth and approaching spacecraft. It\'s the most iconic feature of the ISS.`,
+  tag: 'STEP 10 , OBSERVATION',
+  intro: `The cupola is an observation dome , a multi-windowed dome that gives crew a panoramic view of Earth and approaching spacecraft. It\'s the most iconic feature of the ISS.`,
   boxes: [
     { t:'box-c', tx:'The ISS Cupola was built by ESA and has 7 windows. It\'s used for robotics operations, Earth observation, and docking. Astronauts call it the best office in the world.' },
     { t:'box-t', tx:'Set size to 0 to remove the cupola entirely. Bigger cupolas look more impressive but add mass.' },
@@ -1057,10 +1126,10 @@ const STEPS = [
 
 /* 11 */ {
   title: 'Truss',
-  tag: 'STEP 11 — BACKBONE',
+  tag: 'STEP 11 , BACKBONE',
   intro: `The truss is the structural backbone that holds your solar panels, radiators, and external equipment. A longer truss means more room for power generation.`,
   boxes: [
-    { t:'box-c', tx:'The ISS Integrated Truss Structure is 108.5 metres long — longer than a football field. It supports the solar arrays, thermal radiators, and external payloads.' },
+    { t:'box-c', tx:'The ISS Integrated Truss Structure is 108.5 metres long , longer than a football field. It supports the solar arrays, thermal radiators, and external payloads.' },
     { t:'box-t', tx:'Match the truss to your solar panel count. More panels need a longer truss.' },
   ],
   tasks: ['Set truss length'],
@@ -1077,7 +1146,7 @@ const STEPS = [
 
 /* 12 */ {
   title: 'Radiators',
-  tag: 'STEP 12 — THERMAL',
+  tag: 'STEP 12 , THERMAL',
   intro: `Space is both freezing cold and scorching hot. Radiators dump excess heat from electronics, life support, and crew metabolism into the void.`,
   boxes: [
     { t:'box-c', tx:'The ISS has 6 ammonia-based thermal control radiators that can dissipate up to 70 kilowatts. Without them, electronics would overheat within hours.' },
@@ -1097,7 +1166,7 @@ const STEPS = [
 
 /* 13 */ {
   title: 'Crew Capacity',
-  tag: 'STEP 13 — CREW',
+  tag: 'STEP 13 , CREW',
   intro: `How many people can live and work on your station? More crew means more experiments, but also more life support, food, water, and oxygen.`,
   boxes: [
     { t:'box-c', tx:'The ISS typically hosts 6-7 crew members. During Soyuz crew rotations, up to 13 people may be aboard briefly. Each crew member needs about 1kg of food, 2.5L of water, and 0.84kg of oxygen per day.' },
@@ -1117,10 +1186,10 @@ const STEPS = [
 
 /* 14 */ {
   title: 'Rotating Ring',
-  tag: 'STEP 14 — ARTIFICIAL GRAVITY',
+  tag: 'STEP 14 , ARTIFICIAL GRAVITY',
   intro: `A rotating ring creates artificial gravity through centripetal acceleration. No real station has one yet, but it\'s a staple of science fiction and future station concepts.`,
   boxes: [
-    { t:'box-c', tx:'Concepts like Nautilus-X and the Mars Transit Station propose rotating rings. A 30m radius ring at 4 RPM would produce ~0.5g — enough to prevent bone loss and muscle atrophy.' },
+    { t:'box-c', tx:'Concepts like Nautilus-X and the Mars Transit Station propose rotating rings. A 30m radius ring at 4 RPM would produce ~0.5g , enough to prevent bone loss and muscle atrophy.' },
     { t:'box-t', tx:'Toggle the ring on and adjust the radius. Bigger rings = more comfortable gravity.' },
   ],
   tasks: ['Toggle rotating ring', 'Set ring radius'],
@@ -1144,8 +1213,8 @@ const STEPS = [
 
 /* 15 */ {
   title: 'Stats & Preview',
-  tag: 'STEP 15 — REVIEW',
-  intro: `Review your station\'s capabilities. The stats reflect your design choices — more modules boost capacity, solar panels boost power, antennas boost science.`,
+  tag: 'STEP 15 , REVIEW',
+  intro: `Review your station\'s capabilities. The stats reflect your design choices , more modules boost capacity, solar panels boost power, antennas boost science.`,
   boxes: [
     { t:'box-r', tx:'Your station is nearly complete. Review the stats on the right side of the viewport. Every choice you\'ve made contributes to the final capability profile.' },
     { t:'box-t', tx:'Drag the 3D viewport to orbit around your station. Scroll to zoom in and out. Take a good look before launch!' },
@@ -1157,7 +1226,7 @@ const STEPS = [
 
 /* 16 */ {
   title: 'Launch Station!',
-  tag: 'STEP 16 — ORBIT',
+  tag: 'STEP 16 , ORBIT',
   intro: `All systems are go. Your station is fully designed. Hit the launch button to deploy it into orbit and watch it come alive.`,
   boxes: [
     { t:'box-r', tx:'🛰️ Deploying into orbit... Solar panels extending. Systems powering up. Welcome to space!' },
@@ -1186,7 +1255,7 @@ function launchStation() {
   buildStation();
   sout('🛰️ ' + (P.stationName || 'STATION') + ' is now operational in orbit!');
   document.getElementById('liveStatus').textContent = '🛰️ IN ORBIT!';
-  document.getElementById('sceneHint').textContent = 'Station is orbiting — drag to follow';
+  document.getElementById('sceneHint').textContent = 'Station is orbiting , drag to follow';
 
   // Spawn star particles
   if (!starParticles) {
@@ -1471,9 +1540,9 @@ init();
         </div>
         <nav class="footer-links" aria-label="Footer">
             <a href="/">Home</a>
-            <a href="/games">Play — Games</a>
-            <a href="/workshop">Learn — Workshops</a>
-            <a href="/dev-tools">Make — Tools</a>
+            <a href="/games">Play , Games</a>
+            <a href="/workshop">Learn , Workshops</a>
+            <a href="/dev-tools">Make , Tools</a>
             <a href="/downloads">Downloads</a>
             <a href="/about">Studio</a>
             <a href="/parents">For Parents</a>

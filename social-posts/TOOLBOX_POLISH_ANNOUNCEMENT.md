@@ -38,7 +38,7 @@ We've polished the Game Dev Toolbox with dozens of UX improvements:
 
 **What changed?** Tons of small touches that add up to a noticeably smoother, more polished experience. Everything feels more responsive and alive.
 
-Try it now — start building! 🎨🎮🎵
+Try it now , start building! 🎨🎮🎵
 
 #GameDev #UX #IndieGameDev #JVDesignStudio #FreeTools #UpdatedTools
 ```

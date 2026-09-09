@@ -103,7 +103,7 @@ const ok = (name, cond) => { console.log((cond ? 'PASS ' : 'FAIL ') + name); if 
   const after7 = await page.evaluate(() => frames[0][0].data.filter((v, i) => i % 4 === 3 && v > 0).length);
   ok('pinch: no accidental paint during pinch (' + before7 + '→' + after7 + ')', after7 === before7);
 
-  // 8. Palette strip is horizontally scrollable (touch-action fix) — Colour tab active
+  // 8. Palette strip is horizontally scrollable (touch-action fix) , Colour tab active
   await tapAt(tabs[1].x, tabs[1].y);
   await new Promise(r => setTimeout(r, 150));
   const scrollable = await page.evaluate(() => {

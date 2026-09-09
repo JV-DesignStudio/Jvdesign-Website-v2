@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   JVDS Audio Engine — Shared by Sound Studio, SFX Generator,
+   JVDS Audio Engine , Shared by Sound Studio, SFX Generator,
    Music Maker, and Drum Pad. Single AudioContext, single
    master bus, single export pipeline.
    ═══════════════════════════════════════════════════════════ */
@@ -216,5 +216,5 @@ class JVDSAudioEngine {
   }
 }
 
-// Singleton — all tools share one instance
+// Singleton , all tools share one instance
 window.JVDSAudio = window.JVDSAudio || new JVDSAudioEngine();

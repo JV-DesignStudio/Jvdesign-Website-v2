@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// validate-covers.js — ensures every cover referenced in content/games.json, games-registry.js and content-data.js exists on disk (case-sensitive, GitHub Pages)
+// validate-covers.js , ensures every cover referenced in content/games.json, games-registry.js and content-data.js exists on disk (case-sensitive, GitHub Pages)
 const fs=require('fs'), path=require('path');
 const ROOT=__dirname;
 let broken=[];

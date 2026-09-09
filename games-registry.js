@@ -9,9 +9,9 @@ window.JVDS_GAMES = [
     "cover": "GardenDefenseCover.webp",
     "bg": "linear-gradient(160deg,#8fd07a,#4e7d40)",
     "kids": false,
-    "desc": "Plant sunflowers, sprouts and frost buds, harvest sunlight and hold back the garden pests across 10 waves — then chase high scores in Endless Mode.",
+    "desc": "Plant sunflowers, sprouts and frost buds, harvest sunlight and hold back the garden pests across 10 waves , then chase high scores in Endless Mode.",
     "difficulty": "Medium",
-    "session": "10–20 min",
+    "session": "10-20 min",
     "controls": "Tap to place plants"
   },
   {
@@ -26,7 +26,7 @@ window.JVDS_GAMES = [
     "kids": false,
     "desc": "A cosmic collapse puzzle. Pop groups, trigger cascades, hit level targets and spawn bombs before your moves run out.",
     "difficulty": "Easy to learn",
-    "session": "5–10 min",
+    "session": "5-10 min",
     "controls": "Tap or press Enter"
   },
   {
@@ -41,7 +41,7 @@ window.JVDS_GAMES = [
     "kids": false,
     "desc": "Tap falling tiles across four lanes, nail the timing for perfects, chain combos, dodge traps and climb the levels.",
     "difficulty": "Medium",
-    "session": "2–5 min",
+    "session": "2-5 min",
     "controls": "Tap or D F J K"
   },
   {
@@ -343,7 +343,7 @@ window.JVDS_GAMES = [
     "cover": "biscuit-tin-clicker.webp",
     "bg": "linear-gradient(135deg,#f4a460,#c9936b)",
     "kids": false,
-    "desc": "Cosy clicker — tap biscuits, buy upgrades and fill your tin. Idle earnings while away."
+    "desc": "Cosy clicker , tap biscuits, buy upgrades and fill your tin. Idle earnings while away."
   },
   {
     "id": "cozy-cafe-match",
@@ -367,7 +367,7 @@ window.JVDS_GAMES = [
     "cover": "cozy-creatures.webp",
     "bg": "linear-gradient(135deg,#a8d8ea,#ffffd2)",
     "kids": true,
-    "desc": "Gentle kids game — snuggle, play and explore with cozy creatures. Ages 3-8."
+    "desc": "Gentle kids game , snuggle, play and explore with cozy creatures. Ages 3-8."
   },
   {
     "id": "millionaire-quiz",

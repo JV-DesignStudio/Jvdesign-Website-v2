@@ -78,6 +78,18 @@
   <!-- Offline notice: the whole bundle is local, so offline just works -->
   <div class="arc-offline" id="offlineBanner" hidden>📴 You're offline , every game still plays.</div>
 
+  <section class="arc-mascot-guide" aria-label="Echo and Pip, your Play guides">
+    <div class="arc-mascot-pair" aria-hidden="true">
+      <div><img src="games/chars/echo.png" alt=""><span>Echo</span></div>
+      <div><img src="games/chars/pip.png" alt=""><span>Pip</span></div>
+    </div>
+    <div>
+      <div class="arc-mascot-kicker">Your Play guides</div>
+      <strong>Explore boldly. Play at your pace.</strong>
+      <p id="arcMascotLine">Echo brings the spark. Pip keeps it cosy.</p>
+    </div>
+  </section>
+
   <!-- ══ HOME ══ -->
   <section class="arc-view active" id="view-home" role="tabpanel" aria-label="Home">
     <div class="hero">
@@ -224,6 +236,7 @@
 <script defer src="game-system.js"></script>
 <script defer src="games-registry.js"></script>
 <script defer src="daily-challenge.js"></script>
+<script defer src="weekly-challenge.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════
    Arcade hub logic.
@@ -234,7 +247,19 @@
 (function () {
   'use strict';
 
-  var GAMES = window.JVDS_GAMES || [];
+  // Registry is loaded with defer, so it executes after this inline script
+  // is parsed. Capturing window.JVDS_GAMES here would yield [] and produce
+  // 0/0 explored plus weekly-challenge load failures. Defer initialisation
+  // until DOMContentLoaded (which fires after all defer scripts) and read
+  // the live registry then.
+  var GAMES = null;
+  function getGames() { return GAMES || window.JVDS_GAMES || []; }
+  function syncGames() {
+    var live = window.JVDS_GAMES;
+    if (Array.isArray(live) && live.length) GAMES = live;
+    else if (!GAMES) GAMES = live || [];
+    return GAMES;
+  }
 
   /* ── Tiny helpers ─────────────────────────────────────────── */
 
@@ -503,7 +528,7 @@
     document.getElementById('heroTitle').textContent = fresh ? 'Welcome in 👋' : 'Your Arcade';
     document.getElementById('heroLevel').textContent = stats.level;
     document.getElementById('heroXP').textContent = fresh
-      ? 'Every run earns XP here — pick any game to begin.'
+      ? 'Every run earns XP here , pick any game to begin.'
       : fmt(stats.xpProgress.current) + ' / ' + fmt(stats.xpProgress.max) +
         ' XP to level ' + (stats.level + 1);
     document.getElementById('heroBar').style.width = stats.xpProgress.percentage + '%';
@@ -573,7 +598,7 @@
   var filter = 'All';
   var query = '';
   var sortMode = lsGet('jvds_arc_sort', 'featured');
-  var SORTS = [['featured', 'Featured'], ['fresh', 'Fresh picks'], ['recent', 'Recent'], ['az', 'A–Z']];
+  var SORTS = [['featured', 'Featured'], ['fresh', 'Fresh picks'], ['recent', 'Recent'], ['az', 'A-Z']];
 
   function categories() {
     var seen = ['All'];
@@ -607,7 +632,7 @@
   }
 
   // Keep the strongest, most varied titles at the front of the app.
-  var PICK_ORDER = ['garden-defense','bubble-pop','neon-tiles','arcane-citadel','void-rush','gem-match','bakery-empire','crypt-crawlers'];
+  var PICK_ORDER = ['garden-defense','bubble-pop','neon-tiles','arcane-citadel','gem-match','bakery-empire','crypt-crawlers'];
   var PICK_RANK = {};
   PICK_ORDER.forEach(function (id, index) { PICK_RANK[id] = index; });
 
@@ -629,7 +654,7 @@
         return lb - la;
       });
     } else if (sortMode === 'fresh') {
-      // Never-played first, then least-played — the "what should I try" order.
+      // Never-played first, then least-played , the "what should I try" order.
       arr.sort(function (a, b) {
         var sa = smap[a.id] || {}, sb = smap[b.id] || {};
         var pa = (sa.plays || 0) > 0 ? 1 : 0;
@@ -641,7 +666,7 @@
     return arr;
   }
 
-  // Jump into the Play tab ordered for discovery — the action target for the
+  // Jump into the Play tab ordered for discovery , the action target for the
   // daily/weekly challenge widgets ("play toward today's goal").
   function goFresh() {
     filter = 'All';
@@ -986,7 +1011,7 @@
   var _weeklyEl = document.getElementById('weeklyChallenge');
   if (_weeklyEl) _weeklyEl.addEventListener('click', goFresh);
 
-  // Sound toggle — one key every game's audio engine honors.
+  // Sound toggle , one key every game's audio engine honors.
   document.getElementById('soundToggle').addEventListener('change', function (e) {
     lsSet('jvds_sound', e.target.checked ? '1' : '0');
     buzz(8);
@@ -1020,13 +1045,13 @@
         (g.difficulty ? dRow('Difficulty', esc(g.difficulty)) : '') +
         (g.session ? dRow('Session', esc(g.session)) : '') +
         (g.controls ? dRow('Controls', esc(g.controls)) : '') +
-        dRow('Your best', s.high > 0 ? fmt(s.high) : '—') +
+        dRow('Your best', s.high > 0 ? fmt(s.high) : '-') +
         dRow('Plays', String(s.plays)) +
         dRow('Last played', s.last ? fmtAgo(s.last) : 'never') +
         dRow('Goals earned', sharedGot + (customGot > 0 ? ' <span style="color:var(--arc-faint)">+' + customGot + ' in-game</span>' : '')) +
       '</div>' +
       '<p class="d-desc">' + esc(g.desc || '') + '</p>' +
-      (g.kids ? '<p class="d-desc">👶 ' + esc(g.age || 'Little Players') + ' — gentle and forgiving.</p>' : '');
+      (g.kids ? '<p class="d-desc">👶 ' + esc(g.age || 'Little Players') + ' , gentle and forgiving.</p>' : '');
     detailSheet.hidden = false;
     detailBackdrop.hidden = false;
   }
@@ -1173,15 +1198,27 @@
     window.open('https://play.google.com/store/apps/details?id=uk.co.jvdesignstudio.arcade', '_system');
   });
 
-  renderChips();
-  renderSortRow();
-  // Always hydrate Home once, even when another tab restores from the URL
-  // hash: the daily-challenge claim, rank-up celebrations and stat tiles all
-  // live there, and they must run on launch rather than waiting for a visit.
-  renderHome();
-  refreshGoalDot();
-  var start = (location.hash || '').replace('#', '');
-  show(['home', 'play', 'goals'].indexOf(start) >= 0 ? start : 'home');
+  // Boot: wait for deferred registry + challenge scripts before first paint.
+  function bootArcade() {
+    syncGames();
+    renderChips();
+    renderSortRow();
+    // Always hydrate Home once, even when another tab restores from hash
+    renderHome();
+    refreshGoalDot();
+    var start = (location.hash || '').replace('#', '');
+    show(['home', 'play', 'goals'].indexOf(start) >= 0 ? start : 'home');
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootArcade);
+  } else {
+    // Document already parsed but defer scripts may still be pending; poll briefly
+    var tries = 0;
+    var timer = setInterval(function () {
+      if (window.JVDS_GAMES && window.JVDS_GAMES.length) { clearInterval(timer); bootArcade(); }
+      else if (++tries > 20) { clearInterval(timer); bootArcade(); }
+    }, 50);
+  }
 })();
 </script>
 <script>window.addEventListener('load',function(){if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>

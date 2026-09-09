@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * build.js — JVDesignStudio static include system.
+ * build.js , JVDesignStudio static include system.
  * Walks every .html file in the project (recursively) and replaces the content
  * between <!-- BUILD:name --> ... <!-- /BUILD:name --> markers with the matching
  * partial from /partials. Also normalises the "Skip to main content" link so each

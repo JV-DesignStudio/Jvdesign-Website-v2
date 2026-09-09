@@ -1,4 +1,4 @@
-// liveConfig.js — extracted from tools/arcade-game-maker.html for Vite module split.
+// liveConfig.js , extracted from tools/arcade-game-maker.html for Vite module split.
 // This file is the canonical definition of all game config, state, and theme data.
 // In the monolith these are inline globals; here they are proper ES exports.
 // Import: import { liveConfig, gameState, touchInput, gameTheme } from './liveConfig.js';
@@ -76,7 +76,7 @@ const liveConfig = {
     perksEnabled:true
 };
 
-// Perk-aware accessors — RunMods multipliers fold into speed/fireCooldown at runtime
+// Perk-aware accessors , RunMods multipliers fold into speed/fireCooldown at runtime
 liveConfig._base = { speed: liveConfig.speed, fireCooldown: liveConfig.fireCooldown };
 Object.defineProperty(liveConfig, 'speed', {
     enumerable: true, configurable: true,

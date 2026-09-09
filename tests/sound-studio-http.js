@@ -19,7 +19,7 @@ const server = http.createServer((req,res)=>{
 });
 function listen(){return new Promise(resolve=>server.listen(port, resolve));}
 function check(name, ok, detail=''){
-  console.log((ok ? 'PASS ' : 'FAIL ') + name + (detail ? ' — ' + detail : ''));
+  console.log((ok ? 'PASS ' : 'FAIL ') + name + (detail ? ' , ' + detail : ''));
   if(!ok) failures++;
 }
 let failures = 0;

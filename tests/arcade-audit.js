@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * tests/arcade-audit.js — launch-readiness audit for tools/arcade-game-maker.html
+ * tests/arcade-audit.js , launch-readiness audit for tools/arcade-game-maker.html
  *
  * Drives the REAL app in headless Chrome:
  *   1. Studio boots clean (fresh visitor path: template auto-load → Run)
@@ -29,7 +29,7 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 const results = [];
 function record(name, ok, detail) {
   results.push({ name, ok, detail });
-  console.log((ok ? '  ✓ ' : '  ✗ ') + name + (detail ? ' — ' + detail : ''));
+  console.log((ok ? '  ✓ ' : '  ✗ ') + name + (detail ? ' , ' + detail : ''));
 }
 async function scenario(name, fn) {
   console.log('\n▸ ' + name);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * generate-latest-post.js — emits latest-post.json for the homepage banner.
+ * generate-latest-post.js , emits latest-post.json for the homepage banner.
  *
  * The homepage used to fetch the whole of pages/devlog.html (232KB) and regex it
  * for the newest entry, which was about a third of the homepage's total transfer
@@ -40,4 +40,4 @@ if (!post.title) { console.error('✗ generate-latest-post: could not read a tit
 fs.writeFileSync(OUT, JSON.stringify(post) + '\n');
 const kb = (fs.statSync(OUT).size / 1024).toFixed(2);
 const was = (fs.statSync(SRC).size / 1024).toFixed(0);
-console.log(`✓ generate-latest-post: latest-post.json written (${kb}KB, replaces a ${was}KB fetch) — "${post.title}"`);
+console.log(`✓ generate-latest-post: latest-post.json written (${kb}KB, replaces a ${was}KB fetch) , "${post.title}"`);

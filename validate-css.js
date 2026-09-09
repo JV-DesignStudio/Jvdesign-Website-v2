@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /*
- * validate-css.js — detects inline <style> blocks that fail to parse.
+ * validate-css.js , detects inline <style> blocks that fail to parse.
  *
  * Brace corruption (a rule missing its closing "}") makes the browser silently
  * collapse or drop most of a stylesheet, so a page renders with no theme while
  * looking fine to a static check. This loads every page in a headless browser
  * (ground truth) and flags any inline <style> whose parsed rule count is far
- * below the number of rule-opening braces in its source — the signature of the
+ * below the number of rule-opening braces in its source , the signature of the
  * mugen-workshop / mugen-ai-workshop corruption.
  *
  * A purely static brace count is NOT reliable here: pages with large inline
@@ -37,7 +37,7 @@ function walk(dir) {
 
 /* ── Static pre-pass ────────────────────────────────────────────────────────
  * Catches corruption signatures the live cssRules ratio can't see:
- *   1. Orphaned custom-property declarations — a lost ':root {' opener leaves
+ *   1. Orphaned custom-property declarations , a lost ':root {' opener leaves
  *      "--var: value;" pairs at brace depth 0. Browsers silently discard them,
  *      so tokens vanish while the sheet still "parses".
  *   2. Unbalanced braces per <style> block (comment/string aware).
@@ -57,7 +57,7 @@ function skipString(s, i) {
   }
   return i;
 }
-// NB: callers use while-loops with explicit index management — skipString/
+// NB: callers use while-loops with explicit index management , skipString/
 // skipComment return the index just past the token, so a for-loop's auto-
 // increment would swallow the char after a string's closing quote.
 function staticStyleChecks(css) {

@@ -1,5 +1,5 @@
 /**
- * content-loader.js — Client-side content helpers for JVDesignStudio
+ * content-loader.js , Client-side content helpers for JVDesignStudio
  *
  * Requires: content-data.js (loaded before this script)
  *

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   tool-analytics.js — per-tool usage analytics on top of the existing GA4 setup.
+   tool-analytics.js , per-tool usage analytics on top of the existing GA4 setup.
 
    Include on tool pages AFTER analytics-loader.js has defined window.gtag:
      <script src="../tool-analytics.js"></script>

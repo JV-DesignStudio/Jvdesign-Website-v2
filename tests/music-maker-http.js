@@ -23,7 +23,7 @@ const server = http.createServer((req, res) => {
 
 let failures = 0;
 function check(name, ok, detail) {
-  console.log((ok ? '  ✓ ' : '  ✗ ') + name + (detail !== undefined ? ' — ' + detail : ''));
+  console.log((ok ? '  ✓ ' : '  ✗ ') + name + (detail !== undefined ? ' , ' + detail : ''));
   if (!ok) failures++;
 }
 

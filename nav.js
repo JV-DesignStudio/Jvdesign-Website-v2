@@ -1,4 +1,4 @@
-// nav.js — site header: announce, theme, active link, hamburger, more dropdown, profile chip
+// nav.js , site header: announce, theme, active link, hamburger, more dropdown, profile chip
 window.JVDS = window.JVDS || {};
 window.JVDS.announce = function (msg) {
   var el = document.getElementById('jvds-announce');

@@ -27,10 +27,10 @@ function repAll(from, to, label) {
 
 // ── 1. Title & meta ──────────────────────────────────────────────────────────
 rep('<title>RPG Quest Board, JVDesignStudio</title>',
-    '<title>QuestLog — Turn Your Work Into an RPG</title>', 'title');
+    '<title>QuestLog , Turn Your Work Into an RPG</title>', 'title');
 
 rep('<meta name="description" content="JVDesignStudio Project Tracker, organise and manage your creative game dev projects.">',
-    '<meta name="description" content="QuestLog by JVDesignStudio — a free browser RPG productivity app. Turn projects, tasks and daily habits into quests. Earn XP, level up, defeat boss quests. No account, works offline.">',
+    '<meta name="description" content="QuestLog by JVDesignStudio , a free browser RPG productivity app. Turn projects, tasks and daily habits into quests. Earn XP, level up, defeat boss quests. No account, works offline.">',
     'meta description');
 
 // Manifest must be site-root absolute (works on jvdesignstudio.co.uk AND Netlify bundle)
@@ -47,7 +47,7 @@ rep('<meta name="robots" content="noindex, nofollow">',
       '<meta property="og:type" content="website">',
       '<meta property="og:site_name" content="JVDesignStudio">',
       '<meta property="og:url" content="https://jvdesignstudio.co.uk/tools/quest-board.html">',
-      '<meta property="og:title" content="QuestLog — Turn Your Work Into an RPG">',
+      '<meta property="og:title" content="QuestLog , Turn Your Work Into an RPG">',
       '<meta property="og:description" content="Turn your tasks and habits into quests. Earn XP, level up, build streaks. Free, no account, works offline.">',
       '<meta property="og:image" content="https://jvdesignstudio.co.uk/og/tool-questboard.png">',
       '<meta name="twitter:card" content="summary_large_image">',

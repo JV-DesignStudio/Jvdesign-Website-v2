@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * generate-board-data.js — single source of truth for Dev Board KPIs.
+ * generate-board-data.js , single source of truth for Dev Board KPIs.
  * Reads real files on disk (content/stats.json, sitemap.xml, search-index.json,
  * filesystem counts) and writes board-data.json consumed by pages/dev-board.html.
  *
@@ -122,7 +122,7 @@ function getSwVersion(){
   }catch{ return null; }
 }
 
-// Link validation — read last validate run if exists, else placeholder
+// Link validation , read last validate run if exists, else placeholder
 function validateSummary() {
   // 5228 is last known good; generator updates if validation re-runs
   return { refs: 5228, broken: 0, lastRun: new Date().toISOString().slice(0,10) };

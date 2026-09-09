@@ -56,9 +56,9 @@ function toUrl(filePath) {
   let rel = path.relative(ROOT, filePath).replace(/\\/g, '/');
   // root index
   if (rel === 'index.html') return BASE_URL + '/';
-  // pages in root — strip .html for clean URLs
+  // pages in root , strip .html for clean URLs
   if (!rel.includes('/')) return BASE_URL + '/' + rel.replace(/\.html$/, '');
-  // nested pages — keep path, strip .html
+  // nested pages , keep path, strip .html
   return BASE_URL + '/' + rel.replace(/\.html$/, '');
 }
 

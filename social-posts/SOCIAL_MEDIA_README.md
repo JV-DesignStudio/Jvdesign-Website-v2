@@ -14,13 +14,13 @@ This campaign announces the **Game Dev Toolbox Major Update** with 10+ enhanced 
 ## 📊 Assets Included
 
 ### 1. Graphics (4 Main Posts)
-- **instagram_main_announcement.svg** — Main update announcement with all 4 tools
-- **instagram_try_this_first.svg** — Beginner tutorial showcase (3 quick projects)
-- **instagram_dev_tools_hub.svg** — Dev-tools hub features and workflow example
-- **instagram_carousel_tools.svg** — Carousel post frame 1 (SFX Generator)
+- **instagram_main_announcement.svg** , Main update announcement with all 4 tools
+- **instagram_try_this_first.svg** , Beginner tutorial showcase (3 quick projects)
+- **instagram_dev_tools_hub.svg** , Dev-tools hub features and workflow example
+- **instagram_carousel_tools.svg** , Carousel post frame 1 (SFX Generator)
 
 ### 2. Campaign Document
-- **INSTAGRAM_CAMPAIGN.md** — Complete campaign guide with:
+- **INSTAGRAM_CAMPAIGN.md** , Complete campaign guide with:
   - 8 full post captions (ready to copy-paste)
   - Engagement hooks for each post
   - Posting schedule (2-week rollout)
@@ -107,11 +107,11 @@ See section "💬 Common Questions to Answer in Comments" in INSTAGRAM_CAMPAIGN.
 ## 🎬 Video Content Ideas
 
 ### Reels (15-60 seconds)
-1. **Tool Tour Mashup** — 10-second clips of each tool's new feature
-2. **Before/After Transformation** — Same project, showing improvement
-3. **5-Minute Beginner Challenge** — Follow one "Try This First" tutorial
-4. **Sound Pack Showcase** — Play all 6 SFX packs
-5. **Logo Design Timelapse** — Create game logo in 30 seconds
+1. **Tool Tour Mashup** , 10-second clips of each tool's new feature
+2. **Before/After Transformation** , Same project, showing improvement
+3. **5-Minute Beginner Challenge** , Follow one "Try This First" tutorial
+4. **Sound Pack Showcase** , Play all 6 SFX packs
+5. **Logo Design Timelapse** , Create game logo in 30 seconds
 
 ### Stories (24-hour duration)
 1. Day 1: Announcement teaser (text + emoji)

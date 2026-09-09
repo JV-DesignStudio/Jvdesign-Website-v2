@@ -36,7 +36,7 @@ class AudioEffects {
   getVolume() {
     let volume = this.masterVolume;
     try {
-      // Global SFX toggle from the Arcade settings sheet — one key, all games.
+      // Global SFX toggle from the Arcade settings sheet , one key, all games.
       const globalSound = localStorage.getItem('jvds_sound');
       if (globalSound === '0') return 0;
       // Legacy site preference, honored until the player touches the new toggle.

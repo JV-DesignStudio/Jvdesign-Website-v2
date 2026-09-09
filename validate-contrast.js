@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /*
- * validate-contrast.js — catches headings that render invisible.
+ * validate-contrast.js , catches headings that render invisible.
  *
  * The bug this exists to prevent: `.section-title` defaults to beige because
  * most sections sit on the dark charcoal ground. Put one on a white background
  * without `.section-title--on-light` and the heading renders beige-on-white at
- * about 1.2:1 — present in the DOM, readable by Google, invisible to a human.
+ * about 1.2:1 , present in the DOM, readable by Google, invisible to a human.
  * That shipped on 37 headings across 13 pages before anyone noticed, including
  * "The Books" on the Books page.
  *
@@ -16,7 +16,7 @@
  * in a headless browser and measures what a person would actually see.
  *
  * Two bands:
- *   FAIL  below 3:1  — nobody can read this. Exit 1.
+ *   FAIL  below 3:1  , nobody can read this. Exit 1.
  *   WARN  3:1 up to the WCAG AA threshold (4.5:1, or 3:1 for large text).
  *         Reported, but does not fail the build. Use --strict to fail on these.
  *
@@ -50,7 +50,7 @@ const IGNORE = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-bo
 
 /* Structural text only. These are the elements where being invisible is fatal
    rather than merely poor: if a section heading disappears, the page loses its
-   shape. Body copy is deliberately out of scope — it would drown the signal in
+   shape. Body copy is deliberately out of scope , it would drown the signal in
    hundreds of pre-existing muted-text findings. Widen this when those are fixed. */
 const SELECTOR = 'h1, h2, h3, .section-title, .section-tag, .hero-title, .feat-card-title, .game-title';
 

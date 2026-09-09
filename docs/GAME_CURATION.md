@@ -17,8 +17,10 @@ Score each game from 1 to 5 for fun in the first 30 seconds, mobile controls, vi
 
 ## Current editorial set
 
-Featured: Lumo's Garden Defense, Bubble Pop Galaxy, Neon Tiles, Arcane Citadel, VoidRush, Gem Match, Pip's Bakery Empire, and Crypt Crawlers.
+Featured: Lumo's Garden Defense, Bubble Pop Galaxy, Neon Tiles, Arcane Citadel, Gem Match, Pip's Bakery Empire, and Crypt Crawlers.
 
 Experimental: Stardust Collector, Tiger Smash, Little Steps, and Call of the Cards.
 
 Standalone apps and non-arcade pages are excluded from the public Games grid and from the Arcade bundle where applicable. Re-review this list whenever a game is added, rebuilt, or promoted.
+
+Retired pending rebuild: VoidRush. Its current loop, control explanation, and presentation need a complete redesign before it returns to a public browse surface.

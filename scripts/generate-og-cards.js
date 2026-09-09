@@ -8,7 +8,7 @@
   CARDS list, then rewrites that page's <meta property="og:image"> and
   <meta name="twitter:image"> to point at it (adding a twitter:image if the
   page only had og:image). A handful of pages already have real artwork and
-  are listed under ART — those are wired to the existing image, no card drawn.
+  are listed under ART , those are wired to the existing image, no card drawn.
 
   Why this exists: Facebook, X, LinkedIn, Discord and iMessage do NOT render
   SVG og:images, and a bare logo makes every share look identical. Each card

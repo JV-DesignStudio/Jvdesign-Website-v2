@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   Weekly Challenge — the Daily Challenge's bigger sibling
+   Weekly Challenge , the Daily Challenge's bigger sibling
    ─────────────────────────────────────────────────────────────
    One rotating goal per week, shared by every player that week,
    built from the same XP-source stream as the daily (see

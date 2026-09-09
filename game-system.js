@@ -1056,7 +1056,7 @@ if (typeof document !== 'undefined') {
     t.setAttribute('aria-live', 'polite');
     t.textContent = text;
     // Top-centred: the bottom of the screen is where mobile game controls
-    // live (pads, swipe zones, tap-to-flap) — toasts were covering them.
+    // live (pads, swipe zones, tap-to-flap) , toasts were covering them.
     t.style.cssText =
       'position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%) translateY(-12px);' +
       'background:rgba(20,16,40,.92);color:#fff;border:1px solid rgba(167,131,206,.5);' +
@@ -1279,7 +1279,7 @@ if (typeof document !== 'undefined') {
 
   /* ------ Load player-profile.js if the page didn't include it ------ */
   // Load daily-challenge.js / weekly-challenge.js if the page didn't include
-  // them — same directory as this engine — so run-end toasts can surface
+  // them , same directory as this engine , so run-end toasts can surface
   // challenge progress inside every game with no per-game script tags.
   function ensureChallengeScripts() {
     if (!scriptSrc) return;
@@ -1351,7 +1351,7 @@ if (typeof document !== 'undefined') {
 
     // Best-run bridge: a large group of games report their best via
     // window.__gsBestRun instead of calling addScore(), which left
-    // state.highScore — and the Arcade hub's best-scores list — stuck at
+    // state.highScore , and the Arcade hub's best-scores list , stuck at
     // zero for all of them. Mirror an all-time-best through here so every
     // game shows up in the hub regardless of how it reports scores.
     try {
@@ -1490,7 +1490,7 @@ if (typeof document !== 'undefined') {
     });
     (target === document.documentElement ? document.body : target).appendChild(btn);
   }
-  // Universal mute + pause chrome (audit §09/13 — only 10/34 had mute, 13/34 pause). Injected once via game-system.js which loads on 43 pages, so 24 games get fixed at once without per-game edits. Uses existing SoundManager + GameUI.autoPause.
+  // Universal mute + pause chrome (audit §09/13 , only 10/34 had mute, 13/34 pause). Injected once via game-system.js which loads on 43 pages, so 24 games get fixed at once without per-game edits. Uses existing SoundManager + GameUI.autoPause.
   function initMutePauseChrome(){
     if(document.getElementById('gs-mute-btn') || document.getElementById('gs-pause-btn')) return;
     var bar=document.createElement('div');
@@ -1625,7 +1625,7 @@ if (typeof document !== 'undefined') {
 })();
 
 /* ═══════════════════════════════════════════════════════════════════
-   NARRATIVE METAGAME — "The Void is Spreading"
+   NARRATIVE METAGAME , "The Void is Spreading"
    An overarching story that unfolds as you play different games.
    Each game is a chapter. Progress in any game reveals story fragments.
    Complete all 25 games to unlock the secret 26th game.
@@ -1633,11 +1633,11 @@ if (typeof document !== 'undefined') {
 const VoidStory = {
   STORAGE_KEY: 'jvds_void_story',
   
-  // Story fragments — unlocked by game milestones
+  // Story fragments , unlocked by game milestones
   FRAGMENTS: [
     // Chapter 1: The Awakening (first game played)
     { id: 'ch1_1', game: '*', milestone: 'firstPlay', title: 'The First Stirring', text: 'In the depths between worlds, something stirs. A darkness older than the stars begins to wake.', chapter: 1 },
-    { id: 'ch1_2', game: '*', milestone: 'tenGames', title: 'Whispers in the Dark', text: 'The darkness spreads. Players everywhere feel it — a chill in the code, a flicker in the light.', chapter: 1 },
+    { id: 'ch1_2', game: '*', milestone: 'tenGames', title: 'Whispers in the Dark', text: 'The darkness spreads. Players everywhere feel it , a chill in the code, a flicker in the light.', chapter: 1 },
     
     // Chapter 2: The Void Approaches (specific game milestones)
     { id: 'ch2_1', game: 'void-rush', milestone: 'score100', title: 'First Contact', text: 'The Void Entity appears in deep space, chasing your ship through neon corridors.', chapter: 2 },
@@ -1655,11 +1655,11 @@ const VoidStory = {
     { id: 'ch4_3', game: 'gem-match', milestone: 'score2000', title: 'Light Gems Return', text: 'Golden gems glow brighter. The board begins to clear.', chapter: 4 },
     
     // Chapter 5: The Secret (all games completed)
-    { id: 'ch5_1', game: '*', milestone: 'allComplete', title: 'The Void Revealed', text: 'With all games mastered, the Void Entity\'s true form is revealed. It was never a monster — it was a test.', chapter: 5 },
+    { id: 'ch5_1', game: '*', milestone: 'allComplete', title: 'The Void Revealed', text: 'With all games mastered, the Void Entity\'s true form is revealed. It was never a monster , it was a test.', chapter: 5 },
     { id: 'ch5_2', game: '*', milestone: 'allComplete', title: 'The 26th Game', text: 'A new door opens. Behind it lies a game that was always there, waiting for the worthy.', chapter: 5 },
   ],
   
-  // Game corruption levels — visual elements added to games as story progresses
+  // Game corruption levels , visual elements added to games as story progresses
   CORRUPTION: {
     'void-rush': { level: 3, visual: 'void-trail' },
     'dungeon-delve': { level: 2, visual: 'dark-tiles' },
@@ -1692,7 +1692,7 @@ const VoidStory = {
     } catch (e) {}
   },
   
-  // Record game play — check for new fragments
+  // Record game play , check for new fragments
   recordGamePlay(gameId, score, level) {
     const state = this.load();
     state.gamesPlayed.add(gameId);

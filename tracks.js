@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   JVDS Learning Tracks — shared data for guided learning paths.
+   JVDS Learning Tracks , shared data for guided learning paths.
    Mirrors the tracks shown on pages/learn-hub.html. Consumed by:
      - workshops/my-progress.html (certificate "next on your track")
      - workshop finish banners (e.g. scratch-catch-workshop.html)
@@ -64,7 +64,7 @@
 
   function norm(u) { return String(u || '').replace(/^(\.\.\/)+/, '').replace(/^\/+/, '').toLowerCase(); }
   // Consumers pass either root-relative urls ('workshops/x.html') or bare
-  // filenames ('x.html', as used by my-progress.html SERIES data) — compare
+  // filenames ('x.html', as used by my-progress.html SERIES data) , compare
   // on the final path segment so both work.
   function samePage(a, b) {
     a = norm(a); b = norm(b);

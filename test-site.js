@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* test-site.js — site-wide regression audit.
+/* test-site.js , site-wide regression audit.
  *
  *   node test-site.js           full run (~4-6 min): nav labels, progress keys,
  *                               page-error sweep, workshop engine drive-through
@@ -199,7 +199,7 @@ async function checkPages(base) {
         driven++;
         const drive = await page.evaluate((solveSrc, total) => {
           const out = { failures: [] };
-          // test harness only — SOLVE is a trusted template string defined above, not user input
+          // test harness only , SOLVE is a trusted template string defined above, not user input
           const solve = Function('"use strict"; return (' + solveSrc + ')')();
           for (let s = 1; s <= total; s++) {
             const card = document.getElementById('step-' + s) || document.querySelector(`.step-card[data-step="${s}"]`);
@@ -227,7 +227,7 @@ async function checkPages(base) {
         for (let i = 0; i < shape.total; i++) {
           const res = await page.evaluate((solveSrc, i, hasGo, idxVar) => {
             const out = { failures: [] };
-            // test harness only — SOLVE is trusted
+            // test harness only , SOLVE is trusted
             const solve = Function('"use strict"; return (' + solveSrc + ')')();
             try {
               if (hasGo) goStep(i);

@@ -15,7 +15,7 @@ a game, every game earns you XP, and every achievement matters.
 Complete interactive workshops on Scratch, Godot, and more. Play our arcade of games. 
 Unlock cosmetics. Climb the global leaderboards.
 
-Your progress dashboard shows everything — workshops completed, quests finished, cosmetics unlocked.
+Your progress dashboard shows everything , workshops completed, quests finished, cosmetics unlocked.
 
 All free. All browser-based. All connected.
 
@@ -51,7 +51,7 @@ Finish a workshop? Unlock the matching game.
 Complete the game? Finish the quest.
 Finish the quest? Unlock exclusive cosmetics.
 
-It's not just learning—it's a connected journey.
+It's not just learning-it's a connected journey.
 
 🔗 All workshops → games → quests are linked
 ✨ 10+ cosmetics to unlock
@@ -119,20 +119,20 @@ A complete learn-play ecosystem where interactive education meets competitive ga
 
 Here's what makes it different:
 
-📚 Workshops aren't just lessons—they unlock games
-🎮 Games aren't just fun—they feed into quests  
+📚 Workshops aren't just lessons-they unlock games
+🎮 Games aren't just fun-they feed into quests  
 🏆 Quests connect both into a unified progression system
 ✨ Cosmetic rewards make progress visible
 📊 Personal dashboards track every achievement
 🌍 Global leaderboards enable competition
 
-We've built a system where learning has stakes. Where progress is visible. Where playing and learning aren't opposite activities—they're the same activity.
+We've built a system where learning has stakes. Where progress is visible. Where playing and learning aren't opposite activities-they're the same activity.
 
-For game developers, coders, and creative builders ages 5–18. All free. All browser-based.
+For game developers, coders, and creative builders ages 5-18. All free. All browser-based.
 
 🔗 Launch: JVDesignStudio.co.uk
 
-We believe the future of education is games. Not games as a reward for learning—games as the medium for learning itself.
+We believe the future of education is games. Not games as a reward for learning-games as the medium for learning itself.
 
 #EdTech #GameDev #Learning #Education
 ```
@@ -173,7 +173,7 @@ Hi everyone!
 
 Today we're launching the biggest update to JVDesignStudio ever.
 
-We've built a complete ecosystem where learning and gaming aren't separate—they're the same thing.
+We've built a complete ecosystem where learning and gaming aren't separate-they're the same thing.
 
 Here's what we added:
 
@@ -203,7 +203,7 @@ Start here: https://jvdesignstudio.co.uk
 
 This is what we believe education should be: playful, progressive, and personally rewarding.
 
-—JV
+-JV
 ```
 
 ---
@@ -311,19 +311,19 @@ It's not just an update. It's a completely new way to learn game development.
 
 HERE'S WHAT'S NEW:
 
-📚 **INTERACTIVE QUESTS** — Workshops unlock games. Games feed quests. 
+📚 **INTERACTIVE QUESTS** , Workshops unlock games. Games feed quests. 
 Quests unlock cosmetics. It's one connected journey.
 
-🎮 **LEARNING TRACKS** — 5 curated paths from Scratch basics to Godot 
+🎮 **LEARNING TRACKS** , 5 curated paths from Scratch basics to Godot 
 game dev. Learn by building actual games.
 
-🏆 **GLOBAL LEADERBOARDS** — Track your rank. See where you stand. 
+🏆 **GLOBAL LEADERBOARDS** , Track your rank. See where you stand. 
 Compete with players worldwide on XP, achievements, and daily streaks.
 
-📊 **PROGRESS DASHBOARD** — Everything you've done in one place. 
+📊 **PROGRESS DASHBOARD** , Everything you've done in one place. 
 Workshops completed. Cosmetics unlocked. Achievements earned.
 
-✨ **COSMETIC REWARDS** — Unlock exclusive skins and outfits. 
+✨ **COSMETIC REWARDS** , Unlock exclusive skins and outfits. 
 Make your progress visible.
 
 START HERE:

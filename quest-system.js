@@ -558,7 +558,7 @@ class QuestSystem {
       case 'category-diversity':
         // Real category data only exists for the 3 workshop series that
         // actually call markWorkshopCompleted() with quest-system-known
-        // ids today (Scratch, Godot/GML, MUGEN) — see WORKSHOP_CATEGORIES
+        // ids today (Scratch, Godot/GML, MUGEN) , see WORKSHOP_CATEGORIES
         // below. requirement.minCategories should be sized to that reality.
         const completedCats = new Set(
           playerProfile.state.completedWorkshops

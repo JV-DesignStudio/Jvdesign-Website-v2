@@ -7,7 +7,7 @@ class PlayerProfile {
     this.storageKey = 'jvds_profile';
     // Read the RAW stored profile before defaults are merged: a legacy
     // profile has no xpSchema field, but createDefaultProfile() supplies
-    // xpSchema:2 during the merge — which would silently skip migration.
+    // xpSchema:2 during the merge , which would silently skip migration.
     var storedRaw = null;
     try { storedRaw = JSON.parse(localStorage.getItem(this.storageKey) || 'null'); } catch (e) { storedRaw = null; }
     var isLegacy = !!storedRaw && storedRaw.xpSchema === undefined;
@@ -21,9 +21,9 @@ class PlayerProfile {
      Three XP systems used to exist side-by-side with three level curves
      (profile 1000/lvl, per-game 1000/lvl, workshop dashboard 100/lvl) and
      nothing fed each other. Now the profile is the single ledger:
-       workshopXP — re-scanned from per-workshop progress keys
-       gameXP     — re-scanned from jvds_game_* state keys
-       bonusXP    — challenges, tools, and anything awarded via addXP()
+       workshopXP , re-scanned from per-workshop progress keys
+       gameXP     , re-scanned from jvds_game_* state keys
+       bonusXP    , challenges, tools, and anything awarded via addXP()
      One curve: 100 XP per level. */
 
   migrateXP(isLegacy) {
@@ -145,7 +145,7 @@ class PlayerProfile {
     var oldLevel = this.state.level;
     amount = Math.max(0, Math.floor(amount) || 0);
     // Direct awards (challenges, tools, quest board) land in bonusXP.
-    // Workshop XP arrives via progress keys and game XP via jvds_game_* —
+    // Workshop XP arrives via progress keys and game XP via jvds_game_* -
     // both are re-scanned, so awarding them here would double-count.
     this.state.bonusXP += amount;
     this.refreshXP();
@@ -185,7 +185,7 @@ class PlayerProfile {
 
   /* ─── WORKSHOPS ───
      Completion is recorded for quest/achievement purposes. XP is NOT added
-     here — workshop XP is owned by the per-workshop progress keys and picked
+     here , workshop XP is owned by the per-workshop progress keys and picked
      up by scanComponentXP, so awarding a flat bonus would double-count. */
   markWorkshopCompleted(workshopId) {
     if (!this.state.completedWorkshops.includes(workshopId)) {
@@ -295,7 +295,7 @@ class PlayerProfile {
     return d;
   }
 
-  // Week number: whole days since epoch / 7 — no timezone math, and every
+  // Week number: whole days since epoch / 7 , no timezone math, and every
   // device computes the identical bucket, like the daily rotation.
   getWeekNumber() {
     const n = new Date();

@@ -1,4 +1,4 @@
-// JVDesignStudio Service Worker v19 — isolated caches and exact asset versions.
+// JVDesignStudio Service Worker v19 , isolated caches and exact asset versions.
 const CACHE='jvds-v19';
 const CORE=[
   '/',

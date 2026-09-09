@@ -34,7 +34,7 @@ What changed? Dozens of small touches that add up to a noticeably smoother, more
 
 Open a tool and feel the difference. Your game ideas deserve better feedback.
 
-👉 Start building now — link in bio!
+👉 Start building now , link in bio!
 
 #GameDev #UX #IndieGameDev #JVDesignStudio #FreeTools #UpdatedTools #GameMaker #PolishedUI
 ```
@@ -73,7 +73,7 @@ A 200ms animation. A pulse effect. Clear feedback that you did something right.
 
 These small touches are what separate "works" from "feels good."
 
-Try it now — open the Arcade Game Maker and play with blueprints. Notice how responsive everything feels. 🎯
+Try it now , open the Arcade Game Maker and play with blueprints. Notice how responsive everything feels. 🎯
 
 #GameMaker #PolishedUI #UXDesign #JVDesignStudio #GameDev #Craftsmanship
 ```
@@ -114,7 +114,7 @@ Each path has clear steps, beautiful animations, and a payoff: YOUR GAME.
 
 Pick your level. Follow the path. Create something amazing. ✨
 
-👉 Explore all three paths — link in bio!
+👉 Explore all three paths , link in bio!
 
 #GameDevelopment #Learning #SkillProgression #JVDesignStudio #BeginnerFriendly #IndieGame
 ```
@@ -153,7 +153,7 @@ The Dev-Tools hub is now smarter about helping you discover what you need:
 
 Discovery shouldn't be confusing. It should be smooth.
 
-Try the new search and filters right now — link in bio!
+Try the new search and filters right now , link in bio!
 
 #Tools #Productivity #GameDev #JVDesignStudio #Discovery #UX
 ```

@@ -11,8 +11,8 @@ const ROOT = path.resolve(__dirname, '..');
 // Double-encoded character replacements (UTF-8 bytes interpreted as Latin-1)
 const FIXES = [
   // Em dash, en dash, quotes
-  ['—', '\u2014'],   // em dash
-  ['—', '\u2013'],   // en dash (some variants)
+  ['-', '\u2014'],   // em dash
+  ['-', '\u2013'],   // en dash (some variants)
   ['‘', '\u2018'],   // left single quote
   ['’', '\u2019'],   // right single quote
   ['“', '\u201C'],   // left double quote
