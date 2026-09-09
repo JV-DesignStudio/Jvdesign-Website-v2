@@ -98,8 +98,10 @@
 
   let powerFood=null;
   function placeFood(){
-    do{food={x:Math.floor(Math.random()*GRID),y:Math.floor(Math.random()*GRID)};}
-    while(snake.some(s=>s.x===food.x&&s.y===food.y));
+    const free=[];
+    for(let y=0;y<GRID;y++)for(let x=0;x<GRID;x++)if(!snake.some(s=>s.x===x&&s.y===y))free.push({x,y});
+    if(!free.length){end();return;}
+    food=free[Math.floor(Math.random()*free.length)];
     apples++;
     clearTimeout(goldenTimer);
     golden=apples>1&&apples%5===0;           // every 5th apple is golden
@@ -159,7 +161,13 @@ function activatePower(ptype){
     }
     dir=nextDir;
     const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
-    if(head.x<0||head.y<0||head.x>=GRID||head.y>=GRID||snake.some(s=>s.x===head.x&&s.y===head.y)){if(powers.shield){powers.shield=false;document.getElementById('powerPill').className='power-pill';return;}return end();}
+    const eating=head.x===food.x&&head.y===food.y;
+    // The tail vacates its cell on a non-growing step, so it is safe to enter.
+    const body=eating?snake:snake.slice(0,-1);
+    if(head.x<0||head.y<0||head.x>=GRID||head.y>=GRID||body.some(s=>s.x===head.x&&s.y===head.y)){
+      if(powers.shield){powers.shield=false;document.getElementById('powerPill').className='power-pill';tickT=setTimeout(step,speed);return;}
+      return end();
+    }
     snake.unshift(head);
     if(powerFood && head.x===powerFood.x && head.y===powerFood.y){
       activatePower(powerFood.ptype);
@@ -181,9 +189,8 @@ function activatePower(ptype){
     }
     else snake.pop();
     if(comboTimer>0){comboTimer-=speed/1000;if(comboTimer<=0){combo=0;document.getElementById('comboPill').className='combo-pill';}}
-    if(powers.slowmo) speed=Math.max(speed,120);
     draw();
-    tickT=setTimeout(step,speed);
+    if(running) tickT=setTimeout(step,powers.slowmo?Math.max(speed,120):speed);
   }
 
   function draw(){

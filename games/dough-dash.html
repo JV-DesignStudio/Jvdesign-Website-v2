@@ -70,6 +70,9 @@
 </div>
 
 <script>
+let doughGeneration = 0;
+function doughLater(fn, ms) { const generation=doughGeneration; return setTimeout(() => { if(generation===doughGeneration) fn(); }, ms); }
+
 const gameSystem = new GameSystem('dough-dash', 'Dough Dash', 'squirt');
 const audioEffects = new AudioEffects(0.6);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
@@ -148,7 +151,7 @@ function floatTextAt(x, y, txt, big) {
   div.style.left = x + 'px';
   div.style.top = y + 'px';
   document.getElementById('wrapper').appendChild(div);
-  setTimeout(() => div.remove(), 900);
+  doughLater(() => div.remove(), 900);
 }
 
 /* ── low-moves drama ── */
@@ -174,7 +177,7 @@ function clearHint() {
 }
 function scheduleHint() {
   clearHint();
-  hintTimer = setTimeout(() => {
+  hintTimer = doughLater(() => {
     if (state !== 'playing' || busy) return;
     const pair = findHintPair();
     if (!pair) return;
@@ -272,9 +275,9 @@ function doSwap(a, b) {
   const board0 = document.getElementById('board');
   [a, b].forEach(pt => {
     const el = board0.children[pt.r * COLS + pt.c];
-    if (el) { el.classList.add('swapping'); setTimeout(() => el.classList.remove('swapping'), 170); }
+    if (el) { el.classList.add('swapping'); doughLater(() => el.classList.remove('swapping'), 170); }
   });
-  setTimeout(() => {
+  doughLater(() => {
     if (resolveMatches(1)) {
       moves++;
       updateHud();
@@ -288,7 +291,7 @@ function doSwap(a, b) {
         const btn = board.children[p.r * COLS + p.c];
         if (btn) btn.classList.add('bad');
       });
-      setTimeout(() => { busy = false; renderBoard(); }, 350);
+      doughLater(() => { busy = false; renderBoard(); }, 350);
     }
   }, 170);
 }
@@ -358,7 +361,7 @@ function resolveMatches(chain) {
     const cd = document.getElementById('comboDisplay');
     cd.textContent = '×' + mult + ' COMBO!';
     cd.classList.add('show');
-    setTimeout(() => cd.classList.remove('show'), 1500);
+    doughLater(() => cd.classList.remove('show'), 1500);
   }
   if (chain >= 2) {
     floatText('CHAIN ×' + chain + '  +' + pts, chain >= 3);
@@ -370,7 +373,7 @@ function resolveMatches(chain) {
   }
   updateHud();
 
-  setTimeout(() => {
+  doughLater(() => {
     toRemove.forEach(k => {
       const [r, c] = k.split(',').map(Number);
       grid[r][c] = null;
@@ -447,6 +450,8 @@ function cascade() {
 }
 
 function startGame() {
+  gameSystem.beginRun();
+  doughGeneration++;
   document.getElementById('startModal').classList.remove('show');
   document.getElementById('endModal').classList.remove('show');
   lastMovesLeft = 999;

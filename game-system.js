@@ -104,6 +104,13 @@ class GameSystem {
     this.saveState();
   }
 
+  // Reset the current run without erasing lifetime progress or personal bests.
+  beginRun() {
+    this.state.score = 0;
+    this._runStart = Date.now();
+    this._lastRecordAt = 0;
+  }
+
   /* ── SCORE & PROGRESSION ── */
   addScore(points) {
     this.state.score += points;
@@ -678,6 +685,7 @@ class GameUI {
      visibilitychange→hidden and shows a standard full-screen "tap to resume"
      overlay so there is always an explicit way back in. */
   static autoPause(handlers) {
+    if (GameUI._autoPauseController) GameUI._autoPauseController.destroy();
     let overlay = null;
     let paused = false;
     function showResume() {
@@ -686,26 +694,35 @@ class GameUI {
       overlay.className = 'gs-resume';
       overlay.setAttribute('role', 'button');
       overlay.setAttribute('aria-label', 'Resume game');
+      overlay.tabIndex = 0;
       overlay.innerHTML = '<div class="gs-resume-card"><b>⏸ Paused</b><span>Tap anywhere to resume</span></div>';
       overlay.addEventListener('click', resume);
+      overlay.addEventListener('keydown', e => {
+        if (['Enter', ' ', 'Escape'].includes(e.key)) { e.preventDefault(); e.stopPropagation(); resume(); }
+      });
       document.body.appendChild(overlay);
     }
     function pause() {
+      if (paused) return true;
       let hid = false;
       try { hid = typeof handlers.pause === 'function' ? handlers.pause() : true; } catch (e) {}
       if (hid !== false) { paused = true; showResume(); }
+      return paused;
     }
     function resume() {
+      if (!paused) return;
       if (overlay) { overlay.remove(); overlay = null; }
       try { if (typeof handlers.resume === 'function') handlers.resume(); } catch (e) {}
       paused = false;
     }
-    const controller = { pause, resume, toggle: () => paused ? resume() : pause() };
+    function onVisibility() { if (document.visibilityState === 'hidden') pause(); }
+    const controller = { pause, resume, toggle: () => paused ? resume() : pause(),
+      get paused() { return paused; },
+      destroy: () => { document.removeEventListener('visibilitychange', onVisibility); if (overlay) overlay.remove(); overlay = null; paused = false; }
+    };
     GameUI._autoPauseController = controller;
     if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', function () {
-        if (document.visibilityState === 'hidden') pause();
-      });
+      document.addEventListener('visibilitychange', onVisibility);
       if (!GameUI._autoPauseEventBound) {
         document.addEventListener('gs-toggle-pause', function () {
           if (GameUI._autoPauseController) {
@@ -1567,7 +1584,9 @@ if (typeof document !== 'undefined') {
     if(start) legacy.start=function(){ start.click(); };
     if(sound) legacy.sound=function(){ sound.click(); };
     if(help) legacy.help=function(){ help.click(); };
-    if(game) game.registerArcadeActions(legacy);
+    if(game) Object.keys(legacy).forEach(function(name){
+      if(!game.arcadeActions[name]) game.registerArcadeActions({[name]:legacy[name]});
+    });
     var root=document.createElement('div');
     root.id='arcade-menu'; root.className='arcade-menu';
     root.innerHTML='<a class="arcade-menu-brand" href="../pages/games.html">JVDS <span>ARCADE</span></a>'+

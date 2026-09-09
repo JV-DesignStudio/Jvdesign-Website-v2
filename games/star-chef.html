@@ -171,10 +171,10 @@ function renderKitchen(){
 }
 
 /* ══ GAME LOOP ══ */
-let lastFrame=0;
+let lastFrame=0, chefFrame=0;
 function loop(ts){
   if(state!=='playing') return;
-  requestAnimationFrame(loop);
+  chefFrame=requestAnimationFrame(loop);
   const dt=ts-lastFrame; lastFrame=ts;
   if(dt>100) return;
 
@@ -328,6 +328,8 @@ function showWaveBanner(title,sub){
 
 /* ══ START / END ══ */
 function startGame(){
+  gameSystem.beginRun();
+  cancelAnimationFrame(chefFrame);
   document.getElementById('startModal').classList.remove('show');
   document.getElementById('endModal').classList.remove('show');
   state='playing';
@@ -338,7 +340,7 @@ function startGame(){
   customers.push(makeCustomer());
   startCooking(customers[0]);
   showWaveBanner('🍳 Shift Start!','Serve as many as you can!');
-  requestAnimationFrame(loop);
+  chefFrame=requestAnimationFrame(loop);
 }
 
 function endShift(){
@@ -349,7 +351,7 @@ function endShift(){
   gameSystem.unlockAchievement('firstPlay');
   if(stars>=3) gameSystem.unlockAchievement('5star');
   if(bestStreak>=5) gameSystem.unlockAchievement('streak5');
-  gameSystem.recordGamePlay(Math.round((Date.now()-startTime)/1000));
+  gameSystem.recordGamePlay(Date.now()-startTime);
   gameSystem.saveState();
 
   best=Math.max(best,money);

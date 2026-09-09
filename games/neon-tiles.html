@@ -470,12 +470,16 @@ function musicStop() {
 }
 // hide music from the page while it's backgrounded
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') musicStop();
+  if (document.visibilityState === 'hidden') { musicStop(); if (S.running && !S.paused) togglePause(); }
   else if (S.running && !S.paused) musicStart();
 });
 
 /* ═══════════════ FLOW ═══════════════ */
+let countdownTimer = null;
 function startGame() {
+  gameSystem.beginRun();
+  cancelAnimationFrame(rafId);
+  clearTimeout(countdownTimer);
   document.getElementById('modal').classList.remove('show');
   S.running = false; S.paused = false; S.score = 0; S.combo = 0; S.bestCombo = 0; S.lives = 3;
   document.getElementById('pauseOverlay').hidden = true;
@@ -510,7 +514,7 @@ function countdown(n, done) {
     num.style.animation = 'none'; void num.offsetWidth; num.style.animation = 'cd 1s ease-out';
     audioEffects.playTap(400 + (n - cur) * 100);
     cur--;
-    setTimeout(tick, 500);
+    countdownTimer = setTimeout(tick, 500);
   };
   tick();
 }

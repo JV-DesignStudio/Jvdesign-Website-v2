@@ -423,6 +423,7 @@
   const pPool=[], fPool=[];
   function mkPEmoji(){const el=document.createElement('div');el.style.cssText='position:fixed;pointer-events:none;font-size:1.3rem;z-index:100;transform:translate(-50%,-50%)';return el;}
   function mkFText(){const el=document.createElement('div');el.style.cssText='position:fixed;pointer-events:none;font-weight:800;font-size:1.1rem;z-index:100;transform:translate(-50%,-50%);font-family:Fredoka,cursive';return el;}
+  let critterFrame=0;
   function updateFX(){
     for(let i=particles.length-1;i>=0;i--){
       const p=particles[i];
@@ -440,23 +441,14 @@
       f.el.textContent=f.text;
       f.el.style.cssText=`position:fixed;left:${f.x}px;top:${f.y}px;pointer-events:none;font-weight:800;color:${f.color};font-size:1.1rem;opacity:${f.life};z-index:100;transform:translate(-50%,-50%);font-family:'Fredoka',cursive`;
     }
-    if(running)requestAnimationFrame(updateFX);
+    if(running)critterFrame=requestAnimationFrame(updateFX);
   }
 
   // ── Start / End ──
     let pauseOverlay=null;
-  function togglePause(){
-    if(!running)return;
-    running=false;clearTimeout(popTimer);clearTimeout(tickTimer);stopAmbient();clearInterval(comboTimerInterval);
-    document.getElementById('pauseBtn').textContent='▶';
-    if(!pauseOverlay){
-      pauseOverlay=document.createElement('div');
-      pauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)';
-      pauseOverlay.innerHTML='<div style="text-align:center;color:white;font-family:Fredoka,cursive"><div style="font-size:2rem;margin-bottom:12px">⏸ PAUSED</div><button onclick="togglePause()" style="font-family:Fredoka,cursive;font-size:1.1rem;padding:10px 28px;border:none;border-radius:12px;background:#4e7d80;color:white;cursor:pointer">▶ RESUME</button></div>';
-      document.body.appendChild(pauseOverlay);
-    }
-  }
+  function togglePause(){ if(GameUI._autoPauseController) GameUI._autoPauseController.toggle(); }
   function startGame(){
+    clearTimeout(popTimer);clearTimeout(tickTimer);cancelAnimationFrame(critterFrame);
     initAudio();
     score=0;lives=3+(upgrades.extralife||0);wave=1;timeLeft=WAVE_TIME+(upgrades.slowtime||0)*3;running=true;
     streak=0;bestStreak=0;totalWhacked=0;totalMissed=0;totalSpawned=0;feverMode=false;clearTimeout(feverTimer);document.body.style.background='';
@@ -466,11 +458,12 @@
     cells.forEach(c=>{c.active=false;c.c.classList.remove('up','bonk','hit');});
     startScreen.classList.add('hidden');endScreen.classList.add('hidden');
     showWaveBanner('Wave 1');
-    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{running=false;clearTimeout(popTimer);clearTimeout(tickTimer);},resume:()=>{if(!running){running=true;popTick();tick();}}});
+    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running)return false;running=false;clearTimeout(popTimer);clearTimeout(tickTimer);cancelAnimationFrame(critterFrame);return true;},resume:()=>{if(!running){running=true;popOne();tickTimer=setTimeout(tick,1000);updateFX();}}});
     popOne();tickTimer=setTimeout(tick,1000);updateFX();
   }
 
   function endGame(){
+    if(GameUI._autoPauseController)GameUI._autoPauseController.destroy();
     running=false;clearTimeout(popTimer);clearTimeout(tickTimer);stopAmbient();
     cells.forEach(c=>{c.active=false;c.c.classList.remove('up');});
     particles.forEach(p=>{if(p.el){p.el.remove();pPool.push(p.el);}});floaters.forEach(f=>{if(f.el){f.el.remove();fPool.push(f.el);}});particles=[];floaters=[];

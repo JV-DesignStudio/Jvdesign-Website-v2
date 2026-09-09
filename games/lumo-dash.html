@@ -144,7 +144,7 @@
     player.run=0;player.squash=1;player.coyote=0;player.buffer=0;
     obs=[];coins=[];gems=[];pows=[];parts=[];floaters=[];
     running=true;dist=0;coinCount=0;
-    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running)return false;running=false;return true;},resume:()=>{if(!running){running=true;document.getElementById('pauseBtn').textContent='\u23F8';last=0;requestAnimationFrame(loop);}}});speed=7.2*SCALE;spawnX=W*0.9;gravity=0.95*SCALE;shake=0;groundScroll=0;
+    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running)return false;running=false;return true;},resume:()=>{if(!running){running=true;document.getElementById('pauseBtn').textContent='\u23F8';last=0;cancelAnimationFrame(lumoFrame);lumoFrame=requestAnimationFrame(loop);}}});speed=7.2*SCALE;spawnX=W*0.9;gravity=0.95*SCALE;shake=0;groundScroll=0;
     slideHeld=false;magnetT=0;rushT=0;shield=false;invT=0;combo=0;comboT=0;biome=0;biA=0;biB=0;biMix=0;
     bgFar=[];bgMid=[];
     for(let i=0;i<6;i++)bgFar.push({x:(i/6)*W*1.2,h:60+Math.random()*70});
@@ -250,9 +250,10 @@
 
   /* ---------- main loop ---------- */
   let last=0;
+  let lumoFrame=0;
   function loop(ts){
     if(!running)return;
-    requestAnimationFrame(loop);
+    cancelAnimationFrame(lumoFrame);lumoFrame=requestAnimationFrame(loop);
     if(!last)last=ts;
     let dt=(ts-last)/1000;last=ts;
     if(dt>0.05)dt=0.05;
@@ -489,7 +490,7 @@
       lumoPaused=false; running=true;
       document.getElementById('pauseBtn').textContent='\u23F8';
       if(lumoPauseOverlay) lumoPauseOverlay.style.display='none';
-      last=0; requestAnimationFrame(loop);
+      last=0; cancelAnimationFrame(lumoFrame);lumoFrame=requestAnimationFrame(loop);
       return;
     }
     if(!running) return;
@@ -503,7 +504,7 @@
       lumoPauseOverlay.querySelector('#resumeBtn').addEventListener('click', toggleLumoPause);
     } else lumoPauseOverlay.style.display='flex';
   }
-  function startGame(){if(lumoPauseOverlay) lumoPauseOverlay.style.display='none'; lumoPaused=false; reset();startAmbientMusic();startScreen.classList.add('hidden');endScreen.classList.add('hidden');last=0;requestAnimationFrame(loop);}
+  function startGame(){ cancelAnimationFrame(lumoFrame);if(lumoPauseOverlay) lumoPauseOverlay.style.display='none'; lumoPaused=false; reset();startAmbientMusic();startScreen.classList.add('hidden');endScreen.classList.add('hidden');last=0;cancelAnimationFrame(lumoFrame);lumoFrame=requestAnimationFrame(loop);}
   function end(o){
     running=false;sCrash();shake=14;stopAmbientMusic();
     debris(player.x+player.w/2,player.y+player.h/2);

@@ -157,12 +157,18 @@ function load() {
     if (!raw) { state = freshState(); return false; }
     const s = JSON.parse(raw);
     state = Object.assign(freshState(), s);
-    // ensure every generator key exists (in case of new content)
-    GENERATORS.forEach(g => { if (state.gen[g.id] == null) state.gen[g.id] = 0; });
+    if (!state.gen || typeof state.gen !== 'object' || Array.isArray(state.gen)) state.gen = {};
+    GENERATORS.forEach(g => { state.gen[g.id] = Number.isFinite(state.gen[g.id]) ? Math.max(0, Math.floor(state.gen[g.id])) : 0; });
+    for (const key of ['dough','totalEarned','stars','totalTaps','goldenCaught','bestSessionEarn','rushCompleted']) {
+      if (!Number.isFinite(state[key]) || state[key] < 0) state[key] = 0;
+    }
+    if (!Array.isArray(state.upgrades)) state.upgrades = [];
+    if (!Array.isArray(state.goals)) state.goals = [];
+    if (!Number.isFinite(state.lastSave)) state.lastSave = Date.now();
     return true;
   } catch(e) { state = freshState(); return false; }
 }
-function save() { state.lastSave = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+function save() { state.lastSave = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) { /* Keep the bakery playable when storage is full. */ } }
 
 /* ═══════════════ ECONOMY ═══════════════ */
 function prestigeMult() { return 1 + state.stars * 0.02; }

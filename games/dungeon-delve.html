@@ -250,7 +250,7 @@ let currentLoot = null;
 let combatLog = [];
 let selectedClass = 0;
 let toastTimer = null;
-let moveLock = false;
+let moveLock = false, combatBusy = false;
 
 // ══════════════════════════════════════════════════════════════════
 // HELPERS
@@ -522,6 +522,7 @@ function renderHUD() {
 // GAME START
 // ══════════════════════════════════════════════════════════════════
 function startGame(heroClass) {
+  combatBusy = false; moveLock = false; currentEnemy = null;
   player = {
     name:heroClass.name, className:heroClass.name, emoji:heroClass.emoji, classColor:heroClass.color,
     hp:heroClass.hp, maxHp:heroClass.hp, atk:heroClass.atk, def:heroClass.def, speed:heroClass.speed,
@@ -674,6 +675,7 @@ function tickStatus() {
 // COMBAT
 // ══════════════════════════════════════════════════════════════════
 function startCombat(monster) {
+  combatBusy = false;
   currentEnemy = {...monster};
   combatLog = ['A wild '+monster.name+' appears!'];
   showScreen('combat');
@@ -699,10 +701,12 @@ function renderCombat() {
 
   const abilBtn = $('btn-ability');
   abilBtn.textContent = '✨ '+player.abilityName+(player.abilityCooldown>0?' ('+player.abilityCooldown+')':'');
-  abilBtn.disabled = player.abilityCooldown > 0;
+  abilBtn.disabled = combatBusy || player.hp<=0 || player.abilityCooldown > 0;
+  $('btn-attack').disabled = combatBusy || player.hp<=0;
+  $('btn-flee').disabled = combatBusy || player.hp<=0;
 
   $('btn-potion').textContent = '🧪 Potion ('+player.potions+')';
-  $('btn-potion').disabled = player.potions <= 0;
+  $('btn-potion').disabled = combatBusy || player.hp<=0 || player.potions <= 0;
 }
 
 function levelUp() {
@@ -719,6 +723,8 @@ function levelUp() {
 }
 
 function enemyTurn() {
+  if(!currentEnemy || player.hp<=0)return;
+  combatBusy=false;
   const eDmg = Math.max(1, currentEnemy.atk - player.def + rand(-2,2));
   const crit = Math.random()<0.1;
   const total = crit ? eDmg*2 : eDmg;
@@ -784,6 +790,8 @@ function enemyDefeated() {
 }
 
 function combatAttack() {
+  if(combatBusy || !currentEnemy || player.hp<=0)return;
+  combatBusy=true;
   // Dodge check
   const dodgeChance = Math.min(0.25, (currentEnemy.spd || 3) * 0.03);
   if (Math.random() < dodgeChance) {
@@ -808,7 +816,8 @@ function combatAttack() {
 }
 
 function combatAbility() {
-  if (player.abilityCooldown > 0) return;
+  if (combatBusy || !currentEnemy || player.hp<=0 || player.abilityCooldown > 0) return;
+  combatBusy=true;
   let dmg=0, msg='';
   if (player.className==='Knight') { dmg=Math.max(1,player.atk-currentEnemy.def+5); msg='Shield Bash! '+dmg+' damage and stunned!'; player.abilityCooldown=2; }
   else if (player.className==='Rogue') { dmg=Math.max(1,player.atk*2-currentEnemy.def); msg='Backstab! '+dmg+' damage!'; player.abilityCooldown=2; }
@@ -822,12 +831,13 @@ function combatAbility() {
   flashCrit();
   if (currentEnemy.hp<=0) { currentEnemy.hp=0; renderCombat(); setTimeout(enemyDefeated, 250); return; }
   renderCombat();
-  if (player.className==='Knight') { combatLog.push(currentEnemy.name+' is stunned!'); renderCombat(); return; }
+  if (player.className==='Knight') { combatBusy=false; combatLog.push(currentEnemy.name+' is stunned!'); renderCombat(); return; }
   setTimeout(enemyTurn, 280);
 }
 
 function combatHeal() {
-  if (player.potions<=0) return;
+  if (combatBusy || !currentEnemy || player.hp<=0 || player.potions<=0) return;
+  combatBusy=true;
   player.potions--;
   player.hp = Math.min(player.maxHp, player.hp+30);
   combatLog.push('You drink a potion and heal 30 HP!');
@@ -838,6 +848,8 @@ function combatHeal() {
 }
 
 function combatFlee() {
+  if(combatBusy || !currentEnemy || player.hp<=0)return;
+  combatBusy=true;
   if (Math.random() < 0.5+player.speed*0.05) {
     combatLog.push('You escaped!');
     currentEnemy = null;
