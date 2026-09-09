@@ -3251,19 +3251,6 @@ window.JVDS_CONTENT = {
       "url": "/tools/pixel-studio.html"
     },
     {
-      "id": "easy-pixel-art",
-      "title": "Easy Pixel Art",
-      "desc": "Quick 8×8-32×32 starter with 16 colours and big pixels - now also Simple mode inside Pixel Studio. No account.",
-      "category": "General",
-      "tags": [
-        "Beginner",
-        "Pixel Art",
-        "Easy"
-      ],
-      "comingSoon": false,
-      "url": "/tools/easy-pixel-art.html"
-    },
-    {
       "id": "sprite-animator",
       "title": "Sprite Animator",
       "desc": "Upload a spritesheet, choose frames, preview timing and export packs - also available as Animate + sheet import in Pixel Studio.",
@@ -3305,20 +3292,20 @@ window.JVDS_CONTENT = {
     {
       "id": "sound-studio",
       "title": "Audio Studio",
-      "desc": "Compose music, create chiptune sounds and generate game-ready sound effects in one friendly studio.",
+      "desc": "Unified - compose loops, SFX, chiptune & drums in one studio. Sequencer, effects, WAV/MP3 export + Game Maker handoff. No installs.",
       "category": "General",
       "tags": [
         "Music",
-        "Sound FX",
-        "WAV"
+        "SFX",
+        "Drums"
       ],
       "comingSoon": false,
       "url": "/tools/sound-studio.html"
     },
     {
-      "id": "drum-pad",
+      "id": "sound-studio",
       "title": "Drum Pad",
-      "desc": "Tap beats, switch kits, use keyboard shortcuts and record loops for quick rhythm ideas.",
+      "desc": "Quick drum machine - now also inside Audio Studio (Drum kits). Tap beats and record loops.",
       "category": "General",
       "tags": [
         "Beats",
@@ -3326,7 +3313,7 @@ window.JVDS_CONTENT = {
         "Loops"
       ],
       "comingSoon": false,
-      "url": "/tools/drum-pad.html"
+      "url": "/tools/sound-studio.html"
     },
     {
       "id": "buildlab",
@@ -3819,7 +3806,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-09T13:54:49.235Z",
+    "generated": "2026-09-09T14:00:23.398Z",
     "workshops": 182,
     "games": 32,
     "tools": 18,

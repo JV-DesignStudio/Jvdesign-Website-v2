@@ -16,14 +16,13 @@ html = html
 const tools = [
   ['Asset Pipeline', '🎨', [
     ['Pixel Studio', 'Unified pixel art studio — Simple 8×8-32×32 for kids, plus character templates (humanoid/creature/chibi/top-down), layers, frames, onion skin, spritesheet & GIF export. One studio, no installs.', '../tools/pixel-studio.html', '../PixelStudioCover.webp', ['Pixel Art','Characters','Animation','Easy'], ['PNG','GIF','Spritesheet','JSON']],
-    ['Easy Pixel Art', 'Quick 8×8-32×32 starter with 16 colours and big pixels — now also Simple mode inside Pixel Studio. No account.', '../tools/easy-pixel-art.html', '../PixelStudioCover.webp', ['Beginner', 'Pixel Art', 'Easy'], ['PNG','Share','8×8','16×16']],
     ['Sprite Animator', 'Upload a spritesheet, choose frames, preview timing and export packs — also available as Animate + sheet import in Pixel Studio.', '../tools/sprite-animator.html', null, ['Spritesheet', 'Preview', 'JSON'], ['GIF','PNG','JSON','ZIP']],
     ['Bitmap Font Maker', 'Draw pixel fonts character by character, preview text and export spritesheets, atlases or BMFont XML.', '../tools/bitmap-font-maker.html', null, ['Fonts', 'Atlas', 'BMFont'], ['PNG','JSON','BMFont','ZIP']],
     ['Trading Card Designer', 'Create character cards with templates, rarities, stats, uploaded art and PNG export.', '../tools/trading-card-designer.html', '../CardMakerCoverImage.webp', ['Cards', 'Stats', 'PNG'], ['PNG','Print','JSON']],
   ]],
   ['Audio Pipeline', '🎵', [
-    ['Audio Studio', 'Compose music, create chiptune sounds and generate game-ready sound effects in one friendly studio.', '../tools/sound-studio.html', '../SoundStudioCover.webp', ['Music', 'Sound FX', 'WAV'], ['WAV','MP3','Loop']],
-    ['Drum Pad', 'Tap beats, switch kits, use keyboard shortcuts and record loops for quick rhythm ideas.', '../tools/drum-pad.html', '../DrumPadDevToolCoverImage.webp', ['Beats', 'Kits', 'Loops'], ['WAV','Loop','MIDI']]
+    ['Audio Studio', 'Unified — compose loops, SFX, chiptune & drums in one studio. Sequencer, effects, WAV/MP3 export + Game Maker handoff. No installs.', '../tools/sound-studio.html', '../SoundStudioCover.webp', ['Music', 'SFX', 'Drums'], ['WAV','MP3','Loop']],
+    ['Drum Pad', 'Quick drum machine — now also inside Audio Studio (Drum kits). Tap beats and record loops.', '../tools/drum-pad.html', '../DrumPadDevToolCoverImage.webp', ['Beats', 'Kits', 'Loops'], ['WAV','Loop','MIDI']]
   ]],
   ['Level & World Data', '🧱', [
     ['BuildLab', 'Make Roblox-style 3D block models with shapes, paint, transforms, touch support and OBJ / GLTF / RBXM export.', '../tools/buildlab.html', '../BlockBuilderCover.webp', ['3D Models', 'Roblox', 'Export'], ['OBJ','GLTF','RBXM']],

@@ -20,8 +20,8 @@ const { execFileSync } = require('child_process');
 
 const ROOT = __dirname;
 const BASE = 'https://jvdesignstudio.co.uk';
-const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue', 'scripts', 'docs', 'arcade-app', 'questlog-pwa']);
-const EXCLUDE_FILES = new Set(['games/game-template.html', 'offline.html', 'games/cozy-biscuit-clicker.pre-app.bak.html', 'tools/project-tracker.html', 'tools/dev-board.html']); // dev templates w/o robots meta + offline (noindex handled separately) + robots.txt disallowed
+const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue', 'scripts', 'docs', 'arcade-app', 'questlog-pwa', 'assets', 'Character Refrence sheets']);
+const EXCLUDE_FILES = new Set(['games/game-template.html', 'offline.html', 'games/cozy-biscuit-clicker.pre-app.bak.html', 'tools/project-tracker.html', 'tools/dev-board.html', 'privacy-policy/index.html']); // dev templates w/o robots meta + offline (noindex handled separately) + robots.txt disallowed
 const PRIORITY_MAP = {
   // Hub pages , higher crawl priority
   '/': 1.0,
