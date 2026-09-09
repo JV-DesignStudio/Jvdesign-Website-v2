@@ -63,6 +63,78 @@ const POSTS = [
 
 
 
+    {
+        id: 85,
+        date: '9 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Repair shared missing runtime scripts',
+        excerpt: 'Static and browser regression passed on 7 September; publication pending',
+        content: 'Restored weekly-challenge.js from Git history, corrected 17 reference-page tracking paths, removed app-only Sky High diagnostic script requests, replaced press email protection links with mailto links, and removed two obsolete Cloudflare script tags. validate-links.js now preserves script src attributes. Browser tests verify all 17 pages, affected games, press links, one-time weekly reward, reload and stale-week reset. App bundles remain for their own chats. Evidence: Static and browser regression passed on 7 September; publication pending'
+    },
+    {
+        id: 86,
+        date: '9 September 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Fix Bubble Pop Galaxy first-visit crash',
+        excerpt: 'Passed focused browser regression on 7 September; publication pending',
+        content: 'Startup waits for DOM readiness; tutorial startup handler runs once so Help cannot reset an active run. Mobile spacing keeps the shared controls clear of Help. Verified fresh onboarding, a scoring tap, Help preserving score/moves/bubbles, returning without onboarding, and Continue preserving a saved level and stars. Evidence: Passed focused browser regression on 7 September; publication pending'
+    },
+    {
+        id: 87,
+        date: '9 September 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Repair Defold and PICO-8 lesson answers',
+        excerpt: '12 workshops passed browser completion/reload checks on 7 September; publication pending',
+        content: 'Reviewed all 119 quizzes and 57 blanks across the 12 affected Defold/PICO-8 workshops. Corrected 109 quiz keys and six faulty blank answers; normalized three other encodings. Clarified misleading questions and related examples. Independent answer fixtures reject wrong answers, accept reviewed answers, click visible Next controls, and verify saved completion and unchanged XP after reload. Dev Log #82 prepared. Engine-level example code review remains separate. Evidence: 12 workshops passed browser completion/reload checks on 7 September; publication pending'
+    },
+    {
+        id: 88,
+        date: '9 September 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Repair JVDS Arcade startup and catalogue',
+        excerpt: 'Fixed and verified 9 Sep: deferred hub boot until after games-registry + weekly-challenge execute (syncGames + DOMConten',
+        content: 'Mobile web bundle shows a visible app-error banner for weekly-challenge.js and 0 / 0 games explored. Its inline hub captures JVDS_GAMES before the deferred registry executes. Evidence: Fixed and verified 9 Sep: deferred hub boot until after games-registry + weekly-challenge execute (syncGames + DOMContentLoaded), added explicit weekly-challenge.js defer tag to eliminate load-fail banner, ensured mascot assets bundled. Verified site hub 32/32 and app hub 25/25 games in Play grid, explore count no longer 0/0, no app-error overlay, score injection persists after reload and appears in hub Best Scores. Site shell and app bundle rebuilt via sync-arcade.mjs (153 files).'
+    },
+    {
+        id: 89,
+        date: '9 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Protect the legacy project tracker',
+        excerpt: 'Completed 9 Sep: verified tools/project-tracker.html is now 27-line redirect (noindex, canonical to quest-board.html, me',
+        content: 'The Studio findings board has been moved outside the public repository and its public current-branch copy deleted. This remaining item concerns the separate RPG project-tracker.html, which is still publicly retrievable with client-side-only protection. Evidence: Completed 9 Sep: verified tools/project-tracker.html is now 27-line redirect (noindex, canonical to quest-board.html, meta refresh + JS replace) - no tracker markup, no overflow, no malformed template URL. Added qb-* migration from jvds-tracker-v2/jvds-rpg-v1 in tools/quest-board.html:76 so old saves auto-migrate on first load. Verified unauthenticated fetch returns redirect card, not tracker; quest-board still public but saves are per-browser localStorage (no server PII). Private board already at F:/Website/studio-workspace/board/index.html outside public repo.'
+    },
+    {
+        id: 90,
+        date: '9 September 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Repair the project tracker document',
+        excerpt: 'Completed 9 Sep: same redirect fixes overflow/script-exposure - project-tracker no longer renders tracker DOM, so no exp',
+        content: 'A fresh mobile load of tools/project-tracker.html visibly exposes script text, overflows horizontally and requests a malformed template URL. No uncaught exception is required for this to be broken. Evidence: Completed 9 Sep: same redirect fixes overflow/script-exposure - project-tracker no longer renders tracker DOM, so no exposed script text, no horizontal overflow (verified 390px scrollWidth 390), no malformed template URL. Tested fresh load and mobile viewport via tests/project-tracker-http.js pattern.'
+    },
+    {
+        id: 91,
+        date: '9 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Fix cookie policy access and review consent behavior',
+        excerpt: 'Completed 9 Sep: cookie-consent.js:40 /privacy-policy -> /pages/privacy-policy.html (404 fix). analytics-loader.js:1 now',
+        content: 'cookie-consent.js links to /privacy-policy, which returns 404; /pages/privacy-policy.html returns 200. Contact lacks the Cookie settings control present in the shared footer. Analytics is loaded before an explicit choice. Evidence: Completed 9 Sep: cookie-consent.js:40 /privacy-policy -> /pages/privacy-policy.html (404 fix). analytics-loader.js:1 now consent-gated (default denied, hasConsent() checks cookie/localStorage, only loadGtag() on accepted, grant() triggers load, no googletagmanager request before accept). pages/contact.html:157 added Cookie settings control to footer (was missing). Created privacy-policy/index.html redirect to /pages/privacy-policy.html for clean URL. Ran build.js 169 files updated, validate-links 14747 0 broken, validate-js 355 0 dead.'
+    },
+    {
+        id: 92,
+        date: '9 September 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Make every app reproducible from version control',
+        excerpt: 'Completed 9 Sep: audited 9 apps (F:/Website/*-app). Created git repos for jvds-game-maker-app (1d618cd) and tower-defenc',
+        content: 'jvds-game-maker-app and tower-defence-app are not within a local Git repository. Several other apps have package versions that differ from Android versions; Cozy Cafe, Sky High and Tower Defence have no package scripts. Evidence: Completed 9 Sep: audited 9 apps (F:/Website/*-app). Created git repos for jvds-game-maker-app (1d618cd) and tower-defence-app (451f941). Fixed pkg mismatches: biscuit 1.0.0->2.0.9 (20), pocket 1.7.0->1.10.0 (12), jvds-game-maker 1.0.0->2.0.0 (13). Added missing pkg name/version/scripts for cozy-cafe (2.0.0), sky-high (4.0.0) and tower-defence (1.0.0). All 9 now pkg==android (allowing 1.0≡1.0.0) and have build/android scripts. Documented canonical source + release command per app in docs/APPS_REPRO.md and verified clean checkout via git status + npm ci + npm run build for sample apps.'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,

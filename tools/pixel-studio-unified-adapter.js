@@ -17,14 +17,19 @@ function setStudioMode(mode){
   // Simple mode hides layers complexity
   const left=document.getElementById('left-panel'), right=document.getElementById('right-panel');
   if(mode==='simple'){
-    // Simple keeps full toolbox visible for now (school-computer rule: big pixels via canvas size, not hidden tools)
     easyMode=true;
-    // keep canvas at 32 for compatibility with mobile smoke test; only shrink if very large
     if(cW>64 || cH>64){ setCanvasSize(32,32,true); document.getElementById('custW').value=32; document.getElementById('custH').value=32; }
-    showToast('Simple mode - start drawing, then try Character or Draw.');
+    showToast('Simple mode - 16 colours, big pixels. Open Advanced for Line/Rect/Mirror.');
   } else {
     easyMode=false;
   }
+  // Advanced disclosure: collapsed in Simple, open in Draw/Animate
+  const adv=document.getElementById('advancedTools');
+  if(adv) adv.open = (mode==='draw' || mode==='animate' || mode==='character');
+  // Palette: 16 in Simple, 32 in Draw/Animate/Character
+  document.querySelectorAll('#palette .sw, #bbPal .bb-sw').forEach((el,i)=>{
+    el.style.display = (mode==='simple' && i>=16 ? 'none' : '');
+  });
   if(mode==='character'){
     // ensure char canvas initialised
     initUnifiedCharIfNeeded();
@@ -210,15 +215,12 @@ function stampToCanvasUnified(){
     const tmp=document.createElement('canvas');tmp.width=192;tmp.height=192;
     tmp.getContext('2d').drawImage(cc,0,0);
     const src=tmp.getContext('2d').getImageData(0,0,192,192).data;
-    const rx=192/cW, ry=192/cH;
-    for(let y=0;y<cH;y++){
-      const syi=Math.min(191,(y*ry)|0)*192;
-      for(let x=0;x<cW;x++){
-        const sxi=Math.min(191,(x*rx)|0);
-        const si=(syi+sxi)*4, di=(y*cW+x)*4;
-        if(src[si+3]>10){ id.data[di]=src[si]; id.data[di+1]=src[si+1]; id.data[di+2]=src[si+2]; id.data[di+3]=255; }
-      }
-    }
+    const offX=Math.floor((cW-192)/2), offY=Math.floor((cH-192)/2);
+    for(let y=0;y<cH;y++){ for(let x=0;x<cW;x++){
+      const sx=x-offX, sy=y-offY; if(sx<0||sy<0||sx>=192||sy>=192) continue;
+      const si=(sy*192+sx)*4, di=(y*cW+x)*4; if(src[si+3]<10) continue;
+      id.data[di]=src[si]; id.data[di+1]=src[si+1]; id.data[di+2]=src[si+2]; id.data[di+3]=255;
+    }}
     renderAll();
     showToast('Stamped!');
   }
@@ -238,12 +240,65 @@ function stampAllPosesUnified(){
   }
 }
 
+// Mission + restore
+let missionProgress=0;
+function updateMissionProgress(){
+  const el=document.getElementById('missionProgress');
+  const banner=document.getElementById('mission-banner');
+  if(!banner) return;
+  let p=0;
+  try{
+    const hasDraw = frames[0] && frames[0][0] && frames[0][0].data.filter((v,i)=>i%4===3&&v>0).length>=3;
+    if(hasDraw) p=1;
+    const hasStamp = frames.some(f=>f.some(l=>l && l.data.some((v,i)=>i%4===3&&v>0)));
+    if(p>=1 && hasStamp && (frames.length>1 || (frames[0]&& frames[0].some(l=>l && l.data.filter((v,i)=>i%4===3&&v>0).length>10)))) p=2;
+    if(frames.length>=2) p=3;
+    // export is manual, but we treat as 3 until export, then 4 will be set by export wrapper
+    if(missionProgress>=4) p=4;
+  }catch(e){}
+  if(p>missionProgress) missionProgress=p;
+  if(el) el.textContent=missionProgress+'/4';
+  if(missionProgress>=4 && banner) banner.style.background='linear-gradient(135deg,rgba(16,185,129,.18),rgba(0,212,170,.12))';
+}
+function checkMissionParam(){
+  const hasMission = location.search.includes('mission=first-pixel-character') || location.hash.includes('mission');
+  const dismissed = localStorage.getItem('jvds_mission_dismiss')==='1';
+  const banner=document.getElementById('mission-banner');
+  if(!banner) return;
+  if(hasMission && !dismissed){
+    banner.style.display='flex';
+    setCanvasSize(16,16,true); document.getElementById('custW').value=16; document.getElementById('custH').value=16;
+    setStudioMode('simple');
+    // show guide toast
+    setTimeout(()=>showToast('Mission: draw 3 pixels → Character stamp → Animate → Export'),800);
+    // poll progress
+    setInterval(updateMissionProgress,800);
+  } else if(!dismissed && !hasMission){
+    // show banner collapsed? keep hidden unless mission
+    banner.style.display='none';
+  }
+}
+// Wrap export to mark mission complete
+const origExportPNG = typeof exportPNG !== 'undefined' ? exportPNG : null;
+
 // Restore mode on load + handle Easy import
 (function(){
   // hook into init
   const origInit=window.init;
   window.init= function(){
     if(origInit) origInit();
+    // wrap export for mission
+    if(typeof exportPNG==='function' && !exportPNG._wrapped){
+      const orig=exportPNG;
+      window.exportPNG=function(){ const r=orig.apply(this,arguments); missionProgress=4; updateMissionProgress(); try{ localStorage.setItem('jvds_mission_done','1')}catch(e){}; showToast('Mission complete! PNG exported ✓'); return r; };
+      window.exportPNG._wrapped=true;
+    }
+    // also wrap stamp to update progress
+    if(typeof stampToCanvas==='function' && !stampToCanvas._wrapped){
+      const origS=stampToCanvas;
+      window.stampToCanvas=function(){ const r=origS.apply(this,arguments); setTimeout(updateMissionProgress,200); if(typeof setStudioMode==='function') setTimeout(()=>setStudioMode('draw'),600); return r; };
+      window.stampToCanvas._wrapped=true;
+    }
     // init char canvas after pixel init
     setTimeout(()=>{
       initUnifiedCharIfNeeded();
@@ -251,6 +306,7 @@ function stampAllPosesUnified(){
       let m=null; try{m=localStorage.getItem('jvds_pixel_mode');}catch(e){}
       if(m && ['simple','character','draw','animate'].includes(m)) setStudioMode(m);
       else setStudioMode('simple');
+      checkMissionParam();
       // handle import from easy
       if(location.search.includes('import=easy') || location.hash.includes('import')){
         try{

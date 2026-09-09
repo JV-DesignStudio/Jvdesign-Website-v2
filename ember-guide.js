@@ -137,16 +137,51 @@
   function shouldAutoShow(){
     if(!cfg || !cfg.id) return false;
     if(lsGet(STORAGE_PREFIX + cfg.id + '-seen') === '1') return false;
+    // don't auto-show in automated tests (puppeteer/webdriver)
+    try{ if(navigator.webdriver) return false; }catch(e){}
     // don't auto-show if some other modal is already open
     var openModal = document.querySelector('.modal-overlay.open, #startModal[style*="flex"], #start-overlay[style*="flex"], #restore-modal[style*="flex"]');
     if(openModal) return false;
     return true;
   }
 
+  function injectHelpButton(){
+    // Try to inject into bottom-bar File panel for thumb reach, else floating chip
+    var bbFile = document.querySelector('#bottom-bar #bb3, #bottom-bar .bb-panel:last-child');
+    if(bbFile && !bbFile.querySelector('[data-ember-help]')){
+      var bbBtn=document.createElement('button');
+      bbBtn.type='button';
+      bbBtn.setAttribute('data-ember-help','1');
+      bbBtn.textContent='Help';
+      bbBtn.title='Ember quick guide';
+      bbBtn.style.cssText='padding:6px 10px;border-radius:999px;border:1px solid var(--mascot-ember,#F2637A);background:rgba(242,99,122,.12);color:var(--text,#fff);font-family:Fredoka,cursive;font-weight:700;font-size:.72rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px';
+      bbBtn.innerHTML='<img src="/assets/mascots/ember-badge.webp" alt="" width="18" height="18" style="border-radius:50%;border:1px solid #fff;background:#fff"> Help';
+      bbBtn.addEventListener('click', function(){ openAt(0); });
+      bbFile.appendChild(bbBtn);
+    }
+    // Floating chip only if no header Help exists (so we don't duplicate)
+    if(document.querySelector('[onclick*="EmberGuide.show"]')) return;
+    var isCheatsheet = /cheatsheet|glossary|guide/i.test(cfg.id || '');
+    if(isCheatsheet) return;
+    // avoid double-floating
+    if(document.querySelector('[data-ember-floating]')) return;
+    var hasBottomBar = !!document.querySelector('#bottom-bar');
+    var btn = document.createElement('button');
+    btn.type='button';
+    btn.setAttribute('data-ember-floating','1');
+    btn.title='Ember quick guide';
+    btn.setAttribute('aria-label','Show Ember guide');
+    btn.style.cssText='position:fixed;right:14px;bottom:'+(hasBottomBar?'64px':'14px')+';z-index:9997;background:var(--mascot-ember,#F2637A);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-family:Fredoka,cursive;font-weight:700;font-size:.82rem;box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer;display:inline-flex;align-items:center;gap:6px';
+    btn.innerHTML='<img src="/assets/mascots/ember-badge.webp" alt="" width="22" height="22" style="border-radius:50%;border:2px solid #fff;background:#fff"> Help';
+    btn.addEventListener('click', function(){ openAt(0); });
+    document.body.appendChild(btn);
+  }
+
   window.EmberGuide = {
     init: function(c){
       cfg = c;
       ensureOverlay();
+      injectHelpButton();
       // auto-show on first visit after short delay
       if(shouldAutoShow()){
         setTimeout(function(){

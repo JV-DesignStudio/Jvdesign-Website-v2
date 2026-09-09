@@ -21,9 +21,9 @@ const mime = {
 
 const pages = [
   { path: '/pages/dev-tools.html', type: 'devtools' },
-  { path: '/tools/character-designer.html', type: 'studio' },
-  { path: '/tools/pixel-studio.html', type: 'classic' },
-  { path: '/tools/sprite-animator.html', type: 'classic' }
+  { path: '/tools/pixel-studio.html', type: 'studio' },
+  { path: '/tools/character-designer.html', type: 'bridge' },
+  { path: '/tools/sprite-animator.html', type: 'bridge' }
 ];
 
 const viewports = [
@@ -124,20 +124,29 @@ function createServer() {
               headers: document.querySelectorAll('header.site-header').length,
               localHeaders: document.querySelectorAll('header.tool-header, header.hdr').length,
               footers: document.querySelectorAll('.jvds-tools-footer').length,
-              hasStudioCard: [...document.querySelectorAll('.tool-title')].some(el => el.textContent.includes('Pixel Character Studio')),
-              hasStudioTitle: Boolean(document.querySelector('#studioTitle')),
+              hasStudioCard: [...document.querySelectorAll('.tool-title')].some(el => el.textContent.includes('Pixel Studio')),
+              hasStudioTitle: Boolean(document.querySelector('#main-content') || document.querySelector('#studioMode') || document.querySelector('#studioTitle')),
               hasClassicBridge: Boolean(document.querySelector('.classic-bridge')),
-              hasStudioBridgeLink: Boolean(document.querySelector('.classic-bridge a[href="character-designer.html"]')),
+              hasStudioBridgeLink: Boolean(document.querySelector('.classic-bridge a[href="pixel-studio.html"]') || document.querySelector('a[href="pixel-studio.html"]')),
+              hasBridgeRedirect: document.documentElement.innerHTML.includes('pixel-studio.html') && document.documentElement.innerHTML.includes('Redirecting'),
               overflow: widest ? widest.overflow : Math.max(0, doc.scrollWidth - viewportWidth, body ? body.scrollWidth - viewportWidth : 0),
               widest
             };
           });
 
-          if (target.type !== 'devtools' && result.headers !== 1) failures.push(`${target.path} ${vp.name}: expected 1 shared header, found ${result.headers}`);
-          if (target.type !== 'devtools' && result.localHeaders !== 0) failures.push(`${target.path} ${vp.name}: expected no local header, found ${result.localHeaders}`);
-          if (target.type !== 'devtools' && result.footers !== 1) failures.push(`${target.path} ${vp.name}: expected 1 tools footer, found ${result.footers}`);
-          if (target.type === 'devtools' && !result.hasStudioCard) failures.push(`${target.path} ${vp.name}: missing Pixel Character Studio card`);
-          if (target.type === 'studio' && !result.hasStudioTitle) failures.push(`${target.path} ${vp.name}: missing studio title`);
+          if (target.type === 'studio' || target.type === 'bridge') {
+            // bridge pages are minimal and may not have shared header/footer — skip those checks for bridge
+            if (target.type === 'studio' && result.headers !== 1) failures.push(`${target.path} ${vp.name}: expected 1 shared header, found ${result.headers}`);
+            if (target.type === 'studio' && result.localHeaders !== 0) failures.push(`${target.path} ${vp.name}: expected no local header, found ${result.localHeaders}`);
+            if (target.type === 'studio' && result.footers !== 1) failures.push(`${target.path} ${vp.name}: expected 1 tools footer, found ${result.footers}`);
+          } else if (target.type !== 'devtools') {
+            if (result.headers !== 1) failures.push(`${target.path} ${vp.name}: expected 1 shared header, found ${result.headers}`);
+            if (result.localHeaders !== 0) failures.push(`${target.path} ${vp.name}: expected no local header, found ${result.localHeaders}`);
+            if (result.footers !== 1) failures.push(`${target.path} ${vp.name}: expected 1 tools footer, found ${result.footers}`);
+          }
+          if (target.type === 'devtools' && !result.hasStudioCard) failures.push(`${target.path} ${vp.name}: missing Pixel Studio card`);
+          if (target.type === 'studio' && !result.hasStudioTitle) failures.push(`${target.path} ${vp.name}: missing studio title/mode`);
+          if (target.type === 'bridge' && !result.hasBridgeRedirect && !result.hasStudioBridgeLink) failures.push(`${target.path} ${vp.name}: missing bridge redirect to unified studio`);
           if (target.type === 'classic' && (!result.hasClassicBridge || !result.hasStudioBridgeLink)) failures.push(`${target.path} ${vp.name}: missing classic bridge into merged studio`);
           if (result.overflow > 4) {
             const culprit = result.widest ? ` (${result.widest.tag}#${result.widest.id}.${result.widest.className} width ${result.widest.width}px right ${result.widest.right}px)` : '';

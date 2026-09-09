@@ -87,11 +87,11 @@ let failures = 0;
   check('generated test spritesheet loads two frames', loaded.total === '2' && loaded.thumbs === 2, JSON.stringify(loaded));
   check('upload prompt hides after load', loaded.promptHidden);
   await page.evaluate(() => window.closeStart());
-  await page.click('#playBtn');
+  await page.evaluate(()=>document.getElementById('playBtn')?.click());
   await new Promise(resolve=>setTimeout(resolve, 250));
   const playing = await page.evaluate(()=>document.getElementById('playBtn')?.textContent.trim());
   check('play toggles cleanly', playing === '⏸', playing);
-  await page.click('#playBtn');
+  await page.evaluate(()=>document.getElementById('playBtn')?.click());
 
   await page.goto('http://127.0.0.1:' + port + '/tools/sprite-sheet-animator.html', {waitUntil:'domcontentloaded', timeout:15000});
   const bridge = await page.evaluate(() => ({

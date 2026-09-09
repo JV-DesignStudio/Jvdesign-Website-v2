@@ -368,10 +368,8 @@ function stampToCanvas(fi){
   const tctx=tmp.getContext('2d');tctx.imageSmoothingEnabled=false;tctx.drawImage(charCanvasUnified,0,0);
   const src=tctx.getImageData(0,0,BASE,BASE).data;
   const dst=frames[frameIdx][0];
-  const rx=BASE/cW,ry=BASE/cH;
-  for(let y=0;y<cH;y++){const syi=Math.min(BASE-1,(y*ry)|0)*BASE;
-    for(let x=0;x<cW;x++){const sxi=Math.min(BASE-1,(x*rx)|0);const si=(syi+sxi)*4,di=(y*cW+x)*4;
-      dst.data[di]=src[si];dst.data[di+1]=src[si+1];dst.data[di+2]=src[si+2];dst.data[di+3]=src[si+3];}}
+  const offX=Math.floor((cW-BASE)/2), offY=Math.floor((cH-BASE)/2);
+  for(let y=0;y<cH;y++){ for(let x=0;x<cW;x++){ const sx=x-offX, sy=y-offY; if(sx<0||sy<0||sx>=BASE||sy>=BASE) continue; const si=(sy*BASE+sx)*4, di=(y*cW+x)*4; if(src[si+3]===0) continue; dst.data[di]=src[si]; dst.data[di+1]=src[si+1]; dst.data[di+2]=src[si+2]; dst.data[di+3]=src[si+3]; }}
   if(fi===undefined){if(layers.length<2) addLayer();currentLayer=1;renderLayerList();renderFrameList();renderAll();showToast('Stamped to frame '+(frameIdx+1)+'!');}
   else renderAll();
 }

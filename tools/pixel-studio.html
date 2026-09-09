@@ -143,29 +143,40 @@
 #character-strip .pose-btn.on{background:var(--accent3);color:#000;border-color:var(--accent3);}
 </style>
 
+<section id="mission-banner" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(135deg,rgba(0,212,170,.14),rgba(245,158,11,.12));border-bottom:1px solid var(--border2);flex-wrap:wrap;">
+  <span style="background:var(--accent);color:#000;font-family:'Fredoka',cursive;font-weight:800;font-size:.7rem;padding:4px 8px;border-radius:999px;">15-MIN MISSION</span>
+  <span style="font-size:.72rem;color:var(--text);flex:1;">Draw 3 pixels → <strong>Character</strong> stamp → <strong>Animate</strong> 2 frames → <strong>Export PNG</strong></span>
+  <span style="font-size:.62rem;color:var(--muted);">Progress: <strong id="missionProgress">0/4</strong></span>
+  <button onclick="document.getElementById('mission-banner').style.display='none';localStorage.setItem('jvds_mission_dismiss','1')" style="background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:999px;padding:4px 10px;font-size:.62rem;cursor:pointer;">Dismiss</button>
+</section>
 <section id="app" aria-label="Pixel Studio drawing workspace">
 
   <!-- LEFT PANEL -->
   <div id="left-panel">
     <div class="ps">
       <div class="pt">Tools</div>
-      <div class="tool-grid">
-        <div class="tb on" data-tool="pencil" onclick="setTool('pencil')"><span class="ico">✏️</span>Pencil</div>
-        <div class="tb" data-tool="eraser" onclick="setTool('eraser')"><span class="ico">🧹</span>Eraser</div>
-        <div class="tb" data-tool="fill" onclick="setTool('fill')"><span class="ico">🪣</span>Fill</div>
-        <div class="tb" data-tool="eyedrop" onclick="setTool('eyedrop')"><span class="ico">💧</span>Pick</div>
-        <div class="tb" data-tool="line" onclick="setTool('line')"><span class="ico">📏</span>Line</div>
-        <div class="tb" data-tool="rect" onclick="setTool('rect')"><span class="ico">⬜</span>Rect</div>
+      <div class="tool-grid" id="toolGridBasic">
+        <div class="tb on" data-tool="pencil" onclick="setTool('pencil')" aria-label="Pencil (P)"><span class="ico">✏️</span>Pencil</div>
+        <div class="tb" data-tool="eraser" onclick="setTool('eraser')" aria-label="Eraser (E)"><span class="ico">🧹</span>Eraser</div>
+        <div class="tb" data-tool="fill" onclick="setTool('fill')" aria-label="Fill (F)"><span class="ico">🪣</span>Fill</div>
+        <div class="tb" data-tool="eyedrop" onclick="setTool('eyedrop')" aria-label="Pick colour (G)"><span class="ico">💧</span>Pick</div>
       </div>
+      <details id="advancedTools" style="margin-top:6px;">
+        <summary style="font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;list-style:none;">Advanced ▸ Line, Rect, Mirror</summary>
+        <div class="tool-grid" style="margin-top:6px;">
+          <div class="tb" data-tool="line" onclick="setTool('line')" aria-label="Line (L)"><span class="ico">📏</span>Line</div>
+          <div class="tb" data-tool="rect" onclick="setTool('rect')" aria-label="Rect (R)"><span class="ico">⬜</span>Rect</div>
+          <button class="lb" id="mirrorBtn2" onclick="toggleMirror()" title="Mirror X (M)" aria-label="Mirror X" style="height:auto;padding:8px 0;">↔️ Mirror</button>
+        </div>
+      </details>
       <div style="margin-top:6px;">
         <div class="pt">Brush Size</div>
         <input type="range" min="1" max="16" value="1" id="brushSize" style="width:100%;accent-color:var(--accent);" oninput="brushSz=+this.value;document.getElementById('bsv').textContent=this.value+'px'">
         <div style="font-size:.55rem;color:var(--accent2);text-align:right;" id="bsv">1px</div>
       </div>
       <div class="row-btns" style="margin-top:6px;">
-        <button class="lb" onclick="undo()" title="Ctrl+Z">↩️ Undo</button>
-        <button class="lb" onclick="redo()" title="Ctrl+Y">↪️ Redo</button>
-        <button class="lb" id="mirrorBtn" onclick="toggleMirror()" title="Mirror X (M)">↔️</button>
+        <button class="lb" onclick="undo()" title="Ctrl+Z" aria-label="Undo">↩️ Undo</button>
+        <button class="lb" onclick="redo()" title="Ctrl+Y" aria-label="Redo">↪️ Redo</button>
       </div>
     </div>
     <div class="pdiv"></div>
@@ -207,15 +218,19 @@
     </div>
     <div class="pdiv"></div>
     <div class="ps">
-      <div class="pt">File</div>
+      <div class="pt">Keep - save & export</div>
+      <div style="font-size:.52rem;color:var(--muted);line-height:1.4;margin-bottom:6px;">Save stays on <strong>this device</strong>. On shared school PCs, <strong>Download PNG</strong> to keep forever.</div>
+      <button class="ab ab-s" onclick="saveProject()" title="Save project in this browser">💾 Save in this browser</button>
+      <button class="ab ab-s" onclick="loadProject()" title="Load the project saved in this browser">📂 Load saved</button>
+      <div class="pdiv" style="margin:6px 0;"></div>
+      <div class="pt" style="margin-top:6px;">Import art</div>
       <div class="ab-grid">
         <button class="ab ab-s" onclick="triggerImportPNG()" title="Import a PNG image onto the current layer">⬆️ PNG</button>
         <button class="ab ab-s" onclick="openImportSheet()" title="Import a spritesheet and split it into frames">🗂️ Sheet</button>
-        <button class="ab ab-s" onclick="loadProject()" title="Load the project saved in this browser">📂 Load</button>
-        <button class="ab ab-s" onclick="exportProjectFile()" title="Download an editable .json project file">💾 File</button>
-        <button class="ab ab-s" onclick="triggerImportProject()" title="Open a .json project file">📂 Open</button>
-        <button class="ab ab-r" onclick="confirmClear()" title="Clear the current frame">🗑️ Clear</button>
+        <button class="ab ab-s" onclick="triggerImportProject()" title="Open a .json project file">📂 Open .json</button>
+        <button class="ab ab-s" onclick="exportProjectFile()" title="Download an editable .json project file">⬇️ .json</button>
       </div>
+      <button class="ab ab-r" onclick="confirmClear()" title="Clear the current frame (cannot be undone)" style="margin-top:6px;">🗑️ Clear frame</button>
       <div class="pdiv" style="margin:6px 0;"></div>
       <button class="ab" style="background:#7c3aed;color:white;box-shadow:0 2px 0 #5b21b6;" onclick="sendToGameMaker()">🎮 Send to Game Maker</button>
       <a class="ab" href="arcade-game-maker.html" style="display:block;background:#16a34a;color:white;box-shadow:0 2px 0 #15803d;text-decoration:none;box-sizing:border-box;">← Back to Game Maker</a>
@@ -223,12 +238,15 @@
     </div>
     <!-- Always-visible primary actions: never scrolls out of reach -->
     <div id="left-sticky">
-      <button class="ab ab-p" onclick="exportPNG()" title="Download this frame as a PNG">⬇️ Export PNG</button>
+      <div style="font-size:.52rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Keep</div>
+      <button class="ab ab-p" onclick="exportPNG()" title="Download this frame as a PNG (best for shared PCs)">⬇️ Export PNG</button>
       <div class="ab-grid">
-        <button class="ab ab-g" onclick="exportSheet()" title="Download all frames as one spritesheet">🗂️ Sheet</button>
-        <button class="ab ab-s" onclick="saveProject()" title="Save into this browser">💾 Save</button>
+        <button class="ab ab-g" onclick="exportSheet()" title="Download all frames as one spritesheet + JSON">🗂️ Sheet</button>
+        <button class="ab ab-s" onclick="saveProject()" title="Save project in this browser">💾 Save</button>
         <button class="ab ab-s" onclick="copyPixelShareLink()" title="Copy a share link">🔗 Share</button>
       </div>
+      <button class="ab" style="background:#6366f1;color:white;box-shadow:0 2px 0 #4f46e5;margin-top:6px;" onclick="exportEnginePack()" title="Download spritesheet + Godot/Unity/Phaser packs as ZIP">📦 Engine Pack</button>
+      <div style="font-size:.5rem;color:var(--muted);margin-top:4px;line-height:1.3;">Save → this device · Export PNG → forever</div>
     </div>
     <input type="file" id="importPNGInput" accept="image/*" style="display:none;" onchange="handleImportPNG(this)">
     <input type="file" id="importSheetInput" accept="image/*" style="display:none;" onchange="handleImportSheet(this)">
@@ -304,8 +322,8 @@
     <div class="bb-panel on" id="bb0">
       <div id="bbTools" style="display:flex;gap:4px;"></div>
       <input type="range" min="1" max="16" value="1" id="bbBrush" style="width:60px;accent-color:var(--accent);" oninput="brushSz=+this.value">
-      <button class="z-btn" onclick="undo()">↩️</button>
-      <button class="z-btn" onclick="redo()">↪️</button>
+      <button class="z-btn" onclick="undo()">↶</button>
+      <button class="z-btn" onclick="redo()">↷</button>
       <button class="z-btn" id="bbMirror" onclick="toggleMirror()">↔️</button>
       <button class="z-btn" onclick="changeZoom(-1)">-</button>
       <button class="z-btn" onclick="changeZoom(1)">+</button>
@@ -347,21 +365,6 @@
 </footer>
 <script>window.addEventListener('load',function(){if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
 <script defer src="/cookie-consent.js"></script>
-<script defer src="/ember-guide.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  EmberGuide.init({
-    id: 'pixel-studio',
-    steps: [
-      {target: '#left-panel .tool-grid', title: 'Tools', text: 'Pencil draws, Eraser clears, Fill bucket and Pick colour. Shortcuts: P / E / F / G.'},
-      {target: '#palette', fallback: ['.pal','#palette'], title: 'Colours', text: 'Tap a swatch or use the picker. Click the squares to swap foreground / background. Right-click draws with the back colour.'},
-      {target: '#main-canvas', fallback: ['#canvas-wrap'], title: 'Canvas', text: 'Click and drag to draw. Pinch or use + / - to zoom. Onion skin shows the last frame when animating.'},
-      {target: '#right-panel .frame-scroll', fallback: ['#frameList','#right-panel'], title: 'Frames & Layers', text: 'Add frames, press Play to animate. Layers keep outlines and colours separate.'},
-      {target: '#left-sticky', title: 'Save & Export', text: 'Save keeps it in this browser. Export PNG for one frame, Sheet or GIF for all frames.'}
-    ]
-  });
-});
-</script>
 <!-- /BUILD:footer-tools -->
 
 <div id="toast"></div>
@@ -506,11 +509,11 @@ const PAL = ['#000000','#1a1a2e','#16213e','#0f3460','#533483','#e94560','#f5a62
 
 let cW=32,cH=32,zoomLevel=8,showGrid=true;
 let currentTool='pencil',fgColour='#e94560',bgColour='#000000',brushSz=1;
-let fps=8,onionSkin=false,isPlaying=false,playTimer=null;
+let fps=8,onionSkin=false,isPlaying=false,playTimer=null; window.isPlaying=false; window.fps=8;
 let recentColours=[];
 let frames=[],currentFrame=0,currentLayer=0;
 let layers=[{name:'Layer 1',visible:true}];
-let undoStack=[],redoStack=[],MAX_UNDO=30;
+let undoStack=[],redoStack=[],MAX_UNDO=20;
 let mirrorX=false,dirty=false,autosaveT=null,deferredPrompt=null;
 let isPainting=false,lineStart=null,rectStart=null;
 let mainCanvas,onionCanvas,cursorCanvas,mainCtx,onionCtx,cursorCtx;
@@ -859,7 +862,7 @@ function setupEvents(){
     if(currentTool==='pencil'||currentTool==='eraser'){
       if(e.touches&&!pendingStroke){
         // Defer the first dot: on touch, a quickly-following second finger means pinch
-        pendingStroke={x,y,col,erase,timer:setTimeout(commitPendingStroke,80)};
+        pendingStroke={x,y,col,erase,timer:setTimeout(commitPendingStroke,30)};
         return;
       }
       pushUndo(); paintPx(getID(),x,y,col,erase); renderAll(false);
@@ -1098,12 +1101,12 @@ function nextFrame(){
   renderFrameList(); renderAll();
 }
 function setFps(v){
-  fps=Math.max(1,Math.min(60,Math.round(+v)||8));
+  fps=Math.max(1,Math.min(60,Math.round(+v)||8)); window.fps=fps;
   document.getElementById('fpsInput').value=fps;
   if(isPlaying){clearInterval(playTimer);playTimer=setInterval(nextFrame,1000/fps);}
 }
 function togglePlay(){
-  isPlaying=!isPlaying;
+  isPlaying=!isPlaying; window.isPlaying=isPlaying;
   const btn=document.getElementById('playBtn');
   if(btn){btn.textContent=isPlaying?'? Stop':'? Play';btn.className='play-btn'+(isPlaying?' playing':'');}
   if(isPlaying){
@@ -1144,7 +1147,7 @@ function setTool(t){
 }
 function toggleMirror(){
   mirrorX=!mirrorX;
-  ['mirrorBtn','bbMirror'].forEach(id=>{
+  ['mirrorBtn','mirrorBtn2','bbMirror'].forEach(id=>{
     const b=document.getElementById(id);
     if(b) b.style.color=mirrorX?'var(--accent3)':'';
   });
@@ -1194,6 +1197,26 @@ function exportSheet(){
     const b=document.createElement('a');b.href=URL.createObjectURL(blob);b.download='spritesheet.json';b.click();
   }catch(e){}
   showToast('Spritesheet + JSON atlas exported');
+}
+async function exportEnginePack(){
+  if(frames.length===0){showToast("No frames");return;}
+  showToast("Building engine pack...");
+  const cols=Math.ceil(Math.sqrt(frames.length)),rows=Math.ceil(frames.length/cols);
+  const sc=Math.max(1,Math.floor(512/Math.max(cW*cols,cH*rows)));
+  const sheet=document.createElement("canvas"); sheet.width=cW*cols*sc; sheet.height=cH*rows*sc; const sctx=sheet.getContext("2d"); sctx.imageSmoothingEnabled=false;
+  const positions=[]; frames.forEach((_,fi)=>{const c=fi%cols,r=Math.floor(fi/cols); sctx.drawImage(flattenFrame(fi),c*cW*sc,r*cH*sc,cW*sc,cH*sc); positions.push({x:c*cW*sc,y:r*cH*sc});});
+  const loadJSZip=()=> window.JSZip ? Promise.resolve(window.JSZip) : new Promise((res,rej)=>{const s=document.createElement("script"); s.src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"; s.onload=()=>res(window.JSZip); s.onerror=()=>rej(new Error("JSZip")); document.head.appendChild(s);});
+  try{
+    const JSZip=await loadJSZip(); const zip=new JSZip();
+    const blobSheet=await new Promise(r=>sheet.toBlob(b=>r(b),"image/png")); zip.file("spritesheet.png", blobSheet);
+    const atlas={frames:{},meta:{size:{w:sheet.width,h:sheet.height},scale:1,format:"PNG"}}; positions.forEach((pos,i)=>{atlas.frames["frame_"+i]={frame:{x:pos.x,y:pos.y,w:cW*sc,h:cH*sc},rotated:false,trimmed:false,sourceSize:{w:cW,h:cH}}}); zip.file("spritesheet.json", JSON.stringify(atlas,null,2));
+    let godot="[gd_resource type=\"SpriteFrames\" load_steps="+(1+positions.length)+" format=3]\n\n[ext_resource type=\"Texture2D\" path=\"res://spritesheet.png\" id=\"1_sheet\"]\n\n";
+    positions.forEach((pos,i)=>{ godot+="[sub_resource type=\"AtlasTexture\" id=\"AtlasTexture_"+i+"]\natlas = ExtResource(\"1_sheet\")\nregion = Rect2("+pos.x+", "+pos.y+", "+(cW*sc)+", "+(cH*sc)+")\n"; });
+    godot+="[resource]\nanimations = [{\"frames\": ["+positions.map((_,i)=>"{\"duration\": "+(1000/(fps||8))+", \"texture\": SubResource(\"AtlasTexture_"+i+"\") }").join(", ")+"], \"loop\": true, \"name\": &\"default\", \"speed\": "+fps+".0 }]\n";
+    zip.file("godot/SpriteFrames.tres", godot);
+    zip.file("README.txt", "Spritesheet "+sheet.width+"x"+sheet.height+" ("+cW+"x"+cH+" * "+sc+", "+frames.length+" frames @ "+fps+"fps)\nPhaser/Unity: spritesheet.png + spritesheet.json\nGodot 4: import godot/SpriteFrames.tres as AnimatedSprite2D SpriteFrames\n");
+    const blob=await zip.generateAsync({type:"blob"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="pixel-studio-engine-pack.zip"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),5000); showToast("Engine pack exported");
+  }catch(e){ console.error(e); showToast("ZIP failed, check connection"); }
 }
 function exportGIF(){
   const modal=document.getElementById('gifModal');
@@ -1704,7 +1727,7 @@ function buildUI(){
   });
   // Mobile palette
   const bbPal=document.getElementById('bbPal');
-  PAL.slice(0,16).forEach(col=>{
+  PAL.forEach(col=>{
     const sw=document.createElement('div');sw.className='bb-sw'+(col===fgColour?' on':'');
     sw.style.background=col;sw.dataset.col=col;sw.onclick=()=>setFg(col);bbPal.appendChild(sw);
   });
@@ -1724,7 +1747,7 @@ function buildUI(){
   const bbTools=document.getElementById('bbTools');
   [{id:'pencil',ico:'??',l:'Draw'},{id:'eraser',ico:'??',l:'Erase'},{id:'fill',ico:'??',l:'Fill'},{id:'eyedrop',ico:'??',l:'Pick'},{id:'line',ico:'??',l:'Line'},{id:'rect',ico:'??',l:'Rect'}].forEach(t=>{
     const btn=document.createElement('div');btn.className='bb-tb'+(t.id===currentTool?' on':'');
-    btn.dataset.tool=t.id;btn.innerHTML=`<span class="ico">${t.ico}</span>${t.l}`;btn.onclick=()=>setTool(t.id);bbTools.appendChild(btn);
+    btn.dataset.tool=t.id;btn.setAttribute('aria-label',t.l);btn.innerHTML=`<span class="ico">${t.ico}</span>${t.l}`;btn.onclick=()=>setTool(t.id);bbTools.appendChild(btn);
   });
   // Colour init
   document.getElementById('fgSwatch').style.background=fgColour;

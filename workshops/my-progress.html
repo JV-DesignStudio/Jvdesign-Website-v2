@@ -1018,7 +1018,32 @@ document.getElementById('bkFileInput').addEventListener('change', function () {
   this.value = ''; // allow re-selecting the same file later
 });
 
-buildDashboard();
+function initDashboard(){
+  if(typeof playerProfile !== 'undefined' && playerProfile.getStats){
+    buildDashboard();
+    // keep in sync if profile later migrates or gains XP
+    window.addEventListener('profile-saved', buildDashboard);
+    window.addEventListener('xp-gained', buildDashboard);
+    window.addEventListener('level-up', buildDashboard);
+  } else {
+    // player-profile.js is deferred; poll until it arrives, then render with unified XP
+    let tries=0;
+    const iv=setInterval(()=>{
+      if(typeof playerProfile !== 'undefined' && playerProfile.getStats){
+        clearInterval(iv);
+        buildDashboard();
+        window.addEventListener('profile-saved', buildDashboard);
+        window.addEventListener('xp-gained', buildDashboard);
+        window.addEventListener('level-up', buildDashboard);
+      } else if(tries++>40){
+        clearInterval(iv);
+        buildDashboard();
+      }
+    },100);
+    window.addEventListener('load', ()=>{ clearInterval(iv); buildDashboard(); });
+  }
+}
+initDashboard();
 </script>
 <script defer src="workshop-track.js"></script>
 <script defer src="/mascots.js"></script>
