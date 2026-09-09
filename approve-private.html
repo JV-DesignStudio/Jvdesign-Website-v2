@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>JVDS Online Approve - Phone</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#1f2937}
+.top{position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e7eb;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.count{background:#dc2626;color:#fff;padding:4px 10px;border-radius:999px;font-weight:800}
+.wrap{max-width:600px;margin:0 auto;padding:16px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;margin:0 0 16px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.btn{width:100%;padding:14px;font-size:1rem;font-weight:800;border-radius:12px;border:1px solid transparent;cursor:pointer;margin-top:10px}
+.approve{background:#16a34a;color:#fff}
+.reject{background:#fff;color:#991b1b;border-color:#fecaca}
+.setup{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px;margin:0 0 16px}
+.input{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin:6px 0}
+.small{font-size:.78rem;color:#6b7280}
+</style>
+</head>
+<body>
+<div class="top"><h1 style="margin:0;font-size:1.05rem">👁 JVDS Online - Phone</h1><span class="count" id="cnt">0</span></div>
+<div class="wrap">
+<div id="setup" class="setup">
+<strong>First time on this phone:</strong>
+<p class="small">Paste your private repo + GitHub token (stored only on this phone, never sent elsewhere). The repo is your single source of truth - PC and phone both read/write it.</p>
+<label>Private repo (e.g. JV-DesignStudio/jvds-studio-private)<br><input id="repo" class="input" placeholder="owner/repo"></label>
+<label>Fine-grained PAT (contents: Read & Write)<br><input id="pat" class="input" type="password" placeholder="github_pat_..."></label>
+<button class="btn approve" onclick="saveCfg()">Save on this phone</button>
+<p class="small">Create PAT: GitHub → Settings → Developer settings → Fine-grained tokens → New → Only select that repo → Contents Read & Write. Topic: jvds-studio-xvpbmqau for pushes still works.</p>
+</div>
+<div id="list"></div>
+</div>
+<script>
+const SETUP=document.getElementById('setup');
+function getCfg(){ return {repo:localStorage.getItem('jvds_repo')||'', pat:localStorage.getItem('jvds_pat')||''}; }
+function saveCfg(){
+  const r=document.getElementById('repo').value.trim();
+  const p=document.getElementById('pat').value.trim();
+  if(!r||!p) return alert('Need repo and PAT');
+  localStorage.setItem('jvds_repo',r); localStorage.setItem('jvds_pat',p);
+  SETUP.style.display='none'; load();
+}
+(function(){
+  const c=getCfg();
+  if(c.repo && c.pat){ SETUP.style.display='none'; document.getElementById('repo').value=c.repo; }
+})();
+async function gh(path, opts={}){
+  const c=getCfg();
+  const h={'Accept':'application/vnd.github+json','Authorization':'Bearer '+c.pat};
+  if(opts.body) h['Content-Type']='application/json';
+  const r=await fetch('https://api.github.com/repos/'+c.repo+'/contents/'+path, {headers:h, ...opts});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function load(){
+  const c=getCfg(); if(!c.repo||!c.pat) return;
+  try{
+    const file=await gh('tasks.json');
+    const tasks=JSON.parse(atob(file.content.replace(/\n/g,'')));
+    const pending=tasks.filter(t=>t.status==='human_review'||t.status==='verified_local');
+    document.getElementById('cnt').textContent=pending.length;
+    const list=document.getElementById('list');
+    if(!pending.length){ list.innerHTML='<div style="text-align:center;padding:48px 20px;background:#fff;border:2px solid #bbf7d0;border-radius:16px"><div style="font-size:3rem">✓</div><div style="font-weight:800;color:#166534">All clear - nothing needs you</div></div>'; return; }
+    list.innerHTML='';
+    pending.forEach(t=>{
+      const d=document.createElement('div'); d.className='card';
+      d.innerHTML='<h2 style="margin:0 0 6px;font-size:1.05rem">'+t.id+' · '+t.title+' <span style="font-size:.62rem;padding:3px 8px;border-radius:999px;background:#fee2e2;color:#991b1b">'+t.priority+'</span></h2><div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px"><strong>Check:</strong> '+(t.evidence||'')+'</div><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;margin-top:10px"><strong>Done when:</strong> '+t.done+'</div><div style="font-size:.72rem;color:#6b7280;margin-top:8px">'+t.tag+' · '+t.date+'</div>';
+      const ap=document.createElement('button'); ap.className='btn approve'; ap.textContent='✓ Approve - ship it';
+      ap.onclick=async()=>{
+        ap.disabled=true; ap.textContent='Approving...';
+        try{
+          const file2=await gh('tasks.json');
+          const tasks2=JSON.parse(atob(file2.content.replace(/\n/g,'')));
+          const idx=tasks2.findIndex(x=>x.id===t.id);
+          tasks2[idx].status='done'; tasks2[idx].approvedBy='phone'; tasks2[idx].approvedAt=new Date().toISOString();
+          const content=btoa(unescape(encodeURIComponent(JSON.stringify(tasks2,null,2))));
+          await gh('tasks.json',{method:'PUT',body:JSON.stringify({message:'phone approve '+t.id,content,sha:file2.sha})});
+          d.style.opacity='.5'; ap.textContent='✓ Shipped!'; setTimeout(load,800);
+        }catch(e){ alert('Approve failed: '+e.message); ap.disabled=false; ap.textContent='✓ Approve - ship it'; }
+      };
+      const rej=document.createElement('button'); rej.className='btn reject'; rej.textContent='✕ Decline - send back';
+      rej.onclick=async()=>{
+        rej.disabled=true; rej.textContent='Sending back...';
+        try{
+          const file2=await gh('tasks.json');
+          const tasks2=JSON.parse(atob(file2.content.replace(/\n/g,'')));
+          const idx=tasks2.findIndex(x=>x.id===t.id);
+          tasks2[idx].status='in_progress';
+          const content=btoa(unescape(encodeURIComponent(JSON.stringify(tasks2,null,2))));
+          await gh('tasks.json',{method:'PUT',body:JSON.stringify({message:'phone decline '+t.id,content,sha:file2.sha})});
+          d.style.opacity='.5'; setTimeout(load,800);
+        }catch(e){ alert('Decline failed: '+e.message); rej.disabled=false; }
+      };
+      d.appendChild(ap); d.appendChild(rej); list.appendChild(d);
+    });
+  }catch(e){
+    document.getElementById('list').innerHTML='<p style="color:#b91c1c">Error: '+e.message+'<br><br>Check repo/PAT in the box above.</p>';
+  }
+}
+load();
+setInterval(load,30000);
+</script>
+</body>
+</html>
