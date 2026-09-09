@@ -1,0 +1,48 @@
+#!/bin/sh
+# Pre-commit guard — auto-fixes em dashes then routes to approve site (Ship)
+# Activate with: git config core.hooksPath .githooks (already set)
+# Bypass once: git commit --no-verify
+# Disable auto-fix: JVDS_DASH_AUTOFIX=0 git commit
+# Flow: check → --fix → git add -u → block commit → you review → Ship via http://localhost:8787
+
+echo "→ pre-commit: checking em dashes (public dislike) ..."
+node "F:/Website/studio-workspace/check-dashes.cjs" > /tmp/jvds_dash_check.txt 2>&1
+if grep -q "Found.*files with dashes" /tmp/jvds_dash_check.txt; then
+  if [ "$JVDS_DASH_AUTOFIX" = "0" ]; then
+    echo ""
+    echo "  ✋ Blocked: em/en dashes found in public files (view with: node F:/Website/studio-workspace/check-dashes.cjs)"
+    cat /tmp/jvds_dash_check.txt | head -20
+    echo ""
+    echo "  Fix: node F:/Website/studio-workspace/check-dashes.cjs --fix  (then review git diff)"
+    echo "  To bypass once: git commit --no-verify"
+    echo "  Auto-fix disabled via JVDS_DASH_AUTOFIX=0"
+    echo ""
+    exit 1
+  fi
+  echo ""
+  echo "  Found em/en dashes — auto-fixing and staging for approval..."
+  node "F:/Website/studio-workspace/check-dashes.cjs" --fix > /tmp/jvds_dash_fix.txt 2>&1
+  cat /tmp/jvds_dash_fix.txt
+  git add -u 2>&1 | head -20
+  node "F:/Website/studio-workspace/check-dashes.cjs" > /tmp/jvds_dash_check2.txt 2>&1
+  if grep -q "Found.*files with dashes" /tmp/jvds_dash_check2.txt; then
+    echo ""
+    echo "  Still blocked after auto-fix — manual fix needed"
+    cat /tmp/jvds_dash_check2.txt | head -20
+    echo ""
+    exit 1
+  fi
+  echo ""
+  echo "  ✓ Auto-fixed and staged — NOT committed yet (needs your Ship approval)"
+  echo "  Review: git diff --cached | head -60"
+  echo "  Ship from approve site: http://localhost:8787  → Ship button (runs git commit + push)"
+  echo "  Or re-run: git commit -m \"your message\"  (now clean, will pass)"
+  echo "  Bypass once: git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+# Optional: quick public-boundary check (quiet, 2s)
+# node scripts/validate-public-boundary.js > /tmp/jvds_boundary.txt 2>&1 || { cat /tmp/jvds_boundary.txt; exit 1; }
+
+exit 0

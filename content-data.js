@@ -3302,56 +3302,17 @@ window.JVDS_CONTENT = {
       "url": "/tools/trading-card-designer.html"
     },
     {
-      "id": "game-logo-maker",
-      "title": "Game Logo Maker",
-      "desc": "Design a title logo with presets, fonts, outlines, glow, gradients and export sizes for stores and splash screens.",
-      "category": "General",
-      "tags": [
-        "Logo",
-        "Branding",
-        "PNG"
-      ],
-      "comingSoon": false,
-      "url": "/tools/game-logo-maker.html"
-    },
-    {
-      "id": "music-maker",
-      "title": "Music Maker",
-      "desc": "Build loopable tracks and backing music with a beat sequencer, piano roll, synth presets, save/load and WAV export.",
-      "category": "General",
-      "tags": [
-        "Sequencer",
-        "Piano Roll",
-        "WAV"
-      ],
-      "comingSoon": false,
-      "url": "/tools/music-maker.html"
-    },
-    {
       "id": "sound-studio",
-      "title": "Sound Studio",
-      "desc": "Create 16-bit chiptune melodies and retro effects with waveforms, envelopes, bit crush and reverb.",
+      "title": "Audio Studio",
+      "desc": "Compose music, create chiptune sounds and generate game-ready sound effects in one friendly studio.",
       "category": "General",
       "tags": [
-        "Chiptune",
-        "SFX",
+        "Music",
+        "Sound FX",
         "WAV"
       ],
       "comingSoon": false,
       "url": "/tools/sound-studio.html"
-    },
-    {
-      "id": "sfx-generator",
-      "title": "SFX Studio",
-      "desc": "Generate one-shot game sound effects for arcade, puzzle, platformer and RPG projects, tune the sound, then export game-ready WAV files.",
-      "category": "General",
-      "tags": [
-        "Sound FX",
-        "Packs",
-        "Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/sfx-generator.html"
     },
     {
       "id": "drum-pad",
@@ -3381,42 +3342,16 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "level-designer",
-      "title": "Level Designer",
-      "desc": "Draw 2D platformer levels on a tile grid with layers, fill tools, hazards, pickups and PNG / JSON export.",
+      "title": "World Builder",
+      "desc": "Build levels, generate maps, import tilesets, test play spaces and export game-ready world data.",
       "category": "General",
       "tags": [
+        "Worlds",
         "Levels",
-        "Tile Grid",
-        "JSON"
+        "Tilesets"
       ],
       "comingSoon": false,
       "url": "/tools/level-designer.html"
-    },
-    {
-      "id": "map-generator",
-      "title": "Map Generator",
-      "desc": "Generate dungeons, worlds and islands from a seed, edit by hand and export PNG or JSON tilemaps.",
-      "category": "General",
-      "tags": [
-        "Procedural",
-        "Worlds",
-        "Tilemaps"
-      ],
-      "comingSoon": false,
-      "url": "/tools/map-generator.html"
-    },
-    {
-      "id": "tileset-builder",
-      "title": "Tileset Builder",
-      "desc": "Plan reusable tiles and export a compact tileset for your level workflow.",
-      "category": "General",
-      "tags": [
-        "Tiles",
-        "Canvas",
-        "Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/tileset-builder.html"
     },
     {
       "id": "particle-designer",
@@ -3433,29 +3368,16 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "gdd-builder",
-      "title": "GDD Builder",
-      "desc": "Fill out a structured game design document with progress tracking, browser saves and PDF export.",
-      "category": "General",
-      "tags": [
-        "Game Design",
-        "PDF",
-        "Save"
-      ],
-      "comingSoon": false,
-      "url": "/tools/gdd-builder.html"
-    },
-    {
-      "id": "game-idea-generator",
-      "title": "Game Idea Generator",
-      "desc": "Spin up game-jam prompts with genre, theme, mechanic and twist when you need a fast creative spark.",
+      "title": "Game Design Studio",
+      "desc": "Brainstorm ideas, plan core mechanics, write a full GDD and export your game plan from one studio.",
       "category": "General",
       "tags": [
         "Ideas",
-        "Game Jam",
-        "Random"
+        "Game Design",
+        "Worksheets"
       ],
       "comingSoon": false,
-      "url": "/tools/game-idea-generator.html"
+      "url": "/tools/gdd-builder.html"
     },
     {
       "id": "story-editor",
@@ -3471,40 +3393,14 @@ window.JVDS_CONTENT = {
       "url": "/tools/story-editor.html"
     },
     {
-      "id": "dialogue-tree-builder",
-      "title": "Dialogue Tree Builder",
-      "desc": "Sketch a playable conversation tree with canvas-based links and exportable story structure.",
-      "category": "General",
-      "tags": [
-        "Dialogue",
-        "Nodes",
-        "Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/dialogue-tree-builder.html"
-    },
-    {
-      "id": "design-worksheet",
-      "title": "Design Worksheets",
-      "desc": "Plan core ideas, audience, mechanics and scope before building.",
-      "category": "General",
-      "tags": [
-        "Planning",
-        "Worksheet",
-        "Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/design-worksheet.html"
-    },
-    {
       "id": "store-page-builder",
-      "title": "Store Page Builder",
-      "desc": "Draft store page copy, feature lists and release messaging for a game project.",
+      "title": "Launch Studio",
+      "desc": "Create game logos, promo screenshots, store copy and release messaging from one launch workspace.",
       "category": "General",
       "tags": [
-        "Launch",
-        "Copy",
-        "Planning"
+        "Logo",
+        "Screenshots",
+        "Store Copy"
       ],
       "comingSoon": false,
       "url": "/tools/store-page-builder.html"
@@ -3521,19 +3417,6 @@ window.JVDS_CONTENT = {
       ],
       "comingSoon": false,
       "url": "/tools/arcade-game-maker.html"
-    },
-    {
-      "id": "screenshot-generator",
-      "title": "Screenshot Generator",
-      "desc": "Create polished screenshots and promo images for game pages or posts.",
-      "category": "General",
-      "tags": [
-        "Screenshots",
-        "Promo",
-        "Canvas"
-      ],
-      "comingSoon": false,
-      "url": "/tools/screenshot-generator.html"
     },
     {
       "id": "code-snippet-generator",
@@ -3562,17 +3445,17 @@ window.JVDS_CONTENT = {
       "url": "/tools/error-guide.html"
     },
     {
-      "id": "project-tracker",
-      "title": "Project Tracker",
-      "desc": "Track game tasks, workshop follow-ups, assets, bugs and polish passes with a lightweight local project board.",
+      "id": "quest-board",
+      "title": "Game Planner",
+      "desc": "Turn game tasks, projects, bugs and polish passes into quests with progression, planning views and local saves.",
       "category": "General",
       "tags": [
-        "Tasks",
-        "Bugs",
+        "Quests",
+        "Projects",
         "Planning"
       ],
       "comingSoon": false,
-      "url": "/tools/project-tracker.html"
+      "url": "/tools/quest-board.html"
     },
     {
       "id": "icon-generator",
@@ -3753,13 +3636,13 @@ window.JVDS_CONTENT = {
         {
           "title": "Level 2: Your First Scene",
           "workshops": [
-            "godot_tutorial"
+            "godot-first-scene"
           ]
         },
         {
           "title": "Level 3: 2D Platformer",
           "workshops": [
-            "godot-racing-workshop"
+            "godot-2d-platformer"
           ]
         },
         {
@@ -3783,7 +3666,7 @@ window.JVDS_CONTENT = {
         {
           "title": "Level 1: Scratch Basics",
           "workshops": [
-            "scratch-catch-workshop"
+            "scratch-getting-started"
           ]
         },
         {
@@ -3795,13 +3678,13 @@ window.JVDS_CONTENT = {
         {
           "title": "Level 3: Build a Platformer",
           "workshops": [
-            "scratch-platformer-workshop"
+            "scratch-platformer"
           ]
         },
         {
           "title": "Level 4: Interactive Stories",
           "workshops": [
-            "scratch-story-workshop"
+            "scratch-story"
           ]
         }
       ],
@@ -3819,7 +3702,7 @@ window.JVDS_CONTENT = {
         {
           "title": "Level 1: Roblox Studio Basics",
           "workshops": [
-            "roblox-obby-workshop"
+            "roblox-studio-basics"
           ]
         },
         {
@@ -3855,13 +3738,13 @@ window.JVDS_CONTENT = {
         {
           "title": "Level 1: Python Basics",
           "workshops": [
-            "python-catch-workshop"
+            "python-getting-started"
           ]
         },
         {
           "title": "Level 2: Pygame Intro",
           "workshops": [
-            "python-breakout-workshop"
+            "python-pygame-intro"
           ]
         },
         {
@@ -3891,13 +3774,13 @@ window.JVDS_CONTENT = {
         {
           "title": "Level 1: Unity Interface",
           "workshops": [
-            "unity-pong-workshop"
+            "unity-getting-started"
           ]
         },
         {
           "title": "Level 2: 2D Basics",
           "workshops": [
-            "unity-2d-platformer"
+            "unity-2d-basics"
           ]
         },
         {
@@ -3935,10 +3818,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-07T13:28:54.889Z",
+    "generated": "2026-09-09T12:45:51.180Z",
     "workshops": 182,
     "games": 32,
-    "tools": 27,
+    "tools": 18,
     "books": 5,
     "engines": {
       "Blender": 9,
@@ -3962,7 +3845,7 @@ window.JVDS_CONTENT = {
       "Unreal": 10
     },
     "toolCategories": {
-      "General": 27
+      "General": 18
     }
   }
 };

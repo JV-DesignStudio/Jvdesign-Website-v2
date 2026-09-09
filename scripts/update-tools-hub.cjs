@@ -15,32 +15,32 @@ html = html
 
 const tools = [
   ['Asset Pipeline', '🎨', [
-    ['Pixel Studio', 'Create production-ready pixel art with layers, frames, onion skinning, mirror mode, autosave and GIF / spritesheet export.', '../tools/pixel-studio.html', '../PixelStudioCover.webp', ['Pixel Art', 'Animation', 'Export']],
-    ['Character Designer', 'Build characters from templates, customise parts, pose them, save presets and export spritesheets, GIFs, PNGs or JSON.', '../tools/character-designer.html', '../CharacterCreatorCover.webp', ['Characters', 'Sprites', 'Batch']],
-    ['Sprite Animator', 'Upload a spritesheet, choose frames, preview animation timing live and export frame data for your engine.', '../tools/sprite-animator.html', null, ['Spritesheet', 'Preview', 'JSON']],
-    ['Bitmap Font Maker', 'Draw pixel fonts character by character, preview text and export spritesheets, atlases or BMFont XML.', '../tools/bitmap-font-maker.html', null, ['Fonts', 'Atlas', 'BMFont']],
-    ['Trading Card Designer', 'Create character cards with templates, rarities, stats, uploaded art and PNG export.', '../tools/trading-card-designer.html', '../CardMakerCoverImage.webp', ['Cards', 'Stats', 'PNG']],
+    ['Pixel Studio', 'Create production-ready pixel art with layers, frames, onion skinning, mirror mode, autosave and GIF / spritesheet export.', '../tools/pixel-studio.html', '../PixelStudioCover.webp', ['Pixel Art', 'Animation', 'Export'], ['PNG','GIF','Spritesheet','JSON']],
+    ['Character Designer', 'Build characters from templates, customise parts, pose them, save presets and export spritesheets, GIFs, PNGs or JSON.', '../tools/character-designer.html', '../CharacterCreatorCover.webp', ['Characters', 'Sprites', 'Batch'], ['PNG','Spritesheet','GIF','JSON']],
+    ['Sprite Animator', 'Upload a spritesheet, choose frames, preview animation timing live and export frame data for your engine.', '../tools/sprite-animator.html', null, ['Spritesheet', 'Preview', 'JSON'], ['GIF','PNG','JSON','ZIP']],
+    ['Bitmap Font Maker', 'Draw pixel fonts character by character, preview text and export spritesheets, atlases or BMFont XML.', '../tools/bitmap-font-maker.html', null, ['Fonts', 'Atlas', 'BMFont'], ['PNG','JSON','BMFont','ZIP']],
+    ['Trading Card Designer', 'Create character cards with templates, rarities, stats, uploaded art and PNG export.', '../tools/trading-card-designer.html', '../CardMakerCoverImage.webp', ['Cards', 'Stats', 'PNG'], ['PNG','Print','JSON']],
   ]],
   ['Audio Pipeline', '🎵', [
-    ['Audio Studio', 'Compose music, create chiptune sounds and generate game-ready sound effects in one friendly studio.', '../tools/sound-studio.html', '../SoundStudioCover.webp', ['Music', 'Sound FX', 'WAV']],
-    ['Drum Pad', 'Tap beats, switch kits, use keyboard shortcuts and record loops for quick rhythm ideas.', '../tools/drum-pad.html', '../DrumPadDevToolCoverImage.webp', ['Beats', 'Kits', 'Loops']]
+    ['Audio Studio', 'Compose music, create chiptune sounds and generate game-ready sound effects in one friendly studio.', '../tools/sound-studio.html', '../SoundStudioCover.webp', ['Music', 'Sound FX', 'WAV'], ['WAV','MP3','Loop']],
+    ['Drum Pad', 'Tap beats, switch kits, use keyboard shortcuts and record loops for quick rhythm ideas.', '../tools/drum-pad.html', '../DrumPadDevToolCoverImage.webp', ['Beats', 'Kits', 'Loops'], ['WAV','Loop','MIDI']]
   ]],
   ['Level & World Data', '🧱', [
-    ['BuildLab', 'Make Roblox-style 3D block models with shapes, paint, transforms, touch support and OBJ / GLTF / RBXM export.', '../tools/buildlab.html', '../BlockBuilderCover.webp', ['3D Models', 'Roblox', 'Export']],
-    ['World Builder', 'Build levels, generate maps, import tilesets, test play spaces and export game-ready world data.', '../tools/level-designer.html', '../LevelDesignCover.webp', ['Worlds', 'Levels', 'Tilesets']],
-    ['Particle Designer', 'Design fire, smoke, sparks, magic and other VFX with curves, gradients and engine-friendly exports.', '../tools/particle-designer.html', '../ParticleDesignCoverImage.webp', ['VFX', 'Godot', 'Unity']]
+    ['BuildLab', 'Make Roblox-style 3D block models with shapes, paint, transforms, touch support and OBJ / GLTF / RBXM export.', '../tools/buildlab.html', '../BlockBuilderCover.webp', ['3D Models', 'Roblox', 'Export'], ['OBJ','GLTF','RBXM']],
+    ['World Builder', 'Build levels, generate maps, import tilesets, test play spaces and export game-ready world data.', '../tools/level-designer.html', '../LevelDesignCover.webp', ['Worlds', 'Levels', 'Tilesets'], ['JSON','Tilemap','PNG']],
+    ['Particle Designer', 'Design fire, smoke, sparks, magic and other VFX with curves, gradients and engine-friendly exports.', '../tools/particle-designer.html', '../ParticleDesignCoverImage.webp', ['VFX', 'Godot', 'Unity'], ['JSON','Godot','Unity','PNG']]
   ]],
   ['Design Docs & Narrative', '📋', [
-    ['Game Design Studio', 'Brainstorm ideas, plan core mechanics, write a full GDD and export your game plan from one studio.', '../tools/gdd-builder.html', '../GDDCover.webp', ['Ideas', 'Game Design', 'Worksheets']],
-    ['Story Editor', 'Create branching dialogue, character nodes, choices, endings, visual story links and JSON exports.', '../tools/story-editor.html', '../StodyEditorCover.webp', ['Dialogue', 'Story', 'JSON']],
-    ['Launch Studio', 'Create game logos, promo screenshots, store copy and release messaging from one launch workspace.', '../tools/store-page-builder.html', null, ['Logo', 'Screenshots', 'Store Copy']]
+    ['Game Design Studio', 'Brainstorm ideas, plan core mechanics, write a full GDD and export your game plan from one studio.', '../tools/gdd-builder.html', '../GDDCover.webp', ['Ideas', 'Game Design', 'Worksheets'], ['PDF','JSON','GDD']],
+    ['Story Editor', 'Create branching dialogue, character nodes, choices, endings, visual story links and JSON exports.', '../tools/story-editor.html', '../StodyEditorCover.webp', ['Dialogue', 'Story', 'JSON'], ['JSON','Dialog','Export']],
+    ['Launch Studio', 'Create game logos, promo screenshots, store copy and release messaging from one launch workspace.', '../tools/store-page-builder.html', null, ['Logo', 'Screenshots', 'Store Copy'], ['PNG','Copy','Brand']]
   ]],
   ['Prototype, Debug & Ship', '🚀', [
-    ['Arcade Game Maker', 'Prototype browser games from templates, tune physics, import art/audio/levels and share a playable build.', '../tools/arcade-game-maker.html', '../ArcadeMakerCoverImage.webp', ['Game Maker', 'Phaser', 'Share']],
-    ['Code Snippet Generator', 'Create starter snippets for common game-dev patterns and copy them into your project.', '../tools/code-snippet-generator.html', null, ['Code', 'Starter', 'Helper']],
-    ['Error Guide', 'Look up common beginner bugs and get plain-language fixes.', '../tools/error-guide.html', null, ['Debugging', 'Guide', 'Beginner']],
-    ['Game Planner', 'Turn game tasks, projects, bugs and polish passes into quests with progression, planning views and local saves.', '../tools/quest-board.html', null, ['Quests', 'Projects', 'Planning']],
-    ['Icon Generator', 'Generate Quest Board-style pixel icons and download ready-sized PNGs.', '../tools/icon-generator.html', null, ['Icons', 'Pixel', 'PNG']]
+    ['Arcade Game Maker', 'Prototype browser games from templates, tune physics, import art/audio/levels and share a playable build.', '../tools/arcade-game-maker.html', '../ArcadeMakerCoverImage.webp', ['Game Maker', 'Phaser', 'Share'], ['Share','HTML','Phaser']],
+    ['Code Snippet Generator', 'Create starter snippets for common game-dev patterns and copy them into your project.', '../tools/code-snippet-generator.html', null, ['Code', 'Starter', 'Helper'], ['Snippet','JS','Copy']],
+    ['Error Guide', 'Look up common beginner bugs and get plain-language fixes.', '../tools/error-guide.html', null, ['Debugging', 'Guide', 'Beginner'], ['Guide','Fix']],
+    ['Game Planner', 'Turn game tasks, projects, bugs and polish passes into quests with progression, planning views and local saves.', '../tools/quest-board.html', null, ['Quests', 'Projects', 'Planning'], ['Quests','JSON','Plan']],
+    ['Icon Generator', 'Generate Quest Board-style pixel icons and download ready-sized PNGs.', '../tools/icon-generator.html', null, ['Icons', 'Pixel', 'PNG'], ['PNG','Icon','32×32']]
   ]]
 ];
 
@@ -82,11 +82,12 @@ function workshopCompanionCard(item) {
 }
 
 function card(tool, category) {
-  const [title, desc, href, image, tags] = tool;
+  const [title, desc, href, image, tags, outputs] = tool;
   const thumb = image
     ? `<img width="1024" height="572" loading="lazy" src="${image}" alt="${title} preview">`
     : `<span class="tool-emoji">${category[1]}</span>`;
-  return `<a href="${href}" class="tool-card reveal" data-tool-card data-category="${category[0].toLowerCase()}" data-search="${[title, desc, tags.join(' '), category[0]].join(' ').toLowerCase()}">
+  const searchExtras = outputs ? ' ' + outputs.join(' ').toLowerCase() : '';
+  return `<a href="${href}" class="tool-card reveal" data-tool-card data-category="${category[0].toLowerCase()}" data-search="${[title, desc, tags.join(' '), category[0]].join(' ').toLowerCase()}${searchExtras}">
     <div class="tool-thumb">
         <span class="tool-year">2026</span>
         ${thumb}
@@ -96,6 +97,7 @@ function card(tool, category) {
         <h3 class="tool-title">${title}</h3>
         <p class="tool-desc">${desc}</p>
         <div class="tool-tags">${tags.map(tag => `<span class="tool-tag">${tag}</span>`).join('')}</div>
+        ${outputs && outputs.length ? `<div class="tool-outputs">${outputs.map(o => `<span class="tool-output-badge">${o}</span>`).join('')}</div>` : ''}
         <span class="tool-cta">Open Tool →</span>
     </div>
 </a>`;

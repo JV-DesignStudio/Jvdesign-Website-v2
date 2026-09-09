@@ -134,9 +134,10 @@
  <button class="sec-btn" id="rerollTheme">?? New Theme</button>
  <button class="sec-btn" id="rerollMechanic">?? New Mechanic</button>
  <button class="sec-btn" id="rerollTwist">?? New Twist</button>
- <button class="sec-btn" id="copyIdea" title="Copy this idea as text">?? Copy</button>
- <button class="sec-btn" id="saveIdea" title="Keep this idea in Recent Ideas">?� Keep</button>
- <button class="sec-btn" id="shareIdea" title="Copy a share link for this idea">?? Share</button>
+  <button class="sec-btn" id="copyIdea" title="Copy this idea as text">?? Copy</button>
+ <button class="sec-btn" id="rerollGenre">🎲 New Genre</button>
+  <button class="sec-btn" id="shareIdea" title="Copy a share link for this idea">?? Share</button>
+  <button class="sec-btn" id="exportIdea" title="Export this idea as JSON">⬇ JSON</button>
  </div>
 
  <!-- FILTERS -->
@@ -181,10 +182,10 @@
  <h3 id="gameIdeaWelcomeTitle">?? Welcome to Game Idea Generator</h3>
  <p style="font-size:.82rem;color:rgba(240,234,214,.65);line-height:1.6;margin-bottom:12px;">Stuck on what to build? Spin a full concept, genre, theme, mechanic and a twist, then use it in any workshop or standalone jam.</p>
  <div style="font-size:.78rem;line-height:1.8;margin-bottom:12px;color:#F0EAD6;">
- <div>?? <strong>Spin</strong>, random idea with engine + complexity filters</div>
- <div>?? <strong>Reroll</strong>, keep what you like, shuffle one slot</div>
- <div>?? <strong>Keep</strong>, saves to Recent Ideas (persists) � Copy / Share link</div>
- <div>??️ <strong>Use it</strong>, paste the idea into Arcade Game Maker or your GDD</div>
+ <div>📦<strong>Spin</strong>, random idea with engine + complexity filters</div>
+ <div>🎲<strong>Reroll</strong>, keep what you like, shuffle one slot</div>
+ <div>📋<strong>Keep</strong>, saves to Recent Ideas (persists) · Copy / Share link</div>
+ <div>📋ï¸<strong>Use it</strong>, paste the idea into Arcade Game Maker or your GDD</div>
  </div>
  <div style="font-size:.68rem;color:rgba(240,234,214,.45);border-top:1px solid rgba(255,255,255,.1);padding-top:10px;margin-bottom:14px;">Tip: filters affect Genre + Mechanic. Press <kbd style="padding:1px 5px;border:1px solid rgba(255,255,255,.2);border-radius:4px;background:rgba(255,255,255,.06);">?</kbd> to reopen.</div>
  <div class="modal-btns">
@@ -415,6 +416,14 @@ function flash(msg){
   g.textContent=msg; g.style.opacity=1;
   clearTimeout(g._t); g._t=setTimeout(()=>g.style.opacity=0,1600);
 }
+function exportIdea(){
+  if(!current){ flash('Generate an idea first'); return; }
+  const data={title:current.title, genre:current.genre, theme:current.theme, mechanic:current.mechanic, twist:current.twist, exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=(current.title.replace(/[^a-z0-9]+/gi,'_').toLowerCase()||'game-idea')+'.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  if(window.ToolAnalytics) ToolAnalytics.event('idea_exported', current.genre);
+  flash('Exported JSON ✓');
+}
 function shareIdea(){
   if(!current) return;
   const payload={t:current.title,g:current.genre,th:current.theme,m:current.mechanic,tw:current.twist};
@@ -449,7 +458,7 @@ function tryRestoreShare(){
   }catch(e){}
   return false;
 }
-// Welcome modal � full standard
+// Welcome modal - full standard
 const GAMEIDEA_WELCOME_KEY='jvds_gameidea_seen_v1';
 function closeGameIdeaWelcome(){ try{localStorage.setItem(GAMEIDEA_WELCOME_KEY,'1');}catch{} const m=document.getElementById('gameIdeaWelcomeModal'); if(m) m.classList.remove('open'); }
 function maybeShowGameIdeaWelcome(){ try{if(localStorage.getItem(GAMEIDEA_WELCOME_KEY)==='1') return;}catch{} const m=document.getElementById('gameIdeaWelcomeModal'); if(m) m.classList.add('open'); }
@@ -461,7 +470,7 @@ function renderHistory() {
   section.style.display = '';
   list.innerHTML = history.map((h, i) => `
     <div class="history-item" onclick="restoreHistory(${i})">
-      <strong>${h.title}</strong>, ${h.genre} � ${h.theme} � ${h.mechanic}
+      <strong>${h.title}</strong>, ${h.genre} · ${h.theme} · ${h.mechanic}
     </div>
   `).join('');
 }
@@ -495,6 +504,7 @@ document.getElementById('rerollTwist').addEventListener('click',    () => genera
 document.getElementById('copyIdea').addEventListener('click', copyIdea);
 document.getElementById('saveIdea').addEventListener('click', keepIdea);
 const _shareBtn=document.getElementById('shareIdea'); if(_shareBtn) _shareBtn.addEventListener('click', shareIdea);
+const _exportBtn=document.getElementById('exportIdea'); if(_exportBtn) _exportBtn.addEventListener('click', exportIdea);
 
 // Welcome modal wiring + restore share
 const _giWelcome=document.getElementById('gameIdeaWelcomeModal');

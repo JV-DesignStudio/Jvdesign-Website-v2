@@ -133,13 +133,13 @@
         <div class="tweak-desc">How loud the sound is</div>
       </div>
       <div class="tweak-row">
-        <div class="tweak-label">Pitch <span id="pitchVal">0�</span></div>
+        <div class="tweak-label">Pitch <span id="pitchVal">0°</span></div>
         <input type="range" class="tw" id="twPitch" min="-24" max="24" value="0" oninput="document.getElementById('pitchVal').textContent=(this.value>0?'+':'')+this.value+'st'">
         <div class="tweak-desc">Shift pitch up or down (semitones)</div>
       </div>
       <div class="tweak-row">
-        <div class="tweak-label">Speed <span id="speedVal">1.0�</span></div>
-        <input type="range" class="tw" id="twSpeed" min="0.3" max="3" step="0.05" value="1" oninput="document.getElementById('speedVal').textContent=parseFloat(this.value).toFixed(2)+'�'">
+        <div class="tweak-label">Speed <span id="speedVal">1.0×</span></div>
+        <input type="range" class="tw" id="twSpeed" min="0.3" max="3" step="0.05" value="1" oninput="document.getElementById('speedVal').textContent=parseFloat(this.value).toFixed(2)+'×'">
         <div class="tweak-desc">Make it faster or slower</div>
       </div>
       <div class="tweak-row">
@@ -178,8 +178,8 @@
     <button class="act-btn act-play" id="playBtn" onclick="previewCurrent()">? Preview Sound</button>
     <button class="act-btn act-rand" onclick="randomise()">?? Randomise</button>
     <select id="dlFormat" class="fmt-sel" aria-label="Download format">
-      <option value="wav">WAV � lossless</option>
-      <option value="opus">Opus � small</option>
+      <option value="wav">WAV - lossless</option>
+      <option value="opus">Opus - small</option>
     </select>
     <button class="act-btn act-dl" onclick="downloadCurrent()">? Download</button>
     <button class="act-btn act-rand" onclick="copyShareLink()">?? Copy Link</button>
@@ -250,12 +250,12 @@
 <div class="modal-overlay" id="sfxWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="sfxWelcomeTitle">
   <div class="modal">
     <h3 id="sfxWelcomeTitle">?? Welcome to SFX Studio</h3>
-    <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:12px;">Design retro sound effects � pitch, reverb, bit-crush � then download WAV ready for Godot/Unity.</p>
+    <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:12px;">Design retro sound effects with pitch, reverb, bit-crush • then download WAV ready for Godot/Unity.</p>
     <div style="font-size:.78rem;line-height:1.8;margin-bottom:12px;">
-      <div>?? <strong>Tweak</strong> � variant, pitch, reverb, crush</div>
-      <div>? <strong>Preview</strong> � play instantly, copy snippet for engine</div>
-      <div>?? <strong>Batch</strong> � preset packs + zip of 72 sounds</div>
-      <div>?? <strong>Share</strong> � copy link keeps category + variant</div>
+      <div>🪘<strong>Tweak</strong> - variant, pitch, reverb, crush</div>
+      <div>? <strong>Preview</strong> - play instantly, copy snippet for engine</div>
+      <div>📦<strong>Batch</strong> - preset packs + zip of 72 sounds</div>
+      <div>🔗<strong>Share</strong> - copy link keeps category + variant</div>
     </div>
     <div style="font-size:.68rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;margin-bottom:14px;">Press <kbd style="padding:1px 5px;border:1px solid var(--border2);border-radius:4px;background:var(--panel3);">?</kbd> to reopen.</div>
     <div class="modal-btns">
@@ -751,7 +751,7 @@ function selectCategory(catId){
     c.classList.toggle('active', CATEGORIES[i].id===catId);
   });
   const cat = CATEGORIES.find(c=>c.id===catId);
-  document.getElementById('variantsTitle').innerHTML = `${cat.icon} ${cat.name} � pick a variant`;
+  document.getElementById('variantsTitle').innerHTML = `${cat.icon} ${cat.name} - pick a variant`;
   buildVariants(catId);
 }
 
@@ -815,7 +815,7 @@ function randomise(){
   document.getElementById('twDistort').value=Math.floor(Math.random()*20);
   document.getElementById('twCrush').value=Math.floor(Math.random()*25);
   document.getElementById('pitchVal').textContent=(document.getElementById('twPitch').value>0?'+':'')+document.getElementById('twPitch').value+'st';
-  document.getElementById('speedVal').textContent=parseFloat(document.getElementById('twSpeed').value).toFixed(2)+'�';
+  document.getElementById('speedVal').textContent=parseFloat(document.getElementById('twSpeed').value).toFixed(2)+'×';
   document.getElementById('reverbVal').textContent=document.getElementById('twReverb').value+'%';
   document.getElementById('distortVal').textContent=document.getElementById('twDistort').value+'%';
   document.getElementById('crushVal').textContent=document.getElementById('twCrush').value+'%';
@@ -829,7 +829,7 @@ async function downloadCurrent(){
   const variant = VARIANTS[currentCat][currentVariant];
   const cat = CATEGORIES.find(c=>c.id===currentCat);
   const fmt = exportFormat();
-  showToast(fmt==='wav'?'Rendering WAV�':'Encoding Opus�');
+  showToast(fmt==='wav'?'Rendering WAV·':'Encoding Opus·');
   const buf = await renderCurrentBuf(variant);
   let blob,ext;
   if(fmt==='wav'){
@@ -838,7 +838,7 @@ async function downloadCurrent(){
     try{
       blob=await recordBuffer(buf);ext=extForMime(blob.type);
     }catch(e){
-      showToast('Opus export failed � saved as WAV');
+      showToast('Opus export failed · saved as WAV');
       blob=new Blob([makeWav(trimBuffer(buf,44100),44100)],{type:'audio/wav'});ext='.wav';
     }
   }
@@ -855,7 +855,7 @@ function sendToGameMaker(){
   if(currentCat===null||currentVariant===null){showToast('Pick a category and variant first!');return;}
   const variant=VARIANTS[currentCat][currentVariant];
   const cat=CATEGORIES.find(c=>c.id===currentCat);
-  showToast('Sending to Game Maker�');
+  showToast('Sending to Game Maker·');
   renderCurrentBuf(variant).then(buf=>{
     const wav=makeWav(trimBuffer(buf,44100),44100);
     const bytes=new Uint8Array(wav);
@@ -962,7 +962,7 @@ function applyParams(p){
   const set=(id,lbl,txt)=>{document.getElementById(lbl).textContent=txt;};
   document.getElementById('twVol').value=p.vol;    set('twVol','volVal',p.vol+'%');
   document.getElementById('twPitch').value=p.pitch; set('twPitch','pitchVal',(p.pitch>0?'+':'')+p.pitch+'st');
-  document.getElementById('twSpeed').value=p.speed; set('twSpeed','speedVal',parseFloat(p.speed).toFixed(2)+'�');
+  document.getElementById('twSpeed').value=p.speed; set('twSpeed','speedVal',parseFloat(p.speed).toFixed(2)+'×');
   document.getElementById('twReverb').value=p.rev;  set('twReverb','reverbVal',p.rev+'%');
   document.getElementById('twDistort').value=p.dist;set('twDistort','distortVal',p.dist+'%');
   document.getElementById('twCrush').value=p.crush; set('twCrush','crushVal',p.crush+'%');
@@ -996,7 +996,7 @@ function renderHistory(){
       <span class="hi-icon">${safeIcon}</span>
       <div>
         <div class="hi-name">${safeName}</div>
-        <div class="hi-meta">${safeFile} � ${safeTime}</div>
+        <div class="hi-meta">${safeFile} · ${safeTime}</div>
       </div>
       ${item.params?`<div class="hi-btns">
         <button type="button" class="hi-btn" title="Preview" aria-label="Preview ${safeName}" onclick="historyPlay(${i})">?</button>
@@ -1112,7 +1112,7 @@ let currentPreset = null;
 function loadPreset(presetName, btn){
   currentPreset = presetName;
   const sounds = PRESETS[presetName];
-  showToast(`Loaded ${presetName} pack � ${sounds.length} sounds ready`);
+  showToast(`Loaded ${presetName} pack · ${sounds.length} sounds ready`);
   document.querySelectorAll('[onclick^="loadPreset"]').forEach(b=>{b.style.background='var(--panel2)';b.style.borderColor='var(--border2)';});
   if(btn){btn.style.background='rgba(99,102,241,.2)';btn.style.borderColor='var(--accent)';}
 }
@@ -1127,7 +1127,7 @@ async function downloadPresetPack(){
     const sound=sounds[i];
     const cat = CATEGORIES.find(c=>c.id===sound.cat);
     const variant = VARIANTS[sound.cat][sound.var];
-    showToast(`Rendering ${i+1}/${sounds.length}�`);
+    showToast(`Rendering ${i+1}/${sounds.length} so`);
     const buf = await renderCurrentBuf(variant);
     if(fmt==='wav'){
       files.push({name:`${currentPreset}/${soundFileName(cat,variant)}.wav`, data:makeWav(trimBuffer(buf,44100),44100)});
@@ -1192,7 +1192,7 @@ function fallbackCopy(text,done){
   document.body.appendChild(ta);
   ta.select();
   try{document.execCommand('copy');done();}
-  catch(e){showToast('Copy failed � copy the URL manually');}
+  catch(e){showToast('Copy failed · copy the URL manually');}
   document.body.removeChild(ta);
 }
 
@@ -1209,7 +1209,7 @@ function engineSnippet(){
   const cat=CATEGORIES.find(c=>c.id===currentCat);
   const variant=VARIANTS[currentCat][currentVariant];
   const base=soundFileName(cat,variant);
-  const title=`${cat.name} � ${variant.name}`;
+  const title=`${cat.name} • ${variant.name}`;
   if(codeEngine==='godot'){
     return `# ${title}\nvar _sfx: AudioStream = preload("res://sfx/${base}.wav")\n\nfunc play_sfx() -> void:\n\tvar p := AudioStreamPlayer.new()\n\tp.stream = _sfx\n\tp.finished.connect(p.queue_free)\n\tadd_child(p)\n\tp.play()`;
   }
