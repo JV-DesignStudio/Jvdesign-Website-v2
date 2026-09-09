@@ -50,7 +50,7 @@
     position:'fixed', bottom:'0', left:'0', right:'0', zIndex:'9999',
     background:'#F0EAD6', borderTop:'2px solid #D2B48C',
     padding:'14px 24px', boxShadow:'0 -4px 20px rgba(64,59,51,.12)',
-    fontFamily:'"Inter",sans-serif'
+    fontFamily:'"Inter",sans-serif', boxSizing:'border-box', maxWidth:'100vw', overflow:'hidden'
   });
 
   document.body.appendChild(banner);

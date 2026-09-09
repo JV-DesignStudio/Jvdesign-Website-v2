@@ -3303,6 +3303,19 @@ window.JVDS_CONTENT = {
       "url": "/tools/sound-studio.html"
     },
     {
+      "id": "sfx-generator",
+      "title": "SFX Generator",
+      "desc": "12 categories of retro SFX - pitch, reverb, batch export and Game Maker handoff. 72 variants, one click.",
+      "category": "General",
+      "tags": [
+        "SFX",
+        "Retro",
+        "Batch"
+      ],
+      "comingSoon": false,
+      "url": "/tools/sfx-generator.html"
+    },
+    {
       "id": "drum-pad",
       "title": "Drum Pad",
       "desc": "Quick drum machine - now also inside Audio Studio (Drum kits). Tap beats and record loops.",
@@ -3806,10 +3819,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-09T14:15:50.758Z",
+    "generated": "2026-09-09T14:42:37.567Z",
     "workshops": 182,
     "games": 32,
-    "tools": 17,
+    "tools": 18,
     "books": 5,
     "engines": {
       "Blender": 9,
@@ -3833,7 +3846,7 @@ window.JVDS_CONTENT = {
       "Unreal": 10
     },
     "toolCategories": {
-      "General": 17
+      "General": 18
     }
   }
 };
