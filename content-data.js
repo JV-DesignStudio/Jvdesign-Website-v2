@@ -3303,7 +3303,7 @@ window.JVDS_CONTENT = {
       "url": "/tools/sound-studio.html"
     },
     {
-      "id": "sound-studio",
+      "id": "drum-pad",
       "title": "Drum Pad",
       "desc": "Quick drum machine - now also inside Audio Studio (Drum kits). Tap beats and record loops.",
       "category": "General",
@@ -3313,7 +3313,7 @@ window.JVDS_CONTENT = {
         "Loops"
       ],
       "comingSoon": false,
-      "url": "/tools/sound-studio.html"
+      "url": "/tools/drum-pad.html"
     },
     {
       "id": "buildlab",
@@ -3806,10 +3806,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-09T14:00:23.398Z",
+    "generated": "2026-09-09T14:11:00.578Z",
     "workshops": 182,
     "games": 32,
-    "tools": 18,
+    "tools": 17,
     "books": 5,
     "engines": {
       "Blender": 9,
@@ -3833,7 +3833,7 @@ window.JVDS_CONTENT = {
       "Unreal": 10
     },
     "toolCategories": {
-      "General": 18
+      "General": 17
     }
   }
 };
