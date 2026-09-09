@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v19 , isolated caches and exact asset versions.
-const CACHE='jvds-v19';
+// JVDesignStudio Service Worker v20 - unified Pixel Studio (Simple + Character + Draw + Animate)
+const CACHE='jvds-v20';
 const CORE=[
   '/',
   '/offline.html',

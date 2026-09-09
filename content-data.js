@@ -3237,9 +3237,23 @@ window.JVDS_CONTENT = {
   ],
   "tools": [
     {
+      "id": "pixel-studio",
+      "title": "Pixel Studio",
+      "desc": "Unified pixel art studio - Simple 8×8-32×32 for kids, plus character templates (humanoid/creature/chibi/top-down), layers, frames, onion skin, spritesheet & GIF export. One studio, no installs.",
+      "category": "General",
+      "tags": [
+        "Pixel Art",
+        "Characters",
+        "Animation",
+        "Easy"
+      ],
+      "comingSoon": false,
+      "url": "/tools/pixel-studio.html"
+    },
+    {
       "id": "easy-pixel-art",
       "title": "Easy Pixel Art",
-      "desc": "Super easy 8×8-32×32 pixel art for beginners - big pixels, 16 colours, one-tap draw, undo and instant PNG export. No account.",
+      "desc": "Quick 8×8-32×32 starter with 16 colours and big pixels - now also Simple mode inside Pixel Studio. No account.",
       "category": "General",
       "tags": [
         "Beginner",
@@ -3250,22 +3264,9 @@ window.JVDS_CONTENT = {
       "url": "/tools/easy-pixel-art.html"
     },
     {
-      "id": "character-designer",
-      "title": "Pixel Character Studio",
-      "desc": "Design characters from templates, pixel-edit, animate frames and export spritesheets, GIFs, PNGs or JSON - the merged first-creation workflow.",
-      "category": "General",
-      "tags": [
-        "Characters",
-        "Animation",
-        "Export"
-      ],
-      "comingSoon": false,
-      "url": "/tools/character-designer.html"
-    },
-    {
       "id": "sprite-animator",
       "title": "Sprite Animator",
-      "desc": "Upload a spritesheet, choose frames, preview animation timing live and export frame data for your engine.",
+      "desc": "Upload a spritesheet, choose frames, preview timing and export packs - also available as Animate + sheet import in Pixel Studio.",
       "category": "General",
       "tags": [
         "Spritesheet",
@@ -3818,7 +3819,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-09T12:54:44.583Z",
+    "generated": "2026-09-09T13:12:42.237Z",
     "workshops": 182,
     "games": 32,
     "tools": 18,
