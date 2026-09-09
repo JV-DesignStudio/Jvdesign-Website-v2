@@ -7,7 +7,9 @@ const CORE=[
   '/style-shared.css',
   '/logo.png',
   '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon-512.png',
+  '/assets/vendor/three/three.min.js',
+  '/assets/vendor/three/GLTFExporter.js'
 ];
 
 self.addEventListener('install',e=>{

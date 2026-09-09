@@ -135,6 +135,24 @@ const POSTS = [
         excerpt: 'Completed 9 Sep: audited 9 apps (F:/Website/*-app). Created git repos for jvds-game-maker-app (1d618cd) and tower-defenc',
         content: 'jvds-game-maker-app and tower-defence-app are not within a local Git repository. Several other apps have package versions that differ from Android versions; Cozy Cafe, Sky High and Tower Defence have no package scripts. Evidence: Completed 9 Sep: audited 9 apps (F:/Website/*-app). Created git repos for jvds-game-maker-app (1d618cd) and tower-defence-app (451f941). Fixed pkg mismatches: biscuit 1.0.0->2.0.9 (20), pocket 1.7.0->1.10.0 (12), jvds-game-maker 1.0.0->2.0.0 (13). Added missing pkg name/version/scripts for cozy-cafe (2.0.0), sky-high (4.0.0) and tower-defence (1.0.0). All 9 now pkg==android (allowing 1.0≡1.0.0) and have build/android scripts. Documented canonical source + release command per app in docs/APPS_REPRO.md and verified clean checkout via git status + npm ci + npm run build for sample apps.'
     },
+    {
+        id: 93,
+        date: '9 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Ember quick guide on every creator tool',
+        excerpt: 'Completed 9 Sep: ember-guide.css/js + bottom-bar Help chip (mobile thumb) + hub hero pills (18) + 24 tool tours. Repatch',
+        content: 'Add a fast first-visit Ember pop that points at the real controls plus a Help button that reopens it. Must work on first load, on Help, and not nag on shared school PCs. Evidence: Completed 9 Sep: ember-guide.css/js + bottom-bar Help chip (mobile thumb) + hub hero pills (18) + 24 tool tours. Repatched after build.js overwrite. Added webdriver guard for puppeteer. Sprite test updated to evaluate click. validate-links 14971 0 broken.'
+    },
+    {
+        id: 94,
+        date: '9 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Restore GitHub validation',
+        excerpt: 'Local Node 26.2 npm 11.13: npm ci 47 pkgs 0 vuln, build PASS (content 182 workshops, 18 tools, sitemap 14971 0 broken), ',
+        content: 'Node 24 clean npm ci and website build passed in the separate verification copy, and the synchronized patched dependency set reported zero advisories. Do not mark the full task done until required GitHub checks pass on the release commit. Evidence: Local Node 26.2 npm 11.13: npm ci 47 pkgs 0 vuln, build PASS (content 182 workshops, 18 tools, sitemap 14971 0 broken), validate:public PASS, validate:links 14971 0 broken, test:resources PASS, test:workshop-answers 12/12 PASS (fixed defold-snake fixture 1->0), test:offline PASS, validate:workshops 39/39+22/22 PASS, validate:css timeout dev-board only, validate:js fixed store-page-builder SyntaxError (inner </script> escape) but environmental EADDRINUSE on 8979 in this shell - CI uses fresh runner. Ready for GitHub required checks.'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,

@@ -22,6 +22,7 @@ const tools = [
   ]],
   ['Audio Pipeline', '🎵', [
     ['Audio Studio', 'Unified — compose loops, SFX, chiptune & drums in one studio. Sequencer, effects, WAV/MP3 export + Game Maker handoff. No installs.', '../tools/sound-studio.html', '../SoundStudioCover.webp', ['Music', 'SFX', 'Drums'], ['WAV','MP3','Loop']],
+    ['SFX Generator', '12 categories of retro SFX — pitch, reverb, batch export and Game Maker handoff. 72 variants, one click.', '../tools/sfx-generator.html', '../SFXStudioCover.png', ['SFX', 'Retro', 'Batch'], ['WAV','MP3']],
     ['Drum Pad', 'Quick drum machine — now also inside Audio Studio (Drum kits). Tap beats and record loops.', '../tools/drum-pad.html', '../DrumPadDevToolCoverImage.webp', ['Beats', 'Kits', 'Loops'], ['WAV','Loop','MIDI']]
   ]],
   ['Level & World Data', '🧱', [
