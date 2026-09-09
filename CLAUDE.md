@@ -30,7 +30,9 @@ Refs: `JVDS_PRODUCT_VISION.md`, `F:/Website/studio-workspace/CLAIM_GUIDE.md`, `F
 ```bash
 node F:/Website/studio-workspace/board-keeper.cjs --check
 node F:/Website/studio-workspace/board-keeper.cjs --claim A46 --agent "claude-code"
-# ... do work, verify acceptance checks, update tasks.json status+evidence ...
+# ... do work, fill tasks.json evidence (must name file + test output), then BOT gate (required):
+node F:/Website/studio-workspace/board-keeper.cjs --request-review A46
+# BOT PASS -> human_review | BOT FAIL -> stays in_progress. Approve re-runs bot live. Never hand-edit status.
 node F:/Website/studio-workspace/board-keeper.cjs --sync
 node F:/Website/studio-workspace/board-keeper.cjs --release A46 --status backlog  # to abandon
 ```
