@@ -102,6 +102,10 @@ class AudioEffects {
     });
   }
 
+  playPowerup() {
+    this.playSuccess(1400);
+  }
+
   playCombo(multiplier = 2) {
     if (!this.getContext() || !this.getVolume()) return;
     const now = this.audioContext.currentTime;
@@ -305,3 +309,4 @@ class ParticleSystem {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AudioEffects, ScreenShake, ParticleSystem };
 }
+

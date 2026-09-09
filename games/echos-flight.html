@@ -37,22 +37,30 @@
     </div>
     <button class="home-btn" onclick="location.href='../pages/games.html'">🏠</button>
   </div>
+  <div id="flightStrip" class="flight-strip" aria-live="polite"><span id="flightRoute">SUNLIT REEF</span><span id="flightLeg">Gate 0 / 8</span><span id="flightBuild">Reef glider</span></div>
   <div class="tap-hint" id="tapHint">Tap to flap!</div>
 
   <div class="modal show" id="startModal">
     <div class="card">
       <h1>🩷 Echo's Flight</h1>
-      <div class="sub">Tap to flap, weave the pipes</div>
-      <p>Keep Echo in the air, glide through the gaps and chase your best score. One tap to flap that's it.</p>
+      <div class="sub">The reef is only the beginning.</div>
+      <p>Guide Echo through living reefs. Choose your equipment, brave richer currents and build a different expedition every flight.</p>
+      <div class="flight-label">CHOOSE YOUR EQUIPMENT</div>
+      <div id="flightLoadouts" class="flight-options"></div>
+      <p class="flight-controls">Tap or Space to rise. P pauses. Pass 8 gates to choose your next route. Fish are optional; survival comes first.</p>
+      <p id="flightJournal" class="flight-journal"></p>
       <div class="stats">
         <div class="stat"><div class="l">Best</div><div class="v" id="bestStart">0</div></div>
         <div class="stat"><div class="l">Flights</div><div class="v" id="gamesStart">0</div></div>
       </div>
-      <button class="btn" onclick="startGame()">Play</button>
+      <button class="btn" onclick="startGame()">Begin expedition</button>
       <button class="btn ghost" onclick="location.href='../pages/games.html'">Back to Games</button>
     </div>
   </div>
 
+  <div class="modal" id="routeModal" role="dialog" aria-modal="true" aria-labelledby="routeTitle">
+    <div class="card route-card"><div class="flight-label">A MOMENT TO BREATHE</div><h1 id="routeTitle">Choose your current</h1><p>Each route changes the next eight gates and adds something to your equipment.</p><div id="routeOptions" class="flight-options"></div></div>
+  </div>
   <div class="modal" id="overModal">
     <div class="card">
       <div class="medal" id="medal">🥉</div>
@@ -62,7 +70,9 @@
         <div class="stat"><div class="l">Score</div><div class="v" id="finalScore">0</div></div>
         <div class="stat"><div class="l">Best</div><div class="v" id="finalBest">0</div></div>
       </div>
-      <button class="btn" onclick="startGame()">Play Again</button>
+      <p id="flightDebrief"></p>
+      <button class="btn" onclick="startGame()">Fly again with this equipment</button>
+      <button class="btn ghost" onclick="showFlightHangar()">Change equipment</button>
       <button class="btn ghost" onclick="location.href='../pages/games.html'">Back to Games</button>
     </div>
   </div>
@@ -105,6 +115,8 @@ let activePowers = {shield:false,slowmo:false};
 let powerTimer = null;
 let combo = 0, comboTimer = 0;
 
+let flight = null;
+let flightEndTimer = null;
 let state = 'idle';        // idle | playing | dead
 let score = 0, best = 0;
 let streak = 0;
@@ -143,7 +155,10 @@ function spawnPipe() {
   // margin defined as pipeMargin
   const minTop = pipeMargin;
   const maxTop = H - GROUND_H - pipeGap - pipeMargin;
-  const top = minTop + Math.random() * Math.max(20, maxTop - minTop);
+  const desired = minTop + Math.random() * Math.max(0, maxTop - minTop);
+  const previous = pipes.length ? pipes[pipes.length-1].top + pipes[pipes.length-1].gap/2 : H*0.42;
+  const center = Math.max(pipeGap/2+minTop,Math.min(H-GROUND_H-pipeMargin-pipeGap/2, Math.max(previous-H*0.19,Math.min(previous+H*0.19,desired+pipeGap/2))));
+  const top = center-pipeGap/2;
   pipes.push({ x: W + 40, top: top, gap: pipeGap, scored: false });
 }
 
@@ -151,27 +166,30 @@ function activatePower(type) {
   if (type === "shield") {
     activePowers.shield = true;
     if (powerTimer) clearTimeout(powerTimer);
-    powerTimer = setTimeout(() => { activePowers.shield = false; }, 10000);
+    flight.shieldTime = 10;
   } else if (type === "slowmo") {
     activePowers.slowmo = true;
     if (powerTimer) clearTimeout(powerTimer);
-    powerTimer = setTimeout(() => { activePowers.slowmo = false; }, 8000);
+    flight.slowTime = 8;
   }
 }
 function flap() {
   if (state !== 'playing') return;
-  bird.vy = FLAP_V;
+  bird.vy = FLAP_V * (flight?.kit.glide ? 0.84 : 1);
   bird.wing = 1;
   audioEffects.playTap(680);
   for (let i = 0; i < 4; i++) particles.push({ x: bird.x - birdR, y: bird.y + birdR * 0.5, vx: -40 - Math.random() * 60, vy: 40 + Math.random() * 60, life: 0.4, r: 2 + Math.random() * 2, c: 'rgba(255,255,255,0.8)' });
 }
 
 function startGame() {
+  clearTimeout(flightEndTimer);
+  if(GameUI._autoPauseController?.paused) GameUI._autoPauseController.resume();
   gameSystem.beginRun();
   document.getElementById('startModal').classList.remove('show');
   document.getElementById('overModal').classList.remove('show');
   resize();
   reset();
+  beginExpedition();
   state = 'playing';
   startedAt = performance.now();
   document.getElementById('tapHint').classList.add('show');
@@ -180,6 +198,7 @@ function startGame() {
 
 function die() {
   if (state !== 'playing') return;
+  finishExpedition();
   state = 'dead';
   flashT = 0.12; shakeT = 0.35; shakeMag = 10;
   audioEffects.playError();
@@ -205,7 +224,7 @@ function die() {
   else if (score >= 5) { medal = '🥉'; title = 'Bronze!'; }
   else { medal = '🪶'; title = 'Keep going!'; }
 
-  setTimeout(() => {
+  flightEndTimer = setTimeout(() => {
     document.getElementById('medal').textContent = medal;
     document.getElementById('overTitle').textContent = 'Game Over';
     document.getElementById('overSub').textContent = isBest && score > 0 ? 'New best score! ' + title : title;
@@ -221,7 +240,11 @@ function onPress(e) {
   if (state === 'playing') { e.preventDefault(); flap(); }
 }
 canvas.addEventListener('pointerdown', onPress);
-window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); flap(); } });
+window.addEventListener('keydown', (e) => {
+  if (e.target.closest('button,input,select,textarea')) return;
+  if (e.code === 'Space' && state==='playing') { e.preventDefault(); if(!e.repeat)flap(); }
+  if(e.code==='KeyP')flightPause.toggle();
+});
 
 // ── loop ──
 let last = performance.now();
@@ -248,20 +271,22 @@ function update(dt) {
 
   if (state !== 'playing') { if (state === 'dead') { bird.vy = Math.min(bird.vy + GRAVITY*dt, MAX_FALL); bird.y = Math.min(bird.y + bird.vy*dt, H - GROUND_H - birdR); } return; }
 
+  tickExpedition(dt);
+
   // hide hint after the first couple of seconds
   if (performance.now() - startedAt > 1600) document.getElementById('tapHint').classList.remove('show');
 
   // bird physics
-  bird.vy = Math.min(bird.vy + GRAVITY * dt, MAX_FALL);
+  bird.vy = Math.min(bird.vy + GRAVITY * (flight.kit.glide ? 0.72 : 1) * dt, MAX_FALL);
   bird.y += bird.vy * dt;
   bird.rot = Math.max(-0.5, Math.min(1.4, bird.vy / 620));
   if (bird.wing > 0) bird.wing = Math.max(0, bird.wing - dt * 5);
 
   // difficulty ramp
-  let baseSpeed = 165 + Math.min(score * 4.5, 130);
+  let baseSpeed = (155 + Math.min(flight.gates * 2.5, 95)) * FLIGHT_ROUTES[flight.route].speed;
   if (activePowers.slowmo) baseSpeed *= 0.55;
   pipeSpeed = baseSpeed;
-  pipeGap = Math.max(H * 0.18, H * 0.30 - score * 1.2);
+  pipeGap = Math.max(birdR * 5.2, H * 0.30 - Math.min(flight.gates * 0.7, H*0.07)) * FLIGHT_ROUTES[flight.route].gap;
 
   // spawn pipes by distance
   distSinceSpawn += pipeSpeed * dt;
@@ -285,7 +310,9 @@ function update(dt) {
     if (c.x < -30) { collectibles.splice(i,1); continue; }
     if (!c.collected) {
       const dx = bird.x - c.x, dy = bird.y - c.y;
-      if (Math.hypot(dx,dy) < birdR + 12) {
+      const dist=Math.hypot(dx,dy);
+      if(flight.kit.magnet && dist<105){c.x+=dx*dt*5;c.y+=dy*dt*5;}
+      if (dist < birdR + 12) {
         c.collected = true;
         if (c.type === "power") {
           activatePower("shield");
@@ -293,7 +320,9 @@ function update(dt) {
           ParticleSystem.burst(c.x, c.y, "star", 6);
         } else {
           const mult = activePowers.slowmo ? 2 : 1;
-          score += 3 * mult;
+          score += 3 * mult * FLIGHT_ROUTES[flight.route].loot;
+          flight.fish++;
+          if(flight.kit.salvage && flight.fish%5===0) activatePower('slowmo');
           audioEffects.playTap(1100);
           ParticleSystem.burst(c.x, c.y, "coin", 4);
         }
@@ -327,6 +356,7 @@ function update(dt) {
       const mult = combo >= 10 ? 3 : combo >= 5 ? 2 : combo >= 3 ? 1.5 : 1;
       const pts = Math.round(1 * mult);
       score += pts;
+      recordFlightGate(perfect);
       const streakPill = document.getElementById('streakPill');
       if (combo >= 3) { streakPill.style.display = ''; document.getElementById('streakHud').textContent = "x" + combo + " (" + mult + "x)"; }
       else if (streak >= 2) { streakPill.style.display = ''; document.getElementById('streakHud').textContent = streak; }
@@ -344,14 +374,16 @@ function update(dt) {
     if (p.x + PIPE_W < -20) pipes.splice(i, 1);
   }
 
+  if(flight.gates>0 && flight.gates%8===0 && flight.checkpoint<flight.gates){ openFlightRoutes(); return; }
+
   // collision: ground/ceiling
-  if (bird.y + birdR >= H - GROUND_H) { bird.y = H - GROUND_H - birdR; die(); return; }
+  if (bird.y + birdR >= H - GROUND_H) { bird.y = H - GROUND_H - birdR; if(absorbFlightHit()){bird.vy=FLAP_V*0.8;}else{die();return;} }
   if (bird.y - birdR <= 0) { bird.y = birdR; bird.vy = 0; }
 
   // collision: pipes (circle vs the two rects)
   for (const p of pipes) {
     if (bird.x + birdR > p.x && bird.x - birdR < p.x + PIPE_W) {
-      if (bird.y - birdR < p.top || bird.y + birdR > p.top + p.gap) { die(); return; }
+      if (bird.y - birdR < p.top || bird.y + birdR > p.top + p.gap) { if(absorbFlightHit()){bird.y=p.top+p.gap/2;bird.vy=0;}else{die();return;} }
     }
   }
 }
@@ -363,7 +395,8 @@ function draw() {
 
   // deep water
   const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, '#08425e'); sky.addColorStop(0.55, '#0e6e8e'); sky.addColorStop(1, '#17a3ad');
+  const palette=FLIGHT_ROUTES[flight?.route||'reef'].colors;
+  sky.addColorStop(0,palette[0]); sky.addColorStop(0.55,palette[1]); sky.addColorStop(1,palette[2]);
   ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
   // vignette
   const vig = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.3, W/2, H/2, Math.max(W,H)*0.9);
@@ -420,6 +453,7 @@ function draw() {
   ctx.fillStyle = 'rgba(0,0,0,.14)'; ctx.beginPath(); ctx.ellipse(bird.x+6, bird.y+birdR+8, birdR*0.7, birdR*0.18, 0,0,Math.PI*2); ctx.fill();
   // bird
   drawBird();
+  drawFlightEquipment();
 
   // hit flash
   if (flashT > 0) { ctx.fillStyle = `rgba(190,245,255,${Math.max(0, flashT/0.12)*0.32})`; ctx.fillRect(0, 0, W, H); }
@@ -527,10 +561,11 @@ document.getElementById('bestStart').textContent = best;
 document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
 document.getElementById('bestHud').textContent = best;
 reset();
-requestAnimationFrame(loop);
+window.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(loop),{once:true});
 
 window.addEventListener('beforeunload', () => { gameSystem.saveState(); });
 </script>
+<script src="../echo-flight-expedition.js"></script>
 <script defer src="../cookie-consent.js"></script>
 <script defer src="/mascots.js"></script>
 </body>

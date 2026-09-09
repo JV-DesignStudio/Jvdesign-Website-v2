@@ -36,15 +36,16 @@
     <button class="home-btn" onclick="location.href='../pages/games.html'">🏠</button>
   </div>
 
-  <div class="board" id="board"></div>
+  <section class="order-counter" aria-label="Bakery order"><div id="orderTicket">Choose your first order when the shift starts.</div><div id="orderPantry" aria-live="polite"></div><button id="serveOrder" type="button" onclick="serveDoughOrder()" disabled>Order in progress</button></section>
+  <div id="comboDisplay" class="dough-combo" aria-live="polite"></div><div class="board" id="board"></div>
 
   <div class="modal show" id="startModal">
     <div class="card-modal">
       <h1>🧁 Dough Dash</h1>
-      <div class="sub">Match 3+ tiles to clear</div>
+      <div class="sub">A little bakery. A very busy counter.</div>
       <div class="how">
         <div>Tap a tile, then tap a neighbour to swap them. Match 3+ in a row or column.</div>
-        <div style="margin-top:8px;">Swaps that don't match bounce back for free. Chain cascades for big multipliers , ×2, ×3, ×4! 🔥</div>
+        <div style="margin-top:8px;">Matches stock your pantry. Choose an order, gather its pastries and serve it for more moves. Take quick jobs to stay open or risk a big celebration cake.</div>
       </div>
       <div class="stats">
         <div class="stat"><div class="l">Best Score</div><div class="v" id="bestStart">0</div></div>
@@ -55,6 +56,7 @@
     </div>
   </div>
 
+  <div class="modal" id="orderModal" role="dialog" aria-modal="true" aria-labelledby="orderTitle"><div class="card-modal"><h1 id="orderTitle">What will you bake?</h1><p>Leftover pastries stay in your pantry. Choose your next order around what you have.</p><div id="doughOrderChoices"></div></div></div>
   <div class="modal" id="endModal">
     <div class="card-modal">
       <h1 id="endTitle">Game Over</h1>
@@ -80,7 +82,7 @@ if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolu
 const TILES = ['🍪', '🧁', '🥐', '🍰', '🍩'];
 const TILE_COLORS = {'🍪':'#ff8c42','🧁':'#ff6b9d','🥐':'#ffd93d','🍰':'#6bcb77','🍩':'#a855f7'};
 const COLS = 5, ROWS = 8;
-const MOVES_LIMIT = 30;
+let MOVES_LIMIT = 30;
 
 let grid = [];
 let state = 'menu';
@@ -194,13 +196,13 @@ function findHintPair() {
     for (let c = 0; c < COLS; c++) {
       if (c < COLS - 1) {
         [grid[r][c], grid[r][c + 1]] = [grid[r][c + 1], grid[r][c]];
-        const found = findMatches().size > 0;
+        const found = findMatches().toRemove.size > 0;
         [grid[r][c], grid[r][c + 1]] = [grid[r][c + 1], grid[r][c]];
         if (found) return [{ r, c }, { r, c: c + 1 }];
       }
       if (r < ROWS - 1) {
         [grid[r][c], grid[r + 1][c]] = [grid[r + 1][c], grid[r][c]];
-        const found = findMatches().size > 0;
+        const found = findMatches().toRemove.size > 0;
         [grid[r][c], grid[r + 1][c]] = [grid[r + 1][c], grid[r][c]];
         if (found) return [{ r, c }, { r: r + 1, c }];
       }
@@ -236,7 +238,7 @@ function activateRainbow(r, c) {
 }
 function selectTile(r, c) {
   clearHint(); scheduleHint();
-  if (state !== 'playing' || busy || !grid[r][c]) return;
+  if (state !== 'playing' || busy || moves >= MOVES_LIMIT || !grid[r][c]) return;
   if (selected && selected.r === r && selected.c === c) {
     selected = null;
     renderBoard();
@@ -259,10 +261,8 @@ function selectTile(r, c) {
   // Check if either tile is a special
   const sTile = grid[s.r][s.c];
   const tTile = grid[r][c];
-  if (sTile && sTile.special === 'bomb') { activateBomb(s.r, s.c); grid[s.r][s.c] = null; selected = null; renderBoard(); return; }
-  if (tTile && tTile.special === 'bomb') { activateBomb(r, c); grid[r][c] = null; selected = null; renderBoard(); return; }
-  if (sTile && sTile.special === 'rainbow') { activateRainbow(s.r, s.c); grid[s.r][s.c] = null; selected = null; renderBoard(); return; }
-  if (tTile && tTile.special === 'rainbow') { activateRainbow(r, c); grid[r][c] = null; selected = null; renderBoard(); return; }
+  if(sTile?.special){useDoughSpecial(s.r,s.c);return;}
+  if(tTile?.special){useDoughSpecial(r,c);return;}
   selected = null;
   doSwap(s, { r, c });
 }
@@ -331,6 +331,7 @@ function resolveMatches(chain) {
 
   // Combo multiplier
   const mult = chain >= 5 ? 3 : chain >= 3 ? 2 : chain >= 2 ? 1.5 : 1;
+  stockDoughPantry(toRemove);
   const size = toRemove.size;
   let pts = Math.round(size * 10 * chain * mult);
   if (size >= 4) pts += (size - 3) * 20;
@@ -388,7 +389,7 @@ function resolveMatches(chain) {
     renderBoard();
     if (!resolveMatches(chain + 1)) {
       busy = false;
-      if (moves >= MOVES_LIMIT) endGame();
+      if (moves >= MOVES_LIMIT && !doughOrderReady()) endGame();
       else reshuffleIfStuck();
       scheduleHint();
     }
@@ -401,13 +402,13 @@ function hasAnyMove() {
     for (let c = 0; c < COLS; c++) {
       if (c < COLS - 1) {
         [grid[r][c], grid[r][c+1]] = [grid[r][c+1], grid[r][c]];
-        const found = findMatches().size > 0;
+        const found = findMatches().toRemove.size > 0;
         [grid[r][c], grid[r][c+1]] = [grid[r][c+1], grid[r][c]];
         if (found) return true;
       }
       if (r < ROWS - 1) {
         [grid[r][c], grid[r+1][c]] = [grid[r+1][c], grid[r][c]];
-        const found = findMatches().size > 0;
+        const found = findMatches().toRemove.size > 0;
         [grid[r][c], grid[r+1][c]] = [grid[r+1][c], grid[r][c]];
         if (found) return true;
       }
@@ -460,9 +461,12 @@ function startGame() {
   renderBoard();
   reshuffleIfStuck();
   startTime = performance.now();
+  startDoughShift();
 }
 
 function endGame() {
+  if(state==='over')return;
+  finishDoughShift();
   state = 'over';
   gameSystem.addScore(score);
   gameSystem.addXP(Math.max(3, Math.floor(score / 30)));
@@ -474,7 +478,7 @@ function endGame() {
   best = Math.max(best, score);
   if (score >= 200) ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 16);
   document.getElementById('endTitle').textContent = score >= 200 ? '🎉 Excellent!' : 'Game Over';
-  document.getElementById('endSub').textContent = score >= 200 ? 'Master matcher!' : moves >= MOVES_LIMIT ? 'Out of moves!' : 'Nice score!';
+  document.getElementById('endSub').textContent = doughShift.served+' orders served · '+doughShift.stockUsed+' pastries delivered. '+(doughShift.served?'Build your next order from the stock you already have.':'Try a quick batch first to earn breathing room.');
   document.getElementById('finalScore').textContent = score.toLocaleString();
   GameUI.countUp(document.getElementById('finalScore'), score);
   document.getElementById('finalBest').textContent = best;
@@ -490,7 +494,10 @@ best = gameSystem.state.highScore || 0;
 document.getElementById('bestStart').textContent = best;
 document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
 </script>
+<script src="../dough-dash-orders.js"></script>
 <script defer src="../cookie-consent.js"></script>
 <script defer src="/mascots.js"></script>
 </body>
 </html>
+
+
