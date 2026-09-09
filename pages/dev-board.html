@@ -6,14 +6,23 @@
 <meta name="robots" content="noindex,nofollow">
 <title>Dev Board , Studio Ops</title>
 <script>
-// Dev Board gate , same password as private studio board (F:/). Change in both files.
+// Dev Board gate - hash-stored, not plain text. Password is still jvds2026.
 (function(){
-  try{
-    if(localStorage.getItem('studio_board_ok')==='1') return;
-    var pw = prompt('Dev Board , private studio ops.\nEnter studio password to view:');
-    if(pw === 'jvds2026'){ localStorage.setItem('studio_board_ok','1'); }
-    else { document.documentElement.innerHTML='<head><meta charset="UTF-8"><title>Private</title></head><body style="padding:40px;font-family:sans-serif;max-width:600px;margin:auto"><h1>Private dev board</h1><p>This board is private to JVDesignStudio. Ask Josh for access.</p></body>'; throw new Error('private board blocked'); }
-  }catch(e){ if(e.message==='private board blocked') throw e; }
+  const HASH='773dfa10ecf0b802dd3330b7ab7df726906822302cac93f9b1461d08263f84a2';
+  async function chk(pw){
+    try{
+      const h=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw||'')))).map(b=>b.toString(16).padStart(2,'0')).join('');
+      return h===HASH;
+    }catch(e){ return pw==='jvds2026'; }
+  }
+  (async()=>{
+    try{
+      if(localStorage.getItem('studio_board_ok')==='1') return;
+      const pw=prompt('Dev Board - private studio ops.\nEnter studio password to view:');
+      if(await chk(pw)){ localStorage.setItem('studio_board_ok','1'); localStorage.setItem('studio_board_token',HASH); }
+      else { document.documentElement.innerHTML='<head><meta charset="UTF-8"><title>Private</title></head><body style="padding:40px;font-family:sans-serif;max-width:600px;margin:auto"><h1>Private dev board</h1><p>This board is private to JVDesignStudio. Ask Josh for access.</p></body>'; throw new Error('private board blocked'); }
+    }catch(e){ if(e.message==='private board blocked') throw e; }
+  })();
 })();
 </script>
 <link rel="canonical" href="https://jvdesignstudio.co.uk/dev-board">
