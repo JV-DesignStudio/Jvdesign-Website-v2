@@ -16,6 +16,31 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  await page.setViewport({width:390,height:844,isMobile:true});
  await page.goto(`http://127.0.0.1:${port}/tools/story-editor.html`,{waitUntil:'domcontentloaded',timeout:15000});
  await new Promise(r=>setTimeout(r,1000));
+ const flow=await page.evaluate(()=>{
+   closeStoryWelcome();
+   selectedNode='n2';
+   buildEditPanel();
+   updateNodeField('text','Ember helps write the first scene.');
+   addNode('end');
+   const endId=selectedNode;
+   updateNodeField('text','The story ends cleanly.');
+   selectedNode='n2';
+   buildEditPanel();
+   updateNodeField('to',endId);
+   openPreview();
+   previewGo('n2');
+   const firstPreview=document.getElementById('previewScene').innerText;
+   previewGo(endId);
+   const endPreview=document.getElementById('previewScene').innerText;
+   saveToSlot(0);
+   return {
+     typedCard:[...document.querySelectorAll('.story-node')].some(n=>n.innerText.includes('Ember helps write the first scene.')),
+     firstPreview:firstPreview.includes('Ember helps write the first scene.'),
+     endPreview:endPreview.includes('The story ends cleanly.') && endPreview.includes('The End'),
+     savedSlot:(document.getElementById('saveSlots')?.innerText||'').includes('My Story'),
+     selectedNode:endId
+   };
+ });
  const data=await page.evaluate(()=>{
    try{localStorage.setItem('jvds_story_slots', JSON.stringify([{name:'<img src=x onerror=alert(1)>',nodeCount:2,date:'today',data:{nodes:[],chars:[],vars:[]}}])); renderSaveSlots();}catch(e){}
    return {
@@ -40,9 +65,16 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  check('visible text has no mojibake', data.cleanText);
  check('preview button clean', data.previewBtn);
  check('export/handoff functions exist', data.exportFns);
+ check('authoring flow keeps typed text on node card', flow.typedCard);
+ check('preview shows edited dialogue', flow.firstPreview);
+ check('preview reaches a clean ending', flow.endPreview);
+ check('save slot records the story', flow.savedSlot);
  check('saved slot name escaped', data.escapedSlot);
  check('mobile does not overflow viewport', data.scrollWidth<=data.clientWidth+2, `${data.scrollWidth}/${data.clientWidth}`);
  check('zero runtime errors', errors.length===0, errors.join(' | '));
  await browser.close(); server.close();
  if(failures){console.log(`\n${failures} FAILURE(S)`);process.exit(1);} console.log('\nALL STORY EDITOR CHECKS PASSED');
 })().catch(e=>{console.error(e);server.close();process.exit(1);});
+
+
+

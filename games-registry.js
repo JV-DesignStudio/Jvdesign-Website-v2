@@ -78,7 +78,7 @@ window.JVDS_GAMES = [
     "cover": "EchoFlightCover.webp",
     "bg": "linear-gradient(135deg,#0a1a30,#1a3050)",
     "kids": false,
-    "desc": "Tap to keep Echo the axolotl airborne, weave through the gaps and fly as far as you can."
+    "desc": "Choose flight equipment, explore three currents and combine abilities across an expedition. Every eight gates brings a new route decision."
   },
   {
     "id": "pastry-match",
@@ -102,7 +102,7 @@ window.JVDS_GAMES = [
     "cover": "DoughDashCover.webp",
     "bg": "linear-gradient(135deg,#ff8fab,#ffb3d9)",
     "kids": false,
-    "desc": "Match 3+ tiles in rows or columns to clear the board. Mind the move limit and chain combos!"
+    "desc": "Match pastries to stock your pantry, choose bakery orders and serve six tickets before your moves run out. Leftovers shape your next decision."
   },
   {
     "id": "star-chef",

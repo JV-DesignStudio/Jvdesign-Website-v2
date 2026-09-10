@@ -2864,7 +2864,7 @@ window.JVDS_CONTENT = {
       "category": "Action",
       "cover": "EchoFlightCover.webp",
       "bg": "linear-gradient(135deg,#0a1a30,#1a3050)",
-      "desc": "Tap to keep Echo the axolotl airborne, weave through the gaps and fly as far as you can.",
+      "desc": "Choose flight equipment, explore three currents and combine abilities across an expedition. Every eight gates brings a new route decision.",
       "kids": false,
       "age": null,
       "character": "Echo",
@@ -2892,7 +2892,7 @@ window.JVDS_CONTENT = {
       "category": "Puzzle",
       "cover": "DoughDashCover.webp",
       "bg": "linear-gradient(135deg,#ff8fab,#ffb3d9)",
-      "desc": "Match 3+ tiles in rows or columns to clear the board. Mind the move limit and chain combos!",
+      "desc": "Match pastries to stock your pantry, choose bakery orders and serve six tickets before your moves run out. Leftovers shape your next decision.",
       "kids": false,
       "age": null,
       "character": null,
@@ -3819,7 +3819,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-09T14:42:37.567Z",
+    "generated": "2026-09-10T06:43:02.541Z",
     "workshops": 182,
     "games": 32,
     "tools": 18,

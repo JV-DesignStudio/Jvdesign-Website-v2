@@ -21,9 +21,9 @@ const tools = [
     ['Trading Card Designer', 'Create character cards with templates, rarities, stats, uploaded art and PNG export.', '../tools/trading-card-designer.html', '../CardMakerCoverImage.webp', ['Cards', 'Stats', 'PNG'], ['PNG','Print','JSON']],
   ]],
   ['Audio Pipeline', '🎵', [
-    ['Audio Studio', 'Unified — compose loops, SFX, chiptune & drums in one studio. Sequencer, effects, WAV/MP3 export + Game Maker handoff. No installs.', '../tools/sound-studio.html', '../SoundStudioCover.webp', ['Music', 'SFX', 'Drums'], ['WAV','MP3','Loop']],
-    ['SFX Generator', '12 categories of retro SFX — pitch, reverb, batch export and Game Maker handoff. 72 variants, one click.', '../tools/sfx-generator.html', '../SFXStudioCover.png', ['SFX', 'Retro', 'Batch'], ['WAV','MP3']],
-    ['Drum Pad', 'Quick drum machine — now also inside Audio Studio (Drum kits). Tap beats and record loops.', '../tools/drum-pad.html', '../DrumPadDevToolCoverImage.webp', ['Beats', 'Kits', 'Loops'], ['WAV','Loop','MIDI']]
+    ['Audio Studio', 'Start here for full songs and loops: compose music, use drum tracks, shape chiptune instruments and export WAV/MP3 for Game Maker.', '../tools/sound-studio.html', '../SoundStudioCover.webp', ['Music', 'Loops', 'Chiptune'], ['WAV','MP3','Loop']],
+    ['SFX Generator', 'Start here for game sound effects: jump, coin, laser, hit, UI, win and lose sounds with preset packs and batch export.', '../tools/sfx-generator.html', '../SFXStudioCover.png', ['SFX', 'Game Sounds', 'Batch Packs'], ['WAV','MP3','ZIP']],
+    ['Drum Pad', 'Start here for drum kits and rhythm ideas: switch kits, tap pads, record patterns, save loops and export beats.', '../tools/drum-pad.html', '../DrumPadDevToolCoverImage.webp', ['Drum Kits', 'Beats', 'Loops'], ['WAV','Loop','Pattern']]
   ]],
   ['Level & World Data', '🧱', [
     ['BuildLab', 'Make Roblox-style 3D block models with shapes, paint, transforms, touch support and OBJ / GLTF / RBXM export.', '../tools/buildlab.html', '../BlockBuilderCover.webp', ['3D Models', 'Roblox', 'Export'], ['OBJ','GLTF','RBXM']],
@@ -81,6 +81,26 @@ function workshopCompanionCard(item) {
     '</a>';
 }
 
+
+function audioRouteMarkup() {
+  return `<div class="audio-route-map reveal" aria-label="Audio tool quick routes">
+        <a href="../tools/sfx-generator.html" class="audio-route-card">
+            <span class="audio-route-kicker">Need a sound effect?</span>
+            <strong>SFX Generator</strong>
+            <span>Jump, coin, hit, UI, win/lose and genre packs.</span>
+        </a>
+        <a href="../tools/drum-pad.html" class="audio-route-card">
+            <span class="audio-route-kicker">Need a beat?</span>
+            <strong>Drum Pad</strong>
+            <span>Drum kits, SFX pads, recorded patterns and loops.</span>
+        </a>
+        <a href="../tools/sound-studio.html" class="audio-route-card">
+            <span class="audio-route-kicker">Need music?</span>
+            <strong>Audio Studio</strong>
+            <span>Sequenced tracks, chiptune instruments and WAV export.</span>
+        </a>
+    </div>`;
+}
 function card(tool, category) {
   const [title, desc, href, image, tags, outputs] = tool;
   const thumb = image
@@ -116,7 +136,7 @@ const categoryMarkup = tools.map(category => {
             <span class="category-title">${name}</span>
             <span class="category-count">${items.length} tools</span>
         </div>
-        <div class="tools-grid">
+        ${name === 'Audio Pipeline' ? audioRouteMarkup() : ''}`n        <div class="tools-grid">
 ${items.map(item => card(item, category)).join('\n')}
         </div>
     </div>`;

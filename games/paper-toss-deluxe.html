@@ -28,6 +28,7 @@
 </head>
 <body>
 <div class="wrapper" id="wrapper">
+  <div class="toss-contracts"><div role="group" aria-label="Shot contract"><button type="button" data-toss-contract="direct" aria-pressed="true" onclick="selectTossContract('direct')">Direct shot</button><button type="button" data-toss-contract="bank" aria-pressed="false" onclick="selectTossContract('bank')">Bank shot · risk / reward</button></div><p id="tossTip">Fifteen baskets finish the office tour.</p></div>
   <canvas id="canvas"></canvas>
   <div class="hud">
     <div class="pills">
@@ -148,8 +149,15 @@ let shakeT = 0;
 let resultText = null; // {txt,color,t,x,y}
 let startedAt = 0;
 let arcadePaused = false;
+let tossContract='direct',bankShots=0,tossEndTimer=null;
+function selectTossContract(mode){
+ if(!['direct','bank'].includes(mode)||!['idle','ready'].includes(state)||arcadePaused)return;
+ tossContract=mode;document.querySelectorAll('[data-toss-contract]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tossContract===mode)));
+ document.getElementById('tossTip').textContent=mode==='bank'?'Bounce off either side wall before scoring. Double points and recover one life.':'Direct shot: clear the desk safely. Fifteen baskets finish the office tour.';
+}
 
 function reset() {
+  bankShots=0;
   score = 0; level = 1; lives = 3; hits = 0; combo = 0;
   paper = null; particles = []; resultText = null;
   best = gameSystem.state.highScore || 0;
@@ -172,6 +180,8 @@ function updateHud() {
 }
 
 function startGame() {
+  clearTimeout(tossEndTimer);
+  if(GameUI._autoPauseController?.paused)GameUI._autoPauseController.resume();
   gameSystem.beginRun();
   document.getElementById('startModal').classList.remove('show');
   document.getElementById('overModal').classList.remove('show');
@@ -179,6 +189,7 @@ function startGame() {
   reset();
   arcadePaused = false;
   state = 'ready';
+  selectTossContract('direct');
   startedAt = performance.now();
 }
 
@@ -197,9 +208,12 @@ function throwPaper() {
 }
 
 function scoreHit() {
+  if(state!=='flying')return;
+  if(tossContract==='bank'&&!paper?.banked){miss();resultText={txt:'BANK OFF A WALL FIRST',color:'#ff8a8a',t:1.2,x:W/2,y:H*.4};return;}
+  if(tossContract==='bank'){bankShots++;lives=Math.min(3,lives+1);}
   combo++;
   hits++;
-  const gained = 100 * combo;
+  const gained = 100 * combo * (tossContract==='bank'?2:1);
   score += gained;
   if (score > (gameSystem.state.highScore || 0)) gameSystem.state.highScore = score;
   gameSystem.addXP(Math.max(2, Math.floor(gained / 20)));
@@ -213,6 +227,7 @@ function scoreHit() {
   for (let i = 0; i < 14; i++) particles.push({ x: bin.x, y: bin.y, vx: (Math.random()-0.5)*260, vy: -Math.random()*260, life: 0.6, r: 2+Math.random()*3, c: combo>=3?'#ffd24a':'#8ff0c0' });
   resultText = { txt: (combo > 1 ? combo + 'x COMBO! ' : '') + '+' + gained, color: combo>=3?'#ffd24a':'#8ff0c0', t: 1, x: bin.x, y: bin.y - 40 };
 
+  if(hits>=15){paper=null;gameOver();document.getElementById('overTitle').textContent='Office tour complete!';document.getElementById('overSub').textContent='15 baskets · '+bankShots+' bank shots. Try a tour with more trick shots.';try{localStorage.setItem('jvds_toss_tours',String((Number(localStorage.getItem('jvds_toss_tours'))||0)+1));}catch{}return;}
   hits % 3 === 0 ? levelUp() : 0;
   paper = null; state = 'ready';
   newWind(); placeBin();
@@ -252,7 +267,7 @@ function gameOver() {
   GameUI.countUp(document.getElementById('finalScore'), score);
   GameUI.showMedal(document.getElementById('finalScore').closest('.stats') || document.getElementById('finalScore'), score, [[300,'🥉','Casual Toss'],[800,'🥈','Sharpshooter'],[1500,'🏆','Bin Wizard']]);
   document.getElementById('finalBest').textContent = gameSystem.state.highScore;
-  setTimeout(() => {
+  tossEndTimer=setTimeout(() => {
     document.getElementById('overModal').classList.add('show');
     if (isBest) ParticleSystem.confetti(window.innerWidth/2, window.innerHeight/3, 18);
   }, 500);
@@ -265,7 +280,7 @@ function pos(e) {
   return { x: p.clientX - r.left, y: p.clientY - r.top };
 }
 canvas.addEventListener('pointerdown', (e) => {
-  if (state !== 'ready') return;
+  if (state !== 'ready' || arcadePaused) return;
   e.preventDefault();
   const p = pos(e);
   aim.active = true; aim.sx = p.x; aim.sy = p.y; aim.cx = p.x; aim.cy = p.y;
@@ -311,12 +326,19 @@ function update(dt) {
   if (resultText) { resultText.t -= dt; if (resultText.t <= 0) resultText = null; }
 
   if (state === 'flying' && paper) {
+    const previousY=paper.y,previousX=paper.x;
     paper.vy += GRAVITY * dt;
     paper.vx += wind * dt;
     paper.x += paper.vx * dt;
     paper.y += paper.vy * dt;
     paper.rot += paper.spin * dt;
 
+    if(tossContract==='bank'){
+      if(paper.x<10&&paper.vx<0){paper.x=10;paper.vx=Math.abs(paper.vx)*.82;paper.banked=true;audioEffects.playTap(420);}
+      if(paper.x>W-10&&paper.vx>0){paper.x=W-10;paper.vx=-Math.abs(paper.vx)*.82;paper.banked=true;audioEffects.playTap(420);}
+    }
+    // Sweep the opening, so a fast throw cannot skip the scoring strip.
+    if(previousY<bin.y&&paper.y>=bin.y&&paper.vy>0){const t=(bin.y-previousY)/(paper.y-previousY);const x=previousX+(paper.x-previousX)*t;if(x>bin.x-bin.w/2&&x<bin.x+bin.w/2){scoreHit();return;}}
     // into the bin opening while descending?
     if (paper.vy > 0) {
       const openL = bin.x - bin.w/2, openR = bin.x + bin.w/2;
@@ -391,6 +413,7 @@ function draw() {
   drawBinShadow(bin.x, bin.y + bin.h + 5, bin.w);
   drawBin();
   drawWind();
+  if(tossContract==='bank'){ctx.fillStyle='#e4a447';ctx.fillRect(0,H*.25,8,H*.6);ctx.fillRect(W-8,H*.25,8,H*.6);}
 
   // aim preview
   if (state === 'aiming' && aim.active) drawAim();

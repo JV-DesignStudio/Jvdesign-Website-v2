@@ -39,6 +39,7 @@
     <button class="home-btn" onclick="location.href='../pages/games.html'">🏠</button>
   </div>
 
+  <div class="pastry-tools"><span id="pastryFocus">Focus 3</span><button type="button" id="pastryNote" onclick="notePastry()" disabled>Pin revealed card · 1</button><button type="button" id="pastryGlance" onclick="glancePastries()" disabled>Glance at all · 3</button><small>Two matched pairs restore 1 focus. Pin a card to remember it, or save for a glance.</small></div>
   <div class="board" id="board"></div>
 
   <div class="modal show" id="startModal">
@@ -106,6 +107,10 @@ let flipped = [];
 let matched = 0;
 let startTime = 0;
 let timerInterval = null;
+let pastryFocus=3;
+function refreshPastryTools(){const a=document.getElementById('pastryNote'),b=document.getElementById('pastryGlance');a.disabled=state!=='playing'||pastryFocus<1||flipped.length!==1||cards[flipped[0]]?.noted;b.disabled=state!=='playing'||pastryFocus<3||flipped.length!==0;document.getElementById('pastryFocus').textContent='Focus '+pastryFocus;}
+function notePastry(){if(state!=='playing'||pastryFocus<1||flipped.length!==1||cards[flipped[0]].noted)return;pastryFocus--;cards[flipped[0]].noted=true;updateCard(flipped[0]);refreshPastryTools();}
+function glancePastries(){if(state!=='playing'||pastryFocus<3||flipped.length)return;pastryFocus-=3;state='glance';cards.forEach((c,i)=>{if(c.state==='hidden'){c.state='peek';updateCard(i);}});refreshPastryTools();pastryLater(()=>{cards.forEach((c,i)=>{if(c.state==='peek'){c.state='hidden';updateCard(i);}});state='playing';refreshPastryTools();},850);}
 
 function currentMode() { return MODES.find(m => m.id === chosenMode) || MODES[1]; }
 function initCards() {
@@ -146,10 +151,11 @@ function buildBoard() {
 
 function updateCard(i, animate) {
   const c = cards[i], btn = cardEls[i];
-  const shown = c.state !== 'hidden';
+  const shown = c.state !== 'hidden' || c.noted;
   btn.className = 'card-btn' + (shown ? ' flipped' : '') + (c.state === 'matched' ? ' matched' : '');
   btn.disabled = c.state === 'matched';
-  btn.textContent = shown ? c.emoji : '?';
+  btn.textContent = shown ? c.emoji+(c.noted&&c.state!=='matched'?' 📌':'') : '?';
+  btn.setAttribute('aria-label',shown?c.emoji+(c.noted?' remembered':''):'Hidden pastry '+(i+1));
   if (animate) {
     btn.classList.add('reveal');
     setTimeout(() => btn.classList.remove('reveal'), 300);
@@ -177,6 +183,7 @@ function flipCard(i) {
   cards[i].state = 'flipped';
   flipped.push(i);
   updateCard(i, true);
+  refreshPastryTools();
 
   if (flipped.length === 2) {
     moves++;
@@ -193,6 +200,7 @@ function checkMatch() {
     cards[a].state = 'matched';
     cards[b].state = 'matched';
     matched++;
+    if(matched%2===0)pastryFocus=Math.min(5,pastryFocus+1);
     streak++;
     const mult = streak >= 10 ? 3 : streak >= 5 ? 2 : streak >= 3 ? 1.5 : 1;
     const bonus = Math.round((streak - 1) * 25 * mult);
@@ -218,17 +226,9 @@ function checkMatch() {
     updateCard(a, true);
     updateCard(b, true);
     audioEffects.playError();
-    // Peek: when moves are low (<5), briefly reveal all unmatched cards
-    if (maxMoves - moves <= 5 && matched < currentMode().pairs - 1) {
-      pastryLater(() => {
-        cards.forEach((c, i) => { if (c.state === 'hidden') { c.state = 'peek'; updateCard(i); } });
-        pastryLater(() => {
-          cards.forEach((c, i) => { if (c.state === 'peek') { c.state = 'hidden'; updateCard(i); } });
-        }, 1200);
-      }, 400);
-    }
     if (moves >= maxMoves) { pastryLater(() => endGame(false), 600); return; }
   }
+  refreshPastryTools();
 }
 
 function startGame() {
@@ -236,6 +236,7 @@ function startGame() {
   pastryTimers.forEach(clearTimeout); pastryTimers.clear();
   document.getElementById('startModal').classList.remove('show');
   document.getElementById('winModal').classList.remove('show');
+  pastryFocus=3;
   initCards();
   buildBoard();
   clearInterval(timerInterval);
@@ -244,6 +245,7 @@ function startGame() {
 
   // sneak peek: show every pastry briefly, then flip back and start
   state = 'peek';
+  refreshPastryTools();
   floatText('👀 Memorise!', true);
   cardEls.forEach((btn, i) => {
     btn.classList.add('flipped', 'reveal');
@@ -252,6 +254,7 @@ function startGame() {
   pastryLater(() => {
     cardEls.forEach((btn, i) => updateCard(i, true));
     state = 'playing';
+    refreshPastryTools();
     startTime = performance.now();
     timerInterval = setInterval(() => {
       document.getElementById('timeHud').textContent = Math.round((performance.now() - startTime) / 1000);
