@@ -1,5 +1,5 @@
-// JVDesignStudio Service Worker v20 - unified Pixel Studio (Simple + Character + Draw + Animate)
-const CACHE='jvds-v20';
+// JVDesignStudio Service Worker v21 - A66 offline 15-min mission: precache Pixel Studio + Ember
+const CACHE='jvds-v21';
 const CORE=[
   '/',
   '/offline.html',
@@ -9,7 +9,16 @@ const CORE=[
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/assets/vendor/three/three.min.js',
-  '/assets/vendor/three/GLTFExporter.js'
+  '/assets/vendor/three/GLTFExporter.js',
+  '/tools/pixel-studio.html',
+  '/style-tool-pixel-studio.css',
+  '/tools/pixel-studio-unified-characters.js',
+  '/tools/pixel-studio-unified-adapter.js',
+  '/ember-guide.css',
+  '/ember-guide.js',
+  '/style-mascots.css',
+  '/assets/mascots/ember-hero.webp',
+  '/assets/mascots/ember-badge.webp'
 ];
 
 self.addEventListener('install',e=>{

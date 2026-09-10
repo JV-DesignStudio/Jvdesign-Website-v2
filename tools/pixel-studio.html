@@ -143,11 +143,41 @@
 #character-strip .pose-btn.on{background:var(--accent3);color:#000;border-color:var(--accent3);}
 </style>
 
+<!-- Classroom bar (A79) - only shown with ?classroom -->
+<section id="classroom-bar" style="display:none;align-items:center;gap:10px;padding:9px 14px;background:#1a1a2e;border-bottom:1px solid #2a2a44;flex-wrap:wrap;">
+  <span style="background:#ffd166;color:#1a1a2e;font-family:'Fredoka',cursive;font-weight:800;font-size:.68rem;padding:4px 8px;border-radius:999px;">🏫 Classroom Mode</span>
+  <span style="font-size:.7rem;color:#a0a8b8;flex:1;">Safe for school PCs - no account popups. Save stays on this device. Use <strong>Print lesson</strong> for handouts.</span>
+  <span id="classroomOfflineBadge" style="font-size:.62rem;background:rgba(0,212,170,.15);color:#00d4aa;border:1px solid rgba(0,212,170,.3);padding:4px 8px;border-radius:999px;">Offline ready ✅</span>
+  <button onclick="window.print()" style="background:#fff;color:#1a1a2e;border:none;border-radius:999px;padding:5px 12px;font-family:'Fredoka',cursive;font-weight:700;font-size:.7rem;cursor:pointer;">🖨️ Print lesson</button>
+  <button onclick="document.getElementById('classroom-bar').style.display='none'" style="background:transparent;border:1px solid rgba(255,255,255,.2);color:#8b93a0;border-radius:999px;padding:4px 10px;font-size:.62rem;cursor:pointer;">Hide</button>
+</section>
 <section id="mission-banner" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(135deg,rgba(0,212,170,.14),rgba(245,158,11,.12));border-bottom:1px solid var(--border2);flex-wrap:wrap;">
-  <span style="background:var(--accent);color:#000;font-family:'Fredoka',cursive;font-weight:800;font-size:.7rem;padding:4px 8px;border-radius:999px;">15-MIN MISSION</span>
+  <span style="background:var(--accent);color:#000;font-family:'Fredoka',cursive;font-weight:800;font-size:.7rem;padding:4px 8px;border-radius:999px;">15-MIN MISSION - Ember</span>
   <span style="font-size:.72rem;color:var(--text);flex:1;">Draw 3 pixels → <strong>Character</strong> stamp → <strong>Animate</strong> 2 frames → <strong>Export PNG</strong></span>
   <span style="font-size:.62rem;color:var(--muted);">Progress: <strong id="missionProgress">0/4</strong></span>
   <button onclick="document.getElementById('mission-banner').style.display='none';localStorage.setItem('jvds_mission_dismiss','1')" style="background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:999px;padding:4px 10px;font-size:.62rem;cursor:pointer;">Dismiss</button>
+</section>
+<!-- My Creations keepsake (A78) - local gallery, no account -->
+<section id="keepsake-strip" aria-label="My Creations keepsake" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(124,58,237,.07);border-bottom:1px solid var(--border2);flex-wrap:wrap;">
+  <span style="font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">📦 My Creations</span>
+  <span style="font-size:.62rem;color:var(--muted);flex:1;">Saved on this device - no account needed. On shared PCs, <strong>Export PNG</strong> to keep forever.</span>
+  <div id="keepsakeList" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"></div>
+  <a href="certificate.html" id="keepsakeCert" style="font-size:.68rem;font-weight:700;color:var(--accent2);text-decoration:none;border:1px solid rgba(245,166,35,.3);background:rgba(245,166,35,.1);padding:5px 10px;border-radius:999px;white-space:nowrap;">🏆 Certificate</a>
+</section>
+<!-- Next actions: Play + Improve (A77) - shows after save/export -->
+<section id="next-actions" aria-label="What next" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(135deg,rgba(0,212,170,.1),rgba(91,192,248,.08));border-bottom:1px solid var(--border2);flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:240px;">
+    <img src="/assets/mascots/pip.png" alt="" width="28" height="28" style="border-radius:50%;border:2px solid #fff;flex-shrink:0">
+    <div style="line-height:1.35">
+      <div style="font-size:.72rem;font-weight:800;color:var(--text);">Nice! What next?</div>
+      <div id="echoTip" style="font-size:.68rem;color:var(--muted);">Echo: add a 2nd frame and press Play - see it move!</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button onclick="nextActionPlay()" style="background:var(--accent3);color:#000;border:none;border-radius:999px;padding:7px 14px;font-family:'Fredoka',cursive;font-weight:700;font-size:.72rem;cursor:pointer;">▶️ Play in Arcade Maker</button>
+    <button onclick="nextActionImprove()" style="background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border2);border-radius:999px;padding:7px 14px;font-family:'Fredoka',cursive;font-weight:700;font-size:.72rem;cursor:pointer;">✨ Improve: add shade</button>
+    <button onclick="document.getElementById('next-actions').style.display='none'" style="background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:999px;padding:6px 10px;font-size:.62rem;cursor:pointer;">Dismiss</button>
+  </div>
 </section>
 <section id="app" aria-label="Pixel Studio drawing workspace">
 
@@ -1809,6 +1839,156 @@ function closeModal(id){document.getElementById(id).classList.remove('open');cle
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id);}));
 
 document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>requestAnimationFrame(init)));
+// --- A66/A79 classroom + first-mission visibility ---
+(function(){
+  try{
+    var params=new URLSearchParams(location.search);
+    if(params.has('classroom')){
+      var bar=document.getElementById('classroom-bar');
+      if(bar) bar.style.display='flex';
+      // hide nags that shouldn't appear in classroom
+      localStorage.setItem('jvds_mission_dismiss','1'); // keep banner hidden in classroom unless hash
+    }
+    if(location.hash==='#first-mission' || params.has('first-mission')){
+      var mb=document.getElementById('mission-banner');
+      if(mb) mb.style.display='flex';
+      try{ localStorage.removeItem('jvds_mission_dismiss'); }catch(e){}
+    } else {
+      // show mission banner once per user until dismissed
+      try{ if(localStorage.getItem('jvds_mission_dismiss')!=='1'){ var mb2=document.getElementById('mission-banner'); if(mb2) mb2.style.display='flex'; } }catch(e){}
+    }
+    // offline badge
+    var badge=document.getElementById('classroomOfflineBadge');
+    if(badge){
+      function upd(){ badge.textContent = navigator.onLine ? 'Online ✓' : 'Offline ready ✅'; badge.style.opacity = navigator.onLine ? '.7' : '1'; }
+      window.addEventListener('online',upd); window.addEventListener('offline',upd); upd();
+      if('serviceWorker' in navigator){ navigator.serviceWorker.getRegistration().then(function(r){ if(r) badge.textContent='Offline ready ✅'; }); }
+    }
+  }catch(e){}
+})();
+</script>
+<script>
+// --- A78 Keepsake: My Creations (no-account, local, offline) ---
+(function(){
+  const KEY='jvds_pixel_keepsake';
+  const MAX=6;
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return []; } }
+  function save(arr){ try{ localStorage.setItem(KEY, JSON.stringify(arr)); }catch(e){} }
+  function thumbDataURL(){
+    try{
+      var c=flattenFrame(currentFrame);
+      var t=document.createElement('canvas'); t.width=32; t.height=32;
+      t.getContext('2d').drawImage(c,0,0,32,32);
+      return t.toDataURL('image/png');
+    }catch(e){ return ''; }
+  }
+  window.keepsakeAdd = function(){
+    var arr=load();
+    var title='Creation '+(new Date().toLocaleDateString())+' '+(arr.length+1);
+    try{ title= (document.title.split('|')[0].trim()||'Pixel art')+' '+(new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})); }catch(e){}
+    var entry={ id:Date.now(), title:title.slice(0,32), date:new Date().toISOString().slice(0,10), thumb:thumbDataURL(), project:serializeProject() };
+    arr.unshift(entry);
+    if(arr.length>MAX) arr=arr.slice(0,MAX);
+    save(arr); keepsakeRender();
+    var cert=document.getElementById('keepsakeCert');
+    if(cert) cert.href='certificate.html?title='+encodeURIComponent(entry.title);
+  };
+  window.keepsakeRender = function(){
+    var list=document.getElementById('keepsakeList');
+    if(!list) return;
+    var arr=load();
+    list.innerHTML='';
+    if(arr.length===0){
+      var empty=document.createElement('span');
+      empty.style.cssText='font-size:.62rem;color:var(--muted);';
+      empty.textContent='No saves yet - draw something, then Save.';
+      list.appendChild(empty); return;
+    }
+    arr.forEach(function(e){
+      var btn=document.createElement('button');
+      btn.type='button';
+      btn.title='Re-open '+e.title;
+      btn.style.cssText='display:flex;align-items:center;gap:6px;background:var(--panel3);border:1px solid var(--border2);border-radius:8px;padding:4px 6px;cursor:pointer;';
+      var img=document.createElement('img');
+      img.src=e.thumb; img.alt=''; img.width=28; img.height=28;
+      img.style.cssText='width:28px;height:28px;image-rendering:pixelated;border-radius:4px;background:repeating-conic-gradient(#333 0% 25%,#222 0% 50%) 0 0/6px 6px;border:1px solid var(--border2)';
+      var label=document.createElement('span');
+      label.style.cssText='font-size:.62rem;color:var(--text);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left';
+      label.textContent=e.title;
+      var del=document.createElement('span');
+      del.textContent='×'; del.style.cssText='font-size:.9rem;color:var(--muted);padding:0 2px;cursor:pointer';
+      del.onclick=function(ev){ ev.stopPropagation(); var a=load().filter(function(x){return x.id!==e.id}); save(a); keepsakeRender(); };
+      btn.appendChild(img); btn.appendChild(label); btn.appendChild(del);
+      btn.addEventListener('click', function(){ try{ applyProject(JSON.parse(e.project)); markDirty(); showToast('Re-opened: '+e.title); keepsakeRender(); }catch(err){ showToast('Could not open'); } });
+      list.appendChild(btn);
+    });
+  };
+  // hook into existing save/export
+  var _origSave = window.saveProject;
+  window.saveProject = function(){ var r=_origSave.apply(this,arguments); try{ keepsakeAdd(); missionTick('save'); nextActionsShow(); }catch(e){} return r; };
+  var _origPNG = window.exportPNG;
+  window.exportPNG = function(){ var r=_origPNG.apply(this,arguments); try{ keepsakeAdd(); missionTick('export'); nextActionsShow(); }catch(e){} return r; };
+  var _origSheet = window.exportSheet;
+  if(_origSheet) window.exportSheet = function(){ var r=_origSheet.apply(this,arguments); try{ keepsakeAdd(); missionTick('export'); nextActionsShow(); }catch(e){} return r; };
+  document.addEventListener('DOMContentLoaded', keepsakeRender);
+  // also render after init
+  setTimeout(keepsakeRender, 1200);
+})();
+</script>
+<script>
+// --- A77 Next actions: Play + Improve (Ember/Echo/Pip) ---
+(function(){
+  const tips=[
+    'Echo: add a 2nd frame and press Play - see it move!',
+    'Echo: try shading - pick a darker colour and add one shadow pixel.',
+    'Echo: duplicate the frame, move the arm 1 pixel - instant walk!',
+    'Echo: add onion skin to line up your next frame.',
+    'Echo: try Character → stamp a base, then draw over it.'
+  ];
+  let tipIdx=0;
+  window.missionTick = function(kind){
+    var el=document.getElementById('missionProgress');
+    if(!el) return;
+    var cur=el.textContent; // 0/4
+    var n=parseInt((cur.split('/')[0]||'0'),10);
+    if(kind==='draw' && n<1) n=1;
+    if(kind==='save' && n<2) n=Math.max(n,2);
+    if(kind==='export' && n<4) n=4;
+    // simple tick on any manual action
+    if(n<4 && kind!=='export') n=Math.min(3, n+1);
+    el.textContent=n+'/4';
+  };
+  window.nextActionsShow = function(){
+    var bar=document.getElementById('next-actions');
+    if(!bar) return;
+    bar.style.display='flex';
+    var tip=document.getElementById('echoTip');
+    if(tip){ tip.textContent=tips[tipIdx % tips.length]; tipIdx++; }
+  };
+  window.nextActionPlay = function(){
+    try{
+      var fc=flattenFrame(currentFrame);
+      localStorage.setItem('jvds_sprite_player', fc.toDataURL('image/png'));
+      localStorage.setItem('jvds_next_from','pixel-studio');
+    }catch(e){}
+    location.href='arcade-game-maker.html#from-pixel-studio';
+  };
+  window.nextActionImprove = function(){
+    var bar=document.getElementById('next-actions');
+    if(bar) bar.style.display='none';
+    // give concrete improve action: add frame + onion
+    try{ if(frames.length<2){ addFrame(); } showToast('Echo: dup frame → move 1 pixel → Play'); }catch(e){}
+    var cs=document.getElementById('onionCheck');
+    if(cs && !cs.checked){ cs.checked=true; onionSkin=true; renderAll(); }
+  };
+  // auto-tick on first paint
+  document.addEventListener('pointerdown', function onFirstDraw(e){
+    if(e.target.closest('#main-canvas')){
+      missionTick('draw');
+      document.removeEventListener('pointerdown', onFirstDraw);
+    }
+  }, {once:true});
+})();
 </script>
 <script src="pixel-studio-unified-characters.js"></script>
 <script src="pixel-studio-unified-adapter.js"></script>
@@ -1816,6 +1996,25 @@ document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>reque
 <script defer src="../shared-modal.js"></script>
 <script defer src="../tool-xp.js"></script>
 <script defer src="../tool-analytics.js"></script>
+<script>
+// Ember guide for Pixel Studio - Create mode (A64)
+(function(){
+  function tryInit(){
+    if(!window.EmberGuide) return setTimeout(tryInit, 400);
+    EmberGuide.init({
+      id:'pixel-studio',
+      steps:[
+        {target:'#left-panel .tool-grid, #bottom-bar #bb0', title:'Tools', text:'Pick Pencil, Eraser or Fill. Shortcuts: P/E/F, B for pencil, M for mirror.', fallback:['#left-panel']},
+        {target:'#canvas-area', title:'Canvas', text:'Draw on the pixel grid. Pinch to zoom, drag to paint. Ctrl+Z undoes.'},
+        {target:'#left-sticky, #bottom-bar #bb3', title:'Keep your work', text:'Save stays on this device. Export PNG to keep forever on shared PCs. Share copies a link.', fallback:['#left-panel']},
+        {target:'#keepsake-strip', title:'My Creations', text:'Your last 6 saves - click to re-open. Works offline, no account needed.'},
+        {target:'#next-actions', title:'What next?', text:'After saving, Play sends your sprite to Arcade Maker. Echo shows one way to make v2 better.'}
+      ]
+    });
+  }
+  document.addEventListener('DOMContentLoaded', tryInit);
+})();
+</script>
 <script defer src="/mascots.js"></script>
 </body>
 </html>

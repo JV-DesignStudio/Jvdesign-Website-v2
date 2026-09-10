@@ -399,8 +399,10 @@ function resize(){
   const wrap=id('preview-wrap');
   W=canvas.width=wrap.clientWidth;
   H=canvas.height=wrap.clientHeight;
-  emitX=(emitX===undefined)?W/2:emitX;
-  emitY=(emitY===undefined)?H*.65:emitY;
+  if(emitX===undefined || emitX<0 || emitX>W) emitX=W/2;
+  if(emitY===undefined || emitY<0 || emitY>H) emitY=H*.65;
+  emitX=Math.max(0,Math.min(W, emitX));
+  emitY=Math.max(0,Math.min(H, emitY));
 }
 window.addEventListener('resize',resize);
 // The preview can change size without a window resize (cookie banner, footer,
@@ -1636,9 +1638,14 @@ if(restored){
   syncAllUI();
   toast('Session restored');
 }else{
-  applyPreset(PRESETS[0].cfg,{silent:true});
-  const firstBtn=document.querySelector('.preset-btn');
-  if(firstBtn)firstBtn.classList.add('on');
+  // Show Fire immediately - more visible than Custom so new learners see particles right away
+  applyPreset(PRESETS[1].cfg,{silent:true});
+  const fireBtn=document.getElementById('pr-fire');
+  if(fireBtn)fireBtn.classList.add('on');
+  else {
+    const firstBtn=document.querySelector('.preset-btn');
+    if(firstBtn)firstBtn.classList.add('on');
+  }
 }
 
 try{
@@ -1692,6 +1699,26 @@ document.addEventListener('keydown',e=>{
   }
 });
 </script>
+<script>
+// Ember first-visit guide for Particle Designer (Create side)
+(function(){
+  function tryInit(){
+    if(!window.EmberGuide) return setTimeout(tryInit,400);
+    EmberGuide.init({
+      id:'particle-designer',
+      steps:[
+        {target:'#preview-wrap', title:'Preview', text:'Particles appear here immediately - Fire preset loads by default. Click or drag to move the emitter, press B to burst.'},
+        {target:'#presetGrid', title:'Presets', text:'Pick Fire, Smoke, Sparks, Magic etc to start fast, then tweak.'},
+        {target:'#tab-params', title:'Params', text:'Change rate, lifetime, speed, gravity, size and colour - sliders update live.'},
+        {target:'#tab-saves', title:'Saves', text:'Save stays on this device. Import a JSON to reload a previous effect.'},
+        {target:'#tab-export', title:'Export', text:'Export Raw JSON, or Godot .tres/.tscn or Unity importer. Works offline after first load.'}
+      ]
+    });
+  }
+  document.addEventListener('DOMContentLoaded', tryInit);
+})();
+</script>
+<link rel="stylesheet" href="/ember-guide.css">
 <script defer src="/mascots.js"></script>
 </body>
 </html>
