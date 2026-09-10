@@ -4161,6 +4161,13 @@ const gameState = { lives:3 };
 
 // ── TOUCH INPUT STATE ────────────────────────────────────────────────────────
 const touchInput = { left:false, right:false, up:false, down:false, fire:false, lane0:false, lane1:false, lane2:false, lane3:false };
+function _clearTouchInput() {
+    Object.keys(touchInput).forEach(k => { touchInput[k] = false; });
+    document.querySelectorAll('.tc-pressed,.joy-active,.pb-zone-active,.rl-pressed')
+        .forEach(el => el.classList.remove('tc-pressed','joy-active','pb-zone-active','rl-pressed'));
+    const knob = document.querySelector('#tc-joy-zone .joystick-knob');
+    if (knob) knob.style.transform = 'translate(-50%,-50%)';
+}
 
 // ── GAME THEME (from Colour Palette tool) ────────────────────────────────────
 const gameTheme = { cols:[], name:'' };
@@ -7075,6 +7082,7 @@ function _syncTcPauseIcon() {
 }
 
 function pauseGame() {
+    _clearTouchInput();
     if (!currentPhaserGame || _gamePaused) return;
     _gamePaused = true;
     try {
@@ -7106,6 +7114,7 @@ function pauseGame() {
 }
 
 function resumeGame() {
+    _clearTouchInput();
     if (!currentPhaserGame || !_gamePaused) return;
     _gamePaused = false;
     const pm = document.getElementById('pauseMenu');
@@ -7122,6 +7131,7 @@ function resumeGame() {
 }
 
 function closePauseAndRestart() {
+    _clearTouchInput();
     _gamePaused = false;
     const pm = document.getElementById('pauseMenu');
     if (pm) pm.style.display = 'none';
@@ -7149,6 +7159,7 @@ function quitGame() {
 }
 
 function togglePause() {
+    _clearTouchInput();
     // The Power Picks draft already pauses the scene; letting the pause menu in
     // on top of it leaves two owners of scene.resume() and one of them loses.
     if (_ppOpen) return;
@@ -7345,7 +7356,7 @@ function _launchPhaserGame() {
     // Clear loot items from any previous run
     _lootItems = [];
     // Reset stale touch input so e.g. touchInput.fire=true doesn't auto-launch Pinball
-    Object.keys(touchInput).forEach(k => { touchInput[k] = false; });
+    _clearTouchInput();
     // Clear any stale error overlay from a previous run
     const _errOv = document.getElementById('gameErrorOverlay');
     if (_errOv) _errOv.style.display = 'none';
@@ -9257,6 +9268,7 @@ function _ppCardHTML(p, i) {
 }
 
 function _ppPick(idx) {
+    _clearTouchInput();
     const ov = document.getElementById('ppOverlay');
     if (!ov || !_ppOpen) return;
     const offer = ov._offer || [];
@@ -16133,6 +16145,7 @@ async function _shareGameCard(score) {
 }
 
 function showGameOver(score) {
+    _clearTouchInput();
     _goRunEnded = true;
     _triggerHaptic('lose');
     _speedRunStop(score);

@@ -130,7 +130,8 @@
                 <span class="meta-pill">💰 Resource Management</span>
             </div>
             <div class="hero-ctas">
-<a href="../The_Card_of_the_Rings_Full_Playtest.pdf" target="_blank" class="btn-primary-gold" rel="noopener noreferrer">📥 Download Playtest Rules →</a>
+                <button class="btn-primary-gold" id="btnPlayNow" onclick="launchGame()">⚔️ Play Now vs AI</button>
+                <a href="../The_Card_of_the_Rings_Full_Playtest.pdf" target="_blank" class="btn-ghost-gold" rel="noopener noreferrer">📥 Download Rules</a>
                 <a href="#cards" class="btn-ghost-gold">👀 See the Cards</a>
             </div>
         </div>
@@ -146,6 +147,110 @@
     <div class="stat-item"><span class="stat-label">Version</span><span class="stat-val">v1.1</span></div>
     <div class="stat-item"><span class="stat-label">Status</span><span class="stat-val">Playtesting</span></div>
 </div>
+
+<!-- -- GAME BOARD -- -->
+<section class="game-board-section" id="gameBoard" style="display:none;">
+    <div class="board-inner">
+        <!-- Mode Select Overlay -->
+        <div class="mode-overlay" id="modeOverlay">
+            <div class="mode-card">
+                <div class="mode-icon">🃏</div>
+                <h2 class="mode-title">Call of the Cards</h2>
+                <p class="mode-subtitle">Choose your battle</p>
+                <div class="mode-buttons">
+                    <button class="mode-btn mode-ai" onclick="startGame('ai')">
+                        <span class="mode-emoji">🤖</span>
+                        <span class="mode-label">vs AI</span>
+                        <span class="mode-desc">Battle the Rival</span>
+                    </button>
+                    <button class="mode-btn mode-pvp" onclick="startGame('pvp')">
+                        <span class="mode-emoji">👥</span>
+                        <span class="mode-label">Local 2P</span>
+                        <span class="mode-desc">Pass & play</span>
+                    </button>
+                </div>
+                <button class="btn-ghost-gold mode-back" onclick="closeGame()">← Back to Rules</button>
+            </div>
+        </div>
+
+        <!-- Pass Device Overlay -->
+        <div class="pass-overlay" id="passOverlay" style="display:none;">
+            <div class="pass-card">
+                <div class="pass-icon">📱</div>
+                <h2 class="pass-title" id="passTitle">Pass to Player 2</h2>
+                <p class="pass-msg">Hand the device to the next player.</p>
+                <button class="btn-primary-gold" id="passBtn" onclick="revealTurn()">I'm Ready →</button>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div class="game-over-overlay" id="gameOverOverlay" style="display:none;">
+            <div class="game-over-card">
+                <div class="game-over-icon" id="gameOverIcon">🏆</div>
+                <h2 class="game-over-title" id="gameOverTitle">Victory!</h2>
+                <p class="game-over-msg" id="gameOverMsg">You claimed the crown!</p>
+                <button class="btn-primary-gold" onclick="launchGame()">Play Again</button>
+                <button class="btn-ghost-gold" onclick="closeGame()">Back to Rules</button>
+            </div>
+        </div>
+
+        <!-- Top: AI area -->
+        <div class="board-zone board-ai-zone">
+            <div class="zone-header">
+                <span class="zone-name">💀 Rival</span>
+                <span class="zone-vp" id="aiVpBadge">VP: 0</span>
+                <span class="zone-power" id="aiPowerBadge">Power: 0</span>
+                <span class="zone-cards" id="aiCardsBadge">Cards: 5</span>
+            </div>
+            <div class="board-hand board-ai-hand" id="aiHand"></div>
+            <div class="board-field board-ai-field" id="aiField">
+                <div class="field-label">Rival's Party</div>
+                <div class="field-cards" id="aiFieldCards"></div>
+            </div>
+        </div>
+
+        <!-- Middle: Quests + Log -->
+        <div class="board-zone board-mid-zone">
+            <div class="quest-area">
+                <div class="quest-label">📜 Active Quests</div>
+                <div class="quest-slots" id="questSlots"></div>
+            </div>
+            <div class="board-log" id="gameLog">
+                <div class="log-label">📜 Battle Log</div>
+                <div class="log-entries" id="logEntries"></div>
+            </div>
+        </div>
+
+        <!-- Bottom: Player area -->
+        <div class="board-zone board-player-zone">
+            <div class="board-field board-player-field" id="playerField">
+                <div class="field-label">Your Party</div>
+                <div class="field-cards" id="playerFieldCards"></div>
+                <div class="artifacts-row" id="playerArtifacts">
+                    <div class="field-label">Artifacts</div>
+                    <div class="field-cards" id="playerArtifactCards"></div>
+                </div>
+            </div>
+            <div class="board-hand board-player-hand" id="playerHand"></div>
+            <div class="zone-footer">
+                <span class="zone-name">⚔️ You</span>
+                <span class="zone-vp" id="playerVpBadge">VP: 0 / 5</span>
+                <span class="zone-power" id="playerPowerBadge">Power: 0</span>
+                <span class="zone-gold" id="playerGoldBadge">Gold: 0</span>
+                <button class="btn-end-turn" id="btnEndTurn" onclick="endTurn()">End Turn ⏭️</button>
+            </div>
+        </div>
+
+        <!-- Action Panel -->
+        <div class="action-panel" id="actionPanel" style="display:none;">
+            <div class="action-card-info" id="actionCardInfo"></div>
+            <div class="action-buttons" id="actionButtons"></div>
+        </div>
+
+        <!-- Turn indicator -->
+        <div class="turn-indicator" id="turnIndicator">Your Turn</div>
+    </div>
+</section>
 
 <!-- -- HOW TO PLAY -- -->
 <section class="section-wrap section-lt" id="rules">
@@ -537,6 +642,196 @@ window.addEventListener('beforeunload', () => {
   gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
 });
+</script>
+
+<script src="../call-of-cards-engine.js"></script>
+<script>
+let game = null;
+
+function launchGame() {
+  document.getElementById('gameBoard').style.display = '';
+  document.getElementById('modeOverlay').style.display = '';
+  document.getElementById('gameOverOverlay').style.display = 'none';
+  document.getElementById('passOverlay').style.display = 'none';
+  document.getElementById('gameBoard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function startGame(mode) {
+  document.getElementById('modeOverlay').style.display = 'none';
+  game = new CallOfCardsGame(mode);
+  game.onStateChange = renderBoard;
+  game.onGameEnd = handleGameEnd;
+  game.onPassDevice = showPassScreen;
+  game.initGame();
+}
+
+function closeGame() {
+  document.getElementById('gameBoard').style.display = 'none';
+  document.getElementById('rules').scrollIntoView({ behavior: 'smooth' });
+  game = null;
+}
+
+function showPassScreen(playerKey, callback) {
+  const overlay = document.getElementById('passOverlay');
+  const title = document.getElementById('passTitle');
+  const pName = game.state[playerKey].name;
+  title.textContent = 'Pass to ' + pName;
+  overlay.style.display = '';
+  window._passCallback = callback;
+}
+
+function revealTurn() {
+  document.getElementById('passOverlay').style.display = 'none';
+  if(window._passCallback) { window._passCallback(); window._passCallback = null; }
+}
+
+function handleGameEnd(winner) {
+  const overlay = document.getElementById('gameOverOverlay');
+  const icon = document.getElementById('gameOverIcon');
+  const title = document.getElementById('gameOverTitle');
+  const msg = document.getElementById('gameOverMsg');
+  overlay.style.display = '';
+  if(winner === 'Player 1' || (game.mode === 'ai' && winner === 'Player 1')) {
+    icon.textContent = '🏆';
+    title.textContent = 'Victory!';
+    msg.textContent = 'You claimed the crown! The realm bows to you.';
+  } else {
+    icon.textContent = '💀';
+    title.textContent = 'Defeat';
+    msg.textContent = winner + ' claims the throne. Try again!';
+  }
+}
+
+function renderBoard(state) {
+  const active = state[state.activePlayer];
+  const isPlayerTurn = state.activePlayer === 'p1';
+  const p1 = state.p1;
+  const p2 = state.p2;
+
+  // AI/P2 hand (face down)
+  document.getElementById('aiHand').innerHTML = p2.hand.map(() =>
+    '<div class="card-slot card-face-down" title="Hidden card">🂠</div>'
+  ).join('');
+
+  // AI/P2 field
+  document.getElementById('aiFieldCards').innerHTML = p2.field.length ?
+    p2.field.map(c =>
+      '<div class="board-card card-'+c.type+'"><div class="bc-emoji">'+c.emoji+'</div><div class="bc-name">'+c.name+'</div><div class="bc-stat">'+(c.power||'')+' Power</div></div>'
+    ).join('') : '<div class="empty-field">No companions yet</div>';
+
+  // Quests
+  document.getElementById('questSlots').innerHTML = state.quests.map((q,i) => {
+    const canComplete = isPlayerTurn && game && game.canCompleteQuest(active, q);
+    return '<div class="quest-card'+(canComplete?' quest-completeable':'')+'" onclick="tryQuest('+i+')">'+
+      '<div class="qc-emoji">'+q.emoji+'</div>'+
+      '<div class="qc-name">'+q.name+'</div>'+
+      '<div class="qc-req">Requires: '+q.req+' Power</div>'+
+      '<div class="qc-vp">'+q.vp+' VP</div>'+
+      (canComplete ? '<div class="qc-glow"></div>' : '')+
+    '</div>';
+  }).join('');
+
+  // Player1 field
+  document.getElementById('playerFieldCards').innerHTML = p1.field.length ?
+    p1.field.map(c =>
+      '<div class="board-card card-'+c.type+'"><div class="bc-emoji">'+c.emoji+'</div><div class="bc-name">'+c.name+'</div><div class="bc-stat">'+c.power+' Power</div></div>'
+    ).join('') : '<div class="empty-field">No companions yet</div>';
+
+  // Player1 artifacts
+  document.getElementById('playerArtifactCards').innerHTML = p1.artifacts.length ?
+    p1.artifacts.map(a =>
+      '<div class="board-card card-artifact-mini"><div class="bc-emoji">'+a.emoji+'</div><div class="bc-name">'+a.name+'</div></div>'
+    ).join('') : '';
+
+  // Player1 hand
+  document.getElementById('playerHand').innerHTML = p1.hand.length ?
+    p1.hand.map((c,i) =>
+      '<div class="card-slot card-in-hand'+(!isPlayerTurn?' card-disabled':'')+'" onclick="selectCard('+i+')" data-idx="'+i+'">'+
+        '<div class="hand-card card-'+c.type+'">'+
+          '<div class="hc-top"><span class="hc-type">'+c.type+'</span>'+
+          (c.cost ? '<span class="hc-cost">'+c.cost+' 💰</span>' : '')+'</div>'+
+          '<div class="hc-emoji">'+c.emoji+'</div>'+
+          '<div class="hc-name">'+c.name+'</div>'+
+          (c.power ? '<div class="hc-power">'+c.power+' Power</div>' : '')+
+          '<div class="hc-text">'+c.text+'</div>'+
+        '</div>'+
+      '</div>'
+    ).join('') : '<div class="empty-hand">Hand empty</div>';
+
+  // Badges - P2 (opponent)
+  document.getElementById('aiVpBadge').textContent = 'VP: '+p2.vp;
+  document.getElementById('aiPowerBadge').textContent = 'Power: '+game.getTotalPower(p2);
+  document.getElementById('aiCardsBadge').textContent = 'Cards: '+p2.hand.length;
+  document.querySelector('.board-ai-zone .zone-name').textContent = (game.mode==='ai'?'💀 ':'') + p2.name;
+
+  // Badges - P1 (you)
+  document.getElementById('playerVpBadge').textContent = 'VP: '+p1.vp+' / '+state.winTarget;
+  document.getElementById('playerPowerBadge').textContent = 'Power: '+game.getTotalPower(p1);
+  document.getElementById('playerGoldBadge').textContent = 'Gold: '+game.getAvailableGold(p1);
+
+  // Turn indicator
+  const ti = document.getElementById('turnIndicator');
+  if(isPlayerTurn) {
+    ti.textContent = p1.name + '\'s Turn (Turn '+state.turn+')';
+    ti.className = 'turn-indicator turn-player';
+    document.getElementById('btnEndTurn').disabled = false;
+  } else {
+    ti.textContent = p2.name + '\'s Turn...';
+    ti.className = 'turn-indicator turn-ai';
+    document.getElementById('btnEndTurn').disabled = true;
+  }
+
+  // Log
+  document.getElementById('logEntries').innerHTML = state.log.slice(0,15).map(l =>
+    '<div class="log-line">'+l+'</div>'
+  ).join('');
+}
+
+function selectCard(idx) {
+  if(!game || game.gameOver || game.state.activePlayer !== 'p1') return;
+  const card = game.state.p1.hand[idx];
+  if(!card) return;
+  showActionPanel(card, idx);
+}
+
+function showActionPanel(card, idx) {
+  const panel = document.getElementById('actionPanel');
+  const info = document.getElementById('actionCardInfo');
+  const btns = document.getElementById('actionButtons');
+
+  info.innerHTML = '<div class="ap-card card-'+card.type+'"><div class="ap-emoji">'+card.emoji+'</div><div class="ap-name">'+card.name+'</div>'+
+    (card.power ? '<div class="ap-stat">'+card.power+' Power</div>' : '')+
+    '<div class="ap-text">'+card.text+'</div></div>';
+
+  const gold = game.getAvailableGold(game.active());
+  let buttons = '';
+  if(card.type==='companion' && gold>=card.cost && game.recruitsThisTurn<game.maxRecruitsPerTurn)
+    buttons += '<button class="action-btn action-recruit" onclick="doRecruit('+idx+')">🤝 Recruit ('+card.cost+' 💰)</button>';
+  if(card.type==='artifact' && gold>=card.cost)
+    buttons += '<button class="action-btn action-artifact" onclick="doArtifact('+idx+')">💎 Acquire ('+card.cost+' 💰)</button>';
+  buttons += '<button class="action-btn action-discard" onclick="doDiscard('+idx+')">🗑️ Discard</button>';
+  buttons += '<button class="action-btn action-cancel" onclick="hideAction()">✕</button>';
+  btns.innerHTML = buttons;
+  panel.style.display = '';
+}
+
+function hideAction() {
+  document.getElementById('actionPanel').style.display = 'none';
+}
+
+function doRecruit(idx) { if(game){game.recruitCompanion(idx);} hideAction(); }
+function doArtifact(idx) { if(game){game.purchaseArtifact(idx);} hideAction(); }
+function doDiscard(idx) { if(game){game.discardCard(idx);} hideAction(); }
+function tryQuest(qi) { if(game && !game.gameOver && game.state.activePlayer==='p1'){game.completeQuest(qi);} hideAction(); }
+
+function endTurn() {
+  if(!game || game.gameOver) return;
+  if(game.mode === 'pvp') {
+    game.endTurn(); // triggers pass-device flow
+  } else {
+    game.endTurn(); // triggers AI turn
+  }
+}
 </script>
 
 <script defer src="/mascots.js"></script>

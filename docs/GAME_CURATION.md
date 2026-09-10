@@ -24,3 +24,6 @@ Experimental: Stardust Collector, Tiger Smash, Little Steps, and Call of the Car
 Standalone apps and non-arcade pages are excluded from the public Games grid and from the Arcade bundle where applicable. Re-review this list whenever a game is added, rebuilt, or promoted.
 
 Retired pending rebuild: VoidRush. Its current loop, control explanation, and presentation need a complete redesign before it returns to a public browse surface.
+## Current Arcade Improvement Board
+
+A pick-up-ready task board for the next Arcade cleanup pass is available at `docs/arcade-improvement-board.questlog.json`. Import it into Quest Board to assign work across the team. The decision notes behind those cards are in `docs/ARCADE_IMPROVEMENT_TRIAGE_2026-09-10.md`.
