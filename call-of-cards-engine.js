@@ -262,55 +262,135 @@ class CallOfCardsGame {
     return true;
   }
 
-  /* ---- AI ---- */
+  /* ---- AI - smarter (A118) ---- */
   runAITurn() {
     if(this.gameOver) return;
     const ai = this.active();
+    const opp = this.inactive();
 
-    // Recruit companions
-    const companions = ai.hand.map((c,i) => ({...c, handIdx:i}))
-      .filter(c => c.type === 'companion')
-      .sort((a,b) => (b.power/b.cost) - (a.power/a.cost));
+    const tryCompleteQuest = () => {
+      const completable = this.state.quests.map((q,i)=>({...q, idx:i})).filter(q=>this.canCompleteQuest(ai,q));
+      if(!completable.length) return false;
+      // Prioritize quests it can nearly complete + high VP, and react to opponent close to winning
+      const oppClose = opp.vp >= 4;
+      completable.sort((a,b)=>{
+        // if opponent close, prioritize any win, then smallest req
+        if(oppClose) return (b.vp - a.vp) || (a.req - b.req);
+        // otherwise prioritize best VP per req, and quests nearly complete (low deficit already 0)
+        const aVal = a.vp / Math.max(1,a.req);
+        const bVal = b.vp / Math.max(1,b.req);
+        return bVal - aVal;
+      });
+      const quest = completable[0];
+      let vpGain = quest.vp;
+      if(ai.artifacts.some(a => a.effect === 'bonus_vp')) vpGain += 1;
+      ai.vp += vpGain;
+      this.state.quests.splice(quest.idx, 1);
+      if(this.state.questPool.length > 0) this.state.quests.push(this.state.questPool.shift());
+      this.log(`${ai.name} completed "${quest.name}" for ${vpGain} VP! (${ai.vp}/${this.state.winTarget})`);
+      return true;
+    };
 
+    // 1) If can win now, take it before recruiting
+    if(tryCompleteQuest()){
+      if(ai.vp >= this.state.winTarget){ this.gameOver=true; this.log(`💀 ${ai.name} claims the crown!`); this.emit(); if(this.onGameEnd) this.onGameEnd(ai.name); return; }
+    }
+
+    // 2) Evaluate companions - hold gold for bigger plays
+    const companions = ai.hand.map((c,i) => ({...c, handIdx:i})).filter(c => c.type === 'companion');
+    const artifacts = ai.hand.map((c,i) => ({...c, handIdx:i})).filter(c => c.type === 'artifact');
     let goldLeft = this.getAvailableGold(ai);
+    const currentPower = this.getTotalPower(ai);
+    // Find quest deficits to prioritize recruiting that closes gap
+    const questDeficits = this.state.quests.map(q=>{
+      const hasShield = ai.artifacts.some(a=>a.effect==='ignore_1_req');
+      const req = hasShield ? Math.max(0,q.req-1) : q.req;
+      return {q, deficit: Math.max(0, req - currentPower)};
+    }).sort((a,b)=>a.deficit - b.deficit);
+    const smallestDeficit = questDeficits[0]?.deficit ?? 99;
+    const oppPower = this.getTotalPower(opp);
+
+    // Score companions: power/cost + bonus if it closes deficit, + reactive bonus vs opponent
+    const scoredCompanions = companions.map(c=>{
+      let score = c.power / Math.max(1,c.cost);
+      // prioritize quests it can nearly complete
+      if(c.power >= smallestDeficit && smallestDeficit<=3) score += 1.5;
+      else if(smallestDeficit<=2 && c.power>=2) score += 0.8;
+      // react to opponent: if opponent stronger, prioritize bigger power
+      if(oppPower > currentPower + 1) score += c.power * 0.15;
+      // hold gold: penalize cheap 1-cost 1-power if gold scarce and better cards might come
+      if(goldLeft <=2 && c.cost===1 && c.power===1) score -= 0.6;
+      return {...c, score};
+    }).sort((a,b)=>b.score - a.score);
+
+    // Hold logic: if best score < 1.2 and goldLeft <=2, save gold for bigger play
+    const bestScore = scoredCompanions[0]?.score ?? 0;
+    const shouldHold = goldLeft <=2 && bestScore < 1.2 && smallestDeficit > 2 && opp.vp <4;
     const toRecruit = [];
-    for(const c of companions) {
-      if(toRecruit.length >= this.maxRecruitsPerTurn) break;
-      if(c.cost <= goldLeft) { toRecruit.push(c); goldLeft -= c.cost; }
+    if(!shouldHold){
+      for(const c of scoredCompanions){
+        if(toRecruit.length >= this.maxRecruitsPerTurn) break;
+        if(c.cost <= goldLeft){
+          // also don't spend last gold if it would block a nearly-complete quest next turn
+          if(goldLeft - c.cost ===0 && smallestDeficit===2 && c.power<2 && opp.vp<4){
+            // save 1 gold
+            continue;
+          }
+          toRecruit.push(c); goldLeft -= c.cost;
+        }
+      }
+    } else {
+      this.log(`${ai.name} holds gold for a bigger play`);
     }
 
     toRecruit.sort((a,b) => b.handIdx - a.handIdx);
-    for(const c of toRecruit) {
+    for(const c of toRecruit){
       const idx = ai.hand.findIndex(h => h.uid === c.uid);
-      if(idx >= 0) {
+      if(idx >= 0){
         ai.hand.splice(idx, 1);
-        ai.field.push(c);
+        ai.field.push({ ...c });
         let goldToSpend = c.cost;
-        for(let i = ai.hand.length - 1; i >= 0 && goldToSpend > 0; i--) {
-          if(ai.hand[i].type === 'gold') { ai.hand.splice(i, 1); goldToSpend--; }
+        for(let i = ai.hand.length - 1; i >= 0 && goldToSpend > 0; i--){
+          if(ai.hand[i].type === 'gold'){ ai.hand.splice(i,1); goldToSpend--; }
         }
         this.recruitsThisTurn++;
         this.log(`${ai.name} recruited ${c.name}`);
       }
     }
 
-    // Try to complete a quest
-    for(let qi = 0; qi < this.state.quests.length; qi++) {
-      const quest = this.state.quests[qi];
-      if(this.canCompleteQuest(ai, quest)) {
-        let vpGain = quest.vp;
-        if(ai.artifacts.some(a => a.effect === 'bonus_vp')) vpGain += 1;
-        ai.vp += vpGain;
-        this.state.quests.splice(qi, 1);
-        if(this.state.questPool.length > 0) {
-          this.state.quests.push(this.state.questPool.shift());
+    // 3) Try artifacts - reactive and gold-aware
+    if(goldLeft >0 && artifacts.length){
+      // Score artifacts
+      const scoredArtifacts = artifacts.map(a=>{
+        let score=0;
+        if(a.effect==='allies_plus_1' && ai.field.length>=2) score=3;
+        if(a.effect==='bonus_vp' && ai.vp >=3) score=2.5;
+        if(a.effect==='ignore_1_req' && smallestDeficit===1) score=2.8;
+        if(a.effect==='extra_recruit' && ai.hand.filter(c=>c.type==='companion').length>=2) score=2;
+        if(a.effect==='draw_1') score=1.5;
+        score -= a.cost * 0.3; // cheaper better
+        return {...a, score};
+      }).sort((a,b)=>b.score - a.score);
+      const bestArt = scoredArtifacts[0];
+      // Hold gold if opponent close to winning, don't waste on low-score artifact
+      const oppClose = opp.vp >=4;
+      if(bestArt && bestArt.score>1.0 && bestArt.cost <= goldLeft && !oppClose){
+        const idx = ai.hand.findIndex(h=>h.uid===bestArt.uid);
+        if(idx>=0){
+          ai.hand.splice(idx,1);
+          ai.artifacts.push(bestArt);
+          let goldToSpend = bestArt.cost;
+          for(let i=ai.hand.length-1;i>=0 && goldToSpend>0;i--){ if(ai.hand[i].type==='gold'){ ai.hand.splice(i,1); goldToSpend--; } }
+          this.log(`${ai.name} acquired ${bestArt.name}`);
+          goldLeft -= bestArt.cost;
         }
-        this.log(`${ai.name} completed "${quest.name}" for ${vpGain} VP! (${ai.vp}/${this.state.winTarget})`);
-        break;
       }
     }
 
-    if(ai.vp >= this.state.winTarget) {
+    // 4) Try to complete a quest after recruiting
+    tryCompleteQuest();
+
+    if(ai.vp >= this.state.winTarget){
       this.gameOver = true;
       this.log(`💀 ${ai.name} claims the crown!`);
       this.emit();
@@ -319,14 +399,13 @@ class CallOfCardsGame {
     }
 
     this.emit();
-    // Back to player
     setTimeout(() => {
       this.state.activePlayer = 'p1';
       this.turnNumber++;
       this.state.turn = this.turnNumber;
       this.startTurn();
       this.emit();
-    }, 600);
+    }, 700);
   }
 
   log(msg) {
