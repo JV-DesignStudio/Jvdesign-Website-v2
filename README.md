@@ -8,15 +8,15 @@ Static HTML/CSS/JS, no framework, no build step required to view pages directly 
 
 ```
 index.html, pages/, games/, ...           Site pages
-pages/downloads.html                       Every file download on one page
 partials/                                  Shared nav/footer fragments
-build.js                                   Syncs partials into every page
-generate-sitemap.js                        Regenerates sitemap.xml from pages on disk
-analytics-loader.js                        Single-source GA4 bootstrap (referenced by every page)
-manifest.json                              PWA manifest for the main site
-sitemap.xml                                Generated sitemap (run npm run build:sitemap)
-docs/                                       Dev logs, roadmaps, social/marketing notes
-scripts/archive/                           Retired one-shot migration scripts
+scripts/
+  lib/        paths.js + walk.js (single source of truth)
+  build/      Unified pipeline (content → partials → sitemap → latest → board)
+  validate/   All validators orchestrated
+  archive/    Retired one-shot migration scripts
+content/      Generated content/*.json (from HTML scan)
+sitemap.xml + search-index.json            Generated from pages on disk
+board-data.json                            Generated KPIs for dev-board.html
 ```
 
 Image assets live at the project root alongside the pages that use them.
@@ -28,10 +28,11 @@ Use Node 24 (see `.nvmrc`) and run `npm ci` before the checks. `npm run validate
 The nav and footer are defined once in `partials/` and synced into every page via marker comments (`<!-- BUILD:name --> ... <!-- /BUILD:name -->`):
 
 ```bash
-node build.js
+npm run build                  # full pipeline (content → partials → sitemap → latest → board)
+node scripts/build/index.js --only=partials --skip-validate   # just partials, fast
 ```
 
-Run this after editing any file in `partials/`.
+Legacy entrypoints (`build.js`, `generate-sitemap.js`) still work via `npm run build:legacy` but new code should use `scripts/build/`.
 
 ## Adding a new page
 

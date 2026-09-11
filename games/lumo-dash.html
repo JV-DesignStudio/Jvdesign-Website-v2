@@ -25,7 +25,8 @@
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
-<script defer src="../analytics-loader.js"></script>
+
+
 <link rel="preload" href="../style-game-lumo-dash.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-game-lumo-dash.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -78,7 +79,30 @@
 </div>
 
 <script>
-(function(){
+(function() {
+  // Ensure ambient music starts after the game is ready
+  let ambientMusicInitialized = false;
+  function startAmbientMusic() {
+    try {
+      if (!ambientMusicInitialized) {
+        const ac2 = new (window.AudioContext || window.webkitAudioContext)();
+        const o1 = ac2.createOscillator();
+        const o2 = ac2.createOscillator();
+        const g = ac2.createGain();
+        const f = ac2.createBiquadFilter();
+        o1.type = 'sine'; o1.frequency.value = 130;
+        o2.type = 'triangle'; o2.frequency.value = 195;
+        f.type = 'lowpass'; f.frequency.value = 220;
+        g.gain.value = 0.015;
+        o1.connect(f); o2.connect(f); f.connect(g); g.connect(ac2.destination);
+        o1.start(); o2.start();
+        ambientMusicInitialized = true;
+      }
+    } catch (e) { console.error('Failed to start ambient music:', e); }
+  }
+  // Call ambient music on game start
+  startAmbientMusic();
+  
   const cv=document.getElementById('game'),ctx=cv.getContext('2d');
   const scoreEl=document.getElementById('score'),coinsEl=document.getElementById('coins');
   const comboEl=document.getElementById('combo'),powerEl=document.getElementById('power');
@@ -138,7 +162,12 @@
   function hex2rgb(h){h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
   function mixHex(h1,h2,t){const a=hex2rgb(h1),b=hex2rgb(h2);return`rgb(${a.map((v,i)=>Math.round(lerp(v,b[i],t))).join(',')})`;}
 
-  function reset(){
+  function reset() {
+  if (typeof GameUI === 'undefined') {
+    console.warn('GameUI not initialized; skipping auto-pause logic.');
+  }
+  // Rest of reset logic
+{
     player.h=U;player.w=U*1.08;
     player.x=W*0.20;player.y=GROUND-player.h;player.vy=0;player.onGround=true;player.jumps=0;player.sliding=false;player.rotation=0;
     player.run=0;player.squash=1;player.coyote=0;player.buffer=0;
@@ -539,8 +568,14 @@
     setTimeout(()=>endScreen.classList.remove('hidden'),550);
   }
 
-  document.getElementById('startBtn').addEventListener('click',startGame);
-  document.getElementById('againBtn').addEventListener('click',startGame);
+  document.getElementById('startBtn').addEventListener('click', () => {
+  console.log('Start button clicked!');
+  startGame();
+});
+  document.getElementById('againBtn').addEventListener('click', () => {
+  console.log('Again button clicked!');
+  startGame();
+});
 })();
 </script>
 

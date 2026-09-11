@@ -3292,7 +3292,7 @@ window.JVDS_CONTENT = {
     {
       "id": "sound-studio",
       "title": "Audio Studio",
-      "desc": "Unified - compose loops, SFX, chiptune & drums in one studio. Sequencer, effects, WAV/MP3 export + Game Maker handoff. No installs.",
+      "desc": "Compose loops and tracks, layer drums, make quick SFX, export WAV/MP3, and send audio to Game Maker. Best all-in-one choice.",
       "category": "General",
       "tags": [
         "Music",
@@ -3305,7 +3305,7 @@ window.JVDS_CONTENT = {
     {
       "id": "sfx-generator",
       "title": "SFX Generator",
-      "desc": "12 categories of retro SFX - pitch, reverb, batch export and Game Maker handoff. 72 variants, one click.",
+      "desc": "Fastest route for one-shot game sounds: jumps, coins, hits, UI, power-ups, genre packs and batch WAV export.",
       "category": "General",
       "tags": [
         "SFX",
@@ -3318,7 +3318,7 @@ window.JVDS_CONTENT = {
     {
       "id": "drum-pad",
       "title": "Drum Pad",
-      "desc": "Quick drum machine - now also inside Audio Studio (Drum kits). Tap beats and record loops.",
+      "desc": "Fastest route for beats: tap pads, choose drum kits, sketch loops, then continue in Audio Studio if you want a full track.",
       "category": "General",
       "tags": [
         "Beats",
@@ -3819,7 +3819,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-10T06:43:02.541Z",
+    "generated": "2026-09-11T10:36:53.064Z",
     "workshops": 182,
     "games": 32,
     "tools": 18,
