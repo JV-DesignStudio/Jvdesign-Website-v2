@@ -3819,7 +3819,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-12T08:11:36.578Z",
+    "generated": "2026-09-12T08:25:03.801Z",
     "workshops": 182,
     "games": 32,
     "tools": 18,

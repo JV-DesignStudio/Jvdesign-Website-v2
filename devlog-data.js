@@ -1206,6 +1206,15 @@ const POSTS = [
         excerpt: '9 XP bugs fixed across 16 subjects; all 7 studio apps got a signed release build + Play Store listing.',
         content: '9 XP bugs fixed across 16 subjects; all 7 studio apps got a signed release build + Play Store listing. Evidence: 9 XP bugs fixed across 16 subjects; all 7 studio apps got a signed release build + Play Store listing.'
     },
+    {
+        id: 211,
+        date: '12 September 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Restore workshop progress persistence (102 without STORAGE_KEY + 14 stale v1 keys)',
+        excerpt: 'File: workshops/blender-cube-workshop.html STORAGE_KEY jvds-blender-cube-workshop-v2 added (49 injected), File: workshop',
+        content: 'Grep STORAGE_KEY in workshops/*.html: v2=67, v1=14, noKey=102 (55%). NoKey includes all cheatsheets, series hubs (my-first-*.html 12 files), and real workshops: blender-cube/character/rigging/lighting/materials/scene, cpp-* 6, gml-*, java-*, js-*, python-*, unity-*, unreal-*. True gaps: all 9 Blender episode workshops lack STORAGE_KEY -> reload loses XP/progress. 14 files still on jvds-*-v1: gdevelop-adventure/platformer/pointclick/pong/shooter/snake (6), godot-gdscript-essentials, pico8-* 5, roblox-collapse-obby. Files: workshops/blender-cube-workshop.html, workshops/gdevelop-adventure-workshop.html Evidence: File: workshops/blender-cube-workshop.html STORAGE_KEY jvds-blender-cube-workshop-v2 added (49 injected), File: workshops/gdevelop-adventure-workshop.html v1->v2 migrated (17), migrate-keys.js loaded in 130 workshops, validate-workshops 39/39+22/22 PASS, grep v1 0 v2 130 no 53 allowed (cheatsheet/static), duplicate STORAGE_KEY 0, loadProgress restores quizzesPassed/challengesPassed, File: workshops/blender-workshop.html PASS 390/1440px no overflow, validate:public PASS'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
