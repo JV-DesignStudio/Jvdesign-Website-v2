@@ -210,60 +210,33 @@ function generateGames() {
 /* ── TOOLS ───────────────────────────────────────────────── */
 
 function generateTools() {
-  const html = read(path.join(ROOT, 'pages', 'dev-tools.html'));
+  // Enumerate every indexable tool on disk (noindex pages are excluded, sitemap parity)
+  const toolsDir = path.join(ROOT, 'tools');
+  const files = fs.existsSync(toolsDir) ? fs.readdirSync(toolsDir).filter(f=>f.endsWith('.html')).sort() : [];
   const tools = [];
-
-  // Match tool cards: <a href="../tools/XXX.html" class="tool-card">
-  const cardRe = /<a\s+href="[^"]*\/tools\/([^"]+\.html)"[^>]*class="tool-card[^"]*"[\s\S]*?<h3[^>]*>([^<]+)<\/h3>[\s\S]*?<p[^>]*class="tool-desc"[^>]*>([^<]+)<\/p>[\s\S]*?<\/a>/g;
-
-  let match;
-  while ((match = cardRe.exec(html)) !== null) {
-    const [, file, rawTitle, desc] = match;
-    const slug = file.replace('.html', '');
-
-    // Determine category from surrounding context
-    const before = html.substring(0, match.index);
-    let category = 'General';
-    const categoryMatches = [...before.matchAll(/<div class="tool-category" data-category="([^"]+)"/g)];
-    const categoryKey = categoryMatches.length ? categoryMatches[categoryMatches.length - 1][1] : '';
-    const categoryLabels = {
-      'make art': 'Make Art',
-      'make audio': 'Make Audio',
-      'build worlds': 'Build Worlds',
-      'plan & write': 'Plan & Write',
-      'build & ship': 'Build & Ship',
-      art: 'Art & Design',
-      audio: 'Audio',
-      '3d': '3D & Models',
-      game: 'Game Dev',
-      planning: 'Planning'
-    };
-    if (categoryLabels[categoryKey]) category = categoryLabels[categoryKey];
-
-    // Check if coming soon
-    const isComingSoon = html.substring(match.index, match.index + match[0].length + 200).includes('Coming Soon');
-
-    // Extract tags
-    const tagSection = html.substring(match.index, match.index + match[0].length);
-    const tags = [];
-    const tagRe = /<span class="tool-tag">([^<]+)<\/span>/g;
-    let tagMatch;
-    while ((tagMatch = tagRe.exec(tagSection)) !== null) {
-      tags.push(tagMatch[1]);
-    }
-
-    tools.push({
-      id: slug,
-      title: rawTitle.replace(/\.\s*/g, '. ').trim(),
-      desc: desc.trim(),
-      category,
-      tags,
-      comingSoon: isComingSoon,
-      url: `/tools/${file}`
-    });
+  for(const file of files){
+    const html = read(path.join(toolsDir, file));
+    if(!html) continue;
+    if(/<meta[^>]+name=["']robots["'][^>]*noindex/i.test(html)) continue;
+    // skip dev templates without real content
+    if(['project-tracker.html','dev-board.html'].includes(file)) continue;
+    const slug = file.replace('.html','');
+    const title = extract(html, /<title>([^<|]+)/) || slug.replace(/-/g,' ');
+    const desc = extract(html, /<meta\s+name="description"\s+content="([^"]+)"/) || '';
+    // category inference from existing hub or file path
+    let category='General';
+    const lower=(title+' '+desc).toLowerCase();
+    if(lower.includes('pixel')||lower.includes('sprite')||lower.includes('icon')) category='Make Art';
+    else if(lower.includes('audio')||lower.includes('sfx')||lower.includes('sound')||lower.includes('drum')) category='Make Audio';
+    else if(lower.includes('level')||lower.includes('world')||lower.includes('map')||lower.includes('tileset')) category='Build Worlds';
+    else if(lower.includes('story')||lower.includes('gdd')||lower.includes('quest')||lower.includes('error')) category='Plan & Write';
+    else if(lower.includes('arcade')||lower.includes('buildlab')||lower.includes('particle')) category='Build & Ship';
+    const tags=[];
+    if(lower.includes('pixel')) tags.push('Pixel Art');
+    if(lower.includes('3d')) tags.push('3D');
+    tools.push({ id: slug, title: title.trim(), desc: desc.trim().slice(0,180), category, tags, comingSoon:false, url:`/tools/${file}` });
   }
-
-  console.log(`  tools.json: ${tools.length} entries`);
+  console.log(`  tools.json: ${tools.length} entries (indexable, noindex excluded)`);
   return tools;
 }
 

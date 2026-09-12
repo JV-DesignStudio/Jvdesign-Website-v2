@@ -96,10 +96,10 @@ try{
     process.exit(1);
   } else console.log(`✓ games curated parity: registry ${gr} == filesystem ${gf} (32)`);
   const tf = bd.content?.stats?.tools ?? 0;
-  if(tf !== 18){
-    console.error(`\n✗ tools curated ${tf} != 18 - hub live is 18 (61 raw includes 43 reference/landing)`);
+  if(tf !== 40){
+    console.error(`\n✗ tools curated ${tf} != 40 - hub live is 40 indexable (61 raw includes 21 noindex landing/reference)`);
     process.exit(1);
-  } else console.log(`✓ tools curated: 18 (raw 61)`);
+  } else console.log(`✓ tools curated: 40 (raw 61, 21 noindex)`);
 }catch(e){ if(e.code) console.error(e); else console.log('  [WARN] drift gate skipped:', e.message); }
 
 // also verify ownership doc exists

@@ -15,9 +15,9 @@ function check(ok, file, msg){ if(!ok) failures.push(`${file}: ${msg}`); }
 try{
   const curated = JSON.parse(fs.readFileSync(CONTENT_TOOLS,'utf8'));
   const curatedCount = Array.isArray(curated) ? curated.length : 0;
-  check(curatedCount === 18, 'content/tools.json', `curated ${curatedCount} != 18 (hub live)`);
-  check(files.length === 61, 'tools/*.html', `filesystem ${files.length} != 61 raw (18 curated + 43 reference/landing)`);
-  if(curatedCount===18 && files.length===61) console.log(`  [PASS] tools count curated 18 vs raw 61`);
+  check(curatedCount === 40, 'content/tools.json', `curated ${curatedCount} != 40 (hub live indexable)`);
+  check(files.length === 61, 'tools/*.html', `filesystem ${files.length} != 61 raw (40 indexable + 21 noindex)`);
+  if(curatedCount===40 && files.length===61) console.log(`  [PASS] tools count curated 40 vs raw 61`);
   else console.log(`  [INFO] tools count curated ${curatedCount} vs raw ${files.length}`);
 }catch(e){ failures.push(`content/tools.json: ${e.message}`); }
 

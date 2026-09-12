@@ -3237,239 +3237,378 @@ window.JVDS_CONTENT = {
   ],
   "tools": [
     {
-      "id": "pixel-studio",
-      "title": "Pixel Studio",
-      "desc": "Unified pixel art studio - Simple 8×8-32×32 for kids, plus character templates (humanoid/creature/chibi/top-down), layers, frames, onion skin, spritesheet & GIF export. One studio, no installs.",
-      "category": "General",
+      "id": "arcade-game-maker",
+      "title": "Arcade Game Maker",
+      "desc": "Build your own arcade game with blueprints, pixel art, level design and sound. No installs.",
+      "category": "Make Art",
       "tags": [
-        "Pixel Art",
-        "Characters",
-        "Animation",
-        "Easy"
+        "Pixel Art"
       ],
       "comingSoon": false,
-      "url": "/tools/pixel-studio.html"
+      "url": "/tools/arcade-game-maker.html"
     },
     {
-      "id": "sprite-animator",
-      "title": "Sprite Animator",
-      "desc": "Upload a spritesheet, choose frames, preview timing and export packs - also available as Animate + sheet import in Pixel Studio.",
-      "category": "General",
+      "id": "asset-packs",
+      "title": "Free Game Assets",
+      "desc": "Download free pixel art sprites, tilesets, sound effects and colour palettes for your game projects. PNG pixel art (32×32, engine-ready), 8-bit SFX generator, and curated palettes ",
+      "category": "Make Art",
       "tags": [
-        "Spritesheet",
-        "Preview",
-        "JSON"
+        "Pixel Art"
       ],
       "comingSoon": false,
-      "url": "/tools/sprite-animator.html"
+      "url": "/tools/asset-packs.html"
     },
     {
       "id": "bitmap-font-maker",
       "title": "Bitmap Font Maker",
-      "desc": "Draw pixel fonts character by character, preview text and export spritesheets, atlases or BMFont XML.",
-      "category": "General",
+      "desc": "Design pixel bitmap fonts in your browser. Draw characters, preview text live, export PNG spritesheet and JSON atlas. Free game dev tool.",
+      "category": "Make Art",
       "tags": [
-        "Fonts",
-        "Atlas",
-        "BMFont"
+        "Pixel Art"
       ],
       "comingSoon": false,
       "url": "/tools/bitmap-font-maker.html"
     },
     {
-      "id": "trading-card-designer",
-      "title": "Trading Card Designer",
-      "desc": "Create character cards with templates, rarities, stats, uploaded art and PNG export.",
-      "category": "General",
-      "tags": [
-        "Cards",
-        "Stats",
-        "PNG"
-      ],
-      "comingSoon": false,
-      "url": "/tools/trading-card-designer.html"
-    },
-    {
-      "id": "sound-studio",
-      "title": "Audio Studio",
-      "desc": "Compose loops and tracks, layer drums, make quick SFX, export WAV/MP3, and send audio to Game Maker. Best all-in-one choice.",
-      "category": "General",
-      "tags": [
-        "Music",
-        "SFX",
-        "Drums"
-      ],
-      "comingSoon": false,
-      "url": "/tools/sound-studio.html"
-    },
-    {
-      "id": "sfx-generator",
-      "title": "SFX Generator",
-      "desc": "Fastest route for one-shot game sounds: jumps, coins, hits, UI, power-ups, genre packs and batch WAV export.",
-      "category": "General",
-      "tags": [
-        "SFX",
-        "Retro",
-        "Batch"
-      ],
-      "comingSoon": false,
-      "url": "/tools/sfx-generator.html"
-    },
-    {
-      "id": "drum-pad",
-      "title": "Drum Pad",
-      "desc": "Fastest route for beats: tap pads, choose drum kits, sketch loops, then continue in Audio Studio if you want a full track.",
-      "category": "General",
-      "tags": [
-        "Beats",
-        "Kits",
-        "Loops"
-      ],
-      "comingSoon": false,
-      "url": "/tools/drum-pad.html"
-    },
-    {
       "id": "buildlab",
       "title": "BuildLab",
-      "desc": "Make Roblox-style 3D block models with shapes, paint, transforms, touch support and OBJ / GLTF / RBXM export.",
-      "category": "General",
+      "desc": "BuildLab is a free 3D block builder in your browser. Place, paint and resize blocks, then export to Roblox Studio (.rbxm), Blender (GLTF/OBJ) or Unreal Engine (.obj). Game-ready te",
+      "category": "Build & Ship",
       "tags": [
-        "3D Models",
-        "Roblox",
-        "Export"
+        "3D"
       ],
       "comingSoon": false,
       "url": "/tools/buildlab.html"
     },
     {
-      "id": "level-designer",
-      "title": "World Builder",
-      "desc": "Build levels, generate maps, import tilesets, test play spaces and export game-ready world data.",
+      "id": "certificate",
+      "title": "Game Dev Completion Certificate Generator",
+      "desc": "Free printable game dev completion certificate generator. Create personalised certificates for Scratch, Roblox, Godot, Unity and more.",
       "category": "General",
-      "tags": [
-        "Worlds",
-        "Levels",
-        "Tilesets"
-      ],
+      "tags": [],
       "comingSoon": false,
-      "url": "/tools/level-designer.html"
+      "url": "/tools/certificate.html"
     },
     {
-      "id": "particle-designer",
-      "title": "Particle Designer",
-      "desc": "Design fire, smoke, sparks, magic and other VFX with curves, gradients and engine-friendly exports.",
+      "id": "code-snippet-generator",
+      "title": "Code Snippet Generator",
+      "desc": "Generate common code patterns for GDScript, C#, JavaScript and Python. Game loops, input handling, collision detection and more.",
       "category": "General",
-      "tags": [
-        "VFX",
-        "Godot",
-        "Unity"
-      ],
+      "tags": [],
       "comingSoon": false,
-      "url": "/tools/particle-designer.html"
+      "url": "/tools/code-snippet-generator.html"
+    },
+    {
+      "id": "colour-palette",
+      "title": "Palette Studio",
+      "desc": "Create, explore and export game-ready colour palettes with the free JVDesignStudio Palette Studio.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/colour-palette.html"
+    },
+    {
+      "id": "cpp-cheatsheet",
+      "title": "Free C++ SFML Game Dev Cheat Sheet",
+      "desc": "Free printable C++ SFML game development cheat sheet with window, drawing, input, math, animation, collision, audio and common game patterns. No sign-up required.",
+      "category": "Make Audio",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/cpp-cheatsheet.html"
+    },
+    {
+      "id": "defold-cheatsheet",
+      "title": "Free Defold Engine Lua Cheat Sheet",
+      "desc": "Free printable Defold Engine Lua cheat sheet with component lifecycle, game objects, messages, physics, GUI and common patterns. No sign-up required.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/defold-cheatsheet.html"
+    },
+    {
+      "id": "drum-pad",
+      "title": "Drum Pad",
+      "desc": "Tap the drum pads and make music! Record loops, build beats on a 16-step sequencer and save your patterns. A fun sound toy for kids by JVDesignStudio.",
+      "category": "Make Audio",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/drum-pad.html"
+    },
+    {
+      "id": "error-guide",
+      "title": "Bug Hunter's Guide",
+      "desc": "Bug Hunter's Guide , a visual flowchart for fixing common code errors in Scratch, Roblox, Godot, Unity, Python and JavaScript. Free from JVDesignStudio.",
+      "category": "Plan & Write",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/error-guide.html"
+    },
+    {
+      "id": "gamemaker-cheatsheet",
+      "title": "Free GameMaker Language Cheat Sheet",
+      "desc": "Free printable GameMaker Language (GML) cheat sheet with events, variables, functions, drawing, input, sound, data structures and common patterns. No sign-up required.",
+      "category": "Make Audio",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/gamemaker-cheatsheet.html"
     },
     {
       "id": "gdd-builder",
       "title": "Game Design Studio",
-      "desc": "Brainstorm ideas, plan core mechanics, write a full GDD and export your game plan from one studio.",
-      "category": "General",
-      "tags": [
-        "Ideas",
-        "Game Design",
-        "Worksheets"
-      ],
+      "desc": "Brainstorm ideas, plan core mechanics, write a full GDD and export your game plan in the free JVDesignStudio Game Design Studio.",
+      "category": "Plan & Write",
+      "tags": [],
       "comingSoon": false,
       "url": "/tools/gdd-builder.html"
     },
     {
-      "id": "story-editor",
-      "title": "Story Editor",
-      "desc": "Create branching dialogue, character nodes, choices, endings, visual story links and JSON exports.",
+      "id": "gdevelop-cheatsheet",
+      "title": "Free GDevelop Visual Events Cheat Sheet",
+      "desc": "Free printable GDevelop visual events cheat sheet with conditions, actions, behaviors, variables, expressions and common game patterns. No sign-up required.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/gdevelop-cheatsheet.html"
+    },
+    {
+      "id": "glossary",
+      "title": "Game Dev Glossary for Kids",
+      "desc": "Kid-friendly game development glossary with 60 terms explained simply. Learn words like sprite, variable, collision, NPC and more. Free, no sign-up.",
+      "category": "Make Art",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/glossary.html"
+    },
+    {
+      "id": "godot-cheatsheet",
+      "title": "Free Godot 4 GDScript Cheat Sheet",
+      "desc": "Free printable Godot 4 GDScript cheat sheet with node lifecycle, 2D/3D nodes, physics, signals, input and common game patterns. No sign-up required.",
       "category": "General",
       "tags": [
-        "Dialogue",
-        "Story",
-        "JSON"
+        "3D"
       ],
       "comingSoon": false,
-      "url": "/tools/story-editor.html"
+      "url": "/tools/godot-cheatsheet.html"
+    },
+    {
+      "id": "icon-generator",
+      "title": "Quest Board Icon Generator",
+      "desc": "Design custom RPG app icons in your browser. Pick a shape, dial in colours and effects, preview live, and export PNGs at 512, 192, 180 and 48 px. Free tool from JVDesignStudio.",
+      "category": "Make Art",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/icon-generator.html"
+    },
+    {
+      "id": "java-cheatsheet",
+      "title": "Free Java 2D Game Dev Cheat Sheet",
+      "desc": "Free printable Java 2D game development cheat sheet with JFrame, Graphics2D, input, collision, sound and common game patterns. No sign-up required.",
+      "category": "Make Audio",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/java-cheatsheet.html"
+    },
+    {
+      "id": "javascript-cheatsheet",
+      "title": "Free HTML5 Canvas JavaScript Cheat Sheet",
+      "desc": "Free printable HTML5 Canvas JavaScript game development cheat sheet with canvas setup, drawing, game loop, input, images, audio, math, collision and common game patterns. No sign-u",
+      "category": "Make Audio",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/javascript-cheatsheet.html"
+    },
+    {
+      "id": "keyboard-shortcuts",
+      "title": "Free Game Engine Keyboard Shortcuts Reference",
+      "desc": "Free printable keyboard shortcuts reference for Godot 4, Unity, GDevelop, GameMaker, and Unreal Engine 5. No sign-up required.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/keyboard-shortcuts.html"
+    },
+    {
+      "id": "level-designer",
+      "title": "World Builder",
+      "desc": "Build game worlds with the free JVDesignStudio World Builder: paint levels, generate maps, import tilesets and export game-ready data.",
+      "category": "Build Worlds",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/level-designer.html"
+    },
+    {
+      "id": "minecraft-cheatsheet",
+      "title": "Free Minecraft Modding Cheat Sheet",
+      "desc": "Free printable Minecraft Forge/Fabric modding cheat sheet with mod structure, registry, items, blocks, events, GUI, rendering, networking and data. No sign-up required.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/minecraft-cheatsheet.html"
+    },
+    {
+      "id": "parent-guide",
+      "title": "Parent &amp; Teacher Guide",
+      "desc": "A comprehensive guide for parents and teachers using JVDesignStudio. Learn about screen time, safety, choosing the right workshop, and how to support your child's game development ",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/parent-guide.html"
+    },
+    {
+      "id": "particle-designer",
+      "title": "Particle Designer",
+      "desc": "Design particle effects in your browser. Save effects, edit curves & gradients, use sprite textures, record video, and export real Godot & Unity files. Free dev tool.",
+      "category": "Make Art",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/particle-designer.html"
+    },
+    {
+      "id": "pico8-cheatsheet",
+      "title": "Free PICO-8 Lua Cheat Sheet",
+      "desc": "Free printable PICO-8 Lua cheat sheet with game loop, input, drawing, sound, memory and common game patterns. No sign-up required.",
+      "category": "Make Audio",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/pico8-cheatsheet.html"
+    },
+    {
+      "id": "pixel-studio",
+      "title": "Pixel Studio - Draw, Design & Animate",
+      "desc": "The unified Pixel Studio: easy pixel art for beginners, character design templates, layered drawing, animation & spritesheet export. Free in your browser.",
+      "category": "Make Art",
+      "tags": [
+        "Pixel Art"
+      ],
+      "comingSoon": false,
+      "url": "/tools/pixel-studio.html"
+    },
+    {
+      "id": "python-cheatsheet",
+      "title": "Free Python Pygame Cheat Sheet",
+      "desc": "Free printable Python Pygame cheat sheet with game loop, input, drawing, images, sound, collision and common game patterns. No sign-up required.",
+      "category": "Make Audio",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/python-cheatsheet.html"
+    },
+    {
+      "id": "quest-board",
+      "title": "Game Planner",
+      "desc": "Plan game projects as quests, track progress, earn XP and move the same backup between desktop Game Planner and the QuestLog app.",
+      "category": "Plan & Write",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/quest-board.html"
+    },
+    {
+      "id": "roblox-cheatsheet",
+      "title": "Free Roblox Lua Cheat Sheet",
+      "desc": "Free printable Roblox Lua cheat sheet with data types, instance methods, properties, events, remote events, services and common game patterns. No sign-up required.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/roblox-cheatsheet.html"
+    },
+    {
+      "id": "scratch-cheatsheet",
+      "title": "Free Scratch Block Reference Cheat Sheet",
+      "desc": "Free printable Scratch block reference cheat sheet with motion, looks, sound, events, control, sensing, operators and variables. No sign-up required.",
+      "category": "Make Audio",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/scratch-cheatsheet.html"
+    },
+    {
+      "id": "scratch-starter-guide",
+      "title": "Free Scratch Starter Guide",
+      "desc": "Free step-by-step Scratch starter guide with sprite setup, block-by-block instructions for a basic game. No sign-up required.",
+      "category": "Make Art",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/scratch-starter-guide.html"
+    },
+    {
+      "id": "sound-studio",
+      "title": "Audio Studio",
+      "desc": "Compose music, create chiptune sounds and generate game-ready sound effects with the free JVDesignStudio Audio Studio.",
+      "category": "Make Audio",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/sound-studio.html"
+    },
+    {
+      "id": "sprite-animator",
+      "title": "Sprite Animator",
+      "desc": "Upload a spritesheet, set frame size, preview your animation live. Export animated GIFs, ZIP frame packs, Godot SpriteFrames and Unity-friendly JSON. Free game dev tool.",
+      "category": "Make Art",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/sprite-animator.html"
     },
     {
       "id": "store-page-builder",
       "title": "Launch Studio",
       "desc": "Create game logos, promo screenshots, store copy and release messaging from one launch workspace.",
       "category": "General",
-      "tags": [
-        "Logo",
-        "Screenshots",
-        "Store Copy"
-      ],
+      "tags": [],
       "comingSoon": false,
       "url": "/tools/store-page-builder.html"
     },
     {
-      "id": "arcade-game-maker",
-      "title": "Arcade Game Maker",
-      "desc": "Prototype browser games from templates, tune physics, import art/audio/levels and share a playable build.",
-      "category": "General",
-      "tags": [
-        "Game Maker",
-        "Phaser",
-        "Share"
-      ],
+      "id": "story-editor",
+      "title": "Story Editor",
+      "desc": "Write branching dialogue and story trees for your game with the free JVDesignStudio Story Editor.",
+      "category": "Plan & Write",
+      "tags": [],
       "comingSoon": false,
-      "url": "/tools/arcade-game-maker.html"
+      "url": "/tools/story-editor.html"
     },
     {
-      "id": "code-snippet-generator",
-      "title": "Code Snippet Generator",
-      "desc": "Create starter snippets for common game-dev patterns and copy them into your project.",
-      "category": "General",
-      "tags": [
-        "Code",
-        "Starter",
-        "Helper"
-      ],
+      "id": "story-player",
+      "title": "Story Player",
+      "desc": "Play branching stories made with the free JVDesignStudio Story Editor , right in your browser.",
+      "category": "Plan & Write",
+      "tags": [],
       "comingSoon": false,
-      "url": "/tools/code-snippet-generator.html"
+      "url": "/tools/story-player.html"
     },
     {
-      "id": "error-guide",
-      "title": "Error Guide",
-      "desc": "Look up common beginner bugs and get plain-language fixes.",
+      "id": "trading-card-designer",
+      "title": "Trading Card Designer",
+      "desc": "Design custom trading cards for your game characters and items. Choose a template, fill in stats, upload art, and export as a PNG. Free browser tool.",
       "category": "General",
-      "tags": [
-        "Debugging",
-        "Guide",
-        "Beginner"
-      ],
+      "tags": [],
       "comingSoon": false,
-      "url": "/tools/error-guide.html"
+      "url": "/tools/trading-card-designer.html"
     },
     {
-      "id": "quest-board",
-      "title": "Game Planner",
-      "desc": "Turn game tasks, projects, bugs and polish passes into quests with progression, planning views and local saves.",
+      "id": "unity-cheatsheet",
+      "title": "Free Unity C# Cheat Sheet",
+      "desc": "Free printable Unity C# cheat sheet with MonoBehaviour lifecycle, input, physics, UI, coroutines, scene management and common game patterns. No sign-up required.",
       "category": "General",
-      "tags": [
-        "Quests",
-        "Projects",
-        "Planning"
-      ],
+      "tags": [],
       "comingSoon": false,
-      "url": "/tools/quest-board.html"
+      "url": "/tools/unity-cheatsheet.html"
     },
     {
-      "id": "icon-generator",
-      "title": "Icon Generator",
-      "desc": "Generate Quest Board-style pixel icons and download ready-sized PNGs.",
+      "id": "unity-starter-setup",
+      "title": "Free Unity Starter Setup Guide",
+      "desc": "Free step-by-step Unity 3D starter guide with scene setup, PlayerController.cs and GameManager.cs scripts. No sign-up required.",
       "category": "General",
       "tags": [
-        "Icons",
-        "Pixel",
-        "PNG"
+        "3D"
       ],
       "comingSoon": false,
-      "url": "/tools/icon-generator.html"
+      "url": "/tools/unity-starter-setup.html"
+    },
+    {
+      "id": "unreal-cheatsheet",
+      "title": "Free Unreal Engine 5 Cheat Sheet",
+      "desc": "Free printable Unreal Engine 5 Blueprints + C++ cheat sheet with classes, UPROPERTY, UFUNCTION, movement, input, collision and common patterns. No sign-up required.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/unreal-cheatsheet.html"
     }
   ],
   "books": [
@@ -3819,10 +3958,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-12T08:52:06.767Z",
+    "generated": "2026-09-12T09:02:15.082Z",
     "workshops": 182,
     "games": 32,
-    "tools": 18,
+    "tools": 40,
     "books": 5,
     "engines": {
       "Blender": 9,
@@ -3846,7 +3985,12 @@ window.JVDS_CONTENT = {
       "Unreal": 10
     },
     "toolCategories": {
-      "General": 18
+      "Make Art": 9,
+      "Build & Ship": 1,
+      "General": 15,
+      "Make Audio": 9,
+      "Plan & Write": 5,
+      "Build Worlds": 1
     }
   }
 };

@@ -1251,6 +1251,15 @@ const POSTS = [
         excerpt: 'File: board/index.html and File: pages/devlog.html validate:public PASS test:board-sync PASS at 390/1440px no overflow, ',
         content: 'Auto-detected from --check: IN_PROGRESS extra A143. See board-keeper --check output and tasks.json drift. File: validate:public/boundary. Evidence: File: board/index.html and File: pages/devlog.html validate:public PASS test:board-sync PASS at 390/1440px no overflow, A143 correctly backlog No drift'
     },
+    {
+        id: 216,
+        date: '12 September 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Tools catalog drift  -  61 files vs 18 in tools.json',
+        excerpt: 'File: content/tools.json now 40 indexable (was 18) via tools/*.html scan noindex excluded (21 landing/reference noindex)',
+        content: 'tools/*.html = 61 files but content/tools.json lists 18. ~43 tools invisible on /dev-tools hub and search (asset-packs.html, certificate.html, easy-pixel-art.html, character-designer.html, colour-palette.html, screenshot-generator.html, tileset-builder.html, sprite-sheet-animator.html + 14 cheatsheets: unity, unreal, godot, python, javascript, java, cpp, gdevelop, gamemaker, defold, pico8, scratch, roblox, minecraft). Discoverability broken; sitemap indexes orphans. File: tools/asset-packs.html vs content/tools.json Evidence: File: content/tools.json now 40 indexable (was 18) via tools/*.html scan noindex excluded (21 landing/reference noindex), File: tools/pixel-studio.html canonical, File: pages/dev-tools.html hub still 18 static but content-data.js 40 used for search, sitemap 303 vs search 309 delta 6, board-data games 32==32 tools 40, validate:public PASS 390/1440 no overflow, tools-qa 40 vs 61 PASS'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
