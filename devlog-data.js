@@ -4,6 +4,15 @@
 
 const POSTS = [
     {
+        id: 110,
+        date: '11 September 2026',
+        tag: 'games',
+        emoji: '🃏',
+        title: 'Call of the Cards v1.3 - 108-card print set and a playable digital board',
+        excerpt: 'Fixed the dead End Turn, rebalanced for physical, added Underdog’s Resolve and 16 quests.',
+        content: 'Interactive version was dead - End Turn only emitted in ai mode. Fixed call-of-cards-engine.js endTurn → nextAITurn (p1→Rival→p1, 700ms), and both games/call_of_the_cards.html + call-of-the-cards-playtest.html swapped top/bottom rendering so Local 2P actually shows the active hand. Verified via vm runInContext: p1 6 → Rival 6 → p1 7, quests complete, log correct.\n\nv1.2 rebalance for print: Ring 3→4g, Sword 5→6g, Scout 1→2g, Siege 3→4p, Healer 1→2p (stacks with Ring via getTotalPower healerBonus), Shadow 2→1p + discard 1 random on recruit, Assassin 1→2 VP, Dwarven Smith draws 1 on recruit. Gold text now discard-to-pay, not untap.\n\nv1.3: 108-card set = 46/deck ×2 +16 quests (added Bandit Raid, Ancient Library, Goblin Market, Haunted Keep, Crown Courier, Starfall Summit). New catch-up Underdog’s Resolve - if 2+ VP behind at start of turn, draw +1 (stacks with Amulet). Sim 300 greedy games p1 61% (was 56%), avg 10.4 turns, quests 12→16. Added 4pp rules Call-of-the-Cards-Rules-v1.3.md, updated sitemap 303 and board-data. Next: print PNP and get 5 table tests before art.'
+    },
+    {
         id: 84,
         date: '8 September 2026',
         tag: 'update',

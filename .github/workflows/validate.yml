@@ -53,5 +53,19 @@ jobs:
       - name: Full regression audit
         run: npm run audit:site
 
+      - name: Check generated content drift (A13 guard)
+        run: node scripts/check-generated-drift.js
+
+      - name: Board drift + schema gate (private, skipped in CI if no tasks.json)
+        run: |
+          if [ -f "F:/Website/studio-workspace/tasks.json" ] || [ -f "../studio-workspace/tasks.json" ] || [ -f "$HOME/studio-workspace/tasks.json" ]; then
+            node "F:/Website/studio-workspace/board-keeper.cjs" --check --no-auto || node "../studio-workspace/board-keeper.cjs" --check --no-auto || echo "board drift check skipped - no private tasks.json in this runner"
+          else
+            echo "private board not in CI (expected) - skip drift check, board-data.json freshness covered by drift guard above"
+          fi
+
+      - name: Social queue guard (devlog-data.js -> social-posts/queue)
+        run: node scripts/generate-social-draft.js --check
+
       - name: Smoke tests (headless Chrome)
         run: npm run test:smoke

@@ -34,6 +34,18 @@ node scripts/build/index.js --only=partials --skip-validate   # just partials, f
 
 Legacy entrypoints (`build.js`, `generate-sitemap.js`) still work via `npm run build:legacy` but new code should use `scripts/build/`.
 
+## Board - How Everyone Knows What To Do (Backend → Trello)
+
+> One Trello `F:/Website/studio-workspace/board/index.html` - warm `var(--beige)` `BACKLOG 23 · IN_PROGRESS 1 · HUMAN_REVIEW 0` + `NEXT →` pill `board-keeper.cjs --next` `P1 → first|school|pixel` + `WIP` `👤` + `healthStrip` `Sitemap 303` `Validate 0` `First creation` - so 4 providers + you see the same single goal without asking.
+
+**For humans:** open Trello → `NEXT pill` tells you what to claim, `WIP bar` tells you who holds what, `🌐 Page / 💻 Code` `board/index.html:2041` lets you verify without leaving, `👁 Preview / 📊 Diff / 💬 Comment` `board-server.cjs:115` + `Bulk` + `j/k/a/d/o/?` `Ctrl+K` palette.
+
+**For agents:** `node F:/Website/studio-workspace/board-keeper.cjs --check` → `--claim A118 --agent "name"` (first wins, `WIP 3` `board-keeper.cjs:68`) → code → update `tasks.json` `evidence` `File: … validate:public PASS test:…` → `--request-review` `bot-verify.cjs:1` 7 checks → human `Approve` `board-server.cjs:95` `OPTIONS 204` re-runs BOT live → `done` → `--sync` → `healthStrip` toast `Board updated - refreshing…` in 15s.
+
+Full backend docs: [`scripts/README.md`](scripts/README.md) - pipeline `content→partials→sitemap→latest→board` `scripts/build/index.js:1` `lib/paths.js` single `walk()`.
+
+**Mobile approve:** `📱 Mobile` QR `http://192.168.1.77:8787/approve.html` same Wi-Fi (PC on) or `board/approve-online.html` PAT anywhere `api.github.com`.
+
 ## Adding a new page
 
 When adding a new page, remember to:

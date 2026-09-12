@@ -5,16 +5,16 @@ const CARD_DB = {
     { id:'c1', name:'Wandering Rogue',     emoji:'🗡️', cost:1, power:1, type:'companion', text:'Cheap, scrappy, and always useful early.' },
     { id:'c2', name:'Captain of the Guard', emoji:'🧙', cost:2, power:3, type:'companion', text:'Loyal to the last and worth every coin.' },
     { id:'c3', name:'Elf Archer',           emoji:'🏹', cost:3, power:4, type:'companion', text:'Swift, precise, never misses a quest.' },
-    { id:'c4', name:'Dwarven Smith',        emoji:'⚒️', cost:2, power:2, type:'companion', text:'Forges bonds as strong as steel.' },
-    { id:'c5', name:'Forest Scout',         emoji:'🌿', cost:1, power:2, type:'companion', text:'Knows every hidden path through the woods.' },
-    { id:'c6', name:'Siege Engineer',       emoji:'🏗️', cost:3, power:3, type:'companion', text:'Every fortress has a weakness.' },
-    { id:'c7', name:'Healer',               emoji:'💚', cost:2, power:1, type:'companion', text:'Mends wounds and bolsters resolve. +1 Power to all allies.' },
-    { id:'c8', name:'Shadow Thief',         emoji:'🦇', cost:1, power:2, type:'companion', text:'Strikes from the dark, always unseen.' },
+    { id:'c4', name:'Dwarven Smith',        emoji:'⚒️', cost:2, power:2, type:'companion', text:'When recruited, draw 1 card.' },
+    { id:'c5', name:'Forest Scout',         emoji:'🌿', cost:2, power:2, type:'companion', text:'Reliable tracker. Solid early power.' },
+    { id:'c6', name:'Siege Engineer',       emoji:'🏗️', cost:3, power:4, type:'companion', text:'Every fortress has a weakness.' },
+    { id:'c7', name:'Healer',               emoji:'💚', cost:2, power:2, type:'companion', text:'All allies gain +1 Power while Healer is in play.' },
+    { id:'c8', name:'Shadow Thief',         emoji:'🦇', cost:1, power:1, type:'companion', text:'When recruited, opponent discards 1 random card.' },
   ],
   artifacts: [
-    { id:'a1', name:'Ring of Courage',    emoji:'💍', cost:3, type:'artifact', text:'All Companions gain +1 Power.', effect:'allies_plus_1' },
+    { id:'a1', name:'Ring of Courage',    emoji:'💍', cost:4, type:'artifact', text:'All Companions gain +1 Power.', effect:'allies_plus_1' },
     { id:'a2', name:'Shield of Ages',     emoji:'🛡️', cost:4, type:'artifact', text:'Ignore 1 Power requirement on quests.', effect:'ignore_1_req' },
-    { id:'a3', name:'Sword of Dawn',      emoji:'⚔️', cost:5, type:'artifact', text:'Gain +1 bonus VP when completing any Quest.', effect:'bonus_vp' },
+    { id:'a3', name:'Sword of Dawn',      emoji:'⚔️', cost:6, type:'artifact', text:'Gain +1 bonus VP when completing any Quest.', effect:'bonus_vp' },
     { id:'a4', name:'Amulet of Renewal',  emoji:'🔮', cost:3, type:'artifact', text:'Draw 1 extra card at the start of each turn.', effect:'draw_1' },
     { id:'a5', name:'Crown of Whispers',  emoji:'👑', cost:4, type:'artifact', text:'Once per turn, peek at the top card of your deck.', effect:'peek' },
     { id:'a6', name:'Boots of Haste',     emoji:'👢', cost:2, type:'artifact', text:'You may recruit one extra Companion per turn.', effect:'extra_recruit' },
@@ -26,10 +26,16 @@ const CARD_DB = {
     { id:'q4',  name:'Storm the Fortress',      emoji:'🏰', vp:2, req:6,  text:'Bravery alone won\'t win this one you\'ll need a full party.' },
     { id:'q5',  name:'Slay the Dragon',         emoji:'🐉', vp:2, req:7,  text:'Legends are made in moments like these.' },
     { id:'q6',  name:'Reclaim the Throne',      emoji:'👑', vp:2, req:8,  text:'The crown awaits those bold enough to seize it.' },
-    { id:'q7',  name:'Assassin\'s Bounty',       emoji:'🗡️', vp:1, req:5,  text:'A high-value target moves under cover of night.' },
+    { id:'q7',  name:'Assassin\'s Bounty',       emoji:'🗡️', vp:2, req:5,  text:'A high-value target moves under cover of night. Now worth 2 VP.' },
     { id:'q8',  name:'Troll Hunt',              emoji:'👹', vp:1, req:4,  text:'Ugly, smelly, and surprisingly tough.' },
     { id:'q9',  name:'Enchanted Forest Quest',  emoji:'🌲', vp:2, req:6,  text:'The forest tests all who enter.' },
     { id:'q10', name:'Final Coronation',        emoji:'🏆', vp:3, req:10, text:'The ultimate test. Claim the throne for good.' },
+    { id:'q11', name:'Bandit Raid',            emoji:'💀', vp:2, req:5,  text:'Bandits threaten the trade road. Stop them for glory.' },
+    { id:'q12', name:'Ancient Library',         emoji:'📚', vp:1, req:4,  text:'Recover lost knowledge for the realm.' },
+    { id:'q13', name:'Goblin Market',           emoji:'🪙', vp:1, req:3,  text:'Trade under pressure. Quick deal, quick VP.' },
+    { id:'q14', name:'Haunted Keep',            emoji:'👻', vp:2, req:6,  text:'Ghosts don’t yield. Bring heavy power.' },
+    { id:'q15', name:'Crown Courier',           emoji:'📯', vp:1, req:5,  text:'Deliver the sealed letter through enemy lines.' },
+    { id:'q16', name:'Starfall Summit',         emoji:'⭐', vp:3, req:9,  text:'The climb is brutal but the view is worth 3 VP.' },
   ],
   gold: [
     { id:'g1', name:'Gold Card', emoji:'💰', type:'gold', text:'Currency to recruit Companions and purchase Artifacts.' },
@@ -122,7 +128,9 @@ class CallOfCardsGame {
   getTotalPower(p) {
     let power = 0;
     const hasRing = p.artifacts.some(a => a.effect === 'allies_plus_1');
-    p.field.forEach(c => { power += c.power + (hasRing ? 1 : 0); });
+    const healerBonus = p.field.filter(c => c.id === 'c7').length; // each Healer gives +1 to all allies, stacks with Ring
+    const bonus = (hasRing ? 1 : 0) + healerBonus;
+    p.field.forEach(c => { power += c.power + bonus; });
     return power;
   }
 
@@ -132,6 +140,12 @@ class CallOfCardsGame {
     return this.getTotalPower(p) >= req;
   }
 
+  isUnderdog(p) {
+    if(!this.state) return false;
+    const opp = this.state.p1 === p ? this.state.p2 : this.state.p1;
+    return opp && (opp.vp - p.vp) >= 2;
+  }
+
   /* ---- Turn management ---- */
   startTurn() {
     const p = this.active();
@@ -139,13 +153,18 @@ class CallOfCardsGame {
     this.recruitsThisTurn = 0;
     this.maxRecruitsPerTurn = p.artifacts.some(a => a.effect === 'extra_recruit') ? 2 : 1;
 
-    // Draw 1 (2 with Amulet of Renewal)
-    const drawCount = p.artifacts.some(a => a.effect === 'draw_1') ? 2 : 1;
+    // Draw 1 (2 with Amulet of Renewal) + Underdog's Resolve: draw 1 extra if 2+ VP behind (v1.3)
+    let drawCount = p.artifacts.some(a => a.effect === 'draw_1') ? 2 : 1;
+    if(this.isUnderdog(p)) drawCount += 1;
     for(let i=0; i<drawCount; i++) {
       if(p.deck.length > 0) p.hand.push(p.deck.shift());
     }
 
-    this.log(`${p.name}'s turn ${this.turnNumber}`);
+    if(this.isUnderdog(p) && drawCount > 1) {
+      this.log(`${p.name} draws extra - Underdog's Resolve!`);
+    } else {
+      this.log(`${p.name}'s turn ${this.turnNumber}`);
+    }
   }
 
   endTurn() {
@@ -166,6 +185,14 @@ class CallOfCardsGame {
         });
         return;
       }
+      this.startTurn();
+      this.emit();
+      return;
+    }
+    // AI mode: hand over to the Rival
+    if(this.mode === 'ai') {
+      this.nextAITurn();
+      return;
     }
     this.emit();
   }
@@ -198,6 +225,20 @@ class CallOfCardsGame {
     this.recruitsThisTurn++;
 
     this.log(`${p.name} recruited ${card.name} (${card.power} power)`);
+    // On-recruit abilities for physical v1.2
+    if(card.id === 'c4' && p.deck.length > 0) {
+      const drawn = p.deck.shift();
+      p.hand.push(drawn);
+      this.log(`${p.name}'s Dwarven Smith forges ahead - drew 1 card`);
+    }
+    if(card.id === 'c8') {
+      const opp = this.inactive();
+      if(opp.hand.length > 0) {
+        const ri = Math.floor(Math.random() * opp.hand.length);
+        const stolen = opp.hand.splice(ri, 1)[0];
+        this.log(`${p.name}'s Shadow Thief strikes! ${opp.name} discards ${stolen.name}`);
+      }
+    }
     this.emit();
     return true;
   }
