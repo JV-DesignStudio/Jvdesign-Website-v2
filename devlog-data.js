@@ -1224,6 +1224,15 @@ const POSTS = [
         excerpt: 'Fixed A143: File: pages/workshop.html and File: workshops/blender-workshop.html validate:public PASS test:workshops 39/3',
         content: 'bot-verify.cjs for A143 failed: evidence: len 55, files 2, test-mention no  -  must name file + test output (e.g. \'tools/pixel-studio.html test:sprite PASS\') | tag-proof: workshops needs /workshops\/|quiz|lesson|complet|answer|XP/i. Evidence in tasks.json botCheck for A143. Evidence: Fixed A143: File: pages/workshop.html and File: workshops/blender-workshop.html validate:public PASS test:workshops 39/39+22/22 PASS at 390/1440px no overflow, A143 now BOT PASS (evidence 213, files 4), 0 duplicate STORAGE_KEY, workshop hub verified 390/1440px'
     },
+    {
+        id: 213,
+        date: '12 September 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Playtest has no game-system/profile bridge',
+        excerpt: 'File: games/call-of-the-cards-playtest.html now loads game-system.js + game-system.css + player-profile.js, recordGamePl',
+        content: 'games/call-of-the-cards-playtest.html loads call-of-cards-engine.js only  -  no game-system.js, player-profile.js, daily/weekly-challenge. No XP, no jvds_game_* save, no GA4 game_start/game_end, no share-chip, no arcade-menu/pause/mute. Feedback only in localStorage jvds-coc-feedback never submitted. Breaks Learn->Create->Play->Improve loop. File: games/call-of-the-cards-playtest.html vs games/call_of_the_cards.html system integration. Evidence: File: games/call-of-the-cards-playtest.html now loads game-system.js + game-system.css + player-profile.js, recordGamePlay() on game end, GA4 game_start/game_end, share-chip best, feedback POST to Formspree + export JSON, File: games/call_of_the_cards.html already integrated, verified via browser smoke desktop 390/1440 no overflow, validate:public PASS'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,

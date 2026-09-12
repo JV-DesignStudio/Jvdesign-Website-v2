@@ -26,6 +26,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=Lora:ital,wght@0,600;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
 <link rel="stylesheet" href="/style-mascots.css">
+<!-- Game System Integration (A131) -->
+<script src="../game-system.js"></script>
+<link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
+<script src="../player-profile.js" defer></script>
 <style>
 /* ===== PLAYTEST PAGE STYLES ===== */
 :root {
@@ -596,6 +600,59 @@ function showFeedback() {
   document.getElementById('gameOverOverlay').style.display = 'none';
   document.getElementById('feedbackSection').scrollIntoView({behavior:'smooth'});
 }
+</script>
+<!-- A131: game-system/profile bridge -->
+<script>
+const gameSystemPlaytest = new GameSystem('call-of-cards-playtest', 'Call of the Cards Playtest', 'sage');
+const soundManagerPlaytest = typeof SoundManager !== 'undefined' ? new SoundManager(gameSystemPlaytest) : null;
+// hook into handleGameEnd to record play + XP + GA4 + share-chip
+(function(){
+  const origHandle = window.handleGameEnd;
+  window.handleGameEnd = function(winner){
+    if(typeof origHandle === 'function') origHandle(winner);
+    try{
+      gameSystemPlaytest.recordGamePlay(Date.now());
+      gameSystemPlaytest.addXP(15);
+      gameSystemPlaytest.unlockAchievement('playtestComplete');
+      gameSystemPlaytest.saveState();
+      // GA4
+      if(window.gtag) gtag('event','game_end',{game:'call-of-cards-playtest', winner: winner});
+      // share-chip: show best if exists
+      const best = localStorage.getItem('jvds_game_call-of-cards-playtest_best');
+      if(best){
+        let chip=document.getElementById('shareChip');
+        if(!chip){ chip=document.createElement('div'); chip.id='shareChip'; chip.style.cssText='position:fixed;bottom:16px;right:16px;background:#c9933a;color:#1a1226;padding:8px 14px;border-radius:999px;font-weight:800;z-index:999;'; document.body.appendChild(chip); }
+        chip.textContent='Best: '+best+' - Share';
+        chip.onclick=function(){ if(navigator.share) navigator.share({title:'Call of the Cards Playtest', text:'I scored '+best, url: location.href}); else { navigator.clipboard.writeText(location.href); alert('Link copied'); }};
+      }
+    }catch(e){}
+  };
+  // also record on start
+  const origStart = window.startGame;
+  window.startGame = function(mode){
+    if(window.gtag) gtag('event','game_start',{game:'call-of-cards-playtest', mode:mode});
+    if(typeof origStart === 'function') origStart(mode);
+    try{ gameSystemPlaytest.recordGamePlay(Date.now()); }catch(e){}
+  };
+})();
+// feedback export + POST (A131)
+(function(){
+  const origSubmit = window.submitFeedback;
+  window.submitFeedback = function(e){
+    e.preventDefault();
+    const data={ date:new Date().toISOString(), fun: document.querySelector('[data-field=\"fun\"]')?.dataset.value||null, balance: document.querySelector('[data-field=\"balance\"]')?.dataset.value||null, replay: document.querySelector('[data-field=\"replay\"]')?.dataset.value||null, issues:[...document.querySelectorAll('[data-field=\"issues\"] .fb-check.selected input')].map(i=>i.value), notes: document.getElementById('fbNotes').value.trim(), game:'call-of-cards-playtest' };
+    if(!data.fun && !data.balance && !data.replay && !data.notes){ alert('Please rate at least one category'); return false; }
+    // local save
+    const all=JSON.parse(localStorage.getItem('jvds-coc-feedback')||'[]'); all.push(data); localStorage.setItem('jvds-coc-feedback', JSON.stringify(all));
+    // try POST to Formspree (exportable) - fallback to export
+    try{ fetch('https://formspree.io/f/xvkowqqw',{method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body: JSON.stringify({ _subject:'Call of the Cards Playtest Feedback', data: data})}).catch(()=>{}); }catch(e){}
+    document.getElementById('feedbackForm').style.display='none'; document.getElementById('fbSuccess').style.display=''; 
+    // export button
+    let exp=document.getElementById('exportFeedbackBtn');
+    if(!exp){ exp=document.createElement('button'); exp.id='exportFeedbackBtn'; exp.textContent='⬇ Export feedback JSON'; exp.style.cssText='margin-top:12px;padding:8px 14px;border-radius:8px;border:1px solid #c9933a;background:#1a1226;color:#c9933a;cursor:pointer;'; exp.onclick=function(){ const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='coc-feedback.json'; a.click(); URL.revokeObjectURL(url); }; document.getElementById('fbSuccess').appendChild(exp); }
+    return false;
+  };
+})();
 </script>
 <script defer src="/mascots.js"></script>
 </body>
