@@ -1242,6 +1242,15 @@ const POSTS = [
         excerpt: 'Fixed 3 SyntaxErrors: File: games/lumo-dash.html reset duplicate removed (1e26a17f restore), File: games/lumo-dash-page.',
         content: 'validate-js reports 3 pages with SyntaxError that kills entire script blocks: games/lumo-dash-page.html Unexpected token \')\', games/lumo-dash.html same, games/voidrush.html Unexpected token \'}\'. Buttons do nothing while page looks normal. Check for truncated lines at \'<\' and spliced duplicates. File: games/lumo-dash.html vs games/lumo-dash-page.html vs games/voidrush.html Evidence: Fixed 3 SyntaxErrors: File: games/lumo-dash.html reset duplicate removed (1e26a17f restore), File: games/lumo-dash-page.html restored, File: games/voidrush.html extra } removed, validate-js 358 pages 0 dead (was 3), 390/1440 no overflow, validate:public PASS'
     },
+    {
+        id: 215,
+        date: '12 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Fix IN_PROGRESS extra A143',
+        excerpt: 'File: board/index.html and File: pages/devlog.html validate:public PASS test:board-sync PASS at 390/1440px no overflow, ',
+        content: 'Auto-detected from --check: IN_PROGRESS extra A143. See board-keeper --check output and tasks.json drift. File: validate:public/boundary. Evidence: File: board/index.html and File: pages/devlog.html validate:public PASS test:board-sync PASS at 390/1440px no overflow, A143 correctly backlog No drift'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
