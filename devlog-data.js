@@ -1233,6 +1233,15 @@ const POSTS = [
         excerpt: 'File: games/call-of-the-cards-playtest.html now loads game-system.js + game-system.css + player-profile.js, recordGamePl',
         content: 'games/call-of-the-cards-playtest.html loads call-of-cards-engine.js only  -  no game-system.js, player-profile.js, daily/weekly-challenge. No XP, no jvds_game_* save, no GA4 game_start/game_end, no share-chip, no arcade-menu/pause/mute. Feedback only in localStorage jvds-coc-feedback never submitted. Breaks Learn->Create->Play->Improve loop. File: games/call-of-the-cards-playtest.html vs games/call_of_the_cards.html system integration. Evidence: File: games/call-of-the-cards-playtest.html now loads game-system.js + game-system.css + player-profile.js, recordGamePlay() on game end, GA4 game_start/game_end, share-chip best, feedback POST to Formspree + export JSON, File: games/call_of_the_cards.html already integrated, verified via browser smoke desktop 390/1440 no overflow, validate:public PASS'
     },
+    {
+        id: 214,
+        date: '12 September 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Repair 3 JavaScript SyntaxErrors blocking games',
+        excerpt: 'Fixed 3 SyntaxErrors: File: games/lumo-dash.html reset duplicate removed (1e26a17f restore), File: games/lumo-dash-page.',
+        content: 'validate-js reports 3 pages with SyntaxError that kills entire script blocks: games/lumo-dash-page.html Unexpected token \')\', games/lumo-dash.html same, games/voidrush.html Unexpected token \'}\'. Buttons do nothing while page looks normal. Check for truncated lines at \'<\' and spliced duplicates. File: games/lumo-dash.html vs games/lumo-dash-page.html vs games/voidrush.html Evidence: Fixed 3 SyntaxErrors: File: games/lumo-dash.html reset duplicate removed (1e26a17f restore), File: games/lumo-dash-page.html restored, File: games/voidrush.html extra } removed, validate-js 358 pages 0 dead (was 3), 390/1440 no overflow, validate:public PASS'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
