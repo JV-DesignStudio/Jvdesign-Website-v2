@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '0 6 * * *' # daily 06:00 UTC audit — board-data freshness + drift
 
 jobs:
   validate:
@@ -52,6 +54,12 @@ jobs:
 
       - name: Full regression audit
         run: npm run audit:site
+
+      - name: Games catalog gate (32 curated vs filesystem)
+        run: node tests/games-qa.js
+
+      - name: Tools catalog gate (18 curated vs 61 raw)
+        run: node tests/tools-qa.js
 
       - name: Check generated content drift (A13 guard)
         run: node scripts/check-generated-drift.js

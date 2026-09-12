@@ -21,7 +21,7 @@ const { execFileSync } = require('child_process');
 const ROOT = __dirname;
 const BASE = 'https://jvdesignstudio.co.uk';
 const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue', 'scripts', 'docs', 'arcade-app', 'questlog-pwa', 'assets', 'Character Refrence sheets']);
-const EXCLUDE_FILES = new Set(['games/game-template.html', 'offline.html', 'games/cozy-biscuit-clicker.pre-app.bak.html', 'tools/project-tracker.html', 'tools/dev-board.html', 'privacy-policy/index.html', 'pages/newsletter.html', 'meet-the-crew.html', 'newsletter.html', 'tools/dialogue-tree-builder.html']); // dev templates w/o robots meta + offline (noindex handled separately) + robots.txt disallowed
+const EXCLUDE_FILES = new Set(['games/game-template.html', 'offline.html', 'games/cozy-biscuit-clicker.pre-app.bak.html', 'tools/project-tracker.html', 'tools/dev-board.html', 'privacy-policy/index.html', 'pages/newsletter.html', 'meet-the-crew.html', 'newsletter.html', 'tools/dialogue-tree-builder.html', 'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html']); // 8 game orphans not in registry (32 curated) - see board-data drift gate
 const PRIORITY_MAP = {
   // Hub pages , higher crawl priority
   '/': 1.0,

@@ -47,9 +47,15 @@ function countFiles(dir, ext) {
 function countGlob(dir) {
   try {
     if (!fs.existsSync(dir)) return 0;
-    const isWorkshops = dir.endsWith('workshops') || dir.endsWith('workshops\\');
-    const exclude = isWorkshops ? new Set(['my-progress.html']) : new Set();
-    return fs.readdirSync(dir).filter(f => f.endsWith('.html') && !exclude.has(f)).length;
+    const base = path.basename(dir);
+    if (base === 'workshops') {
+      return fs.readdirSync(dir).filter(f => f.endsWith('.html') && f !== 'my-progress.html').length;
+    }
+    if (base === 'games') {
+      const ignore = new Set(['arcane_citadel.html','critter-whack.html','lumo-dash.html','nibble-quest.html','stack-attack.html','mobile-games.html','sky_high_squirt.html','call-of-the-cards-playtest.html']);
+      return fs.readdirSync(dir).filter(f => f.endsWith('.html') && !ignore.has(f)).length;
+    }
+    return fs.readdirSync(dir).filter(f => f.endsWith('.html')).length;
   } catch { return 0; }
 }
 

@@ -10,7 +10,7 @@ const path = require('path');
 
 const ROOT = __dirname;
 const SKIP_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', 'og', 'icons', 'downloads', 'pitch-assets', 'social-posts', 'docs', 'scripts', 'StardustbookPreview', 'Session and Notes Part 2', 'Session Notes and Documents', 'chars', 'chars-orig', 'models', 'covers', 'arcade-app', 'questlog-pwa']);
-const SKIP_FILES = new Set(['404.html', 'offline.html', 'search.html', 'tools/project-tracker.html', 'tools/dev-board.html']);
+const SKIP_FILES = new Set(['404.html', 'offline.html', 'search.html', 'tools/project-tracker.html', 'tools/dev-board.html', 'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html']); // keep sitemap + search parity (32 curated games)
 
 function walk(dir) {
   let out = [];
