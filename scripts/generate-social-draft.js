@@ -222,6 +222,25 @@ function main() {
   if (created>0) {
     console.log(`Next: claim a board task for the draft and run through same review:`);
     console.log(`  node F:/Website/studio-workspace/board-keeper.cjs --create --title \"Social: ${selected[0]?.title.slice(0,40)}\" --priority P2 --tag site --desc \"Social queue draft for devlog id=${selected[0]?.id} must pass same review before posting. File social-posts/queue/...\" --done \"Queue file in social-posts/queue/ exists, board task human_review->done via --approve, post manually afterwards, live board edits via --update/--sync work while in_progress\"`);
+    // auto-create board tasks for each new draft (if tasks.json reachable)
+    try{
+      const {execSync}=require('child_process');
+      const tasksPath=path.join(ROOT,'..','studio-workspace','tasks.json');
+      if(fs.existsSync(tasksPath)){
+        const tasks=JSON.parse(fs.readFileSync(tasksPath,'utf8'));
+        for(const p of selected){
+          const need = !tasks.some(t=> (t.title||'').includes(`Social: ${p.title.slice(0,20)}`) || (t.evidence||'').includes(`devlog id=${p.id}`));
+          // only for those that were actually created (check queue file exists)
+          const qfile = fs.readdirSync(QUEUE_DIR).find(f=>f.includes(`-${p.id}-`));
+          if(need && qfile){
+            const title=`Social: ${p.title.slice(0,40)}`;
+            const desc=`Social queue draft for devlog id=${p.id} must pass same review before posting. File social-posts/queue/${qfile} - see queue file for X/IG/newsletter copy.`;
+            const done=`Queue file social-posts/queue/${qfile} exists, board task human_review->done via --approve, post manually afterwards at 390/1440 no overflow, validate:public PASS`;
+            try{ execSync(`node "${path.join(ROOT,'..','studio-workspace','board-keeper.cjs')}" --create --title "${title.replace(/"/g,'\\"')}" --priority P2 --tag site --desc "${desc.replace(/"/g,'\\"')}" --done "${done.replace(/"/g,'\\"')}"`, {stdio:'inherit'}); }catch(e){}
+          }
+        }
+      }
+    }catch(e){ console.log('[auto-create] skipped',e.message); }
   }
 }
 

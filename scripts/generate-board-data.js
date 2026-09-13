@@ -134,7 +134,26 @@ function validateSummary() {
   return { refs: 5228, broken: 0, lastRun: new Date().toISOString().slice(0,10) };
 }
 
+function boardHumanReview(){
+  const candidates=[
+    path.join(__dirname,'..','..','studio-workspace','tasks.json'),
+    'F:/Website/studio-workspace/tasks.json',
+    path.join(require('os').homedir(),'studio-workspace','tasks.json')
+  ];
+  for(const p of candidates){
+    try{
+      const t=JSON.parse(fs.readFileSync(p,'utf8'));
+      const hr=t.filter(x=>x.status==='human_review').length;
+      const ip=t.filter(x=>x.status==='in_progress').length;
+      const bl=t.filter(x=>x.status==='backlog').length;
+      return { human_review: hr, in_progress: ip, backlog: bl, total: t.length };
+    }catch{}
+  }
+  return null;
+}
+
 const mascots = mascotsKPI();
+const board = boardHumanReview();
 const data = {
   generated: new Date().toISOString(),
   sitemap: { urls: sitemapCount, lastmod: lastModSitemap() },
@@ -150,6 +169,7 @@ const data = {
       workshopsFiles: workshopsFiles,
     }
   },
+  board: board || { human_review: 0, in_progress: 0, backlog: 0, total: 0, note: 'no private tasks.json at build time' },
   apps: appBuilds(),
   mascots,
   validate: validateSummary(),
