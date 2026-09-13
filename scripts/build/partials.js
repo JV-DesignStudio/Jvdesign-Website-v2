@@ -19,6 +19,8 @@ function runPartials({ verbose = true } = {}) {
     partials['nav-tools'] = partials['nav-content'];
   }
 
+  // cache mtimes - skip write if partials older than file and no marker change
+  const partialsMtime = Math.max(...fs.readdirSync(PARTIALS_DIR).filter(f=>f.endsWith('.html')).map(f=>fs.statSync(path.join(PARTIALS_DIR,f)).mtimeMs));
   const makeMarkerRegex = (name) => new RegExp(`<!--\\s*BUILD:${name}\\s*-->[\\s\\S]*?<!--\\s*/BUILD:${name}\\s*-->`, 'g');
 
   function dedupeSkipLinks(src) {
@@ -28,8 +30,12 @@ function runPartials({ verbose = true } = {}) {
     return head + src.slice(markerIdx);
   }
 
-  let changed = 0, unchanged = 0;
+  let changed = 0, unchanged = 0, skippedMtime = 0;
   for (const filePath of walk(ROOT)) {
+    // mtime skip - if file newer than partials and no BUILD marker, skip read
+    try{
+      if(fs.statSync(filePath).mtimeMs > partialsMtime && !fs.readFileSync(filePath,'utf8').includes('<!-- BUILD:')){ skippedMtime++; unchanged++; continue; }
+    }catch(e){}
     let src = fs.readFileSync(filePath, 'utf8');
     const original = src;
     for (const [name, content] of Object.entries(partials)) {
@@ -49,6 +55,7 @@ function runPartials({ verbose = true } = {}) {
       changed++;
     } else unchanged++;
   }
+  if(verbose && skippedMtime) console.log(`  skipped by mtime: ${skippedMtime} files newer than partials without markers`);
   return { changed, unchanged };
 }
 

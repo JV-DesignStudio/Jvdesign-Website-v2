@@ -20,7 +20,8 @@ const GENERATED=[
   'content-data.js',
   'search-index.json',
   'sitemap.xml',
-  'board-data.json'
+  'board-data.json',
+  'devlog-data.js'
 ];
 function sh(cmd){ return execSync(cmd,{cwd:ROOT, encoding:'utf8', stdio:'pipe'}); }
 function snapshot(){
@@ -85,10 +86,10 @@ try{
   const sitemap = bd.sitemap?.urls ?? 0;
   const search = bd.searchIndex?.count ?? 0;
   const delta = Math.abs(sitemap - search);
-  if(delta > 6){
-    console.error(`\n✗ sitemap (${sitemap}) vs search-index (${search}) delta ${delta} >6 - keep generate-sitemap.js EXCLUDE and generate-search-index.js SKIP in sync`);
+  if(delta > 4){
+    console.error(`\n✗ sitemap (${sitemap}) vs search-index (${search}) delta ${delta} >4 - keep generate-sitemap.js EXCLUDE and generate-search-index.js SKIP in sync via lib/paths`);
     process.exit(1);
-  } else console.log(`✓ sitemap/search parity: ${sitemap} vs ${search} delta ${delta} (<=6 allowed)`);
+  } else console.log(`✓ sitemap/search parity: ${sitemap} vs ${search} delta ${delta} (<=4 allowed, 0 ideal)`);
   const gf = bd.content?.filesystem?.games ?? 0;
   const gr = bd.content?.drift?.gamesRegistry ?? bd.content?.stats?.games ?? 0;
   if(gf !== gr){
@@ -102,6 +103,16 @@ try{
   } else console.log(`✓ tools curated: 40 (raw 61, 21 noindex)`);
 }catch(e){ if(e.code) console.error(e); else console.log('  [WARN] drift gate skipped:', e.message); }
 
+// devlog id uniqueness guard - only POSTS block, not content numbers
+try{
+  const devlog=fs.readFileSync(path.join(ROOT,'devlog-data.js'),'utf8');
+  const block=(devlog.match(/const POSTS\s*=\s*\[([\s\S]*?)\n\];/)||[])[1]||devlog;
+  const ids=[...block.matchAll(/\{\s*id:\s*(\d+)/g)].map(m=>m[1]);
+  const seen=new Set(), dup=new Set();
+  for(const id of ids){ if(seen.has(id)) dup.add(id); else seen.add(id); }
+  if(dup.size){ console.error(`\n✗ devlog-data.js duplicate ids: ${[...dup].join(', ')} - dedupe by id`); process.exit(1); }
+  else console.log(`✓ devlog-data.js ${ids.length} posts, all ids unique`);
+}catch(e){ console.log('  [WARN] devlog id check skipped:', e.message); }
 // also verify ownership doc exists
 const readme=path.join(ROOT,'docs','TOOLS_MERGE_AUDIT.md');
 if(!fs.existsSync(readme)){

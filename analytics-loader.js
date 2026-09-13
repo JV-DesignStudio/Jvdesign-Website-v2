@@ -46,6 +46,12 @@
   if(hasConsent()){
     gtag('consent','update',{analytics_storage:'granted'});
     loadGtag();
+    // Web-vitals beacon - replaces local Slow4G simulation (A18) with real Core Web Vitals
+    try{
+      var v=document.createElement('script'); v.src='https://unpkg.com/web-vitals@3/dist/web-vitals.iife.js';
+      v.onload=function(){ try{ webVitals.onCLS(function(m){ gtag('event','web_vital',{name:m.name,value:Math.round(m.value*1000),id:m.id}); }); webVitals.onLCP(function(m){ gtag('event','web_vital',{name:m.name,value:Math.round(m.value)}); }); }catch(e){} };
+      document.head.appendChild(v);
+    }catch(e){}
   }
   // cookie-consent.js will call window._loadGtag() on accept
 })();

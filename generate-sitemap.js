@@ -18,9 +18,10 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
+const { ROOT: LIB_ROOT, IGNORE_DIRS: LIB_IGNORE, EXCLUDE_FILES: LIB_EXCLUDE } = require('./scripts/lib/paths');
 const ROOT = __dirname;
 const BASE = 'https://jvdesignstudio.co.uk';
-const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue', 'scripts', 'docs', 'arcade-app', 'questlog-pwa', 'assets', 'Character Refrence sheets']);
+const IGNORE_DIRS = LIB_IGNORE;
 const EXCLUDE_FILES = new Set(['games/game-template.html', 'offline.html', 'games/cozy-biscuit-clicker.pre-app.bak.html', 'tools/project-tracker.html', 'tools/dev-board.html', 'privacy-policy/index.html', 'pages/newsletter.html', 'meet-the-crew.html', 'newsletter.html', 'tools/dialogue-tree-builder.html', 'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html']); // 8 game orphans not in registry (32 curated) - see board-data drift gate
 const PRIORITY_MAP = {
   // Hub pages , higher crawl priority
@@ -52,18 +53,35 @@ function walk(dir) {
   return out;
 }
 
-// Build a { relPath -> YYYY-MM-DD } map of last commit dates in one git call.
+// Build a { relPath -> YYYY-MM-DD } map - memoized on HEAD SHA to avoid 64MB log on every build
 function gitLastModMap() {
-  const map = {};
-  try {
+  const cachePath=path.join(ROOT,'.git','lastmod-cache.json');
+  try{
+    const head=execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim();
+    if(fs.existsSync(cachePath)){
+      const cached=JSON.parse(fs.readFileSync(cachePath,'utf8'));
+      if(cached.head===head && cached.map) return cached.map;
+    }
+    const map={};
     const log = execFileSync('git', ['log', '--format=C:%cs', '--name-only'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
     let cur = null;
     for (const line of log.split('\n')) {
       if (line.startsWith('C:')) cur = line.slice(2).trim();
-      else if (line.trim() && cur && !(line in map)) map[line.trim()] = cur; // first (newest) wins
+      else if (line.trim() && cur && !(line in map)) map[line.trim()] = cur;
     }
-  } catch (e) { /* not a git repo / git missing , fall back to mtime */ }
-  return map;
+    try{ fs.writeFileSync(cachePath, JSON.stringify({head, map})); }catch(e){}
+    return map;
+  }catch(e){
+    try{
+      const head=execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim();
+      const cachePath2=path.join(ROOT,'.git','lastmod-cache.json');
+      if(fs.existsSync(cachePath2)){
+        const cached=JSON.parse(fs.readFileSync(cachePath2,'utf8'));
+        if(cached.map) return cached.map;
+      }
+    }catch(e2){}
+    return {};
+  }
 }
 
 const lastMod = gitLastModMap();

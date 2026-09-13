@@ -8,13 +8,16 @@ const { execFileSync } = require('child_process');
 const path = require('path');
 const { ROOT } = require('../lib/paths');
 
+const isNightly = process.argv.includes('--nightly') || process.env.NIGHTLY==='1';
 const STEPS = [
   { id: 'links',     cmd: path.join(ROOT, 'validate-links.js'),     label: 'Internal links' },
   { id: 'css',       cmd: path.join(ROOT, 'validate-css.js'),       label: 'Inline CSS parse' },
   { id: 'js',        cmd: path.join(ROOT, 'validate-js.js'),        label: 'Live JS (puppeteer)' },
-  { id: 'contrast',  cmd: path.join(ROOT, 'validate-contrast.js'),  label: 'Colour contrast' },
+  { id: 'contrast',  cmd: path.join(ROOT, 'validate-contrast.js'),  label: 'Colour contrast', nightly: true },
   { id: 'workshops', cmd: path.join(ROOT, 'validate-workshops.js'), label: 'Workshop front-matter' },
-];
+  { id: 'public',    cmd: path.join(ROOT, 'scripts/validate-public-boundary.js'), label: 'Public boundary' },
+  { id: 'drift',     cmd: path.join(ROOT, 'scripts/check-generated-drift.js'), label: 'Generated drift' },
+].filter(s=> !s.nightly || isNightly);
 
 const only = (process.argv.find(a => a.startsWith('--only=')) || '').split('=')[1] || null;
 const plan = only ? STEPS.filter(s => s.id === only) : STEPS;
