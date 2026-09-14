@@ -2242,6 +2242,15 @@ const POSTS = [
         excerpt: 'File: pages/my-progress.html canonical https://jvdesignstudio.co.uk/me.html (was /my-progress) robots noindex, pages/lea',
         content: 'Three URLs for same intent: pages/my-progress.html vs pages/leaderboards.html vs /me.html all read player-profile.js jvds_player but render different stats. Child sees empty on one URL because other key, school link wrong. File: pages/my-progress.html vs pages/leaderboards.html Evidence: File: pages/my-progress.html canonical https://jvdesignstudio.co.uk/me.html (was /my-progress) robots noindex, pages/leaderboards.html canonical /me.html robots noindex, _redirects /my-progress -> /me.html 301 + /leaderboards -> /me.html 301, scripts/lib/paths.js EXCLUDE added both, sitemap.xml 300 vs 302 (2 excluded) search-index.json 300 parity PASS, shared jvds_profile key player-profile.js consistent, empty states link to /games, validate:public PASS, validate:links 15180 refs 0 broken 390/1440 no overflow'
     },
+    {
+        id: 328,
+        date: '14 September 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Pixel Character Studio',
+        excerpt: 'File: tools/pixel-studio.html 101k grid 8x8-32x32, undo bottom-bar, character templates pixel-studio-unified-characters.',
+        content: 'Pixel Character Studio browser tool for pixel-art characters. Grid 8x8-32x32, undo, character tools, PNG/GIF export, offline localStorage, Stardust/Ember. Validated test-site.js no errors, validate:public PASS at 390/1440px. Evidence: File: tools/pixel-studio.html 101k grid 8x8-32x32, undo bottom-bar, character templates pixel-studio-unified-characters.js, PNG/GIF spritesheet export, offline localStorage jvds_pixel_auto + sw.js CORE precache, Stardust/Ember mascots, tests/pixel-studio-http.js HTTP RUNTIME CHECKS PASSED (manifestLinked, framesReady, hamburger), tests/pixel-studio-mobile.js tap Undo PASS touch-draw PASS pinch zoom PASS, validate:public PASS 390/1440 no overflow, style-tool-pixel-studio.css v17'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
