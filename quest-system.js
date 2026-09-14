@@ -407,6 +407,22 @@ const QUESTS = {
       { type: 'cosmetic-unlock-count', gameId: 'tiger-smash', minCount: 3 }
     ],
     rewards: { xp: 160, badge: '🐯 Tiger Collector', achievement: 'tigerCollector' }
+  },
+
+  'quest-24-pip-pixel-character': {
+    id: 'quest-24-pip-pixel-character',
+    title: 'Design a Pixel Character for Pip',
+    description: 'Draw a pixel character in Pixel Studio and export it - Pip will wear it as a badge! No account needed, works offline.',
+    icon: '🎨🐢',
+    toolId: 'pixel-studio',
+    character: 'Pip',
+    category: 'create',
+    difficulty: 'beginner',
+    order: 24,
+    requirements: [
+      { type: 'tool-export', toolId: 'pixel-studio', minCount: 1 }
+    ],
+    rewards: { xp: 75, badge: '🐢 Pip Pixel Pal', cosmetic: { gameId: 'pixel-studio', cosmeticId: 'pip-badge' } }
   }
 };
 
@@ -566,6 +582,19 @@ class QuestSystem {
             .filter(Boolean)
         );
         return completedCats.size >= requirement.minCategories;
+
+      case 'tool-export':
+        try{
+          const key = 'jvds_tool_export_' + requirement.toolId;
+          const val = parseInt(localStorage.getItem(key) || '0', 10);
+          return val >= (requirement.minCount || 1);
+        }catch(e){ return false; }
+
+      case 'tool-session':
+        try{
+          const k2 = 'jvds_tool_session_' + requirement.toolId;
+          return localStorage.getItem(k2) === '1';
+        }catch(e){ return false; }
 
       default:
         return false;

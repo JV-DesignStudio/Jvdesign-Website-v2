@@ -73,11 +73,34 @@
       _lastAward[action] = now;
       if (!underCap(action, maxPerDay)) return false;
       bumpCap(action);
+      // Offline-first quest tracking: persistent per-tool export/session counts (no account, no admin)
+      try{
+        if(action==='export'){
+          var ek='jvds_tool_export_'+TOOL_ID;
+          var cnt=parseInt(localStorage.getItem(ek)||'0',10)+1;
+          localStorage.setItem(ek, String(cnt));
+        }
+        if(action==='session'){
+          localStorage.setItem('jvds_tool_session_'+TOOL_ID, '1');
+        }
+      }catch(e){}
       var result = playerProfile.addXP(xp, 'tool:' + TOOL_ID + ':' + action);
       showXPToast('+' + xp + ' XP, ' + (label || action));
       if (result && result.levelUp) {
         setTimeout(function () { showXPToast('🎉 Level ' + result.newLevel + '!'); }, 1200);
       }
+      // Character-driven reward: Pip quest check after export (offline)
+      try{
+        if(action==='export' && window.questSystem && playerProfile){
+          var qs=questSystem.checkQuestCompletion('quest-24-pip-pixel-character', playerProfile);
+          if(qs && qs.completed && !playerProfile.getQuestProgress('quest-24-pip-pixel-character')?.completed){
+            // auto-complete via tool export
+            playerProfile.startQuest('quest-24-pip-pixel-character');
+            playerProfile.completeQuest('quest-24-pip-pixel-character');
+            setTimeout(function(){ showXPToast('🐢 Pip Pixel Pal badge unlocked!'); }, 800);
+          }
+        }
+      }catch(e){}
       return true;
     }
   };

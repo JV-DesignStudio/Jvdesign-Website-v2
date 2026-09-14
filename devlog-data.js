@@ -2278,6 +2278,15 @@ const POSTS = [
         excerpt: 'File: workshops/scratch-cheatsheet.html added Scratch Foundation support section with scratch.mit.edu, scratch.org, scra',
         content: 'Research Scratch affiliate and donation programs and add Scratch.org links to the Scratch Cheat Sheet tool. Promote Scratch Foundation donations and Scratch-related resources. Ensure alignment with JVDesignStudio mission - no forced purchases, no admin rights. Evidence: File: workshops/scratch-cheatsheet.html added Scratch Foundation support section with scratch.mit.edu, scratch.org, scratchfoundation.org/donate (501c3, donate@scratch.org), no forced purchases no admin rights, aligns with JVDS mission, validate:public PASS, validate:links 15180 0 broken, 390/1440 no overflow, research: Scratch Foundation donate page https://scratchfoundation.org/donate tax-deductible 46-2612143, scratch.mit.edu free tools/pixel-studio.html companion tool save/export mobile PASS'
     },
+    {
+        id: 332,
+        date: '14 September 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Character Quests Integration',
+        excerpt: 'File: tools/pixel-studio.html Pip quest strip + quest-system.js quest-24-pip-pixel-character tool-export pixel-studio 75',
+        content: 'Integrate character quests (e.g., \'Design a Pixel Character for Pip\') into tools. Features include:       - Offline-first quest completion tracking.       - Character-driven rewards (e.g., badges, XP).       - No admin rights or accounts required.       - Aligns with **Play (Pip)** and **Improve (Echo)**.              **Evidence Requirements**:       - Quests completed offline.       - Tested with character rewards.       - \`validate:public\` passes at 390/1440px.       - File paths and test outputs named explicitly (e.g., \`tools/pixel-studio.html test:quest PASS\`). Evidence: File: tools/pixel-studio.html Pip quest strip + quest-system.js quest-24-pip-pixel-character tool-export pixel-studio 75 XP Pip Pixel Pal badge, tool-xp.js sets jvds_tool_export_pixel-studio + jvds_tool_session + auto-complete Pip quest offline, quest-system.js added tool-export/tool-session checkRequirement localStorage, validate:public PASS, validate:links 15180 0 broken, tested offline no network dependency, 390/1440 no overflow'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
