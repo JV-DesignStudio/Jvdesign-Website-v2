@@ -184,8 +184,8 @@ function main() {
 
   // existing queue files
   const existing = new Set(fs.existsSync(QUEUE_DIR) ? fs.readdirSync(QUEUE_DIR) : []);
-  // also map existing ids
-  const existingIds = new Set([...existing].map(f=> (f.match(/-(\d+)-/)||[])[1]).filter(Boolean));
+  // also map existing ids - parse id as YYYY-MM-DD-(\d+)- (avoid matching year/month)
+  const existingIds = new Set([...existing].map(f=> (f.match(/^\d{4}-\d{2}-\d{2}-(\d+)-/)||[])[1]).filter(Boolean));
 
   let created = 0, skipped = 0, would = 0;
   for (const p of selected) {
@@ -198,7 +198,7 @@ function main() {
     const draft = buildDraft(p);
     const out = path.join(QUEUE_DIR, draft.filename);
     // dedupe by id: if same id exists under different slug/date, reuse existing name unless --force
-    const sameIdFile = [...existing].find(f=>f.includes(`-${p.id}-`));
+    const sameIdFile = [...existing].find(f=>f.match(new RegExp(`^\\d{4}-\\d{2}-\\d{2}-${p.id}-`)));
     const target = sameIdFile && !opts.force ? path.join(QUEUE_DIR, sameIdFile) : out;
     if (opts.check) {
       if (fs.existsSync(target)) { console.log(`✓ exists: ${path.relative(ROOT, target)} (id=${p.id})`); skipped++; }

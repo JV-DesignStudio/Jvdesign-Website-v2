@@ -36,15 +36,15 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 
 const ROOT = __dirname;
-const PORT = 8979;
+const PORT = 0; // random available
 const CONCURRENCY = 5;
 const SETTLE_MS = 500;
 const ALL = process.argv.includes('--all');
 
-const IGNORE = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy',
-  '.github', '.continue', 'og', 'social-posts', 'questlog-pwa']);
+const { IGNORE_DIRS } = require('./scripts/lib/paths');
+const IGNORE = IGNORE_DIRS;
 
-const FATAL = /SyntaxError|is not defined|has already been declared|Unexpected (token|identifier|string|number|end of input)|Invalid or unexpected|missing \) after/;
+const FATAL = /SyntaxError|ReferenceError|TypeError|is not defined|has already been declared|Unexpected (token|identifier|string|number|end of input)|Invalid or unexpected|missing \) after|Cannot read properties|THREE is not defined/;
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif',
@@ -75,9 +75,12 @@ function walk(dir) {
       res.end(data);
     });
   });
-  await new Promise(r => server.listen(PORT, r));
+  await new Promise((r, rej) => server.listen(PORT, r).on('error', rej));
+  const actualPort = server.address().port;
 
-  const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+  let browser;
+  try{ browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] }); }
+  catch(e){ server.close(); console.error('puppeteer launch failed:', e.message); process.exit(2); }
   const fatal = [];
   const noisy = [];
   let loaded = 0;
@@ -100,7 +103,7 @@ function walk(dir) {
       page.on('pageerror', onPageErr);
       page.on('console', onConsole);
       try {
-        await page.goto(`http://localhost:${PORT}/${file}`, { waitUntil: 'load', timeout: 25000 });
+        await page.goto(`http://localhost:${actualPort}/${file}`, { waitUntil: 'load', timeout: 25000 });
         await new Promise(r => setTimeout(r, SETTLE_MS));
         loaded++;
       } catch (e) {
@@ -117,8 +120,8 @@ function walk(dir) {
   });
   await Promise.all(workers);
 
-  await browser.close();
-  server.close();
+  try{ await browser.close(); }catch{}
+  try{ await new Promise(r=>server.close(r)); }catch{}
 
   if (ALL && noisy.length) {
     console.log(`  ${noisy.length} non-fatal console error(s):`);

@@ -19,6 +19,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'content');
+const { IGNORE_DIRS: LIB_IGNORE } = require('./lib/paths');
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
@@ -30,12 +31,8 @@ function read(f) {
 function walk(dir, ext) {
   const results = [];
   if (!fs.existsSync(dir)) return results;
-  const skip = ['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy',
-    '.github', 'og', 'icons', 'downloads', 'pitch-assets', 'social-posts', 'docs',
-    'scripts', 'questlog-pwa', 'src', 'tests', 'chars', 'chars-orig', 'models',
-    'covers', 'arcade-app'];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name.startsWith('.') || skip.includes(entry.name)) continue;
+    if (entry.name.startsWith('.') || LIB_IGNORE.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       results.push(...walk(full, ext));

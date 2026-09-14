@@ -18,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = __dirname;
-const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue', 'arcade-app']);
+const { IGNORE_DIRS } = require('./scripts/lib/paths');
 
 function walk(dir) {
   let out = [];

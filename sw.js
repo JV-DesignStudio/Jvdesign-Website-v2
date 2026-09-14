@@ -5,6 +5,10 @@ const CORE=[
   '/offline.html',
   '/manifest.json',
   '/style-shared.css',
+  '/nav.js',
+  '/style-mascots.css',
+  '/ember-guide.css',
+  '/ember-guide.js',
   '/logo.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -14,9 +18,6 @@ const CORE=[
   '/style-tool-pixel-studio.css',
   '/tools/pixel-studio-unified-characters.js',
   '/tools/pixel-studio-unified-adapter.js',
-  '/ember-guide.css',
-  '/ember-guide.js',
-  '/style-mascots.css',
   '/assets/mascots/ember-hero.webp',
   '/assets/mascots/ember-badge.webp'
 ];

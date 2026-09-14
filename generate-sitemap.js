@@ -22,7 +22,9 @@ const { ROOT: LIB_ROOT, IGNORE_DIRS: LIB_IGNORE, EXCLUDE_FILES: LIB_EXCLUDE } = 
 const ROOT = __dirname;
 const BASE = 'https://jvdesignstudio.co.uk';
 const IGNORE_DIRS = LIB_IGNORE;
-const EXCLUDE_FILES = new Set(['games/game-template.html', 'offline.html', 'games/cozy-biscuit-clicker.pre-app.bak.html', 'tools/project-tracker.html', 'tools/dev-board.html', 'privacy-policy/index.html', 'pages/newsletter.html', 'meet-the-crew.html', 'newsletter.html', 'tools/dialogue-tree-builder.html', 'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html']); // 8 game orphans not in registry (32 curated) - see board-data drift gate
+// Unified with lib/paths EXCLUDE_FILES plus 8 game orphans not in registry (32 curated)
+const GAME_ORPHANS = ['games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html'];
+const EXCLUDE_FILES = new Set([...LIB_EXCLUDE, ...GAME_ORPHANS, 'games/game-template.html', 'games/cozy-biscuit-clicker.pre-app.bak.html']);
 const PRIORITY_MAP = {
   // Hub pages , higher crawl priority
   '/': 1.0,

@@ -32,10 +32,11 @@ for (const s of plan) {
   const t0 = Date.now();
   process.stdout.write(`│ ▶ ${s.id.padEnd(10)} ${s.label} ... `);
   try {
-    execFileSync(process.execPath, [s.cmd], { stdio: 'inherit' });
+    execFileSync(process.execPath, [s.cmd], { stdio: 'inherit', timeout: 120000, killSignal: 'SIGTERM' });
     console.log(`✓ ${Date.now() - t0}ms`);
-  } catch {
-    console.log(`✗ ${Date.now() - t0}ms`);
+  } catch (e) {
+    if(e.killed) console.log(`✗ timeout ${Date.now() - t0}ms`);
+    else console.log(`✗ ${Date.now() - t0}ms`);
     ok = false;
   }
 }
