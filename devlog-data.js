@@ -2251,6 +2251,24 @@ const POSTS = [
         excerpt: 'File: tools/pixel-studio.html 101k grid 8x8-32x32, undo bottom-bar, character templates pixel-studio-unified-characters.',
         content: 'Pixel Character Studio browser tool for pixel-art characters. Grid 8x8-32x32, undo, character tools, PNG/GIF export, offline localStorage, Stardust/Ember. Validated test-site.js no errors, validate:public PASS at 390/1440px. Evidence: File: tools/pixel-studio.html 101k grid 8x8-32x32, undo bottom-bar, character templates pixel-studio-unified-characters.js, PNG/GIF spritesheet export, offline localStorage jvds_pixel_auto + sw.js CORE precache, Stardust/Ember mascots, tests/pixel-studio-http.js HTTP RUNTIME CHECKS PASSED (manifestLinked, framesReady, hamburger), tests/pixel-studio-mobile.js tap Undo PASS touch-draw PASS pinch zoom PASS, validate:public PASS 390/1440 no overflow, style-tool-pixel-studio.css v17'
     },
+    {
+        id: 329,
+        date: '14 September 2026',
+        tag: 'brand',
+        emoji: '🔧',
+        title: 'Educational Licensing',
+        excerpt: 'File: pages/parents.html added #education-licensing section with bulk discounts (10-49 15%, 50+ 25%) + school license + ',
+        content: 'Partner with schools for bulk discounts or bulk licenses. Evidence: File: pages/parents.html added #education-licensing section with bulk discounts (10-49 15%, 50+ 25%) + school license + classroom pack, linked from teachers CTA, validate:public PASS test:parents 390/1440 no overflow, parents.html renders at 390/1440px with no horizontal scroll'
+    },
+    {
+        id: 330,
+        date: '14 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Offline-First Service Workers for Tools',
+        excerpt: 'File: sw.js CACHE=jvds-v21 CORE 23->28 precache pixel-studio.html + sound-studio.html + level-designer.html + style-tool',
+        content: 'Audit and implement offline-first service workers for tools (e.g., Pixel Studio, Sound Studio). Features include:       - Cache tool data offline.       - Character-driven caching (e.g., \`jvds-v21\`).       - Aligns with **school-computer rule**.              **Evidence Requirements**:       - Service workers cache tools correctly.       - Tested offline (no network dependency).       - \`validate:public\` passes at 390/1440px.       - File paths and test outputs named explicitly (e.g., \`tools/pixel-studio.html test:cache PASS\`). Evidence: File: sw.js CACHE=jvds-v21 CORE 23->28 precache pixel-studio.html + sound-studio.html + level-designer.html + style-tool-*.css + nav.js + ember-guide, fetchWithTimeout 5000ms, offline fallback offline.html, character-driven caching jvds-v21, jvds-v21 retire only website caches, localStorage tool data offline preserved, tests/service-worker-smoke.js PASS (6/6: obsolete caches, versioned URLs, extensionless navigation, background refresh, offline fallback), validate:public PASS 390/1440'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,

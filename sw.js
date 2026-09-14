@@ -1,4 +1,4 @@
-// JVDesignStudio Service Worker v21 - A66 offline 15-min mission: precache Pixel Studio + Ember
+// JVDesignStudio Service Worker v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
 const CACHE='jvds-v21';
 const CORE=[
   '/',
@@ -18,8 +18,13 @@ const CORE=[
   '/style-tool-pixel-studio.css',
   '/tools/pixel-studio-unified-characters.js',
   '/tools/pixel-studio-unified-adapter.js',
+  '/tools/sound-studio.html',
+  '/style-tool-sound-studio.css',
+  '/tools/level-designer.html',
+  '/style-tool-level-designer.css',
   '/assets/mascots/ember-hero.webp',
-  '/assets/mascots/ember-badge.webp'
+  '/assets/mascots/ember-badge.webp',
+  '/assets/mascots/lumo-badge.webp'
 ];
 
 self.addEventListener('install',e=>{
