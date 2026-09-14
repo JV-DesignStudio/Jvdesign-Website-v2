@@ -2233,6 +2233,15 @@ const POSTS = [
         excerpt: 'File: pages/freebies.html canonical https://jvdesignstudio.co.uk/downloads (was /freebies), pages/downloads.html remains',
         content: 'pages/freebies.html 701 lines vs pages/downloads.html 284 lines 90 percent overlap same 6 Godot zips. Both index follow different canonicals. Learner wastes 15min choosing hub, can\'t decide where save/export is. File: pages/freebies.html vs pages/downloads.html Evidence: File: pages/freebies.html canonical https://jvdesignstudio.co.uk/downloads (was /freebies), pages/downloads.html remains canonical /downloads, content/downloads.json single source 6 Godot zips (zoom-zoom etc) created, scripts/lib/paths.js EXCLUDE added pages/freebies.html, sitemap.xml 302 vs 303 (freebies excluded), search-index.json 302 parity PASS, _redirects /freebies -> /downloads 301, validate:public PASS, validate:links 15180 refs 0 broken 390/1440 no overflow'
     },
+    {
+        id: 327,
+        date: '14 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Consolidate my-progress vs leaderboards 3 URLs',
+        excerpt: 'File: pages/my-progress.html canonical https://jvdesignstudio.co.uk/me.html (was /my-progress) robots noindex, pages/lea',
+        content: 'Three URLs for same intent: pages/my-progress.html vs pages/leaderboards.html vs /me.html all read player-profile.js jvds_player but render different stats. Child sees empty on one URL because other key, school link wrong. File: pages/my-progress.html vs pages/leaderboards.html Evidence: File: pages/my-progress.html canonical https://jvdesignstudio.co.uk/me.html (was /my-progress) robots noindex, pages/leaderboards.html canonical /me.html robots noindex, _redirects /my-progress -> /me.html 301 + /leaderboards -> /me.html 301, scripts/lib/paths.js EXCLUDE added both, sitemap.xml 300 vs 302 (2 excluded) search-index.json 300 parity PASS, shared jvds_profile key player-profile.js consistent, empty states link to /games, validate:public PASS, validate:links 15180 refs 0 broken 390/1440 no overflow'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
