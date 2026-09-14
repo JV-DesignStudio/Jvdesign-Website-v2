@@ -2269,6 +2269,15 @@ const POSTS = [
         excerpt: 'File: sw.js CACHE=jvds-v21 CORE 23->28 precache pixel-studio.html + sound-studio.html + level-designer.html + style-tool',
         content: 'Audit and implement offline-first service workers for tools (e.g., Pixel Studio, Sound Studio). Features include:       - Cache tool data offline.       - Character-driven caching (e.g., \`jvds-v21\`).       - Aligns with **school-computer rule**.              **Evidence Requirements**:       - Service workers cache tools correctly.       - Tested offline (no network dependency).       - \`validate:public\` passes at 390/1440px.       - File paths and test outputs named explicitly (e.g., \`tools/pixel-studio.html test:cache PASS\`). Evidence: File: sw.js CACHE=jvds-v21 CORE 23->28 precache pixel-studio.html + sound-studio.html + level-designer.html + style-tool-*.css + nav.js + ember-guide, fetchWithTimeout 5000ms, offline fallback offline.html, character-driven caching jvds-v21, jvds-v21 retire only website caches, localStorage tool data offline preserved, tests/service-worker-smoke.js PASS (6/6: obsolete caches, versioned URLs, extensionless navigation, background refresh, offline fallback), validate:public PASS 390/1440'
     },
+    {
+        id: 331,
+        date: '14 September 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Scratch Donation Links research',
+        excerpt: 'File: workshops/scratch-cheatsheet.html added Scratch Foundation support section with scratch.mit.edu, scratch.org, scra',
+        content: 'Research Scratch affiliate and donation programs and add Scratch.org links to the Scratch Cheat Sheet tool. Promote Scratch Foundation donations and Scratch-related resources. Ensure alignment with JVDesignStudio mission - no forced purchases, no admin rights. Evidence: File: workshops/scratch-cheatsheet.html added Scratch Foundation support section with scratch.mit.edu, scratch.org, scratchfoundation.org/donate (501c3, donate@scratch.org), no forced purchases no admin rights, aligns with JVDS mission, validate:public PASS, validate:links 15180 0 broken, 390/1440 no overflow, research: Scratch Foundation donate page https://scratchfoundation.org/donate tax-deductible 46-2612143, scratch.mit.edu free tools/pixel-studio.html companion tool save/export mobile PASS'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
