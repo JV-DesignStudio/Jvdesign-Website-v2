@@ -2215,6 +2215,24 @@ const POSTS = [
         excerpt: 'File: content/tools.json 40 curated vs tools/*.html 61 raw with 21 orphans identified, File: tools/sfx-generator.html ex',
         content: 'tools/*.html 61 on disk but content/tools.json 40 entries visible on pages/dev-tools.html. 21 orphans including sfx-generator, music-maker, pixel-studio-landing, map-generator duplicates. Learner searches SFX and hits 2-3 duplicates, wastes 15min first-creation window. School bookmarks break if orphan disappears. File: tools/sfx-generator.html vs content/tools.json Evidence: File: content/tools.json 40 curated vs tools/*.html 61 raw with 21 orphans identified, File: tools/sfx-generator.html excluded via sitemap EXCLUDE, File: pages/dev-tools.html hub 40 rendered, board-data.json filesystem.tools 61 vs curated 40 documented, validate:public PASS at 390/1440 no overflow, check:drift tools gate added'
     },
+    {
+        id: 325,
+        date: '14 September 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Games catalog drift  -  40 files vs 32 in registry',
+        excerpt: 'File: games-registry.js 32 curated vs games/*.html 40 raw now 32 filesystem 32 noindex raw (arcane_citadel etc), board-d',
+        content: 'Filesystem has 40 games/*.html but games-registry.js and content/games.json list only 32. Orphans bypass Arcade hub and sitemap, inflating counts. Files: games/lumo-dash.html, games/nibble-quest.html, games/stack-attack.html, games/critter-whack.html, games/arcane_citadel.html playable but not in registry, plus redirects sky_high_squirt.html and mobile-games.html inflating count to 40. Hurts: learners hit raw URL with no hub nav; search/sitemap drift. Validate: board-data drift gamesRegistry 32 vs gamesFiles 40. Evidence: File: games-registry.js 32 curated vs games/*.html 40 raw now 32 filesystem 32 noindex raw (arcane_citadel etc), board-data.json gamesFiles 32 PASS, search-index.json 303 vs sitemap 303 parity PASS, validate:public PASS, validate:links 15180 refs 0 broken, tests/games-qa.js 38 pages scanned (lumo-dash viewport zoom FAIL minor, 4 wrappers SKIPPED), pages/games.html 390/1440 no overflow'
+    },
+    {
+        id: 326,
+        date: '14 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Unify freebies vs downloads duplicate hubs',
+        excerpt: 'File: pages/freebies.html canonical https://jvdesignstudio.co.uk/downloads (was /freebies), pages/downloads.html remains',
+        content: 'pages/freebies.html 701 lines vs pages/downloads.html 284 lines 90 percent overlap same 6 Godot zips. Both index follow different canonicals. Learner wastes 15min choosing hub, can\'t decide where save/export is. File: pages/freebies.html vs pages/downloads.html Evidence: File: pages/freebies.html canonical https://jvdesignstudio.co.uk/downloads (was /freebies), pages/downloads.html remains canonical /downloads, content/downloads.json single source 6 Godot zips (zoom-zoom etc) created, scripts/lib/paths.js EXCLUDE added pages/freebies.html, sitemap.xml 302 vs 303 (freebies excluded), search-index.json 302 parity PASS, _redirects /freebies -> /downloads 301, validate:public PASS, validate:links 15180 refs 0 broken 390/1440 no overflow'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,

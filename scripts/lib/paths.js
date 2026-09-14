@@ -33,7 +33,8 @@ const EXCLUDE_FILES = new Set([
   'tools/project-tracker.html', 'tools/dev-board.html',
   'privacy-policy/index.html', 'pages/newsletter.html',
   'meet-the-crew.html', 'newsletter.html',
-  'tools/dialogue-tree-builder.html'
+  'tools/dialogue-tree-builder.html',
+  'pages/freebies.html'
 ]);
 
 const BASE_URL = 'https://jvdesignstudio.co.uk';
