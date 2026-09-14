@@ -148,6 +148,22 @@ try{
     console.error(`\n✗ tools curated ${tf} != 40 - hub live is 40 indexable (61 raw includes 21 noindex landing/reference)`);
     process.exit(1);
   } else console.log(`✓ tools curated: 40 (raw 61, 21 noindex)`);
+  // A178: verify 21 orphans are noindex+canonical (not searchable duplicates)
+  try{
+    const toolsDir = path.join(ROOT,'tools');
+    const contentTools = JSON.parse(fs.readFileSync(path.join(ROOT,'content/tools.json'),'utf8'));
+    const curatedIds = new Set(contentTools.map(t=>t.id+'.html'));
+    const all = fs.readdirSync(toolsDir).filter(f=>f.endsWith('.html'));
+    const orphans = all.filter(f=>!curatedIds.has(f));
+    const bad = orphans.filter(f=>{
+      const html = fs.readFileSync(path.join(toolsDir,f),'utf8');
+      return !/name=["']robots["'][^>]*noindex/i.test(html) || !/rel=["']canonical["']/i.test(html);
+    });
+    if(bad.length){
+      console.error(`\n✗ tools orphans ${bad.length} missing noindex/canonical: ${bad.join(', ')}`);
+      process.exit(1);
+    } else console.log(`✓ tools orphans: ${orphans.length} all noindex+canonical (${orphans.slice(0,3).join(', ')}...)`);
+  }catch(e){ console.log('  [WARN] tools orphan check skipped:', e.message); }
 }catch(e){ if(e.code) console.error(e); else console.log('  [WARN] drift gate skipped:', e.message); }
 
 // devlog id uniqueness guard - only POSTS block, not content numbers
