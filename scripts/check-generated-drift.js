@@ -49,6 +49,7 @@ function normalize(s){
 }
 const isQuick = process.argv.includes('--quick');
 const isFix = process.argv.includes('--fix');
+let quickDrift = [];
 function restoreBefore(before){
   for(const p of GENERATED){
     const fp=path.join(ROOT,p);
@@ -60,17 +61,17 @@ function restoreBefore(before){
     }
   }
   // cleanup sitemap cache side-effect that breaks idempotency
+  try{ fs.unlinkSync(path.join(ROOT,'tmp','lastmod-cache.json')); }catch{}
   try{ fs.unlinkSync(path.join(ROOT,'.git','lastmod-cache.json')); }catch{}
 }
 if(isQuick){
-  // fast lane: no generator runs, just semantic checks on current files + git diff hint
+  // fast lane: check git dirty (including staged) + run parity gates; fail if dirty
   console.log('check:drift --quick: fast semantic checks (no generator run)');
-  // quick still checks normalize drift via git diff vs snapshot without regenerating
-  // we report but do not mutate files
-  const quickDrift=[];
+  quickDrift = [];
   try{
-    const out = execSync('git diff --name-only', {cwd:ROOT, encoding:'utf8'});
-    const dirty = new Set(out.split(/\r?\n/).map(s=>s.trim()).filter(Boolean));
+    const out1 = execSync('git diff --name-only', {cwd:ROOT, encoding:'utf8'});
+    const out2 = execSync('git diff --cached --name-only', {cwd:ROOT, encoding:'utf8'});
+    const dirty = new Set([...out1.split(/\r?\n/), ...out2.split(/\r?\n/)].map(s=>s.trim()).filter(Boolean));
     for(const p of GENERATED){
       if(dirty.has(p)) quickDrift.push(p+' (git dirty)');
     }
@@ -119,6 +120,7 @@ if(!isQuick){
     process.exit(0);
   }
   // no drift but still cleanup cache side-effect
+  try{ fs.unlinkSync(path.join(ROOT,'tmp','lastmod-cache.json')); }catch{}
   try{ fs.unlinkSync(path.join(ROOT,'.git','lastmod-cache.json')); }catch{}
 } else {
   // quick mode: after = before (no mutation), drift already reported via git dirty hint
@@ -158,6 +160,11 @@ try{
   if(dup.size){ console.error(`\n✗ devlog-data.js duplicate ids: ${[...dup].join(', ')} - dedupe by id`); process.exit(1); }
   else console.log(`✓ devlog-data.js ${ids.length} posts, all ids unique`);
 }catch(e){ console.log('  [WARN] devlog id check skipped:', e.message); }
+// quick fail on git dirty (after parity gates so delta also checked)
+if(isQuick && quickDrift.length){
+  console.error(`\n✗ quick: ${quickDrift.length} generated file(s) git-dirty - commit or stash before ship (use --fix or npm run build)`);
+  process.exit(1);
+}
 // also verify ownership doc exists
 const readme=path.join(ROOT,'docs','TOOLS_MERGE_AUDIT.md');
 if(!fs.existsSync(readme)){

@@ -18,12 +18,10 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const { ROOT: LIB_ROOT, IGNORE_DIRS: LIB_IGNORE, EXCLUDE_FILES: LIB_EXCLUDE } = require('./scripts/lib/paths');
+const { ROOT: LIB_ROOT, IGNORE_DIRS: LIB_IGNORE, EXCLUDE_FILES: LIB_EXCLUDE, GAME_ORPHANS } = require('./scripts/lib/paths');
 const ROOT = __dirname;
 const BASE = 'https://jvdesignstudio.co.uk';
 const IGNORE_DIRS = LIB_IGNORE;
-// Unified with lib/paths EXCLUDE_FILES plus 8 game orphans not in registry (32 curated)
-const GAME_ORPHANS = ['games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html'];
 const EXCLUDE_FILES = new Set([...LIB_EXCLUDE, ...GAME_ORPHANS, 'games/game-template.html', 'games/cozy-biscuit-clicker.pre-app.bak.html']);
 const PRIORITY_MAP = {
   // Hub pages , higher crawl priority
@@ -57,7 +55,7 @@ function walk(dir) {
 
 // Build a { relPath -> YYYY-MM-DD } map - memoized on HEAD SHA to avoid 64MB log on every build
 function gitLastModMap() {
-  const cachePath=path.join(ROOT,'.git','lastmod-cache.json');
+  const cachePath=path.join(ROOT,'tmp','lastmod-cache.json');
   try{
     const head=execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim();
     if(fs.existsSync(cachePath)){
@@ -76,7 +74,7 @@ function gitLastModMap() {
   }catch(e){
     try{
       const head=execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim();
-      const cachePath2=path.join(ROOT,'.git','lastmod-cache.json');
+      const cachePath2=path.join(ROOT,'tmp','lastmod-cache.json');
       if(fs.existsSync(cachePath2)){
         const cached=JSON.parse(fs.readFileSync(cachePath2,'utf8'));
         if(cached.map) return cached.map;

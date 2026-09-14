@@ -54,10 +54,13 @@ self.addEventListener('fetch',e=>{
   if(url.origin!==self.location.origin||e.request.headers.has('range'))return;
 
   const cachePromise=caches.open(CACHE);
+  function fetchWithTimeout(req, ms=5000){
+    return Promise.race([fetch(req), new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), ms))]);
+  }
   // Navigation mode also covers extensionless routes and directory URLs.
   if(e.request.mode==='navigate'||url.pathname.endsWith('.html')||url.pathname==='/'){
     e.respondWith(cachePromise.then(async cache=>{
-      try { return await remember(cache,e.request,await fetch(e.request)); }
+      try { return await remember(cache,e.request,await fetchWithTimeout(e.request,5000)); }
       catch(err){
         return await cache.match(e.request)||await cache.match('/offline.html')||
           new Response('Offline',{status:503,headers:{'Content-Type':'text/plain'}});
@@ -70,7 +73,7 @@ self.addEventListener('fetch',e=>{
     // Keep background refresh alive even after a cached response is delivered.
     // A new ?v= URL must never match an older asset version.
     const refresh=cachePromise.then(async cache=>{
-      try { return await remember(cache,e.request,await fetch(e.request)); }
+      try { return await remember(cache,e.request,await fetchWithTimeout(e.request,5000)); }
       catch(err){ return await cache.match(e.request)||new Response('',{status:504,statusText:'Offline'}); }
     });
     e.waitUntil(refresh.then(()=>{}));

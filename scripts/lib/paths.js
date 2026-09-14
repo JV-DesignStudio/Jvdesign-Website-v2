@@ -39,6 +39,10 @@ const EXCLUDE_FILES = new Set([
   'pages/leaderboards.html'
 ]);
 
+const GAME_ORPHANS = [
+  'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html'
+];
+
 const BASE_URL = 'https://jvdesignstudio.co.uk';
 
-module.exports = { ROOT, IGNORE_DIRS, EXCLUDE_FILES, BASE_URL };
+module.exports = { ROOT, IGNORE_DIRS, EXCLUDE_FILES, GAME_ORPHANS, BASE_URL };

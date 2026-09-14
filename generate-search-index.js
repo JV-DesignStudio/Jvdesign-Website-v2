@@ -8,10 +8,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const { ROOT: LIB_ROOT, IGNORE_DIRS: LIB_IGNORE, EXCLUDE_FILES: LIB_EXCLUDE } = require('./scripts/lib/paths');
+const { ROOT: LIB_ROOT, IGNORE_DIRS: LIB_IGNORE, EXCLUDE_FILES: LIB_EXCLUDE, GAME_ORPHANS } = require('./scripts/lib/paths');
 const ROOT = __dirname;
 const SKIP_DIRS = LIB_IGNORE;
-const GAME_ORPHANS = ['games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html'];
 const SKIP_FILES = new Set([...LIB_EXCLUDE, ...GAME_ORPHANS, 'games/game-template.html', '404.html', 'offline.html', 'search.html']);
 
 function walk(dir) {
