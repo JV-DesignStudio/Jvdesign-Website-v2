@@ -1419,6 +1419,36 @@ window.JVDS_CONTENT = {
       "url": "/workshops/godot_tutorial.html"
     },
     {
+      "id": "godot-gatekeeper-3d-part1",
+      "title": "Who Goes There? Part 1: Build a 3D Co-op Checkpoint in Godot",
+      "desc": "Part 1 of a free two-part Godot 4 workshop for ages 8+ with a grown-up. Build a 3D checkpoint base, connect players over the network, scan visitors with a thermometer and run the gate levers.",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "3d"
+      ],
+      "steps": 10,
+      "themeColor": "#0f1117",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-gatekeeper-3d-part1.html"
+    },
+    {
+      "id": "godot-gatekeeper-3d-part2",
+      "title": "Who Goes There? Part 2: The 10-Day Challenge in Godot",
+      "desc": "Part 2 of the Who Goes There? Godot 4 workshop for ages 8+ with a grown-up. Add a shared coin bank, daily rent, rules that get stricter each day, a magnifying glass and a 10-day win or lose ending.",
+      "engine": "Godot",
+      "difficulty": "intermediate",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [],
+      "steps": 7,
+      "themeColor": "#0f1117",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-gatekeeper-3d-part2.html"
+    },
+    {
       "id": "godot-racing-workshop",
       "title": "Zoom Zoom! Build a Racing Game in Godot",
       "desc": "Build your very own top-down racing game in Godot! A parent and child workshop no experience needed. Start from zero and drive your car in 8 fun steps!",
@@ -2787,6 +2817,20 @@ window.JVDS_CONTENT = {
   ],
   "games": [
     {
+      "id": "mini-theme-park-builder",
+      "title": "Mini Theme Park Builder",
+      "tag": "Creative Sim",
+      "emoji": "🎡",
+      "category": "Strategy",
+      "cover": "",
+      "bg": "linear-gradient(135deg,#cfe8ef,#f2a541)",
+      "desc": "Build a tiny park across five days with budget choices, guest joy, queue pressure, weather events, star ratings and Arcade best-score saves.",
+      "kids": false,
+      "age": null,
+      "character": null,
+      "url": "/games/mini-theme-park-builder.html"
+    },
+    {
       "id": "garden-defense",
       "title": "Lumo's Garden Defense",
       "tag": "Lane Defense",
@@ -3958,9 +4002,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-15T08:10:15.134Z",
-    "workshops": 182,
-    "games": 32,
+    "generated": "2026-09-15T13:22:32.341Z",
+    "workshops": 184,
+    "games": 33,
     "tools": 40,
     "books": 5,
     "engines": {
@@ -3970,7 +4014,7 @@ window.JVDS_CONTENT = {
       "GDevelop": 6,
       "General": 51,
       "GML/GameMaker": 6,
-      "Godot": 5,
+      "Godot": 7,
       "Java": 7,
       "JavaScript": 7,
       "Minecraft": 8,

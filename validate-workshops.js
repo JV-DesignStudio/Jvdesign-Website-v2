@@ -7,7 +7,7 @@ const CONVERTED = [
   'add-your-own-stage.html', 'barrel-blast-workshop.html', 'blender-workshop.html',
   'cpp-tower-defence-builder.html', 'fairy-survivors-guide.html', 'fnaf-blueprint.html',
   'gml_shooter_trainer_project.html', 'godot-racing-workshop-2.html', 'godot-racing-workshop.html',
-  'godot_tutorial.html', 'js-platformer-builder.html', 'jump-jump-mario-workshop.html',
+  'godot-gatekeeper-3d-part1.html', 'godot-gatekeeper-3d-part2.html', 'godot_tutorial.html', 'js-platformer-builder.html', 'jump-jump-mario-workshop.html',
   'minecraft-custom-block-mod.html', 'minecraft-custom-food-mod.html', 'minecraft-custom-mob-mod.html',
   'minecraft-custom-tool-mod.html', 'minecraft-first-item-mod.html', 'minecraft-lucky-mod.html',
   'mugen-ai-workshop.html', 'mugen-workshop.html', 'night-watch-part2-workshop.html',
@@ -37,7 +37,7 @@ const CONVERTED = [
 const BUILDER_STYLE = [
   'cpp-tower-defence-builder.html', 'fairy-survivors-guide.html', 'fnaf-blueprint.html',
   'gml_shooter_trainer_project.html', 'godot-racing-workshop-2.html', 'godot-racing-workshop.html',
-  'js-platformer-builder.html', 'nuclear-blueprint.html', 'nuclear-throne-guide.html',
+  'godot-gatekeeper-3d-part1.html', 'godot-gatekeeper-3d-part2.html', 'js-platformer-builder.html', 'nuclear-blueprint.html', 'nuclear-throne-guide.html',
   'openrct2-swim-rescue.html', 'python-game-builder.html', 'race-builder.html', 'racing-blueprint.html',
   'space_invaders_tutorial.html', 'unity-2d-platformer.html', 'unity-3d-platformer.html',
   'unity-top-down-shooter.html', 'unreal-2d-platformer.html', 'unreal-blueprint-shooter.html',

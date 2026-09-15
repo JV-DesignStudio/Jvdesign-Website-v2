@@ -35,6 +35,19 @@ This campaign announces the **Game Dev Toolbox Major Update** with 10+ enhanced 
 
 ## 🚀 Quick Start Guide
 
+## Current Newsletter + Social Queue
+
+New devlog/newsletter/social drafts should go through the queue, not straight to posting:
+
+1. Run `npm run comms:queue`.
+2. Open `social-posts/queue/INDEX.md`.
+3. Copy the newsletter blurb or social caption from the linked draft.
+4. Post only after the linked board task is approved/done.
+5. Record the posted date or URL in the board task evidence.
+
+Each draft includes copy-paste sections for X/Threads, Instagram/Facebook and newsletter broadcasts. Social card images are generated beside the drafts where possible.
+
+
 ### Step 1: Download Graphics
 All 4 main graphics are SVG files that can be:
 - Downloaded directly from this folder
@@ -262,3 +275,4 @@ All assets are prepared and ready for launch. Start with Post 1 (Main Announceme
 Generated: 2026-07-02  
 Last Updated: 2026-07-02  
 Status: Ready for Deployment
+

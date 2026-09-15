@@ -234,6 +234,7 @@
 
 <script defer src="player-profile.js"></script>
 <script defer src="game-system.js"></script>
+<script defer src="quest-system.js"></script>
 <script defer src="games-registry.js"></script>
 <script defer src="daily-challenge.js"></script>
 <script defer src="weekly-challenge.js"></script>
@@ -756,6 +757,43 @@
     refreshGoalDot();
   }
 
+  function questGameStates() {
+    var states = {};
+    GAMES.forEach(function (g) {
+      var s = saveOf(g.id);
+      if (!s) return;
+      states[g.id] = {
+        highScore: s.high,
+        gamesPlayed: s.plays,
+        level: s.level,
+        achievements: s.achievements
+      };
+    });
+    return states;
+  }
+
+  function questProgressCards() {
+    if (typeof QuestSystem !== 'function' || typeof playerProfile === 'undefined') return '';
+    try {
+      var qs = new QuestSystem();
+      var states = questGameStates();
+      var quests = (qs.getAllQuests ? qs.getAllQuests() : qs.quests || []).filter(function (q) {
+        return q && q.requirements && q.requirements.some(function (r) { return String(r.type || '').indexOf('game') >= 0 || r.type === 'cosmetic-unlock-count'; });
+      }).slice(0, 6);
+      if (!quests.length) return '';
+      return '<div class="arc-h">Arcade quests</div><div class="goals quest-progress">' + quests.map(function (q) {
+        var result = qs.checkQuestCompletion(q.id, playerProfile, states);
+        var done = !!result.completed || (playerProfile.getQuestProgress && playerProfile.getQuestProgress(q.id) && playerProfile.getQuestProgress(q.id).completed);
+        if (result.completed && playerProfile.completeQuest) {
+          playerProfile.completeQuest(q.id, { completedIn: 'arcade', title: q.title || q.name || q.id });
+        }
+        var req = !done && result.requirement ? result.requirement : null;
+        var hint = done ? 'Complete' : (req && req.type === 'game-variety' ? 'Play ' + req.minGamesPlayed + ' games with ' + req.minScorePerGame + '+ best' : req && req.type === 'cosmetic-unlock-count' ? 'Unlock ' + req.minCount + ' cosmetics' : 'Keep playing to progress');
+        return '<div class="goal' + (done ? ' got' : '') + '"><div class="ic">' + (done ? '🏆' : '✨') + '</div><b>' + esc(q.title || q.name || q.id) + '</b><span>' + esc(hint) + '</span></div>';
+      }).join('') + '</div>';
+    } catch (e) { return ''; }
+  }
+
   function renderGoals() {
     var defs = sharedAchievements();
     var ids = Object.keys(defs);
@@ -767,7 +805,8 @@
     var got = ids.filter(function (id) { return earned[id]; }).length;
     document.getElementById('goalCount').textContent = got + ' / ' + ids.length;
 
-    document.getElementById('goalGrid').innerHTML = ids.map(function (id) {
+    var questCards = questProgressCards();
+    document.getElementById('goalGrid').innerHTML = questCards + ids.map(function (id) {
       var d = defs[id];
       var has = !!earned[id];
       var name = String(d.name || id).replace(/^\S+\s/, '');

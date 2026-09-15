@@ -1,5 +1,118 @@
 window.JVDS_GAMES = [
   {
+    "id": "pixel-pet-arena",
+    "cat": "Action",
+    "file": "pixel-pet-arena.html",
+    "title": "Pixel Pet Arena",
+    "tag": "Drawing Battle",
+    "emoji": "🐾",
+    "cover": "",
+    "bg": "linear-gradient(135deg,#073b4c,#ef476f)",
+    "kids": false,
+    "desc": "Paint a pixel pet, train its colour stats, choose abilities, and battle through a friendly arena league.",
+    "difficulty": "Easy to learn",
+    "session": "5-10 min",
+    "controls": "Tap pixels, abilities, train and battle"
+  },  {
+    "id": "stardust-ruins",
+    "cat": "Puzzle",
+    "file": "stardust-ruins.html",
+    "title": "Stardust Ruins",
+    "tag": "Puzzle Adventure",
+    "emoji": "🏛️",
+    "cover": "",
+    "bg": "linear-gradient(135deg,#26335f,#d6b46c)",
+    "kids": false,
+    "desc": "Explore starlit rooms, collect keys and relics, dodge hazards, and recover treasure before the lantern fades.",
+    "difficulty": "Easy to learn",
+    "session": "5-10 min",
+    "controls": "Tap movement, rotate, and search"
+  },  {
+    "id": "beat-builder-battle",
+    "cat": "Action",
+    "file": "beat-builder-battle.html",
+    "title": "Beat Builder Battle",
+    "tag": "Rhythm Creation",
+    "emoji": "🥁",
+    "cover": "",
+    "bg": "linear-gradient(135deg,#4a3472,#bc477f)",
+    "kids": false,
+    "desc": "Compose beat patterns, battle rhythm rivals, hit timing goals, unlock sounds, and save your best Arcade score.",
+    "difficulty": "Medium",
+    "session": "5-10 min",
+    "controls": "Tap pads and sequencer steps"
+  },  {
+    "id": "creature-rescue-clinic",
+    "cat": "Chill",
+    "file": "creature-rescue-clinic.html",
+    "title": "Creature Rescue Clinic",
+    "tag": "Cozy Management",
+    "emoji": "🏥",
+    "cover": "",
+    "bg": "linear-gradient(135deg,#2f6f5e,#4fb286)",
+    "kids": false,
+    "desc": "Run a cozy creature clinic by reading symptoms, choosing treatments, upgrading rooms, and keeping patients calm.",
+    "difficulty": "Easy to learn",
+    "session": "5-10 min",
+    "controls": "Tap symptoms, treatments, and upgrades"
+  },  {
+    "id": "echo-casebook",
+    "cat": "Puzzle",
+    "file": "echo-casebook.html",
+    "title": "Echo's Casebook",
+    "tag": "Mystery Story",
+    "emoji": "🔎",
+    "cover": "",
+    "bg": "linear-gradient(135deg,#3d285f,#bc4749)",
+    "kids": false,
+    "desc": "Solve cosy mystery chapters by collecting clues, interviewing suspects, and making careful deductions with Echo.",
+    "difficulty": "Easy to learn",
+    "session": "5-10 min",
+    "controls": "Tap clues, suspects, and deductions"
+  },  {
+    "id": "marble-run-lab",
+    "cat": "Puzzle",
+    "file": "marble-run-lab.html",
+    "title": "Marble Run Lab",
+    "tag": "Physics Toy",
+    "emoji": "🧪",
+    "cover": "",
+    "bg": "linear-gradient(135deg,#203864,#70a3a7)",
+    "kids": false,
+    "desc": "Build marble-run courses with ramps, bumpers, boosts and collectors, then launch and tune for three-star challenge scores.",
+    "difficulty": "Easy to learn",
+    "session": "5-10 min",
+    "controls": "Tap parts, place track, launch"
+  },  {
+    "id": "backpack-quest",
+    "cat": "Strategy",
+    "file": "backpack-quest.html",
+    "title": "Backpack Quest",
+    "tag": "Tiny Roguelite",
+    "emoji": "🎒",
+    "cover": "",
+    "bg": "linear-gradient(135deg,#283618,#dda15e)",
+    "kids": false,
+    "desc": "Choose map nodes, fight room enemies, pack loot, trigger relic synergies, and chase a better six-room run score.",
+    "difficulty": "Medium",
+    "session": "5-10 min",
+    "controls": "Tap routes, loot, and Use Pack"
+  },  {
+    "id": "mini-theme-park-builder",
+    "cat": "Strategy",
+    "file": "mini-theme-park-builder.html",
+    "title": "Mini Theme Park Builder",
+    "tag": "Creative Sim",
+    "emoji": "🎡",
+    "cover": "",
+    "bg": "linear-gradient(135deg,#cfe8ef,#f2a541)",
+    "kids": false,
+    "desc": "Build a tiny park across five days with budget choices, guest joy, queue pressure, weather events, star ratings and Arcade best-score saves.",
+    "difficulty": "Easy to learn",
+    "session": "5-10 min",
+    "controls": "Tap to build and open gates"
+  },
+  {
     "id": "garden-defense",
     "cat": "Strategy",
     "file": "garden-defense.html",
@@ -394,3 +507,12 @@ window.JVDS_GAMES = [
     "desc": "Multiplayer sky-high adventure. Bounce, climb and race friends to the top."
   }
 ];
+
+
+
+
+
+
+
+
+
