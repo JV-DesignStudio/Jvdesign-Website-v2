@@ -37,7 +37,7 @@ const walkForLeaks=(dir,depth=0)=>{
   try{
     for(const e of fs.readdirSync(dir,{withFileTypes:true})){
       if(e.name.startsWith('.git')||e.name==='node_modules') continue;
-      if(e.name==='quest-board-deploy' || e.name==='dist' || e.name==='.vite' || e.name==='coverage' ) continue;
+      if(e.name==='quest-board-deploy' || e.name==='dist' || e.name==='.vite' || e.name==='coverage' || e.name==='tmp' ) continue;
       const full=path.join(dir,e.name);
       if(e.isDirectory()) foundLeaks.push(...walkForLeaks(full,depth+1));
       else if(SCAN_EXTS.some(ext=>e.name.endsWith(ext)) || e.name==='.env' || e.name.startsWith('.env.') || e.name==='.board-token' || e.name.endsWith('.env')){

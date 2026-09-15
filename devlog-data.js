@@ -2305,6 +2305,15 @@ const POSTS = [
         excerpt: 'File: scripts/check-generated-drift.js:36 normalize deduped, scripts/generate-board-data.js:132 lastRun git log, generat',
         content: 'normalize() duplicate generated regex, lastRun masked but sources non-deterministic new Date() x3 vs mtime fallback vs git log 64MB memo. File: scripts/check-generated-drift.js:36 Evidence: File: scripts/check-generated-drift.js:36 normalize deduped, scripts/generate-board-data.js:132 lastRun git log, generate-sitemap.js:58 cache tmp/lastmod-cache.json, board-data.json sitemap.xml tools/pixel-studio.html test:drift PASS 13 files sitemap 300 search 300, validate:public PASS 390/1440 no overflow, board-keeper --check No drift, content/tools.json 40 curated'
     },
+    {
+        id: 335,
+        date: '15 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Fix engines/.nvmrc pin drift',
+        excerpt: 'File: package.json:63 engines 24.11.3 (was 24.x), .nvmrc:1 24.11.3, board-data.json 300 sitemap, tools/pixel-studio.html',
+        content: 'package.json 24.x vs .nvmrc 24 vs .npmrc engine-strict hard fail, validateSummary lastRun not live. File: package.json:63 Evidence: File: package.json:63 engines 24.11.3 (was 24.x), .nvmrc:1 24.11.3, board-data.json 300 sitemap, tools/pixel-studio.html test:drift PASS 13 files sitemap 300 search 300, validate:public PASS 390/1440 no overflow, board-keeper --check No drift, content/tools.json 40 curated, tmp/wt-a67 worktree removed, tmp ignored in validate-public-boundary'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
