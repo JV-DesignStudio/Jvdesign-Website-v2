@@ -321,8 +321,10 @@ body {
 .goal-text strong { color: var(--rose); }
 
 /* ─── AUDIENCE PANELS ──────────────────────────────────────────────── */
-.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 540px) { .panels { grid-template-columns: 1fr; } }
+.panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 540px) { .panels { grid-template-columns: minmax(0, 1fr); } }
+.step-list li > span { min-width: 0; }
+.panel code, .goal-text code { overflow-wrap: anywhere; }
 
 .panel {
   padding: 14px 16px;
@@ -533,6 +535,9 @@ body {
 .gk-crumbs { flex-wrap: wrap; row-gap: 4px; }
 .step-card.collapsed .step-body { display: none; }
 .step-header:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+
+/* scrolled-to steps land below the sticky nav + XP bar */
+.step-card { scroll-margin-top: var(--gk-sticky, 140px); }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
@@ -1138,8 +1143,8 @@ function buildCard(step, i) {
     </div>
   `;
 
-  const childItems  = step.child.items.map((t,n)  => `<li data-n="${n+1}">${t}</li>`).join("");
-  const parentItems = step.parent.items.map((t,n) => `<li data-n="${n+1}">${t}</li>`).join("");
+  const childItems  = step.child.items.map((t,n)  => `<li data-n="${n+1}"><span>${t}</span></li>`).join("");
+  const parentItems = step.parent.items.map((t,n) => `<li data-n="${n+1}"><span>${t}</span></li>`).join("");
 
   body.innerHTML += `
     <div class="panels">
@@ -1252,7 +1257,9 @@ refreshUI();
 function syncStickyTop() {
   const h = document.getElementById("siteHeader");
   const bar = document.getElementById("progress-bar");
-  if (h && bar) bar.style.top = h.getBoundingClientRect().height + "px";
+  if (!h || !bar) return;
+  bar.style.top = h.getBoundingClientRect().height + "px";
+  document.documentElement.style.setProperty("--gk-sticky", Math.round(h.getBoundingClientRect().height + bar.getBoundingClientRect().height + 12) + "px");
 }
 syncStickyTop();
 window.addEventListener("resize", syncStickyTop);
