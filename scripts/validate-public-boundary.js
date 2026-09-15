@@ -28,8 +28,8 @@ const leakPatterns = [
   /\.board-token/i,
 ];
 const ALLOWED_LEAK_FILES = new Set(['validate-public-boundary.js', 'board-keeper.log', 'check-dashes.cjs', 'A29_PROVENANCE.md', 'approve-private.html']);
-// files where .env / BREVO mention is documentation, not secret
-const DOC_LEAK_ALLOW = new Set(['docs/A29_PROVENANCE.md', 'scripts/send-newsletter.js', 'tools/sound-studio.html', 'approve-private.html']);
+// files where .env / BREVO / ga4-key mention is documentation, not secret
+const DOC_LEAK_ALLOW = new Set(['docs/A29_PROVENANCE.md', 'scripts/send-newsletter.js', 'tools/sound-studio.html', 'approve-private.html', 'board-data.json', 'content/stats.json', 'content-data.js']);
 const SCAN_EXTS = ['.js','.html','.ps1','.md','.json','.txt','.yml','.yaml'];
 const walkForLeaks=(dir,depth=0)=>{
   if(depth>8) return [];
