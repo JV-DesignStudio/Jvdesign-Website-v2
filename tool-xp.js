@@ -71,39 +71,49 @@
       var now = Date.now();
       if (now - (_lastAward[action] || 0) < 1500) return false;
       _lastAward[action] = now;
+      // Quest progress counts every real export/session, even after today's
+      // XP cap is reached, so a capped learner can still finish a tool quest.
+      trackQuestProgress(action);
       if (!underCap(action, maxPerDay)) return false;
       bumpCap(action);
-      // Offline-first quest tracking: persistent per-tool export/session counts (no account, no admin)
-      try{
-        if(action==='export'){
-          var ek='jvds_tool_export_'+TOOL_ID;
-          var cnt=parseInt(localStorage.getItem(ek)||'0',10)+1;
-          localStorage.setItem(ek, String(cnt));
-        }
-        if(action==='session'){
-          localStorage.setItem('jvds_tool_session_'+TOOL_ID, '1');
-        }
-      }catch(e){}
       var result = playerProfile.addXP(xp, 'tool:' + TOOL_ID + ':' + action);
       showXPToast('+' + xp + ' XP, ' + (label || action));
       if (result && result.levelUp) {
         setTimeout(function () { showXPToast('🎉 Level ' + result.newLevel + '!'); }, 1200);
       }
-      // Character-driven reward: Pip quest check after export (offline)
-      try{
-        if(action==='export' && window.questSystem && playerProfile){
-          var qs=questSystem.checkQuestCompletion('quest-24-pip-pixel-character', playerProfile);
-          if(qs && qs.completed && !playerProfile.getQuestProgress('quest-24-pip-pixel-character')?.completed){
-            // auto-complete via tool export
-            playerProfile.startQuest('quest-24-pip-pixel-character');
-            playerProfile.completeQuest('quest-24-pip-pixel-character');
-            setTimeout(function(){ showXPToast('🐢 Pip Pixel Pal badge unlocked!'); }, 800);
-          }
-        }
-      }catch(e){}
       return true;
     }
   };
+
+  // Offline-first tool quests (e.g. "Design a Pixel Character for Pip"):
+  // persist per-tool export/session counts, then complete any quest tied to
+  // this tool. questSystem is a top-level const from quest-system.js, so it
+  // is not on window; check it by name.
+  function trackQuestProgress(action) {
+    if (action !== 'export' && action !== 'session') return;
+    try {
+      if (action === 'export') {
+        var ek = 'jvds_tool_export_' + TOOL_ID;
+        localStorage.setItem(ek, String(parseInt(localStorage.getItem(ek) || '0', 10) + 1));
+      } else {
+        localStorage.setItem('jvds_tool_session_' + TOOL_ID, '1');
+      }
+    } catch (e) { return; }
+    if (typeof questSystem === 'undefined') return;
+    questSystem.getAllQuests().forEach(function (quest) {
+      var forThisTool = (quest.requirements || []).some(function (r) {
+        return (r.type === 'tool-export' || r.type === 'tool-session') && r.toolId === TOOL_ID;
+      });
+      if (!forThisTool) return;
+      var awarded = questSystem.awardQuest(quest.id, playerProfile);
+      if (!awarded) return;
+      var rw = awarded.rewards || {};
+      // Toasts share one screen position: wait for the export XP toast and any
+      // level-up toast (starts at 1.2s, lasts ~2.6s) to clear first.
+      setTimeout(function () { showXPToast((rw.badge || awarded.title) + ' unlocked! +' + (rw.xp || 0) + ' XP'); }, 4000);
+      try { document.dispatchEvent(new CustomEvent('jvds:quest-awarded', { detail: { questId: awarded.id } })); } catch (e) {}
+    });
+  }
   window.ToolXP = ToolXP;
 
   // ── Session XP: they opened a tool and stayed a little while ──

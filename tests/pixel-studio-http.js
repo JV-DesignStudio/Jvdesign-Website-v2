@@ -51,15 +51,51 @@ const server = http.createServer((req, res) => {
     return !nav.classList.contains('open') && btn.getAttribute('aria-expanded') === 'false';
   });
 
+  // A198: exporting completes the Pip quest once, even when today's export XP is capped.
+  const QID = 'quest-24-pip-pixel-character';
+  const exportOnce = () => page.evaluate(() => {
+    const a = document.createElement('a'); a.download = 'pip.png'; a.href = 'data:image/png;base64,iVBORw0KGgo=';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  const questState = () => page.evaluate(q => ({
+    completed: !!(playerProfile.getQuestProgress(q) || {}).completed,
+    bonusXP: playerProfile.state.bonusXP,
+    exports: localStorage.getItem('jvds_tool_export_pixel-studio'),
+    cosmetic: playerProfile.hasCosmeticUnlocked('pixel-studio', 'pip-badge'),
+    strip: document.getElementById('pipQuestStatus').textContent
+  }), QID);
+  await page.evaluate(() => {
+    localStorage.setItem('jvds_toolxp_' + new Date().toDateString(), JSON.stringify({ 'pixel-studio:export': 3 }));
+  });
+  const q0 = await questState();
+  await exportOnce();
+  await new Promise(r => setTimeout(r, 1200));
+  const q1 = await questState();
+  await new Promise(r => setTimeout(r, 1600)); // past the 1.5s double-fire cooldown
+  await exportOnce();
+  await new Promise(r => setTimeout(r, 400));
+  const q2 = await questState();
+  const quest = {
+    notDoneAtStart: !q0.completed,
+    countsWhileCapped: q1.exports === '1',
+    completesOnExport: q1.completed,
+    grants75xp: q1.bonusXP - q0.bonusXP === 75,
+    cosmeticUnlocked: q1.cosmetic,
+    stripSaysUnlocked: /unlocked/i.test(q1.strip),
+    noRegrant: q2.bonusXP === q1.bonusXP && q2.exports === '2'
+  };
+  const questOk = Object.values(quest).every(Boolean);
+
   console.log('checks:', JSON.stringify(checks));
   console.log('hamburger opens:', navOpened, '| closes:', navClosed);
+  console.log('pip quest:', JSON.stringify(quest), questOk ? 'PASS' : 'FAIL');
   if (errors.length) {
     console.log('ERRORS (' + errors.length + '):');
     errors.slice(0, 8).forEach(e => console.log('  ' + e));
   } else {
     console.log('NO RUNTIME ERRORS over HTTP');
   }
-  const pass = checks.framesReady && checks.manifestIsDedicated && navOpened && navClosed && errors.length === 0;
+  const pass = checks.framesReady && checks.manifestIsDedicated && navOpened && navClosed && questOk && errors.length === 0;
   console.log(pass ? 'HTTP RUNTIME CHECKS PASSED' : 'FAILURES PRESENT');
   await browser.close();
   server.close();

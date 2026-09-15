@@ -174,23 +174,27 @@
   <button id="pipQuestBtn" onclick="pipQuestCheck()" style="background:#ff7700;color:white;border:none;border-radius:999px;padding:7px 14px;font-family:'Fredoka',cursive;font-weight:700;font-size:.72rem;cursor:pointer;">Check quest</button>
 </section>
 <script>
+// playerProfile and questSystem are top-level consts (not on window), so check them by name.
+// Only report "unlocked" when the quest is really completed in the profile.
 function pipQuestCheck(){
   try{
-    var exported = parseInt(localStorage.getItem('jvds_tool_export_pixel-studio')||'0',10);
+    var QID='quest-24-pip-pixel-character';
     var el=document.getElementById('pipQuestStatus'), btn=document.getElementById('pipQuestBtn');
-    if(exported>0){
-      el.textContent='✅ Exported! Pip Pixel Pal unlocked (+75 XP)  -  check Profile → Achievements';
+    if(typeof playerProfile==='undefined' || typeof questSystem==='undefined') return;
+    // Catch up exports made before the quest could complete (awards once, no-op after)
+    questSystem.awardQuest(QID, playerProfile);
+    if(questSystem.isQuestCompleted(QID, playerProfile)){
+      var xp=(questSystem.getQuest(QID).rewards||{}).xp||0;
+      el.textContent='✅ Pip Pixel Pal unlocked (+'+xp+' XP), see it on your profile';
       btn.textContent='Done ✓'; btn.style.background='#2e7d32';
-      if(window.questSystem && window.playerProfile){
-        try{ if(!playerProfile.getQuestProgress('quest-24-pip-pixel-character')?.completed){ playerProfile.startQuest('quest-24-pip-pixel-character'); playerProfile.completeQuest('quest-24-pip-pixel-character'); } }catch(e){}
-      }
     } else {
-      el.textContent='Draw something, then Export PNG  -  Pip is waiting!';
-      btn.textContent='Export to complete';
+      el.textContent='Draw something, then Export PNG. Pip is waiting!';
+      btn.textContent='Export to complete'; btn.style.background='#ff7700';
     }
   }catch(e){}
 }
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(pipQuestCheck, 800); });
+document.addEventListener('jvds:quest-awarded', pipQuestCheck);
 </script>
 <!-- Next actions: Play + Improve (A77) - shows after save/export -->
 <section id="next-actions" aria-label="What next" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(135deg,rgba(0,212,170,.1),rgba(91,192,248,.08));border-bottom:1px solid var(--border2);flex-wrap:wrap;">

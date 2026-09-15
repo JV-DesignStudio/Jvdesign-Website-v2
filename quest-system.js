@@ -640,6 +640,21 @@ class QuestSystem {
 
     return null;
   }
+
+  // Complete a quest and grant its rewards exactly once (same rewards as
+  // pages/quest-board.html completeQuest). Returns the quest when it was newly
+  // completed, otherwise null, so it is safe to call on every export/visit.
+  awardQuest(questId, playerProfile, gameStates = {}) {
+    const result = this.checkQuestCompletion(questId, playerProfile, gameStates);
+    if (!result.completed) return null;
+    const quest = this.getQuest(questId);
+    const rewards = quest.rewards || {};
+    playerProfile.completeQuest(questId);
+    if (rewards.xp) playerProfile.addXP(rewards.xp, `quest:${questId}`);
+    if (rewards.cosmetic) playerProfile.unlockGameMode(rewards.cosmetic.gameId, rewards.cosmetic.cosmeticId);
+    if (rewards.achievement) playerProfile.unlockAchievement(rewards.achievement);
+    return quest;
+  }
 }
 
 const questSystem = new QuestSystem();
