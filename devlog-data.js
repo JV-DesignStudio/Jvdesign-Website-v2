@@ -2287,6 +2287,15 @@ const POSTS = [
         excerpt: 'File: tools/pixel-studio.html Pip quest strip + quest-system.js quest-24-pip-pixel-character tool-export pixel-studio 75',
         content: 'Integrate character quests (e.g., \'Design a Pixel Character for Pip\') into tools. Features include:       - Offline-first quest completion tracking.       - Character-driven rewards (e.g., badges, XP).       - No admin rights or accounts required.       - Aligns with **Play (Pip)** and **Improve (Echo)**.              **Evidence Requirements**:       - Quests completed offline.       - Tested with character rewards.       - \`validate:public\` passes at 390/1440px.       - File paths and test outputs named explicitly (e.g., \`tools/pixel-studio.html test:quest PASS\`). Evidence: File: tools/pixel-studio.html Pip quest strip + quest-system.js quest-24-pip-pixel-character tool-export pixel-studio 75 XP Pip Pixel Pal badge, tool-xp.js sets jvds_tool_export_pixel-studio + jvds_tool_session + auto-complete Pip quest offline, quest-system.js added tool-export/tool-session checkRequirement localStorage, validate:public PASS, validate:links 15180 0 broken, tested offline no network dependency, 390/1440 no overflow'
     },
+    {
+        id: 333,
+        date: '15 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Fix check-generated-drift --quick phantom (never fails)',
+        excerpt: 'File: scripts/check-generated-drift.js:65 --quick now checks git diff --name-only + --cached for GENERATED (13) and fail',
+        content: 'check-generated-drift.js --quick only git diff hint but never fails, normalize not called, generators not run, 5 steps vs build.js partials drift invisible. File: scripts/check-generated-drift.js:65 Evidence: File: scripts/check-generated-drift.js:65 --quick now checks git diff --name-only + --cached for GENERATED (13) and fails with quick dirty 1 (board-data.json git dirty) + passes 0 when clean (stash test), runs parity gates sitemap 300 search 300, games 32, tools 40 orphan 21 all noindex, package.json:10 alias kept but now fails correctly, full check:drift PASS 13 files, validate:public PASS 390/1440 no overflow, board-keeper --check No drift'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
