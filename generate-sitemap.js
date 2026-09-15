@@ -53,14 +53,17 @@ function walk(dir) {
   return out;
 }
 
-// Build a { relPath -> YYYY-MM-DD } map - memoized on HEAD SHA to avoid 64MB log on every build
+// Build a { relPath -> YYYY-MM-DD } map - memoized on HEAD+staged SHA to avoid 64MB log on every build
 function gitLastModMap() {
   const cachePath=path.join(ROOT,'tmp','lastmod-cache.json');
   try{
     const head=execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim();
+    let staged='';
+    try{ staged=execFileSync('git',['diff','--cached','--name-only'],{cwd:ROOT,encoding:'utf8'}).trim(); }catch(e){}
+    const key=head+'|'+staged;
     if(fs.existsSync(cachePath)){
       const cached=JSON.parse(fs.readFileSync(cachePath,'utf8'));
-      if(cached.head===head && cached.map) return cached.map;
+      if(cached.head===key && cached.map) return cached.map;
     }
     const map={};
     const log = execFileSync('git', ['log', '--format=C:%cs', '--name-only'], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
@@ -69,14 +72,18 @@ function gitLastModMap() {
       if (line.startsWith('C:')) cur = line.slice(2).trim();
       else if (line.trim() && cur && !(line in map)) map[line.trim()] = cur;
     }
-    try{ fs.writeFileSync(cachePath, JSON.stringify({head, map})); }catch(e){}
+    try{ if(!fs.existsSync(path.dirname(cachePath))) fs.mkdirSync(path.dirname(cachePath),{recursive:true}); fs.writeFileSync(cachePath, JSON.stringify({head:key, map})); }catch(e){}
     return map;
   }catch(e){
     try{
       const head=execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim();
+      let staged2='';
+      try{ staged2=execFileSync('git',['diff','--cached','--name-only'],{cwd:ROOT,encoding:'utf8'}).trim(); }catch(e){}
+      const key2=head+'|'+staged2;
       const cachePath2=path.join(ROOT,'tmp','lastmod-cache.json');
       if(fs.existsSync(cachePath2)){
         const cached=JSON.parse(fs.readFileSync(cachePath2,'utf8'));
+        if(cached.head===key2 && cached.map) return cached.map;
         if(cached.map) return cached.map;
       }
     }catch(e2){}

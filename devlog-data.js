@@ -2323,6 +2323,15 @@ const POSTS = [
         excerpt: 'File: scripts/validate-public-boundary.js:19 added ghp_[20], OPENAI_API_KEY, sk-[20], API_KEY= generic pattern, plus DOC',
         content: 'Leak patterns cover github_pat but miss ghp_/OPENAI_API_KEY generic, allow docs to leak real token. File: scripts/validate-public-boundary.js:19 Evidence: File: scripts/validate-public-boundary.js:19 added ghp_[20], OPENAI_API_KEY, sk-[20], API_KEY= generic pattern, plus DOC_LEAK_ALLOW handling for real token in docs, board-data.json sitemap.xml tools/pixel-studio.html test:validate PASS, tested dummy ghp_ token would be flagged, validate:public PASS 390/1440 no overflow, board-keeper --check No drift'
     },
+    {
+        id: 337,
+        date: '15 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Move lastmod cache out of .git',
+        excerpt: 'File: generate-sitemap.js:58 cachePath tmp/lastmod-cache.json (was .git), memo key HEAD+staged via git diff --cached --n',
+        content: 'generate-sitemap.js writes ROOT/.git/lastmod-cache.json not in .gitignore, not read-only, HEAD-only memo ignores staged edits. File: generate-sitemap.js:60 Evidence: File: generate-sitemap.js:58 cachePath tmp/lastmod-cache.json (was .git), memo key HEAD+staged via git diff --cached --name-only, mkdir tmp recursive, .gitignore tmp/ already, scripts/check-generated-drift.js:64 cleanup both tmp and .git paths, sitemap.xml 300 search-index.json 300 board-data.json 300, validate:public PASS 390/1440 no overflow, board-keeper --check No drift, tmp/lastmod-cache.json not in .git'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,

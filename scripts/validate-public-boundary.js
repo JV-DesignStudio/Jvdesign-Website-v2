@@ -20,7 +20,7 @@ const leakPatterns = [
   /github_pat_/i,
   /gho_[A-Za-z0-9_]{20,}/i,
   /ghp_[A-Za-z0-9]{20,}/i,
-  /OPENAI_API_KEY/i,
+  /OPENAI_API_KEY\s*=\s*['"][^'"]{10,}['"]/i,
   /sk-[A-Za-z0-9]{20,}/,
   /API_KEY\s*=\s*['"][^'"]{10,}['"]/i,
   /ntfy-topic/i,
