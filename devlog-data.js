@@ -2296,6 +2296,15 @@ const POSTS = [
         excerpt: 'File: scripts/check-generated-drift.js:65 --quick now checks git diff --name-only + --cached for GENERATED (13) and fail',
         content: 'check-generated-drift.js --quick only git diff hint but never fails, normalize not called, generators not run, 5 steps vs build.js partials drift invisible. File: scripts/check-generated-drift.js:65 Evidence: File: scripts/check-generated-drift.js:65 --quick now checks git diff --name-only + --cached for GENERATED (13) and fails with quick dirty 1 (board-data.json git dirty) + passes 0 when clean (stash test), runs parity gates sitemap 300 search 300, games 32, tools 40 orphan 21 all noindex, package.json:10 alias kept but now fails correctly, full check:drift PASS 13 files, validate:public PASS 390/1440 no overflow, board-keeper --check No drift'
     },
+    {
+        id: 334,
+        date: '15 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Fix normalize gaps + timestamp determinism',
+        excerpt: 'File: scripts/check-generated-drift.js:36 normalize deduped, scripts/generate-board-data.js:132 lastRun git log, generat',
+        content: 'normalize() duplicate generated regex, lastRun masked but sources non-deterministic new Date() x3 vs mtime fallback vs git log 64MB memo. File: scripts/check-generated-drift.js:36 Evidence: File: scripts/check-generated-drift.js:36 normalize deduped, scripts/generate-board-data.js:132 lastRun git log, generate-sitemap.js:58 cache tmp/lastmod-cache.json, board-data.json sitemap.xml tools/pixel-studio.html test:drift PASS 13 files sitemap 300 search 300, validate:public PASS 390/1440 no overflow, board-keeper --check No drift, content/tools.json 40 curated'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,
