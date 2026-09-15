@@ -240,6 +240,14 @@ function buildHeroStats(){
     }
 }
 
+// Readers see the story, not ticket evidence ("Evidence: ...", "File: ...") (A255)
+function readerText(s){ return String(s||'').split(/\s*Evidence:/)[0].trim(); }
+function readerExcerpt(post){
+    const e = String(post.excerpt||'');
+    if(!/^(File:|Fixed A\d)/.test(e)) return e;
+    return readerText(post.content).split(/(?<=[.!?])\s/)[0].slice(0,160);
+}
+
 // ── Render grid ────────────────────────────────────
 function renderPosts(){
     filteredPosts = currentFilter === 'all'
@@ -268,7 +276,7 @@ function renderPosts(){
             <div class="post-body">
                 <div class="post-date">${escHtml(post.date)}</div>
                 <div class="post-title">${escHtml(post.title)}</div>
-                <div class="post-excerpt">${escHtml(post.excerpt)}</div>
+                <div class="post-excerpt">${escHtml(readerExcerpt(post))}</div>
                 <span class="post-read-more">Read more →</span>
             </div>`;
 
@@ -342,7 +350,7 @@ function renderModal(){
 
     // Render content paragraphs
     const contentEl = document.getElementById('modalContent');
-    contentEl.innerHTML = post.content
+    contentEl.innerHTML = readerText(post.content)
         .split(/\n\n+/)
         .map(p => `<p>${escHtml(p.trim())}</p>`)
         .join('');

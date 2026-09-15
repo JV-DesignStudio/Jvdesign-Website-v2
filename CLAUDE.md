@@ -43,9 +43,11 @@ Snapshot (2026-09-08): **In Progress (3)** A01, A12, A47; **Verified (6)** A02-A
 
 ## 4) The Watcher AI (Board Keeper)
 
-`F:/Website/studio-workspace/board-keeper.cjs:1` , deterministic Node script, not a chat model. Hooks in `.opencode/opencode.json:3` run `--check` before/after every tool; Scheduled Task runs every 5 min. Guards on `--sync`: em-dash count, `P1 → devlog` promotion, newsletter cross-link.
+`F:/Website/studio-workspace/board-keeper.cjs:1` , deterministic Node script, not a chat model. Checks run **on commit** (`.githooks/pre-commit`, staged lines only) and **in CI**; there is no per-tool hook, and the daily Scheduled Task is report-only (no `--repair`, `--sync`, drafts or file writes). Guards on `--sync`: em-dash count, newsletter cross-link.
 
 If `DRIFT` reported, fix `tasks.json` then `--sync`. If `--claim` fails (already `in_progress`), pick another `backlog` ID.
+
+**Machinery rules (A255):** meta-work (board, pipeline, validators) stays under ~20% of each week. No automation rewrites content without a reviewed diff: scripts report, a person applies; nothing auto-commits or runs `git add -u`/`-A`. Dev Log and social posts are hand-written for learners and parents; never publish ticket titles, drift fixes or evidence text (bot queue retired, archived in `F:/Website/studio-workspace/social-archive/`).
 
 ## 5) Repo Conventions
 

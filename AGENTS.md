@@ -82,11 +82,16 @@ Current snapshot (2026-09-08, `CLAIM_GUIDE.md`): **In Progress (3)** A01 validat
 File: `F:/Website/studio-workspace/board-keeper.cjs:1`
 
 - **Is not a chat model** , deterministic Node script. The `board-keeper` sub-agent entry in `.opencode/opencode.json:7` uses `qwen2.5-coder:7b` only to *enforce* the protocol, not to watch files with AI.
-- **Hooks:** `.opencode/opencode.json:3` `pre_tool` + `post_tool` both run `node F:/Website/studio-workspace/board-keeper.cjs --check` , every OpenCode tool call prints `tasks.json` counts, `board lastUpdated`, `IN_PROGRESS`/`BACKLOG` ids, and `DRIFT` warnings automatically, no user prompt needed.
-- **Scheduled task:** `JVDS Board Keeper` (via `board-keeper-tick.ps1` + `install-board-keeper-task.ps1`) runs `--check` every 10min + daily 1pm and `--sync` if drift.
-- **Extra guards on --sync:** counts em-dashes in public files (`check-dashes.cjs`), warns about critical `P1 done/verified_local` tasks missing from `pages/devlog.html` (`promote-to-devlog.cjs`), and `newsletter.html` ↔ `devlog.html` cross-link.
+- **When checks run (A255):** on commit (`.githooks/pre-commit`, staged lines only) and in CI (`.github/workflows/validate.yml`). There is no per-tool hook. The `JVDS Board Keeper` scheduled task runs once a day and is **report-only**: it never runs `--repair`/`--sync`, never writes drafts, never regenerates files.
+- **Extra guards on --sync:** counts em-dashes in public files (`check-dashes.cjs`) and cross-checks `newsletter.html` ↔ `devlog.html`.
 
 If `--check` reports `DRIFT`, run `--sync` after fixing `tasks.json`. If `--claim` fails, choose a different `backlog` ID , don't force-write `tasks.json`.
+
+### Machinery rules (A255)
+
+- **Learners first.** Meta-work (board, pipeline, validators, generators) stays under about 20% of each week. If a card only exists to fix the board, question it before doing it.
+- **No automated content rewrites without a reviewed diff.** Scripts may *report* (dashes, drift, links); a person reviews and applies fixes. Nothing auto-commits, nothing runs `git add -u`/`-A` for you.
+- **Dev Log and social posts are written by hand**, for learners and parents. Never publish ticket titles, drift fixes or evidence text. The bot social queue and auto devlog promotion are retired (archived in `F:/Website/studio-workspace/social-archive/` and `devlog-archive-bot-posts.json`).
 
 ## 5) Repo Conventions
 
