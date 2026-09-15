@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://api.github.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src https://api.github.com; img-src 'self' data:">
 <title>JVDS Online Approve - Phone</title>
 <style>
 *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,sans-serif;background:#f8fafc;color:#1f2937}
@@ -26,7 +27,7 @@
 <strong>First time on this phone:</strong>
 <p class="small">Paste your private repo + GitHub token (stored only on this phone, never sent elsewhere). The repo is your single source of truth - PC and phone both read/write it.</p>
 <label>Private repo (e.g. JV-DesignStudio/jvds-studio-private)<br><input id="repo" class="input" placeholder="owner/repo"></label>
-<label>Fine-grained PAT (contents: Read & Write)<br><input id="pat" class="input" type="password" placeholder="github_pat_..."></label>
+<label>Fine-grained PAT (contents: Read & Write)<br><input id="pat" class="input" type="password" placeholder="github_pat_..." autocomplete="off" spellcheck="false"></label>
 <button class="btn approve" onclick="saveCfg()">Save on this phone</button>
 <p class="small">Create PAT: GitHub → Settings → Developer settings → Fine-grained tokens → New → Only select that repo → Contents Read & Write. Topic: jvds-studio-xvpbmqau for pushes still works.</p>
 </div>
@@ -34,25 +35,37 @@
 </div>
 <script>
 const SETUP=document.getElementById('setup');
-function getCfg(){ return {repo:localStorage.getItem('jvds_repo')||'', pat:localStorage.getItem('jvds_pat')||''}; }
+function getCfg(){ return {repo:localStorage.getItem('jvds_repo')||'', pat:sessionStorage.getItem('jvds_pat')||''}; }
 function saveCfg(){
   const r=document.getElementById('repo').value.trim();
   const p=document.getElementById('pat').value.trim();
   if(!r||!p) return alert('Need repo and PAT');
-  localStorage.setItem('jvds_repo',r); localStorage.setItem('jvds_pat',p);
+  localStorage.setItem('jvds_repo',r); sessionStorage.setItem('jvds_pat',p);
+  document.getElementById('pat').value=''; // clear from DOM
   SETUP.style.display='none'; load();
 }
+window.addEventListener('pagehide', function(){ try{ sessionStorage.removeItem('jvds_pat'); }catch(e){} });
+window.addEventListener('beforeunload', function(){ try{ sessionStorage.removeItem('jvds_pat'); }catch(e){} });
 (function(){
   const c=getCfg();
   if(c.repo && c.pat){ SETUP.style.display='none'; document.getElementById('repo').value=c.repo; }
 })();
 async function gh(path, opts={}){
   const c=getCfg();
+  if(!c.pat) throw new Error('Missing PAT - re-enter on this phone');
   const h={'Accept':'application/vnd.github+json','Authorization':'Bearer '+c.pat};
   if(opts.body) h['Content-Type']='application/json';
-  const r=await fetch('https://api.github.com/repos/'+c.repo+'/contents/'+path, {headers:h, ...opts});
-  if(!r.ok) throw new Error(await r.text());
-  return r.json();
+  const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(), 10000);
+  try{
+    const r=await fetch('https://api.github.com/repos/'+c.repo+'/contents/'+path, {headers:h, signal:ctrl.signal, ...opts});
+    clearTimeout(t);
+    if(!r.ok) throw new Error(await r.text());
+    return r.json();
+  }catch(e){
+    clearTimeout(t);
+    if(e.name==='AbortError') throw new Error('GitHub request timed out after 10s');
+    throw e;
+  }
 }
 async function load(){
   const c=getCfg(); if(!c.repo||!c.pat) return;
@@ -100,7 +113,8 @@ async function load(){
   }
 }
 load();
-setInterval(load,30000);
+let pollId=setInterval(function(){ if(document.visibilityState==='visible') load(); },30000);
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') load(); });
 </script>
 </body>
 </html>
