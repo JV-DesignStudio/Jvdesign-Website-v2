@@ -63,7 +63,7 @@
       <a href="/workshop">🔧 Workshop</a>
       <a href="/dev-tools">🛠️ Tools</a>
       <a href="/downloads">📦 Downloads</a>
-      <a href="/freebies">🎁 Freebies</a>
+      <a href="/pages/downloads.html">🎁 Freebies</a>
     </nav>
     <button class="jvds-strip-close" onclick="jvdsCloseStrip()" aria-label="Close menu">✕</button>
   </div>
@@ -3508,6 +3508,38 @@ checkDailyBonus(); checkAchievements();
         setTimeout(function(){s.classList.remove('excited');},480);})(seats[j]);
     }
   });
+})();
+</script>
+
+<script>
+// A215 Arcade profile bridge: report Biscuit Tin lifetime progress without changing the clicker save format.
+(function(){
+  if (typeof GameSystem !== 'function' || typeof bv !== 'function') return;
+  var gs = new GameSystem('biscuit-clicker', 'Biscuit Tin Clicker', 'pip');
+  var lastReported = 0;
+  var milestones = [100, 1000, 10000, 100000, 1000000];
+  try { lastReported = Number((gs.state && gs.state.score) || 0) || 0; } catch(e) { lastReported = 0; }
+  function lifetime(){ try { return Math.floor(Number(bv().lifetime || bv().total || 0)); } catch(e) { return 0; } }
+  function sync(reason){
+    var total = lifetime();
+    if (total > lastReported) {
+      gs.addScore(total - lastReported);
+      lastReported = total;
+    }
+    try { gs.saveState(); } catch(e) {}
+    if (reason === 'milestone' && window.jvdsCheckNewBest) window.jvdsCheckNewBest();
+  }
+  function checkMilestones(){
+    var total = lifetime();
+    for (var i=0;i<milestones.length;i++) {
+      if (total >= milestones[i] && lastReported < milestones[i]) { sync('milestone'); return; }
+    }
+    sync('tick');
+  }
+  setInterval(checkMilestones, 5000);
+  window.addEventListener('beforeunload', function(){ sync('leave'); gs.recordGamePlay(Date.now()); });
+  document.addEventListener('visibilitychange', function(){ if (document.hidden) sync('leave'); });
+  setTimeout(checkMilestones, 1200);
 })();
 </script>
 

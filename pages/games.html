@@ -88,6 +88,7 @@
         <button type="button" class="genre-pill" data-jump="idle" aria-label="Filter Idle and Clicker games">⏳ Idle &amp; Clicker</button>
         <button type="button" class="genre-pill" data-jump="brain" aria-label="Filter Brain games">🧠 Brain</button>
     </div>
+    <script src="../games-registry.js"></script>
     <script>
     (function(){
       document.addEventListener('click', function(e){
@@ -440,29 +441,19 @@
         </label>
         <span class="game-result-count" id="gameResultCount" aria-live="polite"></span>
     </div>
-    <div class="game-filters" id="gameFilters" role="group" aria-label="Filter games by category">
-        <button type="button" class="game-chip active" data-filter="picks" aria-pressed="true">✦ Staff picks <span class="chip-count"></span></button>
-        <button type="button" class="game-chip" data-filter="all" aria-pressed="false">All games <span class="chip-count"></span></button>
-        <button type="button" class="game-chip" data-filter="experimental" aria-pressed="false">🧪 Experiments <span class="chip-count"></span></button>
-        <button type="button" class="game-chip" data-filter="puzzle" aria-pressed="false">🧩 Puzzle &amp; Match <span class="chip-count"></span></button>
-        <button type="button" class="game-chip" data-filter="arcade" aria-pressed="false">🎯 Arcade &amp; Action <span class="chip-count"></span></button>
-        <button type="button" class="game-chip" data-filter="runner" aria-pressed="false">🏃 Runner <span class="chip-count"></span></button>
-        <button type="button" class="game-chip" data-filter="adventure" aria-pressed="false">⚔️ Adventure <span class="chip-count"></span></button>
-        <button type="button" class="game-chip" data-filter="idle" aria-pressed="false">⏳ Idle &amp; Clicker <span class="chip-count"></span></button>
-        <button type="button" class="game-chip" data-filter="brain" aria-pressed="false">🧠 Brain <span class="chip-count"></span></button>
-    </div>
+    <div class="game-filters" id="gameFilters" role="group" aria-label="Filter games by category"></div>
     <p class="game-filter-empty" id="gameFilterEmpty" hidden role="status"><span class="mascot-empty mascot-empty--small" style="display:inline-block;padding:8px 0"><img src="/assets/mascots/echo.jpg" alt="Echo looking surprised" loading="lazy" style="width:64px;height:64px"><span class="mascot-bubble mascot-bubble--light" style="margin-left:8px;vertical-align:middle">Echo & Pip can't find a game there , try “All games”?</span></span><br>No games in this category yet. <button type="button" class="game-filter-reset">Show all games</button></p>
     <script>
     (function(){
-        // Category map keyed by game file basename (without .html).
-        var CAT = {
-            puzzle:   ['bubble-pop-galaxy','pastry-match','dough-dash','bread-blocks','pip_star_connect','gem_match','cozy-cafe-match-game','candy_kingdom'],
-            arcade:   ['neon-tiles','echos-flight','lumo_firefly_night','stardust_collection','critter-whack-page','critter-whack','nibble-quest-page','nibble-quest','stack-attack-page','stack-attack','tiger_smash','paper-toss-deluxe','echo_fruit_catch','cozy_creatures'],
-            runner:   ['voidrush','little_steps','lumo-dash-page','lumo-dash'],
-            adventure:['crypt-crawlers','dungeon-delve','sky_high_with_friends','arcane_citadel_page','arcane_citadel','garden-defense','call_of_the_cards'],
-            idle:     ['pips-bakery-empire','cozy-biscuit-clicker'],
-            brain:    ['millionaire-quiz','star-chef']
-        };
+        var registryByFile = {};
+        var registryCats = ['All'];
+        (window.JVDS_GAMES || []).forEach(function(game){
+            var base = (game.file || '').replace(/.html$/, '');
+            if(!base) return;
+            registryByFile[base] = game;
+            if(game.cat && registryCats.indexOf(game.cat) === -1) registryCats.push(game.cat);
+        });
+        if(registryCats.indexOf('Little Players') === -1) registryCats.push('Little Players');
         var PICK_ORDER = ['garden-defense','bubble-pop-galaxy','neon-tiles','arcane_citadel_page','voidrush','gem_match','pips-bakery-empire','crypt-crawlers'];
         var PICKS = {};
         PICK_ORDER.forEach(function(file, index){ PICKS[file] = index; });
@@ -473,19 +464,22 @@
             'call_of_the_cards': true
         };
         function catOf(basename){
-            for(var c in CAT){ if(CAT[c].indexOf(basename) !== -1) return c; }
-            return 'other';
+            return registryByFile[basename] && registryByFile[basename].cat ? registryByFile[basename].cat : 'Other';
+        }
+        function gameIsKids(basename){
+            return !!(registryByFile[basename] && registryByFile[basename].kids);
         }
         function ready(fn){ document.readyState !== 'loading' ? fn() : document.addEventListener('DOMContentLoaded', fn); }
         ready(function(){
             var cards = [].slice.call(document.querySelectorAll('.games-grid .game-card'));
             if(!cards.length) return;
-            var counts = { all: cards.length };
+            var counts = { 'All': cards.length };
             cards.forEach(function(card){
                 var m = (card.getAttribute('href')||'').match(/([^\/]+)\.html/);
                 var cat = catOf(m ? m[1] : '');
                 var basename = m ? m[1] : '';
                 card.setAttribute('data-cat', cat);
+                card.setAttribute('data-kids', gameIsKids(basename) ? 'true' : 'false');
                 card.setAttribute('data-pick', Object.prototype.hasOwnProperty.call(PICKS, basename) ? 'true' : 'false');
                 card.setAttribute('data-status', card.getAttribute('data-pick') === 'true' ? 'featured' : (EXPERIMENTS[basename] ? 'experimental' : 'complete'));
                 if(card.getAttribute('data-pick') === 'true'){
@@ -507,15 +501,18 @@
                     }
                 }
                 counts[cat] = (counts[cat]||0) + 1;
+                if(gameIsKids(basename)) counts['Little Players'] = (counts['Little Players']||0) + 1;
                 if(card.getAttribute('data-pick') === 'true') counts.picks = (counts.picks||0) + 1;
                 if(card.getAttribute('data-status') === 'experimental') counts.experimental = (counts.experimental||0) + 1;
             });
+            var filterWrap = document.getElementById('gameFilters');
+            var chipDefs = [{ key:'picks', label:'Staff picks' }, { key:'experimental', label:'Experiments' }].concat(registryCats.map(function(cat){ return { key:cat, label:cat }; }));
+            filterWrap.innerHTML = chipDefs.map(function(chip){
+                var active = chip.key === 'picks';
+                var count = chip.key === 'All' ? cards.length : (counts[chip.key]||0);
+                return '<button type="button" class="game-chip' + (active ? ' active' : '') + '" data-filter="' + chip.key + '" aria-pressed="' + active + '">' + chip.label + ' <span class="chip-count">(' + count + ')</span></button>';
+            }).join('');
             var chips = [].slice.call(document.querySelectorAll('.game-chip'));
-            chips.forEach(function(chip){
-                var f = chip.getAttribute('data-filter');
-                var span = chip.querySelector('.chip-count');
-                if(span) span.textContent = '(' + (counts[f]||0) + ')';
-            });
             var emptyMsg = document.getElementById('gameFilterEmpty');
             var search = document.getElementById('gameSearch');
             var sort = document.getElementById('gameSort');
@@ -525,9 +522,10 @@
                 var shown = 0;
                 var query = search ? search.value.trim().toLowerCase() : '';
                 cards.forEach(function(card){
-                    var categoryMatch = filter === 'all' ||
+                    var categoryMatch = filter === 'All' || filter === 'all' ||
                         (filter === 'picks' ? card.getAttribute('data-pick') === 'true' :
                         filter === 'experimental' ? card.getAttribute('data-status') === 'experimental' :
+                        filter === 'Little Players' ? card.getAttribute('data-kids') === 'true' :
                         card.getAttribute('data-cat') === filter);
                     var searchMatch = !query || card.textContent.toLowerCase().indexOf(query) !== -1;
                     var match = categoryMatch && searchMatch;
@@ -561,11 +559,11 @@
             });
             if(search) search.addEventListener('input', function(){
                 var active = document.querySelector('.game-chip.active');
-                apply(active ? active.getAttribute('data-filter') : 'all');
+                apply(active ? active.getAttribute('data-filter') : 'All');
             });
             if(sort) sort.addEventListener('change', function(){ reorder(sort.value); });
             var resetBtn = emptyMsg && emptyMsg.querySelector('.game-filter-reset');
-            if(resetBtn) resetBtn.addEventListener('click', function(){ apply('all'); });
+            if(resetBtn) resetBtn.addEventListener('click', function(){ apply('All'); });
             reorder('featured');
             apply('picks');
         });
@@ -1340,7 +1338,7 @@
     <p class="reveal">Check out the books that inspired many of these games, or explore free downloadable goodies.</p>
     <div class="cta-buttons reveal">
         <a href="books.html" class="btn-white">📚 See the Books</a>
-        <a href="freebies.html" class="btn-outline">🎁 Free Downloads →</a>
+        <a href="downloads.html" class="btn-outline">🎁 Free Downloads →</a>
     </div>
 </section>
 
