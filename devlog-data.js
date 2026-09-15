@@ -2314,6 +2314,15 @@ const POSTS = [
         excerpt: 'File: package.json:63 engines 24.11.3 (was 24.x), .nvmrc:1 24.11.3, board-data.json 300 sitemap, tools/pixel-studio.html',
         content: 'package.json 24.x vs .nvmrc 24 vs .npmrc engine-strict hard fail, validateSummary lastRun not live. File: package.json:63 Evidence: File: package.json:63 engines 24.11.3 (was 24.x), .nvmrc:1 24.11.3, board-data.json 300 sitemap, tools/pixel-studio.html test:drift PASS 13 files sitemap 300 search 300, validate:public PASS 390/1440 no overflow, board-keeper --check No drift, content/tools.json 40 curated, tmp/wt-a67 worktree removed, tmp ignored in validate-public-boundary'
     },
+    {
+        id: 336,
+        date: '15 September 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Fix validate-public-boundary stale patterns',
+        excerpt: 'File: scripts/validate-public-boundary.js:19 added ghp_[20], OPENAI_API_KEY, sk-[20], API_KEY= generic pattern, plus DOC',
+        content: 'Leak patterns cover github_pat but miss ghp_/OPENAI_API_KEY generic, allow docs to leak real token. File: scripts/validate-public-boundary.js:19 Evidence: File: scripts/validate-public-boundary.js:19 added ghp_[20], OPENAI_API_KEY, sk-[20], API_KEY= generic pattern, plus DOC_LEAK_ALLOW handling for real token in docs, board-data.json sitemap.xml tools/pixel-studio.html test:validate PASS, tested dummy ghp_ token would be flagged, validate:public PASS 390/1440 no overflow, board-keeper --check No drift'
+    },
     // ── 78 · September Studio Update ──────────────────────────────────────────
     {
         id: 78,

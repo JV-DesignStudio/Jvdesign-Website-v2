@@ -19,6 +19,10 @@ if (found.length) {
 const leakPatterns = [
   /github_pat_/i,
   /gho_[A-Za-z0-9_]{20,}/i,
+  /ghp_[A-Za-z0-9]{20,}/i,
+  /OPENAI_API_KEY/i,
+  /sk-[A-Za-z0-9]{20,}/,
+  /API_KEY\s*=\s*['"][^'"]{10,}['"]/i,
   /ntfy-topic/i,
   /BREVO_API_KEY/i,
   /(^|\W)\.env(\W|$)/,
@@ -51,6 +55,11 @@ const walkForLeaks=(dir,depth=0)=>{
             if(DOC_LEAK_ALLOW.has(rel) || DOC_LEAK_ALLOW.has(path.basename(rel))){
               // for these files only fail if pattern looks like real token (pat includes _ and value)
               if(pat.source.includes('github_pat') && /github_pat_[A-Za-z0-9]{20,}/.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
+              if(pat.source.includes('gho_') && /gho_[A-Za-z0-9_]{20,}/.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
+              if(pat.source.includes('ghp_') && /ghp_[A-Za-z0-9]{20,}/.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
+              if(pat.source.includes('OPENAI') && /OPENAI_API_KEY\s*=\s*['"][^'"]{10,}/.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
+              if(pat.source.includes('sk-') && /sk-[A-Za-z0-9]{20,}/.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
+              if(pat.source.includes('API_KEY') && /API_KEY\s*=\s*['"][^'"]{10,}['"]/i.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
               if(pat.source.includes('BREVO') && /BREVO_API_KEY\s*=\s*['"][^'"]{10,}/.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
               if(pat.source.includes('\\.env') && /(?:^|[^a-zA-Z0-9_])\.env(?:\s*=\s*['"][^'"]+['"]|\s+key)/i.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
               continue;
