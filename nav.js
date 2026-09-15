@@ -84,9 +84,10 @@ window.JVDS.announce = function (msg) {
   }
   // Profile chip
   try {
-    var p = JSON.parse(localStorage.getItem('jvds-profile') || localStorage.getItem('jvds_player_profile') || 'null');
+    // The real profile is jvds_profile (player-profile.js); the other two names are legacy (A256)
+    var p = JSON.parse(localStorage.getItem('jvds_profile') || localStorage.getItem('jvds-profile') || localStorage.getItem('jvds_player_profile') || 'null');
     var xp=0,lv=1,st=0;
-    if(p){ xp=p.xp||p.totalXP||0; lv=p.level||Math.floor(xp/100)+1||1; st=p.streak||p.bestStreak||0; }
+    if(p){ xp=p.globalXP||p.xp||p.totalXP||0; lv=p.level||Math.floor(xp/100)+1||1; st=p.dailyStreak||p.streak||p.bestStreak||0; }
     else { xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0; lv=Math.floor(xp/100)+1; st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0; }
     var chip = document.getElementById('navProfileChip');
     if(chip){ chip.style.display='flex'; document.getElementById('navProfileLevel').textContent='Lv '+lv; document.getElementById('navProfileStreak').textContent=st; }

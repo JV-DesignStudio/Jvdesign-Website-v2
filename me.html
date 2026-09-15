@@ -141,14 +141,14 @@
 
   <div class="backup">
     <details>
-      <summary>Move my progress to another device</summary>
-      <p class="muted" style="margin:10px 0">Your data lives in this browser. Export a backup file or copy a transfer code to move it.</p>
+      <summary>🎒 My backpack: take your saves with you</summary>
+      <p class="muted" style="margin:10px 0">Everything you make and earn here is saved in this browser. School computers can wipe it. Download your backpack at the end of a session, then open it on any computer to carry on: games, tools, workshops, your character and your XP.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="tab" onclick="exportBackup()">Export backup file</button>
-        <label class="tab" style="cursor:pointer">Import backup file <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)"></label>
-        <button class="tab" onclick="copyCode()">Copy transfer code</button>
-        <input id="restoreCode" placeholder="Paste transfer code" style="min-width:220px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:white">
-        <button class="tab" onclick="restoreCode()">Restore</button>
+        <button class="tab" onclick="exportBackup()">Download my backpack</button>
+        <label class="tab" style="cursor:pointer">Open a backpack file <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importBackup(event)"></label>
+        <button class="tab" onclick="copyCode()">Copy backpack code</button>
+        <input id="restoreCode" aria-label="Paste a backpack code" placeholder="Paste backpack code" style="min-width:0;flex:1 1 200px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:white">
+        <button class="tab" onclick="restoreCode()">Unpack</button>
       </div>
       <p id="backupMsg" class="muted" style="margin-top:8px"></p>
     </details>
@@ -214,6 +214,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 <script defer src="daily-challenge.js"></script>
 <script defer src="quest-system.js"></script>
 <script defer src="cosmetics.js"></script>
+<script defer src="jvds-store.js"></script>
 <script>
 (function(){
   try{ if(window.MigrateKeys) MigrateKeys.run(); }catch(e){}
@@ -586,14 +587,14 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
     });
   });
 
-  /* ── Backup Functions ── */
-  function isBackupKey(k){return typeof k==='string'&&(k.indexOf('jvds')===0||k.indexOf('qb-')===0||k.indexOf('jv_')===0);}
-  function collectBackupData(){var data={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(isBackupKey(k))data[k]=localStorage.getItem(k);}return data;}
-  function applyBackupData(data){if(!data||Array.isArray(data)||typeof data!=='object')throw new Error('Invalid backup');Object.keys(data).forEach(function(k){if(!isBackupKey(k)||typeof data[k]!=='string')throw new Error('Invalid backup');});Object.keys(data).forEach(function(k){localStorage.setItem(k,data[k]);});}
-  window.exportBackup=function(){try{var data=collectBackupData();var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='jvds-backup.json';a.click();document.getElementById('backupMsg').textContent='Backup downloaded.';}catch(e){document.getElementById('backupMsg').textContent='Export failed.';}};
-  window.copyCode=function(){try{var data=collectBackupData();var code=btoa(unescape(encodeURIComponent(JSON.stringify(data))));navigator.clipboard.writeText(code).then(function(){document.getElementById('backupMsg').textContent='Transfer code copied.';});}catch(e){document.getElementById('backupMsg').textContent='Copy failed.';}};
-  window.restoreCode=function(){try{var code=document.getElementById('restoreCode').value.trim();if(!code)return;var data=JSON.parse(decodeURIComponent(escape(atob(code))));applyBackupData(data);document.getElementById('backupMsg').textContent='Restored. Reloading...';setTimeout(function(){location.reload();},600);}catch(e){document.getElementById('backupMsg').textContent='Invalid code.';}};
-  window.importBackup=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var data=JSON.parse(r.result);applyBackupData(data);document.getElementById('backupMsg').textContent='Imported. Reloading...';setTimeout(function(){location.reload()},600);}catch(err){document.getElementById('backupMsg').textContent='Invalid file.';}};r.readAsText(f);};
+  /* ── Backpack (A256): every save on the site in one file, via jvds-store.js ── */
+  function bpMsg(t){document.getElementById('backupMsg').textContent=t;}
+  function bp(){if(!window.JVDS||!JVDS.backpack)throw new Error('Backpack not loaded yet');return JVDS.backpack;}
+  function reloadSoon(){setTimeout(function(){location.reload();},900);}
+  window.exportBackup=function(){try{var n=bp().download();bpMsg('Backpack downloaded ('+n+' saves). Keep it on a USB stick or in your school drive.');}catch(e){bpMsg('Download failed: '+e.message);}};
+  window.copyCode=function(){try{var code=bp().toCode();navigator.clipboard.writeText(code).then(function(){bpMsg('Backpack code copied. It can be long, so the file is safer.');},function(){bpMsg('Could not copy. Use Download my backpack instead.');});}catch(e){bpMsg('Copy failed: '+e.message);}};
+  window.restoreCode=function(){try{var code=document.getElementById('restoreCode').value.trim();if(!code)return;var n=bp().fromCode(code);bpMsg('Unpacked '+n+' saves. Reloading...');reloadSoon();}catch(e){bpMsg('That code did not work. Check you copied all of it.');}};
+  window.importBackup=function(e){var f=e.target.files[0];if(!f)return;bp().restoreFile(f).then(function(n){bpMsg('Unpacked '+n+' saves. Reloading...');reloadSoon();},function(err){bpMsg('That file is not a backpack ('+err.message+').');});};
 
   /* ── Init ── */
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',render); else render();

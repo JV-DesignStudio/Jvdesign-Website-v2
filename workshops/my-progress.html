@@ -129,11 +129,11 @@
 
   <!-- BACKUP & RESTORE -->
   <div class="backup-section">
-    <div class="backup-title">💾 Backup your progress</div>
+    <div class="backup-title">🎒 Your backpack</div>
     <div class="backup-sub">Your XP, badges and certificates live only in this browser , clearing browser data erases them. Save a backup file to keep them safe, or use the code below to move your progress to another device.</div>
     <div class="backup-actions">
-      <button class="bk-btn bk-export" id="bkExportBtn" onclick="exportProgress()">⬇️ Export backup file</button>
-      <label class="bk-btn bk-file">📂 Import backup file<input type="file" id="bkFileInput" accept=".json,application/json" hidden></label>
+      <button class="bk-btn bk-export" id="bkExportBtn" onclick="exportProgress()">⬇️ Download my backpack</button>
+      <label class="bk-btn bk-file">📂 Open a backpack file<input type="file" id="bkFileInput" accept=".json,application/json" hidden></label>
     </div>
     <textarea id="bkTextarea" class="backup-textarea" placeholder="…or paste a backup code (or file contents) in here, then press Restore." spellcheck="false" aria-label="Backup code"></textarea>
     <div class="backup-row">
@@ -270,6 +270,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 
 <script defer src="../tracks.js"></script>
 <script defer src="../player-profile.js"></script>
+<script defer src="../jvds-store.js"></script>
 <script>
 const SERIES = [
   {
@@ -949,20 +950,23 @@ const BK_VERSION = 1;
 
 function bkStatus(msg) { document.getElementById('bkStatus').textContent = msg; }
 
+// A256: one backpack for the whole site (jvds-store.js). It leaves out
+// secrets (GitHub tokens) and per-device choices (cookie consent), which the
+// old "copy every key" export used to put in the file.
+function backpack() {
+  if (!window.JVDS || !JVDS.backpack) throw new Error('backpack not loaded yet, try again in a second');
+  return JVDS.backpack;
+}
+
 function collectProgress() {
-  const data = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    data[k] = localStorage.getItem(k);
-  }
-  return { app: BK_APP_TAG, version: BK_VERSION, exportedAt: new Date().toISOString(), origin: location.origin, keys: Object.keys(data).length, data: data };
+  return backpack().collect();
 }
 
 function exportProgress() {
   try {
     const json = JSON.stringify(collectProgress(), null, 2);
     document.getElementById('bkTextarea').value = json;
-    const fname = 'jvdesignstudio-progress-' + new Date().toISOString().slice(0, 10) + '.json';
+    const fname = 'my-jvds-backpack-' + new Date().toISOString().slice(0, 10) + '.json';
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -983,17 +987,21 @@ function applyBundle(text) {
     bkStatus('⚠️ That does not look like a valid backup file.');
     return false;
   }
-  if (!b || b.app !== BK_APP_TAG || !b.data || typeof b.data !== 'object') {
-    bkStatus('⚠️ That is not a JVDesignStudio progress backup.');
+  // Backpacks from me.html and older My Progress files both open here
+  const saves = b && (b.format === 'jvds-backpack' ? b.keys : (b.app === BK_APP_TAG ? b.data : null));
+  if (!saves || typeof saves !== 'object') {
+    bkStatus('⚠️ That is not a JVDesignStudio backpack.');
     return false;
   }
-  const n = Object.keys(b.data).length;
-  const when = b.exportedAt ? new Date(b.exportedAt).toLocaleDateString('en-GB') : 'unknown date';
-  if (!confirm('Restore backup from ' + when + '? Its ' + n + ' saved entries will overwrite matching current progress.')) return false;
+  const n = Object.keys(saves).length;
+  const stamp = b.savedAt || b.exportedAt;
+  const when = stamp ? new Date(stamp).toLocaleDateString('en-GB') : 'unknown date';
+  if (!confirm('Unpack backpack from ' + when + '? Its ' + n + ' saves will overwrite matching current progress.')) return false;
   let applied = 0;
-  Object.keys(b.data).forEach(function (k) {
-    try { localStorage.setItem(k, String(b.data[k])); applied++; } catch (e) { /* skip */ }
-  });
+  try { applied = backpack().restore(b); } catch (e) {
+    bkStatus('⚠️ Could not unpack: ' + e.message);
+    return false;
+  }
   bkStatus('✓ Restored ' + applied + ' entries from ' + when + '. Dashboard refreshed!');
   if (typeof playerProfile !== 'undefined' && playerProfile.refreshXP) { try { playerProfile.refreshXP(); } catch (e) {} }
   buildDashboard();

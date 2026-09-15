@@ -1,11 +1,13 @@
 // JVDesignStudio Service Worker v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
-const CACHE='jvds-v21';
+// v22 (A256): precache jvds-store.js (backpack + progress) and refresh nav.js (profile chip reads jvds_profile)
+const CACHE='jvds-v22';
 const CORE=[
   '/',
   '/offline.html',
   '/manifest.json',
   '/style-shared.css',
   '/nav.js',
+  '/jvds-store.js',
   '/style-mascots.css',
   '/ember-guide.css',
   '/ember-guide.js',
