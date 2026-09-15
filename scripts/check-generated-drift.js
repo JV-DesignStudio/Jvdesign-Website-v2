@@ -163,6 +163,16 @@ try{
       console.error(`\n✗ tools orphans ${bad.length} missing noindex/canonical: ${bad.join(', ')}`);
       process.exit(1);
     } else console.log(`✓ tools orphans: ${orphans.length} all noindex+canonical (${orphans.slice(0,3).join(', ')}...)`);
+    // A201: one robots meta per page. A second "index, follow" after "noindex" sends
+    // crawlers contradictory directives, and the orphan regex above still passes it.
+    const multi = all.filter(f=>{
+      const html = fs.readFileSync(path.join(toolsDir,f),'utf8');
+      return (html.match(/<meta\s+name=["']robots["']/gi)||[]).length > 1;
+    });
+    if(multi.length){
+      console.error(`\n✗ tools with more than one robots meta: ${multi.join(', ')} - keep a single directive`);
+      process.exit(1);
+    } else console.log(`✓ tools robots meta: ${all.length} pages, at most one each`);
   }catch(e){ console.log('  [WARN] tools orphan check skipped:', e.message); }
 }catch(e){ if(e.code) console.error(e); else console.log('  [WARN] drift gate skipped:', e.message); }
 
