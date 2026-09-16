@@ -1,7 +1,7 @@
 // JVDesignStudio Service Worker v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
 // v22 (A256): precache jvds-store.js (backpack + progress) and refresh nav.js (profile chip reads jvds_profile)
-// v23 (A257): precache assets/css/tokens.css, which style-shared.css now imports
-const CACHE='jvds-v23';
+// v24 (A68-A76): precache new offline-first tools - migrate, gallery, collab, accessibility, challenges, backup, subscription, localize
+const CACHE='jvds-v24';
 const CORE=[
   '/',
   '/offline.html',
@@ -28,7 +28,15 @@ const CORE=[
   '/style-tool-level-designer.css',
   '/assets/mascots/ember-hero.webp',
   '/assets/mascots/ember-badge.webp',
-  '/assets/mascots/lumo-badge.webp'
+  '/assets/mascots/lumo-badge.webp',
+  '/tools/storage-migrate.html',
+  '/tools/gallery.html',
+  '/tools/collab.html',
+  '/tools/accessibility.html',
+  '/tools/challenges.html',
+  '/tools/backup-restore.html',
+  '/tools/subscription.html',
+  '/tools/localize.html'
 ];
 
 self.addEventListener('install',e=>{

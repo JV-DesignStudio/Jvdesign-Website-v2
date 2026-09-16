@@ -2153,6 +2153,23 @@ window.JVDS_CONTENT = {
       "url": "/workshops/roblox-pirate-workshop.html"
     },
     {
+      "id": "roblox-corruption-obby-workshop",
+      "title": "CORRUPTED! Build a Neon Chase Obby in Roblox Studio",
+      "desc": "Build a harder Roblox Studio jumping puzzle where a neon simulation fails behind you. Platforms delete themselves, corruption chases the player, and getting caught triggers a glitch effect. Ages 8+.",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "puzzle",
+        "obby"
+      ],
+      "steps": 0,
+      "themeColor": "#00f5ff",
+      "cover": "og/learn.png",
+      "url": "/workshops/roblox-corruption-obby-workshop.html"
+    },
+    {
       "id": "roblox-obby-workshop",
       "title": "Don't Fall! Build an Obby in Roblox Studio",
       "desc": "Build your first Roblox obstacle course in Roblox Studio! A free parent & child workshop. Moving platforms, lava floors and a finish checkpoint. No experience needed.",
@@ -2817,6 +2834,104 @@ window.JVDS_CONTENT = {
   ],
   "games": [
     {
+      "id": "pixel-pet-arena",
+      "title": "Pixel Pet Arena",
+      "tag": "Drawing Battle",
+      "emoji": "🐾",
+      "category": "Action",
+      "cover": "",
+      "bg": "linear-gradient(135deg,#073b4c,#ef476f)",
+      "desc": "Paint a pixel pet, train its colour stats, choose abilities, and battle through a friendly arena league.",
+      "kids": false,
+      "age": null,
+      "character": null,
+      "url": "/games/pixel-pet-arena.html"
+    },
+    {
+      "id": "stardust-ruins",
+      "title": "Stardust Ruins",
+      "tag": "Puzzle Adventure",
+      "emoji": "🏛️",
+      "category": "Puzzle",
+      "cover": "",
+      "bg": "linear-gradient(135deg,#26335f,#d6b46c)",
+      "desc": "Explore starlit rooms, collect keys and relics, dodge hazards, and recover treasure before the lantern fades.",
+      "kids": false,
+      "age": null,
+      "character": "Stardust",
+      "url": "/games/stardust-ruins.html"
+    },
+    {
+      "id": "beat-builder-battle",
+      "title": "Beat Builder Battle",
+      "tag": "Rhythm Creation",
+      "emoji": "🥁",
+      "category": "Action",
+      "cover": "",
+      "bg": "linear-gradient(135deg,#4a3472,#bc477f)",
+      "desc": "Compose beat patterns, battle rhythm rivals, hit timing goals, unlock sounds, and save your best Arcade score.",
+      "kids": false,
+      "age": null,
+      "character": null,
+      "url": "/games/beat-builder-battle.html"
+    },
+    {
+      "id": "creature-rescue-clinic",
+      "title": "Creature Rescue Clinic",
+      "tag": "Cozy Management",
+      "emoji": "🏥",
+      "category": "Chill",
+      "cover": "",
+      "bg": "linear-gradient(135deg,#2f6f5e,#4fb286)",
+      "desc": "Run a cozy creature clinic by reading symptoms, choosing treatments, upgrading rooms, and keeping patients calm.",
+      "kids": false,
+      "age": null,
+      "character": null,
+      "url": "/games/creature-rescue-clinic.html"
+    },
+    {
+      "id": "echo-casebook",
+      "title": "Echo's Casebook",
+      "tag": "Mystery Story",
+      "emoji": "🔎",
+      "category": "Puzzle",
+      "cover": "",
+      "bg": "linear-gradient(135deg,#3d285f,#bc4749)",
+      "desc": "Solve cosy mystery chapters by collecting clues, interviewing suspects, and making careful deductions with Echo.",
+      "kids": false,
+      "age": null,
+      "character": "Echo",
+      "url": "/games/echo-casebook.html"
+    },
+    {
+      "id": "marble-run-lab",
+      "title": "Marble Run Lab",
+      "tag": "Physics Toy",
+      "emoji": "🧪",
+      "category": "Puzzle",
+      "cover": "",
+      "bg": "linear-gradient(135deg,#203864,#70a3a7)",
+      "desc": "Build marble-run courses with ramps, bumpers, boosts and collectors, then launch and tune for three-star challenge scores.",
+      "kids": false,
+      "age": null,
+      "character": null,
+      "url": "/games/marble-run-lab.html"
+    },
+    {
+      "id": "backpack-quest",
+      "title": "Backpack Quest",
+      "tag": "Tiny Roguelite",
+      "emoji": "🎒",
+      "category": "Strategy",
+      "cover": "",
+      "bg": "linear-gradient(135deg,#283618,#dda15e)",
+      "desc": "Choose map nodes, fight room enemies, pack loot, trigger relic synergies, and chase a better six-room run score.",
+      "kids": false,
+      "age": null,
+      "character": null,
+      "url": "/games/backpack-quest.html"
+    },
+    {
       "id": "mini-theme-park-builder",
       "title": "Mini Theme Park Builder",
       "tag": "Creative Sim",
@@ -3281,6 +3396,15 @@ window.JVDS_CONTENT = {
   ],
   "tools": [
     {
+      "id": "accessibility",
+      "title": "Character-Driven Accessibility",
+      "desc": "Accessibility settings with character voices. Screen reader, reduced motion, high contrast, font size - offline-first.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/accessibility.html"
+    },
+    {
       "id": "arcade-game-maker",
       "title": "Arcade Game Maker",
       "desc": "Build your own arcade game with blueprints, pixel art, level design and sound. No installs.",
@@ -3301,6 +3425,17 @@ window.JVDS_CONTENT = {
       ],
       "comingSoon": false,
       "url": "/tools/asset-packs.html"
+    },
+    {
+      "id": "backup-restore",
+      "title": "Tool Backup & Restore",
+      "desc": "Backup Pixel Studio, Sound Studio and World Builder to ZIP, PNG or JSON. Offline-first restore, character-driven.",
+      "category": "Make Art",
+      "tags": [
+        "Pixel Art"
+      ],
+      "comingSoon": false,
+      "url": "/tools/backup-restore.html"
     },
     {
       "id": "bitmap-font-maker",
@@ -3334,6 +3469,17 @@ window.JVDS_CONTENT = {
       "url": "/tools/certificate.html"
     },
     {
+      "id": "challenges",
+      "title": "Cross-Tool Challenges",
+      "desc": "Weekly challenges combining Pixel Studio, Audio Studio and games. Offline-first, XP and badges, Pip + Echo approved.",
+      "category": "Make Art",
+      "tags": [
+        "Pixel Art"
+      ],
+      "comingSoon": false,
+      "url": "/tools/challenges.html"
+    },
+    {
       "id": "code-snippet-generator",
       "title": "Code Snippet Generator",
       "desc": "Generate common code patterns for GDScript, C#, JavaScript and Python. Game loops, input handling, collision detection and more.",
@@ -3341,6 +3487,17 @@ window.JVDS_CONTENT = {
       "tags": [],
       "comingSoon": false,
       "url": "/tools/code-snippet-generator.html"
+    },
+    {
+      "id": "collab",
+      "title": "Live Collaboration (Offline-First)",
+      "desc": "Offline-first collaboration for Pixel Studio & Music Maker. Character avatars, sync-later queue, no account required.",
+      "category": "Make Art",
+      "tags": [
+        "Pixel Art"
+      ],
+      "comingSoon": false,
+      "url": "/tools/collab.html"
     },
     {
       "id": "colour-palette",
@@ -3386,6 +3543,17 @@ window.JVDS_CONTENT = {
       "tags": [],
       "comingSoon": false,
       "url": "/tools/error-guide.html"
+    },
+    {
+      "id": "gallery",
+      "title": "Tool Showcase Gallery",
+      "desc": "Showcase your Pixel Studio, Audio Studio and World Builder creations. Offline-first gallery, character-organized, browser-only.",
+      "category": "Make Art",
+      "tags": [
+        "Pixel Art"
+      ],
+      "comingSoon": false,
+      "url": "/tools/gallery.html"
     },
     {
       "id": "gamemaker-cheatsheet",
@@ -3478,6 +3646,15 @@ window.JVDS_CONTENT = {
       "tags": [],
       "comingSoon": false,
       "url": "/tools/level-designer.html"
+    },
+    {
+      "id": "localize",
+      "title": "Localized Content Packs",
+      "desc": "Spanish, French and more - offline-first localization. Character-driven translations, works without install.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/localize.html"
     },
     {
       "id": "minecraft-cheatsheet",
@@ -3590,6 +3767,17 @@ window.JVDS_CONTENT = {
       "url": "/tools/sprite-animator.html"
     },
     {
+      "id": "storage-migrate",
+      "title": "Storage Migrate - LocalStorage to IndexedDB",
+      "desc": "Migrate your JVDS tool saves from localStorage to IndexedDB. Offline-first, character-guided, preserves Pixel Studio, Sound Studio and World Builder data on school computers.",
+      "category": "Make Art",
+      "tags": [
+        "Pixel Art"
+      ],
+      "comingSoon": false,
+      "url": "/tools/storage-migrate.html"
+    },
+    {
       "id": "store-page-builder",
       "title": "Launch Studio",
       "desc": "Create game logos, promo screenshots, store copy and release messaging from one launch workspace.",
@@ -3615,6 +3803,15 @@ window.JVDS_CONTENT = {
       "tags": [],
       "comingSoon": false,
       "url": "/tools/story-player.html"
+    },
+    {
+      "id": "subscription",
+      "title": "Monthly Workshops - Subscription (Offline)",
+      "desc": "Monthly workshops offline-first. No account required - subscription status tracked locally, unlocks with Stardust's Golden Key.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/subscription.html"
     },
     {
       "id": "trading-card-designer",
@@ -4002,10 +4199,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-15T13:22:32.341Z",
-    "workshops": 184,
-    "games": 33,
-    "tools": 40,
+    "generated": "2026-09-16T07:24:23.773Z",
+    "workshops": 185,
+    "games": 40,
+    "tools": 48,
     "books": 5,
     "engines": {
       "Blender": 9,
@@ -4022,16 +4219,16 @@ window.JVDS_CONTENT = {
       "OpenRCT2": 3,
       "PICO-8": 6,
       "Python": 9,
-      "Roblox": 10,
+      "Roblox": 11,
       "Scratch": 7,
       "TinkerCAD": 9,
       "Unity": 9,
       "Unreal": 10
     },
     "toolCategories": {
-      "Make Art": 9,
+      "General": 18,
+      "Make Art": 14,
       "Build & Ship": 1,
-      "General": 15,
       "Make Audio": 9,
       "Plan & Write": 5,
       "Build Worlds": 1

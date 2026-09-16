@@ -12,7 +12,7 @@ const hits = [];
 for (const line of diff.split('\n')) {
   if (line.startsWith('+++ ')) { file = line.replace(/^\+\+\+ b\//, ''); continue; }
   if (!PUBLIC.test(file) || SKIP.test(file)) continue;
-  if (line.startsWith('+') && /[—–]/.test(line)) hits.push(`${file}: ${line.slice(1).trim().slice(0, 120)}`);
+  if (line.startsWith('+') && /[--]/.test(line)) hits.push(`${file}: ${line.slice(1).trim().slice(0, 120)}`);
 }
 if (hits.length) {
   console.log(`\n  Blocked: ${hits.length} new line(s) with em/en dashes (use a comma, colon or " - " instead):\n`);
