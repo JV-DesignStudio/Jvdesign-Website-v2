@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/ai-proofread.js — local CLI proofreader for dev log and newsletter drafts
+// scripts/ai-proofread.js - local CLI proofreader for dev log and newsletter drafts
 // Pipes a markdown file into a local Ollama instance and prints concise editorial notes.
 // Does NOT rewrite content. Flags structure, tone, and clarity only.
 //
@@ -24,7 +24,7 @@ const MAX_CHARS = 6000;
 // Strict non-rewrite system prompt
 const SYSTEM_PROMPT = `You are an editorial proofreader for JVDesignStudio, a browser-based creative studio for young people (ages 8-16) and their parents and teachers.
 
-RULES — follow these exactly:
+RULES - follow these exactly:
 1. Do NOT rewrite or suggest alternative wording. Flag issues only.
 2. Do NOT comment on the content decisions, feature choices, or priorities.
 3. Output a numbered list of issues only. Maximum 10 items.
