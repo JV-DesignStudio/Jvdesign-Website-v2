@@ -43,6 +43,9 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      title:document.title,
      canvasSize:canvas.width+'x'+canvas.height,
      drew,
+     particleCount:eval('particles.length'),
+     cfg:eval('JSON.stringify({rate:P.rate,angle:P.angle,sizeStart:P.sizeStart,alphaStart:P.alphaStart,alphaEnd:P.alphaEnd,shape:P.shape,texId:P.texId})'),
+     samplePixels:(()=>{ const d=ctx.getImageData(0,0,canvas.width,canvas.height).data; let n=0; for(let i=0;i<d.length;i+=4){ if(d[i]>10 || d[i+1]>10 || d[i+2]>10) n++; } return n; })(),
      presetCount:document.querySelectorAll('.preset-btn').length,
      hasAngle:!!document.getElementById('pAngle') && document.getElementById('vAngle').textContent==='180',
      rateChanged:window.P ? window.P.rate===75 : true,
@@ -66,6 +69,7 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  await browser.close(); server.close();
  if(failures){console.log(`\n${failures} FAILURE(S)`);process.exit(1);} console.log('\nALL PARTICLE DESIGNER CHECKS PASSED');
 })().catch(e=>{console.error(e);server.close();process.exit(1);});
+
 
 
 

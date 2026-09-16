@@ -60,16 +60,16 @@ node F:/Website/studio-workspace/board-keeper.cjs --request-review A46
 # -> approve RE-RUNS bot live (stored pass not trusted - cheat-proof)
 # NEVER hand-edit tasks.json status to human_review/done - always use --request-review
 
-# 4. Rebuild the visible board
+# 5. Rebuild the visible board
 node F:/Website/studio-workspace/board-keeper.cjs --sync
 # rewrites SHIPPED/HUMAN_REVIEW/IN_PROGRESS/BACKLOG + lastUpdated
 
-# 5. Human review , only you can approve (👁 lane)
+# 6. Human review , only you can approve (👁 lane)
 node F:/Website/studio-workspace/board-keeper.cjs --approve A46 --agent "josh"
 # -> Approved A46 -> done by josh (Human Review -> Shipped)
 # To send back: node F:/Website/studio-workspace/board-keeper.cjs --reject A46 --status in_progress
 
-# 6. To abandon
+# 7. To abandon
 node F:/Website/studio-workspace/board-keeper.cjs --release A46 --status backlog
 ```
 
