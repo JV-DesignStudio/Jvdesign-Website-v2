@@ -15,6 +15,19 @@ if (found.length) {
   console.error('Private planning must be moved outside the public site: ' + found.join(', '));
   process.exit(1);
 }
+// Queue drafts must never be tracked - only .gitkeep is allowed in social-posts/queue/
+const queueDir = path.join(root, 'social-posts/queue');
+if (fs.existsSync(queueDir)) {
+  try {
+    const {execFileSync} = require('child_process');
+    const tracked = execFileSync('git', ['-C', root, 'ls-files', 'social-posts/queue/'], {encoding:'utf8'}).trim();
+    const leakedDrafts = tracked ? tracked.split('\n').filter(f => f && !f.endsWith('.gitkeep')) : [];
+    if (leakedDrafts.length) {
+      console.error('Queue drafts must not be committed: git is tracking ' + leakedDrafts.length + ' file(s) in social-posts/queue/. Ensure social-posts/queue/* is in .gitignore and remove with git rm --cached.');
+      process.exit(1);
+    }
+  } catch(e) {}
+}
 // Extended leak scan - tokens, ntfy, env files (depth 8, json/txt/yml scanned, strict .env)
 const leakPatterns = [
   /github_pat_/i,
