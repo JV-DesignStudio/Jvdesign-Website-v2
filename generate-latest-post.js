@@ -18,8 +18,9 @@ const CANDIDATES = [path.join(ROOT, 'devlog-data.js'), path.join(ROOT, 'pages', 
 const OUT = path.join(ROOT, 'latest-post.json');
 
 function pick(src, field) {
-  let m = src.match(new RegExp(field + "\\s*:\\s*'((?:[^'\\\\]|\\\\.)*)'"));
-  if (!m) m = src.match(new RegExp(field + '\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"'));
+  // Handles both JS-style (key: 'val') and JSON-style ("key": "val")
+  let m = src.match(new RegExp(field + '["\']?\\s*:\\s*\'((?:[^\'\\\\]|\\\\.)*)\'' ));
+  if (!m) m = src.match(new RegExp(field + '["\']?\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"'));
   return m ? m[1].replace(/\\(['"])/g, '$1').replace(/\\\\/g, '\\') : null;
 }
 
@@ -44,7 +45,8 @@ const idx = srcText.indexOf('const POSTS');
 if (idx < 0) { console.error('✗ generate-latest-post: no POSTS array in ' + SRC); process.exit(1); }
 
 // collect all POSTS entries and pick newest by date, then by highest id as tiebreaker (avoid overflow)
-const re = /\{\s*id:\s*(\d+)[\s\S]*?date:\s*'(.*?)'[\s\S]*?title:\s*'(.*?)'/g;
+// Matches both unquoted JS-style (id: 94) and double-quoted JSON-style ("id": 336)
+const re = /\{\s*"?id"?\s*:\s*(\d+)/g;
 let best = null;
 let match;
 let count = 0;
@@ -54,8 +56,8 @@ while ((match = re.exec(srcText)) !== null) {
   const blockStart = match.index;
   const block = srcText.slice(blockStart, blockStart + 5000);
   const emoji = pick(block, 'emoji') || '';
-  const date = pick(block, 'date') || match[2] || '';
-  const title = pick(block, 'title') || match[3] || '';
+  const date = pick(block, 'date') || '';
+  const title = pick(block, 'title') || '';
   const excerpt = pick(block, 'excerpt') || '';
   const ts = parseDate(date);
   const better = !best || ts > best.ts || (ts === best.ts && id > best.id);

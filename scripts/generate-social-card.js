@@ -18,6 +18,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'devlog-data.js');
@@ -68,24 +69,25 @@ function cleanText(v) { return String(v || '').replace(/[\u2013\u2014]/g, ' - ')
 function escXml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function parsePosts(srcText) {
-  const re = /\{\s*"?id"?:\s*(\d+)[\s\S]*?"?date"?:\s*["']([^"']+)["'][\s\S]*?"?tag"?:\s*["']([^"']+)["'][\s\S]*?"?emoji"?:\s*["']([^"']+)["'][\s\S]*?"?title"?:\s*["']([^"']+)["'][\s\S]*?"?excerpt"?:\s*(?:"([^"]*)"|'([^']*)')/g;
-  const out = [];
-  let m;
-  while ((m = re.exec(srcText)) !== null) {
-    const id = String(m[1]);
-    const date = m[2];
-    const tag = m[3];
-    const emoji = m[4];
-    const title = m[5];
-    const excerpt = m[6] != null ? m[6] : (m[7] || '');
-    const blockStart = m.index;
-    const block = srcText.slice(blockStart, blockStart + 8000);
-    let content = '';
-    const cm = block.match(/"?content"?:\s*(?:"([\s\S]*?)"|'([\s\S]*?)'|`([\s\S]*?)`)\s*\n\s*\}/);
-    if (cm) content = (cm[1] || cm[2] || cm[3] || '').trim();
-    out.push({ id, date, tag, emoji, title: cleanText(title), excerpt: cleanText(excerpt.trim()), content: cleanText(content) });
+  const sandbox = { console: { log: () => {}, warn: () => {} }, window: {} };
+  vm.createContext(sandbox);
+  let raw;
+  try {
+    raw = vm.runInContext(`(function(){${srcText};return POSTS;})()`, sandbox, { timeout: 5000 });
+  } catch (e) {
+    console.error('Failed to parse devlog-data.js:', e.message);
+    return [];
   }
-  return out;
+  if (!raw) raw = sandbox.POSTS || sandbox.posts || [];
+  return raw.map(p => ({
+    id: String(p.id),
+    date: p.date || '',
+    tag: p.tag || '',
+    emoji: p.emoji || '',
+    title: cleanText(p.title || ''),
+    excerpt: cleanText((p.excerpt || '').trim()),
+    content: cleanText(p.content || ''),
+  }));
 }
 
 function wrapText(text, maxChars) {
