@@ -7,15 +7,17 @@ const { execSync } = require('child_process');
 const diff = execSync('git diff --cached -U0 --diff-filter=ACM', { encoding: 'utf8', maxBuffer: 1 << 28 });
 const PUBLIC = /\.(html|md|json|js|css|txt|xml)$/i;
 const SKIP = /^(node_modules|tests|scripts|tmp|social-posts)\//;
+// em dash (U+2014) and en dash (U+2013) via char code to avoid literal chars in source
+const EM_EN = new RegExp('[' + String.fromCharCode(8212, 8211) + ']');
 let file = '';
 const hits = [];
 for (const line of diff.split('\n')) {
   if (line.startsWith('+++ ')) { file = line.replace(/^\+\+\+ b\//, ''); continue; }
   if (!PUBLIC.test(file) || SKIP.test(file)) continue;
-  if (line.startsWith('+') && /[—–]/.test(line)) hits.push(`${file}: ${line.slice(1).trim().slice(0, 120)}`);
+  if (line.startsWith('+') && EM_EN.test(line)) hits.push(`${file}: ${line.slice(1).trim().slice(0, 120)}`);
 }
 if (hits.length) {
-  console.log(`\n  Blocked: ${hits.length} new line(s) with em/en dashes (use a comma, colon or " - " instead):\n`);
+  console.log('\n  Blocked: ' + hits.length + ' new line(s) with em/en dashes (use a comma, colon or " - " instead):\n');
   hits.slice(0, 20).forEach(h => console.log('    ' + h));
   console.log('\n  Nothing was changed for you. Edit the lines, re-stage, commit again.');
   console.log('  Bypass once: git commit --no-verify\n');
