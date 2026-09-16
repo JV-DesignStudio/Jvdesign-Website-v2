@@ -157,6 +157,18 @@
   <span style="font-size:.62rem;color:var(--muted);">Progress: <strong id="missionProgress">0/4</strong></span>
   <button onclick="document.getElementById('mission-banner').style.display='none';localStorage.setItem('jvds_mission_dismiss','1')" style="background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:999px;padding:4px 10px;font-size:.62rem;cursor:pointer;">Dismiss</button>
 </section>
+<!-- First Mission bar (A258): one Ember coaching line, 3 numbered steps -->
+<section id="first-mission-bar" style="display:none;align-items:center;gap:10px;padding:9px 14px;background:linear-gradient(135deg,rgba(242,99,122,.16),rgba(174,34,57,.06));border-bottom:1px solid rgba(242,99,122,.22);flex-wrap:wrap;">
+  <img src="/assets/mascots/ember-badge.webp" alt="Ember" width="26" height="26" style="border-radius:50%;flex-shrink:0;">
+  <div style="flex:1;min-width:160px;">
+    <span id="fm-heading" style="font-size:.72rem;font-weight:800;color:#F2637A;">Step 1: Draw a pixel on your character</span>
+  </div>
+  <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;">
+    <span id="fm-dot-1" style="padding:3px 9px;border-radius:999px;font-size:.62rem;font-weight:700;background:rgba(242,99,122,.25);border:1px solid rgba(242,99,122,.5);color:#F2637A;">1 Draw</span>
+    <span id="fm-dot-2" style="padding:3px 9px;border-radius:999px;font-size:.62rem;font-weight:700;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--muted);">2 Save</span>
+    <span id="fm-dot-3" style="padding:3px 9px;border-radius:999px;font-size:.62rem;font-weight:700;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--muted);">3 Export</span>
+  </div>
+</section>
 <!-- My Creations keepsake (A78) - local gallery, no account -->
 <section id="keepsake-strip" aria-label="My Creations keepsake" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(124,58,237,.07);border-bottom:1px solid var(--border2);flex-wrap:wrap;">
   <span style="font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">📦 My Creations</span>
@@ -619,10 +631,14 @@ function init(){
   buildUI();
   setCanvasSize(32,32,false);
   setupEvents();
-  setupAutosave();
-  // Legacy Easy Pixel Art share link + storage migration (keeps #art= bookmarks working after unify)
-  try{ importEasyArtFromHash(); }catch(e){}
-  try{ migrateEasyPixelStorage(); }catch(e){}
+  if(window._firstMission){
+    applyTemplate('character'); // skip restore/start modals in first-mission flow
+  } else {
+    setupAutosave();
+    // Legacy Easy Pixel Art share link + storage migration (keeps #art= bookmarks working after unify)
+    try{ importEasyArtFromHash(); }catch(e){}
+    try{ migrateEasyPixelStorage(); }catch(e){}
+  }
   if(matchMedia('(display-mode: standalone)').matches||navigator.standalone){
     document.querySelectorAll('.js-install').forEach(b=>b.hidden=true);
   }
@@ -1882,9 +1898,14 @@ document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>reque
       localStorage.setItem('jvds_mission_dismiss','1'); // keep banner hidden in classroom unless hash
     }
     if(location.hash==='#first-mission' || params.has('first-mission')){
-      var mb=document.getElementById('mission-banner');
-      if(mb) mb.style.display='flex';
-      try{ localStorage.removeItem('jvds_mission_dismiss'); }catch(e){}
+      window._firstMission = true;
+      try{ localStorage.setItem('jvds_pixel_seen','1'); }catch(e){} // skip start modal so template auto-applies
+      try{ localStorage.setItem('ember-guide-pixel-studio-seen','1'); }catch(e){} // suppress EmberGuide auto-show
+      ['keepsake-strip','pip-quest-strip','mission-banner'].forEach(function(id){
+        var el=document.getElementById(id); if(el) el.style.display='none';
+      });
+      var cb=document.querySelector('.classic-bridge'); if(cb) cb.style.display='none';
+      var fm=document.getElementById('first-mission-bar'); if(fm) fm.style.display='flex';
     } else {
       // show mission banner once per user until dismissed
       try{ if(localStorage.getItem('jvds_mission_dismiss')!=='1'){ var mb2=document.getElementById('mission-banner'); if(mb2) mb2.style.display='flex'; } }catch(e){}
@@ -1980,15 +2001,30 @@ document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>reque
   let tipIdx=0;
   window.missionTick = function(kind){
     var el=document.getElementById('missionProgress');
-    if(!el) return;
-    var cur=el.textContent; // 0/4
-    var n=parseInt((cur.split('/')[0]||'0'),10);
-    if(kind==='draw' && n<1) n=1;
-    if(kind==='save' && n<2) n=Math.max(n,2);
-    if(kind==='export' && n<4) n=4;
-    // simple tick on any manual action
-    if(n<4 && kind!=='export') n=Math.min(3, n+1);
-    el.textContent=n+'/4';
+    if(el){
+      var cur=el.textContent; // 0/4
+      var n=parseInt((cur.split('/')[0]||'0'),10);
+      if(kind==='draw' && n<1) n=1;
+      if(kind==='save' && n<2) n=Math.max(n,2);
+      if(kind==='export' && n<4) n=4;
+      if(n<4 && kind!=='export') n=Math.min(3,n+1);
+      el.textContent=n+'/4';
+    }
+    if(!window._firstMission) return;
+    var fmStep=kind==='draw'?1:kind==='save'?2:kind==='export'?3:0;
+    if(!fmStep) return;
+    var nextHeads=['','Step 2: Save your work','Step 3: Export as PNG','Done! Now play with your character'];
+    var doneLabels=['','✓ Drawn','✓ Saved','✓ Exported'];
+    var h=document.getElementById('fm-heading');
+    if(h) h.textContent=nextHeads[fmStep]||nextHeads[3];
+    for(var s=1;s<=fmStep;s++){
+      var dot=document.getElementById('fm-dot-'+s);
+      if(!dot) continue;
+      dot.textContent=doneLabels[s];
+      dot.style.background='rgba(46,181,165,.2)';
+      dot.style.borderColor='rgba(46,181,165,.5)';
+      dot.style.color='#4FD1C1';
+    }
   };
   window.nextActionsShow = function(){
     var bar=document.getElementById('next-actions');
