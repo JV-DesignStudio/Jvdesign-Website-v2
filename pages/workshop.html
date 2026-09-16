@@ -756,7 +756,8 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
 </section>
 <div class="ws-filter-bar" id="filterBar">
     <span class="ws-filter-label">Show me</span>
-    <button class="ws-filter-btn active" data-format="all">All Workshops</button>
+    <button class="ws-filter-btn active" data-format="start">⭐ Start Here</button>
+    <button class="ws-filter-btn" data-format="all">More workshops</button>
     <div class="ws-filter-sep"></div>
     <button class="ws-filter-btn" data-format="builders">🎮 Interactive Builders</button>
     <button class="ws-filter-btn" data-format="courses">📚 Full Courses</button>
@@ -770,7 +771,7 @@ a.article-card:focus-visible{outline:3px solid var(--teal-dk);outline-offset:3px
     <button class="ws-age-btn" data-age-filter="9+" aria-pressed="false">Ages 9-12</button>
     <button class="ws-age-btn" data-age-filter="13+" aria-pressed="false">Ages 13+</button>
 </div>
-<div class="ws-filter-result" id="filterResult" aria-live="polite">Showing every workshop route.</div>
+<div class="ws-filter-result" id="filterResult" aria-live="polite">Showing the clearest starter routes first. Use More workshops for the full shelf.</div>
 <div class="ws-no-results" id="workshopNoResults">No workshops match that yet. Try a broader word like game, Unreal, Scratch, racing, 3D, or beginner.</div>
 
 
@@ -2984,7 +2985,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
         var filterBar = document.getElementById('filterBar');
         if (!filterBar) return;
 
-        var currentFormat = 'all';
+        var currentFormat = 'start';
         var currentAge = 'all';
         var currentQuery = '';
         var tool = document.getElementById('workshopTool');
@@ -2998,6 +2999,20 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
         var search = document.getElementById('workshopSearch');
         var clear = document.getElementById('workshopSearchClear');
         var noResults = document.getElementById('workshopNoResults');
+        var START_SECTIONS = {
+            'scratch': true,
+            'web': true,
+            'game-builders': true,
+            '3d-builders': true,
+            'roblox': true,
+            'godot': true
+        };
+
+        function isStartSection(sec) {
+            if (!sec || !sec.dataset) return true;
+            if (!sec.dataset.format) return true;
+            return !!START_SECTIONS[sec.id];
+        }
 
         function readableSection(card) {
             var sec = card.closest('.ws-section, .courses-section, .behind-section');
@@ -3087,7 +3102,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
             // Filter sections by format
             sections.forEach(function(sec) {
                 if (sec === filterBar) return;
-                if (currentFormat === 'all' || sec.dataset.format === currentFormat) {
+                if (currentFormat === 'all' || (currentFormat === 'start' ? isStartSection(sec) : sec.dataset.format === currentFormat)) {
                     sec.classList.remove('hidden');
                 } else {
                     sec.classList.add('hidden');
@@ -3097,7 +3112,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
             var visibleCount = 0;
             cards.forEach(function(card) {
                 var sec = card.closest('.ws-section, .courses-section, .behind-section');
-                var formatVisible = !sec || !sec.dataset.format || currentFormat === 'all' || sec.dataset.format === currentFormat;
+                var formatVisible = !sec || !sec.dataset.format || currentFormat === 'all' || (currentFormat === 'start' ? isStartSection(sec) : sec.dataset.format === currentFormat);
                 var toolName = tool.value.toLowerCase();
                 var toolText = (readableSection(card) + ' ' + card.textContent + ' ' + (card.getAttribute('href') || '')).toLowerCase();
                 var toolMatch = !toolName || toolText.indexOf(toolName) !== -1;
@@ -3108,7 +3123,14 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
             });
 
             allSections.forEach(function(sec) {
-                if (sec.dataset.format && currentFormat !== 'all' && sec.dataset.format !== currentFormat) return;
+                var sectionAllowed = true;
+                if (sec.dataset.format && currentFormat !== 'all') {
+                    sectionAllowed = currentFormat === 'start' ? isStartSection(sec) : sec.dataset.format === currentFormat;
+                }
+                if (!sectionAllowed) {
+                    sec.classList.add('hidden');
+                    return;
+                }
                 var sectionCards = sec.querySelectorAll('.article-card, .course-card, .ws-dl-card');
                 if (!sectionCards.length) return;
                 var anyVisible = Array.prototype.some.call(sectionCards, function(card) {
@@ -3118,7 +3140,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
             });
 
             if (result) {
-                var formatLabel = currentFormat === 'all' ? 'every route' : currentFormat.replace('-', ' ');
+                var formatLabel = currentFormat === 'start' ? 'starter routes' : (currentFormat === 'all' ? 'the full More shelf' : currentFormat.replace('-', ' '));
                 var ageLabel = currentAge === 'all' ? 'all ages' : currentAge.replace('+', '+ learners');
                 var searchLabel = currentQuery ? ' matching "' + currentQuery + '"' : '';
                 result.textContent = 'Showing ' + visibleCount + ' results from ' + formatLabel + ' for ' + ageLabel + searchLabel + '.';
@@ -3132,7 +3154,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
         experience.addEventListener('change', applyFilters);
         document.getElementById('workshopReset').addEventListener('click', function() {
             tool.value = ''; experience.value = 'all'; search.value = ''; currentQuery = '';
-            filterBar.querySelector('[data-format="all"]').click();
+            filterBar.querySelector('[data-format="start"]').click();
             filterBar.querySelector('[data-age-filter="all"]').click();
             applyFilters(); search.focus();
         });
@@ -3394,7 +3416,7 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
     var actives = document.querySelectorAll('[data-format].active, [data-age-filter].active');
     for (var i = 0; i < actives.length; i++) {
       var d = actives[i].dataset || {};
-      if ((d.format && d.format !== 'all') || (d.ageFilter && d.ageFilter !== 'all')) return true;
+      if ((d.format && d.format !== 'all' && d.format !== 'start') || (d.ageFilter && d.ageFilter !== 'all')) return true;
     }
     return false;
   }
