@@ -1,4 +1,295 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Stardust Ruins | JVDesignStudio</title><link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#26335f"><meta name="description" content="Rotate corridor tiles, collect keys, dodge hazards and escape starlit rooms."><script src="../game-system.js"></script><link rel="stylesheet" href="../game-system.css"><style>*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:#12172d;color:#fff}.wrap{max-width:1150px;margin:auto;padding:16px 12px 80px}.pill{color:#fff;background:#0006;border-radius:8px;padding:9px 12px;text-decoration:none;font-weight:900}.top{display:flex;gap:10px}.hero{border-bottom:3px solid #f2a541;margin:12px 0}.hero h1{font-size:clamp(2rem,7vw,4.2rem);margin:0}.hud,.game{display:grid;gap:10px}.hud{grid-template-columns:repeat(6,1fr)}.stat,.panel{background:#fff8eb;color:#171b30;border:1px solid #d8cba8;border-radius:8px;padding:10px}.game{grid-template-columns:1fr .8fr}.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.tile{aspect-ratio:1;border:1px solid #c7b985;border-radius:8px;background:#f4e2aa;font-size:1.4rem;font-weight:900;cursor:pointer;position:relative}.tile.wall{background:#817967;color:#fff}.tile.haz{background:#ffd7d2}.tile.exit{background:#ffe08a}.me{position:absolute;right:4px;top:4px;width:15px;height:15px;border-radius:50%;background:#315d73}.moves,.goals{display:grid;gap:8px}.moves{grid-template-columns:repeat(4,1fr);margin-top:10px}.goal{display:grid;grid-template-columns:auto 1fr;gap:8px;background:#fff;border:1px solid #d8cba8;border-radius:8px;padding:8px;color:#686a76}.goal.done{background:#eef7df;color:#171b30}button{font:inherit;font-weight:900;min-height:42px;border-radius:8px;cursor:pointer}.primary{border:0;background:#26335f;color:#fff}.secondary{border:1px solid #d8cba8;background:#fff;color:#171b30}.log{max-height:220px;overflow:auto;color:#535061}.result{display:none;background:#eef7df;border-radius:8px;padding:10px}.result.show{display:block}@media(max-width:820px){.game{grid-template-columns:1fr}.hud{grid-template-columns:repeat(3,1fr)}}@media(max-width:520px){.hud,.moves{grid-template-columns:repeat(2,1fr)}}</style></head><body><div class="wrap"><div class="top"><a class="pill" href="../arcade.html">Back to Arcade</a><a class="pill" href="../games">All games</a></div><section class="hero"><p>Corridor puzzle adventure</p><h1>Stardust Ruins</h1><p>Rotate corridor tiles so your explorer can move through connected paths. Keys open exits, hazards drain light, and each room changes the route puzzle.</p></section><section class="hud"><div class="stat"><b id="score"></b><span>Score</span></div><div class="stat"><b id="room"></b><span>Room</span></div><div class="stat"><b id="light"></b><span>Light</span></div><div class="stat"><b id="keys"></b><span>Keys</span></div><div class="stat"><b id="relics"></b><span>Relics</span></div><div class="stat"><b id="best"></b><span>Best</span></div></section><main class="game"><section class="panel"><div class="grid" id="grid"></div><div class="moves"><button class="primary" data-m="up">Up</button><button class="primary" data-m="down">Down</button><button class="primary" data-m="left">Left</button><button class="primary" data-m="right">Right</button></div><button class="secondary" id="restart">Restart</button></section><aside class="panel"><h2 id="brief"></h2><div class="goals" id="goals"></div><div class="result" id="result"></div><h2>Ruins Log</h2><div class="log" id="log"></div></aside></main></div><script>
-const GAME_ID='stardust-ruins',runKey='jvds_ruins_corridor_run',metaKey='jvds_ruins_corridor_meta',gs=new GameSystem(GAME_ID,'Stardust Ruins','stardust');const rooms=[{exit:24,key:6,relic:18,walls:[4,9,14],haz:[8,19]},{exit:20,key:2,relic:12,walls:[1,7,13],haz:[11,17]},{exit:4,key:22,relic:16,walls:[5,10,15],haz:[6,18]}];const dirs={up:[0,-1,1],right:[1,0,2],down:[0,1,4],left:[-1,0,8]};const icons=['│','─','┐','└','┘','┌'];const goals=[['relic','Find 2 relics',s=>s.relics>=2],['light','Escape with 30 light',s=>s.ended&&s.light>=30],['clear','Clear all rooms',s=>s.ended&&s.room>=rooms.length]];let meta=read(metaKey,{best:0,goals:{}}),s=read(runKey,null)||fresh();function fresh(){return{room:0,pos:0,score:0,light:85,keys:0,relics:0,ended:false,tiles:Array.from({length:25},(_,i)=>i%6),found:{},log:['Rotate corridor tiles, then move only through connected openings.']}}function read(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch(e){return f}}function save(){localStorage.setItem(runKey,JSON.stringify(s));localStorage.setItem(metaKey,JSON.stringify(meta))}function best(){try{return Math.max(meta.best,JSON.parse(localStorage.getItem('jvds_game_'+GAME_ID)||'{}').highScore||0)}catch(e){return meta.best}}function log(m){s.log.unshift(m);s.log=s.log.slice(0,10)}function cur(){return rooms[Math.min(s.room,rooms.length-1)]}function openMask(i){return [5,10,6,3,9,12][s.tiles[i]%6]}function xy(i){return{x:i%5,y:Math.floor(i/5)}}function id(x,y){return y*5+x}function scoreGoals(){goals.forEach(([id,,fn])=>{if(fn(s))meta.goals[id]=true})}
-function rot(i){if(cur().walls.includes(i)||s.ended)return;s.tiles[i]=(s.tiles[i]+1)%6;s.light=Math.max(0,s.light-1);s.score+=12;render()}function move(d){if(s.ended)return;const [dx,dy,bit]=dirs[d],p=xy(s.pos),nx=p.x+dx,ny=p.y+dy;if(nx<0||nx>4||ny<0||ny>4)return;const ni=id(nx,ny),opp={up:4,down:1,left:2,right:8}[d];if(!(openMask(s.pos)&bit)||!(openMask(ni)&opp)){log('The corridor does not connect.');return render()}if(cur().walls.includes(ni))return; s.pos=ni;s.light-=4;s.score+=40;if(cur().haz.includes(ni)){s.light-=9;log('Hazard dust drains the lantern.')}if(ni===cur().key&&!s.found[s.room+'k']){s.keys++;s.found[s.room+'k']=1;s.score+=160;log('Key found.')}if(ni===cur().relic&&!s.found[s.room+'r']){s.relics++;s.found[s.room+'r']=1;s.score+=260;log('Relic found.')}if(ni===cur().exit){if(s.keys>0){s.keys--;s.room++;s.score+=340;log('Exit opened.');if(s.room>=rooms.length)finish();else{s.pos=0;s.light+=10;s.tiles=Array.from({length:25},(_,i)=>(i+s.room)%6)}}else log('The exit needs a key.')}if(s.light<=0)finish();render()}function finish(){s.ended=true;scoreGoals();const final=s.score+s.relics*420+s.light*10+Object.keys(meta.goals).length*180;meta.best=Math.max(meta.best,final);s.score=final;save();gs.addScore(final);gs.recordGamePlay(Date.now());try{gs.saveState({best:meta.best})}catch(e){}window.jvdsCheckNewBest&&window.jvdsCheckNewBest();log('Expedition score '+final+' saved.')}function restart(){s=fresh();render()}function render(){scoreGoals();document.getElementById('score').textContent=s.score;document.getElementById('room').textContent=s.ended?'Done':(s.room+1)+'/'+rooms.length;document.getElementById('light').textContent=s.light+'%';document.getElementById('keys').textContent=s.keys;document.getElementById('relics').textContent=s.relics;document.getElementById('best').textContent=best();document.getElementById('brief').textContent=s.ended?'Ruins complete':'Room '+(s.room+1)+': rotate paths, find the key, reach the exit.';document.getElementById('grid').innerHTML=Array.from({length:25},(_,i)=>'<button class="tile '+(cur().walls.includes(i)?'wall ':cur().haz.includes(i)?'haz ':i===cur().exit?'exit ':'')+'" data-i="'+i+'">'+(cur().walls.includes(i)?'■':i===cur().key&&!s.found[s.room+'k']?'🔑':i===cur().relic&&!s.found[s.room+'r']?'⭐':i===cur().exit?'🚪':icons[s.tiles[i]%6])+(i===s.pos?'<i class="me"></i>':'')+'</button>').join('');document.getElementById('goals').innerHTML=goals.map(([id,t])=>'<div class="goal '+(meta.goals[id]?'done':'')+'"><b>'+(meta.goals[id]?'✓':'○')+'</b><span>'+t+'</span></div>').join('');document.getElementById('log').innerHTML=s.log.map(x=>'<p>'+x+'</p>').join('');document.getElementById('result').className='result'+(s.ended?' show':'');document.getElementById('result').textContent=s.ended?'Final score '+s.score+' - best '+meta.best:'';save()}document.getElementById('grid').onclick=e=>{const b=e.target.closest('[data-i]');if(b)rot(+b.dataset.i)};document.body.onclick=e=>{const b=e.target.closest('[data-m]');if(b)move(b.dataset.m)};document.getElementById('restart').onclick=restart;render();
-</script><script src="../cookie-consent.js" defer></script></body></html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Stardust Ruins | JVDesignStudio</title><link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#26335f"><meta name="description" content="Rotate corridor tiles, collect keys, dodge hazards and escape starlit rooms."><script src="../game-system.js"></script><link rel="stylesheet" href="../game-system.css"><style>*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:#12172d;color:#fff}.wrap{max-width:900px;margin:auto;padding:16px 12px 80px}.top{display:flex;gap:10px;flex-wrap:wrap}.pill{color:#fff;background:#0006;border-radius:8px;padding:9px 12px;text-decoration:none;font-weight:900}.hero{border-bottom:3px solid #f2a541;margin:12px 0}.hero h1{font-size:clamp(2rem,7vw,4.2rem);margin:0}.hud{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}.stat{background:#1a2040;border:1px solid #3a4a8a;border-radius:8px;padding:8px 10px}.stat b{display:block;font-size:1.2rem}.game-layout{display:grid;grid-template-columns:1fr 260px;gap:12px}.canvas-wrap{position:relative}.gc-wrap{display:flex;justify-content:center}#gc{display:block;border-radius:12px;background:#0e1228;cursor:pointer;touch-action:none;width:100%;max-width:460px}.side-panel{background:#1a2040;border:1px solid #3a4a8a;border-radius:10px;padding:12px}.moves{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0}.move-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}button{font:inherit;font-weight:900;min-height:42px;border-radius:8px;cursor:pointer}.bp{border:0;background:#26335f;color:#fff}.bs{border:1px solid #3a4a8a;background:#1a2040;color:#fff}.dpad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;max-width:150px;margin:10px auto}.dpad-mid{display:contents}.dpad .bp{min-height:44px;font-size:1.1rem}.goal{display:flex;gap:8px;background:#131a38;border:1px solid #3a4a8a;border-radius:8px;padding:8px;margin:4px 0;font-size:.85rem}.goal.done{background:#0d2818;border-color:#2d6a40}.log{max-height:200px;overflow:auto;font-size:.82rem;color:#8a9abf;margin-top:8px}.result-box{background:#0d2818;border:2px solid #2d6a40;border-radius:10px;padding:12px;margin:8px 0;display:none}.result-box.show{display:block}#brief{color:#c8b560;font-size:.9rem;margin:0 0 8px;font-style:italic}@media(max-width:760px){.game-layout{grid-template-columns:1fr}.hud{grid-template-columns:repeat(3,1fr)}}</style></head>
+<body><div class="wrap">
+<div class="top"><a class="pill" href="../arcade.html">Back to Arcade</a><a class="pill" href="../games">All games</a></div>
+<section class="hero"><p>Corridor puzzle adventure</p><h1>Stardust Ruins</h1><p>Click tiles to rotate them, then move through connected corridors. Grab the key before the exit - your lantern fades with every step.</p></section>
+<div class="hud">
+  <div class="stat"><b id="h-score">0</b><span>Score</span></div>
+  <div class="stat"><b id="h-room">1/6</b><span>Room</span></div>
+  <div class="stat"><b id="h-light">95</b><span>Light %</span></div>
+  <div class="stat"><b id="h-keys">0</b><span>Keys</span></div>
+  <div class="stat"><b id="h-relics">0</b><span>Relics</span></div>
+  <div class="stat"><b id="h-best">0</b><span>Best</span></div>
+</div>
+<div class="game-layout">
+  <div>
+    <div class="gc-wrap"><canvas id="gc" width="460" height="460"></canvas></div>
+    <div class="dpad" style="margin-top:10px">
+      <button class="bp" style="visibility:hidden"></button>
+      <button class="bp" data-m="up">▲</button>
+      <button class="bp" style="visibility:hidden"></button>
+      <button class="bp" data-m="left">◀</button>
+      <button class="bp" data-m="wait">·</button>
+      <button class="bp" data-m="right">▶</button>
+      <button class="bp" style="visibility:hidden"></button>
+      <button class="bp" data-m="down">▼</button>
+      <button class="bp" style="visibility:hidden"></button>
+    </div>
+    <p style="text-align:center;color:#8a9abf;font-size:.8rem;margin:4px 0">Click tile to rotate · WASD / Arrow keys · Click d-pad</p>
+  </div>
+  <div class="side-panel">
+    <p id="brief">Loading…</p>
+    <h3 style="margin:4px 0">Goals</h3>
+    <div id="goals"></div>
+    <div class="result-box" id="result-box"></div>
+    <h3 style="margin:8px 0 4px">Log</h3>
+    <div class="log" id="log"></div>
+    <button class="bs" id="btn-restart" style="width:100%;margin-top:10px">Restart</button>
+  </div>
+</div>
+</div>
+
+<script>
+const GID='stardust-ruins',RK='jvds_ruins_v2_run',MK='jvds_ruins_v2_meta';
+const GS_SYS=new GameSystem(GID,'Stardust Ruins','stardust');
+
+// 5×5 grid, cells 0-24. Tile types: 0=│ 1=─ 2=┐(E→S) 3=└(N→E) 4=┘(N→W) 5=┌(W→S)
+// openMask bits: 1=N 2=E 4=S 8=W
+const MASKS=[0b0101,0b1010,0b1001,0b0110,0b0101,0b1010]; // actual open faces per tile type (mod 6)
+// N=1,E=2,S=4,W=8
+const TILE_MASKS=[
+  0b0101, // 0: │  N+S
+  0b1010, // 1: ─  E+W
+  0b1001, // 2: ┐  N+W (top connects down-S wait -- re-derive)
+  0b0110, // 3: └  E+S
+  0b0101, // 4: ┘  N+S? no...
+  0b1010, // 5: ┌  E+W? no...
+];
+// Let's define masks correctly:
+// │ = connects N(1) and S(4) = 0b0101 = 5
+// ─ = connects E(2) and W(8) = 0b1010 = 10
+// ┐ = connects N(1) and W(8) = 0b1001 = 9
+// └ = connects E(2) and S(4) = 0b0110 = 6
+// ┘ = connects N(1) and E(2) = 0b0011 = 3
+// ┌ = connects S(4) and W(8) = 0b1100 = 12
+// Cross + = all 4 = 0b1111 = 15
+// T-shape ┬ = E+S+W = 0b1110 = 14
+const TM=[5,10,9,6,3,12]; // open mask for tile type 0-5
+
+const ROOMS=[
+  {brief:"Rotate corridor tiles to connect a path - then move through each opening.",exit:24,key:6,relic:18,walls:[4,9,14],haz:[8,19]},
+  {brief:"Scrollwork columns block the direct route. Thread through the side chambers.",exit:20,key:2,relic:12,walls:[1,7,13],haz:[11,17]},
+  {brief:"Half the floor has collapsed. Step only on what still holds.",exit:4,key:22,relic:16,walls:[5,10,15],haz:[6,18]},
+  {brief:"An ancient junction splits the path. Hazard dust pools at the centre.",exit:22,key:4,relic:10,walls:[3,8,16,21],haz:[6,12,18]},
+  {brief:"The passage narrows. Walls press in from both sides.",exit:2,key:20,relic:14,walls:[5,11,13,19],haz:[7,15,23]},
+  {brief:"The heart of the ruins. Many walls, many dangers. One path leads out.",exit:12,key:23,relic:4,walls:[1,6,17,21],haz:[3,8,15,19]},
+];
+const GOAL_DEFS=[
+  ['relic2','Find 2 relics',       s=>s.relics>=2],
+  ['light30','Escape with 30 light',s=>s.ended&&s.light>=30],
+  ['clear', 'Clear all 6 rooms',   s=>s.ended&&s.room>=ROOMS.length],
+  ['noHaz',  'Reach room 3 avoiding all hazards',s=>s.room>=2&&s.hazHit===0],
+];
+
+const CW=460,CH=460,COLS=5,ROWS=5,TW=CW/COLS,TH=CH/ROWS;
+let meta=readMeta(),s=readRun()||fresh();
+
+function readMeta(){try{return JSON.parse(localStorage.getItem(MK))??defMeta()}catch{return defMeta()}}
+function defMeta(){return{best:0,goals:{}}}
+function readRun(){try{return JSON.parse(localStorage.getItem(RK))}catch{return null}}
+function saveMeta(){localStorage.setItem(MK,JSON.stringify(meta))}
+function saveRun(){localStorage.setItem(RK,JSON.stringify(s))}
+function best(){try{return Math.max(meta.best,JSON.parse(localStorage.getItem('jvds_game_'+GID)||'{}').highScore||0)}catch{return meta.best}}
+
+function fresh(){
+  return{room:0,pos:0,score:0,light:95,keys:0,relics:0,ended:false,
+    tiles:Array.from({length:25},(_,i)=>i%6),found:{},log:['Click tiles to rotate them, then use arrow keys or the D-pad to move.'],hazHit:0};
+}
+
+function cur(){return ROOMS[Math.min(s.room,ROOMS.length-1)]}
+function openMask(i){return TM[s.tiles[i]%6]}
+function xy(i){return{x:i%COLS,y:Math.floor(i/COLS)}}
+function idx(x,y){return y*COLS+x}
+function opp(d){return{up:'down',down:'up',left:'right',right:'left'}[d]}
+const DIR={up:[0,-1,1],down:[0,1,4],left:[-1,0,8],right:[1,0,2]};
+
+function log(m){s.log.unshift(m);s.log=s.log.slice(0,12)}
+
+function rotateTile(i){
+  if(cur().walls.includes(i)||s.ended)return;
+  s.tiles[i]=(s.tiles[i]+1)%6;
+  s.light=Math.max(0,s.light-1);
+  s.score+=10;
+  checkGoals();draw();saveRun();
+  updateHud();
+}
+
+function move(dir){
+  if(s.ended||dir==='wait'||!DIR[dir])return;
+  const[dx,dy,bit]=DIR[dir],{x,y}=xy(s.pos);
+  const nx=x+dx,ny=y+dy;
+  if(nx<0||nx>=COLS||ny<0||ny>=ROWS)return;
+  const ni=idx(nx,ny);
+  if(cur().walls.includes(ni)){log('Blocked by a ruined wall.');draw();return}
+  const oppBit=DIR[opp(dir)][2];
+  if(!(openMask(s.pos)&bit)){log('The corridor does not open that way. Rotate the tile first.');draw();return}
+  if(!(openMask(ni)&oppBit)){log('The adjacent tile does not connect. Rotate it first.');draw();return}
+  s.pos=ni;s.light=Math.max(0,s.light-3);s.score+=40;
+  if(cur().haz.includes(ni)){s.light=Math.max(0,s.light-8);s.hazHit++;log('Hazard dust scorches the lantern!')}
+  if(ni===cur().key&&!s.found[s.room+'k']){s.keys++;s.found[s.room+'k']=1;s.score+=160;log('Key found! Now reach the exit.')}
+  if(ni===cur().relic&&!s.found[s.room+'r']){s.relics++;s.found[s.room+'r']=1;s.score+=260;log('Ancient relic recovered!')}
+  if(ni===cur().exit){
+    if(s.keys>0){
+      s.keys--;s.room++;s.score+=340;log('Exit unlocked! Entering next chamber…');
+      if(s.room>=ROOMS.length)finish();
+      else{s.pos=0;s.light=Math.min(100,s.light+15);s.tiles=Array.from({length:25},(_,i)=>(i+s.room*3)%6)}
+    }else log('The exit needs a key. Find it first.')
+  }
+  if(s.light<=0)finish();
+  checkGoals();draw();saveRun();updateHud();
+}
+
+function finish(){
+  s.ended=true;checkGoals();
+  const final=s.score+s.relics*420+Math.floor(s.light)*10+Object.keys(meta.goals).length*180;
+  s.score=final;meta.best=Math.max(meta.best,final);saveMeta();saveRun();
+  try{GS_SYS.addScore(final);GS_SYS.recordGamePlay(Date.now());GS_SYS.saveState({best:meta.best})}catch{}
+  window.jvdsCheckNewBest&&window.jvdsCheckNewBest();
+  log('Expedition complete. Score '+ final +' saved.');
+  document.getElementById('result-box').className='result-box show';
+  document.getElementById('result-box').textContent='Final score '+final+' · Best '+meta.best;
+}
+
+function checkGoals(){GOAL_DEFS.forEach(([id,,fn])=>{if(fn(s))meta.goals[id]=true})}
+
+// ── DRAW ──
+function draw(){
+  const canvas=document.getElementById('gc'),ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,CW,CH);
+  const room=cur();
+
+  for(let i=0;i<25;i++){
+    const{x,y}=xy(i);
+    const px=x*TW,py=y*TH;
+    const isWall=room.walls.includes(i);
+    const isHaz=room.haz.includes(i);
+    const isExit=i===room.exit;
+    const isKey=i===room.key&&!s.found[s.room+'k'];
+    const isRelic=i===room.relic&&!s.found[s.room+'r'];
+    const isMe=i===s.pos;
+
+    // Base tile
+    if(isWall){
+      ctx.fillStyle='#2a3050';
+      ctx.fillRect(px,py,TW,TH);
+      ctx.fillStyle='#1a2040';
+      ctx.fillRect(px+3,py+3,TW-6,TH-6);
+      // wall texture dots
+      ctx.fillStyle='#354070';
+      for(let r=0;r<3;r++)for(let c=0;c<3;c++)
+        ctx.fillRect(px+10+c*14,py+10+r*14,4,4);
+    }else if(isHaz){
+      ctx.fillStyle='#1a1020';
+      ctx.fillRect(px,py,TW,TH);
+      // haz glow
+      const grd=ctx.createRadialGradient(px+TW/2,py+TH/2,4,px+TW/2,py+TH/2,TW*.55);
+      grd.addColorStop(0,'rgba(180,40,40,0.35)');grd.addColorStop(1,'rgba(180,40,40,0)');
+      ctx.fillStyle=grd;ctx.fillRect(px,py,TW,TH);
+    }else{
+      ctx.fillStyle='#141830';ctx.fillRect(px,py,TW,TH);
+      // Draw corridor lines based on open directions
+      const mask=openMask(i);
+      const cx=px+TW/2,cy=py+TH/2,hw=TW*.18;
+      ctx.strokeStyle='#5060a0';ctx.lineWidth=3;ctx.lineCap='round';
+      ctx.beginPath();ctx.arc(cx,cy,hw,0,Math.PI*2);ctx.stroke();
+      if(mask&1){ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,py);ctx.stroke()} // N
+      if(mask&2){ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px+TW,cy);ctx.stroke()} // E
+      if(mask&4){ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,py+TH);ctx.stroke()} // S
+      if(mask&8){ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,cy);ctx.stroke()} // W
+    }
+
+    // Special tile overlays
+    if(isExit&&!isWall){
+      ctx.fillStyle='rgba(242,165,65,0.18)';ctx.fillRect(px,py,TW,TH);
+      ctx.font=`${TW*.45}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('🚪',px+TW/2,py+TH/2);
+    }
+    if(isKey){
+      ctx.font=`${TW*.4}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('🔑',px+TW/2,py+TH/2);
+    }
+    if(isRelic){
+      ctx.font=`${TW*.4}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('⭐',px+TW/2,py+TH/2);
+    }
+    if(isHaz&&!isMe){
+      ctx.font=`${TW*.35}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('💨',px+TW/2,py+TH/2+4);
+    }
+
+    // Lantern glow around player
+    if(isMe){
+      const lightPct=s.light/100;
+      const glowR=TW*1.8*(0.5+lightPct*.5);
+      const grd=ctx.createRadialGradient(px+TW/2,py+TH/2,4,px+TW/2,py+TH/2,glowR);
+      grd.addColorStop(0,`rgba(255,220,120,${0.25*lightPct})`);
+      grd.addColorStop(1,'rgba(255,220,120,0)');
+      ctx.fillStyle=grd;ctx.fillRect(px-glowR,py-glowR,glowR*2+TW,glowR*2+TH);
+      // Explorer circle
+      ctx.shadowBlur=12;ctx.shadowColor='#f2a541';
+      ctx.fillStyle='#f2a541';ctx.beginPath();ctx.arc(px+TW/2,py+TH/2,TW*.22,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.fillStyle='#fff';ctx.font=`bold ${TW*.22}px Inter,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('☀',px+TW/2,py+TH/2+1);
+    }
+
+    // Grid lines
+    ctx.strokeStyle='rgba(58,74,138,0.4)';ctx.lineWidth=1;
+    ctx.strokeRect(px,py,TW,TH);
+  }
+
+  // Dim overlay based on light level
+  if(s.light<50){
+    ctx.fillStyle=`rgba(0,0,10,${(50-s.light)/120})`;
+    ctx.fillRect(0,0,CW,CH);
+  }
+
+  // Ended overlay
+  if(s.ended){
+    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,CW,CH);
+    ctx.fillStyle='#f2a541';ctx.font='bold 28px Inter,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(s.room>=ROOMS.length?'Ruins Cleared!':'Lantern Extinguished',CW/2,CH/2);
+  }
+}
+
+function updateHud(){
+  document.getElementById('h-score').textContent=s.score;
+  document.getElementById('h-room').textContent=s.ended?'Done':(s.room+1)+'/'+ROOMS.length;
+  document.getElementById('h-light').textContent=s.light;
+  document.getElementById('h-keys').textContent=s.keys;
+  document.getElementById('h-relics').textContent=s.relics;
+  document.getElementById('h-best').textContent=best();
+  document.getElementById('brief').textContent=s.ended?(s.room>=ROOMS.length?'All chambers explored!':'The lantern failed.'):cur().brief;
+  document.getElementById('goals').innerHTML=GOAL_DEFS.map(([id,t])=>
+    `<div class="goal ${meta.goals[id]?'done':''}"><b>${meta.goals[id]?'✓':'○'}</b><span>${t}</span></div>`).join('');
+  document.getElementById('log').innerHTML=s.log.map(x=>`<p style="margin:2px 0">${x}</p>`).join('');
+  document.getElementById('result-box').className='result-box'+(s.ended?' show':'');
+  if(s.ended)document.getElementById('result-box').textContent='Final score '+s.score+' · Best '+meta.best;
+}
+
+// ── INPUT ──
+document.getElementById('gc').addEventListener('click',e=>{
+  const rect=e.target.getBoundingClientRect();
+  const px=(e.clientX-rect.left)*(CW/rect.width),py=(e.clientY-rect.top)*(CH/rect.height);
+  const tx=Math.floor(px/TW),ty=Math.floor(py/TH);
+  if(tx>=0&&tx<COLS&&ty>=0&&ty<ROWS)rotateTile(idx(tx,ty));
+});
+document.body.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-m]');
+  if(btn)move(btn.dataset.m);
+});
+document.addEventListener('keydown',e=>{
+  const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',
+             w:'up',s:'down',a:'left',d:'right',' ':'wait'};
+  if(map[e.key]){e.preventDefault();move(map[e.key])}
+});
+document.getElementById('btn-restart').addEventListener('click',()=>{
+  s=fresh();localStorage.removeItem(RK);
+  document.getElementById('result-box').className='result-box';
+  draw();updateHud();
+});
+
+// ── INIT ──
+draw();updateHud();
+</script>
+<script src="../cookie-consent.js" defer></script></body></html>
+

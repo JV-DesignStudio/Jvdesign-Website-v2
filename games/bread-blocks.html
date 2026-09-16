@@ -32,6 +32,7 @@
     <div class="pills">
       <div class="pill">SCORE <b id="scoreHud">0</b></div>
       <div class="pill">LEVEL <b id="levelHud">1</b></div>
+      <div class="pill mission-pill">MISSION <b id="missionHud">Rows</b></div>
       <div class="pill">HOLD <canvas id="holdCanvas" width="48" height="36"></canvas></div>
       <div class="pill">NEXT <canvas id="nextCanvas" width="48" height="36"></canvas></div>
     </div>
@@ -45,11 +46,11 @@
   <div class="modal show" id="startModal">
     <div class="card-modal">
       <h1>🍞 Bread Blocks</h1>
-      <div class="sub">Stack blocks to clear rows</div>
+      <div class="sub">Spatial reasoning bakery</div>
       <div class="how">
         <div>Tap the <b>sides</b> to move, tap the <b>middle</b> to rotate, <b>swipe down</b> to drop.</div>
         <div style="margin-top:8px;">Keyboard: ← → move, ↑ rotate, ↓ soft drop, Space hard drop.</div>
-        <div style="margin-top:8px;">Clear rows to score. Back-to-back clears build combos , 4 rows at once is a <b>Bread Basket</b>! 🍞</div>
+        <div style="margin-top:8px;">Read the mission before each build: plan shape space, clear the target rows, and explain your board with every placement.</div>
       </div>
       <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(240,234,214,0.5); margin-bottom: 12px;">🎮 In-Game Progress</div>
       <div class="stats">
@@ -68,6 +69,7 @@
       <div class="stats">
         <div class="stat"><div class="l">Score</div><div class="v" id="finalScore">0</div></div>
         <div class="stat"><div class="l">Level</div><div class="v" id="finalLevel">1</div></div>
+        <div class="stat"><div class="l">Missions</div><div class="v" id="finalMissions">0</div></div>
       </div>
       <button class="btn" onclick="startGame()">Play Again</button>
       <button class="btn ghost" onclick="location.href='../pages/games.html'">Back</button>
@@ -105,6 +107,7 @@ const nctx = nextCanvas.getContext('2d');
 let grid = [];
 let state = 'menu';
 let score = 0, lines = 0, level = 1, best = 0, combo = 0;
+let mission = null, missionsDone = 0, piecesPlaced = 0;
 let piece = null, nextPiece = null, holdPiece = null;
 let dropTime = 0, dropInterval = 800;
 let startTime = 0;
@@ -228,6 +231,28 @@ function ghostY() {
   return y;
 }
 
+function missionText() {
+  return mission ? mission.label : "Plan rows";
+}
+function nextMission() {
+  const bank = [
+    { rows: 1, label: "Clear 1 row", tip: "Look for the lowest gap and build flat." },
+    { rows: 2, label: "Clear 2 rows", tip: "Keep two nearly-full rows open before dropping." },
+    { rows: 4, label: "Bread Basket", tip: "Save a straight channel for the long piece." }
+  ];
+  mission = bank[Math.min(bank.length - 1, Math.floor(lines / 6))];
+  updateHud();
+}
+function completeMission(rowsCleared) {
+  if (!mission || rowsCleared < mission.rows) return;
+  missionsDone++;
+  const bonus = 120 * mission.rows * level;
+  score += bonus;
+  floatText("Mission +" + bonus + " · " + mission.tip, true);
+  gameSystem.unlockAchievement("spatialPlanner");
+  nextMission();
+}
+
 function placePiece() {
   for (let r = 0; r < piece.shape.length; r++) {
     for (let c = 0; c < piece.shape[r].length; c++) {
@@ -237,6 +262,7 @@ function placePiece() {
       }
     }
   }
+  piecesPlaced++;
   dropTime = 0;
   checkLines();
 }
@@ -259,6 +285,7 @@ function checkLines() {
   if (combo > 1) pts += 50 * combo * level;
   score += pts;
   lines += full.length;
+  completeMission(full.length);
   level = Math.floor(lines / 4) + 1;
   dropInterval = Math.max(180, 800 - (level - 1) * 60);
 
@@ -294,6 +321,7 @@ function checkLines() {
 function updateHud() {
   document.getElementById('scoreHud').textContent = score;
   document.getElementById('levelHud').textContent = level;
+  document.getElementById('missionHud').textContent = missionText();
 }
 
 function floatText(txt, big) {
@@ -408,10 +436,12 @@ function startGame() {
   lines = 0;
   level = 1;
   combo = 0;
+  missionsDone = 0; piecesPlaced = 0; mission = null;
   dropInterval = 800;
   clearingRows = [];
   pieceBag = []; holdPiece = null; canHold = true; drawHold();
   nextPiece = null;
+  nextMission();
   newPiece();
   updateHud();
   startTime = performance.now();
@@ -434,6 +464,7 @@ function endGame() {
   document.getElementById('finalScore').textContent = score.toLocaleString();
   GameUI.countUp(document.getElementById('finalScore'), score);
   document.getElementById('finalLevel').textContent = level;
+  document.getElementById('finalMissions').textContent = missionsDone;
   GameUI.showMedal(document.getElementById('finalScore').closest('.stats'), score, [
     [200, '🥉', 'Crumbler'],
     [600, '🥈', 'Journeyman Baker'],
@@ -513,3 +544,4 @@ document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed
 <script defer src="/mascots.js"></script>
 </body>
 </html>
+

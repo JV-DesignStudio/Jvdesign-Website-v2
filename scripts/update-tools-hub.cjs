@@ -136,7 +136,8 @@ const categoryMarkup = tools.map(category => {
             <span class="category-title">${name}</span>
             <span class="category-count">${items.length} tools</span>
         </div>
-        ${name === 'Audio Pipeline' ? audioRouteMarkup() : ''}`n        <div class="tools-grid">
+        ${name === 'Audio Pipeline' ? audioRouteMarkup() : ''}
+        <div class="tools-grid">
 ${items.map(item => card(item, category)).join('\n')}
         </div>
     </div>`;

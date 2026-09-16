@@ -42,6 +42,13 @@ function short(text, max = 180) {
   return compact.length > max ? compact.slice(0, max - 1).trimEnd() + '...' : compact;
 }
 
+function commsStatus(task) {
+  const pack = task && task.commsPack;
+  if (!pack) return '';
+  if (pack.posted && (pack.posted.social || pack.posted.newsletter)) return 'posted';
+  return pack.status || task.commsStatus || task.status || '';
+}
+
 function taskForDraft(tasks, id, title) {
   const needle = 'devlog id=' + id;
   return tasks.find((task) => {
@@ -77,6 +84,7 @@ function main() {
       url: meta.url || '',
       taskId: task ? task.id : '',
       taskStatus: task ? task.status : 'needs board task',
+      commsStatus: task ? commsStatus(task) : 'needs board task',
       image,
       x: codeBlock(md, 'X / Threads (280ch) - copy-paste, keep URL'),
       instagram: codeBlock(md, 'Instagram / Facebook (long)'),
@@ -84,27 +92,29 @@ function main() {
     };
   });
 
-  const pending = rows.filter((row) => row.taskStatus !== 'done');
-  const done = rows.filter((row) => row.taskStatus === 'done');
+  const needsReview = rows.filter((row) => !['approved', 'posted'].includes(row.commsStatus));
+  const ready = rows.filter((row) => row.commsStatus === 'approved');
+  const posted = rows.filter((row) => row.commsStatus === 'posted');
 
   const lines = [];
   lines.push('# Newsletter and Social Queue');
   lines.push('');
-  lines.push('Copy-ready drafts live here until Josh has approved the related board task. These files are working notes for manual posting, not public website pages.');
+  lines.push('Copy-ready drafts live here only while they still need review, posting, or send confirmation. Approved work should move from review into Ready; posted/sent work should be recorded and kept out of the daily action pile.');
   lines.push('');
   lines.push('## How to use');
   lines.push('- Run `npm run comms:queue` after adding or approving devlog entries.');
   lines.push('- Open the newest draft in `social-posts/queue/` and copy the newsletter, X/Threads, or Instagram/Facebook section.');
-  lines.push('- Post only after the linked board task reaches `done`.');
-  lines.push('- After posting, record the posted URL/date in the board task evidence.');
+  lines.push('- Post/send only after the comms pack is approved.');
+  lines.push('- After posting or sending, mark the comms pack posted/sent so it leaves the action view.');
   lines.push('');
   lines.push(`Last generated: ${new Date().toISOString()}`);
   lines.push('');
-  lines.push(`Pending drafts: ${pending.length}`);
-  lines.push(`Approved/postable drafts: ${done.length}`);
+  lines.push(`Needs review: ${needsReview.length}`);
+  lines.push(`Ready to post/send: ${ready.length}`);
+  lines.push(`Posted or sent: ${posted.length}`);
   lines.push('');
 
-  for (const [heading, sectionRows] of [['Pending Approval', pending], ['Approved Or Posted', done]]) {
+  for (const [heading, sectionRows] of [['Needs Review', needsReview], ['Ready To Post Or Send', ready], ['Posted Or Sent', posted]]) {
     lines.push(`## ${heading}`);
     lines.push('');
     if (!sectionRows.length) {
@@ -117,6 +127,7 @@ function main() {
       lines.push(`- draft: \`${row.file}\``);
       lines.push(`- devlog: id ${row.id}, ${row.date}, ${row.tag}`);
       lines.push(`- board: ${row.taskId ? `${row.taskId} (${row.taskStatus})` : row.taskStatus}`);
+      lines.push(`- comms: ${row.commsStatus}`);
       lines.push(`- image: ${row.image ? `\`${row.image}\`` : 'needs social card'}`);
       if (row.url) lines.push(`- url: ${row.url}`);
       if (row.newsletter) lines.push(`- newsletter: ${short(row.newsletter)}`);

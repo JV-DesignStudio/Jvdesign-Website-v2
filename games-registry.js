@@ -351,15 +351,18 @@ window.JVDS_GAMES = [
   },
   {
     "id": "stardust",
-    "cat": "Action",
+    "cat": "Puzzle",
     "file": "stardust_collection.html",
-    "title": "Stardust Collector",
-    "tag": "Arcade",
-    "emoji": "",
+    "title": "Stardust Constellation Rescue",
+    "tag": "Pattern · Attention",
+    "emoji": "✨",
     "cover": "stardust-collection-prototype-image.webp",
-    "bg": "linear-gradient(135deg,#050018,#120040)",
-    "kids": false,
-    "desc": "Pilot your star, sweep up glittering stardust, and weave past hazards in this quick arcade mini-game."
+    "bg": "linear-gradient(135deg,#071735,#3d1f72)",
+    "kids": true,
+    "age": "Ages 6-10",
+    "session": "5-8 min",
+    "controls": "Arrow keys, A/D, or touch to collect symbols in order",
+    "desc": "Read constellation symbol patterns, collect the correct stardust in order, dodge hazards, and restore each sky map."
   },
   {
     "id": "critter-whack",
@@ -436,15 +439,16 @@ window.JVDS_GAMES = [
   },
   {
     "id": "candy-kingdom",
-    "cat": "Puzzle",
     "file": "candy_kingdom.html",
-    "title": "Candy Kingdom Adventure",
-    "tag": "Match-3",
+    "title": "Candy Kingdom Adventure Online",
+    "tag": "Kids TTRPG",
     "emoji": "🍬",
+    "cat": "Freebies",
     "cover": "CandyKingdomP.webp",
     "bg": "linear-gradient(135deg,#ff8fab,#ffb3d9)",
-    "kids": false,
-    "desc": "Sweet match-3 puzzle adventure. Match candies, clear levels and explore the Candy Kingdom."
+    "kids": true,
+    "age": "Ages 6-10",
+    "desc": "A guided online version of the kids tabletop RPG: choose a candy hero, read GM scenes, roll a d6, and play through the first adventure."
   },
   {
     "id": "biscuit-clicker",
@@ -507,6 +511,10 @@ window.JVDS_GAMES = [
     "desc": "Multiplayer sky-high adventure. Bounce, climb and race friends to the top."
   }
 ];
+
+
+
+
 
 
 

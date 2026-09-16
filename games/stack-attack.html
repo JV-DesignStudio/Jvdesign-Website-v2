@@ -43,11 +43,21 @@
 
 <div id="wrap"><canvas id="game"></canvas></div>
 <div class="hud">
-  <div id="lbl">Height</div>
+  <div id="lbl">Score</div>
   <div id="score">0</div>
   <div class="hud-row">
     <span class="hud-pill streak" id="streakHud">🔥 0</span>
     <span class="hud-pill multi" id="multiHud">x1</span>
+  </div>
+  <div class="hud-row lesson-row hidden" id="lessonBox"><span class="hud-pill lesson-pill" id="lessonPrompt">Choose a block</span></div>
+  <div class="hud-row choice-row hidden" id="choiceRow"></div>
+  <div class="hud-row stack-tools hidden" id="stackTools">
+    <button class="hud-pill stack-tool" id="repairBtn" type="button">Repair 2</button>
+    <button class="hud-pill stack-tool" id="brakeBtn" type="button">Brake 1</button>
+  </div>
+  <div class="hud-row">
+    <span class="hud-pill" id="floorHud">0/30 floors</span>
+    <span class="hud-pill" id="beamHud">Beams 2</span>
   </div>
 </div>
 <div class="tap-hint hidden" id="hint">Tap anywhere to drop</div>
@@ -56,7 +66,7 @@
 <div class="overlay" id="startScreen">
   <div style="font-size:3.2rem">🧱·-️</div>
   <h1>Stack Attack</h1>
-  <p>A block slides back and forth. <b>Tap / click / press Space</b> to drop it. Line it up perfectly to keep your width, miss, and the overhang gets sliced off.</p>
+  <p>Build a 30-floor maths tower. Pick the correct block from each clue, then drop it carefully. Perfect drops earn beams for repairs.</p>
   <div class="coins-display">💰 <span id="coinsStart">0</span> coins</div>
   <div class="start-btns">
     <button class="btn" id="startBtn">▶ Start Stacking</button>
@@ -97,6 +107,8 @@
   const scoreEl=document.getElementById('score'),hint=document.getElementById('hint');
   const startScreen=document.getElementById('startScreen'),endScreen=document.getElementById('endScreen');
   const streakHud=document.getElementById('streakHud'),multiHud=document.getElementById('multiHud');
+  const stackTools=document.getElementById('stackTools'),repairBtn=document.getElementById('repairBtn'),brakeBtn=document.getElementById('brakeBtn'),floorHud=document.getElementById('floorHud'),beamHud=document.getElementById('beamHud');
+  const lessonBox=document.getElementById('lessonBox'),lessonPrompt=document.getElementById('lessonPrompt'),choiceRow=document.getElementById('choiceRow');
   const toastBox=document.getElementById('toastBox');
   let W,H,DPR,BH;
 
@@ -105,6 +117,7 @@
 
   // ── Persistence ──
   let best=+(localStorage.getItem('stackBest')||0);
+  let beacons=+(localStorage.getItem('stackBeacons')||0);
   let coins=+(localStorage.getItem('stackCoins')||0);
   let muted=localStorage.getItem('stackMute')==='true';
   let equippedTheme=localStorage.getItem('stackTheme')||'classic';
@@ -219,6 +232,8 @@
   let stack,cur,dir,speed,running,score,camY,fragments,particles,floaters;
   let lastFrameT=0;
   let streak,bestStreak,perfects,totalBlocks,slimCount,coinsEarned;
+  let beams, brakeReady, beaconComplete, activeClue, selectedFactor, correctAnswers, wrongAnswers;
+  const BEACON_FLOORS=30;
   let shakeT=0,shakeMag=0;
   const HUES=[6,30,170,200,280,330];
   function baseY(){return H-60;}
@@ -232,15 +247,63 @@
     score=0;scoreEl.textContent=0;camY=0;
     fragments=[];particles=[];floaters=[];
     streak=0;bestStreak=0;perfects=0;totalBlocks=0;slimCount=0;coinsEarned=0;sessionAchs=[];shakeT=0;shakeMag=0;
-    updateHud();spawnBlock();running=true;
+    beams=2;brakeReady=true;beaconComplete=false;correctAnswers=0;wrongAnswers=0;activeClue=null;selectedFactor=1;
+    updateHud();nextClue();spawnBlock();running=true;
     if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running||paused)return false;running=false;return true;},resume:()=>{if(!running&&!paused){running=true;cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop);}}});
     document.getElementById('pauseBtn').onclick=togglePause;
   }
 
+    function makeClue(){
+    const top=stack[stack.length-1];
+    const level=totalBlocks+1;
+    const base=Math.max(48,Math.round(top.w));
+    const type=level%3;
+    let answer, prompt, options;
+    if(type===1){
+      answer=Math.max(46,Math.round(base*0.75));
+      prompt='Area clue: 3/4 of '+base+' = ?';
+      options=[answer,Math.max(46,Math.round(base*0.5)),Math.max(46,Math.round(base*0.9))];
+    }else if(type===2){
+      answer=Math.max(46,Math.round(base-24));
+      prompt='Subtraction clue: '+base+' - 24 = ?';
+      options=[answer,Math.max(46,Math.round(base-12)),Math.max(46,Math.round(base-36))];
+    }else{
+      answer=Math.max(46,Math.round(base*0.5));
+      prompt='Symmetry clue: half of '+base+' = ?';
+      options=[answer,Math.max(46,Math.round(base*0.25)),Math.max(46,Math.round(base*0.7))];
+    }
+    options=[...new Set(options)].sort(()=>Math.random()-0.5);
+    return {prompt,answer,options};
+  }
+  function nextClue(){
+    activeClue=makeClue();selectedFactor=1;
+    lessonPrompt.textContent=activeClue.prompt;
+    choiceRow.innerHTML='';
+    activeClue.options.forEach(value=>{
+      const b=document.createElement('button');
+      b.type='button';b.className='hud-pill choice-pill';b.textContent=value;
+      b.dataset.value=value;
+      b.addEventListener('click',e=>{e.stopPropagation();chooseBlock(value,b);});
+      choiceRow.appendChild(b);
+    });
+    chooseBlock(activeClue.options[0],choiceRow.firstElementChild,true);
+  }
+  function chooseBlock(value,button,silent=false){
+    if(!running||!activeClue)return;
+    selectedFactor=value/activeClue.answer;
+    choiceRow.querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b===button));
+    if(cur){
+      const top=stack[stack.length-1];
+      cur.w=Math.max(38,Math.min(W*0.65,activeClue.answer*selectedFactor));
+      cur.x=Math.max(0,Math.min(W-cur.w,cur.x));
+    }
+    if(!silent)updateHud();
+  }
   function spawnBlock(){
     const top=stack[stack.length-1];
-    speed=2.4+Math.min(score*0.12,5.5);
-    cur={x:0,w:top.w,y:top.y-BH,h:BH,hue:HUES[stack.length%HUES.length]};
+    speed=2.4+Math.min(totalBlocks*0.16,5.8);
+    const w=activeClue?Math.max(38,Math.min(W*0.65,activeClue.answer*selectedFactor)):top.w;
+    cur={x:0,w,y:top.y-BH,h:BH,hue:HUES[stack.length%HUES.length]};
     dir=1;
   }
 
@@ -248,6 +311,13 @@
   function updateHud(){
     streakHud.textContent=(streak>=3?'🔥 ':'')+streak;
     multiHud.textContent='x'+getMulti();
+    floorHud.textContent=Math.min(totalBlocks,BEACON_FLOORS)+'/'+BEACON_FLOORS+' floors';
+    beamHud.textContent='Beams '+beams;
+    if(stackTools)stackTools.classList.toggle('hidden',!running||beaconComplete);
+    if(lessonBox)lessonBox.classList.toggle('hidden',!running||beaconComplete);
+    if(choiceRow)choiceRow.classList.toggle('hidden',!running||beaconComplete);
+    if(repairBtn){repairBtn.disabled=!running||beams<2||!cur;repairBtn.textContent='Repair 2';}
+    if(brakeBtn){brakeBtn.disabled=!running||beams<1||!cur||!brakeReady;brakeBtn.textContent=brakeReady?'Brake 1':'Brake used';}
   }
 
   function addP(x,y,emoji,n=5){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=2+Math.random()*3;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,emoji,life:1});}}
@@ -265,14 +335,17 @@
     if(cur.x<top.x){fragments.push({x:cur.x,w:top.x-cur.x,y:cur.y,h:BH,hue:cur.hue,vx:-2,rot:0,rv:0.06+Math.random()*0.08});sfxSlice();}
     else if(cur.x+cur.w>top.x+top.w){fragments.push({x:right,w:(cur.x+cur.w)-right,y:cur.y,h:BH,hue:cur.hue,vx:2,rot:0,rv:0.06+Math.random()*0.08});sfxSlice();}
 
-    const isPerfect=Math.abs(overlap-cur.w)<3;
+    const isCorrect=activeClue&&Math.abs(cur.w-activeClue.answer)<1;
+    const isPerfect=Math.abs(overlap-cur.w)<3&&isCorrect;
     const isPixel=Math.abs(overlap-cur.w)<1;
     cur.x=left;cur.w=overlap;stack.push(cur);totalBlocks++;
+    if(isCorrect){correctAnswers++;}else{wrongAnswers++;score=Math.max(0,score-3);addF(cur.x+cur.w/2,cur.y-camY,"Math miss", "#ff9a9a");}
     if(cur.w<30)slimCount++;else slimCount=0;
 
     const multi=getMulti();
     if(isPerfect){
       streak++;perfects++;
+      beams=Math.min(6,beams+1);
       if(streak>bestStreak)bestStreak=streak;
       const pts=2*multi;score+=pts;
       sfxPerfect();
@@ -285,21 +358,43 @@
       if(streak>=3)tryAch('p3');if(streak>=5)tryAch('p5');if(streak>=10)tryAch('p10');
       if(isPixel)tryAch('px');
     }else{
-      const pts=1*multi;score+=pts;streak=0;
+      const pts=(isCorrect?1:0)*multi;score+=pts;streak=0;
       sfxPlace();addF(cur.x+cur.w/2,cur.y-camY,'+'+pts,'#fff');addP(cur.x+cur.w/2,cur.y-camY,'💨',3);
     }
     scoreEl.textContent=score;scoreEl.classList.remove('score-pop');void scoreEl.offsetWidth;scoreEl.classList.add('score-pop');updateHud();
 
     if(totalBlocks===1)tryAch('first');
-    if(score>=10)tryAch('h10');if(score>=25)tryAch('h25');if(score>=50)tryAch('h50');
+    if(totalBlocks>=10)tryAch('h10');if(totalBlocks>=25)tryAch('h25');if(totalBlocks>=50)tryAch('h50');
     if(score>=100)tryAch('c100');if(score>=500)tryAch('c500');
-    if(speed>=5.5&&score>=15)tryAch('spd');if(slimCount>=10)tryAch('slim');
+    if(speed>=5.5&&totalBlocks>=15)tryAch('spd');if(slimCount>=10)tryAch('slim');
 
     const c=Math.max(1,Math.floor(multi));coinsEarned+=c;coins+=c;saveCoins();
+    if(totalBlocks>=BEACON_FLOORS)return end(true);
+    nextClue();
     spawnBlock();
   }
 
-  addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();drop();}});
+  function repairTower(){
+    if(!running||!cur||beams<2)return;
+    const top=stack[stack.length-1];
+    beams-=2;
+    top.w=Math.min(W*0.6,top.w+36);
+    top.x=Math.max(0,Math.min(W-top.w,top.x-18));
+    cur.w=Math.min(W*0.6,cur.w+36);
+    cur.x=Math.max(0,Math.min(W-cur.w,cur.x-18));
+    addF(W/2,H*0.28,'Repair','#7fffd4');
+    addP(W/2,H*0.28,'✨',7);
+    updateHud();
+  }
+  function brakeBlock(){
+    if(!running||!cur||beams<1||!brakeReady)return;
+    beams-=1;brakeReady=false;speed=Math.max(1.8,speed*0.5);
+    addF(W/2,H*0.28,'Brake','#b9f2ff');
+    updateHud();
+  }
+  repairBtn.addEventListener('click',e=>{e.stopPropagation();repairTower();});
+  brakeBtn.addEventListener('click',e=>{e.stopPropagation();brakeBlock();});
+  addEventListener('keydown',e=>{if(e.code==='Space'&&document.activeElement!==repairBtn&&document.activeElement!==brakeBtn){e.preventDefault();drop();}});
   cv.addEventListener('pointerdown',e=>{e.preventDefault();drop();});
 
   let paused=false, pauseOverlay=null;
@@ -311,7 +406,7 @@
     if(!ts)ts=performance.now();
     const dt=lastFrameT?Math.min((ts-lastFrameT)/1000,0.05):1/60;lastFrameT=ts;
     const f=dt*60;
-    if(cur){cur.x+=dir*speed*f;if(cur.x+cur.w>W){cur.x=W-cur.w;dir=-1;}if(cur.x<0){cur.x=0;dir=1;}if(score>=20&&Math.random()<0.002*f)dir*=-1;}
+    if(cur){cur.x+=dir*speed*f;if(cur.x+cur.w>W){cur.x=W-cur.w;dir=-1;}if(cur.x<0){cur.x=0;dir=1;}}
     const targetCam=Math.max(0,(baseY()-(cur?cur.y:0))-H*0.45);camY+=(targetCam-camY)*Math.min(1,0.1*f);
     fragments.forEach(f2=>{ f2.vy=(f2.vy||6)+0.45*f; f2.y+=f2.vy*f; f2.x+=f2.vx*f; f2.vx*=Math.pow(0.998,f); f2.rot=(f2.rot||0)+(f2.rv||0)*f; f2.rv*=Math.pow(0.99,f); });
     fragments=fragments.filter(f2=>f2.y-camY<H+80 && f2.y-baseY()<220);
@@ -415,8 +510,8 @@
   // ── Start / End ──
   function startGame(){ cancelAnimationFrame(stackFrame); if(pauseOverlay) pauseOverlay.style.display='none'; paused=false; initAudio();reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');hint.classList.remove('hidden');cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop);setTimeout(()=>hint.classList.add('hidden'),2600);}
 
-  function end(){ if(pauseOverlay) pauseOverlay.style.display='none'; paused=false;
-    running=false;hint.classList.add('hidden');sfxOver();
+  function end(won=false){ if(pauseOverlay) pauseOverlay.style.display='none'; paused=false;
+    running=false;beaconComplete=!!won;updateHud();hint.classList.add('hidden');if(won)sfxAch();else sfxOver();
     // A CSS shake on the canvas element itself, not the internal shakeT/
     // shakeMag used mid-run , the render loop stops calling draw() the
     // instant running=false, so an internal canvas-transform shake would
@@ -427,12 +522,13 @@
     window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
     if(typeof gameSystem!=='undefined')gameSystem.recordGamePlay(Date.now());
     if(score>best){best=score;localStorage.setItem('stackBest',best);}
+    if(won){beacons++;localStorage.setItem('stackBeacons',beacons);coins+=15;coinsEarned+=15;saveCoins();}
     document.getElementById('bestStart').textContent='Best: '+best;
     document.getElementById('coinsStart').textContent=coins;
     const nb=score>=best&&score>0;
-    document.getElementById('endEmoji').textContent=nb?'🌟':score>=40?'🏙️':'·-️';
-    document.getElementById('endTitle').textContent=score>=50?'Cloud Piercer!':score>=25?'Sky-Scraper!':score>=10?'Solid Tower!':'Toppled!';
-    document.getElementById('endMsg').textContent='You stacked high.'+(nb?' , New best! 🎉':' · Best: '+best);
+    document.getElementById('endEmoji').textContent=won?'🗼':nb?'🌟':score>=40?'🏙️':'·-️';
+    document.getElementById('endTitle').textContent=won?'Beacon Complete!':score>=50?'Cloud Piercer!':score>=25?'Sky-Scraper!':score>=10?'Solid Tower!':'Toppled!';
+    document.getElementById('endMsg').textContent=won?'Thirty floors lit. Bonus paid.':('You stacked high.'+(nb?' , New best! 🎉':' · Best: '+best));
     GameUI.countUp(document.getElementById('go-score'), score);
     GameUI.showMedal(document.getElementById('go-medal'), score, [[10,'🣦','Stacker'],[25,'🥈','Tower Builder'],[50,'🏆','Skyscraper']]);
     const acc=totalBlocks>0?Math.round(perfects/totalBlocks*100):0;
@@ -440,8 +536,10 @@
       `<div class="stat-box"><div class="sv">${score}</div><div class="sl">Height</div></div>`+
       `<div class="stat-box"><div class="sv">${bestStreak}</div><div class="sl">Best Streak</div></div>`+
       `<div class="stat-box"><div class="sv">${perfects}</div><div class="sl">Perfects</div></div>`+
-      `<div class="stat-box"><div class="sv">${acc}%</div><div class="sl">Accuracy</div></div>`+
-      `<div class="stat-box"><div class="sv">${totalBlocks}</div><div class="sl">Blocks</div></div>`+
+      `<div class="stat-box"><div class="sv">${acc}%</div><div class="sl">Drop Accuracy</div></div>`+
+      `<div class="stat-box"><div class="sv">${correctAnswers}/${Math.max(1,totalBlocks)}</div><div class="sl">Math</div></div>`+
+      `<div class="stat-box"><div class="sv">${totalBlocks}</div><div class="sl">Floors</div></div>`+
+      `<div class="stat-box"><div class="sv">${beacons}</div><div class="sl">Beacons</div></div>`+
       `<div class="stat-box"><div class="sv">${coinsEarned}</div><div class="sl">Coins</div></div>`;
     const ah=sessionAchs.map(id=>{const a=ACHS.find(a=>a.id===id);return a?`<div class="end-ach">${a.icon} ${a.name}</div>`:'';}).join('');
     document.getElementById('endAchs').innerHTML=ah?'<div style="font-size:.75rem;opacity:.6;margin-bottom:4px">Achievements Unlocked:</div>'+ah:'';
@@ -477,3 +575,5 @@ window.addEventListener('beforeunload', () => {
 <script defer src="/mascots.js"></script>
 </body>
 </html>
+
+

@@ -52,14 +52,18 @@ node F:/Website/studio-workspace/board-keeper.cjs --claim A46 --agent "your-agen
 # -> Claimed A46 -> in_progress by your-agent-name   (you own it)
 # -> Cannot claim A46: status=in_progress (already taken) -> pick another backlog ID
 
-# 3. Do the work, then run the BOT gate (required - bot must pass before human sees it):
+# 3. Do the work, then run the mandatory final checks:
+node F:/Website/studio-workspace/board-keeper.cjs --check
+npm run validate:links
+# If either command reports drift, schema errors, or broken references, fix them before review.
+
+# 4. Run the BOT gate (required - bot must pass before human sees it):
 node F:/Website/studio-workspace/board-keeper.cjs --request-review A46
 # -> runs bot-verify.cjs (evidence must name file + test output, files must exist,
-#    per-tag proof, no-leak, public-boundary; dashes advisory)
+#    per-tag proof, no-leak, public-boundary, board --check, validate:links; dashes advisory)
 # -> BOT PASS -> human_review (you approve) | BOT FAIL -> stays in_progress with reason
 # -> approve RE-RUNS bot live (stored pass not trusted - cheat-proof)
 # NEVER hand-edit tasks.json status to human_review/done - always use --request-review
-
 # 5. Rebuild the visible board
 node F:/Website/studio-workspace/board-keeper.cjs --sync
 # rewrites SHIPPED/HUMAN_REVIEW/IN_PROGRESS/BACKLOG + lastUpdated

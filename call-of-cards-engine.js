@@ -63,6 +63,8 @@ class CallOfCardsGame {
     this.turnPhase = 'draw';
     this.recruitsThisTurn = 0;
     this.maxRecruitsPerTurn = 1;
+    this.discardedThisTurn = false;
+    this.peekedThisTurn = false;
     this.turnNumber = 0;
     this.gameOver = false;
     this.onStateChange = null;
@@ -89,6 +91,8 @@ class CallOfCardsGame {
       hand: deck.splice(0, 5),
       field: [],
       artifacts: [],
+      discard: [],
+      completed: [],
       vp: 0,
       deck,
     };
@@ -125,6 +129,26 @@ class CallOfCardsGame {
     return p.hand.filter(c => c.type === 'gold').length;
   }
 
+  drawCard(p) {
+    if(!p.deck.length && p.discard && p.discard.length) {
+      p.deck = shuffle(p.discard.splice(0));
+      this.log(p.name + ' shuffles their discard into a new deck');
+    }
+    if(p.deck.length) p.hand.push(p.deck.shift());
+  }
+
+  spendGold(p, amount) {
+    let goldToSpend = amount;
+    for(let i = p.hand.length - 1; i >= 0 && goldToSpend > 0; i--) {
+      if(p.hand[i].type === 'gold') {
+        const spent = p.hand.splice(i, 1)[0];
+        p.discard.push(spent);
+        goldToSpend--;
+      }
+    }
+    return goldToSpend === 0;
+  }
+
   getTotalPower(p) {
     let power = 0;
     const hasRing = p.artifacts.some(a => a.effect === 'allies_plus_1');
@@ -151,14 +175,14 @@ class CallOfCardsGame {
     const p = this.active();
     this.turnPhase = 'main';
     this.recruitsThisTurn = 0;
+    this.discardedThisTurn = false;
+    this.peekedThisTurn = false;
     this.maxRecruitsPerTurn = p.artifacts.some(a => a.effect === 'extra_recruit') ? 2 : 1;
 
     // Draw 1 (2 with Amulet of Renewal) + Underdog's Resolve: draw 1 extra if 2+ VP behind (v1.3)
     let drawCount = p.artifacts.some(a => a.effect === 'draw_1') ? 2 : 1;
     if(this.isUnderdog(p)) drawCount += 1;
-    for(let i=0; i<drawCount; i++) {
-      if(p.deck.length > 0) p.hand.push(p.deck.shift());
-    }
+    for(let i=0; i<drawCount; i++) this.drawCard(p);
 
     if(this.isUnderdog(p) && drawCount > 1) {
       this.log(`${p.name} draws extra - Underdog's Resolve!`);
@@ -217,11 +241,7 @@ class CallOfCardsGame {
 
     p.hand.splice(cardIndex, 1);
     p.field.push(card);
-    // Spend gold cards
-    let goldToSpend = card.cost;
-    for(let i = p.hand.length - 1; i >= 0 && goldToSpend > 0; i--) {
-      if(p.hand[i].type === 'gold') { p.hand.splice(i, 1); goldToSpend--; }
-    }
+    this.spendGold(p, card.cost);
     this.recruitsThisTurn++;
 
     this.log(`${p.name} recruited ${card.name} (${card.power} power)`);
@@ -236,6 +256,7 @@ class CallOfCardsGame {
       if(opp.hand.length > 0) {
         const ri = Math.floor(Math.random() * opp.hand.length);
         const stolen = opp.hand.splice(ri, 1)[0];
+        opp.discard.push(stolen);
         this.log(`${p.name}'s Shadow Thief strikes! ${opp.name} discards ${stolen.name}`);
       }
     }
@@ -254,10 +275,7 @@ class CallOfCardsGame {
 
     p.hand.splice(cardIndex, 1);
     p.artifacts.push(card);
-    let goldToSpend = card.cost;
-    for(let i = p.hand.length - 1; i >= 0 && goldToSpend > 0; i--) {
-      if(p.hand[i].type === 'gold') { p.hand.splice(i, 1); goldToSpend--; }
-    }
+    this.spendGold(p, card.cost);
 
     this.log(`${p.name} acquired ${card.name}`);
     this.emit();
@@ -274,6 +292,7 @@ class CallOfCardsGame {
     let vpGain = quest.vp;
     if(p.artifacts.some(a => a.effect === 'bonus_vp')) vpGain += 1;
     p.vp += vpGain;
+    p.completed.push(quest);
 
     this.state.quests.splice(questIndex, 1);
     if(this.state.questPool.length > 0) {
@@ -295,12 +314,27 @@ class CallOfCardsGame {
   }
 
   discardCard(cardIndex) {
-    if(this.turnPhase !== 'main' || this.gameOver) return false;
+    if(this.turnPhase !== 'main' || this.gameOver || this.discardedThisTurn) return false;
     const p = this.active();
     const card = p.hand.splice(cardIndex, 1)[0];
-    if(card) this.log(`${p.name} discarded ${card.name}`);
+    if(!card) return false;
+    p.discard.push(card);
+    this.discardedThisTurn = true;
+    this.drawCard(p);
+    this.log(`${p.name} cycled ${card.name} and drew a replacement`);
     this.emit();
     return true;
+  }
+
+  peekTopCard() {
+    if(this.turnPhase !== 'main' || this.gameOver || this.peekedThisTurn) return null;
+    const p = this.active();
+    if(!p.artifacts.some(a => a.effect === 'peek')) return null;
+    this.peekedThisTurn = true;
+    const card = p.deck[0] || null;
+    this.log(card ? `${p.name} used Crown of Whispers to peek at ${card.name}` : `${p.name} used Crown of Whispers, but the deck is empty`);
+    this.emit();
+    return card;
   }
 
   /* ---- AI - smarter (A118) ---- */
@@ -326,6 +360,7 @@ class CallOfCardsGame {
       let vpGain = quest.vp;
       if(ai.artifacts.some(a => a.effect === 'bonus_vp')) vpGain += 1;
       ai.vp += vpGain;
+      ai.completed.push(quest);
       this.state.quests.splice(quest.idx, 1);
       if(this.state.questPool.length > 0) this.state.quests.push(this.state.questPool.shift());
       this.log(`${ai.name} completed "${quest.name}" for ${vpGain} VP! (${ai.vp}/${this.state.winTarget})`);
@@ -392,7 +427,7 @@ class CallOfCardsGame {
         ai.field.push({ ...c });
         let goldToSpend = c.cost;
         for(let i = ai.hand.length - 1; i >= 0 && goldToSpend > 0; i--){
-          if(ai.hand[i].type === 'gold'){ ai.hand.splice(i,1); goldToSpend--; }
+          if(ai.hand[i].type === 'gold'){ ai.discard.push(ai.hand.splice(i,1)[0]); goldToSpend--; }
         }
         this.recruitsThisTurn++;
         this.log(`${ai.name} recruited ${c.name}`);

@@ -1,0 +1,88 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-09-16",
+  "purpose": "Canonical file map and workflow for local AI agents (Continue/Ollama/qwen) to reduce hallucinations on JVDesignStudio static site",
+  "siteRoot": "F:/Website/Jvdesign-Website-v2",
+  "privateBoardRoot": "F:/Website/studio-workspace",
+  "node": "24.11.3 (.nvmrc)",
+  "directories": {
+    "pages": "pages/*.html -> sitemap/search source, uses style-*.css + BUILD:nav-content/footer",
+    "tools": "tools/*.html -> product-tracker public via tools/project-tracker.html + make-public.js",
+    "games": "games/*.html -> arcade entries, each needs registry entries",
+    "workshops": "workshops/*.html -> validate-workshops.js source",
+    "assets": "assets/mascots/*, icons/*, og/*",
+    "content": "content/*.json -> generated data (games.json, tools.json)",
+    "scripts": "scripts/build/*, scripts/validate/*, generate-*.js",
+    "tests": "tests/*-http.js, *-smoke.js, *-mobile.js, games-qa.js, tools-qa.js",
+    "partials": "partials/nav-content.html, footer-content.html via BUILD: comments",
+    "private": "F:/Website/studio-workspace/tasks.json, board/index.html (never commit to public repo)"
+  },
+  "fileMaps": {
+    "addGame": [
+      "1. games/<file>.html (game canvas + game-system.js)",
+      "2. games-registry.js -> window.JVDS_GAMES[] {id, cat, file, title, tag, bg, kids}",
+      "3. content/games.json -> duplicate entry for site generator (id, title, category, url)",
+      "4. style-game-<id>.css if bespoke, else inline <style>",
+      "5. og image in /og or root (e.g., GardenDefenseCover.webp)",
+      "6. games.html grid auto-discovers via JVDS_GAMES; verify via validate:links"
+    ],
+    "addTool": [
+      "tools/<name>.html + style-tool-<name>.css",
+      "tools/project-tracker.html is source for quest-board.html -> run node make-public.js && node make-app-bundle.js",
+      "After editing partials/* run node build.js"
+    ],
+    "addWorkshop": [
+      "workshops/<name>.html + validate-workshops.js must pass"
+    ],
+    "addPage": [
+      "pages/*.html is sitemap/search source -> after adding run npm run build:sitemap (node scripts/build/index.js --only=sitemap)"
+    ]
+  },
+  "scripts": {
+    "build": "node scripts/build/index.js  (partials + sitemap + search-index)",
+    "build:sitemap": "node scripts/build/index.js --only=sitemap",
+    "build:content": "node scripts/build/index.js --only=content",
+    "build:board": "node scripts/build/board.js",
+    "validate:links": "node validate-links.js  (16403 refs, 0 broken expected)",
+    "validate:public": "node scripts/validate-public-boundary.js",
+    "validate:workshops": "node validate-workshops.js",
+    "validate": "node scripts/validate/index.js",
+    "check:drift": "node scripts/check-generated-drift.js",
+    "board:check": "node F:/Website/studio-workspace/board-keeper.cjs --check",
+    "board:sync": "node F:/Website/studio-workspace/board-keeper.cjs --sync",
+    "board:next": "node F:/Website/studio-workspace/board-keeper.cjs --next",
+    "board:claim": "node F:/Website/studio-workspace/board-keeper.cjs --claim A<ID> --agent \"name\" [--force if WIP limit]",
+    "bot:verify": "node F:/Website/studio-workspace/bot-verify.cjs A<ID> --dry-run  (then --request-review)",
+    "test:pixel": "node tests/pixel-studio-http.js && node tests/pixel-studio-mobile.js",
+    "test:games": "node tests/games-qa.js",
+    "test:tools": "node tests/tools-qa.js"
+  },
+  "boardWorkflow": [
+    "1. node board-keeper.cjs --check",
+    "2. node board-keeper.cjs --claim A<ID> --agent \"you\"",
+    "3. code + npm run validate:links && node board-keeper.cjs --check",
+    "4. update tasks.json evidence (must name file + test output e.g. 'tools/pixel-studio.html test:mobile PASS')",
+    "5. node board-keeper.cjs --request-review A<ID> (runs bot-verify)",
+    "6. node board-keeper.cjs --sync",
+    "7. human approve: node board-keeper.cjs --approve A<ID> --agent \"josh\""
+  ],
+  "gotchas": [
+    "Never hand-edit tasks.json status to human_review/done; use --request-review/--approve",
+    "Never copy studio-workspace/ into quest-board-deploy/ or public repo",
+    "Never hand-edit tools/quest-board.html; edit tools/project-tracker.html then make-public.js",
+    "Public site must pass validate:public (no private paths like studio-workspace)",
+    "Em dashes (-) flagged by check-dashes.cjs as advisory; avoid in public files",
+    "WIP limit 3 in_progress but --force allowed; use --sync to resolve drift",
+    "All 32 registry games need canonical HTML per A132; wrapper vs raw dual files cause mobile contract drift",
+    "Board data: board-data.json regenerated via build:sitemap; don’t hand-edit",
+    "Node 24 required; npm.cmd spawnSync on win32 needs shell:true (see bot-verify fix 2026-09-16)",
+    "Evidence must include file path + test output + tag-proof keyword (site needs pages/|link|valid|sitemap|contrast)"
+  ],
+  "references": [
+    "AGENTS.md",
+    "JVDS_PRODUCT_VISION.md",
+    "F:/Website/studio-workspace/WORKFLOW.md",
+    "F:/Website/studio-workspace/CLAIM_GUIDE.md",
+    "F:/Website/studio-workspace/bot-verify.cjs"
+  ]
+}

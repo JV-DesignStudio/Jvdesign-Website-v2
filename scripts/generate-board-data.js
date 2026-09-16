@@ -52,7 +52,8 @@ function countGlob(dir) {
       return fs.readdirSync(dir).filter(f => f.endsWith('.html') && f !== 'my-progress.html').length;
     }
     if (base === 'games') {
-      const ignore = new Set(['arcane_citadel.html','critter-whack.html','lumo-dash.html','nibble-quest.html','stack-attack.html','mobile-games.html','sky_high_squirt.html','call-of-the-cards-playtest.html']);
+      const {GAME_ORPHANS} = require('./lib/paths');
+      const ignore = new Set(GAME_ORPHANS.map(p=> path.basename(p)));
       return fs.readdirSync(dir).filter(f => f.endsWith('.html') && !ignore.has(f)).length;
     }
     return fs.readdirSync(dir).filter(f => f.endsWith('.html')).length;
@@ -128,17 +129,30 @@ function getSwVersion(){
   }catch{ return null; }
 }
 
-// Link validation , derive live count from filesystem (fallback 5228) and timestamp
+// Link validation , live refs from validate-links (fallback 5228) and timestamp
 function validateSummary() {
-  // try to get live refs without running full validate-links (cheap: count html files * avg refs)
-  // if cache exists, read it; otherwise keep placeholder but mark lastRun deterministically via git log
   let lastRun = new Date().toISOString().slice(0,10);
   try{
     const {execSync} = require('child_process');
     const iso = execSync('git log -1 --format=%cs', {encoding:'utf8', cwd: require('path').resolve(__dirname,'..')}).trim();
     if(/^\d{4}-\d{2}-\d{2}$/.test(iso)) lastRun = iso;
   }catch{}
+  // Try live validate-links count (cache or run)
+  try{
+    const {execSync} = require('child_process');
+    const out = execSync('node validate-links.js 2>&1', {encoding:'utf8', cwd: ROOT, timeout: 30000});
+    const m = out.match(/(\d+)\s+internal refs checked/);
+    if(m) return { refs: parseInt(m[1],10), broken: 0, lastRun };
+  }catch{}
   return { refs: 5228, broken: 0, lastRun };
+}
+
+function socialQueueCount(){
+  try{
+    const qDir = path.join(ROOT, 'social-posts', 'queue');
+    if(!fs.existsSync(qDir)) return 0;
+    return fs.readdirSync(qDir).filter(f=> f.endsWith('.md') && !f.startsWith('INDEX')).length;
+  }catch{ return 0; }
 }
 
 function boardHumanReview(){
@@ -161,10 +175,12 @@ function boardHumanReview(){
 
 const mascots = mascotsKPI();
 const board = boardHumanReview();
+const socialQueue = socialQueueCount();
 const data = {
   generated: new Date().toISOString(),
   sitemap: { urls: sitemapCount, lastmod: lastModSitemap() },
   searchIndex: { count: searchIndex ? searchIndex.count : 0 },
+  socialQueue: { count: socialQueue, dir: 'social-posts/queue' },
   content: {
     stats: stats || { workshops: 0, games: 0, tools: 0, books: 0 },
     filesystem: { pages: pagesCount, workshops: workshopsFiles, games: gamesFiles, tools: toolsFiles, books: booksFiles, css: cssCount },

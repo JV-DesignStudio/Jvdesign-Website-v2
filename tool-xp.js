@@ -135,4 +135,67 @@
     var a = e.target && e.target.closest ? e.target.closest('a[download]') : null;
     if (a) ToolXP.award('export', 25, 3, 'Creation exported!');
   });
+
+  // ── A289 Mobile touch handling: prevent scroll trap on canvases and add touch->mouse fallback for tools that only listen for mouse ──
+  (function(){
+    function isCanvasTarget(el){ return !!el.closest('canvas, #preview-wrap, #canvas-area, .canvas-area, #app'); }
+    // Block page pan/zoom when interacting directly on a canvas viewport
+    document.addEventListener('touchmove', function(e){
+      if(isCanvasTarget(e.target)){
+        if(e.cancelable) e.preventDefault();
+      }
+    }, {passive:false});
+    document.addEventListener('touchstart', function(e){
+      if(isCanvasTarget(e.target)){
+        // Mark last touch for synthetic mouse suppression in tools that already handle it
+        try{ window._lastTouch = Date.now(); }catch(_){}
+      }
+    }, {passive:false});
+    // For canvases that only have mousedown/mousemove, synthesize equivalents from touch so drawing works with one finger
+    function synthMouse(type, touch, target){
+      var evt = new MouseEvent(type, {bubbles:true,cancelable:true,clientX:touch.clientX,clientY:touch.clientY,buttons:1});
+      target.dispatchEvent(evt);
+    }
+    function bindFallback(canvas){
+      if(canvas._touchFallbackBound) return;
+      canvas._touchFallbackBound = true;
+      canvas.addEventListener('touchstart', function(e){
+        if(e.touches.length!==1) return;
+        if(e.cancelable) e.preventDefault();
+        synthMouse('mousedown', e.touches[0], e.target);
+      }, {passive:false});
+      canvas.addEventListener('touchmove', function(e){
+        if(e.touches.length!==1) return;
+        if(e.cancelable) e.preventDefault();
+        synthMouse('mousemove', e.touches[0], e.target);
+      }, {passive:false});
+      canvas.addEventListener('touchend', function(e){
+        if(e.cancelable) e.preventDefault();
+        var t = (e.changedTouches && e.changedTouches[0]) || null;
+        if(t) synthMouse('mouseup', t, e.target);
+      }, {passive:false});
+    }
+    function scan(){
+      // Tools that already have full touch handling - don't double-bind
+      if(['pixel-studio','bitmap-font-maker','level-designer','particle-designer','music-maker','arcade-game-maker','buildlab'].indexOf(TOOL_ID)!==-1) return;
+      document.querySelectorAll('canvas').forEach(function(c){
+        if(c._touchFallbackBound) return;
+        bindFallback(c);
+      });
+    }
+    if(document.readyState !== 'loading') scan();
+    else document.addEventListener('DOMContentLoaded', scan);
+    // Re-scan after dynamic canvas creation (e.g., tileset builder)
+    try{
+      var obs = new MutationObserver(function(muts){
+        muts.forEach(function(m){
+          m.addedNodes.forEach(function(n){
+            if(n.tagName==='CANVAS') bindFallback(n);
+            if(n.querySelectorAll) n.querySelectorAll('canvas').forEach(bindFallback);
+          });
+        });
+      });
+      obs.observe(document.documentElement, {childList:true, subtree:true});
+    }catch(_){}
+  })();
 })();

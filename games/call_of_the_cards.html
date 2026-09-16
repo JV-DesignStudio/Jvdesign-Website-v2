@@ -203,6 +203,7 @@
                 <span class="zone-vp" id="aiVpBadge">VP: 0</span>
                 <span class="zone-power" id="aiPowerBadge">Power: 0</span>
                 <span class="zone-cards" id="aiCardsBadge">Cards: 5</span>
+                <span class="zone-cards" id="aiDeckBadge">Deck: 41</span>
             </div>
             <div class="board-hand board-ai-hand" id="aiHand"></div>
             <div class="board-field board-ai-field" id="aiField">
@@ -239,6 +240,9 @@
                 <span class="zone-vp" id="playerVpBadge">VP: 0 / 5</span>
                 <span class="zone-power" id="playerPowerBadge">Power: 0</span>
                 <span class="zone-gold" id="playerGoldBadge">Gold: 0</span>
+                <span class="zone-cards" id="playerDeckBadge">Deck: 41</span>
+                <span class="zone-cards" id="playerDiscardBadge">Discard: 0</span>
+                <button class="btn-end-turn" id="btnPeek" onclick="peekTopCard()" style="display:none;">👑 Peek</button>
                 <button class="btn-end-turn" id="btnEndTurn" onclick="endTurn()">End Turn ⏭️</button>
             </div>
         </div>
@@ -845,12 +849,23 @@ function renderBoard(state) {
   document.getElementById('aiVpBadge').textContent = 'VP: '+top.vp;
   document.getElementById('aiPowerBadge').textContent = 'Power: '+game.getTotalPower(top);
   document.getElementById('aiCardsBadge').textContent = 'Cards: '+top.hand.length;
+  const aiDeck = document.getElementById('aiDeckBadge');
+  if(aiDeck) aiDeck.textContent = 'Deck: '+(top.deck ? top.deck.length : 0)+' / Discard: '+(top.discard ? top.discard.length : 0);
   document.querySelector('.board-ai-zone .zone-name').textContent = (isAI?'💀 ':'') + top.name;
 
   // Badges - bottom (active in PvP, you in AI)
   document.getElementById('playerVpBadge').textContent = 'VP: '+bottom.vp+' / '+state.winTarget;
   document.getElementById('playerPowerBadge').textContent = 'Power: '+game.getTotalPower(bottom);
   document.getElementById('playerGoldBadge').textContent = 'Gold: '+game.getAvailableGold(bottom);
+  const playerDeck = document.getElementById('playerDeckBadge');
+  const playerDiscard = document.getElementById('playerDiscardBadge');
+  if(playerDeck) playerDeck.textContent = 'Deck: '+(bottom.deck ? bottom.deck.length : 0);
+  if(playerDiscard) playerDiscard.textContent = 'Discard: '+(bottom.discard ? bottom.discard.length : 0)+' / Quests: '+(bottom.completed ? bottom.completed.length : 0);
+  const peekBtn = document.getElementById('btnPeek');
+  if(peekBtn) {
+    const canPeek = game && !game.gameOver && bottom.artifacts && bottom.artifacts.some(a => a.effect === 'peek') && (!game.peekedThisTurn) && (!isAI || isP1Turn);
+    peekBtn.style.display = canPeek ? '' : 'none';
+  }
   document.querySelector('.board-player-zone .zone-name').textContent = (isAI ? '⚔️ You' : '⚔️ ' + bottom.name);
 
   // Turn indicator
@@ -894,7 +909,8 @@ function showActionPanel(card, idx) {
     buttons += '<button class="action-btn action-recruit" onclick="doRecruit('+idx+')">🤝 Recruit ('+card.cost+' 💰)</button>';
   if(card.type==='artifact' && gold>=card.cost)
     buttons += '<button class="action-btn action-artifact" onclick="doArtifact('+idx+')">💎 Acquire ('+card.cost+' 💰)</button>';
-  buttons += '<button class="action-btn action-discard" onclick="doDiscard('+idx+')">🗑️ Discard</button>';
+  if(!game.discardedThisTurn) buttons += '<button class="action-btn action-discard" onclick="doDiscard('+idx+')">🔄 Cycle once</button>';
+  else buttons += '<button class="action-btn action-discard" disabled>🔄 Cycle used</button>';
   buttons += '<button class="action-btn action-cancel" onclick="hideAction()">✕</button>';
   btns.innerHTML = buttons;
   panel.style.display = '';
@@ -907,6 +923,12 @@ function hideAction() {
 function doRecruit(idx) { if(game){game.recruitCompanion(idx);} hideAction(); }
 function doArtifact(idx) { if(game){game.purchaseArtifact(idx);} hideAction(); }
 function doDiscard(idx) { if(game){game.discardCard(idx);} hideAction(); }
+function peekTopCard() {
+  if(!game || game.gameOver) return;
+  const card = game.peekTopCard && game.peekTopCard();
+  if(card) alert('Crown of Whispers sees: ' + card.emoji + ' ' + card.name + '\\n' + (card.text || ''));
+  else alert('Nothing to peek at yet.');
+}
 function tryQuest(qi) { if(game && !game.gameOver){game.completeQuest(qi);} hideAction(); }
 
 function endTurn() {
@@ -918,3 +940,4 @@ function endTurn() {
 <script defer src="/mascots.js"></script>
 </body>
 </html>
+

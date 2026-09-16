@@ -133,21 +133,29 @@ try{
   const sitemap = bd.sitemap?.urls ?? 0;
   const search = bd.searchIndex?.count ?? 0;
   const delta = Math.abs(sitemap - search);
-  if(delta > 4){
-    console.error(`\n✗ sitemap (${sitemap}) vs search-index (${search}) delta ${delta} >4 - keep generate-sitemap.js EXCLUDE and generate-search-index.js SKIP in sync via lib/paths`);
+  if(delta !== 0){
+    console.error(`\n✗ sitemap (${sitemap}) vs search-index (${search}) delta ${delta} !==0 - keep generate-sitemap.js EXCLUDE and generate-search-index.js SKIP in sync via lib/paths GAME_ORPHANS`);
     process.exit(1);
-  } else console.log(`✓ sitemap/search parity: ${sitemap} vs ${search} delta ${delta} (<=4 allowed, 0 ideal)`);
+  } else console.log(`✓ sitemap/search parity: ${sitemap} vs ${search} delta ${delta} (==0)`);
   const gf = bd.content?.filesystem?.games ?? 0;
   const gr = bd.content?.drift?.gamesRegistry ?? bd.content?.stats?.games ?? 0;
+  const {GAME_ORPHANS: _GO} = require('./lib/paths');
+  const gamesRaw = fs.readdirSync(path.join(ROOT,'games')).filter(f=>f.endsWith('.html')).length;
+  const gamesOrphans = _GO.filter(f=> { try{ return fs.existsSync(path.join(ROOT,f)); }catch{return false;}}).length;
   if(gf !== gr){
-    console.error(`\n✗ games drift: filesystem ${gf} != registry ${gr} - 32 curated vs 40 raw, orphans should be noindex redirects (see A130)`);
+    console.error(`\n✗ games drift: filesystem ${gf} != registry ${gr} - ${gamesRaw} raw, ${gamesOrphans} orphans (curated ${gamesRaw - gamesOrphans}), orphans should be noindex redirects (see A130)`);
     process.exit(1);
-  } else console.log(`✓ games curated parity: registry ${gr} == filesystem ${gf} (32)`);
+  } else console.log(`✓ games curated parity: registry ${gr} == filesystem ${gf} (raw ${gamesRaw}, ${gamesOrphans} orphans)`);
   const tf = bd.content?.stats?.tools ?? 0;
-  if(tf !== 40){
-    console.error(`\n✗ tools curated ${tf} != 40 - hub live is 40 indexable (61 raw includes 21 noindex landing/reference)`);
+  const {EXCLUDE_FILES: _EXCLUDE} = require('./lib/paths');
+  const toolsJson = JSON.parse(fs.readFileSync(path.join(ROOT,'content/tools.json'),'utf8'));
+  const expectedTools = toolsJson.length;
+  const rawTools = fs.readdirSync(path.join(ROOT,'tools')).filter(f=>f.endsWith('.html')).length;
+  const orphansTools = rawTools - expectedTools;
+  if(tf !== expectedTools){
+    console.error(`\n✗ tools curated ${tf} != ${expectedTools} - hub live is ${expectedTools} indexable (${rawTools} raw includes ${orphansTools} noindex landing/reference)`);
     process.exit(1);
-  } else console.log(`✓ tools curated: 40 (raw 61, 21 noindex)`);
+  } else console.log(`✓ tools curated: ${expectedTools} (raw ${rawTools}, ${orphansTools} noindex)`);
   // A178: verify 21 orphans are noindex+canonical (not searchable duplicates)
   try{
     const toolsDir = path.join(ROOT,'tools');
@@ -180,7 +188,7 @@ try{
 try{
   const devlog=fs.readFileSync(path.join(ROOT,'devlog-data.js'),'utf8');
   const block=(devlog.match(/const POSTS\s*=\s*\[([\s\S]*?)\n\];/)||[])[1]||devlog;
-  const ids=[...block.matchAll(/\{\s*id:\s*(\d+)/g)].map(m=>m[1]);
+  const ids=[...block.matchAll(/\{\s*["']?id["']?\s*:\s*(\d+)/g)].map(m=>m[1]);
   const seen=new Set(), dup=new Set();
   for(const id of ids){ if(seen.has(id)) dup.add(id); else seen.add(id); }
   if(dup.size){ console.error(`\n✗ devlog-data.js duplicate ids: ${[...dup].join(', ')} - dedupe by id`); process.exit(1); }

@@ -145,7 +145,15 @@
 
   <!-- ══ PLAY ══ -->
   <section class="arc-view" id="view-play" role="tabpanel" aria-label="Play">
-    <input class="arc-search" id="search" type="search" placeholder="Search games..." aria-label="Search games">
+    <div class="finder-panel" aria-label="Find your next game">
+      <div>
+        <strong>Find your next game</strong>
+        <p>Browse by learning focus, play style, age, or games you have not tried yet.</p>
+      </div>
+      <div class="finder-actions" id="finderActions"></div>
+    </div>
+    <input class="arc-search" id="search" type="search" placeholder="Search title, skill, character, or style..." aria-label="Search games">
+    <div class="result-line" id="resultLine"></div>
     <div class="chips" id="chips"></div>
     <div class="sortrow" id="sortRow" role="group" aria-label="Sort games"></div>
     <div class="grid" id="grid"></div>
@@ -600,8 +608,41 @@
 
   var filter = 'All';
   var query = '';
+  var finder = 'all';
   var sortMode = lsGet('jvds_arc_sort', 'featured');
-  var SORTS = [['featured', 'Featured'], ['fresh', 'Fresh picks'], ['recent', 'Recent'], ['az', 'A-Z']];
+  var SORTS = [['featured', 'Featured'], ['fresh', 'Unplayed first'], ['learning', 'Learning value'], ['recent', 'Recent'], ['az', 'A-Z']];
+  var RECENTLY_IMPROVED = ['marble-run-lab','stardust','candy-kingdom','call-of-cards','stack-attack','bread-blocks'];
+  var LEARNING_WORDS = ['learn','logic','maths','math','pattern','memory','strategy','planning','physics','route','spatial','creative','typing','word','quiz','puzzle','ttrpg'];
+
+  function textOf(g) {
+    return [g.title, g.tag, g.desc, g.cat, g.age, g.learning, g.learningGoal, g.controls, g.character].filter(Boolean).join(' ');
+  }
+
+  function hasLearningValue(g) {
+    var t = textOf(g).toLowerCase();
+    return !!g.kids || LEARNING_WORDS.some(function (w) { return t.indexOf(w) >= 0; });
+  }
+
+  function playPromise(g) {
+    var t = textOf(g).toLowerCase();
+    if (g.id === 'marble-run-lab') return 'Route logic and cause-effect';
+    if (g.id === 'stardust') return 'Pattern reading and attention';
+    if (g.id === 'candy-kingdom') return 'Story choices and d6 roleplay';
+    if (g.id === 'call-of-cards') return 'Card strategy and planning';
+    if (g.id === 'stack-attack') return 'Maths, balance, and timing';
+    if (g.id === 'bread-blocks') return 'Spatial planning missions';
+    if (t.indexOf('memory') >= 0) return 'Memory and recall';
+    if (t.indexOf('strategy') >= 0 || t.indexOf('management') >= 0 || t.indexOf('manager') >= 0) return 'Planning and decisions';
+    if (t.indexOf('match') >= 0 || t.indexOf('puzzle') >= 0 || t.indexOf('logic') >= 0) return 'Puzzle thinking';
+    if (t.indexOf('rhythm') >= 0 || t.indexOf('timing') >= 0) return 'Timing and focus';
+    if (g.kids) return 'Gentle play for younger learners';
+    return 'Quick play challenge';
+  }
+
+  function finderLabel(key) {
+    var labels = { all:'All games', education:'Educational', kids:'Little players', unplayed:'Not tried yet', short:'Short sessions', improved:'Recently improved', strategy:'Strategy', puzzle:'Puzzle', action:'Action' };
+    return labels[key] || key;
+  }
 
   function categories() {
     var seen = ['All'];
@@ -627,6 +668,37 @@
     document.getElementById('chips').innerHTML = html;
   }
 
+  function renderFinderActions(smap) {
+    var actions = [
+      ['all', '🎮', 'All games'],
+      ['education', '🧠', 'Educational'],
+      ['kids', '🧸', 'Little players'],
+      ['unplayed', '✨', 'Not tried yet'],
+      ['short', '⏱️', 'Short games'],
+      ['improved', '🛠️', 'Improved'],
+      ['strategy', '♟️', 'Strategy'],
+      ['puzzle', '🧩', 'Puzzle'],
+      ['action', '⚡', 'Action']
+    ];
+    function countFor(key) { return GAMES.filter(function (g) { return finderMatches(g, smap, key); }).length; }
+    document.getElementById('finderActions').innerHTML = actions.map(function (a) {
+      return '<button type="button" data-finder="' + a[0] + '" aria-pressed="' + (finder === a[0]) + '"><span>' + a[1] + '</span>' + esc(a[2]) + '<b>' + countFor(a[0]) + '</b></button>';
+    }).join('');
+  }
+
+  function finderMatches(g, smap, key) {
+    if (key === 'all') return true;
+    if (key === 'education') return hasLearningValue(g);
+    if (key === 'kids') return !!g.kids;
+    if (key === 'unplayed') return !smap[g.id] || !(smap[g.id].plays > 0);
+    if (key === 'short') return /5|quick|short|mini|tiny/i.test(String(g.session || '') + ' ' + textOf(g));
+    if (key === 'improved') return RECENTLY_IMPROVED.indexOf(g.id) >= 0;
+    if (key === 'strategy') return g.cat === 'Strategy';
+    if (key === 'puzzle') return g.cat === 'Puzzle';
+    if (key === 'action') return g.cat === 'Action';
+    return true;
+  }
+
   function renderSortRow() {
     document.getElementById('sortRow').innerHTML = SORTS.map(function (s) {
       return '<button type="button" data-sort="' + s[0] + '" aria-pressed="' +
@@ -650,6 +722,12 @@
       });
     } else if (sortMode === 'az') {
       arr.sort(function (a, b) { return a.title.localeCompare(b.title); });
+    } else if (sortMode === 'learning') {
+      arr.sort(function (a, b) {
+        var av = (hasLearningValue(a) ? 0 : 1);
+        var bv = (hasLearningValue(b) ? 0 : 1);
+        return av - bv || playPromise(a).localeCompare(playPromise(b)) || a.title.localeCompare(b.title);
+      });
     } else if (sortMode === 'recent') {
       arr.sort(function (a, b) {
         var la = (smap[a.id] && smap[a.id].last) || 0;
@@ -675,6 +753,7 @@
     filter = 'All';
     query = '';
     document.getElementById('search').value = '';
+    finder = 'unplayed';
     sortMode = 'fresh';
     lsSet('jvds_arc_sort', sortMode);
     renderChips();
@@ -694,16 +773,24 @@
                 : filter === 'Little Players' ? g.kids
                 : g.cat === filter;
       if (!okCat) return false;
+      if (!finderMatches(g, smap, finder)) return false;
       if (!q) return true;
-      return (g.title + ' ' + g.tag + ' ' + g.desc).toLowerCase().indexOf(q) >= 0;
+      return textOf(g).toLowerCase().indexOf(q) >= 0;
     });
     list = applySort(list, smap);
+    renderFinderActions(smap);
+    var line = document.getElementById('resultLine');
+    if (line) line.textContent = list.length + ' of ' + GAMES.length + ' games shown' + (finder !== 'all' ? ' · ' + finderLabel(finder) : '') + (filter !== 'All' ? ' · ' + filter : '') + (q ? ' · search: “' + query.trim() + '”' : '');
 
     document.getElementById('noResults').hidden = list.length > 0;
     document.getElementById('grid').innerHTML = list.map(function (g) {
       var s = smap[g.id];
       var best = (s && s.high > 0) ? '<div class="best">★ ' + fmt(s.high) + '</div>' : '';
       var kid = g.kids ? '<div class="kidflag">Little Players</div>' : '';
+      var promise = playPromise(g);
+      var improved = RECENTLY_IMPROVED.indexOf(g.id) >= 0 ? '<span class="mini-badge improved">Improved</span>' : '';
+      var age = g.age ? '<span class="mini-badge">' + esc(g.age) + '</span>' : '';
+      var session = g.session ? '<span class="mini-badge">' + esc(g.session) + '</span>' : '';
       var info = '<div class="info-chip" data-info="' + esc(g.id) + '" role="button" aria-label="' +
                  esc(g.title) + ' details">i</div>';
       var plays = (s && s.plays > 0)
@@ -956,10 +1043,18 @@
     var c = e.target.closest('[data-action]');
     if (c && c.dataset.action === 'clear-filters') {
       filter = 'All';
+      finder = 'all';
       query = '';
       document.getElementById('search').value = '';
       renderChips();
       renderGrid();
+    }
+    var f = e.target.closest('[data-finder]');
+    if (f) {
+      finder = f.dataset.finder || 'all';
+      if (finder === 'kids') filter = 'All';
+      renderGrid();
+      buzz(6);
     }
   });
 
@@ -1086,12 +1181,14 @@
         (g.difficulty ? dRow('Difficulty', esc(g.difficulty)) : '') +
         (g.session ? dRow('Session', esc(g.session)) : '') +
         (g.controls ? dRow('Controls', esc(g.controls)) : '') +
+        (g.learning ? dRow('Learning', esc(g.learning)) : '') +
         dRow('Your best', s.high > 0 ? fmt(s.high) : '-') +
         dRow('Plays', String(s.plays)) +
         dRow('Last played', s.last ? fmtAgo(s.last) : 'never') +
         dRow('Goals earned', sharedGot + (customGot > 0 ? ' <span style="color:var(--arc-faint)">+' + customGot + ' in-game</span>' : '')) +
       '</div>' +
       '<p class="d-desc">' + esc(g.desc || '') + '</p>' +
+      (g.learningGoal ? '<p class="d-desc"><b>Learning goal:</b> ' + esc(g.learningGoal) + '</p>' : '') +
       (g.kids ? '<p class="d-desc">👶 ' + esc(g.age || 'Little Players') + ' , gentle and forgiving.</p>' : '');
     detailSheet.hidden = false;
     detailBackdrop.hidden = false;
