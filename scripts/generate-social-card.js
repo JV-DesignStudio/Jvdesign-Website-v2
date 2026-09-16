@@ -68,7 +68,7 @@ function cleanText(v) { return String(v || '').replace(/[\u2013\u2014]/g, ' - ')
 function escXml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function parsePosts(srcText) {
-  const re = /\{\s*id:\s*(\d+)[\s\S]*?date:\s*'([^']+)'[\s\S]*?tag:\s*'([^']+)'[\s\S]*?emoji:\s*'([^']+)'[\s\S]*?title:\s*'([^']+)'[\s\S]*?excerpt:\s*(?:'([^']*)'|"([^"]*)")/g;
+  const re = /\{\s*"?id"?:\s*(\d+)[\s\S]*?"?date"?:\s*["']([^"']+)["'][\s\S]*?"?tag"?:\s*["']([^"']+)["'][\s\S]*?"?emoji"?:\s*["']([^"']+)["'][\s\S]*?"?title"?:\s*["']([^"']+)["'][\s\S]*?"?excerpt"?:\s*(?:"([^"]*)"|'([^']*)')/g;
   const out = [];
   let m;
   while ((m = re.exec(srcText)) !== null) {
@@ -81,7 +81,7 @@ function parsePosts(srcText) {
     const blockStart = m.index;
     const block = srcText.slice(blockStart, blockStart + 8000);
     let content = '';
-    const cm = block.match(/content:\s*(?:'([\s\S]*?)'|"([\s\S]*?)"|`([\s\S]*?)`)\s*\n\s*\}/);
+    const cm = block.match(/"?content"?:\s*(?:"([\s\S]*?)"|'([\s\S]*?)'|`([\s\S]*?)`)\s*\n\s*\}/);
     if (cm) content = (cm[1] || cm[2] || cm[3] || '').trim();
     out.push({ id, date, tag, emoji, title: cleanText(title), excerpt: cleanText(excerpt.trim()), content: cleanText(content) });
   }
