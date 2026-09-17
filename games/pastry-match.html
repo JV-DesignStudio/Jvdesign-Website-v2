@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="description" content="Pastry Match, flip cards to find pairs. A free memory matching game by JVDesignStudio.">
+<meta name="description" content="Pastry Match Bakery Orders is a memory and planning game where players complete recipe orders by finding pastry pairs in smart sequences.">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
 <meta name="theme-color" content="#c56cf0">
@@ -10,12 +10,12 @@
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/pastry-match.html">
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Pastry Match | JVDesignStudio</title>
+<title>Pastry Match: Bakery Orders | JVDesignStudio</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@700;800&display=swap" rel="stylesheet">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jvdesignstudio.co.uk/games/pastry-match.html">
 <meta property="og:title" content="Pastry Match | JVDesignStudio">
-<meta property="og:description" content="Flip cards to find matching pastries. XP, achievements, and character unlocks.">
+<meta property="og:description" content="Complete bakery recipe orders by remembering pastry positions, matching pairs, and using focus tools wisely.">
 <meta property="og:image" content="https://jvdesignstudio.co.uk/og/pastry-match.png">
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/pastry-match.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -24,7 +24,7 @@
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <link rel="preload" href="../style-game-pastry-match.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-game-pastry-match.css?v=17"></noscript>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Pastry Match","url":"https://jvdesignstudio.co.uk/games/pastry-match.html","description":"Flip cards to find matching pastries. Test your memory, match pairs quickly, and earn high scores.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/PastryMatchCover.webp"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Pastry Match: Bakery Orders","url":"https://jvdesignstudio.co.uk/games/pastry-match.html","description":"Complete bakery recipe orders by remembering pastry positions, matching pairs, and using focus tools wisely.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/PastryMatchCover.webp"}</script>
 <link rel="stylesheet" href="/style-mascots.css">
 </head>
 <body>
@@ -39,16 +39,17 @@
     <button class="home-btn" onclick="location.href='../pages/games.html'">🏠</button>
   </div>
 
+  <div class="recipe-order"><strong id="recipeName">Order board</strong><div class="recipe-slots" id="recipeSlots"></div><small id="recipeHint">Match the highlighted pastry pair to complete the recipe bonus.</small></div>
   <div class="pastry-tools"><span id="pastryFocus">Focus 3</span><button type="button" id="pastryNote" onclick="notePastry()" disabled>Pin revealed card · 1</button><button type="button" id="pastryGlance" onclick="glancePastries()" disabled>Glance at all · 3</button><small>Two matched pairs restore 1 focus. Pin a card to remember it, or save for a glance.</small></div>
   <div class="board" id="board"></div>
 
   <div class="modal show" id="startModal">
     <div class="card-modal">
-      <h1>🧩 Pastry Match</h1>
-      <div class="sub">Flip cards to find pairs</div>
+      <h1>🧁 Pastry Match</h1>
+      <div class="sub">Complete bakery orders with memory and planning</div>
       <div class="how">
-        <div>You get a quick <b>sneak peek</b> at the start , memorise the pastries!</div>
-        <div style="margin-top:8px;">Match pairs back-to-back to build a <b>streak</b> for bonus points. Finish fast for a time bonus!</div>
+        <div>You get a quick <b>sneak peek</b> at the start. Read the bakery order, then find those pairs first for recipe bonuses.</div>
+        <div style="margin-top:8px;">Use <b>Focus</b> to pin one card or glance at the board. Smart order planning scores more than random flipping.</div>
       </div>
       <div class="mode-row" id="modeRow"></div>
       <div class="stats">
@@ -82,6 +83,13 @@ const audioEffects = new AudioEffects(0.6);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
 
 const PASTRIES = ['🥐', '🧁', '🍪', '🍰', '🥧', '🍩', '🧆', '🥯', '🍫', '🍬', '🥞', '🍮'];
+const RECIPES = [
+  { name:'Breakfast Box', items:['🥐','🥞','🍪'] },
+  { name:'Party Plate', items:['🧁','🍰','🍩'] },
+  { name:'Cosy Cafe Tray', items:['🥧','🥯','🍫'] },
+  { name:'Sweet Shop Order', items:['🍬','🍮','🧁'] },
+  { name:'Chef Challenge', items:['🥐','🍰','🍩','🍫'] }
+];
 const MODES = [
   { id: 'easy', cols: 4, rows: 3, pairs: 6,  label: '🧒 Little Baker' },
   { id: 'std',  cols: 4, rows: 4, pairs: 8,  label: '🧑 Baker' },
@@ -103,12 +111,16 @@ let cards = [];
 let cardEls = [];
 let state = 'menu';
 let score = 0, moves = 0, best = 0, streak = 0, maxMoves = 0;
+let activeRecipe = null, recipeProgress = [];
 let flipped = [];
 let matched = 0;
 let startTime = 0;
 let timerInterval = null;
 let pastryFocus=3;
 function refreshPastryTools(){const a=document.getElementById('pastryNote'),b=document.getElementById('pastryGlance');a.disabled=state!=='playing'||pastryFocus<1||flipped.length!==1||cards[flipped[0]]?.noted;b.disabled=state!=='playing'||pastryFocus<3||flipped.length!==0;document.getElementById('pastryFocus').textContent='Focus '+pastryFocus;}
+function chooseRecipe(){ const mode=currentMode(); const pool=RECIPES.filter(r=>r.items.length<=Math.min(4,mode.pairs)); activeRecipe=pool[Math.floor(Math.random()*pool.length)]||RECIPES[0]; recipeProgress=[]; }
+function renderRecipe(){ const name=document.getElementById('recipeName'), slots=document.getElementById('recipeSlots'), hint=document.getElementById('recipeHint'); if(!name||!slots||!activeRecipe)return; name.textContent='Order: '+activeRecipe.name; slots.innerHTML=activeRecipe.items.map((emoji,i)=>'<span class="recipe-slot '+(recipeProgress.indexOf(emoji)>=0?'done':i===recipeProgress.length?'next':'')+'">'+emoji+'</span>').join(''); const next=activeRecipe.items[recipeProgress.length]; hint.textContent=next?'Find the '+next+' pair next for a recipe bonus.':'Recipe complete. Finish the remaining pairs.'; }
+function applyRecipeMatch(emoji){ if(!activeRecipe) return 0; const next=activeRecipe.items[recipeProgress.length]; if(emoji===next){ recipeProgress.push(emoji); renderRecipe(); floatText('Order step +150', true); return 150; } if(activeRecipe.items.includes(emoji) && recipeProgress.indexOf(emoji)<0){ floatText('Good pair, but not the order yet'); return 25; } return 0; }
 function notePastry(){if(state!=='playing'||pastryFocus<1||flipped.length!==1||cards[flipped[0]].noted)return;pastryFocus--;cards[flipped[0]].noted=true;updateCard(flipped[0]);refreshPastryTools();}
 function glancePastries(){if(state!=='playing'||pastryFocus<3||flipped.length)return;pastryFocus-=3;state='glance';cards.forEach((c,i)=>{if(c.state==='hidden'){c.state='peek';updateCard(i);}});refreshPastryTools();pastryLater(()=>{cards.forEach((c,i)=>{if(c.state==='peek'){c.state='hidden';updateCard(i);}});state='playing';refreshPastryTools();},850);}
 
@@ -127,6 +139,8 @@ function initCards() {
   matched = 0;
   flipped = [];
   score = 0;
+  chooseRecipe();
+  renderRecipe();
   moves = 0;
   streak = 0;
   maxMoves = mode.pairs * 3; // move limit = 3x pairs
@@ -204,7 +218,7 @@ function checkMatch() {
     streak++;
     const mult = streak >= 10 ? 3 : streak >= 5 ? 2 : streak >= 3 ? 1.5 : 1;
     const bonus = Math.round((streak - 1) * 25 * mult);
-    score += Math.round((Math.max(100 - moves * 2, 10)) * mult) + bonus;
+    score += Math.round((Math.max(100 - moves * 2, 10)) * mult) + bonus + applyRecipeMatch(cards[a].emoji);
     updateCard(a);
     updateCard(b);
     ParticleSystem.sparkle(cardEls[a], 5);
@@ -286,7 +300,8 @@ function endGame(didWin = true) {
   if (didWin) { ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 18); audioEffects.playLevelUp(); }
   else audioEffects.playError();
   const won = matched === currentMode().pairs;
-  document.getElementById('winSub').textContent = (won ? (moves <= 16 ? 'Perfect memory! 🧠' : 'Great match!') : 'Out of moves!') + (timeBonus > 0 ? ' ⏱ Time bonus +' + timeBonus : '');
+  const orderDone = activeRecipe && recipeProgress.length === activeRecipe.items.length;
+  document.getElementById('winSub').textContent = (won ? (orderDone ? 'Bakery order complete! 🧠' : 'Pairs complete. Try the recipe order bonus next!') : 'Out of moves!') + (timeBonus > 0 ? ' ⏱ Time bonus +' + timeBonus : '');
   document.getElementById('finalScore').textContent = score.toLocaleString();
   GameUI.countUp(document.getElementById('finalScore'), score);
   document.getElementById('finalMoves').textContent = moves;

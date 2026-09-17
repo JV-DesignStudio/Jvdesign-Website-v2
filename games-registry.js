@@ -13,7 +13,8 @@ window.JVDS_GAMES = [
     "difficulty": "Easy to learn",
     "session": "5-10 min",
     "controls": "Tap pixels, abilities, train and battle"
-  },  {
+  },
+  {
     "id": "stardust-ruins",
     "cat": "Puzzle",
     "file": "stardust-ruins.html",
@@ -27,7 +28,8 @@ window.JVDS_GAMES = [
     "difficulty": "Easy to learn",
     "session": "5-10 min",
     "controls": "Tap movement, rotate, and search"
-  },  {
+  },
+  {
     "id": "beat-builder-battle",
     "cat": "Action",
     "file": "beat-builder-battle.html",
@@ -41,7 +43,8 @@ window.JVDS_GAMES = [
     "difficulty": "Medium",
     "session": "5-10 min",
     "controls": "Tap pads and sequencer steps"
-  },  {
+  },
+  {
     "id": "creature-rescue-clinic",
     "cat": "Chill",
     "file": "creature-rescue-clinic.html",
@@ -55,7 +58,8 @@ window.JVDS_GAMES = [
     "difficulty": "Easy to learn",
     "session": "5-10 min",
     "controls": "Tap symptoms, treatments, and upgrades"
-  },  {
+  },
+  {
     "id": "echo-casebook",
     "cat": "Puzzle",
     "file": "echo-casebook.html",
@@ -69,21 +73,23 @@ window.JVDS_GAMES = [
     "difficulty": "Easy to learn",
     "session": "5-10 min",
     "controls": "Tap clues, suspects, and deductions"
-  },  {
+  },
+  {
     "id": "marble-run-lab",
     "cat": "Puzzle",
     "file": "marble-run-lab.html",
     "title": "Marble Run Lab",
-    "tag": "Physics Toy",
+    "tag": "Route Physics",
     "emoji": "🧪",
     "cover": "",
     "bg": "linear-gradient(135deg,#203864,#70a3a7)",
     "kids": false,
-    "desc": "Build marble-run courses with ramps, bumpers, boosts and collectors, then launch and tune for three-star challenge scores.",
+    "desc": "Rotate route tiles, trace the marble path, fix leaks and guide the marble from start to goal across staged logic labs.",
     "difficulty": "Easy to learn",
     "session": "5-10 min",
     "controls": "Tap parts, place track, launch"
-  },  {
+  },
+  {
     "id": "backpack-quest",
     "cat": "Strategy",
     "file": "backpack-quest.html",
@@ -97,7 +103,8 @@ window.JVDS_GAMES = [
     "difficulty": "Medium",
     "session": "5-10 min",
     "controls": "Tap routes, loot, and Use Pack"
-  },  {
+  },
+  {
     "id": "mini-theme-park-builder",
     "cat": "Strategy",
     "file": "mini-theme-park-builder.html",
@@ -174,12 +181,14 @@ window.JVDS_GAMES = [
     "cat": "Action",
     "file": "paper-toss-deluxe.html",
     "title": "Paper Toss Deluxe",
-    "tag": "Flick / Timing",
+    "tag": "Physics · Estimation",
     "emoji": "🗑️",
     "cover": "PaperTossCover.webp",
     "bg": "linear-gradient(135deg,#16241a,#28402c)",
     "kids": false,
-    "desc": "Flick paper into the bin across 20 levels of wind and distance. Simple to pick up, tricky to master."
+    "desc": "A physics estimation challenge: read wind and distance, adjust throw angle and force, then learn from each miss across 20 levels.",
+    "session": "3-8 min",
+    "controls": "Drag to aim, estimate wind, adjust force and arc"
   },
   {
     "id": "echo-flight",
@@ -197,13 +206,16 @@ window.JVDS_GAMES = [
     "id": "pastry-match",
     "cat": "Puzzle",
     "file": "pastry-match.html",
-    "title": "Pastry Match",
-    "tag": "Memory · Puzzle",
+    "title": "Pastry Match: Bakery Orders",
+    "tag": "Memory · Planning",
     "emoji": "🧩",
     "cover": "PastryMatchCover.webp",
     "bg": "linear-gradient(135deg,#d4a5e0,#e8d5f2)",
-    "kids": false,
-    "desc": "Flip cards to find matching pastries. Test your memory, match pairs quickly, and earn high scores."
+    "kids": true,
+    "desc": "Memorise pastry positions, match pairs in the recipe order, spend focus on pins or board glances, and complete bakery orders efficiently.",
+    "age": "Ages 6-10",
+    "session": "5-8 min",
+    "controls": "Flip cards, complete recipe orders, use focus tools"
   },
   {
     "id": "dough-dash",
@@ -234,12 +246,12 @@ window.JVDS_GAMES = [
     "cat": "Puzzle",
     "file": "bread-blocks.html",
     "title": "Bread Blocks",
-    "tag": "Block Puzzle",
+    "tag": "Spatial Missions",
     "emoji": "🍞",
     "cover": "BreadBlocksCover.webp",
     "bg": "linear-gradient(135deg,#9ccc65,#7cb342)",
     "kids": false,
-    "desc": "Stack falling blocks to complete rows. Don't let them reach the top!"
+    "desc": "Place bakery blocks with a mission target in mind: clear rows, build baskets, and practise spatial planning under pressure."
   },
   {
     "id": "lumo-firefly",
@@ -318,12 +330,14 @@ window.JVDS_GAMES = [
     "cat": "Action",
     "file": "tiger_smash.html",
     "title": "Tiger Smash",
-    "tag": "Action",
+    "tag": "Angles · Brick Breaker",
     "emoji": "",
     "cover": "TigerSmashCover.webp",
     "bg": "linear-gradient(135deg,#2a1500,#4a2800)",
     "kids": false,
-    "desc": "Fast-paced smashing action with tiger Squirt. Break blocks, rack up combos, beat your high score."
+    "desc": "A brick-breaker about angles and rebound planning: aim shots, clear themed stages, collect coins, and choose useful paddle upgrades.",
+    "session": "5-10 min",
+    "controls": "Move paddle, aim rebounds, break target brick layouts"
   },
   {
     "id": "dungeon-delve",
@@ -342,12 +356,15 @@ window.JVDS_GAMES = [
     "cat": "Action",
     "file": "little_steps.html",
     "title": "Little Steps",
-    "tag": "Endless Runner",
+    "tag": "Choice Runner",
     "emoji": "🌌",
     "cover": "LittleStepsCover.webp",
     "bg": "linear-gradient(135deg,#03000f,#0d0030)",
-    "kids": false,
-    "desc": "A cosmic endless runner. Choose your path through the void and see how far you can go."
+    "kids": true,
+    "desc": "A cosmic runner about small choices: read the path ahead, choose safer lanes, collect sparks, and keep the journey going one step at a time.",
+    "age": "Ages 6-10",
+    "session": "4-7 min",
+    "controls": "Jump, glide, and choose safer routes through the void"
   },
   {
     "id": "stardust",
@@ -369,73 +386,84 @@ window.JVDS_GAMES = [
     "cat": "Action",
     "file": "critter-whack-page.html",
     "title": "Critter Whack",
-    "tag": "Tap / Reaction",
+    "tag": "Reaction · Sorting",
     "emoji": "🐹",
     "cover": "CritterWhackCover.webp",
     "bg": "linear-gradient(135deg,#234020,#3a6b2e)",
-    "kids": false,
-    "desc": "Whack-a-mole with critters! Tap them before they duck back down, but watch out for the bombs."
+    "kids": true,
+    "desc": "A reaction and sorting challenge: tap the right critters for each wave, avoid bombs, and manage streaks as the pattern changes.",
+    "age": "Ages 5-9",
+    "session": "3-6 min",
+    "controls": "Tap helpful critters, avoid hazards, read wave cues"
   },
   {
     "id": "lumo-dash",
     "cat": "Action",
     "file": "lumo-dash-page.html",
     "title": "Lumo Dash",
-    "tag": "Endless Runner",
+    "tag": "Timing · Reflexes",
     "emoji": "🦊",
     "cover": "LumoDashCover.webp",
     "bg": "linear-gradient(135deg,#3a2e6b,#e0857a)",
-    "kids": false,
-    "desc": "Run, jump and slide with Lumo the fox. Dodge cacti and rocks, grab coins, and chase the longest run."
+    "kids": true,
+    "desc": "Run with Lumo through readable obstacle patterns, choosing when to jump or slide while building focus and timing.",
+    "age": "Ages 6-10",
+    "session": "3-6 min",
+    "controls": "Jump, slide, read obstacle patterns, collect gems"
   },
   {
     "id": "nibble-quest",
     "cat": "Action",
     "file": "nibble-quest-page.html",
     "title": "Nibble Quest",
-    "tag": "Arcade · Snake",
+    "tag": "Route Planning Snake",
     "emoji": "🐍",
     "cover": "NibbleQuestCover.webp",
     "bg": "linear-gradient(135deg,#0f2a26,#08201d)",
-    "kids": false,
-    "desc": "The classic snake, made cosy. Eat fruit, grow longer, and don't bite your own tail. Swipe or arrow keys."
+    "kids": true,
+    "desc": "A cosy snake quest about route planning: collect food, manage a growing trail, use power fruit, and avoid trapping yourself.",
+    "age": "Ages 7-11",
+    "session": "4-8 min",
+    "controls": "Arrow keys or swipe to plan safe food routes"
   },
   {
     "id": "stack-attack",
     "cat": "Action",
     "file": "stack-attack-page.html",
     "title": "Stack Attack",
-    "tag": "One-Button · Timing",
+    "tag": "Maths · Balance",
     "emoji": "🧱",
     "cover": "StackAttackCover.webp",
     "bg": "linear-gradient(135deg,#15224a,#0a1230)",
     "kids": false,
-    "desc": "Tap to drop blocks and build the tallest tower you can. Perfect lines keep your width, but miss and you lose an edge."
+    "desc": "Answer quick maths and symmetry prompts, choose the right block width, then balance the tower to reach the beacon."
   },
   {
     "id": "echo-fruit",
     "cat": "Chill",
     "file": "echo_fruit_catch.html",
     "title": "Echo's Fruit Catch!",
-    "tag": "Catch Game · Tilt to Play",
+    "tag": "Early Years Sorting",
     "emoji": "",
     "cover": "axo-fruit-catch.webp",
     "bg": "linear-gradient(180deg,#87CEEB,#c8efaa)",
     "kids": true,
     "age": "Ages 3-8",
-    "desc": "Help Echo the axolotl catch falling fruit and dodge rocks. Tilt your phone to steer bright, cheerful, and very forgiving."
+    "desc": "A gentle early-years sorting game: help Echo catch fruit, avoid rocks, and practise left-right movement with forgiving controls.",
+    "session": "3-5 min",
+    "controls": "Tilt or drag Echo to catch fruit groups and avoid rocks"
   },
   {
     "id": "call-of-cards",
     "cat": "Strategy",
     "file": "call_of_the_cards.html",
     "title": "Call of the Cards: Quest for the Crown",
-    "tag": "Card Strategy",
+    "tag": "Tabletop Card Strategy",
     "emoji": "🃏",
     "cover": "call-of-the-cards.webp",
     "bg": "linear-gradient(135deg,#1a1a2e,#2a2a4a)",
     "kids": false,
-    "desc": "Strategic tabletop card game of bluffing, alliances and adventure. Build your deck and claim the crown."
+    "desc": "A browser playtest of the tabletop card game: recruit companions, manage gold, cycle your deck, complete quests and race to 5 VP."
   },
   {
     "id": "candy-kingdom",
@@ -511,16 +539,3 @@ window.JVDS_GAMES = [
     "desc": "Multiplayer sky-high adventure. Bounce, climb and race friends to the top."
   }
 ];
-
-
-
-
-
-
-
-
-
-
-
-
-
