@@ -116,6 +116,35 @@ async function createFallbackImage(destDir, title, loop) {
   await sharp(Buffer.from(svg)).png().toFile(dest);
   return file;
 }
+function reelsScript(t, p, data) {
+  const title = cleanPublicTitle(p.title || t.title);
+  const loop = loopFor(t, p);
+  const hook = `What changed in JVDesignStudio: ${title}`;
+  const caption = (data.x || data.instagram || title).replace(/\s+/g, ' ').trim();
+  return cleanText(`# Reels / Shorts Script: ${title}
+
+Format: 15-30 seconds
+Character lane: ${loop.name} - ${loop.role}
+
+Hook:
+${hook}
+
+Shot list:
+1. Open on the tool, game or update title.
+2. Show the main change in action for 3-5 seconds.
+3. Show the learner benefit: make, learn, play, save or improve.
+4. End on the JVDesignStudio page, Dev Log or ready-to-try screen.
+
+Voiceover / on-screen text:
+${caption}
+
+Thumbnail idea:
+Use the ready-pack image with a short title overlay: "${title}".
+
+Posting note:
+Keep it simple, clear and useful. This is a schedule-ready video prompt, not a final filmed asset.
+`);
+}
 function packReadme(t, p, copiedImage) {
   const title = p.title || t.title;
   return cleanText(`# Ready To Post: ${title}
@@ -202,6 +231,7 @@ async function main() {
     fs.writeFileSync(path.join(dir, 'caption-instagram-facebook.txt'), cleanText(data.instagram), 'utf8');
     fs.writeFileSync(path.join(dir, 'caption-x-threads.txt'), cleanText(data.x), 'utf8');
     fs.writeFileSync(path.join(dir, 'newsletter-blurb.txt'), cleanText(data.newsletter), 'utf8');
+    fs.writeFileSync(path.join(dir, 'reels-script.txt'), reelsScript(t, p, data), 'utf8');
     fs.writeFileSync(path.join(dir, 'link.txt'), cleanText(data.link), 'utf8');
     fs.writeFileSync(path.join(dir, 'platforms.txt'), cleanText(['Instagram: https://www.instagram.com/','Facebook: https://www.facebook.com/','X: https://x.com/compose/post','Threads: https://www.threads.net/','YouTube Community: https://www.youtube.com/','Newsletter: open your email/newsletter tool'].join('\n')), 'utf8');
     fs.writeFileSync(path.join(dir, 'preview.html'), previewHtml(t, p, copiedImage, data), 'utf8');
@@ -210,6 +240,7 @@ async function main() {
   console.log(`Ready-to-post packs built: ${made} approved pack(s) in social-posts/ready`);
 }
 main().catch(err => { console.error(err); process.exit(1); });
+
 
 
 

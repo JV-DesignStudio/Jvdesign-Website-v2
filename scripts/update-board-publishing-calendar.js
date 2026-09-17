@@ -15,10 +15,10 @@ const SCRIPT_END = '// End publishing calendar';
 const STYLE = `${STYLE_START}
 .publish-calendar{margin:0 0 18px;padding:16px;border:2px solid #7c3aed;border-radius:16px;background:#fbf8ff;color:#21152f;box-shadow:0 8px 22px rgba(124,58,237,.12)}
 .publish-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}.publish-head h2{font-size:1.15rem;margin:0;color:#21152f}.publish-sub{font-size:.78rem;color:#5b4b72;font-weight:800}
-.publish-grid{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px}.publish-lane{background:#fff;border:1px solid #dbcaf7;border-radius:12px;overflow:hidden;min-height:140px}.publish-lane h3{margin:0;padding:10px 12px;font-size:.82rem;color:#21152f;background:#efe7ff;border-bottom:1px solid #dbcaf7;display:flex;justify-content:space-between;gap:8px}
+.publish-alerts{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px;margin-bottom:12px}.publish-alert{background:#fff;border:1px solid #dbcaf7;border-radius:12px;padding:10px}.publish-alert b{display:block;font-size:1.25rem;color:#21152f}.publish-alert span{font-size:.72rem;color:#64748b;font-weight:800}.publish-grid{display:grid;grid-template-columns:repeat(5,minmax(200px,1fr));gap:12px}.publish-lane{background:#fff;border:1px solid #dbcaf7;border-radius:12px;overflow:hidden;min-height:140px}.publish-lane h3{margin:0;padding:10px 12px;font-size:.82rem;color:#21152f;background:#efe7ff;border-bottom:1px solid #dbcaf7;display:flex;justify-content:space-between;gap:8px}
 .publish-list{display:flex;flex-direction:column;gap:8px;padding:10px}.publish-card{background:#fffaf0;border:1px solid #ead7ad;border-left:4px solid var(--pub-accent,#7c3aed);border-radius:10px;padding:9px;display:grid;gap:6px}.publish-card[data-due="today"]{box-shadow:0 0 0 2px rgba(220,38,38,.18)}.publish-card[data-status="scheduled"]{--pub-accent:#2563eb}.publish-card[data-channel="newsletter"]{--pub-accent:#d97706}.publish-card[data-channel="devlog"]{--pub-accent:#0f766e}.publish-card[data-channel="video"]{--pub-accent:#dc2626}
 .publish-meta{font-size:.66rem;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.04em}.publish-title{font-size:.78rem;font-weight:900;color:#172033;line-height:1.35}.publish-line{font-size:.72rem;color:#475569;line-height:1.35}.publish-line strong{color:#21152f}.publish-actions{display:flex;gap:6px;flex-wrap:wrap}.publish-actions button{font-size:.67rem;font-weight:900;border:1px solid #dbcaf7;background:#fff;color:#5b21b6;border-radius:999px;padding:5px 8px;cursor:pointer}.publish-actions button.primary{background:#7c3aed;color:#fff;border-color:#7c3aed}.publish-empty{font-size:.74rem;color:#64748b;padding:10px;line-height:1.4}
-@media(max-width:1150px){.publish-grid{grid-template-columns:repeat(2,minmax(220px,1fr))}}@media(max-width:620px){.publish-grid{grid-template-columns:1fr}.publish-calendar{padding:12px}}
+@media(max-width:1250px){.publish-grid{grid-template-columns:repeat(2,minmax(220px,1fr))}.publish-alerts{grid-template-columns:1fr 1fr}}@media(max-width:620px){.publish-grid{grid-template-columns:1fr}.publish-calendar{padding:12px}}
 ${STYLE_END}`;
 
 const SECTION = `${SECTION_START}
@@ -27,8 +27,8 @@ const SECTION = `${SECTION_START}
         <h2>Publishing Calendar</h2>
         <span class="publish-sub" id="publishSummary">Loading schedule reminders...</span>
       </div>
-      <div class="publish-grid">
-        <div class="publish-lane"><h3>Dev Logs <span id="pubDevlogCount">0</span></h3><div class="publish-list" id="pubDevlogs"></div></div>
+      <div class="publish-alerts"><div class="publish-alert"><b id="pubTodayCount">0</b><span>Scheduled today</span></div><div class="publish-alert"><b id="pubMissedCount">0</b><span>Missed uploads</span></div></div>\n      <div class="publish-grid">
+        <div class="publish-lane"><h3>Missed Uploads <span id="pubMissedLaneCount">0</span></h3><div class="publish-list" id="pubMissed"></div></div>\n        <div class="publish-lane"><h3>Dev Logs <span id="pubDevlogCount">0</span></h3><div class="publish-list" id="pubDevlogs"></div></div>
         <div class="publish-lane"><h3>Friday Newsletter <span id="pubNewsletterCount">0</span></h3><div class="publish-list" id="pubNewsletter"></div></div>
         <div class="publish-lane"><h3>Social Schedule <span id="pubSocialCount">0</span></h3><div class="publish-list" id="pubSocial"></div></div>
         <div class="publish-lane"><h3>Reels / Video <span id="pubVideoCount">0</span></h3><div class="publish-list" id="pubVideo"></div></div>
@@ -50,7 +50,7 @@ const SCRIPT = `${SCRIPT_START}
   const title=t=>t.pack?.title||t.title||'Untitled';
   const kind=t=>String(t.pack?.kind||'social').toLowerCase();
   function due(t,channel){const s=t.pack?.schedule||{}; if(s[channel]?.date)return s[channel].date; if(channel==='newsletter')return iso(friday); if(channel==='video')return iso(add(friday,2)); if(channel==='devlog')return iso(today); return iso(add(today,1));}
-  function isDueToday(date){return date===iso(today);}
+  function dateValue(date){const d=new Date(date+'T00:00:00');return Number.isFinite(d.getTime())?d:null;}\n  function isDueToday(date){return date===iso(today);}\n  function isMissed(date){const d=dateValue(date);return d&&d<today;}
   async function schedule(id,channel,date,time,type){
     const r=await fetch('http://localhost:8787/api/comms-schedule',{method:'POST',headers:{'Content-Type':'application/json','X-Studio-Token':token()},body:JSON.stringify({id,channel,date,time,type})});
     const j=await r.json(); if(!j.ok) throw new Error(j.error||'Could not schedule'); location.reload();
@@ -84,7 +84,7 @@ const SCRIPT = `${SCRIPT_START}
   const newsletter=approved.filter(t=>!t.pack?.posted?.newsletter).slice(0,5);
   const socials=approved.filter(t=>!t.pack?.posted?.social).slice(0,5);
   const video=socials.filter(t=>/video|reel|youtube|workshop|game|arcade|play/i.test([title(t),t.tag,t.desc].join(' '))).slice(0,5);
-  fill('pubDevlogs','pubDevlogCount',devlogs,'devlog','devlog','No Dev Log reminders right now.');
+  const scheduledItems=[];\n  approved.forEach(t=>['social','newsletter','video','devlog'].forEach(channel=>{if(t.pack?.schedule?.[channel]?.date)scheduledItems.push({task:t,channel,date:t.pack.schedule[channel].date});}));\n  const missed=scheduledItems.filter(x=>isMissed(x.date)).map(x=>x.task);\n  fill('pubMissed','pubMissedLaneCount',missed,'social','social','No missed uploads.');\n  fill('pubDevlogs','pubDevlogCount',devlogs,'devlog','devlog','No Dev Log reminders right now.');
   fill('pubNewsletter','pubNewsletterCount',newsletter,'newsletter','newsletter','Friday newsletter has no approved items yet.');
   fill('pubSocial','pubSocialCount',socials,'social','social','No approved social posts waiting to schedule.');
   fill('pubVideo','pubVideoCount',video,'video','reel','No Reels/video candidates yet.');
@@ -114,5 +114,6 @@ function patchServer(){
 patchBoard();
 patchServer();
 console.log('Updated private board Publishing Calendar and schedule API');
+
 
 
