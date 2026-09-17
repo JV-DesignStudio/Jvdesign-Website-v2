@@ -6,6 +6,7 @@ Kind: devlog
 Source: A08
 Image: jvds-social-card.png
 Preview: preview.html
+Upload pack: upload.html
 
 Manual posting flow:
 1. Open preview.html or use the board platform buttons.

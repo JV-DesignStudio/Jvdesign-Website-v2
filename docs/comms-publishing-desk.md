@@ -104,3 +104,19 @@ Use **Schedule** to set a date and simple slot such as `morning`, `lunch`, `even
 - Schedule presets are available for Mon/Wed/Fri social, Friday newsletter and Weekend Reel slots.
 - The Friday newsletter builder creates a weekly draft from approved comms.
 
+
+## Upload Pack
+
+Every ready pack now includes `upload.html`, a one-page handoff for external systems. Use it when moving from the board into Meta Business Suite, YouTube Studio, TikTok, Buffer, Later, Metricool or newsletter tools.
+
+It includes:
+
+- platform-specific copy buttons
+- scheduler links
+- the ready image
+- the Dev Log link
+- newsletter copy
+- Reels / Shorts script
+- proof template for scheduled or posted evidence
+
+When something is scheduled, paste the scheduled proof or note back into the board. When it is live, mark it posted or sent.

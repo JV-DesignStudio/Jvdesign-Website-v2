@@ -145,6 +145,69 @@ Posting note:
 Keep it simple, clear and useful. This is a schedule-ready video prompt, not a final filmed asset.
 `);
 }
+function schedulerLinks() {
+  return [
+    ['Meta Business Suite', 'https://business.facebook.com/latest/composer'],
+    ['Instagram', 'https://www.instagram.com/'],
+    ['Facebook', 'https://www.facebook.com/'],
+    ['X', 'https://x.com/compose/post'],
+    ['Threads', 'https://www.threads.net/'],
+    ['YouTube Studio', 'https://studio.youtube.com/'],
+    ['TikTok Upload', 'https://www.tiktok.com/upload'],
+    ['Buffer', 'https://publish.buffer.com/'],
+    ['Later', 'https://app.later.com/'],
+    ['Metricool', 'https://app.metricool.com/'],
+    ['Mailchimp', 'https://mailchimp.com/'],
+    ['Brevo', 'https://app.brevo.com/']
+  ];
+}
+function proofTemplate(t, p) {
+  return cleanText(`Task: ${t.id}
+Title: ${p.title || t.title}
+Platform:
+Scheduled date/time:
+Scheduler used:
+Scheduled proof URL or note:
+Live post URL:
+Status: scheduled / posted / sent
+`);
+}
+function uploadPackHtml(t, p, copiedImage, data) {
+  const loop = loopFor(t, p);
+  const title = p.title || t.title;
+  const reels = reelsScript(t, p, data).trim();
+  const link = data.link.trim();
+  const img = copiedImage ? `<img class="post-image" src="${esc(copiedImage)}" alt="Ready post image">` : '<div class="image-empty">No image attached</div>';
+  const links = schedulerLinks().map(([label, url]) => `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>`).join('');
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>${esc(title)} | Upload Pack</title>
+<style>
+:root{--accent:${loop.color};--ink:#17120f;--paper:#fffaf0;--line:#e6d8bf;--soft:#f4ead8}*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:#f6efe3;color:var(--ink);line-height:1.5}.wrap{max-width:1180px;margin:0 auto;padding:20px}.hero{background:#17120f;color:#fff;border-top:8px solid var(--accent);border-radius:16px;padding:20px;display:grid;gap:10px}.hero h1{margin:0;font-size:clamp(1.5rem,4vw,2.5rem);line-height:1.05}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:5px 9px;font-weight:900;font-size:.75rem}.grid{display:grid;grid-template-columns:320px 1fr;gap:14px;margin-top:14px}.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}.panel h2{margin:0 0 10px;font-size:.9rem;text-transform:uppercase;color:#695f51;letter-spacing:.06em}.post-image{width:100%;border-radius:10px;border:1px solid var(--line)}.image-empty{aspect-ratio:1;border:1px dashed var(--line);border-radius:10px;background:var(--soft);display:grid;place-items:center;font-weight:900;color:#695f51}.copybox{white-space:pre-wrap;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px;min-height:105px}.actions,.links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btn{border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font-weight:900;padding:8px 11px;text-decoration:none;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}.checklist{display:grid;gap:6px}.checklist label{display:flex;gap:8px;align-items:flex-start;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px;font-weight:800}.wide{grid-column:1/-1}@media(max-width:760px){.grid{grid-template-columns:1fr}.wrap{padding:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<section class="hero"><div class="chips"><span class="chip">${esc(t.id)}</span><span class="chip">${esc(loop.name)} - ${esc(loop.role)}</span><span class="chip">Upload handoff</span></div><h1>${esc(title)}</h1></section>
+<main class="grid">
+<aside class="panel">${img}<div class="actions"><button class="btn primary" onclick="copyText('imagepath')">Copy image path</button><a class="btn" href="${esc(copiedImage || '#')}">Open image</a></div><div class="copybox" id="imagepath">${esc(copiedImage || '')}</div></aside>
+<section class="panel"><h2>Upload Checklist</h2><div class="checklist"><label><input type="checkbox"> Image uploaded</label><label><input type="checkbox"> Caption copied</label><label><input type="checkbox"> Link added</label><label><input type="checkbox"> Scheduled proof saved</label><label><input type="checkbox"> Board marked scheduled/posted/sent</label></div><h2 style="margin-top:14px">Schedulers</h2><div class="links">${links}</div></section>
+<section class="panel"><h2>Instagram / Facebook</h2><div class="copybox" id="ig">${esc(data.instagram)}</div><div class="actions"><button class="btn primary" onclick="copyText('ig')">Copy Instagram/Facebook</button></div></section>
+<section class="panel"><h2>X / Threads</h2><div class="copybox" id="xcopy">${esc(data.x)}</div><div class="actions"><button class="btn primary" onclick="copyText('xcopy')">Copy X/Threads</button></div></section>
+<section class="panel"><h2>Newsletter Block</h2><div class="copybox" id="nl">${esc(data.newsletter)}</div><div class="actions"><button class="btn primary" onclick="copyText('nl')">Copy Newsletter</button></div></section>
+<section class="panel"><h2>Link</h2><div class="copybox" id="link">${esc(link)}</div><div class="actions"><button class="btn primary" onclick="copyText('link')">Copy Link</button><a class="btn" href="${esc(link || '#')}" target="_blank" rel="noopener">Open Link</a></div></section>
+<section class="panel wide"><h2>Reels / Shorts Script</h2><div class="copybox" id="reels">${esc(reels)}</div><div class="actions"><button class="btn primary" onclick="copyText('reels')">Copy Reels Script</button></div></section>
+<section class="panel wide"><h2>Proof Field</h2><div class="copybox" id="proof">${esc(proofTemplate(t, p).trim())}</div><div class="actions"><button class="btn primary" onclick="copyText('proof')">Copy Proof Template</button></div></section>
+</main>
+</div>
+<script>function copyText(id){navigator.clipboard.writeText(document.getElementById(id).innerText)}</script>
+</body>
+</html>`;
+}
 function packReadme(t, p, copiedImage) {
   const title = p.title || t.title;
   return cleanText(`# Ready To Post: ${title}
@@ -155,6 +218,7 @@ Kind: ${p.kind || 'social'}
 Source: ${p.sourceTask || t.id}
 Image: ${copiedImage || p.image || 'none'}
 Preview: preview.html
+Upload pack: upload.html
 
 Manual posting flow:
 1. Open preview.html or use the board platform buttons.
@@ -234,12 +298,18 @@ async function main() {
     fs.writeFileSync(path.join(dir, 'reels-script.txt'), reelsScript(t, p, data), 'utf8');
     fs.writeFileSync(path.join(dir, 'link.txt'), cleanText(data.link), 'utf8');
     fs.writeFileSync(path.join(dir, 'platforms.txt'), cleanText(['Instagram: https://www.instagram.com/','Facebook: https://www.facebook.com/','X: https://x.com/compose/post','Threads: https://www.threads.net/','YouTube Community: https://www.youtube.com/','Newsletter: open your email/newsletter tool'].join('\n')), 'utf8');
+    fs.writeFileSync(path.join(dir, 'scheduler-links.txt'), cleanText(schedulerLinks().map(([label, url]) => label + ': ' + url).join('\\n')), 'utf8');
+    fs.writeFileSync(path.join(dir, 'proof-template.txt'), proofTemplate(t, p), 'utf8');
     fs.writeFileSync(path.join(dir, 'preview.html'), previewHtml(t, p, copiedImage, data), 'utf8');
+    fs.writeFileSync(path.join(dir, 'upload.html'), uploadPackHtml(t, p, copiedImage, data), 'utf8');
     made++;
   }
   console.log(`Ready-to-post packs built: ${made} approved pack(s) in social-posts/ready`);
 }
 main().catch(err => { console.error(err); process.exit(1); });
+
+
+
 
 
 

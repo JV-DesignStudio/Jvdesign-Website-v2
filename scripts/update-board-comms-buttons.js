@@ -19,6 +19,7 @@ const PATCH = `${SCRIPT_START}
   window.commsSlug=function(title){ return String(title||'post').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-').slice(0,60).replace(/-+$/,'')||'post'; };
   window.openReadyPack=function(id,title){ window.open('file:///F:/Website/Jvdesign-Website-v2/social-posts/ready/'+id+'-'+window.commsSlug(title)+'/','_blank','noopener'); };
   window.openReadyPreview=function(id,title){ window.open('file:///F:/Website/Jvdesign-Website-v2/social-posts/ready/'+id+'-'+window.commsSlug(title)+'/preview.html','_blank','noopener'); };
+  window.openUploadPack=function(id,title){ window.open('file:///F:/Website/Jvdesign-Website-v2/social-posts/ready/'+id+'-'+window.commsSlug(title)+'/upload.html','_blank','noopener'); };
   window.commsLoop=function(t,p){ const hay=((t?.tag||'')+' '+(p?.devlog?.tag||'')+' '+(p?.title||t?.title||'')).toLowerCase(); if(/game|play|arcade|roblox|godot/.test(hay))return {name:'Pip',role:'Play',color:'#3b82f6'}; if(/workshop|learn|scratch|education|licens/.test(hay))return {name:'Lumo',role:'Learn',color:'#d97706'}; if(/tool|pixel|studio|create|maker|builder/.test(hay))return {name:'Ember',role:'Create',color:'#dc2626'}; if(/fix|repair|validation|cookie|privacy|audit|update|devlog/.test(hay))return {name:'Echo',role:'Improve',color:'#0f766e'}; return {name:'Stardust',role:'Imagine',color:'#7c3aed'}; };
 })();
 
@@ -39,7 +40,7 @@ const PATCH = `${SCRIPT_START}
     row.append(
       btn(isDev?'Approve + publish':'Approve copy','good',async()=>{ if(!confirm((isDev?'Publish Dev Log ':'Approve copy ')+item.id+'?')) return; await api('/api/comms-approve',{id:item.id}); location.reload(); }),
       btn('Decline with note','bad',async()=>{ const n=note.value.trim()||'Needs edit'; await api('/api/comms-decline',{id:item.id,note:n}); location.reload(); }),
-      btn('Mark social posted','',async()=>{ const u=note.value.trim()||prompt('Social URL or note:')||new Date().toISOString(); await api('/api/comms-posted',{id:item.id,channel:'social',url:u}); location.reload(); }),
+      btn('Mark social posted','',async()=>{ const u=note.value.trim()||prompt('Social URL, scheduled proof or note:')||new Date().toISOString(); await api('/api/comms-posted',{id:item.id,channel:'social',url:u}); location.reload(); }),
       btn('Mark newsletter sent','',async()=>{ const u=note.value.trim()||prompt('Newsletter sent note/date:')||new Date().toISOString(); await api('/api/comms-posted',{id:item.id,channel:'newsletter',url:u}); location.reload(); })
     );
     wrap.append(info,note,row); dmActions.append(wrap); return true;
@@ -64,3 +65,4 @@ html=html.replace(/\n\s*actions\.append\(b\(isDev\?'Approve \+ publish':'Approve
 html=html.replace(/\n\s*actions\.append\(b\('Decline',[\s\S]*?\},'bad'\)\);/g,'');
 fs.writeFileSync(BOARD,html,'utf8');
 console.log('Updated private board comms visual cards');
+

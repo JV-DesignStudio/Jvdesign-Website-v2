@@ -71,7 +71,7 @@ const SCRIPT = `${SCRIPT_START}
     const actions=el.querySelector('.publish-actions');
     const open=document.createElement('button'); open.textContent='Open'; open.onclick=()=>window.openDetail?.(t.id); actions.append(open);
     const sched=document.createElement('button'); sched.className='primary'; sched.textContent=s==='scheduled'?'Reschedule':'Schedule'; sched.onclick=()=>window.scheduleCommsPrompt(t.id,channel,date,type); actions.append(sched);
-    if(channel==='social'||channel==='video'){const pack=document.createElement('button'); pack.textContent='Ready pack'; pack.onclick=()=>window.openReadyPack?.(t.id,title(t)); actions.append(pack);}
+    if(channel==='social'||channel==='video'){const upload=document.createElement('button'); upload.textContent='Upload pack'; upload.onclick=()=>window.openUploadPack?.(t.id,title(t)); actions.append(upload); const pack=document.createElement('button'); pack.textContent='Ready pack'; pack.onclick=()=>window.openReadyPack?.(t.id,title(t)); actions.append(pack);}
     return el;
   }
   function fill(id,countId,items,channel,type,empty){
@@ -90,7 +90,7 @@ const SCRIPT = `${SCRIPT_START}
   fill('pubVideo','pubVideoCount',video,'video','reel','No Reels/video candidates yet.');
   const total=devlogs.length+newsletter.length+socials.length+video.length;
   const dueToday=[...devlogs.map(t=>due(t,'devlog')),...newsletter.map(t=>due(t,'newsletter')),...socials.map(t=>due(t,'social')),...video.map(t=>due(t,'video'))].filter(isDueToday).length;
-  const summary=document.getElementById('publishSummary'); if(summary) summary.textContent=total+' reminder(s), '+dueToday+' due today, newsletter target '+iso(friday);
+  const todayBox=document.getElementById('pubTodayCount'); if(todayBox) todayBox.textContent=dueToday;\n  const missedBox=document.getElementById('pubMissedCount'); if(missedBox) missedBox.textContent=missed.length;\n  const summary=document.getElementById('publishSummary'); if(summary) summary.textContent=total+' reminder(s), '+dueToday+' due today, '+missed.length+' missed, newsletter target '+iso(friday);
 })();
 ${SCRIPT_END}`;
 
@@ -114,6 +114,7 @@ function patchServer(){
 patchBoard();
 patchServer();
 console.log('Updated private board Publishing Calendar and schedule API');
+
 
 
 
