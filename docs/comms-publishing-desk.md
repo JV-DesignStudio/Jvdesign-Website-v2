@@ -1,6 +1,6 @@
 # Comms Publishing Desk
 
-The private board at `http://localhost:8787/` has a **Comms Publishing Desk** near the top.
+The private board at `http://localhost:8787/` has a **Publishing Calendar** and **Comms Publishing Desk** near the top.
 
 Use it for Dev Log, newsletter and social copy approval. The active queue should stay small: if an item has no board task or no next action, archive it.
 
@@ -39,7 +39,7 @@ Use it for Dev Log, newsletter and social copy approval. The active queue should
 - `npm run comms:queue`: refresh draft files, image cards, board cards, publish packs and index.
 - `npm run comms:organize`: keep `queue/` clean by archiving drafts with no linked board task.
 - `npm run comms:ready-packs`: build copy/paste packs in `social-posts/ready/` for approved comms.\n- `npm run comms:audit-ready`: score ready packs for missing copy, technical wording, broken links and missing visuals; writes `social-posts/ready/QUALITY_REPORT.md`.
-- `npm run board:comms-buttons`: add platform buttons to the private Comms cards.
+- `npm run board:publishing-calendar`: add the weekly Publishing Calendar and scheduling reminders to the private board.\n- `npm run board:comms-buttons`: add platform buttons to the private Comms cards.
 - `npm run comms:refresh`: refresh comms, organize the queue, build ready packs, validate health and reapply Today's Tasks plus platform buttons.
 - `npm run comms:packs`: refresh publish-pack data only.
 - `npm run comms:health`: validate the publishing desk data.
@@ -85,3 +85,14 @@ Ready-pack previews and private board comms cards use the JVDS loop as subtle vi
 
 This is visual guidance only. The post still needs a human read before publishing.
 
+
+## Publishing Calendar
+
+The Publishing Calendar turns approved comms into upload reminders:
+
+- **Dev Logs**: approved or pending Dev Log items that need review or publishing.
+- **Friday Newsletter**: approved items ready to prepare for the Friday send.
+- **Social Schedule**: approved social posts waiting to schedule or post.
+- **Reels / Video**: video-friendly candidates for future Reels, YouTube Shorts or workshop clips.
+
+Use **Schedule** to set a date and simple slot such as `morning`, `lunch`, `evening` or `19:00`. After the post is scheduled or live, use the existing posted/sent buttons on the card.
