@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
@@ -10,6 +11,16 @@
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/marble-run-lab.html">
 <title>Marble Run Lab | JVDesignStudio</title>
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jvdesignstudio.co.uk/games/marble-run-lab.html">
+    <meta property="og:title" content="Marble Run Lab | JVDesignStudio">
+    <meta property="og:description" content="Solve Marble Run Lab, a 2D route-building physics puzzle. Rotate tracks, connect the marble from start to goal, and learn flow, slope and cause-and-effect.">
+    <meta property="og:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
+    <meta property="og:site_name" content="JVDesignStudio">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Marble Run Lab | JVDesignStudio">
+    <meta name="twitter:description" content="Solve Marble Run Lab, a 2D route-building physics puzzle. Rotate tracks, connect the marble from start to goal, and learn flow, slope and cause-and-effect.">
+    <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
 <script src="../analytics-loader.js" defer></script>
 <script src="../game-system.js"></script>
 <link rel="stylesheet" href="../game-system.css">
@@ -50,7 +61,17 @@ const LEVELS=[
  {name:'Crossroads',brief:'Cross pieces carry the route through the centre. Make the path continuous before testing.',limit:14,grid:[
   'S-c.....','..|.....','..X--c..','..|..|..','..c--G..','........']},
  {name:'Final Channel',brief:'Use everything: bends, straights and crosses. Fewer rotations means more stars.',limit:16,grid:[
-  'S-c--...','..|..c..','..X..|..','..|..XG.','..c--c..','........']}
+  'S-c--...','..|..c..','..X..|..','..|..XG.','..c--c..','........']},
+ {name:'South Start',brief:'The launcher is at the bottom this time. Think upward.',limit:9,grid:[
+  '...c---G','...|....','...|....','...|....','...|....','S--c....']},
+ {name:'Double Bend',brief:'Two direction changes, four corners. One clean route.',limit:13,grid:[
+  'S--c....','...|....','...c--c.','......|.','......cG','........']},
+ {name:'Staircase',brief:'Short diagonal steps. Six corners in a row — no straights between them.',limit:17,grid:[
+  'Sc......','.cc.....','..cc....','...|....','...c---G','........']},
+ {name:'Mixed Rotation',brief:'Not all pipes face the right way. Watch the straights too.',limit:17,grid:[
+  'S||c....','...|....','...|....','...c||c.','......|.','......cG']},
+ {name:'Master Zigzag',brief:'Six corners and three misaligned straights. Tightest par yet.',limit:20,grid:[
+  'Sc......','.c|c....','...c||c.','......cG','........','........']}
 ];
 let meta=read(metaKey,{best:0,solved:0});
 let state=read(saveKey,null)||fresh();
@@ -71,10 +92,10 @@ function solve(route){state.solved=true;const lvl=LEVELS[state.level];const move
 function animate(route){animating=true;render();let i=0;const step=()=>{document.querySelectorAll('.marble').forEach(m=>m.remove());if(i>=route.length){animating=false;render();return}const p=route[i++];const cell=document.querySelector(`[data-x="${p.x}"][data-y="${p.y}"]`);if(cell){const m=document.createElement('div');m.className='marble';cell.appendChild(m)}setTimeout(step,170)};step()}
 function testRun(){if(animating)return;analyse(true);write();render()}
 function hint(){const a=analyse(false);if(a.connected&&state.leaks===0)log('Looks ready. Test the run.');else if(state.leaks>0)log('Hint: an open pipe end is leaking. Rotate a neighbouring piece to close it.');else log('Hint: follow the route from the launcher and find the first tile that does not connect.');render()}
-function next(){if(!state.solved)return;if(state.level>=LEVELS.length-1){log('All labs complete. Best score saved.');return}state=fresh(state.level+1);write();render()}
+function next(){if(!state.solved)return;if(state.level>=LEVELS.length-1){state=fresh(0);log('All labs complete! Starting again from Lab 1.');write();render();return}state=fresh(state.level+1);write();render()}
 function restart(){state=fresh(state.level);write();render()}
 function log(msg){state.log.unshift(msg);state.log=state.log.slice(0,8)}
-function render(){const lvl=LEVELS[state.level];document.getElementById('score').textContent=state.score;document.getElementById('level').textContent=(state.level+1)+'/'+LEVELS.length;document.getElementById('moves').textContent=state.moves;document.getElementById('leaks').textContent=state.leaks;document.getElementById('stars').textContent='★★★'.slice(0,state.stars)+'☆☆☆'.slice(state.stars);document.getElementById('best').textContent=meta.best;document.getElementById('briefTitle').textContent=lvl.name;document.getElementById('briefText').textContent=lvl.brief;document.getElementById('goals').innerHTML=['Connect start to goal','Close every leak','Solve within '+lvl.limit+' rotations'].map((g,i)=>'<div class="goal '+(state.stars>i?'done':'')+'"><b>'+(state.stars>i?'✓':'○')+'</b><span>'+g+'</span></div>').join('');document.getElementById('nextBtn').disabled=!state.solved||state.level>=LEVELS.length-1;document.getElementById('result').className='result'+(state.solved?' show':'');document.getElementById('result').textContent=state.solved?'Route solved. Stars: '+state.stars+' / 3':'';document.getElementById('log').innerHTML=state.log.map(m=>'<p>'+m+'</p>').join('');const board=document.getElementById('board');board.innerHTML='';for(let y=0;y<6;y++)for(let x=0;x<8;x++){const t=state.tiles[y][x];const c=document.createElement('button');c.className='cell '+(!t?'empty':'')+(t?.lock?' locked':'');c.dataset.x=x;c.dataset.y=y;c.type='button';if(t?.type==='block'){c.textContent='■';c.classList.add('locked')}else if(t){const d=document.createElement('div');d.className='tile '+t.type;d.style.setProperty('--rot',t.rot+'deg');c.appendChild(d)}board.appendChild(c)}write()}
+function render(){const lvl=LEVELS[state.level];document.getElementById('score').textContent=state.score;document.getElementById('level').textContent=(state.level+1)+'/'+LEVELS.length;document.getElementById('moves').textContent=state.moves;document.getElementById('leaks').textContent=state.leaks;document.getElementById('stars').textContent='★★★'.slice(0,state.stars)+'☆☆☆'.slice(state.stars);document.getElementById('best').textContent=meta.best;document.getElementById('briefTitle').textContent=lvl.name;document.getElementById('briefText').textContent=lvl.brief;document.getElementById('goals').innerHTML=['Connect start to goal','Close every leak','Solve within '+lvl.limit+' rotations'].map((g,i)=>'<div class="goal '+(state.stars>i?'done':'')+'"><b>'+(state.stars>i?'✓':'○')+'</b><span>'+g+'</span></div>').join('');const nBtn=document.getElementById('nextBtn');nBtn.disabled=!state.solved;nBtn.textContent=state.level>=LEVELS.length-1?'Replay Labs':'Next Lab';document.getElementById('result').className='result'+(state.solved?' show':'');document.getElementById('result').textContent=state.solved?'Route solved. Stars: '+state.stars+' / 3':'';document.getElementById('log').innerHTML=state.log.map(m=>'<p>'+m+'</p>').join('');const board=document.getElementById('board');board.innerHTML='';for(let y=0;y<6;y++)for(let x=0;x<8;x++){const t=state.tiles[y][x];const c=document.createElement('button');c.className='cell '+(!t?'empty':'')+(t?.lock?' locked':'');c.dataset.x=x;c.dataset.y=y;c.type='button';if(t?.type==='block'){c.textContent='■';c.classList.add('locked')}else if(t){const d=document.createElement('div');d.className='tile '+t.type;d.style.setProperty('--rot',t.rot+'deg');c.appendChild(d)}board.appendChild(c)}write()}
 document.getElementById('board').addEventListener('click',e=>{const c=e.target.closest('.cell');if(c)rotate(+c.dataset.x,+c.dataset.y)});
 document.getElementById('testBtn').onclick=testRun;document.getElementById('hintBtn').onclick=hint;document.getElementById('nextBtn').onclick=next;document.getElementById('restartBtn').onclick=restart;
 analyse(false);render();

@@ -201,10 +201,12 @@ function showGuideQuiz(){
   const bd=document.createElement('div');
   bd.className='mascot-quiz-backdrop';
   bd.innerHTML=`
-    <div class="mascot-quiz-card mascot-quiz-reveal">
-      <div class="mascot-quiz-crew"><img src="/assets/mascots/lumo.jpg" alt=""><img src="/assets/mascots/ember.jpg" alt=""><img src="/assets/mascots/echo.jpg" alt=""><img src="/assets/mascots/pip.png" alt=""><img src="/assets/mascots/stardust.png" alt=""></div>
-      <div class="mascot-quiz-progress">Question <span id="quizStep">1</span> of 3</div>
-      <div class="mascot-quiz-q" id="quizQ"></div>
+    <div class="mascot-quiz-card mascot-quiz-reveal" role="dialog" aria-labelledby="quizTitle quizQ" aria-modal="true">
+      <div class="mascot-quiz-crew" aria-hidden="true"><img src="/assets/mascots/lumo.jpg" alt=""><img src="/assets/mascots/ember.jpg" alt=""><img src="/assets/mascots/echo.jpg" alt=""><img src="/assets/mascots/pip.png" alt=""><img src="/assets/mascots/stardust.png" alt=""></div>
+      <h2 id="quizTitle" class="mascot-quiz-title" style="font-family:Fredoka,sans-serif;font-size:1.15rem;margin:10px 0 4px;color:var(--charcoal)">Find your creative guide</h2>
+      <p class="mascot-quiz-context" style="font-size:.82rem;color:var(--charcoal-lt);margin:0 0 10px;line-height:1.4">3 quick picks - we will match you with Lumo, Ember, Echo and Pip or Stardust and personalize your homepage.</p>
+      <div class="mascot-quiz-progress" aria-live="polite">Question <span id="quizStep">1</span> of 3</div>
+      <div class="mascot-quiz-q" id="quizQ" role="heading" aria-level="3"></div>
       <div class="mascot-quiz-opts" id="quizOpts"></div>
       <button class="mascot-quiz-skip" id="quizSkip">Skip , let me explore</button>
     </div>`;

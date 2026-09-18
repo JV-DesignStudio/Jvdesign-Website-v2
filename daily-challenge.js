@@ -192,6 +192,9 @@
     var riskNote = streak.atRisk
       ? '<div class="jvds-daily-risk-note">Do today’s challenge to keep your streak alive.</div>'
       : '';
+    var zeroNote = (!st.done && st.current === 0 && !st.claimed)
+      ? '<div class="jvds-daily-risk-note" style="color:rgba(240,234,214,.68)">Fresh start - play a game or complete a workshop. Your first action will fill this bar.</div>'
+      : '';
 
     return '' +
       '<div class="jvds-daily-top">' +
@@ -210,7 +213,7 @@
           '</div>' +
         '</div>' +
       '</div>' +
-      riskNote;
+      riskNote + zeroNote;
   }
 
   function paint(el) {

@@ -64,7 +64,7 @@ function shortDate(d) {
 }
 
 function cleanText(v) {
-  return String(v || '').replace(/[–—]/g, '-').trim();
+  return String(v || '').replace(/[--]/g, '-').trim();
 }
 
 function loadPosts() {

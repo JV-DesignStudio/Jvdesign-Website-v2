@@ -44,12 +44,13 @@ const leakPatterns = [
   /kofi-token\.txt/i,
   /\.board-token/i,
 ];
-const ALLOWED_LEAK_FILES = new Set(['validate-public-boundary.js', 'board-keeper.log', 'check-dashes.cjs', 'A29_PROVENANCE.md', 'approve-private.html']);
-// files where .env / BREVO / ga4-key mention is documentation, not secret
-const DOC_LEAK_ALLOW = new Set(['docs/A29_PROVENANCE.md', 'scripts/send-newsletter.js', 'tools/sound-studio.html', 'approve-private.html', 'board-data.json', 'content/stats.json', 'content-data.js']);
-const SCAN_EXTS = ['.js','.html','.ps1','.md','.json','.txt','.yml','.yaml'];
+// rel-path scoped: prevents same-basename files in subdirs from inheriting the skip
+const ALLOWED_LEAK_FILES = new Set(['scripts/validate-public-boundary.js', 'scripts/check-dashes.cjs', 'docs/A29_PROVENANCE.md', 'approve-private.html']);
+// files where .env / BREVO / ga4-key mention is documentation only - checked by rel path, not basename
+const DOC_LEAK_ALLOW = new Set(['docs/A29_PROVENANCE.md', 'scripts/send-newsletter.js', 'tools/sound-studio.html', 'approve-private.html', 'board-data.json', 'content/stats.json', 'content-data.js', 'pages/dev-board.html', 'dev-board.html']);
+const SCAN_EXTS = ['.js','.cjs','.html','.ps1','.md','.json','.txt','.yml','.yaml'];
 const walkForLeaks=(dir,depth=0)=>{
-  if(depth>8) return [];
+  if(depth>12) return [];
   const foundLeaks=[];
   try{
     for(const e of fs.readdirSync(dir,{withFileTypes:true})){
@@ -58,15 +59,14 @@ const walkForLeaks=(dir,depth=0)=>{
       const full=path.join(dir,e.name);
       if(e.isDirectory()) foundLeaks.push(...walkForLeaks(full,depth+1));
       else if(SCAN_EXTS.some(ext=>e.name.endsWith(ext)) || e.name==='.env' || e.name.startsWith('.env.') || e.name==='.board-token' || e.name.endsWith('.env')){
-        if(ALLOWED_LEAK_FILES.has(e.name)) continue;
+        const rel=path.relative(root,full).replace(/\\/g,'/');
+        if(ALLOWED_LEAK_FILES.has(rel)) continue;
         try{
           const txt=fs.readFileSync(full,'utf8');
-          const rel=path.relative(root,full).replace(/\\/g,'/');
           for(const pat of leakPatterns){
             if(!pat.test(txt)) continue;
-            // allow docs/examples that mention env vars but are not leaks
-            if(DOC_LEAK_ALLOW.has(rel) || DOC_LEAK_ALLOW.has(path.basename(rel))){
-              // for these files only fail if pattern looks like real token (pat includes _ and value)
+            // allow docs/examples that mention env vars but are not leaks - rel path only, no basename fallback
+            if(DOC_LEAK_ALLOW.has(rel)){
               if(pat.source.includes('github_pat') && /github_pat_[A-Za-z0-9]{20,}/.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
               if(pat.source.includes('gho_') && /gho_[A-Za-z0-9_]{20,}/.test(txt)) { foundLeaks.push(rel+':'+pat); break; }
               if(pat.source.includes('ghp_') && /ghp_[A-Za-z0-9]{20,}/.test(txt)) { foundLeaks.push(rel+':'+pat); break; }

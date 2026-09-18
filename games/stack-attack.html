@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
@@ -257,22 +258,39 @@
     const top=stack[stack.length-1];
     const level=totalBlocks+1;
     const base=Math.max(48,Math.round(top.w));
-    const type=level%3;
-    let answer, prompt, options;
-    if(type===1){
+    // Pool grows as level increases so early game stays accessible
+    const pool=level<5?[0,0,1,2]:level<10?[0,1,2,3]:level<18?[0,1,2,3,4]:[0,1,2,3,4,5];
+    const type=pool[Math.floor(Math.random()*pool.length)];
+    let answer,prompt,options;
+    if(type===0){
+      answer=Math.max(46,Math.round(base*0.5));
+      prompt='Half of '+base+' = ?';
+      options=[answer,Math.max(46,Math.round(base*0.33)),Math.max(46,Math.round(base*0.7))];
+    }else if(type===1){
       answer=Math.max(46,Math.round(base*0.75));
-      prompt='Area clue: 3/4 of '+base+' = ?';
+      prompt='3/4 of '+base+' = ?';
       options=[answer,Math.max(46,Math.round(base*0.5)),Math.max(46,Math.round(base*0.9))];
     }else if(type===2){
-      answer=Math.max(46,Math.round(base-24));
-      prompt='Subtraction clue: '+base+' - 24 = ?';
-      options=[answer,Math.max(46,Math.round(base-12)),Math.max(46,Math.round(base-36))];
+      const sub=level<8?12:level<16?24:36;
+      answer=Math.max(46,base-sub);
+      prompt=base+' minus '+sub+' = ?';
+      options=[answer,Math.max(46,base-sub+sub/2),Math.max(46,base-sub-sub/2)];
+    }else if(type===3){
+      answer=Math.max(46,Math.round(base*2/3));
+      prompt='2/3 of '+base+' = ?';
+      options=[answer,Math.max(46,Math.round(base*0.5)),Math.max(46,Math.round(base*0.8))];
+    }else if(type===4){
+      const pct=[60,70,80][level%3];
+      answer=Math.max(46,Math.round(base*pct/100));
+      prompt=pct+'% of '+base+' = ?';
+      options=[answer,Math.max(46,Math.round(base*(pct-20)/100)),Math.max(46,Math.round(base*(pct+15)/100))];
     }else{
-      answer=Math.max(46,Math.round(base*0.5));
-      prompt='Symmetry clue: half of '+base+' = ?';
-      options=[answer,Math.max(46,Math.round(base*0.25)),Math.max(46,Math.round(base*0.7))];
+      const add=level<20?8:16;
+      answer=Math.max(46,Math.min(Math.round(W*0.65),base+add));
+      prompt=base+' + '+add+' = ?';
+      options=[answer,Math.max(46,answer-add),Math.min(Math.round(W*0.65),answer+add)];
     }
-    options=[...new Set(options)].sort(()=>Math.random()-0.5);
+    options=[...new Set(options.map(Math.round))].sort(()=>Math.random()-0.5);
     return {prompt,answer,options};
   }
   function nextClue(){

@@ -20,7 +20,7 @@ Completed 9 Sep: verified tools/project-tracker.html is now 27-line redirect (no
 Link: https://jvdesignstudio.co.uk/devlog#post-85
 
 ### Repair the project tracker document
-Completed 9 Sep: same redirect fixes overflow/script-exposure — project-tracker no longer renders tracker DOM, so no exp...
+Completed 9 Sep: same redirect fixes overflow/script-exposure - project-tracker no longer renders tracker DOM, so no exp...
 
 Link: https://jvdesignstudio.co.uk/devlog#post-85
 

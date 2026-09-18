@@ -123,6 +123,15 @@ function generateWorkshops() {
     if (combined.includes('2d') || combined.includes('2D')) tags.push('2d');
     if (isSeries) tags.push('series');
 
+    // cover from og:image or fallback
+    let cover = extract(html, /<meta\s+property="og:image"\s+content="([^"]+)"/);
+    if(!cover) cover = extract(html, /<meta\s+name="og:image"\s+content="([^"]+)"/);
+    if(cover && cover.startsWith('https://jvdesignstudio.co.uk')) cover = cover.replace('https://jvdesignstudio.co.uk','');
+    if(!cover) cover = null;
+    // themeColor fallback
+    let tc = themeColor || '#BC4749';
+    // steps fallback: if not found and not series, assume 6 for engine workshops
+    if(steps===0 && !isSeries && !slug.includes('cheatsheet') && !slug.includes('starter')) steps = 6;
     workshops.push({
       id: slug,
       title: title || slug,
@@ -133,8 +142,8 @@ function generateWorkshops() {
       type: isSeries ? 'series' : 'workshop',
       tags,
       steps,
-      themeColor,
-      cover: null,
+      themeColor: tc,
+      cover: cover,
       url: `/workshops/${slug}.html`
     });
 

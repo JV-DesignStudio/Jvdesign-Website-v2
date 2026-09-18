@@ -1,4 +1,321 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Pixel Pet Arena | JVDesignStudio</title><link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#073b4c"><meta name="description" content="Draw a pixel pet whose shape and colours become battle stats."><script src="../game-system.js"></script><link rel="stylesheet" href="../game-system.css"><style>*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:#073b4c;color:#fff}.wrap{max-width:1150px;margin:auto;padding:16px 12px 80px}.pill{color:#fff;background:#0006;border-radius:8px;padding:9px 12px;text-decoration:none;font-weight:900}.top{display:flex;gap:10px}.hero{border-bottom:3px solid #ffd166;margin:12px 0}.hero h1{font-size:clamp(2rem,7vw,4.2rem);margin:0}.hud,.game{display:grid;gap:10px}.hud{grid-template-columns:repeat(6,1fr)}.stat,.panel{background:#fff9f3;color:#10242d;border:1px solid #d7c8c7;border-radius:8px;padding:10px}.game{grid-template-columns:1fr .85fr}.canvas{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}.px{aspect-ratio:1;border:1px solid #cebfc1;border-radius:4px;background:#fff;cursor:pointer}.c1{background:#ef476f}.c2{background:#ffd166}.c3{background:#83d483}.c4{background:#8ecae6}.pal,.abilities,.goals{display:grid;gap:8px}.pal{grid-template-columns:repeat(5,1fr);margin-bottom:10px}.sw,.ab,.goal{border:1px solid #d7c8c7;background:#fff;color:#10242d;border-radius:8px;padding:9px;font-weight:900;cursor:pointer}.sw.active,.ab.active,.goal.done{background:#eef7df}.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}button{font:inherit;font-weight:900;min-height:42px;border-radius:8px;cursor:pointer}.primary{border:0;background:#073b4c;color:#fff}.secondary{border:1px solid #d7c8c7;background:#fff;color:#10242d}.arena{background:#fff1dc;border-radius:8px;padding:10px}.log{max-height:220px;overflow:auto;color:#594f57}.result{display:none;background:#eef7df;border-radius:8px;padding:10px}.result.show{display:block}@media(max-width:820px){.game{grid-template-columns:1fr}.hud{grid-template-columns:repeat(3,1fr)}}@media(max-width:520px){.hud,.actions{grid-template-columns:1fr}.pal{grid-template-columns:repeat(3,1fr)}}</style></head><body><div class="wrap"><div class="top"><a class="pill" href="../arcade.html">Back to Arcade</a><a class="pill" href="../games">All games</a></div><section class="hero"><p>Drawing-to-battle</p><h1>Pixel Pet Arena</h1><p>Your drawing is the build. Red pixels make power, yellow makes spark, green makes speed, blue makes guard, and connected shapes earn style.</p></section><section class="hud"><div class="stat"><b id="score"></b><span>Score</span></div><div class="stat"><b id="round"></b><span>Round</span></div><div class="stat"><b id="power"></b><span>Power</span></div><div class="stat"><b id="style"></b><span>Style</span></div><div class="stat"><b id="wins"></b><span>Wins</span></div><div class="stat"><b id="best"></b><span>Best</span></div></section><main class="game"><section class="panel"><div class="pal" id="pal"></div><div class="canvas" id="canvas"></div><div class="actions"><button class="primary" id="battle">Battle</button><button class="secondary" id="mirror">Mirror Pet</button><button class="secondary" id="restart">Restart</button></div></section><aside class="panel"><div class="arena" id="arena"></div><h2>Abilities</h2><div class="abilities" id="abilities"></div><h2>Goals</h2><div class="goals" id="goals"></div><div class="result" id="result"></div><h2>Arena Log</h2><div class="log" id="log"></div></aside></main></div><script>
-const GAME_ID='pixel-pet-arena',runKey='jvds_pet_draw_run',metaKey='jvds_pet_draw_meta',gs=new GameSystem(GAME_ID,'Pixel Pet Arena','ember');const cols=['Blank','Power','Spark','Speed','Guard'],emoji=['□','🟥','🟨','🟩','🟦'];const rivals=[['Patch Pup',18,10],['Glow Cat',25,16],['Sprint Moth',34,22],['Crown Sprite',46,30]];const abs=[['dash','Dash','Speed counts twice'],['shell','Shell','Guard blocks loss'],['spark','Spark','Style becomes score'],['roar','Roar','Power bonus']];const goals=[['draw','Paint 24 pixels',s=>s.grid.filter(Boolean).length>=24],['shape','Make one connected body',s=>connected()>12],['champ','Win the league',s=>s.ended&&s.wins>=4]];let meta=read(metaKey,{best:0,goals:{}}),s=read(runKey,null)||fresh(),color=1;function fresh(){return{grid:Array(64).fill(0),round:0,score:0,wins:0,abilities:['dash','shell'],ended:false,log:['Draw a pet shape first. The arena reads the pixels.']}}function read(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch(e){return f}}function save(){localStorage.setItem(runKey,JSON.stringify(s));localStorage.setItem(metaKey,JSON.stringify(meta))}function best(){try{return Math.max(meta.best,JSON.parse(localStorage.getItem('jvds_game_'+GAME_ID)||'{}').highScore||0)}catch(e){return meta.best}}function log(m){s.log.unshift(m);s.log=s.log.slice(0,10)}function counts(){return[0,1,2,3,4].map(c=>s.grid.filter(x=>x===c).length)}function connected(){const start=s.grid.findIndex(Boolean);if(start<0)return 0;const seen=new Set([start]),q=[start];while(q.length){const i=q.pop();[i-8,i+8,i%8?i-1:-1,i%8<7?i+1:-1].forEach(n=>{if(n>=0&&n<64&&s.grid[n]&& !seen.has(n)){seen.add(n);q.push(n)}})}return seen.size}function stats(){const c=counts(),body=connected();let p=c[1]*2+c[2],st=c[2]*2+body,sp=c[3]*2,gd=c[4]*2;if(s.abilities.includes('dash'))sp*=2;if(s.abilities.includes('roar'))p+=8;if(s.abilities.includes('spark'))st+=10;if(s.abilities.includes('shell'))gd+=8;return{p,st,sp,gd,total:p+st+sp+gd}}function paint(i){s.grid[i]=color;scoreGoals();render()}function mirror(){for(let y=0;y<8;y++)for(let x=0;x<4;x++)s.grid[y*8+7-x]=s.grid[y*8+x];log('Pet mirrored. Symmetry boosts connected style.');render()}function tog(id){s.abilities=s.abilities.includes(id)?s.abilities.filter(x=>x!==id):(s.abilities.concat(id).slice(-2));render()}function battle(){if(s.ended)return;const r=rivals[s.round],t=stats(),mine=t.p+t.st+t.sp+t.gd,them=r[1]+r[2];s.score+=mine*6;if(mine>=them){s.wins++;s.score+=350+s.wins*100;log('Win over '+r[0]+'. The drawing build worked.');s.round++}else{const block=s.abilities.includes('shell')?t.gd:0;s.score=Math.max(0,s.score-80);log(r[0]+' wins this bout. Add stronger colours or a bigger body.');if(block<10)s.round++}if(s.round>=rivals.length)finish();scoreGoals();render()}function finish(){s.ended=true;scoreGoals();const final=s.score+s.wins*400+connected()*20+Object.keys(meta.goals).length*180;meta.best=Math.max(meta.best,final);s.score=final;save();gs.addScore(final);gs.recordGamePlay(Date.now());try{gs.saveState({best:meta.best,wins:s.wins})}catch(e){}window.jvdsCheckNewBest&&window.jvdsCheckNewBest();log('League finished. Score '+final+' saved.')}function restart(){s=fresh();color=1;render()}function scoreGoals(){goals.forEach(([id,,fn])=>{if(fn(s))meta.goals[id]=true})}
-function render(){scoreGoals();const t=stats(),r=rivals[Math.min(s.round,rivals.length-1)];document.getElementById('score').textContent=s.score;document.getElementById('round').textContent=s.ended?'Done':(s.round+1)+'/'+rivals.length;document.getElementById('power').textContent=t.p;document.getElementById('style').textContent=t.st;document.getElementById('wins').textContent=s.wins;document.getElementById('best').textContent=best();document.getElementById('pal').innerHTML=cols.map((c,i)=>'<button class="sw '+(color===i?'active':'')+'" data-c="'+i+'">'+emoji[i]+'<br><small>'+c+'</small></button>').join('');document.getElementById('canvas').innerHTML=s.grid.map((v,i)=>'<button class="px c'+v+'" data-i="'+i+'"></button>').join('');document.getElementById('arena').textContent=s.ended?'League complete. Restart to draw a new build.':'Next rival: '+r[0]+' power '+r[1]+' style '+r[2]+'. Connected body: '+connected();document.getElementById('abilities').innerHTML=abs.map(a=>'<button class="ab '+(s.abilities.includes(a[0])?'active':'')+'" data-a="'+a[0]+'"><b>'+a[1]+'</b><br><small>'+a[2]+'</small></button>').join('');document.getElementById('goals').innerHTML=goals.map(([id,t])=>'<div class="goal '+(meta.goals[id]?'done':'')+'"><b>'+(meta.goals[id]?'✓':'○')+'</b><span>'+t+'</span></div>').join('');document.getElementById('log').innerHTML=s.log.map(x=>'<p>'+x+'</p>').join('');document.getElementById('result').className='result'+(s.ended?' show':'');document.getElementById('result').textContent=s.ended?'Final score '+s.score+' - best '+meta.best:'';save()}document.getElementById('pal').onclick=e=>{const b=e.target.closest('[data-c]');if(b){color=+b.dataset.c;render()}};document.getElementById('canvas').onclick=e=>{const b=e.target.closest('[data-i]');if(b)paint(+b.dataset.i)};document.getElementById('abilities').onclick=e=>{const b=e.target.closest('[data-a]');if(b)tog(b.dataset.a)};document.getElementById('battle').onclick=battle;document.getElementById('mirror').onclick=mirror;document.getElementById('restart').onclick=restart;render();
-</script><script src="../cookie-consent.js" defer></script></body></html>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Pixel Pet Arena | JVDesignStudio</title>
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jvdesignstudio.co.uk/games/pixel-pet-arena.html">
+    <meta property="og:title" content="Pixel Pet Arena | JVDesignStudio">
+    <meta property="og:description" content="Draw a pixel pet whose shape and colours become battle stats.">
+    <meta property="og:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
+    <meta property="og:site_name" content="JVDesignStudio">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Pixel Pet Arena | JVDesignStudio">
+    <meta name="twitter:description" content="Draw a pixel pet whose shape and colours become battle stats.">
+    <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/hub-games.png"><link rel="manifest" href="../manifest.json"><meta name="theme-color" content="#073b4c"><meta name="description" content="Draw a pixel pet whose shape and colours become battle stats."><script src="../game-system.js"></script><link rel="stylesheet" href="../game-system.css"><style>*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:#073b4c;color:#fff}.wrap{max-width:1150px;margin:auto;padding:16px 12px 80px}.pill{color:#fff;background:#0006;border-radius:8px;padding:9px 12px;text-decoration:none;font-weight:900}.top{display:flex;gap:10px}.hero{border-bottom:3px solid #ffd166;margin:12px 0}.hero h1{font-size:clamp(2rem,7vw,4.2rem);margin:0}.hud,.game{display:grid;gap:10px}.hud{grid-template-columns:repeat(6,1fr)}.stat,.panel{background:#fff9f3;color:#10242d;border:1px solid #d7c8c7;border-radius:8px;padding:10px}.stat b{display:block;font-size:1.2rem}.game{grid-template-columns:1fr .85fr}.px-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}.px{aspect-ratio:1;border:1px solid #cebfc1;border-radius:3px;background:#fff;cursor:pointer}.c1{background:#ef476f}.c2{background:#ffd166}.c3{background:#83d483}.c4{background:#8ecae6}.pal,.abilities,.goals{display:grid;gap:8px}.pal{grid-template-columns:repeat(5,1fr);margin-bottom:10px}.sw,.ab,.goal{border:1px solid #d7c8c7;background:#fff;color:#10242d;border-radius:8px;padding:8px;font-weight:900;cursor:pointer;text-align:left}.sw.active,.ab.active,.goal.done{background:#eef7df}.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}button{font:inherit;font-weight:900;min-height:42px;border-radius:8px;cursor:pointer}.primary{border:0;background:#073b4c;color:#fff}.secondary{border:1px solid #d7c8c7;background:#fff;color:#10242d}#arena-cv{display:block;width:100%;border-radius:10px;background:#fff1dc;cursor:default}.battle-status{text-align:center;font-weight:900;font-size:.9rem;color:#10242d;min-height:24px;margin:4px 0}.log{max-height:200px;overflow:auto;color:#594f57}.result{display:none;background:#eef7df;border-radius:8px;padding:10px}.result.show{display:block}@media(max-width:820px){.game{grid-template-columns:1fr}.hud{grid-template-columns:repeat(3,1fr)}}@media(max-width:520px){.hud,.actions{grid-template-columns:1fr}.pal{grid-template-columns:repeat(3,1fr)}}</style></head>
+<body><div class="wrap">
+<div class="top"><a class="pill" href="../arcade.html">Back to Arcade</a><a class="pill" href="../games">All games</a></div>
+<section class="hero"><p>Drawing-to-battle</p><h1>Pixel Pet Arena</h1><p>Your drawing is the build. Red makes power, yellow makes spark, green makes speed, blue makes guard, and connected shapes earn style.</p></section>
+<div class="hud">
+  <div class="stat"><b id="h-score">0</b><span>Score</span></div>
+  <div class="stat"><b id="h-round">1/4</b><span>Round</span></div>
+  <div class="stat"><b id="h-power">0</b><span>Power</span></div>
+  <div class="stat"><b id="h-style">0</b><span>Style</span></div>
+  <div class="stat"><b id="h-wins">0</b><span>Wins</span></div>
+  <div class="stat"><b id="h-best">0</b><span>Best</span></div>
+</div>
+<main class="game">
+  <section class="panel">
+    <div class="pal" id="pal"></div>
+    <div class="px-grid" id="canvas"></div>
+    <div class="actions">
+      <button class="primary" id="btn-battle">Battle!</button>
+      <button class="secondary" id="btn-mirror">Mirror</button>
+      <button class="secondary" id="btn-restart">Restart</button>
+    </div>
+  </section>
+  <aside class="panel">
+    <canvas id="arena-cv" width="420" height="180"></canvas>
+    <div class="battle-status" id="battle-status">Draw your pet, then hit Battle!</div>
+    <h3 style="margin:8px 0 4px">Abilities <small style="font-weight:400;color:#594f57">(pick 2)</small></h3>
+    <div class="abilities" id="abilities"></div>
+    <h3 style="margin:8px 0 4px">Goals</h3>
+    <div class="goals" id="goals"></div>
+    <div class="result" id="result"></div>
+    <h3 style="margin:8px 0 4px">Arena Log</h3>
+    <div class="log" id="log"></div>
+  </aside>
+</main>
+</div>
+
+<script>
+const GID='pixel-pet-arena',RK='jvds_pet_draw_run',MK='jvds_pet_draw_meta';
+const GS_SYS=new GameSystem(GID,'Pixel Pet Arena','ember');
+const COLS=['Blank','Power','Spark','Speed','Guard'],EMO=['□','🟥','🟨','🟩','🟦'];
+const PIX_COLORS=['#fff','#ef476f','#ffd166','#83d483','#8ecae6'];
+const RIVALS=[
+  {n:'Patch Pup',  hp:60,  atk:8,  shape:'dog'},
+  {n:'Glow Cat',   hp:85,  atk:13, shape:'cat'},
+  {n:'Sprint Moth',hp:110, atk:18, shape:'moth'},
+  {n:'Crown Sprite',hp:145,atk:24, shape:'sprite'},
+];
+const ABS=[['dash','Dash','Speed counts twice'],['shell','Shell','Guard absorbs damage'],['spark','Spark','Style becomes score'],['roar','Roar','Power+8 bonus']];
+const GOAL_DEFS=[['draw','Paint 24 pixels',s=>s.grid.filter(Boolean).length>=24],['shape','Make a connected body of 12+',s=>connected()>12],['champ','Win the full league',s=>s.ended&&s.wins>=4]];
+
+const CW=420,CH=180,PET_SCALE=14;
+
+let meta=readMeta(),s=readRun()||fresh(),color=1;
+let anim={playerX:0,rivalX:0,playerHp:100,playerHpMax:100,rivalHp:100,rivalHpMax:100,shake:0,shakeTarget:'',flash:'',timer:0,running:false};
+let animId=null;
+
+function readMeta(){try{return JSON.parse(localStorage.getItem(MK))??{best:0,goals:{}}}catch{return{best:0,goals:{}}}}
+function readRun(){try{return JSON.parse(localStorage.getItem(RK))}catch{return null}}
+function saveMeta(){localStorage.setItem(MK,JSON.stringify(meta))}
+function saveRun(){localStorage.setItem(RK,JSON.stringify(s))}
+function fresh(){return{grid:Array(64).fill(0),round:0,score:0,wins:0,abils:['dash','shell'],ended:false,log:['Draw a pet shape. The arena reads your pixels.'],playerHp:100}}
+function best(){try{return Math.max(meta.best,JSON.parse(localStorage.getItem('jvds_game_'+GID)||'{}').highScore||0)}catch{return meta.best}}
+function log(m){s.log.unshift(m);s.log=s.log.slice(0,10)}
+
+function counts(){return[0,1,2,3,4].map(c=>s.grid.filter(x=>x===c).length)}
+function connected(){const st=s.grid.findIndex(Boolean);if(st<0)return 0;const seen=new Set([st]),q=[st];while(q.length){const i=q.pop();[i-8,i+8,i%8?i-1:-1,i%8<7?i+1:-1].forEach(n=>{if(n>=0&&n<64&&s.grid[n]&&!seen.has(n)){seen.add(n);q.push(n)}});}return seen.size}
+function stats(){const c=counts(),body=connected();let p=c[1]*2+c[2],st=c[2]*2+body,sp=c[3]*2,gd=c[4]*2;if(s.abils.includes('dash'))sp*=2;if(s.abils.includes('roar'))p+=8;if(s.abils.includes('spark'))st+=10;if(s.abils.includes('shell'))gd+=8;return{p,st,sp,gd,total:p+st+sp+gd}}
+
+function checkGoals(){GOAL_DEFS.forEach(([id,,fn])=>{if(fn(s))meta.goals[id]=true})}
+
+// ── CANVAS DRAWING ──
+function drawArena(){
+  const canvas=document.getElementById('arena-cv');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,CW,CH);
+
+  // Background
+  const bg=ctx.createLinearGradient(0,0,CW,CH);
+  bg.addColorStop(0,'#fff1dc');bg.addColorStop(1,'#ffe5a0');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,CW,CH);
+
+  // Arena floor
+  ctx.fillStyle='rgba(0,0,0,0.05)';ctx.fillRect(0,CH-20,CW,20);
+  ctx.fillStyle='rgba(0,0,0,0.08)';ctx.fillRect(0,CH-4,CW,4);
+
+  const rival=RIVALS[Math.min(s.round,RIVALS.length-1)];
+
+  // ── PLAYER PET ──
+  const shakeX=anim.shakeTarget==='player'?Math.sin(anim.timer*0.8)*anim.shake:0;
+  const petX=20+anim.playerX+shakeX;
+  const petY=CH-22-PET_SCALE*8;
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.12)';
+  ctx.beginPath();ctx.ellipse(petX+PET_SCALE*4,CH-16,PET_SCALE*4,8,0,0,Math.PI*2);ctx.fill();
+
+  // Draw pixel grid as scaled pet
+  s.grid.forEach((v,i)=>{
+    if(!v)return;
+    const col=i%8,row=Math.floor(i/8);
+    ctx.fillStyle=PIX_COLORS[v];
+    ctx.fillRect(petX+col*PET_SCALE,petY+row*PET_SCALE,PET_SCALE-1,PET_SCALE-1);
+  });
+  // Pet outline
+  ctx.strokeStyle='rgba(0,0,0,0.12)';ctx.lineWidth=1;
+  s.grid.forEach((v,i)=>{
+    if(!v)return;
+    const col=i%8,row=Math.floor(i/8);
+    ctx.strokeRect(petX+col*PET_SCALE,petY+row*PET_SCALE,PET_SCALE-1,PET_SCALE-1);
+  });
+
+  // ── RIVAL PET ──
+  const shakeXr=anim.shakeTarget==='rival'?Math.sin(anim.timer*0.8)*anim.shake:0;
+  const rx=CW-120+anim.rivalX+shakeXr,ry=CH-24;
+
+  ctx.shadowBlur=16;ctx.shadowColor=rival.shape==='sprite'?'#ffd700':rival.shape==='moth'?'#7b2d8b':rival.shape==='cat'?'#ff8c00':'#a0522d';
+
+  if(rival.shape==='dog'){
+    ctx.fillStyle='#c0844c';ctx.beginPath();ctx.ellipse(rx,ry-35,28,35,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#a0622a';ctx.beginPath();ctx.ellipse(rx-24,ry-62,12,18,-.4,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(rx+24,ry-62,12,18,.4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(rx-10,ry-42,7,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(rx+10,ry-42,7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#333';ctx.beginPath();ctx.arc(rx-10,ry-42,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(rx+10,ry-42,3,0,Math.PI*2);ctx.fill();
+  }else if(rival.shape==='cat'){
+    ctx.fillStyle='#ff8c00';ctx.beginPath();ctx.ellipse(rx,ry-36,26,36,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(rx-26,ry-64);ctx.lineTo(rx-14,ry-80);ctx.lineTo(rx-2,ry-64);ctx.fill();
+    ctx.beginPath();ctx.moveTo(rx+2,ry-64);ctx.lineTo(rx+14,ry-80);ctx.lineTo(rx+26,ry-64);ctx.fill();
+    ctx.fillStyle='#ffe';ctx.beginPath();ctx.arc(rx-8,ry-44,8,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(rx+8,ry-44,8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1a1a2e';ctx.beginPath();ctx.ellipse(rx-8,ry-44,3,7,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(rx+8,ry-44,3,7,0,0,Math.PI*2);ctx.fill();
+  }else if(rival.shape==='moth'){
+    ctx.fillStyle='#9b4dca';ctx.beginPath();ctx.ellipse(rx,ry-36,18,38,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(155,77,202,0.55)';ctx.beginPath();ctx.ellipse(rx-46,ry-48,30,20,-.5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(rx+46,ry-48,30,20,.5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(155,77,202,0.35)';ctx.beginPath();ctx.ellipse(rx-38,ry-28,22,14,-.8,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(rx+38,ry-28,22,14,.8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffe0ff';ctx.beginPath();ctx.arc(rx-6,ry-50,5,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(rx+6,ry-50,5,0,Math.PI*2);ctx.fill();
+  }else{
+    ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(rx,ry-48,28,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffaa00';
+    for(let i=0;i<5;i++){const a=i*Math.PI*2/5-Math.PI/2;ctx.beginPath();ctx.moveTo(rx,ry-80);ctx.lineTo(rx+Math.cos(a-0.4)*22,ry-80+Math.sin(a-0.4)*22);ctx.lineTo(rx+Math.cos(a)*32,ry-80+Math.sin(a)*32);ctx.lineTo(rx+Math.cos(a+0.4)*22,ry-80+Math.sin(a+0.4)*22);ctx.fill();}
+    ctx.fillStyle='#fff9';ctx.beginPath();ctx.arc(rx-9,ry-54,7,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(rx+9,ry-54,7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1a1';ctx.beginPath();ctx.arc(rx-9,ry-54,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(rx+9,ry-54,3,0,Math.PI*2);ctx.fill();
+  }
+  ctx.shadowBlur=0;
+
+  // Rival shadow
+  ctx.fillStyle='rgba(0,0,0,0.1)';ctx.beginPath();ctx.ellipse(rx,CH-16,28,7,0,0,Math.PI*2);ctx.fill();
+
+  // ── HP BARS ──
+  const barY=CH-18,barH=8;
+  // Player bar
+  ctx.fillStyle='rgba(0,0,0,0.15)';ctx.beginPath();ctx.roundRect(15,barY,130,barH,4);ctx.fill();
+  const pPct=Math.max(0,anim.playerHp/anim.playerHpMax);
+  ctx.fillStyle=pPct>.5?'#06d6a0':pPct>.25?'#ffd166':'#ef476f';
+  ctx.beginPath();ctx.roundRect(15,barY,130*pPct,barH,4);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.font='bold 10px Inter,sans-serif';ctx.textAlign='left';
+  ctx.fillText('You',15,barY-3);
+
+  // Rival bar
+  ctx.fillStyle='rgba(0,0,0,0.15)';ctx.beginPath();ctx.roundRect(CW-145,barY,130,barH,4);ctx.fill();
+  const rPct=Math.max(0,anim.rivalHp/anim.rivalHpMax);
+  ctx.fillStyle=rPct>.5?'#ef476f':rPct>.25?'#ffd166':'#888';
+  ctx.beginPath();ctx.roundRect(CW-145,barY,130*rPct,barH,4);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.textAlign='right';ctx.fillText(rival.n,CW-15,barY-3);
+
+  // vs label
+  if(!s.ended&&!anim.running){
+    ctx.fillStyle='rgba(0,0,0,0.3)';ctx.font='bold 20px Inter,sans-serif';ctx.textAlign='center';
+    ctx.fillText('VS',CW/2,CH/2+6);
+  }
+
+  // Flash overlay
+  if(anim.flash){
+    ctx.fillStyle=anim.flash;
+    ctx.fillRect(0,0,CW,CH);
+  }
+}
+
+// ── BATTLE ANIMATION ──
+function animateBattle(won,dmgDealt,dmgTaken,oldPlayerHp,rivalFullHp){
+  if(anim.running)return;
+  anim.running=true;
+  const rival=RIVALS[Math.min(s.round,RIVALS.length-1)];
+
+  // Start HP bars at pre-battle values
+  anim.rivalHp=rivalFullHp;anim.rivalHpMax=rivalFullHp;
+  anim.playerHp=oldPlayerHp;anim.playerHpMax=100;
+
+  let phase=0,t=0;
+  const phases=[
+    // 0: player attacks (slides right, rival shakes)
+    {dur:18,fn:(f)=>{
+      anim.playerX=Math.sin(f*Math.PI)*45;
+      if(f>.6){anim.shakeTarget='rival';anim.shake=8*(1-f/.4);
+        anim.rivalHp=Math.max(0,rival.hp-dmgDealt*Math.min(1,(f-.6)/.4));}
+      anim.flash=f>.55&&f<.75?`rgba(255,200,0,${0.3*(1-Math.abs(f-.65)/.1)})`:'';
+    }},
+    // 1: pause
+    {dur:10,fn:(f)=>{anim.playerX=0;anim.shake=0;anim.shakeTarget='';anim.flash=''}},
+    // 2: rival counter-attacks (if player lost bout)
+    {dur:won?0:18,fn:(f)=>{
+      if(won)return;
+      anim.rivalX=-Math.sin(f*Math.PI)*40;
+      if(f>.6){anim.shakeTarget='player';anim.shake=8*(1-f/.4);
+        anim.playerHp=Math.max(0,oldPlayerHp-dmgTaken*Math.min(1,(f-.6)/.4));}
+      anim.flash=f>.55&&f<.75?`rgba(239,71,111,${0.25*(1-Math.abs(f-.65)/.1)})`:'';
+    }},
+    // 3: settle
+    {dur:12,fn:(f)=>{anim.rivalX=0;anim.shake=0;anim.shakeTarget='';anim.flash='';
+      if(won){const g=ctx=>ctx&&(ctx.fillStyle='rgba(100,220,100,'+(f*.2)+')');}
+    }},
+  ];
+
+  function tick(){
+    const ph=phases[phase];
+    if(!ph||ph.dur===0){phase++;if(phase<phases.length&&phases[phase].dur>0){t=0;tick();}else{anim.running=false;anim.playerX=0;anim.rivalX=0;anim.shake=0;anim.shakeTarget='';anim.flash='';drawArena();render();return}}
+    const f=t/ph.dur;
+    ph.fn(f);drawArena();
+    t++;if(t<=ph.dur)animId=requestAnimationFrame(tick);
+    else{phase++;t=0;if(phase<phases.length)animId=requestAnimationFrame(tick);else{anim.running=false;anim.playerX=0;anim.rivalX=0;anim.shake=0;anim.shakeTarget='';anim.flash='';render();}}
+  }
+  animId=requestAnimationFrame(tick);
+}
+
+// ── GAME LOGIC ──
+function battle(){
+  if(s.ended||anim.running)return;
+  const r=RIVALS[s.round],t=stats();
+  const mine=t.p+t.st+t.sp+t.gd;
+  const them=r.hp+r.atk;
+  const dmgDealt=Math.max(5,t.p+t.sp+Math.floor(t.st/2));
+  const dmgTaken=Math.max(0,r.atk-Math.floor(t.gd/2));
+  const won=mine>=them*0.6;
+  const oldPlayerHp=s.playerHp||100;
+  s.playerHp=Math.max(0,oldPlayerHp-(won?0:dmgTaken));
+  s.score+=mine*6;
+  if(won){s.wins++;s.score+=350+s.wins*100;log('Beat '+r.n+'! The build worked.');s.round++;}
+  else{s.score=Math.max(0,s.score-60);log(r.n+' won this bout. Boost power or guard.');}
+  if(s.round>=RIVALS.length||(!won&&s.playerHp<=0))finish();
+  checkGoals();saveRun();
+  const status=won?`⚡ Hit ${r.n} for ${dmgDealt}!`:`💥 ${r.n} attacks for ${dmgTaken}!`;
+  document.getElementById('battle-status').textContent=status;
+  animateBattle(won,dmgDealt,dmgTaken,oldPlayerHp,r.hp);
+}
+
+function finish(){
+  s.ended=true;checkGoals();
+  const final=s.score+s.wins*400+connected()*20+Object.keys(meta.goals).length*180;
+  meta.best=Math.max(meta.best,final);s.score=final;
+  saveMeta();saveRun();
+  try{GS_SYS.addScore(final);GS_SYS.recordGamePlay(Date.now());GS_SYS.saveState({best:meta.best,wins:s.wins})}catch{}
+  window.jvdsCheckNewBest&&window.jvdsCheckNewBest();
+  log('League finished. Score '+final+' saved.');
+}
+
+function paint(i){s.grid[i]=color;checkGoals();saveRun();drawArena();renderHud()}
+function mirror(){for(let y=0;y<8;y++)for(let x=0;x<4;x++)s.grid[y*8+7-x]=s.grid[y*8+x];log('Mirrored!');saveRun();drawArena()}
+function tog(id){s.abils=s.abils.includes(id)?s.abils.filter(x=>x!==id):(s.abils.concat(id).slice(-2));renderHud()}
+function restart(){s=fresh();color=1;anim={playerX:0,rivalX:0,playerHp:100,playerHpMax:100,rivalHp:100,rivalHpMax:100,shake:0,shakeTarget:'',flash:'',timer:0,running:false};drawArena();render()}
+
+// ── RENDER ──
+function renderHud(){
+  const t=stats();
+  document.getElementById('h-score').textContent=s.score;
+  document.getElementById('h-round').textContent=s.ended?'Done':(s.round+1)+'/'+RIVALS.length;
+  document.getElementById('h-power').textContent=t.p;
+  document.getElementById('h-style').textContent=t.st;
+  document.getElementById('h-wins').textContent=s.wins;
+  document.getElementById('h-best').textContent=best();
+}
+function render(){
+  checkGoals();renderHud();
+  // Palette
+  document.getElementById('pal').innerHTML=COLS.map((c,i)=>
+    `<button class="sw ${color===i?'active':''}" data-c="${i}">${EMO[i]}<br><small>${c}</small></button>`).join('');
+  // Pixel grid
+  document.getElementById('canvas').innerHTML=s.grid.map((v,i)=>
+    `<button class="px c${v}" data-i="${i}"></button>`).join('');
+  // Abilities
+  document.getElementById('abilities').innerHTML=ABS.map(a=>
+    `<button class="ab ${s.abils.includes(a[0])?'active':''}" data-a="${a[0]}"><b>${a[1]}</b><br><small>${a[2]}</small></button>`).join('');
+  // Goals
+  document.getElementById('goals').innerHTML=GOAL_DEFS.map(([id,t])=>
+    `<div class="goal ${meta.goals[id]?'done':''}"><b>${meta.goals[id]?'✓':'○'}</b><span>${t}</span></div>`).join('');
+  // Log
+  document.getElementById('log').innerHTML=s.log.map(x=>`<p>${x}</p>`).join('');
+  // Result
+  document.getElementById('result').className='result'+(s.ended?' show':'');
+  document.getElementById('result').textContent=s.ended?`Final score ${s.score} · Best ${meta.best}`:'';
+  if(!anim.running){
+    const rival=RIVALS[Math.min(s.round,RIVALS.length-1)];
+    anim.rivalHp=s.ended?0:rival.hp;anim.rivalHpMax=rival.hp;
+    anim.playerHp=s.playerHp||100;anim.playerHpMax=100;
+    if(!s.ended)document.getElementById('battle-status').textContent=`Next: ${rival.n} — Power ${rival.hp}, Atk ${rival.atk}`;
+    else document.getElementById('battle-status').textContent=s.wins>=4?'League champion!':'Run ended.';
+    drawArena();
+  }
+}
+
+// ── INPUT ──
+document.getElementById('pal').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(b){color=+b.dataset.c;render()}});
+document.getElementById('canvas').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b)paint(+b.dataset.i)});
+document.getElementById('abilities').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b)tog(b.dataset.a)});
+document.getElementById('btn-battle').addEventListener('click',battle);
+document.getElementById('btn-mirror').addEventListener('click',mirror);
+document.getElementById('btn-restart').addEventListener('click',restart);
+
+// ── INIT ──
+render();
+</script>
+<script src="../cookie-consent.js" defer></script></body></html>

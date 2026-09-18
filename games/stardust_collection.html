@@ -2,16 +2,27 @@
 <html lang="en-GB">
 <head>
   <meta charset="UTF-8">
+<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Stardust Constellation Rescue is a free educational browser game about reading symbol patterns, planning movement, and restoring constellations.">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://jvdesignstudio.co.uk/games/stardust_collection.html">
   <title>Stardust Constellation Rescue | JVDesignStudio</title>
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jvdesignstudio.co.uk/games/stardust_collection.html">
+    <meta property="og:title" content="Stardust Constellation Rescue | JVDesignStudio">
+    <meta property="og:description" content="Stardust Constellation Rescue is a free educational browser game about reading symbol patterns, planning movement, and restoring constellations.">
+    <meta property="og:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
+    <meta property="og:site_name" content="JVDesignStudio">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Stardust Constellation Rescue | JVDesignStudio">
+    <meta name="twitter:description" content="Stardust Constellation Rescue is a free educational browser game about reading symbol patterns, planning movement, and restoring constellations.">
+    <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
   <link rel="icon" href="../logo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../style-shared.css?v=17">
+  <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
   <link rel="stylesheet" href="../game-system.css?v=18">
   <script src="../game-system.js"></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Stardust Constellation Rescue","url":"https://jvdesignstudio.co.uk/games/stardust_collection.html","description":"Read symbol patterns, collect the right stardust in order, and restore constellations in a child-friendly educational browser game.","genre":["Educational","Puzzle","Action"],"gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"}}</script>
@@ -63,6 +74,7 @@
   </main>
 <script>
 (() => {
+  const gs = new GameSystem('stardust_collection', 'Stardust Constellation Rescue', 'stardust');
   const FIELD_W = () => field.clientWidth;
   const FIELD_H = () => field.clientHeight;
   const BEST_KEY = 'stardust_constellation_best_v1';
@@ -123,14 +135,14 @@
   function startGame(isPractice=false){
     practice = isPractice; running = true; last = 0; spawn = 0; score = 0; lives = 3; mapIndex = 0; step = 0; chains = 0; speed = 105;
     clearObjects(); resetShip(); renderHud(); renderPattern(); feedback.textContent = 'Collect the highlighted symbol first.'; overlay.classList.add('off'); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
-    if (window.GameSystem && window.GameSystem.startGame) window.GameSystem.startGame('stardust_collection');
+    gs.startGame();
   }
   function finish(win){
     running = false; cancelAnimationFrame(raf); clearObjects(); best = Math.max(best, score); localStorage.setItem(BEST_KEY, String(best)); renderHud();
     overlay.querySelector('h2').textContent = win ? 'Constellation Rescue Complete!' : 'The sky map collapsed';
     overlay.querySelector('p').textContent = win ? `You restored all five constellations with ${score} points. That took pattern reading, timing, and lane planning.` : `Final score: ${score}. Try reading the next highlighted symbol before moving lanes.`;
     startBtn.textContent = 'Play again'; practiceBtn.textContent = 'Practice mode'; overlay.classList.remove('off');
-    if (window.GameSystem && window.GameSystem.endGame) window.GameSystem.endGame(score, { completed: win, mapsRestored: mapIndex + (win ? 1 : 0), practice });
+    gs.endGame(score, { completed: win, mapsRestored: mapIndex + (win ? 1 : 0), practice });
   }
   function nextMap(){
     score += 80 + chains * 10; mapIndex++; step = 0; speed += 18; clearObjects();

@@ -49,6 +49,7 @@ function normalize(s){
 }
 const isQuick = process.argv.includes('--quick');
 const isFix = process.argv.includes('--fix');
+const isJson = process.argv.includes('--json');
 let quickDrift = [];
 function restoreBefore(before){
   for(const p of GENERATED){

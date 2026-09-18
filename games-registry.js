@@ -385,16 +385,16 @@ window.JVDS_GAMES = [
     "id": "critter-whack",
     "cat": "Action",
     "file": "critter-whack-page.html",
-    "title": "Critter Whack",
+    "title": "Critter Whack: Ranger Sort",
     "tag": "Reaction · Sorting",
     "emoji": "🐹",
     "cover": "CritterWhackCover.webp",
     "bg": "linear-gradient(135deg,#234020,#3a6b2e)",
     "kids": true,
-    "desc": "A reaction and sorting challenge: tap the right critters for each wave, avoid bombs, and manage streaks as the pattern changes.",
+    "desc": "Read habitat clues, tap the matching critters, avoid hazards, and build streaks in a quick sorting-and-attention game.",
     "age": "Ages 5-9",
     "session": "3-6 min",
-    "controls": "Tap helpful critters, avoid hazards, read wave cues"
+    "controls": "Read ranger clues, tap matching critters, avoid hazards"
   },
   {
     "id": "lumo-dash",
@@ -442,16 +442,16 @@ window.JVDS_GAMES = [
     "id": "echo-fruit",
     "cat": "Chill",
     "file": "echo_fruit_catch.html",
-    "title": "Echo's Fruit Catch!",
+    "title": "Echo's Fruit Catch: Rainbow Picnic",
     "tag": "Early Years Sorting",
     "emoji": "",
     "cover": "axo-fruit-catch.webp",
     "bg": "linear-gradient(180deg,#87CEEB,#c8efaa)",
     "kids": true,
     "age": "Ages 3-8",
-    "desc": "A gentle early-years sorting game: help Echo catch fruit, avoid rocks, and practise left-right movement with forgiving controls.",
+    "desc": "A gentle early-years sorting game: catch the requested fruit, avoid rocks, and practise left-right movement with forgiving controls.",
     "session": "3-5 min",
-    "controls": "Tilt or drag Echo to catch fruit groups and avoid rocks"
+    "controls": "Move Echo left and right to catch requested fruit"
   },
   {
     "id": "call-of-cards",

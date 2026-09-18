@@ -11,13 +11,13 @@ const failures = [];
 const notes = [];
 function check(ok, file, msg){ if(!ok) failures.push(`${file}: ${msg}`); }
 
-// curated count gate - 18 live hub cards vs 61 filesystem
+// curated count gate - hub card count vs filesystem (updated A249: drum-pad removed, sound-studio canonical)
 try{
   const curated = JSON.parse(fs.readFileSync(CONTENT_TOOLS,'utf8'));
   const curatedCount = Array.isArray(curated) ? curated.length : 0;
-  check(curatedCount === 40, 'content/tools.json', `curated ${curatedCount} != 40 (hub live indexable)`);
-  check(files.length === 61, 'tools/*.html', `filesystem ${files.length} != 61 raw (40 indexable + 21 noindex)`);
-  if(curatedCount===40 && files.length===61) console.log(`  [PASS] tools count curated 40 vs raw 61`);
+  check(curatedCount === 47, 'content/tools.json', `curated ${curatedCount} != 47 (hub live indexable)`);
+  check(files.length === 69, 'tools/*.html', `filesystem ${files.length} != 69 raw (40 indexable + 21 noindex + 8 sub)`);
+  if(curatedCount===47 && files.length===69) console.log(`  [PASS] tools count curated 47 vs raw 69`);
   else console.log(`  [INFO] tools count curated ${curatedCount} vs raw ${files.length}`);
 }catch(e){ failures.push(`content/tools.json: ${e.message}`); }
 

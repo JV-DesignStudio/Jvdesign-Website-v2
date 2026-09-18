@@ -33,12 +33,14 @@ function walk(dir) {
   return out;
 }
 
+const isJson = process.argv.includes('--json');
 const broken = {};   // "target" -> [files]
+const brokenDetails = []; // { target, file, line, errorType }
 let refCount = 0;
 
 for (const filePath of walk(ROOT)) {
-  let c = fs.readFileSync(filePath, 'utf8');
-  c = c.replace(/(<script\b[^>]*>)[\s\S]*?<\/script\s*>/gi, '$1'); // keep script src, ignore JS-built paths
+  let cRaw = fs.readFileSync(filePath, 'utf8');
+  let c = cRaw.replace(/(<script\b[^>]*>)[\s\S]*?<\/script\s*>/gi, '$1'); // keep script src, ignore JS-built paths
   const dir = path.dirname(filePath);
   for (const m of c.matchAll(/(?:href|src)="([^"]+)"/g)) {
     let ref = m[1];
@@ -66,11 +68,30 @@ for (const filePath of walk(ROOT)) {
     if (!fs.existsSync(target)) {
       const rel = path.relative(ROOT, filePath).replace(/\\/g, '/');
       (broken[ref] = broken[ref] || []).push(rel);
+      // line number for --json
+      if (isJson) {
+        const idx = m.index || 0;
+        const line = cRaw.slice(0, cRaw.indexOf(m[0], idx) !== -1 ? cRaw.indexOf(m[0], idx) : idx).split('\n').length;
+        // fallback to counting in cRaw via m.index approximation
+        const lineNum = cRaw.slice(0, m.index).split('\n').length || 1;
+        brokenDetails.push({ target: ref, file: rel, line: lineNum, errorType: 'missing_file' });
+      }
     }
   }
 }
 
 const targets = Object.keys(broken);
+if (isJson) {
+  const payload = {
+    ok: targets.length === 0,
+    refCount,
+    brokenCount: targets.length,
+    broken: targets.sort((a,b)=> broken[b].length - broken[a].length).map(t=> ({ target: t, count: broken[t].length, files: broken[t], errorType: 'missing_file', details: brokenDetails.filter(d=> d.target===t) })),
+    brokenDetails
+  };
+  console.log(JSON.stringify(payload, null, 2));
+  process.exit(targets.length ? 1 : 0);
+}
 if (!targets.length) {
   console.log(`✓ validate-links: ${refCount} internal refs checked, 0 broken.`);
   process.exit(0);

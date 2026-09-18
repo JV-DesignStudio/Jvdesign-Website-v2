@@ -176,6 +176,8 @@ function boardHumanReview(){
 const mascots = mascotsKPI();
 const board = boardHumanReview();
 const socialQueue = socialQueueCount();
+// preserve existing throughput/learner/revenue from previous board-data.json (board-keeper writes them)
+let prev=null; try{ prev=JSON.parse(require('fs').readFileSync(require('path').join(ROOT,'board-data.json'),'utf8')); }catch{}
 const data = {
   generated: new Date().toISOString(),
   sitemap: { urls: sitemapCount, lastmod: lastModSitemap() },
@@ -198,6 +200,9 @@ const data = {
   validate: validateSummary(),
   site: { css: cssCount, pages: pagesCount },
   sw: { version: getSwVersion(), file: 'sw.js' },
+  throughput: prev && prev.throughput ? prev.throughput : { d7:0,d30:0,wipMaxAge:0,medianLead:null,p90Lead:null,updated:new Date().toISOString() },
+  learner: prev && prev.learner ? prev.learner : { generated:new Date().toISOString(), wins:{today:0,week:0,toolUses:0,workshopCompletions:0,note:'stub'}, note:'stub' },
+  revenue: prev && prev.revenue ? prev.revenue : { generated:new Date().toISOString(), bmc:{count:0,total:0,last7d:0},kofi:{count:0,total:0,last7d:0}, last7d:'private', total:'0', private:true },
 };
 
 const out = path.join(ROOT, 'board-data.json');

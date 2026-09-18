@@ -188,6 +188,11 @@ footer{background:#120f0c;padding:32px 24px;text-align:center;border-top:1px sol
       <form id="nlForm" action="https://formspree.io/f/xvkowqqw" method="POST">
         <input type="hidden" name="_subject" value="New newsletter subscriber , JVDesignStudio">
         <input type="hidden" name="_next" value="">
+        <!-- Honeypot for bots - hidden via CSS -->
+        <div style="position:absolute;left:-5000px;top:auto;width:1px;height:1px;overflow:hidden;" aria-hidden="true">
+          <label for="hp_website">Leave this field empty</label>
+          <input type="text" name="_gotcha" id="hp_website" tabindex="-1" autocomplete="off">
+        </div>
         <div class="form-group">
           <label class="form-label" for="nlName">Your Name</label>
           <input class="form-input" type="text" id="nlName" name="name" placeholder="Jane Smith" required>
@@ -198,6 +203,7 @@ footer{background:#120f0c;padding:32px 24px;text-align:center;border-top:1px sol
         </div>
         <button type="submit" class="submit-btn">📬 Subscribe</button>
         <p class="form-note">Your email stays with the studio via Formspree, it's never shared or sold. Weekly on Friday, one email per week max. Unsubscribe via the link in your Formspree confirmation email.</p>
+        <noscript><p class="form-note" style="margin-top:12px;border:1px solid var(--border);padding:10px;border-radius:8px;background:var(--bg3);">JavaScript is disabled or blocked — the form will still submit via standard POST, or email <a href="mailto:josh-couchman@outlook.com?subject=Newsletter%20Subscribe&body=Please%20add%20me%20to%20the%20JVDesignStudio%20newsletter%20-%20my%20email%20is:%20" style="color:var(--teal);text-decoration:underline;">josh-couchman@outlook.com</a> directly.</p></noscript>
       </form>
     </div>
     <div class="success-msg" id="successMsg">
@@ -279,11 +285,19 @@ document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close(); });
 })();
 
-/* Formspree AJAX submission with 8s timeout */
+/* Formspree AJAX submission with 8s timeout + honeypot + offline check */
 const form = document.getElementById('nlForm');
 if (form) {
   form.addEventListener('submit', async function(e) {
     e.preventDefault();
+    // honeypot check
+    var hp=document.getElementById('hp_website');
+    if(hp && hp.value){ return; }
+    // offline check
+    if(typeof navigator!=='undefined' && navigator.onLine===false){
+      alert('You appear offline — please check your connection and try again, or email josh-couchman@outlook.com directly.');
+      return;
+    }
     const btn = form.querySelector('.submit-btn');
     btn.textContent = 'Sending…';
     btn.disabled = true;
@@ -311,7 +325,7 @@ if (form) {
       btn.textContent = '📬 Subscribe';
       btn.disabled = false;
       if(err && err.name === 'AbortError') alert('Request timed out after 8s , please try again.');
-      else alert('Network error , please check your connection and try again.');
+      else alert('Network error , please check your connection and try again. You can also email josh-couchman@outlook.com directly.');
     }
   });
 }
