@@ -45,7 +45,8 @@ function normalize(s){
     .replace(/generated:\s*new Date\(\)\.toISOString\(\)/g,'generated:"<ts>"')
     .replace(/var lastmod[^;]+;/g,'')
     .replace(/"total":\s*"[^"]*BMC[^"]*"/g,'"total":"<ts>"')
-    .replace(/"last7d":\s*"[^"]*"/g,'"last7d":"<ts>"');
+    .replace(/"last7d":\s*"[^"]*"/g,'"last7d":"<ts>"')
+    .replace(/"updated":\s*"[^"]+"/g,'"updated":"<ts>"');
 }
 const isQuick = process.argv.includes('--quick');
 const isFix = process.argv.includes('--fix');
@@ -90,7 +91,7 @@ if(!isQuick){
     sh('node generate-search-index.js');
     sh('node generate-sitemap.js');
     sh('node scripts/generate-board-data.js');
-    try{ sh('node generate-latest-post.js'); }catch(e){ /* latest optional */ }
+    sh('node generate-latest-post.js');
   }catch(e){
     console.error('Generator failed:', e.message);
     console.error(e.stdout||'', e.stderr||'');

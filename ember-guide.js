@@ -99,9 +99,10 @@
         dots.appendChild(d);
       }
     }
-    // announce
-    var ann=document.getElementById('jvds-announce');
-    if(ann) ann.textContent = step.title + ': ' + step.text;
+    // announce via queued polite live region (3s TTL, throttled)
+    var msg = step.title + ': ' + step.text;
+    if (window.JVDS && window.JVDS.announce) window.JVDS.announce(msg);
+    else { var ann=document.getElementById('jvds-announce'); if(ann) ann.textContent = msg; }
   }
 
   function openAt(i){

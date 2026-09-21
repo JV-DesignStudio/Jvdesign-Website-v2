@@ -13,9 +13,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#e8833a",
-      "cover": "og/learn.png",
+      "cover": "/the-workshop.png",
       "url": "/workshops/blender-workshop.html"
     },
     {
@@ -29,7 +29,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#ff70b8",
-      "cover": "og/blender-cheatsheet.png",
+      "cover": "/og/blender-cheatsheet.png",
       "url": "/workshops/blender-cheatsheet.html"
     },
     {
@@ -45,7 +45,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/blender-cube-workshop.png",
+      "cover": "/og/blender-cube-workshop.png",
       "url": "/workshops/blender-cube-workshop.html"
     },
     {
@@ -61,7 +61,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/blender-character-workshop.png",
+      "cover": "/og/blender-character-workshop.png",
       "url": "/workshops/blender-character-workshop.html"
     },
     {
@@ -77,7 +77,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/blender-rigging-workshop.png",
+      "cover": "/og/blender-rigging-workshop.png",
       "url": "/workshops/blender-rigging-workshop.html"
     },
     {
@@ -94,7 +94,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/blender-animation-workshop.png",
+      "cover": "/og/blender-animation-workshop.png",
       "url": "/workshops/blender-animation-workshop.html"
     },
     {
@@ -110,7 +110,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/blender-materials-workshop.png",
+      "cover": "/og/blender-materials-workshop.png",
       "url": "/workshops/blender-materials-workshop.html"
     },
     {
@@ -126,7 +126,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/blender-lighting-workshop.png",
+      "cover": "/og/blender-lighting-workshop.png",
       "url": "/workshops/blender-lighting-workshop.html"
     },
     {
@@ -142,7 +142,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/blender-scene-workshop.png",
+      "cover": "/og/blender-scene-workshop.png",
       "url": "/workshops/blender-scene-workshop.html"
     },
     {
@@ -154,9 +154,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/TowerDefenceCover.png",
       "url": "/workshops/cpp-tower-defence-builder.html"
     },
     {
@@ -170,7 +170,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#a78bfa",
-      "cover": "og/cpp-cheatsheet.png",
+      "cover": "/og/cpp-cheatsheet.png",
       "url": "/workshops/cpp-cheatsheet.html"
     },
     {
@@ -184,7 +184,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/cpp-pong-workshop.png",
+      "cover": "/og/cpp-pong-workshop.png",
       "url": "/workshops/cpp-pong-workshop.html"
     },
     {
@@ -198,7 +198,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/cpp-snake-workshop.png",
+      "cover": "/og/cpp-snake-workshop.png",
       "url": "/workshops/cpp-snake-workshop.html"
     },
     {
@@ -212,7 +212,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/cpp-breakout-workshop.png",
+      "cover": "/og/cpp-breakout-workshop.png",
       "url": "/workshops/cpp-breakout-workshop.html"
     },
     {
@@ -228,7 +228,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/cpp-platformer-workshop.png",
+      "cover": "/og/cpp-platformer-workshop.png",
       "url": "/workshops/cpp-platformer-workshop.html"
     },
     {
@@ -244,7 +244,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/cpp-platformer-part2-workshop.png",
+      "cover": "/og/cpp-platformer-part2-workshop.png",
       "url": "/workshops/cpp-platformer-part2-workshop.html"
     },
     {
@@ -258,7 +258,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/cpp-tower-part1-workshop.png",
+      "cover": "/og/cpp-tower-part1-workshop.png",
       "url": "/workshops/cpp-tower-part1-workshop.html"
     },
     {
@@ -272,7 +272,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/cpp-tower-part2-workshop.png",
+      "cover": "/og/cpp-tower-part2-workshop.png",
       "url": "/workshops/cpp-tower-part2-workshop.html"
     },
     {
@@ -284,9 +284,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#9C27B0",
-      "cover": "og/learn.png",
+      "cover": "/og/defold-dungeon-workshop.png",
       "url": "/workshops/defold-dungeon-workshop.html"
     },
     {
@@ -301,9 +301,9 @@ window.JVDS_CONTENT = {
         "platformer",
         "2d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#00BCD4",
-      "cover": "og/learn.png",
+      "cover": "/og/defold-platformer-workshop.png",
       "url": "/workshops/defold-platformer-workshop.html"
     },
     {
@@ -315,9 +315,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#2196F3",
-      "cover": "og/learn.png",
+      "cover": "/og/defold-pong-workshop.png",
       "url": "/workshops/defold-pong-workshop.html"
     },
     {
@@ -332,9 +332,9 @@ window.JVDS_CONTENT = {
         "puzzle",
         "animation"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#FFC107",
-      "cover": "og/learn.png",
+      "cover": "/og/defold-puzzle-workshop.png",
       "url": "/workshops/defold-puzzle-workshop.html"
     },
     {
@@ -346,9 +346,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#4CAF50",
-      "cover": "og/learn.png",
+      "cover": "/og/defold-snake-workshop.png",
       "url": "/workshops/defold-snake-workshop.html"
     },
     {
@@ -362,9 +362,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "shooter"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#FF9800",
-      "cover": "og/learn.png",
+      "cover": "/og/defold-shooter-workshop.png",
       "url": "/workshops/defold-shooter-workshop.html"
     },
     {
@@ -378,9 +378,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "platformer"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.png",
+      "cover": "/og/gdevelop-platformer-workshop.png",
       "url": "/workshops/gdevelop-platformer-workshop.html"
     },
     {
@@ -394,9 +394,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "puzzle"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.png",
+      "cover": "/og/gdevelop-pointclick-workshop.png",
       "url": "/workshops/gdevelop-pointclick-workshop.html"
     },
     {
@@ -408,9 +408,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.png",
+      "cover": "/og/gdevelop-pong-workshop.png",
       "url": "/workshops/gdevelop-pong-workshop.html"
     },
     {
@@ -422,9 +422,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.png",
+      "cover": "/og/gdevelop-snake-workshop.png",
       "url": "/workshops/gdevelop-snake-workshop.html"
     },
     {
@@ -438,9 +438,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "shooter"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.png",
+      "cover": "/og/gdevelop-shooter-workshop.png",
       "url": "/workshops/gdevelop-shooter-workshop.html"
     },
     {
@@ -454,9 +454,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "rpg"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.png",
+      "cover": "/og/gdevelop-adventure-workshop.png",
       "url": "/workshops/gdevelop-adventure-workshop.html"
     },
     {
@@ -468,9 +468,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/add-your-own-stage.png",
+      "cover": "/og/add-your-own-stage.png",
       "url": "/workshops/add-your-own-stage.html"
     },
     {
@@ -484,9 +484,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "shooter"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#f5f5f0",
-      "cover": "og/nuclear-throne-guide.png",
+      "cover": "/og/nuclear-throne-guide.png",
       "url": "/workshops/nuclear-throne-guide.html"
     },
     {
@@ -498,9 +498,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#fdf6ee",
-      "cover": "og/barrel-blast-workshop.png",
+      "cover": "/og/barrel-blast-workshop.png",
       "url": "/workshops/barrel-blast-workshop.html"
     },
     {
@@ -512,9 +512,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#6366f1",
-      "cover": "og/learn.png",
+      "cover": "/GamesUpdatePromo.png",
       "url": "/workshops/build-a-game-15-min.html"
     },
     {
@@ -526,9 +526,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/Scifirunner.png",
       "url": "/workshops/sci-fi-runner-builder.html"
     },
     {
@@ -540,9 +540,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/space-invaders.png",
       "url": "/workshops/space_invaders_tutorial.html"
     },
     {
@@ -556,9 +556,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#c9a84c",
-      "cover": "og/learn.png",
+      "cover": "/CastleBuilder.png",
       "url": "/workshops/castle-builder.html"
     },
     {
@@ -570,9 +570,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/BlockBuilderCover.png",
       "url": "/workshops/castle-siege-blueprint.html"
     },
     {
@@ -584,9 +584,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#f5f5f0",
-      "cover": "og/fairy-survivors-guide.png",
+      "cover": "/og/fairy-survivors-guide.png",
       "url": "/workshops/fairy-survivors-guide.html"
     },
     {
@@ -600,9 +600,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#e879f9",
-      "cover": "og/learn.png",
+      "cover": "/FairyTaleBuilder.png",
       "url": "/workshops/fairy-tale-builder.html"
     },
     {
@@ -616,7 +616,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#403B33",
-      "cover": "og/gdscript-cheatsheet.png",
+      "cover": "/og/gdscript-cheatsheet.png",
       "url": "/workshops/gdscript-cheatsheet.html"
     },
     {
@@ -630,9 +630,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "rpg"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/Dungeondelve.png",
       "url": "/workshops/diablo-blueprint.html"
     },
     {
@@ -646,9 +646,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "platformer"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#fef9f0",
-      "cover": "og/jump-jump-mario-workshop.png",
+      "cover": "/og/jump-jump-mario-workshop.png",
       "url": "/workshops/jump-jump-mario-workshop.html"
     },
     {
@@ -666,7 +666,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#ff70b8",
-      "cover": "og/my-first-3d-model.png",
+      "cover": "/og/my-first-3d-model.png",
       "url": "/workshops/my-first-3d-model.html"
     },
     {
@@ -683,7 +683,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#9333ea",
-      "cover": "og/my-first-3d-prints-fidget-toy.png",
+      "cover": "/og/my-first-3d-prints-fidget-toy.png",
       "url": "/workshops/my-first-3d-prints-fidget-toy.html"
     },
     {
@@ -700,7 +700,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#ffd166",
-      "cover": "og/my-first-browser-game.png",
+      "cover": "/og/my-first-browser-game.png",
       "url": "/workshops/my-first-browser-game.html"
     },
     {
@@ -717,7 +717,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#a78bfa",
-      "cover": "og/my-first-cpp-game.png",
+      "cover": "/og/my-first-cpp-game.png",
       "url": "/workshops/my-first-cpp-game.html"
     },
     {
@@ -736,7 +736,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#2196F3",
-      "cover": "og/learn.png",
+      "cover": "/og/my-first-defold-game.png",
       "url": "/workshops/my-first-defold-game.html"
     },
     {
@@ -752,7 +752,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#f87171",
-      "cover": "og/my-first-fighting-game.png",
+      "cover": "/og/my-first-fighting-game.png",
       "url": "/workshops/my-first-fighting-game.html"
     },
     {
@@ -772,7 +772,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#BC4749",
-      "cover": "og/my-first-gamemaker-game.png",
+      "cover": "/og/my-first-gamemaker-game.png",
       "url": "/workshops/my-first-gamemaker-game.html"
     },
     {
@@ -790,7 +790,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.png",
+      "cover": "/og/my-first-gdevelop-game.png",
       "url": "/workshops/my-first-gdevelop-game.html"
     },
     {
@@ -809,7 +809,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#f59e0b",
-      "cover": "og/my-first-java-game.png",
+      "cover": "/og/my-first-java-game.png",
       "url": "/workshops/my-first-java-game.html"
     },
     {
@@ -825,7 +825,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#BC4749",
-      "cover": "og/my-first-minecraft-mod.png",
+      "cover": "/og/my-first-minecraft-mod.png",
       "url": "/workshops/my-first-minecraft-mod.html"
     },
     {
@@ -843,7 +843,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#ff004d",
-      "cover": "og/learn.png",
+      "cover": "/og/my-first-pico8-game.png",
       "url": "/workshops/my-first-pico8-game.html"
     },
     {
@@ -860,7 +860,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#06d6a0",
-      "cover": "og/my-first-python-game.png",
+      "cover": "/og/my-first-python-game.png",
       "url": "/workshops/my-first-python-game.html"
     },
     {
@@ -881,7 +881,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#BC4749",
-      "cover": "og/my-first-roblox-studio-game.png",
+      "cover": "/og/my-first-roblox-studio-game.png",
       "url": "/workshops/my-first-roblox-studio-game.html"
     },
     {
@@ -899,7 +899,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#FF7700",
-      "cover": "og/my-first-scratch-game.png",
+      "cover": "/og/my-first-scratch-game.png",
       "url": "/workshops/my-first-scratch-game.html"
     },
     {
@@ -915,7 +915,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/the-workshop.png",
       "url": "/workshops/my-first-series.html"
     },
     {
@@ -936,7 +936,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#BC4749",
-      "cover": "og/my-first-unity-game.png",
+      "cover": "/og/my-first-unity-game.png",
       "url": "/workshops/my-first-unity-game.html"
     },
     {
@@ -954,7 +954,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#BC4749",
-      "cover": "og/my-first-unreal-game.png",
+      "cover": "/og/my-first-unreal-game.png",
       "url": "/workshops/my-first-unreal-game.html"
     },
     {
@@ -974,7 +974,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#BC4749",
-      "cover": "og/my-first-video-game.png",
+      "cover": "/og/my-first-video-game.png",
       "url": "/workshops/my-first-video-game.html"
     },
     {
@@ -988,9 +988,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "horror"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#4c1d95",
-      "cover": "og/learn.png",
+      "cover": "/crypt-crawlers.png",
       "url": "/workshops/night-watch-workshop.html"
     },
     {
@@ -1002,9 +1002,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#4c1d95",
-      "cover": "og/learn.png",
+      "cover": "/crypt-crawlers.png",
       "url": "/workshops/night-watch-part2-workshop.html"
     },
     {
@@ -1018,9 +1018,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "horror"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#4c1d95",
-      "cover": "og/learn.png",
+      "cover": "/crypt-crawlers.png",
       "url": "/workshops/night-watch-part3-workshop.html"
     },
     {
@@ -1032,9 +1032,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/NuclearBlueprintCover.png",
       "url": "/workshops/nuclear-blueprint.html"
     },
     {
@@ -1048,9 +1048,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#22c55e",
-      "cover": "og/learn.png",
+      "cover": "/og/hub-devtools.png",
       "url": "/workshops/phone-stand-builder.html"
     },
     {
@@ -1062,9 +1062,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/Cannon.png",
       "url": "/workshops/pirate-cannon-builder.html"
     },
     {
@@ -1076,9 +1076,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/Ship.png",
       "url": "/workshops/pirate-ship-builder.html"
     },
     {
@@ -1092,9 +1092,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "puzzle"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#f0fdf4",
-      "cover": "og/pixel-quest-workshop.png",
+      "cover": "/og/pixel-quest-workshop.png",
       "url": "/workshops/pixel-quest-workshop.html"
     },
     {
@@ -1108,9 +1108,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "racing"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/RacingBluePrint.png",
       "url": "/workshops/race-builder.html"
     },
     {
@@ -1124,9 +1124,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#e8333a",
-      "cover": "og/learn.png",
+      "cover": "/RaceCarBuilder.png",
       "url": "/workshops/race-car-builder.html"
     },
     {
@@ -1140,9 +1140,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "racing"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/RacingBluePrint.png",
       "url": "/workshops/racing-blueprint.html"
     },
     {
@@ -1156,9 +1156,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#38bdf8",
-      "cover": "og/robot-builder.png",
+      "cover": "/og/robot-builder.png",
       "url": "/workshops/robot-builder.html"
     },
     {
@@ -1172,9 +1172,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/RocketBuilder.png",
       "url": "/workshops/rocket-builder.html"
     },
     {
@@ -1186,9 +1186,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#2a2720",
-      "cover": "og/fnaf-blueprint.png",
+      "cover": "/og/fnaf-blueprint.png",
       "url": "/workshops/fnaf-blueprint.html"
     },
     {
@@ -1202,10 +1202,24 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#7c3aed",
-      "cover": "og/learn.png",
+      "cover": "/SpaceStationBuilder.png",
       "url": "/workshops/space-station-builder.html"
+    },
+    {
+      "id": "start-here",
+      "title": "Start Here - Pick Your Engine",
+      "desc": "New to game dev? Pick an engine - Scratch, Godot, PICO-8, Defold or Roblox - and follow a 3-step ordered track with time and skills. No experience needed.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#FF7700",
+      "cover": "/og/start-here.png",
+      "url": "/workshops/start-here.html"
     },
     {
       "id": "steampunk-airship-builder",
@@ -1216,9 +1230,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/steampunkship.png",
       "url": "/workshops/steampunk-airship-builder.html"
     },
     {
@@ -1232,9 +1246,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#0ea5e9",
-      "cover": "og/learn.png",
+      "cover": "/SubmarineBuilder.png",
       "url": "/workshops/submarine-builder.html"
     },
     {
@@ -1246,9 +1260,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/og/learn.png",
       "url": "/workshops/learn.html"
     },
     {
@@ -1262,9 +1276,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "narrative"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learning-lab.png",
+      "cover": "/og/learning-lab.png",
       "url": "/workshops/learning-lab.html"
     },
     {
@@ -1276,9 +1290,9 @@ window.JVDS_CONTENT = {
       "ageRange": "4-6",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#FF6B6B",
-      "cover": "og/tiny-learners.png",
+      "cover": "/og/tiny-learners.png",
       "url": "/workshops/tiny-learners.html"
     },
     {
@@ -1292,7 +1306,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#fb923c",
-      "cover": "og/gml-cheatsheet.png",
+      "cover": "/og/gml-cheatsheet.png",
       "url": "/workshops/gml-cheatsheet.html"
     },
     {
@@ -1306,9 +1320,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "shooter"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/GmlCover.png",
       "url": "/workshops/gml_shooter_trainer_project.html"
     },
     {
@@ -1322,7 +1336,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/gml-pong-workshop.png",
+      "cover": "/og/gml-pong-workshop.png",
       "url": "/workshops/gml-pong-workshop.html"
     },
     {
@@ -1338,7 +1352,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/gml-platformer-workshop.png",
+      "cover": "/og/gml-platformer-workshop.png",
       "url": "/workshops/gml-platformer-workshop.html"
     },
     {
@@ -1352,7 +1366,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/gml-breakout-workshop.png",
+      "cover": "/og/gml-breakout-workshop.png",
       "url": "/workshops/gml-breakout-workshop.html"
     },
     {
@@ -1368,7 +1382,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/gml-rpg-workshop.png",
+      "cover": "/og/gml-rpg-workshop.png",
       "url": "/workshops/gml-rpg-workshop.html"
     },
     {
@@ -1380,9 +1394,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#478cbf",
-      "cover": "og/godot-gdscript-essentials.png",
+      "cover": "/og/godot-gdscript-essentials.png",
       "url": "/workshops/godot-gdscript-essentials.html"
     },
     {
@@ -1396,9 +1410,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "platformer"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/godot-templates.png",
       "url": "/workshops/godot_templates.html"
     },
     {
@@ -1413,9 +1427,9 @@ window.JVDS_CONTENT = {
         "platformer",
         "2d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/how-to-godot.png",
       "url": "/workshops/godot_tutorial.html"
     },
     {
@@ -1431,7 +1445,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 10,
       "themeColor": "#0f1117",
-      "cover": "og/learn.png",
+      "cover": "/godot-teaser.png",
       "url": "/workshops/godot-gatekeeper-3d-part1.html"
     },
     {
@@ -1445,7 +1459,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 7,
       "themeColor": "#0f1117",
-      "cover": "og/learn.png",
+      "cover": "/godot-teaser.png",
       "url": "/workshops/godot-gatekeeper-3d-part2.html"
     },
     {
@@ -1459,9 +1473,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "racing"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff6b35",
-      "cover": "og/learn.png",
+      "cover": "/godot-teaser.png",
       "url": "/workshops/godot-racing-workshop.html"
     },
     {
@@ -1475,9 +1489,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "racing"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff6b35",
-      "cover": "og/learn.png",
+      "cover": "/godot-teaser.png",
       "url": "/workshops/godot-racing-workshop-2.html"
     },
     {
@@ -1493,7 +1507,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/java-platformer-workshop.png",
+      "cover": "/og/java-platformer-workshop.png",
       "url": "/workshops/java-platformer-workshop.html"
     },
     {
@@ -1507,7 +1521,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/java-breakout-workshop.png",
+      "cover": "/og/java-breakout-workshop.png",
       "url": "/workshops/java-breakout-workshop.html"
     },
     {
@@ -1523,7 +1537,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/java-space-workshop.png",
+      "cover": "/og/java-space-workshop.png",
       "url": "/workshops/java-space-workshop.html"
     },
     {
@@ -1537,7 +1551,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/java-pong-workshop.png",
+      "cover": "/og/java-pong-workshop.png",
       "url": "/workshops/java-pong-workshop.html"
     },
     {
@@ -1553,7 +1567,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/java-rpg-part1-workshop.png",
+      "cover": "/og/java-rpg-part1-workshop.png",
       "url": "/workshops/java-rpg-part1-workshop.html"
     },
     {
@@ -1569,7 +1583,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/java-rpg-part2-workshop.png",
+      "cover": "/og/java-rpg-part2-workshop.png",
       "url": "/workshops/java-rpg-part2-workshop.html"
     },
     {
@@ -1585,7 +1599,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/java-rpg-part3-workshop.png",
+      "cover": "/og/java-rpg-part3-workshop.png",
       "url": "/workshops/java-rpg-part3-workshop.html"
     },
     {
@@ -1599,7 +1613,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#ffd166",
-      "cover": "og/js-cheatsheet.png",
+      "cover": "/og/js-cheatsheet.png",
       "url": "/workshops/js-cheatsheet.html"
     },
     {
@@ -1613,7 +1627,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/js-flappy-workshop.png",
+      "cover": "/og/js-flappy-workshop.png",
       "url": "/workshops/js-flappy-workshop.html"
     },
     {
@@ -1629,7 +1643,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/js-memory-workshop.png",
+      "cover": "/og/js-memory-workshop.png",
       "url": "/workshops/js-memory-workshop.html"
     },
     {
@@ -1643,7 +1657,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/js-breakout-workshop.png",
+      "cover": "/og/js-breakout-workshop.png",
       "url": "/workshops/js-breakout-workshop.html"
     },
     {
@@ -1657,7 +1671,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/js-snake-workshop.png",
+      "cover": "/og/js-snake-workshop.png",
       "url": "/workshops/js-snake-workshop.html"
     },
     {
@@ -1671,9 +1685,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "platformer"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/JSPlatformerCover.png",
       "url": "/workshops/js-platformer-builder.html"
     },
     {
@@ -1689,7 +1703,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/js-platformer-part2-workshop.png",
+      "cover": "/og/js-platformer-part2-workshop.png",
       "url": "/workshops/js-platformer-part2-workshop.html"
     },
     {
@@ -1701,9 +1715,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#d4b850",
-      "cover": "og/minecraft-custom-block-mod.png",
+      "cover": "/og/minecraft-custom-block-mod.png",
       "url": "/workshops/minecraft-custom-block-mod.html"
     },
     {
@@ -1715,9 +1729,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#10b981",
-      "cover": "og/minecraft-custom-mob-mod.png",
+      "cover": "/og/minecraft-custom-mob-mod.png",
       "url": "/workshops/minecraft-custom-mob-mod.html"
     },
     {
@@ -1731,7 +1745,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#2d5a1b",
-      "cover": "og/minecraft-modding-cheatsheet.png",
+      "cover": "/og/minecraft-modding-cheatsheet.png",
       "url": "/workshops/minecraft-modding-cheatsheet.html"
     },
     {
@@ -1743,9 +1757,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#7db84a",
-      "cover": "og/minecraft-first-item-mod.png",
+      "cover": "/og/minecraft-first-item-mod.png",
       "url": "/workshops/minecraft-first-item-mod.html"
     },
     {
@@ -1757,9 +1771,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#c026d3",
-      "cover": "og/minecraft-lucky-mod.png",
+      "cover": "/og/minecraft-lucky-mod.png",
       "url": "/workshops/minecraft-lucky-mod.html"
     },
     {
@@ -1771,9 +1785,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ef641e",
-      "cover": "og/minecraft-custom-food-mod.png",
+      "cover": "/og/minecraft-custom-food-mod.png",
       "url": "/workshops/minecraft-custom-food-mod.html"
     },
     {
@@ -1787,7 +1801,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#7db84a",
-      "cover": "og/minecraft-mod-starter-files.png",
+      "cover": "/og/minecraft-mod-starter-files.png",
       "url": "/workshops/minecraft-mod-starter-files.html"
     },
     {
@@ -1799,9 +1813,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#6366f1",
-      "cover": "og/minecraft-custom-tool-mod.png",
+      "cover": "/og/minecraft-custom-tool-mod.png",
       "url": "/workshops/minecraft-custom-tool-mod.html"
     },
     {
@@ -1817,7 +1831,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#e8312b",
-      "cover": "og/mugen-cheatsheet.png",
+      "cover": "/og/mugen-cheatsheet.png",
       "url": "/workshops/mugen-cheatsheet.html"
     },
     {
@@ -1829,9 +1843,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/MuguenAiCover.png",
       "url": "/workshops/mugen-ai-workshop.html"
     },
     {
@@ -1843,9 +1857,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/MuguenCover.png",
       "url": "/workshops/mugen-workshop.html"
     },
     {
@@ -1859,7 +1873,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/mugen-basics-workshop.png",
+      "cover": "/og/mugen-basics-workshop.png",
       "url": "/workshops/mugen-basics-workshop.html"
     },
     {
@@ -1873,7 +1887,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/mugen-game-setup-workshop.png",
+      "cover": "/og/mugen-game-setup-workshop.png",
       "url": "/workshops/mugen-game-setup-workshop.html"
     },
     {
@@ -1887,7 +1901,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#4ade80",
-      "cover": "og/openrct2-cheatsheet.png",
+      "cover": "/og/openrct2-cheatsheet.png",
       "url": "/workshops/openrct2-cheatsheet.html"
     },
     {
@@ -1901,7 +1915,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 12,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/ModdingRCT.png",
       "url": "/workshops/openrct2-modding-builder.html"
     },
     {
@@ -1913,9 +1927,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/saving-guests.png",
       "url": "/workshops/openrct2-swim-rescue.html"
     },
     {
@@ -1927,9 +1941,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.png",
+      "cover": "/og/pico8-dungeon-workshop.png",
       "url": "/workshops/pico8-dungeon-workshop.html"
     },
     {
@@ -1943,9 +1957,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "puzzle"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.png",
+      "cover": "/og/pico8-match3-workshop.png",
       "url": "/workshops/pico8-match3-workshop.html"
     },
     {
@@ -1959,9 +1973,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "platformer"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.png",
+      "cover": "/og/pico8-platformer-workshop.png",
       "url": "/workshops/pico8-platformer-workshop.html"
     },
     {
@@ -1973,9 +1987,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.png",
+      "cover": "/og/pico8-pong-workshop.png",
       "url": "/workshops/pico8-pong-workshop.html"
     },
     {
@@ -1987,9 +2001,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.png",
+      "cover": "/og/pico8-snake-workshop.png",
       "url": "/workshops/pico8-snake-workshop.html"
     },
     {
@@ -2003,9 +2017,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "shooter"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.png",
+      "cover": "/og/pico8-shooter-workshop.png",
       "url": "/workshops/pico8-shooter-workshop.html"
     },
     {
@@ -2017,9 +2031,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/PythonCover.png",
       "url": "/workshops/python-game-builder.html"
     },
     {
@@ -2033,7 +2047,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#4b8bbe",
-      "cover": "og/python-cheatsheet.png",
+      "cover": "/og/python-cheatsheet.png",
       "url": "/workshops/python-cheatsheet.html"
     },
     {
@@ -2047,7 +2061,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/python-catch-workshop.png",
+      "cover": "/og/python-catch-workshop.png",
       "url": "/workshops/python-catch-workshop.html"
     },
     {
@@ -2063,7 +2077,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/python-platformer-workshop.png",
+      "cover": "/og/python-platformer-workshop.png",
       "url": "/workshops/python-platformer-workshop.html"
     },
     {
@@ -2077,7 +2091,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/python-dodge-workshop.png",
+      "cover": "/og/python-dodge-workshop.png",
       "url": "/workshops/python-dodge-workshop.html"
     },
     {
@@ -2091,7 +2105,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/python-maze-workshop.png",
+      "cover": "/og/python-maze-workshop.png",
       "url": "/workshops/python-maze-workshop.html"
     },
     {
@@ -2105,7 +2119,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/python-breakout-workshop.png",
+      "cover": "/og/python-breakout-workshop.png",
       "url": "/workshops/python-breakout-workshop.html"
     },
     {
@@ -2119,7 +2133,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/python-breakout-part2-workshop.png",
+      "cover": "/og/python-breakout-part2-workshop.png",
       "url": "/workshops/python-breakout-part2-workshop.html"
     },
     {
@@ -2135,7 +2149,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/python-platformer-part2-workshop.png",
+      "cover": "/og/python-platformer-part2-workshop.png",
       "url": "/workshops/python-platformer-part2-workshop.html"
     },
     {
@@ -2147,9 +2161,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/roblox-pirate-workshop.png",
+      "cover": "/og/roblox-pirate-workshop.png",
       "url": "/workshops/roblox-pirate-workshop.html"
     },
     {
@@ -2164,9 +2178,9 @@ window.JVDS_CONTENT = {
         "puzzle",
         "obby"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#7c3aed",
-      "cover": "og/learn.png",
+      "cover": "/og/roblox-corruption-obby-workshop.png",
       "url": "/workshops/roblox-corruption-obby-workshop.html"
     },
     {
@@ -2180,9 +2194,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "obby"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#00b4ff",
-      "cover": "og/roblox-obby-workshop.png",
+      "cover": "/og/roblox-obby-workshop.png",
       "url": "/workshops/roblox-obby-workshop.html"
     },
     {
@@ -2196,9 +2210,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "horror"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#a78bfa",
-      "cover": "og/roblox-horror-workshop.png",
+      "cover": "/og/roblox-horror-workshop.png",
       "url": "/workshops/roblox-horror-workshop.html"
     },
     {
@@ -2212,9 +2226,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "rpg"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#0ea5e9",
-      "cover": "og/roblox-adventure-workshop.png",
+      "cover": "/og/roblox-adventure-workshop.png",
       "url": "/workshops/roblox-adventure-workshop.html"
     },
     {
@@ -2228,9 +2242,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "tycoon"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#facc15",
-      "cover": "og/roblox-tycoon-workshop.png",
+      "cover": "/og/roblox-tycoon-workshop.png",
       "url": "/workshops/roblox-tycoon-workshop.html"
     },
     {
@@ -2244,9 +2258,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "simulator"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#22c55e",
-      "cover": "og/roblox-simulator-workshop.png",
+      "cover": "/og/roblox-simulator-workshop.png",
       "url": "/workshops/roblox-simulator-workshop.html"
     },
     {
@@ -2260,9 +2274,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/roblox-cover.png",
       "url": "/workshops/roblox-creator-journey.html"
     },
     {
@@ -2275,8 +2289,8 @@ window.JVDS_CONTENT = {
       "type": "workshop",
       "tags": [],
       "steps": 0,
-      "themeColor": "",
-      "cover": "og/roblox-studio-cheatsheet.png",
+      "themeColor": "#BC4749",
+      "cover": "/og/roblox-studio-cheatsheet.png",
       "url": "/workshops/roblox-studio-cheatsheet.html"
     },
     {
@@ -2288,9 +2302,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ef4444",
-      "cover": "og/roblox-battle-workshop.png",
+      "cover": "/og/roblox-battle-workshop.png",
       "url": "/workshops/roblox-battle-workshop.html"
     },
     {
@@ -2304,9 +2318,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "obby"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff3b30",
-      "cover": "og/roblox-collapse-obby-workshop.png",
+      "cover": "/og/roblox-collapse-obby-workshop.png",
       "url": "/workshops/roblox-collapse-obby-workshop.html"
     },
     {
@@ -2318,9 +2332,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/scratch-clicker-workshop.png",
+      "cover": "/og/scratch-clicker-workshop.png",
       "url": "/workshops/scratch-clicker-workshop.html"
     },
     {
@@ -2332,9 +2346,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/scratch-catch-workshop.png",
+      "cover": "/og/scratch-catch-workshop.png",
       "url": "/workshops/scratch-catch-workshop.html"
     },
     {
@@ -2346,9 +2360,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/scratch-maze-workshop.png",
+      "cover": "/og/scratch-maze-workshop.png",
       "url": "/workshops/scratch-maze-workshop.html"
     },
     {
@@ -2362,7 +2376,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#ff7700",
-      "cover": "og/scratch-cheatsheet.png",
+      "cover": "/og/scratch-cheatsheet.png",
       "url": "/workshops/scratch-cheatsheet.html"
     },
     {
@@ -2376,9 +2390,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "platformer"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/scratch-platformer-workshop.png",
+      "cover": "/og/scratch-platformer-workshop.png",
       "url": "/workshops/scratch-platformer-workshop.html"
     },
     {
@@ -2390,9 +2404,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/scratch-quiz-workshop.png",
+      "cover": "/og/scratch-quiz-workshop.png",
       "url": "/workshops/scratch-quiz-workshop.html"
     },
     {
@@ -2406,9 +2420,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "narrative"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/scratch-story-workshop.png",
+      "cover": "/og/scratch-story-workshop.png",
       "url": "/workshops/scratch-story-workshop.html"
     },
     {
@@ -2420,9 +2434,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#9333ea",
-      "cover": "og/tinkercad-ep7-keychain.png",
+      "cover": "/og/tinkercad-ep7-keychain.png",
       "url": "/workshops/tinkercad-ep7-keychain.html"
     },
     {
@@ -2436,9 +2450,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#9333ea",
-      "cover": "og/tinkercad-ep1-spinner.png",
+      "cover": "/og/tinkercad-ep1-spinner.png",
       "url": "/workshops/tinkercad-ep1-spinner.html"
     },
     {
@@ -2454,7 +2468,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#9333ea",
-      "cover": "og/tinkercad-cheatsheet.png",
+      "cover": "/og/tinkercad-cheatsheet.png",
       "url": "/workshops/tinkercad-cheatsheet.html"
     },
     {
@@ -2466,9 +2480,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#9333ea",
-      "cover": "og/tinkercad-ep8-shapes.png",
+      "cover": "/og/tinkercad-ep8-shapes.png",
       "url": "/workshops/tinkercad-ep8-shapes.html"
     },
     {
@@ -2480,9 +2494,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#9333ea",
-      "cover": "og/tinkercad-ep3-blocks.png",
+      "cover": "/og/tinkercad-ep3-blocks.png",
       "url": "/workshops/tinkercad-ep3-blocks.html"
     },
     {
@@ -2496,9 +2510,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#9333ea",
-      "cover": "og/tinkercad-ep6-marblerun.png",
+      "cover": "/og/tinkercad-ep6-marblerun.png",
       "url": "/workshops/tinkercad-ep6-marblerun.html"
     },
     {
@@ -2512,9 +2526,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#9333ea",
-      "cover": "og/tinkercad-ep4-pattern.png",
+      "cover": "/og/tinkercad-ep4-pattern.png",
       "url": "/workshops/tinkercad-ep4-pattern.html"
     },
     {
@@ -2528,9 +2542,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#9333ea",
-      "cover": "og/tinkercad-ep5-phonestand.png",
+      "cover": "/og/tinkercad-ep5-phonestand.png",
       "url": "/workshops/tinkercad-ep5-phonestand.html"
     },
     {
@@ -2542,9 +2556,9 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#9333ea",
-      "cover": "og/tinkercad-ep2-popit.png",
+      "cover": "/og/tinkercad-ep2-popit.png",
       "url": "/workshops/tinkercad-ep2-popit.html"
     },
     {
@@ -2558,7 +2572,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#403B33",
-      "cover": "og/unity-cheatsheet.png",
+      "cover": "/og/unity-cheatsheet.png",
       "url": "/workshops/unity-cheatsheet.html"
     },
     {
@@ -2572,7 +2586,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/unity-pong-workshop.png",
+      "cover": "/og/unity-pong-workshop.png",
       "url": "/workshops/unity-pong-workshop.html"
     },
     {
@@ -2586,7 +2600,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/unity-breakout-workshop.png",
+      "cover": "/og/unity-breakout-workshop.png",
       "url": "/workshops/unity-breakout-workshop.html"
     },
     {
@@ -2602,7 +2616,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/unity-action-rpg-workshop.png",
+      "cover": "/og/unity-action-rpg-workshop.png",
       "url": "/workshops/unity-action-rpg-workshop.html"
     },
     {
@@ -2616,7 +2630,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/unity-ui-workshop.png",
+      "cover": "/og/unity-ui-workshop.png",
       "url": "/workshops/unity-ui-workshop.html"
     },
     {
@@ -2630,7 +2644,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/unity-multiplayer-workshop.png",
+      "cover": "/og/unity-multiplayer-workshop.png",
       "url": "/workshops/unity-multiplayer-workshop.html"
     },
     {
@@ -2646,9 +2660,9 @@ window.JVDS_CONTENT = {
         "animation",
         "2d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/UnityPlatformerImage.png",
       "url": "/workshops/unity-2d-platformer.html"
     },
     {
@@ -2663,9 +2677,9 @@ window.JVDS_CONTENT = {
         "platformer",
         "3d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/unity-3d-platformer.png",
       "url": "/workshops/unity-3d-platformer.html"
     },
     {
@@ -2679,9 +2693,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "shooter"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/UnityTopDownCoverImage.png",
       "url": "/workshops/unity-top-down-shooter.html"
     },
     {
@@ -2693,9 +2707,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/UnrealFighter.png",
       "url": "/workshops/unreal-fighter-workshop.html"
     },
     {
@@ -2707,9 +2721,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/unreal-zombie-survivor.png",
+      "cover": "/og/unreal-zombie-survivor.png",
       "url": "/workshops/unreal-zombie-survivor.html"
     },
     {
@@ -2723,7 +2737,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 0,
       "themeColor": "#403B33",
-      "cover": "og/unreal-cheatsheet.png",
+      "cover": "/og/unreal-cheatsheet.png",
       "url": "/workshops/unreal-cheatsheet.html"
     },
     {
@@ -2737,7 +2751,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/unreal-basics-workshop.png",
+      "cover": "/og/unreal-basics-workshop.png",
       "url": "/workshops/unreal-basics-workshop.html"
     },
     {
@@ -2751,7 +2765,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/unreal-advanced-workshop.png",
+      "cover": "/og/unreal-advanced-workshop.png",
       "url": "/workshops/unreal-advanced-workshop.html"
     },
     {
@@ -2765,7 +2779,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff7700",
-      "cover": "og/unreal-multiplayer-workshop.png",
+      "cover": "/og/unreal-multiplayer-workshop.png",
       "url": "/workshops/unreal-multiplayer-workshop.html"
     },
     {
@@ -2780,9 +2794,9 @@ window.JVDS_CONTENT = {
         "platformer",
         "2d"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/unreal-2d-platformer.png",
+      "cover": "/og/unreal-2d-platformer.png",
       "url": "/workshops/unreal-2d-platformer.html"
     },
     {
@@ -2794,9 +2808,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/learn.png",
+      "cover": "/UnrealClicker.png",
       "url": "/workshops/unreal-clicker-builder.html"
     },
     {
@@ -2810,9 +2824,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "shooter"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/unreal-blueprint-shooter.png",
+      "cover": "/og/unreal-blueprint-shooter.png",
       "url": "/workshops/unreal-blueprint-shooter.html"
     },
     {
@@ -2826,9 +2840,9 @@ window.JVDS_CONTENT = {
       "tags": [
         "shooter"
       ],
-      "steps": 0,
+      "steps": 6,
       "themeColor": "#BC4749",
-      "cover": "og/unreal-top-down-shooter.png",
+      "cover": "/og/unreal-top-down-shooter.png",
       "url": "/workshops/unreal-top-down-shooter.html"
     }
   ],
@@ -3527,15 +3541,6 @@ window.JVDS_CONTENT = {
       "url": "/tools/defold-cheatsheet.html"
     },
     {
-      "id": "drum-pad",
-      "title": "Drum Pad",
-      "desc": "Tap the drum pads and make music! Record loops, build beats on a 16-step sequencer and save your patterns. A fun sound toy for kids by JVDesignStudio.",
-      "category": "Make Audio",
-      "tags": [],
-      "comingSoon": false,
-      "url": "/tools/drum-pad.html"
-    },
-    {
       "id": "error-guide",
       "title": "Bug Hunter's Guide",
       "desc": "Bug Hunter's Guide , a visual flowchart for fixing common code errors in Scratch, Roblox, Godot, Unity, Python and JavaScript. Free from JVDesignStudio.",
@@ -4199,17 +4204,17 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-17T06:56:22.388Z",
-    "workshops": 185,
+    "generated": "2026-09-21T08:50:45.705Z",
+    "workshops": 186,
     "games": 40,
-    "tools": 48,
+    "tools": 47,
     "books": 5,
     "engines": {
       "Blender": 9,
       "C++": 9,
       "Defold": 6,
       "GDevelop": 6,
-      "General": 51,
+      "General": 52,
       "GML/GameMaker": 6,
       "Godot": 7,
       "Java": 7,
@@ -4229,7 +4234,7 @@ window.JVDS_CONTENT = {
       "General": 18,
       "Make Art": 14,
       "Build & Ship": 1,
-      "Make Audio": 9,
+      "Make Audio": 8,
       "Plan & Write": 5,
       "Build Worlds": 1
     }

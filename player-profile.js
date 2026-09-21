@@ -257,16 +257,19 @@ class PlayerProfile {
   }
 
   /* ─── DAILY STREAK ─── */
+  // Use UTC ISO dates (YYYY-MM-DD) so the day boundary is consistent
+  // regardless of the user's timezone and local clock.
+  _utcDay(d) { return (d || new Date()).toISOString().slice(0, 10); }
+
   updateDailyStreak() {
-    const today = new Date().toDateString();
-    const lastPlayed = this.state.lastPlayedDate ? new Date(this.state.lastPlayedDate).toDateString() : null;
+    const today = this._utcDay();
+    const lastPlayed = this.state.lastPlayedDate ? this._utcDay(new Date(this.state.lastPlayedDate)) : null;
 
     if (lastPlayed === today) {
       return; // Already played today
     } else if (lastPlayed) {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (lastPlayed === yesterday.toDateString()) {
+      const yesterday = this._utcDay(new Date(Date.now() - 86400000));
+      if (lastPlayed === yesterday) {
         this.state.dailyStreak += 1;
       } else {
         this.state.dailyStreak = 1;
@@ -286,7 +289,7 @@ class PlayerProfile {
      accrue site-wide with no per-game code. daily-challenge.js reads these
      to decide whether today's rotating goal is met. */
   getDailyActivity() {
-    const today = new Date().toDateString();
+    const today = this._utcDay();
     let d = this.state.dailyActivity;
     if (!d || d.date !== today) {
       d = { date: today, games: [], runs: 0, workshops: 0, xp: 0, claimed: null };

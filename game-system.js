@@ -1065,15 +1065,15 @@ if (typeof document !== 'undefined') {
   }
 
   /* ------ XP toast ------ */
-  function showXPToast(text) {
+  var _xpToastQueue = [], _xpToastBusy = false;
+  function _showXPToastVisual(text){
     if (!document.body) return;
     var t = document.createElement('div');
     t.className = 'jvds-xp-toast';
     t.setAttribute('role', 'status');
     t.setAttribute('aria-live', 'polite');
+    t.setAttribute('aria-atomic', 'true');
     t.textContent = text;
-    // Top-centred: the bottom of the screen is where mobile game controls
-    // live (pads, swipe zones, tap-to-flap) , toasts were covering them.
     t.style.cssText =
       'position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:50%;transform:translateX(-50%) translateY(-12px);' +
       'background:rgba(20,16,40,.92);color:#fff;border:1px solid rgba(167,131,206,.5);' +
@@ -1088,8 +1088,20 @@ if (typeof document !== 'undefined') {
     setTimeout(function () {
       t.style.opacity = '0';
       t.style.transform = 'translateX(-50%) translateY(-12px)';
-      setTimeout(function () { t.remove(); }, 350);
-    }, 2200);
+      setTimeout(function () { t.remove(); _xpToastBusy = false; _drainXPToast(); }, 350);
+    }, 3000);
+  }
+  function _drainXPToast(){
+    if (_xpToastBusy || !_xpToastQueue.length) return;
+    _xpToastBusy = true;
+    var msg = _xpToastQueue.shift();
+    try { if (window.JVDS && window.JVDS.announce) window.JVDS.announce(msg); } catch(e){}
+    _showXPToastVisual(msg);
+  }
+  function showXPToast(text) {
+    if (!text) return;
+    _xpToastQueue.push(String(text));
+    _drainXPToast();
   }
 
   /* ------ Score sharing (viral loop) ------
@@ -1623,8 +1635,9 @@ if (typeof document !== 'undefined') {
         var shareData={title:document.title, text:'Play '+(game ? game.gameName : document.title.split('|')[0].trim())+' on JVDS Arcade', url:window.location.href};
         if(navigator.share) navigator.share(shareData).catch(function(){});
         else if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(window.location.href).then(function(){
-          var announce=document.getElementById('jvds-announce'); if(announce) announce.textContent='Game link copied to clipboard.';
-        }).catch(function(){});
+           if(window.JVDS && window.JVDS.announce) window.JVDS.announce('Game link copied to clipboard.');
+           else { var announce=document.getElementById('jvds-announce'); if(announce) announce.textContent='Game link copied to clipboard.'; }
+         }).catch(function(){});
         else window.prompt('Copy this game link:',window.location.href);
       }
       if(action.dataset.arcadeAction==='restart') {
@@ -1636,10 +1649,64 @@ if (typeof document !== 'undefined') {
     });
     document.addEventListener('click',function(e){ if(!root.contains(e.target)) close(); });
   }
+  /* ------ Error boundary (A346) ------
+     Every game (inline + iframe-wrapper) must never leave a blank screen or
+     forever spinner if the game fails to initialise. A shared 10s timeout
+     + global error hook covers both cases with one friendly fallback. */
+  function initErrorBoundary(){
+    if(document.getElementById('gs-error-boundary')) return;
+    var triggered=false;
+    var overlay=document.createElement('div');
+    overlay.id='gs-error-boundary';
+    overlay.setAttribute('role','alert');
+    overlay.setAttribute('aria-live','assertive');
+    overlay.hidden=true;
+    overlay.innerHTML='<div class="gs-error-card"><div class="gs-error-icon">⚠️</div><h2 class="gs-error-title">Game failed to load</h2><p class="gs-error-text">Something went wrong. Check your connection and try again.</p><button type="button" class="gs-error-retry" onclick="location.reload()">↻ Reload game</button><a href="../pages/games.html" class="gs-error-link">← Back to Arcade</a></div>';
+    function show(){
+      if(!triggered) return;
+      if(!overlay.hidden) return;
+      overlay.hidden=false;
+      overlay.style.display='flex';
+    }
+    function trigger(reason){
+      triggered=true;
+      try{ console.warn('[GS error-boundary]',reason); }catch(e){}
+      show();
+    }
+    window.addEventListener('error', function(e){ trigger(e && e.message || 'window error'); });
+    window.addEventListener('unhandledrejection', function(e){ trigger(e && e.reason || 'unhandled rejection'); });
+    // iframe load failure
+    document.addEventListener('error', function(e){
+      var t=e.target;
+      if(t && t.tagName==='IFRAME') trigger('iframe load error');
+    }, true);
+    // 10s timeout: if error flag set OR game never signalled ready, show
+    var ready=false;
+    function markReady(){ ready=true; }
+    window.addEventListener('load', function(){ setTimeout(markReady, 500); });
+    // Games that use GameSystem signal ready when instance created
+    var checkReady = setInterval(function(){
+      if(GameSystem && GameSystem.lastInstance) ready=true;
+      var hasBoard = !!document.querySelector('#board, #game, canvas, .board-wrap, .game-frame-wrap iframe, #gameCanvas, #boardEl');
+      if(hasBoard) {
+        var el=document.querySelector('#board, #game, canvas, .board-wrap, .game-frame-wrap iframe, #gameCanvas, #boardEl');
+        if(el && (el.children.length>0 || el.tagName==='CANVAS' || el.tagName==='IFRAME')) ready=true;
+      }
+    }, 800);
+    setTimeout(function(){
+      clearInterval(checkReady);
+      if(!ready) trigger('timeout 10s no ready signal');
+      else if(triggered) show();
+    }, 10000);
+    // expose for per-game manual dismiss/signal
+    window.JVDSGameReady = markReady;
+    window.JVDSErrorBoundary = { trigger: trigger, overlay: overlay };
+    document.body.appendChild(overlay);
+  }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function(){ initFullscreenToggle(); initMutePauseChrome(); initArcadeMenu(); });
+    document.addEventListener('DOMContentLoaded', function(){ initFullscreenToggle(); initMutePauseChrome(); initArcadeMenu(); initErrorBoundary(); });
   } else {
-    initFullscreenToggle(); initMutePauseChrome(); initArcadeMenu();
+    initFullscreenToggle(); initMutePauseChrome(); initArcadeMenu(); initErrorBoundary();
   }
 })();
 

@@ -1,17 +1,32 @@
-// Runtime verification for the upgraded Pixel Studio.
+// Runtime verification for the upgraded Pixel Studio - HTTP (A204: avoid file:// SecurityError/CORS).
 const puppeteer = require('puppeteer');
+const http = require('http');
+const fs = require('fs');
 const path = require('path');
 
+const ROOT = path.resolve(__dirname, '..');
+const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.webmanifest':'application/manifest+json','.json':'application/json','.webp':'image/webp','.avif':'image/avif'};
+const server = http.createServer((req, res) => {
+  let p = path.join(ROOT, decodeURIComponent(req.url.split('?')[0]));
+  if (!path.extname(p)) p = path.join(p, 'index.html');
+  fs.readFile(p, (e, d) => {
+    if (e) { res.writeHead(404); res.end(); return; }
+    res.writeHead(200, {'Content-Type': MIME[path.extname(p)] || 'application/octet-stream'});
+    res.end(d);
+  });
+});
+
 (async () => {
+  await new Promise(r => server.listen(8125, r));
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.text()); });
 
-  const url = 'file:///' + path.resolve(__dirname, '../tools/pixel-studio.html').replace(/\\/g, '/');
-  await page.goto(url, { waitUntil: 'load' });
-  await new Promise(r => setTimeout(r, 800));
+  const url = 'http://127.0.0.1:8125/tools/pixel-studio.html';
+  await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+  await new Promise(r => setTimeout(r, 1500));
 
   const results = await page.evaluate(async () => {
     const out = [];
@@ -75,5 +90,6 @@ const path = require('path');
   const failed = results.filter(r => r.startsWith('FAIL')).length;
   console.log(failed === 0 && errors.length === 0 ? '\nALL RUNTIME CHECKS PASSED' : '\n' + failed + ' FAILURES, ' + errors.length + ' errors');
   await browser.close();
+  server.close();
   process.exit(failed === 0 && errors.length === 0 ? 0 : 1);
-})().catch(e => { console.error('Harness error:', e); process.exit(1); });
+})().catch(e => { console.error('Harness error:', e); try{server.close();}catch(_){} process.exit(1); });

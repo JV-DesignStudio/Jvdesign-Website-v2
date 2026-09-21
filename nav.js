@@ -1,14 +1,37 @@
 // nav.js , site header: announce, theme, active link, hamburger, more dropdown, profile chip
 window.JVDS = window.JVDS || {};
-window.JVDS.announce = function (msg) {
-  var el = document.getElementById('jvds-announce');
-  if (!el || !msg) return;
-  el.textContent = '';
-  setTimeout(function () { el.textContent = String(msg); }, 60);
-};
+window.JVDS.announce = (function(){
+  var queue = [], busy = false, TTL = 3000;
+  function next(){
+    if (!queue.length) { busy = false; return; }
+    busy = true;
+    var el = document.getElementById('jvds-announce');
+    if (!el) { busy = false; setTimeout(next, 100); return; }
+    var msg = queue.shift();
+    el.textContent = '';
+    setTimeout(function(){
+      el.textContent = String(msg);
+      setTimeout(function(){
+        if (el.textContent === String(msg)) el.textContent = '';
+        busy = false;
+        next();
+      }, TTL);
+    }, 60);
+  }
+  return function(msg){
+    if (!msg) return;
+    queue.push(String(msg));
+    if (!busy) next();
+  };
+})();
 (function(){
+  // Safe localStorage wrapper - on locked-down school computers storage may throw.
+  var store = {
+    get: function(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+    set: function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  };
   // Theme
-  if (localStorage.getItem('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  if (store.get('jvds-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   var b = document.getElementById('themeToggle');
   if (b) {
     function paint(){ b.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀' : '☾'; }
@@ -16,10 +39,10 @@ window.JVDS.announce = function (msg) {
       var dark = document.documentElement.getAttribute('data-theme') === 'dark';
       if (dark) {
         document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('jvds-theme', 'light');
+        store.set('jvds-theme', 'light');
       } else {
         document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('jvds-theme', 'dark');
+        store.set('jvds-theme', 'dark');
       }
       paint();
     });
@@ -85,11 +108,19 @@ window.JVDS.announce = function (msg) {
   // Profile chip
   try {
     // The real profile is jvds_profile (player-profile.js); the other two names are legacy (A256)
-    var p = JSON.parse(localStorage.getItem('jvds_profile') || localStorage.getItem('jvds-profile') || localStorage.getItem('jvds_player_profile') || 'null');
+    var p = JSON.parse(store.get('jvds_profile') || store.get('jvds-profile') || store.get('jvds_player_profile') || 'null');
     var xp=0,lv=1,st=0;
     if(p){ xp=p.globalXP||p.xp||p.totalXP||0; lv=p.level||Math.floor(xp/100)+1||1; st=p.dailyStreak||p.streak||p.bestStreak||0; }
-    else { xp=parseInt(localStorage.getItem('jvds_xp')||'0',10)||0; lv=Math.floor(xp/100)+1; st=parseInt(localStorage.getItem('jvds_streak')||'0',10)||0; }
+    else { xp=parseInt(store.get('jvds_xp')||'0',10)||0; lv=Math.floor(xp/100)+1; st=parseInt(store.get('jvds_streak')||'0',10)||0; }
     var chip = document.getElementById('navProfileChip');
-    if(chip){ chip.style.display='flex'; document.getElementById('navProfileLevel').textContent='Lv '+lv; document.getElementById('navProfileStreak').textContent=st; }
+    if(chip){
+      chip.style.display='flex';
+      document.getElementById('navProfileLevel').textContent='Lv '+lv;
+      document.getElementById('navProfileStreak').textContent=st;
+      var xpInLevel = xp - (lv-1)*100;
+      var xpLabel = 'Level '+lv+' - '+xpInLevel+' / 100 XP to level '+(lv+1)+'. Streak: '+st+' days. View your profile.';
+      chip.setAttribute('aria-label', xpLabel);
+      chip.setAttribute('title', xpLabel);
+    }
   } catch(e){}
 })();

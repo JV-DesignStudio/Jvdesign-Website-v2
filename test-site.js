@@ -41,9 +41,16 @@ function htmlFiles(dir) {
 const ALL_PAGES = htmlFiles(ROOT);
 const WORKSHOP_PAGES = ALL_PAGES.filter(p => p.startsWith('workshops/'));
 
-/* ── 1. NAV LABELS (static) ── */
-const CANON_MAIN = ['🎮 Play', '🎓 Learn ▾', '🌟 Tiny Learners Ages 4-6', '🧪 Learning Lab Ages 7-12', '🚀 Teen Learn Ages 13+', '📊 My Progress', '🛠️ Create', '📚 Read', '📦 Downloads', '🏛️ Studio', '👨‍👩‍👧 Parents', '🔍'];
-const CANON_STRIP = ['🏠 Home', '🎮 Games', '📚 Books', '🎓 Learn', '🔧 Workshop', '🛠️ Tools', '🎁 Freebies'];
+/* ── 1. NAV LABELS (derived from partials/nav-content.html - single source) ── */
+let CANON_MAIN, CANON_STRIP;
+try{
+  const navPartialFs = fs.readFileSync(path.join(ROOT,'partials/nav-content.html'),'utf8');
+  const segTmp = navPartialFs.slice(navPartialFs.search(/<nav[^>]*class="[^"]*main-nav/), navPartialFs.search(/<nav[^>]*class="[^"]*main-nav/)+5000);
+  const segEnd = segTmp.match(/<\/nav>/); const navSeg = segEnd? segTmp.slice(0,segEnd.index): segTmp;
+  const labs=[]; for(const m of navSeg.matchAll(/<a\b[^>]*>(.*?)<\/a>/gs)){ const t=m[1].replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim(); if(t && t!=='Skip to main content') labs.push(t); }
+  CANON_MAIN = labs.length? labs : ['Play','Learn','Create','Read','Imagine','Improve','For Parents','About the Studio','Downloads','Search'];
+} catch(e){ CANON_MAIN = ['Play','Learn','Create','Read','Imagine','Improve','For Parents','About the Studio','Downloads','Search']; }
+CANON_STRIP = ['Home','Games','Books','Learn','Workshop','Tools','Freebies'];
 function linkLabels(seg) {
   const out = [];
   for (const m of seg.matchAll(/<a\b[^>]*>(.*?)<\/a>/gs)) {

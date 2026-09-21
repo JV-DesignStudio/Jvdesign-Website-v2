@@ -11,6 +11,11 @@ const ROOT = path.resolve(__dirname, '..');
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'jvds-links-'));
 try {
   fs.copyFileSync(path.join(ROOT, 'validate-links.js'), path.join(fixture, 'validate-links.js'));
+  // validate-links.js requires ./scripts/lib/paths — copy the dependency into the temp fixture (c586a569 refactor)
+  const libSrc = path.join(ROOT, 'scripts', 'lib', 'paths.js');
+  const libDestDir = path.join(fixture, 'scripts', 'lib');
+  fs.mkdirSync(libDestDir, { recursive: true });
+  fs.copyFileSync(libSrc, path.join(libDestDir, 'paths.js'));
   fs.writeFileSync(path.join(fixture, 'page.html'), '<script>const template = `<a href="not-a-real-link.html">Example</a>`;</script><script src="needed.js"></script>');
   let result = spawnSync(process.execPath, ['validate-links.js'], { cwd: fixture, encoding: 'utf8' });
   assert.equal(result.status, 1);
@@ -25,6 +30,11 @@ try {
     const file = path.join(fixture, name);
     if (fs.existsSync(file)) fs.unlinkSync(file);
   }
+  // cleanup copied lib (and parent dirs) created for c586a569 fixture
+  const libCopy = path.join(fixture, 'scripts', 'lib', 'paths.js');
+  if (fs.existsSync(libCopy)) fs.unlinkSync(libCopy);
+  try { fs.rmdirSync(path.join(fixture, 'scripts', 'lib')); } catch (e) {}
+  try { fs.rmdirSync(path.join(fixture, 'scripts')); } catch (e) {}
   fs.rmdirSync(fixture);
 }
 

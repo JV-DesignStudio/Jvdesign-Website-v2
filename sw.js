@@ -1,7 +1,9 @@
-// JVDesignStudio Service Worker v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
+// JVDesignStudio Service Worker v26 - A207 school-network hardening: timeout only when cached exists, timer cleared, bump cache, Pip quest deps precached
+// v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
 // v22 (A256): precache jvds-store.js (backpack + progress) and refresh nav.js (profile chip reads jvds_profile)
 // v24 (A68-A76): precache new offline-first tools - migrate, gallery, collab, accessibility, challenges, backup, subscription, localize
-const CACHE='jvds-v24';
+// v25 (A332): add pixel-studio shared dependencies so tool fully works offline on first visit
+const CACHE='jvds-v26';
 const CORE=[
   '/',
   '/offline.html',
@@ -19,9 +21,15 @@ const CORE=[
   '/assets/vendor/three/three.min.js',
   '/assets/vendor/three/GLTFExporter.js',
   '/tools/pixel-studio.html',
+  '/tools/pixel-studio-landing.html',
   '/style-tool-pixel-studio.css',
   '/tools/pixel-studio-unified-characters.js',
   '/tools/pixel-studio-unified-adapter.js',
+  '/shared-modal.js',
+  '/player-profile.js',
+  '/tool-xp.js',
+  '/tool-analytics.js',
+  '/quest-system.js',
   '/tools/sound-studio.html',
   '/style-tool-sound-studio.css',
   '/tools/level-designer.html',
@@ -29,6 +37,7 @@ const CORE=[
   '/assets/mascots/ember-hero.webp',
   '/assets/mascots/ember-badge.webp',
   '/assets/mascots/lumo-badge.webp',
+  '/assets/mascots/pip-badge.webp',
   '/tools/storage-migrate.html',
   '/tools/gallery.html',
   '/tools/collab.html',
@@ -72,13 +81,19 @@ self.addEventListener('fetch',e=>{
 
   const cachePromise=caches.open(CACHE);
   function fetchWithTimeout(req, ms=5000){
-    return Promise.race([fetch(req), new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), ms))]);
+    let timer;
+    const p = Promise.race([fetch(req), new Promise((_,rej)=>{ timer=setTimeout(()=>rej(new Error('timeout')), ms); })]);
+    return p.finally(()=> clearTimeout(timer));
   }
-  // Navigation mode also covers extensionless routes and directory URLs.
+  // Navigation: only race timeout when a cached response exists; otherwise wait for network (slow school net with no cache would wrongly show offline.html).
   if(e.request.mode==='navigate'||url.pathname.endsWith('.html')||url.pathname==='/'){
     e.respondWith(cachePromise.then(async cache=>{
-      try { return await remember(cache,e.request,await fetchWithTimeout(e.request,5000)); }
-      catch(err){
+      const cached = await cache.match(e.request);
+      try {
+        const fetched = cached ? await fetchWithTimeout(e.request,5000) : await fetch(e.request);
+        return await remember(cache,e.request,fetched);
+      } catch(err){
+        if(cached) return cached;
         return await cache.match(e.request)||await cache.match('/offline.html')||
           new Response('Offline',{status:503,headers:{'Content-Type':'text/plain'}});
       }

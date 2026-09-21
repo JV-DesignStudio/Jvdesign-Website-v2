@@ -129,7 +129,7 @@ function getSwVersion(){
   }catch{ return null; }
 }
 
-// Link validation , live refs from validate-links (fallback 5228) and timestamp
+// Link validation , live refs from validate-links and timestamp (no placeholder)
 function validateSummary() {
   let lastRun = new Date().toISOString().slice(0,10);
   try{
@@ -137,14 +137,19 @@ function validateSummary() {
     const iso = execSync('git log -1 --format=%cs', {encoding:'utf8', cwd: require('path').resolve(__dirname,'..')}).trim();
     if(/^\d{4}-\d{2}-\d{2}$/.test(iso)) lastRun = iso;
   }catch{}
-  // Try live validate-links count (cache or run)
+  // Live validate-links count - derived directly, no fake KPI
   try{
     const {execSync} = require('child_process');
     const out = execSync('node validate-links.js 2>&1', {encoding:'utf8', cwd: ROOT, timeout: 30000});
     const m = out.match(/(\d+)\s+internal refs checked/);
     if(m) return { refs: parseInt(m[1],10), broken: 0, lastRun };
-  }catch{}
-  return { refs: 5228, broken: 0, lastRun };
+    const m2 = out.match(/(\d+)\s+broken/);
+    if(m2) return { refs: parseInt(m2[1]||0,10), broken: parseInt(m2[1]||0,10), lastRun };
+  }catch(e){
+    // propagate failure instead of fake 5228 placeholder - caller will surface error
+    throw new Error('validateSummary: validate-links failed - '+(e.stdout||e.message||'').slice(0,200));
+  }
+  throw new Error('validateSummary: could not parse validate-links output');
 }
 
 function socialQueueCount(){

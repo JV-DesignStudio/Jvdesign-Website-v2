@@ -193,7 +193,7 @@
   <img src="/assets/mascots/pip-badge.webp" alt="Pip" width="28" height="28" style="border-radius:50%;flex-shrink:0">
   <div style="flex:1;min-width:200px;line-height:1.35">
     <div style="font-size:.72rem;font-weight:800;color:var(--text);">🐢 Quest: Design a Pixel Character for Pip</div>
-    <div id="pipQuestStatus" style="font-size:.68rem;color:var(--muted);">Draw + Export PNG to earn Pip's badge  -  works offline, no account.</div>
+    <div id="pipQuestStatus" style="font-size:.68rem;color:var(--muted);">Draw + Export PNG to earn Pip's badge - works offline, no account.</div>
   </div>
   <button id="pipQuestBtn" onclick="pipQuestCheck()" style="background:#ff7700;color:white;border:none;border-radius:999px;padding:7px 14px;font-family:'Fredoka',cursive;font-weight:700;font-size:.72rem;cursor:pointer;">Check quest</button>
 </section>
@@ -1304,7 +1304,8 @@ function exportPNG(){
   const big=document.createElement('canvas');big.width=cW*sc;big.height=cH*sc;
   const bctx=big.getContext('2d');bctx.imageSmoothingEnabled=false;
   bctx.drawImage(flattenFrame(currentFrame),0,0,big.width,big.height);
-  const a=document.createElement('a');a.href=big.toDataURL('image/png');a.download='pixel_art.png';a.click();
+  const ts=new Date().toISOString().slice(0,16).replace('T','-').replace(/:/g,'');
+  const a=document.createElement('a');a.href=big.toDataURL('image/png');a.download='jvds-pixel-art-'+ts+'.png';a.click();
 }
 function exportSheet(){
   const cols=Math.ceil(Math.sqrt(frames.length)),rows=Math.ceil(frames.length/cols);
@@ -1312,7 +1313,8 @@ function exportSheet(){
   const sh=document.createElement('canvas');sh.width=cW*cols*sc;sh.height=cH*rows*sc;
   const sctx=sh.getContext('2d');sctx.imageSmoothingEnabled=false;
   frames.forEach((_,fi)=>{const c=fi%cols,r=Math.floor(fi/cols);sctx.drawImage(flattenFrame(fi),c*cW*sc,r*cH*sc,cW*sc,cH*sc);});
-  const a=document.createElement('a');a.href=sh.toDataURL('image/png');a.download='spritesheet.png';a.click();
+  const ts2=new Date().toISOString().slice(0,16).replace('T','-').replace(/:/g,'');
+  const a=document.createElement('a');a.href=sh.toDataURL('image/png');a.download='jvds-spritesheet-'+ts2+'.png';a.click();
   // Also offer JSON atlas download (Godot/Unity/Phaser compatible)
   try{
     const atlas={frames:{},meta:{size:{w:cW*cols*sc,h:cH*rows*sc},scale:1,format:'PNG'}};
@@ -1677,11 +1679,28 @@ function copyPixelShareLink(){
     else prompt('Copy:',url);
   }catch(e){ showToast('Could not share'); }
 }
+function storageUsedKB(){
+  try{
+    var b=0;
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      b+=(k.length+(localStorage.getItem(k)||'').length)*2;
+    }
+    return Math.round(b/1024);
+  }catch(e){return 0;}
+}
 function saveProject(){
   try{
+    var usedKB=storageUsedKB();
+    if(usedKB>3500){
+      showToast('Storage getting full ('+usedKB+'KB used). Download a .json backup to keep your work safe.');
+    }
     localStorage.setItem('jvds_pixel',serializeProject());
-    showToast('Saved ?');
-  }catch(e){showToast('Save failed, export project file instead');}
+    if(usedKB<=3500) showToast('Saved ✓');
+  }catch(e){
+    showToast('Storage full - download your project as .json to keep it safe');
+    exportProjectFile();
+  }
 }
 function loadProject(){
   try{
@@ -1814,7 +1833,13 @@ function autoSave(){
   try{
     localStorage.setItem('jvds_pixel_auto',serializeProject());
     dirty=false;
-  }catch(e){/* quota exceeded  autosave silently disabled */}
+  }catch(e){
+    // Quota exceeded - autosave disabled, warn once per session
+    if(!autoSave._warned){
+      autoSave._warned=true;
+      showToast('Storage full - autosave paused. Use “Save” to download a .json backup.');
+    }
+  }
 }
 function setupAutosave(){
   let raw=null;

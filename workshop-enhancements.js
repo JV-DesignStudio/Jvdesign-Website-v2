@@ -439,6 +439,62 @@
     footer.appendChild(btn);
   }
 
+  // ── NEXT-WORKSHOP SIGNPOST (A350) ─────────────────────────────────────
+  function initNextSignpost(){
+    var banner=document.getElementById('finishBanner');
+    if(!banner || banner.querySelector('.next-ep-btn, .jvds-next')) return;
+    var slug=(location.pathname.split('/').pop()||'').replace('.html','');
+    var isLocal=location.protocol==='file:';
+    function injectNext(nextUrl, label, overviewUrl){
+      if(!nextUrl && !overviewUrl) return;
+      var wrap=document.createElement('div');
+      wrap.className='jvds-next';
+      wrap.style.cssText='margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center';
+      if(nextUrl){
+        var a=document.createElement('a');
+        a.href=nextUrl; a.className='next-ep-btn'; a.textContent=label||'Next Workshop →';
+        a.style.cssText='display:inline-flex;align-items:center;gap:8px;background:#f5c842;color:#2a1e05;padding:10px 18px;border-radius:999px;font:800 .9rem Fredoka,sans-serif;text-decoration:none';
+        wrap.appendChild(a);
+      }
+      if(overviewUrl){
+        var o=document.createElement('a');
+        o.href=overviewUrl; o.textContent='← Back to track';
+        o.style.cssText='display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;padding:10px 16px;border-radius:999px;font:700 .8rem Inter,sans-serif;text-decoration:none';
+        wrap.appendChild(o);
+      }
+      // place after final-stats but before gallery if exists
+      var anchor=banner.querySelector('.final-stats');
+      if(anchor && anchor.nextSibling) anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
+      else banner.insertBefore(wrap, banner.firstChild.nextSibling || null);
+    }
+    function fallback(){
+      // generic fallback: link to workshop hub
+      injectNext(null, null, '/workshop');
+    }
+    if(isLocal){ fallback(); return; }
+    fetch('/content/paths.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(paths){
+      for(var i=0;i<paths.length;i++){
+        var p=paths[i];
+        for(var lv=0; lv<p.levels.length; lv++){
+          var ws=p.levels[lv].workshops;
+          var idx=ws.indexOf(slug);
+          if(idx!==-1){
+            var next= idx+1<ws.length ? ws[idx+1] : (p.levels[lv+1] ? p.levels[lv+1].workshops[0] : null);
+            if(next) injectNext('/workshops/'+next+'.html','Next: '+next.replace(/-/g,' ')+' →', '/workshop#'+p.id);
+            else injectNext(null, null, '/workshop#'+p.id);
+            return;
+          }
+        }
+      }
+      // not in any track: try workshops.json order as generic next
+      return fetch('/content/workshops.json', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(all){
+        var idx2=-1; for(var j=0;j<all.length;j++){ if(all[j].id===slug){ idx2=j; break; } }
+        if(idx2!==-1 && idx2+1<all.length) injectNext(all[idx2+1].url, 'Next Workshop →', '/workshop');
+        else fallback();
+      }).catch(fallback);
+    }).catch(fallback);
+  }
+
   // ── INIT ─────────────────────────────────────────────────────────────────────
   function init() {
     initCopyButtons();
@@ -448,6 +504,7 @@
     initLearningMap();
     initBlueprintCoach();
     initResetButton();
+    initNextSignpost();
     patchCompleteStep();
     // Restore after buildDots() has run (it's called at DOMContentLoaded inline)
     setTimeout(restoreProgress, 80);

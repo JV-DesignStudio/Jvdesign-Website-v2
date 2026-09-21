@@ -55,6 +55,26 @@
 
   document.body.appendChild(banner);
 
+  // Move focus to Accept so keyboard users land on the banner immediately.
+  // Use a short delay so the banner is painted before focus moves.
+  setTimeout(function(){
+    var btn = document.getElementById('cookie-accept');
+    if(btn) btn.focus();
+  }, 60);
+
+  // Trap Tab/Shift+Tab within the two banner buttons.
+  banner.addEventListener('keydown', function(e){
+    if(e.key !== 'Tab') return;
+    var focusable = [document.getElementById('cookie-accept'), document.getElementById('cookie-decline')].filter(Boolean);
+    if(!focusable.length) return;
+    var first = focusable[0], last = focusable[focusable.length - 1];
+    if(e.shiftKey){
+      if(document.activeElement === first){ e.preventDefault(); last.focus(); }
+    } else {
+      if(document.activeElement === last){ e.preventDefault(); first.focus(); }
+    }
+  });
+
   // Reserve space at the bottom of the page so the fixed banner never covers
   // footer links or a page's last interactive elements.
   var prevPad = document.body.style.paddingBottom;

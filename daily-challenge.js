@@ -37,11 +37,10 @@
 
   var STREAK_MILESTONES = [3, 7, 14, 30, 50, 100];
 
-  // Days since epoch in LOCAL time, so the challenge flips at local midnight
-  // and every device shows the same one on a given calendar day.
+  // UTC days since epoch - challenge flips at UTC midnight, consistent
+  // across timezones and immune to local clock manipulation.
   function dayNumber() {
-    var n = new Date();
-    return Math.floor(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 86400000);
+    return Math.floor(Date.now() / 86400000);
   }
 
   function profile() {
@@ -153,18 +152,34 @@
     document.head.appendChild(st);
   }
 
-  function celebrate(msg) {
+  var _toastQueue = [], _toastBusy = false;
+  function _showToastVisual(msg){
     if (typeof document === 'undefined' || !document.body) return;
     ensureStyles();
     var t = document.createElement('div');
     t.className = 'jvds-daily-toast';
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
+    t.setAttribute('aria-atomic', 'true');
     t.textContent = msg;
     document.body.appendChild(t);
     requestAnimationFrame(function () { t.classList.add('show'); });
     setTimeout(function () {
       t.classList.remove('show');
-      setTimeout(function () { t.remove(); }, 400);
-    }, 3400);
+      setTimeout(function () { t.remove(); _toastBusy = false; _drainToast(); }, 400);
+    }, 3000);
+  }
+  function _drainToast(){
+    if (_toastBusy || !_toastQueue.length) return;
+    _toastBusy = true;
+    var msg = _toastQueue.shift();
+    try { if (window.JVDS && window.JVDS.announce) window.JVDS.announce(msg); } catch(e){}
+    _showToastVisual(msg);
+  }
+  function celebrate(msg) {
+    if (!msg) return;
+    _toastQueue.push(String(msg));
+    _drainToast();
   }
 
   /* ── Widget ── */

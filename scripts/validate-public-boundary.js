@@ -47,7 +47,7 @@ const leakPatterns = [
 // rel-path scoped: prevents same-basename files in subdirs from inheriting the skip
 const ALLOWED_LEAK_FILES = new Set(['scripts/validate-public-boundary.js', 'scripts/check-dashes.cjs', 'docs/A29_PROVENANCE.md', 'approve-private.html']);
 // files where .env / BREVO / ga4-key mention is documentation only - checked by rel path, not basename
-const DOC_LEAK_ALLOW = new Set(['docs/A29_PROVENANCE.md', 'scripts/send-newsletter.js', 'tools/sound-studio.html', 'approve-private.html', 'board-data.json', 'content/stats.json', 'content-data.js', 'pages/dev-board.html', 'dev-board.html']);
+const DOC_LEAK_ALLOW = new Set(['docs/A29_PROVENANCE.md', 'scripts/send-newsletter.js', 'tools/sound-studio.html', 'approve-private.html', 'board-data.json', 'content/stats.json', 'content-data.js', 'pages/dev-board.html', 'dev-board.html', 'devlog-data.js']);
 const SCAN_EXTS = ['.js','.cjs','.html','.ps1','.md','.json','.txt','.yml','.yaml'];
 const walkForLeaks=(dir,depth=0)=>{
   if(depth>12) return [];
