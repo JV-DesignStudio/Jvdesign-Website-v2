@@ -11,7 +11,7 @@ const ROOT = path.resolve(__dirname, '..');
 const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'jvds-links-'));
 try {
   fs.copyFileSync(path.join(ROOT, 'validate-links.js'), path.join(fixture, 'validate-links.js'));
-  // validate-links.js requires ./scripts/lib/paths — copy the dependency into the temp fixture (c586a569 refactor)
+  // validate-links.js requires ./scripts/lib/paths - copy the dependency into the temp fixture (c586a569 refactor)
   const libSrc = path.join(ROOT, 'scripts', 'lib', 'paths.js');
   const libDestDir = path.join(fixture, 'scripts', 'lib');
   fs.mkdirSync(libDestDir, { recursive: true });

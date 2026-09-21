@@ -196,10 +196,9 @@ try{
   if(dup.size){ console.error(`\n✗ devlog-data.js duplicate ids: ${[...dup].join(', ')} - dedupe by id`); process.exit(1); }
   else console.log(`✓ devlog-data.js ${ids.length} posts, all ids unique`);
 }catch(e){ console.log('  [WARN] devlog id check skipped:', e.message); }
-// quick fail on git dirty (after parity gates so delta also checked)
+// quick: git dirty is advisory only - staged generated files are expected after `npm run build`
 if(isQuick && quickDrift.length){
-  console.error(`\n✗ quick: ${quickDrift.length} generated file(s) git-dirty - commit or stash before ship (use --fix or npm run build)`);
-  process.exit(1);
+  console.log(`\n[quick] ${quickDrift.length} generated file(s) git-dirty - advisory only (commit them after \`npm run build\`, CI uses full drift)`);
 }
 // also verify ownership doc exists
 const readme=path.join(ROOT,'docs','TOOLS_MERGE_AUDIT.md');
