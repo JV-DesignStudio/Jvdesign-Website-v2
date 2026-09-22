@@ -102,48 +102,93 @@
   </div>
   <div class="classic-actions" style="gap:6px;flex-wrap:wrap;justify-content:flex-end;flex:1 1 360px;">
     <div id="studioMode" role="tablist" aria-label="Studio modes" style="display:flex;gap:3px;background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:999px;padding:2px;">
-      <button role="tab" aria-selected="true" data-mode="simple" onclick="setStudioMode('simple')" style="padding:5px 10px;border-radius:999px;border:none;background:var(--accent);color:#fff;font-family:'Fredoka',cursive;font-weight:700;font-size:.66rem;cursor:pointer;">Simple</button>
-      <button role="tab" aria-selected="false" data-mode="character" onclick="setStudioMode('character')" style="padding:5px 10px;border-radius:999px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:.66rem;cursor:pointer;">Character</button>
-      <button role="tab" aria-selected="false" data-mode="draw" onclick="setStudioMode('draw')" style="padding:5px 10px;border-radius:999px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:.66rem;cursor:pointer;">Draw</button>
-      <button role="tab" aria-selected="false" data-mode="animate" onclick="setStudioMode('animate')" style="padding:5px 10px;border-radius:999px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:.66rem;cursor:pointer;">Animate</button>
+      <button role="tab" aria-selected="true" data-mode="draw" onclick="setStudioMode('draw')" style="padding:5px 12px;border-radius:999px;border:none;background:var(--accent);color:#fff;font-family:'Fredoka',cursive;font-weight:700;font-size:.72rem;cursor:pointer;" title="Draw pixels on your canvas">✏️ Draw</button>
+      <button role="tab" aria-selected="false" data-mode="character" onclick="setStudioMode('character')" style="padding:5px 12px;border-radius:999px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:.72rem;cursor:pointer;" title="Design a character, then stamp it to your canvas">🧑 Character</button>
+      <button role="tab" aria-selected="false" data-mode="animate" onclick="setStudioMode('animate')" style="padding:5px 12px;border-radius:999px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:.72rem;cursor:pointer;" title="Add frames and animate your pixel art">▶️ Animate</button>
     </div>
     <button class="help-btn" onclick="EmberGuide.show()" title="Ember quick guide" aria-label="Ember quick guide" style="min-width:34px;padding:5px 9px;">?</button>
     <button class="help-btn" onclick="openStart()" title="Templates and shortcuts" aria-label="Templates and shortcuts" style="min-width:34px;padding:5px 9px;background:rgba(255,255,255,.06);border-color:var(--border2)">Templates</button>
   </div>
 </section>
 <!-- Character templates strip (shown in Character mode) -->
-<section id="character-strip" style="display:none;flex-direction:column;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border2);background:rgba(124,58,237,.06);">
-  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-    <span style="font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);">Template:</span>
+<section id="character-strip" style="display:none;flex-direction:column;gap:0;border-bottom:2px solid var(--border2);background:rgba(124,58,237,.06);">
+
+  <!-- Row 1: Template type selector -->
+  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 14px 6px;border-bottom:1px solid var(--border2);">
+    <span style="font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);flex-shrink:0;">Type:</span>
     <button class="tpl-btn on" data-tpl="humanoid" onclick="switchTemplateUnified('humanoid',this)">🧑 Humanoid</button>
     <button class="tpl-btn" data-tpl="creature" onclick="switchTemplateUnified('creature',this)">🐲 Creature</button>
     <button class="tpl-btn" data-tpl="chibi" onclick="switchTemplateUnified('chibi',this)">🐣 Chibi</button>
     <button class="tpl-btn" data-tpl="topdown" onclick="switchTemplateUnified('topdown',this)">📹 Top-Down</button>
-    <span style="margin-left:auto;display:flex;gap:6px;">
-      <button class="z-btn" onclick="randomCharacterUnified()" title="Randomise">🎲</button>
-      <button class="z-btn" onclick="stampToCanvasUnified()" title="Stamp to frame">⬇ Stamp</button>
-      <button class="z-btn" onclick="stampAllPosesUnified()" title="Stamp all poses">🎬 All Poses</button>
-    </span>
+    <button class="z-btn" onclick="randomCharacterUnified()" title="Random character" style="margin-left:auto;">🎲 Random</button>
   </div>
-  <div id="archetypeGridUnified" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-  <div style="display:flex;gap:8px;align-items:start;flex-wrap:wrap;">
-    <canvas id="char-canvas-unified" width="192" height="192" style="width:96px;height:96px;image-rendering:pixelated;border:1px solid var(--border2);border-radius:8px;background:repeating-conic-gradient(#333 0% 25%,#222 0% 50%) 0 0/8px 8px;"></canvas>
-    <div id="partsUnified" style="display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:200px;"></div>
-    <div id="variantUnified" style="display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:160px;"></div>
+
+  <!-- Row 2: Main editor area - preview left, customisation right -->
+  <div style="display:flex;gap:10px;padding:8px 14px;flex-wrap:wrap;">
+
+    <!-- Left: Character preview + poses -->
+    <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:center;">
+      <canvas id="char-canvas-unified" width="192" height="192" style="width:108px;height:108px;image-rendering:pixelated;border:2px solid var(--border2);border-radius:10px;background:repeating-conic-gradient(#333 0% 25%,#222 0% 50%) 0 0/8px 8px;"></canvas>
+      <div style="font-size:.52rem;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase;">Pose:</div>
+      <div id="poseRowUnified" style="display:flex;gap:3px;flex-wrap:wrap;justify-content:center;max-width:120px;"></div>
+    </div>
+
+    <!-- Right: Quick starts + part customiser -->
+    <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px;">
+      <!-- Quick starts row -->
+      <div>
+        <div style="font-size:.52rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Quick starts:</div>
+        <div id="archetypeGridUnified" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+      </div>
+      <!-- Parts tabs -->
+      <div>
+        <div style="font-size:.52rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Customise:</div>
+        <div id="partsUnified" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+      </div>
+      <!-- Variants + colours for selected part -->
+      <div id="variantUnified" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+    </div>
+
   </div>
-  <div id="poseRowUnified" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+
+  <!-- Row 3: My Stamps shelf -->
+  <div id="stamps-area" style="padding:6px 14px 6px;border-top:1px solid var(--border2);background:rgba(0,0,0,.2);">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span style="font-size:.58rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);flex-shrink:0;">My Stamps:</span>
+      <div id="stampsTray" style="display:flex;gap:5px;align-items:center;flex:1;overflow-x:auto;padding-bottom:2px;"></div>
+      <button onclick="saveCharStamp()" style="flex-shrink:0;padding:4px 10px;border-radius:999px;border:1px solid rgba(245,166,35,.4);background:rgba(245,166,35,.12);color:var(--accent2);font-size:.62rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">+ Save Stamp</button>
+    </div>
+  </div>
+
+  <!-- Row 4: Stamp to canvas - primary action -->
+  <div style="display:flex;gap:8px;padding:8px 14px;border-top:1px solid rgba(0,212,170,.2);background:rgba(0,212,170,.06);">
+    <button onclick="stampToCanvasUnified()" style="flex:1;padding:10px 16px;border-radius:8px;border:none;background:var(--accent3);color:#001a14;font-family:'Fredoka',cursive;font-size:.9rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 0 #00a882;">⬇ Stamp to Canvas</button>
+    <button onclick="stampAllPosesUnified()" title="Stamp all poses as animation frames" style="flex-shrink:0;padding:10px 12px;border-radius:8px;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--text);font-family:'Fredoka',cursive;font-size:.75rem;font-weight:700;cursor:pointer;">🎬 All Poses</button>
+  </div>
+
 </section>
 <style>
-#character-strip .tpl-btn{padding:5px 10px;border-radius:999px;border:1px solid var(--border2);background:rgba(255,255,255,.04);color:var(--text);font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;}
+#character-strip .tpl-btn{padding:5px 10px;border-radius:999px;border:1px solid var(--border2);background:rgba(255,255,255,.04);color:var(--text);font-size:.68rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .12s;}
+#character-strip .tpl-btn:hover{background:rgba(255,255,255,.1);}
 #character-strip .tpl-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
-#character-strip .arch-btn{padding:4px 8px;border-radius:999px;border:1px solid var(--border2);background:rgba(255,255,255,.04);color:var(--muted);font-size:.62rem;cursor:pointer;}
-#character-strip .arch-btn.on{background:rgba(124,58,237,.2);color:#fff;border-color:rgba(124,58,237,.4);}
-#character-strip .ptab{padding:4px 8px;border-radius:8px;border:1px solid var(--border2);background:rgba(255,255,255,.03);cursor:pointer;font-size:.62rem;display:flex;align-items:center;gap:6px;}
-#character-strip .ptab.on{border-color:var(--accent3);background:rgba(0,212,170,.12);}
-#character-strip .var-btn{padding:3px 7px;border-radius:999px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:.6rem;cursor:pointer;}
+#character-strip .arch-btn{padding:4px 8px;border-radius:999px;border:1px solid var(--border2);background:rgba(255,255,255,.04);color:var(--muted);font-size:.62rem;cursor:pointer;font-family:inherit;transition:all .12s;}
+#character-strip .arch-btn:hover{background:rgba(124,58,237,.15);color:var(--text);}
+#character-strip .arch-btn.on{background:rgba(124,58,237,.25);color:#fff;border-color:rgba(124,58,237,.5);}
+#character-strip .ptab{padding:5px 8px;border-radius:8px;border:1px solid var(--border2);background:rgba(255,255,255,.03);cursor:pointer;font-size:.6rem;display:flex;align-items:center;gap:5px;font-family:inherit;transition:all .12s;}
+#character-strip .ptab:hover{background:rgba(255,255,255,.07);}
+#character-strip .ptab.on{border-color:var(--accent3);background:rgba(0,212,170,.14);}
+#character-strip .var-btn{padding:3px 7px;border-radius:999px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:.6rem;cursor:pointer;font-family:inherit;transition:all .12s;}
+#character-strip .var-btn:hover{background:rgba(255,255,255,.08);color:var(--text);}
 #character-strip .var-btn.on{background:var(--panel3);color:var(--text);border-color:var(--accent2);}
-#character-strip .pose-btn{padding:4px 8px;border-radius:999px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:.62rem;cursor:pointer;}
+#character-strip .pose-btn{padding:3px 6px;border-radius:999px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:.58rem;cursor:pointer;font-family:inherit;transition:all .12s;}
+#character-strip .pose-btn:hover{background:rgba(0,212,170,.1);color:var(--text);}
 #character-strip .pose-btn.on{background:var(--accent3);color:#000;border-color:var(--accent3);}
+/* Stamp thumbnail in stamps tray */
+.stamp-thumb-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
+.stamp-thumb-wrap img{width:40px;height:40px;border:2px solid var(--border2);border-radius:6px;image-rendering:pixelated;background:repeating-conic-gradient(#333 0% 25%,#222 0% 50%) 0 0/6px 6px;cursor:pointer;transition:border-color .12s;}
+.stamp-thumb-wrap img:hover{border-color:var(--accent3);}
+.stamp-use-btn{padding:2px 6px;border-radius:999px;border:1px solid rgba(0,212,170,.35);background:rgba(0,212,170,.1);color:var(--accent3);font-size:.5rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.stamp-use-btn:hover{background:rgba(0,212,170,.2);}
 .studio-notice-drawer{border-bottom:1px solid var(--border2);background:rgba(13,13,20,.72);}
 .studio-notice-drawer summary{min-height:28px;display:flex;align-items:center;gap:7px;padding:4px 14px;cursor:pointer;list-style:none;font-size:.62rem;font-weight:800;color:var(--muted);}
 .studio-notice-drawer summary::-webkit-details-marker{display:none;}
@@ -240,8 +285,14 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
 
   <!-- LEFT PANEL -->
   <div id="left-panel">
+    <!-- Character shortcut chip (shown in Draw mode) -->
+    <div id="char-chip" style="margin:8px 8px 0;padding:7px 8px;border-radius:8px;background:rgba(124,58,237,.12);border:1px solid rgba(124,58,237,.25);display:flex;flex-direction:column;gap:4px;">
+      <span style="font-size:.52rem;font-weight:800;color:rgba(180,160,255,.8);">🧑 CHARACTER</span>
+      <span style="font-size:.5rem;color:var(--muted);line-height:1.4;">Design a character then stamp it onto your canvas</span>
+      <button onclick="setStudioMode('character')" style="padding:4px 8px;border-radius:999px;border:none;background:rgba(124,58,237,.35);color:#e0d6ff;font-size:.58rem;font-weight:700;cursor:pointer;font-family:inherit;">🧑 Open Character tab →</button>
+    </div>
     <div class="ps">
-      <div class="pt">Tools</div>
+      <div class="pt" style="margin-top:8px;">Tools</div>
       <div class="tool-grid" id="toolGridBasic">
         <div class="tb on" data-tool="pencil" onclick="setTool('pencil')" aria-label="Pencil (P)"><span class="ico">✏️</span>Pencil</div>
         <div class="tb" data-tool="eraser" onclick="setTool('eraser')" aria-label="Eraser (E)"><span class="ico">🧹</span>Eraser</div>
@@ -400,8 +451,9 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
 <!-- BOTTOM BAR (mobile) -->
 <div id="bottom-bar">
   <div class="bb-tabs">
-    <button class="bb-tab on" onclick="bbTab(0,this)">Tools</button>
+    <button class="bb-tab on" onclick="bbTab(0,this)">Draw</button>
     <button class="bb-tab" onclick="bbTab(1,this)">Colour</button>
+    <button class="bb-tab" onclick="bbTab(4,this);setStudioMode('character');syncMobileCharCanvas();" id="bbCharTab">🧑 Char</button>
     <button class="bb-tab" onclick="bbTab(2,this)">Frames</button>
     <button class="bb-tab" onclick="bbTab(3,this)">Save</button>
   </div>
@@ -438,6 +490,27 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
       <button class="ab ab-s" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="triggerImportProject()">📂 Project</button>
       <button class="ab ab-r" style="margin:0;padding:4px 8px;font-size:.65rem;" onclick="confirmClear()">🗑️ Clear</button>
       <button class="ab js-install" hidden style="margin:0;padding:4px 8px;font-size:.65rem;background:#0ea5e9;color:white;" onclick="installApp()">📲 Install</button>
+    </div>
+    <!-- bb4: Character panel (mobile) -->
+    <div class="bb-panel" id="bb4">
+      <div style="display:flex;flex-direction:column;gap:6px;width:100%;">
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+          <button class="bb-tb" onclick="switchTemplateUnified('humanoid',null);setStudioMode('character');">🧑<span class="ico">Hum.</span></button>
+          <button class="bb-tb" onclick="switchTemplateUnified('creature',null);setStudioMode('character');">🐲<span class="ico">Crtr</span></button>
+          <button class="bb-tb" onclick="switchTemplateUnified('chibi',null);setStudioMode('character');">🐣<span class="ico">Chibi</span></button>
+          <button class="bb-tb" onclick="switchTemplateUnified('topdown',null);setStudioMode('character');">📹<span class="ico">Top</span></button>
+          <button class="bb-tb" onclick="randomCharacterUnified()">🎲<span class="ico">Rand</span></button>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <canvas id="char-canvas-mobile" width="96" height="96" style="width:64px;height:64px;image-rendering:pixelated;border:1px solid var(--border2);border-radius:6px;flex-shrink:0;background:repeating-conic-gradient(#333 0% 25%,#222 0% 50%) 0 0/6px 6px;" onclick="setStudioMode('character')"></canvas>
+          <div style="flex:1;display:flex;flex-direction:column;gap:4px;justify-content:center;">
+            <button onclick="setStudioMode('character')" style="padding:6px 10px;border-radius:7px;border:1px solid var(--border2);background:rgba(124,58,237,.15);color:var(--text);font-size:.65rem;font-weight:700;cursor:pointer;font-family:inherit;">✏️ Edit Character</button>
+            <button onclick="stampToCanvasUnified()" style="padding:6px 10px;border-radius:7px;border:none;background:var(--accent3);color:#001a14;font-size:.65rem;font-weight:800;cursor:pointer;font-family:'Fredoka',cursive;">⬇ Stamp to Canvas</button>
+            <button onclick="saveCharStamp()" style="padding:4px 8px;border-radius:999px;border:1px solid rgba(245,166,35,.4);background:rgba(245,166,35,.1);color:var(--accent2);font-size:.58rem;font-weight:700;cursor:pointer;font-family:inherit;">+ Save Stamp</button>
+          </div>
+        </div>
+        <div id="stampsTrayMobile" style="display:flex;gap:4px;overflow-x:auto;"></div>
+      </div>
     </div>
   </div>
 </div>

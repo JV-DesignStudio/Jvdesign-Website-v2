@@ -1,10 +1,12 @@
-// Unified Pixel Studio adapter - Simple / Character / Draw / Animate modes
+// Unified Pixel Studio adapter - Draw / Character / Animate modes
 // Depends on: pixel-studio-unified-characters.js (defines CHARACTER_TEMPLATES, SKIN etc., charCanvasUnified, cctxUnified, charState etc.)
-let studioMode='simple';
+let studioMode='draw';
 const EASY_PAL=['#000000','#ffffff','#f59e0b','#ef4444','#10b981','#3b82f6','#a855f7','#ec4899','#facc15','#84cc16','#06b6d4','#f43f5e','#6b7280','#92400e','#1e1b4b','#f5e6d3'];
 let easyMode=false;
 
 function setStudioMode(mode){
+  // 'simple' is a legacy alias for 'draw'
+  if(mode==='simple') mode='draw';
   studioMode=mode;
   document.querySelectorAll('#studioMode [data-mode]').forEach(b=>{
     const on=b.dataset.mode===mode;
@@ -14,37 +16,103 @@ function setStudioMode(mode){
   });
   const strip=document.getElementById('character-strip');
   if(strip) strip.style.display=(mode==='character'?'flex':'none');
-  // Simple mode hides layers complexity
-  const left=document.getElementById('left-panel'), right=document.getElementById('right-panel');
-  if(mode==='simple'){
-    easyMode=true;
-    if(cW>64 || cH>64){ setCanvasSize(32,32,true); document.getElementById('custW').value=32; document.getElementById('custH').value=32; }
-    showToast('Simple mode - 16 colours, big pixels. Open Advanced for Line/Rect/Mirror.');
-  } else {
-    easyMode=false;
-  }
-  // Advanced disclosure: collapsed in Simple, open in Draw/Animate
+  easyMode=false;
+  // Advanced disclosure: open in Animate and Character
   const adv=document.getElementById('advancedTools');
-  if(adv) adv.open = (mode==='draw' || mode==='animate' || mode==='character');
-  // Palette: 16 in Simple, 32 in Draw/Animate/Character
-  document.querySelectorAll('#palette .sw, #bbPal .bb-sw').forEach((el,i)=>{
-    el.style.display = (mode==='simple' && i>=16 ? 'none' : '');
-  });
+  if(adv) adv.open=(mode==='animate' || mode==='character');
+  // Show/hide the Character shortcut chip in the left panel
+  const chip=document.getElementById('char-chip');
+  if(chip) chip.style.display=(mode==='character'?'none':'flex');
   if(mode==='character'){
-    // ensure char canvas initialised
     initUnifiedCharIfNeeded();
     renderCharacterUnified();
     buildArchetypesUnified();
     buildPartsUnified();
     buildPoseUnified();
+    buildStampsTray();
+    showToast('Design your character, then tap ⬇ Stamp to Canvas');
   }
-  if(mode==='draw' || mode==='animate'){
-    // ensure canvas visible
+  if(mode==='draw'){
     renderAll();
   }
+  if(mode==='animate'){
+    renderAll();
+    showToast('Animate: +Frame to add frames, ▶️ Play to preview');
+  }
   localStorage.setItem('jvds_pixel_mode',mode);
-  // push to analytics
   if(window.ToolAnalytics) try{ToolAnalytics.event('studio_mode_'+mode);}catch(e){}
+}
+
+// ---- Stamps system ----
+const STAMPS_KEY='jvds_char_stamps';
+const MAX_STAMPS=8;
+
+function getCharStamps(){
+  try{return JSON.parse(localStorage.getItem(STAMPS_KEY)||'[]');}catch(e){return[];}
+}
+
+function saveCharStamp(){
+  initUnifiedCharIfNeeded();
+  const cc=document.getElementById('char-canvas-unified');
+  if(!cc){showToast('Open Character mode first');return;}
+  const stamps=getCharStamps();
+  // thumbnail: 64x64 from 192x192 source
+  const tmp=document.createElement('canvas');tmp.width=64;tmp.height=64;
+  tmp.getContext('2d').drawImage(cc,0,0,64,64);
+  const entry={
+    state:JSON.parse(JSON.stringify(typeof charState!=='undefined'?charState:{})),
+    template:typeof currentTemplate!=='undefined'?currentTemplate:'humanoid',
+    pose:typeof currentPose!=='undefined'?currentPose:'idle',
+    thumb:tmp.toDataURL('image/png'),
+    ts:Date.now()
+  };
+  stamps.unshift(entry);
+  if(stamps.length>MAX_STAMPS)stamps.length=MAX_STAMPS;
+  try{localStorage.setItem(STAMPS_KEY,JSON.stringify(stamps));}catch(e){}
+  buildStampsTray();
+  if(typeof showToast==='function')showToast('Saved to My Stamps!');
+}
+
+function applyCharStamp(i){
+  const stamps=getCharStamps();const s=stamps[i];if(!s)return;
+  if(typeof charState!=='undefined')window.charState=JSON.parse(JSON.stringify(s.state));
+  if(typeof currentTemplate!=='undefined')window.currentTemplate=s.template||'humanoid';
+  if(typeof currentPose!=='undefined')window.currentPose=s.pose||'idle';
+  renderCharacterUnified();buildArchetypesUnified();buildPartsUnified();buildPoseUnified();
+  if(typeof showToast==='function')showToast('Character loaded - tap ⬇ Stamp to Canvas');
+}
+
+function buildStampsTray(){
+  const stamps=getCharStamps();
+  ['stampsTray','stampsTrayMobile'].forEach(id=>{
+    const tray=document.getElementById(id);if(!tray)return;
+    tray.innerHTML='';
+    if(!stamps.length){
+      tray.innerHTML='<span style="font-size:.58rem;color:var(--muted);font-style:italic;padding:4px 0;">Design a character then click + Save Stamp</span>';
+      return;
+    }
+    stamps.forEach((s,i)=>{
+      const wrap=document.createElement('div');
+      wrap.className='stamp-thumb-wrap';
+      const img=document.createElement('img');
+      img.src=s.thumb;img.title='Load this character (tap Use to stamp it)';
+      img.onclick=()=>applyCharStamp(i);
+      const btn=document.createElement('button');
+      btn.className='stamp-use-btn';btn.textContent='↓ Use';
+      btn.onclick=e=>{e.stopPropagation();applyCharStamp(i);setTimeout(stampToCanvasUnified,120);};
+      wrap.appendChild(img);wrap.appendChild(btn);tray.appendChild(wrap);
+    });
+  });
+  // also sync the mobile canvas preview
+  syncMobileCharCanvas();
+}
+
+function syncMobileCharCanvas(){
+  const src=document.getElementById('char-canvas-unified');
+  const dst=document.getElementById('char-canvas-mobile');
+  if(!src||!dst)return;
+  dst.getContext('2d').clearRect(0,0,96,96);
+  dst.getContext('2d').drawImage(src,0,0,96,96);
 }
 
 // --- Character unified wrappers ---
@@ -68,9 +136,10 @@ function initUnifiedCharIfNeeded(){
 function renderCharacterUnified(){
   initUnifiedCharIfNeeded();
   if(typeof renderCharacter==='function'){
-    // hijack original renderCharacter to use unified canvas (already patched to cctxUnified)
     try{ renderCharacter(); }catch(e){ console.warn(e); }
   }
+  // keep mobile preview in sync
+  setTimeout(syncMobileCharCanvas,50);
 }
 function switchTemplateUnified(id,btn){
   document.querySelectorAll('#character-strip .tpl-btn').forEach(b=>b.classList.remove('on'));
@@ -200,11 +269,11 @@ function randomCharacterUnified(){
   buildPoseUnified();
 }
 function stampToCanvasUnified(){
-  // Use existing stampToCanvas from characters file, but ensure it operates on pixel-studio's frames/cW
   if(typeof stampToCanvas==='function'){
     try{
       stampToCanvas();
-      showToast('Stamped to frame '+(currentFrame+1));
+      showToast('Stamped to frame '+(currentFrame+1)+' - tap Draw to keep editing');
+      syncMobileCharCanvas();
     }catch(e){ console.warn(e); showToast('Stamp failed'); }
   } else {
     // fallback: draw char canvas onto current layer
@@ -268,9 +337,8 @@ function checkMissionParam(){
   if(hasMission && !dismissed){
     banner.style.display='flex';
     setCanvasSize(16,16,true); document.getElementById('custW').value=16; document.getElementById('custH').value=16;
-    setStudioMode('simple');
-    // show guide toast
-    setTimeout(()=>showToast('Mission: draw 3 pixels → Character stamp → Animate → Export'),800);
+    setStudioMode('draw');
+    setTimeout(()=>showToast('Mission: draw 3 pixels → Character tab → Stamp → Animate → Export'),800);
     // poll progress
     setInterval(updateMissionProgress,800);
   } else if(!dismissed && !hasMission){
@@ -302,10 +370,12 @@ const origExportPNG = typeof exportPNG !== 'undefined' ? exportPNG : null;
     // init char canvas after pixel init
     setTimeout(()=>{
       initUnifiedCharIfNeeded();
-      // restore mode
+      buildStampsTray();
+      // restore mode ('simple' legacy alias -> 'draw')
       let m=null; try{m=localStorage.getItem('jvds_pixel_mode');}catch(e){}
-      if(m && ['simple','character','draw','animate'].includes(m)) setStudioMode(m);
-      else setStudioMode('simple');
+      if(m==='simple') m='draw';
+      if(m && ['draw','character','animate'].includes(m)) setStudioMode(m);
+      else setStudioMode('draw');
       checkMissionParam();
       // handle import from easy
       if(location.search.includes('import=easy') || location.hash.includes('import')){
