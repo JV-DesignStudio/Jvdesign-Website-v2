@@ -145,6 +145,14 @@
 
   <!-- ══ PLAY ══ -->
   <section class="arc-view" id="view-play" role="tabpanel" aria-label="Play">
+    <div class="start-here" aria-label="Start here in the arcade">
+      <div class="start-copy">
+        <span>Start here</span>
+        <strong>Not sure what to play?</strong>
+        <p>Pick a clear route through the arcade instead of scrolling a wall of games.</p>
+      </div>
+      <div class="start-picks" id="startPicks"></div>
+    </div>
     <div class="finder-panel" aria-label="Find your next game">
       <div>
         <strong>Find your next game</strong>
@@ -611,7 +619,7 @@
   var finder = 'all';
   var sortMode = lsGet('jvds_arc_sort', 'featured');
   var SORTS = [['featured', 'Featured'], ['fresh', 'Unplayed first'], ['learning', 'Learning value'], ['recent', 'Recent'], ['az', 'A-Z']];
-  var RECENTLY_IMPROVED = ['marble-run-lab','stardust','candy-kingdom','call-of-cards','stack-attack','bread-blocks'];
+  var RECENTLY_IMPROVED = ['marble-run-lab','stardust','candy-kingdom','call-of-cards','stack-attack','bread-blocks','little-steps','lumo-dash','nibble-quest','tiger-smash','paper-toss','star-chef','bakery-empire','dungeon-delve','void-rush','neon-tiles','stardust-ruins','echo-casebook'];
   var LEARNING_WORDS = ['learn','logic','maths','math','pattern','memory','strategy','planning','physics','route','spatial','creative','typing','word','quiz','puzzle','ttrpg'];
 
   function textOf(g) {
@@ -640,7 +648,7 @@
   }
 
   function finderLabel(key) {
-    var labels = { all:'All games', education:'Educational', kids:'Little players', unplayed:'Not tried yet', short:'Short sessions', improved:'Recently improved', strategy:'Strategy', puzzle:'Puzzle', action:'Action' };
+    var labels = { all:'All games', education:'Educational', kids:'Little players', unplayed:'Not tried yet', short:'Short sessions', improved:'Improved games', strategy:'Strategy', puzzle:'Puzzle', action:'Action' };
     return labels[key] || key;
   }
 
@@ -675,7 +683,7 @@
       ['kids', '🧸', 'Little players'],
       ['unplayed', '✨', 'Not tried yet'],
       ['short', '⏱️', 'Short games'],
-      ['improved', '🛠️', 'Improved'],
+      ['improved', '✨', 'Improved'],
       ['strategy', '♟️', 'Strategy'],
       ['puzzle', '🧩', 'Puzzle'],
       ['action', '⚡', 'Action']
@@ -706,8 +714,38 @@
     }).join('');
   }
 
+  function gameById(id) {
+    return GAMES.find(function (g) { return g.id === id; });
+  }
+
+  function renderStartHere(smap) {
+    var wrap = document.getElementById('startPicks');
+    if (!wrap) return;
+    var picks = [
+      ['🧠', 'Best learning', 'marble-run-lab', 'Build a route and test cause-effect.'],
+      ['⚡', 'Action skill', 'lumo-dash', 'Read a pattern, then perform it fast.'],
+      ['🧩', 'Puzzle route', 'nibble-quest', 'Plan a path before moving.'],
+      ['🎯', 'Physics play', 'paper-toss', 'Estimate wind, force, and angle.'],
+      ['🔎', 'Clue game', 'echo-casebook', 'Use evidence instead of guessing.'],
+      ['🚀', 'Strategy', 'void-rush', 'Plan fuel, shields, and safe jumps.']
+    ];
+    wrap.innerHTML = picks.map(function (p) {
+      var g = gameById(p[2]);
+      if (!g) return '';
+      var s = smap[g.id] || {};
+      var state = s.plays > 0 ? fmt(s.high || 0) + ' best' : 'Start';
+      return '<a class="start-card" href="games/' + esc(g.file) + '">' +
+        '<span class="start-icon">' + p[0] + '</span>' +
+        '<b>' + esc(p[1]) + '</b>' +
+        '<strong>' + esc(g.title) + '</strong>' +
+        '<em>' + esc(p[3]) + '</em>' +
+        '<small>' + state + '</small>' +
+      '</a>';
+    }).join('');
+  }
+
   // Keep the strongest, most varied titles at the front of the app.
-  var PICK_ORDER = ['garden-defense','bubble-pop','neon-tiles','arcane-citadel','gem-match','bakery-empire','crypt-crawlers'];
+  var PICK_ORDER = ['marble-run-lab','lumo-dash','nibble-quest','paper-toss','tiger-smash','echo-casebook','void-rush','star-chef','bakery-empire','neon-tiles','stardust-ruins','dungeon-delve','stack-attack','bread-blocks','call-of-cards','stardust','candy-kingdom'];
   var PICK_RANK = {};
   PICK_ORDER.forEach(function (id, index) { PICK_RANK[id] = index; });
 
@@ -779,6 +817,7 @@
     });
     list = applySort(list, smap);
     renderFinderActions(smap);
+    renderStartHere(smap);
     var line = document.getElementById('resultLine');
     if (line) line.textContent = list.length + ' of ' + GAMES.length + ' games shown' + (finder !== 'all' ? ' · ' + finderLabel(finder) : '') + (filter !== 'All' ? ' · ' + filter : '') + (q ? ' · search: “' + query.trim() + '”' : '');
 
@@ -803,6 +842,8 @@
                '<div class="body">' +
                  '<div class="tag">' + esc(g.tag) + '</div>' +
                  '<div class="name">' + esc(g.title) + '</div>' +
+                 '<div class="promise">' + esc(promise) + '</div>' +
+                 '<div class="mini-badges">' + improved + age + session + '</div>' +
                  '<div class="plays">' + plays + '</div>' +
                '</div>' +
              '</a>';

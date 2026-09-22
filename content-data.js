@@ -2862,20 +2862,6 @@ window.JVDS_CONTENT = {
       "url": "/games/pixel-pet-arena.html"
     },
     {
-      "id": "stardust-ruins",
-      "title": "Stardust Ruins",
-      "tag": "Puzzle Adventure",
-      "emoji": "🏛️",
-      "category": "Puzzle",
-      "cover": "",
-      "bg": "linear-gradient(135deg,#26335f,#d6b46c)",
-      "desc": "Explore starlit rooms, collect keys and relics, dodge hazards, and recover treasure before the lantern fades.",
-      "kids": false,
-      "age": null,
-      "character": "Stardust",
-      "url": "/games/stardust-ruins.html"
-    },
-    {
       "id": "beat-builder-battle",
       "title": "Beat Builder Battle",
       "tag": "Rhythm Creation",
@@ -2902,20 +2888,6 @@ window.JVDS_CONTENT = {
       "age": null,
       "character": null,
       "url": "/games/creature-rescue-clinic.html"
-    },
-    {
-      "id": "echo-casebook",
-      "title": "Echo's Casebook",
-      "tag": "Mystery Story",
-      "emoji": "🔎",
-      "category": "Puzzle",
-      "cover": "",
-      "bg": "linear-gradient(135deg,#3d285f,#bc4749)",
-      "desc": "Solve cosy mystery chapters by collecting clues, interviewing suspects, and making careful deductions with Echo.",
-      "kids": false,
-      "age": null,
-      "character": "Echo",
-      "url": "/games/echo-casebook.html"
     },
     {
       "id": "marble-run-lab",
@@ -2989,42 +2961,42 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "neon-tiles",
-      "title": "Neon Tiles",
-      "tag": "Rhythm Runner",
+      "title": "Neon Tiles: Beat Builder",
+      "tag": "Rhythm patterns · Memory",
       "emoji": "⚡",
       "category": "Action",
       "cover": "NeonTilesCover.webp",
       "bg": "linear-gradient(160deg,#05060f,#1a1240)",
       "desc": "Tap falling tiles across four lanes, nail the timing for perfects, chain combos, dodge traps and climb the levels.",
-      "kids": false,
+      "kids": true,
       "age": null,
       "character": null,
       "url": "/games/neon-tiles.html"
     },
     {
       "id": "bakery-empire",
-      "title": "Pip's Bakery Empire",
-      "tag": "Idle · Incremental",
+      "title": "Pip’s Bakery Planner",
+      "tag": "Budgeting · Production",
       "emoji": "🥐",
       "category": "Chill",
       "cover": "BakeryEmpireCover.webp",
       "bg": "linear-gradient(135deg,#f4a460,#c9936b)",
       "desc": "Bake, hire staff and buy upgrades. Catch golden croissants, earn while away, then franchise for permanent bonuses.",
-      "kids": false,
+      "kids": true,
       "age": null,
       "character": "Pip",
       "url": "/games/pips-bakery-empire.html"
     },
     {
       "id": "paper-toss",
-      "title": "Paper Toss Deluxe",
-      "tag": "Physics · Estimation",
+      "title": "Paper Toss: Wind Lab",
+      "tag": "Estimation · Physics",
       "emoji": "🗑️",
       "category": "Action",
       "cover": "PaperTossCover.webp",
       "bg": "linear-gradient(135deg,#16241a,#28402c)",
       "desc": "A physics estimation challenge: read wind and distance, adjust throw angle and force, then learn from each miss across 20 levels.",
-      "kids": false,
+      "kids": true,
       "age": null,
       "character": null,
       "url": "/games/paper-toss-deluxe.html"
@@ -3073,14 +3045,14 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "star-chef",
-      "title": "Star Chef",
-      "tag": "Manager · Timing",
+      "title": "Star Chef: Recipe Queue",
+      "tag": "Recipe logic · Planning",
       "emoji": "🍽️",
       "category": "Strategy",
       "cover": "StarChefCover.webp",
       "bg": "linear-gradient(135deg,#ffbe0b,#fb5607)",
       "desc": "Serve hungry customers fast and earn big tips. Build your 5-star restaurant reputation!",
-      "kids": false,
+      "kids": true,
       "age": null,
       "character": null,
       "url": "/games/star-chef.html"
@@ -3157,14 +3129,14 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "void-rush",
-      "title": "VoidRush",
-      "tag": "Space Runner",
+      "title": "VoidRush: Navigation Lab",
+      "tag": "Risk · Fuel planning",
       "emoji": "",
       "category": "Action",
       "cover": "VoidrushCoverimage.webp",
       "bg": "linear-gradient(135deg,#03000f,#0a0025)",
       "desc": "Pilot your ship through neon deep space, collect fuel, and outrun the Void Entity before it swallows you whole.",
-      "kids": false,
+      "kids": true,
       "age": null,
       "character": null,
       "url": "/games/voidrush.html"
@@ -3185,36 +3157,36 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "tiger-smash",
-      "title": "Tiger Smash",
-      "tag": "Angles · Brick Breaker",
+      "title": "Tiger Smash: Angle Lab",
+      "tag": "Angles · Prediction",
       "emoji": "",
       "category": "Action",
       "cover": "TigerSmashCover.webp",
       "bg": "linear-gradient(135deg,#2a1500,#4a2800)",
       "desc": "A brick-breaker about angles and rebound planning: aim shots, clear themed stages, collect coins, and choose useful paddle upgrades.",
-      "kids": false,
+      "kids": true,
       "age": null,
       "character": null,
       "url": "/games/tiger_smash.html"
     },
     {
       "id": "dungeon-delve",
-      "title": "Dungeon Delve",
-      "tag": "Dungeon RPG",
+      "title": "Dungeon Delve: Map Logic",
+      "tag": "Reading · Strategy",
       "emoji": "",
       "category": "Action",
       "cover": "Dungeondelve.webp",
       "bg": "linear-gradient(135deg,#0d0a1a,#1a1535)",
       "desc": "Explore procedurally generated dungeons, collect loot, and survive as long as you can.",
-      "kids": false,
+      "kids": true,
       "age": null,
       "character": null,
       "url": "/games/dungeon-delve.html"
     },
     {
       "id": "little-steps",
-      "title": "Little Steps",
-      "tag": "Choice Runner",
+      "title": "Little Steps: Choice Trail",
+      "tag": "Confidence · Reading choices",
       "emoji": "🌌",
       "category": "Action",
       "cover": "LittleStepsCover.webp",
@@ -3255,8 +3227,8 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "lumo-dash",
-      "title": "Lumo Dash",
-      "tag": "Timing · Reflexes",
+      "title": "Lumo Dash: Pattern Trail",
+      "tag": "Pattern memory · Reflexes",
       "emoji": "🦊",
       "category": "Action",
       "cover": "LumoDashCover.webp",
@@ -3269,8 +3241,8 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "nibble-quest",
-      "title": "Nibble Quest",
-      "tag": "Route Planning Snake",
+      "title": "Nibble Quest: Route Planner",
+      "tag": "Spatial planning · Sequences",
       "emoji": "🐍",
       "category": "Action",
       "cover": "NibbleQuestCover.webp",
@@ -3410,15 +3382,6 @@ window.JVDS_CONTENT = {
   ],
   "tools": [
     {
-      "id": "accessibility",
-      "title": "Character-Driven Accessibility",
-      "desc": "Accessibility settings with character voices. Screen reader, reduced motion, high contrast, font size - offline-first.",
-      "category": "General",
-      "tags": [],
-      "comingSoon": false,
-      "url": "/tools/accessibility.html"
-    },
-    {
       "id": "arcade-game-maker",
       "title": "Arcade Game Maker",
       "desc": "Build your own arcade game with blueprints, pixel art, level design and sound. No installs.",
@@ -3428,17 +3391,6 @@ window.JVDS_CONTENT = {
       ],
       "comingSoon": false,
       "url": "/tools/arcade-game-maker.html"
-    },
-    {
-      "id": "asset-packs",
-      "title": "Free Game Assets",
-      "desc": "Download free pixel art sprites, tilesets, sound effects and colour palettes for your game projects. PNG pixel art (32×32, engine-ready), 8-bit SFX generator, and curated palettes ",
-      "category": "Make Art",
-      "tags": [
-        "Pixel Art"
-      ],
-      "comingSoon": false,
-      "url": "/tools/asset-packs.html"
     },
     {
       "id": "backup-restore",
@@ -3472,15 +3424,6 @@ window.JVDS_CONTENT = {
       ],
       "comingSoon": false,
       "url": "/tools/buildlab.html"
-    },
-    {
-      "id": "certificate",
-      "title": "Game Dev Completion Certificate Generator",
-      "desc": "Free printable game dev completion certificate generator. Create personalised certificates for Scratch, Roblox, Godot, Unity and more.",
-      "category": "General",
-      "tags": [],
-      "comingSoon": false,
-      "url": "/tools/certificate.html"
     },
     {
       "id": "challenges",
@@ -3808,15 +3751,6 @@ window.JVDS_CONTENT = {
       "tags": [],
       "comingSoon": false,
       "url": "/tools/story-player.html"
-    },
-    {
-      "id": "subscription",
-      "title": "Monthly Workshops - Subscription (Offline)",
-      "desc": "Monthly workshops offline-first. No account required - subscription status tracked locally, unlocks with Stardust's Golden Key.",
-      "category": "General",
-      "tags": [],
-      "comingSoon": false,
-      "url": "/tools/subscription.html"
     },
     {
       "id": "trading-card-designer",
@@ -4204,10 +4138,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-22T13:50:09.475Z",
+    "generated": "2026-09-22T15:56:01.001Z",
     "workshops": 186,
-    "games": 40,
-    "tools": 47,
+    "games": 38,
+    "tools": 43,
     "books": 5,
     "engines": {
       "Blender": 9,
@@ -4231,9 +4165,9 @@ window.JVDS_CONTENT = {
       "Unreal": 10
     },
     "toolCategories": {
-      "General": 18,
-      "Make Art": 14,
+      "Make Art": 13,
       "Build & Ship": 1,
+      "General": 15,
       "Make Audio": 8,
       "Plan & Write": 5,
       "Build Worlds": 1
