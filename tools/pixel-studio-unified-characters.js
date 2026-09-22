@@ -98,7 +98,7 @@ const HUMANOID_PARTS=[
 const HUMANOID_ORDER=['legs','body','weapon','head','eyes','mouth','hair','hat'];
 const HUMANOID_POSES=[{id:'idle',label:'&#x1F9CD; Idle'},{id:'jump',label:'&#x1F998; Jump'},{id:'run',label:'&#x1F3C3; Run'},{id:'crouch',label:'&#x1F986; Crouch'},{id:'attack',label:'&#x2694; Attack'}];
 const HUMANOID_ARCH=[
-  {id:'player',  label:'Player',     icon:'??',parts:{body:{v:0,c:'#3b82f6'},legs:{v:0,c:'#1e1e2e'},head:{v:0,c:'#FDDBB4'},eyes:{v:1,c:'#2a4a8a'},mouth:{v:0,c:'#cc3333'},hair:{v:0,c:'#3d2314'},hat:{v:6,c:'#1e1e2e'},weapon:{v:0,c:'#aaaaaa'}}},
+  {id:'player',  label:'Player',     icon:'&#x1F3AE;',parts:{body:{v:0,c:'#3b82f6'},legs:{v:0,c:'#1e1e2e'},head:{v:0,c:'#FDDBB4'},eyes:{v:1,c:'#2a4a8a'},mouth:{v:0,c:'#cc3333'},hair:{v:0,c:'#3d2314'},hat:{v:6,c:'#1e1e2e'},weapon:{v:0,c:'#aaaaaa'}}},
   {id:'ally',    label:'Ally',       icon:'&#x1F91D;',parts:{body:{v:0,c:'#10b981'},legs:{v:0,c:'#1e1e2e'},head:{v:0,c:'#F4C28B'},eyes:{v:1,c:'#1a6a3a'},mouth:{v:0,c:'#cc3333'},hair:{v:0,c:'#c8860f'},hat:{v:6,c:'#1e1e2e'},weapon:{v:3,c:'#10b981'}}},
   {id:'grunt',   label:'Enemy Grunt',icon:'&#x1F4A2;',parts:{body:{v:1,c:'#ef4444'},legs:{v:1,c:'#7B4336'},head:{v:3,c:'#4A2C1A'},eyes:{v:2,c:'#ef4444'},mouth:{v:2,c:'#1a1a1a'},hair:{v:2,c:'#1a1a1a'},hat:{v:4,c:'#ef4444'},weapon:{v:0,c:'#aaaaaa'}}},
   {id:'miniboss',label:'Mini Boss',  icon:'&#x1F9DF;',parts:{body:{v:3,c:'#6b7280'},legs:{v:4,c:'#6b7280'},head:{v:1,c:'#4A2C1A'},eyes:{v:2,c:'#ef4444'},mouth:{v:1,c:'#1a1a1a'},hair:{v:5,c:'#1a1a1a'},hat:{v:3,c:'#c8a850'},weapon:{v:0,c:'#ef4444'}}},
@@ -294,7 +294,7 @@ const TOPDOWN_PARTS=[
 const TOPDOWN_ORDER=['shadow','body','weapon','head','indicator'];
 const TOPDOWN_POSES=[{id:'idle',label:'&#x2B06; North'},{id:'south',label:'&#x2B07; South'},{id:'east',label:'&#x27A1; East'},{id:'attack',label:'&#x2694; Attack'}];
 const TOPDOWN_ARCH=[
-  {id:'td_player',label:'Player',  icon:'??',parts:{shadow:{v:0,c:'#000000'},body:{v:0,c:'#3b82f6'},head:{v:0,c:'#6b7280'},weapon:{v:0,c:'#aaaaaa'},indicator:{v:0,c:'#ffffff'}}},
+  {id:'td_player',label:'Player',  icon:'&#x1F3AE;',parts:{shadow:{v:0,c:'#000000'},body:{v:0,c:'#3b82f6'},head:{v:0,c:'#6b7280'},weapon:{v:0,c:'#aaaaaa'},indicator:{v:0,c:'#ffffff'}}},
   {id:'td_grunt', label:'Enemy',   icon:'&#x1F4A2;',parts:{shadow:{v:0,c:'#000000'},body:{v:0,c:'#ef4444'},head:{v:1,c:'#1e1e2e'},weapon:{v:4,c:'#aaaaaa'},indicator:{v:1,c:'#ef4444'}}},
   {id:'td_boss',  label:'Boss',    icon:'&#x1F479;',parts:{shadow:{v:1,c:'#000000'},body:{v:2,c:'#1e1e2e'},head:{v:2,c:'#c8a850'},weapon:{v:0,c:'#ef4444'},indicator:{v:1,c:'#ef4444'}}},
   {id:'td_mage',  label:'Mage',    icon:'&#x2728;', parts:{shadow:{v:0,c:'#000000'},body:{v:3,c:'#8b5cf6'},head:{v:1,c:'#2a1a3a'},weapon:{v:1,c:'#8b5cf6'},indicator:{v:0,c:'#f472b6'}}},
@@ -322,7 +322,18 @@ function tpl(){return CHARACTER_TEMPLATES[currentTemplate];}
 function normalizeState(st){const ns={};tpl().parts.forEach(p=>{const s=st?st[p.id]:null;const v=(s&&Number.isInteger(s.variant)&&s.variant>=0&&s.variant<p.variants.length)?s.variant:p.defaultVariant;const c=(s&&typeof s.colour==='string'&&/^#[0-9a-fA-F]{6}$/.test(s.colour))?s.colour:p.defaultColour;ns[p.id]={variant:v,colour:c};});return ns;}
 function initCharState(){charState=normalizeState(null);currentPart=tpl().parts[0].id;currentPose=tpl().poses[0].id;activeArchetype=null;}
 function switchTemplate(id,btn){currentTemplate=id;document.querySelectorAll('.tpl-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');document.getElementById('tplLabel').innerHTML=tpl().label;initCharState();buildAll();renderCharacter();showToast('Switched to '+tpl().label);}
+function ensureCharCtx(){
+  if(!cctxUnified){
+    const cc=document.getElementById('char-canvas-unified');
+    if(!cc) return false;
+    charCanvasUnified=cc;
+    cctxUnified=cc.getContext('2d');
+    if(cctxUnified) cctxUnified.imageSmoothingEnabled=false;
+  }
+  return !!cctxUnified;
+}
 function renderCharacter(){
+  if(!ensureCharCtx()) return;
   cctxUnified.clearRect(0,0,BASE,BASE);
   if(charBg!=='transparent'){cctxUnified.fillStyle=charBg;cctxUnified.fillRect(0,0,BASE,BASE);}
   const cx=BASE/2,cy=BASE-10,s=1;
@@ -338,7 +349,7 @@ function buildVariants(part){const g=document.getElementById('variantUnified');g
 function buildColours(part){const c=document.getElementById('colourSwatches');c.innerHTML='';part.colours.forEach(col=>{const sw=document.createElement('div');sw.className='csw'+(col===charState[part.id].colour?' on':'');sw.style.background=col;sw.dataset.col=col;sw.addEventListener('click',()=>setPartColour(col));c.appendChild(sw);});document.getElementById('customColour').value=charState[part.id].colour;}
 function setPartColour(col){charState[currentPart].colour=col;document.getElementById('customColour').value=col;document.querySelectorAll('.csw').forEach(s=>s.classList.toggle('on',s.dataset.col===col));renderCharacter();updatePartTab(currentPart);activeArchetype=null;buildArchetypes();}
 function buildPoseRow(){const row=document.getElementById('poseRowUnified');row.innerHTML='';tpl().poses.forEach(p=>{const btn=document.createElement('button');btn.className='pose-btn'+(p.id===currentPose?' on':'');btn.innerHTML=p.label;btn.addEventListener('click',()=>{currentPose=p.id;document.querySelectorAll('.pose-btn').forEach(b=>b.classList.toggle('on',b===btn));renderCharacter();});row.appendChild(btn);});}
-function buildBgRow(){const row=document.getElementById('bgOpts');row.innerHTML='';BG_OPTIONS.forEach(bg=>{const opt=document.createElement('div');opt.className='bg-opt'+(bg.val===charBg?' on':'');opt.style.background=bg.style;opt.addEventListener('click',()=>{charBg=bg.val;charCanvasUnified.style.background=bg.style;document.querySelectorAll('.bg-opt').forEach(o=>o.classList.toggle('on',o===opt));renderCharacter();queueAutosave();});row.appendChild(opt);});}
+function buildBgRow(){ensureCharCtx();const row=document.getElementById('bgOpts');row.innerHTML='';BG_OPTIONS.forEach(bg=>{const opt=document.createElement('div');opt.className='bg-opt'+(bg.val===charBg?' on':'');opt.style.background=bg.style;opt.addEventListener('click',()=>{charBg=bg.val;if(charCanvasUnified) charCanvasUnified.style.background=bg.style;document.querySelectorAll('.bg-opt').forEach(o=>o.classList.toggle('on',o===opt));renderCharacter();queueAutosave();});row.appendChild(opt);});}
 function randomCharacter(){tpl().parts.forEach(p=>{charState[p.id]={variant:Math.floor(Math.random()*p.variants.length),colour:p.colours[Math.floor(Math.random()*p.colours.length)]};});activeArchetype=null;renderCharacter();buildAll();}
 function resetCharacter(){initCharState();renderCharacter();buildAll();}
 function sendToGameMaker(){
@@ -375,3 +386,16 @@ function stampToCanvas(fi){
 }
 function stampAllPoses(){
   if(window.ToolAnalytics)ToolAnalytics.event('stamp_all_poses');const poses=tpl().poses;if(layers.length<2) addLayer();while(frames.length<poses.length) addFrame();const sp=currentPose;poses.forEach((p,i)=>{currentPose=p.id;renderCharacter();stampToCanvas(i);});currentPose=sp;renderCharacter();currentFrame=0;currentLayer=1;renderLayerList();renderFrameList();renderAll();showToast('All '+poses.length+' poses stamped!');}
+
+// Initialize canvas context immediately (this script loads after DOM is ready at bottom of body)
+// Using let means window.cctxUnified won't update these - so we must initialize them here directly.
+(function initCanvasContext(){
+  const cc=document.getElementById('char-canvas-unified');
+  if(cc){
+    charCanvasUnified=cc;
+    cctxUnified=cc.getContext('2d');
+    if(cctxUnified) cctxUnified.imageSmoothingEnabled=false;
+    initCharState();
+  }
+})();
+

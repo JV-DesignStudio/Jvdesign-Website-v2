@@ -68,14 +68,50 @@ pre[class*="language-"],code[class*="language-"]{background:transparent;text-sha
 </script>
 </head>
 <body>
-<div class="header">
+<!-- BUILD:nav-tools -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script src="/nav.js?v=18" defer></script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+  <nav class="main-nav" id="mainNav" aria-label="Main">
+   <a href="/games" class="nav-link" data-page="games">Play <span class="mascot-duo" aria-hidden="true"><img src="/assets/mascots/echo-badge.webp" alt="" loading="lazy" width="22" height="22"><img src="/assets/mascots/pip-badge.webp" alt="" loading="lazy" width="22" height="22"></span></a>
+   <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress">Learn <img class="mascot-nav-badge" src="/assets/mascots/lumo-badge.webp" alt="" loading="lazy" width="22" height="22"></a>
+   <a href="/dev-tools" class="nav-link active" data-page="dev-tools freebies">Create <img class="mascot-nav-badge" src="/assets/mascots/ember-badge.webp" alt="" loading="lazy" width="22" height="22"></a>
+   <a href="/books" class="nav-link" data-page="books">Read <img class="mascot-nav-badge" src="/assets/mascots/stardust-badge.webp" alt="" loading="lazy" width="22" height="22"></a>
+  <div class="nav-dropdown">
+   <button class="nav-link nav-dropdown-btn" aria-haspopup="true" aria-expanded="false" id="moreDropdownBtn">More ▾</button>
+   <div class="nav-dropdown-menu" role="menu" aria-labelledby="moreDropdownBtn">
+    <a href="/pages/stardust.html" role="menuitem">Imagine <img src="/assets/mascots/stardust-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
+    <a href="/pages/echo.html" role="menuitem">Improve <img src="/assets/mascots/echo-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
+    <a href="/parents" role="menuitem">For Parents</a>
+    <a href="/about" role="menuitem">About the Studio</a>
+    <a href="/downloads" role="menuitem">Downloads</a>
+    <a href="/search" role="menuitem">Search</a>
+   </div>
+  </div>
+ </nav>
+ <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;"><span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">0</span></a>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+</header>
+<!-- /BUILD:nav-tools -->
+
+<div class="header" id="main-content">
   <a href="/index.html" aria-label="Home"><img src="/logo.png" alt="JVDesignStudio" height="28" width="28" style="border-radius:6px"></a>
   <h1>Code Snippet Generator</h1>
   <button class="btn btn-secondary" onclick="downloadMD()" title="Download all visible snippets as a Markdown file">⬇ Download .md</button>
+  <button class="btn btn-secondary" onclick="openHelp()" title="How to use this tool (press ?)">? Help</button>
   <select class="lang-sel" id="langSel" onchange="filterLang()">
     <option value="all">All Languages</option>
-    <option value="gdscript">GDScript</option>
-    <option value="csharp">C#</option>
+    <option value="luau">Luau (Roblox)</option>
+    <option value="gdscript">GDScript (Godot)</option>
+    <option value="csharp">C# (Unity)</option>
     <option value="js">JavaScript</option>
     <option value="py">Python</option>
   </select>
@@ -508,6 +544,116 @@ function loadGame() {
 saveGame({ score: 1200, level: 5, inventory: ['sword', 'shield'] });
 const save = loadGame();
 console.log(save.score); // 1200`},
+  // ── Luau (Roblox) snippets ──
+  {cat:'Movement',lang:'luau',title:'Character Movement (LocalScript)',desc:'Move a Roblox character with UserInputService',
+   code:`-- LocalScript inside StarterCharacterScripts
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Double speed on sprint
+UIS.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.LeftShift then
+        humanoid.WalkSpeed = 32
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.LeftShift then
+        humanoid.WalkSpeed = 16
+    end
+end)`},
+  {cat:'Collision',lang:'luau',title:'Part Touched Event',desc:'Run code when a player touches a part',
+   code:`-- Script inside a Part
+local part = script.Parent
+
+local function onTouched(hit)
+    local character = hit.Parent
+    local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+    if humanoid then
+        humanoid.Health = humanoid.Health - 10
+        print(character.Name .. " took damage!")
+    end
+end
+
+-- Debounce so it only fires once per touch
+local debounce = false
+part.Touched:Connect(function(hit)
+    if debounce then return end
+    debounce = true
+    onTouched(hit)
+    task.wait(1)
+    debounce = false
+end)`},
+  {cat:'Score',lang:'luau',title:'Leaderboard & Score',desc:'Add a leaderstats board that updates score',
+   code:`-- Script inside ServerScriptService
+local Players = game:GetService("Players")
+
+Players.PlayerAdded:Connect(function(player)
+    local leaderstats = Instance.new("Folder")
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = player
+
+    local score = Instance.new("IntValue")
+    score.Name = "Score"
+    score.Value = 0
+    score.Parent = leaderstats
+end)
+
+-- Add score from anywhere on server
+local function addScore(player, points)
+    local ls = player:FindFirstChild("leaderstats")
+    if ls and ls:FindFirstChild("Score") then
+        ls.Score.Value += points
+    end
+end`},
+  {cat:'Saving',lang:'luau',title:'DataStore Save/Load',desc:'Persist player data across sessions',
+   code:`-- Script inside ServerScriptService
+local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
+local ds = DataStoreService:GetDataStore("PlayerData")
+
+Players.PlayerAdded:Connect(function(player)
+    local key = "player_" .. player.UserId
+    local success, data = pcall(function()
+        return ds:GetAsync(key)
+    end)
+    if success and data then
+        -- Restore saved data
+        print(player.Name .. " loaded: " .. tostring(data.coins) .. " coins")
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    local key = "player_" .. player.UserId
+    pcall(function()
+        ds:SetAsync(key, { coins = 100, level = 1 })
+    end)
+end)`},
+  {cat:'Pattern',lang:'luau',title:'ModuleScript Pattern',desc:'Share code between scripts with a module',
+   code:`-- ModuleScript (e.g. ReplicatedStorage > GameConfig)
+local GameConfig = {}
+
+GameConfig.WALK_SPEED = 16
+GameConfig.SPRINT_SPEED = 32
+GameConfig.MAX_HEALTH = 100
+
+function GameConfig.applySettings(humanoid)
+    humanoid.WalkSpeed = GameConfig.WALK_SPEED
+    humanoid.MaxHealth = GameConfig.MAX_HEALTH
+    humanoid.Health = GameConfig.MAX_HEALTH
+end
+
+return GameConfig
+
+-- In any other Script or LocalScript:
+-- local Config = require(game.ReplicatedStorage.GameConfig)
+-- Config.applySettings(humanoid)`},
 ];
 const cats=[...new Set(SNIPPETS.map(s=>s.cat))];
 let currentLang='all';
@@ -525,10 +671,11 @@ function filterCat(cat,btn){
 }
 function filterLang(){
   currentLang=document.getElementById('langSel').value;
+  try{localStorage.setItem('jvds_code_snippet_lang',currentLang);}catch(e){}
   renderSnippets();
 }
-// GDScript maps to Python grammar , syntax is Python-inspired, highlights well
-const LANG_PRISM={gdscript:'python',csharp:'csharp',js:'javascript',py:'python'};
+// GDScript/Luau map to Python grammar - syntax is Python-inspired, highlights reasonably well
+const LANG_PRISM={gdscript:'python',luau:'python',csharp:'csharp',js:'javascript',py:'python'};
 function renderSnippets(){
   const el=document.getElementById('snippets');
   const filtered=SNIPPETS.filter(s=>(currentCat==='all'||s.cat===currentCat)&&(currentLang==='all'||s.lang===currentLang));
@@ -554,10 +701,8 @@ function escapeHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 function copyCode(btn,code){
   navigator.clipboard.writeText(code).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);}).catch(()=>{});
 }
-// Save selected language
-try{localStorage.setItem('jvds_code_snippet_lang',currentLang);}catch(e){}
-// Restore saved language
-try{const savedLang=localStorage.getItem('jvds_code_snippet_lang');if(savedLang&&savedLang!=='all'){currentLang=savedLang;document.getElementById('langSel').value=savedLang;}}catch(e){}
+// Restore saved language on load
+try{const savedLang=localStorage.getItem('jvds_code_snippet_lang');if(savedLang){currentLang=savedLang;document.getElementById('langSel').value=savedLang;}}catch(e){}
 
 function showToast(msg) {
   let t = document.getElementById('csg-toast');
@@ -599,21 +744,88 @@ function downloadMD() {
   showToast(`Downloaded ${filtered.length} snippet${filtered.length !== 1 ? 's' : ''}!`);
 }
 
-// ── HELP ──
+// ── WELCOME MODAL ──
+const CSG_SEEN_KEY = 'jvds_code_snippet_seen_v1';
+function openHelp() {
+  const m = document.getElementById('csgWelcomeModal');
+  if (m) m.classList.add('open');
+}
+function closeHelp() {
+  try { localStorage.setItem(CSG_SEEN_KEY, '1'); } catch(e) {}
+  const m = document.getElementById('csgWelcomeModal');
+  if (m) m.classList.remove('open');
+}
+function maybeShowWelcome() {
+  try { if (localStorage.getItem(CSG_SEEN_KEY) === '1') return; } catch(e) {}
+  openHelp();
+}
+const _csgModal = document.getElementById('csgWelcomeModal');
+if (_csgModal) {
+  _csgModal.addEventListener('click', e => { if (e.target === _csgModal) closeHelp(); });
+}
 document.addEventListener('keydown', e => {
-  if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+  if (e.key === 'Escape') { const o = document.querySelector('.modal-overlay.open'); if (o && o.id === 'csgWelcomeModal') { closeHelp(); e.preventDefault(); } }
+  else if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
     const tag = (e.target.tagName || '').toLowerCase();
-    if (tag === 'input' || tag === 'textarea') return;
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
     e.preventDefault();
-    showToast('Tip: Filter by language/category, click Copy to grab code snippets');
+    openHelp();
   }
 });
 
 buildCats();renderSnippets();
+maybeShowWelcome();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-csharp.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<!-- WELCOME MODAL -->
+<div class="modal-overlay" id="csgWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="csgWelcomeTitle">
+  <div class="modal">
+    <h3 id="csgWelcomeTitle">📋 Code Snippet Generator</h3>
+    <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:14px;">Ready-to-use code patterns for your game projects. Find what you need, copy it, paste it in.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:4px;">🌐</div>
+        <div style="font-size:.75rem;font-weight:700;margin-bottom:2px;">Pick a language</div>
+        <div style="font-size:.7rem;color:var(--muted);">Luau, GDScript, C#, JS or Python</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:4px;">📂</div>
+        <div style="font-size:.75rem;font-weight:700;margin-bottom:2px;">Browse categories</div>
+        <div style="font-size:.7rem;color:var(--muted);">Movement, collision, score and more</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:12px;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:4px;">📋</div>
+        <div style="font-size:.75rem;font-weight:700;margin-bottom:2px;">Copy and paste</div>
+        <div style="font-size:.7rem;color:var(--muted);">Hit Copy, paste straight into your engine</div>
+      </div>
+    </div>
+    <div style="font-size:.78rem;line-height:1.8;margin-bottom:12px;">
+      <div>🎮 <strong>Roblox?</strong> Select <em>Luau</em> for Studio-ready LocalScript and ServerScript patterns</div>
+      <div>🟢 <strong>Godot?</strong> Select <em>GDScript</em> for node-based patterns using Godot 4</div>
+      <div>⬜ <strong>Unity?</strong> Select <em>C#</em> for MonoBehaviour and singleton patterns</div>
+      <div>⬇ <strong>Download</strong> saves all visible snippets as a .md reference file</div>
+    </div>
+    <div style="font-size:.68rem;color:var(--muted);border-top:1px solid rgba(255,255,255,.08);padding-top:10px;margin-bottom:14px;">Press <kbd style="padding:1px 5px;border:1px solid rgba(255,255,255,.15);border-radius:4px;background:rgba(255,255,255,.06);">?</kbd> any time to reopen this guide.</div>
+    <div class="modal-btns">
+      <button class="m-ok" onclick="closeHelp()">Got it, let me explore!</button>
+    </div>
+  </div>
+</div>
+
+<!-- BUILD:footer-tools -->
+<footer class="jvds-tools-footer">
+    <a href="/">🏠 Home</a>
+    <a href="/workshop">🔧 Workshop</a>
+    <a href="/dev-tools">🛠️ Tools</a>
+    <a href="/downloads">📦 Downloads</a>
+    <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener">☕ Support</a>
+</footer>
+<script>window.addEventListener('load',function(){if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
+<script defer src="/cookie-consent.js"></script>
+<!-- /BUILD:footer-tools -->
+
 <script defer src="../player-profile.js"></script>
 <script defer src="../tool-xp.js"></script>
 <script defer src="../tool-analytics.js"></script>
@@ -622,7 +834,13 @@ buildCats();renderSnippets();
 <script defer src="/ember-guide.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-  if(window.EmberGuide) EmberGuide.init({ id: 'code-snippet-generator', steps: [{"target":"pre","title":"Code","text":"Copy the code and paste into your project. Switch language at the top."},{"target":"button[onclick*=\"copy\"]","title":"Copy","text":"Copy adds it to clipboard, ready to paste."}] });
+  if(window.EmberGuide) EmberGuide.init({ id: 'code-snippet-generator', steps: [
+    {"target":"#langSel","title":"Pick your language","text":"Choose Luau for Roblox, GDScript for Godot, C# for Unity, or JavaScript/Python for browser games."},
+    {"target":"#cats","title":"Filter by category","text":"Click a category on the left to narrow down snippets - Movement, Collision, Score, Saving and more."},
+    {"target":".copy-btn","title":"Copy a snippet","text":"Hit Copy to grab the code to your clipboard, then paste it straight into your engine or editor."},
+    {"target":"button[onclick*='downloadMD']","title":"Download as Markdown","text":"Save all currently visible snippets as a .md reference file you can keep alongside your project."},
+    {"target":"button[onclick*='openHelp']","title":"Reopen the guide","text":"Click ? Help (or press ?) any time to bring back this how-to guide."}
+  ]});
 });
 </script>
 </body>

@@ -119,14 +119,14 @@ function syncMobileCharCanvas(){
 let unifiedReady=false;
 function initUnifiedCharIfNeeded(){
   if(unifiedReady) return;
-  // bind charCanvasUnified once DOM ready
-  const cc=document.getElementById('char-canvas-unified');
-  if(!cc) return;
-  if(typeof charCanvasUnified==='undefined' || charCanvasUnified!==cc){
-    // reassign global vars from characters file (they were set to null at load since DOM not ready)
-    window.charCanvasUnified=cc;
-    window.cctxUnified=cc.getContext('2d');
-    if(window.cctxUnified) window.cctxUnified.imageSmoothingEnabled=false;
+  // charCanvasUnified + cctxUnified are initialized in pixel-studio-unified-characters.js bottom IIFE.
+  // Guard: if they somehow aren't set (e.g. canvas missing at load), try again now.
+  if(typeof cctxUnified==='undefined' || !cctxUnified){
+    const cc=document.getElementById('char-canvas-unified');
+    if(!cc) return;
+    charCanvasUnified=cc;
+    cctxUnified=cc.getContext('2d');
+    if(cctxUnified) cctxUnified.imageSmoothingEnabled=false;
   }
   if(typeof charState!=='undefined' && Object.keys(charState).length===0){
     initCharState();
