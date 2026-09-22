@@ -140,7 +140,7 @@ function validateSummary() {
   // Live validate-links count - derived directly, no fake KPI
   try{
     const {execSync} = require('child_process');
-    const out = execSync('node validate-links.js 2>&1', {encoding:'utf8', cwd: ROOT, timeout: 30000});
+    const out = execSync('node validate-links.js 2>&1', {encoding:'utf8', cwd: ROOT, timeout: 120000});
     const m = out.match(/(\d+)\s+internal refs checked/);
     if(m) return { refs: parseInt(m[1],10), broken: 0, lastRun };
     const m2 = out.match(/(\d+)\s+broken/);
