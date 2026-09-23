@@ -5,12 +5,12 @@
 <script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Bubble Pop Galaxy | JVDesignStudio</title>
-<meta name="description" content="A cosmic collapse puzzle. Clear groups of bubbles, trigger chain reactions, hit level targets and chase bombs. Earn XP and achievements.">
+<meta name="description" content="A juicy galaxy puzzle game full of chain reactions, colour missions, bombs, rockets, wild bubbles and score-chasing combos.">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/bubble-pop-galaxy.html">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jvdesignstudio.co.uk/games/bubble-pop-galaxy.html">
 <meta property="og:title" content="Bubble Pop Galaxy | JVDesignStudio">
-<meta property="og:description" content="A cosmic collapse puzzle. Clear bubble groups, build combos, hit level targets and chase bombs.">
+<meta property="og:description" content="Pop smart clusters, build combo chains, charge specials and complete galaxy missions before the moves run out.">
 <meta property="og:image" content="https://jvdesignstudio.co.uk/og/bubble-pop-galaxy.png">
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/bubble-pop-galaxy.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -20,772 +20,452 @@
 <script src="../game-system.js"></script>
 <script src="../audio-effects.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
-<link rel="preload" href="../style-game-bubble-pop-galaxy.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="../style-game-bubble-pop-galaxy.css?v=18"></noscript>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Bubble Pop Galaxy","url":"https://jvdesignstudio.co.uk/games/bubble-pop-galaxy.html","description":"A cosmic collapse puzzle. Pop groups, trigger cascades, hit level targets and spawn bombs before your moves run out.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/BubblePopCover.webp"}</script>
-<link rel="stylesheet" href="/style-mascots.css">
+<link rel="stylesheet" href="../style-game-bubble-pop-galaxy.css?v=20">
+<link rel="stylesheet" href="../style-mascots.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Bubble Pop Galaxy","url":"https://jvdesignstudio.co.uk/games/bubble-pop-galaxy.html","description":"A juicy galaxy puzzle game full of chain reactions, colour missions, bombs, rockets, wild bubbles and score-chasing combos.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/BubblePopCover.webp"}</script>
 </head>
 <body>
-<div class="game-container">
-  <div class="header">
-    <div class="title">🫧 Bubble Pop Galaxy</div>
-    <div class="stars-chip" id="starsChip" title="Stars earned across the galaxy">⭐ 0</div>
-    <button class="home-btn" id="helpBtn" title="How to Play" aria-label="How to play" onclick="showTutorial()">?</button>
-    <button class="home-btn" aria-label="Back to Arcade" title="Back to Arcade" onclick="location.href='../pages/games.html'">🏠</button>
-  </div>
+<div class="game-shell">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Galaxy puzzle league</p>
+      <h1>🫧 Bubble Pop Galaxy</h1>
+    </div>
+    <div class="top-actions">
+      <button class="round-btn" id="helpBtn" aria-label="How to play">?</button>
+      <button class="round-btn" aria-label="Back to Arcade" onclick="location.href='../pages/games.html'">🏠</button>
+    </div>
+  </header>
 
-  <div class="stats">
-    <div class="stat"><div class="stat-label">Level</div><div class="stat-value" id="levelVal">1</div></div>
-    <div class="stat"><div class="stat-label">Score</div><div class="stat-value" id="scoreVal">0</div></div>
-    <div class="stat moves" id="movesStat"><div class="stat-label">Moves</div><div class="stat-value" id="movesVal">0</div></div>
-  </div>
+  <main class="play-layout">
+    <section class="panel mission-panel" aria-label="Mission">
+      <div class="sector-row">
+        <span id="sectorName">Orion Nursery</span>
+        <b id="starBank">⭐ 0</b>
+      </div>
+      <div class="level-strip" id="levelStrip"></div>
+      <div class="mission-card">
+        <p class="mission-kicker">Current mission</p>
+        <h2 id="missionTitle">Warm-up Orbit</h2>
+        <p id="missionText">Score points and collect bubbles.</p>
+        <div class="mission-goals" id="missionGoals"></div>
+      </div>
+      <div class="power-card">
+        <div class="power-head"><span>Super nova charge</span><b id="chargeText">0%</b></div>
+        <div class="charge-bar"><div id="chargeFill"></div></div>
+        <button class="super-btn" id="superBtn" disabled>Launch Super Nova</button>
+      </div>
+    </section>
 
-  <div class="target-wrap">
-    <div class="target-top"><span>Target</span><span><span id="scoreMini">0</span> / <b id="targetVal">0</b></span></div>
-    <div class="target-bar"><div class="target-fill" id="targetFill"></div></div>
-  </div>
+    <section class="board-wrap" aria-label="Bubble board">
+      <div class="score-ribbon">
+        <div><small>Level</small><b id="levelVal">1</b></div>
+        <div><small>Score</small><b id="scoreVal">0</b></div>
+        <div><small>Moves</small><b id="movesVal">0</b></div>
+        <div><small>Combo</small><b id="comboVal">x1</b></div>
+      </div>
+      <div class="board-frame">
+        <div class="orbit orbit-a"></div>
+        <div class="orbit orbit-b"></div>
+        <div class="board" id="board"></div>
+      </div>
+      <p class="status-line" id="statusLine">Tap a cluster of 2+ matching bubbles.</p>
+    </section>
 
-  <div class="board-area">
-    <div class="board" id="board"></div>
-  </div>
-
-  <div class="footer" id="footer">Tap groups of 2+ to pop them</div>
+    <section class="panel strategy-panel" aria-label="Strategy">
+      <h2>Combo lab</h2>
+      <div class="combo-meter" id="comboMeter"></div>
+      <div class="tip-box" id="tipBox">Big clusters create specials. Specials create cascades. Cascades win stars.</div>
+      <div class="legend">
+        <span>💣 Bomb clears a blast</span>
+        <span>🚀 Rocket clears a line</span>
+        <span>🌈 Wild joins any colour</span>
+        <span>🪨 Crack rocks with nearby pops</span>
+      </div>
+    </section>
+  </main>
 </div>
 
-<!-- Level complete / game over modal -->
-<div class="modal" id="modal">
+<div class="modal" id="modal" role="dialog" aria-modal="true">
   <div class="modal-card">
-    <div class="modal-emoji" id="modalEmoji">🎉</div>
-    <div class="modal-title" id="modalTitle">Level Complete!</div>
-    <div class="modal-sub" id="modalSub"></div>
-    <div class="modal-stats">
-      <div class="modal-stat"><span>Score</span><b id="mScore">0</b></div>
-      <div class="modal-stat"><span>Best group</span><b id="mBest">0</b></div>
-      <div class="modal-stat"><span>XP earned</span><b id="mXp">0</b></div>
-    </div>
-    <button class="btn" id="modalBtn" onclick="modalAction()">Next Level</button>
+    <div class="modal-emoji" id="modalEmoji">🌌</div>
+    <h2 id="modalTitle">Bubble Pop Galaxy</h2>
+    <p id="modalSub">Pop clusters, build combos and complete the mission.</p>
+    <div class="modal-stats" id="modalStats"></div>
+    <button class="btn" id="modalPrimary">Start Run</button>
     <button class="btn ghost" onclick="location.href='../pages/games.html'">Back to Games</button>
   </div>
 </div>
-
-<div class="banner" id="banner">
-  <div class="banner-title" id="bannerTitle">Level 2</div>
-  <div class="banner-sub" id="bannerSub">Get ready!</div>
-</div>
-
+<div class="toast" id="toast"></div>
 <script>
-/* ═══════════════ SETUP ═══════════════ */
 const gameSystem = new GameSystem('bubble-pop', 'Bubble Pop Galaxy', 'pip');
-const soundManager = new SoundManager(gameSystem);
 const audioEffects = new AudioEffects(0.7);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
 
-const COLS = 7, ROWS = 8;
-const EMOJI_BOMB = '💣';
+const COLS = 8, ROWS = 8;
+const TYPES = ['red','teal','gold','violet','blue','green'];
+const LABELS = { red:'Red', teal:'Teal', gold:'Gold', violet:'Violet', blue:'Blue', green:'Green' };
+const ICONS = { bomb:'💣', rocketH:'🚀', rocketV:'↕️', wild:'🌈', rock:'🪨' };
+const SAVE_KEY = 'bp_galaxy_combo_progress_v2';
 
-let cells = [];          // cells[r][c] = bubble | null
-let nextId = 1;
-let busy = false;        // input lock during animation
-let hintTimer = null;
-let chainCount = 0;      // cascade chain counter
-
-const game = {
-  level: 1,
-  score: 0,              // cumulative total across the whole game (display + XP)
-  levelScore: 0,         // resets each level; this is what the target is measured against
-  moves: 0,
-  target: 0,
-  numColors: 4,
-  bestGroup: 0,
-  streak: 0,             // consecutive matches of 4+
-  over: false,
-};
-
-/* ═══════════════ PROGRESS (persistent) ═══════════════
-   The point of the game: climb the galaxy, earn stars. Best level and
-   per-level star ratings survive reloads. */
-const BP_KEY = 'bp_galaxy_progress';
-function loadProgress() {
-  try {
-    const p = JSON.parse(localStorage.getItem(BP_KEY)) || {};
-    return { bestLevel: p.bestLevel || 1, stars: p.stars || {} };
-  } catch (e) { return { bestLevel: 1, stars: {} }; }
-}
-function saveProgress() {
-  try { localStorage.setItem(BP_KEY, JSON.stringify(prog)); } catch (e) {}
-}
-let prog = loadProgress();
-function totalStars() { return Object.values(prog.stars).reduce((a, b) => a + b, 0); }
-
-/* ═══════════════ REGIONS , every level has an identity ═══════════════ */
-const REGIONS = [
-  { name: 'Outer Rim' },                                            // standard
-  { name: 'Nebula Drift', grav: 'left' },                           // gravity pulls sideways
-  { name: 'Twin Stars', colors: 3, movesMul: 0.7, targetMul: 0.8 }, // pure puzzle
-  { name: 'Meteor Belt', bombAt: 5, targetMul: 1.15 },              // bombs flow
-  { name: 'Supernova', boss: true, targetMul: 1.35, movesAdd: 2 },  // every 5th: boss
+const sectors = [
+  { name:'Orion Nursery', title:'Warm-up Orbit', text:'Learn to chain clusters and fill the score target.', colors:4, moves:26, target:18000, goals:{ score:18000, collect:{red:8, teal:8} } },
+  { name:'Meteor Belt', title:'Bomb Maker', text:'Pop larger groups to forge bombs and crack rocks.', colors:4, moves:24, target:26000, rocks:5, goals:{ score:26000, specials:2, collect:{gold:10} } },
+  { name:'Nebula Rapids', title:'Cascade Chase', text:'Sideways gravity creates strange falls and bigger chains.', colors:5, moves:25, target:34000, gravity:'left', goals:{ score:34000, chain:3, collect:{violet:12, blue:8} } },
+  { name:'Comet Crossing', title:'Rocket Route', text:'Make huge clusters, fire rockets and clear the comet lane.', colors:5, moves:23, target:42000, rocks:8, goals:{ score:42000, specials:4, collect:{green:12} } },
+  { name:'Supernova Gate', title:'Final Spark', text:'Use every combo trick to open the gate and bank three stars.', colors:5, moves:25, target:56000, rocks:10, goals:{ score:56000, chain:4, specials:5, collect:{red:12, gold:12} } }
 ];
 
-/* ═══════════════ LEVEL CONFIG ═══════════════
-   Targets now outpace the gentle move growth, so difficulty actually ramps.
-   Colours cap at 5 (six colours starves chain play on a 7-wide board). */
-function levelConfig(level) {
-  const region = REGIONS[(level - 1) % REGIONS.length];
-  const step = Math.floor((level - 1) / REGIONS.length);   // full galaxy loops
-  const colors = Math.min(region.colors || (4 + Math.floor(step / 2)), 5);
-  const moves = Math.round((24 + step * 2) * (region.movesMul || 1)) + (region.movesAdd || 0);
-  const target = Math.round((1400 + (level - 1) * 550 + step * 400) * (region.targetMul || 1) / 50) * 50;
-  return {
-    colors, moves, target,
-    grav: region.grav || 'down',
-    bombAt: region.bombAt || 6,
-    region: region.name,
-    boss: !!region.boss,
-  };
-}
+let state = loadProgress();
+let cells = [];
+let nextId = 1;
+let busy = false;
+let levelIndex = Math.min(state.bestLevel || 0, sectors.length - 1);
+let run = {};
 
-/* ═══════════════ BOARD BUILD ═══════════════ */
-function makeBubble(color) {
-  return { id: nextId++, color, special: null };
+function loadProgress(){
+  try { return Object.assign({bestLevel:0, stars:{}, bestScore:0}, JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')); }
+  catch(e){ return {bestLevel:0, stars:{}, bestScore:0}; }
 }
+function saveProgress(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e){} }
+function starTotal(){ return Object.values(state.stars).reduce((a,b)=>a+b,0); }
+function randType(max){ return TYPES[Math.floor(Math.random()*max)]; }
 
-function fillBoard() {
+function startLevel(index = levelIndex){
+  levelIndex = Math.max(0, Math.min(index, sectors.length - 1));
+  const cfg = sectors[levelIndex];
+  run = { score:0, moves:cfg.moves, combo:1, bestCombo:1, charge:0, specials:0, chainBest:0, collected:{}, rocksBroken:0, cleared:false, reported:0 };
   cells = [];
-  for (let r = 0; r < ROWS; r++) {
-    cells[r] = [];
-    for (let c = 0; c < COLS; c++) {
-      cells[r][c] = makeBubble(1 + Math.floor(Math.random() * game.numColors));
-    }
+  nextId = 1;
+  for(let r=0;r<ROWS;r++){
+    cells[r]=[];
+    for(let c=0;c<COLS;c++) cells[r][c] = makeBubble(randType(cfg.colors));
   }
-  if (!hasMoves()) reshuffle();
+  placeRocks(cfg.rocks||0);
+  guaranteeMoves();
+  busy = false;
+  document.getElementById('modal').classList.remove('show');
+  updateLevelStrip();
+  render();
+  updateHud();
+  toast('Mission ' + (levelIndex+1) + ': ' + cfg.title);
+}
+function makeBubble(type, special=null){ return { id: nextId++, type, special, hp: special==='rock'?2:1 }; }
+function placeRocks(count){
+  let placed=0;
+  while(placed<count){
+    const r = 1 + Math.floor(Math.random()*(ROWS-2));
+    const c = Math.floor(Math.random()*COLS);
+    if(cells[r][c] && cells[r][c].special !== 'rock') { cells[r][c]=makeBubble('rock','rock'); placed++; }
+  }
+}
+function guaranteeMoves(){
+  if(hasMove()) return;
+  cells[ROWS-1][0]=makeBubble('red'); cells[ROWS-1][1]=makeBubble('red');
 }
 
-/* ═══════════════ RENDER ═══════════════ */
-function render() {
+function render(){
   const board = document.getElementById('board');
-  const existing = {};
-  board.querySelectorAll('.bubble').forEach(el => existing[el.dataset.id] = el);
-  const seen = new Set();
-
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const b = cells[r][c];
-      if (!b) continue;
-      seen.add(String(b.id));
-      let el = existing[b.id];
-      if (!el) {
-        el = document.createElement('button');
-        el.type = 'button';
-        el.className = 'bubble';
-        el.dataset.id = b.id;
-        // spawn above the board for a drop-in animation
-        el.style.transform = `translate(${c * 100}%, ${(r - ROWS) * 100}%)`;
-        el.innerHTML = `<div class="bubble-inner"></div>`;
-        el.addEventListener('click', () => onTap(b.id));
-        board.appendChild(el);
-        // force reflow so the transition to real position animates
-        void el.offsetWidth;
-      }
-      el.className = 'bubble c' + b.color + (b.special === 'bomb' ? ' bomb' : '');
-      const colourNames = {1:'red',2:'teal',3:'yellow',4:'purple',5:'blue',6:'green'};
-      el.setAttribute('aria-label', b.special === 'bomb'
-        ? 'Bomb bubble'
-        : (colourNames[b.color] || 'Colour') + ' bubble, group of ' + connectedGroup(r,c).length);
-      el.querySelector('.bubble-inner').textContent = b.special === 'bomb' ? EMOJI_BOMB : '';
-      el.style.transform = `translate(${c * 100}%, ${r * 100}%)`;
+  const existing = new Map([...board.querySelectorAll('.bubble')].map(el=>[Number(el.dataset.id), el]));
+  const live = new Set();
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const b = cells[r][c]; if(!b) continue;
+    live.add(b.id);
+    let el = existing.get(b.id);
+    if(!el){
+      el = document.createElement('button');
+      el.type='button'; el.className='bubble'; el.dataset.id=b.id;
+      el.innerHTML='<span class="shine"></span><span class="mark"></span>';
+      el.addEventListener('click', ()=>handleTap(b.id));
+      board.appendChild(el);
     }
+    el.className = 'bubble ' + b.type + (b.special ? ' special ' + b.special : '');
+    el.style.transform = 'translate('+(c*100)+'%, '+(r*100)+'%)';
+    el.querySelector('.mark').textContent = ICONS[b.special] || '';
+    el.setAttribute('aria-label', describeBubble(r,c,b));
   }
-  // remove stale elements
-  board.querySelectorAll('.bubble').forEach(el => {
-    if (!seen.has(el.dataset.id)) el.remove();
-  });
+  board.querySelectorAll('.bubble').forEach(el=>{ if(!live.has(Number(el.dataset.id))) el.remove(); });
 }
-
-/* ═══════════════ CONNECTIVITY ═══════════════ */
-function findBubble(id) {
-  for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++)
-      if (cells[r][c] && cells[r][c].id === id) return { r, c, b: cells[r][c] };
+function describeBubble(r,c,b){
+  if(b.special==='rock') return 'Rock bubble, crack with nearby pops';
+  if(b.special) return (ICONS[b.special]||'Special') + ' special bubble';
+  return LABELS[b.type] + ' bubble, cluster size ' + groupAt(r,c).length;
+}
+function findById(id){
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(cells[r][c] && cells[r][c].id===id) return {r,c,b:cells[r][c]};
   return null;
 }
-
-function connectedGroup(r, c) {
+function neighbours(r,c){ return [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].filter(([rr,cc])=>rr>=0&&rr<ROWS&&cc>=0&&cc<COLS); }
+function groupAt(r,c){
   const start = cells[r][c];
-  if (!start) return [];
-  const color = start.color;
-  const stack = [[r, c]];
-  const seen = new Set([r + ',' + c]);
-  const group = [];
-  while (stack.length) {
-    const [cr, cc] = stack.pop();
-    group.push([cr, cc]);
-    [[cr-1,cc],[cr+1,cc],[cr,cc-1],[cr,cc+1]].forEach(([nr, nc]) => {
-      if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) return;
-      const key = nr + ',' + nc;
-      if (seen.has(key)) return;
-      const nb = cells[nr][nc];
-      if (nb && !nb.special && nb.color === color) { seen.add(key); stack.push([nr, nc]); }
-    });
+  if(!start || start.special==='rock') return [];
+  if(start.special && start.special !== 'wild') return [[r,c]];
+  const colour = start.type;
+  const seen = new Set([r+','+c]);
+  const stack = [[r,c]];
+  const group=[];
+  while(stack.length){
+    const [cr,cc]=stack.pop(); group.push([cr,cc]);
+    for(const [nr,nc] of neighbours(cr,cc)){
+      const key=nr+','+nc, nb=cells[nr][nc];
+      if(seen.has(key)||!nb||nb.special==='rock') continue;
+      if(nb.type===colour || nb.special==='wild' || start.special==='wild') { seen.add(key); stack.push([nr,nc]); }
+    }
   }
   return group;
 }
-
-function bombRadius(r, c) {
-  const cellsHit = [];
-  for (let dr = -1; dr <= 1; dr++)
-    for (let dc = -1; dc <= 1; dc++) {
-      const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && cells[nr][nc]) cellsHit.push([nr, nc]);
-    }
-  return cellsHit;
-}
-
-function hasMoves() {
-  for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++) {
-      const b = cells[r][c];
-      if (!b) continue;
-      if (b.special === 'bomb') return true;
-      if (c + 1 < COLS && cells[r][c+1] && !cells[r][c+1].special && cells[r][c+1].color === b.color) return true;
-      if (r + 1 < ROWS && cells[r+1][c] && !cells[r+1][c].special && cells[r+1][c].color === b.color) return true;
-    }
+function hasMove(){
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const b=cells[r][c]; if(!b) continue;
+    if(b.special && b.special!=='rock') return true;
+    if(groupAt(r,c).length>=2) return true;
+  }
   return false;
 }
 
-// Find ALL groups of 2+ on the board (for cascade detection)
-function findAllGroups() {
-  const visited = new Set();
-  const groups = [];
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const key = r + ',' + c;
-      if (visited.has(key)) continue;
-      const b = cells[r][c];
-      if (!b || b.special === 'bomb') continue;
-      const group = connectedGroup(r, c);
-      if (group.length >= 2) {
-        group.forEach(([gr, gc]) => visited.add(gr + ',' + gc));
-        groups.push(group);
+function handleTap(id){
+  if(busy || run.cleared) return;
+  const found = findById(id); if(!found) return;
+  const {r,c,b} = found;
+  let hit = [];
+  let specialUsed = false;
+  if(b.special==='rock') { nudge(id); audioEffects.playError(); setStatus('Rocks crack when you pop beside them.'); return; }
+  if(b.special==='bomb'){ hit = blast(r,c,1); specialUsed = true; }
+  else if(b.special==='rocketH'){ hit = [...Array(COLS)].map((_,cc)=>[r,cc]); specialUsed = true; }
+  else if(b.special==='rocketV'){ hit = [...Array(ROWS)].map((_,rr)=>[rr,c]); specialUsed = true; }
+  else if(b.special==='wild'){ hit = wildGroup(r,c); specialUsed = true; }
+  else { hit = groupAt(r,c); if(hit.length<2){ nudge(id); audioEffects.playError(); setStatus('Find a cluster of 2 or more matching bubbles.'); return; } }
+  busy = true;
+  run.moves--;
+  resolveHit(hit, {r,c,b,specialUsed, manual:true});
+}
+function wildGroup(r,c){
+  let best = [[r,c]];
+  for(const [nr,nc] of neighbours(r,c)){
+    const g = groupAt(nr,nc);
+    if(g.length > best.length) best = [[r,c], ...g];
+  }
+  return uniqueCells(best);
+}
+function blast(r,c,rad){
+  const out=[];
+  for(let rr=r-rad;rr<=r+rad;rr++) for(let cc=c-rad;cc<=c+rad;cc++) if(rr>=0&&rr<ROWS&&cc>=0&&cc<COLS) out.push([rr,cc]);
+  return out;
+}
+function uniqueCells(list){
+  const seen=new Set(), out=[];
+  for(const [r,c] of list){ const k=r+','+c; if(!seen.has(k)){ seen.add(k); out.push([r,c]); } }
+  return out;
+}
+
+function resolveHit(hit, ctx){
+  hit = uniqueCells(hit).filter(([r,c])=>cells[r][c]);
+  const size = hit.length;
+  const specialName = ctx.specialUsed ? 'special blast' : size>=8 ? 'mega cluster' : size>=5 ? 'big cluster' : 'cluster';
+  run.bestCombo = Math.max(run.bestCombo, run.combo);
+  const gained = Math.round((size*size*12 + size*35) * run.combo);
+  run.score += gained;
+  run.charge = Math.min(100, run.charge + size * (ctx.specialUsed ? 5 : 3));
+  if(ctx.specialUsed) run.specials++;
+  collectAndRemove(hit, ctx);
+  crackRocks(hit);
+  spawnSpecial(ctx, size);
+  popFx(ctx.r, ctx.c, '+'+gained+' · '+specialName);
+  updateHud();
+  setTimeout(()=>{
+    collapse(); refill(); render();
+    const cascades = findCascadeGroups();
+    if(cascades.length){
+      run.combo = Math.min(9, run.combo + 1);
+      run.chainBest = Math.max(run.chainBest, run.combo);
+      const best = cascades.sort((a,b)=>b.length-a.length)[0];
+      toast('⚡ Chain x' + run.combo + '!');
+      setTimeout(()=>resolveHit(best, {r:best[0][0], c:best[0][1], b:null, specialUsed:false, manual:false}), 210);
+    } else {
+      run.combo = 1;
+      if(!hasMove()) shuffleBoard();
+      updateHud();
+      busy = false;
+      checkEnd();
+    }
+  }, 240);
+}
+function collectAndRemove(hit, ctx){
+  const keep = ctx.manual && !ctx.specialUsed && hit.length>=5 ? ctx.r+','+ctx.c : null;
+  for(const [r,c] of hit){
+    const b = cells[r][c]; if(!b) continue;
+    const el = document.querySelector('[data-id="'+b.id+'"]'); if(el) el.classList.add('pop');
+    if(b.special !== 'rock') run.collected[b.type] = (run.collected[b.type]||0)+1;
+    if((r+','+c) !== keep) cells[r][c]=null;
+  }
+}
+function crackRocks(hit){
+  for(const [r,c] of hit){
+    for(const [nr,nc] of neighbours(r,c)){
+      const rock = cells[nr][nc];
+      if(rock && rock.special==='rock'){
+        rock.hp--;
+        if(rock.hp<=0){ cells[nr][nc]=null; run.rocksBroken++; run.score += 120; }
       }
     }
+  }
+}
+function spawnSpecial(ctx, size){
+  if(!ctx.manual || ctx.specialUsed || size<5 || !cells[ctx.r][ctx.c]) return;
+  const b = cells[ctx.r][ctx.c];
+  if(size>=10) b.special='wild';
+  else if(size>=8) b.special = Math.random()>.5 ? 'rocketH' : 'rocketV';
+  else b.special='bomb';
+  run.specials++;
+  toast((ICONS[b.special]||'✨') + ' special made!');
+}
+function findCascadeGroups(){
+  const visited=new Set(), groups=[];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const b=cells[r][c]; const key=r+','+c;
+    if(!b||b.special||visited.has(key)) continue;
+    const g=groupAt(r,c); g.forEach(([rr,cc])=>visited.add(rr+','+cc));
+    if(g.length>=4) groups.push(g);
   }
   return groups;
 }
-
-/* ═══════════════ TAP HANDLER ═══════════════ */
-function onTap(id) {
-  if (busy || game.over) return;
-  const found = findBubble(id);
-  if (!found) return;
-  const { r, c, b } = found;
-
-  let group;
-  let isBomb = false;
-  if (b.special === 'bomb') {
-    group = bombRadius(r, c);
-    isBomb = true;
-  } else {
-    group = connectedGroup(r, c);
-    if (group.length < 2) { audioEffects.playError(); nudge(id); return; }
+function collapse(){
+  const cfg=sectors[levelIndex];
+  if(cfg.gravity==='left'){
+    for(let r=0;r<ROWS;r++){ let w=0; for(let c=0;c<COLS;c++) if(cells[r][c]){ const b=cells[r][c]; cells[r][c]=null; cells[r][w++]=b; } }
+    return;
   }
-
-  gameSystem.unlockAchievement('firstPop');
-  busy = true;
-  clearHint();
-
-  const size = group.length;
-  const willSpawnBomb = !isBomb && size >= game.bombAt;
-
-  // scoring, reward big groups, with a gentle streak multiplier.
-  // Streak builds on 3+ groups so ordinary play isn't punished; the target
-  // is tuned so a level takes roughly 6-14 taps rather than a single big pop.
-  if (!isBomb && size >= 3) game.streak++; else if (!isBomb) game.streak = 0;
-  const mult = 1 + Math.min(game.streak, 5) * 0.3;
-  const gained = Math.round(size * (size + 1) * 3 * mult);
-  game.score += gained;
-  game.levelScore += gained;
-  game.bestGroup = Math.max(game.bestGroup, size);
-  game.moves--;
-
-  gameSystem.addXP(Math.max(1, Math.floor(gained / 25)));
-
-  // audio + juice
-  if (isBomb) {
-    audioEffects.playCombo(6);
-    ScreenShake.shake(document.querySelector('.board'), 14, 300);
-    floatScore(window.innerWidth/2, window.innerHeight*0.28, '💥 BOMB! +' + gained, '#ffd24a', 'mega');
-  } else if (size >= 6) {
-    audioEffects.playCombo(size);
-    ScreenShake.shake(document.querySelector('.board'), 7, 180);
-    floatScore(window.innerWidth/2, window.innerHeight*0.28, '✨ ' + size + ' cluster!', '#b98bff', 'big');
-  } else { audioEffects.playPop(); }
-  if (game.streak >= 2) audioEffects.playCombo(game.streak);
-
-  // floating score + particles at tap point
-  const tapEl = document.querySelector(`.bubble[data-id="${id}"]`);
-  if (tapEl) {
-    const rect = tapEl.getBoundingClientRect();
-    const scoreSize = size >= 10 ? 'mega' : size >= 5 ? 'big' : '';
-    const scoreColor = isBomb ? '#ffd24a' : mult > 1 ? '#ffd24a' : '#fff';
-    floatScore(rect.left + rect.width/2, rect.top + rect.height/2, '+' + gained, scoreColor, scoreSize);
-    if (mult > 1) floatScore(rect.left + rect.width/2, rect.top + rect.height/2 + 30, '×' + mult.toFixed(1) + ' streak!', '#ff5b6b', 'big');
-    if (size >= 5 || isBomb) ParticleSystem.burst(rect.left + rect.width/2, rect.top + rect.height/2, isBomb ? '💥' : '💫', Math.min(14, size + 2));
-  }
-
-  // animate pops
-  group.forEach(([gr, gc]) => {
-    const bub = cells[gr][gc];
-    if (!bub) return;
-    // when spawning a bomb, keep the tapped bubble in place
-    if (willSpawnBomb && gr === r && gc === c) return;
-    const el = document.querySelector(`.bubble[data-id="${bub.id}"]`);
-    if (el) el.classList.add('popping');
-    cells[gr][gc] = null;
-  });
-
-  if (willSpawnBomb) {
-    cells[r][c].special = 'bomb';
-    const el = document.querySelector(`.bubble[data-id="${id}"]`);
-    if (el) { el.classList.add('bomb'); el.querySelector('.bubble-inner').textContent = EMOJI_BOMB; }
-    floatScore(window.innerWidth/2, window.innerHeight*0.3, 'BOMB! 💣', '#ffd24a');
-  }
-
-  updateHud();
-
-  setTimeout(() => {
-    collapse();
-    refill();
-    render();
-    // Chain cascade detection: check if refill created auto-matches
-    setTimeout(() => {
-      const autoGroups = findAllGroups();
-      if (autoGroups.length > 0) {
-        // Cascade chain! Pop them automatically with bonus
-        chainCount = (chainCount || 0) + 1;
-        const chainBonus = chainCount * 50;
-        game.score += chainBonus;
-        game.levelScore += chainBonus;
-        const board = document.querySelector('.board');
-        if (board) { board.classList.remove('cascade'); void board.offsetWidth; board.classList.add('cascade'); }
-        if (chainCount >= 2) showChainBanner('⚡ ' + chainCount + 'x CHAIN! +' + chainBonus);
-        else floatScore(window.innerWidth/2, window.innerHeight * 0.3, 'Chain +' + chainBonus, '#b98bff', 'big');
-        autoGroups.forEach(g => {
-          g.forEach(([gr, gc]) => {
-            const bub = cells[gr][gc];
-            if (bub) {
-              const el = document.querySelector(`.bubble[data-id="${bub.id}"]`);
-              if (el) el.classList.add('popping');
-              cells[gr][gc] = null;
-            }
-          });
-        });
-        if (chainCount >= 3) ScreenShake.shake(document.querySelector('.board'), 6, 180);
-        updateHud();
-        setTimeout(() => { collapse(); refill(); render(); setTimeout(afterResolve, 300); }, 200);
-        return;
-      }
-      chainCount = 0;
-      afterResolve();
-    }, 250);
-  }, 200);
+  for(let c=0;c<COLS;c++){ let w=ROWS-1; for(let r=ROWS-1;r>=0;r--) if(cells[r][c]){ const b=cells[r][c]; cells[r][c]=null; cells[w--][c]=b; } }
+}
+function refill(){
+  const cfg=sectors[levelIndex];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(!cells[r][c]) cells[r][c]=makeBubble(randType(cfg.colors));
+}
+function shuffleBoard(){
+  const cfg=sectors[levelIndex];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(cells[r][c] && cells[r][c].special!=='rock') cells[r][c]=makeBubble(randType(cfg.colors));
+  guaranteeMoves(); render(); toast('Board reshuffled - new combo chance!');
 }
 
-function afterResolve() {
-  if (!hasMoves()) reshuffle();
-  updateHud();
-  busy = false;
-
-  if (game.levelScore >= game.target) { levelComplete(); return; }
-  if (game.moves <= 0) { gameOver(); return; }
-  scheduleHint();
+function launchSuper(){
+  if(run.charge<100 || busy) return;
+  busy=true; run.charge=0; run.specials++;
+  const centre=[Math.floor(ROWS/2), Math.floor(COLS/2)];
+  toast('🌟 Super Nova!');
+  resolveHit(blast(centre[0], centre[1], 2), {r:centre[0], c:centre[1], b:null, specialUsed:true, manual:true});
 }
 
-/* ═══════════════ GRAVITY + REFILL ═══════════════ */
-function collapse() {
-  if (game.grav === 'left') return collapseLeft();
-  // drop within columns
-  for (let c = 0; c < COLS; c++) {
-    let write = ROWS - 1;
-    for (let r = ROWS - 1; r >= 0; r--) {
-      if (cells[r][c]) {
-        const b = cells[r][c];
-        cells[r][c] = null;
-        cells[write][c] = b;
-        write--;
-      }
-    }
-  }
-  // shift whole empty columns toward the centre-left (keeps board tidy)
-  let writeCol = 0;
-  for (let c = 0; c < COLS; c++) {
-    const columnEmpty = cells.every(row => !row[c]);
-    if (!columnEmpty) {
-      if (writeCol !== c) {
-        for (let r = 0; r < ROWS; r++) { cells[r][writeCol] = cells[r][c]; cells[r][c] = null; }
-      }
-      writeCol++;
-    }
-  }
-}
-
-// Nebula Drift: everything falls toward the left wall instead of the floor.
-function collapseLeft() {
-  for (let r = 0; r < ROWS; r++) {
-    let write = 0;
-    for (let c = 0; c < COLS; c++) {
-      if (cells[r][c]) {
-        const b = cells[r][c];
-        cells[r][c] = null;
-        cells[r][write] = b;
-        write++;
-      }
-    }
-  }
-}
-
-function refill() {
-  for (let c = 0; c < COLS; c++) {
-    for (let r = 0; r < ROWS; r++) {
-      if (!cells[r][c]) cells[r][c] = makeBubble(1 + Math.floor(Math.random() * game.numColors));
-    }
-  }
-}
-
-function reshuffle() {
-  const colors = [];
-  for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++)
-      if (cells[r][c] && !cells[r][c].special) colors.push(cells[r][c].color);
-  let guard = 0;
-  do {
-    // Fisher-Yates
-    for (let i = colors.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [colors[i],colors[j]]=[colors[j],colors[i]]; }
-    let k = 0;
-    for (let r = 0; r < ROWS; r++)
-      for (let c = 0; c < COLS; c++)
-        if (cells[r][c] && !cells[r][c].special) cells[r][c].color = colors[k++];
-    guard++;
-  } while (!hasMoves() && guard < 30);
-  render();
-}
-
-/* ═══════════════ HUD ═══════════════ */
-function updateHud() {
-  document.getElementById('levelVal').textContent = game.level;
-  document.getElementById('scoreVal').textContent = game.score;
-  document.getElementById('movesVal').textContent = Math.max(0, game.moves);
-  document.getElementById('scoreMini').textContent = Math.min(game.levelScore, game.target);
-  document.getElementById('targetVal').textContent = game.target;
-  const pct = Math.min(100, (game.levelScore / game.target) * 100);
-  document.getElementById('targetFill').style.width = pct + '%';
-  document.getElementById('movesStat').classList.toggle('low', game.moves <= 5);
-
-  const footer = document.getElementById('footer');
-  if (game.streak >= 3) footer.innerHTML = `<span class="combo-flash">🔥 ${game.streak}x streak! +${(1 + Math.min(game.streak, 5) * 0.3).toFixed(1)}x multiplier!</span>`;
-  else if (game.streak >= 2) footer.innerHTML = `<span class="combo-flash">🔥 ${game.streak}x streak!</span>`;
-  else if (game.moves <= 5) footer.innerHTML = `<span style="color:#ff5b6b;font-weight:700">⚠️ ${game.moves} moves left , make them count!</span>`;
-  else footer.textContent = 'Tap groups of 2+ · big groups leave bombs 💣';
-}
-
-/* ═══════════════ HINTS ═══════════════ */
-function scheduleHint() {
-  clearHint();
-  hintTimer = setTimeout(showHint, 5000);
-}
-function clearHint() {
-  if (hintTimer) clearTimeout(hintTimer);
-  document.querySelectorAll('.bubble.hint').forEach(el => el.classList.remove('hint'));
-}
-function showHint() {
-  for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++) {
-      const b = cells[r][c];
-      if (!b) continue;
-      if (b.special === 'bomb') { markHint([[r,c]]); return; }
-      const g = connectedGroup(r, c);
-      if (g.length >= 2) { markHint(g); return; }
-    }
-}
-function markHint(group) {
-  group.forEach(([r,c]) => {
-    const b = cells[r][c];
-    const el = b && document.querySelector(`.bubble[data-id="${b.id}"]`);
-    if (el) el.classList.add('hint');
-  });
-}
-
-/* ═══════════════ FX HELPERS ═══════════════ */
-function floatScore(x, y, text, color, size) {
-  const el = document.createElement('div');
-  el.className = 'pop-score' + (size === 'mega' ? ' mega' : size === 'big' ? ' big' : '');
-  el.textContent = text;
-  el.style.left = x + 'px';
-  el.style.top = y + 'px';
-  el.style.color = color || '#fff';
-  el.style.fontSize = size === 'mega' ? '2.2rem' : size === 'big' ? '1.8rem' : '1.3rem';
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 900);
-}
-function showChainBanner(text) {
-  const el = document.createElement('div');
-  el.className = 'chain-banner';
-  el.textContent = text;
-  el.style.left = '50%';
-  el.style.top = '35%';
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1000);
-}
-function nudge(id) {
-  const el = document.querySelector(`.bubble[data-id="${id}"]`);
-  if (el) { ScreenShake.pulse(el.querySelector('.bubble-inner'), 1.12, 160); }
-}
-
-/* ═══════════════ FLOW ═══════════════ */
-function startLevel(level) {
-  const cfg = levelConfig(level);
-  game.level = level;
-  game.numColors = cfg.colors;
-  game.moves = cfg.moves;
-  game.target = cfg.target;
-  game.grav = cfg.grav;
-  game.bombAt = cfg.bombAt;
-  game.levelScore = 0;
-  game.streak = 0;
-  game.over = false;
-  busy = false;
-  chainCount = 0;
-  document.getElementById('modal').classList.remove('show');
-  fillBoard();
-  render();
-  updateHud();
-  updateStarsChip();
-  if (level > 1) {
-    const gravNote = cfg.grav === 'left' ? ' · ⬅ Gravity drifts sideways!' : '';
-    const bossNote = cfg.boss ? 'SUPERNOVA · ' : '';
-    let tip = '';
-    if (level === 2) tip = '\n💡 Pop 5+ to spawn a Bomb!';
-    if (level === 3) tip = '\n💡 Chains = free bonus points!';
-    showBanner((cfg.boss ? '💥 ' : '') + 'Level ' + level + ' , ' + cfg.region,
-      bossNote + cfg.colors + ' colours · ' + cfg.moves + ' moves' + gravNote + tip);
-  } else {
-    showBanner('Level 1 , ' + cfg.region, 'Tap groups of 2+ same-colour bubbles');
-  }
-  scheduleHint();
-}
-
-function updateStarsChip() {
-  const el = document.getElementById('starsChip');
-  if (el) el.textContent = '⭐ ' + totalStars();
-}
-
-function newGame() {
-  gameSystem.beginRun();
-  game.score = 0;
-  game._reportedScore = 0;
-  game.bestGroup = 0;
-  startLevel(1);
-}
-
-function levelComplete() {
-  game.over = true;
-  clearHint();
-  const leftover = Math.max(0, game.moves);
-  const bonus = leftover * 60;
-  game.score += bonus;
-  // Feed the running total into the shared save so the Arcade hub's
-  // best-scores list can see it (this game never reported scores before).
-  // addScore expects a delta, so only report what hasn't been recorded yet.
-  const scoreDelta = game.score - (game._reportedScore || 0);
-  if (scoreDelta > 0) { gameSystem.addScore(scoreDelta); game._reportedScore = game.score; }
-  const xp = Math.floor(game.levelScore / 20) + leftover * 3;
-  gameSystem.addXP(xp);
-  if (game.level >= 5) gameSystem.unlockAchievement('level5');
-  if (game.bestGroup >= 10) gameSystem.unlockAchievement('bigGroup');
-  gameSystem.recordGamePlay(Date.now());
-  gameSystem.saveState();
-
-  // Star rating: 3 = comfy margin, 2 = cleared it, 1 = base (always granted
-  // on clear). Best per level persists , mastery is the meta goal.
-  const stars = leftover >= 8 ? 3 : leftover >= 4 ? 2 : 1;
-  prog.stars[game.level] = Math.max(prog.stars[game.level] || 0, stars);
-  prog.bestLevel = Math.max(prog.bestLevel, game.level + 1);
-  saveProgress();
-
-  audioEffects.playLevelUp();
-  ParticleSystem.confetti(window.innerWidth/2, window.innerHeight/3, 22);
-
-  showModal('🎉', 'Level ' + game.level + ' Complete!',
-    '⭐'.repeat(stars) + '☆'.repeat(3 - stars) +
-    (leftover > 0 ? ` · +${bonus} move bonus (${leftover} left)` : '') +
-    (stars === 3 ? '\n🏆 Perfect clear!' : stars === 2 ? '\n👍 Nice work!' : ''),
-    xp, 'Next Level');
-  document.getElementById('modalBtn').dataset.next = 'level';
-  updateStarsChip();
-}
-
-function gameOver() {
-  game.over = true;
-  clearHint();
-  const xp = Math.floor(game.levelScore / 30);
-  const finalDelta = game.score - (game._reportedScore || 0);
-  if (finalDelta > 0) { gameSystem.addScore(finalDelta); game._reportedScore = game.score; }
-  gameSystem.addXP(Math.max(0, xp));
-  if (game.level >= 5) gameSystem.unlockAchievement('level5');
-  if (game.bestGroup >= 10) gameSystem.unlockAchievement('bigGroup');
-  gameSystem.recordGamePlay(Date.now());
-  gameSystem.saveState();
-
-  audioEffects.playError();
-  showModal('🌌', 'Out of Moves', `You reached ${game.levelScore} / ${game.target} on Level ${game.level}\n${game.region || 'the galaxy'} · Retry or adjust your strategy`, Math.max(0, xp), 'Retry Level ' + game.level);
-  document.getElementById('modalBtn').dataset.next = 'retry';
-}
-
-function showModal(emoji, title, sub, xp, btnText) {
-  document.getElementById('modalEmoji').textContent = emoji;
-  document.getElementById('modalTitle').textContent = title;
-  document.getElementById('modalSub').textContent = sub;
-  document.getElementById('mScore').textContent = game.score;
-  document.getElementById('mBest').textContent = game.bestGroup;
-  document.getElementById('mXp').textContent = xp;
-  document.getElementById('modalBtn').textContent = btnText;
-  document.getElementById('modal').classList.add('show');
-}
-
-function modalAction() {
-  const ms = document.querySelector('#modal .modal-stats');
-  if (ms) ms.style.display = ''; // stats return for run modals
-  const next = document.getElementById('modalBtn').dataset.next;
-  if (next === 'level') startLevel(game.level + 1);
-  else if (next === 'retry') startLevel(game.level);      // fair: retry the same level
-  else if (next === 'continue') startLevel(prog.bestLevel);
-  else newGame();
-}
-
-function showBanner(title, sub) {
-  const banner = document.getElementById('banner');
-  document.getElementById('bannerTitle').textContent = title;
-  document.getElementById('bannerSub').textContent = sub;
-  banner.classList.remove('show'); void banner.offsetWidth; banner.classList.add('show');
-}
-
-window.addEventListener('beforeunload', () => {
-  gameSystem.recordGamePlay(Date.now());
-  gameSystem.saveState();
+document.getElementById('superBtn').addEventListener('click', launchSuper);
+document.getElementById('helpBtn').addEventListener('click', showHelp);
+document.getElementById('modalPrimary').addEventListener('click', ()=>{
+  const action = document.getElementById('modalPrimary').dataset.action || 'start';
+  if(action==='next') startLevel(levelIndex+1); else if(action==='retry') startLevel(levelIndex); else startLevel(levelIndex);
 });
 
-// Boot: returning players continue their climb; the modal offers Continue
-// vs Start Over. First-time players just start at Level 1.
-{ const _ms = document.querySelector('#modal .modal-stats'); if (_ms) _ms.style.display = 'none'; } // run stats are meaningless on the map
-updateStarsChip();
-
-// ── Tutorial / How to Play ──
-const TUTORIAL_KEY = 'bp_galaxy_tutorial_seen';
-function showTutorial() {
-  document.getElementById('tutorialModal').classList.add('show');
+function updateHud(){
+  const cfg=sectors[levelIndex], goals=cfg.goals;
+  document.getElementById('sectorName').textContent = cfg.name;
+  document.getElementById('starBank').textContent = '⭐ ' + starTotal();
+  document.getElementById('missionTitle').textContent = cfg.title;
+  document.getElementById('missionText').textContent = cfg.text;
+  document.getElementById('levelVal').textContent = levelIndex+1;
+  document.getElementById('scoreVal').textContent = run.score;
+  document.getElementById('movesVal').textContent = run.moves;
+  document.getElementById('comboVal').textContent = 'x' + run.combo;
+  document.getElementById('chargeText').textContent = Math.floor(run.charge) + '%';
+  document.getElementById('chargeFill').style.width = run.charge + '%';
+  document.getElementById('superBtn').disabled = run.charge < 100 || busy;
+  const goalBox=document.getElementById('missionGoals'); goalBox.innerHTML='';
+  addGoal(goalBox, 'Score', run.score, goals.score, '🌟');
+  if(goals.chain) addGoal(goalBox, 'Best chain', run.chainBest, goals.chain, '⚡');
+  if(goals.specials) addGoal(goalBox, 'Specials', run.specials, goals.specials, '💥');
+  if(goals.collect) for(const [type, need] of Object.entries(goals.collect)) addGoal(goalBox, LABELS[type], run.collected[type]||0, need, '●', type);
+  updateComboMeter();
+  const complete = missionComplete();
+  setStatus(complete ? 'Mission ready! Finish this move to bank your stars.' : 'Build clusters, make specials, then chain them together.');
 }
-function closeTutorial() {
-  document.getElementById('tutorialModal').classList.remove('show');
-  try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch(e) {}
+function addGoal(box,label,now,need,icon,type){
+  const row=document.createElement('div'); row.className='goal' + (now>=need?' done':'') + (type?' '+type:'');
+  row.innerHTML='<span>'+icon+' '+label+'</span><b>'+Math.min(now,need)+'/'+need+'</b><i style="width:'+Math.min(100,now/need*100)+'%"></i>';
+  box.appendChild(row);
 }
-function hasSeenTutorial() {
-  try { return localStorage.getItem(TUTORIAL_KEY) === '1'; } catch(e) { return false; }
+function updateComboMeter(){
+  const box=document.getElementById('comboMeter'); box.innerHTML='';
+  for(let i=1;i<=9;i++){ const dot=document.createElement('span'); dot.className=i<=run.combo?'lit':''; box.appendChild(dot); }
+}
+function updateLevelStrip(){
+  const strip=document.getElementById('levelStrip'); strip.innerHTML='';
+  sectors.forEach((s,i)=>{ const node=document.createElement('button'); node.className='planet '+(i===levelIndex?'active':'')+(i<=state.bestLevel?' unlocked':''); node.textContent=(state.stars[i]?'⭐'.repeat(state.stars[i]):i+1); node.disabled=i>state.bestLevel; node.onclick=()=>startLevel(i); strip.appendChild(node); });
+}
+function missionComplete(){
+  const g=sectors[levelIndex].goals;
+  if(run.score < g.score) return false;
+  if(g.chain && run.chainBest < g.chain) return false;
+  if(g.specials && run.specials < g.specials) return false;
+  if(g.collect) for(const [t,n] of Object.entries(g.collect)) if((run.collected[t]||0)<n) return false;
+  return true;
+}
+function checkEnd(){
+  if(missionComplete()) return finishLevel();
+  if(run.moves<=0) return failLevel();
+}
+function finishLevel(){
+  run.cleared=true; busy=true;
+  const spare=Math.max(0,run.moves);
+  const stars = spare>=8 ? 3 : spare>=4 ? 2 : 1;
+  state.stars[levelIndex]=Math.max(state.stars[levelIndex]||0, stars);
+  state.bestLevel=Math.max(state.bestLevel, Math.min(levelIndex+1, sectors.length-1));
+  state.bestScore=Math.max(state.bestScore, run.score);
+  saveProgress();
+  reportScore();
+  gameSystem.addXP(Math.floor(run.score/35)+stars*25);
+  gameSystem.unlockAchievement('firstPop');
+  if(stars===3) gameSystem.unlockAchievement('threeStarClear');
+  if(levelIndex===sectors.length-1) gameSystem.unlockAchievement('galaxyClear');
+  gameSystem.saveState();
+  audioEffects.playLevelUp();
+  showModal('🎉','Mission Complete', 'You earned ' + '⭐'.repeat(stars) + ' with ' + spare + ' moves spare.', [
+    ['Score', run.score], ['Best combo', 'x'+run.bestCombo], ['Best chain', 'x'+run.chainBest]
+  ], levelIndex===sectors.length-1 ? 'Replay Finale' : 'Next Mission', levelIndex===sectors.length-1 ? 'retry' : 'next');
+}
+function failLevel(){
+  busy=true; reportScore(); gameSystem.addXP(Math.floor(run.score/50)); gameSystem.saveState(); audioEffects.playError();
+  showModal('🌌','Out of Moves','You were close. Aim for bigger clusters early, then spend specials together.', [
+    ['Score', run.score], ['Target', sectors[levelIndex].goals.score], ['Best combo', 'x'+run.bestCombo]
+  ], 'Retry Mission', 'retry');
+}
+function reportScore(){ const delta=run.score-(run.reported||0); if(delta>0){ gameSystem.addScore(delta); run.reported=run.score; } }
+function showModal(emoji,title,sub,stats,button,action){
+  document.getElementById('modalEmoji').textContent=emoji;
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalSub').textContent=sub;
+  document.getElementById('modalStats').innerHTML=stats.map(([a,b])=>'<div><span>'+a+'</span><b>'+b+'</b></div>').join('');
+  const btn=document.getElementById('modalPrimary'); btn.textContent=button; btn.dataset.action=action;
+  document.getElementById('modal').classList.add('show');
+}
+function showHelp(){
+  showModal('🫧','How to Play','Tap 2+ matching bubbles. Groups of 5+ become specials. Chain specials and cascades to finish the mission before moves run out.', [
+    ['5+ cluster','💣 Bomb'], ['8+ cluster','🚀 Rocket'], ['10+ cluster','🌈 Wild']
+  ], 'Play', 'start');
+}
+function setStatus(text){ document.getElementById('statusLine').textContent=text; document.getElementById('tipBox').textContent=text; }
+function toast(text){ const t=document.getElementById('toast'); t.textContent=text; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); }
+function nudge(id){ const el=document.querySelector('[data-id="'+id+'"]'); if(el){ el.classList.add('wrong'); setTimeout(()=>el.classList.remove('wrong'),260); } }
+function popFx(r,c,text){
+  const board=document.getElementById('board').getBoundingClientRect();
+  const fx=document.createElement('div'); fx.className='float-score'; fx.textContent=text;
+  fx.style.left=(board.left + (c+.5)*board.width/COLS)+'px'; fx.style.top=(board.top + (r+.5)*board.height/ROWS)+'px';
+  document.body.appendChild(fx); setTimeout(()=>fx.remove(),900);
+  if(text.includes('mega') || text.includes('blast')) ScreenShake.shake(document.querySelector('.board-frame'), 8, 180);
+  audioEffects.playPop();
 }
 
-// ── Contextual tips (first 3 levels) ──
-const TIPS = {
-  1: [
-    { trigger: 'firstPop', text: 'Nice! Tap bigger groups for more points 🫧' },
-    { trigger: 'moves5', text: 'Watch your moves! ⚠️ Running low...' },
-  ],
-  2: [
-    { trigger: 'start', text: 'Tip: Pop 5+ bubbles and the last one becomes a 💣 Bomb!' },
-    { trigger: 'bomb', text: 'Bombs blast a 3×3 area , huge points! 💥' },
-  ],
-  3: [
-    { trigger: 'start', text: 'Chain combos happen when new bubbles fall into matches! ⚡' },
-    { trigger: 'chain', text: 'Chains give bonus points , keep them going! 🔥' },
-  ],
-};
-let tipShown = {};
-function showTip(level, trigger) {
-  if (level > 3) return;
-  const key = level + ':' + trigger;
-  if (tipShown[key]) return;
-  const tips = TIPS[level];
-  if (!tips) return;
-  const tip = tips.find(t => t.trigger === trigger);
-  if (!tip) return;
-  tipShown[key] = true;
-  const overlay = document.getElementById('tipOverlay');
-  const text = document.getElementById('tipText');
-  if (!overlay || !text) return;
-  text.textContent = tip.text;
-  overlay.style.opacity = '1';
-  setTimeout(() => { overlay.style.opacity = '0'; }, 4000);
-}
-
-// Intercept first pop to show tip
-const _origOnTap = onTap;
-let firstPopDone = false;
-// We'll call showTip from within the game events instead of wrapping onTap
-
-// Hook into game events for tips
-const _origLevelComplete = levelComplete;
-const _origGameOver = gameOver;
-
-// Show start-of-level tip
-const _origStartLevel = startLevel;
-startLevel = function(level) {
-  _origStartLevel(level);
-  if (level <= 3) showTip(level, 'start');
-};
-
-// Show bomb tip when bomb spawns
-const _origOnTapInner = onTap;
-// We'll track bombs via the existing code , the bomb floatScore call is our hook
-
-// The tutorial markup appears below this script; wait until it exists.
-document.addEventListener('DOMContentLoaded', () => {
-if (prog.bestLevel > 1) {
-  const total = totalStars();
-  showModal('🌌', 'Galaxy Map',
-    `Best: Level ${prog.bestLevel} · ⭐ ${total} star${total === 1 ? '' : 's'} earned`,
-    0, 'Continue , Level ' + prog.bestLevel);
-  document.getElementById('modalBtn').dataset.next = 'continue';
-} else {
-  // First time: show tutorial, then start
-  if (!hasSeenTutorial()) {
-    showTutorial();
-    // Only the first tutorial dismissal starts a run; later Help visits preserve it.
-    document.querySelector('#tutorialModal .btn').addEventListener('click', newGame, { once: true });
-  } else {
-    newGame();
-  }
-}
-}, { once: true });
+showModal('🫧','Bubble Pop Galaxy','A proper combo puzzle: complete colour missions, forge specials, chain cascades and earn stars across five galaxy sectors.', [
+  ['Best score', state.bestScore||0], ['Stars banked', starTotal()], ['Unlocked', (state.bestLevel+1)+' / '+sectors.length]
+], state.bestLevel ? 'Continue' : 'Start Run', 'start');
+updateLevelStrip();
 </script>
 <script defer src="../cookie-consent.js"></script>
-<!-- Tutorial / How to Play -->
-<div class="modal" id="tutorialModal">
-  <div class="modal-card" style="max-width:380px">
-    <div class="modal-emoji">🫧</div>
-    <div class="modal-title">How to Play</div>
-    <div class="modal-sub" style="text-align:left; line-height:1.7">
-      <b style="color:#4fd6c8">Tap</b> groups of <b>2 or more</b> same-colour bubbles to pop them.<br><br>
-      <b style="color:#ffd24a">Bigger groups</b> = more points. Pop <b>5+</b> to earn bonus score.<br><br>
-      Pop a <b>big group</b> and the last bubble becomes a <b>💣 Bomb</b> , tap it to blast a 3×3 area!<br><br>
-      <b style="color:#b98bff">Chain combos</b> happen when gravity fills new matches automatically.<br><br>
-      Hit the <b style="color:#4fd6c8">target score</b> before you run out of <b style="color:#ffd24a">moves</b> to clear each level.<br><br>
-      <span style="font-size:.8rem; opacity:.7">Earn ⭐ stars for clearing with moves to spare!</span>
-    </div>
-    <button class="btn" onclick="closeTutorial()">Let's Go! 🚀</button>
-  </div>
-</div>
-
-<!-- In-game tip overlay (first few levels) -->
-<div id="tipOverlay" style="position:fixed; bottom:60px; left:50%; transform:translateX(-50%); z-index:80; pointer-events:none; text-align:center; opacity:0; transition: opacity .4s;">
-  <div style="background:rgba(0,0,0,.75); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.15); border-radius:14px; padding:10px 18px; font-size:.8rem; color:#fff; max-width:300px; line-height:1.5;" id="tipText"></div>
-</div>
-<script defer src="/mascots.js"></script>
+<script defer src="../mascots.js"></script>
 </body>
 </html>

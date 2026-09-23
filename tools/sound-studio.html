@@ -64,6 +64,40 @@
   ]
 }
 </script>
+<style>
+/* UNIFIED GRID OVERRIDES */
+body{overflow-y:auto!important;height:auto!important;touch-action:auto!important;user-select:auto!important;}
+#track-panel{display:none!important;}
+#seq-panel{flex:1;min-width:0;overflow-x:auto;}
+#inst-panel{width:220px!important;min-width:160px;flex-shrink:0;}
+@media(max-width:699px){#inst-panel{display:block!important;width:100%!important;}}
+/* Unified row: label + cells side by side */
+.seq-track-row{display:flex!important;align-items:center;min-height:44px;border-bottom:1px solid rgba(255,255,255,.04);}
+.seq-track-row.active>.sst-label{background:rgba(255,255,255,.05);border-right:2px solid var(--accent,#7c3aed);}
+.sst-label{width:112px;min-width:80px;flex-shrink:0;display:flex;align-items:center;gap:3px;padding:4px 6px;cursor:pointer;height:100%;border-right:2px solid transparent;transition:background .12s;position:relative;}
+.sst-color{width:3px;height:24px;border-radius:2px;flex-shrink:0;}
+.sst-name{flex:1;font-size:.58rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px;}
+.sst-label .track-mute{min-width:28px;min-height:28px;font-size:.5rem;border-radius:4px;border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--muted);cursor:pointer;flex-shrink:0;}
+.sst-label .track-mute.muted{background:rgba(239,68,68,.25);color:#ef4444;border-color:#ef4444;}
+.sst-label .track-vol{width:38px;accent-color:var(--accent,#7c3aed);}
+.sst-cells{display:flex;align-items:center;gap:2px;padding:3px 6px;flex-wrap:nowrap;}
+/* SFX SHELF */
+#sfx-shelf{background:var(--panel,#111827);border-top:1px solid rgba(255,255,255,.08);margin:0;}
+.sfx-shelf-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;user-select:none;background:rgba(99,102,241,.06);border-bottom:1px solid rgba(255,255,255,.04);width:100%;border-left:none;border-right:none;border-top:none;font-family:inherit;text-align:left;}
+.sfx-shelf-bar:hover{background:rgba(99,102,241,.12);}
+.sfx-shelf-title{font-family:'Fredoka',cursive;font-size:.85rem;font-weight:700;color:#a5b4fc;flex:1;}
+.sfx-shelf-arrow{font-size:.7rem;color:var(--muted,#8b93a0);transition:transform .2s;}
+.sfx-shelf-arrow.open{transform:rotate(180deg);}
+.sfx-shelf-body{display:none;padding:14px;max-height:340px;overflow-y:auto;}
+.sfx-shelf-body.open{display:flex;flex-direction:column;gap:12px;}
+.sfx-cat-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sfx-cat-label{font-size:.58rem;font-weight:700;color:var(--muted,#8b93a0);text-transform:uppercase;letter-spacing:.06em;width:68px;flex-shrink:0;}
+.sfx-vbtn{padding:5px 9px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--text,#e8edf8);font-family:'Fredoka',cursive;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .12s;}
+.sfx-vbtn:hover{background:rgba(99,102,241,.15);border-color:#6366f1;color:#a5b4fc;}
+.sfx-vbtn.playing{background:rgba(16,185,129,.15);border-color:#10b981;color:#6ee7b7;}
+.sfx-dl-btn{margin-top:4px;padding:6px 14px;border-radius:8px;border:none;background:var(--accent3,#10b981);color:#000;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.sfx-dl-btn:disabled{opacity:.4;cursor:default;}
+</style>
 </head>
 <body>
 <noscript><div style="position:fixed;inset:0;background:#0a0a12;color:#f0f0f0;display:flex;align-items:center;justify-content:center;font-family:sans-serif;font-size:1rem;text-align:center;padding:2rem;z-index:99999;">This tool requires JavaScript. Please enable JavaScript in your browser.</div></noscript>
@@ -77,23 +111,24 @@
   <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
  <span class="logo-name">JVDesignStudio</span>
  </a>
-  <nav class="main-nav" id="mainNav" aria-label="Main">
-   <a href="/games" class="nav-link" data-page="games">Play <span class="mascot-duo" aria-hidden="true"><img src="/assets/mascots/echo-badge.webp" alt="" loading="lazy" width="22" height="22"><img src="/assets/mascots/pip-badge.webp" alt="" loading="lazy" width="22" height="22"></span></a>
-   <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress">Learn <img class="mascot-nav-badge" src="/assets/mascots/lumo-badge.webp" alt="" loading="lazy" width="22" height="22"></a>
-   <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies">Create <img class="mascot-nav-badge" src="/assets/mascots/ember-badge.webp" alt="" loading="lazy" width="22" height="22"></a>
-   <a href="/books" class="nav-link" data-page="books">Read <img class="mascot-nav-badge" src="/assets/mascots/stardust-badge.webp" alt="" loading="lazy" width="22" height="22"></a>
-  <div class="nav-dropdown">
-   <button class="nav-link nav-dropdown-btn" aria-haspopup="true" aria-expanded="false" id="moreDropdownBtn">More ▾</button>
-   <div class="nav-dropdown-menu" role="menu" aria-labelledby="moreDropdownBtn">
-    <a href="/pages/stardust.html" role="menuitem">Imagine <img src="/assets/mascots/stardust-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
-    <a href="/pages/echo.html" role="menuitem">Improve <img src="/assets/mascots/echo-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
-    <a href="/parents" role="menuitem">For Parents</a>
-    <a href="/about" role="menuitem">About the Studio</a>
-    <a href="/downloads" role="menuitem">Downloads</a>
-    <a href="/search" role="menuitem">Search</a>
+   <nav class="main-nav" id="mainNav" aria-label="Main">
+    <a href="/games" class="nav-link" data-page="games">Play <span class="mascot-duo" aria-hidden="true"><img src="/assets/mascots/echo-badge.webp" alt="" loading="lazy" width="22" height="22"><img src="/assets/mascots/pip-badge.webp" alt="" loading="lazy" width="22" height="22"></span></a>
+    <a href="/workshop" class="nav-link" data-page="workshop learn-hub learning-lab tiny-learners my-progress">Learn <img class="mascot-nav-badge" src="/assets/mascots/lumo-badge.webp" alt="" loading="lazy" width="22" height="22"></a>
+    <a href="/dev-tools" class="nav-link" data-page="dev-tools freebies">Create <img class="mascot-nav-badge" src="/assets/mascots/ember-badge.webp" alt="" loading="lazy" width="22" height="22"></a>
+    <a href="/books" class="nav-link" data-page="books">Read <img class="mascot-nav-badge" src="/assets/mascots/stardust-badge.webp" alt="" loading="lazy" width="22" height="22"></a>
+    <a href="/parents" class="nav-link nav-link--parents" data-page="parents">For Parents <span aria-hidden="true" style="font-size:.7rem;margin-left:2px">🛡️</span></a>
+   <div class="nav-dropdown">
+    <button class="nav-link nav-dropdown-btn" aria-haspopup="true" aria-expanded="false" id="moreDropdownBtn">More ▾</button>
+    <div class="nav-dropdown-menu" role="menu" aria-labelledby="moreDropdownBtn">
+     <a href="/pages/stardust.html" role="menuitem">Imagine <img src="/assets/mascots/stardust-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
+     <a href="/pages/echo.html" role="menuitem">Improve <img src="/assets/mascots/echo-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
+     <a href="/parents" role="menuitem">For Parents</a>
+     <a href="/about" role="menuitem">About the Studio</a>
+     <a href="/downloads" role="menuitem">Downloads</a>
+     <a href="/search" role="menuitem">Search</a>
+    </div>
    </div>
-  </div>
- </nav>
+  </nav>
  <a href="/me.html" class="nav-profile-chip" id="navProfileChip" aria-label="Your profile" title="Your profile" style="display:none;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--beige);text-decoration:none;flex-shrink:0;"><span id="navProfileLevel">Lv 1</span> <span id="navProfileStreak" style="color:#f5c842;">0</span></a>
  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
  <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
@@ -128,21 +163,23 @@
 <div id="transport">
   <button class="t-btn t-play" id="playBtn" onclick="togglePlay()">▶ Play</button>
   <button class="t-btn t-stop" onclick="stopAll()">■ Stop</button>
+  <button class="t-btn" id="undoBtn" onclick="undo()" title="Undo (Ctrl+Z)" aria-label="Undo" style="padding:5px 8px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'Fredoka',cursive;" disabled>↩</button>
+  <button class="t-btn" id="redoBtn" onclick="redo()" title="Redo (Ctrl+Y)" aria-label="Redo" style="padding:5px 8px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-family:'Fredoka',cursive;" disabled>↪</button>
   <div class="t-sep"></div>
-  <div class="t-label">BPM</div>
-  <button class="p-btn" onclick="changeBPM(-5)">-</button>
-  <div class="t-val" id="bpmVal">120</div>
-  <button class="p-btn" onclick="changeBPM(5)">+</button>
-  <input type="range" class="t-slider" min="60" max="200" value="120" id="bpmSlider" oninput="setBPM(+this.value)">
+  <label for="bpmVal" class="t-label">BPM</label>
+  <button class="p-btn" onclick="changeBPM(-5)" aria-label="Decrease BPM">-</button>
+  <div class="t-val" id="bpmVal" aria-live="polite" aria-label="Current BPM">120</div>
+  <button class="p-btn" onclick="changeBPM(5)" aria-label="Increase BPM">+</button>
+  <input type="range" class="t-slider" min="60" max="200" value="120" id="bpmSlider" aria-label="BPM slider" oninput="setBPM(+this.value)">
   <div class="t-sep"></div>
-  <div class="t-label">Steps</div>
+  <label for="stepsSelect" class="t-label">Steps</label>
   <select id="stepsSelect" onchange="setSteps(+this.value)" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);border-radius:5px;padding:3px 5px;font-size:.6rem;font-family:inherit;">
     <option value="8">8</option>
     <option value="16" selected>16</option>
     <option value="32">32</option>
   </select>
   <div class="t-sep"></div>
-  <div class="t-label">Loops</div>
+  <label for="loopsSelect" class="t-label">Loops</label>
   <select id="loopsSelect" style="background:var(--panel3);color:var(--text);border:1px solid var(--border2);border-radius:5px;padding:3px 5px;font-size:.6rem;font-family:inherit;">
     <option value="1">1</option>
     <option value="2" selected>2</option>
@@ -150,6 +187,10 @@
   </select>
   <div class="t-sep"></div>
   <div class="beat-indicator" id="beatIndicator"></div>
+  <div class="t-sep"></div>
+  <label for="masterVol" class="t-label" title="Master volume">Vol</label>
+  <input type="range" class="t-slider" id="masterVol" min="0" max="1" step="0.01" value="1" aria-label="Master volume" oninput="setMasterVol(+this.value)" style="width:54px;">
+  <button class="t-btn" onclick="tapTempo()" title="Tap to set BPM" aria-label="Tap tempo" style="padding:5px 9px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;font-weight:700;">Tap</button>
   <div class="t-sep"></div>
   <button class="t-btn ab-p" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-weight:600;background:var(--accent3);color:#000;" onclick="exportWAV()">⬇ WAV</button>
   <button class="t-btn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:none;cursor:pointer;font-family:'Fredoka',cursive;font-weight:700;background:linear-gradient(135deg,#5b21b6,#7c3aed);color:white;" onclick="sendToGameMaker()">🎮 Send to Game Maker</button>
@@ -164,18 +205,12 @@
 
 <main id="main-content"><div id="app">
 
-  <!-- TRACK LIST -->
-  <div id="track-panel">
-    <div class="track-header">
-      Tracks
-      <button class="add-track-btn" onclick="addTrack()" title="Add track">+</button>
-    </div>
-    <div class="track-list" id="trackList"></div>
-  </div>
-
-  <!-- SEQUENCER -->
+  <!-- SEQUENCER (unified: labels + cells in each row) -->
   <div id="seq-panel">
-    <div class="seq-header" id="seqHeader"></div>
+    <div class="seq-header" style="display:flex;align-items:center;gap:8px;padding:4px 8px 4px 120px;">
+      <button class="add-track-btn" onclick="addTrack()" title="Add melody/bass track" style="font-size:.65rem;padding:2px 8px;">+ Track</button>
+      <span style="font-size:.55rem;color:var(--muted);margin-left:4px;">Click squares to toggle beats · Click track label to select</span>
+    </div>
     <div class="seq-body">
       <div class="seq-grid" id="seqGrid"></div>
     </div>
@@ -196,31 +231,31 @@
       <div class="ipt">Envelope</div>
 
       <div class="knob-row">
-        <div class="knob-label">Attack <span id="attVal">0.01s</span></div>
-        <input type="range" class="kn" min="0.001" max="1" step="0.001" value="0.01" id="attKnob" oninput="setEnv('attack',+this.value)">
+        <div class="knob-label" title="How fast the sound fades in">Attack <span id="attVal">0.01s</span></div>
+        <input type="range" class="kn" min="0.001" max="1" step="0.001" value="0.01" id="attKnob" aria-label="Attack" oninput="setEnv('attack',+this.value)">
       </div>
       <div class="knob-row">
-        <div class="knob-label">Decay <span id="decVal">0.1s</span></div>
-        <input type="range" class="kn" min="0.01" max="2" step="0.01" value="0.1" id="decKnob" oninput="setEnv('decay',+this.value)">
+        <div class="knob-label" title="How fast the volume drops after the initial peak">Decay <span id="decVal">0.1s</span></div>
+        <input type="range" class="kn" min="0.01" max="2" step="0.01" value="0.1" id="decKnob" aria-label="Decay" oninput="setEnv('decay',+this.value)">
       </div>
       <div class="knob-row">
-        <div class="knob-label">Sustain <span id="susVal">0.3</span></div>
-        <input type="range" class="kn" min="0" max="1" step="0.01" value="0.3" id="susKnob" oninput="setEnv('sustain',+this.value)">
+        <div class="knob-label" title="The volume level while a note is held (0 = silence, 1 = full)">Sustain <span id="susVal">0.3</span></div>
+        <input type="range" class="kn" min="0" max="1" step="0.01" value="0.3" id="susKnob" aria-label="Sustain" oninput="setEnv('sustain',+this.value)">
       </div>
       <div class="knob-row">
-        <div class="knob-label">Release <span id="relVal">0.2s</span></div>
-        <input type="range" class="kn" min="0.01" max="3" step="0.01" value="0.2" id="relKnob" oninput="setEnv('release',+this.value)">
+        <div class="knob-label" title="How long the sound fades out after the note ends">Release <span id="relVal">0.2s</span></div>
+        <input type="range" class="kn" min="0.01" max="3" step="0.01" value="0.2" id="relKnob" aria-label="Release" oninput="setEnv('release',+this.value)">
       </div>
 
       <div class="ipdiv"></div>
       <div class="ipt">Pitch</div>
       <div class="knob-row">
-        <div class="knob-label">Octave <span id="octVal">4</span></div>
-        <input type="range" class="kn" min="1" max="7" step="1" value="4" id="octKnob" oninput="setOct(+this.value)">
+        <div class="knob-label" title="Which octave the notes play in (higher = brighter)">Octave <span id="octVal">4</span></div>
+        <input type="range" class="kn" min="1" max="7" step="1" value="4" id="octKnob" aria-label="Octave" oninput="setOct(+this.value)">
       </div>
       <div class="knob-row">
-        <div class="knob-label">Detune <span id="detVal">0</span></div>
-        <input type="range" class="kn" min="-50" max="50" step="1" value="0" id="detKnob" oninput="setDet(+this.value)">
+        <div class="knob-label" title="Slightly shifts the pitch up or down (0 = in tune)">Detune <span id="detVal">0</span></div>
+        <input type="range" class="kn" min="-50" max="50" step="1" value="0" id="detKnob" aria-label="Detune" oninput="setDet(+this.value)">
       </div>
       <button class="ab ab-s" style="font-size:.65rem;margin-top:2px;" onclick="openPianoRoll()">🎵 Set Notes per Step</button>
 
@@ -255,6 +290,22 @@
 
       <div class="ipdiv"></div>
       <button class="ab ab-s" style="color:var(--accent4);border-color:rgba(239,68,68,.3);" onclick="deleteTrack()">🗑️ Delete Track</button>
+    </div>
+  </div>
+</div>
+
+<!-- SFX SHELF -->
+<div id="sfx-shelf">
+  <button class="sfx-shelf-bar" onclick="toggleSfxShelf()" aria-expanded="false" id="sfxShelfBtn" aria-controls="sfxBody">
+    <span class="sfx-shelf-title">🎵 Sound FX Lab</span>
+    <span style="font-size:.6rem;color:var(--muted);">Click a sound to preview · ⬇ to download</span>
+    <span class="sfx-shelf-arrow" id="sfxArrow" aria-hidden="true">▲</span>
+  </button>
+  <div class="sfx-shelf-body" id="sfxBody">
+    <div id="sfxCatRows"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+      <button class="sfx-dl-btn" id="sfxDlBtn" onclick="sfxDownload()" disabled>⬇ Download Last Sound</button>
+      <span style="font-size:.6rem;color:var(--muted);" id="sfxLastName">-</span>
     </div>
   </div>
 </div>
@@ -312,18 +363,26 @@
     <p class="ss-lead">A multi-track step sequencer. Each row is an instrument, each square is one beat. Build a loop, shape the sound on the right, then export a WAV or send it to Arcade Game Maker.</p>
     <div class="ss-sec">How it works</div>
     <ul class="ss-steps">
-      <li><b>1  Tap</b>Click squares in the grid to switch beats on. A demo loop is already playing , press ▶ Play to hear it.</li>
+      <li><b>1  Tap</b>Click squares in the grid to switch beats on. Press ▶ Play to hear your loop.</li>
       <li><b>2  Shape</b>Click a track name, then use the right panel to change its wave, envelope and effects.</li>
       <li><b>3  Notes</b>Use <b style="display:inline;text-transform:none;letter-spacing:0;">Set Notes per Step</b> on melody tracks to pick pitches.</li>
       <li><b>4  Export</b>⬇ WAV downloads the loop. Your work autosaves as you go.</li>
     </ul>
+    <div class="ss-sec" style="margin-top:10px;">Keyboard shortcuts</div>
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:.62rem;margin-top:4px;">
+      <code style="background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;">Space</code><span style="color:var(--muted);">Play / Stop</span>
+      <code style="background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;">Ctrl+Z</code><span style="color:var(--muted);">Undo</span>
+      <code style="background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;">Ctrl+Y</code><span style="color:var(--muted);">Redo</span>
+      <code style="background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;">?</code><span style="color:var(--muted);">Open this help</span>
+      <code style="background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;">Esc</code><span style="color:var(--muted);">Close modals</span>
+    </div>
     <div class="ss-btns">
       <button class="ss-btn primary" onclick="closeStart()">Start making</button>
     </div>
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <div class="ss-overlay" id="restore-modal">
   <div class="ss-box narrow">
@@ -336,12 +395,12 @@
   </div>
 </div>
 
-<div id="piano-modal">
+<div id="piano-modal" role="dialog" aria-modal="true" aria-labelledby="piano-modal-title">
   <div class="piano-box">
-    <h2>🎵 Set Notes, <span id="pianoTrackName">Track</span></h2>
+    <h2 id="piano-modal-title">🎵 Set Notes, <span id="pianoTrackName">Track</span></h2>
     <p style="font-size:.6rem;color:var(--muted);margin-bottom:8px;">Click a note on each step column. Click again to clear.</p>
     <div class="piano-wrap" id="pianoWrap"></div>
-    <button class="piano-close" onclick="closePianoRoll()">Done ✓</button>
+    <button class="piano-close" id="pianoCloseBtn" onclick="closePianoRoll()">Done ✓</button>
   </div>
 </div>
 
@@ -349,12 +408,19 @@
 // ------------------------------------------
 // AUDIO CONTEXT
 // ------------------------------------------
-let ctx = null;
+let ctx = null, masterGain = null;
 function getCtx(){
-  if(!ctx) ctx = new (window.AudioContext||window.webkitAudioContext)();
+  if(!ctx){
+    ctx = new (window.AudioContext||window.webkitAudioContext)();
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 1;
+    masterGain.connect(ctx.destination);
+  }
   if(ctx.state==='suspended') ctx.resume();
   return ctx;
 }
+function getMaster(){ getCtx(); return masterGain; }
+function setMasterVol(v){ getCtx(); masterGain.gain.value=v; }
 
 // ------------------------------------------
 // NOTES
@@ -452,7 +518,7 @@ function playNote(track, time, dur=0.15, step=null){
     conv.buffer=buf;
     const prev=dest; dest=conv; prev.connect(conv);
   }
-  dest.connect(ac.destination);
+  dest.connect(getMaster());
 
   if(t.drum==='kick'){
     playKick(ac, gainNode, time, t);
@@ -595,25 +661,67 @@ function highlightStep(s){
 const CELL_SIZE = 36; // px
 
 function buildGrid(){
-  buildTrackList();
   buildSeqGrid();
   buildBeatIndicator();
 }
 
-function buildTrackList(){
-  const list=document.getElementById('trackList');
-  list.innerHTML='';
+const DRUM_ICONS={kick:'🥁',snare:'🪘',hihat:'🔔',clap:'👏'};
+
+function buildSeqGrid(){
+  const grid_el=document.getElementById('seqGrid');
+  grid_el.innerHTML='';
+
   tracks.forEach((t,ti)=>{
-    const el=document.createElement('div');
-    el.className='track-row'+(ti===activeTrack?' active':'');
-    el.innerHTML=`
-      <div class="track-color" style="background:${t.color}"></div>
-      <span class="track-name" style="color:${t.color}">${t.name}</span>
-      <button class="track-mute${t.muted?' muted':''}" onclick="toggleMute(${ti},event)" title="Mute">M</button>
-      <input type="range" class="track-vol" min="0" max="1" step="0.01" value="${t.vol}" oninput="setVol(${ti},+this.value)" onclick="event.stopPropagation()">
+    const row=document.createElement('div');
+    row.className='seq-track-row'+(ti===activeTrack?' active':'');
+    row.dataset.ti=ti;
+
+    // Label
+    const label=document.createElement('div');
+    label.className='sst-label';
+    const icon=t.drum!=='none'?(DRUM_ICONS[t.drum]||''):'';
+    label.innerHTML=`
+      <div class="sst-color" style="background:${t.color}" aria-hidden="true"></div>
+      <span class="sst-name" style="color:${t.color}" title="${t.name}">${icon} ${t.name}</span>
+      <button class="track-mute${t.muted?' muted':''}" data-mute="${ti}" onclick="toggleMute(${ti},event)" aria-label="Mute ${t.name}" aria-pressed="${t.muted}" title="Mute ${t.name}">M</button>
+      <input type="range" class="track-vol" min="0" max="1" step="0.01" value="${t.vol}" aria-label="Volume for ${t.name}" oninput="setVol(${ti},+this.value)" onclick="event.stopPropagation()">
     `;
-    el.addEventListener('click',()=>selectTrack(ti));
-    list.appendChild(el);
+    label.addEventListener('click',()=>selectTrack(ti));
+    row.appendChild(label);
+
+    // Cells wrapper
+    const cells=document.createElement('div');
+    cells.className='sst-cells';
+    for(let s=0;s<steps;s++){
+      if(s>0&&s%4===0){
+        const div=document.createElement('div');
+        div.className='beat-line';
+        div.style.cssText='width:2px;height:36px;background:rgba(255,255,255,.08);flex-shrink:0;';
+        cells.appendChild(div);
+      }
+      const cell=document.createElement('div');
+      cell.className='step-cell'+(grid[ti][s].on?' on':'');
+      cell.dataset.track=ti; cell.dataset.step=s;
+      cell.style.width=cell.style.height=CELL_SIZE+'px';
+      cell.setAttribute('role','button');
+      cell.setAttribute('aria-label',`Beat ${s+1}, ${t.name}`);
+      cell.setAttribute('aria-pressed',grid[ti][s].on?'true':'false');
+      cell.setAttribute('tabindex','0');
+      if(grid[ti][s].on){
+        cell.style.background=t.color;
+        if(t.drum==='none') cell.innerHTML=`<span class="note-label">${grid[ti][s].note}${grid[ti][s].oct}</span>`;
+      }
+      cell.addEventListener('pointerdown',e=>{
+        e.preventDefault();
+        toggleCell(ti,s,cell,t);
+      });
+      cell.addEventListener('keydown',e=>{
+        if(e.key===' '||e.key==='Enter'){e.preventDefault();toggleCell(ti,s,cell,t);}
+      });
+      cells.appendChild(cell);
+    }
+    row.appendChild(cells);
+    grid_el.appendChild(row);
   });
 
   // Mobile track chips
@@ -630,48 +738,15 @@ function buildTrackList(){
   }
 }
 
-function buildSeqGrid(){
-  const grid_el=document.getElementById('seqGrid');
-  grid_el.innerHTML='';
-
-  tracks.forEach((t,ti)=>{
-    const row=document.createElement('div');
-    row.className='seq-track-row';
-
-    for(let s=0;s<steps;s++){
-      // Beat divider every 4
-      if(s>0&&s%4===0){
-        const div=document.createElement('div');
-        div.className='beat-line';
-        div.style.height='40px';
-        row.appendChild(div);
-      }
-      const cell=document.createElement('div');
-      cell.className='step-cell'+(grid[ti][s].on?' on':'');
-      cell.dataset.track=ti; cell.dataset.step=s;
-      cell.style.width=cell.style.height=CELL_SIZE+'px';
-      if(grid[ti][s].on){
-        cell.style.background=t.color;
-        cell.innerHTML=`<span class="note-label">${grid[ti][s].note}${grid[ti][s].oct}</span>`;
-      }
-      cell.addEventListener('pointerdown',e=>{
-        e.preventDefault();
-        toggleCell(ti,s,cell,t);
-      });
-      row.appendChild(cell);
-    }
-    grid_el.appendChild(row);
-  });
-}
-
 function toggleCell(ti,s,cell,t){
   pushHistory();
   grid[ti][s].on=!grid[ti][s].on;
   cell.classList.toggle('on',grid[ti][s].on);
+  cell.setAttribute('aria-pressed',grid[ti][s].on?'true':'false');
   if(grid[ti][s].on){
     cell.style.background=t.color;
-    cell.innerHTML=`<span class="note-label">${grid[ti][s].note}${grid[ti][s].oct}</span>`;
-    // Preview sound
+    if(t.drum==='none') cell.innerHTML=`<span class="note-label">${grid[ti][s].note}${grid[ti][s].oct}</span>`;
+    else cell.innerHTML='';
     if(!isPlaying) playNote(ti, getCtx().currentTime+0.01, 0.15, s);
   } else {
     cell.style.background='';
@@ -718,14 +793,25 @@ function deleteTrack(){
 
 function selectTrack(ti){
   activeTrack=ti;
-  buildTrackList();
+  document.querySelectorAll('.seq-track-row').forEach(row=>{
+    row.classList.toggle('active', parseInt(row.dataset.ti)===ti);
+  });
+  // Mobile chips
+  const bbList=document.getElementById('bbTrackList');
+  if(bbList) bbList.querySelectorAll('div').forEach((chip,i)=>{
+    const t=tracks[i];
+    if(!t) return;
+    chip.style.borderColor=i===ti?t.color:'var(--border2)';
+    chip.style.background=i===ti?t.color+'22':'transparent';
+  });
   updateInstPanel();
 }
 
 function toggleMute(ti,e){
   e.stopPropagation();
   tracks[ti].muted=!tracks[ti].muted;
-  buildTrackList();
+  const btn=document.querySelector(`.sst-label [data-mute="${ti}"]`);
+  if(btn){ btn.classList.toggle('muted',tracks[ti].muted); btn.setAttribute('aria-pressed',tracks[ti].muted); }
 }
 function setVol(ti,v){tracks[ti].vol=v;}
 
@@ -737,9 +823,9 @@ function updateInstPanel(){
   if(!t) return;
   document.getElementById('instName').textContent=t.name;
   // Waveform
-  document.querySelectorAll('.wave-btn[data-wave]').forEach(b=>b.classList.toggle('on',b.dataset.wave===t.wave));
+  document.querySelectorAll('.wave-btn[data-wave]').forEach(b=>{const on=b.dataset.wave===t.wave;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});
   // Drum
-  document.querySelectorAll('.wave-btn[data-drum]').forEach(b=>b.classList.toggle('on',b.dataset.drum===t.drum));
+  document.querySelectorAll('.wave-btn[data-drum]').forEach(b=>{const on=b.dataset.drum===t.drum;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});
   // Envelope
   document.getElementById('attKnob').value=t.env.attack; document.getElementById('attVal').textContent=t.env.attack.toFixed(3)+'s';
   document.getElementById('decKnob').value=t.env.decay;  document.getElementById('decVal').textContent=t.env.decay.toFixed(2)+'s';
@@ -749,7 +835,7 @@ function updateInstPanel(){
   document.getElementById('octKnob').value=t.oct; document.getElementById('octVal').textContent=t.oct;
   document.getElementById('detKnob').value=t.detune; document.getElementById('detVal').textContent=t.detune+'';
   // FX (desktop + mobile buttons)
-  document.querySelectorAll('.fx-btn[data-fx]').forEach(b=>b.classList.toggle('on',!!t.fx[b.dataset.fx]));
+  document.querySelectorAll('.fx-btn[data-fx]').forEach(b=>{const on=!!t.fx[b.dataset.fx];b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);});
 }
 
 function setWave(w){
@@ -794,6 +880,26 @@ function setBPM(v){
   document.getElementById('bpmSlider').value=bpm;
 }
 function changeBPM(d){ setBPM(bpm+d); }
+
+// Tap Tempo
+let _tapTimes=[];
+function tapTempo(){
+  const now=Date.now();
+  _tapTimes=_tapTimes.filter(t=>now-t<3000);
+  _tapTimes.push(now);
+  if(_tapTimes.length>=2){
+    const intervals=[];
+    for(let i=1;i<_tapTimes.length;i++) intervals.push(_tapTimes[i]-_tapTimes[i-1]);
+    const avg=intervals.reduce((a,b)=>a+b,0)/intervals.length;
+    setBPM(Math.round(60000/avg));
+  }
+}
+
+function updateUndoRedoBtns(){
+  const u=document.getElementById('undoBtn'), r=document.getElementById('redoBtn');
+  if(u) u.disabled=!histUndo.length;
+  if(r) r.disabled=!histRedo.length;
+}
 function setSteps(n){
   if(n===steps) return;
   pushHistory();
@@ -845,17 +951,24 @@ function openPianoRoll(){
         o.type=t.wave; o.frequency.value=f;
         g.gain.setValueAtTime(0.3,ac.currentTime);
         g.gain.linearRampToValueAtTime(0,ac.currentTime+0.3);
-        o.connect(g); g.connect(ac.destination);
+        o.connect(g); g.connect(getMaster());
         o.start(); o.stop(ac.currentTime+0.35);
-        buildSeqGrid();
+        buildGrid();
       });
       col.appendChild(key);
     });
     wrap.appendChild(col);
   }
   document.getElementById('piano-modal').classList.add('open');
+  setTimeout(()=>{ const c=document.getElementById('pianoCloseBtn'); if(c) c.focus(); },50);
+  _pianoOpener=document.activeElement;
 }
-function closePianoRoll(){ document.getElementById('piano-modal').classList.remove('open'); }
+let _pianoOpener=null;
+function closePianoRoll(){
+  document.getElementById('piano-modal').classList.remove('open');
+  if(_pianoOpener) try{_pianoOpener.focus();}catch(e){}
+  _pianoOpener=null;
+}
 
 // ------------------------------------------
 // EXPORT WAV
@@ -972,6 +1085,7 @@ function pushHistory(){
   if(histUndo.length>HIST_MAX) histUndo.shift();
   histRedo.length = 0;
   queueAutosave();
+  updateUndoRedoBtns();
 }
 
 // -- Autosave (debounced) --
@@ -1039,6 +1153,7 @@ function undo(){
   histRedo.push(snapshotState());
   restoreState(histUndo.pop());
   showToast('Undo');
+  updateUndoRedoBtns();
 }
 function redo(){
   if(!histRedo.length){ showToast('Nothing to redo'); return; }
@@ -1046,6 +1161,7 @@ function redo(){
   histUndo.push(snapshotState());
   restoreState(histRedo.pop());
   showToast('Redo');
+  updateUndoRedoBtns();
 }
 
 // ------------------------------------------
@@ -1065,7 +1181,7 @@ function pastePattern(){
     row.push(patternClipboard[s] ? {...patternClipboard[s]} : {on:false,note:'C',oct:tracks[activeTrack].oct});
   }
   grid[activeTrack]=row;
-  buildSeqGrid();
+  buildGrid();
   showToast('Pattern pasted');
 }
 function clearTrack(){
@@ -1073,14 +1189,14 @@ function clearTrack(){
   pushHistory();
   const oct=tracks[activeTrack].oct;
   grid[activeTrack]=Array.from({length:steps},()=>({on:false,note:'C',oct}));
-  buildSeqGrid();
+  buildGrid();
   showToast('Track cleared');
 }
 function clearAllPatterns(){
   if(!confirm('Clear every pattern on every track?')) return;
   pushHistory();
   grid=tracks.map(t=>Array.from({length:steps},()=>({on:false,note:'C',oct:t.oct})));
-  buildSeqGrid();
+  buildGrid();
   showToast('All patterns cleared');
 }
 
@@ -1100,7 +1216,7 @@ function exportProject(){
   a.download='sound_studio_project.json';
   a.click();
   URL.revokeObjectURL(a.href);
-  showToast('⬇ Project file downloaded ?');
+  showToast('Project downloaded ✓');
 }
 function importProjectFile(){
   document.getElementById('projectFileInput').click();
@@ -1115,7 +1231,7 @@ function handleProjectFile(input){
       if(!Array.isArray(d.tracks)||!Array.isArray(d.grid)) throw new Error('bad format');
       pushHistory();
       applyProject(d);
-      showToast('?⬇ Project imported ?');
+      showToast('Project imported ✓');
     }catch(e){ showToast('Invalid project file'); }
   };
   reader.readAsText(f);
@@ -1202,6 +1318,8 @@ document.addEventListener('keydown',e=>{
     if(m && m.style.display!=='flex'){ e.preventDefault(); openStart(); return; }
   }
   if(e.key==='Escape'){
+    const pm=document.getElementById('piano-modal');
+    if(pm && pm.classList.contains('open')){ closePianoRoll(); e.preventDefault(); return; }
     const m=document.getElementById('start-modal');
     if(m && m.style.display==='flex'){ closeStart(); e.preventDefault(); return; }
   }
@@ -1229,9 +1347,238 @@ document.addEventListener('DOMContentLoaded',()=>{
   buildGrid();
   updateInstPanel();
   offerRestore();
-  // Resume AudioContext on first interaction
+  buildSfxShelf();
   document.body.addEventListener('pointerdown',()=>getCtx(),{once:true});
 });
+</script>
+
+<script>
+// ------------------------------------------
+// SFX SHELF
+// ------------------------------------------
+let sfxLastBuf=null, sfxLastName='';
+
+const SFX_CATS=[
+  {name:'UI',icon:'🖱️',sounds:[
+    {n:'Click',fn:sfxClick},{n:'Pop',fn:sfxPop},{n:'Beep',fn:sfxBeep},
+    {n:'Error',fn:sfxError},{n:'Success',fn:sfxSuccess},{n:'Notify',fn:sfxNotify}
+  ]},
+  {name:'Retro',icon:'🕹️',sounds:[
+    {n:'Coin',fn:sfxCoin},{n:'Jump',fn:sfxJump},{n:'Hit',fn:sfxHit},
+    {n:'Powerup',fn:sfxPowerup},{n:'Game Over',fn:sfxGameover},{n:'Warp',fn:sfxWarp}
+  ]},
+  {name:'Impact',icon:'💥',sounds:[
+    {n:'Boom',fn:sfxBoom},{n:'Punch',fn:sfxPunch},{n:'Zap',fn:sfxZap},
+    {n:'Crash',fn:sfxCrash},{n:'Thud',fn:sfxThud},{n:'Splat',fn:sfxSplat}
+  ]},
+  {name:'Nature',icon:'🌿',sounds:[
+    {n:'Rain',fn:sfxRain},{n:'Wind',fn:sfxWind},{n:'Thunder',fn:sfxThunder},
+    {n:'Water',fn:sfxWater},{n:'Fire',fn:sfxFire},{n:'Bird',fn:sfxBird}
+  ]},
+];
+
+function toggleSfxShelf(){
+  const body=document.getElementById('sfxBody');
+  const arrow=document.getElementById('sfxArrow');
+  const btn=document.getElementById('sfxShelfBtn');
+  const open=body.classList.toggle('open');
+  arrow.classList.toggle('open',open);
+  if(btn) btn.setAttribute('aria-expanded',open);
+}
+
+function buildSfxShelf(){
+  const el=document.getElementById('sfxCatRows');
+  if(!el) return;
+  SFX_CATS.forEach(cat=>{
+    const row=document.createElement('div');
+    row.className='sfx-cat-row';
+    row.innerHTML=`<span class="sfx-cat-label">${cat.icon} ${cat.name}</span>`;
+    cat.sounds.forEach(s=>{
+      const btn=document.createElement('button');
+      btn.className='sfx-vbtn';
+      btn.textContent=s.n;
+      btn.onclick=()=>playSfx(s.fn,s.n,btn);
+      row.appendChild(btn);
+    });
+    el.appendChild(row);
+  });
+}
+
+function playSfx(fn,name,btn){
+  const ac=getCtx();
+  document.querySelectorAll('.sfx-vbtn').forEach(b=>b.classList.remove('playing'));
+  btn.classList.add('playing');
+  setTimeout(()=>btn.classList.remove('playing'),600);
+  const offline=new OfflineAudioContext(1,ac.sampleRate*2,ac.sampleRate);
+  fn(offline,0);
+  offline.startRendering().then(buf=>{
+    sfxLastBuf=buf; sfxLastName=name;
+    document.getElementById('sfxLastName').textContent=name;
+    document.getElementById('sfxDlBtn').disabled=false;
+    // Play live
+    const src=ac.createBufferSource();
+    src.buffer=buf; src.connect(getMaster()); src.start();
+  });
+}
+
+function sfxDownload(){
+  if(!sfxLastBuf) return;
+  const wav=bufferToWav(sfxLastBuf);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([wav],{type:'audio/wav'}));
+  a.download=(sfxLastName||'sfx').toLowerCase().replace(/\s+/g,'_')+'.wav';
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('SFX downloaded!');
+}
+
+// -- SFX SYNTHESIS FUNCTIONS --
+function sfxNoise(ac,dur){
+  const buf=ac.createBuffer(1,ac.sampleRate*dur,ac.sampleRate);
+  const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  const src=ac.createBufferSource(); src.buffer=buf; return src;
+}
+function sfxOsc(ac,type,freq,t0,dur){
+  const o=ac.createOscillator(); o.type=type; o.frequency.setValueAtTime(freq,t0); return o;
+}
+function sfxGain(ac,vol,t0,dur,curve){
+  const g=ac.createGain(); g.gain.setValueAtTime(0,t0);
+  if(curve==='ad'){ g.gain.linearRampToValueAtTime(vol,t0+dur*0.1); g.gain.linearRampToValueAtTime(0,t0+dur); }
+  else if(curve==='exp'){ g.gain.setValueAtTime(vol,t0); g.gain.exponentialRampToValueAtTime(0.001,t0+dur); }
+  else { g.gain.linearRampToValueAtTime(vol,t0+0.005); g.gain.linearRampToValueAtTime(0,t0+dur); }
+  return g;
+}
+
+function sfxClick(ac,t0){
+  const n=sfxNoise(ac,0.02); const g=sfxGain(ac,0.4,t0,0.02,'exp');
+  const f=ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=3000;
+  n.connect(f); f.connect(g); g.connect(ac.destination); n.start(t0); n.stop(t0+0.02);
+}
+function sfxPop(ac,t0){
+  const o=sfxOsc(ac,'sine',440,t0,0.08);
+  o.frequency.exponentialRampToValueAtTime(80,t0+0.08);
+  const g=sfxGain(ac,0.5,t0,0.1,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0+0.15);
+}
+function sfxBeep(ac,t0){
+  const o=sfxOsc(ac,'square',880,t0,0.15);
+  const g=sfxGain(ac,0.3,t0,0.15,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0+0.2);
+}
+function sfxError(ac,t0){
+  [0,0.1].forEach((off,i)=>{
+    const o=sfxOsc(ac,'sawtooth',i===0?300:200,t0+off,0.08);
+    const g=sfxGain(ac,0.35,t0+off,0.09,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0+off); o.stop(t0+off+0.1);
+  });
+}
+function sfxSuccess(ac,t0){
+  [523,659,784].forEach((f,i)=>{
+    const o=sfxOsc(ac,'square',f,t0+i*0.1,0.12);
+    const g=sfxGain(ac,0.3,t0+i*0.1,0.12,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0+i*0.1); o.stop(t0+i*0.1+0.15);
+  });
+}
+function sfxNotify(ac,t0){
+  [660,880].forEach((f,i)=>{
+    const o=sfxOsc(ac,'sine',f,t0+i*0.08,0.1);
+    const g=sfxGain(ac,0.4,t0+i*0.08,0.1,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0+i*0.08); o.stop(t0+i*0.08+0.12);
+  });
+}
+function sfxCoin(ac,t0){
+  [988,1319].forEach((f,i)=>{
+    const o=sfxOsc(ac,'square',f,t0+i*0.06,0.07);
+    const g=sfxGain(ac,0.35,t0+i*0.06,0.08,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0+i*0.06); o.stop(t0+i*0.06+0.1);
+  });
+}
+function sfxJump(ac,t0){
+  const o=sfxOsc(ac,'square',200,t0,0.3);
+  o.frequency.exponentialRampToValueAtTime(800,t0+0.3);
+  const g=sfxGain(ac,0.4,t0,0.3,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0+0.35);
+}
+function sfxHit(ac,t0){
+  const n=sfxNoise(ac,0.15); const g=sfxGain(ac,0.5,t0,0.12,'exp');
+  const f=ac.createBiquadFilter(); f.type='highpass'; f.frequency.value=1000;
+  n.connect(f); f.connect(g); g.connect(ac.destination); n.start(t0); n.stop(t0+0.15);
+}
+function sfxPowerup(ac,t0){
+  const o=sfxOsc(ac,'square',330,t0,0.4);
+  o.frequency.exponentialRampToValueAtTime(1320,t0+0.4);
+  const g=sfxGain(ac,0.35,t0,0.4,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0+0.45);
+}
+function sfxGameover(ac,t0){
+  const freqs=[494,466,440,415];
+  freqs.forEach((f,i)=>{ const o=sfxOsc(ac,'sawtooth',f,t0+i*0.18,0.16);
+    const g=sfxGain(ac,0.3,t0+i*0.18,0.16,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0+i*0.18); o.stop(t0+i*0.18+0.2);
+  });
+}
+function sfxWarp(ac,t0){
+  const o=sfxOsc(ac,'sawtooth',1000,t0,0.5);
+  o.frequency.exponentialRampToValueAtTime(100,t0+0.5);
+  const g=sfxGain(ac,0.35,t0,0.5,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0+0.55);
+}
+function sfxBoom(ac,t0){
+  const o=ac.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(80,t0); o.frequency.exponentialRampToValueAtTime(0.01,t0+0.6);
+  const n=sfxNoise(ac,0.6); const nf=ac.createBiquadFilter(); nf.type='lowpass'; nf.frequency.value=400; n.connect(nf);
+  const g=sfxGain(ac,0.7,t0,0.6,'exp'); o.connect(g); nf.connect(g); g.connect(ac.destination);
+  o.start(t0); o.stop(t0+0.7); n.start(t0); n.stop(t0+0.65);
+}
+function sfxPunch(ac,t0){
+  const o=sfxOsc(ac,'sine',200,t0,0.15); o.frequency.exponentialRampToValueAtTime(50,t0+0.15);
+  const n=sfxNoise(ac,0.08); const nf=ac.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=500; n.connect(nf);
+  const g=sfxGain(ac,0.6,t0,0.15,'exp'); o.connect(g); nf.connect(g); g.connect(ac.destination);
+  o.start(t0); o.stop(t0+0.2); n.start(t0); n.stop(t0+0.1);
+}
+function sfxZap(ac,t0){
+  const o=sfxOsc(ac,'sawtooth',2000,t0,0.2); o.frequency.exponentialRampToValueAtTime(200,t0+0.2);
+  const g=sfxGain(ac,0.4,t0,0.2,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0+0.25);
+}
+function sfxCrash(ac,t0){
+  const n=sfxNoise(ac,0.8); const nf=ac.createBiquadFilter(); nf.type='highpass'; nf.frequency.value=2000;
+  const g=sfxGain(ac,0.5,t0,0.8,'exp'); n.connect(nf); nf.connect(g); g.connect(ac.destination); n.start(t0); n.stop(t0+0.85);
+}
+function sfxThud(ac,t0){
+  const o=sfxOsc(ac,'sine',120,t0,0.18); o.frequency.exponentialRampToValueAtTime(30,t0+0.18);
+  const g=sfxGain(ac,0.6,t0,0.18,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0+0.22);
+}
+function sfxSplat(ac,t0){
+  const n=sfxNoise(ac,0.25); const nf=ac.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=800; nf.Q.value=0.5;
+  const o=sfxOsc(ac,'sine',80,t0,0.25); o.frequency.exponentialRampToValueAtTime(20,t0+0.25);
+  const g=sfxGain(ac,0.55,t0,0.25,'exp'); n.connect(nf); nf.connect(g); o.connect(g); g.connect(ac.destination);
+  n.start(t0); n.stop(t0+0.28); o.start(t0); o.stop(t0+0.3);
+}
+function sfxRain(ac,t0){
+  for(let i=0;i<12;i++){
+    const d=i*0.06+Math.random()*0.04;
+    const n=sfxNoise(ac,0.05); const nf=ac.createBiquadFilter(); nf.type='highpass'; nf.frequency.value=4000+Math.random()*4000;
+    const g=sfxGain(ac,0.15+Math.random()*0.1,t0+d,0.05,'exp'); n.connect(nf); nf.connect(g); g.connect(ac.destination); n.start(t0+d); n.stop(t0+d+0.06);
+  }
+}
+function sfxWind(ac,t0){
+  const n=sfxNoise(ac,1.0); const nf=ac.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=300; nf.Q.value=0.5;
+  const g=ac.createGain(); g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(0.3,t0+0.3); g.gain.linearRampToValueAtTime(0.15,t0+0.7); g.gain.linearRampToValueAtTime(0,t0+1.0);
+  n.connect(nf); nf.connect(g); g.connect(ac.destination); n.start(t0); n.stop(t0+1.05);
+}
+function sfxThunder(ac,t0){
+  const n=sfxNoise(ac,1.2); const nf=ac.createBiquadFilter(); nf.type='lowpass'; nf.frequency.value=600;
+  const g=ac.createGain(); g.gain.setValueAtTime(0.8,t0); g.gain.linearRampToValueAtTime(0.6,t0+0.05); g.gain.exponentialRampToValueAtTime(0.001,t0+1.2);
+  n.connect(nf); nf.connect(g); g.connect(ac.destination); n.start(t0); n.stop(t0+1.25);
+}
+function sfxWater(ac,t0){
+  for(let i=0;i<6;i++){
+    const d=i*0.12;
+    const o=sfxOsc(ac,'sine',300+Math.random()*200,t0+d,0.1); o.frequency.exponentialRampToValueAtTime(100,t0+d+0.1);
+    const g=sfxGain(ac,0.25,t0+d,0.1,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0+d); o.stop(t0+d+0.15);
+  }
+}
+function sfxFire(ac,t0){
+  const n=sfxNoise(ac,0.9); const nf=ac.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=200; nf.Q.value=0.3;
+  const g=ac.createGain(); g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(0.25,t0+0.1); g.gain.setValueAtTime(0.25,t0+0.8); g.gain.linearRampToValueAtTime(0,t0+0.9);
+  n.connect(nf); nf.connect(g); g.connect(ac.destination); n.start(t0); n.stop(t0+0.95);
+}
+function sfxBird(ac,t0){
+  const freqs=[1400,1600,1400,1800,1600];
+  freqs.forEach((f,i)=>{
+    const d=i*0.09;
+    const o=sfxOsc(ac,'sine',f,t0+d,0.07); o.frequency.linearRampToValueAtTime(f+200,t0+d+0.035); o.frequency.linearRampToValueAtTime(f,t0+d+0.07);
+    const g=sfxGain(ac,0.3,t0+d,0.07,'exp'); o.connect(g); g.connect(ac.destination); o.start(t0+d); o.stop(t0+d+0.09);
+  });
+}
 </script>
 
 <script defer src="../player-profile.js"></script>
