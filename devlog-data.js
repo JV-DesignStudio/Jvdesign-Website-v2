@@ -4,6 +4,56 @@
 
 const POSTS = [
     {
+        id: 107,
+        date: '23 September 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Fix tower-defence version drift pkg 1.0.0 vs android 1.0 (auto-flagged)',
+        excerpt: 'Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.',
+        content: 'App tower-defence: package.json 1.0.0 != android/app/build.gradle 1.0. Fix pkg or gradle so versions match (1.0 â‰¡ 1.0.0 allowed). File: tower-defence-app/package.json vs tower-defence-app/android/app/build.gradle Evidence: Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.'
+    },
+
+    {
+        id: 106,
+        date: '23 September 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Fix sky-high-squirt version drift pkg 4.0.0 vs android 4.0 (auto-flagged)',
+        excerpt: 'Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.',
+        content: 'App sky-high-squirt: package.json 4.0.0 != android/app/build.gradle 4.0. Fix pkg or gradle so versions match (1.0 â‰¡ 1.0.0 allowed). File: sky-high-squirt-app/package.json vs sky-high-squirt-app/android/app/build.gradle Evidence: Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.'
+    },
+
+    {
+        id: 105,
+        date: '23 September 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Fix questlog version drift pkg 1.0.0 vs android 1.0 (auto-flagged)',
+        excerpt: 'Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.',
+        content: 'App questlog: package.json 1.0.0 != android/app/build.gradle 1.0. Fix pkg or gradle so versions match (1.0 â‰¡ 1.0.0 allowed). File: questlog-app/package.json vs questlog-app/android/app/build.gradle Evidence: Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.'
+    },
+
+    {
+        id: 104,
+        date: '23 September 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Fix jvds-game-maker version drift pkg 2.0.0 vs android 2.0 (auto-flagged)',
+        excerpt: 'Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.',
+        content: 'App jvds-game-maker: package.json 2.0.0 != android/app/build.gradle 2.0. Fix pkg or gradle so versions match (1.0 â‰¡ 1.0.0 allowed). File: jvds-game-maker-app/package.json vs jvds-game-maker-app/android/app/build.gradle Evidence: Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.'
+    },
+
+    {
+        id: 103,
+        date: '23 September 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Fix jvds-arcade version drift pkg 1.0.0 vs android 1.0 (auto-flagged)',
+        excerpt: 'Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.',
+        content: 'App jvds-arcade: package.json 1.0.0 != android/app/build.gradle 1.0. Fix pkg or gradle so versions match (1.0 â‰¡ 1.0.0 allowed). File: jvds-arcade-app/package.json vs jvds-arcade-app/android/app/build.gradle Evidence: Culled 2026-09-23: false positive - 1.0 and 1.0.0 are the same version. normVer fix applied to auto-flag.'
+    },
+
+    {
         id: 102,
         date: '23 September 2026',
         tag: 'site',

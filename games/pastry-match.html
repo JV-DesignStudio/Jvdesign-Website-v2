@@ -3,339 +3,244 @@
 <head>
 <meta charset="UTF-8">
 <script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
-<meta name="description" content="Pastry Match Bakery Orders is a memory and planning game where players complete recipe orders by finding pastry pairs in smart sequences.">
+<meta name="description" content="Pastry Match Bakery Orders is a fast bakery puzzle game where players match pastries, fill customer boxes, build combos, and finish a busy shift.">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
-<meta name="theme-color" content="#c56cf0">
+<meta name="theme-color" content="#ff8db8">
 <script defer src="../analytics-loader.js"></script>
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/pastry-match.html">
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Pastry Match: Bakery Orders | JVDesignStudio</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jvdesignstudio.co.uk/games/pastry-match.html">
-<meta property="og:title" content="Pastry Match | JVDesignStudio">
-<meta property="og:description" content="Complete bakery recipe orders by remembering pastry positions, matching pairs, and using focus tools wisely.">
+<meta property="og:title" content="Pastry Match: Bakery Orders | JVDesignStudio">
+<meta property="og:description" content="Match pastries, fill customer boxes, trigger power pastries, and survive the bakery rush.">
 <meta property="og:image" content="https://jvdesignstudio.co.uk/og/pastry-match.png">
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/pastry-match.png">
 <meta name="twitter:card" content="summary_large_image">
 <script src="../game-system.js"></script>
 <script src="../audio-effects.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
-<link rel="preload" href="../style-game-pastry-match.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="../style-game-pastry-match.css?v=17"></noscript>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Pastry Match: Bakery Orders","url":"https://jvdesignstudio.co.uk/games/pastry-match.html","description":"Complete bakery recipe orders by remembering pastry positions, matching pairs, and using focus tools wisely.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/PastryMatchCover.webp"}</script>
+<link rel="stylesheet" href="../style-game-pastry-match.css?v=30">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Pastry Match: Bakery Orders","url":"https://jvdesignstudio.co.uk/games/pastry-match.html","description":"Match pastries, fill customer boxes, trigger power pastries, and survive the bakery rush.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/PastryMatchCover.webp"}</script>
 <link rel="stylesheet" href="/style-mascots.css">
 </head>
 <body>
-<div class="wrapper" id="wrapper">
-  <div class="hud" style="position:relative">
-  <button class="sound-toggle" id="soundBtn" onclick="toggleSound()">🔊</button>
-    <div class="pills">
-      <div class="pill">SCORE <b id="scoreHud">0</b></div>
-      <div class="pill">MOVES <b id="movesHud">0</b></div>
-      <div class="pill">⏱ <b id="timeHud">0</b></div>
+<main class="bakery-game" id="game">
+  <section class="topbar">
+    <button class="round-btn" id="soundBtn" type="button" aria-label="Toggle sound">🔊</button>
+    <div class="score-strip">
+      <div><span>Score</span><b id="scoreHud">0</b></div>
+      <div><span>Time</span><b id="timeHud">90</b></div>
+      <div><span>Combo</span><b id="comboHud">x1</b></div>
+      <div><span>Stars</span><b id="starsHud">0</b></div>
     </div>
-    <button class="home-btn" onclick="location.href='../pages/games.html'">🏠</button>
-  </div>
+    <button class="round-btn" type="button" onclick="location.href='../pages/games.html'" aria-label="Back to games">🏠</button>
+  </section>
 
-  <div class="recipe-order"><strong id="recipeName">Order board</strong><div class="recipe-slots" id="recipeSlots"></div><small id="recipeHint">Match the highlighted pastry pair to complete the recipe bonus.</small></div>
-  <div class="pastry-tools"><span id="pastryFocus">Focus 3</span><button type="button" id="pastryNote" onclick="notePastry()" disabled>Pin revealed card · 1</button><button type="button" id="pastryGlance" onclick="glancePastries()" disabled>Glance at all · 3</button><small>Two matched pairs restore 1 focus. Pin a card to remember it, or save for a glance.</small></div>
-  <div class="board" id="board"></div>
+  <section class="bakery-window">
+    <div class="awning"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="customer-lane" id="customers"></div>
+    <div class="target-card">
+      <div><small>Current order</small><strong id="orderName">Pick a customer</strong></div>
+      <div class="order-slots" id="orderSlots"></div>
+      <div class="patience"><span id="patienceBar"></span></div>
+    </div>
+  </section>
+
+  <section class="play-area">
+    <aside class="bakery-panel">
+      <h2>🧁 Bakery Rush</h2>
+      <p id="shiftHint">Swap neighbouring pastries to make lines of 3+. Fill the order before patience runs out.</p>
+      <div class="goal-box">
+        <span>Shift target</span>
+        <b id="targetHud">4200</b>
+      </div>
+      <div class="power-row">
+        <button type="button" id="spoonBtn">🥄 Spoon clear <b>1</b></button>
+        <button type="button" id="trayBtn">✨ Tray shuffle <b>1</b></button>
+      </div>
+    </aside>
+    <div class="board-wrap">
+      <div class="combo-banner" id="comboBanner">Sweet combo!</div>
+      <div class="match-board" id="board" aria-label="Pastry match board"></div>
+    </div>
+  </section>
 
   <div class="modal show" id="startModal">
-    <div class="card-modal">
-      <h1>🧁 Pastry Match</h1>
-      <div class="sub">Complete bakery orders with memory and planning</div>
-      <div class="how">
-        <div>You get a quick <b>sneak peek</b> at the start. Read the bakery order, then find those pairs first for recipe bonuses.</div>
-        <div style="margin-top:8px;">Use <b>Focus</b> to pin one card or glance at the board. Smart order planning scores more than random flipping.</div>
+    <div class="modal-card">
+      <h1>🥐 Pastry Match</h1>
+      <p>Run the counter, match pastries, pack customer boxes, and keep the queue happy.</p>
+      <div class="how-grid">
+        <div><b>1</b><span>Tap one pastry then a neighbour to swap.</span></div>
+        <div><b>2</b><span>Match 3+ to send pastries into the active order.</span></div>
+        <div><b>3</b><span>Make 4 or 5 for jam bombs, rainbow macarons, and big tips.</span></div>
       </div>
       <div class="mode-row" id="modeRow"></div>
-      <div class="stats">
-        <div class="stat"><div class="l">Best (<span id="bestModeLabel">Baker</span>)</div><div class="v" id="bestStart">0</div></div>
-        <div class="stat"><div class="l">Games</div><div class="v" id="gamesStart">0</div></div>
-      </div>
-      <button class="btn" onclick="startGame()">Play</button>
-      <button class="btn ghost" onclick="location.href='../pages/games.html'">Back</button>
+      <button class="primary" type="button" id="playBtn">Open bakery</button>
+      <button class="secondary" type="button" onclick="location.href='../pages/games.html'">Back</button>
     </div>
   </div>
 
-  <div class="modal" id="winModal">
-    <div class="card-modal">
-      <h1>🎉 You Won!</h1>
-      <div class="sub"><span id="winModeTag"></span></div>
-    <div class="sub" id="winSub">Perfect match!</div>
-      <div class="stats">
-        <div class="stat"><div class="l">Score</div><div class="v" id="finalScore">0</div></div>
-        <div class="stat"><div class="l">Moves</div><div class="v" id="finalMoves">0</div></div>
-        <div class="stat"><div class="l">Best</div><div class="v" id="finalBest">0</div></div>
+  <div class="modal" id="endModal">
+    <div class="modal-card">
+      <h1 id="endTitle">Shift complete!</h1>
+      <p id="endCopy">The pastry boxes are packed.</p>
+      <div class="result-grid">
+        <div><span>Score</span><b id="finalScore">0</b></div>
+        <div><span>Orders</span><b id="finalOrders">0</b></div>
+        <div><span>Best</span><b id="finalBest">0</b></div>
       </div>
-      <button class="btn" onclick="startGame()">Play Again</button>
-      <button class="btn ghost" onclick="location.href='../pages/games.html'">Back</button>
+      <button class="primary" type="button" id="againBtn">Play again</button>
+      <button class="secondary" type="button" onclick="location.href='../pages/games.html'">Back</button>
     </div>
   </div>
-</div>
+</main>
 
 <script>
 const gameSystem = new GameSystem('pastry-match', 'Pastry Match', 'squirt');
-const audioEffects = new AudioEffects(0.6);
+const audioEffects = new AudioEffects(0.55);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
-
-const PASTRIES = ['🥐', '🧁', '🍪', '🍰', '🥧', '🍩', '🧆', '🥯', '🍫', '🍬', '🥞', '🍮'];
-const RECIPES = [
-  { name:'Breakfast Box', items:['🥐','🥞','🍪'] },
-  { name:'Party Plate', items:['🧁','🍰','🍩'] },
-  { name:'Cosy Cafe Tray', items:['🥧','🥯','🍫'] },
-  { name:'Sweet Shop Order', items:['🍬','🍮','🧁'] },
-  { name:'Chef Challenge', items:['🥐','🍰','🍩','🍫'] }
+const PASTRIES = [
+  { id:'croissant', emoji:'🥐', name:'Croissant' },
+  { id:'cupcake', emoji:'🧁', name:'Cupcake' },
+  { id:'donut', emoji:'🍩', name:'Donut' },
+  { id:'cookie', emoji:'🍪', name:'Cookie' },
+  { id:'cake', emoji:'🍰', name:'Cake' },
+  { id:'pie', emoji:'🥧', name:'Pie' }
 ];
 const MODES = [
-  { id: 'easy', cols: 4, rows: 3, pairs: 6,  label: '🧒 Little Baker' },
-  { id: 'std',  cols: 4, rows: 4, pairs: 8,  label: '🧑 Baker' },
-  { id: 'hard', cols: 6, rows: 4, pairs: 12, label: '🔥 Head Chef' },
+  { id:'easy', label:'Little Baker', time:95, target:3000, queue:2 },
+  { id:'rush', label:'Bakery Rush', time:90, target:4200, queue:3 },
+  { id:'chef', label:'Head Chef', time:85, target:5600, queue:3 }
 ];
-const PM_KEY = 'pastryMatch:v2';
-function toggleSound() {
-  const current = localStorage.getItem('soundEnabled') !== 'false';
-  localStorage.setItem('soundEnabled', current ? 'false' : 'true');
-  audioEffects.setMasterVolume(current ? 0 : 0.6);
-  document.getElementById('soundBtn').textContent = current ? '🔇' : '🔊';
+const CUSTOMER_NAMES = ['Milo','Pip','Nia','Lumo','Echo','Dot','Jun','Bee','Roo'];
+const BOARD = 7;
+let modeId = 'rush', state = 'menu', board = [], selected = null, score = 0, combo = 1, timeLeft = 90, tick = null, customers = [], active = 0, ordersDone = 0, best = gameSystem.state.highScore || 0, spoon = 1, tray = 1, busy = false;
+const $ = id => document.getElementById(id);
+function mode(){ return MODES.find(m => m.id === modeId) || MODES[1]; }
+function rand(max){ return Math.floor(Math.random() * max); }
+function pastry(){ return PASTRIES[rand(PASTRIES.length)].id; }
+function byId(id){ return PASTRIES.find(p => p.id === id) || PASTRIES[0]; }
+function saveBest(){ if(score > best){ best = score; try{ localStorage.setItem('pastryMatchBest', String(best)); }catch(e){} } }
+function toggleSound(){ const on = localStorage.getItem('soundEnabled') !== 'false'; localStorage.setItem('soundEnabled', on ? 'false' : 'true'); audioEffects.setMasterVolume(on ? 0 : 0.55); $('soundBtn').textContent = on ? '🔇' : '🔊'; }
+function makeOrder(level){
+  const count = Math.min(3 + Math.floor(level / 3), modeId === 'chef' ? 5 : 4);
+  const picks = [...PASTRIES].sort(() => Math.random() - .5).slice(0, count);
+  const needs = {};
+  picks.forEach((p, i) => needs[p.id] = 2 + ((level + i) % 2));
+  return { name:CUSTOMER_NAMES[level % CUSTOMER_NAMES.length], needs, max:26 + rand(14), patience:100, mood:'🙂' };
 }
-function loadModes() {
-  try { return JSON.parse(localStorage.getItem(PM_KEY)) || {}; } catch (e) { return {}; }
+function resetBoard(){
+  board = Array.from({length:BOARD}, () => Array.from({length:BOARD}, pastry));
+  for(let guard=0; findMatches().length && guard<20; guard++) board = Array.from({length:BOARD}, () => Array.from({length:BOARD}, pastry));
 }
-function saveModes(m) { try { localStorage.setItem(PM_KEY, JSON.stringify(m)); } catch (e) {} }
-let chosenMode = 'std';
-let cards = [];
-let cardEls = [];
-let state = 'menu';
-let score = 0, moves = 0, best = 0, streak = 0, maxMoves = 0;
-let activeRecipe = null, recipeProgress = [];
-let flipped = [];
-let matched = 0;
-let startTime = 0;
-let timerInterval = null;
-let pastryFocus=3;
-function refreshPastryTools(){const a=document.getElementById('pastryNote'),b=document.getElementById('pastryGlance');a.disabled=state!=='playing'||pastryFocus<1||flipped.length!==1||cards[flipped[0]]?.noted;b.disabled=state!=='playing'||pastryFocus<3||flipped.length!==0;document.getElementById('pastryFocus').textContent='Focus '+pastryFocus;}
-function chooseRecipe(){ const mode=currentMode(); const pool=RECIPES.filter(r=>r.items.length<=Math.min(4,mode.pairs)); activeRecipe=pool[Math.floor(Math.random()*pool.length)]||RECIPES[0]; recipeProgress=[]; }
-function renderRecipe(){ const name=document.getElementById('recipeName'), slots=document.getElementById('recipeSlots'), hint=document.getElementById('recipeHint'); if(!name||!slots||!activeRecipe)return; name.textContent='Order: '+activeRecipe.name; slots.innerHTML=activeRecipe.items.map((emoji,i)=>'<span class="recipe-slot '+(recipeProgress.indexOf(emoji)>=0?'done':i===recipeProgress.length?'next':'')+'">'+emoji+'</span>').join(''); const next=activeRecipe.items[recipeProgress.length]; hint.textContent=next?'Find the '+next+' pair next for a recipe bonus.':'Recipe complete. Finish the remaining pairs.'; }
-function applyRecipeMatch(emoji){ if(!activeRecipe) return 0; const next=activeRecipe.items[recipeProgress.length]; if(emoji===next){ recipeProgress.push(emoji); renderRecipe(); floatText('Order step +150', true); return 150; } if(activeRecipe.items.includes(emoji) && recipeProgress.indexOf(emoji)<0){ floatText('Good pair, but not the order yet'); return 25; } return 0; }
-function notePastry(){if(state!=='playing'||pastryFocus<1||flipped.length!==1||cards[flipped[0]].noted)return;pastryFocus--;cards[flipped[0]].noted=true;updateCard(flipped[0]);refreshPastryTools();}
-function glancePastries(){if(state!=='playing'||pastryFocus<3||flipped.length)return;pastryFocus-=3;state='glance';cards.forEach((c,i)=>{if(c.state==='hidden'){c.state='peek';updateCard(i);}});refreshPastryTools();pastryLater(()=>{cards.forEach((c,i)=>{if(c.state==='peek'){c.state='hidden';updateCard(i);}});state='playing';refreshPastryTools();},850);}
-
-function currentMode() { return MODES.find(m => m.id === chosenMode) || MODES[1]; }
-function initCards() {
-  const mode = currentMode();
-  const deck = [];
-  for (let i = 0; i < mode.pairs; i++) { deck.push(PASTRIES[i % PASTRIES.length]); deck.push(PASTRIES[i % PASTRIES.length]); }
-  // Fisher-Yates: the old sort-by-random shuffle was biased, letting sharp
-  // players predict pair positions from earlier deals.
-  for (let i = deck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [deck[i], deck[j]] = [deck[j], deck[i]];
-  }
-  cards = deck.map((emoji, i) => ({ id: i, emoji, state: 'hidden' }));
-  matched = 0;
-  flipped = [];
-  score = 0;
-  chooseRecipe();
-  renderRecipe();
-  moves = 0;
-  streak = 0;
-  maxMoves = mode.pairs * 3; // move limit = 3x pairs
-  const boardEl = document.getElementById('board');
-  boardEl.classList.toggle('cols6', currentMode().cols === 6);
-  boardEl.style.gridTemplateColumns = 'repeat(' + currentMode().cols + ', 1fr)';
-}
-
-function buildBoard() {
-  const board = document.getElementById('board');
-  board.innerHTML = '';
-  cardEls = cards.map((c, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'card-btn';
-    btn.textContent = '?';
-    btn.onclick = () => flipCard(i);
-    board.appendChild(btn);
-    return btn;
-  });
-  updateHud();
-}
-
-function updateCard(i, animate) {
-  const c = cards[i], btn = cardEls[i];
-  const shown = c.state !== 'hidden' || c.noted;
-  btn.className = 'card-btn' + (shown ? ' flipped' : '') + (c.state === 'matched' ? ' matched' : '');
-  btn.disabled = c.state === 'matched';
-  btn.textContent = shown ? c.emoji+(c.noted&&c.state!=='matched'?' 📌':'') : '?';
-  btn.setAttribute('aria-label',shown?c.emoji+(c.noted?' remembered':''):'Hidden pastry '+(i+1));
-  if (animate) {
-    btn.classList.add('reveal');
-    setTimeout(() => btn.classList.remove('reveal'), 300);
-  }
-}
-
-function updateHud() {
-  document.getElementById('scoreHud').textContent = score;
-  document.getElementById('movesHud').textContent = moves;
-}
-
-function floatText(txt, big) {
-  const div = document.createElement('div');
-  div.className = 'float-pop' + (big ? ' big' : '');
-  div.textContent = txt;
-  document.getElementById('wrapper').appendChild(div);
-  setTimeout(() => div.remove(), 900);
-}
-
-let pastryTimers = new Set();
-function pastryLater(fn, ms) { const id = setTimeout(() => { pastryTimers.delete(id); fn(); }, ms); pastryTimers.add(id); return id; }
-function flipCard(i) {
-  if (state !== 'playing' || cards[i].state !== 'hidden' || flipped.length >= 2 || moves >= maxMoves) return;
-  audioEffects.playTap(600);
-  cards[i].state = 'flipped';
-  flipped.push(i);
-  updateCard(i, true);
-  refreshPastryTools();
-
-  if (flipped.length === 2) {
-    moves++;
-    updateHud();
-    pastryLater(checkMatch, 550);
-  }
-}
-
-function checkMatch() {
-  if (flipped.length !== 2) return;
-  const [a, b] = flipped;
-  flipped = [];
-  if (cards[a].emoji === cards[b].emoji) {
-    cards[a].state = 'matched';
-    cards[b].state = 'matched';
-    matched++;
-    if(matched%2===0)pastryFocus=Math.min(5,pastryFocus+1);
-    streak++;
-    const mult = streak >= 10 ? 3 : streak >= 5 ? 2 : streak >= 3 ? 1.5 : 1;
-    const bonus = Math.round((streak - 1) * 25 * mult);
-    score += Math.round((Math.max(100 - moves * 2, 10)) * mult) + bonus + applyRecipeMatch(cards[a].emoji);
-    updateCard(a);
-    updateCard(b);
-    ParticleSystem.sparkle(cardEls[a], 5);
-    ParticleSystem.sparkle(cardEls[b], 5);
-    if (streak >= 2) {
-      const comboEl = document.getElementById('comboDisplay');
-      if (comboEl) { comboEl.textContent = '×' + mult + ' COMBO!'; comboEl.classList.add('show'); pastryLater(() => comboEl.classList.remove('show'), 1500); }
-      floatText('STREAK ×' + streak + '  +' + bonus, streak >= 3);
-      audioEffects.playCombo(streak);
-    } else {
-      audioEffects.playSuccess(750);
-    }
-    updateHud();
-    if (matched === currentMode().pairs) endGame();
-  } else {
-    cards[a].state = 'hidden';
-    cards[b].state = 'hidden';
-    streak = 0;
-    updateCard(a, true);
-    updateCard(b, true);
-    audioEffects.playError();
-    if (moves >= maxMoves) { pastryLater(() => endGame(false), 600); return; }
-  }
-  refreshPastryTools();
-}
-
-function startGame() {
+function startGame(){
   gameSystem.beginRun();
-  pastryTimers.forEach(clearTimeout); pastryTimers.clear();
-  document.getElementById('startModal').classList.remove('show');
-  document.getElementById('winModal').classList.remove('show');
-  pastryFocus=3;
-  initCards();
-  buildBoard();
-  clearInterval(timerInterval);
-  document.getElementById('timeHud').textContent = 0;
-  document.getElementById('movesHud').textContent = '0/' + maxMoves;
-
-  // sneak peek: show every pastry briefly, then flip back and start
-  state = 'peek';
-  refreshPastryTools();
-  floatText('👀 Memorise!', true);
-  cardEls.forEach((btn, i) => {
-    btn.classList.add('flipped', 'reveal');
-    btn.textContent = cards[i].emoji;
-  });
-  pastryLater(() => {
-    cardEls.forEach((btn, i) => updateCard(i, true));
-    state = 'playing';
-    refreshPastryTools();
-    startTime = performance.now();
-    timerInterval = setInterval(() => {
-      document.getElementById('timeHud').textContent = Math.round((performance.now() - startTime) / 1000);
-    }, 500);
-  }, 1600);
+  state = 'playing'; score = 0; combo = 1; ordersDone = 0; spoon = 1; tray = 1; selected = null; busy = false; timeLeft = mode().time;
+  customers = Array.from({length:mode().queue}, (_, i) => makeOrder(i)); active = 0; resetBoard(); renderAll();
+  $('startModal').classList.remove('show'); $('endModal').classList.remove('show');
+  clearInterval(tick); tick = setInterval(gameTick, 1000);
 }
-
-function endGame(didWin = true) {
-  state = didWin ? 'won' : 'lost';
-  document.querySelector('#winModal h1').textContent = didWin ? 'You matched them all!' : 'Out of moves';
-  clearInterval(timerInterval);
-  const time = Math.round((performance.now() - startTime) / 1000);
-  const timeBonus = didWin ? Math.max(0, 90 - time) * 2 : 0;
-  score += timeBonus;
-  updateHud();
-  gameSystem.addScore(score);
-  const mode = currentMode();
-  const modes = loadModes();
-  modes[mode.id] = Math.max(modes[mode.id] || 0, score);
-  saveModes(modes);
-  gameSystem.addXP(Math.max(5, Math.floor(score / 20)));
-  gameSystem.unlockAchievement('firstPlay');
-  if (didWin && moves === currentMode().pairs) gameSystem.unlockAchievement('perfectMemory');
-  gameSystem.recordGamePlay(time * 1000);
-  gameSystem.saveState();
-
-  best = Math.max(best, score);
-  document.getElementById('bestStart').textContent = best;
-  if (didWin) { ParticleSystem.confetti(window.innerWidth / 2, window.innerHeight / 3, 18); audioEffects.playLevelUp(); }
-  else audioEffects.playError();
-  const won = matched === currentMode().pairs;
-  const orderDone = activeRecipe && recipeProgress.length === activeRecipe.items.length;
-  document.getElementById('winSub').textContent = (won ? (orderDone ? 'Bakery order complete! 🧠' : 'Pairs complete. Try the recipe order bonus next!') : 'Out of moves!') + (timeBonus > 0 ? ' ⏱ Time bonus +' + timeBonus : '');
-  document.getElementById('finalScore').textContent = score.toLocaleString();
-  GameUI.countUp(document.getElementById('finalScore'), score);
-  document.getElementById('finalMoves').textContent = moves;
-  document.getElementById('finalBest').textContent = Math.max(best, modes[mode.id] || 0);
-  document.getElementById('winModeTag').textContent = mode.label;
-  const par = mode.pairs * 2;
-  GameUI.showMedal(document.getElementById('finalScore').closest('.stats'), score,
-    [[par * 40, '🥉', 'Bronze Baker'], [par * 70, '🥈', 'Silver Baker'], [par * 100, '🥇', 'Gold Baker']]);
-  document.getElementById('winModal').classList.add('show');
+function gameTick(){
+  if(state !== 'playing') return;
+  timeLeft--; const c = customers[active]; if(c){ c.patience = Math.max(0, c.patience - (modeId === 'easy' ? 3 : 4)); if(c.patience <= 0) missCustomer(); }
+  if(timeLeft <= 0) endGame();
+  renderHud(); renderCustomers(); renderOrder();
 }
-
-best = gameSystem.state.highScore || 0;
-function renderModeRow() {
-  const row = document.getElementById('modeRow');
-  const modes = loadModes();
-  row.innerHTML = MODES.map(m =>
-    '<button type="button" class="' + (m.id === chosenMode ? 'sel' : '') + '" data-mode="' + m.id + '">' + m.label + '</button>').join('');
-  row.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
-    chosenMode = b.dataset.mode;
-    const m = currentMode();
-    best = Math.max(gameSystem.state.highScore || 0, modes[chosenMode] || 0);
-    document.getElementById('bestModeLabel').textContent = m.label.replace(/^\S+\s*/, '');
-    document.getElementById('bestStart').textContent = modes[chosenMode] || 0;
-    renderModeRow();
-  }));
-  const m = currentMode();
-  document.getElementById('bestModeLabel').textContent = m.label.replace(/^\S+\s*/, '');
-  document.getElementById('bestStart').textContent = modes[chosenMode] || 0;
+function missCustomer(){
+  score = Math.max(0, score - 150); combo = 1; floatText('Order walked away -150');
+  customers[active] = makeOrder(ordersDone + customers.length + rand(3));
+  renderAll();
 }
-renderModeRow();
-document.getElementById('gamesStart').textContent = gameSystem.state.gamesPlayed || 0;
+function renderAll(){ renderHud(); renderCustomers(); renderOrder(); renderBoard(); renderTools(); }
+function renderHud(){ $('scoreHud').textContent = score; $('timeHud').textContent = timeLeft; $('comboHud').textContent = 'x' + combo.toFixed(combo % 1 ? 1 : 0); $('starsHud').textContent = stars(); $('targetHud').textContent = mode().target; }
+function stars(){ return score >= mode().target ? 3 : score >= mode().target * .7 ? 2 : score >= mode().target * .4 ? 1 : 0; }
+function renderCustomers(){
+  $('customers').innerHTML = customers.map((c,i) => '<button type="button" class="customer '+(i===active?'active':'')+'" data-i="'+i+'"><span class="face">'+c.mood+'</span><b>'+c.name+'</b><small>'+remaining(c)+' left</small></button>').join('');
+  document.querySelectorAll('.customer').forEach(btn => btn.onclick = () => { active = Number(btn.dataset.i); renderCustomers(); renderOrder(); });
+}
+function remaining(c){ return Object.values(c.needs).reduce((a,b) => a + Math.max(0,b), 0); }
+function renderOrder(){
+  const c = customers[active]; if(!c) return;
+  $('orderName').textContent = c.name + "'s pastry box";
+  $('orderSlots').innerHTML = Object.entries(c.needs).map(([id,n]) => '<span class="slot '+(n<=0?'done':'')+'"><i>'+byId(id).emoji+'</i><b>'+Math.max(0,n)+'</b></span>').join('');
+  $('patienceBar').style.width = c.patience + '%';
+}
+function renderTools(){ $('spoonBtn').querySelector('b').textContent = spoon; $('trayBtn').querySelector('b').textContent = tray; $('spoonBtn').disabled = state!=='playing'||spoon<1||busy; $('trayBtn').disabled = state!=='playing'||tray<1||busy; }
+function renderBoard(){
+  const el = $('board'); el.innerHTML = '';
+  for(let r=0;r<BOARD;r++) for(let c=0;c<BOARD;c++){
+    const tile = document.createElement('button'); const id = board[r][c]; const p = byId(id);
+    tile.type = 'button'; tile.className = 'tile pastry-'+id+(selected && selected.r===r && selected.c===c ? ' selected' : ''); tile.dataset.r = r; tile.dataset.c = c; tile.textContent = p.emoji; tile.setAttribute('aria-label', p.name);
+    tile.onclick = () => tapTile(r,c); el.appendChild(tile);
+  }
+}
+function tapTile(r,c){
+  if(state !== 'playing' || busy) return;
+  if(!selected){ selected = {r,c}; renderBoard(); audioEffects.playTap(520); return; }
+  if(selected.r === r && selected.c === c){ selected = null; renderBoard(); return; }
+  const near = Math.abs(selected.r-r) + Math.abs(selected.c-c) === 1;
+  if(!near){ selected = {r,c}; renderBoard(); audioEffects.playTap(520); return; }
+  const first = { r:selected.r, c:selected.c }, second = { r, c };
+  swap(first, second); selected = null; renderBoard();
+  const matches = findMatches();
+  if(matches.length){ resolveMatches(matches); } else { swap(first, second); combo = 1; audioEffects.playError(); renderAll(); }
+}
+function swap(a,b){ const t = board[a.r][a.c]; board[a.r][a.c] = board[b.r][b.c]; board[b.r][b.c] = t; }
+function findMatches(){
+  const found = new Set();
+  for(let r=0;r<BOARD;r++){ let run=1; for(let c=1;c<=BOARD;c++){ if(c<BOARD && board[r][c]===board[r][c-1]) run++; else { if(run>=3) for(let k=c-run;k<c;k++) found.add(r+','+k); run=1; } } }
+  for(let c=0;c<BOARD;c++){ let run=1; for(let r=1;r<=BOARD;r++){ if(r<BOARD && board[r][c]===board[r-1][c]) run++; else { if(run>=3) for(let k=r-run;k<r;k++) found.add(k+','+c); run=1; } } }
+  return [...found].map(s => { const [r,c] = s.split(',').map(Number); return {r,c,id:board[r][c]}; });
+}
+function resolveMatches(matches){
+  busy = true; const counts = {}; matches.forEach(m => counts[m.id] = (counts[m.id]||0)+1);
+  const gained = feedOrders(counts, matches.length);
+  matches.forEach(m => { const cell = document.querySelector('[data-r="'+m.r+'"][data-c="'+m.c+'"]'); if(cell) cell.classList.add('matched'); board[m.r][m.c] = null; });
+  score += Math.round((matches.length * 45 + gained) * combo); combo = Math.min(5, combo + (matches.length >= 5 ? .8 : matches.length >= 4 ? .5 : .25));
+  if(matches.length >= 4) score += makePower(matches);
+  renderHud(); renderOrder(); renderCustomers(); showCombo(matches.length);
+  setTimeout(dropTiles, 260);
+}
+function feedOrders(counts, matchSize){
+  let bonus = 0; const c = customers[active];
+  Object.entries(counts).forEach(([id,n]) => { if(c.needs[id] > 0){ const used = Math.min(c.needs[id], n); c.needs[id] -= used; c.patience = Math.min(100, c.patience + used * 4); bonus += used * 120; } });
+  if(remaining(c) <= 0){ ordersDone++; bonus += 650 + Math.round(c.patience * 5); floatText('Order served! +' + bonus, true); audioEffects.playSuccess(760); customers[active] = makeOrder(ordersDone + customers.length); }
+  else if(bonus){ floatText('Box filled +' + bonus); audioEffects.playSuccess(620); }
+  return bonus + (matchSize >= 4 ? 180 : 0);
+}
+function makePower(matches){
+  if(matches.length >= 5){ floatText('Rainbow macaron!'); return 350; }
+  floatText('Jam bomb!'); return 220;
+}
+function dropTiles(){
+  for(let c=0;c<BOARD;c++){
+    const stack=[]; for(let r=BOARD-1;r>=0;r--) if(board[r][c]) stack.push(board[r][c]);
+    for(let r=BOARD-1;r>=0;r--) board[r][c] = stack[BOARD-1-r] || pastry();
+  }
+  renderBoard(); const more = findMatches();
+  if(more.length) setTimeout(() => resolveMatches(more), 180); else { busy=false; renderTools(); renderHud(); }
+}
+function showCombo(size){ const banner = $('comboBanner'); banner.textContent = size >= 5 ? 'Rainbow order rush!' : size >= 4 ? 'Jam bomb combo!' : 'Sweet combo x' + combo.toFixed(1); banner.classList.add('show'); setTimeout(() => banner.classList.remove('show'), 650); }
+function floatText(text,big){ const d=document.createElement('div'); d.className='float-text'+(big?' big':''); d.textContent=text; $('game').appendChild(d); setTimeout(()=>d.remove(),950); }
+function useSpoon(){ if(state!=='playing'||spoon<1||busy)return; spoon--; const c=customers[active]; const need=Object.keys(c.needs).find(id=>c.needs[id]>0) || pastry(); const spots=[]; for(let r=0;r<BOARD;r++)for(let col=0;col<BOARD;col++)if(board[r][col]===need)spots.push({r,c:col,id:need}); resolveMatches(spots.slice(0, Math.min(5, spots.length))); }
+function useTray(){ if(state!=='playing'||tray<1||busy)return; tray--; resetBoard(); selected=null; combo=1; floatText('Fresh tray!'); renderAll(); }
+function endGame(){
+  if(state === 'ended') return; state='ended'; clearInterval(tick); saveBest();
+  gameSystem.addScore(score); gameSystem.addXP(Math.max(8, Math.floor(score/35))); gameSystem.unlockAchievement('firstPlay'); if(stars()>=3) gameSystem.unlockAchievement('goldBaker'); gameSystem.recordGamePlay((mode().time-timeLeft)*1000); gameSystem.saveState();
+  $('endTitle').textContent = stars() >= 3 ? 'Gold star bakery!' : 'Shift complete!'; $('endCopy').textContent = 'You served '+ordersDone+' orders and earned '+stars()+' stars.';
+  $('finalScore').textContent = score; $('finalOrders').textContent = ordersDone; $('finalBest').textContent = Math.max(best, score); $('endModal').classList.add('show'); if(stars()>=2) ParticleSystem.confetti(innerWidth/2, innerHeight/3, 20);
+}
+function renderModes(){ $('modeRow').innerHTML = MODES.map(m => '<button type="button" class="'+(m.id===modeId?'sel':'')+'" data-mode="'+m.id+'">'+m.label+'</button>').join(''); document.querySelectorAll('#modeRow button').forEach(b=>b.onclick=()=>{modeId=b.dataset.mode; renderModes();}); }
+$('soundBtn').onclick = toggleSound; $('playBtn').onclick = startGame; $('againBtn').onclick = startGame; $('spoonBtn').onclick = useSpoon; $('trayBtn').onclick = useTray;
+try{ best = Math.max(best, Number(localStorage.getItem('pastryMatchBest'))||0); }catch(e){}
+renderModes(); renderHud();
 </script>
 <script defer src="../cookie-consent.js"></script>
 <script defer src="/mascots.js"></script>
 </body>
 </html>
+

@@ -1,9 +1,8 @@
-// JVDesignStudio Service Worker v26 - A207 school-network hardening: timeout only when cached exists, timer cleared, bump cache, Pip quest deps precached
+// JVDesignStudio Service Worker v27 - A207 school-network hardening: timeout only when cached exists, timer cleared, bump cache, Pip quest deps precached
 // v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
 // v22 (A256): precache jvds-store.js (backpack + progress) and refresh nav.js (profile chip reads jvds_profile)
-// v24 (A68-A76): precache new offline-first tools - migrate, gallery, collab, accessibility, challenges, backup, subscription, localize
 // v25 (A332): add pixel-studio shared dependencies so tool fully works offline on first visit
-const CACHE='jvds-v26';
+const CACHE='jvds-v27';
 const CORE=[
   '/',
   '/offline.html',
@@ -38,14 +37,7 @@ const CORE=[
   '/assets/mascots/ember-badge.webp',
   '/assets/mascots/lumo-badge.webp',
   '/assets/mascots/pip-badge.webp',
-  '/tools/storage-migrate.html',
-  '/tools/gallery.html',
-  '/tools/collab.html',
-  '/tools/accessibility.html',
-  '/tools/challenges.html',
-  '/tools/backup-restore.html',
-  '/tools/subscription.html',
-  '/tools/localize.html'
+  '/tools/gallery.html'
 ];
 
 self.addEventListener('install',e=>{
