@@ -40,7 +40,8 @@ const EXCLUDE_FILES = new Set([
 ]);
 
 const GAME_ORPHANS = [
-  'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html','games/echo-casebook.html','games/stardust-ruins.html'
+  'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html'
+  // echo-casebook.html and stardust-ruins.html removed — they are curated games in content/games.json
 ];
 
 const BASE_URL = 'https://jvdesignstudio.co.uk';
