@@ -276,20 +276,16 @@ function stampToCanvasUnified(){
       syncMobileCharCanvas();
     }catch(e){ console.warn(e); showToast('Stamp failed'); }
   } else {
-    // fallback: draw char canvas onto current layer
+    // fallback: draw char canvas onto current layer, scaled to canvas size
     const cc=document.getElementById('char-canvas-unified');
     if(!cc) return;
     pushUndo();
     const id=getID();
-    const tmp=document.createElement('canvas');tmp.width=192;tmp.height=192;
-    tmp.getContext('2d').drawImage(cc,0,0);
-    const src=tmp.getContext('2d').getImageData(0,0,192,192).data;
-    const offX=Math.floor((cW-192)/2), offY=Math.floor((cH-192)/2);
-    for(let y=0;y<cH;y++){ for(let x=0;x<cW;x++){
-      const sx=x-offX, sy=y-offY; if(sx<0||sy<0||sx>=192||sy>=192) continue;
-      const si=(sy*192+sx)*4, di=(y*cW+x)*4; if(src[si+3]<10) continue;
-      id.data[di]=src[si]; id.data[di+1]=src[si+1]; id.data[di+2]=src[si+2]; id.data[di+3]=255;
-    }}
+    const tmp=document.createElement('canvas');tmp.width=cW;tmp.height=cH;
+    const tctx=tmp.getContext('2d');tctx.imageSmoothingEnabled=false;
+    tctx.drawImage(cc,0,0,cW,cH);
+    const src=tctx.getImageData(0,0,cW,cH).data;
+    for(let i=0;i<cW*cH;i++){const si=i*4;if(src[si+3]<10)continue;id.data[si]=src[si];id.data[si+1]=src[si+1];id.data[si+2]=src[si+2];id.data[si+3]=255;}
     renderAll();
     showToast('Stamped!');
   }

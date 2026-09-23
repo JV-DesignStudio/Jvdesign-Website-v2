@@ -300,11 +300,16 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
         <div class="tb" data-tool="eyedrop" onclick="setTool('eyedrop')" aria-label="Pick colour (G)"><span class="ico">💧</span>Pick</div>
       </div>
       <details id="advancedTools" style="margin-top:6px;">
-        <summary style="font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;list-style:none;">Advanced ▸ Line, Rect, Mirror</summary>
+        <summary style="font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;list-style:none;">Advanced ▸ Line, Rect, Select, Mirror</summary>
         <div class="tool-grid" style="margin-top:6px;">
           <div class="tb" data-tool="line" onclick="setTool('line')" aria-label="Line (L)"><span class="ico">📏</span>Line</div>
           <div class="tb" data-tool="rect" onclick="setTool('rect')" aria-label="Rect (R)"><span class="ico">⬜</span>Rect</div>
-          <button class="lb" id="mirrorBtn2" onclick="toggleMirror()" title="Mirror X (M)" aria-label="Mirror X" style="height:auto;padding:8px 0;">↔️ Mirror</button>
+          <div class="tb" data-tool="select" onclick="setTool('select')" aria-label="Select (S)"><span class="ico">⬡</span>Select</div>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
+          <button class="lb" id="mirrorBtn2" onclick="toggleMirror()" title="Mirror X (M)" aria-label="Mirror X" style="height:auto;padding:6px 0;flex:1;">↔️ Mirror X</button>
+          <button class="lb" id="mirrorYBtn" onclick="toggleMirrorY()" title="Mirror Y" aria-label="Mirror Y" style="height:auto;padding:6px 0;flex:1;">↕️ Mirror Y</button>
+          <button class="lb" id="filledRectBtn" onclick="toggleFilledRect()" title="Filled rect" aria-label="Filled rectangle" style="height:auto;padding:6px 0;flex:1;">▪ Fill</button>
         </div>
       </details>
       <div style="margin-top:6px;">
@@ -353,6 +358,7 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
         <button class="z-btn" onclick="resetView()" title="Fit view">Fit</button>
         <button class="z-btn" onclick="toggleGrid()" id="gridBtn" title="Toggle grid" style="color:var(--accent3);">#</button>
       </div>
+      <div id="canvasSizeLabel" style="font-size:.5rem;color:var(--accent2);text-align:center;margin-top:3px;">32 × 32</div>
     </div>
     <div class="pdiv"></div>
     <div class="ps">
@@ -637,8 +643,9 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
     <h3>⌨ Shortcuts</h3>
     <p style="line-height:2;">
       <b>B / P</b> pencil &middot; <b>E</b> eraser &middot; <b>F</b> fill<br>
-      <b>I / G</b> eyedropper &middot; <b>L</b> line &middot; <b>R</b> rect<br>
-      <b>M</b> mirror &middot; <b>X</b> swap colours &middot; <b>Space</b> play<br>
+      <b>I / G</b> eyedropper &middot; <b>L</b> line &middot; <b>R</b> rect &middot; <b>S</b> select<br>
+      <b>M</b> mirror X &middot; <b>X</b> swap colours &middot; <b>Space</b> play<br>
+      Select: <b>Del</b> clear &middot; <b>Ctrl+C</b> copy &middot; <b>Ctrl+V</b> paste &middot; drag to move<br>
       <b>+/&minus;</b> zoom &middot; <b>Ctrl+Z</b> undo &middot; <b>Ctrl+Y</b> redo<br>
       Right-click draws with the background colour.
     </p>
@@ -674,7 +681,9 @@ let recentColours=[];
 let frames=[],currentFrame=0,currentLayer=0;
 let layers=[{name:'Layer 1',visible:true}];
 let undoStack=[],redoStack=[],MAX_UNDO=20;
-let mirrorX=false,dirty=false,autosaveT=null,deferredPrompt=null;
+let mirrorX=false,mirrorY=false,filledRect=false,dirty=false,autosaveT=null,deferredPrompt=null;
+let selection=null; // {x0,y0,x1,y1} or null; used by select tool
+let selDragStart=null,selMoving=false,selMoveStart=null,selClipboard=null;
 let isPainting=false,lineStart=null,rectStart=null;
 let mainCanvas,onionCanvas,cursorCanvas,mainCtx,onionCtx,cursorCtx;
 // snapshot for line/rect preview
@@ -788,6 +797,9 @@ function setCanvasSize(w,h,keepData){
   autoZoom();
   resizeCanvases();
   renderAll();
+  selection=null;
+  const lbl=document.getElementById('canvasSizeLabel');
+  if(lbl) lbl.textContent=cW+' × '+cH;
 }
 
 function autoZoom(){
@@ -946,6 +958,8 @@ function paintPx(id,x,y,col,erase){
     for(let dx=-half;dx<=brushSz-1-half;dx++){
       setPixel(id,x+dx,y+dy,r,g,b,a);
       if(mirrorX) setPixel(id,cW-1-(x+dx),y+dy,r,g,b,a);
+      if(mirrorY) setPixel(id,x+dx,cH-1-(y+dy),r,g,b,a);
+      if(mirrorX&&mirrorY) setPixel(id,cW-1-(x+dx),cH-1-(y+dy),r,g,b,a);
     }
 }
 function floodFill(id,sx,sy,col){
@@ -971,8 +985,12 @@ function drawLine(id,x0,y0,x1,y1,col,erase){
 }
 function drawRect(id,x0,y0,x1,y1,col,erase){
   const lx=Math.min(x0,x1),rx=Math.max(x0,x1),ty=Math.min(y0,y1),by=Math.max(y0,y1);
-  for(let x=lx;x<=rx;x++){paintPx(id,x,ty,col,erase);paintPx(id,x,by,col,erase);}
-  for(let y=ty;y<=by;y++){paintPx(id,lx,y,col,erase);paintPx(id,rx,y,col,erase);}
+  if(filledRect){
+    for(let y=ty;y<=by;y++) for(let x=lx;x<=rx;x++) paintPx(id,x,y,col,erase);
+  } else {
+    for(let x=lx;x<=rx;x++){paintPx(id,x,ty,col,erase);paintPx(id,x,by,col,erase);}
+    for(let y=ty;y<=by;y++){paintPx(id,lx,y,col,erase);paintPx(id,rx,y,col,erase);}
+  }
 }
 
 // ----------------------------------------------
@@ -1081,6 +1099,20 @@ function setupEvents(){
       pushUndo();
       snapshot=new ImageData(new Uint8ClampedArray(getID().data),getID().width,getID().height);
       rectStart=[x,y];
+    } else if(currentTool==='select'){
+      // Start new selection drag (or move if inside existing selection)
+      if(selection){
+        const{x0,y0,x1,y1}=selection;
+        const lx=Math.min(x0,x1),rx=Math.max(x0,x1),ty=Math.min(y0,y1),by=Math.max(y0,y1);
+        if(x>=lx&&x<=rx&&y>=ty&&y<=by){
+          selMoving=true; selMoveStart=[x,y];
+          cutSelection();
+          return;
+        }
+      }
+      clearSelection();
+      selDragStart=[x,y];
+      selection={x0:x,y0:y,x1:x,y1:y};
     }
   }
 
@@ -1108,8 +1140,22 @@ function setupEvents(){
     cursorCtx.strokeStyle='rgba(255,255,255,0.5)';
     cursorCtx.lineWidth=1;
     cursorCtx.strokeRect(x*zoomLevel+.5,y*zoomLevel+.5,zoomLevel-1,zoomLevel-1);
-    if(mirrorX){
-      cursorCtx.strokeRect((cW-1-x)*zoomLevel+.5,y*zoomLevel+.5,zoomLevel-1,zoomLevel-1);
+    if(mirrorX) cursorCtx.strokeRect((cW-1-x)*zoomLevel+.5,y*zoomLevel+.5,zoomLevel-1,zoomLevel-1);
+    if(mirrorY) cursorCtx.strokeRect(x*zoomLevel+.5,(cH-1-y)*zoomLevel+.5,zoomLevel-1,zoomLevel-1);
+    if(mirrorX&&mirrorY) cursorCtx.strokeRect((cW-1-x)*zoomLevel+.5,(cH-1-y)*zoomLevel+.5,zoomLevel-1,zoomLevel-1);
+
+    if(currentTool==='select'){
+      if(isPainting&&selMoving&&selClipboard&&selMoveStart){
+        const dx=x-selMoveStart[0],dy=y-selMoveStart[1];
+        const{w,h}=selClipboard;
+        selection={x0:selMoveStart[0]-Math.floor(w/2)+dx,y0:selMoveStart[1]-Math.floor(h/2)+dy,x1:selMoveStart[0]+Math.ceil(w/2)-1+dx,y1:selMoveStart[1]+Math.ceil(h/2)-1+dy};
+        renderAll(false); drawSelectionOverlay(); return;
+      } else if(isPainting&&selDragStart){
+        selection={x0:selDragStart[0],y0:selDragStart[1],x1:Math.max(0,Math.min(cW-1,x)),y1:Math.max(0,Math.min(cH-1,y))};
+        renderAll(false); drawSelectionOverlay(); return;
+      } else if(!isPainting&&selection){
+        drawSelectionOverlay(); return;
+      }
     }
 
     if(!isPainting) return;
@@ -1143,6 +1189,33 @@ function setupEvents(){
     const col=right?bgColour:fgColour;
     const erase=right?false:currentTool==='eraser';
     if(pendingStroke) commitPendingStroke();
+    if(currentTool==='select'){
+      if(selMoving&&selClipboard){
+        // Commit paste at new position
+        const dx=x-selMoveStart[0],dy=y-selMoveStart[1];
+        const id=getID();
+        const{w,h,data}=selClipboard;
+        const ox=selMoveStart[0]-Math.floor(w/2)+dx;
+        const oy=selMoveStart[1]-Math.floor(h/2)+dy;
+        for(let py=0;py<h;py++) for(let px2=0;px2<w;px2++){
+          const si=(py*w+px2)*4;
+          if(data[si+3]===0) continue;
+          setPixel(id,ox+px2,oy+py,data[si],data[si+1],data[si+2],data[si+3]);
+        }
+        selection={x0:ox,y0:oy,x1:ox+w-1,y1:oy+h-1};
+        selMoving=false; selMoveStart=null;
+        renderAll(); drawSelectionOverlay();
+      } else if(selDragStart){
+        selection={x0:selDragStart[0],y0:selDragStart[1],x1:Math.max(0,Math.min(cW-1,x)),y1:Math.max(0,Math.min(cH-1,y))};
+        selDragStart=null;
+        drawSelectionOverlay();
+        const{x0,y0,x1,y1}=selection;
+        const sw=Math.abs(x1-x0)+1,sh=Math.abs(y1-y0)+1;
+        showToast('Selected '+sw+'×'+sh+' (Del=clear, drag=move, Ctrl+C=copy)');
+      }
+      isPainting=false;
+      return;
+    }
     if(currentTool==='line'&&lineStart){
       if(snapshot) frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
       drawLine(getID(),lineStart[0],lineStart[1],x,y,col,erase);
@@ -1175,8 +1248,14 @@ function setupEvents(){
     if((e.ctrlKey||e.metaKey)&&k==='y'){e.preventDefault();redo();return;}
     if(e.ctrlKey||e.metaKey||e.altKey) return;
     if(e.key==='?'){openModal('keysModal');return;}
-    if(e.key==='Escape'){['keysModal','restoreModal','gifModal','clearModal','importSheetModal'].forEach(id=>closeModal(id));return;}
-    const m={b:'pencil',p:'pencil',e:'eraser',f:'fill',i:'eyedrop',g:'eyedrop',l:'line',r:'rect'};
+    if(e.key==='Escape'){
+      if(selection){clearSelection();renderAll();return;}
+      ['keysModal','restoreModal','gifModal','clearModal','importSheetModal'].forEach(id=>closeModal(id));return;
+    }
+    if((e.ctrlKey||e.metaKey)&&k==='c'&&currentTool==='select'){e.preventDefault();copySelection();return;}
+    if((e.ctrlKey||e.metaKey)&&k==='v'){e.preventDefault();pasteSelection();return;}
+    if((e.key==='Delete'||e.key==='Backspace')&&selection&&currentTool==='select'){e.preventDefault();cutSelection();clearSelection();renderAll();return;}
+    const m={b:'pencil',p:'pencil',e:'eraser',f:'fill',i:'eyedrop',g:'eyedrop',l:'line',r:'rect',s:'select'};
     if(m[k]) setTool(m[k]);
     if(k==='m') toggleMirror();
     if(k==='x') swapFgBg();
@@ -1342,6 +1421,7 @@ function addToRecent(col){
 // TOOLS
 // ----------------------------------------------
 function setTool(t){
+  if(t!=='select'&&selection) clearSelection();
   currentTool=t;
   document.querySelectorAll('.tb,.bb-tb').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));
 }
@@ -1353,6 +1433,72 @@ function toggleMirror(){
   });
   renderAll();
   showToast(mirrorX?'Mirror X on':'Mirror X off');
+}
+function toggleMirrorY(){
+  mirrorY=!mirrorY;
+  const b=document.getElementById('mirrorYBtn');
+  if(b) b.style.color=mirrorY?'var(--accent3)':'';
+  renderAll();
+  showToast(mirrorY?'Mirror Y on':'Mirror Y off');
+}
+function toggleFilledRect(){
+  filledRect=!filledRect;
+  const b=document.getElementById('filledRectBtn');
+  if(b) b.style.color=filledRect?'var(--accent3)':'';
+  showToast(filledRect?'Filled rect on':'Outline rect');
+}
+function clearSelection(){
+  selection=null; selDragStart=null; selMoving=false; selMoveStart=null;
+  cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);
+}
+function drawSelectionOverlay(){
+  if(!selection) return;
+  const{x0,y0,x1,y1}=selection;
+  const lx=Math.min(x0,x1),rx=Math.max(x0,x1),ty=Math.min(y0,y1),by=Math.max(y0,y1);
+  cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);
+  cursorCtx.setLineDash([4,4]);
+  cursorCtx.lineDashOffset=-(Date.now()/80)%8;
+  cursorCtx.strokeStyle='#fff';
+  cursorCtx.lineWidth=1;
+  cursorCtx.strokeRect(lx*zoomLevel+.5,ty*zoomLevel+.5,(rx-lx+1)*zoomLevel-1,(by-ty+1)*zoomLevel-1);
+  cursorCtx.setLineDash([]);
+}
+function copySelection(){
+  if(!selection) return;
+  const{x0,y0,x1,y1}=selection;
+  const lx=Math.min(x0,x1),rx=Math.max(x0,x1),ty=Math.min(y0,y1),by=Math.max(y0,y1);
+  const w=rx-lx+1,h=by-ty+1;
+  const id=getID();
+  selClipboard={w,h,data:new Uint8ClampedArray(w*h*4)};
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const si=((ty+y)*cW+(lx+x))*4, di=(y*w+x)*4;
+    selClipboard.data[di]=id.data[si]; selClipboard.data[di+1]=id.data[si+1];
+    selClipboard.data[di+2]=id.data[si+2]; selClipboard.data[di+3]=id.data[si+3];
+  }
+  showToast('Copied '+w+'×'+h);
+}
+function cutSelection(){
+  if(!selection) return;
+  copySelection();
+  pushUndo();
+  const{x0,y0,x1,y1}=selection;
+  const lx=Math.min(x0,x1),rx=Math.max(x0,x1),ty=Math.min(y0,y1),by=Math.max(y0,y1);
+  const id=getID();
+  for(let y=ty;y<=by;y++) for(let x=lx;x<=rx;x++) setPixel(id,x,y,0,0,0,0);
+  renderAll(false);
+}
+function pasteSelection(){
+  if(!selClipboard) return;
+  pushUndo();
+  const{w,h,data}=selClipboard;
+  const id=getID();
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const si=(y*w+x)*4;
+    if(data[si+3]===0) continue;
+    setPixel(id,x,y,data[si],data[si+1],data[si+2],data[si+3]);
+  }
+  renderAll(false);
+  showToast('Pasted');
 }
 function clearCanvas(){
   pushUndo();
