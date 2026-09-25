@@ -18,10 +18,8 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const { ROOT: LIB_ROOT, IGNORE_DIRS: LIB_IGNORE, EXCLUDE_FILES: LIB_EXCLUDE, GAME_ORPHANS } = require('./scripts/lib/paths');
-const ROOT = __dirname;
-const BASE = 'https://jvdesignstudio.co.uk';
-const IGNORE_DIRS = LIB_IGNORE;
+const { ROOT, IGNORE_DIRS, EXCLUDE_FILES: LIB_EXCLUDE, GAME_ORPHANS, BASE_URL: BASE } = require('./scripts/lib/paths');
+const { walk } = require('./scripts/lib/walk');
 const EXCLUDE_FILES = new Set([...LIB_EXCLUDE, ...GAME_ORPHANS, 'games/game-template.html', 'games/cozy-biscuit-clicker.pre-app.bak.html']);
 const PRIORITY_MAP = {
   // Hub pages , higher crawl priority
@@ -42,15 +40,6 @@ function toCleanUrl(rel) {
   // Exclude any .bak.html that slipped through
   if (rel.endsWith('.bak.html')) return null;
   return '/' + rel;
-}
-
-function walk(dir) {
-  let out = [];
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (e.isDirectory()) { if (!IGNORE_DIRS.has(e.name)) out = out.concat(walk(path.join(dir, e.name))); }
-    else if (e.name.endsWith('.html')) out.push(path.join(dir, e.name));
-  }
-  return out;
 }
 
 // Build a { relPath -> YYYY-MM-DD } map - memoized on HEAD+staged SHA to avoid 64MB log on every build
@@ -99,7 +88,7 @@ function robotsNoindex(html) {
 }
 
 const rows = [];
-for (const fp of walk(ROOT)) {
+for (const fp of walk(ROOT, { ext: ".html", ignore: IGNORE_DIRS })) {
   const rel = path.relative(ROOT, fp).replace(/\\/g, '/');
   if (EXCLUDE_FILES.has(rel)) continue;
   const html = fs.readFileSync(fp, 'utf8');

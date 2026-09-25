@@ -8,26 +8,12 @@
 const fs = require('fs');
 const path = require('path');
 
-const { ROOT: LIB_ROOT, IGNORE_DIRS: LIB_IGNORE, EXCLUDE_FILES: LIB_EXCLUDE, GAME_ORPHANS } = require('./scripts/lib/paths');
-const ROOT = __dirname;
-const SKIP_DIRS = LIB_IGNORE;
+const { ROOT, IGNORE_DIRS: SKIP_DIRS, EXCLUDE_FILES: LIB_EXCLUDE, GAME_ORPHANS } = require('./scripts/lib/paths');
+const { walk } = require('./scripts/lib/walk');
 const SKIP_FILES = new Set([...LIB_EXCLUDE, ...GAME_ORPHANS, 'games/game-template.html', '404.html', 'offline.html', 'search.html']);
 
-function walk(dir) {
-  let out = [];
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
-      out = out.concat(walk(path.join(dir, e.name)));
-    } else if (e.isFile() && e.name.endsWith('.html')) {
-      out.push(path.join(dir, e.name));
-    }
-  }
-  return out;
-}
-
 const entries = [];
-for (const fp of walk(ROOT)) {
+for (const fp of walk(ROOT, { ext: ".html", ignore: SKIP_DIRS })) {
   const rel = path.relative(ROOT, fp).replace(/\\/g, '/');
   if (SKIP_FILES.has(rel) || rel.startsWith('quest-board') || rel.includes('.bak.')) continue;
   const src = fs.readFileSync(fp, 'utf8');

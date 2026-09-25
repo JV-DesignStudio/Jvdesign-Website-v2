@@ -9,9 +9,9 @@
 const fs   = require('fs');
 const path = require('path');
 
-const ROOT     = __dirname;
+const { ROOT, IGNORE_DIRS } = require('./scripts/lib/paths');
+const { walk } = require('./scripts/lib/walk');
 const PARTIALS = path.join(ROOT, 'partials');
-const IGNORE_DIRS = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', 'docs', 'questlog-pwa', 'arcade-app', 'og', 'social-posts', 'scripts', '.github', '.continue']);
 
 // Load all partials once
 const partials = {};
@@ -29,20 +29,6 @@ function makeMarkerRegex(name) {
     return new RegExp(`<!--\\s*BUILD:${name}\\s*-->[\\s\\S]*?<!--\\s*/BUILD:${name}\\s*-->`, 'g');
 }
 
-// Recursively collect .html files, skipping ignored directories.
-function walk(dir) {
-    let out = [];
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (entry.isDirectory()) {
-            if (IGNORE_DIRS.has(entry.name)) continue;
-            out = out.concat(walk(path.join(dir, entry.name)));
-        } else if (entry.isFile() && entry.name.endsWith('.html')) {
-            out.push(path.join(dir, entry.name));
-        }
-    }
-    return out;
-}
-
 // Remove duplicate page-level "skip to main content" links that sit before the
 // nav-content marker (the partial re-adds exactly one inside the marker).
 function dedupeSkipLinks(src) {
@@ -55,7 +41,7 @@ function dedupeSkipLinks(src) {
 
 let changed = 0, unchanged = 0;
 
-walk(ROOT).forEach(filePath => {
+walk(ROOT, { ext: ".html", ignore: IGNORE_DIRS }).forEach(filePath => {
     let src = fs.readFileSync(filePath, 'utf8');
     const original = src;
 

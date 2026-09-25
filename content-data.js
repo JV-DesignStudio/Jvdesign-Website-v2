@@ -3135,7 +3135,7 @@ window.JVDS_CONTENT = {
       "category": "Action",
       "cover": "VoidrushCoverimage.webp",
       "bg": "linear-gradient(135deg,#03000f,#0a0025)",
-      "desc": "A high-speed chase-the-sun runner: steer through neon lanes, collect sunlight shards, hit boost gates, dodge void blocks, and outrun the dark.",
+      "desc": "A fuller chase-the-sun runner with handcrafted sectors, sunlight management, boost gates, shields, near-miss scoring, storms, and a Dawn Gate finish.",
       "kids": true,
       "age": "Ages 9-14",
       "character": null,
@@ -3421,17 +3421,6 @@ window.JVDS_CONTENT = {
       "url": "/tools/arcade-game-maker.html"
     },
     {
-      "id": "backup-restore",
-      "title": "Tool Backup & Restore",
-      "desc": "Backup Pixel Studio, Sound Studio and World Builder to ZIP, PNG or JSON. Offline-first restore, character-driven.",
-      "category": "Make Art",
-      "tags": [
-        "Pixel Art"
-      ],
-      "comingSoon": false,
-      "url": "/tools/backup-restore.html"
-    },
-    {
       "id": "bitmap-font-maker",
       "title": "Bitmap Font Maker",
       "desc": "Design pixel bitmap fonts in your browser. Draw characters, preview text live, export PNG spritesheet and JSON atlas. Free game dev tool.",
@@ -3454,17 +3443,6 @@ window.JVDS_CONTENT = {
       "url": "/tools/buildlab.html"
     },
     {
-      "id": "challenges",
-      "title": "Cross-Tool Challenges",
-      "desc": "Weekly challenges combining Pixel Studio, Audio Studio and games. Offline-first, XP and badges, Pip + Echo approved.",
-      "category": "Make Art",
-      "tags": [
-        "Pixel Art"
-      ],
-      "comingSoon": false,
-      "url": "/tools/challenges.html"
-    },
-    {
       "id": "code-snippet-generator",
       "title": "Code Snippet Generator",
       "desc": "Generate common code patterns for GDScript, C#, JavaScript and Python. Game loops, input handling, collision detection and more.",
@@ -3472,17 +3450,6 @@ window.JVDS_CONTENT = {
       "tags": [],
       "comingSoon": false,
       "url": "/tools/code-snippet-generator.html"
-    },
-    {
-      "id": "collab",
-      "title": "Live Collaboration (Offline-First)",
-      "desc": "Offline-first collaboration for Pixel Studio & Music Maker. Character avatars, sync-later queue, no account required.",
-      "category": "Make Art",
-      "tags": [
-        "Pixel Art"
-      ],
-      "comingSoon": false,
-      "url": "/tools/collab.html"
     },
     {
       "id": "colour-palette",
@@ -3624,15 +3591,6 @@ window.JVDS_CONTENT = {
       "url": "/tools/level-designer.html"
     },
     {
-      "id": "localize",
-      "title": "Localized Content Packs",
-      "desc": "Spanish, French and more - offline-first localization. Character-driven translations, works without install.",
-      "category": "General",
-      "tags": [],
-      "comingSoon": false,
-      "url": "/tools/localize.html"
-    },
-    {
       "id": "minecraft-cheatsheet",
       "title": "Free Minecraft Modding Cheat Sheet",
       "desc": "Free printable Minecraft Forge/Fabric modding cheat sheet with mod structure, registry, items, blocks, events, GUI, rendering, networking and data. No sign-up required.",
@@ -3741,26 +3699,6 @@ window.JVDS_CONTENT = {
       "tags": [],
       "comingSoon": false,
       "url": "/tools/sprite-animator.html"
-    },
-    {
-      "id": "storage-migrate",
-      "title": "Storage Migrate - LocalStorage to IndexedDB",
-      "desc": "Migrate your JVDS tool saves from localStorage to IndexedDB. Offline-first, character-guided, preserves Pixel Studio, Sound Studio and World Builder data on school computers.",
-      "category": "Make Art",
-      "tags": [
-        "Pixel Art"
-      ],
-      "comingSoon": false,
-      "url": "/tools/storage-migrate.html"
-    },
-    {
-      "id": "store-page-builder",
-      "title": "Launch Studio",
-      "desc": "Create game logos, promo screenshots, store copy and release messaging from one launch workspace.",
-      "category": "General",
-      "tags": [],
-      "comingSoon": false,
-      "url": "/tools/store-page-builder.html"
     },
     {
       "id": "story-editor",
@@ -4166,10 +4104,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-23T17:13:05.858Z",
+    "generated": "2026-09-24T13:14:17.150Z",
     "workshops": 186,
     "games": 40,
-    "tools": 43,
+    "tools": 37,
     "books": 5,
     "engines": {
       "Blender": 9,
@@ -4193,9 +4131,9 @@ window.JVDS_CONTENT = {
       "Unreal": 10
     },
     "toolCategories": {
-      "Make Art": 13,
+      "Make Art": 9,
       "Build & Ship": 1,
-      "General": 15,
+      "General": 13,
       "Make Audio": 8,
       "Plan & Write": 5,
       "Build Worlds": 1

@@ -1,5 +1,5 @@
 // ── MASCOT CONFIG ──
-const MASCOT_CFG = {
+var MASCOT_CFG = {
   lumo:     { name:'Lumo',     img:'/assets/mascots/lumo.jpg',     color:'#7C6CF0', pillar:'Learn' },
   ember:    { name:'Ember',    img:'/assets/mascots/ember.jpg',    color:'#F2637A', pillar:'Create' },
   play:     { name:'Echo & Pip', img:'/assets/mascots/echo.jpg',  color:'#2EB5A5', pillar:'Play', img2:'/assets/mascots/pip.png' },
@@ -16,7 +16,7 @@ function setGuide(id){
   }catch(e){}
 }
 // Mascot speech rotator , picks a random friendly line on load
-const MASCOT_LINES = {
+var MASCOT_LINES = {
   lumo: [
     "Psst , let's learn something brilliant together!",
     "Curious today? Follow me!",

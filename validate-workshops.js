@@ -2,6 +2,20 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = __dirname;
+// Coverage gate: keep the validator honest as new workshop pages are added.
+// The detailed progress checks below cover the established interactive
+// patterns; this directory-wide gate ensures every workshop HTML file still
+// has the public metadata contract used by the site and sitemap.
+const ALL_WORKSHOP_FILES = fs.readdirSync(path.join(ROOT, 'workshops'))
+  .filter(file => file.endsWith('.html'))
+  .sort();
+const coverage = { files: ALL_WORKSHOP_FILES.length, missing_title: [], missing_description: [], missing_canonical: [] };
+ALL_WORKSHOP_FILES.forEach(file => {
+  const content = fs.readFileSync(path.join(ROOT, 'workshops', file), 'utf8');
+  if (!/<title>[^<]+<\/title>/i.test(content)) coverage.missing_title.push(file);
+  if (!/<meta\s+name=["']description["']/i.test(content)) coverage.missing_description.push(file);
+  if (!/<link\s+rel=["']canonical["']/i.test(content)) coverage.missing_canonical.push(file);
+});
 
 const CONVERTED = [
   'add-your-own-stage.html', 'barrel-blast-workshop.html', 'blender-workshop.html',
@@ -84,7 +98,10 @@ CONVERTED.forEach(file => {
   }
 });
 
-console.log(`✓ Valid (checkbox-style): ${results.valid.length}/${CONVERTED.length - BUILDER_STYLE.length}`);
+console.log(`✓ Valid (checkbox-style): ${results.valid.length}/${CONVERTED.length - BUILDER_STYLE.length}`);console.log(`✓ Workshop coverage: ${coverage.files} HTML files checked for title, description and canonical metadata`);
+if (coverage.missing_title.length) console.log('  Missing title: ' + coverage.missing_title.join(', '));
+if (coverage.missing_description.length) console.log('  Missing description: ' + coverage.missing_description.join(', '));
+if (coverage.missing_canonical.length) console.log('  Missing canonical: ' + coverage.missing_canonical.join(', '));
 console.log(`✓ Builder-style (different pattern by design, STORAGE_KEY present): ${results.builder_style.length}/${BUILDER_STYLE.length}`);
 console.log(`✗ Missing STORAGE_KEY: ${results.missing_key.length}`);
 if (results.missing_key.length > 0) console.log('  Files: ' + results.missing_key.join(', '));
@@ -93,5 +110,5 @@ if (results.missing_functions.length > 0) console.log('  Files: ' + results.miss
 console.log(`✗ Read Errors: ${results.errors.length}`);
 if (results.errors.length > 0) results.errors.forEach(e => console.log(`  ${e.file}: ${e.error}`));
 
-const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0;
+const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0 || coverage.missing_title.length > 0 || coverage.missing_description.length > 0 || coverage.missing_canonical.length > 0;
 if (hasFailures) process.exitCode = 1;

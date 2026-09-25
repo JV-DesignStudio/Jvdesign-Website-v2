@@ -377,15 +377,15 @@ window.JVDS_GAMES = [
     "cover": "VoidrushCoverimage.webp",
     "bg": "linear-gradient(135deg,#03000f,#0a0025)",
     "kids": true,
-    "desc": "A high-speed chase-the-sun runner: steer through neon lanes, collect sunlight shards, hit boost gates, dodge void blocks, and outrun the dark.",
-    "description": "Steer a solar glider through neon sectors, balancing sunlight, speed boosts, hazards, and risk-reward routes.",
+    "desc": "A fuller chase-the-sun runner with handcrafted sectors, sunlight management, boost gates, shields, near-miss scoring, storms, and a Dawn Gate finish.",
+    "description": "Steer through authored solar sectors, skim near-misses, chain boost gates, collect shields, and reach the Dawn Gate before the void drains your sunlight.",
     "age": "Ages 9-14",
     "difficulty": "Medium",
     "session": "5-10 min",
     "controls": "A/D, arrows, mouse drag, or touch drag to steer",
     "learning": "Reaction timing · Spatial awareness · Risk reward",
     "status": "improved",
-    "playPromise": "Chase the sun through neon lanes, collect sunlight, chain boost gates, and survive faster sectors.",
+    "playPromise": "Survive five named sectors with lane patterns, near-misses, shields, storms, boost gates and a real Dawn Gate finish.",
     "searchText": "VoidRush: Chase the Sun Solar speed runner Chase the sun through neon lanes, collect sunlight, chain boost gates, and survive faster sectors. Ages 9-14 educational improved learning"
   },
   {
@@ -741,6 +741,7 @@ window.JVDS_GAMES = [
 if (typeof module !== "undefined") {
   module.exports = window.JVDS_GAMES;
 }
+
 
 
 

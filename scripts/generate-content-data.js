@@ -17,30 +17,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '..');
+const { ROOT, IGNORE_DIRS } = require('./lib/paths');
+const { walk } = require('./lib/walk');
 const OUT = path.join(ROOT, 'content');
-const { IGNORE_DIRS: LIB_IGNORE } = require('./lib/paths');
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
 function read(f) {
   try { return fs.readFileSync(f, 'utf8'); }
   catch { return ''; }
-}
-
-function walk(dir, ext) {
-  const results = [];
-  if (!fs.existsSync(dir)) return results;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name.startsWith('.') || LIB_IGNORE.has(entry.name)) continue;
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...walk(full, ext));
-    } else if (entry.name.endsWith(ext)) {
-      results.push(full);
-    }
-  }
-  return results;
 }
 
 function extract(html, re) {
@@ -55,7 +40,7 @@ function slugFromFilename(file) {
 /* ── WORKSHOPS ───────────────────────────────────────────── */
 
 function generateWorkshops() {
-  const files = walk(path.join(ROOT, 'workshops'), '.html');
+  const files = walk(path.join(ROOT, 'workshops'), { ext: '.html', ignore: IGNORE_DIRS });
   const workshops = [];
   const engines = {};
 

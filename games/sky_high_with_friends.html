@@ -207,9 +207,6 @@
       </div>
       <div class="xp-bar"><div class="xp-fill" id="go-xp-bar"></div></div>
     </div>
-    <div class="btn-row hidden" id="continue-row">
-      <button class="btn blue" id="continue-btn" aria-label="Watch ad to continue run">🎉 Second Chance</button>
-    </div>
     <div class="btn-row">
       <button class="btn" id="retry-btn">Retry</button>
       <button class="btn secondary" id="menu-btn">Menu</button>
@@ -317,19 +314,6 @@
     <div class="setting-row">
       <span class="setting-label">Ghost</span>
       <button class="toggle-btn" id="ghost-toggle">ON</button>
-    </div>
-
-    <div class="setting-row" id="remove-ads-row">
-      <span class="setting-label">Remove Ads</span>
-      <button class="toggle-btn" id="remove-ads-btn">Buy , $1.99</button>
-    </div>
-    <div class="setting-row" id="coin-pack-row">
-      <span class="setting-label">500 Coins</span>
-      <button class="toggle-btn" id="coin-pack-btn">$0.99</button>
-    </div>
-    <div class="setting-row" id="starter-row">
-      <span class="setting-label">Starter Pack</span>
-      <button class="toggle-btn" id="starter-btn">$2.99</button>
     </div>
 
     <div class="setting-row hidden" id="tilt-row">
@@ -442,17 +426,17 @@ function modMult(key) {
 }
 
 const CHARS = {
-  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', name: 'Pip the Turtle',    emoji: '🦁', unlockM: 0,
+  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', iris: '#5d4037', name: 'Pip the Turtle',    emoji: '🐢', unlockM: 0,
              perk: 'sturdy', perkName: 'Sturdy Shell', perkDesc: 'Hazards hit 50% softer' },
-  fox:     { body: '#8b5cf6', accent: '#4c1d95', eye: '#fff', name: 'Lumo the Fox',      emoji: '🦂', unlockM: 750,
+  fox:     { body: '#8b5cf6', accent: '#4c1d95', eye: '#fff', iris: '#7c3aed', name: 'Lumo the Fox',      emoji: '🦊', unlockM: 750,
              perk: 'speed',  perkName: 'Agile',       perkDesc: 'Sharper steering' },
-  tiger:   { body: '#ec4899', accent: '#831843', eye: '#fff', name: 'Ember the Tiger',   emoji: '🦁', unlockM: 2500,
+  tiger:   { body: '#ec4899', accent: '#831843', eye: '#fff', iris: '#be185d', name: 'Ember the Tiger',   emoji: '🐯', unlockM: 2500,
              perk: 'spring', perkName: 'Big Bounce',  perkDesc: 'Springs launch 15% higher' },
-  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', name: 'Echo the Axolotl',  emoji: '🦞', unlockM: 4500,
+  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', iris: '#1a1a2e', name: 'Echo the Axolotl',  emoji: '🦎', unlockM: 4500,
              perk: 'magnet', perkName: 'Magnetic',    perkDesc: 'Bigger coin reach, magnets last 2s longer' },
-  stardust:{ body: '#e0e7ff', accent: '#4338ca', eye: '#fff', name: 'Stardust',           emoji: 'âœ¨', unlockM: 12000,
+  stardust:{ body: '#e0e7ff', accent: '#4338ca', eye: '#fff', iris: '#6d28d9', name: 'Stardust',           emoji: '✨', unlockM: 12000,
              perk: 'celestial', perkName: 'Star Trail', perkDesc: 'Leaves a stardust trail · +10% coins', secret: true },
-  prism:    { body: '#c4b5fd', accent: '#5b21b6', eye: '#fff', name: 'Prism',              emoji: '🔮', unlockM: 24000,
+  prism:    { body: '#c4b5fd', accent: '#5b21b6', eye: '#fff', iris: '#4c1d95', name: 'Prism',              emoji: '🔮', unlockM: 24000,
              perk: 'prismatic', perkName: 'Prismatic', perkDesc: 'Rainbow trail · +15% coins', secret: true },
 };
 const CHAR_ORDER = ['turtle', 'fox', 'tiger', 'axolotl', 'stardust', 'prism'];
@@ -1077,9 +1061,7 @@ const state = {
   towerSeed: 0,
   nearMisses: 0,        // close calls this run â†’ bonus XP at death
   /* ── v1.2 additions ── */
-  continueUsed: false,  // Second Chance consumed this run?
-  recordedRun: false,   // gameSystem.recordGamePlay guard for continued runs
-  bank: null,           // snapshot of what a death banked (rolled back on continue)
+  recordedRun: false,
   hazardHits: 0,
   springBounces: 0,
   powerupsGrabbed: 0,
@@ -3152,10 +3134,11 @@ function drawHatViking(ctx, x, y, w, h) {
    character at (x, y, w, h) on any ctx. bodyColor/accentColor allow skin
    tints to work. facing: 1 = right, -1 = left. */
 function charGrad(c, x, y, w, h, color) {
-  const gr = c.createLinearGradient(x, y, x + w, y + h);
-  gr.addColorStop(0, lighten(color, 0.22));
-  gr.addColorStop(0.55, color);
-  gr.addColorStop(1, darken(color, 0.14));
+  const gr = c.createLinearGradient(x, y, x + w * 0.3, y + h);
+  gr.addColorStop(0, lighten(color, 0.30));
+  gr.addColorStop(0.35, lighten(color, 0.12));
+  gr.addColorStop(0.6, color);
+  gr.addColorStop(1, darken(color, 0.18));
   return gr;
 }
 function charOutline(c, color, w) {
@@ -3163,7 +3146,7 @@ function charOutline(c, color, w) {
   c.lineWidth = Math.max(1.2, w * 0.05);
   c.lineJoin = 'round';
 }
-function charEye(c, ex, ey, r, blink, look) {
+function charEye(c, ex, ey, r, blink, look, irisColor) {
   if (blink) {
     c.strokeStyle = '#2a1a12';
     c.lineWidth = Math.max(1.2, r * 0.5);
@@ -3175,13 +3158,24 @@ function charEye(c, ex, ey, r, blink, look) {
   }
   c.fillStyle = '#fff';
   c.beginPath(); c.arc(ex, ey, r, 0, Math.PI * 2); c.fill();
-  c.fillStyle = '#241a12';
-  c.beginPath(); c.arc(ex + look * r * 0.28, ey + r * 0.08, r * 0.52, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(0,0,0,0.06)';
+  c.beginPath(); c.ellipse(ex, ey - r * 0.3, r * 0.9, r * 0.5, 0, 0, Math.PI * 2); c.fill();
+  const ic = irisColor || '#241a12';
+  const ix = ex + look * r * 0.26;
+  const iy = ey + r * 0.06;
+  c.fillStyle = ic;
+  c.beginPath(); c.arc(ix, iy, r * 0.56, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#1a1018';
+  c.beginPath(); c.arc(ix, iy, r * 0.34, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#fff';
-  c.beginPath(); c.arc(ex + look * r * 0.28 - r * 0.2, ey - r * 0.24, r * 0.2, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.arc(ix - r * 0.18, iy - r * 0.22, r * 0.22, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.7)';
+  c.beginPath(); c.arc(ix + r * 0.16, iy + r * 0.18, r * 0.10, 0, Math.PI * 2); c.fill();
 }
 function charBlush(c, bx, by, rx, ry) {
-  c.fillStyle = 'rgba(255,110,150,0.28)';
+  c.fillStyle = 'rgba(255,100,140,0.22)';
+  c.beginPath(); c.ellipse(bx, by, rx * 1.4, ry * 1.3, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(255,120,160,0.35)';
   c.beginPath(); c.ellipse(bx, by, rx, ry, 0, 0, Math.PI * 2); c.fill();
 }
 
@@ -3702,9 +3696,7 @@ function startGame(weekly) {
   state.zone = 0;
   state.trailTimer = 0;
   state.nearMisses = 0;
-  state.continueUsed = false;
   state.recordedRun = false;
-  state.bank = null;
   state.hazardHits = 0;
   state.springBounces = 0;
   state.powerupsGrabbed = 0;
@@ -3859,18 +3851,6 @@ function die() {
   releaseWakeLock();
   document.getElementById('runmod-badge').classList.add('hidden');
 
-  // Snapshot for Second Chance: if the player continues, everything banked
-  // here is rolled back so the resumed run can earn it again honestly.
-  state.bank = {
-    prevCoins: save.coins,
-    prevXp: save.xp,
-    prevBest: save.bestHeight,
-    prevWeekly: { seed: save.weeklyBest.seed, best: save.weeklyBest.best },
-    prevLifetime: save.lifetimeCoins || 0,
-    prevAchievements: (save.achievements || []).slice(),
-    prevClaimed: (save.missions && save.missions.claimed ? save.missions.claimed.slice() : []),
-  };
-
   // Coins banked: run modifier multipliers + Golden Touch upgrade + perks
   let coinMult = modMult('coinMult')
     * upgradeMult('coinValue', 0.05);
@@ -3883,13 +3863,12 @@ function die() {
   // Award XP, based on height + coins + near-miss bravery + a small completion bonus
   const xpEarned = Math.floor(state.heightM / 5) + state.runCoins * 2 + 10 + state.nearMisses * 5;
   const levelUp = awardXp(xpEarned);
-  state.bank.xpEarned = xpEarned;
   const runScore = Math.floor(state.heightM) + state.runCoins * 5;
   window.__gsScore = (window.__gsScore || 0) + runScore;
   window.__gsBestRun = Math.max(window.__gsBestRun || 0, runScore);
   if (typeof gameSystem !== 'undefined' && !state.recordedRun) {
     gameSystem.recordGamePlay(Date.now());
-    state.recordedRun = true; // a continued run must not count twice
+    state.recordedRun = true;
   }
 
   let isNewBest;
@@ -3987,13 +3966,6 @@ function die() {
   // Record death telemetry (local ring buffer + GA4)
   if (typeof SkyTelemetry !== 'undefined') SkyTelemetry.recordDeath();
 
-  // Second Chance: one rewarded continue per run, only where an ad provider
-  // exists (the app). Worth it from 50m up.
-  const continueRow = document.getElementById('continue-row');
-  const canContinue = typeof window.squirtRewardedAd === 'function'
-    && !state.continueUsed && state.heightM >= 50;
-  continueRow.classList.toggle('hidden', !canContinue);
-
   // Leaderboards: only where the Play Games bridge is active
   const boardsBtn = document.getElementById('boards-btn');
   if (window.playGames) {
@@ -4020,62 +3992,6 @@ function die() {
   if (messages.length) {
     setTimeout(() => showToast(messages.join('  •  ')), 400);
   }
-}
-
-/* ---------- Second Chance ----------
-   Rolls back everything the death banked, then drops the player onto the
-   highest platform below the camera with a grace shield. Once per run. */
-function continueRun() {
-  const bank = state.bank;
-  if (!bank) return;
-  save.coins = bank.prevCoins;
-  save.xp = bank.prevXp;
-  save.level = levelFromXp(save.xp);
-  save.lifetimeCoins = bank.prevLifetime;
-  save.achievements = bank.prevAchievements.slice();
-  if (save.missions) save.missions.claimed = bank.prevClaimed.slice();
-  if (state.weekly) {
-    save.weeklyBest = { seed: bank.prevWeekly.seed, best: bank.prevWeekly.best };
-  } else {
-    save.bestHeight = bank.prevBest;
-  }
-  persist();
-
-  state.continueUsed = true;
-  state.mode = 'playing';
-  document.body.dataset.mode = 'playing';
-  document.getElementById('gameover').classList.add('hidden');
-
-  // Land on the highest platform below the camera; spawn one if none survived
-  const p = state.player;
-  let plat = null;
-  for (const pl of state.platforms) {
-    if (pl.ground || pl.type === 'breakable' && pl.broken) continue;
-    if (pl.y > state.cameraY + H * 0.35 && pl.y < state.cameraY + H * 0.9) {
-      if (!plat || pl.y < plat.y) plat = pl;
-    }
-  }
-  if (!plat) {
-    plat = { x: W / 2 - 35, y: state.cameraY + H * 0.62, w: 70, h: 14, type: 'static', bounced: false, vx: 0 };
-    state.platforms.push(plat);
-  }
-  p.x = plat.x + plat.w / 2 - p.w / 2;
-  p.y = plat.y - p.h - 1;
-  p.vx = 0;
-  p.vy = 0;
-  p.squish = 0;
-  state.invulnFrames = 90;
-  state.shieldActive = true; // grace shield for the comeback
-  state.cameraY = p.y - H * 0.45;
-  state.shakeMag = 0; state.shakeX = 0; state.shakeY = 0;
-  state.flashAlpha = 0;
-
-  addFlash('#5cdbff', 0.25);
-  addText(W / 2, p.y - 70, '🎉 Second Chance!', { color: '#5cdbff', size: 24, decay: 0.012 });
-  SFX.powerup();
-  vib([20, 30, 20]);
-  musicZoneTick();
-  requestWakeLock();
 }
 
 function returnToMenu() {
@@ -4681,13 +4597,6 @@ function refreshSettings() {
   }
   document.getElementById('tilt-row').classList.toggle('hidden', (save.settings.controls||'tilt')!=='tilt' || !tilt.enabled);
   document.getElementById('touchBtns').classList.toggle('show', (save.settings.controls||'tilt')==='buttons' && state.mode==='playing');
-  const adBtn=document.getElementById('remove-ads-btn');
-  if(adBtn){
-    const owned = save.iap && save.iap.removeAds;
-    adBtn.textContent = owned ? 'âœ“ Owned' : 'Buy , $1.99';
-    adBtn.classList.toggle('off', !!owned);
-    adBtn.disabled = !!owned;
-  }
 }
 function updateControlMode(){
   const mode = save.settings.controls||'tilt';
@@ -4740,54 +4649,6 @@ for(const id of ['haptics','shake','particles','ghost']){
     SFX.click();
   });
 }
-document.getElementById('remove-ads-btn').addEventListener('click', async ()=>{
-  if(save.iap && save.iap.removeAds) return;
-  const btn=document.getElementById('remove-ads-btn');
-  btn.textContent='…'; btn.disabled=true;
-  try{
-    const billing = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Billing;
-    if(billing && billing.purchase){
-      await billing.purchase({ productId: 'remove_ads' });
-    } else {
-      await new Promise(r=>setTimeout(r,600));
-    }
-    save.iap = save.iap||{}; save.iap.removeAds=true; persist();
-    refreshSettings(); showToast('Ads removed! Thank you âœ¨'); SFX.buy();
-    try{ if(typeof gtag==='function') gtag('event','iap_purchase', { items:[{id:'remove_ads'}] }); }catch(e){}
-    const adBtn=document.getElementById('ad-double-btn'); if(adBtn) adBtn.style.display='none';
-  }catch(e){ showToast('Purchase failed'); btn.textContent='Buy , $1.99'; btn.disabled=false; }
-});
-// IAP restore on boot
-async function restoreIAP(){
-  try{
-    const billing = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Billing;
-    if(billing && billing.getAvailableProducts){
-      const prods = await billing.getAvailableProducts();
-      for(const p of prods){
-        if(p.productId==='remove_ads') save.iap.removeAds=true;
-        if(p.productId==='coin_pack_500') save.iap.coinPack500=true;
-        if(p.productId==='starter_pack') save.iap.starterPack=true;
-      }
-      persist();
-    }
-  }catch(e){}
-}
-restoreIAP();
-
-async function grantIAP(productId){
-  try{
-    const billing = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Billing;
-    if(billing && billing.purchase){ await billing.purchase({ productId }); }
-    else { await new Promise(r=>setTimeout(r,600)); }
-    if(productId==='remove_ads'){ save.iap.removeAds=true; }
-    else if(productId==='coin_pack_500'){ save.coins+=500; showToast('500 coins added! 🦙'); }
-    else if(productId==='starter_pack'){ save.coins+=1000; for(const h of COSMETICS.hat.filter(x=>x.id!=='none')){ if(!save.owned.hat.includes(h.id)) save.owned.hat.push(h.id); } for(const s of COSMETICS.skin.filter(x=>x.price>0)){ if(!save.owned.skin.includes(s.id)) save.owned.skin.push(s.id); } showToast('Starter Pack unlocked! âœ¨'); }
-    persist(); refreshSettings(); SFX.buy();
-    try{ if(typeof gtag==='function') gtag('event','iap_purchase',{items:[{id:productId}]}); }catch(e){}
-  }catch(e){ showToast('Purchase failed'); }
-}
-document.getElementById('coin-pack-btn').addEventListener('click', ()=>grantIAP('coin_pack_500'));
-document.getElementById('starter-btn').addEventListener('click', ()=>grantIAP('starter_pack'));
 document.getElementById('reset-btn').addEventListener('click', () => {
   if (confirm('This will erase ALL progress, coins, cosmetics, and achievements. Are you sure?')) {
     localStorage.removeItem(SAVE_KEY);
@@ -4841,16 +4702,6 @@ document.getElementById('ach-back-btn').addEventListener('click', closeAchieveme
 document.getElementById('missions-btn').addEventListener('click', openMissions);
 document.getElementById('missions-back-btn').addEventListener('click', closeMissions);
 
-/* ---------- Second Chance wiring ---------- */
-document.getElementById('continue-btn').addEventListener('click', () => {
-  if (state.continueUsed) return;
-  SFX.click();
-  if (typeof window.squirtRewardedAd === 'function') {
-    window.squirtRewardedAd(continueRun);
-  } else {
-    continueRun(); // no ad provider (web/dev) , grant directly so the flow is testable
-  }
-});
 document.getElementById('boards-btn').addEventListener('click', () => {
   SFX.click();
   if (!(window.playGames && window.playGames.available())) return;
@@ -5103,17 +4954,17 @@ function jvdsCloseStrip(){
     <div class="footer-inner">
         <div class="footer-brand">
             <div class="footer-logo">JVDesignStudio</div>
-            <div class="footer-tagline">Books · Games · Creative Adventures</div>
-            <p class="footer-blurb">Browser-first creative studio - no install, no account to start. Learn, create and play on a school computer.</p>
+            <div class="footer-tagline">Coding &amp; Game Dev Workshops</div>
+            <p class="footer-blurb">Free coding and game development workshops for young creators. No install, no account - works on any school computer.</p>
         </div>
         <div class="footer-grid">
             <nav class="footer-col" aria-label="Explore">
                 <h3 class="footer-col-title">Explore</h3>
                 <a href="/">Home</a>
-                <a href="/games">Play - Games</a>
-                <a href="/workshop">Learn - Workshops</a>
-                <a href="/dev-tools">Create - Tools</a>
-                <a href="/books">Read - Books</a>
+                <a href="/workshop">Workshops</a>
+                <a href="/dev-tools">Tools</a>
+                <a href="/games">Games</a>
+                <a href="/books">Books</a>
                 <a href="/downloads">Downloads</a>
                 <a href="/sitemap">Sitemap</a>
                 <a href="/search">Search</a>
@@ -5124,8 +4975,7 @@ function jvdsCloseStrip(){
                 <a href="/teachers.html">For Teachers</a>
                 <a href="/about">About the Studio</a>
                 <a href="/contact">Contact</a>
-                <a href="/me.html">My Progress</a>
-                <a href="/pages/privacy-policy.html">Privacy Policy</a>
+                <a href="/privacy-policy">Privacy Policy</a>
                 <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
             </nav>
             <nav class="footer-col" aria-label="Socials">

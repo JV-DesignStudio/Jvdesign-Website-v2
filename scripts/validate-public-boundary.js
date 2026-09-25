@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Keep the private Studio reference out of this public repository and Pages output.
+// --dry-run: report all issues and exit 0 (for auditing the allow-list without blocking CI).
 const fs = require('fs');
 const path = require('path');
+const DRY_RUN = process.argv.includes('--dry-run');
 const root = path.resolve(__dirname, '..');
 const forbidden = ['tools/dev-board.html', 'docs/audits', 'studio-workspace'];
 const docs = path.join(root, 'docs');
@@ -12,8 +14,9 @@ if (fs.existsSync(docs)) {
 }
 const found = forbidden.filter(relative => fs.existsSync(path.join(root, relative)));
 if (found.length) {
-  console.error('Private planning must be moved outside the public site: ' + found.join(', '));
-  process.exit(1);
+  const msg='Private planning must be moved outside the public site: ' + found.join(', ');
+  if(DRY_RUN){ console.log('[dry-run] '+msg); }
+  else { console.error(msg); process.exit(1); }
 }
 // Queue drafts must never be tracked - only .gitkeep is allowed in social-posts/queue/
 const queueDir = path.join(root, 'social-posts/queue');
@@ -87,8 +90,9 @@ const walkForLeaks=(dir,depth=0)=>{
 };
 const leaks=walkForLeaks(root);
 if(leaks.length){
-  console.error('FAIL: potential private leak patterns found: '+leaks.slice(0,10).join(', '));
-  console.error('Fix: remove secrets from public files or add to .gitignore; check '+leaks.length+' hits');
+  const msg='FAIL: potential private leak patterns found: '+leaks.slice(0,10).join(', ')+'\nFix: remove secrets from public files or add to .gitignore; check '+leaks.length+' hit(s)';
+  if(DRY_RUN){ console.log('[dry-run] '+msg); console.log('Public boundary: '+leaks.length+' issue(s) found (dry-run, exit 0).'); process.exit(0); }
+  console.error(msg);
   process.exit(1);
 }
 console.log('Public boundary checked: internal board and audit artifacts are absent.');
