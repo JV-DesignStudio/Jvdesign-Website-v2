@@ -7,19 +7,19 @@
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
 <meta name="theme-color" content="#BC4749">
-<meta name="description" content="Play Candy Kingdom Adventure Online as a guided kids tabletop RPG session with candy heroes, GM scenes, d6 rolls and the free printable adventure pack.">
+<meta name="description" content="A free kids tabletop RPG in the browser: one short Candy Kingdom adventure, three candy heroes, a d6 roll and a proper ending in under five minutes. No account, no install.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/candy_kingdom.html">
 <title>Candy Kingdom Adventure Online | JVDesignStudio</title>
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://jvdesignstudio.co.uk/games/candy_kingdom.html">
     <meta property="og:title" content="Candy Kingdom Adventure Online | JVDesignStudio">
-    <meta property="og:description" content="Play Candy Kingdom Adventure Online as a guided kids tabletop RPG session with candy heroes, GM scenes, d6 rolls and the free printable adventure pack.">
+    <meta property="og:description" content="A free kids tabletop RPG in the browser: one short Candy Kingdom adventure, three candy heroes, a d6 roll and a proper ending in under five minutes. No account, no install.">
     <meta property="og:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
     <meta property="og:site_name" content="JVDesignStudio">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Candy Kingdom Adventure Online | JVDesignStudio">
-    <meta name="twitter:description" content="Play Candy Kingdom Adventure Online as a guided kids tabletop RPG session with candy heroes, GM scenes, d6 rolls and the free printable adventure pack.">
+    <meta name="twitter:description" content="A free kids tabletop RPG in the browser: one short Candy Kingdom adventure, three candy heroes, a d6 roll and a proper ending in under five minutes. No account, no install.">
     <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
 <script src="../analytics-loader.js" defer></script>
 <script src="../game-system.js"></script>
@@ -31,8 +31,8 @@
 <body>
 <div class="wrap">
   <div class="top"><a class="pill" href="../arcade.html">Back to Arcade</a><a class="pill" href="../games">All Games</a><a class="pill" href="../the-candy-kingdom-adventure-game-design-document.pdf">Tabletop Pack</a></div>
-  <section class="hero"><div><div class="kicker">Guided kids tabletop RPG</div><h1>Candy Kingdom Adventure Online</h1><p>Choose a candy hero, read the GM scene, decide who acts, then roll the d6. It keeps the tabletop heart while making the first adventure playable online.</p></div><div class="emoji">🍬</div></section>
-  <section class="hud"><div class="stat"><b id="score">0</b><span>Score</span></div><div class="stat"><b id="chapter">1/5</b><span>Scene</span></div><div class="stat"><b id="hearts">3</b><span>Teamwork</span></div><div class="stat"><b id="odds">50%</b><span>Success Chance</span></div><div class="stat"><b id="stars">☆☆☆</b><span>Stars</span></div><div class="stat"><b id="best">0</b><span>Best</span></div></section>
+  <section class="hero"><div><div class="kicker">Guided kids tabletop RPG</div><h1>Candy Kingdom Adventure Online</h1><p>One short adventure you can finish in a few minutes. Read the GM scene, choose which candy hero acts, then roll the d6 to find out how it goes. It keeps the tabletop heart and asks for no account, no install and no second session.</p></div><div class="emoji">🍬</div></section>
+  <section class="hud"><div class="stat"><b id="score">0</b><span>Score</span></div><div class="stat"><b id="chapter">1/1</b><span>Adventure</span></div><div class="stat"><b id="hearts">?</b><span>Your Roll</span></div><div class="stat"><b id="odds">50%</b><span>Success Chance</span></div><div class="stat"><b id="stars">☆☆☆</b><span>Stars</span></div><div class="stat"><b id="best">0</b><span>Best</span></div></section>
   <main class="game">
     <section class="panel">
       <div class="scene"><span class="badge" id="skillBadge">Sweet Smarts</span><h2 id="sceneTitle">Scene</h2><p id="sceneText"></p></div>
@@ -53,26 +53,96 @@ const heroes=[
  {id:'peppermint',name:'Peppermint Wizard',emoji:'🌀',stat:'Sweet Smarts',hint:'clever, magical, good at riddles and planning'},
  {id:'choc',name:'Chocolate Rogue',emoji:'🍫',stat:'Fizzyness',hint:'quick, quiet, good at dodging and sneaking'}
 ];
-const scenes=[
- {title:'The Sticky Caramel Crossing',need:'Fizzyness',text:'The bridge is gone and caramel is spreading across the path. The clue says: "fast feet beat sticky sweets." Who should cross first?',explain:'Fizzyness fits because the clue asks for quick movement before the caramel catches the hero.'},
- {title:'Rock Candy Blockade',need:'Chewiness',text:'A crystal wall blocks the road. The clue says the wall cracks only when someone can push, brace and keep going.',explain:'Chewiness fits strength and toughness, so it is the best stat for pushing through the wall.'},
- {title:'The Flavour Riddle',need:'Sweet Smarts',text:'Two candy canes point in different directions. One is sweet, one is sour. A written riddle decides the safe path.',explain:'Sweet Smarts fits reading, riddles and planning.'},
- {title:'Fizzing Gumdrop Rapids',need:'Fizzyness',text:'Gumdrop stones pop up and vanish in rhythm. The team needs timing, balance and a quick jump pattern.',explain:'Fizzyness fits timing, balance and quick reactions.'},
- {title:'The Sour Patch Choice',need:'Sweet Smarts',text:'The Sour Patch Kid offers three promises, but only one matches all earlier clues. The team must spot the contradiction.',explain:'Sweet Smarts fits comparing evidence and finding the contradiction.'}
-];
+// A590: one adventure, finished in a few minutes. The clue names the strength
+// that fits, the hero you pick earns the +1, and a single roll decides how the
+// story ends. No second session, no scene counter, no waiting.
+const SCENE={
+ title:'The Sticky Caramel Crossing',
+ need:'Fizzyness',
+ text:'The bridge is gone and warm caramel is spreading across the path. The GM reads out the clue: "fast feet beat sticky sweets." Which hero crosses first?',
+ why:'Fizzyness fits, because the clue asks for quick feet before the caramel catches the team.',
+ success:'The Chocolate Rogue slips over first, then waves the others across. The caramel stops at the river and the path is open again.',
+ partial:'The team gets across, but the caramel catches the last hero and soaks one boot. The bridge is open, and so is the bakery.',
+ fail:'The caramel wins this round. The team backs off, waits for it to cool, then slips over the hardened surface a minute later.'
+};
+const GOALS=['Finish the adventure','Match the clue to the right hero','Roll 4 or more'];
 let meta=read(metaKey,{best:0});
 let state=read(saveKey,null)||fresh();
 function read(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch(e){return f}}
 function write(){localStorage.setItem(saveKey,JSON.stringify(state));localStorage.setItem(metaKey,JSON.stringify(meta))}
-function fresh(){return{scene:0,score:0,hearts:3,stars:0,selected:null,done:false,correct:0,rolls:0,log:['Start by reading the GM scene, then choose which hero leads the action.']}}
-function current(){return scenes[state.scene]}
-function chance(){const h=heroes.find(x=>x.id===state.selected);const bonus=h&&h.stat===current().need?1:0;return {bonus,percent:bonus?67:50}}
-function selectHero(id){if(state.done)return;state.selected=id;const c=chance();log((heroes.find(h=>h.id===id)||{}).name+' selected. Success chance: '+c.percent+'%.');render()}
-function roll(){if(!state.selected||state.done)return;const h=heroes.find(x=>x.id===state.selected);const sc=current();const c=chance();const die=1+Math.floor(Math.random()*6);const total=die+c.bonus;state.rolls++;document.getElementById('die').textContent=die+(c.bonus?'+1':'');if(h.stat===sc.need)state.correct++;let msg='Rolled '+die+(c.bonus?' + 1 = '+total:'')+'. ';if(total>=4){const gain=150+(h.stat===sc.need?100:0);state.score+=gain;msg+='Success. '+sc.explain+' +'+gain;}else if(total>=2){state.score+=45;state.hearts=Math.max(0,state.hearts-1);msg+='Partial success. The team gets through, but loses teamwork. '+sc.explain;}else{state.hearts=Math.max(0,state.hearts-2);msg+='The plan fails. Try reading the clue more carefully next time.'}log(msg);if(state.hearts<=0){finish(false);return}if(state.scene>=scenes.length-1)finish(true);else{state.scene++;state.selected=null}write();render()}
-function finish(won){state.done=true;state.stars=(won?1:0)+(state.correct>=4?1:0)+(state.hearts>=2?1:0);state.score+=state.stars*250;meta.best=Math.max(meta.best,state.score);gameSystem.addScore(state.score);gameSystem.addXP(20+state.stars*15);gameSystem.unlockAchievement('firstAdventure');if(state.correct>=4)gameSystem.unlockAchievement('goodRoleplayChoice');try{gameSystem.saveState({best:meta.best})}catch(e){}gameSystem.recordGamePlay(Date.now());log(won?'Quest complete. The kingdom is sweet again.':'The team ran out of teamwork. Restart and use the clues.');write();render()}
-function restart(){state=fresh();document.getElementById('die').textContent='?';write();render()}
-function log(m){state.log.unshift(m);state.log=state.log.slice(0,9)}
-function render(){const sc=current();const c=chance();document.getElementById('score').textContent=state.score;document.getElementById('chapter').textContent=(state.scene+1)+'/'+scenes.length;document.getElementById('hearts').textContent=state.hearts;document.getElementById('odds').textContent=c.percent+'%';document.getElementById('stars').textContent='★★★'.slice(0,state.stars)+'☆☆☆'.slice(state.stars);document.getElementById('best').textContent=meta.best;document.getElementById('skillBadge').textContent=sc.need;document.getElementById('sceneTitle').textContent=sc.title;document.getElementById('sceneText').textContent=sc.text;document.getElementById('lesson').textContent=state.selected?('GM note: '+sc.explain+' The matching stat adds +1, so a near miss can become a success.'):'GM tip: choose the hero whose strengths fit the scene. Chewiness is tough, Sweet Smarts is clever, Fizzyness is quick.';document.getElementById('rollBtn').disabled=!state.selected||state.done;document.getElementById('rollBtn').textContent=state.done?'Quest Finished':'Roll the d6';document.getElementById('choices').innerHTML=heroes.map(h=>'<button class="choice '+(state.selected===h.id?'selected':'')+'" data-id="'+h.id+'"><b>'+h.emoji+' '+h.name+'</b><small>'+h.stat+' - '+h.hint+'</small></button>').join('');document.getElementById('party').innerHTML=heroes.map(h=>'<button class="hero-card '+(state.selected===h.id?'active':'')+'" data-id="'+h.id+'"><b>'+h.emoji+' '+h.name+'</b><span>'+h.stat+'</span><div class="meter"><i style="width:'+(h.stat===sc.need?100:45)+'%"></i></div></button>').join('');document.getElementById('goals').innerHTML=['Finish the adventure','Make 4 strong roleplay choices','Keep 2+ teamwork'].map((g,i)=>{const ok=i===0?state.done&&state.hearts>0:i===1?state.correct>=4:state.hearts>=2;return '<div class="goal '+(ok?'done':'')+'"><b>'+(ok?'✓':'○')+'</b><span>'+g+'</span></div>'}).join('');document.getElementById('result').className='result'+(state.done?' show':'');document.getElementById('result').innerHTML=state.done?'<b>Final score '+state.score+'</b><br>Stars: '+state.stars+'/3 <button class="secondary" onclick="restart()">Play Again</button>':'';document.getElementById('log').innerHTML=state.log.map(x=>'<p>'+x+'</p>').join('');write()}
+function fresh(){return{score:0,stars:0,selected:null,done:false,total:0,matched:false,ending:'',log:['Start by reading the GM scene, then choose which hero leads the action.']}}
+function hero(){return heroes.find(x=>x.id===state.selected)||null}
+function chance(){const h=hero();return h&&h.stat===SCENE.need?75:50}
+function selectHero(id){
+ if(state.done)return;
+ state.selected=id;
+ const h=hero();
+ state.matched=h.stat===SCENE.need;
+ log(h.name+' takes the lead. Success chance: '+chance()+'%.');
+ render();
+}
+function roll(){
+ if(!state.selected||state.done)return;
+ const die=1+Math.floor(Math.random()*6);
+ const bonus=state.matched?1:0;
+ const total=die+bonus;
+ state.total=total;
+ state.ending=total>=5?'success':total>=3?'partial':'fail';
+ document.getElementById('die').textContent=die+(bonus?'+1':'');
+ log('Rolled '+die+(bonus?' + 1 = '+total:' = '+total)+'. '+SCENE.why);
+ log(SCENE[state.ending]);
+ state.score=(total>=5?300:total>=3?150:60)+(state.matched?100:0);
+ state.stars=(total>=5?1:0)+(state.matched?1:0)+(total>=4?1:0);
+ meta.best=Math.max(meta.best,state.score);
+ state.done=true;
+ gameSystem.addScore(state.score);
+ gameSystem.addXP(20+state.stars*15);
+ gameSystem.unlockAchievement('firstAdventure');
+ if(state.matched)gameSystem.unlockAchievement('goodRoleplayChoice');
+ try{gameSystem.saveState({best:meta.best})}catch(e){}
+ gameSystem.recordGamePlay(Date.now());
+ write();
+ render();
+}
+function restart(){
+ state=fresh();
+ document.getElementById('die').textContent='?';
+ write();
+ render();
+}
+function log(m){state.log.unshift(m);state.log=state.log.slice(0,6)}
+function render(){
+ const h=hero();
+ document.getElementById('score').textContent=state.score;
+ document.getElementById('chapter').textContent='1/1';
+ document.getElementById('hearts').textContent=state.total||'?';
+ document.getElementById('odds').textContent=chance()+'%';
+ document.getElementById('stars').textContent='★★★'.slice(0,state.stars)+'☆☆☆'.slice(state.stars);
+ document.getElementById('best').textContent=meta.best;
+ document.getElementById('skillBadge').textContent=SCENE.need;
+ document.getElementById('sceneTitle').textContent=SCENE.title;
+ document.getElementById('sceneText').textContent=h?SCENE.text:'The GM reads out the scene, then you choose which candy hero acts.';
+ document.getElementById('lesson').textContent=!h
+  ?'GM tip: the clue names one strength. Pick the hero who has it and your roll gets +1.'
+  :state.matched
+   ?'GM note: '+SCENE.why+' Your hero matches the clue, so your roll gets +1.'
+   :'GM note: the clue asked for '+SCENE.need.toLowerCase()+'. A different hero can still try, just without the +1.';
+ document.getElementById('rollBtn').disabled=!h||state.done;
+ document.getElementById('rollBtn').textContent=state.done?'Adventure finished':'Roll the d6';
+ document.getElementById('choices').innerHTML=heroes.map(x=>'<button class="choice '+(state.selected===x.id?'selected':'')+'" data-id="'+x.id+'"><b>'+x.emoji+' '+x.name+'</b><small>'+x.stat+' - '+x.hint+'</small></button>').join('');
+ document.getElementById('party').innerHTML=heroes.map(x=>'<button class="hero-card '+(state.selected===x.id?'active':'')+'" data-id="'+x.id+'"><b>'+x.emoji+' '+x.name+'</b><span>'+x.stat+'</span><div class="meter"><i style="width:'+(x.stat===SCENE.need?100:45)+'%"></i></div></button>').join('');
+ document.getElementById('goals').innerHTML=GOALS.map((g,i)=>{
+  const ok=i===0?state.done:i===1?state.matched:state.total>=4;
+  return '<div class="goal '+(ok?'done':'')+'"><b>'+(ok?'✓':'○')+'</b><span>'+g+'</span></div>';
+ }).join('');
+ const result=document.getElementById('result');
+ result.className='result'+(state.done?' show':'');
+ result.innerHTML=state.done
+  ?'<b>Final score '+state.score+'</b><br>'+SCENE[state.ending]+'<br>Stars: '+state.stars+'/3 <button class="secondary" onclick="restart()">Play Again</button>'
+  :'';
+ document.getElementById('log').innerHTML=state.log.map(x=>'<p>'+x+'</p>').join('');
+ write();
+}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b)selectHero(b.dataset.id)});
 document.getElementById('rollBtn').onclick=roll;
 render();

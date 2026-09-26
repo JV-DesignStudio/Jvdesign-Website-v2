@@ -40,14 +40,14 @@
   <main class="play-layout">
     <section class="panel mission-panel" aria-label="Mission">
       <div class="sector-row">
-        <span id="sectorName">Orion Nursery</span>
+        <span id="sectorName">Lantern Nebula</span>
         <b id="starBank">⭐ 0</b>
       </div>
       <div class="level-strip" id="levelStrip"></div>
       <div class="mission-card">
-        <p class="mission-kicker">Current mission</p>
-        <h2 id="missionTitle">Warm-up Orbit</h2>
-        <p id="missionText">Score points and collect bubbles.</p>
+        <p class="mission-kicker">Tonight's mission</p>
+        <h2 id="missionTitle">Light the Lanterns</h2>
+        <p id="missionText">Stardust lit the way in. Pop the matching colours and the nebula lanterns glow one by one.</p>
         <div class="mission-goals" id="missionGoals"></div>
       </div>
       <div class="power-card">
@@ -59,7 +59,7 @@
 
     <section class="board-wrap" aria-label="Bubble board">
       <div class="score-ribbon">
-        <div><small>Level</small><b id="levelVal">1</b></div>
+        <div><small>Mission</small><b id="levelVal">1/1</b></div>
         <div><small>Score</small><b id="scoreVal">0</b></div>
         <div><small>Moves</small><b id="movesVal">0</b></div>
         <div><small>Combo</small><b id="comboVal">x1</b></div>
@@ -108,32 +108,35 @@ const LABELS = { red:'Red', teal:'Teal', gold:'Gold', violet:'Violet', blue:'Blu
 const ICONS = { bomb:'💣', rocketH:'🚀', rocketV:'↕️', wild:'🌈', rock:'🪨' };
 const SAVE_KEY = 'bp_galaxy_combo_progress_v2';
 
-const sectors = [
-  { name:'Orion Nursery', title:'Warm-up Orbit', text:'Learn to chain clusters and fill the score target.', colors:4, moves:26, target:18000, goals:{ score:18000, collect:{red:8, teal:8} } },
-  { name:'Meteor Belt', title:'Bomb Maker', text:'Pop larger groups to forge bombs and crack rocks.', colors:4, moves:24, target:26000, rocks:5, goals:{ score:26000, specials:2, collect:{gold:10} } },
-  { name:'Nebula Rapids', title:'Cascade Chase', text:'Sideways gravity creates strange falls and bigger chains.', colors:5, moves:25, target:34000, gravity:'left', goals:{ score:34000, chain:3, collect:{violet:12, blue:8} } },
-  { name:'Comet Crossing', title:'Rocket Route', text:'Make huge clusters, fire rockets and clear the comet lane.', colors:5, moves:23, target:42000, rocks:8, goals:{ score:42000, specials:4, collect:{green:12} } },
-  { name:'Supernova Gate', title:'Final Spark', text:'Use every combo trick to open the gate and bank three stars.', colors:5, moves:25, target:56000, rocks:10, goals:{ score:56000, chain:4, specials:5, collect:{red:12, gold:12} } }
-];
+// A591: one mission, finished in a few minutes. Stardust lit the way in; the
+// lantern nebula just needs the colour goals met. No sector ladder, no unlocks.
+const MISSION = {
+  name:'Lantern Nebula',
+  title:'Light the Lanterns',
+  text:'Stardust lit the way in. Pop the matching colours and the nebula lanterns glow one by one.',
+  colors:4,
+  moves:14,
+  target:12000,
+  goals:{ score:12000, collect:{ red:12, teal:12 } }
+};
 
 let state = loadProgress();
 let cells = [];
 let nextId = 1;
 let busy = false;
-let levelIndex = Math.min(state.bestLevel || 0, sectors.length - 1);
 let run = {};
 
 function loadProgress(){
-  try { return Object.assign({bestLevel:0, stars:{}, bestScore:0}, JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')); }
-  catch(e){ return {bestLevel:0, stars:{}, bestScore:0}; }
+  // A591: one mission, so only the stars for it and the best score are kept.
+  try { return Object.assign({stars:{}, bestScore:0}, JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')); }
+  catch(e){ return {stars:{}, bestScore:0}; }
 }
 function saveProgress(){ try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch(e){} }
 function starTotal(){ return Object.values(state.stars).reduce((a,b)=>a+b,0); }
 function randType(max){ return TYPES[Math.floor(Math.random()*max)]; }
 
-function startLevel(index = levelIndex){
-  levelIndex = Math.max(0, Math.min(index, sectors.length - 1));
-  const cfg = sectors[levelIndex];
+function startMission(){
+  const cfg = MISSION;
   run = { score:0, moves:cfg.moves, combo:1, bestCombo:1, charge:0, specials:0, chainBest:0, collected:{}, rocksBroken:0, cleared:false, reported:0 };
   cells = [];
   nextId = 1;
@@ -148,7 +151,7 @@ function startLevel(index = levelIndex){
   updateLevelStrip();
   render();
   updateHud();
-  toast('Mission ' + (levelIndex+1) + ': ' + cfg.title);
+  toast('Mission: ' + cfg.title);
 }
 function makeBubble(type, special=null){ return { id: nextId++, type, special, hp: special==='rock'?2:1 }; }
 function placeRocks(count){
@@ -330,7 +333,7 @@ function findCascadeGroups(){
   return groups;
 }
 function collapse(){
-  const cfg=sectors[levelIndex];
+  const cfg=MISSION;
   if(cfg.gravity==='left'){
     for(let r=0;r<ROWS;r++){ let w=0; for(let c=0;c<COLS;c++) if(cells[r][c]){ const b=cells[r][c]; cells[r][c]=null; cells[r][w++]=b; } }
     return;
@@ -338,11 +341,11 @@ function collapse(){
   for(let c=0;c<COLS;c++){ let w=ROWS-1; for(let r=ROWS-1;r>=0;r--) if(cells[r][c]){ const b=cells[r][c]; cells[r][c]=null; cells[w--][c]=b; } }
 }
 function refill(){
-  const cfg=sectors[levelIndex];
+  const cfg=MISSION;
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(!cells[r][c]) cells[r][c]=makeBubble(randType(cfg.colors));
 }
 function shuffleBoard(){
-  const cfg=sectors[levelIndex];
+  const cfg=MISSION;
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(cells[r][c] && cells[r][c].special!=='rock') cells[r][c]=makeBubble(randType(cfg.colors));
   guaranteeMoves(); render(); toast('Board reshuffled - new combo chance!');
 }
@@ -359,16 +362,16 @@ document.getElementById('superBtn').addEventListener('click', launchSuper);
 document.getElementById('helpBtn').addEventListener('click', showHelp);
 document.getElementById('modalPrimary').addEventListener('click', ()=>{
   const action = document.getElementById('modalPrimary').dataset.action || 'start';
-  if(action==='next') startLevel(levelIndex+1); else if(action==='retry') startLevel(levelIndex); else startLevel(levelIndex);
+  if(action==='next') startMission(); else if(action==='retry') startMission(); else startMission();
 });
 
 function updateHud(){
-  const cfg=sectors[levelIndex], goals=cfg.goals;
+  const cfg=MISSION, goals=cfg.goals;
   document.getElementById('sectorName').textContent = cfg.name;
   document.getElementById('starBank').textContent = '⭐ ' + starTotal();
   document.getElementById('missionTitle').textContent = cfg.title;
   document.getElementById('missionText').textContent = cfg.text;
-  document.getElementById('levelVal').textContent = levelIndex+1;
+  document.getElementById('levelVal').textContent = '1/1';
   document.getElementById('scoreVal').textContent = run.score;
   document.getElementById('movesVal').textContent = run.moves;
   document.getElementById('comboVal').textContent = 'x' + run.combo;
@@ -395,10 +398,13 @@ function updateComboMeter(){
 }
 function updateLevelStrip(){
   const strip=document.getElementById('levelStrip'); strip.innerHTML='';
-  sectors.forEach((s,i)=>{ const node=document.createElement('button'); node.className='planet '+(i===levelIndex?'active':'')+(i<=state.bestLevel?' unlocked':''); node.textContent=(state.stars[i]?'⭐'.repeat(state.stars[i]):i+1); node.disabled=i>state.bestLevel; node.onclick=()=>startLevel(i); strip.appendChild(node); });
+  const node=document.createElement('div');
+  node.className='planet active unlocked';
+  node.textContent=state.stars[0]?'⭐'.repeat(state.stars[0]):'1';
+  strip.appendChild(node);
 }
 function missionComplete(){
-  const g=sectors[levelIndex].goals;
+  const g=MISSION.goals;
   if(run.score < g.score) return false;
   if(g.chain && run.chainBest < g.chain) return false;
   if(g.specials && run.specials < g.specials) return false;
@@ -412,26 +418,31 @@ function checkEnd(){
 function finishLevel(){
   run.cleared=true; busy=true;
   const spare=Math.max(0,run.moves);
-  const stars = spare>=8 ? 3 : spare>=4 ? 2 : 1;
-  state.stars[levelIndex]=Math.max(state.stars[levelIndex]||0, stars);
-  state.bestLevel=Math.max(state.bestLevel, Math.min(levelIndex+1, sectors.length-1));
+  // A591: one star for finishing, one for a real chain, one for using a special.
+  // Spare moves used to hand out 3 stars every run, which made the rating and
+  // the replay pointless.
+  const chainStar = run.chainBest>=4;
+  const specialStar = run.specials>0;
+  const stars = 1 + (chainStar?1:0) + (specialStar?1:0);
+  state.stars[0]=Math.max(state.stars[0]||0, stars);
   state.bestScore=Math.max(state.bestScore, run.score);
   saveProgress();
   reportScore();
   gameSystem.addXP(Math.floor(run.score/35)+stars*25);
   gameSystem.unlockAchievement('firstPop');
   if(stars===3) gameSystem.unlockAchievement('threeStarClear');
-  if(levelIndex===sectors.length-1) gameSystem.unlockAchievement('galaxyClear');
+  gameSystem.unlockAchievement('galaxyClear');
   gameSystem.saveState();
   audioEffects.playLevelUp();
-  showModal('🎉','Mission Complete', 'You earned ' + '⭐'.repeat(stars) + ' with ' + spare + ' moves spare.', [
+  showModal('🎉','Mission Complete',
+    'The nebula is lit. ' + '⭐'.repeat(stars) + ' of 3 - one for finishing, one for a chain of 4, one for using a special. ' + spare + ' move' + (spare===1?'':'s') + ' spare.', [
     ['Score', run.score], ['Best combo', 'x'+run.bestCombo], ['Best chain', 'x'+run.chainBest]
-  ], levelIndex===sectors.length-1 ? 'Replay Finale' : 'Next Mission', levelIndex===sectors.length-1 ? 'retry' : 'next');
+  ], 'Play the mission again', 'retry');
 }
 function failLevel(){
   busy=true; reportScore(); gameSystem.addXP(Math.floor(run.score/50)); gameSystem.saveState(); audioEffects.playError();
   showModal('🌌','Out of Moves','You were close. Aim for bigger clusters early, then spend specials together.', [
-    ['Score', run.score], ['Target', sectors[levelIndex].goals.score], ['Best combo', 'x'+run.bestCombo]
+    ['Score', run.score], ['Target', MISSION.goals.score], ['Best combo', 'x'+run.bestCombo]
   ], 'Retry Mission', 'retry');
 }
 function reportScore(){ const delta=run.score-(run.reported||0); if(delta>0){ gameSystem.addScore(delta); run.reported=run.score; } }
@@ -460,9 +471,9 @@ function popFx(r,c,text){
   audioEffects.playPop();
 }
 
-showModal('🫧','Bubble Pop Galaxy','A proper combo puzzle: complete colour missions, forge specials, chain cascades and earn stars across five galaxy sectors.', [
-  ['Best score', state.bestScore||0], ['Stars banked', starTotal()], ['Unlocked', (state.bestLevel+1)+' / '+sectors.length]
-], state.bestLevel ? 'Continue' : 'Start Run', 'start');
+showModal('🫧','Bubble Pop Galaxy','One small mission: light the Lantern Nebula by popping the matching colours, then beat your own score.', [
+  ['Best score', state.bestScore||0], ['Stars earned', state.stars[0] ? '⭐'.repeat(state.stars[0]) : 'not yet']
+], 'Start the mission', 'start');
 updateLevelStrip();
 </script>
 <script defer src="../cookie-consent.js"></script>

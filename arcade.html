@@ -87,7 +87,7 @@
     <div class="arc-hero-copy">
       <div class="arc-hero-eyebrow">Play with Pip + Echo</div>
       <h1 class="arc-hero-title">Free games for<br><span>big ideas</span></h1>
-      <p class="arc-hero-sub">Pick a game, make a run, and keep your best moments in one cosy arcade.</p>
+      <p class="arc-hero-sub">Pick a tiny story, make a run, and reach a satisfying ending in five minutes or less.</p>
       <div class="arc-hero-actions">
         <button type="button" class="arc-hero-primary" data-goto="play">Browse games <span aria-hidden="true">→</span></button>
         <button type="button" class="arc-hero-secondary" data-goto="goals">See your goals</button>
@@ -652,7 +652,7 @@
   var LEARNING_WORDS = ['learn','logic','maths','math','pattern','memory','strategy','planning','physics','route','spatial','creative','typing','word','quiz','puzzle','ttrpg'];
 
   function textOf(g) {
-    return [g.title, g.tag, g.desc, g.cat, g.age, g.learning, g.learningGoal, g.controls, g.character].filter(Boolean).join(' ');
+    return [g.title, g.tag, g.desc, g.cat, g.age, g.learning, g.learningGoal, g.controls, g.character, g.storyHook, g.objective, g.finishLine].filter(Boolean).join(' ');
   }
 
   function hasLearningValue(g) {
@@ -676,6 +676,46 @@
     return 'Quick play challenge';
   }
 
+  // Every Arcade card should answer the two questions a new player has:
+  // "What am I doing?" and "When will this little adventure finish?"
+  function arcadeGuide(g) {
+    if (g.character) return g.character;
+    if (g.cat === 'Puzzle') return 'Stardust';
+    if (g.cat === 'Strategy') return 'Lumo';
+    if (g.cat === 'Chill') return 'Pip';
+    return 'Echo';
+  }
+
+  function storyHook(g) {
+    if (g.storyHook) return g.storyHook;
+    var guide = arcadeGuide(g);
+    if (g.cat === 'Puzzle') return guide + ' has one small mystery to solve in ' + g.title + '.';
+    if (g.cat === 'Strategy') return guide + ' needs one clever plan before the moment slips away.';
+    if (g.cat === 'Chill') return guide + ' has a tiny friend, order or surprise that needs your help.';
+    return guide + ' is counting on one brave run through ' + g.title + '.';
+  }
+
+  function finishLine(g) {
+    if (g.finishLine) return g.finishLine;
+    if (g.cat === 'Puzzle') return 'Solve the mission, see what changed, then try a new route.';
+    if (g.cat === 'Strategy') return 'Make the call, see the result, and replay with a sharper plan.';
+    if (g.cat === 'Chill') return 'Complete the moment, celebrate together, and play it again.';
+    return 'Reach the finish, learn your score, and take one more run if you want.';
+  }
+
+  // What the player is actually asked to do, in one line. A584: every registry
+  // entry carries its own, so this only covers a registry that has drifted.
+  function arcadeObjective(g) {
+    if (g.objective) return g.objective;
+    if (g.cat === 'Puzzle') return 'Solve the one problem this game sets you.';
+    if (g.cat === 'Strategy') return 'Make one plan and see how it holds up.';
+    if (g.cat === 'Chill') return 'Look after the moment, then see how it ends.';
+    return 'Play one run through to the end.';
+  }
+
+  function arcadeSession(g) {
+    return g.arcadeSession || g.session || '5 min max';
+  }
   function finderLabel(key) {
     var labels = { all:'All games', education:'Educational', kids:'Little players', unplayed:'Not tried yet', short:'Short sessions', improved:'Improved games', strategy:'Strategy', puzzle:'Puzzle', action:'Action' };
     return labels[key] || key;
@@ -855,10 +895,11 @@
       var s = smap[g.id];
       var best = (s && s.high > 0) ? '<div class="best">★ ' + fmt(s.high) + '</div>' : '';
       var kid = g.kids ? '<div class="kidflag">Little Players</div>' : '';
-      var promise = playPromise(g);
+      var promise = storyHook(g);
       var improved = RECENTLY_IMPROVED.indexOf(g.id) >= 0 ? '<span class="mini-badge improved">Improved</span>' : '';
       var age = g.age ? '<span class="mini-badge">' + esc(g.age) + '</span>' : '';
-      var session = g.session ? '<span class="mini-badge">' + esc(g.session) + '</span>' : '';
+      var session = '<span class="mini-badge session">' + esc(arcadeSession(g)) + '</span>';
+      var guide = '<span class="mini-badge guide">' + esc(arcadeGuide(g)) + ' guides</span>';
       var info = '<div class="info-chip" data-info="' + esc(g.id) + '" role="button" aria-label="' +
                  esc(g.title) + ' details">i</div>';
       var plays = (s && s.plays > 0)
@@ -871,8 +912,9 @@
                '<div class="body">' +
                  '<div class="tag">' + esc(g.tag) + '</div>' +
                  '<div class="name">' + esc(g.title) + '</div>' +
-                 '<div class="promise">' + esc(promise) + '</div>' +
-                 '<div class="mini-badges">' + improved + age + session + '</div>' +
+                 '<div class="finish">' + esc(finishLine(g)) + '</div>' +
+                 '<div class="objective">' + esc(arcadeObjective(g)) + '</div>' +
+                 '<div class="mini-badges">' + improved + age + session + guide + '</div>' +
                  '<div class="plays">' + plays + '</div>' +
                '</div>' +
              '</a>';
@@ -1249,7 +1291,9 @@
       '<div class="d-rows">' +
         dRow('Type', esc(g.tag)) +
         (g.difficulty ? dRow('Difficulty', esc(g.difficulty)) : '') +
-        (g.session ? dRow('Session', esc(g.session)) : '') +
+        dRow('Run', esc(arcadeSession(g))) +
+        dRow('Guide', esc(arcadeGuide(g))) +
+        dRow('Goal', esc(arcadeObjective(g))) +
         (g.controls ? dRow('Controls', esc(g.controls)) : '') +
         (g.learning ? dRow('Learning', esc(g.learning)) : '') +
         dRow('Your best', s.high > 0 ? fmt(s.high) : '-') +
@@ -1257,10 +1301,11 @@
         dRow('Last played', s.last ? fmtAgo(s.last) : 'never') +
         dRow('Goals earned', sharedGot + (customGot > 0 ? ' <span style="color:var(--arc-faint)">+' + customGot + ' in-game</span>' : '')) +
       '</div>' +
+      '<p class="d-desc"><b>Story:</b> ' + esc(storyHook(g)) + '</p>' +
+      '<p class="d-desc"><b>Finish:</b> ' + esc(finishLine(g)) + '</p>' +
       '<p class="d-desc">' + esc(g.desc || '') + '</p>' +
       (g.learningGoal ? '<p class="d-desc"><b>Learning goal:</b> ' + esc(g.learningGoal) + '</p>' : '') +
-      (g.kids ? '<p class="d-desc">👶 ' + esc(g.age || 'Little Players') + ' , gentle and forgiving.</p>' : '');
-    detailSheet.hidden = false;
+      (g.kids ? '<p class="d-desc">👶 ' + esc(g.age || 'Little Players') + ' , gentle and forgiving.</p>' : '');    detailSheet.hidden = false;
     detailBackdrop.hidden = false;
   }
   function closeDetail() {
