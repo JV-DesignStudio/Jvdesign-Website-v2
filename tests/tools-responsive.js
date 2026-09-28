@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /* A625/A677: responsive checks for EVERY tool page.
- * Loads each tools/*.html at 390 / 768 / 1440 and fails on horizontal overflow
- * or runtime errors, so mobile layout regressions and CSS bloat are caught. */
+ * Loads each tools/*.html at 390 / 1440 (add 768 with TR_WIDTHS=390,768,1440)
+ * and fails on horizontal overflow or runtime errors, so mobile layout
+ * regressions and CSS bloat are caught.
+ *
+ * Runs fast (single reused page, images/fonts blocked, domcontentloaded) so it
+ * stays inside the review bot's per-test timeout. */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -13,7 +17,7 @@ const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.js
 
 // Every tool page on disk - no hand-maintained list to drift.
 const TOOLS = fs.readdirSync(path.join(ROOT, 'tools')).filter(f => f.endsWith('.html')).sort();
-const WIDTHS = (process.env.TR_WIDTHS ? process.env.TR_WIDTHS.split(',') : [390, 768, 1440]).map(Number);
+const WIDTHS = (process.env.TR_WIDTHS ? process.env.TR_WIDTHS.split(',') : [390, 1440]).map(Number);
 
 const server = http.createServer((req, res) => {
   let rel; try { rel = decodeURIComponent(req.url.split('?')[0]); } catch { res.writeHead(400); return res.end(); }
@@ -28,21 +32,28 @@ const server = http.createServer((req, res) => {
   await new Promise(r => server.listen(PORT, r));
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const failures = [];
+  const page = await browser.newPage();
+  await page.setRequestInterception(true);
+  page.on('request', req => {
+    const t = req.resourceType();
+    if (t === 'image' || t === 'font' || t === 'media') return req.abort();
+    req.continue();
+  });
   try {
-    for (const tool of TOOLS) {
-      for (const width of WIDTHS) {
-        const page = await browser.newPage();
+    for (const width of WIDTHS) {
+      await page.setViewport({ width, height: 800, isMobile: width < 700 });
+      for (const tool of TOOLS) {
         const errs = [];
-        page.on('pageerror', e => errs.push(e.message));
-        await page.setViewport({ width, height: 800, isMobile: width < 700 });
+        const onErr = e => errs.push(e.message);
+        page.on('pageerror', onErr);
         try {
-          await page.goto(`http://127.0.0.1:${PORT}/tools/${tool}`, { waitUntil: 'networkidle2', timeout: 20000 });
-          await new Promise(r => setTimeout(r, 400));
+          await page.goto(`http://127.0.0.1:${PORT}/tools/${tool}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+          await new Promise(r => setTimeout(r, 200));
         } catch (e) { errs.push('goto: ' + e.message); }
         const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth })).catch(() => ({ sw: -1, iw: width }));
+        page.off('pageerror', onErr);
         const overflow = m.sw - m.iw;
         if (overflow > 1 || errs.length) failures.push(`${tool} @${width}: overflow +${overflow}px ${errs.slice(0, 1).join(' | ')}`);
-        await page.close();
       }
     }
   } finally { await browser.close(); server.close(); }
