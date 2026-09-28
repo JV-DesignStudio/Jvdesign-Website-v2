@@ -1,11 +1,11 @@
 # Tools Full Audit - 61 Tools @ 390/1440 + Offline + Save/Export
 
-Generated: 2026-09-22 via scripts/audit-tools-full.js
+Generated: 2026-09-28 via scripts/audit-tools-full.js
 Scope: 61 tools/*.html (curated 40, orphan 21 noindex+canonical) sitemap 300 search 300 board-data tools 61
 
 ## Summary
-- Total 69 | curated 47 | orphan 22
-- Create 40 (curated 23 orphan 17)
+- Total 69 | curated 37 | orphan 32
+- Create 40 (curated 15 orphan 25)
 - Utility 5, Board 3, Reference 21
 - Pixel Studio keepsake + Pip quest: only tools/pixel-studio.html:168 has pip-quest-strip
 
@@ -13,25 +13,25 @@ Scope: 61 tools/*.html (curated 40, orphan 21 noindex+canonical) sitemap 300 sea
 
 | File | Tag | Hub | Autosave | Export | Share | XP | Noindex | Canonical | Status | Broken Where |
 |---|---|---|---|---|---|---|---|---|---|---|
-| accessibility.html | create | curated | Y | - | Y | Y | - | Y | FAIL | missing export |
+| accessibility.html | create | orphan | Y | - | Y | Y | Y | Y | LEGACY-ORPHAN | missing export |
 | arcade-game-maker-landing.html | create | orphan | Y | Y | Y | - | Y | Y | WARN | none |
 | arcade-game-maker.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
-| asset-packs.html | utility | curated | Y | - | Y | - | - | Y | FAIL | missing export |
-| backup-restore.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
+| asset-packs.html | utility | orphan | Y | - | Y | - | Y | Y | FAIL | missing export |
+| backup-restore.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
 | bitmap-font-maker.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
 | buildlab.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
-| certificate.html | utility | curated | Y | - | Y | - | - | Y | FAIL | missing export |
-| challenges.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
+| certificate.html | utility | orphan | Y | - | Y | - | Y | Y | FAIL | missing export |
+| challenges.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
 | character-designer.html | create | orphan | Y | Y | Y | - | Y | Y | WARN | none |
 | code-snippet-generator.html | utility | curated | Y | Y | Y | Y | - | Y | OK | none |
-| collab.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
+| collab.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
 | colour-palette.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
 | colour-palettes.html | create | orphan | Y | Y | Y | - | Y | Y | WARN | none |
 | cpp-cheatsheet.html | reference | curated | Y | - | Y | - | - | Y | OK | missing export |
 | defold-cheatsheet.html | reference | curated | Y | - | Y | - | - | Y | OK | missing export |
 | design-worksheet.html | reference | orphan | Y | - | Y | - | Y | Y | OK | missing export |
 | dialogue-tree-builder.html | create | orphan | Y | Y | - | - | Y | Y | WARN | none |
-| drum-pad.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
+| drum-pad.html | create | orphan | Y | - | - | - | Y | Y | LEGACY-ORPHAN | missing export |
 | easy-pixel-art.html | create | orphan | Y | Y | Y | - | Y | Y | WARN | none |
 | error-guide.html | reference | curated | Y | - | Y | - | - | Y | OK | missing export |
 | gallery.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
@@ -48,11 +48,11 @@ Scope: 61 tools/*.html (curated 40, orphan 21 noindex+canonical) sitemap 300 sea
 | keyboard-shortcuts.html | reference | curated | Y | - | Y | - | - | Y | OK | missing export |
 | level-designer-landing.html | create | orphan | Y | Y | Y | - | Y | Y | WARN | none |
 | level-designer.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
-| localize.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
+| localize.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
 | map-generator-landing.html | create | orphan | Y | Y | Y | - | Y | Y | WARN | none |
 | map-generator.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
 | minecraft-cheatsheet.html | reference | curated | Y | - | Y | - | - | Y | OK | missing export |
-| music-maker.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
+| music-maker.html | create | orphan | Y | - | - | - | Y | Y | LEGACY-ORPHAN | missing export |
 | parent-guide.html | reference | curated | Y | - | Y | - | - | Y | OK | missing export |
 | particle-designer.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
 | pico8-cheatsheet.html | reference | curated | Y | - | Y | - | - | Y | OK | missing export |
@@ -68,15 +68,15 @@ Scope: 61 tools/*.html (curated 40, orphan 21 noindex+canonical) sitemap 300 sea
 | scratch-starter-guide.html | reference | curated | Y | - | Y | - | - | Y | OK | missing export |
 | screenshot-generator.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
 | sfx-generator-landing.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
-| sfx-generator.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
+| sfx-generator.html | create | orphan | Y | - | - | - | Y | Y | LEGACY-ORPHAN | missing export |
 | sound-studio.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
 | sprite-animator.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
 | sprite-sheet-animator.html | create | orphan | Y | Y | Y | - | Y | Y | WARN | none |
-| storage-migrate.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
-| store-page-builder.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
+| storage-migrate.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
+| store-page-builder.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
 | story-editor.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
 | story-player.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
-| subscription.html | create | curated | Y | - | Y | Y | - | Y | FAIL | missing export |
+| subscription.html | create | orphan | Y | - | Y | Y | Y | Y | LEGACY-ORPHAN | missing export |
 | tileset-builder.html | create | orphan | Y | Y | Y | Y | Y | Y | OK | none |
 | trading-card-designer.html | create | curated | Y | Y | Y | Y | - | Y | OK | none |
 | unity-cheatsheet.html | reference | curated | Y | - | Y | - | - | Y | OK | missing export |
