@@ -48,6 +48,16 @@ function normalize(s){
     .replace(/"last7d":\s*"[^"]*"/g,'"last7d":"<ts>"')
     .replace(/"updated":\s*"[^"]+"/g,'"updated":"<ts>"');
 }
+function stripVolatile(s){
+  // board-keeper rewrites these live from the private tasks.json every sync/approve.
+  // They are board telemetry, not generated site content, so they must not block a push.
+  if(!s) return s;
+  try{
+    const o=JSON.parse(s);
+    delete o.throughput; delete o.learner; delete o.revenue; delete o.board; delete o.socialQueue;
+    return JSON.stringify(o);
+  }catch{ return s; }
+}
 const isQuick = process.argv.includes('--quick');
 const isFix = process.argv.includes('--fix');
 const isJson = process.argv.includes('--json');
@@ -100,8 +110,9 @@ if(!isQuick){
   }
   after=snapshot();
   for(const p of GENERATED){
-    const a=normalize(before[p]);
-    const b=normalize(after[p]);
+    let a=normalize(before[p]);
+    let b=normalize(after[p]);
+    if(p==='board-data.json'){ a=stripVolatile(a); b=stripVolatile(b); }
     if(a!==b){
       drift.push(p);
       console.log(`DRIFT: ${p}`);
