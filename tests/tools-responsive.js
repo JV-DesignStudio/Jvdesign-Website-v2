@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-/* A625: responsive spot checks for the primary tools.
- * Loads each tool at 390 / 768 / 1440 and fails on horizontal overflow or
- * runtime errors, so mobile layout regressions are caught in CI. */
+/* A625/A677: responsive checks for EVERY tool page.
+ * Loads each tools/*.html at 390 / 768 / 1440 and fails on horizontal overflow
+ * or runtime errors, so mobile layout regressions and CSS bloat are caught. */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -11,13 +11,9 @@ const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.TR_PORT || 8195);
 const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.avif':'image/avif','.webmanifest':'application/manifest+json'};
 
-const TOOLS = [
-  'pixel-studio.html', 'sprite-animator.html', 'level-designer.html',
-  'particle-designer.html', 'bitmap-font-maker.html', 'icon-generator.html',
-  'game-logo-maker.html', 'screenshot-generator.html', 'colour-palette.html',
-  'code-snippet-generator.html', 'story-editor.html', 'trading-card-designer.html'
-];
-const WIDTHS = [390, 768, 1440];
+// Every tool page on disk - no hand-maintained list to drift.
+const TOOLS = fs.readdirSync(path.join(ROOT, 'tools')).filter(f => f.endsWith('.html')).sort();
+const WIDTHS = (process.env.TR_WIDTHS ? process.env.TR_WIDTHS.split(',') : [390, 768, 1440]).map(Number);
 
 const server = http.createServer((req, res) => {
   let rel; try { rel = decodeURIComponent(req.url.split('?')[0]); } catch { res.writeHead(400); return res.end(); }
