@@ -50,6 +50,8 @@ let failures = 0;
     exportFn: typeof window.exportWAV === 'function',
     gameMakerFn: typeof window.sendToGameMaker === 'function',
     shareFn: typeof window.copySoundShareLink === 'function',
+    sfxSendFn: typeof window.sendSfxToGameMaker === 'function',
+    modes: document.querySelectorAll('.ss-mode').length,
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth,
     badText: /⭐\?|\? Play|\? Help|\? Workshop|\? WAV|\? Back|\? Project|\? Stop|\? Undo|\? Redo|\?\?/.test(document.body.innerText)
@@ -62,7 +64,8 @@ let failures = 0;
   check('welcome title clean', initial.welcome === '🎛️ Welcome to Audio Studio', initial.welcome);
   check('tracks render', initial.tracks >= 1, String(initial.tracks));
   check('sequencer cells render', initial.cells >= 8, String(initial.cells));
-  check('export and handoff functions exist', initial.exportFn && initial.gameMakerFn && initial.shareFn);
+  check('export and handoff functions exist', initial.exportFn && initial.gameMakerFn && initial.shareFn && initial.sfxSendFn);
+  check('mode switcher renders', initial.modes === 3, String(initial.modes));
   check('mobile does not overflow viewport', initial.scrollWidth <= initial.clientWidth + 2, `${initial.scrollWidth}/${initial.clientWidth}`);
   check('no known broken placeholder text', !initial.badText);
   await page.evaluate(() => closeStart());
@@ -73,6 +76,40 @@ let failures = 0;
   await page.click('#playBtn');
   const stopped = await page.evaluate(()=>document.getElementById('playBtn')?.textContent.trim());
   check('stop toggles back to play', stopped === '▶ Play', stopped);
+
+  // Music / Drums / SFX modes
+  await page.evaluate(()=>setMode('drums'));
+  await new Promise(resolve=>setTimeout(resolve, 150));
+  const drums = await page.evaluate(()=>({
+    body: document.body.className,
+    kit: getComputedStyle(document.getElementById('drum-kit')).display,
+    melodyRows: Array.from(document.querySelectorAll('.seq-track-row')).filter(r=>r.dataset.drum==='none'&&getComputedStyle(r).display!=='none').length,
+    pads: document.querySelectorAll('#drum-kit .dk-pad').length
+  }));
+  check('drums mode active', /\bmode-drums\b/.test(drums.body), drums.body);
+  check('drum kit strip visible', drums.kit !== 'none', drums.kit);
+  check('melody rows hidden in drums mode', drums.melodyRows === 0, String(drums.melodyRows));
+  check('drum pads render', drums.pads >= 4, String(drums.pads));
+
+  await page.evaluate(()=>setMode('sfx'));
+  await new Promise(resolve=>setTimeout(resolve, 150));
+  const sfxMode = await page.evaluate(()=>({
+    body: document.body.className,
+    app: getComputedStyle(document.getElementById('app')).display,
+    shelf: getComputedStyle(document.getElementById('sfxBody')).display,
+    sounds: document.querySelectorAll('#sfxBody .sfx-vbtn').length
+  }));
+  check('sfx mode active', /\bmode-sfx\b/.test(sfxMode.body), sfxMode.body);
+  check('sequencer hidden in sfx mode', sfxMode.app === 'none', sfxMode.app);
+  check('sfx lab visible in sfx mode', sfxMode.shelf !== 'none', sfxMode.shelf);
+  check('sfx sounds render', sfxMode.sounds >= 12, String(sfxMode.sounds));
+
+  // Deep link applies the matching mode on load
+  await page.goto(`http://127.0.0.1:${port}/tools/sound-studio.html?deeplink=1#drums`, {waitUntil:'domcontentloaded'});
+  await new Promise(resolve=>setTimeout(resolve, 500));
+  const deepLink = await page.evaluate(()=>document.body.className);
+  check('deep link #drums applies drums mode', /\bmode-drums\b/.test(deepLink), deepLink);
+
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   server.close();

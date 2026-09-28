@@ -75,7 +75,11 @@ body{overflow-y:auto!important;height:auto!important;touch-action:auto!important
 #track-panel{display:none!important;}
 #seq-panel{flex:1;min-width:0;overflow-x:auto;}
 #inst-panel{width:220px!important;min-width:160px;flex-shrink:0;}
-@media(max-width:699px){#inst-panel{display:block!important;width:100%!important;}}
+@media(max-width:699px){
+  #app{flex-direction:column;}
+  #seq-panel{width:100%;flex:1 1 auto;min-height:200px;}
+  #inst-panel{display:block!important;width:100%!important;max-height:40vh;border-left:none;border-top:1px solid var(--border);}
+}
 /* Unified row: label + cells side by side */
 .seq-track-row{display:flex!important;align-items:center;min-height:44px;border-bottom:1px solid rgba(255,255,255,.04);}
 .seq-track-row.active>.sst-label{background:rgba(255,255,255,.05);border-right:2px solid var(--accent,#7c3aed);}
@@ -102,6 +106,38 @@ body{overflow-y:auto!important;height:auto!important;touch-action:auto!important
 .sfx-vbtn.playing{background:rgba(16,185,129,.15);border-color:#10b981;color:#6ee7b7;}
 .sfx-dl-btn{margin-top:4px;padding:6px 14px;border-radius:8px;border:none;background:var(--accent3,#10b981);color:#000;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
 .sfx-dl-btn:disabled{opacity:.4;cursor:default;}
+/* MODE BAR */
+.ss-modes{width:min(960px,calc(100% - 32px));margin:10px auto 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;background:linear-gradient(135deg,rgba(124,58,237,.14),rgba(236,72,153,.08));border:1px solid rgba(255,255,255,.1);border-radius:14px;}
+.ss-mode{padding:8px 16px;border-radius:999px;border:1px solid var(--border2,rgba(255,255,255,.15));background:transparent;color:var(--text,#e8edf8);font-family:'Fredoka',cursive;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s;}
+.ss-mode:hover{border-color:var(--accent,#7c3aed);}
+.ss-mode.on{background:var(--accent,#7c3aed);border-color:var(--accent,#7c3aed);color:#fff;box-shadow:0 2px 10px rgba(124,58,237,.4);}
+.ss-mode-hint{flex:1;min-width:170px;font-size:.72rem;color:var(--muted,#8b93a0);line-height:1.35;}
+@media(max-width:560px){.ss-mode{flex:1;padding:8px 6px;font-size:.72rem;}.ss-mode-hint{flex-basis:100%;}}
+/* DRUM KIT STRIP */
+#drum-kit{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px 8px 120px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(239,68,68,.05);}
+body.mode-drums #drum-kit{display:flex;}
+.dk-pad{padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:var(--text,#e8edf8);font-family:'Fredoka',cursive;font-weight:700;font-size:.82rem;cursor:pointer;transition:transform .08s,background .12s,border-color .12s;}
+.dk-pad:hover{border-color:#ef4444;background:rgba(239,68,68,.15);}
+.dk-pad.hit{background:#ef4444;color:#fff;transform:scale(.95);}
+.dk-sep{width:1px;height:26px;background:rgba(255,255,255,.12);}
+.dk-tool{padding:9px 12px;border-radius:9px;border:1px dashed rgba(255,255,255,.25);background:transparent;color:var(--muted,#8b93a0);font-family:'Fredoka',cursive;font-weight:600;font-size:.72rem;cursor:pointer;}
+.dk-tool:hover{color:var(--text,#e8edf8);border-color:var(--accent,#7c3aed);}
+@media(max-width:699px){#drum-kit{padding-left:10px;}}
+/* MODE FOCUS */
+body.mode-drums .seq-track-row[data-drum="none"]{display:none!important;}
+body.mode-drums .add-track-btn{display:none!important;}
+body.mode-drums .ipseg-wave,body.mode-drums .ipseg-pitch{display:none!important;}
+body.mode-sfx #transport{display:none!important;}
+body.mode-sfx #app{display:none!important;}
+body.mode-sfx #bottom-bar{display:none!important;}
+body.mode-sfx #sfx-shelf{margin:12px auto;width:min(960px,calc(100% - 32px));border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;}
+body.mode-sfx .sfx-shelf-body{display:flex!important;max-height:none;padding:20px;gap:16px;}
+body.mode-sfx .sfx-cat-label{width:84px;font-size:.68rem;}
+body.mode-sfx .sfx-vbtn{padding:10px 14px;font-size:.85rem;}
+body.mode-sfx .sfx-dl-btn{padding:10px 18px;font-size:.9rem;}
+body.mode-sfx #sfxArrow{display:none;}
+body.mode-sfx .sfx-shelf-bar{cursor:default;}
+body.mode-sfx .sfx-shelf-bar:hover{background:rgba(99,102,241,.06);}
 </style>
 </head>
 <body>
@@ -157,13 +193,12 @@ body{overflow-y:auto!important;height:auto!important;touch-action:auto!important
   </div>
 </header>
 
-<div class="also-try" style="width:min(960px,calc(100% - 32px));margin:8px auto;padding:10px 20px;background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(236,72,153,.08));border:1px solid rgba(255,255,255,.1);border-radius:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-  <span style="background:#7c3aed;color:#fff;font-weight:800;padding:4px 8px;border-radius:999px;font-size:.7rem;">Audio Studio - unified</span>
-  <span style="color:var(--muted);font-size:.78rem;">Compose, SFX, drums & chiptune in one studio. No installs. <strong style="color:var(--text)">SFX / Drum / Chiptune now redirect here.</strong></span>
-  <span style="margin-left:auto;display:flex;gap:8px;">
-    <a href="sound-studio.html" aria-current="page" style="color:#fff;background:var(--accent);padding:6px 10px;border-radius:999px;font-weight:700;text-decoration:none;font-size:.72rem;">Audio Studio</a>
-  </span>
-</div>
+<nav class="ss-modes" aria-label="Studio mode">
+  <button class="ss-mode on" data-mode="music" onclick="setMode('music')" aria-pressed="true">🎵 Music</button>
+  <button class="ss-mode" data-mode="drums" onclick="setMode('drums')" aria-pressed="false">🥁 Drums</button>
+  <button class="ss-mode" data-mode="sfx" onclick="setMode('sfx')" aria-pressed="false">🔊 SFX</button>
+  <span class="ss-mode-hint" id="modeHint" aria-live="polite">Full song: drums, bass and melody. Click squares to toggle beats.</span>
+</nav>
 
 <div id="transport">
   <button class="t-btn t-play" id="playBtn" onclick="togglePlay()">▶ Play</button>
@@ -216,6 +251,14 @@ body{overflow-y:auto!important;height:auto!important;touch-action:auto!important
       <button class="add-track-btn" onclick="addTrack()" title="Add melody/bass track" style="font-size:.65rem;padding:2px 8px;">+ Track</button>
       <span style="font-size:.55rem;color:var(--muted);margin-left:4px;">Click squares to toggle beats · Click track label to select</span>
     </div>
+    <div id="drum-kit" aria-label="Drum kit quick add">
+      <button class="dk-pad" data-drum="kick" onclick="drumPadClick('kick',this)" title="Hear the kick and add or select its track">🥁 Kick</button>
+      <button class="dk-pad" data-drum="snare" onclick="drumPadClick('snare',this)" title="Hear the snare and add or select its track">🪘 Snare</button>
+      <button class="dk-pad" data-drum="hihat" onclick="drumPadClick('hihat',this)" title="Hear the hi-hat and add or select its track">🔔 Hi-Hat</button>
+      <button class="dk-pad" data-drum="clap" onclick="drumPadClick('clap',this)" title="Hear the clap and add or select its track">👏 Clap</button>
+      <span class="dk-sep" aria-hidden="true"></span>
+      <button class="dk-tool" onclick="loadStarterBeat()" title="Fill a classic kick, snare and hi-hat beat">✨ Starter beat</button>
+    </div>
     <div class="seq-body">
       <div class="seq-grid" id="seqGrid"></div>
     </div>
@@ -225,72 +268,89 @@ body{overflow-y:auto!important;height:auto!important;touch-action:auto!important
   <div id="inst-panel">
     <div class="ip">
       <div class="ipt" id="instName">Select a track</div>
-      <div class="wave-btns">
-        <button class="wave-btn on" data-wave="square" onclick="setWave('square')">▱ Square</button>
-        <button class="wave-btn" data-wave="sawtooth" onclick="setWave('sawtooth')">◁ Saw</button>
-        <button class="wave-btn" data-wave="triangle" onclick="setWave('triangle')">△ Tri</button>
-        <button class="wave-btn" data-wave="sine" onclick="setWave('sine')">≈ Sine</button>
+
+      <div class="ipseg ipseg-drum">
+        <div class="ipdiv"></div>
+        <div class="ipt">Drum Type</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+          <button class="wave-btn" data-drum="kick" onclick="setDrum('kick')">🥁 Kick</button>
+          <button class="wave-btn" data-drum="snare" onclick="setDrum('snare')">🪘 Snare</button>
+          <button class="wave-btn" data-drum="hihat" onclick="setDrum('hihat')">🔔 HiHat</button>
+          <button class="wave-btn" data-drum="clap" onclick="setDrum('clap')">👏 Clap</button>
+          <button class="wave-btn on" data-drum="none" onclick="setDrum('none')">🎹 Synth</button>
+        </div>
       </div>
 
-      <div class="ipdiv"></div>
-      <div class="ipt">Envelope</div>
-
-      <div class="knob-row">
-        <div class="knob-label" title="How fast the sound fades in">Attack <span id="attVal">0.01s</span></div>
-        <input type="range" class="kn" min="0.001" max="1" step="0.001" value="0.01" id="attKnob" aria-label="Attack" oninput="setEnv('attack',+this.value)">
-      </div>
-      <div class="knob-row">
-        <div class="knob-label" title="How fast the volume drops after the initial peak">Decay <span id="decVal">0.1s</span></div>
-        <input type="range" class="kn" min="0.01" max="2" step="0.01" value="0.1" id="decKnob" aria-label="Decay" oninput="setEnv('decay',+this.value)">
-      </div>
-      <div class="knob-row">
-        <div class="knob-label" title="The volume level while a note is held (0 = silence, 1 = full)">Sustain <span id="susVal">0.3</span></div>
-        <input type="range" class="kn" min="0" max="1" step="0.01" value="0.3" id="susKnob" aria-label="Sustain" oninput="setEnv('sustain',+this.value)">
-      </div>
-      <div class="knob-row">
-        <div class="knob-label" title="How long the sound fades out after the note ends">Release <span id="relVal">0.2s</span></div>
-        <input type="range" class="kn" min="0.01" max="3" step="0.01" value="0.2" id="relKnob" aria-label="Release" oninput="setEnv('release',+this.value)">
+      <div class="ipseg ipseg-wave">
+        <div class="ipdiv"></div>
+        <div class="ipt">Waveform</div>
+        <div class="wave-btns">
+          <button class="wave-btn on" data-wave="square" onclick="setWave('square')">▱ Square</button>
+          <button class="wave-btn" data-wave="sawtooth" onclick="setWave('sawtooth')">◁ Saw</button>
+          <button class="wave-btn" data-wave="triangle" onclick="setWave('triangle')">△ Tri</button>
+          <button class="wave-btn" data-wave="sine" onclick="setWave('sine')">≈ Sine</button>
+        </div>
       </div>
 
-      <div class="ipdiv"></div>
-      <div class="ipt">Pitch</div>
-      <div class="knob-row">
-        <div class="knob-label" title="Which octave the notes play in (higher = brighter)">Octave <span id="octVal">4</span></div>
-        <input type="range" class="kn" min="1" max="7" step="1" value="4" id="octKnob" aria-label="Octave" oninput="setOct(+this.value)">
+      <div class="ipseg ipseg-env">
+        <div class="ipdiv"></div>
+        <div class="ipt">Envelope</div>
+
+        <div class="knob-row">
+          <div class="knob-label" title="How fast the sound fades in">Attack <span id="attVal">0.01s</span></div>
+          <input type="range" class="kn" min="0.001" max="1" step="0.001" value="0.01" id="attKnob" aria-label="Attack" oninput="setEnv('attack',+this.value)">
+        </div>
+        <div class="knob-row">
+          <div class="knob-label" title="How fast the volume drops after the initial peak">Decay <span id="decVal">0.1s</span></div>
+          <input type="range" class="kn" min="0.01" max="2" step="0.01" value="0.1" id="decKnob" aria-label="Decay" oninput="setEnv('decay',+this.value)">
+        </div>
+        <div class="knob-row">
+          <div class="knob-label" title="The volume level while a note is held (0 = silence, 1 = full)">Sustain <span id="susVal">0.3</span></div>
+          <input type="range" class="kn" min="0" max="1" step="0.01" value="0.3" id="susKnob" aria-label="Sustain" oninput="setEnv('sustain',+this.value)">
+        </div>
+        <div class="knob-row">
+          <div class="knob-label" title="How long the sound fades out after the note ends">Release <span id="relVal">0.2s</span></div>
+          <input type="range" class="kn" min="0.01" max="3" step="0.01" value="0.2" id="relKnob" aria-label="Release" oninput="setEnv('release',+this.value)">
+        </div>
       </div>
-      <div class="knob-row">
-        <div class="knob-label" title="Slightly shifts the pitch up or down (0 = in tune)">Detune <span id="detVal">0</span></div>
-        <input type="range" class="kn" min="-50" max="50" step="1" value="0" id="detKnob" aria-label="Detune" oninput="setDet(+this.value)">
+
+      <div class="ipseg ipseg-pitch">
+        <div class="ipdiv"></div>
+        <div class="ipt">Pitch</div>
+        <div class="knob-row">
+          <div class="knob-label" title="Which octave the notes play in (higher = brighter)">Octave <span id="octVal">4</span></div>
+          <input type="range" class="kn" min="1" max="7" step="1" value="4" id="octKnob" aria-label="Octave" oninput="setOct(+this.value)">
+        </div>
+        <div class="knob-row">
+          <div class="knob-label" title="Slightly shifts the pitch up or down (0 = in tune)">Detune <span id="detVal">0</span></div>
+          <input type="range" class="kn" min="-50" max="50" step="1" value="0" id="detKnob" aria-label="Detune" oninput="setDet(+this.value)">
+        </div>
+        <button class="ab ab-s" style="font-size:.65rem;margin-top:2px;" onclick="openPianoRoll()">🎵 Set Notes per Step</button>
       </div>
-      <button class="ab ab-s" style="font-size:.65rem;margin-top:2px;" onclick="openPianoRoll()">🎵 Set Notes per Step</button>
 
-      <div class="ipdiv"></div>
-      <div class="ipt">Pattern Tools</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
-        <button class="ab ab-s" style="margin-bottom:0;font-size:.62rem;" onclick="copyPattern()" title="Copy this track's pattern">📋 Copy</button>
-        <button class="ab ab-s" style="margin-bottom:0;font-size:.62rem;" onclick="pastePattern()" title="Paste copied pattern">📋 Paste</button>
+      <div class="ipseg ipseg-pattern">
+        <div class="ipdiv"></div>
+        <div class="ipt">Pattern Tools</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
+          <button class="ab ab-s" style="margin-bottom:0;font-size:.62rem;" onclick="copyPattern()" title="Copy this track's pattern">📋 Copy</button>
+          <button class="ab ab-s" style="margin-bottom:0;font-size:.62rem;" onclick="pastePattern()" title="Paste copied pattern">📋 Paste</button>
+        </div>
+        <button class="ab ab-s" style="font-size:.62rem;color:var(--accent4);border-color:rgba(239,68,68,.3);" onclick="clearTrack()" title="Clear all steps on this track">🗑️ Clear Track</button>
       </div>
-      <button class="ab ab-s" style="font-size:.62rem;color:var(--accent4);border-color:rgba(239,68,68,.3);" onclick="clearTrack()" title="Clear all steps on this track">🗑️ Clear Track</button>
 
-      <div class="ipdiv"></div>
-      <div class="ipt">Effects</div>
-      <button class="fx-btn" id="fxBitcrush" data-fx="bitcrush" onclick="toggleFX('bitcrush')"><span class="fx-dot"></span>Bit Crush (8-bit)</button>
-      <button class="fx-btn" id="fxReverb" data-fx="reverb" onclick="toggleFX('reverb')"><span class="fx-dot"></span>Reverb</button>
-      <button class="fx-btn" id="fxDistort" data-fx="distort" onclick="toggleFX('distort')"><span class="fx-dot"></span>Distortion</button>
-      <button class="fx-btn" id="fxVibrato" data-fx="vibrato" onclick="toggleFX('vibrato')"><span class="fx-dot"></span>Vibrato</button>
+      <div class="ipseg ipseg-fx">
+        <div class="ipdiv"></div>
+        <div class="ipt">Effects</div>
+        <button class="fx-btn" id="fxBitcrush" data-fx="bitcrush" onclick="toggleFX('bitcrush')"><span class="fx-dot"></span>Bit Crush (8-bit)</button>
+        <button class="fx-btn" id="fxReverb" data-fx="reverb" onclick="toggleFX('reverb')"><span class="fx-dot"></span>Reverb</button>
+        <button class="fx-btn" id="fxDistort" data-fx="distort" onclick="toggleFX('distort')"><span class="fx-dot"></span>Distortion</button>
+        <button class="fx-btn" id="fxVibrato" data-fx="vibrato" onclick="toggleFX('vibrato')"><span class="fx-dot"></span>Vibrato</button>
+      </div>
 
-      <div class="ipdiv"></div>
-      <div class="ipt">Danger Zone</div>
-      <button class="ab ab-s" style="color:var(--accent4);border-color:rgba(239,68,68,.3);" onclick="clearAllPatterns()">🗑️ Clear All Patterns</button>
-
-      <div class="ipdiv"></div>
-      <div class="ipt">Drum Type</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;">
-        <button class="wave-btn" data-drum="kick" onclick="setDrum('kick')">🥁 Kick</button>
-        <button class="wave-btn" data-drum="snare" onclick="setDrum('snare')">🪘 Snare</button>
-        <button class="wave-btn" data-drum="hihat" onclick="setDrum('hihat')">🔔 HiHat</button>
-        <button class="wave-btn" data-drum="clap" onclick="setDrum('clap')">👏 Clap</button>
-        <button class="wave-btn on" data-drum="none" onclick="setDrum('none')">🎹 Synth</button>
+      <div class="ipseg ipseg-danger">
+        <div class="ipdiv"></div>
+        <div class="ipt">Danger Zone</div>
+        <button class="ab ab-s" style="color:var(--accent4);border-color:rgba(239,68,68,.3);" onclick="clearAllPatterns()">🗑️ Clear All Patterns</button>
       </div>
 
       <div class="ipdiv"></div>
@@ -302,14 +362,15 @@ body{overflow-y:auto!important;height:auto!important;touch-action:auto!important
 <!-- SFX SHELF -->
 <div id="sfx-shelf">
   <button class="sfx-shelf-bar" onclick="toggleSfxShelf()" aria-expanded="false" id="sfxShelfBtn" aria-controls="sfxBody">
-    <span class="sfx-shelf-title">🎵 Sound FX Lab</span>
-    <span style="font-size:.6rem;color:var(--muted);">Click a sound to preview · ⬇ to download</span>
+    <span class="sfx-shelf-title">🔊 Sound Effects</span>
+    <span style="font-size:.6rem;color:var(--muted);">Click a sound to preview · download a WAV or send it to Game Maker</span>
     <span class="sfx-shelf-arrow" id="sfxArrow" aria-hidden="true">▲</span>
   </button>
   <div class="sfx-shelf-body" id="sfxBody">
     <div id="sfxCatRows"></div>
     <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
       <button class="sfx-dl-btn" id="sfxDlBtn" onclick="sfxDownload()" disabled>⬇ Download Last Sound</button>
+      <button class="sfx-dl-btn" id="sfxSendBtn" onclick="sendSfxToGameMaker()" disabled style="background:#7c3aed;color:#fff;">🕹️ Send to Game Maker</button>
       <span style="font-size:.6rem;color:var(--muted);" id="sfxLastName">-</span>
     </div>
   </div>
@@ -365,13 +426,13 @@ body{overflow-y:auto!important;height:auto!important;touch-action:auto!important
 <div class="ss-overlay" id="start-modal" onclick="if(event.target===this)closeStart()">
   <div class="ss-box">
     <div class="ss-title">🎛️ Welcome to Audio Studio</div>
-    <p class="ss-lead">A multi-track step sequencer. Each row is an instrument, each square is one beat. Build a loop, shape the sound on the right, then export a WAV or send it to Arcade Game Maker.</p>
+    <p class="ss-lead">One studio, three modes. Compose a song, build a beat, or make a single sound effect. Each row is an instrument and each square is one beat.</p>
     <div class="ss-sec">How it works</div>
     <ul class="ss-steps">
-      <li><b>1  Tap</b>Click squares in the grid to switch beats on. Press ▶ Play to hear your loop.</li>
-      <li><b>2  Shape</b>Click a track name, then use the right panel to change its wave, envelope and effects.</li>
-      <li><b>3  Notes</b>Use <b style="display:inline;text-transform:none;letter-spacing:0;">Set Notes per Step</b> on melody tracks to pick pitches.</li>
-      <li><b>4  Export</b>⬇ WAV downloads the loop. Your work autosaves as you go.</li>
+      <li><b>1  Pick</b>Choose <b style="display:inline;text-transform:none;letter-spacing:0;">Music</b>, <b style="display:inline;text-transform:none;letter-spacing:0;">Drums</b> or <b style="display:inline;text-transform:none;letter-spacing:0;">SFX</b> at the top of the page.</li>
+      <li><b>2  Tap</b>Click squares in the grid to switch beats on. Press ▶ Play to hear your loop.</li>
+      <li><b>3  Shape</b>Click a track name to change its sound on the right, or tap a drum pad to add drums.</li>
+      <li><b>4  Export</b>⬇ WAV downloads your loop or sound. Your work autosaves as you go.</li>
     </ul>
     <div class="ss-sec" style="margin-top:10px;">Keyboard shortcuts</div>
     <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:.62rem;margin-top:4px;">
@@ -443,6 +504,60 @@ const IS_BLACK = {'^':false,'C':false,'D':false,'E':false,'F':false,'G':false,'A
 let bpm = 120, steps = 16, currentStep = -1, isPlaying = false, schedTimer = null;
 let nextStepTime = 0, lookahead = 0.1, schedInterval = 25;
 let activeTrack = 0;
+
+// ------------------------------------------
+// STUDIO MODES (Music / Drums / SFX)
+// ------------------------------------------
+const SS_MODES = ['music','drums','sfx'];
+const SS_MODE_KEY = 'jvds_sound_mode';
+const MODE_HINTS = {
+  music:'Full song: drums, bass and melody. Click squares to toggle beats.',
+  drums:'Just a beat: tap a drum to add it, then click squares to place hits.',
+  sfx:'One sound at a time: preview, then download a WAV or send it to Game Maker.'
+};
+let studioMode = 'music';
+
+function setMode(mode, opts){
+  opts = opts || {};
+  if(SS_MODES.indexOf(mode) < 0) mode = 'music';
+  studioMode = mode;
+  document.body.classList.remove('mode-music','mode-drums','mode-sfx');
+  document.body.classList.add('mode-' + mode);
+  document.querySelectorAll('.ss-mode').forEach(b=>{
+    const on = b.dataset.mode === mode;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const hint = document.getElementById('modeHint');
+  if(hint && MODE_HINTS[mode]) hint.textContent = MODE_HINTS[mode];
+  if(mode === 'sfx'){
+    const shelfBody = document.getElementById('sfxBody');
+    const shelfBtn = document.getElementById('sfxShelfBtn');
+    const shelfArrow = document.getElementById('sfxArrow');
+    if(shelfBody) shelfBody.classList.add('open');
+    if(shelfArrow) shelfArrow.classList.add('open');
+    if(shelfBtn) shelfBtn.setAttribute('aria-expanded','true');
+  } else {
+    const shelfBody = document.getElementById('sfxBody');
+    if(shelfBody) shelfBody.classList.remove('open');
+  }
+  try{ localStorage.setItem(SS_MODE_KEY, mode); }catch(e){}
+  if(!opts.silent){ try{ history.replaceState(null, '', '#' + mode); }catch(e){} }
+}
+
+function applyInitialMode(){
+  let stored = '';
+  try{ stored = localStorage.getItem(SS_MODE_KEY) || ''; }catch(e){}
+  const hash = (location.hash || '').replace('#','');
+  const mode = SS_MODES.indexOf(hash) >= 0 ? hash
+             : (SS_MODES.indexOf(stored) >= 0 ? stored : 'music');
+  setMode(mode, { silent:true });
+}
+
+window.addEventListener('hashchange',()=>{
+  const hash = (location.hash || '').replace('#','');
+  if(SS_MODES.indexOf(hash) >= 0 && hash !== studioMode) setMode(hash, { silent:true });
+});
 
 // Default tracks
 const TRACK_DEFAULTS = [
@@ -680,6 +795,7 @@ function buildSeqGrid(){
     const row=document.createElement('div');
     row.className='seq-track-row'+(ti===activeTrack?' active':'');
     row.dataset.ti=ti;
+    row.dataset.drum=t.drum;
 
     // Label
     const label=document.createElement('div');
@@ -784,6 +900,51 @@ function addTrack(){
   activeTrack=tracks.length-1;
   buildGrid();
   updateInstPanel();
+}
+
+function addDrumTrack(drum){
+  if(tracks.length>=12){showToast('Max 12 tracks');return;}
+  const base=TRACK_DEFAULTS.find(t=>t.drum===drum)||{name:drum,wave:'square',oct:1,vol:0.8,env:{attack:0.001,decay:0.15,sustain:0,release:0.05}};
+  pushHistory();
+  const col=TRACK_COLOURS[tracks.length%TRACK_COLOURS.length];
+  tracks.push({name:base.name,color:col,drum,wave:base.wave,oct:base.oct,vol:base.vol,muted:false,fx:{bitcrush:false,reverb:false,distort:false,vibrato:false},env:{...base.env},detune:0});
+  grid.push(Array.from({length:steps},()=>({on:false,note:'C',oct:base.oct})));
+  activeTrack=tracks.length-1;
+  buildGrid();
+  updateInstPanel();
+}
+
+function drumPadClick(drum,btn){
+  if(btn){btn.classList.add('hit');setTimeout(()=>btn.classList.remove('hit'),140);}
+  let ti=tracks.findIndex(t=>t.drum===drum);
+  if(ti<0){ addDrumTrack(drum); ti=tracks.length-1; }
+  else { selectTrack(ti); }
+  auditionDrum(drum);
+}
+
+function auditionDrum(drum){
+  const ac=getCtx();
+  const g=ac.createGain();
+  const now=ac.currentTime+0.01;
+  g.gain.setValueAtTime(0,now);
+  g.gain.linearRampToValueAtTime(0.9,now+0.005);
+  g.gain.exponentialRampToValueAtTime(0.001,now+0.45);
+  g.connect(getMaster());
+  const fn={kick:playKick,snare:playSnare,hihat:playHihat,clap:playClap}[drum];
+  if(fn) fn(ac,g,now,{});
+}
+
+function loadStarterBeat(){
+  if(!tracks.some(t=>t.drum!=='none')){ showToast('Add a drum track first'); return; }
+  pushHistory();
+  const beats={kick:[0,4,8,12],snare:[4,12],hihat:[0,2,4,6,8,10,12,14],clap:[]};
+  tracks.forEach((t,ti)=>{
+    if(t.drum==='none') return;
+    const hits=beats[t.drum]||[];
+    grid[ti]=Array.from({length:steps},(_,s)=>({on:hits.indexOf(s)>=0,note:'C',oct:t.oct}));
+  });
+  buildGrid();
+  showToast('Starter beat loaded');
 }
 
 function deleteTrack(){
@@ -978,15 +1139,19 @@ function closePianoRoll(){
 // ------------------------------------------
 // EXPORT WAV
 // ------------------------------------------
+function bufferToDataUrl(buf){
+  const wav=bufferToWav(buf);
+  const bytes=new Uint8Array(wav);
+  let binary='';
+  for(let i=0;i<bytes.length;i+=8192) binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
+  return 'data:audio/wav;base64,'+btoa(binary);
+}
+
 function sendToGameMaker(){
   if(!tracks.length){showToast('Add some tracks first!');return;}
   showToast('Rendering for Game Maker');
   renderMixdown().then(buf=>{
-    const wav=bufferToWav(buf);
-    const bytes=new Uint8Array(wav);
-    let binary='';
-    for(let i=0;i<bytes.length;i+=8192) binary+=String.fromCharCode.apply(null,bytes.subarray(i,i+8192));
-    const dataUrl='data:audio/wav;base64,'+btoa(binary);
+    const dataUrl=bufferToDataUrl(buf);
     localStorage.setItem('jvds_music_last',JSON.stringify({dataUrl,bpm,name:'Sound Studio Track'}));
     showToast('Sent to Game Maker. Open Arcade Game Maker > Sounds, then use Import Music.');
   }).catch(()=>showToast('Render failed'));
@@ -1347,6 +1512,7 @@ document.addEventListener('keydown',e=>{
 // INIT
 // ------------------------------------------
 document.addEventListener('DOMContentLoaded',()=>{
+  applyInitialMode();
   initGrid();
   loadDefaultPattern();
   buildGrid();
@@ -1383,6 +1549,7 @@ const SFX_CATS=[
 ];
 
 function toggleSfxShelf(){
+  if(studioMode==='sfx') return; // always open in SFX mode
   const body=document.getElementById('sfxBody');
   const arrow=document.getElementById('sfxArrow');
   const btn=document.getElementById('sfxShelfBtn');
@@ -1420,6 +1587,8 @@ function playSfx(fn,name,btn){
     sfxLastBuf=buf; sfxLastName=name;
     document.getElementById('sfxLastName').textContent=name;
     document.getElementById('sfxDlBtn').disabled=false;
+    const send=document.getElementById('sfxSendBtn');
+    if(send) send.disabled=false;
     // Play live
     const src=ac.createBufferSource();
     src.buffer=buf; src.connect(getMaster()); src.start();
@@ -1434,6 +1603,14 @@ function sfxDownload(){
   a.download=(sfxLastName||'sfx').toLowerCase().replace(/\s+/g,'_')+'.wav';
   a.click(); URL.revokeObjectURL(a.href);
   showToast('SFX downloaded!');
+}
+
+function sendSfxToGameMaker(){
+  if(!sfxLastBuf){ showToast('Preview a sound first'); return; }
+  try{
+    localStorage.setItem('jvds_sfx_last',JSON.stringify({dataUrl:bufferToDataUrl(sfxLastBuf),name:sfxLastName||'SFX'}));
+    showToast('Sent to Game Maker. Open Arcade Game Maker > Sounds, then Import Last SFX.');
+  }catch(e){ showToast('Could not send sound'); }
 }
 
 // -- SFX SYNTHESIS FUNCTIONS --
