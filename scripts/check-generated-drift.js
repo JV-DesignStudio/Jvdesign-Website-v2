@@ -9,6 +9,9 @@
  */
 const fs=require('fs'), path=require('path'), {execSync}=require('child_process');
 const ROOT=path.resolve(__dirname,'..');
+// Serialise with other agents - the generators rewrite shared files.
+try{ require('./lib/build-lock').acquire('check:drift'); }
+catch(e){ console.error('\n  '+e.message+'\n'); process.exit(3); }
 const GENERATED=[
   'content/workshops.json',
   'content/games.json',
@@ -205,9 +208,13 @@ try{
 try{
   const devlog=fs.readFileSync(path.join(ROOT,'devlog-data.js'),'utf8');
   const block=(devlog.match(/const POSTS\s*=\s*\[([\s\S]*?)\n\];/)||[])[1]||devlog;
+  // Match real entry keys first (both `id:` and `"id":`), so stripping quoted
+  // strings below cannot delete the key itself, then fall back to stripped text.
   // Ignore id-shaped examples embedded inside post content strings.
   const codeWithoutStrings = block.replace(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"/gs, '');
-  const ids=[...codeWithoutStrings.matchAll(/\{\s*["']?id["']?\s*:\s*(\d+)/g)].map(m=>m[1]);
+  const idRe=/\{\s*["']?id["']?\s*:\s*(\d+)/g;
+  let ids=[...block.matchAll(idRe)].map(m=>m[1]);
+  if(!ids.length) ids=[...codeWithoutStrings.matchAll(idRe)].map(m=>m[1]);
   const seen=new Set(), dup=new Set();
   for(const id of ids){ if(seen.has(id)) dup.add(id); else seen.add(id); }
   if(dup.size){ console.error(`\n✗ devlog-data.js duplicate ids: ${[...dup].join(', ')} - dedupe by id`); process.exit(1); }

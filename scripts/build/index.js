@@ -56,6 +56,10 @@ async function main() {
   const args = process.argv.slice(2);
   if (args.includes('--help') || args.includes('-h')) return help();
 
+  // Serialise builds across agents - two concurrent runs clobber shared files.
+  try { require('../lib/build-lock').acquire('npm run build'); }
+  catch (e) { console.error(`\n  ${e.message}\n`); process.exit(3); }
+
   const only = (args.find(a => a.startsWith('--only=')) || '').split('=')[1] || null;
   const skipValidate = args.includes('--skip-validate');
 
