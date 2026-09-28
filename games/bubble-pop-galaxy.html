@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="../style-game-bubble-pop-galaxy.css?v=20">
 <link rel="stylesheet" href="../style-mascots.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Bubble Pop Galaxy","url":"https://jvdesignstudio.co.uk/games/bubble-pop-galaxy.html","description":"A juicy galaxy puzzle game full of chain reactions, colour missions, bombs, rockets, wild bubbles and score-chasing combos.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/BubblePopCover.webp"}</script>
-</head>
+<style>.quality-panel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 16px}.quality-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:12px}.quality-card b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#ffd166;margin-bottom:4px}.quality-card span{font-size:.84rem;line-height:1.4;color:rgba(255,255,255,.86)}.quality-card a{color:#3ddcff;font-weight:800}.coach-box{background:rgba(61,220,255,.09);border:1px solid rgba(61,220,255,.28);border-radius:14px;padding:10px;margin-bottom:10px}.coach-box b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#3ddcff;margin-bottom:4px}.coach-box span{font-size:.84rem;line-height:1.4;color:#fff}@media(max-width:900px){.quality-panel{grid-template-columns:1fr 1fr}}@media(max-width:560px){.quality-panel{grid-template-columns:1fr}}</style></head>
 <body>
 <div class="game-shell">
   <header class="topbar">
@@ -36,6 +36,13 @@
       <button class="round-btn" aria-label="Back to Arcade" onclick="location.href='../pages/games.html'">🏠</button>
     </div>
   </header>
+
+  <section class="quality-panel" aria-label="How this game works">
+    <div class="quality-card"><b>Goal</b><span>Light the Lantern Nebula: pop clusters, chain cascades and meet the colour goals in 14 moves.</span></div>
+    <div class="quality-card"><b>Skill</b><span>Pattern matching, chain planning and goal strategy.</span></div>
+    <div class="quality-card"><b>Session</b><span>Under 5 min, touch and keyboard.</span></div>
+    <div class="quality-card"><b>Build next</b><span><a href="../tools/arcade-game-maker.html">Make your own puzzle in Game Maker</a></span></div>
+  </section>
 
   <main class="play-layout">
     <section class="panel mission-panel" aria-label="Mission">
@@ -75,6 +82,7 @@
     <section class="panel strategy-panel" aria-label="Strategy">
       <h2>Combo lab</h2>
       <div class="combo-meter" id="comboMeter"></div>
+      <div class="coach-box" id="coachBox"><b>Nebula Coach</b><span id="coachText">Big clusters make specials; chain them for stars.</span></div>
       <div class="tip-box" id="tipBox">Big clusters create specials. Specials create cascades. Cascades win stars.</div>
       <div class="legend">
         <span>💣 Bomb clears a blast</span>
@@ -386,6 +394,20 @@ function updateHud(){
   updateComboMeter();
   const complete = missionComplete();
   setStatus(complete ? 'Mission ready! Finish this move to bank your stars.' : 'Build clusters, make specials, then chain them together.');
+  updateCoach(complete);
+}
+function updateCoach(complete){
+  const el=document.getElementById('coachText'); if(!el) return;
+  const g=MISSION.goals;
+  const missing=Object.entries(g.collect||{}).map(([t,n])=>[LABELS[t],Math.max(0,n-(run.collected[t]||0))]).filter(([,n])=>n>0);
+  let adv;
+  if(complete) adv='Mission is ready. Make one more move to bank your stars.';
+  else if(run.moves<=3) adv='Only '+run.moves+' move'+(run.moves===1?'':'s')+' left. Pop the biggest cluster on screen right now.';
+  else if(missing.length) adv='Still needed: '+missing.map(([l,n])=>n+' '+l).join(' and ')+'. Hunt those colours before spending specials.';
+  else if(run.charge>=100) adv='Super Nova is charged. Save it for a turn when no big cluster is showing.';
+  else if(run.chainBest>=4) adv='Strong chain already. Keep chaining clusters to push your best.';
+  else adv='Set up a cluster of 5 or more to make a bomb, then chain the cascade it starts.';
+  if(el.textContent!==adv) el.textContent=adv;
 }
 function addGoal(box,label,now,need,icon,type){
   const row=document.createElement('div'); row.className='goal' + (now>=need?' done':'') + (type?' '+type:'');

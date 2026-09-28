@@ -15,6 +15,8 @@
 <title>Pirate Ship Shipyard | JVDesignStudio</title>
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="jv-exporter.js"></script>
+<script src="builder-templates.js"></script>
 <link rel="preload" href="../style-workshop-pirate-ship-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-workshop-pirate-ship-builder.css?v=17"></noscript>
     <meta property="og:type"        content="website">
@@ -406,6 +408,8 @@ function initThree(){
 // SHIP BUILDER
 // ---------------------------------------
 function rebuildShip(){
+  shipGroup.name = 'pirate_ship';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
   while(shipGroup.children.length)shipGroup.remove(shipGroup.children[0]);
   const p=P;
   const hullMat=new THREE.MeshStandardMaterial({color:p.hullColor,roughness:0.7,metalness:0.05});
@@ -499,13 +503,13 @@ function rebuildShip(){
   const hullMesh=new THREE.Mesh(hullGeo,hullMat);
   hullMesh.castShadow=true;
   hullMesh.receiveShadow=true;
-  hullG.add(hullMesh);
+  hullG.add(part(hullMesh, 'hull'));
 
   // Keel strip
   const keelGeo=new THREE.BoxGeometry(0.12,HD*p.keelDepth*0.3,HL*0.9);
   const keel=new THREE.Mesh(keelGeo,new THREE.MeshStandardMaterial({color:'#1a0e05',roughness:0.8}));
   keel.position.y=-HD*0.5-HD*p.keelDepth*0.15;
-  hullG.add(keel);
+  hullG.add(part(keel, 'keel'));
 
   // --- DECK ---
   const deckGeo=new THREE.BoxGeometry(HB*0.85,p.deckThick,HL*0.88);
@@ -513,14 +517,14 @@ function rebuildShip(){
   deck.position.y=0;
   deck.castShadow=true;
   deck.receiveShadow=true;
-  shipGroup.add(deck);
+  shipGroup.add(part(deck, 'deck'));
 
   // Deck plank lines
   for(let i=-4;i<=4;i++){
     const lineGeo=new THREE.BoxGeometry(0.02,p.deckThick+0.01,HL*0.85);
     const line=new THREE.Mesh(lineGeo,new THREE.MeshStandardMaterial({color:'#5a4020',roughness:0.9}));
     line.position.set(i*HB*0.09,0.001,0);
-    shipGroup.add(line);
+    shipGroup.add(part(line, `deck_plank_${i}`));
   }
 
   // --- BOWSPRIT ---
@@ -531,37 +535,37 @@ function rebuildShip(){
   bowsprit.position.set(0,0.3,HL*0.5+p.bspritLen*0.4*Math.cos(bAng));
   bowsprit.position.y+=p.bspritLen*0.4*Math.sin(bAng);
   bowsprit.castShadow=true;
-  shipGroup.add(bowsprit);
+  shipGroup.add(part(bowsprit, 'bowsprit'));
 
   // --- STERN CASTLE ---
   const scGeo=new THREE.BoxGeometry(HB*0.78,p.sternH,p.sternLen);
   const sc=new THREE.Mesh(scGeo,hullMat);
   sc.position.set(0,p.sternH/2,-HL*0.5+p.sternLen*0.5);
   sc.castShadow=true;
-  shipGroup.add(sc);
+  shipGroup.add(part(sc, 'stern_castle'));
   // Stern castle deck
   const scdGeo=new THREE.BoxGeometry(HB*0.82,p.deckThick,p.sternLen+0.1);
   const scd=new THREE.Mesh(scdGeo,deckMat);
   scd.position.set(0,p.sternH,-HL*0.5+p.sternLen*0.5);
   scd.castShadow=true;
-  shipGroup.add(scd);
+  shipGroup.add(part(scd, 'stern_deck'));
   // Stern railing
   const srGeo=new THREE.BoxGeometry(HB*0.82,p.railH*0.8,0.08);
   const sr=new THREE.Mesh(srGeo,trimMat);
   sr.position.set(0,p.sternH+p.railH*0.4,-HL*0.5);
-  shipGroup.add(sr);
+  shipGroup.add(part(sr, 'stern_rail'));
 
   // --- FORECASTLE ---
   const fcGeo=new THREE.BoxGeometry(HB*0.7,p.fcH,p.fcLen);
   const fc=new THREE.Mesh(fcGeo,hullMat);
   fc.position.set(0,p.fcH/2,HL*0.5-p.fcLen*0.5);
   fc.castShadow=true;
-  shipGroup.add(fc);
+  shipGroup.add(part(fc, 'forecastle'));
   const fcdGeo=new THREE.BoxGeometry(HB*0.74,p.deckThick,p.fcLen+0.1);
   const fcd=new THREE.Mesh(fcdGeo,deckMat);
   fcd.position.set(0,p.fcH,HL*0.5-p.fcLen*0.5);
   fcd.castShadow=true;
-  shipGroup.add(fcd);
+  shipGroup.add(part(fcd, 'forecastle_deck'));
 
   // --- MASTS ---
   function buildMast(height,radius,zPos,name){
@@ -571,7 +575,7 @@ function rebuildShip(){
     const mast=new THREE.Mesh(mGeo,mastMat);
     mast.position.y=height/2;
     mast.castShadow=true;
-    mastG.add(mast);
+    mastG.add(part(mast, `mast_pole_${name}`));
     // Yards (horizontal spars)
     const yardCount=Math.min(p.sailCount,3);
     for(let i=0;i<yardCount;i++){
@@ -582,7 +586,7 @@ function rebuildShip(){
       yard.rotation.z=Math.PI/2;
       yard.position.y=yh;
       yard.castShadow=true;
-      mastG.add(yard);
+      mastG.add(part(yard, `yard_${name}_${i}`));
 
       // Sail
       const sw=yw*0.9, sh=height*0.2;
@@ -598,7 +602,7 @@ function rebuildShip(){
       const sail=new THREE.Mesh(sailGeo,sailMat);
       sail.position.y=yh-sh*0.5;
       sail.castShadow=true;
-      mastG.add(sail);
+      mastG.add(part(sail, `sail_${name}_${i}`));
     }
     mastG.position.z=HL*zPos;
     shipGroup.add(mastG);
@@ -614,12 +618,12 @@ function rebuildShip(){
   const nestGeo=new THREE.CylinderGeometry(p.nestR,p.nestR*0.85,p.nestH,12,1,true);
   const nest=new THREE.Mesh(nestGeo,mastMat);
   nest.position.set(0,nestY,HL*p.mainMastPos);
-  shipGroup.add(nest);
+  shipGroup.add(part(nest, 'crows_nest'));
   // Nest floor
   const nfGeo=new THREE.CylinderGeometry(p.nestR*0.95,p.nestR*0.95,0.05,12);
   const nf=new THREE.Mesh(nfGeo,deckMat);
   nf.position.set(0,nestY-p.nestH*0.4,HL*p.mainMastPos);
-  shipGroup.add(nf);
+  shipGroup.add(part(nf, 'crows_nest_floor'));
 
   // --- RAILINGS ---
   [-1,1].forEach(side=>{
@@ -627,7 +631,7 @@ function rebuildShip(){
     const rGeo=new THREE.BoxGeometry(0.05,0.05,HL*0.7);
     const rail=new THREE.Mesh(rGeo,trimMat);
     rail.position.set(side*HB*0.43,p.railH,0);
-    shipGroup.add(rail);
+    shipGroup.add(part(rail, `rail_${side>0?'starboard':'port'}`));
     // Posts
     for(let i=0;i<p.railPosts;i++){
       const t=i/(p.railPosts-1);
@@ -635,7 +639,7 @@ function rebuildShip(){
       const pGeo=new THREE.CylinderGeometry(0.02,0.02,p.railH,6);
       const post=new THREE.Mesh(pGeo,trimMat);
       post.position.set(side*HB*0.43,p.railH*0.5,z);
-      shipGroup.add(post);
+      shipGroup.add(part(post, `rail_post_${side>0?'starboard':'port'}_${i}`));
     }
   });
 
@@ -648,14 +652,14 @@ function rebuildShip(){
       const phGeo=new THREE.BoxGeometry(0.02,0.22,0.22);
       const ph=new THREE.Mesh(phGeo,new THREE.MeshStandardMaterial({color:'#111'}));
       ph.position.set(side*HB*0.44,-HD*0.15,z);
-      shipGroup.add(ph);
+      shipGroup.add(part(ph, `cannon_port_${side>0?'starboard':'port'}_${i}`));
       // Cannon barrel
       const cbGeo=new THREE.CylinderGeometry(p.cannonR*0.6,p.cannonR,0.5,8);
       const cb=new THREE.Mesh(cbGeo,metalMat);
       cb.rotation.z=side*Math.PI/2;
       cb.position.set(side*(HB*0.44+0.15),-HD*0.15,z);
       cb.castShadow=true;
-      shipGroup.add(cb);
+      shipGroup.add(part(cb, `cannon_barrel_${side>0?'starboard':'port'}_${i}`));
     }
   });
 
@@ -664,12 +668,12 @@ function rebuildShip(){
   const rudder=new THREE.Mesh(rudGeo,hullMat);
   rudder.position.set(0,-p.rudderH*0.3,-HL*0.5-0.1);
   rudder.castShadow=true;
-  shipGroup.add(rudder);
+  shipGroup.add(part(rudder, 'rudder'));
   // Rudder post
   const rpGeo=new THREE.CylinderGeometry(0.04,0.04,p.rudderH*1.1,6);
   const rp=new THREE.Mesh(rpGeo,metalMat);
   rp.position.set(0,-p.rudderH*0.3+p.rudderH*0.55,-HL*0.5-0.05);
-  shipGroup.add(rp);
+  shipGroup.add(part(rp, 'rudder_post'));
 
   // --- ANCHOR ---
   const aS=p.anchorSize;
@@ -678,25 +682,25 @@ function rebuildShip(){
   const ash=new THREE.Mesh(ashGeo,metalMat);
   ash.position.set(HB*0.35,-HD*0.3,HL*0.35);
   ash.castShadow=true;
-  shipGroup.add(ash);
+  shipGroup.add(part(ash, 'anchor_shank'));
   // Ring
   const arGeo=new THREE.TorusGeometry(0.12*aS,0.025*aS,8,16);
   const ar=new THREE.Mesh(arGeo,metalMat);
   ar.position.set(HB*0.35,-HD*0.3+0.6*aS,HL*0.35);
-  shipGroup.add(ar);
+  shipGroup.add(part(ar, 'anchor_ring'));
   // Arms
   [-1,1].forEach(s=>{
     const armGeo=new THREE.CylinderGeometry(0.025*aS,0.025*aS,0.5*aS,6);
     const arm=new THREE.Mesh(armGeo,metalMat);
     arm.rotation.z=s*Math.PI/4;
     arm.position.set(HB*0.35+s*0.15*aS,-HD*0.3-0.5*aS,HL*0.35);
-    shipGroup.add(arm);
+    shipGroup.add(part(arm, `anchor_arm_${s>0?'starboard':'port'}`));
     // Fluke
     const flGeo=new THREE.ConeGeometry(0.08*aS,0.2*aS,6);
     const fl=new THREE.Mesh(flGeo,metalMat);
     fl.rotation.z=s*Math.PI/3;
     fl.position.set(HB*0.35+s*0.28*aS,-HD*0.3-0.65*aS,HL*0.35);
-    shipGroup.add(fl);
+    shipGroup.add(part(fl, `anchor_fluke_${s>0?'starboard':'port'}`));
   });
 
   // --- FIGUREHEAD ---
@@ -706,16 +710,16 @@ function rebuildShip(){
     const fbGeo=new THREE.CylinderGeometry(0.08*p.figSize,0.15*p.figSize,0.8*p.figSize,8);
     const fb=new THREE.Mesh(fbGeo,trimMat);
     fb.rotation.x=Math.PI/6;
-    fhG.add(fb);
+    fhG.add(part(fb, 'figurehead_body'));
     // Head
     const fhdGeo=new THREE.SphereGeometry(0.1*p.figSize,8,8);
     const fhd=new THREE.Mesh(fhdGeo,trimMat);
     fhd.position.y=0.45*p.figSize;
     fhd.position.z=0.1*p.figSize;
-    fhG.add(fhd);
+    fhG.add(part(fhd, 'figurehead_head'));
     fhG.position.set(0,-HD*0.2,HL*0.52);
     fhG.rotation.x=-0.3;
-    shipGroup.add(fhG);
+    shipGroup.add(fhG); fhG.name = 'figurehead';
   }
 
   // --- FLAGS ---
@@ -729,7 +733,7 @@ function rebuildShip(){
     fGeo.computeVertexNormals();
     const flag=new THREE.Mesh(fGeo,mat);
     flag.position.set(p.flagW*0.5,h-p.flagH*0.5,0);
-    mastGroup.add(flag);
+    mastGroup.add(part(flag, `flag_${h.toFixed(1)}`));
   }
   if(p.showJolly) addFlag(mainM,p.mainMastH+0.2,flagMat);
   addFlag(foreM,p.foreMastH+0.2,new THREE.MeshStandardMaterial({color:p.trimColor,roughness:0.9,side:THREE.DoubleSide}));
@@ -741,12 +745,12 @@ function rebuildShip(){
     const wfGeo=new THREE.TorusGeometry(p.winR,0.03,8,16);
     const wf=new THREE.Mesh(wfGeo,trimMat);
     wf.position.set(x,p.sternH*0.5,-HL*0.5-0.01);
-    shipGroup.add(wf);
+    shipGroup.add(part(wf, `window_frame_${i}`));
     // Glass
     const wgGeo=new THREE.CircleGeometry(p.winR*0.9,16);
     const wg=new THREE.Mesh(wgGeo,new THREE.MeshStandardMaterial({color:'#88aacc',roughness:0.1,metalness:0.3,transparent:true,opacity:0.6}));
     wg.position.set(x,p.sternH*0.5,-HL*0.5-0.005);
-    shipGroup.add(wg);
+    shipGroup.add(part(wg, `window_glass_${i}`));
   }
 
   // --- ROPES (shrouds from mast to railings) ---
@@ -764,7 +768,7 @@ function rebuildShip(){
         ]);
         const rGeo=new THREE.TubeGeometry(curve,12,0.015,4,false);
         const rope=new THREE.Mesh(rGeo,new THREE.MeshStandardMaterial({color:'#8a7550',roughness:0.9}));
-        shipGroup.add(rope);
+        shipGroup.add(part(rope, `rigging_rope_${m.mz.toFixed(2)}_${side>0?'starboard':'port'}`));
       });
     });
   }
@@ -776,19 +780,19 @@ function rebuildShip(){
         const lGeo=new THREE.CylinderGeometry(0.06,0.08,0.2,6);
         const lantern=new THREE.Mesh(lGeo,new THREE.MeshStandardMaterial({color:'#cc8800',emissive:'#aa6600',emissiveIntensity:0.5,roughness:0.4}));
         lantern.position.set(side*HB*0.38,y,z);
-        shipGroup.add(lantern);
+        shipGroup.add(part(lantern, `lantern_${z.toFixed(1)}_${side>0?'starboard':'port'}`));
         // Hook
         const hGeo=new THREE.TorusGeometry(0.04,0.01,4,8,Math.PI);
         const hook=new THREE.Mesh(hGeo,metalMat);
         hook.position.set(side*HB*0.38,y+0.12,z);
-        shipGroup.add(hook);
+        shipGroup.add(part(hook, `lantern_hook_${z.toFixed(1)}_${side>0?'starboard':'port'}`));
       });
     });
     // Stern lantern
     const slGeo=new THREE.CylinderGeometry(0.1,0.12,0.3,6);
     const sLantern=new THREE.Mesh(slGeo,new THREE.MeshStandardMaterial({color:'#cc8800',emissive:'#aa6600',emissiveIntensity:0.6,roughness:0.4}));
     sLantern.position.set(0,p.sternH+0.6,-HL*0.5);
-    shipGroup.add(sLantern);
+    shipGroup.add(part(sLantern, 'stern_lantern'));
   }
 
   // Trim strip along hull
@@ -796,7 +800,7 @@ function rebuildShip(){
     const tsGeo=new THREE.BoxGeometry(0.04,0.08,HL*0.85);
     const ts=new THREE.Mesh(tsGeo,trimMat);
     ts.position.set(side*HB*0.44,-HD*0.05,0);
-    shipGroup.add(ts);
+    shipGroup.add(part(ts, `trim_${side>0?'starboard':'port'}`));
   });
 
   // Update water color
@@ -1348,6 +1352,53 @@ document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(
 
 <script>
 window.BQ={"key":"jvds-pirate-ship-v2","name":"Pirate Ship Shipyard","profileId":"pirate-ship-builder","quiz":[{"q":"What is the <strong>bowsprit</strong>?","opts":["The spar extending forward from the bow","The rear deck","The ship's wheel","The lowest sail"],"a":0,"why":"The bowsprit sticks out over the front and anchors rigging for the fore mast."},{"q":"Which mast is the tallest on the ship?","opts":["The fore mast","The mizzen mast","The main mast","The flag pole"],"a":2,"why":"The main mast is the central and tallest mast, and it carries the crow's nest."},{"q":"Where does the <strong>mizzen mast</strong> stand?","opts":["At the bow","At the rear of the ship","Below deck","On the bowsprit"],"a":1,"why":"Fore mast at the front, main mast in the middle, mizzen mast at the rear."},{"q":"What is the <strong>forecastle</strong>?","opts":["The captain's cabin","The raised platform at the stern","The kitchen","The raised section at the bow"],"a":3,"why":"The forecastle is the raised deck at the front. The raised rear platform is the stern castle."},{"q":"What is the crow's nest used for?","opts":["Keeping birds","A lookout platform high on the main mast","Storing cannonballs","Steering the ship"],"a":1,"why":"From high up, a lookout can spot land, ships and storms long before the deck crew."},{"q":"Which part steers the ship?","opts":["The rudder at the stern","The anchor","The figurehead","The gunwale"],"a":0,"why":"The rudder pivots in the water at the stern to turn the ship."}]};
+</script>
+<script>
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the ship lives, so
+   the dialog always reads the ship that is actually on screen.
+------------------------------- */
+const SHIP_TEMPLATES = [
+  { id: 'pearl', emoji: '🏴‍☠️', name: 'Black Pearl', note: 'Classic three-mast frigate  -  the house favourite.',
+    data: { shipName: 'Black Pearl', hullLen: 12, hullBeam: 4, hullDepth: 3, cannonCount: 5, sailColor: '#e8dcc8', hullColor: '#3a2010', flagColor: '#1a1a1a', showJolly: true } },
+  { id: 'crimson', emoji: '🔴', name: 'Crimson Tide', note: 'Red sails and gold trim  -  fast and flashy.',
+    data: { shipName: 'Crimson Tide', hullLen: 11, hullBeam: 3.6, hullDepth: 2.8, cannonCount: 6, sailColor: '#c53030', hullColor: '#4a1010', flagColor: '#c9a84c', trimColor: '#c9a84c', showJolly: false } },
+  { id: 'ghost', emoji: '👻', name: 'Ghost Galleon', note: 'Pale sails and weathered hull  -  haunted seas.',
+    data: { shipName: 'Ghost Galleon', hullLen: 13, hullBeam: 4.2, hullDepth: 3.2, cannonCount: 4, sailColor: '#d1d5db', hullColor: '#2d2d2d', flagColor: '#e5e7eb', sailCount: 2, showFigure: true } },
+  { id: 'sunset', emoji: '☀️', name: 'Sunset Runner', note: 'Light hull, many sails  -  built for speed.',
+    data: { shipName: 'Sunset Runner', hullLen: 10, hullBeam: 3.2, hullDepth: 2.5, cannonCount: 3, sailColor: '#fef3c7', hullColor: '#8b6b3a', flagColor: '#38bdf8', sailCount: 3, showRopes: true } },
+  { id: 'ironclad', emoji: '⚓', name: 'Ironclad', note: 'Short, wide and heavily armed.',
+    data: { shipName: 'Ironclad', hullLen: 9, hullBeam: 4.5, hullDepth: 3, cannonCount: 8, sailColor: '#9ca3af', hullColor: '#374151', flagColor: '#111827', sailCount: 1, showLanterns: true } },
+  { id: 'explorer', emoji: '🧭', name: 'Explorer', note: 'Blue flag, extra lanterns and a tall main mast.',
+    data: { shipName: 'Explorer', hullLen: 12, hullBeam: 3.8, hullDepth: 2.8, cannonCount: 4, sailColor: '#e0f2fe', hullColor: '#6b4a2a', flagColor: '#2563eb', mainMastH: 11, showFigure: true } }
+];
+function loadShipTemplate(t) {
+  Object.assign(P, t.data);
+  rebuildShip(); updateStats();
+  toast('Template: ' + t.data.shipName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-btns',
+    templates: SHIP_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadShipTemplate(t); } }; }),
+    random: randomShip,
+    onApply: function () { if (typeof go === 'function') go(0); }
+  });
+}
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Pirate Ship Shipyard',
+    units: 'm',
+    accent: '#d4a843',
+    getGroup: function () { return shipGroup; },
+    getName: function () { return P.shipName || 'pirate-ship'; },
+    say: toast,
+    png: downloadPNG,
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
 </script>
 <script defer src="../player-profile.js"></script>
 <script defer src="builder-quiz.js"></script>

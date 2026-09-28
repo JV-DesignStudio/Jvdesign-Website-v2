@@ -271,6 +271,7 @@
 
 <div id="toast"></div>
 
+<script src="../hidpi-canvas.js"></script>
 <script>
 function id(x){return document.getElementById(x);}
 
@@ -504,30 +505,31 @@ function drawFrame(){
   if(!sheetImg||activeFrames.length===0){ctx.clearRect(0,0,canvas.width,canvas.height);return;}
   const fi=activeFrames[currentFrame]??0;
   const f=frames[fi];
-  canvas.width=frameW*zoom;canvas.height=frameH*zoom;
+  const LW=frameW*zoom, LH=frameH*zoom;
+  if(window.HiDPI) HiDPI.fit(canvas,LW,LH,ctx); else {canvas.width=LW;canvas.height=LH;}
   ctx.imageSmoothingEnabled=false;
 
   // bg
   if(bgMode==='checker'){
     const s=Math.max(2,zoom);
-    for(let y=0;y<canvas.height;y+=s*2)for(let x=0;x<canvas.width;x+=s*2){
+    for(let y=0;y<LH;y+=s*2)for(let x=0;x<LW;x+=s*2){
       ctx.fillStyle='#333';ctx.fillRect(x,y,s,s);ctx.fillRect(x+s,y+s,s,s);
       ctx.fillStyle='#111';ctx.fillRect(x+s,y,s,s);ctx.fillRect(x,y+s,s,s);
     }
-  } else {ctx.fillStyle=bgMode==='white'?'#fff':bgMode==='dark'?'#1a1a2e':'#000';ctx.fillRect(0,0,canvas.width,canvas.height);}
+  } else {ctx.fillStyle=bgMode==='white'?'#fff':bgMode==='dark'?'#1a1a2e':'#000';ctx.fillRect(0,0,LW,LH);}
 
   // Onion skin: ghost previous (pink) and next (green) frames under the current one
   if(onionSkin&&!playing&&activeFrames.length>1){
     const prevF=frames[activeFrames[(currentFrame-1+activeFrames.length)%activeFrames.length]];
     const nextF=frames[activeFrames[(currentFrame+1)%activeFrames.length]];
     ctx.globalAlpha=.28;
-    ctx.drawImage(sheetCanvas,prevF.x,prevF.y,frameW,frameH,0,0,canvas.width,canvas.height);
+    ctx.drawImage(sheetCanvas,prevF.x,prevF.y,frameW,frameH,0,0,LW,LH);
     ctx.globalAlpha=.16;
-    ctx.drawImage(sheetCanvas,nextF.x,nextF.y,frameW,frameH,0,0,canvas.width,canvas.height);
+    ctx.drawImage(sheetCanvas,nextF.x,nextF.y,frameW,frameH,0,0,LW,LH);
     ctx.globalAlpha=1;
   }
 
-  ctx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,canvas.width,canvas.height);
+  ctx.drawImage(sheetCanvas,f.x,f.y,frameW,frameH,0,0,LW,LH);
   id('currentFrameNum').textContent=currentFrame+1;
 
   // highlight in strip
@@ -824,7 +826,6 @@ function applyProject(d){
       id('offsetX').value=offsetX;id('offsetY').value=offsetY;id('spacing').value=spacing;
       frames=(Array.isArray(d.frames)?d.frames:[]).map(f=>({x:+f.x||0,y:+f.y||0,enabled:f.e!==false,fps:f.fps||null}));
       setFps(Math.min(60,Math.max(1,+d.fps||12)));id('fpsSlider').value=fps;
-function setZoom(v){zoom=Math.min(16,Math.max(1,v));id('zoomVal').textContent=zoom+'×';drawFrame();markDirty();}
       bgMode=['checker','black','white','dark'].includes(d.bgMode)?d.bgMode:'checker';
       document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===bgMode));
       looping=d.looping!==false;id('loopBtn').classList.toggle('on',looping);
@@ -957,8 +958,8 @@ function canvasToSheetPx(e){
   if(activeFrames.length===0) return null;
   const f=frames[activeFrames[currentFrame]];
   const rect=canvas.getBoundingClientRect();
-  const px=Math.floor((e.clientX-rect.left)*(canvas.width/rect.width)/zoom);
-  const py=Math.floor((e.clientY-rect.top)*(canvas.height/rect.height)/zoom);
+  const px=Math.floor((e.clientX-rect.left)/zoom);
+  const py=Math.floor((e.clientY-rect.top)/zoom);
   if(px<0||py<0||px>=frameW||py>=frameH) return null;
   return {x:f.x+px,y:f.y+py};
 }

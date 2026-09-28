@@ -59,7 +59,7 @@ h1{margin:6px 0 8px;font-size:clamp(1.8rem,4vw,2.6rem)}p{color:var(--muted);line
 <h1>Cross-Tool Challenges</h1>
 <p>Weekly challenges that mix making and playing. Design a character <em>and</em> play a game. All offline - completions, XP and badges stay in this browser (IndexedDB), leaderboards update when you are back online.</p>
 <div class="stats"><div class="stat" id="statDone">0 completed</div><div class="stat" id="statXP">0 XP</div><div class="stat" id="statStreak">Streak 0</div></div>
-<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="btn Weekly" type="button">Weekly set</button><button class="btn" id="btnMonthly" type="button">Monthly epic</button><button class="btn" id="btnReset" type="button">Reset challenges</button></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="btnWeekly" type="button">Weekly set</button><button class="btn" id="btnMonthly" type="button">Monthly epic</button><button class="btn" id="btnReset" type="button">Reset challenges</button></div>
 <div id="grid" class="grid" aria-live="polite"></div>
 </main>
 <footer class="jvds-tools-footer"><a href="/">Home</a><a href="/dev-tools">Tools</a></footer>
@@ -98,7 +98,7 @@ async function render(){
   const streak=Object.keys(prog).length; $('statStreak').textContent='Streak '+streak;
   grid.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{const id=b.dataset.id;const was=!!prog[id];await setDone(id,!was);if(!was){if(window.ToolXP)ToolXP.award('challenge-'+id,CHALLENGES.find(c=>c.id===id).xp);announce('Challenge complete! +'+CHALLENGES.find(c=>c.id===id).xp+' XP');} else announce('Challenge undone');render();});
 }
-document.getElementById('btn Weekly').onclick=()=>{currentPeriod='weekly';render();};
+document.getElementById('btnWeekly').onclick=()=>{currentPeriod='weekly';render();};
 document.getElementById('btnMonthly').onclick=()=>{currentPeriod='monthly';render();};
 document.getElementById('btnReset').onclick=async()=>{if(!confirm('Reset all challenge progress?'))return;const db=await openDB();await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear().onsuccess=res;tx.onerror=()=>rej(tx.error);tx.oncomplete=()=>db.close();});announce('Challenges reset');render();};
 render();

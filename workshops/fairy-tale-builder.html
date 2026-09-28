@@ -30,6 +30,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="jv-exporter.js"></script>
+<script src="builder-templates.js"></script>
 <link rel="preload" href="../style-workshop-fairy-tale-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-workshop-fairy-tale-builder.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -174,7 +176,6 @@
       <button class="quick-btn" onclick="randomCottage()" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764">🎲 Random</button>
       <button class="quick-btn" onclick="openSaveModal()" style="background:linear-gradient(135deg,#d946ef,#86198f);box-shadow:0 3px 0 #701a75">💾 Save</button>
       <button class="quick-btn" onclick="openLoadModal()" style="background:linear-gradient(135deg,#c084fc,#7e22ce);box-shadow:0 3px 0 #581c87">📂 Load</button>
-      <button class="quick-btn" onclick="exportGLB()" style="background:linear-gradient(135deg,#6366f1,#4338ca);box-shadow:0 3px 0 #3730a3">📦 GLB</button>
       <button class="quick-btn" onclick="quickBuild()" style="background:linear-gradient(135deg,var(--acc),var(--acc-dk));box-shadow:0 3px 0 var(--acc-dk)">⚡ Quick Build</button>
     </div>
   </header>
@@ -443,6 +444,8 @@ function hexToThree(hex) { return new THREE.Color(hex); }
 function buildCottage() {
   if (cottageGroup) scene.remove(cottageGroup);
   cottageGroup = new THREE.Group();
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
+  cottageGroup.name = 'fairy_cottage';
   smokeParticles = [];
   lanternLights = [];
 
@@ -465,7 +468,7 @@ function buildCottage() {
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.01;
   ground.receiveShadow = true;
-  cottageGroup.add(ground);
+  cottageGroup.add(part(ground, 'garden_ground'));
 
   // House body
   const bodyGeo = new THREE.BoxGeometry(bw, bh, bd);
@@ -473,7 +476,7 @@ function buildCottage() {
   body.position.y = baseY + bh / 2;
   body.castShadow = true;
   body.receiveShadow = true;
-  cottageGroup.add(body);
+  cottageGroup.add(part(body, 'cottage'));
 
   // Roof
   if (P.roofStyle === 'pitched') {
@@ -482,13 +485,13 @@ function buildCottage() {
     roof.position.y = baseY + bh + P.roofHeight / 2;
     roof.rotation.y = Math.PI / 4;
     roof.castShadow = true;
-    cottageGroup.add(roof);
+    cottageGroup.add(part(roof, 'roof'));
   } else if (P.roofStyle === 'round') {
     const roofGeo = new THREE.SphereGeometry(bw * 0.8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
     const roof = new THREE.Mesh(roofGeo, roofMat);
     roof.position.y = baseY + bh;
     roof.castShadow = true;
-    cottageGroup.add(roof);
+    cottageGroup.add(part(roof, 'roof'));
   } else {
     for (let i = 0; i < 5; i++) {
       const r = bw * 0.82 - i * 0.08;
@@ -497,13 +500,13 @@ function buildCottage() {
       ring.rotation.x = Math.PI / 2;
       ring.position.y = baseY + bh + 0.3 + i * (P.roofHeight / 5);
       ring.castShadow = true;
-      cottageGroup.add(ring);
+      cottageGroup.add(part(ring, 'roof_thatch_ring_'+i));
     }
     const topGeo = new THREE.ConeGeometry(bw * 0.3, P.roofHeight * 0.4, 12);
     const top = new THREE.Mesh(topGeo, roofMat);
     top.position.y = baseY + bh + P.roofHeight;
     top.castShadow = true;
-    cottageGroup.add(top);
+    cottageGroup.add(part(top, 'roof_thatch_top'));
   }
 
   // Chimney
@@ -511,11 +514,11 @@ function buildCottage() {
   const chimney = new THREE.Mesh(chimneyGeo, stoneMat);
   chimney.position.set(bw * 0.3, baseY + bh + P.chimneyHeight / 2, bd * 0.25);
   chimney.castShadow = true;
-  cottageGroup.add(chimney);
+  cottageGroup.add(part(chimney, 'chimney'));
   const chimneyTopGeo = new THREE.BoxGeometry(0.4, 0.1, 0.4);
   const chimneyTop = new THREE.Mesh(chimneyTopGeo, darkWood);
   chimneyTop.position.set(bw * 0.3, baseY + bh + P.chimneyHeight + 0.05, bd * 0.25);
-  cottageGroup.add(chimneyTop);
+  cottageGroup.add(part(chimneyTop, 'chimney_top'));
 
   // Smoke
   if (P.chimneySmoke && P.activated) {
@@ -524,7 +527,7 @@ function buildCottage() {
       const puff = new THREE.Mesh(new THREE.SphereGeometry(0.08 + i * 0.03, 6, 6), smokeMat.clone());
       puff.position.set(bw * 0.3 + (Math.random() - 0.5) * 0.1, baseY + bh + P.chimneyHeight + 0.2 + i * 0.25, bd * 0.25 + (Math.random() - 0.5) * 0.1);
       smokeParticles.push({ mesh: puff, baseY: puff.position.y, phase: Math.random() * Math.PI * 2 });
-      cottageGroup.add(puff);
+      cottageGroup.add(part(puff, 'chimney_smoke_'+i));
     }
   }
 
@@ -541,36 +544,36 @@ function buildCottage() {
     const door = new THREE.Mesh(doorGeo, doorMat);
     door.position.set(0, baseY, bd / 2 + 0.01);
     door.castShadow = true;
-    cottageGroup.add(door);
+    cottageGroup.add(part(door, 'door'));
   } else if (P.doorStyle === 'round') {
     const doorGeo = new THREE.CircleGeometry(0.4, 16);
     const door = new THREE.Mesh(doorGeo, doorMat);
     door.position.set(0, baseY + 0.5, bd / 2 + 0.01);
     door.castShadow = true;
-    cottageGroup.add(door);
+    cottageGroup.add(part(door, 'door'));
   } else {
     for (let s = -1; s <= 1; s += 2) {
       const doorGeo = new THREE.BoxGeometry(0.3, 0.9, 0.06);
       const door = new THREE.Mesh(doorGeo, doorMat);
       door.position.set(s * 0.2, baseY + 0.45, bd / 2 + 0.01);
       door.castShadow = true;
-      cottageGroup.add(door);
+      cottageGroup.add(part(door, 'door_'+s));
     }
     const handleGeo = new THREE.SphereGeometry(0.03, 6, 6);
     const handleMat = new THREE.MeshStandardMaterial({ color: 0xccaa44, roughness: 0.3, metalness: 0.8 });
     const handleL = new THREE.Mesh(handleGeo, handleMat);
     handleL.position.set(-0.07, baseY + 0.45, bd / 2 + 0.05);
-    cottageGroup.add(handleL);
+    cottageGroup.add(part(handleL, 'door_handle_left'));
     const handleR = new THREE.Mesh(handleGeo, handleMat);
     handleR.position.set(0.07, baseY + 0.45, bd / 2 + 0.05);
-    cottageGroup.add(handleR);
+    cottageGroup.add(part(handleR, 'door_handle_right'));
   }
 
   // Door step
   const stepGeo = new THREE.BoxGeometry(0.8, 0.08, 0.3);
   const step = new THREE.Mesh(stepGeo, stoneMat);
   step.position.set(0, baseY - 0.04, bd / 2 + 0.15);
-  cottageGroup.add(step);
+  cottageGroup.add(part(step, 'door_step'));
 
   // Windows
   const winPositions = [];
@@ -595,42 +598,42 @@ function buildCottage() {
         const winFrame = new THREE.Mesh(winGeo, darkWood);
         winFrame.position.set(wx, wy, wz);
         winFrame.lookAt(wx * 5, wy, wz * 5);
-        cottageGroup.add(winFrame);
+        cottageGroup.add(part(winFrame, 'window_frame_'+i));
         const glassGeo = new THREE.CircleGeometry(0.13, 12);
         const glass = new THREE.Mesh(glassGeo, glassMat);
         glass.position.set(wx, wy + 0.1, wz);
         glass.lookAt(wx * 5, wy + 0.1, wz * 5);
-        cottageGroup.add(glass);
+        cottageGroup.add(part(glass, 'window_glass_'+i));
       } else if (P.windowStyle === 'round') {
         const rimGeo = new THREE.TorusGeometry(0.15, 0.03, 8, 16);
         const rim = new THREE.Mesh(rimGeo, darkWood);
         rim.position.set(wx, wy, wz);
         rim.lookAt(wx * 5, wy, wz * 5);
-        cottageGroup.add(rim);
+        cottageGroup.add(part(rim, 'window_frame_'+i));
         const glassGeo = new THREE.CircleGeometry(0.12, 12);
         const glass = new THREE.Mesh(glassGeo, glassMat);
         glass.position.set(wx, wy, wz);
         glass.lookAt(wx * 5, wy, wz * 5);
-        cottageGroup.add(glass);
+        cottageGroup.add(part(glass, 'window_glass_'+i));
       } else {
         const frameGeo = new THREE.BoxGeometry(0.32, 0.36, 0.04);
         const frame = new THREE.Mesh(frameGeo, darkWood);
         frame.position.set(wx, wy, wz);
         frame.lookAt(wx * 5, wy, wz * 5);
-        cottageGroup.add(frame);
+        cottageGroup.add(part(frame, 'window_frame_'+i));
         const glassGeo = new THREE.PlaneGeometry(0.24, 0.28);
         const glass = new THREE.Mesh(glassGeo, glassMat);
         glass.position.set(wx, wy, wz);
         glass.lookAt(wx * 5, wy, wz * 5);
-        cottageGroup.add(glass);
+        cottageGroup.add(part(glass, 'window_glass_'+i));
         const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.02, 0.05), darkWood);
         crossH.position.set(wx, wy, wz);
         crossH.lookAt(wx * 5, wy, wz * 5);
-        cottageGroup.add(crossH);
+        cottageGroup.add(part(crossH, 'window_cross_h_'+i));
         const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.28, 0.05), darkWood);
         crossV.position.set(wx, wy, wz);
         crossV.lookAt(wx * 5, wy, wz * 5);
-        cottageGroup.add(crossV);
+        cottageGroup.add(part(crossV, 'window_cross_v_'+i));
       }
     }
   }
@@ -644,17 +647,17 @@ function buildCottage() {
     const tower = new THREE.Mesh(tGeo, bodyMat.clone());
     tower.position.set(tx, baseY + P.towerHeight / 2, tz);
     tower.castShadow = true;
-    cottageGroup.add(tower);
+cottageGroup.add(part(tower, 'tower_'+t));
     const tRoofGeo = new THREE.ConeGeometry(0.5, 1.2, 8);
     const tRoof = new THREE.Mesh(tRoofGeo, roofMat.clone());
     tRoof.position.set(tx, baseY + P.towerHeight + 0.6, tz);
     tRoof.castShadow = true;
-    cottageGroup.add(tRoof);
+cottageGroup.add(part(tRoof, 'tower_roof_'+t));
     // Tower window
     const tWinGeo = new THREE.CircleGeometry(0.1, 8);
     const tWin = new THREE.Mesh(tWinGeo, glassMat.clone());
     tWin.position.set(tx + 0.36, baseY + P.towerHeight * 0.7, tz);
-    cottageGroup.add(tWin);
+cottageGroup.add(part(tWin, 'tower_window_'+t));
   }
 
   // Fence
@@ -669,14 +672,14 @@ function buildCottage() {
       const postGeo = new THREE.BoxGeometry(0.06, P.fenceHeight, 0.06);
       const post = new THREE.Mesh(postGeo, fenceMat);
       post.position.set(fx, baseY + P.fenceHeight / 2, fz);
-      cottageGroup.add(post);
+      cottageGroup.add(part(post, 'fence_post_'+i));
     }
     for (let r = 0; r < 2; r++) {
       const ringGeo = new THREE.TorusGeometry(fenceRadius, 0.025, 4, postCount);
       const ring = new THREE.Mesh(ringGeo, fenceMat);
       ring.rotation.x = Math.PI / 2;
       ring.position.y = baseY + P.fenceHeight * (0.3 + r * 0.4);
-      cottageGroup.add(ring);
+      cottageGroup.add(part(ring, 'fence_rail_'+r));
     }
   }
 
@@ -695,7 +698,7 @@ function buildCottage() {
     const path = new THREE.Mesh(pathGeo, pathMat);
     path.rotation.x = -Math.PI / 2;
     path.position.set(0, 0.005, bd / 2 + pathLen / 2);
-    cottageGroup.add(path);
+cottageGroup.add(part(path, 'path'));
     // Path stones
     if (P.pathStyle !== 'dirt') {
       for (let i = 0; i < Math.floor(pathLen * 3); i++) {
@@ -705,7 +708,7 @@ function buildCottage() {
         const stone = new THREE.Mesh(stoneGeo, stoneMat.clone());
         stone.rotation.x = -Math.PI / 2;
         stone.position.set(sx, 0.01, sz);
-        cottageGroup.add(stone);
+        cottageGroup.add(part(stone, 'path_stone_'+i));
       }
     }
   }
@@ -721,13 +724,13 @@ function buildCottage() {
     const stemMat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
     const stem = new THREE.Mesh(stemGeo, stemMat);
     stem.position.set(fx, 0.15, fz);
-    cottageGroup.add(stem);
+cottageGroup.add(part(stem, 'flower_stem_'+i));
     const petalColor = flowerColors[Math.floor(Math.random() * flowerColors.length)];
     const petalGeo = new THREE.SphereGeometry(0.06, 6, 6);
     const petalMat = new THREE.MeshStandardMaterial({ color: petalColor, roughness: 0.4 });
     const petal = new THREE.Mesh(petalGeo, petalMat);
     petal.position.set(fx, 0.33, fz);
-    cottageGroup.add(petal);
+cottageGroup.add(part(petal, 'flower_'+i));
   }
 
   // Mushrooms
@@ -744,11 +747,11 @@ function buildCottage() {
     const mStemGeo = new THREE.CylinderGeometry(0.04 * mScale, 0.05 * mScale, 0.18 * mScale, 6);
     const mStem = new THREE.Mesh(mStemGeo, mushStem);
     mStem.position.set(mx, 0.09 * mScale, mz);
-    cottageGroup.add(mStem);
+cottageGroup.add(part(mStem, 'mushroom_stem_'+i));
     const mCapGeo = new THREE.SphereGeometry(0.09 * mScale, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2);
     const mCap = new THREE.Mesh(mCapGeo, mushCap);
     mCap.position.set(mx, 0.18 * mScale, mz);
-    cottageGroup.add(mCap);
+cottageGroup.add(part(mCap, 'mushroom_cap_'+i));
     for (let d = 0; d < 3; d++) {
       const dAngle = (d / 3) * Math.PI * 2;
       const dotGeo = new THREE.SphereGeometry(0.02 * mScale, 4, 4);
@@ -758,7 +761,7 @@ function buildCottage() {
         0.2 * mScale,
         mz + Math.sin(dAngle) * 0.06 * mScale
       );
-      cottageGroup.add(dot);
+      cottageGroup.add(part(dot, 'mushroom_dot_'+i+'_'+d));
     }
   }
 
@@ -775,13 +778,13 @@ function buildCottage() {
     const trunk = new THREE.Mesh(trunkGeo, treeTrunk);
     trunk.position.set(tx, 0.75 * tScale, tz);
     trunk.castShadow = true;
-    cottageGroup.add(trunk);
+cottageGroup.add(part(trunk, 'tree_trunk_'+i));
     const leavesGeo = new THREE.SphereGeometry(0.5 * tScale, 8, 6);
     const leaves = new THREE.Mesh(leavesGeo, treeLeaves.clone());
     leaves.material.color.setHex([0x2d7a1e, 0x3a8a2e, 0x1e6a14][Math.floor(Math.random() * 3)]);
     leaves.position.set(tx, 1.7 * tScale, tz);
     leaves.castShadow = true;
-    cottageGroup.add(leaves);
+cottageGroup.add(part(leaves, 'tree_foliage_'+i));
   }
 
   // Lanterns
@@ -795,13 +798,13 @@ function buildCottage() {
     const poleGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.8, 6);
     const pole = new THREE.Mesh(poleGeo, lanternMat);
     pole.position.set(lx, 0.4, lz);
-    cottageGroup.add(pole);
+cottageGroup.add(part(pole, 'lantern_pole_'+i));
     const lanternBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.1), lanternMat);
     lanternBody.position.set(lx, 0.85, lz);
-    cottageGroup.add(lanternBody);
+cottageGroup.add(part(lanternBody, 'lantern_'+i));
     const glow = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), glowMat.clone());
     glow.position.set(lx, 0.85, lz);
-    cottageGroup.add(glow);
+cottageGroup.add(part(glow, 'lantern_glow_'+i));
     if (P.activated) {
       const light = new THREE.PointLight(0xffaa44, 0.8, 4);
       light.position.set(lx, 0.9, lz);
@@ -823,7 +826,7 @@ function buildCottage() {
       const bulbMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: P.activated ? 0.9 : 0.4 });
       const bulb = new THREE.Mesh(bulbGeo, bulbMat);
       bulb.position.set(lx, ly, lz);
-      cottageGroup.add(bulb);
+      cottageGroup.add(part(bulb, 'fairy_light_'+i));
     }
     // Wire
     const wirePoints = [];
@@ -846,13 +849,13 @@ function buildCottage() {
       new THREE.MeshStandardMaterial({ color: 0xf5f0d0, roughness: 0.7 })
     );
     mhBody.position.set(mhX, 0.3, mhZ);
-    cottageGroup.add(mhBody);
+cottageGroup.add(part(mhBody, 'mushroom_house_body'));
     const mhCap = new THREE.Mesh(
       new THREE.SphereGeometry(0.45, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
       new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.5 })
     );
     mhCap.position.set(mhX, 0.6, mhZ);
-    cottageGroup.add(mhCap);
+cottageGroup.add(part(mhCap, 'mushroom_house_roof'));
     for (let d = 0; d < 4; d++) {
       const dAngle = (d / 4) * Math.PI * 2;
       const dotGeo = new THREE.SphereGeometry(0.05, 4, 4);
@@ -862,20 +865,20 @@ function buildCottage() {
         0.75,
         mhZ + Math.sin(dAngle) * 0.3
       );
-      cottageGroup.add(dot);
+      cottageGroup.add(part(dot, 'mushroom_house_dot_'+d));
     }
     const mhDoor = new THREE.Mesh(
       new THREE.CircleGeometry(0.1, 8),
       new THREE.MeshStandardMaterial({ color: 0x5c3a1e })
     );
     mhDoor.position.set(mhX, 0.15, mhZ + 0.31);
-    cottageGroup.add(mhDoor);
+cottageGroup.add(part(mhDoor, 'mushroom_house_door'));
     const mhWin = new THREE.Mesh(
       new THREE.CircleGeometry(0.06, 6),
       glassMat.clone()
     );
     mhWin.position.set(mhX + 0.25, 0.35, mhZ + 0.15);
-    cottageGroup.add(mhWin);
+cottageGroup.add(part(mhWin, 'mushroom_house_window'));
   }
 
   // Bridge (if stream present)
@@ -888,18 +891,18 @@ function buildCottage() {
       const stream = new THREE.Mesh(streamGeo, streamMat);
       stream.rotation.x = -Math.PI / 2;
       stream.position.set(0, 0.01, bZ);
-      cottageGroup.add(stream);
+      cottageGroup.add(part(stream, 'stream_'+b));
       // Bridge planks
       const bridgeGeo = new THREE.BoxGeometry(0.8, 0.05, 0.7);
       const bridge = new THREE.Mesh(bridgeGeo, darkWood.clone());
       bridge.position.set(0, 0.1, bZ);
-      cottageGroup.add(bridge);
+      cottageGroup.add(part(bridge, 'bridge_'+b));
       // Railings
       for (let s = -1; s <= 1; s += 2) {
         const railGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 4);
         const rail = new THREE.Mesh(railGeo, darkWood.clone());
         rail.position.set(s * 0.35, 0.25, bZ);
-        cottageGroup.add(rail);
+        cottageGroup.add(part(rail, 'bridge_rail_'+b+'_'+s));
       }
     }
   }
@@ -1779,6 +1782,55 @@ function init() {
 }
 
 init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const COTTAGE_TEMPLATES = [
+  { id: 'willow', emoji: '🌿', name: 'Willow Rest', note: 'Thatch roof, mushroom house and starry lights  -  the quick-build favourite.',
+    data: { houseName: 'Willow Rest', bodyColor: '#e8d5b8', roofColor: '#5a2d1a', roofStyle: 'thatch', roofHeight: 2.5, chimneyHeight: 2, chimneySmoke: true, windowCount: 4, windowStyle: 'arch', doorColor: '#4a2a1a', doorStyle: 'arch', towerCount: 1, towerHeight: 5, gardenSize: 3, fenceHeight: 0.6, pathStyle: 'stone', flowerCount: 18, mushroomCount: 8, lanternCount: 6, fairyLights: true, bridgeCount: 0, mushroomHouse: true, treeCount: 5, activated: false } },
+  { id: 'rose', emoji: '🌹', name: 'Rose Cottage', note: 'Pitched red roof and a neat stone path.',
+    data: { houseName: 'Rose Cottage', bodyColor: '#d4a574', roofColor: '#8b1a1a', roofStyle: 'pitched', roofHeight: 2, chimneyHeight: 2, chimneySmoke: true, windowCount: 3, windowStyle: 'arch', doorColor: '#6b3a2a', doorStyle: 'arch', towerCount: 0, towerHeight: 4, gardenSize: 2, fenceHeight: 0.5, pathStyle: 'stone', flowerCount: 12, mushroomCount: 6, lanternCount: 4, fairyLights: true, bridgeCount: 0, mushroomHouse: false, treeCount: 4, activated: false } },
+  { id: 'foxglove', emoji: '🦊', name: 'Foxglove End', note: 'Round roof, cobble path and lots of flowers.',
+    data: { houseName: 'Foxglove End', bodyColor: '#f0d9b5', roofColor: '#a16207', roofStyle: 'round', roofHeight: 2.2, chimneyHeight: 1.8, chimneySmoke: false, windowCount: 3, windowStyle: 'round', doorColor: '#78350f', doorStyle: 'round', towerCount: 0, towerHeight: 4, gardenSize: 2.5, fenceHeight: 0.5, pathStyle: 'cobble', flowerCount: 20, mushroomCount: 4, lanternCount: 5, fairyLights: true, bridgeCount: 1, mushroomHouse: false, treeCount: 3, activated: false } },
+  { id: 'thistle', emoji: '🌸', name: 'Thistlewood', note: 'Mossy greens and a little tower for the view.',
+    data: { houseName: 'Thistlewood', bodyColor: '#cbd5a0', roofColor: '#3f6212', roofStyle: 'pitched', roofHeight: 2.4, chimneyHeight: 2.2, chimneySmoke: true, windowCount: 4, windowStyle: 'square', doorColor: '#365314', doorStyle: 'arch', towerCount: 1, towerHeight: 6, gardenSize: 3, fenceHeight: 0.7, pathStyle: 'dirt', flowerCount: 14, mushroomCount: 10, lanternCount: 4, fairyLights: false, bridgeCount: 0, mushroomHouse: true, treeCount: 6, activated: false } },
+  { id: 'moonlit', emoji: '🌙', name: 'Moonlit Rest', note: 'Blue-grey walls and lanterns that glow at dusk.',
+    data: { houseName: 'Moonlit Rest', bodyColor: '#cbd5e1', roofColor: '#334155', roofStyle: 'pitched', roofHeight: 2.2, chimneyHeight: 2, chimneySmoke: true, windowCount: 3, windowStyle: 'arch', doorColor: '#1e293b', doorStyle: 'arch', towerCount: 0, towerHeight: 4, gardenSize: 2, fenceHeight: 0.5, pathStyle: 'stone', flowerCount: 10, mushroomCount: 6, lanternCount: 8, fairyLights: true, bridgeCount: 0, mushroomHouse: false, treeCount: 4, activated: false } },
+  { id: 'bramble', emoji: '🍄', name: 'Bramble Gate', note: 'Cottage plus bridge and a cluster of toadstools.',
+    data: { houseName: 'Bramble Gate', bodyColor: '#e7d6a8', roofColor: '#92400e', roofStyle: 'thatch', roofHeight: 2.6, chimneyHeight: 1.5, chimneySmoke: false, windowCount: 5, windowStyle: 'arch', doorColor: '#78350f', doorStyle: 'double', towerCount: 0, towerHeight: 4, gardenSize: 3.5, fenceHeight: 0.6, pathStyle: 'cobble', flowerCount: 22, mushroomCount: 12, lanternCount: 6, fairyLights: true, bridgeCount: 1, mushroomHouse: true, treeCount: 5, activated: false } }
+];
+
+function loadCottageTemplate(t) {
+  Object.assign(P, t.data, { activated: false });
+  buildCottage(); updateStats(); syncRightBar();
+  sout('Template loaded: ' + t.data.houseName + '. Change anything, then export.');
+  toast('Template: ' + t.data.houseName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: COTTAGE_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadCottageTemplate(t); } }; }),
+    random: randomCottage,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Fairy Tale Builder',
+    units: 'm',
+    accent: '#e879f9',
+    getGroup: function () { return cottageGroup; },
+    getName: function () { return P.houseName || 'cottage'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script defer src="../cookie-consent.js"></script>
@@ -1800,7 +1852,7 @@ window.BQ={"key":"jvds-fairy-tale-builder","name":"Fairy Tale Cottage Builder","
     <p style="font-weight:800;margin:0 0 12px">Keep creating on-site - try a companion tool</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
       <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🎨</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">Pixel Studio</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Draw sprites</div></div></a>
-      <a href="../tools/sfx-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🔊</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">SFX Generator</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Make sounds</div></div></a>
+      <a href="../tools/sound-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🔊</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">SFX Generator</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Make sounds</div></div></a>
       <a href="../tools/level-designer.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🗸️</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">Level Designer</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Plan levels</div></div></a>
       <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🎨</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">Colour Palette</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Build a scheme</div></div></a>
     </div>
@@ -1813,7 +1865,7 @@ window.BQ={"key":"jvds-fairy-tale-builder","name":"Fairy Tale Cottage Builder","
         <div class="footer-brand">
             <div class="footer-logo">JVDesignStudio</div>
             <div class="footer-tagline">Coding &amp; Game Dev Workshops</div>
-            <p class="footer-blurb">Free coding and game development workshops for young creators. No install, no account - works on any school computer.</p>
+            <p class="footer-blurb">Free, guided coding and game development for young creators. Easy for families to start and practical for classrooms to use.</p>
         </div>
         <div class="footer-grid">
             <nav class="footer-col" aria-label="Explore">

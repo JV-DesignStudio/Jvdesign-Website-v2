@@ -141,6 +141,9 @@
       <button class="tb-btn" id="btnErase" onclick="setTool('erase')" title="Erase (E)" aria-label="Erase pixels">⌫</button>
       <button class="tb-btn" id="btnFill" onclick="setTool('fill')" title="Fill (F)" aria-label="Fill connected pixels">🪣</button>
       <div class="sep"></div>
+      <button class="tb-btn" onclick="undo()" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+      <button class="tb-btn" onclick="redo()" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
+      <div class="sep"></div>
       <button class="tb-btn" onclick="clearChar()" title="Clear" aria-label="Clear current character">✕</button>
       <button class="tb-btn" onclick="invertChar()" title="Invert" aria-label="Invert current character pixels">⇄</button>
       <button class="tb-btn" onclick="shift(-1,0)" title="Shift left" aria-label="Shift character left">◀</button>
@@ -217,6 +220,7 @@
 
 <div id="toast"></div>
 
+<script src="../hidpi-canvas.js"></script>
 <script>
 // -- helpers --
 function id(x){return document.getElementById(x);}
@@ -297,13 +301,14 @@ function calcCellSize(){
 
 function resizeCanvas(){
   calcCellSize();
-  canvas.width=(GW*(CELL+BORDER))+BORDER;
-  canvas.height=(GH*(CELL+BORDER))+BORDER;
+  const w=(GW*(CELL+BORDER))+BORDER;
+  const h=(GH*(CELL+BORDER))+BORDER;
+  if(window.HiDPI) HiDPI.fit(canvas,w,h,ctx); else {canvas.width=w;canvas.height=h;}
 }
 
 function drawEditor(){
   const arr=getArr(currentChar);
-  const W=canvas.width,H=canvas.height;
+  const W=(GW*(CELL+BORDER))+BORDER,H=(GH*(CELL+BORDER))+BORDER;
   ctx.fillStyle='#0a0a1a';
   ctx.fillRect(0,0,W,H);
   for(let row=0;row<GH;row++){

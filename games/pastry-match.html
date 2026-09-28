@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
-<meta name="description" content="Pastry Match Bakery Orders is a fast bakery puzzle game where players match pastries, fill customer boxes, build combos, and finish a busy shift.">
+<meta name="description" content="Pastry Match One Order: read the customer's box, swap pastries, fill the order and see it served.">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
 <meta name="theme-color" content="#ff8db8">
@@ -11,12 +11,12 @@
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/pastry-match.html">
 <meta name="robots" content="index, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Pastry Match: Bakery Orders | JVDesignStudio</title>
+<title>Pastry Match: One Order | JVDesignStudio</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://jvdesignstudio.co.uk/games/pastry-match.html">
-<meta property="og:title" content="Pastry Match: Bakery Orders | JVDesignStudio">
-<meta property="og:description" content="Match pastries, fill customer boxes, trigger power pastries, and survive the bakery rush.">
+<meta property="og:title" content="Pastry Match: One Order | JVDesignStudio">
+<meta property="og:description" content="One order, one box: swap pastries, fill the order and see it served.">
 <meta property="og:image" content="https://jvdesignstudio.co.uk/og/pastry-match.png">
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/pastry-match.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -24,7 +24,7 @@
 <script src="../audio-effects.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <link rel="stylesheet" href="../style-game-pastry-match.css?v=30">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Pastry Match: Bakery Orders","url":"https://jvdesignstudio.co.uk/games/pastry-match.html","description":"Match pastries, fill customer boxes, trigger power pastries, and survive the bakery rush.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/PastryMatchCover.webp"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Pastry Match: One Order","url":"https://jvdesignstudio.co.uk/games/pastry-match.html","description":"One order, one box: swap pastries, fill the order and see it served.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/PastryMatchCover.webp"}</script>
 <link rel="stylesheet" href="/style-mascots.css">
 </head>
 <body>
@@ -53,10 +53,10 @@
   <section class="play-area">
     <aside class="bakery-panel">
       <h2>🧁 Bakery Rush</h2>
-      <p id="shiftHint">Swap neighbouring pastries to make lines of 3+. Fill the order before patience runs out.</p>
+      <p id="shiftHint">Swap neighbouring pastries to make lines of 3+. Fill the box at your own pace.</p>
       <div class="goal-box">
-        <span>Shift target</span>
-        <b id="targetHud">4200</b>
+        <span>Order box</span>
+        <b id="targetHud">-</b>
       </div>
       <div class="power-row">
         <button type="button" id="spoonBtn">🥄 Spoon clear <b>1</b></button>
@@ -72,7 +72,7 @@
   <div class="modal show" id="startModal">
     <div class="modal-card">
       <h1>🥐 Pastry Match</h1>
-      <p>Run the counter, match pastries, pack customer boxes, and keep the queue happy.</p>
+      <p>One order, one box: swap pastries, match 3+ and fill the box.</p>
       <div class="how-grid">
         <div><b>1</b><span>Tap one pastry then a neighbour to swap.</span></div>
         <div><b>2</b><span>Match 3+ to send pastries into the active order.</span></div>
@@ -86,8 +86,8 @@
 
   <div class="modal" id="endModal">
     <div class="modal-card">
-      <h1 id="endTitle">Shift complete!</h1>
-      <p id="endCopy">The pastry boxes are packed.</p>
+      <h1 id="endTitle">Order served!</h1>
+      <p id="endCopy">Take the next order whenever you like.</p>
       <div class="result-grid">
         <div><span>Score</span><b id="finalScore">0</b></div>
         <div><span>Orders</span><b id="finalOrders">0</b></div>
@@ -112,14 +112,15 @@ const PASTRIES = [
   { id:'pie', emoji:'🥧', name:'Pie' }
 ];
 const MODES = [
-  { id:'easy', label:'Little Baker', time:95, target:3000, queue:2 },
-  { id:'rush', label:'Bakery Rush', time:90, target:4200, queue:3 },
-  { id:'chef', label:'Head Chef', time:85, target:5600, queue:3 }
+  { id:'easy', label:'Little Baker' },
+  { id:'rush', label:'Bakery Rush' },
+  { id:'chef', label:'Head Chef' }
 ];
 const CUSTOMER_NAMES = ['Milo','Pip','Nia','Lumo','Echo','Dot','Jun','Bee','Roo'];
 const BOARD = 7;
-let modeId = 'rush', state = 'menu', board = [], selected = null, score = 0, combo = 1, timeLeft = 90, tick = null, customers = [], active = 0, ordersDone = 0, best = gameSystem.state.highScore || 0, spoon = 1, tray = 1, busy = false;
+let modeId = 'rush', state = 'menu', board = [], selected = null, score = 0, combo = 1, order = null, best = gameSystem.state.highScore || 0, spoon = 1, tray = 1, busy = false, orderStart = 0;
 const $ = id => document.getElementById(id);
+const boardEl = $('board');
 function mode(){ return MODES.find(m => m.id === modeId) || MODES[1]; }
 function rand(max){ return Math.floor(Math.random() * max); }
 function pastry(){ return PASTRIES[rand(PASTRIES.length)].id; }
@@ -127,47 +128,40 @@ function byId(id){ return PASTRIES.find(p => p.id === id) || PASTRIES[0]; }
 function saveBest(){ if(score > best){ best = score; try{ localStorage.setItem('pastryMatchBest', String(best)); }catch(e){} } }
 function toggleSound(){ const on = localStorage.getItem('soundEnabled') !== 'false'; localStorage.setItem('soundEnabled', on ? 'false' : 'true'); audioEffects.setMasterVolume(on ? 0 : 0.55); $('soundBtn').textContent = on ? '🔇' : '🔊'; }
 function makeOrder(level){
-  const count = Math.min(3 + Math.floor(level / 3), modeId === 'chef' ? 5 : 4);
-  const picks = [...PASTRIES].sort(() => Math.random() - .5).slice(0, count);
+  const picks = [...PASTRIES].sort(() => Math.random() - .5).slice(0, 3);
   const needs = {};
-  picks.forEach((p, i) => needs[p.id] = 2 + ((level + i) % 2));
-  return { name:CUSTOMER_NAMES[level % CUSTOMER_NAMES.length], needs, max:26 + rand(14), patience:100, mood:'🙂' };
+  picks.forEach(p => needs[p.id] = 3);
+  const total = Object.values(needs).reduce((a,b)=>a+b,0);
+  return { name:CUSTOMER_NAMES[level % CUSTOMER_NAMES.length], needs, total, mood:'🙂' };
+}
+function hasAnyMove(){
+  for(let r=0;r<BOARD;r++) for(let c=0;c<BOARD;c++) for(const [dr,dc] of [[0,1],[1,0]]){ const r2=r+dr,c2=c+dc; if(r2>=BOARD||c2>=BOARD)continue; const a=board[r][c],b=board[r2][c2]; board[r][c]=b; board[r2][c2]=a; const m=findMatches().length>0; board[r][c]=a; board[r2][c2]=b; if(m) return true; }
+  return false;
 }
 function resetBoard(){
   board = Array.from({length:BOARD}, () => Array.from({length:BOARD}, pastry));
   for(let guard=0; findMatches().length && guard<20; guard++) board = Array.from({length:BOARD}, () => Array.from({length:BOARD}, pastry));
+  for(let guard=0; !hasAnyMove() && guard<20; guard++){ for(let r=0;r<BOARD;r++) for(let c=0;c<BOARD;c++) board[r][c]=pastry(); }
 }
 function startGame(){
   gameSystem.beginRun();
-  state = 'playing'; score = 0; combo = 1; ordersDone = 0; spoon = 1; tray = 1; selected = null; busy = false; timeLeft = mode().time;
-  customers = Array.from({length:mode().queue}, (_, i) => makeOrder(i)); active = 0; resetBoard(); renderAll();
+  state = 'playing'; score = 0; combo = 1; selected = null; busy = false; order = makeOrder(0); orderStart = Date.now(); resetBoard(); renderAll();
   $('startModal').classList.remove('show'); $('endModal').classList.remove('show');
-  clearInterval(tick); tick = setInterval(gameTick, 1000);
-}
-function gameTick(){
-  if(state !== 'playing') return;
-  timeLeft--; const c = customers[active]; if(c){ c.patience = Math.max(0, c.patience - (modeId === 'easy' ? 3 : 4)); if(c.patience <= 0) missCustomer(); }
-  if(timeLeft <= 0) endGame();
-  renderHud(); renderCustomers(); renderOrder();
-}
-function missCustomer(){
-  score = Math.max(0, score - 150); combo = 1; floatText('Order walked away -150');
-  customers[active] = makeOrder(ordersDone + customers.length + rand(3));
-  renderAll();
 }
 function renderAll(){ renderHud(); renderCustomers(); renderOrder(); renderBoard(); renderTools(); }
-function renderHud(){ $('scoreHud').textContent = score; $('timeHud').textContent = timeLeft; $('comboHud').textContent = 'x' + combo.toFixed(combo % 1 ? 1 : 0); $('starsHud').textContent = stars(); $('targetHud').textContent = mode().target; }
-function stars(){ return score >= mode().target ? 3 : score >= mode().target * .7 ? 2 : score >= mode().target * .4 ? 1 : 0; }
+function renderHud(){ $('scoreHud').textContent = score; $('timeHud').textContent = order ? (remaining(order)===0?'served':'1/1') : '1/1'; $('comboHud').textContent = 'x' + combo.toFixed(combo % 1 ? 1 : 0); $('starsHud').textContent = stars(); $('targetHud').textContent = '-'; }
+function stars(){ return score >= 4200 ? 3 : score >= 2500 ? 2 : score >= 1000 ? 1 : 0; }
 function renderCustomers(){
-  $('customers').innerHTML = customers.map((c,i) => '<button type="button" class="customer '+(i===active?'active':'')+'" data-i="'+i+'"><span class="face">'+c.mood+'</span><b>'+c.name+'</b><small>'+remaining(c)+' left</small></button>').join('');
-  document.querySelectorAll('.customer').forEach(btn => btn.onclick = () => { active = Number(btn.dataset.i); renderCustomers(); renderOrder(); });
+  if(!order) return;
+  $('customers').innerHTML = '<button type="button" class="customer active"><span class="face">'+order.mood+'</span><b>'+order.name+'</b><small>'+remaining(order)+' left</small></button>';
 }
-function remaining(c){ return Object.values(c.needs).reduce((a,b) => a + Math.max(0,b), 0); }
+function remaining(o){ return Object.values(o.needs).reduce((a,b) => a + Math.max(0,b), 0); }
 function renderOrder(){
-  const c = customers[active]; if(!c) return;
-  $('orderName').textContent = c.name + "'s pastry box";
-  $('orderSlots').innerHTML = Object.entries(c.needs).map(([id,n]) => '<span class="slot '+(n<=0?'done':'')+'"><i>'+byId(id).emoji+'</i><b>'+Math.max(0,n)+'</b></span>').join('');
-  $('patienceBar').style.width = c.patience + '%';
+  if(!order) return;
+  $('orderName').textContent = order.name + "'s pastry box";
+  $('orderSlots').innerHTML = Object.entries(order.needs).map(([id,n]) => '<span class="slot '+(n<=0?'done':'')+'"><i>'+byId(id).emoji+'</i><b>'+Math.max(0,n)+'</b></span>').join('');
+  const pct = 100 - Math.round(remaining(order)/order.total*100);
+  $('patienceBar').style.width = pct + '%';
 }
 function renderTools(){ $('spoonBtn').querySelector('b').textContent = spoon; $('trayBtn').querySelector('b').textContent = tray; $('spoonBtn').disabled = state!=='playing'||spoon<1||busy; $('trayBtn').disabled = state!=='playing'||tray<1||busy; }
 function renderBoard(){
@@ -206,9 +200,9 @@ function resolveMatches(matches){
   setTimeout(dropTiles, 260);
 }
 function feedOrders(counts, matchSize){
-  let bonus = 0; const c = customers[active];
-  Object.entries(counts).forEach(([id,n]) => { if(c.needs[id] > 0){ const used = Math.min(c.needs[id], n); c.needs[id] -= used; c.patience = Math.min(100, c.patience + used * 4); bonus += used * 120; } });
-  if(remaining(c) <= 0){ ordersDone++; bonus += 650 + Math.round(c.patience * 5); floatText('Order served! +' + bonus, true); audioEffects.playSuccess(760); customers[active] = makeOrder(ordersDone + customers.length); }
+  let bonus = 0;
+  Object.entries(counts).forEach(([id,n]) => { if(order.needs[id] > 0){ const used = Math.min(order.needs[id], n); order.needs[id] -= used; bonus += used * 120; } });
+  if(remaining(order) <= 0){ bonus += 650; floatText('Order served! +' + bonus, true); audioEffects.playSuccess(760); }
   else if(bonus){ floatText('Box filled +' + bonus); audioEffects.playSuccess(620); }
   return bonus + (matchSize >= 4 ? 180 : 0);
 }
@@ -222,19 +216,20 @@ function dropTiles(){
     for(let r=BOARD-1;r>=0;r--) board[r][c] = stack[BOARD-1-r] || pastry();
   }
   renderBoard(); const more = findMatches();
-  if(more.length) setTimeout(() => resolveMatches(more), 180); else { busy=false; renderTools(); renderHud(); }
+  if(more.length) setTimeout(() => resolveMatches(more), 180); else { busy=false; renderTools(); renderHud(); if(state==='playing' && remaining(order)===0) setTimeout(endGame, 100); }
 }
 function showCombo(size){ const banner = $('comboBanner'); banner.textContent = size >= 5 ? 'Rainbow order rush!' : size >= 4 ? 'Jam bomb combo!' : 'Sweet combo x' + combo.toFixed(1); banner.classList.add('show'); setTimeout(() => banner.classList.remove('show'), 650); }
 function floatText(text,big){ const d=document.createElement('div'); d.className='float-text'+(big?' big':''); d.textContent=text; $('game').appendChild(d); setTimeout(()=>d.remove(),950); }
-function useSpoon(){ if(state!=='playing'||spoon<1||busy)return; spoon--; const c=customers[active]; const need=Object.keys(c.needs).find(id=>c.needs[id]>0) || pastry(); const spots=[]; for(let r=0;r<BOARD;r++)for(let col=0;col<BOARD;col++)if(board[r][col]===need)spots.push({r,c:col,id:need}); resolveMatches(spots.slice(0, Math.min(5, spots.length))); }
+function useSpoon(){ if(state!=='playing'||spoon<1||busy)return; spoon--; const need=Object.keys(order.needs).find(id=>order.needs[id]>0) || pastry(); const spots=[]; for(let r=0;r<BOARD;r++)for(let c=0;c<BOARD;c++)if(board[r][c]===need)spots.push({r,c,id:need}); resolveMatches(spots.slice(0, Math.min(5, spots.length))); }
 function useTray(){ if(state!=='playing'||tray<1||busy)return; tray--; resetBoard(); selected=null; combo=1; floatText('Fresh tray!'); renderAll(); }
 function endGame(){
-  if(state === 'ended') return; state='ended'; clearInterval(tick); saveBest();
-  gameSystem.addScore(score); gameSystem.addXP(Math.max(8, Math.floor(score/35))); gameSystem.unlockAchievement('firstPlay'); if(stars()>=3) gameSystem.unlockAchievement('goldBaker'); gameSystem.recordGamePlay((mode().time-timeLeft)*1000); gameSystem.saveState();
-  $('endTitle').textContent = stars() >= 3 ? 'Gold star bakery!' : 'Shift complete!'; $('endCopy').textContent = 'You served '+ordersDone+' orders and earned '+stars()+' stars.';
-  $('finalScore').textContent = score; $('finalOrders').textContent = ordersDone; $('finalBest').textContent = Math.max(best, score); $('endModal').classList.add('show'); if(stars()>=2) ParticleSystem.confetti(innerWidth/2, innerHeight/3, 20);
+  if(state === 'ended') return; state='ended'; saveBest();
+  gameSystem.addScore(score); gameSystem.addXP(Math.max(8, Math.floor(score/35))); gameSystem.unlockAchievement('firstPlay'); if(stars()>=2) gameSystem.unlockAchievement('goldBaker'); gameSystem.recordGamePlay(Date.now() - orderStart); gameSystem.saveState();
+  $('endTitle').textContent = 'Order served!'; $('endCopy').textContent = 'You served 1 order and earned '+stars()+' stars. Take the next order whenever you like.';
+  $('finalScore').textContent = score; $('finalOrders').textContent = '1'; $('finalBest').textContent = Math.max(best, score); $('timeHud').textContent = 'served'; $('patienceBar').style.width = '100%'; $('endModal').classList.add('show'); if(stars()>=1) ParticleSystem.confetti(innerWidth/2, innerHeight/3, 20);
 }
 function renderModes(){ $('modeRow').innerHTML = MODES.map(m => '<button type="button" class="'+(m.id===modeId?'sel':'')+'" data-mode="'+m.id+'">'+m.label+'</button>').join(''); document.querySelectorAll('#modeRow button').forEach(b=>b.onclick=()=>{modeId=b.dataset.mode; renderModes();}); }
+
 $('soundBtn').onclick = toggleSound; $('playBtn').onclick = startGame; $('againBtn').onclick = startGame; $('spoonBtn').onclick = useSpoon; $('trayBtn').onclick = useTray;
 try{ best = Math.max(best, Number(localStorage.getItem('pastryMatchBest'))||0); }catch(e){}
 renderModes(); renderHud();

@@ -30,6 +30,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="jv-exporter.js"></script>
+<script src="builder-templates.js"></script>
 <link rel="preload" href="../style-workshop-rocket-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-workshop-rocket-builder.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -175,8 +177,6 @@
       <button class="quick-btn" onclick="randomRocket()" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764">🎲 Random</button>
       <button class="quick-btn" onclick="openSaveModal()" style="background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03">💾 Save</button>
       <button class="quick-btn" onclick="openLoadModal()" style="background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006">📂 Load</button>
-      <button class="quick-btn" onclick="downloadRocket()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">⬇ Export OBJ</button>
-      <button class="quick-btn" onclick="exportGLB()" style="background:linear-gradient(135deg,#6366f1,#4338ca);box-shadow:0 3px 0 #3730a3">📦 GLB</button>
       <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
     </div>
   </header>
@@ -623,6 +623,8 @@ function buildRocket() {
   if (rocketGroup) scene.remove(rocketGroup);
   exhaustParticles = [];
   rocketGroup = new THREE.Group();
+  rocketGroup.name = 'rocket';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
   rocketGroup.position.y = R.launchY;
 
   const pMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.primaryCol), roughness: 0.35, metalness: 0.55 });
@@ -639,7 +641,7 @@ function buildRocket() {
   const body = new THREE.Mesh(bodyGeo, pMat);
   body.position.y = baseY + bh / 2;
   body.castShadow = true;
-  rocketGroup.add(body);
+  rocketGroup.add(part(body, 'body'));
 
   // Stripe band
   if (R.stripeOn) {
@@ -647,7 +649,7 @@ function buildRocket() {
     const stripMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.stripeCol), roughness: 0.4, metalness: 0.5 });
     const strip = new THREE.Mesh(stripGeo, stripMat);
     strip.position.y = baseY + bh * R.stripePos;
-    rocketGroup.add(strip);
+    rocketGroup.add(part(strip, 'body_stripe'));
   }
 
   // Payload fairing
@@ -661,18 +663,18 @@ function buildRocket() {
     const trans = new THREE.Mesh(transGeo, fMat);
     trans.position.y = noseBase + fH * 0.1;
     trans.castShadow = true;
-    rocketGroup.add(trans);
+    rocketGroup.add(part(trans, 'fairing_transition'));
     const barrelGeo = new THREE.CylinderGeometry(fR, fR, fH * 0.8, 20);
     const barrel = new THREE.Mesh(barrelGeo, fMat);
     barrel.position.y = noseBase + fH * 0.2 + fH * 0.4;
     barrel.castShadow = true;
-    rocketGroup.add(barrel);
+    rocketGroup.add(part(barrel, 'fairing_barrel'));
     const seamGeo = new THREE.TorusGeometry(fR, 0.025, 6, 24);
     const seamMat = new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.8 });
     const seam = new THREE.Mesh(seamGeo, seamMat);
     seam.rotation.x = Math.PI / 2;
     seam.position.y = noseBase + fH * 0.2 + fH * 0.8;
-    rocketGroup.add(seam);
+    rocketGroup.add(part(seam, 'fairing_seam'));
     noseLift = fH;
   }
 
@@ -685,7 +687,7 @@ function buildRocket() {
     const nose = new THREE.Mesh(noseGeo, sMat);
     nose.position.y = effectiveNoseBase + noseH / 2;
     nose.castShadow = true;
-    rocketGroup.add(nose);
+    rocketGroup.add(part(nose, 'nosecone'));
   } else if (R.nosecone === 'ogive') {
     const noseR = R.fairing !== 'none' ? br * (R.fairing === 'xl' ? 1.32 : 1.2) : br;
     const noseH = bh * 0.65 * nsc;
@@ -693,15 +695,15 @@ function buildRocket() {
     const nose = new THREE.Mesh(noseGeo, sMat);
     nose.position.y = effectiveNoseBase + noseH / 2;
     nose.castShadow = true;
-    rocketGroup.add(nose);
+    rocketGroup.add(part(nose, 'nosecone'));
     const tipGeo = new THREE.SphereGeometry(noseR * 0.18, 10, 10);
     const tip = new THREE.Mesh(tipGeo, sMat);
     tip.position.y = effectiveNoseBase + noseH;
-    rocketGroup.add(tip);
+    rocketGroup.add(part(tip, 'nosecone_tip'));
     const shGeo = new THREE.CylinderGeometry(noseR * 1.06, noseR, noseH * 0.18, 24);
     const sh = new THREE.Mesh(shGeo, sMat);
     sh.position.y = effectiveNoseBase + noseH * 0.09;
-    rocketGroup.add(sh);
+    rocketGroup.add(part(sh, 'nosecone_shoulder'));
   } else { // blunt
     const noseR = R.fairing !== 'none' ? br * (R.fairing === 'xl' ? 1.32 : 1.2) : br;
     const noseH = bh * 0.28 * nsc;
@@ -709,11 +711,11 @@ function buildRocket() {
     const nose = new THREE.Mesh(noseGeo, sMat);
     nose.position.y = effectiveNoseBase + noseH / 2;
     nose.castShadow = true;
-    rocketGroup.add(nose);
+    rocketGroup.add(part(nose, 'nosecone'));
     const capGeo = new THREE.SphereGeometry(noseR * 0.55, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2);
     const cap = new THREE.Mesh(capGeo, sMat);
     cap.position.y = effectiveNoseBase + noseH;
-    rocketGroup.add(cap);
+    rocketGroup.add(part(cap, 'nosecone_cap'));
   }
 
   // Engine interstage ring
@@ -721,7 +723,7 @@ function buildRocket() {
   const ring = new THREE.Mesh(ringGeo, darkMat);
   ring.position.y = baseY + 0.3;
   ring.rotation.x = Math.PI / 2;
-  rocketGroup.add(ring);
+  rocketGroup.add(part(ring, 'interstage_ring'));
 
   // Engine bells
   const enginePositions = [];
@@ -741,15 +743,15 @@ function buildRocket() {
   }
 
   const bellR = R.engineCount > 1 ? br * 0.28 : br * 0.42;
-  enginePositions.forEach(function([ex, ez]) {
+  enginePositions.forEach(function([ex, ez], ei) {
     const bellGeo = new THREE.CylinderGeometry(bellR * 1.5, bellR * 0.7, 0.35, 16);
     const bell = new THREE.Mesh(bellGeo, exhaustMat);
     bell.position.set(ex, baseY - 0.18, ez);
-    rocketGroup.add(bell);
+    rocketGroup.add(part(bell, 'engine_bell_' + ei));
     const throatGeo = new THREE.CylinderGeometry(bellR * 0.7, bellR * 0.7, 0.08, 12);
     const throat = new THREE.Mesh(throatGeo, darkMat);
     throat.position.set(ex, baseY - 0.38, ez);
-    rocketGroup.add(throat);
+    rocketGroup.add(part(throat, 'engine_throat_' + ei));
   });
 
   // Fins
@@ -758,7 +760,7 @@ function buildRocket() {
   const finMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.4, metalness: 0.55, side: THREE.DoubleSide });
 
   const fs = Math.max(0.3, R.finScale); // fin size multiplier
-  finAngles.forEach(function(angle) {
+  finAngles.forEach(function(angle, fi) {
     let finMesh;
     if (R.finStyle === 'delta') {
       const shape = new THREE.Shape();
@@ -774,17 +776,18 @@ function buildRocket() {
       finMesh.position.y = baseY;
     } else { // grid
       const gGroup = new THREE.Group();
+      gGroup.name = 'fin_' + fi;
       const barMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.5, metalness: 0.5 });
       const gW = br * 1.8 * fs, gH = bh * 0.38 * fs, gD = 0.06;
-      [-gH * 0.33, 0, gH * 0.33].forEach(function(gy) {
+      [-gH * 0.33, 0, gH * 0.33].forEach(function(gy, gi) {
         const g = new THREE.Mesh(new THREE.BoxGeometry(gD, gD, gW), barMat);
         g.position.set(gW * 0.5 + br, gy + baseY + gH * 0.5, 0);
-        gGroup.add(g);
+        gGroup.add(part(g, 'fin_' + fi + '_bar_' + gi));
       });
-      [-gW * 0.33, 0, gW * 0.33].forEach(function(gx) {
+      [-gW * 0.33, 0, gW * 0.33].forEach(function(gx, gi) {
         const g = new THREE.Mesh(new THREE.BoxGeometry(gD, gH, gD), barMat);
         g.position.set(gx + gW * 0.5 + br, baseY + gH * 0.5, 0);
-        gGroup.add(g);
+        gGroup.add(part(g, 'fin_' + fi + '_bar_' + gi));
       });
       gGroup.rotation.y = angle;
       rocketGroup.add(gGroup);
@@ -792,7 +795,8 @@ function buildRocket() {
     }
     finMesh.castShadow = true;
     const wrapper = new THREE.Group();
-    wrapper.add(finMesh);
+    wrapper.name = 'fin_' + fi;
+    wrapper.add(part(finMesh, 'fin_' + fi + '_blade'));
     wrapper.rotation.y = angle;
     rocketGroup.add(wrapper);
   });
@@ -805,14 +809,14 @@ function buildRocket() {
     const boosterAngles = [];
     for (let i = 0; i < R.boosters; i++) boosterAngles.push((i / R.boosters) * Math.PI * 2);
 
-    boosterAngles.forEach(function(a) {
+    boosterAngles.forEach(function(a, bi) {
       const bx = Math.cos(a) * bDist, bz = Math.sin(a) * bDist;
       const bBody = new THREE.Mesh(new THREE.CylinderGeometry(bsr, bsr, bsh, 16), pMat.clone());
-      bBody.position.set(bx, baseY + bsh / 2, bz); bBody.castShadow = true; rocketGroup.add(bBody);
+      bBody.position.set(bx, baseY + bsh / 2, bz); bBody.castShadow = true; rocketGroup.add(part(bBody, 'booster_' + bi + '_body'));
       const bNose = new THREE.Mesh(new THREE.ConeGeometry(bsr, bsh * 0.35, 16), sMat.clone());
-      bNose.position.set(bx, baseY + bsh + bsh * 0.175, bz); rocketGroup.add(bNose);
+      bNose.position.set(bx, baseY + bsh + bsh * 0.175, bz); rocketGroup.add(part(bNose, 'booster_' + bi + '_nose'));
       const bBell = new THREE.Mesh(new THREE.CylinderGeometry(bsr * 1.4, bsr * 0.7, 0.22, 12), exhaustMat.clone());
-      bBell.position.set(bx, baseY - 0.11, bz); rocketGroup.add(bBell);
+      bBell.position.set(bx, baseY - 0.11, bz); rocketGroup.add(part(bBell, 'booster_' + bi + '_bell'));
       const strutLen = bDist - br - bsr;
       const strutGeo = new THREE.CylinderGeometry(0.025, 0.025, strutLen, 6);
       const strut = new THREE.Mesh(strutGeo, darkMat);
@@ -822,7 +826,7 @@ function buildRocket() {
       const strutDir = toPt.clone().sub(fromPt).normalize();
       strut.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), strutDir);
       strut.position.copy(fromPt).lerp(toPt, 0.5);
-      rocketGroup.add(strut);
+      rocketGroup.add(part(strut, 'booster_' + bi + '_strut_upper'));
       const strut2Geo = new THREE.CylinderGeometry(0.02, 0.02, strutLen, 6);
       const strut2 = new THREE.Mesh(strut2Geo, darkMat);
       const strut2Y = baseY + bsh * 0.2;
@@ -831,7 +835,7 @@ function buildRocket() {
       const dir2  = to2.clone().sub(from2).normalize();
       strut2.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir2);
       strut2.position.copy(from2).lerp(to2, 0.5);
-      rocketGroup.add(strut2);
+      rocketGroup.add(part(strut2, 'booster_' + bi + '_strut_lower'));
     });
   }
 
@@ -843,8 +847,8 @@ function buildRocket() {
     const wCount = Math.max(1, Math.min(8, R.windowCount));
     const winAngles = [];
     for (let i = 0; i < wCount; i++) winAngles.push((i / wCount) * Math.PI * 2);
-    winHeights.forEach(function(wh) {
-      winAngles.forEach(function(wa) {
+    winHeights.forEach(function(wh, hi) {
+      winAngles.forEach(function(wa, wi) {
         const wx = Math.cos(wa) * (br + 0.005);
         const wz = Math.sin(wa) * (br + 0.005);
         if (R.windowStyle === 'porthole' || R.windowStyle === 'row') {
@@ -852,23 +856,23 @@ function buildRocket() {
           const rim = new THREE.Mesh(rimGeo, rimMat);
           rim.position.set(wx, baseY + wh, wz);
           rim.lookAt(wx * 5, baseY + wh, wz * 5);
-          rocketGroup.add(rim);
+          rocketGroup.add(part(rim, 'window_' + hi + '_' + wi + '_rim'));
           const glassGeo = new THREE.CircleGeometry(0.06, 16);
           const glass = new THREE.Mesh(glassGeo, glassMat);
           glass.position.set(wx, baseY + wh, wz);
           glass.lookAt(wx * 5, baseY + wh, wz * 5);
-          rocketGroup.add(glass);
+          rocketGroup.add(part(glass, 'window_' + hi + '_' + wi + '_glass'));
         } else { // rect
           const frameGeo = new THREE.BoxGeometry(0.06, 0.14, 0.01);
           const frame = new THREE.Mesh(frameGeo, rimMat);
           frame.position.set(wx, baseY + wh, wz);
           frame.lookAt(wx * 5, baseY + wh, wz * 5);
-          rocketGroup.add(frame);
+          rocketGroup.add(part(frame, 'window_' + hi + '_' + wi + '_frame'));
           const rectGlassGeo = new THREE.PlaneGeometry(0.044, 0.11);
           const rectGlass = new THREE.Mesh(rectGlassGeo, glassMat);
           rectGlass.position.set(wx, baseY + wh, wz);
           rectGlass.lookAt(wx * 5, baseY + wh, wz * 5);
-          rocketGroup.add(rectGlass);
+          rocketGroup.add(part(rectGlass, 'window_' + hi + '_' + wi + '_rectGlass'));
         }
       });
     });
@@ -891,18 +895,18 @@ function buildRocket() {
       const top = new THREE.Vector3(strutTopX, baseY, strutTopZ);
       const bot = new THREE.Vector3(strutBotX, baseY - bh * 0.35, strutBotZ);
       main.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), bot.clone().sub(top).normalize());
-      rocketGroup.add(main);
+      rocketGroup.add(part(main, 'leg_' + i + '_strut'));
       const footGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.04, 10);
       const foot = new THREE.Mesh(footGeo, legMat);
       foot.position.set(strutBotX, baseY - bh * 0.35, strutBotZ);
-      rocketGroup.add(foot);
+      rocketGroup.add(part(foot, 'leg_' + i + '_foot'));
       const braceLen = bh * 0.22;
       const braceGeo = new THREE.CylinderGeometry(0.014, 0.014, braceLen, 6);
       const brace = new THREE.Mesh(braceGeo, legMat);
       brace.position.set(lx * (br + 0.05), baseY - bh * 0.08, lz * (br + 0.05));
       const braceDir = new THREE.Vector3(lx, -0.55, lz).normalize();
       brace.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), braceDir);
-      rocketGroup.add(brace);
+      rocketGroup.add(part(brace, 'leg_' + i + '_brace'));
     }
   }
 
@@ -912,7 +916,7 @@ function buildRocket() {
     engineGlow.color = glowColor;
     engineGlow.intensity = 2.5;
     engineGlow.position.y = baseY - 0.6 + R.launchY;
-    enginePositions.forEach(function([ex, ez]) {
+    enginePositions.forEach(function([ex, ez], ei) {
       for (let i = 0; i < 3; i++) {
         const fh = 0.3 + Math.random() * 0.5;
         const fGeo = new THREE.ConeGeometry(bellR * (0.6 + Math.random() * 0.6), fh, 8);
@@ -920,7 +924,7 @@ function buildRocket() {
         const flame = new THREE.Mesh(fGeo, fMat);
         flame.position.set(ex, baseY - 0.45 - fh / 2, ez);
         flame.rotation.x = Math.PI;
-        rocketGroup.add(flame);
+        rocketGroup.add(part(flame, 'exhaust_flame_' + ei + '_' + i));
         exhaustParticles.push({ mesh: flame, baseY: baseY - 0.45 - fh / 2, phase: Math.random() * Math.PI * 2 });
       }
     });
@@ -1733,6 +1737,55 @@ function init() {
 }
 
 init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const ROCKET_TEMPLATES = [
+  { id: 'nova7', emoji: '🚀', name: 'Nova-7', note: 'The house favourite: ogive nose, twin boosters, four swept fins.',
+    data: { name: 'NOVA-7', nosecone: 'ogive', bodyHeight: 3.2, bodyRadius: 0.35, primaryCol: '#e8543a', secondaryCol: '#ffffff', finStyle: 'swept', finCount: 4, boosters: 2, boosterSize: 0.7, engineCount: 3, fairing: 'standard', stripeOn: true, stripeCol: '#f5c842', glowCol: '#ff6600', windowStyle: 'porthole', landingLegs: true, finScale: 1.0, stripePos: 0.35, noseconeScale: 1.0, windowCount: 2 } },
+  { id: 'saturn', emoji: '🌕', name: 'Saturn V', note: 'Tall, white and black, five engines, no boosters.',
+    data: { name: 'SATURN V', nosecone: 'ogive', bodyHeight: 5.2, bodyRadius: 0.44, primaryCol: '#f5f5f5', secondaryCol: '#1a1a1a', finStyle: 'swept', finCount: 4, boosters: 0, boosterSize: 0.6, engineCount: 5, fairing: 'standard', stripeOn: true, stripeCol: '#1a1a1a', glowCol: '#ff6600', windowStyle: 'none', landingLegs: false, finScale: 1.1, stripePos: 0.55, noseconeScale: 1.1, windowCount: 1 } },
+  { id: 'falcon', emoji: '🦅', name: 'Falcon Heavy', note: 'White core, two side boosters, grid fins, nine engines.',
+    data: { name: 'FALCON', nosecone: 'ogive', bodyHeight: 4.4, bodyRadius: 0.4, primaryCol: '#e0e0e0', secondaryCol: '#333333', finStyle: 'grid', finCount: 4, boosters: 2, boosterSize: 0.8, engineCount: 5, fairing: 'xl', stripeOn: false, stripeCol: '#888888', glowCol: '#88ccff', windowStyle: 'none', landingLegs: true, finScale: 0.8, stripePos: 0.3, noseconeScale: 1.3, windowCount: 1 } },
+  { id: 'firestorm', emoji: '🔥', name: 'Firestorm', note: 'Orange and yellow, delta fins, made to look fast.',
+    data: { name: 'FIRESTORM', nosecone: 'cone', bodyHeight: 2.8, bodyRadius: 0.32, primaryCol: '#e8543a', secondaryCol: '#f5c842', finStyle: 'delta', finCount: 3, boosters: 0, boosterSize: 0.6, engineCount: 3, fairing: 'none', stripeOn: true, stripeCol: '#ff2200', glowCol: '#ff3300', windowStyle: 'rect', landingLegs: false, finScale: 1.3, stripePos: 0.4, noseconeScale: 1.0, windowCount: 3 } },
+  { id: 'scout', emoji: '🔬', name: 'Scout Probe', note: 'A small blunt-nosed research rocket. Quick to print.',
+    data: { name: 'SCOUT', nosecone: 'blunt', bodyHeight: 1.7, bodyRadius: 0.28, primaryCol: '#e8e8ec', secondaryCol: '#38bdf8', finStyle: 'delta', finCount: 3, boosters: 0, boosterSize: 0.5, engineCount: 1, fairing: 'none', stripeOn: true, stripeCol: '#38bdf8', glowCol: '#88ccff', windowStyle: 'porthole', landingLegs: false, finScale: 0.9, stripePos: 0.6, noseconeScale: 1.4, windowCount: 2 } },
+  { id: 'aurora', emoji: '🌌', name: 'Aurora', note: 'Midnight blue with green trim and glowing portholes.',
+    data: { name: 'AURORA', nosecone: 'ogive', bodyHeight: 3.8, bodyRadius: 0.37, primaryCol: '#0d1b2a', secondaryCol: '#4ade80', finStyle: 'delta', finCount: 4, boosters: 4, boosterSize: 0.55, engineCount: 3, fairing: 'standard', stripeOn: true, stripeCol: '#a78bfa', glowCol: '#44ffaa', windowStyle: 'row', landingLegs: true, finScale: 1.0, stripePos: 0.25, noseconeScale: 1.1, windowCount: 5 } }
+];
+
+function loadRocketTemplate(t) {
+  Object.assign(R, t.data, { launched: false, launchY: 0 });
+  buildRocket(); updateStats(); updateSpecCard(); syncRightBar();
+  sout('Template loaded: ' + t.data.name + '. Change anything, then export.');
+  toast('Template: ' + t.data.name);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: ROCKET_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadRocketTemplate(t); } }; }),
+    random: randomRocket,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Rocket Builder',
+    units: 'm',
+    accent: '#e8543a',
+    getGroup: function () { return rocketGroup; },
+    getName: function () { return (R.name && R.name !== 'UNNAMED') ? R.name : 'rocket'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script defer src="../cookie-consent.js"></script>
@@ -1760,7 +1813,7 @@ init();
         <div class="footer-brand">
             <div class="footer-logo">JVDesignStudio</div>
             <div class="footer-tagline">Coding &amp; Game Dev Workshops</div>
-            <p class="footer-blurb">Free coding and game development workshops for young creators. No install, no account - works on any school computer.</p>
+            <p class="footer-blurb">Free, guided coding and game development for young creators. Easy for families to start and practical for classrooms to use.</p>
         </div>
         <div class="footer-grid">
             <nav class="footer-col" aria-label="Explore">

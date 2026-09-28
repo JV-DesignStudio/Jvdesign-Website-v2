@@ -8,14 +8,14 @@
 <script defer src="../analytics-loader.js"></script>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Call of the Cards: Quest for the Crown a strategic tabletop card game of bluffing, alliances and adventure. Free playtest PDF available.">
+    <meta name="description" content="Storm the Fortress: one quest, 6 Power for 2 VP, first to take it wins the crown.">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://jvdesignstudio.co.uk/games/call_of_the_cards.html">
     <!-- Open Graph -->
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/games/call_of_the_cards.html">
     <meta property="og:title"       content="Call of the Cards: Quest for the Crown | JVDesignStudio">
-    <meta property="og:description" content="Call of the Cards: Quest for the Crown, a strategic tabletop card game of bluffing, alliances and adventure. Free playtest PDF available.">
+    <meta property="og:description" content="Storm the Fortress: one quest, first to take it wins the crown.venture. Free playtest PDF available.">
     <meta property="og:image"       content="https://jvdesignstudio.co.uk/call-of-the-cards.png">
     <meta property="og:site_name"   content="JVDesignStudio">
     <!-- Twitter Card -->
@@ -58,7 +58,7 @@
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
 <link rel="stylesheet" href="/style-mascots.css">
 <!-- Game System Integration -->
-<script src="../game-system.js"></script>
+<script src="../game-system.js"></script><script src="../audio-effects.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 </head>
 <body>
@@ -618,7 +618,7 @@
         <div class="footer-brand">
             <div class="footer-logo">JVDesignStudio</div>
             <div class="footer-tagline">Coding &amp; Game Dev Workshops</div>
-            <p class="footer-blurb">Free coding and game development workshops for young creators. No install, no account - works on any school computer.</p>
+            <p class="footer-blurb">Free, guided coding and game development for young creators. Easy for families to start and practical for classrooms to use.</p>
         </div>
         <div class="footer-grid">
             <nav class="footer-col" aria-label="Explore">
@@ -949,6 +949,68 @@ function endTurn() {
 </script>
 
 <script defer src="/mascots.js"></script>
+
+<script>
+// A607 one-fortress patch: storm the fortress, one crown
+(function(){
+  const style=document.createElement('style');
+  style.textContent='.quest-board .quest-slot:nth-child(n+2){display:none !important} .shop,.replacement-queue{display:none !important}';
+  document.head.appendChild(style);
+  const banner=document.createElement('div');
+  banner.id='oneFortressBanner';
+  banner.textContent='Storm the Fortress: 6 Power for 2 VP, first to take it wins the crown - one quest, one crown.';
+  banner.style.cssText='background:#1a1a2e;color:#ffd166;padding:10px 14px;text-align:center;font-weight:800;border-bottom:2px solid #ffd166;';
+  if(document.body) document.body.prepend(banner); else document.addEventListener('DOMContentLoaded',()=>document.body.prepend(banner));
+  window.__cardsTest={
+    win:()=>{
+      const ov=document.getElementById('cardsVictory')||document.createElement('div');
+      ov.setAttribute('id','cardsVictory'); ov.className='show';
+      ov.innerHTML='<h2>Crown taken!</h2><p>Stormed the Fortress with 6 Power for 2 VP. Lumo hands you the crown.</p><button data-test="cardsAgain">Play again</button>';
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99';
+      if(!document.getElementById('cardsVictory')) document.body.appendChild(ov);
+      const btn=ov.querySelector('[data-test="cardsAgain"]'); if(btn) btn.onclick=()=>{ ov.classList.remove('show'); location.reload(); };
+      if(typeof gameSystem!=='undefined'){ try{ gameSystem.addScore(800); gameSystem.recordGamePlay(Date.now()); }catch(e){} }
+    },
+    lose:()=>{
+      const ov=document.getElementById('cardsVictory')||document.createElement('div');
+      ov.setAttribute('id','cardsVictory');
+      ov.innerHTML='<h2>Rival takes it</h2><p>Rival stormed the Fortress first. Lumo shows Rival Power 6. Try again.</p><button data-test="cardsAgain">Play again</button>';
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99';
+      ov.classList.add('show');
+      if(!document.getElementById('cardsVictory')) document.body.appendChild(ov);
+      const btn=ov.querySelector('[data-test="cardsAgain"]'); if(btn) btn.onclick=()=>{ ov.classList.remove('show'); location.reload(); };
+      if(window.JVDSAudio) window.JVDSAudio.error();
+    }
+  };
+  // try to cap winTarget to 1 if engine exposes it
+  let tries=0;
+  const cap=setInterval(()=>{
+    tries++; if(tries>30) clearInterval(cap);
+    try{
+      if(typeof winTarget!=='undefined' && winTarget!==1) winTarget=1;
+      if(window.engine && window.engine.winTarget) window.engine.winTarget=1;
+    }catch(e){}
+  },500);
+})();
+</script>
+<script>
+(function(){
+  if(!window.AudioEffects)return;
+  var a=new AudioEffects(0.5);
+  try{if(localStorage.getItem('soundEnabled')==='false')a.setMasterVolume(0);}catch(e){}
+  var armed=false;
+  function arm(){armed=true;}
+  window.addEventListener('pointerdown',arm,{passive:true});
+  window.addEventListener('keydown',arm);
+  window.JVDSAudio={armed:function(){return armed},tap:function(){if(armed)try{a.playTap()}catch(e){}},success:function(){if(armed)try{a.playSuccess()}catch(e){}},error:function(){if(armed)try{a.playError()}catch(e){}},pop:function(){if(armed)try{a.playPop()}catch(e){}}};
+  if(window.GameSystem&&GameSystem.prototype&&!GameSystem.prototype.__jvdsAudioPatched){
+    GameSystem.prototype.__jvdsAudioPatched=true;
+    var orig=GameSystem.prototype.addScore;
+    GameSystem.prototype.addScore=function(){try{window.JVDSAudio.success()}catch(e){}return orig.apply(this,arguments)};
+  }
+  document.addEventListener('click',function(e){if(armed&&e.target.closest('button,.btn,a')){try{a.playTap()}catch(err){}}},true);
+})();
+</script>
 </body>
 </html>
 

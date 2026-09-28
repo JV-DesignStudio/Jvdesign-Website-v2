@@ -45,7 +45,7 @@ let failures = 0;
     play: document.getElementById('playBtn')?.textContent.trim(),
     transport: document.getElementById('transport')?.innerText || '',
     welcome: document.querySelector('#start-modal .ss-title')?.textContent || '',
-    tracks: document.querySelectorAll('.track-row').length,
+    tracks: document.querySelectorAll('.seq-track-row').length,
     cells: document.querySelectorAll('.step-cell').length,
     exportFn: typeof window.exportWAV === 'function',
     gameMakerFn: typeof window.sendToGameMaker === 'function',

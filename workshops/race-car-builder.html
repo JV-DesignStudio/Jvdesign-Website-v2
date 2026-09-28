@@ -29,6 +29,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="jv-exporter.js"></script>
+<script src="builder-templates.js"></script>
 <link rel="preload" href="../style-workshop-race-car-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-workshop-race-car-builder.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -162,7 +164,6 @@
       <button class="quick-btn" onclick="openSaveModal()" style="background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03">💾 Save</button>
       <button class="quick-btn" onclick="openLoadModal()" style="background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006">📂 Load</button>
       <button class="quick-btn" onclick="downloadOBJ()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">⬇ OBJ</button>
-      <button class="quick-btn" onclick="exportGLB()" style="background:linear-gradient(135deg,#6366f1,#4338ca);box-shadow:0 3px 0 #3730a3">📦 GLB</button>
       <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
     </div>
   </header>
@@ -324,6 +325,8 @@ function hexToThree(hex) { return new THREE.Color(hex); }
 function buildCar() {
   if (carGroup) scene.remove(carGroup);
   carGroup = new THREE.Group();
+  carGroup.name = 'race_car';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
   var pMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.primaryCol), roughness: 0.3, metalness: 0.6 });
   var sMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.accentCol), roughness: 0.35, metalness: 0.5 });
   var darkMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.7, metalness: 0.3 });
@@ -336,59 +339,59 @@ function buildCar() {
 
   if (P.bodyStyle === 'formula') {
     var nose = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.9, 8), pMat);
-    nose.rotation.x = Math.PI / 2; nose.position.set(0, bh * 0.5, halfWB + 0.4); nose.castShadow = true; carGroup.add(nose);
+    nose.rotation.x = Math.PI / 2; nose.position.set(0, bh * 0.5, halfWB + 0.4); nose.castShadow = true; carGroup.add(part(nose, 'nose'));
     var body = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.7, bh, wb * 0.65), pMat);
-    body.position.set(0, bh * 0.5, 0); body.castShadow = true; carGroup.add(body);
+    body.position.set(0, bh * 0.5, 0); body.castShadow = true; carGroup.add(part(body, 'body'));
     var cockpit = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.35, bh * 0.55, wb * 0.28), darkMat);
-    cockpit.position.set(0, bh * 1.1, -0.1); carGroup.add(cockpit);
+    cockpit.position.set(0, bh * 1.1, -0.1); carGroup.add(part(cockpit, 'cockpit'));
     var wind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.35, bh * 0.3, 0.04), glassMat);
-    wind.position.set(0, bh * 1.2, 0.35); wind.rotation.x = -0.3; carGroup.add(wind);
+    wind.position.set(0, bh * 1.2, 0.35); wind.rotation.x = -0.3; carGroup.add(part(wind, 'windshield'));
     [-1, 1].forEach(function(side) {
       var pod = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.22, bh * 0.7, wb * 0.35), pMat);
-      pod.position.set(side * bw * 0.38, bh * 0.45, -0.15); pod.castShadow = true; carGroup.add(pod);
+      pod.position.set(side * bw * 0.38, bh * 0.45, -0.15); pod.castShadow = true; carGroup.add(part(pod, `side_pod_${side>0?'right':'left'}`));
     });
     var cover = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.55, bh * 0.85, wb * 0.2), pMat);
-    cover.position.set(0, bh * 0.6, -halfWB * 0.55); cover.castShadow = true; carGroup.add(cover);
+    cover.position.set(0, bh * 0.6, -halfWB * 0.55); cover.castShadow = true; carGroup.add(part(cover, 'engine_cover'));
   } else if (P.bodyStyle === 'muscle') {
     var body = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.85, bh * 1.4, wb * 0.9), pMat);
-    body.position.set(0, bh * 0.7, 0); body.castShadow = true; carGroup.add(body);
+    body.position.set(0, bh * 0.7, 0); body.castShadow = true; carGroup.add(part(body, 'body'));
     var hood = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.5, bh * 0.3, wb * 0.3), pMat);
-    hood.position.set(0, bh * 1.45, halfWB * 0.35); hood.castShadow = true; carGroup.add(hood);
+    hood.position.set(0, bh * 1.45, halfWB * 0.35); hood.castShadow = true; carGroup.add(part(hood, 'hood'));
     var roof = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.75, bh * 0.5, wb * 0.38), pMat);
-    roof.position.set(0, bh * 1.65, -0.1); roof.castShadow = true; carGroup.add(roof);
+    roof.position.set(0, bh * 1.65, -0.1); roof.castShadow = true; carGroup.add(part(roof, 'roof'));
     var wind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.72, bh * 0.45, 0.04), glassMat);
-    wind.position.set(0, bh * 1.55, 0.25); wind.rotation.x = -0.35; carGroup.add(wind);
+    wind.position.set(0, bh * 1.55, 0.25); wind.rotation.x = -0.35; carGroup.add(part(wind, 'windshield'));
     var rWind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.72, bh * 0.4, 0.04), glassMat);
-    rWind.position.set(0, bh * 1.55, -0.45); rWind.rotation.x = 0.3; carGroup.add(rWind);
+    rWind.position.set(0, bh * 1.55, -0.45); rWind.rotation.x = 0.3; carGroup.add(part(rWind, 'rear_windshield'));
     var trunk = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.8, bh * 0.35, wb * 0.18), pMat);
-    trunk.position.set(0, bh * 1.1, -halfWB * 0.55); trunk.castShadow = true; carGroup.add(trunk);
+    trunk.position.set(0, bh * 1.1, -halfWB * 0.55); trunk.castShadow = true; carGroup.add(part(trunk, 'trunk'));
   } else if (P.bodyStyle === 'offroad') {
     var body = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.82, bh * 1.2, wb * 0.85), pMat);
-    body.position.set(0, bh * 0.9, 0); body.castShadow = true; carGroup.add(body);
+    body.position.set(0, bh * 0.9, 0); body.castShadow = true; carGroup.add(part(body, 'body'));
     var roof = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.7, bh * 0.55, wb * 0.5), pMat);
-    roof.position.set(0, bh * 1.8, -0.05); roof.castShadow = true; carGroup.add(roof);
+    roof.position.set(0, bh * 1.8, -0.05); roof.castShadow = true; carGroup.add(part(roof, 'roof'));
     var wind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.68, bh * 0.5, 0.04), glassMat);
-    wind.position.set(0, bh * 1.7, 0.28); wind.rotation.x = -0.25; carGroup.add(wind);
+    wind.position.set(0, bh * 1.7, 0.28); wind.rotation.x = -0.25; carGroup.add(part(wind, 'windshield'));
     var rWind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.68, bh * 0.45, 0.04), glassMat);
-    rWind.position.set(0, bh * 1.7, -0.38); rWind.rotation.x = 0.25; carGroup.add(rWind);
+    rWind.position.set(0, bh * 1.7, -0.38); rWind.rotation.x = 0.25; carGroup.add(part(rWind, 'rear_windshield'));
     var rack = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.65, 0.04, wb * 0.12), chromeMat);
-    rack.position.set(0, bh * 2.1, 0.2); carGroup.add(rack);
+    rack.position.set(0, bh * 2.1, 0.2); carGroup.add(part(rack, 'roof_rack'));
     var bar = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.6, bh * 0.25, 0.06), chromeMat);
-    bar.position.set(0, bh * 0.4, halfWB * 0.55); carGroup.add(bar);
+    bar.position.set(0, bh * 0.4, halfWB * 0.55); carGroup.add(part(bar, 'front_bumper'));
   } else {
     var body = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.88, bh * 1.05, wb * 0.88), pMat);
-    body.position.set(0, bh * 0.55, 0); body.castShadow = true; carGroup.add(body);
+    body.position.set(0, bh * 0.55, 0); body.castShadow = true; carGroup.add(part(body, 'body'));
     var hood = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.75, bh * 0.25, wb * 0.35), pMat);
-    hood.position.set(0, bh * 1.15, halfWB * 0.3); hood.castShadow = true; carGroup.add(hood);
+    hood.position.set(0, bh * 1.15, halfWB * 0.3); hood.castShadow = true; carGroup.add(part(hood, 'hood'));
     var roof = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.65, bh * 0.5, wb * 0.35), pMat);
-    roof.position.set(0, bh * 1.4, -0.05); roof.castShadow = true; carGroup.add(roof);
+    roof.position.set(0, bh * 1.4, -0.05); roof.castShadow = true; carGroup.add(part(roof, 'roof'));
     var wind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.62, bh * 0.42, 0.04), glassMat);
-    wind.position.set(0, bh * 1.3, 0.2); wind.rotation.x = -0.35; carGroup.add(wind);
+    wind.position.set(0, bh * 1.3, 0.2); wind.rotation.x = -0.35; carGroup.add(part(wind, 'windshield'));
     var rWind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.62, bh * 0.38, 0.04), glassMat);
-    rWind.position.set(0, bh * 1.3, -0.38); rWind.rotation.x = 0.3; carGroup.add(rWind);
+    rWind.position.set(0, bh * 1.3, -0.38); rWind.rotation.x = 0.3; carGroup.add(part(rWind, 'rear_windshield'));
     [-1, 1].forEach(function(side) {
       var f = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.18, bh * 0.7, wb * 0.5), pMat);
-      f.position.set(side * bw * 0.48, bh * 0.55, -0.1); f.castShadow = true; carGroup.add(f);
+      f.position.set(side * bw * 0.48, bh * 0.55, -0.1); f.castShadow = true; carGroup.add(part(f, `fender_${side>0?'right':'left'}`));
     });
   }
 
@@ -400,34 +403,34 @@ function buildCar() {
   ];
   wheelPositions.forEach(function(wp) {
     var tire = new THREE.Mesh(new THREE.CylinderGeometry(wheelR, wheelR, wheelH, 24), tireMat);
-    tire.rotation.z = Math.PI / 2; tire.position.set(wp.x, wheelR, wp.z); tire.castShadow = true; carGroup.add(tire);
+    tire.rotation.z = Math.PI / 2; tire.position.set(wp.x, wheelR, wp.z); tire.castShadow = true; carGroup.add(part(tire, `wheel_tire_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}`));
     var rimMesh = new THREE.Mesh(new THREE.CylinderGeometry(wheelR * 0.7, wheelR * 0.7, wheelH + 0.01, 16), chromeMat);
-    rimMesh.rotation.z = Math.PI / 2; rimMesh.position.set(wp.x, wheelR, wp.z); carGroup.add(rimMesh);
+    rimMesh.rotation.z = Math.PI / 2; rimMesh.position.set(wp.x, wheelR, wp.z); carGroup.add(part(rimMesh, `wheel_rim_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}`));
     var spokeMat = new THREE.MeshStandardMaterial({ color: 0x888899, roughness: 0.3, metalness: 0.8 });
     var spokeCount = P.wheelStyle === 'multisplit' ? 10 : P.wheelStyle === 'rally' ? 6 : P.wheelStyle === 'slick' ? 0 : 5;
     for (var s = 0; s < spokeCount; s++) {
       var a = (s / spokeCount) * Math.PI * 2;
       var spoke = new THREE.Mesh(new THREE.BoxGeometry(0.02, wheelR * 0.65, 0.025), spokeMat);
       spoke.position.set(wp.x, wheelR + Math.sin(a) * wheelR * 0.32, wp.z + Math.cos(a) * wheelR * 0.32);
-      spoke.rotation.x = a; carGroup.add(spoke);
+      spoke.rotation.x = a; carGroup.add(part(spoke, `wheel_spoke_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}_${s}`));
     }
     var disc = new THREE.Mesh(new THREE.CylinderGeometry(wheelR * 0.5, wheelR * 0.5, 0.03, 16), darkMat);
-    disc.rotation.z = Math.PI / 2; disc.position.set(wp.x + (wp.x > 0 ? -0.06 : 0.06), wheelR, wp.z); carGroup.add(disc);
+    disc.rotation.z = Math.PI / 2; disc.position.set(wp.x + (wp.x > 0 ? -0.06 : 0.06), wheelR, wp.z); carGroup.add(part(disc, `brake_disc_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}`));
     var cal = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.04), brakeMat);
-    cal.position.set(wp.x + (wp.x > 0 ? -0.05 : 0.05), wheelR + wheelR * 0.4, wp.z); carGroup.add(cal);
+    cal.position.set(wp.x + (wp.x > 0 ? -0.05 : 0.05), wheelR + wheelR * 0.4, wp.z); carGroup.add(part(cal, `brake_caliper_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}`));
   });
 
   if (P.frontWing !== 'none') {
     var wingH = { none: 0, low: 0.04, medium: 0.08, high: 0.14 }[P.frontWing];
     var wing = new THREE.Mesh(new THREE.BoxGeometry(bw * 1.05, wingH, 0.12), sMat);
-    wing.position.set(0, bh * 0.15 + wingH / 2, halfWB + 0.35); wing.castShadow = true; carGroup.add(wing);
+    wing.position.set(0, bh * 0.15 + wingH / 2, halfWB + 0.35); wing.castShadow = true; carGroup.add(part(wing, 'front_wing'));
     [-1, 1].forEach(function(side) {
       var ep = new THREE.Mesh(new THREE.BoxGeometry(0.03, wingH + 0.06, 0.14), sMat);
-      ep.position.set(side * bw * 0.52, bh * 0.15 + wingH / 2, halfWB + 0.35); carGroup.add(ep);
+      ep.position.set(side * bw * 0.52, bh * 0.15 + wingH / 2, halfWB + 0.35); carGroup.add(part(ep, `front_wing_endplate_${side>0?'right':'left'}`));
     });
     [-1, 1].forEach(function(side) {
       var sup = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, bh * 0.15, 6), chromeMat);
-      sup.position.set(side * bw * 0.3, bh * 0.08, halfWB + 0.35); carGroup.add(sup);
+      sup.position.set(side * bw * 0.3, bh * 0.08, halfWB + 0.35); carGroup.add(part(sup, `front_wing_support_${side>0?'right':'left'}`));
     });
   }
 
@@ -436,16 +439,16 @@ function buildCar() {
     var spY = bh * 1.2 + spH / 2;
     var angle = (P.rearWingAngle || 15) * Math.PI / 180;
     var wing = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.95, spH, 0.1), sMat);
-    wing.position.set(0, spY, -halfWB - 0.1); wing.rotation.x = -angle; wing.castShadow = true; carGroup.add(wing);
+    wing.position.set(0, spY, -halfWB - 0.1); wing.rotation.x = -angle; wing.castShadow = true; carGroup.add(part(wing, 'rear_wing'));
     var flap = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.9, 0.02, 0.04), pMat);
-    flap.position.set(0, spY + spH * 0.5 + 0.01, -halfWB - 0.14); flap.rotation.x = -angle; carGroup.add(flap);
+    flap.position.set(0, spY + spH * 0.5 + 0.01, -halfWB - 0.14); flap.rotation.x = -angle; carGroup.add(part(flap, 'rear_wing_flap'));
     [-1, 1].forEach(function(side) {
       var ep = new THREE.Mesh(new THREE.BoxGeometry(0.03, spH + 0.06, 0.12), sMat);
-      ep.position.set(side * bw * 0.47, spY, -halfWB - 0.1); ep.rotation.x = -angle; carGroup.add(ep);
+      ep.position.set(side * bw * 0.47, spY, -halfWB - 0.1); ep.rotation.x = -angle; carGroup.add(part(ep, `rear_wing_endplate_${side>0?'right':'left'}`));
     });
     [-1, 1].forEach(function(side) {
       var up = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, bh * 0.55, 6), chromeMat);
-      up.position.set(side * bw * 0.35, bh * 0.95, -halfWB - 0.05); carGroup.add(up);
+      up.position.set(side * bw * 0.35, bh * 0.95, -halfWB - 0.05); carGroup.add(part(up, `rear_wing_upright_${side>0?'right':'left'}`));
     });
   }
 
@@ -453,30 +456,30 @@ function buildCar() {
     var sw = P.sideSkirts === 'wide' ? 0.08 : 0.04;
     [-1, 1].forEach(function(side) {
       var skirt = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.05, wb * 0.75), darkMat);
-      skirt.position.set(side * halfW * 0.95, 0.04, 0); carGroup.add(skirt);
+      skirt.position.set(side * halfW * 0.95, 0.04, 0); carGroup.add(part(skirt, `side_skirt_${side>0?'right':'left'}`));
     });
   }
 
   var exhMat = new THREE.MeshStandardMaterial({ color: 0x444455, roughness: 0.5, metalness: 0.7 });
   if (P.exhaustType === 'single') {
     var e = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.12, 12), exhMat);
-    e.rotation.x = Math.PI / 2; e.position.set(0, bh * 0.2, -halfWB - 0.12); carGroup.add(e);
+    e.rotation.x = Math.PI / 2; e.position.set(0, bh * 0.2, -halfWB - 0.12); carGroup.add(part(e, 'exhaust_single'));
   } else if (P.exhaustType === 'dual') {
     [-0.15, 0.15].forEach(function(xOff) {
       var e = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.12, 12), exhMat);
-      e.rotation.x = Math.PI / 2; e.position.set(xOff, bh * 0.2, -halfWB - 0.12); carGroup.add(e);
+      e.rotation.x = Math.PI / 2; e.position.set(xOff, bh * 0.2, -halfWB - 0.12); carGroup.add(part(e, `exhaust_dual_${xOff}`));
     });
   } else if (P.exhaustType === 'quad') {
     [-0.18, -0.06, 0.06, 0.18].forEach(function(xOff) {
       var e = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.03, 0.12, 10), exhMat);
-      e.rotation.x = Math.PI / 2; e.position.set(xOff, bh * 0.18, -halfWB - 0.12); carGroup.add(e);
+      e.rotation.x = Math.PI / 2; e.position.set(xOff, bh * 0.18, -halfWB - 0.12); carGroup.add(part(e, `exhaust_quad_${xOff}`));
     });
   } else {
     [-1, 1].forEach(function(side) {
       var e = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, wb * 0.3, 10), exhMat);
-      e.rotation.x = Math.PI / 2; e.position.set(side * halfW * 0.92, bh * 0.35, 0); carGroup.add(e);
+      e.rotation.x = Math.PI / 2; e.position.set(side * halfW * 0.92, bh * 0.35, 0); carGroup.add(part(e, `exhaust_side_${side>0?'right':'left'}`));
       var cap = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 10), exhMat);
-      cap.position.set(side * halfW * 0.92, bh * 0.35, -wb * 0.15); carGroup.add(cap);
+      cap.position.set(side * halfW * 0.92, bh * 0.35, -wb * 0.15); carGroup.add(part(cap, `exhaust_cap_${side>0?'right':'left'}`));
     });
   }
 
@@ -485,16 +488,16 @@ function buildCar() {
     var cageH = P.rollCage === 'full' ? bh * 1.1 : bh * 0.6;
     var cageY = bh * 0.8;
     var hoop = new THREE.Mesh(new THREE.TorusGeometry(bw * 0.28, 0.02, 8, 16, Math.PI), cageMat);
-    hoop.position.set(0, cageY + cageH, -0.15); hoop.rotation.y = Math.PI / 2; hoop.rotation.z = Math.PI; carGroup.add(hoop);
+    hoop.position.set(0, cageY + cageH, -0.15); hoop.rotation.y = Math.PI / 2; hoop.rotation.z = Math.PI; carGroup.add(part(hoop, 'roll_hoop'));
     [-1, 1].forEach(function(side) {
       var bar = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, cageH * 1.1, 6), cageMat);
-      bar.position.set(side * bw * 0.22, cageY + cageH * 0.5, -0.15); bar.rotation.z = side * 0.15; carGroup.add(bar);
+      bar.position.set(side * bw * 0.22, cageY + cageH * 0.5, -0.15); bar.rotation.z = side * 0.15; carGroup.add(part(bar, `roll_cage_bar_${side>0?'right':'left'}`));
     });
     if (P.rollCage === 'full') {
       var cross = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, bw * 0.56, 6), cageMat);
-      cross.position.set(0, cageY + cageH * 0.85, -0.15); cross.rotation.z = Math.PI / 2; carGroup.add(cross);
+      cross.position.set(0, cageY + cageH * 0.85, -0.15); cross.rotation.z = Math.PI / 2; carGroup.add(part(cross, 'roll_cage_cross'));
       var fHoop = new THREE.Mesh(new THREE.TorusGeometry(bw * 0.24, 0.018, 8, 16, Math.PI), cageMat);
-      fHoop.position.set(0, cageY + cageH * 0.9, 0.15); fHoop.rotation.y = Math.PI / 2; fHoop.rotation.z = Math.PI; carGroup.add(fHoop);
+      fHoop.position.set(0, cageY + cageH * 0.9, 0.15); fHoop.rotation.y = Math.PI / 2; fHoop.rotation.z = Math.PI; carGroup.add(part(fHoop, 'roll_hoop_front'));
     }
   }
 
@@ -503,21 +506,21 @@ function buildCar() {
     [-1, 1].forEach(function(side) {
       if (P.headlightStyle === 'round') {
         var hl = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12), lightMat);
-        hl.position.set(side * bw * 0.3, bh * 0.55, halfWB + 0.05); carGroup.add(hl);
+        hl.position.set(side * bw * 0.3, bh * 0.55, halfWB + 0.05); carGroup.add(part(hl, `headlight_${side>0?'right':'left'}_${P.headlightStyle}`));
       } else if (P.headlightStyle === 'rectangular') {
         var hl = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 0.03), lightMat);
-        hl.position.set(side * bw * 0.3, bh * 0.55, halfWB + 0.05); carGroup.add(hl);
+        hl.position.set(side * bw * 0.3, bh * 0.55, halfWB + 0.05); carGroup.add(part(hl, `headlight_${side>0?'right':'left'}_${P.headlightStyle}`));
       } else {
         var hl = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.03), lightMat);
-        hl.position.set(side * bw * 0.3, bh * 0.55, halfWB + 0.05); carGroup.add(hl);
+        hl.position.set(side * bw * 0.3, bh * 0.55, halfWB + 0.05); carGroup.add(part(hl, `headlight_${side>0?'right':'left'}_${P.headlightStyle}`));
         var strip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.01, 0.02), lightMat);
-        strip.position.set(side * bw * 0.3, bh * 0.52, halfWB + 0.05); carGroup.add(strip);
+        strip.position.set(side * bw * 0.3, bh * 0.52, halfWB + 0.05); carGroup.add(part(strip, `headlight_strip_${side>0?'right':'left'}`));
       }
     });
     var tailMat = new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: new THREE.Color(0xff0000), emissiveIntensity: 0.4, roughness: 0.2 });
     [-1, 1].forEach(function(side) {
       var tl = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.025, 0.02), tailMat);
-      tl.position.set(side * bw * 0.3, bh * 0.5, -halfWB - 0.02); carGroup.add(tl);
+      tl.position.set(side * bw * 0.3, bh * 0.5, -halfWB - 0.02); carGroup.add(part(tl, `taillight_${side>0?'right':'left'}`));
     });
   }
 
@@ -526,18 +529,18 @@ function buildCar() {
     if (P.liveryStyle === 'stripes') {
       [-0.08, 0.08].forEach(function(xOff) {
         var s = new THREE.Mesh(new THREE.BoxGeometry(0.04, bh * 0.02, wb * 1.1), livMat);
-        s.position.set(xOff, bh * 1.02, 0.1); carGroup.add(s);
+        s.position.set(xOff, bh * 1.02, 0.1); carGroup.add(part(s, `livery_stripe_${xOff}`));
       });
     } else if (P.liveryStyle === 'flames') {
       var flameMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.liveryCol), emissive: new THREE.Color(P.liveryCol), emissiveIntensity: 0.3, roughness: 0.4 });
       var flame = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.6, bh * 0.08, wb * 0.35), flameMat);
-      flame.position.set(0, bh * 1.01, halfWB * 0.4); carGroup.add(flame);
+      flame.position.set(0, bh * 1.01, halfWB * 0.4); carGroup.add(part(flame, 'livery_flame'));
     } else if (P.liveryStyle === 'tribal') {
       [-1, 1].forEach(function(side) {
         var tri = new THREE.Mesh(new THREE.BoxGeometry(0.03, bh * 0.4, wb * 0.25), livMat);
-        tri.position.set(side * halfW * 0.7, bh * 0.7, 0); carGroup.add(tri);
+        tri.position.set(side * halfW * 0.7, bh * 0.7, 0); carGroup.add(part(tri, `livery_tribal_${side>0?'right':'left'}_1`));
         var tri2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, bh * 0.25, wb * 0.18), livMat);
-        tri2.position.set(side * halfW * 0.6, bh * 0.9, -0.15); tri2.rotation.z = side * 0.3; carGroup.add(tri2);
+        tri2.position.set(side * halfW * 0.6, bh * 0.9, -0.15); tri2.rotation.z = side * 0.3; carGroup.add(part(tri2, `livery_tribal_${side>0?'right':'left'}_2`));
       });
     }
   }
@@ -546,7 +549,7 @@ function buildCar() {
     var numMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
     [-1, 1].forEach(function(side) {
       var plate = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.12, 0.14), numMat);
-      plate.position.set(side * halfW * 0.82, bh * 0.8, 0.1); carGroup.add(plate);
+      plate.position.set(side * halfW * 0.82, bh * 0.8, 0.1); carGroup.add(part(plate, `number_plate_${side>0?'right':'left'}`));
     });
   }
 
@@ -1357,6 +1360,55 @@ function init() {
 }
 
 init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const CAR_TEMPLATES = [
+  { id: 'inferno', emoji: '🔥', name: 'Inferno', note: 'Red drift car with flames  -  the quick-build.',
+    data: { carName: 'INFERNO', bodyStyle: 'drift', primaryCol: '#e8333a', accentCol: '#f5c842', engineType: 'v8', wheelStyle: '5spoke', rearSpoiler: 'high', sideSkirts: 'wide', exhaustType: 'quad', liveryStyle: 'flames', carNumber: 13 } },
+  { id: 'lightning', emoji: '⚡', name: 'Lightning', note: 'Formula style, white stripes and low wing.',
+    data: { carName: 'Lightning', bodyStyle: 'formula', primaryCol: '#e8333a', accentCol: '#ffffff', engineType: 'v6', wheelStyle: '5spoke', frontWing: 'medium', rearSpoiler: 'medium', liveryStyle: 'stripes', carNumber: 7 } },
+  { id: 'shadow', emoji: '🌑', name: 'Shadow', note: 'Matte black, tinted windows and dual exhaust.',
+    data: { carName: 'Shadow', bodyStyle: 'drift', primaryCol: '#1a1a1a', accentCol: '#22c55e', engineType: 'v8', wheelStyle: '5spoke', wheelCol: '#1a1a1a', rearSpoiler: 'high', tintWindows: true, liveryStyle: 'solid', carNumber: 9 } },
+  { id: 'arctic', emoji: '❄️', name: 'Arctic', note: 'Ice blue with white accents  -  cool and fast.',
+    data: { carName: 'Arctic', bodyStyle: 'formula', primaryCol: '#38bdf8', accentCol: '#ffffff', engineType: 'v6', wheelStyle: '5spoke', frontWing: 'low', rearSpoiler: 'high', liveryStyle: 'stripes', carNumber: 22 } },
+  { id: 'sunset', emoji: '🌅', name: 'Sunset', note: 'Orange and purple with a big rear wing.',
+    data: { carName: 'Sunset', bodyStyle: 'drift', primaryCol: '#f97316', accentCol: '#a78bfa', engineType: 'v8', wheelStyle: '5spoke', rearSpoiler: 'high', rearWingAngle: 30, liveryStyle: 'gradient', carNumber: 42 } },
+  { id: 'toxic', emoji: '☣️', name: 'Toxic', note: 'Neon green and black  -  street-racer vibe.',
+    data: { carName: 'Toxic', bodyStyle: 'drift', primaryCol: '#22c55e', accentCol: '#1a1a1a', engineType: 'v8', wheelStyle: '5spoke', wheelCol: '#22c55e', brakeCalipers: '#22c55e', tintWindows: true, liveryStyle: 'solid', carNumber: 77 } }
+];
+
+function loadCarTemplate(t) {
+  Object.assign(P, t.data);
+  if (typeof buildCar === 'function') buildCar(); if (typeof updateStats === 'function') updateStats(); if (typeof updateSpecCard === 'function') updateSpecCard(); if (typeof syncRightBar === 'function') syncRightBar();
+  if (typeof sout === 'function') sout('Template loaded: ' + t.data.carName);
+  if (typeof toast === 'function') toast('Template: ' + t.data.carName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: CAR_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadCarTemplate(t); } }; }),
+    random: randomCar,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Race Car Builder',
+    units: 'm',
+    accent: '#e8333a',
+    getGroup: function () { return carGroup; },
+    getName: function () { return P.carName || 'race-car'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script defer src="../cookie-consent.js"></script>
@@ -1366,7 +1418,7 @@ init();
     <p style="font-weight:800;margin:0 0 12px">Keep creating on-site - try a companion tool</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
       <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🎨</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">Pixel Studio</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Draw sprites</div></div></a>
-      <a href="../tools/sfx-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🔊</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">SFX Generator</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Make sounds</div></div></a>
+      <a href="../tools/sound-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🔊</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">SFX Generator</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Make sounds</div></div></a>
       <a href="../tools/level-designer.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🗸️</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">Level Designer</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Plan levels</div></div></a>
       <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🎨</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">Colour Palette</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Build a scheme</div></div></a>
     </div>

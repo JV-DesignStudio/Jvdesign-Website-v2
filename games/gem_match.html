@@ -51,7 +51,7 @@
 <script src="../game-system.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Gem Match","url":"https://jvdesignstudio.co.uk/games/gem_match.html","description":"Two-minute match-3 with bombs, wilds, fever mode, cascading combos, and a global leaderboard.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/GemMatchCover.webp"}</script>
-</head>
+<style>.quality-panel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 0;text-align:left}.quality-card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:10px}.quality-card b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#ffd93d;margin-bottom:4px}.quality-card span{font-size:.82rem;line-height:1.35;color:rgba(255,255,255,.86)}.quality-card a{color:#8ecae6;font-weight:800}.match-live{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:660px;margin:0 auto 12px}.match-mission,.match-coach{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px}.match-mission b,.match-coach b{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#ffd93d;margin-bottom:4px}.match-mission span,.match-coach span{font-size:.82rem;line-height:1.35;color:#fff}@media(max-width:700px){.quality-panel{grid-template-columns:1fr 1fr}.match-live{grid-template-columns:1fr}}@media(max-width:420px){.quality-panel{grid-template-columns:1fr}}</style></head>
 <body>
 
 <div id="bgLayer"></div>
@@ -125,6 +125,12 @@
     <div class="ss-tip"><span>⭐</span>×4 Chain<br>= Fever!</div>
     <div class="ss-tip"><span>⭐</span>Combos add<br>+3 seconds</div>
   </div>
+  <div class="quality-panel" aria-label="How this game works">
+    <div class="quality-card"><b>Goal</b><span>Reach Fever or score 1,500 before the 2:00 timer runs out.</span></div>
+    <div class="quality-card"><b>Skill</b><span>Pattern matching, combo planning, and fast decisions.</span></div>
+    <div class="quality-card"><b>Session</b><span>Under 5 min, touch and keyboard.</span></div>
+    <div class="quality-card"><b>Build next</b><span><a href="../tools/arcade-game-maker.html">Make your own puzzle in Game Maker</a></span></div>
+  </div>
 </div>
 
 <!-- GAME -->
@@ -155,6 +161,11 @@
   <div class="status-row">
     <div class="pill combo-pill" id="comboPill">🔥 2× Combo!</div>
     <div class="pill fever-pill" id="feverPill">⚡ FEVER!</div>
+  </div>
+
+  <div class="match-live" aria-label="Live mission">
+    <div class="match-mission"><b>Match Mission</b><span id="matchMission">Reach Fever or 1,500 before the timer ends.</span></div>
+    <div class="match-coach"><b>Combo Coach</b><span id="matchCoach">Match 4 for a bomb, 5 for a wild, and chain four in a row to trigger Fever.</span></div>
   </div>
 
   <!-- Board -->
@@ -218,7 +229,7 @@
         <div class="footer-brand">
             <div class="footer-logo">JVDesignStudio</div>
             <div class="footer-tagline">Coding &amp; Game Dev Workshops</div>
-            <p class="footer-blurb">Free coding and game development workshops for young creators. No install, no account - works on any school computer.</p>
+            <p class="footer-blurb">Free, guided coding and game development for young creators. Easy for families to start and practical for classrooms to use.</p>
         </div>
         <div class="footer-grid">
             <nav class="footer-col" aria-label="Explore">
@@ -443,6 +454,32 @@ function updHUD(){
   const pct=Math.max(0,timeLeft/DURATION*100);
   timerBar.style.width=pct+'%';
   timerBar.classList.toggle('low',timeLeft<=10);
+  updateMission();
+}
+
+// Live objective + coaching, refreshed on every HUD update.
+function updateMission(){
+  const mm=document.getElementById('matchMission'), cc=document.getElementById('matchCoach');
+  if(!mm || !cc) return;
+  const target=1500;
+  let m;
+  if(goOverlay.classList.contains('show')){
+    m = score>=target
+      ? 'Target reached with '+score.toLocaleString()+'. Play again to push your best.'
+      : 'Time up at '+score.toLocaleString()+'. Reach Fever or '+target.toLocaleString()+' next run.';
+  } else {
+    m = fever
+      ? 'Fever is running: every match is x2, keep the cascades alive.'
+      : 'Mission: reach Fever or '+target.toLocaleString()+' before the timer ends. '+score.toLocaleString()+' / '+target.toLocaleString()+'.';
+  }
+  let c;
+  if(fever) c='Fever is live, so bigger groups are worth more. Take the 4 and 5 matches.';
+  else if(chain>=2) c='Chain '+chain+' of '+FEVER_AT+'. '+(FEVER_AT-chain)+' more in a row triggers Fever.';
+  else if(timeLeft<=20) c='Under 20 seconds: take quick three-matches instead of setting up long chains.';
+  else if(score>=target) c='Target already reached. Cascades add +3 seconds, so keep matching to raise your best.';
+  else c='Match 4 for a bomb, 5 for a wild, and chain four in a row to trigger Fever.';
+  if(mm.textContent!==m) mm.textContent=m;
+  if(cc.textContent!==c) cc.textContent=c;
 }
 
 // Smooth score roll-up
@@ -894,6 +931,7 @@ function endGame(){
 
   if(isNew) confetti();
   goOverlay.classList.add('show');
+  updateMission();
 
   // Save to both leaderboards then refresh
   if(score>0){
@@ -949,7 +987,7 @@ $('btnStart').addEventListener('click',()=>{
 });
 $('btnAgain').addEventListener('click',init);
 $('sndBtn').addEventListener('click',()=>{soundOn=!soundOn;$('sndBtn').textContent=soundOn?'🔊':'🔇';});
-$('navToggle').addEventListener('click',()=>$('mobileNav').classList.toggle('open'));
+$('navToggle').addEventListener('click',()=>$('mainNav').classList.toggle('open'));
 $('howToHeader').addEventListener('click',()=>$('howTo').classList.toggle('open'));
 
 // -- Leaderboard ----------------------------------------

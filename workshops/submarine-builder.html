@@ -30,6 +30,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="jv-exporter.js"></script>
+<script src="builder-templates.js"></script>
 <link rel="preload" href="../style-workshop-submarine-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-workshop-submarine-builder.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -177,7 +179,6 @@
       <button class="quick-btn" onclick="openSaveModal()" style="background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03">💾 Save</button>
       <button class="quick-btn" onclick="openLoadModal()" style="background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006">📂 Load</button>
       <button class="quick-btn" onclick="downloadSub()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">⭐ OBJ</button>
-      <button class="quick-btn" onclick="exportGLB()" style="background:linear-gradient(135deg,#6366f1,#4338ca);box-shadow:0 3px 0 #3730a3">📦 GLB</button>
       <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
     </div>
   </header>
@@ -481,6 +482,8 @@ function buildSub() {
   if (subGroup) scene.remove(subGroup);
   bubbleParticles = [];
   subGroup = new THREE.Group();
+  subGroup.name = 'submarine';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
   subGroup.position.y = P.diveY;
 
   const bodyMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.primaryCol), roughness: 0.35, metalness: 0.55 });
@@ -501,16 +504,16 @@ function buildSub() {
     hull.rotation.z = Math.PI / 2;
     hull.position.set(0, baseY, 0);
     hull.castShadow = true;
-    subGroup.add(hull);
+    subGroup.add(part(hull, 'hull'));
     const endGeo = new THREE.SphereGeometry(hr, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
     const bowEnd = new THREE.Mesh(endGeo, bodyMat);
     bowEnd.rotation.x = Math.PI / 2;
     bowEnd.position.set(hl / 2, baseY, 0);
-    subGroup.add(bowEnd);
+    subGroup.add(part(bowEnd, 'hull_bow_cap'));
     const sternEnd = new THREE.Mesh(endGeo.clone(), bodyMat);
     sternEnd.rotation.x = -Math.PI / 2;
     sternEnd.position.set(-hl / 2, baseY, 0);
-    subGroup.add(sternEnd);
+    subGroup.add(part(sternEnd, 'hull_stern_cap'));
   } else if (P.hullStyle === 'teardrop') {
     const pts = [];
     const segs = 20;
@@ -533,23 +536,23 @@ function buildSub() {
     hull.rotation.x = Math.PI / 2;
     hull.position.set(0, baseY, 0);
     hull.castShadow = true;
-    subGroup.add(hull);
+    subGroup.add(part(hull, 'hull'));
   } else {
     const hullGeo = new THREE.BoxGeometry(hl, hr * 1.6, hr * 1.6);
     const hull = new THREE.Mesh(hullGeo, bodyMat);
     hull.position.set(0, baseY, 0);
     hull.castShadow = true;
-    subGroup.add(hull);
+    subGroup.add(part(hull, 'hull'));
     const bowGeo = new THREE.ConeGeometry(hr * 1.6 * 0.7, hr * 1.2, 4);
     const bow = new THREE.Mesh(bowGeo, bodyMat);
     bow.rotation.z = -Math.PI / 2;
     bow.position.set(hl / 2 + hr * 0.6, baseY, 0);
-    subGroup.add(bow);
+    subGroup.add(part(bow, 'hull_bow_cone'));
     const sternGeo = new THREE.ConeGeometry(hr * 1.6 * 0.7, hr * 0.8, 4);
     const stern = new THREE.Mesh(sternGeo, bodyMat);
     stern.rotation.z = Math.PI / 2;
     stern.position.set(-hl / 2 - hr * 0.4, baseY, 0);
-    subGroup.add(stern);
+    subGroup.add(part(stern, 'hull_stern_cone'));
   }
 
   // STRIPE
@@ -559,11 +562,11 @@ function buildSub() {
     const stripe = new THREE.Mesh(stripeGeo, stripeMat);
     stripe.rotation.y = Math.PI / 2;
     stripe.position.set(0, baseY, 0);
-    subGroup.add(stripe);
+    subGroup.add(part(stripe, 'hull_stripe_0'));
     const stripe2 = new THREE.Mesh(stripeGeo.clone(), stripeMat);
     stripe2.rotation.y = Math.PI / 2;
     stripe2.position.set(hl * 0.2, baseY, 0);
-    subGroup.add(stripe2);
+    subGroup.add(part(stripe2, 'hull_stripe_1'));
   }
 
   // CONNING TOWER
@@ -573,32 +576,32 @@ function buildSub() {
     const tower = new THREE.Mesh(towerGeo, bodyMat);
     tower.position.set(-hl * 0.05, baseY + hr + th / 2, 0);
     tower.castShadow = true;
-    subGroup.add(tower);
+    subGroup.add(part(tower, 'conning_tower'));
     const edgeGeo = new THREE.BoxGeometry(tw * 2.1, 0.06, tw * 1.3);
     const edge = new THREE.Mesh(edgeGeo, accentMat);
     edge.position.set(-hl * 0.05, baseY + hr + th, 0);
-    subGroup.add(edge);
+    subGroup.add(part(edge, 'conning_tower_edge'));
 
     if (P.periscope) {
       const scopeGeo = new THREE.CylinderGeometry(0.04, 0.04, th * 1.5, 8);
       const scope = new THREE.Mesh(scopeGeo, accentMat);
       scope.position.set(-hl * 0.05 + tw * 0.4, baseY + hr + th + th * 0.75, 0);
-      subGroup.add(scope);
+      subGroup.add(part(scope, 'periscope'));
       const headGeo = new THREE.BoxGeometry(0.08, 0.06, 0.12);
       const head = new THREE.Mesh(headGeo, darkMat);
       head.position.set(-hl * 0.05 + tw * 0.4, baseY + hr + th * 1.5 + 0.06, 0);
-      subGroup.add(head);
+      subGroup.add(part(head, 'periscope_head'));
     }
 
     if (P.antenna) {
       const antGeo = new THREE.CylinderGeometry(0.02, 0.015, th * 2, 6);
       const ant = new THREE.Mesh(antGeo, accentMat);
       ant.position.set(-hl * 0.05 - tw * 0.5, baseY + hr + th + th, 0);
-      subGroup.add(ant);
+      subGroup.add(part(ant, 'antenna'));
       const tipGeo = new THREE.SphereGeometry(0.04, 8, 8);
       const tip = new THREE.Mesh(tipGeo, lightMat);
       tip.position.set(-hl * 0.05 - tw * 0.5, baseY + hr + th * 2 + 0.02, 0);
-      subGroup.add(tip);
+      subGroup.add(part(tip, 'antenna_tip'));
     }
   }
 
@@ -607,7 +610,7 @@ function buildSub() {
     const domeGeo = new THREE.SphereGeometry(hr * 0.3, 16, 12);
     const dome = new THREE.Mesh(domeGeo, accentMat);
     dome.position.set(hl / 2 + hr * 0.15, baseY - hr * 0.15, 0);
-    subGroup.add(dome);
+    subGroup.add(part(dome, 'sonar_dome'));
   }
 
   // TORPEDO TUBES
@@ -621,12 +624,12 @@ function buildSub() {
         const yOff = t === 0 ? 0.12 : -0.12;
         tube.rotation.z = Math.PI / 2;
         tube.position.set(hl / 2 + 0.2, baseY + yOff, s * hr * 0.45);
-        subGroup.add(tube);
+        subGroup.add(part(tube, `torpedo_tube_${s>0?'starboard':'port'}_${t}`));
         const ringGeo = new THREE.TorusGeometry(0.09, 0.02, 8, 16);
         const ring = new THREE.Mesh(ringGeo, darkMat);
         ring.rotation.y = Math.PI / 2;
         ring.position.set(hl / 2 + 0.46, baseY + yOff, s * hr * 0.45);
-        subGroup.add(ring);
+        subGroup.add(part(ring, `torpedo_ring_${s>0?'starboard':'port'}_${t}`));
       }
     }
   }
@@ -635,19 +638,19 @@ function buildSub() {
   const finAngles = [];
   for (let i = 0; i < P.finCount; i++) finAngles.push((i / P.finCount) * Math.PI * 2);
   const fs = Math.max(0.2, P.finSize);
-  finAngles.forEach(function(angle) {
+  finAngles.forEach(function(angle, fi) {
     const finGroup = new THREE.Group();
     const finGeo = new THREE.BoxGeometry(hl * 0.2 * fs, 0.06, hr * 0.8 * fs);
     const fin = new THREE.Mesh(finGeo, bodyMat);
     fin.position.set(-hl * 0.38, baseY, 0);
     fin.castShadow = true;
-    finGroup.add(fin);
+    finGroup.add(part(fin, `fin_blade_${fi}`));
     const tipGeo = new THREE.BoxGeometry(hl * 0.08 * fs, 0.08, hr * 0.3 * fs);
     const tipMesh = new THREE.Mesh(tipGeo, accentMat);
     tipMesh.position.set(-hl * 0.38 - hl * 0.06 * fs, baseY, 0);
-    finGroup.add(tipMesh);
+    finGroup.add(part(tipMesh, `fin_tip_${fi}`));
     finGroup.rotation.y = angle;
-    subGroup.add(finGroup);
+    subGroup.add(part(finGroup, 'finGroup'));
   });
 
   // PROPELLER
@@ -657,22 +660,22 @@ function buildSub() {
     const hubGeo = new THREE.CylinderGeometry(pr * 0.25, pr * 0.25, 0.2, 10);
     const hub = new THREE.Mesh(hubGeo, darkMat);
     hub.rotation.z = Math.PI / 2;
-    propGroup.add(hub);
+    propGroup.add(part(hub, 'prop_hub'));
     for (let i = 0; i < P.propellerBlades; i++) {
       const a = (i / P.propellerBlades) * Math.PI * 2;
       const bladeGeo = new THREE.BoxGeometry(0.04, pr * 0.8, pr * 0.3);
       const blade = new THREE.Mesh(bladeGeo, accentMat);
       blade.position.set(0, Math.sin(a) * pr * 0.45, Math.cos(a) * pr * 0.45);
       blade.rotation.x = a;
-      propGroup.add(blade);
+      propGroup.add(part(blade, `prop_blade_${i}`));
     }
     const shaftGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6);
     const shaft = new THREE.Mesh(shaftGeo, darkMat);
     shaft.rotation.z = Math.PI / 2;
     shaft.position.set(-0.4, 0, 0);
-    propGroup.add(shaft);
+    propGroup.add(part(shaft, 'prop_shaft'));
     propGroup.position.set(-hl / 2 - 0.5, baseY, 0);
-    subGroup.add(propGroup);
+    subGroup.add(part(propGroup, 'propGroup'));
   }
 
   // PORTHOLES
@@ -688,12 +691,12 @@ function buildSub() {
       const rim = new THREE.Mesh(rimGeo, rimMat);
       rim.position.set(xPos, yPos, zPos);
       rim.lookAt(xPos, yPos, zPos * 5);
-      subGroup.add(rim);
+      subGroup.add(part(rim, `porthole_rim_${i}`));
       const glassGeo = new THREE.CircleGeometry(phR * 0.8, 16);
       const glass = new THREE.Mesh(glassGeo, glassMat);
       glass.position.set(xPos, yPos, zPos);
       glass.lookAt(xPos, yPos, zPos * 5);
-      subGroup.add(glass);
+      subGroup.add(part(glass, `porthole_glass_${i}`));
     }
     const sideCount = Math.min(phCount, 4);
     for (let i = 0; i < sideCount; i++) {
@@ -704,12 +707,12 @@ function buildSub() {
         const rim = new THREE.Mesh(rimGeo, rimMat);
         rim.position.set(xPos, baseY, zPos);
         rim.lookAt(xPos, baseY, zPos * 5);
-        subGroup.add(rim);
+        subGroup.add(part(rim, `porthole_side_rim_${i}_${side>0?'starboard':'port'}`));
         const glassGeo = new THREE.CircleGeometry(phR * 0.8, 16);
         const glass = new THREE.Mesh(glassGeo, glassMat);
         glass.position.set(xPos, baseY, zPos);
         glass.lookAt(xPos, baseY, zPos * 5);
-        subGroup.add(glass);
+        subGroup.add(part(glass, `porthole_side_glass_${i}_${side>0?'starboard':'port'}`));
       });
     }
   }
@@ -718,10 +721,10 @@ function buildSub() {
   const lightGeo = new THREE.SphereGeometry(0.12, 10, 10);
   const light1 = new THREE.Mesh(lightGeo, lightMat);
   light1.position.set(hl / 2 + 0.15, baseY + 0.3, 0);
-  subGroup.add(light1);
+  subGroup.add(part(light1, 'bow_light_upper'));
   const light2 = new THREE.Mesh(lightGeo.clone(), lightMat);
   light2.position.set(hl / 2 + 0.15, baseY - 0.3, 0);
-  subGroup.add(light2);
+  subGroup.add(part(light2, 'bow_light_lower'));
 
   scene.add(subGroup);
   updateSpecCard();
@@ -1392,6 +1395,55 @@ function init() {
 }
 
 init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const SUB_TEMPLATES = [
+  { id: 'abyss7', emoji: '🌊', name: 'Abyss-7', note: 'Teardrop hull and four fins  -  the quick-build.',
+    data: { subName: 'ABYSS-7', hullStyle: 'teardrop', hullLen: 10, hullRad: 1.1, primaryCol: '#1a3a5a', accentCol: '#0ea5e9', finCount: 4, portholeCount: 4, propellerBlades: 6 } },
+  { id: 'nautilus', emoji: '🐙', name: 'Nautilus', note: 'Classic cylinder with six portholes.',
+    data: { subName: 'Nautilus', hullStyle: 'cylinder', hullLen: 8, hullRad: 1.2, primaryCol: '#1a3a5a', accentCol: '#0ea5e9', finCount: 4, portholeCount: 6, propellerBlades: 4 } },
+  { id: 'stingray', emoji: '🦈', name: 'Stingray', note: 'Wide, flat hull and big fins.',
+    data: { subName: 'Stingray', hullStyle: 'cylinder', hullLen: 9, hullRad: 1.4, primaryCol: '#0f172a', accentCol: '#06b6d4', finCount: 2, finSize: 0.8, propellerBlades: 5 } },
+  { id: 'triton', emoji: '🔱', name: 'Triton', note: 'Long hull, no sonar dome  -  stealthy.',
+    data: { subName: 'Triton', hullStyle: 'teardrop', hullLen: 11, hullRad: 1.0, primaryCol: '#334155', accentCol: '#eab308', finCount: 4, sonarDome: false, periscope: true } },
+  { id: 'kraken', emoji: '🦑', name: 'Kraken', note: 'Dark hull, red accents and many torpedoes.',
+    data: { subName: 'Kraken', hullStyle: 'cylinder', hullLen: 9, hullRad: 1.3, primaryCol: '#1e1a40', accentCol: '#ef4444', finCount: 4, torpedoTubes: 4, stripeOn: true, stripeCol: '#ef4444' } },
+  { id: 'coral', emoji: '🪸', name: 'Coral', note: 'Bright teal and extra portholes  -  research sub.',
+    data: { subName: 'Coral', hullStyle: 'cylinder', hullLen: 8, hullRad: 1.1, primaryCol: '#0e7490', accentCol: '#fbbf24', finCount: 4, portholeCount: 8, conningTower: true } }
+];
+
+function loadSubTemplate(t) {
+  Object.assign(P, t.data);
+  if (typeof buildSub === 'function') buildSub(); if (typeof updateStats === 'function') updateStats();
+  if (typeof sout === 'function') sout('Template loaded: ' + t.data.subName);
+  if (typeof toast === 'function') toast('Template: ' + t.data.subName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: SUB_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadSubTemplate(t); } }; }),
+    random: randomSub,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Submarine Builder',
+    units: 'm',
+    accent: '#0ea5e9',
+    getGroup: function () { return subGroup; },
+    getName: function () { return P.subName || 'submarine'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script defer src="../cookie-consent.js"></script>
@@ -1418,7 +1470,7 @@ init();
         <div class="footer-brand">
             <div class="footer-logo">JVDesignStudio</div>
             <div class="footer-tagline">Coding &amp; Game Dev Workshops</div>
-            <p class="footer-blurb">Free coding and game development workshops for young creators. No install, no account - works on any school computer.</p>
+            <p class="footer-blurb">Free, guided coding and game development for young creators. Easy for families to start and practical for classrooms to use.</p>
         </div>
         <div class="footer-grid">
             <nav class="footer-col" aria-label="Explore">

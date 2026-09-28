@@ -11,13 +11,13 @@ const failures = [];
 const notes = [];
 function check(ok, file, msg){ if(!ok) failures.push(`${file}: ${msg}`); }
 
-// curated count gate - hub card count vs filesystem (updated A368: 4 experimental tools hidden, curated 43)
+// curated count gate - hub card count vs filesystem (A368 hid experimental tools; 6 offline-first stubs later noindexed, so curated is 37)
 try{
   const curated = JSON.parse(fs.readFileSync(CONTENT_TOOLS,'utf8'));
   const curatedCount = Array.isArray(curated) ? curated.length : 0;
-  check(curatedCount === 43, 'content/tools.json', `curated ${curatedCount} != 43 (hub live indexable)`);
-  check(files.length === 69, 'tools/*.html', `filesystem ${files.length} != 69 raw (43 indexable + 26 noindex)`);
-  if(curatedCount===43 && files.length===69) console.log(`  [PASS] tools count curated 43 vs raw 69`);
+  check(curatedCount === 37, 'content/tools.json', `curated ${curatedCount} != 37 (hub live indexable)`);
+  check(files.length === 69, 'tools/*.html', `filesystem ${files.length} != 69 raw (37 indexable + 32 noindex)`);
+  if(curatedCount===37 && files.length===69) console.log(`  [PASS] tools count curated 37 vs raw 69`);
   else console.log(`  [INFO] tools count curated ${curatedCount} vs raw ${files.length}`);
 }catch(e){ failures.push(`content/tools.json: ${e.message}`); }
 

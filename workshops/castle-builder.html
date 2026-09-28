@@ -29,6 +29,9 @@
 <link rel="preconnect" href="https://www.google-analytics.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="../assets/vendor/three/three.min.js"></script>
+<script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="jv-exporter.js"></script>
+<script src="builder-templates.js"></script>
 <link rel="preload" href="../style-workshop-castle-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-workshop-castle-builder.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -474,6 +477,8 @@ function hexToThree(hex) { return new THREE.Color(hex); }
 function buildCastle() {
   if (castleGroup) scene.remove(castleGroup);
   castleGroup = new THREE.Group();
+  castleGroup.name = 'castle';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
   torchLights = [];
 
   const wallMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.wallColor), roughness: 0.85, metalness: 0.05 });
@@ -501,18 +506,18 @@ function buildCastle() {
     const moatMesh = new THREE.Mesh(moatGeo, moatMat);
     moatMesh.rotation.x = Math.PI / 2;
     moatMesh.position.y = -0.3;
-    castleGroup.add(moatMesh);
+    castleGroup.add(part(moatMesh, 'moat'));
 
     /* Moat edge rings */
     const edgeMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a, roughness: 0.9 });
     const outerEdge = new THREE.Mesh(new THREE.TorusGeometry(moatR + moatW / 2 + 0.15, 0.15, 8, 48), edgeMat);
     outerEdge.rotation.x = Math.PI / 2;
     outerEdge.position.y = 0.05;
-    castleGroup.add(outerEdge);
+    castleGroup.add(part(outerEdge, 'moat_outer_lip'));
     const innerEdge = new THREE.Mesh(new THREE.TorusGeometry(moatR - moatW / 2 - 0.15, 0.15, 8, 48), edgeMat);
     innerEdge.rotation.x = Math.PI / 2;
     innerEdge.position.y = 0.05;
-    castleGroup.add(innerEdge);
+    castleGroup.add(part(innerEdge, 'moat_inner_lip'));
   }
 
   /* ---- DRAWBRIDGE ---- */
@@ -522,7 +527,7 @@ function buildCastle() {
     bridge.position.set(0, 0.05, -halfSize - P.moatWidth / 2 - wt / 2);
     bridge.castShadow = true;
     bridge.receiveShadow = true;
-    castleGroup.add(bridge);
+    castleGroup.add(part(bridge, 'drawbridge'));
 
     /* Chain cables */
     const chainMat = ironMat;
@@ -531,7 +536,7 @@ function buildCastle() {
       const chain = new THREE.Mesh(chainGeo, chainMat);
       chain.position.set(side * (P.gateWidth / 2 + 0.3), wh * 0.6, -halfSize - P.moatWidth / 2);
       chain.rotation.x = Math.PI * 0.12;
-      castleGroup.add(chain);
+      castleGroup.add(part(chain, side === -1 ? 'drawbridge_chain_left' : 'drawbridge_chain_right'));
     }
   }
 
@@ -544,13 +549,13 @@ function buildCastle() {
     { rx: 0, rz: Math.PI / 2, pos: [halfSize, wh / 2 + baseY, 0] },
   ];
 
-  wallData.forEach(function(w) {
+  wallData.forEach(function(w, wi) {
     const wallGeo = new THREE.BoxGeometry(wallLength, wh, wt);
     const wall = new THREE.Mesh(wallGeo, wallMat);
     wall.position.set(w.pos[0], w.pos[1], w.pos[2]);
     wall.castShadow = true;
     wall.receiveShadow = true;
-    castleGroup.add(wall);
+    castleGroup.add(part(wall, 'wall_' + ['north','south','west','east'][wi]));
   });
 
   /* Wall stone detail strips */
@@ -559,16 +564,16 @@ function buildCastle() {
     const stripGeo = new THREE.BoxGeometry(wallLength + 0.05, 0.12, wt + 0.05);
     const strip = new THREE.Mesh(stripGeo, stoneMat);
     strip.position.set(0, stripY + baseY, -halfSize);
-    castleGroup.add(strip);
+    castleGroup.add(part(strip, 'wall_stone_course_front_' + i));
     const strip2 = new THREE.Mesh(stripGeo.clone(), stoneMat);
     strip2.position.set(0, stripY + baseY, halfSize);
-    castleGroup.add(strip2);
+    castleGroup.add(part(strip2, 'wall_stone_course_back_' + i));
     const strip3 = new THREE.Mesh(new THREE.BoxGeometry(wt + 0.05, 0.12, wallLength + 0.05), stoneMat);
     strip3.position.set(-halfSize, stripY + baseY, 0);
-    castleGroup.add(strip3);
+    castleGroup.add(part(strip3, 'wall_stone_course_left_' + i));
     const strip4 = new THREE.Mesh(new THREE.BoxGeometry(wt + 0.05, 0.12, wallLength + 0.05), stoneMat);
     strip4.position.set(halfSize, stripY + baseY, 0);
-    castleGroup.add(strip4);
+    castleGroup.add(part(strip4, 'wall_stone_course_right_' + i));
   }
 
   /* ---- BATTLEMENTS ---- */
@@ -581,7 +586,7 @@ function buildCastle() {
     { axis: 'x', pos: [halfSize, wh + baseY, -halfSize], dir: [1, 0, 0], length: wallLength },
   ];
 
-  wallPositions.forEach(function(wp) {
+  wallPositions.forEach(function(wp, wpi) {
     const bc = Math.floor(wp.length / (bSize * 2.5));
     for (let i = 0; i < bc; i++) {
       if (i % 2 === 0) {
@@ -594,7 +599,7 @@ function buildCastle() {
           bMesh.position.set(wp.pos[0], wp.pos[1] + bSize * 0.75, wp.pos[2] + t + bSize);
         }
         bMesh.castShadow = true;
-        castleGroup.add(bMesh);
+        castleGroup.add(part(bMesh, 'battlement_' + wpi + '_' + i));
       }
     }
   });
@@ -628,7 +633,7 @@ function buildCastle() {
       tower.position.set(tx, tH / 2 + baseY, tz);
       tower.castShadow = true;
       tower.receiveShadow = true;
-      castleGroup.add(tower);
+      castleGroup.add(part(tower, 'tower_' + i + '_shaft'));
 
       /* Conical roof */
       const roofGeo = new THREE.ConeGeometry(tR * 1.3, tH * 0.3, 16);
@@ -636,7 +641,7 @@ function buildCastle() {
       const roof = new THREE.Mesh(roofGeo, roofMat);
       roof.position.set(tx, tH + tH * 0.15 + baseY, tz);
       roof.castShadow = true;
-      castleGroup.add(roof);
+      castleGroup.add(part(roof, 'tower_' + i + '_roof'));
 
       /* Tower stone bands */
       for (let b = 0; b < 3; b++) {
@@ -644,7 +649,7 @@ function buildCastle() {
         const band = new THREE.Mesh(bandGeo, stoneMat);
         band.rotation.x = Math.PI / 2;
         band.position.set(tx, tH * (0.2 + b * 0.3) + baseY, tz);
-        castleGroup.add(band);
+        castleGroup.add(part(band, 'tower_' + i + '_stone_band_' + b));
       }
     } else {
       /* Square tower */
@@ -653,7 +658,7 @@ function buildCastle() {
       tower.position.set(tx, tH / 2 + baseY, tz);
       tower.castShadow = true;
       tower.receiveShadow = true;
-      castleGroup.add(tower);
+      castleGroup.add(part(tower, 'tower_' + i + '_shaft'));
 
       /* Crenellations on square tower */
       for (let c = 0; c < 4; c++) {
@@ -669,7 +674,7 @@ function buildCastle() {
               cMesh.position.set(tx + offset, tH + bSize * 0.6 + baseY, tz + (c === 1 ? -tR : tR));
             }
             cMesh.castShadow = true;
-            castleGroup.add(cMesh);
+            castleGroup.add(part(cMesh, 'tower_' + i + '_crenel_' + c + '_' + j));
           }
         }
       }
@@ -678,7 +683,7 @@ function buildCastle() {
       const capGeo = new THREE.BoxGeometry(tR * 2 + 0.2, 0.15, tR * 2 + 0.2);
       const cap = new THREE.Mesh(capGeo, stoneMat);
       cap.position.set(tx, tH + baseY, tz);
-      castleGroup.add(cap);
+      castleGroup.add(part(cap, 'tower_' + i + '_roof'));
     }
 
     /* Tower windows */
@@ -693,7 +698,7 @@ function buildCastle() {
         const win = new THREE.Mesh(winGeo, glassMat);
         win.position.set(winX, tH * 0.5 + baseY, winZ);
         win.lookAt(winX * 2, tH * 0.5 + baseY, winZ * 2);
-        castleGroup.add(win);
+        castleGroup.add(part(win, 'tower_' + i + '_window_' + w));
       }
     }
   }
@@ -709,36 +714,36 @@ function buildCastle() {
     const pillarL = new THREE.Mesh(pillarGeo, darkStone);
     pillarL.position.set(-gateW / 2, gateH / 2 + gateY, -halfSize);
     pillarL.castShadow = true;
-    castleGroup.add(pillarL);
+    castleGroup.add(part(pillarL, 'gate_pillar_left'));
     const pillarR = new THREE.Mesh(pillarGeo.clone(), darkStone);
     pillarR.position.set(gateW / 2, gateH / 2 + gateY, -halfSize);
     pillarR.castShadow = true;
-    castleGroup.add(pillarR);
+    castleGroup.add(part(pillarR, 'gate_pillar_right'));
 
     /* Arch top - half torus */
     const archGeo = new THREE.TorusGeometry(gateW / 2, 0.2, 8, 16, Math.PI);
     const arch = new THREE.Mesh(archGeo, darkStone);
     arch.position.set(0, gateH + gateY, -halfSize);
     arch.rotation.z = Math.PI;
-    castleGroup.add(arch);
+    castleGroup.add(part(arch, 'gate_arch'));
 
     /* Dark interior */
     const interiorGeo = new THREE.PlaneGeometry(gateW - 0.2, gateH - 0.2);
     const interiorMat = new THREE.MeshStandardMaterial({ color: 0x0a0806, roughness: 1 });
     const interior = new THREE.Mesh(interiorGeo, interiorMat);
     interior.position.set(0, gateH / 2 + gateY + 0.1, -halfSize + 0.01);
-    castleGroup.add(interior);
+    castleGroup.add(part(interior, 'gate_interior'));
   } else if (P.gateStyle === 'double') {
     /* Double doors */
     const doorGeo = new THREE.BoxGeometry(gateW / 2 - 0.1, gateH, 0.15);
     const doorL = new THREE.Mesh(doorGeo, woodMat);
     doorL.position.set(-gateW / 4 - 0.05, gateH / 2 + gateY, -halfSize);
     doorL.castShadow = true;
-    castleGroup.add(doorL);
+    castleGroup.add(part(doorL, 'gate_door_left'));
     const doorR = new THREE.Mesh(doorGeo.clone(), woodMat);
     doorR.position.set(gateW / 4 + 0.05, gateH / 2 + gateY, -halfSize);
     doorR.castShadow = true;
-    castleGroup.add(doorR);
+    castleGroup.add(part(doorR, 'gate_door_right'));
 
     /* Iron bands */
     for (let d = 0; d < 3; d++) {
@@ -746,7 +751,7 @@ function buildCastle() {
       const bandGeo = new THREE.BoxGeometry(gateW + 0.1, 0.08, 0.17);
       const band = new THREE.Mesh(bandGeo, ironMat);
       band.position.set(0, bandY + gateY, -halfSize);
-      castleGroup.add(band);
+      castleGroup.add(part(band, 'gate_iron_band_' + d));
     }
 
     /* Door ring handles */
@@ -754,7 +759,7 @@ function buildCastle() {
       const ringGeo = new THREE.TorusGeometry(0.12, 0.02, 6, 12);
       const ring = new THREE.Mesh(ringGeo, ironMat);
       ring.position.set(side * (gateW / 4 + 0.05), gateH * 0.45 + gateY, -halfSize - 0.1);
-      castleGroup.add(ring);
+      castleGroup.add(part(ring, side === -1 ? 'gate_door_ring_left' : 'gate_door_ring_right'));
     }
   } else {
     /* Portcullis */
@@ -762,7 +767,7 @@ function buildCastle() {
     const frame = new THREE.Mesh(frameGeo, ironMat);
     frame.position.set(0, gateH / 2 + gateY, -halfSize);
     frame.castShadow = true;
-    castleGroup.add(frame);
+    castleGroup.add(part(frame, 'gate_portcullis_frame'));
 
     /* Grid bars */
     const barCount = Math.floor(gateW / 0.3);
@@ -770,7 +775,7 @@ function buildCastle() {
       const barGeo = new THREE.CylinderGeometry(0.03, 0.03, gateH, 6);
       const bar = new THREE.Mesh(barGeo, ironMat);
       bar.position.set(-gateW / 2 + 0.15 + b * (gateW / barCount), gateH / 2 + gateY, -halfSize - 0.08);
-      castleGroup.add(bar);
+      castleGroup.add(part(bar, 'gate_portcullis_bar_' + b));
     }
     /* Horizontal bars */
     const hBarCount = Math.floor(gateH / 0.4);
@@ -779,7 +784,7 @@ function buildCastle() {
       const hBar = new THREE.Mesh(hBarGeo, ironMat);
       hBar.rotation.z = Math.PI / 2;
       hBar.position.set(0, gateH * (0.15 + h * (1 / hBarCount)) + gateY, -halfSize - 0.08);
-      castleGroup.add(hBar);
+      castleGroup.add(part(hBar, 'gate_portcullis_crossbar_' + h));
     }
 
     /* Dark interior */
@@ -787,14 +792,14 @@ function buildCastle() {
     const interiorMat = new THREE.MeshStandardMaterial({ color: 0x0a0806, roughness: 1 });
     const interior = new THREE.Mesh(interiorGeo, interiorMat);
     interior.position.set(0, gateH / 2 + gateY + 0.1, -halfSize + 0.02);
-    castleGroup.add(interior);
+    castleGroup.add(part(interior, 'gate_interior'));
   }
 
   /* Gate arch top (for all styles) */
   const archTopGeo = new THREE.BoxGeometry(gateW + 0.6, 0.35, wt + 0.2);
   const archTop = new THREE.Mesh(archTopGeo, darkStone);
   archTop.position.set(0, gateH + 0.15 + gateY, -halfSize);
-  castleGroup.add(archTop);
+  castleGroup.add(part(archTop, 'gate_arch_top'));
 
   /* ---- KEEP ---- */
   const kH = P.keepHeight;
@@ -804,7 +809,7 @@ function buildCastle() {
   keep.position.set(0, kH / 2 + baseY, 0);
   keep.castShadow = true;
   keep.receiveShadow = true;
-  castleGroup.add(keep);
+  castleGroup.add(part(keep, 'keep'));
 
   /* Keep roof */
   const keepRoofGeo = new THREE.ConeGeometry(kW * 0.75, kH * 0.2, 4);
@@ -813,7 +818,7 @@ function buildCastle() {
   keepRoof.position.set(0, kH + kH * 0.1 + baseY, 0);
   keepRoof.rotation.y = Math.PI / 4;
   keepRoof.castShadow = true;
-  castleGroup.add(keepRoof);
+  castleGroup.add(part(keepRoof, 'keep_roof'));
 
   /* Keep crenellations */
   for (let c = 0; c < 4; c++) {
@@ -830,7 +835,7 @@ function buildCastle() {
           cMesh.position.set(offset, kH + bSize * 0.75 + baseY, (c === 1 ? -kW / 2 : kW / 2));
         }
         cMesh.castShadow = true;
-        castleGroup.add(cMesh);
+        castleGroup.add(part(cMesh, 'keep_crenel_' + c + '_' + j));
       }
     }
   }
@@ -841,7 +846,7 @@ function buildCastle() {
     const dGeo = new THREE.BoxGeometry(kW + 0.1, 0.12, kW + 0.1);
     const dMesh = new THREE.Mesh(dGeo, stoneMat);
     dMesh.position.set(0, dY + baseY, 0);
-    castleGroup.add(dMesh);
+    castleGroup.add(part(dMesh, 'keep_stone_band_' + d));
   }
 
   /* Keep windows */
@@ -854,7 +859,7 @@ function buildCastle() {
     const wMesh = new THREE.Mesh(wGeo, glassMat);
     wMesh.position.set(wX, kH * 0.55 + baseY, wZ);
     wMesh.lookAt(wX * 3, kH * 0.55 + baseY, wZ * 3);
-    castleGroup.add(wMesh);
+    castleGroup.add(part(wMesh, 'keep_window_' + w));
   }
 
   /* ---- COURTYARD ---- */
@@ -864,7 +869,7 @@ function buildCastle() {
     const court = new THREE.Mesh(courtGeo, courtMat);
     court.position.set(0, 0.04, 0);
     court.receiveShadow = true;
-    castleGroup.add(court);
+    castleGroup.add(part(court, 'courtyard'));
   }
 
   /* ---- WINDOWS (wall windows) ---- */
@@ -882,7 +887,7 @@ function buildCastle() {
     else { wx = halfSize + 0.01; wz = -2 + (w % 2) * 4; rotY = -Math.PI / 2; }
     winMesh.position.set(wx, wy, wz);
     winMesh.rotation.y = rotY;
-    castleGroup.add(winMesh);
+    castleGroup.add(part(winMesh, 'wall_window_' + w));
   }
 
   /* ---- BANNERS ---- */
@@ -909,20 +914,20 @@ function buildCastle() {
       const poleGeo = new THREE.CylinderGeometry(0.03, 0.03, 2, 6);
       const pole = new THREE.Mesh(poleGeo, poleMat);
       pole.position.set(bp[0], bp[1] + 1, bp[2]);
-      castleGroup.add(pole);
+      castleGroup.add(part(pole, 'banner_pole_' + i));
 
       /* Flag */
       const flagGeo = new THREE.PlaneGeometry(0.8, 0.5);
       const flag = new THREE.Mesh(flagGeo, bannerMat);
       flag.position.set(bp[0] + 0.45, bp[1] + 1.5, bp[2]);
       flag.rotation.y = Math.PI / 2;
-      castleGroup.add(flag);
+      castleGroup.add(part(flag, 'banner_flag_' + i));
 
       /* Small ball on top */
       const ballGeo = new THREE.SphereGeometry(0.06, 8, 8);
       const ball = new THREE.Mesh(ballGeo, ironMat);
       ball.position.set(bp[0], bp[1] + 2, bp[2]);
-      castleGroup.add(ball);
+      castleGroup.add(part(ball, 'banner_finial_' + i));
     }
   }
 
@@ -951,13 +956,13 @@ function buildCastle() {
       const bracketGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
       const bracket = new THREE.Mesh(bracketGeo, torchMat);
       bracket.position.set(tp[0], tp[1], tp[2]);
-      castleGroup.add(bracket);
+      castleGroup.add(part(bracket, 'torch_bracket_' + i));
 
       /* Torch stick */
       const stickGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5, 6);
       const stick = new THREE.Mesh(stickGeo, torchMat);
       stick.position.set(tp[0], tp[1] + 0.35, tp[2]);
-      castleGroup.add(stick);
+      castleGroup.add(part(stick, 'torch_stick_' + i));
 
       /* Fire ball (glowing when lit) */
       const fireGeo = new THREE.SphereGeometry(0.12, 8, 8);
@@ -965,7 +970,7 @@ function buildCastle() {
       fireClone.opacity = 0;
       const fire = new THREE.Mesh(fireGeo, fireClone);
       fire.position.set(tp[0], tp[1] + 0.65, tp[2]);
-      castleGroup.add(fire);
+      castleGroup.add(part(fire, 'torch_flame_' + i));
 
       /* Point light (off by default) */
       const light = new THREE.PointLight(0xff8833, 0, 6);
@@ -1730,6 +1735,56 @@ function init() {
 }
 
 init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const CASTLE_TEMPLATES = [
+  { id: 'stormreach', emoji: '🏰', name: 'Stormreach', note: 'Tall, moated and ready for a siege  -  the quick-build classic.',
+    data: { castleName: 'Stormreach', wallHeight: 6, wallThickness: 1.0, wallColor: '#6b5a40', stoneColor: '#8b7355', towerCount: 6, towerHeight: 10, towerRadius: 1.2, towerStyle: 'round', gateStyle: 'portcullis', gateWidth: 2.5, battlementSize: 0.5, keepHeight: 12, keepWidth: 4.5, moat: true, moatWidth: 3, drawbridge: true, bannerColor: '#8b1a1a', flagCount: 6, windowCount: 12, torchCount: 12, courtyard: true } },
+  { id: 'ironhold', emoji: '🛡️', name: 'Ironhold', note: 'Square towers, arch gate, no frills  -  easy to remix.',
+    data: { castleName: 'Ironhold', wallHeight: 5, wallThickness: 0.8, wallColor: '#6b5a40', stoneColor: '#8b7355', towerCount: 4, towerHeight: 8, towerRadius: 1.2, towerStyle: 'square', gateStyle: 'arch', gateWidth: 2, battlementSize: 0.4, keepHeight: 10, keepWidth: 4, moat: true, moatWidth: 3, drawbridge: true, bannerColor: '#8b1a1a', flagCount: 4, windowCount: 8, torchCount: 8, courtyard: true } },
+  { id: 'frostspire', emoji: '❄️', name: 'Frostspire', note: 'Pale stone, blue banners and tall round towers.',
+    data: { castleName: 'Frostspire', wallHeight: 5.5, wallThickness: 0.9, wallColor: '#a09080', stoneColor: '#c0b090', towerCount: 4, towerHeight: 9, towerRadius: 1.3, towerStyle: 'round', gateStyle: 'arch', gateWidth: 2.2, battlementSize: 0.45, keepHeight: 11, keepWidth: 4.2, moat: true, moatWidth: 2.5, drawbridge: false, bannerColor: '#1a3a6b', flagCount: 4, windowCount: 10, torchCount: 6, courtyard: true } },
+  { id: 'emberhold', emoji: '🔥', name: 'Emberhold', note: 'Warm red stone and double doors  -  great for banner practice.',
+    data: { castleName: 'Emberhold', wallHeight: 4.5, wallThickness: 0.7, wallColor: '#7a6a50', stoneColor: '#9a8a70', towerCount: 4, towerHeight: 7, towerRadius: 1.1, towerStyle: 'square', gateStyle: 'double', gateWidth: 2.4, battlementSize: 0.4, keepHeight: 9, keepWidth: 3.8, moat: false, moatWidth: 3, drawbridge: false, bannerColor: '#c9a84c', flagCount: 5, windowCount: 8, torchCount: 10, courtyard: true } },
+  { id: 'ravenkeep', emoji: '🦅', name: 'Ravenkeep', note: 'Dark slate walls, high keep and a dry moat.',
+    data: { castleName: 'Ravenkeep', wallHeight: 6, wallThickness: 1.0, wallColor: '#4a4a50', stoneColor: '#3a3020', towerCount: 6, towerHeight: 11, towerRadius: 1.2, towerStyle: 'square', gateStyle: 'portcullis', gateWidth: 2, battlementSize: 0.5, keepHeight: 13, keepWidth: 4.8, moat: false, moatWidth: 3, drawbridge: false, bannerColor: '#4a1a5a', flagCount: 6, windowCount: 6, torchCount: 12, courtyard: false } },
+  { id: 'sunspire', emoji: '☀️', name: 'Sunspire', note: 'Sandy stone, green banners and a cosy courtyard.',
+    data: { castleName: 'Sunspire', wallHeight: 4, wallThickness: 0.6, wallColor: '#c0b090', stoneColor: '#a09080', towerCount: 4, towerHeight: 6, towerRadius: 1.0, towerStyle: 'round', gateStyle: 'arch', gateWidth: 2.2, battlementSize: 0.35, keepHeight: 8, keepWidth: 3.5, moat: true, moatWidth: 2, drawbridge: true, bannerColor: '#2a5a2a', flagCount: 3, windowCount: 12, torchCount: 4, courtyard: true } }
+];
+
+function loadCastleTemplate(t) {
+  Object.assign(P, t.data);
+  torchesLit = false;
+  buildCastle(); updateStats(); updateSpecCard(); syncRightBar();
+  sout('Template loaded: ' + t.data.castleName + '. Change anything, then export.');
+  toast('Template: ' + t.data.castleName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: CASTLE_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadCastleTemplate(t); } }; }),
+    random: randomCastle,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Castle Builder',
+    units: 'm',
+    accent: '#c9a84c',
+    getGroup: function () { return castleGroup; },
+    getName: function () { return P.castleName || 'castle'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script defer src="../cookie-consent.js"></script>
@@ -1757,7 +1812,7 @@ init();
         <div class="footer-brand">
             <div class="footer-logo">JVDesignStudio</div>
             <div class="footer-tagline">Coding &amp; Game Dev Workshops</div>
-            <p class="footer-blurb">Free coding and game development workshops for young creators. No install, no account - works on any school computer.</p>
+            <p class="footer-blurb">Free, guided coding and game development for young creators. Easy for families to start and practical for classrooms to use.</p>
         </div>
         <div class="footer-grid">
             <nav class="footer-col" aria-label="Explore">

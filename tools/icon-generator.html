@@ -222,6 +222,7 @@
 <div id="toast"></div>
 </main>
 
+<script src="../hidpi-canvas.js"></script>
 <script>
 function id(x){return document.getElementById(x);}
 
@@ -461,8 +462,11 @@ skull(ctx,S,f,A){
 /* -- render pipeline -- */
 const STARS=[[0.13,0.10],[0.83,0.15],[0.08,0.72],[0.89,0.70],[0.20,0.86],[0.78,0.88],[0.91,0.38],[0.06,0.40],[0.50,0.08]];
 
-function drawIcon(canvas,st){
-  const ctx=canvas.getContext('2d'),S=canvas.width;
+function drawIcon(canvas,st,ratio){
+  ratio=ratio||1;
+  const ctx=canvas.getContext('2d');
+  const S=canvas.width/ratio;
+  if(ctx.setTransform)ctx.setTransform(ratio,0,0,ratio,0,0);
   ctx.clearRect(0,0,S,S);
 
   const R=st.corner==='rounded'?S*0.18:st.corner==='soft'?S*0.09:0;
@@ -497,7 +501,14 @@ function drawIcon(canvas,st){
 }
 
 function render(){
-  ['cvMain','cvMid','cvMini'].forEach(c=>drawIcon(id(c),state));
+  [['cvMain',512],['cvMid',192],['cvMini',48]].forEach(([cid,size])=>{
+    const cv=id(cid); if(!cv) return;
+    const d=window.HiDPI?HiDPI.dpr():1;
+    if(cv.width!==Math.round(size*d)){
+      if(window.HiDPI) HiDPI.fit(cv,size,size); else {cv.width=size;cv.height=size;}
+    }
+    drawIcon(cv,state,d);
+  });
 }
 
 /* -- UI builders -- */

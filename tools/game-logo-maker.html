@@ -247,12 +247,6 @@
 {"@type":"Question","name":"Can I use my logo commercially?","acceptedAnswer":{"@type":"Answer","text":"Yes. Logos you create are yours to use on store pages, thumbnails, trailers and merch."}},
 {"@type":"Question","name":"What sizes can I export?","acceptedAnswer":{"@type":"Answer","text":"PNG exports at 800x280, 512x512, 1280x640 and 630x500, with or without a transparent background."}},
 {"@type":"Question","name":"Is my artwork uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. Everything is rendered and stored locally in your browser."}}]}
-
-{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
-{"@type":"Question","name":"Is the Game Logo Maker really free?","acceptedAnswer":{"@type":"Answer","text":"Yes - every style, font and effect is free, with no account required."}},
-{"@type":"Question","name":"Can I use my logo commercially?","acceptedAnswer":{"@type":"Answer","text":"Yes. Logos you create are yours to use on store pages, thumbnails, trailers and merch."}},
-{"@type":"Question","name":"What sizes can I export?","acceptedAnswer":{"@type":"Answer","text":"PNG exports at 800x280, 512x512, 1280x640 and 630x500, with or without a transparent background."}},
-{"@type":"Question","name":"Is my artwork uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. Everything is rendered and stored locally in your browser."}}]}
 </script>
 
 
@@ -277,6 +271,7 @@
 
 <div id="toast"></div>
 
+<script src="../hidpi-canvas.js"></script>
 <script>
 function id(x){return document.getElementById(x);}
 
@@ -461,12 +456,14 @@ function buildFxGrid(){
 // -- RENDER --
 const canvas=id('logo-canvas');
 const ctx=canvas.getContext('2d');
+if(window.HiDPI) HiDPI.fit(canvas,CW,CH,ctx);
 
 let flickerOffset=0;
 setInterval(()=>{if(activeEffects.has('flicker')){flickerOffset=Math.random()>.85?Math.random()*4-2:0;render();}},100);
 
 function setCanvasSize(w,h){
-  CW=w;CH=h;canvas.width=w;canvas.height=h;
+  CW=w;CH=h;
+  if(window.HiDPI) HiDPI.fit(canvas,w,h,ctx); else {canvas.width=w;canvas.height=h;}
   id('canvasLabel').textContent=`${w} × ${h} px`;
   document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('on'));
   const key=`sz-${w}`;const el=id(key);if(el) el.classList.add('on');
@@ -657,18 +654,18 @@ const SAVE_KEY='jvds_gamelogo_saved',AUTO_KEY='jvds_gamelogo_auto';
 
 function exportPNG(transparent){
   const base=(id('titleText').value||'game').replace(/\s+/g,'_').toLowerCase();
-  if(!transparent){
-    canvas.toBlob(b=>dl(b,`logo_${base}.png`),'image/png');
-    return;
-  }
+  // Always render the export to its own logical-size canvas so the HiDPI
+  // preview backing store never changes the downloaded resolution.
   const tmp=document.createElement('canvas');tmp.width=CW;tmp.height=CH;
-  paint(tmp.getContext('2d'),CW,CH,true);
-  tmp.toBlob(b=>dl(b,`logo_${base}_transparent.png`),'image/png');
+  paint(tmp.getContext('2d'),CW,CH,!!transparent);
+  tmp.toBlob(b=>dl(b,`logo_${base}${transparent?'_transparent':''}.png`),'image/png');
 }
 
 async function copyPNG(){
   try{
-    const blob=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('blob failed')),'image/png'));
+    const copy=document.createElement('canvas');copy.width=CW;copy.height=CH;
+    paint(copy.getContext('2d'),CW,CH,false);
+    const blob=await new Promise((res,rej)=>copy.toBlob(b=>b?res(b):rej(new Error('blob failed')),'image/png'));
     await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
     toast('Copied to clipboard!');
   }catch(e){toast('Clipboard blocked - use Download instead');}

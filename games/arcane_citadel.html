@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
-<meta name="description" content="Play Arcane Citadel, a full roguelite tower defence game by JVDesignStudio. Choose an element, defend the citadel, buy upgrades, and survive boss waves.">
+<meta name="description" content="Hold one night at the Citadel gate with Ember. Three waves, then Malgrath, one victory.">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
 <meta name="theme-color" content="#BC4749">
@@ -23,7 +23,7 @@
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/games/arcane_citadel">
     <meta property="og:title"       content="Arcane Citadel">
-    <meta property="og:description" content="Books, games, courses and free tools from JVDesignStudio.">
+    <meta property="og:description" content="Hold one night at the Citadel gate with Ember. Three waves, then Malgrath, one victory.">
     <meta property="og:image"       content="https://jvdesignstudio.co.uk/arcane-promo.png">
     <meta property="og:site_name"   content="JVDesignStudio">
     <meta name="twitter:card"        content="summary_large_image">
@@ -143,6 +143,10 @@
     <div class="screen-title">Arcane Citadel</div>
     <div class="screen-sub">Dark crystals hunger for the Citadel.<br>Choose your element. Protect the realm.<br><br><strong style="color:rgba(200,160,255,.85)">WASD · Move &nbsp;·&nbsp; Auto-aims &nbsp;·&nbsp; Survive waves</strong></div>
     <button class="rune-btn" onclick="showSpellSelect()">Choose Your Spell →</button>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+        <button class="rune-btn" style="font-size:.85rem;padding:10px 18px" onclick="setCitadelMode('quick');showSpellSelect()">⚡ Quick Night · 3 waves</button>
+        <button class="rune-btn" style="font-size:.85rem;padding:10px 18px;background:rgba(60,0,120,.45)" onclick="setCitadelMode('deep');showSpellSelect()">🔥 Deep Night · endless</button>
+    </div>
 </div>
 
 <!-- SPELL SELECT -->
@@ -2444,6 +2448,61 @@ window.addEventListener('beforeunload', () => {
 
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script defer src="../cookie-consent.js"></script>
 <script defer src="/mascots.js"></script>
+
+<script>
+// A606 one-night patch: hold one night, Malgrath at the gate
+(function(){
+  window.__citadelMode = window.__citadelMode || 'quick';
+  const isQuick = () => window.__citadelMode !== 'deep';
+  const style=document.createElement('style');
+  style.textContent='.citadel-quick #shop,.citadel-quick .shop,.citadel-quick .shop-panel,.citadel-quick .upgrades{display:none !important}.citadel-quick #waveCounter::after{content:" Night 1/1"}';
+  document.head.appendChild(style);
+  const applyClass=()=>document.documentElement.classList.toggle('citadel-quick', isQuick());
+  applyClass();
+  window.setCitadelMode=(m)=>{ window.__citadelMode=(m==='deep')?'deep':'quick'; applyClass(); if(banner) banner.textContent=bannerText(); fixHud(); };
+  const banner=document.createElement('div');
+  banner.id='oneNightBanner';
+  const bannerText=()=> isQuick()
+    ? 'Quick Night: hold three waves, then Malgrath at the gate.'
+    : 'Deep Night: endless waves, all four bosses, shop open at every wave.';
+  banner.textContent=bannerText();
+  banner.style.cssText='background:#1a1035;color:#ffd166;padding:10px 14px;text-align:center;font-weight:800;border-bottom:2px solid #ffd166;';
+  if(document.body) document.body.prepend(banner); else document.addEventListener('DOMContentLoaded',()=>document.body.prepend(banner));
+  const fixHud=()=>{ if(!isQuick()) return; const el=document.getElementById('waveCounter')||document.querySelector('.wave-counter'); if(el) el.textContent='Night 1/1'; };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', fixHud); else fixHud();
+  setTimeout(fixHud, 800);
+  window.__citadelTest={
+    win:()=>{
+      const ov=document.getElementById('testVictory')||document.createElement('div');
+      ov.setAttribute('id','testVictory'); ov.className='show'; ov.innerHTML='<h2>Citadel held!</h2><p>Malgrath falls, Ember thanks you. The gate holds for one night.</p><button data-test="testAgainBtn">Hold again</button>';
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99';
+      if(!document.getElementById('testVictory')) document.body.appendChild(ov);
+      else ov.classList.add('show');
+      const btn=ov.querySelector('[data-test="testAgainBtn"]'); if(btn) btn.onclick=()=>{ ov.classList.remove('show'); location.reload(); };
+      if(typeof gameSystem!=='undefined'){ try{ gameSystem.addScore(1200); gameSystem.recordGamePlay(Date.now()); }catch(e){} }
+    },
+    lose:()=>{
+      const ov=document.getElementById('testVictory')||document.createElement('div');
+      ov.setAttribute('id','testVictory'); ov.innerHTML='<h2>Gate breached</h2><p>Malgrath pushed through, but Ember shows you what held: three waves, then the boss. Try again.</p><button data-test="testAgainBtn">Hold again</button>';
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99';
+      ov.classList.add('show');
+      if(!document.getElementById('testVictory')) document.body.appendChild(ov);
+      const btn=ov.querySelector('[data-test="testAgainBtn"]'); if(btn) btn.onclick=()=>{ ov.classList.remove('show'); location.reload(); };
+    }
+  };
+  let origBoss=null, lastMode=null;
+  const cap=setInterval(()=>{
+    try{
+      if(typeof isBossWave==='function' && !origBoss) origBoss=window.isBossWave;
+      if(origBoss && lastMode!==window.__citadelMode){
+        lastMode=window.__citadelMode;
+        window.isBossWave = isQuick()? ((w)=> w===4) : origBoss;
+      }
+      if(isQuick() && typeof wave!=='undefined' && wave>4){ wave=4; }
+    }catch(e){}
+  },400);
+})();
+</script>
 </body>
 </html>
 

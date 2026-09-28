@@ -22,7 +22,7 @@
     <meta name="twitter:description" content="A free kids tabletop RPG in the browser: one short Candy Kingdom adventure, three candy heroes, a d6 roll and a proper ending in under five minutes. No account, no install.">
     <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
 <script src="../analytics-loader.js" defer></script>
-<script src="../game-system.js"></script>
+<script src="../game-system.js"></script><script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css">
 <style>
 :root{--ink:#33213d;--panel:#fff8fb;--pink:#bc4749;--mint:#70a3a7;--gold:#f2a541;--cream:#f0ead6;--line:#ead2dc;--good:#4f8a57;--bad:#a63d40;--shadow:0 18px 42px rgba(51,33,61,.22)}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:radial-gradient(circle at 20% 10%,#fff0f8 0,#ffc7df 32%,#8bcbd0 100%)}button,a{font:inherit}.wrap{width:min(1120px,100%);margin:0 auto;padding:16px 14px 90px}.top{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.pill{color:#fff;text-decoration:none;font-weight:950;background:rgba(51,33,61,.55);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:9px 12px}.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;padding:12px 0 16px;border-bottom:3px solid rgba(255,255,255,.65)}.kicker{font-size:.78rem;font-weight:950;text-transform:uppercase;color:#6b2142}.hero h1{font-size:clamp(2rem,6vw,4.1rem);line-height:.98;margin:4px 0 8px;letter-spacing:0}.hero p{max-width:760px;line-height:1.55;margin:0;color:rgba(51,33,61,.78)}.emoji{font-size:4rem}.hud{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:12px}.stat,.panel{background:rgba(255,248,251,.96);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}.stat{padding:10px}.stat b{display:block;font-size:1.18rem}.stat span{display:block;color:#755d68;font-size:.72rem;font-weight:950;text-transform:uppercase}.game{display:grid;grid-template-columns:minmax(0,1.04fr) minmax(320px,.8fr);gap:12px;margin-top:12px}.panel{padding:14px}.scene{min-height:190px;border-radius:8px;background:linear-gradient(135deg,#fff,#ffe2ef);border:1px solid var(--line);padding:16px;display:grid;align-content:center;gap:8px}.scene h2{font-size:1.55rem;margin:0}.scene p{line-height:1.55;margin:0;color:#5d4752}.choices{display:grid;gap:9px;margin-top:12px}.choice{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:11px;text-align:left;cursor:pointer}.choice:hover,.choice.selected{outline:3px solid rgba(112,163,167,.28)}.choice b{display:block}.choice small{display:block;color:#755d68;margin-top:3px;line-height:1.35}.dice-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:12px}.primary,.secondary{border-radius:8px;min-height:44px;font-weight:950;cursor:pointer}.primary{border:0;background:var(--pink);color:#fff}.secondary{border:1px solid var(--line);background:#fff;color:var(--ink)}button:disabled{opacity:.5;cursor:not-allowed}.dice{width:72px;height:72px;border-radius:16px;background:#fff;border:3px solid var(--ink);display:grid;place-items:center;font-size:2rem;font-weight:950;box-shadow:0 8px 0 rgba(51,33,61,.16)}.lesson{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:10px;line-height:1.45;color:#5d4752}.party{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.hero-card{border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px;cursor:pointer}.hero-card.active{outline:3px solid rgba(242,165,65,.35)}.hero-card b{display:block}.hero-card span{font-size:.75rem;color:#755d68}.meter{height:10px;background:#efdce4;border-radius:999px;overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--mint),var(--gold));width:0}.goal{display:grid;grid-template-columns:auto 1fr;gap:8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#755d68;padding:8px;font-weight:850;margin-bottom:7px}.goal.done{background:#eef7df;color:var(--ink)}.log{max-height:260px;overflow:auto;line-height:1.45;color:#5d4752}.log p{margin:.4rem 0}.result{display:none;background:#eef7df;border:1px solid #aac58b;border-radius:8px;padding:10px;font-weight:850}.result.show{display:block}.badge{display:inline-block;border-radius:999px;background:#fff0b8;color:#6b4b00;padding:4px 9px;font-size:.72rem;font-weight:950}@media(max-width:900px){.hero,.game{grid-template-columns:1fr}.hud{grid-template-columns:repeat(3,1fr)}}@media(max-width:560px){.hud,.party{grid-template-columns:repeat(2,1fr)}.dice-row{grid-template-columns:1fr}.dice{width:100%;height:58px}.pill{flex:1;text-align:center}}
@@ -78,6 +78,7 @@ function selectHero(id){
  state.selected=id;
  const h=hero();
  state.matched=h.stat===SCENE.need;
+ if(window.JVDSAudio)window.JVDSAudio.tap();
  log(h.name+' takes the lead. Success chance: '+chance()+'%.');
  render();
 }
@@ -95,6 +96,7 @@ function roll(){
  state.stars=(total>=5?1:0)+(state.matched?1:0)+(total>=4?1:0);
  meta.best=Math.max(meta.best,state.score);
  state.done=true;
+ if(state.ending==='fail'&&window.JVDSAudio)window.JVDSAudio.error();
  gameSystem.addScore(state.score);
  gameSystem.addXP(20+state.stars*15);
  gameSystem.unlockAchievement('firstAdventure');
@@ -149,6 +151,24 @@ render();
 window.addEventListener('beforeunload',()=>{gameSystem.recordGamePlay(Date.now());gameSystem.saveState()});
 </script>
 <script defer src="../cookie-consent.js"></script>
+<script>
+(function(){
+  if(!window.AudioEffects)return;
+  var a=new AudioEffects(0.5);
+  try{if(localStorage.getItem('soundEnabled')==='false')a.setMasterVolume(0);}catch(e){}
+  var armed=false;
+  function arm(){armed=true;}
+  window.addEventListener('pointerdown',arm,{passive:true});
+  window.addEventListener('keydown',arm);
+  window.JVDSAudio={armed:function(){return armed},tap:function(){if(armed)try{a.playTap()}catch(e){}},success:function(){if(armed)try{a.playSuccess()}catch(e){}},error:function(){if(armed)try{a.playError()}catch(e){}},pop:function(){if(armed)try{a.playPop()}catch(e){}}};
+  if(window.GameSystem&&GameSystem.prototype&&!GameSystem.prototype.__jvdsAudioPatched){
+    GameSystem.prototype.__jvdsAudioPatched=true;
+    var orig=GameSystem.prototype.addScore;
+    GameSystem.prototype.addScore=function(){try{window.JVDSAudio.success()}catch(e){}return orig.apply(this,arguments)};
+  }
+  document.addEventListener('click',function(e){if(armed&&e.target.closest('button,.btn,a')){try{a.playTap()}catch(err){}}},true);
+})();
+</script>
 </body>
 </html>
 

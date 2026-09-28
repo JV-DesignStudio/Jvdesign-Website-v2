@@ -29,6 +29,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="jv-exporter.js"></script>
+<script src="builder-templates.js"></script>
 <link rel="preload" href="../style-workshop-phone-stand-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-workshop-phone-stand-builder.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -174,9 +176,6 @@
       <button class="quick-btn" onclick="exportPNG()" style="background:linear-gradient(135deg,#0891b2,#155e75);box-shadow:0 3px 0 #164e63">📷 PNG</button>
       <button class="quick-btn" onclick="openSaveModal()" style="background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03">💾 Save</button>
       <button class="quick-btn" onclick="openLoadModal()" style="background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006">📂 Load</button>
-      <button class="quick-btn" onclick="exportOBJ()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24">📦 OBJ</button>
-      <button class="quick-btn" onclick="exportGLB()" style="background:linear-gradient(135deg,#6366f1,#4338ca);box-shadow:0 3px 0 #3730a3">🧊 GLB</button>
-      <button class="quick-btn" onclick="exportSTL()" style="background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 3px 0 #15803d">📎 STL</button>
       <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
     </div>
   </header>
@@ -462,6 +461,8 @@ function hexToThree(hex) { return new THREE.Color(hex); }
 function buildStand() {
   if (standGroup) scene.remove(standGroup);
   standGroup = new THREE.Group();
+  standGroup.name = 'phone_stand';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
 
   const S = P.standStyle;
   const sw = P.standWidth;
@@ -486,7 +487,7 @@ function buildStand() {
     base.position.set(0, bt / 2, 0);
     base.castShadow = true;
     base.receiveShadow = true;
-    standGroup.add(base);
+    standGroup.add(part(base, 'base'));
 
     /* Angled back support */
     const supportH = sh * 0.85;
@@ -498,7 +499,7 @@ function buildStand() {
     support.position.set(0, supportCenterY, supportCenterZ);
     support.rotation.x = -(Math.PI / 2 - ang);
     support.castShadow = true;
-    standGroup.add(support);
+    standGroup.add(part(support, 'angled_support'));
 
     /* Back brace */
     const braceH = sh * 0.6;
@@ -507,14 +508,14 @@ function buildStand() {
     brace.position.set(0, bt + braceH * 0.35, -sd * 0.35);
     brace.rotation.x = -(Math.PI / 2 - ang) * 0.5;
     brace.castShadow = true;
-    standGroup.add(brace);
+    standGroup.add(part(brace, 'back_brace'));
 
     /* Phone lip */
     const lipGeo = new THREE.BoxGeometry(pw + 6, lh, bt);
     const lip = new THREE.Mesh(lipGeo, darkMat);
     lip.position.set(0, bt + lh / 2, sd * 0.3);
     lip.castShadow = true;
-    standGroup.add(lip);
+    standGroup.add(part(lip, 'phone_lip'));
 
     /* Lip side walls */
     const wallH = lh * 1.2;
@@ -522,11 +523,11 @@ function buildStand() {
     const wallL = new THREE.Mesh(wallGeo, darkMat);
     wallL.position.set(-(pw / 2 + 3), bt + wallH / 2 - 1, sd * 0.3);
     wallL.castShadow = true;
-    standGroup.add(wallL);
+    standGroup.add(part(wallL, 'lip_wall_left'));
     const wallR = new THREE.Mesh(wallGeo.clone(), darkMat);
     wallR.position.set(pw / 2 + 3, bt + wallH / 2 - 1, sd * 0.3);
     wallR.castShadow = true;
-    standGroup.add(wallR);
+    standGroup.add(part(wallR, 'lip_wall_right'));
 
     /* Cable slot */
     if (P.cableSlot) {
@@ -534,7 +535,7 @@ function buildStand() {
       const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
       const slot = new THREE.Mesh(slotGeo, slotMat);
       slot.position.set(0, bt + lh / 2, sd * 0.3);
-      standGroup.add(slot);
+      standGroup.add(part(slot, 'cable_slot'));
     }
 
     /* Grip texture ridges on support */
@@ -548,7 +549,7 @@ function buildStand() {
         const rz = supportCenterZ + Math.cos(ang) * (t - 0.5) * supportH * 0.3;
         ridge.position.set(0, ry, rz);
         ridge.rotation.x = -(Math.PI / 2 - ang);
-        standGroup.add(ridge);
+        standGroup.add(part(ridge, 'grip_ridge_' + i));
       }
     } else if (P.gripTexture === 'dots') {
       for (let r = 0; r < 3; r++) {
@@ -559,7 +560,7 @@ function buildStand() {
           const dz = supportCenterZ + (r - 1) * 5;
           const dy = bt + 6 + r * 6;
           dot.position.set(dx, dy, dz);
-          standGroup.add(dot);
+          standGroup.add(part(dot, 'grip_dot_' + r + '_' + c));
         }
       }
     }
@@ -583,7 +584,7 @@ function buildStand() {
       const textMesh = new THREE.Mesh(textGeo, textMat);
       textMesh.position.set(0, bt + supportH * 0.5, supportCenterZ + supportD * 0.6);
       textMesh.rotation.x = -(Math.PI / 2 - ang) * 0.5;
-      standGroup.add(textMesh);
+      standGroup.add(part(textMesh, 'brand_text'));
     }
 
   } else if (S === 'flat') {
@@ -593,33 +594,35 @@ function buildStand() {
     base.position.set(0, bt / 2, 0);
     base.castShadow = true;
     base.receiveShadow = true;
-    standGroup.add(base);
+    standGroup.add(part(base, 'base'));
 
     const backGeo = new THREE.BoxGeometry(sw, sh, bt);
     const back = new THREE.Mesh(backGeo, mainMat);
     back.position.set(0, bt + sh / 2, -sd * 0.35);
     back.castShadow = true;
-    standGroup.add(back);
+    standGroup.add(part(back, 'back_panel'));
 
     const lipGeo = new THREE.BoxGeometry(pw + 6, lh, bt);
     const lip = new THREE.Mesh(lipGeo, darkMat);
     lip.position.set(0, bt + lh / 2, sd * 0.3);
     lip.castShadow = true;
-    standGroup.add(lip);
+    standGroup.add(part(lip, 'phone_lip'));
 
     const wallH = lh * 1.2;
     const wallGeo = new THREE.BoxGeometry(bt * 0.8, wallH, bt);
     const wallL = new THREE.Mesh(wallGeo, darkMat);
     wallL.position.set(-(pw / 2 + 3), bt + wallH / 2 - 1, sd * 0.3);
-    standGroup.add(wallL);
+    standGroup.add(part(wallL, 'lip_wall_left'));
     const wallR = new THREE.Mesh(wallGeo.clone(), darkMat);
     wallR.position.set(pw / 2 + 3, bt + wallH / 2 - 1, sd * 0.3);
-    standGroup.add(wallR);
+    standGroup.add(part(wallR, 'lip_wall_right'));
 
     if (P.cableSlot) {
       const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
       const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
-      standGroup.add(new THREE.Mesh(slotGeo, slotMat).translateX(0).translateY(bt + lh / 2).translateZ(sd * 0.3));
+      const slot = new THREE.Mesh(slotGeo, slotMat);
+      slot.position.set(0, bt + lh / 2, sd * 0.3);
+      standGroup.add(part(slot, 'cable_slot'));
     }
 
     if (P.gripTexture === 'ridges') {
@@ -627,7 +630,7 @@ function buildStand() {
         const ridgeGeo = new THREE.BoxGeometry(sw * 0.7, 0.6, 0.6);
         const ridge = new THREE.Mesh(ridgeGeo, darkMat);
         ridge.position.set(0, bt + 4 + i * (sh * 0.1), -sd * 0.35 + bt * 0.6);
-        standGroup.add(ridge);
+        standGroup.add(part(ridge, 'grip_ridge_' + i));
       }
     } else if (P.gripTexture === 'dots') {
       for (let r = 0; r < 3; r++) {
@@ -635,7 +638,7 @@ function buildStand() {
           const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
           const dot = new THREE.Mesh(dotGeo, darkMat);
           dot.position.set((c - 2.5) * (sw * 0.12), bt + 6 + r * 6, -sd * 0.35 + bt * 0.6);
-          standGroup.add(dot);
+          standGroup.add(part(dot, 'grip_dot_' + r + '_' + c));
         }
       }
     }
@@ -654,7 +657,7 @@ function buildStand() {
       const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
       const textMesh = new THREE.Mesh(textGeo, textMat);
       textMesh.position.set(0, bt + sh * 0.5, -sd * 0.35 + bt * 0.55);
-      standGroup.add(textMesh);
+      standGroup.add(part(textMesh, 'brand_text'));
     }
 
   } else if (S === 'cradle') {
@@ -664,14 +667,14 @@ function buildStand() {
     base.position.set(0, bt / 2, 0);
     base.castShadow = true;
     base.receiveShadow = true;
-    standGroup.add(base);
+    standGroup.add(part(base, 'base'));
 
     const supportH = sh * 0.9;
     const supportGeo = new THREE.BoxGeometry(sw, supportH, bt);
     const support = new THREE.Mesh(supportGeo, mainMat);
     support.position.set(0, bt + supportH / 2, -sd * 0.3);
     support.castShadow = true;
-    standGroup.add(support);
+    standGroup.add(part(support, 'cradle_support'));
 
     /* Side cradle arms */
     const armW = bt * 1.2;
@@ -681,23 +684,25 @@ function buildStand() {
     const armL = new THREE.Mesh(armGeo, darkMat);
     armL.position.set(-(pw / 2 + 3), bt + armH / 2, sd * 0.15);
     armL.castShadow = true;
-    standGroup.add(armL);
+    standGroup.add(part(armL, 'arm_left'));
     const armR = new THREE.Mesh(armGeo.clone(), darkMat);
     armR.position.set(pw / 2 + 3, bt + armH / 2, sd * 0.15);
     armR.castShadow = true;
-    standGroup.add(armR);
+    standGroup.add(part(armR, 'arm_right'));
 
     /* Front lip */
     const lipGeo = new THREE.BoxGeometry(pw + 12, lh, bt);
     const lip = new THREE.Mesh(lipGeo, darkMat);
     lip.position.set(0, bt + lh / 2, sd * 0.35);
     lip.castShadow = true;
-    standGroup.add(lip);
+    standGroup.add(part(lip, 'phone_lip'));
 
     if (P.cableSlot) {
       const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
       const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
-      standGroup.add(new THREE.Mesh(slotGeo, slotMat).translateX(0).translateY(bt + lh / 2).translateZ(sd * 0.35));
+      const slot = new THREE.Mesh(slotGeo, slotMat);
+      slot.position.set(0, bt + lh / 2, sd * 0.35);
+      standGroup.add(part(slot, 'cable_slot'));
     }
 
     if (P.gripTexture === 'ridges') {
@@ -705,7 +710,7 @@ function buildStand() {
         const ridgeGeo = new THREE.BoxGeometry(sw * 0.6, 0.6, 0.6);
         const ridge = new THREE.Mesh(ridgeGeo, darkMat);
         ridge.position.set(0, bt + 4 + i * 5, -sd * 0.3 + bt * 0.6);
-        standGroup.add(ridge);
+        standGroup.add(part(ridge, 'grip_ridge_' + i));
       }
     } else if (P.gripTexture === 'dots') {
       for (let r = 0; r < 3; r++) {
@@ -713,7 +718,7 @@ function buildStand() {
           const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
           const dot = new THREE.Mesh(dotGeo, darkMat);
           dot.position.set((c - 2) * (sw * 0.12), bt + 6 + r * 5, -sd * 0.3 + bt * 0.6);
-          standGroup.add(dot);
+          standGroup.add(part(dot, 'grip_dot_' + r + '_' + c));
         }
       }
     }
@@ -732,7 +737,7 @@ function buildStand() {
       const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
       const textMesh = new THREE.Mesh(textGeo, textMat);
       textMesh.position.set(0, bt + supportH * 0.5, -sd * 0.3 + bt * 0.55);
-      standGroup.add(textMesh);
+      standGroup.add(part(textMesh, 'brand_text'));
     }
 
   } else if (S === 'foldable') {
@@ -742,7 +747,7 @@ function buildStand() {
     base.position.set(0, bt / 2, sd * 0.15);
     base.castShadow = true;
     base.receiveShadow = true;
-    standGroup.add(base);
+    standGroup.add(part(base, 'base'));
 
     const supportH = sh * 0.8;
     const supportGeo = new THREE.BoxGeometry(sw, supportH, bt);
@@ -751,7 +756,7 @@ function buildStand() {
     support.position.set(0, bt + supportH * Math.cos(sAng) * 0.5, -sd * 0.1);
     support.rotation.x = -sAng;
     support.castShadow = true;
-    standGroup.add(support);
+    standGroup.add(part(support, 'foldable_support'));
 
     /* Hinge accent */
     const hingeGeo = new THREE.CylinderGeometry(bt * 0.7, bt * 0.7, sw * 0.15, 12);
@@ -759,7 +764,7 @@ function buildStand() {
     const hinge = new THREE.Mesh(hingeGeo, hingeMat);
     hinge.rotation.z = Math.PI / 2;
     hinge.position.set(0, bt, -sd * 0.1);
-    standGroup.add(hinge);
+    standGroup.add(part(hinge, 'hinge'));
 
     /* Support strut */
     const strutLen = sh * 0.5;
@@ -768,18 +773,20 @@ function buildStand() {
     strut.position.set(0, bt + strutLen * 0.3, -sd * 0.25);
     strut.rotation.x = -sAng * 0.4;
     strut.castShadow = true;
-    standGroup.add(strut);
+    standGroup.add(part(strut, 'strut'));
 
     const lipGeo = new THREE.BoxGeometry(pw + 6, lh, bt);
     const lip = new THREE.Mesh(lipGeo, darkMat);
     lip.position.set(0, bt + lh / 2, sd * 0.35);
     lip.castShadow = true;
-    standGroup.add(lip);
+    standGroup.add(part(lip, 'phone_lip'));
 
     if (P.cableSlot) {
       const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
       const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
-      standGroup.add(new THREE.Mesh(slotGeo, slotMat).translateX(0).translateY(bt + lh / 2).translateZ(sd * 0.35));
+      const slot = new THREE.Mesh(slotGeo, slotMat);
+      slot.position.set(0, bt + lh / 2, sd * 0.35);
+      standGroup.add(part(slot, 'cable_slot'));
     }
 
     if (P.gripTexture === 'ridges') {
@@ -788,7 +795,7 @@ function buildStand() {
         const ridge = new THREE.Mesh(ridgeGeo, darkMat);
         ridge.position.set(0, bt + 4 + i * (supportH * 0.12), -sd * 0.15);
         ridge.rotation.x = -sAng;
-        standGroup.add(ridge);
+        standGroup.add(part(ridge, 'grip_ridge_' + i));
       }
     } else if (P.gripTexture === 'dots') {
       for (let r = 0; r < 3; r++) {
@@ -796,7 +803,7 @@ function buildStand() {
           const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
           const dot = new THREE.Mesh(dotGeo, darkMat);
           dot.position.set((c - 2) * (sw * 0.12), bt + 6 + r * 5, -sd * 0.15);
-          standGroup.add(dot);
+          standGroup.add(part(dot, 'grip_dot_' + r + '_' + c));
         }
       }
     }
@@ -816,7 +823,7 @@ function buildStand() {
       const textMesh = new THREE.Mesh(textGeo, textMat);
       textMesh.position.set(0, bt + supportH * 0.4, -sd * 0.1 + bt * 0.55);
       textMesh.rotation.x = -sAng * 0.5;
-      standGroup.add(textMesh);
+      standGroup.add(part(textMesh, 'brand_text'));
     }
   }
 
@@ -825,7 +832,7 @@ function buildStand() {
   const phoneMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.2, metalness: 0.5, transparent: true, opacity: 0.35 });
   const phone = new THREE.Mesh(phoneGeo, phoneMat);
   phone.position.set(0, bt + lh + pt / 2, sd * 0.25);
-  standGroup.add(phone);
+  standGroup.add(part(phone, 'phone_ghost_preview'));
 
   scene.add(standGroup);
   updateSpecCard();
@@ -1470,10 +1477,7 @@ const STEPS = [
       <div style="font-size:2.4rem;margin-bottom:7px">📎</div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-dk);letter-spacing:.1em;margin-bottom:6px">${P.standName || 'YOUR STAND'}</div>
       <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">${P.standWidth}×${P.standDepth}×${P.standHeight}mm · ${P.angle}° · ${P.standStyle}</div>
-      <button class="run-btn" style="font-size:1rem;padding:12px" onclick="exportSTL()">📎 EXPORT STL</button>
       <div style="display:flex;gap:6px;justify-content:center;margin-top:10px">
-        <button class="run-btn" style="font-size:.78rem;padding:8px;background:#2d6a4f;box-shadow:0 3px 0 #1a4035" onclick="exportOBJ()">📦 OBJ</button>
-        <button class="run-btn" style="font-size:.78rem;padding:8px;background:#6366f1;box-shadow:0 3px 0 #4338ca" onclick="exportGLB()">🧊 GLB</button>
         <button class="run-btn" style="font-size:.78rem;padding:8px;background:#0891b2;box-shadow:0 3px 0 #155e75" onclick="exportPNG()">📷 PNG</button>
       </div>
     </div>`;
@@ -1774,6 +1778,55 @@ function init() {
 }
 
 init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const STAND_TEMPLATES = [
+  { id: 'quick', emoji: '📱', name: 'Quick Stand', note: 'Angled, ridged grip and a cable slot  -  the quick-build.',
+    data: { standName: 'QUICK STAND', standStyle: 'angled', angle: 60, standWidth: 100, standDepth: 80, cableSlot: true, gripTexture: 'ridges', color: '#22c55e', brandText: '' } },
+  { id: 'minimal', emoji: '⬜', name: 'Minimal', note: 'Clean and flat with no slot  -  prints fast.',
+    data: { standName: 'Minimal', standStyle: 'flat', angle: 0, standWidth: 90, standDepth: 70, cableSlot: false, gripTexture: 'none', color: '#e5e7eb', roundedCorners: true } },
+  { id: 'tall', emoji: '📐', name: 'Tall', note: 'Steeper angle for video calls.',
+    data: { standName: 'Tall', standStyle: 'angled', angle: 70, standWidth: 110, standDepth: 85, cableSlot: true, gripTexture: 'dots', color: '#38bdf8', lipHeight: 10 } },
+  { id: 'wide', emoji: '🖥️', name: 'Wide', note: 'Extra width for tablets.',
+    data: { standName: 'Wide', standStyle: 'angled', angle: 55, standWidth: 140, standDepth: 90, cableSlot: true, gripTexture: 'ridges', color: '#a78bfa', brandText: 'TABLET' } },
+  { id: 'chunky', emoji: '🧱', name: 'Chunky', note: 'Thick base and big lip  -  very sturdy.',
+    data: { standName: 'Chunky', standStyle: 'angled', angle: 60, standWidth: 100, standDepth: 80, baseThickness: 6, lipHeight: 12, cableSlot: true, gripTexture: 'lines', color: '#f59e0b' } },
+  { id: 'personal', emoji: '✏️', name: 'Personal', note: 'Add your name  -  same shape as Quick Stand.',
+    data: { standName: 'MY STAND', standStyle: 'angled', angle: 60, standWidth: 100, standDepth: 80, cableSlot: true, gripTexture: 'ridges', color: '#ec4899', brandText: 'MY NAME' } }
+];
+
+function loadStandTemplate(t) {
+  Object.assign(P, t.data);
+  if (typeof buildStand === 'function') buildStand(); if (typeof updateStats === 'function') updateStats(); if (typeof updateSpecCard === 'function') updateSpecCard(); if (typeof syncRightBar === 'function') syncRightBar();
+  if (typeof sout === 'function') sout('Template loaded: ' + t.data.standName);
+  if (typeof toast === 'function') toast('Template: ' + t.data.standName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: STAND_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadStandTemplate(t); } }; }),
+    random: randomBuild,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Phone Stand Builder',
+    units: 'mm',
+    accent: '#22c55e',
+    getGroup: function () { return standGroup; },
+    getName: function () { return P.standName || 'phone-stand'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
 </script>
 <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script>
 <script defer src="../cookie-consent.js"></script>
@@ -1784,7 +1837,7 @@ init();
     <p style="font-weight:800;margin:0 0 12px">Keep creating on-site - try a companion tool</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
       <a href="../tools/pixel-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🎨</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">Pixel Studio</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Draw sprites</div></div></a>
-      <a href="../tools/sfx-generator.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🔊</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">SFX Generator</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Make sounds</div></div></a>
+      <a href="../tools/sound-studio.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🔊</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">SFX Generator</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Make sounds</div></div></a>
       <a href="../tools/level-designer.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🗸️</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">Level Designer</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Plan levels</div></div></a>
       <a href="../tools/colour-palette.html" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px 12px;display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;"><span style="font-size:1.7rem;">🎨</span><div><div style="font-weight:700;font-size:.88rem;color:#F0EAD6;">Colour Palette</div><div style="font-size:.72rem;color:rgba(240,234,214,.55);">Build a scheme</div></div></a>
     </div>

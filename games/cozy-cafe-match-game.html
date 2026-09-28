@@ -16,16 +16,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Cozy Cafe">
 <title>Cozy Cafe Match | JVDesignStudio</title>
-<meta name="description" content="A cozy match-3 puzzle game. Match snacks, fill cravings, no rush.">
+<meta name="description" content="One morning rush in Pip's cafe: serve 5 guests, match snacks and fill cravings, then shutters close.">
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/games/cozy-cafe-match-game.html">
     <meta property="og:title"       content="Cozy Cafe Match">
-    <meta property="og:description" content="A cozy match-3 puzzle game. Match snacks, fill cravings, no rush.">
+    <meta property="og:description" content="One morning rush in Pip's cafe: serve 5 guests and fill cravings before shutters close.">
     <meta property="og:image"       content="https://jvdesignstudio.co.uk/CozyCafeCover.png">
     <meta property="og:site_name"   content="JVDesignStudio">
     <meta name="twitter:card"        content="summary_large_image">
     <meta name="twitter:title"       content="Cozy Cafe Match">
-    <meta name="twitter:description" content="A cozy match-3 puzzle game. Match snacks, fill cravings, no rush.">
+    <meta name="twitter:description" content="One morning rush in Pip's cafe: serve 5 guests and fill cravings before shutters close.">
     <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/CozyCafeCover.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -43,7 +43,7 @@
       "name": "Cozy Cafe Match",
       "applicationCategory": "Game",
       "applicationSubCategory": "Puzzle",
-      "description": "A gentle match-3 puzzle with no timer. Match snacks, fill cravings, zero pressure. Free browser game.",
+       "description": "One morning rush: serve 5 guests, match snacks and fill cravings before shutters close. Free browser game.",
       "author": {"@type": "Person", "name": "J. Valentine"},
       "publisher": {"@type": "Organization", "name": "JVDesignStudio"},
       "operatingSystem": "Web Browser",
@@ -86,17 +86,17 @@
   window.jvdsCloseStrip=jvdsCloseStrip;
 })();
 </script>
-<!-- /BUILD:nav-strip -->☰ JVDesignStudio</button>
+<!-- /BUILD:nav-strip -->
 
 <div class="app">
 
   <div class="topbar">
-    <div class="brand">Cozy <em>Cafe</em>×2</div>
-    <div class="topbar-stats">
-      <div class="stat-pill coins">🪙 <span id="coinCount">0</span>×2</div>
-      <div class="stat-pill">? <span id="happyCount">0</span>×2</div>
-    </div>
-  </div>
+     <div class="brand">Cozy <em>Cafe</em> - Morning Rush</div>
+     <div class="topbar-stats">
+       <div class="stat-pill coins">🪙 <span id="coinCount">0</span></div>
+       <div class="stat-pill"><span id="happyCount">0</span>/5 guests</div>
+     </div>
+   </div>
 
   <div class="guest-hud">
     <div class="guest-row">
@@ -168,7 +168,8 @@
   </div>
 </div>
 
-<div class="toast" id="toast">×2</div>
+<div class="toast" id="toast"></div>
+<div class="modal-backdrop" id="shiftResult"><div class="modal"><div class="modal-header"><div class="modal-title" id="shiftTitle">Shutters close</div><button class="modal-close" data-close>✕</button></div><div id="shiftText" style="font-size:14px;color:var(--cocoa-soft);line-height:1.7;"></div><div style="display:flex;gap:8px;margin-top:16px"><button class="shop-buy" id="shiftAgain" style="flex:1">Serve again</button></div></div></div>
 
 <!-- ============ TUTORIAL OVERLAY ============ -->
 <div class="modal-backdrop" id="tutorialModal">
@@ -221,6 +222,9 @@
       <button class="bb-btn" id="exportSaveBtn" style="flex:1"><span class="bb-icon">⭐</span>Export code</button>
       <button class="bb-btn" id="importSaveBtn" style="flex:1"><span class="bb-icon">⭐</span>Import code</button>
     </div>
+    <div class="modal-title" style="font-size:16px;margin:14px 0 4px">📱 Continue in the app</div>
+    <p style="font-size:12px;color:var(--cocoa-soft);margin-bottom:8px;font-style:italic">Started here? Tap Export code above, install the free app, then paste the code there to keep the same cafe on your phone.</p>
+    <a href="https://play.google.com/store/apps/details?id=uk.co.jvdesignstudio.cozycafe" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:var(--rose-deep,#d88a9a);color:#fff;border-radius:12px;padding:11px 14px;font-weight:800">📱 Get Cozy Cafe on Google Play</a>
   </div>
 </div>
 
@@ -823,6 +827,7 @@ let comboCount = 0;
 let currentStreak = 0;
 let cleanServe = true;
 let timeOfDay = 'afternoon';
+const SHIFT_TARGET = 5; let shiftServed = 0; let preShiftVault = null;
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const $ = (id) => document.getElementById(id);
@@ -1403,6 +1408,12 @@ function scoreMatches(triggered) {
 }
 
 function fulfilGuest() {
+  shiftServed++;
+  updateHUD();
+  if(shiftServed >= SHIFT_TARGET){
+    showShiftResult();
+    return;
+  }
   vault.happiness += 1;
   vault.stats.guests_served += 1;
   window.__gsScore = (window.__gsScore||0) + 10;
@@ -1439,6 +1450,30 @@ function fulfilGuest() {
   setTimeout(nextGuest, 1300);
 }
 
+function showShiftResult(){
+  const coins = vault.coins;
+  const best = Math.max(window.__gsBestRun||0, coins);
+  if(typeof gameSystem!=='undefined'){ gameSystem.addScore(Math.max(0, coins - (window.__lastShiftCoins||0))); gameSystem.recordGamePlay(Date.now()); window.__lastShiftCoins = coins; }
+  $('shiftTitle').textContent = 'Shutters close - morning rush done!';
+  $('shiftText').innerHTML = `You served ${SHIFT_TARGET} guests. Tip jar: ${coins} coins. Stardust thanks you for the rush. The counter is clear and the cafe is quiet.`;
+  $('shiftResult').classList.add('show');
+  try{ localStorage.setItem('cc_shift_best', String(Math.max(Number(localStorage.getItem('cc_shift_best')||0), coins))); }catch(e){}
+}
+function resetShift(){
+  shiftServed = 0;
+  busy = false;
+  preShiftVault = JSON.parse(JSON.stringify(vault));
+  $('shiftResult').classList.remove('show');
+  createBoard(); buildBoardOnce(); refillQueue(); nextGuest(); render(); updateHUD();
+}
+window.__cafeTest = {
+  serveOne: ()=>fulfilGuest(),
+  getShift: ()=>shiftServed,
+  isDone: ()=>document.getElementById('shiftResult').classList.contains('show'),
+  getTitle: ()=>document.getElementById('shiftTitle').textContent,
+  getText: ()=>document.getElementById('shiftText').textContent,
+  reset: ()=>resetShift()
+};
 // ============ AMBIENT SYSTEMS (chill things) ============
 function startAmbientSystems() {
   // Slow day/night cycle: 90 seconds per phase, 3 phases (4.5 min full cycle)
@@ -1564,7 +1599,7 @@ function updateHUD() {
   $('coinCount').textContent = vault.coins;
   if (window._lastCoins != null && vault.coins > window._lastCoins && window.floatCoins) window.floatCoins(vault.coins - window._lastCoins);
   window._lastCoins = vault.coins;
-  $('happyCount').textContent = vault.happiness;
+  $('happyCount').textContent = shiftServed + '/' + SHIFT_TARGET;
 
   const q = $('orderQueue');
   q.innerHTML = '';
@@ -2643,6 +2678,8 @@ function init() {
   if (hour >= 0 && hour < 4) vault.stats.played_at_night = true;
   if (hour >= 5 && hour < 7) vault.stats.played_at_dawn = true;
 
+  shiftServed = 0;
+  preShiftVault = JSON.parse(JSON.stringify(vault));
   createBoard();
   buildBoardOnce();
   refillQueue();
@@ -2657,10 +2694,12 @@ function init() {
   // Daily bonus check
   checkDailyBonus();
 
-  // Tutorial on first ever visit
-  if (!vault.tutorial_seen) {
+  // Tutorial on first ever visit - skip during shift, cafe is now shift-only
+  if (!vault.tutorial_seen && false) {
     setTimeout(showTutorial, 600);
   }
+  const ag = document.getElementById('shiftAgain');
+  if(ag) ag.addEventListener('click', ()=>{ $('shiftResult').classList.remove('show'); resetShift(); });
 }
 
 init();
@@ -2679,7 +2718,6 @@ function jvdsCloseStrip(){
 <script>
 // -- GAME SYSTEM INTEGRATION --
 const gameSystem = new GameSystem('cozy-cafe', 'Cozy Cafe Match', 'pip');
-const soundManager = new SoundManager(gameSystem);
 const audioEffects = new AudioEffects(0.7);
 
 // Track score as XP (10 points = 1 XP), and mirror it into the shared

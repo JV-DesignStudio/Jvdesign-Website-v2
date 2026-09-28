@@ -30,6 +30,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="jv-exporter.js"></script>
+<script src="builder-templates.js"></script>
 <link rel="preload" href="../style-workshop-robot-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-workshop-robot-builder.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -176,7 +178,6 @@
       <button class="quick-btn" onclick="downloadPNG()" style="background:linear-gradient(135deg,#0e7490,#164e63);box-shadow:0 3px 0 #083344">🖼️ PNG</button>
       <button class="quick-btn" onclick="showProfileCard()" style="background:linear-gradient(135deg,#7c3aed,#1e1b4b);box-shadow:0 3px 0 #312e81">💳 Card</button>
       <button class="quick-btn" onclick="downloadRobot()" style="background:linear-gradient(135deg,#2d6a4f,#1a4035);color:#fff;box-shadow:0 3px 0 #0d2e24">⬇ OBJ</button>
-      <button class="quick-btn" onclick="exportGLB()" style="background:linear-gradient(135deg,#6366f1,#4338ca);box-shadow:0 3px 0 #3730a3">📦 GLB</button>
       <button class="quick-btn" onclick="openSaveModal()" style="background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03">💾 Save</button>
       <button class="quick-btn" onclick="openLoadModal()" style="background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006">📂 Load</button>
       <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
@@ -599,6 +600,8 @@ function exportGLB() {
 function buildRobot() {
   if (robotGroup) scene.remove(robotGroup);
   robotGroup = new THREE.Group();
+  robotGroup.name = 'robot';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
 
   const pMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.primaryCol), roughness: 0.4, metalness: 0.6 });
   const sMat = new THREE.MeshStandardMaterial({ color: hexToThree(R.secondaryCol), roughness: 0.45, metalness: 0.55 });
@@ -618,35 +621,35 @@ function buildRobot() {
   if (R.legStyle === 'biped') {
     const legW = torsoW * 0.24;
     [-1, 1].forEach(function(side) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(legW, legH * 0.92, legW * 1.05), pMat);
+      const leg = part(new THREE.Mesh(new THREE.BoxGeometry(legW, legH * 0.92, legW * 1.05), pMat), side < 0 ? 'leg_left' : 'leg_right');
       leg.position.set(side * torsoW * 0.24, legH * 0.46, 0);
       leg.castShadow = true;
       robotGroup.add(leg);
-      const foot = new THREE.Mesh(new THREE.BoxGeometry(legW * 1.6, legH * 0.12, legW * 2.2), darkMat);
+      const foot = part(new THREE.Mesh(new THREE.BoxGeometry(legW * 1.6, legH * 0.12, legW * 2.2), darkMat), side < 0 ? 'foot_left' : 'foot_right');
       foot.position.set(side * torsoW * 0.24, legH * 0.06, legW * 0.4);
       robotGroup.add(foot);
-      const knee = new THREE.Mesh(new THREE.SphereGeometry(legW * 0.55, 12, 12), sMat);
+      const knee = part(new THREE.Mesh(new THREE.SphereGeometry(legW * 0.55, 12, 12), sMat), side < 0 ? 'knee_left' : 'knee_right');
       knee.position.set(side * torsoW * 0.24, legH * 0.5, 0);
       robotGroup.add(knee);
     });
   } else if (R.legStyle === 'tank') {
-    const base = new THREE.Mesh(new THREE.BoxGeometry(torsoW * 1.05, legH * 0.5, torsoD * 1.1), sMat);
+    const base = part(new THREE.Mesh(new THREE.BoxGeometry(torsoW * 1.05, legH * 0.5, torsoD * 1.1), sMat), 'tank_base');
     base.position.set(0, legH * 0.55, 0);
     base.castShadow = true;
     robotGroup.add(base);
     [-1, 1].forEach(function(side) {
-      const tread = new THREE.Mesh(new THREE.CylinderGeometry(legH * 0.36, legH * 0.36, torsoD * 1.7, 16), darkMat);
+      const tread = part(new THREE.Mesh(new THREE.CylinderGeometry(legH * 0.36, legH * 0.36, torsoD * 1.7, 16), darkMat), side < 0 ? 'tread_left' : 'tread_right');
       tread.rotation.z = Math.PI / 2;
       tread.position.set(side * (torsoW * 0.62), legH * 0.36, 0);
       tread.castShadow = true;
       robotGroup.add(tread);
     });
   } else { // hover
-    const pod = new THREE.Mesh(new THREE.CylinderGeometry(torsoW * 0.32, torsoW * 0.5, legH * 0.7, 20), sMat);
+    const pod = part(new THREE.Mesh(new THREE.CylinderGeometry(torsoW * 0.32, torsoW * 0.5, legH * 0.7, 20), sMat), 'hover_pod');
     pod.position.set(0, legH * 0.6, 0);
     pod.castShadow = true;
     robotGroup.add(pod);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(torsoW * 0.55, 0.05, 8, 24), eyeMat);
+    const ring = part(new THREE.Mesh(new THREE.TorusGeometry(torsoW * 0.55, 0.05, 8, 24), eyeMat), 'hover_glow_ring');
     ring.rotation.x = Math.PI / 2;
     ring.position.set(0, legH * 0.18, 0);
     robotGroup.add(ring);
@@ -656,9 +659,9 @@ function buildRobot() {
   /* ---- TORSO ---- */
   let torso;
   if (R.torsoStyle === 'barrel') {
-    torso = new THREE.Mesh(new THREE.CylinderGeometry(torsoW / 2, torsoW / 2, bh, 20), pMat);
+    torso = part(new THREE.Mesh(new THREE.CylinderGeometry(torsoW / 2, torsoW / 2, bh, 20), pMat), 'torso');
   } else {
-    torso = new THREE.Mesh(new THREE.BoxGeometry(torsoW, bh, torsoD), pMat);
+    torso = part(new THREE.Mesh(new THREE.BoxGeometry(torsoW, bh, torsoD), pMat), 'torso');
   }
   torso.position.y = torsoY;
   torso.castShadow = true;
@@ -670,17 +673,17 @@ function buildRobot() {
     const stripeGeo = R.torsoStyle === 'barrel'
       ? new THREE.CylinderGeometry(torsoW / 2 + 0.01, torsoW / 2 + 0.01, bh * 0.16, 20)
       : new THREE.BoxGeometry(torsoW + 0.02, bh * 0.16, torsoD + 0.02);
-    const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+    const stripe = part(new THREE.Mesh(stripeGeo, stripeMat), 'torso_stripe');
     stripe.position.y = legH + bh * 0.32;
     robotGroup.add(stripe);
   }
 
   /* Chest reactor panel */
   if (R.chestPanel) {
-    const panel = new THREE.Mesh(new THREE.CircleGeometry(torsoW * 0.18, 16), eyeMat);
+    const panel = part(new THREE.Mesh(new THREE.CircleGeometry(torsoW * 0.18, 16), eyeMat), 'chest_reactor');
     panel.position.set(0, torsoY + bh * 0.1, torsoD / 2 + 0.01);
     robotGroup.add(panel);
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(torsoW * 0.18, 0.02, 8, 20), darkMat);
+    const rim = part(new THREE.Mesh(new THREE.TorusGeometry(torsoW * 0.18, 0.02, 8, 20), darkMat), 'chest_reactor_rim');
     rim.position.copy(panel.position);
     robotGroup.add(rim);
     eyeGlow.push(panel.material);
@@ -689,64 +692,65 @@ function buildRobot() {
   /* ---- HEAD ---- */
   const headR = torsoW * 0.32;
   const neckH = 0.08;
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(headR * 0.4, headR * 0.4, neckH, 12), darkMat);
+  const neck = part(new THREE.Mesh(new THREE.CylinderGeometry(headR * 0.4, headR * 0.4, neckH, 12), darkMat), 'neck');
   neck.position.y = torsoTop + neckH / 2;
   robotGroup.add(neck);
 
   const headGroup = new THREE.Group();
+  headGroup.name = 'head';
   const headCenterY = torsoTop + neckH + headR;
   headGroup.position.set(0, headCenterY, 0);
 
   let headMesh;
   if (R.headStyle === 'round') {
-    headMesh = new THREE.Mesh(new THREE.SphereGeometry(headR, 20, 20), pMat);
+    headMesh = part(new THREE.Mesh(new THREE.SphereGeometry(headR, 20, 20), pMat), 'head_shell');
   } else if (R.headStyle === 'box' || R.headStyle === 'catears') {
-    headMesh = new THREE.Mesh(new THREE.BoxGeometry(headR * 1.7, headR * 1.6, headR * 1.7), pMat);
+    headMesh = part(new THREE.Mesh(new THREE.BoxGeometry(headR * 1.7, headR * 1.6, headR * 1.7), pMat), 'head_shell');
   } else if (R.headStyle === 'visor') {
-    headMesh = new THREE.Mesh(new THREE.BoxGeometry(headR * 1.7, headR * 1.5, headR * 1.6), pMat);
+    headMesh = part(new THREE.Mesh(new THREE.BoxGeometry(headR * 1.7, headR * 1.5, headR * 1.6), pMat), 'head_shell');
   } else if (R.headStyle === 'skull') {
-    headMesh = new THREE.Mesh(new THREE.SphereGeometry(headR, 20, 16), pMat);
+    headMesh = part(new THREE.Mesh(new THREE.SphereGeometry(headR, 20, 16), pMat), 'head_shell');
     headMesh.scale.y = 0.84;
   } else if (R.headStyle === 'cyclops') {
-    headMesh = new THREE.Mesh(new THREE.SphereGeometry(headR, 20, 20), pMat);
+    headMesh = part(new THREE.Mesh(new THREE.SphereGeometry(headR, 20, 20), pMat), 'head_shell');
   } else { // dome
-    headMesh = new THREE.Mesh(new THREE.SphereGeometry(headR, 20, 20, 0, Math.PI * 2, 0, Math.PI / 1.7), pMat);
+    headMesh = part(new THREE.Mesh(new THREE.SphereGeometry(headR, 20, 20, 0, Math.PI * 2, 0, Math.PI / 1.7), pMat), 'head_shell');
   }
   headMesh.castShadow = true;
   headGroup.add(headMesh);
 
   // Eyes / visor
   if (R.headStyle === 'visor') {
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(headR * 1.5, headR * 0.5, 0.05), eyeMat);
+    const visor = part(new THREE.Mesh(new THREE.BoxGeometry(headR * 1.5, headR * 0.5, 0.05), eyeMat), 'head_visor');
     visor.position.set(0, headR * 0.05, headR * 0.85);
     headGroup.add(visor);
     eyeGlow.push(visor.material);
   } else if (R.headStyle === 'skull') {
     [-1, 1].forEach(function(side) {
-      const socket = new THREE.Mesh(new THREE.SphereGeometry(headR * 0.22, 10, 10), darkMat);
+      const socket = part(new THREE.Mesh(new THREE.SphereGeometry(headR * 0.22, 10, 10), darkMat), side < 0 ? 'head_eye_socket_left' : 'head_eye_socket_right');
       socket.position.set(side * headR * 0.36, headR * 0.06, headR * 0.78);
       headGroup.add(socket);
-      const skullEye = new THREE.Mesh(new THREE.SphereGeometry(headR * 0.12, 8, 8), eyeMat);
+      const skullEye = part(new THREE.Mesh(new THREE.SphereGeometry(headR * 0.12, 8, 8), eyeMat), side < 0 ? 'head_eye_left' : 'head_eye_right');
       skullEye.position.set(side * headR * 0.36, headR * 0.06, headR * 0.82);
       headGroup.add(skullEye);
       eyeGlow.push(skullEye.material);
     });
     [-1, 1].forEach(function(side) {
-      const cheek = new THREE.Mesh(new THREE.BoxGeometry(headR * 0.28, headR * 0.18, headR * 0.22), sMat);
+      const cheek = part(new THREE.Mesh(new THREE.BoxGeometry(headR * 0.28, headR * 0.18, headR * 0.22), sMat), side < 0 ? 'head_cheek_left' : 'head_cheek_right');
       cheek.position.set(side * headR * 0.6, -headR * 0.18, headR * 0.58);
       headGroup.add(cheek);
     });
   } else if (R.headStyle === 'cyclops') {
-    const bigEye = new THREE.Mesh(new THREE.SphereGeometry(headR * 0.3, 12, 12), eyeMat);
+    const bigEye = part(new THREE.Mesh(new THREE.SphereGeometry(headR * 0.3, 12, 12), eyeMat), 'head_eye');
     bigEye.position.set(0, headR * 0.06, headR * 0.92);
     headGroup.add(bigEye);
     eyeGlow.push(bigEye.material);
-    const eyeRim = new THREE.Mesh(new THREE.TorusGeometry(headR * 0.3, 0.025, 8, 20), darkMat);
+    const eyeRim = part(new THREE.Mesh(new THREE.TorusGeometry(headR * 0.3, 0.025, 8, 20), darkMat), 'head_eye_rim');
     eyeRim.position.copy(bigEye.position);
     headGroup.add(eyeRim);
   } else {
     [-1, 1].forEach(function(side) {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(headR * 0.16, 10, 10), eyeMat);
+      const eye = part(new THREE.Mesh(new THREE.SphereGeometry(headR * 0.16, 10, 10), eyeMat), side < 0 ? 'head_eye_left' : 'head_eye_right');
       eye.position.set(side * headR * 0.42, headR * 0.05, headR * 0.88);
       headGroup.add(eye);
       eyeGlow.push(eye.material);
@@ -756,10 +760,10 @@ function buildRobot() {
   // Cat ears
   if (R.headStyle === 'catears') {
     [-1, 1].forEach(function(side) {
-      const ear = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.22, headR * 0.52, 8), pMat);
+      const ear = part(new THREE.Mesh(new THREE.ConeGeometry(headR * 0.22, headR * 0.52, 8), pMat), side < 0 ? 'head_ear_left' : 'head_ear_right');
       ear.position.set(side * headR * 0.52, headR * 0.95, 0);
       headGroup.add(ear);
-      const earInner = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.1, headR * 0.34, 8), sMat);
+      const earInner = part(new THREE.Mesh(new THREE.ConeGeometry(headR * 0.1, headR * 0.34, 8), sMat), side < 0 ? 'head_ear_inner_left' : 'head_ear_inner_right');
       earInner.position.set(side * headR * 0.52, headR * 0.92, 0.01);
       headGroup.add(earInner);
     });
@@ -767,10 +771,10 @@ function buildRobot() {
 
   // Antenna
   if (R.antenna) {
-    const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, headR * 0.9, 8), darkMat);
+    const stalk = part(new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, headR * 0.9, 8), darkMat), 'antenna_stalk');
     stalk.position.set(0, headR + headR * 0.45, 0);
     headGroup.add(stalk);
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(headR * 0.12, 10, 10), eyeMat);
+    const tip = part(new THREE.Mesh(new THREE.SphereGeometry(headR * 0.12, 10, 10), eyeMat), 'antenna_tip');
     tip.position.set(0, headR + headR * 0.9, 0);
     headGroup.add(tip);
     eyeGlow.push(tip.material);
@@ -786,27 +790,28 @@ function buildRobot() {
 
   [-1, 1].forEach(function(side) {
     const shoulderGroup = new THREE.Group();
+  shoulderGroup.name = side < 0 ? 'arm_left' : 'arm_right';
     shoulderGroup.position.set(side * armX, shoulderY, 0);
 
-    const shoulder = new THREE.Mesh(new THREE.SphereGeometry(armRad * 1.4, 12, 12), sMat);
+    const shoulder = part(new THREE.Mesh(new THREE.SphereGeometry(armRad * 1.4, 12, 12), sMat), 'shoulder');
     shoulderGroup.add(shoulder);
 
     if (R.shoulderPads) {
-      const pad = new THREE.Mesh(new THREE.BoxGeometry(armRad * 2.6, armRad * 1.6, armRad * 2.6), sMat);
+      const pad = part(new THREE.Mesh(new THREE.BoxGeometry(armRad * 2.6, armRad * 1.6, armRad * 2.6), sMat), 'shoulder_pad');
       pad.position.set(0, armRad * 1.0, 0);
       shoulderGroup.add(pad);
     }
 
-    const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(armRad, armRad * 0.9, upperLen, 12), pMat);
+    const upperArm = part(new THREE.Mesh(new THREE.CylinderGeometry(armRad, armRad * 0.9, upperLen, 12), pMat), 'upper_arm');
     upperArm.position.set(0, -upperLen / 2, 0);
     upperArm.castShadow = true;
     shoulderGroup.add(upperArm);
 
-    const elbow = new THREE.Mesh(new THREE.SphereGeometry(armRad * 1.05, 10, 10), sMat);
+    const elbow = part(new THREE.Mesh(new THREE.SphereGeometry(armRad * 1.05, 10, 10), sMat), 'elbow');
     elbow.position.set(0, -upperLen, 0);
     shoulderGroup.add(elbow);
 
-    const lowerArm = new THREE.Mesh(new THREE.CylinderGeometry(armRad * 0.85, armRad * 0.75, lowerLen, 12), pMat);
+    const lowerArm = part(new THREE.Mesh(new THREE.CylinderGeometry(armRad * 0.85, armRad * 0.75, lowerLen, 12), pMat), 'lower_arm');
     lowerArm.position.set(0, -upperLen - lowerLen / 2, 0);
     lowerArm.castShadow = true;
     shoulderGroup.add(lowerArm);
@@ -814,21 +819,21 @@ function buildRobot() {
     const handY = -upperLen - lowerLen;
     if (R.armStyle === 'claw') {
       [-1, 1].forEach(function(p) {
-        const pincer = new THREE.Mesh(new THREE.BoxGeometry(armRad * 0.5, armRad * 1.6, armRad * 0.5), darkMat);
+        const pincer = part(new THREE.Mesh(new THREE.BoxGeometry(armRad * 0.5, armRad * 1.6, armRad * 0.5), darkMat), 'hand_pincer_' + (side < 0 ? 'left_' : 'right_') + (p < 0 ? 'left' : 'right'));
         pincer.position.set(p * armRad * 0.4, handY - armRad * 0.7, 0);
         pincer.rotation.z = p * 0.25;
         shoulderGroup.add(pincer);
       });
     } else if (R.armStyle === 'blaster') {
-      const gunBody = new THREE.Mesh(new THREE.BoxGeometry(armRad * 1.8, armRad * 1.4, armRad * 2.6), darkMat);
+      const gunBody = part(new THREE.Mesh(new THREE.BoxGeometry(armRad * 1.8, armRad * 1.4, armRad * 2.6), darkMat), 'hand_gun');
       gunBody.position.set(0, handY - armRad * 0.7, armRad * 0.4);
       shoulderGroup.add(gunBody);
-      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(armRad * 0.4, armRad * 0.4, armRad * 1.6, 10), darkMat);
+      const barrel = part(new THREE.Mesh(new THREE.CylinderGeometry(armRad * 0.4, armRad * 0.4, armRad * 1.6, 10), darkMat), 'hand_gun_barrel');
       barrel.rotation.x = Math.PI / 2;
       barrel.position.set(0, handY - armRad * 0.7, armRad * 1.7);
       shoulderGroup.add(barrel);
     } else { // straight
-      const hand = new THREE.Mesh(new THREE.SphereGeometry(armRad * 0.9, 10, 10), sMat);
+      const hand = part(new THREE.Mesh(new THREE.SphereGeometry(armRad * 0.9, 10, 10), sMat), 'hand');
       hand.position.set(0, handY - armRad * 0.6, 0);
       shoulderGroup.add(hand);
     }
@@ -836,20 +841,20 @@ function buildRobot() {
     // Weapon attachment: sword/blaster on right arm, shield on left arm
     if (R.weapon !== 'none') {
       if (side === 1 && R.weapon === 'sword') {
-        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, lowerLen * 0.9, 0.18), darkMat);
+        const blade = part(new THREE.Mesh(new THREE.BoxGeometry(0.05, lowerLen * 0.9, 0.18), darkMat), 'hand_blade');
         blade.position.set(0, handY - lowerLen * 0.5, 0.1);
         shoulderGroup.add(blade);
       } else if (side === 1 && R.weapon === 'blaster') {
-        const blaster = new THREE.Mesh(new THREE.CylinderGeometry(armRad * 0.5, armRad * 0.5, lowerLen * 0.7, 10), darkMat);
+        const blaster = part(new THREE.Mesh(new THREE.CylinderGeometry(armRad * 0.5, armRad * 0.5, lowerLen * 0.7, 10), darkMat), 'hand_blaster');
         blaster.rotation.x = Math.PI / 2;
         blaster.position.set(0, handY - armRad * 0.6, lowerLen * 0.35);
         shoulderGroup.add(blaster);
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(armRad * 0.4, 8, 8), eyeMat);
+        const tip = part(new THREE.Mesh(new THREE.SphereGeometry(armRad * 0.4, 8, 8), eyeMat), 'hand_blaster_tip');
         tip.position.set(0, handY - armRad * 0.6, lowerLen * 0.7);
         shoulderGroup.add(tip);
         eyeGlow.push(tip.material);
       } else if (side === -1 && R.weapon === 'shield') {
-        const shield = new THREE.Mesh(new THREE.BoxGeometry(0.06, lowerLen, lowerLen * 0.8), sMat);
+        const shield = part(new THREE.Mesh(new THREE.BoxGeometry(0.06, lowerLen, lowerLen * 0.8), sMat), 'hand_shield');
         shield.position.set(0, handY - lowerLen * 0.5, 0);
         shoulderGroup.add(shield);
       }
@@ -862,18 +867,18 @@ function buildRobot() {
   /* ---- BACKPACK ---- */
   if (R.backpack === 'jetpack') {
     [-1, 1].forEach(function(side) {
-      const jet = new THREE.Mesh(new THREE.CylinderGeometry(armRad * 1.1, armRad * 1.3, bh * 0.7, 12), sMat);
+      const jet = part(new THREE.Mesh(new THREE.CylinderGeometry(armRad * 1.1, armRad * 1.3, bh * 0.7, 12), sMat), side < 0 ? 'jetpack_left' : 'jetpack_right');
       jet.position.set(side * torsoW * 0.22, torsoY, -torsoD / 2 - armRad * 1.3);
       jet.castShadow = true;
       robotGroup.add(jet);
-      const flame = new THREE.Mesh(new THREE.ConeGeometry(armRad * 1.0, bh * 0.25, 10), eyeMat);
+      const flame = part(new THREE.Mesh(new THREE.ConeGeometry(armRad * 1.0, bh * 0.25, 10), eyeMat), side < 0 ? 'jetpack_flame_left' : 'jetpack_flame_right');
       flame.rotation.x = Math.PI;
       flame.position.set(side * torsoW * 0.22, torsoY - bh * 0.45, -torsoD / 2 - armRad * 1.3);
       robotGroup.add(flame);
       eyeGlow.push(flame.material);
     });
   } else if (R.backpack === 'cargo') {
-    const cargo = new THREE.Mesh(new THREE.BoxGeometry(torsoW * 0.8, bh * 0.7, torsoD * 0.4), sMat);
+    const cargo = part(new THREE.Mesh(new THREE.BoxGeometry(torsoW * 0.8, bh * 0.7, torsoD * 0.4), sMat), 'cargo_pod');
     cargo.position.set(0, torsoY, -torsoD / 2 - torsoD * 0.2);
     cargo.castShadow = true;
     robotGroup.add(cargo);
@@ -1808,6 +1813,55 @@ function init() {
 }
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const ROBOT_TEMPLATES = [
+  { id: 'unit7', emoji: '🤖', name: 'UNIT-7', note: 'Visor head, claw arms and a jetpack  -  the quick-build star.',
+    data: { name: 'UNIT-7', headStyle: 'visor', torsoStyle: 'box', bodyHeight: 1.2, primaryCol: '#9ca3af', secondaryCol: '#374151', eyeCol: '#38bdf8', armStyle: 'claw', legStyle: 'biped', antenna: true, shoulderPads: true, backpack: 'jetpack', chestPanel: true, weapon: 'blaster', stripeOn: true, stripeCol: '#f5c842', activated: false } },
+  { id: 'scout', emoji: '🔭', name: 'Scout', note: 'Light dome head, straight arms  -  quick to print.',
+    data: { name: 'SCOUT', headStyle: 'dome', torsoStyle: 'box', bodyHeight: 1.0, primaryCol: '#e5e7eb', secondaryCol: '#6b7280', eyeCol: '#22c55e', armStyle: 'straight', legStyle: 'biped', antenna: false, shoulderPads: false, backpack: 'none', chestPanel: false, weapon: 'none', stripeOn: true, stripeCol: '#22c55e', activated: false } },
+  { id: 'titan', emoji: '🦾', name: 'Titan', note: 'Tank treads, cannon and heavy plating.',
+    data: { name: 'TITAN', headStyle: 'dome', torsoStyle: 'heavy', bodyHeight: 1.4, primaryCol: '#4b5563', secondaryCol: '#1f2937', eyeCol: '#ef4444', armStyle: 'cannon', legStyle: 'tank', antenna: true, shoulderPads: true, backpack: 'none', chestPanel: true, weapon: 'cannon', stripeOn: true, stripeCol: '#ef4444', activated: false } },
+  { id: 'sentry', emoji: '🛡️', name: 'Sentry', note: 'Box head, shield arm and biped legs.',
+    data: { name: 'SENTRY', headStyle: 'box', torsoStyle: 'box', bodyHeight: 1.3, primaryCol: '#fbbf24', secondaryCol: '#92400e', eyeCol: '#38bdf8', armStyle: 'shield', legStyle: 'biped', antenna: false, shoulderPads: true, backpack: 'none', chestPanel: true, weapon: 'none', stripeOn: false, stripeCol: '#fbbf24', activated: false } },
+  { id: 'jetter', emoji: '🚀', name: 'Jetter', note: 'Jetpack, visor and claw  -  built for the sky.',
+    data: { name: 'JETTER', headStyle: 'visor', torsoStyle: 'slim', bodyHeight: 1.1, primaryCol: '#38bdf8', secondaryCol: '#0c4a6e', eyeCol: '#f5c842', armStyle: 'claw', legStyle: 'biped', antenna: true, shoulderPads: false, backpack: 'jetpack', chestPanel: true, weapon: 'blaster', stripeOn: true, stripeCol: '#ffffff', activated: false } },
+  { id: 'bulwark', emoji: '⚙️', name: 'Bulwark', note: 'Heavy torso, straight arms and quadruped stance.',
+    data: { name: 'BULWARK', headStyle: 'dome', torsoStyle: 'heavy', bodyHeight: 1.2, primaryCol: '#a3a3a3', secondaryCol: '#52525b', eyeCol: '#a78bfa', armStyle: 'straight', legStyle: 'quad', antenna: false, shoulderPads: true, backpack: 'none', chestPanel: true, weapon: 'none', stripeOn: true, stripeCol: '#a78bfa', activated: false } }
+];
+
+function loadRobotTemplate(t) {
+  Object.assign(R, t.data, { activated: false });
+  buildRobot(); updateStats(); updateSpecCard(); syncRightBar();
+  sout('Template loaded: ' + t.data.name + '. Change anything, then export.');
+  toast('Template: ' + t.data.name);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: ROBOT_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadRobotTemplate(t); } }; }),
+    random: randomRobot,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Robot Builder',
+    units: 'm',
+    accent: '#38bdf8',
+    getGroup: function () { return robotGroup; },
+    getName: function () { return (window.R && R.name && R.name !== 'UNNAMED') ? R.name : 'robot'; },
+    say: sout,
+    png: downloadPNG,
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
 </script>
 <script defer src="../cookie-consent.js"></script>
 
@@ -1834,7 +1888,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         <div class="footer-brand">
             <div class="footer-logo">JVDesignStudio</div>
             <div class="footer-tagline">Coding &amp; Game Dev Workshops</div>
-            <p class="footer-blurb">Free coding and game development workshops for young creators. No install, no account - works on any school computer.</p>
+            <p class="footer-blurb">Free, guided coding and game development for young creators. Easy for families to start and practical for classrooms to use.</p>
         </div>
         <div class="footer-grid">
             <nav class="footer-col" aria-label="Explore">

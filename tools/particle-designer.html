@@ -312,6 +312,7 @@
 
 <div id="toast"></div>
 
+<script src="../hidpi-canvas.js"></script>
 <script>
 'use strict';
 const id=x=>document.getElementById(x);
@@ -401,8 +402,9 @@ let W,H,emitX,emitY;
 
 function resize(){
   const wrap=id('preview-wrap');
-  W=canvas.width=wrap.clientWidth;
-  H=canvas.height=wrap.clientHeight;
+  W=wrap.clientWidth;
+  H=wrap.clientHeight;
+  if(window.HiDPI) HiDPI.fit(canvas,W,H); else {canvas.width=W;canvas.height=H;}
   if(emitX===undefined || emitX<0 || emitX>W) emitX=W/2;
   if(emitY===undefined || emitY<0 || emitY>H) emitY=H*.65;
   emitX=Math.max(0,Math.min(W, emitX));
@@ -426,6 +428,10 @@ id('preview-wrap').addEventListener('click',e=>setEmitFromPoint(e.clientX,e.clie
 id('preview-wrap').addEventListener('mousemove',e=>{if(e.buttons===1)setEmitFromPoint(e.clientX,e.clientY);});
 id('preview-wrap').addEventListener('touchstart',e=>{if(e.touches[0]){setEmitFromPoint(e.touches[0].clientX,e.touches[0].clientY);e.preventDefault();}},{passive:false});
 id('preview-wrap').addEventListener('touchmove',e=>{if(e.touches[0]){setEmitFromPoint(e.touches[0].clientX,e.touches[0].clientY);e.preventDefault();}},{passive:false});
+// Finalise the emitter on release and drop any lingering touch state, so a
+// finger that leaves the canvas mid-drag does not keep the last coordinate.
+id('preview-wrap').addEventListener('touchend',e=>{const t=e.changedTouches&&e.changedTouches[0];if(t)setEmitFromPoint(t.clientX,t.clientY);e.preventDefault();},{passive:false});
+id('preview-wrap').addEventListener('touchcancel',e=>{e.preventDefault();},{passive:false});
 
 // -- Textures --
 function makeBuiltinTex(kind){

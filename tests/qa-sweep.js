@@ -28,7 +28,7 @@ const PAGES = [
   'workshops/learning-lab.html',
   'workshops/learn.html',
   'pages/dev-tools.html',
-  'tools/music-maker.html',
+  'tools/sound-studio.html',
   'tools/character-designer.html',
   'pages/books.html',
   'books/Pip_and_the_night_sky.html',
@@ -56,7 +56,7 @@ const PAGES = [
   console.log('page | dcl_ms | kb | domNodes | inlineKB | extJS | err | warn | failed');
   const rows = [];
   for (const rel of PAGES) {
-    const mob = /gem_match|critter|arcade|tiny-learners|music-maker/.test(rel);
+    const mob = /gem_match|critter|arcade|tiny-learners|sound-studio/.test(rel);
     const page = await browser.newPage();
     if (mob) await page.setViewport({ width: 390, height: 780, isMobile: true, hasTouch: true });
     else await page.setViewport({ width: 1366, height: 850 });

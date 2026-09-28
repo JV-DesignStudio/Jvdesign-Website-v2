@@ -126,6 +126,7 @@
   </div>
 </div>
 <div id="toast" class="toast"></div>
+<script src="../hidpi-canvas.js"></script>
 <script>
 let screenshotImg = null;
 
@@ -141,11 +142,14 @@ function loadScreenshot(input) {
   reader.readAsDataURL(file);
 }
 
-function renderPreview() {
-  const canvas = document.getElementById('preview');
+function renderPreview(target) {
+  const preview = document.getElementById('preview');
+  const canvas = target || preview;
   const ctx = canvas.getContext('2d');
   const w = 1280, h = 720;
-  canvas.width = w; canvas.height = h;
+  // Preview uses a HiDPI backing store; export targets stay at logical size.
+  if(canvas === preview && window.HiDPI){ HiDPI.fit(canvas, w, h, ctx); }
+  else { canvas.width = w; canvas.height = h; if(ctx.setTransform) ctx.setTransform(1,0,0,1,0,0); }
 
   // Background
   ctx.fillStyle = document.getElementById('bgColor').value;
@@ -215,9 +219,10 @@ function renderPreview() {
 }
 
 function exportPNG() {
-  const canvas = document.getElementById('preview');
+  const off = document.createElement('canvas');
+  renderPreview(off);
   const a = document.createElement('a');
-  a.href = canvas.toDataURL('image/png');
+  a.href = off.toDataURL('image/png');
   a.download = 'screenshot-' + Date.now() + '.png';
   a.click();
   showToast('PNG exported!');

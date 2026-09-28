@@ -341,9 +341,9 @@
 // ══════════════════════════════════════
 // TAB SWITCHING
 // ══════════════════════════════════════
-document.querySelectorAll('.tab-btn').forEach(function(btn){
+document.querySelectorAll('.hb-tab').forEach(function(btn){
   btn.addEventListener('click', function(){
-    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.hb-tab').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
     document.querySelectorAll('.worksheet').forEach(function(ws){ ws.classList.remove('visible'); });
     var target = document.getElementById(btn.getAttribute('data-tab'));
@@ -358,22 +358,41 @@ var GRID_COLORS = ['#a8d5a2','#6db5f5','#f5c842','#ef4444','#8b5cf6'];
 var currentColorIdx = 0;
 var grid = document.getElementById('levelGrid');
 if(grid){
+  var painting = false;
+  function paintAt(x, y){
+    var el = document.elementFromPoint(x, y);
+    if(el && el.classList && el.classList.contains('level-cell')){
+      el.style.background = GRID_COLORS[currentColorIdx];
+    }
+  }
   for(var r=0;r<12;r++){
     for(var c=0;c<20;c++){
       var cell = document.createElement('div');
       cell.className = 'level-cell';
       cell.dataset.row = r;
       cell.dataset.col = c;
-      cell.addEventListener('mousedown', function(e){
-        e.preventDefault();
-        this.style.background = GRID_COLORS[currentColorIdx];
-      });
-      cell.addEventListener('mouseenter', function(e){
-        if(e.buttons===1) this.style.background = GRID_COLORS[currentColorIdx];
-      });
       grid.appendChild(cell);
     }
   }
+  // Pointer events cover mouse, touch and pen; elementFromPoint lets a
+  // drag trace across cells on touch (where pointerenter is not delivered).
+  grid.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    painting = true;
+    if(grid.setPointerCapture && e.pointerId !== undefined){
+      try { grid.setPointerCapture(e.pointerId); } catch(err){}
+    }
+    paintAt(e.clientX, e.clientY);
+  });
+  grid.addEventListener('pointermove', function(e){
+    if(!painting) return;
+    e.preventDefault();
+    paintAt(e.clientX, e.clientY);
+  });
+  function endPaint(){ painting = false; }
+  grid.addEventListener('pointerup', endPaint);
+  grid.addEventListener('pointercancel', endPaint);
+  grid.addEventListener('pointerleave', endPaint);
   // Color picker
   document.querySelectorAll('.legend-swatch').forEach(function(sw,i){
     sw.style.cursor = 'pointer';

@@ -15,6 +15,7 @@
 <title>Pirate Cannon Forge | JVDesignStudio</title>
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="jv-exporter.js"></script>
 <link rel="preload" href="../style-workshop-pirate-cannon-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-workshop-pirate-cannon-builder.css?v=17"></noscript>
     <meta property="og:type"        content="website">
@@ -222,6 +223,8 @@ function initThree() {
   scene.add(point);
 
   cannonGroup = new THREE.Group();
+  cannonGroup.name = 'pirate_cannon';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
   scene.add(cannonGroup);
 
   // Controls
@@ -293,6 +296,7 @@ function rebuildCannon() {
   while (cannonGroup.children.length) cannonGroup.remove(cannonGroup.children[0]);
   if (workshopBox) { scene.remove(workshopBox); workshopBox = null; }
   if (gridHelper) { scene.remove(gridHelper); gridHelper = null; }
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
 
   const p = params;
 
@@ -327,6 +331,7 @@ function rebuildCannon() {
   const barrelPivot = new THREE.Group();
   barrelPivot.position.set(0, carriageTopY + p.barrelOuterR * 0.55, -p.carriageLen * 0.05);
   barrelPivot.rotation.x = angleRad; // positive X rotation tilts muzzle (+Z) upward
+  barrelPivot.name = 'barrel_pivot';
   cannonGroup.add(barrelPivot);
 
   // Helper: radius at a given t (0=breech, 1=muzzle)
@@ -354,14 +359,14 @@ function rebuildCannon() {
   // Lathe grows along Y; rotate so it grows along +Z instead
   barrel.rotation.x = -Math.PI / 2;
   barrel.position.z = breechZ;
-  barrelPivot.add(barrel);
+  barrelPivot.add(part(barrel, 'barrel'));
 
   // Inner bore (cylinder along Y ? rotate to Z)
   const boreGeo = new THREE.CylinderGeometry(p.barrelInnerR, p.barrelInnerR, p.barrelLen * 0.92, 16);
   const bore = new THREE.Mesh(boreGeo, boreMat);
   bore.rotation.x = Math.PI / 2;
   bore.position.z = breechZ + p.barrelLen * 0.5;
-  barrelPivot.add(bore);
+  barrelPivot.add(part(bore, 'barrel_bore'));
 
   // --- Muzzle Ring (torus wrapping around barrel at muzzle) ---
   if (p.muzzleRingSize > 0) {
@@ -372,7 +377,7 @@ function rebuildCannon() {
     // (XY torus around Z axis is exactly what we want)
     mRing.position.z = muzzleZ;
     mRing.castShadow = true;
-    barrelPivot.add(mRing);
+    barrelPivot.add(part(mRing, 'muzzle_ring'));
   }
 
   // --- Cascabel (rear knob + neck, behind breech) ---
@@ -380,13 +385,13 @@ function rebuildCannon() {
   const casc = new THREE.Mesh(cascGeo, metalMat);
   casc.position.z = breechZ - p.cascabelR * 0.6;
   casc.castShadow = true;
-  barrelPivot.add(casc);
+  barrelPivot.add(part(casc, 'cascabel'));
 
   const cascNeckGeo = new THREE.CylinderGeometry(p.cascabelNeckR, p.cascabelNeckR, p.cascabelR * 0.8, 12);
   const cascNeck = new THREE.Mesh(cascNeckGeo, metalMat);
   cascNeck.rotation.x = Math.PI / 2; // align along Z
   cascNeck.position.z = breechZ - p.cascabelR * 0.15;
-  barrelPivot.add(cascNeck);
+  barrelPivot.add(part(cascNeck, 'cascabel_neck'));
 
   // --- Trunnions (stick out sideways at pivot point Z=0) ---
   const trGeo = new THREE.CylinderGeometry(p.trunnionR, p.trunnionR, p.trunnionLen, 12);
@@ -396,7 +401,7 @@ function rebuildCannon() {
     tr.rotation.z = Math.PI / 2;
     tr.position.set(side * (radiusAt(0.25) + p.trunnionLen * 0.5), 0, 0);
     tr.castShadow = true;
-    barrelPivot.add(tr);
+    barrelPivot.add(part(tr, `trunnion_${side>0?'starboard':'port'}`));
   });
 
   // --- Reinforce Rings (torus bands along barrel) ---
@@ -408,7 +413,7 @@ function rebuildCannon() {
     // Torus in XY plane circles around Z , perfect
     ring.position.z = breechZ + p.barrelLen * t;
     ring.castShadow = true;
-    barrelPivot.add(ring);
+    barrelPivot.add(part(ring, `reinforce_ring_${i}`));
   }
 
   // --- Vent / Touch Hole (pokes out radially near breech) ---
@@ -418,7 +423,7 @@ function rebuildCannon() {
   const vent = new THREE.Mesh(ventGeo, ventMat2);
   // Vent pokes upward (along Y local) from barrel surface
   vent.position.set(0, radiusAt(0.12) * 0.5, ventZ);
-  barrelPivot.add(vent);
+  barrelPivot.add(part(vent, 'vent'));
 
   // =============================================
   // CARRIAGE GROUP , the wooden body, cheeks,
@@ -426,6 +431,7 @@ function rebuildCannon() {
   // they stay together.
   // =============================================
   const carriageGroup = new THREE.Group();
+  carriageGroup.name = 'carriage';
   cannonGroup.add(carriageGroup);
 
   // Main carriage box
@@ -434,7 +440,7 @@ function rebuildCannon() {
   carriage.position.y = p.wheelR + p.carriageH / 2;
   carriage.castShadow = true;
   carriage.receiveShadow = true;
-  carriageGroup.add(carriage);
+  carriageGroup.add(part(carriage, 'carriage_body'));
 
   // Carriage side cheeks (tapered)
   [-1, 1].forEach(side => {
@@ -449,7 +455,7 @@ function rebuildCannon() {
     cheek.rotation.y = Math.PI / 2;
     cheek.position.set(side * (p.carriageW / 2 + 0.012), p.wheelR, 0);
     cheek.castShadow = true;
-    carriageGroup.add(cheek);
+    carriageGroup.add(part(cheek, `carriage_cheek_${side>0?'starboard':'port'}`));
   });
 
   // Barrel cradle notches on top of cheeks
@@ -459,7 +465,7 @@ function rebuildCannon() {
     cradle.position.set(side * (p.carriageW / 2 + 0.012), carriageTopY + p.barrelOuterR * 0.1, -p.carriageLen * 0.05);
     cradle.rotation.x = Math.PI / 2;
     cradle.rotation.z = side > 0 ? Math.PI : 0;
-    carriageGroup.add(cradle);
+    carriageGroup.add(part(cradle, `carriage_cradle_${side>0?'starboard':'port'}`));
   });
 
   // Metal bands on carriage
@@ -468,7 +474,7 @@ function rebuildCannon() {
     const bandGeo = new THREE.BoxGeometry(p.carriageW + 0.01, 0.015, 0.02);
     const band = new THREE.Mesh(bandGeo, metalMat);
     band.position.set(0, p.wheelR + p.carriageH + 0.005, bandZ);
-    carriageGroup.add(band);
+    carriageGroup.add(part(band, `carriage_band_${i}`));
   }
 
   // --- Rope ---
@@ -480,7 +486,7 @@ function rebuildCannon() {
         new THREE.Vector3(side * p.carriageW * 0.4, carriageTopY + 0.02, 0),
       ]);
       const ropeGeo = new THREE.TubeGeometry(ropeCurve, 20, 0.006, 6, false);
-      carriageGroup.add(new THREE.Mesh(ropeGeo, ropeMat));
+      carriageGroup.add(part(new THREE.Mesh(ropeGeo, ropeMat), `carriage_rope_${side>0?'starboard':'port'}`));
     });
   }
 
@@ -494,13 +500,14 @@ function rebuildCannon() {
     const wedgeGeo = new THREE.ExtrudeGeometry(wedgeShape, { depth: 0.06, bevelEnabled: false });
     const wedge = new THREE.Mesh(wedgeGeo, woodMat);
     wedge.position.set(-0.03, carriageTopY, -p.carriageLen * 0.32);
-    carriageGroup.add(wedge);
+    carriageGroup.add(part(wedge, 'quoin_wedge'));
   }
 
   // =============================================
   // WHEEL + AXLE GROUP
   // =============================================
   const wheelAxleGroup = new THREE.Group();
+  wheelAxleGroup.name = 'wheels';
   cannonGroup.add(wheelAxleGroup);
 
   [-1, 1].forEach(side => {
@@ -508,12 +515,12 @@ function rebuildCannon() {
     // Rim
     const rimGeo = new THREE.TorusGeometry(p.wheelR, p.wheelThick * 0.5, 8, 32);
     const rim = new THREE.Mesh(rimGeo, wheelMat);
-    wheelGroup.add(rim);
+    wheelGroup.add(part(rim, `wheel_rim_${side>0?'starboard':'port'}`));
     // Hub
     const hubGeo = new THREE.CylinderGeometry(p.wheelThick, p.wheelThick, p.wheelThick * 1.5, 12);
     const hub = new THREE.Mesh(hubGeo, metalMat);
     hub.rotation.x = Math.PI / 2;
-    wheelGroup.add(hub);
+    wheelGroup.add(part(hub, `wheel_hub_${side>0?'starboard':'port'}`));
     // Spokes
     for (let s = 0; s < p.spokeCount; s++) {
       const ang = (s / p.spokeCount) * Math.PI * 2;
@@ -521,7 +528,7 @@ function rebuildCannon() {
       const spoke = new THREE.Mesh(spokeGeo, wheelMat);
       spoke.position.set(Math.cos(ang) * p.wheelR * 0.45, Math.sin(ang) * p.wheelR * 0.45, 0);
       spoke.rotation.z = ang + Math.PI / 2;
-      wheelGroup.add(spoke);
+      wheelGroup.add(part(spoke, `wheel_spoke_${side>0?'starboard':'port'}_${s}`));
     }
     wheelGroup.rotation.y = Math.PI / 2;
     wheelGroup.position.set(side * (p.carriageW / 2 + p.wheelThick), p.wheelR, -p.carriageLen * 0.15);
@@ -534,7 +541,7 @@ function rebuildCannon() {
   const axle = new THREE.Mesh(axleGeo, metalMat);
   axle.rotation.z = Math.PI / 2;
   axle.position.set(0, p.wheelR, -p.carriageLen * 0.15);
-  wheelAxleGroup.add(axle);
+  wheelAxleGroup.add(part(axle, 'axle'));
 
   // Ground plane
   const floorGeo = new THREE.PlaneGeometry(p.wsWidth, p.wsDepth);
@@ -542,7 +549,7 @@ function rebuildCannon() {
   const floor = new THREE.Mesh(floorGeo, floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
-  cannonGroup.add(floor);
+  cannonGroup.add(part(floor, 'ground'));
 
   // Update dimension display
   document.getElementById('wsWidth').textContent = p.wsWidth.toFixed(1);
@@ -906,5 +913,18 @@ window.BQ={"key":"jvds-pirate-cannon-v2","name":"Pirate Cannon Forge","profileId
 </script>
 <script defer src="workshop-track.js"></script>
 <script defer src="/mascots.js"></script>
+<script>
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Pirate Cannon Forge',
+    units: 'm',
+    accent: '#c9a84c',
+    mount: '.header-actions',
+    getGroup: function () { return cannonGroup; },
+    getName: function () { return 'pirate-cannon'; },
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
+</script>
 </body>
 </html>

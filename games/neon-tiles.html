@@ -23,7 +23,7 @@
 <link rel="stylesheet" href="../style-game-neon-tiles.css?v=22">
 <link rel="stylesheet" href="../style-mascots.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Neon Tiles: Beat Builder","url":"https://jvdesignstudio.co.uk/games/neon-tiles.html","description":"A proper web rhythm game with song choice, falling notes, timing grades, combo streaks, health and unlockable neon tracks.","genre":"Rhythm","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/NeonTilesCover.webp"}</script>
-</head>
+<style>.quality-panel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 16px}.quality-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:12px}.quality-card b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#b98bff;margin-bottom:4px}.quality-card span{font-size:.84rem;line-height:1.4;color:rgba(255,255,255,.86)}.quality-card a{color:#4fd6c8;font-weight:800}.daily-card{background:linear-gradient(135deg,rgba(185,139,255,.18),rgba(79,214,200,.14));border:1px solid rgba(185,139,255,.4);border-radius:16px;padding:10px;margin-bottom:10px}.daily-card b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#b98bff;margin-bottom:4px}.daily-card span{font-size:.84rem;line-height:1.4;color:#fff;display:block}.daily-card .streak{color:#4fd6c8;font-weight:800}@media(max-width:900px){.quality-panel{grid-template-columns:1fr 1fr}}@media(max-width:560px){.quality-panel{grid-template-columns:1fr}}</style></head>
 <body>
 <div class="game-shell">
   <header class="topbar">
@@ -38,12 +38,20 @@
     </div>
   </header>
 
+  <section class="quality-panel" aria-label="How this game works">
+    <div class="quality-card"><b>Goal</b><span>Pick a track, hit the notes on the line and earn the best grade you can.</span></div>
+    <div class="quality-card"><b>Skill</b><span>Rhythm timing, pattern reading and focus.</span></div>
+    <div class="quality-card"><b>Session</b><span>3-5 min, touch pads or D F J K.</span></div>
+    <div class="quality-card"><b>Build next</b><span><a href="../tools/sound-studio.html">Compose your own track in Sound Studio</a></span></div>
+  </section>
+
   <main class="rhythm-layout">
     <section class="song-panel panel" aria-label="Song choice">
       <div class="panel-head">
         <span>Song select</span>
         <b id="bestBadge">Best: 0</b>
       </div>
+      <div class="daily-card" id="dailyCard"><b>Daily Challenge</b><span id="dailyText">Loading today's track...</span></div>
       <div id="songList" class="song-list"></div>
       <div class="mod-card">
         <p>Speed</p>
@@ -125,10 +133,30 @@ let stats = resetStats();
 const travelMsBase = 1850;
 const hitY = 82;
 
-function loadProgress(){ try{return Object.assign({unlocked:1,best:{}}, JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));}catch(e){return {unlocked:1,best:{}};} }
+function loadProgress(){ const base={unlocked:1,best:{},daily:{streak:0,last:''}}; try{return Object.assign(base, JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));}catch(e){return base;} }
 function saveProgress(){ try{localStorage.setItem(SAVE_KEY, JSON.stringify(progress));}catch(e){} }
 function resetStats(){ return {score:0,combo:0,maxCombo:0,perfect:0,good:0,miss:0,hits:0,total:0,life:100,grade:'-',ended:false}; }
 function isUnlocked(song){ return !song.unlock || progress.unlocked >= song.unlock; }
+const gradeRank={S:5,A:4,B:3,C:2,D:1,F:0};
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function yesterdayKey(){ const d=new Date(); d.setDate(d.getDate()-1); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function dailySong(){ let h=0; const k=todayKey(); for(let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0; return songs[h % songs.length]; }
+function dailyTarget(){ return ['A','B','B','C'][new Date().getDate() % 4]; }
+function bumpDaily(met){
+  const d=progress.daily||(progress.daily={streak:0,last:''});
+  const t=todayKey();
+  if(!met || d.last===t) return;
+  d.streak=(d.last===yesterdayKey()?d.streak:0)+1;
+  d.last=t;
+  saveProgress();
+}
+function renderDaily(){
+  const el=document.getElementById('dailyText');
+  if(!el) return;
+  const s=dailySong(), t=dailyTarget(), d=progress.daily||{streak:0,last:''};
+  const done=d.last===todayKey();
+  el.innerHTML='Today: <b style="display:inline;color:#fff">'+s.title+'</b> - reach grade '+t+'. <span class="streak">🔥 '+d.streak+' day streak</span>'+(done?' - done today ✅':'');
+}
 function beatMs(song){ return 60000 / song.bpm; }
 function songLength(song){ return (Math.max(...song.pattern.map(n=>n[0])) + 4) * beatMs(song); }
 function makeChart(song){
@@ -154,6 +182,7 @@ function buildPads(){
 }
 function updateUi(){
   renderSongs();
+  renderDaily();
   document.getElementById('nowTitle').textContent=selected.title;
   document.getElementById('nowInfo').textContent=selected.mood+' · '+selected.bpm+' BPM · Level '+selected.level;
   document.getElementById('bestBadge').textContent='Best: '+(progress.best[selected.id]?.score||0);
@@ -254,6 +283,8 @@ function endSong(cleared){
   if(stats.maxCombo>=25) gameSystem.unlockAchievement('combo25');
   if(grade==='S') gameSystem.unlockAchievement('perfectRhythm');
   gameSystem.saveState();
+  gameSystem.recordGamePlay(90000);
+  bumpDaily(selected.id===dailySong().id && gradeRank[grade]>=gradeRank[dailyTarget()]);
   updateUi();
   showResult(cleared, grade, acc, stars);
 }
