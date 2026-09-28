@@ -14,6 +14,11 @@
 <meta property="og:image" content="https://jvdesignstudio.co.uk/og/bakery-empire.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="../logo.png" type="image/png">
+<!-- BUILD:head-icons -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- /BUILD:head-icons -->
 <link rel="manifest" href="../manifest.json">
 <script defer src="../analytics-loader.js"></script>
 <script src="../game-system.js"></script>
@@ -31,7 +36,7 @@
   <main class="bakery-layout">
     <section class="panel customer-panel"><div class="panel-head"><span>Customer queue</span><b id="dayBadge">Day 1</b></div><div class="customers" id="customers"></div><div class="goal-card"><p>Shift goals</p><div id="goals"></div></div></section>
     <section class="shop-floor"><div class="hud"><div><small>Coins</small><b id="coinVal">£0</b></div><div><small>Served</small><b id="servedVal">0</b></div><div><small>Stars</small><b id="starVal">0</b></div><div><small>Time</small><b id="timeVal">90</b></div></div><div class="counter"><div class="pip">🐶<span>Pip</span></div><div class="workbench" id="workbench"></div><div class="oven-row" id="ovens"></div><div class="decor-row" id="decor"></div></div><div class="recipe-row" id="recipes"></div><p class="status" id="status">Pick an order, choose a recipe, then prep → bake → decorate → serve.</p></section>
-    <section class="panel upgrade-panel"><div class="now-order" id="nowOrder"></div><div class="upgrades"><h2>Shop upgrades</h2><button data-upgrade="oven">🔥 Faster oven <b id="ovenUp">£45</b></button><button data-upgrade="patience">💛 Comfy queue <b id="patienceUp">£40</b></button><button data-upgrade="tips">✨ Tip jar <b id="tipsUp">£55</b></button></div><div class="coach" id="coach">Don’t let orders burn. The sweet spot is when the oven timer turns green.</div><button class="primary" id="startBtn">Start Shift</button></section>
+    <section class="panel upgrade-panel"><div class="now-order" id="nowOrder"></div><div class="upgrades"><h2>Shop upgrades</h2><button data-upgrade="oven">🔥 Faster oven <b id="ovenUp">£45</b></button><button data-upgrade="patience">💛 Comfy queue <b id="patienceUp">£40</b></button><button data-upgrade="tips">✨ Tip jar <b id="tipsUp">£55</b></button></div><div class="coach coach--live" id="coach">Bakery Coach: don't let orders burn. The sweet spot is when the oven timer turns green.</div><button class="primary" id="startBtn">Start Shift</button></section>
   </main>
 </div>
 <div class="modal" id="modal" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-emoji" id="modalEmoji">🥐</div><h2 id="modalTitle">Pip's Bakery Rush</h2><p id="modalText">Serve customers through a busy bakery shift.</p><div class="modal-stats" id="modalStats"></div><button class="primary" id="modalPrimary">Start Shift</button><button class="ghost" onclick="location.href='../pages/games.html'">Back to Games</button></div></div>
@@ -58,9 +63,9 @@ function startDecor(itemId){if(activeDecor){setStatus('Decor station is busy.');
 function serve(itemId){if(!selectedCustomer){setStatus('Select the customer this bake is for.');return;}const item=state.ready.find(i=>i.id===itemId)||state.items.find(i=>i.id===itemId&&i.stage==='burnt');if(!item){setStatus('No finished bake selected.');return;}const correct=item.recipe.id===selectedCustomer.recipe.id,patience=Math.max(0,selectedCustomer.patience),tip=correct?Math.round((patience/100)*selectedCustomer.bonus*(1+progress.upgrades.tips*.35)):0,coins=correct?item.recipe.price+tip:Math.round(item.recipe.price*.25);state.coins+=coins;state.served++;state.score+=coins*10+(correct?Math.round(patience)*3:0);if(correct&&item.stage!=='burnt')state.stars+=item.quality>=3&&patience>65?2:1;state.queue=state.queue.filter(c=>c.id!==selectedCustomer.id);selectedCustomer=null;state.ready=state.ready.filter(i=>i.id!==itemId);state.items=state.items.filter(i=>i.id!==itemId);setStatus(correct?'Served! +£'+coins:'Wrong order. Small refund only.');audioEffects.playPop();render();if(state.served>=state.goalServe&&state.coins>=state.goalCoins)endShift();}
 function binItem(id){state.items=state.items.filter(i=>i.id!==id);state.ready=state.ready.filter(i=>i.id!==id);setStatus('Cleared the counter.');render();}
 function buyUpgrade(type){const cost={oven:45+progress.upgrades.oven*35,patience:40+progress.upgrades.patience*30,tips:55+progress.upgrades.tips*35}[type];if(state.coins<cost){setStatus('Need £'+cost+' for that upgrade.');return;}state.coins-=cost;progress.upgrades[type]++;saveProgress();setStatus('Upgrade bought!');audioEffects.playSuccess();render();}
-function endShift(){if(!running)return;running=false;clearInterval(tickTimer);clearInterval(spawnTimer);const stars=(state.served>=state.goalServe&&state.coins>=state.goalCoins&&state.lost<=1)?3:(state.served>=Math.ceil(state.goalServe*.75)?2:(state.served>=4?1:0));progress.day++;progress.stars+=stars;progress.bestCoins=Math.max(progress.bestCoins,state.coins);saveProgress();gameSystem.addScore(state.score+state.coins*5);gameSystem.addXP(20+stars*25+state.served*4);gameSystem.unlockAchievement('firstShift');if(stars>=3)gameSystem.unlockAchievement('threeStarShift');if(state.served>=10)gameSystem.unlockAchievement('rushHour');gameSystem.saveState();showModal(stars>=2?'🎉':'🥐','Shift Complete',('⭐'.repeat(stars)||'No stars yet')+' · Served '+state.served+' customers and earned £'+state.coins,[['Coins','£'+state.coins],['Served',state.served],['Lost',state.lost],['Shop stars',progress.stars]],'Next Shift',startShift);}
+function endShift(){if(!running)return;running=false;clearInterval(tickTimer);clearInterval(spawnTimer);const stars=(state.served>=state.goalServe&&state.coins>=state.goalCoins&&state.lost<=1)?3:(state.served>=Math.ceil(state.goalServe*.75)?2:(state.served>=4?1:0));progress.day++;progress.stars+=stars;progress.bestCoins=Math.max(progress.bestCoins,state.coins);saveProgress();gameSystem.addScore(state.score+state.coins*5);gameSystem.recordGamePlay(90000);bumpBakeryDaily(state.coins);gameSystem.addXP(20+stars*25+state.served*4);gameSystem.unlockAchievement('firstShift');if(stars>=3)gameSystem.unlockAchievement('threeStarShift');if(state.served>=10)gameSystem.unlockAchievement('rushHour');gameSystem.saveState();showModal(stars>=2?'🎉':'🥐','Shift Complete',('⭐'.repeat(stars)||'No stars yet')+' · Served '+state.served+' customers and earned £'+state.coins,[['Coins','£'+state.coins],['Served',state.served],['Lost',state.lost],['Shop stars',progress.stars]],'Next Shift',startShift);}
 function togglePause(){if(!running)return;paused=!paused;if(paused){pauseAt=performance.now();document.getElementById('pauseBtn').textContent='▶';setStatus('Paused.');}else{const d=performance.now()-pauseAt;shiftStart+=d;state.ovens.forEach(o=>{if(o)o.finish+=d});document.getElementById('pauseBtn').textContent='⏸';setStatus('Back to baking!');}}
-function render(){renderCustomers();renderRecipes();renderWorkbench();renderOvens();renderDecor();renderGoals();renderOrder();renderHud();}
+function render(){renderCustomers();renderRecipes();renderWorkbench();renderOvens();renderDecor();renderGoals();renderOrder();renderHud();updateCoach();}
 function renderCustomers(){const box=document.getElementById('customers');box.innerHTML='';state.queue.forEach(c=>{const el=document.createElement('button');el.className='customer '+(selectedCustomer&&selectedCustomer.id===c.id?'active':'');el.onclick=()=>selectCustomer(c.id);el.innerHTML='<span class="face">'+c.recipe.icon+'</span><b>'+c.name+'</b><em>'+c.recipe.name+'</em><i><span style="width:'+Math.max(0,c.patience)+'%"></span></i>';box.appendChild(el);});if(!state.queue.length)box.innerHTML='<p class="empty">No queue yet.</p>';}
 function renderRecipes(){const box=document.getElementById('recipes');box.innerHTML='';recipes.forEach(r=>{const btn=document.createElement('button');btn.className='recipe '+(selectedRecipe.id===r.id?'active':'');btn.onclick=()=>selectRecipe(r.id);btn.innerHTML='<b>'+r.icon+'</b><span>'+r.name+'</span><em>£'+r.price+'</em>';box.appendChild(btn);});}
 function renderWorkbench(){const box=document.getElementById('workbench');box.innerHTML='<button class="station prep" onclick="startPrep()"><b>🥣 Prep bench</b><span>'+(activePrep?'Mixing '+activePrep.recipe.name:'Tap to prep '+selectedRecipe.name)+'</span></button><div class="items" id="rawItems"></div>';const raw=box.querySelector('#rawItems');state.items.filter(i=>i.stage==='raw').forEach(item=>{const b=document.createElement('button');b.className='item raw';b.innerHTML=item.recipe.icon+' raw';b.onclick=()=>loadOven(firstFreeOven(),item.id);raw.appendChild(b);});state.items.filter(i=>i.stage==='burnt').forEach(item=>{const b=document.createElement('button');b.className='item burnt';b.innerHTML='🔥 burnt '+item.recipe.icon;b.onclick=()=>binItem(item.id);raw.appendChild(b);});}
@@ -69,11 +74,47 @@ function renderDecor(){const box=document.getElementById('decor');box.innerHTML=
 function renderGoals(){document.getElementById('goals').innerHTML=goal('Serve',state.served,state.goalServe)+goal('Coins',state.coins,state.goalCoins)+goal('Lost max',Math.max(0,1-state.lost),1);}function goal(label,now,need){return '<div class="goal"><span>'+label+'</span><b>'+Math.min(now,need)+'/'+need+'</b><i style="width:'+Math.min(100,now/need*100)+'%"></i></div>';}
 function renderOrder(){const box=document.getElementById('nowOrder');box.innerHTML=selectedCustomer?'<p>Selected order</p><h2>'+selectedCustomer.recipe.icon+' '+selectedCustomer.recipe.name+'</h2><span>'+selectedCustomer.name+' · patience '+Math.round(selectedCustomer.patience)+'% · tip £'+selectedCustomer.bonus+'</span>':'<p>Selected order</p><h2>No customer yet</h2><span>Tap a customer in the queue.</span>';}
 function renderHud(){document.getElementById('coinVal').textContent='£'+state.coins;document.getElementById('servedVal').textContent=state.served;document.getElementById('starVal').textContent=state.stars;document.getElementById('timeVal').textContent=state.dayTime;document.getElementById('dayBadge').textContent='Day '+progress.day;document.getElementById('ovenUp').textContent='£'+(45+progress.upgrades.oven*35);document.getElementById('patienceUp').textContent='£'+(40+progress.upgrades.patience*30);document.getElementById('tipsUp').textContent='£'+(55+progress.upgrades.tips*35);}
-function setStatus(t){document.getElementById('status').textContent=t;document.getElementById('coach').textContent=t;}
+function setStatus(t){document.getElementById('status').textContent=t;}
+function updateCoach(){
+  const el=document.getElementById('coach'); if(!el) return;
+  let t;
+  if(!running){ t='Press Start Shift. Goal: serve 8 customers and earn £120 in 90 seconds.'; }
+  else if(!selectedCustomer&&!state.ready.length&&!state.items.length) t='Tap a customer to pick their order, then prep the recipe on the bench.';
+  else {
+    const burning=state.ovens.findIndex(o=>o&&!o.burnt&&o.left<1200);
+    const burnt=state.ovens.some(o=>o&&o.burnt);
+    const low=state.queue.slice().sort((a,b)=>a.patience-b.patience)[0];
+    const cheap=Math.min(45+progress.upgrades.oven*35, 40+progress.upgrades.patience*30, 55+progress.upgrades.tips*35);
+    if(burning>=0) t='Oven '+(burning+1)+' is nearly ready. Collect it before it burns.';
+    else if(burnt) t='A bake burnt. Tap it to bin it so the counter stays clear.';
+    else if(state.ready.length) t='A bake is ready. Select the customer it is for, then serve it.';
+    else if(low&&low.patience<35) t=low.name+' is losing patience. Serve them next.';
+    else if(state.coins>=cheap&&(progress.upgrades.oven<4||progress.upgrades.patience<4||progress.upgrades.tips<4)) t='You can afford an upgrade. Spend coins before the shift ends.';
+    else if(selectedCustomer) t='Serving '+selectedCustomer.name+' ('+selectedCustomer.recipe.name+'). Prep, bake, decorate, serve.';
+    else t='Prep the selected recipe, load a raw bake into an oven, watch the timer.';
+  }
+  if(el.textContent!==t) el.textContent=t;
+}
+function bakeryDayKey(prev){ const d=new Date(); if(prev) d.setDate(d.getDate()-1); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function bakeryDailyTarget(){ return 150+((new Date().getDate())%4)*50; }
+function renderDaily(){
+  const host=document.getElementById('bakeryDaily'); if(!host) return;
+  const d=progress.daily||{streak:0,last:''}, done=d.last===bakeryDayKey();
+  host.innerHTML='🔥 Daily: earn <b>£'+bakeryDailyTarget()+'</b> in one shift. Streak: <b>'+d.streak+'</b> day'+(d.streak===1?'':'s')+(done?' · done today ✅':'');
+}
+function bumpBakeryDaily(coins){
+  if(coins<bakeryDailyTarget()) return;
+  progress.daily=progress.daily||{streak:0,last:''};
+  if(progress.daily.last===bakeryDayKey()) return;
+  progress.daily.streak=(progress.daily.last===bakeryDayKey(true)?progress.daily.streak:0)+1;
+  progress.daily.last=bakeryDayKey();
+  saveProgress();
+  renderDaily();
+}
 function showModal(emoji,title,text,stats,button,action){document.getElementById('modalEmoji').textContent=emoji;document.getElementById('modalTitle').textContent=title;document.getElementById('modalText').textContent=text;document.getElementById('modalStats').innerHTML=stats.map(s=>'<div><span>'+s[0]+'</span><b>'+s[1]+'</b></div>').join('');document.getElementById('modalPrimary').textContent=button;document.getElementById('modalPrimary').onclick=action;document.getElementById('modal').classList.add('show');}
 function showHelp(){showModal('🥐','How to Play','Pick a customer, prep their recipe, load raw dough into an oven, collect it before it burns, decorate it, then serve the selected customer.',[['Prep','choose recipe then mix'],['Bake','green timer is best'],['Serve','match the selected order']],running?'Resume':'Start Shift',()=>{document.getElementById('modal').classList.remove('show');if(!running)startShift();});}
 document.getElementById('startBtn').onclick=startShift;document.getElementById('pauseBtn').onclick=togglePause;document.getElementById('helpBtn').onclick=showHelp;document.querySelectorAll('[data-upgrade]').forEach(b=>b.onclick=()=>buyUpgrade(b.dataset.upgrade));
-showModal('🥐',"Pip's Bakery Rush",'A proper bakery service game: manage orders, oven timers, decoration, patience and upgrades through a busy shift.',[['Best coins','£'+progress.bestCoins],['Shop stars',progress.stars],['Upgrades',Object.values(progress.upgrades).reduce((a,b)=>a+b,0)]],'Start Shift',startShift);render();
+showModal('🥐',"Pip's Bakery Rush",'A proper bakery service game: manage orders, oven timers, decoration, patience and upgrades through a busy shift.',[['Best coins','£'+progress.bestCoins],['Shop stars',progress.stars],['Upgrades',Object.values(progress.upgrades).reduce((a,b)=>a+b,0)]],'Start Shift',startShift);render();renderDaily();
 </script>
 <script defer src="../cookie-consent.js"></script><script defer src="../mascots.js"></script>
 <script defer src="../game-shell.js"></script>

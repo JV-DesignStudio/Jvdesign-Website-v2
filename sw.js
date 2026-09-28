@@ -2,7 +2,8 @@
 // v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
 // v22 (A256): precache jvds-store.js (backpack + progress) and refresh nav.js (profile chip reads jvds_profile)
 // v25 (A332): add pixel-studio shared dependencies so tool fully works offline on first visit
-const CACHE='jvds-v27';
+// v28 (A611): offline fallback uses the small pip-hero.webp instead of the 2.5 MB pip.png
+const CACHE='jvds-v28';
 const CORE=[
   '/',
   '/offline.html',
@@ -37,6 +38,7 @@ const CORE=[
   '/assets/mascots/ember-badge.webp',
   '/assets/mascots/lumo-badge.webp',
   '/assets/mascots/pip-badge.webp',
+  '/assets/mascots/pip-hero.webp',
   '/tools/gallery.html'
 ];
 
