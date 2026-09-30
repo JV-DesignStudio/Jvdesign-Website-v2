@@ -3345,7 +3345,7 @@ window.JVDS_CONTENT = {
       "category": "Chill",
       "cover": "cozy-creatures.webp",
       "bg": "linear-gradient(135deg,#a8d8ea,#ffffd2)",
-      "desc": "Gentle kids game , snuggle, play and explore with cozy creatures. Ages 3-8.",
+      "desc": "A gentle tabletop rulebook for the Cozy Creatures Snuggle board game. Read the rules together, then play at the table. Ages 3-8.",
       "kids": true,
       "age": "Ages 3-8",
       "character": null,
@@ -4104,7 +4104,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-30T14:12:11.251Z",
+    "generated": "2026-09-30T14:41:14.265Z",
     "workshops": 186,
     "games": 40,
     "tools": 37,
