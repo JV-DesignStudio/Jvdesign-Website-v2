@@ -18,6 +18,13 @@ if (found.length) {
   if(DRY_RUN){ console.log('[dry-run] '+msg); }
   else { console.error(msg); process.exit(1); }
 }
+// Admin/approval tools must never live at the public root (they leak tokens/PAT fields).
+const privateAtRoot = fs.readdirSync(root).filter(name => /-private\.html$/i.test(name));
+if (privateAtRoot.length) {
+  const msg='Private admin pages must not be served from the site root: ' + privateAtRoot.join(', ') + '\nMove the tooling into studio-workspace (outside the public repo).';
+  if(DRY_RUN){ console.log('[dry-run] '+msg); }
+  else { console.error(msg); process.exit(1); }
+}
 // Queue drafts must never be tracked - only .gitkeep is allowed in social-posts/queue/
 const queueDir = path.join(root, 'social-posts/queue');
 if (fs.existsSync(queueDir)) {
@@ -48,9 +55,9 @@ const leakPatterns = [
   /\.board-token/i,
 ];
 // rel-path scoped: prevents same-basename files in subdirs from inheriting the skip
-const ALLOWED_LEAK_FILES = new Set(['scripts/validate-public-boundary.js', 'scripts/check-dashes.cjs', 'docs/A29_PROVENANCE.md', 'approve-private.html']);
+const ALLOWED_LEAK_FILES = new Set(['scripts/validate-public-boundary.js', 'scripts/check-dashes.cjs', 'docs/A29_PROVENANCE.md']);
 // files where .env / BREVO / ga4-key mention is documentation only - checked by rel path, not basename
-const DOC_LEAK_ALLOW = new Set(['docs/A29_PROVENANCE.md', 'scripts/send-newsletter.js', 'tools/sound-studio.html', 'approve-private.html', 'board-data.json', 'content/stats.json', 'content-data.js', 'pages/dev-board.html', 'dev-board.html', 'devlog-data.js']);
+const DOC_LEAK_ALLOW = new Set(['docs/A29_PROVENANCE.md', 'scripts/send-newsletter.js', 'tools/sound-studio.html', 'board-data.json', 'content/stats.json', 'content-data.js', 'pages/dev-board.html', 'dev-board.html', 'devlog-data.js']);
 const SCAN_EXTS = ['.js','.cjs','.html','.ps1','.md','.json','.txt','.yml','.yaml'];
 const walkForLeaks=(dir,depth=0)=>{
   if(depth>12) return [];

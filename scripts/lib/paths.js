@@ -23,7 +23,9 @@ const IGNORE_DIRS = new Set([
   'social-posts', 'docs', 'scripts', 'questlog-pwa', 'arcade-app',
   'assets', 'Character Refrence sheets', 'StardustbookPreview',
   'Session and Notes Part 2', 'Session Notes and Documents',
-  'chars', 'chars-orig', 'models', 'covers'
+  'chars', 'chars-orig', 'models', 'covers',
+  // Internal-only: never published, so never sitemap/search/validate as pages.
+  'tmp', 'archive'
 ]);
 
 // Files never indexed as public pages (noindex or dev templates)
