@@ -107,7 +107,19 @@ function walk(dir) {
         await new Promise(r => setTimeout(r, SETTLE_MS));
         loaded++;
       } catch (e) {
-        errs.add('page failed to load: ' + e.message.split('\n')[0].slice(0, 60));
+        // A page whose whole job is a redirect (<meta http-equiv="refresh"> or an
+        // immediate location change, e.g. dev-board.html, pages/newsletter.html)
+        // starts navigating away the instant it loads. Puppeteer then reports the
+        // in-flight navigation being torn down as "Execution context was destroyed"
+        // / "Navigating frame was detached" / ERR_ABORTED. That is the page working
+        // as intended, not dead JavaScript, so count it as loaded rather than a
+        // failure. A genuine load failure still lands in errs below.
+        const m = e.message.split('\n')[0];
+        if (/Execution context was destroyed|Navigating frame was detached|ERR_ABORTED/i.test(m)) {
+          loaded++;
+        } else {
+          errs.add('page failed to load: ' + m.slice(0, 60));
+        }
       }
       page.off('pageerror', onPageErr);
       page.off('console', onConsole);
