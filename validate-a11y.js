@@ -40,6 +40,7 @@ const STRICT = process.argv.includes('--strict') || process.env.A11Y_STRICT === 
 const ALL = process.argv.includes('--all');
 const AREA = (process.argv.find(a => a.startsWith('--area=')) || '').split('=')[1] || null;
 const CONCURRENCY = 6;
+const VIEWPORTS = [{ width: 390, height: 844 }, { width: 1440, height: 900 }]; // A679: tools must pass at phone + desktop
 
 function walk(dir) {
   let out = [];
@@ -77,8 +78,12 @@ const CHECKS = `(() => {
     if (el.closest('[aria-hidden="true"]')) continue;
     if (el.tagName === 'INPUT' && /hidden/i.test(el.type)) continue;
     if (bot(el) || !visible(el)) continue;
+    const desc = el.tagName.toLowerCase() + (el.id ? ' #' + el.id : el.className ? '.' + String(el.className).split(/\\s+/)[0] : '');
     if (el.tagName === 'A' && el.getAttribute('href') === '#') { if (!accName(el)) issues.push('control: empty # link'); continue; }
-    if (!accName(el)) issues.push('control: no accessible name on ' + el.tagName.toLowerCase() + (el.id ? ' #' + el.id : el.className ? '.' + String(el.className).split(/\\s+/)[0] : ''));
+    const name = accName(el);
+    if (!name) { issues.push('control: no accessible name on ' + desc); continue; }
+    const explicit = el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title');
+    if (!explicit && !/[A-Za-z0-9]/.test(name)) issues.push('control: icon-only label on ' + desc);
   }
   for (const el of document.querySelectorAll('input:not([type=hidden]), select, textarea')) {
     if (bot(el) || !visible(el)) continue;
@@ -115,11 +120,15 @@ const CHECKS = `(() => {
       const rel = queue.pop(); if (!rel) break;
       try {
         await page.goto('file:///' + path.join(ROOT, rel).split(path.sep).join('/'), { waitUntil: 'load', timeout: 20000 });
-        const issues = await page.evaluate(CHECKS);
+        const found = new Set();
+        for (const vp of VIEWPORTS) {
+          await page.setViewport(vp);
+          for (const it of await page.evaluate(CHECKS)) found.add(it);
+        }
         loaded++;
-        if (issues.length) {
+        if (found.size) {
           withIssues++;
-          for (const it of issues) {
+          for (const it of found) {
             const k = it.split(':')[0];
             counts[k] = (counts[k] || 0) + 1;
             (offenders[k] = offenders[k] || []).push(rel + ' -> ' + it);
