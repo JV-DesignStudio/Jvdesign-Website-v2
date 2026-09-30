@@ -14,15 +14,7 @@
  *
  * Run: node tests/story-run-games.js
  */
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const puppeteer = require('puppeteer');
-
-const ROOT = path.join(__dirname, '..');
-const PORT = Number(process.env.SRG_PORT || 8147);
-const BASE = 'http://127.0.0.1:' + PORT;
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.m4a': 'audio/mp4', '.mp3': 'audio/mpeg' };
+const { withServer } = require('./story-run-harness.cjs');
 
 // the fifteen action games A585 reworks, with the registry character
 const GAMES = [
@@ -49,26 +41,15 @@ const ok = (name, cond, detail) => {
   if (!cond) failures++;
 };
 
-const server = http.createServer((req, res) => {
-  let rel;
-  try { rel = decodeURIComponent(req.url.split('?')[0]); } catch { res.writeHead(400); return res.end(); }
-  const file = path.join(ROOT, rel);
-  if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end(); }
-  res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream' });
-  fs.createReadStream(file).pipe(res);
-});
-
 (async () => {
-  await new Promise(r => server.listen(PORT, r));
-  const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
-  try {
+  await withServer(async ({ base, browser }) => {
     for (const g of GAMES) {
       const page = await browser.newPage();
       const errors = [];
       page.on('pageerror', e => errors.push(e.message));
       await page.setViewport({ width: 390, height: 844, isMobile: true });
       try {
-        await page.goto(BASE + '/games/' + g.file, { waitUntil: 'load', timeout: 30000 });
+        await page.goto(base + '/games/' + g.file, { waitUntil: 'load', timeout: 30000 });
         // Start the run: click the game's primary start control. Games that
         // begin on load (tiger, little-steps) already have the HUD mounted.
         await page.evaluate(() => {
@@ -122,10 +103,7 @@ const server = http.createServer((req, res) => {
         await page.close();
       }
     }
-  } finally {
-    await browser.close();
-    server.close();
-  }
+  });
   console.log(failures ? '\nSTORY RUN GAMES FAILURES (' + failures + ')' : '\nALL STORY RUN GAME CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 })();

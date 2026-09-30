@@ -17,16 +17,8 @@
  *
  * Run: node tests/story-run-cosy-deep.js
  */
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+const { withServer } = require('./story-run-harness.cjs');
 const assert = require('assert/strict');
-const puppeteer = require('puppeteer');
-
-const ROOT = path.resolve(__dirname, '..');
-const PORT = Number(process.env.SRCD_PORT || 8267);
-const BASE = 'http://127.0.0.1:' + PORT;
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.m4a': 'audio/mp4', '.mp3': 'audio/mpeg' };
 
 // The five interactive cosy games: registry id + the guide the card promises.
 const GAMES = [
@@ -39,20 +31,8 @@ const GAMES = [
 
 let failures = 0;
 
-const server = http.createServer((req, res) => {
-  let p;
-  try { p = path.resolve(ROOT, '.' + decodeURIComponent(req.url.split('?')[0])); } catch { res.writeHead(400); return res.end(); }
-  if (!p.startsWith(ROOT + path.sep)) { res.writeHead(403); return res.end(); }
-  fs.readFile(p, (e, b) => {
-    res.writeHead(e ? 404 : 200, { 'Content-Type': MIME[path.extname(p).toLowerCase()] || 'application/octet-stream' });
-    res.end(e ? '' : b);
-  });
-});
-
 (async () => {
-  await new Promise(r => server.listen(PORT, '127.0.0.1', r));
-  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
-  try {
+  await withServer(async ({ base, browser }) => {
     for (const g of GAMES) {
       const page = await browser.newPage();
       const errors = [];
@@ -65,7 +45,7 @@ const server = http.createServer((req, res) => {
       };
 
       try {
-        await page.goto(BASE + '/games/' + g.file, { waitUntil: 'networkidle0', timeout: 30000 });
+        await page.goto(base + '/games/' + g.file, { waitUntil: 'networkidle0', timeout: 30000 });
         await page.evaluate(() => document.getElementById('cookie-decline')?.click());
 
         await check('starts the story run', async () => {
@@ -128,10 +108,7 @@ const server = http.createServer((req, res) => {
         await page.close();
       }
     }
-  } finally {
-    await browser.close();
-    server.close();
-  }
+  });
   console.log(failures ? '\nSTORY RUN COSY DEEP FAILURES (' + failures + ')' : '\nALL STORY RUN COSY DEEP CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });
