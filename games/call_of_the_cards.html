@@ -64,6 +64,8 @@
 <link rel="stylesheet" href="/style-mascots.css">
 <!-- Game System Integration -->
 <script src="../game-system.js"></script><script src="../audio-effects.js"></script>
+<link rel="stylesheet" href="../story-run.css">
+<script src="../story-run.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 </head>
 <body>
@@ -762,6 +764,27 @@ window.addEventListener('beforeunload', () => {
 
 <script src="../call-of-cards-engine.js"></script>
 <script>
+const storyRun = window.__storyRun = new StoryRun({
+  id: 'call-of-cards',
+  character: 'Lumo',
+  title: 'Storm the Fortress',
+  open: 'Lumo needs one fortress stormed: 6 Power for 2 VP, first to take it wins the crown.',
+  objective: 'Recruit, acquire and cycle once to storm the Fortress.',
+  cap: 300,
+  beats: [
+    { at: 0,   text: 'Build your party and gather Power for the push.' },
+    { at: 0.4, text: 'The Rival closes in, so keep recruiting and cycling.' },
+    { at: 0.8, text: 'One last quest decides who takes the Fortress.' }
+  ],
+  result: {
+    success: 'The crown is taken, Lumo clears the table and the Fortress is yours.',
+    partial: 'The Fortress holds this time and Lumo keeps the plan for another run.',
+    fail: 'The Rival takes the crown, and Lumo clears the table for a fresh run.'
+  },
+  gameSystem: gameSystem,
+  onFinish: function () { if (game) game.gameOver = true; },
+  onRestart: function () { startGame('ai'); }
+});
 let game = null;
 
 function launchGame() {
@@ -774,6 +797,7 @@ function launchGame() {
 
 function startGame(mode) {
   document.getElementById('modeOverlay').style.display = 'none';
+  if (window.__storyRun && !window.__storyRun.running) window.__storyRun.begin();
   game = new CallOfCardsGame(mode);
   game.onStateChange = renderBoard;
   game.onGameEnd = handleGameEnd;
@@ -816,12 +840,16 @@ function handleGameEnd(winner) {
     title.textContent = 'Defeat';
     msg.textContent = winner + ' claims the throne. Try again!';
   }
+  const won = winner === 'Player 1';
+  const finalScore = game && game.state && game.state.p1 ? game.state.p1.vp : 0;
+  if (window.__storyRun) window.__storyRun.finish(won ? 'success' : 'fail', finalScore);
 }
 
 function renderBoard(state) {
   const active = state[state.activePlayer];
   const p1 = state.p1;
   const p2 = state.p2;
+  if (window.__storyRun) window.__storyRun.setScore(p1.vp);
   const isAI = game && game.mode === 'ai';
   const isP1Turn = state.activePlayer === 'p1';
   // In AI mode bottom is always p1; in PvP bottom is whichever is active

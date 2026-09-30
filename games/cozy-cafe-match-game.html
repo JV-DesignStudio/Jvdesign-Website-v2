@@ -59,6 +59,8 @@
 <link rel="stylesheet" href="/style-mascots.css">
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
+<link rel="stylesheet" href="../story-run.css">
+<script src="../story-run.js"></script>
 <script src="../audio-effects.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 </head>
@@ -1463,8 +1465,10 @@ function showShiftResult(){
   $('shiftText').innerHTML = `You served ${SHIFT_TARGET} guests. Tip jar: ${coins} coins. Stardust thanks you for the rush. The counter is clear and the cafe is quiet.`;
   $('shiftResult').classList.add('show');
   try{ localStorage.setItem('cc_shift_best', String(Math.max(Number(localStorage.getItem('cc_shift_best')||0), coins))); }catch(e){}
+  if (window.__storyRun) window.__storyRun.finish('success', coins);
 }
 function resetShift(){
+  if (window.__storyRun && !window.__storyRun.running) window.__storyRun.begin();
   shiftServed = 0;
   busy = false;
   preShiftVault = JSON.parse(JSON.stringify(vault));
@@ -1602,6 +1606,7 @@ function updateHUD() {
   $('cravingFill').style.width = Math.min(100, (cravingProgress / cravingTarget) * 100) + '%';
   $('cravingIcon').innerHTML = renderTileSVG(currentGuest.favourite);
   $('coinCount').textContent = vault.coins;
+  if (window.__storyRun) window.__storyRun.setScore(vault.coins);
   if (window._lastCoins != null && vault.coins > window._lastCoins && window.floatCoins) window.floatCoins(vault.coins - window._lastCoins);
   window._lastCoins = vault.coins;
   $('happyCount').textContent = shiftServed + '/' + SHIFT_TARGET;
@@ -2724,6 +2729,29 @@ function jvdsCloseStrip(){
 // -- GAME SYSTEM INTEGRATION --
 const gameSystem = new GameSystem('cozy-cafe', 'Cozy Cafe Match', 'pip');
 const audioEffects = new AudioEffects(0.7);
+
+// -- STORY RUN: one morning rush with a visible finish --
+const storyRun = window.__storyRun = new StoryRun({
+  id: 'cozy-cafe-match',
+  title: 'One Morning Rush',
+  character: 'Pip',
+  open: "Pip's cafe opens for one morning rush and 5 guests are already at the door.",
+  objective: 'Match the pastries, fill the cravings and serve all 5 guests.',
+  beats: [
+    { at: 0, text: 'The first guest steps up to the counter.' },
+    { at: 0.4, text: 'The orders stack up and the trays fill fast.' },
+    { at: 0.8, text: 'The fifth guest is nearly served and the shutters are close.' }
+  ],
+  cap: 300,
+  result: {
+    success: 'The fifth guest leaves, the tip jar is counted and Pip closes the shutters.',
+    partial: 'The morning rush winds down with most guests happy and Pip ready for the next one.',
+    fail: 'The cafe quiets before the rush is done, but Pip keeps the oven warm for another morning.'
+  },
+  onFinish: function(){ busy = true; },
+  onRestart: function(){ resetShift(); }
+});
+if (storyRun && !storyRun.running) storyRun.begin();
 
 // Track score as XP (10 points = 1 XP), and mirror it into the shared
 // score/highScore fields leaderboards.html reads (was never synced before).

@@ -23,6 +23,8 @@
 <link rel="manifest" href="../manifest.json">
 <script defer src="../analytics-loader.js"></script>
 <script src="../game-system.js"></script>
+<link rel="stylesheet" href="../story-run.css">
+<script src="../story-run.js"></script>
 <script src="../audio-effects.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <link rel="stylesheet" href="../style-game-bubble-pop-galaxy.css?v=20">
@@ -115,6 +117,27 @@ const gameSystem = new GameSystem('bubble-pop', 'Bubble Pop Galaxy', 'pip');
 const audioEffects = new AudioEffects(0.7);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
 
+const storyRun = window.__storyRun = new StoryRun({
+  id: 'bubble-pop',
+  title: 'Light the Lanterns',
+  character: 'Stardust',
+  open: 'Stardust lit the way in, and the Lantern Nebula has gone dark.',
+  objective: 'Pop the matching colours, reach the score target and light the nebula.',
+  beats: [
+    { at: 0, text: 'The first clusters pop and the lanterns start to glow.' },
+    { at: 0.4, text: 'The chain builds and the nebula brightens.' },
+    { at: 0.8, text: 'One last cluster to light the whole nebula.' }
+  ],
+  cap: 300,
+  result: {
+    success: 'The nebula lights up, you see your stars, then Stardust hands you the same mission to beat.',
+    partial: 'The nebula glows part way and Stardust keeps the lanterns warm for another go.',
+    fail: 'The moves run out with the nebula still dim, so Stardust points you to a better first cluster.'
+  },
+  onFinish: function(){ busy = true; },
+  onRestart: function(){ startMission(); }
+});
+
 const COLS = 8, ROWS = 8;
 const TYPES = ['red','teal','gold','violet','blue','green'];
 const LABELS = { red:'Red', teal:'Teal', gold:'Gold', violet:'Violet', blue:'Blue', green:'Green' };
@@ -149,6 +172,7 @@ function starTotal(){ return Object.values(state.stars).reduce((a,b)=>a+b,0); }
 function randType(max){ return TYPES[Math.floor(Math.random()*max)]; }
 
 function startMission(){
+  if (window.__storyRun && !window.__storyRun.running) window.__storyRun.begin();
   const cfg = MISSION;
   run = { score:0, moves:cfg.moves, combo:1, bestCombo:1, charge:0, specials:0, chainBest:0, collected:{}, rocksBroken:0, cleared:false, reported:0 };
   cells = [];
@@ -386,6 +410,7 @@ function updateHud(){
   document.getElementById('missionText').textContent = cfg.text;
   document.getElementById('levelVal').textContent = '1/1';
   document.getElementById('scoreVal').textContent = run.score;
+  if (window.__storyRun) window.__storyRun.setScore(run.score);
   document.getElementById('movesVal').textContent = run.moves;
   document.getElementById('comboVal').textContent = 'x' + run.combo;
   document.getElementById('chargeText').textContent = Math.floor(run.charge) + '%';
@@ -455,6 +480,7 @@ function finishLevel(){
   state.bestScore=Math.max(state.bestScore, run.score);
   saveProgress();
   reportScore();
+  if (window.__storyRun) window.__storyRun.finish('success', run.score);
   gameSystem.addXP(Math.floor(run.score/35)+stars*25);
   gameSystem.unlockAchievement('firstPop');
   if(stars===3) gameSystem.unlockAchievement('threeStarClear');
@@ -467,7 +493,7 @@ function finishLevel(){
   ], 'Play the mission again', 'retry');
 }
 function failLevel(){
-  busy=true; reportScore(); gameSystem.addXP(Math.floor(run.score/50)); gameSystem.saveState(); audioEffects.playError();
+  busy=true; reportScore(); if (window.__storyRun) window.__storyRun.finish('fail', run.score); gameSystem.addXP(Math.floor(run.score/50)); gameSystem.saveState(); audioEffects.playError();
   showModal('🌌','Out of Moves','You were close. Aim for bigger clusters early, then spend specials together.', [
     ['Score', run.score], ['Target', MISSION.goals.score], ['Best combo', 'x'+run.bestCombo]
   ], 'Retry Mission', 'retry');

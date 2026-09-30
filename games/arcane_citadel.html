@@ -39,6 +39,8 @@
 <link rel="stylesheet" href="/style-mascots.css">
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
+<link rel="stylesheet" href="../story-run.css">
+<script src="../story-run.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 </head>
 <body>
@@ -934,6 +936,7 @@ function showWaveComplete(){
     }else if(wcr){wcr.innerHTML='';}
     buildShop();
     document.getElementById('screen-wave').classList.add('show');
+    if(window.__storyRun && window.__citadelMode!=='deep' && wave>=4) window.__storyRun.finish('success',score);
 }
 
 function startNextWave(){
@@ -952,6 +955,7 @@ function startNextWave(){
 // ══════════════════════════════════════════════════════════
 function updateHUD(){
     document.getElementById('hud-score').textContent=score.toLocaleString();
+    if(window.__storyRun) window.__storyRun.setScore(score);
     document.getElementById('hud-wave').textContent=wave;
     document.getElementById('hud-coins').textContent=coins;
     // Boss wave badge
@@ -2403,12 +2407,14 @@ GameUI.showMedal(document.getElementById('go-wave'), wave, [[5,'\uD83E\uDD49','A
             : '<span style="color:rgba(180,140,255,.3);font-size:.7rem;letter-spacing:.08em">No relics found</span>';
     }
     document.getElementById('screen-gameover').classList.remove('hidden');
+    if(window.__storyRun) window.__storyRun.finish('fail',score);
 }
 
 // ══════════════════════════════════════════════════════════
 // START / RESTART
 // ══════════════════════════════════════════════════════════
 function startGame(){
+    if(window.__storyRun && !window.__storyRun.running) window.__storyRun.begin();
     initGame();gameState='playing';
     if(animID)cancelAnimationFrame(animID);
     loop();
@@ -2440,6 +2446,27 @@ function jvdsCloseStrip(){
 // ══ GAME SYSTEM INTEGRATION ══
 const gameSystem = new GameSystem('arcane-citadel', 'Arcane Citadel', 'wizard');
 const soundManager = new SoundManager(gameSystem);
+
+const storyRun = window.__storyRun = new StoryRun({
+  id: 'arcane-citadel',
+  title: 'The Citadel Gate',
+  character: 'Ember',
+  open: 'Ember is holding the Citadel gate for one night and Malgrath is at the gate.',
+  objective: 'Hold three waves and defeat Malgrath, or push a Deep Night as far as you can.',
+  beats: [
+    { at: 0, text: 'The first wave breaks against the gate.' },
+    { at: 0.4, text: 'The second wave presses in and the gate holds.' },
+    { at: 0.8, text: 'Malgrath steps up for the last stand.' }
+  ],
+  cap: 300,
+  result: {
+    success: 'Malgrath falls, the Citadel holds and Ember thanks you.',
+    partial: 'The night runs long, the gate holds so far and Ember fights on.',
+    fail: 'Malgrath pushes through, but Ember shows you what held and you try again.'
+  },
+  onFinish: function(){ gameState = 'dead'; if(animID) cancelAnimationFrame(animID); },
+  onRestart: function(){ if(animID) cancelAnimationFrame(animID); startGame(); }
+});
 
 // Score → XP + score-tier achievements, handled reactively by the engine
 // (replaces the two setInterval pollers this used to copy-paste).

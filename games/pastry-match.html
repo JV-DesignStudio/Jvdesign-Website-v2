@@ -27,6 +27,9 @@
 <meta name="twitter:card" content="summary_large_image">
 <script src="../game-system.js"></script>
 <script src="../audio-effects.js"></script>
+<link rel="stylesheet" href="../story-run.css">
+<script src="../story-run.js"></script>
+
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <link rel="stylesheet" href="../style-game-pastry-match.css?v=30">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Pastry Match: One Order","url":"https://jvdesignstudio.co.uk/games/pastry-match.html","description":"One order, one box: swap pastries, fill the order and see it served.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/PastryMatchCover.webp"}</script>
@@ -108,6 +111,25 @@
 const gameSystem = new GameSystem('pastry-match', 'Pastry Match', 'squirt');
 const audioEffects = new AudioEffects(0.55);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
+const storyRun = window.__storyRun = new StoryRun({
+  id: 'pastry-match',
+  character: 'Pip',
+  title: 'Pastry Match: One Order',
+  open: 'Pip has one order on the counter today, and the box needs filling before it goes out.',
+  objective: 'Swap the pastries into lines of three and fill the box in front of you.',
+  cap: 300,
+  beats: [
+    { at: 0, text: 'The first order goes up on the counter.' },
+    { at: 0.4, text: 'The box is half full and the matches get bigger.' },
+    { at: 0.8, text: 'Last few pastries to fill the box and send it out.' }
+  ],
+  result: {
+    success: 'The box is handed over with a star rating, and Pip asks if you want the next order.',
+    partial: 'The box goes out nearly full, and Pip jots a note for the next order.',
+    fail: 'The order waits on the counter, but Pip keeps the recipe ready for another go.'
+  },
+  onRestart: function(){ startGame(); }
+});
 const PASTRIES = [
   { id:'croissant', emoji:'🥐', name:'Croissant' },
   { id:'cupcake', emoji:'🧁', name:'Cupcake' },
@@ -150,11 +172,12 @@ function resetBoard(){
 }
 function startGame(){
   gameSystem.beginRun();
+  if(window.__storyRun && !window.__storyRun.running) window.__storyRun.begin();
   state = 'playing'; score = 0; combo = 1; selected = null; busy = false; order = makeOrder(0); orderStart = Date.now(); resetBoard(); renderAll();
   $('startModal').classList.remove('show'); $('endModal').classList.remove('show');
 }
 function renderAll(){ renderHud(); renderCustomers(); renderOrder(); renderBoard(); renderTools(); }
-function renderHud(){ $('scoreHud').textContent = score; $('timeHud').textContent = order ? (remaining(order)===0?'served':'1/1') : '1/1'; $('comboHud').textContent = 'x' + combo.toFixed(combo % 1 ? 1 : 0); $('starsHud').textContent = stars(); $('targetHud').textContent = '-'; }
+function renderHud(){ $('scoreHud').textContent = score; if(window.__storyRun) window.__storyRun.setScore(score); $('timeHud').textContent = order ? (remaining(order)===0?'served':'1/1') : '1/1'; $('comboHud').textContent = 'x' + combo.toFixed(combo % 1 ? 1 : 0); $('starsHud').textContent = stars(); $('targetHud').textContent = '-'; }
 function stars(){ return score >= 4200 ? 3 : score >= 2500 ? 2 : score >= 1000 ? 1 : 0; }
 function renderCustomers(){
   if(!order) return;
@@ -230,7 +253,7 @@ function useTray(){ if(state!=='playing'||tray<1||busy)return; tray--; resetBoar
 function endGame(){
   if(state === 'ended') return; state='ended'; saveBest();
   gameSystem.addScore(score); gameSystem.addXP(Math.max(8, Math.floor(score/35))); gameSystem.unlockAchievement('firstPlay'); if(stars()>=2) gameSystem.unlockAchievement('goldBaker'); gameSystem.recordGamePlay(Date.now() - orderStart); gameSystem.saveState();
-  $('endTitle').textContent = 'Order served!'; $('endCopy').textContent = 'You served 1 order and earned '+stars()+' stars. Take the next order whenever you like.';
+  if(window.__storyRun) window.__storyRun.finish('success', score); $('endTitle').textContent = 'Order served!'; $('endCopy').textContent = 'You served 1 order and earned '+stars()+' stars. Take the next order whenever you like.';
   $('finalScore').textContent = score; $('finalOrders').textContent = '1'; $('finalBest').textContent = Math.max(best, score); $('timeHud').textContent = 'served'; $('patienceBar').style.width = '100%'; $('endModal').classList.add('show'); if(stars()>=1) ParticleSystem.confetti(innerWidth/2, innerHeight/3, 20);
 }
 function renderModes(){ $('modeRow').innerHTML = MODES.map(m => '<button type="button" class="'+(m.id===modeId?'sel':'')+'" data-mode="'+m.id+'">'+m.label+'</button>').join(''); document.querySelectorAll('#modeRow button').forEach(b=>b.onclick=()=>{modeId=b.dataset.mode; renderModes();}); }

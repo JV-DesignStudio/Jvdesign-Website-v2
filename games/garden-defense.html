@@ -33,6 +33,8 @@
 <script defer src="../analytics-loader.js"></script>
 <script src="../audio-effects.js"></script>
 <script src="../game-system.js"></script>
+<link rel="stylesheet" href="../story-run.css">
+<script src="../story-run.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <link rel="preload" href="../style-game-garden-defense.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-game-garden-defense.css?v=17"></noscript>
@@ -937,6 +939,7 @@
       document.getElementById('waveFill').style.width=(Math.max(1,Math.min(waveIdx,5))/5*100)+'%';
     }
     refreshPickerAfford();
+    if(window.__storyRun) window.__storyRun.setScore(score);
   }
   function refreshPickerAfford(){
     for(const k in PLANTS){
@@ -1010,6 +1013,7 @@
     gdAnnounce(endTitleTxt+', final score '+score+'.');
     const challengeBonus=(waveGoals&&waveGoals.guard?150:0)+(waveGoals&&waveGoals.economy?150:0)+(waveGoals&&waveGoals.streak?200:0);
     if(challengeBonus){score+=challengeBonus; window.__gsScore=(window.__gsScore||0)+challengeBonus;}
+    if(window.__storyRun) window.__storyRun.finish(won?'success':'fail', score);
     document.getElementById('endStats').innerHTML=
       `<div class="sbox"><div class="v">${score}</div><div class="l">Score</div></div>`+
       `<div class="sbox"><div class="v">${reachedWave}</div><div class="l">Wave</div></div>`+
@@ -1036,6 +1040,7 @@
     document.getElementById('startScreen').classList.add('hidden');
     document.getElementById('endScreen').classList.add('hidden');
     reset();
+    if(window.__storyRun && !window.__storyRun.running) window.__storyRun.begin();
     betweenTimer=5; // setup window before the first wave
     // hidden debug: #w9 style hash starts at a later wave with extra sun + fast placement (for testing)
     const m=location.hash.match(/^#w(\d+)$/);
@@ -1066,6 +1071,27 @@
 
   // GameSystem instance (referenced by placePlant etc.)
   window.gs = new GameSystem('garden-defense','Lumo\'s Garden Defense','lumo');
+
+  const storyRun = window.__storyRun = new StoryRun({
+    id: 'garden-defense',
+    character: 'Lumo',
+    title: "Lumo's Garden Defense",
+    open: "Lumo's garden is under attack and the sprouts need you at the fence.",
+    objective: 'Grow sunflowers and hold five waves of pests without losing a row.',
+    cap: 300,
+    gameSystem: gs,
+    beats: [
+      { at: 0, text: 'The first pests creep toward the fence.' },
+      { at: 0.4, text: 'The waves thicken and the sunlight runs short.' },
+      { at: 0.8, text: 'Last stand: hold every row until dawn.' }
+    ],
+    result: {
+      success: 'Dawn arrives, the garden still glows and Lumo leaves the gate open for another defence.',
+      partial: 'The battle ends with the garden holding most rows and Lumo grateful for the help.',
+      fail: 'The pests break through, but Lumo saves the seeds and calls you back at first light.'
+    },
+    onRestart: () => { begin(); }
+  });
 
   // pause when tab hidden
   document.addEventListener('visibilitychange',()=>{ if(document.hidden && running && !paused){ togglePause(); } });
