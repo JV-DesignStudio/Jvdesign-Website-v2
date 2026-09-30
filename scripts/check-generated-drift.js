@@ -220,6 +220,18 @@ try{
   if(dup.size){ console.error(`\n✗ devlog-data.js duplicate ids: ${[...dup].join(', ')} - dedupe by id`); process.exit(1); }
   else console.log(`✓ devlog-data.js ${ids.length} posts, all ids unique`);
 }catch(e){ console.log('  [WARN] devlog id check skipped:', e.message); }
+// devlog public-safety guard - no internal drafts / board machinery / audit notes may be published
+try{
+  const { loadPosts, findUnpublishable, isPublicationClean } = require('./lib/devlog-guard');
+  const posts = loadPosts();
+  const bad = findUnpublishable(posts);
+  if(bad.length){
+    console.error(`\n✗ devlog-data.js publishes ${bad.length} non publication-clean entr${bad.length===1?'y':'ies'}: ids ${bad.map(d=>d.id).join(', ')}`);
+    console.error('  Internal drafts/board machinery/audit notes must be rewritten for learners or archived.');
+    console.error('  Check with: node report-devlog-drafts.js');
+    process.exit(1);
+  } else console.log(`✓ devlog-data.js ${posts.length} posts, all publication-clean`);
+}catch(e){ console.error('\n✗ devlog public-safety check failed:', e.message); process.exit(1); }
 // quick: git dirty is advisory only - staged generated files are expected after `npm run build`
 if(isQuick && quickDrift.length){
   console.log(`\n[quick] ${quickDrift.length} generated file(s) git-dirty - advisory only (commit them after \`npm run build\`, CI uses full drift)`);

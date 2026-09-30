@@ -12,6 +12,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { markersIn, isInternalText } = require('./scripts/lib/devlog-guard');
 
 const ROOT = __dirname;
 const CANDIDATES = [path.join(ROOT, 'devlog-data.js'), path.join(ROOT, 'pages', 'devlog.html')];
@@ -50,15 +51,20 @@ const re = /\{\s*"?id"?\s*:\s*(\d+)/g;
 let best = null;
 let match;
 let count = 0;
+let skipped = 0;
 while ((match = re.exec(srcText)) !== null) {
   count++;
   const id = parseInt(match[1],10);
   const blockStart = match.index;
   const block = srcText.slice(blockStart, blockStart + 5000);
+  // Never surface an internal draft/board entry in the public homepage banner.
+  if (markersIn(block).length) { skipped++; continue; }
   const emoji = pick(block, 'emoji') || '';
   const date = pick(block, 'date') || '';
   const title = pick(block, 'title') || '';
   const excerpt = pick(block, 'excerpt') || '';
+  // Keep the public banner to real studio-journal posts, never internal audit/release notes.
+  if (isInternalText(title, excerpt)) { skipped++; continue; }
   const ts = parseDate(date);
   const better = !best || ts > best.ts || (ts === best.ts && id > best.id);
   if (better) best = { emoji, date, title, excerpt, id, ts };
@@ -66,9 +72,11 @@ while ((match = re.exec(srcText)) !== null) {
 
 if (!best || !best.title) { console.error('✗ generate-latest-post: could not read a title from ' + SRC); process.exit(1); }
 
-const post = { emoji: best.emoji, date: best.date, title: best.title, excerpt: best.excerpt };
+// Strip any internal machinery that survived to the excerpt shown on the homepage.
+const clean = s => String(s || '').split(/\s*(?:Evidence:|DEV LOG DRAFT|Draft file:|Source task:|WHEN APPROVED:|Created via board web UI|ready to claim)/i)[0].trim();
+const post = { emoji: best.emoji, date: best.date, title: clean(best.title), excerpt: clean(best.excerpt) };
 fs.writeFileSync(OUT, JSON.stringify(post) + '\n');
 const kb = (fs.statSync(OUT).size / 1024).toFixed(2);
 const was = (fs.statSync(SRC).size / 1024).toFixed(0);
 const rel = path.relative(ROOT, SRC);
-console.log(`✓ generate-latest-post: latest-post.json written (${kb}KB, source ${rel} ` + count + ` posts, newest id=${best.id}) , "${post.title}"`);
+console.log(`✓ generate-latest-post: latest-post.json written (${kb}KB, source ${rel} ` + count + ` posts, ${skipped} skipped, newest id=${best.id}) , "${post.title}"`);
