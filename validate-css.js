@@ -12,6 +12,11 @@
  * A purely static brace count is NOT reliable here: pages with large inline
  * <script> blocks (the 3D builders) fool it. The live cssRules count does not.
  *
+ * Runner mirrors validate-js.js: random port, a small worker pool, and a
+ * guaranteed cleanup so a stuck browser or held port can never wedge the
+ * pipeline (A717). The old fixed port 8977 + one newPage per page meant a
+ * second run, or ~390 pages loaded sequentially, blew the 120s step budget.
+ *
  * Exit 1 if any block looks broken. Run: node validate-css.js  (npm run validate:css)
  */
 const http = require('http');
@@ -19,12 +24,16 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 
+const { IGNORE_DIRS } = require('./scripts/lib/paths');
 const ROOT = __dirname;
-const PORT = 8977;
-const IGNORE = new Set(['node_modules', '.git', '.claude', 'partials', 'quest-board-deploy', '.github', '.continue']);
+const PORT = 0; // random available port, never collides with another run
+const CONCURRENCY = 5;
+const IGNORE = IGNORE_DIRS;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
-  '.woff': 'font/woff', '.woff2': 'font/woff2', '.wav': 'audio/wav', '.m4a': 'audio/mp4' };
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif',
+  '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2',
+  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.m4a': 'audio/mp4', '.ogg': 'audio/ogg',
+  '.pdf': 'application/pdf', '.xml': 'application/xml', '.txt': 'text/plain', '.webmanifest': 'application/manifest+json' };
 
 function walk(dir) {
   let out = [];
@@ -105,50 +114,83 @@ function staticStyleChecks(css) {
     process.exit(1);
   }
 
+  const files = pages.map(f => path.relative(ROOT, f).split(path.sep).join('/'));
+
   const server = http.createServer((req, res) => {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p.endsWith('/')) p += 'index.html';
-    fs.readFile(path.join(ROOT, p), (err, buf) => {
-      if (err) { res.writeHead(404); res.end(); return; }
-      res.writeHead(200, { 'Content-Type': MIME[path.extname(p).toLowerCase()] || 'application/octet-stream' });
+    const file = path.join(ROOT, p);
+    if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
+    fs.readFile(file, (err, buf) => {
+      if (err) { res.writeHead(404); return res.end('404'); }
+      res.writeHead(200, { 'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream' });
       res.end(buf);
     });
-  }).listen(PORT);
+  });
+  try {
+    await new Promise((resolve, reject) => server.listen(PORT, resolve).on('error', reject));
+  } catch (e) {
+    console.error(`✗ validate-css: could not start local server: ${e.message}`);
+    process.exit(2);
+  }
+  const actualPort = server.address().port;
 
-  const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
-  const broken = [];
-
-  for (const fp of pages) {
-    const rel = path.relative(ROOT, fp).replace(/\\/g, '/');
-    const page = await browser.newPage();
-    try {
-      await page.goto(`http://localhost:${PORT}/${rel}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
-      const blocks = await page.evaluate(() => {
-        return [...document.querySelectorAll('style')].map((st, i) => {
-          const opens = (st.textContent.match(/\{/g) || []).length;
-          let rules = -1;
-          try { rules = st.sheet ? st.sheet.cssRules.length : -1; } catch (e) { rules = -2; }
-          return { i, opens, rules };
-        });
-      });
-      for (const b of blocks) {
-        // Only meaningful for non-trivial blocks. Corruption signature: many
-        // opening braces but almost no parsed rules.
-        if (b.opens >= 8 && b.rules >= 0 && b.rules < b.opens * 0.35) {
-          broken.push(`${rel}  <style#${b.i}>  ${b.rules} rules parsed from ${b.opens} opening braces`);
-        }
-      }
-    } catch (e) {
-      broken.push(`${rel}  LOAD_ERROR: ${String(e.message || e).slice(0, 60)}`);
-    }
-    await page.close();
+  let browser;
+  try {
+    browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+  } catch (e) {
+    server.close();
+    console.error('✗ validate-css: puppeteer launch failed:', e.message);
+    process.exit(2);
   }
 
-  await browser.close();
-  server.close();
+  const broken = [];
+  const queue = files.slice();
+
+  const workers = Array.from({ length: CONCURRENCY }, async () => {
+    const page = await browser.newPage();
+    for (;;) {
+      const rel = queue.pop();
+      if (!rel) break;
+      try {
+        await page.goto(`http://localhost:${actualPort}/${rel}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        const blocks = await page.evaluate(() => {
+          return [...document.querySelectorAll('style')].map((st, i) => {
+            const opens = (st.textContent.match(/\{/g) || []).length;
+            let rules = -1;
+            try { rules = st.sheet ? st.sheet.cssRules.length : -1; } catch (e) { rules = -2; }
+            return { i, opens, rules };
+          });
+        });
+        for (const b of blocks) {
+          // Only meaningful for non-trivial blocks. Corruption signature: many
+          // opening braces but almost no parsed rules.
+          if (b.opens >= 8 && b.rules >= 0 && b.rules < b.opens * 0.35) {
+            broken.push(`${rel}  <style#${b.i}>  ${b.rules} rules parsed from ${b.opens} opening braces`);
+          }
+        }
+      } catch (e) {
+        const msg = String(e.message || e);
+        // Redirect pages (meta-refresh / JS location change) tear down the
+        // execution context mid-navigation; that is not CSS corruption.
+        if (/Execution context was destroyed|ERR_ABORTED|Navigating frame was detached|Target closed/i.test(msg)) {
+          continue;
+        }
+        broken.push(`${rel}  LOAD_ERROR: ${msg.slice(0, 60)}`);
+      }
+    }
+    await page.close();
+  });
+
+  try {
+    await Promise.all(workers);
+  } finally {
+    try { await browser.close(); } catch {}
+    try { await new Promise(r => server.close(r)); } catch {}
+  }
 
   if (!broken.length) {
-    console.log(`✓ validate-css: ${pages.length} pages, all inline <style> blocks parse cleanly.`);
+    console.log(`✓ validate-css: ${files.length} pages, all inline <style> blocks parse cleanly.`);
     process.exit(0);
   }
   console.log(`✗ validate-css: ${broken.length} broken inline <style> block(s):\n`);

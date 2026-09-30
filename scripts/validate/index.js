@@ -11,8 +11,8 @@ const { ROOT } = require('../lib/paths');
 const isNightly = process.argv.includes('--nightly') || process.env.NIGHTLY==='1';
 const STEPS = [
   { id: 'links',     cmd: path.join(ROOT, 'validate-links.js'),     label: 'Internal links' },
-  { id: 'css',       cmd: path.join(ROOT, 'validate-css.js'),       label: 'Inline CSS parse' },
-  { id: 'js',        cmd: path.join(ROOT, 'validate-js.js'),        label: 'Live JS (puppeteer)' },
+  { id: 'css',       cmd: path.join(ROOT, 'validate-css.js'),       label: 'Inline CSS parse', timeout: 300000 },
+  { id: 'js',        cmd: path.join(ROOT, 'validate-js.js'),        label: 'Live JS (puppeteer)', timeout: 300000 },
   { id: 'contrast',  cmd: path.join(ROOT, 'validate-contrast.js'),  label: 'Colour contrast', nightly: true },
   { id: 'workshops', cmd: path.join(ROOT, 'validate-workshops.js'), label: 'Workshop front-matter' },
   { id: 'stats',     cmd: path.join(ROOT, 'validate-stats.js'),     label: 'Marketing counts' },
@@ -34,7 +34,7 @@ for (const s of plan) {
   const t0 = Date.now();
   process.stdout.write(`│ ▶ ${s.id.padEnd(10)} ${s.label} ... `);
   try {
-    execFileSync(process.execPath, [s.cmd], { stdio: 'inherit', timeout: 120000, killSignal: 'SIGTERM' });
+    execFileSync(process.execPath, [s.cmd], { stdio: 'inherit', timeout: s.timeout || 120000, killSignal: 'SIGTERM' });
     console.log(`✓ ${Date.now() - t0}ms`);
   } catch (e) {
     if(e.killed) console.log(`✗ timeout ${Date.now() - t0}ms`);
