@@ -14,6 +14,7 @@ const STEPS = [
   { id: 'css',       cmd: path.join(ROOT, 'validate-css.js'),       label: 'Inline CSS parse', timeout: 300000 },
   { id: 'js',        cmd: path.join(ROOT, 'validate-js.js'),        label: 'Live JS (puppeteer)', timeout: 300000 },
   { id: 'contrast',  cmd: path.join(ROOT, 'validate-contrast.js'),  label: 'Colour contrast', nightly: true },
+  { id: 'a11y',      cmd: path.join(ROOT, 'validate-a11y.js'),      label: 'Accessibility report', nightly: true },
   { id: 'workshops', cmd: path.join(ROOT, 'validate-workshops.js'), label: 'Workshop front-matter' },
   { id: 'stats',     cmd: path.join(ROOT, 'validate-stats.js'),     label: 'Marketing counts' },
   { id: 'quests',    cmd: path.join(ROOT, 'validate-quests.js'),    label: 'Quest references' },
