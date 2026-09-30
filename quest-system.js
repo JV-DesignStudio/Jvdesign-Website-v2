@@ -9,17 +9,17 @@ const QUESTS = {
     description: 'Complete the Scratch Fruit Catch workshop, then score 500 in Echo\'s Fruit Catch game.',
     icon: '🍎',
     workshopId: 'scratch-catch-workshop',
-    gameId: 'echo-fruit-catch',
+    gameId: 'echo-fruit',
     category: 'intro',
     difficulty: 'beginner',
     order: 1,
     requirements: [
       { type: 'workshop', id: 'scratch-catch-workshop' },
-      { type: 'game-score', gameId: 'echo-fruit-catch', minScore: 500 }
+      { type: 'game-score', gameId: 'echo-fruit', minScore: 500 }
     ],
     rewards: {
       xp: 100,
-      cosmetic: { gameId: 'echo-fruit-catch', cosmeticId: 'special-basket' },
+      cosmetic: { gameId: 'echo-fruit', cosmeticId: 'special-basket' },
       badge: '🏆 Fruit Master'
     }
   },
@@ -30,18 +30,18 @@ const QUESTS = {
     description: 'Complete the Jump Jump Mario workshop, then reach height 500 in Sky High Squirt.',
     icon: '⭐',
     workshopId: 'jump-jump-mario-workshop',
-    gameId: 'sky-high-squirt',
+    gameId: 'sky-high-friends',
     category: 'platformer',
     difficulty: 'intermediate',
     order: 2,
     prerequisites: ['quest-1-scratch-catch'],
     requirements: [
       { type: 'workshop', id: 'jump-jump-mario-workshop' },
-      { type: 'game-metric', gameId: 'sky-high-squirt', metric: 'maxHeight', minValue: 500 }
+      { type: 'game-metric', gameId: 'sky-high-friends', metric: 'maxHeight', minValue: 500 }
     ],
     rewards: {
       xp: 150,
-      cosmetic: { gameId: 'sky-high-squirt', cosmeticId: 'godot-skin' },
+      cosmetic: { gameId: 'sky-high-friends', cosmeticId: 'godot-skin' },
       badge: '🎮 Platformer Pro'
     }
   },
@@ -106,16 +106,16 @@ const QUESTS = {
     title: 'Pip\'s Baker Empire',
     description: 'Reach level 5 in Pip\'s Bakery Empire idle game.',
     icon: '🥐',
-    gameId: 'pips-bakery-empire',
+    gameId: 'bakery-empire',
     category: 'gaming',
     difficulty: 'beginner',
     order: 6,
     requirements: [
-      { type: 'game-level', gameId: 'pips-bakery-empire', minLevel: 5 }
+      { type: 'game-level', gameId: 'bakery-empire', minLevel: 5 }
     ],
     rewards: {
       xp: 125,
-      cosmetic: { gameId: 'pips-bakery-empire', cosmeticId: 'golden-apron' },
+      cosmetic: { gameId: 'bakery-empire', cosmeticId: 'golden-apron' },
       badge: '🥐 Baker\'s Pride'
     }
   },
@@ -125,12 +125,12 @@ const QUESTS = {
     title: 'Sky High Explorer',
     description: 'Unlock 5 cosmetics in Sky High Squirt game.',
     icon: '☁️',
-    gameId: 'sky-high-squirt',
+    gameId: 'sky-high-friends',
     category: 'gaming',
     difficulty: 'intermediate',
     order: 7,
     requirements: [
-      { type: 'cosmetic-unlock-count', gameId: 'sky-high-squirt', minCount: 5 }
+      { type: 'cosmetic-unlock-count', gameId: 'sky-high-friends', minCount: 5 }
     ],
     rewards: {
       xp: 150,
@@ -161,14 +161,13 @@ const QUESTS = {
   'quest-9-python-coder': {
     id: 'quest-9-python-coder',
     title: 'Python Programmer',
-    description: 'Complete 2 Python workshops and score 300 in a Python-based game.',
+    description: 'Complete 2 Python workshops to unlock the Python Pro badge.',
     icon: '🐍',
     category: 'coding',
     difficulty: 'intermediate',
     order: 9,
     requirements: [
-      { type: 'workshop-count', workshopIds: ['python-basics-workshop', 'python-advanced-workshop'], minCount: 2 },
-      { type: 'game-score', gameId: 'python-game', minScore: 300 }
+      { type: 'workshop-count', workshopIds: ['my-first-python-game', 'python-catch-workshop'], minCount: 2 }
     ],
     rewards: {
       xp: 180,
@@ -186,7 +185,7 @@ const QUESTS = {
     difficulty: 'intermediate',
     order: 10,
     requirements: [
-      { type: 'workshop-count', workshopIds: ['roblox-basics', 'roblox-scripts', 'roblox-games'], minCount: 3 }
+      { type: 'workshop-count', workshopIds: ['my-first-roblox-studio-game', 'roblox-obby-workshop', 'roblox-tycoon-workshop'], minCount: 3 }
     ],
     rewards: {
       xp: 200,
@@ -223,8 +222,8 @@ const QUESTS = {
     order: 12,
     prerequisites: ['quest-2-jump-jump-master'],
     requirements: [
-      { type: 'workshop-count', workshopIds: ['godot-basics', 'godot-2d', 'godot-3d', 'godot-multiplayer'], minCount: 4 },
-      { type: 'game-level', gameId: 'sky-high-squirt', minLevel: 10 }
+      { type: 'workshop-count', workshopIds: ['my-first-video-game', 'godot_tutorial', 'godot-racing-workshop', 'godot-gdscript-essentials'], minCount: 4 },
+      { type: 'game-level', gameId: 'sky-high-friends', minLevel: 10 }
     ],
     rewards: {
       xp: 280,
