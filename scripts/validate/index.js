@@ -15,6 +15,8 @@ const STEPS = [
   { id: 'js',        cmd: path.join(ROOT, 'validate-js.js'),        label: 'Live JS (puppeteer)' },
   { id: 'contrast',  cmd: path.join(ROOT, 'validate-contrast.js'),  label: 'Colour contrast', nightly: true },
   { id: 'workshops', cmd: path.join(ROOT, 'validate-workshops.js'), label: 'Workshop front-matter' },
+  { id: 'stats',     cmd: path.join(ROOT, 'validate-stats.js'),     label: 'Marketing counts' },
+  { id: 'quests',    cmd: path.join(ROOT, 'validate-quests.js'),    label: 'Quest references' },
   { id: 'public',    cmd: path.join(ROOT, 'scripts/validate-public-boundary.js'), label: 'Public boundary' },
   { id: 'drift',     cmd: path.join(ROOT, 'scripts/check-generated-drift.js'), label: 'Generated drift' },
 ].filter(s=> !s.nightly || isNightly);
