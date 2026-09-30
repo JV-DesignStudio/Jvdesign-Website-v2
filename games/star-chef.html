@@ -22,6 +22,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <!-- /BUILD:head-icons -->
   <link rel="stylesheet" href="../style-game-star-chef.css" />
+  <link rel="stylesheet" href="../story-run.css" />
 </head>
 <body>
   <main class="chef-shell">
@@ -86,6 +87,7 @@
 
   <div class="toast" id="toast">Ready</div>
   <script src="../audio-effects.js"></script>
+  <script src="../story-run.js"></script>
   <script>
   (() => {
     const GAME_ID = 'star-chef';
@@ -109,6 +111,23 @@
     const pos = { prep:[126,138], grill:[352,104], bake:[584,142], plate:[382,324] };
 
     let running=false, paused=false, time=120, coins=0, rep=3, combo=1, goal=450, queue=[], active=null, stepIndex=0, chef={x:382,y:324,tx:382,ty:324}, particles=[], cook=null, last=performance.now(), spawnTick=0;
+
+    const storyRun=window.__storyRun=(()=>{try{return new StoryRun({
+      id:'star-chef',
+      title:'One Tiny Restaurant', character:'Lumo',
+      open:'Lumo booked you a tiny restaurant and the first customers are already seated.',
+      objective:'Serve the recipe queue in order and build your five-star rating.',
+      beats:[{at:0,text:'The first ticket lands on the rail.'},{at:0.45,text:'The queue fills and the combo starts to matter.'},{at:0.8,text:'Last covers, the five-star rating is close.'}],
+      cap:300,
+      result:{
+        success:'The queue empties, the rating is five stars and Lumo books a bigger room.',
+        partial:'The shift ends with happy tables and a rating worth building on.',
+        fail:'The kitchen wins this round, but Lumo keeps the booking for tomorrow.'
+      },
+      onFinish:function(){ running=false; paused=true; },
+      onRestart:function(){ start(); }
+    });}catch(e){return null;}})();
+    function storyScore(){ if(storyRun&&storyRun.running) storyRun.setScore(coins); }
 
     function bestKey(){ return 'jvds-best-' + GAME_ID; }
     function saveScore(){
@@ -134,6 +153,7 @@
     function fillQueue(){ while(queue.length<4) queue.push(makeOrder()); }
 
     function render(){
+      storyScore();
       $('coins').textContent='£'+coins;
       $('rep').textContent=rep+'★';
       $('combo').textContent='x'+combo;
@@ -214,15 +234,17 @@
     }
 
     function start(){
-      running=true; paused=false; if(queue.length===0) fillQueue(); setHint('Shift started. Pick the most urgent customer and run the recipe steps.'); render();
+      running=true; paused=false; if(queue.length===0) fillQueue(); if(storyRun&&!storyRun.running) storyRun.begin(); setHint('Shift started. Pick the most urgent customer and run the recipe steps.'); render();
     }
     function reset(){
       running=false; paused=false; time=120; coins=0; rep=3; combo=1; queue=[]; active=null; stepIndex=0; cook=null; particles=[]; chef={x:382,y:324,tx:382,ty:324}; $('cookMeter').hidden=true; fillQueue(); setHint('Pick a customer order, then tap the station that matches the glowing recipe step.'); render();
     }
     function finish(){
       running=false; paused=true; saveScore();
-      const msg = coins>=goal ? 'Shift complete! Star café saved.' : 'Shift over. Try faster station planning.';
-      toast(msg, coins>=goal); setHint(msg+' Best: £'+localStorage.getItem(bestKey())); render();
+      const won = coins>=goal;
+      const msg = won ? 'Shift complete! Star café saved.' : 'Shift over. Try faster station planning.';
+      toast(msg, won); setHint(msg+' Best: £'+localStorage.getItem(bestKey())); render();
+      if(storyRun) storyRun.finish(won?'success':(coins>=goal*0.6?'partial':'fail'), coins);
     }
 
     function spawnSpark(x,y,icon){ for(let i=0;i<12;i++) particles.push({x,y,vx:(Math.random()-.5)*4,vy:-Math.random()*4-1,life:1,icon}); }

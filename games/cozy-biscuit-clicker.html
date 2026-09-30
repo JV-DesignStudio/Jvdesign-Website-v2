@@ -503,6 +503,8 @@ button:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px}
 <!-- App systems: rewarded ads, reminders. Site arcade system is intentionally
      not part of the app. -->
 <script src="../game-system.js"></script>
+<link rel="stylesheet" href="../story-run.css">
+<script src="../story-run.js"></script>
 </head>
 <body>
 
@@ -1746,6 +1748,7 @@ function paintCounts(){
   const c=_btEl('coinCount'); if(c)c.textContent=fmt(total);
   const h=_btEl('happyCount'); if(h)h.textContent=vault.happiness;
   if(_biscuitsLabel)_biscuitsLabel.innerHTML=fmt(total)+' <span>biscuits</span>';
+  try{ storyTrack(); }catch(e){}
   return total;
 }
 // Full HUD (hats, wardrobe, widget push) - used on timers and after purchases.
@@ -4154,6 +4157,45 @@ setInterval(spawnBgCookie,900);
 for(let i=0;i<8;i++)spawnBgCookie(true);
 setTimeout(maybeRain,10000); setInterval(maybeRain,55000);
 checkDailyBonus(); checkAchievements();
+
+// ── A587: a light first-visit story shift ──────────────────────────────
+// The idle core is unchanged; this just frames the first few minutes as a
+// gentle "fill the tin" shift with a visible ending, so the card promise
+// (3-5 min, no forced grind) is honest. After the shift ends the clicker
+// carries on exactly as before.
+const storyRun=window.__storyRun=(()=>{try{return new StoryRun({
+  id:'biscuit-clicker',
+  title:'The Open Tin', character:'Pip',
+  open:'Pip left the biscuit tin open and the whole crew is taking turns.',
+  objective:'Tap the tin and bake 150 biscuits in your first shift.',
+  beats:[{at:0,text:'The first biscuits drop into the tin.'},{at:0.45,text:'The tin is filling and the crew is cheering.'},{at:0.8,text:'Nearly full, one more handful.'}],
+  cap:300,
+  result:{
+    success:'The tin is full, Pip counts the haul and the crew thanks you.',
+    partial:'A good first shift, the tin is part-full and the crew is happy.',
+    fail:'The tin rests for now, but the crew will be back for another shift.'
+  },
+  onFinish:function(){ storyBaseline=null; },
+  onRestart:function(){ storyBegin(); }
+});}catch(e){return null;}})();
+let storyBaseline=null;
+const STORY_GOAL=150;
+function storyBegin(){
+  if(!storyRun)return;
+  storyBaseline=Math.floor(bv().total);
+  storyRun.begin();
+}
+function storyTrack(){
+  if(!storyRun||!storyRun.running||storyBaseline==null)return;
+  const gained=Math.floor(bv().total)-storyBaseline;
+  storyRun.setScore(Math.max(0,gained));
+  if(gained>=STORY_GOAL){ storyRun.finish('success',gained); }
+}
+// begin the shift once the splash is out of the way (first interaction)
+['pointerdown','keydown'].forEach(function(ev){
+  document.addEventListener(ev,function(){ if(storyRun&&!storyRun.running&&!storyRun.finished)storyBegin(); },{once:true});
+});
+setTimeout(function(){ if(storyRun&&!storyRun.running&&!storyRun.finished)storyBegin(); },5000);
 
 
 </script>
