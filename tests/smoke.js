@@ -136,8 +136,12 @@ async function scenario(name, fn) {
     await page.waitForFunction(() => document.getElementById('bkTextarea').value.length > 100);
     const backupJson = await page.$eval('#bkTextarea', el => el.value);
     const parsed = JSON.parse(backupJson);
-    record('export envelope is valid', parsed.app === 'jvdesignstudio-progress' && parsed.keys > 0,
-      'app=' + parsed.app + ', keys=' + parsed.keys);
+    const envelopeOk =
+      (parsed.format === 'jvds-backpack' && parsed.count > 0 && parsed.keys && typeof parsed.keys === 'object') ||
+      (parsed.app === 'jvdesignstudio-progress' && parsed.data && typeof parsed.data === 'object');
+    const envelopeSaves = parsed.keys ? Object.keys(parsed.keys).length : Object.keys(parsed.data || {}).length;
+    record('export envelope is valid', envelopeOk,
+      'format=' + (parsed.format || parsed.app) + ', saves=' + envelopeSaves);
 
     // Wipe everything, verify dashboard resets to zero
     await page.evaluate(() => localStorage.clear());
