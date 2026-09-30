@@ -36,6 +36,7 @@
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 
 <link rel="stylesheet" href="/style-mascots.css">
+<link rel="stylesheet" href="../story-run.css">
 </head>
 <body>
 <!-- BUILD:nav-strip -->
@@ -353,6 +354,7 @@
   </div>
 </div>
 
+<script src="../story-run.js"></script>
 <script>
 /* ============================================================================
    SKY HIGH SQUIRT
@@ -361,6 +363,31 @@
    ============================================================================ */
 const GAME_VERSION = { v: '3.0', code: 14, date: '2026-09-01', codename: 'Horizon' };
 const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
+
+// A585: one 5-minute story run. Echo and the crew race you up the tower; reach
+// the top (500m) before the light runs out. StoryRun owns the HUD, the rising
+// beat and the finish screen so the promise on the arcade card comes true.
+const STORY_TOP_M = 500;
+const storyRun = (typeof StoryRun !== 'undefined') ? new StoryRun({
+  id: 'sky-high-friends',
+  gameSystem: (typeof gameSystem !== 'undefined' ? gameSystem : null),
+  title: 'Race to the Roof',
+  character: 'Echo',
+  open: 'Echo and the crew are climbing the same tower and racing you to the top.',
+  objective: 'Climb to ' + STORY_TOP_M + 'm before the light runs out.',
+  beats: [
+    { at: 0.0, text: 'The race starts. Echo is right beside you.' },
+    { at: 0.4, text: '250m. The crew pulls level and the wind picks up.' },
+    { at: 0.75, text: '400m. The roof is in sight, Echo is one jump behind.' }
+  ],
+  cap: 300,
+  result: {
+    success: 'You touch the top first, Echo cheers and the tower resets for a rematch.',
+    partial: 'The light fades before the roof, but the crew waits and the climb counts.',
+    fail: 'You fall before the top this time, and Echo marks the route to try again.'
+  }
+}) : null;
+if (storyRun) { window.__storyRun = storyRun; }
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -1892,6 +1919,13 @@ function update() {
   if (p.y < state.highestY) state.highestY = p.y;
   state.heightM = Math.max(0, Math.floor((H - 120 - state.highestY) * PHYS.scoreScale));
   state.zone = getZone(state.heightM);
+
+  // A585: feed the story run and end it the moment you reach the roof.
+  if (storyRun && state.mode === 'playing') {
+    storyRun.setScore(state.heightM);
+    if (state.heightM >= STORY_TOP_M) { reachStoryTop(); return; }
+  }
+
 
   // ── In-run goal feedback ──
   // Altitude milestones every MILESTONE_STEP metres (lower on screen than the
@@ -3777,6 +3811,7 @@ function startGame(weekly) {
   document.getElementById('pause').classList.add('hidden');
   document.getElementById('modchooser').classList.add('hidden');
 
+  if (storyRun) storyRun.begin();
   requestWakeLock();
 }
 
@@ -3843,6 +3878,26 @@ function deathFxTick() {
     tx.y += tx.vy; tx.life -= tx.decay;
   }
   state.texts = state.texts.filter(tx => tx.life > 0);
+}
+
+// A585: you reached the roof before the timer. Bank the run through the normal
+// death-style bookkeeping (so coins/XP still count) then finish as a success.
+function reachStoryTop() {
+  state.mode = 'dead';
+  document.body.dataset.mode = 'dead';
+  releaseWakeLock();
+  const bankedCoins = state.runCoins;
+  save.coins += bankedCoins;
+  const xpEarned = Math.floor(state.heightM / 5) + state.runCoins * 2 + 10 + state.nearMisses * 5;
+  awardXp(xpEarned);
+  if (typeof gameSystem !== 'undefined' && !state.recordedRun) {
+    gameSystem.recordGamePlay(Date.now());
+    state.recordedRun = true;
+  }
+  if (state.heightM > save.bestHeight) save.bestHeight = state.heightM;
+  persist();
+  SFX.levelUp();
+  storyRun.finish('success', state.heightM);
 }
 
 function die() {
@@ -3986,7 +4041,13 @@ function die() {
     }
   }
 
-  document.getElementById('gameover').classList.remove('hidden');
+  // A585: the story run owns the finish screen; the game's own panel would be
+  // a second "you fell" screen, so it only shows when the run is absent.
+  if (storyRun) {
+    storyRun.finish((state.heightM >= STORY_TOP_M) ? 'success' : (storyRun.timeLeft() <= 0 ? 'partial' : 'fail'), state.heightM);
+  } else {
+    document.getElementById('gameover').classList.remove('hidden');
+  }
 
   const messages = [];
   if (levelUp) { messages.push(`⭐ Level ${levelUp}!`); setTimeout(() => SFX.levelUp(), 600); }
@@ -4001,6 +4062,7 @@ function die() {
 
 function returnToMenu() {
   state.mode = 'menu';
+  if (storyRun) storyRun.stop();
   document.body.dataset.mode = 'menu';
   // Menu backdrop is always the meadow, whatever altitude the run reached
   state.heightM = 0;

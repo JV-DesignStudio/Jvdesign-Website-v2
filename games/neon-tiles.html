@@ -25,12 +25,13 @@
 <script src="../game-system.js"></script>
 <script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css?v=18">
+<link rel="stylesheet" href="../story-run.css">
 <link rel="stylesheet" href="../style-game-neon-tiles.css?v=22">
 <link rel="stylesheet" href="../style-mascots.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Neon Tiles: Beat Builder","url":"https://jvdesignstudio.co.uk/games/neon-tiles.html","description":"A proper web rhythm game with song choice, falling notes, timing grades, combo streaks, health and unlockable neon tracks.","genre":"Rhythm","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/NeonTilesCover.webp"}</script>
 <style>.quality-panel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 16px}.quality-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:12px}.quality-card b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#b98bff;margin-bottom:4px}.quality-card span{font-size:.84rem;line-height:1.4;color:rgba(255,255,255,.86)}.quality-card a{color:#4fd6c8;font-weight:800}.daily-card{background:linear-gradient(135deg,rgba(185,139,255,.18),rgba(79,214,200,.14));border:1px solid rgba(185,139,255,.4);border-radius:16px;padding:10px;margin-bottom:10px}.daily-card b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#b98bff;margin-bottom:4px}.daily-card span{font-size:.84rem;line-height:1.4;color:#fff;display:block}.daily-card .streak{color:#4fd6c8;font-weight:800}@media(max-width:900px){.quality-panel{grid-template-columns:1fr 1fr}}@media(max-width:560px){.quality-panel{grid-template-columns:1fr}}</style></head>
 <body>
-<div class="game-shell">
+<div class="game-shell" data-storyrun-host>
   <header class="topbar">
     <div>
       <p class="eyebrow">Arcade rhythm stage</p>
@@ -114,10 +115,26 @@
     <button class="ghost" onclick="location.href='../pages/games.html'">Back to Games</button>
   </div>
 </div>
+<script src="../story-run.js"></script>
 <script>
 const gameSystem = new GameSystem('neon-tiles', 'Neon Tiles: Beat Builder', 'lumo');
 const audioEffects = new AudioEffects(0.65);
 if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
+const storyRun = window.__storyRun || (window.__storyRun = new StoryRun({
+  id:'neon-tiles', gameSystem:gameSystem,
+  title:'Echo and the Short Track', character:'Echo',
+  open:'Echo has one short track to get right before the lights come up.',
+  objective:'Pick a track and hit the falling notes to keep your energy.',
+  beats:[{at:0,text:'First notes on the line.'},{at:0.4,text:'The track speeds up.'},{at:0.78,text:'Final bars, hold your energy.'}],
+  cap:300,
+  result:{
+    success:'The song ends, Echo counts you in and the harder track unlocks.',
+    partial:'The track survives with a wobble, and Echo keeps the lights on.',
+    fail:'The lights dim early, but Echo has your timing noted for the next run.'
+  },
+  onFinish:function(){ playing=false; paused=false; cancelAnimationFrame(raf); },
+  onRestart:function(){ startSong(); }
+}));
 const LANES = ['D','F','J','K'];
 const SAVE_KEY = 'neon_tiles_rhythm_progress_v2';
 const songs = [
@@ -206,6 +223,7 @@ function updateHud(){
   document.getElementById('goodVal').textContent=stats.good;
   document.getElementById('missVal').textContent=stats.miss;
   document.getElementById('maxComboVal').textContent=stats.maxCombo;
+  storyRun.setScore(stats.score);
 }
 function gradeFor(acc, life, miss){ if(life<=0)return 'F'; if(acc>=96 && miss===0)return 'S'; if(acc>=90)return 'A'; if(acc>=80)return 'B'; if(acc>=70)return 'C'; return 'D'; }
 function startSong(){
@@ -224,6 +242,7 @@ function startSong(){
   countdown();
   cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
   gameSystem.beginRun();
+  if(!storyRun.running) storyRun.begin();
   updateUi();
 }
 function countdown(){
@@ -282,16 +301,14 @@ function endSong(cleared){
   if(stats.score>(best.score||0)) progress.best[selected.id]={score:stats.score,grade,acc,maxCombo:stats.maxCombo,stars};
   progress.unlocked=Math.max(progress.unlocked, Object.values(progress.best).reduce((a,b)=>a+(b.stars||0),0));
   saveProgress();
-  gameSystem.addScore(stats.score);
-  gameSystem.addXP(Math.max(5, Math.floor(stats.score/350)+stars*20));
   gameSystem.unlockAchievement('firstSong');
   if(stats.maxCombo>=25) gameSystem.unlockAchievement('combo25');
   if(grade==='S') gameSystem.unlockAchievement('perfectRhythm');
-  gameSystem.saveState();
-  gameSystem.recordGamePlay(90000);
   bumpDaily(selected.id===dailySong().id && gradeRank[grade]>=gradeRank[dailyTarget()]);
   updateUi();
-  showResult(cleared, grade, acc, stars);
+  document.getElementById('modal').classList.remove('show');
+  const outcome = !cleared ? 'fail' : (gradeRank[grade]>=gradeRank['B'] ? 'success' : 'partial');
+  storyRun.finish(outcome, stats.score);
 }
 function showResult(cleared, grade, acc, stars){
   const m=document.getElementById('modal');

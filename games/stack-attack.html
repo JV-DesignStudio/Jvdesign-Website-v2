@@ -39,6 +39,7 @@
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
+<link rel="stylesheet" href="../story-run.css">
 </head>
 <body>
 <div class="topbar">
@@ -48,7 +49,7 @@
 </div>
 
 <div id="wrap"><canvas id="game"></canvas></div>
-<div class="hud">
+<div class="hud" data-storyrun-host>
   <div id="lbl">Score</div>
   <div id="score">0</div>
   <div class="hud-row">
@@ -107,6 +108,7 @@
   <button class="btn sm" id="achBack">← Back</button>
 </div>
 
+<script src="../story-run.js"></script>
 <script>
 (function(){
   const cv=document.getElementById('game'),ctx=cv.getContext('2d');
@@ -242,6 +244,20 @@
   const BEACON_FLOORS=30;
   let shakeT=0,shakeMag=0;
   const HUES=[6,30,170,200,280,330];
+  const storyRun = window.__storyRun || (window.__storyRun = new StoryRun({
+    id:'stack-attack', title:'Ember and the Beacon Tower', character:'Ember',
+    open:'Ember is stacking blocks to reach the beacon and needs your maths to keep it straight.',
+    objective:'Answer the prompts, match the block widths and balance the tower.',
+    beats:[{at:0,text:'First blocks are set.'},{at:0.4,text:'The tower climbs and the clues get harder.'},{at:0.8,text:'The beacon is close, keep it balanced.'}],
+    cap:300,
+    result:{
+      success:'The beacon lights and Ember marks one more block for tomorrow.',
+      partial:'The tower leans, holds, and the beacon flickers on at last.',
+      fail:'The tower topples, but Ember knows which block to place first.'
+    },
+    onFinish:function(){ running=false; },
+    onRestart:function(){ startGame(); }
+  }));
   function baseY(){return H-60;}
 
   // Stars
@@ -341,6 +357,7 @@
     if(choiceRow)choiceRow.classList.toggle('hidden',!running||beaconComplete);
     if(repairBtn){repairBtn.disabled=!running||beams<2||!cur;repairBtn.textContent='Repair 2';}
     if(brakeBtn){brakeBtn.disabled=!running||beams<1||!cur||!brakeReady;brakeBtn.textContent=brakeReady?'Brake 1':'Brake used';}
+    storyRun.setScore(score);
   }
 
   function addP(x,y,emoji,n=5){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=2+Math.random()*3;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,emoji,life:1});}}
@@ -531,7 +548,7 @@
   }
 
   // ── Start / End ──
-  function startGame(){ cancelAnimationFrame(stackFrame); if(pauseOverlay) pauseOverlay.style.display='none'; paused=false; initAudio();reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');hint.classList.remove('hidden');cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop);setTimeout(()=>hint.classList.add('hidden'),2600);}
+  function startGame(){ cancelAnimationFrame(stackFrame); if(pauseOverlay) pauseOverlay.style.display='none'; paused=false; initAudio();if(typeof gameSystem!=='undefined')storyRun.gameSystem=gameSystem;reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');hint.classList.remove('hidden');cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop);setTimeout(()=>hint.classList.add('hidden'),2600);if(!storyRun.running)storyRun.begin();}
 
   function end(won=false){ if(pauseOverlay) pauseOverlay.style.display='none'; paused=false;
     running=false;beaconComplete=!!won;updateHud();hint.classList.add('hidden');if(won)sfxAch();else sfxOver();
@@ -543,7 +560,6 @@
     setTimeout(()=>document.getElementById('game').classList.remove('topple-shake'),400);
     window.__gsScore=(window.__gsScore||0)+score;
     window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
-    if(typeof gameSystem!=='undefined')gameSystem.recordGamePlay(Date.now());
     if(score>best){best=score;localStorage.setItem('stackBest',best);}
     if(won){beacons++;localStorage.setItem('stackBeacons',beacons);coins+=15;coinsEarned+=15;saveCoins();}
     document.getElementById('bestStart').textContent='Best: '+best;
@@ -567,7 +583,10 @@
     const ah=sessionAchs.map(id=>{const a=ACHS.find(a=>a.id===id);return a?`<div class="end-ach">${a.icon} ${a.name}</div>`:'';}).join('');
     document.getElementById('endAchs').innerHTML=ah?'<div style="font-size:.75rem;opacity:.6;margin-bottom:4px">Achievements Unlocked:</div>'+ah:'';
     if(nb)addP(W/2,H/3,'🎉',12);
-    endScreen.classList.remove('hidden');
+    endScreen.classList.add('hidden');
+    const outcome=won?'success':score>=25?'partial':'fail';
+    if(typeof gameSystem!=='undefined')storyRun.gameSystem=gameSystem;
+    storyRun.finish(outcome,score);
   }
 
   // ── Wiring ──

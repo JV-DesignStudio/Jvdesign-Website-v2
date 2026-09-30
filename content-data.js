@@ -3227,7 +3227,7 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "lumo-dash",
-      "title": "Lumo Dash: Glow Garden Run",
+      "title": "Lumo Dash: Pattern Trail",
       "tag": "Endless Run · Jumping",
       "emoji": "🦊",
       "category": "Action",
@@ -3241,7 +3241,7 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "nibble-quest",
-      "title": "Nibble Quest: The Picnic Trail",
+      "title": "Nibble Quest: Route Planner",
       "tag": "Spatial planning · Sequences",
       "emoji": "🐍",
       "category": "Action",
@@ -4104,7 +4104,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-09-30T10:16:22.117Z",
+    "generated": "2026-09-30T12:35:00.083Z",
     "workshops": 186,
     "games": 40,
     "tools": 37,

@@ -31,6 +31,7 @@
 <link rel="stylesheet" href="../style-game-dough-dash.css?v=30">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Dough Dash","url":"https://jvdesignstudio.co.uk/games/dough-dash.html","description":"Steer dough through a busy kitchen, collect ingredients, dodge hazards, and deliver oven combos.","genre":"Action","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/DoughDashCover.webp"}</script>
 <link rel="stylesheet" href="/style-mascots.css">
+<link rel="stylesheet" href="../story-run.css">
 </head>
 <body>
 <main class="dash-game" id="game">
@@ -45,6 +46,7 @@
   <div class="modal show" id="startModal"><div class="modal-card"><h1>🍞 Dough Dash</h1><p>Roll through the kitchen, grab the recipe ingredients, dodge spills and mixer blades, then dive into the oven for a perfect bake.</p><div class="how"><div><b>Move</b><span>Arrow keys, WASD, swipe, or tap the buttons.</span></div><div><b>Collect</b><span>Only the ingredients on the order card score big.</span></div><div><b>Deliver</b><span>Hit the glowing oven when the recipe is complete.</span></div></div><div class="mode-row" id="modeRow"></div><button class="primary" id="playBtn" type="button">Start dash</button><button class="secondary" type="button" onclick="location.href='../pages/games.html'">Back</button></div></div>
   <div class="modal" id="endModal"><div class="modal-card"><h1 id="endTitle">Shift over!</h1><p id="endCopy">The dough made it through the rush.</p><div class="results"><div><span>Score</span><b id="finalScore">0</b></div><div><span>Orders</span><b id="finalOrders">0</b></div><div><span>Best</span><b id="finalBest">0</b></div></div><button class="primary" id="againBtn" type="button">Play again</button><button class="secondary" type="button" onclick="location.href='../pages/games.html'">Back</button></div></div>
 </main>
+<script src="../story-run.js"></script>
 <script>
 const gameSystem = new GameSystem('dough-dash','Dough Dash','squirt');
 const audioEffects = new AudioEffects(0.55); if(localStorage.getItem('soundEnabled')==='false') audioEffects.setMasterVolume(0);
@@ -54,11 +56,26 @@ const ingredients=[{id:'flour',emoji:'🌾',color:'#f7d78a'},{id:'sugar',emoji:'
 const recipes=[{name:'Jam Twist',need:{flour:2,berry:2,sugar:1}},{name:'Choco Bun',need:{flour:2,choc:2,cream:1}},{name:'Party Doughnut',need:{flour:2,sugar:2,cream:1}},{name:'Berry Crown',need:{berry:3,cream:1,sugar:1}},{name:'Cookie Roll',need:{flour:2,choc:1,sugar:2}}];
 let modeId='rush', running=false, last=0, score=0, hearts=3, combo=1, orders=0, best=gameSystem.state.highScore||Number(localStorage.getItem('doughDashBest')||0), player, items=[], hazards=[], oven, recipe, got={}, heat=100, particles=[], startX=0,startY=0;
 const $=id=>document.getElementById(id); function mode(){return modes.find(m=>m.id===modeId)||modes[1]} function rand(a,b){return a+Math.random()*(b-a)} function pick(a){return a[Math.floor(Math.random()*a.length)]}
+const storyRun = window.__storyRun || (window.__storyRun = new StoryRun({
+  id:'dough-dash', gameSystem:gameSystem,
+  title:"Ember's Bakery Rush", character:'Ember',
+  open:"Ember's dough is rolling and the kitchen is on fire with orders.",
+  objective:'Deliver the batch of orders before the heat runs out.',
+  beats:[{at:0,text:'First order lands on the pass.'},{at:0.45,text:'The rush doubles up and the heat climbs.'},{at:0.82,text:'Last call, the ovens are glowing.'}],
+  cap:300,
+  result:{
+    success:'The last oven opens, the orders are served and Ember high-fives you.',
+    partial:'Most orders land, one burns, and the shift still ends on its feet.',
+    fail:'The kitchen wins this round, but the dough is still warm for tomorrow.'
+  },
+  onFinish:function(){ running=false; if(score>best){best=score;localStorage.setItem('doughDashBest',best)} },
+  onRestart:function(){ startGame(); }
+}));
 function toggleSound(){const on=localStorage.getItem('soundEnabled')!=='false';localStorage.setItem('soundEnabled',on?'false':'true');audioEffects.setMasterVolume(on?0:.55);$('soundBtn').textContent=on?'🔇':'🔊'}
 function newRecipe(){recipe=recipes[orders%recipes.length];got={}; Object.keys(recipe.need).forEach(k=>got[k]=0); heat=100; renderRecipe(); toast(recipe.name+' order!')}
 function spawn(){items=[];hazards=[];oven={x:W-92,y:H/2-58,w:72,h:116,pulse:0}; for(let i=0;i<18;i++){const ing=pick(ingredients);items.push({type:'ing',id:ing.id,x:rand(90,W-170),y:rand(90,H-90),r:22,bob:rand(0,6)});} for(let i=0;i<8+(modeId==='chef'?3:0);i++)hazards.push({x:rand(130,W-230),y:rand(80,H-80),r:24,vx:rand(-80,80),vy:rand(-70,70),kind:i%2?'spill':'mixer'});}
-function startGame(){gameSystem.beginRun(); running=true; score=0; hearts=3; combo=1; orders=0; player={x:72,y:H/2,r:24,vx:0,vy:0,inv:0,trail:[]}; newRecipe(); spawn(); last=performance.now(); $('startModal').classList.remove('show');$('endModal').classList.remove('show'); updateHud(); requestAnimationFrame(loop)}
-function updateHud(){$('scoreHud').textContent=score;$('ordersHud').textContent=orders+'/'+mode().target;$('heartsHud').textContent='❤️'.repeat(Math.max(0,hearts));$('comboHud').textContent='x'+combo.toFixed(combo%1?1:0)}
+function startGame(){gameSystem.beginRun(); running=true; score=0; hearts=3; combo=1; orders=0; player={x:72,y:H/2,r:24,vx:0,vy:0,inv:0,trail:[]}; newRecipe(); spawn(); last=performance.now(); $('startModal').classList.remove('show');$('endModal').classList.remove('show'); updateHud(); if(!storyRun.running)storyRun.begin(); requestAnimationFrame(loop)}
+function updateHud(){$('scoreHud').textContent=score;$('ordersHud').textContent=orders+'/'+mode().target;$('heartsHud').textContent='❤️'.repeat(Math.max(0,hearts));$('comboHud').textContent='x'+combo.toFixed(combo%1?1:0);storyRun.setScore(score)}
 function renderRecipe(){$('recipeName').textContent=recipe.name;$('recipeList').innerHTML=Object.entries(recipe.need).map(([id,n])=>{const ing=ingredients.find(i=>i.id===id);return '<span class="need '+((got[id]||0)>=n?'done':'')+'"><i>'+ing.emoji+'</i><b>'+Math.min(got[id]||0,n)+'/'+n+'</b></span>'}).join('')}
 function complete(){return Object.entries(recipe.need).every(([id,n])=>(got[id]||0)>=n)}
 function loop(t){if(!running)return; const dt=Math.min(.033,(t-last)/1000); last=t; update(dt); draw(t/1000); requestAnimationFrame(loop)}
@@ -75,7 +92,7 @@ function drawItem(it){const ing=ingredients.find(i=>i.id===it.id);ctx.save();ctx
 function drawHazard(h){ctx.save();ctx.translate(h.x,h.y);ctx.fillStyle=h.kind==='spill'?'#72d7ff':'#9a9a9a';ctx.beginPath();ctx.arc(0,0,h.r,0,7);ctx.fill();ctx.font='27px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(h.kind==='spill'?'💧':'⚙️',0,1);ctx.restore()}
 function drawPlayer(){if(!player)return;player.trail.forEach((p,i)=>{ctx.globalAlpha=(12-i)/42;ctx.fillStyle='#f1c27d';ctx.beginPath();ctx.arc(p.x,p.y,player.r*(1-i/18),0,7);ctx.fill()});ctx.globalAlpha=1;ctx.save();ctx.translate(player.x,player.y); if(player.inv>0&&Math.floor(player.inv*12)%2){ctx.globalAlpha=.45}ctx.fillStyle='#f2b96b';ctx.beginPath();ctx.arc(0,0,player.r,0,7);ctx.fill();ctx.fillStyle='#6b3a20';ctx.beginPath();ctx.arc(-8,-4,3,0,7);ctx.arc(8,-4,3,0,7);ctx.fill();ctx.strokeStyle='#6b3a20';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,4,8,0,Math.PI);ctx.stroke();ctx.restore();ctx.globalAlpha=1}
 function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
-function endGame(won){running=false; if(score>best){best=score;localStorage.setItem('doughDashBest',best)} gameSystem.addScore(score);gameSystem.addXP(Math.max(8,Math.floor(score/40)));gameSystem.unlockAchievement('firstPlay'); if(won)gameSystem.unlockAchievement('ovenHero');gameSystem.recordGamePlay(90000);gameSystem.saveState();$('endTitle').textContent=won?'Bakery cleared!':'Dough down!';$('endCopy').textContent='You delivered '+orders+' oven orders.';$('finalScore').textContent=score;$('finalOrders').textContent=orders;$('finalBest').textContent=Math.max(best,score);$('endModal').classList.add('show')}
+function endGame(won){running=false; if(score>best){best=score;localStorage.setItem('doughDashBest',best)} if(won)gameSystem.unlockAchievement('ovenHero');$('endModal').classList.remove('show');storyRun.finish(won?'success':'fail',score)}
 function renderModes(){$('modeRow').innerHTML=modes.map(m=>'<button class="'+(m.id===modeId?'sel':'')+'" data-mode="'+m.id+'" type="button">'+m.label+'</button>').join('');document.querySelectorAll('#modeRow button').forEach(b=>b.onclick=()=>{modeId=b.dataset.mode;renderModes()})}
 document.addEventListener('keydown',e=>{keys[e.key]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});document.addEventListener('keyup',e=>keys[e.key]=false);canvas.addEventListener('pointerdown',e=>{startX=e.clientX;startY=e.clientY});canvas.addEventListener('pointermove',e=>{if(!startX)return;const dx=e.clientX-startX,dy=e.clientY-startY;keys.ArrowRight=dx>18;keys.ArrowLeft=dx<-18;keys.ArrowDown=dy>18;keys.ArrowUp=dy<-18});canvas.addEventListener('pointerup',()=>{startX=0;keys.ArrowRight=keys.ArrowLeft=keys.ArrowDown=keys.ArrowUp=false});document.querySelectorAll('.touch-pad button').forEach(b=>{const map={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};b.onpointerdown=()=>keys[map[b.dataset.dir]]=true;b.onpointerup=b.onpointerleave=()=>keys[map[b.dataset.dir]]=false});
 $('soundBtn').onclick=toggleSound;$('playBtn').onclick=startGame;$('againBtn').onclick=startGame;renderModes();newRecipe();updateHud();draw(0);
