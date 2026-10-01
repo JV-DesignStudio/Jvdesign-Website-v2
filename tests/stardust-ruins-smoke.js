@@ -130,7 +130,7 @@ const tap = async (page, sym) => {
     const html = fs.readFileSync(path.join(ROOT, 'games', 'stardust-ruins.html'), 'utf8');
     ok('no ruin ladder left in the page', !/puzzles\[|id="next"|level\+\+|const puzzles/.test(html));
     ok('the page promises one ruin', /one ruin/i.test(html));
-    ok('the noindex decision is preserved', /noindex,follow/.test(html));
+    ok('the robots tag is index, follow (A658)', /index, follow/.test(html));
   } finally {
     await browser.close();
     server.close();
