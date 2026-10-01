@@ -2,8 +2,8 @@
 var MASCOT_CFG = {
   lumo:     { name:'Lumo',     img:'/assets/mascots/lumo.jpg',     color:'#7C6CF0', pillar:'Learn' },
   ember:    { name:'Ember',    img:'/assets/mascots/ember.jpg',    color:'#F2637A', pillar:'Create' },
-  play:     { name:'Echo & Pip', img:'/assets/mascots/echo.jpg',  color:'#2EB5A5', pillar:'Play', img2:'/assets/mascots/pip.png' },
-  stardust: { name:'Stardust', img:'/assets/mascots/stardust.png', color:'#FFD23C', pillar:'Read' },
+  play:     { name:'Echo & Pip', img:'/assets/mascots/echo.jpg',  color:'#2EB5A5', pillar:'Play', img2:'/assets/mascots/pip-hero.webp' },
+  stardust: { name:'Stardust', img:'/assets/mascots/stardust-hero.webp', color:'#FFD23C', pillar:'Read' },
 };
 function getGuide(){ try{ return localStorage.getItem('jvds_guide'); }catch(e){ return null; } }
 function setGuide(id){
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.quest-card, .quest-item, [data-quest-card]').forEach(card=>{
     if(card.querySelector('.mascot-quest-by')) return;
     const txt = (card.textContent||'').toLowerCase();
-    let m='stardust', label='Stardust', img='/assets/mascots/stardust.png';
+    let m='stardust', label='Stardust', img='/assets/mascots/stardust-hero.webp';
     if (txt.includes('learn')||txt.includes('workshop')||txt.includes('scratch')||txt.includes('tiny')){ m='lumo'; label='Lumo · Learn'; img='/assets/mascots/lumo.jpg'; }
     else if (txt.includes('tool')||txt.includes('pixel')||txt.includes('build')||txt.includes('create')||txt.includes('sprite')||txt.includes('audio')){ m='ember'; label='Ember · Create'; img='/assets/mascots/ember.jpg'; }
     else if (txt.includes('play')||txt.includes('game')||txt.includes('arcade')||txt.includes('score')){ m='play'; label='Echo & Pip · Play'; img='/assets/mascots/echo.jpg'; }
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(box && !box.querySelector('.mascot-search-avatar')){
       const av=document.createElement('img');
       av.className='mascot-search-avatar';
-      av.src = g==='ember' ? '/assets/mascots/ember.jpg' : g==='play' ? '/assets/mascots/echo.jpg' : g==='stardust' ? '/assets/mascots/stardust.png' : '/assets/mascots/lumo.jpg';
+      av.src = g==='ember' ? '/assets/mascots/ember.jpg' : g==='play' ? '/assets/mascots/echo.jpg' : g==='stardust' ? '/assets/mascots/stardust-hero.webp' : '/assets/mascots/lumo.jpg';
       av.alt=''; av.style.cssText='width:22px;height:22px;border-radius:50%;border:1px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.12);margin-right:6px;flex-shrink:0;object-fit:cover;background:#fff';
       av.loading='lazy';
       box.insertBefore(av, box.firstChild);
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.loader, .spinner, [data-loader]').forEach(el=>{
     if(el.querySelector('.mascot-loader')) return;
     const kind = el.dataset.mascot || (Math.random()<.5 ? 'stardust' : 'pip');
-    const img = kind==='pip' ? '/assets/mascots/pip.png' : '/assets/mascots/stardust.png';
+    const img = kind==='pip' ? '/assets/mascots/pip-hero.webp' : '/assets/mascots/stardust-hero.webp';
     const wrap=document.createElement('div');
     wrap.className='mascot-loader mascot-loader--'+kind;
     wrap.innerHTML=`<img src="${img}" alt="" loading="lazy"><span>Loading…</span>`;
@@ -202,7 +202,7 @@ function showGuideQuiz(){
   bd.className='mascot-quiz-backdrop';
   bd.innerHTML=`
     <div class="mascot-quiz-card mascot-quiz-reveal" role="dialog" aria-labelledby="quizTitle quizQ" aria-modal="true">
-      <div class="mascot-quiz-crew" aria-hidden="true"><img src="/assets/mascots/lumo.jpg" alt=""><img src="/assets/mascots/ember.jpg" alt=""><img src="/assets/mascots/echo.jpg" alt=""><img src="/assets/mascots/pip.png" alt=""><img src="/assets/mascots/stardust.png" alt=""></div>
+      <div class="mascot-quiz-crew" aria-hidden="true"><img src="/assets/mascots/lumo.jpg" alt=""><img src="/assets/mascots/ember.jpg" alt=""><img src="/assets/mascots/echo.jpg" alt=""><img src="/assets/mascots/pip-hero.webp" alt=""><img src="/assets/mascots/stardust-hero.webp" alt=""></div>
       <h2 id="quizTitle" class="mascot-quiz-title" style="font-family:Fredoka,sans-serif;font-size:1.15rem;margin:10px 0 4px;color:var(--charcoal)">Find your creative guide</h2>
       <p class="mascot-quiz-context" style="font-size:.82rem;color:var(--charcoal-lt);margin:0 0 10px;line-height:1.4">3 quick picks - we will match you with Lumo, Ember, Echo and Pip or Stardust and personalize your homepage.</p>
       <div class="mascot-quiz-progress" aria-live="polite">Question <span id="quizStep">1</span> of 3</div>
@@ -216,19 +216,19 @@ function showGuideQuiz(){
       {t:"Exploring a mystery forest", m:'lumo', img:'/assets/mascots/lumo.jpg'},
       {t:"Building something wild", m:'ember', img:'/assets/mascots/ember.jpg'},
       {t:"Playing with friends", m:'play', img:'/assets/mascots/echo.jpg'},
-      {t:"Snuggling with a cozy story", m:'stardust', img:'/assets/mascots/stardust.png'},
+      {t:"Snuggling with a cozy story", m:'stardust', img:'/assets/mascots/stardust-hero.webp'},
     ]},
     {q:"How do you like to learn?", opts:[
-      {t:"Try it and see what happens", m:'play', img:'/assets/mascots/pip.png'},
+      {t:"Try it and see what happens", m:'play', img:'/assets/mascots/pip-hero.webp'},
       {t:"Follow steps one by one", m:'lumo', img:'/assets/mascots/lumo.jpg'},
       {t:"Make it look and sound perfect", m:'ember', img:'/assets/mascots/ember.jpg'},
-      {t:"Feel it in a story", m:'stardust', img:'/assets/mascots/stardust.png'},
+      {t:"Feel it in a story", m:'stardust', img:'/assets/mascots/stardust-hero.webp'},
     ]},
     {q:"Pick a superpower!", opts:[
       {t:"Curiosity , always asking why", m:'lumo', img:'/assets/mascots/lumo.jpg'},
       {t:"Creation , turning ideas real", m:'ember', img:'/assets/mascots/ember.jpg'},
       {t:"Playfulness , joy is power", m:'play', img:'/assets/mascots/echo.jpg'},
-      {t:"Wonder , tiny stars, big dreams", m:'stardust', img:'/assets/mascots/stardust.png'},
+      {t:"Wonder , tiny stars, big dreams", m:'stardust', img:'/assets/mascots/stardust-hero.webp'},
     ]},
   ];
   let idx=0, votes={lumo:0,ember:0,play:0,stardust:0};
@@ -328,7 +328,7 @@ function showCelebration({mascot='stardust', title='You did it!', text='' }){
 
 function injectEmptyMascot(host, kind, text){
   if(!host || host.querySelector('.mascot-empty')) return;
-  const img = kind==='play' ? '/assets/mascots/echo.jpg' : kind==='lumo' ? '/assets/mascots/lumo.jpg' : '/assets/mascots/stardust.png';
+  const img = kind==='play' ? '/assets/mascots/echo.jpg' : kind==='lumo' ? '/assets/mascots/lumo.jpg' : '/assets/mascots/stardust-hero.webp';
   const wrap=document.createElement('div');
   wrap.className='mascot-empty mascot-empty--small';
   wrap.innerHTML=`<img src="${img}" alt="" loading="lazy"><div class="mascot-bubble mascot-bubble--light">${text}</div>`;
