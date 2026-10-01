@@ -439,6 +439,16 @@ window.checkConceptFill = checkConceptFill;
 window.completeStep = completeStep;
 window.toggleStep = toggleStep;
 
+/* expose internals for workshop-interactive.js */
+window._wsEngine = {
+  get streak() { return streak; }, set streak(v) { streak = v; },
+  get bestStreak() { return bestStreak; }, set bestStreak(v) { bestStreak = v; },
+  get totalQuizzes() { return totalQuizzes; }, set totalQuizzes(v) { totalQuizzes = v; },
+  get correctFirst() { return correctFirst; }, set correctFirst(v) { correctFirst = v; },
+  XP_QUIZ: XP_QUIZ, XP_CODE: XP_CODE, XP_STREAK_BONUS: XP_STREAK_BONUS,
+  awardXp: awardXp, saveProgress: saveProgress, updateXpDisplay: updateXpDisplay
+};
+
 shuffleQuizOptions();
 initKeyboardAccess();
 loadProgress();
