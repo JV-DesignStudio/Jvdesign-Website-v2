@@ -1,25 +1,1130 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 <meta name="description" content="Play Sky High With Friends, a fun free browser game by JVDesignStudio.">
 <link rel="icon" href="../logo.png" type="image/png">
-<!-- BUILD:head-icons -->
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#BC4749">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/sky_high_with_friends.html">
     <meta name="robots" content="index, follow">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <title>Sky High With Friends | JVDesignStudio</title>
-<link rel="preload" href="../style-game-sky_high_with_friends.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="../style-game-sky_high_with_friends.css?v=17"></noscript>
+<style>
+
+  /* ============================================================
+     SKY HIGH WITH FRIENDS (synced from app build)
+     ============================================================ */
+
+  :root {
+    --ui-bg: rgba(20, 14, 38, 0.78);
+    --ui-bg-solid: #1a1140;
+    --ui-bg-dark: #0d0726;
+    --ui-stroke: rgba(255, 255, 255, 0.18);
+    --ui-text: #fdf6e3;
+    --accent: #ffd23f;
+    --accent-2: #ff7eb9;
+    --accent-3: #5cdbff;
+    --locked: #4a3d6b;
+    --owned: #4caf50;
+    --equipped: #ffd23f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: #0a0617;
+    color: var(--ui-text);
+    font-family: 'Fredoka', 'Inter', 'Trebuchet MS', sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #wrap {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  /* Fullscreen: the canvas IS the viewport. W/H in JS track it. */
+  #game {
+    display: block;
+    background: #87ceeb;
+    touch-action: none;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .hud {
+    display: none;
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .hud .pill {
+    background: rgba(20, 14, 38, 0.88);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 14px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .hud .pill .label { opacity: 0.6; font-weight: 500; margin-right: 6px; font-size: 11px; text-transform: uppercase; }
+  .hud .pill.coins { color: var(--accent); }
+
+  /* Pause button lives in the HUD row; only exists while a run is live */
+  .hud .pill.hud-btn {
+    pointer-events: auto;
+    cursor: pointer;
+    display: none;
+    padding: 8px 13px;
+    font-size: 15px;
+    line-height: 1;
+    transition: background 0.1s, transform 0.1s;
+  }
+  .hud .pill.hud-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.12); }
+  body[data-mode="playing"] .hud .pill.hud-btn { display: block; }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(ellipse at center, rgba(10,6,23,0.55), rgba(10,6,23,0.9));
+    z-index: 10;
+    pointer-events: auto;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .overlay.hidden { display: none; }
+  .overlay:not(.hidden) { animation: overlayIn 0.22s ease both; }
+  @keyframes overlayIn { from { opacity: 0; } }
+
+
+  .panel {
+    background: linear-gradient(180deg, var(--ui-bg-solid), var(--ui-bg-dark));
+    border: 1px solid var(--ui-stroke);
+    border-radius: 18px;
+    padding: 28px 32px;
+    text-align: center;
+    max-width: 460px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+  .panel.shop-panel {
+    max-width: 540px;
+    text-align: left;
+  }
+  .panel h1 {
+    font-size: 30px;
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  /* â”€â”€ Menu juice â”€â”€ */
+  /* â”€â”€ Loading screen â”€â”€ */
+  #loading {
+    position: fixed;
+    inset: 0;
+    z-index: 600;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(180deg, #0a0617, #120a2b);
+    transition: opacity 0.35s ease;
+  }
+  #loading.gone { opacity: 0; pointer-events: none; }
+  #loading.hide { display: none; }
+  .loading-inner { text-align: center; }
+  .loading-pet {
+    font-size: 54px;
+    display: inline-block;
+    animation: introBounce 0.9s cubic-bezier(.35,0,.65,1) infinite alternate;
+  }
+  .loading-title {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: clamp(26px, 8vw, 36px);
+    margin: 10px 0 26px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .loading-bar {
+    width: 210px;
+    height: 8px;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.1);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .loading-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-3), var(--accent));
+    border-radius: 999px;
+    transition: width 0.18s ease;
+  }
+  .loading-pct {
+    margin-top: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    opacity: 0.5;
+  }
+
+  /* â”€â”€ Main menu: full-screen scene â”€â”€ */
+  #menu.overlay {
+    display: block;
+    padding: 0;
+    background: linear-gradient(180deg, rgba(10,6,23,0.9) 0%, rgba(10,6,23,0.55) 42%, rgba(10,6,23,0.12) 78%, rgba(10,6,23,0.05) 100%);
+  }
+  /* ID specificity would beat .overlay.hidden â€” keep hide working */
+  #menu.overlay.hidden { display: none; }
+  #menu.overlay { display: flex; flex-direction: column; justify-content: space-between; padding: calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom)); gap: 12px; }
+  #menu.overlay.hidden { display: none !important; }
+  .menu-top {
+    position: static;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 3;
+    flex-shrink: 0;
+  }
+  .mchips { display: flex; flex-direction: row; gap: 6px; align-items: center; }
+  .mchip {
+    background: rgba(20, 14, 38, 0.88);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-weight: 800;
+    font-size: 13px;
+    pointer-events: auto;
+    white-space: nowrap;
+  }
+  .mini-xp {
+    width: 96px;
+    height: 5px;
+    background: rgba(0,0,0,0.45);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 2px;
+    border: 1px solid var(--ui-stroke);
+  }
+  .mini-xp-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-3), var(--accent));
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(.2,.8,.4,1);
+  }
+  .mini-xp-text { font-size: 8px; opacity: 0.5; letter-spacing: 0.5px; }
+  .menu-topright { display: flex; gap: 8px; align-items: center; pointer-events: auto; }
+  .menu-topright .panel-gear { position: static; }
+
+  .menu-title-wrap {
+    position: static;
+    text-align: center;
+    pointer-events: none;
+    z-index: 2;
+    margin: 6px 0 4px;
+    text-wrap: balance;
+  }
+  .menu-title-wrap .game-title {
+    font-size: clamp(28px, 8.5vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.02;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 4px 14px rgba(10,6,23,0.55);
+  }
+  .title-under {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    margin-top: 8px;
+  }
+
+  .menu-corner-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    pointer-events: none;
+    z-index: 3;
+    margin: 4px 0;
+  }
+  .menu-corner-grid .corner-btn { pointer-events: auto; }
+  .corner-btn {
+    width: 100%;
+    height: 64px;
+    border-radius: 16px;
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-stroke);
+    color: var(--ui-text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 20px;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 3;
+    transition: transform 0.12s, background 0.12s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .corner-btn span {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    opacity: 0.65;
+  }
+  @media (hover:hover) { .corner-btn:hover { background: rgba(30,22,54,0.85); } }
+  .corner-btn:active { transform: scale(0.96); }
+  @media (min-width: 768px) {
+    .menu-corner-grid { display: contents; }
+    .corner-btn { position: absolute; width: 60px; height: 60px; border-radius: 18px; font-size: 22px; }
+    .corner-btn.l1 { left: calc(10px + env(safe-area-inset-left)); top: 41%; }
+    .corner-btn.l2 { left: calc(10px + env(safe-area-inset-left)); top: calc(41% + 74px); }
+    .corner-btn.r1 { right: calc(10px + env(safe-area-inset-right)); top: 41%; }
+    .corner-btn.r2 { right: calc(10px + env(safe-area-inset-right)); top: calc(41% + 74px); }
+  }
+
+  .menu-bottom {
+    position: static;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .menu-bottom > * { pointer-events: auto; }
+  .menu-bottom .char-label { margin: 0; }
+  .menu-bottom .char-unlock-hint { margin-bottom: 2px; }
+  .menu-hint { font-size: 11px; opacity: 0.55; text-align: center; pointer-events: none !important; }
+  .menu-hint .key { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: 10px; }
+  .keys-hint { display: none; }
+  @media (pointer: fine) { .keys-hint { display: inline; } .touch-hint { display: none; } }
+  .hidden-soft { position: absolute; left: -9999px; }
+
+  /* HUD is play/pause-only (menu has its own chips). High-specificity +
+     late placement so nothing in the cascade can resurrect it. */
+  html body .hud { display: none; }
+  html body[data-mode="playing"] .hud,
+  html body[data-mode="paused"] .hud { display: flex; }
+
+  /* â”€â”€ Intro / splash â”€â”€ */
+  #intro {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(180deg, rgba(10,6,23,0.95), rgba(10,6,23,0.8));
+    cursor: pointer;
+    transition: opacity 0.35s ease;
+  }
+  #intro.gone { opacity: 0; pointer-events: none; }
+  #intro.hide { display: none; }
+  .intro-inner { text-align: center; animation: introIn 0.6s cubic-bezier(.2,1.2,.3,1) both; }
+  @keyframes introIn { from { opacity: 0; transform: scale(0.88) translateY(12px); } }
+  .intro-pet {
+    font-size: 64px;
+    display: inline-block;
+    animation: introBounce 1.05s cubic-bezier(.35,0,.65,1) infinite alternate;
+    
+  }
+  @keyframes introBounce {
+    from { transform: translateY(0) scale(1.08, 0.92); }
+    to   { transform: translateY(-28px) scale(0.94, 1.06); }
+  }
+  .intro-title {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: clamp(38px, 12vw, 54px);
+    line-height: 1.02;
+    margin-top: 8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 5px 16px rgba(10,6,23,0.65);
+  }
+  .intro-tap {
+    margin-top: 28px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent-3);
+    animation: tapPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes tapPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+  .intro-studio {
+    position: absolute;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.38);
+  }
+
+  /* FTUE */
+  #ftue { position: fixed; inset: 0; z-index: 450; display: grid; place-items: center; background: rgba(10,6,23,0.82); }
+  #ftue.hidden { display: none; }
+  .ftue-card { background: var(--ui-bg-solid); border: 1px solid var(--ui-stroke); border-radius: 20px; padding: 22px 18px; width: min(360px, 90vw); text-align: center; }
+  .ftue-title { font-family: 'Fredoka', sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 14px; }
+  .ftue-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; text-align: left; }
+  .ftue-step { display: flex; gap: 10px; align-items: center; font-size: 14px; font-weight: 600; background: rgba(255,255,255,0.06); border: 1px solid var(--ui-stroke); border-radius: 12px; padding: 10px 12px; }
+  .ftue-icon { font-size: 20px; width: 28px; text-align: center; }
+
+  /* Daily wheel */
+  #daily-wheel { position: fixed; inset: 0; z-index: 460; display: grid; place-items: center; background: rgba(10,6,23,0.85); }
+  #daily-wheel.hidden { display: none; }
+  .wheel-card { background: var(--ui-bg-solid); border: 1px solid var(--ui-stroke); border-radius: 20px; padding: 22px 18px; width: min(340px, 90vw); text-align: center; }
+  .wheel-title { font-family: 'Fredoka', sans-serif; font-weight: 800; font-size: 20px; margin-bottom: 12px; }
+  #wheel-canvas { display: block; margin: 0 auto 12px; max-width: 100%; }
+  .wheel-reward { font-size: 16px; font-weight: 700; margin-top: 8px; min-height: 24px; color: var(--accent); }
+
+  /* Big primary Play button */
+  .btn.play-big {
+    width: 100%;
+    padding: 15px 32px;
+    font-size: 20px;
+    margin: 0 0 2px;
+    animation: fadeUp 0.5s cubic-bezier(.2,.9,.3,1.15) 0.08s both;
+  }
+
+  /* Settings gear pinned to the panel corner */
+  .panel-gear {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--ui-stroke);
+    font-size: 18px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s, transform 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .panel-gear:hover { background: rgba(255,255,255,0.12); }
+  .panel-gear:active { transform: scale(0.88); }
+
+  /* "Your jumper" mini-label */
+  .char-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.5;
+    text-align: center;
+    margin: 10px 0 6px;
+  }
+
+  .game-title {
+    font-size: clamp(30px, 9vw, 40px) !important;
+    animation: titleIn 0.6s cubic-bezier(.2,1.4,.3,1) both, titleFloat 3.2s ease-in-out 0.6s infinite alternate;
+    text-shadow: 0 4px 14px rgba(10,6,23,0.6);
+  }
+  @keyframes titleIn { from { opacity: 0; transform: translateY(-20px) scale(0.8); } }
+  @keyframes titleFloat { from { transform: translateY(0); } to { transform: translateY(-4px); } }
+  .tagline { margin-bottom: 14px !important; }
+
+  .menu-anim { animation: fadeUp 0.5s cubic-bezier(.2,.9,.3,1.15) both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } }
+
+  /* XP bar shimmer */
+  .xp-fill { position: relative; overflow: hidden; }
+  .xp-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,0.55) 50%, transparent 75%);
+    transform: translateX(-110%);
+    animation: xpShine 2.6s ease-in-out 1s infinite;
+  }
+  @keyframes xpShine { 55%, 100% { transform: translateX(110%); } }
+
+  /* Play button shine sweep */
+  #play-btn { position: relative; overflow: hidden; }
+  #play-btn::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -70%;
+    width: 45%; height: 100%;
+    background: linear-gradient(105deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform: skewX(-20deg);
+    animation: shine 3.4s ease-in-out 1.4s infinite;
+    pointer-events: none;
+  }
+  @keyframes shine { 0% { left: -70%; } 50%, 100% { left: 140%; } }
+
+  /* HUD pill pulse (coin pickup, milestone) */
+  .hud .pill.pulse { animation: pillPulse 0.32s cubic-bezier(.2,.9,.3,1.4); }
+  @keyframes pillPulse { 40% { transform: scale(1.16); } }
+
+  /* Character preview canvases inside select chips */
+  .char-btn canvas { display: block; width: 52px; height: 52px; }
+  .shop-char-select .char-btn { width: 56px; height: 56px; }
+  .shop-char-select .char-btn canvas { width: 44px; height: 44px; }
+  .char-btn.active canvas { animation: chipBob 1.6s ease-in-out infinite; }
+  @keyframes chipBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  .panel h2 {
+    font-size: 22px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .panel p { opacity: 0.75; font-size: 14px; line-height: 1.5; margin-bottom: 18px; text-align: center; }
+
+  .char-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 18px 0 10px;
+  }
+  .char-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.06);
+    cursor: pointer;
+    font-size: 32px;
+    display: grid;
+    place-items: center;
+    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .char-btn:hover:not(.locked) { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
+  .char-btn.active {
+    border-color: var(--accent);
+    background: rgba(255, 210, 63, 0.15);
+    box-shadow: 0 0 20px rgba(255, 210, 63, 0.3);
+  }
+  .char-btn.locked {
+    cursor: not-allowed;
+    opacity: 0.4;
+    filter: grayscale(0.8);
+  }
+  .char-btn .lock {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: var(--locked);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 6px;
+    border: 1px solid rgba(0,0,0,0.4);
+  }
+  .char-name {
+    font-size: 13px;
+    opacity: 0.8;
+    margin-bottom: 4px;
+    height: 16px;
+    text-align: center;
+  }
+  .char-unlock-hint {
+    font-size: 11px;
+    color: var(--accent-3);
+    height: 14px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+
+  .btn {
+    background: linear-gradient(180deg, var(--accent), #f0a500);
+    color: #2a1a00;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 6px 0 #a86f00, 0 10px 20px rgba(0,0,0,0.3);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #a86f00, 0 5px 10px rgba(0,0,0,0.3); }
+  .btn.secondary {
+    background: linear-gradient(180deg, #6b4ba8, #483078);
+    color: #fff;
+    box-shadow: 0 6px 0 #2e1a4e, 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .btn.secondary:active { box-shadow: 0 3px 0 #2e1a4e, 0 5px 10px rgba(0,0,0,0.3); }
+  .btn.danger {
+    background: linear-gradient(180deg, #ef5350, #b71c1c);
+    color: #fff;
+    box-shadow: 0 6px 0 #7f1010, 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .btn.danger:active { box-shadow: 0 3px 0 #7f1010, 0 5px 10px rgba(0,0,0,0.3); }
+  .btn.blue {
+    background: linear-gradient(180deg, var(--accent-3), #0288d1);
+    color: #04222e;
+    box-shadow: 0 6px 0 #01579b, 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .btn.blue:active { box-shadow: 0 3px 0 #01579b, 0 5px 10px rgba(0,0,0,0.3); }
+  .btn.gold {
+    background: linear-gradient(180deg, var(--accent), #f0a500);
+    color: #2a1a00;
+    box-shadow: 0 6px 0 #a86f00, 0 10px 20px rgba(0,0,0,0.3);
+  }
+  .btn.gold:active { box-shadow: 0 3px 0 #a86f00, 0 5px 10px rgba(0,0,0,0.3); }
+
+  /* Daily missions */
+  .mission-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 12px;
+  }
+  .mission-row.done { border-color: var(--owned); background: rgba(76, 175, 80, 0.08); }
+  .mission-reward {
+    font-size: 11px;
+    color: var(--accent);
+    background: rgba(255, 210, 63, 0.12);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 4px;
+  }
+  .mission-bar {
+    height: 6px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .mission-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-3), var(--accent));
+    border-radius: 999px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .stats {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin: 18px 0;
+  }
+  .stat .v { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .stat .l { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* XP bar */
+  .xp-bar-wrap { margin: 14px 0 4px; }
+  .xp-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .xp-row span:first-child { color: var(--accent-3); }
+  .xp-row span:last-child  { color: var(--accent); }
+  .xp-bar {
+    height: 8px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--ui-stroke);
+  }
+  .xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-3), var(--accent));
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(.2,.8,.4,1);
+    box-shadow: 0 0 8px rgba(255, 210, 63, 0.5);
+  }
+  .xp-text {
+    font-size: 10px;
+    opacity: 0.6;
+    text-align: center;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Active seasonal event banner */
+  .event-banner {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 5px 16px;
+    background: rgba(255,180,60,0.18);
+    border: 1.5px solid rgba(255,180,60,0.5);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    color: #ffd23f;
+    letter-spacing: 0.03em;
+    animation: eventPulse 2.8s ease-in-out infinite;
+  }
+  .event-banner.hidden { display: none; }
+  @keyframes eventPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,210,63,0); }
+    50%      { box-shadow: 0 0 0 6px rgba(255,210,63,0.18); }
+  }
+
+  /* Streak badge */
+  .streak-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 6px 14px;
+    background: rgba(255, 87, 34, 0.15);
+    border: 1px solid rgba(255, 87, 34, 0.4);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ff7043;
+  }
+  .streak-badge.zero { display: none; }
+
+  .daily-mod-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 6px 14px;
+    background: rgba(255, 210, 63, 0.15);
+    border: 1px solid rgba(255, 210, 63, 0.4);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .daily-mod-badge .dm-name { color: var(--accent); }
+
+  /* New best banner */
+  .newbest-banner {
+    display: none;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    color: #2a1a00;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    margin: 0 auto 12px;
+    width: fit-content;
+    letter-spacing: 1px;
+    animation: newbestpulse 1.2s ease-in-out infinite;
+    box-shadow: 0 4px 20px rgba(255, 210, 63, 0.5);
+  }
+  @keyframes newbestpulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .controls-hint {
+    margin-top: 16px;
+    font-size: 12px;
+    opacity: 0.55;
+    line-height: 1.6;
+    text-align: center;
+  }
+  .key { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 11px; }
+
+  /* â”€â”€ CONTROLS â”€â”€
+     Mobile is tilt-first (Doodle Jump style): no on-screen buttons. A silent
+     drag-anywhere fallback and desktop keyboard remain. */
+
+  /* ----- Shop ----- */
+  .shop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--ui-stroke);
+  }
+  .shop-header h1 { text-align: left; font-size: 24px; }
+  .shop-coins {
+    background: rgba(255, 210, 63, 0.15);
+    border: 1px solid rgba(255, 210, 63, 0.4);
+    color: var(--accent);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 14px;
+  }
+
+  .shop-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .shop-tab {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--ui-stroke);
+    color: var(--ui-text);
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+  .shop-tab:hover { background: rgba(255,255,255,0.1); }
+  .shop-tab.active {
+    background: rgba(255, 210, 63, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .shop-char-select {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 16px;
+    padding: 10px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+  }
+  .shop-char-select .char-btn { width: 48px; height: 48px; font-size: 24px; }
+
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 4px 4px 4px 0;
+  }
+  .shop-grid::-webkit-scrollbar { width: 6px; }
+  .shop-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+  .shop-item {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid var(--ui-stroke);
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .shop-item:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+  .shop-item:active { transform: scale(0.95); }
+  .shop-item.owned { border-color: var(--owned); }
+  .shop-item.equipped {
+    border-color: var(--equipped);
+    background: rgba(255, 210, 63, 0.1);
+    box-shadow: 0 0 16px rgba(255, 210, 63, 0.25);
+  }
+  .shop-item.locked { cursor: not-allowed; opacity: 0.5; }
+  .shop-item.cant-afford { opacity: 0.7; }
+
+  .shop-item-preview {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 8px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+  }
+  .shop-item-preview canvas {
+    width: 56px !important;
+    height: 56px !important;
+    display: block;
+  }
+  .shop-item-name {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.2;
+    min-height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shop-item-price {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 800;
+  }
+  .shop-item-status {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .shop-item.owned .shop-item-status { background: var(--owned); color: #fff; }
+  .shop-item.equipped .shop-item-status { background: var(--equipped); color: #2a1a00; }
+  .shop-item.locked .shop-item-status { background: var(--locked); color: #fff; }
+
+  /* Run modifier badge (shown under the HUD while a modified run is live) */
+  .runmod-badge {
+    position: fixed;
+    top: calc(56px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(92, 219, 255, 0.12);
+    border: 1px solid rgba(92, 219, 255, 0.45);
+    color: var(--accent-3);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    z-index: 6;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .runmod-badge.hidden { display: none; }
+
+  /* Modifier chooser cards */
+  .mod-cards { display: flex; gap: 12px; margin: 6px 0 4px; }
+  .mod-card {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 2px solid var(--ui-stroke);
+    border-radius: 16px;
+    padding: 18px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.12s, border-color 0.12s, background 0.12s;
+  }
+  .mod-card:hover { background: rgba(255,255,255,0.09); transform: translateY(-2px); }
+  .mod-card:active { transform: scale(0.96); }
+  .mod-card.todays { border-color: var(--accent); }
+  .mod-card .m-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+  .mod-card .m-name { font-weight: 800; font-size: 14px; margin-bottom: 5px; }
+  .mod-card.todays .m-name { color: var(--accent); }
+  .mod-card .m-desc { font-size: 11px; opacity: 0.7; line-height: 1.4; }
+  .mod-card .m-tag {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255, 210, 63, 0.15);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  /* Upgrade rows in the shop */
+  .upg-list { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
+  .upg-list::-webkit-scrollbar { width: 6px; }
+  .upg-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+  .upg-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .upg-icon { font-size: 26px; flex-shrink: 0; }
+  .upg-info { flex: 1; min-width: 0; }
+  .upg-name { font-size: 13px; font-weight: 800; }
+  .upg-desc { font-size: 11px; opacity: 0.65; margin-top: 2px; }
+  .upg-pips { margin-top: 6px; display: flex; gap: 4px; }
+  .upg-pip { width: 14px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.14); }
+  .upg-pip.on { background: var(--accent); box-shadow: 0 0 6px rgba(255, 210, 63, 0.5); }
+  .upg-buy {
+    flex-shrink: 0;
+    background: linear-gradient(180deg, var(--accent), #f0a500);
+    color: #2a1a00;
+    border: none;
+    padding: 9px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #a86f00;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .upg-buy:active { transform: translateY(2px); box-shadow: 0 2px 0 #a86f00; }
+  .upg-buy.maxed { background: var(--owned); box-shadow: 0 4px 0 #2e6b31; cursor: default; }
+  .upg-buy.cant { filter: grayscale(0.6); opacity: 0.75; }
+
+  /* Panel entrance: every overlay pop feels intentional */
+  .overlay:not(.hidden) .panel { animation: panelIn 0.3s cubic-bezier(.2,.9,.3,1.15); }
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(26px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .toast {
+    position: fixed;
+    top: calc(60px + env(safe-area-inset-top)); /* below the HUD pills, not under them */
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--ui-bg-solid);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-weight: 700;
+    z-index: 100;
+    transition: transform 0.4s cubic-bezier(.2,1.5,.5,1);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    pointer-events: none; /* never steal taps from the HUD underneath */
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ----- Settings ----- */
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--ui-stroke);
+  }
+  .setting-row:last-of-type { border-bottom: none; }
+  .setting-label { font-size: 14px; font-weight: 600; }
+  .toggle-btn {
+    background: var(--owned);
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 60px;
+    transition: all 0.15s;
+  }
+  .toggle-btn.off { background: #555; }
+  .toggle-btn.danger { background: #d32f2f; }
+  .seg-row { display: flex; gap: 6px; }
+  .seg-btn { background: rgba(255,255,255,0.08); border: 1px solid var(--ui-stroke); color: var(--ui-text); padding: 6px 12px; border-radius: 999px; font-weight: 800; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .seg-btn.active { background: var(--accent); color: #2a1a00; border-color: var(--accent); }
+  /* Touch buttons for controls=buttons */
+  #touchBtns { position: fixed; bottom: calc(10px + env(safe-area-inset-bottom)); left: 0; right: 0; display: none; justify-content: space-between; padding: 0 14px; pointer-events: none; z-index: 6; }
+  #touchBtns.show { display: flex; }
+  .tbtn { width: 72px; height: 72px; border-radius: 18px; background: rgba(20,14,38,0.65); border: 1px solid var(--ui-stroke); color: #fff; font-size: 26px; display: grid; place-items: center; pointer-events: auto; touch-action: none; user-select: none; }
+  .toggle-btn.danger:hover { background: #f44336; }
+  .btn.small {
+    padding: 10px 16px;
+    font-size: 12px;
+    box-shadow: 0 4px 0 #2e1a4e, 0 6px 12px rgba(0,0,0,0.3);
+  }
+  .btn.small:active { box-shadow: 0 2px 0 #2e1a4e, 0 3px 8px rgba(0,0,0,0.3); transform: translateY(2px); }
+
+  .version-row {
+    text-align: center;
+    font-size: 11px;
+    opacity: 0.45;
+    padding-top: 14px;
+    letter-spacing: 0.5px;
+  }
+  /* ----- Achievements ----- */
+  .ach-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .ach-grid::-webkit-scrollbar { width: 6px; }
+  .ach-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+  .ach-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--ui-stroke);
+    border-radius: 12px;
+    transition: all 0.15s;
+  }
+  .ach-item.earned {
+    border-color: var(--accent);
+    background: rgba(255, 210, 63, 0.08);
+  }
+  .ach-item.locked { opacity: 0.45; }
+  .ach-icon {
+    font-size: 26px;
+    width: 40px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .ach-item.locked .ach-icon { filter: grayscale(1); }
+  .ach-info { flex: 1; }
+  .ach-name { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
+  .ach-item.earned .ach-name { color: var(--accent); }
+  .ach-desc { font-size: 11px; opacity: 0.65; }
+  .ach-check { font-size: 18px; flex-shrink: 0; }
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* â”€â”€ Reduced motion â”€â”€ */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+/* â”€â”€ MOBILE PATCH â”€â”€ */
+@media(max-width:480px){
+  .hud{font-size:.72rem;padding:8px 10px;}
+  .pill{padding:4px 8px;font-size:.68rem;}
+  .shop-grid{grid-template-columns:1fr 1fr !important;}
+  .shop-item-name{font-size:.72rem;}
+  .shop-item-price{font-size:.68rem;}
+  .menu-title-wrap h2{font-size:1.4rem;}
+  .corner-btn{width:54px;height:54px;font-size:18px;}
+  .btn{min-height:48px;}
+  .toggle-btn{min-height:44px;min-width:60px;}
+  .panel-gear{width:44px;height:44px;}
+}
+
+</style>
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/games/sky_high_with_friends.html">
     <meta property="og:title"       content="Sky High With Friends">
@@ -32,11 +1137,15 @@
     <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/SkyHighCover.png">
 <!-- Game System Integration -->
 <script src="../game-system.js"></script>
-<script defer src="../player-profile.js"></script>
-<link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
+<script src="../player-profile.js"></script>
+<link rel="stylesheet" href="../game-system.css"><style>
+  /* style-shared.css sets body{font-family:'Inter'...} and, loading after
+     this page's own inline <style>, wins the cascade on source order alone
+     â€” re-assert this game's own font here instead of touching the shared
+     stylesheet (which every other page also depends on). */
+  html, body { font-family: 'Fredoka', 'Inter', 'Trebuchet MS', sans-serif; }
+</style>
 
-<link rel="stylesheet" href="/style-mascots.css">
-<link rel="stylesheet" href="../story-run.css">
 </head>
 <body>
 <!-- BUILD:nav-strip -->
@@ -44,21 +1153,21 @@
   <div class="jvds-strip-inner">
     <a href="/" class="jvds-strip-logo">JVDesignStudio</a>
     <nav class="jvds-strip-links">
-      <a href="/">🏠 Home</a>
-      <a href="/games">🎮 Games</a>
-      <a href="/books">📚 Books</a>
-      <a href="/learn-hub">🎓 Learn</a>
-      <a href="/workshop">🔧 Workshop</a>
-      <a href="/dev-tools">🛠️ Tools</a>
-      <a href="/pages/stardust.html">✨ Imagine</a>
-      <a href="/pages/echo.html">🔁 Improve</a>
-      <a href="/downloads">📦 Downloads</a>
-      <a href="/pages/downloads.html">🎁 Freebies</a>
+      <a href="/">ðŸ  Home</a>
+      <a href="/games">ðŸŽ® Games</a>
+      <a href="/books">ðŸ“š Books</a>
+      <a href="/learn-hub">ðŸŽ“ Learn</a>
+      <a href="/workshop">ðŸ”§ Workshop</a>
+      <a href="/dev-tools">ðŸ› ï¸ Tools</a>
+      <a href="/pages/stardust.html">âœ¨ Imagine</a>
+      <a href="/pages/echo.html">ðŸ” Improve</a>
+      <a href="/downloads">ðŸ“¦ Downloads</a>
+      <a href="/pages/downloads.html">ðŸŽ Freebies</a>
     </nav>
-    <button class="jvds-strip-close" onclick="jvdsCloseStrip()" aria-label="Close menu">✕</button>
+    <button class="jvds-strip-close" onclick="jvdsCloseStrip()" aria-label="Close menu">âœ•</button>
   </div>
 </div>
-<button class="jvds-tab" id="jvdsTab" onclick="jvdsOpenStrip()">☰ JVDesignStudio</button>
+<button class="jvds-tab" id="jvdsTab" onclick="jvdsOpenStrip()">â˜° JVDesignStudio</button>
 <script>
 (function(){
   function jvdsOpenStrip(){document.getElementById('jvdsStrip').classList.add('open');document.getElementById('jvdsTab').classList.add('hidden');}
@@ -69,12 +1178,12 @@
 </script>
 <!-- /BUILD:nav-strip -->
 
-<a href="../pages/games.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;font-family:sans-serif;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(6px);">← Games</a>
+<a href="../pages/games.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;font-family:sans-serif;font-size:13px;font-weight:700;text-decoration:none;padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(6px);">â† Games</a>
 
 <!-- ===== LOADING ===== -->
 <div id="loading">
   <div class="loading-inner">
-    <div class="loading-pet">🦁</div>
+    <div class="loading-pet">ðŸ¢</div>
     <div class="loading-title">Sky High With Friends</div>
     <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
     <div class="loading-pct" id="loading-pct">0%</div>
@@ -84,28 +1193,28 @@
 <!-- ===== INTRO / SPLASH ===== -->
 <div id="intro">
   <div class="intro-inner">
-    <div class="intro-pet">🦁</div>
+    <div class="intro-pet">ðŸ¢</div>
     <div class="intro-title">Sky High<br>With Friends</div>
     <div class="intro-tap">Tap to start</div>
   </div>
-  <div class="intro-studio">A JVDesignStudio game · <span id="intro-version"></span></div>
+  <div class="intro-studio">A JVDesignStudio game Â· <span id="intro-version"></span></div>
 </div>
 
 <div id="ftue" class="hidden">
   <div class="ftue-card">
     <div class="ftue-title">How to play</div>
     <div class="ftue-steps">
-      <div class="ftue-step"><span class="ftue-icon">📱</span><span id="ftue-ctrl-text">Tilt to steer</span></div>
-      <div class="ftue-step"><span class="ftue-icon">🐍</span><span>Land on platforms to jump</span></div>
-      <div class="ftue-step"><span class="ftue-icon">🦙</span><span>Collect coins & dodge wasps</span></div>
+      <div class="ftue-step"><span class="ftue-icon">ðŸ“±</span><span id="ftue-ctrl-text">Tilt to steer</span></div>
+      <div class="ftue-step"><span class="ftue-icon">ðŸ¦˜</span><span>Land on platforms to jump</span></div>
+      <div class="ftue-step"><span class="ftue-icon">ðŸª™</span><span>Collect coins & dodge wasps</span></div>
     </div>
-    <button class="btn" id="ftue-go">Got it , Play!</button>
+    <button class="btn" id="ftue-go">Got it â€” Play!</button>
   </div>
 </div>
 
 <div id="daily-wheel" class="hidden">
   <div class="wheel-card">
-    <div class="wheel-title">🏁 Daily Reward</div>
+    <div class="wheel-title">ðŸŽ Daily Reward</div>
     <canvas id="wheel-canvas" width="280" height="280"></canvas>
     <button class="btn" id="wheel-spin-btn">Spin!</button>
     <div class="wheel-reward" id="wheel-reward"></div>
@@ -114,12 +1223,12 @@
 <div id="wrap">
   <canvas id="game" width="420" height="700" role="img" aria-label="Sky High With Friends game. Tilt your device to steer your character upward."></canvas>
 </div>
-<div id="touchBtns"><button class="tbtn" id="tbtnL" aria-label="Move left">←</button><button class="tbtn" id="tbtnR" aria-label="Move right">→</button></div>
+<div id="touchBtns"><button class="tbtn" id="tbtnL" aria-label="Move left">â - €</button><button class="tbtn" id="tbtnR" aria-label="Move right">â - ¶</button></div>
 
 <div class="hud">
   <div class="pill"><span class="label">Height</span><span id="hud-height">0m</span></div>
   <div class="pill coins"><span class="label">Coins</span><span id="hud-coins">0</span></div>
-  <button class="pill hud-btn" id="pause-btn" aria-label="Pause game">⏸</button>
+  <button class="pill hud-btn" id="pause-btn" aria-label="Pause game">â¸</button>
 </div>
 
 <div class="runmod-badge hidden" id="runmod-badge"></div>
@@ -130,40 +1239,41 @@
 <div class="overlay hidden" id="menu">
   <div class="menu-top">
     <div class="mchips">
-      <div class="mchip" id="menu-best">🏁 0m</div>
-      <div class="mchip" id="menu-level">⭐ Lv 1</div>
+      <div class="mchip" id="menu-best">ðŸ† 0m</div>
+      <div class="mchip" id="menu-level">â­ Lv 1</div>
       <div class="mini-xp"><div class="mini-xp-fill" id="menu-xp-fill"></div></div>
       <div class="mini-xp-text" id="menu-xp-text">0 / 100 XP</div>
     </div>
     <div class="menu-topright">
-      <div class="mchip coins" id="menu-coins">🦙 0</div>
-    <button class="panel-gear" id="settings-btn" aria-label="Settings">⚙️</button>
+      <div class="mchip coins" id="menu-coins">ðŸª™ 0</div>
+      <button class="panel-gear" id="settings-btn" aria-label="Settings">âš™ï¸</button>
     </div>
   </div>
 
   <div class="menu-title-wrap">
     <h1 class="game-title">Sky High With Friends</h1>
     <div class="title-under">
+      <div class="event-banner menu-anim hidden" id="event-banner" style="animation-delay:.15s"></div>
       <div class="daily-mod-badge menu-anim" id="dailyModBadge" style="animation-delay:.2s"></div>
-      <div class="streak-badge menu-anim" id="streak-badge" style="animation-delay:.26s">📊 <span id="streak-num">0</span> day streak</div>
+      <div class="streak-badge menu-anim" id="streak-badge" style="animation-delay:.26s">ðŸ”¥ <span id="streak-num">0</span> day streak</div>
     </div>
   </div>
 
   <div class="menu-corner-grid">
-    <button class="corner-btn l1 menu-anim" id="shop-btn" aria-label="Open shop" style="animation-delay:.3s">🛡ï¸<span>Shop</span></button>
-    <button class="corner-btn r1 menu-anim" id="weekly-btn" aria-label="Weekly challenge" style="animation-delay:.3s">🧹ï¸<span>Weekly</span></button>
-    <button class="corner-btn l2 menu-anim" id="missions-btn" aria-label="View daily missions" style="animation-delay:.34s">🎃<span>Missions</span></button>
-    <button class="corner-btn r2 menu-anim" id="ach-btn" aria-label="View achievements" style="animation-delay:.34s">🏁<span>Awards</span></button>
+    <button class="corner-btn l1 menu-anim" id="shop-btn" aria-label="Open shop" style="animation-delay:.3s">ðŸ›ï¸<span>Shop</span></button>
+    <button class="corner-btn r1 menu-anim" id="weekly-btn" aria-label="Weekly challenge" style="animation-delay:.3s">ðŸ - “ï¸<span>Weekly</span></button>
+    <button class="corner-btn l2 menu-anim" id="missions-btn" aria-label="View daily missions" style="animation-delay:.34s">ðŸ“‹<span>Missions</span></button>
+    <button class="corner-btn r2 menu-anim" id="ach-btn" aria-label="View achievements" style="animation-delay:.34s">ðŸ†<span>Awards</span></button>
   </div>
 
   <div class="menu-bottom">
     <div class="char-label menu-anim" style="animation-delay:.14s">Your jumper</div>
     <div class="char-row menu-anim" id="char-row" style="animation-delay:.18s"></div>
     <div class="char-unlock-hint" id="char-unlock-hint"></div>
-    <button class="btn play-big menu-anim" id="play-btn" aria-label="Start playing" style="animation-delay:.08s">▶&nbsp; Play</button>
+    <button class="btn play-big menu-anim" id="play-btn" aria-label="Start playing" style="animation-delay:.08s">â - ¶&nbsp; Play</button>
     <div class="menu-hint menu-anim" id="controls-hint" style="animation-delay:.4s">
-      <span class="keys-hint"><span class="key">←</span><span class="key">→</span> / <span class="key">A</span><span class="key">D</span> steer · wraps around edges</span>
-      <span class="touch-hint">Tilt to steer · wraps around edges</span>
+      <span class="keys-hint"><span class="key">â†</span><span class="key">â†’</span> / <span class="key">A</span><span class="key">D</span> steer Â· wraps around edges</span>
+      <span class="touch-hint">Tilt to steer Â· wraps around edges</span>
     </div>
   </div>
 
@@ -174,7 +1284,7 @@
   <div class="panel shop-panel">
     <div class="shop-header">
       <h1>The Sky Shop</h1>
-      <div class="shop-coins">🦙 <span id="shop-coin-count">0</span></div>
+      <div class="shop-coins">ðŸª™ <span id="shop-coin-count">0</span></div>
     </div>
 
     <div class="shop-char-select" id="shop-char-select"></div>
@@ -199,7 +1309,7 @@
 <div class="overlay hidden" id="gameover">
   <div class="panel">
     <h2>You Fell!</h2>
-    <div class="newbest-banner" id="go-newbest">⭐ NEW BEST! ⭐</div>
+    <div class="newbest-banner" id="go-newbest">â­ NEW BEST! â­</div>
     <div class="stats">
       <div class="stat"><div class="v" id="go-height">0m</div><div class="l">Height</div></div>
       <div class="stat"><div class="v" id="go-coins">0</div><div class="l">Coins</div></div>
@@ -216,10 +1326,10 @@
     <div class="btn-row">
       <button class="btn" id="retry-btn">Retry</button>
       <button class="btn secondary" id="menu-btn">Menu</button>
-      <button class="btn secondary small hidden" id="boards-btn">🏁 Boards</button>
-      <button class="btn secondary small" id="share-btn" aria-label="Share score">📨 Share</button>
+      <button class="btn secondary small hidden" id="boards-btn">ðŸ† Boards</button>
+      <button class="btn secondary small" id="share-btn" aria-label="Share score">ðŸ“¤ Share</button>
     </div>
-    <button class="btn small hidden" id="export-deaths-btn" style="margin-top:8px;font-size:11px;opacity:0.5;">📊 Export Run Data</button>
+    <button class="btn small hidden" id="export-deaths-btn" style="margin-top:8px;font-size:11px;opacity:0.5;">ðŸ“Š Export Run Data</button>
   </div>
 </div>
 
@@ -241,7 +1351,7 @@
 <div class="overlay hidden" id="modchooser">
   <div class="panel">
     <h2>Choose a Sky</h2>
-    <p>Every run gets a twist , pick yours.</p>
+    <p>Every run gets a twist â€” pick yours.</p>
     <div class="mod-cards" id="mod-cards"></div>
     <div class="btn-row" style="margin-top: 16px;">
       <button class="btn secondary small" id="mod-skip-btn">Plain Skies</button>
@@ -273,7 +1383,7 @@
       <button class="btn danger small" id="pz-quit-btn" aria-label="Quit to menu">Quit</button>
     </div>
     <div class="btn-row">
-      <button class="btn secondary small" id="pz-leaderboard-btn" aria-label="View leaderboard">🏁 Leaderboard</button>
+      <button class="btn secondary small" id="pz-leaderboard-btn" aria-label="View leaderboard">ðŸ† Leaderboard</button>
     </div>
   </div>
 </div>
@@ -354,44 +1464,18 @@
   </div>
 </div>
 
-<script src="../story-run.js"></script>
 <script>
 /* ============================================================================
-   SKY HIGH SQUIRT
+   SKY HIGH WITH FRIENDS
    Version lives in /version.json (single source of truth) and is stamped
-   here by release.mjs , `node release.mjs --notes "..."` does a full release.
+   here by release.mjs â€” `node release.mjs --notes "..."` does a full release.
    ============================================================================ */
-const GAME_VERSION = { v: '3.0', code: 14, date: '2026-09-01', codename: 'Horizon' };
+const GAME_VERSION = { v: '4.2', code: 17, date: '2026-09-28', codename: 'Skylight' };
 const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
-
-// A585: one 5-minute story run. Echo and the crew race you up the tower; reach
-// the top (500m) before the light runs out. StoryRun owns the HUD, the rising
-// beat and the finish screen so the promise on the arcade card comes true.
-const STORY_TOP_M = 500;
-const storyRun = (typeof StoryRun !== 'undefined') ? new StoryRun({
-  id: 'sky-high-friends',
-  gameSystem: (typeof gameSystem !== 'undefined' ? gameSystem : null),
-  title: 'Race to the Roof',
-  character: 'Echo',
-  open: 'Echo and the crew are climbing the same tower and racing you to the top.',
-  objective: 'Climb to ' + STORY_TOP_M + 'm before the light runs out.',
-  beats: [
-    { at: 0.0, text: 'The race starts. Echo is right beside you.' },
-    { at: 0.4, text: '250m. The crew pulls level and the wind picks up.' },
-    { at: 0.75, text: '400m. The roof is in sight, Echo is one jump behind.' }
-  ],
-  cap: 300,
-  result: {
-    success: 'You touch the top first, Echo cheers and the tower resets for a rematch.',
-    partial: 'The light fades before the roof, but the crew waits and the climb counts.',
-    fail: 'You fall before the top this time, and Echo marks the route to try again.'
-  }
-}) : null;
-if (storyRun) { window.__storyRun = storyRun; }
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-/* Logical playfield size , tracks the viewport (fullscreen game).
+/* Logical playfield size â€” tracks the viewport (fullscreen game).
    Updated by resize(); everything reads these live. */
 let W = 420, H = 700;
 
@@ -402,6 +1486,7 @@ const PHYS = {
   moveAccel: 0.7,
   moveMax: 6.5,
   friction: 0.86,
+  steerLerp: 0.34,   // how fast velocity chases the tilt target (0..1 per frame)
   cameraLerp: 0.12,
   scoreScale: 0.1,
 };
@@ -420,22 +1505,22 @@ const COIN_COMBO_WINDOW = 50;     // frames between coins to keep the pitch comb
    rather than touching PHYS directly, so the base feel never drifts.
    The same pool doubles as the pick-your-modifier deck before each run. */
 const DAILY_MODIFIERS = [
-  { id: 'coinRush',   name: 'Coin Rush',    icon: '🦙', desc: '+50% coins this run',        coinMult: 1.5 },
-  { id: 'feather',    name: 'Featherweight', icon: '🎲', desc: 'Lighter gravity today',     gravityMult: 0.82 },
-  { id: 'luckyJets',  name: 'Lucky Jets',   icon: '🌬', desc: 'Power-ups spawn 2x as often', powerupMult: 2 },
-  { id: 'hazardStorm',name: 'Hazard Storm', icon: '🔒ï¸', desc: 'More gusts, more coins',     hazardMult: 1.6, coinMult: 1.25 },
-  { id: 'calmSkies',  name: 'Calm Skies',   icon: '🔓ï¸', desc: 'Fewer hazards today',        hazardMult: 0.5 },
+  { id: 'coinRush',   name: 'Coin Rush',    icon: 'ðŸª™', desc: '+50% coins this run',        coinMult: 1.5 },
+  { id: 'feather',    name: 'Featherweight', icon: 'ðŸª¶', desc: 'Lighter gravity today',     gravityMult: 0.82 },
+  { id: 'luckyJets',  name: 'Lucky Jets',   icon: 'ðŸš€', desc: 'Power-ups spawn 2x as often', powerupMult: 2 },
+  { id: 'hazardStorm',name: 'Hazard Storm', icon: 'ðŸŒªï¸', desc: 'More gusts, more coins',     hazardMult: 1.6, coinMult: 1.25 },
+  { id: 'calmSkies',  name: 'Calm Skies',   icon: 'ðŸŒ¤ï¸', desc: 'Fewer hazards today',        hazardMult: 0.5 },
   /* risk/reward cards only offered in the pre-run chooser */
-  { id: 'galeForce',  name: 'Gale Force',   icon: '🔓', desc: '2x hazards · +80% coins',    hazardMult: 2, coinMult: 1.8, chooserOnly: true },
-  { id: 'slippery',   name: 'Slippery Skies', icon: '🧲', desc: 'Slidey steering · +30% coins', frictionMult: 1.06, coinMult: 1.3, chooserOnly: true },
-  { id: 'headStart',  name: 'Head Start',   icon: '🌬', desc: 'Begin this run at 150m',     startM: 150, chooserOnly: true },
+  { id: 'galeForce',  name: 'Gale Force',   icon: 'ðŸŒ€', desc: '2x hazards Â· +80% coins',    hazardMult: 2, coinMult: 1.8, chooserOnly: true },
+  { id: 'slippery',   name: 'Slippery Skies', icon: 'ðŸ§¼', desc: 'Slidey steering Â· +30% coins', frictionMult: 1.06, coinMult: 1.3, chooserOnly: true },
+  { id: 'headStart',  name: 'Head Start',   icon: 'ðŸš€', desc: 'Begin this run at 150m',     startM: 150, chooserOnly: true },
 ];
 function daysSinceEpochLocal() {
   const d = new Date();
   return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
 }
 function getDailyModifier() {
-  // Only fair daily mods , chooser-only risk/reward stays in chooser
+  // Only fair daily mods â€” chooser-only risk/reward stays in chooser
   const dailyPool = DAILY_MODIFIERS.filter(m => !m.chooserOnly);
   return dailyPool[daysSinceEpochLocal() % dailyPool.length];
 }
@@ -458,18 +1543,18 @@ function modMult(key) {
 }
 
 const CHARS = {
-  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', iris: '#5d4037', name: 'Pip the Turtle',    emoji: '🐢', unlockM: 0,
+  turtle:  { body: '#4caf50', accent: '#2e7d32', eye: '#fff', iris: '#5d4037', name: 'Pip the Turtle',    emoji: 'ðŸ¢', unlockM: 0,
              perk: 'sturdy', perkName: 'Sturdy Shell', perkDesc: 'Hazards hit 50% softer' },
-  fox:     { body: '#8b5cf6', accent: '#4c1d95', eye: '#fff', iris: '#7c3aed', name: 'Lumo the Fox',      emoji: '🦊', unlockM: 750,
+  fox:     { body: '#8b5cf6', accent: '#4c1d95', eye: '#fff', iris: '#7c3aed', name: 'Lumo the Fox',      emoji: 'ðŸ¦Š', unlockM: 750,
              perk: 'speed',  perkName: 'Agile',       perkDesc: 'Sharper steering' },
-  tiger:   { body: '#ec4899', accent: '#831843', eye: '#fff', iris: '#be185d', name: 'Ember the Tiger',   emoji: '🐯', unlockM: 2500,
+  tiger:   { body: '#ec4899', accent: '#831843', eye: '#fff', iris: '#be185d', name: 'Ember the Tiger',   emoji: 'ðŸ¯', unlockM: 2500,
              perk: 'spring', perkName: 'Big Bounce',  perkDesc: 'Springs launch 15% higher' },
-  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', iris: '#1a1a2e', name: 'Echo the Axolotl',  emoji: '🦎', unlockM: 4500,
+  axolotl: { body: '#f48fb1', accent: '#ad1457', eye: '#fff', iris: '#1a1a2e', name: 'Echo the Axolotl',  emoji: 'ðŸ¦Ž', unlockM: 4500,
              perk: 'magnet', perkName: 'Magnetic',    perkDesc: 'Bigger coin reach, magnets last 2s longer' },
-  stardust:{ body: '#e0e7ff', accent: '#4338ca', eye: '#fff', iris: '#6d28d9', name: 'Stardust',           emoji: '✨', unlockM: 12000,
-             perk: 'celestial', perkName: 'Star Trail', perkDesc: 'Leaves a stardust trail · +10% coins', secret: true },
-  prism:    { body: '#c4b5fd', accent: '#5b21b6', eye: '#fff', iris: '#4c1d95', name: 'Prism',              emoji: '🔮', unlockM: 24000,
-             perk: 'prismatic', perkName: 'Prismatic', perkDesc: 'Rainbow trail · +15% coins', secret: true },
+  stardust:{ body: '#e0e7ff', accent: '#4338ca', eye: '#fff', iris: '#6d28d9', name: 'Stardust',           emoji: 'âœ¨', unlockM: 12000,
+             perk: 'celestial', perkName: 'Star Trail', perkDesc: 'Leaves a stardust trail Â· +10% coins', secret: true },
+  prism:    { body: '#c4b5fd', accent: '#5b21b6', eye: '#fff', iris: '#4c1d95', name: 'Prism',              emoji: 'ðŸ”®', unlockM: 24000,
+             perk: 'prismatic', perkName: 'Prismatic', perkDesc: 'Rainbow trail Â· +15% coins', secret: true },
 };
 const CHAR_ORDER = ['turtle', 'fox', 'tiger', 'axolotl', 'stardust', 'prism'];
 function perkActive(p) {
@@ -498,6 +1583,14 @@ const COSMETICS = {
     { id: 'headphones',name: 'Headphones', price: 400, levelReq: 6, draw: drawHatHeadphones },
     { id: 'astro',     name: 'Astro Helmet', price: 450, draw: drawHatAstro },
     { id: 'viking',    name: 'Viking Helm', price: 380, draw: drawHatViking },
+    { id: 'cowboy',    name: 'Cowboy Hat', price: 320, draw: drawHatCowboy },
+    { id: 'ninja',     name: 'Ninja Band', price: 220, draw: drawHatNinja },
+    { id: 'tiara',     name: 'Gem Tiara',  price: 520, draw: drawHatTiara },
+    // â”€â”€ Seasonal event hats â”€â”€ (eventId locks them outside their season)
+    { id: 'pumpkin',   name: 'Pumpkin Hat',  price: 0, draw: drawHatPumpkin,  eventId: 'halloween' },
+    { id: 'elf',       name: "Elf Hat",      price: 0, draw: drawHatElf,      eventId: 'christmas' },
+    { id: 'sunVisor',  name: 'Sun Visor',    price: 0, draw: drawHatSunVisor, eventId: 'summer' },
+    { id: 'leafCrown', name: 'Leaf Crown',   price: 0, draw: drawHatLeafCrown,eventId: 'autumn' },
   ],
   skin: [
     { id: 'default',   name: 'Default',    price: 0,    tint: null },
@@ -512,6 +1605,9 @@ const COSMETICS = {
     { id: 'candy',     name: 'Candy',      price: 0,    tint: '#ff69b4', levelReq: 12 },
     { id: 'nebula',    name: 'Nebula',     price: 400,  tint: '#c084fc' },
     { id: 'stardust',  name: 'Stardust',   price: 450,  tint: '#fef3c7' },
+    { id: 'bubblegum', name: 'Bubblegum',  price: 340,  tint: '#ff8fd0' },
+    { id: 'toxic',     name: 'Toxic',      price: 360,  tint: '#9cff2e' },
+    { id: 'chrome',    name: 'Chrome',     price: 520,  tint: '#c7d2e8' },
   ],
   aura: [
     { id: 'none',      name: 'No Aura',    price: 0, color: null },
@@ -528,6 +1624,14 @@ const COSMETICS = {
     { id: 'starlight', name: 'Starlight',  price: 500, color: '#e0e7ff' },
     { id: 'nebula',    name: 'Nebula',     price: 480, color: '#c084fc' },
     { id: 'keepsake',  name: 'Keepsake',   price: 0, color: '#c9a96e', achievement: 'anniversary', lockedHint: 'A once-a-year gift' },
+    { id: 'bubbles',   name: 'Bubbles',    price: 380, color: '#7ee8fa' },
+    { id: 'sakura',    name: 'Sakura',     price: 300, color: '#ffb7c5' },
+    { id: 'thunder',   name: 'Thunder',    price: 420, color: '#a78bfa' },
+    // â”€â”€ Seasonal event auras â”€â”€
+    { id: 'spooky',   name: 'Spooky',   price: 0, color: '#ff6a00', eventId: 'halloween' },
+    { id: 'snowfall', name: 'Snowfall', price: 0, color: '#a8d8ff', eventId: 'christmas' },
+    { id: 'hearts',   name: 'Hearts',   price: 0, color: '#ff4d7c', eventId: 'valentine' },
+    { id: 'petals',   name: 'Petals',   price: 0, color: '#ffb3cc', eventId: 'spring' },
   ],
 };
 
@@ -535,10 +1639,10 @@ const COSMETICS = {
    The long-term coin sink: each track has 5 levels, cost scales geometrically,
    and every level is felt in the run. */
 const UPGRADES = [
-  { id: 'coinValue',  name: 'Golden Touch',  icon: '🦙', desc: '+5% coin value per level',        max: 5, base: 60,  mult: 1.8, per: 0.05 },
-  { id: 'springBoost',name: 'Springy Soles', icon: '✨', desc: '+8% jump power per level',        max: 5, base: 80,  mult: 1.8, per: 0.08 },
-  { id: 'magnetTime', name: 'Magnet Master', icon: '🧲', desc: '+0.6s magnet duration per level', max: 5, base: 70,  mult: 1.8, per: 0.04 },
-  { id: 'luck',       name: 'Lucky Charm',   icon: '☁', desc: '+12% power-up chance per level',  max: 5, base: 90,  mult: 1.8, per: 0.12 },
+  { id: 'coinValue',  name: 'Golden Touch',  icon: 'ðŸª™', desc: '+5% coin value per level',        max: 5, base: 60,  mult: 1.8, per: 0.05 },
+  { id: 'springBoost',name: 'Springy Soles', icon: 'ðŸ‘Ÿ', desc: '+8% jump power per level',        max: 5, base: 80,  mult: 1.8, per: 0.08 },
+  { id: 'magnetTime', name: 'Magnet Master', icon: 'ðŸ§²', desc: '+0.6s magnet duration per level', max: 5, base: 70,  mult: 1.8, per: 0.04 },
+  { id: 'luck',       name: 'Lucky Charm',   icon: 'ðŸ€', desc: '+12% power-up chance per level',  max: 5, base: 90,  mult: 1.8, per: 0.12 },
 ];
 function upgradeLevel(id) {
   return (save.upgrades && save.upgrades[id]) || 0;
@@ -581,6 +1685,8 @@ function defaultSave() {
     lastPlayDate: null,    // 'YYYY-MM-DD'
     streak: 0,
     bestStreak: 0,
+    // Daily wheel â€” reset each calendar day
+    dailySpinDate: null,   // 'YYYY-MM-DD' of last spin (replaces old boolean dailySpin)
     settings: { sound: true, music: true, controls: 'tilt', haptics: true, shake: true, particles: true, ghost: true },
     firstPlayTs: Date.now(),
     tutorialDone: false,
@@ -615,7 +1721,7 @@ function persist() {
   catch (e) { console.warn('Save failed', e); }
   cloudSave();
 }
-// Cloud saves stub , hook Play Games Saved Games when plugin available, else no-op
+// Cloud saves stub â€” hook Play Games Saved Games when plugin available, else no-op
 function cloudSave(){
   try{
     const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames;
@@ -825,29 +1931,29 @@ function musicZoneTick() {
    Each: id, name, desc, icon, check(save, runStats) â†’ bool
    Achievements unlock once and stay unlocked. */
 const ACHIEVEMENTS = [
-  { id: 'firstJump',    name: 'First Steps',     desc: 'Complete your first run',           icon: '👶', check: (s, r) => true },
+  { id: 'firstJump',    name: 'First Steps',     desc: 'Complete your first run',           icon: 'ðŸ‘£', check: (s, r) => true },
   { id: 'reach500',     name: 'Climber',         desc: 'Reach 500m',                        icon: 'â›°ï¸', check: (s) => s.bestHeight >= 500 },
   { id: 'reach1000',    name: 'Sky Walker',      desc: 'Reach 1000m',                       icon: 'â˜ï¸', check: (s) => s.bestHeight >= 1000 },
-  { id: 'reach3000',    name: 'High Flyer',      desc: 'Reach 3000m',                       icon: '🌬', check: (s) => s.bestHeight >= 3000 },
-  { id: 'reach5000',    name: 'Star Chaser',     desc: 'Reach 5000m',                       icon: '⭐', check: (s) => s.bestHeight >= 5000 },
-  { id: 'reach8000',    name: 'Aurora Chaser',   desc: 'Reach 8000m',                       icon: '🔓', check: (s) => s.bestHeight >= 8000 },
-  { id: 'reach12000',   name: 'Cosmos Voyager',  desc: 'Reach 12000m',                      icon: '🎯', check: (s) => s.bestHeight >= 12000 },
-  { id: 'reach16000',   name: 'Void Walker',     desc: 'Reach 16000m',                      icon: '🔓', check: (s) => s.bestHeight >= 16000 },
+  { id: 'reach3000',    name: 'High Flyer',      desc: 'Reach 3000m',                       icon: 'ðŸš€', check: (s) => s.bestHeight >= 3000 },
+  { id: 'reach5000',    name: 'Star Chaser',     desc: 'Reach 5000m',                       icon: 'â­', check: (s) => s.bestHeight >= 5000 },
+  { id: 'reach8000',    name: 'Aurora Chaser',   desc: 'Reach 8000m',                       icon: 'ðŸŒŒ', check: (s) => s.bestHeight >= 8000 },
+  { id: 'reach12000',   name: 'Cosmos Voyager',  desc: 'Reach 12000m',                      icon: 'ðŸª', check: (s) => s.bestHeight >= 12000 },
+  { id: 'reach16000',   name: 'Void Walker',     desc: 'Reach 16000m',                      icon: 'ðŸŒ‘', check: (s) => s.bestHeight >= 16000 },
   { id: 'reach20000',   name: 'Infinity',        desc: 'Reach 20000m',                      icon: 'â™¾ï¸', check: (s) => s.bestHeight >= 20000 },
-  { id: 'reach10000',   name: 'Legend',          desc: 'Reach 10000m (unlocks Gold Skin)',  icon: '👑', check: (s) => s.bestHeight >= 10000 },
-  { id: 'reach24000',   name: 'Infinite Voyager', desc: 'Reach 24000m',                    icon: '🔓', check: (s) => s.bestHeight >= 24000 },
-  { id: 'totalCoins10k', name: 'Midas',           desc: 'Collect 10000 coins lifetime',    icon: '👑', check: (s) => s.lifetimeCoins >= 10000 },
-  { id: 'nearMiss10',   name: 'Untouchable',      desc: '10 near misses in one run',       icon: '🎁', check: (s, r) => r && r.nearMisses >= 10 },
-  { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: '🦙', check: (s, r) => r && r.runCoins >= 50 },
-  { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: '👑', check: (s) => s.lifetimeCoins >= 500 },
-  { id: 'allChars',     name: 'Whole Family',    desc: 'Unlock all 4 characters',           icon: '👨‍👩‍👦‍👧', check: (s) => s.unlockedChars.length >= 4 },
-  { id: 'level5',       name: 'Apprentice',      desc: 'Reach Level 5',                     icon: '🔓', check: (s) => s.level >= 5 },
-  { id: 'level10',      name: 'Expert',          desc: 'Reach Level 10',                    icon: '🔓', check: (s) => s.level >= 10 },
-  { id: 'level20',      name: 'Master',          desc: 'Reach Level 20',                    icon: '🔓', check: (s) => s.level >= 20 },
-  { id: 'streak3',      name: 'Habit Forming',   desc: 'Play 3 days in a row',              icon: '📊', check: (s) => s.bestStreak >= 3 },
-  { id: 'streak7',      name: 'Dedicated',       desc: 'Play 7 days in a row',              icon: '🤔', check: (s) => s.bestStreak >= 7 },
-  { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Buy 5 cosmetics',                   icon: '🛡ï¸', check: (s) => (s.owned.hat.length + s.owned.skin.length + s.owned.aura.length) >= 8 }, // 3 defaults + 5
-  { id: 'anniversary',  name: 'Full Circle',     desc: 'Come back on the day you first started, a year or more later (unlocks Keepsake aura)', icon: '🎭', check: (s) => {
+  { id: 'reach10000',   name: 'Legend',          desc: 'Reach 10000m (unlocks Gold Skin)',  icon: 'ðŸ‘‘', check: (s) => s.bestHeight >= 10000 },
+  { id: 'reach24000',   name: 'Infinite Voyager', desc: 'Reach 24000m',                    icon: 'ðŸŒŒ', check: (s) => s.bestHeight >= 24000 },
+  { id: 'totalCoins10k', name: 'Midas',           desc: 'Collect 10000 coins lifetime',    icon: 'ðŸ’°', check: (s) => s.lifetimeCoins >= 10000 },
+  { id: 'nearMiss10',   name: 'Untouchable',      desc: '10 near misses in one run',       icon: 'ðŸŽ¯', check: (s, r) => r && r.nearMisses >= 10 },
+  { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: 'ðŸª™', check: (s, r) => r && r.runCoins >= 50 },
+  { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: 'ðŸ’°', check: (s) => s.lifetimeCoins >= 500 },
+  { id: 'allChars',     name: 'Whole Family',    desc: 'Unlock all 4 characters',           icon: 'ðŸ‘¨â€ðŸ‘©â€ðŸ‘§â€ðŸ‘¦', check: (s) => s.unlockedChars.length >= 4 },
+  { id: 'level5',       name: 'Apprentice',      desc: 'Reach Level 5',                     icon: 'ðŸŒ±', check: (s) => s.level >= 5 },
+  { id: 'level10',      name: 'Expert',          desc: 'Reach Level 10',                    icon: 'ðŸŒ¿', check: (s) => s.level >= 10 },
+  { id: 'level20',      name: 'Master',          desc: 'Reach Level 20',                    icon: 'ðŸŒ³', check: (s) => s.level >= 20 },
+  { id: 'streak3',      name: 'Habit Forming',   desc: 'Play 3 days in a row',              icon: 'ðŸ”¥', check: (s) => s.bestStreak >= 3 },
+  { id: 'streak7',      name: 'Dedicated',       desc: 'Play 7 days in a row',              icon: 'ðŸ’ª', check: (s) => s.bestStreak >= 7 },
+  { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Buy 5 cosmetics',                   icon: 'ðŸ›ï¸', check: (s) => (s.owned.hat.length + s.owned.skin.length + s.owned.aura.length) >= 8 }, // 3 defaults + 5
+  { id: 'anniversary',  name: 'Full Circle',     desc: 'Come back on the day you first started, a year or more later (unlocks Keepsake aura)', icon: 'ðŸŽ‚', check: (s) => {
     if (!s.firstPlayTs) return false;
     const first = new Date(s.firstPlayTs), now = new Date();
     return now.getFullYear() > first.getFullYear() && now.getMonth() === first.getMonth() && now.getDate() === first.getDate();
@@ -869,14 +1975,14 @@ function checkAchievements(runStats) {
 /* ---------- Daily missions ----------
    Three per day, deterministic from the date. All are "in a single run"
    goals, evaluated when a run ends. Completing one auto-banks the coin
-   reward , no claim button to forget. */
+   reward â€” no claim button to forget. */
 const MISSIONS = [
   { id: 'height',  icon: 'â›°ï¸', name: 'Sky Walker',   reward: 30, target: () => 300 + (daysSinceEpochLocal() % 3) * 300, value: r => r.heightM,        fmt: t => `Reach ${t}m in one run` },
-  { id: 'coins',   icon: '🦙', name: 'Coin Purse',   reward: 30, target: () => 20 + (daysSinceEpochLocal() % 3) * 10,   value: r => r.runCoins,       fmt: t => `Collect ${t} coins in one run` },
-  { id: 'near',    icon: '👆', name: 'Daredevil',    reward: 35, target: () => 3,  value: r => r.nearMisses,             fmt: () => 'Bank 3 near-misses in one run' },
-  { id: 'hits',    icon: '🛡ï¸', name: 'Storm Rider',  reward: 35, target: () => 2,  value: r => r.hazardHits,             fmt: () => 'Survive 2 hazard hits in one run' },
-  { id: 'springs', icon: '🔓', name: 'Spring Loaded',reward: 25, target: () => 5,  value: r => r.springBounces,          fmt: () => 'Bounce on 5 springs in one run' },
-  { id: 'power',   icon: '🌬', name: 'Fully Loaded', reward: 30, target: () => 2,  value: r => r.powerupsGrabbed,        fmt: () => 'Grab 2 power-ups in one run' },
+  { id: 'coins',   icon: 'ðŸª™', name: 'Coin Purse',   reward: 30, target: () => 20 + (daysSinceEpochLocal() % 3) * 10,   value: r => r.runCoins,       fmt: t => `Collect ${t} coins in one run` },
+  { id: 'near',    icon: 'ðŸ’¨', name: 'Daredevil',    reward: 35, target: () => 3,  value: r => r.nearMisses,             fmt: () => 'Bank 3 near-misses in one run' },
+  { id: 'hits',    icon: 'ðŸ›¡ï¸', name: 'Storm Rider',  reward: 35, target: () => 2,  value: r => r.hazardHits,             fmt: () => 'Survive 2 hazard hits in one run' },
+  { id: 'springs', icon: 'ðŸŒ€', name: 'Spring Loaded',reward: 25, target: () => 5,  value: r => r.springBounces,          fmt: () => 'Bounce on 5 springs in one run' },
+  { id: 'power',   icon: 'ðŸš€', name: 'Fully Loaded', reward: 30, target: () => 2,  value: r => r.powerupsGrabbed,        fmt: () => 'Grab 2 power-ups in one run' },
 ];
 function todaysMissions() {
   const rand = mulberry32(daysSinceEpochLocal() + 7);
@@ -910,7 +2016,7 @@ function evaluateMissions() {
     if (v >= m.target() && !save.missions.claimed.includes(m.id)) {
       save.missions.claimed.push(m.id);
       save.coins += m.reward;
-      missionToasts.push(`âœ… ${m.name} +${m.reward}🦙`);
+      missionToasts.push(`âœ… ${m.name} +${m.reward}ðŸª™`);
       setTimeout(() => SFX.buy(), 1800);
     }
   }
@@ -932,12 +2038,12 @@ function openMissions() {
     div.innerHTML = `
       <div class="ach-icon">${m.icon}</div>
       <div class="ach-info">
-        <div class="ach-name">${m.name} <span class="mission-reward">+${m.reward}🦙</span></div>
+        <div class="ach-name">${m.name} <span class="mission-reward">+${m.reward}ðŸª™</span></div>
         <div class="ach-desc">${m.fmt(target)}</div>
         <div class="mission-bar"><div class="mission-fill" style="width:${Math.round((best / target) * 100)}%"></div></div>
         <div class="ach-desc">${best} / ${target}</div>
       </div>
-      <div class="ach-check">${done ? 'âœ…' : '🎃'}</div>`;
+      <div class="ach-check">${done ? 'âœ…' : 'ðŸ“‹'}</div>`;
     list.appendChild(div);
   }
 }
@@ -1070,7 +2176,7 @@ const state = {
   zone: 0,
   particles: [],
   trailTimer: 0,
-  /* ── v0.3 additions ── */
+  /* â”€â”€ v0.3 additions â”€â”€ */
   gameTime: 0,          // frames since run start (drives vanishing platforms, pause-safe)
   shakeMag: 0,          // screen shake intensity, decays per step
   shakeX: 0, shakeY: 0, // computed once per step so paused screens don't jitter
@@ -1085,23 +2191,34 @@ const state = {
   lastZone: -1,
   ghostCursor: 0,       // monotonic replay index for the ghost
   lastHudH: -1, lastHudC: -1, // last values pushed to the HUD DOM
-  /* ── v1.1 additions ── */
+  /* â”€â”€ v1.1 additions â”€â”€ */
   modifier: null,       // run modifier picked in the pre-run chooser
   weekly: false,        // weekly challenge mode
   tower: null,          // prebuilt deterministic platform stack (weekly)
   towerIdx: 0,
   towerSeed: 0,
   nearMisses: 0,        // close calls this run â†’ bonus XP at death
-  /* ── v1.2 additions ── */
+  /* â”€â”€ v1.2 additions â”€â”€ */
   recordedRun: false,
+  bank: null,           // snapshot of what a death banked (rolled back on continue)
   hazardHits: 0,
   springBounces: 0,
   powerupsGrabbed: 0,
   deathTumble: 0,       // rotation angle for death tumble animation
   deathFallVy: 0,       // downward velocity during death tumble
+  /* â”€â”€ v4.1 expression system â”€â”€ */
+  expression: 'neutral',   // neutral|happy|scared|dead|surprised|excited
+  eyeTargetX: 0,           // world-space X of nearest interesting object (coin/hazard)
+  eyeTargetY: 0,
+  eyeTargetActive: false,  // true when there's something close enough to look at
+  nearMissFlash: 0,        // frames left of surprised expression after near-miss
+  coinStreakFace: 0,        // frames left of excited expression during coin combo
+  /* â”€â”€ menu idle quirks â”€â”€ */
+  menuIdleTimer: 0,        // frames since last idle quirk
+  menuIdleAnim: null,      // current quirk: {type, frame, duration}
 };
 
-/* HUD elements cached once , update() used to re-query the DOM every frame */
+/* HUD elements cached once â€” update() used to re-query the DOM every frame */
 const hudHeightEl = document.getElementById('hud-height');
 const hudCoinsEl = document.getElementById('hud-coins');
 
@@ -1201,7 +2318,7 @@ function weeklySeed() {
 }
 
 /* Vertical gap between platforms. Grows gently with altitude so deep runs
-   demand more precise steering , but stays well under the ~207px max jump
+   demand more precise steering â€” but stays well under the ~207px max jump
    height even at 3600m+. Shared by initial seeding and in-run generation so
    the curve is continuous. */
 function gapFor(h, rand) {
@@ -1272,7 +2389,7 @@ function seedPlatforms(rand) {
   while (y > -200) {
     let plat;
     if (state.weekly && state.tower) {
-      // Weekly: the whole start of the run comes from the seeded tower , clone so mutations don't poison the tower
+      // Weekly: the whole start of the run comes from the seeded tower â€” clone so mutations don't poison the tower
       const tplat = state.tower[state.towerIdx++];
       if (!tplat) break;
       plat = { ...tplat, coinRow: tplat.coinRow ? tplat.coinRow.map(c => ({ ...c })) : undefined, hazardSpec: tplat.hazardSpec ? { ...tplat.hazardSpec } : undefined, powerupSpec: tplat.powerupSpec ? { ...tplat.powerupSpec } : undefined };
@@ -1478,7 +2595,7 @@ function tiltSupported() {
 function handleOrientation(e) {
   if (e.gamma == null) return;
   // gamma: -90 (left) to 90 (right). Most natural play in landscape-ish portrait
-  // is around ±25°. Subtract calibration so "neutral" = however you were holding it.
+  // is around Â±25Â°. Subtract calibration so "neutral" = however you were holding it.
   const raw = e.gamma - tilt.calibration;
   const max = 25;
   tilt.value = Math.max(-1, Math.min(1, raw / max));
@@ -1512,11 +2629,11 @@ async function enableTilt() {
     }
   };
   window.addEventListener('deviceorientation', calibrate);
-  showToast('Tilt to steer , recalibrate anytime in Settings');
+  showToast('Tilt to steer â€” recalibrate anytime in Settings');
   return true;
 }
 
-// Detect a touch-capable device (phones/tablets) , desktop never auto-tilts
+// Detect a touch-capable device (phones/tablets) â€” desktop never auto-tilts
 function isTouchDevice() {
   return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 }
@@ -1531,7 +2648,7 @@ function recalibrateTilt() {
     }
   };
   window.addEventListener('deviceorientation', recal);
-  showToast('Tilt recalibrated , hold your phone comfortably');
+  showToast('Tilt recalibrated â€” hold your phone comfortably');
 }
 
 // Called from the Play/Retry tap so iOS's permission prompt opens inside
@@ -1542,7 +2659,7 @@ async function enableTiltForMobile() {
   if (ok) {
     document.getElementById('tilt-row').classList.remove('hidden');
   } else {
-    showToast('Tilt unavailable , drag the screen to steer');
+    showToast('Tilt unavailable â€” drag the screen to steer');
   }
 }
 document.getElementById('tilt-recal-btn').addEventListener('click', recalibrateTilt);
@@ -1587,7 +2704,7 @@ function spawnBurstParticles(x, y, color, n, opts = {}) {
   }
 }
 
-/* ── Game-feel helpers ──
+/* â”€â”€ Game-feel helpers â”€â”€
    Shake/flash values are computed once per physics step so a paused or
    backgrounded frame can't leave the screen jittering behind an overlay. */
 function addShake(mag) {
@@ -1654,9 +2771,15 @@ function update() {
   const maxV = PHYS.moveMax * (perkActive('speed') ? 1.12 : 1);
   const ctrl = save.settings.controls || 'tilt';
   if (ctrl === 'tilt' && tilt.enabled) {
-    p.vx = tilt.value * maxV * modMult('frictionMult');
-    if (tilt.value < -0.05) p.facing = -1;
-    else if (tilt.value > 0.05) p.facing = 1;
+    // Ease-in response curve: gentle at small tilts for fine control, full
+    // speed at a strong tilt. Steer toward that target instead of snapping so
+    // the character carries a little momentum â€” weighty, not twitchy.
+    const tv = tilt.value;
+    const curved = Math.sign(tv) * Math.pow(Math.abs(tv), 1.35);
+    const target = curved * maxV * modMult('frictionMult');
+    p.vx += (target - p.vx) * PHYS.steerLerp;
+    if (tv < -0.05) p.facing = -1;
+    else if (tv > 0.05) p.facing = 1;
   } else if (ctrl === 'drag') {
     // drag sets p.vx directly via pointermove; just clamp + friction when idle
     if (!dragActive) p.vx *= PHYS.friction * modMult('frictionMult');
@@ -1757,7 +2880,7 @@ function update() {
   if (state.trailTimer % 3 === 0) spawnTrailParticle();
 
   // Ghost recording
-  // Stardust trail , respects particles toggle
+  // Stardust trail â€” respects particles toggle
   if (save.settings.particles!==false && state.character === 'stardust' && state.gameTime % 3 === 0) {
     state.particles.push({ x: p.x + p.w/2 + (Math.random()-0.5)*6, y: p.y + p.h/2, vx:(Math.random()-0.5)*0.6, vy:0.8+Math.random()*0.8, life:0.7, color: Math.random()<0.5?'#a5b4fc':'#fde68a', shape:'circle', size:1.2+Math.random()*1.8, rot:0, rotV:0 });
   }
@@ -1799,6 +2922,7 @@ function update() {
       // Combo: quick consecutive pickups pitch the coin sound upward
       state.coinStreak = state.coinStreakTimer > 0 ? state.coinStreak + 1 : 0;
       state.coinStreakTimer = COIN_COMBO_WINDOW;
+      if (state.coinStreak >= 2) state.coinStreakFace = 20;
       spawnParticles(c.x, c.y, '#ffd23f', 8);
       addText(c.x, c.y - 12, '+1', { color: '#ffd23f', size: 13 });
       SFX.coin(state.coinStreak);
@@ -1845,7 +2969,7 @@ function update() {
       const d2 = dx*dx + dy*dy;
       if (d2 < hitR * hitR) {
         if (state.jetpackFrames > 0) {
-          // Jetpack flying , hazard just gives brief invuln, doesn't kill thrust
+          // Jetpack flying â€” hazard just gives brief invuln, doesn't kill thrust
           state.invulnFrames = 20;
           spawnParticles(hz.x, hz.y, '#ff7043', 8);
           addShake(2);
@@ -1860,7 +2984,7 @@ function update() {
           addFlash('#5cdbff', 0.18);
           vib(25);
           SFX.shieldHit();
-          addText(p.x + p.w/2, p.y - 14, '🛡ï¸ Absorbed!', { color: '#5cdbff', size: 15 });
+          addText(p.x + p.w/2, p.y - 14, 'ðŸ›¡ï¸ Absorbed!', { color: '#5cdbff', size: 15 });
         } else {
           // Pip's Sturdy Shell perk: hazards shove you down half as hard
           const soft = perkActive('sturdy') ? 0.5 : 1;
@@ -1878,6 +3002,7 @@ function update() {
         // Near miss: skimming a gust without touching it pays out at death
         hz.nearMissed = true;
         state.nearMisses++;
+        state.nearMissFlash = 18;
         addText(hz.x, hz.y - hz.r - 8, 'Close!', { color: '#ffd23f', size: 13 });
         SFX.near();
       }
@@ -1898,17 +3023,17 @@ function update() {
       if (pu.type === 'jetpack') {
         state.jetpackFrames = 150;
         spawnParticles(pu.x, pu.y, '#ff7043', 10);
-        addText(pu.x, pu.y - 18, '🌬 Jetpack!', { color: '#ff7043', size: 17 });
+        addText(pu.x, pu.y - 18, 'ðŸš€ Jetpack!', { color: '#ff7043', size: 17 });
       } else if (pu.type === 'magnet') {
         // Bubble's perk + Magnet Master upgrade both extend the duration
         state.magnetFrames = MAGNET_FRAMES * (perkActive('magnet') ? 1.5 : 1)
           + Math.round(36 * upgradeLevel('magnetTime'));
         spawnParticles(pu.x, pu.y, '#ff7eb9', 10);
-        addText(pu.x, pu.y - 18, '🧲 Coin Magnet!', { color: '#ff7eb9', size: 17 });
+        addText(pu.x, pu.y - 18, 'ðŸ§² Coin Magnet!', { color: '#ff7eb9', size: 17 });
       } else {
         state.shieldActive = true;
         spawnParticles(pu.x, pu.y, '#5cdbff', 10);
-        addText(pu.x, pu.y - 18, '🛡ï¸ Shield up!', { color: '#5cdbff', size: 17 });
+        addText(pu.x, pu.y - 18, 'ðŸ›¡ï¸ Shield up!', { color: '#5cdbff', size: 17 });
       }
     }
   }
@@ -1920,14 +3045,7 @@ function update() {
   state.heightM = Math.max(0, Math.floor((H - 120 - state.highestY) * PHYS.scoreScale));
   state.zone = getZone(state.heightM);
 
-  // A585: feed the story run and end it the moment you reach the roof.
-  if (storyRun && state.mode === 'playing') {
-    storyRun.setScore(state.heightM);
-    if (state.heightM >= STORY_TOP_M) { reachStoryTop(); return; }
-  }
-
-
-  // ── In-run goal feedback ──
+  // â”€â”€ In-run goal feedback â”€â”€
   // Altitude milestones every MILESTONE_STEP metres (lower on screen than the
   // zone banner so the two never overlap when they land together)
   if (state.heightM >= state.nextMilestone) {
@@ -1949,7 +3067,7 @@ function update() {
   // Crossing your own best height mid-run: celebrate it loudly, once per run
   if (!state.bestBeaten && save.bestHeight >= 50 && state.heightM > save.bestHeight) {
     state.bestBeaten = true;
-    addText(W / 2, p.y - 60, '⭐ NEW BEST! ⭐', { color: '#ffd23f', size: 24, decay: 0.010 });
+    addText(W / 2, p.y - 60, 'â­ NEW BEST! â­', { color: '#ffd23f', size: 24, decay: 0.010 });
     addFlash('#ffd23f', 0.22);
     addShake(4);
     SFX.unlock();
@@ -2014,10 +3132,43 @@ function update() {
     state.lastHudC = state.runCoins;
     hudCoinsEl.textContent = state.runCoins;
   }
+
+  // â”€â”€ Expression + eye tracking â”€â”€
+  if (state.nearMissFlash > 0) state.nearMissFlash--;
+  if (state.coinStreakFace > 0) state.coinStreakFace--;
+
+  if (state.mode === 'dead') {
+    state.expression = 'dead';
+  } else if (state.nearMissFlash > 0) {
+    state.expression = 'surprised';
+  } else if (state.coinStreakFace > 0 || state.coinStreak >= 3) {
+    state.expression = 'excited';
+  } else if (p.vy > 4) {
+    state.expression = 'scared';
+  } else if (p.vy < -8) {
+    state.expression = 'happy';
+  } else {
+    state.expression = 'neutral';
+  }
+
+  // Eye tracking: find the nearest coin or hazard within range
+  const px = p.x + p.w / 2, py = p.y + p.h / 2;
+  let bestD2 = 140 * 140, bestX = 0, bestY = 0, found = false;
+  for (const c of state.coins) {
+    if (c.collected) continue;
+    const dx = c.x - px, dy = c.y - py, d2 = dx * dx + dy * dy;
+    if (d2 < bestD2) { bestD2 = d2; bestX = c.x; bestY = c.y; found = true; }
+  }
+  for (const hz of state.hazards) {
+    const dx = hz.x - px, dy = hz.y - py, d2 = dx * dx + dy * dy;
+    if (d2 < 100 * 100 && d2 < bestD2) { bestD2 = d2; bestX = hz.x; bestY = hz.y; found = true; }
+  }
+  state.eyeTargetActive = found;
+  if (found) { state.eyeTargetX = bestX; state.eyeTargetY = bestY; }
 }
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   VISUAL SPRITES , everything static is pre-rendered to small
+   VISUAL SPRITES â€” everything static is pre-rendered to small
    offscreen canvases once, then blitted with drawImage each
    frame. Cheaper than the multi-shape draws it replaces and
    lets the art go much richer (rounded corners, grass, grain,
@@ -2034,7 +3185,7 @@ function makeSprite(w, h, drawFn) {
   return { c, w, h };
 }
 
-/* ── Clouds (3 shapes × 3 zone tints) ── */
+/* â”€â”€ Clouds (3 shapes Ã -  3 zone tints) â”€â”€ */
 function paintCloud(g, w, h, tint) {
   g.fillStyle = tint;
   g.beginPath();
@@ -2055,7 +3206,55 @@ const cloudSprites = {
   night: CLOUD_SHAPES.map(([w, h]) => makeSprite(w, h, (g) => paintCloud(g, w, h, '#3a3660'))),
 };
 
-/* ── Celestial bodies ── */
+/* â”€â”€ Floating islands (3 shapes Ã -  4 zone tints) â”€â”€
+   Silhouette rocks the camera parallaxes against, giving the climb real
+   depth. Each tint is a solid body plus a lighter lit cap and a faint rim
+   on the shaded side, so they read in both bright and deep-space zones. */
+function paintIsland(g, w, h, body, top, rim) {
+  // rounded rocky underside (blob, not a spike, so it reads as stone)
+  g.fillStyle = body;
+  g.beginPath();
+  g.moveTo(w * 0.05, h * 0.36);
+  g.bezierCurveTo(w * 0.09, h * 0.72, w * 0.30, h * 0.95, w * 0.50, h * 0.96);
+  g.bezierCurveTo(w * 0.70, h * 0.95, w * 0.91, h * 0.72, w * 0.95, h * 0.36);
+  g.bezierCurveTo(w * 0.66, h * 0.29, w * 0.34, h * 0.29, w * 0.05, h * 0.36);
+  g.closePath();
+  g.fill();
+  // shaded right side for form
+  g.fillStyle = 'rgba(0,0,0,0.14)';
+  g.beginPath();
+  g.moveTo(w * 0.52, h * 0.30);
+  g.bezierCurveTo(w * 0.72, h * 0.36, w * 0.86, h * 0.62, w * 0.82, h * 0.78);
+  g.bezierCurveTo(w * 0.74, h * 0.90, w * 0.62, h * 0.94, w * 0.50, h * 0.96);
+  g.bezierCurveTo(w * 0.68, h * 0.86, w * 0.70, h * 0.50, w * 0.52, h * 0.30);
+  g.closePath();
+  g.fill();
+  // soft rounded lit cap
+  g.fillStyle = top;
+  g.beginPath();
+  g.ellipse(w * 0.5, h * 0.34, w * 0.45, h * 0.12, 0, 0, Math.PI * 2);
+  g.fill();
+  // faint rim light along the top edge
+  g.strokeStyle = rim;
+  g.lineWidth = 1.4;
+  g.beginPath();
+  g.ellipse(w * 0.5, h * 0.33, w * 0.45, h * 0.12, 0, Math.PI * 1.05, Math.PI * 1.95);
+  g.stroke();
+}
+const ISLAND_SHAPES = [[150, 70], [108, 52], [188, 86]];
+const ISLAND_TINTS = {
+  meadow: ['#6d8fb2', '#87a9c8', 'rgba(255,255,255,0.30)'],
+  dusk:   ['#7a5872', '#98708a', 'rgba(255,214,184,0.28)'],
+  night:  ['#2b2b4e', '#3a3a68', 'rgba(150,150,220,0.28)'],
+  space:  ['#171334', '#241d4c', 'rgba(150,120,255,0.35)'],
+};
+const islandSprites = Object.fromEntries(
+  Object.entries(ISLAND_TINTS).map(([k, t]) => [
+    k, ISLAND_SHAPES.map(([w, h]) => makeSprite(w, h, (g) => paintIsland(g, w, h, t[0], t[1], t[2]))),
+  ])
+);
+
+/* â”€â”€ Celestial bodies â”€â”€ */
 const sunSprite = makeSprite(130, 130, (g, w, h) => {
   const cx = w / 2, cy = h / 2;
   const rg = g.createRadialGradient(cx, cy, 4, cx, cy, 65);
@@ -2092,7 +3291,7 @@ const moonSprite = makeSprite(84, 84, (g, w, h) => {
   g.fillRect(0, 0, w, h);
 });
 
-/* ── Glow dots (fireflies / pollen motes) ── */
+/* â”€â”€ Glow dots (fireflies / pollen motes) â”€â”€ */
 const fireflySprite = makeSprite(16, 16, (g) => {
   const rg = g.createRadialGradient(8, 8, 0.5, 8, 8, 8);
   rg.addColorStop(0, 'rgba(228,255,150,0.95)');
@@ -2107,21 +3306,28 @@ const pollenSprite = makeSprite(16, 16, (g) => {
   g.fillStyle = rg; g.fillRect(0, 0, 16, 16);
 });
 
-/* ── Platforms ──
-   Sprite is 4px wider / 12px taller than the 70×14 hitbox: 6px of headroom
+/* â”€â”€ Platforms â”€â”€
+   Sprite is 4px wider / 12px taller than the 70Ã - 14 hitbox: 6px of headroom
    for grass tufts, 6px below for the soft shadow. Hitbox origin inside the
    sprite is (2, 6). */
 const PLAT_SPR_W = 74, PLAT_SPR_H = 26;
 function platBody(g, fill, edge) {
   const x = 2, y = 6, w = 70, h = 14;
-  g.fillStyle = 'rgba(15,15,35,0.22)';
-  roundRect(g, x + 3, y + h - 1, w - 6, 6, 3); g.fill();
+  // Drop shadow
+  g.fillStyle = 'rgba(15,15,35,0.25)';
+  roundRect(g, x + 2, y + h, w - 4, 5, 3); g.fill();
+  // Main body
   g.fillStyle = fill;
   roundRect(g, x, y, w, h, 6); g.fill();
+  // Bottom edge
   g.fillStyle = edge;
   roundRect(g, x, y + h - 5, w, 5, 3); g.fill();
-  g.fillStyle = 'rgba(255,255,255,0.32)';
+  // Top highlight â€” brighter
+  g.fillStyle = 'rgba(255,255,255,0.38)';
   roundRect(g, x + 3, y + 1.5, w - 6, 2.5, 1.5); g.fill();
+  // Subtle inner shadow at bottom
+  g.fillStyle = 'rgba(0,0,0,0.08)';
+  roundRect(g, x + 2, y + h - 3, w - 4, 3, 2); g.fill();
 }
 function grassTufts(g, color) {
   const y = 6;
@@ -2199,63 +3405,106 @@ const platSprites = {
     }
   }),
   cloud: makeSprite(78, 28, (g) => {
+    // Shadow
+    g.fillStyle = 'rgba(140,160,200,0.35)';
+    g.beginPath();
+    g.arc(15, 18, 8, 0, Math.PI * 2);
+    g.arc(39, 14, 11, 0, Math.PI * 2);
+    g.arc(63, 18, 8, 0, Math.PI * 2);
+    g.fill();
+    // Main cloud body
     g.fillStyle = '#ffffff';
     g.beginPath();
     g.arc(15, 16, 9, 0, Math.PI * 2);
     g.arc(39, 12, 12, 0, Math.PI * 2);
     g.arc(63, 16, 9, 0, Math.PI * 2);
     g.fill();
-    g.fillStyle = 'rgba(255,255,255,0.92)';
+    g.fillStyle = 'rgba(255,255,255,0.95)';
     roundRect(g, 8, 13, 62, 9, 4.5); g.fill();
-    g.fillStyle = 'rgba(165,190,225,0.5)';
+    // Top highlight
+    g.fillStyle = 'rgba(255,255,255,0.6)';
+    g.beginPath(); g.ellipse(35, 8, 14, 4, -0.1, 0, Math.PI * 2); g.fill();
+    // Bottom shadow
+    g.fillStyle = 'rgba(165,190,225,0.45)';
     g.beginPath(); g.ellipse(39, 22.5, 26, 3.5, 0, 0, Math.PI * 2); g.fill();
   }),
 };
 
-/* ── Pre-rendered powerup sprites ── */
+/* â”€â”€ Pre-rendered powerup sprites â”€â”€ */
 const powerupSprites = {
   jetpack: makeSprite(28, 28, (g) => {
     const cx = 14, cy = 14, r = 10;
-    const pulse = 1;
-    g.fillStyle = 'rgba(255,112,67,0.28)';
-    g.beginPath(); g.arc(cx, cy, (r + 5) * pulse, 0, Math.PI * 2); g.fill();
-    g.fillStyle = 'rgb(255,112,67)';
+    // Glow
+    const jg = g.createRadialGradient(cx, cy, r * 0.3, cx, cy, r + 5);
+    jg.addColorStop(0, 'rgba(255,112,67,0.4)');
+    jg.addColorStop(1, 'rgba(255,112,67,0)');
+    g.fillStyle = jg;
+    g.beginPath(); g.arc(cx, cy, r + 5, 0, Math.PI * 2); g.fill();
+    // Body
+    const jb = g.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, r);
+    jb.addColorStop(0, '#ffab91');
+    jb.addColorStop(0.5, '#ff7043');
+    jb.addColorStop(1, '#e64a19');
+    g.fillStyle = jb;
     g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+    // Arrow
     g.fillStyle = '#fff';
     g.beginPath();
     g.moveTo(cx, cy - r * 0.55);
     g.lineTo(cx - r * 0.4, cy + r * 0.35);
     g.lineTo(cx + r * 0.4, cy + r * 0.35);
     g.closePath(); g.fill();
+    // Highlight
+    g.fillStyle = 'rgba(255,255,255,0.3)';
+    g.beginPath(); g.ellipse(cx - 2, cy - 3, 4, 3, -0.3, 0, Math.PI * 2); g.fill();
   }),
   magnet: makeSprite(28, 28, (g) => {
     const cx = 14, cy = 14, r = 10;
-    g.fillStyle = 'rgba(255,126,185,0.28)';
+    const mg = g.createRadialGradient(cx, cy, r * 0.3, cx, cy, r + 5);
+    mg.addColorStop(0, 'rgba(255,126,185,0.4)');
+    mg.addColorStop(1, 'rgba(255,126,185,0)');
+    g.fillStyle = mg;
     g.beginPath(); g.arc(cx, cy, r + 5, 0, Math.PI * 2); g.fill();
-    g.fillStyle = 'rgb(255,126,185)';
+    const mb = g.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, r);
+    mb.addColorStop(0, '#ff80ab');
+    mb.addColorStop(0.5, '#f06292');
+    mb.addColorStop(1, '#c2185b');
+    g.fillStyle = mb;
     g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
     g.strokeStyle = '#fff';
     g.lineWidth = 3;
     g.beginPath();
     g.arc(cx, cy - 1, r * 0.5, Math.PI, Math.PI * 2);
     g.stroke();
+    g.fillStyle = '#fff';
     g.fillRect(cx - r * 0.5 - 1.5, cy - 1, 3, 5);
     g.fillRect(cx + r * 0.5 - 1.5, cy - 1, 3, 5);
+    g.fillStyle = 'rgba(255,255,255,0.3)';
+    g.beginPath(); g.ellipse(cx - 2, cy - 3, 4, 3, -0.3, 0, Math.PI * 2); g.fill();
   }),
   shield: makeSprite(28, 28, (g) => {
     const cx = 14, cy = 14, r = 10;
-    g.fillStyle = 'rgba(92,219,255,0.28)';
+    const sg = g.createRadialGradient(cx, cy, r * 0.3, cx, cy, r + 5);
+    sg.addColorStop(0, 'rgba(92,219,255,0.4)');
+    sg.addColorStop(1, 'rgba(92,219,255,0)');
+    g.fillStyle = sg;
     g.beginPath(); g.arc(cx, cy, r + 5, 0, Math.PI * 2); g.fill();
-    g.fillStyle = 'rgb(92,219,255)';
+    const sb = g.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, r);
+    sb.addColorStop(0, '#b3e5fc');
+    sb.addColorStop(0.5, '#4fc3f7');
+    sb.addColorStop(1, '#0288d1');
+    g.fillStyle = sb;
     g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
     g.fillStyle = '#fff';
     g.beginPath(); g.arc(cx, cy, r * 0.4, 0, Math.PI * 2); g.fill();
-    g.fillStyle = 'rgb(92,219,255)';
+    g.fillStyle = '#4fc3f7';
     g.beginPath(); g.arc(cx, cy, r * 0.22, 0, Math.PI * 2); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.3)';
+    g.beginPath(); g.ellipse(cx - 2, cy - 3, 4, 3, -0.3, 0, Math.PI * 2); g.fill();
   }),
 };
 
-/* ── Pre-rendered hazard sprites , 3 variants ── */
+/* â”€â”€ Pre-rendered hazard sprites â€” 3 variants â”€â”€ */
 const hazardSprites = {};
 hazardSprites.gust = makeSprite(42, 42, (g) => {
   const cx = 21, cy = 21, r = 16;
@@ -2274,7 +3523,7 @@ hazardSprites.gust = makeSprite(42, 42, (g) => {
   }
 });
 hazardSprites.wasp = makeSprite(42, 42, (g) => {
-  // Wasp , yellow/black body with wings
+  // Wasp â€” yellow/black body with wings
   g.fillStyle = 'rgba(255,193,7,0.22)';
   g.beginPath(); g.arc(21, 21, 18, 0, Math.PI * 2); g.fill();
   // wings
@@ -2315,7 +3564,7 @@ hazardSprites.spike = makeSprite(42, 42, (g) => {
   g.fillStyle = 'rgba(255,255,255,0.45)'; g.beginPath(); g.arc(17, 15, 3, 0, Math.PI * 2); g.fill();
 });
 hazardSprites.comet = makeSprite(42, 42, (g) => {
-  // Comet , blazing orange-yellow streak
+  // Comet â€” blazing orange-yellow streak
   g.fillStyle = 'rgba(255,167,38,0.3)'; g.beginPath(); g.arc(21, 21, 18, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#ff9800'; g.beginPath(); g.arc(21, 21, 13, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#ffeb3b'; g.beginPath(); g.arc(21, 21, 8, 0, Math.PI * 2); g.fill();
@@ -2327,7 +3576,7 @@ hazardSprites.comet = makeSprite(42, 42, (g) => {
   g.beginPath(); g.moveTo(36, 26); g.lineTo(22, 22); g.stroke();
 });
 hazardSprites.voidhole = makeSprite(42, 42, (g) => {
-  // Void hole , swirling dark vortex
+  // Void hole â€” swirling dark vortex
   g.fillStyle = 'rgba(120,0,180,0.3)'; g.beginPath(); g.arc(21, 21, 20, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#1a0033'; g.beginPath(); g.arc(21, 21, 14, 0, Math.PI * 2); g.fill();
   g.fillStyle = '#0d001a'; g.beginPath(); g.arc(21, 21, 8, 0, Math.PI * 2); g.fill();
@@ -2341,7 +3590,7 @@ hazardSprites.voidhole = makeSprite(42, 42, (g) => {
 // Back-compat alias
 const hazardSprite = hazardSprites.gust;
 
-/* ── Char + particle atlas (perf B) ── */
+/* â”€â”€ Char + particle atlas (perf B) â”€â”€ */
 const charSpriteCache = new Map();
 function getCharSprite(charId, bodyColor, accentColor, facing){
   const key = charId+'|'+bodyColor+'|'+accentColor+'|'+facing;
@@ -2353,7 +3602,7 @@ function getCharSprite(charId, bodyColor, accentColor, facing){
   if(charSpriteCache.size>64){ const fk=charSpriteCache.keys().next().value; charSpriteCache.delete(fk); }
   return spr;
 }
-// Pre-bake top 5 skins × 5 chars × 2 facings = 50 sprites on load
+// Pre-bake top 5 skins Ã -  5 chars Ã -  2 facings = 50 sprites on load
 (function preBakeSprites(){
   const topSkins = [{tint:null},{tint:'#222'},{tint:'#9fdfff'},{tint:'#ff6b9d'},{tint:'#ffd23f'}];
   const chars = Object.keys(CHARS);
@@ -2368,54 +3617,89 @@ function getCharSprite(charId, bodyColor, accentColor, facing){
   }
 })();
 
-/* ── Coin: 8 spin frames ── */
+/* â”€â”€ Coin: 8 spin frames â”€â”€ */
 const coinFrames = [];
 for (let i = 0; i < 8; i++) {
   const th = (i * Math.PI) / 4;
   coinFrames.push(makeSprite(22, 22, (g) => {
     const cx = 11, cy = 11, r = 7;
     const rx = Math.max(1.4, Math.abs(Math.cos(th)) * r);
-    g.fillStyle = 'rgba(255,210,63,0.22)';
-    g.beginPath(); g.arc(cx, cy, r + 3.5, 0, Math.PI * 2); g.fill();
+    // Outer glow â€” warmer, more visible
+    const og = g.createRadialGradient(cx, cy, r * 0.5, cx, cy, r + 4);
+    og.addColorStop(0, 'rgba(255,210,63,0.32)');
+    og.addColorStop(1, 'rgba(255,210,63,0)');
+    g.fillStyle = og;
+    g.beginPath(); g.arc(cx, cy, r + 4, 0, Math.PI * 2); g.fill();
+    // Coin body â€” richer gradient
     const grad = g.createLinearGradient(cx - rx, cy - r, cx + rx, cy + r);
-    grad.addColorStop(0, '#ffe98a');
-    grad.addColorStop(0.5, '#ffd23f');
-    grad.addColorStop(1, '#f0a500');
+    grad.addColorStop(0, '#fff0b3');
+    grad.addColorStop(0.3, '#ffe98a');
+    grad.addColorStop(0.6, '#ffd23f');
+    grad.addColorStop(1, '#e89e00');
     g.fillStyle = grad;
     g.beginPath(); g.ellipse(cx, cy, rx, r, 0, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = '#c77c02';
+    g.strokeStyle = '#b86e00';
     g.lineWidth = 1;
     g.stroke();
+    // Specular highlight
     if (rx > 3.5) {
-      g.fillStyle = 'rgba(255,255,255,0.85)';
-      g.beginPath(); g.ellipse(cx - rx * 0.32, cy - 2.8, rx * 0.24, 1.6, -0.4, 0, Math.PI * 2); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.9)';
+      g.beginPath(); g.ellipse(cx - rx * 0.30, cy - 2.8, rx * 0.26, 1.8, -0.4, 0, Math.PI * 2); g.fill();
+      // Secondary highlight
+      g.fillStyle = 'rgba(255,255,255,0.35)';
+      g.beginPath(); g.ellipse(cx + rx * 0.20, cy + 2, rx * 0.14, 1, 0.3, 0, Math.PI * 2); g.fill();
     }
+    // Diamond emblem
     if (rx > r * 0.88) {
-      g.fillStyle = '#c77c02';
+      g.fillStyle = '#b86e00';
       g.beginPath();
-      g.moveTo(cx, cy - 3); g.lineTo(cx + 1.6, cy); g.lineTo(cx, cy + 3); g.lineTo(cx - 1.6, cy);
+      g.moveTo(cx, cy - 3.2); g.lineTo(cx + 1.8, cy); g.lineTo(cx, cy + 3.2); g.lineTo(cx - 1.8, cy);
+      g.closePath(); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.3)';
+      g.beginPath();
+      g.moveTo(cx, cy - 2); g.lineTo(cx + 1, cy); g.lineTo(cx, cy - 0.5);
       g.closePath(); g.fill();
     }
   }));
 }
 
-/* ── Ground strip (start of every run) , rebuilt on resize to span W ── */
+/* â”€â”€ Ground strip (start of every run) â€” rebuilt on resize to span W â”€â”€ */
 function paintGround(g, w) {
   const h = 52;
-  g.fillStyle = '#5d4037';
+  // Dirt with gradient
+  const dg = g.createLinearGradient(0, 14, 0, h);
+  dg.addColorStop(0, '#6d4c41');
+  dg.addColorStop(0.4, '#5d4037');
+  dg.addColorStop(1, '#4e342e');
+  g.fillStyle = dg;
   g.fillRect(0, 14, w, h - 14);
-  g.fillStyle = 'rgba(0,0,0,0.18)';
+  // Dirt texture â€” pebbles and soil dots
+  g.fillStyle = 'rgba(0,0,0,0.15)';
   for (let i = 0; i < Math.ceil(w / 30); i++) {
     g.beginPath();
     g.ellipse((i * 61 + 23) % w, 24 + ((i * 17) % 22), 2.5 + ((i * 7) % 3), 1.8, 0, 0, Math.PI * 2);
     g.fill();
   }
-  g.fillStyle = '#66bb6a';
+  // Lighter dirt specks
+  g.fillStyle = 'rgba(255,255,255,0.06)';
+  for (let i = 0; i < Math.ceil(w / 40); i++) {
+    g.beginPath();
+    g.arc((i * 43 + 11) % w, 20 + ((i * 23) % 26), 1.5 + ((i * 11) % 2), 0, Math.PI * 2);
+    g.fill();
+  }
+  // Grass layers â€” richer green gradient
+  const gg = g.createLinearGradient(0, 4, 0, 18);
+  gg.addColorStop(0, '#43a047');
+  gg.addColorStop(0.5, '#66bb6a');
+  gg.addColorStop(1, '#558b2f');
+  g.fillStyle = gg;
   g.fillRect(0, 6, w, 12);
   g.fillStyle = '#4caf50';
   g.fillRect(0, 6, w, 5);
-  g.fillStyle = 'rgba(255,255,255,0.25)';
+  // Grass shine
+  g.fillStyle = 'rgba(255,255,255,0.28)';
   g.fillRect(0, 6, w, 1.5);
+  // Grass blades
   g.fillStyle = '#66bb6a';
   for (let i = 0; i < Math.ceil(w / 14); i++) {
     const gx = (i * 14.5) + ((i * 29) % 7);
@@ -2424,21 +3708,32 @@ function paintGround(g, w) {
     g.quadraticCurveTo(gx, -2 - ((i * 13) % 4), gx + 3, 7);
     g.fill();
   }
+  // Dark grass blades for depth
+  g.fillStyle = '#388e3c';
+  for (let i = 0; i < Math.ceil(w / 20); i++) {
+    const gx = (i * 20.5) + ((i * 37) % 9) + 5;
+    g.beginPath();
+    g.moveTo(gx - 2, 8);
+    g.quadraticCurveTo(gx + 1, -1 - ((i * 11) % 3), gx + 2.5, 8);
+    g.fill();
+  }
+  // Flowers â€” more variety
   for (let i = 0; i < Math.ceil(w / 70); i++) {
     const fx = 30 + i * 68 + ((i * 31) % 20);
-    g.fillStyle = i % 2 ? '#ff9ecb' : '#fff';
-    g.beginPath(); g.arc(fx, 4 - (i % 3), 2, 0, Math.PI * 2); g.fill();
+    const fc = ['#ff9ecb', '#fff', '#ffd23f', '#b388ff', '#80deea'][i % 5];
+    g.fillStyle = fc;
+    g.beginPath(); g.arc(fx, 4 - (i % 3), 2.2, 0, Math.PI * 2); g.fill();
     g.fillStyle = '#ffd23f';
-    g.beginPath(); g.arc(fx, 4 - (i % 3), 0.8, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.arc(fx, 4 - (i % 3), 0.9, 0, Math.PI * 2); g.fill();
   }
 }
 let groundSprite = null;
 
-/* ── Vignette , rebuilt on resize ── */
+/* â”€â”€ Vignette â€” rebuilt on resize â”€â”€ */
 let vignetteSprite = null;
 
-/* ── Ambient sky life (screen-space, persists across runs) ── */
-const AMBIENT = { clouds: [], birds: [], flies: [], shoot: null, shootCd: 500 };
+/* â”€â”€ Ambient sky life (screen-space, persists across runs) â”€â”€ */
+const AMBIENT = { clouds: [], islands: [], birds: [], flies: [], shoot: null, shoot2: null, shootCd: 500 };
 (function initAmbient() {
   for (let i = 0; i < 10; i++) {
     AMBIENT.clouds.push({
@@ -2448,6 +3743,17 @@ const AMBIENT = { clouds: [], birds: [], flies: [], shoot: null, shootCd: 500 };
       drift: 0.08 + Math.random() * 0.16,
       v: i % 3,
       s: 0.7 + Math.random() * 0.7,
+    });
+  }
+  // Parallax islands: three depth bands (far = small + slow, near = big + fast)
+  for (let i = 0; i < 6; i++) {
+    const par = i < 2 ? 0.16 : i < 4 ? 0.30 : 0.46;
+    AMBIENT.islands.push({
+      x: Math.random() * W * 0.9 - W * 0.06,
+      y: Math.random() * (H + 260),
+      par,
+      v: i % ISLAND_SHAPES.length,
+      s: (par < 0.2 ? 0.6 : par < 0.35 ? 0.85 : 1.1) * (0.85 + Math.random() * 0.35),
     });
   }
   for (let i = 0; i < 3; i++) {
@@ -2468,7 +3774,7 @@ const AMBIENT = { clouds: [], birds: [], flies: [], shoot: null, shootCd: 500 };
   }
 })();
 
-/* Twinkling star field , normalized 0..1 coords so it survives resize */
+/* Twinkling star field â€” normalized 0..1 coords so it survives resize */
 const STARS = [];
 for (let i = 0; i < 46; i++) {
   STARS.push({
@@ -2480,7 +3786,7 @@ for (let i = 0; i < 46; i++) {
   });
 }
 
-/* Zone blend factors , shared by the sky renderer and the music crossfade */
+/* Zone blend factors â€” shared by the sky renderer and the music crossfade */
 function zoneMix() {
   const z = ZONES[state.zone];
   const zNext = ZONES[Math.min(state.zone + 1, ZONES.length - 1)];
@@ -2495,7 +3801,7 @@ function zoneMix() {
   };
 }
 
-/* Sky gradient cache , creating gradients every frame showed up as jank on
+/* Sky gradient cache â€” creating gradients every frame showed up as jank on
    low-end phones. Rebuilt only when the zone blend actually moves. */
 let skyGradCache = { key: '', grad: null };
 let auraGradCache = { key: '', grad: null };
@@ -2522,7 +3828,7 @@ function drawSky() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Celestial bodies , fixed screen positions (infinitely far away)
+  // Celestial bodies â€” fixed screen positions (infinitely far away)
   if (meadowA > 0.02) {
     ctx.globalAlpha = meadowA;
     ctx.drawImage(sunSprite.c, W - 106, 6, sunSprite.w, sunSprite.h);
@@ -2537,7 +3843,7 @@ function drawSky() {
   }
   ctx.globalAlpha = 1;
 
-  // Twinkling stars , denser in deeper zones
+  // Twinkling stars â€” denser in deeper zones
   const starDensity = state.zone >= 4 ? 1.5 : 1;
   const starA = Math.min(1, Math.max(0, (state.heightM - 800) / 1200));
   if (starA > 0) {
@@ -2577,7 +3883,7 @@ function drawSky() {
     ctx.restore();
   }
 
-  // Aurora ribbons , three slow, layered waves (zone 4)
+  // Aurora ribbons â€” three slow, layered waves (zone 4)
   if (auroraA > 0.02) {
     const tt = performance.now() / 1000;
     const ribbons = [
@@ -2606,7 +3912,40 @@ function drawSky() {
     ctx.restore();
   }
 
-  // Clouds , three parallax layers crossfading between zone tints
+  // Floating islands â€” parallax silhouettes at three depths, tinted by zone.
+  // Drawn behind the clouds so weather passes in front of the rock.
+  if (AMBIENT.islands.length) {
+    const islandPasses = [
+      [meadowA, islandSprites.meadow],
+      [duskA,   islandSprites.dusk],
+      [nightA,  islandSprites.night],
+      [auroraA, islandSprites.space],
+    ];
+    const islWrapH = H + 300;
+    for (const is of AMBIENT.islands) {
+      const sy = (((is.y - state.cameraY * is.par) % islWrapH) + islWrapH) % islWrapH - 150;
+      const baseA = is.par < 0.2 ? 0.20 : is.par < 0.35 ? 0.30 : 0.42;
+      if (qualityStep > 0) {
+        let bestA = 0, bestSet = null;
+        for (const [a, set] of islandPasses) if (a > bestA) { bestA = a; bestSet = set; }
+        if (bestSet && bestA > 0.03) {
+          const spr = bestSet[is.v];
+          ctx.globalAlpha = bestA * baseA;
+          ctx.drawImage(spr.c, is.x, sy, spr.w * is.s, spr.h * is.s);
+        }
+      } else {
+        for (const [a, set] of islandPasses) {
+          if (a <= 0.02) continue;
+          const spr = set[is.v];
+          ctx.globalAlpha = a * baseA;
+          ctx.drawImage(spr.c, is.x, sy, spr.w * is.s, spr.h * is.s);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Clouds â€” three parallax layers crossfading between zone tints
   for (const c of AMBIENT.clouds) {
     if (anim) c.x += c.drift;
     const wrapW = W + 260;
@@ -2678,13 +4017,16 @@ function drawSky() {
   }
   ctx.globalAlpha = 1;
 
-  // Occasional shooting star at night
-  if (anim && nightA > 0.5) {
+  // Shooting stars â€” occasional at night, more frequent + multi in zones 4+
+  const isDeepSpace = state.zone >= 4;
+  const shootAlpha = isDeepSpace ? Math.max(nightA, 0.8) : nightA;
+  if (anim && shootAlpha > (isDeepSpace ? 0.2 : 0.5)) {
+    // Primary star
     if (AMBIENT.shoot) {
       const s = AMBIENT.shoot;
-      s.x += s.vx; s.y += s.vy; s.life -= 0.028;
+      s.x += s.vx; s.y += s.vy; s.life -= isDeepSpace ? 0.018 : 0.028;
       if (s.life <= 0) AMBIENT.shoot = null;
-    } else if (--AMBIENT.shootCd <= 0 && Math.random() < 0.03) {
+    } else if (--AMBIENT.shootCd <= 0 && Math.random() < (isDeepSpace ? 0.06 : 0.03)) {
       AMBIENT.shoot = {
         x: 60 + Math.random() * (W - 120),
         y: 30 + Math.random() * 130,
@@ -2692,22 +4034,38 @@ function drawSky() {
         vy: 1.6 + Math.random() * 1.2,
         life: 1,
       };
-      AMBIENT.shootCd = 600 + Math.random() * 900;
+      AMBIENT.shootCd = isDeepSpace ? 200 + Math.random() * 400 : 600 + Math.random() * 900;
+    }
+    // Secondary star for zone 5+ (two at once)
+    if (isDeepSpace && state.zone >= 5) {
+      if (AMBIENT.shoot2) {
+        const s = AMBIENT.shoot2;
+        s.x += s.vx; s.y += s.vy; s.life -= 0.022;
+        if (s.life <= 0) AMBIENT.shoot2 = null;
+      } else if (!AMBIENT.shoot2 && Math.random() < 0.025) {
+        AMBIENT.shoot2 = {
+          x: W * 0.2 + Math.random() * W * 0.6,
+          y: 20 + Math.random() * 100,
+          vx: -(3 + Math.random() * 5),
+          vy: 1 + Math.random() * 2,
+          life: 1,
+        };
+      }
     }
   }
-  if (AMBIENT.shoot && nightA > 0.1) {
-    const s = AMBIENT.shoot;
-    const tailX = s.x - s.vx * 7, tailY = s.y - s.vy * 7;
+  // Draw stars
+  function _drawShootStar(s, alpha) {
+    const tailLen = isDeepSpace ? 10 : 7;
+    const tailX = s.x - s.vx * tailLen, tailY = s.y - s.vy * tailLen;
     const lg = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
-    lg.addColorStop(0, `rgba(255,255,255,${0.9 * s.life * nightA})`);
+    lg.addColorStop(0, `rgba(255,255,255,${0.9 * s.life * alpha})`);
     lg.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.strokeStyle = lg;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(s.x, s.y);
-    ctx.lineTo(tailX, tailY);
-    ctx.stroke();
+    ctx.lineWidth = isDeepSpace ? 2.5 : 2;
+    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(tailX, tailY); ctx.stroke();
   }
+  if (AMBIENT.shoot && shootAlpha > 0.1) _drawShootStar(AMBIENT.shoot, shootAlpha);
+  if (AMBIENT.shoot2 && isDeepSpace) _drawShootStar(AMBIENT.shoot2, shootAlpha * 0.8);
 }
 
 function drawGround() {
@@ -2719,9 +4077,9 @@ function drawGround() {
   ctx.drawImage(groundSprite.c, 0, y, groundSprite.w, groundSprite.h);
 }
 
-/* ── Menu mascot: the selected character (with equipped skin/hat/aura)
+/* â”€â”€ Menu mascot: the selected character (with equipped skin/hat/aura)
    idle-hopping on a floating cloud mid-screen. Wall-clock driven so
-   it stays alive on the title screen and behind sub-menus. ── */
+   it stays alive on the title screen and behind sub-menus. â”€â”€ */
 function drawMenuPet() {
   const t = performance.now();
   const id = state.character;
@@ -2762,14 +4120,72 @@ function drawMenuPet() {
   }
 
   const hop = Math.abs(Math.sin(t * 0.0026));
-  const lift = 24 * hop * hop; // hangs a little at the apex
+  const lift = 24 * hop * hop;
   const sq = 1 - 0.16 * (1 - hop);
-  const dw = size * (2 - sq); // wider when squashed
-  const dh = size * sq;
-  const dx = W / 2 - dw / 2;
-  const dy = cloudTop - dh - lift;
+  let dw = size * (2 - sq);
+  let dh = size * sq;
+  let dx = W / 2 - dw / 2;
+  let dy = cloudTop - dh - lift;
 
-  // Cloud platform (scaled-up sprite) + soft shadow on it
+  // â”€â”€ Idle quirks: per-character micro-animations â”€â”€
+  state.menuIdleTimer++;
+  const ia = state.menuIdleAnim;
+  let idleTilt = 0, idleExpr = 'neutral';
+  // Trigger a new quirk every 120â€“300 frames
+  if (!ia && state.menuIdleTimer > 120 + Math.random() * 180) {
+    state.menuIdleTimer = 0;
+    const quirks = {
+      turtle:   ['retract', 'lookAround', 'wiggle', 'blink'],
+      fox:      ['tailWag', 'lookAround', 'perk', 'wiggle'],
+      tiger:    ['prowl', 'lookAround', 'stretch', 'wiggle'],
+      axolotl:  ['gillFlutter', 'lookAround', 'wiggle', 'blink'],
+      stardust: ['sparkle', 'lookAround', 'pulse', 'wiggle'],
+      prism:    ['rainbow', 'lookAround', 'pulse', 'wiggle']
+    };
+    const pool = quirks[id] || ['wiggle', 'lookAround'];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    state.menuIdleAnim = { type: pick, frame: 0, duration: pick === 'lookAround' ? 60 : 35 };
+  }
+  if (ia) {
+    ia.frame++;
+    const p = ia.frame / ia.duration;
+    if (ia.type === 'wiggle') {
+      idleTilt = Math.sin(p * Math.PI * 4) * 0.12 * (1 - p);
+    } else if (ia.type === 'lookAround') {
+      idleExpr = 'happy';
+    } else if (ia.type === 'retract') {
+      // Turtle shrinks into shell briefly
+      const shrink = Math.sin(p * Math.PI) * 0.15;
+      dh *= (1 - shrink); dy += shrink * size;
+      idleExpr = 'scared';
+    } else if (ia.type === 'tailWag' || ia.type === 'prowl') {
+      idleTilt = Math.sin(p * Math.PI * 6) * 0.08 * (1 - p);
+      idleExpr = 'happy';
+    } else if (ia.type === 'perk') {
+      const perkLift = Math.sin(p * Math.PI) * 6;
+      dy -= perkLift;
+      idleExpr = 'surprised';
+    } else if (ia.type === 'stretch') {
+      const stretchAmt = Math.sin(p * Math.PI) * 0.12;
+      dh *= (1 + stretchAmt); dw *= (1 - stretchAmt * 0.5);
+      dx = W / 2 - dw / 2;
+      idleExpr = 'happy';
+    } else if (ia.type === 'gillFlutter') {
+      idleTilt = Math.sin(p * Math.PI * 8) * 0.06 * (1 - p);
+      idleExpr = 'happy';
+    } else if (ia.type === 'sparkle' || ia.type === 'rainbow') {
+      idleExpr = 'excited';
+    } else if (ia.type === 'pulse') {
+      const pulseScale = 1 + Math.sin(p * Math.PI * 3) * 0.06;
+      dw *= pulseScale; dh *= pulseScale;
+      dx = W / 2 - dw / 2;
+    } else if (ia.type === 'blink') {
+      idleExpr = p < 0.5 ? 'happy' : 'neutral';
+    }
+    if (ia.frame >= ia.duration) state.menuIdleAnim = null;
+  }
+
+  // Cloud platform + soft shadow
   ctx.drawImage(cs.c, W / 2 - cw / 2, cloudY, cw, chh);
   const shadowScale = 1 - (lift / 24) * 0.5;
   ctx.fillStyle = 'rgba(15,15,35,0.18)';
@@ -2778,9 +4194,22 @@ function drawMenuPet() {
   ctx.fill();
 
   const mf = Math.sin(t * 0.0011) > 0 ? 1 : -1;
-  const mspr = getCharSprite(id, bodyColor, accentColor, mf);
-  ctx.drawImage(mspr.c, dx, dy, dw, dh);
+
+  // Draw with idle tilt + expression (skip cache for animated states)
+  ctx.save();
+  if (idleTilt !== 0) {
+    ctx.translate(W / 2, dy + dh / 2);
+    ctx.rotate(idleTilt);
+    ctx.translate(-W / 2, -(dy + dh / 2));
+  }
+  if (idleExpr !== 'neutral' || ia) {
+    drawCharacter(ctx, id, dx, dy, dw, dh, bodyColor, accentColor, mf, idleExpr, mf);
+  } else {
+    const mspr = getCharSprite(id, bodyColor, accentColor, mf);
+    ctx.drawImage(mspr.c, dx, dy, dw, dh);
+  }
   if (hat && hat.draw) hat.draw(ctx, dx, dy, dw, dh);
+  ctx.restore();
 
   // Name tag under the cloud
   ctx.font = '800 13px Fredoka, Inter, sans-serif';
@@ -2828,6 +4257,11 @@ function drawPlatforms() {
 
     const spr = plat.type === 'static' ? platSprites.static[state.zone] : platSprites[plat.type];
     ctx.globalAlpha = alpha;
+    // Soft contact shadow under the platform grounds it in the scene
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    ctx.beginPath();
+    ctx.ellipse(plat.x + plat.w / 2, y + plat.h - 2, plat.w * 0.44, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.drawImage(spr.c, plat.x - 2, y - 6, spr.w, spr.h);
 
     // Live direction arrow on moving platforms (the sprite is direction-neutral)
@@ -2848,11 +4282,20 @@ function drawPlatforms() {
 
 function drawCoins() {
   const frame = coinFrames[(state.gameTime >> 2) % 8];
+  let i = 0;
   for (const c of state.coins) {
+    i++;
     if (c.collected) continue;
     const y = c.y - state.cameraY + Math.sin(c.bob) * 2;
     if (y < -20 || y > H + 20) continue;
     ctx.drawImage(frame.c, c.x - 11, y - 11, frame.w, frame.h);
+    // Occasional glint so coins catch the light
+    if ((state.gameTime + i * 13) % 47 < 4) {
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath();
+      ctx.arc(c.x - 3, y - 4, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
@@ -3167,6 +4610,135 @@ function drawHatViking(ctx, x, y, w, h) {
   ctx.beginPath(); ctx.moveTo(x+w*0.92, y+6); ctx.quadraticCurveTo(x+w*0.98, y-10, x+w*0.85, y-12); ctx.lineTo(x+w*0.80, y-8); ctx.quadraticCurveTo(x+w*0.92, y-2, x+w*0.88, y+6); ctx.fill(); ctx.stroke();
 }
 
+// â”€â”€ Seasonal hat draw functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function drawHatPumpkin(ctx, x, y, w, h) {
+  // Carved pumpkin on the head
+  const cx = x + w/2;
+  ctx.fillStyle = '#e65c00';
+  ctx.beginPath(); ctx.arc(cx, y - 5, 7, 0, Math.PI * 2); ctx.fill();
+  // Ridges
+  ctx.strokeStyle = '#c24a00'; ctx.lineWidth = 1;
+  for(let i=-1;i<=1;i++){
+    ctx.beginPath(); ctx.moveTo(cx+i*3, y-12); ctx.lineTo(cx+i*3, y+1); ctx.stroke();
+  }
+  // Stem
+  ctx.fillStyle = '#2d5016'; ctx.fillRect(cx-1, y-13, 2, 4);
+  // Eyes
+  ctx.fillStyle = '#1a0800';
+  ctx.beginPath(); ctx.moveTo(cx-5, y-7); ctx.lineTo(cx-3, y-5); ctx.lineTo(cx-1, y-7); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(cx+1, y-7); ctx.lineTo(cx+3, y-5); ctx.lineTo(cx+5, y-7); ctx.closePath(); ctx.fill();
+  // Grin
+  ctx.beginPath(); ctx.arc(cx, y-3, 4, 0.1, Math.PI-0.1); ctx.fill();
+}
+function drawHatElf(ctx, x, y, w, h) {
+  // Pointy elf hat with bell
+  const cx = x + w/2;
+  ctx.fillStyle = '#1a9e3a';
+  ctx.beginPath(); ctx.moveTo(cx-8, y-1); ctx.lineTo(cx+8, y-1); ctx.lineTo(cx, y-16); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#0d6624'; ctx.lineWidth = 1; ctx.stroke();
+  // White brim
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(cx - 9, y - 2, 18, 4);
+  // Red stripe
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(cx - 9, y - 1, 18, 2);
+  // Gold bell at tip
+  ctx.fillStyle = '#ffd23f';
+  ctx.beginPath(); ctx.arc(cx, y-16, 2.5, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#cc9900'; ctx.lineWidth = 1; ctx.stroke();
+}
+function drawHatSunVisor(ctx, x, y, w, h) {
+  // Neon sun visor brim only (open top)
+  const cx = x + w/2;
+  ctx.fillStyle = '#ff6b1a';
+  // Brim - a thick semi-ellipse
+  ctx.beginPath(); ctx.ellipse(cx, y+1, w*0.45, 5, 0, Math.PI, 0, true); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#cc4400'; ctx.lineWidth = 1; ctx.stroke();
+  // Band
+  ctx.fillStyle = '#ffd23f';
+  ctx.fillRect(cx - w*0.44, y-3, w*0.88, 4);
+}
+function drawHatLeafCrown(ctx, x, y, w, h) {
+  // Crown of autumn leaves
+  const cx = x + w/2;
+  const leaves = [
+    {dx:-8,dy:-6,r:5,c:'#cc5500',a:-0.4},
+    {dx:-3,dy:-10,r:5,c:'#e87722',a:0.1},
+    {dx: 3,dy:-11,r:5,c:'#c13a1e',a:-0.1},
+    {dx: 8,dy:-6,r:4,c:'#d4841a',a:0.4},
+    {dx: 0,dy:-8, r:4,c:'#aa3300',a:0},
+  ];
+  for(const l of leaves){
+    ctx.save();
+    ctx.translate(cx+l.dx, y+l.dy);
+    ctx.rotate(l.a);
+    ctx.fillStyle=l.c;
+    ctx.beginPath(); ctx.ellipse(0,0,l.r,l.r*0.6,0,0,Math.PI*2); ctx.fill();
+    // stem
+    ctx.strokeStyle='#3a1a00'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,l.r*0.5); ctx.lineTo(0,l.r*0.5+3); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawHatCowboy(ctx, x, y, w, h) {
+  // wide brim + creased crown
+  ctx.fillStyle = '#8d5524';
+  roundRect(ctx, x - 3, y - 5, w + 6, 5, 2.5); ctx.fill();
+  ctx.fillStyle = '#a86a2c';
+  roundRect(ctx, x + 3, y - 15, w - 6, 12, 4); ctx.fill();
+  ctx.fillStyle = '#7a4a1e';
+  ctx.beginPath();
+  ctx.moveTo(x + 3, y - 9); ctx.lineTo(x + w - 3, y - 9);
+  ctx.lineTo(x + w - 3, y - 11); ctx.lineTo(x + 3, y - 11); ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#5a3413';
+  ctx.fillRect(x + 3, y - 7, w - 6, 2.5);
+}
+
+function drawHatNinja(ctx, x, y, w, h) {
+  const t = performance.now() / 1000;
+  // headband with two swaying tails
+  ctx.fillStyle = '#263238';
+  roundRect(ctx, x + 1, y - 6, w - 2, 6, 3); ctx.fill();
+  ctx.strokeStyle = '#263238';
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  const sway = Math.sin(t * 4) * 2.2;
+  ctx.beginPath();
+  ctx.moveTo(x + w - 2, y - 3);
+  ctx.quadraticCurveTo(x + w + 8, y - 3 + sway, x + w + 13, y + 2 + sway);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + w - 2, y - 1);
+  ctx.quadraticCurveTo(x + w + 9, y - 1 - sway, x + w + 14, y - 3 - sway);
+  ctx.stroke();
+  // metal plate on the brow
+  ctx.fillStyle = '#90a4ae';
+  roundRect(ctx, x + w / 2 - 4, y - 7, 8, 5, 1.5); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillRect(x + w / 2 - 3, y - 6.5, 6, 1);
+}
+
+function drawHatTiara(ctx, x, y, w, h) {
+  const cx = x + w / 2;
+  ctx.fillStyle = '#ffd23f';
+  roundRect(ctx, cx - 8, y - 5, 16, 3.5, 2); ctx.fill();
+  const pts = [[-6, 0.7], [0, 1.25], [6, 0.7]];
+  for (const [dx, sc] of pts) {
+    ctx.beginPath();
+    ctx.moveTo(cx + dx - 3.2, y - 5);
+    ctx.lineTo(cx + dx, y - 5 - 9 * sc);
+    ctx.lineTo(cx + dx + 3.2, y - 5);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillStyle = '#67e8f9';
+  ctx.beginPath(); ctx.arc(cx, y - 13, 1.9, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx - 6, y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 6, y - 9, 1.4, 0, Math.PI * 2); ctx.fill();
+}
+
 /* ---------- Character drawing (shared) ----------
    Sticker style: every major shape gets a soft dark outline and a subtle
    top-left gradient, eyes blink and catch a shine, cheeks blush. Draws a
@@ -3185,31 +4757,83 @@ function charOutline(c, color, w) {
   c.lineWidth = Math.max(1.2, w * 0.05);
   c.lineJoin = 'round';
 }
-function charEye(c, ex, ey, r, blink, look, irisColor) {
+function charEye(c, ex, ey, r, blink, look, irisColor, expr) {
+  // Dead: X eyes
+  if (expr === 'dead') {
+    c.strokeStyle = '#2a1a12'; c.lineWidth = Math.max(1.5, r * 0.4); c.lineCap = 'round';
+    c.beginPath(); c.moveTo(ex - r*0.5, ey - r*0.5); c.lineTo(ex + r*0.5, ey + r*0.5); c.stroke();
+    c.beginPath(); c.moveTo(ex + r*0.5, ey - r*0.5); c.lineTo(ex - r*0.5, ey + r*0.5); c.stroke();
+    c.lineCap = 'butt'; return;
+  }
   if (blink) {
-    c.strokeStyle = '#2a1a12';
-    c.lineWidth = Math.max(1.2, r * 0.5);
-    c.beginPath();
-    c.moveTo(ex - r, ey);
-    c.quadraticCurveTo(ex, ey + r * 0.8, ex + r, ey);
-    c.stroke();
+    c.strokeStyle = '#2a1a12'; c.lineWidth = Math.max(1.2, r * 0.5);
+    c.beginPath(); c.moveTo(ex - r, ey); c.quadraticCurveTo(ex, ey + r * 0.8, ex + r, ey); c.stroke();
     return;
   }
+  // Scared: wider eyes (scale up radius)
+  const er = expr === 'scared' ? r * 1.18 : expr === 'surprised' ? r * 1.22 : r;
+  // Happy/excited: squinted bottom (half-eye)
+  const squint = expr === 'happy' || expr === 'excited';
   c.fillStyle = '#fff';
-  c.beginPath(); c.arc(ex, ey, r, 0, Math.PI * 2); c.fill();
-  c.fillStyle = 'rgba(0,0,0,0.06)';
-  c.beginPath(); c.ellipse(ex, ey - r * 0.3, r * 0.9, r * 0.5, 0, 0, Math.PI * 2); c.fill();
+  if (squint) {
+    c.beginPath(); c.arc(ex, ey, er, Math.PI, 0); c.closePath(); c.fill();
+    c.strokeStyle = '#2a1a12'; c.lineWidth = Math.max(1, er * 0.3);
+    c.beginPath(); c.moveTo(ex - er, ey); c.lineTo(ex + er, ey); c.stroke();
+  } else {
+    c.beginPath(); c.arc(ex, ey, er, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(0,0,0,0.06)';
+    c.beginPath(); c.ellipse(ex, ey - er * 0.3, er * 0.9, er * 0.5, 0, 0, Math.PI * 2); c.fill();
+  }
   const ic = irisColor || '#241a12';
-  const ix = ex + look * r * 0.26;
-  const iy = ey + r * 0.06;
+  const ix = ex + look * er * 0.26;
+  const iy = squint ? ey - er * 0.12 : ey + er * 0.06;
+  const pupilScale = expr === 'scared' ? 0.42 : expr === 'surprised' ? 0.28 : 0.34;
   c.fillStyle = ic;
-  c.beginPath(); c.arc(ix, iy, r * 0.56, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.arc(ix, iy, er * 0.56, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#1a1018';
-  c.beginPath(); c.arc(ix, iy, r * 0.34, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.arc(ix, iy, er * pupilScale, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#fff';
-  c.beginPath(); c.arc(ix - r * 0.18, iy - r * 0.22, r * 0.22, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.arc(ix - er * 0.18, iy - er * 0.22, er * 0.22, 0, Math.PI * 2); c.fill();
   c.fillStyle = 'rgba(255,255,255,0.7)';
-  c.beginPath(); c.arc(ix + r * 0.16, iy + r * 0.18, r * 0.10, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.arc(ix + er * 0.16, iy + er * 0.18, er * 0.10, 0, Math.PI * 2); c.fill();
+}
+function charMouth(c, mx, my, w, h, expr, facing) {
+  const eo = facing * (w * 0.06);
+  c.lineCap = 'round';
+  if (expr === 'dead') {
+    // Wavy line
+    c.strokeStyle = '#2a1a12'; c.lineWidth = Math.max(1, w * 0.028);
+    c.beginPath(); c.moveTo(mx - w*0.06, my);
+    c.quadraticCurveTo(mx - w*0.02, my - h*0.02, mx + w*0.01, my);
+    c.quadraticCurveTo(mx + w*0.04, my + h*0.02, mx + w*0.06, my);
+    c.stroke();
+  } else if (expr === 'scared') {
+    // Small open O
+    c.fillStyle = '#2a1a12';
+    c.beginPath(); c.ellipse(mx + eo*0.3, my, w*0.04, h*0.035, 0, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#8b4060';
+    c.beginPath(); c.ellipse(mx + eo*0.3, my, w*0.025, h*0.02, 0, 0, Math.PI*2); c.fill();
+  } else if (expr === 'surprised') {
+    // Big O
+    c.fillStyle = '#2a1a12';
+    c.beginPath(); c.ellipse(mx + eo*0.3, my, w*0.05, h*0.045, 0, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#8b4060';
+    c.beginPath(); c.ellipse(mx + eo*0.3, my, w*0.032, h*0.028, 0, 0, Math.PI*2); c.fill();
+  } else if (expr === 'happy' || expr === 'excited') {
+    // Wide grin
+    c.strokeStyle = '#2a1a12'; c.lineWidth = Math.max(1, w * 0.032);
+    const gw = expr === 'excited' ? 0.10 : 0.08;
+    c.beginPath(); c.arc(mx + eo*0.3, my - h*0.02, w * gw, 0.08, Math.PI - 0.08); c.stroke();
+    if (expr === 'excited') {
+      // Tongue peek
+      c.fillStyle = '#e88'; c.beginPath(); c.ellipse(mx + eo*0.3, my + h*0.02, w*0.025, h*0.018, 0, 0, Math.PI*2); c.fill();
+    }
+  } else {
+    // Default gentle smile
+    c.strokeStyle = '#2a1a12'; c.lineWidth = Math.max(1, w * 0.032);
+    c.beginPath(); c.arc(mx + eo*0.3, my - h*0.02, w * 0.07, 0.12, Math.PI - 0.12); c.stroke();
+  }
+  c.lineCap = 'butt';
 }
 function charBlush(c, bx, by, rx, ry) {
   c.fillStyle = 'rgba(255,100,140,0.22)';
@@ -3218,11 +4842,14 @@ function charBlush(c, bx, by, rx, ry) {
   c.beginPath(); c.ellipse(bx, by, rx, ry, 0, 0, Math.PI * 2); c.fill();
 }
 
-function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing) {
+function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing, expr, eyeLookX) {
   const f = facing || 1;
   const eo = f * (w * 0.06);
   const blinkSeed = charId === 'turtle' ? 0 : charId === 'fox' ? 64 : charId === 'tiger' ? 128 : charId === 'axolotl' ? 176 : charId === 'stardust' ? 208 : 240;
-  const blink = ((performance.now() / 16.7 + blinkSeed) % 240) < 8;
+  const blink = expr !== 'dead' && ((performance.now() / 16.7 + blinkSeed) % 240) < 8;
+  const iris = (CHARS[charId] && CHARS[charId].iris) || '#241a12';
+  const ex = expr || 'neutral';
+  const elook = typeof eyeLookX === 'number' ? eyeLookX : f;
 
   if (charId === 'turtle') {
     const cx = x + w * 0.5;
@@ -3235,49 +4862,60 @@ function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing) {
     c.fillStyle = '#f5e6a3'; c.beginPath(); c.arc(x + w * 0.14, y + h * 0.90, w * 0.022, 0, Math.PI*2); c.fill(); c.beginPath(); c.arc(x + w * 0.86, y + h * 0.90, w * 0.022, 0, Math.PI*2); c.fill();
     c.fillStyle = darken(bodyColor, 0.08);
     c.beginPath(); c.ellipse(cx - f * w * 0.44, y + h * 0.70, w * 0.09, h * 0.06, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-    // Shell , deeper dome + highlight
+    // Shell â€” deeper dome + highlight
     c.fillStyle = charGrad(c, x, y, w, h, darken(bodyColor, 0.14));
     c.beginPath(); c.ellipse(cx, y + h * 0.50, w * 0.52, h * 0.45, 0, 0, Math.PI * 2); c.fill();
     charOutline(c, bodyColor, w); c.stroke();
-    // Shell highlight
-    c.fillStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.ellipse(cx - w*0.12, y + h*0.36, w*0.18, h*0.14, -0.3, 0, Math.PI*2); c.fill();
+    // Shell highlight â€” main specular
+    c.fillStyle = 'rgba(255,255,255,0.22)'; c.beginPath(); c.ellipse(cx - w*0.12, y + h*0.34, w*0.20, h*0.15, -0.3, 0, Math.PI*2); c.fill();
+    // Secondary rim highlight
+    c.fillStyle = 'rgba(255,255,255,0.10)'; c.beginPath(); c.ellipse(cx + w*0.18, y + h*0.62, w*0.14, h*0.08, 0.2, 0, Math.PI*2); c.fill();
     // Central scute + 6 surrounding (hex-like)
     c.fillStyle = darken(bodyColor, 0.32);
     c.beginPath(); c.ellipse(cx, y + h * 0.46, w * 0.15, h * 0.12, 0, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,0.16)'; c.lineWidth = Math.max(1, w*0.02); c.stroke();
+    c.strokeStyle = 'rgba(0,0,0,0.18)'; c.lineWidth = Math.max(1, w*0.02); c.stroke();
+    // Inner scute highlight
+    c.fillStyle = 'rgba(255,255,255,0.12)'; c.beginPath(); c.ellipse(cx - w*0.03, y + h * 0.43, w * 0.06, h * 0.05, -0.2, 0, Math.PI * 2); c.fill();
     const scutes = [[-0.18, -0.10],[0.18,-0.10],[-0.20,0.14],[0.20,0.14],[0, -0.22],[0,0.22]];
     c.fillStyle = darken(bodyColor, 0.24);
     for(const [ox,oy] of scutes){ c.beginPath(); c.ellipse(cx+ox*w, y+h*(0.46+oy), w*0.085, h*0.075, 0,0,Math.PI*2); c.fill(); c.stroke(); }
-    // Shell rim light
-    c.strokeStyle = lighten(accentColor, 0.22); c.lineWidth = Math.max(1.2, w*0.05); c.beginPath(); c.ellipse(cx, y + h*0.50, w*0.52, h*0.45, 0, Math.PI*0.15, Math.PI*0.85); c.stroke();
-    // Head , slightly more beak-like, extends forward
+    // Scute inner highlights
+    c.fillStyle = 'rgba(255,255,255,0.10)';
+    for(const [ox,oy] of scutes){ c.beginPath(); c.ellipse(cx+ox*w - w*0.015, y+h*(0.44+oy), w*0.035, h*0.03, -0.2, 0, Math.PI*2); c.fill(); }
+    // Shell rim light â€” warm glow
+    c.strokeStyle = lighten(accentColor, 0.28); c.lineWidth = Math.max(1.5, w*0.055); c.beginPath(); c.ellipse(cx, y + h*0.50, w*0.52, h*0.45, 0, Math.PI*0.15, Math.PI*0.85); c.stroke();
+    // Head â€” slightly more beak-like, extends forward
     const hx = cx + f * w * 0.10;
     c.fillStyle = charGrad(c, x, y, w, h, lighten(bodyColor, 0.04));
     c.beginPath(); c.ellipse(hx, y + h * 0.22, w * 0.26, h * 0.20, 0, 0, Math.PI * 2); c.fill(); charOutline(c, bodyColor, w); c.stroke();
     // Nostrils
     c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.arc(hx+f*w*0.14, y+h*0.20, w*0.015,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(hx+f*w*0.14, y+h*0.24, w*0.015,0,Math.PI*2); c.fill();
-    // Eyes , slightly larger for turtle
-    charEye(c, hx - w * 0.10, y + h * 0.19, w * 0.095, blink, f);
-    charEye(c, hx + w * 0.10, y + h * 0.19, w * 0.095, blink, f);
-    // Gentle smile + chin
-    c.strokeStyle = '#2a1a12'; c.lineWidth = Math.max(1, w * 0.032); c.beginPath(); c.arc(hx + eo * 0.3, y + h * 0.27, w * 0.07, 0.12, Math.PI - 0.12); c.stroke();
+    // Eyes â€” slightly larger for turtle
+    charEye(c, hx - w * 0.10, y + h * 0.19, w * 0.10, blink, elook, iris, ex);
+    charEye(c, hx + w * 0.10, y + h * 0.19, w * 0.10, blink, elook, iris, ex);
+    charMouth(c, hx, y + h * 0.27, w, h, ex, f);
     charBlush(c, hx - w * 0.20, y + h * 0.25, w * 0.05, h * 0.028); charBlush(c, hx + w * 0.20, y + h * 0.25, w * 0.05, h * 0.028);
 
   } else if (charId === 'fox') {
     const cx = x + w * 0.5;
-    // Tail , double layer for fluff: dark base + bright body + white tip
+    // Tail â€” double layer for fluff: dark base + bright body + white tip
     c.fillStyle = darken(bodyColor, 0.22); charOutline(c, bodyColor, w);
     c.beginPath(); c.moveTo(cx - f * w * 0.22, y + h * 0.56); c.quadraticCurveTo(cx - f * w * 0.60, y + h * 0.30, cx - f * w * 0.48, y + h * 0.14); c.quadraticCurveTo(cx - f * w * 0.24, y + h * 0.28, cx - f * w * 0.08, y + h * 0.56); c.closePath(); c.fill(); c.stroke();
     c.fillStyle = bodyColor;
     c.beginPath(); c.moveTo(cx - f * w * 0.20, y + h * 0.54); c.quadraticCurveTo(cx - f * w * 0.52, y + h * 0.32, cx - f * w * 0.42, y + h * 0.18); c.quadraticCurveTo(cx - f * w * 0.26, y + h * 0.30, cx - f * w * 0.10, y + h * 0.54); c.closePath(); c.fill();
     c.fillStyle = '#fff'; c.beginPath(); c.ellipse(cx - f * w * 0.46, y + h * 0.19, w * 0.075, h * 0.062, 0, 0, Math.PI * 2); c.fill(); c.strokeStyle = darken(bodyColor, 0.52); c.lineWidth = Math.max(1, w*0.03); c.stroke();
-    // Body , tapered chest
+    // Body â€” tapered chest
     c.fillStyle = charGrad(c, x, y, w, h, bodyColor); roundRect(c, x + w * 0.16, y + h * 0.26, w * 0.68, h * 0.54, w * 0.18); c.fill(); charOutline(c, bodyColor, w); c.stroke();
-    // Chest ruff
+    // Chest ruff â€” layered fur look
+    c.fillStyle = 'rgba(255,255,255,0.5)'; c.beginPath(); c.ellipse(cx, y + h*0.39, w*0.22, h*0.14, 0,0,Math.PI*2); c.fill();
     c.fillStyle = '#fff'; c.beginPath(); c.ellipse(cx, y + h*0.38, w*0.18, h*0.11, 0,0,Math.PI*2); c.fill();
+    // Chest fur highlight
+    c.fillStyle = 'rgba(255,255,255,0.25)'; c.beginPath(); c.ellipse(cx - w*0.04, y + h*0.35, w*0.08, h*0.05, -0.2, 0, Math.PI*2); c.fill();
     // Belly
     c.fillStyle = '#ede9fe'; c.beginPath(); c.ellipse(cx, y + h * 0.62, w * 0.19, h * 0.15, 0, 0, Math.PI * 2); c.fill();
-    // Ears , taller, with black tip notch
+    // Belly highlight
+    c.fillStyle = 'rgba(255,255,255,0.15)'; c.beginPath(); c.ellipse(cx - w*0.05, y + h * 0.58, w * 0.08, h * 0.06, -0.2, 0, Math.PI * 2); c.fill();
+    // Ears â€” taller, with black tip notch
     c.fillStyle = bodyColor; charOutline(c, bodyColor, w);
     c.beginPath(); c.moveTo(x + w * 0.26, y + h * 0.30); c.lineTo(x + w * 0.18, y - h * 0.02); c.lineTo(x + w * 0.40, y + h * 0.20); c.closePath(); c.fill(); c.stroke();
     c.beginPath(); c.moveTo(x + w * 0.74, y + h * 0.30); c.lineTo(x + w * 0.82, y - h * 0.02); c.lineTo(x + w * 0.60, y + h * 0.20); c.closePath(); c.fill(); c.stroke();
@@ -3286,33 +4924,39 @@ function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing) {
     c.beginPath(); c.moveTo(x+w*0.80, y+h*0.08); c.lineTo(x+w*0.82, y-h*0.02); c.lineTo(x+w*0.76, y+h*0.04); c.closePath(); c.fill();
     c.fillStyle = '#e9d5ff'; c.beginPath(); c.moveTo(x + w*0.27, y+h*0.26); c.lineTo(x+w*0.24, y+h*0.10); c.lineTo(x+w*0.34, y+h*0.20); c.closePath(); c.fill();
     c.beginPath(); c.moveTo(x+w*0.73, y+h*0.26); c.lineTo(x+w*0.76, y+h*0.10); c.lineTo(x+w*0.66, y+h*0.20); c.closePath(); c.fill();
-    // Snout , narrower, with highlight
+    // Snout â€” narrower, with highlight
     c.fillStyle = '#fff'; c.beginPath(); c.ellipse(cx + eo, y + h * 0.42, w * 0.13, h * 0.095, 0, 0, Math.PI * 2); c.fill(); c.strokeStyle='rgba(0,0,0,0.08)'; c.lineWidth=1; c.stroke();
     c.fillStyle = '#1a1030'; c.beginPath(); c.ellipse(cx + eo*1.4, y + h*0.38, w*0.042, h*0.030, 0,0,Math.PI*2); c.fill(); c.fillStyle='rgba(255,255,255,0.9)'; c.beginPath(); c.arc(cx+eo*1.4 - w*0.012, y+h*0.37, w*0.012,0,Math.PI*2); c.fill();
-    charEye(c, cx+eo - w*0.14, y+h*0.31, w*0.095, blink, f); charEye(c, cx+eo + w*0.14, y+h*0.31, w*0.095, blink, f);
-    // Eyebrows
-    c.strokeStyle = darken(bodyColor,0.32); c.lineWidth=Math.max(1,w*0.022); c.beginPath(); c.moveTo(cx+eo - w*0.20, y+h*0.24); c.quadraticCurveTo(cx+eo - w*0.14, y+h*0.22, cx+eo - w*0.08, y+h*0.24); c.stroke(); c.beginPath(); c.moveTo(cx+eo + w*0.08, y+h*0.24); c.quadraticCurveTo(cx+eo + w*0.14, y+h*0.22, cx+eo + w*0.20, y+h*0.24); c.stroke();
+    charEye(c, cx+eo - w*0.14, y+h*0.31, w*0.10, blink, elook, iris, ex); charEye(c, cx+eo + w*0.14, y+h*0.31, w*0.10, blink, elook, iris, ex);
+    // Eyebrows â€” raise when scared/surprised
+    const browLift = (ex === 'scared' || ex === 'surprised') ? -h*0.02 : 0;
+    c.strokeStyle = darken(bodyColor,0.32); c.lineWidth=Math.max(1,w*0.022); c.beginPath(); c.moveTo(cx+eo - w*0.20, y+h*0.24+browLift); c.quadraticCurveTo(cx+eo - w*0.14, y+h*0.22+browLift, cx+eo - w*0.08, y+h*0.24+browLift); c.stroke(); c.beginPath(); c.moveTo(cx+eo + w*0.08, y+h*0.24+browLift); c.quadraticCurveTo(cx+eo + w*0.14, y+h*0.22+browLift, cx+eo + w*0.20, y+h*0.24+browLift); c.stroke();
     c.strokeStyle='rgba(90,40,120,0.55)'; c.lineWidth=Math.max(0.6,w*0.015); const wx=cx+f*w*0.15; c.beginPath(); c.moveTo(wx, y+h*0.41); c.lineTo(wx+f*w*0.22, y+h*0.37); c.stroke(); c.beginPath(); c.moveTo(wx, y+h*0.44); c.lineTo(wx+f*w*0.22, y+h*0.46); c.stroke();
+    charMouth(c, cx+eo, y + h*0.44, w, h, ex, f);
     c.fillStyle = darken(accentColor,0.08); charOutline(c, bodyColor, w); c.beginPath(); c.ellipse(cx-w*0.20, y+h*0.86, w*0.11, h*0.078,0,0,Math.PI*2); c.fill(); c.stroke(); c.beginPath(); c.ellipse(cx+w*0.20, y+h*0.86, w*0.11, h*0.078,0,0,Math.PI*2); c.fill(); c.stroke();
     charBlush(c, cx-w*0.24, y+h*0.38, w*0.05, h*0.028); charBlush(c, cx+w*0.24, y+h*0.38, w*0.05, h*0.028);
 
   } else if (charId === 'tiger') {
     const cx = x + w * 0.5;
-    // Tail , with magenta/black rings
+    // Tail â€” with magenta/black rings
     c.strokeStyle = bodyColor; c.lineWidth=Math.max(3,w*0.10); c.lineCap='round'; c.beginPath(); c.moveTo(cx - f*w*0.18, y+h*0.66); c.quadraticCurveTo(cx - f*w*0.54, y+h*0.40, cx - f*w*0.38, y+h*0.30); c.stroke(); c.lineCap='butt';
     c.strokeStyle='#1a0a12'; c.lineWidth=Math.max(1.8,w*0.045); for(let i=0;i<3;i++){ const t=0.22+i*0.24; const tx=cx - f*w*(0.18+t*0.52); const ty=y+h*(0.66 - t*0.62); c.beginPath(); c.moveTo(tx- w*0.04, ty-2); c.lineTo(tx+ w*0.04, ty+2); c.stroke(); }
     // Body
     c.fillStyle = charGrad(c, x, y, w, h, bodyColor); roundRect(c, x+w*0.12, y+h*0.20, w*0.76, h*0.60, w*0.20); c.fill(); charOutline(c, bodyColor, w); c.stroke();
-    // Stripes , more, with slight taper
+    // Stripes â€” more, with slight taper
     c.fillStyle = '#1a0a12';
     for(let i=0;i<4;i++){ const sy=y+h*(0.28+i*0.11); const sw = i%2===0?0.13:0.11; roundRect(c, x+w*0.18, sy, w*sw, h*0.042, h*0.02); c.fill(); roundRect(c, x+w*0.82 - w*sw, sy, w*sw, h*0.042, h*0.02); c.fill(); }
+    // Body highlight â€” rim light
+    c.fillStyle = 'rgba(255,255,255,0.12)'; c.beginPath(); c.ellipse(cx - w*0.20, y+h*0.32, w*0.10, h*0.18, -0.15, 0, Math.PI*2); c.fill();
     // Belly + chest
-    c.fillStyle = '#fff7ed'; c.beginPath(); c.ellipse(cx, y+h*0.60, w*0.21, h*0.16,0,0,Math.PI*2); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.ellipse(cx, y+h*0.36, w*0.16, h*0.08,0,0,Math.PI*2); c.fill();
-    // Ears , with black rim
+    c.fillStyle = '#fff7ed'; c.beginPath(); c.ellipse(cx, y+h*0.60, w*0.21, h*0.16,0,0,Math.PI*2); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.15)'; c.beginPath(); c.ellipse(cx - w*0.05, y+h*0.56, w*0.08, h*0.06, -0.2, 0, Math.PI*2); c.fill();
+    c.fillStyle='#fff'; c.beginPath(); c.ellipse(cx, y+h*0.36, w*0.16, h*0.08,0,0,Math.PI*2); c.fill();
+    // Ears â€” with black rim
     c.fillStyle=bodyColor; charOutline(c, bodyColor, w); c.beginPath(); c.arc(x+w*0.22, y+h*0.18, w*0.13,0,Math.PI*2); c.fill(); c.stroke(); c.beginPath(); c.arc(x+w*0.78, y+h*0.18, w*0.13,0,Math.PI*2); c.fill(); c.stroke();
     c.strokeStyle='#1a0a12'; c.lineWidth=Math.max(1.2,w*0.03); c.beginPath(); c.arc(x+w*0.22, y+h*0.18, w*0.13,0,Math.PI*2); c.stroke(); c.beginPath(); c.arc(x+w*0.78, y+h*0.18, w*0.13,0,Math.PI*2); c.stroke();
     c.fillStyle='#f9a8d4'; c.beginPath(); c.arc(x+w*0.22, y+h*0.18, w*0.06,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(x+w*0.78, y+h*0.18, w*0.06,0,Math.PI*2); c.fill();
-    // Head , with cheek stripes
+    // Head â€” with cheek stripes
     c.fillStyle=charGrad(c, x,y,w,h, bodyColor); c.beginPath(); c.ellipse(cx, y+h*0.28, w*0.29, h*0.18,0,0,Math.PI*2); c.fill(); charOutline(c, bodyColor, w); c.stroke();
     c.fillStyle='#1a0a12'; // forehead M
     c.beginPath(); c.moveTo(cx, y+h*0.18); c.lineTo(cx-w*0.07, y+h*0.24); c.lineTo(cx-w*0.03, y+h*0.24); c.lineTo(cx, y+h*0.20); c.lineTo(cx+w*0.03, y+h*0.24); c.lineTo(cx+w*0.07, y+h*0.24); c.closePath(); c.fill();
@@ -3320,15 +4964,16 @@ function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing) {
     for(let s=-1;s<=1;s+=2){ c.fillStyle='rgba(20,8,12,0.85)'; c.beginPath(); c.ellipse(cx+s*w*0.18, y+h*0.32, w*0.025, h*0.045, s*0.35,0,Math.PI*2); c.fill(); }
     c.fillStyle='#fce7f3'; c.beginPath(); c.ellipse(cx+eo, y+h*0.36, w*0.13, h*0.075,0,0,Math.PI*2); c.fill();
     c.fillStyle='#9d174d'; c.beginPath(); c.ellipse(cx+eo*1.2, y+h*0.33, w*0.048, h*0.038,0,0,Math.PI*2); c.fill(); c.fillStyle='rgba(255,255,255,0.9)'; c.beginPath(); c.arc(cx+eo*1.2 - w*0.01, y+h*0.318, w*0.012,0,Math.PI*2); c.fill();
-    charEye(c, cx+eo - w*0.13, y+h*0.27, w*0.088, blink, f); charEye(c, cx+eo + w*0.13, y+h*0.27, w*0.088, blink, f);
+    charEye(c, cx+eo - w*0.13, y+h*0.27, w*0.095, blink, elook, iris, ex); charEye(c, cx+eo + w*0.13, y+h*0.27, w*0.095, blink, elook, iris, ex);
     // Whiskers + fangs hint
     c.strokeStyle='rgba(80,20,40,0.75)'; c.lineWidth=Math.max(0.6,w*0.016); const twx=cx+f*w*0.12; c.beginPath(); c.moveTo(twx, y+h*0.35); c.lineTo(twx+f*w*0.22, y+h*0.31); c.stroke(); c.beginPath(); c.moveTo(twx, y+h*0.38); c.lineTo(twx+f*w*0.22, y+h*0.40); c.stroke();
+    charMouth(c, cx+eo, y + h*0.38, w, h, ex, f);
     c.fillStyle=bodyColor; charOutline(c, bodyColor, w); c.beginPath(); c.ellipse(cx-w*0.20, y+h*0.86, w*0.11, h*0.078,0,0,Math.PI*2); c.fill(); c.stroke(); c.beginPath(); c.ellipse(cx+w*0.20, y+h*0.86, w*0.11, h*0.078,0,0,Math.PI*2); c.fill(); c.stroke();
     charBlush(c, cx-w*0.23, y+h*0.35, w*0.05, h*0.028); charBlush(c, cx+w*0.23, y+h*0.35, w*0.05, h*0.028);
 
   } else if (charId === 'axolotl') {
     const cx = x + w * 0.5;
-    // Gills , feathery: 3 stalks each side with 3 filaments
+    // Gills â€” feathery: 3 stalks each side with 3 filaments
     c.strokeStyle = accentColor; c.lineWidth=Math.max(2.2,w*0.065); c.lineCap='round';
     const stalks=[ [0.20,0.34,0.02,0.10],[0.18,0.30,-0.02,0.22],[0.15,0.35,-0.03,0.35],[0.80,0.34,0.98,0.10],[0.82,0.30,1.02,0.22],[0.85,0.35,1.03,0.35] ];
     for(const [x0,y0,x1,y1] of stalks){ c.beginPath(); c.moveTo(x+w*x0, y+h*y0); c.lineTo(x+w*x1, y+h*y1); c.stroke(); }
@@ -3339,64 +4984,88 @@ function drawCharacter(c, charId, x, y, w, h, bodyColor, accentColor, facing) {
     }
     c.lineCap='butt'; c.fillStyle=accentColor;
     for(const [tx,ty] of [[0.02,0.10],[-0.02,0.22],[-0.03,0.35],[0.98,0.10],[1.02,0.22],[1.03,0.35]]){ c.beginPath(); c.arc(x+w*tx, y+h*ty, Math.max(1.6,w*0.058),0,Math.PI*2); c.fill(); }
-    // Tail , with translucent fin membrane
+    // Tail â€” with translucent fin membrane
     c.fillStyle='rgba(244,143,177,0.35)'; c.beginPath(); c.moveTo(cx - f*w*0.12, y+h*0.56); c.quadraticCurveTo(cx - f*w*0.58, y+h*0.48, cx - f*w*0.50, y+h*0.40); c.quadraticCurveTo(cx - f*w*0.30, y+h*0.58, cx - f*w*0.08, y+h*0.62); c.closePath(); c.fill();
     c.fillStyle=bodyColor; charOutline(c, bodyColor, w); c.beginPath(); c.moveTo(cx - f*w*0.15, y+h*0.70); c.quadraticCurveTo(cx - f*w*0.50, y+h*0.55, cx - f*w*0.45, y+h*0.45); c.quadraticCurveTo(cx - f*w*0.35, y+h*0.60, cx - f*w*0.10, y+h*0.72); c.closePath(); c.fill(); c.stroke();
-    // Body , chubbier, with highlight
+    // Body â€” chubbier, with highlight
     c.fillStyle=charGrad(c, x,y,w,h, bodyColor); c.beginPath(); c.ellipse(cx, y+h*0.51, w*0.39, h*0.34,0,0,Math.PI*2); c.fill(); charOutline(c, bodyColor, w); c.stroke();
-    c.fillStyle='rgba(255,255,255,0.16)'; c.beginPath(); c.ellipse(cx - w*0.10, y+h*0.38, w*0.14, h*0.10, -0.25,0,Math.PI*2); c.fill();
-    // Belly spots
-    c.fillStyle=darken(accentColor,0.08); c.beginPath(); c.arc(x+w*0.36, y+h*0.58, w*0.032,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(x+w*0.56, y+h*0.62, w*0.026,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(x+w*0.66, y+h*0.50, w*0.022,0,Math.PI*2); c.fill();
-    // Head , wider, with smile curve
+    // Main body highlight
+    c.fillStyle='rgba(255,255,255,0.20)'; c.beginPath(); c.ellipse(cx - w*0.10, y+h*0.38, w*0.16, h*0.12, -0.25,0,Math.PI*2); c.fill();
+    // Rim light
+    c.fillStyle='rgba(255,255,255,0.10)'; c.beginPath(); c.ellipse(cx + w*0.22, y+h*0.58, w*0.08, h*0.12, 0.15,0,Math.PI*2); c.fill();
+    // Belly spots â€” with subtle glow
+    c.fillStyle=darken(accentColor,0.08);
+    c.beginPath(); c.arc(x+w*0.36, y+h*0.58, w*0.035,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(x+w*0.56, y+h*0.62, w*0.028,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(x+w*0.66, y+h*0.50, w*0.024,0,Math.PI*2); c.fill();
+    c.beginPath(); c.arc(x+w*0.44, y+h*0.66, w*0.020,0,Math.PI*2); c.fill();
+    // Head â€” wider, with smile curve
     c.fillStyle=charGrad(c, x,y,w,h, lighten(bodyColor,0.06)); c.beginPath(); c.ellipse(cx, y+h*0.33, w*0.31, h*0.20,0,0,Math.PI*2); c.fill(); charOutline(c, bodyColor, w); c.stroke();
-    c.strokeStyle='#2a1a12'; c.lineWidth=Math.max(1.2,w*0.038); c.beginPath(); c.arc(cx+eo*0.5, y+h*0.39, w*0.13, 0.10, Math.PI-0.10); c.stroke();
-    // Tiny teeth hint inside smile
-    c.fillStyle='#fff'; c.beginPath(); c.ellipse(cx+eo*0.5 - w*0.03, y+h*0.405, w*0.012, h*0.018,0,0,Math.PI*2); c.fill(); c.beginPath(); c.ellipse(cx+eo*0.5 + w*0.03, y+h*0.405, w*0.012, h*0.018,0,0,Math.PI*2); c.fill();
+    charMouth(c, cx+eo*0.5, y + h*0.39, w, h, ex, f);
+    if (ex === 'neutral' || ex === 'happy' || ex === 'excited') {
+      c.fillStyle='#fff'; c.beginPath(); c.ellipse(cx+eo*0.5 - w*0.03, y+h*0.405, w*0.012, h*0.018,0,0,Math.PI*2); c.fill(); c.beginPath(); c.ellipse(cx+eo*0.5 + w*0.03, y+h*0.405, w*0.012, h*0.018,0,0,Math.PI*2); c.fill();
+    }
     charBlush(c, cx-w*0.23, y+h*0.39, w*0.055, h*0.030); charBlush(c, cx+w*0.23, y+h*0.39, w*0.055, h*0.030);
-    // Eyes , big, high on head
-    charEye(c, cx+eo - w*0.13, y+h*0.30, w*0.082, blink, f); charEye(c, cx+eo + w*0.13, y+h*0.30, w*0.082, blink, f);
+    charEye(c, cx+eo - w*0.13, y+h*0.30, w*0.09, blink, elook, iris, ex); charEye(c, cx+eo + w*0.13, y+h*0.30, w*0.09, blink, elook, iris, ex);
     // Stubby legs with toes hint
     c.fillStyle=bodyColor; charOutline(c, bodyColor, w); c.beginPath(); c.ellipse(cx-w*0.26, y+h*0.81, w*0.10, h*0.080, -0.22,0,Math.PI*2); c.fill(); c.stroke(); c.beginPath(); c.ellipse(cx+w*0.26, y+h*0.81, w*0.10, h*0.080, 0.22,0,Math.PI*2); c.fill(); c.stroke();
     c.fillStyle='rgba(255,255,255,0.5)'; c.beginPath(); c.arc(cx-w*0.26, y+h*0.83, w*0.015,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(cx+w*0.26, y+h*0.83, w*0.015,0,Math.PI*2); c.fill();
   } else if (charId === 'stardust') {
     const cx = x + w*0.5, cy = y + h*0.48;
-    // Glow
-    const glow = c.createRadialGradient(cx, cy, w*0.08, cx, cy, w*0.62);
+    // Outer glow â€” softer, more layered
+    const glow2 = c.createRadialGradient(cx, cy, w*0.04, cx, cy, w*0.72);
+    glow2.addColorStop(0, 'rgba(224,231,255,0.4)'); glow2.addColorStop(0.3, 'rgba(167,139,250,0.18)'); glow2.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = glow2; c.beginPath(); c.arc(cx, cy, w*0.72, 0, Math.PI*2); c.fill();
+    // Inner glow
+    const glow = c.createRadialGradient(cx, cy, w*0.08, cx, cy, w*0.58);
     glow.addColorStop(0, 'rgba(224,231,255,0.95)'); glow.addColorStop(0.45, 'rgba(139,92,246,0.35)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
-    c.fillStyle = glow; c.beginPath(); c.arc(cx, cy, w*0.62, 0, Math.PI*2); c.fill();
-    // Body , star orb
+    c.fillStyle = glow; c.beginPath(); c.arc(cx, cy, w*0.58, 0, Math.PI*2); c.fill();
+    // Body â€” star orb
     c.fillStyle = charGrad(c, x,y,w,h, bodyColor); c.beginPath(); c.arc(cx, cy, w*0.26, 0, Math.PI*2); c.fill(); charOutline(c, '#4338ca', w); c.stroke();
-    // Star points
-    c.fillStyle = '#fff'; for(let i=0;i<5;i++){ const a=(i/5)*Math.PI*2 - Math.PI/2; const x1=cx+Math.cos(a)*w*0.34, y1=cy+Math.sin(a)*w*0.34; const x2=cx+Math.cos(a+0.22)*w*0.16, y2=cy+Math.sin(a+0.22)*w*0.16; c.beginPath(); c.moveTo(cx,cy); c.lineTo(x1,y1); c.lineTo(x2,y2); c.closePath(); c.fill(); }
+    // Orb highlight
+    c.fillStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.ellipse(cx - w*0.06, cy - w*0.08, w*0.12, w*0.08, -0.3, 0, Math.PI*2); c.fill();
+    // Star points â€” brighter with glow tips
+    c.fillStyle = '#fff'; for(let i=0;i<5;i++){ const a=(i/5)*Math.PI*2 - Math.PI/2; const x1=cx+Math.cos(a)*w*0.36, y1=cy+Math.sin(a)*w*0.36; const x2=cx+Math.cos(a+0.22)*w*0.16, y2=cy+Math.sin(a+0.22)*w*0.16; c.beginPath(); c.moveTo(cx,cy); c.lineTo(x1,y1); c.lineTo(x2,y2); c.closePath(); c.fill(); }
+    // Sparkle dots at star tips
+    c.fillStyle = 'rgba(255,255,255,0.85)'; for(let i=0;i<5;i++){ const a=(i/5)*Math.PI*2 - Math.PI/2; c.beginPath(); c.arc(cx+Math.cos(a)*w*0.36, cy+Math.sin(a)*w*0.36, w*0.025, 0, Math.PI*2); c.fill(); }
     c.fillStyle='rgba(255,255,255,0.9)'; c.beginPath(); c.arc(cx - w*0.08, cy - w*0.08, w*0.06,0,Math.PI*2); c.fill();
-    // Tail , comet trail
+    // Tail â€” comet trail
     c.fillStyle='rgba(199,210,254,0.55)'; c.beginPath(); c.ellipse(cx - f*w*0.22, y+h*0.72, w*0.14, h*0.08, -0.2,0,Math.PI*2); c.fill();
     c.fillStyle='rgba(255,255,255,0.45)'; c.beginPath(); c.ellipse(cx - f*w*0.28, y+h*0.72, w*0.07, h*0.04, -0.2,0,Math.PI*2); c.fill();
-    // Eyes , starry
-    charEye(c, cx - w*0.10, cy - h*0.06, w*0.075, blink, f); charEye(c, cx + w*0.10, cy - h*0.06, w*0.075, blink, f);
-    c.fillStyle='#ffd23f'; c.beginPath(); c.arc(cx - w*0.10 + f*w*0.02, cy - h*0.06, w*0.012,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(cx + w*0.10 + f*w*0.02, cy - h*0.06, w*0.012,0,Math.PI*2); c.fill();
+    // Eyes â€” starry
+    charEye(c, cx - w*0.10, cy - h*0.06, w*0.082, blink, elook, iris, ex); charEye(c, cx + w*0.10, cy - h*0.06, w*0.082, blink, elook, iris, ex);
+    if (ex !== 'dead') { c.fillStyle='#ffd23f'; c.beginPath(); c.arc(cx - w*0.10 + elook*w*0.02, cy - h*0.06, w*0.014,0,Math.PI*2); c.fill(); c.beginPath(); c.arc(cx + w*0.10 + elook*w*0.02, cy - h*0.06, w*0.014,0,Math.PI*2); c.fill(); }
+    charMouth(c, cx, cy + h*0.06, w, h, ex, f);
     charBlush(c, cx - w*0.18, cy + h*0.08, w*0.045, h*0.028); charBlush(c, cx + w*0.18, cy + h*0.08, w*0.045, h*0.028);
   } else if (charId === 'prism') {
     const cx = x + w*0.5, cy = y + h*0.48;
-    // Glass orb glow
-    const glow = c.createRadialGradient(cx, cy, w*0.06, cx, cy, w*0.58);
+    // Outer glass glow
+    const glow2 = c.createRadialGradient(cx, cy, w*0.04, cx, cy, w*0.68);
+    glow2.addColorStop(0, 'rgba(196,181,253,0.35)'); glow2.addColorStop(0.4, 'rgba(91,33,182,0.15)'); glow2.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = glow2; c.beginPath(); c.arc(cx, cy, w*0.68, 0, Math.PI*2); c.fill();
+    // Inner glass orb glow
+    const glow = c.createRadialGradient(cx, cy, w*0.06, cx, cy, w*0.54);
     glow.addColorStop(0, 'rgba(196,181,253,0.95)'); glow.addColorStop(0.5, 'rgba(91,33,182,0.3)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
-    c.fillStyle = glow; c.beginPath(); c.arc(cx, cy, w*0.58, 0, Math.PI*2); c.fill();
+    c.fillStyle = glow; c.beginPath(); c.arc(cx, cy, w*0.54, 0, Math.PI*2); c.fill();
     // Glass body
     c.fillStyle = charGrad(c, x,y,w,h, bodyColor); c.beginPath(); c.arc(cx, cy, w*0.24, 0, Math.PI*2); c.fill(); charOutline(c, '#5b21b6', w); c.stroke();
-    // Rainbow refraction bands
-    const rainbow = ['#ff0000','#ff8800','#ffff00','#00ff00','#0088ff','#8800ff'];
-    for(let i=0;i<6;i++){ c.fillStyle=rainbow[i]; c.globalAlpha=0.35; const a=i*Math.PI/3; c.beginPath(); c.ellipse(cx+Math.cos(a)*w*0.06, cy+Math.sin(a)*w*0.06, w*0.06, w*0.02, a, 0, Math.PI*2); c.fill(); }
+    // Glass highlight
+    c.fillStyle = 'rgba(255,255,255,0.18)'; c.beginPath(); c.ellipse(cx - w*0.06, cy - w*0.06, w*0.12, w*0.07, -0.4, 0, Math.PI*2); c.fill();
+    // Rainbow refraction bands â€” more vivid
+    const rainbow = ['#ff0044','#ff8800','#ffdd00','#00dd44','#0088ff','#aa00ff'];
+    for(let i=0;i<6;i++){ c.fillStyle=rainbow[i]; c.globalAlpha=0.42; const a=i*Math.PI/3; c.beginPath(); c.ellipse(cx+Math.cos(a)*w*0.07, cy+Math.sin(a)*w*0.07, w*0.07, w*0.022, a, 0, Math.PI*2); c.fill(); }
     c.globalAlpha=1;
-    c.fillStyle='rgba(255,255,255,0.85)'; c.beginPath(); c.arc(cx-w*0.06, cy-w*0.06, w*0.05,0,Math.PI*2); c.fill();
+    c.fillStyle='rgba(255,255,255,0.9)'; c.beginPath(); c.arc(cx-w*0.06, cy-w*0.06, w*0.05,0,Math.PI*2); c.fill();
+    // Secondary catchlight
+    c.fillStyle='rgba(255,255,255,0.5)'; c.beginPath(); c.arc(cx+w*0.08, cy+w*0.06, w*0.025,0,Math.PI*2); c.fill();
     // Rainbow tail
     const hues=['#ff0066','#ff9900','#ffd23f','#66dd44','#5cdbff','#9966ff'];
     for(let i=0;i<4;i++){ c.fillStyle=hues[i]; c.globalAlpha=0.45-i*0.08; c.beginPath(); c.ellipse(cx-f*w*(0.18+i*0.06), y+h*(0.68+i*0.03), w*0.08-i*1, h*0.03, -0.15*i, 0, Math.PI*2); c.fill(); }
     c.globalAlpha=1;
-    // Eyes , prism sparkle
-    charEye(c, cx - w*0.10, cy - h*0.05, w*0.07, blink, f); charEye(c, cx + w*0.10, cy - h*0.05, w*0.07, blink, f);
-    c.fillStyle='#ff0066'; c.beginPath(); c.arc(cx - w*0.10 + f*w*0.02, cy - h*0.05, w*0.012,0,Math.PI*2); c.fill();
-    c.fillStyle='#5cdbff'; c.beginPath(); c.arc(cx + w*0.10 + f*w*0.02, cy - h*0.05, w*0.012,0,Math.PI*2); c.fill();
+    // Eyes â€” prism sparkle
+    charEye(c, cx - w*0.10, cy - h*0.05, w*0.078, blink, elook, '#ff0066', ex); charEye(c, cx + w*0.10, cy - h*0.05, w*0.078, blink, elook, '#5cdbff', ex);
+    if (ex !== 'dead') { c.fillStyle='#ff0066'; c.beginPath(); c.arc(cx - w*0.10 + elook*w*0.02, cy - h*0.05, w*0.014,0,Math.PI*2); c.fill(); c.fillStyle='#5cdbff'; c.beginPath(); c.arc(cx + w*0.10 + elook*w*0.02, cy - h*0.05, w*0.014,0,Math.PI*2); c.fill(); }
+    charMouth(c, cx, cy + h*0.08, w, h, ex, f);
     charBlush(c, cx - w*0.18, cy + h*0.10, w*0.045, h*0.028); charBlush(c, cx + w*0.18, cy + h*0.10, w*0.045, h*0.028);
   }
 }
@@ -3421,13 +5090,20 @@ function drawPlayer() {
   const drawX = p.x + (p.w - drawW) / 2;
   const drawY = y + (p.h - drawH);
 
-  // Shadow (stays flat, never rotates with the body)
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  // Subtle body glow
+  const glowCol = baseChar.body;
+  ctx.fillStyle = `rgba(${parseInt(glowCol.slice(1,3),16)},${parseInt(glowCol.slice(3,5),16)},${parseInt(glowCol.slice(5,7),16)},0.08)`;
   ctx.beginPath();
-  ctx.ellipse(p.x + p.w/2, y + p.h + 2, drawW/2, 4, 0, 0, Math.PI * 2);
+  ctx.ellipse(p.x + p.w/2, y + p.h * 0.45, drawW * 0.8, drawH * 0.7, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Lean into horizontal movement , sells the steering at a glance
+  // Shadow (stays flat, never rotates with the body)
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath();
+  ctx.ellipse(p.x + p.w/2, y + p.h + 2, drawW * 0.48, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Lean into horizontal movement â€” sells the steering at a glance
   const lean = state.mode === 'dead'
     ? state.deathTumble
     : Math.max(-0.26, Math.min(0.26, p.vx * 0.034));
@@ -3441,13 +5117,22 @@ function drawPlayer() {
     ctx.globalAlpha = (state.invulnFrames % 8) < 4 ? 0.35 : 1;
   }
 
-  // Perf B: cached sprite when not squishing/shielded (blink still works via overlay)
-  const canCache = p.squish < 0.02 && !state.shieldActive && state.invulnFrames === 0 && state.jetpackFrames === 0;
+  // Compute eye-look direction from eye tracking
+  let eyeLook = p.facing || 1;
+  if (state.eyeTargetActive) {
+    const dx = state.eyeTargetX - (p.x + p.w/2);
+    eyeLook = dx > 8 ? 1 : dx < -8 ? -1 : eyeLook;
+  }
+
+  // Expressions change per-frame so skip cache when expression is active
+  const expr = state.expression;
+  const isAnimatedExpr = expr !== 'neutral';
+  const canCache = !isAnimatedExpr && p.squish < 0.02 && !state.shieldActive && state.invulnFrames === 0 && state.jetpackFrames === 0;
   if (canCache) {
     const spr = getCharSprite(state.character, bodyColor, accentColor, p.facing||1);
     ctx.drawImage(spr.c, drawX, drawY, drawW, drawH);
   } else {
-    drawCharacter(ctx, state.character, drawX, drawY, drawW, drawH, bodyColor, accentColor, p.facing||1);
+    drawCharacter(ctx, state.character, drawX, drawY, drawW, drawH, bodyColor, accentColor, p.facing||1, expr, eyeLook);
   }
 
   // Hat on top (leans with the character)
@@ -3632,7 +5317,7 @@ function render() {
     // Living title screen: the meadow + your character, idle-hopping on the grass
     drawGround();
     drawMenuPet();
-    // build version, bottom-right , always know what you're playing
+    // build version, bottom-right â€” always know what you're playing
     ctx.font = '600 10px Inter, sans-serif';
     ctx.textAlign = 'right';
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
@@ -3784,7 +5469,7 @@ function startGame(weekly) {
   // Streak check (only awards on new day)
   const streakResult = updateStreak();
   if (streakResult.newDay && streakResult.bonus > 0) {
-    setTimeout(() => showToast(`📊 Day ${save.streak} streak! +${streakResult.bonus} coins`), 200);
+    setTimeout(() => showToast(`ðŸ”¥ Day ${save.streak} streak! +${streakResult.bonus} coins`), 200);
   }
   // 7-day chest
   if (streakResult.newDay && save.streak % 7 === 0 && save.streak > 0) {
@@ -3792,7 +5477,7 @@ function startGame(weekly) {
     save.coins += chestCoins;
     // random hat not owned
     const allHats = COSMETICS.hat.filter(h=>h.id!=='none' && !save.owned.hat.includes(h.id));
-    if(allHats.length){ const pick=allHats[Math.floor(Math.random()*allHats.length)]; save.owned.hat.push(pick.id); showToast(`🏁 7-day chest! +${chestCoins} coins + ${pick.name}!`); } else showToast(`🏁 7-day chest! +${chestCoins} coins!`);
+    if(allHats.length){ const pick=allHats[Math.floor(Math.random()*allHats.length)]; save.owned.hat.push(pick.id); showToast(`ðŸŽ 7-day chest! +${chestCoins} coins + ${pick.name}!`); } else showToast(`ðŸŽ 7-day chest! +${chestCoins} coins!`);
     persist(); try{ if(typeof gtag==='function') gtag('event','streak_chest', { streak: save.streak }); }catch(e){}
   }
 
@@ -3811,7 +5496,6 @@ function startGame(weekly) {
   document.getElementById('pause').classList.add('hidden');
   document.getElementById('modchooser').classList.add('hidden');
 
-  if (storyRun) storyRun.begin();
   requestWakeLock();
 }
 
@@ -3842,7 +5526,7 @@ function resumeGame() {
   SFX.click();
 }
 
-// Abandoning a run: no rewards, no death sequence , straight back to the menu.
+// Abandoning a run: no rewards, no death sequence â€” straight back to the menu.
 function quitToMenu() {
   if (state.mode !== 'paused') return;
   document.getElementById('pause').classList.add('hidden');
@@ -3880,26 +5564,6 @@ function deathFxTick() {
   state.texts = state.texts.filter(tx => tx.life > 0);
 }
 
-// A585: you reached the roof before the timer. Bank the run through the normal
-// death-style bookkeeping (so coins/XP still count) then finish as a success.
-function reachStoryTop() {
-  state.mode = 'dead';
-  document.body.dataset.mode = 'dead';
-  releaseWakeLock();
-  const bankedCoins = state.runCoins;
-  save.coins += bankedCoins;
-  const xpEarned = Math.floor(state.heightM / 5) + state.runCoins * 2 + 10 + state.nearMisses * 5;
-  awardXp(xpEarned);
-  if (typeof gameSystem !== 'undefined' && !state.recordedRun) {
-    gameSystem.recordGamePlay(Date.now());
-    state.recordedRun = true;
-  }
-  if (state.heightM > save.bestHeight) save.bestHeight = state.heightM;
-  persist();
-  SFX.levelUp();
-  storyRun.finish('success', state.heightM);
-}
-
 function die() {
   state.mode = 'dead';
   document.body.dataset.mode = 'dead';
@@ -3911,12 +5575,16 @@ function die() {
   releaseWakeLock();
   document.getElementById('runmod-badge').classList.add('hidden');
 
-  // Coins banked: run modifier multipliers + Golden Touch upgrade + perks
+  // Coins banked: run modifier multipliers + Golden Touch upgrade + perks + streak bonus
   let coinMult = modMult('coinMult')
     * upgradeMult('coinValue', 0.05);
   if (perkActive('celestial')) coinMult *= 1.1; // Stardust +10%
   if (perkActive('prismatic')) coinMult *= 1.15; // Prism +15%
   if (save.nextRunBonus) { coinMult *= save.nextRunBonus; save.nextRunBonus = 0; }
+  // Streak coin multiplier: longer streaks = bigger coin hauls
+  const sk = save.streak || 0;
+  const streakMult = sk >= 14 ? 1.5 : sk >= 7 ? 1.3 : sk >= 5 ? 1.2 : sk >= 3 ? 1.1 : 1.0;
+  coinMult *= streakMult;
   const bankedCoins = Math.round(state.runCoins * coinMult);
   save.coins += bankedCoins;
 
@@ -3933,7 +5601,7 @@ function die() {
 
   let isNewBest;
   if (state.weekly) {
-    // Weekly runs compete on their own board , the all-time best is untouched
+    // Weekly runs compete on their own board â€” the all-time best is untouched
     if (save.weeklyBest.seed !== weeklySeed()) save.weeklyBest = { seed: weeklySeed(), best: 0 };
     isNewBest = state.heightM > save.weeklyBest.best;
     if (isNewBest) save.weeklyBest.best = state.heightM;
@@ -3973,7 +5641,7 @@ function die() {
   }
 
   persist();
-  // Leaderboard , submit when new best
+  // Leaderboard â€” submit when new best
   try{ const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames; if(pg && pg.submitScore && isNewBest) pg.submitScore({ leaderboardId: 'sky_high_leaderboard', score: save.bestHeight }); }catch(e){}
   try{ if(typeof gtag==='function' && isNewBest) gtag('event','new_best', { height_m: save.bestHeight }); }catch(e){}
 
@@ -3987,7 +5655,7 @@ function die() {
     });
   }
 
-  // Character-themed death particles burst , matches CHARS palette
+  // Character-themed death particles burst â€” matches CHARS palette
   const charColors = {
     turtle: ['#4caf50', '#388e3c', '#81c784', '#ffd23f'],
     fox:    ['#8b5cf6', '#7c3aed', '#c4b5fd', '#ede9fe'],
@@ -4012,7 +5680,7 @@ function die() {
   animateNumber(document.getElementById('go-height'), 0, state.heightM, 700, 'm');
   animateNumber(document.getElementById('go-coins'), 0, state.runCoins, 450, '');
   document.getElementById('go-best-label').textContent = state.weekly ? 'Week Best' : 'Best';
-  document.getElementById('go-newbest').textContent = state.weekly ? '⭐ NEW WEEKLY BEST! ⭐' : '⭐ NEW BEST! ⭐';
+  document.getElementById('go-newbest').textContent = state.weekly ? 'â­ NEW WEEKLY BEST! â­' : 'â­ NEW BEST! â­';
 
   // XP bar on game-over
   const xpInfo = xpProgressInLevel(save.xp);
@@ -4025,6 +5693,7 @@ function die() {
 
   // Record death telemetry (local ring buffer + GA4)
   if (typeof SkyTelemetry !== 'undefined') SkyTelemetry.recordDeath();
+
 
   // Leaderboards: only where the Play Games bridge is active
   const boardsBtn = document.getElementById('boards-btn');
@@ -4041,28 +5710,22 @@ function die() {
     }
   }
 
-  // A585: the story run owns the finish screen; the game's own panel would be
-  // a second "you fell" screen, so it only shows when the run is absent.
-  if (storyRun) {
-    storyRun.finish((state.heightM >= STORY_TOP_M) ? 'success' : (storyRun.timeLeft() <= 0 ? 'partial' : 'fail'), state.heightM);
-  } else {
-    document.getElementById('gameover').classList.remove('hidden');
-  }
+  document.getElementById('gameover').classList.remove('hidden');
 
   const messages = [];
-  if (levelUp) { messages.push(`⭐ Level ${levelUp}!`); setTimeout(() => SFX.levelUp(), 600); }
-  if (state.nearMisses > 0) messages.push(`👆 ${state.nearMisses} near miss${state.nearMisses > 1 ? 'es' : ''}!`);
+  if (levelUp) { messages.push(`â­ Level ${levelUp}!`); setTimeout(() => SFX.levelUp(), 600); }
+  if (state.nearMisses > 0) messages.push(`ðŸ’¨ ${state.nearMisses} near miss${state.nearMisses > 1 ? 'es' : ''}!`);
+  if (streakMult > 1.0) messages.push(`ðŸ”¥ Ã - ${streakMult} streak bonus!`);
   for (const m of missionToasts) messages.push(m);
   if (newlyUnlocked.length) { messages.push('Unlocked: ' + newlyUnlocked.join(', ')); setTimeout(() => SFX.unlock(), levelUp ? 1100 : 600); }
-  if (newlyUnlockedNames.length) { messages.push('🏁 ' + newlyUnlockedNames.join(', ')); setTimeout(() => SFX.unlock(), levelUp ? 1500 : 900); }
+  if (newlyUnlockedNames.length) { messages.push('ðŸ† ' + newlyUnlockedNames.join(', ')); setTimeout(() => SFX.unlock(), levelUp ? 1500 : 900); }
   if (messages.length) {
-    setTimeout(() => showToast(messages.join('  •  ')), 400);
+    setTimeout(() => showToast(messages.join('  â€¢  ')), 400);
   }
 }
 
 function returnToMenu() {
   state.mode = 'menu';
-  if (storyRun) storyRun.stop();
   document.body.dataset.mode = 'menu';
   // Menu backdrop is always the meadow, whatever altitude the run reached
   state.heightM = 0;
@@ -4109,15 +5772,30 @@ function pulseEl(el, cls = 'pulse') {
 function refreshMenu() {
   document.getElementById('menu-best').textContent = save.bestHeight + 'm';
   document.getElementById('menu-coins').textContent = save.coins;
-  // Daily wheel check , show once per day
-  if(save.tutorialDone && !save.dailySpin && !state._wheelShown){
-    save.dailySpin = true; persist(); state._wheelShown = true;
+  // Daily wheel â€” show once per calendar day (dailySpinDate resets each day)
+  const _today = todayStr();
+  if(save.tutorialDone && save.dailySpinDate !== _today && !state._wheelShown){
+    state._wheelShown = true;
     setTimeout(()=>{ showDailyWheel(); }, 800);
+  }
+
+  // Active seasonal event banner
+  const activeEv = getActiveEvent();
+  const evBanner = document.getElementById('event-banner');
+  if(evBanner){
+    if(activeEv){
+      evBanner.classList.remove('hidden');
+      evBanner.textContent = activeEv.emoji+' '+activeEv.name+' â€” Free items in the shop!';
+      evBanner.style.color = activeEv.color || '#ffd23f';
+      evBanner.style.borderColor = (activeEv.color||'#ffd23f')+'88';
+    } else {
+      evBanner.classList.add('hidden');
+    }
   }
 
   const dm = getDailyModifier();
   document.getElementById('dailyModBadge').innerHTML =
-    `${dm.icon} <span class="dm-name">${dm.name}</span> , ${dm.desc}`;
+    `${dm.icon} <span class="dm-name">${dm.name}</span> â€” ${dm.desc}`;
 
   // Level + XP
   const xpInfo = xpProgressInLevel(save.xp);
@@ -4169,12 +5847,12 @@ function refreshMenu() {
   document.getElementById('char-name').textContent = c.name;
   const hint = document.getElementById('char-unlock-hint');
   if (save.unlockedChars.includes(state.character)) {
-    hint.textContent = `â˜… ${c.perkName} , ${c.perkDesc}`;
+    hint.textContent = `â˜… ${c.perkName} â€” ${c.perkDesc}`;
   } else {
-    hint.textContent = `Unlocks at ${c.unlockM}m · ${c.perkName}: ${c.perkDesc}`;
+    hint.textContent = `Unlocks at ${c.unlockM}m Â· ${c.perkName}: ${c.perkDesc}`;
   }
 
-  // Weekly challenge entry shows this week's best (span only , the button
+  // Weekly challenge entry shows this week's best (span only â€” the button
   // is a corner tile: emoji + label)
   const wb = document.getElementById('weekly-btn');
   const wbLabel = wb.querySelector('span');
@@ -4199,12 +5877,49 @@ function closeShop() {
   refreshMenu();
 }
 
+/* â”€â”€ Seasonal Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Each event has an id, display name, date range (month 0-11, day 1-31),
+   a banner emoji, and a colour hint for the shop badge.
+   Items with a matching eventId are FREE during the event window.
+   Items without an eventId use the old per-id override table below.
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const SEASONAL_EVENTS = [
+  { id:'halloween', name:'Spooky Season',  emoji:'ðŸŽƒ', color:'#ff6a00',
+    start:{m:9,d:1},  end:{m:10,d:5} },   // Oct 1 â€“ Nov 5
+  { id:'christmas', name:'Winter Wonderland', emoji:'ðŸŽ„', color:'#3ee6c4',
+    start:{m:11,d:1}, end:{m:11,d:31} },  // Dec 1â€“31
+  { id:'valentine', name:"Valentine's Day",  emoji:'ðŸ’•', color:'#ff4d7c',
+    start:{m:1,d:10}, end:{m:1,d:20} },   // Feb 10â€“20
+  { id:'spring',    name:'Spring Bloom',   emoji:'ðŸŒ¸', color:'#ffb3cc',
+    start:{m:2,d:20}, end:{m:4,d:10} },   // Mar 20 â€“ May 10
+  { id:'summer',    name:'Summer Sun',     emoji:'â˜€ï¸', color:'#ffd23f',
+    start:{m:5,d:1},  end:{m:7,d:31} },   // Jun 1 â€“ Aug 31
+  { id:'autumn',    name:'Autumn Fall',    emoji:'ðŸ‚', color:'#cc6600',
+    start:{m:8,d:1},  end:{m:8,d:30} },   // Sep 1â€“30
+];
+function getActiveEvent(){
+  const now=new Date();
+  const m=now.getMonth(), d=now.getDate();
+  for(const ev of SEASONAL_EVENTS){
+    const s=ev.start, e=ev.end;
+    const afterStart = m>s.m || (m===s.m && d>=s.d);
+    const beforeEnd  = m<e.m || (m===e.m && d<=e.d);
+    if(afterStart && beforeEnd) return ev;
+  }
+  return null;
+}
 function seasonalFree(item){
+  // New: event-tagged items are free during their event
+  if(item.eventId){
+    const ev=getActiveEvent();
+    return ev && ev.id===item.eventId;
+  }
+  // Legacy per-id overrides (kept for backwards compat)
   const m=new Date().getMonth();
-  if(item.id==='santa' && m===11) return true;
-  if(item.id==='horns' && m===9) return true;
-  if(item.id==='flower' && m===3) return true; // Easter (April)
-  if(item.id==='party' && m===0) return true; // New Year (January)
+  if(item.id==='santa'  && m===11) return true;
+  if(item.id==='horns'  && m===9)  return true;
+  if(item.id==='flower' && m===3)  return true;
+  if(item.id==='party'  && m===0)  return true;
   return false;
 }
 function refreshShop() {
@@ -4223,7 +5938,7 @@ function refreshShop() {
     if (!unlocked) {
       const lock = document.createElement('span');
       lock.className = 'lock';
-      lock.textContent = '🔓';
+      lock.textContent = 'ðŸ”’';
       btn.appendChild(lock);
     }
     btn.addEventListener('click', () => {
@@ -4263,7 +5978,7 @@ function refreshShop() {
         </div>`;
       const buy = document.createElement('button');
       buy.className = 'upg-buy' + (maxed ? ' maxed' : '') + (!maxed && save.coins < cost ? ' cant' : '');
-      buy.textContent = maxed ? 'MAX' : '🦙 ' + cost;
+      buy.textContent = maxed ? 'MAX' : 'ðŸª™ ' + cost;
       if (!maxed) {
         buy.addEventListener('click', () => {
           if (save.coins < cost) { SFX.error(); showToast('Not enough coins!'); return; }
@@ -4295,6 +6010,8 @@ function refreshShop() {
     const equipped = equippedId === item.id;
     const lockedByAchievement = item.achievement && !save.achievements.includes(item.achievement);
     const lockedByLevel = item.levelReq && save.level < item.levelReq;
+    const activeEv = getActiveEvent();
+    const lockedByEvent = item.eventId && !(activeEv && activeEv.id === item.eventId);
     const effPrice = seasonalFree(item) ? 0 : item.price;
     const canAfford = save.coins >= effPrice;
 
@@ -4302,8 +6019,8 @@ function refreshShop() {
     div.className = 'shop-item';
     if (equipped) div.classList.add('equipped');
     else if (owned) div.classList.add('owned');
-    if ((lockedByAchievement || lockedByLevel) && !owned) div.classList.add('locked');
-    if (!owned && !canAfford && !lockedByAchievement && !lockedByLevel && effPrice > 0) div.classList.add('cant-afford');
+    if ((lockedByAchievement || lockedByLevel || lockedByEvent) && !owned) div.classList.add('locked');
+    if (!owned && !canAfford && !lockedByAchievement && !lockedByLevel && !lockedByEvent && effPrice > 0) div.classList.add('cant-afford');
 
     const previewWrap = document.createElement('div');
     previewWrap.className = 'shop-item-preview';
@@ -4329,22 +6046,29 @@ function refreshShop() {
     } else if (lockedByLevel) {
       status.className = 'shop-item-status';
       status.textContent = 'Lv ' + item.levelReq;
+    } else if (lockedByEvent) {
+      // Find which event unlocks this
+      const unlockEv = SEASONAL_EVENTS.find(e=>e.id===item.eventId);
+      status.className = 'shop-item-status';
+      status.textContent = unlockEv ? unlockEv.emoji+' '+unlockEv.name : 'ðŸ”’ Seasonal';
     } else {
       status.className = 'shop-item-price';
-      if(seasonalFree(item) && !owned) status.textContent = '🎸 Free this month!';
-      else status.textContent = effPrice === 0 ? 'Free' : '🦙 ' + effPrice;
+      if(seasonalFree(item) && !owned){
+        const ev=getActiveEvent();
+        status.textContent = (ev?ev.emoji:'ðŸŽ')+' Free this event!';
+      } else status.textContent = effPrice === 0 ? 'Free' : 'ðŸª™ ' + effPrice;
     }
 
     div.appendChild(previewWrap);
     div.appendChild(name);
     div.appendChild(status);
 
-    div.addEventListener('click', () => handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedByLevel));
+    div.addEventListener('click', () => handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedByLevel, lockedByEvent));
     grid.appendChild(div);
   }
 }
 
-function handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedByLevel) {
+function handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedByLevel, lockedByEvent) {
   if (lockedByAchievement && !owned) {
     SFX.error();
     showToast((item.lockedHint || 'Reach 10000m') + ' to unlock!');
@@ -4353,6 +6077,12 @@ function handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedB
   if (lockedByLevel && !owned) {
     SFX.error();
     showToast(`Reach Level ${item.levelReq} to unlock!`);
+    return;
+  }
+  if (lockedByEvent && !owned) {
+    SFX.error();
+    const ev = SEASONAL_EVENTS.find(e=>e.id===item.eventId);
+    showToast(ev ? `${ev.emoji} Returns during ${ev.name}!` : 'Seasonal item â€” check back later!');
     return;
   }
   if (equipped) return;
@@ -4374,7 +6104,8 @@ function handleShopItemClick(item, owned, equipped, lockedByAchievement, lockedB
   save.owned[shopTab].push(item.id);
   save.equipped[shopChar][shopTab] = item.id;
   persist();
-  showToast(effPrice2===0 && seasonalFree(item) ? `Claimed ${item.name}! 🎸` : `Bought ${item.name}!`);
+  const ev=getActiveEvent();
+  showToast(effPrice2===0 && seasonalFree(item) ? `${ev?ev.emoji:'ðŸŽ'} Claimed ${item.name}!` : `Bought ${item.name}!`);
   pulseEl(document.getElementById('shop-coins'));
   refreshShop();
 }
@@ -4418,7 +6149,7 @@ document.getElementById('export-deaths-btn').addEventListener('click', () => {
   var count = SkyTelemetry.exportDeaths();
   var btn = document.getElementById('export-deaths-btn');
   if (btn) btn.textContent = 'âœ… Exported ' + count + ' runs';
-  setTimeout(() => { if (btn) btn.textContent = '📊 Export Run Data'; }, 2000);
+  setTimeout(() => { if (btn) btn.textContent = 'ðŸ“Š Export Run Data'; }, 2000);
 });
 document.getElementById('share-btn').addEventListener('click', async () => {
   const text = `I hit ${state.heightM}m with ${state.runCoins} coins in Sky High With Friends! Can you beat it?`;
@@ -4429,7 +6160,10 @@ document.getElementById('share-btn').addEventListener('click', async () => {
   }catch(e){ showToast('Share cancelled'); }
 });
 
-
+// Telemetry welcome message (dev console)
+if (typeof SkyTelemetry !== 'undefined') {
+  console.log('Sky High telemetry active. Try: SkyTelemetry.printDashboard() or SkyTelemetry.exportDeaths()');
+}
 
 /* ---------- Pre-run modifier chooser ---------- */
 let chooserWeekly = false;
@@ -4538,13 +6272,13 @@ document.querySelectorAll('.shop-tab').forEach(t => {
 let ftueTimer=null;
 // Reduced motion hint on first visit
 if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches && !save._rmHint){
-  setTimeout(()=>{ showToast('Reduced motion enabled , animations paused'); save._rmHint=true; persist(); },1200);
+  setTimeout(()=>{ showToast('Reduced motion enabled â€” animations paused'); save._rmHint=true; persist(); },1200);
 }
 function showFTUE(){
   const ftue=document.getElementById('ftue');
   const txt=document.getElementById('ftue-ctrl-text');
   const ctrl=save.settings.controls||'tilt';
-  txt.textContent = ctrl==='tilt' ? 'Tilt to steer' : ctrl==='drag' ? 'Drag to steer' : 'Use â-€ â-¶ buttons to steer';
+  txt.textContent = ctrl==='tilt' ? 'Tilt to steer' : ctrl==='drag' ? 'Drag to steer' : 'Use â - € â - ¶ buttons to steer';
   ftue.classList.remove('hidden');
   clearTimeout(ftueTimer);
   ftueTimer=setTimeout(()=>{ if(!ftue.classList.contains('hidden')){ hideFTUE(true); openModChooser(false); } },10000);
@@ -4558,31 +6292,39 @@ function hideFTUE(auto){
 document.getElementById('ftue-go').addEventListener('click', ()=>{ hideFTUE(); openModChooser(false); });
 
 /* ---------- Daily Reward Wheel ---------- */
+// Streak-scaled wheel: 7+ days improves coin prizes by 50%, 14+ days doubles them
+function wheelCoinAmt(base){ const sk=save.streak||0; if(sk>=14) return base*2; if(sk>=7) return Math.round(base*1.5); return base; }
 const WHEEL_SEGMENTS = [
-  { label: '100 🦙', weight: 30, grant: (s)=>{ s.coins+=100; return '100 coins!'; }},
-  { label: '200 🦙', weight: 22, grant: (s)=>{ s.coins+=200; return '200 coins!'; }},
-  { label: '500 🦙', weight: 8,  grant: (s)=>{ s.coins+=500; return '500 coins!'; }},
-  { label: '+1 Level', weight: 12, grant: (s)=>{ s.xp+=200; return '+200 XP!'; }},
-  { label: 'Random Hat', weight: 10, grant: (s)=>{
-    const unh=COSMETICS.hat.filter(h=>h.id!=='none'&&!s.owned.hat.includes(h.id));
-    if(!unh.length){ s.coins+=150; return '150 coins (all hats owned!)'; }
+  { label: 'ðŸª™ Coins',    weight: 30, grant: (s)=>{ const n=wheelCoinAmt(100); s.coins+=n; return n+' coins!'; }},
+  { label: 'ðŸª™ðŸª™ Coins', weight: 22, grant: (s)=>{ const n=wheelCoinAmt(200); s.coins+=n; return n+' coins!'; }},
+  { label: 'ðŸ’° Big Coins',weight: 8,  grant: (s)=>{ const n=wheelCoinAmt(500); s.coins+=n; return n+' coins!'; }},
+  { label: 'â­ XP Burst', weight: 12, grant: (s)=>{ const xp=save.streak>=7?300:200; s.xp+=xp; return '+'+xp+' XP!'; }},
+  { label: 'ðŸŽ© Hat',      weight: 10, grant: (s)=>{
+    const unh=COSMETICS.hat.filter(h=>h.id!=='none'&&!h.eventId&&!s.owned.hat.includes(h.id));
+    if(!unh.length){ const n=wheelCoinAmt(150); s.coins+=n; return n+' coins (all hats owned!)'; }
     const pick=unh[Math.floor(Math.random()*unh.length)];
     s.owned.hat.push(pick.id); return pick.name+'!';
   }},
-  { label: 'Random Skin', weight: 8, grant: (s)=>{
+  { label: 'ðŸŒˆ Skin',     weight: 8, grant: (s)=>{
     const uns=COSMETICS.skin.filter(x=>!s.owned.skin.includes(x.id)&&x.price>0);
-    if(!uns.length){ s.coins+=200; return '200 coins (all skins owned!)'; }
+    if(!uns.length){ const n=wheelCoinAmt(200); s.coins+=n; return n+' coins (all skins owned!)'; }
     const pick=uns[Math.floor(Math.random()*uns.length)];
     s.owned.skin.push(pick.id); return pick.name+'!';
   }},
-  { label: '2× Next Run', weight: 7, grant: (s)=>{ s.nextRunBonus=2; return 'Double coins next run!'; }},
-  { label: 'Mystery âœ¨', weight: 5, grant: (s)=>{ s.coins+=300; return '300 mystery coins!'; }},
+  { label: '2Ã -  Next Run', weight: 7, grant: (s)=>{ s.nextRunBonus=2; return 'Double coins next run!'; }},
+  { label: 'âœ¨ Mystery',  weight: 5, grant: (s)=>{ const n=wheelCoinAmt(300); s.coins+=n; return n+' mystery coins!'; }},
 ];
 let wheelSpinning=false;
 function showDailyWheel(){
   const wh=document.getElementById('daily-wheel');
   if(!wh) return;
   wh.classList.remove('hidden');
+  // Show streak context in title
+  const titleEl=wh.querySelector('.wheel-title');
+  if(titleEl){
+    if(save.streak>=3) titleEl.textContent='ðŸ”¥ Day '+save.streak+' Reward!';
+    else titleEl.textContent='ðŸŽ Daily Reward';
+  }
   drawWheelCanvas(0);
   document.getElementById('wheel-reward').textContent='';
   document.getElementById('wheel-spin-btn').textContent='Spin!';
@@ -4630,10 +6372,11 @@ function spinWheel(){
     else {
       wheelSpinning=false;
       const reward=WHEEL_SEGMENTS[winIdx].grant(save);
+      save.dailySpinDate=todayStr(); // mark today claimed
       document.getElementById('wheel-reward').textContent='You got: '+reward;
       btn.textContent='âœ“ Collected';
       persist(); try{ if(typeof gtag==='function') gtag('event','daily_wheel',{segment:WHEEL_SEGMENTS[winIdx].label}); }catch(e){}
-      setTimeout(()=>{ document.getElementById('daily-wheel').classList.add('hidden'); },2000);
+      setTimeout(()=>{ document.getElementById('daily-wheel').classList.add('hidden'); refreshMenu(); },2000);
     }
   }
   requestAnimationFrame(tick);
@@ -4756,7 +6499,7 @@ function refreshAchievements() {
         <div class="ach-name">${a.name}</div>
         <div class="ach-desc">${a.desc}</div>
       </div>
-      <div class="ach-check">${done ? 'âœ…' : '🔓'}</div>
+      <div class="ach-check">${done ? 'âœ…' : 'ðŸ”’'}</div>
     `;
     grid.appendChild(div);
   }
@@ -4850,7 +6593,7 @@ function warmUp() {
 setTimeout(warmUp, 400); // the intro screen covers this work
 
 // First tap anywhere brings the AudioContext to life (autoplay policies
-// require a gesture) , so Play never pays that cost.
+// require a gesture) â€” so Play never pays that cost.
 function warmAudio() {
   initAudio();
   if (sound.ctx && sound.ctx.state === 'suspended') sound.ctx.resume().catch(() => {});
@@ -4913,7 +6656,7 @@ refreshMenu();
 document.getElementById('intro-version').textContent = GAME_VERSION_STR;
 document.getElementById('settings-version').textContent = GAME_VERSION_STR;
 
-// Dev tap counter: tap intro version 5× to reveal death-screen export button
+// Dev tap counter: tap intro version 5Ã -  to reveal death-screen export button
 (function () {
   var taps = 0, lastTap = 0;
   var el = document.getElementById('intro-version');
@@ -4926,13 +6669,11 @@ document.getElementById('settings-version').textContent = GAME_VERSION_STR;
     taps++;
     if (taps >= 5) {
       taps = 0;
-      // Diagnostics are supplied by the native app, not this website build.
-      if (typeof SkyTelemetry === 'undefined') return;
       var btn = document.getElementById('export-deaths-btn');
       if (btn) btn.classList.remove('hidden');
       if (typeof SkyTelemetry !== 'undefined') {
         var n = SkyTelemetry.deathStats().count || 0;
-        el.textContent = GAME_VERSION_STR + ' · ' + n + ' runs logged';
+        el.textContent = GAME_VERSION_STR + ' Â· ' + n + ' runs logged';
       }
     }
   });
@@ -4995,7 +6736,7 @@ function loop(now) {
   // Auto quality governor (steps render resolution down/up on weak devices)
   fpsTick(now);
 
-  // The loading screen is fully opaque , skip scene rendering underneath it
+  // The loading screen is fully opaque â€” skip scene rendering underneath it
   if (!loadDone) {
     requestAnimationFrame(loop);
     return;
@@ -5016,6 +6757,8 @@ function jvdsCloseStrip(){
   document.getElementById('jvdsTab').classList.remove('hidden');
 }
 </script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');</script><script src="../cookie-consent.js"></script>
+
 <!-- BUILD:footer-content -->
 <footer class="site-footer">
     <div class="footer-inner">
@@ -5068,7 +6811,7 @@ function jvdsCloseStrip(){
                 <a href="https://buymeacoffee.com/jv_designstudio" target="_blank" rel="noopener noreferrer">Buy Me a Coffee</a>
             </nav>
         </div>
-        <p class="footer-copy">© <span id="footerYear">2026</span> JVDesignStudio. All rights reserved.</p>
+        <p class="footer-copy">Â© <span id="footerYear">2026</span> JVDesignStudio. All rights reserved.</p>
         <script>(function(){try{var y=document.getElementById('footerYear');if(y)y.textContent=new Date().getFullYear();}catch(e){}})();</script>
     </div>
 </footer>
@@ -5096,46 +6839,8 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 <!-- /BUILD:footer-content -->
 <script>
 // â•â• GAME SYSTEM INTEGRATION â•â•
-// Repair legacy mojibake in this older page without touching gameplay data.
-(function () {
-  const repairs = {
-    'â†': '←', 'â†’': '→', 'âœ…': '✅', 'âœ“': '✓',
-    'â˜…': '★', 'â˜†': '☆', 'âœ¨': '✨', 'âš™ï¸': '⚙️',
-    'â›°ï¸': '🛫', 'â˜ï¸': '☁️', 'â™¾ï¸': '♾️',
-    'â-€': '←', 'â-¶': '→', 'â¸': '⏸', 'ï¿½': '·'
-  };
-  function repair(root) {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    const nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-    nodes.forEach(node => {
-      let value = node.nodeValue;
-      Object.keys(repairs).forEach(bad => { value = value.split(bad).join(repairs[bad]); });
-      if (value !== node.nodeValue) node.nodeValue = value;
-    });
-  }
-  function start() {
-    repair(document.body);
-    new MutationObserver(records => records.forEach(record => {
-      record.addedNodes.forEach(node => {
-        if (node.nodeType === Node.TEXT_NODE && node.parentNode) repair(node.parentNode);
-        else if (node.nodeType === Node.ELEMENT_NODE) repair(node);
-      });
-    })).observe(document.body, { childList: true, subtree: true });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
-  else start();
-})();
-
 const gameSystem = new GameSystem('sky-high-with-friends', 'Sky High With Friends', 'pip');
 const soundManager = new SoundManager(gameSystem);
-JVDSArcade.register({
-  start: () => startGame(state.weekly),
-  restart: () => startGame(state.weekly),
-  pause: () => state.mode === 'paused' ? resumeGame() : pauseGame(),
-  sound: toggleSound,
-  quit: returnToMenu
-});
 
 // Score â†’ XP + score-tier achievements, handled reactively by the engine
 // (replaces the two setInterval pollers this used to copy-paste).
@@ -5146,7 +6851,5 @@ window.addEventListener('beforeunload', () => {
   gameSystem.saveState();
 });
 </script>
-<script defer src="/mascots.js"></script>
-<script defer src="../game-shell.js"></script>
 </body>
 </html>
