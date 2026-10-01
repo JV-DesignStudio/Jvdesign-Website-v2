@@ -6,6 +6,17 @@
 
 const POSTS = [
     {
+        id: 279,
+        date: '1 October 2026',
+        tag: 'games',
+        emoji: '☕',
+        title: 'Cozy Cafe Match v2.4: a bigger, cosier update',
+        excerpt: 'Cafe days you can pause, real London weather in the window, a new Special to pick each day, and perks that make every fresh cafe play a little differently.',
+        image: '/assets/devlog/cozy-cafe-match-v24-special.png',
+        content: 'We just gave Cozy Cafe Match its biggest update yet, and the whole cafe feels calmer and warmer for it.\n\nA cafe day is now a proper little visit of about fifteen minutes, and the clock only runs while you are actually playing. Serve a guest or land a big combo and the day stretches out a little; put your phone down and it simply waits for you. There are still no fail states and no pressure.\n\nNew friends wander in during the back half of each week, and each one arrives with a new snack to match and a page of their story to read. The cafe light follows the real time over London, and the little window now shows the real weather there too. Tap the weather chip for a closer look at the day outside.\n\nEvery day now opens with a choice: a Today\'s Special. Pick one of three gentle twists, like Golden Hour that pays more but ends sooner, a Slow Morning that stretches a lazy day out, or a Feast Day with room for more guests. Prefer no twist at all? Just play it straight.\n\nAnd when you prestige into a brand new cafe, you now choose a permanent perk that stacks, so every cafe you run plays a little differently.\n\nWe also tidied the whole top of the screen, so your coins, your day and the weather are easy to read at a glance, and made Calm mode genuinely smooth for anyone who prefers less movement.'
+    },
+
+    {
         id: 278,
         date: '30 September 2026',
         tag: 'games',
