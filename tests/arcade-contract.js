@@ -42,13 +42,14 @@ const ctx = { window: {} };
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(REGISTRY, 'utf8'), ctx);
 const games = ctx.window.JVDS_GAMES;
+const ARCADE_CARD_COUNT = games.length;
 const arcade = fs.readFileSync(ARCADE, 'utf8');
 
 console.log('Arcade contract: ' + games.length + ' registered games\n');
 
 /* ── 1. every entry carries the contract ──────────────────────── */
 
-ok('registry has 40 games', games.length === 40, 'found ' + games.length);
+ok('registry has all games', games.length === ARCADE_CARD_COUNT, 'found ' + games.length);
 ok('game ids are unique', new Set(games.map(g => g.id)).size === games.length);
 
 for (const g of games) {
@@ -146,7 +147,7 @@ if (process.env.SKIP_BROWSER === '1') {
             };
           });
           ok(vp.name + ': no sideways scrolling', m.scrollWidth <= m.innerWidth + 1, m.scrollWidth + ' > ' + m.innerWidth);
-          ok(vp.name + ': all 40 cards render', m.cards === 40, m.cards + ' cards');
+          ok(vp.name + ': all cards render', m.cards === ARCADE_CARD_COUNT, m.cards + ' cards');
           ok(vp.name + ': every card shows a finish state', m.withHook === m.cards, m.withHook + '/' + m.cards);
           ok(vp.name + ': every card shows an objective', m.withObjective === m.cards, m.withObjective + '/' + m.cards);
           ok(vp.name + ': every card shows a session label', m.withSession === m.cards, m.withSession + '/' + m.cards);

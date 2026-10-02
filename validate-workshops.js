@@ -6,11 +6,18 @@ const ROOT = __dirname;
 // The detailed progress checks below cover the established interactive
 // patterns; this directory-wide gate ensures every workshop HTML file still
 // has the public metadata contract used by the site and sitemap.
+// Public-workshop coverage gate. Prototype pages marked noindex (for example
+// the *-canvas.html build-along drafts) are intentionally not public yet and
+// are excluded until they are promoted to real workshop URLs.
 const ALL_WORKSHOP_FILES = fs.readdirSync(path.join(ROOT, 'workshops'))
   .filter(file => file.endsWith('.html'))
   .sort();
-const coverage = { files: ALL_WORKSHOP_FILES.length, missing_title: [], missing_description: [], missing_canonical: [] };
-ALL_WORKSHOP_FILES.forEach(file => {
+const PUBLIC_WORKSHOP_FILES = ALL_WORKSHOP_FILES.filter(file => {
+  const content = fs.readFileSync(path.join(ROOT, 'workshops', file), 'utf8');
+  return !/<meta\s+name=["']robots["'][^>]*noindex/i.test(content);
+});
+const coverage = { files: PUBLIC_WORKSHOP_FILES.length, missing_title: [], missing_description: [], missing_canonical: [] };
+PUBLIC_WORKSHOP_FILES.forEach(file => {
   const content = fs.readFileSync(path.join(ROOT, 'workshops', file), 'utf8');
   if (!/<title>[^<]+<\/title>/i.test(content)) coverage.missing_title.push(file);
   if (!/<meta\s+name=["']description["']/i.test(content)) coverage.missing_description.push(file);

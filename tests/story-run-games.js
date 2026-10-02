@@ -32,6 +32,7 @@ const GAMES = [
   { file: 'lumo-dash.html', id: 'lumo-dash', character: 'Lumo' },
   { file: 'nibble-quest.html', id: 'nibble-quest', character: 'Pip' },
   { file: 'stack-attack.html', id: 'stack-attack', character: 'Ember' },
+  { file: 'nova-siege.html', id: 'nova-siege', character: 'Pip' },
   { file: 'sky_high_with_friends.html', id: 'sky-high-friends', character: 'Echo' }
 ];
 

@@ -422,6 +422,39 @@ const QUESTS = {
       { type: 'tool-export', toolId: 'pixel-studio', minCount: 1 }
     ],
     rewards: { xp: 75, badge: '🐢 Pip Pixel Pal', cosmetic: { gameId: 'pixel-studio', cosmeticId: 'pip-badge' } }
+  },
+
+  'quest-25-nova-defender': {
+    id: 'quest-25-nova-defender',
+    title: 'Nova Defender',
+    description: "Pilot Pip's defence squadron in Nova Siege and score 2,000 points to push the Swarm back from the Nova gate.",
+    icon: '🚀',
+    gameId: 'nova-siege',
+    character: 'Pip',
+    category: 'gaming',
+    difficulty: 'beginner',
+    order: 25,
+    requirements: [
+      { type: 'game-score', gameId: 'nova-siege', minScore: 2000 }
+    ],
+    rewards: { xp: 120, badge: '🚀 Nova Defender', cosmetic: { gameId: 'nova-siege', cosmeticId: 'nova-badge' } }
+  },
+
+  'quest-26-nova-gate-hero': {
+    id: 'quest-26-nova-gate-hero',
+    title: 'Gate Hero',
+    description: 'Score 15,000 points in Nova Siege and beat the stage bosses to lock the Nova gate for good.',
+    icon: '☄️',
+    gameId: 'nova-siege',
+    character: 'Pip',
+    category: 'gaming',
+    difficulty: 'advanced',
+    order: 26,
+    prerequisites: ['quest-25-nova-defender'],
+    requirements: [
+      { type: 'game-score', gameId: 'nova-siege', minScore: 15000 }
+    ],
+    rewards: { xp: 300, badge: '☄️ Gate Hero', achievement: 'novaGateHero', cosmetic: { gameId: 'nova-siege', cosmeticId: 'solaris-hull' } }
   }
 };
 

@@ -1,12 +1,37 @@
 window.JVDS_GAMES = [
   {
+    "id": "nova-siege",
+    "cat": "Action",
+    "file": "nova-siege.html",
+    "title": "Nova Siege",
+    "tag": "Space Shooter",
+    "emoji": "🚀",
+    "cover": "NovaSiegeCover.webp",
+    "bg": "linear-gradient(135deg,#05070f,#4cc9f0)",
+    "kids": false,
+    "desc": "A remastered retro pixel shooter: dodge the swarm, blast the galactic army, beat stage bosses, then bank credits to permanently upgrade your ship and unlock new hulls.",
+    "difficulty": "Easy to learn",
+    "session": "3-5 min",
+    "controls": "Drag to fly (auto-fire), or arrow keys",
+    "objective": "Dodge the swarm, shoot the galactic army, and bank credits to upgrade your ship.",
+    "age": "Ages 8-14",
+    "learning": "Reflexes · Resource planning · Upgrade strategy",
+    "description": "A remastered top-down pixel space shooter in the classic Seek and Destroy arcade style: drag to fly, dodge the swarm, shoot the galactic army, beat stage bosses, and spend banked credits on permanent ship upgrades and unlockable hulls.",
+    "playPromise": "Fly your pixel ship, clear the swarm, drop a stage boss, then spend your credits on a stronger ship and launch again.",
+    "storyHook": "The Swarm is streaming out of the Nova gate and Pip needs a pilot: fly the defence ship and hold the line.",
+    "character": "Pip",
+    "finishLine": "Beat the boss to hold the gate, bank your credits, upgrade, then launch again.",
+    "arcadeSession": "3-5 min",
+    "status": "improved"
+  },
+  {
     "id": "pixel-pet-arena",
     "cat": "Action",
     "file": "pixel-pet-arena.html",
     "title": "Pixel Pet Arena",
     "tag": "Pet Care · Battle",
     "emoji": "🐾",
-    "cover": "",
+    "cover": "PixelPetArenaCover.webp",
     "bg": "linear-gradient(135deg,#073b4c,#ef476f)",
     "kids": false,
     "desc": "Hatch an egg with Pip, draw your pixel pet, look after its mood and energy, train one stat, then battle 3 arena rivals in a 5-minute story run.",
@@ -31,7 +56,7 @@ window.JVDS_GAMES = [
     "title": "Beat Builder Battle",
     "tag": "Rhythm Career",
     "emoji": "🥁",
-    "cover": "",
+    "cover": "BeatBuilderBattleCover.webp",
     "bg": "linear-gradient(135deg,#4a3472,#bc477f)",
     "kids": false,
     "desc": "Compose beat loops, battle rhythm rivals, grow fans, unlock beat packs and venues, and chase stronger timing scores.",
@@ -56,7 +81,7 @@ window.JVDS_GAMES = [
     "title": "Creature Rescue Clinic",
     "tag": "Clinic Sim",
     "emoji": "🏥",
-    "cover": "",
+    "cover": "CreatureRescueClinicCover.webp",
     "bg": "linear-gradient(135deg,#2f6f5e,#4fb286)",
     "kids": false,
     "desc": "Run a cosy creature rescue clinic with live rooms, patient triage, diagnosis, treatments, upgrades and a full shift score.",
@@ -78,7 +103,7 @@ window.JVDS_GAMES = [
     "title": "3D Marble Run Creator",
     "tag": "3D Creator · Physics",
     "emoji": "🧪",
-    "cover": "",
+    "cover": "MarbleRunLabCover.webp",
     "bg": "linear-gradient(135deg,#203864,#70a3a7)",
     "kids": true,
     "desc": "Orbit the track like a rollercoaster builder with Lumo, place ramps, turns, drops and boosters, then launch the marble and finish the mission in 5 minutes.",
@@ -104,7 +129,7 @@ window.JVDS_GAMES = [
     "title": "Backpack Quest",
     "tag": "Packing Puzzle",
     "emoji": "🎒",
-    "cover": "",
+    "cover": "BackpackQuestCover.webp",
     "bg": "linear-gradient(135deg,#283618,#dda15e)",
     "kids": false,
     "desc": "Pack shaped loot into a small backpack, build adjacency combos, then face the Ancient Golem in one short fight.",
@@ -126,7 +151,7 @@ window.JVDS_GAMES = [
     "title": "Mini Theme Park Builder",
     "tag": "Tiny Theme Park Sim",
     "emoji": "🎡",
-    "cover": "",
+    "cover": "MiniThemeParkBuilderCover.webp",
     "bg": "linear-gradient(135deg,#cfe8ef,#f2a541)",
     "kids": false,
     "desc": "Build a small Theme Park style sim with paths, rides, stalls, animated guests, queues, ticket prices, staff, research and a five-day season.",
@@ -899,7 +924,7 @@ window.JVDS_GAMES = [
     "title": "Echo's Casebook: One Case",
     "tag": "Deduction · One Case",
     "emoji": "🔎",
-    "cover": "",
+    "cover": "EchoCasebookCover.webp",
     "bg": "linear-gradient(135deg,#0f3030,#f6c6d4)",
     "kids": false,
     "desc": "One missing-muffin case: read the four clues, cross out the suspects the evidence rules out, then accuse the one that fits.",
@@ -921,7 +946,7 @@ window.JVDS_GAMES = [
     "title": "Stardust Ruins: One Relic",
     "tag": "Symbol logic · One ruin",
     "emoji": "🏛️",
-    "cover": "",
+    "cover": "StardustRuinsCover.webp",
     "bg": "linear-gradient(135deg,#1a1040,#a78bfa)",
     "kids": false,
     "desc": "Read the clue sequence, tap the ancient symbols in that order, and open the relic chamber.",
@@ -935,27 +960,5 @@ window.JVDS_GAMES = [
     "arcadeSession": "3-5 min",
     "age": "Ages 8-13",
     "learning": "Symbol logic · Sequencing"
-  },
+  }
 ];
-
-if (typeof module !== "undefined") {
-  module.exports = window.JVDS_GAMES;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
