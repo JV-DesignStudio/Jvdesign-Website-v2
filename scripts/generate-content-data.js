@@ -385,8 +385,8 @@ function generatePaths() {
       ageRange: '10+',
       levels: [
         { title: 'Level 1: GDScript Basics', workshops: ['godot-gdscript-essentials'] },
-        { title: 'Level 2: Your First Scene', workshops: ['godot-first-scene'] },
-        { title: 'Level 3: 2D Platformer', workshops: ['godot-2d-platformer'] },
+        { title: 'Level 2: Your First Game', workshops: ['godot-racing-workshop'] },
+        { title: 'Level 3: 2D Platformer', workshops: ['jump-jump-mario-workshop'] },
         { title: 'Level 4: Build a Complete Game', workshops: ['my-first-video-game'] }
       ],
       certificate: 'Junior Godot Developer'
@@ -400,10 +400,10 @@ function generatePaths() {
       engine: 'Scratch',
       ageRange: '7-12',
       levels: [
-        { title: 'Level 1: Scratch Basics', workshops: ['scratch-getting-started'] },
+        { title: 'Level 1: Scratch Basics', workshops: ['scratch-catch-workshop'] },
         { title: 'Level 2: Your First Game', workshops: ['my-first-scratch-game'] },
-        { title: 'Level 3: Build a Platformer', workshops: ['scratch-platformer'] },
-        { title: 'Level 4: Interactive Stories', workshops: ['scratch-story'] }
+        { title: 'Level 3: Build a Platformer', workshops: ['scratch-platformer-workshop'] },
+        { title: 'Level 4: Interactive Stories', workshops: ['scratch-story-workshop'] }
       ],
       certificate: 'Scratch Creator'
     },
@@ -416,10 +416,10 @@ function generatePaths() {
       engine: 'Roblox',
       ageRange: '10+',
       levels: [
-        { title: 'Level 1: Roblox Studio Basics', workshops: ['roblox-studio-basics'] },
+        { title: 'Level 1: Your First Game', workshops: ['my-first-roblox-studio-game'] },
         { title: 'Level 2: Build an Obby', workshops: ['roblox-obby-workshop'] },
         { title: 'Level 3: Tycoon', workshops: ['roblox-tycoon-workshop'] },
-        { title: 'Level 4: Your First Game', workshops: ['my-first-roblox-studio-game'] }
+        { title: 'Level 4: Pet Simulator', workshops: ['roblox-simulator-workshop'] }
       ],
       certificate: 'Roblox Developer'
     },
@@ -432,8 +432,8 @@ function generatePaths() {
       engine: 'Python',
       ageRange: '10+',
       levels: [
-        { title: 'Level 1: Python Basics', workshops: ['python-getting-started'] },
-        { title: 'Level 2: Pygame Intro', workshops: ['python-pygame-intro'] },
+        { title: 'Level 1: Python Basics', workshops: ['python-game-builder'] },
+        { title: 'Level 2: Catch Game', workshops: ['python-catch-workshop'] },
         { title: 'Level 3: Build Breakout', workshops: ['python-breakout-workshop'] },
         { title: 'Level 4: Platformer', workshops: ['python-platformer-workshop'] }
       ],
@@ -448,9 +448,9 @@ function generatePaths() {
       engine: 'Unity',
       ageRange: '12+',
       levels: [
-        { title: 'Level 1: Unity Interface', workshops: ['unity-getting-started'] },
-        { title: 'Level 2: 2D Basics', workshops: ['unity-2d-basics'] },
-        { title: 'Level 3: 2D Platformer', workshops: ['unity-2d-platformer'] }
+        { title: 'Level 1: 2D Platformer', workshops: ['unity-2d-platformer'] },
+        { title: 'Level 2: Top-Down Shooter', workshops: ['unity-top-down-shooter'] },
+        { title: 'Level 3: 3D Platformer', workshops: ['unity-3d-platformer'] }
       ],
       certificate: 'Unity Beginner'
     },
@@ -469,6 +469,15 @@ function generatePaths() {
       certificate: 'Tiny Creator'
     }
   ];
+
+  const workshopsDir = path.join(ROOT, 'workshops');
+  const missing = [];
+  paths.forEach((p) => (p.levels || []).forEach((l) => (l.workshops || []).forEach((w) => {
+    if (!fs.existsSync(path.join(workshopsDir, w + '.html'))) missing.push(`${p.id} -> ${w}`);
+  })));
+  if (missing.length) {
+    throw new Error(`paths.json references ${missing.length} workshop(s) that do not exist: ${missing.join(', ')}. Repoint them to real files before generating.`);
+  }
 
   console.log(`  paths.json: ${paths.length} entries`);
   return paths;
