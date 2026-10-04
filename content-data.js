@@ -4242,7 +4242,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-04T08:31:52.432Z",
+    "generated": "2026-10-04T08:45:20.196Z",
     "workshops": 194,
     "games": 41,
     "tools": 37,
