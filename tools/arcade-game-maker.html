@@ -3517,7 +3517,7 @@ score += bumper.pts;
  <button class="btn-sm" id="goResultCodeBtn" style="flex:1;font-size:.7rem;background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.3);color:#fbbf24;" title="Copy a code your friend can paste into their Game Maker to put your score on their leaderboard" onclick="_copyResultCode()">📋 Code</button>
  <button class="btn-sm" style="flex:1;font-size:.7rem;" title="Shareable picture card for WhatsApp/Instagram" onclick="_shareGameCard(_goPendingScore)">🖼 Card</button>
  </div>
- <a class="go-credit" href="https://jvdesignstudio.com" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;">🕹️ Made with JVDesignStudio.com</a>
+ <a class="go-credit" href="https://jvdesignstudio.co.uk/" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none;">🕹️ Made with JVDesignStudio - make your own</a>
  </div>
  </div>
 
@@ -3966,240 +3966,23 @@ score += bumper.pts;
  <button id="pwa-install-dismiss" onclick="dismissPwaBanner()" aria-label="Dismiss">✕</button>
 </div>
 
+<!-- A760: liveConfig + GameAudio now live in src/arcade-maker/*.js and are imported here.
+     This is a module (deferred), so it runs after HTML parsing but before any user
+     interaction. Everything is published on window so the classic script below and every
+     inline onclick handler keep working. The modules guard their own fallbacks, so the page
+     still works when opened directly from disk with no server. -->
+<script type="module">
+import { liveConfig, gameState, touchInput, gameTheme, themeInt, themeHex, _themeData, _lcDefaults, _clearTouchInput } from '../src/arcade-maker/liveConfig.js';
+import { GameAudio } from '../src/arcade-maker/GameAudio.js';
+import { GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS } from '../src/arcade-maker/genres.js';
+import { ACH_TOAST } from '../src/arcade-maker/achievements.js';
+// The modules export clean names; the classic code below still reads the old
+// underscore-prefixed globals, so those aliases are published too.
+const _GENRE_DESCS = GENRE_DESCS, _GENRE_ICONS = GENRE_ICONS, _ACH_TOAST = ACH_TOAST;
+Object.assign(window, { liveConfig, gameState, touchInput, gameTheme, themeInt, themeHex, _themeData, _lcDefaults, _clearTouchInput, GameAudio, GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS, ACH_TOAST, _GENRE_DESCS, _GENRE_ICONS, _ACH_TOAST });
+</script>
 <script>
 // ── LIVE CONFIG (read every frame) ───────────────────────────────────────────
-const liveConfig = {
-    speed:200, rotateSpeed:190, bulletSpeed:540, fireCooldown:180,
-    spawnDelay:1100, enemySpeed:150, gravity:600, jumpForce:450,
-    pointsPerKill:10, obstacleSpeed:220, fireRate:400,
-    // Note: scoreMultiplier applied at runtime via liveConfig.scoreMultiplier
-    // Custom tab options
-    lives:3, playerScale:1.0, bgStyle:'dark', screenShake:true,
-    bulletSpread:1, doubleJump:false, paddleW:90, enemyZigzag:false,
-    pipeGap:120, pong2Player:false,
-    // Difficulty ramp
-    difficultyScale:1.0,
-    // Game speed (physics + timer multiplier)
-    gameSpeed:1.0,
-    // Win condition: 'none' | 'score' | 'time'
-    winCondition:'none', winTarget:500,
-    // Power-ups
-    powerUpEnabled:true, powerUpFreq:10000,
-    puShieldOn:true, puX2On:true, puSpeedOn:true, puLifeOn:true,
-    // Snake options
-    snakeWallWrap:true, snakeCellSize:20,
-    snakeSpeed:160, snakeStartLen:3, snakePoisonFood:true, snakeGoldenFood:true,
-    // Asteroids options
-    asteroidCount:6, asteroidSpeedMul:1.0, asteroidDrag:50, asteroidSaucer:true,
-    // Dodge options
-    dodgeStarRatio:30,
-    // Paper Toss options
-    paperTossWindMax:140, paperTossBinWidth:70, paperTossMissLimit:3,
-    // Runner options
-    runnerObstacleMix:'standard', runnerCoinFreq:0.15, runnerParallax:true,
-    // Shooter options
-    maxEnemies:12, bossWaves:true,
-    // Platformer options
-    wallJump:false, platformerEnemyCount:4,
-    // Breaker options
-    brickRows:4,
-    // Invaders options
-    invaderCols:8, invaderRows:3, invaderUfo:true,
-    // Roguelike options
-    rogueRooms:6, rogueDensity:0.3, rogueStartHp:3,
-    rogueEnemyHpMul:1.0,   // multiplier applied to every enemy's base HP
-    rogueBossMul:1.0,       // multiplier applied to boss HP
-    // Visual FX
-    crtEffect:false, sceneTransition:'none',
-    // Sound pack
-    soundPack:'chiptune',
-    gameFont:'JetBrains',
-    tags:[],
-    // Speed run
-    speedRun:false,
-    // Boss Designer
-    bossHp:15, bossScale:2.0, bossSpeed:50, bossReward:150, bossPhases:null,
-    // Cutscene
-    cutsceneSlides:null, cutsceneWhen:'before',
-    // User-defined event rules (Events tab)
-    events: [],
-    // ── Loot & Drops ──────────────────────────────────────────────
-    lootEnabled:    false,
-    lootDropRate:   0.40,  // chance per enemy kill
-    lootCoinRate:   0.55,  // fraction of drops → coin
-    lootGemRate:    0.25,  // fraction → gem
-    lootHealRate:   0.12,  // fraction → heal
-    lootCustomPuRate:0.08, // fraction → custom PU
-    lootCoinValue:  25,
-    lootGemValue:   100,
-    // ── Custom Power-ups ──────────────────────────────────────────
-    customPowerUps: [],
-    // ── Game Juice ────────────────────────────────────────────────
-    juiceEnabled:   true,
-    juiceShake:     true,  juiceShakeIntensity: 3,  juiceShakeDuration: 140,
-    juiceHitStop:   true,  juiceHitStopMs: 30,
-    juiceBurst:     true,  juiceBurstCount: 8,
-    juiceChroma:    true,
-    juiceZoom:      false, juiceZoomScale: 1.06,
-    juiceComboFlash:true,
-    // ── Visual Themes ─────────────────────────────────────────────
-    theme: 'space',
-    // ── Parallax Backgrounds ──────────────────────────────────────
-    parallaxLayers: true,
-    // ── Story / Dialogue ──────────────────────────────────────────
-    storyIntro: '', storyWin: '', storyLose: '',
-    // ── Enemy AI ──────────────────────────────────────────────────
-    enemyAI: 'classic',
-    // ── Boss Fight ────────────────────────────────────────────────
-    bossEnabled: false, bossScore: 500, bossHpNew: 20, bossBehaviour: 'sweep',
-    // ── Multi-Level Progression ───────────────────────────────────
-    levelsEnabled: false,
-    levelCount: 3,
-    levelConfigs: [
-        { speed: 180, enemyCount: 5,  bgHex: '#0a0a12' },
-        { speed: 240, enemyCount: 8,  bgHex: '#0d0d1a' },
-        { speed: 300, enemyCount: 12, bgHex: '#0a0d14' },
-        { speed: 360, enemyCount: 16, bgHex: '#14080a' },
-        { speed: 420, enemyCount: 20, bgHex: '#080a14' },
-    ],
-    _currentLevel: 0,
-    // ── Visual Level Editor ───────────────────────────────────────
-    tileMapEnabled: false,
-    tileMap: [],
-    tileSize: 32,
-    // ── Collectibles & Shop ───────────────────────────────────────
-    coinsEnabled: true,
-    coinEmoji: '🪙',
-    coinValue: 10,
-    // ── Achievements ──────────────────────────────────────────────
-    achievements: [],
-    // ── Particle System ───────────────────────────────────────────
-    particleStyle: 'burst',
-    particleColor: 'purple',
-    particleCount: 8,
-    particleSize: 'medium',
-    trailEffect: false,
-    // ── Rhythm game ───────────────────────────────────────────────────
-    rhythmLanes: 4,      // 1-4 active lanes
-    rhythmSpeed: 260,    // note fall speed px/s
-    rhythmMisses: 30,    // misses before game over
-    rhythmWinScore: 2000, // score needed to trigger victory
-    platLevel: 1,         // current platformer level (1-3); persisted by autosave
-    // ── Street Fighter ────────────────────────────────────────────
-    cpuDifficulty: 'normal', // easy | normal | hard | brutal
-    roundCount: 3,            // best-of N rounds
-    twoPlayer: false,         // true = P2 uses arrow keys
-    // ── New extras features ───────────────────────────────────────
-    powerupsEnabled: false,
-    powerupTypes: ['speed','shield','magnet','double'],
-    weatherEffect: 'none',
-    hapticEnabled: true,
-    hapticIntensity: 1.0, // 0.0-1.5 multiplier applied to all vibrate patterns
-    // ── Patch3 HUD/Combat/Camera extras ──────────────────────────────────
-    countdownEnabled: false,
-    startLives: 3,
-    playerColour: null,
-    playerSize: 1.0,
-    invincFrames: 90,
-    screenShakeCombat: true,
-    cameraZoom: 1.0,
-    hitFlash: true,
-    slowMoHit: false,
-    comboWindow: 1500,
-    scoreMultiplier: 1,
-    autoFire: false,
-    scoreStyle: 'default',
-    livesStyle: 'hearts',
-    scorePopups: true,
-    showTimer: false,
-    // Power Picks: the in-run perk draft. On by default , it is the thing that
-    // makes two runs of the same game play differently.
-    perksEnabled: true
-};
-
-/* Player movement speed and weapon cadence are read directly by all 21 scenes,
-   so rather than touching ~80 call sites the two values become accessors that
-   fold in the current run's perks. The raw author-set numbers live in
-   liveConfig._base and are what save/share/export always write, so a run can
-   never leak its buffs back into the studio sliders. With no perks taken both
-   multipliers are exactly 1 and every genre behaves as it did before. */
-liveConfig._base = { speed: liveConfig.speed, fireCooldown: liveConfig.fireCooldown };
-Object.defineProperty(liveConfig, 'speed', {
-    enumerable: true, configurable: true,
-    get() {
-        let m = 1;
-        try { m = RunMods.moveSpeedMul; } catch (e) { m = 1; }   // RunMods may still be in its TDZ
-        return this._base.speed * (m || 1);
-    },
-    set(v) { this._base.speed = v; },
-});
-Object.defineProperty(liveConfig, 'fireCooldown', {
-    enumerable: true, configurable: true,
-    get() {
-        let m = 1;
-        try { m = RunMods.fireRateMul; } catch (e) { m = 1; }     // RunMods may still be in its TDZ
-        return Math.max(24, Math.round(this._base.fireCooldown / (m || 1)));
-    },
-    set(v) { this._base.fireCooldown = v; },
-});
-
-// Tower Defence liveConfig defaults (used by custom-DEFENSE section + sceneTowerDefense)
-if (!liveConfig.tdStartGold)    liveConfig.tdStartGold    = 150;
-if (!liveConfig.tdEnemyHpMul)   liveConfig.tdEnemyHpMul   = 1.0;
-if (!liveConfig.tdEnemySpdMul)  liveConfig.tdEnemySpdMul  = 1.0;
-if (!liveConfig.tdTowerTypes) liveConfig.tdTowerTypes = [
-    { id:'arrow',  emoji:'🏹', name:'Arrow',  cost:50,  range:120, rate:900,  dmg:1, aoe:0,  slow:0    },
-    { id:'sniper', emoji:'🎯', name:'Sniper', cost:100, range:210, rate:1800, dmg:3, aoe:0,  slow:0    },
-    { id:'ice',    emoji:'❄️', name:'Ice',    cost:80,  range:100, rate:1100, dmg:1, aoe:0,  slow:0.45 },
-    { id:'bomb',   emoji:'💥', name:'Bomb',   cost:120, range:90,  rate:1600, dmg:2, aoe:45, slow:0    },
-];
-
-// ── CLICKER / MEMORY / WAVESURVIVAL liveConfig defaults ─────────────────────
-if (liveConfig.clickReward       === undefined) liveConfig.clickReward       = 5;
-if (liveConfig.autoClickerCost   === undefined) liveConfig.autoClickerCost   = 10;
-if (liveConfig.clickerMilestones === undefined) liveConfig.clickerMilestones = true;
-if (liveConfig.clickEmoji        === undefined) liveConfig.clickEmoji        = '👾';
-if (liveConfig.memoryGrid        === undefined) liveConfig.memoryGrid        = 'medium';
-if (liveConfig.memoryCardSet     === undefined) liveConfig.memoryCardSet     = 'animals';
-if (liveConfig.memoryTimerMode   === undefined) liveConfig.memoryTimerMode   = false;
-if (liveConfig.memoryFlipDelay   === undefined) liveConfig.memoryFlipDelay   = 900;
-if (liveConfig.waveScaling       === undefined) liveConfig.waveScaling       = 2;
-if (liveConfig.wavePause         === undefined) liveConfig.wavePause         = 2000;
-if (liveConfig.waveClearBonus    === undefined) liveConfig.waveClearBonus    = true;
-
-// ── GAME STATE (persists across scene restarts) ────────────────────────────────
-const gameState = { lives:3 };
-
-// ── TOUCH INPUT STATE ────────────────────────────────────────────────────────
-const touchInput = { left:false, right:false, up:false, down:false, fire:false, lane0:false, lane1:false, lane2:false, lane3:false };
-function _clearTouchInput() {
-    Object.keys(touchInput).forEach(k => { touchInput[k] = false; });
-    document.querySelectorAll('.tc-pressed,.joy-active,.pb-zone-active,.rl-pressed')
-        .forEach(el => el.classList.remove('tc-pressed','joy-active','pb-zone-active','rl-pressed'));
-    const knob = document.querySelector('#tc-joy-zone .joystick-knob');
-    if (knob) knob.style.transform = 'translate(-50%,-50%)';
-}
-
-// ── GAME THEME (from Colour Palette tool) ────────────────────────────────────
-const gameTheme = { cols:[], name:'' };
-function themeInt(idx, fallback) {
-    const c = gameTheme.cols[idx];
-    return c ? parseInt(c.replace('#',''), 16) : fallback;
-}
-function themeHex(idx, fallback) { return gameTheme.cols[idx] || fallback; }
-
-// ── Visual Theme data ─────────────────────────────────────────────────────────
-function _themeData(theme) {
-    const themes = {
-        space:  { bg:0x0a0a18, bgHex:'#0a0a18', playerEmoji:'🚀', enemyEmoji:'👾', bulletEmoji:'💥', collectEmoji:'⭐', accentColor:0x7c3aed },
-        ocean:  { bg:0x042a3d, bgHex:'#042a3d', playerEmoji:'🐠', enemyEmoji:'🦑', bulletEmoji:'💧', collectEmoji:'🐚', accentColor:0x0891b2 },
-        forest: { bg:0x0d1a0d, bgHex:'#0d1a0d', playerEmoji:'🦊', enemyEmoji:'🍄', bulletEmoji:'🌿', collectEmoji:'🌰', accentColor:0x16a34a },
-        castle: { bg:0x1a1a22, bgHex:'#1a1a22', playerEmoji:'⚔️', enemyEmoji:'🐉', bulletEmoji:'✨', collectEmoji:'💎', accentColor:0xb45309 },
-        candy:  { bg:0x2a0a2a, bgHex:'#2a0a2a', playerEmoji:'🧁', enemyEmoji:'🍬', bulletEmoji:'⭐', collectEmoji:'🍭', accentColor:0xec4899 },
-        cyber:  { bg:0x000a00, bgHex:'#000a00', playerEmoji:'🤖', enemyEmoji:'💻', bulletEmoji:'⚡', collectEmoji:'🔋', accentColor:0x22c55e }
-    };
-    return themes[theme] || themes.space;
-}
 
 // ── ASSET STATE ───────────────────────────────────────────────────────────────
 let customSpriteDataUrl   = null;
@@ -4364,20 +4147,8 @@ function _clearUserCode() {
     localStorage.removeItem('jv_user_code');
 }
 
-const _ACH_TOAST = {
-    first_blood:'🎯 First Blood', centurion:'💯 Centurion', high_roller:'💰 High Roller',
-    survivor:'⏱ Survivor (60s)', untouchable:'🛡 Untouchable', wave_3:'👾 Wave 3 Clear',
-    power_up:'⚡ Power-Up!', speed_demon:'🚀 Speed Demon', goal_reached:'🏁 Goal Reached!',
-    // Genre-specific
-    snake_long:'🐍 Big Snake (20+)', snake_flawless:'🌟 Flawless Run',
-    pong_shutout:'🏓 Shutout!', pong_comeback:'💪 Comeback Win!',
-    invaders_perfect:'🛸 Perfect Wave', asteroids_chain:'🌌 3-Wave Chain', asteroids_ace:'⭐ Asteroid Ace (Wave 5)',
-    runner_survivor:'⏱ Runner Survivor (100s)', runner_centurion:'💯 Runner 1K',
-    plat_clean:'🧹 Flawless Platformer', shooter_combo10:'🔥 10× Combo!',
-    rogue_floor3:'⚔️ Floor 3 Reached!',
-    race_podium:'🏆 Podium Finish', race_clean:'🌟 Clean Lap (no off-road)', race_nitro3:'⚡ Nitro Triple', race_fast:'🏎️ Under 30s Lap',
-    hop_100:'🐸 Height 100!', hop_500:'🌤 Cloud Jumper!'
-};
+// _ACH_TOAST is imported from src/arcade-maker/achievements.js (A763) and
+// published on window by the module bootstrap near the top of this file.
 // NOTE: _achUnlock is defined ONCE, later in this file (with localStorage
 // persistence). Do not re-declare it here , the duplicate silently won.
 
@@ -4441,357 +4212,8 @@ const fallbackLevels = [
 const fallbackLevel = fallbackLevels[Math.floor(Math.random() * fallbackLevels.length)];
 
 // Snapshot of factory defaults, used to delta-encode share payloads
-const _lcDefaults = JSON.parse(JSON.stringify(liveConfig));
 
 // ── AUDIO ENGINE ─────────────────────────────────────────────────────────────
-const GameAudio = {
-    ctx: null, volume: 0.5, sfxEnabled: true,
-    sfxVol: 1.0,   // category multiplier (0-1), Sounds tab slider
-    musicVol: 0.6, // category multiplier (0-1), Sounds tab slider
-    sounds: { shoot:'laser', jump:'boing', hit:'boom', score:'coin', levelup:'fanfare', death:'lose', powerup:'powerup', victory:'victory' },
-    customBuffers: { shoot:null, jump:null, hit:null, score:null, levelup:null, death:null, powerup:null, victory:null },
-    musicNodes: [], musicTimeout: null, musicStep: 0,
-    customMusic: null, _musicSource: null,
-
-    getCtx() {
-        if (!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)();
-        if (this.ctx.state==='suspended') this.ctx.resume();
-        return this.ctx;
-    },
-
-    play(event) {
-        if (!this.sfxEnabled) return;
-        const s = this.sounds[event];
-        if (s === 'off') return;
-        if (this.customBuffers[event]) { this._playBuffer(this.customBuffers[event]); return; }
-        const fn = this['_snd_' + s];
-        if (fn) fn.call(this);
-    },
-
-    previewSlot(event) {
-        const saved = this.sfxEnabled;
-        this.sfxEnabled = true;
-        this.play(event);
-        this.sfxEnabled = saved;
-    },
-    previewMusic() {
-        // Play 3 seconds of the current music (custom or built-in style)
-        // Read the REAL toggle state (this.musicOn was never defined, so the
-        // "already playing" branch could never trigger)
-        const wasOn = document.getElementById('musicToggle')?.checked || false;
-        if (!wasOn) {
-            const style = document.getElementById('musicStyle')?.value || 'chiptune';
-            this.startMusic(style);
-            setTimeout(() => { if (!wasOn) this.stopMusic(); }, 3000);
-        } else {
-            showToast('Music is already playing!');
-        }
-    },
-    // Missing method: preference restore called GameAudio.setVolume() on boot
-    // and silently failed inside its try/catch, so saved volume never applied
-    setVolume(v) {
-        this.volume = Math.max(0, Math.min(1, Number(v) || 0));
-    },
-
-    _osc(type, freq0, freq1, dur, vol) {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        const o = ac.createOscillator(), g = ac.createGain();
-        o.type = window._soundPackType || type;
-        // Pitch randomisation: if enabled, vary detune ±semitones for organic feel
-        const _pitchVariance = window._sfxPitchVariance || 0;
-        const _randomDetune = _pitchVariance > 0 ? (Math.random() * 2 - 1) * _pitchVariance * 100 : 0;
-        o.detune.value = (window._soundPackDetune || 0) + _randomDetune;
-        o.connect(g); g.connect(ac.destination);
-        o.frequency.setValueAtTime(freq0, t);
-        if (freq1) o.frequency.exponentialRampToValueAtTime(freq1, t + dur * 0.8);
-        g.gain.setValueAtTime(this.volume * this.sfxVol * vol, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-        o.start(t); o.stop(t + dur + 0.02);
-    },
-
-    _noise(dur, vol) {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate);
-        const d = buf.getChannelData(0);
-        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-        const src = ac.createBufferSource(), g = ac.createGain();
-        src.buffer = buf; src.connect(g); g.connect(ac.destination);
-        g.gain.setValueAtTime(this.volume * this.sfxVol * vol, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-        src.start(t);
-    },
-
-    // SHOOT sounds
-    _snd_laser() { this._osc('sawtooth', 880, 110, 0.13, 0.25); },
-    _snd_plasma() { this._osc('square', 440, 55, 0.18, 0.2); },
-    _snd_zap() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [800,600,400].forEach((f,i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.type = 'square'; o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i * 0.03;
-            g.gain.setValueAtTime((this.volume * this.sfxVol) * 0.15, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st + 0.05);
-            o.start(st); o.stop(st + 0.07);
-        });
-    },
-    _snd_pop() { this._osc('sine', 600, 200, 0.07, 0.3); },
-
-    // JUMP sounds
-    _snd_boing() { this._osc('sine', 220, 550, 0.22, 0.3); },
-    _snd_spring() { this._osc('triangle', 300, 700, 0.15, 0.28); },
-    _snd_rocket() { this._osc('sawtooth', 150, 600, 0.2, 0.22); },
-    _snd_float() { this._osc('sine', 400, 600, 0.3, 0.18); },
-
-    // HIT/DIE sounds
-    _snd_boom() {
-        this._noise(0.25, 0.4);
-        this._osc('sine', 80, 20, 0.25, 0.3);
-    },
-    _snd_crunch() { this._noise(0.12, 0.35); },
-    _snd_buzz() { this._osc('square', 220, 80, 0.2, 0.3); },
-
-    // SCORE sounds
-    _snd_coin() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [523, 784].forEach((f, i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i * 0.07;
-            g.gain.setValueAtTime((this.volume * this.sfxVol) * 0.22, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st + 0.12);
-            o.start(st); o.stop(st + 0.14);
-        });
-    },
-    _snd_ding() { this._osc('sine', 880, 880, 0.15, 0.25); },
-    _snd_chime() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [523, 659, 784, 1047].forEach((f, i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i * 0.055;
-            g.gain.setValueAtTime((this.volume * this.sfxVol) * 0.18, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st + 0.14);
-            o.start(st); o.stop(st + 0.16);
-        });
-    },
-
-    // LEVEL UP sounds, picks randomly from 3 fanfares for variety
-    _snd_fanfare() {
-        const _pick = Math.floor(Math.random() * 3);
-        if (_pick === 1) { this._snd_fanfare_b(); return; }
-        if (_pick === 2) { this._snd_fanfare_c(); return; }
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [523,659,784,1047].forEach((f,i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.type = window._soundPackType||'square'; o.detune.value=window._soundPackDetune||0;
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i * 0.09;
-            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.22, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st+0.22);
-            o.start(st); o.stop(st+0.25);
-        });
-    },
-    // Fanfare variant B, upward triad arpeggio
-    _snd_fanfare_b() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [392,494,587,784,988].forEach((f,i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.type = window._soundPackType||'triangle'; o.detune.value=window._soundPackDetune||0;
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i * 0.08;
-            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st+0.18);
-            o.start(st); o.stop(st+0.2);
-        });
-    },
-    // Fanfare variant C, triumphant chord swell
-    _snd_fanfare_c() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [[440,554,659],[554,659,880]].forEach(([f1,f2,f3],i) => {
-            [f1,f2,f3].forEach(f => {
-                const o = ac.createOscillator(), g = ac.createGain();
-                o.type = window._soundPackType||'sine'; o.detune.value=window._soundPackDetune||0;
-                o.connect(g); g.connect(ac.destination); o.frequency.value = f;
-                const st = t + i * 0.25;
-                g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime((this.volume * this.sfxVol)*0.14, st+0.06);
-                g.gain.exponentialRampToValueAtTime(0.001, st+0.45);
-                o.start(st); o.stop(st+0.5);
-            });
-        });
-    },
-    _snd_jingle() { this._osc('square', 784, 1568, 0.35, 0.2); },
-    _snd_ascend() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [330,392,494,659].forEach((f,i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.type = window._soundPackType||'square'; o.detune.value=window._soundPackDetune||0;
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i*0.07;
-            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st+0.18);
-            o.start(st); o.stop(st+0.2);
-        });
-    },
-
-    // DEATH / GAME OVER sounds
-    _snd_lose() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [440,350,280,220].forEach((f,i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.type = window._soundPackType||'sawtooth'; o.detune.value=window._soundPackDetune||0;
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i*0.1;
-            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st+0.18);
-            o.start(st); o.stop(st+0.22);
-        });
-    },
-    _snd_wah() { this._osc('sawtooth', 300, 100, 0.5, 0.25); },
-    _snd_splat() { this._noise(0.35, 0.4); this._osc('sine', 100, 40, 0.4, 0.2); },
-
-    // POWERUP sounds
-    _snd_powerup() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [392,523,659,784].forEach((f,i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.type = window._soundPackType||'triangle'; o.detune.value=window._soundPackDetune||0;
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i*0.065;
-            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st+0.15);
-            o.start(st); o.stop(st+0.18);
-        });
-    },
-    _snd_sparkle() { this._osc('sine', 1200, 2400, 0.18, 0.18); },
-    _snd_shield()  { this._osc('triangle', 500, 800, 0.22, 0.2); },
-
-    // VICTORY / WIN sounds
-    _snd_victory() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [523,659,784,880,1047].forEach((f,i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.type = window._soundPackType||'square'; o.detune.value=window._soundPackDetune||0;
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i*0.1;
-            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.22, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st+0.25);
-            o.start(st); o.stop(st+0.28);
-        });
-    },
-    _snd_tada()    { this._osc('square', 784, 1568, 0.4, 0.28); },
-    _snd_triumph() {
-        const ac = this.getCtx(), t = ac.currentTime + 0.01;
-        [392,494,587,784,987].forEach((f,i) => {
-            const o = ac.createOscillator(), g = ac.createGain();
-            o.type = window._soundPackType||'square'; o.detune.value=window._soundPackDetune||0;
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = f;
-            const st = t + i*0.08;
-            g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
-            g.gain.exponentialRampToValueAtTime(0.001, st+0.2);
-            o.start(st); o.stop(st+0.22);
-        });
-    },
-
-    _playBuffer(dataUrl) {
-        const ac = this.getCtx();
-        // fetch() does not support data: URLs in Firefox/Safari, decode base64 directly.
-        const _decode = (ab) => {
-            ac.decodeAudioData(ab).then(buf => {
-                const src = ac.createBufferSource(), g = ac.createGain();
-                src.buffer = buf; src.connect(g); g.connect(ac.destination);
-                g.gain.value = (this.volume * this.sfxVol); src.start();
-            }).catch(() => {});
-        };
-        if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
-            try {
-                const b64  = dataUrl.split(',')[1];
-                const bin  = atob(b64);
-                const bytes = new Uint8Array(bin.length);
-                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                _decode(bytes.buffer);
-            } catch(e) {}
-        } else {
-            fetch(dataUrl).then(r => r.arrayBuffer()).then(_decode).catch(() => {});
-        }
-    },
-
-    // BACKGROUND MUSIC
-    setMusic(on) {
-        if (on) this.startMusic(document.getElementById('musicStyle').value);
-        else this.stopMusic();
-    },
-
-    startMusic(style) {
-        this.stopMusic();
-        if (this.customMusic) { this._playCustomMusic(); return; }
-        const ac = this.getCtx();
-        const patterns = {
-            chiptune: { notes:[262,294,330,349,392,440,494,523], bpm:160, seq:[0,2,4,2,0,2,4,5,0,2,4,2,5,4,2,0] },
-            space:    { notes:[110,138,165,184,220,277,330,369], bpm:60,  seq:[0,null,null,2,null,null,4,null,null,1,null,null,3,null,null,null] },
-            action:   { notes:[330,370,415,440,494,554,622,660], bpm:200, seq:[0,4,2,5,1,4,3,5,0,4,2,5,3,2,1,0] }
-        };
-        const p = patterns[style] || patterns.chiptune;
-        const interval = (60 / p.bpm) * 1000 / 2;
-        let step = 0;
-        const tick = () => {
-            const ni = p.seq[step % p.seq.length];
-            if (ni !== null && ni !== undefined) {
-                const o = ac.createOscillator(), g = ac.createGain();
-                o.type = style === 'space' ? 'sine' : 'square';
-                o.connect(g); g.connect(ac.destination);
-                o.frequency.value = p.notes[ni];
-                const t = ac.currentTime;
-                g.gain.setValueAtTime((this.volume * this.musicVol) * 0.08, t);
-                g.gain.exponentialRampToValueAtTime(0.001, t + interval / 1000 * 0.9);
-                o.start(t); o.stop(t + interval / 1000);
-            }
-            step++;
-            this.musicTimeout = setTimeout(tick, interval);
-        };
-        tick();
-    },
-
-    stopMusic() {
-        if (this.musicTimeout) clearTimeout(this.musicTimeout);
-        this.musicTimeout = null;
-        if (this._musicSource) { try { this._musicSource.stop(); } catch(e) {} this._musicSource = null; }
-    },
-
-    _playCustomMusic() {
-        const ac = this.getCtx();
-        const _start = (buf) => {
-            if (this._musicSource) { try { this._musicSource.stop(); } catch(e) {} }
-            const src = ac.createBufferSource(), g = ac.createGain();
-            src.buffer = buf; src.loop = true;
-            src.connect(g); g.connect(ac.destination);
-            g.gain.value = this.volume * this.musicVol * 0.5;
-            src.start(); this._musicSource = src;
-        };
-        const url = this.customMusic;
-        if (typeof url === 'string' && url.startsWith('data:')) {
-            try {
-                const b64  = url.split(',')[1];
-                const bin  = atob(b64);
-                const bytes = new Uint8Array(bin.length);
-                for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                ac.decodeAudioData(bytes.buffer).then(_start).catch(() => {});
-            } catch(e) {}
-        } else {
-            fetch(url).then(r => r.arrayBuffer()).then(ab => ac.decodeAudioData(ab)).then(_start).catch(() => {});
-        }
-    }
-};
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 // Clear a custom SFX buffer when user picks a built-in from the dropdown
@@ -5617,7 +5039,7 @@ function _showStreakHistory(){
 function _showTodayBoard() {
     const today = daysSinceEpochLocalMaker();
     const rows = [];
-    const GENRES = ['SHOOTER','PLATFORMER','DODGE','BREAKER','RUNNER','FLAPPY','INVADERS','PONG','SNAKE','ASTEROIDS','ROGUELIKE','RACING','HOPPER','BEAT','PUZZLE','RHYTHM','DEFENSE','PINBALL','CLICKER','MEMORY','WAVESURVIVAL'];
+    const GENRES = GENRE_LIST; // single roster from src/arcade-maker/genres.js (A763)
     GENRES.forEach(g => {
         let board = [];
         try { board = JSON.parse(localStorage.getItem('jv_lb_' + g) || '[]'); } catch (e) {}
@@ -5898,31 +5320,8 @@ function _spawnParticles(scene, x, y, opts) {
 }
 
 // ── GENRE PICKER ─────────────────────────────────────────────────────────────
-const _GENRE_DESCS = {
-    SHOOTER:   'Rotate, thrust & blast enemies across space.',
-    PLATFORMER:'Jump across platforms, dodge hazards, reach the end.',
-    DODGE:     'Sidestep falling objects survive as long as you can.',
-    BREAKER:   'Bounce the ball, smash every block, clear the board.',
-    RUNNER:    'Sprint endlessly duck, jump, and dodge obstacles.',
-    FLAPPY:    'Tap to flap weave through a gauntlet of narrow gaps.',
-    INVADERS:  'Hold the line against endless waves of alien invaders.',
-    PONG:      'Out-reflect a relentless CPU paddle to win.',
-    SNAKE:     'Grow longer, eat pellets, don\'t bite yourself.',
-    ASTEROIDS: 'Spin, thrust and detonate every rock in the field.',
-    ROGUELIKE: 'Explore dungeons, fight monsters, collect loot.',
-    RACING:    'Burn rubber, drift, use nitro, and cross the line first.',
-    HOPPER:    'Leap between platforms, go as high as you can.',
-    BEAT:      '1v1 Street Fighter, face the CPU or challenge a friend on the same keyboard. Best-of-3 rounds wins the match.',
-    PUZZLE:    'Slide and match tiles to clear the board.',
-    RHYTHM:    'Hit notes on beat, keep the multiplier alive.',
-    DEFENSE:      'Place towers, hold the path, stop every wave.',
-    PINBALL:      'Keep the ball alive, rack up combos and jackpots.',
-    CLICKER:      'Click the target to score, buy upgrades and rack up millions!',
-    MEMORY:       'Flip cards and find matching pairs before time runs out.',
-    WAVESURVIVAL: 'Survive endless waves of enemies, how long can you last?',
-    PAPERTOSS:    'Toss paper balls into the bin, watch the wind, score big!',
-};
-const _GENRE_ICONS = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'🥊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮',CLICKER:'👆',MEMORY:'🃏',WAVESURVIVAL:'🌊',PAPERTOSS:'🏀'};
+// _GENRE_DESCS and _GENRE_ICONS are imported from src/arcade-maker/genres.js
+// (A763, published on window by the module bootstrap).
 
 // Format the controls hint text, wraps recognised key tokens in styled <kbd> badges
 function _formatControlsHint(text) {
@@ -6019,7 +5418,7 @@ function _updateExtrasForGenre(genre) {
     // Update Genre Options card label to reflect current genre
     const genreBtn = document.getElementById('ec-genre');
     if (genreBtn) {
-        const GENRE_LABELS = {
+        const GENRE_BTN_LABELS = {
             SHOOTER:'🚀 Shooter', PLATFORMER:'🏃 Platformer', RUNNER:'🦕 Runner',
             INVADERS:'👾 Invaders', DODGE:'⬇️ Dodge', FLAPPY:'🐦 Flappy',
             BREAKER:'🧱 Breaker', SNAKE:'🐍 Snake', PONG:'🏓 Pong',
@@ -6029,7 +5428,7 @@ function _updateExtrasForGenre(genre) {
             WAVESURVIVAL:'🌊 Wave Survival', CLICKER:'👆 Clicker', MEMORY:'🃏 Memory',
         };
         const lbl = genreBtn.querySelector('.ec-name');
-        if (lbl) lbl.textContent = (GENRE_LABELS[g] || g) + ' Options';
+        if (lbl) lbl.textContent = (GENRE_BTN_LABELS[g] || g) + ' Options';
     }
     // Switch visible genre section inside #ep-genre
     document.querySelectorAll('#ep-genre > div[id^="custom-"]').forEach(el => {
@@ -7287,11 +6686,10 @@ function compileAndBootEngine() {
     
 }
 function _showTitleScreen(data) {
-    const ICONS  = {SHOOTER:'🚀',PLATFORMER:'🏃',DODGE:'⬇️',BREAKER:'🧱',RUNNER:'🦕',FLAPPY:'🐦',INVADERS:'👾',PONG:'🏓',SNAKE:'🐍',ASTEROIDS:'☄️',ROGUELIKE:'⚔️',RACING:'🏎️',HOPPER:'🐸',BEAT:'🥊',PUZZLE:'🧩',RHYTHM:'🎵',DEFENSE:'🗼',PINBALL:'🔮',CLICKER:'👆',MEMORY:'🃏',WAVESURVIVAL:'🌊'};
-    const GENRES = {SHOOTER:'Space Shooter',PLATFORMER:'2D Platformer',DODGE:'Dodge & Collect',BREAKER:'Brick Breaker',RUNNER:'Auto Runner',FLAPPY:'Flappy Jump',INVADERS:'Space Invaders',PONG:'Pong',SNAKE:'Snake',ASTEROIDS:'Asteroids',ROGUELIKE:'Roguelike Dungeon',RACING:'Top-Down Racing',HOPPER:'Endless Hopper',BEAT:"1v1 Fighter",PUZZLE:'Puzzle',RHYTHM:'Rhythm',DEFENSE:'Tower Defense',PINBALL:'Pinball',CLICKER:'Idle Clicker',MEMORY:'Card Memory',WAVESURVIVAL:'Wave Survival'};
-    document.getElementById('introIcon').textContent       = ICONS[data.genre]  || '🕹️';
+    // Genre icons and labels come from src/arcade-maker/genres.js (A763).
+    document.getElementById('introIcon').textContent       = GENRE_ICONS[data.genre]  || '🕹️';
     document.getElementById('introGameTitle').textContent  = data.title         || 'My Arcade Game';
-    document.getElementById('introGenreSub').textContent   = GENRES[data.genre] || data.genre;
+    document.getElementById('introGenreSub').textContent   = GENRE_LABELS[data.genre] || data.genre;
     const storyEl = document.getElementById('introStoryText');
     // Prefer liveConfig.storyIntro if set, then fall back to imported story
     const _introTxt = liveConfig.storyIntro || ((currentStory && currentStory.intro) ? currentStory.intro : '');
@@ -16212,35 +15610,9 @@ function showGameOver(score) {
     if (_goGenre === 'PLATFORMER' && _sessionHits === 0) _achUnlock('plat_clean');
     if (_goGenre === 'SNAKE' && _sessionHits === 0)      _achUnlock('snake_flawless');
 
-    const ACH_LABELS = {
-        first_blood:      '🎯 First Blood',
-        centurion:        '💯 Centurion',
-        high_roller:      '💰 High Roller',
-        survivor:         '⏱ Survivor (60s)',
-        untouchable:      '🛡 Untouchable',
-        wave_3:           '👾 Wave 3 Clear',
-        power_up:         '⚡ Power-Up!',
-        speed_demon:      '🚀 Speed Demon',
-        goal_reached:     '🏁 Goal Reached!',
-        snake_long:       '🐍 Big Snake (20+)',
-        snake_flawless:   '🌟 Flawless Run',
-        pong_shutout:     '🏓 Shutout!',
-        pong_comeback:    '💪 Comeback Win!',
-        invaders_perfect: '🛸 Perfect Wave',
-        asteroids_chain:  '🌌 3-Wave Chain',
-        asteroids_ace:    '⭐ Asteroid Ace (Wave 5)',
-        runner_survivor:  '⏱ Runner Survivor (100s)',
-        runner_centurion: '💯 Runner 1K',
-        plat_clean:       '🧹 Flawless Platformer',
-        shooter_combo10:  '🔥 10× Combo!',
-        rogue_floor3:     '⚔️ Floor 3 Reached!',
-        race_podium:      '🏆 Podium Finish',
-        race_clean:       '🌟 Clean Lap (no off-road)',
-        race_nitro3:      '⚡ Nitro Triple',
-        race_fast:        '🏎️ Under 30s Lap',
-        hop_100:          '🐸 Height 100!',
-        hop_500:          '🌤 Cloud Jumper!'
-    };
+    // ACH_LABELS was a duplicate of _ACH_TOAST; both now come from the single
+    // source in src/arcade-maker/achievements.js (A763).
+    const ACH_LABELS = ACH_TOAST;
     const achEl = document.getElementById('goAchievements');
     if (achEl) {
         achEl.innerHTML = [..._sessionAchs].map(id => ACH_LABELS[id] ? `<span class="go-ach">${ACH_LABELS[id]}</span>` : '').join('');
@@ -16744,7 +16116,7 @@ window.addEventListener('DOMContentLoaded',function(){
         const _wm = root.createElement('div');
         _wm.id = 'jvds-credit';
         _wm.style.cssText = 'position:fixed;bottom:6px;right:8px;font-size:9px;color:rgba(255,255,255,.28);font-family:Inter,sans-serif;z-index:9999;pointer-events:none;letter-spacing:.04em;';
-        _wm.innerHTML = 'Made with <a href="https://jvdesignstudio.com/arcade-game-maker" target="_blank" style="color:rgba(167,139,250,.5);text-decoration:none;">JVDesign Arcade</a>';
+        _wm.innerHTML = 'Made with <a href="https://jvdesignstudio.co.uk/tools/arcade-game-maker.html" target="_blank" style="color:rgba(167,139,250,.5);text-decoration:none;">JVDesignStudio</a> - make your own';
         root.body.appendChild(_wm);
     } catch(_e) {}
     // Serialise and download
@@ -22174,5 +21546,8 @@ document.addEventListener('DOMContentLoaded', function(){
   if(window.EmberGuide) EmberGuide.init({ id: 'arcade-game-maker', steps: [{"target":"#starterTemplates","title":"Templates","text":"Start from a template or blank. 22 genres - pick one and play with it."},{"target":"canvas","title":"Game canvas","text":"Play here. Use arrows/WASD and space. Edit on the left, test instantly."},{"target":"button[onclick*=\"export\"]","fallback":["button[onclick*=\"share\"]"],"title":"Export & share","text":"Save keeps it in browser. Share gives a link you can send to anyone."}] });
 });
 </script>
+<script defer src="/creation-share.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
 </body>
 </html>

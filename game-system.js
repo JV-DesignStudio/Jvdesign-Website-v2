@@ -1062,6 +1062,12 @@ if (typeof document !== 'undefined') {
   function track(name, params) {
     if (typeof gtag !== 'function') return;
     try { gtag('event', name, params || {}); } catch (e) { /* never break gameplay */ }
+    try {
+      if (window.JVDSFunnel) {
+        if (name === 'game_end') window.JVDSFunnel.complete({ surface: 'game', trigger: 'game_end' });
+        else if (name === 'share_create') window.JVDSFunnel.share({ surface: 'game', trigger: 'share_create' });
+      }
+    } catch (e) { /* never break gameplay */ }
   }
 
   /* ------ XP toast ------ */

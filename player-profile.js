@@ -474,6 +474,9 @@ const playerProfile = new PlayerProfile();
   on('workshop-completed', 'workshop_complete', function (d) {
     return { workshop_id: d.workshopId, xp_earned: d.xpEarned };
   });
+  window.addEventListener('workshop-completed', function () {
+    if (window.JVDSFunnel) window.JVDSFunnel.complete({ surface: 'workshop', trigger: 'workshop-completed' });
+  });
 
   on('quest-completed', 'quest_complete', function (d) {
     return { quest_id: d.questId };
