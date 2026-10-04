@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java RPG Battle Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(245,158,11,.15);color:#f59e0b;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Java RPG Battle Canvas <span class="cw-lang-tag">Java</span></h1>
+  <p>Build a turn-based battle system step by step. The canvas shows your combat scene.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Java RPG battle scene"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A monster appears with its name and HP bar</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Java-to-JS transpiler (light transform so Java
+   syntax runs in the canvas iframe)
+   =================================================== */
+function javaToJs(code) {
+  return code
+    .replace(/\b(int|boolean|double|float|long|char)\s+/g, 'let ')
+    .replace(/\bString\s+/g, 'let ')
+    .replace(/\bRectangle\s+/g, 'let ')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.get\(([^)]+)\)/g, '[$1]')
+    .replace(/\.remove\(([^)]+)\)/g, '.splice($1, 1)')
+    .replace(/System\.out\.println\(/g, 'console.log(') + '\n';
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (RPG battle system)
+   =================================================== */
+
+var CSS_BATTLE = '<style>body{margin:0;overflow:hidden;background:#14100c;font-family:Arial,sans-serif}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="500" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+/* Hero object */
+var HERO_OBJ = 'let hero={name:"Aria",hp:30,maxHp:30,attack:5,level:1,xp:0,xpToLevel:25,gold:0,defending:false};';
+
+/* Monster factory */
+var MONSTER_FACTORY = 'function createMonster(type){' +
+  'if(type==="slime")return{name:"Slime",hp:12,maxHp:12,attack:3,xpReward:8,goldReward:5,color:"#4ade80"};' +
+  'if(type==="wolf")return{name:"Wolf",hp:20,maxHp:20,attack:5,xpReward:15,goldReward:12,color:"#60a5fa"};' +
+  'if(type==="goblin")return{name:"Goblin",hp:28,maxHp:28,attack:7,xpReward:25,goldReward:20,color:"#a78bfa"};' +
+  'return createMonster("slime");}';
+
+var MONSTER_VAR = 'let monster=createMonster("slime");';
+
+/* Battle state */
+var BATTLE_STATE = 'let battleLog="A wild "+monster.name+" appears!";let battleOver=false;let resultMsg="";let dmgText="";let dmgTimer=0;let dmgX=0;let dmgY=0;';
+
+/* Draw helpers */
+var DRAW_BG = 'ctx.fillStyle="#14100c";ctx.fillRect(0,0,500,400);' +
+  'ctx.fillStyle="#1a1520";ctx.fillRect(0,0,500,60);' +
+  'ctx.fillStyle="rgba(255,255,255,0.05)";ctx.fillRect(0,280,500,120);';
+
+var DRAW_HERO_STATS = 'ctx.fillStyle="#ff7700";ctx.fillRect(30,130,60,80);' +
+  'ctx.fillStyle="#fff";ctx.font="bold 14px Arial";ctx.textAlign="left";' +
+  'ctx.fillText(hero.name,20,100);' +
+  'ctx.fillStyle="#333";ctx.fillRect(20,108,100,12);' +
+  'ctx.fillStyle="#06d6a0";ctx.fillRect(20,108,Math.max(0,100*hero.hp/hero.maxHp),12);' +
+  'ctx.fillStyle="#fff";ctx.font="11px Arial";ctx.fillText(hero.hp+"/"+hero.maxHp+" HP",22,118);' +
+  'ctx.fillText("Lv "+hero.level,20,240);';
+
+var DRAW_MONSTER = 'ctx.fillStyle=monster.color;ctx.fillRect(350,100,90,80);' +
+  'ctx.fillStyle="#fff";ctx.font="bold 14px Arial";ctx.textAlign="right";' +
+  'ctx.fillText(monster.name,440,90);' +
+  'ctx.fillStyle="#333";ctx.fillRect(340,195,100,12);' +
+  'ctx.fillStyle="#ef4444";ctx.fillRect(340,195,Math.max(0,100*monster.hp/monster.maxHp),12);' +
+  'ctx.fillStyle="#fff";ctx.font="11px Arial";ctx.fillText(monster.hp+"/"+monster.maxHp+" HP",342,205);';
+
+var DRAW_MONSTER_FACE = 'ctx.fillStyle="rgba(0,0,0,0.3)";ctx.fillRect(370,120,12,12);ctx.fillRect(408,120,12,12);' +
+  'ctx.fillRect(375,150,40,8);';
+
+var DRAW_LOG = 'ctx.fillStyle="#ffd166";ctx.font="13px Arial";ctx.textAlign="center";' +
+  'ctx.fillText(battleLog,250,270);';
+
+var DRAW_ACTIONS = 'if(!battleOver){' +
+  'ctx.fillStyle="#2d2040";ctx.fillRect(20,310,105,36);ctx.fillRect(140,310,105,36);' +
+  'ctx.fillRect(260,310,105,36);ctx.fillRect(380,310,105,36);' +
+  'ctx.strokeStyle="#a78bfa";ctx.lineWidth=1;' +
+  'ctx.strokeRect(20,310,105,36);ctx.strokeRect(140,310,105,36);' +
+  'ctx.strokeRect(260,310,105,36);ctx.strokeRect(380,310,105,36);' +
+  'ctx.fillStyle="#fff";ctx.font="bold 13px Arial";ctx.textAlign="center";' +
+  'ctx.fillText("Attack",72,333);ctx.fillText("Defend",192,333);' +
+  'ctx.fillText("Potion",312,333);ctx.fillText("Flee",432,333);}';
+
+var DRAW_XP_BAR = 'ctx.fillStyle="#fff";ctx.font="11px Arial";ctx.textAlign="left";' +
+  'ctx.fillText("XP: "+hero.xp+"/"+hero.xpToLevel,20,380);' +
+  'ctx.fillStyle="#333";ctx.fillRect(20,384,120,8);' +
+  'ctx.fillStyle="#f59e0b";ctx.fillRect(20,384,Math.max(0,120*hero.xp/hero.xpToLevel),8);' +
+  'ctx.fillText("Gold: "+hero.gold,160,380);';
+
+var DRAW_RESULT = 'if(battleOver){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,500,400);' +
+  'ctx.fillStyle=resultMsg.indexOf("Victory")!==-1?"#ffd166":"#ef4444";' +
+  'ctx.font="bold 28px Arial";ctx.textAlign="center";ctx.fillText(resultMsg,250,180);' +
+  'ctx.fillStyle="#fff";ctx.font="14px Arial";ctx.fillText("Click to fight again",250,220);}';
+
+var DRAW_DMG = 'if(dmgTimer>0){ctx.fillStyle="rgba(255,100,100,"+(dmgTimer/30)+")";' +
+  'ctx.font="bold 20px Arial";ctx.textAlign="center";ctx.fillText(dmgText,dmgX,dmgY-30+dmgTimer);dmgTimer-=0.5;}';
+
+/* Click handler for action buttons */
+var CLICK_HANDLER_BASE = 'canvas.addEventListener("click",function(e){' +
+  'var rect=canvas.getBoundingClientRect();' +
+  'var mx=(e.clientX-rect.left)*(500/rect.width);' +
+  'var my=(e.clientY-rect.top)*(400/rect.height);';
+
+var CLICK_RESTART = 'if(battleOver){' +
+  'var types=["slime","wolf","goblin"];monster=createMonster(types[Math.floor(Math.random()*3)]);' +
+  'battleLog="A wild "+monster.name+" appears!";battleOver=false;resultMsg="";return;}';
+
+/* Monster attack logic */
+var MONSTER_COUNTER = 'function monsterAttack(){' +
+  'if(monster.hp<=0)return;' +
+  'let dmg=monster.attack+Math.floor(Math.random()*3);' +
+  'if(hero.defending){dmg=Math.floor(dmg/2);hero.defending=false;}' +
+  'hero.hp=Math.max(0,hero.hp-dmg);' +
+  'battleLog+="  "+monster.name+" hits for "+dmg+"!";' +
+  'dmgText="-"+dmg;dmgX=60;dmgY=130;dmgTimer=30;' +
+  'if(hero.hp<=0){battleOver=true;resultMsg="Defeat! You fell in battle.";}}';
+
+/* XP and level-up logic */
+var LEVELUP_LOGIC = 'function gainXp(amount){' +
+  'hero.xp+=amount;' +
+  'while(hero.xp>=hero.xpToLevel){' +
+  'hero.xp-=hero.xpToLevel;hero.level++;hero.maxHp+=6;hero.attack+=2;hero.hp=hero.maxHp;' +
+  'hero.xpToLevel=hero.level*25;' +
+  'resultMsg+=" Level Up! Lv"+hero.level;}}';
+
+/* Victory logic */
+var VICTORY_CHECK = 'function checkVictory(){' +
+  'if(monster.hp<=0){' +
+  'battleOver=true;resultMsg="Victory! +"+monster.xpReward+" XP, +"+monster.goldReward+" Gold";' +
+  'hero.gold+=monster.goldReward;gainXp(monster.xpReward);}}';
+
+/* Defeat/respawn logic */
+var RESPAWN_LOGIC = 'function respawn(){' +
+  'hero.hp=Math.floor(hero.maxHp/2);hero.gold=Math.floor(hero.gold/2);hero.defending=false;}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_BATTLE +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Java RPG Part 2 steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-java-rpg2-canvas',
+  downloadName: 'my-java-rpg-battles.html',
+
+  hints: [
+    'A monster appears with its name and HP bar',
+    'Hero on the left, monster on the right, action buttons below',
+    'Click Attack to deal damage - watch the HP bars change',
+    'Defend halves damage, Flee has a chance to escape',
+    'Defeat the monster to earn XP and level up',
+    'Lose a fight and respawn with half HP - tune the balance'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'let battleLog="A wild "+monster.name+" appears!";' +
+        'function draw(){' +
+        DRAW_BG + DRAW_HERO_STATS +
+        'ctx.fillStyle=monster.color;ctx.fillRect(350,100,90,80);' +
+        DRAW_MONSTER_FACE +
+        'ctx.fillStyle="#fff";ctx.font="bold 14px Arial";ctx.textAlign="right";' +
+        'ctx.fillText(monster.name,440,90);' +
+        'ctx.fillStyle="#333";ctx.fillRect(340,195,100,12);' +
+        'ctx.fillStyle="#ef4444";ctx.fillRect(340,195,Math.max(0,100*monster.hp/monster.maxHp),12);' +
+        'ctx.fillStyle="#fff";ctx.font="11px Arial";ctx.fillText(monster.hp+"/"+monster.maxHp+" HP",342,205);' +
+        DRAW_LOG +
+        'requestAnimationFrame(draw)}draw();'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'function draw(){' +
+        DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
+        'requestAnimationFrame(draw)}draw();'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
+        MONSTER_COUNTER +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        CLICK_HANDLER_BASE +
+        'if(battleOver)return;' +
+        'if(my>=310&&my<=346){' +
+        'if(mx>=20&&mx<=125){' +
+        'let dmg=hero.attack+Math.floor(Math.random()*4)-1;' +
+        'monster.hp=Math.max(0,monster.hp-dmg);' +
+        'battleLog="You hit "+monster.name+" for "+dmg+"!";' +
+        'dmgText="-"+dmg;dmgX=395;dmgY=100;dmgTimer=30;' +
+        'if(monster.hp<=0){battleOver=true;resultMsg="Victory!";battleLog=monster.name+" defeated!"}' +
+        'else{monsterAttack()}}' +
+        '}});' +
+        'function draw(){' +
+        DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
+        DRAW_DMG + DRAW_RESULT +
+        'requestAnimationFrame(draw)}draw();'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
+        MONSTER_COUNTER +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        CLICK_HANDLER_BASE +
+        'if(battleOver)return;' +
+        'if(my>=310&&my<=346){' +
+        'if(mx>=20&&mx<=125){' +
+        'let dmg=hero.attack+Math.floor(Math.random()*4)-1;' +
+        'monster.hp=Math.max(0,monster.hp-dmg);' +
+        'battleLog="You hit "+monster.name+" for "+dmg+"!";' +
+        'dmgText="-"+dmg;dmgX=395;dmgY=100;dmgTimer=30;' +
+        'if(monster.hp<=0){battleOver=true;resultMsg="Victory!";battleLog=monster.name+" defeated!"}' +
+        'else{monsterAttack()}}' +
+        'else if(mx>=140&&mx<=245){' +
+        'hero.defending=true;battleLog="You brace behind your shield.";monsterAttack()}' +
+        'else if(mx>=260&&mx<=365){' +
+        'if(hero.hp<hero.maxHp){hero.hp=Math.min(hero.maxHp,hero.hp+12);battleLog="Glug! Potion heals 12 HP!";monsterAttack()}' +
+        'else{battleLog="Already at full HP!"}}' +
+        'else if(mx>=380&&mx<=485){' +
+        'if(Math.random()<0.6){battleLog="You fled to safety!";battleOver=true;resultMsg="Escaped!"}' +
+        'else{battleLog="Could not escape!";monsterAttack()}}' +
+        '}});' +
+        'function draw(){' +
+        DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
+        DRAW_DMG + DRAW_RESULT +
+        'requestAnimationFrame(draw)}draw();'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
+        MONSTER_COUNTER + LEVELUP_LOGIC + VICTORY_CHECK +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        CLICK_HANDLER_BASE +
+        CLICK_RESTART +
+        'if(battleOver)return;' +
+        'if(my>=310&&my<=346){' +
+        'if(mx>=20&&mx<=125){' +
+        'let dmg=hero.attack+Math.floor(Math.random()*4)-1;' +
+        'monster.hp=Math.max(0,monster.hp-dmg);' +
+        'battleLog="You hit "+monster.name+" for "+dmg+"!";' +
+        'dmgText="-"+dmg;dmgX=395;dmgY=100;dmgTimer=30;' +
+        'checkVictory();if(!battleOver){monsterAttack()}}' +
+        'else if(mx>=140&&mx<=245){' +
+        'hero.defending=true;battleLog="You brace behind your shield.";monsterAttack()}' +
+        'else if(mx>=260&&mx<=365){' +
+        'if(hero.hp<hero.maxHp){hero.hp=Math.min(hero.maxHp,hero.hp+12);battleLog="Glug! Potion heals 12 HP!";monsterAttack()}' +
+        'else{battleLog="Already at full HP!"}}' +
+        'else if(mx>=380&&mx<=485){' +
+        'if(Math.random()<0.6){battleLog="You fled to safety!";battleOver=true;resultMsg="Escaped!"}' +
+        'else{battleLog="Could not escape!";monsterAttack()}}' +
+        '}});' +
+        'function draw(){' +
+        DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
+        DRAW_XP_BAR + DRAW_DMG + DRAW_RESULT +
+        'requestAnimationFrame(draw)}draw();'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
+        MONSTER_COUNTER + LEVELUP_LOGIC + VICTORY_CHECK + RESPAWN_LOGIC +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        CLICK_HANDLER_BASE +
+        'if(battleOver){' +
+        'if(resultMsg.indexOf("Defeat")!==-1){respawn();}' +
+        'var types=["slime","wolf","goblin"];monster=createMonster(types[Math.floor(Math.random()*3)]);' +
+        'battleLog="A wild "+monster.name+" appears!";battleOver=false;resultMsg="";return;}' +
+        'if(my>=310&&my<=346){' +
+        'if(mx>=20&&mx<=125){' +
+        'let dmg=hero.attack+Math.floor(Math.random()*4)-1;' +
+        'monster.hp=Math.max(0,monster.hp-dmg);' +
+        'battleLog="You hit "+monster.name+" for "+dmg+"!";' +
+        'dmgText="-"+dmg;dmgX=395;dmgY=100;dmgTimer=30;' +
+        'checkVictory();if(!battleOver){monsterAttack()}}' +
+        'else if(mx>=140&&mx<=245){' +
+        'hero.defending=true;battleLog="You brace behind your shield.";monsterAttack()}' +
+        'else if(mx>=260&&mx<=365){' +
+        'if(hero.hp<hero.maxHp){hero.hp=Math.min(hero.maxHp,hero.hp+12);battleLog="Glug! Potion heals 12 HP!";monsterAttack()}' +
+        'else{battleLog="Already at full HP!"}}' +
+        'else if(mx>=380&&mx<=485){' +
+        'if(Math.random()<0.6){battleLog="You fled to safety!";battleOver=true;resultMsg="Escaped!"}' +
+        'else{battleLog="Could not escape!";monsterAttack()}}' +
+        '}});' +
+        'function draw(){' +
+        DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
+        DRAW_XP_BAR + DRAW_DMG + DRAW_RESULT +
+        'requestAnimationFrame(draw)}draw();'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Monster',
+      goal: 'Create a monster with a factory method and draw it on the battle screen with its HP bar.',
+      points: [
+        'In Java, the Monster class has <code>String name, int hp, maxHp, attack, xpReward, goldReward</code>',
+        'A <code>static Monster create(String type)</code> factory builds different enemies from one method',
+        'The hero stats appear on the left, the monster on the right with a coloured rectangle and HP bar'
+      ],
+      challenge: 'Create a monster using the factory and store it:',
+      starter: '// Create a monster using the factory method\n// "slime" = weak, "wolf" = medium, "goblin" = tough\nlet monster = createMonster("___");\n\n// Each monster has: name, hp, maxHp, attack\n// xpReward, goldReward, color\n// Try changing the type to see different monsters!',
+      solution: 'let monster = createMonster("slime");\n\n// Each monster has: name, hp, maxHp, attack\n// xpReward, goldReward, color\n// Try changing the type to see different monsters!',
+      checks: ['createmonster', 'monster'],
+      height: 160,
+      fills: {
+        text: 'Monster.create() is a ___ factory method. Each monster carries an xpReward and a ___ for when defeated.',
+        answers: ['static', 'goldReward']
+      },
+      quiz: {
+        question: 'What is handy about a <code>create(type)</code> factory pattern?',
+        options: [
+          'It is the only way to make objects',
+          'All monster stats live in ONE place - balancing the game means editing one method',
+          'Static methods run faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Battle Layout',
+      goal: 'Draw the full battle screen: hero on the left, monster on the right, action menu at the bottom.',
+      points: [
+        'The battle screen is drawn INSTEAD of the map when <code>state.equals("BATTLE")</code>',
+        'Both fighters show name + HP bar - reuse the same bar-drawing code for both',
+        'Four action buttons at the bottom: <strong>Attack, Defend, Potion, Flee</strong>'
+      ],
+      challenge: 'Set the battle screen state and log message:',
+      starter: '// When a battle starts, set the state\nString state = "___";\n\n// The battle log shows what happened\nString battleLog = "A wild " + monster.name + " ___!";\n\n// The screen checks state to decide what to draw:\n// if (state.equals("BATTLE")) { drawBattleScreen(); }',
+      solution: 'String state = "BATTLE";\n\nString battleLog = "A wild " + monster.name + " appears!";\n\n// The screen checks state to decide what to draw:\n// if (state.equals("BATTLE")) { drawBattleScreen(); }',
+      checks: ['battle', 'battlelog'],
+      height: 180,
+      fills: {
+        text: 'We reused the HP bar by pulling it into a ___ method. The early return stops the ___ being drawn under the battle screen.',
+        answers: ['drawBar', 'map']
+      },
+      quiz: {
+        question: 'The battle screen and map are both drawn by paintComponent. What chooses between them?',
+        options: [
+          'The Timer speed',
+          'The state variable - one screen per state, checked at the top',
+          'The window size'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Attack & Damage',
+      goal: 'Click Attack to deal damage - HP bars decrease, damage numbers float up.',
+      points: [
+        'Damage has variance: <code>hero.getAttack() + (int)(Math.random()*4) - 1</code> for attack-1 to attack+2',
+        'After your attack, if the foe survives, it strikes back - <code>monsterAttack()</code>',
+        'The battleLog updates so the player can follow the fight turn by turn'
+      ],
+      challenge: 'Calculate the attack damage with variance:',
+      starter: '// Attack damage with some randomness\n// hero.attack is the base, add random 0-3, subtract 1\nint dmg = hero.attack + (int)(Math.random() * ___) - 1;\n\n// Deal damage to the monster\nmonster.hp = Math.max(0, monster.hp - ___);\n\n// Update the battle log\nbattleLog = "You hit " + monster.name + " for " + dmg + "!";',
+      solution: 'int dmg = hero.attack + (int)(Math.random() * 4) - 1;\n\nmonster.hp = Math.max(0, monster.hp - dmg);\n\nbattleLog = "You hit " + monster.name + " for " + dmg + "!";',
+      checks: ['hero.attack', 'math.random', 'dmg'],
+      height: 200,
+      fills: {
+        text: 'Damage variance uses Math.random() to add ___ to each hit. After dealing damage, always check if the monster is still ___.',
+        answers: ['randomness', 'alive']
+      },
+      quiz: {
+        question: 'Why does the monster only counter-attack <code>if (foe.isAlive())</code>?',
+        options: [
+          'Dead monsters hitting you back would be absurd - always check state after dealing damage',
+          'It saves memory',
+          'isAlive() heals the monster'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 4,
+      title: 'Defend & Flee',
+      goal: 'Defend halves the incoming damage. Flee has a 60% chance to escape the battle.',
+      points: [
+        'Defending sets <code>boolean defending = true</code> - the monster counter-attack then divides damage by 2',
+        'Flee rolls <code>Math.random() < 0.6</code> - 60% chance to escape, otherwise the monster gets a free hit',
+        'After each player action, the monster always strikes back (unless you fled or it died)'
+      ],
+      challenge: 'Write the defend and flee logic:',
+      starter: '// Defend: set the flag so damage is halved\nboolean defending = ___;\nbattleLog = "You brace behind your shield.";\n\n// Flee: 60% chance to escape\nif (Math.random() < ___) {\n    battleLog = "You fled to safety!";\n    // state = "EXPLORE";\n} else {\n    battleLog = "Could not escape!";\n}',
+      solution: 'boolean defending = true;\nbattleLog = "You brace behind your shield.";\n\nif (Math.random() < 0.6) {\n    battleLog = "You fled to safety!";\n} else {\n    battleLog = "Could not escape!";\n}',
+      checks: ['defending', '0.6', 'fled'],
+      height: 220,
+      fills: {
+        text: 'Defending halves the monster damage using integer ___ by 2. Flee odds of 0.6 mean a ___% chance to escape.',
+        answers: ['division', '60']
+      },
+      quiz: {
+        question: 'Why guarantee a few safe steps after fleeing a battle?',
+        options: [
+          'Monsters need time to respawn',
+          'Back-to-back random battles feel unfair and exhausting - pacing is part of game design',
+          'Java random needs to reset'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Victory & XP',
+      goal: 'Defeat the monster to earn XP and gold. Level up when XP reaches the threshold.',
+      points: [
+        'After your attack kills the foe: add <code>foe.xpReward</code> and <code>foe.goldReward</code> to the hero',
+        'Level-up formula: while <code>xp >= level * 25</code>, subtract cost, level++, maxHp += 6, attack += 2, full heal',
+        'The XP bar at the bottom fills toward the next level - click to fight again after victory'
+      ],
+      challenge: 'Write the level-up logic inside gainXp:',
+      starter: '// Level-up: keep levelling while enough XP\nwhile (xp >= level * ___) {\n    xp -= level * 25;\n    level++;\n    maxHp += ___;\n    attack += 2;\n    hp = maxHp;  // full heal on level-up!\n}',
+      solution: 'while (xp >= level * 25) {\n    xp -= level * 25;\n    level++;\n    maxHp += 6;\n    attack += 2;\n    hp = maxHp;\n}',
+      checks: ['level', 'maxhp', 'attack'],
+      height: 180,
+      fills: {
+        text: 'Levelling costs level times ___ XP. On level-up the hero gains 6 max HP, 2 attack, and is healed to ___.',
+        answers: ['25', 'maxHp']
+      },
+      quiz: {
+        question: 'Why is gainXp a <code>while</code> loop, not an if?',
+        options: [
+          'While loops are safer',
+          'A huge XP reward (like a boss) might grant several level-ups at once',
+          'if statements cannot change fields'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Defeat & Balance',
+      goal: 'Handle losing gracefully: respawn with half HP and half gold, then tune the combat numbers.',
+      points: [
+        'On defeat: respawn with half max HP and half gold - a sting, not a total wipe',
+        'Click to fight again after defeat - the hero keeps their level but feels the cost',
+        'Balance testing: can you survive 3 slimes at level 1? Does a goblin feel scary but beatable at level 2?'
+      ],
+      challenge: 'Write the respawn logic for a fallen hero:',
+      starter: '// Respawn: half HP, half gold, keep levels\nhero.hp = hero.maxHp / ___;\nhero.gold = hero.gold / ___;\nhero.defending = false;\n\n// Balance numbers to tune:\n// encounter rate: 0.15\n// potion heal: 12\n// defend: halves damage\n// flee odds: 0.6',
+      solution: 'hero.hp = hero.maxHp / 2;\nhero.gold = hero.gold / 2;\nhero.defending = false;\n\n// Balance numbers to tune:\n// encounter rate: 0.15\n// potion heal: 12\n// defend: halves damage\n// flee odds: 0.6',
+      checks: ['maxhp', 'gold', 'defending'],
+      height: 200,
+      fills: {
+        text: 'Respawn costs half your ___ and half your HP. Losing should sting but never wipe your ___.',
+        answers: ['gold', 'progress']
+      },
+      quiz: {
+        question: 'Which is the best-designed death penalty for this game?',
+        options: [
+          'Delete the save file',
+          'Respawn with half HP and gold - losing stings but you keep your levels and continue',
+          'Nothing happens at all'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

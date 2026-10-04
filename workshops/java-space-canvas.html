@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java Space Shooter Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(245,158,11,.15);color:#f59e0b;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Java Space Shooter Build Canvas <span class="cw-lang-tag">☕ Java</span></h1>
+  <p>Write Java game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Java Space Shooter game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">Your ship sits at the bottom of space, ready to defend Earth</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Java-to-JS transpiler (light transform so Java
+   syntax runs in the canvas iframe)
+   =================================================== */
+function javaToJs(code) {
+  return code
+    .replace(/\b(int|boolean|double|float|long|char)\s+/g, 'let ')
+    .replace(/\bString\s+/g, 'let ')
+    .replace(/\bRectangle\s+/g, 'let ')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.get\(([^)]+)\)/g, '[$1]')
+    .replace(/\.remove\(([^)]+)\)/g, '.splice($1, 1)')
+    .replace(/System\.out\.println\(/g, 'console.log(');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Java space shooter)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0a0c1a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="500"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var SHIP_VARS = 'let shipX=280,shipW=40,shipH=30,shipSpeed=6;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,spaceHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="Space")spaceHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="Space")spaceHeld=false});';
+
+var BULLET_VARS = 'let bullets=[];let fireCooldown=0;';
+
+var ALIEN_VARS = 'let aliens=[];let alienDir=1;let alienSpeed=2;';
+
+var SPAWN_ALIENS = 'function spawnAliens(){aliens=[];for(let r=0;r<4;r++)for(let c=0;c<6;c++)aliens.push({x:60+c*80,y:50+r*50,w:36,h:26,alive:true})}spawnAliens();';
+
+var SCORE_VARS = 'let score=0;';
+
+var WAVE_VARS = 'let wave=1;';
+
+var LIVES_VARS = 'let lives=3;let gameOver=false;';
+
+var STARS = 'const stars=[];for(let i=0;i<60;i++)stars.push({x:Math.random()*600,y:Math.random()*500,s:Math.random()*2+0.5});';
+
+var DRAW_BG = 'ctx.fillStyle="#0a0c1a";ctx.fillRect(0,0,600,500);' +
+  'ctx.fillStyle="rgba(255,255,255,0.7)";for(const s of stars){ctx.fillRect(s.x,s.y,s.s,s.s)}';
+
+var DRAW_SHIP = 'ctx.fillStyle="#4dd9e0";ctx.beginPath();ctx.moveTo(shipX+shipW/2,450);ctx.lineTo(shipX,450+shipH);ctx.lineTo(shipX+shipW,450+shipH);ctx.closePath();ctx.fill();';
+
+var DRAW_BULLETS = 'ctx.fillStyle="#facc15";for(const b of bullets){ctx.fillRect(b.x,b.y,b.w,b.h)}';
+
+var DRAW_ALIENS = 'ctx.fillStyle="#a358f5";for(const a of aliens){if(a.alive)ctx.fillRect(a.x,a.y,a.w,a.h)}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);';
+
+var DRAW_WAVE = 'ctx.fillText("Wave: "+wave,10,46);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillStyle="#4dd9e0";for(var hi=0;hi<lives;hi++){ctx.fillText("\\u2764",590-hi*22,24)}ctx.textAlign="left";';
+
+var SHIP_MOVE = 'if(leftHeld)shipX-=shipSpeed;if(rightHeld)shipX+=shipSpeed;if(shipX<0)shipX=0;if(shipX+shipW>600)shipX=600-shipW;';
+
+var BULLET_MOVE = 'for(let i=bullets.length-1;i>=0;i--){bullets[i].y-=9;if(bullets[i].y+bullets[i].h<0)bullets.splice(i,1)}';
+
+var BULLET_FIRE = 'if(fireCooldown>0)fireCooldown--;if(spaceHeld&&fireCooldown<=0){bullets.push({x:shipX+shipW/2-2,y:448,w:4,h:12});fireCooldown=10}';
+
+var ALIEN_MOVE = 'let hitWall=false;for(const a of aliens){if(!a.alive)continue;if(a.x+alienDir*alienSpeed<0||a.x+a.w+alienDir*alienSpeed>600)hitWall=true}' +
+  'if(hitWall){alienDir=-alienDir;for(const a of aliens){if(a.alive)a.y+=14}}else{for(const a of aliens){if(a.alive)a.x+=alienDir*alienSpeed}}';
+
+var COLLISION = 'for(let bi=bullets.length-1;bi>=0;bi--){let b=bullets[bi];for(const a of aliens){if(a.alive&&b.x+b.w>a.x&&b.x<a.x+a.w&&b.y+b.h>a.y&&b.y<a.y+a.h){a.alive=false;bullets.splice(bi,1);score+=20;break}}}';
+
+var COLLISION_WAVE = 'for(let bi=bullets.length-1;bi>=0;bi--){let b=bullets[bi];for(const a of aliens){if(a.alive&&b.x+b.w>a.x&&b.x<a.x+a.w&&b.y+b.h>a.y&&b.y<a.y+a.h){a.alive=false;bullets.splice(bi,1);score+=20*wave;break}}}';
+
+var WAVE_CHECK = 'if(aliens.every(function(a){return!a.alive})){wave++;alienSpeed=2+wave;spawnAliens()}';
+
+var GAME_OVER_CHECK = 'for(const a of aliens){if(a.alive&&a.y+a.h>450){gameOver=true}}';
+
+var DRAW_GAME_OVER = 'if(gameOver){ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,600,500);ctx.fillStyle="#fff";ctx.font="bold 44px sans-serif";ctx.textAlign="center";ctx.fillText("GAME OVER",300,220);ctx.font="bold 20px sans-serif";ctx.fillText("Score: "+score+"   Wave: "+wave,300,260);ctx.fillText("Click to restart",300,300);ctx.textAlign="left";return}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Java space shooter steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-java-space-canvas',
+  downloadName: 'my-java-space-shooter.html',
+
+  hints: [
+    'Your ship sits at the bottom of space, ready to defend Earth',
+    'Press Space to fire lasers upward at the alien wave',
+    'A grid of aliens marches across the sky and drops down',
+    'Lasers destroy aliens on contact - watch the score climb',
+    'Clear a wave and a faster one spawns - how long can you survive?',
+    'The aliens reach your ship line and it is game over'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + STARS +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_SHIP +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + KEYS + BULLET_VARS + STARS +
+        'function loop(){' +
+        SHIP_MOVE +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_BULLETS + DRAW_SHIP +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SPAWN_ALIENS + STARS +
+        'function loop(){' +
+        SHIP_MOVE + BULLET_FIRE + BULLET_MOVE +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SCORE_VARS + SPAWN_ALIENS + STARS +
+        'function loop(){' +
+        SHIP_MOVE + BULLET_FIRE + BULLET_MOVE + ALIEN_MOVE +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SCORE_VARS + WAVE_VARS + SPAWN_ALIENS + STARS +
+        'function loop(){' +
+        SHIP_MOVE + BULLET_FIRE + BULLET_MOVE + ALIEN_MOVE + COLLISION_WAVE +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP + DRAW_SCORE + DRAW_WAVE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SCORE_VARS + WAVE_VARS + LIVES_VARS + SPAWN_ALIENS + STARS +
+        'canvas.addEventListener("click",function(){if(gameOver){gameOver=false;score=0;wave=1;lives=3;alienSpeed=2;alienDir=1;bullets=[];spawnAliens()}});' +
+        'function loop(){' +
+        DRAW_GAME_OVER +
+        SHIP_MOVE + BULLET_FIRE + BULLET_MOVE + ALIEN_MOVE + COLLISION_WAVE + WAVE_CHECK +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP + DRAW_SCORE + DRAW_WAVE + DRAW_LIVES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Player Ship',
+      goal: 'Draw a triangle ship at the bottom of space that moves left and right with arrow keys.',
+      points: [
+        'In Java, the ship is stored as <code>int shipX, shipW, shipH</code> - position and size',
+        'Arrow keys set <code>boolean leftHeld, rightHeld</code> - read each frame to move smoothly',
+        'Clamp the ship: <code>shipX = Math.max(0, Math.min(600 - shipW, shipX))</code> so it stays on screen'
+      ],
+      challenge: '☕ Write the ship movement and clamping in Java:',
+      starter: '// Move the ship left and right\nif (leftHeld)  shipX -= shipSpeed;\nif (rightHeld) shipX += ___;\n\n// Clamp to screen edges\nif (shipX < 0) shipX = ___;\nif (shipX + shipW > 600) shipX = 600 - ___;',
+      solution: '// Move the ship left and right\nif (leftHeld)  shipX -= shipSpeed;\nif (rightHeld) shipX += shipSpeed;\n\n// Clamp to screen edges\nif (shipX < 0) shipX = 0;\nif (shipX + shipW > 600) shipX = 600 - shipW;',
+      checks: ['leftheld', 'rightheld', 'shipx'],
+      height: 180,
+      fills: {
+        text: 'The ship moves by reading ___ each frame. Clamping with Math.max and Math.min stops the ship leaving the ___.',
+        answers: ['booleans', 'screen']
+      },
+      quiz: {
+        question: 'Why use <code>boolean leftHeld</code> instead of moving inside <code>keyPressed()</code> directly?',
+        options: [
+          'Booleans use less memory than events',
+          'Movement is smooth every frame while the key is held, instead of stuttering with key-repeat delay',
+          'Java does not allow method calls inside keyPressed'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Firing Lasers',
+      goal: 'Press Space to fire lasers that fly upward and disappear off screen.',
+      points: [
+        'Bullets live in an <code>ArrayList&lt;Rectangle&gt;</code> - they come and go constantly',
+        'On Space: add a new bullet at the ship nose - <code>shipX + shipW/2 - 2</code> centres it',
+        'Each frame: move every bullet up by 9 pixels, then remove any that left the top'
+      ],
+      challenge: '☕ Write the bullet firing and movement:',
+      starter: '// Fire a bullet when Space is pressed\nif (spaceHeld && fireCooldown <= 0) {\n    bullets.push({x: shipX + shipW/2 - 2, y: 448, w: 4, h: 12});\n    fireCooldown = ___;\n}\nif (fireCooldown > 0) fireCooldown--;\n\n// Move bullets upward\nfor (int i = bullets.length - 1; i >= 0; i--) {\n    bullets[i].y -= ___;\n    if (bullets[i].y + bullets[i].h < 0)\n        bullets.splice(i, 1);\n}',
+      solution: '// Fire a bullet when Space is pressed\nif (spaceHeld && fireCooldown <= 0) {\n    bullets.push({x: shipX + shipW/2 - 2, y: 448, w: 4, h: 12});\n    fireCooldown = 10;\n}\nif (fireCooldown > 0) fireCooldown--;\n\n// Move bullets upward\nfor (int i = bullets.length - 1; i >= 0; i--) {\n    bullets[i].y -= 9;\n    if (bullets[i].y + bullets[i].h < 0)\n        bullets.splice(i, 1);\n}',
+      checks: ['bullets', 'firecooldown', 'splice'],
+      height: 260,
+      fills: {
+        text: 'Bullets fly upward by ___ y each frame. Off-screen bullets must be removed so the list does not grow ___.',
+        answers: ['decreasing', 'forever']
+      },
+      quiz: {
+        question: 'Why must off-screen bullets be removed from the list?',
+        options: [
+          'They could hit aliens from behind',
+          'Otherwise the list grows forever and the game gradually slows down',
+          'Java limits lists to 100 items'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'The Alien Wave',
+      goal: 'Spawn a grid of aliens that march side-to-side and step down at the walls.',
+      points: [
+        'Aliens are stored in an <code>ArrayList</code> - spawn a 6x4 grid in the constructor',
+        'One shared <code>int alienDir = 1</code> - every alien moves <code>alienDir * 2</code> horizontally',
+        'If ANY alien touches a wall, flip alienDir and move the whole wave DOWN 14 pixels'
+      ],
+      challenge: '☕ Write the alien wave movement:',
+      starter: '// Check if any alien hit a wall\nboolean hitWall = false;\nfor (int i = 0; i < aliens.length; i++) {\n    var a = aliens[i];\n    if (!a.alive) continue;\n    if (a.x + alienDir * alienSpeed < 0 ||\n        a.x + a.w + alienDir * alienSpeed > 600)\n        hitWall = ___;\n}\n\n// Flip direction and step down, or move sideways\nif (hitWall) {\n    alienDir = ___;\n    for (int i = 0; i < aliens.length; i++)\n        if (aliens[i].alive) aliens[i].y += 14;\n} else {\n    for (int i = 0; i < aliens.length; i++)\n        if (aliens[i].alive) aliens[i].x += alienDir * ___;\n}',
+      solution: '// Check if any alien hit a wall\nboolean hitWall = false;\nfor (int i = 0; i < aliens.length; i++) {\n    var a = aliens[i];\n    if (!a.alive) continue;\n    if (a.x + alienDir * alienSpeed < 0 ||\n        a.x + a.w + alienDir * alienSpeed > 600)\n        hitWall = true;\n}\n\n// Flip direction and step down, or move sideways\nif (hitWall) {\n    alienDir = -alienDir;\n    for (int i = 0; i < aliens.length; i++)\n        if (aliens[i].alive) aliens[i].y += 14;\n} else {\n    for (int i = 0; i < aliens.length; i++)\n        if (aliens[i].alive) aliens[i].x += alienDir * alienSpeed;\n}',
+      checks: ['hitwall', 'aliendir', 'alive'],
+      height: 340,
+      fills: {
+        text: 'The whole wave shares one direction variable called ___. When any alien touches a wall we flip it and every alien steps ___ by 14 pixels.',
+        answers: ['alienDir', 'down']
+      },
+      quiz: {
+        question: 'Why check the wall with a flag BEFORE moving the aliens?',
+        options: [
+          'It is faster',
+          'So the entire wave turns together on the same frame instead of splitting apart',
+          'Java evaluates loops backwards'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Blasting Aliens',
+      goal: 'Lasers destroy aliens on contact - remove both objects and add to the score.',
+      points: [
+        'Loop bullets backwards (so removal is safe), and for each bullet check every alien',
+        'Overlap test: bullet right > alien left AND bullet left < alien right, same for vertical',
+        'On hit: mark alien dead, remove the bullet, <code>score += 20</code>, and break (bullet is gone)'
+      ],
+      challenge: '☕ Write the bullet-alien collision:',
+      starter: '// Check each bullet against each alien\nfor (int bi = bullets.length - 1; bi >= 0; bi--) {\n    var b = bullets[bi];\n    for (int ai = 0; ai < aliens.length; ai++) {\n        var a = aliens[ai];\n        if (a.alive &&\n            b.x + b.w > a.x &&\n            b.x < a.x + a.w &&\n            b.y + b.h > a.y &&\n            b.y < a.y + a.h) {\n            a.___ = false;\n            bullets.splice(bi, 1);\n            ___ += 20;\n            break;\n        }\n    }\n}',
+      solution: '// Check each bullet against each alien\nfor (int bi = bullets.length - 1; bi >= 0; bi--) {\n    var b = bullets[bi];\n    for (int ai = 0; ai < aliens.length; ai++) {\n        var a = aliens[ai];\n        if (a.alive &&\n            b.x + b.w > a.x &&\n            b.x < a.x + a.w &&\n            b.y + b.h > a.y &&\n            b.y < a.y + a.h) {\n            a.alive = false;\n            bullets.splice(bi, 1);\n            score += 20;\n            break;\n        }\n    }\n}',
+      checks: ['alive', 'score', 'splice'],
+      height: 300,
+      fills: {
+        text: 'An alien is destroyed by setting ___ to false. The break stops checking a bullet that was already ___.',
+        answers: ['alive', 'removed']
+      },
+      quiz: {
+        question: 'What does the <code>break</code> after a hit prevent?',
+        options: [
+          'The alien respawning',
+          'One bullet destroying several aliens in the same frame after it was already removed',
+          'The score going negative'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Waves & Difficulty',
+      goal: 'When a wave is cleared, spawn the next one faster and worth more points.',
+      points: [
+        'Add <code>int wave = 1</code> - increment it each time all aliens are destroyed',
+        'Check <code>aliens.every(a => !a.alive)</code> - if true, wave++, respawn the grid',
+        'Make speed scale: <code>alienSpeed = 2 + wave</code>, and score scale: <code>score += 20 * wave</code>'
+      ],
+      challenge: '☕ Write the wave completion and difficulty ramp:',
+      starter: '// Check if all aliens are destroyed\nboolean allDead = true;\nfor (int i = 0; i < aliens.length; i++) {\n    if (aliens[i].alive) allDead = false;\n}\n\nif (allDead) {\n    ___++;\n    alienSpeed = 2 + ___;\n    spawnAliens();\n}',
+      solution: '// Check if all aliens are destroyed\nboolean allDead = true;\nfor (int i = 0; i < aliens.length; i++) {\n    if (aliens[i].alive) allDead = false;\n}\n\nif (allDead) {\n    wave++;\n    alienSpeed = 2 + wave;\n    spawnAliens();\n}',
+      checks: ['wave', 'alienspeed', 'spawnaliens'],
+      height: 220,
+      fills: {
+        text: 'When the list is empty we increase ___ and call spawnAliens(). Alien speed scales as 2 + ___.',
+        answers: ['wave', 'wave']
+      },
+      quiz: {
+        question: 'Why put the grid-spawn code in its own method?',
+        options: [
+          'Methods run faster than loose code',
+          'We need it at the start AND after every cleared wave - write once, call twice',
+          'paintComponent cannot contain loops'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Game Over & Polish',
+      goal: 'Lose when aliens reach the ship line, show a game over screen with score and wave.',
+      points: [
+        'Add <code>boolean gameOver = false</code> - if any alien passes y = 450, the invasion succeeded',
+        'When gameOver: freeze the game loop and draw GAME OVER, score, and wave reached',
+        'Balance: limit lasers with a cooldown so aiming matters - <code>fireCooldown = 10</code>'
+      ],
+      challenge: '☕ Write the game over check:',
+      starter: '// Check if any alien reached the ship line\nfor (int i = 0; i < aliens.length; i++) {\n    if (aliens[i].alive && aliens[i].y + aliens[i].h > ___) {\n        ___ = true;\n    }\n}\n\n// Lose a life instead of instant game over\nif (gameOver) {\n    lives--;\n    if (lives > 0) {\n        gameOver = ___;\n        spawnAliens();\n    }\n}',
+      solution: '// Check if any alien reached the ship line\nfor (int i = 0; i < aliens.length; i++) {\n    if (aliens[i].alive && aliens[i].y + aliens[i].h > 450) {\n        gameOver = true;\n    }\n}\n\n// Lose a life instead of instant game over\nif (gameOver) {\n    lives--;\n    if (lives > 0) {\n        gameOver = false;\n        spawnAliens();\n    }\n}',
+      checks: ['gameover', 'lives', 'spawnaliens'],
+      height: 260,
+      fills: {
+        text: 'The game ends when any alien passes y = ___. The ___ variable counts how many chances the player has left.',
+        answers: ['450', 'lives']
+      },
+      quiz: {
+        question: 'Limiting bullets with a cooldown makes the game:',
+        options: [
+          'Easier, because bullets are stronger',
+          'More skilful - you must aim instead of holding down fire',
+          'Slower to render'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>
