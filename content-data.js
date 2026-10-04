@@ -1495,6 +1495,114 @@ window.JVDS_CONTENT = {
       "url": "/workshops/godot-racing-workshop-2.html"
     },
     {
+      "id": "java-breakout-canvas",
+      "title": "Java Breakout Build Canvas",
+      "desc": "",
+      "engine": "Java",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/java-breakout-canvas.html"
+    },
+    {
+      "id": "java-platformer-canvas",
+      "title": "Java Platformer Build Canvas",
+      "desc": "",
+      "engine": "Java",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/java-platformer-canvas.html"
+    },
+    {
+      "id": "java-pong-canvas",
+      "title": "Java Pong Build Canvas",
+      "desc": "",
+      "engine": "Java",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/java-pong-canvas.html"
+    },
+    {
+      "id": "java-rpg-part2-canvas",
+      "title": "Java RPG Battle Canvas",
+      "desc": "",
+      "engine": "Java",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "rpg"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/java-rpg-part2-canvas.html"
+    },
+    {
+      "id": "java-rpg-part1-canvas",
+      "title": "Java RPG Build Canvas",
+      "desc": "",
+      "engine": "Java",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "rpg"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/java-rpg-part1-canvas.html"
+    },
+    {
+      "id": "java-rpg-part3-canvas",
+      "title": "Java RPG Finale Build Canvas",
+      "desc": "",
+      "engine": "Java",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "rpg"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/java-rpg-part3-canvas.html"
+    },
+    {
+      "id": "java-space-canvas",
+      "title": "Java Space Shooter Build Canvas",
+      "desc": "",
+      "engine": "Java",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "shooter"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/java-space-canvas.html"
+    },
+    {
       "id": "java-platformer-workshop",
       "title": "My First Java Game Ep 1: Simple Platformer",
       "desc": "Learn Java by building a platformer with jumping, gravity and platforms. Free interactive workshop with quizzes, code challenges and XP.",
@@ -1705,6 +1813,22 @@ window.JVDS_CONTENT = {
       "themeColor": "#ff7700",
       "cover": "/og/js-platformer-part2-workshop.png",
       "url": "/workshops/js-platformer-part2-workshop.html"
+    },
+    {
+      "id": "js-platformer-canvas",
+      "title": "Platformer Build Canvas",
+      "desc": "",
+      "engine": "JavaScript",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/js-platformer-canvas.html"
     },
     {
       "id": "minecraft-custom-block-mod",
@@ -3934,15 +4058,15 @@ window.JVDS_CONTENT = {
           ]
         },
         {
-          "title": "Level 2: Your First Scene",
+          "title": "Level 2: Your First Game",
           "workshops": [
-            "godot-first-scene"
+            "godot-racing-workshop"
           ]
         },
         {
           "title": "Level 3: 2D Platformer",
           "workshops": [
-            "godot-2d-platformer"
+            "jump-jump-mario-workshop"
           ]
         },
         {
@@ -3966,7 +4090,7 @@ window.JVDS_CONTENT = {
         {
           "title": "Level 1: Scratch Basics",
           "workshops": [
-            "scratch-getting-started"
+            "scratch-catch-workshop"
           ]
         },
         {
@@ -3978,13 +4102,13 @@ window.JVDS_CONTENT = {
         {
           "title": "Level 3: Build a Platformer",
           "workshops": [
-            "scratch-platformer"
+            "scratch-platformer-workshop"
           ]
         },
         {
           "title": "Level 4: Interactive Stories",
           "workshops": [
-            "scratch-story"
+            "scratch-story-workshop"
           ]
         }
       ],
@@ -4000,9 +4124,9 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "levels": [
         {
-          "title": "Level 1: Roblox Studio Basics",
+          "title": "Level 1: Your First Game",
           "workshops": [
-            "roblox-studio-basics"
+            "my-first-roblox-studio-game"
           ]
         },
         {
@@ -4018,9 +4142,9 @@ window.JVDS_CONTENT = {
           ]
         },
         {
-          "title": "Level 4: Your First Game",
+          "title": "Level 4: Pet Simulator",
           "workshops": [
-            "my-first-roblox-studio-game"
+            "roblox-simulator-workshop"
           ]
         }
       ],
@@ -4038,13 +4162,13 @@ window.JVDS_CONTENT = {
         {
           "title": "Level 1: Python Basics",
           "workshops": [
-            "python-getting-started"
+            "python-game-builder"
           ]
         },
         {
-          "title": "Level 2: Pygame Intro",
+          "title": "Level 2: Catch Game",
           "workshops": [
-            "python-pygame-intro"
+            "python-catch-workshop"
           ]
         },
         {
@@ -4072,21 +4196,21 @@ window.JVDS_CONTENT = {
       "ageRange": "12+",
       "levels": [
         {
-          "title": "Level 1: Unity Interface",
-          "workshops": [
-            "unity-getting-started"
-          ]
-        },
-        {
-          "title": "Level 2: 2D Basics",
-          "workshops": [
-            "unity-2d-basics"
-          ]
-        },
-        {
-          "title": "Level 3: 2D Platformer",
+          "title": "Level 1: 2D Platformer",
           "workshops": [
             "unity-2d-platformer"
+          ]
+        },
+        {
+          "title": "Level 2: Top-Down Shooter",
+          "workshops": [
+            "unity-top-down-shooter"
+          ]
+        },
+        {
+          "title": "Level 3: 3D Platformer",
+          "workshops": [
+            "unity-3d-platformer"
           ]
         }
       ],
@@ -4118,8 +4242,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-01T19:16:26.863Z",
-    "workshops": 186,
+    "generated": "2026-10-04T08:31:52.432Z",
+    "workshops": 194,
     "games": 41,
     "tools": 37,
     "books": 5,
@@ -4131,8 +4255,8 @@ window.JVDS_CONTENT = {
       "General": 52,
       "GML/GameMaker": 6,
       "Godot": 7,
-      "Java": 7,
-      "JavaScript": 7,
+      "Java": 14,
+      "JavaScript": 8,
       "Minecraft": 8,
       "MUGEN": 5,
       "OpenRCT2": 3,
