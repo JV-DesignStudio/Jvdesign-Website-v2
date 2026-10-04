@@ -23,9 +23,19 @@
     'tileset-builder': 1, 'particle-designer': 1, 'colour-palette': 1,
     'icon-generator': 1, 'game-logo-maker': 1, 'game-idea-generator': 1,
     'gdd-builder': 1, 'design-worksheet': 1, 'story-editor': 1,
-    'sound-studio': 1, 'music-maker': 1, 'sfx-generator': 1
+    'sound-studio': 1, 'music-maker': 1, 'sfx-generator': 1,
+    'trading-card-designer': 1, 'arcade-game-maker': 1,
+    'code-snippet-generator': 1, 'buildlab': 1
   };
   if (!CREATORS[TOOL]) return;
+
+  // A676: same shared save/export keepsake strip on every curated create tool.
+  (function loadKeepsake() {
+    var s = document.createElement('script');
+    s.src = '/creation-keepsake.js';
+    s.defer = true;
+    document.head.appendChild(s);
+  })();
 
   var HOME = 'https://jvdesignstudio.co.uk';
   var TOOL_URL = HOME + '/tools/' + TOOL + '.html';
