@@ -1,26 +1,40 @@
 const fs = require('fs');
+const path = require('path');
 
-const studioPicks = [
-  'games/pixel-pet-arena.html',
-  'games/creature-rescue-clinic.html',
-  'games/backpack-quest.html',
-  'games/marble-run-lab.html',
-  'games/beat-builder-battle.html',
-  'games/garden-defense.html'
-];
+const ROOT = path.join(__dirname, '..');
+
+// games-registry.js assigns window.JVDS_GAMES, and is the id -> file map.
+global.window = {};
+require(path.join(ROOT, 'games-registry.js'));
+const games = (global.window && global.window.JVDS_GAMES) || [];
+const byId = {};
+for (const game of games) byId[game.id] = game;
+
+// docs/GAME_CURATION.json is the single source of truth for the Flagship tier.
+const curation = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs', 'GAME_CURATION.json'), 'utf8'));
+const flagshipIds = curation.flagship || [];
+if (!flagshipIds.length) {
+  console.error('[FAIL] docs/GAME_CURATION.json has no flagship list');
+  process.exit(1);
+}
+
+const studioPicks = [];
+for (const id of flagshipIds) {
+  const game = byId[id];
+  if (!game) {
+    console.error(`[FAIL] flagship id "${id}" is not in games-registry.js`);
+    process.exit(1);
+  }
+  studioPicks.push('games/' + game.file);
+}
 
 const polishSignals = {
-  'games/pixel-pet-arena.html': [/Build Coach/, /League Mission/, /medals/],
-  'games/creature-rescue-clinic.html': [/Triage Coach/, /clinicCoach/, /recommended/],
-  'games/backpack-quest.html': [/Pack Coach/, /starter-grid/, /Synergy score/],
-  'games/marble-run-lab.html': [/Flow Coach/, /flowCoach/, /leak/],
-  'games/beat-builder-battle.html': [/Beat Coach/, /preset-row/, /timing-readout/],
-  'games/garden-defense.html': [/waveIntel/, /gd-wave-intel/, /Challenge Bonus/]
+  'games/arcane_citadel_page.html': [/quality-panel/, /hero-badges/, /boss-card/]
 };
 
 let failed = false;
 for (const file of studioPicks) {
-  const html = fs.readFileSync(file, 'utf8');
+  const html = fs.readFileSync(path.join(ROOT, file), 'utf8');
   const checks = [
     ['quality panel', /quality-panel|gd-quality-panel/],
     ['goal label', /<b>Goal<\/b>/],
@@ -44,4 +58,4 @@ for (const file of studioPicks) {
 }
 
 if (failed) process.exit(1);
-console.log(`Game quality gate passed for ${studioPicks.length} Studio Picks with polish signals.`);
+console.log(`Game quality gate passed for ${studioPicks.length} Flagship game(s) from docs/GAME_CURATION.json.`);
