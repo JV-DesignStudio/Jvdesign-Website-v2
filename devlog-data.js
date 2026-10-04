@@ -375,15 +375,7 @@ const POSTS = [
         content: 'Pixel Pet Arena is our creator-meets-battler: draw a pixel pet, look after its mood and energy, train one stat, then battle. We shaped it into one short league, three rivals and a clear finish in about five minutes, with Pip cheering you on. Your drawing choices matter to how the battles go. Draw, care, train, battle, done, and a reason to build a better pet next time.'
     },
 
-    {
-        id: 321,
-        date: '2 October 2026',
-        tag: 'games',
-        emoji: '🔧',
-        title: 'Action games rebuilt as five-minute story runs',
-        excerpt: 'Fifteen arcade action games were reshaped so each tells one small, finishable story.',
-        content: 'We set a simple rule for the Arcade: every game should be something you can start and finish in about five minutes, and feel like a small story while you do it. This pass took fifteen action games and gave each one a clear beginning, a guiding character and a real ending, trimming the endless or grind-heavy parts. The aim is that a new player always knows how to start, what they are doing, and when they have finished.'
-    },
+    
 
     {
         id: 320,
@@ -391,8 +383,8 @@ const POSTS = [
         tag: 'games',
         emoji: '🔧',
         title: 'A five-minute promise on every arcade card',
-        excerpt: 'Every arcade game now states its story hook, its action, its guide and its finish up front.',
-        content: 'The Arcade had grown to forty games, and too many of them did not tell you what you were about to do or how long it would take. We set one promise across the whole catalogue: every game card shows a short story hook, what you actually do, which character guides you, and that it finishes in five minutes or less. It makes browsing honest and helps a new player pick without guessing.'
+        excerpt: 'Every arcade game now says what you do and when it finishes, and fifteen action games were rebuilt to keep that promise.',
+        content: 'The Arcade had grown to forty games, and too many of them did not tell you what you were about to do or how long it would take. So we set one promise across the whole catalogue: every game card shows a short story hook, what you actually do, which character guides you, and that it finishes in five minutes or less. Then we made it true. Fifteen action games were rebuilt into small, finishable stories with a clear beginning, a guiding character and a real ending, trimming the endless and grind-heavy parts. A new player now always knows how to start, what they are doing, and when they are done.'
     },
 
     
@@ -509,15 +501,7 @@ const POSTS = [
         content: 'The most common beginner question is which engine to learn first, so we answered it properly. The new page compares Godot, PICO-8, Defold, Roblox and Scratch in plain language: what age each suits, how hard it is, and what you end up making. It then walks you to a recommendation instead of leaving you to guess.'
     },
 
-    {
-        id: 298,
-        date: '2 October 2026',
-        tag: 'update',
-        emoji: '🔧',
-        title: 'Every workshop series, checked and repaired',
-        excerpt: 'A full sweep of the workshop library found bugs in all nine series groups, all now fixed.',
-        content: 'We went through the whole workshop library looking for lessons that could not actually be finished or that contradicted themselves. Every series group had at least one problem: missing catalog entries, a hidden six-episode series, a finish screen that never appeared, progress saved under the wrong labels, and the site\'s longest workshop had no ending at all. All of it is repaired now, so the lessons end the way they say they will.'
-    },
+    
 
     {
         id: 297,
@@ -569,15 +553,7 @@ const POSTS = [
         content: 'The Bitmap Font Maker is for turning letters into pixel fonts for game UI, but it had rough edges: garbled labels, a missing skip link and a cramped mobile layout. We cleaned all of it up and tightened the export so the font it hands you is ready to drop into a project. It now feels like a small, real piece of a developer pipeline rather than a demo.'
     },
 
-    {
-        id: 292,
-        date: '2 October 2026',
-        tag: 'tools',
-        emoji: '🔧',
-        title: 'A health check across the whole toolbox',
-        excerpt: 'Going through every public tool to prove it works, and fixing the ones that did not.',
-        content: 'We wanted every tool on the site to earn its place, so we audited them one by one. The flagship tools were solid, some needed test cleanup, and several had broken labels, unsafe text handling or a layout that fell apart on a phone. We repaired the broken ones, removed duplicate routes, and set the expectation that a tool is only public once it works on first click.'
-    },
+    
 
     {
         id: 291,
