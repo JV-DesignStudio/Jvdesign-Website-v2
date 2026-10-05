@@ -1386,6 +1386,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/gml-rpg-workshop.html"
     },
     {
+      "id": "godot-racing-workshop",
+      "title": "Build a Racing Game in Godot: Free Beginner Tutorial",
+      "desc": "Build a top-down racing game in Godot from scratch. Free step-by-step beginner tutorial for home and classroom. No experience needed.",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "racing"
+      ],
+      "steps": 6,
+      "themeColor": "#ff6b35",
+      "cover": "/godot-teaser.png",
+      "url": "/workshops/godot-racing-workshop.html"
+    },
+    {
       "id": "godot-gdscript-essentials",
       "title": "GDScript Essentials: Learn Before You Build",
       "desc": "Learn GDScript fundamentals before building Godot games. Variables, functions, control flow, objects and more. Free interactive course for ages 10+.",
@@ -1461,22 +1477,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#0f1117",
       "cover": "/godot-teaser.png",
       "url": "/workshops/godot-gatekeeper-3d-part2.html"
-    },
-    {
-      "id": "godot-racing-workshop",
-      "title": "Zoom Zoom! Build a Racing Game in Godot",
-      "desc": "Build your very own top-down racing game in Godot! A parent and child workshop no experience needed. Start from zero and drive your car in 8 fun steps!",
-      "engine": "Godot",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "racing"
-      ],
-      "steps": 6,
-      "themeColor": "#ff6b35",
-      "cover": "/godot-teaser.png",
-      "url": "/workshops/godot-racing-workshop.html"
     },
     {
       "id": "godot-racing-workshop-2",
@@ -1711,6 +1711,20 @@ window.JVDS_CONTENT = {
       "url": "/workshops/java-rpg-part3-workshop.html"
     },
     {
+      "id": "js-flappy-workshop",
+      "title": "Build a Flappy Bird Clone in JavaScript: Free Beginner Tutorial",
+      "desc": "Build a Flappy Bird clone in JavaScript on HTML canvas. Free step-by-step tutorial with quizzes and code challenges. No install, no account.",
+      "engine": "JavaScript",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#ff7700",
+      "cover": "/og/js-flappy-workshop.png",
+      "url": "/workshops/js-flappy-workshop.html"
+    },
+    {
       "id": "js-cheatsheet",
       "title": "Free JavaScript Game Dev Cheat Sheet",
       "desc": "Free printable JavaScript game dev cheat sheet variables, Canvas API, game loop, keyboard input, collision detection and common code snippets. No sign-up needed.",
@@ -1723,20 +1737,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#ffd166",
       "cover": "/og/js-cheatsheet.png",
       "url": "/workshops/js-cheatsheet.html"
-    },
-    {
-      "id": "js-flappy-workshop",
-      "title": "My First Browser Game Ep 1: Flappy Bird Clone",
-      "desc": "Learn JavaScript by building a Flappy Bird clone on HTML canvas. Free interactive workshop with quizzes, code challenges and XP.",
-      "engine": "JavaScript",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#ff7700",
-      "cover": "/og/js-flappy-workshop.png",
-      "url": "/workshops/js-flappy-workshop.html"
     },
     {
       "id": "js-memory-workshop",
@@ -2161,6 +2161,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/python-game-builder.html"
     },
     {
+      "id": "python-platformer-workshop",
+      "title": "Build a Python Platformer in Pygame: Free Beginner Tutorial",
+      "desc": "Build a Python platformer in Pygame with gravity, jumping and platforms. Free step-by-step beginner tutorial. No install beyond Python.",
+      "engine": "Python",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#ff7700",
+      "cover": "/og/python-platformer-workshop.png",
+      "url": "/workshops/python-platformer-workshop.html"
+    },
+    {
       "id": "python-cheatsheet",
       "title": "Free Python &amp; Pygame Cheat Sheet",
       "desc": "Free printable Python &amp; Pygame cheat sheet variables, game setup, drawing, event handling, collision detection and common code snippets. No sign-up needed.",
@@ -2187,22 +2203,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#ff7700",
       "cover": "/og/python-catch-workshop.png",
       "url": "/workshops/python-catch-workshop.html"
-    },
-    {
-      "id": "python-platformer-workshop",
-      "title": "My First Python Game Ep 2: Simple Platformer",
-      "desc": "Build a Python platformer with gravity, jumping and platforms in Pygame. Free interactive workshop with quizzes and code challenges.",
-      "engine": "Python",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "platformer"
-      ],
-      "steps": 6,
-      "themeColor": "#ff7700",
-      "cover": "/og/python-platformer-workshop.png",
-      "url": "/workshops/python-platformer-workshop.html"
     },
     {
       "id": "python-dodge-workshop",
@@ -2291,6 +2291,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/roblox-pirate-workshop.html"
     },
     {
+      "id": "roblox-obby-workshop",
+      "title": "Build an Obby in Roblox Studio: Free Beginner Tutorial",
+      "desc": "Build your first Roblox obby, a moving-platform obstacle course, in Roblox Studio. Free step-by-step beginner tutorial. No experience needed.",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "obby"
+      ],
+      "steps": 6,
+      "themeColor": "#00b4ff",
+      "cover": "/og/roblox-obby-workshop.png",
+      "url": "/workshops/roblox-obby-workshop.html"
+    },
+    {
       "id": "roblox-corruption-obby-workshop",
       "title": "CORRUPTED: Build a Neon Glitch Obby in Roblox Studio",
       "desc": "Build a 3rd-person neon jumping puzzle where the simulation fails behind you. Platforms delete themselves, a Corruption Zone chases you, and being caught glitches your screen. Free workshop for ages 10+.",
@@ -2306,22 +2322,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#7c3aed",
       "cover": "/og/roblox-corruption-obby-workshop.png",
       "url": "/workshops/roblox-corruption-obby-workshop.html"
-    },
-    {
-      "id": "roblox-obby-workshop",
-      "title": "Don't Fall! Build an Obby in Roblox Studio",
-      "desc": "Build your first Roblox obstacle course in Roblox Studio! A free parent & child workshop. Moving platforms, lava floors and a finish checkpoint. No experience needed.",
-      "engine": "Roblox",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "obby"
-      ],
-      "steps": 6,
-      "themeColor": "#00b4ff",
-      "cover": "/og/roblox-obby-workshop.png",
-      "url": "/workshops/roblox-obby-workshop.html"
     },
     {
       "id": "roblox-horror-workshop",
@@ -3556,7 +3556,10 @@ window.JVDS_CONTENT = {
         "Pixel Art"
       ],
       "comingSoon": false,
-      "url": "/tools/arcade-game-maker.html"
+      "url": "/tools/arcade-game-maker.html",
+      "aliases": [
+        "arcade engine"
+      ]
     },
     {
       "id": "bitmap-font-maker",
@@ -3578,7 +3581,11 @@ window.JVDS_CONTENT = {
         "3D"
       ],
       "comingSoon": false,
-      "url": "/tools/buildlab.html"
+      "url": "/tools/buildlab.html",
+      "aliases": [
+        "roblox builder",
+        "Roblox Builder"
+      ]
     },
     {
       "id": "code-snippet-generator",
@@ -3674,8 +3681,8 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "godot-cheatsheet",
-      "title": "Free Godot 4 GDScript Cheat Sheet",
-      "desc": "Free printable Godot 4 GDScript cheat sheet with node lifecycle, 2D/3D nodes, physics, signals, input and common game patterns. No sign-up required.",
+      "title": "Free Godot 4 GDScript Cheat Sheet (Printable PDF)",
+      "desc": "Free printable Godot 4 GDScript cheat sheet (PDF) for beginners. Node lifecycle, 2D/3D nodes, physics, signals, input and common game patterns. No sign-up required.",
       "category": "General",
       "tags": [
         "3D"
@@ -3703,8 +3710,8 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "javascript-cheatsheet",
-      "title": "Free HTML5 Canvas JavaScript Cheat Sheet",
-      "desc": "Free printable HTML5 Canvas JavaScript game development cheat sheet with canvas setup, drawing, game loop, input, images, audio, math, collision and common game patterns. No sign-u",
+      "title": "Free HTML5 Canvas JavaScript Cheat Sheet (Printable PDF)",
+      "desc": "Free printable HTML5 Canvas JavaScript cheat sheet (PDF) for beginners. Canvas setup, drawing, game loop, input, images, audio, collision and common patterns. No sign-up required.",
       "category": "Make Audio",
       "tags": [],
       "comingSoon": false,
@@ -3726,7 +3733,13 @@ window.JVDS_CONTENT = {
       "category": "Build Worlds",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/level-designer.html"
+      "url": "/tools/level-designer.html",
+      "aliases": [
+        "map generator",
+        "tileset builder",
+        "Map Generator",
+        "Tileset Builder"
+      ]
     },
     {
       "id": "minecraft-cheatsheet",
@@ -3766,19 +3779,26 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "pixel-studio",
-      "title": "Pixel Studio - Draw, Design & Animate",
-      "desc": "The unified Pixel Studio: easy pixel art for beginners, character design templates, layered drawing, animation & spritesheet export. Free in your browser.",
+      "title": "Pixel Studio: Free Pixel Art Maker for Beginners",
+      "desc": "Free pixel art maker in your browser: beginner 8x8 to 32x32 mode, character templates, layers, animation and spritesheet export. No install, no account.",
       "category": "Make Art",
       "tags": [
         "Pixel Art"
       ],
       "comingSoon": false,
-      "url": "/tools/pixel-studio.html"
+      "url": "/tools/pixel-studio.html",
+      "aliases": [
+        "character designer",
+        "easy pixel art",
+        "character creator",
+        "Character Designer",
+        "Easy Pixel Art"
+      ]
     },
     {
       "id": "python-cheatsheet",
-      "title": "Free Python Pygame Cheat Sheet",
-      "desc": "Free printable Python Pygame cheat sheet with game loop, input, drawing, images, sound, collision and common game patterns. No sign-up required.",
+      "title": "Free Python Pygame Cheat Sheet (Printable PDF)",
+      "desc": "Free printable Python Pygame cheat sheet (PDF) for beginners. Game loop, input, drawing, images, sound, collision and common game patterns. No sign-up required.",
       "category": "Make Audio",
       "tags": [],
       "comingSoon": false,
@@ -3791,12 +3811,16 @@ window.JVDS_CONTENT = {
       "category": "Plan & Write",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/quest-board.html"
+      "url": "/tools/quest-board.html",
+      "aliases": [
+        "project tracker",
+        "Project Tracker"
+      ]
     },
     {
       "id": "roblox-cheatsheet",
-      "title": "Free Roblox Lua Cheat Sheet",
-      "desc": "Free printable Roblox Lua cheat sheet with data types, instance methods, properties, events, remote events, services and common game patterns. No sign-up required.",
+      "title": "Free Roblox Lua Cheat Sheet (Printable PDF)",
+      "desc": "Free printable Roblox Lua cheat sheet (PDF) for beginners. Data types, instances, properties, events, remote events, services and common game patterns. No sign-up required.",
       "category": "General",
       "tags": [],
       "comingSoon": false,
@@ -3827,7 +3851,17 @@ window.JVDS_CONTENT = {
       "category": "Make Audio",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/sound-studio.html"
+      "url": "/tools/sound-studio.html",
+      "aliases": [
+        "sfx generator",
+        "drum pad",
+        "music maker",
+        "sound effects",
+        "beats",
+        "SFX Generator",
+        "Drum Pad",
+        "Music Maker"
+      ]
     },
     {
       "id": "sprite-animator",
@@ -3836,7 +3870,11 @@ window.JVDS_CONTENT = {
       "category": "Make Art",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/sprite-animator.html"
+      "url": "/tools/sprite-animator.html",
+      "aliases": [
+        "sprite sheet animator",
+        "Sprite Sheet Animator"
+      ]
     },
     {
       "id": "story-editor",
@@ -3845,7 +3883,12 @@ window.JVDS_CONTENT = {
       "category": "Plan & Write",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/story-editor.html"
+      "url": "/tools/story-editor.html",
+      "aliases": [
+        "dialogue tree builder",
+        "branching dialogue",
+        "Dialogue Tree Builder"
+      ]
     },
     {
       "id": "story-player",
@@ -3867,8 +3910,8 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "unity-cheatsheet",
-      "title": "Free Unity C# Cheat Sheet",
-      "desc": "Free printable Unity C# cheat sheet with MonoBehaviour lifecycle, input, physics, UI, coroutines, scene management and common game patterns. No sign-up required.",
+      "title": "Free Unity C# Cheat Sheet (Printable PDF)",
+      "desc": "Free printable Unity C# cheat sheet (PDF) for beginners. MonoBehaviour lifecycle, input, physics, UI, coroutines and common game patterns. No sign-up required.",
       "category": "General",
       "tags": [],
       "comingSoon": false,
@@ -4242,7 +4285,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-04T09:45:10.959Z",
+    "generated": "2026-10-05T13:05:46.037Z",
     "workshops": 194,
     "games": 41,
     "tools": 37,
