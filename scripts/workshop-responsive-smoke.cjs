@@ -96,15 +96,27 @@ function createServer() {
 
           const result = await page.evaluate(() => {
             const doc = document.documentElement;
-            const body = document.body;
-            const maxScroll = Math.max(doc.scrollWidth, body ? body.scrollWidth : 0);
+            const maxScroll = doc.scrollWidth;
             const viewportWidth = window.innerWidth;
             const hasBlueprint = Boolean(document.querySelector('.bp-outer, .bp-canvas-wrap'));
+            // An element inside a horizontal scroll container is intentionally
+            // clipped and does not cause page-level overflow (for example the
+            // workshop jump nav on phones), so it must not be counted as a culprit.
+            const isClipped = el => {
+              let a = el.parentElement;
+              while (a && a !== document.body && a !== document.documentElement) {
+                const ox = getComputedStyle(a).overflowX;
+                if (ox === 'auto' || ox === 'scroll' || ox === 'hidden') return true;
+                a = a.parentElement;
+              }
+              return false;
+            };
             let widest = null;
             document.querySelectorAll('body *').forEach(el => {
               const rect = el.getBoundingClientRect();
               if (el.classList && el.classList.contains('skip-link')) return;
               if (el.closest('.step-tabs, .steps-tabs')) return;
+              if (isClipped(el)) return;
               const overflow = Math.max(0, rect.right - viewportWidth);
               if (overflow > 4 && (!widest || overflow > widest.overflow)) {
                 widest = {
