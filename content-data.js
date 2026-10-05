@@ -1815,22 +1815,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/js-platformer-part2-workshop.html"
     },
     {
-      "id": "js-platformer-canvas",
-      "title": "Platformer Build Canvas",
-      "desc": "",
-      "engine": "JavaScript",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "platformer"
-      ],
-      "steps": 6,
-      "themeColor": "#BC4749",
-      "cover": "og/learn.png",
-      "url": "/workshops/js-platformer-canvas.html"
-    },
-    {
       "id": "minecraft-custom-block-mod",
       "title": "Crystal Block! Add a Custom Glowing Block to Minecraft",
       "desc": "Add a custom glowing Crystal Block to Minecraft with Fabric! Register a block, create textures, blockstates and drop loot. Free beginner Java modding workshop.",
@@ -4285,8 +4269,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-05T13:05:46.037Z",
-    "workshops": 194,
+    "generated": "2026-10-05T15:18:50.997Z",
+    "workshops": 193,
     "games": 41,
     "tools": 37,
     "books": 5,
@@ -4299,7 +4283,7 @@ window.JVDS_CONTENT = {
       "GML/GameMaker": 6,
       "Godot": 7,
       "Java": 14,
-      "JavaScript": 8,
+      "JavaScript": 7,
       "Minecraft": 8,
       "MUGEN": 5,
       "OpenRCT2": 3,
