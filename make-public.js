@@ -1,4 +1,7 @@
-// make-public.js, generates quest-board.html (clean public version) from project-tracker.html
+// make-public.js, legacy generator for quest-board.html from project-tracker.html.
+// OBSOLETE (A776): project-tracker.html is now a redirect stub (Project Tracker was
+// retired into Game Planner), so this refuses to write rather than destroy the
+// hand-authored tools/quest-board.html. Kept for reference.
 // Run from anywhere: node make-public.js   (paths are resolved relative to this script)
 'use strict';
 const fs = require('fs');
@@ -227,7 +230,20 @@ function completeSetup(){
   done.push('auth gate → setup wizard');
 }
 
-// ── 8. Write output ───────────────────────────────────────────────────────────
+// ── 8. Guard + write output ───────────────────────────────────────────────────
+// project-tracker.html was retired into a redirect when Project Tracker merged
+// into Game Planner, so this generator no longer has a full-app source. Never
+// overwrite the hand-authored tools/quest-board.html with a broken partial build.
+if (errs.length) {
+  console.error('\n✗ make-public: refusing to write ' + path.relative(ROOT, OUT_FILE) + ' - ' + errs.length + ' transform(s) missed.');
+  console.error('  Source ' + path.relative(ROOT, SRC_FILE) + ' is no longer the full app.');
+  if (c.includes('http-equiv="refresh"') || c.includes('location.replace')) {
+    console.error('  It is now a redirect stub (Project Tracker was retired into Game Planner).');
+    console.error('  make-public.js is obsolete; tools/quest-board.html is hand-maintained.');
+  }
+  console.error('  No files were changed.');
+  process.exit(1);
+}
 fs.writeFileSync(OUT_FILE, c);
 
 // ── 9. Syntax check all inline scripts ───────────────────────────────────────
