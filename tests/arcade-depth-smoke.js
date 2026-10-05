@@ -1,17 +1,19 @@
 require('./arcade-browser-harness.cjs')([
  {file:'paper-toss-deluxe.html',run:async(p,check,a)=>{
- await check('bank contract changes real wall physics',async()=>a.equal(await p.evaluate(()=>{startGame();selectTossContract('bank');state='flying';paper={x:W-4,y:H*.4,vx:180,vy:-60,rot:0,spin:0};update(.02);return paper.banked&&paper.vx<0;}),true));
- await check('banked hit doubles reward and recovers a life',async()=>a.equal(await p.evaluate(()=>{lives=2;scoreHit();return score===200&&lives===3&&bankShots===1;}),true));
- await check('direct shot does not satisfy a bank contract',async()=>a.equal(await p.evaluate(()=>{state='flying';paper={banked:false};const before=hits;scoreHit();return hits===before&&lives===2;}),true));
- await check('fifteen baskets complete and save a tour',async()=>a.equal(await p.evaluate(()=>{state='ready';selectTossContract('direct');hits=14;state='flying';paper={};scoreHit();return state==='dead'&&document.getElementById('overTitle').textContent==='Office tour complete!'&&Number(localStorage.getItem('jvds_toss_tours'))===1;}),true));
- await check('restart cancels delayed end screen',async()=>{await p.evaluate(()=>startGame());await new Promise(r=>setTimeout(r,550));a.equal(await p.evaluate(()=>document.getElementById('overModal').classList.contains('show')),false);});
+ await check('five wind-lab levels and throw mission',async()=>a.equal(await p.evaluate(()=>document.querySelectorAll('#levelMap button').length===5&&/Score/i.test(document.getElementById('missionTitle').textContent)),true));
+ await check('starting level resets throws and ball',async()=>a.equal(await p.evaluate(()=>{startLevel(0);return score===0&&throws===cfg().throws&&!!ball&&playing===true;}),true));
+ await check('curve flight path bends sideways with lift',async()=>a.equal(await p.evaluate(()=>{const straight=flightPoint(0.5,0,1),curved=flightPoint(0.5,0.8,1);return Math.abs(curved.wx-straight.wx)>0.02&&curved.h>0;}),true));
+ await check('clean hit scores and builds streak',async()=>a.equal(await p.evaluate(()=>{startLevel(0);wind={x:0,y:0,p:0};ball={wx:0,wz:0,h:0,r:44,t:0,duration:.86,reach:1,endX:0,arc:.72,spin:0,bounces:0,curve:false,hit:false,power:1};const before=score;scoreHit();return score>before&&streak===1;}),true));
+ await check('trick curve counts toward lab tricks',async()=>a.equal(await p.evaluate(()=>{ball={wx:0,wz:0,h:0,r:44,t:0,duration:.86,reach:1,endX:0,arc:.72,spin:0.8,bounces:0,curve:true,hit:false,power:1};const t=tricks;scoreHit();return tricks===t+1;}),true));
+ await check('miss resets streak without ending level',async()=>a.equal(await p.evaluate(()=>{throws=8;score=0;miss();return streak===0&&flying===false;}),true));
+ await check('restart resets score and throws',async()=>{await new Promise(r=>setTimeout(r,600));a.equal(await p.evaluate(()=>{startLevel(level);return score===0&&throws===cfg().throws;}),true);});
  }},
  {file:'pastry-match.html',run:async(p,check,a)=>{
- await p.evaluate(()=>startGame());await p.waitForFunction(()=>state==='playing');
- await check('pinning costs focus and remembers a missed card',async()=>a.equal(await p.evaluate(()=>{flipCard(0);notePastry();const other=cards.findIndex(c=>c.emoji!==cards[0].emoji);flipCard(other);pastryTimers.forEach(clearTimeout);pastryTimers.clear();checkMatch();return pastryFocus===2&&cards[0].state==='hidden'&&cards[0].noted&&cardEls[0].textContent.includes('📌');}),true));
- await check('cannot buy a glance without three focus',async()=>a.equal(await p.evaluate(()=>{glancePastries();return state==='playing'&&pastryFocus===2;}),true));
- await check('glance reveals then hides unpinned cards',async()=>{await p.evaluate(()=>{pastryFocus=3;glancePastries();});a.equal(await p.evaluate(()=>state==='glance'),true);await p.waitForFunction(()=>state==='playing');a.equal(await p.evaluate(()=>pastryFocus===0&&cards.filter(c=>!c.noted).every(c=>c.state==='hidden')),true);});
- await check('two matched pairs replenish focus',async()=>a.equal(await p.evaluate(()=>{for(let n=0;n<2;n++){const x=cards.findIndex(c=>c.state==='hidden');const y=cards.findIndex((c,i)=>i!==x&&c.state==='hidden'&&c.emoji===cards[x].emoji);flipCard(x);flipCard(y);pastryTimers.forEach(clearTimeout);pastryTimers.clear();checkMatch();}return pastryFocus===1&&matched===2;}),true));
- await check('restart resets tools and notes',async()=>a.equal(await p.evaluate(()=>{startGame();return pastryFocus===3&&cards.every(c=>!c.noted);}),true));
+ await p.evaluate(()=>startGame());await p.waitForFunction(()=>document.querySelectorAll('#board .tile').length===49);
+ await check('one order box with three pastry slots',async()=>a.equal(await p.evaluate(()=>document.querySelectorAll('#board .tile').length===49&&document.querySelectorAll('#orderSlots .slot').length>=3&&document.getElementById('timeHud').textContent==='1/1'),true));
+ await check('forced match resolves and scores',async()=>{await p.evaluate(()=>{const needId=Object.keys(order.needs).find(k=>order.needs[k]>0)||'croissant';for(let c=0;c<3;c++)board[0][c]=needId;resolveMatches([{r:0,c:0,id:needId},{r:0,c:1,id:needId},{r:0,c:2,id:needId}]);});await p.waitForFunction(()=>!busy,{timeout:10000});a.equal(await p.evaluate(()=>score>0),true);});
+ await check('tray tool reshuffles a full board',async()=>a.equal(await p.evaluate(()=>{const t=tray;useTray();return tray===t-1&&document.querySelectorAll('#board .tile').length===49;}),true));
+ await check('serving the box ends the order',async()=>{await p.evaluate(()=>{startGame();endGame();});a.equal(await p.evaluate(()=>document.getElementById('endModal').classList.contains('show')&&document.getElementById('endTitle').textContent==='Order served!'),true);});
+ await check('restart resets box and score',async()=>a.equal(await p.evaluate(()=>{startGame();return score===0&&!document.getElementById('endModal').classList.contains('show')&&document.querySelectorAll('#board .tile').length===49;}),true));
  }}
 ]).catch(e=>{console.error(e);process.exitCode=1;});
