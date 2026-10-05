@@ -25,6 +25,7 @@ const { ROOT } = require('../lib/paths');
 const STEPS = [
   { id: 'content',  label: 'Content  (scan -> content/*.json -> content-data.js)', fn: () => require('./content').runContent() },
   { id: 'tools',    label: 'Tools hub (grid + stats from content/tools.json)',     fn: () => require('./tools-hub').runToolsHub() },
+  { id: 'redirects', label: 'Redirects (redirects.json -> stubs + 404 routes)',   fn: () => require('./redirects').runRedirects() },
   { id: 'partials', label: 'Partials (inject nav/footer)',                        fn: () => require('./partials').runPartials() },
   { id: 'sitemap',  label: 'Sitemap  (sitemap.xml + search-index.json)',           fn: () => require('./sitemap').runSitemap() },
   { id: 'latest',   label: 'Latest   (latest-post.json)',                         fn: () => require('./latest').runLatest() },
