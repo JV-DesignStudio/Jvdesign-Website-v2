@@ -3,7 +3,8 @@
 // v22 (A256): precache jvds-store.js (backpack + progress) and refresh nav.js (profile chip reads jvds_profile)
 // v25 (A332): add pixel-studio shared dependencies so tool fully works offline on first visit
 // v28 (A611): offline fallback uses the small pip-hero.webp instead of the 2.5 MB pip.png
-const CACHE='jvds-v28';
+// v29 (A675): precache the top create tools + their CSS and shared widgets for offline-first school use
+const CACHE='jvds-v29';
 const CORE=[
   '/',
   '/offline.html',
@@ -34,6 +35,37 @@ const CORE=[
   '/style-tool-sound-studio.css',
   '/tools/level-designer.html',
   '/style-tool-level-designer.css',
+  // A675: top create tools precached for offline-first school use.
+  // arcade-game-maker is excluded on purpose: its HTML is 1.27 MB and it loads a
+  // 1 MB physics bundle, too heavy to force onto school networks. It runtime-caches.
+  '/tools/trading-card-designer.html',
+  '/style-tool-trading-card-designer.css',
+  '/tools/colour-palette.html',
+  '/style-tool-colour-palette.css',
+  '/tools/particle-designer.html',
+  '/style-tool-particle-designer.css',
+  '/tools/bitmap-font-maker.html',
+  '/style-tool-bitmap-font-maker.css',
+  '/tools/sprite-animator.html',
+  '/style-tool-sprite-animator.css',
+  '/tools/icon-generator.html',
+  '/style-tool-icon-generator.css',
+  '/tools/gdd-builder.html',
+  '/style-tool-gdd-builder.css',
+  '/tools/story-editor.html',
+  '/style-tool-story-editor.css',
+  '/tools/code-snippet-generator.html',
+  '/style-tool-code-snippet-generator.css',
+  '/tools/buildlab.html',
+  '/style-tool-buildlab.css',
+  // Shared widget scripts those tools load, so they work on a first offline visit.
+  '/creation-share.js',
+  '/creation-keepsake.js',
+  '/jvds-funnel.js',
+  '/feedback-widget.js',
+  '/mascots.js',
+  '/hidpi-canvas.js',
+  '/cookie-consent.js',
   '/assets/mascots/ember-hero.webp',
   '/assets/mascots/ember-badge.webp',
   '/assets/mascots/lumo-badge.webp',
