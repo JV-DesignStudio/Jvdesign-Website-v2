@@ -138,6 +138,17 @@
       <h1 class="hero-title">Nuclear<br><span class="hl">Blueprint</span></h1>
 <div class="callout tip" style="border-left:3px solid #22c55e;background:rgba(34,197,94,.07);"><div class="callout-icon">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of every step in this workshop: <a href="/downloads/nuclear-blueprint-reference.zip" download style="color:#16a34a;font-weight:800;text-decoration:underline;">⬇ nuclear-blueprint-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>
 
+      <div class="starter-banner" style="background:#fff7ed;border:2px solid #fdba74;border-radius:14px;padding:16px 20px;margin:16px 0;display:flex;align-items:center;gap:14px;flex-wrap:wrap;max-width:1100px;box-sizing:border-box;">
+        <span style="font-size:2.2rem;flex-shrink:0;line-height:1;">📦</span>
+        <div style="flex:1;min-width:180px;">
+          <strong style="font-size:.95rem;color:#7c2d12;display:block;margin-bottom:3px;">Starter Template Available, open it alongside this workshop!</strong>
+          <span style="font-size:.82rem;color:#9a3412;line-height:1.55;">37 step checklist plus a Reference Run you can load straight into play.</span>
+        </div>
+        <a href="../nuclear-blueprint-starter.zip" download style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:#c2410c;color:#fff;font-weight:800;font-size:.88rem;padding:11px 22px;border-radius:10px;text-decoration:none;box-shadow:0 3px 0 #9a3412;white-space:nowrap;">📦 Starter Template</a>
+        <a href="../nuclear-blueprint-starter.zip" download style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:#fff;color:#c2410c;font-weight:800;font-size:.88rem;padding:11px 22px;border-radius:10px;text-decoration:none;border:2px solid #c2410c;white-space:nowrap;">⬇ Download Free</a>
+        <a id="nbRunLink" href="#run=eyJ2IjoxLCJzY29yZSI6MTI1MCwid29ybGQiOjIsInJvb20iOjMsImhwIjoxNDAsIm1heEhwIjoxNDAsInNwZWVkTXVsdCI6MS4xNSwibGlmZXN0ZWFsIjp0cnVlLCJsaWZlc3RlYWxBbXQiOjMsInNoaWVsZCI6ZmFsc2UsImFjdGl2ZVNsb3QiOjAsIndwbjAiOnsibmFtZSI6Ik5vdmEgU3BsaW50ZXIiLCJkbWciOjQsImZyIjowLjIsImJjIjozLCJzcCI6MTgsImJzIjoxMiwiY29sIjoiIzM4YmRmOCIsImJvdW5jZSI6dHJ1ZSwiZXhwbG9zaXZlIjpmYWxzZSwiaG9taW5nIjpmYWxzZX0sIndwbjEiOnsibmFtZSI6IkVtYmVyIFNpZGVhcm0iLCJkbWciOjYsImZyIjowLjQ1LCJiYyI6MSwic3AiOjgsImJzIjo5LCJjb2wiOiIjODhjYzAwIiwiYm91bmNlIjpmYWxzZSwiZXhwbG9zaXZlIjp0cnVlLCJob21pbmciOmZhbHNlfSwibXV0MSI6ImRhbWFnZV91cCIsIm11dDIiOiJsaWZlc3RlYWwiLCJwaGFzZSI6InBsYXlpbmciLCJkYXRlIjoiUmVmZXJlbmNlIGJ1aWxkIiwibGFiZWwiOiJSZWZlcmVuY2UgcnVuLCBXb3JsZCAyLTMsIFNjb3JlIDEyNTAifQ==" style="flex-shrink:0;display:inline-flex;align-items:center;gap:8px;background:#16a34a;color:#fff;font-weight:800;font-size:.88rem;padding:11px 22px;border-radius:10px;text-decoration:none;box-shadow:0 3px 0 #14532d;white-space:nowrap;">🔗 Reference Run</a>
+      </div>
+
       <p class="hero-desc">Wire Unreal Blueprints to build a Nuclear Throne-style roguelite. Design your starting weapon, clear rooms, find new weapons, choose mutations, fight bosses.</p>
       <div class="hero-pills">
         <span class="pill fire">Unreal Engine 5</span>
@@ -2712,6 +2723,20 @@ loadProgress();resizeGame();renderStep();requestAnimationFrame(loop);
     }catch(e){ console.warn('Hash load failed:', e); }
   }
   checkHashLoad();
+
+  /* -- Apply a shared run when the hash changes in place (Reference Run link) -- */
+  window.addEventListener('hashchange', function(){
+    var h = window.location.hash;
+    if(!h || h.indexOf('#run=') !== 0) return;
+    try{
+      var raw = h.replace('#run=','');
+      var data = JSON.parse(decodeURIComponent(escape(atob(raw))));
+      if(data && data.v === 1 && typeof loadRoom === 'function' && typeof G !== 'undefined'){
+        var ok = applyRun(data);
+        if(ok) nbToast('🔗 Shared run loaded, World ' + data.world + '-' + data.room + '! Good luck!');
+      }
+    }catch(e){ console.warn('Hash load failed:', e); }
+  });
 
   /* -- Close modals on backdrop click -- */
   document.getElementById('nbSlotsModal').addEventListener('click', function(e){
