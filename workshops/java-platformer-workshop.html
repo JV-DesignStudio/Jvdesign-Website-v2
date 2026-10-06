@@ -300,6 +300,344 @@ window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-java-platformer-v2';
 window.WORKSHOP_PROFILE_ID='java-platformer-workshop';
 </script>
+
+<script>
+
+'use strict';
+
+/* ===================================================
+   Java-to-JS transpiler (light transform so Java
+   syntax runs in the canvas iframe)
+   =================================================== */
+function javaToJs(code) {
+  return code
+    .replace(/\b(int|boolean|double|float|long|char)\s+/g, 'let ')
+    .replace(/\bString\s+/g, 'let ')
+    .replace(/\bRectangle\s+/g, 'let ')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.get\(([^)]+)\)/g, '[$1]')
+    .replace(/\.remove\(([^)]+)\)/g, '.splice($1, 1)')
+    .replace(/System\.out\.println\(/g, 'console.log(');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Java platformer)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#191e3c;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=50,py=300,pw=34,ph=44,vx=0,vy=0,speed=5;let onGround=false;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW"||e.code==="Space")upHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW"||e.code==="Space")upHeld=false});';
+
+var PLATFORMS = 'const platforms=[{x:0,y:370,w:600,h:30},{x:100,y:280,w:120,h:16},{x:300,y:220,w:120,h:16},{x:480,y:300,w:100,h:16},{x:50,y:160,w:100,h:16},{x:250,y:120,w:140,h:16},{x:450,y:160,w:120,h:16}];';
+
+var COINS = 'const coins=[{x:140,y:255,r:8,collected:false},{x:340,y:195,r:8,collected:false},{x:510,y:275,r:8,collected:false},{x:80,y:135,r:8,collected:false},{x:300,y:95,r:8,collected:false},{x:490,y:135,r:8,collected:false}];let score=0;';
+
+var ENEMIES = 'const enemies=[{x:130,y:260,w:20,h:20,speed:1,minX:100,maxX:200},{x:320,y:200,w:20,h:20,speed:0.8,minX:300,maxX:400},{x:270,y:100,w:20,h:20,speed:1.2,minX:250,maxX:370}];let health=3;let invuln=0;';
+
+var DRAW_BG = 'ctx.fillStyle="#191e3c";ctx.fillRect(0,0,600,400);';
+var DRAW_PLATFORMS = 'ctx.fillStyle="#06d6a0";for(const p of platforms){ctx.fillRect(p.x,p.y,p.w,p.h)}';
+var DRAW_PLAYER = 'ctx.fillStyle="#ff7700";ctx.fillRect(px,py,pw,ph);';
+var DRAW_PLAYER_BLINK = 'if(invuln<=0||Math.floor(invuln*10)%2===0){ctx.fillStyle="#ff7700";ctx.fillRect(px,py,pw,ph)}';
+var DRAW_COINS = 'ctx.fillStyle="#ffd166";for(const c of coins){if(!c.collected){ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill()}}';
+var DRAW_ENEMIES = 'ctx.fillStyle="#4cc9f0";for(const e of enemies){ctx.fillRect(e.x,e.y,e.w,e.h)}';
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);';
+var DRAW_HEALTH = 'ctx.fillStyle="#ff7700";for(var hi=0;hi<health;hi++){ctx.fillText("\\u2764",520+hi*22,24)}';
+
+var PLAT_CHECK = 'onGround=false;for(const p of platforms){if(px+pw>p.x&&px<p.x+p.w&&py+ph>p.y&&py+ph<p.y+p.h&&vy>=0){py=p.y-ph;vy=0;onGround=true}}';
+var MOVE_LOGIC = 'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld&&onGround){vy=-14;onGround=false}';
+var PHYSICS = 'vy+=1;py+=vy;if(px<0)px=0;if(px+pw>600)px=600-pw;';
+var PHYSICS_WIDE = 'vy+=1;py+=vy;if(px<0)px=0;';
+var COIN_COLLECT = 'for(const c of coins){if(!c.collected&&px+pw>c.x-c.r&&px<c.x+c.r&&py+ph>c.y-c.r&&py<c.y+c.r){c.collected=true;score++}}';
+var ENEMY_PATROL = 'for(const e of enemies){e.x+=e.speed;if(e.x<=e.minX||e.x+e.w>=e.maxX)e.speed*=-1}';
+var ENEMY_HIT = 'if(invuln>0)invuln-=1/60;for(const e of enemies){if(invuln<=0&&px+pw>e.x&&px<e.x+e.w&&py+ph>e.y&&py<e.y+e.h){health--;invuln=1.5;vy=-6;if(health<=0){px=50;py=300;health=3;score=0;for(const c of coins)c.collected=false}}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Java platformer steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-java-platformer-workshop',
+  downloadName: 'my-java-platformer.html',
+
+  hints: [
+    'Your player falls with gravity and lands on the ground',
+    'Arrow keys move left/right, Up or Space to jump',
+    'Platforms appear - the player lands on them from above',
+    'Golden coins sparkle - run into them to collect',
+    'Blue enemies patrol platforms - watch your hearts!',
+    'The camera follows the player through a wider world'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'function loop(){vy+=1;py+=vy;if(py+ph>370){py=370-ph;vy=0;onGround=true}' +
+        DRAW_BG + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS +
+        'function loop(){' +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        PHYSICS +
+        'if(py+ph>370){py=370-ph;vy=0;onGround=true}else{onGround=false}' +
+        DRAW_BG + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS + PLATFORMS +
+        MOVE_LOGIC.replace('if(leftHeld)', 'function handleInput(){if(leftHeld)') + '}' +
+        'function loop(){handleInput();' +
+        PHYSICS +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS + PLATFORMS + COINS +
+        'function handleInput(){' + MOVE_LOGIC + '}' +
+        'function loop(){handleInput();' + PHYSICS +
+        PLAT_CHECK +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS + PLATFORMS + COINS + ENEMIES +
+        'function handleInput(){' + MOVE_LOGIC + '}' +
+        'function loop(){handleInput();' + PHYSICS +
+        PLAT_CHECK + COIN_COLLECT +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_ENEMIES + DRAW_PLAYER_BLINK + DRAW_SCORE + DRAW_HEALTH +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS +
+        'const platforms=[{x:0,y:370,w:1200,h:30},{x:100,y:280,w:120,h:16},{x:300,y:220,w:120,h:16},{x:480,y:300,w:100,h:16},{x:50,y:160,w:100,h:16},{x:250,y:120,w:140,h:16},{x:450,y:160,w:120,h:16},{x:650,y:250,w:120,h:16},{x:850,y:180,w:140,h:16},{x:1050,y:280,w:100,h:16}];' +
+        'const coins=[{x:140,y:255,r:8,collected:false},{x:340,y:195,r:8,collected:false},{x:510,y:275,r:8,collected:false},{x:80,y:135,r:8,collected:false},{x:300,y:95,r:8,collected:false},{x:490,y:135,r:8,collected:false},{x:700,y:225,r:8,collected:false},{x:900,y:155,r:8,collected:false},{x:1080,y:255,r:8,collected:false}];let score=0;' +
+        ENEMIES +
+        'function handleInput(){' + MOVE_LOGIC + '}' +
+        'let camera=0;' +
+        'function loop(){handleInput();' + PHYSICS_WIDE +
+        PLAT_CHECK + COIN_COLLECT + ENEMY_PATROL + ENEMY_HIT +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + 'ctx.save();ctx.translate(-camera,0);' +
+        DRAW_PLATFORMS + DRAW_COINS + DRAW_ENEMIES + DRAW_PLAYER_BLINK +
+        'ctx.restore();ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);' +
+        DRAW_HEALTH +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Player & Gravity',
+      goal: 'Draw a player rectangle that falls with gravity and lands on the ground.',
+      points: [
+        'In Java, the player is stored as <code>int px, py, pw, ph</code> - position and size',
+        'Each frame: <code>vy += 1</code> accelerates the player downward (gravity)',
+        'When <code>py + ph >= 370</code> (the ground), snap the player on top and stop falling'
+      ],
+      challenge: '☕ Write the gravity and ground collision in Java:',
+      starter: '// Apply gravity each frame\n// Step 1: gravity increases vertical velocity\nvy += ___;\n\n// Step 2: velocity moves the player\npy += ___;\n\n// Step 3: stop at the ground (y = 370 is ground top)\nif (py + ph >= 370) {\n    py = 370 - ph;\n    vy = 0;\n}',
+      solution: '// Apply gravity each frame\nvy += 1;\n\n// Velocity moves the player\npy += vy;\n\n// Stop at the ground\nif (py + ph >= 370) {\n    py = 370 - ph;\n    vy = 0;\n}',
+      checks: ['vy', 'py', '370'],
+      height: 200,
+      fills: {
+        text: 'Gravity increases ___ each frame. When the player touches the ground, velocity is set to ___.',
+        answers: ['vy', '0']
+      },
+      quiz: {
+        question: 'In Java, why does gravity add to velocity (<code>vy += 1</code>) instead of directly to position?',
+        options: [
+          'It saves memory in the JVM',
+          'Velocity accumulates over time - this creates natural acceleration, not instant teleportation',
+          'Java requires it for the Timer class'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Arrow Keys & Jump',
+      goal: 'Move left and right with arrow keys and jump with Up or Space.',
+      points: [
+        'Java tracks keys with <code>boolean leftHeld, rightHeld, upHeld</code> - set in keyPressed/keyReleased',
+        'Each frame: read booleans to set <code>px -= speed</code> or <code>px += speed</code>',
+        'Jump only when <code>onGround</code> is true - set <code>vy = -14</code> for a strong upward launch'
+      ],
+      challenge: '☕ Write the movement and jump logic:',
+      starter: '// Move left and right\nif (leftHeld)  px -= speed;\nif (rightHeld) px += ___;\n\n// Jump when standing on ground\nif (___ && onGround) {\n    vy = ___;\n    onGround = false;\n}',
+      solution: 'if (leftHeld)  px -= speed;\nif (rightHeld) px += speed;\n\nif (upHeld && onGround) {\n    vy = -14;\n    onGround = false;\n}',
+      checks: ['leftheld', 'rightheld', 'onground'],
+      height: 200,
+      fills: {
+        text: 'The booleans leftHeld and rightHeld are set by ___ events. Jumping only works when ___ is true.',
+        answers: ['key', 'onGround']
+      },
+      quiz: {
+        question: 'Why use <code>boolean leftHeld</code> instead of moving the player inside <code>keyPressed()</code>?',
+        options: [
+          'Booleans use less memory than events',
+          'So movement is smooth every frame while the key is held, instead of stuttering with key-repeat delay',
+          'Java does not allow method calls inside keyPressed'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Platforms & Collision',
+      goal: 'Add platform rectangles and make the player land on them.',
+      points: [
+        'Each platform is stored as <code>{ x, y, w, h }</code> - just like <code>java.awt.Rectangle</code>',
+        'Check overlap: player right > plat left AND player left < plat right AND same for vertical',
+        'Only land when falling down (<code>vy >= 0</code>) so you can jump through from below'
+      ],
+      challenge: '☕ Write the platform collision loop:',
+      starter: '// Check each platform for landing\nonGround = false;\nfor (int i = 0; i < platforms.length; i++) {\n    var plat = platforms[i];\n    if (px + pw > plat.x &&\n        px < plat.x + plat.w &&\n        py + ph > plat.y &&\n        py + ph < plat.y + plat.h &&\n        vy >= 0) {\n        py = plat.y - ___;\n        vy = ___;\n        onGround = ___;\n    }\n}',
+      solution: 'onGround = false;\nfor (int i = 0; i < platforms.length; i++) {\n    var plat = platforms[i];\n    if (px + pw > plat.x &&\n        px < plat.x + plat.w &&\n        py + ph > plat.y &&\n        py + ph < plat.y + plat.h &&\n        vy >= 0) {\n        py = plat.y - ph;\n        vy = 0;\n        onGround = true;\n    }\n}',
+      checks: ['platforms', 'onground', 'plat.y'],
+      height: 280,
+      fills: {
+        text: 'The collision checks four edges for ___. The player only lands when falling ___ (vy >= 0).',
+        answers: ['overlap', 'downward']
+      },
+      quiz: {
+        question: 'Why check <code>vy >= 0</code> in the platform collision?',
+        options: [
+          'So the player can jump upward through platforms instead of bonking their head on every one',
+          'It makes the game loop faster',
+          'Platforms only exist when vy is positive'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 4,
+      title: 'Coins & Score',
+      goal: 'Place collectible coins and track the player\'s score.',
+      points: [
+        'Coins use a <code>collected</code> boolean - like an <code>ArrayList</code> with a flag per item',
+        'Each frame, check if the player overlaps each coin - if so, mark it collected',
+        'Increment <code>score</code> for each pickup - drawn with <code>g.drawString()</code> in Java'
+      ],
+      challenge: '☕ Write the coin collection logic:',
+      starter: '// Check each coin\nfor (int i = 0; i < coins.length; i++) {\n    var c = coins[i];\n    if (!c.collected &&\n        px + pw > c.x - c.r &&\n        px < c.x + c.r &&\n        py + ph > c.y - c.r &&\n        py < c.y + c.r) {\n        c.___ = true;\n        ___++;\n    }\n}',
+      solution: 'for (int i = 0; i < coins.length; i++) {\n    var c = coins[i];\n    if (!c.collected &&\n        px + pw > c.x - c.r &&\n        px < c.x + c.r &&\n        py + ph > c.y - c.r &&\n        py < c.y + c.r) {\n        c.collected = true;\n        score++;\n    }\n}',
+      checks: ['coins', 'score', 'collected'],
+      height: 240,
+      fills: {
+        text: 'A coin disappears by setting ___ to true. The overlap test compares the player rectangle against the coin ___.',
+        answers: ['collected', 'circle']
+      },
+      quiz: {
+        question: 'Why use a <code>collected</code> flag instead of removing coins from the array?',
+        options: [
+          'Arrays in Java cannot have items removed',
+          'The flag is simpler - no index shifting, and you can easily reset all coins by setting them back to false',
+          'Flags are always faster than array operations'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Enemies & Health',
+      goal: 'Add patrolling enemies that cost a heart on contact.',
+      points: [
+        'Each enemy has <code>speed, minX, maxX</code> - it walks back and forth between boundaries',
+        'Reverse <code>speed</code> when the enemy hits its boundary: <code>speed *= -1</code>',
+        'On player-enemy overlap: reduce health, give brief invulnerability, bounce the player up'
+      ],
+      challenge: '☕ Write the enemy patrol and damage logic:',
+      starter: '// Move enemies back and forth\nfor (int i = 0; i < enemies.length; i++) {\n    var e = enemies[i];\n    e.x += e.___;\n    if (e.x <= e.minX || e.x + e.w >= e.maxX)\n        e.speed *= -1;\n}\n\n// Damage on contact\nif (invuln > 0) invuln -= 1.0 / 60;\nfor (int i = 0; i < enemies.length; i++) {\n    var e = enemies[i];\n    if (invuln <= 0 &&\n        px + pw > e.x && px < e.x + e.w &&\n        py + ph > e.y && py < e.y + e.h) {\n        ___--;\n        invuln = 1.5;\n        vy = -6;\n    }\n}',
+      solution: 'for (int i = 0; i < enemies.length; i++) {\n    var e = enemies[i];\n    e.x += e.speed;\n    if (e.x <= e.minX || e.x + e.w >= e.maxX)\n        e.speed *= -1;\n}\n\nif (invuln > 0) invuln -= 1.0 / 60;\nfor (int i = 0; i < enemies.length; i++) {\n    var e = enemies[i];\n    if (invuln <= 0 &&\n        px + pw > e.x && px < e.x + e.w &&\n        py + ph > e.y && py < e.y + e.h) {\n        health--;\n        invuln = 1.5;\n        vy = -6;\n    }\n}',
+      checks: ['enemies', 'health', 'speed'],
+      height: 360,
+      fills: {
+        text: 'Enemies reverse direction by multiplying speed by ___. Invulnerability prevents taking damage every ___.',
+        answers: ['-1', 'frame']
+      },
+      quiz: {
+        question: 'What would happen without the invulnerability timer after taking damage?',
+        options: [
+          'Nothing different',
+          'The player would lose ALL hearts in a fraction of a second because collision triggers every frame they overlap',
+          'The enemy would disappear'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Camera & Polish',
+      goal: 'Make the camera follow the player through a wider level.',
+      points: [
+        'A camera is just an x offset - in Java: <code>int camera</code>, applied with <code>g.translate(-camera, 0)</code>',
+        'Each frame: <code>camera = px - 200</code> keeps the player near the left side',
+        'Clamp camera to 0 minimum so it never scrolls past the level start'
+      ],
+      challenge: '☕ Write the camera follow logic:',
+      starter: '// Camera follows the player\ncamera = px - 200;\n\n// Do not scroll past the start\nif (camera < 0) camera = ___;\n\n// Do not scroll past the end\nif (camera > ___) camera = 600;',
+      solution: 'camera = px - 200;\nif (camera < 0) camera = 0;\nif (camera > 600) camera = 600;',
+      checks: ['camera', 'px'],
+      height: 140,
+      fills: {
+        text: 'The camera is a horizontal ___ applied with g.translate. Clamping stops it scrolling past the level ___.',
+        answers: ['offset', 'edges']
+      },
+      quiz: {
+        question: 'How does <code>g.translate(-camera, 0)</code> make the level scroll?',
+        options: [
+          'It moves the JFrame window on the desktop',
+          'It shifts every drawing operation left by the camera amount - objects at x=500 appear at x=500-camera on screen',
+          'It changes the player position variable'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+
+</script>
+<script defer src="../workshop-canvas-engine.js?v=1"></script>
 <script defer src="workshop-engine.js"></script>
 <script defer src="workshop-interactive.js"></script>
 <script type="application/ld+json">

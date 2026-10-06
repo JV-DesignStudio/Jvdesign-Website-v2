@@ -318,6 +318,385 @@ window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-java-pong-v2';
 window.WORKSHOP_PROFILE_ID='java-pong-workshop';
 </script>
+
+<script>
+
+'use strict';
+
+/* ===================================================
+   Java-to-JS transpiler (light transform so Java
+   syntax runs in the canvas iframe)
+   =================================================== */
+function javaToJs(code) {
+  return code
+    .replace(/\b(int|boolean|double|float|long|char)\s+/g, 'let ')
+    .replace(/\bString\s+/g, 'let ')
+    .replace(/\bRectangle\s+/g, 'let ')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.get\(([^)]+)\)/g, '[$1]')
+    .replace(/\.remove\(([^)]+)\)/g, '.splice($1, 1)')
+    .replace(/System\.out\.println\(/g, 'console.log(');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Java Pong)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0c0e18;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PADDLE_VARS = 'let p1Y=165,p2Y=165;const padW=10,padH=70,padSpeed=5;';
+
+var BALL_VARS = 'let bx=295,by=195,bs=10,bvx=4,bvy=3;';
+
+var SCORE_VARS = 'let score1=0,score2=0;';
+
+var STATE_VARS = 'let gameState="play",flash=0;';
+
+var AI_VARS = 'let aiSpeed=4,deadZone=10;';
+
+var KEYS = 'let wHeld=false,sHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="KeyW"||e.code==="ArrowUp")wHeld=true;' +
+    'if(e.code==="KeyS"||e.code==="ArrowDown")sHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="KeyW"||e.code==="ArrowUp")wHeld=false;' +
+    'if(e.code==="KeyS"||e.code==="ArrowDown")sHeld=false});';
+
+var KEYS_BOTH = 'let wHeld=false,sHeld=false,upHeld=false,downHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="KeyW")wHeld=true;' +
+    'if(e.code==="KeyS")sHeld=true;' +
+    'if(e.code==="ArrowUp")upHeld=true;' +
+    'if(e.code==="ArrowDown")downHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="KeyW")wHeld=false;' +
+    'if(e.code==="KeyS")sHeld=false;' +
+    'if(e.code==="ArrowUp")upHeld=false;' +
+    'if(e.code==="ArrowDown")downHeld=false});';
+
+var MOVE_P1 = 'if(wHeld)p1Y-=padSpeed;if(sHeld)p1Y+=padSpeed;p1Y=Math.max(0,Math.min(330,p1Y));';
+
+var MOVE_P2_KEYS = 'if(upHeld)p2Y-=padSpeed;if(downHeld)p2Y+=padSpeed;p2Y=Math.max(0,Math.min(330,p2Y));';
+
+var DRAW_BG = 'ctx.fillStyle="#0c0e18";ctx.fillRect(0,0,600,400);';
+
+var DRAW_NET = 'ctx.fillStyle="#3c4260";for(var ny=0;ny<400;ny+=20){ctx.fillRect(297,ny,6,12)}';
+
+var DRAW_PADDLES = 'ctx.fillStyle="#fff";ctx.fillRect(15,p1Y,padW,padH);ctx.fillRect(575,p2Y,padW,padH);';
+
+var DRAW_BALL = 'ctx.fillStyle="#fff";ctx.fillRect(bx,by,bs,bs);';
+
+var DRAW_SCORES = 'ctx.fillStyle="#fff";ctx.font="bold 48px monospace";ctx.textAlign="center";ctx.fillText(score1,220,60);ctx.fillText(score2,380,60);';
+
+var BALL_MOVE = 'bx+=bvx;by+=bvy;';
+
+var WALL_BOUNCE = 'if(by<=0||by+bs>=400)bvy=-bvy;';
+
+var PADDLE_HIT = 'if(bx<=25&&bx+bs>=15&&by+bs>=p1Y&&by<=p1Y+padH&&bvx<0){bvx=-bvx;bvy=((by+bs/2)-(p1Y+35))/5}' +
+  'if(bx+bs>=575&&bx<=585&&by+bs>=p2Y&&by<=p2Y+padH&&bvx>0){bvx=-bvx;bvy=((by+bs/2)-(p2Y+35))/5}';
+
+var PADDLE_HIT_SPEED = 'if(bx<=25&&bx+bs>=15&&by+bs>=p1Y&&by<=p1Y+padH&&bvx<0){bvx=-(bvx-1);bvy=((by+bs/2)-(p1Y+35))/5}' +
+  'if(bx+bs>=575&&bx<=585&&by+bs>=p2Y&&by<=p2Y+padH&&bvx>0){bvx=-(bvx+1);bvy=((by+bs/2)-(p2Y+35))/5}' +
+  'bvx=Math.max(-10,Math.min(10,bvx));';
+
+var SERVE_FN = 'function serve(dir){bx=295;by=195;bvx=4*dir;bvy=Math.random()<0.5?3:-3}';
+
+var SCORING = 'if(bx<-10){score2++;serve(-1)}if(bx>610){score1++;serve(1)}';
+
+var AI_LOGIC = 'var padCentre=p2Y+35,ballCentre=by+bs/2;if(padCentre<ballCentre-deadZone)p2Y+=aiSpeed;if(padCentre>ballCentre+deadZone)p2Y-=aiSpeed;p2Y=Math.max(0,Math.min(330,p2Y));';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Java Pong steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-java-pong-workshop',
+  downloadName: 'my-java-pong.html',
+
+  hints: [
+    'Two white paddles on a black court with a dashed centre line',
+    'The ball bounces off the top and bottom walls',
+    'The ball rebounds off paddles with spin from where it hits',
+    'Scores appear at the top - first to 7 wins the match',
+    'The right paddle chases the ball automatically',
+    'Serve resets, speed ramps up, and a winner is crowned'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + KEYS +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_P1 +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        'function loop(){' +
+        MOVE_P1 +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        'function loop(){' +
+        MOVE_P1 +
+        BALL_MOVE + WALL_BOUNCE +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'if(bx<-20||bx>620){bx=295;by=195;bvx=4*(Math.random()<0.5?1:-1);bvy=Math.random()<0.5?3:-3}' +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + KEYS +
+        SERVE_FN +
+        'function loop(){' +
+        MOVE_P1 +
+        BALL_MOVE + WALL_BOUNCE + PADDLE_HIT_SPEED +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + AI_VARS + KEYS +
+        SERVE_FN +
+        'function loop(){' +
+        MOVE_P1 +
+        BALL_MOVE + WALL_BOUNCE + PADDLE_HIT_SPEED + SCORING +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'p2Y=Math.max(0,Math.min(330,p2Y));' +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + AI_VARS + STATE_VARS + KEYS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score1=0;score2=0;flash=0;serve(1);gameState="play"}});' +
+        SERVE_FN +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_P1 +
+        BALL_MOVE + WALL_BOUNCE + PADDLE_HIT_SPEED +
+        AI_LOGIC +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'if(flash>0)flash--;' +
+        '}' +
+        DRAW_BG +
+        'if(flash>0){ctx.fillStyle="rgba(255,255,255,"+(flash/12*0.15)+")";ctx.fillRect(0,0,600,400)}' +
+        DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText(score1>=7?"PLAYER 1 WINS!":"PLAYER 2 WINS!",300,200);' +
+        'ctx.font="18px monospace";ctx.fillText("Press R to play again",300,240)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Court & Paddles',
+      goal: 'Draw the Pong court with a centre line and two paddles. Move the left paddle with W/S or arrow keys.',
+      points: [
+        'The court is 600x400 pixels with a black background and a dashed centre line',
+        'Two white paddles: left at x=15, right at x=575, both 10 wide and 70 tall',
+        'Player 1 uses <code>boolean wHeld, sHeld</code> to track held keys each frame',
+        'Clamp paddles between 0 and 330 (court height 400 minus paddle height 70)'
+      ],
+      challenge: '☕ Write the paddle movement logic in Java:',
+      starter: '// Move the left paddle up and down\nif (wHeld)  p1Y -= ___;\nif (sHeld)  p1Y += ___;\n\n// Clamp so the paddle stays on court\np1Y = Math.max(0, Math.min(___, p1Y));',
+      solution: '// Move the left paddle up and down\nif (wHeld)  p1Y -= padSpeed;\nif (sHeld)  p1Y += padSpeed;\n\n// Clamp so the paddle stays on court\np1Y = Math.max(0, Math.min(330, p1Y));',
+      checks: ['wheld', 'sheld', 'p1y', '330'],
+      height: 160,
+      fills: {
+        text: 'The left paddle moves with ___ and S keys. Clamping to 330 prevents the paddle leaving the ___ of the court.',
+        answers: ['W', 'bottom']
+      },
+      quiz: {
+        question: 'Why is the clamp maximum 330 instead of 400?',
+        options: [
+          'It is a random nice number',
+          'Court height (400) minus paddle height (70) = 330, so the paddle bottom never leaves the court',
+          'Paddles must stay in the top half'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Ball & Bouncing',
+      goal: 'Add a ball that moves each frame and bounces off the top and bottom walls.',
+      points: [
+        'The ball has position (<code>bx, by</code>) and velocity (<code>bvx, bvy</code>)',
+        'Each frame: <code>bx += bvx; by += bvy</code> moves the ball',
+        'When the ball hits the top (<code>by &lt;= 0</code>) or bottom (<code>by + bs &gt;= 400</code>), flip bvy',
+        'This is the same wall-bounce pattern from Breakout, just on two walls instead of three'
+      ],
+      challenge: '☕ Write the ball movement and wall bounce:',
+      starter: '// Move the ball each frame\nbx += bvx;\nby += ___;\n\n// Bounce off top and bottom walls\nif (by <= 0 || by + bs >= ___) {\n    bvy = ___;\n}',
+      solution: '// Move the ball each frame\nbx += bvx;\nby += bvy;\n\n// Bounce off top and bottom walls\nif (by <= 0 || by + bs >= 400) {\n    bvy = -bvy;\n}',
+      checks: ['bvx', 'bvy', '400'],
+      height: 180,
+      fills: {
+        text: 'The ball moves by adding ___ to its position each frame. Flipping bvy with ___ reverses the vertical direction.',
+        answers: ['velocity', '-bvy']
+      },
+      quiz: {
+        question: 'Why bounce off top and bottom but NOT left and right?',
+        options: [
+          'Left and right are where paddles live - a missed ball should score a point, not bounce back',
+          'The canvas only has two walls',
+          'Horizontal bouncing would be too fast'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 3,
+      title: 'Paddle Hits',
+      goal: 'Make the ball rebound off both paddles with spin based on where it strikes.',
+      points: [
+        'Check if the ball overlaps the left paddle (x 15..25, y p1Y..p1Y+70) AND is moving left',
+        'On hit: flip <code>bvx</code> so the ball heads the other way',
+        'Add spin: <code>bvy = (ballCentreY - paddleCentreY) / 5</code> - hit the edge for sharp angles',
+        'Only rebound when the ball is moving <strong>toward</strong> that paddle (<code>bvx &lt; 0</code> for left) to stop it getting stuck'
+      ],
+      challenge: '☕ Write the paddle collision for both sides:',
+      starter: '// Left paddle rebound\nif (bx <= 25 && bx + bs >= 15 &&\n    by + bs >= p1Y && by <= p1Y + padH &&\n    bvx < 0) {\n    bvx = ___;\n    bvy = ((by + bs/2) - (p1Y + 35)) / 5;\n}\n\n// Right paddle rebound\nif (bx + bs >= 575 && bx <= 585 &&\n    by + bs >= p2Y && by <= p2Y + padH &&\n    bvx > 0) {\n    bvx = ___;\n    bvy = ((by + bs/2) - (___ + 35)) / 5;\n}',
+      solution: '// Left paddle rebound\nif (bx <= 25 && bx + bs >= 15 &&\n    by + bs >= p1Y && by <= p1Y + padH &&\n    bvx < 0) {\n    bvx = -bvx;\n    bvy = ((by + bs/2) - (p1Y + 35)) / 5;\n}\n\n// Right paddle rebound\nif (bx + bs >= 575 && bx <= 585 &&\n    by + bs >= p2Y && by <= p2Y + padH &&\n    bvx > 0) {\n    bvx = -bvx;\n    bvy = ((by + bs/2) - (p2Y + 35)) / 5;\n}',
+      checks: ['-bvx', 'p1y', 'p2y', 'padh'],
+      height: 320,
+      fills: {
+        text: 'The spin formula divides the distance from ball centre to paddle ___ by 5. Checking <code>bvx < 0</code> ensures the ball is moving ___ the paddle.',
+        answers: ['centre', 'toward']
+      },
+      quiz: {
+        question: 'What would happen without the <code>bvx &lt; 0</code> direction check on the left paddle?',
+        options: [
+          'The ball would phase through the paddle',
+          'The ball could get stuck inside the paddle, flipping direction every frame and vibrating',
+          'Nothing different would happen'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Scoring & First to 7',
+      goal: 'Award points when the ball exits left or right, and end the match at 7.',
+      points: [
+        'Ball exits left (<code>bx &lt; -10</code>): player 2 scores, <code>serve(-1)</code> toward the loser',
+        'Ball exits right (<code>bx &gt; 610</code>): player 1 scores, <code>serve(1)</code>',
+        'The <code>serve(dir)</code> function recentres the ball and sends it in the given direction',
+        'When either score reaches 7, the match is over'
+      ],
+      challenge: '☕ Write the scoring and win detection:',
+      starter: '// Ball exits the left side\nif (bx < -10) {\n    ___++;\n    serve(-1);\n}\n// Ball exits the right side\nif (bx > 610) {\n    ___++;\n    serve(1);\n}\n\n// Check for a winner\nif (score1 == ___ || score2 == ___) {\n    gameState = "over";\n}',
+      solution: '// Ball exits the left side\nif (bx < -10) {\n    score2++;\n    serve(-1);\n}\n// Ball exits the right side\nif (bx > 610) {\n    score1++;\n    serve(1);\n}\n\n// Check for a winner\nif (score1 == 7 || score2 == 7) {\n    gameState = "over";\n}',
+      checks: ['score1', 'score2', 'serve', '7'],
+      height: 280,
+      fills: {
+        text: 'When the ball exits the LEFT side, player ___ scores. The serve goes ___ the player who lost the point.',
+        answers: ['2', 'toward']
+      },
+      quiz: {
+        question: 'Why serve toward the player who just lost the point?',
+        options: [
+          'It punishes the loser',
+          'It is fair - the scorer should not immediately receive an easy attack',
+          'The ball must alternate sides by rule'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Computer Opponent',
+      goal: 'Replace player 2 with an AI that chases the ball but can be beaten.',
+      points: [
+        'Simple AI: compare the paddle centre (<code>p2Y + 35</code>) to the ball centre (<code>by + bs/2</code>)',
+        'If the paddle is above the ball, move down; if below, move up',
+        'A <strong>dead zone</strong> of 10px stops the AI reacting to tiny differences - adds human-like hesitation',
+        'The AI moves at speed 4 while the player moves at 5 - you can outpace it with sharp angles'
+      ],
+      challenge: '☕ Write the AI chase logic:',
+      starter: '// AI tracks the ball\nint padCentre = p2Y + 35;\nint ballCentre = by + bs / 2;\n\nif (padCentre < ballCentre - ___)\n    p2Y += aiSpeed;\nif (padCentre > ballCentre + ___)\n    p2Y -= ___;',
+      solution: '// AI tracks the ball\nint padCentre = p2Y + 35;\nint ballCentre = by + bs / 2;\n\nif (padCentre < ballCentre - deadZone)\n    p2Y += aiSpeed;\nif (padCentre > ballCentre + deadZone)\n    p2Y -= aiSpeed;',
+      checks: ['padcentre', 'ballcentre', 'aispeed', 'deadzone'],
+      height: 200,
+      fills: {
+        text: 'The dead zone stops the AI reacting to gaps smaller than ___ pixels. This makes the AI ___ instead of perfect.',
+        answers: ['10', 'beatable']
+      },
+      quiz: {
+        question: 'Why give the AI a speed limit and dead zone?',
+        options: [
+          'To save CPU power',
+          'A flawless AI cannot be beaten - deliberate weakness is what makes it fun',
+          'Java timers require it'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Polish & Win Screen',
+      goal: 'Add a score flash, rally speed-up, and a proper win screen with restart.',
+      points: [
+        'Flash effect: set <code>flash = 12</code> when someone scores; paint a white overlay that fades each frame',
+        'Rally speed-up: each paddle hit increases <code>bvx</code> slightly (already built in), capped at 10',
+        'When a score reaches 7, show the winner text and "Press R to play again"',
+        'Pressing R resets scores and serves a fresh ball - the classic arcade loop'
+      ],
+      challenge: '☕ Write the scoring with flash and win detection:',
+      starter: '// Score with flash effect\nif (bx < -10) {\n    score2++;\n    flash = ___;\n    serve(-1);\n}\nif (bx > 610) {\n    score1++;\n    flash = ___;\n    serve(1);\n}\n\n// Win condition\nif (score1 >= 7 || score2 >= 7) {\n    gameState = "___";\n}',
+      solution: '// Score with flash effect\nif (bx < -10) {\n    score2++;\n    flash = 12;\n    serve(-1);\n}\nif (bx > 610) {\n    score1++;\n    flash = 12;\n    serve(1);\n}\n\n// Win condition\nif (score1 >= 7 || score2 >= 7) {\n    gameState = "over";\n}',
+      checks: ['flash', 'score1', 'score2', 'over'],
+      height: 280,
+      fills: {
+        text: 'The flash counter starts at ___ and counts down each frame. Game developers call effects like flashes and shakes ___.',
+        answers: ['12', 'juice']
+      },
+      quiz: {
+        question: 'Which pattern from Pong appears in almost every commercial game?',
+        options: [
+          'The dashed centre line',
+          'The MENU / PLAYING / GAME_OVER state machine and restart loop',
+          'The beep sound'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+
+</script>
+<script defer src="../workshop-canvas-engine.js?v=1"></script>
 <script defer src="workshop-engine.js"></script>
 <script defer src="workshop-interactive.js"></script>
 <script type="application/ld+json">

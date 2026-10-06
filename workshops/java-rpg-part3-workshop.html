@@ -180,7 +180,27 @@
 <div class="callout tip" style="border-left:3px solid #22c55e;background:rgba(34,197,94,.07);"><div class="callout-icon">📦</div><div><strong>Reference project:</strong> download the finished code files used in this workshop: <a href="/downloads/java-rpg-part3-workshop-reference.zip" download style="color:#16a34a;font-weight:800;text-decoration:underline;">⬇ java-rpg-part3-workshop-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>
 
 
-  <div class="callout info" style="margin:0 0 16px;border-left:3px solid #60a5fa"><div class="callout-icon">💻</div><div><strong>How to run:</strong> Save, then compile and run: <code>javac Main.java && java Main</code></div></div>
+  <div class="callout info" style="margin:0 0 16px;border-left:3px solid #60a5fa"><div class="callout-icon">💻</div><div><strong>How to run:</strong> Write Java code in each step. The canvas shows what your code does, a live preview that maps Java concepts to a visual game. Full setup + offline compile guide stays below as reference</div></div>
+  <div class="cw-header">
+    <h2>Build Java RPG Part 3 Step by Step</h2>
+    <p>Each step adds a feature. Write the code, watch it come alive in the canvas.</p>
+  </div>
+
+  <div class="cw-layout">
+    <div class="cw-steps" id="stepsPanel"></div>
+    <div class="cw-canvas-panel" id="canvasPanel">
+      <div class="cw-progress">
+        <span id="cwProgressText">Step 1 / 6</span>
+        <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+      </div>
+      <div class="cw-canvas-frame">
+        <iframe id="gameFrame" sandbox="allow-scripts" title="Your Java RPG Part 3 game"></iframe>
+      </div>
+      <div class="cw-canvas-hint" id="canvasHint">Click the NPC to start a conversation</div>
+      <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+    </div>
+  </div>
+
 
 
   <!-- STEP 1 -->
@@ -361,8 +381,8 @@ class GamePanel extends JPanel implements ActionListener {
         <div class="cc-prompt">Count quest kills only when they should count:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (<input class="cc-blank" data-a="cXVlc3RBY3RpdmU=" placeholder="Enter text..." size="12"> &amp;&amp; foe.name.equals(<input class="cc-blank" data-a="R29ibGlu" placeholder="Enter text..." size="9">))
-    goblinsSlain<input class="cc-blank" data-a="JTJCJTJC" placeholder="..." size="4">;</pre>
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (<input class="cc-blank" aria-label="Fill in the blank" data-a="cXVlc3RBY3RpdmU=" placeholder="Enter text..." size="12"> &amp;&amp; foe.name.equals(<input class="cc-blank" aria-label="Fill in the blank" data-a="R29ibGlu" placeholder="Enter text..." size="9">))
+    goblinsSlain<input class="cc-blank" aria-label="Fill in the blank" data-a="JTJCJTJC" placeholder="..." size="4">;</pre>
         </div>
         <button class="cc-check-btn" onclick="checkCodeChallenge(this)">▶ Check My Code</button>
         <div class="cc-feedback"></div>
@@ -511,9 +531,9 @@ if (map[heroRow][heroCol] == 5) {
         <div class="cc-prompt">Trigger the enrage exactly once, at half health:</div>
         <div class="code-block" style="margin:10px 0">
           <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">GamePanel.java</span></div>
-          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (foe.name.equals("Dragon") &amp;&amp; !<input class="cc-blank" data-a="ZW5yYWdlZA==" placeholder="Your answer..." size="8">
-        &amp;&amp; foe.hp &lt;= foe.maxHp / <input class="cc-blank" data-a="Mg==" placeholder="..." size="4">) {
-    enraged = <input class="cc-blank" data-a="dHJ1ZQ==" placeholder="Text..." size="5">;
+          <pre class="code-pre cc-code-area" style="border:none;background:transparent;padding:14px 16px">if (foe.name.equals("Dragon") &amp;&amp; !<input class="cc-blank" aria-label="Fill in the blank" data-a="ZW5yYWdlZA==" placeholder="Your answer..." size="8">
+        &amp;&amp; foe.hp &lt;= foe.maxHp / <input class="cc-blank" aria-label="Fill in the blank" data-a="Mg==" placeholder="..." size="4">) {
+    enraged = <input class="cc-blank" aria-label="Fill in the blank" data-a="dHJ1ZQ==" placeholder="Text..." size="5">;
     foe.attack += 4;
 }</pre>
         </div>
@@ -1188,6 +1208,621 @@ window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-java-rpg-part3-v2';
 window.WORKSHOP_PROFILE_ID='java-rpg-part3-workshop';
 </script>
+
+<script>
+
+'use strict';
+
+/* ===================================================
+   Java-to-JS transpiler (light transform so Java
+   syntax runs in the canvas iframe)
+   =================================================== */
+function javaToJs(code) {
+  return code
+    // Java method declaration -> JS function: strip the return type plus any
+    // Java parameter types, so "boolean hasItem(String itemName) {" becomes
+    // "function hasItem(itemName) {". Must run before the type replacements.
+    .replace(/\b(?:public\s+|private\s+|protected\s+|static\s+)*(?:int|boolean|double|float|long|char|void|String\[\]|String)\s+(\w+)\s*\(([^)]*)\)\s*\{/g,
+      function (m, name, params) {
+        var args = params.split(',').map(function (p) {
+          return p.trim().replace(/^(?:int|boolean|double|float|long|char|String\[\]|String)\s+/, '');
+        }).filter(Boolean).join(', ');
+        return 'function ' + name + '(' + args + ') {';
+      })
+    .replace(/\bnew\s+String\[\]\s*\{([^}]*)\}/g, '[$1]')
+    .replace(/\b(int|boolean|double|float|long|char)\s+/g, 'let ')
+    .replace(/\bString\[\]\s+/g, 'let ')
+    .replace(/\bString\s+/g, 'let ')
+    .replace(/\bRectangle\s+/g, 'let ')
+    // Java string equality -> strict JS equality: a.equals(b) -> (a === b)
+    .replace(/([\w.\[\]()]+)\.equals\(([^()]*)\)/g, '($1 === $2)')
+    // for-each with a declared type: for (Item it : inventory) -> for (const it of inventory)
+    .replace(/\bfor\s*\(\s*(?:int|boolean|double|float|long|char|Item|String\[\]|String)\s+(\w+)\s*:\s*([\w.\[\]()]+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.get\(([^)]+)\)/g, '[$1]')
+    .replace(/\.remove\(([^)]+)\)/g, '.splice($1, 1)')
+    .replace(/System\.out\.println\(/g, 'console.log(') + '\n';
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Java RPG quest/boss)
+   =================================================== */
+
+var CSS_GAME = '<style>body{margin:0;overflow:hidden;background:#191e3c;font-family:Arial,sans-serif}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="500" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+/* ---- Village scene ---- */
+var VILLAGE_BG =
+  'function drawVillage(){' +
+    'ctx.fillStyle="#2d5a27";ctx.fillRect(0,0,500,400);' +
+    'ctx.fillStyle="#3a7a30";for(let i=0;i<500;i+=40)for(let j=0;j<400;j+=40){ctx.fillRect(i+2,j+2,36,36)}' +
+    'ctx.fillStyle="#5a5a6a";ctx.fillRect(60,40,80,70);ctx.fillRect(300,60,90,60);' +
+    'ctx.fillStyle="#8b4513";ctx.fillRect(80,80,30,30);ctx.fillRect(330,90,30,30);' +
+    'ctx.fillStyle="#c4a35a";ctx.fillRect(60,30,80,12);ctx.fillRect(300,50,90,12);' +
+    'ctx.fillStyle="#4488ff";ctx.fillRect(350,260,100,100);' +
+    'ctx.fillStyle="#3366cc";ctx.fillRect(360,270,80,80);' +
+  '}';
+
+/* ---- NPC + Hero ---- */
+var NPC_VARS = 'let npcX=200,npcY=160,npcW=30,npcH=40;let heroX=120,heroY=250,heroW=28,heroH=36;';
+
+var DRAW_NPC =
+  'function drawNpc(){' +
+    'ctx.fillStyle="#a78bfa";ctx.fillRect(npcX,npcY,npcW,npcH);' +
+    'ctx.fillStyle="#c4b5fd";ctx.fillRect(npcX+8,npcY+4,14,10);' +
+    'ctx.fillStyle="#fff";ctx.font="bold 11px Arial";ctx.textAlign="center";' +
+    'ctx.fillText("Elder",npcX+npcW/2,npcY-6);' +
+  '}';
+
+var DRAW_HERO =
+  'function drawHero(){' +
+    'ctx.fillStyle="#ff7700";ctx.fillRect(heroX,heroY,heroW,heroH);' +
+    'ctx.fillStyle="#ffaa44";ctx.fillRect(heroX+7,heroY+4,14,10);' +
+  '}';
+
+var HERO_MOVE =
+  'let keys={};' +
+  'document.addEventListener("keydown",function(e){keys[e.code]=true;e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){keys[e.code]=false});' +
+  'function moveHero(){' +
+    'let spd=3;' +
+    'if(keys.ArrowLeft||keys.KeyA)heroX-=spd;' +
+    'if(keys.ArrowRight||keys.KeyD)heroX+=spd;' +
+    'if(keys.ArrowUp||keys.KeyW)heroY-=spd;' +
+    'if(keys.ArrowDown||keys.KeyS)heroY+=spd;' +
+    'if(heroX<0)heroX=0;if(heroX+heroW>500)heroX=500-heroW;' +
+    'if(heroY<0)heroY=0;if(heroY+heroH>400)heroY=400-heroH;' +
+  '}';
+
+/* ---- Dialog system ---- */
+var DIALOG_VARS =
+  'let dialogActive=false,dialogLine=0;' +
+  'let dialogLines=["Elder: The Dragon stirs in the north-east...","Elder: Slay 3 goblins to prove yourself.","Elder: Then seek me again for the Dragon Key.","Elder: The realm depends on you, hero!"];';
+
+var DIALOG_CLICK =
+  'canvas.addEventListener("click",function(e){' +
+    'let rect=canvas.getBoundingClientRect();' +
+    'let mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
+    'if(dialogActive){dialogLine++;if(dialogLine>=dialogLines.length){dialogActive=false;dialogLine=0}return}' +
+    'let dist=Math.abs(heroX-npcX)+Math.abs(heroY-npcY);' +
+    'if(dist<80){dialogActive=true;dialogLine=0}' +
+  '});';
+
+var DRAW_DIALOG =
+  'function drawDialog(){' +
+    'if(!dialogActive)return;' +
+    'ctx.fillStyle="rgba(0,0,0,0.85)";ctx.fillRect(20,310,460,80);' +
+    'ctx.strokeStyle="#a78bfa";ctx.lineWidth=2;ctx.strokeRect(20,310,460,80);' +
+    'ctx.fillStyle="#fff";ctx.font="15px Arial";ctx.textAlign="left";' +
+    'ctx.fillText(dialogLines[Math.min(dialogLine,dialogLines.length-1)],36,350);' +
+    'ctx.fillStyle="#aaa";ctx.font="12px Arial";ctx.fillText("Click to continue...",36,375);' +
+  '}';
+
+/* ---- Quest system ---- */
+var QUEST_VARS =
+  'let questActive=false,goblinsSlain=0,questGoal=3;' +
+  'let questComplete=false;';
+
+var DRAW_QUEST_LOG =
+  'function drawQuestLog(){' +
+    'if(!questActive&&!questComplete)return;' +
+    'ctx.fillStyle="rgba(0,0,0,0.8)";ctx.fillRect(310,10,180,80);' +
+    'ctx.strokeStyle="#ffd166";ctx.lineWidth=1;ctx.strokeRect(310,10,180,80);' +
+    'ctx.fillStyle="#ffd166";ctx.font="bold 13px Arial";ctx.textAlign="left";' +
+    'ctx.fillText("Quest Log",320,30);' +
+    'ctx.fillStyle="#fff";ctx.font="12px Arial";' +
+    'if(questComplete){ctx.fillStyle="#4ade80";ctx.fillText("\\u2713 Slay 3 Goblins",320,50);ctx.fillText("\\u2713 Obtain Dragon Key",320,68)}' +
+    'else{let check=goblinsSlain>=questGoal?"\\u2713":"\\u25cb";ctx.fillText(check+" Goblins: "+goblinsSlain+"/"+questGoal,320,50);ctx.fillText("\\u25cb Obtain Dragon Key",320,68)}' +
+  '}';
+
+var GOBLIN_VARS =
+  'let goblins=[{x:380,y:180,hp:3,maxHp:3,alive:true},{x:100,y:320,hp:3,maxHp:3,alive:true},{x:420,y:100,hp:3,maxHp:3,alive:true}];';
+
+var DRAW_GOBLINS =
+  'function drawGoblins(){' +
+    'for(let g of goblins){' +
+      'if(!g.alive)continue;' +
+      'ctx.fillStyle="#22c55e";ctx.fillRect(g.x,g.y,24,28);' +
+      'ctx.fillStyle="#166534";ctx.fillRect(g.x+6,g.y+4,12,8);' +
+      'ctx.fillStyle="red";ctx.fillRect(g.x,g.y-6,24,4);' +
+      'ctx.fillStyle="#4ade80";ctx.fillRect(g.x,g.y-6,24*(g.hp/g.maxHp),4);' +
+    '}' +
+  '}';
+
+var GOBLIN_CLICK =
+  'function handleGoblinClick(mx,my){' +
+    'for(let g of goblins){' +
+      'if(!g.alive)continue;' +
+      'if(mx>g.x&&mx<g.x+24&&my>g.y&&my<g.y+28){' +
+        'g.hp--;if(g.hp<=0){g.alive=false;if(questActive)goblinsSlain++}' +
+      '}' +
+    '}' +
+  '}';
+
+/* ---- Gate & Key ---- */
+var GATE_VARS = 'let hasKey=false,gateOpen=false;let gateX=440,gateY=180,gateW=20,gateH=50;let keyX=200,keyY=100,keyW=16,keyH=16,keyCollected=false;';
+
+var DRAW_GATE =
+  'function drawGate(){' +
+    'if(!gateOpen){ctx.fillStyle="#8b5e3c";ctx.fillRect(gateX,gateY,gateW,gateH);' +
+    'ctx.fillStyle="#5c3d1e";ctx.fillRect(gateX+4,gateY+10,12,30);' +
+    'ctx.fillStyle="#ffd166";ctx.font="bold 14px Arial";ctx.textAlign="center";' +
+    'ctx.fillText("\\ud83d\\udd12",gateX+gateW/2,gateY-4)}' +
+    'else{ctx.fillStyle="#4ade80";ctx.fillRect(gateX,gateY,gateW,gateH);' +
+    'ctx.fillStyle="#fff";ctx.font="10px Arial";ctx.textAlign="center";ctx.fillText("OPEN",gateX+gateW/2,gateY+28)}' +
+  '}';
+
+var DRAW_KEY =
+  'function drawKey(){' +
+    'if(keyCollected)return;' +
+    'ctx.fillStyle="#ffd166";ctx.beginPath();ctx.arc(keyX+keyW/2,keyY+keyH/2,keyW/2,0,Math.PI*2);ctx.fill();' +
+    'ctx.fillStyle="#b8860b";ctx.fillRect(keyX+keyW/2-2,keyY+keyH,4,10);' +
+    'ctx.fillRect(keyX+keyW/2,keyY+keyH+4,6,3);' +
+  '}';
+
+/* ---- Boss fight ---- */
+var BOSS_VARS =
+  'let bossHp=80,bossMaxHp=80,bossAttack=9,heroHp=30,heroMaxHp=30,heroAttack=5;' +
+  'let bossPhase=1,enraged=false;let bossTurn=false;' +
+  'let battleLog="The Dragon roars!";let battleAnim=0;' +
+  'let bossFlash=0,heroFlash=0;';
+
+var DRAW_BOSS_SCENE =
+  'function drawBossScene(){' +
+    'ctx.fillStyle="#1a0a14";ctx.fillRect(0,0,500,400);' +
+    'ctx.fillStyle="#2d1520";for(let i=0;i<500;i+=50){ctx.fillRect(i,350,48,50)}' +
+    'ctx.fillStyle="#331a00";ctx.fillRect(0,340,500,4);' +
+    'for(let i=0;i<8;i++){ctx.fillStyle="rgba(255,80,0,"+(0.03+Math.random()*0.04)+")";ctx.fillRect(Math.random()*500,Math.random()*200+100,60,40)}' +
+  '}';
+
+var DRAW_BOSS =
+  'function drawBoss(){' +
+    'let bx=320,by=100,bw=80,bh=100;' +
+    'ctx.fillStyle=bossFlash>0?(bossFlash%4<2?"#fff":"#ff4444"):(enraged?"#ff4400":"#cc2222");' +
+    'ctx.fillRect(bx,by,bw,bh);' +
+    'ctx.fillStyle="#ffcc00";ctx.beginPath();ctx.moveTo(bx+20,by+25);ctx.arc(bx+20,by+25,8,0,Math.PI*2);ctx.fill();' +
+    'ctx.beginPath();ctx.moveTo(bx+60,by+25);ctx.arc(bx+60,by+25,8,0,Math.PI*2);ctx.fill();' +
+    'ctx.fillStyle="#ff6600";ctx.beginPath();ctx.moveTo(bx+25,by+55);ctx.lineTo(bx+40,by+70);ctx.lineTo(bx+55,by+55);ctx.fill();' +
+    'ctx.fillStyle=enraged?"#ff6600":"#fff";ctx.font="bold 14px Arial";ctx.textAlign="center";' +
+    'ctx.fillText(enraged?"ENRAGED DRAGON":"Dragon",bx+bw/2,by-10);' +
+    'if(enraged){ctx.fillStyle="#ff4400";ctx.font="bold 11px Arial";ctx.fillText("Phase "+bossPhase,bx+bw/2,by-24)}' +
+    'ctx.fillStyle="#333";ctx.fillRect(bx,by+bh+8,bw,10);' +
+    'ctx.fillStyle=enraged?"#ff6600":"#ef4444";ctx.fillRect(bx,by+bh+8,bw*(bossHp/bossMaxHp),10);' +
+    'ctx.fillStyle="#fff";ctx.font="11px Arial";ctx.fillText(bossHp+"/"+bossMaxHp,bx+bw/2,by+bh+17);' +
+    'if(bossFlash>0)bossFlash--;' +
+  '}';
+
+var DRAW_BATTLE_HERO =
+  'function drawBattleHero(){' +
+    'let hx=80,hy=220,hw=40,hh=50;' +
+    'ctx.fillStyle=heroFlash>0?(heroFlash%4<2?"#fff":"#ff7700"):"#ff7700";' +
+    'ctx.fillRect(hx,hy,hw,hh);' +
+    'ctx.fillStyle="#ffaa44";ctx.fillRect(hx+10,hy+6,20,14);' +
+    'ctx.fillStyle="#fff";ctx.font="bold 14px Arial";ctx.textAlign="center";ctx.fillText("Hero",hx+hw/2,hy-10);' +
+    'ctx.fillStyle="#333";ctx.fillRect(hx,hy+hh+8,hw+40,10);' +
+    'ctx.fillStyle="#06d6a0";ctx.fillRect(hx,hy+hh+8,(hw+40)*(heroHp/heroMaxHp),10);' +
+    'ctx.fillStyle="#fff";ctx.font="11px Arial";ctx.fillText(heroHp+"/"+heroMaxHp,hx+40,hy+hh+17);' +
+    'if(heroFlash>0)heroFlash--;' +
+  '}';
+
+var DRAW_BATTLE_UI =
+  'function drawBattleUI(){' +
+    'ctx.fillStyle="rgba(0,0,0,0.8)";ctx.fillRect(20,320,460,70);' +
+    'ctx.strokeStyle="#ffd166";ctx.lineWidth=1;ctx.strokeRect(20,320,460,70);' +
+    'ctx.fillStyle="#fff";ctx.font="14px Arial";ctx.textAlign="left";ctx.fillText(battleLog,36,345);' +
+    'ctx.fillStyle="#aaa";ctx.font="13px Arial";' +
+    'ctx.fillText("[A] Attack    [D] Defend    [P] Potion",36,370);' +
+    'if(bossPhase>1){ctx.fillStyle="#ff6600";ctx.font="bold 12px Arial";ctx.textAlign="right";ctx.fillText("Phase "+bossPhase,470,370)}' +
+  '}';
+
+/* ---- Victory / ending ---- */
+var VICTORY_VARS = 'let victoryTimer=0;let scrollY=0;';
+
+var DRAW_VICTORY =
+  'function drawVictory(stats){' +
+    'victoryTimer++;scrollY=Math.min(victoryTimer*0.5,120);' +
+    'ctx.fillStyle="#0f0a19";ctx.fillRect(0,0,500,400);' +
+    'for(let i=0;i<30;i++){ctx.fillStyle="rgba(255,209,102,"+(0.2+Math.random()*0.3)+")";' +
+    'let sx=(i*73+victoryTimer*0.3)%500,sy=(i*47+victoryTimer*0.5)%400;ctx.fillRect(sx,sy,2,2)}' +
+    'ctx.fillStyle="#ffd166";ctx.font="bold 36px Arial";ctx.textAlign="center";' +
+    'ctx.fillText("THE REALM IS SAVED!",250,80-scrollY+120);' +
+    'ctx.fillStyle="#fff";ctx.font="20px Arial";' +
+    'ctx.fillText(stats.name+", Level "+stats.level,250,130-scrollY+120);' +
+    'ctx.font="16px Arial";ctx.fillStyle="#ccc";' +
+    'ctx.fillText("Goblins slain: "+stats.goblins,250,170-scrollY+120);' +
+    'ctx.fillText("Dragon: DEFEATED",250,195-scrollY+120);' +
+    'ctx.fillText("Gold earned: "+stats.gold,250,220-scrollY+120);' +
+    'ctx.fillStyle="#a78bfa";ctx.font="bold 18px Arial";' +
+    'ctx.fillText("A game by YOU",250,270-scrollY+120);' +
+    'ctx.fillStyle="#666";ctx.font="14px Arial";' +
+    'ctx.fillText("Built with Java + JVDesignStudio",250,300-scrollY+120);' +
+    'if(victoryTimer>120){ctx.fillStyle="#ffd166";ctx.font="14px Arial";ctx.fillText("Press R to play again",250,370)}' +
+  '}';
+
+/* ---- Recap / What You Learned ---- */
+var RECAP_CONCEPTS = 'const concepts=[' +
+  '{title:"NPC Dialogue",desc:"Manhattan distance + String[] lines",color:"#a78bfa",icon:"\\ud83d\\udcac"},' +
+  '{title:"Quest System",desc:"boolean questActive + kill counter",color:"#ffd166",icon:"\\ud83d\\udcdc"},' +
+  '{title:"Lock & Key",desc:"hasItem() gates walkable()",color:"#8b5e3c",icon:"\\ud83d\\udd11"},' +
+  '{title:"Boss Phases",desc:"Enrage at half HP, attack += 4",color:"#ef4444",icon:"\\ud83d\\udc09"},' +
+  '{title:"State Machine",desc:"EXPLORE / BATTLE / DIALOGUE / VICTORY",color:"#06d6a0",icon:"\\u2699\\ufe0f"},' +
+  '{title:"Game Loop",desc:"Timer + actionPerformed + repaint",color:"#4cc9f0",icon:"\\ud83d\\udd04"}' +
+  '];';
+
+var DRAW_RECAP =
+  'let recapHover=-1;' +
+  'function drawRecap(){' +
+    'ctx.fillStyle="#0f0a19";ctx.fillRect(0,0,500,400);' +
+    'ctx.fillStyle="#ffd166";ctx.font="bold 22px Arial";ctx.textAlign="center";' +
+    'ctx.fillText("What You Learned",250,36);' +
+    'ctx.fillStyle="#aaa";ctx.font="14px Arial";ctx.fillText("Click a card to see more",250,56);' +
+    'for(let i=0;i<concepts.length;i++){' +
+      'let col=i%3,row=Math.floor(i/3);' +
+      'let cx=30+col*160,cy=75+row*155,cw=140,ch=130;' +
+      'ctx.fillStyle=recapHover===i?"rgba(255,255,255,0.12)":"rgba(255,255,255,0.06)";' +
+      'ctx.fillRect(cx,cy,cw,ch);' +
+      'ctx.strokeStyle=concepts[i].color;ctx.lineWidth=2;ctx.strokeRect(cx,cy,cw,ch);' +
+      'ctx.font="26px Arial";ctx.textAlign="center";ctx.fillStyle="#fff";' +
+      'ctx.fillText(concepts[i].icon,cx+cw/2,cy+36);' +
+      'ctx.fillStyle=concepts[i].color;ctx.font="bold 13px Arial";' +
+      'ctx.fillText(concepts[i].title,cx+cw/2,cy+60);' +
+      'ctx.fillStyle="#ccc";ctx.font="11px Arial";' +
+      'let words=concepts[i].desc.split(" "),line="",ly=cy+78;' +
+      'for(let w of words){let test=line+w+" ";if(ctx.measureText(test).width>cw-16){ctx.fillText(line.trim(),cx+cw/2,ly);ly+=14;line=w+" "}else{line=test}}' +
+      'ctx.fillText(line.trim(),cx+cw/2,ly);' +
+    '}' +
+  '}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Java RPG Part 3 steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-java-rpg3-workshop',
+  downloadName: 'my-java-rpg-finale.html',
+
+  hints: [
+    'Click the NPC to start a conversation',
+    'Accept the quest and track your goblin kills',
+    'Find the Dragon Key and open the gate',
+    'Fight the Dragon through multiple phases',
+    'Victory! Watch the credits and see your stats',
+    'Click the concept cards to review everything you learned'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + NPC_VARS + VILLAGE_BG + DRAW_NPC + DRAW_HERO + HERO_MOVE +
+        DIALOG_VARS + DIALOG_CLICK +
+        DRAW_DIALOG +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'function loop(){moveHero();' +
+        'drawVillage();drawNpc();drawHero();drawDialog();' +
+        'ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,500,28);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 13px Arial";ctx.textAlign="left";' +
+        'ctx.fillText("Aria  Lv1  \\u2764 30/30",10,18);' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + NPC_VARS + VILLAGE_BG + DRAW_NPC + DRAW_HERO + HERO_MOVE +
+        DIALOG_VARS + QUEST_VARS + GOBLIN_VARS +
+        DRAW_GOBLINS + DRAW_QUEST_LOG + DRAW_DIALOG +
+        'dialogLines=["Elder: Slay 3 goblins!","Elder: Prove yourself, hero."];' +
+        'canvas.addEventListener("click",function(e){' +
+          'let rect=canvas.getBoundingClientRect();' +
+          'let mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
+          'if(dialogActive){dialogLine++;if(dialogLine>=dialogLines.length){dialogActive=false;questActive=true}return}' +
+          'let dist=Math.abs(heroX-npcX)+Math.abs(heroY-npcY);' +
+          'if(dist<80&&!questActive){dialogActive=true;dialogLine=0;return}' +
+          'for(let g of goblins){if(g.alive&&mx>g.x&&mx<g.x+24&&my>g.y&&my<g.y+28){g.hp--;if(g.hp<=0){g.alive=false;if(questActive)goblinsSlain++;if(goblinsSlain>=questGoal)questComplete=true}}}' +
+        '});' +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'function loop(){moveHero();' +
+        'drawVillage();drawGoblins();drawNpc();drawHero();drawQuestLog();drawDialog();' +
+        'ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,500,28);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 13px Arial";ctx.textAlign="left";' +
+        'ctx.fillText("Aria  Lv1  Goblins: "+goblinsSlain+"/"+questGoal,10,18);' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + NPC_VARS + VILLAGE_BG + DRAW_NPC + DRAW_HERO + HERO_MOVE +
+        QUEST_VARS + GATE_VARS +
+        DRAW_GATE + DRAW_KEY + DRAW_QUEST_LOG +
+        'questActive=true;goblinsSlain=3;questComplete=true;' +
+        'canvas.addEventListener("click",function(e){' +
+          'let rect=canvas.getBoundingClientRect();' +
+          'let mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
+          'if(!keyCollected&&mx>keyX&&mx<keyX+keyW&&my>keyY&&my<keyY+keyH+10){keyCollected=true;hasKey=true}' +
+          'if(hasKey&&!gateOpen&&mx>gateX&&mx<gateX+gateW&&my>gateY&&my<gateY+gateH){gateOpen=true;hasKey=false}' +
+        '});' +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'function loop(){moveHero();' +
+        'drawVillage();drawKey();drawGate();drawNpc();drawHero();drawQuestLog();' +
+        'ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,500,28);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 13px Arial";ctx.textAlign="left";' +
+        'ctx.fillText("Aria  Lv3  Key: "+(hasKey?"YES":"no")+"  Gate: "+(gateOpen?"OPEN":"locked"),10,18);' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + BOSS_VARS +
+        DRAW_BOSS_SCENE + DRAW_BOSS + DRAW_BATTLE_HERO + DRAW_BATTLE_UI +
+        'document.addEventListener("keydown",function(e){' +
+          'if(bossHp<=0||heroHp<=0)return;' +
+          'let k=e.key.toLowerCase();' +
+          'if(k==="a"){let dmg=heroAttack;bossHp=Math.max(0,bossHp-dmg);bossFlash=12;' +
+            'battleLog="Hero hits Dragon for "+dmg+"!";' +
+            'try{' + javaToJs(u) + '}catch(ex){}' +
+            'if(bossHp>0){setTimeout(function(){let bd=bossAttack;heroHp=Math.max(0,heroHp-bd);heroFlash=12;battleLog="Dragon hits back for "+bd+"!"},500)}' +
+          '}' +
+          'if(k==="d"){battleLog="Hero braces! Next hit halved.";' +
+            'setTimeout(function(){let bd=Math.floor(bossAttack/2);heroHp=Math.max(0,heroHp-bd);heroFlash=8;battleLog="Dragon hits for "+bd+" (defended)!"},500)}' +
+          'if(k==="p"){heroHp=Math.min(heroMaxHp,heroHp+12);battleLog="Hero drinks a Potion! +12 HP"}' +
+        '});' +
+        'function loop(){' +
+        'drawBossScene();drawBoss();drawBattleHero();drawBattleUI();' +
+        'if(bossHp<=0){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,500,400);' +
+          'ctx.fillStyle="#ffd166";ctx.font="bold 30px Arial";ctx.textAlign="center";ctx.fillText("DRAGON DEFEATED!",250,200);' +
+          'ctx.fillStyle="#fff";ctx.font="16px Arial";ctx.fillText("The realm is saved!",250,240)}' +
+        'if(heroHp<=0){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,500,400);' +
+          'ctx.fillStyle="#ef4444";ctx.font="bold 30px Arial";ctx.textAlign="center";ctx.fillText("YOU HAVE FALLEN",250,200);' +
+          'ctx.fillStyle="#fff";ctx.font="16px Arial";ctx.fillText("Press R to retry",250,240)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + VICTORY_VARS +
+        DRAW_VICTORY +
+        'let stats={name:"Aria",level:5,goblins:3,gold:225};' +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'document.addEventListener("keydown",function(e){if(e.key.toLowerCase()==="r"&&victoryTimer>120){victoryTimer=0;scrollY=0}});' +
+        'function loop(){drawVictory(stats);' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + RECAP_CONCEPTS +
+        DRAW_RECAP +
+        'let selectedCard=-1;' +
+        'canvas.addEventListener("mousemove",function(e){' +
+          'let rect=canvas.getBoundingClientRect();let mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
+          'recapHover=-1;' +
+          'for(let i=0;i<concepts.length;i++){let col=i%3,row=Math.floor(i/3);' +
+            'let cx=30+col*160,cy=75+row*155;' +
+            'if(mx>cx&&mx<cx+140&&my>cy&&my<cy+130)recapHover=i}' +
+        '});' +
+        'canvas.addEventListener("click",function(e){' +
+          'let rect=canvas.getBoundingClientRect();let mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
+          'for(let i=0;i<concepts.length;i++){let col=i%3,row=Math.floor(i/3);' +
+            'let cx=30+col*160,cy=75+row*155;' +
+            'if(mx>cx&&mx<cx+140&&my>cy&&my<cy+130){selectedCard=selectedCard===i?-1:i}}' +
+        '});' +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'function loop(){drawRecap();' +
+        'if(selectedCard>=0){' +
+          'ctx.fillStyle="rgba(0,0,0,0.85)";ctx.fillRect(50,310,400,80);' +
+          'ctx.strokeStyle=concepts[selectedCard].color;ctx.lineWidth=2;ctx.strokeRect(50,310,400,80);' +
+          'ctx.fillStyle=concepts[selectedCard].color;ctx.font="bold 15px Arial";ctx.textAlign="center";' +
+          'ctx.fillText(concepts[selectedCard].icon+" "+concepts[selectedCard].title,250,340);' +
+          'ctx.fillStyle="#fff";ctx.font="13px Arial";ctx.fillText(concepts[selectedCard].desc,250,365);' +
+          'ctx.fillStyle="#aaa";ctx.font="11px Arial";ctx.fillText("Click card again to close",250,383)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'NPC & Dialog',
+      goal: 'Draw a village scene with a talkable NPC. Click the Elder to see dialogue advance.',
+      points: [
+        'The NPC is stored at <code>int npcRow, npcCol</code> and drawn as a purple rectangle',
+        'Talking requires being NEXT TO the NPC: <code>Math.abs(heroRow-npcRow) + Math.abs(heroCol-npcCol) == 1</code> (Manhattan distance)',
+        'Dialogue is a <code>String[] lines</code> with an index that advances on each press of E'
+      ],
+      challenge: '☕ Write the NPC distance check and dialogue advance:',
+      starter: '// Manhattan distance: one step away\nboolean nextToNpc() {\n    return Math.abs(heroRow - npcRow)\n         + Math.abs(heroCol - npcCol) == ___;\n}\n\n// Advance dialogue\nif (e.getKeyChar() == \'e\' && nextToNpc()) {\n    state = "___";\n    dialogueLine = 0;\n}\n\n// Next line\ndialogLine++;\nif (dialogLine >= dialogue.___) {\n    state = "EXPLORE";\n}',
+      solution: '// Manhattan distance: one step away\nboolean nextToNpc() {\n    return Math.abs(heroRow - npcRow)\n         + Math.abs(heroCol - npcCol) == 1;\n}\n\n// Advance dialogue\nif (e.getKeyChar() == \'e\' && nextToNpc()) {\n    state = "DIALOGUE";\n    dialogueLine = 0;\n}\n\n// Next line\ndialogLine++;\nif (dialogLine >= dialogue.length) {\n    state = "EXPLORE";\n}',
+      checks: ['1', 'dialogue', 'length'],
+      height: 260,
+      fills: {
+        text: 'The distance check uses ___ distance (sum of row and column differences). Dialogue advances until the line index reaches dialogue.___.',
+        answers: ['manhattan', 'length']
+      },
+      quiz: {
+        question: 'Why talk to an NPC you are NEXT TO rather than standing on the same tile?',
+        options: [
+          'Standing on people is rude and looks broken - the NPC tile stays solid like a wall',
+          'Java cannot detect same-tile overlap',
+          'It saves a tile type'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 2,
+      title: 'Quest Log',
+      goal: 'Accept a quest from the Elder and track goblin kills with a HUD counter.',
+      points: [
+        'Quest state is just two variables: <code>boolean questActive; int goblinsSlain;</code>',
+        'Finishing the Elder\'s dialogue the first time sets <code>questActive = true</code>',
+        'When a defeated foe\'s name equals "Goblin" and the quest is active: <code>goblinsSlain++</code>'
+      ],
+      challenge: '☕ Write the quest tracking logic:',
+      starter: '// Quest state\nboolean questActive = ___;\nint goblinsSlain = 0;\n\n// When a monster dies:\nif (questActive && foe.name.equals("___"))\n    goblinsSlain___;\n\n// Elder responds to progress\nString[] currentDialogue() {\n    if (!questActive) return dialogue;\n    if (goblinsSlain < 3)\n        return new String[]{ "Elder: " + goblinsSlain + " of 3 slain." };\n    return new String[]{ "Elder: Take the DRAGON KEY!" };\n}',
+      solution: '// Quest state\nboolean questActive = false;\nint goblinsSlain = 0;\n\n// When a monster dies:\nif (questActive && foe.name.equals("Goblin"))\n    goblinsSlain++;\n\n// Elder responds to progress\nString[] currentDialogue() {\n    if (!questActive) return dialogue;\n    if (goblinsSlain < 3)\n        return new String[]{ "Elder: " + goblinsSlain + " of 3 slain." };\n    return new String[]{ "Elder: Take the DRAGON KEY!" };\n}',
+      checks: ['questactive', 'goblin', 'goblinsslain'],
+      height: 280,
+      fills: {
+        text: 'The quest is tracked with a ___ flag and a kill counter. The Elder\'s dialogue ___ based on how many goblins are slain.',
+        answers: ['boolean', 'changes']
+      },
+      quiz: {
+        question: 'The Elder\'s dialogue changes based on quest progress. Why does that matter?',
+        options: [
+          'It uses less memory than one long speech',
+          'The world reacts to the player\'s actions - that reactivity makes RPGs feel alive',
+          'NPCs must have exactly three speeches'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'The Key & Gate',
+      goal: 'Gate the boss behind the quest reward. The Dragon Key opens a locked tile.',
+      points: [
+        'When the Elder\'s quest-complete dialogue finishes, grant the key: <code>hero.pickUp(new Item("Dragon Key","key",0))</code>',
+        'Tile type 5 is the gate - only walkable when <code>hero.hasItem("Dragon Key")</code> returns true',
+        'Stepping through consumes the key and sets the tile to 0 - classic lock-and-key design'
+      ],
+      challenge: '☕ Write the gate check and key consumption:',
+      starter: '// Hero checks inventory\nboolean hasItem(String itemName) {\n    for (Item it : inventory)\n        if (it.name.equals(___)) return true;\n    return false;\n}\n\n// Gate is walkable only with the key\nif (map[r][c] == 5)\n    return hero.___("Dragon Key");\n\n// Stepping through consumes the key\nif (map[heroRow][heroCol] == 5) {\n    hero.useItem("Dragon Key");\n    map[heroRow][heroCol] = ___;\n}',
+      solution: '// Hero checks inventory\nboolean hasItem(String itemName) {\n    for (Item it : inventory)\n        if (it.name.equals(itemName)) return true;\n    return false;\n}\n\n// Gate is walkable only with the key\nif (map[r][c] == 5)\n    return hero.hasItem("Dragon Key");\n\n// Stepping through consumes the key\nif (map[heroRow][heroCol] == 5) {\n    hero.useItem("Dragon Key");\n    map[heroRow][heroCol] = 0;\n}',
+      checks: ['hasitem', 'itemname', 'useitem'],
+      height: 280,
+      fills: {
+        text: 'Tile type ___ is the gate. It is only walkable when hero.hasItem returns ___. Stepping through the gate consumes the key.',
+        answers: ['5', 'true']
+      },
+      quiz: {
+        question: 'What stops the player reaching the Dragon at level 1?',
+        options: [
+          'The Dragon is friendly at first',
+          'The gate needs the key, the key needs 3 goblin kills - the quest chain forces you to level up first',
+          'The map is too big'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Dragon Boss',
+      goal: 'Build a multi-phase boss fight. The Dragon enrages at half health with increased attack.',
+      points: [
+        'The Dragon has big stats: 80 HP, 9 attack, 100 XP - a boss, not a random encounter',
+        'Phase 2 triggers at half HP: <code>attack += 4</code> and the log shows "ENRAGED!"',
+        'A boolean guard <code>enraged</code> ensures the phase change happens exactly once'
+      ],
+      challenge: '☕ Write the boss enrage logic:',
+      starter: '// Trigger enrage exactly once at half health\nboolean enraged = false;\n\nif (foe.name.equals("Dragon") && !___\n        && foe.hp <= foe.maxHp / ___) {\n    enraged = ___;\n    foe.attack += 4;\n    battleLog = "The Dragon is ENRAGED!";\n}',
+      solution: '// Trigger enrage exactly once at half health\nboolean enraged = false;\n\nif (foe.name.equals("Dragon") && !enraged\n        && foe.hp <= foe.maxHp / 2) {\n    enraged = true;\n    foe.attack += 4;\n    battleLog = "The Dragon is ENRAGED!";\n}',
+      checks: ['enraged', 'true', 'attack'],
+      height: 200,
+      fills: {
+        text: 'The boss enters phase 2 when HP drops to ___ of its maximum. A boolean flag prevents the enrage from triggering every ___.',
+        answers: ['half', 'frame']
+      },
+      quiz: {
+        question: 'Why do bosses change behaviour mid-fight?',
+        options: [
+          'To fix bugs in phase one',
+          'A long fight with one pattern gets boring - phases force the player to adapt and create a story arc',
+          'Java switches require it'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'The Ending',
+      goal: 'Defeating the Dragon triggers a victory screen with credits, stats and a replay option.',
+      points: [
+        'When the Dragon is defeated, set <code>state = "VICTORY"</code> instead of returning to EXPLORE',
+        'The ending screen shows: golden title, hero level, goblins slain, gold earned, and YOUR name as developer',
+        'A short delay before allowing restart prevents accidentally skipping the hard-earned ending'
+      ],
+      challenge: '☕ Write the victory state and ending display:',
+      starter: '// When the Dragon falls\nif (isDragon) {\n    state = "___";\n    return;\n}\n\n// Victory screen\nif (state.equals("VICTORY")) {\n    g.setColor(new Color(255, 209, 102));\n    g.drawString("THE REALM IS ___!", 110, 200);\n    g.drawString(hero.getName() + ", Level " + hero.getLevel(), 110, 260);\n    g.drawString("A game by ___", 110, 350);\n}',
+      solution: '// When the Dragon falls\nif (isDragon) {\n    state = "VICTORY";\n    return;\n}\n\n// Victory screen\nif (state.equals("VICTORY")) {\n    g.setColor(new Color(255, 209, 102));\n    g.drawString("THE REALM IS SAVED!", 110, 200);\n    g.drawString(hero.getName() + ", Level " + hero.getLevel(), 110, 260);\n    g.drawString("A game by YOU", 110, 350);\n}',
+      checks: ['victory', 'saved', 'level'],
+      height: 260,
+      fills: {
+        text: 'Beating the Dragon sets state to ___ instead of EXPLORE. The ending credits the ___ as the developer.',
+        answers: ['victory', 'player']
+      },
+      quiz: {
+        question: 'Why delay the restart key on the ending screen?',
+        options: [
+          'Java needs time to garbage-collect',
+          'So players cannot accidentally skip the ending they spent seven episodes earning',
+          'Timers cannot stop instantly'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'What You Learned',
+      goal: 'Review all the professional patterns hiding inside your seven Java games.',
+      points: [
+        '<strong>Game loop</strong> (every episode), <strong>state machine</strong> (MENU/EXPLORE/BATTLE), <strong>encapsulation</strong> (Hero class)',
+        '<strong>Factory pattern</strong> (Monster.create), <strong>tile maps</strong> (RPG world), <strong>lock-and-key design</strong> (the gate)',
+        'These are the same patterns inside Minecraft, Stardew Valley and Undertale - all Java or Java-like'
+      ],
+      challenge: '☕ Identify the design patterns in your RPG:',
+      starter: '// The Monster.create method is a\n// ___ pattern\n\n// Hero\'s private fields demonstrate\n// ___\n\n// MENU, EXPLORE, BATTLE, VICTORY\n// is a state ___\n\n// The gate that needs the Dragon Key\n// is ___ design',
+      solution: '// The Monster.create method is a\n// factory pattern\n\n// Hero\'s private fields demonstrate\n// encapsulation\n\n// MENU, EXPLORE, BATTLE, VICTORY\n// is a state machine\n\n// The gate that needs the Dragon Key\n// is lock-and-key design',
+      checks: ['factory', 'encapsulation', 'machine'],
+      height: 200,
+      fills: {
+        text: 'Monster.create is a ___ pattern. The Hero\'s private fields use ___. MENU/PLAYING/GAME_OVER is a state ___.',
+        answers: ['factory', 'encapsulation', 'machine']
+      },
+      quiz: {
+        question: 'Seven games later, what is the single most important habit you practised in every episode?',
+        options: [
+          'Typing fast',
+          'Build one small piece, run it, test it, THEN add the next piece',
+          'Using as many classes as possible'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+
+</script>
+<script defer src="../workshop-canvas-engine.js?v=1"></script>
 <script defer src="workshop-engine.js"></script>
 <script defer src="workshop-interactive.js"></script>
 <script type="application/ld+json">

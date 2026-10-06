@@ -299,6 +299,380 @@ window.WORKSHOP_TOTAL=6;
 window.WORKSHOP_KEY='jvds-java-rpg-part1-v2';
 window.WORKSHOP_PROFILE_ID='java-rpg-part1-workshop';
 </script>
+
+<script>
+
+'use strict';
+
+/* ===================================================
+   Java-to-JS transpiler (light transform so Java
+   syntax runs in the canvas iframe)
+   =================================================== */
+function javaToJs(code) {
+  return code
+    .replace(/\b(int|boolean|double|float|long|char)\s+/g, 'let ')
+    .replace(/\bString\s+/g, 'let ')
+    .replace(/\bRectangle\s+/g, 'let ')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.get\(([^)]+)\)/g, '[$1]')
+    .replace(/\.remove\(([^)]+)\)/g, '.splice($1, 1)')
+    .replace(/System\.out\.println\(/g, 'console.log(') + '\n';
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Java RPG)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#191e3c;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="480" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var TILE = 'const TILE=32;';
+
+var HERO_VARS = 'let heroName="Aria",heroHp=30,heroMaxHp=30,heroAttack=5,heroGold=0,heroRow=1,heroCol=1;';
+
+var INVENTORY = 'let inventory=[];';
+
+var MAP_DATA = 'const map=[' +
+  '[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],' +
+  '[1,0,0,0,0,0,0,0,0,0,0,0,0,3,1],' +
+  '[1,0,1,1,0,0,0,2,2,0,0,1,0,0,1],' +
+  '[1,0,1,0,0,0,0,2,2,0,0,1,0,0,1],' +
+  '[1,0,0,0,0,1,0,0,0,0,0,0,0,0,1],' +
+  '[1,0,0,0,0,1,0,0,0,0,1,0,0,3,1],' +
+  '[1,0,0,3,0,0,0,0,0,0,1,0,0,0,1],' +
+  '[1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],' +
+  '[1,0,1,1,1,0,0,0,0,0,1,1,1,0,1],' +
+  '[1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],' +
+  '[1,0,0,0,0,0,2,2,2,0,0,0,3,0,1],' +
+  '[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]' +
+  '];';
+
+var TILE_COLORS = 'function tileColor(t){' +
+  'if(t===0)return"#34783e";' +
+  'if(t===1)return"#5a5a64";' +
+  'if(t===2)return"#325ab4";' +
+  'if(t===3)return"#d4af37";' +
+  'return"#34783e"}';
+
+var DRAW_MAP = 'function drawMap(){for(let r=0;r<map.length;r++)for(let c=0;c<map[0].length;c++){ctx.fillStyle=tileColor(map[r][c]);ctx.fillRect(c*TILE,r*TILE,TILE,TILE)}}';
+
+var DRAW_HERO = 'function drawHero(){ctx.fillStyle="#e6463c";ctx.fillRect(heroCol*TILE+4,heroRow*TILE+4,TILE-8,TILE-8)}';
+
+var DRAW_HUD = 'function drawHud(){' +
+  'ctx.fillStyle="rgba(0,0,0,0.75)";ctx.fillRect(0,0,480,28);' +
+  'ctx.fillStyle="#fff";ctx.font="bold 13px sans-serif";ctx.textAlign="left";' +
+  'ctx.fillText(heroName,8,19);' +
+  'ctx.fillStyle="#c00";ctx.fillRect(70,7,100,14);' +
+  'ctx.fillStyle="#06d6a0";ctx.fillRect(70,7,Math.max(0,100*heroHp/heroMaxHp),14);' +
+  'ctx.fillStyle="#fff";ctx.fillText("HP "+heroHp+"/"+heroMaxHp,175,19);' +
+  'ctx.fillText("Gold: "+heroGold,280,19);' +
+  'ctx.fillText("Items: "+inventory.length,380,19)}';
+
+var WALKABLE = 'function walkable(r,c){' +
+  'if(r<0||r>=map.length||c<0||c>=map[0].length)return false;' +
+  'return map[r][c]===0||map[r][c]===3}';
+
+var KEYS_RPG = 'document.addEventListener("keydown",function(e){' +
+  'let r=heroRow,c=heroCol;' +
+  'if(e.code==="ArrowUp"||e.code==="KeyW")r--;' +
+  'if(e.code==="ArrowDown"||e.code==="KeyS")r++;' +
+  'if(e.code==="ArrowLeft"||e.code==="KeyA")c--;' +
+  'if(e.code==="ArrowRight"||e.code==="KeyD")c++;' +
+  'if(walkable(r,c)){heroRow=r;heroCol=c}' +
+  'e.preventDefault();draw()});';
+
+var KEYS_RPG_CHEST = 'document.addEventListener("keydown",function(e){' +
+  'let r=heroRow,c=heroCol;' +
+  'if(e.code==="ArrowUp"||e.code==="KeyW")r--;' +
+  'if(e.code==="ArrowDown"||e.code==="KeyS")r++;' +
+  'if(e.code==="ArrowLeft"||e.code==="KeyA")c--;' +
+  'if(e.code==="ArrowRight"||e.code==="KeyD")c++;' +
+  'if(walkable(r,c)){heroRow=r;heroCol=c;' +
+  'if(map[heroRow][heroCol]===3){inventory.push("Potion");heroGold+=25;map[heroRow][heroCol]=0}}' +
+  'e.preventDefault();draw()});';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Java RPG steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-java-rpg1-workshop',
+  downloadName: 'my-java-rpg.html',
+
+  hints: [
+    'Your hero appears on screen with HP and name',
+    'Pick up items - your inventory list grows on screen',
+    'A tile map built from colored squares fills the canvas',
+    'Arrow keys move the hero around - walls block the way',
+    'Walk onto gold chests to collect loot',
+    'The HUD shows HP bar, gold, and item count - save your progress!'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP +
+        'let heroName="Aria",heroHp=30,heroMaxHp=30,heroAttack=5;' +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'ctx.fillStyle="#191e3c";ctx.fillRect(0,0,480,400);' +
+        'ctx.fillStyle="#e6463c";ctx.fillRect(200,150,80,100);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 16px sans-serif";ctx.textAlign="center";' +
+        'ctx.fillText(heroName,240,290);' +
+        'ctx.fillText("HP: "+heroHp+" / "+heroMaxHp,240,315);' +
+        'ctx.fillText("ATK: "+heroAttack,240,340);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP +
+        'let heroName="Aria",heroHp=30,heroMaxHp=30,heroAttack=5;' +
+        INVENTORY +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'ctx.fillStyle="#191e3c";ctx.fillRect(0,0,480,400);' +
+        'ctx.fillStyle="#e6463c";ctx.fillRect(200,100,80,100);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 16px sans-serif";ctx.textAlign="center";' +
+        'ctx.fillText(heroName,240,240);' +
+        'ctx.fillText("HP: "+heroHp+" / "+heroMaxHp,240,265);' +
+        'ctx.fillStyle="#ffd166";ctx.font="bold 14px sans-serif";' +
+        'ctx.fillText("Inventory ("+inventory.length+")",240,300);' +
+        'for(let i=0;i<inventory.length;i++){ctx.fillStyle="#adf";ctx.fillText(inventory[i],240,320+i*18)}'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + TILE + MAP_DATA + TILE_COLORS +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'for(let r=0;r<map.length;r++)for(let c=0;c<map[0].length;c++){ctx.fillStyle=tileColor(map[r][c]);ctx.fillRect(c*TILE,r*TILE,TILE,TILE)}'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + TILE + HERO_VARS + MAP_DATA + TILE_COLORS + DRAW_MAP + DRAW_HERO + WALKABLE +
+        'function draw(){drawMap();drawHero()}' +
+        'document.addEventListener("keydown",function(e){' +
+        'let r=heroRow,c=heroCol;' +
+        'try{' + javaToJs(u) + '}catch(e2){}' +
+        'if(walkable(r,c)){heroRow=r;heroCol=c}' +
+        'e.preventDefault();draw()});' +
+        'draw();'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + TILE + HERO_VARS + INVENTORY + MAP_DATA + TILE_COLORS +
+        DRAW_MAP + DRAW_HERO + WALKABLE +
+        'function draw(){drawMap();drawHero();' +
+        'ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,480,24);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 12px sans-serif";ctx.textAlign="left";' +
+        'ctx.fillText("Gold: "+heroGold+"  Items: "+inventory.length,8,17)}' +
+        'document.addEventListener("keydown",function(e){' +
+        'let r=heroRow,c=heroCol;' +
+        'if(e.code==="ArrowUp"||e.code==="KeyW")r--;' +
+        'if(e.code==="ArrowDown"||e.code==="KeyS")r++;' +
+        'if(e.code==="ArrowLeft"||e.code==="KeyA")c--;' +
+        'if(e.code==="ArrowRight"||e.code==="KeyD")c++;' +
+        'if(walkable(r,c)){heroRow=r;heroCol=c;' +
+        'try{' + javaToJs(u) + '}catch(e2){}}' +
+        'e.preventDefault();draw()});' +
+        'draw();'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + TILE + HERO_VARS + INVENTORY + MAP_DATA + TILE_COLORS +
+        DRAW_MAP + DRAW_HERO + WALKABLE +
+        'try{' + javaToJs(u) + '}catch(e){}' +
+        'function draw(){drawMap();drawHero();drawHud()}' +
+        KEYS_RPG_CHEST +
+        'draw();'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Hero',
+      goal: 'Create a hero with a name, HP, and attack stat - display them on screen.',
+      points: [
+        'In Java, the hero is a class with fields: <code>String name</code>, <code>int maxHp, hp, attack</code>',
+        'The constructor sets starting values: <code>new Hero("Aria")</code> gives 30 HP and 5 attack',
+        'We draw the hero as a red rectangle and show stats as text below it'
+      ],
+      challenge: '☕ Set up the hero stats in Java:',
+      starter: '// Create the hero\'s stats\nString heroName = "Aria";\nint heroMaxHp = ___;\nint heroHp = heroMaxHp;\nint heroAttack = ___;',
+      solution: 'String heroName = "Aria";\nint heroMaxHp = 30;\nint heroHp = heroMaxHp;\nint heroAttack = 5;',
+      checks: ['heroname', 'heromaxhp', 'heroattack'],
+      height: 140,
+      fills: {
+        text: 'The hero\'s HP is clamped between 0 and ___. The hero\'s starting attack power is ___.',
+        answers: ['maxHp', '5']
+      },
+      quiz: {
+        question: 'Why should hero fields be <code>private</code> with methods like <code>takeDamage()</code>?',
+        options: [
+          'Private fields compile faster in Java',
+          'So nothing can set HP to -50 directly - the method clamps it at 0, enforcing the game rules',
+          'Java requires all fields to be private'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Items & Inventory',
+      goal: 'Add items to the hero\'s inventory and display them on screen.',
+      points: [
+        'An Item has a name, type ("potion"/"weapon"/"key"), and a power value',
+        'The hero\'s inventory is an <code>ArrayList&lt;Item&gt;</code> - items are added with <code>pickUp()</code>',
+        'Using a potion calls <code>heal(power)</code> then removes it from the list'
+      ],
+      challenge: '☕ Add items to the hero\'s inventory:',
+      starter: '// Add items to the inventory array\ninventory.push("Health Potion");\ninventory.push("___");\ninventory.push("___");',
+      solution: 'inventory.push("Health Potion");\ninventory.push("Iron Sword");\ninventory.push("Bronze Key");',
+      checks: ['inventory', 'push'],
+      height: 120,
+      fills: {
+        text: 'The inventory is a List of ___ objects. Using a potion calls the hero\'s ___ method.',
+        answers: ['Item', 'heal']
+      },
+      quiz: {
+        question: 'Why does <code>useItem()</code> return a <code>boolean</code>?',
+        options: [
+          'All Java methods must return something',
+          'So the caller knows whether the hero actually had that item - no potion means no heal',
+          'Booleans are needed for ArrayLists'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'The Tile Map',
+      goal: 'Draw a grid-based world from a 2D array: grass, walls, water, and chests.',
+      points: [
+        'The world is an <code>int[][] map</code> - each number is a tile type: 0=grass, 1=wall, 2=water, 3=chest',
+        'A nested loop draws each tile: row controls y, column controls x',
+        'Each tile is <code>TILE</code> pixels wide - <code>fillRect(c*TILE, r*TILE, TILE, TILE)</code>'
+      ],
+      challenge: '☕ Write the tile drawing loop:',
+      starter: '// Draw each tile as a colored square\nfor (int r = 0; r < map.length; r++) {\n    for (int c = 0; c < map[0].length; c++) {\n        // Pick color based on tile type\n        if (map[r][c] == 0) ctx.fillStyle = "#34783e";  // grass\n        if (map[r][c] == 1) ctx.fillStyle = "___";      // wall\n        if (map[r][c] == 2) ctx.fillStyle = "#325ab4";   // water\n        if (map[r][c] == 3) ctx.fillStyle = "#d4af37";   // chest\n        ctx.fillRect(___*TILE, r*TILE, TILE, TILE);\n    }\n}',
+      solution: 'for (int r = 0; r < map.length; r++) {\n    for (int c = 0; c < map[0].length; c++) {\n        if (map[r][c] == 0) ctx.fillStyle = "#34783e";\n        if (map[r][c] == 1) ctx.fillStyle = "#5a5a64";\n        if (map[r][c] == 2) ctx.fillStyle = "#325ab4";\n        if (map[r][c] == 3) ctx.fillStyle = "#d4af37";\n        ctx.fillRect(c*TILE, r*TILE, TILE, TILE);\n    }\n}',
+      checks: ['map', 'fillrect', 'tile'],
+      height: 240,
+      fills: {
+        text: 'Columns run across (the ___ direction). Each tile is drawn with fillRect at column times ___ pixels.',
+        answers: ['x', 'TILE']
+      },
+      quiz: {
+        question: 'In a tile map, what does <code>map[3][7] == 2</code> mean?',
+        options: [
+          'There are 2 tiles at that spot',
+          'The tile at row 3, column 7 is water (type 2)',
+          'The map is 3 by 7 tiles'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Walking the World',
+      goal: 'Move the hero around the tile map with arrow keys, blocked by walls and water.',
+      points: [
+        'The hero\'s position is a grid position: <code>heroRow, heroCol</code> - not pixels',
+        'On key press, calculate the target tile - only move if <code>walkable(r, c)</code> returns true',
+        'Walkable means the tile is grass (0) or chest (3) - walls (1) and water (2) block you'
+      ],
+      challenge: '☕ Write the movement logic for arrow keys:',
+      starter: '// Move based on key pressed\nif (e.code === "ArrowUp" || e.code === "KeyW")    r--;\nif (e.code === "ArrowDown" || e.code === "KeyS")  r++;\nif (e.code === "ArrowLeft" || e.code === "KeyA")  ___;\nif (e.code === "ArrowRight" || e.code === "KeyD") ___;',
+      solution: 'if (e.code === "ArrowUp" || e.code === "KeyW")    r--;\nif (e.code === "ArrowDown" || e.code === "KeyS")  r++;\nif (e.code === "ArrowLeft" || e.code === "KeyA")  c--;\nif (e.code === "ArrowRight" || e.code === "KeyD") c++;',
+      checks: ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'],
+      height: 160,
+      fills: {
+        text: 'RPG movement uses grid positions: heroRow and ___. The walkable function returns false for walls and ___.',
+        answers: ['heroCol', 'water']
+      },
+      quiz: {
+        question: 'Why check <code>r &lt; 0 || r &gt;= map.length</code> inside walkable()?',
+        options: [
+          'To make water solid',
+          'Reading outside the array bounds crashes Java - check edges before reading the tile',
+          'To speed up the game loop'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Chests & Pickups',
+      goal: 'Walk onto chest tiles to collect loot - gold and items added to inventory.',
+      points: [
+        'After moving, check if the new tile is a chest (type 3)',
+        'If it is: add an item to inventory, add gold, then set the tile to 0 (grass) so it cannot be looted again',
+        'This is the same pattern as coin collection - a flag (the tile type) prevents double-pickup'
+      ],
+      challenge: '☕ Write the chest collection logic:',
+      starter: '// Check if hero stepped on a chest\nif (map[heroRow][heroCol] === 3) {\n    inventory.push("Potion");\n    heroGold += ___;\n    map[heroRow][heroCol] = ___;\n}',
+      solution: 'if (map[heroRow][heroCol] === 3) {\n    inventory.push("Potion");\n    heroGold += 25;\n    map[heroRow][heroCol] = 0;\n}',
+      checks: ['map[herorow][herocol]', 'inventory', 'herogold'],
+      height: 140,
+      fills: {
+        text: 'After looting, we set the chest tile to ___ so the player cannot collect infinite ___.',
+        answers: ['0', 'potions']
+      },
+      quiz: {
+        question: 'After looting, we set the chest tile to 0. What bug does this prevent?',
+        options: [
+          'The hero drowning',
+          'Standing on the chest again and looting infinite potions',
+          'The map failing to draw'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'HUD & Save',
+      goal: 'Draw an HP bar, gold counter, and item count - the essentials of an RPG HUD.',
+      points: [
+        'The HUD is a dark strip across the top: <code>fillRect(0, 0, 480, 28)</code> with alpha',
+        'The HP bar is red background + green foreground scaled by <code>hp / maxHp</code>',
+        'Gold and inventory count display as text - players read bars and numbers instantly'
+      ],
+      challenge: '☕ Write the HUD drawing function:',
+      starter: '// Draw the HUD bar\nfunction drawHud() {\n    ctx.fillStyle = "rgba(0,0,0,0.75)";\n    ctx.fillRect(0, 0, 480, 28);\n    // HP bar background (red)\n    ctx.fillStyle = "#c00";\n    ctx.fillRect(70, 7, 100, 14);\n    // HP bar foreground (green), scaled by current HP\n    ctx.fillStyle = "#06d6a0";\n    ctx.fillRect(70, 7, 100 * heroHp / ___, 14);\n    // Text labels\n    ctx.fillStyle = "#fff";\n    ctx.font = "bold 13px sans-serif";\n    ctx.textAlign = "left";\n    ctx.fillText(heroName, 8, 19);\n    ctx.fillText("Gold: " + ___, 280, 19);\n    ctx.fillText("Items: " + inventory.length, 380, 19);\n}',
+      solution: 'function drawHud() {\n    ctx.fillStyle = "rgba(0,0,0,0.75)";\n    ctx.fillRect(0, 0, 480, 28);\n    ctx.fillStyle = "#c00";\n    ctx.fillRect(70, 7, 100, 14);\n    ctx.fillStyle = "#06d6a0";\n    ctx.fillRect(70, 7, 100 * heroHp / heroMaxHp, 14);\n    ctx.fillStyle = "#fff";\n    ctx.font = "bold 13px sans-serif";\n    ctx.textAlign = "left";\n    ctx.fillText(heroName, 8, 19);\n    ctx.fillText("Gold: " + heroGold, 280, 19);\n    ctx.fillText("Items: " + inventory.length, 380, 19);\n}',
+      checks: ['drawhud', 'heromaxhp', 'herogold'],
+      height: 300,
+      fills: {
+        text: 'The HP bar width is scaled by current HP divided by ___. The HUD strip uses ___ transparency so the map shows through.',
+        answers: ['maxHp', 'alpha']
+      },
+      quiz: {
+        question: 'Why is an HP <em>bar</em> better than just showing an HP <em>number</em>?',
+        options: [
+          'Bars use less memory than numbers',
+          'Players read bars instantly at a glance - a green sliver screams danger faster than reading "3/30"',
+          'Java cannot draw numbers on screen'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+
+</script>
+<script defer src="../workshop-canvas-engine.js?v=1"></script>
 <script defer src="workshop-engine.js"></script>
 <script defer src="workshop-interactive.js"></script>
 <script type="application/ld+json">
