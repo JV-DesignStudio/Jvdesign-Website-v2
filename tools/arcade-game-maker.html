@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script src="/tool-handoff.js"></script>
 <script defer src="../analytics-loader.js"></script>
 <meta name="description" content="Build your own arcade game with blueprints, pixel art, level design and sound. No installs.">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/tools/arcade-game-maker.html">
@@ -16504,23 +16505,16 @@ function _snakeSwipeEnd(e) {
     }
 }
 
-// ── ASSET IMPORT AUTO-ROUTING ────────────────────────────────────────────────
-// When the user opens Pixel Studio from a specific asset block, we record which
-// slot they came from in jvds_import_slot. Pixel Studio always saves to the
-// shared 'jvds_sprite_player' key on "Send to Game Maker", this routes that
-// art to whichever slot (player/enemy/bullet/block) the user actually opened
-// the studio from, then clears the slot marker so it doesn't get reused.
-function _routeImportedSprite(dataUrl, label) {
-    const slot = localStorage.getItem('jvds_import_slot') || 'player';
-    localStorage.removeItem('jvds_import_slot');
-    const slotName = { player:'Player', enemy:'Enemy', bullet:'Bullet', block:'Tile/Block', bg:'Background' }[slot] || slot;
-    if      (slot === 'enemy')  _applyEnemyDataUrl(dataUrl, label);
-    else if (slot === 'bullet') _applyBulletDataUrl(dataUrl, label);
-    else if (slot === 'block')  _applyBlockDataUrl(dataUrl, label);
-    else if (slot === 'bg')     _applyBgDataUrl(dataUrl, label);
-    else                        _applySpriteDataUrl(dataUrl, label);
-    return slotName;
-}
+// ── ASSET IMPORT AUTO-ROUTING (A673: handled by the shared tool-handoff.js) ──
+// The shared hand-off records which slot the user opened (jvds_import_slot) and
+// routes the saved art to the matching applier registered below.
+window.JVDSHandoff.register({
+    player: _applySpriteDataUrl,
+    enemy:  _applyEnemyDataUrl,
+    bullet: _applyBulletDataUrl,
+    block:  _applyBlockDataUrl,
+    bg:     _applyBgDataUrl
+});
 
 // When the window regains focus (user has returned from a Workshop tab),
 // auto-import whatever the tool saved so they never have to hunt for the right
@@ -16533,7 +16527,7 @@ window.addEventListener('focus', () => {
     //    user opened the Workshop from.
     const slot = localStorage.getItem('jvds_import_slot');
     if (slot && localStorage.getItem('jvds_sprite_player')) {
-        const slotName = _routeImportedSprite(localStorage.getItem('jvds_sprite_player'), 'Pixel Studio art');
+        const slotName = window.JVDSHandoff.routeImportedSprite(localStorage.getItem('jvds_sprite_player'), 'Pixel Studio art');
         showToast(`✅ Pixel Studio art → ${slotName} slot`);
         return;
     }
@@ -16567,41 +16561,9 @@ window.addEventListener('focus', () => {
 });
 
 // ── WORKSHOP ─────────────────────────────────────────────────────────────────
-function openWorkshop(toolSrc) {
-    document.getElementById('wkOverlay').classList.add('open');
-    const btn = toolSrc
-        ? document.querySelector(`.wk-tab[data-src="${toolSrc}"]`)
-        : document.querySelector('.wk-tab');
-    if (btn) switchWorkshopTool(btn);
-}
-function closeWorkshop() {
-    document.getElementById('wkOverlay').classList.remove('open');
-    // Always leave split mode off when fully closing, so the next open starts fullscreen
-    document.getElementById('wkOverlay').classList.remove('wk-split');
-    const btn = document.getElementById('wkSplitBtn');
-    if (btn) btn.textContent = '⇤ Side-by-side';
-}
-// Dock the Workshop to the right edge so the running game stays visible on the
-// left , iterate on art/sfx while it plays. Falls back to fullscreen below 1024px.
-function toggleWorkshopSplit() {
-    const ov  = document.getElementById('wkOverlay');
-    const btn = document.getElementById('wkSplitBtn');
-    if (!ov) return;
-    const on = ov.classList.toggle('wk-split');
-    if (btn) btn.textContent = on ? '⇥ Fullscreen' : '⇤ Side-by-side';
-}
-function switchWorkshopTool(btn) {
-    document.querySelectorAll('.wk-tab').forEach(t => t.classList.remove('on'));
-    btn.classList.add('on');
-    document.getElementById('wkIframe').src = btn.dataset.src;
-}
-function showWorkshopBadge(msg) {
-    const b = document.getElementById('wkBadge');
-    b.textContent = msg;
-    b.classList.add('show');
-    clearTimeout(b._to);
-    b._to = setTimeout(() => b.classList.remove('show'), 5000);
-}
+// Panel control (openWorkshop / closeWorkshop / toggleWorkshopSplit /
+// switchWorkshopTool / showWorkshopBadge) now lives in the shared tool-handoff.js
+// so other tools can drive the same workshop shell. It is exposed on window.
 
 // ── SPRITE EDITOR ─────────────────────────────────────────────────────────────
 const SE_SIZE = 8;  // grid is 8 × 8 cells
