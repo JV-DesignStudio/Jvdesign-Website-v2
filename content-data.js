@@ -1310,6 +1310,66 @@ window.JVDS_CONTENT = {
       "url": "/workshops/gml-cheatsheet.html"
     },
     {
+      "id": "gml-breakout-canvas",
+      "title": "GML Breakout Build Canvas",
+      "desc": "",
+      "engine": "GML/GameMaker",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gml-breakout-canvas.html"
+    },
+    {
+      "id": "gml-platformer-canvas",
+      "title": "GML Platformer Build Canvas",
+      "desc": "",
+      "engine": "GML/GameMaker",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gml-platformer-canvas.html"
+    },
+    {
+      "id": "gml-pong-canvas",
+      "title": "GML Pong Build Canvas",
+      "desc": "",
+      "engine": "GML/GameMaker",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gml-pong-canvas.html"
+    },
+    {
+      "id": "gml-rpg-canvas",
+      "title": "GML RPG Build Canvas",
+      "desc": "",
+      "engine": "GML/GameMaker",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "rpg"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gml-rpg-canvas.html"
+    },
+    {
       "id": "gml_shooter_trainer_project",
       "title": "GML Shooter Trainer",
       "desc": "Write code, move, shoot, survive. A 12-level GML-style coding course with a live top-down shooter. Ages 11+. Free.",
@@ -3350,12 +3410,12 @@ window.JVDS_CONTENT = {
     {
       "id": "lumo-dash",
       "title": "Lumo Dash: Pattern Trail",
-      "tag": "Endless Run · Jumping",
+      "tag": "Pattern Memory · Reflexes",
       "emoji": "🦊",
       "category": "Action",
       "cover": "LumoDashCover.webp",
       "bg": "linear-gradient(135deg,#0f766e,#8b5cf6)",
-      "desc": "Keep Lumo moving through the Glow Garden, jump brambles, collect glowflies and relight three lantern gates before the short run ends.",
+      "desc": "Copy glowing movement patterns across 6 named courses, dodge hazard gates and earn stars with Lumo.",
       "kids": true,
       "age": "Ages 6-10",
       "character": "Lumo",
@@ -3490,12 +3550,12 @@ window.JVDS_CONTENT = {
     {
       "id": "sky-high-friends",
       "title": "Sky High With Friends",
-      "tag": "Multiplayer · Action",
+      "tag": "Solo Climb · Action",
       "emoji": "🎈",
       "category": "Action",
       "cover": "SkyHighCover.webp",
       "bg": "linear-gradient(135deg,#87CEEB,#1a1a2e)",
-      "desc": "Multiplayer sky-high adventure. Bounce, climb and race friends to the top.",
+      "desc": "Solo sky-high climbing. Bounce Squirt the axolotl up the tower, ride gusts, grab coins and beat your best height.",
       "kids": false,
       "age": "Ages 8-14",
       "character": null,
@@ -4269,8 +4329,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-05T15:18:50.997Z",
-    "workshops": 193,
+    "generated": "2026-10-06T15:51:55.737Z",
+    "workshops": 197,
     "games": 41,
     "tools": 37,
     "books": 5,
@@ -4280,7 +4340,7 @@ window.JVDS_CONTENT = {
       "Defold": 6,
       "GDevelop": 6,
       "General": 52,
-      "GML/GameMaker": 6,
+      "GML/GameMaker": 10,
       "Godot": 7,
       "Java": 14,
       "JavaScript": 7,
