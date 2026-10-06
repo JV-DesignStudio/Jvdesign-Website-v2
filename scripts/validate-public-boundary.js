@@ -5,14 +5,27 @@ const fs = require('fs');
 const path = require('path');
 const DRY_RUN = process.argv.includes('--dry-run');
 const root = path.resolve(__dirname, '..');
-const forbidden = ['tools/dev-board.html', 'docs/audits', 'studio-workspace'];
-const docs = path.join(root, 'docs');
-if (fs.existsSync(docs)) {
-  for (const entry of fs.readdirSync(docs)) {
-    if (/^STUDIO_AUDIT.*\.md$/i.test(entry)) forbidden.push('docs/' + entry);
-  }
-}
-const found = forbidden.filter(relative => fs.existsSync(path.join(root, relative)));
+const forbidden = [
+  'tools/dev-board.html',
+  'studio-workspace',
+  'docs',
+  'revenue',
+  'social-posts',
+  'pitch-assets',
+  'quest-board-deploy',
+  'newsletter-queue.json',
+  'audit-rustfall-results.json',
+  'agent-manifest.json',
+];
+const {execFileSync} = require('child_process');
+const found = forbidden.filter(relative => {
+  const full = path.join(root, relative);
+  if (!fs.existsSync(full)) return false;
+  try {
+    const tracked = execFileSync('git', ['-C', root, 'ls-files', relative], {encoding:'utf8'}).trim();
+    return tracked.length > 0;
+  } catch(e) { return false; }
+});
 if (found.length) {
   const msg='Private planning must be moved outside the public site: ' + found.join(', ');
   if(DRY_RUN){ console.log('[dry-run] '+msg); }
@@ -29,7 +42,6 @@ if (privateAtRoot.length) {
 const queueDir = path.join(root, 'social-posts/queue');
 if (fs.existsSync(queueDir)) {
   try {
-    const {execFileSync} = require('child_process');
     const tracked = execFileSync('git', ['-C', root, 'ls-files', 'social-posts/queue/'], {encoding:'utf8'}).trim();
     const leakedDrafts = tracked ? tracked.split('\n').filter(f => f && !f.endsWith('.gitkeep')) : [];
     if (leakedDrafts.length) {
@@ -55,9 +67,9 @@ const leakPatterns = [
   /\.board-token/i,
 ];
 // rel-path scoped: prevents same-basename files in subdirs from inheriting the skip
-const ALLOWED_LEAK_FILES = new Set(['scripts/validate-public-boundary.js', 'scripts/check-dashes.cjs', 'docs/A29_PROVENANCE.md']);
+const ALLOWED_LEAK_FILES = new Set(['scripts/validate-public-boundary.js', 'scripts/check-dashes.cjs']);
 // files where .env / BREVO / ga4-key mention is documentation only - checked by rel path, not basename
-const DOC_LEAK_ALLOW = new Set(['docs/A29_PROVENANCE.md', 'scripts/send-newsletter.js', 'tools/sound-studio.html', 'board-data.json', 'content/stats.json', 'content-data.js', 'pages/dev-board.html', 'dev-board.html', 'devlog-data.js']);
+const DOC_LEAK_ALLOW = new Set(['scripts/send-newsletter.js', 'tools/sound-studio.html', 'board-data.json', 'content/stats.json', 'content-data.js', 'pages/dev-board.html', 'dev-board.html', 'devlog-data.js']);
 const SCAN_EXTS = ['.js','.cjs','.html','.ps1','.md','.json','.txt','.yml','.yaml'];
 const walkForLeaks=(dir,depth=0)=>{
   if(depth>12) return [];
