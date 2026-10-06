@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GML Breakout Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,146,60,.15);color:#fb923c;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GML Breakout Build Canvas <span class="cw-lang-tag">🎯 GML</span></h1>
+  <p>Write GML game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GML Breakout game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A mouse-controlled paddle at the bottom with a ball ready to serve</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GML-to-JS transpiler
+   =================================================== */
+function gmlToJs(code) {
+  return code
+    .replace(/\/\/\/.*/g, '//')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2, Math.min($3, $1))')
+    .replace(/\bchoose\(([^)]+)\)/g, function(_, args) {
+      var items = args.split(',').map(function(s) { return s.trim(); });
+      return '[' + items.join(',') + '][Math.floor(Math.random()*' + items.length + ')]';
+    })
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bsign\(/g, 'Math.sign(')
+    .replace(/\broom_height\b/g, '520')
+    .replace(/\broom_width\b/g, '700')
+    .replace(/\bmouse_x\b/g, 'mouseX')
+    .replace(/\binstance_create_layer\([^)]*\)/g, 'spawnBrick(arguments)')
+    .replace(/\binstance_number\(\w+\)/g, 'bricks.length')
+    .replace(/\binstance_destroy\(\)/g, '/*destroy*/')
+    .replace(/\bhspeed\b/g, 'bvx')
+    .replace(/\bvspeed\b/g, 'bvy')
+    .replace(/\bglobal\.(\w+)/g, '$1')
+    .replace(/\bother\.x\b/g, 'padX')
+    .replace(/\bother\.y\b/g, 'padY')
+    .replace(/\bother\.points\b/g, 'hitPts')
+    .replace(/\bwith\s*\([^)]*\)\s*instance_destroy\(\);?/g, '/*brick removed*/')
+    .replace(/\bimage_blend\b/g, 'color')
+    .replace(/\bpart_\w+\([^)]*\);?/g, '/*particle call*/')
+    .replace(/\bcamera_\w+\([^)]*\);?/g, '/*camera call*/')
+    .replace(/\brandom_range\(([^,]+),\s*([^)]+)\)/g, '($1+Math.random()*($2-$1))')
+    .replace(/\broom_goto\([^)]*\);?/g, '/*room change*/');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (GML Breakout)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f1117;margin:0;overflow:hidden}canvas{display:block;cursor:none}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="700" height="520"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var MOUSE = 'let mouseX=350;canvas.addEventListener("mousemove",function(e){var r=canvas.getBoundingClientRect();mouseX=Math.max(55,Math.min(645,(e.clientX-r.left)*(700/r.width)))});';
+
+var PAD_VARS = 'let padX=350,padY=490;const padW=110,padH=14;';
+
+var BALL_VARS = 'let bx=345,by=470,bs=14,bvx=4,bvy=-4;';
+
+var SCORE_VARS = 'let score=0;';
+
+var LIVES_VARS = 'let lives=3;';
+
+var SHAKE_VARS = 'let shake=0;';
+
+var BRICK_COLORS = 'var BRICK_COLORS=["#ef4444","#f97316","#eab308","#84cc16","#06b6d4"];';
+
+var BRICK_SETUP = BRICK_COLORS +
+  'var bricks=[];' +
+  'for(var r=0;r<5;r++){for(var c=0;c<10;c++){bricks.push({x:c*68+11,y:r*26+50,w:64,h:22,color:BRICK_COLORS[r],pts:(5-r)*10,alive:true})}}';
+
+var PARTICLES = 'var particles=[];function spawnParticles(px,py,col){for(var i=0;i<12;i++){particles.push({x:px,y:py,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6,life:30+Math.random()*15,maxLife:45,size:3+Math.random()*3,color:col})}}';
+
+var MOVE_PAD = 'padX=mouseX;';
+
+var BALL_MOVE = 'bx+=bvx;by+=bvy;';
+
+var WALL_BOUNCE = 'if(bx<=0||bx+bs>=700)bvx=-bvx;if(by<=0)bvy=-bvy;';
+
+var PAD_HIT = 'if(by+bs>=padY&&by+bs<=padY+padH&&bx+bs>=padX-55&&bx<=padX+55&&bvy>0){bvy=-bvy;bvx=(bx+bs/2-padX)/12;if(bvx===0)bvx=1}';
+
+var BRICK_HIT = 'for(var bi=0;bi<bricks.length;bi++){var br=bricks[bi];if(!br.alive)continue;if(bx+bs>br.x&&bx<br.x+br.w&&by+bs>br.y&&by<br.y+br.h){bvy=-bvy;br.alive=false;score+=br.pts;shake=4;spawnParticles(br.x+32,br.y+11,br.color);break}}';
+
+var BALL_LOST = 'if(by>530){lives--;if(lives<=0){gameOver=true}else{bx=345;by=470;bvx=[4,-4][Math.floor(Math.random()*2)];bvy=-4}}';
+
+var DRAW_BG = 'ctx.save();if(shake>0){shake-=0.3;ctx.translate((Math.random()-0.5)*shake*2,(Math.random()-0.5)*shake*2)}ctx.fillStyle="#0f1117";ctx.fillRect(-10,-10,720,540);';
+
+var DRAW_PAD = 'ctx.fillStyle="#fff";ctx.beginPath();ctx.roundRect(padX-55,padY,110,14,7);ctx.fill();';
+
+var DRAW_BALL = 'ctx.fillStyle="#fff";ctx.fillRect(bx,by,bs,bs);';
+
+var DRAW_BRICKS = 'bricks.forEach(function(br){if(!br.alive)return;ctx.fillStyle=br.color;ctx.beginPath();ctx.roundRect(br.x,br.y,br.w,br.h,4);ctx.fill()});';
+
+var DRAW_PARTICLES = 'particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.life--;p.size*=0.97;ctx.globalAlpha=p.life/p.maxLife;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);ctx.globalAlpha=1;return p.life>0});';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,16,30);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillText("Lives: "+lives,684,30);';
+
+var DRAW_END = 'ctx.restore();';
+
+var DRAW_GAMEOVER = 'if(gameOver){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",350,260);ctx.font="18px monospace";ctx.fillText("Score: "+score,350,300)}';
+
+var DRAW_WIN = 'if(bricks.every(function(b){return!b.alive})){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("YOU WIN!",350,260);ctx.font="18px monospace";ctx.fillText("Score: "+score,350,300);gameOver=true}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - GML Breakout steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-gml-breakout-canvas',
+  downloadName: 'my-gml-breakout.html',
+
+  hints: [
+    'Mouse-controlled paddle at the bottom, ball bouncing off three walls',
+    'A colourful 5-row brick wall spawned by nested loops',
+    'Bricks disappear on hit, paddle steers the ball with spin',
+    'Sparks fly from destroyed bricks using the particle system',
+    'The screen shakes on impact and you have three lives',
+    'Clear all bricks to win - the classic arcade loop complete'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + MOUSE + PAD_VARS + BALL_VARS +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'let gameOver=false;' +
+        'function loop(){if(gameOver)return;' +
+        MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT +
+        'if(by>530){bx=345;by=470;bvx=[4,-4][Math.floor(Math.random()*2)];bvy=-4}' +
+        'ctx.fillStyle="#0f1117";ctx.fillRect(0,0,700,520);' +
+        DRAW_PAD + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + MOUSE + PAD_VARS + BALL_VARS + BRICK_COLORS +
+        'var bricks=[];' +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'if(bricks.length===0){for(var r=0;r<5;r++){for(var c=0;c<10;c++){bricks.push({x:c*68+11,y:r*26+50,w:64,h:22,color:BRICK_COLORS[r],pts:(5-r)*10,alive:true})}}}' +
+        'let gameOver=false;' +
+        'function loop(){if(gameOver)return;' +
+        MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT +
+        'if(by>530){bx=345;by=470;bvx=[4,-4][Math.floor(Math.random()*2)];bvy=-4}' +
+        'ctx.fillStyle="#0f1117";ctx.fillRect(0,0,700,520);' +
+        DRAW_BRICKS + DRAW_PAD + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + MOUSE + PAD_VARS + BALL_VARS + SCORE_VARS + BRICK_SETUP +
+        'let gameOver=false,hitPts=0;' +
+        'function loop(){if(gameOver)return;' +
+        MOVE_PAD + BALL_MOVE + WALL_BOUNCE +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        BRICK_HIT + PAD_HIT +
+        'if(by>530){bx=345;by=470;bvx=[4,-4][Math.floor(Math.random()*2)];bvy=-4}' +
+        'ctx.fillStyle="#0f1117";ctx.fillRect(0,0,700,520);' +
+        DRAW_BRICKS + DRAW_PAD + DRAW_BALL + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + MOUSE + PAD_VARS + BALL_VARS + SCORE_VARS + BRICK_SETUP + PARTICLES +
+        'let gameOver=false,hitPts=0;' +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'function loop(){if(gameOver)return;' +
+        MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT + BRICK_HIT +
+        'if(by>530){bx=345;by=470;bvx=[4,-4][Math.floor(Math.random()*2)];bvy=-4}' +
+        'ctx.fillStyle="#0f1117";ctx.fillRect(0,0,700,520);' +
+        DRAW_BRICKS + DRAW_PARTICLES + DRAW_PAD + DRAW_BALL + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + MOUSE + PAD_VARS + BALL_VARS + SCORE_VARS + LIVES_VARS + SHAKE_VARS + BRICK_SETUP + PARTICLES +
+        'let gameOver=false,hitPts=0;' +
+        'function loop(){if(gameOver)return;' +
+        MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT + BRICK_HIT +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        BALL_LOST +
+        DRAW_BG + DRAW_BRICKS + DRAW_PARTICLES + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES + DRAW_END +
+        DRAW_GAMEOVER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + MOUSE + PAD_VARS + BALL_VARS + SCORE_VARS + LIVES_VARS + SHAKE_VARS + BRICK_SETUP + PARTICLES +
+        'let gameOver=false,hitPts=0;' +
+        'function loop(){' +
+        'if(!gameOver){' +
+        MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT + BRICK_HIT + BALL_LOST +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PARTICLES + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES + DRAW_END +
+        DRAW_WIN + DRAW_GAMEOVER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Mouse Paddle & Ball',
+      goal: 'Set up a mouse-controlled paddle and a bouncing ball with wall bounces on three edges.',
+      points: [
+        'spr_paddle is 110x14, spr_ball 14x14, room 700x520 with a dark background',
+        '<code>x = clamp(mouse_x, 55, room_width - 55)</code> centres the paddle on the cursor (origin centred!)',
+        'Ball Create: <code>hspeed = choose(-4, 4); vspeed = -4</code> serves upward randomly',
+        'Wall bounces on left, right and top edges; the bottom is the losing zone'
+      ],
+      challenge: '🎯 Write the paddle Step and ball bounce in GML:',
+      starter: '// obj_paddle Step\nx = clamp(___, 55, room_width - 55);\n\n// obj_ball Step\nif (x < 8 || x > room_width - 8) hspeed = -___;\nif (y < 8) vspeed = -___;',
+      solution: '// obj_paddle Step\nx = clamp(mouse_x, 55, room_width - 55);\n\n// obj_ball Step\nif (x < 8 || x > room_width - 8) hspeed = -hspeed;\nif (y < 8) vspeed = -vspeed;',
+      checks: ['mouse_x', 'clamp', 'hspeed', 'vspeed'],
+      height: 160,
+      fills: {
+        text: 'The built-in variable ___ gives the cursor position. The paddle origin is centred so clamp margins equal half the paddle ___.',
+        answers: ['mouse_x', 'width']
+      },
+      quiz: {
+        question: 'Why must the paddle sprite origin be centred for x = mouse_x to feel right?',
+        options: [
+          'Origins are decorative',
+          'The origin is the point that sits AT x - centred means the paddle centres on the cursor',
+          'GameMaker requires it'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Spawning the Brick Wall',
+      goal: 'Generate a 5x10 coloured brick grid from code using instance_create_layer and image_blend.',
+      points: [
+        'obj_brick: 64x22 sprite. Do NOT hand-place 50 bricks - spawn them with code!',
+        'Nested for loops in obj_game Create call <code>instance_create_layer</code> for each brick',
+        'Colour by row with <code>image_blend</code>: one white sprite, tinted per row - no extra art',
+        'Store points per brick: top rows are worth more'
+      ],
+      challenge: '🎯 Write the brick spawning loop in GML:',
+      starter: 'var colors = [c_red, c_orange, c_yellow, c_lime, c_aqua];\n\nfor (var r = 0; r < ___; r++) {\n    for (var c = 0; c < ___; c++) {\n        var b = instance_create_layer(\n            c * 68 + 44, r * 26 + 60,\n            "Instances", obj_brick);\n        b.image_blend = colors[___];\n    }\n}',
+      solution: 'var colors = [c_red, c_orange, c_yellow, c_lime, c_aqua];\n\nfor (var r = 0; r < 5; r++) {\n    for (var c = 0; c < 10; c++) {\n        var b = instance_create_layer(\n            c * 68 + 44, r * 26 + 60,\n            "Instances", obj_brick);\n        b.image_blend = colors[r];\n    }\n}',
+      checks: ['instance_create_layer', 'image_blend', 'colors'],
+      height: 240,
+      fills: {
+        text: '<code>image_blend</code> lets 5 brick colours come from ___ white sprite. The spawn function is called ___.',
+        answers: ['one', 'instance_create_layer']
+      },
+      quiz: {
+        question: 'image_blend lets 5 brick colours come from...',
+        options: [
+          '5 different sprites',
+          'ONE white sprite tinted at spawn time - less art, instant palette changes',
+          'The room background'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Brick Breaking & Paddle Spin',
+      goal: 'Wire collision events: bricks die on hit, the paddle steers the ball with spin.',
+      points: [
+        'obj_ball + obj_brick collision: flip vspeed, add points, <code>with (other) instance_destroy()</code>',
+        '<code>with</code> runs code AS another instance - the cleanest way to affect what you hit',
+        'obj_ball + obj_paddle collision: bounce up and steer via <code>hspeed = (x - other.x) / 12</code>',
+        'Guard the paddle bounce with <code>vspeed > 0</code> so edge clips cannot double-bounce'
+      ],
+      challenge: '🎯 Write the two collision events in GML:',
+      starter: '/// Collision with obj_brick\nvspeed = -vspeed;\nglobal.score += other.points;\n___ (other) instance_destroy();\n\n/// Collision with obj_paddle\nif (vspeed > 0) {\n    vspeed = -vspeed;\n    hspeed = (x - other.x) / ___;\n}',
+      solution: '/// Collision with obj_brick\nvspeed = -vspeed;\nglobal.score += other.points;\nwith (other) instance_destroy();\n\n/// Collision with obj_paddle\nif (vspeed > 0) {\n    vspeed = -vspeed;\n    hspeed = (x - other.x) / 12;\n}',
+      checks: ['with', 'instance_destroy', 'other', 'vspeed'],
+      height: 220,
+      fills: {
+        text: 'The ___ statement runs code as another instance, here destroying the brick. The paddle bounce guard checks vspeed > ___.',
+        answers: ['with', '0']
+      },
+      quiz: {
+        question: '"with (other) instance_destroy();" destroys...',
+        options: [
+          'The ball',
+          'The brick that was hit - "with" switches who is running this code',
+          'All bricks'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Native Particles',
+      goal: 'Make bricks explode into sparks using GameMaker\'s built-in particle system.',
+      points: [
+        'GameMaker has particles BUILT IN: create a system, define a type, emit bursts',
+        'obj_game Create: <code>part_system_create()</code> + <code>part_type_create()</code> with shape, size, speed, life',
+        'On brick death: <code>part_particles_create(ps, other.x, other.y, spark, 12)</code> - one call, 12 sparks',
+        'Tint the burst to match the brick colour with <code>part_type_color1</code>'
+      ],
+      challenge: '🎯 Write the particle setup and burst call in GML:',
+      starter: 'global.ps = part_system_create();\nglobal.pt_spark = part_type_create();\npart_type_shape(global.pt_spark, pt_shape_square);\npart_type_size(global.pt_spark, 0.08, 0.14, -0.005, 0);\npart_type_life(global.pt_spark, 20, ___);\n\n// on brick death:\npart_particles_create(global.ps, other.x, other.y,\n    global.pt_spark, ___);',
+      solution: 'global.ps = part_system_create();\nglobal.pt_spark = part_type_create();\npart_type_shape(global.pt_spark, pt_shape_square);\npart_type_size(global.pt_spark, 0.08, 0.14, -0.005, 0);\npart_type_life(global.pt_spark, 20, 35);\n\n// on brick death:\npart_particles_create(global.ps, other.x, other.y,\n    global.pt_spark, 12);',
+      checks: ['part_system_create', 'part_type_create', 'part_particles_create'],
+      height: 240,
+      fills: {
+        text: 'GameMaker particles need a particle ___ plus particle types. Spawning a burst uses ___ with a count of 12.',
+        answers: ['system', 'part_particles_create']
+      },
+      quiz: {
+        question: 'The advantage of a defined particle TYPE reused for every burst is...',
+        options: [
+          'Bigger particles',
+          'Configure once, emit thousands cheaply - the engine batches and animates them for you',
+          'It works without a room'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Screen Shake & Lives',
+      goal: 'Add camera shake on brick hits and the three-lives system.',
+      points: [
+        'shake = 4 on brick death; each Step it decays by 0.3 and offsets the camera with <code>random_range</code>',
+        'Shake decaying smoothly creates a punch-then-settle feel, like real impacts',
+        'Ball past bottom: <code>lives--</code>, reset ball to centre; 0 lives triggers game over',
+        'Draw hearts in Draw GUI to show remaining lives'
+      ],
+      challenge: '🎯 Write the shake decay and lives logic in GML:',
+      starter: 'if (shake > 0) {\n    shake -= ___;\n    camera_set_view_pos(cam,\n        base_x + random_range(-shake, shake),\n        base_y + random_range(-shake, ___));\n}\n\n// Ball lost\nif (y > room_height + 10) {\n    ___--;\n}',
+      solution: 'if (shake > 0) {\n    shake -= 0.3;\n    camera_set_view_pos(cam,\n        base_x + random_range(-shake, shake),\n        base_y + random_range(-shake, shake));\n}\n\n// Ball lost\nif (y > room_height + 10) {\n    lives--;\n}',
+      checks: ['shake', 'random_range', 'lives'],
+      height: 240,
+      fills: {
+        text: 'Shake decays by ___ per frame for a smooth settle. The ranged random function is called ___.',
+        answers: ['0.3', 'random_range']
+      },
+      quiz: {
+        question: 'Shake decaying by 0.3/frame (not instantly stopping) makes the effect...',
+        options: [
+          'Longer and floatier',
+          'Snap hard then settle smoothly - a punch followed by recovery, like real impacts',
+          'Random forever'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Win Condition & Polish',
+      goal: 'Detect the cleared wall, add alarms for serve delay, and complete the game loop.',
+      points: [
+        'Win check: <code>if (instance_number(obj_brick) == 0) room_goto(rm_win)</code>',
+        'Serve delay with Alarm events: set <code>alarm[0] = 60</code> in Create (fires in 1 second)',
+        'The Alarm 0 event fires once: <code>hspeed = choose(-4, 4); vspeed = -4</code>',
+        'Speed cap (bvx/bvy clamped to +/-7), sound effects on hits, and the restart loop'
+      ],
+      challenge: '🎯 Write the win check and alarm setup in GML:',
+      starter: 'if (instance_number(___) == 0) {\n    room_goto(rm_win);\n}\n\n/// obj_ball Create:\nhspeed = 0; vspeed = 0;\nalarm[0] = ___;\n\n/// Alarm 0 event:\nhspeed = choose(-4, 4);\nvspeed = ___;',
+      solution: 'if (instance_number(obj_brick) == 0) {\n    room_goto(rm_win);\n}\n\n/// obj_ball Create:\nhspeed = 0; vspeed = 0;\nalarm[0] = 60;\n\n/// Alarm 0 event:\nhspeed = choose(-4, 4);\nvspeed = -4;',
+      checks: ['instance_number', 'alarm', 'choose'],
+      height: 240,
+      fills: {
+        text: 'Counting living instances uses ___. A delayed one-off action uses an ___ event, set in frames.',
+        answers: ['instance_number', 'Alarm']
+      },
+      quiz: {
+        question: 'Alarm events are GameMaker\'s native version of which pattern you built manually elsewhere?',
+        options: [
+          'The game loop',
+          'The frame-countdown timer - set a number, an event fires when it hits zero',
+          'Collision detection'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

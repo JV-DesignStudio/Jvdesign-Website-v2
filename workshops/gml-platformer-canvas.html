@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GML Platformer Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,146,60,.15);color:#fb923c;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GML Platformer Build Canvas <span class="cw-lang-tag">🎯 GML</span></h1>
+  <p>Write GML game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GML Platformer game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">An orange player on green platforms with a dark background</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GML-to-JS transpiler
+   =================================================== */
+function gmlToJs(code) {
+  return code
+    .replace(/\/\/\/.*/g, '//')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\bkeyboard_check\(vk_left\)/gi, 'leftHeld')
+    .replace(/\bkeyboard_check\(vk_right\)/gi, 'rightHeld')
+    .replace(/\bkeyboard_check\(vk_up\)/gi, 'upHeld')
+    .replace(/\bkeyboard_check\(vk_down\)/gi, 'downHeld')
+    .replace(/\bkeyboard_check_pressed\(vk_space\)/gi, 'spacePressed')
+    .replace(/\bkeyboard_check\(ord\("(\w)"\)\)/g, function(_, k) { return k.toLowerCase() + 'Held'; })
+    .replace(/\bplace_meeting\(([^,]+),\s*([^,]+),\s*\w+\)/g, 'placeMeeting($1,$2)')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2, Math.min($3, $1))')
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bsign\(/g, 'Math.sign(')
+    .replace(/\blerp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, '($1+($2-$1)*$3)')
+    .replace(/\broom_height\b/g, '400')
+    .replace(/\broom_width\b/g, '800')
+    .replace(/\bglobal\.(\w+)/g, '$1')
+    .replace(/\binstance_destroy\(\)/g, '/*destroy*/')
+    .replace(/\broom_goto_next\(\)/g, '/*next room*/')
+    .replace(/\broom_goto\([^)]*\)/g, '/*goto room*/');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (GML Platformer)
+   =================================================== */
+
+var CSS_GAME = '<style>body{margin:0;overflow:hidden;background:#1a1a2e}canvas{display:block}</style>';
+var CANVAS_TAG = '<canvas id="game" width="800" height="400"></canvas>';
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var LEVEL = 'var walls=[{x:0,y:368,w:800,h:32},{x:0,y:0,w:800,h:16},{x:0,y:16,w:16,h:384},{x:784,y:16,w:16,h:384},' +
+  '{x:120,y:300,w:120,h:16},{x:300,y:240,w:120,h:16},{x:500,y:280,w:140,h:16},{x:660,y:200,w:120,h:16},' +
+  '{x:200,y:170,w:100,h:16}];' +
+  'var coins=[{x:160,y:270,r:8},{x:340,y:210,r:8},{x:550,y:250,r:8},{x:700,y:170,r:8},{x:240,y:140,r:8}];' +
+  'var spikes=[{x:420,y:352,w:40,h:16}];' +
+  'var flag={x:730,y:168,w:16,h:32};';
+
+var PLAYER_VARS = 'var px=60,py=340,pw=32,ph=48,hsp=0,vsp=0,moveSpeed=4,jumpForce=-11,grav=0.5,coyote=0,buffer=0,coinCount=0,spawnX=60,spawnY=340;';
+
+var KEYS = 'var leftHeld=false,rightHeld=false,spacePressed=false,spaceJustPressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="Space"){spacePressed=true;spaceJustPressed=true}' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="Space")spacePressed=false});';
+
+var PLACE_MEETING = 'function placeMeeting(tx,ty){for(var i=0;i<walls.length;i++){var w=walls[i];if(tx+pw/2>w.x&&tx-pw/2<w.x+w.w&&ty+ph/2>w.y&&ty-ph/2<w.y+w.h)return true}return false}';
+
+var PHYSICS_H = 'if(placeMeeting(px+hsp,py)){while(!placeMeeting(px+Math.sign(hsp),py))px+=Math.sign(hsp);hsp=0}px+=hsp;';
+var PHYSICS_V = 'if(placeMeeting(px,py+vsp)){while(!placeMeeting(px,py+Math.sign(vsp)))py+=Math.sign(vsp);vsp=0}py+=vsp;';
+
+var COIN_CHECK = 'for(var ci=coins.length-1;ci>=0;ci--){var c=coins[ci];if(Math.abs(px-c.x)<20&&Math.abs(py-c.y)<20){coins.splice(ci,1);coinCount++}}';
+var SPIKE_CHECK = 'for(var si=0;si<spikes.length;si++){var s=spikes[si];if(px+pw/2>s.x&&px-pw/2<s.x+s.w&&py+ph/2>s.y&&py-ph/2<s.y+s.h){px=spawnX;py=spawnY;vsp=0}}';
+var FLAG_CHECK = 'if(px+pw/2>flag.x&&px-pw/2<flag.x+flag.w&&py+ph/2>flag.y&&py-ph/2<flag.y+flag.h){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("LEVEL COMPLETE!",400,200);ctx.font="16px monospace";ctx.fillText("Coins: "+coinCount+"/"+5,400,240);return}';
+
+var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,800,400);';
+var DRAW_WALLS = 'ctx.fillStyle="#22c55e";walls.forEach(function(w){ctx.fillRect(w.x,w.y,w.w,w.h)});';
+var DRAW_COINS = 'ctx.fillStyle="#fbbf24";coins.forEach(function(c){ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill()});';
+var DRAW_SPIKES = 'ctx.fillStyle="#ef4444";spikes.forEach(function(s){ctx.beginPath();for(var i=0;i<s.w;i+=10){ctx.moveTo(s.x+i,s.y+s.h);ctx.lineTo(s.x+i+5,s.y);ctx.lineTo(s.x+i+10,s.y+s.h)}ctx.fill()});';
+var DRAW_FLAG = 'ctx.fillStyle="#60a5fa";ctx.fillRect(flag.x,flag.y,flag.w,flag.h);ctx.fillStyle="#fff";ctx.fillRect(flag.x,flag.y,12,8);';
+var DRAW_PLAYER = 'ctx.fillStyle="#fb923c";ctx.fillRect(px-pw/2,py-ph/2,pw,ph);';
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Coins: "+coinCount,20,36);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - GML Platformer steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-gml-platformer-canvas',
+  downloadName: 'my-gml-platformer.html',
+
+  hints: [
+    'Orange player and green platforms in a dark room',
+    'The player walks left and right and slides flush against walls',
+    'Jump with coyote time - even late jumps work!',
+    'The camera smoothly follows the player through a wider level',
+    'Gold coins to collect and red spikes to avoid',
+    'Reach the blue flag to complete the level'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'hsp=0;vsp=0;' +
+        DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
+        'function loop(){' +
+        'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
+        'vsp+=grav;' +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        PHYSICS_H + PHYSICS_V +
+        DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
+        'function loop(){' +
+        'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
+        'vsp+=grav;' +
+        'var onGround=placeMeeting(px,py+1);' +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        PHYSICS_H + PHYSICS_V +
+        'spaceJustPressed=false;' +
+        DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
+        'var camX=0;' +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
+        'vsp+=grav;' +
+        'var onGround=placeMeeting(px,py+1);' +
+        'if(onGround)coyote=6;else coyote--;' +
+        'if(spaceJustPressed)buffer=6;else buffer--;' +
+        'if(buffer>0&&coyote>0){vsp=jumpForce;coyote=0;buffer=0}' +
+        PHYSICS_H + PHYSICS_V +
+        'spaceJustPressed=false;' +
+        'var target=Math.max(0,Math.min(0,px-400));' +
+        'camX+=(target-camX)*0.1;' +
+        'ctx.save();ctx.translate(-camX,0);' +
+        DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
+        'ctx.restore();' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
+        'function loop(){' +
+        'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
+        'vsp+=grav;' +
+        'var onGround=placeMeeting(px,py+1);' +
+        'if(onGround)coyote=6;else coyote--;' +
+        'if(spaceJustPressed)buffer=6;else buffer--;' +
+        'if(buffer>0&&coyote>0){vsp=jumpForce;coyote=0;buffer=0}' +
+        PHYSICS_H + PHYSICS_V +
+        'spaceJustPressed=false;' +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        COIN_CHECK + SPIKE_CHECK +
+        DRAW_BG + DRAW_WALLS + DRAW_COINS + DRAW_SPIKES + DRAW_PLAYER + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
+        'var won=false;' +
+        'function loop(){' +
+        'if(won){' + DRAW_BG + DRAW_WALLS + DRAW_COINS + DRAW_FLAG + DRAW_PLAYER + DRAW_HUD +
+        'ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("LEVEL COMPLETE!",400,180);ctx.font="16px monospace";ctx.fillText("Coins: "+coinCount+" / 5",400,220);' +
+        'requestAnimationFrame(loop);return}' +
+        'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
+        'vsp+=grav;' +
+        'var onGround=placeMeeting(px,py+1);' +
+        'if(onGround)coyote=6;else coyote--;' +
+        'if(spaceJustPressed)buffer=6;else buffer--;' +
+        'if(buffer>0&&coyote>0){vsp=jumpForce;coyote=0;buffer=0}' +
+        PHYSICS_H + PHYSICS_V +
+        'spaceJustPressed=false;' +
+        COIN_CHECK + SPIKE_CHECK +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'if(px+pw/2>flag.x&&px-pw/2<flag.x+flag.w&&py+ph/2>flag.y&&py-ph/2<flag.y+flag.h)won=true;' +
+        DRAW_BG + DRAW_WALLS + DRAW_COINS + DRAW_SPIKES + DRAW_FLAG + DRAW_PLAYER + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Player, Wall & the Grid',
+      goal: 'Set up the player and wall objects, lay out a room with platforms, and declare the movement variables.',
+      points: [
+        'Sprites: spr_player (32x48, orange), spr_wall (32x32, green). Set player origin to Middle Centre',
+        'Room: dark background, a floor, and several ledges painted from obj_wall instances',
+        'obj_player Create: <code>move_speed, jump_force, grav, vsp, hsp</code> - foundations before motion',
+        'We use our OWN hsp/vsp instead of built-in hspeed/vspeed so we can test collisions BEFORE moving'
+      ],
+      challenge: '🎯 Write the player Create event variables in GML:',
+      starter: 'move_speed = ___;\njump_force  = -11;\ngrav        = ___;\nvsp = 0;\nhsp = 0;',
+      solution: 'move_speed = 4;\njump_force  = -11;\ngrav        = 0.5;\nvsp = 0;\nhsp = 0;',
+      checks: ['move_speed', 'jump_force', 'grav', 'vsp', 'hsp'],
+      height: 140,
+      fills: {
+        text: 'Solid level pieces are instances of obj____. The sprite ___ is set to Middle Centre for simpler collision maths.',
+        answers: ['wall', 'origin']
+      },
+      quiz: {
+        question: 'Why use our OWN hsp/vsp instead of built-in hspeed/vspeed?',
+        options: [
+          'The built-ins are broken',
+          'We need to test collisions BEFORE applying movement - manual variables give us that control',
+          'They are faster to type'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'place_meeting Movement',
+      goal: 'Implement collision-safe horizontal and vertical movement - the most famous 10 lines in GameMaker.',
+      points: [
+        '<code>place_meeting(x, y, obj)</code>: "if I stood at this position, would I overlap that object?" - collision BEFORE moving',
+        'Horizontal: compute hsp from input; if ahead is blocked, inch pixel-by-pixel then zero the speed',
+        'Vertical: add gravity to vsp first, then the same place_meeting pattern',
+        'This exact Step code is in thousands of shipped games - learn it by heart'
+      ],
+      challenge: '🎯 Write the horizontal collision block in GML:',
+      starter: 'if (place_meeting(x + hsp, y, obj_wall)) {\n    while (!place_meeting(x + ___(hsp), y, obj_wall))\n        x += sign(hsp);\n    hsp = ___;\n}\nx += hsp;',
+      solution: 'if (place_meeting(x + hsp, y, obj_wall)) {\n    while (!place_meeting(x + sign(hsp), y, obj_wall))\n        x += sign(hsp);\n    hsp = 0;\n}\nx += hsp;',
+      checks: ['place_meeting', 'sign', 'hsp'],
+      height: 180,
+      fills: {
+        text: 'The while-loop inches toward the wall giving ___-perfect landing. The function ___ returns -1, 0 or 1 for the movement direction.',
+        answers: ['pixel', 'sign']
+      },
+      quiz: {
+        question: 'The while-loop that inches toward the wall gives you...',
+        options: [
+          'Slower movement',
+          'Pixel-perfect landing flush against walls - no gaps, no overlaps, at any speed',
+          'Wall destruction'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Jumping & Coyote Time',
+      goal: 'Add jumping with coyote time and jump buffering - the pro-level polish that makes jumps feel psychic.',
+      points: [
+        'Grounded test: <code>place_meeting(x, y + 1, obj_wall)</code> - is there floor one pixel below?',
+        'Coyote time: reset to 6 when grounded, count down in air; jump allowed while > 0 (0.1s forgiveness)',
+        'Jump buffering: remember a space press for 6 frames so pressing JUST before landing still fires',
+        'Both timers together = jumps that feel psychic, the same window you built in other engines'
+      ],
+      challenge: '🎯 Write the coyote time and jump logic in GML:',
+      starter: 'var on_ground = place_meeting(x, y + 1, obj_wall);\nif (on_ground) coyote = ___; else coyote--;\n\nif (keyboard_check_pressed(vk_space)) buffer = ___; else buffer--;\n\nif (buffer > 0 && coyote > 0) {\n    vsp = ___;\n    coyote = 0;\n    buffer = 0;\n}',
+      solution: 'var on_ground = place_meeting(x, y + 1, obj_wall);\nif (on_ground) coyote = 6; else coyote--;\n\nif (keyboard_check_pressed(vk_space)) buffer = 6; else buffer--;\n\nif (buffer > 0 && coyote > 0) {\n    vsp = jump_force;\n    coyote = 0;\n    buffer = 0;\n}',
+      checks: ['place_meeting', 'coyote', 'buffer', 'jump_force'],
+      height: 220,
+      fills: {
+        text: 'The grounded check looks one pixel ___ the player. Coyote time forgives ___ jumps; jump buffering forgives early ones.',
+        answers: ['below', 'late']
+      },
+      quiz: {
+        question: 'Jump buffering handles the case where the player presses jump...',
+        options: [
+          'Twice quickly',
+          'Slightly BEFORE landing - the press is remembered and fires on touchdown instead of being eaten',
+          'While paused'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Camera & A Bigger World',
+      goal: 'Expand the room and add a smooth-follow camera using lerp.',
+      points: [
+        'Resize the room to 2400x500 and build a longer level with more platforms',
+        'Enable Viewport 0 in Room editor, camera 800x500',
+        '<code>lerp(a, b, 0.1)</code> moves a tenth of the way per frame - smooth chase, no snapping',
+        'Clamp the target inside the room so the camera never shows void'
+      ],
+      challenge: '🎯 Write the smooth-follow camera in GML:',
+      starter: 'var cam = view_camera[0];\nvar cx = camera_get_view_x(cam);\nvar target = clamp(obj_player.x - ___, 0, room_width - 800);\ncamera_set_view_pos(cam, ___(cx, target, 0.1),\n    camera_get_view_y(cam));',
+      solution: 'var cam = view_camera[0];\nvar cx = camera_get_view_x(cam);\nvar target = clamp(obj_player.x - 400, 0, room_width - 800);\ncamera_set_view_pos(cam, lerp(cx, target, 0.1),\n    camera_get_view_y(cam));',
+      checks: ['clamp', 'lerp', 'camera'],
+      height: 180,
+      fills: {
+        text: 'lerp moves a ___ of the remaining distance each frame. The camera target is clamped to keep it inside the ___.',
+        answers: ['fraction', 'room']
+      },
+      quiz: {
+        question: 'lerp(cx, target, 0.1) each frame produces...',
+        options: [
+          'Instant snapping',
+          'An easing chase - fast when far, gentle when close, like a cameraman',
+          'A shaking camera'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Coins, Spikes & Respawn',
+      goal: 'Add collectable coins and deadly spikes with a respawn point.',
+      points: [
+        'obj_coin collision with player: <code>instance_destroy()</code> and <code>global.coins++</code> - pickups in two lines',
+        'obj_spike collision: move the player back to global respawn coordinates and zero vsp',
+        'Inside spike collision, <code>other</code> is the player - the event belongs to the spike',
+        'What took loops and lists in Python is one visual event here - engines trade control for speed'
+      ],
+      challenge: '🎯 Write the coin and spike collision events in GML:',
+      starter: '/// obj_coin Collision with obj_player\nglobal.coins += 1;\n___();\n\n/// obj_spike Collision with obj_player\nother.x = global.rx;\nother.y = global.ry;\nother.___ = 0;',
+      solution: '/// obj_coin Collision with obj_player\nglobal.coins += 1;\ninstance_destroy();\n\n/// obj_spike Collision with obj_player\nother.x = global.rx;\nother.y = global.ry;\nother.vsp = 0;',
+      checks: ['instance_destroy', 'global', 'other'],
+      height: 180,
+      fills: {
+        text: 'A pickup deletes itself with ___. Inside the spike collision event, ___ refers to the player who touched it.',
+        answers: ['instance_destroy', 'other']
+      },
+      quiz: {
+        question: 'In obj_spike\'s collision event, why is the player "other"?',
+        options: [
+          'Players are always other',
+          'The event belongs to the spike - self is the spike, other is whoever collided with it',
+          'A GML quirk'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'The Goal & Multiple Rooms',
+      goal: 'Add a goal flag that advances to the next room, completing the game loop.',
+      points: [
+        'obj_flag collision with player: <code>room_goto_next()</code> - GameMaker rooms ARE your level system',
+        'Build rm_level2 by copying and redesigning. Room order in the asset browser IS the level order',
+        'Last room: rm_win with victory text, coin count, R to restart via <code>room_goto(rm_level1)</code>',
+        'Set respawn per room in a Room Start event so spawn points follow the level'
+      ],
+      challenge: '🎯 Write the flag collision and room flow in GML:',
+      starter: '/// obj_flag Collision with obj_player\nif (room != room_last) {\n    ___();\n} else {\n    room_goto(___);\n}',
+      solution: '/// obj_flag Collision with obj_player\nif (room != room_last) {\n    room_goto_next();\n} else {\n    room_goto(rm_win);\n}',
+      checks: ['room_goto', 'room_last'],
+      height: 160,
+      fills: {
+        text: 'Advancing a level is one call: ___. The room order in the asset ___ defines the level order.',
+        answers: ['room_goto_next', 'browser']
+      },
+      quiz: {
+        question: 'GameMaker rooms map naturally onto...',
+        options: [
+          'Save files',
+          'Levels/screens - the engine gives you a level system for free where other tools needed load functions',
+          'Sprites'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

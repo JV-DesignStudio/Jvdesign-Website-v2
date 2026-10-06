@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GML RPG Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,146,60,.15);color:#fb923c;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GML RPG Build Canvas <span class="cw-lang-tag">🎯 GML</span></h1>
+  <p>Write GML game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GML RPG game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A top-down RPG with 8-way movement, NPCs, and enemies</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GML-to-JS transpiler (RPG edition)
+   =================================================== */
+function gmlToJs(code) {
+  return code
+    .replace(/\/\/\/.*/g, '//')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\bkeyboard_check\(vk_left\)/gi, 'leftHeld')
+    .replace(/\bkeyboard_check\(vk_right\)/gi, 'rightHeld')
+    .replace(/\bkeyboard_check\(vk_up\)/gi, 'upHeld')
+    .replace(/\bkeyboard_check\(vk_down\)/gi, 'downHeld')
+    .replace(/\bkeyboard_check_pressed\(vk_space\)/gi, 'spacePressed')
+    .replace(/\bkeyboard_check_pressed\(ord\("(\w)"\)\)/g, function(_, k) { return k.toLowerCase() + 'Pressed'; })
+    .replace(/\bkeyboard_check\(ord\("(\w)"\)\)/g, function(_, k) { return k.toLowerCase() + 'Held'; })
+    .replace(/\bpoint_distance\(([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/g,
+      'Math.sqrt(($3-$1)*($3-$1)+($4-$2)*($4-$2))')
+    .replace(/\bpoint_direction\(([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/g,
+      'Math.atan2(-($4-$2),$3-$1)')
+    .replace(/\blengthdir_x\(([^,]+),\s*([^)]+)\)/g, '($1*Math.cos($2))')
+    .replace(/\blengthdir_y\(([^,]+),\s*([^)]+)\)/g, '(-$1*Math.sin($2))')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2, Math.min($3, $1))')
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bsign\(/g, 'Math.sign(')
+    .replace(/\blerp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, '($1+($2-$1)*$3)')
+    .replace(/\bstring\(/g, 'String(')
+    .replace(/\bjson_stringify\(/g, 'JSON.stringify(')
+    .replace(/\bjson_parse\(/g, 'JSON.parse(')
+    .replace(/\broom_height\b/g, '480')
+    .replace(/\broom_width\b/g, '640')
+    .replace(/\bglobal\.(\w+)/g, '$1')
+    .replace(/\binstance_destroy\(\)/g, '/*destroy*/')
+    .replace(/\broom_goto\([^)]*\)/g, '/*goto room*/')
+    .replace(/\broom_goto_next\(\)/g, '/*next room*/');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (top-down RPG)
+   =================================================== */
+
+var CSS_GAME = '<style>body{margin:0;overflow:hidden;background:#1a1a2e}canvas{display:block}</style>';
+var CANVAS_TAG = '<canvas id="game" width="640" height="480"></canvas>';
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var KEYS = 'var leftHeld=false,rightHeld=false,upHeld=false,downHeld=false,spacePressed=false,zHeld=false,zPressed=false,rPressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'if(e.code==="Space")spacePressed=true;' +
+    'if(e.code==="KeyZ"){zHeld=true;zPressed=true}' +
+    'if(e.code==="KeyR")rPressed=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false;' +
+    'if(e.code==="KeyZ")zHeld=false});';
+
+var PLAYER_VARS = 'var px=320,py=380,pw=28,ph=28,spd=3,facing="down",hp=3,maxHp=3,iframes=0,attackTimer=0;';
+
+var NPC = 'var npcs=[{x:300,y:160,w:28,h:28,msg:"The forest to the north is dangerous. Take this sword!",color:"#60a5fa"},' +
+  '{x:500,y:300,w:28,h:28,msg:"Press Z to attack nearby enemies!",color:"#a78bfa"}];';
+
+var ENEMIES = 'var enemies=[{x:200,y:100,w:28,h:28,hp:2,spd:1,state:"idle",timer:60,color:"#ef4444"},' +
+  '{x:450,y:80,w:28,h:28,hp:2,spd:1,state:"idle",timer:90,color:"#ef4444"},' +
+  '{x:100,y:200,w:28,h:28,hp:2,spd:1.2,state:"idle",timer:40,color:"#f97316"}];';
+
+var WALLS = 'var walls=[{x:0,y:0,w:640,h:16},{x:0,y:464,w:640,h:16},{x:0,y:0,w:16,h:480},{x:624,y:0,w:16,h:480},' +
+  '{x:100,y:240,w:80,h:16},{x:400,y:200,w:16,h:80},{x:250,y:380,w:120,h:16}];';
+
+var TILES_BG = 'ctx.fillStyle="#2d5a27";ctx.fillRect(0,0,640,480);' +
+  'ctx.fillStyle="#234d1e";for(var tx=0;tx<640;tx+=32)for(var ty=0;ty<480;ty+=32){if((tx+ty)%64===0)ctx.fillRect(tx,ty,32,32)}';
+
+var DRAW_WALLS = 'ctx.fillStyle="#5c4033";walls.forEach(function(w){ctx.fillRect(w.x,w.y,w.w,w.h)});';
+var DRAW_PLAYER = 'if(iframes>0&&Math.floor(iframes/3)%2===0){}else{ctx.fillStyle="#fb923c";ctx.fillRect(px-pw/2,py-ph/2,pw,ph);' +
+  'ctx.fillStyle="#fff";var ex=facing==="left"?-5:facing==="right"?5:0,ey=facing==="up"?-5:facing==="down"?5:0;' +
+  'ctx.fillRect(px+ex-2,py+ey-2,4,4)}';
+var DRAW_NPCS = 'npcs.forEach(function(n){ctx.fillStyle=n.color;ctx.fillRect(n.x-n.w/2,n.y-n.h/2,n.w,n.h);' +
+  'ctx.fillStyle="#fff";ctx.font="bold 10px monospace";ctx.textAlign="center";ctx.fillText("?",n.x,n.y-18)});';
+var DRAW_ENEMIES = 'enemies.forEach(function(e){ctx.fillStyle=e.color;ctx.fillRect(e.x-e.w/2,e.y-e.h/2,e.w,e.h);' +
+  'ctx.fillStyle="#222";ctx.fillRect(e.x-3,e.y-3,6,6);' +
+  'ctx.fillStyle="#ef4444";for(var i=0;i<e.hp;i++){ctx.fillRect(e.x-8+i*10,e.y-e.h/2-6,8,3)}});';
+
+var DRAW_HEARTS = 'for(var hi=0;hi<maxHp;hi++){ctx.fillStyle=hi<hp?"#ef4444":"#333";ctx.fillRect(20+hi*24,20,18,16)}';
+var DRAW_ATTACK = 'if(attackTimer>0){var ax=px,ay=py;if(facing==="up")ay-=30;if(facing==="down")ay+=30;if(facing==="left")ax-=30;if(facing==="right")ax+=30;' +
+  'ctx.strokeStyle="#fbbf24";ctx.lineWidth=3;ctx.beginPath();ctx.arc(ax,ay,16,0,Math.PI*2);ctx.stroke()}';
+
+var WALL_COLLIDE = 'function wallCollide(tx,ty){for(var i=0;i<walls.length;i++){var w=walls[i];if(tx+pw/2>w.x&&tx-pw/2<w.x+w.w&&ty+ph/2>w.y&&ty-ph/2<w.y+w.h)return true}return false}';
+
+var DIALOGUE = 'var dlgText="",dlgTimer=0,dlgChar=0,dlgFull="";' +
+  'function startDialogue(msg){dlgFull=msg;dlgText="";dlgChar=0;dlgTimer=120}' +
+  'function updateDialogue(){if(dlgTimer>0){dlgTimer--;if(dlgChar<dlgFull.length){dlgText+=dlgFull[dlgChar];dlgChar++}}}' +
+  'function drawDialogue(){if(dlgTimer>0){ctx.fillStyle="rgba(0,0,0,0.85)";ctx.fillRect(40,380,560,80);ctx.strokeStyle="#fbbf24";ctx.lineWidth=2;ctx.strokeRect(40,380,560,80);' +
+  'ctx.fillStyle="#fff";ctx.font="14px monospace";ctx.textAlign="left";ctx.fillText(dlgText,60,420)}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - GML RPG steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-gml-rpg-canvas',
+  downloadName: 'my-gml-rpg.html',
+
+  hints: [
+    'A top-down green world with an orange hero and walls',
+    'NPCs with chat bubbles and a typewriter dialogue box',
+    'Red enemies patrol, then chase when you get close',
+    'Hearts, i-frames, and a Z-key sword slash',
+    'Walls divide the world and a warp leads to a new area',
+    'Save and load with JSON serialisation'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + KEYS + PLAYER_VARS + WALLS + WALL_COLLIDE +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
+        'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
+        'var nx=px+mx*spd,ny=py+my*spd;' +
+        'if(!wallCollide(nx,py))px=nx;if(!wallCollide(px,ny))py=ny;' +
+        'if(mx<0)facing="left";if(mx>0)facing="right";if(my<0)facing="up";if(my>0)facing="down";' +
+        TILES_BG + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + WALL_COLLIDE + DIALOGUE +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
+        'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
+        'var nx=px+mx*spd,ny=py+my*spd;' +
+        'if(!wallCollide(nx,py))px=nx;if(!wallCollide(px,ny))py=ny;' +
+        'if(mx<0)facing="left";if(mx>0)facing="right";if(my<0)facing="up";if(my>0)facing="down";' +
+        'if(spacePressed){for(var ni=0;ni<npcs.length;ni++){var n=npcs[ni];if(Math.abs(px-n.x)<40&&Math.abs(py-n.y)<40){startDialogue(n.msg)}}}' +
+        'updateDialogue();spacePressed=false;' +
+        TILES_BG + DRAW_WALLS + DRAW_NPCS + DRAW_PLAYER + 'drawDialogue();' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
+        'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
+        'var nx=px+mx*spd,ny=py+my*spd;' +
+        'if(!wallCollide(nx,py))px=nx;if(!wallCollide(px,ny))py=ny;' +
+        'if(mx<0)facing="left";if(mx>0)facing="right";if(my<0)facing="up";if(my>0)facing="down";' +
+        'enemies.forEach(function(e){var dist=Math.sqrt((px-e.x)*(px-e.x)+(py-e.y)*(py-e.y));' +
+        'if(e.state==="idle"){e.timer--;if(e.timer<=0){e.timer=60+Math.random()*60;e.state="wander";e.wx=e.x+(Math.random()-0.5)*80;e.wy=e.y+(Math.random()-0.5)*80}' +
+        'if(dist<120)e.state="chase"}' +
+        'else if(e.state==="wander"){var dx=e.wx-e.x,dy=e.wy-e.y,d=Math.sqrt(dx*dx+dy*dy);if(d>2){e.x+=dx/d*e.spd*0.5;e.y+=dy/d*e.spd*0.5}else e.state="idle";' +
+        'if(dist<120)e.state="chase"}' +
+        'else if(e.state==="chase"){var dx=px-e.x,dy=py-e.y,d=Math.sqrt(dx*dx+dy*dy);if(d>2){e.x+=dx/d*e.spd;e.y+=dy/d*e.spd}' +
+        'if(dist>200)e.state="idle"}});' +
+        'if(spacePressed){for(var ni=0;ni<npcs.length;ni++){var n=npcs[ni];if(Math.abs(px-n.x)<40&&Math.abs(py-n.y)<40){startDialogue(n.msg)}}}' +
+        'updateDialogue();spacePressed=false;' +
+        TILES_BG + DRAW_WALLS + DRAW_NPCS + DRAW_ENEMIES + DRAW_PLAYER + 'drawDialogue();' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
+        'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
+        'var nx=px+mx*spd,ny=py+my*spd;' +
+        'if(!wallCollide(nx,py))px=nx;if(!wallCollide(px,ny))py=ny;' +
+        'if(mx<0)facing="left";if(mx>0)facing="right";if(my<0)facing="up";if(my>0)facing="down";' +
+        'if(iframes>0)iframes--;' +
+        'if(attackTimer>0)attackTimer--;' +
+        'if(zPressed&&attackTimer<=0){attackTimer=15;' +
+        'var ax=px,ay=py;if(facing==="up")ay-=30;if(facing==="down")ay+=30;if(facing==="left")ax-=30;if(facing==="right")ax+=30;' +
+        'for(var ei=enemies.length-1;ei>=0;ei--){var e=enemies[ei];if(Math.abs(ax-e.x)<24&&Math.abs(ay-e.y)<24){e.hp--;if(e.hp<=0)enemies.splice(ei,1)}}}' +
+        'enemies.forEach(function(e){var dist=Math.sqrt((px-e.x)*(px-e.x)+(py-e.y)*(py-e.y));' +
+        'if(e.state==="idle"){e.timer--;if(e.timer<=0){e.timer=60+Math.random()*60;e.state="wander";e.wx=e.x+(Math.random()-0.5)*80;e.wy=e.y+(Math.random()-0.5)*80}' +
+        'if(dist<120)e.state="chase"}' +
+        'else if(e.state==="wander"){var dx=e.wx-e.x,dy=e.wy-e.y,d=Math.sqrt(dx*dx+dy*dy);if(d>2){e.x+=dx/d*e.spd*0.5;e.y+=dy/d*e.spd*0.5}else e.state="idle";' +
+        'if(dist<120)e.state="chase"}' +
+        'else if(e.state==="chase"){var dx=px-e.x,dy=py-e.y,d=Math.sqrt(dx*dx+dy*dy);if(d>2){e.x+=dx/d*e.spd;e.y+=dy/d*e.spd}' +
+        'if(dist<20&&iframes<=0){hp--;iframes=45;if(hp<=0){px=320;py=380;hp=maxHp}}' +
+        'if(dist>200)e.state="idle"}});' +
+        'if(spacePressed){for(var ni=0;ni<npcs.length;ni++){var n=npcs[ni];if(Math.abs(px-n.x)<40&&Math.abs(py-n.y)<40){startDialogue(n.msg)}}}' +
+        'updateDialogue();spacePressed=false;zPressed=false;' +
+        TILES_BG + DRAW_WALLS + DRAW_NPCS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATTACK + DRAW_HEARTS + 'drawDialogue();' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE +
+        'var warp={x:600,y:240,w:24,h:40,targetX:40,targetY:240,room:2,color:"#a855f7"};var currentRoom=1;' +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
+        'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
+        'var nx=px+mx*spd,ny=py+my*spd;' +
+        'if(!wallCollide(nx,py))px=nx;if(!wallCollide(px,ny))py=ny;' +
+        'if(mx<0)facing="left";if(mx>0)facing="right";if(my<0)facing="up";if(my>0)facing="down";' +
+        'if(iframes>0)iframes--;' +
+        'if(attackTimer>0)attackTimer--;' +
+        'if(zPressed&&attackTimer<=0){attackTimer=15;' +
+        'var ax=px,ay=py;if(facing==="up")ay-=30;if(facing==="down")ay+=30;if(facing==="left")ax-=30;if(facing==="right")ax+=30;' +
+        'for(var ei=enemies.length-1;ei>=0;ei--){var e=enemies[ei];if(Math.abs(ax-e.x)<24&&Math.abs(ay-e.y)<24){e.hp--;if(e.hp<=0)enemies.splice(ei,1)}}}' +
+        'enemies.forEach(function(e){var dist=Math.sqrt((px-e.x)*(px-e.x)+(py-e.y)*(py-e.y));' +
+        'if(e.state==="idle"){e.timer--;if(e.timer<=0){e.timer=60+Math.random()*60;e.state="wander";e.wx=e.x+(Math.random()-0.5)*80;e.wy=e.y+(Math.random()-0.5)*80}' +
+        'if(dist<120)e.state="chase"}' +
+        'else if(e.state==="wander"){var dx=e.wx-e.x,dy=e.wy-e.y,d=Math.sqrt(dx*dx+dy*dy);if(d>2){e.x+=dx/d*e.spd*0.5;e.y+=dy/d*e.spd*0.5}else e.state="idle";' +
+        'if(dist<120)e.state="chase"}' +
+        'else if(e.state==="chase"){var dx=px-e.x,dy=py-e.y,d=Math.sqrt(dx*dx+dy*dy);if(d>2){e.x+=dx/d*e.spd;e.y+=dy/d*e.spd}' +
+        'if(dist<20&&iframes<=0){hp--;iframes=45;if(hp<=0){px=320;py=380;hp=maxHp}}' +
+        'if(dist>200)e.state="idle"}});' +
+        'if(Math.abs(px-warp.x)<20&&Math.abs(py-warp.y)<20){px=warp.targetX;py=warp.targetY;currentRoom=warp.room}' +
+        'if(spacePressed){for(var ni=0;ni<npcs.length;ni++){var n=npcs[ni];if(Math.abs(px-n.x)<40&&Math.abs(py-n.y)<40){startDialogue(n.msg)}}}' +
+        'updateDialogue();spacePressed=false;zPressed=false;' +
+        TILES_BG + DRAW_WALLS +
+        'ctx.fillStyle=warp.color;ctx.fillRect(warp.x-warp.w/2,warp.y-warp.h/2,warp.w,warp.h);ctx.fillStyle="#fff";ctx.font="10px monospace";ctx.textAlign="center";ctx.fillText(">>",warp.x,warp.y+4);' +
+        DRAW_NPCS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATTACK + DRAW_HEARTS +
+        'ctx.fillStyle="#fff";ctx.font="12px monospace";ctx.textAlign="right";ctx.fillText("Room "+currentRoom,620,36);' +
+        'drawDialogue();' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE +
+        'var warp={x:600,y:240,w:24,h:40,targetX:40,targetY:240,room:2,color:"#a855f7"};var currentRoom=1;' +
+        'var saveData=null;' +
+        'try{' + gmlToJs(u) + '}catch(e){}' +
+        'function doSave(){saveData=JSON.stringify({px:px,py:py,hp:hp,room:currentRoom});' +
+        'try{localStorage.setItem("rpg_save",saveData)}catch(e){}startDialogue("Game saved!")}' +
+        'function doLoad(){try{var s=localStorage.getItem("rpg_save");if(s){var d=JSON.parse(s);px=d.px;py=d.py;hp=d.hp;currentRoom=d.room;startDialogue("Game loaded!")}}catch(e){}}' +
+        'function loop(){' +
+        'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
+        'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
+        'var nx=px+mx*spd,ny=py+my*spd;' +
+        'if(!wallCollide(nx,py))px=nx;if(!wallCollide(px,ny))py=ny;' +
+        'if(mx<0)facing="left";if(mx>0)facing="right";if(my<0)facing="up";if(my>0)facing="down";' +
+        'if(iframes>0)iframes--;' +
+        'if(attackTimer>0)attackTimer--;' +
+        'if(zPressed&&attackTimer<=0){attackTimer=15;' +
+        'var ax=px,ay=py;if(facing==="up")ay-=30;if(facing==="down")ay+=30;if(facing==="left")ax-=30;if(facing==="right")ax+=30;' +
+        'for(var ei=enemies.length-1;ei>=0;ei--){var e=enemies[ei];if(Math.abs(ax-e.x)<24&&Math.abs(ay-e.y)<24){e.hp--;if(e.hp<=0)enemies.splice(ei,1)}}}' +
+        'enemies.forEach(function(e){var dist=Math.sqrt((px-e.x)*(px-e.x)+(py-e.y)*(py-e.y));' +
+        'if(e.state==="idle"){e.timer--;if(e.timer<=0){e.timer=60+Math.random()*60;e.state="wander";e.wx=e.x+(Math.random()-0.5)*80;e.wy=e.y+(Math.random()-0.5)*80}' +
+        'if(dist<120)e.state="chase"}' +
+        'else if(e.state==="wander"){var dx=e.wx-e.x,dy=e.wy-e.y,d=Math.sqrt(dx*dx+dy*dy);if(d>2){e.x+=dx/d*e.spd*0.5;e.y+=dy/d*e.spd*0.5}else e.state="idle";' +
+        'if(dist<120)e.state="chase"}' +
+        'else if(e.state==="chase"){var dx=px-e.x,dy=py-e.y,d=Math.sqrt(dx*dx+dy*dy);if(d>2){e.x+=dx/d*e.spd;e.y+=dy/d*e.spd}' +
+        'if(dist<20&&iframes<=0){hp--;iframes=45;if(hp<=0){px=320;py=380;hp=maxHp}}' +
+        'if(dist>200)e.state="idle"}});' +
+        'if(Math.abs(px-warp.x)<20&&Math.abs(py-warp.y)<20){px=warp.targetX;py=warp.targetY;currentRoom=warp.room}' +
+        'if(spacePressed){for(var ni=0;ni<npcs.length;ni++){var n=npcs[ni];if(Math.abs(px-n.x)<40&&Math.abs(py-n.y)<40){startDialogue(n.msg)}}' +
+        'if(dlgTimer<=0)doSave()}' +
+        'if(rPressed)doLoad();' +
+        'updateDialogue();spacePressed=false;zPressed=false;rPressed=false;' +
+        TILES_BG + DRAW_WALLS +
+        'ctx.fillStyle=warp.color;ctx.fillRect(warp.x-warp.w/2,warp.y-warp.h/2,warp.w,warp.h);ctx.fillStyle="#fff";ctx.font="10px monospace";ctx.textAlign="center";ctx.fillText(">>",warp.x,warp.y+4);' +
+        DRAW_NPCS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATTACK + DRAW_HEARTS +
+        'ctx.fillStyle="#fff";ctx.font="12px monospace";ctx.textAlign="right";ctx.fillText("Room "+currentRoom,620,36);' +
+        'ctx.fillStyle="#aaa";ctx.font="11px monospace";ctx.textAlign="center";ctx.fillText("Space=Save  R=Load",320,475);' +
+        'drawDialogue();' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: '8-Way Movement & Depth',
+      goal: 'Set up a top-down RPG room with smooth 8-directional movement and wall collisions.',
+      points: [
+        'Sprites: spr_player (28x28, orange), spr_wall (32x32, brown). Top-down origin at Middle Centre',
+        'Room: grass-green background tiled with two shades, walls define rooms and corridors',
+        '<code>var mx = keyboard_check(vk_right) - keyboard_check(vk_left)</code> - movement on each axis in one line',
+        'Diagonal normalisation: if both axes are non-zero, multiply each by 0.707 (1/√2) to prevent faster diagonals'
+      ],
+      challenge: '🎯 Write the player Step event for 8-way movement in GML:',
+      starter: 'var mx = keyboard_check(vk_right) - keyboard_check(vk_left);\nvar my = keyboard_check(___) - keyboard_check(vk_up);\n\n// Diagonal normalisation\nif (mx != 0 && my != 0) {\n    mx *= ___;\n    my *= 0.707;\n}\n\nx += mx * spd;\ny += my * ___;',
+      solution: 'var mx = keyboard_check(vk_right) - keyboard_check(vk_left);\nvar my = keyboard_check(vk_down) - keyboard_check(vk_up);\n\n// Diagonal normalisation\nif (mx != 0 && my != 0) {\n    mx *= 0.707;\n    my *= 0.707;\n}\n\nx += mx * spd;\ny += my * spd;',
+      checks: ['keyboard_check', 'mx', 'my', '0.707', 'spd'],
+      height: 200,
+      fills: {
+        text: 'Subtracting the negative axis from the positive gives -1, 0 or 1 in one ___. Diagonal speed is fixed by multiplying both axes by ___, which is 1/√2.',
+        answers: ['line', '0.707']
+      },
+      quiz: {
+        question: 'Without diagonal normalisation, moving diagonally is...',
+        options: [
+          'Slower (speed splits between axes)',
+          'Faster by ~41% - you get full speed on BOTH axes, which adds up to √2 * normal speed',
+          'The same speed'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Dialogue Box & Typewriter',
+      goal: 'Add NPCs with a dialogue box that reveals text character by character.',
+      points: [
+        'obj_npc stores a <code>msg</code> string. Collision or proximity triggers the dialogue box',
+        'A controller draws a black rectangle at the screen bottom. Each frame, one more character is revealed',
+        '<code>string_copy(msg, 1, char_index)</code> returns a growing substring - typewriter in one line',
+        'Space press near an NPC: start the typewriter. Space again: show all text instantly or close the box'
+      ],
+      challenge: '🎯 Write the typewriter dialogue variables in GML:',
+      starter: 'dlg_text = "";\ndlg_full  = ___;\ndlg_char  = 0;\ndlg_timer = ___;\n\n/// Each frame:\nif (dlg_timer > 0) {\n    dlg_timer--;\n    if (dlg_char < string_length(dlg_full)) {\n        dlg_char++;\n        dlg_text = string_copy(dlg_full, 1, dlg_char);\n    }\n}',
+      solution: 'dlg_text = "";\ndlg_full  = msg;\ndlg_char  = 0;\ndlg_timer = 120;\n\n/// Each frame:\nif (dlg_timer > 0) {\n    dlg_timer--;\n    if (dlg_char < string_length(dlg_full)) {\n        dlg_char++;\n        dlg_text = string_copy(dlg_full, 1, dlg_char);\n    }\n}',
+      checks: ['dlg_text', 'dlg_full', 'dlg_char', 'string_copy'],
+      height: 240,
+      fills: {
+        text: 'The typewriter grows the visible string by one ___ per frame. string_copy(msg, 1, n) returns the first n characters of the ___.',
+        answers: ['character', 'message']
+      },
+      quiz: {
+        question: 'string_copy(msg, 1, char_index) is the GML equivalent of...',
+        options: [
+          'Splitting into an array',
+          'A substring from position 1 to char_index - growing it by 1 each frame gives the typewriter effect',
+          'Copying the string to a new variable'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Enemy States: Idle / Chase / Attack',
+      goal: 'Give enemies a state machine that switches between idling, wandering, and chasing the player.',
+      points: [
+        '<code>state = "idle"</code> in Create. The Step event uses a <code>switch</code> on state',
+        'Idle: wait, then pick a random wander target. If player enters detection radius → chase',
+        'Chase: move toward the player. If player leaves range → return to idle',
+        '<code>point_distance(x, y, obj_player.x, obj_player.y)</code> measures how far the player is'
+      ],
+      challenge: '🎯 Write the enemy state machine in GML:',
+      starter: 'var dist = point_distance(x, y, obj_player.x, obj_player.y);\n\nswitch (state) {\n    case "idle":\n        timer--;\n        if (timer <= 0) state = "wander";\n        if (dist < ___) state = "chase";\n        break;\n    case "chase":\n        move_towards_point(obj_player.x, obj_player.y, spd);\n        if (dist > ___) state = "idle";\n        break;\n}',
+      solution: 'var dist = point_distance(x, y, obj_player.x, obj_player.y);\n\nswitch (state) {\n    case "idle":\n        timer--;\n        if (timer <= 0) state = "wander";\n        if (dist < 120) state = "chase";\n        break;\n    case "chase":\n        move_towards_point(obj_player.x, obj_player.y, spd);\n        if (dist > 200) state = "idle";\n        break;\n}',
+      checks: ['point_distance', 'state', 'switch', 'chase', 'idle'],
+      height: 260,
+      fills: {
+        text: 'Each enemy stores a ___ string. The switch checks it every frame. Chase triggers when the player is within the ___ radius.',
+        answers: ['state', 'detection']
+      },
+      quiz: {
+        question: 'Why is the chase exit radius (200) larger than the enter radius (120)?',
+        options: [
+          'A bug',
+          'Hysteresis - without the gap, an enemy at exactly the threshold would flicker between idle and chase every frame',
+          'Enemies have better eyesight when chasing'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Combat: Hearts & I-Frames',
+      goal: 'Add a health system with hearts, contact damage with invincibility frames, and a melee attack.',
+      points: [
+        'Player Create: <code>hp = 3; max_hp = 3; iframes = 0;</code> Three hearts, classic RPG style',
+        'Enemy contact: if iframes == 0, lose a heart and set iframes = 45 (0.75s invincibility)',
+        'I-frames: decrement each frame, player blinks while > 0, enemies pass through harmlessly',
+        'Attack: press Z to swing. Check nearby enemies, subtract their HP. On 0 → destroy the enemy'
+      ],
+      challenge: '🎯 Write the Z-key attack in GML:',
+      starter: 'if (keyboard_check_pressed(ord("Z"))) {\n    // Attack in facing direction\n    var ax = x, ay = y;\n    if (facing == "up")    ay -= ___;\n    if (facing == "down")  ay += 30;\n    if (facing == "left")  ax -= 30;\n    if (facing == "right") ax += ___;\n\n    with (obj_enemy) {\n        if (point_distance(x, y, ax, ay) < 24) {\n            hp--;\n            if (hp <= 0) instance_destroy();\n        }\n    }\n}',
+      solution: 'if (keyboard_check_pressed(ord("Z"))) {\n    // Attack in facing direction\n    var ax = x, ay = y;\n    if (facing == "up")    ay -= 30;\n    if (facing == "down")  ay += 30;\n    if (facing == "left")  ax -= 30;\n    if (facing == "right") ax += 30;\n\n    with (obj_enemy) {\n        if (point_distance(x, y, ax, ay) < 24) {\n            hp--;\n            if (hp <= 0) instance_destroy();\n        }\n    }\n}',
+      checks: ['keyboard_check_pressed', 'facing', 'point_distance', 'instance_destroy', 'hp'],
+      height: 300,
+      fills: {
+        text: 'The attack creates a hit circle 30 pixels in the ___ direction. The GML with() block runs code on every instance of that ___ type.',
+        answers: ['facing', 'object']
+      },
+      quiz: {
+        question: 'What does with(obj_enemy) do inside the player\'s Step event?',
+        options: [
+          'Deletes all enemies',
+          'Temporarily switches scope - code inside runs AS each obj_enemy instance, so self.x/.y are the enemy\'s position',
+          'Creates a new enemy'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'World & Room Warps',
+      goal: 'Connect rooms with warp objects that teleport the player between areas.',
+      points: [
+        'obj_warp stores: <code>target_room, target_x, target_y</code>. Place it at doorways',
+        'Player collision with warp: <code>room_goto(target_room)</code>, set x/y to target coordinates',
+        'Room Start event: reset spawn, enemies, and local state per room',
+        'Each room is a self-contained area - enemies and pickups belong to THEIR room only'
+      ],
+      challenge: '🎯 Write the warp collision in GML:',
+      starter: '/// obj_warp Collision with obj_player\nvar _target_room = target_room;\nvar _tx = ___;\nvar _ty = target_y;\n\nroom_goto(_target_room);\nobj_player.x = ___;\nobj_player.y = _ty;',
+      solution: '/// obj_warp Collision with obj_player\nvar _target_room = target_room;\nvar _tx = target_x;\nvar _ty = target_y;\n\nroom_goto(_target_room);\nobj_player.x = _tx;\nobj_player.y = _ty;',
+      checks: ['room_goto', 'target'],
+      height: 180,
+      fills: {
+        text: 'Each warp stores its ___ room and spawn position. room_goto() loads the new room while the ___ object persists across rooms.',
+        answers: ['target', 'player']
+      },
+      quiz: {
+        question: 'Why save the warp\'s target coordinates into local variables before room_goto()?',
+        options: [
+          'It runs faster',
+          'room_goto() destroys the warp instance (it belongs to the old room) - reading target_x AFTER the goto would fail because the warp no longer exists',
+          'A GML style convention'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Save & Load with JSON',
+      goal: 'Persist the game state to a file using json_stringify and json_parse.',
+      points: [
+        'Build a save struct: <code>{ px: x, py: y, hp: hp, room: room }</code> - everything needed to restore',
+        '<code>json_stringify(save_struct)</code> → a JSON string. Write it with <code>file_text_write_string</code>',
+        'Load: read the string, <code>json_parse()</code> returns the struct, apply each field back',
+        'Same idea as Python\'s json.dumps/loads or JS\'s JSON.stringify/parse - universal pattern'
+      ],
+      challenge: '🎯 Write the save and load functions in GML:',
+      starter: '/// Save\nvar save_data = {\n    px: obj_player.x,\n    py: obj_player.y,\n    hp: obj_player.hp,\n    current_room: room\n};\nvar json = ___(save_data);\n\n/// Load\nvar loaded = ___(json);\nobj_player.x  = loaded.px;\nobj_player.y  = loaded.py;\nobj_player.hp = loaded.hp;\nroom_goto(loaded.current_room);',
+      solution: '/// Save\nvar save_data = {\n    px: obj_player.x,\n    py: obj_player.y,\n    hp: obj_player.hp,\n    current_room: room\n};\nvar json = json_stringify(save_data);\n\n/// Load\nvar loaded = json_parse(json);\nobj_player.x  = loaded.px;\nobj_player.y  = loaded.py;\nobj_player.hp = loaded.hp;\nroom_goto(loaded.current_room);',
+      checks: ['json_stringify', 'json_parse', 'save_data', 'loaded'],
+      height: 300,
+      fills: {
+        text: 'json_stringify converts a struct into a ___ string. json_parse converts the string back into a ___ you can read fields from.',
+        answers: ['JSON', 'struct']
+      },
+      quiz: {
+        question: 'What does json_stringify produce?',
+        options: [
+          'A binary file',
+          'A human-readable JSON text string - the same format used by JavaScript, Python, and every web API',
+          'A compressed save file'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>
