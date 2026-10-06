@@ -29,7 +29,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
   <link rel="stylesheet" href="../game-system.css?v=18">
-  <script src="../game-system.js"></script><script src="../audio-effects.js"></script>
+  <script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script><script src="../audio-effects.js"></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Stardust Constellation Rescue","url":"https://jvdesignstudio.co.uk/games/stardust_collection.html","description":"Read symbol patterns, collect the right stardust in order, and restore constellations in a child-friendly educational browser game.","genre":["Educational","Puzzle","Action"],"gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"}}</script>
   <style>
     :root{--space:#081326;--panel:#101f3d;--ink:#f7fbff;--muted:#b7c6dd;--gold:#ffd166;--cyan:#3ddcff;--pink:#ff6fb1;--green:#5cf2a8;--danger:#ff6868}
@@ -89,7 +89,7 @@
   const gs = new GameSystem('stardust_collection', 'Stardust Constellation Rescue', 'stardust');
   const FIELD_W = () => field.clientWidth;
   const FIELD_H = () => field.clientHeight;
-  const BEST_KEY = 'stardust_constellation_best_v1';
+  // Best score lives in the unified jvds_game_stardust_collection key.
   const MAPS = [
     { name:'Lantern of Lyra', pattern:['✦','◆','✦','☾'] },
     { name:'Compass of Orion', pattern:['☾','✧','◆','✧','✦'] },
@@ -112,7 +112,7 @@
   const overlay = document.getElementById('overlay');
   const startBtn = document.getElementById('startBtn');
   const practiceBtn = document.getElementById('practiceBtn');
-  let best = Number(localStorage.getItem(BEST_KEY) || 0);
+  let best = window.GameSystem ? window.GameSystem.getBestScore('stardust_collection') : 0;
   let running = false, practice = false, raf = 0, last = 0, spawn = 0;
   let score = 0, lives = 3, mapIndex = 0, step = 0, chains = 0, speed = 105;
   let x = 0, targetX = 0, objects = [], keys = {};
@@ -150,7 +150,7 @@
     gs.beginRun();
   }
   function finish(win){
-    running = false; cancelAnimationFrame(raf); clearObjects(); best = Math.max(best, score); localStorage.setItem(BEST_KEY, String(best)); renderHud();
+    running = false; cancelAnimationFrame(raf); clearObjects(); best = Math.max(best, score); if (window.GameSystem && window.GameSystem.saveScore) window.GameSystem.saveScore('stardust_collection', best); renderHud();
     overlay.querySelector('h2').textContent = win ? 'Constellation Rescue Complete!' : 'The sky map collapsed';
     overlay.querySelector('p').textContent = win ? `You restored all five constellations with ${score} points. That took pattern reading, timing, and lane planning.` : `Final score: ${score}. Try reading the next highlighted symbol before moving lanes.`;
     startBtn.textContent = 'Play again'; practiceBtn.textContent = 'Practice mode'; overlay.classList.remove('off');

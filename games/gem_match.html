@@ -53,7 +53,7 @@
     </script><link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
 <link rel="stylesheet" href="/style-mascots.css">
 <!-- Game System Integration -->
-<script src="../game-system.js"></script>
+<script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Gem Match","url":"https://jvdesignstudio.co.uk/games/gem_match.html","description":"Two-minute match-3 with bombs, wilds, fever mode, cascading combos, and a saved best score.","genre":"Puzzle","gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"},"image":"https://jvdesignstudio.co.uk/GemMatchCover.webp"}</script>
 <style>.quality-panel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 0;text-align:left}.quality-card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:10px}.quality-card b{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:#ffd93d;margin-bottom:4px}.quality-card span{font-size:.82rem;line-height:1.35;color:rgba(255,255,255,.86)}.quality-card a{color:#8ecae6;font-weight:800}.match-live{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:660px;margin:0 auto 12px}.match-mission,.match-coach{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px}.match-mission b,.match-coach b{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:#ffd93d;margin-bottom:4px}.match-mission span,.match-coach span{font-size:.82rem;line-height:1.35;color:#fff}@media(max-width:700px){.quality-panel{grid-template-columns:1fr 1fr}.match-live{grid-template-columns:1fr}}@media(max-width:420px){.quality-panel{grid-template-columns:1fr}}</style></head>
@@ -344,7 +344,7 @@ const SWAP_CLASS = {right:'swap-r',left:'swap-l',down:'swap-d',up:'swap-u'};
 // -- State -------------------------------------------
 let board = [], score = 0, shownScore = 0;
 let timeLeft = DURATION, timerID = null, scoreRafID = null;
-let bestScore = +localStorage.getItem('gmBest')||0;
+let bestScore = window.GameSystem?window.GameSystem.getBestScore('gem-match'):0;
 let sel = -1, busy = false, gameOn = false, arcadePaused = false;
 let chain = 0, maxChain = 0, matchTally = 0, bombTally = 0, wildTally = 0;
 let fever = false, hintID = null, soundOn = true;
@@ -949,7 +949,7 @@ function endGame(){
   window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
   if(typeof gameSystem!=='undefined'){gameSystem.addScore(score);gameSystem.recordGamePlay(Date.now());}
   const isNew=score>bestScore&&score>0;
-  if(isNew){bestScore=score;localStorage.setItem('gmBest',bestScore);SFX.newBest();}
+  if(isNew){bestScore=score;SFX.newBest();}
   else SFX.over();
 
   GameUI.countUp(goScore, score);

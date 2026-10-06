@@ -8,7 +8,7 @@ await check('Collecting a needed ingredient scores and tracks recipe',async()=>a
 await page.screenshot({path:path.join(OUT,'dough-board.png')});
 await check('Delivering a complete recipe serves one order',async()=>assert(await page.evaluate(()=>{Object.keys(recipe.need).forEach(k=>got[k]=recipe.need[k]);const beforeOrders=orders;const beforeScore=score;deliver();running=false;return orders===beforeOrders+1&&score>beforeScore;})));
 await check('Hazard hit costs a heart but keeps run alive',async()=>assert(await page.evaluate(()=>{hearts=3;running=true;hurt('test bump');const h=hearts;running=false;return h===2;})));
-await check('Oven target ends run and banks best',async()=>assert(await page.evaluate(()=>{score=9999;orders=99;endGame(true);return running===false&&(Number(localStorage.getItem('doughDashBest'))||0)>=9999;})));
+await check('Oven target ends run and banks best',async()=>assert(await page.evaluate(()=>{score=9999;orders=99;endGame(true);return running===false&&(Number(JSON.parse(localStorage.getItem('jvds_game_dough-dash')||'{}').highScore)||0)>=9999;})));
 await check('Restart resets score hearts and orders',async()=>assert(await page.evaluate(()=>{startGame();running=false;return score===0&&hearts===3&&orders===0;})));
 await check('Restart state is clean kitchen',async()=>assert(await page.evaluate(()=>score===0&&hearts===3&&orders===0&&!!recipe&&items.length>=14)));
 await check('Phone layout has no horizontal clipping',async()=>{await page.setViewport({width:320,height:568});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));});

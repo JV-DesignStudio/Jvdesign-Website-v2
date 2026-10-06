@@ -29,7 +29,7 @@
     <header class="topbar">
       <a class="back" href="../arcade.html">← Arcade</a>
       <div class="brand"><span>🍽️</span><strong>Star Chef</strong><small>Recipe Queue</small></div>
-      <button class="sound" id="pauseBtn" type="button">⏸</button>
+      <button class="sound" id="pauseBtn" type="button" aria-label="Pause">⏸</button>
     </header>
 
     <section class="hero-card">
@@ -87,6 +87,7 @@
 
   <div class="toast" id="toast">Ready</div>
   <script src="../audio-effects.js"></script>
+  <script src="../game-score.js"></script>
   <script src="../story-run.js"></script>
   <script>
   (() => {
@@ -129,12 +130,10 @@
     });}catch(e){return null;}})();
     function storyScore(){ if(storyRun&&storyRun.running) storyRun.setScore(coins); }
 
-    function bestKey(){ return 'jvds-best-' + GAME_ID; }
     function saveScore(){
-      const best = Math.max(Number(localStorage.getItem(bestKey())||0), coins);
-      localStorage.setItem(bestKey(), best);
       if(window.GameSystem?.saveScore) window.GameSystem.saveScore(GAME_ID, coins, {level: starsEarned(), energy: rep});
     }
+    function bestCoins(){ return window.GameSystem ? window.GameSystem.getBestScore(GAME_ID) : 0; }
     function buzz(ms=18){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
     function sfx(name){ try{ audio?.[name]?.(); }catch(e){} }
     function toast(msg, good=true){
@@ -243,7 +242,7 @@
       running=false; paused=true; saveScore();
       const won = coins>=goal;
       const msg = won ? 'Shift complete! Star café saved.' : 'Shift over. Try faster station planning.';
-      toast(msg, won); setHint(msg+' Best: £'+localStorage.getItem(bestKey())); render();
+      toast(msg, won); setHint(msg+' Best: £'+bestCoins()); render();
       if(storyRun) storyRun.finish(won?'success':(coins>=goal*0.6?'partial':'fail'), coins);
     }
 

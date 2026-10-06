@@ -24,7 +24,7 @@
 <!-- /BUILD:head-icons -->
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/critter-whack-page.html">
 <meta name="robots" content="noindex, follow">
-<script src="../game-system.js"></script><script src="../audio-effects.js"></script>
+<script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script><script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../game-system.css?v=18">
 <link rel="stylesheet" href="../story-run.css">
 <style>
@@ -59,7 +59,7 @@
   {title:'Slow and steady',text:'Tap slow critters only.',tag:'slow',emoji:'🐌'}
  ];
  const board=document.getElementById('board'), scoreEl=document.getElementById('score'), waveEl=document.getElementById('wave'), timeEl=document.getElementById('time'), livesEl=document.getElementById('lives'), bestEl=document.getElementById('best'), feedback=document.getElementById('feedback'), overlay=document.getElementById('overlay');
- let score=0,wave=1,lives=3,time=45,best=Number(localStorage.getItem('critter_ranger_best')||0),running=false,rule=RULES[0],timer=0,spawnTimer=0,streak=0,holes=[];
+ let score=0,wave=1,lives=3,time=45,best=(window.GameSystem?window.GameSystem.getBestScore('critter-whack'):0),running=false,rule=RULES[0],timer=0,spawnTimer=0,streak=0,holes=[];
  const storyRun = window.__storyRun || (window.__storyRun = new StoryRun({
   id:'critter-whack', title:'Echo and the Forest Rescue', character:'Echo',
   open:'Echo is sorting the forest rescue and the wrong critter goes to the wrong home.',
@@ -85,7 +85,7 @@
  function loop(){if(!running)return;const now=performance.now();holes.forEach(h=>{if(h.up&&now>h.until){if(h.item&&h.item.good){streak=0;feedback.textContent='A matching critter got away.';}hide(h);}});if(now>spawnTimer){pop();spawnTimer=now+Math.max(360,850-wave*38);}requestAnimationFrame(loop);}
  function tick(){if(!running)return;time--;if(time%10===0){wave++;setRule();feedback.textContent='New clue: '+rule.text;}hud();if(time<=0)end(true);else timer=setTimeout(tick,1000);}
  function start(){score=0;wave=1;lives=3;time=45;streak=0;running=true;holes.forEach(hide);setRule();hud();overlay.classList.add('off');feedback.textContent='Find: '+rule.text;if(window.GameSystem){try{window.__cwgs=new GameSystem('critter-whack','Critter Whack: Ranger Sort','pip');window.__cwgs.beginRun();}catch(e){}}storyRun.gameSystem=window.__cwgs;if(!storyRun.running)storyRun.begin();tick();loop();}
- function end(won){running=false;clearTimeout(timer);holes.forEach(hide);best=Math.max(best,score);localStorage.setItem('critter_ranger_best',String(best));bestEl.textContent=best;storyRun.finish(won?'success':'fail',score);}
+ function end(won){running=false;clearTimeout(timer);holes.forEach(hide);best=Math.max(best,score);if(window.GameSystem&&window.GameSystem.saveScore)window.GameSystem.saveScore('critter-whack',best);bestEl.textContent=best;storyRun.finish(won?'success':'fail',score);}
  document.getElementById('startBtn').addEventListener('click',start);setupBoard();setRule();hud();
 })();
 </script>

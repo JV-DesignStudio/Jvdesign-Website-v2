@@ -9,7 +9,7 @@
 <meta name="twitter:title" content="Nova Siege | JVDesignStudio">
 <meta name="twitter:description" content="Nova Siege - a remastered retro pixel space shooter. Dodge the swarm, blast the galactic army, bank credits and upgrade your ship.">
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/hub-games.png"><link rel="icon" href="../logo.png" type="image/png">
-<link rel="stylesheet" href="../story-run.css"><link rel="stylesheet" href="../game-system.css"><script src="../story-run.js"></script><script src="../game-system.js"></script>
+<link rel="stylesheet" href="../story-run.css"><link rel="stylesheet" href="../game-system.css"><script src="../story-run.js"></script><script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script>
 <style>
 :root{--ink:#d8f5ff;--dim:#6f93a8;--green:#7CFC00;--panel:#0b1220;--line:#1e3a52;--cyan:#4cc9f0;--gold:#ffd166;--red:#ff4d5e}
 *{box-sizing:border-box}body{margin:0;min-height:100vh;background:#05070d;color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
@@ -196,7 +196,7 @@ function shipSprite(h){
 var SPR={ufo:build(UFO_ROWS,UFO_LEG),dart:build(DART_ROWS,DART_LEG),purp:build(PURP_ROWS,PURP_LEG),star:build(STAR_ROWS,STAR_LEG),orb:build(ORB_ROWS,ORB_LEG),plus:build(PLUS_ROWS,PLUS_LEG),boss:build(BOSS_ROWS,BOSS_LEG)};
 var SHIPS=HULLS.map(shipSprite);
 /* ============================ SAVE / META ============================ */
-var KEY='jvds-nova-siege-v1',BESTKEY='jvds-best-nova-siege';
+var KEY='jvds-nova-siege-v1';
 function fresh(){return{credits:0,hull:0,up:{damage:0,rate:0,multishot:0,speed:0,shield:0,magnet:0,life:0},quests:{kills:0,bosses:0,waves:0,best:0,runs:0,powerups:0},completed:{},hulls:[0]};}
 function loadMeta(){try{var s=JSON.parse(localStorage.getItem(KEY));if(!s||typeof s!=='object')return fresh();var f=fresh();s.up=s.up||f.up;s.quests=s.quests||f.quests;s.completed=s.completed||{};s.hulls=Array.isArray(s.hulls)&&s.hulls.length?s.hulls:[0];return s}catch(e){return fresh()}}
 function saveMeta(){try{localStorage.setItem(KEY,JSON.stringify(meta))}catch(e){}}
@@ -247,7 +247,7 @@ var spawnT=36,boss=null,spawnQueue=0;
 function endRun(win){
   if(run.over)return;run.over=true;cancelAnimationFrame(raf);
   meta.credits+=run.credits;meta.quests.best=Math.max(meta.quests.best||0,run.score);saveMeta();
-  var best=Number(localStorage.getItem(BESTKEY)||0);if(run.score>best)localStorage.setItem(BESTKEY,String(run.score));
+  if(window.GameSystem&&window.GameSystem.saveScore)window.GameSystem.saveScore('nova-siege',run.score,{level:run.stage});
   try{if(window.jvdsCheckNewBest)window.jvdsCheckNewBest()}catch(e){}
   try{if(gameSystem){gameSystem.state.score=run.score;gameSystem.recordGamePlay(Date.now());gameSystem.addCoins(run.credits);gameSystem.saveState();}}catch(e){}
   try{var pp=window.playerProfile;if(pp&&pp.addXP)pp.addXP(Math.round(run.score/12),'game:nova-siege')}catch(e){}
@@ -414,7 +414,7 @@ function render(){
 }
 function ptextW(str,s){return Math.max(0,String(str).length*6*s-s);}
 function pnumW(v,s){return String(v).length*6*s}
-function hud(){document.getElementById('hScore').textContent=run.score.toLocaleString();document.getElementById('hStage').textContent=run.stage;document.getElementById('hWave').textContent=run.wave;document.getElementById('hLives').textContent=run.health;document.getElementById('hCredits').textContent=run.credits;document.getElementById('hBest').textContent=Number(localStorage.getItem(BESTKEY)||0).toLocaleString();storyScore();}
+function hud(){document.getElementById('hScore').textContent=run.score.toLocaleString();document.getElementById('hStage').textContent=run.stage;document.getElementById('hWave').textContent=run.wave;document.getElementById('hLives').textContent=run.health;document.getElementById('hCredits').textContent=run.credits;document.getElementById('hBest').textContent=(window.GameSystem?window.GameSystem.getBestScore('nova-siege'):0).toLocaleString();storyScore();}
 /* ============================ UI ============================ */
 document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tabpane').forEach(function(x){x.classList.remove('active')});t.classList.add('active');document.getElementById('pane-'+t.dataset.tab).classList.add('active');if(t.dataset.tab==='up')renderUpgrades();if(t.dataset.tab==='quest')renderQuests();if(t.dataset.tab==='skin')renderSkins();sfx('tap');}});
 function renderCredits(){document.getElementById('credBank').textContent=meta.credits.toLocaleString();if(document.getElementById('hCredits'))document.getElementById('hCredits').textContent=(run?run.credits:0);}
@@ -435,7 +435,7 @@ document.getElementById('startBtn').onclick=function(){storyBegin();startRun()};
 function drawTitle(){var tcanvas=document.getElementById('titleFont'),tc=tcanvas.getContext('2d');tc.clearRect(0,0,tcanvas.width,tcanvas.height);ptext(tc,'NOVA',tcanvas.width/2,6,4,'#7CFC00','#ffffff','center');ptext(tc,'SIEGE',tcanvas.width/2,42,4,'#7CFC00','#ffffff','center');ptext(tc,"PIP'S ARCADE REMASTER",tcanvas.width/2,86,1,'#8fe36a','#04070c','center');}
 drawTitle();
 renderUpgrades();renderQuests();renderSkins();renderCredits();
-document.getElementById('hBest').textContent=Number(localStorage.getItem(BESTKEY)||0).toLocaleString();
+document.getElementById('hBest').textContent=(window.GameSystem?window.GameSystem.getBestScore('nova-siege'):0).toLocaleString();
 run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,over:true,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,inv:0,bossActive:false,shield:0,runPower:0,kills:0,waveKills:0,waveTarget:6,fireT:0};
 window.__nova={get run(){return run},get meta(){return meta},get boss(){return boss},get sprites(){return SPR},get ships(){return SHIPS}};
 hud();

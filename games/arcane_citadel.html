@@ -38,7 +38,7 @@
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
 <link rel="stylesheet" href="/style-mascots.css">
 <!-- Game System Integration -->
-<script src="../game-system.js"></script>
+<script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script>
 <link rel="stylesheet" href="../story-run.css">
 <script src="../story-run.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
@@ -530,11 +530,15 @@ function saveScore(scoreVal, waveVal, spellName){
     const entry={score:scoreVal, wave:waveVal, spell:spellName, date:Date.now()};
     let rank=null;
     try{
-        const arr=JSON.parse(localStorage.getItem('ac_scores')||'[]');
+        const st=JSON.parse(localStorage.getItem('jvds_game_arcane-citadel')||'null')||{};
+        const arr=Array.isArray(st.scores)?st.scores:[];
         arr.push(entry);
         arr.sort((a,b)=>b.score-a.score);
         rank=arr.findIndex(e=>e.date===entry.date)+1;
-        localStorage.setItem('ac_scores',JSON.stringify(arr.slice(0,20)));
+        st.scores=arr.slice(0,20);
+        st.highScore=Math.max(st.highScore||0,scoreVal);
+        st.lastPlayed=new Date().toISOString();
+        localStorage.setItem('jvds_game_arcane-citadel',JSON.stringify(st));
     }catch(e){}
     return rank;
 }
@@ -543,7 +547,7 @@ function loadLB(){
     const el=document.getElementById('lb-rows');
     if(!el)return;
     let arr=[];
-    try{ arr=JSON.parse(localStorage.getItem('ac_scores')||'[]'); }catch(e){}
+    try{ arr=(JSON.parse(localStorage.getItem('jvds_game_arcane-citadel')||'null')||{}).scores||[]; }catch(e){}
     if(!arr.length){
         el.innerHTML='<div class="lb-empty">No runs yet, go survive some waves!</div>';
         return;

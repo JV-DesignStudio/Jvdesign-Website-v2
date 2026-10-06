@@ -37,7 +37,7 @@
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
 <link rel="stylesheet" href="/style-mascots.css">
 <!-- Game System Integration -->
-<script src="../game-system.js"></script>
+<script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <link rel="stylesheet" href="../story-run.css">
 </head>
@@ -45,7 +45,7 @@
 <div class="topbar">
   <a class="back" href="/games">← All Games</a>
   <span class="brand">JVDesignStudio</span>
-  <button class="mute-btn" id="pauseBtn" style="margin-right:6px">⏸</button><button class="mute-btn" id="muteBtn">🔊</button>
+  <button class="mute-btn" id="pauseBtn" style="margin-right:6px" aria-label="Pause">⏸</button><button class="mute-btn" id="muteBtn" aria-label="Mute">🔊</button>
 </div>
 
 <div id="wrap"><canvas id="game"></canvas></div>
@@ -124,7 +124,7 @@
   addEventListener('resize',resize);resize();
 
   // ── Persistence ──
-  let best=+(localStorage.getItem('stackBest')||0);
+  let best=(window.GameSystem?window.GameSystem.getBestScore('stack-attack'):0);
   let beacons=+(localStorage.getItem('stackBeacons')||0);
   let coins=+(localStorage.getItem('stackCoins')||0);
   let muted=localStorage.getItem('stackMute')==='true';
@@ -560,7 +560,7 @@
     setTimeout(()=>document.getElementById('game').classList.remove('topple-shake'),400);
     window.__gsScore=(window.__gsScore||0)+score;
     window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
-    if(score>best){best=score;localStorage.setItem('stackBest',best);}
+    if(score>best){best=score;if(window.GameSystem&&window.GameSystem.saveScore)window.GameSystem.saveScore('stack-attack',best);}
     if(won){beacons++;localStorage.setItem('stackBeacons',beacons);coins+=15;coinsEarned+=15;saveCoins();}
     document.getElementById('bestStart').textContent='Best: '+best;
     document.getElementById('coinsStart').textContent=coins;

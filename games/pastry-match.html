@@ -25,7 +25,7 @@
 <meta property="og:image" content="https://jvdesignstudio.co.uk/og/pastry-match.png">
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/pastry-match.png">
 <meta name="twitter:card" content="summary_large_image">
-<script src="../game-system.js"></script>
+<script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script>
 <script src="../audio-effects.js"></script>
 <link rel="stylesheet" href="../story-run.css">
 <script src="../story-run.js"></script>
@@ -152,7 +152,7 @@ function mode(){ return MODES.find(m => m.id === modeId) || MODES[1]; }
 function rand(max){ return Math.floor(Math.random() * max); }
 function pastry(){ return PASTRIES[rand(PASTRIES.length)].id; }
 function byId(id){ return PASTRIES.find(p => p.id === id) || PASTRIES[0]; }
-function saveBest(){ if(score > best){ best = score; try{ localStorage.setItem('pastryMatchBest', String(best)); }catch(e){} } }
+function saveBest(){ if(score > best){ best = score; try{ if(window.GameSystem&&window.GameSystem.saveScore) window.GameSystem.saveScore('pastry-match', best); }catch(e){} } }
 function toggleSound(){ const on = localStorage.getItem('soundEnabled') !== 'false'; localStorage.setItem('soundEnabled', on ? 'false' : 'true'); audioEffects.setMasterVolume(on ? 0 : 0.55); $('soundBtn').textContent = on ? '🔇' : '🔊'; }
 function makeOrder(level){
   const picks = [...PASTRIES].sort(() => Math.random() - .5).slice(0, 3);
@@ -259,7 +259,7 @@ function endGame(){
 function renderModes(){ $('modeRow').innerHTML = MODES.map(m => '<button type="button" class="'+(m.id===modeId?'sel':'')+'" data-mode="'+m.id+'">'+m.label+'</button>').join(''); document.querySelectorAll('#modeRow button').forEach(b=>b.onclick=()=>{modeId=b.dataset.mode; renderModes();}); }
 
 $('soundBtn').onclick = toggleSound; $('playBtn').onclick = startGame; $('againBtn').onclick = startGame; $('spoonBtn').onclick = useSpoon; $('trayBtn').onclick = useTray;
-try{ best = Math.max(best, Number(localStorage.getItem('pastryMatchBest'))||0); }catch(e){}
+try{ best = Math.max(best, window.GameSystem?window.GameSystem.getBestScore('pastry-match'):0); }catch(e){}
 renderModes(); renderHud();
 </script>
 <script defer src="../cookie-consent.js"></script>

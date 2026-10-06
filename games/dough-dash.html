@@ -25,7 +25,7 @@
 <meta property="og:image" content="https://jvdesignstudio.co.uk/og/dough-dash.png">
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/dough-dash.png">
 <meta name="twitter:card" content="summary_large_image">
-<script src="../game-system.js"></script>
+<script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script>
 <script src="../audio-effects.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <link rel="stylesheet" href="../style-game-dough-dash.css?v=30">
@@ -42,7 +42,7 @@
   </header>
   <section class="order-card"><div><small>Next bake</small><strong id="recipeName">Jam Twist</strong></div><div class="recipe-list" id="recipeList"></div><div class="heat"><span id="heatBar"></span></div></section>
   <section class="stage"><canvas id="gameCanvas" width="960" height="620" aria-label="Dough Dash kitchen runner"></canvas><div class="toast" id="toast">Ready?</div></section>
-  <nav class="touch-pad" aria-label="Touch controls"><button data-dir="up">▲</button><div><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div></nav>
+  <nav class="touch-pad" aria-label="Touch controls"><button data-dir="up" aria-label="Move up">▲</button><div><button data-dir="left" aria-label="Move left">◀</button><button data-dir="down" aria-label="Move down">▼</button><button data-dir="right" aria-label="Move right">▶</button></div></nav>
   <div class="modal show" id="startModal"><div class="modal-card"><h1>🍞 Dough Dash</h1><p>Roll through the kitchen, grab the recipe ingredients, dodge spills and mixer blades, then dive into the oven for a perfect bake.</p><div class="how"><div><b>Move</b><span>Arrow keys, WASD, swipe, or tap the buttons.</span></div><div><b>Collect</b><span>Only the ingredients on the order card score big.</span></div><div><b>Deliver</b><span>Hit the glowing oven when the recipe is complete.</span></div></div><div class="mode-row" id="modeRow"></div><button class="primary" id="playBtn" type="button">Start dash</button><button class="secondary" type="button" onclick="location.href='../pages/games.html'">Back</button></div></div>
   <div class="modal" id="endModal"><div class="modal-card"><h2 id="endTitle">Shift over!</h2><p id="endCopy">The dough made it through the rush.</p><div class="results"><div><span>Score</span><b id="finalScore">0</b></div><div><span>Orders</span><b id="finalOrders">0</b></div><div><span>Best</span><b id="finalBest">0</b></div></div><button class="primary" id="againBtn" type="button">Play again</button><button class="secondary" type="button" onclick="location.href='../pages/games.html'">Back</button></div></div>
 </main>
@@ -54,7 +54,7 @@ const canvas=document.getElementById('gameCanvas'), ctx=canvas.getContext('2d');
 const W=960,H=620, keys={}, modes=[{id:'easy',label:'Little Roll',speed:220,target:4},{id:'rush',label:'Bakery Rush',speed:265,target:5},{id:'chef',label:'Head Chef',speed:310,target:6}];
 const ingredients=[{id:'flour',emoji:'🌾',color:'#f7d78a'},{id:'sugar',emoji:'🍬',color:'#ff8ed1'},{id:'berry',emoji:'🍓',color:'#ff4966'},{id:'choc',emoji:'🍫',color:'#8b4a2f'},{id:'cream',emoji:'🍦',color:'#fff4d9'}];
 const recipes=[{name:'Jam Twist',need:{flour:2,berry:2,sugar:1}},{name:'Choco Bun',need:{flour:2,choc:2,cream:1}},{name:'Party Doughnut',need:{flour:2,sugar:2,cream:1}},{name:'Berry Crown',need:{berry:3,cream:1,sugar:1}},{name:'Cookie Roll',need:{flour:2,choc:1,sugar:2}}];
-let modeId='rush', running=false, last=0, score=0, hearts=3, combo=1, orders=0, best=gameSystem.state.highScore||Number(localStorage.getItem('doughDashBest')||0), player, items=[], hazards=[], oven, recipe, got={}, heat=100, particles=[], startX=0,startY=0;
+let modeId='rush', running=false, last=0, score=0, hearts=3, combo=1, orders=0, best=gameSystem.state.highScore||(window.GameSystem?window.GameSystem.getBestScore('dough-dash'):0), player, items=[], hazards=[], oven, recipe, got={}, heat=100, particles=[], startX=0,startY=0;
 const $=id=>document.getElementById(id); function mode(){return modes.find(m=>m.id===modeId)||modes[1]} function rand(a,b){return a+Math.random()*(b-a)} function pick(a){return a[Math.floor(Math.random()*a.length)]}
 const storyRun = window.__storyRun || (window.__storyRun = new StoryRun({
   id:'dough-dash', gameSystem:gameSystem,
@@ -68,7 +68,7 @@ const storyRun = window.__storyRun || (window.__storyRun = new StoryRun({
     partial:'Most orders land, one burns, and the shift still ends on its feet.',
     fail:'The kitchen wins this round, but the dough is still warm for tomorrow.'
   },
-  onFinish:function(){ running=false; if(score>best){best=score;localStorage.setItem('doughDashBest',best)} },
+  onFinish:function(){ running=false; if(score>best){best=score;if(window.GameSystem&&window.GameSystem.saveScore)window.GameSystem.saveScore('dough-dash',best)} },
   onRestart:function(){ startGame(); }
 }));
 function toggleSound(){const on=localStorage.getItem('soundEnabled')!=='false';localStorage.setItem('soundEnabled',on?'false':'true');audioEffects.setMasterVolume(on?0:.55);$('soundBtn').textContent=on?'🔇':'🔊'}
@@ -92,7 +92,7 @@ function drawItem(it){const ing=ingredients.find(i=>i.id===it.id);ctx.save();ctx
 function drawHazard(h){ctx.save();ctx.translate(h.x,h.y);ctx.fillStyle=h.kind==='spill'?'#72d7ff':'#9a9a9a';ctx.beginPath();ctx.arc(0,0,h.r,0,7);ctx.fill();ctx.font='27px serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(h.kind==='spill'?'💧':'⚙️',0,1);ctx.restore()}
 function drawPlayer(){if(!player)return;player.trail.forEach((p,i)=>{ctx.globalAlpha=(12-i)/42;ctx.fillStyle='#f1c27d';ctx.beginPath();ctx.arc(p.x,p.y,player.r*(1-i/18),0,7);ctx.fill()});ctx.globalAlpha=1;ctx.save();ctx.translate(player.x,player.y); if(player.inv>0&&Math.floor(player.inv*12)%2){ctx.globalAlpha=.45}ctx.fillStyle='#f2b96b';ctx.beginPath();ctx.arc(0,0,player.r,0,7);ctx.fill();ctx.fillStyle='#6b3a20';ctx.beginPath();ctx.arc(-8,-4,3,0,7);ctx.arc(8,-4,3,0,7);ctx.fill();ctx.strokeStyle='#6b3a20';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,4,8,0,Math.PI);ctx.stroke();ctx.restore();ctx.globalAlpha=1}
 function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
-function endGame(won){running=false; if(score>best){best=score;localStorage.setItem('doughDashBest',best)} if(won)gameSystem.unlockAchievement('ovenHero');$('endModal').classList.remove('show');storyRun.finish(won?'success':'fail',score)}
+function endGame(won){running=false; if(score>best){best=score;if(window.GameSystem&&window.GameSystem.saveScore)window.GameSystem.saveScore('dough-dash',best)} if(won)gameSystem.unlockAchievement('ovenHero');$('endModal').classList.remove('show');storyRun.finish(won?'success':'fail',score)}
 function renderModes(){$('modeRow').innerHTML=modes.map(m=>'<button class="'+(m.id===modeId?'sel':'')+'" data-mode="'+m.id+'" type="button">'+m.label+'</button>').join('');document.querySelectorAll('#modeRow button').forEach(b=>b.onclick=()=>{modeId=b.dataset.mode;renderModes()})}
 document.addEventListener('keydown',e=>{keys[e.key]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});document.addEventListener('keyup',e=>keys[e.key]=false);canvas.addEventListener('pointerdown',e=>{startX=e.clientX;startY=e.clientY});canvas.addEventListener('pointermove',e=>{if(!startX)return;const dx=e.clientX-startX,dy=e.clientY-startY;keys.ArrowRight=dx>18;keys.ArrowLeft=dx<-18;keys.ArrowDown=dy>18;keys.ArrowUp=dy<-18});canvas.addEventListener('pointerup',()=>{startX=0;keys.ArrowRight=keys.ArrowLeft=keys.ArrowDown=keys.ArrowUp=false});document.querySelectorAll('.touch-pad button').forEach(b=>{const map={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};b.onpointerdown=()=>keys[map[b.dataset.dir]]=true;b.onpointerup=b.onpointerleave=()=>keys[map[b.dataset.dir]]=false});
 $('soundBtn').onclick=toggleSound;$('playBtn').onclick=startGame;$('againBtn').onclick=startGame;renderModes();newRecipe();updateHud();draw(0);
