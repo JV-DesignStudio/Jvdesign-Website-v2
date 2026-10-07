@@ -160,6 +160,108 @@ window.JVDS_CONTENT = {
       "url": "/workshops/cpp-tower-defence-builder.html"
     },
     {
+      "id": "cpp-breakout-canvas",
+      "title": "C++ Breakout Build Canvas",
+      "desc": "",
+      "engine": "C++",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/cpp-breakout-canvas.html"
+    },
+    {
+      "id": "cpp-platformer-canvas",
+      "title": "C++ Platformer Build Canvas",
+      "desc": "",
+      "engine": "C++",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/cpp-platformer-canvas.html"
+    },
+    {
+      "id": "cpp-platformer-part2-canvas",
+      "title": "C++ Platformer Part 2 Build Canvas",
+      "desc": "",
+      "engine": "C++",
+      "difficulty": "intermediate",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/cpp-platformer-part2-canvas.html"
+    },
+    {
+      "id": "cpp-pong-canvas",
+      "title": "C++ Pong Build Canvas",
+      "desc": "",
+      "engine": "C++",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/cpp-pong-canvas.html"
+    },
+    {
+      "id": "cpp-snake-canvas",
+      "title": "C++ Snake Build Canvas",
+      "desc": "",
+      "engine": "C++",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/cpp-snake-canvas.html"
+    },
+    {
+      "id": "cpp-tower-part1-canvas",
+      "title": "C++ Tower Defence Part 1 Build Canvas",
+      "desc": "",
+      "engine": "C++",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/cpp-tower-part1-canvas.html"
+    },
+    {
+      "id": "cpp-tower-part2-canvas",
+      "title": "C++ Tower Defence Part 2 Build Canvas",
+      "desc": "",
+      "engine": "C++",
+      "difficulty": "intermediate",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/cpp-tower-part2-canvas.html"
+    },
+    {
       "id": "cpp-cheatsheet",
       "title": "Free C++ &amp; SFML Cheat Sheet",
       "desc": "Free printable C++ & SFML cheat sheet variables, window setup, drawing shapes, event handling, collision and the most-used code snippets. No sign-up needed.",
@@ -276,6 +378,96 @@ window.JVDS_CONTENT = {
       "url": "/workshops/cpp-tower-part2-workshop.html"
     },
     {
+      "id": "defold-dungeon-canvas",
+      "title": "Defold Dungeon Build Canvas",
+      "desc": "",
+      "engine": "Defold",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/defold-dungeon-canvas.html"
+    },
+    {
+      "id": "defold-platformer-canvas",
+      "title": "Defold Platformer Build Canvas",
+      "desc": "",
+      "engine": "Defold",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/defold-platformer-canvas.html"
+    },
+    {
+      "id": "defold-pong-canvas",
+      "title": "Defold Pong Build Canvas",
+      "desc": "",
+      "engine": "Defold",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/defold-pong-canvas.html"
+    },
+    {
+      "id": "defold-puzzle-canvas",
+      "title": "Defold Puzzle Build Canvas",
+      "desc": "",
+      "engine": "Defold",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "puzzle"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/defold-puzzle-canvas.html"
+    },
+    {
+      "id": "defold-shooter-canvas",
+      "title": "Defold Shooter Build Canvas",
+      "desc": "",
+      "engine": "Defold",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "shooter"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/defold-shooter-canvas.html"
+    },
+    {
+      "id": "defold-snake-canvas",
+      "title": "Defold Snake Build Canvas",
+      "desc": "",
+      "engine": "Defold",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/defold-snake-canvas.html"
+    },
+    {
       "id": "defold-dungeon-workshop",
       "title": "Dungeon Crawler in Defold",
       "desc": "Build a dungeon crawler in Defold! A free workshop. Learn tilemaps, enemies, health systems and room transitions with Lua scripting. Ages 10+.",
@@ -366,6 +558,94 @@ window.JVDS_CONTENT = {
       "themeColor": "#FF9800",
       "cover": "/og/defold-shooter-workshop.png",
       "url": "/workshops/defold-shooter-workshop.html"
+    },
+    {
+      "id": "gdevelop-platformer-canvas",
+      "title": "GDevelop Platformer Build Canvas",
+      "desc": "",
+      "engine": "GDevelop",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gdevelop-platformer-canvas.html"
+    },
+    {
+      "id": "gdevelop-pointclick-canvas",
+      "title": "GDevelop Point &amp; Click Build Canvas",
+      "desc": "",
+      "engine": "GDevelop",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gdevelop-pointclick-canvas.html"
+    },
+    {
+      "id": "gdevelop-pong-canvas",
+      "title": "GDevelop Pong Build Canvas",
+      "desc": "",
+      "engine": "GDevelop",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gdevelop-pong-canvas.html"
+    },
+    {
+      "id": "gdevelop-snake-canvas",
+      "title": "GDevelop Snake Build Canvas",
+      "desc": "",
+      "engine": "GDevelop",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gdevelop-snake-canvas.html"
+    },
+    {
+      "id": "gdevelop-shooter-canvas",
+      "title": "GDevelop Space Shooter Build Canvas",
+      "desc": "",
+      "engine": "GDevelop",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "shooter"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gdevelop-shooter-canvas.html"
+    },
+    {
+      "id": "gdevelop-adventure-canvas",
+      "title": "GDevelop Top-Down Adventure Build Canvas",
+      "desc": "",
+      "engine": "GDevelop",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/gdevelop-adventure-canvas.html"
     },
     {
       "id": "gdevelop-platformer-workshop",
@@ -721,6 +1001,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/my-first-cpp-game.html"
     },
     {
+      "id": "my-first-cpp-game-canvas",
+      "title": "My First C++ Game Build Canvas",
+      "desc": "",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/my-first-cpp-game-canvas.html"
+    },
+    {
       "id": "my-first-defold-game",
       "title": "My First Defold Game",
       "desc": "6 free Defold game engine workshops. Build a pong clone, snake, dungeon crawler, space shooter, puzzle match and platformer with Lua scripting. Ages 10+.",
@@ -738,6 +1034,22 @@ window.JVDS_CONTENT = {
       "themeColor": "#2196F3",
       "cover": "/og/my-first-defold-game.png",
       "url": "/workshops/my-first-defold-game.html"
+    },
+    {
+      "id": "my-first-defold-game-canvas",
+      "title": "My First Defold Game Build Canvas",
+      "desc": "",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/my-first-defold-game-canvas.html"
     },
     {
       "id": "my-first-fighting-game",
@@ -794,6 +1106,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/my-first-gdevelop-game.html"
     },
     {
+      "id": "my-first-gdevelop-game-canvas",
+      "title": "My First GDevelop Game Build Canvas",
+      "desc": "",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/my-first-gdevelop-game-canvas.html"
+    },
+    {
       "id": "my-first-java-game",
       "title": "My First Java Game",
       "desc": "7 free beginner Java game workshops. Build a platformer, breakout, space shooter, Pong and a 3-part RPG with real Java code. Interactive quizzes and XP. Ages 11+.",
@@ -847,6 +1175,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/my-first-pico8-game.html"
     },
     {
+      "id": "my-first-pico8-game-canvas",
+      "title": "My First PICO-8 Game Build Canvas",
+      "desc": "",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/my-first-pico8-game-canvas.html"
+    },
+    {
       "id": "my-first-python-game",
       "title": "My First Python Game",
       "desc": "7 free beginner Python game workshops with Pygame. Build a catch game, platformer, dodge game, maze, breakout and more. Interactive quizzes and XP. Ages 10+.",
@@ -862,6 +1206,22 @@ window.JVDS_CONTENT = {
       "themeColor": "#06d6a0",
       "cover": "/og/my-first-python-game.png",
       "url": "/workshops/my-first-python-game.html"
+    },
+    {
+      "id": "my-first-python-game-canvas",
+      "title": "My First Python Game Build Canvas",
+      "desc": "",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/my-first-python-game-canvas.html"
     },
     {
       "id": "my-first-roblox-studio-game",
@@ -976,6 +1336,20 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/og/my-first-video-game.png",
       "url": "/workshops/my-first-video-game.html"
+    },
+    {
+      "id": "night-watch-canvas",
+      "title": "Night Watch Part 1 Build Canvas",
+      "desc": "",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/night-watch-canvas.html"
     },
     {
       "id": "night-watch-workshop",
@@ -1462,6 +1836,20 @@ window.JVDS_CONTENT = {
       "url": "/workshops/godot-racing-workshop.html"
     },
     {
+      "id": "godot-gdscript-essentials-canvas",
+      "title": "GDScript Essentials Build Canvas",
+      "desc": "",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-gdscript-essentials-canvas.html"
+    },
+    {
       "id": "godot-gdscript-essentials",
       "title": "GDScript Essentials: Learn Before You Build",
       "desc": "Learn GDScript fundamentals before building Godot games. Variables, functions, control flow, objects and more. Free interactive course for ages 10+.",
@@ -1490,6 +1878,84 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/godot-templates.png",
       "url": "/workshops/godot_templates.html"
+    },
+    {
+      "id": "godot-tutorial-canvas",
+      "title": "Godot Basics Tutorial Build Canvas",
+      "desc": "",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-tutorial-canvas.html"
+    },
+    {
+      "id": "godot-gatekeeper-3d-part1-canvas",
+      "title": "Godot Gatekeeper 3D Part 1 Build Canvas",
+      "desc": "",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "3d"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-gatekeeper-3d-part1-canvas.html"
+    },
+    {
+      "id": "godot-gatekeeper-3d-part2-canvas",
+      "title": "Godot Gatekeeper 3D Part 2 Build Canvas",
+      "desc": "",
+      "engine": "Godot",
+      "difficulty": "intermediate",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "3d"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-gatekeeper-3d-part2-canvas.html"
+    },
+    {
+      "id": "godot-racing-canvas",
+      "title": "Godot Racing Build Canvas",
+      "desc": "",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "racing"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-racing-canvas.html"
+    },
+    {
+      "id": "godot-racing-2-canvas",
+      "title": "Godot Racing Part 2 Build Canvas",
+      "desc": "",
+      "engine": "Godot",
+      "difficulty": "intermediate",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "racing"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-racing-2-canvas.html"
     },
     {
       "id": "godot_tutorial",
@@ -2191,6 +2657,94 @@ window.JVDS_CONTENT = {
       "url": "/workshops/pico8-shooter-workshop.html"
     },
     {
+      "id": "pico8-dungeon-canvas",
+      "title": "PICO-8 Dungeon Build Canvas",
+      "desc": "",
+      "engine": "PICO-8",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/pico8-dungeon-canvas.html"
+    },
+    {
+      "id": "pico8-match3-canvas",
+      "title": "PICO-8 Match-3 Build Canvas",
+      "desc": "",
+      "engine": "PICO-8",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/pico8-match3-canvas.html"
+    },
+    {
+      "id": "pico8-platformer-canvas",
+      "title": "PICO-8 Platformer Build Canvas",
+      "desc": "",
+      "engine": "PICO-8",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/pico8-platformer-canvas.html"
+    },
+    {
+      "id": "pico8-pong-canvas",
+      "title": "PICO-8 Pong Build Canvas",
+      "desc": "",
+      "engine": "PICO-8",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/pico8-pong-canvas.html"
+    },
+    {
+      "id": "pico8-shooter-canvas",
+      "title": "PICO-8 Shooter Build Canvas",
+      "desc": "",
+      "engine": "PICO-8",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "shooter"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/pico8-shooter-canvas.html"
+    },
+    {
+      "id": "pico8-snake-canvas",
+      "title": "PICO-8 Snake Build Canvas",
+      "desc": "",
+      "engine": "PICO-8",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/pico8-snake-canvas.html"
+    },
+    {
       "id": "python-game-builder",
       "title": "Build a Python Game Dodge &amp; Collect",
       "desc": "Fill in the numbers, make the decisions, and watch your game run live. Build a dodge and collect game. Ages 11+. Free.",
@@ -2319,6 +2873,108 @@ window.JVDS_CONTENT = {
       "themeColor": "#ff7700",
       "cover": "/og/python-platformer-part2-workshop.png",
       "url": "/workshops/python-platformer-part2-workshop.html"
+    },
+    {
+      "id": "python-breakout-canvas",
+      "title": "Python Breakout Build Canvas",
+      "desc": "",
+      "engine": "Python",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/python-breakout-canvas.html"
+    },
+    {
+      "id": "python-breakout-part2-canvas",
+      "title": "Python Breakout Part 2 Build Canvas",
+      "desc": "",
+      "engine": "Python",
+      "difficulty": "intermediate",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/python-breakout-part2-canvas.html"
+    },
+    {
+      "id": "python-catch-canvas",
+      "title": "Python Catch Build Canvas",
+      "desc": "",
+      "engine": "Python",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/python-catch-canvas.html"
+    },
+    {
+      "id": "python-dodge-canvas",
+      "title": "Python Dodge Build Canvas",
+      "desc": "",
+      "engine": "Python",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/python-dodge-canvas.html"
+    },
+    {
+      "id": "python-maze-canvas",
+      "title": "Python Maze Build Canvas",
+      "desc": "",
+      "engine": "Python",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/python-maze-canvas.html"
+    },
+    {
+      "id": "python-platformer-canvas",
+      "title": "Python Platformer Build Canvas",
+      "desc": "",
+      "engine": "Python",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/python-platformer-canvas.html"
+    },
+    {
+      "id": "python-platformer-part2-canvas",
+      "title": "Python Platformer Part 2 Build Canvas",
+      "desc": "",
+      "engine": "Python",
+      "difficulty": "intermediate",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/python-platformer-part2-canvas.html"
     },
     {
       "id": "roblox-pirate-workshop",
@@ -2576,6 +3232,78 @@ window.JVDS_CONTENT = {
       "themeColor": "#ff7700",
       "cover": "/og/scratch-quiz-workshop.png",
       "url": "/workshops/scratch-quiz-workshop.html"
+    },
+    {
+      "id": "scratch-catch-canvas",
+      "title": "Scratch Catch Build Canvas",
+      "desc": "",
+      "engine": "Scratch",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/scratch-catch-canvas.html"
+    },
+    {
+      "id": "scratch-clicker-canvas",
+      "title": "Scratch Clicker Build Canvas",
+      "desc": "",
+      "engine": "Scratch",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/scratch-clicker-canvas.html"
+    },
+    {
+      "id": "scratch-maze-canvas",
+      "title": "Scratch Maze Build Canvas",
+      "desc": "",
+      "engine": "Scratch",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/scratch-maze-canvas.html"
+    },
+    {
+      "id": "scratch-platformer-canvas",
+      "title": "Scratch Platformer Build Canvas",
+      "desc": "",
+      "engine": "Scratch",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/scratch-platformer-canvas.html"
+    },
+    {
+      "id": "scratch-quiz-canvas",
+      "title": "Scratch Quiz Build Canvas",
+      "desc": "",
+      "engine": "Scratch",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/scratch-quiz-canvas.html"
     },
     {
       "id": "scratch-story-workshop",
@@ -4329,28 +5057,28 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-06T15:52:25.055Z",
-    "workshops": 197,
+    "generated": "2026-10-07T16:13:06.257Z",
+    "workshops": 246,
     "games": 41,
     "tools": 37,
     "books": 5,
     "engines": {
       "Blender": 9,
-      "C++": 9,
-      "Defold": 6,
-      "GDevelop": 6,
-      "General": 52,
+      "C++": 16,
+      "Defold": 12,
+      "GDevelop": 12,
+      "General": 58,
       "GML/GameMaker": 10,
-      "Godot": 7,
+      "Godot": 13,
       "Java": 14,
       "JavaScript": 7,
       "Minecraft": 8,
       "MUGEN": 5,
       "OpenRCT2": 3,
-      "PICO-8": 6,
-      "Python": 9,
+      "PICO-8": 12,
+      "Python": 16,
       "Roblox": 11,
-      "Scratch": 7,
+      "Scratch": 12,
       "TinkerCAD": 9,
       "Unity": 9,
       "Unreal": 10
