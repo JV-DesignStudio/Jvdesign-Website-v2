@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Night Watch Part 1 Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Night Watch Part 1 Build Canvas <span class="cw-lang-tag">&#x1f916; Godot</span></h1>
+  <p>Patrol a dark building with your flashlight. Check every room.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Night Watch game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A dark building floor plan with a flashlight cone</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function gdscriptToJs(code) {
+  return code
+    .replace(/#.*$/gm, '')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bVector2\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
+    .replace(/\brandf\(\)/g, 'Math.random()')
+    .replace(/\brandi\(\)\s*%\s*(\w+)/g, 'Math.floor(Math.random()*$1)')
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
+    .replace(/\.position\.x/g, '.x')
+    .replace(/\.position\.y/g, '.y')
+    .replace(/\bInput\.is_action_pressed\("ui_left"\)/g, 'leftHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
+    .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
+    .replace(/\belif\b/g, '} else if')
+    .replace(/\bif\s+(.+):/g, 'if($1){')
+    .replace(/\belse\s*:/g, '} else {')
+    .replace(/\bfor\s+(\w+)\s+in\s+range\(([^)]+)\)\s*:/g, 'for(let $1=0;$1<$2;$1++){')
+    .replace(/\bwhile\s+(.+):/g, 'while($1){')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false')
+    .replace(/\bnull\b/g, 'null');
+}
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0a0a0a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var GUARD_VARS = 'let px=200,py=360,pw=12,speed=2,flashAngle=0,flashRange=120;';
+var ROOM_DATA = 'let rooms=[' +
+  '{x:20,y:20,w:160,h:120,name:"Office",checked:false},' +
+  '{x:220,y:20,w:160,h:120,name:"Server",checked:false},' +
+  '{x:20,y:180,w:160,h:120,name:"Storage",checked:false},' +
+  '{x:220,y:180,w:160,h:120,name:"Break Room",checked:false}' +
+  '];';
+var WALL_DATA = 'let walls=[{x:0,y:0,w:400,h:8},{x:0,y:0,w:8,h:400},{x:392,y:0,w:8,h:400},{x:0,y:392,w:400,h:8},' +
+  '{x:0,y:148,w:160,h:8},{x:190,y:0,w:8,h:148},{x:190,y:148,w:8,h:8},' +
+  '{x:210,y:148,w:190,h:8},{x:210,y:0,w:8,h:148},' +
+  '{x:0,y:308,w:160,h:8},{x:190,y:168,w:8,h:148},{x:210,y:168,w:8,h:148},{x:210,y:308,w:190,h:8}];';
+var EVENT_VARS = 'let events=["Lights flicker...","A door creaks...","Footsteps echo...","Something falls..."];let eventTimer=0,eventText="",eventAlpha=0;';
+var STATE_VARS = 'let gameState="play",checkedCount=0;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false});';
+
+var MOUSE_TRACK = 'let mx=200,my=200;canvas.addEventListener("mousemove",function(e){var r=canvas.getBoundingClientRect();mx=e.clientX-r.left;my=e.clientY-r.top});';
+
+var DRAW_DARK = 'ctx.fillStyle="#0a0a0a";ctx.fillRect(0,0,400,400);';
+var DRAW_FLASH = 'ctx.save();ctx.translate(px+pw/2,py+pw/2);var fa=Math.atan2(my-(py+pw/2),mx-(px+pw/2));ctx.rotate(fa);' +
+  'var grad=ctx.createRadialGradient(0,0,10,0,0,flashRange);grad.addColorStop(0,"rgba(255,241,186,0.4)");grad.addColorStop(1,"rgba(255,241,186,0)");' +
+  'ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,flashRange,-0.5,0.5);ctx.fill();ctx.restore();';
+var DRAW_WALLS = 'ctx.fillStyle="#334155";for(var wi=0;wi<walls.length;wi++){ctx.fillRect(walls[wi].x,walls[wi].y,walls[wi].w,walls[wi].h)}';
+var DRAW_ROOMS = 'for(var ri=0;ri<rooms.length;ri++){var r=rooms[ri];ctx.fillStyle=r.checked?"rgba(34,197,94,0.1)":"rgba(30,41,59,0.3)";ctx.fillRect(r.x,r.y,r.w,r.h);' +
+  'ctx.fillStyle=r.checked?"#22c55e":"#64748b";ctx.font="bold 11px monospace";ctx.textAlign="center";ctx.fillText(r.name+(r.checked?" [OK]":""),r.x+r.w/2,r.y+r.h/2)}';
+var DRAW_GUARD = 'ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(px+pw/2,py+pw/2,pw/2,0,Math.PI*2);ctx.fill();';
+var DRAW_HUD = 'ctx.fillStyle="#94a3b8";ctx.font="bold 14px monospace";ctx.textAlign="left";ctx.fillText("Rooms: "+checkedCount+"/4",10,390);' +
+  'if(eventAlpha>0){ctx.globalAlpha=eventAlpha;ctx.fillStyle="#f43f5e";ctx.font="bold 16px monospace";ctx.textAlign="center";ctx.fillText(eventText,200,200);ctx.globalAlpha=1}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-night-watch1-canvas',
+  downloadName: 'my-night-watch-1.html',
+
+  hints: [
+    'A dark building floor plan with a flashlight cone',
+    'The guard moves through rooms with WASD',
+    'A flashlight cone follows the mouse direction',
+    'Room labels show which ones have been checked',
+    'Spooky events flash text on screen randomly',
+    'All four rooms checked completes the patrol'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_DARK + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK +
+        'function loop(){' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'px=Math.max(8,Math.min(392-pw,px));py=Math.max(8,Math.min(392-pw,py));' +
+        DRAW_DARK + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK +
+        'function loop(){' +
+        'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
+        'px=Math.max(8,Math.min(392-pw,px));py=Math.max(8,Math.min(392-pw,py));' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_DARK + DRAW_FLASH + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK +
+        'function loop(){' +
+        'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
+        'px=Math.max(8,Math.min(392-pw,px));py=Math.max(8,Math.min(392-pw,py));' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_DARK + DRAW_FLASH + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + EVENT_VARS + KEYS + MOUSE_TRACK +
+        'function loop(){' +
+        'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
+        'px=Math.max(8,Math.min(392-pw,px));py=Math.max(8,Math.min(392-pw,py));' +
+        'for(var ri=0;ri<rooms.length;ri++){var r=rooms[ri];if(!r.checked&&px+pw>r.x+20&&px<r.x+r.w-20&&py+pw>r.y+20&&py<r.y+r.h-20){r.checked=true;checkedCount++}}' +
+        'eventTimer++;if(eventTimer%300===0){eventText=events[Math.floor(Math.random()*events.length)];eventAlpha=1}' +
+        'if(eventAlpha>0)eventAlpha-=0.01;' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_DARK + DRAW_FLASH + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + EVENT_VARS + STATE_VARS + KEYS + MOUSE_TRACK +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="done"){for(var i=0;i<rooms.length;i++)rooms[i].checked=false;checkedCount=0;px=200;py=360;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
+        'px=Math.max(8,Math.min(392-pw,px));py=Math.max(8,Math.min(392-pw,py));' +
+        'for(var ri=0;ri<rooms.length;ri++){var r=rooms[ri];if(!r.checked&&px+pw>r.x+20&&px<r.x+r.w-20&&py+pw>r.y+20&&py<r.y+r.h-20){r.checked=true;checkedCount++}}' +
+        'eventTimer++;if(eventTimer%300===0){eventText=events[Math.floor(Math.random()*events.length)];eventAlpha=1}' +
+        'if(eventAlpha>0)eventAlpha-=0.01;' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_DARK + DRAW_FLASH + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
+        'if(gameState==="done"){ctx.fillStyle="rgba(34,197,94,0.2)";ctx.fillRect(0,0,400,400);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("PATROL COMPLETE!",200,180);' +
+        'ctx.font="16px monospace";ctx.fillText("All rooms checked",200,210);ctx.fillText("Press R to patrol again",200,240)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Building',
+      goal: 'Set up a dark building with four rooms to patrol.',
+      points: [
+        'The building is a 400x400 dark space divided into four rooms',
+        'Each room has a name, position, and a checked flag',
+        'Walls separate the rooms with doorways between them',
+        'In Godot you would build this with TileMap and Area2D nodes'
+      ],
+      challenge: '🤖 Define the room layout:',
+      starter: '# Four rooms to patrol\nvar room_count = ___\nvar room_names = ["Office", "Server", "Storage", "Break Room"]\n\n# Guard starts at the entrance\nvar guard_x = 200\nvar guard_y = ___',
+      solution: '# Four rooms to patrol\nvar room_count = 4\nvar room_names = ["Office", "Server", "Storage", "Break Room"]\n\n# Guard starts at the entrance\nvar guard_x = 200\nvar guard_y = 360',
+      checks: ['4', '360', 'room_count'],
+      height: 140,
+      fills: {
+        text: 'The building has ___ rooms to check. The guard starts at the ___ entrance.',
+        answers: ['4', 'bottom']
+      },
+      quiz: {
+        question: 'Why divide the building into named rooms?',
+        options: [
+          'Names look professional',
+          'Named rooms give the player spatial awareness and clear objectives - "check the Server room" is meaningful, "go to coordinates" is not',
+          'Rooms require names in Godot'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Guard Movement',
+      goal: 'Move the security guard with WASD, staying inside the building.',
+      points: [
+        'The guard moves at speed 2 - slow and deliberate for atmosphere',
+        'Clamp to building bounds (inside the outer walls)',
+        'In a full Godot game you would use CharacterBody2D with move_and_slide',
+        'The dark atmosphere makes movement feel more tense'
+      ],
+      challenge: '🤖 Write the guard movement:',
+      starter: '# Move the guard\nif Input.is_action_pressed("ui_left"):\n    guard_x -= ___\nif Input.is_action_pressed("ui_right"):\n    guard_x += speed\nif Input.is_action_pressed("ui_up"):\n    guard_y -= speed\nif Input.is_action_pressed("ui_down"):\n    guard_y += ___',
+      solution: '# Move the guard\nif Input.is_action_pressed("ui_left"):\n    guard_x -= speed\nif Input.is_action_pressed("ui_right"):\n    guard_x += speed\nif Input.is_action_pressed("ui_up"):\n    guard_y -= speed\nif Input.is_action_pressed("ui_down"):\n    guard_y += speed',
+      checks: ['is_action_pressed', 'speed', 'guard_x', 'guard_y'],
+      height: 200,
+      fills: {
+        text: 'The guard moves at ___ pixels per frame. The slow speed creates a ___ atmosphere.',
+        answers: ['2', 'tense']
+      },
+      quiz: {
+        question: 'Why move the guard slowly in a horror/suspense game?',
+        options: [
+          'Faster movement causes bugs',
+          'Slow movement builds tension - the player feels vulnerable because they cannot quickly escape, amplifying every spooky event',
+          'The canvas cannot render fast movement'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Flashlight',
+      goal: 'Add a flashlight cone that follows the mouse cursor.',
+      points: [
+        'The flashlight direction is calculated with <code>atan2(mouse_y - guard_y, mouse_x - guard_x)</code>',
+        'A radial gradient creates a warm glow that fades to darkness',
+        'The cone spans about 0.5 radians each side (roughly 60 degrees total)',
+        'In Godot you would use a Light2D node with PointLight2D'
+      ],
+      challenge: '🤖 Set the flashlight parameters:',
+      starter: '# Flashlight settings\nvar flash_range = ___\nvar flash_half_angle = 0.5\n\n# Direction follows the mouse\nvar flash_dir = atan2(mouse_y - guard_y, mouse_x - guard_x)',
+      solution: '# Flashlight settings\nvar flash_range = 120\nvar flash_half_angle = 0.5\n\n# Direction follows the mouse\nvar flash_dir = atan2(mouse_y - guard_y, mouse_x - guard_x)',
+      checks: ['120', '0.5', 'flash_range', 'atan2'],
+      height: 120,
+      fills: {
+        text: 'The flashlight reaches ___ pixels. Mouse-aimed light gives the player ___ over what they can see.',
+        answers: ['120', 'control']
+      },
+      quiz: {
+        question: 'Why use mouse aiming for the flashlight?',
+        options: [
+          'Keyboards cannot aim',
+          'Mouse aiming decouples looking from moving - the guard can walk one direction while checking another, adding tactical depth',
+          'It makes the cursor visible'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Room Checking',
+      goal: 'Mark rooms as checked when the guard enters their centre area.',
+      points: [
+        'Check if the guard is well inside the room (not just touching the door)',
+        'Set the room\'s checked flag to true and increment the counter',
+        'Checked rooms get a green tint and [OK] label',
+        'Requiring the guard to enter deeply prevents accidental drive-by checks'
+      ],
+      challenge: '🤖 Write the room checking logic:',
+      starter: '# Check if guard is inside each room\nfor i in range(4):\n    if not rooms[i].checked:\n        if guard_x > rooms[i].x + 20 and guard_x < rooms[i].x + rooms[i].w - 20:\n            if guard_y > rooms[i].y + 20 and guard_y < rooms[i].y + rooms[i].h - ___:\n                rooms[i].checked = ___\n                checked_count += 1',
+      solution: '# Check if guard is inside each room\nfor i in range(4):\n    if not rooms[i].checked:\n        if guard_x > rooms[i].x + 20 and guard_x < rooms[i].x + rooms[i].w - 20:\n            if guard_y > rooms[i].y + 20 and guard_y < rooms[i].y + rooms[i].h - 20:\n                rooms[i].checked = true\n                checked_count += 1',
+      checks: ['checked', 'true', 'checked_count', '20'],
+      height: 180,
+      fills: {
+        text: 'The guard must be ___ pixels inside the room to check it. This prevents accidental checks from the ___.',
+        answers: ['20', 'doorway']
+      },
+      quiz: {
+        question: 'Why require the guard to enter deeply instead of just touching the room?',
+        options: [
+          'Deeper detection is more accurate',
+          'It forces the player to commit to entering - you cannot safely peek from the door, building tension about what is inside',
+          'Room edges are buggy'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Spooky Events',
+      goal: 'Trigger random atmospheric events to build tension.',
+      points: [
+        'Every 300 frames (5 seconds) a random event text appears',
+        'Events are purely atmospheric: flickering lights, creaking doors, footsteps',
+        'Text fades in then slowly fades out using alpha',
+        'In Godot you would use Timer nodes and AnimationPlayer for timed events'
+      ],
+      challenge: '🤖 Write the event timer:',
+      starter: '# Trigger a random event every 300 frames\nevent_timer += 1\nif event_timer % ___ == 0:\n    event_text = events[randi() % ___]\n    event_alpha = 1.0\n\n# Fade the event text\nif event_alpha > 0:\n    event_alpha -= 0.01',
+      solution: '# Trigger a random event every 300 frames\nevent_timer += 1\nif event_timer % 300 == 0:\n    event_text = events[randi() % 4]\n    event_alpha = 1.0\n\n# Fade the event text\nif event_alpha > 0:\n    event_alpha -= 0.01',
+      checks: ['300', 'event_alpha', 'event_text', 'randi'],
+      height: 160,
+      fills: {
+        text: 'Events trigger every ___ frames. The alpha fades by ___ per frame for a slow disappearance.',
+        answers: ['300', '0.01']
+      },
+      quiz: {
+        question: 'Why are atmospheric events important in a night watch game?',
+        options: [
+          'They fill silence',
+          'Random events keep the player on edge even without real danger - anticipation of something happening is often scarier than the thing itself',
+          'Events are required by Godot'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Patrol Complete',
+      goal: 'End the shift when all four rooms are checked.',
+      points: [
+        'When checked_count reaches 4, the patrol is complete',
+        'Show a green overlay with "PATROL COMPLETE!" message',
+        'Press R to reset all rooms and start a new patrol',
+        'This simple objective structure can expand with time limits and scoring'
+      ],
+      challenge: '🤖 Write the patrol completion check:',
+      starter: '# Check if all rooms are done\nif checked_count >= ___:\n    game_state = "___"\n\n# The patrol is complete when every room shows [OK]',
+      solution: '# Check if all rooms are done\nif checked_count >= 4:\n    game_state = "done"\n\n# The patrol is complete when every room shows [OK]',
+      checks: ['4', 'done', 'checked_count'],
+      height: 100,
+      fills: {
+        text: 'The patrol ends when ___ rooms are checked. The state changes to "___" to show the victory screen.',
+        answers: ['4', 'done']
+      },
+      quiz: {
+        question: 'How could you make the patrol more challenging?',
+        options: [
+          'Add more rooms only',
+          'Add a time limit, randomise which rooms need checking, or add hazards that reset checked rooms - variety creates replay value',
+          'Make the guard faster'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

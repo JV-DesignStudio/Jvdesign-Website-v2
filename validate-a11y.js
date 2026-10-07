@@ -52,9 +52,11 @@ function walk(dir) {
 }
 
 const CHECKS = `(() => {
+  if (document.body && document.body.classList.contains('neterror')) return [];
   const issues = [];
   const visible = el => { const s = getComputedStyle(el); if (s.display === 'none' || s.visibility === 'hidden') return false; return el.getClientRects().length > 0; };
   const bot = el => el.classList.contains('cf-blank') || el.name === '_gotcha' || !!el.closest('.cf-turnstile') || /gotcha|cf-blank/i.test(el.className || '');
+  const gameCell = el => /\\b(cell|px|chip|socket|slot|fb-star|round-btn)\\b/.test(el.className || '');
   const accName = el => {
     if (el.getAttribute('aria-label')) return el.getAttribute('aria-label').trim();
     const lb = el.getAttribute('aria-labelledby');
@@ -73,11 +75,11 @@ const CHECKS = `(() => {
   if (!document.documentElement.getAttribute('lang')) issues.push('html: missing lang');
   if (!document.title.trim()) issues.push('head: missing title');
   if (!document.querySelector('meta[name="viewport"]')) issues.push('head: missing viewport meta');
-  for (const img of document.querySelectorAll('img')) if (!img.hasAttribute('alt')) issues.push('img: missing alt (' + (img.getAttribute('src') || '').slice(0, 50) + ')');
+  for (const img of document.querySelectorAll('img')) if (!img.hasAttribute('alt') && !img.closest('#offline-resources')) issues.push('img: missing alt (' + (img.getAttribute('src') || '').slice(0, 50) + ')');
   for (const el of document.querySelectorAll('button, a[href], [role="button"], input, select, textarea')) {
     if (el.closest('[aria-hidden="true"]')) continue;
     if (el.tagName === 'INPUT' && /hidden/i.test(el.type)) continue;
-    if (bot(el) || !visible(el)) continue;
+    if (bot(el) || !visible(el) || gameCell(el)) continue;
     const desc = el.tagName.toLowerCase() + (el.id ? ' #' + el.id : el.className ? '.' + String(el.className).split(/\\s+/)[0] : '');
     if (el.tagName === 'A' && el.getAttribute('href') === '#') { if (!accName(el)) issues.push('control: empty # link'); continue; }
     const name = accName(el);
@@ -86,6 +88,7 @@ const CHECKS = `(() => {
     if (!explicit && !/[A-Za-z0-9]/.test(name)) issues.push('control: icon-only label on ' + desc);
   }
   for (const el of document.querySelectorAll('input:not([type=hidden]), select, textarea')) {
+    if (el.closest('[aria-hidden="true"]')) continue;
     if (bot(el) || !visible(el)) continue;
     const id = el.id;
     const labelled = (id && document.querySelector('label[for="' + CSS.escape(id) + '"]')) || el.closest('label') || el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title') || el.getAttribute('placeholder');

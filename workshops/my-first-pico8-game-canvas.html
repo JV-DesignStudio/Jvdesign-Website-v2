@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My First PICO-8 Game Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(236,72,153,.15);color:#ec4899;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>My First PICO-8 Game Build Canvas <span class="cw-lang-tag">&#x1f3ae; PICO-8</span></h1>
+  <p>Write PICO-8 Lua code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your PICO-8 Catch game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A small catcher at the bottom of a dark screen</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   PICO-8 Lua-to-JS transpiler (light transform so
+   PICO-8 syntax runs in the canvas iframe)
+   =================================================== */
+function p8ToJs(code) {
+  return code
+    .replace(/--.*$/gm, '')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\./g, '+')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\badd\((\w+),\s*([^)]+)\)/g, '$1.push($2)')
+    .replace(/\bdel\((\w+),\s*([^)]+)\)/g, '$1.splice($1.indexOf($2),1)')
+    .replace(/\brnd\(([^)]*)\)/g, 'Math.random()*($1)')
+    .replace(/\bflr\(/g, 'Math.floor(')
+    .replace(/\bbtn\(0\)/g, 'leftHeld')
+    .replace(/\bbtn\(1\)/g, 'rightHeld')
+    .replace(/\bbtn\(2\)/g, 'upHeld')
+    .replace(/\bbtn\(3\)/g, 'downHeld')
+    .replace(/\bbtn\(4\)/g, 'zHeld')
+    .replace(/\bbtn\(5\)/g, 'xHeld')
+    .replace(/\bbtnp\(0\)/g, 'leftPressed')
+    .replace(/\bbtnp\(1\)/g, 'rightPressed')
+    .replace(/\bbtnp\(2\)/g, 'upPressed')
+    .replace(/\bbtnp\(3\)/g, 'downPressed')
+    .replace(/\bbtnp\(4\)/g, 'zPressed')
+    .replace(/\bbtnp\(5\)/g, 'xPressed')
+    .replace(/\bprint\(([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/g,
+      'ctx.fillStyle=P8PAL[$4]||"#fff";ctx.fillText($1,$2*3,$3*3)')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\bfunction\s+(\w+)\(([^)]*)\)/g, 'function $1($2){')
+    .replace(/\bnot\s+/g, '!')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (PICO-8 Catch)
+   =================================================== */
+var S = 3;
+
+var P8PAL = '{0:"#000",1:"#1d2b53",2:"#7e2553",3:"#008751",4:"#ab5236",5:"#5f574f",6:"#c2c3c7",7:"#fff",8:"#ff004d",9:"#ffa300",10:"#ffec27",11:"#00e436",12:"#29adff",13:"#83769c",14:"#ff77a8",15:"#ffccaa"}';
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#000;margin:0;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="384" height="384"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");ctx.font="bold 9px monospace";const S=3,P8PAL=' + P8PAL + ';';
+
+var CATCHER_VARS = 'let cx=56,cy=120,cw=16,ch=6;';
+
+var STAR_VARS = 'let sx=Math.floor(Math.random()*120)+4,sy=-8,sw=6,sh=6,fallSpeed=1;';
+
+var SCORE_VARS = 'let score=0;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false,zHeld=false,xHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'if(e.code==="KeyZ")zHeld=true;if(e.code==="KeyX")xHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false;' +
+    'if(e.code==="KeyZ")zHeld=false;if(e.code==="KeyX")xHeld=false});';
+
+var MOVE_CATCHER = 'if(leftHeld)cx-=2;if(rightHeld)cx+=2;cx=Math.max(0,Math.min(128-cw,cx));';
+
+var DRAW_BG = 'ctx.fillStyle="#000";ctx.fillRect(0,0,384,384);';
+
+var DRAW_CATCHER = 'ctx.fillStyle=P8PAL[12];ctx.fillRect(cx*S,cy*S,cw*S,ch*S);';
+
+var DRAW_STAR = 'ctx.fillStyle=P8PAL[10];ctx.fillRect(sx*S,sy*S,sw*S,sh*S);';
+
+var DRAW_SCORE = 'ctx.fillStyle=P8PAL[7];ctx.font="bold 12px monospace";ctx.textAlign="left";ctx.fillText("score "+score,6,12);';
+
+var STAR_FALL = 'sy+=fallSpeed;';
+
+var STAR_RESET = 'function resetStar(){sx=Math.floor(Math.random()*120)+4;sy=-8}';
+
+var STAR_CATCH = 'if(sy+sh>=cy&&sy<=cy+ch&&sx+sw>=cx&&sx<=cx+cw){score++;resetStar()}';
+
+var STAR_MISS = 'if(sy>130){resetStar()}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - My First PICO-8 Game steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-my-first-pico8-canvas',
+  downloadName: 'my-first-pico8-game.html',
+
+  hints: [
+    'A blue catcher sits at the bottom of a black screen',
+    'The catcher slides left and right with arrow keys',
+    'A yellow star falls from the top of the screen',
+    'Catching the star adds a point and spawns a new one',
+    'Stars that miss just respawn - no punishment',
+    'Stars speed up as your score grows'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + KEYS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_CATCHER +
+        DRAW_BG + DRAW_CATCHER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + KEYS +
+        'function loop(){' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'cx=Math.max(0,Math.min(128-cw,cx));' +
+        DRAW_BG + DRAW_CATCHER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'if(sy>130)resetStar();' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER + STAR_FALL +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'if(sy>130)resetStar();' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER + STAR_FALL + STAR_CATCH +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        STAR_MISS +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Catcher',
+      goal: 'Draw a blue catcher at the bottom of the PICO-8 screen.',
+      points: [
+        'PICO-8 has a tiny 128x128 pixel screen - we scale it 3x to 384x384 for the canvas',
+        'The catcher is a blue rectangle: 16 wide, 6 tall, sitting at y=120 (near the bottom)',
+        'In PICO-8 you draw with <code>rectfill(cx,cy,cx+cw,cy+ch,12)</code> - colour 12 is blue',
+        'The catcher starts centred: x = (128 - 16) / 2 = 56'
+      ],
+      challenge: '🎮 Set the catcher position and size:',
+      starter: '-- set the catcher position\ncx = ___\ncy = 120\ncw = ___\nch = 6',
+      solution: '-- set the catcher position\ncx = 56\ncy = 120\ncw = 16\nch = 6',
+      checks: ['56', '120', '16', '6'],
+      height: 120,
+      fills: {
+        text: 'PICO-8 screen is ___ pixels wide. The catcher starts at x = ___ to be centred.',
+        answers: ['128', '56']
+      },
+      quiz: {
+        question: 'Why is the PICO-8 screen only 128x128?',
+        options: [
+          'It is broken',
+          'The tiny size is a creative constraint - it forces clean pixel art and simple designs, like retro consoles',
+          'Bigger screens use too much RAM'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Arrow Key Movement',
+      goal: 'Move the catcher left and right with btn(0) and btn(1).',
+      points: [
+        'PICO-8 uses <code>btn(0)</code> for left and <code>btn(1)</code> for right',
+        'Move 2 pixels per frame while a button is held',
+        'Clamp with <code>if cx < 0 then cx = 0 end</code> so it stays on screen',
+        'The 6 PICO-8 buttons: 0=left, 1=right, 2=up, 3=down, 4=z, 5=x'
+      ],
+      challenge: '🎮 Write the catcher movement:',
+      starter: '-- move the catcher\nif btn(0) then\n  cx -= ___\nend\nif btn(1) then\n  cx += ___\nend\n\n-- stay on screen\nif cx < 0 then cx = 0 end\nif cx > 128 - cw then cx = 128 - ___ end',
+      solution: '-- move the catcher\nif btn(0) then\n  cx -= 2\nend\nif btn(1) then\n  cx += 2\nend\n\n-- stay on screen\nif cx < 0 then cx = 0 end\nif cx > 128 - cw then cx = 128 - cw end',
+      checks: ['btn(0)', 'btn(1)', 'cw'],
+      height: 200,
+      fills: {
+        text: 'btn(0) checks the ___ arrow. The catcher moves ___ pixels each frame.',
+        answers: ['left', '2']
+      },
+      quiz: {
+        question: 'Why does PICO-8 use numbers for buttons instead of names?',
+        options: [
+          'A bug in the engine',
+          'PICO-8 mimics a fantasy console with a simple 6-button gamepad - numbers match physical button positions',
+          'Letters take more memory'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Falling Star',
+      goal: 'Spawn a yellow star at a random position and make it fall.',
+      points: [
+        'The star starts above the screen at <code>sy = -8</code> so it slides in',
+        'Each frame: <code>sy += fallSpeed</code> moves it down',
+        'In PICO-8: <code>rnd(120)</code> gives a random number from 0 to 120',
+        'When it falls off the bottom, reset to the top at a new random x'
+      ],
+      challenge: '🎮 Write the star falling logic:',
+      starter: '-- move the star down\nsy += ___\n\n-- reset when off screen\nif sy > 130 then\n  sx = flr(rnd(___)) + 4\n  sy = -8\nend',
+      solution: '-- move the star down\nsy += fallSpeed\n\n-- reset when off screen\nif sy > 130 then\n  sx = flr(rnd(120)) + 4\n  sy = -8\nend',
+      checks: ['fallspeed', '130', 'rnd'],
+      height: 160,
+      fills: {
+        text: 'rnd(120) returns a random number between 0 and ___. The star resets when sy passes ___.',
+        answers: ['120', '130']
+      },
+      quiz: {
+        question: 'Why add 4 to the random x position?',
+        options: [
+          'It makes the game harder',
+          'It adds a small margin so stars do not spawn right at the screen edge',
+          'PICO-8 requires it'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Catching Stars',
+      goal: 'Detect when the star overlaps the catcher and award a point.',
+      points: [
+        'Two rectangles overlap when their edges cross on both axes',
+        'Check: star bottom >= catcher top AND star top <= catcher bottom AND same for left/right',
+        'On catch: <code>score += 1</code> and reset the star',
+        'This is AABB collision - the same test used in nearly every 2D game'
+      ],
+      challenge: '🎮 Write the catch check:',
+      starter: '-- did the star hit the catcher?\nif sy + sh >= ___ and sy <= cy + ch and sx + sw >= ___ and sx <= cx + cw then\n  score += 1\n  resetStar()\nend',
+      solution: '-- did the star hit the catcher?\nif sy + sh >= cy and sy <= cy + ch and sx + sw >= cx and sx <= cx + cw then\n  score += 1\n  resetStar()\nend',
+      checks: ['score', 'resetstar', 'cy', 'cx'],
+      height: 140,
+      fills: {
+        text: 'AABB stands for axis-aligned ___ box. We compare ___ edges total to check overlap.',
+        answers: ['bounding', 'four']
+      },
+      quiz: {
+        question: 'What happens if we only check the y axis and skip x?',
+        options: [
+          'The game catches stars that are above or below but anywhere across the screen - even if the catcher is nowhere near',
+          'Nothing changes',
+          'The star stops falling'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Missed Stars Just Respawn',
+      goal: 'When a star misses, just send it back to the top - no punishment.',
+      points: [
+        'If the star passes y = 130 without being caught, call <code>resetStar()</code>',
+        'No lives system - this is a relaxed beginner game',
+        'The player can keep playing and practising forever',
+        'Many real games have a chill endless mode alongside a challenge mode'
+      ],
+      challenge: '🎮 Write the miss reset:',
+      starter: '-- star fell off screen\nif sy > ___ then\n  ___()\nend',
+      solution: '-- star fell off screen\nif sy > 130 then\n  resetStar()\nend',
+      checks: ['130', 'resetstar'],
+      height: 100,
+      fills: {
+        text: 'When the star passes y = ___, it respawns. This game has no lives because it is meant to be ___.',
+        answers: ['130', 'relaxed']
+      },
+      quiz: {
+        question: 'Why is a no-punishment catch game a good first project?',
+        options: [
+          'Punishment code is too hard to write',
+          'Beginners feel success immediately - adding difficulty later is easy once the core loop works',
+          'PICO-8 cannot track lives'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Speed Ramp',
+      goal: 'Make stars fall faster as the score grows.',
+      points: [
+        'Increase fallSpeed based on score: <code>fallSpeed = 1 + flr(score / 5)</code>',
+        'Cap at 4 so the game stays playable: <code>if fallSpeed > 4 then fallSpeed = 4 end</code>',
+        'Every 5 points the star falls one pixel faster per frame',
+        'This gentle difficulty curve keeps the game interesting without frustrating beginners'
+      ],
+      challenge: '🎮 Write the speed ramp:',
+      starter: '-- speed up as score grows\nfallSpeed = 1 + flr(score / ___)\nif fallSpeed > ___ then\n  fallSpeed = ___\nend',
+      solution: '-- speed up as score grows\nfallSpeed = 1 + flr(score / 5)\nif fallSpeed > 4 then\n  fallSpeed = 4\nend',
+      checks: ['fallspeed', 'score', '5', '4'],
+      height: 120,
+      fills: {
+        text: 'The star speeds up every ___ points. The cap of ___ keeps it beatable for beginners.',
+        answers: ['5', '4']
+      },
+      quiz: {
+        question: 'Why cap the speed at 4 instead of letting it grow forever?',
+        options: [
+          'The canvas breaks above 4',
+          'On a 128-pixel screen a star moving 4px/frame is already fast - higher speeds would cross the whole screen in under a second',
+          'PICO-8 numbers max out at 4'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

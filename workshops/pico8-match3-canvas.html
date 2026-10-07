@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PICO-8 Match-3 Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(236,72,153,.15);color:#ec4899;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>PICO-8 Match-3 Build Canvas <span class="cw-lang-tag">&#x1f3ae; PICO-8</span></h1>
+  <p>Write PICO-8 Lua code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your PICO-8 Match-3 game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">An 8x8 grid of coloured gems on a dark background</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function p8ToJs(code) {
+  return code
+    .replace(/--.*$/gm, '')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\./g, '+')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\badd\((\w+),\s*([^)]+)\)/g, '$1.push($2)')
+    .replace(/\bdel\((\w+),\s*([^)]+)\)/g, '$1.splice($1.indexOf($2),1)')
+    .replace(/\brnd\(([^)]*)\)/g, 'Math.random()*($1)')
+    .replace(/\bflr\(/g, 'Math.floor(')
+    .replace(/\bbtn\(0\)/g, 'leftHeld')
+    .replace(/\bbtn\(1\)/g, 'rightHeld')
+    .replace(/\bbtn\(2\)/g, 'upHeld')
+    .replace(/\bbtn\(3\)/g, 'downHeld')
+    .replace(/\bbtn\(4\)/g, 'zHeld')
+    .replace(/\bbtn\(5\)/g, 'xHeld')
+    .replace(/\bbtnp\(0\)/g, 'leftPressed')
+    .replace(/\bbtnp\(1\)/g, 'rightPressed')
+    .replace(/\bbtnp\(2\)/g, 'upPressed')
+    .replace(/\bbtnp\(3\)/g, 'downPressed')
+    .replace(/\bbtnp\(4\)/g, 'zPressed')
+    .replace(/\bbtnp\(5\)/g, 'xPressed')
+    .replace(/\bprint\(([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/g,
+      'ctx.fillStyle=P8PAL[$4]||"#fff";ctx.fillText($1,$2*3,$3*3)')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\bfunction\s+(\w+)\(([^)]*)\)/g, 'function $1($2){')
+    .replace(/\bnot\s+/g, '!')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (PICO-8 Match-3)
+   =================================================== */
+var S = 3;
+var GS = 8;
+var COLS = 8;
+var ROWS = 8;
+var OX = 16;
+var OY = 24;
+
+var P8PAL = '{0:"#000",1:"#1d2b53",2:"#7e2553",3:"#008751",4:"#ab5236",5:"#5f574f",6:"#c2c3c7",7:"#fff",8:"#ff004d",9:"#ffa300",10:"#ffec27",11:"#00e436",12:"#29adff",13:"#83769c",14:"#ff77a8",15:"#ffccaa"}';
+
+var GEM_COLS = '[8,9,10,11,12]';
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#000;margin:0;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="384" height="384"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");ctx.font="bold 12px monospace";const S=3,GS=8,COLS=8,ROWS=8,OX=16,OY=24,P8PAL=' + P8PAL + ',GEM_COLS=' + GEM_COLS + ';';
+
+var GRID_INIT = 'var grid=[];for(var r=0;r<ROWS;r++){grid[r]=[];for(var c=0;c<COLS;c++){grid[r][c]=Math.floor(Math.random()*5)}}';
+
+var CURSOR_VARS = 'let curX=0,curY=0;';
+
+var SCORE_VARS = 'let score=0;';
+
+var STATE_VARS = 'let gameState="play",clearTimer=0;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false,zHeld=false,xHeld=false;' +
+  'let leftPressed=false,rightPressed=false,upPressed=false,downPressed=false,zPressed=false,xPressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA"){leftHeld=true;leftPressed=true}' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD"){rightHeld=true;rightPressed=true}' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW"){upHeld=true;upPressed=true}' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS"){downHeld=true;downPressed=true}' +
+    'if(e.code==="KeyZ"){zHeld=true;zPressed=true}' +
+    'if(e.code==="KeyX"){xHeld=true;xPressed=true}' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false;' +
+    'if(e.code==="KeyZ")zHeld=false;if(e.code==="KeyX")xHeld=false});';
+
+var CLEAR_PRESSED = 'leftPressed=false;rightPressed=false;upPressed=false;downPressed=false;zPressed=false;xPressed=false;';
+
+var MOVE_CURSOR = 'if(leftPressed&&curX>0)curX--;if(rightPressed&&curX<COLS-2)curX++;if(upPressed&&curY>0)curY--;if(downPressed&&curY<ROWS-1)curY++;';
+
+var SWAP_FN = 'function doSwap(){var t=grid[curY][curX];grid[curY][curX]=grid[curY][curX+1];grid[curY][curX+1]=t}';
+
+var MATCH_FN = 'function findMatches(){var m=[];for(var r=0;r<ROWS;r++){for(var c=0;c<COLS-2;c++){if(grid[r][c]>=0&&grid[r][c]===grid[r][c+1]&&grid[r][c]===grid[r][c+2]){m.push([r,c],[r,c+1],[r,c+2])}}}' +
+  'for(var c=0;c<COLS;c++){for(var r=0;r<ROWS-2;r++){if(grid[r][c]>=0&&grid[r][c]===grid[r+1][c]&&grid[r][c]===grid[r+2][c]){m.push([r,c],[r+1,c],[r+2,c])}}}return m}';
+
+var CLEAR_FN = 'function clearMatches(m){var s=new Set();for(var i=0;i<m.length;i++){s.add(m[i][0]+","+m[i][1])}var cleared=0;s.forEach(function(k){var p=k.split(",");grid[parseInt(p[0])][parseInt(p[1])]=-1;cleared++});return cleared}';
+
+var DROP_FN = 'function dropGems(){for(var c=0;c<COLS;c++){var wr=ROWS-1;for(var r=ROWS-1;r>=0;r--){if(grid[r][c]>=0){grid[wr][c]=grid[r][c];if(wr!==r)grid[r][c]=-1;wr--}}while(wr>=0){grid[wr][c]=Math.floor(Math.random()*5);wr--}}}';
+
+var DRAW_BG = 'ctx.fillStyle=P8PAL[1];ctx.fillRect(0,0,384,384);';
+
+var DRAW_GRID = 'for(var r=0;r<ROWS;r++){for(var c=0;c<COLS;c++){var gx=(OX+c*GS+1)*S,gy=(OY+r*GS+1)*S;if(grid[r][c]>=0){ctx.fillStyle=P8PAL[GEM_COLS[grid[r][c]]];ctx.fillRect(gx,gy,6*S,6*S)}}}';
+
+var DRAW_CURSOR = 'ctx.strokeStyle=P8PAL[7];ctx.lineWidth=2;ctx.strokeRect((OX+curX*GS)*S,(OY+curY*GS)*S,GS*2*S,GS*S);';
+
+var DRAW_SCORE = 'ctx.fillStyle=P8PAL[7];ctx.font="bold 12px monospace";ctx.textAlign="left";ctx.fillText("score "+score,6,14);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-pico8-match3-canvas',
+  downloadName: 'my-pico8-match3.html',
+
+  hints: [
+    'An 8x8 grid of coloured gems on a dark background',
+    'A white cursor highlights two adjacent gems',
+    'Pressing Z swaps the two gems under the cursor',
+    'Three or more matching gems in a row or column clear',
+    'Cleared gems disappear and gems above drop down',
+    'New gems fill the top and chain matches add bonus points'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + GRID_INIT + CURSOR_VARS + KEYS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GRID +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + GRID_INIT + CURSOR_VARS + KEYS +
+        'function loop(){' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_CURSOR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + GRID_INIT + CURSOR_VARS + KEYS +
+        SWAP_FN +
+        'function loop(){' +
+        MOVE_CURSOR +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_CURSOR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + GRID_INIT + CURSOR_VARS + SCORE_VARS + KEYS +
+        SWAP_FN + MATCH_FN + CLEAR_FN +
+        'function loop(){' +
+        MOVE_CURSOR +
+        'if(zPressed){doSwap();var m=findMatches();if(m.length>0){score+=clearMatches(m)}else{doSwap()}}' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_CURSOR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + GRID_INIT + CURSOR_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        SWAP_FN + MATCH_FN + CLEAR_FN + DROP_FN +
+        'function loop(){' +
+        'if(clearTimer>0){clearTimer--;if(clearTimer===0){dropGems();var m2=findMatches();if(m2.length>0){score+=clearMatches(m2);clearTimer=15}}}else{' +
+        MOVE_CURSOR +
+        'if(zPressed){doSwap();var m=findMatches();if(m.length>0){score+=clearMatches(m);clearTimer=15}else{doSwap()}}' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        '}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_CURSOR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + GRID_INIT + CURSOR_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        SWAP_FN + MATCH_FN + CLEAR_FN + DROP_FN +
+        'var chain=0;' +
+        'function loop(){' +
+        'if(clearTimer>0){clearTimer--;if(clearTimer===0){dropGems();var m2=findMatches();if(m2.length>0){chain++;score+=clearMatches(m2)*(chain+1);clearTimer=15}else{chain=0}}}else{' +
+        MOVE_CURSOR +
+        'if(zPressed){doSwap();var m=findMatches();if(m.length>0){chain=0;score+=clearMatches(m);clearTimer=15}else{doSwap()}}' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        '}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_CURSOR + DRAW_SCORE +
+        'if(chain>0){ctx.fillStyle=P8PAL[10];ctx.font="bold 12px monospace";ctx.textAlign="right";ctx.fillText("chain x"+(chain+1),378,14)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Gem Grid',
+      goal: 'Fill an 8x8 grid with random coloured gems.',
+      points: [
+        'The grid is a 2D array: grid[row][col] holds a colour index (0-4)',
+        'Five gem colours from the PICO-8 palette: red(8), orange(9), yellow(10), green(11), blue(12)',
+        'Each cell is 8x8 pixels with a 1-pixel gap for the gem (6x6 drawn)',
+        'The grid is offset from the top-left to centre it on the 128x128 screen'
+      ],
+      challenge: '🎮 Set up the grid dimensions:',
+      starter: '-- grid size\nlocal cols = ___\nlocal rows = ___\nlocal numColours = 5',
+      solution: '-- grid size\nlocal cols = 8\nlocal rows = 8\nlocal numColours = 5',
+      checks: ['8', '5'],
+      height: 100,
+      fills: {
+        text: 'The grid is ___ by ___ cells. There are 5 different gem colours.',
+        answers: ['8', '8']
+      },
+      quiz: {
+        question: 'Why use numbers (0-4) instead of colour names for gems?',
+        options: [
+          'Numbers are shorter to type',
+          'Numbers let us use the value as an array index to look up the actual colour - fast and flexible',
+          'PICO-8 does not support strings'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Cursor Movement',
+      goal: 'Move a cursor across the grid with arrow keys.',
+      points: [
+        'The cursor highlights TWO adjacent cells (the swap pair)',
+        'btnp(0-3) moves one cell at a time: left, right, up, down',
+        'Clamp: curX stays between 0 and COLS-2 (needs room for the second cell)',
+        'curY stays between 0 and ROWS-1'
+      ],
+      challenge: '🎮 Write the cursor movement:',
+      starter: '-- move the cursor\nif btnp(0) and curX > 0 then curX -= 1 end\nif btnp(1) and curX < ___ - 2 then curX += 1 end\nif btnp(2) and curY > 0 then curY -= 1 end\nif btnp(3) and curY < ___ - 1 then curY += 1 end',
+      solution: '-- move the cursor\nif btnp(0) and curX > 0 then curX -= 1 end\nif btnp(1) and curX < 8 - 2 then curX += 1 end\nif btnp(2) and curY > 0 then curY -= 1 end\nif btnp(3) and curY < 8 - 1 then curY += 1 end',
+      checks: ['btnp', 'curx', 'cury'],
+      height: 140,
+      fills: {
+        text: 'The cursor can go as far right as column ___. It highlights ___ cells at once.',
+        answers: ['6', '2']
+      },
+      quiz: {
+        question: 'Why can the cursor only go to column 6 (COLS-2)?',
+        options: [
+          'Column 7 is reserved',
+          'The cursor covers two cells side by side - at column 6 the second cell is column 7, the last one',
+          'It is a bug'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Swapping Gems',
+      goal: 'Press Z to swap the two gems under the cursor.',
+      points: [
+        'Swap means: temp = grid[curY][curX], grid[curY][curX] = grid[curY][curX+1], grid[curY][curX+1] = temp',
+        'This is the classic three-variable swap pattern used everywhere in programming',
+        'After a swap, the engine will check for matches (next step)',
+        'If no match results, the swap should be undone (swap back)'
+      ],
+      challenge: '🎮 Write the swap:',
+      starter: '-- swap two gems\nif btnp(4) then\n  local temp = grid[curY][curX]\n  grid[curY][curX] = grid[curY][curX + ___]\n  grid[curY][curX + ___] = temp\nend',
+      solution: '-- swap two gems\nif btnp(4) then\n  local temp = grid[curY][curX]\n  grid[curY][curX] = grid[curY][curX + 1]\n  grid[curY][curX + 1] = temp\nend',
+      checks: ['temp', 'grid', 'btnp(4)'],
+      height: 140,
+      fills: {
+        text: 'The swap uses a ___ variable to hold one value. If no match is found the swap is ___.',
+        answers: ['temp', 'undone']
+      },
+      quiz: {
+        question: 'Why do we need a temp variable to swap two values?',
+        options: [
+          'Without temp, assigning A=B overwrites A before we can copy it to B - the original A is lost',
+          'Lua requires three variables',
+          'It is just coding style'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 4,
+      title: 'Finding Matches',
+      goal: 'Scan the grid for 3+ gems in a row or column.',
+      points: [
+        'Horizontal scan: for each row, check if three consecutive cells share the same colour',
+        'Vertical scan: for each column, check if three consecutive cells share the same colour',
+        'Collect all matching positions in an array',
+        'If a swap produces no matches, undo it by swapping back'
+      ],
+      challenge: '🎮 Write the horizontal match check:',
+      starter: '-- check horizontal matches\nfor r = 0, rows-1 do\n  for c = 0, cols-___ do\n    if grid[r][c] == grid[r][c+1] and grid[r][c] == grid[r][c+___] then\n      -- found a match of 3!\n      score += 1\n    end\n  end\nend',
+      solution: '-- check horizontal matches\nfor r = 0, rows-1 do\n  for c = 0, cols-3 do\n    if grid[r][c] == grid[r][c+1] and grid[r][c] == grid[r][c+2] then\n      -- found a match of 3!\n      score += 1\n    end\n  end\nend',
+      checks: ['3', 'grid', 'score'],
+      height: 200,
+      fills: {
+        text: 'We check ___ consecutive cells for a match. The column loop stops at cols - ___ to avoid going off the grid.',
+        answers: ['3', '3']
+      },
+      quiz: {
+        question: 'Why scan horizontally AND vertically?',
+        options: [
+          'Vertical matches are rarer',
+          'Matches can form in either direction - a player might line up three gems in a column, which a horizontal-only scan would miss',
+          'PICO-8 requires both passes'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Gravity Drop',
+      goal: 'After clearing matches, gems fall down and new gems fill the top.',
+      points: [
+        'Set matched cells to -1 (empty). Then "drop": scan each column from bottom up',
+        'Move non-empty cells down to fill gaps, like stacking blocks',
+        'Fill any remaining empty cells at the top with new random gems',
+        'After dropping, check for new matches - this creates chain combos'
+      ],
+      challenge: '🎮 Write the gravity drop for one column:',
+      starter: '-- drop gems in a column\n-- scan from bottom, move gems down\n-- fill empty top cells\nlocal wr = rows - 1\nfor r = rows-1, 0, -1 do\n  if grid[r][c] >= ___ then\n    grid[wr][c] = grid[r][c]\n    wr -= 1\n  end\nend\n-- fill remaining with new\nwhile wr >= ___ do\n  grid[wr][c] = flr(rnd(5))\n  wr -= 1\nend',
+      solution: '-- drop gems in a column\n-- scan from bottom, move gems down\n-- fill empty top cells\nlocal wr = rows - 1\nfor r = rows-1, 0, -1 do\n  if grid[r][c] >= 0 then\n    grid[wr][c] = grid[r][c]\n    wr -= 1\n  end\nend\n-- fill remaining with new\nwhile wr >= 0 do\n  grid[wr][c] = flr(rnd(5))\n  wr -= 1\nend',
+      checks: ['0', 'rnd', 'wr'],
+      height: 240,
+      fills: {
+        text: 'Empty cells are marked with ___. New random gems fill from the ___ of each column.',
+        answers: ['-1', 'top']
+      },
+      quiz: {
+        question: 'Why scan from the bottom when dropping gems?',
+        options: [
+          'Bottom-up lets us place gems into their final position in one pass - like letting gravity pull them down naturally',
+          'Top-down is slower',
+          'PICO-8 arrays start at the bottom'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 6,
+      title: 'Chain Combos',
+      goal: 'After gems drop, check for new matches and multiply points for chains.',
+      points: [
+        'After dropping, call findMatches again - if new matches formed, that is a chain',
+        'Chain multiplier: first clear = x1, chain 1 = x2, chain 2 = x3, etc.',
+        'Use a timer (clearTimer) to pause briefly between each clear for visual feedback',
+        'This chain system is what makes match-3 games deeply strategic'
+      ],
+      challenge: '🎮 Write the chain scoring:',
+      starter: '-- chain bonus\nlocal points = cleared * (chain + ___)\nscore += points\nchain += ___',
+      solution: '-- chain bonus\nlocal points = cleared * (chain + 1)\nscore += points\nchain += 1',
+      checks: ['chain', 'cleared', 'score'],
+      height: 100,
+      fills: {
+        text: 'A chain of ___ adds a x2 multiplier. The pause timer between clears is ___ frames.',
+        answers: ['1', '15']
+      },
+      quiz: {
+        question: 'Why are chain combos important in match-3 design?',
+        options: [
+          'They make the score higher',
+          'Chains reward planning ahead - the player learns to set up drops that trigger cascading matches, adding strategic depth',
+          'They fill the screen faster'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

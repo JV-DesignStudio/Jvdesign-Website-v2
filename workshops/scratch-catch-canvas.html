@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scratch Catch Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,191,36,.15);color:#fbbf24;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Scratch Catch Build Canvas <span class="cw-lang-tag">&#x1f431; Scratch</span></h1>
+  <p>Write Scratch block code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Scratch Catch game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">An orange basket at the bottom of the Scratch stage</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Scratch-to-JS transpiler (block notation to JS)
+   =================================================== */
+function scratchToJs(code) {
+  return code
+    .replace(/when green flag clicked/g, '')
+    .replace(/forever/g, '')
+    .replace(/end/g, '}')
+    .replace(/if <key \[right arrow\] pressed\?> then/g, 'if(rightHeld){')
+    .replace(/if <key \[left arrow\] pressed\?> then/g, 'if(leftHeld){')
+    .replace(/if <key \[up arrow\] pressed\?> then/g, 'if(upHeld){')
+    .replace(/if <key \[down arrow\] pressed\?> then/g, 'if(downHeld){')
+    .replace(/if <key \[space\] pressed\?> then/g, 'if(spaceHeld){')
+    .replace(/change x by \[([^\]]+)\]/g, 'sprite.x+=$1;')
+    .replace(/change y by \[([^\]]+)\]/g, 'sprite.y+=$1;')
+    .replace(/set x to \[([^\]]+)\]/g, 'sprite.x=$1;')
+    .replace(/set y to \[([^\]]+)\]/g, 'sprite.y=$1;')
+    .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'sprite.x=$1;sprite.y=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
+    .replace(/if <touching \[Edge\]\?> then/g, 'if(sprite.x<0||sprite.x>460||sprite.y<0||sprite.y>340){')
+    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
+    .replace(/say \[([^\]]+)\]/g, 'sayText="$1";')
+    .replace(/move \[([^\]]+)\] steps/g, 'sprite.x+=$1*Math.cos(sprite.dir*Math.PI/180);sprite.y+=$1*Math.sin(sprite.dir*Math.PI/180);')
+    .replace(/turn right \[([^\]]+)\] degrees/g, 'sprite.dir+=$1;')
+    .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\/\/.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Scratch Catch)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#2b1f5e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="480" height="360"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var BASKET_VARS = 'let bx=200,by=320,bw=80,bh=20,speed=6;';
+
+var FRUIT_VARS = 'let fx=Math.floor(Math.random()*440)+20,fy=-20,fw=20,fh=20,fallSpeed=3;';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var SPRITE = 'var sprite={x:200,y:320,dir:0};';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var MOVE_BASKET = 'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;bx=Math.max(0,Math.min(480-bw,bx));';
+
+var DRAW_BG = 'ctx.fillStyle="#2b1f5e";ctx.fillRect(0,0,480,360);';
+
+var DRAW_BASKET = 'ctx.fillStyle="#fbbf24";ctx.fillRect(bx,by,bw,bh);';
+
+var DRAW_FRUIT = 'ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(fx+fw/2,fy+fh/2,fw/2,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,12,28);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillText("Lives: "+lives,468,28);';
+
+var FRUIT_FALL = 'fy+=fallSpeed;';
+
+var FRUIT_RESET = 'function resetFruit(){fx=Math.floor(Math.random()*440)+20;fy=-20}';
+
+var FRUIT_CATCH = 'if(fy+fh>=by&&fy<=by+bh&&fx+fw>=bx&&fx<=bx+bw){score++;resetFruit()}';
+
+var FRUIT_MISS = 'if(fy>370){lives--;if(lives<=0){gameState="over"}else{resetFruit()}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Scratch Catch steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-scratch-catch-canvas',
+  downloadName: 'my-scratch-catch.html',
+
+  hints: [
+    'An orange basket at the bottom of the Scratch stage',
+    'The basket slides left and right with arrow keys',
+    'A red fruit falls from the top of the stage',
+    'Catching the fruit adds a point and spawns a new one',
+    'Missing the fruit costs a life',
+    'Game over at zero lives, with speed ramp and restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + SPRITE + KEYS +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_BASKET +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + SPRITE + KEYS +
+        'function loop(){' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'bx=Math.max(0,Math.min(480-bw,bx));' +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + FRUIT_VARS + SPRITE + KEYS +
+        FRUIT_RESET +
+        'function loop(){' +
+        MOVE_BASKET +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'if(fy>370)resetFruit();' +
+        DRAW_BG + DRAW_BASKET + DRAW_FRUIT +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + SPRITE + KEYS +
+        FRUIT_RESET +
+        'function loop(){' +
+        MOVE_BASKET + FRUIT_FALL +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'if(fy>370)resetFruit();' +
+        DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + SPRITE + KEYS +
+        FRUIT_RESET +
+        'function loop(){' +
+        MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + STATE_VARS + SPRITE + KEYS +
+        FRUIT_RESET +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=3;resetFruit();gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH + FRUIT_MISS +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",240,160);ctx.font="18px monospace";ctx.fillText("Score: "+score,240,195);' +
+        'ctx.fillText("Press R to play again",240,225)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Basket Sprite',
+      goal: 'Place an orange basket at the bottom of the Scratch stage.',
+      points: [
+        'The Scratch stage is 480x360 pixels - our canvas matches it exactly',
+        'The basket is a bright orange rectangle: 80 wide, 20 tall, at y=320',
+        'In Scratch you would set a sprite\'s position with <code>go to x: 200 y: 320</code>',
+        'The basket starts centred: x = (480 - 80) / 2 = 200'
+      ],
+      challenge: '🐱 Set the basket position and size:',
+      starter: '// Set the basket starting position\nset [bx] to [___]\nset [by] to [320]\nset [bw] to [___]\nset [bh] to [20]',
+      solution: '// Set the basket starting position\nset [bx] to [200]\nset [by] to [320]\nset [bw] to [80]\nset [bh] to [20]',
+      checks: ['200', '320', '80', '20'],
+      height: 120,
+      fills: {
+        text: 'The basket starts at x = ___ to appear centred. Its width of ___ pixels gives room to catch falling objects.',
+        answers: ['200', '80']
+      },
+      quiz: {
+        question: 'Why is the Scratch stage 480x360 pixels?',
+        options: [
+          'It is a random size',
+          'It matches the classic Scratch stage dimensions so projects feel familiar',
+          'Bigger canvases crash browsers'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Arrow Key Movement',
+      goal: 'Move the basket left and right with arrow keys, staying on stage.',
+      points: [
+        'In Scratch you check keys with <code>if &lt;key [right arrow] pressed?&gt; then</code>',
+        'Move by <code>speed</code> (6) pixels each frame while a key is held',
+        'The basket must stay between x=0 and x=400 (480 minus basket width)',
+        'Smooth movement comes from checking keys every frame in a forever loop'
+      ],
+      challenge: '🐱 Write the basket movement blocks:',
+      starter: '// Move basket with arrow keys\nif <key [left arrow] pressed?> then\n  change x by [___]\nend\nif <key [right arrow] pressed?> then\n  change x by [___]\nend',
+      solution: '// Move basket with arrow keys\nif <key [left arrow] pressed?> then\n  change x by [-6]\nend\nif <key [right arrow] pressed?> then\n  change x by [6]\nend',
+      checks: ['left arrow', 'right arrow', '-6', '6'],
+      height: 180,
+      fills: {
+        text: 'The basket moves ___ pixels per frame. Negative x moves ___ on the stage.',
+        answers: ['6', 'left']
+      },
+      quiz: {
+        question: 'Why use "key pressed?" inside forever instead of "when key pressed"?',
+        options: [
+          '"When key pressed" only fires once - "key pressed?" checks every frame for smooth held-key movement',
+          'They do the same thing',
+          '"When key pressed" is broken in Scratch'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 3,
+      title: 'Falling Fruit',
+      goal: 'Spawn a fruit at a random x and let it fall down the stage.',
+      points: [
+        'The fruit starts above the stage at fy = -20 so it slides in smoothly',
+        'Each frame: <code>change [fy] by [fallSpeed]</code> moves it down (positive y is down)',
+        'In Scratch: <code>set y to (pick random -20 to -20)</code> for the start position',
+        'When it passes the bottom (fy > 370), reset to a new random x at the top'
+      ],
+      challenge: '🐱 Write the fruit falling blocks:',
+      starter: '// Move fruit downward\nchange [fy] by [___]\n\n// Reset when off stage\nset [fx] to pick random [20] to [440]\nset [fy] to [___]',
+      solution: '// Move fruit downward\nchange [fy] by [fallSpeed]\n\n// Reset when off stage\nset [fx] to pick random [20] to [440]\nset [fy] to [-20]',
+      checks: ['fallspeed', '-20', '440'],
+      height: 140,
+      fills: {
+        text: 'The fruit moves ___ pixels down each frame. Starting at fy = ___ makes it slide in from above.',
+        answers: ['3', '-20']
+      },
+      quiz: {
+        question: 'Why start the fruit above the visible stage?',
+        options: [
+          'It needs time to speed up',
+          'Starting off-screen means the fruit slides smoothly into view instead of popping in at the edge',
+          'Scratch requires negative positions'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Catching Fruit',
+      goal: 'Detect when fruit touches the basket and score a point.',
+      points: [
+        'In Scratch you use <code>if &lt;touching [Basket]?&gt;</code> for collision',
+        'On canvas we check if the rectangles overlap using four edge comparisons',
+        'On catch: <code>change [score] by [1]</code> and reset fruit to the top',
+        'This AABB collision check is the same pattern used in every 2D game'
+      ],
+      challenge: '🐱 Write the catch detection:',
+      starter: '// Check if fruit touches basket\nchange [score] by [___]\nset [fx] to pick random [20] to [___]\nset [fy] to [-20]',
+      solution: '// Check if fruit touches basket\nchange [score] by [1]\nset [fx] to pick random [20] to [440]\nset [fy] to [-20]',
+      checks: ['score', '1', '440', '-20'],
+      height: 120,
+      fills: {
+        text: 'The collision check compares ___ edges of both rectangles. Catching a fruit adds ___ to the score.',
+        answers: ['four', '1']
+      },
+      quiz: {
+        question: 'Why does Scratch use "touching" blocks instead of manual edge checks?',
+        options: [
+          'Manual checks are wrong',
+          'Scratch hides the maths inside easy-to-read blocks - but underneath it does the same rectangle overlap test',
+          'Scratch sprites are circles'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Lives and Missing',
+      goal: 'Lose a life when fruit hits the ground, game over at zero.',
+      points: [
+        'When the fruit passes the bottom without being caught: <code>change [lives] by [-1]</code>',
+        'If lives reach 0: game over - stop everything',
+        'Otherwise reset the fruit for another try',
+        'Display lives in the top-right corner alongside the score'
+      ],
+      challenge: '🐱 Write the miss penalty:',
+      starter: '// Fruit missed!\nchange [lives] by [___]\n\n// Check for game over\nset [gameState] to [___]',
+      solution: '// Fruit missed!\nchange [lives] by [-1]\n\n// Check for game over\nset [gameState] to [over]',
+      checks: ['lives', '-1', 'over'],
+      height: 120,
+      fills: {
+        text: 'The player starts with ___ lives. When lives reach ___, the game state changes to "over".',
+        answers: ['3', '0']
+      },
+      quiz: {
+        question: 'Why use a gameState variable instead of "stop all"?',
+        options: [
+          '"Stop all" is permanent',
+          'A state variable lets you show a game-over screen and restart - "stop all" kills everything with no recovery',
+          'Scratch does not have "stop all"'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Speed Ramp and Restart',
+      goal: 'Make fruit fall faster as score grows, let R restart the game.',
+      points: [
+        'Increase fallSpeed every few catches: <code>set [fallSpeed] to [3 + score / 5]</code>',
+        'Cap it at 8 so the game stays playable',
+        'Pressing R resets score, lives, speed, and fruit position',
+        'This difficulty ramp is the same pattern used in Tetris and endless runners'
+      ],
+      challenge: '🐱 Write the speed ramp:',
+      starter: '// Speed up as score grows\nset [fallSpeed] to [3 + score / ___]\n\n// Cap the speed\nset [maxSpeed] to [___]',
+      solution: '// Speed up as score grows\nset [fallSpeed] to [3 + score / 5]\n\n// Cap the speed\nset [maxSpeed] to [8]',
+      checks: ['fallspeed', 'score', '5', '8'],
+      height: 100,
+      fills: {
+        text: 'The fruit speeds up every ___ points. The cap of ___ pixels per frame keeps it playable.',
+        answers: ['5', '8']
+      },
+      quiz: {
+        question: 'Why cap the fall speed instead of letting it grow forever?',
+        options: [
+          'The canvas breaks at high speeds',
+          'Without a cap the fruit becomes uncatchable - the player needs a fair chance no matter how high the score',
+          'Scratch variables overflow at 10'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

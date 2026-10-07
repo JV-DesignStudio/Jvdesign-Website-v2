@@ -38,7 +38,9 @@ const EXCLUDE_FILES = new Set([
   'tools/dialogue-tree-builder.html',
   'pages/freebies.html',
   'pages/my-progress.html',
-  'pages/leaderboards.html'
+  'pages/leaderboards.html',
+  'games/sky_high_squirt.html',
+  'tools/tileset-builder.html'
 ]);
 
 const GAME_ORPHANS = [

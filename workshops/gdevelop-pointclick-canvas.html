@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDevelop Point &amp; Click Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(163,230,53,.15);color:#a3e635;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GDevelop Point &amp; Click Build Canvas <span class="cw-lang-tag">&#x1f3a8; GDevelop</span></h1>
+  <p>Write GDevelop event logic step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GDevelop Point and Click game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A room with a door, a table, and clickable objects</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GDevelop-to-JS transpiler (simplified event notation)
+   =================================================== */
+function gdToJs(code) {
+  return code
+    .replace(/\/\/.*$/gm, '')
+    .replace(/Action:\s*SetVariable\((\w+),\s*([^)]+)\)/g, '$1=$2;')
+    .replace(/Condition:\s*Variable\((\w+)\)\s*([<>!=]+)\s*([^\n]+)/g, 'if($1$2$3)')
+    .replace(/Action:\s*ShowMessage\("([^"]+)"\)/g, 'msgText="$1";msgTimer=180;')
+    .replace(/Action:\s*AddToInventory\("([^"]+)"\)/g, 'if(inventory.indexOf("$1")===-1)inventory.push("$1");')
+    .replace(/Condition:\s*HasItem\("([^"]+)"\)/g, 'if(inventory.indexOf("$1")!==-1)')
+    .replace(/Action:\s*GoToRoom\((\d+)\)/g, 'currentRoom=$1;')
+    .replace(/\bAction:\s*/g, '')
+    .replace(/\bCondition:\s*/g, 'if');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Point & Click)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var ROOM_DATA = 'var rooms=[' +
+  '{name:"Living Room",bg:"#2d1b4e",objects:[' +
+    '{x:40,y:180,w:80,h:120,color:"#8b4513",label:"Cabinet",msg:"A wooden cabinet. It is locked.",key:"cabinetOpen",needsItem:"Key",successMsg:"You unlock the cabinet! Inside is a golden star.",givesItem:"Star"},' +
+    '{x:480,y:100,w:80,h:200,color:"#4a3728",label:"Door",msg:"A heavy door. It needs a star emblem.",key:"doorOpen",needsItem:"Star",successMsg:"The star fits! The door opens...",goRoom:1},' +
+    '{x:200,y:250,w:160,h:60,color:"#654321",label:"Table",msg:"A sturdy oak table. Something glints underneath."},' +
+    '{x:260,y:290,w:20,h:14,color:"#facc15",label:"Key",msg:"A small brass key!",pickup:"Key"}' +
+  ']},' +
+  '{name:"Secret Room",bg:"#1a2e4a",objects:[' +
+    '{x:250,y:120,w:100,h:100,color:"#3b82f6",label:"Treasure",msg:"A gleaming treasure chest!",key:"chestOpen",successMsg:"You open the chest and find the crystal!",givesItem:"Crystal"},' +
+    '{x:40,y:100,w:60,h:200,color:"#4a3728",label:"Back",msg:"Go back to the living room.",goRoom:0}' +
+  ']}];';
+
+var STATE_VARS = 'var currentRoom=0,inventory=[],msgText="Click objects to interact.",msgTimer=180,hoverLabel="",gameState="play";' +
+  'var flags={cabinetOpen:false,doorOpen:false,chestOpen:false};';
+
+var MOUSE_VARS = 'var mouseX=0,mouseY=0,clicked=false;' +
+  'canvas.addEventListener("mousemove",function(e){var r=canvas.getBoundingClientRect();mouseX=e.clientX-r.left;mouseY=e.clientY-r.top});' +
+  'canvas.addEventListener("click",function(e){var r=canvas.getBoundingClientRect();mouseX=e.clientX-r.left;mouseY=e.clientY-r.top;clicked=true});';
+
+var DRAW_ROOM = 'var room=rooms[currentRoom];ctx.fillStyle=room.bg;ctx.fillRect(0,0,600,400);' +
+  'ctx.fillStyle="#1a1a1a";ctx.fillRect(0,340,600,60);' +
+  'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText(room.name,300,30);';
+
+var DRAW_OBJECTS = 'hoverLabel="";for(var oi=0;oi<room.objects.length;oi++){var ob=room.objects[oi];' +
+  'if(ob.pickup&&inventory.indexOf(ob.pickup)!==-1)continue;' +
+  'if(ob.key&&flags[ob.key])continue;' +
+  'ctx.fillStyle=ob.color;ctx.fillRect(ob.x,ob.y,ob.w,ob.h);' +
+  'if(mouseX>=ob.x&&mouseX<=ob.x+ob.w&&mouseY>=ob.y&&mouseY<=ob.y+ob.h){' +
+  'hoverLabel=ob.label;ctx.strokeStyle="#facc15";ctx.lineWidth=2;ctx.strokeRect(ob.x-2,ob.y-2,ob.w+4,ob.h+4)}}';
+
+var DRAW_INVENTORY = 'ctx.fillStyle="#fff";ctx.font="14px monospace";ctx.textAlign="left";ctx.fillText("Inventory: "+(inventory.length?inventory.join(", "):"empty"),16,365);';
+
+var DRAW_MSG = 'if(msgTimer>0){msgTimer--;ctx.fillStyle="#fff";ctx.font="14px monospace";ctx.textAlign="center";ctx.fillText(msgText,300,390)}';
+
+var DRAW_HOVER = 'if(hoverLabel){ctx.fillStyle="#facc15";ctx.font="bold 14px monospace";ctx.textAlign="center";ctx.fillText(hoverLabel,mouseX,mouseY-10)}';
+
+var CLICK_LOGIC = 'if(clicked){clicked=false;var room=rooms[currentRoom];for(var ci=0;ci<room.objects.length;ci++){var co=room.objects[ci];' +
+  'if(co.pickup&&inventory.indexOf(co.pickup)!==-1)continue;' +
+  'if(co.key&&flags[co.key])continue;' +
+  'if(mouseX>=co.x&&mouseX<=co.x+co.w&&mouseY>=co.y&&mouseY<=co.y+co.h){' +
+  'if(co.pickup){inventory.push(co.pickup);msgText="Picked up: "+co.pickup;msgTimer=120}' +
+  'else if(co.needsItem){if(inventory.indexOf(co.needsItem)!==-1){flags[co.key]=true;msgText=co.successMsg;msgTimer=180;' +
+  'if(co.givesItem){inventory.splice(inventory.indexOf(co.needsItem),1);inventory.push(co.givesItem)}' +
+  'if(co.goRoom!==undefined){currentRoom=co.goRoom}}else{msgText=co.msg;msgTimer=180}}' +
+  'else if(co.goRoom!==undefined){currentRoom=co.goRoom;msgText="";msgTimer=0}' +
+  'else{msgText=co.msg;msgTimer=180}break}}}';
+
+var WIN_CHECK = 'if(inventory.indexOf("Crystal")!==-1&&gameState==="play"){gameState="win"}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - GDevelop Point & Click steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-gdevelop-pointclick-canvas',
+  downloadName: 'my-gdevelop-pointclick.html',
+
+  hints: [
+    'A room with a door, a table, and clickable objects',
+    'Click objects to see descriptions and interact',
+    'A yellow highlight shows which object is under the cursor',
+    'Pick up the key from under the table',
+    'Use items from inventory to unlock new areas',
+    'Find the crystal in the secret room to win'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_MSG +
+        'clicked=false;' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+        'function loop(){' +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_MSG +
+        'clicked=false;' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+        'function loop(){' +
+        CLICK_LOGIC +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+        'function loop(){' +
+        CLICK_LOGIC +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+        'function loop(){' +
+        CLICK_LOGIC +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="win"){currentRoom=0;inventory=[];flags={cabinetOpen:false,doorOpen:false,chestOpen:false};msgText="Click objects to interact.";msgTimer=180;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        CLICK_LOGIC +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        WIN_CHECK +
+        '}' +
+        DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
+        'if(gameState==="win"){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,600,400);' +
+        'ctx.fillStyle="#facc15";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("YOU FOUND THE CRYSTAL!",300,180);ctx.fillStyle="#fff";ctx.font="16px monospace";' +
+        'ctx.fillText("Press R to play again",300,215)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Room',
+      goal: 'Draw a room with coloured rectangle objects the player can see.',
+      points: [
+        'Point-and-click games are room-based: each room is a scene with clickable objects',
+        'Objects are rectangles with colour, position, size, and a label',
+        'The Living Room has a cabinet, a door, a table, and a key',
+        'In GDevelop, each object is a sprite placed in the scene editor'
+      ],
+      challenge: '&#x1f3a8; Define the room and its objects:',
+      starter: '// Set up the room\nAction: SetVariable(currentRoom, ___)\nAction: SetVariable(roomName, "Living Room")\nAction: SetVariable(objectCount, ___)',
+      solution: '// Set up the room\nAction: SetVariable(currentRoom, 0)\nAction: SetVariable(roomName, "Living Room")\nAction: SetVariable(objectCount, 4)',
+      checks: ['currentRoom', '0', '4'],
+      height: 110,
+      fills: {
+        text: 'The first room is index ___. It contains ___ interactive objects.',
+        answers: ['0', '4']
+      },
+      quiz: {
+        question: 'Why are point-and-click games organized into rooms?',
+        options: [
+          'Rooms are easier to draw',
+          'Each room is a self-contained puzzle space - the player focuses on what is visible, reducing overwhelm',
+          'The engine requires rooms'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Mouse Hover & Highlight',
+      goal: 'Highlight objects when the mouse hovers over them and show their label.',
+      points: [
+        'Track mouse position relative to the canvas',
+        'For each object, check if the mouse is inside its rectangle',
+        'Draw a yellow border around the hovered object',
+        'Show the object label above the cursor as a tooltip'
+      ],
+      challenge: '&#x1f3a8; Write the hover detection:',
+      starter: '// Check if mouse is over an object\nCondition: MouseOverObject()\nAction: SetVariable(hoverLabel, object.___)\nAction: HighlightObject("___")',
+      solution: '// Check if mouse is over an object\nCondition: MouseOverObject()\nAction: SetVariable(hoverLabel, object.label)\nAction: HighlightObject("yellow")',
+      checks: ['hoverLabel', 'label', 'yellow'],
+      height: 120,
+      fills: {
+        text: 'Hovered objects show a ___ border. The object ___ appears as a tooltip.',
+        answers: ['yellow', 'label']
+      },
+      quiz: {
+        question: 'Why highlight objects on hover?',
+        options: [
+          'It makes the game prettier',
+          'Highlighting tells the player which objects are interactive - without it, they would click randomly hoping to find something',
+          'The mouse requires visual feedback'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Click to Interact',
+      goal: 'Click objects to see their descriptions and pick up items.',
+      points: [
+        'Clicking an object shows its description message at the bottom',
+        'Some objects can be picked up and added to inventory (like the Key)',
+        'Messages display for 180 frames (3 seconds) then fade',
+        'In GDevelop, you would use <strong>mouse click on object</strong> conditions'
+      ],
+      challenge: '&#x1f3a8; Write the click interaction:',
+      starter: '// Click on an object\nCondition: ClickedOnObject()\nAction: ShowMessage("___")\n\n// If object is a pickup\nCondition: ObjectIsPickup()\nAction: AddToInventory("___")',
+      solution: '// Click on an object\nCondition: ClickedOnObject()\nAction: ShowMessage("A wooden cabinet. It is locked.")\n\n// If object is a pickup\nCondition: ObjectIsPickup()\nAction: AddToInventory("Key")',
+      checks: ['ShowMessage', 'AddToInventory', 'Key'],
+      height: 150,
+      fills: {
+        text: 'Clicking an object shows a ___. Pickup items go into the ___.',
+        answers: ['message', 'inventory']
+      },
+      quiz: {
+        question: 'Why show descriptions when clicking objects?',
+        options: [
+          'To fill the screen with text',
+          'Descriptions build the world and give clues - the player learns what objects do and which ones matter for puzzles',
+          'The engine requires text output'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Inventory System',
+      goal: 'Track collected items and display them at the bottom of the screen.',
+      points: [
+        'Inventory is an array of item name strings',
+        'Display items in a bar at the bottom: "Inventory: Key, Star" or "empty"',
+        'Items are added with AddToInventory and can be checked with HasItem',
+        'In GDevelop, you would use an <strong>inventory extension</strong> or scene variables'
+      ],
+      challenge: '&#x1f3a8; Write the inventory check:',
+      starter: '// Check if player has the key\nCondition: HasItem("___")\nAction: ShowMessage("You can unlock the cabinet!")\n\n// Display inventory\nAction: SetVariable(invDisplay, inventory.join(", "))',
+      solution: '// Check if player has the key\nCondition: HasItem("Key")\nAction: ShowMessage("You can unlock the cabinet!")\n\n// Display inventory\nAction: SetVariable(invDisplay, inventory.join(", "))',
+      checks: ['HasItem', 'Key', 'inventory'],
+      height: 140,
+      fills: {
+        text: 'Items are stored in an ___ array. The HasItem condition checks if a specific item is ___.',
+        answers: ['inventory', 'present']
+      },
+      quiz: {
+        question: 'Why use named items instead of just counting pickups?',
+        options: [
+          'Names use less memory',
+          'Named items create specific puzzles - "use Key on Cabinet" is a meaningful interaction, while "use item 1 on object 2" is not',
+          'GDevelop only supports strings'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Using Items & Rooms',
+      goal: 'Use inventory items on objects to unlock them and move between rooms.',
+      points: [
+        'Some objects require a specific item: the Cabinet needs the Key, the Door needs the Star',
+        'Using an item: remove the old item from inventory, add the new reward',
+        'The Door leads to Room 1 (Secret Room) when unlocked with the Star',
+        'This lock-and-key pattern is the foundation of all adventure game puzzles'
+      ],
+      challenge: '&#x1f3a8; Write the item-use logic:',
+      starter: '// Use Key on Cabinet\nCondition: ClickedOnObject("Cabinet")\nCondition: HasItem("___")\nAction: ShowMessage("You unlock the cabinet!")\nAction: AddToInventory("___")\n\n// Use Star on Door\nCondition: ClickedOnObject("Door")\nCondition: HasItem("Star")\nAction: GoToRoom(___)',
+      solution: '// Use Key on Cabinet\nCondition: ClickedOnObject("Cabinet")\nCondition: HasItem("Key")\nAction: ShowMessage("You unlock the cabinet!")\nAction: AddToInventory("Star")\n\n// Use Star on Door\nCondition: ClickedOnObject("Door")\nCondition: HasItem("Star")\nAction: GoToRoom(1)',
+      checks: ['Key', 'Star', 'GoToRoom', '1'],
+      height: 200,
+      fills: {
+        text: 'The Cabinet requires the ___. The Door leads to room ___ when unlocked.',
+        answers: ['Key', '1']
+      },
+      quiz: {
+        question: 'What is the "lock and key" puzzle pattern?',
+        options: [
+          'Only puzzles involving actual locks',
+          'Any obstacle (lock) that requires a specific item or action (key) to pass - doors, NPCs, machines, and riddles all use this pattern',
+          'A GDevelop-specific system'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Win & Restart',
+      goal: 'Find the Crystal in the Secret Room to win. Press R to replay.',
+      points: [
+        'The Secret Room has a treasure chest that gives the Crystal',
+        'Finding the Crystal triggers the win state with a congratulations overlay',
+        'R resets the room, inventory, and all flags for a fresh puzzle run',
+        'This chain (Key -> Cabinet -> Star -> Door -> Crystal) is the complete puzzle'
+      ],
+      challenge: '&#x1f3a8; Write the win condition:',
+      starter: '// Check if Crystal is in inventory\nCondition: HasItem("___")\nAction: SetVariable(gameState, "___")',
+      solution: '// Check if Crystal is in inventory\nCondition: HasItem("Crystal")\nAction: SetVariable(gameState, "win")',
+      checks: ['Crystal', 'win'],
+      height: 100,
+      fills: {
+        text: 'The puzzle chain is: Key -> Cabinet -> ___ -> Door -> ___.',
+        answers: ['Star', 'Crystal']
+      },
+      quiz: {
+        question: 'What makes a point-and-click puzzle satisfying?',
+        options: [
+          'Having many rooms',
+          'Each step logically follows from exploration and clues - the player feels clever for connecting the dots, not frustrated by random trial and error',
+          'Pixel-hunting for hidden objects'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

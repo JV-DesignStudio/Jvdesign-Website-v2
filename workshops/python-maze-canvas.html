@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Maze Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(52,211,153,.15);color:#34d399;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Python Maze Build Canvas <span class="cw-lang-tag">&#x1f40d; Python</span></h1>
+  <p>Write Python game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Python Maze game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A dark grid with gray walls forming a maze</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Python-to-JS transpiler (light transform so Python
+   syntax runs in the canvas iframe)
+   =================================================== */
+function pyToJs(code) {
+  return code
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    .replace(/\bNone\b/g, 'null')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\belif\b/g, 'else if')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||')
+    .replace(/\bnot\b/g, '!')
+    .replace(/\blen\s*\(/g, '(')
+    .replace(/\.append\s*\(/g, '.push(')
+    .replace(/\brandom\.randint\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/#.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Python Maze)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0d1117;margin:0;overflow:hidden}canvas{display:block}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var CELL = 'const COLS=20,ROWS=20,CELL=20;';
+
+var MAZE_DATA = 'var maze=[' +
+  '[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],' +
+  '[1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1],' +
+  '[1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,1],' +
+  '[1,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1],' +
+  '[1,0,1,1,1,1,1,1,1,0,1,1,1,0,1,0,1,1,1,1],' +
+  '[1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],' +
+  '[1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],' +
+  '[1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],' +
+  '[1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,0,1],' +
+  '[1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,1],' +
+  '[1,1,1,1,1,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1],' +
+  '[1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1],' +
+  '[1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],' +
+  '[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],' +
+  '[1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,0,1],' +
+  '[1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1],' +
+  '[1,0,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],' +
+  '[1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],' +
+  '[1,0,1,1,1,1,1,0,1,0,1,1,1,0,0,0,1,1,0,1],' +
+  '[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]];';
+
+var PLAYER_VARS = 'let px=1,py=1;';
+
+var KEY_VARS = 'let hasKey=false;';
+
+var GHOST_VARS = 'let gx=18,gy=18,ghostTimer=0,ghostInterval=12;';
+
+var LIVES_VARS = 'let lives=3;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var MOVE_TIMER = 'let moveTimer=0,moveInterval=0;';
+
+var DRAW_MAZE = 'function drawMaze(){for(var r=0;r<ROWS;r++){for(var c=0;c<COLS;c++){' +
+  'var t=maze[r][c];' +
+  'if(t===1){ctx.fillStyle="#2d333b";ctx.fillRect(c*CELL,r*CELL,CELL,CELL)}' +
+  'else if(t===2){ctx.fillStyle="#161b22";ctx.fillRect(c*CELL,r*CELL,CELL,CELL);' +
+    'ctx.fillStyle="#facc15";ctx.beginPath();ctx.arc(c*CELL+CELL/2,r*CELL+CELL/2,CELL/3,0,Math.PI*2);ctx.fill()}' +
+  'else if(t===3){ctx.fillStyle="#92400e";ctx.fillRect(c*CELL,r*CELL,CELL,CELL)}' +
+  'else if(t===4){ctx.fillStyle="#2563eb";ctx.fillRect(c*CELL,r*CELL,CELL,CELL)}' +
+  'else{ctx.fillStyle="#161b22";ctx.fillRect(c*CELL,r*CELL,CELL,CELL)}' +
+  '}}}';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#34d399";ctx.beginPath();ctx.arc(px*CELL+CELL/2,py*CELL+CELL/2,CELL/3,0,Math.PI*2);ctx.fill();';
+
+var DRAW_GHOST = 'ctx.fillStyle="#ef4444";ctx.beginPath();ctx.arc(gx*CELL+CELL/2,gy*CELL+CELL/2,CELL/3,0,Math.PI*2);ctx.fill();';
+
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 14px monospace";ctx.textAlign="left";' +
+  'ctx.fillText("Lives: "+lives,6,394);' +
+  'if(hasKey){ctx.fillStyle="#facc15";ctx.fillText("KEY",340,394)}';
+
+var KEY_HANDLER = 'document.addEventListener("keydown",function(e){' +
+  'if(gameState!=="play")return;' +
+  'var nx=px,ny=py;' +
+  'if(e.code==="ArrowUp")ny--;' +
+  'if(e.code==="ArrowDown")ny++;' +
+  'if(e.code==="ArrowLeft")nx--;' +
+  'if(e.code==="ArrowRight")nx++;' +
+  'if(nx>=0&&nx<COLS&&ny>=0&&ny<ROWS){' +
+    'var t=maze[ny][nx];' +
+    'if(t!==1&&(t!==3||hasKey)){' +
+      'if(t===2){hasKey=true;maze[ny][nx]=0}' +
+      'if(t===3&&hasKey){maze[ny][nx]=0}' +
+      'px=nx;py=ny;' +
+    '}' +
+  '}' +
+  'e.preventDefault()});';
+
+var GHOST_AI = 'function moveGhost(){' +
+  'var dx=px-gx,dy=py-gy,nx=gx,ny=gy;' +
+  'if(Math.abs(dx)>Math.abs(dy)){nx+=dx>0?1:-1}else{ny+=dy>0?1:-1}' +
+  'if(nx>=0&&nx<COLS&&ny>=0&&ny<ROWS&&maze[ny][nx]!==1&&maze[ny][nx]!==3){gx=nx;gy=ny}}';
+
+var GHOST_TICK = 'ghostTimer++;if(ghostTimer>=ghostInterval){ghostTimer=0;moveGhost();}';
+
+var GHOST_COLLIDE = 'if(gx===px&&gy===py){lives--;if(lives<=0){gameState="over"}else{px=1;py=1;gx=18;gy=18;ghostTimer=0}}';
+
+var WIN_CHECK = 'if(maze[py][px]===4){gameState="win"}';
+
+var RESTART_HANDLER = 'document.addEventListener("keydown",function(e){' +
+  'if(e.code==="KeyR"&&(gameState==="over"||gameState==="win")){' +
+  'lives=3;hasKey=false;px=1;py=1;gx=18;gy=18;ghostTimer=0;gameState="play";' +
+  'maze[5][17]=2;maze[13][17]=3;maze[18][14]=4}});';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Python Maze steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-python-maze-canvas',
+  downloadName: 'my-python-maze.html',
+
+  hints: [
+    'A dark grid with gray walls forming a maze',
+    'A green circle moves tile by tile through the maze with arrow keys',
+    'A yellow key and brown door appear in the maze',
+    'A red ghost chases the player through the corridors',
+    'A blue exit tile, win and game-over screens, and a lives counter',
+    'A custom maze layout designed by the learner'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + CELL +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_MAZE +
+        'function loop(){drawMaze();' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + CELL + MAZE_DATA + PLAYER_VARS + MOVE_TIMER +
+        DRAW_MAZE +
+        KEY_HANDLER +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'drawMaze();' + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + CELL + MAZE_DATA + PLAYER_VARS + KEY_VARS + MOVE_TIMER +
+        DRAW_MAZE +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        KEY_HANDLER +
+        'function loop(){' +
+        'drawMaze();' + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + CELL + MAZE_DATA + PLAYER_VARS + KEY_VARS +
+        GHOST_VARS + LIVES_VARS + STATE_VARS + MOVE_TIMER +
+        DRAW_MAZE + GHOST_AI +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        KEY_HANDLER +
+        'function loop(){' +
+        'if(gameState==="play"){' + GHOST_TICK + GHOST_COLLIDE + '}' +
+        'drawMaze();' + DRAW_PLAYER + DRAW_GHOST + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + CELL + MAZE_DATA + PLAYER_VARS + KEY_VARS +
+        GHOST_VARS + LIVES_VARS + STATE_VARS + MOVE_TIMER +
+        DRAW_MAZE + GHOST_AI +
+        KEY_HANDLER +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        RESTART_HANDLER +
+        'function loop(){' +
+        'if(gameState==="play"){' + GHOST_TICK + GHOST_COLLIDE + WIN_CHECK + '}' +
+        'drawMaze();' + DRAW_PLAYER + DRAW_GHOST + DRAW_HUD +
+        'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("YOU WIN!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,210)}' +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,210)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + CELL +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        PLAYER_VARS + KEY_VARS +
+        GHOST_VARS + LIVES_VARS + STATE_VARS + MOVE_TIMER +
+        DRAW_MAZE + GHOST_AI +
+        KEY_HANDLER + RESTART_HANDLER +
+        'function loop(){' +
+        'if(gameState==="play"){' + GHOST_TICK + GHOST_COLLIDE + WIN_CHECK + '}' +
+        'drawMaze();' + DRAW_PLAYER + DRAW_GHOST + DRAW_HUD +
+        'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("YOU WIN!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,210)}' +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,210)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Maze Grid',
+      goal: 'Define a 2D maze array and draw walls and paths on the canvas.',
+      points: [
+        'The canvas is 400x400 pixels - a 20x20 grid of 20-pixel cells',
+        'The maze is a 2D array: <code>0</code> = path, <code>1</code> = wall',
+        'Walls are dark gray (<code>#2d333b</code>), paths are slightly lighter (<code>#161b22</code>)',
+        'Each cell is drawn with <code>fillRect(col * CELL, row * CELL, CELL, CELL)</code>'
+      ],
+      challenge: '🐍 Set the maze dimensions and cell size:',
+      starter: '# Define the maze grid dimensions\nCOLS = ___\nROWS = ___\nCELL = ___\n\n# Build the maze (0 = path, 1 = wall)\nmaze = [\n  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],\n  [1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1],\n  [1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,1],\n  [1,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1],\n  [1,0,1,1,1,1,1,1,1,0,1,1,1,0,1,0,1,1,1,1],\n  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],\n  [1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],\n  [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],\n  [1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,0,1],\n  [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,1],\n  [1,1,1,1,1,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1],\n  [1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1],\n  [1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],\n  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],\n  [1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,0,1],\n  [1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1],\n  [1,0,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],\n  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],\n  [1,0,1,1,1,1,1,0,1,0,1,1,1,0,0,0,1,1,0,1],\n  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]\n]',
+      solution: '# Define the maze grid dimensions\nCOLS = 20\nROWS = 20\nCELL = 20\n\n# Build the maze (0 = path, 1 = wall)\nmaze = [\n  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],\n  [1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1],\n  [1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,1],\n  [1,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1],\n  [1,0,1,1,1,1,1,1,1,0,1,1,1,0,1,0,1,1,1,1],\n  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],\n  [1,1,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],\n  [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],\n  [1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,0,1],\n  [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,1],\n  [1,1,1,1,1,0,1,0,1,0,1,1,1,1,0,1,1,1,0,1],\n  [1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1],\n  [1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],\n  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1],\n  [1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,0,1],\n  [1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,1],\n  [1,0,1,0,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],\n  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1],\n  [1,0,1,1,1,1,1,0,1,0,1,1,1,0,0,0,1,1,0,1],\n  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]\n]',
+      checks: ['20', 'maze'],
+      height: 520,
+      fills: {
+        text: 'The grid is ___ cells wide and each cell is ___ pixels, giving a 400-pixel canvas.',
+        answers: ['20', '20']
+      },
+      quiz: {
+        question: 'Why use a 2D array for the maze instead of drawing walls individually?',
+        options: [
+          'Arrays are the only way to store data in Python',
+          'A 2D array maps directly to grid positions - you can check any cell with maze[row][col] for both drawing and collision',
+          'Individual walls would be faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Tile-by-Tile Movement',
+      goal: 'Move the player one tile at a time with arrow keys, blocked by walls.',
+      points: [
+        'The player is a green circle sitting in one cell of the grid',
+        'Arrow keys move one tile at a time: calculate the next position <code>(nx, ny)</code> before moving',
+        'Check <code>maze[ny][nx]</code> before moving - if it is <code>1</code> (wall), the move is blocked',
+        'This is tile-based movement: the player snaps to the grid, no sub-pixel sliding'
+      ],
+      challenge: '🐍 Write the movement and wall-check logic:',
+      starter: '# Calculate next position\nnx = px\nny = py\nif key == "ArrowUp":\n    ny -= ___\nif key == "ArrowDown":\n    ny += ___\n\n# Only move if next cell is not a wall\nif maze[ny][nx] != ___:\n    px = nx\n    py = ny',
+      solution: '# Calculate next position\nnx = px\nny = py\nif key == "ArrowUp":\n    ny -= 1\nif key == "ArrowDown":\n    ny += 1\n\n# Only move if next cell is not a wall\nif maze[ny][nx] != 1:\n    px = nx\n    py = ny',
+      checks: ['maze', 'nx', 'ny', '1'],
+      height: 240,
+      fills: {
+        text: 'The player moves ___ cell per key press. Before moving, we check that <code>maze[ny][nx]</code> is not equal to ___ (wall).',
+        answers: ['1', '1']
+      },
+      quiz: {
+        question: 'Why check the target cell BEFORE updating the player position?',
+        options: [
+          'Python requires variables to be checked before assignment',
+          'If you move first and check after, the player would teleport inside walls and need to be pushed back out',
+          'It makes the code shorter'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Keys & Doors',
+      goal: 'Add a collectible key and a locked door. The key unlocks the door.',
+      points: [
+        'Tile type <code>2</code> = key (yellow circle), type <code>3</code> = door (brown rectangle)',
+        'Walking onto a key tile sets <code>hasKey = True</code> and clears the tile to <code>0</code>',
+        'The door blocks movement just like a wall - unless <code>hasKey</code> is True',
+        'When the player walks through the door with the key, clear the door tile too'
+      ],
+      challenge: '🐍 Add key and door tiles to the maze:',
+      starter: '# Place key at row 5, col 17 and door at row 13, col 17\nmaze[5][17] = ___\nmaze[13][17] = ___\n\n# When player steps on a key tile\nhasKey = ___',
+      solution: '# Place key at row 5, col 17 and door at row 13, col 17\nmaze[5][17] = 2\nmaze[13][17] = 3\n\n# When player steps on a key tile\nhasKey = True',
+      checks: ['2', '3', 'true'],
+      height: 140,
+      fills: {
+        text: 'The key tile uses type ___ and the door uses type ___. Picking up the key sets hasKey to True.',
+        answers: ['2', '3']
+      },
+      quiz: {
+        question: 'Why clear the key tile to 0 after picking it up?',
+        options: [
+          'So the player does not collect the same key every time they walk over that cell',
+          'Zero is the only valid tile number',
+          'The key disappears for visual effect only'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 4,
+      title: 'The Ghost',
+      goal: 'Add a ghost that chases the player through the maze.',
+      points: [
+        'The ghost is a red circle that starts at the far corner (18, 18)',
+        'Every <code>ghostInterval</code> frames, the ghost moves one tile toward the player',
+        'Simple chase AI: compare positions and move along the bigger axis (row or column)',
+        'The ghost respects walls - if the target cell is a wall, the ghost stays put'
+      ],
+      challenge: '🐍 Write the ghost chase AI:',
+      starter: '# Move ghost toward the player\ndx = px - gx\ndy = py - gy\nnx = gx\nny = gy\n\n# Move along the bigger axis\nif abs(dx) > abs(dy):\n    nx += 1 if dx > 0 else ___\nelse:\n    ny += 1 if dy > 0 else ___\n\n# Only move if not a wall\nif maze[ny][nx] != ___:\n    gx = nx\n    gy = ny',
+      solution: '# Move ghost toward the player\ndx = px - gx\ndy = py - gy\nnx = gx\nny = gy\n\n# Move along the bigger axis\nif abs(dx) > abs(dy):\n    nx += 1 if dx > 0 else -1\nelse:\n    ny += 1 if dy > 0 else -1\n\n# Only move if not a wall\nif maze[ny][nx] != 1:\n    gx = nx\n    gy = ny',
+      checks: ['-1', 'maze', 'gx', 'gy'],
+      height: 280,
+      fills: {
+        text: 'The ghost moves one tile every ___ frames. It picks the axis with the ___ distance to close the gap.',
+        answers: ['12', 'bigger']
+      },
+      quiz: {
+        question: 'Why does the ghost move only every N frames instead of every frame?',
+        options: [
+          'Moving every frame makes the ghost impossibly fast - the delay gives the player time to react and plan a path',
+          'JavaScript cannot update two objects per frame',
+          'Ghosts are slow in real life'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Exit, Win & Lose',
+      goal: 'Add an exit tile. Reaching it wins. Losing all lives ends the game. R to restart.',
+      points: [
+        'Tile type <code>4</code> = exit (blue rectangle) placed near the bottom-right',
+        'When the player steps on the exit: <code>gameState = "win"</code> and show "YOU WIN!"',
+        'If the ghost catches the player, lose a life. At 0 lives: <code>gameState = "over"</code>',
+        'Press R to restart: reset lives, position, ghost, key, and door'
+      ],
+      challenge: '🐍 Set the exit tile and win/lose conditions:',
+      starter: '# Place the exit tile\nmaze[18][14] = ___\n\n# Check for win\nif maze[py][px] == ___:\n    gameState = "win"\n\n# Check for lose\nif lives <= ___:\n    gameState = "over"',
+      solution: '# Place the exit tile\nmaze[18][14] = 4\n\n# Check for win\nif maze[py][px] == 4:\n    gameState = "win"\n\n# Check for lose\nif lives <= 0:\n    gameState = "over"',
+      checks: ['4', 'win', 'over', '0'],
+      height: 200,
+      fills: {
+        text: 'The exit uses tile type ___. The game ends in defeat when lives drop to ___.',
+        answers: ['4', '0']
+      },
+      quiz: {
+        question: 'Why use gameState strings like "win" and "over" instead of booleans?',
+        options: [
+          'Strings are faster than booleans in Python',
+          'A single state variable with named states is clearer than juggling multiple booleans - and you can add states like "paused" easily',
+          'Booleans do not work in if statements'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Design Your Own Levels',
+      goal: 'Edit the maze array to create your own custom level layout.',
+      points: [
+        'Change <code>0</code>s and <code>1</code>s in the maze array to reshape walls and paths',
+        'Place a key (<code>2</code>), door (<code>3</code>), and exit (<code>4</code>) somewhere reachable',
+        'Keep the border walls (first and last row/column should stay as <code>1</code>)',
+        'Test your maze: can a player actually reach the key, then the door, then the exit?'
+      ],
+      challenge: '🐍 Design your own maze layout:',
+      starter: '# Your custom maze! Edit the 0s and 1s.\n# 0=path  1=wall  2=key  3=door  4=exit\nmaze = [\n  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],\n  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],\n  [1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,1,0,1],\n  [1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1],\n  [1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,1,0,1,0,1],\n  [1,0,0,0,0,0,0,0,0,0,1,0,0,0,1,2,0,0,0,1],\n  [1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,0,1],\n  [1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],\n  [1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,0,1],\n  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],\n  [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,0,1],\n  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,1],\n  [1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,1,0,1,0,1],\n  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,3,1],\n  [1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,0,1,1,0,1],\n  [1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1],\n  [1,0,1,0,1,1,1,0,1,1,1,0,1,0,1,1,0,1,0,1],\n  [1,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],\n  [1,0,0,0,1,1,1,0,1,0,1,1,1,0,0,0,1,1,4,1],\n  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]\n]',
+      solution: '# Your custom maze! Edit the 0s and 1s.\n# 0=path  1=wall  2=key  3=door  4=exit\nmaze = [\n  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],\n  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],\n  [1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,1,1,1,0,1],\n  [1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1],\n  [1,0,1,0,1,1,1,1,1,1,1,0,1,0,1,1,0,1,0,1],\n  [1,0,0,0,0,0,0,0,0,0,1,0,0,0,1,2,0,0,0,1],\n  [1,0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,0,1],\n  [1,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],\n  [1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,0,1],\n  [1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1],\n  [1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1,1,0,1],\n  [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,1],\n  [1,0,1,1,1,1,1,0,1,1,1,0,1,1,1,1,0,1,0,1],\n  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,3,1],\n  [1,0,1,1,1,0,1,1,1,1,1,1,1,0,1,0,1,1,0,1],\n  [1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1],\n  [1,0,1,0,1,1,1,0,1,1,1,0,1,0,1,1,0,1,0,1],\n  [1,0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1],\n  [1,0,0,0,1,1,1,0,1,0,1,1,1,0,0,0,1,1,4,1],\n  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]\n]',
+      checks: ['maze', '0', '1', '2', '3', '4'],
+      height: 520,
+      fills: {
+        text: 'The border of the maze should always be ___ (walls). The exit tile type is ___.',
+        answers: ['1', '4']
+      },
+      quiz: {
+        question: 'What is the most important thing to test after redesigning a maze?',
+        options: [
+          'That the maze looks symmetrical',
+          'That there is a reachable path from the start to the key, through the door, and to the exit',
+          'That there are more walls than paths'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

@@ -4329,7 +4329,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-06T15:51:55.737Z",
+    "generated": "2026-10-06T15:52:25.055Z",
     "workshops": 197,
     "games": 41,
     "tools": 37,

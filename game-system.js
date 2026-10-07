@@ -17,10 +17,15 @@ class GameSystem {
     // Lets AudioEffects (audio-effects.js) find the active game's sound
     // settings without every game having to pass its instance around.
     GameSystem.lastInstance = this;
-    if (typeof window !== 'undefined' && !window.JVDSArcade) {
-      window.JVDSArcade = {
-        register: actions => GameSystem.lastInstance && GameSystem.lastInstance.registerArcadeActions(actions)
-      };
+    if (typeof window !== 'undefined') {
+      // The engine stamps window.JVDSArcade = {} at load time (before any
+      // instance exists), so `register` has to be installed even when the
+      // object is already present - otherwise games that call
+      // JVDSArcade.register() straight after construction throw.
+      window.JVDSArcade = window.JVDSArcade || {};
+      if (!window.JVDSArcade.register) {
+        window.JVDSArcade.register = actions => GameSystem.lastInstance && GameSystem.lastInstance.registerArcadeActions(actions);
+      }
     }
 
     this.state = this.loadState() || {
@@ -62,6 +67,10 @@ class GameSystem {
 
   /* ── STATE MANAGEMENT ── */
   loadState() {
+    // A672: delegate to the save module when present, else inline fallback.
+    if (typeof window !== 'undefined' && window.JVDSEngine && window.JVDSEngine.save) {
+      return window.JVDSEngine.save.load(this.storageKey);
+    }
     try {
       const stored = localStorage.getItem(this.storageKey);
       const state = stored ? JSON.parse(stored) : null;
@@ -78,6 +87,10 @@ class GameSystem {
   }
 
   saveState() {
+    if (typeof window !== 'undefined' && window.JVDSEngine && window.JVDSEngine.save) {
+      window.JVDSEngine.save.persist(this.storageKey, this.state);
+      return;
+    }
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(this.state));
     } catch (e) {
@@ -113,6 +126,12 @@ class GameSystem {
 
   /* ── SCORE & PROGRESSION ── */
   addScore(points) {
+    if (typeof window !== 'undefined' && window.JVDSEngine && window.JVDSEngine.score) {
+      const r = window.JVDSEngine.score.add(this.state, points);
+      if (r.newBest) this.checkHighScoreAchievement();
+      this.saveState();
+      return r.score;
+    }
     this.state.score += points;
     this.state.totalScore = (this.state.totalScore || 0) + points;
     if (this.state.score > this.state.highScore) {
@@ -134,6 +153,11 @@ class GameSystem {
   }
 
   addXP(amount) {
+    if (typeof window !== 'undefined' && window.JVDSEngine && window.JVDSEngine.score) {
+      const r = window.JVDSEngine.score.addXP(this.state, amount);
+      this.saveState();
+      return r;
+    }
     this.state.xp += amount;
     const xpPerLevel = 1000;
     const newLevel = Math.floor(this.state.xp / xpPerLevel) + 1;
@@ -149,6 +173,11 @@ class GameSystem {
   }
 
   addCoins(amount) {
+    if (typeof window !== 'undefined' && window.JVDSEngine && window.JVDSEngine.score) {
+      const coins = window.JVDSEngine.score.addCoins(this.state, amount);
+      this.saveState();
+      return coins;
+    }
     this.state.coins += amount;
     this.saveState();
     return this.state.coins;
@@ -982,7 +1011,7 @@ if (typeof document !== 'undefined') {
 /* ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    GLOBAL PROFILE BRIDGE, feeds gameplay into the unified
    player profile (player-profile.js) so every game counts
-   toward global XP, quests, and the global leaderboard.
+   toward global XP and quests.
 
    Awards (per game, capped per day so they can't be farmed):
    - session   +10 XP  once/day, spent 30s+ in a game
@@ -1875,6 +1904,87 @@ const VoidStory = {
     setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 6000);
   }
 };
+
+// A672: versioned engine identity. The score/save modules (game-system-score.js,
+// game-system-save.js) load before this file and register on window.JVDSEngine;
+// here we stamp the version and expose the API surface for tools and tests.
+GameSystem.VERSION = '2.0.0';
+
+/* Unified score schema (see game-score.js).
+   One documented key per game - jvds_game_<gameId> - is what the Arcade hub and
+   me.html read. Light games get the same API from game-score.js; engine games
+   use these statics. Delegates to game-score.js when it is present so the
+   legacy-key migration happens in one place. */
+var _GS_LEGACY_KEYS = {
+  'gem-match': ['gmBest'], 'garden-defense': ['gdBest'], 'cozy-cafe': ['cc_shift_best'],
+  'arcane-citadel': ['ac_scores'], 'echo-fruit': ['echo_picnic_best'],
+  'critter-whack': ['critter_ranger_best'], 'dough-dash': ['doughDashBest'],
+  'pastry-match': ['pastryMatchBest'], 'stack-attack': ['stackBest'],
+  'void-rush': ['voidrush-best'], 'stardust_collection': ['stardust_constellation_best_v1']
+};
+function _gsLegacyBest(gameId) {
+  var best = 0;
+  var keys = (_GS_LEGACY_KEYS[gameId] || []).concat(['jvds-best-' + gameId]);
+  keys.forEach(function (k) {
+    var v;
+    try { v = JSON.parse(localStorage.getItem(k)); } catch (e) { return; }
+    if (v == null) return;
+    if (v && typeof v === 'object') {
+      if (Array.isArray(v)) v.forEach(function (o) { best = Math.max(best, Math.floor((o && o.score) || 0)); });
+      else best = Math.max(best, Math.floor(v.highScore) || 0, Math.floor(v.score) || 0, Math.floor(v.best) || 0);
+    } else {
+      best = Math.max(best, Math.floor(Number(v)) || 0);
+    }
+  });
+  return best;
+}
+GameSystem.saveScore = function (gameId, score, meta) {
+  if (typeof window !== 'undefined' && window.JVDSGameScore) {
+    return window.JVDSGameScore.saveScore(gameId, score, meta);
+  }
+  if (!gameId || typeof score !== 'number' || !isFinite(score)) return 0;
+  score = Math.max(0, Math.floor(score));
+  try {
+    var k = 'jvds_game_' + gameId;
+    var s = JSON.parse(localStorage.getItem(k) || 'null') || {};
+    s.score = score;
+    s.highScore = Math.max(Number(s.highScore) || 0, _gsLegacyBest(gameId), score);
+    if (typeof s.gamesPlayed !== 'number') s.gamesPlayed = 0;
+    if (meta && typeof meta === 'object') {
+      if (meta.newPlay) s.gamesPlayed += 1;
+      if (typeof meta.level === 'number' && meta.level > 0) s.level = Math.max(Number(s.level) || 1, Math.floor(meta.level));
+      if (meta.extra && typeof meta.extra === 'object' && !Array.isArray(meta.extra)) s.extra = Object.assign({}, s.extra, meta.extra);
+    }
+    s.lastPlayed = new Date().toISOString();
+    localStorage.setItem(k, JSON.stringify(s));
+    return s.highScore;
+  } catch (e) { return 0; }
+};
+GameSystem.getBestScore = function (gameId) {
+  if (typeof window !== 'undefined' && window.JVDSGameScore) {
+    return window.JVDSGameScore.getBestScore(gameId);
+  }
+  try {
+    var s = JSON.parse(localStorage.getItem('jvds_game_' + gameId) || 'null');
+    return Math.max(Math.floor((s && Number(s.highScore)) || 0), _gsLegacyBest(gameId));
+  } catch (e) { return _gsLegacyBest(gameId); }
+};
+GameSystem.getScoreState = function (gameId) {
+  if (typeof window !== 'undefined' && window.JVDSGameScore) {
+    return window.JVDSGameScore.getScoreState(gameId);
+  }
+  var s = {};
+  try { s = JSON.parse(localStorage.getItem('jvds_game_' + gameId) || 'null') || {}; } catch (e) {}
+  if (s.highScore == null) s.highScore = _gsLegacyBest(gameId);
+  return s;
+};
+if (typeof window !== 'undefined') {
+  window.GameSystem = GameSystem;
+  window.JVDSEngine = window.JVDSEngine || {};
+  window.JVDSEngine.version = GameSystem.VERSION;
+  if (!window.JVDSArcade) window.JVDSArcade = {};
+  window.JVDSArcade.engine = window.JVDSEngine;
+}
 
 // Hook into GameSystem.recordGamePlay
 const _origRecord = GameSystem.prototype.recordGamePlay;

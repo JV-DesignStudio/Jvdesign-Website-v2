@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defold Shooter Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(45,212,191,.15);color:#2dd4bf;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Defold Shooter Build Canvas <span class="cw-lang-tag">&#x1f3ae; Defold</span></h1>
+  <p>Write Defold Lua game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Defold Shooter game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A cyan ship at the bottom of a dark starfield</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Defold Lua-to-JS transpiler
+   =================================================== */
+function defoldToJs(code) {
+  return code
+    .replace(/--(.*)$/gm, '//$1')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bself\.(\w+)/g, 'self_$1')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\.\s*/g, '+ ')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\btable\.insert\s*\(\s*(\w+)\s*,\s*/g, '$1.push(')
+    .replace(/\bmath\.random\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\bmath\.floor\s*\(/g, 'Math.floor(')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Defold Shooter)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#050520;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="500"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var SHIP_VARS = 'let sx=180,sy=460,sw=28,sh=20,shipSpeed=5;';
+
+var BULLET_VARS = 'var bullets=[];let shootCooldown=0;';
+
+var ENEMY_VARS = 'var enemies=[];let enemyDir=1,enemySpeed=1,enemyDrop=0,waveTimer=0;' +
+  'function spawnWave(){enemies=[];for(var r=0;r<3;r++){for(var c=0;c<7;c++){enemies.push({x:30+c*50,y:40+r*45,w:30,h:20,alive:true})}}}spawnWave();';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var STARS = 'var stars=[];for(var si=0;si<60;si++){stars.push({x:Math.random()*400,y:Math.random()*500,s:Math.random()*2+0.5})}';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,spaceHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="Space")spaceHeld=true;' +
+    'if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;enemySpeed=1;spawnWave();gameState="play"}' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="Space")spaceHeld=false});';
+
+var MOVE_SHIP = 'if(leftHeld)sx-=shipSpeed;if(rightHeld)sx+=shipSpeed;sx=Math.max(0,Math.min(400-sw,sx));';
+
+var SHOOT = 'if(shootCooldown>0)shootCooldown--;' +
+  'if(spaceHeld&&shootCooldown<=0){bullets.push({x:sx+sw/2-2,y:sy-8,w:4,h:8});shootCooldown=12}';
+
+var MOVE_BULLETS = 'for(var bi=bullets.length-1;bi>=0;bi--){bullets[bi].y-=7;if(bullets[bi].y<-10)bullets.splice(bi,1)}';
+
+var MOVE_ENEMIES = 'var hitEdge=false;for(var ei=0;ei<enemies.length;ei++){if(enemies[ei].alive){enemies[ei].x+=enemyDir*enemySpeed;' +
+  'if(enemies[ei].x<=5||enemies[ei].x+enemies[ei].w>=395)hitEdge=true}}' +
+  'if(hitEdge){enemyDir=-enemyDir;for(var ej=0;ej<enemies.length;ej++){enemies[ej].y+=15}}';
+
+var BULLET_HIT = 'for(var bhi=bullets.length-1;bhi>=0;bhi--){for(var ehi=0;ehi<enemies.length;ehi++){var eb=enemies[ehi];' +
+  'if(eb.alive&&bullets[bhi].x+bullets[bhi].w>eb.x&&bullets[bhi].x<eb.x+eb.w&&bullets[bhi].y<eb.y+eb.h&&bullets[bhi].y+bullets[bhi].h>eb.y){' +
+  'eb.alive=false;score+=10;bullets.splice(bhi,1);break}}}';
+
+var ENEMY_REACH = 'for(var eri=0;eri<enemies.length;eri++){if(enemies[eri].alive&&enemies[eri].y+enemies[eri].h>=sy){lives=0;gameState="over"}}';
+
+var ENEMY_HIT_SHIP = 'for(var esi=0;esi<enemies.length;esi++){var es=enemies[esi];' +
+  'if(es.alive&&es.x+es.w>sx&&es.x<sx+sw&&es.y+es.h>sy&&es.y<sy+sh){lives--;es.alive=false;if(lives<=0)gameState="over"}}';
+
+var WAVE_CHECK = 'var aliveCount=0;for(var wi=0;wi<enemies.length;wi++){if(enemies[wi].alive)aliveCount++}' +
+  'if(aliveCount===0){enemySpeed=Math.min(enemySpeed+0.3,4);spawnWave()}';
+
+var DRAW_BG = 'ctx.fillStyle="#050520";ctx.fillRect(0,0,400,500);';
+
+var DRAW_STARS = 'ctx.fillStyle="#334155";for(var dsi=0;dsi<stars.length;dsi++){ctx.fillRect(stars[dsi].x,stars[dsi].y,stars[dsi].s,stars[dsi].s);' +
+  'stars[dsi].y+=stars[dsi].s*0.5;if(stars[dsi].y>500){stars[dsi].y=0;stars[dsi].x=Math.random()*400}}';
+
+var DRAW_SHIP = 'ctx.fillStyle="#22d3ee";ctx.fillRect(sx,sy,sw,sh);ctx.fillRect(sx+sw/2-3,sy-6,6,6);';
+
+var DRAW_BULLETS = 'ctx.fillStyle="#fbbf24";for(var dbi=0;dbi<bullets.length;dbi++){ctx.fillRect(bullets[dbi].x,bullets[dbi].y,bullets[dbi].w,bullets[dbi].h)}';
+
+var DRAW_ENEMIES = 'for(var dei=0;dei<enemies.length;dei++){if(enemies[dei].alive){ctx.fillStyle="#ef4444";ctx.fillRect(enemies[dei].x,enemies[dei].y,enemies[dei].w,enemies[dei].h)}}';
+
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,8,20);' +
+  'ctx.textAlign="right";ctx.fillText("Lives: "+lives,392,20);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Defold Shooter steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-defold-shooter-canvas',
+  downloadName: 'my-defold-shooter.html',
+
+  hints: [
+    'A cyan ship at the bottom of a dark starfield',
+    'The ship moves left and right and fires yellow bullets upward',
+    'Red enemies fill three rows at the top of the screen',
+    'Bullets destroy enemies on contact, scoring 10 points each',
+    'Enemies march side to side and drop down when they hit an edge',
+    'Clear all enemies for a faster wave, game over if they reach you'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + STARS + KEYS +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_SHIP +
+        DRAW_BG + DRAW_STARS + DRAW_SHIP +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + BULLET_VARS + STARS + KEYS +
+        'function loop(){' +
+        MOVE_SHIP +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        MOVE_BULLETS +
+        DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_SHIP +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + STARS + KEYS +
+        'function loop(){' +
+        MOVE_SHIP + SHOOT + MOVE_BULLETS +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STARS + KEYS +
+        'function loop(){' +
+        MOVE_SHIP + SHOOT + MOVE_BULLETS + MOVE_ENEMIES +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STATE_VARS + STARS + KEYS +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_SHIP + SHOOT + MOVE_BULLETS + MOVE_ENEMIES + BULLET_HIT +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP + DRAW_HUD +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,230);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,260);ctx.fillText("Press R to retry",200,290)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STATE_VARS + STARS + KEYS +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_SHIP + SHOOT + MOVE_BULLETS + MOVE_ENEMIES + BULLET_HIT + ENEMY_REACH + WAVE_CHECK +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP + DRAW_HUD +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,230);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,260);ctx.fillText("Press R to retry",200,290)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Ship',
+      goal: 'Draw a cyan ship at the bottom of a scrolling starfield.',
+      points: [
+        'The canvas is 400x500. The ship is 28x20 pixels near the bottom at y=460',
+        'A small turret (6x6) sits on top of the ship for visual detail',
+        'Background stars scroll slowly downward and wrap to the top',
+        'In Defold the ship would be a game object with a sprite and script'
+      ],
+      challenge: '🎮 Set the ship position and size:',
+      starter: '-- Place the ship at the bottom\nlocal sx = ___\nlocal sy = ___\nlocal sw = 28\nlocal sh = 20',
+      solution: '-- Place the ship at the bottom\nlocal sx = 180\nlocal sy = 460\nlocal sw = 28\nlocal sh = 20',
+      checks: ['180', '460', '28', '20'],
+      height: 120,
+      fills: {
+        text: 'The ship starts at x=___ to be roughly centred. It sits at y=___ near the bottom edge.',
+        answers: ['180', '460']
+      },
+      quiz: {
+        question: 'Why scroll background stars instead of keeping them static?',
+        options: [
+          'Static stars cause bugs',
+          'Moving stars create a sense of speed and forward motion even though the ship stays at the bottom',
+          'Stars must move in Defold'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Shooting Bullets',
+      goal: 'Press Space to fire yellow bullets upward from the ship.',
+      points: [
+        'Each bullet is a small rectangle (4x8) that moves upward at 7 pixels per frame',
+        'A cooldown timer (12 frames) prevents firing too fast',
+        'Bullets spawn from the ship centre: <code>x = sx + sw/2 - 2</code>',
+        'In Defold you would use a factory to spawn bullet game objects'
+      ],
+      challenge: '🎮 Write the shooting logic:',
+      starter: '-- Fire a bullet with cooldown\nif spaceHeld and shootCooldown <= 0 then\n    -- Spawn bullet at ship centre\n    local bx = sx + sw/2 - 2\n    local by = sy - ___\n    shootCooldown = ___\nend\nif shootCooldown > 0 then\n    shootCooldown = shootCooldown - 1\nend',
+      solution: '-- Fire a bullet with cooldown\nif spaceHeld and shootCooldown <= 0 then\n    -- Spawn bullet at ship centre\n    local bx = sx + sw/2 - 2\n    local by = sy - 8\n    shootCooldown = 12\nend\nif shootCooldown > 0 then\n    shootCooldown = shootCooldown - 1\nend',
+      checks: ['spaceheld', 'shootcooldown', '12', '8'],
+      height: 200,
+      fills: {
+        text: 'The cooldown of ___ frames limits fire rate. In Defold, bullets are spawned using ___.',
+        answers: ['12', 'factories']
+      },
+      quiz: {
+        question: 'In Defold, what is a factory component used for?',
+        options: [
+          'Making sprites bigger',
+          'Creating new game object instances at runtime from a prototype - perfect for bullets, enemies, and effects',
+          'Playing animations'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Enemy Formation',
+      goal: 'Spawn three rows of red enemies at the top.',
+      points: [
+        'Enemies are arranged in a 7-column by 3-row grid with spacing',
+        'Each enemy is 30x20 pixels with an <code>alive</code> flag',
+        'Position formula: <code>x = 30 + col * 50, y = 40 + row * 45</code>',
+        'In Defold you would use a factory inside a loop in a spawner script'
+      ],
+      challenge: '🎮 Write the enemy wave spawner:',
+      starter: '-- Spawn enemy grid\nfor r = 0, ___ do\n    for c = 0, ___ do\n        local ex = 30 + c * 50\n        local ey = 40 + r * 45\n        -- Add enemy at (ex, ey)\n    end\nend',
+      solution: '-- Spawn enemy grid\nfor r = 0, 2 do\n    for c = 0, 6 do\n        local ex = 30 + c * 50\n        local ey = 40 + r * 45\n        -- Add enemy at (ex, ey)\n    end\nend',
+      checks: ['2', '6', '50', '45'],
+      height: 180,
+      fills: {
+        text: 'The formation has ___ rows and ___ columns, totalling 21 enemies.',
+        answers: ['3', '7']
+      },
+      quiz: {
+        question: 'Why use an alive flag instead of removing dead enemies from the array?',
+        options: [
+          'Arrays cannot have items removed',
+          'Keeping enemies in place preserves the grid structure for movement - removing one would shift all positions',
+          'Dead enemies might come back'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Bullet-Enemy Collision',
+      goal: 'Destroy enemies when a bullet hits them. Score 10 points each.',
+      points: [
+        'Check every bullet against every alive enemy using AABB overlap',
+        'On hit: set enemy.alive = false, add 10 to score, remove the bullet',
+        'Loop bullets in reverse so removing one does not skip the next',
+        'In Defold you would use collision objects and <code>on_message()</code> for hit detection'
+      ],
+      challenge: '🎮 Write the bullet-enemy collision:',
+      starter: '-- Check if bullet overlaps enemy\nif enemy.alive and bx + bw > enemy.x and bx < enemy.x + enemy.w and by < enemy.y + enemy.h and by + bh > enemy.y then\n    enemy.alive = ___\n    score = score + ___\nend',
+      solution: '-- Check if bullet overlaps enemy\nif enemy.alive and bx + bw > enemy.x and bx < enemy.x + enemy.w and by < enemy.y + enemy.h and by + bh > enemy.y then\n    enemy.alive = false\n    score = score + 10\nend',
+      checks: ['false', '10', 'alive'],
+      height: 140,
+      fills: {
+        text: 'Each destroyed enemy awards ___ points. In Defold, collision detection uses ___ objects with shapes.',
+        answers: ['10', 'collision']
+      },
+      quiz: {
+        question: 'Why loop bullets in reverse when checking collisions?',
+        options: [
+          'Reverse is faster',
+          'When you splice out a hit bullet, indices shift down - reverse iteration means unprocessed bullets are not skipped',
+          'Bullets move in reverse'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Enemy Movement',
+      goal: 'Enemies march side to side and drop down when hitting an edge.',
+      points: [
+        'All enemies move in the same direction at <code>enemySpeed</code>',
+        'When any alive enemy touches a screen edge, reverse direction for all',
+        'On direction change, drop all enemies 15 pixels closer to the player',
+        'If enemies reach the ship row, it is instant game over'
+      ],
+      challenge: '🎮 Write the edge detection and direction change:',
+      starter: '-- Check if any enemy hits the edge\nlocal hitEdge = false\nif enemy.x <= 5 or enemy.x + enemy.w >= ___ then\n    hitEdge = true\nend\n\n-- Reverse and drop\nif hitEdge then\n    enemyDir = -enemyDir\n    -- Drop enemies by ___ pixels\nend',
+      solution: '-- Check if any enemy hits the edge\nlocal hitEdge = false\nif enemy.x <= 5 or enemy.x + enemy.w >= 395 then\n    hitEdge = true\nend\n\n-- Reverse and drop\nif hitEdge then\n    enemyDir = -enemyDir\n    -- Drop enemies by 15 pixels\nend',
+      checks: ['395', 'enemydir', 'hitedge', '15'],
+      height: 180,
+      fills: {
+        text: 'Enemies reverse at the screen edge (___px). Each reversal drops them ___ pixels closer.',
+        answers: ['395', '15']
+      },
+      quiz: {
+        question: 'Why does the Space Invaders march-and-drop pattern create tension?',
+        options: [
+          'It looks cool',
+          'Each drop brings enemies closer to game over - the pace visually accelerates as fewer enemies remain, creating urgency',
+          'The screen is too small for straight movement'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Waves & Game Over',
+      goal: 'Clear all enemies for a faster wave. Lose lives or let them reach you for game over.',
+      points: [
+        'When all enemies destroyed: increase <code>enemySpeed</code> and spawn a new wave',
+        'Cap speed at 4 to keep it possible',
+        'If an enemy row reaches the ship y-position: instant game over',
+        'Press R to restart with score reset and fresh wave'
+      ],
+      challenge: '🎮 Write the wave clear and speed ramp:',
+      starter: '-- Count alive enemies\nlocal alive = 0\n-- ... count them\n\n-- If none left, spawn faster wave\nif alive == 0 then\n    enemySpeed = enemySpeed + ___\n    if enemySpeed > ___ then\n        enemySpeed = ___\n    end\n    spawnWave()\nend',
+      solution: '-- Count alive enemies\nlocal alive = 0\n-- ... count them\n\n-- If none left, spawn faster wave\nif alive == 0 then\n    enemySpeed = enemySpeed + 0.3\n    if enemySpeed > 4 then\n        enemySpeed = 4\n    end\n    spawnWave()\nend',
+      checks: ['enemyspeed', 'spawnwave', '0.3', '4'],
+      height: 200,
+      fills: {
+        text: 'Each wave increases speed by ___. The cap of ___ pixels per frame prevents impossible waves.',
+        answers: ['0.3', '4']
+      },
+      quiz: {
+        question: 'What makes the wave system create a satisfying gameplay loop?',
+        options: [
+          'More enemies appear',
+          'Each wave is slightly harder - the player feels progress while the challenge grows, balancing skill and difficulty',
+          'The colours change'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++ Platformer Part 2 Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>C++ Platformer Part 2 Build Canvas <span class="cw-lang-tag">⚙️ C++</span></h1>
+  <p>Write C++ game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your C++ Platformer Part 2 game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue player on platforms with a red patrolling enemy</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   C++-to-JS transpiler (light transform so C++
+   syntax runs in the canvas iframe)
+   =================================================== */
+function cppToJs(code) {
+  return code
+    .replace(/\b(int|float|double|bool|char|auto|unsigned|long)\s+/g, 'let ')
+    .replace(/\bconst\s+let\s+/g, 'const ')
+    .replace(/\bstd::string\s+/g, 'let ')
+    .replace(/\bstd::cout\s*<<\s*/g, 'console.log(')
+    .replace(/\bstd::endl/g, '"\\n")')
+    .replace(/\bstd::abs\(/g, 'Math.abs(')
+    .replace(/\bstd::max\(/g, 'Math.max(')
+    .replace(/\bstd::min\(/g, 'Math.min(')
+    .replace(/\.f\b/g, '')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.push_back\(/g, '.push(');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (C++ Platformer Part 2)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#10162a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+/* --- Player from Part 1 --- */
+var PLAYER_VARS = 'let px=60,py=300,pw=24,ph=32,vx=0,vy=0,onGround=false,jumpsLeft=2;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,jumpPressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if((e.code==="ArrowUp"||e.code==="Space"||e.code==="KeyW")&&!jumpPressed){jumpPressed=true;' +
+      'if(jumpsLeft>0){vy=jumpsLeft===2?-10:-8;jumpsLeft--;onGround=false}}' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="Space"||e.code==="KeyW")jumpPressed=false});';
+
+/* --- Platforms --- */
+var PLATFORMS = 'var platforms=[{x:0,y:370,w:600,h:30},{x:120,y:290,w:100,h:14},{x:300,y:240,w:120,h:14},{x:480,y:310,w:100,h:14},{x:50,y:200,w:90,h:14},{x:220,y:150,w:100,h:14},{x:420,y:180,w:110,h:14}];';
+
+var WIDE_PLATFORMS = 'var platforms=[{x:0,y:370,w:1800,h:30},{x:120,y:290,w:100,h:14},{x:300,y:240,w:120,h:14},{x:480,y:310,w:100,h:14},{x:50,y:200,w:90,h:14},{x:220,y:150,w:100,h:14},{x:420,y:180,w:110,h:14},{x:650,y:260,w:100,h:14},{x:820,y:200,w:120,h:14},{x:1000,y:280,w:100,h:14},{x:1150,y:220,w:110,h:14},{x:1350,y:300,w:100,h:14},{x:1500,y:240,w:120,h:14}];';
+
+/* --- Player movement & physics --- */
+var PLAYER_MOVE = 'vx=0;if(leftHeld)vx=-4;if(rightHeld)vx=4;px+=vx;vy+=0.45;py+=vy;';
+
+var PLAYER_CLAMP = 'if(px<0)px=0;if(px+pw>600)px=600-pw;';
+
+var PLAYER_CLAMP_WIDE = 'if(px<0)px=0;';
+
+/* --- Platform collision --- */
+var PLAT_COLLIDE = 'onGround=false;for(var i=0;i<platforms.length;i++){var p=platforms[i];' +
+  'if(px+pw>p.x&&px<p.x+p.w&&py+ph>p.y&&py<p.y+p.h){' +
+    'if(vy>0&&py+ph-vy<=p.y+4){py=p.y-ph;vy=0;onGround=true;jumpsLeft=2}' +
+    'else if(vy<0&&py-vy>=p.y+p.h-4){py=p.y+p.h;vy=0}}}' +
+  'if(py>420){py=300;px=60;vy=0;vx=0}';
+
+var PLAT_COLLIDE_RESPAWN = 'onGround=false;for(var i=0;i<platforms.length;i++){var p=platforms[i];' +
+  'if(px+pw>p.x&&px<p.x+p.w&&py+ph>p.y&&py<p.y+p.h){' +
+    'if(vy>0&&py+ph-vy<=p.y+4){py=p.y-ph;vy=0;onGround=true;jumpsLeft=2}' +
+    'else if(vy<0&&py-vy>=p.y+p.h-4){py=p.y+p.h;vy=0}}}' +
+  'if(py>420)respawn();';
+
+/* --- Enemy data --- */
+var ENEMY_VARS = 'var enemies=[{x:300,y:346,w:26,h:24,vx:1.5,minX:260,maxX:420,alive:true},{x:480,y:286,w:26,h:24,vx:1,minX:460,maxX:560,alive:true}];';
+
+var ENEMY_VARS_WIDE = 'var enemies=[{x:300,y:346,w:26,h:24,vx:1.5,minX:260,maxX:420,alive:true},{x:480,y:286,w:26,h:24,vx:1,minX:460,maxX:560,alive:true},{x:700,y:346,w:26,h:24,vx:1.2,minX:650,maxX:820,alive:true},{x:1050,y:346,w:26,h:24,vx:1.8,minX:1000,maxX:1200,alive:true}];';
+
+/* --- Enemy patrol --- */
+var ENEMY_PATROL = 'for(var i=0;i<enemies.length;i++){var en=enemies[i];if(!en.alive)continue;en.x+=en.vx;if(en.x<en.minX||en.x>en.maxX)en.vx=-en.vx}';
+
+/* --- Stomp logic --- */
+var STOMP_LOGIC = 'for(var i=0;i<enemies.length;i++){var en=enemies[i];if(!en.alive)continue;' +
+  'if(px+pw>en.x&&px<en.x+en.w&&py+ph>en.y&&py<en.y+en.h){' +
+    'if(vy>0&&py+ph-en.y<16){en.alive=false;vy=-8;score+=50}' +
+    'else{respawn()}}}';
+
+/* --- Score variable --- */
+var SCORE_VAR = 'let score=0;';
+
+/* --- Respawn --- */
+var RESPAWN_FN_SIMPLE = 'function respawn(){px=60;py=300;vx=0;vy=0}';
+
+/* --- Camera --- */
+var CAMERA_VARS = 'var camX=0;const LEVEL_W=1800;';
+
+var CAMERA_UPDATE = 'camX=px-280;if(camX<0)camX=0;if(camX>LEVEL_W-600)camX=LEVEL_W-600;';
+
+/* --- Spikes --- */
+var SPIKE_DATA = 'var spikes=[{x:200,y:356,w:30,h:14},{x:550,y:356,w:40,h:14},{x:900,y:356,w:30,h:14},{x:1250,y:356,w:40,h:14}];';
+
+/* --- Checkpoints --- */
+var CHECKPOINT_DATA = 'var checkpoints=[{x:500,y:320,w:10,h:50,reached:false},{x:1100,y:320,w:10,h:50,reached:false}];';
+
+/* ===================================================
+   DRAWING HELPERS
+   =================================================== */
+
+var DRAW_BG = 'ctx.fillStyle="#10162a";ctx.fillRect(0,0,600,400);';
+
+var DRAW_PLATFORMS = 'ctx.fillStyle="#3b4a63";for(var i=0;i<platforms.length;i++){var p=platforms[i];ctx.fillRect(p.x,p.y,p.w,p.h)}';
+
+var DRAW_PLATFORMS_CAM = 'ctx.fillStyle="#3b4a63";for(var i=0;i<platforms.length;i++){var p=platforms[i];ctx.fillRect(p.x-camX,p.y,p.w,p.h)}';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#60a5fa";ctx.fillRect(px,py,pw,ph);';
+
+var DRAW_PLAYER_CAM = 'ctx.fillStyle="#60a5fa";ctx.fillRect(px-camX,py,pw,ph);';
+
+var DRAW_ENEMIES = 'ctx.fillStyle="#f87171";for(var i=0;i<enemies.length;i++){var en=enemies[i];if(en.alive)ctx.fillRect(en.x,en.y,en.w,en.h)}';
+
+var DRAW_ENEMIES_CAM = 'ctx.fillStyle="#f87171";for(var i=0;i<enemies.length;i++){var en=enemies[i];if(en.alive)ctx.fillRect(en.x-camX,en.y,en.w,en.h)}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);';
+
+var DRAW_SPIKES_CAM = 'ctx.fillStyle="#ff5470";for(var i=0;i<spikes.length;i++){var s=spikes[i];' +
+  'ctx.beginPath();ctx.moveTo(s.x-camX,s.y+s.h);ctx.lineTo(s.x-camX+s.w/2,s.y);ctx.lineTo(s.x-camX+s.w,s.y+s.h);ctx.fill()}';
+
+var DRAW_CHECKPOINTS_CAM = 'for(var i=0;i<checkpoints.length;i++){var cp=checkpoints[i];' +
+  'ctx.fillStyle=cp.reached?"#4ade80":"#2dd4bf";' +
+  'ctx.fillRect(cp.x-camX,cp.y,cp.w,cp.h);' +
+  'ctx.fillRect(cp.x-camX-6,cp.y,22,12)}';
+
+var DRAW_DOOR_CAM = 'ctx.fillStyle="#a78bfa";ctx.fillRect(door.x-camX,door.y,door.w,door.h);' +
+  'ctx.fillStyle="#c4b5fd";ctx.fillRect(door.x-camX+4,door.y+4,16,20);';
+
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";' +
+  'ctx.fillText("Score: "+score,10,24);ctx.fillText("Deaths: "+deaths,10,44);';
+
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - C++ Platformer Part 2 steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-cpp-platformer-p2-canvas',
+  downloadName: 'my-cpp-platformer-2.html',
+
+  hints: [
+    'A blue player on platforms with a red patrolling enemy',
+    'Stomp enemies from above to score points; touch their side and respawn',
+    'The camera follows the player through the wider level',
+    'Red spike triangles kill on touch; teal flags save your respawn point',
+    'Reach the purple door to beat the level',
+    'Deaths, score and a speedrun timer on the champion screen'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + ENEMY_VARS + KEYS +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        PLAYER_MOVE + PLAYER_CLAMP + PLAT_COLLIDE +
+        ENEMY_PATROL +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_ENEMIES + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + ENEMY_VARS + SCORE_VAR + KEYS +
+        RESPAWN_FN_SIMPLE +
+        'function loop(){' +
+        PLAYER_MOVE + PLAYER_CLAMP + PLAT_COLLIDE +
+        ENEMY_PATROL +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WIDE_PLATFORMS + ENEMY_VARS_WIDE + SCORE_VAR + KEYS +
+        RESPAWN_FN_SIMPLE +
+        CAMERA_VARS +
+        'function loop(){' +
+        PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
+        ENEMY_PATROL + STOMP_LOGIC +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WIDE_PLATFORMS + ENEMY_VARS_WIDE + SCORE_VAR + KEYS +
+        'let deaths=0;var respawnX=60,respawnY=300;function respawn(){px=respawnX;py=respawnY;vx=0;vy=0;deaths++}' +
+        CAMERA_VARS + SPIKE_DATA + CHECKPOINT_DATA +
+        'function loop(){' +
+        PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
+        ENEMY_PATROL + STOMP_LOGIC +
+        CAMERA_UPDATE +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_SPIKES_CAM + DRAW_CHECKPOINTS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM +
+        DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + KEYS + SCORE_VAR +
+        'let deaths=0;' +
+        'var levels=[' +
+          '{platforms:[{x:0,y:370,w:1200,h:30},{x:120,y:290,w:100,h:14},{x:300,y:240,w:120,h:14},{x:480,y:310,w:100,h:14},{x:700,y:260,w:100,h:14},{x:900,y:220,w:100,h:14}],' +
+          'enemies:[{x:300,y:346,w:26,h:24,vx:1.5,minX:260,maxX:420,alive:true},{x:700,y:346,w:26,h:24,vx:1.2,minX:650,maxX:820,alive:true}],' +
+          'spikes:[{x:200,y:356,w:30,h:14},{x:550,y:356,w:40,h:14}],' +
+          'checkpoints:[{x:500,y:320,w:10,h:50,reached:false}],' +
+          'door:{x:1080,y:320,w:24,h:50},width:1200},' +
+          '{platforms:[{x:0,y:370,w:1600,h:30},{x:150,y:280,w:110,h:14},{x:350,y:220,w:120,h:14},{x:550,y:290,w:100,h:14},{x:750,y:230,w:110,h:14},{x:950,y:270,w:100,h:14},{x:1150,y:210,w:120,h:14},{x:1350,y:280,w:100,h:14}],' +
+          'enemies:[{x:350,y:346,w:26,h:24,vx:1.8,minX:300,maxX:470,alive:true},{x:750,y:346,w:26,h:24,vx:2,minX:700,maxX:870,alive:true},{x:1150,y:346,w:26,h:24,vx:1.5,minX:1100,maxX:1280,alive:true}],' +
+          'spikes:[{x:250,y:356,w:30,h:14},{x:650,y:356,w:40,h:14},{x:1050,y:356,w:30,h:14}],' +
+          'checkpoints:[{x:600,y:320,w:10,h:50,reached:false},{x:1000,y:320,w:10,h:50,reached:false}],' +
+          'door:{x:1480,y:320,w:24,h:50},width:1600}' +
+        '];' +
+        'var currentLevel=0,platforms,enemies,spikes,checkpoints,door,LEVEL_W;' +
+        'var px=60,py=300,pw=24,ph=32,vx=0,vy=0,onGround=false,jumpsLeft=2;' +
+        'var camX=0,respawnX=60,respawnY=300;' +
+        'function respawn(){px=respawnX;py=respawnY;vx=0;vy=0;deaths++}' +
+        'function loadLevel(n){var L=levels[n];platforms=L.platforms;enemies=JSON.parse(JSON.stringify(L.enemies));spikes=L.spikes;checkpoints=JSON.parse(JSON.stringify(L.checkpoints));door=L.door;LEVEL_W=L.width;px=60;py=300;respawnX=60;respawnY=300;vx=0;vy=0}' +
+        'loadLevel(0);' +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'vx=0;if(leftHeld)vx=-4;if(rightHeld)vx=4;px+=vx;vy+=0.45;py+=vy;if(px<0)px=0;' +
+        'onGround=false;for(var i=0;i<platforms.length;i++){var p=platforms[i];if(px+pw>p.x&&px<p.x+p.w&&py+ph>p.y&&py<p.y+p.h){if(vy>0&&py+ph-vy<=p.y+4){py=p.y-ph;vy=0;onGround=true;jumpsLeft=2}else if(vy<0&&py-vy>=p.y+p.h-4){py=p.y+p.h;vy=0}}}' +
+        'if(py>420)respawn();' +
+        'for(var i=0;i<enemies.length;i++){var en=enemies[i];if(!en.alive)continue;en.x+=en.vx;if(en.x<en.minX||en.x>en.maxX)en.vx=-en.vx;' +
+          'if(px+pw>en.x&&px<en.x+en.w&&py+ph>en.y&&py<en.y+en.h){if(vy>0&&py+ph-en.y<16){en.alive=false;vy=-8;score+=50}else respawn()}}' +
+        'for(var i=0;i<spikes.length;i++){var s=spikes[i];if(px+pw>s.x&&px<s.x+s.w&&py+ph>s.y&&py<s.y+s.h)respawn()}' +
+        'for(var i=0;i<checkpoints.length;i++){var cp=checkpoints[i];if(!cp.reached&&px+pw>cp.x&&px<cp.x+cp.w&&py+ph>cp.y&&py<cp.y+cp.h){cp.reached=true;respawnX=cp.x;respawnY=cp.y-ph}}' +
+        'if(px+pw>door.x&&px<door.x+door.w&&py+ph>door.y&&py<door.y+door.h){if(currentLevel<levels.length-1){currentLevel++;loadLevel(currentLevel)}}' +
+        'camX=px-280;if(camX<0)camX=0;if(camX>LEVEL_W-600)camX=LEVEL_W-600;' +
+        DRAW_BG +
+        'ctx.fillStyle="#3b4a63";for(var i=0;i<platforms.length;i++){var p=platforms[i];ctx.fillRect(p.x-camX,p.y,p.w,p.h)}' +
+        'ctx.fillStyle="#ff5470";for(var i=0;i<spikes.length;i++){var s=spikes[i];ctx.beginPath();ctx.moveTo(s.x-camX,s.y+s.h);ctx.lineTo(s.x-camX+s.w/2,s.y);ctx.lineTo(s.x-camX+s.w,s.y+s.h);ctx.fill()}' +
+        'for(var i=0;i<checkpoints.length;i++){var cp=checkpoints[i];ctx.fillStyle=cp.reached?"#4ade80":"#2dd4bf";ctx.fillRect(cp.x-camX,cp.y,cp.w,cp.h);ctx.fillRect(cp.x-camX-6,cp.y,22,12)}' +
+        'ctx.fillStyle="#a78bfa";ctx.fillRect(door.x-camX,door.y,door.w,door.h);ctx.fillStyle="#c4b5fd";ctx.fillRect(door.x-camX+4,door.y+4,16,20);' +
+        'ctx.fillStyle="#f87171";for(var i=0;i<enemies.length;i++){var en=enemies[i];if(en.alive)ctx.fillRect(en.x-camX,en.y,en.w,en.h)}' +
+        'ctx.fillStyle="#60a5fa";ctx.fillRect(px-camX,py,pw,ph);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);ctx.fillText("Deaths: "+deaths,10,44);' +
+        'ctx.fillText("Level: "+(currentLevel+1)+"/"+levels.length,10,64);' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + KEYS + SCORE_VAR +
+        'let deaths=0,startTime=Date.now(),gameWon=false;' +
+        'var levels=[' +
+          '{platforms:[{x:0,y:370,w:1200,h:30},{x:120,y:290,w:100,h:14},{x:300,y:240,w:120,h:14},{x:480,y:310,w:100,h:14},{x:700,y:260,w:100,h:14},{x:900,y:220,w:100,h:14}],' +
+          'enemies:[{x:300,y:346,w:26,h:24,vx:1.5,minX:260,maxX:420,alive:true},{x:700,y:346,w:26,h:24,vx:1.2,minX:650,maxX:820,alive:true}],' +
+          'spikes:[{x:200,y:356,w:30,h:14},{x:550,y:356,w:40,h:14}],' +
+          'checkpoints:[{x:500,y:320,w:10,h:50,reached:false}],' +
+          'door:{x:1080,y:320,w:24,h:50},width:1200},' +
+          '{platforms:[{x:0,y:370,w:1600,h:30},{x:150,y:280,w:110,h:14},{x:350,y:220,w:120,h:14},{x:550,y:290,w:100,h:14},{x:750,y:230,w:110,h:14},{x:950,y:270,w:100,h:14},{x:1150,y:210,w:120,h:14},{x:1350,y:280,w:100,h:14}],' +
+          'enemies:[{x:350,y:346,w:26,h:24,vx:1.8,minX:300,maxX:470,alive:true},{x:750,y:346,w:26,h:24,vx:2,minX:700,maxX:870,alive:true},{x:1150,y:346,w:26,h:24,vx:1.5,minX:1100,maxX:1280,alive:true}],' +
+          'spikes:[{x:250,y:356,w:30,h:14},{x:650,y:356,w:40,h:14},{x:1050,y:356,w:30,h:14}],' +
+          'checkpoints:[{x:600,y:320,w:10,h:50,reached:false},{x:1000,y:320,w:10,h:50,reached:false}],' +
+          'door:{x:1480,y:320,w:24,h:50},width:1600}' +
+        '];' +
+        'var currentLevel=0,platforms,enemies,spikes,checkpoints,door,LEVEL_W;' +
+        'var px=60,py=300,pw=24,ph=32,vx=0,vy=0,onGround=false,jumpsLeft=2;' +
+        'var camX=0,respawnX=60,respawnY=300;' +
+        'function respawn(){px=respawnX;py=respawnY;vx=0;vy=0;deaths++}' +
+        'function loadLevel(n){var L=levels[n];platforms=L.platforms;enemies=JSON.parse(JSON.stringify(L.enemies));spikes=L.spikes;checkpoints=JSON.parse(JSON.stringify(L.checkpoints));door=L.door;LEVEL_W=L.width;px=60;py=300;respawnX=60;respawnY=300;vx=0;vy=0}' +
+        'loadLevel(0);' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameWon){deaths=0;score=0;startTime=Date.now();gameWon=false;currentLevel=0;loadLevel(0)}});' +
+        'function loop(){' +
+        'if(!gameWon){' +
+        'vx=0;if(leftHeld)vx=-4;if(rightHeld)vx=4;px+=vx;vy+=0.45;py+=vy;if(px<0)px=0;' +
+        'onGround=false;for(var i=0;i<platforms.length;i++){var p=platforms[i];if(px+pw>p.x&&px<p.x+p.w&&py+ph>p.y&&py<p.y+p.h){if(vy>0&&py+ph-vy<=p.y+4){py=p.y-ph;vy=0;onGround=true;jumpsLeft=2}else if(vy<0&&py-vy>=p.y+p.h-4){py=p.y+p.h;vy=0}}}' +
+        'if(py>420)respawn();' +
+        'for(var i=0;i<enemies.length;i++){var en=enemies[i];if(!en.alive)continue;en.x+=en.vx;if(en.x<en.minX||en.x>en.maxX)en.vx=-en.vx;' +
+          'if(px+pw>en.x&&px<en.x+en.w&&py+ph>en.y&&py<en.y+en.h){if(vy>0&&py+ph-en.y<16){en.alive=false;vy=-8;score+=50}else respawn()}}' +
+        'for(var i=0;i<spikes.length;i++){var s=spikes[i];if(px+pw>s.x&&px<s.x+s.w&&py+ph>s.y&&py<s.y+s.h)respawn()}' +
+        'for(var i=0;i<checkpoints.length;i++){var cp=checkpoints[i];if(!cp.reached&&px+pw>cp.x&&px<cp.x+cp.w&&py+ph>cp.y&&py<cp.y+cp.h){cp.reached=true;respawnX=cp.x;respawnY=cp.y-ph}}' +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'camX=px-280;if(camX<0)camX=0;if(camX>LEVEL_W-600)camX=LEVEL_W-600;' +
+        '}' +
+        DRAW_BG +
+        'ctx.fillStyle="#3b4a63";for(var i=0;i<platforms.length;i++){var p=platforms[i];ctx.fillRect(p.x-camX,p.y,p.w,p.h)}' +
+        'ctx.fillStyle="#ff5470";for(var i=0;i<spikes.length;i++){var s=spikes[i];ctx.beginPath();ctx.moveTo(s.x-camX,s.y+s.h);ctx.lineTo(s.x-camX+s.w/2,s.y);ctx.lineTo(s.x-camX+s.w,s.y+s.h);ctx.fill()}' +
+        'for(var i=0;i<checkpoints.length;i++){var cp=checkpoints[i];ctx.fillStyle=cp.reached?"#4ade80":"#2dd4bf";ctx.fillRect(cp.x-camX,cp.y,cp.w,cp.h);ctx.fillRect(cp.x-camX-6,cp.y,22,12)}' +
+        'ctx.fillStyle="#a78bfa";ctx.fillRect(door.x-camX,door.y,door.w,door.h);ctx.fillStyle="#c4b5fd";ctx.fillRect(door.x-camX+4,door.y+4,16,20);' +
+        'ctx.fillStyle="#f87171";for(var i=0;i<enemies.length;i++){var en=enemies[i];if(en.alive)ctx.fillRect(en.x-camX,en.y,en.w,en.h)}' +
+        'ctx.fillStyle="#60a5fa";ctx.fillRect(px-camX,py,pw,ph);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);ctx.fillText("Deaths: "+deaths,10,44);' +
+        'ctx.fillText("Level: "+(currentLevel+1)+"/"+levels.length,10,64);' +
+        'if(gameWon){ctx.fillStyle="rgba(16,22,42,0.82)";ctx.fillRect(0,0,600,400);' +
+        'ctx.fillStyle="#fbbf24";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("CHAMPION!",300,140);' +
+        'var secs=Math.floor((Date.now()-startTime)/1000);' +
+        'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";' +
+        'ctx.fillText("Time: "+Math.floor(secs/60)+"m "+secs%60+"s",300,200);' +
+        'ctx.fillText("Score: "+score,300,235);ctx.fillText("Deaths: "+deaths,300,270);' +
+        'ctx.font="16px monospace";ctx.fillText("Press R to play again",300,320)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Enemy Class',
+      goal: 'Add patrolling enemies that walk back and forth between bounds, just like the Enemy class in real C++.',
+      points: [
+        'Each enemy has position (<code>float x, y</code>), velocity (<code>float vx</code>), and patrol bounds (<code>float minX, maxX</code>)',
+        'The patrol update: move by vx each frame; when the enemy reaches minX or maxX, flip vx',
+        'In real SFML the constructor takes <code>(x, y, lo, hi)</code> and sets the shape  -  here the engine pre-builds the array for you',
+        'Two enemies: one patrolling on the ground, one on a ledge, drawn red'
+      ],
+      challenge: '⚙️ Write the enemy patrol logic in C++:',
+      starter: '// Move each enemy and flip at bounds\nfor (auto en : enemies) {\n    if (!en.alive) continue;\n    en.x += en.___;\n    if (en.x < en.minX || en.x > en.___)\n        en.vx = ___;\n}',
+      solution: '// Move each enemy and flip at bounds\nfor (auto en : enemies) {\n    if (!en.alive) continue;\n    en.x += en.vx;\n    if (en.x < en.minX || en.x > en.maxX)\n        en.vx = -en.vx;\n}',
+      checks: ['vx', 'maxx', '-en.vx'],
+      height: 180,
+      fills: {
+        text: 'The enemy moves by adding ___ each frame. When it reaches its patrol bounds it ___ direction by flipping vx.',
+        answers: ['vx', 'reverses']
+      },
+      quiz: {
+        question: 'Enemy and Player share the shape+velocity+update pattern. In bigger games this becomes - ',
+        options: [
+          'Copy-paste forever',
+          'A shared base class (inheritance)  -  Entity with Player and Enemy deriving from it',
+          'A single giant class'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Stomp or Suffer',
+      goal: 'Implement stomp kills: fall on an enemy from above to destroy it, touch the side and respawn.',
+      points: [
+        'For each living enemy that overlaps the player: check if the player is <strong>falling</strong> and landing on its top',
+        'Stomp: set <code>alive = false</code>, bounce the player upward (<code>vy = -350</code> in SFML, or -8 here), add score',
+        'Otherwise: the player touched the side  -  call <code>respawn()</code> to reset position',
+        'Skip dead enemies with the <code>alive</code> flag  -  the same pattern from Breakout bricks'
+      ],
+      challenge: '⚙️ Write the stomp and death collision:',
+      starter: '// Check each living enemy\nfor (auto en : enemies) {\n    if (!en.alive) continue;\n    // Overlap test (handled by engine)\n    if (vy > 0 && py + ph - en.y < 16) {\n        en.alive = ___;\n        vy = ___;\n        score += 50;\n    } else {\n        ___();\n    }\n}',
+      solution: '// Check each living enemy\nfor (auto en : enemies) {\n    if (!en.alive) continue;\n    // Overlap test (handled by engine)\n    if (vy > 0 && py + ph - en.y < 16) {\n        en.alive = false;\n        vy = -8;\n        score += 50;\n    } else {\n        respawn();\n    }\n}',
+      checks: ['false', '-8', 'respawn'],
+      height: 260,
+      fills: {
+        text: 'The stomp reuses the "landing from ___" check aimed at an enemy instead of a platform. The bounce sets vy to ___ so the player can chain stomps.',
+        answers: ['above', '-8']
+      },
+      quiz: {
+        question: 'The stomp test reuses which platformer check?',
+        options: [
+          'The coin pickup',
+          'Landing-from-above  -  the same "falling onto a top surface" logic aimed at an enemy',
+          'The wall clamp'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'The Scrolling Camera',
+      goal: 'Follow the player through a wider level using a camera offset  -  what SFML does with sf::View.',
+      points: [
+        'SFML has a real camera class: <code>sf::View</code>. Centre it on the player, clamp to level edges, and call <code>window.setView(view)</code>',
+        'Here we do the same thing manually: compute <code>camX</code> as <code>playerX - 280</code>, clamped between 0 and <code>LEVEL_W - 600</code>',
+        'Every draw call subtracts camX from the x position  -  SFML does this automatically inside setView',
+        'For HUD text (score, deaths) do NOT subtract camX  -  it stays fixed on screen'
+      ],
+      challenge: '⚙️ Write the camera follow logic in C++:',
+      starter: '// Centre camera on the player\nfloat camX = px - ___;\n\n// Clamp so camera never shows past the edges\nif (camX < 0) camX = 0;\nif (camX > LEVEL_W - ___) camX = LEVEL_W - ___;',
+      solution: '// Centre camera on the player\nfloat camX = px - 280;\n\n// Clamp so camera never shows past the edges\nif (camX < 0) camX = 0;\nif (camX > LEVEL_W - 600) camX = LEVEL_W - 600;',
+      checks: ['280', '600', 'level_w'],
+      height: 180,
+      fills: {
+        text: 'The camera is centred on the player with an offset of ___ pixels. Clamping prevents showing past the level ___.',
+        answers: ['280', 'edges']
+      },
+      quiz: {
+        question: 'In Python you subtracted cam_x from every draw call. sf::View replaces that by - ',
+        options: [
+          'Drawing twice',
+          'Transforming ALL drawing through the view automatically  -  the engine does the offsetting',
+          'Moving the window'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Spikes & Checkpoints',
+      goal: 'Add deadly spike hazards and fair checkpoint flags that update the respawn point.',
+      points: [
+        'Spikes: red triangles on the ground. Touching one calls <code>respawn()</code>  -  same function as enemy death',
+        'Checkpoints: flag shapes. When the player touches one, update <code>respawnPoint</code> so respawn sends you there',
+        'One <code>respawn()</code> function used by spikes, enemies, AND pits  -  single source of truth',
+        'Place checkpoints before hard sections so death feels fair, not punishing'
+      ],
+      challenge: '⚙️ Write the spike and checkpoint logic:',
+      starter: '// Spikes kill on contact\nfor (auto sp : spikes) {\n    if (overlap(player, sp))\n        ___();\n}\n\n// Checkpoints update the respawn point\nfor (auto cp : checkpoints) {\n    if (!cp.reached && overlap(player, cp)) {\n        cp.reached = ___;\n        respawnX = cp.x;\n        respawnY = cp.y - ___;\n    }\n}',
+      solution: '// Spikes kill on contact\nfor (auto sp : spikes) {\n    if (overlap(player, sp))\n        respawn();\n}\n\n// Checkpoints update the respawn point\nfor (auto cp : checkpoints) {\n    if (!cp.reached && overlap(player, cp)) {\n        cp.reached = true;\n        respawnX = cp.x;\n        respawnY = cp.y - ph;\n    }\n}',
+      checks: ['respawn', 'true', 'ph'],
+      height: 280,
+      fills: {
+        text: 'Every death path calls one ___ function. Checkpoints set respawnY to the flag top minus ___ so the player spawns standing on it.',
+        answers: ['respawn', 'ph']
+      },
+      quiz: {
+        question: 'Every death path calls one respawn() function. When you later add a death sound, you edit - ',
+        options: [
+          'Every collision block',
+          'Exactly one function  -  that is why shared paths matter',
+          'The Enemy class'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Levels as Structs',
+      goal: 'Bundle platforms, enemies, spikes, checkpoints and a door into level data, then swap between levels.',
+      points: [
+        'A <strong>struct Level</strong> holds: platforms, enemies, spikes, checkpoints, door, width  -  all the data for one level',
+        'A <code>loadLevel(n)</code> function copies the struct into the live game arrays and resets the player',
+        'Reaching the door loads level n+1; after the last level, show the champion screen',
+        'New levels need zero new logic  -  eventually data can come from files or a level editor'
+      ],
+      challenge: '⚙️ Write the door check and level loading:',
+      starter: '// Player reaches the door\nif (overlap(player, door)) {\n    if (currentLevel < levels.___ - 1) {\n        ___++;\n        loadLevel(___);\n    }\n}',
+      solution: '// Player reaches the door\nif (overlap(player, door)) {\n    if (currentLevel < levels.length - 1) {\n        currentLevel++;\n        loadLevel(currentLevel);\n    }\n}',
+      checks: ['length', 'currentlevel', 'loadlevel'],
+      height: 180,
+      fills: {
+        text: 'Separating level ___ from game logic means new levels need zero new code. The function ___(n) copies level data into the live arrays.',
+        answers: ['data', 'loadLevel']
+      },
+      quiz: {
+        question: 'Separating level DATA from game LOGIC means - ',
+        options: [
+          'Levels run faster',
+          'New levels need zero new logic, and eventually data can come from files or a level editor',
+          'The compiler optimises structs'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Polish & Ship',
+      goal: 'Add a death counter, speedrun timer, and a champion win screen with restart.',
+      points: [
+        'Track <code>deaths</code> (++ inside respawn) and a speedrun timer started when the game begins',
+        'When the player reaches the final door, set <code>gameWon = true</code> and show the champion screen',
+        'Display time as <code>secs / 60</code> for minutes and <code>secs % 60</code> for leftover seconds',
+        'Press R to restart: reset deaths, score, timer, and load level 0  -  the state-machine pattern from Pong'
+      ],
+      challenge: '⚙️ Write the win detection and champion screen trigger:',
+      starter: '// Final door reached  -  no more levels\nif (overlap(player, door)) {\n    if (currentLevel >= levels.length - 1) {\n        gameWon = ___;\n    }\n}\n\n// Format the timer\nint secs = elapsedSeconds();\nint minutes = secs / ___;\nint remainder = secs % ___;',
+      solution: '// Final door reached  -  no more levels\nif (overlap(player, door)) {\n    if (currentLevel >= levels.length - 1) {\n        gameWon = true;\n    }\n}\n\n// Format the timer\nint secs = elapsedSeconds();\nint minutes = secs / 60;\nint remainder = secs % 60;',
+      checks: ['true', 'gamewon', '60'],
+      height: 240,
+      fills: {
+        text: 'The timer uses ___ division for minutes and the ___ operator for leftover seconds.',
+        answers: ['integer', '%']
+      },
+      quiz: {
+        question: 'A death counter and timer on the win screen add - ',
+        options: [
+          'Lag',
+          'Replay value  -  beat your time and go for deathless runs. Numbers players chase for free',
+          'Compile warnings'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

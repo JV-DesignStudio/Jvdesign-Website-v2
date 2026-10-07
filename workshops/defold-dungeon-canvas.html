@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defold Dungeon Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(45,212,191,.15);color:#2dd4bf;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Defold Dungeon Build Canvas <span class="cw-lang-tag">&#x1f3ae; Defold</span></h1>
+  <p>Write Defold Lua game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Defold Dungeon game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A green player square in a dark dungeon room with grey walls</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Defold Lua-to-JS transpiler
+   =================================================== */
+function defoldToJs(code) {
+  return code
+    .replace(/--(.*)$/gm, '//$1')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bself\.(\w+)/g, 'self_$1')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\.\s*/g, '+ ')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\btable\.insert\s*\(\s*(\w+)\s*,\s*/g, '$1.push(')
+    .replace(/\bmath\.random\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\bmath\.floor\s*\(/g, 'Math.floor(')
+    .replace(/\bmath\.abs\s*\(/g, 'Math.abs(')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Defold Dungeon)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f0e17;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");const T=20,COLS=20,ROWS=20;';
+
+var MAP_DATA = 'var map=[' +
+  '"11111111111111111111",' +
+  '"10000000110000000001",' +
+  '"10000000000000000001",' +
+  '"10001110000011100001",' +
+  '"10001000000000100001",' +
+  '"10000000000000000001",' +
+  '"11100001100001110011",' +
+  '"10000000000000000001",' +
+  '"10000000000000000001",' +
+  '"10011100000001110001",' +
+  '"10010000000000010001",' +
+  '"10000000000000000001",' +
+  '"10000011111100000001",' +
+  '"10000010000100000001",' +
+  '"10000000000000000001",' +
+  '"10011000000000110001",' +
+  '"10010000000000010001",' +
+  '"10000000000000000001",' +
+  '"10000000000000000001",' +
+  '"11111111111111111111"' +
+  '];';
+
+var PLAYER_VARS = 'let playerX=1,playerY=1;';
+
+var ENEMY_VARS = 'var enemies=[{x:8,y:4,dx:1,dy:0,timer:0,rate:30},{x:15,y:10,dx:0,dy:1,timer:0,rate:25},{x:5,y:16,dx:1,dy:0,timer:0,rate:35}];';
+
+var KEY_VARS = 'var keyItem={x:18,y:1,got:false};';
+
+var DOOR_VARS = 'var door={x:18,y:18};';
+
+var STATE_VARS = 'let gameState="play",hp=3,attackTimer=0;';
+
+var KEYS = 'let moveDir=null,spacePressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")moveDir="left";' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")moveDir="right";' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")moveDir="up";' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")moveDir="down";' +
+    'if(e.code==="Space")spacePressed=true;' +
+    'if(e.code==="KeyR"&&(gameState==="win"||gameState==="over")){playerX=1;playerY=1;hp=3;keyItem.got=false;' +
+    'enemies[0].x=8;enemies[0].y=4;enemies[1].x=15;enemies[1].y=10;enemies[2].x=5;enemies[2].y=16;gameState="play"}' +
+    'e.preventDefault()});';
+
+var MOVE_PLAYER = 'if(moveDir){var nx=playerX,ny=playerY;' +
+  'if(moveDir==="left")nx--;if(moveDir==="right")nx++;' +
+  'if(moveDir==="up")ny--;if(moveDir==="down")ny++;' +
+  'if(nx>=0&&nx<COLS&&ny>=0&&ny<ROWS&&map[ny][nx]!=="1"){playerX=nx;playerY=ny}' +
+  'moveDir=null}';
+
+var ATTACK = 'if(attackTimer>0)attackTimer--;' +
+  'if(spacePressed){attackTimer=10;' +
+  'for(var ai=enemies.length-1;ai>=0;ai--){var ae=enemies[ai];' +
+  'if(Math.abs(ae.x-playerX)<=1&&Math.abs(ae.y-playerY)<=1){enemies.splice(ai,1)}}' +
+  'spacePressed=false}else{spacePressed=false}';
+
+var ENEMY_MOVE = 'for(var ei=0;ei<enemies.length;ei++){var em=enemies[ei];em.timer++;' +
+  'if(em.timer>=em.rate){em.timer=0;var enx=em.x+em.dx,eny=em.y+em.dy;' +
+  'if(enx<0||enx>=COLS||eny<0||eny>=ROWS||map[eny][enx]==="1"){em.dx=-em.dx;em.dy=-em.dy}' +
+  'else{em.x=enx;em.y=eny}}}';
+
+var ENEMY_HIT = 'for(var hi=0;hi<enemies.length;hi++){if(enemies[hi].x===playerX&&enemies[hi].y===playerY){hp--;' +
+  'playerX=1;playerY=1;if(hp<=0)gameState="over"}}';
+
+var KEY_COLLECT = 'if(!keyItem.got&&playerX===keyItem.x&&playerY===keyItem.y)keyItem.got=true;';
+
+var DOOR_CHECK = 'if(keyItem.got&&playerX===door.x&&playerY===door.y)gameState="win";';
+
+var DRAW_BG = 'ctx.fillStyle="#0f0e17";ctx.fillRect(0,0,400,400);';
+
+var DRAW_MAP = 'for(var my=0;my<ROWS;my++)for(var mx=0;mx<COLS;mx++){' +
+  'ctx.fillStyle=map[my][mx]==="1"?"#4a4a5a":"#1a1a2e";ctx.fillRect(mx*T,my*T,T,T)}';
+
+var DRAW_KEY = 'if(!keyItem.got){ctx.fillStyle="#fbbf24";ctx.fillRect(keyItem.x*T+4,keyItem.y*T+4,12,12)}';
+
+var DRAW_DOOR = 'ctx.fillStyle=keyItem.got?"#22c55e":"#7f1d1d";ctx.fillRect(door.x*T+2,door.y*T+2,16,16);';
+
+var DRAW_ENEMIES = 'ctx.fillStyle="#ef4444";for(var de=0;de<enemies.length;de++){ctx.fillRect(enemies[de].x*T+3,enemies[de].y*T+3,14,14)}';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#22c55e";ctx.fillRect(playerX*T+2,playerY*T+2,16,16);' +
+  'if(attackTimer>0){ctx.strokeStyle="#fbbf24";ctx.lineWidth=2;ctx.strokeRect(playerX*T-T+2,playerY*T-T+2,T*3-4,T*3-4)}';
+
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 14px monospace";ctx.textAlign="left";' +
+  'ctx.fillText("HP: "+hp+(keyItem.got?" | KEY":""),4,14);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Defold Dungeon steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-defold-dungeon-canvas',
+  downloadName: 'my-defold-dungeon.html',
+
+  hints: [
+    'A green player square in a dark dungeon room with grey walls',
+    'The player moves tile-by-tile with arrow keys, blocked by walls',
+    'Red enemies patrol back and forth through the rooms',
+    'Press Space to swing the sword and defeat adjacent enemies',
+    'A golden key unlocks the exit door in the corner',
+    'Reach the green door with the key to escape the dungeon'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + MAP_DATA + PLAYER_VARS + KEYS +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_PLAYER +
+        DRAW_BG + DRAW_MAP + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + MAP_DATA + PLAYER_VARS + KEYS +
+        'function loop(){' +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_MAP + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + STATE_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_MAP + DRAW_ENEMIES + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + STATE_VARS + KEYS +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + ENEMY_MOVE + ENEMY_HIT +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_MAP + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("DEFEATED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + KEY_VARS + DOOR_VARS + STATE_VARS + KEYS +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + ENEMY_MOVE + ENEMY_HIT + ATTACK + KEY_COLLECT +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_MAP + DRAW_KEY + DRAW_DOOR + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("DEFEATED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + KEY_VARS + DOOR_VARS + STATE_VARS + KEYS +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + ENEMY_MOVE + ENEMY_HIT + ATTACK + KEY_COLLECT + DOOR_CHECK +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_MAP + DRAW_KEY + DRAW_DOOR + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
+        'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("ESCAPED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,220)}' +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("DEFEATED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Dungeon Map',
+      goal: 'Draw a tile-based dungeon with walls and a player character.',
+      points: [
+        'The dungeon is a 20x20 grid of tiles, each 20 pixels (400x400 canvas)',
+        'The map is an array of strings: "1" = wall (grey), "0" = floor (dark)',
+        'In Defold you would use a tilemap component to define the level layout',
+        'The player starts at grid position (1, 1) - the top-left open cell'
+      ],
+      challenge: '🎮 Set the player start position:',
+      starter: '-- Place the player in the dungeon\nlocal playerX = ___\nlocal playerY = ___\n-- The map uses 1 for walls and 0 for floor',
+      solution: '-- Place the player in the dungeon\nlocal playerX = 1\nlocal playerY = 1\n-- The map uses 1 for walls and 0 for floor',
+      checks: ['1', 'playerx', 'playery'],
+      height: 100,
+      fills: {
+        text: 'The player starts at grid (___, ___). In Defold, level layouts use ___ components.',
+        answers: ['1', '1', 'tilemap']
+      },
+      quiz: {
+        question: 'In Defold, what component is best for building a tile-based level?',
+        options: [
+          'A single large sprite',
+          'A tilemap component that references a tile source with wall and floor tiles',
+          'Individual game objects for each tile'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Tile-Based Movement',
+      goal: 'Move the player one tile at a time, blocked by walls.',
+      points: [
+        'Calculate the target tile before moving: <code>nx = playerX + dx</code>',
+        'Check the map: if <code>map[ny][nx] ~= "1"</code>, the tile is walkable',
+        'Move one tile per keypress, not per frame - gives a classic roguelike feel',
+        'In Defold you would check the tilemap layer value at the target position'
+      ],
+      challenge: '🎮 Write the movement with wall collision:',
+      starter: '-- Calculate target tile\nlocal nx = playerX\nlocal ny = playerY\nif moveDir == "left" then nx = nx - 1 end\nif moveDir == "right" then nx = nx + 1 end\n\n-- Only move if target is not a wall\nif map[ny][nx] ~= "___" then\n    playerX = nx\n    playerY = ny\nend',
+      solution: '-- Calculate target tile\nlocal nx = playerX\nlocal ny = playerY\nif moveDir == "left" then nx = nx - 1 end\nif moveDir == "right" then nx = nx + 1 end\n\n-- Only move if target is not a wall\nif map[ny][nx] ~= "1" then\n    playerX = nx\n    playerY = ny\nend',
+      checks: ['1', 'map', 'movedir'],
+      height: 200,
+      fills: {
+        text: 'Wall tiles are marked "___" in the map array. Checking before moving prevents the player entering ___.',
+        answers: ['1', 'walls']
+      },
+      quiz: {
+        question: 'Why check the destination tile BEFORE moving?',
+        options: [
+          'It looks better',
+          'Moving first and checking after would let the player briefly enter walls - check first prevents illegal positions entirely',
+          'Lua requires pre-checks'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Patrolling Enemies',
+      goal: 'Add red enemies that patrol back and forth through the rooms.',
+      points: [
+        'Each enemy has a position, direction (dx, dy), and a timer for movement speed',
+        'When the timer reaches the rate, move one tile in the current direction',
+        'If the next tile is a wall, reverse direction: <code>dx = -dx</code>',
+        'In Defold you would use <code>go.animate()</code> or manual movement in <code>update()</code>'
+      ],
+      challenge: '🎮 Write the enemy patrol logic:',
+      starter: '-- Move enemy along patrol\nem.timer = em.timer + 1\nif em.timer >= em.rate then\n    em.timer = 0\n    local enx = em.x + em.dx\n    local eny = em.y + em.dy\n    if map[eny][enx] == "1" then\n        em.dx = ___\n        em.dy = ___\n    end\nend',
+      solution: '-- Move enemy along patrol\nem.timer = em.timer + 1\nif em.timer >= em.rate then\n    em.timer = 0\n    local enx = em.x + em.dx\n    local eny = em.y + em.dy\n    if map[eny][enx] == "1" then\n        em.dx = -em.dx\n        em.dy = -em.dy\n    end\nend',
+      checks: ['-em.dx', '-em.dy', 'timer', 'rate'],
+      height: 220,
+      fills: {
+        text: 'Enemies reverse direction when they hit a ___. Each enemy has its own ___ controlling how fast it patrols.',
+        answers: ['wall', 'rate']
+      },
+      quiz: {
+        question: 'In Defold, what is go.animate() used for?',
+        options: [
+          'Drawing sprites',
+          'Smoothly animating a game object property (like position) over time without manual per-frame code',
+          'Playing sound effects'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Sword Attack',
+      goal: 'Press Space to swing a sword and defeat adjacent enemies.',
+      points: [
+        'Space triggers a sword swing that hits all tiles within 1 step of the player',
+        'Check each enemy: if <code>math.abs(enemy.x - playerX) <= 1</code> on both axes, it is in range',
+        'Defeated enemies are removed from the array',
+        'In Defold you would create a short-lived collision area around the player on attack'
+      ],
+      challenge: '🎮 Write the attack logic:',
+      starter: '-- Swing sword on Space\nif spacePressed then\n    attackTimer = 10\n    -- Check each enemy\n    if math.abs(enemy.x - playerX) <= ___ and math.abs(enemy.y - playerY) <= ___ then\n        -- Remove enemy\n    end\nend',
+      solution: '-- Swing sword on Space\nif spacePressed then\n    attackTimer = 10\n    -- Check each enemy\n    if math.abs(enemy.x - playerX) <= 1 and math.abs(enemy.y - playerY) <= 1 then\n        -- Remove enemy\n    end\nend',
+      checks: ['math.abs', 'attacktimer', '1'],
+      height: 180,
+      fills: {
+        text: 'The sword reaches ___ tile in every direction. The attack flash lasts ___ frames.',
+        answers: ['1', '10']
+      },
+      quiz: {
+        question: 'Why use math.abs for the attack range check?',
+        options: [
+          'It makes numbers positive',
+          'abs gives the distance regardless of direction - an enemy 1 tile left (-1) or right (+1) is equally in range',
+          'Defold requires abs for attacks'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Key & Door',
+      goal: 'Place a golden key and a locked door. The key unlocks the exit.',
+      points: [
+        'The key is a gold square at (18, 1) - walk over it to collect',
+        'The door at (18, 18) shows red when locked, green when the key is held',
+        'Check <code>keyItem.got</code> flag to know if the player has the key',
+        'In Defold you would use <code>msg.post()</code> to notify the door when the key is collected'
+      ],
+      challenge: '🎮 Write the key collection:',
+      starter: '-- Pick up the key\nif not keyItem.got and playerX == keyItem.___ and playerY == keyItem.___ then\n    keyItem.got = ___\nend',
+      solution: '-- Pick up the key\nif not keyItem.got and playerX == keyItem.x and playerY == keyItem.y then\n    keyItem.got = true\nend',
+      checks: ['keyitem', 'got', 'true'],
+      height: 120,
+      fills: {
+        text: 'The key sets a ___ flag when collected. The door changes from ___ to green when unlocked.',
+        answers: ['got', 'red']
+      },
+      quiz: {
+        question: 'Why use a flag instead of removing the key object?',
+        options: [
+          'Flags are faster',
+          'The flag lets other objects check if the player has the key - the door reads keyItem.got to decide its colour and whether to open',
+          'You cannot remove objects in Lua'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Escape & Victory',
+      goal: 'Reach the door with the key to escape. Lose all HP and it is game over.',
+      points: [
+        'Win: player on door tile AND keyItem.got is true',
+        'Lose: HP drops to 0 from enemy contact (player respawns at start on each hit)',
+        'Show "ESCAPED!" or "DEFEATED!" with R to restart',
+        'In Defold you would load a results screen via collection proxy'
+      ],
+      challenge: '🎮 Write the win condition:',
+      starter: '-- Check if player reached the door with the key\nif keyItem.got and playerX == door.___ and playerY == door.___ then\n    gameState = "___"\nend',
+      solution: '-- Check if player reached the door with the key\nif keyItem.got and playerX == door.x and playerY == door.y then\n    gameState = "win"\nend',
+      checks: ['keyitem.got', 'door', 'win'],
+      height: 120,
+      fills: {
+        text: 'The win requires both reaching the ___ and having the ___. This lock-and-key pattern appears in almost every adventure game.',
+        answers: ['door', 'key']
+      },
+      quiz: {
+        question: 'What design pattern does the key-and-door mechanic represent?',
+        options: [
+          'A random reward',
+          'A gate - progress is blocked until the player earns a specific item, guiding exploration and pacing',
+          'A visual effect'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Godot Racing Part 2 Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Godot Racing Part 2 Build Canvas <span class="cw-lang-tag">&#x1f916; Godot</span></h1>
+  <p>Add AI opponents, power-ups and drifting to your racer.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Godot Racing Part 2 game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue player car with a red AI car on the road</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function gdscriptToJs(code) {
+  return code
+    .replace(/#.*$/gm, '')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bVector2\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
+    .replace(/\brandf\(\)/g, 'Math.random()')
+    .replace(/\brandi\(\)\s*%\s*(\w+)/g, 'Math.floor(Math.random()*$1)')
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
+    .replace(/\.position\.x/g, '.x')
+    .replace(/\.position\.y/g, '.y')
+    .replace(/\bInput\.is_action_pressed\("ui_left"\)/g, 'leftHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
+    .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
+    .replace(/\belif\b/g, '} else if')
+    .replace(/\bif\s+(.+):/g, 'if($1){')
+    .replace(/\belse\s*:/g, '} else {')
+    .replace(/\bfor\s+(\w+)\s+in\s+range\(([^)]+)\)\s*:/g, 'for(let $1=0;$1<$2;$1++){')
+    .replace(/\bwhile\s+(.+):/g, 'while($1){')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false')
+    .replace(/\bnull\b/g, 'null');
+}
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var CAR_VARS = 'let carX=270,carY=320,carW=60,carH=40,carSpeed=0,maxSpeed=7,drift=0;';
+var ROAD_VARS = 'let roadOffset=0,laneW=240,roadX=180;';
+var AI_VARS = 'let aiCars=[];for(let i=0;i<2;i++)aiCars.push({x:200+i*120,y:60+i*100,w:50,h:36,speed:2+Math.random()*2,lane:i});';
+var POWER_VARS = 'let powerUp={x:250,y:-200,w:24,h:24,type:"boost",active:false};let boostTimer=0;';
+var MINIMAP_VARS = 'let positions=[{y:0,color:"#60a5fa"},{y:100,color:"#f43f5e"},{y:200,color:"#fb923c"}];';
+var SCORE_VARS = 'let place=3,distance=0,lapLength=4000,lap=0;';
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false});';
+
+var DRAW_ROAD = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,600,400);' +
+  'ctx.fillStyle="#444";ctx.fillRect(roadX,0,laneW,400);' +
+  'ctx.strokeStyle="#ffff00";ctx.setLineDash([20,20]);ctx.lineDashOffset=-roadOffset;' +
+  'for(var li=1;li<3;li++){ctx.beginPath();ctx.moveTo(roadX+li*laneW/3,0);ctx.lineTo(roadX+li*laneW/3,400);ctx.stroke()}ctx.setLineDash([]);';
+
+var DRAW_CAR = 'ctx.fillStyle=boostTimer>0?"#fbbf24":"#60a5fa";ctx.fillRect(carX,carY,carW,carH);';
+var DRAW_AI = 'var aiColors=["#f43f5e","#fb923c"];for(var i=0;i<aiCars.length;i++){ctx.fillStyle=aiColors[i];ctx.fillRect(aiCars[i].x,aiCars[i].y,aiCars[i].w,aiCars[i].h)}';
+var DRAW_POWER = 'if(!powerUp.active){ctx.fillStyle="#22c55e";ctx.fillRect(powerUp.x,powerUp.y,powerUp.w,powerUp.h);ctx.fillStyle="#fff";ctx.font="bold 14px monospace";ctx.textAlign="center";ctx.fillText("B",powerUp.x+12,powerUp.y+17)}';
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";' +
+  'ctx.fillText("Place: "+place+"/3",10,24);ctx.fillText("Lap: "+lap+"/3",10,48);' +
+  'if(boostTimer>0){ctx.fillStyle="#fbbf24";ctx.fillText("BOOST!",10,72)}';
+var DRAW_MINIMAP = 'ctx.fillStyle="rgba(0,0,0,0.5)";ctx.fillRect(540,10,50,120);' +
+  'for(var i=0;i<positions.length;i++){ctx.fillStyle=positions[i].color;ctx.fillRect(555,20+positions[i].y*0.03,20,8)}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-godot-racing2-canvas',
+  downloadName: 'my-godot-racing-2.html',
+
+  hints: [
+    'A blue player car with a red AI car on the road',
+    'Two AI cars drive at different speeds in their lanes',
+    'A green boost power-up appears on the road',
+    'Collecting the boost turns the car gold and increases speed',
+    'Drifting adds sideways slide when turning at speed',
+    'A minimap shows positions and place ranking updates live'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + KEYS +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
+        'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));roadOffset+=carSpeed;' +
+        DRAW_ROAD + DRAW_CAR + DRAW_AI +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + KEYS +
+        'function loop(){' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
+        'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));roadOffset+=carSpeed;' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'for(var i=0;i<aiCars.length;i++){aiCars[i].y=Math.max(20,Math.min(360,aiCars[i].y))}' +
+        DRAW_ROAD + DRAW_CAR + DRAW_AI +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
+        'function loop(){' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
+        'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));roadOffset+=carSpeed;' +
+        'for(var i=0;i<aiCars.length;i++){aiCars[i].y+=carSpeed-aiCars[i].speed;if(aiCars[i].y>400)aiCars[i].y=-60;if(aiCars[i].y<-60)aiCars[i].y=400}' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_ROAD + DRAW_CAR + DRAW_AI + DRAW_POWER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
+        'function loop(){' +
+        'var effMax=boostTimer>0?maxSpeed+3:maxSpeed;' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(effMax,carSpeed));' +
+        'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));roadOffset+=carSpeed;' +
+        'if(boostTimer>0)boostTimer--;' +
+        'for(var i=0;i<aiCars.length;i++){aiCars[i].y+=carSpeed-aiCars[i].speed;if(aiCars[i].y>400)aiCars[i].y=-60;if(aiCars[i].y<-60)aiCars[i].y=400}' +
+        'if(!powerUp.active){powerUp.y+=carSpeed;if(powerUp.y>420){powerUp.y=-200;powerUp.x=roadX+Math.floor(Math.random()*(laneW-30))}}' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_ROAD + DRAW_CAR + DRAW_AI + DRAW_POWER + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
+        'function loop(){' +
+        'var effMax=boostTimer>0?maxSpeed+3:maxSpeed;' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(effMax,carSpeed));' +
+        'var steerAmt=3;if(carSpeed>4&&(leftHeld||rightHeld)){drift+=leftHeld?-0.5:0.5}else{drift*=0.9}' +
+        'if(leftHeld)carX-=steerAmt;if(rightHeld)carX+=steerAmt;carX+=drift;' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));roadOffset+=carSpeed;' +
+        'if(boostTimer>0)boostTimer--;' +
+        'for(var i=0;i<aiCars.length;i++){aiCars[i].y+=carSpeed-aiCars[i].speed;if(aiCars[i].y>400)aiCars[i].y=-60;if(aiCars[i].y<-60)aiCars[i].y=400}' +
+        'if(!powerUp.active){powerUp.y+=carSpeed;if(powerUp.y>420){powerUp.y=-200;powerUp.x=roadX+Math.floor(Math.random()*(laneW-30))}}' +
+        'if(!powerUp.active&&carX<powerUp.x+powerUp.w&&carX+carW>powerUp.x&&carY<powerUp.y+powerUp.h&&carY+carH>powerUp.y){powerUp.active=true;boostTimer=120}' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_ROAD + DRAW_CAR + DRAW_AI + DRAW_POWER + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + MINIMAP_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){carSpeed=0;distance=0;lap=0;place=3;boostTimer=0;drift=0;powerUp.active=false;powerUp.y=-200;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'var effMax=boostTimer>0?maxSpeed+3:maxSpeed;' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(effMax,carSpeed));' +
+        'if(leftHeld)carX-=3;if(rightHeld)carX+=3;carX+=drift*0.9;drift*=0.92;' +
+        'if(carSpeed>4&&(leftHeld||rightHeld))drift+=(leftHeld?-0.5:0.5);' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));roadOffset+=carSpeed;distance+=carSpeed;' +
+        'if(boostTimer>0)boostTimer--;' +
+        'for(var i=0;i<aiCars.length;i++){aiCars[i].y+=carSpeed-aiCars[i].speed;if(aiCars[i].y>400)aiCars[i].y=-60;if(aiCars[i].y<-60)aiCars[i].y=400}' +
+        'if(!powerUp.active){powerUp.y+=carSpeed;if(powerUp.y>420){powerUp.y=-200;powerUp.x=roadX+Math.floor(Math.random()*(laneW-30))}' +
+        'if(carX<powerUp.x+powerUp.w&&carX+carW>powerUp.x&&carY<powerUp.y+powerUp.h&&carY+carH>powerUp.y){powerUp.active=true;boostTimer=120}}' +
+        'if(distance>=lapLength){lap++;distance=0;powerUp.active=false;powerUp.y=-200;if(lap>=3)gameState="over"}' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_ROAD + DRAW_CAR + DRAW_AI + DRAW_POWER + DRAW_HUD + DRAW_MINIMAP +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("RACE OVER!",300,180);ctx.font="20px monospace";ctx.fillText("Place: "+place+"/3",300,220);' +
+        'ctx.fillText("Press R to race again",300,260)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'AI Opponents',
+      goal: 'Add two AI cars that drive in their own lanes on the road.',
+      points: [
+        'Each AI car has its own x, y, speed, and lane properties',
+        'AI cars are simpler than the player - they drive at a constant speed',
+        'In Godot you would create an AI scene with its own script',
+        'Two AI cars plus the player makes a three-car race'
+      ],
+      challenge: '\ud83e\udd16 Set up the AI car array:',
+      starter: '# Create two AI opponents\nvar ai_count = ___\nvar ai_speed_1 = 2.5\nvar ai_speed_2 = ___\nvar ai_lane_width = 80',
+      solution: '# Create two AI opponents\nvar ai_count = 2\nvar ai_speed_1 = 2.5\nvar ai_speed_2 = 3.5\nvar ai_lane_width = 80',
+      checks: ['2', 'ai_speed'],
+      height: 120,
+      fills: {
+        text: 'The race has ___ AI opponents. Each AI drives at a ___ speed for variety.',
+        answers: ['2', 'different']
+      },
+      quiz: {
+        question: 'Why give AI cars different speeds?',
+        options: [
+          'Same-speed AI would move in lockstep - different speeds create overtaking opportunities and make the race feel dynamic',
+          'Godot requires unique speed values',
+          'Faster AI uses less memory'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 2,
+      title: 'AI Movement',
+      goal: 'Make AI cars scroll relative to the player speed, wrapping when off-screen.',
+      points: [
+        'AI y position changes by <code>car_speed - ai_speed</code> (relative movement)',
+        'If the player is faster, AI scrolls down; if slower, AI scrolls up',
+        'Wrap AI off-screen edges so they reappear endlessly',
+        'This relative scrolling trick simulates a shared track without world coordinates'
+      ],
+      challenge: '\ud83e\udd16 Move AI cars relative to the player:',
+      starter: '# Move each AI car\nfor i in range(2):\n    ai_cars[i].y += car_speed - ai_cars[i].___\n    if ai_cars[i].y > 400:\n        ai_cars[i].y = ___\n    if ai_cars[i].y < -60:\n        ai_cars[i].y = ___',
+      solution: '# Move each AI car\nfor i in range(2):\n    ai_cars[i].y += car_speed - ai_cars[i].speed\n    if ai_cars[i].y > 400:\n        ai_cars[i].y = -60\n    if ai_cars[i].y < -60:\n        ai_cars[i].y = 400',
+      checks: ['speed', '-60', '400'],
+      height: 180,
+      fills: {
+        text: 'AI moves by the difference between player ___ and AI speed. This is called ___ motion.',
+        answers: ['speed', 'relative']
+      },
+      quiz: {
+        question: 'Why use relative movement instead of absolute positions?',
+        options: [
+          'Absolute positions are forbidden in Godot',
+          'Relative movement lets you simulate an infinite track with a small fixed canvas - no world coordinates needed',
+          'It runs faster on slow computers'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Power-Up Spawning',
+      goal: 'Spawn a boost power-up on the road that scrolls toward the player.',
+      points: [
+        'Power-ups spawn above the screen and scroll down like obstacles',
+        'Each power-up has a type (boost) and an active flag',
+        'When collected, active becomes true so it stops drawing',
+        'In Godot you would use an Area2D with a signal for pickup'
+      ],
+      challenge: '\ud83e\udd16 Spawn and scroll the power-up:',
+      starter: '# Scroll power-up toward player\npower_up.y += ___\n\n# Respawn when off-screen\nif power_up.y > 420:\n    power_up.y = ___\n    power_up.x = road_x + randi() % (lane_w - 30)\n    power_up.active = false',
+      solution: '# Scroll power-up toward player\npower_up.y += car_speed\n\n# Respawn when off-screen\nif power_up.y > 420:\n    power_up.y = -200\n    power_up.x = road_x + randi() % (lane_w - 30)\n    power_up.active = false',
+      checks: ['car_speed', '-200', 'active'],
+      height: 160,
+      fills: {
+        text: 'Power-ups scroll at ___ so they match the road. Setting active to ___ re-enables the pickup.',
+        answers: ['car_speed', 'false']
+      },
+      quiz: {
+        question: 'Why use an active flag instead of deleting the power-up?',
+        options: [
+          'Deleting objects is impossible in GDScript',
+          'Reusing one object with a flag avoids allocation - toggle visibility instead of create/destroy',
+          'Flags are more colourful'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Boost Effect',
+      goal: 'Collecting the power-up gives a speed boost for 2 seconds.',
+      points: [
+        'On collision with the power-up: set <code>boost_timer = 120</code> (2 seconds at 60fps)',
+        'While boosted, max_speed increases by 3',
+        'The car turns gold to show the boost is active',
+        'Countdown the timer each frame: <code>boost_timer -= 1</code>'
+      ],
+      challenge: '\ud83e\udd16 Write the boost pickup and timer:',
+      starter: '# Check collision with power-up\nif not power_up.active:\n    if car_x < power_up.x + power_up.w and car_x + car_w > power_up.x:\n        power_up.active = true\n        boost_timer = ___\n\n# Count down boost\nif boost_timer > 0:\n    boost_timer -= ___',
+      solution: '# Check collision with power-up\nif not power_up.active:\n    if car_x < power_up.x + power_up.w and car_x + car_w > power_up.x:\n        power_up.active = true\n        boost_timer = 120\n\n# Count down boost\nif boost_timer > 0:\n    boost_timer -= 1',
+      checks: ['120', 'boost_timer', 'active'],
+      height: 180,
+      fills: {
+        text: 'The boost lasts ___ frames (2 seconds at 60fps). The car changes colour to give ___ feedback.',
+        answers: ['120', 'visual']
+      },
+      quiz: {
+        question: 'Why express duration in frames instead of seconds?',
+        options: [
+          'Frames are smaller numbers',
+          'The game loop runs per-frame, so counting frames is a direct countdown without needing a separate timer system',
+          'GDScript does not support seconds'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Drifting',
+      goal: 'Add sideways drift when turning at high speed for a racing feel.',
+      points: [
+        'Drift accumulates when steering above speed 4: <code>drift += direction * 0.5</code>',
+        'Drift decays each frame: <code>drift *= 0.9</code> for a slide-then-grip feel',
+        'The drift value is added to carX on top of normal steering',
+        'Real racing games use the same concept with more physics layers'
+      ],
+      challenge: '\ud83e\udd16 Write the drift accumulation:',
+      starter: '# Accumulate drift at high speed\nif car_speed > 4:\n    if Input.is_action_pressed("ui_left"):\n        drift += ___\n    if Input.is_action_pressed("ui_right"):\n        drift -= ___\n\n# Decay drift\ndrift *= ___',
+      solution: '# Accumulate drift at high speed\nif car_speed > 4:\n    if Input.is_action_pressed("ui_left"):\n        drift += -0.5\n    if Input.is_action_pressed("ui_right"):\n        drift -= -0.5\n\n# Decay drift\ndrift *= 0.9',
+      checks: ['drift', '0.5', '0.9', 'car_speed'],
+      height: 160,
+      fills: {
+        text: 'Drift only kicks in above speed ___. The decay factor of ___ makes the car gradually grip again.',
+        answers: ['4', '0.9']
+      },
+      quiz: {
+        question: 'Why does drift only activate at high speed?',
+        options: [
+          'Low-speed drift would feel wrong - cars only lose traction when cornering fast, matching real physics intuition',
+          'The canvas cannot draw drift at low speed',
+          'Drift variables overflow below speed 4'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 6,
+      title: 'Minimap & Finish',
+      goal: 'Show a minimap with race positions and end the race after 3 laps.',
+      points: [
+        'The minimap is a small dark rectangle showing coloured dots for each racer',
+        'Position is derived from distance: the further ahead, the higher on the map',
+        'Place ranking updates by comparing player distance vs AI distances',
+        'After 3 laps: show final place and offer restart'
+      ],
+      challenge: '\ud83e\udd16 Track laps and determine place:',
+      starter: '# Track laps\ndistance += car_speed\nif distance >= lap_length:\n    lap += ___\n    distance = 0\n    if lap >= ___:\n        game_state = "over"\n\n# Determine place (simplified)\nvar ahead = 0\nfor i in range(2):\n    if ai_cars[i].y < car_y:\n        ahead += 1\nplace = ahead + ___',
+      solution: '# Track laps\ndistance += car_speed\nif distance >= lap_length:\n    lap += 1\n    distance = 0\n    if lap >= 3:\n        game_state = "over"\n\n# Determine place (simplified)\nvar ahead = 0\nfor i in range(2):\n    if ai_cars[i].y < car_y:\n        ahead += 1\nplace = ahead + 1',
+      checks: ['lap_length', '3', 'place', 'ahead'],
+      height: 240,
+      fills: {
+        text: 'Place is calculated by counting AI cars ___ of the player. The race ends after ___ laps.',
+        answers: ['ahead', '3']
+      },
+      quiz: {
+        question: 'Why is a minimap important in a racing game?',
+        options: [
+          'It fills empty screen space',
+          'It gives spatial awareness of opponents beyond the visible screen, letting players plan overtakes',
+          'Godot requires minimaps for racing games'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

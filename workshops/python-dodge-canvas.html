@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Dodge Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(52,211,153,.15);color:#34d399;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Python Dodge Build Canvas <span class="cw-lang-tag">&#x1f40d; Python</span></h1>
+  <p>Write Python game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Python Dodge game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A green runner at the bottom of a dark screen</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Python-to-JS transpiler (light transform so Python
+   syntax runs in the canvas iframe)
+   =================================================== */
+function pyToJs(code) {
+  return code
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    .replace(/\bNone\b/g, 'null')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\belif\b/g, 'else if')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||')
+    .replace(/\bnot\b/g, '!')
+    .replace(/\blen\s*\(/g, '(')
+    .replace(/\.append\s*\(/g, '.push(')
+    .replace(/\brandom\.randint\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/#.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Python Dodge & Collect)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=285,py=360,pw=30,ph=30,speed=6;';
+
+var OBJECT_VARS = 'let objects=[];let spawnTimer=0;let spawnInterval=60;let fallSpeed=3;';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var STATE_VARS = 'let gameState="play";let highScore=0;try{highScore=parseInt(localStorage.getItem("jvds-dodge-hi"))||0}catch(e){}';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var MOVE_PLAYER = 'if(leftHeld)px-=speed;if(rightHeld)px+=speed;px=Math.max(0,Math.min(600-pw,px));';
+
+var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,600,400);';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#34d399";ctx.fillRect(px,py,pw,ph);';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 24px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,16,32);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillText("Lives: "+lives,584,32);';
+
+var SPAWN_OBJECT = 'function spawnObject(){var isBomb=Math.random()<0.3;objects.push({x:Math.floor(Math.random()*560)+20,y:-20,r:10,type:isBomb?"bomb":"star"})}';
+
+var DRAW_OBJECTS = 'for(var i=0;i<objects.length;i++){var o=objects[i];if(o.type==="star"){ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill()}else{ctx.fillStyle="#ef4444";ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill()}}';
+
+var MOVE_OBJECTS = 'for(var i=objects.length-1;i>=0;i--){objects[i].y+=fallSpeed;if(objects[i].y>420){objects.splice(i,1)}}';
+
+var COLLISION_CHECK = 'for(var i=objects.length-1;i>=0;i--){var o=objects[i];if(o.x+o.r>=px&&o.x-o.r<=px+pw&&o.y+o.r>=py&&o.y-o.r<=py+ph){if(o.type==="star"){score++}else{lives--}objects.splice(i,1);if(lives<=0){gameState="over";if(score>highScore){highScore=score;try{localStorage.setItem("jvds-dodge-hi",""+highScore)}catch(e){}}}}}';
+
+var SPAWN_TICK = 'spawnTimer++;if(spawnTimer>=spawnInterval){spawnTimer=0;spawnObject()}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Python Dodge & Collect steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-python-dodge-canvas',
+  downloadName: 'my-python-dodge.html',
+
+  hints: [
+    'A green runner at the bottom of a dark screen',
+    'The runner slides left and right with the arrow keys',
+    'Yellow stars fall from the top of the screen',
+    'Stars and red bombs fall together with weighted random spawning',
+    'Catching a star scores a point, hitting a bomb costs a life',
+    'Game over at zero lives, with difficulty ramp and high score'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_PLAYER +
+        DRAW_BG + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS +
+        'function loop(){' +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(600-pw,px));' +
+        DRAW_BG + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + OBJECT_VARS + KEYS +
+        SPAWN_OBJECT +
+        'function loop(){' +
+        MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'for(var i=objects.length-1;i>=0;i--){if(objects[i].y>420){objects.splice(i,1)}}' +
+        DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + OBJECT_VARS + SCORE_VARS + KEYS +
+        SPAWN_OBJECT +
+        'function loop(){' +
+        MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'for(var i=objects.length-1;i>=0;i--){if(objects[i].y>420){objects.splice(i,1)}}' +
+        DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + OBJECT_VARS + SCORE_VARS + KEYS +
+        SPAWN_OBJECT +
+        'function loop(){' +
+        MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS +
+        COLLISION_CHECK +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS + DRAW_SCORE + DRAW_LIVES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + OBJECT_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        SPAWN_OBJECT +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=3;spawnInterval=60;objects=[];spawnTimer=0;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS + COLLISION_CHECK +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS + DRAW_SCORE + DRAW_LIVES +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",300,160);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,200);' +
+        'ctx.fillText("High Score: "+highScore,300,230);' +
+        'ctx.fillText("Press R to play again",300,270)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Runner',
+      goal: 'Draw a green rectangle player at the bottom-centre of the screen.',
+      points: [
+        'The canvas is 600x400 pixels with a dark background (#1a1a2e)',
+        'The runner is a green rectangle: 30 wide, 30 tall, sitting at y=360',
+        'In real Pygame you would use <code>pygame.Rect(285, 360, 30, 30)</code> - here the canvas engine stores <code>px, py, pw, ph</code>',
+        'The runner starts centred horizontally: x = (600 - 30) / 2 = 285'
+      ],
+      challenge: '🐍 Set the runner position and size:',
+      starter: '# Set the runner starting position\npx = ___\npy = 360\npw = ___\nph = 30',
+      solution: '# Set the runner starting position\npx = 285\npy = 360\npw = 30\nph = 30',
+      checks: ['285', '360', '30'],
+      height: 120,
+      fills: {
+        text: 'The runner starts at x = ___ to appear centred. Its size of ___ pixels square makes a compact target to dodge with.',
+        answers: ['285', '30']
+      },
+      quiz: {
+        question: 'Why is the runner 30x30 on a 600-pixel canvas?',
+        options: [
+          'It is a random nice number',
+          'A small runner (5% of canvas width) makes dodging meaningful - bigger would be too easy to get hit',
+          'Smaller sprites use less memory'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Keyboard Movement',
+      goal: 'Move the runner left and right with the arrow keys, clamped to the screen edges.',
+      points: [
+        'The engine tracks <code>leftHeld</code> and <code>rightHeld</code> - in real Pygame you would use <code>pygame.key.get_pressed()</code>',
+        'Move by <code>speed</code> (6) pixels each frame while a key is held',
+        'Clamp with <code>max(0, min(600 - pw, px))</code> so the runner never leaves the screen',
+        'Using held keys instead of single presses gives smooth, continuous movement'
+      ],
+      challenge: '🐍 Write the runner movement logic:',
+      starter: '# Move the runner with arrow keys\nif leftHeld:\n    px -= ___\nif rightHeld:\n    px += ___\n\n# Clamp so the runner stays on screen\npx = max(0, min(___ - pw, px))',
+      solution: '# Move the runner with arrow keys\nif leftHeld:\n    px -= speed\nif rightHeld:\n    px += speed\n\n# Clamp so the runner stays on screen\npx = max(0, min(600 - pw, px))',
+      checks: ['leftheld', 'rightheld', 'speed', '600'],
+      height: 180,
+      fills: {
+        text: 'The runner moves ___ pixels per frame. Clamping to 600 - pw prevents the runner leaving the ___ side of the screen.',
+        answers: ['6', 'right']
+      },
+      quiz: {
+        question: 'Why use held keys instead of single key events for movement?',
+        options: [
+          'Events are broken in Pygame',
+          'get_pressed reports keys HELD each frame, giving smooth gliding instead of one step per press',
+          'It uses less memory'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'The Spawn Timer',
+      goal: 'Spawn falling star objects from random x positions at timed intervals.',
+      points: [
+        'A spawn timer counts frames: when <code>spawnTimer >= spawnInterval</code>, spawn a new object',
+        'Each object starts above the screen at <code>y = -20</code> so it slides in smoothly',
+        'Each frame: <code>fy += fallSpeed</code> moves it downward (positive y is down on canvas)',
+        'When it passes the bottom, remove it from the array'
+      ],
+      challenge: '🐍 Write the spawn and fall logic:',
+      starter: '# Count frames and spawn a star\nspawnTimer += 1\nif spawnTimer >= ___:\n    spawnTimer = 0\n    spawnObject()\n\n# Move all objects down\nfor obj in objects:\n    obj["y"] += ___',
+      solution: '# Count frames and spawn a star\nspawnTimer += 1\nif spawnTimer >= spawnInterval:\n    spawnTimer = 0\n    spawnObject()\n\n# Move all objects down\nfor obj in objects:\n    obj["y"] += fallSpeed',
+      checks: ['spawninterval', 'fallspeed', 'spawnobject', 'spawntimer'],
+      height: 180,
+      fills: {
+        text: 'A new object spawns every ___ frames. Each object falls at ___ pixels per frame.',
+        answers: ['60', '3']
+      },
+      quiz: {
+        question: 'Why use a timer instead of spawning every frame?',
+        options: [
+          'Spawning every frame would flood the screen with hundreds of objects per second, making the game unplayable',
+          'Timers are faster than frame checks',
+          'Python can only create one object per timer'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 4,
+      title: 'Bombs: Weighted Random',
+      goal: 'Introduce bomb objects alongside stars using a random threshold.',
+      points: [
+        'Use <code>random.random() < 0.3</code> to give a 30% chance of spawning a bomb instead of a star',
+        'Stars are yellow circles (<code>#fbbf24</code>), bombs are red circles (<code>#ef4444</code>)',
+        'Each object stores its <code>type</code>: either <code>"star"</code> or <code>"bomb"</code>',
+        'This weighted random pattern is used everywhere - loot tables, enemy spawns, critical hit chances'
+      ],
+      challenge: '🐍 Write the weighted spawn logic:',
+      starter: '# Decide what to spawn\nisBomb = random.random() < ___\nif isBomb:\n    objType = "___"\nelse:\n    objType = "___"',
+      solution: '# Decide what to spawn\nisBomb = random.random() < 0.3\nif isBomb:\n    objType = "bomb"\nelse:\n    objType = "star"',
+      checks: ['0.3', 'bomb', 'star'],
+      height: 160,
+      fills: {
+        text: 'There is a ___% chance each spawn is a bomb. Stars are coloured ___ and bombs are red.',
+        answers: ['30', 'yellow']
+      },
+      quiz: {
+        question: 'Why use 30% for bombs instead of 50%?',
+        options: [
+          'Lower bomb chance means most objects are collectible stars, rewarding skilled play while keeping tension',
+          '50% would crash the game',
+          'Computers cannot generate 50% random numbers'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Catch or Boom',
+      goal: 'Detect collisions: catch stars for points, hit bombs to lose lives. Game over at 0 lives.',
+      points: [
+        'Check if any object overlaps the runner using circle-vs-rectangle collision',
+        'Star collision: <code>score += 1</code>, remove the star',
+        'Bomb collision: <code>lives -= 1</code>, remove the bomb',
+        'If lives reach 0: <code>gameState = "over"</code> to freeze the game'
+      ],
+      challenge: '🐍 Write the collision logic:',
+      starter: '# Check each object for collision with runner\nfor obj in objects:\n    if obj["x"] + obj["r"] >= px and obj["x"] - obj["r"] <= px + pw and obj["y"] + obj["r"] >= py and obj["y"] - obj["r"] <= py + ph:\n        if obj["type"] == "star":\n            score += ___\n        else:\n            lives -= ___\n        # Remove the object after collision',
+      solution: '# Check each object for collision with runner\nfor obj in objects:\n    if obj["x"] + obj["r"] >= px and obj["x"] - obj["r"] <= px + pw and obj["y"] + obj["r"] >= py and obj["y"] - obj["r"] <= py + ph:\n        if obj["type"] == "star":\n            score += 1\n        else:\n            lives -= 1\n        # Remove the object after collision',
+      checks: ['score', 'lives', 'star', 'bomb'],
+      height: 200,
+      fills: {
+        text: 'Catching a star adds ___ to the score. Getting hit by a bomb costs ___ life.',
+        answers: ['1', '1']
+      },
+      quiz: {
+        question: 'Why use a gameState variable instead of just stopping the loop?',
+        options: [
+          'Stopping the loop is impossible',
+          'A state variable lets you show a game-over screen, check for restart, and keep the canvas drawing - stopping the loop would freeze everything',
+          'Python requires state variables'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'The Difficulty Curve',
+      goal: 'Increase spawn rate and fall speed based on score. Track high score. Press R to restart.',
+      points: [
+        'Increase <code>fallSpeed</code> as score grows: <code>fallSpeed = 3 + score // 5</code>',
+        'Decrease <code>spawnInterval</code> so objects appear faster: <code>spawnInterval = max(20, 60 - score * 2)</code>',
+        'Save high score with <code>localStorage</code> so it persists across sessions',
+        'On game over, pressing R resets score, lives, speed, spawn rate, and objects'
+      ],
+      challenge: '🐍 Write the difficulty ramp:',
+      starter: '# Increase fall speed as score grows\nfallSpeed = 3 + score // ___\n\n# Spawn faster as score grows\nspawnInterval = max(___, 60 - score * 2)',
+      solution: '# Increase fall speed as score grows\nfallSpeed = 3 + score // 5\n\n# Spawn faster as score grows\nspawnInterval = max(20, 60 - score * 2)',
+      checks: ['fallspeed', 'score', '5', '20'],
+      height: 120,
+      fills: {
+        text: 'The fall speed increases every ___ points. The spawn interval never drops below ___ frames to keep the game playable.',
+        answers: ['5', '20']
+      },
+      quiz: {
+        question: 'Why cap the spawn interval at 20 instead of letting it reach 0?',
+        options: [
+          'The canvas cannot draw faster than 20 frames',
+          'Without a minimum, objects would spawn every frame and fill the screen instantly - the player would have no room to dodge',
+          'JavaScript timers break at zero'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

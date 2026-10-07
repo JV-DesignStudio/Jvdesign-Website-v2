@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My First GDevelop Game Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(163,230,53,.15);color:#a3e635;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>My First GDevelop Game Build Canvas <span class="cw-lang-tag">&#x1f3a8; GDevelop</span></h1>
+  <p>Write GDevelop event logic step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your first GDevelop game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A green basket at the bottom of a dark screen</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GDevelop-to-JS transpiler (simplified event notation)
+   =================================================== */
+function gdToJs(code) {
+  return code
+    .replace(/\/\/.*$/gm, '')
+    .replace(/Condition:\s*KeyPressed\("Left"\)/g, 'if(leftHeld)')
+    .replace(/Condition:\s*KeyPressed\("Right"\)/g, 'if(rightHeld)')
+    .replace(/Condition:\s*KeyPressed\("Up"\)/g, 'if(upHeld)')
+    .replace(/Condition:\s*KeyPressed\("Down"\)/g, 'if(downHeld)')
+    .replace(/Action:\s*(\w+)\.SetX\(([^)]+)\)/g, '$1x=$2;')
+    .replace(/Action:\s*(\w+)\.SetY\(([^)]+)\)/g, '$1y=$2;')
+    .replace(/Action:\s*SetVariable\((\w+),\s*([^)]+)\)/g, '$1=$2;')
+    .replace(/Condition:\s*(\w+)\.X\(\)\s*([<>!=]+)\s*(\S+)/g, 'if($1x$2$3)')
+    .replace(/Condition:\s*(\w+)\.Y\(\)\s*([<>!=]+)\s*(\S+)/g, 'if($1y$2$3)')
+    .replace(/Condition:\s*Variable\((\w+)\)\s*([<>!=]+)\s*(\S+)/g, 'if($1$2$3)')
+    .replace(/Action:\s*Create\("(\w+)",\s*([^,]+),\s*([^)]+)\)/g, '$1s.push({x:$2,y:$3,w:20,h:20,alive:true});')
+    .replace(/Action:\s*Delete\("(\w+)"\)/g, '$1.alive=false;')
+    .replace(/Condition:\s*Timer\("(\w+)"\)\s*>\s*(\d+)/g, function(_, name, sec) {
+      return 'if(' + name + 'Timer>' + (parseInt(sec) * 60) + ')';
+    })
+    .replace(/\bAction:\s*/g, '')
+    .replace(/\bCondition:\s*/g, 'if');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (My First GDevelop Game)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var BASKET_VARS = 'let basketx=155,baskety=355,basketw=90,basketh=24,speed=6;';
+
+var STAR_VARS = 'let starx=Math.floor(Math.random()*360)+20,stary=-20,starw=20,starh=20,fallSpeed=3;';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var MOVE_BASKET = 'if(leftHeld)basketx-=speed;if(rightHeld)basketx+=speed;basketx=Math.max(0,Math.min(400-basketw,basketx));';
+
+var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,400,400);';
+
+var DRAW_BASKET = 'ctx.fillStyle="#22c55e";ctx.fillRect(basketx,baskety,basketw,basketh);';
+
+var DRAW_STAR = 'ctx.fillStyle="#facc15";ctx.beginPath();ctx.arc(starx+starw/2,stary+starh/2,starw/2,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 22px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,12,28);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillText("Lives: "+lives,388,28);';
+
+var STAR_FALL = 'stary+=fallSpeed;';
+
+var STAR_RESET = 'function resetStar(){starx=Math.floor(Math.random()*360)+20;stary=-20}';
+
+var STAR_CATCH = 'if(stary+starh>=baskety&&stary<=baskety+basketh&&starx+starw>=basketx&&starx<=basketx+basketw){score++;resetStar()}';
+
+var STAR_MISS = 'if(stary>420){lives--;if(lives<=0){gameState="over"}else{resetStar()}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - My First GDevelop Game steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-my-first-gdevelop-canvas',
+  downloadName: 'my-first-gdevelop-game.html',
+
+  hints: [
+    'A green basket at the bottom of a dark screen',
+    'The basket slides left and right with arrow keys',
+    'A yellow star falls from the top of the screen',
+    'Catching the star adds a point and spawns a new one',
+    'Missing the star costs a life - three lives total',
+    'Speed increases as you score, press R to restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + KEYS +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_BASKET +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + KEYS +
+        'function loop(){' +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'basketx=Math.max(0,Math.min(400-basketw,basketx));' +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_BASKET +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'if(stary>420)resetStar();' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_BASKET + STAR_FALL +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'if(stary>420)resetStar();' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_BASKET + STAR_FALL + STAR_CATCH +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE + DRAW_LIVES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        STAR_RESET +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=3;resetStar();gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_BASKET + STAR_FALL + STAR_CATCH + STAR_MISS +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE + DRAW_LIVES +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",200,170);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,210);' +
+        'ctx.fillText("Press R to play again",200,245)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Place the Basket',
+      goal: 'Create a green basket object at the bottom of the screen.',
+      points: [
+        'In GDevelop, you create <strong>objects</strong> and place them in <strong>scenes</strong>',
+        'Our basket is 90 pixels wide and 24 pixels tall, sitting near y=355',
+        'The scene is 400x400 pixels with a dark background',
+        'The basket starts centred: x = (400 - 90) / 2 = 155'
+      ],
+      challenge: '&#x1f3a8; Set the basket position and size:',
+      starter: '// Place the basket object in the scene\nAction: SetVariable(basketx, ___)\nAction: SetVariable(baskety, 355)\nAction: SetVariable(basketw, ___)\nAction: SetVariable(basketh, 24)',
+      solution: '// Place the basket object in the scene\nAction: SetVariable(basketx, 155)\nAction: SetVariable(baskety, 355)\nAction: SetVariable(basketw, 90)\nAction: SetVariable(basketh, 24)',
+      checks: ['155', '355', '90', '24'],
+      height: 130,
+      fills: {
+        text: 'The basket starts at x = ___ to appear centred. It is ___ pixels wide.',
+        answers: ['155', '90']
+      },
+      quiz: {
+        question: 'In GDevelop, what are the two main building blocks?',
+        options: [
+          'Functions and classes',
+          'Objects placed in scenes - objects have behaviours, scenes are your levels',
+          'Variables and loops'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Move with Arrow Keys',
+      goal: 'Use keyboard events to move the basket left and right.',
+      points: [
+        'GDevelop uses <strong>events</strong>: a Condition triggers an Action',
+        'Condition: <code>KeyPressed("Left")</code> checks if the left arrow is held',
+        'Action: change the basket X position by subtracting or adding speed',
+        'Clamp the position so the basket stays on screen (0 to 400 - width)'
+      ],
+      challenge: '&#x1f3a8; Write the movement events:',
+      starter: '// Move basket with arrow keys\nCondition: KeyPressed("Left")\nAction: SetVariable(basketx, basketx - ___)\n\nCondition: KeyPressed("Right")\nAction: SetVariable(basketx, basketx + ___)',
+      solution: '// Move basket with arrow keys\nCondition: KeyPressed("Left")\nAction: SetVariable(basketx, basketx - speed)\n\nCondition: KeyPressed("Right")\nAction: SetVariable(basketx, basketx + speed)',
+      checks: ['KeyPressed', 'Left', 'Right', 'speed'],
+      height: 160,
+      fills: {
+        text: 'GDevelop events have two parts: a ___ that checks something, and an ___ that does something.',
+        answers: ['condition', 'action']
+      },
+      quiz: {
+        question: 'Why does GDevelop use events instead of typing code?',
+        options: [
+          'Events are slower but easier to read',
+          'Events let you build game logic visually - each row is a condition/action pair that reads like a sentence',
+          'Code is not allowed in game engines'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Falling Star',
+      goal: 'Create a star that falls from a random position at the top.',
+      points: [
+        'The star starts above the screen at y = -20 so it slides in smoothly',
+        'Each frame the star moves down by <code>fallSpeed</code> (3 pixels)',
+        'When it passes the bottom (y > 420), reset to a new random x at the top',
+        'In GDevelop you would use the <strong>Bounce</strong> or <strong>Destroy</strong> behaviour'
+      ],
+      challenge: '&#x1f3a8; Write the star falling logic:',
+      starter: '// Move the star downward each frame\nAction: SetVariable(stary, stary + ___)\n\n// Reset when it falls off screen\nCondition: Variable(stary) > ___\nAction: SetVariable(starx, Random(360) + 20)\nAction: SetVariable(stary, -20)',
+      solution: '// Move the star downward each frame\nAction: SetVariable(stary, stary + fallSpeed)\n\n// Reset when it falls off screen\nCondition: Variable(stary) > 420\nAction: SetVariable(starx, Random(360) + 20)\nAction: SetVariable(stary, -20)',
+      checks: ['fallSpeed', '420', 'stary'],
+      height: 170,
+      fills: {
+        text: 'The star moves ___ pixels per frame. It resets when y passes ___.',
+        answers: ['3', '420']
+      },
+      quiz: {
+        question: 'Why start the star at y = -20 instead of y = 0?',
+        options: [
+          'It needs time to speed up',
+          'Starting off-screen means the star slides smoothly into view instead of appearing at the edge',
+          'Negative numbers render faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Catch the Star',
+      goal: 'Detect when the star touches the basket and add a point.',
+      points: [
+        'In GDevelop, you use <strong>collision conditions</strong> between two objects',
+        'Here we check if the star rectangle overlaps the basket rectangle',
+        'On catch: increase score by 1 and reset the star to the top',
+        'This is called <strong>AABB collision</strong> - checking if two boxes overlap'
+      ],
+      challenge: '&#x1f3a8; Write the catch detection:',
+      starter: '// Check if star overlaps basket\nCondition: StarCollidesWith(Basket)\nAction: SetVariable(score, score + ___)\nAction: ResetStar()',
+      solution: '// Check if star overlaps basket\nCondition: StarCollidesWith(Basket)\nAction: SetVariable(score, score + 1)\nAction: ResetStar()',
+      checks: ['score', '1'],
+      height: 120,
+      fills: {
+        text: 'GDevelop checks collisions between ___. Each catch adds ___ to the score.',
+        answers: ['objects', '1']
+      },
+      quiz: {
+        question: 'What does AABB collision detection check?',
+        options: [
+          'Whether two circles overlap',
+          'Whether two axis-aligned rectangles overlap by comparing their four edges',
+          'Whether pixels of the same colour touch'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Lives System',
+      goal: 'Lose a life when the star hits the ground. Game over at zero.',
+      points: [
+        'When the star passes the bottom without being caught, subtract a life',
+        'If lives reach 0, change the game state to "over"',
+        'Otherwise, reset the star for another chance',
+        'GDevelop scene variables store lives and game state'
+      ],
+      challenge: '&#x1f3a8; Write the miss penalty:',
+      starter: '// Star missed - hit the ground\nCondition: Variable(stary) > 420\nAction: SetVariable(lives, lives - ___)\n\nCondition: Variable(lives) <= ___\nAction: SetVariable(gameState, "over")',
+      solution: '// Star missed - hit the ground\nCondition: Variable(stary) > 420\nAction: SetVariable(lives, lives - 1)\n\nCondition: Variable(lives) <= 0\nAction: SetVariable(gameState, "over")',
+      checks: ['lives', '0', 'over'],
+      height: 160,
+      fills: {
+        text: 'The player starts with ___ lives. When lives hit ___, the game ends.',
+        answers: ['3', '0']
+      },
+      quiz: {
+        question: 'Why use a gameState variable instead of just stopping?',
+        options: [
+          'GDevelop requires it',
+          'A state variable lets you show a game-over screen and offer restart - stopping would freeze everything',
+          'It uses less memory'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Speed Up & Restart',
+      goal: 'Make stars fall faster as score grows. Press R to play again.',
+      points: [
+        'Increase fallSpeed every few catches: <code>fallSpeed = 3 + score / 5</code>',
+        'Cap it at 8 so the game stays playable',
+        'Pressing R resets score, lives, speed, and star position',
+        'This difficulty ramp keeps the game interesting as the player improves'
+      ],
+      challenge: '&#x1f3a8; Write the speed ramp:',
+      starter: '// Speed up as score grows\nAction: SetVariable(fallSpeed, 3 + score / ___)\n\n// Cap the speed\nCondition: Variable(fallSpeed) > ___\nAction: SetVariable(fallSpeed, ___)',
+      solution: '// Speed up as score grows\nAction: SetVariable(fallSpeed, 3 + score / 5)\n\n// Cap the speed\nCondition: Variable(fallSpeed) > 8\nAction: SetVariable(fallSpeed, 8)',
+      checks: ['fallSpeed', 'score', '5', '8'],
+      height: 150,
+      fills: {
+        text: 'Stars speed up every ___ points. The maximum speed is ___ pixels per frame.',
+        answers: ['5', '8']
+      },
+      quiz: {
+        question: 'Why cap the fall speed?',
+        options: [
+          'The engine crashes at high speeds',
+          'Without a cap the game becomes impossible - the star passes too fast for any human to catch',
+          'GDevelop variables have a maximum value'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

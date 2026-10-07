@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scratch Clicker Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,191,36,.15);color:#fbbf24;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Scratch Clicker Build Canvas <span class="cw-lang-tag">&#x1f431; Scratch</span></h1>
+  <p>Write Scratch block code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Scratch Clicker game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A colourful circle target in the centre of the stage</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Scratch-to-JS transpiler (block notation to JS)
+   =================================================== */
+function scratchToJs(code) {
+  return code
+    .replace(/when green flag clicked/g, '')
+    .replace(/forever/g, '')
+    .replace(/end/g, '}')
+    .replace(/if <key \[right arrow\] pressed\?> then/g, 'if(rightHeld){')
+    .replace(/if <key \[left arrow\] pressed\?> then/g, 'if(leftHeld){')
+    .replace(/if <key \[up arrow\] pressed\?> then/g, 'if(upHeld){')
+    .replace(/if <key \[down arrow\] pressed\?> then/g, 'if(downHeld){')
+    .replace(/if <key \[space\] pressed\?> then/g, 'if(spaceHeld){')
+    .replace(/change x by \[([^\]]+)\]/g, 'sprite.x+=$1;')
+    .replace(/change y by \[([^\]]+)\]/g, 'sprite.y+=$1;')
+    .replace(/set x to \[([^\]]+)\]/g, 'sprite.x=$1;')
+    .replace(/set y to \[([^\]]+)\]/g, 'sprite.y=$1;')
+    .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'sprite.x=$1;sprite.y=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
+    .replace(/if <touching \[Edge\]\?> then/g, 'if(sprite.x<0||sprite.x>460||sprite.y<0||sprite.y>340){')
+    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
+    .replace(/say \[([^\]]+)\]/g, 'sayText="$1";')
+    .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\/\/.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Scratch Clicker)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="480" height="360"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var TARGET_VARS = 'let tx=200,ty=140,tr=35;';
+
+var SCORE_VARS = 'let score=0;';
+
+var TIMER_VARS = 'let timeLeft=30,lastTick=Date.now();';
+
+var STATE_VARS = 'let gameState="play";';
+
+var CLICK_HANDLER = 'let clicked=false,clickX=0,clickY=0;' +
+  'canvas.addEventListener("click",function(e){' +
+    'var r=canvas.getBoundingClientRect();clickX=e.clientX-r.left;clickY=e.clientY-r.top;clicked=true});';
+
+var MOVE_TARGET = 'function moveTarget(){tx=Math.floor(Math.random()*380)+50;ty=Math.floor(Math.random()*260)+50}';
+
+var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,480,360);';
+
+var DRAW_TARGET = 'ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(tx,ty,tr,0,Math.PI*2);ctx.fill();' +
+  'ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(tx,ty,tr*0.6,0,Math.PI*2);ctx.fill();' +
+  'ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(tx,ty,tr*0.25,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,12,28);';
+
+var DRAW_TIMER = 'ctx.textAlign="right";ctx.fillText("Time: "+timeLeft,468,28);';
+
+var CHECK_CLICK = 'if(clicked){var dx=clickX-tx,dy=clickY-ty;if(dx*dx+dy*dy<=tr*tr){score++;moveTarget()}clicked=false}';
+
+var TICK_TIMER = 'if(Date.now()-lastTick>=1000){timeLeft--;lastTick=Date.now();if(timeLeft<=0)gameState="over"}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Scratch Clicker steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-scratch-clicker-canvas',
+  downloadName: 'my-scratch-clicker.html',
+
+  hints: [
+    'A colourful circle target in the centre of the stage',
+    'Click the target and it jumps to a random position',
+    'The score goes up each time you click the target',
+    'A countdown timer ticks down from 30 seconds',
+    'The target gets smaller as your score grows',
+    'Game over screen with final score and restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + TARGET_VARS + CLICK_HANDLER +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_TARGET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + TARGET_VARS + CLICK_HANDLER + MOVE_TARGET +
+        'function loop(){' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'clicked=false;' +
+        DRAW_BG + DRAW_TARGET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + TARGET_VARS + SCORE_VARS + CLICK_HANDLER + MOVE_TARGET +
+        'function loop(){' +
+        CHECK_CLICK +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_TARGET + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + TARGET_VARS + SCORE_VARS + TIMER_VARS + STATE_VARS + CLICK_HANDLER + MOVE_TARGET +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        CHECK_CLICK +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_TARGET + DRAW_SCORE + DRAW_TIMER +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("TIME UP!",240,160);ctx.font="18px monospace";ctx.fillText("Score: "+score,240,195)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + TARGET_VARS + SCORE_VARS + TIMER_VARS + STATE_VARS + CLICK_HANDLER + MOVE_TARGET +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        CHECK_CLICK + TICK_TIMER +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_TARGET + DRAW_SCORE + DRAW_TIMER +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("TIME UP!",240,160);ctx.font="18px monospace";ctx.fillText("Score: "+score,240,195)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + TARGET_VARS + SCORE_VARS + TIMER_VARS + STATE_VARS + CLICK_HANDLER + MOVE_TARGET +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;timeLeft=30;tr=35;moveTarget();gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        CHECK_CLICK + TICK_TIMER +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_TARGET + DRAW_SCORE + DRAW_TIMER +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("TIME UP!",240,160);ctx.font="18px monospace";ctx.fillText("Final Score: "+score,240,195);' +
+        'ctx.fillText("Press R to play again",240,225)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Target Sprite',
+      goal: 'Draw a colourful bullseye target in the centre of the stage.',
+      points: [
+        'The target is three circles layered: gold outer, red middle, white centre',
+        'In Scratch this would be a sprite with a bullseye costume',
+        'The target starts at the centre: x=200, y=140 on a 480x360 stage',
+        'The outer radius is 35 pixels - big enough to click easily'
+      ],
+      challenge: '🐱 Set the target position and size:',
+      starter: '// Place the target sprite\nset [tx] to [___]\nset [ty] to [___]\nset [tr] to [35]',
+      solution: '// Place the target sprite\nset [tx] to [200]\nset [ty] to [140]\nset [tr] to [35]',
+      checks: ['200', '140', '35'],
+      height: 100,
+      fills: {
+        text: 'The target starts at x=___ which is near the centre. The radius of ___ pixels makes it easy to click.',
+        answers: ['200', '35']
+      },
+      quiz: {
+        question: 'Why use three layered circles for the target?',
+        options: [
+          'One circle is too hard to draw',
+          'Layered circles create a bullseye effect that gives clear visual feedback on what to click',
+          'Scratch requires three sprites minimum'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Click to Move',
+      goal: 'When clicked, the target jumps to a random position on stage.',
+      points: [
+        'In Scratch: <code>when this sprite clicked</code> starts the click handler',
+        'Use <code>go to x: (pick random -180 to 180) y: (pick random -120 to 120)</code> to move randomly',
+        'On canvas we check if the click is inside the circle using distance formula',
+        'The target stays within bounds: x from 50 to 430, y from 50 to 310'
+      ],
+      challenge: '🐱 Write the random movement:',
+      starter: '// When target clicked, move to random spot\nset [tx] to pick random [50] to [___]\nset [ty] to pick random [50] to [___]',
+      solution: '// When target clicked, move to random spot\nset [tx] to pick random [50] to [430]\nset [ty] to pick random [50] to [310]',
+      checks: ['430', '310', 'random'],
+      height: 100,
+      fills: {
+        text: 'The target moves to a random x between 50 and ___. The margin of 50 pixels keeps it fully ___ on stage.',
+        answers: ['430', 'visible']
+      },
+      quiz: {
+        question: 'Why add a 50-pixel margin instead of using the full stage?',
+        options: [
+          'The edges are broken',
+          'A margin ensures the target circle is always fully visible and clickable, never cut off by the edge',
+          'Scratch does not allow edge positions'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Score Counter',
+      goal: 'Add 1 to the score each time you successfully click the target.',
+      points: [
+        'In Scratch: <code>change [score] by [1]</code> inside the click handler',
+        'The score displays in the top-left corner in white text',
+        'The score variable starts at 0 when the green flag is clicked',
+        'Only clicks inside the target circle count - clicking empty space does nothing'
+      ],
+      challenge: '🐱 Write the scoring blocks:',
+      starter: '// When green flag clicked\nset [score] to [___]\n\n// When target clicked\nchange [score] by [___]',
+      solution: '// When green flag clicked\nset [score] to [0]\n\n// When target clicked\nchange [score] by [1]',
+      checks: ['score', '0', '1'],
+      height: 120,
+      fills: {
+        text: 'The score starts at ___ and increases by ___ with each successful click.',
+        answers: ['0', '1']
+      },
+      quiz: {
+        question: 'Why only count clicks inside the circle?',
+        options: [
+          'The canvas ignores other clicks',
+          'Counting only accurate clicks rewards aim and makes the game a test of skill, not random clicking',
+          'Scratch cannot detect clicks outside sprites'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Countdown Timer',
+      goal: 'Add a 30-second countdown. Game over when time runs out.',
+      points: [
+        'In Scratch: use a <code>repeat until [timer > 30]</code> or a custom countdown variable',
+        'The timer ticks down once per second from 30 to 0',
+        'When time hits 0: <code>set [gameState] to [over]</code>',
+        'The timer displays in the top-right corner opposite the score'
+      ],
+      challenge: '🐱 Set up the timer:',
+      starter: '// When green flag clicked\nset [timeLeft] to [___]\n\n// Each second\nchange [timeLeft] by [___]',
+      solution: '// When green flag clicked\nset [timeLeft] to [30]\n\n// Each second\nchange [timeLeft] by [-1]',
+      checks: ['timeleft', '30', '-1'],
+      height: 120,
+      fills: {
+        text: 'The timer starts at ___ seconds. Each second it changes by ___, counting down to zero.',
+        answers: ['30', '-1']
+      },
+      quiz: {
+        question: 'Why use a countdown instead of counting up?',
+        options: [
+          'Counting up is harder to code',
+          'A countdown creates urgency - the player sees time running out and clicks faster, which is more exciting',
+          'Scratch timers only go down'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Shrinking Target',
+      goal: 'Make the target smaller as the score grows for increasing difficulty.',
+      points: [
+        'In Scratch: <code>set size to (100 - score * 2) %</code> shrinks the costume',
+        'On canvas we reduce the radius: tr = 35 - score (minimum 15)',
+        'Smaller target = harder to click = more satisfying when you hit it',
+        'Capping at 15 pixels ensures it is always visible and clickable'
+      ],
+      challenge: '🐱 Write the shrinking logic:',
+      starter: '// Shrink target as score grows\nset [tr] to [35 - score]\n\n// But never smaller than\nset [minSize] to [___]',
+      solution: '// Shrink target as score grows\nset [tr] to [35 - score]\n\n// But never smaller than\nset [minSize] to [15]',
+      checks: ['tr', '35', 'score', '15'],
+      height: 120,
+      fills: {
+        text: 'The target starts at radius ___ and shrinks by 1 pixel per point. The minimum size of ___ keeps it clickable.',
+        answers: ['35', '15']
+      },
+      quiz: {
+        question: 'Why does a shrinking target make the game better?',
+        options: [
+          'Big targets use too much memory',
+          'Dynamic difficulty keeps the game challenging as the player improves - each click is harder than the last',
+          'Scratch sprites must change size'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Game Over and Restart',
+      goal: 'Show the final score when time runs out, press R to play again.',
+      points: [
+        'When gameState is "over": display "TIME UP!" and the final score',
+        'Pressing R resets score to 0, time to 30, target size to 35',
+        'The target moves back to centre on restart',
+        'This play-again loop is what makes a game replayable'
+      ],
+      challenge: '🐱 Write the restart logic:',
+      starter: '// Reset everything for a new game\nset [score] to [___]\nset [timeLeft] to [___]\nset [tr] to [___]\nset [gameState] to [play]',
+      solution: '// Reset everything for a new game\nset [score] to [0]\nset [timeLeft] to [30]\nset [tr] to [35]\nset [gameState] to [play]',
+      checks: ['score', '0', '30', '35', 'play'],
+      height: 120,
+      fills: {
+        text: 'On restart the score resets to ___ and the timer resets to ___. This is called the game loop.',
+        answers: ['0', '30']
+      },
+      quiz: {
+        question: 'What makes a clicker game replayable?',
+        options: [
+          'More sprites',
+          'The score gives you a number to beat - "one more try" to do better creates the replay hook',
+          'Longer timers'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

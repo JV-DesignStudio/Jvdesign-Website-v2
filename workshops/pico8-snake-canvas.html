@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PICO-8 Snake Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(236,72,153,.15);color:#ec4899;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>PICO-8 Snake Build Canvas <span class="cw-lang-tag">&#x1f3ae; PICO-8</span></h1>
+  <p>Write PICO-8 Lua code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your PICO-8 Snake game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A green square on a dark 16x16 grid</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function p8ToJs(code) {
+  return code
+    .replace(/--.*$/gm, '')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\./g, '+')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\badd\((\w+),\s*([^)]+)\)/g, '$1.push($2)')
+    .replace(/\bdel\((\w+),\s*([^)]+)\)/g, '$1.splice($1.indexOf($2),1)')
+    .replace(/\brnd\(([^)]*)\)/g, 'Math.random()*($1)')
+    .replace(/\bflr\(/g, 'Math.floor(')
+    .replace(/\bbtn\(0\)/g, 'leftHeld')
+    .replace(/\bbtn\(1\)/g, 'rightHeld')
+    .replace(/\bbtn\(2\)/g, 'upHeld')
+    .replace(/\bbtn\(3\)/g, 'downHeld')
+    .replace(/\bbtn\(4\)/g, 'zHeld')
+    .replace(/\bbtn\(5\)/g, 'xHeld')
+    .replace(/\bbtnp\(0\)/g, 'leftPressed')
+    .replace(/\bbtnp\(1\)/g, 'rightPressed')
+    .replace(/\bbtnp\(2\)/g, 'upPressed')
+    .replace(/\bbtnp\(3\)/g, 'downPressed')
+    .replace(/\bbtnp\(4\)/g, 'zPressed')
+    .replace(/\bbtnp\(5\)/g, 'xPressed')
+    .replace(/\bprint\(([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/g,
+      'ctx.fillStyle=P8PAL[$4]||"#fff";ctx.fillText($1,$2*3,$3*3)')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\bfunction\s+(\w+)\(([^)]*)\)/g, 'function $1($2){')
+    .replace(/\bnot\s+/g, '!')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (PICO-8 Snake)
+   =================================================== */
+var S = 3;
+var CELL = 8;
+
+var P8PAL = '{0:"#000",1:"#1d2b53",2:"#7e2553",3:"#008751",4:"#ab5236",5:"#5f574f",6:"#c2c3c7",7:"#fff",8:"#ff004d",9:"#ffa300",10:"#ffec27",11:"#00e436",12:"#29adff",13:"#83769c",14:"#ff77a8",15:"#ffccaa"}';
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#000;margin:0;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="384" height="384"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");ctx.font="bold 12px monospace";const S=3,CELL=8,P8PAL=' + P8PAL + ';';
+
+var SNAKE_VARS = 'let snake=[{x:8,y:8}],dx=1,dy=0,ndx=1,ndy=0;';
+
+var FOOD_VARS = 'let fx=4,fy=4;';
+
+var SCORE_VARS = 'let score=0;';
+
+var STATE_VARS = 'let gameState="play",tick=0,moveRate=8;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false,zHeld=false,xHeld=false;' +
+  'let leftPressed=false,rightPressed=false,upPressed=false,downPressed=false,zPressed=false,xPressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA"){leftHeld=true;leftPressed=true}' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD"){rightHeld=true;rightPressed=true}' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW"){upHeld=true;upPressed=true}' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS"){downHeld=true;downPressed=true}' +
+    'if(e.code==="KeyZ"){zHeld=true;zPressed=true}' +
+    'if(e.code==="KeyX"){xHeld=true;xPressed=true}' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false;' +
+    'if(e.code==="KeyZ")zHeld=false;if(e.code==="KeyX")xHeld=false});';
+
+var CLEAR_PRESSED = 'leftPressed=false;rightPressed=false;upPressed=false;downPressed=false;zPressed=false;xPressed=false;';
+
+var PLACE_FOOD = 'function placeFood(){fx=Math.floor(Math.random()*16);fy=Math.floor(Math.random()*16)}';
+
+var DRAW_BG = 'ctx.fillStyle="#000";ctx.fillRect(0,0,384,384);';
+
+var DRAW_GRID = 'ctx.strokeStyle="#111";for(var gi=0;gi<=16;gi++){ctx.beginPath();ctx.moveTo(gi*CELL*S,0);ctx.lineTo(gi*CELL*S,384);ctx.stroke();ctx.beginPath();ctx.moveTo(0,gi*CELL*S);ctx.lineTo(384,gi*CELL*S);ctx.stroke()}';
+
+var DRAW_SNAKE = 'for(var si=0;si<snake.length;si++){ctx.fillStyle=si===0?P8PAL[11]:P8PAL[3];ctx.fillRect(snake[si].x*CELL*S,snake[si].y*CELL*S,CELL*S,CELL*S)}';
+
+var DRAW_FOOD = 'ctx.fillStyle=P8PAL[8];ctx.fillRect(fx*CELL*S,fy*CELL*S,CELL*S,CELL*S);';
+
+var DRAW_SCORE = 'ctx.fillStyle=P8PAL[7];ctx.font="bold 12px monospace";ctx.textAlign="left";ctx.fillText("score "+score,6,14);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-pico8-snake-canvas',
+  downloadName: 'my-pico8-snake.html',
+
+  hints: [
+    'A green square on a dark 16x16 grid',
+    'The snake head turns with arrow keys - it cannot reverse',
+    'A red food square sits on the grid',
+    'Eating food grows the snake and adds a point',
+    'Hitting your own tail ends the game',
+    'Game over screen with score and R to restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + KEYS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + STATE_VARS + KEYS +
+        'function loop(){tick++;' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:snake[0].x+dx,y:snake[0].y+dy};head.x=(head.x+16)%16;head.y=(head.y+16)%16;snake.unshift(head);snake.pop()}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + STATE_VARS + KEYS +
+        PLACE_FOOD +
+        'function loop(){tick++;' +
+        'if(leftPressed&&dx!==1){ndx=-1;ndy=0}if(rightPressed&&dx!==-1){ndx=1;ndy=0}' +
+        'if(upPressed&&dy!==1){ndx=0;ndy=-1}if(downPressed&&dy!==-1){ndx=0;ndy=1}' +
+        'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};snake.unshift(head);' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        '}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        PLACE_FOOD +
+        'function loop(){tick++;' +
+        'if(leftPressed&&dx!==1){ndx=-1;ndy=0}if(rightPressed&&dx!==-1){ndx=1;ndy=0}' +
+        'if(upPressed&&dy!==1){ndx=0;ndy=-1}if(downPressed&&dy!==-1){ndx=0;ndy=1}' +
+        'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};snake.unshift(head);' +
+        'if(head.x===fx&&head.y===fy){score++;placeFood()}else{snake.pop()}' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        '}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        PLACE_FOOD +
+        'function loop(){tick++;' +
+        'if(gameState==="play"){' +
+        'if(leftPressed&&dx!==1){ndx=-1;ndy=0}if(rightPressed&&dx!==-1){ndx=1;ndy=0}' +
+        'if(upPressed&&dy!==1){ndx=0;ndy=-1}if(downPressed&&dy!==-1){ndx=0;ndy=1}' +
+        'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'snake.unshift(head);if(head.x===fx&&head.y===fy){score++;placeFood()}else{snake.pop()}' +
+        '}}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
+        'if(gameState==="over"){ctx.fillStyle=P8PAL[7];ctx.font="bold 24px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",192,170);ctx.font="14px monospace";ctx.fillText("Score: "+score,192,200);ctx.fillText("Press R to restart",192,224)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        PLACE_FOOD +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){snake=[{x:8,y:8}];dx=1;dy=0;ndx=1;ndy=0;score=0;moveRate=8;placeFood();gameState="play"}});' +
+        'function loop(){tick++;' +
+        'if(gameState==="play"){' +
+        'if(leftPressed&&dx!==1){ndx=-1;ndy=0}if(rightPressed&&dx!==-1){ndx=1;ndy=0}' +
+        'if(upPressed&&dy!==1){ndx=0;ndy=-1}if(downPressed&&dy!==-1){ndx=0;ndy=1}' +
+        'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};' +
+        'for(var ci=0;ci<snake.length;ci++){if(snake[ci].x===head.x&&snake[ci].y===head.y){gameState="over"}}' +
+        'if(gameState==="play"){snake.unshift(head);if(head.x===fx&&head.y===fy){score++;placeFood()}else{snake.pop()}}' +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        '}}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
+        'if(gameState==="over"){ctx.fillStyle=P8PAL[7];ctx.font="bold 24px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",192,170);ctx.font="14px monospace";ctx.fillText("Score: "+score,192,200);ctx.fillText("Press R to restart",192,224)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Snake Head',
+      goal: 'Draw a green snake head on a 16x16 grid.',
+      points: [
+        'The PICO-8 screen is 128x128 pixels - we divide it into a 16x16 grid of 8-pixel cells',
+        'The snake is stored as an array of {x, y} grid positions',
+        'The head starts at grid position (8, 8) - the centre of the board',
+        'Colour 11 is bright green in the PICO-8 palette, colour 3 is dark green for the body'
+      ],
+      challenge: '🎮 Set the starting snake head position:',
+      starter: '-- snake starts in the centre\nsnake = {}\nadd(snake, {x=___, y=___})',
+      solution: '-- snake starts in the centre\nsnake = {}\nadd(snake, {x=8, y=8})',
+      checks: ['8'],
+      height: 100,
+      fills: {
+        text: 'The grid is ___ cells wide. Each cell is ___ pixels.',
+        answers: ['16', '8']
+      },
+      quiz: {
+        question: 'Why use a grid instead of pixel positions for snake?',
+        options: [
+          'Grids look cooler',
+          'Grid movement makes the snake snap to clean positions - no half-cell overlaps or messy collisions',
+          'PICO-8 cannot do pixel movement'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Grid Movement',
+      goal: 'Move the snake one cell per tick using direction variables.',
+      points: [
+        'The snake moves on a timer: every <code>moveRate</code> frames (8), shift one grid cell',
+        'Direction is stored in <code>dx, dy</code>: (1,0)=right, (-1,0)=left, (0,-1)=up, (0,1)=down',
+        'Arrow keys set the <em>next</em> direction - it applies on the next move tick',
+        'Wrapping: <code>(x + 16) % 16</code> makes the snake appear on the opposite side'
+      ],
+      challenge: '🎮 Write the direction input:',
+      starter: '-- change direction with arrows\n-- btn(0)=left btn(1)=right\n-- btn(2)=up   btn(3)=down\nif btnp(0) and dx ~= 1 then\n  ndx = ___\n  ndy = 0\nend\nif btnp(1) and dx ~= -1 then\n  ndx = ___\n  ndy = 0\nend',
+      solution: '-- change direction with arrows\n-- btn(0)=left btn(1)=right\n-- btn(2)=up   btn(3)=down\nif btnp(0) and dx ~= 1 then\n  ndx = -1\n  ndy = 0\nend\nif btnp(1) and dx ~= -1 then\n  ndx = 1\n  ndy = 0\nend',
+      checks: ['-1', '1', 'ndx', 'ndy'],
+      height: 200,
+      fills: {
+        text: 'The snake moves every ___ frames. Checking dx ~= 1 prevents turning ___ into yourself.',
+        answers: ['8', 'directly']
+      },
+      quiz: {
+        question: 'Why buffer the direction in ndx/ndy instead of changing dx/dy immediately?',
+        options: [
+          'It uses less memory',
+          'Buffering prevents a quick double-tap from reversing into yourself between move ticks',
+          'PICO-8 requires two variables for direction'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Food Pickup',
+      goal: 'Place food on the grid and detect when the snake eats it.',
+      points: [
+        'Food sits at a random grid cell: <code>fx = flr(rnd(16)), fy = flr(rnd(16))</code>',
+        'When the head lands on the food cell: <code>head.x == fx and head.y == fy</code>',
+        'On eat: do NOT pop the tail - the snake grows by one cell',
+        'If the head is NOT on food, pop the tail to keep the same length'
+      ],
+      challenge: '🎮 Write the food check:',
+      starter: '-- did we eat the food?\nif head.x == ___ and head.y == ___ then\n  score += 1\n  placeFood()\nelse\n  -- remove tail to keep length\n  snake.pop()\nend',
+      solution: '-- did we eat the food?\nif head.x == fx and head.y == fy then\n  score += 1\n  placeFood()\nelse\n  -- remove tail to keep length\n  snake.pop()\nend',
+      checks: ['fx', 'fy', 'score', 'placefood'],
+      height: 180,
+      fills: {
+        text: 'When the snake eats food we skip the ___ call. This makes the snake one cell ___.',
+        answers: ['pop', 'longer']
+      },
+      quiz: {
+        question: 'How does the snake "grow" when eating food?',
+        options: [
+          'We add extra cells to the array',
+          'We simply skip removing the tail - the new head was already added, so the array is now one longer',
+          'The cells get bigger'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Score Display',
+      goal: 'Show the score on screen using PICO-8 print.',
+      points: [
+        'In PICO-8: <code>print("score "..score, 2, 2, 7)</code> draws white text at (2,2)',
+        'The <code>..</code> operator joins strings and numbers in Lua',
+        'Colour 7 is white in the PICO-8 palette',
+        'The score increments each time you eat food from the previous step'
+      ],
+      challenge: '🎮 Write the score display:',
+      starter: '-- show the score\nprint("score "..score, 2, 2, ___)',
+      solution: '-- show the score\nprint("score "..score, 2, 2, 7)',
+      checks: ['score', 'print', '7'],
+      height: 80,
+      fills: {
+        text: 'The .. operator ___ strings in Lua. Colour ___ is white in the PICO-8 palette.',
+        answers: ['concatenates', '7']
+      },
+      quiz: {
+        question: 'Why does Lua use .. for string joining instead of +?',
+        options: [
+          'A Lua design choice - + is only for numbers, .. is only for strings, so the engine always knows which you mean',
+          'Plus is broken in Lua',
+          'Dots are faster than plus'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Self Collision',
+      goal: 'End the game when the snake head hits its own body.',
+      points: [
+        'Before adding the new head, loop through every body segment',
+        'If any segment matches the new head position: game over',
+        'Use a for loop: <code>for i = 1, #snake do ... end</code>',
+        'Set <code>gameState = "over"</code> to freeze the game and show the score'
+      ],
+      challenge: '🎮 Write the self-collision check:',
+      starter: '-- check if head hits body\nfor i = 1, #snake do\n  if snake[i].x == head.x and snake[i].y == head.___ then\n    gameState = "___"\n  end\nend',
+      solution: '-- check if head hits body\nfor i = 1, #snake do\n  if snake[i].x == head.x and snake[i].y == head.y then\n    gameState = "over"\n  end\nend',
+      checks: ['head.x', 'head.y', 'over'],
+      height: 160,
+      fills: {
+        text: 'We check every ___ in the snake array. If any matches the head, the state becomes ___.',
+        answers: ['segment', 'over']
+      },
+      quiz: {
+        question: 'Why check collision BEFORE adding the head to the array?',
+        options: [
+          'It is faster',
+          'If we checked after, the head would always match itself at index 1 and the game would end immediately',
+          'PICO-8 requires this order'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Restart & Speed Up',
+      goal: 'Press R to restart and make the snake faster as it grows.',
+      points: [
+        'On game over, R resets: snake back to one segment, score to 0, direction to right',
+        'Speed ramp: <code>moveRate = max(3, 8 - flr(score / 3))</code> - faster every 3 points',
+        'moveRate is capped at 3 frames minimum so the game stays playable',
+        'This restart loop is the same pattern used in every arcade game'
+      ],
+      challenge: '🎮 Write the speed ramp:',
+      starter: '-- speed up as snake grows\nmoveRate = 8 - flr(score / ___)\nif moveRate < ___ then\n  moveRate = ___\nend',
+      solution: '-- speed up as snake grows\nmoveRate = 8 - flr(score / 3)\nif moveRate < 3 then\n  moveRate = 3\nend',
+      checks: ['moverate', 'score', '3'],
+      height: 120,
+      fills: {
+        text: 'The snake speeds up every ___ points. The minimum moveRate of ___ keeps it playable.',
+        answers: ['3', '3']
+      },
+      quiz: {
+        question: 'Why does snake use a move timer instead of moving every frame?',
+        options: [
+          'Moving at 60 cells per second would be impossibly fast - the timer gives a classic grid-step rhythm the player can follow',
+          'PICO-8 cannot move every frame',
+          'Timers use less CPU'
+        ],
+        correct: 0
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

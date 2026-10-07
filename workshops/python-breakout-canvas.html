@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Breakout Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(52,211,153,.15);color:#34d399;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Python Breakout Build Canvas <span class="cw-lang-tag">&#x1f40d; Python</span></h1>
+  <p>Write Python game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Python Breakout game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A white paddle at the bottom of a dark screen</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Python-to-JS transpiler (light transform so Python
+   syntax runs in the canvas iframe)
+   =================================================== */
+function pyToJs(code) {
+  return code
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    .replace(/\bNone\b/g, 'null')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\belif\b/g, 'else if')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||')
+    .replace(/\bnot\b/g, '!')
+    .replace(/\blen\s*\(/g, '(')
+    .replace(/\.append\s*\(/g, '.push(')
+    .replace(/\brandom\.randint\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/#.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Python Breakout)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f0f1a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PADDLE_VARS = 'let px=250,py=375,pw=100,ph=14;';
+
+var BALL_VARS = 'let bx=300,by=200,br=8,bvx=4,bvy=-4;';
+
+var BRICK_VARS = 'let bricks=[];' +
+  'const brickRows=5,brickCols=8,brickW=60,brickH=20,brickPad=8,brickTop=40,brickLeft=28;' +
+  'const rowColors=["#f43f5e","#f97316","#facc15","#34d399","#38bdf8"];' +
+  'for(let r=0;r<brickRows;r++){for(let c=0;c<brickCols;c++){' +
+  'bricks.push({x:brickLeft+c*(brickW+brickPad),y:brickTop+r*(brickH+brickPad),w:brickW,h:brickH,alive:true,color:rowColors[r]})}}';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var MOVE_PADDLE = 'if(leftHeld)px-=7;if(rightHeld)px+=7;px=Math.max(0,Math.min(600-pw,px));';
+
+var MOVE_BALL = 'bx+=bvx;by+=bvy;' +
+  'if(bx-br<=0||bx+br>=600)bvx=-bvx;' +
+  'if(by-br<=0)bvy=-bvy;';
+
+var PADDLE_BOUNCE = 'if(by+br>=py&&by+br<=py+ph&&bx>=px&&bx<=px+pw){' +
+  'bvy=-Math.abs(bvy);' +
+  'var offset=(bx-(px+pw/2))/(pw/2);' +
+  'bvx=offset*5;}';
+
+var DRAW_BG = 'ctx.fillStyle="#0f0f1a";ctx.fillRect(0,0,600,400);';
+
+var DRAW_PADDLE = 'ctx.fillStyle="#fff";ctx.fillRect(px,py,pw,ph);';
+
+var DRAW_BALL = 'ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.fill();';
+
+var DRAW_BRICKS = 'for(var i=0;i<bricks.length;i++){if(bricks[i].alive){ctx.fillStyle=bricks[i].color;ctx.fillRect(bricks[i].x,bricks[i].y,bricks[i].w,bricks[i].h)}}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,16,22);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillText("Lives: "+lives,584,22);';
+
+var BRICK_COLLIDE = 'for(var i=0;i<bricks.length;i++){var b=bricks[i];if(b.alive&&bx+br>b.x&&bx-br<b.x+b.w&&by+br>b.y&&by-br<b.y+b.h){b.alive=false;score+=10;bvy=-bvy;break}}';
+
+var BALL_LOST = 'if(by-br>400){lives--;if(lives<=0){gameState="over"}else{bx=300;by=200;bvx=4;bvy=-4}}';
+
+var CHECK_WIN = 'var allDead=true;for(var i=0;i<bricks.length;i++){if(bricks[i].alive){allDead=false;break}}if(allDead)gameState="win";';
+
+function resetBricksCode() {
+  return 'for(var i=0;i<bricks.length;i++)bricks[i].alive=true;';
+}
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Python Breakout steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-python-breakout-canvas',
+  downloadName: 'my-python-breakout.html',
+
+  hints: [
+    'A white paddle at the bottom of a dark screen',
+    'A white ball bouncing off the walls and ceiling',
+    'The ball bounces off the paddle with angle spin',
+    'A colourful grid of bricks fills the top of the screen',
+    'Bricks vanish when the ball hits them and the score climbs',
+    'Lives count down when the ball is lost, victory when all bricks are smashed'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + KEYS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_PADDLE +
+        DRAW_BG + DRAW_PADDLE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE +
+        DRAW_BG + DRAW_PADDLE + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PADDLE + MOVE_BALL +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PADDLE + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        PADDLE_BOUNCE +
+        'function loop(){' +
+        MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE +
+        DRAW_BG + DRAW_PADDLE + DRAW_BALL + DRAW_BRICKS +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + KEYS +
+        BRICK_VARS + PADDLE_BOUNCE +
+        'function loop(){' +
+        MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PADDLE + DRAW_BALL + DRAW_BRICKS + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        BRICK_VARS + PADDLE_BOUNCE +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="over"||gameState==="win")){score=0;lives=3;bx=300;by=200;bvx=4;bvy=-4;' + resetBricksCode() + 'gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE + BRICK_COLLIDE + BALL_LOST +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        CHECK_WIN +
+        '}' +
+        DRAW_BG + DRAW_PADDLE + DRAW_BALL + DRAW_BRICKS + DRAW_SCORE + DRAW_LIVES +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220);' +
+        'ctx.fillText("Press R to play again",300,260)}' +
+        'if(gameState==="win"){ctx.fillStyle="#facc15";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("YOU WIN!",300,180);ctx.font="20px monospace";ctx.fillStyle="#fff";ctx.fillText("Score: "+score,300,220);' +
+        'ctx.fillText("Press R to play again",300,260)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Setup & Paddle',
+      goal: 'Draw a white paddle at the bottom of the screen.',
+      points: [
+        'The canvas is 600x400 pixels with a dark background (#0f0f1a)',
+        'The paddle is a white rectangle: 100 wide, 14 tall, sitting near the bottom at y=375',
+        'In real Pygame you would use <code>pygame.Rect(250, 375, 100, 14)</code> - here the canvas engine stores <code>px, py, pw, ph</code>',
+        'The paddle starts centred horizontally: x = (600 - 100) / 2 = 250'
+      ],
+      challenge: '\uD83D\uDC0D Set the paddle position and size:',
+      starter: '# Set the paddle starting position\npx = ___\npy = 375\npw = ___\nph = 14',
+      solution: '# Set the paddle starting position\npx = 250\npy = 375\npw = 100\nph = 14',
+      checks: ['250', '375', '100', '14'],
+      height: 120,
+      fills: {
+        text: 'The paddle starts at x = ___ to appear centred. Its width of ___ pixels gives enough room to bounce the ball but still requires aiming.',
+        answers: ['250', '100']
+      },
+      quiz: {
+        question: 'Why is the paddle 100 pixels wide on a 600-pixel canvas?',
+        options: [
+          'It is a random nice number',
+          'About one-sixth of the canvas width - wide enough to be useful but narrow enough that positioning matters',
+          'Wider paddles crash the game'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'The Ball',
+      goal: 'Launch a ball from the centre that bounces off walls and ceiling.',
+      points: [
+        'The ball starts at the centre (300, 200) with radius 8',
+        'It has velocity: <code>bvx</code> (horizontal) and <code>bvy</code> (vertical) - typically 4 and -4',
+        'Each frame: <code>bx += bvx</code>, <code>by += bvy</code> moves the ball',
+        'When it hits a side wall or the ceiling, reverse the matching velocity component'
+      ],
+      challenge: '\uD83D\uDC0D Set the ball velocity so it launches upward and to the right:',
+      starter: '# Set the ball velocity\nbvx = ___\nbvy = ___',
+      solution: '# Set the ball velocity\nbvx = 4\nbvy = -4',
+      checks: ['bvx', 'bvy'],
+      height: 100,
+      fills: {
+        text: 'A negative bvy means the ball moves ___. The ball reverses direction when it hits a ___ or the ceiling.',
+        answers: ['upward', 'wall']
+      },
+      quiz: {
+        question: 'Why is bvy negative to go upward?',
+        options: [
+          'Canvas y = 0 is the top of the screen, so negative y moves up',
+          'Negative numbers are always faster',
+          'Python requires negative velocity for balls'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 3,
+      title: 'Paddle Spin',
+      goal: 'Make the ball bounce off the paddle with angle control.',
+      points: [
+        'When the ball touches the paddle, reverse its vertical direction',
+        'Calculate an <code>offset</code>: how far from the paddle centre the ball hit',
+        'Use <code>offset = (bx - (px + pw / 2)) / (pw / 2)</code> to get a value from -1 (left edge) to +1 (right edge)',
+        'Set <code>bvx = offset * 5</code> so hitting the left side sends the ball left, right side sends it right'
+      ],
+      challenge: '\uD83D\uDC0D Write the paddle bounce with spin:',
+      starter: '# Bounce off paddle with angle control\nif by + br >= py and by + br <= py + ph and bx >= px and bx <= px + pw:\n    bvy = -abs(bvy)\n    offset = (bx - (px + pw / 2)) / (pw / ___)\n    bvx = offset * ___',
+      solution: '# Bounce off paddle with angle control\nif by + br >= py and by + br <= py + ph and bx >= px and bx <= px + pw:\n    bvy = -abs(bvy)\n    offset = (bx - (px + pw / 2)) / (pw / 2)\n    bvx = offset * 5',
+      checks: ['offset', 'bvy', 'bvx', 'abs'],
+      height: 160,
+      fills: {
+        text: 'The offset ranges from ___ (left edge) to +1 (right edge). Multiplying by ___ sets the horizontal speed based on where the ball hit.',
+        answers: ['-1', '5']
+      },
+      quiz: {
+        question: 'Why calculate an offset instead of just reversing bvy?',
+        options: [
+          'Without offset the ball always bounces straight up - the player has no way to aim',
+          'The offset makes the ball go faster',
+          'Python requires offset calculations for all collisions'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 4,
+      title: 'The Brick Wall',
+      goal: 'Build a grid of colourful bricks at the top of the screen.',
+      points: [
+        'The wall has 5 rows and 8 columns of bricks, each 60 wide and 20 tall',
+        'Each row gets a different colour: red, orange, yellow, green, blue',
+        'Store every brick as an object: <code>{x, y, w, h, alive, color}</code>',
+        'A nested loop builds the grid: <code>for r in range(5): for c in range(8):</code>'
+      ],
+      challenge: '\uD83D\uDC0D Define the brick grid dimensions:',
+      starter: '# Brick grid settings\nbrickRows = ___\nbrickCols = ___\nbrickW = 60\nbrickH = 20\nrowColors = ["#f43f5e", "#f97316", "#facc15", "#34d399", "#38bdf8"]',
+      solution: '# Brick grid settings\nbrickRows = 5\nbrickCols = 8\nbrickW = 60\nbrickH = 20\nrowColors = ["#f43f5e", "#f97316", "#facc15", "#34d399", "#38bdf8"]',
+      checks: ['5', '8', '60', '20'],
+      height: 150,
+      fills: {
+        text: 'The wall has ___ rows and ___ columns. That gives 40 bricks total, each worth 10 points.',
+        answers: ['5', '8']
+      },
+      quiz: {
+        question: 'Why store each brick as an object with an alive property?',
+        options: [
+          'Objects look fancier in code',
+          'When the ball hits a brick, setting alive=false hides it without removing it from the array - simpler than splicing',
+          'Python lists only hold objects'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Smashing & Scoring',
+      goal: 'Detect ball-brick collisions, smash bricks and earn points.',
+      points: [
+        'Loop through every brick. If it is alive, check if the ball overlaps it',
+        'Collision: <code>bx + br > brick.x</code> AND <code>bx - br < brick.x + brick.w</code> AND same for y',
+        'On hit: set <code>alive = false</code>, add 10 to score, reverse <code>bvy</code>',
+        'Break after the first hit each frame so the ball does not tunnel through multiple bricks'
+      ],
+      challenge: '\uD83D\uDC0D Write the brick collision loop:',
+      starter: '# Check each brick for collision\nfor i in range(len(bricks)):\n    b = bricks[i]\n    if b.alive and bx + br > b.x and bx - br < b.x + b.w and by + br > b.y and by - br < b.y + b.h:\n        b.alive = ___\n        score += ___\n        bvy = -bvy\n        break',
+      solution: '# Check each brick for collision\nfor i in range(len(bricks)):\n    b = bricks[i]\n    if b.alive and bx + br > b.x and bx - br < b.x + b.w and by + br > b.y and by - br < b.y + b.h:\n        b.alive = False\n        score += 10\n        bvy = -bvy\n        break',
+      checks: ['alive', 'score', 'bvy', 'break'],
+      height: 200,
+      fills: {
+        text: 'Each smashed brick adds ___ points. The break statement stops the loop after the ___ hit per frame.',
+        answers: ['10', 'first']
+      },
+      quiz: {
+        question: 'Why break after the first brick hit?',
+        options: [
+          'Python cannot continue loops after an if',
+          'Without break the ball could destroy an entire row in one frame by tunnelling through - break limits it to one brick per frame',
+          'Break makes the game run faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Lives, Loss & Victory',
+      goal: 'Handle ball loss, game over, win condition and restart.',
+      points: [
+        'When the ball falls below the paddle (<code>by - br > 400</code>): lose a life, reset ball to centre',
+        'At 0 lives: <code>gameState = "over"</code> and show GAME OVER',
+        'When all bricks have <code>alive = false</code>: <code>gameState = "win"</code> and show YOU WIN',
+        'Press R to restart: reset score, lives, ball, and rebuild all bricks'
+      ],
+      challenge: '\uD83D\uDC0D Write the win check:',
+      starter: '# Check if all bricks are destroyed\nallDead = True\nfor i in range(len(bricks)):\n    if bricks[i].alive:\n        allDead = ___\n        break\nif allDead:\n    gameState = "___"',
+      solution: '# Check if all bricks are destroyed\nallDead = True\nfor i in range(len(bricks)):\n    if bricks[i].alive:\n        allDead = False\n        break\nif allDead:\n    gameState = "win"',
+      checks: ['alldead', 'alive', 'win', 'false'],
+      height: 200,
+      fills: {
+        text: 'The player starts with ___ lives. When all bricks are destroyed, the game state changes to "___".',
+        answers: ['3', 'win']
+      },
+      quiz: {
+        question: 'Why loop through all bricks to check for a win?',
+        options: [
+          'Counting destroyed bricks would use too much memory',
+          'Checking alive on every brick is the simplest way to know if any remain - no extra counter needed, and it stops early with break',
+          'Python cannot count array elements'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

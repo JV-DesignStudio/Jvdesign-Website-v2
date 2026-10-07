@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defold Puzzle Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(45,212,191,.15);color:#2dd4bf;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Defold Puzzle Build Canvas <span class="cw-lang-tag">&#x1f3ae; Defold</span></h1>
+  <p>Write Defold Lua game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Defold Puzzle game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">An 8x8 grid of coloured tiles on a dark background</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Defold Lua-to-JS transpiler
+   =================================================== */
+function defoldToJs(code) {
+  return code
+    .replace(/--(.*)$/gm, '//$1')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bself\.(\w+)/g, 'self_$1')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\.\s*/g, '+ ')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\btable\.insert\s*\(\s*(\w+)\s*,\s*/g, '$1.push(')
+    .replace(/\bmath\.random\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\bmath\.floor\s*\(/g, 'Math.floor(')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Defold Puzzle)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f172a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="320" height="360"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");const COLS=8,ROWS=8,TILE=40;';
+
+var COLORS = 'var tileColors=["#ef4444","#3b82f6","#22c55e","#fbbf24","#a855f7"];';
+
+var GRID_INIT = 'var grid=[];function fillGrid(){grid=[];for(var r=0;r<ROWS;r++){grid[r]=[];for(var c=0;c<COLS;c++){grid[r][c]=Math.floor(Math.random()*5)}}}fillGrid();';
+
+var SCORE_VARS = 'let score=0;';
+
+var SELECT_VARS = 'let selR=-1,selC=-1;';
+
+var CLICK_HANDLER = 'canvas.addEventListener("click",function(e){var rect=canvas.getBoundingClientRect();' +
+  'var mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
+  'var c=Math.floor(mx/TILE),r=Math.floor(my/TILE);' +
+  'if(r<0||r>=ROWS||c<0||c>=COLS)return;' +
+  'if(selR===-1){selR=r;selC=c}else{' +
+  'var dr=Math.abs(r-selR),dc=Math.abs(c-selC);' +
+  'if((dr===1&&dc===0)||(dr===0&&dc===1)){' +
+  'var tmp=grid[selR][selC];grid[selR][selC]=grid[r][c];grid[r][c]=tmp;' +
+  'var matches=findMatches();if(matches.length>0){clearMatches(matches);dropTiles();refill()}' +
+  'else{var tmp2=grid[selR][selC];grid[selR][selC]=grid[r][c];grid[r][c]=tmp2}}' +
+  'selR=-1;selC=-1}});';
+
+var MATCH_FN = 'function findMatches(){var m=[];' +
+  'for(var r=0;r<ROWS;r++){for(var c=0;c<COLS-2;c++){if(grid[r][c]===grid[r][c+1]&&grid[r][c]===grid[r][c+2]){m.push([r,c],[r,c+1],[r,c+2])}}}' +
+  'for(var c=0;c<COLS;c++){for(var r=0;r<ROWS-2;r++){if(grid[r][c]===grid[r+1][c]&&grid[r][c]===grid[r+2][c]){m.push([r,c],[r+1,c],[r+2,c])}}}' +
+  'return m}';
+
+var CLEAR_FN = 'function clearMatches(m){for(var i=0;i<m.length;i++){grid[m[i][0]][m[i][1]]=-1;score++}}';
+
+var DROP_FN = 'function dropTiles(){for(var c=0;c<COLS;c++){var write=ROWS-1;for(var r=ROWS-1;r>=0;r--){if(grid[r][c]!==-1){grid[write][c]=grid[r][c];write--}}while(write>=0){grid[write][c]=-1;write--}}}';
+
+var REFILL_FN = 'function refill(){var again=false;for(var r=0;r<ROWS;r++){for(var c=0;c<COLS;c++){if(grid[r][c]===-1){grid[r][c]=Math.floor(Math.random()*5);again=true}}}' +
+  'if(again){var m2=findMatches();if(m2.length>0){clearMatches(m2);dropTiles();refill()}}}';
+
+var DRAW_BG = 'ctx.fillStyle="#0f172a";ctx.fillRect(0,0,320,360);';
+
+var DRAW_GRID = 'for(var dr=0;dr<ROWS;dr++){for(var dc=0;dc<COLS;dc++){if(grid[dr][dc]>=0){ctx.fillStyle=tileColors[grid[dr][dc]];' +
+  'ctx.fillRect(dc*TILE+2,dr*TILE+2,TILE-4,TILE-4);' +
+  'if(dr===selR&&dc===selC){ctx.strokeStyle="#fff";ctx.lineWidth=3;ctx.strokeRect(dc*TILE+1,dr*TILE+1,TILE-2,TILE-2)}}}}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("Score: "+score,160,350);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Defold Puzzle steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-defold-puzzle-canvas',
+  downloadName: 'my-defold-puzzle.html',
+
+  hints: [
+    'An 8x8 grid of coloured tiles on a dark background',
+    'Click a tile to select it - a white border highlights it',
+    'Click an adjacent tile to swap the two',
+    'Three or more matching colours in a row or column are cleared',
+    'Tiles above drop down to fill gaps, new tiles appear at the top',
+    'Score grows with each tile cleared - chain combos for bonus points'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + COLORS + GRID_INIT +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GRID +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + COLORS + GRID_INIT + SELECT_VARS +
+        'canvas.addEventListener("click",function(e){var rect=canvas.getBoundingClientRect();' +
+        'var mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
+        'try{' + defoldToJs(u) + '}catch(e){}});' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GRID +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + COLORS + GRID_INIT + SELECT_VARS +
+        'canvas.addEventListener("click",function(e){var rect=canvas.getBoundingClientRect();' +
+        'var mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
+        'var c=Math.floor(mx/TILE),r=Math.floor(my/TILE);' +
+        'if(r<0||r>=ROWS||c<0||c>=COLS)return;' +
+        'if(selR===-1){selR=r;selC=c}else{' +
+        'var dr=Math.abs(r-selR),dc=Math.abs(c-selC);' +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'selR=-1;selC=-1}});' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GRID +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + COLORS + GRID_INIT + SELECT_VARS + SCORE_VARS +
+        MATCH_FN +
+        CLICK_HANDLER +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'function clearMatches(m){for(var i=0;i<m.length;i++){grid[m[i][0]][m[i][1]]=-1;score++}}' +
+        'function dropTiles(){}function refill(){for(var r=0;r<ROWS;r++){for(var c=0;c<COLS;c++){if(grid[r][c]===-1)grid[r][c]=Math.floor(Math.random()*5)}}}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GRID + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + COLORS + GRID_INIT + SELECT_VARS + SCORE_VARS +
+        MATCH_FN + CLEAR_FN +
+        CLICK_HANDLER +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        DROP_FN +
+        'function refill(){for(var r=0;r<ROWS;r++){for(var c=0;c<COLS;c++){if(grid[r][c]===-1)grid[r][c]=Math.floor(Math.random()*5)}}}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GRID + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + COLORS + GRID_INIT + SELECT_VARS + SCORE_VARS +
+        MATCH_FN + CLEAR_FN + DROP_FN + REFILL_FN +
+        CLICK_HANDLER +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GRID + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Tile Grid',
+      goal: 'Fill an 8x8 grid with random coloured tiles.',
+      points: [
+        'The grid is 8 columns by 8 rows, each tile is 40x40 pixels (320x320)',
+        'Five tile colours: red, blue, green, yellow, purple (indices 0-4)',
+        'Each cell stores a colour index: <code>math.random(0, 4)</code>',
+        'In Defold you would use a grid of game objects created by a factory'
+      ],
+      challenge: '🎮 Fill the grid with random tiles:',
+      starter: '-- Fill each cell with a random colour\nlocal grid = {}\nfor r = 0, 7 do\n    grid[r] = {}\n    for c = 0, 7 do\n        grid[r][c] = math.random(0, ___)\n    end\nend',
+      solution: '-- Fill each cell with a random colour\nlocal grid = {}\nfor r = 0, 7 do\n    grid[r] = {}\n    for c = 0, 7 do\n        grid[r][c] = math.random(0, 4)\n    end\nend',
+      checks: ['math.random', '4', 'grid'],
+      height: 180,
+      fills: {
+        text: 'There are ___ different tile colours. The grid has ___ total cells.',
+        answers: ['5', '64']
+      },
+      quiz: {
+        question: 'Why use colour indices (0-4) instead of colour strings?',
+        options: [
+          'Strings are too long',
+          'Integer comparison is fast and simple - matching "is grid[r][c] == grid[r][c+1]?" works cleanly with numbers',
+          'Defold only stores numbers'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Tile Selection',
+      goal: 'Click a tile to select it, shown with a white border.',
+      points: [
+        'Convert mouse click (pixels) to grid position: <code>col = math.floor(mx / 40)</code>',
+        'Store selected row and column: selR, selC. Set to -1 when nothing selected',
+        'Draw a white border around the selected tile',
+        'In Defold you would use <code>on_input()</code> with touch or mouse action'
+      ],
+      challenge: '🎮 Write the tile selection from click position:',
+      starter: '-- Convert click to grid position\nlocal c = math.floor(mx / ___)\nlocal r = math.floor(my / ___)\n\n-- Select the tile\nselR = r\nselC = c',
+      solution: '-- Convert click to grid position\nlocal c = math.floor(mx / TILE)\nlocal r = math.floor(my / TILE)\n\n-- Select the tile\nselR = r\nselC = c',
+      checks: ['math.floor', 'selr', 'selc'],
+      height: 140,
+      fills: {
+        text: 'Each tile is ___ pixels wide. Dividing mouse position by tile size converts pixels to ___ coordinates.',
+        answers: ['40', 'grid']
+      },
+      quiz: {
+        question: 'In Defold, how do you detect which game object was clicked?',
+        options: [
+          'Check the sprite colour',
+          'Use on_input to get screen coordinates, then convert to world position or use a GUI node with pick_node',
+          'Objects detect clicks automatically'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Swapping Tiles',
+      goal: 'Click a second adjacent tile to swap them.',
+      points: [
+        'Adjacent means exactly 1 tile apart horizontally or vertically (not diagonal)',
+        'Check: <code>(dr == 1 and dc == 0) or (dr == 0 and dc == 1)</code>',
+        'Swap using a temporary variable: <code>tmp = grid[selR][selC]; grid[selR][selC] = grid[r][c]; grid[r][c] = tmp</code>',
+        'After the swap, clear selection by setting selR = -1'
+      ],
+      challenge: '🎮 Write the adjacency check and swap:',
+      starter: '-- Check if tiles are adjacent\nlocal dr = math.abs(r - selR)\nlocal dc = math.abs(c - selC)\nif (dr == ___ and dc == 0) or (dr == 0 and dc == ___) then\n    -- Swap the tiles\n    local tmp = grid[selR][selC]\n    grid[selR][selC] = grid[r][c]\n    grid[r][c] = tmp\nend',
+      solution: '-- Check if tiles are adjacent\nlocal dr = math.abs(r - selR)\nlocal dc = math.abs(c - selC)\nif (dr == 1 and dc == 0) or (dr == 0 and dc == 1) then\n    -- Swap the tiles\n    local tmp = grid[selR][selC]\n    grid[selR][selC] = grid[r][c]\n    grid[r][c] = tmp\nend',
+      checks: ['math.abs', '1', '0', 'tmp'],
+      height: 200,
+      fills: {
+        text: 'Adjacent tiles are exactly ___ step apart. Diagonal swaps are ___ in this match-3 game.',
+        answers: ['1', 'not allowed']
+      },
+      quiz: {
+        question: 'Why only allow adjacent swaps?',
+        options: [
+          'Distant swaps are too hard to code',
+          'Adjacency-only swaps force strategic thinking - you must plan moves to create matches nearby',
+          'The grid is too small for distant swaps'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Match Detection',
+      goal: 'Find 3 or more tiles of the same colour in a row or column.',
+      points: [
+        'Scan every row: compare grid[r][c] with grid[r][c+1] and grid[r][c+2]',
+        'Scan every column: compare grid[r][c] with grid[r+1][c] and grid[r+2][c]',
+        'If all three match, add their positions to the matches list',
+        'A match of 4 or 5 naturally emerges from overlapping 3-matches'
+      ],
+      challenge: '🎮 Write the horizontal match scan:',
+      starter: '-- Scan rows for 3 in a row\nfor r = 0, 7 do\n    for c = 0, ___ do\n        if grid[r][c] == grid[r][c+1] and grid[r][c] == grid[r][c+___] then\n            -- Found a match!\n        end\n    end\nend',
+      solution: '-- Scan rows for 3 in a row\nfor r = 0, 7 do\n    for c = 0, 5 do\n        if grid[r][c] == grid[r][c+1] and grid[r][c] == grid[r][c+2] then\n            -- Found a match!\n        end\n    end\nend',
+      checks: ['5', '2', 'grid'],
+      height: 180,
+      fills: {
+        text: 'The column loop stops at ___ (not 7) to avoid reading past the grid edge. A match needs ___ consecutive same-colour tiles.',
+        answers: ['5', '3']
+      },
+      quiz: {
+        question: 'Why stop the loop at column 5 for a horizontal scan?',
+        options: [
+          'Column 5 is the last visible column',
+          'Checking c, c+1, c+2 from column 6 would read column 8 which does not exist - stopping at 5 prevents an out-of-bounds error',
+          'Five matches are the maximum'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Dropping Tiles',
+      goal: 'After clearing matches, tiles above fall down to fill the gaps.',
+      points: [
+        'Cleared tiles are set to -1 (empty)',
+        'For each column: scan from bottom up, moving non-empty tiles down',
+        'Use a write pointer that starts at the bottom and works up',
+        'Fill remaining empty cells at the top with -1 for the refill step'
+      ],
+      challenge: '🎮 Write the drop logic for one column:',
+      starter: '-- Drop tiles down in a column\nlocal write = ROWS - 1\nfor r = ROWS - 1, 0, -1 do\n    if grid[r][c] ~= ___ then\n        grid[write][c] = grid[r][c]\n        write = write - ___\n    end\nend',
+      solution: '-- Drop tiles down in a column\nlocal write = ROWS - 1\nfor r = ROWS - 1, 0, -1 do\n    if grid[r][c] ~= -1 then\n        grid[write][c] = grid[r][c]\n        write = write - 1\n    end\nend',
+      checks: ['-1', 'write', 'grid'],
+      height: 180,
+      fills: {
+        text: 'Empty tiles are marked ___. The write pointer moves ___ as tiles are placed.',
+        answers: ['-1', 'up']
+      },
+      quiz: {
+        question: 'Why scan from bottom to top when dropping tiles?',
+        options: [
+          'Top-down would mix up the order',
+          'Scanning bottom-up lets you stack surviving tiles correctly - the lowest non-empty tile goes to the lowest open slot',
+          'Lua loops are bottom-up by default'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Refill & Chain Combos',
+      goal: 'Fill empty cells with new random tiles and check for chain matches.',
+      points: [
+        'Replace every -1 cell with a new random colour (0-4)',
+        'After refilling, check for matches again - this creates chain combos',
+        'If new matches found: clear, drop, and refill recursively',
+        'Chain combos are what make match-3 games exciting - one move can cascade'
+      ],
+      challenge: '🎮 Write the refill with chain detection:',
+      starter: '-- Refill empty cells\nfor r = 0, 7 do\n    for c = 0, 7 do\n        if grid[r][c] == ___ then\n            grid[r][c] = math.random(0, ___)\n        end\n    end\nend\n-- Check for new matches (chain combo)',
+      solution: '-- Refill empty cells\nfor r = 0, 7 do\n    for c = 0, 7 do\n        if grid[r][c] == -1 then\n            grid[r][c] = math.random(0, 4)\n        end\n    end\nend\n-- Check for new matches (chain combo)',
+      checks: ['-1', 'math.random', '4'],
+      height: 180,
+      fills: {
+        text: 'Chain combos happen when new tiles create ___ matches. This recursive clear-drop-refill cycle is the core loop of every ___-3 game.',
+        answers: ['additional', 'match']
+      },
+      quiz: {
+        question: 'What makes chain combos satisfying in match-3 games?',
+        options: [
+          'More colours appear',
+          'The player makes ONE move but gets MULTIPLE scoring events - an unexpected reward from a single decision',
+          'The grid gets smaller'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

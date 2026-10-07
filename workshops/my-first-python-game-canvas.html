@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My First Python Game Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(52,211,153,.15);color:#34d399;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>My First Python Game Build Canvas <span class="cw-lang-tag">&#x1f40d; Python</span></h1>
+  <p>Write Python game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your first Python game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue catcher at the bottom of a dark sky</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Python-to-JS transpiler (light transform so Python
+   syntax runs in the canvas iframe)
+   =================================================== */
+function pyToJs(code) {
+  return code
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    .replace(/\bNone\b/g, 'null')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\belif\b/g, 'else if')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||')
+    .replace(/\bnot\b/g, '!')
+    .replace(/\blen\s*\(/g, '(')
+    .replace(/\.append\s*\(/g, '.push(')
+    .replace(/\brandom\.randint\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/#.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (My First Python Game)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var CATCHER_VARS = 'let cx=260,cy=370,cw=80,ch=20;';
+
+var SPEED_VAR = 'let speed=5;';
+
+var STAR_VARS = 'let sx=Math.floor(Math.random()*560)+20,sy=-10,sr=10,starSpeed=3;';
+
+var SCORE_VAR = 'let score=0;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var MOVE_CATCHER = 'if(leftHeld)cx-=speed;if(rightHeld)cx+=speed;cx=Math.max(0,Math.min(600-cw,cx));';
+
+var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,600,400);';
+
+var DRAW_CATCHER = 'ctx.fillStyle="#3b82f6";ctx.fillRect(cx,cy,cw,ch);';
+
+var DRAW_STAR = 'ctx.fillStyle="#facc15";ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();';
+
+var STAR_FALL = 'sy+=starSpeed;';
+
+var STAR_RESET = 'function resetStar(){sx=Math.floor(Math.random()*560)+20;sy=-10}';
+
+var STAR_CATCH = 'if(sy+sr>=cy&&sy-sr<=cy+ch&&sx+sr>=cx&&sx-sr<=cx+cw){score++;resetStar()}';
+
+var STAR_MISS = 'if(sy>410){resetStar()}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 22px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,16,32);';
+
+var DRAW_CONGRATS = 'if(score>=10){ctx.fillStyle="#facc15";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("Amazing! You scored 10!",300,200);ctx.textAlign="left"}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - My First Python Game steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-my-first-python-canvas',
+  downloadName: 'my-first-python-game.html',
+
+  hints: [
+    'A blue catcher at the bottom of a dark sky',
+    'The catcher slides left and right with the arrow keys',
+    'A yellow star falls from the top of the sky',
+    'Catching the star scores a point and a new star appears',
+    'The score is shown at the top of the screen with a congratulations at 10',
+    'The game has your own custom colours, sizes or speed'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + SPEED_VAR + KEYS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_CATCHER +
+        DRAW_BG + DRAW_CATCHER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + SPEED_VAR + KEYS +
+        'function loop(){' +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'cx=Math.max(0,Math.min(600-cw,cx));' +
+        DRAW_BG + DRAW_CATCHER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + SPEED_VAR + STAR_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'if(sy>410)resetStar();' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + SPEED_VAR + STAR_VARS + SCORE_VAR + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER + STAR_FALL +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'if(sy>410)resetStar();' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + SPEED_VAR + STAR_VARS + SCORE_VAR + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + SPEED_VAR + STAR_VARS + SCORE_VAR + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE + DRAW_CONGRATS +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Catcher',
+      goal: 'Draw a blue rectangle at the bottom of the screen. This is your catcher!',
+      points: [
+        'The canvas is 600 pixels wide and 400 pixels tall with a dark sky background (<code>#1a1a2e</code>)',
+        'The catcher is a blue rectangle: 80 wide, 20 tall, sitting near the bottom at y = 370',
+        'In Pygame you would write <code>pygame.Rect(260, 370, 80, 20)</code> - here the engine stores <code>cx, cy, cw, ch</code>',
+        'The catcher starts centred: x = (600 - 80) / 2 = 260'
+      ],
+      challenge: '🐍 Set the catcher position and size:',
+      starter: '# Set the catcher starting position\ncx = ___\ncy = ___\ncw = 80\nch = 20',
+      solution: '# Set the catcher starting position\ncx = 260\ncy = 370\ncw = 80\nch = 20',
+      checks: ['260', '370', '80', '20'],
+      height: 120,
+      fills: {
+        text: 'The catcher starts at x = ___ so it appears centred. It sits at y = ___ near the bottom of the screen.',
+        answers: ['260', '370']
+      },
+      quiz: {
+        question: 'Why does the catcher start at x = 260?',
+        options: [
+          'It is a random number',
+          '(600 - 80) / 2 = 260, which centres an 80-pixel-wide shape on a 600-pixel canvas',
+          'All games start at 260'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Arrow Keys',
+      goal: 'Move the catcher left and right with the arrow keys. Keep it on screen!',
+      points: [
+        'The engine tracks <code>leftHeld</code> and <code>rightHeld</code> - in Pygame you would use <code>pygame.key.get_pressed()</code>',
+        'Move by <code>speed</code> (5) pixels each frame while a key is held',
+        'Clamp with <code>max(0, min(600 - cw, cx))</code> so the catcher never leaves the screen',
+        'Holding a key gives smooth movement instead of one step per press'
+      ],
+      challenge: '🐍 Write the movement logic:',
+      starter: '# Move with arrow keys\nif leftHeld:\n    cx -= ___\nif rightHeld:\n    cx += ___\n\n# Stay on screen\ncx = max(0, min(___ - cw, cx))',
+      solution: '# Move with arrow keys\nif leftHeld:\n    cx -= speed\nif rightHeld:\n    cx += speed\n\n# Stay on screen\ncx = max(0, min(600 - cw, cx))',
+      checks: ['leftheld', 'rightheld', 'speed', '600'],
+      height: 180,
+      fills: {
+        text: 'The catcher moves ___ pixels per frame. Clamping to 600 - cw stops it leaving the ___ side.',
+        answers: ['5', 'right']
+      },
+      quiz: {
+        question: 'What does clamping mean here?',
+        options: [
+          'It makes the catcher jump',
+          'It limits the catcher position so it cannot go past the screen edges',
+          'It speeds up the catcher'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'A Falling Star',
+      goal: 'A yellow star falls from a random spot at the top. When it goes off screen, it resets.',
+      points: [
+        'The star starts above the screen at <code>sy = -10</code> so it slides in smoothly',
+        'Each frame: <code>sy += starSpeed</code> moves it downward (3 pixels per frame)',
+        'In Pygame: <code>star_y += 3</code> does the same thing',
+        'When it passes the bottom (<code>sy > 410</code>), reset to the top at a new random x'
+      ],
+      challenge: '🐍 Write the star falling and reset logic:',
+      starter: '# Move the star down\nsy += ___\n\n# Reset when off screen\nif sy > ___:\n    sx = random.randint(20, 560)\n    sy = -10',
+      solution: '# Move the star down\nsy += starSpeed\n\n# Reset when off screen\nif sy > 410:\n    sx = random.randint(20, 560)\n    sy = -10',
+      checks: ['starspeed', '410', 'randint'],
+      height: 160,
+      fills: {
+        text: 'The star falls ___ pixels each frame. It resets when it passes y = ___ at the bottom.',
+        answers: ['3', '410']
+      },
+      quiz: {
+        question: 'Why start the star at sy = -10 instead of sy = 0?',
+        options: [
+          'Negative numbers are faster',
+          'Starting above the screen means the star slides smoothly into view instead of popping in at the edge',
+          'The star needs to warm up'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Catching!',
+      goal: 'When the star touches the catcher, score a point and reset the star.',
+      points: [
+        'The star is caught when it overlaps the catcher rectangle',
+        'Check: star bottom reaches catcher top AND star is within the catcher width',
+        'On catch: <code>score += 1</code> and call <code>resetStar()</code> to send it back to the top',
+        'This overlap check is called collision detection - every game uses it!'
+      ],
+      challenge: '🐍 Write the catch check:',
+      starter: '# Did the star hit the catcher?\nif sy + sr >= ___ and sx >= ___ and sx <= cx + cw:\n    score += 1\n    resetStar()',
+      solution: '# Did the star hit the catcher?\nif sy + sr >= cy and sx >= cx and sx <= cx + cw:\n    score += 1\n    resetStar()',
+      checks: ['score', 'resetstar', 'cy', 'cx'],
+      height: 120,
+      fills: {
+        text: 'The star is caught when its y position reaches the catcher at y = ___. Each catch adds ___ to the score.',
+        answers: ['370', '1']
+      },
+      quiz: {
+        question: 'Why check both the y position AND the x position?',
+        options: [
+          'Checking only y would count a catch even if the star fell on the other side of the screen',
+          'Python requires two checks',
+          'It makes the game slower'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Score Display',
+      goal: 'Show the score on screen. When the player reaches 10, show a congratulations!',
+      points: [
+        'Use <code>ctx.fillText</code> to draw text on the canvas - like <code>screen.blit(font.render(...))</code> in Pygame',
+        'Draw the score in white at the top-left corner',
+        'When score reaches 10, show a golden congratulations message in the centre',
+        'Giving the player a goal (reach 10!) makes the game more fun'
+      ],
+      challenge: '🐍 Write the score and congratulations display:',
+      starter: '# Draw the score\nctx.fillStyle = "___"\nctx.font = "bold 22px monospace"\nctx.fillText("Score: " + str(score), 16, 32)\n\n# Congratulations at 10!\nif score >= ___:\n    ctx.fillStyle = "#facc15"\n    ctx.fillText("Amazing!", 250, 200)',
+      solution: '# Draw the score\nctx.fillStyle = "#fff"\nctx.font = "bold 22px monospace"\nctx.fillText("Score: " + str(score), 16, 32)\n\n# Congratulations at 10!\nif score >= 10:\n    ctx.fillStyle = "#facc15"\n    ctx.fillText("Amazing!", 250, 200)',
+      checks: ['filltext', 'score', '10', 'fff'],
+      height: 200,
+      fills: {
+        text: 'The score is drawn in ___ colour. A congratulations appears when the player catches ___ stars.',
+        answers: ['white', '10']
+      },
+      quiz: {
+        question: 'Why draw the score every single frame instead of only when it changes?',
+        options: [
+          'The canvas is cleared and redrawn every frame, so everything must be drawn again each time',
+          'Python forgets variables between frames',
+          'It makes the number flash'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 6,
+      title: 'Make It Yours',
+      goal: 'Customise your game! Change a colour, size, or speed to make it your own.',
+      points: [
+        'Try changing the catcher colour from blue to your favourite colour',
+        'Make the star bigger or smaller by changing <code>sr</code> (the radius)',
+        'Speed things up or slow them down by changing <code>starSpeed</code> or <code>speed</code>',
+        'There are no wrong answers here - experiment and have fun!'
+      ],
+      challenge: '🐍 Change at least one value to make it yours:',
+      starter: '# Make it yours! Change any values you like\nspeed = ___\nstarSpeed = ___\ncw = ___',
+      solution: '# Make it yours! Change any values you like\nspeed = 7\nstarSpeed = 4\ncw = 100',
+      checks: ['speed', 'starspeed', 'cw'],
+      height: 100,
+      fills: {
+        text: 'Increasing speed makes the catcher move ___. A bigger cw makes catching ___.',
+        answers: ['faster', 'easier']
+      },
+      quiz: {
+        question: 'What is the best way to learn game development?',
+        options: [
+          'Read a textbook cover to cover',
+          'Change things, see what happens, and build your own ideas on top of what you learned',
+          'Copy someone else\'s game exactly'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

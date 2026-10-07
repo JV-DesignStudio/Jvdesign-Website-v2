@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scratch Quiz Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,191,36,.15);color:#fbbf24;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Scratch Quiz Build Canvas <span class="cw-lang-tag">&#x1f431; Scratch</span></h1>
+  <p>Write Scratch block code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Scratch Quiz game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A question displayed on stage with three answer buttons</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Scratch-to-JS transpiler (block notation to JS)
+   =================================================== */
+function scratchToJs(code) {
+  return code
+    .replace(/when green flag clicked/g, '')
+    .replace(/forever/g, '')
+    .replace(/end/g, '}')
+    .replace(/if <key \[1\] pressed\?> then/g, 'if(key1){')
+    .replace(/if <key \[2\] pressed\?> then/g, 'if(key2){')
+    .replace(/if <key \[3\] pressed\?> then/g, 'if(key3){')
+    .replace(/if <key \[space\] pressed\?> then/g, 'if(spaceHeld){')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
+    .replace(/say \[([^\]]+)\]/g, 'feedback="$1";')
+    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
+    .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\/\/.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Scratch Quiz)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="480" height="360"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var QUIZ_DATA = 'var questions=[' +
+  '{q:"What colour is the Scratch cat?",a:["Orange","Blue","Green"],c:0},' +
+  '{q:"How many lives does a cat have?",a:["7","9","3"],c:1},' +
+  '{q:"What shape is a stop sign?",a:["Circle","Octagon","Square"],c:1},' +
+  '{q:"How many days in a week?",a:["5","6","7"],c:2},' +
+  '{q:"What does the green flag do?",a:["Stop","Start","Pause"],c:1}' +
+  '];';
+
+var QUIZ_VARS = 'let qIndex=0,score=0,total=5,feedback="",feedTimer=0;';
+
+var TIMER_VARS = 'let timeLeft=10,lastTick=Date.now();';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let key1=false,key2=false,key3=false,spaceHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="Digit1"||e.code==="Numpad1")key1=true;' +
+    'if(e.code==="Digit2"||e.code==="Numpad2")key2=true;' +
+    'if(e.code==="Digit3"||e.code==="Numpad3")key3=true;' +
+    'if(e.code==="Space")spaceHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'key1=false;key2=false;key3=false;spaceHeld=false});';
+
+var CLICK_HANDLER = 'canvas.addEventListener("click",function(e){' +
+  'var r=canvas.getBoundingClientRect(),y=e.clientY-r.top;' +
+  'if(y>=160&&y<210)key1=true;else if(y>=220&&y<270)key2=true;else if(y>=280&&y<330)key3=true});';
+
+var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,480,360);';
+
+var DRAW_QUESTION = 'if(qIndex<questions.length){var q=questions[qIndex];' +
+  'ctx.fillStyle="#fbbf24";ctx.font="bold 20px monospace";ctx.textAlign="center";' +
+  'ctx.fillText("Question "+(qIndex+1)+" of "+total,240,40);' +
+  'ctx.fillStyle="#fff";ctx.font="18px monospace";ctx.fillText(q.q,240,80);' +
+  'var opts=q.a;for(var oi=0;oi<3;oi++){' +
+  'ctx.fillStyle=oi===0?"#3b82f6":oi===1?"#8b5cf6":"#ec4899";' +
+  'ctx.fillRect(80,160+oi*60,320,40);' +
+  'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="center";' +
+  'ctx.fillText((oi+1)+". "+opts[oi],240,185+oi*60)}}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,12,356);';
+
+var DRAW_TIMER = 'ctx.textAlign="right";ctx.fillText("Time: "+timeLeft,468,356);';
+
+var DRAW_FEEDBACK = 'if(feedTimer>0){ctx.fillStyle=feedback.indexOf("Correct")>=0?"#34d399":"#f43f5e";' +
+  'ctx.font="bold 22px monospace";ctx.textAlign="center";ctx.fillText(feedback,240,130);feedTimer--}';
+
+var CHECK_ANSWER = 'function checkAns(picked){if(qIndex>=questions.length||feedTimer>0)return;' +
+  'if(picked===questions[qIndex].c){score++;feedback="Correct!"}else{feedback="Wrong! Answer: "+questions[qIndex].a[questions[qIndex].c]}' +
+  'feedTimer=60;setTimeout(function(){qIndex++;timeLeft=10;if(qIndex>=questions.length)gameState="done"},1000)}';
+
+var TICK_TIMER = 'if(feedTimer<=0&&Date.now()-lastTick>=1000){timeLeft--;lastTick=Date.now();if(timeLeft<=0){feedback="Time up!";feedTimer=60;' +
+  'setTimeout(function(){qIndex++;timeLeft=10;if(qIndex>=questions.length)gameState="done"},1000)}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Scratch Quiz steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-scratch-quiz-canvas',
+  downloadName: 'my-scratch-quiz.html',
+
+  hints: [
+    'A question displayed on stage with three answer buttons',
+    'Click a button or press 1, 2, 3 to answer',
+    'Correct answers light up green, wrong ones show red',
+    'The score tracks how many you get right',
+    'A 10-second timer counts down for each question',
+    'Final results screen shows your total score'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + QUIZ_DATA + QUIZ_VARS + KEYS +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_QUESTION +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + QUIZ_DATA + QUIZ_VARS + KEYS + CLICK_HANDLER +
+        'function loop(){' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'key1=false;key2=false;key3=false;' +
+        DRAW_BG + DRAW_QUESTION +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + QUIZ_DATA + QUIZ_VARS + SCORE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER +
+        'function loop(){' +
+        'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'key1=false;key2=false;key3=false;' +
+        DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + QUIZ_DATA + QUIZ_VARS + TIMER_VARS + STATE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        'key1=false;key2=false;key3=false;' +
+        DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE + DRAW_TIMER +
+        'if(gameState==="done"){ctx.fillStyle="rgba(0,0,0,0.8)";ctx.fillRect(0,0,480,360);' +
+        'ctx.fillStyle="#fbbf24";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("QUIZ COMPLETE!",240,140);ctx.fillStyle="#fff";ctx.font="20px monospace";' +
+        'ctx.fillText("Score: "+score+" / "+total,240,180)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + QUIZ_DATA + QUIZ_VARS + TIMER_VARS + STATE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        TICK_TIMER +
+        'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        'key1=false;key2=false;key3=false;' +
+        DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE + DRAW_TIMER +
+        'if(gameState==="done"){ctx.fillStyle="rgba(0,0,0,0.8)";ctx.fillRect(0,0,480,360);' +
+        'ctx.fillStyle="#fbbf24";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("QUIZ COMPLETE!",240,140);ctx.fillStyle="#fff";ctx.font="20px monospace";' +
+        'ctx.fillText("Score: "+score+" / "+total,240,180)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + QUIZ_DATA + QUIZ_VARS + TIMER_VARS + STATE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="done"){qIndex=0;score=0;timeLeft=10;feedback="";feedTimer=0;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        TICK_TIMER +
+        'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        'key1=false;key2=false;key3=false;' +
+        DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE + DRAW_TIMER +
+        'if(gameState==="done"){ctx.fillStyle="rgba(0,0,0,0.8)";ctx.fillRect(0,0,480,360);' +
+        'ctx.fillStyle="#fbbf24";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("QUIZ COMPLETE!",240,140);ctx.fillStyle="#fff";ctx.font="20px monospace";' +
+        'ctx.fillText("Score: "+score+" / "+total,240,180);' +
+        'ctx.fillText(score>=4?"Amazing!":score>=2?"Good try!":"Keep practising!",240,215);' +
+        'ctx.font="16px monospace";ctx.fillText("Press R to play again",240,250)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Question Display',
+      goal: 'Show a question with three answer choices on stage.',
+      points: [
+        'Questions are stored in a list - each has a question, three answers, and which is correct',
+        'In Scratch: use a list variable for questions and <code>say</code> blocks to display them',
+        'Three coloured buttons show the answer choices: blue, purple, pink',
+        'The question number appears at the top: "Question 1 of 5"'
+      ],
+      challenge: '🐱 Set up the quiz data:',
+      starter: '// Set up quiz variables\nset [qIndex] to [___]\nset [score] to [___]\nset [total] to [5]',
+      solution: '// Set up quiz variables\nset [qIndex] to [0]\nset [score] to [0]\nset [total] to [5]',
+      checks: ['qindex', '0', 'score', '5'],
+      height: 100,
+      fills: {
+        text: 'The quiz starts at question index ___. There are ___ questions in total.',
+        answers: ['0', '5']
+      },
+      quiz: {
+        question: 'Why use an index variable instead of just "question 1"?',
+        options: [
+          'Indices sound more professional',
+          'An index lets you loop through any list of questions - change the questions without changing the code',
+          'Scratch requires indices'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Click or Press to Answer',
+      goal: 'Let players click buttons or press 1, 2, 3 to pick an answer.',
+      points: [
+        'In Scratch: <code>when this sprite clicked</code> handles button clicks',
+        'Keyboard shortcuts (1, 2, 3) give a faster way to answer',
+        'Both input methods work the same way - accessibility matters',
+        'The player can only answer once per question (no spam clicking)'
+      ],
+      challenge: '🐱 Set up answer input:',
+      starter: '// Press 1, 2, or 3 to answer\nif <key [1] pressed?> then\n  say [Picked answer ___]\nend\nif <key [2] pressed?> then\n  say [Picked answer ___]\nend\nif <key [3] pressed?> then\n  say [Picked answer 3]\nend',
+      solution: '// Press 1, 2, or 3 to answer\nif <key [1] pressed?> then\n  say [Picked answer 1]\nend\nif <key [2] pressed?> then\n  say [Picked answer 2]\nend\nif <key [3] pressed?> then\n  say [Picked answer 3]\nend',
+      checks: ['key', '1', '2', '3'],
+      height: 220,
+      fills: {
+        text: 'Players can click buttons or press ___, 2, 3 on the keyboard. Having two input methods improves ___.',
+        answers: ['1', 'accessibility']
+      },
+      quiz: {
+        question: 'Why offer both click and keyboard input?',
+        options: [
+          'Keyboard is broken sometimes',
+          'Different people prefer different inputs - some find clicking easier, others prefer keys, and touch screens need clicks',
+          'It fills more code space'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Right or Wrong Feedback',
+      goal: 'Show green "Correct!" or red "Wrong!" after each answer.',
+      points: [
+        'Compare the picked answer to the correct answer stored in the question data',
+        'Correct: <code>say [Correct!]</code> in green, add 1 to score',
+        'Wrong: show the right answer so the player learns',
+        'Feedback stays visible for 1 second then moves to the next question'
+      ],
+      challenge: '🐱 Write the answer checking:',
+      starter: '// Check if answer is correct\nchange [score] by [___]\nset [feedback] to [Correct!]\n\n// If wrong, show the right answer\nset [feedback] to [___]',
+      solution: '// Check if answer is correct\nchange [score] by [1]\nset [feedback] to [Correct!]\n\n// If wrong, show the right answer\nset [feedback] to [Wrong!]',
+      checks: ['score', '1', 'feedback', 'correct'],
+      height: 140,
+      fills: {
+        text: 'A correct answer adds ___ to the score. Showing the right answer after a wrong guess helps the player ___.',
+        answers: ['1', 'learn']
+      },
+      quiz: {
+        question: 'Why show the correct answer when the player is wrong?',
+        options: [
+          'To fill screen space',
+          'Immediate feedback teaches - the player learns the right answer and is more likely to remember it next time',
+          'Scratch requires showing answers'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Question Timer',
+      goal: 'Add a 10-second countdown for each question.',
+      points: [
+        'Each question gets 10 seconds - enough to read and think but creates urgency',
+        'The timer displays in the bottom-right: "Time: 10"',
+        'When time runs out, skip to the next question with no points',
+        'The timer resets to 10 for each new question'
+      ],
+      challenge: '🐱 Set up the timer:',
+      starter: '// Timer for each question\nset [timeLeft] to [___]\n\n// Each second\nchange [timeLeft] by [___]',
+      solution: '// Timer for each question\nset [timeLeft] to [10]\n\n// Each second\nchange [timeLeft] by [-1]',
+      checks: ['timeleft', '10', '-1'],
+      height: 100,
+      fills: {
+        text: 'Each question gets ___ seconds. The timer counts down by ___ each second.',
+        answers: ['10', '1']
+      },
+      quiz: {
+        question: 'Why 10 seconds per question instead of unlimited time?',
+        options: [
+          'Unlimited time crashes the browser',
+          'A time limit creates urgency and excitement - it tests quick thinking, not just knowledge',
+          'Scratch timers only go to 10'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Score Tracking',
+      goal: 'Track and display the running score throughout the quiz.',
+      points: [
+        'The score shows as "Score: 0" in the bottom-left corner',
+        'It updates instantly when a correct answer is given',
+        'In Scratch: the score variable can be shown on stage with "show variable"',
+        'Wrong answers and timeouts do not change the score'
+      ],
+      challenge: '🐱 Write the score display:',
+      starter: '// Display score\nset [score] to [___]\nset [total] to [___]',
+      solution: '// Display score\nset [score] to [0]\nset [total] to [5]',
+      checks: ['score', '0', 'total', '5'],
+      height: 80,
+      fills: {
+        text: 'The score starts at ___. The total possible score is ___, one per question.',
+        answers: ['0', '5']
+      },
+      quiz: {
+        question: 'Why show the score during the quiz instead of only at the end?',
+        options: [
+          'It uses less memory at the end',
+          'A running score motivates the player - seeing progress builds excitement and encourages trying harder on remaining questions',
+          'Scratch always shows variables'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Results and Restart',
+      goal: 'Show final results with a message based on score, press R to retry.',
+      points: [
+        'After all questions: show "QUIZ COMPLETE!" with the final score',
+        'Score 4-5: "Amazing!" / Score 2-3: "Good try!" / Score 0-1: "Keep practising!"',
+        'Pressing R resets everything for a fresh attempt',
+        'Challenge: try to get a perfect score of 5/5'
+      ],
+      challenge: '🐱 Write the results screen:',
+      starter: '// Show result message based on score\n// 4-5 correct:\nset [message] to [___]\n// 2-3 correct:\nset [message] to [Good try!]\n// 0-1 correct:\nset [message] to [___]',
+      solution: '// Show result message based on score\n// 4-5 correct:\nset [message] to [Amazing!]\n// 2-3 correct:\nset [message] to [Good try!]\n// 0-1 correct:\nset [message] to [Keep practising!]',
+      checks: ['amazing', 'good', 'keep', 'practising'],
+      height: 160,
+      fills: {
+        text: 'A score of 4 or 5 gets "___!" Different messages for different scores make the result feel ___.',
+        answers: ['Amazing', 'personal']
+      },
+      quiz: {
+        question: 'Why give different messages for different score ranges?',
+        options: [
+          'One message is boring to code',
+          'Tiered feedback acknowledges effort at every level - even a low score gets encouragement rather than just "you failed"',
+          'Scratch requires three messages'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDevelop Pong Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(163,230,53,.15);color:#a3e635;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GDevelop Pong Build Canvas <span class="cw-lang-tag">&#x1f3a8; GDevelop</span></h1>
+  <p>Write GDevelop event logic step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GDevelop Pong game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">Two white paddles on a dark court with a dashed centre line</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GDevelop-to-JS transpiler (simplified event notation)
+   =================================================== */
+function gdToJs(code) {
+  return code
+    .replace(/\/\/.*$/gm, '')
+    .replace(/Condition:\s*KeyPressed\("Up"\)/g, 'if(upHeld)')
+    .replace(/Condition:\s*KeyPressed\("Down"\)/g, 'if(downHeld)')
+    .replace(/Condition:\s*KeyPressed\("W"\)/g, 'if(wHeld)')
+    .replace(/Condition:\s*KeyPressed\("S"\)/g, 'if(sHeld)')
+    .replace(/Action:\s*SetVariable\((\w+),\s*([^)]+)\)/g, '$1=$2;')
+    .replace(/Condition:\s*Variable\((\w+)\)\s*([<>!=]+)\s*(\S+)/g, 'if($1$2$3)')
+    .replace(/Action:\s*Ball\.Bounce\(\)/g, 'bvy=-bvy;')
+    .replace(/Action:\s*Ball\.ReverseX\(\)/g, 'bvx=-bvx;')
+    .replace(/Action:\s*Serve\(([^)]*)\)/g, 'serve($1);')
+    .replace(/\bAction:\s*/g, '')
+    .replace(/\bCondition:\s*/g, 'if');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (GDevelop Pong)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PADDLE_VARS = 'let p1Y=152,p2Y=152;const padW=16,padH=96,padSpeed=6;';
+
+var BALL_VARS = 'let bx=292,by=192,bs=14,bvx=4,bvy=3;';
+
+var SCORE_VARS = 'let scoreL=0,scoreR=0;';
+
+var STATE_VARS = 'let gameState="play",flash=0;';
+
+var AI_VARS = 'let aiSpeed=4,deadZone=14;';
+
+var KEYS = 'let wHeld=false,sHeld=false,upHeld=false,downHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="KeyW")wHeld=true;if(e.code==="KeyS")sHeld=true;' +
+    'if(e.code==="ArrowUp")upHeld=true;if(e.code==="ArrowDown")downHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="KeyW")wHeld=false;if(e.code==="KeyS")sHeld=false;' +
+    'if(e.code==="ArrowUp")upHeld=false;if(e.code==="ArrowDown")downHeld=false});';
+
+var MOVE_P1 = 'if(wHeld)p1Y-=padSpeed;if(sHeld)p1Y+=padSpeed;p1Y=Math.max(0,Math.min(304,p1Y));';
+
+var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,600,400);';
+
+var DRAW_NET = 'ctx.fillStyle="#3c4260";for(var ny=0;ny<400;ny+=20){ctx.fillRect(297,ny,6,12)}';
+
+var DRAW_PADDLES = 'ctx.fillStyle="#fff";ctx.fillRect(15,p1Y,padW,padH);ctx.fillRect(569,p2Y,padW,padH);';
+
+var DRAW_BALL = 'ctx.fillStyle="#facc15";ctx.beginPath();ctx.arc(bx+bs/2,by+bs/2,bs/2,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORES = 'ctx.fillStyle="#fff";ctx.font="bold 48px monospace";ctx.textAlign="center";ctx.fillText(scoreL,220,60);ctx.fillText(scoreR,380,60);';
+
+var BALL_MOVE = 'bx+=bvx;by+=bvy;';
+
+var WALL_BOUNCE = 'if(by<=0||by+bs>=400)bvy=-bvy;';
+
+var PADDLE_HIT = 'if(bx<=31&&bx+bs>=15&&by+bs>=p1Y&&by<=p1Y+padH&&bvx<0){bvx=-bvx*1.05;bvy=(by+bs/2-(p1Y+48))/10}' +
+  'if(bx+bs>=569&&bx<=585&&by+bs>=p2Y&&by<=p2Y+padH&&bvx>0){bvx=-bvx*1.05;bvy=(by+bs/2-(p2Y+48))/10}' +
+  'bvx=Math.max(-10,Math.min(10,bvx));';
+
+var SERVE_FN = 'function serve(dir){bx=292;by=192;bvx=4*dir;bvy=[3,-3][Math.floor(Math.random()*2)]}';
+
+var SCORING = 'if(bx<-20){scoreR++;flash=12;serve(-1)}if(bx>620){scoreL++;flash=12;serve(1)}';
+
+var AI_LOGIC = 'var gap=by+bs/2-(p2Y+48);if(Math.abs(gap)>deadZone){p2Y+=Math.sign(gap)*aiSpeed}p2Y=Math.max(0,Math.min(304,p2Y));';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - GDevelop Pong steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-gdevelop-pong-canvas',
+  downloadName: 'my-gdevelop-pong.html',
+
+  hints: [
+    'Two white paddles on a dark court with a dashed centre line',
+    'The ball bounces off the top and bottom walls',
+    'The ball rebounds off paddles with spin from hit position',
+    'Scores appear at the top and update when the ball passes a paddle',
+    'The right paddle chases the ball automatically',
+    'First to 7 wins - press R to play again'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + KEYS +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_P1 +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        'function loop(){' +
+        MOVE_P1 + BALL_MOVE +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'if(bx<-20||bx>620){bx=292;by=192;bvx=4*(Math.random()<0.5?1:-1);bvy=[3,-3][Math.floor(Math.random()*2)]}' +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        'function loop(){' +
+        MOVE_P1 + BALL_MOVE + WALL_BOUNCE +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'bvx=Math.max(-10,Math.min(10,bvx));' +
+        'if(bx<-20||bx>620){bx=292;by=192;bvx=4*(Math.random()<0.5?1:-1);bvy=[3,-3][Math.floor(Math.random()*2)]}' +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + KEYS +
+        SERVE_FN +
+        'function loop(){' +
+        MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + AI_VARS + KEYS +
+        SERVE_FN +
+        'function loop(){' +
+        MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + SCORING +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'p2Y=Math.max(0,Math.min(304,p2Y));' +
+        DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + AI_VARS + STATE_VARS + KEYS +
+        'let rPressed=false;document.addEventListener("keydown",function(e){if(e.code==="KeyR")rPressed=true});' +
+        SERVE_FN +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + AI_LOGIC + SCORING +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'if(flash>0)flash--;' +
+        '}else if(rPressed){scoreL=0;scoreR=0;flash=0;serve(1);gameState="play";rPressed=false}' +
+        DRAW_BG +
+        'if(flash>0){ctx.fillStyle="rgba(255,255,255,"+(flash/12*0.15)+")";ctx.fillRect(0,0,600,400)}' +
+        DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText(scoreL>=7?"PLAYER WINS!":"AI WINS!",300,195);' +
+        'ctx.font="18px monospace";ctx.fillText("Press R to play again",300,230)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Court & Paddles',
+      goal: 'Set up a dark court with two paddles and a dashed centre line.',
+      points: [
+        'In GDevelop, you create <strong>objects</strong> and place them in <strong>scenes</strong>',
+        'Each paddle is 16 pixels wide and 96 pixels tall, white on a dark court',
+        'The left paddle is at x=15, the right paddle at x=569',
+        'Both start vertically centred: y = (400 - 96) / 2 = 152'
+      ],
+      challenge: '&#x1f3a8; Set the paddle dimensions and starting position:',
+      starter: '// Set up the paddles\nAction: SetVariable(padW, ___)\nAction: SetVariable(padH, ___)\nAction: SetVariable(p1Y, 152)\nAction: SetVariable(padSpeed, 6)',
+      solution: '// Set up the paddles\nAction: SetVariable(padW, 16)\nAction: SetVariable(padH, 96)\nAction: SetVariable(p1Y, 152)\nAction: SetVariable(padSpeed, 6)',
+      checks: ['16', '96', '152', '6'],
+      height: 130,
+      fills: {
+        text: 'Each paddle is ___ pixels wide and ___ pixels tall.',
+        answers: ['16', '96']
+      },
+      quiz: {
+        question: 'Why are paddles tall and narrow in Pong?',
+        options: [
+          'It looks classic',
+          'A tall paddle covers enough of the 400px height to be useful, while being narrow enough not to block the ball trivially',
+          'Wide paddles crash the game'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Ball Movement',
+      goal: 'Launch a ball that moves diagonally and bounces off the top and bottom walls.',
+      points: [
+        'The ball has velocity: bvx (horizontal) and bvy (vertical)',
+        'Each frame: x += bvx, y += bvy moves it diagonally',
+        'When the ball hits the top or bottom wall, flip bvy to bounce',
+        'In GDevelop, you would use the <strong>Bounce</strong> behaviour or flip velocity manually'
+      ],
+      challenge: '&#x1f3a8; Write the wall bounce logic:',
+      starter: '// Ball bounces off top and bottom walls\nCondition: Variable(by) <= ___\nAction: Ball.Bounce()\n\nCondition: Variable(by) >= ___\nAction: Ball.Bounce()',
+      solution: '// Ball bounces off top and bottom walls\nCondition: Variable(by) <= 0\nAction: Ball.Bounce()\n\nCondition: Variable(by) >= 386\nAction: Ball.Bounce()',
+      checks: ['by', '0', 'Bounce'],
+      height: 150,
+      fills: {
+        text: 'Bouncing off a horizontal wall flips the ___ velocity. The ball moves ___ pixels per frame horizontally.',
+        answers: ['vertical', '4']
+      },
+      quiz: {
+        question: 'What does "bouncing" actually mean in code?',
+        options: [
+          'The ball teleports to the other side',
+          'The velocity component perpendicular to the wall is negated - the ball reflects like light off a mirror',
+          'A special physics engine handles it'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Paddle Collision & Spin',
+      goal: 'Make the ball rebound off paddles with angle based on where it hits.',
+      points: [
+        'Check if the ball overlaps a paddle using position comparisons',
+        'On hit: reverse horizontal velocity and slightly increase speed (* 1.05)',
+        'Spin: the vertical speed depends on where the ball hits the paddle',
+        'Hit the edge for sharp angles, hit the centre for a flat return'
+      ],
+      challenge: '&#x1f3a8; Write the paddle collision with spin:',
+      starter: '// Ball hits left paddle - reverse and add spin\nCondition: BallCollides(LeftPaddle)\nAction: Ball.ReverseX()\nAction: SetVariable(bvx, bvx * ___)\nAction: SetVariable(bvy, (by - p1Y) / ___)',
+      solution: '// Ball hits left paddle - reverse and add spin\nCondition: BallCollides(LeftPaddle)\nAction: Ball.ReverseX()\nAction: SetVariable(bvx, bvx * 1.05)\nAction: SetVariable(bvy, (by - p1Y) / 10)',
+      checks: ['ReverseX', '1.05', 'bvy', '10'],
+      height: 140,
+      fills: {
+        text: 'Each paddle hit speeds the ball up by ___%. The spin is calculated from the hit ___ on the paddle.',
+        answers: ['5', 'position']
+      },
+      quiz: {
+        question: 'Why does Pong use position-based spin?',
+        options: [
+          'It looks more realistic',
+          'It gives the player control over the return angle - skilled players can aim their shots',
+          'Random angles would be the same'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Scoring System',
+      goal: 'Award points when the ball passes a paddle and re-serve.',
+      points: [
+        'Ball past left edge: right player scores. Ball past right edge: left player scores',
+        'After scoring, reset the ball to centre and serve toward the scorer',
+        'Display scores at the top of the screen, large and centred',
+        'In GDevelop, a controller object tracks global score variables'
+      ],
+      challenge: '&#x1f3a8; Write the scoring events:',
+      starter: '// Ball exits left side - right player scores\nCondition: Variable(bx) < ___\nAction: SetVariable(scoreR, scoreR + 1)\nAction: Serve(-1)\n\n// Ball exits right side - left player scores\nCondition: Variable(bx) > ___\nAction: SetVariable(scoreL, scoreL + 1)\nAction: Serve(1)',
+      solution: '// Ball exits left side - right player scores\nCondition: Variable(bx) < -20\nAction: SetVariable(scoreR, scoreR + 1)\nAction: Serve(-1)\n\n// Ball exits right side - left player scores\nCondition: Variable(bx) > 620\nAction: SetVariable(scoreL, scoreL + 1)\nAction: Serve(1)',
+      checks: ['scoreR', 'scoreL', '-20', '620', 'Serve'],
+      height: 200,
+      fills: {
+        text: 'The ball must pass ___ pixels beyond the edge before scoring. The serve goes toward the ___.',
+        answers: ['20', 'scorer']
+      },
+      quiz: {
+        question: 'Why serve toward the player who just scored?',
+        options: [
+          'It is a random tradition',
+          'Serving toward the loser would punish them further - serving toward the scorer gives the other player a chance to recover',
+          'The ball moves faster that way'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'AI Opponent',
+      goal: 'Make the right paddle chase the ball with a beatable dead zone.',
+      points: [
+        'The AI compares the ball Y position to its own centre',
+        'Only move if the gap exceeds a dead zone (14 pixels) - this creates hesitation',
+        'Cap the AI speed at 4 pixels per frame so a skilled player can outrun it',
+        'In GDevelop, these would be events in the AI paddle object'
+      ],
+      challenge: '&#x1f3a8; Write the AI paddle logic:',
+      starter: '// AI chases the ball\nCondition: Variable(gap) > ___\nAction: SetVariable(p2Y, p2Y + aiSpeed)\n\nCondition: Variable(gap) < -___\nAction: SetVariable(p2Y, p2Y - aiSpeed)',
+      solution: '// AI chases the ball\nCondition: Variable(gap) > 14\nAction: SetVariable(p2Y, p2Y + aiSpeed)\n\nCondition: Variable(gap) < -14\nAction: SetVariable(p2Y, p2Y - aiSpeed)',
+      checks: ['gap', '14', 'p2Y', 'aiSpeed'],
+      height: 150,
+      fills: {
+        text: 'The dead zone of ___ pixels stops the AI from reacting to tiny movements. The AI moves at ___ pixels per frame.',
+        answers: ['14', '4']
+      },
+      quiz: {
+        question: 'Why give the AI a dead zone instead of perfect tracking?',
+        options: [
+          'To save processing power',
+          'Perfect tracking cannot be beaten - the dead zone creates moments where the AI hesitates, giving the player a chance',
+          'GDevelop requires dead zones'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Win Condition & Restart',
+      goal: 'First to 7 wins. Add a score flash and press R to restart.',
+      points: [
+        'Check if either score reaches 7 after each point',
+        'Flash effect: a brief white overlay on score, fading over 12 frames',
+        'Show the winner text and "Press R to play again"',
+        'R resets both scores, the ball, and the flash counter'
+      ],
+      challenge: '&#x1f3a8; Write the win condition:',
+      starter: '// Check for winner\nCondition: Variable(scoreL) >= ___\nAction: SetVariable(gameState, "over")\n\nCondition: Variable(scoreR) >= ___\nAction: SetVariable(gameState, "___")\n\n// Flash on score\nAction: SetVariable(flash, ___)',
+      solution: '// Check for winner\nCondition: Variable(scoreL) >= 7\nAction: SetVariable(gameState, "over")\n\nCondition: Variable(scoreR) >= 7\nAction: SetVariable(gameState, "over")\n\n// Flash on score\nAction: SetVariable(flash, 12)',
+      checks: ['7', 'over', 'flash', '12'],
+      height: 200,
+      fills: {
+        text: 'The game ends when a player reaches ___ points. The flash lasts ___ frames.',
+        answers: ['7', '12']
+      },
+      quiz: {
+        question: 'What design pattern does the PLAY/OVER state machine represent?',
+        options: [
+          'A debugging tool',
+          'A finite state machine - the same pattern used in every commercial game for menus, gameplay, pause, and game over',
+          'A GDevelop-only feature'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

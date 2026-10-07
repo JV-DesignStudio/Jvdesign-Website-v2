@@ -39,6 +39,11 @@ function dedupeSkipLinks(src) {
     return head + src.slice(markerIdx);
 }
 
+// Load content stats for inline substitution: <!-- STAT:workshops --> etc.
+const statsPath = path.join(ROOT, 'content', 'marketing.json');
+const contentStats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
+const STAT_RE = /<!-- STAT:(\w+) -->/g;
+
 let changed = 0, unchanged = 0;
 
 walk(ROOT, { ext: ".html", ignore: IGNORE_DIRS }).forEach(filePath => {
@@ -53,6 +58,12 @@ walk(ROOT, { ext: ".html", ignore: IGNORE_DIRS }).forEach(filePath => {
     });
 
     src = dedupeSkipLinks(src);
+
+    // Replace <!-- STAT:key --> markers with canonical display values
+    src = src.replace(STAT_RE, (m, key) => {
+        const entry = contentStats[key];
+        return entry && entry.display ? entry.display : m;
+    });
 
     // Perf: convert render-blocking style-shared.css to preload pattern across all pages
     // Turns <link rel="stylesheet" href="...style-shared.css"> into preload onload version to avoid render block

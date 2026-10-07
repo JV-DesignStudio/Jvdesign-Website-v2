@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Godot Gatekeeper 3D Part 1 Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Godot Gatekeeper Part 1 Build Canvas <span class="cw-lang-tag">&#x1f916; Godot</span></h1>
+  <p>Sneak past the guard in this top-down stealth game.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Gatekeeper stealth game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A green player dot and a red guard on a tiled floor</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function gdscriptToJs(code) {
+  return code
+    .replace(/#.*$/gm, '')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bVector2\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
+    .replace(/\brandf\(\)/g, 'Math.random()')
+    .replace(/\brandi\(\)\s*%\s*(\w+)/g, 'Math.floor(Math.random()*$1)')
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
+    .replace(/\.position\.x/g, '.x')
+    .replace(/\.position\.y/g, '.y')
+    .replace(/\bInput\.is_action_pressed\("ui_left"\)/g, 'leftHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
+    .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
+    .replace(/\belif\b/g, '} else if')
+    .replace(/\bif\s+(.+):/g, 'if($1){')
+    .replace(/\belse\s*:/g, '} else {')
+    .replace(/\bfor\s+(\w+)\s+in\s+range\(([^)]+)\)\s*:/g, 'for(let $1=0;$1<$2;$1++){')
+    .replace(/\bwhile\s+(.+):/g, 'while($1){')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false')
+    .replace(/\bnull\b/g, 'null');
+}
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f172a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=40,py=360,pw=16,speed=2.5;';
+var GUARD_VARS = 'let gx=200,gy=120,gw=16,gAngle=0,gSpeed=1.2,gDir=1;' +
+  'let patrol=[{x:120,y:120},{x:280,y:120},{x:280,y:200},{x:120,y:200}];let gTarget=0;';
+var VISION_VARS = 'let visionRange=100,visionAngle=0.6;';
+var WALL_DATA = 'let walls=[{x:80,y:60,w:100,h:12},{x:240,y:60,w:12,h:120},{x:80,y:240,w:160,h:12},{x:320,y:160,w:12,h:120}];';
+var EXIT_VARS = 'let exitX=360,exitY=20,exitW=30,exitH=30;';
+var STATE_VARS = 'let gameState="play",alertTimer=0;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false});';
+
+var DRAW_BG = 'ctx.fillStyle="#1e293b";ctx.fillRect(0,0,400,400);' +
+  'ctx.strokeStyle="#334155";for(var gi=0;gi<400;gi+=40){ctx.beginPath();ctx.moveTo(gi,0);ctx.lineTo(gi,400);ctx.stroke();ctx.beginPath();ctx.moveTo(0,gi);ctx.lineTo(400,gi);ctx.stroke()}';
+
+var DRAW_WALLS = 'ctx.fillStyle="#475569";for(var wi=0;wi<walls.length;wi++){ctx.fillRect(walls[wi].x,walls[wi].y,walls[wi].w,walls[wi].h)}';
+var DRAW_EXIT = 'ctx.fillStyle="#22c55e";ctx.fillRect(exitX,exitY,exitW,exitH);ctx.fillStyle="#fff";ctx.font="bold 10px monospace";ctx.textAlign="center";ctx.fillText("EXIT",exitX+exitW/2,exitY+18);';
+var DRAW_PLAYER = 'ctx.fillStyle="#60a5fa";ctx.beginPath();ctx.arc(px+pw/2,py+pw/2,pw/2,0,Math.PI*2);ctx.fill();';
+var DRAW_GUARD = 'ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(gx+gw/2,gy+gw/2,gw/2,0,Math.PI*2);ctx.fill();';
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 14px monospace";ctx.textAlign="left";ctx.fillText("Sneak to the EXIT!",10,390);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-godot-gatekeeper1-canvas',
+  downloadName: 'my-godot-gatekeeper-1.html',
+
+  hints: [
+    'A green player dot and a red guard on a tiled floor',
+    'The guard patrols a square route between four waypoints',
+    'A yellow vision cone extends from the guard',
+    'Walls block the player path and create cover',
+    'Getting spotted triggers an alert state',
+    'Reach the green EXIT without being caught'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + WALL_DATA + EXIT_VARS + KEYS +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_PLAYER + DRAW_GUARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + WALL_DATA + EXIT_VARS + KEYS +
+        'function loop(){' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
+        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){' +
+        'if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_PLAYER + DRAW_GUARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + WALL_DATA + EXIT_VARS + KEYS +
+        'function loop(){' +
+        'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
+        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
+        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){' +
+        'if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_PLAYER + DRAW_GUARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS +
+        'function loop(){' +
+        'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
+        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
+        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){' +
+        'if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
+        'var tx=patrol[gTarget].x,ty=patrol[gTarget].y;var dx=tx-gx,dy=ty-gy;var dist=Math.sqrt(dx*dx+dy*dy);' +
+        'if(dist<2){gTarget=(gTarget+1)%patrol.length}else{gx+=dx/dist*gSpeed;gy+=dy/dist*gSpeed}' +
+        'gAngle=Math.atan2(dy,dx);' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT +
+        'ctx.save();ctx.translate(gx+gw/2,gy+gw/2);ctx.rotate(gAngle);ctx.fillStyle="rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();' +
+        DRAW_PLAYER + DRAW_GUARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
+        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
+        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){' +
+        'if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
+        'var tx=patrol[gTarget].x,ty=patrol[gTarget].y;var dx=tx-gx,dy=ty-gy;var dist=Math.sqrt(dx*dx+dy*dy);' +
+        'if(dist<2){gTarget=(gTarget+1)%patrol.length}else{gx+=dx/dist*gSpeed;gy+=dy/dist*gSpeed}' +
+        'gAngle=Math.atan2(dy,dx);' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT +
+        'ctx.save();ctx.translate(gx+gw/2,gy+gw/2);ctx.rotate(gAngle);ctx.fillStyle="rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();' +
+        DRAW_PLAYER + DRAW_GUARD + DRAW_HUD +
+        'if(gameState==="caught"){ctx.fillStyle="rgba(239,68,68,0.3)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("SPOTTED!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="caught"||gameState==="win")){px=40;py=360;gTarget=0;gx=200;gy=120;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
+        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
+        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){' +
+        'if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
+        'var tx=patrol[gTarget].x,ty=patrol[gTarget].y;var ddx=tx-gx,ddy=ty-gy;var dist=Math.sqrt(ddx*ddx+ddy*ddy);' +
+        'if(dist<2){gTarget=(gTarget+1)%patrol.length}else{gx+=ddx/dist*gSpeed;gy+=ddy/dist*gSpeed}' +
+        'gAngle=Math.atan2(ddy,ddx);' +
+        'var pdx=px+pw/2-(gx+gw/2),pdy=py+pw/2-(gy+gw/2);var pDist=Math.sqrt(pdx*pdx+pdy*pdy);' +
+        'var pAng=Math.atan2(pdy,pdx);var diff=Math.abs(pAng-gAngle);if(diff>Math.PI)diff=2*Math.PI-diff;' +
+        'if(pDist<visionRange&&diff<visionAngle)gameState="caught";' +
+        'if(px+pw>exitX&&px<exitX+exitW&&py+pw>exitY&&py<exitY+exitH)gameState="win";' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT +
+        'ctx.save();ctx.translate(gx+gw/2,gy+gw/2);ctx.rotate(gAngle);ctx.fillStyle="rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();' +
+        DRAW_PLAYER + DRAW_GUARD + DRAW_HUD +
+        'if(gameState==="caught"){ctx.fillStyle="rgba(239,68,68,0.3)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("SPOTTED!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
+        'if(gameState==="win"){ctx.fillStyle="rgba(34,197,94,0.3)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("ESCAPED!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Scene',
+      goal: 'Set up the stealth scene: player, guard, walls and exit.',
+      points: [
+        'The player is a blue circle starting at the bottom-left',
+        'The guard is a red circle positioned in the middle area',
+        'Grey walls create corridors and cover opportunities',
+        'The green EXIT zone is in the top-right corner'
+      ],
+      challenge: '\ud83e\udd16 Set the player and exit positions:',
+      starter: '# Player starts bottom-left\nvar player_x = ___\nvar player_y = ___\n\n# Exit is top-right\nvar exit_x = 360\nvar exit_y = ___',
+      solution: '# Player starts bottom-left\nvar player_x = 40\nvar player_y = 360\n\n# Exit is top-right\nvar exit_x = 360\nvar exit_y = 20',
+      checks: ['40', '360', '20'],
+      height: 140,
+      fills: {
+        text: 'The player starts at the ___-left corner. The exit is at the ___-right corner, maximising the sneak distance.',
+        answers: ['bottom', 'top']
+      },
+      quiz: {
+        question: 'Why place the player and exit at opposite corners?',
+        options: [
+          'It looks symmetrical',
+          'Maximum distance forces the player to navigate the entire map, making every guard encounter meaningful',
+          'Godot requires diagonal placement'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Player Movement',
+      goal: 'Move the player with arrow keys, blocked by walls.',
+      points: [
+        'WASD or arrows move the player at speed 2.5 (slow for stealth)',
+        'After moving, check collision with each wall rectangle',
+        'On collision: push the player back outside the wall',
+        'Slower speed than action games adds tension and careful planning'
+      ],
+      challenge: '\ud83e\udd16 Write wall-aware movement:',
+      starter: '# Move the player\nif Input.is_action_pressed("ui_left"):\n    player_x -= ___\nif Input.is_action_pressed("ui_right"):\n    player_x += speed\nif Input.is_action_pressed("ui_up"):\n    player_y -= speed\nif Input.is_action_pressed("ui_down"):\n    player_y += ___',
+      solution: '# Move the player\nif Input.is_action_pressed("ui_left"):\n    player_x -= speed\nif Input.is_action_pressed("ui_right"):\n    player_x += speed\nif Input.is_action_pressed("ui_up"):\n    player_y -= speed\nif Input.is_action_pressed("ui_down"):\n    player_y += speed',
+      checks: ['is_action_pressed', 'speed', 'player_x', 'player_y'],
+      height: 200,
+      fills: {
+        text: 'The player moves at ___ pixels per frame. Stealth games use ___ movement speed than action games.',
+        answers: ['2.5', 'slower']
+      },
+      quiz: {
+        question: 'Why is wall collision important in a stealth game?',
+        options: [
+          'It prevents cheating by walking through cover',
+          'Walls create corridors that force the player into the guard line of sight - cover only works if walls are solid',
+          'Without walls the game would crash'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Guard Patrol',
+      goal: 'Make the guard walk a square patrol route between four waypoints.',
+      points: [
+        'Patrol waypoints form a rectangle the guard walks around',
+        'Move toward the current target; when close, advance to the next',
+        'Use <code>atan2(dy, dx)</code> to get the guard facing direction',
+        'In Godot you would use a Path2D with PathFollow2D for patrol routes'
+      ],
+      challenge: '\ud83e\udd16 Write the patrol logic:',
+      starter: '# Move guard toward current waypoint\nvar target = patrol[guard_target]\nvar dx = target.x - guard_x\nvar dy = target.y - guard_y\nvar dist = abs(dx) + abs(dy)\n\n# Advance to next waypoint when close\nif dist < ___:\n    guard_target = (guard_target + 1) % ___',
+      solution: '# Move guard toward current waypoint\nvar target = patrol[guard_target]\nvar dx = target.x - guard_x\nvar dy = target.y - guard_y\nvar dist = abs(dx) + abs(dy)\n\n# Advance to next waypoint when close\nif dist < 4:\n    guard_target = (guard_target + 1) % 4',
+      checks: ['patrol', 'guard_target', '4'],
+      height: 180,
+      fills: {
+        text: 'The guard follows ___ waypoints in a loop. The modulo operator % wraps the index back to ___.',
+        answers: ['4', '0']
+      },
+      quiz: {
+        question: 'Why use waypoints instead of random movement for the guard?',
+        options: [
+          'Random movement is too hard to code',
+          'Predictable patrol routes let the player learn the pattern and plan their route - randomness would feel unfair',
+          'Waypoints use less CPU'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Vision Cone',
+      goal: 'Draw a vision cone showing where the guard can see.',
+      points: [
+        'The cone extends visionRange (100) pixels from the guard',
+        'It spans visionAngle (0.6 radians, about 34 degrees) to each side',
+        'The cone points in the direction the guard faces (gAngle)',
+        'In Godot you would use a polygon with raycasts for visibility'
+      ],
+      challenge: '\ud83e\udd16 Set the vision cone parameters:',
+      starter: '# Vision cone settings\nvar vision_range = ___\nvar vision_angle = ___\n\n# Guard faces toward patrol target\nvar guard_facing = atan2(dy, dx)',
+      solution: '# Vision cone settings\nvar vision_range = 100\nvar vision_angle = 0.6\n\n# Guard faces toward patrol target\nvar guard_facing = atan2(dy, dx)',
+      checks: ['100', '0.6', 'vision_range', 'vision_angle'],
+      height: 120,
+      fills: {
+        text: 'The vision cone reaches ___ pixels. The half-angle of ___ radians gives a focused forward view.',
+        answers: ['100', '0.6']
+      },
+      quiz: {
+        question: 'Why show the vision cone to the player?',
+        options: [
+          'It looks cool',
+          'Visible threat zones let the player make informed decisions - stealth without feedback is guessing, not skill',
+          'The guard needs to see it too'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Detection',
+      goal: 'Detect when the player enters the guard vision cone.',
+      points: [
+        'Check two conditions: distance < visionRange AND angle difference < visionAngle',
+        'Angle to player: <code>atan2(player_y - guard_y, player_x - guard_x)</code>',
+        'Compare against guard facing angle with wraparound handling',
+        'On detection: set gameState to "caught" and show a red overlay'
+      ],
+      challenge: '\ud83e\udd16 Write the detection check:',
+      starter: '# Check if player is in vision cone\nvar to_player_dist = abs(player_x - guard_x) + abs(player_y - guard_y)\nvar to_player_angle = atan2(player_y - guard_y, player_x - guard_x)\nvar angle_diff = abs(to_player_angle - guard_facing)\n\nif to_player_dist < ___ and angle_diff < ___:\n    game_state = "caught"',
+      solution: '# Check if player is in vision cone\nvar to_player_dist = abs(player_x - guard_x) + abs(player_y - guard_y)\nvar to_player_angle = atan2(player_y - guard_y, player_x - guard_x)\nvar angle_diff = abs(to_player_angle - guard_facing)\n\nif to_player_dist < vision_range and angle_diff < vision_angle:\n    game_state = "caught"',
+      checks: ['vision_range', 'vision_angle', 'caught', 'atan2'],
+      height: 180,
+      fills: {
+        text: 'Detection requires both ___ and angle checks to pass. This creates the cone shape instead of a ___.',
+        answers: ['distance', 'circle']
+      },
+      quiz: {
+        question: 'Why check both distance AND angle for detection?',
+        options: [
+          'One check is not accurate enough',
+          'Distance alone would be a circle (detected behind the guard); angle alone would extend to infinity - both together make a realistic cone',
+          'GDScript requires two conditions'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Escape!',
+      goal: 'Reach the EXIT zone to win, with restart on R.',
+      points: [
+        'Check overlap with the exit rectangle for the win condition',
+        'Show a green overlay with "ESCAPED!" on victory',
+        'Show a red overlay with "SPOTTED!" on detection',
+        'Press R resets player and guard positions for another attempt'
+      ],
+      challenge: '\ud83e\udd16 Write the exit check:',
+      starter: '# Check if player reached the exit\nif player_x + pw > exit_x and player_x < exit_x + exit_w:\n    if player_y + pw > exit_y and player_y < exit_y + ___:\n        game_state = "___"',
+      solution: '# Check if player reached the exit\nif player_x + pw > exit_x and player_x < exit_x + exit_w:\n    if player_y + pw > exit_y and player_y < exit_y + exit_h:\n        game_state = "win"',
+      checks: ['exit_h', 'win', 'exit_x', 'exit_y'],
+      height: 120,
+      fills: {
+        text: 'The win condition checks rectangle ___ with the exit zone. The game supports ___ states: play, caught, and win.',
+        answers: ['overlap', 'three']
+      },
+      quiz: {
+        question: 'What makes stealth games replayable?',
+        options: [
+          'Longer levels',
+          'Multiple valid paths - the guard patrol creates timing windows, and walls create route choices, so each attempt can play differently',
+          'More colours on screen'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

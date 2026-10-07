@@ -62,17 +62,26 @@ else if (Number(n[1]) !== stats.workshops) add(`index.html: numberOfItems ${n[1]
 
 // 4) Known-stale phrases must never reappear on marketing pages.
 const FORBID = [
-  [/\b(?:178|182|187)\s+(?:free\s+|interactive\s+|guided\s+)?(?:workshops?|courses?)/i, 'stale workshop/course count'],
-  [/\b(?:32|33)\s+(?:free\s+|listed\s+|browser\s+)?games?/i, 'stale games count'],
+  [/\b(?:160|170|178|182|187|193)\s+(?:free\s+|interactive\s+|guided\s+)?(?:workshops?|courses?)/i, 'stale workshop/course count'],
+  [/\b(?:32|33|38)\s+(?:free\s+|listed\s+|browser\s+)?games?/i, 'stale games count'],
   [/\b(?:30|60)\s+(?:free\s+|creative\s+|focused\s+)?tools?/i, 'stale tools count'],
+  [/\b6\s+books?\s/i, 'stale books count (should be 5)'],
 ];
-const MARKET_PAGES = ['index.html', 'pages/about.html', 'pages/learn-hub.html', 'pages/parents.html', 'pages/parent-guide.html', 'pages/press.html', 'pages/teachers.html', 'pages/workshop.html'];
+const MARKET_PAGES = ['index.html', 'pages/about.html', 'pages/learn-hub.html', 'pages/parents.html', 'pages/parent-guide.html', 'pages/press.html', 'pages/teachers.html', 'pages/workshop.html', 'pages/games.html', 'pages/downloads.html', 'tools/parent-guide.html'];
 for (const f of MARKET_PAGES) {
   const html = read(f);
   for (const [re, what] of FORBID) {
     const mm = html.match(re);
     if (mm) add(`${f}: ${what} "${mm[0].trim()}"`);
   }
+}
+
+// 5) No un-replaced STAT markers should remain after build.
+const STAT_MARKER = /<!-- STAT:\w+ -->/g;
+for (const f of MARKET_PAGES) {
+  const html = read(f);
+  const sm = html.match(STAT_MARKER);
+  if (sm) add(`${f}: ${sm.length} un-replaced STAT marker(s) - run node build.js first`);
 }
 
 if (errors.length) {

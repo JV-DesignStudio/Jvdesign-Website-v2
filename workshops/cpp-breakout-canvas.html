@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++ Breakout Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>C++ Breakout Build Canvas <span class="cw-lang-tag">⚙️ C++</span></h1>
+  <p>Write C++ game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your C++ Breakout game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">An orange paddle at the bottom of a dark court</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   C++-to-JS transpiler (light transform so C++
+   syntax runs in the canvas iframe)
+   =================================================== */
+function cppToJs(code) {
+  return code
+    .replace(/\b(int|float|double|bool|char|auto|unsigned|long)\s+/g, 'let ')
+    .replace(/\bconst\s+let\s+/g, 'const ')
+    .replace(/\bstd::string\s+/g, 'let ')
+    .replace(/\bstd::cout\s*<<\s*/g, 'console.log(')
+    .replace(/\bstd::endl/g, '"\\n")')
+    .replace(/\bstd::abs\(/g, 'Math.abs(')
+    .replace(/\bstd::max\(/g, 'Math.max(')
+    .replace(/\bstd::min\(/g, 'Math.min(')
+    .replace(/\.f\b/g, '')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.push_back\(/g, '.push(');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (C++ Breakout)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f1220;margin:0;overflow:hidden}canvas{display:block;cursor:none}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PADDLE_VARS = 'let px=250;const padW=100,padH=12,padSpeed=6,padY=375;';
+
+var BALL_VARS = 'let bx=295,by=300,bs=10,bvx=3,bvy=-3;';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var BRICK_COLORS = 'var brickColors=["#f87171","#fb923c","#facc15","#4ade80"];';
+
+var BRICK_SETUP = 'var bricks=[];var brickW=65,brickH=18,brickPad=6,brickRows=4,brickCols=8,brickTop=40;' +
+  'for(var r=0;r<brickRows;r++){for(var c=0;c<brickCols;c++){bricks.push({x:c*(brickW+brickPad)+14,y:r*(brickH+brickPad)+brickTop,w:brickW,h:brickH,alive:true,row:r})}}';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,mouseX=-1;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});' +
+  'canvas.addEventListener("mousemove",function(e){mouseX=e.offsetX});';
+
+var MOVE_PADDLE = 'if(leftHeld)px-=padSpeed;if(rightHeld)px+=padSpeed;if(mouseX>=0)px=mouseX-padW/2;px=Math.max(0,Math.min(600-padW,px));';
+
+var DRAW_BG = 'ctx.fillStyle="#0f1220";ctx.fillRect(0,0,600,400);';
+
+var DRAW_PADDLE = 'ctx.fillStyle="#ff7700";ctx.fillRect(px,padY,padW,padH);';
+
+var DRAW_BALL = 'ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(bx+bs/2,by+bs/2,bs/2,0,Math.PI*2);ctx.fill();';
+
+var DRAW_BRICKS = BRICK_COLORS + 'for(var i=0;i<bricks.length;i++){var b=bricks[i];if(b.alive){ctx.fillStyle=brickColors[b.row%brickColors.length];ctx.fillRect(b.x,b.y,b.w,b.h)}}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,10,18);' +
+  'ctx.textAlign="right";ctx.fillText("Lives: "+lives,590,18);';
+
+var BALL_MOVE = 'bx+=bvx;by+=bvy;';
+
+var WALL_BOUNCE = 'if(bx<=0||bx+bs>=600)bvx=-bvx;if(by<=0)bvy=-bvy;';
+
+var PADDLE_HIT = 'if(by+bs>=padY&&by+bs<=padY+padH&&bx+bs>=px&&bx<=px+padW&&bvy>0){' +
+  'bvy=-bvy;var hitPos=((bx+bs/2)-(px+padW/2))/(padW/2);bvx=hitPos*5;' +
+  'if(Math.abs(bvx)<1)bvx=bvx<0?-1:1}';
+
+var BRICK_COLLISION = 'for(var i=0;i<bricks.length;i++){var b=bricks[i];if(!b.alive)continue;' +
+  'if(bx+bs>b.x&&bx<b.x+b.w&&by+bs>b.y&&by<b.y+b.h){' +
+  'b.alive=false;score+=(brickRows-b.row)*10;' +
+  'var overlapX=Math.min(bx+bs-b.x,b.x+b.w-bx);var overlapY=Math.min(by+bs-b.y,b.y+b.h-by);' +
+  'if(overlapX<overlapY)bvx=-bvx;else bvy=-bvy;break}}';
+
+var SERVE_FN = 'function serve(){bx=295;by=300;bvx=3*(Math.random()<0.5?1:-1);bvy=-3}';
+
+var REBUILD_BRICKS = 'function rebuildBricks(){bricks=[];for(var r=0;r<brickRows;r++){for(var c=0;c<brickCols;c++){bricks.push({x:c*(brickW+brickPad)+14,y:r*(brickH+brickPad)+brickTop,w:brickW,h:brickH,alive:true,row:r})}}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - C++ Breakout steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-cpp-breakout-canvas',
+  downloadName: 'my-cpp-breakout.html',
+
+  hints: [
+    'An orange paddle at the bottom of a dark court',
+    'A white ball bouncing off the top and side walls',
+    'The ball rebounds off the paddle with angled spin',
+    'A colourful grid of bricks fills the top of the screen',
+    'Bricks vanish when the ball hits them and the score climbs',
+    'Three lives, a win screen, and a restart key'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + KEYS +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_PADDLE +
+        DRAW_BG + DRAW_PADDLE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PADDLE +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PADDLE + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PADDLE +
+        BALL_MOVE + WALL_BOUNCE +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'if(by>410){bx=295;by=300;bvx=3*(Math.random()<0.5?1:-1);bvy=-3}' +
+        DRAW_BG + DRAW_PADDLE + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+        BRICK_SETUP +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_PADDLE +
+        BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
+        'if(by>410){bx=295;by=300;bvx=3*(Math.random()<0.5?1:-1);bvy=-3}' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PADDLE + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + KEYS +
+        BRICK_SETUP +
+        SERVE_FN +
+        'function loop(){' +
+        MOVE_PADDLE +
+        BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'if(by>410){lives--;serve();if(lives<=0){bx=-100;by=-100}}' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PADDLE + DRAW_BALL + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        BRICK_SETUP +
+        SERVE_FN + REBUILD_BRICKS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState!=="play"){rebuildBricks();score=0;lives=3;serve();gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PADDLE +
+        BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
+        BRICK_COLLISION +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PADDLE + DRAW_BALL + DRAW_SCORE +
+        'if(gameState==="win"){ctx.fillStyle="#4ade80";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("YOU WIN!",300,200);ctx.font="18px monospace";ctx.fillText("Score: "+score,300,235);' +
+        'ctx.fillStyle="#fff";ctx.fillText("Press R to play again",300,270)}' +
+        'if(gameState==="over"){ctx.fillStyle="#f87171";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",300,200);ctx.font="18px monospace";ctx.fillText("Score: "+score,300,235);' +
+        'ctx.fillStyle="#fff";ctx.fillText("Press R to play again",300,270)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Paddle & Controls',
+      goal: 'Draw an orange paddle at the bottom and move it with arrow keys or the mouse.',
+      points: [
+        'The court is 600x400 pixels with a dark background',
+        'The paddle is 100 wide, 12 tall, drawn in orange at y=375',
+        'Arrow keys (or A/D) move the paddle at speed 6; the mouse gives instant position control',
+        'Clamp the paddle between 0 and 500 (court width 600 minus paddle width 100)'
+      ],
+      challenge: '⚙️ Write the paddle movement logic in C++:',
+      starter: '// Move the paddle with arrow keys\nif (leftHeld)  px -= ___;\nif (rightHeld) px += ___;\n\n// Clamp so the paddle stays on court\npx = std::max(0, std::min(___, px));',
+      solution: '// Move the paddle with arrow keys\nif (leftHeld)  px -= padSpeed;\nif (rightHeld) px += padSpeed;\n\n// Clamp so the paddle stays on court\npx = std::max(0, std::min(500, px));',
+      checks: ['leftheld', 'rightheld', 'px', '500'],
+      height: 160,
+      fills: {
+        text: 'The paddle moves left when ___ is held. Clamping to 500 prevents the paddle leaving the ___ side of the court.',
+        answers: ['leftHeld', 'right']
+      },
+      quiz: {
+        question: 'Why is the clamp maximum 500 instead of 600?',
+        options: [
+          'It is a random nice number',
+          'Court width (600) minus paddle width (100) = 500, so the paddle right edge never leaves the court',
+          'Paddles must stay in the left half'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Ball & Bouncing',
+      goal: 'Add a ball that moves each frame and bounces off the top, left and right walls.',
+      points: [
+        'The ball has position (<code>float bx, by</code>) and velocity (<code>float bvx, bvy</code>)',
+        'Each frame: <code>bx += bvx; by += bvy;</code> moves the ball',
+        'When the ball hits the left wall (<code>bx &lt;= 0</code>) or right wall (<code>bx + bs &gt;= 600</code>), flip bvx',
+        'When the ball hits the top (<code>by &lt;= 0</code>), flip bvy  -  the bottom is death, not a wall'
+      ],
+      challenge: '⚙️ Write the ball movement and wall bounce:',
+      starter: '// Move the ball each frame\nbx += bvx;\nby += ___;\n\n// Bounce off left and right walls\nif (bx <= 0 || bx + bs >= ___)\n    bvx = -bvx;\n\n// Bounce off the top wall only\nif (by <= 0)\n    bvy = ___;',
+      solution: '// Move the ball each frame\nbx += bvx;\nby += bvy;\n\n// Bounce off left and right walls\nif (bx <= 0 || bx + bs >= 600)\n    bvx = -bvx;\n\n// Bounce off the top wall only\nif (by <= 0)\n    bvy = -bvy;',
+      checks: ['bvx', 'bvy', '600'],
+      height: 220,
+      fills: {
+        text: 'The ball moves by adding ___ to its position each frame. The bottom wall is missing because falling off the ___ costs a life.',
+        answers: ['velocity', 'bottom']
+      },
+      quiz: {
+        question: 'Why bounce off three walls but NOT the bottom?',
+        options: [
+          'The canvas only has three walls',
+          'The bottom is where the paddle lives  -  missing the ball should cost a life, not bounce back',
+          'Vertical bouncing would be too fast'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Paddle Hit & Spin',
+      goal: 'Make the ball rebound off the paddle with a launch angle based on where it strikes.',
+      points: [
+        'Check if the ball overlaps the paddle (y padY..padY+padH, x px..px+padW) AND is moving down',
+        'On hit: flip <code>bvy</code> so the ball heads back up',
+        'Add spin: <code>bvx = ((ballCentreX - paddleCentreX) / halfPadW) * 5</code>  -  hit the edge for sharp angles',
+        'In real SFML this would use <code>getGlobalBounds().findIntersection()</code>  -  the logic is identical'
+      ],
+      challenge: '⚙️ Write the paddle rebound with spin:',
+      starter: '// Paddle rebound with angle control\nif (by + bs >= padY && by + bs <= padY + padH &&\n    bx + bs >= px && bx <= px + padW &&\n    bvy > 0) {\n    bvy = ___;\n    float hitPos = ((bx + bs/2) - (px + padW/2)) / (padW/2);\n    bvx = hitPos * ___;\n}',
+      solution: '// Paddle rebound with angle control\nif (by + bs >= padY && by + bs <= padY + padH &&\n    bx + bs >= px && bx <= px + padW &&\n    bvy > 0) {\n    bvy = -bvy;\n    float hitPos = ((bx + bs/2) - (px + padW/2)) / (padW/2);\n    bvx = hitPos * 5;\n}',
+      checks: ['-bvy', 'hitpos', 'padw', '5'],
+      height: 240,
+      fills: {
+        text: 'The spin is controlled by where the ball hits the ___. Hitting the edge produces a ___ angle.',
+        answers: ['paddle', 'sharp']
+      },
+      quiz: {
+        question: 'What would happen without the <code>bvy &gt; 0</code> direction check?',
+        options: [
+          'The ball would phase through the paddle',
+          'The ball could get stuck inside the paddle, flipping direction every frame and vibrating',
+          'Nothing different would happen'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Brick Grid',
+      goal: 'Build a grid of colourful bricks using nested loops and an array.',
+      points: [
+        'The wall is 8 columns by 4 rows  -  32 bricks in total',
+        'Each brick has x, y, width, height, alive (bool), and a row index for colour',
+        'Use nested for-loops: outer for rows, inner for columns',
+        'Colour by row using an array of colours  -  each row gets its own shade'
+      ],
+      challenge: '⚙️ Write the nested loop to build the brick wall:',
+      starter: '// Build the brick wall (8 cols x 4 rows)\nfor (int r = 0; r < ___; r++) {\n    for (int c = 0; c < ___; c++) {\n        // Each brick: x, y, width, height, alive, row\n        bricks.push_back({c * 71 + 14, r * 24 + 40,\n                          65, 18, ___, r});\n    }\n}',
+      solution: '// Build the brick wall (8 cols x 4 rows)\nfor (int r = 0; r < 4; r++) {\n    for (int c = 0; c < 8; c++) {\n        // Each brick: x, y, width, height, alive, row\n        bricks.push_back({c * 71 + 14, r * 24 + 40,\n                          65, 18, true, r});\n    }\n}',
+      checks: ['4', '8', 'true', 'push_back'],
+      height: 220,
+      fills: {
+        text: 'The wall has ___ rows and 8 columns. Each brick starts with alive set to ___ so it appears on screen.',
+        answers: ['4', 'true']
+      },
+      quiz: {
+        question: 'Why store bricks in an array instead of drawing them with 32 separate variables?',
+        options: [
+          'Arrays are colourful',
+          'An array lets you loop over all bricks for collision, drawing and removal without repeating code 32 times',
+          'C++ requires arrays for rectangles'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Brick Collision',
+      goal: 'Detect when the ball hits a brick, remove it and add to the score.',
+      points: [
+        'Loop through all bricks; skip dead ones (<code>if (!b.alive) continue</code>)',
+        'Axis-aligned bounding box (AABB) test: the ball and brick rectangles overlap',
+        'On hit: mark <code>alive = false</code>, add points (top rows score more), bounce the ball',
+        'Use overlap-depth to decide: side hit flips bvx, top/bottom hit flips bvy  -  then <code>break</code>'
+      ],
+      challenge: '⚙️ Write the brick collision loop:',
+      starter: '// Check every brick for a hit\nfor (auto& b : bricks) {\n    if (!b.alive) continue;\n    if (bx+bs > b.x && bx < b.x+b.w &&\n        by+bs > b.y && by < b.y+b.h) {\n        b.alive = ___;\n        score += (brickRows - b.row) * 10;\n        // Bounce off the correct side\n        float overlapX = std::min(bx+bs - b.x, b.x+b.w - bx);\n        float overlapY = std::min(by+bs - b.y, b.y+b.h - by);\n        if (overlapX < overlapY) ___ = -bvx;\n        else                     ___ = -bvy;\n        ___;\n    }\n}',
+      solution: '// Check every brick for a hit\nfor (auto& b : bricks) {\n    if (!b.alive) continue;\n    if (bx+bs > b.x && bx < b.x+b.w &&\n        by+bs > b.y && by < b.y+b.h) {\n        b.alive = false;\n        score += (brickRows - b.row) * 10;\n        // Bounce off the correct side\n        float overlapX = std::min(bx+bs - b.x, b.x+b.w - bx);\n        float overlapY = std::min(by+bs - b.y, b.y+b.h - by);\n        if (overlapX < overlapY) bvx = -bvx;\n        else                     bvy = -bvy;\n        break;\n    }\n}',
+      checks: ['false', 'bvx', 'bvy', 'break'],
+      height: 340,
+      fills: {
+        text: 'The overlap-depth test compares horizontal and vertical penetration  -  the ___ overlap reveals which side was hit. We break after the first hit so the ball only destroys ___ brick per frame.',
+        answers: ['smaller', 'one']
+      },
+      quiz: {
+        question: 'Why break after the first brick collision instead of checking them all?',
+        options: [
+          'Loops can only run once',
+          'The ball should bounce once per frame  -  hitting multiple bricks could flip the velocity back and tunnel through',
+          'Breaking is faster than continuing'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Win, Lose & Polish',
+      goal: 'Add lives, game over, win detection and a restart key to complete the game.',
+      points: [
+        'Ball below the screen (<code>by &gt; 410</code>): lose a life and re-serve from centre',
+        '0 lives: set <code>gameState = "over"</code> and freeze physics',
+        'All bricks dead: set <code>gameState = "win"</code>  -  check with a loop or <code>std::none_of</code>',
+        'Press R to rebuild the wall, reset score/lives, and play again'
+      ],
+      challenge: '⚙️ Write the lose-life, win and game-over logic:',
+      starter: '// Ball fell off the bottom\nif (by > 410) {\n    ___--;\n    serve();\n    if (lives <= 0) gameState = "___";\n}\n\n// Win check: are all bricks dead?\nbool anyAlive = false;\nfor (auto& b : bricks)\n    if (b.alive) anyAlive = true;\nif (!anyAlive) gameState = "___";',
+      solution: '// Ball fell off the bottom\nif (by > 410) {\n    lives--;\n    serve();\n    if (lives <= 0) gameState = "over";\n}\n\n// Win check: are all bricks dead?\nbool anyAlive = false;\nfor (auto& b : bricks)\n    if (b.alive) anyAlive = true;\nif (!anyAlive) gameState = "win";',
+      checks: ['lives', 'over', 'anyalive', 'win'],
+      height: 300,
+      fills: {
+        text: 'The game ends in a loss when lives reaches ___. The win check loops through all bricks to see if ___ are still alive.',
+        answers: ['0', 'any']
+      },
+      quiz: {
+        question: 'Which pattern from Breakout appears in almost every commercial game?',
+        options: [
+          'The coloured bricks',
+          'The PLAY / WIN / GAME_OVER state machine and restart loop',
+          'The bouncing ball'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

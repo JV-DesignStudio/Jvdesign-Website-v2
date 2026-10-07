@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Catch Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(52,211,153,.15);color:#34d399;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Python Catch Build Canvas <span class="cw-lang-tag">&#x1f40d; Python</span></h1>
+  <p>Write Python game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Python Catch game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">An orange basket at the bottom of a dark screen</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Python-to-JS transpiler (light transform so Python
+   syntax runs in the canvas iframe)
+   =================================================== */
+function pyToJs(code) {
+  return code
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    .replace(/\bNone\b/g, 'null')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\belif\b/g, 'else if')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||')
+    .replace(/\bnot\b/g, '!')
+    .replace(/\blen\s*\(/g, '(')
+    .replace(/\.append\s*\(/g, '.push(')
+    .replace(/\brandom\.randint\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/#.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Python Catch)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#191e3c;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var BASKET_VARS = 'let bx=255,by=365,bw=90,bh=22,speed=7;';
+
+var FRUIT_VARS = 'let fx=Math.floor(Math.random()*560)+20,fy=-20,fw=20,fh=20,fallSpeed=4;';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var MOVE_BASKET = 'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;bx=Math.max(0,Math.min(600-bw,bx));';
+
+var DRAW_BG = 'ctx.fillStyle="#191e3c";ctx.fillRect(0,0,600,400);';
+
+var DRAW_BASKET = 'ctx.fillStyle="#ff7700";ctx.fillRect(bx,by,bw,bh);';
+
+var DRAW_FRUIT = 'ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(fx+fw/2,fy+fh/2,fw/2,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 24px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,16,32);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillText("Lives: "+lives,584,32);';
+
+var FRUIT_FALL = 'fy+=fallSpeed;';
+
+var FRUIT_RESET = 'function resetFruit(){fx=Math.floor(Math.random()*560)+20;fy=-20}';
+
+var FRUIT_CATCH = 'if(fy+fh>=by&&fy<=by+bh&&fx+fw>=bx&&fx<=bx+bw){score++;resetFruit()}';
+
+var FRUIT_MISS = 'if(fy>410){lives--;if(lives<=0){gameState="over"}else{resetFruit()}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Python Catch steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-python-catch-canvas',
+  downloadName: 'my-python-catch.html',
+
+  hints: [
+    'An orange basket at the bottom of a dark screen',
+    'The basket slides left and right with the arrow keys',
+    'A red fruit falls from the top of the screen',
+    'Catching the fruit scores a point and spawns a new one',
+    'Missing the fruit costs a life',
+    'Game over when lives reach zero, with speed ramp and restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + KEYS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_BASKET +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + KEYS +
+        'function loop(){' +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'bx=Math.max(0,Math.min(600-bw,bx));' +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + FRUIT_VARS + KEYS +
+        FRUIT_RESET +
+        'function loop(){' +
+        MOVE_BASKET +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'if(fy>410)resetFruit();' +
+        DRAW_BG + DRAW_BASKET + DRAW_FRUIT +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + KEYS +
+        FRUIT_RESET +
+        'function loop(){' +
+        MOVE_BASKET + FRUIT_FALL +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'if(fy>410)resetFruit();' +
+        DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + KEYS +
+        FRUIT_RESET +
+        'function loop(){' +
+        MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        FRUIT_RESET +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=4;resetFruit();gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH + FRUIT_MISS +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220);' +
+        'ctx.fillText("Press R to play again",300,260)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Basket',
+      goal: 'Draw an orange basket at the bottom of the screen.',
+      points: [
+        'The canvas is 600x400 pixels with a dark blue background',
+        'The basket is an orange rectangle: 90 wide, 22 tall, sitting near the bottom at y=365',
+        'In real Pygame you would use <code>pygame.Rect(255, 365, 90, 22)</code> - here the canvas engine stores <code>bx, by, bw, bh</code>',
+        'The basket starts centred horizontally: x = (600 - 90) / 2 = 255'
+      ],
+      challenge: '🐍 Set the basket position and size:',
+      starter: '# Set the basket starting position\nbx = ___\nby = 365\nbw = ___\nbh = 22',
+      solution: '# Set the basket starting position\nbx = 255\nby = 365\nbw = 90\nbh = 22',
+      checks: ['255', '365', '90', '22'],
+      height: 120,
+      fills: {
+        text: 'The basket starts at x = ___ to appear centred. Its width of ___ pixels gives enough room to catch falling objects.',
+        answers: ['255', '90']
+      },
+      quiz: {
+        question: 'Why is the basket 90 pixels wide on a 600-pixel canvas?',
+        options: [
+          'It is a random nice number',
+          'It is exactly 15% of the canvas width - wide enough to catch things but narrow enough to make aiming matter',
+          'Wider baskets crash the game'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Keyboard Movement',
+      goal: 'Move the basket left and right with the arrow keys, clamped to the screen edges.',
+      points: [
+        'The engine tracks <code>leftHeld</code> and <code>rightHeld</code> - in real Pygame you would use <code>pygame.key.get_pressed()</code>',
+        'Move by <code>speed</code> (7) pixels each frame while a key is held',
+        'Clamp with <code>max(0, min(600 - bw, bx))</code> so the basket never leaves the screen',
+        'Using held keys instead of single presses gives smooth, continuous movement'
+      ],
+      challenge: '🐍 Write the basket movement logic:',
+      starter: '# Move the basket with arrow keys\nif leftHeld:\n    bx -= ___\nif rightHeld:\n    bx += ___\n\n# Clamp so the basket stays on screen\nbx = max(0, min(___ - bw, bx))',
+      solution: '# Move the basket with arrow keys\nif leftHeld:\n    bx -= speed\nif rightHeld:\n    bx += speed\n\n# Clamp so the basket stays on screen\nbx = max(0, min(600 - bw, bx))',
+      checks: ['leftheld', 'rightheld', 'speed', '600'],
+      height: 180,
+      fills: {
+        text: 'The basket moves ___ pixels per frame. Clamping to 600 - bw prevents the basket leaving the ___ side of the screen.',
+        answers: ['7', 'right']
+      },
+      quiz: {
+        question: 'Why use held keys instead of single key events for movement?',
+        options: [
+          'Events are broken in Pygame',
+          'get_pressed reports keys HELD each frame, giving smooth gliding instead of one step per press',
+          'It uses less memory'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Falling Fruit',
+      goal: 'Spawn a fruit at a random x position and let it fall down the screen.',
+      points: [
+        'The fruit starts above the screen at <code>fy = -20</code> so it slides in smoothly',
+        'Each frame: <code>fy += fallSpeed</code> moves it downward (positive y is down on canvas)',
+        'In Pygame: <code>fruit = pygame.Rect(random.randint(20, 560), -20, 20, 20)</code>',
+        'When it passes the bottom (<code>fy > 410</code>), reset to the top at a new random x'
+      ],
+      challenge: '🐍 Write the fruit falling logic:',
+      starter: '# Move the fruit downward\nfy += ___\n\n# Reset when it falls off screen\nif fy > ___:\n    fx = random.randint(20, 560)\n    fy = -20',
+      solution: '# Move the fruit downward\nfy += fallSpeed\n\n# Reset when it falls off screen\nif fy > 410:\n    fx = random.randint(20, 560)\n    fy = -20',
+      checks: ['fallspeed', '410', 'randint'],
+      height: 160,
+      fills: {
+        text: 'The fruit moves ___ pixels downward each frame. Starting at fy = ___ makes it slide in from above the visible area.',
+        answers: ['4', '-20']
+      },
+      quiz: {
+        question: 'Why start the fruit at y = -20 instead of y = 0?',
+        options: [
+          'It needs time to accelerate',
+          'Starting above the screen means the fruit slides smoothly into view instead of popping in at the edge',
+          'Negative coordinates are faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Catching Fruit',
+      goal: 'Detect when the fruit overlaps the basket and award a point.',
+      points: [
+        'Two rectangles overlap when: right edges pass each other AND bottom edges pass each other',
+        'In Pygame you would use <code>basket.colliderect(fruit)</code> - here we check the four edges manually',
+        'On catch: <code>score += 1</code> and reset the fruit to the top',
+        'This is called AABB (axis-aligned bounding box) collision - the same test used in every 2D game'
+      ],
+      challenge: '🐍 Write the catch detection:',
+      starter: '# Check if fruit overlaps basket\nif fy + fh >= ___ and fy <= by + bh and fx + fw >= ___ and fx <= bx + bw:\n    score += 1\n    resetFruit()',
+      solution: '# Check if fruit overlaps basket\nif fy + fh >= by and fy <= by + bh and fx + fw >= bx and fx <= bx + bw:\n    score += 1\n    resetFruit()',
+      checks: ['score', 'resetfruit', 'by', 'bx'],
+      height: 140,
+      fills: {
+        text: 'The collision check compares ___ edges of both rectangles. In Pygame you would call ___() for the same test.',
+        answers: ['four', 'colliderect']
+      },
+      quiz: {
+        question: 'Why check all four edges instead of just centre distance?',
+        options: [
+          'Centre distance only works for circles - rectangles need edge checks to avoid corner misses',
+          'Four checks are faster',
+          'Python requires exactly four conditions per if statement'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Lives & Missing',
+      goal: 'Lose a life when fruit hits the ground, game over at zero.',
+      points: [
+        'When the fruit passes the bottom without being caught: <code>lives -= 1</code>',
+        'If lives reach 0: <code>gameState = "over"</code> - freeze the game',
+        'Otherwise reset the fruit for another chance',
+        'Display lives top-right with the score top-left - a simple HUD'
+      ],
+      challenge: '🐍 Write the miss penalty:',
+      starter: '# Fruit hit the ground without being caught\nif fy > 410:\n    lives -= ___\n    if lives <= ___:\n        gameState = "over"\n    else:\n        resetFruit()',
+      solution: '# Fruit hit the ground without being caught\nif fy > 410:\n    lives -= 1\n    if lives <= 0:\n        gameState = "over"\n    else:\n        resetFruit()',
+      checks: ['lives', 'gameover', 'resetfruit', '0'],
+      height: 180,
+      fills: {
+        text: 'The player starts with ___ lives. When lives reach ___, the game state changes to "over".',
+        answers: ['3', '0']
+      },
+      quiz: {
+        question: 'Why use a gameState variable instead of just stopping the loop?',
+        options: [
+          'Stopping the loop is impossible',
+          'A state variable lets you show a game-over screen, check for restart, and keep the canvas drawing - stopping the loop would freeze everything',
+          'Python requires state variables'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Speed Ramp & Restart',
+      goal: 'Make the fruit fall faster as the score grows, and let R restart the game.',
+      points: [
+        'Increase <code>fallSpeed</code> every few catches: <code>fallSpeed = 4 + score // 5</code> speeds up every 5 points',
+        'Cap it with <code>min(fallSpeed, 10)</code> so it stays playable',
+        'On game over, pressing R resets score, lives, speed, and fruit position',
+        'This is the same difficulty ramp pattern used in Tetris, arcade games, and endless runners'
+      ],
+      challenge: '🐍 Write the speed ramp:',
+      starter: '# Increase fall speed as score grows\nfallSpeed = 4 + score // ___\nfallSpeed = min(fallSpeed, ___)',
+      solution: '# Increase fall speed as score grows\nfallSpeed = 4 + score // 5\nfallSpeed = min(fallSpeed, 10)',
+      checks: ['fallspeed', 'score', '5', '10'],
+      height: 100,
+      fills: {
+        text: 'The fruit speeds up every ___ points. The cap of ___ pixels per frame keeps the game challenging but not impossible.',
+        answers: ['5', '10']
+      },
+      quiz: {
+        question: 'Why cap the fall speed at 10 instead of letting it grow forever?',
+        options: [
+          'The canvas cannot draw faster than 10',
+          'Without a cap the game becomes unplayable - the fruit passes the basket in 2 frames and no human can react',
+          'Python integers overflow at 10'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

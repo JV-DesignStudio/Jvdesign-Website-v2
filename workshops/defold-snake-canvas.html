@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defold Snake Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(45,212,191,.15);color:#2dd4bf;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Defold Snake Build Canvas <span class="cw-lang-tag">&#x1f3ae; Defold</span></h1>
+  <p>Write Defold Lua game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Defold Snake game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A green square on a dark 20x20 grid</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Defold Lua-to-JS transpiler
+   =================================================== */
+function defoldToJs(code) {
+  return code
+    .replace(/--(.*)$/gm, '//$1')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bself\.(\w+)/g, 'self_$1')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\.\s*/g, '+ ')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\btable\.insert\s*\(\s*(\w+)\s*,\s*/g, '$1.push(')
+    .replace(/\bmath\.random\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\bmath\.floor\s*\(/g, 'Math.floor(')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Defold Snake)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f172a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");const GRID=20,CELL=20;';
+
+var SNAKE_VARS = 'let snake=[{x:10,y:10}],dx=1,dy=0,ndx=1,ndy=0;';
+
+var FOOD_VARS = 'let food={x:15,y:15};';
+
+var SCORE_VARS = 'let score=0;';
+
+var STATE_VARS = 'let gameState="play",tickRate=150,lastTick=0;';
+
+var KEYS = 'document.addEventListener("keydown",function(e){' +
+    'if((e.code==="ArrowLeft"||e.code==="KeyA")&&dx!==1){ndx=-1;ndy=0}' +
+    'if((e.code==="ArrowRight"||e.code==="KeyD")&&dx!==-1){ndx=1;ndy=0}' +
+    'if((e.code==="ArrowUp"||e.code==="KeyW")&&dy!==1){ndx=0;ndy=-1}' +
+    'if((e.code==="ArrowDown"||e.code==="KeyS")&&dy!==-1){ndx=0;ndy=1}' +
+    'if(e.code==="KeyR"&&gameState==="over"){snake=[{x:10,y:10}];dx=1;dy=0;ndx=1;ndy=0;score=0;tickRate=150;spawnFood();gameState="play"}' +
+    'e.preventDefault()});';
+
+var SPAWN_FOOD = 'function spawnFood(){food.x=Math.floor(Math.random()*GRID);food.y=Math.floor(Math.random()*GRID)}';
+
+var DRAW_BG = 'ctx.fillStyle="#0f172a";ctx.fillRect(0,0,400,400);';
+
+var DRAW_GRID = 'ctx.strokeStyle="#1e293b";for(var gi=0;gi<=GRID;gi++){ctx.beginPath();ctx.moveTo(gi*CELL,0);ctx.lineTo(gi*CELL,400);ctx.stroke();ctx.beginPath();ctx.moveTo(0,gi*CELL);ctx.lineTo(400,gi*CELL);ctx.stroke()}';
+
+var DRAW_SNAKE = 'for(var si=0;si<snake.length;si++){ctx.fillStyle=si===0?"#22c55e":"#4ade80";ctx.fillRect(snake[si].x*CELL+1,snake[si].y*CELL+1,CELL-2,CELL-2)}';
+
+var DRAW_FOOD = 'ctx.fillStyle="#ef4444";ctx.fillRect(food.x*CELL+2,food.y*CELL+2,CELL-4,CELL-4);';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,8,18);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Defold Snake steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-defold-snake-canvas',
+  downloadName: 'my-defold-snake.html',
+
+  hints: [
+    'A green square on a dark 20x20 grid',
+    'The snake head moves in the direction of the arrow keys',
+    'Red food appears at a random grid cell',
+    'Eating food makes the snake grow by one segment',
+    'Hitting the wall or yourself ends the game',
+    'The snake speeds up as it grows, with a restart option'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + KEYS +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + STATE_VARS + KEYS +
+        'function loop(ts){' +
+        'if(ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;' +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'snake[0].x=Math.max(0,Math.min(GRID-1,snake[0].x));snake[0].y=Math.max(0,Math.min(GRID-1,snake[0].y));}' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + STATE_VARS + KEYS +
+        SPAWN_FOOD +
+        'function loop(ts){' +
+        'if(gameState==="play"&&ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;' +
+        'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);snake.pop();' +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        SPAWN_FOOD +
+        'function loop(ts){' +
+        'if(gameState==="play"&&ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;' +
+        'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);' +
+        'try{' + defoldToJs(u) + '}catch(e){snake.pop();}' +
+        '}' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        SPAWN_FOOD +
+        'function loop(ts){' +
+        'if(gameState==="play"&&ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;' +
+        'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);' +
+        'if(head.x===food.x&&head.y===food.y){score++;spawnFood()}else{snake.pop()}' +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        SPAWN_FOOD +
+        'function loop(ts){' +
+        'if(gameState==="play"&&ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;' +
+        'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);' +
+        'if(head.x===food.x&&head.y===food.y){score++;spawnFood();tickRate=Math.max(60,150-score*5)}else{snake.pop()}' +
+        'if(head.x<0||head.x>=GRID||head.y<0||head.y>=GRID){gameState="over"}' +
+        'for(var ci=1;ci<snake.length;ci++){if(head.x===snake[ci].x&&head.y===snake[ci].y)gameState="over"}' +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",200,180);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,210);' +
+        'ctx.fillText("Press R to restart",200,240)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Snake Head',
+      goal: 'Place a green square on a 20x20 grid.',
+      points: [
+        'The game uses a 20x20 grid where each cell is 20 pixels (400x400 canvas)',
+        'The snake is an array of {x, y} grid positions - starting with one segment at (10, 10)',
+        'In Defold you would create a game object with a sprite for the head',
+        'Grid-based movement means the snake jumps cell-to-cell, not pixel-by-pixel'
+      ],
+      challenge: '🎮 Set the snake starting position:',
+      starter: '-- Place the snake head on the grid\nlocal snake = {}\nlocal head = {x = ___, y = ___}\ntable.insert(snake, head)',
+      solution: '-- Place the snake head on the grid\nlocal snake = {}\nlocal head = {x = 10, y = 10}\ntable.insert(snake, head)',
+      checks: ['10', 'snake', 'head'],
+      height: 120,
+      fills: {
+        text: 'The snake starts at grid position (___,___) which is the centre of a 20x20 grid.',
+        answers: ['10', '10']
+      },
+      quiz: {
+        question: 'Why use grid coordinates instead of pixel positions for Snake?',
+        options: [
+          'Pixels are too small',
+          'Grid movement makes collision and growth simple - just compare and add integer positions',
+          'Defold only supports grids'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Grid Movement',
+      goal: 'Move the snake head one cell per tick in the current direction.',
+      points: [
+        'Direction is stored as dx, dy: (1,0) means right, (-1,0) left, (0,-1) up, (0,1) down',
+        'Each tick: <code>head.x = head.x + dx</code> and <code>head.y = head.y + dy</code>',
+        'The snake moves on a timer (tickRate), not every frame - this gives the classic Snake feel',
+        'In Defold you would update position in <code>update(self, dt)</code> with a timer'
+      ],
+      challenge: '🎮 Write the movement logic:',
+      starter: '-- Move the snake head by direction\nself.x = self.x + ___\nself.y = self.y + ___',
+      solution: '-- Move the snake head by direction\nself.x = self.x + dx\nself.y = self.y + dy',
+      checks: ['dx', 'dy'],
+      height: 100,
+      fills: {
+        text: 'The direction vector (dx, dy) = (1, 0) moves the snake ___. The tick rate of ___ ms gives a steady pace.',
+        answers: ['right', '150']
+      },
+      quiz: {
+        question: 'Why move on a timer instead of every frame?',
+        options: [
+          'Frames are too slow',
+          'A tick timer gives the classic step-by-step Snake movement and makes speed control easy',
+          'Defold requires timers'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Spawning Food',
+      goal: 'Place red food at a random grid cell for the snake to eat.',
+      points: [
+        'Food is a single {x, y} position on the grid',
+        '<code>math.random(0, 19)</code> picks a random cell in the 20x20 grid',
+        'In Defold you would use a factory to spawn a food game object at a position',
+        'The food stays put until the snake reaches it'
+      ],
+      challenge: '🎮 Write the food spawning function:',
+      starter: '-- Spawn food at a random grid cell\nlocal fx = math.random(0, ___)\nlocal fy = math.random(0, ___)',
+      solution: '-- Spawn food at a random grid cell\nlocal fx = math.random(0, 19)\nlocal fy = math.random(0, 19)',
+      checks: ['math.random', '19'],
+      height: 100,
+      fills: {
+        text: 'Food spawns in grid cells 0 to ___, giving ___ possible columns.',
+        answers: ['19', '20']
+      },
+      quiz: {
+        question: 'In Defold, how would you spawn a food object at runtime?',
+        options: [
+          'Draw it directly on screen',
+          'Use a factory component that creates game object instances from a prototype',
+          'Food objects exist from the start'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Eating & Growing',
+      goal: 'When the snake reaches the food, grow by one segment and respawn the food.',
+      points: [
+        'If head position equals food position: the snake eats',
+        'Growing: skip the <code>snake.pop()</code> this tick so the tail stays, making the snake longer',
+        'After eating: score up and spawn new food',
+        'In Defold you would check collision in <code>on_message</code> using physics or manual distance'
+      ],
+      challenge: '🎮 Write the eating logic:',
+      starter: '-- Check if snake head is on the food\nif head.x == food.x and head.y == ___ then\n    score = score + ___\n    spawnFood()\nend',
+      solution: '-- Check if snake head is on the food\nif head.x == food.x and head.y == food.y then\n    score = score + 1\n    spawnFood()\nend',
+      checks: ['food.y', 'score', 'spawnfood'],
+      height: 140,
+      fills: {
+        text: 'The snake grows by keeping the ___ segment when it eats. Each food adds ___ to the score.',
+        answers: ['tail', '1']
+      },
+      quiz: {
+        question: 'How does the snake actually grow longer?',
+        options: [
+          'A new segment is added to the front',
+          'The tail is NOT removed on the eating tick - the body array gets one entry longer',
+          'The segments get bigger'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Wall & Self Collision',
+      goal: 'End the game when the snake hits a wall or its own body.',
+      points: [
+        'Wall collision: head.x < 0 or >= 20, same for head.y',
+        'Self collision: loop through body segments and check if any match head position',
+        'In Defold you would use collision groups: the head in one group, walls and body in another',
+        'Set <code>gameState = "over"</code> to freeze the game'
+      ],
+      challenge: '🎮 Write the collision checks:',
+      starter: '-- Wall collision\nif head.x < 0 or head.x >= ___ or head.y < 0 or head.y >= ___ then\n    gameState = "over"\nend\n\n-- Self collision: check each body segment\n-- if any segment matches head position, game over',
+      solution: '-- Wall collision\nif head.x < 0 or head.x >= 20 or head.y < 0 or head.y >= 20 then\n    gameState = "over"\nend\n\n-- Self collision: check each body segment\n-- if any segment matches head position, game over',
+      checks: ['20', 'gameover', 'over'],
+      height: 160,
+      fills: {
+        text: 'The grid is ___ cells wide. In Defold, collision detection uses ___ and collision objects.',
+        answers: ['20', 'groups']
+      },
+      quiz: {
+        question: 'Why check self-collision starting from segment 1, not 0?',
+        options: [
+          'Segment 0 is invisible',
+          'Segment 0 IS the head - comparing the head to itself would always trigger a false collision',
+          'Lua arrays start at 1'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Speed Ramp & Restart',
+      goal: 'Speed up as the snake grows and allow restarting with R.',
+      points: [
+        'Decrease tickRate as score grows: <code>tickRate = 150 - score * 5</code>',
+        'Cap minimum at 60ms so the game stays playable',
+        'Press R on game over to reset everything: snake, direction, score, speed',
+        'This escalating difficulty is the core of what makes Snake addictive'
+      ],
+      challenge: '🎮 Write the speed ramp:',
+      starter: '-- Speed up as score grows\nlocal tickRate = 150 - score * ___\nif tickRate < ___ then\n    tickRate = ___\nend',
+      solution: '-- Speed up as score grows\nlocal tickRate = 150 - score * 5\nif tickRate < 60 then\n    tickRate = 60\nend',
+      checks: ['tickrate', 'score', '5', '60'],
+      height: 120,
+      fills: {
+        text: 'Each point reduces the tick interval by ___ms. The minimum of ___ms keeps the game possible.',
+        answers: ['5', '60']
+      },
+      quiz: {
+        question: 'What classic design pattern makes Snake endlessly replayable?',
+        options: [
+          'Bright colours',
+          'Escalating speed creates a natural difficulty curve - you always feel like you could do better next time',
+          'The grid pattern'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

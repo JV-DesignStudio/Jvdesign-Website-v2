@@ -2,6 +2,166 @@
    Player Profile, Unified progression across all games & workshops
    ═══════════════════════════════════════════════════════════ */
 
+/* Storage key -> workshop id for ledger reconciliation (A791).
+   Covers every SERIES episode in workshops/my-progress.html, every
+   window.BQ quiz page, and every other complete-able progress key found
+   in workshops/*.html. Canvas preview keys are intentionally absent. */
+var WORKSHOP_KEY_TO_ID = {
+    'jvds-3d-print-ep1-v2': 'tinkercad-ep1-spinner',
+    'jvds-3d-print-ep2-v2': 'tinkercad-ep2-popit',
+    'jvds-3d-print-ep3-v2': 'tinkercad-ep3-blocks',
+    'jvds-3d-print-ep4-v2': 'tinkercad-ep4-pattern',
+    'jvds-3d-print-ep5-v2': 'tinkercad-ep5-phonestand',
+    'jvds-3d-print-ep6-v2': 'tinkercad-ep6-marblerun',
+    'jvds-3d-print-ep7-v2': 'tinkercad-ep7-keychain',
+    'jvds-3d-print-ep8-v2': 'tinkercad-ep8-shapes',
+    'jvds-barrel-blast-v2': 'barrel-blast-workshop',
+    'jvds-blender-animation-v2': 'blender-animation-workshop',
+    'jvds-blender-character-v2': 'blender-character-workshop',
+    'jvds-blender-cube-v2': 'blender-cube-workshop',
+    'jvds-blender-lighting-v2': 'blender-lighting-workshop',
+    'jvds-blender-materials-v2': 'blender-materials-workshop',
+    'jvds-blender-rigging-v2': 'blender-rigging-workshop',
+    'jvds-blender-scene-v2': 'blender-scene-workshop',
+    'jvds-blender-v2': 'blender-workshop',
+    'jvds-castle-builder-v2': 'castle-builder',
+    'jvds-castle-siege-v2': 'castle-siege-blueprint',
+    'jvds-cpp-breakout-v2': 'cpp-breakout-workshop',
+    'jvds-cpp-platformer-v2': 'cpp-platformer-workshop',
+    'jvds-cpp-platformer2-v2': 'cpp-platformer-part2-workshop',
+    'jvds-cpp-pong-v2': 'cpp-pong-workshop',
+    'jvds-cpp-snake-v2': 'cpp-snake-workshop',
+    'jvds-cpp-tower-defence-v2': 'cpp-tower-defence-builder',
+    'jvds-cpp-tower-part1-v2': 'cpp-tower-part1-workshop',
+    'jvds-cpp-tower-part2-v2': 'cpp-tower-part2-workshop',
+    'jvds-defold-dungeon-v2': 'defold-dungeon-workshop',
+    'jvds-defold-platformer-v2': 'defold-platformer-workshop',
+    'jvds-defold-pong-v2': 'defold-pong-workshop',
+    'jvds-defold-puzzle-v2': 'defold-puzzle-workshop',
+    'jvds-defold-shooter-v2': 'defold-shooter-workshop',
+    'jvds-defold-snake-v2': 'defold-snake-workshop',
+    'jvds-diablo-blueprint-v2': 'diablo-blueprint',
+    'jvds-fairy-survivors-v2': 'fairy-survivors-guide',
+    'jvds-fairy-tale-builder': 'fairy-tale-builder',
+    'jvds-fnaf-blueprint-v2': 'fnaf-blueprint',
+    'jvds-gdevelop-adventure-v2': 'gdevelop-adventure-workshop',
+    'jvds-gdevelop-platformer-v2': 'gdevelop-platformer-workshop',
+    'jvds-gdevelop-pointclick-v2': 'gdevelop-pointclick-workshop',
+    'jvds-gdevelop-pong-v2': 'gdevelop-pong-workshop',
+    'jvds-gdevelop-shooter-v2': 'gdevelop-shooter-workshop',
+    'jvds-gdevelop-snake-v2': 'gdevelop-snake-workshop',
+    'jvds-gml-breakout-v2': 'gml-breakout-workshop',
+    'jvds-gml-platformer-v2': 'gml-platformer-workshop',
+    'jvds-gml-pong-v2': 'gml-pong-workshop',
+    'jvds-gml-rpg-v2': 'gml-rpg-workshop',
+    'jvds-gml-shooter-v2': 'gml_shooter_trainer_project',
+    'jvds-godot-gatekeeper3d-p1-v2': 'godot-gatekeeper-3d-part1',
+    'jvds-godot-gatekeeper3d-p2-v2': 'godot-gatekeeper-3d-part2',
+    'jvds-godot-gdscript-v2': 'godot-gdscript-essentials',
+    'jvds-godot-racing-v2': 'godot-racing-workshop',
+    'jvds-godot-racing2-v2': 'godot-racing-workshop-2',
+    'jvds-godot-tutorial-v2': 'godot_tutorial',
+    'jvds-java-breakout-v2': 'java-breakout-workshop',
+    'jvds-java-breakout-workshop': 'java-breakout-workshop',
+    'jvds-java-platformer-v2': 'java-platformer-workshop',
+    'jvds-java-platformer-workshop': 'java-platformer-workshop',
+    'jvds-java-pong-v2': 'java-pong-workshop',
+    'jvds-java-pong-workshop': 'java-pong-workshop',
+    'jvds-java-rpg-part1-v2': 'java-rpg-part1-workshop',
+    'jvds-java-rpg-part2-v2': 'java-rpg-part2-workshop',
+    'jvds-java-rpg-part3-v2': 'java-rpg-part3-workshop',
+    'jvds-java-rpg1-workshop': 'java-rpg-part1-workshop',
+    'jvds-java-rpg2-workshop': 'java-rpg-part2-workshop',
+    'jvds-java-rpg3-workshop': 'java-rpg-part3-workshop',
+    'jvds-java-space-v2': 'java-space-workshop',
+    'jvds-java-space-workshop': 'java-space-workshop',
+    'jvds-js-breakout-v2': 'js-breakout-workshop',
+    'jvds-js-flappy-v2': 'js-flappy-workshop',
+    'jvds-js-memory-v2': 'js-memory-workshop',
+    'jvds-js-platformer-v2': 'js-platformer-builder',
+    'jvds-js-platformer2-v2': 'js-platformer-part2-workshop',
+    'jvds-js-snake-v2': 'js-snake-workshop',
+    'jvds-jump-jump-mario-v2': 'jump-jump-mario-workshop',
+    'jvds-minecraft-custom-block-v2': 'minecraft-custom-block-mod',
+    'jvds-minecraft-custom-food-v2': 'minecraft-custom-food-mod',
+    'jvds-minecraft-custom-mob-v2': 'minecraft-custom-mob-mod',
+    'jvds-minecraft-custom-tool-v2': 'minecraft-custom-tool-mod',
+    'jvds-minecraft-first-item-v2': 'minecraft-first-item-mod',
+    'jvds-minecraft-lucky-v2': 'minecraft-lucky-mod',
+    'jvds-mugen-ai-v2': 'mugen-ai-workshop',
+    'jvds-mugen-basics-v2': 'mugen-basics-workshop',
+    'jvds-mugen-game-v2': 'mugen-game-setup-workshop',
+    'jvds-mugen-stage-v2': 'add-your-own-stage',
+    'jvds-mugen-v2': 'mugen-workshop',
+    'jvds-night-watch-p2-v2': 'night-watch-part2-workshop',
+    'jvds-night-watch-p3-v2': 'night-watch-part3-workshop',
+    'jvds-night-watch-v2': 'night-watch-workshop',
+    'jvds-nuclear-blueprint-v2': 'nuclear-blueprint',
+    'jvds-nuclear-throne-v2': 'nuclear-throne-guide',
+    'jvds-openrct2-modding-v2': 'openrct2-modding-builder',
+    'jvds-openrct2-swim-v2': 'openrct2-swim-rescue',
+    'jvds-pico8-dungeon-v2': 'pico8-dungeon-workshop',
+    'jvds-pico8-match3-v2': 'pico8-match3-workshop',
+    'jvds-pico8-platformer-v2': 'pico8-platformer-workshop',
+    'jvds-pico8-pong-v2': 'pico8-pong-workshop',
+    'jvds-pico8-shooter-v2': 'pico8-shooter-workshop',
+    'jvds-pico8-snake-v2': 'pico8-snake-workshop',
+    'jvds-pirate-cannon-v2': 'pirate-cannon-builder',
+    'jvds-pirate-ship-v2': 'pirate-ship-builder',
+    'jvds-pixel-quest-v2': 'pixel-quest-workshop',
+    'jvds-python-breakout-v2': 'python-breakout-workshop',
+    'jvds-python-breakout2-v2': 'python-breakout-part2-workshop',
+    'jvds-python-catch-v2': 'python-catch-workshop',
+    'jvds-python-dodge-v2': 'python-dodge-workshop',
+    'jvds-python-game-v2': 'python-game-builder',
+    'jvds-python-maze-v2': 'python-maze-workshop',
+    'jvds-python-platformer-v2': 'python-platformer-workshop',
+    'jvds-python-platformer2-v2': 'python-platformer-part2-workshop',
+    'jvds-race-builder-v2': 'race-builder',
+    'jvds-race-car-builder': 'race-car-builder',
+    'jvds-racing-blueprint-v2': 'racing-blueprint',
+    'jvds-roblox-adventure-v2': 'roblox-adventure-workshop',
+    'jvds-roblox-battle-v2': 'roblox-battle-workshop',
+    'jvds-roblox-collapse-v2': 'roblox-collapse-obby-workshop',
+    'jvds-roblox-corruption-v1': 'roblox-corruption-obby-workshop',
+    'jvds-roblox-creator-journey-v2': 'roblox-creator-journey',
+    'jvds-roblox-creator-v2': 'roblox-creator-journey',
+    'jvds-roblox-horror-v2': 'roblox-horror-workshop',
+    'jvds-roblox-obby-v2': 'roblox-obby-workshop',
+    'jvds-roblox-pirate-v2': 'roblox-pirate-workshop',
+    'jvds-roblox-simulator-v2': 'roblox-simulator-workshop',
+    'jvds-roblox-tycoon-v2': 'roblox-tycoon-workshop',
+    'jvds-robot-builder-v2': 'robot-builder',
+    'jvds-rocket-builder-v2': 'rocket-builder',
+    'jvds-scifi-runner-v2': 'sci-fi-runner-builder',
+    'jvds-scratch-catch-v2': 'scratch-catch-workshop',
+    'jvds-scratch-clicker-v2': 'scratch-clicker-workshop',
+    'jvds-scratch-maze-v2': 'scratch-maze-workshop',
+    'jvds-scratch-platformer-v2': 'scratch-platformer-workshop',
+    'jvds-scratch-quiz-v2': 'scratch-quiz-workshop',
+    'jvds-scratch-story-v2': 'scratch-story-workshop',
+    'jvds-space-invaders-v2': 'space_invaders_tutorial',
+    'jvds-steampunk-airship-v2': 'steampunk-airship-builder',
+    'jvds-submarine-builder': 'submarine-builder',
+    'jvds-unity-2d-platformer-v2': 'unity-2d-platformer',
+    'jvds-unity-3d-platformer-v2': 'unity-3d-platformer',
+    'jvds-unity-action-rpg-v2': 'unity-action-rpg-workshop',
+    'jvds-unity-breakout-v2': 'unity-breakout-workshop',
+    'jvds-unity-multiplayer-v2': 'unity-multiplayer-workshop',
+    'jvds-unity-pong-v2': 'unity-pong-workshop',
+    'jvds-unity-top-down-v2': 'unity-top-down-shooter',
+    'jvds-unity-ui-menus-v2': 'unity-ui-workshop',
+    'jvds-unreal-2d-platformer-v2': 'unreal-2d-platformer',
+    'jvds-unreal-advanced-v2': 'unreal-advanced-workshop',
+    'jvds-unreal-basics-v2': 'unreal-basics-workshop',
+    'jvds-unreal-bp-shooter-v2': 'unreal-blueprint-shooter',
+    'jvds-unreal-clicker-v2': 'unreal-clicker-builder',
+    'jvds-unreal-fighter-v2': 'unreal-fighter-workshop',
+    'jvds-unreal-multiplayer-v2': 'unreal-multiplayer-workshop',
+    'jvds-unreal-top-down-v2': 'unreal-top-down-shooter',
+    'jvds-unreal-zombie-v2': 'unreal-zombie-survivor'
+};
+
 class PlayerProfile {
   constructor() {
     this.storageKey = 'jvds_profile';
@@ -15,6 +175,8 @@ class PlayerProfile {
     this.migrateXP(isLegacy);
     this.refreshXP();
     if (isLegacy) this.saveProfile(); // persist the migration
+    // A791: reconcile already-complete progress keys into the single ledger.
+    if (this.syncWorkshopCompletions()) this.saveProfile();
   }
 
   /* ─── UNIFIED XP LEDGER ───
@@ -186,7 +348,11 @@ class PlayerProfile {
   /* ─── WORKSHOPS ───
      Completion is recorded for quest/achievement purposes. XP is NOT added
      here , workshop XP is owned by the per-workshop progress keys and picked
-     up by scanComponentXP, so awarding a flat bonus would double-count. */
+     up by scanComponentXP, so awarding a flat bonus would double-count.
+     completedWorkshops is the single authoritative "workshops done" ledger
+     (A791): me.html and workshops/my-progress.html both read it, and
+     syncWorkshopCompletions() reconciles progress keys that finished
+     without reporting, so every surface shows the same total. */
   markWorkshopCompleted(workshopId) {
     if (!this.state.completedWorkshops.includes(workshopId)) {
       this.state.completedWorkshops.push(workshopId);
@@ -200,6 +366,33 @@ class PlayerProfile {
 
   isWorkshopCompleted(workshopId) {
     return this.state.completedWorkshops.includes(workshopId);
+  }
+
+  /* ─── LEDGER RECONCILIATION (A791) ───
+     Fold every already-complete per-workshop progress key into
+     completedWorkshops exactly once. "Complete" uses the same shape rule as
+     workshops/my-progress.html (completed array covers total), so the two
+     pages agree by construction. Canvas preview keys (jvds-*-canvas) carry
+     no total and are skipped: the canvas engine has no completion signal.
+     Direct push, no events: this runs on every load and must stay silent. */
+  syncWorkshopCompletions() {
+    var added = 0;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (!key || key.indexOf('jvds-') !== 0 || key === this.storageKey) continue;
+        var id = WORKSHOP_KEY_TO_ID[key];
+        if (!id || this.state.completedWorkshops.indexOf(id) !== -1) continue;
+        var w = null;
+        try { w = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { w = null; }
+        if (w && Array.isArray(w.completed) && w.completed.length > 0 &&
+            typeof w.total === 'number' && w.completed.length >= w.total) {
+          this.state.completedWorkshops.push(id);
+          added++;
+        }
+      }
+    } catch (e) { /* private-mode: keep last known ledger */ }
+    return added;
   }
 
   /* ─── ACHIEVEMENTS ─── */
@@ -427,6 +620,10 @@ class PlayerProfile {
 
 // Create and export singleton
 const playerProfile = new PlayerProfile();
+// A791: a top-level const in a classic script does not attach to window, but
+// me.html, pages/workshop.html and several games read window.playerProfile,
+// so the ledger was unreachable there. Export it explicitly.
+if (typeof window !== 'undefined') window.playerProfile = playerProfile;
 
 /* ═══════════════════════════════════════════════════════════
    GA4 BRIDGE

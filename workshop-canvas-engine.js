@@ -128,6 +128,7 @@ function renderSteps() {
       '<ul class="cw-explain">' + step.points.map(function(p) { return '<li>' + p + '</li>'; }).join('') + '</ul>' +
       '<div class="cw-challenge">' + step.challenge + '</div>' +
       '<textarea class="cw-editor" id="editor-' + step.num + '"' +
+        ' aria-label="Code editor for step ' + step.num + '"' +
         ' spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"' +
         ' style="min-height:' + (step.height || 100) + 'px"' +
         (isDone ? ' readonly' : '') +
@@ -153,6 +154,7 @@ function renderSteps() {
         fillHtml += parts[fi];
         if (fi < step.fills.answers.length) {
           fillHtml += '<input class="cw-fill-blank" id="fill-' + step.num + '-' + fi + '"' +
+            ' aria-label="Fill blank ' + (fi + 1) + ' for step ' + step.num + '"' +
             ' data-answer="' + step.fills.answers[fi] + '"' +
             ' placeholder="···"' +
             (isDone ? ' disabled' : '') + '>';

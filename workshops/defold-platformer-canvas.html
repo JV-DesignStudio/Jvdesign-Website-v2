@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defold Platformer Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(45,212,191,.15);color:#2dd4bf;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Defold Platformer Build Canvas <span class="cw-lang-tag">&#x1f3ae; Defold</span></h1>
+  <p>Write Defold Lua game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Defold Platformer game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue player square standing on a green ground platform</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Defold Lua-to-JS transpiler
+   =================================================== */
+function defoldToJs(code) {
+  return code
+    .replace(/--(.*)$/gm, '//$1')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bself\.(\w+)/g, 'self_$1')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\.\s*/g, '+ ')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\btable\.insert\s*\(\s*(\w+)\s*,\s*/g, '$1.push(')
+    .replace(/\bmath\.random\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\bmath\.floor\s*\(/g, 'Math.floor(')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Defold Platformer)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0c0a1d;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=50,py=340,pw=24,ph=32,pvx=0,pvy=0,onGround=false;const gravity=0.6,jumpForce=-10,moveSpeed=4;';
+
+var PLATFORM_VARS = 'var platforms=[{x:0,y:372,w:600,h:28},{x:120,y:300,w:100,h:16},{x:280,y:240,w:120,h:16},{x:430,y:180,w:100,h:16},{x:200,y:130,w:80,h:16}];';
+
+var COIN_VARS = 'var coins=[{x:155,y:275,s:14,got:false},{x:325,y:215,s:14,got:false},{x:465,y:155,s:14,got:false},{x:230,y:105,s:14,got:false}];';
+
+var SCORE_VARS = 'let score=0;';
+
+var FLAG_VARS = 'var flag={x:220,y:98,w:12,h:32};';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upPressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW"||e.code==="Space")upPressed=true;' +
+    'if(e.code==="KeyR"&&gameState==="win"){score=0;px=50;py=340;pvx=0;pvy=0;coins.forEach(function(c){c.got=false});gameState="play"}' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var MOVE_PLAYER = 'pvx=0;if(leftHeld)pvx=-moveSpeed;if(rightHeld)pvx=moveSpeed;px+=pvx;if(px<0)px=0;if(px+pw>600)px=600-pw;';
+
+var APPLY_GRAVITY = 'pvy+=gravity;py+=pvy;onGround=false;' +
+  'for(var pi=0;pi<platforms.length;pi++){var pl=platforms[pi];' +
+  'if(px+pw>pl.x&&px<pl.x+pl.w&&py+ph>=pl.y&&py+ph<=pl.y+12&&pvy>=0){py=pl.y-ph;pvy=0;onGround=true}}';
+
+var JUMP = 'if(upPressed&&onGround){pvy=jumpForce}upPressed=false;';
+
+var DRAW_BG = 'ctx.fillStyle="#0c0a1d";ctx.fillRect(0,0,600,400);';
+
+var DRAW_PLATFORMS = 'ctx.fillStyle="#22c55e";for(var di=0;di<platforms.length;di++){var dp=platforms[di];ctx.fillRect(dp.x,dp.y,dp.w,dp.h)}';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#3b82f6";ctx.fillRect(px,py,pw,ph);';
+
+var DRAW_COINS = 'for(var ci=0;ci<coins.length;ci++){if(!coins[ci].got){ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(coins[ci].x+7,coins[ci].y+7,7,0,Math.PI*2);ctx.fill()}}';
+
+var DRAW_FLAG = 'ctx.fillStyle="#ef4444";ctx.fillRect(flag.x,flag.y,flag.w,flag.h);ctx.fillStyle="#fff";ctx.fillRect(flag.x,flag.y,flag.w,10);';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Coins: "+score+"/4",12,24);';
+
+var COIN_COLLECT = 'for(var cc=0;cc<coins.length;cc++){if(!coins[cc].got&&px+pw>coins[cc].x&&px<coins[cc].x+14&&py+ph>coins[cc].y&&py<coins[cc].y+14){coins[cc].got=true;score++}}';
+
+var FLAG_CHECK = 'if(px+pw>flag.x&&px<flag.x+flag.w&&py+ph>flag.y&&py<flag.y+flag.h&&score>=4){gameState="win"}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Defold Platformer steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-defold-platformer-canvas',
+  downloadName: 'my-defold-platformer.html',
+
+  hints: [
+    'A blue player square standing on a green ground platform',
+    'The player runs left and right with smooth movement',
+    'The player jumps with gravity pulling them back down',
+    'Floating platforms at different heights to climb',
+    'Yellow coins appear on platforms to collect',
+    'A red-and-white flag at the top - reach it with all coins to win'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS +
+        'function loop(){' +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'px+=pvx;if(px<0)px=0;if(px+pw>600)px=600-pw;' +
+        APPLY_GRAVITY +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'py+=pvy;onGround=false;' +
+        'for(var pi=0;pi<platforms.length;pi++){var pl=platforms[pi];' +
+        'if(px+pw>pl.x&&px<pl.x+pl.w&&py+ph>=pl.y&&py+ph<=pl.y+12&&pvy>=0){py=pl.y-ph;pvy=0;onGround=true}}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY + JUMP +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_VARS + COIN_VARS + SCORE_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY + JUMP +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_VARS + COIN_VARS + FLAG_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + APPLY_GRAVITY + JUMP + COIN_COLLECT +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_FLAG + DRAW_PLAYER + DRAW_SCORE +
+        'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("YOU WIN!",300,180);ctx.font="18px monospace";ctx.fillText("All coins collected!",300,210);' +
+        'ctx.fillText("Press R to play again",300,240)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Player & Ground',
+      goal: 'Draw a blue player on a green ground platform.',
+      points: [
+        'The player is a 24x32 rectangle representing a character sprite',
+        'The ground platform spans the full width at y=372, 28 pixels tall',
+        'In Defold, the player is a game object with a sprite and collision components',
+        'The player starts at x=50, standing on the ground at y=340'
+      ],
+      challenge: '🎮 Set the player position and ground:',
+      starter: '-- Player starts on the ground\nlocal px = ___\nlocal py = ___\nlocal pw = 24\nlocal ph = 32',
+      solution: '-- Player starts on the ground\nlocal px = 50\nlocal py = 340\nlocal pw = 24\nlocal ph = 32',
+      checks: ['50', '340', '24', '32'],
+      height: 120,
+      fills: {
+        text: 'The player starts at x=___ near the left edge. The ground sits at y=___ near the bottom.',
+        answers: ['50', '372']
+      },
+      quiz: {
+        question: 'In Defold, what component defines the shape used for collision detection?',
+        options: [
+          'The sprite component',
+          'A collision object component with a shape (box, sphere, or capsule)',
+          'The script component'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Horizontal Movement',
+      goal: 'Move the player left and right with arrow keys, clamped to the screen.',
+      points: [
+        'Set velocity based on input: left = -4, right = +4, neither = 0',
+        'Apply velocity to position each frame: <code>px = px + pvx</code>',
+        'Clamp between 0 and 600 - pw so the player stays on screen',
+        'In Defold you would set the velocity in <code>on_input()</code> and apply in <code>update()</code>'
+      ],
+      challenge: '🎮 Write the movement logic:',
+      starter: '-- Set horizontal velocity from input\npvx = 0\nif leftHeld then\n    pvx = -___\nend\nif rightHeld then\n    pvx = ___\nend',
+      solution: '-- Set horizontal velocity from input\npvx = 0\nif leftHeld then\n    pvx = -moveSpeed\nend\nif rightHeld then\n    pvx = moveSpeed\nend',
+      checks: ['pvx', 'leftheld', 'rightheld', 'movespeed'],
+      height: 160,
+      fills: {
+        text: 'The player moves ___ pixels per frame. Setting velocity to 0 when no key is held creates ___ stop movement.',
+        answers: ['4', 'instant']
+      },
+      quiz: {
+        question: 'Why set velocity to 0 each frame before checking keys?',
+        options: [
+          'To save memory',
+          'It ensures the player stops moving the moment you release the key - no sliding',
+          'Lua requires resetting variables'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Gravity & Platforms',
+      goal: 'Add gravity that pulls the player down, stopped by platforms.',
+      points: [
+        'Gravity adds to vertical velocity each frame: <code>pvy = pvy + 0.6</code>',
+        'Apply velocity: <code>py = py + pvy</code>',
+        'For each platform: if the player feet overlap the top, snap to the surface and set onGround = true',
+        'In Defold, gravity is handled by the physics engine or manually in <code>update()</code>'
+      ],
+      challenge: '🎮 Write the gravity and platform landing:',
+      starter: '-- Apply gravity\npvy = pvy + ___\npy = py + pvy\n\n-- Land on platforms (check if feet touch platform top)\nonGround = false',
+      solution: '-- Apply gravity\npvy = pvy + gravity\npy = py + pvy\n\n-- Land on platforms (check if feet touch platform top)\nonGround = false',
+      checks: ['gravity', 'pvy', 'onground'],
+      height: 140,
+      fills: {
+        text: 'Gravity accelerates at ___ pixels per frame squared. The onGround flag tracks whether the player can ___.',
+        answers: ['0.6', 'jump']
+      },
+      quiz: {
+        question: 'Why check only the top of the platform for landing?',
+        options: [
+          'Platforms only have tops',
+          'Checking the top prevents the player sticking to sides or passing through - a classic one-way platform',
+          'It uses less code'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Jumping',
+      goal: 'Let the player jump when on a platform by pressing Up or Space.',
+      points: [
+        'Jump only when <code>onGround</code> is true - prevents double jumping',
+        'Apply an upward impulse: <code>pvy = -10</code> (negative y is up on canvas)',
+        'Gravity naturally slows the jump and pulls the player back down',
+        'In Defold you would check <code>action.pressed</code> in <code>on_input()</code> for the jump key'
+      ],
+      challenge: '🎮 Write the jump logic:',
+      starter: '-- Jump when on a platform\nif upPressed and ___ then\n    pvy = ___\nend\nupPressed = false',
+      solution: '-- Jump when on a platform\nif upPressed and onGround then\n    pvy = jumpForce\nend\nupPressed = false',
+      checks: ['onground', 'jumpforce', 'uppressed'],
+      height: 120,
+      fills: {
+        text: 'Jump force is ___ (negative means upward). Resetting upPressed to false prevents ___ jump.',
+        answers: ['-10', 'held']
+      },
+      quiz: {
+        question: 'Why does gravity alone create a smooth jump arc?',
+        options: [
+          'It does not - you need extra code',
+          'The upward impulse decreases each frame by gravity, creating a natural parabola - the same physics as a thrown ball',
+          'Canvas handles arcs automatically'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Coins',
+      goal: 'Place collectible coins on platforms. Touch them to pick them up.',
+      points: [
+        'Coins are small circles on each platform with a <code>got</code> flag',
+        'Check overlap between player rect and coin circle each frame',
+        'When collected: set <code>got = true</code> and increment score',
+        'In Defold you would use trigger collision objects on coin game objects'
+      ],
+      challenge: '🎮 Write the coin collection:',
+      starter: '-- Collect coins on touch\nif not coin.got and px + pw > coin.x and px < coin.x + 14 and py + ph > coin.y and py < coin.y + 14 then\n    coin.got = ___\n    score = score + ___\nend',
+      solution: '-- Collect coins on touch\nif not coin.got and px + pw > coin.x and px < coin.x + 14 and py + ph > coin.y and py < coin.y + 14 then\n    coin.got = true\n    score = score + 1\nend',
+      checks: ['true', 'score', 'got'],
+      height: 140,
+      fills: {
+        text: 'Each coin has a ___ flag to track if collected. In Defold, pickups use ___ collision objects.',
+        answers: ['got', 'trigger']
+      },
+      quiz: {
+        question: 'What is the difference between a trigger and a collision object in Defold?',
+        options: [
+          'Triggers are bigger',
+          'A trigger detects overlap and sends a message but does NOT physically block movement - perfect for pickups',
+          'There is no difference'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Goal Flag & Win',
+      goal: 'Reach the flag at the top with all coins collected to win.',
+      points: [
+        'The flag is at the highest platform - a red and white rectangle',
+        'Win condition: player touches flag AND score equals 4 (all coins)',
+        'Set <code>gameState = "win"</code> and display a victory message',
+        'Press R to restart with all coins respawned and player at the start'
+      ],
+      challenge: '🎮 Write the win check:',
+      starter: '-- Check if player reached the flag with all coins\nif px + pw > flag.x and px < flag.x + flag.w and py + ph > flag.y and py < flag.y + flag.h and score >= ___ then\n    gameState = "___"\nend',
+      solution: '-- Check if player reached the flag with all coins\nif px + pw > flag.x and px < flag.x + flag.w and py + ph > flag.y and py < flag.y + flag.h and score >= 4 then\n    gameState = "win"\nend',
+      checks: ['4', 'win', 'flag'],
+      height: 120,
+      fills: {
+        text: 'The player needs ___ coins to activate the flag. Requiring collectibles before the exit adds ___ to the level.',
+        answers: ['4', 'exploration']
+      },
+      quiz: {
+        question: 'Why require all coins before the flag works?',
+        options: [
+          'The flag is broken without coins',
+          'It encourages exploration of the whole level and rewards thorough play instead of rushing to the end',
+          'Coins power the flag'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scratch Platformer Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,191,36,.15);color:#fbbf24;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Scratch Platformer Build Canvas <span class="cw-lang-tag">&#x1f431; Scratch</span></h1>
+  <p>Write Scratch block code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Scratch Platformer game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A yellow player sprite standing on a green ground platform</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Scratch-to-JS transpiler (block notation to JS)
+   =================================================== */
+function scratchToJs(code) {
+  return code
+    .replace(/when green flag clicked/g, '')
+    .replace(/forever/g, '')
+    .replace(/end/g, '}')
+    .replace(/if <key \[right arrow\] pressed\?> then/g, 'if(rightHeld){')
+    .replace(/if <key \[left arrow\] pressed\?> then/g, 'if(leftHeld){')
+    .replace(/if <key \[up arrow\] pressed\?> then/g, 'if(upHeld){')
+    .replace(/if <key \[down arrow\] pressed\?> then/g, 'if(downHeld){')
+    .replace(/if <key \[space\] pressed\?> then/g, 'if(spaceHeld){')
+    .replace(/change x by \[([^\]]+)\]/g, 'px+=$1;')
+    .replace(/change y by \[([^\]]+)\]/g, 'py+=$1;')
+    .replace(/set x to \[([^\]]+)\]/g, 'px=$1;')
+    .replace(/set y to \[([^\]]+)\]/g, 'py=$1;')
+    .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'px=$1;py=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
+    .replace(/if <touching \[Edge\]\?> then/g, 'if(px<0||px>456||py<0||py>336){')
+    .replace(/if <touching color \[([^\]]+)\]\?> then/g, 'if(onPlatform(px,py)){')
+    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
+    .replace(/say \[([^\]]+)\]/g, 'sayText="$1";')
+    .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\/\/.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Scratch Platformer)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1e1b4b;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="480" height="360"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=40,py=280,pw=24,ph=24,pvx=0,pvy=0,pSpeed=4,gravity=0.5,jumpForce=-9,onGround=false;';
+
+var COIN_VARS = 'let coins=[{x:160,y:250},{x:280,y:180},{x:400,y:120},{x:120,y:140},{x:350,y:250}];let coinSize=14;';
+
+var SCORE_VARS = 'let score=0;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var PLATFORMS = 'var plats=[' +
+  '{x:0,y:320,w:480,h:40},' +
+  '{x:100,y:270,w:100,h:16},' +
+  '{x:240,y:210,w:100,h:16},' +
+  '{x:370,y:150,w:100,h:16},' +
+  '{x:60,y:160,w:100,h:16},' +
+  '{x:200,y:100,w:120,h:16}' +
+  '];';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,spaceHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="Space")spaceHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="Space")spaceHeld=false});';
+
+var PLAT_CHECK = 'function onPlatform(nx,ny){for(var i=0;i<plats.length;i++){var p=plats[i];if(nx+pw>p.x&&nx<p.x+p.w&&ny+ph>=p.y&&ny+ph<=p.y+8)return p}return null}';
+
+var PLAT_COLLIDE = 'function platBelow(nx,ny){for(var i=0;i<plats.length;i++){var p=plats[i];if(nx+pw>p.x&&nx<p.x+p.w&&ny+ph>p.y&&ny<p.y+p.h)return p}return null}';
+
+var DRAW_BG = 'ctx.fillStyle="#1e1b4b";ctx.fillRect(0,0,480,360);';
+
+var DRAW_PLATS = 'ctx.fillStyle="#34d399";for(var i=0;i<plats.length;i++){var p=plats[i];ctx.fillRect(p.x,p.y,p.w,p.h)}';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#fbbf24";ctx.fillRect(px,py,pw,ph);' +
+  'ctx.fillStyle="#1e1b4b";ctx.fillRect(px+6,py+6,4,4);ctx.fillRect(px+14,py+6,4,4);';
+
+var DRAW_COINS = 'ctx.fillStyle="#f59e0b";for(var i=0;i<coins.length;i++){var c=coins[i];ctx.beginPath();ctx.arc(c.x,c.y,coinSize/2,0,Math.PI*2);ctx.fill()}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Coins: "+score+" / "+5,12,28);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Scratch Platformer steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-scratch-platformer-canvas',
+  downloadName: 'my-scratch-platformer.html',
+
+  hints: [
+    'A yellow player sprite standing on a green ground platform',
+    'The player runs left and right with arrow keys',
+    'Gravity pulls the player down, platforms catch them',
+    'Pressing space or up arrow makes the player jump',
+    'Gold coins float above the platforms waiting to be collected',
+    'Collect all 5 coins to win, with restart on R'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS +
+        'function loop(){' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(456,px));' +
+        DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE +
+        'function loop(){' +
+        'if(leftHeld)pvx=-pSpeed;else if(rightHeld)pvx=pSpeed;else pvx=0;' +
+        'pvy+=gravity;px+=pvx;py+=pvy;' +
+        'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
+        'if(py>360){py=280;px=40;pvy=0}' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(456,px));' +
+        DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE +
+        'function loop(){' +
+        'if(leftHeld)pvx=-pSpeed;else if(rightHeld)pvx=pSpeed;else pvx=0;' +
+        'pvy+=gravity;' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'px+=pvx;py+=pvy;' +
+        'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
+        'if(py>360){py=280;px=40;pvy=0}' +
+        'px=Math.max(0,Math.min(456,px));' +
+        DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + COIN_VARS + SCORE_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE +
+        'function loop(){' +
+        'if(leftHeld)pvx=-pSpeed;else if(rightHeld)pvx=pSpeed;else pvx=0;' +
+        'pvy+=gravity;' +
+        'if((upHeld||spaceHeld)&&onGround){pvy=jumpForce}' +
+        'px+=pvx;py+=pvy;' +
+        'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
+        'if(py>360){py=280;px=40;pvy=0}' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(456,px));' +
+        DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + COIN_VARS + SCORE_VARS + STATE_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE +
+        'var origCoins=coins.map(function(c){return{x:c.x,y:c.y}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){px=40;py=280;pvx=0;pvy=0;score=0;coins=origCoins.map(function(c){return{x:c.x,y:c.y}});gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(leftHeld)pvx=-pSpeed;else if(rightHeld)pvx=pSpeed;else pvx=0;' +
+        'pvy+=gravity;' +
+        'if((upHeld||spaceHeld)&&onGround){pvy=jumpForce}' +
+        'px+=pvx;py+=pvy;' +
+        'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
+        'if(py>360){py=280;px=40;pvy=0}' +
+        'for(var ci=coins.length-1;ci>=0;ci--){var c=coins[ci];if(px+pw>c.x-coinSize/2&&px<c.x+coinSize/2&&py+ph>c.y-coinSize/2&&py<c.y+coinSize/2){coins.splice(ci,1);score++}}' +
+        'if(score>=5)gameState="win";' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        'px=Math.max(0,Math.min(456,px));' +
+        DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
+        'if(gameState==="win"){ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,480,360);' +
+        'ctx.fillStyle="#fbbf24";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("ALL COINS COLLECTED!",240,160);ctx.fillStyle="#fff";ctx.font="18px monospace";' +
+        'ctx.fillText("Press R to play again",240,195)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Player Sprite',
+      goal: 'Draw a yellow player on the green ground platform.',
+      points: [
+        'The player is a 24x24 yellow square with two tiny eye dots',
+        'It starts on the ground platform at position (40, 280)',
+        'The ground spans the full width at y=320, 40 pixels tall',
+        'In Scratch you would create a sprite and place it with <code>go to x: [-200] y: [-100]</code>'
+      ],
+      challenge: '🐱 Set the player starting position:',
+      starter: '// Place the player on the ground\ngo to x: [___] y: [___]\nset [pw] to [24]\nset [ph] to [24]',
+      solution: '// Place the player on the ground\ngo to x: [40] y: [280]\nset [pw] to [24]\nset [ph] to [24]',
+      checks: ['40', '280', '24'],
+      height: 120,
+      fills: {
+        text: 'The player starts at x=___ near the left edge. Its size of ___ pixels makes it easy to see.',
+        answers: ['40', '24']
+      },
+      quiz: {
+        question: 'Why start the player near the left edge?',
+        options: [
+          'Left is the only valid starting side',
+          'Starting at the left gives a natural left-to-right progression - the player explores rightward to find platforms and coins',
+          'The ground only exists on the left'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Left and Right Running',
+      goal: 'Move the player left and right with arrow keys.',
+      points: [
+        'In Scratch: <code>if &lt;key [right arrow] pressed?&gt; then change x by [4]</code>',
+        'The player moves at 4 pixels per frame - fast enough to feel responsive',
+        'Releasing both keys stops horizontal movement immediately',
+        'The player stays within the stage bounds (0 to 456)'
+      ],
+      challenge: '🐱 Write horizontal movement:',
+      starter: '// Move left and right\nif <key [left arrow] pressed?> then\n  change x by [___]\nend\nif <key [right arrow] pressed?> then\n  change x by [___]\nend',
+      solution: '// Move left and right\nif <key [left arrow] pressed?> then\n  change x by [-4]\nend\nif <key [right arrow] pressed?> then\n  change x by [4]\nend',
+      checks: ['left arrow', 'right arrow', '-4', '4'],
+      height: 180,
+      fills: {
+        text: 'The player moves ___ pixels per frame. Negative x goes ___ on screen.',
+        answers: ['4', 'left']
+      },
+      quiz: {
+        question: 'Why stop the player instantly when keys are released?',
+        options: [
+          'Gradual stopping is too complex',
+          'Instant stop gives tight control needed for precise platforming - missing a jump because of slide feels unfair',
+          'Scratch cannot do gradual stopping'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Gravity and Platforms',
+      goal: 'Add gravity that pulls the player down and platforms that catch them.',
+      points: [
+        'Gravity adds 0.5 to vertical speed each frame: <code>change [pvy] by [0.5]</code>',
+        'When the player lands on a platform, stop falling: <code>set [pvy] to [0]</code>',
+        'Six platforms at different heights create a climbing path',
+        'If the player falls off screen, reset to the ground - no lives lost'
+      ],
+      challenge: '🐱 Write the gravity logic:',
+      starter: '// Apply gravity each frame\nchange [pvy] by [___]\n\n// When landing on a platform\nset [pvy] to [___]\nset [onGround] to [true]',
+      solution: '// Apply gravity each frame\nchange [pvy] by [0.5]\n\n// When landing on a platform\nset [pvy] to [0]\nset [onGround] to [true]',
+      checks: ['pvy', '0.5', '0', 'onground', 'true'],
+      height: 140,
+      fills: {
+        text: 'Gravity adds ___ to the vertical speed each frame. This creates smooth acceleration, not constant falling speed. Landing sets onGround to ___.',
+        answers: ['0.5', 'true']
+      },
+      quiz: {
+        question: 'Why use acceleration (0.5 per frame) instead of constant fall speed?',
+        options: [
+          'Constant speed is too slow',
+          'Acceleration creates a natural parabolic arc - the player rises slowly, hangs at the peak, then falls faster, which feels like real jumping',
+          'Scratch only supports acceleration'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Jumping',
+      goal: 'Press space or up arrow to jump - but only when on the ground.',
+      points: [
+        'Jump by setting a negative vertical speed: <code>set [pvy] to [-9]</code>',
+        'Only allow jumping when <code>onGround</code> is true - no double jumps',
+        'In Scratch: <code>if &lt;key [space] pressed?&gt; and &lt;onGround = true&gt; then</code>',
+        'The jump force of -9 combined with gravity of 0.5 creates a nice arc'
+      ],
+      challenge: '🐱 Write the jump logic:',
+      starter: '// Jump when on ground\nif <key [space] pressed?> then\n  set [pvy] to [___]\nend',
+      solution: '// Jump when on ground\nif <key [space] pressed?> then\n  set [pvy] to [-9]\nend',
+      checks: ['space', 'pvy', '-9'],
+      height: 120,
+      fills: {
+        text: 'The jump force is ___ (negative means upward). Checking onGround prevents ___ jumping in mid-air.',
+        answers: ['-9', 'double']
+      },
+      quiz: {
+        question: 'Why is the jump force negative?',
+        options: [
+          'Negative numbers are stronger',
+          'On screen y=0 is the top - a negative velocity moves upward, and gravity gradually reverses it for a smooth arc',
+          'Scratch requires negative jumps'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Collectible Coins',
+      goal: 'Add gold coins on platforms that the player can collect.',
+      points: [
+        'Five gold coins float above different platforms',
+        'In Scratch: <code>if &lt;touching [Coin]?&gt; then hide, change score by 1</code>',
+        'When the player touches a coin, it disappears and score increases by 1',
+        'The coin counter shows "Coins: 0 / 5" in the top-left corner'
+      ],
+      challenge: '🐱 Write the coin collection:',
+      starter: '// When touching a coin\nchange [score] by [___]\n\n// Total coins to collect\nset [totalCoins] to [___]',
+      solution: '// When touching a coin\nchange [score] by [1]\n\n// Total coins to collect\nset [totalCoins] to [5]',
+      checks: ['score', '1', '5'],
+      height: 100,
+      fills: {
+        text: 'Each coin adds ___ to the score. There are ___ coins total placed on different platforms.',
+        answers: ['1', '5']
+      },
+      quiz: {
+        question: 'Why place coins on platforms instead of random positions?',
+        options: [
+          'Random positions look messy',
+          'Coins on platforms reward exploration and guide the player upward - they show where to go next',
+          'Scratch sprites must touch platforms'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Win Screen and Restart',
+      goal: 'Collect all 5 coins to win. Press R to reset and play again.',
+      points: [
+        'When score reaches 5: <code>set [gameState] to [win]</code>',
+        'Display "ALL COINS COLLECTED!" in gold text',
+        'Pressing R resets player position, score, and respawns all coins',
+        'Try to collect all coins in the fewest jumps possible'
+      ],
+      challenge: '🐱 Write the win condition:',
+      starter: '// Check if all coins collected\nif <score = ___> then\n  set [gameState] to [___]\nend\n\n// Reset on R\nset [score] to [0]\ngo to x: [40] y: [280]',
+      solution: '// Check if all coins collected\nif <score = 5> then\n  set [gameState] to [win]\nend\n\n// Reset on R\nset [score] to [0]\ngo to x: [40] y: [280]',
+      checks: ['5', 'win', 'score', '0', '40', '280'],
+      height: 160,
+      fills: {
+        text: 'The game is won when ___ coins are collected. The player resets to position (40,___).',
+        answers: ['5', '280']
+      },
+      quiz: {
+        question: 'What makes platformers fun to replay?',
+        options: [
+          'More platforms',
+          'Mastering the physics - each replay you jump better, find faster routes, and collect coins more efficiently',
+          'Changing the colours'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

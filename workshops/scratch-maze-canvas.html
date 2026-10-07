@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scratch Maze Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,191,36,.15);color:#fbbf24;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Scratch Maze Build Canvas <span class="cw-lang-tag">&#x1f431; Scratch</span></h1>
+  <p>Write Scratch block code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Scratch Maze game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A small player sprite in the top-left of a dark maze</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Scratch-to-JS transpiler (block notation to JS)
+   =================================================== */
+function scratchToJs(code) {
+  return code
+    .replace(/when green flag clicked/g, '')
+    .replace(/forever/g, '')
+    .replace(/end/g, '}')
+    .replace(/if <key \[right arrow\] pressed\?> then/g, 'if(rightHeld){')
+    .replace(/if <key \[left arrow\] pressed\?> then/g, 'if(leftHeld){')
+    .replace(/if <key \[up arrow\] pressed\?> then/g, 'if(upHeld){')
+    .replace(/if <key \[down arrow\] pressed\?> then/g, 'if(downHeld){')
+    .replace(/if <key \[space\] pressed\?> then/g, 'if(spaceHeld){')
+    .replace(/change x by \[([^\]]+)\]/g, 'px+=$1;')
+    .replace(/change y by \[([^\]]+)\]/g, 'py+=$1;')
+    .replace(/set x to \[([^\]]+)\]/g, 'px=$1;')
+    .replace(/set y to \[([^\]]+)\]/g, 'py=$1;')
+    .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'px=$1;py=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
+    .replace(/if <touching \[Edge\]\?> then/g, 'if(px<0||px>464||py<0||py>344){')
+    .replace(/if <touching color \[([^\]]+)\]\?> then/g, 'if(touchingWall(px,py)){')
+    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
+    .replace(/say \[([^\]]+)\]/g, 'sayText="$1";')
+    .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\/\/.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Scratch Maze)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f172a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="480" height="360"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=30,py=30,ps=16,pSpeed=3;';
+
+var GOAL_VARS = 'let gx=432,gy=312,gs=24;';
+
+var SCORE_VARS = 'let moves=0,level=1;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var MAZE_DATA = 'var walls=[' +
+  '{x:80,y:0,w:16,h:120},{x:160,y:60,w:16,h:160},{x:240,y:0,w:16,h:100},' +
+  '{x:320,y:80,w:16,h:180},{x:400,y:0,w:16,h:140},' +
+  '{x:0,y:120,w:100,h:16},{x:160,y:200,w:180,h:16},{x:80,y:280,w:160,h:16},' +
+  '{x:320,y:240,w:160,h:16},{x:240,y:120,w:100,h:16},' +
+  '{x:400,y:160,w:80,h:16},{x:0,y:200,w:80,h:16},{x:240,y:300,w:16,h:60}' +
+  '];';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false});';
+
+var WALL_CHECK = 'function touchingWall(nx,ny){for(var i=0;i<walls.length;i++){var w=walls[i];if(nx+ps>w.x&&nx<w.x+w.w&&ny+ps>w.y&&ny<w.y+w.h)return true}return false}';
+
+var DRAW_BG = 'ctx.fillStyle="#0f172a";ctx.fillRect(0,0,480,360);';
+
+var DRAW_WALLS = 'ctx.fillStyle="#475569";for(var i=0;i<walls.length;i++){var w=walls[i];ctx.fillRect(w.x,w.y,w.w,w.h)}';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#fbbf24";ctx.fillRect(px,py,ps,ps);';
+
+var DRAW_GOAL = 'ctx.fillStyle="#34d399";ctx.fillRect(gx,gy,gs,gs);';
+
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Moves: "+moves,12,356);' +
+  'ctx.textAlign="right";ctx.fillText("Level: "+level,468,356);';
+
+var GOAL_CHECK = 'if(px+ps>gx&&px<gx+gs&&py+ps>gy&&py<gy+gs){gameState="win"}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Scratch Maze steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-scratch-maze-canvas',
+  downloadName: 'my-scratch-maze.html',
+
+  hints: [
+    'A small player sprite in the top-left of a dark maze',
+    'The player moves with arrow keys through corridors',
+    'Grey walls block the player from passing through',
+    'A green goal square waits in the bottom-right corner',
+    'A move counter tracks how many steps you take',
+    'Reaching the goal shows a win screen with your move count'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS +
+        'function loop(){' +
+        'var ox=px,oy=py;' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
+        DRAW_BG + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + KEYS + MAZE_DATA + WALL_CHECK +
+        'function loop(){' +
+        'var ox=px,oy=py;' +
+        'if(leftHeld)px-=pSpeed;if(rightHeld)px+=pSpeed;' +
+        'if(upHeld)py-=pSpeed;if(downHeld)py+=pSpeed;' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
+        DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GOAL_VARS + KEYS + MAZE_DATA + WALL_CHECK +
+        'function loop(){' +
+        'var ox=px,oy=py;' +
+        'if(leftHeld){px-=pSpeed;if(touchingWall(px,py))px=ox}' +
+        'if(rightHeld){px+=pSpeed;if(touchingWall(px,py))px=ox}' +
+        'if(upHeld){py-=pSpeed;if(touchingWall(px,py))py=oy}' +
+        'if(downHeld){py+=pSpeed;if(touchingWall(px,py))py=oy}' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
+        DRAW_BG + DRAW_WALLS + DRAW_GOAL + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GOAL_VARS + SCORE_VARS + KEYS + MAZE_DATA + WALL_CHECK +
+        'function loop(){' +
+        'var ox=px,oy=py;' +
+        'if(leftHeld){px-=pSpeed;if(touchingWall(px,py))px=ox}' +
+        'if(rightHeld){px+=pSpeed;if(touchingWall(px,py))px=ox}' +
+        'if(upHeld){py-=pSpeed;if(touchingWall(px,py))py=oy}' +
+        'if(downHeld){py+=pSpeed;if(touchingWall(px,py))py=oy}' +
+        'if(px!==ox||py!==oy)moves++;' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
+        DRAW_BG + DRAW_WALLS + DRAW_GOAL + DRAW_PLAYER + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GOAL_VARS + SCORE_VARS + STATE_VARS + KEYS + MAZE_DATA + WALL_CHECK +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){px=30;py=30;moves=0;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'var ox=px,oy=py;' +
+        'if(leftHeld){px-=pSpeed;if(touchingWall(px,py))px=ox}' +
+        'if(rightHeld){px+=pSpeed;if(touchingWall(px,py))px=ox}' +
+        'if(upHeld){py-=pSpeed;if(touchingWall(px,py))py=oy}' +
+        'if(downHeld){py+=pSpeed;if(touchingWall(px,py))py=oy}' +
+        'if(px!==ox||py!==oy)moves++;' +
+        GOAL_CHECK +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
+        DRAW_BG + DRAW_WALLS + DRAW_GOAL + DRAW_PLAYER + DRAW_HUD +
+        'if(gameState==="win"){ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,480,360);' +
+        'ctx.fillStyle="#34d399";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("YOU WIN!",240,150);ctx.fillStyle="#fff";ctx.font="18px monospace";' +
+        'ctx.fillText("Moves: "+moves,240,185);ctx.fillText("Press R to play again",240,215)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Player Sprite',
+      goal: 'Draw a yellow player square in the top-left corner of the maze.',
+      points: [
+        'The player is a 16x16 yellow square - like a small Scratch sprite',
+        'It starts at position (30, 30) in the top-left corner',
+        'In Scratch you would use <code>go to x: [-200] y: [150]</code> for the top-left',
+        'The player speed is 3 pixels per frame for precise maze navigation'
+      ],
+      challenge: '🐱 Set the player starting position:',
+      starter: '// Place the player sprite\ngo to x: [___] y: [___]\nset [ps] to [16]\nset [pSpeed] to [3]',
+      solution: '// Place the player sprite\ngo to x: [30] y: [30]\nset [ps] to [16]\nset [pSpeed] to [3]',
+      checks: ['30', '16', '3'],
+      height: 120,
+      fills: {
+        text: 'The player starts at position (___,30). Its size of ___ pixels fits through maze corridors.',
+        answers: ['30', '16']
+      },
+      quiz: {
+        question: 'Why is the player speed only 3 pixels per frame?',
+        options: [
+          'The canvas is slow',
+          'Slow speed gives precise control in tight corridors - too fast and you overshoot turns',
+          'Scratch sprites cannot go faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Four-Way Movement',
+      goal: 'Move the player in all four directions with arrow keys.',
+      points: [
+        'In Scratch: check all four arrow keys with <code>if &lt;key [up arrow] pressed?&gt; then</code>',
+        'Up decreases y (toward the top), down increases y',
+        'Left decreases x, right increases x',
+        'The player must stay within the 480x360 stage bounds'
+      ],
+      challenge: '🐱 Write four-way movement:',
+      starter: '// Move with arrow keys\nif <key [up arrow] pressed?> then\n  change y by [___]\nend\nif <key [down arrow] pressed?> then\n  change y by [___]\nend\nif <key [left arrow] pressed?> then\n  change x by [-3]\nend\nif <key [right arrow] pressed?> then\n  change x by [3]\nend',
+      solution: '// Move with arrow keys\nif <key [up arrow] pressed?> then\n  change y by [-3]\nend\nif <key [down arrow] pressed?> then\n  change y by [3]\nend\nif <key [left arrow] pressed?> then\n  change x by [-3]\nend\nif <key [right arrow] pressed?> then\n  change x by [3]\nend',
+      checks: ['up arrow', 'down arrow', 'left arrow', 'right arrow', '-3', '3'],
+      height: 260,
+      fills: {
+        text: 'Moving up uses change y by ___ because y=0 is the ___ of the screen.',
+        answers: ['-3', 'top']
+      },
+      quiz: {
+        question: 'Why does "up" require a negative y change?',
+        options: [
+          'It is a Scratch bug',
+          'On screen, y=0 is the top and y grows downward - so moving up means decreasing y',
+          'Negative numbers are faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Maze Walls',
+      goal: 'Add grey walls that block the player from passing through.',
+      points: [
+        'In Scratch: <code>if &lt;touching color [grey]?&gt; then</code> detects wall contact',
+        'Walls are grey rectangles placed across the stage forming corridors',
+        'When the player touches a wall, undo the movement (go back to previous position)',
+        'Each axis is checked separately so you can slide along walls'
+      ],
+      challenge: '🐱 Write the wall collision:',
+      starter: '// If touching a wall, undo the move\nif <touching color [grey]?> then\n  set x to [___]\n  set y to [___]\nend',
+      solution: '// If touching a wall, undo the move\nif <touching color [grey]?> then\n  set x to [oldX]\n  set y to [oldY]\nend',
+      checks: ['touching', 'color', 'oldx', 'oldy'],
+      height: 120,
+      fills: {
+        text: 'When the player hits a wall, we restore the ___ position. This is called ___ collision response.',
+        answers: ['previous', 'pushback']
+      },
+      quiz: {
+        question: 'Why check each axis separately for wall collision?',
+        options: [
+          'It is required by Scratch',
+          'Separate axis checks let you slide along walls - blocking both axes at once makes the player stick to corners',
+          'One check is faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'The Goal',
+      goal: 'Add a green goal square in the bottom-right that the player must reach.',
+      points: [
+        'The goal is a 24x24 green square at position (432, 312)',
+        'In Scratch: <code>if &lt;touching [Goal]?&gt; then</code> checks if you reached it',
+        'The goal is larger than the player (24 vs 16) to make it easier to reach',
+        'It sits in the bottom-right corner - the opposite end of the maze from the start'
+      ],
+      challenge: '🐱 Set the goal position:',
+      starter: '// Place the goal sprite\nset [gx] to [___]\nset [gy] to [___]\nset [gs] to [24]',
+      solution: '// Place the goal sprite\nset [gx] to [432]\nset [gy] to [312]\nset [gs] to [24]',
+      checks: ['432', '312', '24'],
+      height: 100,
+      fills: {
+        text: 'The goal is at the ___-right corner, ___ pixels in size so it is easy to reach.',
+        answers: ['bottom', '24']
+      },
+      quiz: {
+        question: 'Why place the goal opposite from the start?',
+        options: [
+          'The bottom-right is the only valid position',
+          'Maximum distance means the player must navigate the entire maze, making the journey satisfying',
+          'Green looks better in corners'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Move Counter',
+      goal: 'Track how many moves the player makes to reach the goal.',
+      points: [
+        'In Scratch: <code>change [moves] by [1]</code> each time the player moves',
+        'Only count frames where the player actually changed position',
+        'Display moves in the bottom-left and level in the bottom-right',
+        'Fewer moves = better score, encouraging players to find the optimal path'
+      ],
+      challenge: '🐱 Write the move counter:',
+      starter: '// Count each movement\nchange [moves] by [___]\n\n// Reset on new game\nset [moves] to [___]',
+      solution: '// Count each movement\nchange [moves] by [1]\n\n// Reset on new game\nset [moves] to [0]',
+      checks: ['moves', '1', '0'],
+      height: 100,
+      fills: {
+        text: 'The counter increases by ___ each frame the player moves. Fewer moves means a ___ score.',
+        answers: ['1', 'better']
+      },
+      quiz: {
+        question: 'Why count only frames where position changed?',
+        options: [
+          'Counting every frame is too fast',
+          'It accurately measures effort - standing still or being blocked by a wall should not penalise the player',
+          'Scratch cannot count every frame'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Win Screen and Restart',
+      goal: 'Show a win message with the move count when you reach the goal.',
+      points: [
+        'When the player touches the goal: <code>set [gameState] to [win]</code>',
+        'Display "YOU WIN!" with the total move count',
+        'Pressing R resets position to start and clears the move counter',
+        'Challenge friends to complete the maze in fewer moves'
+      ],
+      challenge: '🐱 Write the win detection:',
+      starter: '// Check if player reached the goal\nset [gameState] to [___]\n\n// Reset for new attempt\ngo to x: [___] y: [30]\nset [moves] to [0]',
+      solution: '// Check if player reached the goal\nset [gameState] to [win]\n\n// Reset for new attempt\ngo to x: [30] y: [30]\nset [moves] to [0]',
+      checks: ['win', '30', 'moves', '0'],
+      height: 120,
+      fills: {
+        text: 'The game state changes to "___" when the player reaches the goal. The player resets to position (___,30).',
+        answers: ['win', '30']
+      },
+      quiz: {
+        question: 'What makes a maze game replayable?',
+        options: [
+          'More walls',
+          'The move counter gives a score to beat - "can I do it in fewer moves?" creates the replay motivation',
+          'Bigger mazes only'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

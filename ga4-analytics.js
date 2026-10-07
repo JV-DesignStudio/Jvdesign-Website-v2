@@ -1,8 +1,8 @@
 /* ═══════════════════════════════════════════════════════════
    GA4 Analytics System, Comprehensive Event Tracking
 
-   Loaded by 4 hub pages (leaderboards.html, learn-hub.html,
-   my-progress.html, quest-board.html), which call trackPageView()
+   Loaded by hub pages (me.html, learn-hub.html,
+   quest-board.html), which call trackPageView()
    and trackEngagementMetric() directly. Most of the other methods
    below have no call sites and only serve as the reference SCHEMA
    for event names and parameter shapes.
@@ -283,7 +283,7 @@ class GA4Analytics {
     gtag('event', 'page_view', {
       page_path: pagePath,
       page_title: pageTitle,
-      page_type: pageType, // game, workshop, quest, hub, leaderboard, profile
+      page_type: pageType, // game, workshop, quest, hub, profile
       session_id: this.sessionId,
       timestamp: new Date().toISOString()
     });

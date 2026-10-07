@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDevelop Top-Down Adventure Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(163,230,53,.15);color:#a3e635;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GDevelop Top-Down Adventure Build Canvas <span class="cw-lang-tag">&#x1f3a8; GDevelop</span></h1>
+  <p>Write GDevelop event logic step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GDevelop Adventure game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue player square on a green field with grey walls</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GDevelop-to-JS transpiler (simplified event notation)
+   =================================================== */
+function gdToJs(code) {
+  return code
+    .replace(/\/\/.*$/gm, '')
+    .replace(/Condition:\s*KeyPressed\("Left"\)/g, 'if(leftHeld)')
+    .replace(/Condition:\s*KeyPressed\("Right"\)/g, 'if(rightHeld)')
+    .replace(/Condition:\s*KeyPressed\("Up"\)/g, 'if(upHeld)')
+    .replace(/Condition:\s*KeyPressed\("Down"\)/g, 'if(downHeld)')
+    .replace(/Condition:\s*KeyPressed\("E"\)/g, 'if(ePressed)')
+    .replace(/Action:\s*SetVariable\((\w+),\s*([^)]+)\)/g, '$1=$2;')
+    .replace(/Condition:\s*Variable\((\w+)\)\s*([<>!=]+)\s*([^\n]+)/g, 'if($1$2$3)')
+    .replace(/Action:\s*ShowDialog\("([^"]+)"\)/g, 'dialogText="$1";dialogTimer=180;')
+    .replace(/\bAction:\s*/g, '')
+    .replace(/\bCondition:\s*/g, 'if');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Top-Down Adventure)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a2e1a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=50,py=200,pw=24,ph=24,speed=3;';
+
+var WALL_DATA = 'var walls=[{x:0,y:0,w:400,h:16},{x:0,y:384,w:400,h:16},{x:0,y:0,w:16,h:400},{x:384,y:0,w:16,h:400},' +
+  '{x:120,y:80,w:16,h:160},{x:200,y:200,w:160,h:16},{x:280,y:80,w:16,h:140}];';
+
+var NPC_DATA = 'var npcs=[{x:180,y:60,w:24,h:24,color:"#c084fc",msg:"Welcome, hero! Find the 3 gems hidden around.",name:"Sage"},' +
+  '{x:320,y:300,w:24,h:24,color:"#fb923c",msg:"The last gem is through the narrow passage...",name:"Scout"}];';
+
+var ITEM_DATA = 'var items=[{x:60,y:340,w:14,h:14,color:"#ef4444",alive:true,name:"Ruby"},' +
+  '{x:340,y:60,w:14,h:14,color:"#22d3ee",alive:true,name:"Sapphire"},' +
+  '{x:240,y:340,w:14,h:14,color:"#22c55e",alive:true,name:"Emerald"}];';
+
+var SCORE_VARS = 'let collected=0,totalItems=3;';
+
+var STATE_VARS = 'let gameState="play",dialogText="",dialogTimer=0,ePressed=false;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'if(e.code==="KeyE")ePressed=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false;' +
+    'if(e.code==="KeyE")ePressed=false});';
+
+var MOVE_PLAYER = 'var oldX=px,oldY=py;if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;';
+
+var WALL_COLLIDE = 'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];' +
+  'if(px+pw>w.x&&px<w.x+w.w&&py+ph>w.y&&py<w.y+w.h){px=oldX;py=oldY}}';
+
+var DRAW_BG = 'ctx.fillStyle="#2d5a27";ctx.fillRect(0,0,400,400);';
+
+var DRAW_WALLS = 'ctx.fillStyle="#6b7280";for(var dw=0;dw<walls.length;dw++){var wl=walls[dw];ctx.fillRect(wl.x,wl.y,wl.w,wl.h)}';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#3b82f6";ctx.fillRect(px,py,pw,ph);ctx.fillStyle="#93c5fd";ctx.fillRect(px+5,py+4,5,5);ctx.fillRect(px+14,py+4,5,5);';
+
+var DRAW_NPCS = 'for(var dn=0;dn<npcs.length;dn++){var np=npcs[dn];ctx.fillStyle=np.color;ctx.fillRect(np.x,np.y,np.w,np.h);' +
+  'ctx.fillStyle="#fff";ctx.font="bold 10px monospace";ctx.textAlign="center";ctx.fillText(np.name,np.x+12,np.y-4)}';
+
+var DRAW_ITEMS = 'for(var di=0;di<items.length;di++){if(items[di].alive){var it=items[di];ctx.fillStyle=it.color;ctx.beginPath();' +
+  'ctx.moveTo(it.x+it.w/2,it.y);ctx.lineTo(it.x+it.w,it.y+it.h);ctx.lineTo(it.x,it.y+it.h);ctx.closePath();ctx.fill()}}';
+
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Gems: "+collected+" / "+totalItems,20,394);' +
+  'ctx.textAlign="right";ctx.fillText("E = Talk",380,394);';
+
+var DRAW_DIALOG = 'if(dialogTimer>0){dialogTimer--;ctx.fillStyle="rgba(0,0,0,0.8)";ctx.fillRect(20,300,360,60);' +
+  'ctx.fillStyle="#fff";ctx.font="14px monospace";ctx.textAlign="center";ctx.fillText(dialogText,200,335)}';
+
+var ITEM_COLLECT = 'for(var ic=0;ic<items.length;ic++){if(items[ic].alive&&Math.abs(px+pw/2-(items[ic].x+7))<20&&Math.abs(py+ph/2-(items[ic].y+7))<20){' +
+  'items[ic].alive=false;collected++;dialogText="Found the "+items[ic].name+"!";dialogTimer=120}}';
+
+var NPC_TALK = 'if(ePressed){for(var nt=0;nt<npcs.length;nt++){var nc=npcs[nt];' +
+  'if(Math.abs(px+pw/2-(nc.x+12))<36&&Math.abs(py+ph/2-(nc.y+12))<36){dialogText=nc.msg;dialogTimer=180}}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - GDevelop Adventure steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-gdevelop-adventure-canvas',
+  downloadName: 'my-gdevelop-adventure.html',
+
+  hints: [
+    'A blue player square on a green field with grey walls',
+    'The player moves in all four directions with arrow keys',
+    'Grey walls block movement - the player slides along them',
+    'Purple and orange NPCs stand in the world with names',
+    'Coloured gem triangles can be collected by walking over them',
+    'Collect all 3 gems to win - press E to talk to NPCs'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALL_DATA + KEYS +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_PLAYER + WALL_COLLIDE +
+        DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALL_DATA + KEYS +
+        'function loop(){' +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        WALL_COLLIDE +
+        DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALL_DATA + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALL_DATA + NPC_DATA + STATE_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + WALL_COLLIDE +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_WALLS + DRAW_NPCS + DRAW_PLAYER + DRAW_DIALOG +
+        'ePressed=false;' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALL_DATA + NPC_DATA + ITEM_DATA + SCORE_VARS + STATE_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + WALL_COLLIDE + NPC_TALK +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_WALLS + DRAW_ITEMS + DRAW_NPCS + DRAW_PLAYER + DRAW_HUD + DRAW_DIALOG +
+        'ePressed=false;' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALL_DATA + NPC_DATA + ITEM_DATA + SCORE_VARS + STATE_VARS + KEYS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){collected=0;px=50;py=200;for(var ri=0;ri<items.length;ri++)items[ri].alive=true;dialogText="";dialogTimer=0;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + WALL_COLLIDE + NPC_TALK + ITEM_COLLECT +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_WALLS + DRAW_ITEMS + DRAW_NPCS + DRAW_PLAYER + DRAW_HUD + DRAW_DIALOG +
+        'if(gameState==="win"){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,400);' +
+        'ctx.fillStyle="#facc15";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("ALL GEMS FOUND!",200,180);ctx.fillStyle="#fff";ctx.font="16px monospace";' +
+        'ctx.fillText("Press R to play again",200,215)}' +
+        'ePressed=false;' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Player & World',
+      goal: 'Place a player on a green field surrounded by grey walls.',
+      points: [
+        'The world is a 400x400 green field with 16-pixel-thick border walls',
+        'The player is a 24x24 blue square starting at (50, 200)',
+        'Interior walls create corridors and rooms to explore',
+        'In GDevelop, you tile wall objects and give them the <strong>Platform</strong> or <strong>Physics</strong> behaviour'
+      ],
+      challenge: '&#x1f3a8; Set the player starting position:',
+      starter: '// Place the player in the world\nAction: SetVariable(px, ___)\nAction: SetVariable(py, ___)\nAction: SetVariable(pw, 24)\nAction: SetVariable(speed, 3)',
+      solution: '// Place the player in the world\nAction: SetVariable(px, 50)\nAction: SetVariable(py, 200)\nAction: SetVariable(pw, 24)\nAction: SetVariable(speed, 3)',
+      checks: ['50', '200', '24', '3'],
+      height: 130,
+      fills: {
+        text: 'The player starts at position (___,___). The border walls are ___ pixels thick.',
+        answers: ['50', '200', '16']
+      },
+      quiz: {
+        question: 'Why use thick border walls instead of just clamping position?',
+        options: [
+          'Thick walls look better',
+          'Walls are objects that the collision system can detect - they work the same as interior walls, keeping the code consistent',
+          'Clamping is slower'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Four-Way Movement',
+      goal: 'Move the player in all four directions with arrow keys.',
+      points: [
+        'Top-down movement uses all four arrow keys: up, down, left, right',
+        'Each direction adds or subtracts speed from x or y',
+        'The player moves 3 pixels per frame - exploration pace, not action pace',
+        'In GDevelop, the <strong>Top-down movement</strong> behaviour handles this automatically'
+      ],
+      challenge: '&#x1f3a8; Write the four-way movement:',
+      starter: '// Move in four directions\nCondition: KeyPressed("Up")\nAction: SetVariable(py, py - ___)\n\nCondition: KeyPressed("Down")\nAction: SetVariable(py, py + ___)\n\nCondition: KeyPressed("Left")\nAction: SetVariable(px, px - speed)\n\nCondition: KeyPressed("Right")\nAction: SetVariable(px, px + speed)',
+      solution: '// Move in four directions\nCondition: KeyPressed("Up")\nAction: SetVariable(py, py - speed)\n\nCondition: KeyPressed("Down")\nAction: SetVariable(py, py + speed)\n\nCondition: KeyPressed("Left")\nAction: SetVariable(px, px - speed)\n\nCondition: KeyPressed("Right")\nAction: SetVariable(px, px + speed)',
+      checks: ['KeyPressed', 'Up', 'Down', 'speed'],
+      height: 240,
+      fills: {
+        text: 'The player moves ___ pixels per frame. GDevelop calls this the ___ movement behaviour.',
+        answers: ['3', 'Top-down']
+      },
+      quiz: {
+        question: 'How does top-down movement differ from platformer movement?',
+        options: [
+          'There is no difference',
+          'Top-down has no gravity - the player moves freely in all four directions instead of being pulled down',
+          'Top-down is faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Wall Collision',
+      goal: 'Block the player from walking through walls.',
+      points: [
+        'Save the old position before moving. If the new position overlaps a wall, restore the old one',
+        'This "try and undo" approach is simple and effective for grid-free movement',
+        'Check every wall rectangle against the player rectangle',
+        'In GDevelop, objects with <strong>solid</strong> behaviour block movement automatically'
+      ],
+      challenge: '&#x1f3a8; Write the wall collision:',
+      starter: '// Save old position before moving\nAction: SetVariable(oldX, px)\nAction: SetVariable(oldY, py)\n\n// After moving, check walls\nCondition: PlayerCollidesWith(Wall)\nAction: SetVariable(px, ___)\nAction: SetVariable(py, ___)',
+      solution: '// Save old position before moving\nAction: SetVariable(oldX, px)\nAction: SetVariable(oldY, py)\n\n// After moving, check walls\nCondition: PlayerCollidesWith(Wall)\nAction: SetVariable(px, oldX)\nAction: SetVariable(py, oldY)',
+      checks: ['oldX', 'oldY'],
+      height: 170,
+      fills: {
+        text: 'The collision system uses a "try and ___" approach. If the player overlaps a wall, restore the ___ position.',
+        answers: ['undo', 'old']
+      },
+      quiz: {
+        question: 'Why save the old position instead of pushing the player out of the wall?',
+        options: [
+          'Old positions use less memory',
+          'Push-out is complex - you need to calculate which direction to push. Restoring is simple, reliable, and avoids edge cases',
+          'GDevelop does not support push-out'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'NPCs & Dialog',
+      goal: 'Add characters the player can talk to by pressing E.',
+      points: [
+        'NPCs are coloured squares with name labels floating above them',
+        'Press E near an NPC to show their dialog in a box at the bottom',
+        'Dialog displays for 180 frames (3 seconds) then fades',
+        'In GDevelop, you would use a <strong>Dialogue Tree</strong> extension for complex conversations'
+      ],
+      challenge: '&#x1f3a8; Write the NPC interaction:',
+      starter: '// Talk to nearby NPC when E pressed\nCondition: KeyPressed("E")\nCondition: PlayerNearNPC()\nAction: ShowDialog("___")',
+      solution: '// Talk to nearby NPC when E pressed\nCondition: KeyPressed("E")\nCondition: PlayerNearNPC()\nAction: ShowDialog("Welcome, hero! Find the 3 gems hidden around.")',
+      checks: ['KeyPressed', 'E', 'ShowDialog'],
+      height: 110,
+      fills: {
+        text: 'Dialog appears when the player is within ___ pixels of an NPC. It shows for ___ frames.',
+        answers: ['36', '180']
+      },
+      quiz: {
+        question: 'Why use a proximity check instead of collision for talking?',
+        options: [
+          'Collision would push the NPC away',
+          'A proximity zone lets the player talk from a comfortable distance - collision requires touching, which feels awkward in a top-down game',
+          'Proximity is faster to calculate'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Item Collection',
+      goal: 'Place gem items around the world that the player can pick up.',
+      points: [
+        'Three gems (Ruby, Sapphire, Emerald) are placed at different locations',
+        'Walking near a gem collects it: mark it not alive, increment counter',
+        'A dialog message confirms which gem was found',
+        'In GDevelop, collected items would be deleted and a scene variable incremented'
+      ],
+      challenge: '&#x1f3a8; Write the gem collection:',
+      starter: '// Collect gem when player walks near it\nCondition: PlayerNearItem()\nAction: Delete("Item")\nAction: SetVariable(collected, collected + ___)\nAction: ShowDialog("Found the gem!")',
+      solution: '// Collect gem when player walks near it\nCondition: PlayerNearItem()\nAction: Delete("Item")\nAction: SetVariable(collected, collected + 1)\nAction: ShowDialog("Found the gem!")',
+      checks: ['collected', '1', 'Delete'],
+      height: 120,
+      fills: {
+        text: 'There are ___ gems to find. Each collection shows a ___ message.',
+        answers: ['3', 'dialog']
+      },
+      quiz: {
+        question: 'Why show a dialog when collecting an item?',
+        options: [
+          'It is required by the engine',
+          'Feedback confirms the action happened - without it, the player might not notice a small item disappearing',
+          'Dialogs slow the game down for balance'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Win Condition & Restart',
+      goal: 'Win when all gems are collected. Press R to explore again.',
+      points: [
+        'Check if collected equals totalItems (3) after each pickup',
+        'Show a "ALL GEMS FOUND!" overlay with a semi-transparent background',
+        'R resets player position, respawns items, and clears dialogs',
+        'This explore-collect-complete loop is the foundation of adventure games'
+      ],
+      challenge: '&#x1f3a8; Write the win condition:',
+      starter: '// Check if all gems collected\nCondition: Variable(collected) >= ___\nAction: SetVariable(gameState, "___")',
+      solution: '// Check if all gems collected\nCondition: Variable(collected) >= 3\nAction: SetVariable(gameState, "win")',
+      checks: ['collected', '3', 'win'],
+      height: 100,
+      fills: {
+        text: 'The player wins after collecting all ___ gems. Adventure games use the explore-collect-___ loop.',
+        answers: ['3', 'complete']
+      },
+      quiz: {
+        question: 'What separates a good adventure game from a simple collection quest?',
+        options: [
+          'More items to collect',
+          'Story, exploration, and NPC interactions give meaning to the collection - players care about WHY they collect, not just how many',
+          'Better graphics'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

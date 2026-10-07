@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My First C++ Game Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>My First C++ Game Build Canvas <span class="cw-lang-tag">⚙️ C++</span></h1>
+  <p>Write C++ game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your first C++ game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue catcher at the bottom of a dark sky</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   C++-to-JS transpiler (light transform so C++
+   syntax runs in the canvas iframe)
+   =================================================== */
+function cppToJs(code) {
+  return code
+    .replace(/\b(int|float|double|bool|char|auto|unsigned|long)\s+/g, 'let ')
+    .replace(/\bconst\s+let\s+/g, 'const ')
+    .replace(/\bstd::string\s+/g, 'let ')
+    .replace(/\bstd::cout\s*<<\s*/g, 'console.log(')
+    .replace(/\bstd::endl/g, '"\\n")')
+    .replace(/\bstd::abs\(/g, 'Math.abs(')
+    .replace(/\bstd::max\(/g, 'Math.max(')
+    .replace(/\bstd::min\(/g, 'Math.min(')
+    .replace(/\.f\b/g, '')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.push_back\(/g, '.push(');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (My First C++ Game)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0b0e1a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var CATCHER_VARS = 'let cx=270,cw=60,ch=16,cSpeed=6;';
+
+var STAR_VARS = 'let stars=[];let starTimer=0;let starInterval=40;let starSpeed=3;';
+
+var SCORE_VARS = 'let score=0,lives=3,highScore=0;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var MOVE_CATCHER = 'if(leftHeld)cx-=cSpeed;if(rightHeld)cx+=cSpeed;cx=Math.max(0,Math.min(540,cx));';
+
+var DRAW_BG = 'ctx.fillStyle="#0b0e1a";ctx.fillRect(0,0,600,400);';
+
+var DRAW_GROUND = 'ctx.fillStyle="#1a1f36";ctx.fillRect(0,380,600,20);';
+
+var DRAW_CATCHER = 'ctx.fillStyle="#60a5fa";ctx.fillRect(cx,364,cw,ch);';
+
+var DRAW_STARS = 'ctx.fillStyle="#fbbf24";for(var si=0;si<stars.length;si++){var s=stars[si];ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill()}';
+
+var SPAWN_STAR = 'starTimer++;if(starTimer>=starInterval){starTimer=0;stars.push({x:Math.random()*580+10,y:-10,r:8})}';
+
+var MOVE_STARS = 'for(var mi=stars.length-1;mi>=0;mi--){stars[mi].y+=starSpeed}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,16,30);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillText("Lives: "+lives,584,30);ctx.textAlign="left";';
+
+var DRAW_HIGH = 'ctx.fillStyle="rgba(255,255,255,0.4)";ctx.font="14px monospace";ctx.textAlign="center";ctx.fillText("Best: "+highScore,300,30);ctx.textAlign="left";';
+
+var CATCH_CHECK = 'for(var ci=stars.length-1;ci>=0;ci--){var st=stars[ci];' +
+  'if(st.y+st.r>=364&&st.x>=cx&&st.x<=cx+cw){score++;stars.splice(ci,1)}' +
+  'else if(st.y>410){lives--;stars.splice(ci,1)}}';
+
+var RESTART_KEY = 'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;stars=[];starTimer=0;starInterval=40;starSpeed=3;gameState="play"}});';
+
+var GAME_OVER_DRAW = 'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+  'ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,215);' +
+  'ctx.fillText("Best: "+highScore,300,245);' +
+  'ctx.font="18px monospace";ctx.fillText("Press R to play again",300,280);ctx.textAlign="left"}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - My First C++ Game steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-my-first-cpp-canvas',
+  downloadName: 'my-first-cpp-game.html',
+
+  hints: [
+    'A blue catcher at the bottom of a dark sky',
+    'The catcher slides left and right with the arrow keys',
+    'Golden stars fall from the sky',
+    'Stars that hit the catcher are caught  -  missed stars cost a life',
+    'Score and lives are shown at the top of the screen',
+    'A game-over screen appears when lives run out  -  press R to restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + KEYS +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_CATCHER +
+        DRAW_BG + DRAW_GROUND + DRAW_CATCHER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + KEYS +
+        'function loop(){' +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_GROUND + DRAW_CATCHER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + KEYS +
+        'function loop(){' +
+        MOVE_CATCHER +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        'function loop(){' +
+        MOVE_CATCHER + SPAWN_STAR + MOVE_STARS +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS + DRAW_SCORE + DRAW_LIVES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_CATCHER + SPAWN_STAR + MOVE_STARS +
+        CATCH_CHECK +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS + DRAW_SCORE + DRAW_LIVES +
+        GAME_OVER_DRAW +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        RESTART_KEY +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_CATCHER + SPAWN_STAR + MOVE_STARS +
+        CATCH_CHECK +
+        'if(lives<=0){if(score>highScore)highScore=score;gameState="over"}' +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS + DRAW_SCORE + DRAW_LIVES + DRAW_HIGH +
+        GAME_OVER_DRAW +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Catcher',
+      goal: 'Draw a blue catcher on a dark background with a ground line. The catcher sits near the bottom of the screen.',
+      points: [
+        'The canvas is 600x400 pixels with a dark-sky background (<code>#0b0e1a</code>) and a ground strip at the bottom',
+        'The catcher is a blue rectangle: 60 wide, 16 tall, sitting just above the ground at y=364',
+        'In real C++ you would create the catcher with <code>sf::RectangleShape catcher({60.f, 16.f})</code>',
+        'The variable <code>int cx</code> tracks the catcher\'s x position  -  it starts centred at 270'
+      ],
+      challenge: '⚙️ Set the catcher\'s starting position and size:',
+      starter: '// Set the catcher\'s starting position\nint catcherX = ___;\nint catcherWidth = ___;\nint catcherHeight = 16;\n\n// Apply to the engine variables\ncx = catcherX;\ncw = catcherWidth;',
+      solution: '// Set the catcher\'s starting position\nint catcherX = 270;\nint catcherWidth = 60;\nint catcherHeight = 16;\n\n// Apply to the engine variables\ncx = catcherX;\ncw = catcherWidth;',
+      checks: ['270', '60', 'cx', 'cw'],
+      height: 180,
+      fills: {
+        text: 'The catcher starts at x = ___ to appear centred. Its width of ___ pixels gives enough room to catch falling objects.',
+        answers: ['270', '60']
+      },
+      quiz: {
+        question: 'Why is the catcher 60 pixels wide on a 600-pixel canvas?',
+        options: [
+          'It is exactly 10% of the canvas width  -  wide enough to catch things but narrow enough to make aiming matter',
+          'It must be exactly 60 pixels by C++ rules',
+          'Wider catchers crash the game'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 2,
+      title: 'Keyboard Movement',
+      goal: 'Move the catcher left and right with arrow keys or A/D. Clamp it so it stays on screen.',
+      points: [
+        'The engine tracks <code>bool leftHeld, rightHeld</code> for arrow keys and A/D',
+        'Each frame: if the key is held, move the catcher by <code>cSpeed</code> pixels (6)',
+        'Clamp <code>cx</code> between 0 and 540 (canvas width 600 minus catcher width 60)',
+        'In real SFML you would check <code>sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)</code>'
+      ],
+      challenge: '⚙️ Write the movement and clamping logic:',
+      starter: '// Move catcher with arrow keys\nif (leftHeld)  cx -= ___;\nif (rightHeld) cx += ___;\n\n// Keep the catcher on screen\ncx = std::max(0, std::min(___, cx));',
+      solution: '// Move catcher with arrow keys\nif (leftHeld)  cx -= cSpeed;\nif (rightHeld) cx += cSpeed;\n\n// Keep the catcher on screen\ncx = std::max(0, std::min(540, cx));',
+      checks: ['leftheld', 'rightheld', 'cspeed', '540'],
+      height: 170,
+      fills: {
+        text: 'The catcher moves ___ pixels per frame. Clamping to 540 stops it leaving the ___ edge of the screen.',
+        answers: ['6', 'right']
+      },
+      quiz: {
+        question: 'Why is the clamp maximum 540 instead of 600?',
+        options: [
+          'Canvas width (600) minus catcher width (60) = 540, so the right edge of the catcher never leaves the canvas',
+          '540 is a standard game number',
+          'The ground is 540 pixels wide'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 3,
+      title: 'Falling Stars',
+      goal: 'Spawn golden stars at random x positions and move them downward each frame.',
+      points: [
+        'Stars are stored in an array. In real C++ you would use <code>std::vector&lt;Star&gt;</code>',
+        'A timer counts frames. Every <code>starInterval</code> (40) frames, spawn a new star at a random x',
+        'Each frame, move every star down by <code>starSpeed</code> (3 pixels)',
+        'Stars that fall below the canvas are removed  -  we will handle catching in step 4'
+      ],
+      challenge: '⚙️ Write the spawn timer and movement loop:',
+      starter: '// Tick the spawn timer\nstarTimer++;\nif (starTimer >= ___) {\n    starTimer = 0;\n    // Spawn a new star at random x\n    stars.push({x: Math.random() * 580 + 10,\n                y: -10, r: 8});\n}\n\n// Move all stars downward\nfor (int i = stars.length - 1; i >= 0; i--) {\n    stars[i].y += ___;\n}',
+      solution: '// Tick the spawn timer\nstarTimer++;\nif (starTimer >= starInterval) {\n    starTimer = 0;\n    // Spawn a new star at random x\n    stars.push({x: Math.random() * 580 + 10,\n                y: -10, r: 8});\n}\n\n// Move all stars downward\nfor (int i = stars.length - 1; i >= 0; i--) {\n    stars[i].y += starSpeed;\n}',
+      checks: ['startimer', 'starinterval', 'starspeed', 'push'],
+      height: 280,
+      fills: {
+        text: 'A new star spawns every ___ frames. Each star falls at ___ pixels per frame.',
+        answers: ['40', '3']
+      },
+      quiz: {
+        question: 'Why loop backward (i = length - 1 down to 0) when processing stars?',
+        options: [
+          'It draws them in the right order',
+          'When you remove an item mid-loop, looping backward keeps the remaining indices valid',
+          'Backward loops run faster in C++'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Catching & Missing',
+      goal: 'Detect when a star hits the catcher (caught!) or falls past the ground (missed  -  lose a life).',
+      points: [
+        'A star is caught if its y + radius reaches the catcher top (364) AND its x is between <code>cx</code> and <code>cx + cw</code>',
+        'A caught star adds 1 to <code>score</code> and is removed from the array',
+        'A star that falls below y=410 is missed  -  subtract 1 from <code>lives</code>',
+        'In real C++ this is the same AABB-vs-circle collision check you would use with SFML bounds'
+      ],
+      challenge: '⚙️ Write the catch and miss detection:',
+      starter: '// Check each star\nfor (int i = stars.length - 1; i >= 0; i--) {\n    // Caught by the catcher?\n    if (stars[i].y + stars[i].r >= 364 &&\n        stars[i].x >= cx &&\n        stars[i].x <= cx + ___) {\n        ___++;\n        stars.splice(i, 1);\n    }\n    // Fell off the bottom?\n    else if (stars[i].y > 410) {\n        ___--;\n        stars.splice(i, 1);\n    }\n}',
+      solution: '// Check each star\nfor (int i = stars.length - 1; i >= 0; i--) {\n    // Caught by the catcher?\n    if (stars[i].y + stars[i].r >= 364 &&\n        stars[i].x >= cx &&\n        stars[i].x <= cx + cw) {\n        score++;\n        stars.splice(i, 1);\n    }\n    // Fell off the bottom?\n    else if (stars[i].y > 410) {\n        lives--;\n        stars.splice(i, 1);\n    }\n}',
+      checks: ['score', 'lives', 'cw', 'splice'],
+      height: 320,
+      fills: {
+        text: 'A star is caught when it overlaps the catcher\'s ___ pixels of width. Missing a star costs one ___.',
+        answers: ['60', 'life']
+      },
+      quiz: {
+        question: 'Why check <code>stars[i].x >= cx && stars[i].x <= cx + cw</code>?',
+        options: [
+          'It checks if the star\'s centre is horizontally within the catcher  -  basic collision detection',
+          'It makes the star glow',
+          'It checks the star\'s colour'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Score, Lives & Game Over',
+      goal: 'Display the score and lives on screen. End the game when lives reach zero.',
+      points: [
+        'Draw score in the top-left and lives in the top-right using <code>ctx.fillText</code>',
+        'When <code>lives &lt;= 0</code>, set <code>gameState = "over"</code> to freeze the action',
+        'The game-over screen shows the final score and "Press R to play again"',
+        'This is the same state-machine pattern you would use with an <code>enum GameState</code> in real C++'
+      ],
+      challenge: '⚙️ Write the game-over check and difficulty scaling:',
+      starter: '// Check for game over\nif (___ <= 0) {\n    gameState = "___";\n}\n\n// Speed up spawns as score grows\nif (score > 0 && score % 10 == 0) {\n    starInterval = std::max(___, starInterval - 1);\n}',
+      solution: '// Check for game over\nif (lives <= 0) {\n    gameState = "over";\n}\n\n// Speed up spawns as score grows\nif (score > 0 && score % 10 == 0) {\n    starInterval = std::max(15, starInterval - 1);\n}',
+      checks: ['lives', 'over', 'starinterval', '15'],
+      height: 200,
+      fills: {
+        text: 'The game ends when lives drop to ___. Reducing starInterval makes stars spawn ___, increasing difficulty.',
+        answers: ['zero', 'faster']
+      },
+      quiz: {
+        question: 'Why cap starInterval at 15 instead of letting it reach 0?',
+        options: [
+          'At 0 the game would spawn a star every single frame  -  far too many to ever catch',
+          'The number 15 looks nicer on screen',
+          'C++ arrays cannot hold more than 15 items'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 6,
+      title: 'Polish & Restart',
+      goal: 'Add a high-score tracker, speed ramp, and a clean restart with the R key.',
+      points: [
+        'Press R when the game is over to reset score, lives, stars, and timer  -  then resume playing',
+        'Track a high score that persists across rounds: <code>if (score > highScore) highScore = score</code>',
+        'Increase <code>starSpeed</code> slightly as the score grows to ramp the challenge',
+        'This restart loop is reused in every game: Pong, Snake, Breakout and beyond'
+      ],
+      challenge: '⚙️ Write the high-score tracking and difficulty ramp:',
+      starter: '// Track the high score\nif (score > ___) {\n    ___ = score;\n}\n\n// Gradually increase falling speed\nstarSpeed = 3 + score / ___;\n\n// Cap the speed so it stays playable\nstarSpeed = std::min(___, starSpeed);',
+      solution: '// Track the high score\nif (score > highScore) {\n    highScore = score;\n}\n\n// Gradually increase falling speed\nstarSpeed = 3 + score / 10;\n\n// Cap the speed so it stays playable\nstarSpeed = std::min(8, starSpeed);',
+      checks: ['highscore', 'starspeed', '10', '8'],
+      height: 240,
+      fills: {
+        text: 'The high score remembers the best ___ across games. Dividing score by 10 means speed increases every ___ catches.',
+        answers: ['score', '10']
+      },
+      quiz: {
+        question: 'Which pattern from this game appears in almost every game you will build next?',
+        options: [
+          'Golden falling circles',
+          'The game-loop + state-machine + restart pattern: PLAYING, GAME_OVER, reset and loop again',
+          'The blue catcher colour'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++ Snake Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>C++ Snake Build Canvas <span class="cw-lang-tag">&#9881; C++</span></h1>
+  <p>Write C++ game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your C++ Snake game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A green head cell on a dark 20x20 grid</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   C++-to-JS transpiler (light transform so C++
+   syntax runs in the canvas iframe)
+   =================================================== */
+function cppToJs(code) {
+  return code
+    .replace(/\b(int|float|double|bool|char|auto|unsigned|long)\s+/g, 'let ')
+    .replace(/\bconst\s+let\s+/g, 'const ')
+    .replace(/\bstd::string\s+/g, 'let ')
+    .replace(/\bstd::cout\s*<<\s*/g, 'console.log(')
+    .replace(/\bstd::endl/g, '"\\n")')
+    .replace(/\bstd::abs\(/g, 'Math.abs(')
+    .replace(/\bstd::max\(/g, 'Math.max(')
+    .replace(/\bstd::min\(/g, 'Math.min(')
+    .replace(/\.f\b/g, '')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.push_back\(/g, '.push(');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (C++ Snake)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0a0e14;margin:0;overflow:hidden}canvas{display:block}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");const GRID=20,CELL=20;';
+
+var SNAKE_VARS = 'let snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];let dir={x:1,y:0};let nextDir={x:1,y:0};';
+
+var FOOD_VARS = 'let food={x:15,y:10};';
+
+var SCORE_VARS = 'let score=0;let highScore=0;';
+
+var STATE_VARS = 'let gameOver=false;';
+
+var SPEED_VARS = 'let baseSpeed=150;let tickSpeed=150;';
+
+var KEYS = 'document.addEventListener("keydown",function(e){' +
+  'if(e.code==="ArrowUp"&&dir.y!==1)nextDir={x:0,y:-1};' +
+  'if(e.code==="ArrowDown"&&dir.y!==-1)nextDir={x:0,y:1};' +
+  'if(e.code==="ArrowLeft"&&dir.x!==1)nextDir={x:-1,y:0};' +
+  'if(e.code==="ArrowRight"&&dir.x!==-1)nextDir={x:1,y:0};' +
+  'if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code)!==-1)e.preventDefault()});';
+
+var KEYS_RESTART = 'document.addEventListener("keydown",function(e){' +
+  'if(e.code==="ArrowUp"&&dir.y!==1)nextDir={x:0,y:-1};' +
+  'if(e.code==="ArrowDown"&&dir.y!==-1)nextDir={x:0,y:1};' +
+  'if(e.code==="ArrowLeft"&&dir.x!==1)nextDir={x:-1,y:0};' +
+  'if(e.code==="ArrowRight"&&dir.x!==-1)nextDir={x:1,y:0};' +
+  'if(e.code==="KeyR"&&gameOver){snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];dir={x:1,y:0};nextDir={x:1,y:0};score=0;tickSpeed=baseSpeed;gameOver=false;spawnFood();startLoop()}' +
+  'if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code)!==-1)e.preventDefault()});';
+
+var DRAW_BG = 'ctx.fillStyle="#0a0e14";ctx.fillRect(0,0,400,400);';
+
+var DRAW_GRID = 'ctx.strokeStyle="rgba(255,255,255,0.04)";for(var gx=0;gx<=GRID;gx++){ctx.beginPath();ctx.moveTo(gx*CELL,0);ctx.lineTo(gx*CELL,400);ctx.stroke()}for(var gy=0;gy<=GRID;gy++){ctx.beginPath();ctx.moveTo(0,gy*CELL);ctx.lineTo(400,gy*CELL);ctx.stroke()}';
+
+var DRAW_SNAKE = 'for(var si=0;si<snake.length;si++){var s=snake[si];var shade=Math.max(80,200-si*6);ctx.fillStyle=si===0?"#06d6a0":"rgb(4,"+shade+","+Math.floor(shade*0.6)+")";ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2)}';
+
+var DRAW_FOOD = 'ctx.fillStyle="#ff5470";ctx.beginPath();ctx.arc(food.x*CELL+CELL/2,food.y*CELL+CELL/2,CELL/2-2,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,8,18);';
+
+var DRAW_HISCORE = 'ctx.textAlign="right";ctx.fillText("Best: "+highScore,392,18);';
+
+var DRAW_GAMEOVER = 'if(gameOver){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,180);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,215);ctx.fillText("Press R to restart",200,250)}';
+
+var SPAWN_FOOD = 'function spawnFood(){var tries=0;while(tries<1000){var fx=Math.floor(Math.random()*GRID),fy=Math.floor(Math.random()*GRID);var onSnake=false;for(var i=0;i<snake.length;i++){if(snake[i].x===fx&&snake[i].y===fy){onSnake=true;break}}if(!onSnake){food={x:fx,y:fy};return}tries++}}';
+
+var MOVE_SNAKE = 'dir=nextDir;var newHead={x:snake[0].x+dir.x,y:snake[0].y+dir.y};';
+
+var GROW_OR_MOVE = 'snake.unshift(newHead);if(newHead.x===food.x&&newHead.y===food.y){score++;spawnFood()}else{snake.pop()}';
+
+var WALL_CHECK = 'if(newHead.x<0||newHead.x>=GRID||newHead.y<0||newHead.y>=GRID){gameOver=true}';
+
+var SELF_CHECK = 'for(var si=1;si<snake.length;si++){if(snake[si].x===newHead.x&&snake[si].y===newHead.y){gameOver=true;break}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - C++ Snake steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-cpp-snake-canvas',
+  downloadName: 'my-cpp-snake.html',
+
+  hints: [
+    'A green head cell on a dark 20×20 grid',
+    'The snake moves one cell per tick in the arrow-key direction',
+    'A red food dot appears and the snake grows when it eats',
+    'The snake dies when it hits the edge of the grid',
+    'The snake dies when it runs into its own body',
+    'Score and speed increase with each food eaten  -  press R to restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + 'let snake=[{x:10,y:10}];let dir={x:1,y:0};let nextDir={x:1,y:0};' +
+        KEYS +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'function draw(){' +
+        DRAW_BG + DRAW_GRID +
+        'var s=snake[0];ctx.fillStyle="#06d6a0";ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2)' +
+        '}draw();'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + 'let snake=[{x:10,y:10}];let dir={x:1,y:0};let nextDir={x:1,y:0};' +
+        KEYS +
+        'function tick(){' +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'snake[0].x+=dir.x;snake[0].y+=dir.y;' +
+        'if(snake[0].x<0)snake[0].x=GRID-1;if(snake[0].x>=GRID)snake[0].x=0;' +
+        'if(snake[0].y<0)snake[0].y=GRID-1;if(snake[0].y>=GRID)snake[0].y=0;' +
+        DRAW_BG + DRAW_GRID +
+        'var s=snake[0];ctx.fillStyle="#06d6a0";ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2)' +
+        '}setInterval(tick,150);tick();'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS +
+        KEYS + SPAWN_FOOD +
+        'function tick(){' +
+        MOVE_SNAKE +
+        'if(newHead.x<0)newHead.x=GRID-1;if(newHead.x>=GRID)newHead.x=0;' +
+        'if(newHead.y<0)newHead.y=GRID-1;if(newHead.y>=GRID)newHead.y=0;' +
+        'try{' + cppToJs(u) + '}catch(e){snake.unshift(newHead);snake.pop()}' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
+        '}setInterval(tick,150);tick();'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS +
+        KEYS + SPAWN_FOOD +
+        'function tick(){' +
+        'if(gameOver)return;' +
+        MOVE_SNAKE +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'if(!gameOver){snake.unshift(newHead);if(newHead.x===food.x&&newHead.y===food.y){score++;spawnFood()}else{snake.pop()}}' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
+        'if(gameOver){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("WALL HIT!",200,200)}' +
+        '}setInterval(tick,150);tick();'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS +
+        KEYS + SPAWN_FOOD +
+        'function tick(){' +
+        'if(gameOver)return;' +
+        MOVE_SNAKE + WALL_CHECK +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'if(!gameOver){snake.unshift(newHead);if(newHead.x===food.x&&newHead.y===food.y){score++;spawnFood()}else{snake.pop()}}' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
+        'if(gameOver){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,200)}' +
+        '}setInterval(tick,150);tick();'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + SPEED_VARS +
+        SPAWN_FOOD +
+        KEYS_RESTART +
+        'var loopId=0;' +
+        'function startLoop(){clearInterval(loopId);loopId=setInterval(tick,tickSpeed)}' +
+        'function tick(){' +
+        'if(gameOver){' + DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE + DRAW_HISCORE + DRAW_GAMEOVER + 'return}' +
+        MOVE_SNAKE + WALL_CHECK + SELF_CHECK +
+        'if(!gameOver){snake.unshift(newHead);if(newHead.x===food.x&&newHead.y===food.y){' +
+        'try{' + cppToJs(u) + '}catch(e){score++}' +
+        'spawnFood();clearInterval(loopId);loopId=setInterval(tick,tickSpeed)}else{snake.pop()}}' +
+        'if(gameOver&&score>highScore)highScore=score;' +
+        DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE + DRAW_HISCORE + DRAW_GAMEOVER +
+        '}startLoop();tick();'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Grid & Head',
+      goal: 'Draw a 20×20 grid and place the snake head as a green cell at the centre.',
+      points: [
+        'The world is a 20×20 grid of 20px cells, giving a 400×400 canvas',
+        'A grid cell is a coordinate pair: <code>struct Cell { int x, y; };</code>  -  your first struct!',
+        'The snake head starts at cell (10, 10), drawn as a green 18×18 rectangle inside a 20×20 slot (1px gap each side)',
+        'In real C++ you would use <code>sf::RectangleShape</code> and <code>setPosition({x * 20.f, y * 20.f})</code>  -  same grid logic'
+      ],
+      challenge: '⚙️ Place the head on the grid and set the initial direction:',
+      starter: '// Place the snake head at the centre of the grid\nint headX = ___;\nint headY = ___;\n\n// Initial direction: moving right\nint dirX = ___;\nint dirY = 0;',
+      solution: '// Place the snake head at the centre of the grid\nint headX = 10;\nint headY = 10;\n\n// Initial direction: moving right\nint dirX = 1;\nint dirY = 0;',
+      checks: ['headx', 'heady', 'dirx', 'diry'],
+      height: 180,
+      fills: {
+        text: 'The grid is ___ cells wide. Each cell is ___ pixels, so the canvas is 400×400.',
+        answers: ['20', '20']
+      },
+      quiz: {
+        question: 'Why use a grid instead of free pixel movement for Snake?',
+        options: [
+          'Pixels are too small to see',
+          'Snake is a GRID game  -  whole-cell steps at fixed intervals ARE the classic feel and simplify collision',
+          'C++ cannot do pixel movement'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Movement & Input',
+      goal: 'Move the snake one cell per tick and steer with arrow keys, blocking 180° reversal.',
+      points: [
+        'Snake uses TICK-based movement: a timer fires every ~150ms and the snake steps one cell',
+        'Arrow keys set the direction, but you must block the exact opposite (right→left kills you instantly)',
+        'The 180° rule: <code>if (want.x != -dir.x || want.y != -dir.y) nextDir = want</code>',
+        'Buffer input in <code>nextDir</code> and apply once per tick to prevent the double-key-press bug'
+      ],
+      challenge: '⚙️ Write the direction change with the 180° safety check:',
+      starter: '// Apply buffered direction each tick\ndir = nextDir;\n\n// When Up arrow pressed, go up if not going down\nif (key == "ArrowUp" && dir.y != ___)\n    nextDir = {0, -1};\n\n// When Right arrow pressed, go right if not going left\nif (key == "ArrowRight" && dir.x != ___)\n    nextDir = {1, 0};',
+      solution: '// Apply buffered direction each tick\ndir = nextDir;\n\n// When Up arrow pressed, go up if not going down\nif (key == "ArrowUp" && dir.y != 1)\n    nextDir = {0, -1};\n\n// When Right arrow pressed, go right if not going left\nif (key == "ArrowRight" && dir.x != -1)\n    nextDir = {1, 0};',
+      checks: ['nextdir', 'dir', '1', '-1'],
+      height: 220,
+      fills: {
+        text: 'Reversing 180° would mean instant ___ (head into neck). We buffer input in ___ and apply it once per tick.',
+        answers: ['death', 'nextDir']
+      },
+      quiz: {
+        question: 'Why buffer the direction in nextDir instead of changing dir immediately?',
+        options: [
+          'It makes the code longer',
+          'Two key presses between ticks could chain up→left→down, reversing overall  -  buffering blocks that',
+          'JavaScript requires it'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Growing the Snake',
+      goal: 'Add food, grow the body when eaten, and track segments with an array (deque).',
+      points: [
+        'The body is a <code>std::deque&lt;Cell&gt;</code>: push the new head at the front, pop the tail at the back',
+        'When the head lands on food: skip <code>pop_back()</code> so the snake grows by one',
+        'Respawn food at a random cell that is NOT on the snake body',
+        'Score = number of food eaten. In real C++ you would show it with <code>window.setTitle()</code>'
+      ],
+      challenge: '⚙️ Write the grow-or-move logic:',
+      starter: '// Add new head to the front\nsnake.push_front(newHead);\n\n// Did we eat food?\nif (newHead.x == food.x && newHead.y == ___) {\n    score++;\n    food = ___;\n} else {\n    snake.___();   // remove tail\n}',
+      solution: '// Add new head to the front\nsnake.push_front(newHead);\n\n// Did we eat food?\nif (newHead.x == food.x && newHead.y == food.y) {\n    score++;\n    food = spawnFood();\n} else {\n    snake.pop_back();   // remove tail\n}',
+      checks: ['food.y', 'spawnfood', 'pop_back'],
+      height: 220,
+      fills: {
+        text: 'The deque trick: push_front adds the new ___. If no food was eaten, pop_back removes the ___.',
+        answers: ['head', 'tail']
+      },
+      quiz: {
+        question: 'What happens if you push_front WITHOUT pop_back?',
+        options: [
+          'The snake teleports',
+          'The snake grows by one segment  -  which is exactly how eating works!',
+          'A compile error'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Wall Collision',
+      goal: 'End the game when the snake hits any edge of the grid.',
+      points: [
+        'The grid runs from 0 to 19 in both axes (20 cells, indexed 0-19)',
+        'Wall death: new head x < 0 or x >= 20, or y < 0 or y >= 20',
+        'On death: set <code>bool gameOver = true</code>, stop ticking, overlay "GAME OVER"',
+        'In real C++ you would use an <code>enum GameState { Playing, Dead };</code> state machine'
+      ],
+      challenge: '⚙️ Write the wall collision check:',
+      starter: '// Check if head left the grid\nif (newHead.x < 0 || newHead.x >= ___ ||\n    newHead.y < ___ || newHead.y >= ___) {\n    gameOver = ___;\n}',
+      solution: '// Check if head left the grid\nif (newHead.x < 0 || newHead.x >= 20 ||\n    newHead.y < 0 || newHead.y >= 20) {\n    gameOver = true;\n}',
+      checks: ['20', '0', 'true', 'gameover'],
+      height: 160,
+      fills: {
+        text: 'Valid cell coordinates run from 0 to ___. Any coordinate outside that range means the snake hit a ___.',
+        answers: ['19', 'wall']
+      },
+      quiz: {
+        question: 'Why check >= 20 instead of > 20?',
+        options: [
+          'Grid cells are indexed 0-19, so cell 20 does not exist  -  >= 20 catches the first out-of-bounds position',
+          'It is a random choice',
+          'The wall is one pixel thick'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Self Collision',
+      goal: 'Detect when the snake runs into its own body.',
+      points: [
+        'Self-bite: compare the new head position against every existing body segment',
+        'Check BEFORE pushing the new head, so you do not compare the head to itself',
+        'Loop through all segments: <code>for (auto& c : snake) if (c.x == newHead.x && c.y == newHead.y) gameOver = true</code>',
+        'This is what makes Snake hard: your own body is the obstacle, and it grows with every success'
+      ],
+      challenge: '⚙️ Write the self-collision check:',
+      starter: '// Check every body segment for collision\nfor (auto& c : snake) {\n    if (c.x == ___.x && c.y == ___.y) {\n        ___ = true;\n    }\n}',
+      solution: '// Check every body segment for collision\nfor (auto& c : snake) {\n    if (c.x == newHead.x && c.y == newHead.y) {\n        gameOver = true;\n    }\n}',
+      checks: ['newhead', 'gameover', 'true'],
+      height: 160,
+      fills: {
+        text: 'The self-collision loop compares every ___ cell to the new head. This check runs ___ pushing the head.',
+        answers: ['body', 'before']
+      },
+      quiz: {
+        question: 'What makes Snake harder the better you play?',
+        options: [
+          'The walls close in',
+          'Your own body is the obstacle  -  every food eaten makes the hazard longer',
+          'The food gets smaller'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Score & Polish',
+      goal: 'Display the score, speed up with each food eaten, track high score, and restart with R.',
+      points: [
+        'Score displayed top-left, high score top-right  -  no font file needed, canvas <code>fillText</code> works',
+        'Speed-up: decrease the tick interval each time food is eaten: <code>tickSpeed = std::max(50, 150 - score * 5)</code>',
+        'The speed floor of 50ms (~20 ticks/sec) keeps maximum difficulty humanly playable',
+        'Press R to restart: reset snake, direction, score, speed and respawn food'
+      ],
+      challenge: '⚙️ Write the score and speed-up on eating:',
+      starter: '// When food is eaten:\nscore++;\ntickSpeed = std::max(___, 150 - score * ___);\nif (score > ___)\n    highScore = score;',
+      solution: '// When food is eaten:\nscore++;\ntickSpeed = std::max(50, 150 - score * 5);\nif (score > highScore)\n    highScore = score;',
+      checks: ['50', '5', 'highscore'],
+      height: 160,
+      fills: {
+        text: 'Each food eaten shaves ___ ms off the tick interval. The floor of ___ ms stops the game becoming impossibly fast.',
+        answers: ['5', '50']
+      },
+      quiz: {
+        question: 'Why is 50ms the speed floor?',
+        options: [
+          'JavaScript cannot go faster',
+          'Past ~20 ticks per second humans cannot react  -  the floor keeps maximum difficulty playable',
+          'The deque overflows'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

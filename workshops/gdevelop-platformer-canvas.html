@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDevelop Platformer Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(163,230,53,.15);color:#a3e635;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GDevelop Platformer Build Canvas <span class="cw-lang-tag">&#x1f3a8; GDevelop</span></h1>
+  <p>Write GDevelop event logic step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GDevelop Platformer game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue square on a green ground with a sky background</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GDevelop-to-JS transpiler (simplified event notation)
+   =================================================== */
+function gdToJs(code) {
+  return code
+    .replace(/\/\/.*$/gm, '')
+    .replace(/Condition:\s*KeyPressed\("Left"\)/g, 'if(leftHeld)')
+    .replace(/Condition:\s*KeyPressed\("Right"\)/g, 'if(rightHeld)')
+    .replace(/Condition:\s*KeyPressed\("Up"\)/g, 'if(upHeld)')
+    .replace(/Condition:\s*KeyPressed\("Space"\)/g, 'if(spaceHeld)')
+    .replace(/Action:\s*SetVariable\((\w+),\s*([^)]+)\)/g, '$1=$2;')
+    .replace(/Condition:\s*Variable\((\w+)\)\s*([<>!=]+)\s*([^\n]+)/g, 'if($1$2$3)')
+    .replace(/Action:\s*Player\.Jump\(\)/g, 'if(onGround){vy=-jumpPower;onGround=false}')
+    .replace(/Condition:\s*Player\.IsOnFloor\(\)/g, 'if(onGround)')
+    .replace(/\bAction:\s*/g, '')
+    .replace(/\bCondition:\s*/g, 'if');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Platformer)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0c1445;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=50,py=300,pw=28,ph=32,vx=0,vy=0,speed=4,jumpPower=10,gravity=0.5,onGround=false;';
+
+var PLATFORM_DATA = 'var platforms=[{x:0,y:370,w:600,h:30},{x:100,y:290,w:120,h:16},{x:300,y:230,w:120,h:16},{x:180,y:170,w:100,h:16},{x:420,y:130,w:140,h:16}];';
+
+var COIN_DATA = 'var coins=[{x:145,y:265,r:8,alive:true},{x:345,y:205,r:8,alive:true},{x:215,y:145,r:8,alive:true},{x:475,y:105,r:8,alive:true},{x:530,y:105,r:8,alive:true}];';
+
+var SCORE_VARS = 'let score=0,totalCoins=5;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,spaceHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW"||e.code==="Space")spaceHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW"||e.code==="Space")spaceHeld=false});';
+
+var MOVE_PLAYER = 'vx=0;if(leftHeld)vx=-speed;if(rightHeld)vx=speed;px+=vx;';
+
+var APPLY_GRAVITY = 'vy+=gravity;py+=vy;onGround=false;';
+
+var COLLIDE_PLATFORMS = 'for(var pi=0;pi<platforms.length;pi++){var pl=platforms[pi];' +
+  'if(px+pw>pl.x&&px<pl.x+pl.w&&py+ph>pl.y&&py<pl.y+pl.h){' +
+  'if(vy>=0&&py+ph-vy<=pl.y+4){py=pl.y-ph;vy=0;onGround=true}' +
+  'else if(vy<0&&py-vy>=pl.y+pl.h-4){py=pl.y+pl.h;vy=0}}}';
+
+var CLAMP_PLAYER = 'if(px<0)px=0;if(px+pw>600)px=600-pw;if(py>420){py=300;px=50;vy=0}';
+
+var DRAW_BG = 'var grd=ctx.createLinearGradient(0,0,0,400);grd.addColorStop(0,"#1e3a5f");grd.addColorStop(1,"#0c1445");ctx.fillStyle=grd;ctx.fillRect(0,0,600,400);';
+
+var DRAW_PLATFORMS = 'ctx.fillStyle="#22c55e";for(var di=0;di<platforms.length;di++){var dp=platforms[di];ctx.fillRect(dp.x,dp.y,dp.w,dp.h)}';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#3b82f6";ctx.fillRect(px,py,pw,ph);ctx.fillStyle="#60a5fa";ctx.fillRect(px+4,py+4,8,8);ctx.fillRect(px+16,py+4,8,8);';
+
+var DRAW_COINS = 'for(var ci=0;ci<coins.length;ci++){if(coins[ci].alive){ctx.fillStyle="#facc15";ctx.beginPath();ctx.arc(coins[ci].x,coins[ci].y,coins[ci].r,0,Math.PI*2);ctx.fill()}}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Coins: "+score+" / "+totalCoins,12,24);';
+
+var COIN_COLLECT = 'for(var cc=0;cc<coins.length;cc++){if(coins[cc].alive&&Math.abs(px+pw/2-coins[cc].x)<20&&Math.abs(py+ph/2-coins[cc].y)<20){coins[cc].alive=false;score++}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - GDevelop Platformer steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-gdevelop-platformer-canvas',
+  downloadName: 'my-gdevelop-platformer.html',
+
+  hints: [
+    'A blue square on a green ground with a sky background',
+    'The player runs left and right with arrow keys',
+    'The player jumps with Space and falls with gravity',
+    'Green platforms at different heights to jump between',
+    'Yellow coins float above platforms waiting to be collected',
+    'Collect all 5 coins to win - press R to replay'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_DATA + KEYS +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY + COLLIDE_PLATFORMS + CLAMP_PLAYER +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_DATA + KEYS +
+        'function loop(){' +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'px=Math.max(0,Math.min(600-pw,px));' +
+        APPLY_GRAVITY + COLLIDE_PLATFORMS + CLAMP_PLAYER +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_DATA + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'py+=vy;onGround=false;' +
+        COLLIDE_PLATFORMS + CLAMP_PLAYER +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_DATA + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        CLAMP_PLAYER +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_DATA + COIN_DATA + SCORE_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY + COLLIDE_PLATFORMS + CLAMP_PLAYER +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORM_DATA + COIN_DATA + SCORE_VARS + STATE_VARS + KEYS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){score=0;px=50;py=300;vx=0;vy=0;for(var ri=0;ri<coins.length;ri++)coins[ri].alive=true;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + APPLY_GRAVITY + COLLIDE_PLATFORMS + CLAMP_PLAYER + COIN_COLLECT +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
+        'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("ALL COINS COLLECTED!",300,180);ctx.font="18px monospace";ctx.fillText("Press R to play again",300,215)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Player & Ground',
+      goal: 'Place a player on a ground platform with a sky background.',
+      points: [
+        'The player is a 28x32 blue rectangle standing on a green ground',
+        'The ground is a platform at y=370, spanning the full 600px width',
+        'In GDevelop, you add the <strong>Platform</strong> behaviour to ground objects',
+        'The player starts at x=50, y=300 - just above the ground'
+      ],
+      challenge: '&#x1f3a8; Set the player starting position:',
+      starter: '// Place the player above the ground\nAction: SetVariable(px, ___)\nAction: SetVariable(py, ___)\nAction: SetVariable(pw, 28)\nAction: SetVariable(ph, 32)',
+      solution: '// Place the player above the ground\nAction: SetVariable(px, 50)\nAction: SetVariable(py, 300)\nAction: SetVariable(pw, 28)\nAction: SetVariable(ph, 32)',
+      checks: ['50', '300', '28', '32'],
+      height: 130,
+      fills: {
+        text: 'The player starts at x=___ near the left side. The ground sits at y=___.',
+        answers: ['50', '370']
+      },
+      quiz: {
+        question: 'In GDevelop, what behaviour makes an object act as solid ground?',
+        options: [
+          'The Bounce behaviour',
+          'The Platform behaviour - it tells the engine this object is walkable/jumpable',
+          'The Gravity behaviour'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Horizontal Movement',
+      goal: 'Move the player left and right with arrow keys, staying on screen.',
+      points: [
+        'In GDevelop, the <strong>Platformer character</strong> behaviour handles movement automatically',
+        'Here we set horizontal velocity: left subtracts speed, right adds speed',
+        'The player is clamped between x=0 and x=572 (600 - player width)',
+        'No horizontal movement when no key is held - the player stops'
+      ],
+      challenge: '&#x1f3a8; Write the movement events:',
+      starter: '// Move the player with arrow keys\nCondition: KeyPressed("Left")\nAction: SetVariable(vx, -___)\n\nCondition: KeyPressed("Right")\nAction: SetVariable(vx, ___)',
+      solution: '// Move the player with arrow keys\nCondition: KeyPressed("Left")\nAction: SetVariable(vx, -speed)\n\nCondition: KeyPressed("Right")\nAction: SetVariable(vx, speed)',
+      checks: ['KeyPressed', 'Left', 'Right', 'speed'],
+      height: 160,
+      fills: {
+        text: 'The player moves ___ pixels per frame. GDevelop handles this with the ___ character behaviour.',
+        answers: ['4', 'Platformer']
+      },
+      quiz: {
+        question: 'Why does the player stop when no key is held?',
+        options: [
+          'Friction is built into the engine',
+          'We reset velocity to 0 each frame - without a key press, no force is applied so the player stays still',
+          'The platform blocks movement'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Gravity & Jumping',
+      goal: 'Add gravity that pulls the player down and a jump with Space.',
+      points: [
+        'Gravity adds to vertical velocity each frame: <code>vy += 0.5</code>',
+        'Jumping sets vy to a negative value (upward): <code>vy = -jumpPower</code>',
+        'You can only jump when on the ground (onGround is true)',
+        'In GDevelop, the Platformer behaviour has built-in gravity and jump force settings'
+      ],
+      challenge: '&#x1f3a8; Write the gravity and jump logic:',
+      starter: '// Apply gravity each frame\nAction: SetVariable(vy, vy + ___)\n\n// Jump when on ground and Space pressed\nCondition: KeyPressed("Space")\nCondition: Player.IsOnFloor()\nAction: Player.Jump()',
+      solution: '// Apply gravity each frame\nAction: SetVariable(vy, vy + gravity)\n\n// Jump when on ground and Space pressed\nCondition: KeyPressed("Space")\nCondition: Player.IsOnFloor()\nAction: Player.Jump()',
+      checks: ['gravity', 'Space', 'IsOnFloor', 'Jump'],
+      height: 170,
+      fills: {
+        text: 'Gravity accelerates the player downward by ___ each frame. Jump power is ___ pixels per frame upward.',
+        answers: ['0.5', '10']
+      },
+      quiz: {
+        question: 'Why can you only jump when on the ground?',
+        options: [
+          'The Space key only works on the ground',
+          'Without this check, the player could jump infinitely in mid-air - the ground check is what makes it a platform game',
+          'Gravity blocks jumping in the air'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Platform Collision',
+      goal: 'Land on platforms by detecting collision from above.',
+      points: [
+        'For each platform, check if the player rectangle overlaps it',
+        'Only land if the player is falling downward (vy >= 0) and was above the platform',
+        'On landing: snap player to platform top, set vy=0, set onGround=true',
+        'In GDevelop, the Platform behaviour handles this automatically'
+      ],
+      challenge: '&#x1f3a8; Write the landing logic:',
+      starter: '// Check each platform for collision\n// If player is falling and overlaps platform top\nCondition: Player.CollidesWithPlatform()\nAction: SetVariable(py, platformTop - ___)\nAction: SetVariable(vy, ___)\nAction: SetVariable(onGround, true)',
+      solution: '// Check each platform for collision\n// If player is falling and overlaps platform top\nCondition: Player.CollidesWithPlatform()\nAction: SetVariable(py, platformTop - ph)\nAction: SetVariable(vy, 0)\nAction: SetVariable(onGround, true)',
+      checks: ['py', 'vy', '0', 'onGround', 'true'],
+      height: 160,
+      fills: {
+        text: 'The player snaps to the platform ___ on landing. Vertical velocity resets to ___.',
+        answers: ['top', '0']
+      },
+      quiz: {
+        question: 'Why check that the player was above the platform before landing?',
+        options: [
+          'It prevents teleportation',
+          'Without this check, walking sideways into a platform would snap you on top of it - we only want to land when falling from above',
+          'GDevelop requires it'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Coin Collection',
+      goal: 'Place coins on platforms and collect them by touching.',
+      points: [
+        'Coins are yellow circles placed above each platform',
+        'Check distance between player centre and coin centre',
+        'On collect: mark coin as not alive and increment score',
+        'In GDevelop, you would use a collision condition and then delete the coin instance'
+      ],
+      challenge: '&#x1f3a8; Write the coin collection:',
+      starter: '// Check if player touches a coin\nCondition: PlayerCollidesWith(Coin)\nAction: Delete("Coin")\nAction: SetVariable(score, score + ___)',
+      solution: '// Check if player touches a coin\nCondition: PlayerCollidesWith(Coin)\nAction: Delete("Coin")\nAction: SetVariable(score, score + 1)',
+      checks: ['score', '1', 'Coin'],
+      height: 110,
+      fills: {
+        text: 'There are ___ coins to collect. Each coin disappears when the player gets within ___ pixels.',
+        answers: ['5', '20']
+      },
+      quiz: {
+        question: 'Why use distance-based collection instead of exact position matching?',
+        options: [
+          'Exact matching is impossible on canvas',
+          'Distance gives a generous hitbox - the player does not need pixel-perfect alignment, making the game feel responsive',
+          'Coins are round so distance is required'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Win Screen & Restart',
+      goal: 'Show a win message when all coins are collected. Press R to replay.',
+      points: [
+        'Check if score equals totalCoins (5) after each collection',
+        'Set gameState to "win" and display a congratulations message',
+        'Pressing R resets player position, score, and respawns all coins',
+        'This complete loop (play, collect, win, restart) is the core of every level-based game'
+      ],
+      challenge: '&#x1f3a8; Write the win condition:',
+      starter: '// Check if all coins collected\nCondition: Variable(score) >= ___\nAction: SetVariable(gameState, "___")',
+      solution: '// Check if all coins collected\nCondition: Variable(score) >= 5\nAction: SetVariable(gameState, "win")',
+      checks: ['score', '5', 'win'],
+      height: 100,
+      fills: {
+        text: 'The player wins after collecting all ___ coins. The game state changes to "___".',
+        answers: ['5', 'win']
+      },
+      quiz: {
+        question: 'What makes platformers replayable beyond coin collecting?',
+        options: [
+          'More coins',
+          'Speed-run timers, hidden secrets, tighter jumps, and new mechanics per level - each layer adds mastery depth',
+          'Better graphics'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

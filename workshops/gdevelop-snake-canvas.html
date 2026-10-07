@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDevelop Snake Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(163,230,53,.15);color:#a3e635;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GDevelop Snake Build Canvas <span class="cw-lang-tag">&#x1f3a8; GDevelop</span></h1>
+  <p>Write GDevelop event logic step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GDevelop Snake game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A green square on a dark grid</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GDevelop-to-JS transpiler (simplified event notation)
+   =================================================== */
+function gdToJs(code) {
+  return code
+    .replace(/\/\/.*$/gm, '')
+    .replace(/Condition:\s*KeyPressed\("Left"\)/g, 'if(leftHeld)')
+    .replace(/Condition:\s*KeyPressed\("Right"\)/g, 'if(rightHeld)')
+    .replace(/Condition:\s*KeyPressed\("Up"\)/g, 'if(upHeld)')
+    .replace(/Condition:\s*KeyPressed\("Down"\)/g, 'if(downHeld)')
+    .replace(/Action:\s*SetVariable\((\w+),\s*([^)]+)\)/g, '$1=$2;')
+    .replace(/Condition:\s*Variable\((\w+)\)\s*([<>!=]+)\s*(\S+)/g, 'if($1$2$3)')
+    .replace(/Action:\s*Create\("(\w+)",\s*([^,]+),\s*([^)]+)\)/g, '$1s.push({x:$2,y:$3});')
+    .replace(/Action:\s*Delete\("(\w+)"\)/g, '$1.alive=false;')
+    .replace(/Condition:\s*Timer\("(\w+)"\)\s*>\s*(\d+)/g, function(_, name, sec) {
+      return 'if(' + name + 'Timer>' + (parseInt(sec) * 60) + ')';
+    })
+    .replace(/\bAction:\s*/g, '')
+    .replace(/\bCondition:\s*/g, 'if');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Snake)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f172a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");const GRID=20,COLS=20,ROWS=20;';
+
+var SNAKE_VARS = 'let snake=[{x:10,y:10}],dx=1,dy=0,nextDx=1,nextDy=0;';
+
+var FOOD_VARS = 'let foodx=15,foody=10;';
+
+var SCORE_VARS = 'let score=0;';
+
+var STATE_VARS = 'let gameState="play",moveTimer=0,moveDelay=8;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"&&dx!==1){nextDx=-1;nextDy=0}' +
+    'if(e.code==="ArrowRight"&&dx!==-1){nextDx=1;nextDy=0}' +
+    'if(e.code==="ArrowUp"&&dy!==1){nextDx=0;nextDy=-1}' +
+    'if(e.code==="ArrowDown"&&dy!==-1){nextDx=0;nextDy=1}' +
+    'leftHeld=e.code==="ArrowLeft";rightHeld=e.code==="ArrowRight";' +
+    'upHeld=e.code==="ArrowUp";downHeld=e.code==="ArrowDown";' +
+    'e.preventDefault()});';
+
+var PLACE_FOOD = 'function placeFood(){foodx=Math.floor(Math.random()*COLS);foody=Math.floor(Math.random()*ROWS);' +
+  'for(var i=0;i<snake.length;i++){if(snake[i].x===foodx&&snake[i].y===foody){placeFood();return}}}';
+
+var DRAW_BG = 'ctx.fillStyle="#0f172a";ctx.fillRect(0,0,400,400);' +
+  'ctx.strokeStyle="#1e293b";for(var gx=0;gx<COLS;gx++)for(var gy=0;gy<ROWS;gy++){ctx.strokeRect(gx*GRID,gy*GRID,GRID,GRID)}';
+
+var DRAW_SNAKE = 'for(var si=0;si<snake.length;si++){ctx.fillStyle=si===0?"#22c55e":"#4ade80";ctx.fillRect(snake[si].x*GRID+1,snake[si].y*GRID+1,GRID-2,GRID-2)}';
+
+var DRAW_FOOD = 'ctx.fillStyle="#ef4444";ctx.fillRect(foodx*GRID+2,foody*GRID+2,GRID-4,GRID-4);';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,10,394);';
+
+var MOVE_SNAKE = 'moveTimer++;if(moveTimer>=moveDelay){moveTimer=0;dx=nextDx;dy=nextDy;' +
+  'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);}';
+
+var EAT_CHECK = 'if(snake[0].x===foodx&&snake[0].y===foody){score++;placeFood()}else if(moveTimer===0){snake.pop()}';
+
+var WALL_CHECK = 'if(snake[0].x<0||snake[0].x>=COLS||snake[0].y<0||snake[0].y>=ROWS){gameState="over"}';
+
+var SELF_CHECK = 'for(var ci=1;ci<snake.length;ci++){if(snake[0].x===snake[ci].x&&snake[0].y===snake[ci].y){gameState="over"}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - GDevelop Snake steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-gdevelop-snake-canvas',
+  downloadName: 'my-gdevelop-snake.html',
+
+  hints: [
+    'A green square on a dark grid',
+    'The snake changes direction with arrow keys',
+    'A red food square appears on the grid',
+    'Eating food grows the snake and adds a point',
+    'Hitting a wall ends the game',
+    'Hitting yourself also ends it - press R to restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + KEYS +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_SNAKE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + STATE_VARS + KEYS +
+        'function loop(){' +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_SNAKE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + STATE_VARS + KEYS +
+        PLACE_FOOD +
+        'function loop(){' +
+        MOVE_SNAKE +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'if(moveTimer===0&&snake.length>1)snake.pop();' +
+        DRAW_BG + DRAW_SNAKE + DRAW_FOOD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        PLACE_FOOD +
+        'function loop(){' +
+        MOVE_SNAKE +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'if(moveTimer===0&&!(snake[0].x===foodx&&snake[0].y===foody))snake.pop();' +
+        DRAW_BG + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        PLACE_FOOD +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_SNAKE + EAT_CHECK +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",200,180);ctx.font="16px monospace";ctx.fillText("Score: "+score,200,210)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        PLACE_FOOD +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){snake=[{x:10,y:10}];dx=1;dy=0;nextDx=1;nextDy=0;score=0;moveDelay=8;placeFood();gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_SNAKE + EAT_CHECK + WALL_CHECK + SELF_CHECK +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",200,180);ctx.font="16px monospace";ctx.fillText("Score: "+score,200,210);' +
+        'ctx.fillText("Press R to restart",200,240)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Snake Head',
+      goal: 'Place a green square on a 20x20 grid. This is the snake head.',
+      points: [
+        'The grid is 20 columns by 20 rows, each cell is 20 pixels',
+        'The snake is an array of {x, y} grid positions',
+        'The head starts at column 10, row 10 - the centre of the grid',
+        'In GDevelop, you would create an object and set its grid position variables'
+      ],
+      challenge: '&#x1f3a8; Set the snake starting position:',
+      starter: '// Place the snake head on the grid\nAction: SetVariable(headX, ___)\nAction: SetVariable(headY, ___)\nAction: SetVariable(gridSize, 20)',
+      solution: '// Place the snake head on the grid\nAction: SetVariable(headX, 10)\nAction: SetVariable(headY, 10)\nAction: SetVariable(gridSize, 20)',
+      checks: ['10', '20'],
+      height: 110,
+      fills: {
+        text: 'The grid has ___ columns and ___ rows. The head starts in the centre.',
+        answers: ['20', '20']
+      },
+      quiz: {
+        question: 'Why use a grid instead of free pixel movement for Snake?',
+        options: [
+          'Grids use less memory',
+          'Snake moves in discrete steps - a grid keeps segments aligned and makes collision checks simple',
+          'GDevelop only supports grids'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Direction Control',
+      goal: 'Change the snake direction with arrow keys, preventing reversal.',
+      points: [
+        'Direction is stored as dx/dy: right=(1,0), left=(-1,0), up=(0,-1), down=(0,1)',
+        'You cannot reverse into yourself: if going right, left is blocked',
+        'The direction queues as <code>nextDx/nextDy</code> and applies on the next move tick',
+        'In GDevelop, each arrow key event sets the direction variables'
+      ],
+      challenge: '&#x1f3a8; Write the direction change events:',
+      starter: '// Change direction on key press (no reversing)\nCondition: KeyPressed("Up")\nAction: SetVariable(nextDx, ___)\nAction: SetVariable(nextDy, ___)\n\nCondition: KeyPressed("Down")\nAction: SetVariable(nextDx, 0)\nAction: SetVariable(nextDy, ___)',
+      solution: '// Change direction on key press (no reversing)\nCondition: KeyPressed("Up")\nAction: SetVariable(nextDx, 0)\nAction: SetVariable(nextDy, -1)\n\nCondition: KeyPressed("Down")\nAction: SetVariable(nextDx, 0)\nAction: SetVariable(nextDy, 1)',
+      checks: ['nextDx', 'nextDy', '-1', '1'],
+      height: 180,
+      fills: {
+        text: 'Moving up means dy = ___. The direction uses a queue so it changes on the next ___.',
+        answers: ['-1', 'tick']
+      },
+      quiz: {
+        question: 'Why queue the direction instead of changing it immediately?',
+        options: [
+          'Queuing looks smoother',
+          'If you change direction twice between ticks, you could accidentally reverse into yourself',
+          'GDevelop timers require it'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Food on the Grid',
+      goal: 'Place a red food square at a random grid position.',
+      points: [
+        'Food spawns at a random column (0 to 19) and row (0 to 19)',
+        'It must not spawn inside the snake body',
+        'When food is placed, it stays until the snake eats it',
+        'In GDevelop, you would create a Food object at a random grid position'
+      ],
+      challenge: '&#x1f3a8; Write the food placement:',
+      starter: '// Place food at a random grid position\nAction: SetVariable(foodx, Random(___) )\nAction: SetVariable(foody, Random(___) )',
+      solution: '// Place food at a random grid position\nAction: SetVariable(foodx, Random(20) )\nAction: SetVariable(foody, Random(20) )',
+      checks: ['foodx', 'foody', '20'],
+      height: 110,
+      fills: {
+        text: 'Food spawns at a random column from 0 to ___. It must not overlap the ___.',
+        answers: ['19', 'snake']
+      },
+      quiz: {
+        question: 'Why check that food does not spawn inside the snake?',
+        options: [
+          'It would crash the game',
+          'The player would score a free point without doing anything - and the food would be invisible',
+          'The grid cannot hold two objects'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Eating & Growing',
+      goal: 'When the snake head reaches the food, grow the snake and score a point.',
+      points: [
+        'Check if the head position matches the food position',
+        'On eat: increase score, place new food, keep the tail (do not pop)',
+        'Normally the tail is removed each tick to maintain length',
+        'Skipping the tail pop for one tick makes the snake grow by one segment'
+      ],
+      challenge: '&#x1f3a8; Write the eating logic:',
+      starter: '// Check if snake head is on the food\nCondition: Variable(headX) == foodx\n  Condition: Variable(headY) == foody\n  Action: SetVariable(score, score + ___)\n  Action: PlaceFood()',
+      solution: '// Check if snake head is on the food\nCondition: Variable(headX) == foodx\n  Condition: Variable(headY) == foody\n  Action: SetVariable(score, score + 1)\n  Action: PlaceFood()',
+      checks: ['score', '1', 'headX', 'headY'],
+      height: 140,
+      fills: {
+        text: 'The snake grows by skipping the tail ___ for one tick. Each food adds ___ point.',
+        answers: ['pop', '1']
+      },
+      quiz: {
+        question: 'How does the snake "grow" without a special grow function?',
+        options: [
+          'A new segment is created at the tail',
+          'The head moves forward but the tail is NOT removed - so the snake is one cell longer',
+          'The grid expands'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Wall Collision',
+      goal: 'End the game when the snake hits any wall.',
+      points: [
+        'The snake dies if head x < 0, x >= 20, y < 0, or y >= 20',
+        'These are boundary checks: going past any edge of the grid',
+        'Set gameState to "over" and show the final score',
+        'In GDevelop, you would use conditions checking the head position against scene borders'
+      ],
+      challenge: '&#x1f3a8; Write the wall collision check:',
+      starter: '// Check all four walls\nCondition: Variable(headX) < ___\nAction: SetVariable(gameState, "over")\n\nCondition: Variable(headX) >= ___\nAction: SetVariable(gameState, "over")\n\nCondition: Variable(headY) < 0\nAction: SetVariable(gameState, "over")\n\nCondition: Variable(headY) >= ___\nAction: SetVariable(gameState, "over")',
+      solution: '// Check all four walls\nCondition: Variable(headX) < 0\nAction: SetVariable(gameState, "over")\n\nCondition: Variable(headX) >= 20\nAction: SetVariable(gameState, "over")\n\nCondition: Variable(headY) < 0\nAction: SetVariable(gameState, "over")\n\nCondition: Variable(headY) >= 20\nAction: SetVariable(gameState, "over")',
+      checks: ['headX', 'headY', '0', '20', 'over'],
+      height: 260,
+      fills: {
+        text: 'The grid runs from 0 to ___. Going past any edge sets gameState to "___".',
+        answers: ['19', 'over']
+      },
+      quiz: {
+        question: 'Why check >= 20 instead of > 20?',
+        options: [
+          'It catches one extra pixel',
+          'Grid columns are 0-19, so column 20 is already off the grid - >= 20 catches the exact boundary',
+          'Greater-than is slower'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Self Collision & Restart',
+      goal: 'End the game if the snake hits its own body. Press R to restart.',
+      points: [
+        'Loop through every body segment and check if the head overlaps it',
+        'Skip index 0 (the head itself) when checking',
+        'On game over, pressing R resets the snake to one segment, resets score and speed',
+        'As the snake grows, speed increases slightly by reducing the move delay'
+      ],
+      challenge: '&#x1f3a8; Write the self-collision and speed ramp:',
+      starter: '// Check if head hits any body segment\nCondition: HeadOverlapsBody()\nAction: SetVariable(gameState, "___")\n\n// Speed up as snake grows\nAction: SetVariable(moveDelay, 8 - score / ___)',
+      solution: '// Check if head hits any body segment\nCondition: HeadOverlapsBody()\nAction: SetVariable(gameState, "over")\n\n// Speed up as snake grows\nAction: SetVariable(moveDelay, 8 - score / 3)',
+      checks: ['over', 'moveDelay', '3'],
+      height: 140,
+      fills: {
+        text: 'Self-collision checks every ___ segment against the head. The delay decreases every ___ points.',
+        answers: ['body', '3']
+      },
+      quiz: {
+        question: 'Why does Snake get harder automatically as you play?',
+        options: [
+          'The walls close in',
+          'The snake is longer (harder to dodge) AND moves faster - two difficulty curves in one mechanic',
+          'Food spawns in worse positions'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

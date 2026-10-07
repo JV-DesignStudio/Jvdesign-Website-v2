@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Platformer Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(52,211,153,.15);color:#34d399;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Python Platformer Build Canvas <span class="cw-lang-tag">&#x1f40d; Python</span></h1>
+  <p>Write Python game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Python Platformer game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue player standing on a green ground platform</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Python-to-JS transpiler (light transform so Python
+   syntax runs in the canvas iframe)
+   =================================================== */
+function pyToJs(code) {
+  return code
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    .replace(/\bNone\b/g, 'null')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\belif\b/g, 'else if')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||')
+    .replace(/\bnot\b/g, '!')
+    .replace(/\blen\s*\(/g, '(')
+    .replace(/\.append\s*\(/g, '.push(')
+    .replace(/\brandom\.randint\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/#.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Python Platformer)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#111827;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=50,py=328,pw=24,ph=32,vy=0,speed=4,onGround=true;';
+
+var GRAVITY_CONST = 'const gravity=0.5,jumpForce=-10;';
+
+var GROUND_VARS = 'const groundY=360,groundH=40;';
+
+var PLATFORM_DATA = 'let platforms=[{x:0,y:360,w:600,h:40},{x:120,y:280,w:100,h:16},{x:280,y:220,w:120,h:16},{x:440,y:160,w:100,h:16},{x:200,y:100,w:140,h:16}];';
+
+var COIN_DATA = 'let coins=[{x:155,y:255,r:8},{x:325,y:195,r:8},{x:475,y:135,r:8},{x:255,y:75,r:8}];';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var GOAL_VARS = 'let goalX=520,goalY=68,goalW=16,goalH=32,levelComplete=false;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upPressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="Space"||e.code==="KeyW")upPressed=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="Space"||e.code==="KeyW")upPressed=false});';
+
+var MOVE_PLAYER = 'if(leftHeld)px-=speed;if(rightHeld)px+=speed;px=Math.max(0,Math.min(600-pw,px));';
+
+var APPLY_GRAVITY = 'vy+=gravity;py+=vy;';
+
+var GROUND_CHECK = 'onGround=false;for(var i=0;i<platforms.length;i++){var p=platforms[i];' +
+  'if(px+pw>p.x&&px<p.x+p.w&&py+ph>=p.y&&py+ph<=p.y+p.h+vy+2&&vy>=0){' +
+  'py=p.y-ph;vy=0;onGround=true}}';
+
+var SIMPLE_GROUND_CHECK = 'onGround=false;if(py+ph>=groundY){py=groundY-ph;vy=0;onGround=true}';
+
+var DRAW_BG = 'ctx.fillStyle="#111827";ctx.fillRect(0,0,600,400);';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#3b82f6";ctx.fillRect(px,py,pw,ph);';
+
+var DRAW_GROUND = 'ctx.fillStyle="#22c55e";ctx.fillRect(0,groundY,600,groundH);';
+
+var DRAW_PLATFORMS = 'ctx.fillStyle="#22c55e";for(var i=0;i<platforms.length;i++){var p=platforms[i];ctx.fillRect(p.x,p.y,p.w,p.h)}';
+
+var DRAW_COINS = 'ctx.fillStyle="#facc15";for(var i=0;i<coins.length;i++){var c=coins[i];ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill()}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,16,28);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillText("Lives: "+lives,584,28);';
+
+var DRAW_GOAL = 'ctx.fillStyle="#4ade80";ctx.fillRect(goalX,goalY,goalW,goalH);' +
+  'ctx.fillStyle="#16a34a";ctx.beginPath();ctx.moveTo(goalX,goalY);ctx.lineTo(goalX+24,goalY+10);ctx.lineTo(goalX,goalY+20);ctx.fill();';
+
+var JUMP_LOGIC = 'if(upPressed&&onGround){vy=jumpForce;onGround=false}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Python Platformer steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-python-platformer-canvas',
+  downloadName: 'my-python-platformer.html',
+
+  hints: [
+    'A blue player standing on a green ground platform',
+    'The player falls with gravity and lands on the ground',
+    'The player jumps when you press Up or Space',
+    'Floating platforms appear and the player can land on them',
+    'Yellow coins hover above platforms and score appears top-left',
+    'A green goal flag at the top, falling off costs a life'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + GROUND_VARS + KEYS +
+        'let px=50,py=328,pw=24,ph=32;' +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_GROUND +
+        DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + GROUND_VARS + GRAVITY_CONST + KEYS +
+        'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
+        'function loop(){' +
+        MOVE_PLAYER +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_GROUND + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + GROUND_VARS + GRAVITY_CONST + KEYS +
+        'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
+        'function loop(){' +
+        MOVE_PLAYER +
+        APPLY_GRAVITY + SIMPLE_GROUND_CHECK +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_GROUND + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + GRAVITY_CONST + KEYS +
+        'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
+        PLATFORM_DATA +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY +
+        JUMP_LOGIC +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + GRAVITY_CONST + KEYS +
+        'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
+        PLATFORM_DATA + COIN_DATA + SCORE_VARS +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY + JUMP_LOGIC + GROUND_CHECK +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + GRAVITY_CONST + KEYS +
+        'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
+        PLATFORM_DATA + COIN_DATA + SCORE_VARS + GOAL_VARS + STATE_VARS +
+        'let startX=50,startY=328;' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState!=="play"){' +
+        'px=startX;py=startY;vy=0;score=0;lives=3;levelComplete=false;' +
+        'coins=[{x:155,y:255,r:8},{x:325,y:195,r:8},{x:475,y:135,r:8},{x:255,y:75,r:8}];' +
+        'gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + APPLY_GRAVITY + JUMP_LOGIC + GROUND_CHECK +
+        'for(var i=coins.length-1;i>=0;i--){var c=coins[i];' +
+        'if(px+pw>c.x-c.r&&px<c.x+c.r&&py+ph>c.y-c.r&&py<c.y+c.r){score+=10;coins.splice(i,1)}}' +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_GOAL + DRAW_PLAYER + DRAW_SCORE + DRAW_LIVES +
+        'if(levelComplete){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("LEVEL COMPLETE!",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220);' +
+        'ctx.fillText("Press R to play again",300,260)}' +
+        'if(gameState==="dead"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220);' +
+        'ctx.fillText("Press R to restart",300,260)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Project Setup & Player',
+      goal: 'Draw a blue player rectangle standing on a green ground platform.',
+      points: [
+        'The canvas is 600x400 pixels with a dark background (#111827)',
+        'The player is a blue rectangle: 24 wide, 32 tall',
+        'The ground is a green rectangle at y=360, spanning 600 pixels wide and 40 tall',
+        'The player starts at x=50, sitting on the ground at y = 360 - 32 = 328'
+      ],
+      challenge: '\uD83D\uDC0D Set the player position and dimensions:',
+      starter: '# Set the player starting position\npx = ___\npy = 328\npw = ___\nph = 32',
+      solution: '# Set the player starting position\npx = 50\npy = 328\npw = 24\nph = 32',
+      checks: ['50', '328', '24', '32'],
+      height: 120,
+      fills: {
+        text: 'The player starts at x = ___ near the left edge. Its width of ___ pixels makes a character-sized sprite.',
+        answers: ['50', '24']
+      },
+      quiz: {
+        question: 'Why is the player y position 328 and not 360?',
+        options: [
+          'The ground starts at y=360 and the player is 32 tall, so 360 - 32 = 328 places the player standing on top of the ground',
+          'The number 328 is chosen at random',
+          'The canvas only draws even numbers'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 2,
+      title: 'Gravity & Velocity',
+      goal: 'Add vertical velocity so the player falls and lands on the ground.',
+      points: [
+        'Vertical velocity <code>vy</code> starts at 0 and increases by <code>gravity</code> (0.5) each frame',
+        'Each frame: <code>vy += gravity</code> pulls the player down, then <code>py += vy</code> applies the motion',
+        'When the player touches the ground (<code>py + ph >= groundY</code>), snap to the surface and set <code>vy = 0</code>',
+        'Set <code>onGround = true</code> when landed - this flag enables jumping later'
+      ],
+      challenge: '\uD83D\uDC0D Write the gravity and ground collision:',
+      starter: '# Apply gravity\nvy += ___\npy += vy\n\n# Land on ground\nif py + ph >= ___:\n    py = groundY - ph\n    vy = 0\n    onGround = True',
+      solution: '# Apply gravity\nvy += gravity\npy += vy\n\n# Land on ground\nif py + ph >= groundY:\n    py = groundY - ph\n    vy = 0\n    onGround = True',
+      checks: ['gravity', 'groundy', 'vy', 'onground'],
+      height: 180,
+      fills: {
+        text: 'Gravity adds ___ to vy each frame. When the player\'s bottom edge reaches ___, they land.',
+        answers: ['0.5', 'groundY']
+      },
+      quiz: {
+        question: 'Why does gravity add to vy instead of directly to py?',
+        options: [
+          'Adding to velocity creates acceleration - the player speeds up as they fall, which feels natural like real gravity',
+          'It uses less memory',
+          'Python cannot add floats to position'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 3,
+      title: 'Jumping',
+      goal: 'Press Up or Space to jump when the player is on the ground.',
+      points: [
+        'The engine tracks <code>upPressed</code> - in real Pygame you would check for the UP key event',
+        'Jump only when <code>onGround</code> is true - this prevents infinite mid-air jumps',
+        'Set <code>vy = -10</code> (negative = upward on canvas) to launch the player',
+        'Gravity will naturally slow the rise, stop it, then pull the player back down - a perfect arc'
+      ],
+      challenge: '\uD83D\uDC0D Write the jump condition:',
+      starter: '# Jump when pressing Up/Space while on ground\nif upPressed and ___:\n    vy = ___\n    onGround = False',
+      solution: '# Jump when pressing Up/Space while on ground\nif upPressed and onGround:\n    vy = -10\n    onGround = False',
+      checks: ['onground', '-10', 'uppressed'],
+      height: 120,
+      fills: {
+        text: 'The jump velocity is ___ (negative means upward). Checking ___ prevents double-jumping in mid-air.',
+        answers: ['-10', 'onGround']
+      },
+      quiz: {
+        question: 'Why is the jump velocity negative?',
+        options: [
+          'Negative numbers are faster',
+          'On the canvas, y=0 is the top - so a negative vy moves the player upward, and gravity (positive) pulls them back down',
+          'Python requires negative jump values'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Platforms',
+      goal: 'Add floating platforms the player can land on.',
+      points: [
+        'Platforms are stored in a <code>platforms[]</code> array, each with <code>{x, y, w, h}</code>',
+        'Loop through every platform and check: is the player falling onto the top edge?',
+        'Check all four conditions: horizontal overlap AND player bottom reaches platform top AND falling downward (<code>vy >= 0</code>)',
+        'On collision: snap <code>py</code> to platform top minus player height, set <code>vy = 0</code> and <code>onGround = true</code>'
+      ],
+      challenge: '\uD83D\uDC0D Write the platform collision loop:',
+      starter: '# Check each platform for landing\nonGround = False\nfor p in platforms:\n    if px + pw > p.x and px < p.x + p.w and py + ph >= ___ and vy >= 0:\n        py = p.y - ___\n        vy = 0\n        onGround = ___',
+      solution: '# Check each platform for landing\nonGround = False\nfor p in platforms:\n    if px + pw > p.x and px < p.x + p.w and py + ph >= p.y and vy >= 0:\n        py = p.y - ph\n        vy = 0\n        onGround = True',
+      checks: ['onground', 'platforms', 'p.y', 'ph'],
+      height: 180,
+      fills: {
+        text: 'The loop checks each platform in the ___ array. Setting onGround to ___ before the loop ensures the player falls if no platform is beneath them.',
+        answers: ['platforms', 'False']
+      },
+      quiz: {
+        question: 'Why check vy >= 0 in the platform collision?',
+        options: [
+          'So the player can only land when falling downward - without this check, jumping up through a platform would snap them to the top',
+          'It prevents memory leaks',
+          'vy is always positive in platformers'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Coins & Score',
+      goal: 'Collect coins on overlap and display the score.',
+      points: [
+        'Coins are stored in <code>coins[]</code> as circles with <code>{x, y, r}</code>',
+        'Check overlap: player rectangle intersects coin circle (simplified to bounding box check)',
+        'On collect: add 10 to score and remove the coin with <code>splice</code> (Python: <code>pop</code>)',
+        'Loop backwards when removing items from a list to avoid skipping elements'
+      ],
+      challenge: '\uD83D\uDC0D Write the coin collection logic:',
+      starter: '# Check each coin for collection\nfor i in range(len(coins) - 1, -1, -1):\n    c = coins[i]\n    if px + pw > c.x - c.r and px < c.x + c.r and py + ph > c.y - c.r and py < c.y + c.r:\n        score += ___\n        coins.pop(___)',
+      solution: '# Check each coin for collection\nfor i in range(len(coins) - 1, -1, -1):\n    c = coins[i]\n    if px + pw > c.x - c.r and px < c.x + c.r and py + ph > c.y - c.r and py < c.y + c.r:\n        score += 10\n        coins.pop(i)',
+      checks: ['score', '10', 'coins', 'pop'],
+      height: 160,
+      fills: {
+        text: 'Each coin is worth ___ points. Looping ___ through the array prevents skipping items when removing.',
+        answers: ['10', 'backwards']
+      },
+      quiz: {
+        question: 'Why loop backwards when removing coins from the list?',
+        options: [
+          'Backwards loops are faster in Python',
+          'Removing an item shifts later indices down - looping forward would skip the next coin after a removal',
+          'The canvas draws coins in reverse order'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'The Goal & Falling Off',
+      goal: 'Reach the goal flag to win. Falling off the screen costs a life. R to restart.',
+      points: [
+        'The goal is a green flag at the top of the level - touch it to show "LEVEL COMPLETE"',
+        'If the player falls below the canvas (<code>py > 420</code>), lose a life and respawn',
+        'At 0 lives, set <code>gameState = "dead"</code> and show game over',
+        'Press R to restart: reset position, score, lives, and coins'
+      ],
+      challenge: '\uD83D\uDC0D Write the goal check and fall detection:',
+      starter: '# Check if player reached the goal\nif px + pw > goalX and px < goalX + goalW and py + ph > goalY and py < goalY + goalH:\n    levelComplete = ___\n    gameState = "win"\n\n# Fell off the bottom\nif py > ___:\n    lives -= 1\n    if lives <= 0:\n        gameState = "___"\n    else:\n        px = 50\n        py = 328\n        vy = 0',
+      solution: '# Check if player reached the goal\nif px + pw > goalX and px < goalX + goalW and py + ph > goalY and py < goalY + goalH:\n    levelComplete = True\n    gameState = "win"\n\n# Fell off the bottom\nif py > 420:\n    lives -= 1\n    if lives <= 0:\n        gameState = "dead"\n    else:\n        px = 50\n        py = 328\n        vy = 0',
+      checks: ['levelcomplete', '420', 'lives', 'dead'],
+      height: 280,
+      fills: {
+        text: 'The player starts with ___ lives. Falling past y = ___ counts as falling off the screen.',
+        answers: ['3', '420']
+      },
+      quiz: {
+        question: 'Why use 420 instead of 400 (the canvas height) for the fall check?',
+        options: [
+          'A small buffer past the visible area lets the player fully disappear before losing a life - it feels less abrupt',
+          'The canvas is secretly 420 pixels tall',
+          'Larger numbers load faster'
+        ],
+        correct: 0
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

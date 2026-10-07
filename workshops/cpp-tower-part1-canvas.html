@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++ Tower Defence Part 1 Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>C++ Tower Defence Part 1 Build Canvas <span class="cw-lang-tag">⚙️ C++</span></h1>
+  <p>Write C++ game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your C++ Tower Defence game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A winding sandy road on green grass with waypoint markers</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   C++-to-JS transpiler (light transform so C++
+   syntax runs in the canvas iframe)
+   =================================================== */
+function cppToJs(code) {
+  return code
+    .replace(/\b(int|float|double|bool|char|auto|unsigned|long)\s+/g, 'let ')
+    .replace(/\bconst\s+let\s+/g, 'const ')
+    .replace(/\bstd::string\s+/g, 'let ')
+    .replace(/\bstd::cout\s*<<\s*/g, 'console.log(')
+    .replace(/\bstd::endl/g, '"\\n")')
+    .replace(/\bstd::abs\(/g, 'Math.abs(')
+    .replace(/\bstd::max\(/g, 'Math.max(')
+    .replace(/\bstd::min\(/g, 'Math.min(')
+    .replace(/\bstd::sqrt\(/g, 'Math.sqrt(')
+    .replace(/\bstd::atan2\(/g, 'Math.atan2(')
+    .replace(/\.f\b/g, '')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.push_back\(/g, '.push(');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (C++ Tower Defence)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#18281c;margin:0;overflow:hidden}canvas{display:block;cursor:crosshair}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PATH_DATA = 'var path=[{x:-20,y:80},{x:180,y:80},{x:180,y:200},{x:80,y:200},{x:80,y:320},{x:400,y:320},{x:400,y:140},{x:540,y:140},{x:540,y:350},{x:620,y:350}];';
+
+var DRAW_GRASS = 'ctx.fillStyle="#2d5a27";ctx.fillRect(0,0,600,400);';
+
+var DRAW_PATH = 'ctx.strokeStyle="#c2b280";ctx.lineWidth=36;ctx.lineCap="round";ctx.lineJoin="round";ctx.beginPath();ctx.moveTo(path[0].x,path[0].y);for(var pi=1;pi<path.length;pi++){ctx.lineTo(path[pi].x,path[pi].y)}ctx.stroke();';
+
+var DRAW_PATH_DOTS = 'ctx.fillStyle="#a89060";for(var pi=0;pi<path.length;pi++){ctx.beginPath();ctx.arc(path[pi].x,path[pi].y,5,0,6.28);ctx.fill()}';
+
+var ENEMY_VARS = 'var enemies=[];var spawnTimer=0;var spawnInterval=1.2;var toSpawn=6;';
+
+var TOWER_VARS = 'var towers=[];var gold=100;var TOWER_COST=50;';
+
+var LIVES_VARS = 'var lives=20;var wave=1;';
+
+var MOUSE_VARS = 'var mouseX=0,mouseY=0,mouseDown=false;' +
+  'canvas.addEventListener("mousemove",function(e){var r=canvas.getBoundingClientRect();mouseX=e.clientX-r.left;mouseY=e.clientY-r.top});' +
+  'canvas.addEventListener("click",function(e){var r=canvas.getBoundingClientRect();mouseX=e.clientX-r.left;mouseY=e.clientY-r.top;mouseDown=true});';
+
+var SPAWN_ENEMY = 'function spawnEnemy(){enemies.push({x:path[0].x,y:path[0].y,wp:1,speed:70,hp:20,maxHp:20,alive:true,bounty:15})}';
+
+var UPDATE_ENEMIES = 'function updateEnemies(dt){for(var i=0;i<enemies.length;i++){var e=enemies[i];if(!e.alive)continue;if(e.wp>=path.length){e.alive=false;lives--;continue}var dx=path[e.wp].x-e.x,dy=path[e.wp].y-e.y;var len=Math.sqrt(dx*dx+dy*dy);if(len<4){e.wp++;continue}e.x+=dx/len*e.speed*dt;e.y+=dy/len*e.speed*dt}}';
+
+var UPDATE_ENEMIES_NO_LIVES = 'function updateEnemies(dt){for(var i=0;i<enemies.length;i++){var e=enemies[i];if(!e.alive)continue;if(e.wp>=path.length){e.alive=false;continue}var dx=path[e.wp].x-e.x,dy=path[e.wp].y-e.y;var len=Math.sqrt(dx*dx+dy*dy);if(len<4){e.wp++;continue}e.x+=dx/len*e.speed*dt;e.y+=dy/len*e.speed*dt}}';
+
+var DRAW_ENEMIES = 'function drawEnemies(){for(var i=0;i<enemies.length;i++){var e=enemies[i];if(!e.alive)continue;ctx.fillStyle="#e65046";ctx.beginPath();ctx.arc(e.x,e.y,10,0,6.28);ctx.fill();ctx.fillStyle="#44ff44";ctx.fillRect(e.x-12,e.y-16,24*(e.hp/e.maxHp),4);ctx.strokeStyle="#225522";ctx.strokeRect(e.x-12,e.y-16,24,4)}}';
+
+var NEAR_PATH_FN = 'function nearPath(px,py,r){for(var i=0;i+1<path.length;i++){var ax=path[i].x,ay=path[i].y,bx=path[i+1].x,by=path[i+1].y;var abx=bx-ax,aby=by-ay,apx=px-ax,apy=py-ay;var t=(abx*apx+aby*apy)/(abx*abx+aby*aby);t=Math.max(0,Math.min(1,t));var cx=ax+abx*t,cy=ay+aby*t;var dx=px-cx,dy=py-cy;if(Math.sqrt(dx*dx+dy*dy)<r)return true}return false}';
+
+var OCCUPIED_FN = 'function occupied(gx,gy){for(var i=0;i<towers.length;i++){if(towers[i].gx===gx&&towers[i].gy===gy)return true}return false}';
+
+var DRAW_GHOST = 'var gx=Math.floor(mouseX/40)*40,gy=Math.floor(mouseY/40)*40;var blocked=nearPath(gx+20,gy+20,30)||occupied(gx,gy);ctx.globalAlpha=0.45;ctx.fillStyle=blocked?"#f87171":"#06d6a0";ctx.fillRect(gx+2,gy+2,36,36);ctx.globalAlpha=1;';
+
+var PLACE_TOWER = 'if(mouseDown){var gx=Math.floor(mouseX/40)*40,gy=Math.floor(mouseY/40)*40;if(!nearPath(gx+20,gy+20,30)&&!occupied(gx,gy)&&gold>=TOWER_COST){towers.push({x:gx+20,y:gy+20,gx:gx,gy:gy,range:110,damage:5,cooldown:0});gold-=TOWER_COST}mouseDown=false}';
+
+var DRAW_TOWERS = 'function drawTowers(){for(var i=0;i<towers.length;i++){var t=towers[i];ctx.fillStyle="#60a5fa";ctx.fillRect(t.x-15,t.y-15,30,30);ctx.strokeStyle="#3b82f6";ctx.strokeRect(t.x-15,t.y-15,30,30)}}';
+
+var DRAW_RANGES = 'function drawRanges(){for(var i=0;i<towers.length;i++){var t=towers[i];var dx=mouseX-t.x,dy=mouseY-t.y;if(Math.sqrt(dx*dx+dy*dy)<30){ctx.beginPath();ctx.arc(t.x,t.y,t.range,0,6.28);ctx.fillStyle="rgba(96,165,250,0.1)";ctx.fill();ctx.strokeStyle="rgba(96,165,250,0.3)";ctx.stroke()}}}';
+
+var NEAREST_IN_RANGE = 'function nearestInRange(t){var best=null,bestDist=t.range*t.range;for(var i=0;i<enemies.length;i++){var e=enemies[i];if(!e.alive)continue;var dx=e.x-t.x,dy=e.y-t.y;var d2=dx*dx+dy*dy;if(d2<=bestDist){bestDist=d2;best=e}}return best}';
+
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Gold: "+gold,10,22);ctx.fillText("Lives: "+lives,10,44);ctx.fillText("Wave: "+wave,10,66);';
+
+var DRAW_HUD_FULL = 'ctx.fillStyle="#ffd166";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Gold: "+gold,10,22);ctx.fillStyle=lives<=5?"#f87171":"#4ade80";ctx.fillText("Lives: "+lives,10,44);ctx.fillStyle="#c4b5fd";ctx.fillText("Wave: "+wave,10,66);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - C++ Tower Defence steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-cpp-tower-p1-canvas',
+  downloadName: 'my-cpp-tower-defence.html',
+
+  hints: [
+    'A winding sandy road on green grass with waypoint markers',
+    'Red enemies walk the road corner to corner at constant speed',
+    'A green or red ghost square follows your mouse, snapped to a 40px grid',
+    'Blue towers appear on click; gold counter goes down by 50',
+    'Hovering a tower shows its range circle; enemies glow when targeted',
+    'Gold HUD in colour, lives go red below 5, escaped enemies cost a life'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PATH_DATA +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_GRASS + DRAW_PATH + DRAW_PATH_DOTS +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PATH_DATA + ENEMY_VARS + LIVES_VARS +
+        SPAWN_ENEMY + UPDATE_ENEMIES_NO_LIVES + DRAW_ENEMIES +
+        'var lastTime=performance.now();' +
+        'for(var si=0;si<3;si++)spawnEnemy();' +
+        'function loop(){' +
+        'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'updateEnemies(dt);' +
+        DRAW_GRASS + DRAW_PATH +
+        'drawEnemies();' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PATH_DATA + ENEMY_VARS + TOWER_VARS + LIVES_VARS +
+        MOUSE_VARS + NEAR_PATH_FN + OCCUPIED_FN +
+        SPAWN_ENEMY + UPDATE_ENEMIES_NO_LIVES + DRAW_ENEMIES + DRAW_TOWERS +
+        'var lastTime=performance.now();' +
+        'for(var si=0;si<3;si++)spawnEnemy();' +
+        'function loop(){' +
+        'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
+        'updateEnemies(dt);' +
+        DRAW_GRASS + DRAW_PATH +
+        'drawEnemies();drawTowers();' +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PATH_DATA + ENEMY_VARS + TOWER_VARS + LIVES_VARS +
+        MOUSE_VARS + NEAR_PATH_FN + OCCUPIED_FN +
+        SPAWN_ENEMY + UPDATE_ENEMIES_NO_LIVES + DRAW_ENEMIES + DRAW_TOWERS +
+        'var lastTime=performance.now();' +
+        'for(var si=0;si<3;si++)spawnEnemy();' +
+        'function loop(){' +
+        'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
+        'updateEnemies(dt);' +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'mouseDown=false;' +
+        DRAW_GRASS + DRAW_PATH +
+        'drawEnemies();drawTowers();' + DRAW_GHOST + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PATH_DATA + ENEMY_VARS + TOWER_VARS + LIVES_VARS +
+        MOUSE_VARS + NEAR_PATH_FN + OCCUPIED_FN +
+        SPAWN_ENEMY + UPDATE_ENEMIES_NO_LIVES + DRAW_ENEMIES + DRAW_TOWERS +
+        DRAW_RANGES + NEAREST_IN_RANGE +
+        'var lastTime=performance.now();' +
+        'for(var si=0;si<3;si++)spawnEnemy();' +
+        'function loop(){' +
+        'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
+        'updateEnemies(dt);' +
+        PLACE_TOWER +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_GRASS + DRAW_PATH +
+        'drawEnemies();drawTowers();drawRanges();' + DRAW_GHOST + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PATH_DATA + ENEMY_VARS + TOWER_VARS + LIVES_VARS +
+        MOUSE_VARS + NEAR_PATH_FN + OCCUPIED_FN +
+        SPAWN_ENEMY + UPDATE_ENEMIES + DRAW_ENEMIES + DRAW_TOWERS +
+        DRAW_RANGES + NEAREST_IN_RANGE +
+        'var lastTime=performance.now();' +
+        'function loop(){' +
+        'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
+        'spawnTimer-=dt;if(spawnTimer<=0&&toSpawn>0){spawnEnemy();toSpawn--;spawnTimer=spawnInterval}' +
+        'updateEnemies(dt);' +
+        PLACE_TOWER +
+        'for(var ti=0;ti<towers.length;ti++){var t=towers[ti];t.cooldown-=dt;if(t.cooldown<=0){var target=nearestInRange(t);if(target){target.hp-=t.damage;if(target.hp<=0){target.alive=false;gold+=target.bounty}t.cooldown=0.7}}}' +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_GRASS + DRAW_PATH +
+        'drawEnemies();drawTowers();drawRanges();' + DRAW_GHOST + DRAW_HUD_FULL +
+        'if(lives<=0){ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,600,400);ctx.fillStyle="#f87171";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,190);ctx.fillStyle="#fff";ctx.font="18px monospace";ctx.fillText("The enemies broke through!",300,230)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Path: Waypoints',
+      goal: 'Define the enemy path as waypoints and draw the road on a green field.',
+      points: [
+        'The path is a <code>std::vector&lt;sf::Vector2f&gt;</code> of corner points from left edge to right edge',
+        'Draw the road as thick line segments between consecutive waypoints using rotated rectangles',
+        'S-bends give towers more shooting time than straight lines  -  that is map design!',
+        'The segment angle comes from <code>std::atan2(d.y, d.x)</code> converted from radians to degrees'
+      ],
+      challenge: '⚙️ Set up the path corners and compute a segment direction:',
+      starter: '// Define a path with corners\n// The path vector is already loaded for you.\n// Compute direction between two points:\nfloat dx = path[1].x - path[0].x;\nfloat dy = path[1].y - path[0].y;\nfloat len = std::sqrt(dx*dx + dy*___);\nfloat angle = std::atan2(___, dx);',
+      solution: '// Define a path with corners\n// The path vector is already loaded for you.\n// Compute direction between two points:\nfloat dx = path[1].x - path[0].x;\nfloat dy = path[1].y - path[0].y;\nfloat len = std::sqrt(dx*dx + dy*dy);\nfloat angle = std::atan2(dy, dx);',
+      checks: ['dy', 'atan2', 'sqrt'],
+      height: 180,
+      fills: {
+        text: 'The path is a vector of ___ (corner positions). The segment angle comes from std::atan2(d.y, d.x), converting from ___ to degrees.',
+        answers: ['waypoints', 'radians']
+      },
+      quiz: {
+        question: 'Why do S-bend paths make better tower defence maps than straight ones?',
+        options: [
+          'They render faster',
+          'Enemies spend longer inside tower range near bends, so placement choices become interesting',
+          'Waypoints must curve'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Path-Following Enemies',
+      goal: 'Make enemies walk the path corner to corner at constant speed using normalised direction vectors.',
+      points: [
+        'Enemy struct: position, speed, hp, and <code>int wp</code>  -  which waypoint it is heading for',
+        'Each frame: direction = target - position; normalise it (divide by its length); move by direction * speed * dt',
+        'Within 4px of the target → <code>wp++</code>. Past the last waypoint → it escaped',
+        'Normalising is THE fundamental game-maths operation  -  you will use it in every 2D and 3D game'
+      ],
+      challenge: '⚙️ Move the enemy along its normalised direction:',
+      starter: '// Direction to next waypoint\nfloat dx = path[e.wp].x - e.x;\nfloat dy = path[e.wp].y - e.y;\nfloat len = std::sqrt(dx*dx + dy*___);\n\n// Normalise and move\ne.x += (dx / ___) * e.speed * dt;\ne.y += (dy / ___) * e.speed * dt;',
+      solution: '// Direction to next waypoint\nfloat dx = path[e.wp].x - e.x;\nfloat dy = path[e.wp].y - e.y;\nfloat len = std::sqrt(dx*dx + dy*dy);\n\n// Normalise and move\ne.x += (dx / len) * e.speed * dt;\ne.y += (dy / len) * e.speed * dt;',
+      checks: ['dy', 'len', 'speed', 'dt'],
+      height: 200,
+      fills: {
+        text: 'Normalising means dividing the direction vector by its ___. This makes the enemy move at ___ speed regardless of distance to the waypoint.',
+        answers: ['length', 'constant']
+      },
+      quiz: {
+        question: 'Why normalise the direction before scaling by speed?',
+        options: [
+          'C++ requires unit vectors',
+          'Without it, enemies far from a waypoint would move faster  -  normalising makes speed constant regardless of distance',
+          'It prevents overflow'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Grid Placement Preview',
+      goal: 'Show a snapped, colour-coded ghost tower under the cursor on a 40px grid.',
+      points: [
+        'The build grid is 40px: <code>gx = mouseX / 40 * 40</code> (integer division snaps!)',
+        'Draw a translucent ghost tower at the snapped cell: green = buildable, red = blocked',
+        'Blocked cells: on the road (distance from any path segment &lt; 30) or already occupied by a tower',
+        'This preview-before-commit UI pattern appears in every strategy game'
+      ],
+      challenge: '⚙️ Snap the mouse to the grid and check if blocked:',
+      starter: '// Snap to 40px grid\nint gx = (mouseX / ___) * 40;\nint gy = (mouseY / ___) * 40;\n\n// Check if this cell is blocked\nbool blocked = nearPath(gx + 20, gy + 20, ___)\n            || occupied(gx, gy);',
+      solution: '// Snap to 40px grid\nint gx = (mouseX / 40) * 40;\nint gy = (mouseY / 40) * 40;\n\n// Check if this cell is blocked\nbool blocked = nearPath(gx + 20, gy + 20, 30)\n            || occupied(gx, gy);',
+      checks: ['40', '30', 'nearpath', 'occupied'],
+      height: 180,
+      fills: {
+        text: 'Integer division then multiplication snaps a coordinate to the ___. The ghost tower\'s fourth colour value (120) controls ___ (alpha).',
+        answers: ['grid', 'transparency']
+      },
+      quiz: {
+        question: 'With mouseX = 137, what is (137 / 40) * 40 in C++ integer maths?',
+        options: [
+          '137',
+          '120  -  integer division truncates 137/40 to 3, then 3 times 40',
+          '140'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Towers & the Gold Economy',
+      goal: 'Place towers on click, spend gold, and block double-building on occupied cells.',
+      points: [
+        'Tower struct: position, range (110), damage (5), fire cooldown  -  stored in a vector',
+        'Start with 100 gold; a tower costs 50. Click on a valid cell with enough gold → build and subtract',
+        '<code>occupied()</code> loops the towers comparing snapped grid positions',
+        'Build and payment must happen together or never  -  split checks can build without paying (a dupe bug!)'
+      ],
+      challenge: '⚙️ Guard the build action and spend gold:',
+      starter: '// Place a tower on click\nif (!blocked && gold >= ___) {\n    towers.push_back({\n        {(float)gx + 20, (float)gy + 20}\n    });\n    gold -= ___;\n}',
+      solution: '// Place a tower on click\nif (!blocked && gold >= TOWER_COST) {\n    towers.push_back({\n        {(float)gx + 20, (float)gy + 20}\n    });\n    gold -= TOWER_COST;\n}',
+      checks: ['blocked', 'tower_cost', 'gold'],
+      height: 180,
+      fills: {
+        text: 'A tower costs ___ gold. The check <code>!blocked</code> ensures the cell is not on the ___ and not already occupied.',
+        answers: ['50', 'road']
+      },
+      quiz: {
+        question: 'Why is the gold check part of the SAME if-statement as the placement check?',
+        options: [
+          'To save a line of code',
+          'Build and payment must happen together or never  -  split checks can build without paying (a dupe bug!)',
+          'C++ if-statements are faster when combined'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Range Circles & Targeting',
+      goal: 'Visualise tower range on hover and detect enemies within it using squared-distance maths.',
+      points: [
+        'Hovering a tower draws its range: a translucent circle of radius <code>range</code>, centred on the tower',
+        'In-range test: squared distance <code>dx*dx + dy*dy &lt;= range*range</code>, skipping the expensive sqrt',
+        '<code>nearestInRange(tower)</code> returns the closest living enemy or null  -  Part 2 shooting uses this',
+        'Comparing squared distances avoids thousands of sqrt calls per frame  -  every real engine does this'
+      ],
+      challenge: '⚙️ Find the nearest enemy in range using squared distance:',
+      starter: '// Squared-distance range check\nfloat dx = e.x - t.x;\nfloat dy = e.y - t.y;\nfloat d2 = dx*dx + ___;\n\nfloat bestDist = t.range * t.___;\nif (d2 <= bestDist) {\n    bestDist = d2;\n    best = &e;\n}',
+      solution: '// Squared-distance range check\nfloat dx = e.x - t.x;\nfloat dy = e.y - t.y;\nfloat d2 = dx*dx + dy*dy;\n\nfloat bestDist = t.range * t.range;\nif (d2 <= bestDist) {\n    bestDist = d2;\n    best = &e;\n}',
+      checks: ['dy*dy', 'range', 'bestdist', 'd2'],
+      height: 210,
+      fills: {
+        text: 'We compare squared distances to skip the expensive ___ call. When no enemy is in range the function returns ___.',
+        answers: ['sqrt', 'nullptr']
+      },
+      quiz: {
+        question: 'Why compare squared distances instead of using sqrt?',
+        options: [
+          'sqrt returns the wrong answer for game distances',
+          'sqrt is expensive  -  comparing d*d <= r*r gives the same true/false answer without computing a square root',
+          'Squared distances look better on screen'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Economy Balance & Lives',
+      goal: 'Add lives that decrease when enemies escape, tune the economy, and prep hooks for Part 2.',
+      points: [
+        'An escaped enemy (past last waypoint) costs 1 life; at 0 lives the game ends',
+        'Balance rule of thumb: starting gold buys 2 towers; a kill bounty (~15) refunds ~30% of a tower cost',
+        'Set <code>bounty = 15</code> in the Enemy struct  -  Part 2 pays it out on kill',
+        'Checklist before Part 2: path following, ghost placement, gold, range targeting  -  all green? Ready for war'
+      ],
+      challenge: '⚙️ Handle enemy escapes and check for game over:',
+      starter: '// Enemy escaped past last waypoint\nif (e.wp >= path.size() && e.alive) {\n    e.alive = ___;\n    lives___;\n}\n\n// Game over check\nif (lives <= ___) {\n    gameState = "over";\n}',
+      solution: '// Enemy escaped past last waypoint\nif (e.wp >= path.size() && e.alive) {\n    e.alive = false;\n    lives--;\n}\n\n// Game over check\nif (lives <= 0) {\n    gameState = "over";\n}',
+      checks: ['false', 'lives', '--', '0'],
+      height: 200,
+      fills: {
+        text: 'Each escaped enemy costs ___ life. The kill bounty of 15 gold refunds about ___% of a tower\'s cost, keeping the economy tight.',
+        answers: ['1', '30']
+      },
+      quiz: {
+        question: 'Why balance the economy BEFORE adding shooting in Part 2?',
+        options: [
+          'Shooting is too hard to code first',
+          'Economy is the skeleton  -  if building feels wrong now, waves of enemies will only hide the problem',
+          'Gold must compile before bullets'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

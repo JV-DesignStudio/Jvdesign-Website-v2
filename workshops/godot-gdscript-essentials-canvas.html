@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDScript Essentials Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GDScript Essentials Build Canvas <span class="cw-lang-tag">&#x1f916; Godot</span></h1>
+  <p>Learn GDScript fundamentals through interactive code challenges.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GDScript output"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">Output panel showing variable values</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Code</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function gdscriptToJs(code) {
+  return code
+    .replace(/#.*$/gm, '')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bVector2\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
+    .replace(/\brandf\(\)/g, 'Math.random()')
+    .replace(/\brandi\(\)\s*%\s*(\w+)/g, 'Math.floor(Math.random()*$1)')
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
+    .replace(/\.position\.x/g, '.x')
+    .replace(/\.position\.y/g, '.y')
+    .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
+    .replace(/\belif\b/g, '} else if')
+    .replace(/\bif\s+(.+):/g, 'if($1){')
+    .replace(/\belse\s*:/g, '} else {')
+    .replace(/\bfor\s+(\w+)\s+in\s+range\(([^)]+)\)\s*:/g, 'for(let $1=0;$1<$2;$1++){')
+    .replace(/\bwhile\s+(.+):/g, 'while($1){')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false')
+    .replace(/\bnull\b/g, 'null');
+}
+
+var CSS_OUTPUT = '<style>body{background:#0f172a;color:#e2e8f0;font-family:monospace;font-size:16px;padding:20px;margin:0;white-space:pre-wrap;overflow:auto}' +
+  '.pass{color:#22c55e}.fail{color:#f43f5e}.info{color:#60a5fa}.title{color:#fbbf24;font-size:20px;font-weight:bold;margin-bottom:12px}</style>';
+
+var OUTPUT_FN = 'var _out=document.body;function output(text,cls){var d=document.createElement("div");d.textContent=text;if(cls)d.className=cls;_out.appendChild(d)}' +
+  'function title(t){var d=document.createElement("div");d.textContent=t;d.className="title";_out.appendChild(d)}' +
+  'function check(label,got,want){var ok=String(got)===String(want);output((ok?"PASS":"FAIL")+" "+label+" => "+got,ok?"pass":"fail")}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_OUTPUT +
+    '<\/head><body><script>' + OUTPUT_FN + code + '<\/script><\/body><\/html>';
+}
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-godot-gdscript-canvas',
+  downloadName: 'my-gdscript-essentials.html',
+
+  hints: [
+    'Output panel showing variable values',
+    'Variables store and display different types',
+    'A function calculates and returns a result',
+    'A loop counts and accumulates a total',
+    'Conditions branch based on comparisons',
+    'A signal pattern connects objects with callbacks'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        'title("Step 1: Variables & Types");' +
+        'try{' + gdscriptToJs(u) + '}catch(e){output("Error: "+e.message,"fail")}' +
+        'try{check("player_name is a string",typeof player_name,"string");' +
+        'check("health is a number",typeof health,"number");' +
+        'check("is_alive is boolean",typeof is_alive,"boolean");' +
+        'check("health is 100",health,100)}catch(e){output("Define all variables first","info")}'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        'title("Step 2: Functions");' +
+        'try{' + gdscriptToJs(u) + '}catch(e){output("Error: "+e.message,"fail")}' +
+        'try{check("add_numbers(3,5) is 8",add_numbers(3,5),8);' +
+        'check("add_numbers(10,20) is 30",add_numbers(10,20),30);' +
+        'check("greet(Hero) has name",greet("Hero").indexOf("Hero")>=0,true)}catch(e){output("Define the functions first","info")}'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        'title("Step 3: Loops");' +
+        'try{' + gdscriptToJs(u) + '}catch(e){output("Error: "+e.message,"fail")}' +
+        'try{check("total is 55",total,55);' +
+        'check("count is 10",count,10)}catch(e){output("Complete the loop first","info")}'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        'title("Step 4: Conditions");' +
+        'let test_score=85;' +
+        'try{' + gdscriptToJs(u) + '}catch(e){output("Error: "+e.message,"fail")}' +
+        'try{check("grade for 85 is B",grade,"B");' +
+        'output("Testing with score = 95...","info");' +
+        'test_score=95;grade="";' + gdscriptToJs(u.replace(/test_score\s*=\s*\d+/g,'')) +
+        'check("grade for 95 is A",grade,"A")}catch(e){output("Complete the conditions first","info")}'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        'title("Step 5: Arrays & Dictionaries");' +
+        'try{' + gdscriptToJs(u) + '}catch(e){output("Error: "+e.message,"fail")}' +
+        'try{check("inventory has 3 items",inventory.length,3);' +
+        'check("player has name",player.name!==undefined,true);' +
+        'check("player health is number",typeof player.health,"number")}catch(e){output("Define inventory and player first","info")}'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        'title("Step 6: Signals Pattern");' +
+        'let _signals={};function connect(sig,fn){_signals[sig]=fn}function emit(sig,data){if(_signals[sig])_signals[sig](data)}' +
+        'try{' + gdscriptToJs(u) + '}catch(e){output("Error: "+e.message,"fail")}' +
+        'try{output("Emitting health_changed with 50...","info");emit("health_changed",50);' +
+        'output("Emitting health_changed with 0...","info");emit("health_changed",0);' +
+        'check("signal system works",typeof _signals["health_changed"],"function")}catch(e){output("Connect the signal first","info")}'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Variables & Types',
+      goal: 'Declare variables of different types: String, int, float, and bool.',
+      points: [
+        'GDScript uses <code>var</code> for variables: <code>var health = 100</code>',
+        'Types: String (<code>"text"</code>), int (<code>42</code>), float (<code>3.14</code>), bool (<code>true</code>/<code>false</code>)',
+        'Constants use <code>const</code>: <code>const MAX_HP = 100</code>',
+        'GDScript is dynamically typed but supports optional type hints: <code>var hp: int = 100</code>'
+      ],
+      challenge: '🤖 Declare four variables with the correct types:',
+      starter: 'var player_name = "___"\nvar health = ___\nvar speed = 5.5\nvar is_alive = ___',
+      solution: 'var player_name = "Hero"\nvar health = 100\nvar speed = 5.5\nvar is_alive = true',
+      checks: ['player_name', 'health', 'is_alive', '100'],
+      height: 120,
+      fills: {
+        text: 'GDScript declares variables with the ___ keyword. Boolean values are ___ or false.',
+        answers: ['var', 'true']
+      },
+      quiz: {
+        question: 'What is the difference between int and float in GDScript?',
+        options: [
+          'There is no difference',
+          'int stores whole numbers (42), float stores decimals (3.14) - using int for health avoids floating-point rounding',
+          'Float is faster'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Functions',
+      goal: 'Write functions that take parameters and return values.',
+      points: [
+        'Functions use <code>func name(params):</code> syntax',
+        'Return values with <code>return</code>: <code>func add(a, b): return a + b</code>',
+        'Functions are the building blocks of game logic - _ready(), _process(), custom ones',
+        'In Godot, <code>_ready()</code> runs once on spawn, <code>_process(delta)</code> runs every frame'
+      ],
+      challenge: '🤖 Write two functions:',
+      starter: 'func add_numbers(a, b):\n    return a ___ b\n\nfunc greet(name):\n    return "Hello, " + ___',
+      solution: 'func add_numbers(a, b):\n    return a + b\n\nfunc greet(name):\n    return "Hello, " + name',
+      checks: ['add_numbers', 'return', 'greet', 'name'],
+      height: 120,
+      fills: {
+        text: 'Functions are declared with the ___ keyword. The ___ statement sends a value back to the caller.',
+        answers: ['func', 'return']
+      },
+      quiz: {
+        question: 'Why does Godot use _ready() and _process() as function names?',
+        options: [
+          'Random convention',
+          'The underscore prefix marks engine callbacks - Godot calls them automatically at the right time (spawn, each frame)',
+          'They must start with underscore for speed'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Loops',
+      goal: 'Use a for loop to count from 1 to 10 and sum the results.',
+      points: [
+        '<code>for i in range(n):</code> loops from 0 to n-1',
+        '<code>for i in range(1, 11):</code> loops from 1 to 10',
+        'Accumulator pattern: start with 0, add each value inside the loop',
+        'Loops power spawning enemies, checking inventories, and processing arrays'
+      ],
+      challenge: '🤖 Sum numbers 1 to 10 using a loop:',
+      starter: 'var total = 0\nvar count = 0\nfor i in range(___):\n    total += i + 1\n    count += ___',
+      solution: 'var total = 0\nvar count = 0\nfor i in range(10):\n    total += i + 1\n    count += 1',
+      checks: ['total', 'count', '10', 'range'],
+      height: 120,
+      fills: {
+        text: 'range(10) produces numbers from ___ to 9. The total of 1+2+...+10 is ___.',
+        answers: ['0', '55']
+      },
+      quiz: {
+        question: 'Why does range(10) go from 0 to 9, not 1 to 10?',
+        options: [
+          'A bug in GDScript',
+          'Zero-indexed ranges match array indices (array[0] to array[9]) - a convention shared by most languages',
+          'It saves one byte of memory'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Conditions',
+      goal: 'Use if/elif/else to assign a letter grade based on a test score.',
+      points: [
+        '<code>if condition:</code> runs the block when true',
+        '<code>elif</code> checks another condition if the first was false',
+        '<code>else:</code> is the fallback when nothing matched',
+        'Conditions are evaluated top-down: the first true branch wins'
+      ],
+      challenge: '🤖 Assign a grade based on test_score:',
+      starter: 'var grade = ""\nif test_score >= ___:\n    grade = "A"\nelif test_score >= 80:\n    grade = "___"\nelif test_score >= 70:\n    grade = "C"\nelse:\n    grade = "F"',
+      solution: 'var grade = ""\nif test_score >= 90:\n    grade = "A"\nelif test_score >= 80:\n    grade = "B"\nelif test_score >= 70:\n    grade = "C"\nelse:\n    grade = "F"',
+      checks: ['90', 'grade', 'elif', 'else'],
+      height: 180,
+      fills: {
+        text: 'GDScript uses ___ instead of "else if". Conditions are checked from ___ to bottom.',
+        answers: ['elif', 'top']
+      },
+      quiz: {
+        question: 'Why does the order of elif branches matter?',
+        options: [
+          'It does not matter',
+          'The first true branch wins - if >= 70 came before >= 90, a score of 95 would get grade C instead of A',
+          'GDScript alphabetizes them'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Arrays & Dictionaries',
+      goal: 'Create an array for inventory items and a dictionary for player stats.',
+      points: [
+        'Arrays: <code>var items = ["sword", "shield", "potion"]</code>',
+        'Access by index: <code>items[0]</code> is "sword"',
+        'Dictionaries: <code>var player = {"name": "Hero", "health": 100}</code>',
+        'Access by key: <code>player.name</code> or <code>player["name"]</code>'
+      ],
+      challenge: '🤖 Create an inventory array and player dictionary:',
+      starter: 'var inventory = ["sword", "___", "potion"]\n\nvar player = {}\nplayer.name = "___"\nplayer.health = ___\nplayer.level = 1',
+      solution: 'var inventory = ["sword", "shield", "potion"]\n\nvar player = {}\nplayer.name = "Hero"\nplayer.health = 100\nplayer.level = 1',
+      checks: ['inventory', 'player', 'name', 'health'],
+      height: 140,
+      fills: {
+        text: 'Arrays use ___ brackets, dictionaries use curly braces. Array indices start at ___.',
+        answers: ['square', '0']
+      },
+      quiz: {
+        question: 'When would you use a dictionary instead of an array?',
+        options: [
+          'Dictionaries are always better',
+          'When data has named properties (name, health, level) rather than a simple ordered list - lookup by key is clearer than by index',
+          'Arrays cannot store strings'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Signals',
+      goal: 'Connect a signal to a callback function to react to game events.',
+      points: [
+        'Signals are Godot\'s event system: <code>signal health_changed</code>',
+        '<code>connect("signal_name", callable)</code> links a signal to a handler function',
+        '<code>emit("signal_name", data)</code> fires the signal with data',
+        'Signals decouple objects: the emitter does not need to know who is listening'
+      ],
+      challenge: '🤖 Connect and handle the health_changed signal:',
+      starter: 'func on_health_changed(new_health):\n    if new_health <= 0:\n        print("Game ___!")\n    else:\n        print("Health: " + str(new_health))\n\nconnect("health_changed", ___)',
+      solution: 'func on_health_changed(new_health):\n    if new_health <= 0:\n        print("Game Over!")\n    else:\n        print("Health: " + str(new_health))\n\nconnect("health_changed", on_health_changed)',
+      checks: ['connect', 'health_changed', 'on_health_changed', 'print'],
+      height: 160,
+      fills: {
+        text: 'Signals let objects communicate without direct ___. The connect function links a signal name to a ___ function.',
+        answers: ['references', 'callback']
+      },
+      quiz: {
+        question: 'Why are signals better than directly calling another object\'s function?',
+        options: [
+          'Signals are faster',
+          'Signals decouple objects - the sender does not need to know who listens, making code modular and reusable',
+          'Direct calls are forbidden in Godot'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

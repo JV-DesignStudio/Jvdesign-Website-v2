@@ -32,8 +32,9 @@
   // Build banner
   var banner = document.createElement('div');
   banner.id = 'cookie-banner';
-  banner.setAttribute('role', 'region');
+  banner.setAttribute('role', 'dialog');
   banner.setAttribute('aria-label', 'Cookie consent');
+  banner.setAttribute('aria-live', 'polite');
   banner.innerHTML = [
     '<div style="max-width:900px;margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">',
     '<p style="flex:1;min-width:220px;margin:0;font-size:.85rem;line-height:1.5;color:#403B33;">',
@@ -55,23 +56,10 @@
 
   document.body.appendChild(banner);
 
-  // Move focus to Accept so keyboard users land on the banner immediately.
-  // Use a short delay so the banner is painted before focus moves.
-  setTimeout(function(){
-    var btn = document.getElementById('cookie-accept');
-    if(btn) btn.focus();
-  }, 60);
-
-  // Trap Tab/Shift+Tab within the two banner buttons.
   banner.addEventListener('keydown', function(e){
-    if(e.key !== 'Tab') return;
-    var focusable = [document.getElementById('cookie-accept'), document.getElementById('cookie-decline')].filter(Boolean);
-    if(!focusable.length) return;
-    var first = focusable[0], last = focusable[focusable.length - 1];
-    if(e.shiftKey){
-      if(document.activeElement === first){ e.preventDefault(); last.focus(); }
-    } else {
-      if(document.activeElement === last){ e.preventDefault(); first.focus(); }
+    if(e.key === 'Escape'){
+      e.preventDefault();
+      document.getElementById('cookie-decline').click();
     }
   });
 

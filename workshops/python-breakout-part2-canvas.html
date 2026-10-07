@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python Breakout Part 2 Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(52,211,153,.15);color:#34d399;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Python Breakout Part 2 Build Canvas <span class="cw-lang-tag">&#x1f40d; Python</span></h1>
+  <p>Write Python game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Python Breakout Part 2 game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A breakout game with paddle, ball and bricks ready for power-ups</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Python-to-JS transpiler (light transform so Python
+   syntax runs in the canvas iframe)
+   =================================================== */
+function pyToJs(code) {
+  return code
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    .replace(/\bNone\b/g, 'null')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\belif\b/g, 'else if')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||')
+    .replace(/\bnot\b/g, '!')
+    .replace(/\blen\s*\(/g, '(')
+    .replace(/\.append\s*\(/g, '.push(')
+    .replace(/\brandom\.randint\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/#.*$/gm, '');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Python Breakout Part 2)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f0f1a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PAD_VARS = 'let padX=225,padY=370,padW=150,padH=14,padBase=150,speed=7;';
+
+var BALL_VARS = 'let balls=[{x:292,y:300,vx:3,vy:-3}];let bs=12;';
+
+var BRICK_COLORS = 'var brickColors=["#f87171","#fb923c","#facc15","#4ade80","#60a5fa"];';
+
+var BRICK_INIT = 'var bricks=[];function buildLevel(pattern){bricks=[];for(var r=0;r<pattern.length;r++)for(var c=0;c<pattern[r];c++){bricks.push({x:c*75+12,y:r*28+40,w:70,h:24,hp:1,color:brickColors[r%5],alive:true})}}buildLevel([8,8,8,8,8]);';
+
+var SCORE_VARS = 'let score=0,lives=3,level=1;';
+
+var POWERUP_VARS = 'let powerups=[];let wideTimer=0,slowTimer=0;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var PAD_MOVE = 'if(leftHeld)padX-=speed;if(rightHeld)padX+=speed;padX=Math.max(0,Math.min(600-padW,padX));';
+
+var DRAW_BG = 'ctx.fillStyle="#0f0f1a";ctx.fillRect(0,0,600,400);';
+
+var DRAW_PAD = 'ctx.fillStyle="#ff7700";ctx.fillRect(padX,padY,padW,padH);';
+
+var DRAW_BALLS = 'for(var i=0;i<balls.length;i++){var bl=balls[i];ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(bl.x+bs/2,bl.y+bs/2,bs/2,0,Math.PI*2);ctx.fill()}';
+
+var DRAW_BRICKS = 'for(var i=0;i<bricks.length;i++){var b=bricks[i];if(b.alive){ctx.fillStyle=b.hp>1?"#555":b.color;ctx.fillRect(b.x,b.y,b.w,b.h)}}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,12,24);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillStyle="#fff";ctx.fillText("Lives: "+lives,588,24);';
+
+var DRAW_LEVEL = 'ctx.textAlign="center";ctx.fillStyle="#888";ctx.font="14px monospace";ctx.fillText("Level "+level,300,24);';
+
+var BALL_MOVE = 'for(var i=0;i<balls.length;i++){var bl=balls[i];bl.x+=bl.vx;bl.y+=bl.vy;if(bl.x<=0||bl.x+bs>=600)bl.vx=-bl.vx;if(bl.y<=0)bl.vy=-bl.vy}';
+
+var PAD_HIT = 'for(var i=0;i<balls.length;i++){var bl=balls[i];if(bl.x+bs>padX&&bl.x<padX+padW&&bl.y+bs>padY&&bl.y+bs<padY+padH&&bl.vy>0){bl.vy=-bl.vy;var hit=(bl.x+bs/2)-(padX+padW/2);bl.vx=hit/20}}';
+
+var BRICK_HIT = 'for(var i=0;i<balls.length;i++){var bl=balls[i];for(var j=0;j<bricks.length;j++){var b=bricks[j];if(b.alive&&bl.x+bs>b.x&&bl.x<b.x+b.w&&bl.y+bs>b.y&&bl.y<b.y+b.h){b.hp--;if(b.hp<=0){b.alive=false;score+=10}bl.vy=-bl.vy;break}}}';
+
+var BALL_LOST = 'for(var i=balls.length-1;i>=0;i--){if(balls[i].y>410)balls.splice(i,1)}if(balls.length===0){lives--;if(lives<=0){gameState="over"}else{balls=[{x:292,y:300,vx:3,vy:-3}]}}';
+
+var STATE_VARS = 'let gameState="play";';
+
+var DRAW_POWERUPS = 'for(var i=0;i<powerups.length;i++){var p=powerups[i];ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,8,0,Math.PI*2);ctx.fill()}';
+
+var POWERUP_FALL = 'for(var i=powerups.length-1;i>=0;i--){powerups[i].y+=2;if(powerups[i].y>410)powerups.splice(i,1)}';
+
+var TIMER_TICK = 'if(wideTimer>0){wideTimer--;if(wideTimer===0){padW=padBase}}if(slowTimer>0){slowTimer--}';
+
+var SHAKE_VARS = 'let shakeFrames=0;';
+
+var PARTICLES = 'let particles=[];';
+
+var PARTICLE_UPDATE = 'for(var i=particles.length-1;i>=0;i--){var pt=particles[i];pt.x+=pt.vx;pt.y+=pt.vy;pt.life--;if(pt.life<=0)particles.splice(i,1)}';
+
+var DRAW_PARTICLES = 'for(var i=0;i<particles.length;i++){var pt=particles[i];ctx.fillStyle=pt.color;ctx.globalAlpha=pt.life/pt.maxLife;ctx.fillRect(pt.x,pt.y,3,3);ctx.globalAlpha=1}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - Python Breakout Part 2 steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-python-breakout2-canvas',
+  downloadName: 'my-python-breakout-2.html',
+
+  hints: [
+    'A breakout game with paddle, ball and bricks ready for power-ups',
+    'Power-ups drop from broken bricks as coloured circles',
+    'Catching the wide power-up makes the paddle grow temporarily',
+    'Multi-ball splits one ball into three for extra chaos',
+    'Tough bricks take two hits and some bricks look darker',
+    'Screen shake and particles add juice when bricks explode'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS + BRICK_INIT +
+        SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        PAD_MOVE + BALL_MOVE + PAD_HIT + BRICK_HIT + BALL_LOST + POWERUP_FALL + TIMER_TICK +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS + BRICK_INIT +
+        SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
+        'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*3)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        PAD_MOVE + BALL_MOVE + PAD_HIT +
+        'for(var i=0;i<balls.length;i++){var bl=balls[i];for(var j=0;j<bricks.length;j++){var b=bricks[j];if(b.alive&&bl.x+bs>b.x&&bl.x<b.x+b.w&&bl.y+bs>b.y&&bl.y<b.y+b.h){b.hp--;if(b.hp<=0){b.alive=false;score+=10;spawnPowerup(b.x+b.w/2,b.y)}bl.vy=-bl.vy;break}}}' +
+        BALL_LOST + POWERUP_FALL + TIMER_TICK +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS + BRICK_INIT +
+        SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
+        'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"},{type:"multi",color:"#fb923c"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*4)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
+        'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}}' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        PAD_MOVE + BALL_MOVE + PAD_HIT +
+        'for(var i=0;i<balls.length;i++){var bl=balls[i];for(var j=0;j<bricks.length;j++){var b=bricks[j];if(b.alive&&bl.x+bs>b.x&&bl.x<b.x+b.w&&bl.y+bs>b.y&&bl.y<b.y+b.h){b.hp--;if(b.hp<=0){b.alive=false;score+=10;spawnPowerup(b.x+b.w/2,b.y)}bl.vy=-bl.vy;break}}}' +
+        BALL_LOST + POWERUP_FALL +
+        'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
+        TIMER_TICK +
+        'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS + BRICK_INIT +
+        SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
+        'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"},{type:"multi",color:"#fb923c"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*4)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
+        'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}else if(p.type==="multi"){var ob=balls[0];if(ob){balls.push({x:ob.x,y:ob.y,vx:ob.vx+1,vy:ob.vy});balls.push({x:ob.x,y:ob.y,vx:ob.vx-1,vy:ob.vy})}}}' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        PAD_MOVE + BALL_MOVE + PAD_HIT +
+        'for(var i=0;i<balls.length;i++){var bl=balls[i];for(var j=0;j<bricks.length;j++){var b=bricks[j];if(b.alive&&bl.x+bs>b.x&&bl.x<b.x+b.w&&bl.y+bs>b.y&&bl.y<b.y+b.h){b.hp--;if(b.hp<=0){b.alive=false;score+=10;spawnPowerup(b.x+b.w/2,b.y)}bl.vy=-bl.vy;break}}}' +
+        BALL_LOST + POWERUP_FALL +
+        'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
+        TIMER_TICK +
+        'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS +
+        'var bricks=[];var levels=[[8,8,8,8,8],[7,8,7,8,7],[6,8,6,8,6]];var level=1;' +
+        'function buildLevel(pattern){bricks=[];for(var r=0;r<pattern.length;r++)for(var c=0;c<pattern[r];c++){bricks.push({x:c*75+12,y:r*28+40,w:70,h:24,hp:(r<2?2:1),color:brickColors[r%5],alive:true})}}buildLevel(levels[0]);' +
+        SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
+        'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"},{type:"multi",color:"#fb923c"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*4)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
+        'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}else if(p.type==="multi"){var ob=balls[0];if(ob){balls.push({x:ob.x,y:ob.y,vx:ob.vx+1,vy:ob.vy});balls.push({x:ob.x,y:ob.y,vx:ob.vx-1,vy:ob.vy})}}}' +
+        'function checkNextLevel(){var alive=0;for(var i=0;i<bricks.length;i++)if(bricks[i].alive)alive++;if(alive===0){level++;var idx=(level-1)%levels.length;buildLevel(levels[idx]);balls=[{x:292,y:300,vx:3,vy:-3}];powerups=[]}}' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        PAD_MOVE + BALL_MOVE + PAD_HIT +
+        'for(var i=0;i<balls.length;i++){var bl=balls[i];for(var j=0;j<bricks.length;j++){var b=bricks[j];if(b.alive&&bl.x+bs>b.x&&bl.x<b.x+b.w&&bl.y+bs>b.y&&bl.y<b.y+b.h){b.hp--;if(b.hp<=0){b.alive=false;score+=10;spawnPowerup(b.x+b.w/2,b.y)}bl.vy=-bl.vy;break}}}' +
+        BALL_LOST + POWERUP_FALL +
+        'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
+        TIMER_TICK +
+        'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'checkNextLevel()' +
+        '}' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES +
+        'ctx.textAlign="center";ctx.fillStyle="#888";ctx.font="14px monospace";ctx.fillText("Level "+level,300,24);' +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS +
+        'var bricks=[];var levels=[[8,8,8,8,8],[7,8,7,8,7],[6,8,6,8,6]];var level=1;' +
+        'function buildLevel(pattern){bricks=[];for(var r=0;r<pattern.length;r++)for(var c=0;c<pattern[r];c++){bricks.push({x:c*75+12,y:r*28+40,w:70,h:24,hp:(r<2?2:1),color:brickColors[r%5],alive:true})}}buildLevel(levels[0]);' +
+        SCORE_VARS + STATE_VARS + POWERUP_VARS + SHAKE_VARS + PARTICLES + KEYS +
+        'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"},{type:"multi",color:"#fb923c"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*4)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
+        'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}else if(p.type==="multi"){var ob=balls[0];if(ob){balls.push({x:ob.x,y:ob.y,vx:ob.vx+1,vy:ob.vy});balls.push({x:ob.x,y:ob.y,vx:ob.vx-1,vy:ob.vy})}}}' +
+        'function spawnParticles(px,py,col){for(var i=0;i<6;i++){particles.push({x:px,y:py,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:20,maxLife:20,color:col})}}' +
+        'function checkNextLevel(){var alive=0;for(var i=0;i<bricks.length;i++)if(bricks[i].alive)alive++;if(alive===0){level++;var idx=(level-1)%levels.length;buildLevel(levels[idx]);balls=[{x:292,y:300,vx:3,vy:-3}];powerups=[];particles=[]}}' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        PAD_MOVE + BALL_MOVE + PAD_HIT +
+        'for(var i=0;i<balls.length;i++){var bl=balls[i];for(var j=0;j<bricks.length;j++){var b=bricks[j];if(b.alive&&bl.x+bs>b.x&&bl.x<b.x+b.w&&bl.y+bs>b.y&&bl.y<b.y+b.h){b.hp--;if(b.hp<=0){b.alive=false;score+=10;spawnPowerup(b.x+b.w/2,b.y);spawnParticles(b.x+b.w/2,b.y+b.h/2,b.color);shakeFrames=5}bl.vy=-bl.vy;break}}}' +
+        BALL_LOST + POWERUP_FALL +
+        'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
+        TIMER_TICK + PARTICLE_UPDATE +
+        'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
+        'try{' + pyToJs(u) + '}catch(e){}' +
+        'checkNextLevel()' +
+        '}' +
+        'var ox=0,oy=0;if(shakeFrames>0){ox=Math.round((Math.random()-0.5)*6);oy=Math.round((Math.random()-0.5)*6);shakeFrames--}ctx.save();ctx.translate(ox,oy);' +
+        DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_PARTICLES + DRAW_SCORE + DRAW_LIVES +
+        'ctx.textAlign="center";ctx.fillStyle="#888";ctx.font="14px monospace";ctx.fillText("Level "+level,300,24);' +
+        'ctx.restore();' +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Power-Up Drops',
+      goal: 'When a brick breaks, give it a 20% chance to drop a coloured power-up circle.',
+      points: [
+        'Power-ups are small circles that fall at speed 2 after a brick is destroyed',
+        'Three types: <code>"wide"</code> (green #4ade80), <code>"slow"</code> (blue #60a5fa), <code>"life"</code> (pink #f472b6)',
+        'Use <code>random.randint(1, 5) == 1</code> for a 20% chance - same as rolling a five-sided die',
+        'Each power-up is a dict with x, y, type, and color pushed into the <code>powerups</code> list'
+      ],
+      challenge: '🐍 Write the power-up spawn logic that runs when a brick breaks:',
+      starter: '# Spawn a power-up 20% of the time\nif random.randint(1, 5) == ___:\n    ptype = "wide"\n    pcolor = "___"\n    powerups.append({"x": bx, "y": by, "type": ptype, "color": pcolor})',
+      solution: '# Spawn a power-up 20% of the time\nif random.randint(1, 5) == 1:\n    ptype = "wide"\n    pcolor = "#4ade80"\n    powerups.append({"x": bx, "y": by, "type": ptype, "color": pcolor})',
+      checks: ['randint', 'powerups', 'append', 'wide'],
+      height: 140,
+      fills: {
+        text: 'A power-up spawns with a ___% chance. The green power-up type is called "___".',
+        answers: ['20', 'wide']
+      },
+      quiz: {
+        question: 'Why use random.randint(1, 5) == 1 for a 20% chance?',
+        options: [
+          'There are 5 outcomes (1-5) and exactly 1 wins, so the probability is 1/5 = 20%',
+          'The number 1 is special in Python random',
+          'randint always returns 1 first'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 2,
+      title: 'Catching: Wide Paddle',
+      goal: 'Catch the "wide" power-up to double the paddle width for 5 seconds.',
+      points: [
+        'A power-up is caught when its circle overlaps the paddle rectangle',
+        'For "wide": set <code>padW = padBase * 2</code> to double the width',
+        'Start a timer: <code>wideTimer = 300</code> (about 5 seconds at 60 fps)',
+        'Each frame the timer ticks down - when it hits 0, reset <code>padW = padBase</code>'
+      ],
+      challenge: '🐍 Write the catch detection and wide-paddle timer:',
+      starter: '# Check each power-up for paddle overlap\nfor p in powerups:\n    if p["y"] + 8 >= padY and p["x"] >= padX and p["x"] <= padX + ___:\n        if p["type"] == "wide":\n            padW = padBase * ___\n            wideTimer = 300',
+      solution: '# Check each power-up for paddle overlap\nfor p in powerups:\n    if p["y"] + 8 >= padY and p["x"] >= padX and p["x"] <= padX + padW:\n        if p["type"] == "wide":\n            padW = padBase * 2\n            wideTimer = 300',
+      checks: ['powerups', 'padw', 'padbase', 'widetimer', '300'],
+      height: 160,
+      fills: {
+        text: 'The wide power-up doubles the paddle for ___ frames. The base width is stored in ___ so we can reset it.',
+        answers: ['300', 'padBase']
+      },
+      quiz: {
+        question: 'Why store the original width in padBase instead of hardcoding 150?',
+        options: [
+          'Hardcoded values work fine for this',
+          'If you ever change the base width, padBase updates everywhere - no magic numbers to hunt down',
+          'Python does not allow number literals in assignments'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Multi-Ball!',
+      goal: 'Catch an orange "multi" power-up to split the ball into 3. Lose a life only when ALL balls are gone.',
+      points: [
+        'A new power-up type: <code>"multi"</code> (orange #fb923c)',
+        'On catch: copy the current ball twice with slightly different vx to fan them out',
+        'All balls live in the <code>balls</code> list - loop through them for movement and collision',
+        'A life is lost only when <code>len(balls) == 0</code> - as long as one ball survives, you are safe'
+      ],
+      challenge: '🐍 Write the multi-ball split when the "multi" power-up is caught:',
+      starter: '# Split into 3 balls\nif p["type"] == "multi":\n    ob = balls[0]\n    balls.append({"x": ob["x"], "y": ob["y"], "vx": ob["vx"] + 1, "vy": ob["___"]})\n    balls.append({"x": ob["x"], "y": ob["y"], "vx": ob["vx"] - ___, "vy": ob["vy"]})',
+      solution: '# Split into 3 balls\nif p["type"] == "multi":\n    ob = balls[0]\n    balls.append({"x": ob["x"], "y": ob["y"], "vx": ob["vx"] + 1, "vy": ob["vy"]})\n    balls.append({"x": ob["x"], "y": ob["y"], "vx": ob["vx"] - 1, "vy": ob["vy"]})',
+      checks: ['balls', 'append', 'multi', 'vx', 'vy'],
+      height: 160,
+      fills: {
+        text: 'The new balls copy the original position but offset ___ by +1 and -1 to fan out. A life is lost only when the balls list is ___.',
+        answers: ['vx', 'empty']
+      },
+      quiz: {
+        question: 'Why offset vx instead of vy when splitting balls?',
+        options: [
+          'Changing vx fans the balls left and right so they spread out and cover more bricks',
+          'vy cannot be changed',
+          'It makes the balls faster'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 4,
+      title: 'Tough Bricks & Slow-Mo',
+      goal: 'Some bricks take 2 hits to destroy. The "slow" power-up halves ball speed for 3 seconds.',
+      points: [
+        'Each brick gets an <code>hp</code> property - most start at 1, tough ones at 2',
+        'Tough bricks (hp 2) are drawn darker (#555). After one hit they drop to hp 1 and show their normal color',
+        'The "slow" power-up sets <code>slowTimer = 180</code> (3 seconds at 60 fps)',
+        'While slowTimer > 0, multiply each ball velocity by 0.98 each frame to gently decelerate'
+      ],
+      challenge: '🐍 Write the brick hp logic when a ball hits a brick:',
+      starter: '# Reduce brick hp on hit\nb["hp"] -= ___\nif b["hp"] <= 0:\n    b["alive"] = False\n    score += 10\n\n# Slow-mo: reduce ball speed while timer active\nif slowTimer > 0:\n    for bl in balls:\n        bl["vx"] *= ___',
+      solution: '# Reduce brick hp on hit\nb["hp"] -= 1\nif b["hp"] <= 0:\n    b["alive"] = False\n    score += 10\n\n# Slow-mo: reduce ball speed while timer active\nif slowTimer > 0:\n    for bl in balls:\n        bl["vx"] *= 0.98',
+      checks: ['hp', 'alive', 'false', 'slowtimer', '0.98'],
+      height: 180,
+      fills: {
+        text: 'Tough bricks start with hp = ___. The slow-mo multiplier of ___ gently reduces speed each frame rather than halving it instantly.',
+        answers: ['2', '0.98']
+      },
+      quiz: {
+        question: 'Why multiply by 0.98 each frame instead of dividing speed by 2 once?',
+        options: [
+          'Division is slower than multiplication',
+          'Gradual deceleration feels smooth and cinematic - an instant halve would feel jarring and abrupt',
+          'Python cannot divide floats'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Level Patterns',
+      goal: 'After clearing all bricks, load the next level with a different brick layout.',
+      points: [
+        'Define a <code>levels</code> list where each entry is a list of brick counts per row',
+        'Example: <code>[[8,8,8,8,8], [7,8,7,8,7], [6,8,6,8,6]]</code> - 3 different patterns',
+        'When alive brick count hits 0: increment level, call <code>buildLevel</code> with the next pattern',
+        'Use modulo <code>(level - 1) % len(levels)</code> to loop back to the first pattern after the last'
+      ],
+      challenge: '🐍 Write the level progression check:',
+      starter: '# Count remaining bricks\nalive = 0\nfor b in bricks:\n    if b["alive"]:\n        alive += 1\n\n# Load next level if all bricks cleared\nif alive == ___:\n    level += 1\n    idx = (level - 1) % len(___)\n    buildLevel(levels[idx])',
+      solution: '# Count remaining bricks\nalive = 0\nfor b in bricks:\n    if b["alive"]:\n        alive += 1\n\n# Load next level if all bricks cleared\nif alive == 0:\n    level += 1\n    idx = (level - 1) % len(levels)\n    buildLevel(levels[idx])',
+      checks: ['alive', 'level', 'buildlevel', 'levels'],
+      height: 200,
+      fills: {
+        text: 'The next level loads when alive reaches ___. The modulo operator ___ makes patterns cycle so the game never runs out of levels.',
+        answers: ['0', '%']
+      },
+      quiz: {
+        question: 'What does (level - 1) % len(levels) do when level exceeds the number of patterns?',
+        options: [
+          'It crashes with an index error',
+          'It wraps back to the start - level 4 with 3 patterns gives index 0, so the patterns repeat endlessly',
+          'It skips to the last pattern'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Juice: Shake & Flash',
+      goal: 'Add screen shake, particles and flash effects when bricks break.',
+      points: [
+        'Screen shake: offset the canvas by random +/-3px for 5 frames using <code>ctx.translate(ox, oy)</code>',
+        'Particles: spawn 6 tiny squares at the brick position with random velocities',
+        'Each particle has a <code>life</code> counter that fades it out with <code>globalAlpha</code>',
+        'These tiny effects make the game feel alive - game developers call this "juice"'
+      ],
+      challenge: '🐍 Write the screen shake and particle spawn:',
+      starter: '# Screen shake: random offset for 5 frames\nshakeFrames = ___\n\n# Spawn particles at broken brick\nfor i in range(6):\n    particles.append({\n        "x": bx, "y": by,\n        "vx": random.randint(-2, 2),\n        "vy": random.randint(-2, 2),\n        "life": ___,\n        "maxLife": 20,\n        "color": bcolor\n    })',
+      solution: '# Screen shake: random offset for 5 frames\nshakeFrames = 5\n\n# Spawn particles at broken brick\nfor i in range(6):\n    particles.append({\n        "x": bx, "y": by,\n        "vx": random.randint(-2, 2),\n        "vy": random.randint(-2, 2),\n        "life": 20,\n        "maxLife": 20,\n        "color": bcolor\n    })',
+      checks: ['shakeframes', 'particles', 'append', 'life', '20'],
+      height: 220,
+      fills: {
+        text: 'Screen shake lasts ___ frames. Each particle lives for ___ frames and fades out using globalAlpha.',
+        answers: ['5', '20']
+      },
+      quiz: {
+        question: 'Why do particles need both life and maxLife?',
+        options: [
+          'maxLife is unused - life alone would work',
+          'life counts down each frame while maxLife stays fixed - dividing them gives a 0-to-1 fade ratio for smooth alpha',
+          'Python requires both variables for a loop'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

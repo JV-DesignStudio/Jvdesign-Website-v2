@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GDevelop Space Shooter Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(163,230,53,.15);color:#a3e635;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>GDevelop Space Shooter Build Canvas <span class="cw-lang-tag">&#x1f3a8; GDevelop</span></h1>
+  <p>Write GDevelop event logic step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your GDevelop Space Shooter game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A cyan triangle ship at the bottom of a starfield</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GDevelop-to-JS transpiler (simplified event notation)
+   =================================================== */
+function gdToJs(code) {
+  return code
+    .replace(/\/\/.*$/gm, '')
+    .replace(/Condition:\s*KeyPressed\("Left"\)/g, 'if(leftHeld)')
+    .replace(/Condition:\s*KeyPressed\("Right"\)/g, 'if(rightHeld)')
+    .replace(/Condition:\s*KeyPressed\("Space"\)/g, 'if(spaceHeld)')
+    .replace(/Action:\s*SetVariable\((\w+),\s*([^)]+)\)/g, '$1=$2;')
+    .replace(/Condition:\s*Variable\((\w+)\)\s*([<>!=]+)\s*([^\n]+)/g, 'if($1$2$3)')
+    .replace(/Action:\s*Create\("Bullet",\s*([^,]+),\s*([^)]+)\)/g, 'bullets.push({x:$1,y:$2,w:4,h:12,alive:true});')
+    .replace(/Action:\s*Create\("Enemy",\s*([^,]+),\s*([^)]+)\)/g, 'enemies.push({x:$1,y:$2,w:28,h:28,alive:true});')
+    .replace(/Action:\s*Delete\("(\w+)"\)/g, '$1.alive=false;')
+    .replace(/Condition:\s*Timer\("(\w+)"\)\s*>\s*(\d+)/g, function(_, name, sec) {
+      return 'if(' + name + 'Timer>' + (parseInt(sec) * 60) + ')';
+    })
+    .replace(/\bAction:\s*/g, '')
+    .replace(/\bCondition:\s*/g, 'if');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Space Shooter)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0a0a1a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="500"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var SHIP_VARS = 'let sx=186,sy=440,sw=28,sh=28,speed=5;';
+
+var BULLET_VARS = 'var bullets=[],bulletSpeed=7,fireTimer=0,fireDelay=12;';
+
+var ENEMY_VARS = 'var enemies=[],spawnTimer=0,spawnDelay=50,enemySpeed=2;';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var STATE_VARS = 'let gameState="play",wave=1;';
+
+var STARS = 'var stars=[];for(var si=0;si<60;si++)stars.push({x:Math.random()*400,y:Math.random()*500,s:Math.random()*2+0.5});';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,spaceHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="Space")spaceHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="Space")spaceHeld=false});';
+
+var MOVE_SHIP = 'if(leftHeld)sx-=speed;if(rightHeld)sx+=speed;sx=Math.max(0,Math.min(400-sw,sx));';
+
+var DRAW_BG = 'ctx.fillStyle="#0a0a1a";ctx.fillRect(0,0,400,500);' +
+  'ctx.fillStyle="#fff";for(var sd=0;sd<stars.length;sd++){stars[sd].y+=stars[sd].s;if(stars[sd].y>500){stars[sd].y=0;stars[sd].x=Math.random()*400}ctx.fillRect(stars[sd].x,stars[sd].y,1,1)}';
+
+var DRAW_SHIP = 'ctx.fillStyle="#22d3ee";ctx.beginPath();ctx.moveTo(sx+sw/2,sy);ctx.lineTo(sx,sy+sh);ctx.lineTo(sx+sw,sy+sh);ctx.closePath();ctx.fill();';
+
+var DRAW_BULLETS = 'ctx.fillStyle="#facc15";for(var bd=0;bd<bullets.length;bd++){if(bullets[bd].alive){ctx.fillRect(bullets[bd].x,bullets[bd].y,bullets[bd].w,bullets[bd].h)}}';
+
+var DRAW_ENEMIES = 'ctx.fillStyle="#ef4444";for(var ed=0;ed<enemies.length;ed++){if(enemies[ed].alive){ctx.fillRect(enemies[ed].x,enemies[ed].y,enemies[ed].w,enemies[ed].h)}}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);ctx.textAlign="right";ctx.fillText("Lives: "+lives,390,24);ctx.textAlign="center";ctx.fillText("Wave "+wave,200,24);';
+
+var UPDATE_BULLETS = 'for(var bu=bullets.length-1;bu>=0;bu--){bullets[bu].y-=bulletSpeed;if(bullets[bu].y<-20)bullets.splice(bu,1)}';
+
+var UPDATE_ENEMIES = 'for(var eu=enemies.length-1;eu>=0;eu--){enemies[eu].y+=enemySpeed;if(enemies[eu].y>520){enemies.splice(eu,1);lives--}}';
+
+var FIRE_BULLET = 'fireTimer++;if(spaceHeld&&fireTimer>=fireDelay){fireTimer=0;bullets.push({x:sx+sw/2-2,y:sy-12,w:4,h:12,alive:true})}';
+
+var SPAWN_ENEMY = 'spawnTimer++;if(spawnTimer>=spawnDelay){spawnTimer=0;enemies.push({x:Math.floor(Math.random()*372),y:-30,w:28,h:28,alive:true})}';
+
+var HIT_CHECK = 'for(var hi=bullets.length-1;hi>=0;hi--){for(var hj=enemies.length-1;hj>=0;hj--){' +
+  'if(bullets[hi]&&enemies[hj]&&bullets[hi].x<enemies[hj].x+enemies[hj].w&&bullets[hi].x+bullets[hi].w>enemies[hj].x&&bullets[hi].y<enemies[hj].y+enemies[hj].h&&bullets[hi].y+bullets[hi].h>enemies[hj].y){' +
+  'bullets.splice(hi,1);enemies.splice(hj,1);score++;break}}}';
+
+var ENEMY_HIT_SHIP = 'for(var es=enemies.length-1;es>=0;es--){' +
+  'if(enemies[es].x<sx+sw&&enemies[es].x+enemies[es].w>sx&&enemies[es].y<sy+sh&&enemies[es].y+enemies[es].h>sy){' +
+  'enemies.splice(es,1);lives--}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - GDevelop Shooter steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-gdevelop-shooter-canvas',
+  downloadName: 'my-gdevelop-shooter.html',
+
+  hints: [
+    'A cyan triangle ship at the bottom of a starfield',
+    'The ship moves left and right with arrow keys',
+    'Yellow bullets fire upward when Space is held',
+    'Red enemies fall from the top of the screen',
+    'Bullets destroy enemies for points, misses cost lives',
+    'Waves get faster - press R to restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + STARS + KEYS +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_SHIP +
+        DRAW_BG + DRAW_SHIP +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + STARS + KEYS +
+        'function loop(){' +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'sx=Math.max(0,Math.min(400-sw,sx));' +
+        DRAW_BG + DRAW_SHIP +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + BULLET_VARS + STARS + KEYS +
+        'function loop(){' +
+        MOVE_SHIP +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        UPDATE_BULLETS +
+        DRAW_BG + DRAW_SHIP + DRAW_BULLETS +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STARS + KEYS +
+        'function loop(){' +
+        MOVE_SHIP + FIRE_BULLET + UPDATE_BULLETS +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'for(var eu=enemies.length-1;eu>=0;eu--){enemies[eu].y+=enemySpeed;if(enemies[eu].y>520)enemies.splice(eu,1)}' +
+        DRAW_BG + DRAW_SHIP + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STARS + KEYS +
+        'function loop(){' +
+        MOVE_SHIP + FIRE_BULLET + SPAWN_ENEMY + UPDATE_BULLETS + UPDATE_ENEMIES +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_SHIP + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SCORE +
+        'if(lives<=0){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,230);ctx.font="16px monospace";ctx.fillText("Score: "+score,200,260)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STATE_VARS + STARS + KEYS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;wave=1;enemies=[];bullets=[];spawnDelay=50;enemySpeed=2;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_SHIP + FIRE_BULLET + SPAWN_ENEMY + UPDATE_BULLETS + UPDATE_ENEMIES + HIT_CHECK + ENEMY_HIT_SHIP +
+        'try{' + gdToJs(u) + '}catch(e){}' +
+        'if(lives<=0)gameState="over";' +
+        '}' +
+        DRAW_BG + DRAW_SHIP + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SCORE +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",200,220);ctx.font="16px monospace";ctx.fillText("Score: "+score,200,255);' +
+        'ctx.fillText("Press R to restart",200,280)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Ship & Starfield',
+      goal: 'Place a ship at the bottom of a scrolling starfield.',
+      points: [
+        'The ship is a cyan triangle at the bottom of a 400x500 canvas',
+        'Stars scroll downward to create the feeling of flying through space',
+        'The ship starts centred: x = (400 - 28) / 2 = 186',
+        'In GDevelop, you would create a Ship object and a starfield background with tiling'
+      ],
+      challenge: '&#x1f3a8; Set the ship starting position:',
+      starter: '// Place the ship at the bottom centre\nAction: SetVariable(sx, ___)\nAction: SetVariable(sy, ___)\nAction: SetVariable(sw, 28)\nAction: SetVariable(speed, 5)',
+      solution: '// Place the ship at the bottom centre\nAction: SetVariable(sx, 186)\nAction: SetVariable(sy, 440)\nAction: SetVariable(sw, 28)\nAction: SetVariable(speed, 5)',
+      checks: ['186', '440', '28', '5'],
+      height: 130,
+      fills: {
+        text: 'The ship starts at x=___ to be centred. It sits at y=___ near the bottom.',
+        answers: ['186', '440']
+      },
+      quiz: {
+        question: 'Why do stars scroll instead of the ship moving forward?',
+        options: [
+          'The ship cannot move up',
+          'Moving the background is simpler and keeps the player visible - the illusion of movement is the same',
+          'Scrolling is faster to render'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Ship Movement',
+      goal: 'Move the ship left and right with arrow keys, staying on screen.',
+      points: [
+        'Left arrow subtracts speed from x, right arrow adds speed',
+        'Clamp x between 0 and 400 - ship width so it stays in bounds',
+        'The ship moves at 5 pixels per frame - fast enough to dodge',
+        'In GDevelop, keyboard events change the ship X position'
+      ],
+      challenge: '&#x1f3a8; Write the ship movement events:',
+      starter: '// Move ship with arrow keys\nCondition: KeyPressed("Left")\nAction: SetVariable(sx, sx - ___)\n\nCondition: KeyPressed("Right")\nAction: SetVariable(sx, sx + ___)',
+      solution: '// Move ship with arrow keys\nCondition: KeyPressed("Left")\nAction: SetVariable(sx, sx - speed)\n\nCondition: KeyPressed("Right")\nAction: SetVariable(sx, sx + speed)',
+      checks: ['KeyPressed', 'Left', 'Right', 'speed'],
+      height: 150,
+      fills: {
+        text: 'The ship moves ___ pixels per frame. It is clamped so it cannot leave the ___.',
+        answers: ['5', 'screen']
+      },
+      quiz: {
+        question: 'Why clamp the ship to the screen edges?',
+        options: [
+          'It prevents rendering errors',
+          'A ship that flies off-screen is lost to the player - clamping keeps it always accessible',
+          'The canvas crashes with negative coordinates'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Firing Bullets',
+      goal: 'Press Space to fire yellow bullets upward from the ship.',
+      points: [
+        'Each bullet is a small yellow rectangle (4x12) that moves upward',
+        'A fire delay (12 frames) prevents bullet spam',
+        'Bullets spawn at the ship centre and fly at 7 pixels per frame',
+        'In GDevelop, you would use <strong>Create object</strong> action to spawn bullets'
+      ],
+      challenge: '&#x1f3a8; Write the bullet firing logic:',
+      starter: '// Fire a bullet when Space is held (with cooldown)\nCondition: KeyPressed("Space")\nCondition: Variable(fireTimer) >= ___\nAction: Create("Bullet", sx + sw/2 - 2, sy - ___)\nAction: SetVariable(fireTimer, 0)',
+      solution: '// Fire a bullet when Space is held (with cooldown)\nCondition: KeyPressed("Space")\nCondition: Variable(fireTimer) >= 12\nAction: Create("Bullet", sx + sw/2 - 2, sy - 12)\nAction: SetVariable(fireTimer, 0)',
+      checks: ['Space', '12', 'Bullet', 'fireTimer'],
+      height: 150,
+      fills: {
+        text: 'The fire cooldown is ___ frames. Bullets spawn at the ___ top of the ship.',
+        answers: ['12', 'centre']
+      },
+      quiz: {
+        question: 'Why use a fire delay instead of shooting every frame?',
+        options: [
+          'The canvas can only draw 12 bullets',
+          'Without a delay, holding Space creates a solid beam of bullets - the delay makes each shot matter and balances difficulty',
+          'GDevelop timers require delays'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Enemy Spawning',
+      goal: 'Spawn red enemies at random X positions that fall downward.',
+      points: [
+        'Enemies are 28x28 red squares that spawn above the screen',
+        'A spawn timer creates a new enemy every 50 frames',
+        'Enemies fall at 2 pixels per frame toward the bottom',
+        'In GDevelop, you would use a timer condition and Create object action'
+      ],
+      challenge: '&#x1f3a8; Write the enemy spawning:',
+      starter: '// Spawn an enemy at a random position\nCondition: Timer("spawn") > ___\nAction: Create("Enemy", Random(372), ___)\nAction: ResetTimer("spawn")',
+      solution: '// Spawn an enemy at a random position\nCondition: Timer("spawn") > 50\nAction: Create("Enemy", Random(372), -30)\nAction: ResetTimer("spawn")',
+      checks: ['Timer', '50', 'Enemy', '-30'],
+      height: 130,
+      fills: {
+        text: 'A new enemy spawns every ___ frames. They start at y=___ above the visible area.',
+        answers: ['50', '-30']
+      },
+      quiz: {
+        question: 'Why spawn enemies at a random X position?',
+        options: [
+          'It is easier to code',
+          'Random positions force the player to move and aim - predictable enemies would become trivial after a few seconds',
+          'The canvas requires random values'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Hit Detection',
+      goal: 'Destroy enemies when bullets hit them. Lose a life when enemies reach the bottom.',
+      points: [
+        'Check every bullet against every enemy for rectangle overlap',
+        'On hit: remove both the bullet and enemy, add to score',
+        'Enemies passing the bottom cost a life',
+        'In GDevelop, collision conditions between groups handle this automatically'
+      ],
+      challenge: '&#x1f3a8; Write the hit detection:',
+      starter: '// Bullet hits enemy\nCondition: BulletCollidesWith(Enemy)\nAction: Delete("Bullet")\nAction: Delete("Enemy")\nAction: SetVariable(score, score + ___)\n\n// Enemy reaches bottom\nCondition: Variable(enemyY) > ___\nAction: Delete("Enemy")\nAction: SetVariable(lives, lives - 1)',
+      solution: '// Bullet hits enemy\nCondition: BulletCollidesWith(Enemy)\nAction: Delete("Bullet")\nAction: Delete("Enemy")\nAction: SetVariable(score, score + 1)\n\n// Enemy reaches bottom\nCondition: Variable(enemyY) > 520\nAction: Delete("Enemy")\nAction: SetVariable(lives, lives - 1)',
+      checks: ['score', '1', 'lives', '520'],
+      height: 200,
+      fills: {
+        text: 'Each enemy destroyed adds ___ point. An enemy passing the bottom costs ___ life.',
+        answers: ['1', '1']
+      },
+      quiz: {
+        question: 'Why check every bullet against every enemy?',
+        options: [
+          'There is only one of each',
+          'Multiple bullets and enemies can exist at once - each pair must be checked because any bullet could hit any enemy',
+          'GDevelop checks them alphabetically'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Waves & Restart',
+      goal: 'Speed up enemy spawning in waves. Press R to restart after game over.',
+      points: [
+        'Every 10 points, increase the wave number and decrease spawn delay',
+        'Also increase enemy speed slightly each wave',
+        'Cap the difficulty so it stays challenging but not impossible',
+        'R resets everything for a fresh run - the classic arcade loop'
+      ],
+      challenge: '&#x1f3a8; Write the wave progression:',
+      starter: '// Advance wave every 10 points\nCondition: Variable(score) >= wave * ___\nAction: SetVariable(wave, wave + 1)\nAction: SetVariable(spawnDelay, spawnDelay - ___)\nAction: SetVariable(enemySpeed, enemySpeed + 0.3)',
+      solution: '// Advance wave every 10 points\nCondition: Variable(score) >= wave * 10\nAction: SetVariable(wave, wave + 1)\nAction: SetVariable(spawnDelay, spawnDelay - 5)\nAction: SetVariable(enemySpeed, enemySpeed + 0.3)',
+      checks: ['wave', '10', 'spawnDelay', '5', 'enemySpeed'],
+      height: 140,
+      fills: {
+        text: 'A new wave triggers every ___ points. The spawn delay decreases by ___ frames each wave.',
+        answers: ['10', '5']
+      },
+      quiz: {
+        question: 'Why do arcade games get harder over time?',
+        options: [
+          'To force you to insert more coins',
+          'Increasing difficulty matches the player improving skill - a flat difficulty becomes boring once mastered',
+          'The hardware runs faster'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

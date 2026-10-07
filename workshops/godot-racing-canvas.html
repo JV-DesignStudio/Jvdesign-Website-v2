@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Godot Racing Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Godot Racing Build Canvas <span class="cw-lang-tag">&#x1f916; Godot</span></h1>
+  <p>Write GDScript game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Godot Racing game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue car on a grey road with lane markings</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GDScript-to-JS transpiler (light transform so
+   GDScript syntax runs in the canvas iframe)
+   =================================================== */
+function gdscriptToJs(code) {
+  return code
+    .replace(/#.*$/gm, '')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bVector2\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
+    .replace(/\brandf\(\)/g, 'Math.random()')
+    .replace(/\brandi\(\)\s*%\s*(\w+)/g, 'Math.floor(Math.random()*$1)')
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
+    .replace(/\.position\.x/g, '.x')
+    .replace(/\.position\.y/g, '.y')
+    .replace(/\bInput\.is_action_pressed\("ui_left"\)/g, 'leftHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
+    .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
+    .replace(/\belif\b/g, '} else if')
+    .replace(/\bif\s+(.+):/g, 'if($1){')
+    .replace(/\belse\s*:/g, '} else {')
+    .replace(/\bfor\s+(\w+)\s+in\s+range\(([^)]+)\)\s*:/g, 'for(let $1=0;$1<$2;$1++){')
+    .replace(/\bwhile\s+(.+):/g, 'while($1){')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false')
+    .replace(/\bnull\b/g, 'null');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (Godot Racing)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var CAR_VARS = 'let carX=270,carY=320,carW=60,carH=40,carSpeed=0,maxSpeed=6,steer=0;';
+
+var ROAD_VARS = 'let roadOffset=0,laneW=200,roadX=200;';
+
+var OBS_VARS = 'let obs=[];for(let i=0;i<3;i++)obs.push({x:220+Math.floor(Math.random()*160),y:-100-i*200,w:40,h:40});';
+
+var LAP_VARS = 'let distance=0,lapLength=3000,lap=0,bestTime=Infinity,lapTimer=0,frameCount=0;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false});';
+
+var DRAW_ROAD = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,600,400);' +
+  'ctx.fillStyle="#444";ctx.fillRect(roadX,0,laneW,400);' +
+  'ctx.strokeStyle="#ffff00";ctx.setLineDash([20,20]);ctx.lineDashOffset=-roadOffset;' +
+  'ctx.beginPath();ctx.moveTo(roadX+laneW/2,0);ctx.lineTo(roadX+laneW/2,400);ctx.stroke();ctx.setLineDash([]);';
+
+var DRAW_CAR = 'ctx.fillStyle="#60a5fa";ctx.fillRect(carX,carY,carW,carH);' +
+  'ctx.fillStyle="#3b82f6";ctx.fillRect(carX+5,carY+2,12,8);ctx.fillRect(carX+carW-17,carY+2,12,8);' +
+  'ctx.fillRect(carX+5,carY+carH-10,12,8);ctx.fillRect(carX+carW-17,carY+carH-10,12,8);';
+
+var DRAW_OBS = 'ctx.fillStyle="#f43f5e";for(let i=0;i<obs.length;i++){ctx.fillRect(obs[i].x,obs[i].y,obs[i].w,obs[i].h)}';
+
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";' +
+  'ctx.fillText("Speed: "+Math.round(carSpeed*10),10,24);' +
+  'ctx.fillText("Lap: "+lap,10,48);' +
+  'ctx.textAlign="right";ctx.fillText("Time: "+(lapTimer/60).toFixed(1)+"s",590,24);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+/* ===================================================
+   CW_CONFIG - Godot Racing steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-godot-racing-canvas',
+  downloadName: 'my-godot-racing.html',
+
+  hints: [
+    'A blue car on a grey road with lane markings',
+    'The car accelerates forward and steers left/right',
+    'Yellow lane dashes scroll down to show movement',
+    'Red obstacles appear and scroll toward the car',
+    'Hitting an obstacle slows the car down',
+    'Lap timer tracks time with a best-lap display'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + KEYS +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_ROAD + DRAW_CAR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + KEYS +
+        'function loop(){' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));' +
+        'carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
+        DRAW_ROAD + DRAW_CAR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + KEYS +
+        'function loop(){' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;' +
+        'if(downHeld)carSpeed-=0.1;' +
+        'carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
+        'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_ROAD + DRAW_CAR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + OBS_VARS + KEYS +
+        'function loop(){' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;' +
+        'if(downHeld)carSpeed-=0.1;' +
+        'carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
+        'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));' +
+        'roadOffset+=carSpeed;' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_ROAD + DRAW_CAR + DRAW_OBS +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + OBS_VARS + KEYS +
+        'function loop(){' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;' +
+        'if(downHeld)carSpeed-=0.1;' +
+        'carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
+        'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));' +
+        'roadOffset+=carSpeed;' +
+        'for(var i=0;i<obs.length;i++){obs[i].y+=carSpeed;' +
+        'if(obs[i].y>420){obs[i].y=-60;obs[i].x=220+Math.floor(Math.random()*160)}}' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        DRAW_ROAD + DRAW_CAR + DRAW_OBS +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + CAR_VARS + ROAD_VARS + OBS_VARS + LAP_VARS + STATE_VARS + KEYS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){carSpeed=0;distance=0;lap=0;lapTimer=0;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;' +
+        'if(downHeld)carSpeed-=0.1;' +
+        'carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
+        'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
+        'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));' +
+        'roadOffset+=carSpeed;distance+=carSpeed;lapTimer++;' +
+        'for(var i=0;i<obs.length;i++){obs[i].y+=carSpeed;' +
+        'if(obs[i].y>420){obs[i].y=-60;obs[i].x=220+Math.floor(Math.random()*160)}' +
+        'if(carX<obs[i].x+obs[i].w&&carX+carW>obs[i].x&&carY<obs[i].y+obs[i].h&&carY+carH>obs[i].y){carSpeed*=0.3;obs[i].y=420}}' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_ROAD + DRAW_CAR + DRAW_OBS + DRAW_HUD +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("RACE COMPLETE!",300,180);ctx.font="20px monospace";' +
+        'ctx.fillText("Best Lap: "+(bestTime===Infinity?"--":(bestTime/60).toFixed(1)+"s"),300,220);' +
+        'ctx.fillText("Press R to race again",300,260)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Car & Road',
+      goal: 'Draw a blue car on a grey road with lane markings.',
+      points: [
+        'The canvas is 600x400 pixels with a dark background',
+        'The road is a 200px wide grey strip centred at x=200',
+        'The car is a blue rectangle: 60 wide, 40 tall, starting at x=270',
+        'In Godot you would use a Sprite2D node for the car'
+      ],
+      challenge: '\ud83e\udd16 Set the car position and road dimensions:',
+      starter: '# Set the car starting position\nvar car_x = ___\nvar car_y = 320\nvar car_w = ___\nvar car_h = 40',
+      solution: '# Set the car starting position\nvar car_x = 270\nvar car_y = 320\nvar car_w = 60\nvar car_h = 40',
+      checks: ['270', '320', '60', '40'],
+      height: 120,
+      fills: {
+        text: 'The car starts at x = ___ to sit on the road. The road is ___ pixels wide.',
+        answers: ['270', '200']
+      },
+      quiz: {
+        question: 'Why is the road narrower than the canvas?',
+        options: [
+          'It is a bug in the code',
+          'The dark sides act as boundaries - driving off the road should feel wrong, adding challenge',
+          'Wider roads use too much memory'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Acceleration & Steering',
+      goal: 'Make the car accelerate with Up, brake with Down, and steer with Left/Right.',
+      points: [
+        'In Godot: <code>Input.is_action_pressed("ui_up")</code> checks held keys',
+        'Acceleration adds 0.15 to speed each frame; releasing lets friction slow it',
+        'Steering moves the car 3 pixels left or right per frame',
+        '<code>clamp(car_x, road_x, road_x + lane_w - car_w)</code> keeps the car on the road'
+      ],
+      challenge: '\ud83e\udd16 Write the acceleration and steering:',
+      starter: '# Accelerate and brake\nif Input.is_action_pressed("ui_up"):\n    car_speed += ___\nif Input.is_action_pressed("ui_down"):\n    car_speed -= 0.1\n\n# Steer left and right\nif Input.is_action_pressed("ui_left"):\n    car_x -= ___\nif Input.is_action_pressed("ui_right"):\n    car_x += ___',
+      solution: '# Accelerate and brake\nif Input.is_action_pressed("ui_up"):\n    car_speed += 0.15\nif Input.is_action_pressed("ui_down"):\n    car_speed -= 0.1\n\n# Steer left and right\nif Input.is_action_pressed("ui_left"):\n    car_x -= 3\nif Input.is_action_pressed("ui_right"):\n    car_x += 3',
+      checks: ['is_action_pressed', 'car_speed', 'car_x'],
+      height: 200,
+      fills: {
+        text: 'The car accelerates by ___ per frame. Steering moves ___ pixels per frame for responsive control.',
+        answers: ['0.15', '3']
+      },
+      quiz: {
+        question: 'Why use gradual acceleration instead of instant max speed?',
+        options: [
+          'Instant speed would crash the canvas',
+          'Ramping up speed feels physical and gives the player a sense of weight and momentum',
+          'Godot requires gradual changes'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Scrolling Road',
+      goal: 'Make the lane dashes scroll to create the illusion of forward movement.',
+      points: [
+        'The road itself never moves - the dashes scroll by offsetting their draw position',
+        '<code>road_offset += car_speed</code> increases the dash offset each frame',
+        'This is a parallax trick: move the markings, not the camera',
+        'In Godot you would use a ParallaxBackground node for this effect'
+      ],
+      challenge: '\ud83e\udd16 Update the road scroll offset:',
+      starter: '# Scroll the road markings\nroad_offset += ___\n\n# The offset wraps so dashes repeat\nif road_offset > 40:\n    road_offset -= ___',
+      solution: '# Scroll the road markings\nroad_offset += car_speed\n\n# The offset wraps so dashes repeat\nif road_offset > 40:\n    road_offset -= 40',
+      checks: ['road_offset', 'car_speed', '40'],
+      height: 120,
+      fills: {
+        text: 'The scroll offset grows by ___ each frame. This parallax trick makes stationary dashes look like ___.',
+        answers: ['car_speed', 'movement']
+      },
+      quiz: {
+        question: 'What is the parallax scrolling trick?',
+        options: [
+          'Moving the player very fast',
+          'Moving background elements at different speeds to create depth illusion without actually moving the camera',
+          'Drawing more pixels per frame'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Obstacles',
+      goal: 'Spawn red obstacles that scroll toward the car as it drives.',
+      points: [
+        'Obstacles start above the screen and move down by car_speed each frame',
+        'When an obstacle passes below the screen, it resets to a random x above',
+        'Three obstacles cycle continuously for endless challenge',
+        'In Godot you would instance obstacle scenes from a PackedScene'
+      ],
+      challenge: '\ud83e\udd16 Move obstacles and recycle them:',
+      starter: '# Move each obstacle toward the car\nfor i in range(3):\n    obs[i].y += ___\n    # Recycle off-screen obstacles\n    if obs[i].y > ___:\n        obs[i].y = -60\n        obs[i].x = 220 + randi() % 160',
+      solution: '# Move each obstacle toward the car\nfor i in range(3):\n    obs[i].y += car_speed\n    # Recycle off-screen obstacles\n    if obs[i].y > 420:\n        obs[i].y = -60\n        obs[i].x = 220 + randi() % 160',
+      checks: ['car_speed', '420', 'randi'],
+      height: 180,
+      fills: {
+        text: 'Obstacles scroll at ___ speed so they match the road. Recycling obstacles off-screen avoids creating ___ objects.',
+        answers: ['car_speed', 'new']
+      },
+      quiz: {
+        question: 'Why recycle obstacles instead of creating new ones?',
+        options: [
+          'GDScript cannot create objects',
+          'Reusing existing objects avoids memory allocation overhead - this is called object pooling',
+          'New obstacles would be the same colour'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Collision Detection',
+      goal: 'Detect when the car hits an obstacle and slow it down.',
+      points: [
+        'AABB collision: two rectangles overlap when all four edge checks pass',
+        'On hit: multiply speed by 0.3 for a dramatic slowdown',
+        'Move the obstacle off-screen after a hit so it does not multi-trigger',
+        'In Godot you would use Area2D with a CollisionShape2D'
+      ],
+      challenge: '\ud83e\udd16 Write the collision check:',
+      starter: '# Check each obstacle for collision\nfor i in range(3):\n    if car_x < obs[i].x + obs[i].w and car_x + car_w > obs[i].x and car_y < obs[i].y + obs[i].h and car_y + ___ > obs[i].y:\n        car_speed *= ___\n        obs[i].y = 420',
+      solution: '# Check each obstacle for collision\nfor i in range(3):\n    if car_x < obs[i].x + obs[i].w and car_x + car_w > obs[i].x and car_y < obs[i].y + obs[i].h and car_y + car_h > obs[i].y:\n        car_speed *= 0.3\n        obs[i].y = 420',
+      checks: ['car_h', 'car_speed', '0.3', '420'],
+      height: 140,
+      fills: {
+        text: 'AABB checks ___ edges of both rectangles. The speed penalty of ___ makes collisions feel punishing.',
+        answers: ['four', '0.3']
+      },
+      quiz: {
+        question: 'Why multiply speed by 0.3 instead of setting it to zero?',
+        options: [
+          'Zero speed crashes the engine',
+          'A dramatic slowdown feels like impact while keeping the player in motion - a full stop would feel like a freeze bug',
+          'Multiplication is faster than assignment'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Lap Timer & Best Time',
+      goal: 'Track distance for laps and record the best lap time.',
+      points: [
+        'Distance accumulates each frame: <code>distance += car_speed</code>',
+        'When distance exceeds lap_length (3000), a lap completes',
+        'Record lap time if it beats the best, then reset the timer',
+        'After 3 laps the race ends - press R to restart'
+      ],
+      challenge: '\ud83e\udd16 Write the lap tracking logic:',
+      starter: '# Track distance and laps\ndistance += car_speed\nif distance >= ___:\n    lap += 1\n    distance = 0\n    if lap_timer < best_time:\n        best_time = ___\n    lap_timer = 0\n    if lap >= ___:\n        game_state = "over"',
+      solution: '# Track distance and laps\ndistance += car_speed\nif distance >= lap_length:\n    lap += 1\n    distance = 0\n    if lap_timer < best_time:\n        best_time = lap_timer\n    lap_timer = 0\n    if lap >= 3:\n        game_state = "over"',
+      checks: ['lap_length', 'best_time', 'lap_timer', '3'],
+      height: 200,
+      fills: {
+        text: 'A lap completes every ___ distance units. The race ends after ___ laps.',
+        answers: ['3000', '3']
+      },
+      quiz: {
+        question: 'Why track best time instead of total time?',
+        options: [
+          'Total time is too large to store',
+          'Best lap time rewards consistency and improvement - players chase their own record, adding replay value',
+          'Godot only supports one timer'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++ Platformer Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>C++ Platformer Build Canvas <span class="cw-lang-tag">⚙️ C++</span></h1>
+  <p>Write C++ game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your C++ Platformer game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">An orange player standing on a green ground platform</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   C++-to-JS transpiler (light transform so C++
+   syntax runs in the canvas iframe)
+   =================================================== */
+function cppToJs(code) {
+  return code
+    .replace(/\b(int|float|double|bool|char|auto|unsigned|long)\s+/g, 'let ')
+    .replace(/\bconst\s+let\s+/g, 'const ')
+    .replace(/\bstd::string\s+/g, 'let ')
+    .replace(/\bstd::cout\s*<<\s*/g, 'console.log(')
+    .replace(/\bstd::endl/g, '"\\n")')
+    .replace(/\bstd::abs\(/g, 'Math.abs(')
+    .replace(/\bstd::max\(/g, 'Math.max(')
+    .replace(/\bstd::min\(/g, 'Math.min(')
+    .replace(/\.f\b/g, '')
+    .replace(/\bfor\s*\(\s*let\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $1 of $2)')
+    .replace(/\.size\(\)/g, '.length')
+    .replace(/\.push_back\(/g, '.push(');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (C++ Platformer)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#191e3c;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PLAYER_VARS = 'let px=80,py=340,pw=30,ph=36,pvx=0,pvy=0,onGround=false;';
+
+var GRAVITY = 'const GRAV=1200,JUMP_VEL=-460,MOVE_SPEED=220;';
+
+var PLATFORMS = 'const platforms=[{x:0,y:380,w:600,h:20},{x:120,y:300,w:100,h:14},{x:300,y:240,w:120,h:14},{x:480,y:180,w:100,h:14},{x:200,y:140,w:100,h:14},{x:50,y:80,w:120,h:14}];';
+
+var COINS = 'let coins=[{x:155,y:274,s:14},{x:345,y:214,s:14},{x:515,y:154,s:14},{x:235,y:114,s:14},{x:95,y:54,s:14}];';
+
+var SCORE_VARS = 'let score=0;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,spaceHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="Space")spaceHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="Space")spaceHeld=false});';
+
+var MOVE_PLAYER = 'pvx=0;if(leftHeld)pvx=-MOVE_SPEED;if(rightHeld)pvx=MOVE_SPEED;';
+
+var APPLY_GRAVITY = 'pvy+=GRAV/60;py+=pvy/60;px+=pvx/60;';
+
+var CLAMP_X = 'if(px<0)px=0;if(px+pw>600)px=600-pw;';
+
+var GROUND_CHECK = 'onGround=false;for(var i=0;i<platforms.length;i++){var p=platforms[i];if(px+pw>p.x&&px<p.x+p.w&&py+ph>=p.y&&py+ph<=p.y+p.h+pvy/60+2&&pvy>=0){py=p.y-ph;pvy=0;onGround=true;}}';
+
+var JUMP_LOGIC = 'if(spaceHeld&&onGround){pvy=JUMP_VEL;spaceHeld=false;}';
+
+var DRAW_BG = 'ctx.fillStyle="#191e3c";ctx.fillRect(0,0,600,400);';
+
+var DRAW_PLATFORMS = 'ctx.fillStyle="#06d6a0";for(var i=0;i<platforms.length;i++){var p=platforms[i];ctx.fillRect(p.x,p.y,p.w,p.h);}';
+
+var DRAW_PLAYER = 'ctx.fillStyle="#ff7700";ctx.fillRect(px,py,pw,ph);';
+
+var DRAW_COINS = 'ctx.fillStyle="#ffd166";for(var i=0;i<coins.length;i++){var c=coins[i];ctx.fillRect(c.x,c.y,c.s,c.s);}';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,16,30);';
+
+var COIN_COLLECT = 'for(var i=coins.length-1;i>=0;i--){var c=coins[i];if(px+pw>c.x&&px<c.x+c.s&&py+ph>c.y&&py<c.y+c.s){coins.splice(i,1);score+=10;}}';
+
+var RESPAWN = 'if(py>420){px=80;py=340;pvy=0;}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - C++ Platformer steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-cpp-platformer-canvas',
+  downloadName: 'my-cpp-platformer.html',
+
+  hints: [
+    'An orange player standing on a green ground platform',
+    'The player slides left and right, gravity pulls it down',
+    'Press Space to jump up from the ground',
+    'Floating green platforms the player can land on',
+    'Gold coins appear above platforms with a score counter',
+    'Collect all coins to win, fall off to respawn'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        CLAMP_X +
+        GROUND_CHECK +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
+        GROUND_CHECK +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        JUMP_LOGIC + RESPAWN +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + COINS + SCORE_VARS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
+        GROUND_CHECK + JUMP_LOGIC + RESPAWN +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER + DRAW_COINS + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + COINS + SCORE_VARS + STATE_VARS + KEYS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="won"){score=0;px=80;py=340;pvy=0;pvx=0;coins=[{x:155,y:274,s:14},{x:345,y:214,s:14},{x:515,y:154,s:14},{x:235,y:114,s:14},{x:95,y:54,s:14}];gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
+        GROUND_CHECK + JUMP_LOGIC + RESPAWN +
+        COIN_COLLECT +
+        'try{' + cppToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER + DRAW_COINS + DRAW_SCORE +
+        'if(gameState==="won"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("YOU WIN!",300,180);' +
+        'ctx.font="18px monospace";ctx.fillText("Score: "+score,300,215);' +
+        'ctx.fillText("Press R to play again",300,245)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Player & Ground',
+      goal: 'Draw an orange player rectangle standing on a green ground platform.',
+      points: [
+        'The canvas is 600×400 pixels with a dark blue background',
+        'The ground platform spans the full width at y=380, 600 wide and 20 tall, drawn in green (#06d6a0)',
+        'The player is an orange rectangle (#ff7700) at position (80, 340), 30 wide and 36 tall',
+        'In real C++ you would use <code>sf::RectangleShape</code> for both  -  here the canvas engine draws them for you'
+      ],
+      challenge: '⚙️ Set the player’s starting position and size:',
+      starter: '// Set the player starting position\nfloat px = ___;\nfloat py = ___;\n\n// Player dimensions\nint pw = 30;\nint ph = ___;',
+      solution: '// Set the player starting position\nfloat px = 80;\nfloat py = 340;\n\n// Player dimensions\nint pw = 30;\nint ph = 36;',
+      checks: ['80', '340', '36'],
+      height: 160,
+      fills: {
+        text: 'The player starts at x=80, y=___ so it sits just above the ground platform at y=380. The player is ___ pixels tall.',
+        answers: ['340', '36']
+      },
+      quiz: {
+        question: 'Why is the player’s y position 340 when the ground is at 380?',
+        options: [
+          'It is a random number',
+          'Ground y (380) minus player height (36) ≈ 344, so the player’s feet touch the ground  -  we use 340 for a small gap',
+          'The player floats above the ground by design'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Movement & Gravity',
+      goal: 'Move the player left and right with arrow keys while gravity pulls it down each frame.',
+      points: [
+        'Each frame: add gravity to vertical velocity <code>pvy += GRAV / 60</code>, then move the player by velocity / 60',
+        'Left and right arrows set horizontal velocity to ±220 px/sec',
+        'In real C++ you would multiply by <code>dt</code> (delta time)  -  here we divide by 60 for a fixed 60 fps timestep',
+        'Clamp <code>px</code> between 0 and 570 so the player stays on screen'
+      ],
+      challenge: '⚙️ Write gravity and movement each frame:',
+      starter: '// Apply gravity each frame\npvy += ___ / 60;\n\n// Move the player\npy += pvy / 60;\npx += ___ / 60;\n\n// Clamp to screen\nif (px < 0) px = 0;\nif (px + pw > 600) px = 600 - ___;',
+      solution: '// Apply gravity each frame\npvy += GRAV / 60;\n\n// Move the player\npy += pvy / 60;\npx += pvx / 60;\n\n// Clamp to screen\nif (px < 0) px = 0;\nif (px + pw > 600) px = 600 - pw;',
+      checks: ['grav', 'pvx', 'pw'],
+      height: 220,
+      fills: {
+        text: 'Gravity is a constant acceleration of ___ px/sec². Dividing by 60 converts per-second values to per-___ values.',
+        answers: ['1200', 'frame']
+      },
+      quiz: {
+        question: 'Why divide velocity by 60 instead of using it directly?',
+        options: [
+          'To make the game slower',
+          'Velocity is in pixels per SECOND but the loop runs 60 times per second  -  dividing converts to pixels per frame',
+          'It prevents integer overflow'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Jumping',
+      goal: 'Press Space to jump, but only when standing on the ground.',
+      points: [
+        'Jump: set <code>pvy = JUMP_VEL</code> (−460)  -  negative because up is negative y on canvas',
+        'Only allow jumping when <code>onGround</code> is true, otherwise the player could fly',
+        'After jumping, set <code>spaceHeld = false</code> to consume the input so holding Space doesn’t re-jump',
+        'In real C++ you would check <code>sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)</code> with a flag'
+      ],
+      challenge: '⚙️ Write the jump logic:',
+      starter: '// Jump when Space pressed and on ground\nif (spaceHeld && ___) {\n    pvy = ___;\n    spaceHeld = ___;\n}',
+      solution: '// Jump when Space pressed and on ground\nif (spaceHeld && onGround) {\n    pvy = JUMP_VEL;\n    spaceHeld = false;\n}',
+      checks: ['onground', 'jump_vel', 'false'],
+      height: 150,
+      fills: {
+        text: 'The jump velocity is ___ (negative means upward). Setting spaceHeld to false after jumping prevents ___ jumps.',
+        answers: ['-460', 'double']
+      },
+      quiz: {
+        question: 'Why must we check onGround before allowing a jump?',
+        options: [
+          'To save CPU time',
+          'Without the check the player could press Space mid-air and jump again infinitely  -  flying instead of jumping',
+          'The keyboard would break'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Platforms & Landing',
+      goal: 'Add floating platforms and detect when the player lands on them from above.',
+      points: [
+        'Each platform is an object with x, y, w, h  -  the ground is just the first platform in the array',
+        'Landing check: player overlaps platform horizontally AND player bottom reaches platform top AND player is falling (pvy ≥ 0)',
+        'On landing: snap the player on top (<code>py = platform.y - ph</code>), zero vertical velocity, set <code>onGround = true</code>',
+        'The <code>pvy >= 0</code> check lets the player jump UP through platforms  -  a classic one-way platform rule'
+      ],
+      challenge: '⚙️ Write the platform collision loop:',
+      starter: '// Check each platform for landing\nonGround = false;\nfor (int i = 0; i < platforms.size(); i++) {\n    auto p = platforms[i];\n    if (px + pw > p.x && px < p.x + p.w &&\n        py + ph >= p.y && py + ph <= p.y + p.h + 4 &&\n        pvy >= ___) {\n        py = p.y - ___;\n        pvy = ___;\n        onGround = true;\n    }\n}',
+      solution: '// Check each platform for landing\nonGround = false;\nfor (int i = 0; i < platforms.size(); i++) {\n    auto p = platforms[i];\n    if (px + pw > p.x && px < p.x + p.w &&\n        py + ph >= p.y && py + ph <= p.y + p.h + 4 &&\n        pvy >= 0) {\n        py = p.y - ph;\n        pvy = 0;\n        onGround = true;\n    }\n}',
+      checks: ['onground', 'pvy', 'p.y', 'ph'],
+      height: 280,
+      fills: {
+        text: 'Setting onGround to ___ at the start of each frame means the player is airborne unless a platform proves otherwise. The check <code>pvy >= 0</code> means landing only works while ___.',
+        answers: ['false', 'falling']
+      },
+      quiz: {
+        question: 'What does the pvy >= 0 check achieve for gameplay?',
+        options: [
+          'It makes the game harder',
+          'It creates one-way platforms  -  the player can jump up through them but lands on top when falling',
+          'It prevents horizontal movement'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Coins & Score',
+      goal: 'Place collectible gold coins above platforms and track the score.',
+      points: [
+        'Coins are small gold squares (14×14) placed above each floating platform',
+        'Collision: if the player rectangle overlaps a coin rectangle, remove the coin and add 10 points',
+        'Loop backwards when removing items from an array to avoid skipping elements',
+        'In real C++ you would use <code>std::erase_if</code> or the erase-remove idiom on a <code>std::vector</code>'
+      ],
+      challenge: '⚙️ Write the coin collection logic:',
+      starter: '// Collect coins the player touches\nfor (int i = coins.size() - 1; i >= 0; i--) {\n    auto c = coins[i];\n    if (px + pw > c.x && px < c.x + c.s &&\n        py + ph > c.y && py < c.y + c.s) {\n        coins.erase(i);\n        score += ___;\n    }\n}',
+      solution: '// Collect coins the player touches\nfor (int i = coins.size() - 1; i >= 0; i--) {\n    auto c = coins[i];\n    if (px + pw > c.x && px < c.x + c.s &&\n        py + ph > c.y && py < c.y + c.s) {\n        coins.erase(i);\n        score += 10;\n    }\n}',
+      checks: ['coins', 'score', '10'],
+      height: 220,
+      fills: {
+        text: 'Each coin is worth ___ points. We loop backwards so that removing a coin does not ___ the next index.',
+        answers: ['10', 'skip']
+      },
+      quiz: {
+        question: 'Why loop backwards (from length−1 down to 0) when removing items?',
+        options: [
+          'It is faster',
+          'Removing an item shifts later items down  -  looping forward would skip the next item after a removal',
+          'Arrays must be read in reverse'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Win & Restart',
+      goal: 'Win when all coins are collected. Press R to play again.',
+      points: [
+        'After collecting all coins (<code>coins.size() == 0</code>), set <code>gameState = "won"</code>',
+        'In the won state, display "YOU WIN!" with the final score, and stop updating the player',
+        'Press R to restart: reset position, velocity, refill the coins array, score to 0, state to "play"',
+        'This is the same state-machine pattern you would use with an <code>enum GameState</code> in real C++'
+      ],
+      challenge: '⚙️ Write the win condition and restart check:',
+      starter: '// Win when all coins collected\nif (coins.size() == ___ && gameState == "play") {\n    gameState = "___";\n}\n\n// Fall off the bottom? Respawn\nif (py > ___) {\n    px = 80;\n    py = 340;\n    pvy = 0;\n}',
+      solution: '// Win when all coins collected\nif (coins.size() == 0 && gameState == "play") {\n    gameState = "won";\n}\n\n// Fall off the bottom? Respawn\nif (py > 420) {\n    px = 80;\n    py = 340;\n    pvy = 0;\n}',
+      checks: ['coins', 'won', '420', 'pvy'],
+      height: 240,
+      fills: {
+        text: 'The game is won when the coins array has ___ items left. Falling past y=420 triggers a ___ at the start position.',
+        answers: ['0', 'respawn']
+      },
+      quiz: {
+        question: 'Which pattern from this platformer appears in almost every commercial game?',
+        options: [
+          'The green platforms',
+          'The PLAY / WON state machine and restart loop  -  the same structure controls menus, cutscenes, and game-over screens',
+          'The orange player colour'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My First Defold Game Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(45,212,191,.15);color:#2dd4bf;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>My First Defold Game Build Canvas <span class="cw-lang-tag">&#x1f3ae; Defold</span></h1>
+  <p>Write Defold Lua game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your first Defold game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue catcher at the bottom of a dark screen</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   Defold Lua-to-JS transpiler (light transform so Lua
+   syntax runs in the canvas iframe)
+   =================================================== */
+function defoldToJs(code) {
+  return code
+    .replace(/--(.*)$/gm, '//$1')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bself\.(\w+)/g, 'self_$1')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\.\s*/g, '+ ')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\btable\.insert\s*\(\s*(\w+)\s*,\s*/g, '$1.push(')
+    .replace(/\bmath\.random\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\bmath\.floor\s*\(/g, 'Math.floor(')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (My First Defold Game)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#0f172a;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var CATCHER_VARS = 'let cx=160,cy=365,cw=80,ch=20,cspeed=6;';
+
+var STAR_VARS = 'let sx=Math.floor(Math.random()*360)+20,sy=-20,ss=16,starSpeed=3;';
+
+var SCORE_VARS = 'let score=0;';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var MOVE_CATCHER = 'if(leftHeld)cx-=cspeed;if(rightHeld)cx+=cspeed;cx=Math.max(0,Math.min(400-cw,cx));';
+
+var DRAW_BG = 'ctx.fillStyle="#0f172a";ctx.fillRect(0,0,400,400);';
+
+var DRAW_CATCHER = 'ctx.fillStyle="#3b82f6";ctx.fillRect(cx,cy,cw,ch);';
+
+var DRAW_STAR = 'ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(sx+ss/2,sy+ss/2,ss/2,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 22px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,12,30);';
+
+var STAR_FALL = 'sy+=starSpeed;';
+
+var STAR_RESET = 'function resetStar(){sx=Math.floor(Math.random()*360)+20;sy=-20}';
+
+var STAR_CATCH = 'if(sy+ss>=cy&&sy<=cy+ch&&sx+ss>=cx&&sx<=cx+cw){score++;resetStar()}';
+
+var STAR_MISS = 'if(sy>420){resetStar()}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+/* ===================================================
+   CW_CONFIG - My First Defold Game steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-my-first-defold-canvas',
+  downloadName: 'my-first-defold-game.html',
+
+  hints: [
+    'A blue catcher at the bottom of a dark screen',
+    'The catcher slides left and right with the arrow keys',
+    'A yellow star falls from the top of the screen',
+    'Catching the star scores a point and spawns a new one',
+    'Missed stars simply respawn at the top',
+    'Stars fall faster as your score grows'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + KEYS +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        MOVE_CATCHER +
+        DRAW_BG + DRAW_CATCHER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + KEYS +
+        'function loop(){' +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'cx=Math.max(0,Math.min(400-cw,cx));' +
+        DRAW_BG + DRAW_CATCHER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'if(sy>420)resetStar();' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER + STAR_FALL +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        'if(sy>420)resetStar();' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER + STAR_FALL + STAR_CATCH +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        STAR_MISS +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
+        'try{' + defoldToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Catcher',
+      goal: 'Draw a blue catcher at the bottom of the screen.',
+      points: [
+        'The canvas is 400x400 pixels with a dark background',
+        'The catcher is a blue rectangle: 80 wide, 20 tall, at y=365',
+        'In Defold you would set the sprite width in the .go file - here the canvas stores <code>cx, cy, cw, ch</code>',
+        'The catcher starts centred: x = (400 - 80) / 2 = 160'
+      ],
+      challenge: '🎮 Set the catcher position and size:',
+      starter: '-- Set the catcher starting position\nlocal cx = ___\nlocal cy = 365\nlocal cw = ___\nlocal ch = 20',
+      solution: '-- Set the catcher starting position\nlocal cx = 160\nlocal cy = 365\nlocal cw = 80\nlocal ch = 20',
+      checks: ['160', '365', '80', '20'],
+      height: 120,
+      fills: {
+        text: 'The catcher starts at x = ___ to be centred. Its width of ___ pixels gives enough catching room.',
+        answers: ['160', '80']
+      },
+      quiz: {
+        question: 'Why is the catcher 80 pixels wide on a 400-pixel canvas?',
+        options: [
+          'It is a random nice number',
+          'It is 20% of the canvas - wide enough to catch stars but narrow enough to require aiming',
+          'Wider catchers crash the game'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Keyboard Movement',
+      goal: 'Move the catcher left and right with the arrow keys.',
+      points: [
+        'In Defold you read input via <code>on_input(self, action_id, action)</code> in the script',
+        'Move by <code>cspeed</code> (6) pixels each frame while a key is held',
+        'Clamp so the catcher stays on screen: <code>math.floor</code> is not needed here, just min/max',
+        'Smooth movement comes from checking held keys every frame'
+      ],
+      challenge: '🎮 Write the catcher movement logic:',
+      starter: '-- Move the catcher with arrow keys\nif leftHeld then\n    cx = cx - ___\nend\nif rightHeld then\n    cx = cx + ___\nend',
+      solution: '-- Move the catcher with arrow keys\nif leftHeld then\n    cx = cx - cspeed\nend\nif rightHeld then\n    cx = cx + cspeed\nend',
+      checks: ['leftheld', 'rightheld', 'cspeed'],
+      height: 160,
+      fills: {
+        text: 'The catcher moves ___ pixels per frame. In Defold, input is handled in the ___ callback.',
+        answers: ['6', 'on_input']
+      },
+      quiz: {
+        question: 'In Defold, where do you handle keyboard input?',
+        options: [
+          'In the render script',
+          'In the on_input function of a game object script, after binding the input in game.input_binding',
+          'Input is handled automatically'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Falling Star',
+      goal: 'Spawn a yellow star at a random x position and let it fall.',
+      points: [
+        'The star starts above the screen at <code>sy = -20</code> so it slides in smoothly',
+        'Each frame: <code>sy = sy + starSpeed</code> moves it downward',
+        'In Defold you would use <code>go.set_position()</code> to move the star game object',
+        'When it passes the bottom, reset to the top at a new random x with <code>math.random(20, 360)</code>'
+      ],
+      challenge: '🎮 Write the star falling logic:',
+      starter: '-- Move the star downward\nsy = sy + ___\n\n-- Reset when it falls off screen\nif sy > 420 then\n    sx = math.random(20, 360)\n    sy = ___\nend',
+      solution: '-- Move the star downward\nsy = sy + starSpeed\n\n-- Reset when it falls off screen\nif sy > 420 then\n    sx = math.random(20, 360)\n    sy = -20\nend',
+      checks: ['starspeed', '420', 'math.random'],
+      height: 160,
+      fills: {
+        text: 'The star moves ___ pixels downward each frame. Starting at sy = ___ makes it slide in from above.',
+        answers: ['3', '-20']
+      },
+      quiz: {
+        question: 'In Defold, how do you move a game object each frame?',
+        options: [
+          'Change the sprite directly',
+          'Use go.set_position() in the update() function with a new vmath.vector3 position',
+          'Objects move on their own'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Catching Stars',
+      goal: 'Detect when the star overlaps the catcher and award a point.',
+      points: [
+        'Two rectangles overlap when their edges cross on both axes',
+        'In Defold you might use physics collision or manual distance checks',
+        'On catch: <code>score = score + 1</code> and reset the star to the top',
+        'This AABB collision test is the foundation of 2D game physics'
+      ],
+      challenge: '🎮 Write the catch detection:',
+      starter: '-- Check if star overlaps catcher\nif sy + ss >= ___ and sy <= cy + ch and sx + ss >= ___ and sx <= cx + cw then\n    score = score + 1\n    resetStar()\nend',
+      solution: '-- Check if star overlaps catcher\nif sy + ss >= cy and sy <= cy + ch and sx + ss >= cx and sx <= cx + cw then\n    score = score + 1\n    resetStar()\nend',
+      checks: ['score', 'resetstar', 'cy', 'cx'],
+      height: 140,
+      fills: {
+        text: 'The collision check compares ___ edges of both rectangles. This technique is called ___ collision detection.',
+        answers: ['four', 'AABB']
+      },
+      quiz: {
+        question: 'What does AABB stand for in collision detection?',
+        options: [
+          'Automatic Alignment Boundary Box',
+          'Axis-Aligned Bounding Box - rectangles aligned to the x and y axes',
+          'Advanced Algorithm for Bouncing Balls'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Missed Stars Respawn',
+      goal: 'When a star falls off the bottom, respawn it with no penalty.',
+      points: [
+        'This is a beginner-friendly game - no lives, no game over',
+        'When <code>sy > 420</code> (past the bottom), call <code>resetStar()</code>',
+        'The star gets a new random x position and starts at the top again',
+        'Keeping the game forgiving helps new players build confidence'
+      ],
+      challenge: '🎮 Write the miss respawn logic:',
+      starter: '-- Star fell off the bottom\nif sy > ___ then\n    resetStar()\nend',
+      solution: '-- Star fell off the bottom\nif sy > 420 then\n    resetStar()\nend',
+      checks: ['420', 'resetstar'],
+      height: 100,
+      fills: {
+        text: 'The star respawns when it passes y = ___. This game has no ___ system to keep it beginner-friendly.',
+        answers: ['420', 'lives']
+      },
+      quiz: {
+        question: 'Why skip a lives system in a first game?',
+        options: [
+          'Lives are impossible to code',
+          'A forgiving game lets beginners focus on learning movement and collision without frustration',
+          'Stars cannot be missed'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Speed Ramp',
+      goal: 'Make stars fall faster as the score grows to add challenge.',
+      points: [
+        'Increase <code>starSpeed</code> based on score: <code>starSpeed = 3 + math.floor(score / 5)</code>',
+        'Cap speed with a max so it stays playable: cap at 8',
+        'In Defold you would adjust the velocity in <code>update()</code> each frame',
+        'This difficulty curve keeps the game interesting as players improve'
+      ],
+      challenge: '🎮 Write the speed ramp:',
+      starter: '-- Increase star speed as score grows\nstarSpeed = 3 + math.floor(score / ___)\nif starSpeed > ___ then\n    starSpeed = ___\nend',
+      solution: '-- Increase star speed as score grows\nstarSpeed = 3 + math.floor(score / 5)\nif starSpeed > 8 then\n    starSpeed = 8\nend',
+      checks: ['starspeed', 'score', '5', '8'],
+      height: 120,
+      fills: {
+        text: 'The star speeds up every ___ points. The cap of ___ pixels per frame keeps it playable.',
+        answers: ['5', '8']
+      },
+      quiz: {
+        question: 'Why add a speed cap instead of letting it grow forever?',
+        options: [
+          'Lua integers overflow at 8',
+          'Without a cap the star moves too fast to see - a speed ceiling keeps the game challenging but fair',
+          'The canvas cannot handle fast objects'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

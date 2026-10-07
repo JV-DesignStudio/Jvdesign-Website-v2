@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PICO-8 Dungeon Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(236,72,153,.15);color:#ec4899;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>PICO-8 Dungeon Build Canvas <span class="cw-lang-tag">&#x1f3ae; PICO-8</span></h1>
+  <p>Write PICO-8 Lua code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your PICO-8 Dungeon game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A blue player square in a dark dungeon room</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function p8ToJs(code) {
+  return code
+    .replace(/--.*$/gm, '')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\./g, '+')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\badd\((\w+),\s*([^)]+)\)/g, '$1.push($2)')
+    .replace(/\bdel\((\w+),\s*([^)]+)\)/g, '$1.splice($1.indexOf($2),1)')
+    .replace(/\brnd\(([^)]*)\)/g, 'Math.random()*($1)')
+    .replace(/\bflr\(/g, 'Math.floor(')
+    .replace(/\bbtn\(0\)/g, 'leftHeld')
+    .replace(/\bbtn\(1\)/g, 'rightHeld')
+    .replace(/\bbtn\(2\)/g, 'upHeld')
+    .replace(/\bbtn\(3\)/g, 'downHeld')
+    .replace(/\bbtn\(4\)/g, 'zHeld')
+    .replace(/\bbtn\(5\)/g, 'xHeld')
+    .replace(/\bbtnp\(0\)/g, 'leftPressed')
+    .replace(/\bbtnp\(1\)/g, 'rightPressed')
+    .replace(/\bbtnp\(2\)/g, 'upPressed')
+    .replace(/\bbtnp\(3\)/g, 'downPressed')
+    .replace(/\bbtnp\(4\)/g, 'zPressed')
+    .replace(/\bbtnp\(5\)/g, 'xPressed')
+    .replace(/\bprint\(([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/g,
+      'ctx.fillStyle=P8PAL[$4]||"#fff";ctx.fillText($1,$2*3,$3*3)')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\bfunction\s+(\w+)\(([^)]*)\)/g, 'function $1($2){')
+    .replace(/\bnot\s+/g, '!')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (PICO-8 Dungeon)
+   =================================================== */
+var S = 3;
+
+var P8PAL = '{0:"#000",1:"#1d2b53",2:"#7e2553",3:"#008751",4:"#ab5236",5:"#5f574f",6:"#c2c3c7",7:"#fff",8:"#ff004d",9:"#ffa300",10:"#ffec27",11:"#00e436",12:"#29adff",13:"#83769c",14:"#ff77a8",15:"#ffccaa"}';
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#000;margin:0;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="384" height="384"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");ctx.font="bold 12px monospace";const S=3,P8PAL=' + P8PAL + ';';
+
+var PLAYER_VARS = 'let px=60,py=60,pw=8,ph=8,pspd=1.5,hp=3,maxHp=3,atkTimer=0,atkDir=1;';
+
+var WALLS = 'var walls=[{x:0,y:0,w:128,h:8},{x:0,y:120,w:128,h:8},{x:0,y:0,w:8,h:128},{x:120,y:0,w:8,h:128},' +
+  '{x:40,y:8,w:8,h:40},{x:80,y:48,w:8,h:40},{x:40,y:88,w:48,h:8}];';
+
+var ENEMIES = 'var enemies=[{x:100,y:30,w:8,h:8,hp:2,dx:0,dy:0.5},{x:30,y:100,w:8,h:8,hp:2,dx:0.5,dy:0}];';
+
+var GEMS = 'var gems=[{x:16,y:16,w:6,h:6,got:false},{x:104,y:104,w:6,h:6,got:false},{x:56,y:56,w:6,h:6,got:false}];';
+
+var SCORE_VARS = 'let score=0,gemsTotal=3;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false,zHeld=false,xHeld=false;' +
+  'let zPressed=false,xPressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'if(e.code==="KeyZ"){zHeld=true;zPressed=true}' +
+    'if(e.code==="KeyX"){xHeld=true;xPressed=true}' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false;' +
+    'if(e.code==="KeyZ")zHeld=false;if(e.code==="KeyX")xHeld=false});';
+
+var CLEAR_PRESSED = 'zPressed=false;xPressed=false;';
+
+var MOVE_PLAYER = 'var mx=0,my=0;if(leftHeld){mx=-pspd;atkDir=0}if(rightHeld){mx=pspd;atkDir=1}if(upHeld){my=-pspd;atkDir=2}if(downHeld){my=pspd;atkDir=3}';
+
+var COLLIDE_WALLS = 'px+=mx;for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+ph>w.y&&py<w.y+w.h){if(mx>0)px=w.x-pw;if(mx<0)px=w.x+w.w}}' +
+  'py+=my;for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+ph>w.y&&py<w.y+w.h){if(my>0)py=w.y-ph;if(my<0)py=w.y+w.h}}';
+
+var MOVE_ENEMIES = 'for(var ei=0;ei<enemies.length;ei++){var en=enemies[ei];en.x+=en.dx;en.y+=en.dy;' +
+  'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(en.x+en.w>w.x&&en.x<w.x+w.w&&en.y+en.h>w.y&&en.y<w.y+w.h){en.dx=-en.dx;en.dy=-en.dy;en.x+=en.dx*2;en.y+=en.dy*2;break}}}';
+
+var ENEMY_TOUCH = 'for(var ei=0;ei<enemies.length;ei++){var en=enemies[ei];if(en.hp>0&&px+pw>en.x&&px<en.x+en.w&&py+ph>en.y&&py<en.y+en.h){hp--;px=60;py=60;break}}';
+
+var DRAW_BG = 'ctx.fillStyle=P8PAL[0];ctx.fillRect(0,0,384,384);';
+
+var DRAW_FLOOR = 'ctx.fillStyle="#0d1117";ctx.fillRect(8*S,8*S,112*S,112*S);';
+
+var DRAW_WALLS = 'ctx.fillStyle=P8PAL[5];for(var wi=0;wi<walls.length;wi++){var w=walls[wi];ctx.fillRect(w.x*S,w.y*S,w.w*S,w.h*S)}';
+
+var DRAW_PLAYER = 'ctx.fillStyle=P8PAL[12];ctx.fillRect(px*S,py*S,pw*S,ph*S);';
+
+var DRAW_ENEMIES = 'for(var ei=0;ei<enemies.length;ei++){var en=enemies[ei];if(en.hp>0){ctx.fillStyle=P8PAL[8];ctx.fillRect(en.x*S,en.y*S,en.w*S,en.h*S)}}';
+
+var DRAW_GEMS = 'for(var gi=0;gi<gems.length;gi++){if(!gems[gi].got){ctx.fillStyle=P8PAL[11];ctx.fillRect(gems[gi].x*S,gems[gi].y*S,gems[gi].w*S,gems[gi].h*S)}}';
+
+var DRAW_HUD = 'ctx.fillStyle=P8PAL[7];ctx.font="bold 12px monospace";ctx.textAlign="left";ctx.fillText("hp "+hp+"/"+maxHp+"  gems "+score+"/"+gemsTotal,6,14);';
+
+var DRAW_ATK = 'if(atkTimer>0){ctx.fillStyle="rgba(255,255,255,0.6)";var ax=px,ay=py;if(atkDir===0)ax-=10;if(atkDir===1)ax+=pw+2;if(atkDir===2)ay-=10;if(atkDir===3)ay+=ph+2;ctx.fillRect(ax*S,ay*S,8*S,8*S)}';
+
+var COLLECT_GEMS = 'for(var gi=0;gi<gems.length;gi++){var g=gems[gi];if(!g.got&&px+pw>g.x&&px<g.x+g.w&&py+ph>g.y&&py<g.y+g.h){g.got=true;score++}}';
+
+var ATTACK = 'if(atkTimer>0)atkTimer--;' +
+  'if(xPressed&&atkTimer===0){atkTimer=10;var ax=px,ay=py;if(atkDir===0)ax-=10;if(atkDir===1)ax+=pw+2;if(atkDir===2)ay-=10;if(atkDir===3)ay+=ph+2;' +
+  'for(var ei=0;ei<enemies.length;ei++){var en=enemies[ei];if(en.hp>0&&ax+8>en.x&&ax<en.x+en.w&&ay+8>en.y&&ay<en.y+en.h){en.hp--}}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-pico8-dungeon-canvas',
+  downloadName: 'my-pico8-dungeon.html',
+
+  hints: [
+    'A blue player in a walled dungeon room',
+    'The player walks in four directions and stops at walls',
+    'Red enemies patrol back and forth inside the dungeon',
+    'Touching an enemy costs HP and resets your position',
+    'Pressing X swings a sword in the direction you face',
+    'Collect all green gems to win'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALLS + KEYS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALLS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        COLLIDE_WALLS +
+        DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALLS + ENEMIES + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_ENEMIES + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALLS + ENEMIES + STATE_VARS + KEYS + CLEAR_PRESSED +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES + ENEMY_TOUCH +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'if(hp<=0)gameState="over"' +
+        '}' + CLEAR_PRESSED +
+        DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
+        'if(gameState==="over"){ctx.fillStyle=P8PAL[8];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("defeated!",64*S,60*S)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALLS + ENEMIES + STATE_VARS + KEYS + CLEAR_PRESSED +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES + ENEMY_TOUCH +
+        ATTACK +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'if(hp<=0)gameState="over"' +
+        '}' + CLEAR_PRESSED +
+        DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATK + DRAW_HUD +
+        'if(gameState==="over"){ctx.fillStyle=P8PAL[8];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("defeated!",64*S,60*S)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + WALLS + ENEMIES + GEMS + SCORE_VARS + STATE_VARS + KEYS + CLEAR_PRESSED +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="over"||gameState==="win")){hp=3;score=0;px=60;py=60;for(var i=0;i<enemies.length;i++){enemies[i].hp=2}for(var i=0;i<gems.length;i++){gems[i].got=false}gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES + ENEMY_TOUCH + ATTACK + COLLECT_GEMS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'if(hp<=0)gameState="over"' +
+        '}' + CLEAR_PRESSED +
+        DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_GEMS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATK + DRAW_HUD +
+        'if(gameState==="over"){ctx.fillStyle=P8PAL[8];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("defeated!",64*S,60*S);ctx.font="12px monospace";ctx.fillText("press r to retry",64*S,72*S)}' +
+        'if(gameState==="win"){ctx.fillStyle=P8PAL[11];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("dungeon cleared!",64*S,60*S);ctx.font="12px monospace";ctx.fillText("press r to replay",64*S,72*S)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Dungeon Room',
+      goal: 'Draw the player in a walled dungeon room.',
+      points: [
+        'The room has walls on all four edges: 8 pixels thick on each side',
+        'Interior walls create corridors and obstacles',
+        'The player is an 8x8 blue square at (60, 60)',
+        'Walls are stored in an array of {x, y, w, h} objects'
+      ],
+      challenge: '🎮 Set the player start position:',
+      starter: '-- player starts in a safe spot\npx = ___\npy = ___\npw = 8\nph = 8',
+      solution: '-- player starts in a safe spot\npx = 60\npy = 60\npw = 8\nph = 8',
+      checks: ['60', '8'],
+      height: 120,
+      fills: {
+        text: 'The dungeon walls are ___ pixels thick. The player is ___ pixels in each dimension.',
+        answers: ['8', '8']
+      },
+      quiz: {
+        question: 'Why are all walls and the player the same 8-pixel size?',
+        options: [
+          'It is a coincidence',
+          'Matching the PICO-8 tile size (8x8) means everything snaps to the sprite grid - standard for tile-based games',
+          'Bigger sizes crash PICO-8'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Four-Way Movement',
+      goal: 'Walk in four directions and collide with walls.',
+      points: [
+        'Check btn(0-3) for left, right, up, down',
+        'Move at 1.5 pixels per frame on each axis',
+        'After moving on x, check walls and push back. Then move on y and check again',
+        'Separating x and y collision prevents corner-sticking'
+      ],
+      challenge: '🎮 Write the movement:',
+      starter: '-- four-way movement\nlocal mx = 0\nlocal my = 0\nif btn(0) then mx = -___ end\nif btn(1) then mx = ___ end\nif btn(2) then my = -___ end\nif btn(3) then my = ___ end',
+      solution: '-- four-way movement\nlocal mx = 0\nlocal my = 0\nif btn(0) then mx = -1.5 end\nif btn(1) then mx = 1.5 end\nif btn(2) then my = -1.5 end\nif btn(3) then my = 1.5 end',
+      checks: ['1.5', 'btn(0)', 'btn(1)', 'btn(2)', 'btn(3)'],
+      height: 180,
+      fills: {
+        text: 'The player moves ___ pixels per frame. Collision is checked on x and y ___.',
+        answers: ['1.5', 'separately']
+      },
+      quiz: {
+        question: 'Why resolve x and y collision separately instead of together?',
+        options: [
+          'Joint resolution can push the player diagonally through corners - separate passes always slide cleanly along walls',
+          'It is faster',
+          'PICO-8 cannot do diagonal movement'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 3,
+      title: 'Patrolling Enemies',
+      goal: 'Add red enemies that bounce between walls.',
+      points: [
+        'Enemies are {x, y, w, h, hp, dx, dy} - dx/dy set their patrol direction',
+        'Each frame: move by dx/dy. When hitting a wall, reverse both dx and dy',
+        'This creates a back-and-forth patrol path automatically',
+        'Colour 8 (red) makes enemies clearly dangerous'
+      ],
+      challenge: '🎮 Write the enemy patrol:',
+      starter: '-- move each enemy\nfor i = 1, #enemies do\n  enemies[i].x += enemies[i].___\n  enemies[i].y += enemies[i].___\n  -- reverse on wall hit (handled by engine)\nend',
+      solution: '-- move each enemy\nfor i = 1, #enemies do\n  enemies[i].x += enemies[i].dx\n  enemies[i].y += enemies[i].dy\n  -- reverse on wall hit (handled by engine)\nend',
+      checks: ['dx', 'dy', 'enemies'],
+      height: 140,
+      fills: {
+        text: 'Enemies reverse direction when they hit a ___. Each enemy has ___ hit points.',
+        answers: ['wall', '2']
+      },
+      quiz: {
+        question: 'Why reverse both dx and dy on wall collision?',
+        options: [
+          'It makes them faster',
+          'Reversing both creates a clean bounce-back along the same path - reversing only one would send them at an angle through walls',
+          'PICO-8 requires it'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Damage & HP',
+      goal: 'Touching an enemy costs 1 HP and resets the player position.',
+      points: [
+        'Check overlap between player and each living enemy (hp > 0)',
+        'On touch: <code>hp -= 1</code> and teleport player back to (60, 60)',
+        'When hp reaches 0: <code>gameState = "over"</code>',
+        'Display HP in the top-left HUD'
+      ],
+      challenge: '🎮 Write the enemy damage:',
+      starter: '-- check enemy contact\nfor i = 1, #enemies do\n  if enemies[i].hp > 0 then\n    -- overlap check (handled by engine)\n    -- on hit:\n    hp -= ___\n    if hp <= ___ then\n      gameState = "over"\n    end\n  end\nend',
+      solution: '-- check enemy contact\nfor i = 1, #enemies do\n  if enemies[i].hp > 0 then\n    -- overlap check (handled by engine)\n    -- on hit:\n    hp -= 1\n    if hp <= 0 then\n      gameState = "over"\n    end\n  end\nend',
+      checks: ['hp', '0', 'over'],
+      height: 180,
+      fills: {
+        text: 'The player starts with ___ HP. Touching an enemy costs ___ HP and resets position.',
+        answers: ['3', '1']
+      },
+      quiz: {
+        question: 'Why reset the player position on hit instead of just subtracting HP?',
+        options: [
+          'It looks cooler',
+          'Without a reset the player stays overlapping the enemy and loses all HP in a few frames - the reset gives breathing room',
+          'PICO-8 forces position resets'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Sword Attack',
+      goal: 'Press X to swing a sword in the direction you face.',
+      points: [
+        'Track the last direction with atkDir: 0=left, 1=right, 2=up, 3=down',
+        'On X press: place an 8x8 attack hitbox adjacent to the player in that direction',
+        'If the hitbox overlaps an enemy: <code>enemy.hp -= 1</code>',
+        'A cooldown timer (atkTimer) prevents mashing - 10 frames between swings'
+      ],
+      challenge: '🎮 Write the attack:',
+      starter: '-- sword attack\nif btnp(5) and atkTimer == 0 then\n  atkTimer = ___\n  -- check enemies in swing area\n  -- on hit: enemy hp -= ___\nend\nif atkTimer > 0 then\n  atkTimer -= 1\nend',
+      solution: '-- sword attack\nif btnp(5) and atkTimer == 0 then\n  atkTimer = 10\n  -- check enemies in swing area\n  -- on hit: enemy hp -= 1\nend\nif atkTimer > 0 then\n  atkTimer -= 1\nend',
+      checks: ['10', 'atktimer', 'btnp(5)'],
+      height: 160,
+      fills: {
+        text: 'The attack cooldown lasts ___ frames. The sword hitbox is placed ___ to the player.',
+        answers: ['10', 'adjacent']
+      },
+      quiz: {
+        question: 'Why use a cooldown timer for the sword?',
+        options: [
+          'Without a cooldown the player could mash X and instantly kill any enemy on contact - the timer adds rhythm and risk',
+          'The sword needs time to render',
+          'PICO-8 buttons do not repeat'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 6,
+      title: 'Gems & Victory',
+      goal: 'Collect green gems to clear the dungeon.',
+      points: [
+        'Gems work like coins: {x, y, w, h, got} with overlap detection',
+        'Collect all gems to win: <code>if score >= gemsTotal then gameState = "win" end</code>',
+        'R restarts: reset HP, score, enemy HP, gem flags, and player position',
+        'The dungeon pattern (explore, fight, collect) is the core of games from Zelda to Hades'
+      ],
+      challenge: '🎮 Write the win check:',
+      starter: '-- check for victory\nif score >= ___ then\n  gameState = "___"\nend',
+      solution: '-- check for victory\nif score >= gemsTotal then\n  gameState = "win"\nend',
+      checks: ['gemstotal', 'win'],
+      height: 100,
+      fills: {
+        text: 'There are ___ gems to collect. The explore-fight-collect loop is called the ___ pattern.',
+        answers: ['3', 'dungeon']
+      },
+      quiz: {
+        question: 'What makes a dungeon game compelling beyond just collecting items?',
+        options: [
+          'More pixels',
+          'Risk-reward tension: enemies guard the gems, so the player must decide when to fight and when to dodge',
+          'Bigger rooms'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

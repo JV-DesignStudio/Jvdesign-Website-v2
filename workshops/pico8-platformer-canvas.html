@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PICO-8 Platformer Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(236,72,153,.15);color:#ec4899;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>PICO-8 Platformer Build Canvas <span class="cw-lang-tag">&#x1f3ae; PICO-8</span></h1>
+  <p>Write PICO-8 Lua code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your PICO-8 Platformer game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A small player square on a ground platform</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function p8ToJs(code) {
+  return code
+    .replace(/--.*$/gm, '')
+    .replace(/\blocal\s+/g, 'let ')
+    .replace(/\bthen\b/g, '{')
+    .replace(/\belseif\b/g, '} else if')
+    .replace(/\belse\b(?!\s*if)/g, '} else {')
+    .replace(/\bend\b/g, '}')
+    .replace(/~=/g, '!==')
+    .replace(/\.\./g, '+')
+    .replace(/#(\w+)/g, '$1.length')
+    .replace(/\badd\((\w+),\s*([^)]+)\)/g, '$1.push($2)')
+    .replace(/\bdel\((\w+),\s*([^)]+)\)/g, '$1.splice($1.indexOf($2),1)')
+    .replace(/\brnd\(([^)]*)\)/g, 'Math.random()*($1)')
+    .replace(/\bflr\(/g, 'Math.floor(')
+    .replace(/\bbtn\(0\)/g, 'leftHeld')
+    .replace(/\bbtn\(1\)/g, 'rightHeld')
+    .replace(/\bbtn\(2\)/g, 'upHeld')
+    .replace(/\bbtn\(3\)/g, 'downHeld')
+    .replace(/\bbtn\(4\)/g, 'zHeld')
+    .replace(/\bbtn\(5\)/g, 'xHeld')
+    .replace(/\bbtnp\(0\)/g, 'leftPressed')
+    .replace(/\bbtnp\(1\)/g, 'rightPressed')
+    .replace(/\bbtnp\(2\)/g, 'upPressed')
+    .replace(/\bbtnp\(3\)/g, 'downPressed')
+    .replace(/\bbtnp\(4\)/g, 'zPressed')
+    .replace(/\bbtnp\(5\)/g, 'xPressed')
+    .replace(/\bprint\(([^,]+),\s*([^,]+),\s*([^,]+),\s*([^)]+)\)/g,
+      'ctx.fillStyle=P8PAL[$4]||"#fff";ctx.fillText($1,$2*3,$3*3)')
+    .replace(/\bnil\b/g, 'null')
+    .replace(/\bfunction\s+(\w+)\(([^)]*)\)/g, 'function $1($2){')
+    .replace(/\bnot\s+/g, '!')
+    .replace(/\band\b/g, '&&')
+    .replace(/\bor\b/g, '||');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (PICO-8 Platformer)
+   =================================================== */
+var S = 3;
+
+var P8PAL = '{0:"#000",1:"#1d2b53",2:"#7e2553",3:"#008751",4:"#ab5236",5:"#5f574f",6:"#c2c3c7",7:"#fff",8:"#ff004d",9:"#ffa300",10:"#ffec27",11:"#00e436",12:"#29adff",13:"#83769c",14:"#ff77a8",15:"#ffccaa"}';
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#000;margin:0;overflow:hidden}canvas{display:block;image-rendering:pixelated;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="384" height="384"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");ctx.font="bold 12px monospace";const S=3,P8PAL=' + P8PAL + ';';
+
+var PLAYER_VARS = 'let px=20,py=100,pw=8,ph=8,pvx=0,pvy=0,grounded=false,spd=1.5,grav=0.15,jmp=-3;';
+
+var PLATFORMS = 'var plats=[{x:0,y:120,w:128,h:8},{x:20,y:96,w:32,h:8},{x:70,y:80,w:32,h:8},{x:30,y:56,w:28,h:8},{x:80,y:40,w:32,h:8}];';
+
+var COINS = 'var coins=[{x:32,y:88,w:6,h:6,got:false},{x:82,y:72,w:6,h:6,got:false},{x:40,y:48,w:6,h:6,got:false},{x:92,y:32,w:6,h:6,got:false}];';
+
+var SCORE_VARS = 'let score=0;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false,zHeld=false,xHeld=false;' +
+  'let zPressed=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
+    'if(e.code==="KeyZ"||e.code==="ArrowUp"){zHeld=true;zPressed=true}' +
+    'if(e.code==="KeyX")xHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
+    'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false;' +
+    'if(e.code==="KeyZ"||e.code==="ArrowUp")zHeld=false;' +
+    'if(e.code==="KeyX")xHeld=false});';
+
+var CLEAR_PRESSED = 'zPressed=false;';
+
+var MOVE_PLAYER = 'pvx=0;if(leftHeld)pvx=-spd;if(rightHeld)pvx=spd;';
+
+var APPLY_GRAVITY = 'pvy+=grav;';
+
+var COLLIDE_PLATS = 'px+=pvx;for(var pi=0;pi<plats.length;pi++){var p=plats[pi];if(px+pw>p.x&&px<p.x+p.w&&py+ph>p.y&&py<p.y+p.h){if(pvx>0)px=p.x-pw;if(pvx<0)px=p.x+p.w}}' +
+  'grounded=false;py+=pvy;for(var pi=0;pi<plats.length;pi++){var p=plats[pi];if(px+pw>p.x&&px<p.x+p.w&&py+ph>p.y&&py<p.y+p.h){if(pvy>0){py=p.y-ph;grounded=true}if(pvy<0){py=p.y+p.h}pvy=0}}';
+
+var DRAW_BG = 'ctx.fillStyle=P8PAL[1];ctx.fillRect(0,0,384,384);';
+
+var DRAW_PLATS = 'ctx.fillStyle=P8PAL[5];for(var pi=0;pi<plats.length;pi++){var p=plats[pi];ctx.fillRect(p.x*S,p.y*S,p.w*S,p.h*S)}';
+
+var DRAW_PLAYER = 'ctx.fillStyle=P8PAL[12];ctx.fillRect(px*S,py*S,pw*S,ph*S);';
+
+var DRAW_COINS = 'for(var ci=0;ci<coins.length;ci++){if(!coins[ci].got){ctx.fillStyle=P8PAL[10];ctx.fillRect(coins[ci].x*S,coins[ci].y*S,coins[ci].w*S,coins[ci].h*S)}}';
+
+var DRAW_SCORE = 'ctx.fillStyle=P8PAL[7];ctx.font="bold 12px monospace";ctx.textAlign="left";ctx.fillText("coins "+score+"/"+coins.length,6,14);';
+
+var COLLECT_COINS = 'for(var ci=0;ci<coins.length;ci++){var c=coins[ci];if(!c.got&&px+pw>c.x&&px<c.x+c.w&&py+ph>c.y&&py<c.y+c.h){c.got=true;score++}}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-pico8-platformer-canvas',
+  downloadName: 'my-pico8-platformer.html',
+
+  hints: [
+    'A blue player square stands on a brown ground platform',
+    'The player runs left and right and feels gravity pulling down',
+    'Pressing Z or Up makes the player jump when on the ground',
+    'Multiple platforms at different heights to jump between',
+    'Yellow coins sit on platforms waiting to be collected',
+    'All coins collected shows a win message'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        COLLIDE_PLATS +
+        'if(py>140){py=100;px=20;pvy=0}' +
+        DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS + CLEAR_PRESSED +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        COLLIDE_PLATS +
+        'if(py>140){py=100;px=20;pvy=0}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS + CLEAR_PRESSED +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY +
+        'if(zPressed&&grounded){pvy=jmp}' +
+        COLLIDE_PLATS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'if(py>140){py=100;px=20;pvy=0}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + COINS + SCORE_VARS + KEYS + CLEAR_PRESSED +
+        'function loop(){' +
+        MOVE_PLAYER + APPLY_GRAVITY +
+        'if(zPressed&&grounded){pvy=jmp}' +
+        COLLIDE_PLATS + COLLECT_COINS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'if(py>140){py=100;px=20;pvy=0}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PLAYER_VARS + PLATFORMS + COINS + SCORE_VARS + STATE_VARS + KEYS + CLEAR_PRESSED +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="win"){score=0;px=20;py=100;pvy=0;for(var i=0;i<coins.length;i++)coins[i].got=false;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        MOVE_PLAYER + APPLY_GRAVITY +
+        'if(zPressed&&grounded){pvy=jmp}' +
+        COLLIDE_PLATS + COLLECT_COINS +
+        'try{' + p8ToJs(u) + '}catch(e){}' +
+        'if(py>140){py=100;px=20;pvy=0}' +
+        '}' +
+        CLEAR_PRESSED +
+        DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
+        'if(gameState==="win"){ctx.fillStyle=P8PAL[11];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("all coins!",64*S,50*S);ctx.font="12px monospace";ctx.fillText("press r to replay",64*S,62*S)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'Player & Ground',
+      goal: 'Draw a player square standing on a ground platform.',
+      points: [
+        'The player is an 8x8 blue square (colour 12) at position (20, 100)',
+        'The ground is a brown platform (colour 5) spanning the full width at y=120',
+        'Platforms are stored as {x, y, w, h} objects in an array',
+        'The PICO-8 screen is 128x128 - the ground sits 8 pixels from the bottom'
+      ],
+      challenge: '🎮 Set up the player:',
+      starter: '-- player starting position\npx = ___\npy = ___\npw = 8\nph = 8',
+      solution: '-- player starting position\npx = 20\npy = 100\npw = 8\nph = 8',
+      checks: ['20', '100', '8'],
+      height: 120,
+      fills: {
+        text: 'The player is ___ pixels wide and tall. The ground platform sits at y = ___.',
+        answers: ['8', '120']
+      },
+      quiz: {
+        question: 'Why store platforms in an array instead of hard-coding each one?',
+        options: [
+          'Arrays look nicer',
+          'An array lets us loop through all platforms with one collision check - adding new platforms needs no new code',
+          'PICO-8 requires arrays'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Gravity & Running',
+      goal: 'Add gravity that pulls the player down and left/right movement.',
+      points: [
+        'Gravity: each frame add a small amount to pvy: <code>pvy += 0.15</code>',
+        'Running: btn(0) left, btn(1) right at speed 1.5 pixels per frame',
+        'After moving, check all platforms for collision and push the player out',
+        'If the player falls off screen (py > 140), reset to the start position'
+      ],
+      challenge: '🎮 Write the gravity and running:',
+      starter: '-- gravity pulls the player down\npvy += ___\n\n-- horizontal movement\npvx = 0\nif btn(0) then pvx = -___ end\nif btn(1) then pvx = ___ end',
+      solution: '-- gravity pulls the player down\npvy += 0.15\n\n-- horizontal movement\npvx = 0\nif btn(0) then pvx = -1.5 end\nif btn(1) then pvx = 1.5 end',
+      checks: ['0.15', '1.5', 'pvy', 'pvx'],
+      height: 160,
+      fills: {
+        text: 'Gravity adds ___ to the vertical speed each frame. The player runs at ___ pixels per frame.',
+        answers: ['0.15', '1.5']
+      },
+      quiz: {
+        question: 'Why is gravity 0.15 instead of a bigger number like 1?',
+        options: [
+          'Bigger gravity would make the player slam to the ground instantly - 0.15 gives a smooth arc when jumping',
+          'PICO-8 cannot handle numbers above 0.2',
+          'Small numbers are more realistic'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 3,
+      title: 'Jumping',
+      goal: 'Press Z or Up to jump, but only when standing on the ground.',
+      points: [
+        'Jump by setting pvy to a negative value: <code>pvy = -3</code> (up is negative)',
+        'Only allow jumping when <code>grounded</code> is true - prevents infinite air jumps',
+        'The collision system sets grounded=true when landing on a platform top',
+        'Use btnp(4) for a single press - holding Z should not repeat the jump'
+      ],
+      challenge: '🎮 Write the jump logic:',
+      starter: '-- jump when pressing Z and on ground\nif btnp(4) and ___ then\n  pvy = ___\nend',
+      solution: '-- jump when pressing Z and on ground\nif btnp(4) and grounded then\n  pvy = -3\nend',
+      checks: ['grounded', '-3', 'pvy'],
+      height: 100,
+      fills: {
+        text: 'Jump sets pvy to ___ (negative = upward). The ___ flag prevents air jumping.',
+        answers: ['-3', 'grounded']
+      },
+      quiz: {
+        question: 'Why use btnp (pressed) instead of btn (held) for jumping?',
+        options: [
+          'btn would trigger the jump every single frame while held - the player would rocket upward instead of jumping once',
+          'btnp is faster',
+          'PICO-8 buttons only work with btnp'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 4,
+      title: 'More Platforms',
+      goal: 'Add platforms at different heights to create a vertical level.',
+      points: [
+        'Platforms are {x, y, w, h} objects - add more to the plats array',
+        'Place them at staggered heights so the player can jump between them',
+        'The collision code already loops through ALL platforms - new ones just work',
+        'Good spacing: platforms should be reachable with a jump height of about 24 pixels'
+      ],
+      challenge: '🎮 Add platforms to the level:',
+      starter: '-- define the level platforms\n-- ground is already at y=120\n-- add platforms at different heights\nlocal newPlat = {x=70, y=___, w=32, h=8}\nadd(plats, newPlat)',
+      solution: '-- define the level platforms\n-- ground is already at y=120\n-- add platforms at different heights\nlocal newPlat = {x=70, y=80, w=32, h=8}\nadd(plats, newPlat)',
+      checks: ['80', '32', '8', 'plats'],
+      height: 140,
+      fills: {
+        text: 'Each platform is ___ pixels tall. A platform at y=80 sits ___ pixels above the ground.',
+        answers: ['8', '40']
+      },
+      quiz: {
+        question: 'Why do platforms work automatically when added to the array?',
+        options: [
+          'The collision loop checks every platform in the array - it does not know or care how many there are',
+          'PICO-8 registers them automatically',
+          'Platforms do not need collision'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 5,
+      title: 'Coins',
+      goal: 'Place collectible coins on platforms.',
+      points: [
+        'Coins are {x, y, w, h, got} objects - got tracks whether collected',
+        'Collision check: if the player overlaps a coin and got is false, collect it',
+        'On collect: set got=true and increment score',
+        'Draw only coins where got is false'
+      ],
+      challenge: '🎮 Write the coin collection:',
+      starter: '-- check each coin\nfor i = 1, #coins do\n  if not coins[i].got then\n    if px+pw > coins[i].x and px < coins[i].x+coins[i].w then\n      if py+ph > coins[i].y and py < coins[i].y+coins[i].h then\n        coins[i].got = ___\n        score += ___\n      end\n    end\n  end\nend',
+      solution: '-- check each coin\nfor i = 1, #coins do\n  if not coins[i].got then\n    if px+pw > coins[i].x and px < coins[i].x+coins[i].w then\n      if py+ph > coins[i].y and py < coins[i].y+coins[i].h then\n        coins[i].got = true\n        score += 1\n      end\n    end\n  end\nend',
+      checks: ['score', 'got', 'true'],
+      height: 240,
+      fills: {
+        text: 'The got flag starts as ___. When collected it becomes ___ so the coin disappears.',
+        answers: ['false', 'true']
+      },
+      quiz: {
+        question: 'Why use a "got" flag instead of removing the coin from the array?',
+        options: [
+          'Removing mid-loop can skip items or crash - a flag is safe, simple, and lets you reset all coins for replay',
+          'Arrays cannot have items removed',
+          'Flags are faster than deletion'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 6,
+      title: 'Win Screen & Replay',
+      goal: 'Show a win message when all coins are collected and R to replay.',
+      points: [
+        'Check if score equals the total number of coins: <code>if score >= #coins then gameState = "win" end</code>',
+        'Display "all coins!" in green text at the centre',
+        'R key resets: score to 0, player to start, all coins got=false',
+        'This collect-everything pattern appears in platformers from Mario to Celeste'
+      ],
+      challenge: '🎮 Write the win check:',
+      starter: '-- did we get all coins?\nif score >= #___ then\n  gameState = "___"\nend',
+      solution: '-- did we get all coins?\nif score >= #coins then\n  gameState = "win"\nend',
+      checks: ['coins', 'win', 'score'],
+      height: 100,
+      fills: {
+        text: 'The #coins operator returns the ___ of the coins array. Collecting them all sets the state to ___.',
+        answers: ['length', 'win']
+      },
+      quiz: {
+        question: 'What makes platformer levels fun to replay?',
+        options: [
+          'More pixels',
+          'Speed-running for a faster time, finding hidden routes, or trying to collect everything without dying',
+          'Bigger screens'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>
