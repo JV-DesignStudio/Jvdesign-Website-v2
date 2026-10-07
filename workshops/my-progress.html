@@ -18,6 +18,12 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<!-- Shared security fallbacks (A781): GitHub Pages ignores _headers, so every page
+     carries this meta CSP + referrer policy until hosting honours _headers.
+     Keep in sync with the Content-Security-Policy line in _headers, minus
+     frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -670,7 +676,7 @@ function getEpStatus(data) {
 }
 
 function buildDashboard() {
-  let totalXp = 0, totalCompleted = 0, bestStreak = 0, totalQuizzes = 0, totalCorrect = 0;
+  let totalXp = 0, bestStreak = 0, totalQuizzes = 0, totalCorrect = 0;
   let anyHighAccuracy = false;
   const tagDone = {};
 
@@ -687,7 +693,6 @@ function buildDashboard() {
         if (d.totalQuizzes > 0 && (d.correctFirst / d.totalQuizzes) >= 0.9) anyHighAccuracy = true;
       }
       if (status === 'done') {
-        totalCompleted++;
         tagDone[series.tag]++;
       }
     });
@@ -697,16 +702,21 @@ function buildDashboard() {
   const level = Math.floor(totalXp / XP_PER_LEVEL) + 1;
   const xpInLevel = totalXp % XP_PER_LEVEL;
 
-  // ── Unified XP: the player profile is the single ledger ──
+  // ── Unified ledgers: the player profile is the single source ──
   // Workshop XP (scanned from progress keys) + game XP (jvds_game_* states)
-  // + bonus XP (challenges & tools). Falls back to the workshop-only sum if
-  // player-profile.js failed to load.
+  // + bonus XP (challenges & tools), and the workshops-done count from the
+  // reconciled completedWorkshops array (A791). Falls back to the
+  // workshop-only sums if player-profile.js failed to load.
   let shownXp = totalXp, shownLevel = level, gameBonusXp = 0;
+  // Workshops-done headline reads the single profile ledger when available;
+  // the SERIES sum below is only the degraded fallback if it failed to load.
+  let shownCompleted = Object.values(tagDone).reduce((n, v) => n + v, 0);
   if (typeof playerProfile !== 'undefined' && playerProfile.getStats) {
     try {
       const ps = playerProfile.getStats();
       shownXp = ps.totalXP;
       shownLevel = ps.level;
+      shownCompleted = ps.workshopsCompleted;
       gameBonusXp = (ps.gameXP || 0) + (ps.bonusXP || 0);
     } catch (e) { /* keep workshop-only totals */ }
   }
@@ -714,7 +724,7 @@ function buildDashboard() {
 
   document.getElementById('totalXpDisplay').textContent = shownXp.toLocaleString();
   document.getElementById('globalLevel').textContent = shownLevel;
-  document.getElementById('completedCount').textContent = totalCompleted;
+  document.getElementById('completedCount').textContent = shownCompleted;
   document.getElementById('globalStreak').textContent = bestStreak;
   document.getElementById('globalAccuracy').textContent = accuracy + '%';
   document.getElementById('xpTotalFill').style.width = ((shownXp % XP_PER_LEVEL) / XP_PER_LEVEL * 100) + '%';
@@ -724,7 +734,7 @@ function buildDashboard() {
 
   // Badges
   const badgeData = {
-    completed: totalCompleted, bestStreak, level: shownLevel, anyHighAccuracy, enginesUsed,
+    completed: shownCompleted, bestStreak, level: shownLevel, anyHighAccuracy, enginesUsed,
     scratchDone: tagDone.scratch || 0, robloxDone: tagDone.roblox || 0,
     godotDone: (tagDone.godot || 0) + (tagDone['godot-extra'] || 0),
     mugenDone: tagDone.mugen || 0, unityDone: tagDone.unity || 0,
@@ -797,7 +807,7 @@ function buildDashboard() {
     container.innerHTML += html;
   });
 
-  if (totalCompleted === 0 && totalXp === 0) {
+  if (shownCompleted === 0 && totalXp === 0) {
     beginnerContainer.innerHTML += '<div class="no-progress">No progress yet! <a href="../pages/workshop.html">Start a workshop</a> and your XP will show up here.</div>';
   }
 
