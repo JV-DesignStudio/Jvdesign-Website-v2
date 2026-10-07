@@ -1,4 +1,4 @@
-// JVDesignStudio Service Worker v27 - A207 school-network hardening: timeout only when cached exists, timer cleared, bump cache, Pip quest deps precached
+// JVDesignStudio Service Worker v29 - A207 school-network hardening: timeout only when cached exists, timer cleared, bump cache, Pip quest deps precached
 // v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
 // v22 (A256): precache jvds-store.js (backpack + progress) and refresh nav.js (profile chip reads jvds_profile)
 // v25 (A332): add pixel-studio shared dependencies so tool fully works offline on first visit
@@ -71,6 +71,7 @@ const CORE=[
   '/assets/mascots/lumo-badge.webp',
   '/assets/mascots/pip-badge.webp',
   '/assets/mascots/pip-hero.webp',
+  '/assets/mascots/pip.png',
   '/tools/gallery.html'
 ];
 
