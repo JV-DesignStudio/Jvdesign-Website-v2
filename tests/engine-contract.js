@@ -8,7 +8,7 @@ const http = require('http');
 const puppeteer = require('puppeteer');
 const ROOT = path.resolve(__dirname, '..');
 const GAMES_DIR = path.join(ROOT, 'games');
-const ENGINE_VERSION = '2.0.0';
+const ENGINE_VERSION = '2.1.0';
 const MAX_GAMES = 8;
 
 const games = fs.readdirSync(GAMES_DIR)

@@ -7,9 +7,9 @@
 (function (root) {
   'use strict';
   var api = root.JVDSEngine = root.JVDSEngine || {};
-  api.version = api.version || '2.0.0';
+  api.version = api.version || '2.1.0';
   api.save = {
-    version: '2.0.0',
+    version: '2.1.0',
     // Load and repair a stored state object for a game's storage key.
     load: function (storageKey) {
       try {
