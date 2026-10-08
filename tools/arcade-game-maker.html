@@ -401,6 +401,7 @@ if(localStorage.getItem('jv_analytics_ok')==='1') _initAnalytics();
  </div>
  <div style="display:flex;gap:6px;">
  <button class="btn-sm" style="flex:2;background:rgba(34,197,94,.15);color:#4ade80;border-color:rgba(34,197,94,.25);" onclick="exportGame()">⬇ Download HTML</button>
+ <button class="btn-sm" style="flex:1;" onclick="exportCurrentJson()" title="Save this project as an editable .json file you can re-import or keep">⬇ JSON</button>
  <button class="btn-sm" style="flex:1;" onclick="importGameFile()" title="Load a .json or .html game file">📥 Import</button>
  <input id="importFileInput" type="file" accept=".json,.html" style="display:none;" onchange="_onImportFileChange(this)">
  </div>
@@ -14910,6 +14911,22 @@ function duplicateSlot(srcIdx) {
         renderSaveSlots();
         showToast(`Slot ${srcIdx+1} → Slot ${destIdx+1} copied ✓`, 'success');
     } catch(e) { showToast('Duplicate failed', 'error'); }
+}
+
+// Export the current (unsaved) project as an editable .json file. This is the
+// round-trip partner of Import: keep a portable backup with no account needed.
+function exportCurrentJson() {
+    try {
+        const d = _buildSaveData();
+        const blob = new Blob([JSON.stringify(d, null, 2)], {type:'application/json;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (d.title || 'arcade-game').replace(/[^a-z0-9]/gi,'-').toLowerCase() + '.json';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        showToast('Project exported as JSON ✓');
+    } catch(e) { showToast('Export failed', 'error'); }
 }
 
 function exportSlotJson(slotIdx) {
