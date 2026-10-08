@@ -22,15 +22,14 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
-<link rel="preload" href="../style-tool-gdd-builder.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="../style-tool-gdd-builder.css?v=17"></noscript>
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<link rel="preload" href="../style-tool-gdd-builder.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="../style-tool-gdd-builder.css?v=18"></noscript>
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/tools/gdd-builder.html">
     <meta property="og:title"       content="Game Design Studio | JVDesignStudio">
@@ -483,8 +482,6 @@
 <script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-tools -->
 
-
-
 <!-- WELCOME MODAL -->
 <div class="modal-overlay" id="gddWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="gddWelcomeTitle">
   <div class="modal">
@@ -504,6 +501,7 @@
   </div>
 </div>
 
+<canvas id="gddConfetti" aria-hidden="true"></canvas>
 <div id="toast"></div>
 
 <script>
@@ -517,13 +515,13 @@ const COVER_COLOURS = [
   {hex:'#db2777',label:'Pink'},{hex:'#0891b2',label:'Cyan'},
   {hex:'#4338ca',label:'Indigo'},{hex:'#374151',label:'Grey'},
 ];
-const COVER_EMOJIS = ['??','???','??','??','??','?','??','??','??','??','??','???','??','??','??','??','??','??','-','??'];
+const COVER_EMOJIS = ['🎮','🕹️','🐸','🚀','🧙','👾','🦸','🐉','🏰','⚔️','🗺️','💎','👻','🤖','🐙','⭐','🔥','🧩','🎯','🎲'];
 const MOODS = ['Exciting','Cosy','Scary','Mysterious','Funny','Epic','Relaxing','Tense','Hopeful','Dark','Cheerful','Spooky'];
 const ART_STYLES = ['Pixel Art','Cartoon','Realistic','Minimalist','Hand-drawn','Anime','Low Poly','Retro 8-bit','Painterly','Comic Book','Silhouette'];
 const CAMERAS = ['Side-scrolling','Top-down','First Person','Third Person','Isometric','Fixed Camera'];
 const MUSIC_MOODS = ['Upbeat','Mysterious','Scary','Epic','Relaxing','Sad','Triumphant','Tense','Dreamy','Energetic'];
 const MUSIC_STYLES = ['Chiptune / 8-bit','Orchestral','Electronic','Acoustic','Rock','Jazz','Ambient','Pop','No Music'];
-const CHAR_EMOJIS = ['🪙','🐸','🪘','🧙','👾','🧑‍🚀','🚀','🚀','🦁','🏹','🪙','🎨'];
+const CHAR_EMOJIS = ['🪙','🐸','🧙','👾','🧑‍🚀','🚀','🦁','🏹','🐉','🦊','🎨','👻'];
 const DEFAULT_MILESTONES = ['✏️ Finish the Game Design Document','🎨 Create main character art','💧 Build a playable prototype','🎐 Complete Level 1','🐛 Bug test and fix issues','🚀 Share / release the game'];
 const DEFAULT_LEVELS = ['World 1, Tutorial / Safe Zone','World 2, First Challenge','World 3, Boss Level'];
 
@@ -711,19 +709,28 @@ function addMilestone(text=''){
   milestones.push({id, text, done: false});
   renderMilestones();
 }
+let _justTickedMilestone=null;
+function toggleMilestoneDone(i){
+  milestones[i].done=!milestones[i].done;
+  _justTickedMilestone = milestones[i].done ? milestones[i].id : null;
+  renderMilestones();
+  trackProgress();
+}
 function renderMilestones(){
   const list = document.getElementById('milestoneList');
   list.innerHTML = '';
   milestones.forEach((m, i) => {
     const item = document.createElement('div');
     item.className = 'milestone-item';
+    const tick = _justTickedMilestone && m.id===_justTickedMilestone;
     item.innerHTML = `
-      <div class="milestone-check${m.done?' done':''}" onclick="milestones[${i}].done=!milestones[${i}].done;renderMilestones();">${m.done?'?':''}</div>
-      <input aria-label="Milestone" class="milestone-input" type="text" value="${esc(m.text)}" placeholder="e.g. Build the main menu" oninput="milestones[${i}].text=this.value" style="${m.done?'text-decoration:line-through;color:var(--muted);':''}">
-      <button class="milestone-del" aria-label="Remove milestone" onclick="milestones.splice(${i},1);renderMilestones();">&times;</button>
+      <div class="milestone-check${m.done?' done':''}${tick?' tick':''}" role="checkbox" aria-checked="${m.done?'true':'false'}" tabindex="0" onclick="toggleMilestoneDone(${i})" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();toggleMilestoneDone(${i});}">${m.done?'\u2713':''}</div>
+      <input aria-label="Milestone" class="milestone-input" type="text" value="${esc(m.text)}" placeholder="e.g. Build the main menu" oninput="milestones[${i}].text=this.value;trackProgress()" style="${m.done?'text-decoration:line-through;color:var(--muted);':''}">
+      <button class="milestone-del" aria-label="Remove milestone" onclick="milestones.splice(${i},1);renderMilestones();trackProgress();">&times;</button>
     `;
     list.appendChild(item);
   });
+  _justTickedMilestone = null;
 }
 
 // ══════════════════════════════════════
@@ -741,8 +748,8 @@ function renderLevels(){
     item.className = 'level-item';
     item.innerHTML = `
       <div class="level-num">${i+1}</div>
-      <input aria-label="Level name" class="level-input" type="text" value="${esc(l.text)}" placeholder="Level or area name..." oninput="levels[${i}].text=this.value">
-      <button class="level-del" aria-label="Remove level" onclick="levels.splice(${i},1);renderLevels();">&times;</button>
+      <input aria-label="Level name" class="level-input" type="text" value="${esc(l.text)}" placeholder="Level or area name..." oninput="levels[${i}].text=this.value;trackProgress()">
+      <button class="level-del" aria-label="Remove level" onclick="levels.splice(${i},1);renderLevels();trackProgress();">&times;</button>
     `;
     list.appendChild(item);
   });
@@ -785,6 +792,7 @@ function trackProgress(){
     document.getElementById('progressFill').style.width = pct+'%';
     document.getElementById('progressPct').textContent = pct+'%';
     document.getElementById('ctrlBadge').textContent = pct+'% complete';
+    updateSectionStamps();
   }, 200);
 }
 
@@ -800,6 +808,156 @@ function initCounters(){
 }
 function refreshCounters(){
   counterUpdaters.forEach(u => u());
+}
+
+// ══════════════════════════════════════
+// REWARDS: section stamps, confetti, achievements
+// ══════════════════════════════════════
+const GDD_ACH_KEY='jvds_gdd_achievements';
+const GDD_SECTIONS=[
+  {key:'cover',    label:'Game Identity'},
+  {key:'concept',  label:'Game Concept'},
+  {key:'gameplay', label:'Gameplay Rules'},
+  {key:'chars',    label:'Characters'},
+  {key:'world',    label:'World & Story'},
+  {key:'art',      label:'Art Style'},
+  {key:'sound',    label:'Sound & Music'},
+  {key:'timeline', label:'Timeline'},
+  {key:'notes',    label:'Extra Notes', optional:true},
+];
+const GDD_CORE_KEYS=GDD_SECTIONS.filter(s=>!s.optional).map(s=>s.key);
+let _stampsReady=false, _prevStamps={};
+
+function gddVal(id){ const el=document.getElementById(id); return el ? String(el.value||'').trim() : ''; }
+function sectionComplete(key){
+  switch(key){
+    case 'cover':    return gddVal('gameTitle').length>2 && !!gddVal('gameGenre') && !!gddVal('gamePlatform');
+    case 'concept':  return gddVal('coreLoop').length>3 && gddVal('uniqueTwist').length>3;
+    case 'gameplay': return gddVal('winCond').length>3 && gddVal('loseCond').length>3;
+    case 'chars':    return characters.filter(c=>c.name && c.name.trim()).length>=2;
+    case 'world':    return gddVal('setting').length>3 && (gddVal('storySummary').length>3 || levels.filter(l=>l.text && l.text.trim()).length>1);
+    case 'art':      return getChips('artStyleChips').length>0 || getChips('cameraChips').length>0 || gddVal('artNotes').length>3;
+    case 'sound':    return getChips('musicMoodChips').length>0 || getChips('musicStyleChips').length>0 || gddVal('sfxNotes').length>3;
+    case 'timeline': return milestones.filter(m=>m.text && m.text.trim()).length>0;
+    case 'notes':    return gddVal('extraNotes').length>3;
+    default: return false;
+  }
+}
+
+function updateSectionStamps(){
+  const now={};
+  GDD_SECTIONS.forEach(s => { now[s.key]=sectionComplete(s.key); });
+  GDD_SECTIONS.forEach(s => {
+    const sec=document.getElementById('sec-'+s.key);
+    if(!sec) return;
+    const head=sec.querySelector('.section-head');
+    if(head && !head.querySelector('.section-stamp')){
+      const stamp=document.createElement('span');
+      stamp.className='section-stamp';
+      stamp.setAttribute('aria-hidden','true');
+      stamp.textContent='\u2713';
+      const tog=head.querySelector('.section-toggle');
+      head.insertBefore(stamp, tog || null);
+    }
+    sec.classList.toggle('stamped', !!now[s.key]);
+  });
+  const wasReady=_stampsReady;
+  _stampsReady=true;
+  if(wasReady){
+    GDD_SECTIONS.forEach(s => {
+      if(now[s.key] && !_prevStamps[s.key]){
+        const sec=document.getElementById('sec-'+s.key);
+        if(sec){
+          const r=sec.getBoundingClientRect();
+          let cx=r.left+r.width/2, cy=r.top+46;
+          const vw=window.innerWidth, vh=window.innerHeight;
+          if(cy<80 || cy>vh-80) cy=Math.max(80, vh*0.4);
+          if(cx<40 || cx>vw-40) cx=vw/2;
+          fireConfetti(cx, cy, false);
+        }
+      }
+    });
+    checkAchievements(now);
+  }
+  _prevStamps=now;
+}
+
+function checkAchievements(now){
+  const coreDone=GDD_CORE_KEYS.filter(k=>now[k]).length;
+  const msTotal=milestones.filter(m=>m.text && m.text.trim()).length;
+  const msDone=milestones.filter(m=>m.done && m.text && m.text.trim()).length;
+  const cast=characters.filter(c=>c.name && c.name.trim()).length;
+  const defs=[
+    {id:'first_stamp',    test:coreDone>=1,                       msg:'First section stamped! Nice start.'},
+    {id:'half',           test:coreDone>=Math.ceil(GDD_CORE_KEYS.length/2), msg:'Halfway there! Keep building.'},
+    {id:'all_sections',   test:coreDone>=GDD_CORE_KEYS.length,    big:true, msg:'Every section done! You are a game designer.'},
+    {id:'first_milestone',test:msDone>=1,                         msg:'First milestone ticked!'},
+    {id:'all_milestones', test:msTotal>=3 && msDone>=msTotal,     big:true, msg:'Every milestone complete!'},
+    {id:'full_cast',      test:cast>=4,                           msg:'Full cast assembled!'},
+  ];
+  let unlocked=[];
+  try{ unlocked=JSON.parse(localStorage.getItem(GDD_ACH_KEY)||'[]')||[]; }catch(e){ unlocked=[]; }
+  let changed=false;
+  defs.forEach(d => {
+    if(unlocked.includes(d.id) || !d.test) return;
+    unlocked.push(d.id); changed=true;
+    rewardToast(d.msg);
+    if(d.big) fireConfetti(window.innerWidth/2, Math.min(260, window.innerHeight*0.3), true);
+  });
+  if(changed){ try{ localStorage.setItem(GDD_ACH_KEY, JSON.stringify(unlocked)); }catch(e){} }
+}
+
+let _rtQueue=[], _rtBusy=false;
+function rewardToast(msg){
+  _rtQueue.push(msg);
+  if(!_rtBusy) drainRewardToasts();
+}
+function drainRewardToasts(){
+  if(!_rtQueue.length){ _rtBusy=false; return; }
+  _rtBusy=true;
+  const t=document.getElementById('toast');
+  if(!t){ _rtQueue=[]; _rtBusy=false; return; }
+  t.textContent=_rtQueue.shift();
+  t.style.opacity=1;
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>{ t.style.opacity=0; setTimeout(drainRewardToasts, 320); }, 2400);
+}
+
+let _confettiParts=[], _confettiRAF=null;
+function prefersReducedMotion(){ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; } }
+function fireConfetti(cx, cy, big){
+  if(prefersReducedMotion()) return;
+  const canvas=document.getElementById('gddConfetti');
+  if(!canvas || !canvas.getContext) return;
+  canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+  canvas.style.display='block';
+  const colors=['#7c3aed','#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#0891b2'];
+  const n=big?140:46;
+  for(let i=0;i<n;i++){
+    const ang=Math.random()*Math.PI*2, spd=(big?5:3)+Math.random()*(big?7:4);
+    _confettiParts.push({
+      x:cx, y:cy, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd-2,
+      g:0.14+Math.random()*0.08, w:5+Math.random()*6, h:7+Math.random()*8,
+      rot:Math.random()*Math.PI, vr:(Math.random()-0.5)*0.3,
+      col:colors[(Math.random()*colors.length)|0], life:0, max:70+Math.random()*50,
+    });
+  }
+  if(!_confettiRAF) _confettiLoop();
+}
+function _confettiLoop(){
+  const canvas=document.getElementById('gddConfetti');
+  if(!canvas){ _confettiRAF=null; return; }
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  _confettiParts.forEach(p => {
+    p.life++; p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.vx*=0.99; p.rot+=p.vr;
+    ctx.save(); ctx.globalAlpha=Math.max(0,1-p.life/p.max);
+    ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    ctx.fillStyle=p.col; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+  });
+  _confettiParts=_confettiParts.filter(p => p.life<p.max && p.y<canvas.height+40);
+  if(_confettiParts.length){ _confettiRAF=requestAnimationFrame(_confettiLoop); }
+  else { ctx.clearRect(0,0,canvas.width,canvas.height); canvas.style.display='none'; _confettiRAF=null; }
 }
 
 // ══════════════════════════════════════
