@@ -24,8 +24,8 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
-<link rel="preload" href="../style-tool-pixel-studio.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="../style-tool-pixel-studio.css?v=18"></noscript>
+<link rel="preload" href="../style-tool-pixel-studio.css?v=19" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="../style-tool-pixel-studio.css?v=19"></noscript>
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/tools/pixel-studio.html">
     <meta property="og:title"       content="Pixel Studio: Free Pixel Art Maker for Beginners | JVDesignStudio">
@@ -317,16 +317,22 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
         <div class="tb" data-tool="eyedrop" onclick="setTool('eyedrop')" aria-label="Pick colour (G)"><span class="ico">💧</span>Pick</div>
       </div>
       <details id="advancedTools" style="margin-top:6px;">
-        <summary style="font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;list-style:none;">Advanced ▸ Line, Rect, Select, Mirror</summary>
+        <summary style="font-size:.58rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;list-style:none;">Advanced ▸ Shapes, Select, Transform</summary>
         <div class="tool-grid" style="margin-top:6px;">
           <div class="tb" data-tool="line" onclick="setTool('line')" aria-label="Line (L)"><span class="ico">📏</span>Line</div>
           <div class="tb" data-tool="rect" onclick="setTool('rect')" aria-label="Rect (R)"><span class="ico">⬜</span>Rect</div>
+          <div class="tb" data-tool="ellipse" onclick="setTool('ellipse')" aria-label="Ellipse (O)"><span class="ico">⬭</span>Ellipse</div>
           <div class="tb" data-tool="select" onclick="setTool('select')" aria-label="Select (S)"><span class="ico">⬡</span>Select</div>
         </div>
         <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
           <button class="lb" id="mirrorBtn2" onclick="toggleMirror()" title="Mirror X (M)" aria-label="Mirror X" style="height:auto;padding:6px 0;flex:1;">↔️ Mirror X</button>
           <button class="lb" id="mirrorYBtn" onclick="toggleMirrorY()" title="Mirror Y" aria-label="Mirror Y" style="height:auto;padding:6px 0;flex:1;">↕️ Mirror Y</button>
-          <button class="lb" id="filledRectBtn" onclick="toggleFilledRect()" title="Filled rect" aria-label="Filled rectangle" style="height:auto;padding:6px 0;flex:1;">▪ Fill</button>
+          <button class="lb" id="filledRectBtn" onclick="toggleFilledRect()" title="Fill shapes (Line stays a line)" aria-label="Filled shapes" style="height:auto;padding:6px 0;flex:1;">▪ Fill</button>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;">
+          <button class="lb" onclick="flipFrame('x')" title="Flip the current frame left to right" aria-label="Flip horizontal" style="height:auto;padding:6px 0;flex:1;">↔️ Flip X</button>
+          <button class="lb" onclick="flipFrame('y')" title="Flip the current frame top to bottom" aria-label="Flip vertical" style="height:auto;padding:6px 0;flex:1;">↕️ Flip Y</button>
+          <button class="lb" onclick="rotateFrame()" title="Rotate the current frame 90 degrees clockwise" aria-label="Rotate 90 degrees" style="height:auto;padding:6px 0;flex:1;">↻ Rotate</button>
         </div>
       </details>
       <div style="margin-top:6px;">
@@ -661,7 +667,7 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
     <h3>⌨ Shortcuts</h3>
     <p style="line-height:2;">
       <b>B / P</b> pencil &middot; <b>E</b> eraser &middot; <b>F</b> fill<br>
-      <b>I / G</b> eyedropper &middot; <b>L</b> line &middot; <b>R</b> rect &middot; <b>S</b> select<br>
+      <b>I / G</b> eyedropper &middot; <b>L</b> line &middot; <b>R</b> rect &middot; <b>O</b> ellipse &middot; <b>S</b> select<br>
       <b>M</b> mirror X &middot; <b>X</b> swap colours &middot; <b>Space</b> play<br>
       Select: <b>Del</b> clear &middot; <b>Ctrl+C</b> copy &middot; <b>Ctrl+V</b> paste &middot; drag to move<br>
       <b>+/&minus;</b> zoom &middot; <b>Ctrl+Z</b> undo &middot; <b>Ctrl+Y</b> redo<br>
@@ -703,7 +709,7 @@ let undoStack=[],redoStack=[],MAX_UNDO=20;
 let mirrorX=false,mirrorY=false,filledRect=false,dirty=false,autosaveT=null,deferredPrompt=null;
 let selection=null; // {x0,y0,x1,y1} or null; used by select tool
 let selDragStart=null,selMoving=false,selMoveStart=null,selClipboard=null;
-let isPainting=false,lineStart=null,rectStart=null;
+let isPainting=false,lineStart=null,rectStart=null,ellipseStart=null;
 let mainCanvas,onionCanvas,cursorCanvas,mainCtx,onionCtx,cursorCtx;
 // snapshot for line/rect preview
 let snapshot=null;
@@ -1010,10 +1016,24 @@ function drawRect(id,x0,y0,x1,y1,col,erase){
     for(let y=ty;y<=by;y++){paintPx(id,lx,y,col,erase);paintPx(id,rx,y,col,erase);}
   }
 }
+// Pixel ellipse inscribed in the drag rectangle. Outline cells are those inside
+// the ellipse whose four neighbours are not all inside, which reads cleanly at
+// small sizes; filled mode paints every inside cell.
+function drawEllipse(id,x0,y0,x1,y1,col,erase){
+  const lx=Math.min(x0,x1),rx=Math.max(x0,x1),ty=Math.min(y0,y1),by=Math.max(y0,y1);
+  const cx=(lx+rx+1)/2,cy=(ty+by+1)/2,a=Math.max(0.5,(rx-lx+1)/2),b=Math.max(0.5,(by-ty+1)/2);
+  const inside=(x,y)=>{const nx=(x+0.5-cx)/a,ny=(y+0.5-cy)/b;return nx*nx+ny*ny<=1.0001;};
+  for(let y=ty;y<=by;y++) for(let x=lx;x<=rx;x++){
+    if(filledRect){ if(inside(x,y)) paintPx(id,x,y,col,erase); }
+    else if(inside(x,y)&&!(inside(x-1,y)&&inside(x+1,y)&&inside(x,y-1)&&inside(x,y+1))) paintPx(id,x,y,col,erase);
+  }
+}
 
 // ----------------------------------------------
 // UNDO / REDO
 // ----------------------------------------------
+function cloneID(id){return id?new ImageData(new Uint8ClampedArray(id.data),id.width,id.height):null;}
+function cloneLayers(list){return list.map(cloneID);}
 function pushUndo(){
   const id=getID();
   undoStack.push({f:currentFrame,l:currentLayer,data:new ImageData(new Uint8ClampedArray(id.data),id.width,id.height)});
@@ -1021,23 +1041,85 @@ function pushUndo(){
   redoStack.length=0;
   markDirty();
 }
-function applyEntry(e){frames[e.f][e.l]=e.data;}
+// Frame-level undo for transforms (flip/rotate): records every layer plus the
+// canvas size, because rotate changes cW/cH.
+function pushFrameUndo(){
+  undoStack.push({frame:currentFrame,w:cW,h:cH,layers:cloneLayers(frames[currentFrame])});
+  if(undoStack.length>MAX_UNDO) undoStack.shift();
+  redoStack.length=0;
+  markDirty();
+}
+function snapEntry(e){
+  if(e.layers) return {frame:e.frame,w:cW,h:cH,layers:cloneLayers(frames[e.frame])};
+  const id=getID();
+  return {f:e.f,l:e.l,data:new ImageData(new Uint8ClampedArray(id.data),id.width,id.height)};
+}
+function applyEntry(e){
+  if(e.layers){
+    cW=e.w;cH=e.h;
+    frames[e.frame]=cloneLayers(e.layers);
+    currentFrame=e.frame;
+    if(currentLayer>=layers.length) currentLayer=layers.length-1;
+    selection=null;
+    const lbl=document.getElementById('canvasSizeLabel'); if(lbl) lbl.textContent=cW+' × '+cH;
+    const wEl=document.getElementById('custW'),hEl=document.getElementById('custH');
+    if(wEl) wEl.value=cW; if(hEl) hEl.value=cH;
+    autoZoom(); resizeCanvases();
+  } else {
+    frames[e.f][e.l]=e.data;
+  }
+}
 function undo(){
   const e=undoStack.pop();
   if(!e) return;
-  const cur=frames[e.f][e.l];
-  redoStack.push({f:e.f,l:e.l,data:cur?new ImageData(new Uint8ClampedArray(cur.data),cur.width,cur.height):null});
+  redoStack.push(snapEntry(e));
   applyEntry(e);
   renderAll();
 }
 function redo(){
   const e=redoStack.pop();
   if(!e) return;
-  const cur=frames[e.f][e.l];
-  undoStack.push({f:e.f,l:e.l,data:cur?new ImageData(new Uint8ClampedArray(cur.data),cur.width,cur.height):null});
+  undoStack.push(snapEntry(e));
   applyEntry(e);
   renderAll();
   markDirty();
+}
+function flipFrame(axis){
+  pushFrameUndo();
+  frames[currentFrame]=frames[currentFrame].map(id=>{
+    if(!id) return null;
+    const out=new ImageData(cW,cH);
+    for(let y=0;y<cH;y++) for(let x=0;x<cW;x++){
+      const sx=axis==='x'?cW-1-x:x, sy=axis==='y'?cH-1-y:y;
+      const si=(sy*cW+sx)*4, di=(y*cW+x)*4;
+      out.data[di]=id.data[si];out.data[di+1]=id.data[si+1];out.data[di+2]=id.data[si+2];out.data[di+3]=id.data[si+3];
+    }
+    return out;
+  });
+  selection=null;
+  renderAll();
+  showToast(axis==='x'?'Flipped left to right':'Flipped top to bottom');
+}
+function rotateFrame(){
+  pushFrameUndo();
+  const oldW=cW,oldH=cH,nw=oldH,nh=oldW;
+  frames=frames.map(f=>f.map(id=>{
+    if(!id) return null;
+    const out=new ImageData(nw,nh);
+    for(let y=0;y<nh;y++) for(let x=0;x<nw;x++){
+      const si=((oldH-1-x)*oldW+y)*4, di=(y*nw+x)*4;
+      out.data[di]=id.data[si];out.data[di+1]=id.data[si+1];out.data[di+2]=id.data[si+2];out.data[di+3]=id.data[si+3];
+    }
+    return out;
+  }));
+  cW=nw;cH=nh;
+  selection=null;
+  const lbl=document.getElementById('canvasSizeLabel'); if(lbl) lbl.textContent=cW+' × '+cH;
+  const wEl=document.getElementById('custW'),hEl=document.getElementById('custH');
+  if(wEl) wEl.value=cW; if(hEl) hEl.value=cH;
+  autoZoom(); resizeCanvases();
+  renderAll();
+  showToast('Rotated 90°');
 }
 
 // ----------------------------------------------
@@ -1076,9 +1158,9 @@ function setupEvents(){
     // Second finger ? switch to pinch-zoom, cancel any active stroke
     if(e.touches&&e.touches.length>=2){
       cancelPendingStroke();
-      if(snapshot&&(lineStart||rectStart)){
+      if(snapshot&&(lineStart||rectStart||ellipseStart)){
         frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
-        lineStart=null;rectStart=null;snapshot=null;
+        lineStart=null;rectStart=null;ellipseStart=null;snapshot=null;
       }
       isPainting=false;
       pinch={d:pinchDist(e.touches),z:zoomLevel};
@@ -1117,6 +1199,10 @@ function setupEvents(){
       pushUndo();
       snapshot=new ImageData(new Uint8ClampedArray(getID().data),getID().width,getID().height);
       rectStart=[x,y];
+    } else if(currentTool==='ellipse'){
+      pushUndo();
+      snapshot=new ImageData(new Uint8ClampedArray(getID().data),getID().width,getID().height);
+      ellipseStart=[x,y];
     } else if(currentTool==='select'){
       // Start new selection drag (or move if inside existing selection)
       if(selection){
@@ -1190,6 +1276,10 @@ function setupEvents(){
       frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
       drawRect(getID(),rectStart[0],rectStart[1],x,y,col,erase);
       renderAll(false);
+    } else if(currentTool==='ellipse'&&ellipseStart&&snapshot){
+      frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
+      drawEllipse(getID(),ellipseStart[0],ellipseStart[1],x,y,col,erase);
+      renderAll(false);
     }
   }
 
@@ -1242,6 +1332,10 @@ function setupEvents(){
       if(snapshot) frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
       drawRect(getID(),rectStart[0],rectStart[1],x,y,col,erase);
       rectStart=null; snapshot=null;
+    } else if(currentTool==='ellipse'&&ellipseStart){
+      if(snapshot) frames[currentFrame][currentLayer]=new ImageData(new Uint8ClampedArray(snapshot.data),snapshot.width,snapshot.height);
+      drawEllipse(getID(),ellipseStart[0],ellipseStart[1],x,y,col,erase);
+      ellipseStart=null; snapshot=null;
     }
     isPainting=false;
     cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);
@@ -1253,7 +1347,7 @@ function setupEvents(){
   mc.addEventListener('mousemove',move);
   document.addEventListener('mouseup',up);
   document.addEventListener('touchend',e=>{lastTouch=Date.now();up(e);},{passive:false});
-  document.addEventListener('touchcancel',()=>{lastTouch=Date.now();isPainting=false;pinch=null;cancelPendingStroke();lineStart=null;rectStart=null;snapshot=null;});
+  document.addEventListener('touchcancel',()=>{lastTouch=Date.now();isPainting=false;pinch=null;cancelPendingStroke();lineStart=null;rectStart=null;ellipseStart=null;snapshot=null;});
   mc.addEventListener('mouseleave',()=>{cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);});
   mc.addEventListener('contextmenu',e=>e.preventDefault());
   mc.addEventListener('touchstart',e=>{lastTouch=Date.now();down(e);},{passive:false});
@@ -1273,7 +1367,7 @@ function setupEvents(){
     if((e.ctrlKey||e.metaKey)&&k==='c'&&currentTool==='select'){e.preventDefault();copySelection();return;}
     if((e.ctrlKey||e.metaKey)&&k==='v'){e.preventDefault();pasteSelection();return;}
     if((e.key==='Delete'||e.key==='Backspace')&&selection&&currentTool==='select'){e.preventDefault();cutSelection();clearSelection();renderAll();return;}
-    const m={b:'pencil',p:'pencil',e:'eraser',f:'fill',i:'eyedrop',g:'eyedrop',l:'line',r:'rect',s:'select'};
+    const m={b:'pencil',p:'pencil',e:'eraser',f:'fill',i:'eyedrop',g:'eyedrop',l:'line',r:'rect',o:'ellipse',s:'select'};
     if(m[k]) setTool(m[k]);
     if(k==='m') toggleMirror();
     if(k==='x') swapFgBg();
@@ -1283,6 +1377,13 @@ function setupEvents(){
   });
 
   let _rt; window.addEventListener('resize',()=>{clearTimeout(_rt);_rt=setTimeout(()=>{autoZoom();resizeCanvases();renderAll();},120);});
+  // Re-fit whenever the workspace itself changes size, not just the window:
+  // dismissing the cookie banner, orientation changes or the mobile address bar
+  // all resize #canvas-area without firing a window resize.
+  if('ResizeObserver' in window){
+    let _ra;
+    new ResizeObserver(()=>{clearTimeout(_ra);_ra=setTimeout(()=>{autoZoom();resizeCanvases();renderAll();},90);}).observe(document.getElementById('canvas-area'));
+  }
 }
 
 // ----------------------------------------------
@@ -1463,7 +1564,7 @@ function toggleFilledRect(){
   filledRect=!filledRect;
   const b=document.getElementById('filledRectBtn');
   if(b) b.style.color=filledRect?'var(--accent3)':'';
-  showToast(filledRect?'Filled rect on':'Outline rect');
+  showToast(filledRect?'Filled shapes on':'Outline shapes');
 }
 function clearSelection(){
   selection=null; selDragStart=null; selMoving=false; selMoveStart=null;
@@ -2134,7 +2235,7 @@ function buildUI(){
   });
   // Mobile tools
   const bbTools=document.getElementById('bbTools');
-  [{id:'pencil',ico:'✏️',l:'Draw'},{id:'eraser',ico:'🧹',l:'Erase'},{id:'fill',ico:'🫧',l:'Fill'},{id:'eyedrop',ico:'💧',l:'Pick'},{id:'line',ico:'📏',l:'Line'},{id:'rect',ico:'🔲',l:'Rect'}].forEach(t=>{
+  [{id:'pencil',ico:'✏️',l:'Draw'},{id:'eraser',ico:'🧹',l:'Erase'},{id:'fill',ico:'🫧',l:'Fill'},{id:'eyedrop',ico:'💧',l:'Pick'},{id:'line',ico:'📏',l:'Line'},{id:'rect',ico:'🔲',l:'Rect'},{id:'ellipse',ico:'⬭',l:'Ellipse'}].forEach(t=>{
     const btn=document.createElement('div');btn.className='bb-tb'+(t.id===currentTool?' on':'');
     btn.dataset.tool=t.id;btn.setAttribute('aria-label',t.l);btn.innerHTML=`<span class="ico">${t.ico}</span>${t.l}`;btn.onclick=()=>setTool(t.id);bbTools.appendChild(btn);
   });
@@ -2183,6 +2284,7 @@ document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>reque
       });
       var cb=document.querySelector('.classic-bridge'); if(cb) cb.style.display='none';
       var fm=document.getElementById('first-mission-bar'); if(fm) fm.style.display='flex';
+      document.body.classList.add('ps-focus'); // hide competing feedback/share buttons during the guided mission
     } else if(params.has('mission') || location.hash==='#mission'){
       try{ if(localStorage.getItem('jvds_mission_dismiss')!=='1'){ var mb2=document.getElementById('mission-banner'); if(mb2) mb2.style.display='flex'; } }catch(e){}
     }
@@ -2306,6 +2408,7 @@ document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>reque
     var bar=document.getElementById('next-actions');
     if(!bar) return;
     bar.style.display='flex';
+    document.body.classList.remove('ps-focus'); // mission done: bring back share/feedback as the finish step
     var tip=document.getElementById('echoTip');
     if(tip){ tip.textContent=tips[tipIdx % tips.length]; tipIdx++; }
   };

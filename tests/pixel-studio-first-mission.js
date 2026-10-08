@@ -72,6 +72,14 @@ async function runAt(page, viewport) {
   ok('390px: restore modal not open', m.restoreModalClosed);
   ok('390px: 16x16 character template applied', m.characterTemplate);
 
+  // A811: focus mode hides the floating feedback/share buttons during the mission
+  const focus = await page.evaluate(() => {
+    const vis = s => { const el = document.querySelector(s); return el ? getComputedStyle(el).display !== 'none' : false; };
+    return { psFocus: document.body.classList.contains('ps-focus'), fb: vis('#jvfb-btn'), share: vis('#jvds-share-btn') };
+  });
+  ok('390px: first-mission focus mode on', focus.psFocus);
+  ok('390px: feedback/share hidden during mission', !focus.fb && !focus.share);
+
   // step progression
   const s1 = await page.evaluate(() => {
     missionTick('draw');
@@ -101,6 +109,14 @@ async function runAt(page, viewport) {
   ok('step 3 done: dot-3 shows tick', s3.d3.includes('✓'));
   ok('step 3 done: next-actions bar appears', s3.nextActionsVisible);
   ok('step 3 done: Play button in next-actions', s3.playBtn);
+
+  // A811: finishing the mission reveals the share/feedback buttons again
+  const focus2 = await page.evaluate(() => {
+    const vis = s => { const el = document.querySelector(s); return el ? getComputedStyle(el).display !== 'none' : false; };
+    return { psFocus: document.body.classList.contains('ps-focus'), fb: vis('#jvfb-btn'), share: vis('#jvds-share-btn') };
+  });
+  ok('390px: focus mode clears when mission done', !focus2.psFocus);
+  ok('390px: share/feedback revealed at finish', focus2.share || focus2.fb);
 
   // === 1440px desktop ===
   await runAt(page, { width: 1440, height: 900, deviceScaleFactor: 1 });

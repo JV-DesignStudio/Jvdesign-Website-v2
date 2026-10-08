@@ -34,6 +34,58 @@ const ok = (name, cond) => { console.log((cond ? 'PASS ' : 'FAIL ') + name); if 
   await page.goto('http://127.0.0.1:8127/tools/pixel-studio.html', { waitUntil: 'networkidle2', timeout: 30000 });
   await new Promise(r => setTimeout(r, 1200));
 
+  // 0. Layout sanity (A809): on phones the editor's column layout used to turn
+  // the top bar's inline flex-basis into heights, collapsing #canvas-area to 0
+  // and hiding the drawing surface entirely.
+  const layout = await page.evaluate(() => {
+    const ca = document.getElementById('canvas-area');
+    const mc = document.getElementById('main-canvas');
+    const cr = ca.getBoundingClientRect(), mr = mc.getBoundingClientRect();
+    const doc = document.documentElement;
+    return {
+      areaH: Math.round(cr.height),
+      canvasW: Math.round(mr.width),
+      canvasH: Math.round(mr.height),
+      inside: mr.height <= cr.height + 1 && mr.width <= cr.width + 1,
+      overflow: doc.scrollWidth > doc.clientWidth + 1
+    };
+  });
+  ok('layout: canvas-area has real height (' + layout.areaH + 'px)', layout.areaH > 60);
+  ok('layout: canvas visible and inside area (' + layout.canvasW + '×' + layout.canvasH + ')', layout.canvasW > 0 && layout.canvasH > 0 && layout.inside);
+  ok('layout: no horizontal overflow', !layout.overflow);
+
+  // 0b. Floating feedback/share buttons must not cover an open modal (A809).
+  const widgetOverModal = await page.evaluate(() => {
+    if (typeof openModal !== 'function') return { skip: true };
+    openModal('startModal');
+    const vis = s => { const el = document.querySelector(s); return el ? getComputedStyle(el).display !== 'none' : false; };
+    const hidden = { fb: !vis('#jvfb-btn'), share: !vis('#jvds-share-btn') };
+    if (typeof closeModal === 'function') closeModal('startModal');
+    return hidden;
+  });
+  if (!widgetOverModal.skip) {
+    ok('modal: feedback button hidden while modal open', widgetOverModal.fb);
+    ok('modal: share button hidden while modal open', widgetOverModal.share);
+  }
+
+  // 0c. Re-fitting the canvas when the workspace changes (A813). The reserved
+  // cookie-banner space shrinks the fixed-height tool and other elements (mascot
+  // coach) come and go, so force an area resize and check the view re-fits.
+  const refit = await page.evaluate(async () => {
+    const area = document.getElementById('canvas-area');
+    const width = () => Math.round(document.getElementById('main-canvas').getBoundingClientRect().width);
+    const b = document.getElementById('cookie-accept');
+    if (b) b.click();
+    else { const bb = document.getElementById('cookie-banner'); if (bb) bb.remove(); }
+    area.style.maxHeight = '96px';
+    await new Promise(r => setTimeout(r, 450));
+    const shrunk = width();
+    area.style.maxHeight = '';
+    await new Promise(r => setTimeout(r, 450));
+    return { shrunk, grew: width() };
+  });
+  ok('refit: canvas re-fits when workspace grows (' + refit.shrunk + '→' + refit.grew + ')', refit.grew > refit.shrunk);
+
   const client = await page.target().createCDPSession();
   const touch = async (type, points) => client.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(p => ({ x: Number(p.x), y: Number(p.y) })) });
   const tapAt = async (x, y) => {

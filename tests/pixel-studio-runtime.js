@@ -59,6 +59,61 @@ const server = http.createServer((req, res) => {
     redo();
     ok('redo restored mirrored stroke', frames[0][0].data[(8 * cW + (cW - 1 - 2)) * 4 + 3] === 255);
 
+    // --- A810: ellipse tool + flip/rotate transforms ---
+    const blank = () => { frames[0][0] = new ImageData(cW, cH); };
+    const alpha = (x, y) => frames[0][0].data[(y * cW + x) * 4 + 3];
+
+    // Ellipse outline draws the boundary, not the centre
+    setTool('ellipse');
+    ok('ellipse tool selectable (key O)', currentTool === 'ellipse');
+    blank();
+    pushUndo();
+    drawEllipse(getID(), 0, 0, 8, 8, '#e94560', false);
+    renderAll();
+    ok('ellipse outline edge painted', alpha(4, 0) === 255 || alpha(0, 4) === 255 || alpha(8, 4) === 255 || alpha(4, 8) === 255);
+    ok('ellipse outline centre empty', alpha(4, 4) === 0);
+    undo();
+    ok('ellipse undo removes whole shape', frames[0][0].data.every((v, i) => i % 4 !== 3 || v === 0));
+
+    // Filled ellipse paints the interior
+    blank();
+    const prevFill = filledRect;
+    filledRect = true;
+    pushUndo();
+    drawEllipse(getID(), 0, 0, 8, 8, '#e94560', false);
+    renderAll();
+    ok('ellipse filled centre painted', alpha(4, 4) === 255);
+    filledRect = prevFill;
+    undo();
+
+    // Flip X moves a pixel to the mirrored column, undo restores it
+    blank();
+    setTool('pencil');
+    pushUndo();
+    paintPx(getID(), 1, 2, '#00d4aa', false);
+    flipFrame('x');
+    ok('flip X moves pixel to mirrored column', alpha(cW - 2, 2) === 255 && alpha(1, 2) === 0);
+    undo();
+    ok('flip undo restores pixel', alpha(1, 2) === 255 && alpha(cW - 2, 2) === 0);
+
+    // Rotate 90 clockwise (square canvas keeps its size), undo restores content
+    blank();
+    setPixel(frames[0][0], 1, 2, 0, 212, 170, 255);
+    rotateFrame();
+    ok('rotate 90 keeps square canvas size', cW === 32 && cH === 32);
+    ok('rotate 90 moves pixel clockwise', alpha(cW - 3, 1) === 255);
+    undo();
+    ok('rotate undo restores pixel', alpha(1, 2) === 255 && cW === 32 && cH === 32);
+
+    // Non-square rotate swaps dimensions; undo restores them and the content
+    setCanvasSize(16, 32, false);
+    setPixel(frames[0][0], 1, 2, 255, 0, 0, 255);
+    rotateFrame();
+    ok('rotate swaps non-square dimensions', cW === 32 && cH === 16);
+    undo();
+    ok('undo restores non-square dimensions and pixel', cW === 16 && cH === 32 && alpha(1, 2) === 255);
+    setCanvasSize(32, 32, false);
+
     // GIF encoder present + produces a valid-looking blob header
     const blob = encodeGIF([flattenFrame(0), flattenFrame(0)], 4);
     const buf = new Uint8Array(await blob.arrayBuffer());
