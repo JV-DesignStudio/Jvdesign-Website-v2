@@ -446,21 +446,42 @@
   }
 
   let paused=false, pauseOverlay=null;
-  function togglePause(){ if(paused){ paused=false; running=true; if(pauseOverlay) pauseOverlay.style.display='none'; document.getElementById('pauseBtn').textContent='⏸'; cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop); return; } if(!running) return; paused=true; running=false; document.getElementById('pauseBtn').textContent='▶'; if(!pauseOverlay){ pauseOverlay=document.createElement('div'); pauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(8,12,30,.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:60;text-align:center;padding:24px'; pauseOverlay.innerHTML='<div style="font-size:2rem">⏸ Paused</div><button id="resumeBtn" class="btn teal">🧱 Resume</button>'; document.body.appendChild(pauseOverlay); pauseOverlay.querySelector('#resumeBtn').addEventListener('click', togglePause); } else pauseOverlay.style.display='flex'; }
+  function togglePause(){ if(paused){ paused=false; running=true; if(pauseOverlay) pauseOverlay.style.display='none'; document.getElementById('pauseBtn').textContent='⏸'; startFrame(); return; } if(!running) return; paused=true; running=false; document.getElementById('pauseBtn').textContent='▶'; if(!pauseOverlay){ pauseOverlay=document.createElement('div'); pauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(8,12,30,.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:60;text-align:center;padding:24px'; pauseOverlay.innerHTML='<div style="font-size:2rem">⏸ Paused</div><button id="resumeBtn" class="btn teal">🧱 Resume</button>'; document.body.appendChild(pauseOverlay); pauseOverlay.querySelector('#resumeBtn').addEventListener('click', togglePause); } else pauseOverlay.style.display='flex'; }
   // ── Loop ──
+  // Movement/physics run once per fixed engine step so speed is frame-rate
+  // independent. The shared runtime drives the loop and input when present
+  // (engine >= 2.1.0); otherwise the original requestAnimationFrame loop below
+  // runs unchanged, so older cached engine copies still play the game.
   let stackFrame=0;
-  function loop(ts){
-    if(!running)return;cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop);
-    if(!ts)ts=performance.now();
-    const dt=lastFrameT?Math.min((ts-lastFrameT)/1000,0.05):1/60;lastFrameT=ts;
-    const f=dt*60;
+  const RT=window.JVDSEngine&&window.JVDSEngine.runtime;
+  const stackInput=RT?RT.input(cv):null;
+  let frameLoop=null;
+  if(RT)cv.dataset.engineRuntime=RT.version;
+  if(RT){const unlock=()=>{initAudio();if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();cv.removeEventListener('pointerdown',unlock);};cv.addEventListener('pointerdown',unlock);}
+  function simulate(f){
     if(cur){cur.x+=dir*speed*f;if(cur.x+cur.w>W){cur.x=W-cur.w;dir=-1;}if(cur.x<0){cur.x=0;dir=1;}}
     const targetCam=Math.max(0,(baseY()-(cur?cur.y:0))-H*0.45);camY+=(targetCam-camY)*Math.min(1,0.1*f);
     fragments.forEach(f2=>{ f2.vy=(f2.vy||6)+0.45*f; f2.y+=f2.vy*f; f2.x+=f2.vx*f; f2.vx*=Math.pow(0.998,f); f2.rot=(f2.rot||0)+(f2.rv||0)*f; f2.rv*=Math.pow(0.99,f); });
     fragments=fragments.filter(f2=>f2.y-camY<H+80 && f2.y-baseY()<220);
     particles=particles.filter(p=>{p.x+=p.vx*f;p.y+=p.vy*f;p.vy+=0.15*f;p.life-=0.02*f;return p.life>0;});
     floaters=floaters.filter(f2=>{f2.y+=f2.vy*f;f2.life-=0.015*f;return f2.life>0;});
+  }
+  function loop(ts){
+    if(!running)return;cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop);
+    if(!ts)ts=performance.now();
+    const dt=lastFrameT?Math.min((ts-lastFrameT)/1000,0.05):1/60;lastFrameT=ts;
+    simulate(dt*60);
     draw();
+  }
+  function runtimeStep(step){
+    if(!running){if(frameLoop)frameLoop.stop();return;}
+    if(stackInput&&(stackInput.wasPressed('space')||stackInput.pointer.pressed)&&document.activeElement!==repairBtn&&document.activeElement!==brakeBtn)drop();
+    simulate(step*60);
+  }
+  function runtimeRender(){if(running)draw();}
+  function startFrame(){
+    if(RT){if(!frameLoop)frameLoop=RT.loop({step:1/60,update:runtimeStep,render:runtimeRender,input:stackInput,autostart:false,autoPause:false});frameLoop.start();}
+    else{cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop);}
   }
 
   // ── Draw ──
@@ -556,7 +577,7 @@
   }
 
   // ── Start / End ──
-  function startGame(){ cancelAnimationFrame(stackFrame); if(pauseOverlay) pauseOverlay.style.display='none'; paused=false; initAudio();if(typeof gameSystem!=='undefined')storyRun.gameSystem=gameSystem;reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');hint.classList.remove('hidden');cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop);setTimeout(()=>hint.classList.add('hidden'),2600);if(!storyRun.running)storyRun.begin();}
+  function startGame(){ cancelAnimationFrame(stackFrame); if(pauseOverlay) pauseOverlay.style.display='none'; paused=false; initAudio();if(typeof gameSystem!=='undefined')storyRun.gameSystem=gameSystem;reset();startScreen.classList.add('hidden');endScreen.classList.add('hidden');hint.classList.remove('hidden');startFrame();setTimeout(()=>hint.classList.add('hidden'),2600);if(!storyRun.running)storyRun.begin();}
 
   function end(won=false){ if(pauseOverlay) pauseOverlay.style.display='none'; paused=false;
     running=false;beaconComplete=!!won;updateHud();hint.classList.add('hidden');if(won)sfxAch();else sfxOver();
