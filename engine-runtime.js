@@ -25,7 +25,7 @@
 (function (root) {
   'use strict';
   var api = root.JVDSEngine = root.JVDSEngine || {};
-  api.version = api.version || '2.1.0';
+  api.version = api.version || '2.2.0';
 
   function reducedMotion() {
     try { return !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches); }
@@ -357,6 +357,132 @@
     }, duration + 60);
   }
 
+  // ------------------------------------------------------------ physics ----
+  // Bodies are plain objects with x, y, vx, vy and w/h. Rects use {x,y,w,h}
+  // (top-left). moveAndCollide resolves one axis at a time and zeroes velocity
+  // on contact, which is enough for platformer and top-down movement alike.
+  function applyVelocity(body, dt, o) {
+    o = o || {};
+    if (o.drag) {
+      var keep = Math.max(0, 1 - o.drag * dt);
+      body.vx = (body.vx || 0) * keep;
+      body.vy = (body.vy || 0) * keep;
+    }
+    if (o.maxSpeed) {
+      var sp = Math.sqrt((body.vx || 0) * (body.vx || 0) + (body.vy || 0) * (body.vy || 0));
+      if (sp > o.maxSpeed) { body.vx = body.vx / sp * o.maxSpeed; body.vy = body.vy / sp * o.maxSpeed; }
+    }
+    body.x += (body.vx || 0) * dt;
+    body.y += (body.vy || 0) * dt;
+    return body;
+  }
+  function applyGravity(body, dt, g) {
+    body.vy = (body.vy || 0) + (g == null ? 2000 : g) * dt;
+    return body;
+  }
+  function moveAndCollide(body, dx, dy, solids) {
+    solids = solids || [];
+    var res = { left: false, right: false, top: false, bottom: false, ground: false, ceiling: false, wall: false };
+    body.x += dx;
+    for (var i = 0; i < solids.length; i++) {
+      if (aabb(body, solids[i])) {
+        if (dx > 0) { body.x = solids[i].x - body.w; res.right = true; }
+        else if (dx < 0) { body.x = solids[i].x + solids[i].w; res.left = true; }
+        if (dx !== 0) { body.vx = 0; res.wall = true; }
+      }
+    }
+    body.y += dy;
+    for (var j = 0; j < solids.length; j++) {
+      if (aabb(body, solids[j])) {
+        if (dy > 0) { body.y = solids[j].y - body.h; res.bottom = true; res.ground = true; }
+        else if (dy < 0) { body.y = solids[j].y + solids[j].h; res.top = true; res.ceiling = true; }
+        if (dy !== 0) { body.vy = 0; }
+      }
+    }
+    return res;
+  }
+  function clampBody(body, bounds) {
+    if (!bounds) return body;
+    if (bounds.x != null && body.x < bounds.x) body.x = bounds.x;
+    if (bounds.y != null && body.y < bounds.y) body.y = bounds.y;
+    if (bounds.w != null && body.x + body.w > bounds.x + bounds.w) body.x = bounds.x + bounds.w - body.w;
+    if (bounds.h != null && body.y + body.h > bounds.y + bounds.h) body.y = bounds.y + bounds.h - body.h;
+    return body;
+  }
+
+  // ------------------------------------------------------------- render ----
+  // Small rendering helpers. The sprite cache means the same image is decoded
+  // once no matter how many times a game asks for it.
+  function makeSpriteCache() {
+    var cache = {};
+    function get(src) {
+      if (cache[src]) return cache[src];
+      var img = new Image();
+      img.jvdsReady = false;
+      img.onload = function () { img.jvdsReady = true; };
+      img.onerror = function () { img.jvdsError = true; };
+      img.src = src;
+      cache[src] = img;
+      return img;
+    }
+    return {
+      load: get,
+      has: function (src) { return !!cache[src]; },
+      ready: function (src) { return !!(cache[src] && cache[src].jvdsReady); },
+      draw: function (ctx, src, x, y, w, h) {
+        var img = get(src);
+        if (!img.jvdsReady || !ctx) return false;
+        ctx.drawImage(img, x, y, w == null ? img.naturalWidth : w, h == null ? img.naturalHeight : h);
+        return true;
+      },
+      clear: function () { cache = {}; }
+    };
+  }
+  function camera(o) {
+    o = o || {};
+    var cam = {
+      x: o.x || 0, y: o.y || 0, w: o.w || 0, h: o.h || 0,
+      lerp: o.lerp == null ? 0.1 : o.lerp,
+      deadzone: o.deadzone || 0,
+      worldW: o.worldW || 0, worldH: o.worldH || 0,
+      follow: function (tx, ty, dt) {
+        var frame = (dt == null ? 1 / 60 : dt) * 60;
+        var factor = 1 - Math.pow(1 - cam.lerp, frame);
+        var goalX = tx - cam.w / 2, goalY = ty - cam.h / 2;
+        if (cam.deadzone > 0) {
+          if (Math.abs(tx - (cam.x + cam.w / 2)) < cam.deadzone) goalX = cam.x;
+          if (Math.abs(ty - (cam.y + cam.h / 2)) < cam.deadzone) goalY = cam.y;
+        }
+        cam.x += (goalX - cam.x) * factor;
+        cam.y += (goalY - cam.y) * factor;
+        return cam.clamp();
+      },
+      clamp: function () {
+        if (cam.worldW) cam.x = Math.max(0, Math.min(cam.x, Math.max(0, cam.worldW - cam.w)));
+        if (cam.worldH) cam.y = Math.max(0, Math.min(cam.y, Math.max(0, cam.worldH - cam.h)));
+        return cam;
+      }
+    };
+    return cam;
+  }
+  function parallax(cam, factor) {
+    factor = factor == null ? 0.5 : factor;
+    return { x: -(cam.x || 0) * factor, y: -(cam.y || 0) * factor };
+  }
+  function flash(o) {
+    o = o || {};
+    if (reducedMotion() || !root.document || !root.document.body) return null;
+    var el = root.document.createElement('div');
+    el.className = 'jvdse-flash';
+    el.style.background = o.color || '#ffffff';
+    el.style.opacity = String(o.opacity == null ? 0.6 : o.opacity);
+    el.style.transitionDuration = (o.duration || 380) + 'ms';
+    root.document.body.appendChild(el);
+    root.requestAnimationFrame(function () { el.style.opacity = '0'; });
+    root.setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, (o.duration || 380) + 80);
+    return el;
+  }
+
   function injectCss() {
     if (!root.document || root.document.getElementById('jvdse-css')) return;
     var css = root.document.createElement('style');
@@ -365,7 +491,8 @@
       '.jvdse-float{position:fixed;z-index:2147483200;pointer-events:none;font:900 16px system-ui,sans-serif;color:#ffe066;text-shadow:0 2px 6px rgba(0,0,0,.5);transform:translate(-50%,-50%);animation:jvdseFloat .9s ease-out forwards}' +
       '@keyframes jvdseFloat{to{transform:translate(-50%,-160%);opacity:0}}' +
       '.jvdse-particle{position:fixed;z-index:2147483200;pointer-events:none;border-radius:50%;transform:translate(-50%,-50%);animation:jvdseParticle .62s ease-out forwards}' +
-      '@keyframes jvdseParticle{to{transform:translate(calc(-50% + var(--jvdse-dx,0px)),calc(-50% + var(--jvdse-dy,0px)));opacity:0}}';
+      '@keyframes jvdseParticle{to{transform:translate(calc(-50% + var(--jvdse-dx,0px)),calc(-50% + var(--jvdse-dy,0px)));opacity:0}}' +
+      '.jvdse-flash{position:fixed;inset:0;z-index:2147483100;pointer-events:none;transition:opacity linear}';
     root.document.head.appendChild(css);
   }
   if (root.document) {
@@ -374,12 +501,19 @@
   }
 
   api.runtime = {
-    version: '2.1.0',
+    version: '2.2.0',
     loop: loop,
     input: input,
     collide: {
       aabb: aabb, pointInRect: pointInRect, circle: circle, circleRect: circleRect,
       overlap: overlap, resolve: resolve
+    },
+    physics: {
+      applyVelocity: applyVelocity, applyGravity: applyGravity,
+      moveAndCollide: moveAndCollide, clamp: clampBody
+    },
+    render: {
+      sprite: makeSpriteCache, camera: camera, parallax: parallax, flash: flash
     },
     juice: {
       shake: shake, float: float, tween: tween, burst: burst,

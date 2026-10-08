@@ -53,8 +53,8 @@ function check(name, ok, detail=''){
   check('title loads', initial.title.includes('Stack Attack'), initial.title);
   check('canvas exists and is sized', initial.canvas && initial.canvasW > 0 && initial.canvasH > 0, initial.canvasW + 'x' + initial.canvasH);
   check('engine runtime present', initial.runtime, initial.runtimeVersion || 'none');
-  check('runtime version 2.1.0', initial.runtimeVersion === '2.1.0', String(initial.runtimeVersion));
-  check('game runs on the shared runtime', initial.engineMarker === '2.1.0', String(initial.engineMarker));
+  check('runtime version 2.2.0', initial.runtimeVersion === '2.2.0', String(initial.runtimeVersion));
+  check('game runs on the shared runtime', initial.engineMarker === '2.2.0', String(initial.engineMarker));
   check('start screen visible on load', initial.startBtn && initial.startVisible);
   check('desktop has no horizontal overflow', initial.overflow <= 2, String(initial.overflow));
 

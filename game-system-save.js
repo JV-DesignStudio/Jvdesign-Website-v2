@@ -7,9 +7,9 @@
 (function (root) {
   'use strict';
   var api = root.JVDSEngine = root.JVDSEngine || {};
-  api.version = api.version || '2.1.0';
+  api.version = api.version || '2.2.0';
   api.save = {
-    version: '2.1.0',
+    version: '2.2.0',
     // Load and repair a stored state object for a game's storage key.
     load: function (storageKey) {
       try {
@@ -33,6 +33,32 @@
         console.error('Failed to save game state:', e);
         return false;
       }
+    },
+    // Remove one game's saved state (used by reset/clear-all flows).
+    remove: function (storageKey) {
+      try { localStorage.removeItem(storageKey); return true; }
+      catch (e) { return false; }
+    },
+    // True when localStorage can actually be written (private mode / full quota
+    // return false so callers can warn instead of failing silently).
+    available: function () {
+      try {
+        var k = '__jvds_probe__';
+        localStorage.setItem(k, '1');
+        localStorage.removeItem(k);
+        return true;
+      } catch (e) { return false; }
+    },
+    // Serialise a state object to a portable string (for export/keepsake).
+    exportState: function (state) {
+      try { return JSON.stringify(state); } catch (e) { return null; }
+    },
+    // Parse an exported string back into a state object, or null if invalid.
+    importState: function (json) {
+      try {
+        var s = JSON.parse(json);
+        return (s && typeof s === 'object' && !Array.isArray(s)) ? s : null;
+      } catch (e) { return null; }
     }
   };
 })(typeof window !== 'undefined' ? window : this);

@@ -1908,7 +1908,7 @@ const VoidStory = {
 // A672: versioned engine identity. The score/save modules (game-system-score.js,
 // game-system-save.js) load before this file and register on window.JVDSEngine;
 // here we stamp the version and expose the API surface for tools and tests.
-GameSystem.VERSION = '2.1.0';
+GameSystem.VERSION = '2.2.0';
 
 /* Unified score schema (see game-score.js).
    One documented key per game - jvds_game_<gameId> - is what the Arcade hub and

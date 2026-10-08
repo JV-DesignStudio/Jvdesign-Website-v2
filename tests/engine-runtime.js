@@ -7,14 +7,16 @@ const path = require('path');
 const http = require('http');
 const puppeteer = require('puppeteer');
 const ROOT = path.resolve(__dirname, '..');
-const RUNTIME_VERSION = '2.1.0';
+const RUNTIME_VERSION = '2.2.0';
 
 const NOISE = /ServiceWorker|MIME type|Failed to load resource|net::ERR|ERR_FAILED|ERR_ABORTED|favicon/i;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 (async () => {
   const server = http.createServer((req, res) => {
-    const p = path.resolve(ROOT, '.' + decodeURIComponent(req.url.split('?')[0]));
+    const url = decodeURIComponent(req.url.split('?')[0]);
+    if (url === '/__blank__') { res.writeHead(200, { 'Content-Type': 'text/html' }); return res.end('<!doctype html><html><head></head><body></body></html>'); }
+    const p = path.resolve(ROOT, '.' + url);
     if (!p.startsWith(ROOT + path.sep)) { res.writeHead(403); return res.end(); }
     fs.readFile(p, (e, b) => { res.writeHead(e ? 404 : 200); res.end(e ? '' : b); });
   });
@@ -37,9 +39,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     const errors = [];
     page.on('pageerror', e => { const m = String(e.message || e); if (!NOISE.test(m)) errors.push(m); });
     await page.setViewport({ width: 390, height: 720 });
-    await page.setContent('<!doctype html><html><head></head><body></body></html>');
+    await page.goto(base + '/__blank__', { waitUntil: 'domcontentloaded' });
     await page.bringToFront();
     if (motion) await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: motion }]);
+    await page.addScriptTag({ url: base + '/game-system-save.js' });
     await page.addScriptTag({ url: base + '/engine-runtime.js' });
     await sleep(50);
     return { page, errors };
@@ -253,6 +256,77 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     check('reduced-motion: burst spawns no particles', r.particles === 0, 'particles=' + r.particles);
     check('reduced-motion: tween snaps to target immediately', r.tweenFinal === 9, String(r.tweenFinal));
     check('reduced-motion: no uncaught errors', rmErrors.length === 0, rmErrors[0] || '');
+
+    // 7. Physics.
+    const ph = await page.evaluate(() => {
+      const P = window.JVDSEngine.runtime.physics;
+      const b = { x: 0, y: 0, vx: 60, vy: 0, w: 10, h: 10 };
+      P.applyVelocity(b, 1);
+      const movedX = b.x;
+      P.applyGravity(b, 0.5, 100);
+      const vy = b.vy;
+      const body = { x: 0, y: 0, vx: 0, vy: 100, w: 10, h: 10 };
+      const below = P.moveAndCollide(body, 0, 20, [{ x: 0, y: 20, w: 100, h: 10 }]);
+      const body2 = { x: 0, y: 100, vx: 100, vy: 0, w: 10, h: 10 };
+      const right = P.moveAndCollide(body2, 25, 0, [{ x: 20, y: 0, w: 10, h: 200 }]);
+      const body3 = { x: 95, y: 95, w: 10, h: 10 };
+      P.clamp(body3, { x: 0, y: 0, w: 100, h: 100 });
+      return { movedX, vy, bodyY: body.y, ground: below.ground, vyAfter: body.vy, body2X: body2.x, right: right.right, wall: right.wall, clampedX: body3.x, clampedY: body3.y };
+    });
+    check('physics: applyVelocity integrates', ph.movedX === 60, String(ph.movedX));
+    check('physics: applyGravity accumulates', ph.vy === 50, String(ph.vy));
+    check('physics: moveAndCollide lands on ground and stops', ph.bodyY === 10 && ph.ground === true && ph.vyAfter === 0, `y=${ph.bodyY} ground=${ph.ground} vy=${ph.vyAfter}`);
+    check('physics: moveAndCollide stops at a wall', ph.body2X === 10 && ph.right === true && ph.wall === true, `x=${ph.body2X}`);
+    check('physics: clamp keeps the body in bounds', ph.clampedX === 90 && ph.clampedY === 90, `${ph.clampedX},${ph.clampedY}`);
+
+    // 8. Render helpers.
+    const rd = await page.evaluate(async () => {
+      const R = window.JVDSEngine.runtime.render;
+      const gif = 'data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=';
+      const sp = R.sprite();
+      const cached = sp.load(gif) === sp.load(gif);
+      const canvas = document.createElement('canvas'); canvas.width = 10; canvas.height = 10;
+      const ctx = canvas.getContext('2d');
+      const before = sp.draw(ctx, gif, 0, 0);
+      await new Promise(resolve => {
+        const img = sp.load(gif);
+        if (img.jvdsReady) return resolve();
+        img.addEventListener('load', () => resolve());
+        setTimeout(resolve, 400);
+      });
+      const after = sp.draw(ctx, gif, 0, 0);
+      const cam = R.camera({ w: 100, h: 100, lerp: 1, worldW: 1000, worldH: 1000 });
+      cam.follow(500, 500, 1 / 60);
+      const px = R.parallax({ x: 100, y: 50 }, 0.5);
+      const fl = R.flash({ color: '#fff' });
+      return { cached, before, after, camX: cam.x, camY: cam.y, px, flash: !!fl };
+    });
+    check('render: sprite cache reuses one image', rd.cached === true);
+    check('render: draw waits for the image to load', rd.before === false && rd.after === true, `${rd.before}->${rd.after}`);
+    check('render: camera follows to target centre', rd.camX === 450 && rd.camY === 450, `${rd.camX},${rd.camY}`);
+    check('render: parallax offsets by camera factor', rd.px.x === -50 && rd.px.y === -25, JSON.stringify(rd.px));
+    check('render: flash creates an overlay', rd.flash === true);
+
+    // 9. Save helpers.
+    const sv = await page.evaluate(() => {
+      const S = window.JVDSEngine.save;
+      localStorage.removeItem('jvds_test_save');
+      S.persist('jvds_test_save', { score: 5 });
+      const loaded = S.load('jvds_test_save');
+      const str = S.exportState({ a: 1 });
+      const imp = S.importState(str);
+      const bad = S.importState('{not json');
+      const arr = S.importState('[1,2]');
+      const avail = S.available();
+      const removed = S.remove('jvds_test_save');
+      const after = S.load('jvds_test_save');
+      return { score: loaded && loaded.score, str, impA: imp && imp.a, bad, arr, avail, removed, after };
+    });
+    check('save: persist then load round-trips', sv.score === 5, String(sv.score));
+    check('save: export/import round-trips', sv.str === '{"a":1}' && sv.impA === 1, String(sv.str));
+    check('save: import rejects bad input (json + array)', sv.bad === null && sv.arr === null);
+    check('save: available true in a writable context', sv.avail === true);
+    check('save: remove clears the key', sv.removed === true && sv.after === null);
 
     check('runtime: no uncaught errors overall', errors.length === 0, errors[0] || '');
   } finally {
