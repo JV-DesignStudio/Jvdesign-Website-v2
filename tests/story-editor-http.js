@@ -57,7 +57,41 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      clientWidth:document.documentElement.clientWidth
    };
  });
- check('title loads', data.title.includes('Story Editor'), data.title);
+  const mobileFlow=await page.evaluate(()=>{
+    const out=[];const rec=(name,cond,detail='')=>out.push({name,ok:!!cond,detail:String(detail)});
+    const shown=el=>!!el&&getComputedStyle(el).display!=='none';
+
+    rec('passage button visible on mobile', shown(document.getElementById('storyDrawerBtn')));
+    openStoryDrawer();
+    const drawer=document.getElementById('storyDrawer');
+    rec('passage drawer opens', drawer.classList.contains('open'));
+    const count=document.querySelectorAll('#drawerList .drawer-item').length;
+    rec('drawer lists every passage', count===nodes.length, count+'/'+nodes.length);
+    const item=document.querySelector('#drawerList .drawer-item');
+    const itemId=item&&item.dataset.id;
+    if(item) item.click();
+    rec('picking a passage closes the drawer', !drawer.classList.contains('open'));
+    rec('picking a passage selects it', selectedNode===itemId, selectedNode+' vs '+itemId);
+    rec('mobile switches to the Edit tab', document.getElementById('bb1').classList.contains('on'));
+    const ta=document.querySelector('#bbEditPanel textarea');
+    rec('mobile editor uses readable type', ta && parseFloat(getComputedStyle(ta).fontSize)>=13.5, ta?getComputedStyle(ta).fontSize:'no textarea');
+
+    // add-next: one tap makes a connected node to the right
+    selectedNode=null;
+    addNode('dialogue');
+    const base=nodes.find(n=>n.id===selectedNode);
+    const before=nodes.length;
+    addNextNode('dialogue');
+    const added=nodes[nodes.length-1];
+    rec('add-next creates a node', nodes.length===before+1);
+    rec('add-next connects from the selected node', base&&base.to===added.id, base?base.to+' vs '+added.id:'no base');
+    rec('add-next lands to the right', added.x>base.x, added.x+' > '+base.x);
+    rec('add-next selects it and opens Edit', selectedNode===added.id && document.getElementById('bb1').classList.contains('on'));
+    return out;
+  });
+  mobileFlow.forEach(r=>check(r.name,r.ok,r.detail));
+
+  check('title loads', data.title.includes('Story Editor'), data.title);
  check('single skip link', data.skipLinks===1, String(data.skipLinks));
  check('main target exists', data.main);
  check('starter nodes render', data.nodes>=1, String(data.nodes));

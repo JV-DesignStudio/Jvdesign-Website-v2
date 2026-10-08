@@ -29,15 +29,14 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="preload" href="../style-tool-story-editor.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="../style-tool-story-editor.css?v=17"></noscript>
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<link rel="preload" href="../style-tool-story-editor.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="../style-tool-story-editor.css?v=18"></noscript>
 
  <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Story Editor","description":"Node-based dialogue editor for branching RPG conversations. Write, connect, preview and export as JSON for Godot or Unity. Free, no install.","url":"https://jvdesignstudio.co.uk/tools/story-editor.html","applicationCategory":"DesignApplication","operatingSystem":"Web Browser","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"author":{"@type":"Person","name":"J. Valentine"}}
@@ -183,6 +182,7 @@
  <div id="canvas-area">
  <svg id="arrow-svg"></svg>
  <div id="story-canvas"></div>
+ <button id="storyDrawerBtn" onclick="openStoryDrawer()" aria-label="Open passage list">📖 Passages</button>
  <div id="toolbar">
  <button class="toolbar-btn" onclick="undo()" title="Undo (Ctrl+Z)">↶ Undo</button>
  <button class="toolbar-btn" onclick="redo()" title="Redo (Ctrl+Y)">↷ Redo</button>
@@ -239,6 +239,18 @@
  <button class="ab ab-r" style="margin:0;padding:6px 10px;font-size:.7rem;flex-shrink:0;" onclick="clearStory()">New</button>
  </div>
  </div>
+</div>
+
+<!-- MOBILE PASSAGE DRAWER -->
+<div id="drawerBackdrop" class="drawer-backdrop" onclick="closeStoryDrawer()"></div>
+<div id="storyDrawer" role="dialog" aria-modal="true" aria-labelledby="storyDrawerTitle">
+ <div class="drawer-head">
+  <strong id="storyDrawerTitle">Passages</strong>
+  <button class="drawer-close" onclick="closeStoryDrawer()" aria-label="Close passage list">✕</button>
+ </div>
+ <input class="drawer-search" id="drawerSearch" placeholder="Search passages…" oninput="renderStoryDrawer()">
+ <div class="drawer-list" id="drawerList"></div>
+ <button class="ab ab-p" style="margin:0;" onclick="closeStoryDrawer();addNode('dialogue')">+ New passage</button>
 </div>
 
 <!-- BUILD:footer-tools -->
@@ -470,9 +482,9 @@ function loadDefaultStory() {
       {text:'A painting!', to:'n9', cond:null, fx:[]},
     ], to:null},
     {id:'n7', type:'end',      x:1080, y:160, char:'Narrator', text:'The wizard blocks your path. Game Over!', choices:[], to:null},
-    {id:'n8', type:'dialogue', x:1340, y:0,   char:'Wizard',   text:"Correct! You are wise. You may pass. ?", choices:[], to:'n10'},
+    {id:'n8', type:'dialogue', x:1340, y:0,   char:'Wizard',   text:"Correct! You are wise. You may pass. ✨", choices:[], to:'n10'},
     {id:'n9', type:'dialogue', x:1340, y:160, char:'Wizard',   text:"Close... but no. The answer is a map. Try again tomorrow.", choices:[], to:'n7'},
-    {id:'n10',type:'end',      x:1600, y:0,   char:'Narrator', text:'You step past the wizard and into the forest. Adventure awaits! ?', choices:[], to:null},
+    {id:'n10',type:'end',      x:1600, y:0,   char:'Narrator', text:'You step past the wizard and into the forest. Adventure awaits! 🌟', choices:[], to:null},
   ];
   nodes.forEach(n=>{ if(!n.fx) n.fx=[]; n.choices.forEach(c=>{ if(c.cond===undefined) c.cond=null; if(!c.fx) c.fx=[]; }); });
   nextId = 11;
@@ -506,6 +518,34 @@ function fitView() {
   canvasOffset.x = (aw - sw*canvasScale)/2 - minX*canvasScale;
   canvasOffset.y = (ah - sh*canvasScale)/2 - minY*canvasScale;
   applyTransform();
+}
+
+// -- Mobile helpers: readable type, passage drawer, tap-to-edit --
+function isMobileView(){ try{ return window.matchMedia('(max-width:699px)').matches; }catch(e){ return window.innerWidth < 700; } }
+
+function centerNode(id){
+  const n = nodes.find(x=>x.id===id); if(!n) return;
+  const area = document.getElementById('canvas-area'); if(!area) return;
+  const el = document.querySelector(`.story-node[data-id="${id}"]`);
+  const w = el ? el.offsetWidth : 200, h = el ? el.offsetHeight : 100;
+  canvasOffset.x = area.clientWidth/2  - (n.x + w/2)*canvasScale;
+  canvasOffset.y = area.clientHeight/2 - (n.y + h/2)*canvasScale;
+  applyTransform();
+}
+function centerNodeIfNeeded(id){
+  const n = nodes.find(x=>x.id===id); if(!n) return;
+  const area = document.getElementById('canvas-area'); if(!area) return;
+  const el = document.querySelector(`.story-node[data-id="${id}"]`);
+  const w = el ? el.offsetWidth : 200, h = el ? el.offsetHeight : 100;
+  const sx = n.x*canvasScale + canvasOffset.x, sy = n.y*canvasScale + canvasOffset.y;
+  const sw = w*canvasScale, sh = h*canvasScale, pad = 40;
+  if (sx<pad || sy<pad || sx+sw>area.clientWidth-pad || sy+sh>area.clientHeight-pad) centerNode(id);
+}
+// Select a node, bring it into view, and on phones open the Edit tab.
+function focusNodeForEdit(id){
+  selectNode(id);
+  centerNodeIfNeeded(id);
+  if (isMobileView()) bbTab(1);
 }
 
 // ---------------------------------------------------------------------------
@@ -544,7 +584,7 @@ function createNodeEl(node) {
     choicesHTML = `<div class="node-choices">${node.choices.map(c=>`<div class="node-choice-item">↗ ${c.cond&&c.cond.v?'❓ ':''}${esc(c.text)||'…'}${c.fx&&c.fx.length?' ⚡':''}</div>`).join('')}</div>`;
   }
   const tagChip = node.tag ? `<span class="node-tag" title="${esc(node.tag)}" style="background:${tagColour(node.tag)}26;color:${tagColour(node.tag)};border:1px solid ${tagColour(node.tag)}66;">${esc(node.tag)}</span>` : '';
-  const fxBadge = (node.fx && node.fx.length) ? `<span class="node-id" style="color:#a5b4fc;" title="On-enter effects">?${node.fx.length}</span>` : '';
+  const fxBadge = (node.fx && node.fx.length) ? `<span class="node-id" style="color:#a5b4fc;" title="On-enter effects">⚡${node.fx.length}</span>` : '';
 
   el.innerHTML = `
     <div class="node-header">
@@ -614,6 +654,8 @@ function setupNodeDrag(el, node) {
     function onUp(ev) {
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
+      // A tap (not a drag) on a phone opens the editor for that node
+      if (isMobileView() && !wasDrag) bbTab(1);
     }
 
     el.addEventListener('pointermove', onMove);
@@ -737,7 +779,7 @@ function buildEditPanel() {
         <option value="add" ${f.op==='add'?'selected':''}>± by</option>
       </select>
       <input type="number" style="${numIn}" value="${Number(f.val??0)}" oninput="${mk}(${fi},'val',this.value)">
-      <button class="del-choice" onclick="${mk==='updateChoiceFx'?`removeChoiceFx`:`removeNodeFx`}(${mk==='updateChoiceFx'?mkArgs(fi):fi})">?</button>
+      <button class="del-choice" aria-label="Remove effect" onclick="${mk==='updateChoiceFx'?`removeChoiceFx`:`removeNodeFx`}(${mk==='updateChoiceFx'?mkArgs(fi):fi})">✕</button>
     </div>`).join('');
   };
   function mkArgs(fi){ return curChoiceIdx+','+fi; }
@@ -749,10 +791,10 @@ function buildEditPanel() {
       <div class="choice-edit-row">
         <input type="text" value="${esc(c.text||'')}" placeholder="Choice text..." oninput="updateChoice(${i},'text',this.value)">
         <select onchange="updateChoice(${i},'to',this.value)" style="width:100px;padding:3px 5px;border-radius:5px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.58rem;outline:none;">
-          <option value="">? none</option>
+          <option value="">(none)</option>
           ${nodes.filter(n=>n.id!==node.id).map(n=>`<option value="${n.id}" ${n.id===c.to?'selected':''}>${n.id}</option>`).join('')}
         </select>
-        <button class="del-choice" onclick="removeChoice(${i})">?</button>
+          <button class="del-choice" aria-label="Remove choice" onclick="removeChoice(${i})">✕</button>
       </div>
       ${condRow(c,i)}
       ${fxRows(c.fx,'updateChoiceFx')}
@@ -764,7 +806,7 @@ function buildEditPanel() {
   if (node.type === 'choice') {
     typeSpecific = `
       <div class="field">
-        <label>Choices (up to 4)${vars.length?' - ? = requires - ? = changes':''}</label>
+        <label>Choices (up to 4)${vars.length?' - 🔒 requires - ⚡ changes':''}</label>
         <div class="choices-edit">${choiceBlocks}</div>
         ${node.choices.length<4?`<button class="add-choice-btn" onclick="addChoice()">+ Add Choice</button>`:''}
       </div>
@@ -795,6 +837,11 @@ function buildEditPanel() {
   setEditMessage(`
     <div class="ps">
       <div class="pt">Edit Node, #${node.id}</div>
+      <div style="display:flex;gap:4px;margin-bottom:10px;">
+        <button class="add-choice-btn" style="flex:1;justify-content:center;" title="Add the next beat and connect it" onclick="addNextNode('dialogue')">+ Dialogue</button>
+        <button class="add-choice-btn" style="flex:1;justify-content:center;" title="Add a branching choice and connect it" onclick="addNextNode('choice')">+ Choice</button>
+        <button class="add-choice-btn" style="flex:1;justify-content:center;" title="Add an ending and connect it" onclick="addNextNode('end')">+ End</button>
+      </div>
       <div class="field">
         <label>Character</label>
         <select onchange="updateNodeField('char',this.value)" style="width:100%;padding:6px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--panel3);color:var(--text);font-size:.72rem;outline:none;">
@@ -978,16 +1025,56 @@ function handleConnectDot(id) {
 // ---------------------------------------------------------------------------
 function addNode(type) {
   pushHistory();
-  const area = document.getElementById('canvas-area');
-  const cx = (area.clientWidth/2  - canvasOffset.x) / canvasScale - 100;
-  const cy = (area.clientHeight/2 - canvasOffset.y) / canvasScale - 40;
+  const sel = nodes.find(n=>n.id===selectedNode);
+  let x, y;
+  if (sel) {
+    // Drop the new node just below the selected one so it stays in view
+    x = snap(sel.x);
+    y = snap(sel.y + 160);
+  } else {
+    const area = document.getElementById('canvas-area');
+    x = snap((area.clientWidth/2  - canvasOffset.x) / canvasScale - 100);
+    y = snap((area.clientHeight/2 - canvasOffset.y) / canvasScale - 40);
+  }
   const id = 'n' + nextId++;
   const defaultChar = chars[0]?.name || 'Narrator';
-  nodes.push({id, type, x:cx+Math.random()*40-20, y:cy+Math.random()*40-20, char:defaultChar, text:'', choices: type==='choice'?[{text:'',to:''},{text:'',to:''}]:[], to:null});
+  nodes.push({id, type, x, y, char:defaultChar, text:'', choices: type==='choice'?[{text:'',to:''},{text:'',to:''}]:[], to:null});
   selectNode(id);
   renderAll();
+  centerNodeIfNeeded(id);
+  if (isMobileView()) bbTab(1);   // start typing straight away on a phone
   markDirty();
   showToast(`${type} node added`);
+}
+
+// Add a node and wire it to the selected node in one tap. A non-choice
+// node that can still take a link gets it; a choice node fills its first
+// empty option (or grows a new one). The new node lands to the right.
+function addNextNode(type) {
+  const from = nodes.find(n=>n.id===selectedNode);
+  pushHistory();
+  const id = 'n' + nextId++;
+  const x = from ? snap(from.x + 260) : 40;
+  const y = from ? snap(from.y) : 40;
+  const node = {id, type, x, y, char: from ? from.char : (chars[0]?.name || 'Narrator'),
+    text:'', choices: type==='choice'?[{text:'',to:''},{text:'',to:''}]:[], to:null};
+  nodes.push(node);
+  let connected = false;
+  if (from) {
+    if (from.type === 'choice') {
+      const empty = from.choices.find(c=>!c.to);
+      if (empty) { empty.to = id; connected = true; }
+      else { from.choices.push({text:'',to:id,cond:null,fx:[]}); connected = true; }
+    } else if (from.type !== 'end' && !from.to) {
+      from.to = id; connected = true;
+    }
+  }
+  markDirty();
+  selectNode(id);
+  renderAll();
+  centerNode(id);
+  if (isMobileView()) bbTab(1);
+  showToast(type + ' added' + (connected ? ' and connected' : ''));
 }
 
 function deleteNode(id) {
@@ -1115,7 +1202,7 @@ function renderNodeList() {
     el.className='node-list-item'+(node.id===selectedNode?' on':'');
     el.dataset.id = node.id;
     el.innerHTML=`<span class="nli-icon">${icons[node.type]||'■'}</span><div><div class="nli-name">${esc(node.char)}: ${esc((node.text||'…').slice(0,24))}</div><div class="nli-type">${node.type}${node.tag?' · '+esc(node.tag):''} · #${node.id}</div></div>`;
-    el.onclick=()=>selectNode(node.id);
+    el.onclick=()=>focusNodeForEdit(node.id);
     list.appendChild(el);
   });
   if (!list.children.length && q) list.innerHTML='<div style="padding:10px;font-size:.55rem;color:var(--muted);text-align:center;">No nodes match.</div>';
@@ -1300,10 +1387,10 @@ function renderPreviewScene() {
       if(!c.text) return '';
       const ok = evalCond(c.cond, runVars);
       if(ok) return `<button class="preview-choice" onclick="previewPick(${i})">${esc(c.text)}</button>`;
-      return `<button class="preview-choice" disabled title="Requires ${esc(condLabel(c.cond))}" style="opacity:.4;cursor:not-allowed;">? ${esc(c.text)} <small>(${esc(condLabel(c.cond))})</small></button>`;
+      return `<button class="preview-choice" disabled title="Requires ${esc(condLabel(c.cond))}" style="opacity:.4;cursor:not-allowed;">🔒 ${esc(c.text)} <small>(${esc(condLabel(c.cond))})</small></button>`;
     }).join('') + '</div>';
   } else if (node.to) {
-    choicesHTML = `<div class="preview-choices"><button class="preview-choice" onclick="previewGo('${node.to}')">Continue ?</button></div>`;
+    choicesHTML = `<div class="preview-choices"><button class="preview-choice" onclick="previewGo('${node.to}')">Continue →</button></div>`;
   } else {
     choicesHTML = '<div class="preview-end">The End.</div>';
   }
@@ -1448,12 +1535,12 @@ function exportScript() {
     if(node.type==='choice'&&node.choices.length){
       node.choices.forEach((c,i)=>{
         if(c.cond&&c.cond.v) script+=`  [IF ${condLabel(c.cond)}]\n`;
-        script+=`  ${i+1}. "${c.text||'-'}" ? #${c.to||'?'}\n`;
+        script+=`  ${i+1}. "${c.text||'-'}" → #${c.to||'?'}\n`;
         if(c.fx&&c.fx.length) script+=`     [DO: ${c.fx.map(fxLabel).join('; ')}]\n`;
         if(c.to)queue.push(c.to);
       });
     } else if(node.to){
-      script+=`  ? #${node.to}\n`;
+      script+=`  → #${node.to}\n`;
       queue.push(node.to);
     }
     script+='\n';
@@ -1822,15 +1909,62 @@ function clearStory() {
 // MOBILE TABS
 // ---------------------------------------------------------------------------
 function bbTab(i,btn) {
-  document.querySelectorAll('.bb-tab').forEach(b=>b.classList.remove('on'));
+  const tabs = document.querySelectorAll('.bb-tab');
+  if (!btn) btn = tabs[i];
+  tabs.forEach(b=>b.classList.remove('on'));
   document.querySelectorAll('.bb-panel').forEach(p=>p.classList.remove('on'));
-  btn.classList.add('on');
-  document.getElementById('bb'+i).classList.add('on');
+  if (btn) btn.classList.add('on');
+  const panel = document.getElementById('bb'+i);
+  if (panel) panel.classList.add('on');
   if(i===1) {
     // Sync the desktop edit panel into the mobile tab (no cloneNode -
     // a clone would go stale as soon as buildEditPanel updates the original)
-    document.getElementById('bbEditPanel').innerHTML = document.getElementById('editPanel').innerHTML;
+    const src = document.getElementById('editPanel'), dst = document.getElementById('bbEditPanel');
+    if (src && dst) dst.innerHTML = src.innerHTML;
   }
+}
+
+// ---------------------------------------------------------------------------
+// MOBILE PASSAGE DRAWER, a tappable list of every node (Twine-style sidebar)
+// ---------------------------------------------------------------------------
+function openStoryDrawer(){
+  const d = document.getElementById('storyDrawer'), b = document.getElementById('drawerBackdrop');
+  if (!d) return;
+  renderStoryDrawer();
+  d.classList.add('open');
+  if (b) b.classList.add('open');
+}
+function closeStoryDrawer(){
+  const d = document.getElementById('storyDrawer'), b = document.getElementById('drawerBackdrop');
+  if (d) d.classList.remove('open');
+  if (b) b.classList.remove('open');
+}
+function renderStoryDrawer(){
+  const list = document.getElementById('drawerList');
+  if (!list) return;
+  const q = (document.getElementById('drawerSearch')?.value || '').trim().toLowerCase();
+  const icons = {start:'S', dialogue:'D', choice:'C', end:'E'};
+  list.innerHTML = '';
+  let shown = 0;
+  nodes.forEach(node=>{
+    if (q && ![node.char,node.text,node.type,node.tag,node.id].join(' ').toLowerCase().includes(q)) return;
+    shown++;
+    const linked = node.type==='choice'
+      ? (node.choices||[]).some(c=>c.to)
+      : node.type==='end' ? true : !!node.to;
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'drawer-item';
+    el.dataset.id = node.id;
+    el.innerHTML = `<span class="dr-ico">${icons[node.type]||'■'}</span>
+      <span class="dr-body">
+        <span class="dr-title">${esc(node.char||'?')}: ${esc((node.text||'No text yet').slice(0,44))}</span>
+        <span class="dr-meta">${node.type}${node.tag?' · '+esc(node.tag):''} · #${node.id}${linked?'':' · unlinked'}</span>
+      </span>`;
+    el.onclick = ()=>{ closeStoryDrawer(); focusNodeForEdit(node.id); };
+    list.appendChild(el);
+  });
+  if (!shown) list.innerHTML = '<div class="dr-empty">'+(q?'No passages match.':'No passages yet. Add one below.')+'</div>';
 }
 
 // ---------------------------------------------------------------------------
@@ -1850,6 +1984,7 @@ document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click
 document.addEventListener('keydown', e => {
   const tag = (e.target.tagName||'').toLowerCase();
   if (e.key === 'Escape') {
+    if (document.getElementById('storyDrawer')?.classList.contains('open')) { closeStoryDrawer(); return; }
     const open = document.querySelector('.modal-overlay.open');
     if (open) { if(open.id==='storyWelcomeModal') closeStoryWelcome(); else closeModal(open.id); return; }
     if (connectMode) toggleConnectMode();
