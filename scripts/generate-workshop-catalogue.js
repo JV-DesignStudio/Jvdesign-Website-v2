@@ -58,27 +58,36 @@ function section(entries) {
     + '</section>';
 }
 
-function main() {
-  const checkOnly = process.argv.includes('--check');
+function generate({ checkOnly = false } = {}) {
   const entries = JSON.parse(fs.readFileSync(DATA, 'utf8'));
   const want = START + '\n' + section(entries) + '\n' + END;
   let html = fs.readFileSync(HUB, 'utf8');
   if (!html.includes(START) || !html.includes(END)) {
-    console.log('  [FAIL] catalogue markers missing in pages/workshop.html');
-    process.exit(1);
+    throw new Error('catalogue markers missing in pages/workshop.html');
   }
   const have = html.slice(html.indexOf(START), html.indexOf(END) + END.length);
-  if (have === want) {
-    console.log('  [PASS] catalogue in sync (' + entries.length + ' cards)');
-    return;
-  }
-  if (checkOnly) {
-    console.log('  [FAIL] catalogue drift: regenerate with node scripts/generate-workshop-catalogue.js');
-    process.exit(1);
-  }
+  if (have === want) return { changed: false, count: entries.length };
+  if (checkOnly) return { changed: true, count: entries.length };
   html = html.slice(0, html.indexOf(START)) + want + html.slice(html.indexOf(END) + END.length);
   fs.writeFileSync(HUB, html);
-  console.log('  [OK] catalogue wrote ' + entries.length + ' cards into pages/workshop.html');
+  return { changed: true, count: entries.length };
 }
 
-main();
+function main() {
+  const checkOnly = process.argv.includes('--check');
+  const { changed, count } = generate({ checkOnly });
+  if (checkOnly) {
+    if (changed) {
+      console.log('  [FAIL] catalogue drift: regenerate with node scripts/generate-workshop-catalogue.js');
+      process.exit(1);
+    }
+    console.log('  [PASS] catalogue in sync (' + count + ' cards)');
+    return;
+  }
+  console.log(changed
+    ? '  [OK] catalogue wrote ' + count + ' cards into pages/workshop.html'
+    : '  [PASS] catalogue already in sync (' + count + ' cards)');
+}
+
+if (require.main === module) main();
+module.exports = { generate };

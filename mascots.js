@@ -15,35 +15,105 @@ function setGuide(id){
     try{ if(window.JVDSAnalytics) JVDSAnalytics.guide = id; }catch(e){}
   }catch(e){}
 }
-// Mascot speech rotator , picks a random friendly line on load
-var MASCOT_LINES = {
-  lumo: [
-    "Psst , let's learn something brilliant together!",
-    "Curious today? Follow me!",
-    "Every big creator started with one tiny step.",
-    "Tap, try, tinker , that's how magic starts.",
-  ],
-  ember: [
-    "Ready to make something awesome?",
-    "Your idea + these tools = magic. Let's build!",
-    "No wrong answers , just wild experiments.",
-    "This is your studio. Make it yours!",
-  ],
-  play: [
-    "Echo found a secret level , wanna play?",
-    "Pip says slow and steady wins the fun!",
-    "Two players? Twice the chaos!",
-    "New games drop all the time , let's go!",
-    "Echo wants one more run. Pip has snacks ready.",
-    "Pip found a cosy puzzle. Echo found the score table.",
-  ],
-  stardust: [
-    "Wherever someone needs hope... I appear ✨",
-    "Made from dreams, kindness and tiny pieces of stars.",
-    "You found me! Want to read a story together?",
-    "Every page is a new adventure.",
-  ]
+// ── CHARACTER QUOTES ── canonical library for the whole crew.
+// One source for hero bubbles, companion tips, the site-wide quote strip,
+// pages/quotes.html and the five character pages. Voice notes: Stardust
+// wonders, Lumo explains kindly, Ember experiments, Pip plays, Echo reflects.
+// Keep lines short, in JVDS voice, and free of em-dashes.
+var JVDS_QUOTES = {
+  stardust: {
+    name:'Stardust', pillar:'Imagine', role:'The Dream Spirit',
+    img:'/assets/mascots/stardust-hero.webp', badge:'/assets/mascots/stardust-badge.webp', color:'#FFC733',
+    lines:[
+      "Wherever someone needs hope, I appear.",
+      "Every big idea starts as a tiny spark.",
+      "Wonder is the first step to making something real.",
+      "A dream is just an idea waiting for you.",
+      "Look up. There is always room for one more star.",
+      "You do not need the whole plan. Start with a flicker.",
+      "Made from dreams, kindness and tiny pieces of stars.",
+      "The best stories begin with a 'what if'."
+    ]
+  },
+  lumo: {
+    name:'Lumo', pillar:'Learn', role:'The Purple Fox',
+    img:'/assets/mascots/lumo-hero.webp', badge:'/assets/mascots/lumo-badge.webp', color:'#7C6CF0',
+    lines:[
+      "You do not have to know it yet. That is why we learn.",
+      "Small steps, done kindly, add up fast.",
+      "A tricky thing is just a thing you have not met your way yet.",
+      "Curiosity is not a distraction. It is the whole point.",
+      "Ask the question. The answer can wait.",
+      "Nobody starts as an expert. Everyone starts as a beginner.",
+      "It is okay to go slowly if you keep going.",
+      "Psst. Let's learn something brilliant together!"
+    ]
+  },
+  ember: {
+    name:'Ember', pillar:'Create', role:'The Pink Tiger',
+    img:'/assets/mascots/ember-hero.webp', badge:'/assets/mascots/ember-badge.webp', color:'#F2637A',
+    lines:[
+      "Creative has no limits.",
+      "Start messy. Perfect can come later.",
+      "Your idea counts, even before it works.",
+      "Make the thing only you would make.",
+      "Try it. If it breaks, that is a clue.",
+      "This is your studio. Make it yours!",
+      "Make something today that did not exist yesterday.",
+      "No wrong answers, just wild experiments."
+    ]
+  },
+  pip: {
+    name:'Pip', pillar:'Play', role:'The Little Turtle',
+    img:'/assets/mascots/pip-hero.webp', badge:'/assets/mascots/pip-badge.webp', color:'#7AC74F',
+    lines:[
+      "There is no wrong way to play.",
+      "Try again. Games are for trying.",
+      "Slow and steady still wins the fun.",
+      "One more go. You are closer than you think.",
+      "The best way to understand a game is to play it.",
+      "Little and brave beats big and bored.",
+      "Adventure is just curiosity with muddy boots.",
+      "Two players? Twice the chaos!"
+    ]
+  },
+  echo: {
+    name:'Echo', pillar:'Improve', role:'The Axolotl Explorer',
+    img:'/assets/mascots/echo-hero.webp', badge:'/assets/mascots/echo-badge.webp', color:'#2EB5A5',
+    lines:[
+      "What would you change next time?",
+      "Finished is good. A little better is great.",
+      "Look back kindly, then take one step forward.",
+      "Every version teaches the next one.",
+      "You improved just by noticing.",
+      "The first try is brave. The next try is wiser.",
+      "One more run? I want to see what you improve.",
+      "Progress is quiet. Keep listening for it."
+    ]
+  }
 };
+
+// Derive the legacy bubble lines from the canonical library so every existing
+// [data-mascot-bubble] and companion tip gets the richer set automatically.
+// `play` stays for the existing Echo + Pip duo key.
+var MASCOT_LINES = {
+  lumo:     JVDS_QUOTES.lumo.lines,
+  ember:    JVDS_QUOTES.ember.lines,
+  stardust: JVDS_QUOTES.stardust.lines,
+  play:     JVDS_QUOTES.pip.lines.concat(JVDS_QUOTES.echo.lines),
+  pip:      JVDS_QUOTES.pip.lines,
+  echo:     JVDS_QUOTES.echo.lines
+};
+
+function jvdsQuoteKeys(){ return ['stardust','lumo','ember','pip','echo']; }
+function jvdsQuoteKey(){
+  var g = getGuide();
+  if (g === 'play') g = Math.random() < .5 ? 'pip' : 'echo';
+  if (g && JVDS_QUOTES[g]) return g;
+  var keys = jvdsQuoteKeys();
+  return keys[Math.floor(Math.random()*keys.length)];
+}
+function jvdsPickLine(key){ var q=JVDS_QUOTES[key]; return q ? q.lines[Math.floor(Math.random()*q.lines.length)] : ''; }
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-mascot-bubble]').forEach(el => {
     const key = el.getAttribute('data-mascot-bubble');
@@ -195,6 +265,20 @@ document.addEventListener('DOMContentLoaded', () => {
     wrap.innerHTML=`<img src="${img}" alt="" loading="lazy"><span>Loading…</span>`;
     el.innerHTML=''; el.appendChild(wrap);
   });
+
+  // ── Character quotes: site-wide strip + reusable cards ──
+  injectQuoteStrip();
+  document.querySelectorAll('[data-quote-grid]').forEach(renderQuoteGrid);
+  document.querySelectorAll('[data-quote-character]').forEach(renderCharacterQuotes);
+  document.querySelectorAll('[data-quote-filter]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('[data-quote-filter]').forEach(b=>b.classList.toggle('is-active', b===btn));
+      document.querySelectorAll('[data-quote-grid]').forEach(g=>{
+        g.setAttribute('data-quote-grid', btn.getAttribute('data-quote-filter')||'');
+        renderQuoteGrid(g);
+      });
+    });
+  });
 });
 
 function showGuideQuiz(){
@@ -333,4 +417,64 @@ function injectEmptyMascot(host, kind, text){
   wrap.className='mascot-empty mascot-empty--small';
   wrap.innerHTML=`<img src="${img}" alt="" loading="lazy"><div class="mascot-bubble mascot-bubble--light">${text}</div>`;
   host.prepend(wrap);
+}
+
+/* ── Character quotes: shared renderers ──
+   Used by the site-wide strip, pages/quotes.html and the character pages. */
+function injectQuoteStrip(){
+  if(document.getElementById('jvds-quote-strip')) return;
+  const path=location.pathname.toLowerCase();
+  // Creator workspaces stay uncluttered: no strip on tools, games or arcade.
+  if(path.includes('/tools/') || path.includes('/games/') || path.includes('/arcade') || path.includes('/quest-board')) return;
+  const footer=document.querySelector('footer.site-footer') || document.querySelector('footer');
+  if(!footer || !footer.parentNode) return;
+  const strip=document.createElement('section');
+  strip.id='jvds-quote-strip';
+  strip.className='jvds-quote-strip';
+  strip.setAttribute('aria-label','A word from the crew');
+  function paint(key, animate){
+    const q=JVDS_QUOTES[key]; if(!q) return;
+    strip.innerHTML=
+      '<img class="jvds-quote-strip-avatar" src="'+q.badge+'" alt="" width="44" height="44" loading="lazy">'+
+      '<p class="jvds-quote-strip-text"><span class="jvds-quote-strip-name" style="color:'+q.color+'">'+q.name+'</span>'+
+      '<span class="jvds-quote-strip-quote">&ldquo;'+jvdsPickLine(key)+'&rdquo;</span></p>'+
+      '<button type="button" class="jvds-quote-strip-next" aria-label="Show another quote">Another &starf;</button>';
+    if(animate){ strip.classList.remove('is-fresh'); void strip.offsetWidth; strip.classList.add('is-fresh'); }
+    const btn=strip.querySelector('.jvds-quote-strip-next');
+    if(btn) btn.addEventListener('click', ()=>{
+      const others=jvdsQuoteKeys().filter(k=>k!==key);
+      paint(others[Math.floor(Math.random()*others.length)], true);
+    });
+  }
+  paint(jvdsQuoteKey(), false);
+  footer.parentNode.insertBefore(strip, footer);
+}
+
+function quoteCard(key, line){
+  const q=JVDS_QUOTES[key];
+  const card=document.createElement('figure');
+  card.className='jvds-quote-card';
+  card.style.setProperty('--q', q.color);
+  card.setAttribute('data-character', key);
+  card.innerHTML=
+    '<img src="'+q.badge+'" alt="" width="46" height="46" loading="lazy">'+
+    '<figcaption><blockquote class="jvds-quote-text">&ldquo;'+line+'&rdquo;</blockquote>'+
+    '<span class="jvds-quote-name">'+q.name+' &middot; '+q.pillar+'</span></figcaption>';
+  return card;
+}
+
+function renderQuoteGrid(grid){
+  const only=grid.getAttribute('data-quote-grid');
+  grid.classList.add('jvds-quote-grid');
+  const keys=(only && JVDS_QUOTES[only]) ? [only] : jvdsQuoteKeys();
+  const frag=document.createDocumentFragment();
+  keys.forEach(k=>{ JVDS_QUOTES[k].lines.forEach(line=> frag.appendChild(quoteCard(k, line))); });
+  grid.innerHTML=''; grid.appendChild(frag);
+}
+
+function renderCharacterQuotes(host){
+  const q=JVDS_QUOTES[host.getAttribute('data-quote-character')];
+  if(!q) return;
+  host.innerHTML='';
+  q.lines.forEach(line=> host.appendChild(quoteCard(host.getAttribute('data-quote-character'), line)));
 }
