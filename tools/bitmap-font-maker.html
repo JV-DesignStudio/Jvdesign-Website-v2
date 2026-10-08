@@ -34,11 +34,10 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
 <link rel="preload" href="../style-tool-bitmap-font-maker.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-tool-bitmap-font-maker.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -154,9 +153,9 @@
         <option value="16x16">16×16</option>
       </select>
       <div class="sep"></div>
-      <button class="tb-btn on" id="btnPen" onclick="setTool('pen')" title="Draw (D)" aria-label="Draw pixels">✏</button>
-      <button class="tb-btn" id="btnErase" onclick="setTool('erase')" title="Erase (E)" aria-label="Erase pixels">⌫</button>
-      <button class="tb-btn" id="btnFill" onclick="setTool('fill')" title="Fill (F)" aria-label="Fill connected pixels">🪣</button>
+      <button class="tb-btn on" id="btnPen" onclick="setTool('pen')" title="Draw (1)" aria-label="Draw pixels">✏</button>
+      <button class="tb-btn" id="btnErase" onclick="setTool('erase')" title="Erase (2)" aria-label="Erase pixels">⌫</button>
+      <button class="tb-btn" id="btnFill" onclick="setTool('fill')" title="Fill (3)" aria-label="Fill connected pixels">🪣</button>
       <div class="sep"></div>
       <button class="tb-btn" onclick="undo()" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
       <button class="tb-btn" onclick="redo()" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>
@@ -184,7 +183,7 @@
       <span id="sb-char">Char: A (0x41)</span>
       <span id="sb-grid">Grid: 8×8</span>
       <span id="sb-drawn">0 chars drawn</span>
-      <span style="margin-left:auto;opacity:.5;">← → to switch · D/E/F = draw/erase/fill</span>
+      <span style="margin-left:auto;opacity:.5;">← → to switch · type a letter to jump · 1/2/3 = draw/erase/fill</span>
     </div>
   </div>
 
@@ -215,14 +214,14 @@
   </div>
 </div>
 
-
 <!-- WELCOME MODAL -->
 <div class="modal-overlay" id="bitmapWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="bitmapWelcomeTitle">
   <div class="modal">
     <h3 id="bitmapWelcomeTitle">🔤 Welcome to Bitmap Font Maker</h3>
     <p style="font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:12px;">Draw pixel bitmap characters, preview live, and export a spritesheet + atlas for Godot/Unity.</p>
     <div style="font-size:.78rem;line-height:1.8;margin-bottom:12px;">
-      <div>🎨 <strong>Draw</strong> - pick a char, draw with pen/erase/fill, D/E/F keys</div>
+      <div>🎨 <strong>Draw</strong> - pick a char, draw with pen/erase/fill, 1/2/3 keys</div>
+      <div>⌨ <strong>Jump</strong> - type any letter, number or symbol to open that glyph</div>
       <div>↔ <strong>Shift</strong> - nudge glyph, copy/paste between chars</div>
       <div>👁 <strong>Preview</strong> - type any text, tweak scale/spacing/ink</div>
       <div>💾 <strong>Export</strong> - PNG spritesheet, JSON atlas, BMFont Bundle (.fnt + PNG zip), share link</div>
@@ -567,16 +566,21 @@ function drawPreview(){
 id('pv-text').addEventListener('input',drawPreview);
 
 // -- Keyboard shortcuts --
+const TOOL_KEYS={'1':'pen','2':'erase','3':'fill'};
 document.addEventListener('keydown',e=>{
-  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
-  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
-  if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.shiftKey&&e.key.toLowerCase()==='z'))){e.preventDefault();redo();return;}
-  if(e.key==='ArrowRight'||e.key==='Tab'){e.preventDefault();nextChar();}
-  else if(e.key==='ArrowLeft'){e.preventDefault();prevChar();}
-  else if(e.key.toLowerCase()==='d') setTool('pen');
-  else if(e.key.toLowerCase()==='e') setTool('erase');
-  else if(e.key.toLowerCase()==='f') setTool('fill');
-  else if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();clearChar();}
+  const tag=(e.target.tagName||'').toUpperCase();
+  if(tag==='TEXTAREA'||tag==='INPUT'||tag==='SELECT'||e.target.isContentEditable) return;
+  const k=e.key;
+  if((e.ctrlKey||e.metaKey)&&k.toLowerCase()==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
+  if((e.ctrlKey||e.metaKey)&&(k.toLowerCase()==='y'||(e.shiftKey&&k.toLowerCase()==='z'))){e.preventDefault();redo();return;}
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(document.querySelector('.modal-overlay.open')) return; // modal owns the keyboard while open
+  if(k==='ArrowRight'||k==='Tab'){e.preventDefault();nextChar();}
+  else if(k==='ArrowLeft'){e.preventDefault();prevChar();}
+  else if(TOOL_KEYS[k]) setTool(TOOL_KEYS[k]);
+  else if(k==='Delete'||k==='Backspace'){e.preventDefault();clearChar();}
+  else if(k===' '||k==='?') return; // space scrolls / activates focus, ? opens help
+  else if(k.length===1&&ALL_CHARS.includes(k)){e.preventDefault();selectChar(k);}
 });
 
 // -- Exports --

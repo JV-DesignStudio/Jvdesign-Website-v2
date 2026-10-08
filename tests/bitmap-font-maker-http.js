@@ -87,6 +87,22 @@ let failures = 0;
   check('status tracks drawn characters', /1 chars? drawn/.test(drawing.drawn), drawing.drawn);
   check('current character display clean', drawing.char === 'A', drawing.char);
   check('preview canvas draws text area', drawing.previewWidth > 0, String(drawing.previewWidth));
+  await page.evaluate(()=>{ window.closeBitmapWelcome(); if(document.activeElement&&document.activeElement.blur) document.activeElement.blur(); });
+  await page.keyboard.press('b');
+  await new Promise(resolve=>setTimeout(resolve, 80));
+  const typedLower = await page.evaluate(()=>({
+    char: document.getElementById('curCharDisp')?.textContent || '',
+    active: document.getElementById('cb-' + 'b'.charCodeAt(0))?.classList.contains('active') || false
+  }));
+  check('typing b opens the b glyph', typedLower.char === 'b' && typedLower.active, JSON.stringify(typedLower));
+  await page.keyboard.down('Shift'); await page.keyboard.press('K'); await page.keyboard.up('Shift');
+  await new Promise(resolve=>setTimeout(resolve, 80));
+  const typedUpper = await page.evaluate(()=>document.getElementById('curCharDisp')?.textContent || '');
+  check('Shift+K opens the K glyph', typedUpper === 'K', typedUpper);
+  await page.keyboard.press('2');
+  await new Promise(resolve=>setTimeout(resolve, 80));
+  const toolKey = await page.evaluate(()=>document.getElementById('btnErase')?.classList.contains('on') || false);
+  check('2 key selects the erase tool', toolKey);
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   server.close();
