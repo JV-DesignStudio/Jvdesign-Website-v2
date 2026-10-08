@@ -46,6 +46,9 @@
     .teacher-toggle-btn:hover,
     .teacher-toggle-btn.active { background: rgba(255,209,102,.16); border-color: rgba(255,209,102,.45); color: #ffd166; }
     @media(max-width:860px){ .teacher-toggle-btn { display: none !important; } }
+    /* A802 lesson plan link stays visible on small screens (it is a link, not a toggle) */
+    a.teacher-toggle-btn.lesson-plan-btn { text-decoration: none; }
+    @media(max-width:860px){ a.teacher-toggle-btn.lesson-plan-btn { display: inline-block !important; } }
 
     /* Teacher notes */
     .teacher-note {
@@ -185,6 +188,62 @@
     @media(max-width:480px) {
       .report-issue-fab { bottom: 16px; right: 16px; font-size: .72rem; padding: 8px 12px; }
     }
+
+    /* Interactive improvements */
+    .quiz-feedback.show, .cc-feedback.show, .cf-feedback.show, .tf-feedback.show {
+      animation: feedbackSlide .3s ease-out;
+    }
+    @keyframes feedbackSlide {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .quiz-opt.disabled {
+      opacity: 0.35 !important;
+      pointer-events: none !important;
+      text-decoration: line-through;
+    }
+    .quiz-opt:not(.disabled):not(.correct):not(.wrong):hover {
+      transform: translateX(4px);
+      transition: transform .15s ease;
+    }
+    .quiz-next-btn.show {
+      animation: btnPulse .6s ease-out;
+    }
+    @keyframes btnPulse {
+      0% { transform: scale(0.9); opacity: 0; }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .cc-blank:focus, .cf-blank:focus {
+      outline: 2px solid rgba(124,108,240,.5);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 4px rgba(124,108,240,.15);
+    }
+    .cc-blank.correct, .cf-blank.correct {
+      background: rgba(6,214,160,.12) !important;
+      border-color: rgba(6,214,160,.5) !important;
+    }
+    .cc-blank.wrong, .cf-blank.wrong {
+      background: rgba(248,113,113,.12) !important;
+      border-color: rgba(248,113,113,.5) !important;
+      animation: shake .4s ease;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-4px); }
+      40% { transform: translateX(4px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(3px); }
+    }
+    .quiz-opt.wrong {
+      animation: shake .4s ease;
+    }
+    .order-item {
+      transition: border-color .3s ease, transform .15s ease;
+    }
+    .order-item:hover:not(.locked) {
+      transform: translateX(4px);
+    }
   `;
 
   const styleEl = document.createElement('style');
@@ -258,6 +317,31 @@
     var navToggle = document.getElementById('navToggle');
     if (header && navToggle) header.insertBefore(btn, navToggle);
     else if (header) header.appendChild(btn);
+  }
+
+  // ── LESSON PLAN LINK (A802) ─────────────────────────────────────────────
+  // Workshops with a printable teacher plan on /teachers expose it here,
+  // next to the teacher toggle, so a teacher finds it without hunting.
+  var LESSON_PLANS = {
+    'scratch-catch-workshop': 'plan-scratch-catch',
+    'python-catch-workshop': 'plan-python-catch',
+    'js-snake-workshop': 'plan-js-snake'
+  };
+  function initLessonPlanLink() {
+    var seg = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+    var anchor = LESSON_PLANS[seg];
+    if (!anchor || document.getElementById('lessonPlanBtn')) return;
+    var header = document.querySelector('.header-inner');
+    if (!header) return;
+    var a = document.createElement('a');
+    a.id = 'lessonPlanBtn';
+    a.href = '/teachers#' + anchor;
+    a.className = 'teacher-toggle-btn lesson-plan-btn';
+    a.textContent = '📋 Lesson plan';
+    a.title = 'Open the printable teacher lesson plan for this workshop';
+    var navToggle = document.getElementById('navToggle');
+    if (header && navToggle) header.insertBefore(a, navToggle);
+    else header.appendChild(a);
   }
 
   // ── STUCK? COLLAPSIBLES ──────────────────────────────────────────────────────
@@ -553,10 +637,133 @@
     document.body.appendChild(btn);
   }
 
+  // ── INTERACTIVE IMPROVEMENTS ──────────────────────────────────────────────────
+  function patchInteractives() {
+    // Track wrong attempts per quiz gate for progressive hints
+    var quizAttempts = {};
+
+    // Enhance quiz wrong-answer feedback using event delegation
+    // This catches the quiz-opt.wrong class being added and improves feedback
+    document.addEventListener('click', function (e) {
+      var submitBtn = e.target.closest('.quiz-submit');
+      if (!submitBtn) return;
+      var gate = submitBtn.closest('.quiz-gate');
+      if (!gate || gate.classList.contains('passed')) return;
+
+      var id = gate.id || 'q';
+      // Wait a tick for the original checkQuiz to run and set classes
+      setTimeout(function () {
+        var fb = gate.querySelector('.quiz-feedback');
+        if (!fb || !fb.classList.contains('wrong')) return;
+
+        quizAttempts[id] = (quizAttempts[id] || 0) + 1;
+        var attempts = quizAttempts[id];
+
+        if (attempts === 1) {
+          fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite! Read the question again carefully and try another option.</span>';
+        } else if (attempts >= 2) {
+          // After 2 wrong tries, eliminate one wrong option
+          var keyRaw = gate.dataset.k || gate.dataset.a || '';
+          var correct;
+          try { correct = parseInt(decodeURIComponent(atob(keyRaw))); } catch (err) { correct = -1; }
+          var opts = gate.querySelectorAll('.quiz-opt');
+          var eliminated = false;
+          for (var i = 0; i < opts.length; i++) {
+            var o = opts[i];
+            if (parseInt(o.dataset.idx) !== correct && !o.classList.contains('disabled')) {
+              o.classList.add('disabled');
+              eliminated = true;
+              break;
+            }
+          }
+          if (eliminated) {
+            fb.innerHTML = '<span class="fb-icon">💡</span><span>Here\'s a hint: one wrong answer has been crossed out. Try again!</span>';
+          } else {
+            fb.innerHTML = '<span class="fb-icon">💡</span><span>Almost there! Look carefully at the remaining option.</span>';
+          }
+        }
+      }, 50);
+    }, true);
+
+    // Patch checkOrderChallenge to show which items are misplaced
+    if (typeof window.checkOrder === 'function') {
+      var origCheckOrder = window.checkOrder;
+      window.checkOrder = function (btn) {
+        origCheckOrder(btn);
+        var challenge = btn.closest('.order-challenge');
+        if (!challenge || challenge.classList.contains('passed')) return;
+        var items = challenge.querySelectorAll('.order-item');
+        items.forEach(function (item) {
+          var num = item.querySelector('.order-num');
+          if (!num) return;
+          var picked = parseInt(num.textContent);
+          var expected = parseInt(item.dataset.pos);
+          if (picked && expected && picked !== expected) {
+            item.style.borderColor = 'rgba(248,113,113,.5)';
+          } else if (picked && expected && picked === expected) {
+            item.style.borderColor = 'rgba(6,214,160,.5)';
+          }
+        });
+      };
+    }
+
+    // Add keyboard support: Enter key submits the active quiz/challenge
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      var active = document.activeElement;
+      if (!active) return;
+
+      // Enter in a fill-in-the-blank input triggers its check button
+      if (active.classList.contains('cf-blank') || active.classList.contains('cc-blank')) {
+        var wrap = active.closest('.concept-fill, .code-challenge');
+        if (wrap) {
+          var checkBtn = wrap.querySelector('.cf-check-btn, .cc-check-btn');
+          if (checkBtn && !checkBtn.disabled) checkBtn.click();
+        }
+        e.preventDefault();
+      }
+    });
+
+    // Add animated confetti burst on step completion
+    if (typeof window.completeStep === 'function') {
+      var origComplete = window.completeStep;
+      window.completeStep = function (n) {
+        origComplete(n);
+        showStepConfetti();
+      };
+    }
+  }
+
+  function showStepConfetti() {
+    var colors = ['#06d6a0', '#ffd166', '#7c6cf0', '#f87171', '#38bdf8'];
+    var container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden';
+    document.body.appendChild(container);
+
+    for (var i = 0; i < 30; i++) {
+      var particle = document.createElement('div');
+      var size = Math.random() * 8 + 4;
+      var x = Math.random() * 100;
+      var color = colors[Math.floor(Math.random() * colors.length)];
+      particle.style.cssText = 'position:absolute;top:-10px;left:' + x + '%;width:' + size + 'px;height:' + size + 'px;background:' + color + ';border-radius:' + (Math.random() > 0.5 ? '50%' : '2px') + ';opacity:0.9';
+      container.appendChild(particle);
+
+      var duration = Math.random() * 1200 + 800;
+      var drift = (Math.random() - 0.5) * 200;
+      particle.animate([
+        { transform: 'translateY(0) translateX(0) rotate(0deg)', opacity: 1 },
+        { transform: 'translateY(' + (window.innerHeight + 20) + 'px) translateX(' + drift + 'px) rotate(' + (Math.random() * 720) + 'deg)', opacity: 0 }
+      ], { duration: duration, easing: 'cubic-bezier(.25,.46,.45,.94)' });
+    }
+
+    setTimeout(function () { container.remove(); }, 2200);
+  }
+
   // ── INIT ─────────────────────────────────────────────────────────────────────
   function init() {
     initCopyButtons();
     initTeacherMode();
+    initLessonPlanLink();
     initStuckSections();
     initStickyProgress();
     initLearningMap();
@@ -565,6 +772,7 @@
     initNextSignpost();
     patchCompleteStep();
     initReportButton();
+    patchInteractives();
     // Restore after buildDots() has run (it's called at DOMContentLoaded inline)
     setTimeout(restoreProgress, 80);
   }

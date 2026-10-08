@@ -52,6 +52,9 @@ function generateWorkshops() {
     // Skip non-workshop pages
     if (slug === 'my-progress') continue;
 
+    // Skip redirect stubs (retired or de-duplicated pages that forward elsewhere)
+    if (/http-equiv=["']refresh["']/i.test(html)) continue;
+
     const title = extract(html, /<title>([^<|]+)/);
     const desc = extract(html, /<meta\s+name="description"\s+content="([^"]+)"/);
     const themeColor = extract(html, /<meta\s+name="theme-color"\s+content="([^"]+)"/);
@@ -113,6 +116,14 @@ function generateWorkshops() {
     if(!cover) cover = extract(html, /<meta\s+name="og:image"\s+content="([^"]+)"/);
     if(cover && cover.startsWith('https://jvdesignstudio.co.uk')) cover = cover.replace('https://jvdesignstudio.co.uk','');
     if(!cover) cover = null;
+    // A804: display covers prefer webp siblings (page og:image stays PNG for crawlers)
+    if(cover && cover.endsWith('.png')){
+      try{
+        const op = path.join(ROOT, cover.replace(/^\//,''));
+        const wp = op.replace(/\.png$/,'.webp');
+        if(fs.existsSync(wp) && fs.existsSync(op)) cover = cover.replace(/\.png$/,'.webp');
+      }catch(e){}
+    }
     // themeColor fallback
     let tc = themeColor || '#BC4749';
     // steps fallback: if not found and not series, assume 6 for engine workshops

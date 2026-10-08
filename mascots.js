@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? "Need a hand? Try me , I love happy accidents. Hit the tool, tweak a knob, and see what happens."
         : "Psst , follow me step by step. Tap the blocks, try it your way, no wrong answers.";
       const coach = document.createElement('div');
-      coach.className = 'mascot-coach';
+      coach.className = 'mascot-coach' + (isTool ? ' mascot-coach--tool' : '');
       coach.style.setProperty('--mascot-accent', mascot==='ember' ? 'var(--mascot-ember)' : 'var(--mascot-lumo)');
       coach.innerHTML = `<img src="${img}" alt="${name}"><div class="mascot-coach-body"><strong>${name} says:</strong> ${line}</div><button class="mascot-coach-dismiss" aria-label="Dismiss">Got it</button>`;
       coachHost.insertAdjacentElement('afterend', coach);

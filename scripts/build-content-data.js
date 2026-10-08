@@ -29,11 +29,23 @@ if (Array.isArray(data.workshops)) {
     if (w.cover) return w;
     const ogPng = path.join(ROOT, 'og', `${w.id}.png`);
     const ogWebp = path.join(ROOT, 'og', `${w.id}.webp`);
-    if (fs.existsSync(ogPng)) return { ...w, cover: `og/${w.id}.png` };
     if (fs.existsSync(ogWebp)) return { ...w, cover: `og/${w.id}.webp` };
+    if (fs.existsSync(ogPng)) return { ...w, cover: `og/${w.id}.png` };
     // fallback to generic workshop og
+    if (fs.existsSync(path.join(ROOT, 'og', 'learn.webp'))) return { ...w, cover: `og/learn.webp` };
     if (fs.existsSync(path.join(ROOT, 'og', 'learn.png'))) return { ...w, cover: `og/learn.png` };
     if (fs.existsSync(path.join(ROOT, 'og', 'hub-games.png'))) return { ...w, cover: `og/hub-games.png` };
+    return w;
+  });
+}
+
+// A804: covers pointing at missing files fall back to generic webp art (applies to all entries, not just null covers)
+if (Array.isArray(data.workshops)) {
+  data.workshops = data.workshops.map(w => {
+    if (!w.cover || (!w.cover.endsWith('.png') && !w.cover.endsWith('.webp'))) return w;
+    if (/^https?:\/\//.test(w.cover)) return w;
+    if (fs.existsSync(path.join(ROOT, w.cover.replace(/^\//, '')))) return w;
+    if (fs.existsSync(path.join(ROOT, 'og', 'learn.webp'))) return { ...w, cover: 'og/learn.webp' };
     return w;
   });
 }

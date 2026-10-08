@@ -165,6 +165,59 @@ let failures = 0;
   check('song export renders the full arrangement', rendered.len>300000 && rendered.len<420000, JSON.stringify(rendered));
   await page.evaluate(()=>{ songMode=false; document.body.classList.remove('song-mode'); song=[{p:0,rep:1}]; });
 
+  // A820: piano roll, add / resize / velocity / move
+  const pr = await page.evaluate(()=>{
+    selectTrack(4);
+    openPianoRoll();
+    const canvas=document.getElementById('piano-canvas');
+    const r=canvas.getBoundingClientRect();
+    const fire=(type,x,y)=>canvas.dispatchEvent(new PointerEvent(type,{clientX:r.left+x,clientY:r.top+y,bubbles:true,pointerId:1,buttons:1}));
+    fire('pointerdown',1*26+5,11*16+8);
+    fire('pointerup',1*26+5,11*16+8);
+    const added={on:grid[4][1].on, note:grid[4][1].note, len:grid[4][1].len};
+    fire('pointerdown',2*26-3,11*16+8);
+    fire('pointermove',5*26,11*16+8);
+    fire('pointerup',5*26,11*16+8);
+    const resized=grid[4][1].len;
+    const v=document.getElementById('pianoVel'); v.value=40; v.dispatchEvent(new Event('input'));
+    const vel=grid[4][1].vel;
+    fire('pointerdown',1*26+5,11*16+8);
+    fire('pointermove',9*26+5,11*16+8);
+    fire('pointerup',9*26+5,11*16+8);
+    const moved={old:grid[4][1].on, at:grid[4][9].on};
+    closePianoRoll();
+    return {has:!!canvas, w:canvas.width, h:canvas.height, added, resized, vel, moved};
+  });
+  check('piano roll canvas opens', pr.has && pr.w>0 && pr.h>0, JSON.stringify({w:pr.w,h:pr.h}));
+  check('piano roll adds a note', pr.added.on && pr.added.note==='C' && pr.added.len===1, JSON.stringify(pr.added));
+  check('piano roll resizes note length', pr.resized>=3, String(pr.resized));
+  check('piano roll sets velocity', Math.abs(pr.vel-40/127)<0.02, String(pr.vel));
+  check('piano roll moves a note', pr.moved.old===false && pr.moved.at===true, JSON.stringify(pr.moved));
+
+  // A822: SFX lab
+  const lab = await page.evaluate(async()=>{
+    const btns=document.querySelectorAll('#sfxRecipeBtns .sfx-vbtn').length;
+    const cats=document.querySelectorAll('#sfxCatRows .sfx-cat-row').length;
+    document.getElementById('sfxPitch').value=0.5;
+    const b1=await labRender(0,_labParams());
+    document.getElementById('sfxPitch').value=2;
+    const b2=await labRender(0,_labParams());
+    const sum=b=>{ const d=b.getChannelData(0); let s=0; for(let i=0;i<d.length;i+=97) s+=Math.abs(d[i]); return s; };
+    const s1=sum(b1), s2=sum(b2);
+    return {btns, cats, len:b1.length, differs:Math.abs(s1-s2)>1e-4};
+  });
+  check('SFX lab renders and responds to controls', lab.btns>=6 && lab.cats>=6 && lab.len>1000 && lab.differs, JSON.stringify(lab));
+  const labPrev = await page.evaluate(async()=>{ labPreview(); await new Promise(r=>setTimeout(r,300)); return {buf:!!sfxLastBuf, name:sfxLastName}; });
+  check('SFX lab preview stores a sound', labPrev.buf && !!labPrev.name, JSON.stringify(labPrev));
+  const labRnd = await page.evaluate(()=>{
+    const ids=['sfxPitch','sfxLen','sfxTone','sfxShape'];
+    const before=ids.map(i=>document.getElementById(i).value);
+    labRandomise();
+    const after=ids.map(i=>document.getElementById(i).value);
+    return {changed:after.some((v,i)=>v!==before[i])};
+  });
+  check('SFX lab randomise changes controls', labRnd.changed, JSON.stringify(labRnd));
+
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   server.close();

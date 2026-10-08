@@ -15,7 +15,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#BC4749">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/stack-attack-page.html">
@@ -32,18 +32,17 @@
 <meta name="twitter:description" content="Play Stack Attack, a free one-button stacking game by JVDesignStudio. Tap to drop blocks and build the tallest tower!">
 <meta name="twitter:image"       content="https://jvdesignstudio.co.uk/GamesUpdatePromo.png">
 <title>Stack Attack | JVDesignStudio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
 <script defer src="../analytics-loader.js"></script>
 <link rel="preload" href="../style-game-stack-attack.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-game-stack-attack.css?v=17"></noscript>
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
 <link rel="stylesheet" href="/style-mascots.css">
 <!-- Game System Integration -->
-<script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script>
+<script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script><script src="../engine-runtime.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <link rel="stylesheet" href="../story-run.css">
 </head>
@@ -277,7 +276,7 @@
     streak=0;bestStreak=0;perfects=0;totalBlocks=0;slimCount=0;coinsEarned=0;sessionAchs=[];shakeT=0;shakeMag=0;
     beams=2;brakeReady=true;beaconComplete=false;correctAnswers=0;wrongAnswers=0;activeClue=null;selectedFactor=1;
     updateHud();nextClue();spawnBlock();running=true;
-    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running||paused)return false;running=false;return true;},resume:()=>{if(!running&&!paused){running=true;cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop);}}});
+    if(typeof GameUI!=='undefined')GameUI.autoPause({pause:()=>{if(!running||paused)return false;running=false;return true;},resume:()=>{if(!running&&!paused){running=true;startFrame();}}});
     document.getElementById('pauseBtn').onclick=togglePause;
   }
 
@@ -440,8 +439,11 @@
   }
   repairBtn.addEventListener('click',e=>{e.stopPropagation();repairTower();});
   brakeBtn.addEventListener('click',e=>{e.stopPropagation();brakeBlock();});
-  addEventListener('keydown',e=>{if(e.code==='Space'&&document.activeElement!==repairBtn&&document.activeElement!==brakeBtn){e.preventDefault();drop();}});
-  cv.addEventListener('pointerdown',e=>{e.preventDefault();drop();});
+  // Legacy direct-input path, used only when the shared engine runtime is absent.
+  if(!(window.JVDSEngine&&window.JVDSEngine.runtime)){
+    addEventListener('keydown',e=>{if(e.code==='Space'&&document.activeElement!==repairBtn&&document.activeElement!==brakeBtn){e.preventDefault();drop();}});
+    cv.addEventListener('pointerdown',e=>{e.preventDefault();drop();});
+  }
 
   let paused=false, pauseOverlay=null;
   function togglePause(){ if(paused){ paused=false; running=true; if(pauseOverlay) pauseOverlay.style.display='none'; document.getElementById('pauseBtn').textContent='⏸'; cancelAnimationFrame(stackFrame);stackFrame=requestAnimationFrame(loop); return; } if(!running) return; paused=true; running=false; document.getElementById('pauseBtn').textContent='▶'; if(!pauseOverlay){ pauseOverlay=document.createElement('div'); pauseOverlay.style.cssText='position:fixed;inset:0;background:rgba(8,12,30,.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:60;text-align:center;padding:24px'; pauseOverlay.innerHTML='<div style="font-size:2rem">⏸ Paused</div><button id="resumeBtn" class="btn teal">🧱 Resume</button>'; document.body.appendChild(pauseOverlay); pauseOverlay.querySelector('#resumeBtn').addEventListener('click', togglePause); } else pauseOverlay.style.display='flex'; }
@@ -623,5 +625,4 @@ window.addEventListener('beforeunload', () => {
 <script defer src="/mascots.js"></script>
 </body>
 </html>
-
 

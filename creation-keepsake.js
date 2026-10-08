@@ -144,7 +144,10 @@
   function place() {
     if (!strip) return;
     var banner = document.getElementById('cookie-banner');
-    strip.style.bottom = (16 + (banner ? banner.offsetHeight + 12 : 0)) + 'px';
+    var base = 16 + (banner ? banner.offsetHeight + 12 : 0);
+    /* Sit above the fixed feedback (bottom-left) and share (bottom-right)
+       buttons so the strip never overlaps them. */
+    strip.style.bottom = (base + 52) + 'px';
   }
 
   function build() {

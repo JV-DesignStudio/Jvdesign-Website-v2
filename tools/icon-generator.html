@@ -32,15 +32,14 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="preload" href="../style-tool-icon-generator.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="../style-tool-icon-generator.css?v=17"></noscript>
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<link rel="preload" href="../style-tool-icon-generator.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="../style-tool-icon-generator.css?v=18"></noscript>
 
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
 <link rel="stylesheet" href="/style-mascots.css">
@@ -130,7 +129,7 @@
     <li><strong>3</strong><span>Style</span></li>
     <li><strong>4</strong><span>Export</span></li>
   </ol>
-  <button class="brief-help" type="button" onclick="EmberGuide.show()" title="How Icon Generator works">Help</button>
+  <button class="brief-help" type="button" onclick="openStart()" title="How Icon Generator works">Help</button>
 </section>
 
 <div id="app">
@@ -203,6 +202,8 @@
     <div class="ctrl-section">
       <h3>Design</h3>
       <button class="act-btn exp-save" onclick="saveDesign()">💾 Save to Browser</button>
+      <button class="act-btn exp-reset" onclick="undo()">↩️ Undo</button>
+      <button class="act-btn exp-reset" onclick="redo()">↪️ Redo</button>
       <button class="act-btn exp-reset" onclick="resetDesign()">Reset to Default</button>
     </div>
 
@@ -558,7 +559,7 @@ function applyPalette(pid){
   const p=PALETTES.find(x=>x.id===pid);if(!p)return;
   pushUndo();
   state.palette=pid;state.bgTop=p.top;state.bgBottom=p.bottom;state.accent=p.accent;
-  syncInputs();render();scheduleAutosave();
+  syncInputs();syncUI();render();scheduleAutosave();
 }
 function clearPalette(){state.palette='custom';syncUI();}
 function pickSymbol(v){pushUndo();state.symbol=v;syncUI();render();scheduleAutosave();}
@@ -654,11 +655,32 @@ function closeStart(){ id('ig-overlay').classList.remove('show'); try{localStora
 function igHasSeen(){ try{ return localStorage.getItem(IG_SEEN)==='1'; }catch(e){ return true; } }
 function copyIconShareLink(){
   try{
-    const url=location.href.split('#')[0]+'#icon='+btoa(unescape(encodeURIComponent(JSON.stringify({v:1,ts:Date.now()})))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    const url=location.href.split('#')[0]+'#icon='+encodeDesign(state);
     history.replaceState(null,'',url);
     if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(()=>toast('🔗 Share link copied')).catch(()=>prompt('Copy:',url));
     else prompt('Copy:',url);
   }catch(e){ toast('Could not share'); }
+}
+/* Share links carry the whole design so a friend opens the same icon. */
+function encodeDesign(st){
+  try{ return btoa(unescape(encodeURIComponent(JSON.stringify({v:1,s:st})))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+  catch(e){ return ''; }
+}
+function decodeDesign(str){
+  try{
+    str=String(str).replace(/-/g,'+').replace(/_/g,'/');
+    const o=JSON.parse(decodeURIComponent(escape(atob(str))));
+    return o&&o.s?o.s:null;
+  }catch(e){ return null; }
+}
+function applyHash(){
+  const m=(location.hash||'').match(/icon=([^&]+)/);
+  if(!m) return false;
+  const s=decodeDesign(m[1]);
+  if(!s) return false;
+  state=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),s);
+  syncInputs();syncUI();render();
+  return true;
 }
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
@@ -669,11 +691,13 @@ document.addEventListener('keydown',e=>{
 
 /* -- init -- */
 loadSaved();
+const hadShared = applyHash();
 buildFx();
 syncInputs();
 syncUI();
 render();
-if(!igHasSeen()) openStart();
+if(!hadShared && !igHasSeen()) openStart();
+window.addEventListener('hashchange',()=>{ if(applyHash()) toast('Loaded shared icon'); });
 </script>
 
 <!-- BUILD:footer-tools -->

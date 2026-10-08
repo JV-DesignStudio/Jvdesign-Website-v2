@@ -88,6 +88,45 @@ let failures = 0;
   check('export/share/library functions exist', initial.exportFn && initial.sheetFn && initial.shareFn && initial.saveFn && initial.exportDeckFn && initial.importDeckFn && initial.newFn);
   check('no visible mojibake', initial.cleanText);
   check('mobile does not overflow viewport', initial.scrollWidth <= initial.clientWidth + 2, initial.scrollWidth + '/' + initial.clientWidth);
+  const split = await page.evaluate(() => {
+    const c = document.getElementById('card-canvas').getBoundingClientRect();
+    const ctrl = document.getElementById('controls');
+    return {
+      canvasTop: Math.round(c.top), canvasH: Math.round(c.height),
+      ctrlScrolls: ctrl.scrollHeight > ctrl.clientHeight + 2,
+      bodyScroll: document.body.scrollHeight > document.body.clientHeight + 2,
+      vh: window.innerHeight
+    };
+  });
+  check('mobile preview visible without scrolling', split.canvasTop >= 0 && split.canvasTop < split.vh / 2 && split.canvasH < split.vh * 0.5, JSON.stringify(split));
+  check('mobile controls scroll internally', split.ctrlScrolls, String(split.ctrlScrolls));
+  check('mobile page itself does not scroll', !split.bodyScroll, String(split.bodyScroll));
+  const coach = await page.evaluate(() => {
+    const c = document.querySelector('.mascot-coach');
+    return {
+      coachExists: !!c,
+      coachVisible: c ? getComputedStyle(c).display !== 'none' : false,
+      companion: !!document.querySelector('.mascot-companion')
+    };
+  });
+  check('mobile: Ember coach banner hidden on tool page', !coach.coachVisible, JSON.stringify(coach));
+  check('mobile: Ember companion avatar present', coach.companion, JSON.stringify(coach));
+  const overlap = await page.evaluate(async () => {
+    for (let i = 0; i < 25; i++) {
+      if (document.getElementById('jvfb-btn') && document.getElementById('jvds-keepsake-strip')) break;
+      await new Promise(r => setTimeout(r, 100));
+    }
+    const rects = el => { if (!el) return null; const b = el.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+    return {
+      strip: rects(document.getElementById('jvds-keepsake-strip')),
+      fb: rects(document.getElementById('jvfb-btn')),
+      share: rects(document.getElementById('jvds-share-btn'))
+    };
+  });
+  const hits = (a, b) => a && b && !(a.r <= b.l || a.l >= b.r || a.b <= b.t || a.t >= b.b);
+  check('keepsake strip present on the tool', !!overlap.strip, JSON.stringify(overlap.strip));
+  check('keepsake strip does not overlap feedback button', !hits(overlap.strip, overlap.fb), JSON.stringify(overlap));
+  check('keepsake strip does not overlap share button', !hits(overlap.strip, overlap.share), JSON.stringify(overlap));
   const library = await page.evaluate(() => {
     const data = window.collectCardData();
     localStorage.setItem('jvds_trading_card_library', JSON.stringify([{id:'xss-test', ts: Date.now(), name:'<img src=x onerror=alert(1)>', data, thumb:null}]));

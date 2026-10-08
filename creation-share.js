@@ -18,12 +18,12 @@
 
   var TOOL = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
   var CREATORS = {
-    'pixel-studio': 1, 'character-designer': 1, 'level-designer': 1,
-    'sprite-animator': 1, 'sprite-sheet-animator': 1, 'bitmap-font-maker': 1,
-    'tileset-builder': 1, 'particle-designer': 1, 'colour-palette': 1,
+    'pixel-studio': 1, 'level-designer': 1,
+    'sprite-animator': 1, 'bitmap-font-maker': 1,
+    'particle-designer': 1, 'colour-palette': 1,
     'icon-generator': 1, 'game-logo-maker': 1, 'game-idea-generator': 1,
     'gdd-builder': 1, 'design-worksheet': 1, 'story-editor': 1,
-    'sound-studio': 1, 'music-maker': 1, 'sfx-generator': 1,
+    'sound-studio': 1,
     'trading-card-designer': 1, 'arcade-game-maker': 1,
     'code-snippet-generator': 1, 'buildlab': 1
   };

@@ -177,7 +177,7 @@
     }
     function scan(){
       // Tools that already have full touch handling - don't double-bind
-      if(['pixel-studio','bitmap-font-maker','level-designer','particle-designer','music-maker','arcade-game-maker','buildlab'].indexOf(TOOL_ID)!==-1) return;
+      if(['pixel-studio','bitmap-font-maker','level-designer','particle-designer','arcade-game-maker','buildlab'].indexOf(TOOL_ID)!==-1) return;
       document.querySelectorAll('canvas').forEach(function(c){
         if(c._touchFallbackBound) return;
         bindFallback(c);

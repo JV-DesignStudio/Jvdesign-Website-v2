@@ -23,13 +23,12 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <script src="https://cdn.jsdelivr.net/npm/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
 <script type="importmap">
@@ -41,7 +40,7 @@
   }
 }
 </script>
-<link rel="stylesheet" href="../style-tool-buildlab.css?v=18">
+<link rel="stylesheet" href="../style-tool-buildlab.css?v=19">
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/tools/buildlab.html">
     <meta property="og:title"       content="BuildLab | Free 3D Block Builder">
@@ -1996,9 +1995,9 @@ function setupEvents() {
 
   // Mobile swipe between panel tabs
   (function(){
-    const tabBar = document.querySelector('.mob-tab-bar');
+    const tabBar = document.querySelector('.mob-toolbar');
     if (!tabBar) return;
-    const tabs = Array.from(tabBar.querySelectorAll('.mob-tab-btn'));
+    const tabs = Array.from(tabBar.querySelectorAll('.mob-tab'));
     let swipeStartX = 0, swipeStartY = 0;
     const vp = document.getElementById('viewport');
     if (!vp) return;
@@ -2576,7 +2575,7 @@ function clearAll(silent=false) {
 // -------------------------------------------------------
 function openNameModal() {
   document.getElementById('buildNameInput').value = buildName;
-  document.getElementById('nameModal').classList.add('open');
+  blOpenModal('nameModal');
 }
 function saveName() {
   buildName = document.getElementById('buildNameInput').value.trim() || 'My Build';
@@ -2585,9 +2584,23 @@ function saveName() {
 }
 function saveSlotOpen() {
   renderModalSaveSlots();
-  document.getElementById('saveModal').classList.add('open');
+  blOpenModal('saveModal');
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+// Hide the global helper widgets (keepsake strip, feedback, share) whenever a
+// modal or the mobile drawer is open, so they do not sit on top of the controls.
+function blSyncModalClass() {
+  document.body.classList.toggle('bl-modal-open', !!document.querySelector('.modal-overlay.open'));
+}
+function blOpenModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.classList.add('open');
+  blSyncModalClass();
+}
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.classList.remove('open');
+  blSyncModalClass();
+}
 
 function getSlots() {
   try { return JSON.parse(localStorage.getItem('jvds_builder_saves') || '[]'); } catch { return []; }
@@ -3402,7 +3415,7 @@ function animate() {
 
 // -- CLOSE MODALS ON OVERLAY CLICK --
 document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+  o.addEventListener('click', e => { if (e.target === o) { o.classList.remove('open'); blSyncModalClass(); } });
 });
 
 // -------------------------------------------------------
@@ -4599,7 +4612,7 @@ function restoreAutosave() {
 }
 
 function openWelcome() {
-  setRemixButtonLabel(); document.getElementById('welcomeModal').classList.add('open'); }
+  setRemixButtonLabel(); blOpenModal('welcomeModal'); }
 
 // -------------------------------------------------------
 // ENGINE CONTEXT MODE
@@ -4740,7 +4753,7 @@ function showExportPreview(format, exportFn) {
     closeModal('exportPreviewModal');
     exportFn();
   };
-  document.getElementById('exportPreviewModal').classList.add('open');
+  blOpenModal('exportPreviewModal');
 }
 
 function exportScreenshot() {
@@ -5083,6 +5096,7 @@ function showTutorialStep() {
     });
 
     drawer.classList.add('open');
+    document.body.classList.add('bl-drawer-open');
 
     // Sync prop sliders when opening edit panel
     if (tab === 'props') syncMobProps();
@@ -5094,6 +5108,7 @@ function showTutorialStep() {
   window.mobClose = function() {
     drawerOpen = false;
     document.getElementById('mobDrawer').classList.remove('open');
+    document.body.classList.remove('bl-drawer-open');
     document.querySelectorAll('.mob-tab').forEach(function(t){t.classList.remove('active');});
   };
 
@@ -5223,7 +5238,6 @@ Object.assign(window, { startTutorial, showTutorialStep, mobTab: window.mobTab, 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', emberBuildLabInit);
   else emberBuildLabInit();
 })();
-
 
 </script>
 

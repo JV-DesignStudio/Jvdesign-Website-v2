@@ -4,7 +4,11 @@
 // v25 (A332): add pixel-studio shared dependencies so tool fully works offline on first visit
 // v28 (A611): offline fallback uses the small pip-hero.webp instead of the 2.5 MB pip.png
 // v29 (A675): precache the top create tools + their CSS and shared widgets for offline-first school use
-const CACHE='jvds-v29';
+// v30 (A809): ship the Pixel Studio phone layout fix and modal widget hiding (fresh CSS)
+// v31 (A823): allow blob: in the CSP and self-host the BuildLab mobile chrome fix
+// v32 (A831): self-host Prism so the Code Snippet Generator highlights offline
+// v33 (A936): Icon Generator Help, real share links and a pinned mobile preview
+const CACHE='jvds-v33';
 const CORE=[
   '/',
   '/offline.html',
@@ -56,6 +60,15 @@ const CORE=[
   '/style-tool-story-editor.css',
   '/tools/code-snippet-generator.html',
   '/style-tool-code-snippet-generator.css',
+  // A831: self-hosted Prism so the Code Snippet Generator highlights offline.
+  '/assets/vendor/prism/prism.min.js',
+  '/assets/vendor/prism/prism-jvds.css',
+  '/assets/vendor/prism/components/prism-c.min.js',
+  '/assets/vendor/prism/components/prism-cpp.min.js',
+  '/assets/vendor/prism/components/prism-csharp.min.js',
+  '/assets/vendor/prism/components/prism-python.min.js',
+  '/assets/vendor/prism/components/prism-lua.min.js',
+  '/assets/vendor/prism/components/prism-java.min.js',
   '/tools/buildlab.html',
   '/style-tool-buildlab.css',
   // Shared widget scripts those tools load, so they work on a first offline visit.
