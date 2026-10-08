@@ -110,6 +110,61 @@ let failures = 0;
   const deepLink = await page.evaluate(()=>document.body.className);
   check('deep link #drums applies drums mode', /\bmode-drums\b/.test(deepLink), deepLink);
 
+  // A817: share link encodes the song, My Songs library
+  const share = await page.evaluate(()=>{
+    window.prompt=()=>{};
+    try{ Object.defineProperty(navigator,'clipboard',{value:{writeText:()=>Promise.resolve()},configurable:true}); }catch(e){}
+    const b64=window.b64encode(window.songData());
+    const dec=window.b64decode(b64);
+    return {hashLen:b64.length, bpm:dec.bpm, tracks:dec.tracks.length};
+  });
+  check('share payload round-trips', share.tracks>=1 && share.bpm>0 && share.hashLen>20, JSON.stringify(share));
+  await page.evaluate(()=>{ window.copySoundShareLink(); });
+  const shareHash = await page.evaluate(()=>location.hash.slice(0,6));
+  check('share link stores song in hash', shareHash==='#song=', shareHash);
+  const lib = await page.evaluate(async()=>{
+    document.getElementById('projName').value='Unit Test Song';
+    await window.saveToLibrary();
+    const list=await window.libAll();
+    return {count:list.length, name:list[0]&&list[0].name};
+  });
+  check('My Songs library saves a named song', lib.count>=1 && lib.name==='Unit Test Song', JSON.stringify(lib));
+
+  // A818: waveform canvas + per-track meters
+  const viz = await page.evaluate(()=>{
+    const c=document.getElementById('viz-canvas');
+    return {has:!!c, w:c?c.width:0, h:c?c.height:0, meters:document.querySelectorAll('.sst-meter i').length, tracks:document.querySelectorAll('.seq-track-row').length};
+  });
+  check('waveform canvas present', viz.has && viz.w>0 && viz.h>0, JSON.stringify(viz));
+  check('per-track meters render', viz.meters === viz.tracks && viz.meters>=1, JSON.stringify(viz));
+  await page.evaluate(()=>{ try{closeStart&&closeStart();}catch(e){} document.querySelectorAll('.ss-overlay').forEach(o=>o.style.display='none'); togglePlay(); });
+  await new Promise(resolve=>setTimeout(resolve, 700));
+  const live = await page.evaluate(()=>({playing:isPlaying, level:trackLevel.reduce((a,b)=>Math.max(a,b||0),0)}));
+  check('meters respond during playback', live.playing && live.level>0, JSON.stringify(live));
+  await page.evaluate(()=>{ stopAll(); });
+
+  // A819: patterns + arrangement
+  const pat = await page.evaluate(()=>{
+    const before=patterns.length;
+    addPattern();
+    const bIdx=currentPattern;
+    patterns[bIdx].grid[0][1].on=true;
+    switchPattern(0);
+    const aHas=grid[0][1].on;
+    const bHas=patterns[bIdx].grid[0][1].on;
+    return {before, after:patterns.length, aHas, bHas, tabs:document.querySelectorAll('#patternTabs .ab-tab').length};
+  });
+  check('add pattern creates an independent pattern', pat.after===pat.before+1 && pat.aHas===false && pat.bHas===true && pat.tabs===pat.after, JSON.stringify(pat));
+  const songList = await page.evaluate(()=>{
+    songMode=true; document.body.classList.add('song-mode'); song=[{p:0,rep:2},{p:1,rep:1}];
+    const list=buildPlayback();
+    return {len:list.length, first:list[0]&&list[0].p, at32:list[32]&&list[32].p};
+  });
+  check('song arrangement chains sections', songList.len===48 && songList.first===0 && songList.at32===1, JSON.stringify(songList));
+  const rendered = await page.evaluate(async()=>{ const b=await window.renderMixdown(); return {len:b.length, sr:b.sampleRate}; });
+  check('song export renders the full arrangement', rendered.len>300000 && rendered.len<420000, JSON.stringify(rendered));
+  await page.evaluate(()=>{ songMode=false; document.body.classList.remove('song-mode'); song=[{p:0,rep:1}]; });
+
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   server.close();
