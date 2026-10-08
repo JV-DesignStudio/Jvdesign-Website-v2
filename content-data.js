@@ -3254,20 +3254,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/scratch-maze-workshop.html"
     },
     {
-      "id": "scratch-cheatsheet",
-      "title": "Free Scratch Cheat Sheet",
-      "desc": "Free printable Scratch cheat sheet motion, looks, events, control, sensing, variables, operators and common block patterns. No sign-up needed.",
-      "engine": "Scratch",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#ff7700",
-      "cover": "/og/scratch-cheatsheet.png",
-      "url": "/workshops/scratch-cheatsheet.html"
-    },
-    {
       "id": "scratch-platformer-workshop",
       "title": "Jump &amp; Run! Build a Platformer in Scratch",
       "desc": "Build a side-scrolling platformer in Scratch! A free parent & child workshop. Gravity, jumping, platforms, coins and a finish flag. Ages 7+.",
@@ -5174,8 +5160,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-08T09:59:04.851Z",
-    "workshops": 251,
+    "generated": "2026-10-08T15:42:53.962Z",
+    "workshops": 250,
     "games": 44,
     "tools": 37,
     "books": 5,
@@ -5195,7 +5181,7 @@ window.JVDS_CONTENT = {
       "PICO-8": 12,
       "Python": 16,
       "Roblox": 11,
-      "Scratch": 13,
+      "Scratch": 12,
       "TinkerCAD": 9,
       "Unity": 9,
       "Unreal": 10

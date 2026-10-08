@@ -52,6 +52,9 @@ function generateWorkshops() {
     // Skip non-workshop pages
     if (slug === 'my-progress') continue;
 
+    // Skip redirect stubs (retired or de-duplicated pages that forward elsewhere)
+    if (/http-equiv=["']refresh["']/i.test(html)) continue;
+
     const title = extract(html, /<title>([^<|]+)/);
     const desc = extract(html, /<meta\s+name="description"\s+content="([^"]+)"/);
     const themeColor = extract(html, /<meta\s+name="theme-color"\s+content="([^"]+)"/);
