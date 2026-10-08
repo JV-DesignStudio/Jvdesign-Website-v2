@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Godot Puzzle Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Godot Puzzle Build Canvas <span class="cw-lang-tag">&#x1f916; Godot</span></h1>
+  <p>Write GDScript game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Godot Puzzle game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A 4x4 grid of coloured tiles on a dark background</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function gdscriptToJs(code) {
+  return code
+    .replace(/#.*$/gm, '')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bVector2\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
+    .replace(/\brandf\(\)/g, 'Math.random()')
+    .replace(/\brandi\(\)\s*%\s*(\w+)/g, 'Math.floor(Math.random()*$1)')
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
+    .replace(/\.position\.x/g, '.x')
+    .replace(/\.position\.y/g, '.y')
+    .replace(/\bInput\.is_action_pressed\("ui_left"\)/g, 'leftHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
+    .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
+    .replace(/\belif\b/g, '} else if')
+    .replace(/\bif\s+(.+):/g, 'if($1){')
+    .replace(/\belse\s*:/g, '} else {')
+    .replace(/\bfor\s+(\w+)\s+in\s+range\(([^)]+)\)\s*:/g, 'for(let $1=0;$1<$2;$1++){')
+    .replace(/\bwhile\s+(.+):/g, 'while($1){')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false')
+    .replace(/\bnull\b/g, 'null');
+}
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="400" height="450"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var GRID_VARS = 'let cols=4,rows=4,tileW=80,tileH=80,padX=40,padY=60;';
+
+var COLORS = 'var COLORS=["#f43f5e","#60a5fa","#22c55e","#fbbf24","#a78bfa","#f97316","#ec4899","#14b8a6"];';
+
+var BOARD_INIT = 'let board=[];let pairs=cols*rows/2;let deck=[];for(let i=0;i<pairs;i++){deck.push(i%8);deck.push(i%8)}' +
+  'for(let i=deck.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));let t=deck[i];deck[i]=deck[j];deck[j]=t}' +
+  'for(let r=0;r<rows;r++){board[r]=[];for(let c=0;c<cols;c++){board[r][c]={color:deck[r*cols+c],revealed:false,matched:false}}}';
+
+var FLIP_VARS = 'let first=null,second=null,lockBoard=false,moves=0,matches=0;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var CLICK_HANDLER = 'canvas.addEventListener("click",function(e){' +
+  'if(lockBoard||gameState!=="play")return;' +
+  'var rect=canvas.getBoundingClientRect();' +
+  'var mx=(e.clientX-rect.left)*(canvas.width/rect.width);' +
+  'var my=(e.clientY-rect.top)*(canvas.height/rect.height);' +
+  'var c=Math.floor((mx-padX)/tileW);var r=Math.floor((my-padY)/tileH);' +
+  'if(c<0||c>=cols||r<0||r>=rows)return;' +
+  'var tile=board[r][c];if(tile.revealed||tile.matched)return;' +
+  'tile.revealed=true;' +
+  'if(!first){first={r:r,c:c}}' +
+  'else{second={r:r,c:c};moves++;lockBoard=true;' +
+  'setTimeout(function(){checkMatch()},600)}});';
+
+var CHECK_MATCH = 'function checkMatch(){' +
+  'var a=board[first.r][first.c],b=board[second.r][second.c];' +
+  'if(a.color===b.color){a.matched=true;b.matched=true;matches++;' +
+  'if(matches>=pairs)gameState="win"}' +
+  'else{a.revealed=false;b.revealed=false}' +
+  'first=null;second=null;lockBoard=false}';
+
+var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,400,450);';
+
+var DRAW_BOARD = 'for(var r=0;r<rows;r++){for(var c=0;c<cols;c++){var x=padX+c*tileW,y=padY+r*tileH,tile=board[r][c];' +
+  'if(tile.matched){ctx.fillStyle="#334155";ctx.fillRect(x+2,y+2,tileW-4,tileH-4);ctx.strokeStyle="#475569";ctx.strokeRect(x+2,y+2,tileW-4,tileH-4)}' +
+  'else if(tile.revealed){ctx.fillStyle=COLORS[tile.color];ctx.fillRect(x+2,y+2,tileW-4,tileH-4)}' +
+  'else{ctx.fillStyle="#475569";ctx.fillRect(x+2,y+2,tileW-4,tileH-4);ctx.fillStyle="#64748b";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("?",x+tileW/2,y+tileH/2+10)}}}';
+
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";ctx.fillText("Moves: "+moves,12,28);' +
+  'ctx.textAlign="right";ctx.fillText("Matches: "+matches+"/"+pairs,388,28);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-godot-puzzle-canvas',
+  downloadName: 'my-godot-puzzle.html',
+
+  hints: [
+    'A 4x4 grid of face-down tiles showing question marks',
+    'Clicking a tile reveals its colour underneath',
+    'A second tile flips to check for a match',
+    'Matching tiles stay revealed, mismatches flip back',
+    'The move counter tracks how many pairs you have tried',
+    'All pairs matched - you win with your total move count'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + GRID_VARS + COLORS + BOARD_INIT +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_BOARD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS +
+        CLICK_HANDLER +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_BOARD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS +
+        CLICK_HANDLER + CHECK_MATCH +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_BOARD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS +
+        CLICK_HANDLER + CHECK_MATCH +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_BOARD + DRAW_HUD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS + STATE_VARS +
+        CLICK_HANDLER + CHECK_MATCH +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_BOARD + DRAW_HUD +
+        'if(gameState==="win"){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,450);' +
+        'ctx.fillStyle="#22c55e";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("YOU WIN!",200,200);' +
+        'ctx.fillStyle="#fff";ctx.font="18px monospace";ctx.fillText("Completed in "+moves+" moves",200,235)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS + STATE_VARS +
+        CLICK_HANDLER + CHECK_MATCH +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){' +
+        'var nd=[];for(var i=0;i<pairs;i++){nd.push(i%8);nd.push(i%8)}' +
+        'for(var i=nd.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=nd[i];nd[i]=nd[j];nd[j]=t}' +
+        'for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){board[r][c]={color:nd[r*cols+c],revealed:false,matched:false}}' +
+        'first=null;second=null;lockBoard=false;moves=0;matches=0;gameState="play"}});' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_BOARD + DRAW_HUD +
+        'if(gameState==="win"){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,450);' +
+        'ctx.fillStyle="#22c55e";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("YOU WIN!",200,200);' +
+        'ctx.fillStyle="#fff";ctx.font="18px monospace";ctx.fillText("Completed in "+moves+" moves",200,235);' +
+        'ctx.fillText("Press R to play again",200,265)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Grid',
+      goal: 'Draw a 4x4 grid of face-down tiles.',
+      points: [
+        'The grid is 4 columns by 4 rows = 16 tiles total',
+        'Each tile is 80x80 pixels with 2px padding between them',
+        'Face-down tiles show a "?" in dark grey',
+        'In Godot you would use a GridContainer with TextureButtons'
+      ],
+      challenge: '🤖 Set the grid dimensions:',
+      starter: '# Grid size\nvar cols = ___\nvar rows = ___\nvar tile_w = 80\nvar tile_h = 80',
+      solution: '# Grid size\nvar cols = 4\nvar rows = 4\nvar tile_w = 80\nvar tile_h = 80',
+      checks: ['4', '80'],
+      height: 120,
+      fills: {
+        text: 'The grid has ___ columns and ___ rows, making 16 tiles total.',
+        answers: ['4', '4']
+      },
+      quiz: {
+        question: 'Why use an even number of tiles?',
+        options: [
+          'Odd numbers look ugly',
+          'Memory matching needs pairs - an even total ensures every tile has exactly one match',
+          'Canvas only supports even numbers'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Clicking to Flip',
+      goal: 'Click a tile to reveal its colour.',
+      points: [
+        'Convert the mouse click position to a grid column and row',
+        'Formula: <code>col = (mouse_x - pad) / tile_w</code>',
+        'Set <code>tile.revealed = true</code> to show its colour',
+        'Ignore clicks on already-revealed or matched tiles'
+      ],
+      challenge: '🤖 Convert click to grid position:',
+      starter: '# Convert click to grid\nvar col = (mouse_x - pad_x) / ___\nvar row = (mouse_y - pad_y) / ___',
+      solution: '# Convert click to grid\nvar col = (mouse_x - pad_x) / tile_w\nvar row = (mouse_y - pad_y) / tile_h',
+      checks: ['tile_w', 'tile_h'],
+      height: 100,
+      fills: {
+        text: 'Dividing by ___ converts pixel position to grid column. Each tile is ___ pixels wide.',
+        answers: ['tile_w', '80']
+      },
+      quiz: {
+        question: 'Why ignore clicks on revealed tiles?',
+        options: [
+          'It causes a crash',
+          'Re-clicking an already-shown tile would waste the second flip or break the pair-matching logic',
+          'Revealed tiles are invisible'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Checking for Matches',
+      goal: 'Flip two tiles and check if their colours match.',
+      points: [
+        'Track the first and second flipped tiles separately',
+        'After the second flip, compare: <code>tile_a.color == tile_b.color</code>',
+        'Match: mark both as <code>matched = true</code> so they stay revealed',
+        'No match: set both back to <code>revealed = false</code> after a delay'
+      ],
+      challenge: '🤖 Write the match check:',
+      starter: '# Compare the two flipped tiles\nif tile_a.color == tile_b.color:\n    tile_a.matched = ___\n    tile_b.matched = ___\nelse:\n    tile_a.revealed = ___\n    tile_b.revealed = ___',
+      solution: '# Compare the two flipped tiles\nif tile_a.color == tile_b.color:\n    tile_a.matched = true\n    tile_b.matched = true\nelse:\n    tile_a.revealed = false\n    tile_b.revealed = false',
+      checks: ['matched', 'true', 'revealed', 'false'],
+      height: 180,
+      fills: {
+        text: 'Matching tiles stay face-___. Non-matching tiles flip back face-___.',
+        answers: ['up', 'down']
+      },
+      quiz: {
+        question: 'Why add a delay before flipping mismatched tiles back?',
+        options: [
+          'The computer needs time to check',
+          'The delay gives the player time to see and memorise both colours before they disappear',
+          'Instant flips use too much memory'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Move Counter',
+      goal: 'Track and display how many pairs the player has tried.',
+      points: [
+        'Increment <code>moves</code> each time a second tile is flipped',
+        'Display moves in the top-left corner of the canvas',
+        'Display matches found out of total pairs on the right',
+        'Fewer moves = better performance'
+      ],
+      challenge: '🤖 Update the move counter:',
+      starter: '# Count the move\nmoves += ___\n# Total pairs\nvar pairs = cols * rows / ___',
+      solution: '# Count the move\nmoves += 1\n# Total pairs\nvar pairs = cols * rows / 2',
+      checks: ['moves', '1', '2'],
+      height: 100,
+      fills: {
+        text: 'Each pair attempt adds ___ to moves. A 4x4 grid has ___ pairs.',
+        answers: ['1', '8']
+      },
+      quiz: {
+        question: 'Why count moves instead of time?',
+        options: [
+          'Time is harder to code',
+          'Move counting rewards memory and strategy - completing in fewer moves shows better recall',
+          'Canvas does not have a timer'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Win Screen',
+      goal: 'Show a victory message when all pairs are found.',
+      points: [
+        'Check: <code>matches >= pairs</code> means all pairs found',
+        'Draw a semi-transparent overlay to dim the board',
+        'Display "YOU WIN!" with the total move count',
+        'The overlay uses <code>rgba(0,0,0,0.6)</code> for a dim effect'
+      ],
+      challenge: '🤖 Write the win check:',
+      starter: '# Check if all pairs matched\nif matches >= ___:\n    game_state = "___"',
+      solution: '# Check if all pairs matched\nif matches >= pairs:\n    game_state = "win"',
+      checks: ['matches', 'pairs', 'win'],
+      height: 80,
+      fills: {
+        text: 'The game ends when ___ equals ___. A dark overlay highlights the victory message.',
+        answers: ['matches', 'pairs']
+      },
+      quiz: {
+        question: 'Why dim the board with a semi-transparent overlay?',
+        options: [
+          'Clearing the board is too hard',
+          'The overlay draws attention to the message while keeping the completed board visible as proof of the win',
+          'It hides bugs in the drawing code'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Shuffle & Restart',
+      goal: 'Press R to reshuffle and start a new game.',
+      points: [
+        'Fisher-Yates shuffle randomises the tile positions fairly',
+        'Reset all tiles to <code>revealed = false, matched = false</code>',
+        'Reset moves to 0 and matches to 0',
+        'The same shuffle algorithm is used in professional card games'
+      ],
+      challenge: '🤖 Write the shuffle:',
+      starter: '# Fisher-Yates shuffle\nfor i in range(deck.length - 1, 0, -1):\n    var j = randi() % (i + ___)\n    # Swap deck[i] and deck[j]',
+      solution: '# Fisher-Yates shuffle\nfor i in range(deck.length - 1, 0, -1):\n    var j = randi() % (i + 1)\n    # Swap deck[i] and deck[j]',
+      checks: ['randi', 'i + 1', 'swap'],
+      height: 100,
+      fills: {
+        text: 'Fisher-Yates picks a random index from 0 to ___ for each position. This guarantees every arrangement is equally ___.',
+        answers: ['i', 'likely']
+      },
+      quiz: {
+        question: 'Why use Fisher-Yates instead of sorting with random comparisons?',
+        options: [
+          'Sort-based shuffle is biased - some arrangements appear more often. Fisher-Yates gives truly uniform randomness',
+          'Sort is slower',
+          'GDScript does not have a sort function'
+        ],
+        correct: 0
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My First Scratch Game Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,191,36,.15);color:#fbbf24;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>My First Scratch Game Canvas <span class="cw-lang-tag">&#x1f431; Scratch</span></h1>
+  <p>Write Scratch block code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your first Scratch game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A yellow basket at the bottom of the stage</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function scratchToJs(code) {
+  return code
+    .replace(/when green flag clicked/g, '')
+    .replace(/forever/g, '')
+    .replace(/end/g, '}')
+    .replace(/if <key \[right arrow\] pressed\?> then/g, 'if(rightHeld){')
+    .replace(/if <key \[left arrow\] pressed\?> then/g, 'if(leftHeld){')
+    .replace(/if <key \[up arrow\] pressed\?> then/g, 'if(upHeld){')
+    .replace(/if <key \[down arrow\] pressed\?> then/g, 'if(downHeld){')
+    .replace(/if <key \[space\] pressed\?> then/g, 'if(spaceHeld){')
+    .replace(/change x by \[([^\]]+)\]/g, 'sprite.x+=$1;')
+    .replace(/change y by \[([^\]]+)\]/g, 'sprite.y+=$1;')
+    .replace(/set x to \[([^\]]+)\]/g, 'sprite.x=$1;')
+    .replace(/set y to \[([^\]]+)\]/g, 'sprite.y=$1;')
+    .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'sprite.x=$1;sprite.y=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
+    .replace(/if <touching \[Edge\]\?> then/g, 'if(sprite.x<0||sprite.x>460||sprite.y<0||sprite.y>340){')
+    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
+    .replace(/say \[([^\]]+)\]/g, 'sayText="$1";')
+    .replace(/move \[([^\]]+)\] steps/g, 'sprite.x+=$1*Math.cos(sprite.dir*Math.PI/180);sprite.y+=$1*Math.sin(sprite.dir*Math.PI/180);')
+    .replace(/turn right \[([^\]]+)\] degrees/g, 'sprite.dir+=$1;')
+    .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\/\/.*$/gm, '');
+}
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#2b1f5e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="480" height="360"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var BASKET_VARS = 'let bx=200,by=320,bw=80,bh=20,speed=5;';
+
+var STAR_VARS = 'let sx=Math.floor(Math.random()*440)+20,sy=-20,sw=20,sh=20,fallSpeed=2;';
+
+var SCORE_VARS = 'let score=0;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var SPRITE = 'var sprite={x:200,y:320,dir:0};';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var DRAW_BG = 'ctx.fillStyle="#2b1f5e";ctx.fillRect(0,0,480,360);';
+
+var DRAW_BASKET = 'ctx.fillStyle="#fbbf24";ctx.fillRect(bx,by,bw,bh);';
+
+var DRAW_STAR = 'ctx.fillStyle="#22c55e";ctx.beginPath();ctx.arc(sx+sw/2,sy+sh/2,sw/2,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,12,28);';
+
+var STAR_RESET = 'function resetStar(){sx=Math.floor(Math.random()*440)+20;sy=-20}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-my-first-scratch-canvas',
+  downloadName: 'my-first-scratch-game.html',
+
+  hints: [
+    'A yellow basket at the bottom of the stage',
+    'The basket slides left and right with arrow keys',
+    'A green star falls from the top of the stage',
+    'Catching the star scores a point and drops a new one',
+    'The star falls faster as your score grows',
+    'Score display and restart with the R key'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + SPRITE + KEYS +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + SPRITE + KEYS +
+        'function loop(){' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'bx=Math.max(0,Math.min(400,bx));' +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SPRITE + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
+        'bx=Math.max(0,Math.min(400,bx));' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'if(sy>370)resetStar();' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + SPRITE + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
+        'bx=Math.max(0,Math.min(400,bx));' +
+        'sy+=fallSpeed;' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'if(sy>370)resetStar();' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + SPRITE + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
+        'bx=Math.max(0,Math.min(400,bx));' +
+        'sy+=fallSpeed;' +
+        'if(sy+sh>=by&&sy<=by+bh&&sx+sw>=bx&&sx<=bx+bw){score++;resetStar();fallSpeed=Math.min(7,2+score/5)}' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'if(sy>370)resetStar();' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + SPRITE + KEYS +
+        STAR_RESET +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){score=0;fallSpeed=2;resetStar();gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
+        'bx=Math.max(0,Math.min(400,bx));' +
+        'sy+=fallSpeed;' +
+        'if(sy+sh>=by&&sy<=by+bh&&sx+sw>=bx&&sx<=bx+bw){score++;resetStar();fallSpeed=Math.min(7,2+score/5)}' +
+        'if(sy>370)resetStar();' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",240,160);ctx.font="18px monospace";ctx.fillText("Score: "+score,240,195);' +
+        'ctx.fillText("Press R to play again",240,225)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Basket',
+      goal: 'Place a yellow basket at the bottom of the Scratch stage.',
+      points: [
+        'The Scratch stage is 480x360 pixels',
+        'The basket is a bright yellow rectangle: 80 wide, 20 tall',
+        'In Scratch you set position with <code>go to x: 200 y: 320</code>',
+        'The basket starts centred at x = 200'
+      ],
+      challenge: '🐱 Set the basket position:',
+      starter: '// Set the basket position\nset [bx] to [___]\nset [by] to [320]\nset [bw] to [___]',
+      solution: '// Set the basket position\nset [bx] to [200]\nset [by] to [320]\nset [bw] to [80]',
+      checks: ['200', '320', '80'],
+      height: 100,
+      fills: {
+        text: 'The basket starts at x = ___ to be centred. It is ___ pixels wide.',
+        answers: ['200', '80']
+      },
+      quiz: {
+        question: 'Why is the basket near the bottom of the stage?',
+        options: [
+          'It looks better there',
+          'The player needs space above to see falling objects and react in time',
+          'Scratch only draws at the bottom'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Arrow Key Movement',
+      goal: 'Move the basket left and right with arrow keys.',
+      points: [
+        'In Scratch: <code>if &lt;key [left arrow] pressed?&gt; then</code> checks held keys',
+        'Move 5 pixels each frame while the key is held',
+        'The basket stays between x=0 and x=400',
+        'Smooth movement comes from checking every frame inside a forever loop'
+      ],
+      challenge: '🐱 Write the movement blocks:',
+      starter: '// Move with arrow keys\nif <key [left arrow] pressed?> then\n  change x by [___]\nend\nif <key [right arrow] pressed?> then\n  change x by [___]\nend',
+      solution: '// Move with arrow keys\nif <key [left arrow] pressed?> then\n  change x by [-5]\nend\nif <key [right arrow] pressed?> then\n  change x by [5]\nend',
+      checks: ['left arrow', 'right arrow', '-5', '5'],
+      height: 180,
+      fills: {
+        text: 'The basket moves ___ pixels per frame. Negative values move ___.',
+        answers: ['5', 'left']
+      },
+      quiz: {
+        question: 'Why use "key pressed?" instead of "when key pressed"?',
+        options: [
+          '"When key pressed" fires once per tap - "key pressed?" checks every frame for smooth held-key movement',
+          'They are the same',
+          '"When key pressed" is removed from Scratch'
+        ],
+        correct: 0
+      }
+    },
+    {
+      num: 3,
+      title: 'A Falling Star',
+      goal: 'Drop a green star from a random spot at the top.',
+      points: [
+        'The star starts above the stage at sy = -20',
+        'Each frame: <code>change [sy] by [fallSpeed]</code> moves it down',
+        'When it passes the bottom (sy > 370), reset to a random x at the top',
+        'Starting off-screen makes the star slide in smoothly'
+      ],
+      challenge: '🐱 Make the star fall:',
+      starter: '// Move star down\nchange [sy] by [___]\n\n// Reset off-screen\nset [sy] to [___]',
+      solution: '// Move star down\nchange [sy] by [fallSpeed]\n\n// Reset off-screen\nset [sy] to [-20]',
+      checks: ['fallspeed', '-20'],
+      height: 100,
+      fills: {
+        text: 'The star falls ___ pixels per frame. It resets to y = ___ when off-screen.',
+        answers: ['2', '-20']
+      },
+      quiz: {
+        question: 'Why start the star above the visible stage?',
+        options: [
+          'It accelerates before appearing',
+          'Sliding in from off-screen looks smooth instead of suddenly appearing at the edge',
+          'Scratch needs negative positions'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Catching the Star',
+      goal: 'Score a point when the star touches the basket.',
+      points: [
+        'In Scratch you use <code>if &lt;touching [Basket]?&gt;</code>',
+        'On canvas we check if rectangles overlap',
+        'On catch: add 1 to score and reset the star',
+        'The same check works in every catching game'
+      ],
+      challenge: '🐱 Write the catch:',
+      starter: '// Star caught!\nchange [score] by [___]\nset [sy] to [___]',
+      solution: '// Star caught!\nchange [score] by [1]\nset [sy] to [-20]',
+      checks: ['score', '1', '-20'],
+      height: 80,
+      fills: {
+        text: 'Catching adds ___ to the score. The star resets to y = ___ for the next drop.',
+        answers: ['1', '-20']
+      },
+      quiz: {
+        question: 'What happens if we forget to reset the star?',
+        options: [
+          'Nothing changes',
+          'The star keeps scoring points forever because it stays overlapping the basket',
+          'The game crashes'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Speed Ramp',
+      goal: 'Make the star fall faster as the score grows.',
+      points: [
+        'Formula: <code>fallSpeed = 2 + score / 5</code>',
+        'Every 5 catches the speed increases by 1',
+        'Cap at 7 so the game stays playable',
+        'This difficulty curve keeps the game interesting'
+      ],
+      challenge: '🐱 Write the speed ramp:',
+      starter: '// Speed up with score\nset [fallSpeed] to [2 + score / ___]\n// Cap at max\nset [maxSpeed] to [___]',
+      solution: '// Speed up with score\nset [fallSpeed] to [2 + score / 5]\n// Cap at max\nset [maxSpeed] to [7]',
+      checks: ['fallspeed', '5', '7'],
+      height: 100,
+      fills: {
+        text: 'Speed increases every ___ catches. The cap of ___ keeps things fair.',
+        answers: ['5', '7']
+      },
+      quiz: {
+        question: 'Why cap the speed?',
+        options: [
+          'Scratch cannot go faster',
+          'Without a cap the star becomes uncatchable - capping preserves fairness at high scores',
+          'It saves battery'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Score Display & Restart',
+      goal: 'Show the score and let R restart the game.',
+      points: [
+        'The score is drawn in white text at the top-left',
+        'Pressing R resets score to 0, speed to 2, and repositions the star',
+        'This is the same restart pattern used in arcade games',
+        'A game state variable controls whether the game is running'
+      ],
+      challenge: '🐱 Write the restart:',
+      starter: '// Reset on R press\nset [score] to [___]\nset [fallSpeed] to [___]\nset [gameState] to [play]',
+      solution: '// Reset on R press\nset [score] to [0]\nset [fallSpeed] to [2]\nset [gameState] to [play]',
+      checks: ['score', '0', 'fallspeed', '2', 'play'],
+      height: 100,
+      fills: {
+        text: 'Resetting score to ___ and speed to ___ gives a clean start.',
+        answers: ['0', '2']
+      },
+      quiz: {
+        question: 'Why use a game state variable?',
+        options: [
+          'It makes the code longer',
+          'A state variable lets you pause updates when game is over and resume cleanly on restart',
+          'Scratch requires it'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

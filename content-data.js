@@ -1122,6 +1122,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/my-first-gdevelop-game-canvas.html"
     },
     {
+      "id": "my-first-godot-game-canvas",
+      "title": "My First Godot Game Canvas",
+      "desc": "",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/my-first-godot-game-canvas.html"
+    },
+    {
       "id": "my-first-java-game",
       "title": "My First Java Game",
       "desc": "7 free beginner Java game workshops. Build a platformer, breakout, space shooter, Pong and a 3-part RPG with real Java code. Interactive quizzes and XP. Ages 11+.",
@@ -1261,6 +1277,22 @@ window.JVDS_CONTENT = {
       "themeColor": "#FF7700",
       "cover": "/og/my-first-scratch-game.png",
       "url": "/workshops/my-first-scratch-game.html"
+    },
+    {
+      "id": "my-first-scratch-game-canvas",
+      "title": "My First Scratch Game Canvas",
+      "desc": "",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/my-first-scratch-game-canvas.html"
     },
     {
       "id": "my-first-series",
@@ -1924,6 +1956,38 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "og/learn.png",
       "url": "/workshops/godot-gatekeeper-3d-part2-canvas.html"
+    },
+    {
+      "id": "godot-platformer-canvas",
+      "title": "Godot Platformer Build Canvas",
+      "desc": "",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-platformer-canvas.html"
+    },
+    {
+      "id": "godot-puzzle-canvas",
+      "title": "Godot Puzzle Build Canvas",
+      "desc": "",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "puzzle"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/godot-puzzle-canvas.html"
     },
     {
       "id": "godot-racing-canvas",
@@ -3292,6 +3356,20 @@ window.JVDS_CONTENT = {
       "url": "/workshops/scratch-platformer-canvas.html"
     },
     {
+      "id": "scratch-pong-canvas",
+      "title": "Scratch Pong Build Canvas",
+      "desc": "",
+      "engine": "Scratch",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.png",
+      "url": "/workshops/scratch-pong-canvas.html"
+    },
+    {
       "id": "scratch-quiz-canvas",
       "title": "Scratch Quiz Build Canvas",
       "desc": "",
@@ -4316,6 +4394,45 @@ window.JVDS_CONTENT = {
       "age": "Ages 8-13",
       "character": "Stardust",
       "url": "/games/stardust-ruins.html"
+    },
+    {
+      "id": "highway-dodge",
+      "title": "Highway Dodge",
+      "tag": "Traffic Runner",
+      "emoji": "🚗",
+      "category": "Action",
+      "bg": "linear-gradient(135deg,#0a0a1a,#f59e0b)",
+      "desc": "Swerve through oncoming traffic at high speed. Dodge cars, chain near-misses for combo points, and collect shields to survive crashes.",
+      "kids": false,
+      "age": "Ages 8-14",
+      "character": null,
+      "url": "/games/highway-dodge.html"
+    },
+    {
+      "id": "lumo-run",
+      "title": "Lumo's Run",
+      "tag": "Endless Runner",
+      "emoji": "✨",
+      "category": "Action",
+      "bg": "linear-gradient(135deg,#0c1222,#7c3aed)",
+      "desc": "An endless runner through an enchanted forest. Jump over gaps and rocks, slide under low branches, and collect stardust to keep running.",
+      "kids": false,
+      "age": "Ages 7-14",
+      "character": "Lumo",
+      "url": "/games/lumo-run.html"
+    },
+    {
+      "id": "crossy-crew",
+      "title": "Crossy Crew",
+      "tag": "Road Crossing",
+      "emoji": "🐸",
+      "category": "Action",
+      "bg": "linear-gradient(135deg,#1a472a,#16a34a)",
+      "desc": "Hop across busy roads and rushing rivers in this Crossy Road style game. Dodge traffic, ride logs, collect coins, and see how far you can get.",
+      "kids": false,
+      "age": "Ages 7-14",
+      "character": null,
+      "url": "/games/crossy-crew.html"
     }
   ],
   "tools": [
@@ -5057,9 +5174,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-07T16:24:25.718Z",
-    "workshops": 246,
-    "games": 41,
+    "generated": "2026-10-08T09:59:04.851Z",
+    "workshops": 251,
+    "games": 44,
     "tools": 37,
     "books": 5,
     "engines": {
@@ -5067,9 +5184,9 @@ window.JVDS_CONTENT = {
       "C++": 16,
       "Defold": 12,
       "GDevelop": 12,
-      "General": 58,
+      "General": 60,
       "GML/GameMaker": 10,
-      "Godot": 13,
+      "Godot": 15,
       "Java": 14,
       "JavaScript": 7,
       "Minecraft": 8,
@@ -5078,7 +5195,7 @@ window.JVDS_CONTENT = {
       "PICO-8": 12,
       "Python": 16,
       "Roblox": 11,
-      "Scratch": 12,
+      "Scratch": 13,
       "TinkerCAD": 9,
       "Unity": 9,
       "Unreal": 10

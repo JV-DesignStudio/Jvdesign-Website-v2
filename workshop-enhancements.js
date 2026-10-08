@@ -149,6 +149,42 @@
       margin-top: 6px;
     }
     .reset-progress-btn:hover { border-color: rgba(248,113,113,.35); color: rgba(248,113,113,.7); }
+
+    /* Report issue button */
+    .report-issue-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(26,29,42,.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(232,234,242,.6);
+      font-family: 'Fredoka',cursive;
+      font-size: .78rem;
+      font-weight: 600;
+      padding: 9px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .2s;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    }
+    .report-issue-fab:hover {
+      background: rgba(248,113,113,.12);
+      border-color: rgba(248,113,113,.35);
+      color: #f87171;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,.3);
+    }
+    .report-issue-fab .report-icon { font-size: 1rem; line-height: 1; }
+    @media(max-width:480px) {
+      .report-issue-fab { bottom: 16px; right: 16px; font-size: .72rem; padding: 8px 12px; }
+    }
   `;
 
   const styleEl = document.createElement('style');
@@ -495,6 +531,28 @@
     }).catch(fallback);
   }
 
+  // ── REPORT ISSUE BUTTON ──────────────────────────────────────────────────────
+  function initReportButton() {
+    var title = document.title || 'Workshop page';
+    var page = location.pathname.split('/').pop() || location.pathname;
+    var subject = encodeURIComponent('Issue: ' + title);
+    var body = encodeURIComponent(
+      'Hi! I found an issue on this workshop:\n\n' +
+      'Page: ' + title + '\n' +
+      'URL: ' + location.href + '\n' +
+      'Browser: ' + navigator.userAgent + '\n\n' +
+      'What went wrong:\n(describe what happened)\n\n' +
+      'What step were you on:\n(e.g. Step 3)\n'
+    );
+    var href = 'mailto:joshhyyymakes@gmail.com?subject=' + subject + '&body=' + body;
+    var btn = document.createElement('a');
+    btn.className = 'report-issue-fab';
+    btn.href = href;
+    btn.innerHTML = '<span class="report-icon">🐛</span> Report Issue';
+    btn.title = 'Something not working? Let us know!';
+    document.body.appendChild(btn);
+  }
+
   // ── INIT ─────────────────────────────────────────────────────────────────────
   function init() {
     initCopyButtons();
@@ -506,6 +564,7 @@
     initResetButton();
     initNextSignpost();
     patchCompleteStep();
+    initReportButton();
     // Restore after buildDots() has run (it's called at DOMContentLoaded inline)
     setTimeout(restoreProgress, 80);
   }

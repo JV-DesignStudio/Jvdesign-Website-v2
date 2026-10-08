@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My First Godot Game Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(96,165,250,.15);color:#60a5fa;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>My First Godot Game Canvas <span class="cw-lang-tag">&#x1f916; Godot</span></h1>
+  <p>Write GDScript game code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your first Godot game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A green basket at the bottom of a dark screen</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ===================================================
+   GDScript-to-JS transpiler (light transform so
+   GDScript syntax runs in the canvas iframe)
+   =================================================== */
+function gdscriptToJs(code) {
+  return code
+    .replace(/#.*$/gm, '')
+    .replace(/\bprint\s*\(/g, 'console.log(')
+    .replace(/\bVector2\(([^,]+),\s*([^)]+)\)/g, '{x:$1,y:$2}')
+    .replace(/\brandf\(\)/g, 'Math.random()')
+    .replace(/\brandi\(\)\s*%\s*(\w+)/g, 'Math.floor(Math.random()*$1)')
+    .replace(/\babs\(/g, 'Math.abs(')
+    .replace(/\bclamp\(([^,]+),\s*([^,]+),\s*([^)]+)\)/g, 'Math.max($2,Math.min($3,$1))')
+    .replace(/\.position\.x/g, '.x')
+    .replace(/\.position\.y/g, '.y')
+    .replace(/\bInput\.is_action_pressed\("ui_left"\)/g, 'leftHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
+    .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
+    .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
+    .replace(/\belif\b/g, '} else if')
+    .replace(/\bif\s+(.+):/g, 'if($1){')
+    .replace(/\belse\s*:/g, '} else {')
+    .replace(/\bfor\s+(\w+)\s+in\s+range\(([^)]+)\)\s*:/g, 'for(let $1=0;$1<$2;$1++){')
+    .replace(/\bwhile\s+(.+):/g, 'while($1){')
+    .replace(/\bvar\b/g, 'let')
+    .replace(/\btrue\b/g, 'true')
+    .replace(/\bfalse\b/g, 'false')
+    .replace(/\bnull\b/g, 'null');
+}
+
+/* ===================================================
+   IFRAME BUILDING BLOCKS (My First Godot Game - Catch)
+   =================================================== */
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1a1a2e;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="600" height="400"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var BASKET_VARS = 'let bx=250,by=360,bw=100,bh=20,speed=5;';
+
+var STAR_VARS = 'let sx=Math.floor(Math.random()*560)+20,sy=-20,sw=20,sh=20,fallSpeed=3;';
+
+var SCORE_VARS = 'let score=0;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var DRAW_BG = 'ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,600,400);';
+
+var DRAW_BASKET = 'ctx.fillStyle="#60a5fa";ctx.fillRect(bx,by,bw,bh);';
+
+var DRAW_STAR = 'ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(sx+sw/2,sy+sh/2,sw/2,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 20px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,12,28);';
+
+var STAR_RESET = 'function resetStar(){sx=Math.floor(Math.random()*560)+20;sy=-20}';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+/* ===================================================
+   CW_CONFIG - My First Godot Game steps + templates
+   =================================================== */
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-my-first-godot-canvas',
+  downloadName: 'my-first-godot-game.html',
+
+  hints: [
+    'A blue basket at the bottom of a dark screen',
+    'The basket slides left and right with arrow keys',
+    'A golden star falls from the top of the screen',
+    'Catching the star adds a point and spawns a new one',
+    'Stars fall faster as your score grows',
+    'Game over screen with restart using R key'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + KEYS +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + KEYS +
+        'function loop(){' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'bx=Math.max(0,Math.min(500,bx));' +
+        DRAW_BG + DRAW_BASKET +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
+        'bx=Math.max(0,Math.min(500,bx));' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'if(sy>410)resetStar();' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
+        'bx=Math.max(0,Math.min(500,bx));' +
+        'sy+=fallSpeed;' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'if(sy>410)resetStar();' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + KEYS +
+        STAR_RESET +
+        'function loop(){' +
+        'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
+        'bx=Math.max(0,Math.min(500,bx));' +
+        'sy+=fallSpeed;' +
+        'if(sy+sh>=by&&sy<=by+bh&&sx+sw>=bx&&sx<=bx+bw){score++;resetStar()}' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        'if(sy>410)resetStar();' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS +
+        STAR_RESET +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;fallSpeed=3;resetStar();gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
+        'bx=Math.max(0,Math.min(500,bx));' +
+        'sy+=fallSpeed;' +
+        'if(sy+sh>=by&&sy<=by+bh&&sx+sw>=bx&&sx<=bx+bw){score++;resetStar();fallSpeed=Math.min(8,3+score/5)}' +
+        'if(sy>410)resetStar();' +
+        'try{' + gdscriptToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",300,180);ctx.font="18px monospace";ctx.fillText("Score: "+score,300,215);' +
+        'ctx.fillText("Press R to play again",300,250)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Basket',
+      goal: 'Place a blue basket at the bottom of the screen.',
+      points: [
+        'The canvas is 600x400 pixels with a dark background',
+        'The basket is a blue rectangle: 100 wide, 20 tall',
+        'In Godot you would create a Sprite2D node for the basket',
+        'The basket starts centred: x = 250'
+      ],
+      challenge: '\ud83e\udd16 Set the basket position:',
+      starter: '# Set the basket position\nvar basket_x = ___\nvar basket_y = 360\nvar basket_w = ___',
+      solution: '# Set the basket position\nvar basket_x = 250\nvar basket_y = 360\nvar basket_w = 100',
+      checks: ['250', '360', '100'],
+      height: 100,
+      fills: {
+        text: 'The basket starts at x = ___ to appear centred. It is ___ pixels wide.',
+        answers: ['250', '100']
+      },
+      quiz: {
+        question: 'Why place the basket near the bottom?',
+        options: [
+          'It looks cooler there',
+          'The player needs space above to see objects falling and react in time',
+          'Godot requires sprites at the bottom'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Left & Right Movement',
+      goal: 'Move the basket with arrow keys, keeping it on screen.',
+      points: [
+        'In Godot: <code>Input.is_action_pressed("ui_left")</code> checks held keys',
+        'Move 5 pixels per frame while the key is held',
+        '<code>clamp(basket_x, 0, 500)</code> keeps the basket on screen',
+        'The basket cannot move past the canvas edges'
+      ],
+      challenge: '\ud83e\udd16 Write the movement:',
+      starter: '# Move left and right\nif Input.is_action_pressed("ui_left"):\n    basket_x -= ___\nif Input.is_action_pressed("ui_right"):\n    basket_x += ___',
+      solution: '# Move left and right\nif Input.is_action_pressed("ui_left"):\n    basket_x -= 5\nif Input.is_action_pressed("ui_right"):\n    basket_x += 5',
+      checks: ['is_action_pressed', 'basket_x', '5'],
+      height: 140,
+      fills: {
+        text: 'The basket moves ___ pixels per frame. The clamp keeps it between 0 and ___.',
+        answers: ['5', '500']
+      },
+      quiz: {
+        question: 'Why clamp the position instead of just checking edges?',
+        options: [
+          'Clamp is slower but more accurate',
+          'Clamp handles both edges in one call and prevents the basket from ever leaving bounds, even at high speeds',
+          'You cannot use if-statements in Godot'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'A Falling Star',
+      goal: 'Drop a golden star from a random position at the top.',
+      points: [
+        'The star starts at a random x between 20 and 580, y = -20',
+        'Each frame: <code>star_y += fall_speed</code> moves it down',
+        'When it passes the bottom (y > 410), reset to a new random x at the top',
+        'In Godot you would instance a star scene from a PackedScene'
+      ],
+      challenge: '\ud83e\udd16 Make the star fall:',
+      starter: '# Move star downward\nstar_y += ___\n\n# Reset when off screen\nif star_y > 410:\n    star_y = ___',
+      solution: '# Move star downward\nstar_y += fall_speed\n\n# Reset when off screen\nif star_y > 410:\n    star_y = -20',
+      checks: ['fall_speed', '-20'],
+      height: 120,
+      fills: {
+        text: 'The star falls at ___ pixels per frame. Starting at y = ___ makes it slide in smoothly.',
+        answers: ['3', '-20']
+      },
+      quiz: {
+        question: 'Why start the star above the screen?',
+        options: [
+          'It needs to accelerate first',
+          'Starting off-screen means the star slides smoothly into view instead of appearing suddenly at the edge',
+          'Godot sprites must start off-screen'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Catching Stars',
+      goal: 'Detect when the star touches the basket and score a point.',
+      points: [
+        'AABB collision: two rectangles overlap when all four edge checks pass',
+        'On catch: score goes up by 1, star resets to the top',
+        'In Godot you would use Area2D with a CollisionShape2D',
+        'This same check works for any two rectangles in any game'
+      ],
+      challenge: '\ud83e\udd16 Write the catch check:',
+      starter: '# Check if star touches basket\nif star_y + star_h >= basket_y and star_x + star_w >= basket_x and star_x <= basket_x + basket_w:\n    score += ___\n    star_y = ___',
+      solution: '# Check if star touches basket\nif star_y + star_h >= basket_y and star_x + star_w >= basket_x and star_x <= basket_x + basket_w:\n    score += 1\n    star_y = -20',
+      checks: ['score', '1', '-20'],
+      height: 120,
+      fills: {
+        text: 'Catching a star adds ___ to the score. The star resets to y = ___ for the next drop.',
+        answers: ['1', '-20']
+      },
+      quiz: {
+        question: 'What does AABB stand for?',
+        options: [
+          'Automatic Axis-Based Bouncing',
+          'Axis-Aligned Bounding Box - it checks overlap of two non-rotated rectangles by comparing edges',
+          'Advanced Area Boundary Buffer'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Speed Ramp',
+      goal: 'Make stars fall faster as the score grows.',
+      points: [
+        'Formula: <code>fall_speed = 3 + score / 5</code>',
+        'Every 5 catches the speed increases by 1 pixel per frame',
+        'Cap at 8 so the game stays playable',
+        'This is the same difficulty curve used in Tetris'
+      ],
+      challenge: '\ud83e\udd16 Write the speed increase:',
+      starter: '# Increase speed with score\nvar fall_speed = 3 + score / ___\n# Cap the speed\nfall_speed = clamp(fall_speed, 3, ___)',
+      solution: '# Increase speed with score\nvar fall_speed = 3 + score / 5\n# Cap the speed\nfall_speed = clamp(fall_speed, 3, 8)',
+      checks: ['5', '8'],
+      height: 100,
+      fills: {
+        text: 'Speed increases every ___ catches. The cap of ___ keeps the game fair.',
+        answers: ['5', '8']
+      },
+      quiz: {
+        question: 'Why not increase speed every single catch?',
+        options: [
+          'The computer cannot handle it',
+          'Increasing every 5 catches gives the player time to adjust - too fast a ramp feels unfair and frustrating',
+          'GDScript only counts in fives'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Game Over & Restart',
+      goal: 'Show a game-over screen and let R restart everything.',
+      points: [
+        'When the score target is reached or time runs out, set <code>game_state = "over"</code>',
+        'In the "over" state, stop updating positions and show the final score',
+        'Pressing R resets score, speed, and star position',
+        'A state machine ("play" / "over") keeps the logic clean'
+      ],
+      challenge: '\ud83e\udd16 Write the restart logic:',
+      starter: '# Reset everything on R press\nscore = ___\nfall_speed = ___\ngame_state = "play"',
+      solution: '# Reset everything on R press\nscore = 0\nfall_speed = 3\ngame_state = "play"',
+      checks: ['score', '0', 'fall_speed', '3', 'play'],
+      height: 100,
+      fills: {
+        text: 'Resetting score to ___ and speed to ___ gives a clean fresh start.',
+        answers: ['0', '3']
+      },
+      quiz: {
+        question: 'Why use a state machine instead of reloading the page?',
+        options: [
+          'Reloading is faster',
+          'A state machine resets variables instantly without the delay and flicker of a full page reload',
+          'GDScript cannot reload pages'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>

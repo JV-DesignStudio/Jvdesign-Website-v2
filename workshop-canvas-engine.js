@@ -306,9 +306,85 @@ function advanceStep(num) {
   if (firstTime) {
     wsAwardXp(wsXpPerStep(), 'Build step ' + num);
     wsSaveShared();
+    cwCelebrate(num);
   }
   var next = document.getElementById('card-' + STEPS[currentStep].num);
   if (next) next.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* ── Celebrations ── */
+function cwCelebrate(num) {
+  var card = document.getElementById('card-' + num);
+  if (card) card.classList.add('cw-just-done');
+
+  var frame = document.querySelector('.cw-canvas-frame');
+  if (frame) {
+    frame.classList.add('cw-frame-glow');
+    setTimeout(function() { frame.classList.remove('cw-frame-glow'); }, 1500);
+  }
+
+  cwShowXpPopup(card);
+  cwConfetti(card);
+
+  var doneCount = Object.keys(completed).length;
+  if (doneCount === STEPS.length) {
+    cwMilestone('All Steps Complete!', 'You built the whole game!');
+  } else if (doneCount === Math.floor(STEPS.length / 2)) {
+    cwMilestone('Halfway There!', doneCount + ' of ' + STEPS.length + ' steps done');
+  }
+}
+
+function cwShowXpPopup(anchor) {
+  var xp = wsXpPerStep();
+  var el = document.createElement('div');
+  el.className = 'cw-xp-popup';
+  el.textContent = '+' + xp + ' XP';
+  if (anchor) {
+    var r = anchor.getBoundingClientRect();
+    el.style.left = (r.left + r.width / 2 - 30) + 'px';
+    el.style.top = (r.top - 10) + 'px';
+  } else {
+    el.style.left = '50%'; el.style.top = '40%';
+  }
+  document.body.appendChild(el);
+  setTimeout(function() { el.remove(); }, 1300);
+}
+
+function cwConfetti(anchor) {
+  var container = document.createElement('div');
+  container.className = 'cw-confetti';
+  var colors = ['#ff7700','#ffd166','#4ade80','#60a5fa','#a78bfa','#ff5470','#22d3ee'];
+  var r = anchor ? anchor.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0 };
+  var cx = r.left + r.width / 2;
+  var cy = r.top;
+  for (var i = 0; i < 30; i++) {
+    var p = document.createElement('div');
+    p.className = 'cw-confetti-piece';
+    p.style.background = colors[i % colors.length];
+    p.style.left = (cx + (Math.random() - .5) * 200) + 'px';
+    p.style.top = (cy + (Math.random() - .5) * 40) + 'px';
+    p.style.width = (5 + Math.random() * 6) + 'px';
+    p.style.height = (5 + Math.random() * 6) + 'px';
+    p.style.animationDuration = (1 + Math.random() * .8) + 's';
+    p.style.animationDelay = (Math.random() * .15) + 's';
+    container.appendChild(p);
+  }
+  document.body.appendChild(container);
+  setTimeout(function() { container.remove(); }, 2200);
+}
+
+function cwMilestone(title, sub) {
+  var el = document.createElement('div');
+  el.className = 'cw-milestone';
+  el.innerHTML = '<div class="cw-milestone-icon">' +
+    (title.indexOf('All') === 0 ? '🎉' : '🚀') +
+    '</div><div class="cw-milestone-text">' + title +
+    '</div><div class="cw-milestone-sub">' + sub + '</div>';
+  document.body.appendChild(el);
+  setTimeout(function() {
+    el.style.animation = 'cwMilestoneOut .4s ease forwards';
+    setTimeout(function() { el.remove(); }, 500);
+  }, 2200);
 }
 
 function selectQuiz(num, idx) {

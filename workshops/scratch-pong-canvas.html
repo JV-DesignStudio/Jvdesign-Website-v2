@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scratch Pong Build Canvas | JVDesignStudio</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../workshop-canvas.css">
+<style>.cw-lang-tag{display:inline-block;background:rgba(251,191,36,.15);color:#fbbf24;font-family:'Fredoka',cursive;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}</style>
+</head>
+<body>
+
+<div class="cw-header">
+  <h1>Scratch Pong Build Canvas <span class="cw-lang-tag">&#x1f431; Scratch</span></h1>
+  <p>Write Scratch block code step by step. The canvas shows what your code does.</p>
+</div>
+
+<div class="cw-layout">
+  <div class="cw-steps" id="stepsPanel"></div>
+  <div class="cw-canvas-panel" id="canvasPanel">
+    <div class="cw-progress">
+      <span id="cwProgressText">Step 1 / 6</span>
+      <div class="cw-progress-bar"><div class="cw-progress-fill" id="cwProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cw-canvas-frame">
+      <iframe id="gameFrame" sandbox="allow-scripts" title="Your Scratch Pong game"></iframe>
+    </div>
+    <div class="cw-canvas-hint" id="canvasHint">A white paddle at the bottom of a dark stage</div>
+    <button class="cw-btn-dl" onclick="CW.downloadGame()">Download My Game</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+function scratchToJs(code) {
+  return code
+    .replace(/when green flag clicked/g, '')
+    .replace(/forever/g, '')
+    .replace(/end/g, '}')
+    .replace(/if <key \[right arrow\] pressed\?> then/g, 'if(rightHeld){')
+    .replace(/if <key \[left arrow\] pressed\?> then/g, 'if(leftHeld){')
+    .replace(/if <key \[up arrow\] pressed\?> then/g, 'if(upHeld){')
+    .replace(/if <key \[down arrow\] pressed\?> then/g, 'if(downHeld){')
+    .replace(/if <key \[space\] pressed\?> then/g, 'if(spaceHeld){')
+    .replace(/change x by \[([^\]]+)\]/g, 'sprite.x+=$1;')
+    .replace(/change y by \[([^\]]+)\]/g, 'sprite.y+=$1;')
+    .replace(/set x to \[([^\]]+)\]/g, 'sprite.x=$1;')
+    .replace(/set y to \[([^\]]+)\]/g, 'sprite.y=$1;')
+    .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'sprite.x=$1;sprite.y=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
+    .replace(/if <touching \[Edge\]\?> then/g, 'if(sprite.x<0||sprite.x>460||sprite.y<0||sprite.y>340){')
+    .replace(/if <([^>]+)> then/g, 'if($1){')
+    .replace(/repeat \[([^\]]+)\]/g, 'for(let i=0;i<$1;i++){')
+    .replace(/say \[([^\]]+)\]/g, 'sayText="$1";')
+    .replace(/move \[([^\]]+)\] steps/g, 'sprite.x+=$1*Math.cos(sprite.dir*Math.PI/180);sprite.y+=$1*Math.sin(sprite.dir*Math.PI/180);')
+    .replace(/turn right \[([^\]]+)\] degrees/g, 'sprite.dir+=$1;')
+    .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    .replace(/\/\/.*$/gm, '');
+}
+
+var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:center;background:#1e1b4b;margin:0;overflow:hidden}canvas{display:block;cursor:pointer}</style>';
+
+var CANVAS_TAG = '<canvas id="game" width="480" height="360"></canvas>';
+
+var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
+
+var PAD_VARS = 'let padX=190,padY=340,padW=100,padH=12,padSpeed=7;';
+
+var BALL_VARS = 'let bx=240,by=180,br=8,bdx=3,bdy=-3;';
+
+var SCORE_VARS = 'let score=0,lives=3;';
+
+var STATE_VARS = 'let gameState="play";';
+
+var SPRITE = 'var sprite={x:190,y:340,dir:0};';
+
+var KEYS = 'let leftHeld=false,rightHeld=false;' +
+  'document.addEventListener("keydown",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
+    'e.preventDefault()});' +
+  'document.addEventListener("keyup",function(e){' +
+    'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
+    'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false});';
+
+var DRAW_BG = 'ctx.fillStyle="#1e1b4b";ctx.fillRect(0,0,480,360);' +
+  'ctx.strokeStyle="#312e81";ctx.setLineDash([4,8]);ctx.beginPath();ctx.moveTo(0,180);ctx.lineTo(480,180);ctx.stroke();ctx.setLineDash([]);';
+
+var DRAW_PAD = 'ctx.fillStyle="#fff";ctx.fillRect(padX,padY,padW,padH);';
+
+var DRAW_BALL = 'ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.fill();';
+
+var DRAW_SCORE = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);';
+
+var DRAW_LIVES = 'ctx.textAlign="right";ctx.fillText("Lives: "+lives,470,24);';
+
+function wrap(code) {
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+}
+
+window.CW_CONFIG = {
+  storageKey: 'jvds-scratch-pong-canvas',
+  downloadName: 'my-scratch-pong.html',
+
+  hints: [
+    'A white paddle at the bottom of a dark stage',
+    'The paddle slides left and right with arrow keys',
+    'A yellow ball bounces off the top and side walls',
+    'The ball bounces off the paddle when it hits',
+    'Missing the ball costs a life',
+    'Game over at zero lives, with score and restart'
+  ],
+
+  templates: {
+    1: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + SPRITE + KEYS +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'function loop(){' +
+        DRAW_BG + DRAW_PAD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    2: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + SPRITE + KEYS +
+        'function loop(){' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'padX=Math.max(0,Math.min(380,padX));' +
+        DRAW_BG + DRAW_PAD +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    3: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + SPRITE + KEYS +
+        'function loop(){' +
+        'if(leftHeld)padX-=padSpeed;if(rightHeld)padX+=padSpeed;' +
+        'padX=Math.max(0,Math.min(380,padX));' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'bx+=bdx;by+=bdy;' +
+        'if(bx-br<=0||bx+br>=480)bdx*=-1;' +
+        'if(by-br<=0)bdy*=-1;' +
+        'if(by+br>=360){by=180;bdx=3*(Math.random()>0.5?1:-1);bdy=-3}' +
+        DRAW_BG + DRAW_PAD + DRAW_BALL +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    4: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + SCORE_VARS + SPRITE + KEYS +
+        'function loop(){' +
+        'if(leftHeld)padX-=padSpeed;if(rightHeld)padX+=padSpeed;' +
+        'padX=Math.max(0,Math.min(380,padX));' +
+        'bx+=bdx;by+=bdy;' +
+        'if(bx-br<=0||bx+br>=480)bdx*=-1;' +
+        'if(by-br<=0)bdy*=-1;' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'if(by+br>=360){by=180;bdx=3*(Math.random()>0.5?1:-1);bdy=-3}' +
+        DRAW_BG + DRAW_PAD + DRAW_BALL + DRAW_SCORE +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    5: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + SCORE_VARS + SPRITE + KEYS +
+        'function loop(){' +
+        'if(leftHeld)padX-=padSpeed;if(rightHeld)padX+=padSpeed;' +
+        'padX=Math.max(0,Math.min(380,padX));' +
+        'bx+=bdx;by+=bdy;' +
+        'if(bx-br<=0||bx+br>=480)bdx*=-1;' +
+        'if(by-br<=0)bdy*=-1;' +
+        'if(by+br>=padY&&bx>=padX&&bx<=padX+padW&&bdy>0){bdy*=-1;score++;var off=(bx-(padX+padW/2))/(padW/2);bdx=off*5}' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        'if(by+br>=360){lives--;by=180;bdx=3*(Math.random()>0.5?1:-1);bdy=-3}' +
+        DRAW_BG + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    },
+    6: function(u) {
+      return wrap(
+        SETUP + PAD_VARS + BALL_VARS + SCORE_VARS + STATE_VARS + SPRITE + KEYS +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;bx=240;by=180;bdx=3;bdy=-3;gameState="play"}});' +
+        'function loop(){' +
+        'if(gameState==="play"){' +
+        'if(leftHeld)padX-=padSpeed;if(rightHeld)padX+=padSpeed;' +
+        'padX=Math.max(0,Math.min(380,padX));' +
+        'bx+=bdx;by+=bdy;' +
+        'if(bx-br<=0||bx+br>=480)bdx*=-1;' +
+        'if(by-br<=0)bdy*=-1;' +
+        'if(by+br>=padY&&bx>=padX&&bx<=padX+padW&&bdy>0){bdy*=-1;score++;var off=(bx-(padX+padW/2))/(padW/2);bdx=off*5}' +
+        'if(by+br>=360){lives--;if(lives<=0){gameState="over"}else{by=180;bdx=3*(Math.random()>0.5?1:-1);bdy=-3}}' +
+        'try{' + scratchToJs(u) + '}catch(e){}' +
+        '}' +
+        DRAW_BG + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES +
+        'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
+        'ctx.fillText("GAME OVER",240,160);ctx.font="18px monospace";ctx.fillText("Score: "+score,240,195);' +
+        'ctx.fillText("Press R to play again",240,225)}' +
+        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+      );
+    }
+  },
+
+  steps: [
+    {
+      num: 1,
+      title: 'The Paddle',
+      goal: 'Place a white paddle at the bottom of the stage.',
+      points: [
+        'The Scratch stage is 480x360 pixels',
+        'The paddle is a white rectangle: 100 wide, 12 tall, at y=340',
+        'In Scratch you would use a sprite with <code>go to x: 190 y: 340</code>',
+        'The paddle starts near the centre: x = 190'
+      ],
+      challenge: '🐱 Set the paddle size and position:',
+      starter: '// Set paddle position\nset [padX] to [___]\nset [padY] to [340]\nset [padW] to [___]\nset [padH] to [12]',
+      solution: '// Set paddle position\nset [padX] to [190]\nset [padY] to [340]\nset [padW] to [100]\nset [padH] to [12]',
+      checks: ['190', '340', '100', '12'],
+      height: 120,
+      fills: {
+        text: 'The paddle starts at x = ___ and is ___ pixels wide for easy ball-catching.',
+        answers: ['190', '100']
+      },
+      quiz: {
+        question: 'Why make the paddle wider than the ball?',
+        options: [
+          'It fills the screen better',
+          'A wide paddle gives the player a forgiving hit zone - too narrow makes early play frustrating',
+          'The ball is invisible otherwise'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 2,
+      title: 'Paddle Movement',
+      goal: 'Slide the paddle left and right with arrow keys.',
+      points: [
+        'In Scratch: <code>if &lt;key [left arrow] pressed?&gt; then change x by [-7]</code>',
+        'Speed is 7 pixels per frame for responsive control',
+        'Clamp between 0 and 380 (480 minus paddle width) to stay on stage',
+        'The forever loop checks keys every frame for smooth movement'
+      ],
+      challenge: '🐱 Write the paddle movement:',
+      starter: '// Move paddle\nif <key [left arrow] pressed?> then\n  change x by [___]\nend\nif <key [right arrow] pressed?> then\n  change x by [___]\nend',
+      solution: '// Move paddle\nif <key [left arrow] pressed?> then\n  change x by [-7]\nend\nif <key [right arrow] pressed?> then\n  change x by [7]\nend',
+      checks: ['left arrow', 'right arrow', '-7', '7'],
+      height: 180,
+      fills: {
+        text: 'The paddle moves ___ pixels per frame. It cannot go past x = ___.',
+        answers: ['7', '380']
+      },
+      quiz: {
+        question: 'Why is paddle speed (7) higher than typical catching games (5)?',
+        options: [
+          'Higher numbers are always better',
+          'Pong needs faster reactions because the ball moves in two dimensions - the paddle must keep up',
+          'Scratch defaults to 7'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 3,
+      title: 'Bouncing Ball',
+      goal: 'Launch a ball that bounces off the top and side walls.',
+      points: [
+        'The ball starts at the centre: bx=240, by=180',
+        'It moves by bdx (horizontal) and bdy (vertical) each frame',
+        'When it hits a side wall: <code>bdx *= -1</code> reverses horizontal direction',
+        'When it hits the top: <code>bdy *= -1</code> reverses vertical direction'
+      ],
+      challenge: '🐱 Write the wall bounces:',
+      starter: '// Bounce off side walls\nset [bdx] to [bdx * ___]\n\n// Bounce off top wall\nset [bdy] to [bdy * ___]',
+      solution: '// Bounce off side walls\nset [bdx] to [bdx * -1]\n\n// Bounce off top wall\nset [bdy] to [bdy * -1]',
+      checks: ['bdx', 'bdy', '-1'],
+      height: 120,
+      fills: {
+        text: 'Multiplying by ___ reverses direction. The ball starts moving at ___ pixels per frame.',
+        answers: ['-1', '3']
+      },
+      quiz: {
+        question: 'Why does the ball not bounce off the bottom?',
+        options: [
+          'The bottom is broken',
+          'The bottom is where the paddle is - missing it should cost a life, not bounce for free',
+          'Only three walls fit on screen'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 4,
+      title: 'Paddle Bounce',
+      goal: 'Bounce the ball off the paddle and score a point.',
+      points: [
+        'Check: ball bottom reaches paddle top AND ball x is within paddle width',
+        'On bounce: <code>bdy *= -1</code> sends the ball back up, score += 1',
+        'The bounce angle changes based on where the ball hits the paddle',
+        'Hitting near the paddle edge sends the ball at a steeper angle'
+      ],
+      challenge: '🐱 Write the paddle bounce:',
+      starter: '// Ball hits paddle\nchange [score] by [___]\nset [bdy] to [bdy * ___]',
+      solution: '// Ball hits paddle\nchange [score] by [1]\nset [bdy] to [bdy * -1]',
+      checks: ['score', '1', 'bdy', '-1'],
+      height: 100,
+      fills: {
+        text: 'Each paddle hit adds ___ to the score. The offset from paddle centre controls the ___.',
+        answers: ['1', 'angle']
+      },
+      quiz: {
+        question: 'Why vary the bounce angle based on hit position?',
+        options: [
+          'It is more realistic physics',
+          'Angled bounces give the player directional control over the ball, adding skill and strategy to each hit',
+          'Scratch requires variable angles'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 5,
+      title: 'Lives System',
+      goal: 'Lose a life when the ball passes the paddle, game over at zero.',
+      points: [
+        'When <code>by + br >= 360</code> the ball has passed the bottom',
+        'Subtract 1 life and reset the ball to the centre',
+        'If lives reach 0: set game_state to "over"',
+        'Display lives in the top-right corner'
+      ],
+      challenge: '🐱 Write the miss penalty:',
+      starter: '// Ball missed!\nchange [lives] by [___]\n// Check game over\nif lives <= ___:\n  set [gameState] to [over]',
+      solution: '// Ball missed!\nchange [lives] by [-1]\n// Check game over\nif lives <= 0:\n  set [gameState] to [over]',
+      checks: ['lives', '-1', '0', 'over'],
+      height: 120,
+      fills: {
+        text: 'Missing costs ___ life. The game ends when lives reach ___.',
+        answers: ['1', '0']
+      },
+      quiz: {
+        question: 'Why give 3 lives instead of 1?',
+        options: [
+          'Three is a lucky number',
+          'Multiple lives let beginners learn from mistakes instead of restarting immediately after one miss',
+          'The ball moves too fast for one life'
+        ],
+        correct: 1
+      }
+    },
+    {
+      num: 6,
+      title: 'Game Over & Restart',
+      goal: 'Show the final score and restart with R.',
+      points: [
+        'In the "over" state: stop updating ball and paddle positions',
+        'Display "GAME OVER" with the final score at centre stage',
+        'Pressing R resets score, lives, ball position, and state',
+        'The state machine pattern keeps play and game-over logic separate'
+      ],
+      challenge: '🐱 Write the restart:',
+      starter: '// Reset everything\nset [score] to [___]\nset [lives] to [___]\nset [gameState] to [play]',
+      solution: '// Reset everything\nset [score] to [0]\nset [lives] to [3]\nset [gameState] to [play]',
+      checks: ['score', '0', 'lives', '3', 'play'],
+      height: 100,
+      fills: {
+        text: 'Restart resets score to ___ and lives to ___.',
+        answers: ['0', '3']
+      },
+      quiz: {
+        question: 'Why also reset ball position on restart?',
+        options: [
+          'The ball is invisible otherwise',
+          'Starting from centre gives the player a moment to position the paddle before the ball reaches them',
+          'Scratch deletes the ball on game over'
+        ],
+        correct: 1
+      }
+    }
+  ]
+};
+</script>
+<script src="../workshop-canvas-engine.js"></script>
+<script defer src="/feedback-widget.js"></script>
+<script defer src="/jvds-funnel.js"></script>
+</body>
+</html>
