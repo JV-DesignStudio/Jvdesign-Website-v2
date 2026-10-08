@@ -72,6 +72,19 @@ let failures = 0;
   check('welcome action is clean', initial.startButton === 'Start Designing ✓', initial.startButton);
   check('template buttons render', initial.templates >= 3, String(initial.templates));
   check('type buttons render', initial.typeButtons >= 3, String(initial.typeButtons));
+  const idempotent = await page.evaluate(() => {
+    const count = () => ({
+      t: document.querySelectorAll('.template-btn').length,
+      y: document.querySelectorAll('.type-btn').length,
+      c: document.querySelectorAll('.color-chip').length,
+      r: document.querySelectorAll('.rarity-btn').length
+    });
+    const before = count();
+    buildTemplateGrid(); buildTypeGrid(); buildColorRow(); buildRarity();
+    return { before, after: count() };
+  });
+  check('controls are idempotent (no duplicates on re-init)', JSON.stringify(idempotent.before) === JSON.stringify(idempotent.after), JSON.stringify(idempotent.after));
+  check('exactly 6 templates, 8 types, 6 rarities', idempotent.after.t === 6 && idempotent.after.y === 8 && idempotent.after.r === 6, JSON.stringify(idempotent.after));
   check('export/share/library functions exist', initial.exportFn && initial.sheetFn && initial.shareFn && initial.saveFn && initial.exportDeckFn && initial.importDeckFn && initial.newFn);
   check('no visible mojibake', initial.cleanText);
   check('mobile does not overflow viewport', initial.scrollWidth <= initial.clientWidth + 2, initial.scrollWidth + '/' + initial.clientWidth);
@@ -87,6 +100,20 @@ let failures = 0;
   });
   check('saved library rows render', library.rows === 1, String(library.rows));
   check('saved card name is text, not markup', library.text.includes('<img src=x onerror=alert(1)>') && library.strayImages === 0, library.text + ' / images ' + library.strayImages);
+  await page.setViewport({width:1440,height:900});
+  await new Promise(resolve=>setTimeout(resolve, 300));
+  const desktop = await page.evaluate(() => {
+    const c = document.getElementById('card-canvas').getBoundingClientRect();
+    const ctrl = document.getElementById('controls');
+    return {
+      top: Math.round(c.top), bottom: Math.round(c.bottom), vh: window.innerHeight,
+      ctrlScrolls: ctrl.scrollHeight > ctrl.clientHeight + 2,
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
+    };
+  });
+  check('desktop preview fully visible', desktop.top >= 0 && desktop.bottom <= desktop.vh, JSON.stringify(desktop));
+  check('desktop controls scroll internally', desktop.ctrlScrolls, String(desktop.ctrlScrolls));
+  check('desktop no horizontal overflow', !desktop.overflow, String(desktop.overflow));
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   server.close();
