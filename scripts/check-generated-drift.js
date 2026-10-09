@@ -236,8 +236,5 @@ try{
 if(isQuick && quickDrift.length){
   console.log(`\n[quick] ${quickDrift.length} generated file(s) git-dirty - advisory only (commit them after \`npm run build\`, CI uses full drift)`);
 }
-// also verify ownership doc exists
-const readme=path.join(ROOT,'docs','TOOLS_MERGE_AUDIT.md');
-if(!fs.existsSync(readme)){
-  console.warn('WARN: docs/TOOLS_MERGE_AUDIT.md missing - ownership audit needs it');
-}
+// docs/TOOLS_MERGE_AUDIT.md was internal planning material and was removed from
+// the public repo by A779, so it is no longer required or checked here.
