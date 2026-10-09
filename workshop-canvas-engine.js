@@ -126,6 +126,7 @@ function renderSteps() {
         (step.activity ? '<span class="cw-activity">' + step.activity + '</span>' : '') +
       '</div>' +
       '<p class="cw-goal">' + step.goal + '</p>' +
+      (step.checkpoint ? '<p class="cw-checkpoint"><strong>Checkpoint:</strong> ' + step.checkpoint + '</p>' : '') +
       '<ul class="cw-explain">' + step.points.map(function(p) { return '<li>' + p + '</li>'; }).join('') + '</ul>' +
       '<div class="cw-challenge">' + step.challenge + '</div>' +
       '<textarea class="cw-editor" id="editor-' + step.num + '"' +
