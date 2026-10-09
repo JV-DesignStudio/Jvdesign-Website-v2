@@ -3470,6 +3470,20 @@ window.JVDS_CONTENT = {
       "url": "/workshops/stardew-world-ep11-play-share.html"
     },
     {
+      "id": "stardew-world-ep12-design",
+      "title": "Stardew World Workshop Ep 12: Design Your World",
+      "desc": "Episode 12 of the free Stardew World Workshop. Learn level design thinking: purpose, paths, flow, balance and detail, then test it in the Mod Studio. Ages 10+.",
+      "engine": "Stardew Valley",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#3f7d3a",
+      "cover": "/og/stardew-world-workshop.png",
+      "url": "/workshops/stardew-world-ep12-design.html"
+    },
+    {
       "id": "stardew-world-ep2-mods-folder",
       "title": "Stardew World Workshop Ep 2: Inside a Mod",
       "desc": "Episode 2 of the free Stardew World Workshop. Tour the Mods folder and learn how SMAPI loads a mod from its manifest.json and content.json. Beginner, ages 10+.",
@@ -5343,8 +5357,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-09T15:00:38.794Z",
-    "workshops": 264,
+    "generated": "2026-10-09T16:03:28.501Z",
+    "workshops": 265,
     "games": 43,
     "tools": 37,
     "books": 5,
@@ -5365,7 +5379,7 @@ window.JVDS_CONTENT = {
       "Python": 16,
       "Roblox": 11,
       "Scratch": 12,
-      "Stardew Valley": 14,
+      "Stardew Valley": 15,
       "TinkerCAD": 9,
       "Unity": 9,
       "Unreal": 10

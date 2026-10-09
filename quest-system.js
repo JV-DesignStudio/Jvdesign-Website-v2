@@ -471,8 +471,8 @@ const QUESTS = {
         'stardew-world-ep1-setup', 'stardew-world-ep2-mods-folder', 'stardew-world-ep3-first-tile',
         'stardew-world-ep4-layers', 'stardew-world-ep5-tile-properties', 'stardew-world-ep6-build-and-decorate',
         'stardew-world-ep7-warps', 'stardew-world-ep8-new-area', 'stardew-world-ep9-package-mod',
-        'stardew-world-ep10-troubleshoot', 'stardew-world-ep11-play-share'
-      ], minCount: 11 }
+        'stardew-world-ep10-troubleshoot', 'stardew-world-ep11-play-share', 'stardew-world-ep12-design'
+      ], minCount: 12 }
     ],
     rewards: { xp: 400, badge: '🧑‍🌾 Farm Architect', achievement: 'farmArchitect' }
   }

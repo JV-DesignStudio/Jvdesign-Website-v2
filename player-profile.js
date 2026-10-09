@@ -170,7 +170,8 @@ var WORKSHOP_KEY_TO_ID = {
     'jvds-stardew-world-ep8-v2': 'stardew-world-ep8-new-area',
     'jvds-stardew-world-ep9-v2': 'stardew-world-ep9-package-mod',
     'jvds-stardew-world-ep10-v2': 'stardew-world-ep10-troubleshoot',
-    'jvds-stardew-world-ep11-v2': 'stardew-world-ep11-play-share'
+    'jvds-stardew-world-ep11-v2': 'stardew-world-ep11-play-share',
+    'jvds-stardew-world-ep12-v2': 'stardew-world-ep12-design'
 };
 
 class PlayerProfile {
