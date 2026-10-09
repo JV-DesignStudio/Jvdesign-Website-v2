@@ -182,7 +182,7 @@
             <span><strong>Beat your best</strong><small>Arcade and action runs</small></span>
             <span class="quick-play-arrow" aria-hidden="true">→</span>
         </a>
-        <a class="quick-play-card quick-play-card--violet" href="#littlePlayers">
+        <a class="quick-play-card quick-play-card--violet" href="#littlePlayers" data-discovery-filter="littlePlayers">
             <span class="quick-play-icon" aria-hidden="true">🌈</span>
             <span><strong>Play together</strong><small>Gentle picks for little players</small></span>
             <span class="quick-play-arrow" aria-hidden="true">→</span>
@@ -319,7 +319,10 @@
         });
         document.querySelectorAll('[data-discovery-filter]').forEach(function(link){
             link.addEventListener('click', function(){
-                var chip = document.querySelector('.game-chip[data-filter="' + link.getAttribute('data-discovery-filter') + '"]');
+                var want = String(link.getAttribute('data-discovery-filter') || '').toLowerCase();
+                var chip = [].slice.call(document.querySelectorAll('.game-chip')).filter(function(c){
+                    return String(c.getAttribute('data-filter') || '').toLowerCase() === want;
+                })[0];
                 if(chip) chip.click();
             });
         });
@@ -442,9 +445,9 @@
 <section class="games-section" id="games">
     <div class="section-header reveal">
         <span class="section-tag">✦ Browser Games</span>
-        <h2 class="section-title section-title--on-dark">Flagship and Play Labs</h2>
+        <h2 class="section-title section-title--on-dark">Studio Picks and Play Labs</h2>
         <p style="color:rgba(240,234,214,0.75);margin-top:10px;font-size:1rem;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;">
-            Arcane Citadel is the flagship. Use the Play Labs filter for prototypes, odd ideas and smaller tests.
+            Arcane Citadel is the flagship. Use the Play Labs filter for prototypes, odd ideas and smaller tests. The catalogue lists 28 playable browser games and experiments, including Play Lab prototypes. Standalone studio apps live in their own sections.
         </p>
     </div>
 
@@ -473,9 +476,9 @@
                 <option value="za">Name Z-A</option>
             </select>
         </label>
-        <span class="game-result-count" id="gameResultCount" aria-live="polite">40 games</span>
+        <span class="game-result-count" id="gameResultCount" aria-live="polite">28 games</span>
     </div>
-    <div class="game-filters" id="gameFilters" role="group" aria-label="Filter games by category"><button type="button" class="game-chip active" data-filter="picks" aria-pressed="true">Flagship <span class="chip-count">(1)</span></button><button type="button" class="game-chip" data-filter="experimental" aria-pressed="false">Play Labs <span class="chip-count">(27)</span></button><button type="button" class="game-chip" data-filter="All" aria-pressed="false">All <span class="chip-count">(28)</span></button><button type="button" class="game-chip" data-filter="Little Players" aria-pressed="false">Little Players <span class="chip-count">(3)</span></button></div>
+    <div class="game-filters" id="gameFilters" role="group" aria-label="Filter games by category"><button type="button" class="game-chip active" data-filter="picks" aria-pressed="true">Studio Pick <span class="chip-count">(1)</span></button><button type="button" class="game-chip" data-filter="experimental" aria-pressed="false">Play Labs <span class="chip-count">(27)</span></button><button type="button" class="game-chip" data-filter="All" aria-pressed="false">All <span class="chip-count">(28)</span></button><button type="button" class="game-chip" data-filter="Little Players" aria-pressed="false">Little Players <span class="chip-count">(3)</span></button></div>
     <p class="game-filter-empty" id="gameFilterEmpty" hidden role="status"><span class="mascot-empty mascot-empty--small" style="display:inline-block;padding:8px 0"><img src="/assets/mascots/echo.jpg" alt="Echo looking surprised" loading="lazy" style="width:64px;height:64px"><span class="mascot-bubble mascot-bubble--light" style="margin-left:8px;vertical-align:middle">Echo & Pip can't find a game there , try “All games”?</span></span><br>No games in this category yet. <button type="button" class="game-filter-reset">Show all games</button></p>
     <script>
     (function(){
@@ -523,6 +526,37 @@
             'mini-theme-park-builder': true,
             'star-connect': true
         };
+        // What each Play Lab build is testing. One short line per experiment so a
+        // learner knows it is an idea under test, not a finished game.
+        var EXPERIMENT_TESTS = {
+            'garden-defense': 'lane defence, wave pacing and upgrade timing',
+            'bubble-pop-galaxy': 'cascade puzzles and combo feedback',
+            'neon-tiles': 'four-lane timing and combo rhythm',
+            'pips-bakery-empire': 'idle growth and upgrade pacing',
+            'paper-toss-deluxe': 'flick physics and wind estimation',
+            'echos-flight': 'one-tap gap timing and difficulty ramp',
+            'pastry-match': 'memory pairs and quick matching',
+            'dough-dash': 'grid matching under a move limit',
+            'star-chef': 'queue reading and service prioritisation',
+            'bread-blocks': 'row clearing and speed balance',
+            'lumo_firefly_night': 'colour matching chains and power-ups',
+            'pip_star_connect': 'sequence tracing against the clock',
+            'gem_match': 'planning chains with limited moves',
+            'crypt-crawlers': 'hazard reading in tight rooms',
+            'dungeon-delve': 'clue-based route choice and survival',
+            'critter-whack-page': 'reaction timing and hit feedback',
+            'lumo-dash-page': 'pattern-memory course pacing',
+            'nibble-quest-page': 'navigation and hazard reading',
+            'stack-attack-page': 'spatial stacking and balance',
+            'backpack-quest': 'inventory choice and risk reward',
+            'beat-builder-battle': 'rhythm sequencing and pattern memory',
+            'creature-rescue-clinic': 'diagnosis flow and upgrade planning',
+            'echo-casebook': 'branching dialogue and deduction',
+            'marble-run-lab': 'cause and effect routing',
+            'mini-theme-park-builder': 'build and balance sandbox',
+            'pixel-pet-arena': 'care loop with battle pacing',
+            'stardust-ruins': 'exploration and key gating'
+        };
         var BUILD_LINKS = {
             'pixel-pet-arena': ['../tools/pixel-studio.html', 'Make a pixel hero'],
             'creature-rescue-clinic': ['../tools/story-editor.html', 'Plan a cosy scene'],
@@ -557,7 +591,7 @@
                     if(thumb && !thumb.querySelector('.staff-pick')){
                         var badge = document.createElement('span');
                         badge.className = 'game-badge staff-pick';
-                        badge.textContent = 'Flagship';
+                        badge.textContent = 'Studio Pick';
                         thumb.appendChild(badge);
                     }
                     var build = BUILD_LINKS[basename];
@@ -571,14 +605,29 @@
                         link.addEventListener('click', function(e){ e.stopPropagation(); });
                         body.insertBefore(link, cta);
                     }
-                }
-                if(card.getAttribute('data-status') === 'experimental'){
+                } else if(card.getAttribute('data-status') === 'experimental'){
                     var expThumb = card.querySelector('.game-thumb');
                     if(expThumb && !expThumb.querySelector('.experimental')){
                         var expBadge = document.createElement('span');
                         expBadge.className = 'game-badge experimental';
-                        expBadge.textContent = 'Lab build';
+                        expBadge.textContent = 'Play Lab';
                         expThumb.appendChild(expBadge);
+                    }
+                    var expBody = card.querySelector('.game-body');
+                    var expCta = card.querySelector('.game-cta');
+                    if(expBody && !expBody.querySelector('.game-testing')){
+                        var testNote = document.createElement('span');
+                        testNote.className = 'game-testing';
+                        testNote.textContent = 'Testing: ' + (EXPERIMENT_TESTS[basename] || 'new play ideas');
+                        expBody.insertBefore(testNote, expBody.querySelector('.game-desc') || expCta);
+                    }
+                } else {
+                    var finThumb = card.querySelector('.game-thumb');
+                    if(finThumb && !finThumb.querySelector('.finished')){
+                        var finBadge = document.createElement('span');
+                        finBadge.className = 'game-badge finished';
+                        finBadge.textContent = 'Finished';
+                        finThumb.appendChild(finBadge);
                     }
                 }
                 counts[cat] = (counts[cat]||0) + 1;
@@ -587,7 +636,7 @@
                 if(card.getAttribute('data-status') === 'experimental') counts.experimental = (counts.experimental||0) + 1;
             });
             var filterWrap = document.getElementById('gameFilters');
-            var chipDefs = [{ key:'picks', label:'Flagship' }, { key:'experimental', label:'Play Labs' }].concat(registryCats.map(function(cat){ return { key:cat, label:cat }; }));
+            var chipDefs = [{ key:'picks', label:'Studio Pick' }, { key:'experimental', label:'Play Labs' }].concat(registryCats.map(function(cat){ return { key:cat, label:cat }; }));
             filterWrap.innerHTML = chipDefs.map(function(chip){
                 var active = chip.key === 'picks';
                 var count = chip.key === 'All' ? cards.length : (counts[chip.key]||0);
@@ -1040,7 +1089,7 @@
             <div class="game-body">
                 <div class="game-tag">Puzzle</div>
                 <h3 class="game-title">PiP's Star Connect</h3>
-                <p class="game-desc">Tap the stars in order to draw constellations in the night sky, just like PiP!</p>
+                <p class="game-desc">Tap the stars in order to trace Orion in the night sky before it goes dark, just like PiP!</p>
                 <span class="game-cta">Play Now →</span>
             </div>
         </a>
@@ -1541,7 +1590,7 @@
                 <div class="kids-tag">Puzzle · Tap to Play</div>
                 <h3 class="kids-title">PiP's Star Connect</h3>
                 <div class="kids-age">Ages 4+</div>
-                <p class="kids-desc">Tap stars in order to draw constellations gentle and satisfying for young players.</p>
+                <p class="kids-desc">Tap stars in order to trace Orion, gentle and satisfying for young players.</p>
                 <span class="kids-cta">Play Now →</span>
             </div>
         </a>
