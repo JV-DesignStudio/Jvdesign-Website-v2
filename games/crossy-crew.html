@@ -49,13 +49,21 @@ canvas{flex:1;width:100%;display:block;touch-action:none}
 .hidden{display:none}
 .toast{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);background:rgba(34,197,94,.9);color:#fff;padding:8px 20px;border-radius:8px;font-weight:700;font-size:18px;z-index:15;opacity:0;transition:opacity .15s;pointer-events:none}
 .toast.show{opacity:1}
-.dpad{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:grid;grid-template:auto auto auto / auto auto auto;gap:4px;z-index:10}
-.dpad button{background:rgba(22,163,74,.3);border:2px solid rgba(34,197,94,.4);color:#86efac;width:52px;height:44px;border-radius:10px;font-size:18px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dpad{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:grid;grid-template:auto auto auto / auto auto auto;gap:4px;z-index:12}
+.dpad button{background:rgba(22,163,74,.45);border:2px solid rgba(34,197,94,.6);color:#bbf7d0;width:56px;height:48px;border-radius:10px;font-size:20px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.dpad button:active{background:rgba(34,197,94,.7)}
 .dpad .empty{visibility:hidden}
+/* Story HUD lives inside the game shell so it never pushes the board off-screen. */
+.game-wrap .storyrun{width:100%;margin:0;padding:6px 10px 0}
+.game-wrap .storyrun .sr-story{margin-top:6px;padding:6px 10px}
+.game-wrap .storyrun .sr-open,
+.game-wrap .storyrun .sr-objective{display:none}
+/* Game-over modal must sit above the fullscreen game shell (game-shell.js uses z-index 99990). */
+.storyrun.sr-modal{z-index:100050}
 </style>
 </head>
 <body>
-<div class="game-wrap">
+<div class="game-wrap" data-jvds-root data-storyrun-host>
   <div class="top-bar">
     <a href="../arcade.html">&larr; Arcade</a>
     <span class="title">Crossy Crew</span>
@@ -65,6 +73,7 @@ canvas{flex:1;width:100%;display:block;touch-action:none}
     <div><small>Score</small><b id="scoreHud">0</b></div>
     <div><small>Hops</small><b id="hopsHud">0</b></div>
     <div><small>Coins</small><b id="coinsHud">0</b></div>
+    <div><small>Goal</small><b id="goalHud">10</b></div>
     <div><small>Best</small><b id="bestHud">0</b></div>
   </div>
   <canvas id="game"></canvas>
@@ -99,13 +108,14 @@ canvas{flex:1;width:100%;display:block;touch-action:none}
 </div>
 
 <script src="../story-run.js"></script>
+<script src="../game-showcase.js"></script>
 <script>
 (function(){
 const C = document.getElementById('game'), ctx = C.getContext('2d');
 const $ = id => document.getElementById(id);
 const audio = window.AudioEffects ? new AudioEffects(.5) : null;
 const sys = window.GameSystem ? new GameSystem('crossy-crew','Crossy Crew','pip') : null;
-const storyRun = window.StoryRun ? new StoryRun({
+const storyRun = window.__storyRun = window.StoryRun ? new StoryRun({
   id:'crossy-crew', gameSystem:sys, title:'Crossy Crew', character:'Pip',
   open:'Pip and Echo are at the edge of a busy crossing and the road stretches on forever.',
   objective:'Hop as far as you can without getting squished or swept away.',
@@ -128,6 +138,32 @@ let player, rows, cameraY, furthest, score, coins, hops;
 let best = (sys ? GameSystem.getBestScore('crossy-crew') : 0) || 0;
 let last = 0, idleTimer = 0, particles = [];
 let hopAnim = 0;
+
+// A952 showcase polish: distance goals that celebrate as you hit them, and a
+// screen shake on death. Shared implementation in ../game-showcase.js.
+const MISSION = [10, 25, 50, 100];
+const milestones = window.JVDSShowcase ? new JVDSShowcase.Milestones(MISSION, function (m) {
+  toast('Goal reached: ' + m + ' rows!');
+  try { audio?.playSuccess?.(); } catch(e) {}
+  for (let i = 0; i < 14; i++) {
+    particles.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH / 2, vx: (Math.random() - .5) * 240, vy: -Math.random() * 240, life: 1, color: '#86efac', size: 3 });
+  }
+}) : null;
+const shake = window.JVDSShowcase ? new JVDSShowcase.Shake(14) : null;
+let dustTimer = 0;
+
+// Read-only debug handle so tests can verify mobile movement, death state and
+// showcase progression without poking at canvas pixels.
+window.__crossy = {
+  get col() { return player ? player.col : -1; },
+  get row() { return player ? player.row : -1; },
+  get hops() { return hops; },
+  get score() { return score; },
+  get dead() { return dead; },
+  get running() { return running; },
+  get milestone() { return milestones ? milestones.next() : null; },
+  get shake() { return shake ? shake.amount : 0; }
+};
 
 const ROAD = 'road', RIVER = 'river', GRASS = 'grass', SAFE = 'safe';
 const carColors = ['#ef4444','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#f97316'];
@@ -225,6 +261,9 @@ function reset() {
   idleTimer = 0;
   particles = [];
   hopAnim = 0;
+  dustTimer = 0;
+  if (milestones) milestones.reset();
+  if (shake) shake.amount = 0;
   syncPlayerPos();
 }
 
@@ -257,6 +296,7 @@ function hop(dx, dy) {
     const diff = newRow - furthest;
     furthest = newRow;
     score += diff * 10;
+    if (milestones) milestones.check(furthest);
   }
 
   if (targetRow.hasCoin === newCol) {
@@ -285,7 +325,6 @@ function startGame() {
   sys?.beginRun?.();
   if (storyRun && !storyRun.running) storyRun.begin();
   last = performance.now();
-  requestAnimationFrame(loop);
 }
 
 function die(reason) {
@@ -293,6 +332,7 @@ function die(reason) {
   player.alive = false;
   dead = true;
   running = false;
+  if (shake) shake.hit(16);
   burst(player.x, player.y, '#ef4444', 20);
   try { audio?.playError?.(); } catch(e) {}
   if (score > best) {
@@ -321,10 +361,19 @@ function hud() {
   $('hopsHud').textContent = hops;
   $('coinsHud').textContent = coins;
   $('bestHud').textContent = best;
+  const goal = milestones ? milestones.next() : null;
+  $('goalHud').textContent = goal == null ? 'Done' : goal;
   if (storyRun) storyRun.setScore(score);
 }
 
 function update(dt) {
+  particles.forEach(p => {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt * 2;
+  });
+  particles = particles.filter(p => p.life > 0);
+
   if (!running || dead) return;
 
   const targetCamY = Math.max(0, furthest - 4);
@@ -334,6 +383,13 @@ function update(dt) {
   if (idleTimer > 6) { die('Too slow!'); return; }
 
   hopAnim = Math.max(0, hopAnim - dt);
+
+  // little puffs as the crew hops along
+  dustTimer -= dt;
+  if (dustTimer <= 0 && window.JVDSShowcase) {
+    JVDSShowcase.dust(particles, player.col * cellW + cellW / 2, screenY(player.row) + cellH, '#86efac', 2, { drift: 30, spread: 18, up: 40, size: 1.5 });
+    dustTimer = .16;
+  }
 
   for (let r = Math.floor(cameraY) - 2; r < Math.floor(cameraY) + VISIBLE_ROWS + 5; r++) {
     const row = getRow(r);
@@ -399,13 +455,6 @@ function update(dt) {
     die('Left behind!');
     return;
   }
-
-  particles.forEach(p => {
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.life -= dt * 2;
-  });
-  particles = particles.filter(p => p.life > 0);
 
   hud();
 }
@@ -540,6 +589,9 @@ function draw() {
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, W, H);
 
+  ctx.save();
+  if (shake) shake.apply(ctx, dpr);
+
   const startRow = Math.floor(cameraY) - 2;
   const endRow = Math.ceil(cameraY) + VISIBLE_ROWS + 3;
   for (let r = startRow; r <= endRow; r++) {
@@ -563,6 +615,9 @@ function draw() {
     ctx.textAlign = 'center';
     ctx.fillText('HOP! ' + Math.ceil(6 - idleTimer) + 's', W / 2, H * .15);
   }
+
+  ctx.restore();
+  if (shake) shake.decay();
 }
 
 function loop(now) {
@@ -571,7 +626,7 @@ function loop(now) {
   fit();
   update(dt);
   draw();
-  if (running || !dead) requestAnimationFrame(loop);
+  requestAnimationFrame(loop);
 }
 
 let swStartX = 0, swStartY = 0;
