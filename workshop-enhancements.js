@@ -784,3 +784,69 @@
   }
 
 })();
+
+/* Workshop brief (A954). The 3D builder workshops opened straight into the
+   builder with no "what you'll make / before you start / what you'll learn"
+   intro. Add a consistent brief from this map, only when the page has no intro
+   of its own. Scoped by page id so it never touches workshops that already
+   explain themselves. */
+(function () {
+  'use strict';
+
+  var BRIEFS = {
+    'robot-builder': { build: "Design and build your own 3D robot step by step, then export it as a 3D model.", before: "Best for ages 7-9 with a grown-up. No install and no account, it runs in your browser.", learn: "3D shape building, colour and proportion, and how the parts fit together." },
+    'rocket-builder': { build: "Design and build your own 3D rocket with nose cones, fins and boosters.", before: "Ages 10-14. No install and no account, it runs in your browser.", learn: "3D modelling, symmetry and balancing a design." },
+    'space-station-builder': { build: "Design and build your own 3D space station from modules and solar panels.", before: "Ages 10-14. No install and no account, it runs in your browser.", learn: "Modular 3D building, scale and layout planning." },
+    'submarine-builder': { build: "Design and build your own 3D submarine with a hull, fins and a propeller.", before: "Ages 10-14. No install and no account, it runs in your browser.", learn: "3D modelling, curves and balance." },
+    'castle-builder': { build: "Design and build your own 3D medieval castle with towers, walls and a gate.", before: "Ages 10-14. No install and no account, it runs in your browser.", learn: "3D building, structure and layout planning." },
+    'pirate-ship-builder': { build: "Build and sail a pirate ship in your browser.", before: "Ages 10+. No install and no account, it runs in your browser.", learn: "3D modelling, ship parts and how a build moves." },
+    'pirate-cannon-builder': { build: "Build a pirate cannon game in your browser.", before: "Ages 10+. No install and no account, it runs in your browser.", learn: "Aiming, angles and simple game logic." },
+    'race-car-builder': { build: "Design and build your own 3D race car with a body, wheels and a spoiler.", before: "Ages 10-14. No install and no account, it runs in your browser.", learn: "3D modelling, symmetry and how design affects speed." },
+    'steampunk-airship-builder': { build: "Build and fly a steampunk airship in your browser.", before: "Ages 10+. No install and no account, it runs in your browser.", learn: "3D building, balloon and propeller design." },
+    'phone-stand-builder': { build: "Design and build your own 3D printable phone stand.", before: "Ages 10+. No install and no account, it runs in your browser.", learn: "3D modelling for printing, scale and stability." },
+    'fairy-tale-builder': { build: "Design and build your own 3D fairy tale cottage.", before: "Best for ages 7-9 with a grown-up. No install and no account, it runs in your browser.", learn: "3D shape building, colour and decoration." },
+    'mugen-ai-workshop': { build: "Build a fighting game character for MUGEN with AI opponents.", before: "Ages 10+. You will need MUGEN (free) on your computer.", learn: "Character setup, states and simple AI." }
+  };
+
+  function pageId() {
+    return (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+  }
+
+  function hasIntro() {
+    return !!document.querySelector('.workshop-brief, .hero-sub, .hero-desc, .lead, .badge-row, .hero-pills, .hero-tags, .intro-brief');
+  }
+
+  function makeBrief(b) {
+    var sec = document.createElement('section');
+    sec.className = 'workshop-brief';
+    sec.setAttribute('aria-label', 'Workshop overview');
+    sec.style.cssText = 'max-width:900px;margin:16px auto;padding:16px 18px;background:var(--beige,#F0EAD6);border:1.5px solid rgba(64,59,51,.16);border-radius:12px;color:var(--charcoal,#1a1208);font-size:.92rem;line-height:1.6;';
+    sec.innerHTML =
+      '<h2 style="font-family:Fredoka,Inter,sans-serif;font-size:1.1rem;margin:0 0 8px;">What you\'ll make</h2>' +
+      '<p style="margin:0 0 12px;">' + b.build + '</p>' +
+      '<div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">' +
+        '<div><h3 style="font-size:.86rem;margin:0 0 4px;">Before you start</h3><p style="margin:0;">' + b.before + '</p></div>' +
+        '<div><h3 style="font-size:.86rem;margin:0 0 4px;">What you\'ll learn</h3><p style="margin:0;">' + b.learn + '</p></div>' +
+      '</div>';
+    return sec;
+  }
+
+  function place(sec) {
+    var hdr = document.querySelector('header.hdr');
+    if (hdr && hdr.parentNode) { hdr.parentNode.insertBefore(sec, hdr.nextSibling); return true; }
+    var app = document.getElementById('app');
+    if (app) { app.insertBefore(sec, app.firstChild); return true; }
+    var main = document.querySelector('main') || document.body;
+    if (main) { main.insertBefore(sec, main.firstChild); return true; }
+    return false;
+  }
+
+  function run() {
+    var b = BRIEFS[pageId()];
+    if (!b || hasIntro()) return;
+    place(makeBrief(b));
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+})();
