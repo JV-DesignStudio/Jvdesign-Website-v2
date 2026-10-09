@@ -109,10 +109,23 @@
     window.dispatchEvent(new Event('resize'));
   }
 
+  function enhanceControls() {
+    // Several games render the sound toggle as an icon-only button. Give it a
+    // spoken name so screen readers announce it instead of "button".
+    var sound = document.getElementById('soundBtn');
+    if (!sound) return;
+    var named = sound.getAttribute('aria-label') || sound.getAttribute('aria-labelledby') || sound.getAttribute('title');
+    var text = (sound.textContent || '').trim();
+    if (!named && !/[a-z0-9]/i.test(text)) {
+      sound.setAttribute('aria-label', 'Mute or unmute sound');
+    }
+  }
+
   function wire() {
     injectCss();
     ensureButton();
     ensureLauncher();
+    enhanceControls();
     document.addEventListener('click', function (e) {
       if (navigator.webdriver) return; // let automation click start controls without changing layout
       if (document.documentElement.classList.contains('jvds-immersive')) return;

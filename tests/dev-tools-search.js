@@ -33,7 +33,8 @@ const pills = pillTags.map((tag) => {
 });
 
 ok('hub has 15 core tool cards', cards.length === 15, 'found ' + cards.length);
-ok('hub has 24 reference pills', pills.length === 24, 'found ' + pills.length);
+// 23 pills: A797 retired the roblox-builder redirect-stub pill, so the count dropped from 24.
+ok('hub has 23 reference pills', pills.length === 23, 'found ' + pills.length);
 ok('every core card has data-search', cards.every((c) => c.search.length > 0));
 ok('every reference pill has data-search', pills.every((p) => p.search.length > 0),
   pills.filter((p) => !p.search).map((p) => p.title).join(', ') || 'all present');
