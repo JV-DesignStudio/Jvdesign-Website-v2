@@ -39,9 +39,12 @@ for (const rel of files) {
   real++;
 
   const title = ((html.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || '').trim();
-  const desc = ((html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i) || [])[1]
-    || (html.match(/<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']/i) || [])[1]
-    || '').trim();
+  // Extract the content attribute of the description meta tag, respecting the
+  // quoting so an apostrophe inside a double-quoted value (e.g. "Lumo's Dash")
+  // does not truncate it.
+  const descTag = (html.match(/<meta[^>]*name=["']description["'][^>]*>/i) || [])[0] || '';
+  const descMatch = descTag.match(/content=("([^"]*)"|'([^']*)')/i);
+  const desc = ((descMatch && (descMatch[2] !== undefined ? descMatch[2] : descMatch[3])) || '').trim();
 
   if (!title) missingTitle.push(rel); else (titles[title] = titles[title] || []).push(rel);
   if (!desc) missingDesc.push(rel); else (descs[desc] = descs[desc] || []).push(rel);
