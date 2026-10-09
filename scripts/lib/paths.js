@@ -44,7 +44,8 @@ const EXCLUDE_FILES = new Set([
 ]);
 
 const GAME_ORPHANS = [
-  'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html'
+  'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/lumo-run.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html'
+  // lumo-run.html is a noindex redirect to lumo-dash.html (A967 consolidation).
   // echo-casebook.html and stardust-ruins.html removed - they are curated games in content/games.json
 ];
 
