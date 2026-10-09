@@ -5,7 +5,7 @@ const EPISODES=[
   'stardew-world-ep1-setup.html','stardew-world-ep2-mods-folder.html','stardew-world-ep3-first-tile.html',
   'stardew-world-ep4-layers.html','stardew-world-ep5-tile-properties.html','stardew-world-ep6-build-and-decorate.html',
   'stardew-world-ep7-warps.html','stardew-world-ep8-new-area.html','stardew-world-ep9-package-mod.html',
-  'stardew-world-ep10-troubleshoot.html'
+  'stardew-world-ep10-troubleshoot.html','stardew-world-ep11-play-share.html'
 ];
 let failures=0;
 function check(name,ok,detail=''){console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:''));if(!ok)failures++;}
@@ -34,13 +34,18 @@ const server=http.createServer((req,res)=>{
     const hub=await page.evaluate(()=>({
       studioLinks:document.querySelectorAll('a[href*="stardew-mod-studio.html"]').length,
       episodes:document.querySelectorAll('a[href*="stardew-world-ep"]').length,
+      hero:!!document.getElementById('sdHero'),
+      prog:!!document.getElementById('sdProgText'),
       dashes:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length,
       sw:document.documentElement.scrollWidth
     }));
     check('hub links to the Mod Studio',hub.studioLinks>=2,'links '+hub.studioLinks);
     check('hub lists the episode links',hub.episodes>=10,'links '+hub.episodes);
+    check('hub has the living-world hero',hub.hero);
+    check('hub has the progress dashboard',hub.prog);
     check('hub has no dashes',hub.dashes===0);
     check('hub desktop no overflow',hub.sw<=1442,hub.sw+'');
+    check('hub no browser errors',errors.length===0,errors.slice(0,2).join(' | '));
 
     // Episodes
     for(const file of EPISODES){

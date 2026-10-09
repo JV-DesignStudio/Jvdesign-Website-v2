@@ -81,6 +81,19 @@ const server=http.createServer((req,res)=>{
 
     check('no browser errors',errors.length===0,errors.slice(0,2).join(' | '));
 
+    // embed mode (used by episode iframes)
+    errors.length=0;
+    await page.goto(base+PAGE+'?embed=1&tab=warps',{waitUntil:'load'});
+    const emb=await page.evaluate(()=>({
+      header:getComputedStyle(document.querySelector('.site-header')).display==='none',
+      hero:getComputedStyle(document.querySelector('.hero')).display==='none',
+      tabs:getComputedStyle(document.querySelector('.sdms-tabs')).display==='none',
+      warps:document.getElementById('panel-warps').classList.contains('is-active')
+    }));
+    check('embed hides the site chrome',emb.header&&emb.hero&&emb.tabs);
+    check('embed opens the requested tab',emb.warps);
+    check('embed has no browser errors',errors.length===0,errors.slice(0,2).join(' | '));
+
     for(const width of [390,320]){
       await page.setViewport({width,height:844,isMobile:true});
       await page.goto(base+PAGE,{waitUntil:'load'});
