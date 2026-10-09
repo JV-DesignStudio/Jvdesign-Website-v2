@@ -149,6 +149,8 @@
           <button type="button" class="sdms-tool" id="toolErase">⌫ Erase</button>
           <button type="button" class="sdms-tool" id="toolCopy">⧉ Copy</button>
           <button type="button" class="sdms-tool" id="toolPaste" disabled>📋 Paste</button>
+          <button type="button" class="sdms-tool" id="toolNpc">🧍 NPC</button>
+          <button type="button" class="sdms-tool" id="toolDoor">🚪 Door</button>
           <button type="button" class="sdms-tool" id="toolUndo" disabled>↶ Undo</button>
           <button type="button" class="sdms-tool" id="toolRedo" disabled>↷ Redo</button>
           <button type="button" class="sdms-tool" id="mapClear">Clear layer</button>
@@ -166,10 +168,12 @@
         </div>
         <div class="sdms-canvas-stage">
           <canvas id="sdmsMap" width="576" height="384" role="img" aria-label="Map editor grid. Use the palette and rules on the right, then start the walk test to move a character with the arrow keys."></canvas>
+          <canvas id="sdMinimap" width="144" height="96" role="img" aria-label="Minimap of your world"></canvas>
         </div>
         <div class="sdms-actions">
           <button type="button" class="sdms-btn" id="mapWalk">▶ Play my world</button>
           <button type="button" class="sdms-btn sdms-btn--primary" id="playFull">⛶ Play full screen</button>
+          <button type="button" class="sdms-btn" id="tourBtn">🧭 Quick tour</button>
           <button type="button" class="sdms-btn" id="mapReset">Reset studio</button>
         </div>
         <div class="sdms-dpad" id="mapDpad" style="display:none" aria-label="Move the test character">
@@ -340,6 +344,18 @@
     <button type="button" data-move="left" aria-label="Left">◀</button><button type="button" data-move="down" aria-label="Down">▼</button><button type="button" data-move="right" aria-label="Right">▶</button>
   </div>
   <div class="sdms-play-bar"><button type="button" class="sdms-btn" id="playClose">✕ Close play</button></div>
+</div>
+
+<div class="sdms-tour" id="tourOverlay" hidden>
+  <div class="sdms-tour-card">
+    <div class="sdms-tour-dots" id="tourDots"></div>
+    <h3 id="tourTitle">Welcome to the Studio</h3>
+    <p id="tourBody">This is a little map editor. In a few steps you will paint a world, set its rules, play it and save it.</p>
+    <div class="sdms-tour-bar">
+      <button type="button" class="sdms-btn" id="tourSkip">Skip</button>
+      <button type="button" class="sdms-btn sdms-btn--primary" id="tourNext">Next →</button>
+    </div>
+  </div>
 </div>
 
 <!-- BUILD:footer-content -->
@@ -530,7 +546,7 @@
   function loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; } }
   function persist() {
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify({ grid: grid, rules: RULES, activeLayer: activeLayer, activeTile: activeTile, cols: MCOLS, rows: MROWS, fields: readFields() }));
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ grid: grid, rules: RULES, activeLayer: activeLayer, activeTile: activeTile, cols: MCOLS, rows: MROWS, layerVisible: layerVisible, npcs: npcs, doors: doors, fields: readFields() }));
     } catch (e) {}
   }
   var FIELD_IDS = ['mfName', 'mfAuthor', 'mfVersion', 'mfId', 'mfDesc', 'cfMap', 'xFolder', 'xMapName', 'xMode', 'xWarp', 'warpAVal', 'warpBVal', 'worldName'];
@@ -554,6 +570,20 @@
   var mapCtx = mapCanvas ? mapCanvas.getContext('2d') : null;
   var grid = { Back: new Array(MCOLS * MROWS).fill('grass'), Buildings: new Array(MCOLS * MROWS).fill(null), Front: new Array(MCOLS * MROWS).fill(null) };
   var activeLayer = 'Back', activeTile = 'grass', tool = 'paint', brushSize = 1;
+  var layerVisible = { Back: true, Buildings: true, Front: true };
+  var paintCursor = { c: 2, r: 2 };
+  var npcs = [], activeNpc = null, doors = [];
+  var insideInterior = false;
+  var ICOLS = 10, IROWS = 8, interiorDoor = { c: ICOLS - 2, r: 4 };
+  var interior = (function () {
+    var a = new Array(ICOLS * IROWS).fill('wood');
+    function s(c, r, t) { if (c >= 0 && c < ICOLS && r >= 0 && r < IROWS) a[r * ICOLS + c] = t; }
+    for (var c = 0; c < ICOLS; c++) { s(c, 0, 'rock'); s(c, IROWS - 1, 'rock'); }
+    for (var r = 0; r < IROWS; r++) { s(0, r, 'rock'); s(ICOLS - 1, r, 'rock'); }
+    s(2, 2, 'building'); s(2, 3, 'building'); s(6, 2, 'building'); s(7, 2, 'building');
+    s(4, 5, 'flower');
+    return a;
+  })();
   var walkOn = false, char = { c: 1, r: 1 }, painting = false, paintedOnce = false, strokePushed = false;
   var undoStack = [], redoStack = [];
   var TIME_TINTS = { morning: 'rgba(255,214,150,.12)', noon: null, sunset: 'rgba(255,140,60,.20)', night: 'rgba(18,26,72,.38)' };
@@ -591,9 +621,10 @@
     // soft drop shadows for raised layers
     mapCtx.fillStyle = 'rgba(0,0,0,.20)';
     for (var sr = 0; sr < MROWS; sr++) for (var sc = 0; sc < MCOLS; sc++) {
-      if (grid.Buildings[midx(sc, sr)] || grid.Front[midx(sc, sr)]) mapCtx.fillRect(sc * MCELL + 4, sr * MCELL + 5, MCELL, MCELL);
+      if ((layerVisible.Buildings && grid.Buildings[midx(sc, sr)]) || (layerVisible.Front && grid.Front[midx(sc, sr)])) mapCtx.fillRect(sc * MCELL + 4, sr * MCELL + 5, MCELL, MCELL);
     }
     LAYERS.forEach(function (L) {
+      if (!layerVisible[L]) return;
       for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var t = grid[L][midx(c, r)]; if (t) drawTileAt(mapCtx, c * MCELL, r * MCELL, MCELL, t); }
     });
     // autotiled edges: a rim where water, paths and floors meet a different tile
@@ -625,8 +656,18 @@
       mapCtx.strokeStyle = dragging === 'copy' ? '#70A3A7' : '#ffd166'; mapCtx.lineWidth = 2;
       mapCtx.strokeRect(pc0 * MCELL + 1, pr0 * MCELL + 1, (pc1 - pc0 + 1) * MCELL - 2, (pr1 - pr0 + 1) * MCELL - 2);
     }
+    doors.forEach(function (d) { mapCtx.fillStyle = '#ffd166'; mapCtx.fillRect(d.c * MCELL + 6, d.r * MCELL + 4, MCELL - 12, MCELL - 8); });
+    npcs.forEach(function (n) {
+      if (n.path.length) { mapCtx.strokeStyle = 'rgba(224,122,168,.8)'; mapCtx.lineWidth = 2; mapCtx.beginPath(); mapCtx.moveTo(n.x * MCELL + MCELL / 2, n.y * MCELL + MCELL / 2); n.path.forEach(function (p) { mapCtx.lineTo(p.c * MCELL + MCELL / 2, p.r * MCELL + MCELL / 2); }); mapCtx.stroke(); }
+      mapCtx.fillStyle = '#e07aa8'; mapCtx.beginPath(); mapCtx.arc(n.x * MCELL + MCELL / 2, n.y * MCELL + MCELL / 2, MCELL * 0.28, 0, Math.PI * 2); mapCtx.fill();
+    });
+    if (!walkOn && !playOn) {
+      mapCtx.strokeStyle = '#ffd166'; mapCtx.lineWidth = 2;
+      mapCtx.strokeRect(paintCursor.c * MCELL + 1, paintCursor.r * MCELL + 1, MCELL - 2, MCELL - 2);
+    }
     var tt = TIME_TINTS[timeOfDay];
     if (tt) { mapCtx.fillStyle = tt; mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height); }
+    renderMinimap();
   }
 
   function setCell(c, r, t) { if (c < 0 || c >= MCOLS || r < 0 || r >= MROWS) return; grid[activeLayer][midx(c, r)] = t; }
@@ -706,6 +747,8 @@
       if (tool === 'rect') { dragging = 'rect'; dragStart = cell; dragEnd = cell; renderMap(); e.preventDefault(); return; }
       if (tool === 'copy') { dragging = 'copy'; dragStart = cell; dragEnd = cell; renderMap(); e.preventDefault(); return; }
       if (tool === 'paste') { pasteAt(cell); blip(620, 0.06, 'triangle'); e.preventDefault(); return; }
+      if (tool === 'npc') { addNpc(cell); e.preventDefault(); return; }
+      if (tool === 'door') { toggleDoor(cell); e.preventDefault(); return; }
       painting = true; strokePushed = false;
       if (tool === 'fill') fillAt(e.clientX, e.clientY); else mapPaintAt(e.clientX, e.clientY);
       blip(tool === 'erase' ? 300 : (activeTile === 'water' ? 520 : 460), 0.05, 'triangle');
@@ -728,8 +771,11 @@
     var box = document.getElementById('mapLayers'); if (!box) return; box.innerHTML = '';
     LAYERS.forEach(function (L) {
       var label = document.createElement('label'); label.className = 'sdms-check';
+      var vis = document.createElement('input'); vis.type = 'checkbox'; vis.checked = layerVisible[L]; vis.title = 'Show or hide the ' + L + ' layer'; vis.setAttribute('aria-label', 'Show ' + L + ' layer');
+      vis.addEventListener('change', function () { layerVisible[L] = vis.checked; renderMap(); persist(); });
       var radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'sdmsLayer'; radio.value = L; radio.checked = (L === activeLayer);
       radio.addEventListener('change', function () { activeLayer = L; persist(); });
+      label.appendChild(vis);
       label.appendChild(radio);
       label.appendChild(document.createTextNode(L + (L === 'Back' ? ' (ground)' : L === 'Front' ? ' (over the player)' : ' (objects)')));
       box.appendChild(label);
@@ -752,7 +798,7 @@
   }
   function setTool(t) {
     tool = t;
-    [['toolFill', 'fill'], ['toolRect', 'rect'], ['toolErase', 'erase'], ['toolCopy', 'copy'], ['toolPaste', 'paste']].forEach(function (p) {
+    [['toolFill', 'fill'], ['toolRect', 'rect'], ['toolErase', 'erase'], ['toolCopy', 'copy'], ['toolPaste', 'paste'], ['toolNpc', 'npc'], ['toolDoor', 'door']].forEach(function (p) {
       var b = document.getElementById(p[0]); if (b) b.classList.toggle('is-active', t === p[1]);
     });
   }
@@ -776,15 +822,26 @@
       'Layers used: <strong>Back</strong>, <strong>Buildings</strong>, <strong>Front</strong>.<br>' +
       'A doorway is a map property <code>Warp</code> = <code>fromX fromY toArea toX toY</code>.';
   }
+  var farmDoorReturn = { c: 1, r: 1 };
   function tryMove(dc, dr) {
     var c = char.c + dc, r = char.r + dr;
+    if (insideInterior) {
+      if (c < 0 || c >= ICOLS || r < 0 || r >= IROWS) return { ok: false, msg: 'That is the wall.' };
+      var it = interior[r * ICOLS + c];
+      if (it !== 'wood' && it !== 'flower') return { ok: false, msg: 'You bump into the furniture. The doorway out is on the right wall.' };
+      char.c = c; char.r = r;
+      if (c === interiorDoor.c && r === interiorDoor.r) { insideInterior = false; char = { c: farmDoorReturn.c, r: farmDoorReturn.r }; return { ok: true, tile: it, exited: true }; }
+      return { ok: true, tile: it };
+    }
     if (c < 0 || c >= MCOLS || r < 0 || r >= MROWS) return { ok: false, msg: 'Edge of the map. In Stardew you would fall into the void, so paint ground to the edges or add a border warp.' };
     var t = topTileAt(c, r);
     if (!t) return { ok: false, msg: 'There is no tile there (empty). The game has nothing to stand on.' };
     var rules = RULES[t] || {};
     if (rules.water === T) return { ok: false, msg: 'That tile is Water, so you cannot walk on it.' };
     if (rules.passable !== T) return { ok: false, msg: 'That tile is a wall (Passable = F). Change the rule or go around.' };
-    char.c = c; char.r = r; return { ok: true, tile: t };
+    char.c = c; char.r = r;
+    for (var i = 0; i < doors.length; i++) if (doors[i].c === c && doors[i].r === r) { farmDoorReturn = { c: c, r: r }; insideInterior = true; char = { c: interiorDoor.c - 1, r: interiorDoor.r }; return { ok: true, tile: t, entered: true }; }
+    return { ok: true, tile: t };
   }
   function mapMove(dc, dr) {
     var res = tryMove(dc, dr);
@@ -813,6 +870,22 @@
   });
   document.addEventListener('keyup', function (e) { var d = dirFromKey(e.key); if (d) delete heldDirs[d]; });
   setInterval(function () { if (!walkOn) return; var pm = document.getElementById('panel-map'); if (!pm || !pm.classList.contains('is-active')) return; for (var d in heldDirs) { if (heldDirs[d]) { stepDir(d); break; } } }, 170);
+  // keyboard paint cursor (when not walking or playing)
+  document.addEventListener('keydown', function (e) {
+    if (walkOn || playOn) return;
+    var pm = document.getElementById('panel-map'); if (!pm || !pm.classList.contains('is-active')) return;
+    var d = dirFromKey(e.key);
+    if (d) {
+      if (d === 'up') paintCursor.r = Math.max(0, paintCursor.r - 1);
+      else if (d === 'down') paintCursor.r = Math.min(MROWS - 1, paintCursor.r + 1);
+      else if (d === 'left') paintCursor.c = Math.max(0, paintCursor.c - 1);
+      else if (d === 'right') paintCursor.c = Math.min(MCOLS - 1, paintCursor.c + 1);
+      renderMap(); e.preventDefault();
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      pushHistory(); grid[activeLayer][midx(paintCursor.c, paintCursor.r)] = (tool === 'erase') ? null : activeTile;
+      blip(460, 0.04, 'triangle'); renderMap(); runChallenges(); persist(); e.preventDefault();
+    }
+  });
 
   /* ---------- full-screen play mode ---------- */
   var playOn = false, playCanvas = document.getElementById('playCanvas'), playCtx = playCanvas ? playCanvas.getContext('2d') : null;
@@ -820,11 +893,28 @@
   var playMsgEl = document.getElementById('playMsg');
   function playRender() {
     if (!playCtx) return;
+    var now = Date.now() / 1000;
+    var wantW = (insideInterior ? ICOLS : MCOLS) * playCell, wantH = (insideInterior ? IROWS : MROWS) * playCell;
+    if (playCanvas.width !== wantW || playCanvas.height !== wantH) { playCanvas.width = wantW; playCanvas.height = wantH; }
     playCtx.fillStyle = '#0b0f14'; playCtx.fillRect(0, 0, playCanvas.width, playCanvas.height);
-    playCtx.fillStyle = 'rgba(0,0,0,.20)';
-    for (var sr = 0; sr < MROWS; sr++) for (var sc = 0; sc < MCOLS; sc++) { if (grid.Buildings[midx(sc, sr)] || grid.Front[midx(sc, sr)]) playCtx.fillRect(sc * playCell + 5, sr * playCell + 6, playCell, playCell); }
-    LAYERS.forEach(function (L) { for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var t = grid[L][midx(c, r)]; if (t) drawTileAt(playCtx, c * playCell, r * playCell, playCell, t); } });
-    var tt = TIME_TINTS[timeOfDay]; if (tt) { playCtx.fillStyle = tt; playCtx.fillRect(0, 0, playCanvas.width, playCanvas.height); }
+    if (insideInterior) {
+      for (var ir = 0; ir < IROWS; ir++) for (var ic = 0; ic < ICOLS; ic++) drawTileAt(playCtx, ic * playCell, ir * playCell, playCell, interior[ir * ICOLS + ic]);
+      playCtx.fillStyle = '#ffd166'; playCtx.fillRect(interiorDoor.c * playCell + 6, interiorDoor.r * playCell + 4, playCell - 12, playCell - 8);
+    } else {
+      playCtx.fillStyle = 'rgba(0,0,0,.20)';
+      for (var sr = 0; sr < MROWS; sr++) for (var sc = 0; sc < MCOLS; sc++) { if (grid.Buildings[midx(sc, sr)] || grid.Front[midx(sc, sr)]) playCtx.fillRect(sc * playCell + 5, sr * playCell + 6, playCell, playCell); }
+      LAYERS.forEach(function (L) { for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var t = grid[L][midx(c, r)]; if (t) drawTileAt(playCtx, c * playCell, r * playCell, playCell, t); } });
+      doors.forEach(function (d) { playCtx.fillStyle = '#ffd166'; playCtx.fillRect(d.c * playCell + 6, d.r * playCell + 4, playCell - 12, playCell - 8); });
+      npcs.forEach(function (n) {
+        var pts = [{ c: n.x, r: n.y }].concat(n.path), pos;
+        if (pts.length > 1) { var span = pts.length * 2 - 2; var k = Math.floor((now * 1.4 + (n.off || 0)) % span); var i = k < pts.length ? k : span - k; pos = pts[i]; }
+        else pos = pts[0];
+        var nx = pos.c * playCell + playCell / 2, ny = pos.r * playCell + playCell / 2;
+        playCtx.fillStyle = '#e07aa8'; playCtx.beginPath(); playCtx.arc(nx, ny, playCell * 0.3, 0, Math.PI * 2); playCtx.fill();
+        playCtx.fillStyle = '#fff'; playCtx.beginPath(); playCtx.arc(nx - playCell * 0.1, ny - playCell * 0.06, playCell * 0.06, 0, Math.PI * 2); playCtx.arc(nx + playCell * 0.1, ny - playCell * 0.06, playCell * 0.06, 0, Math.PI * 2); playCtx.fill();
+      });
+      var tt = TIME_TINTS[timeOfDay]; if (tt) { playCtx.fillStyle = tt; playCtx.fillRect(0, 0, playCanvas.width, playCanvas.height); }
+    }
     playCtx.fillStyle = 'rgba(0,0,0,.25)'; playCtx.beginPath(); playCtx.ellipse(playPix.x, playPix.y + playCell * 0.3, playCell * 0.3, playCell * 0.14, 0, 0, Math.PI * 2); playCtx.fill();
     playCtx.fillStyle = '#fff'; playCtx.beginPath(); playCtx.arc(playPix.x, playPix.y, playCell * 0.32, 0, Math.PI * 2); playCtx.fill();
     playCtx.fillStyle = '#3f7d3a'; playCtx.beginPath(); playCtx.arc(playPix.x, playPix.y, playCell * 0.24, 0, Math.PI * 2); playCtx.fill();
@@ -839,7 +929,12 @@
     var dc = d === 'left' ? -1 : d === 'right' ? 1 : 0, dr = d === 'up' ? -1 : d === 'down' ? 1 : 0;
     var res = tryMove(dc, dr);
     if (!res.ok) { if (playMsgEl) playMsgEl.textContent = res.msg; blip(220, 0.05); }
-    else { playSteps++; if (playMsgEl) playMsgEl.textContent = 'Exploring your world. Steps: ' + playSteps; blip(500, 0.04, 'triangle'); }
+    else {
+      playSteps++;
+      if (res.entered || res.exited) { playPix.x = char.c * playCell + playCell / 2; playPix.y = char.r * playCell + playCell / 2; }
+      if (playMsgEl) playMsgEl.textContent = res.entered ? 'You went inside. Walk to the door on the right wall to leave.' : res.exited ? 'Back outside. Steps: ' + playSteps : 'Exploring your world. Steps: ' + playSteps;
+      blip(500, 0.04, 'triangle');
+    }
   }
   function openPlay() {
     if (!playCanvas) return;
@@ -865,6 +960,31 @@
   });
   document.addEventListener('keyup', function (e) { if (!playOn) return; var d = dirFromKey(e.key); if (d) delete playHeld[d]; });
   setInterval(function () { if (!playOn) return; for (var d in playHeld) { if (playHeld[d]) { playStep(d); break; } } }, 170);
+
+  /* ---------- NPCs and doors ---------- */
+  function addNpc(cell) {
+    if (cell.c < 0 || cell.c >= MCOLS || cell.r < 0 || cell.r >= MROWS) return;
+    var m = document.getElementById('mapMsg');
+    if (!activeNpc) {
+      activeNpc = { x: cell.c, y: cell.r, path: [], off: Math.random() * 10 };
+      npcs.push(activeNpc);
+      m.className = 'sdms-msg ok'; m.textContent = 'NPC placed. Click more tiles to add its walking path, then Play.';
+    } else {
+      activeNpc.path.push({ c: cell.c, r: cell.r });
+      m.className = 'sdms-msg ok'; m.textContent = 'Path point ' + activeNpc.path.length + ' added to the NPC.';
+    }
+    renderMap(); persist();
+  }
+  function toggleDoor(cell) {
+    if (cell.c < 0 || cell.c >= MCOLS || cell.r < 0 || cell.r >= MROWS) return;
+    var found = -1;
+    for (var i = 0; i < doors.length; i++) if (doors[i].c === cell.c && doors[i].r === cell.r) found = i;
+    if (found >= 0) doors.splice(found, 1); else doors.push({ c: cell.c, r: cell.r });
+    var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = found >= 0 ? 'Door removed.' : 'Door added. Step on it in Play mode to go inside.';
+    renderMap(); persist();
+  }
+  var npcBtn = document.getElementById('toolNpc'); if (npcBtn) npcBtn.addEventListener('click', function () { if (tool === 'npc') { activeNpc = null; setTool('paint'); } else { activeNpc = null; setTool('npc'); } });
+  var doorBtn = document.getElementById('toolDoor'); if (doorBtn) doorBtn.addEventListener('click', function () { setTool(tool === 'door' ? 'paint' : 'door'); });
   [].slice.call(document.querySelectorAll('.sdms-tool[data-brush]')).forEach(function (b) {
     b.addEventListener('click', function () {
       brushSize = parseInt(b.getAttribute('data-brush'), 10);
@@ -947,6 +1067,12 @@
     var tc = cv.getContext('2d'); var tw = cv.width / MCOLS, th = cv.height / MROWS;
     tc.fillStyle = '#0b0f14'; tc.fillRect(0, 0, cv.width, cv.height);
     LAYERS.forEach(function (L) { for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var t = g[L][midx(c, r)]; if (t) { tc.fillStyle = COLORS[t] || COLORS.grass; tc.fillRect(c * tw, r * th, tw, th); } } });
+  }
+  function renderMinimap() {
+    var cv = document.getElementById('sdMinimap'); if (!cv) return;
+    var g = cv.getContext('2d'); var tw = cv.width / MCOLS, th = cv.height / MROWS;
+    g.fillStyle = '#0b0f14'; g.fillRect(0, 0, cv.width, cv.height);
+    LAYERS.forEach(function (L) { if (!layerVisible[L]) return; for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var t = grid[L][midx(c, r)]; if (t) { g.fillStyle = COLORS[t] || COLORS.grass; g.fillRect(c * tw, r * th, Math.ceil(tw), Math.ceil(th)); } } });
   }
   function shareURL(g) { return location.origin + location.pathname + '#world=' + btoa(unescape(encodeURIComponent(JSON.stringify({ g: g })))).replace(/=+$/, ''); }
   function renderWorlds() {
@@ -1269,6 +1395,9 @@
       if (saved.rules) { for (var k in saved.rules) { if (RULES[k] && saved.rules[k]) { RULES[k].passable = saved.rules[k].passable; RULES[k].water = saved.rules[k].water; RULES[k].diggable = saved.rules[k].diggable; } } }
       if (saved.activeLayer) activeLayer = saved.activeLayer;
       if (saved.activeTile) activeTile = saved.activeTile;
+      if (saved.layerVisible) { for (var lv in layerVisible) { if (typeof saved.layerVisible[lv] === 'boolean') layerVisible[lv] = saved.layerVisible[lv]; } }
+      if (Array.isArray(saved.npcs)) npcs = saved.npcs;
+      if (Array.isArray(saved.doors)) doors = saved.doors;
       applyFields(saved.fields);
     } catch (e) {}
   }
@@ -1278,6 +1407,32 @@
 
   buildLayersUI(); buildPaletteUI(); buildRulesUI(); updateCompare(); renderMap();
   refreshFiles(); renderDebug(); refreshExportPreview(); renderWarps(null, null); renderWorlds(); runChallenges(); updateHistoryButtons();
+
+  /* ---------- guided first-run tour ---------- */
+  var TOUR = [
+    { t: 'Welcome to the Studio', b: 'This is a little map editor. In a few steps you will paint a world, set its rules, play it and save it.' },
+    { t: '1. Pick a tile', b: 'Use the Tile palette on the right to choose grass, water, trees, buildings and more. Click or drag on the map to paint.' },
+    { t: '2. Set the rules', b: 'Each tile has rules: Passable, Water and Diggable. The play test uses them, so walls block you and water is water.' },
+    { t: '3. Use the tools', b: 'Brush sizes 1 to 3, Fill for a whole area, Rect to drag a block, Copy and Paste, and Undo if you change your mind.' },
+    { t: '4. Play it', b: 'Click Play my world or Play full screen to walk around. Doors take you inside, and NPCs wander their paths.' },
+    { t: '5. Save and share', b: 'In My worlds, name and Save your world, Share a link, or Download a world page to keep or send.' }
+  ];
+  var tourIdx = 0;
+  function showTour(i) {
+    tourIdx = i;
+    var ov = document.getElementById('tourOverlay'); if (!ov) return; ov.hidden = false;
+    var ti = document.getElementById('tourTitle'), bo = document.getElementById('tourBody');
+    if (ti) ti.textContent = TOUR[i].t; if (bo) bo.textContent = TOUR[i].b;
+    var dots = document.getElementById('tourDots');
+    if (dots) { dots.innerHTML = ''; TOUR.forEach(function (_, k) { var s = document.createElement('span'); if (k === i) s.className = 'on'; dots.appendChild(s); }); }
+    var next = document.getElementById('tourNext'); if (next) next.textContent = (i === TOUR.length - 1) ? 'Done' : 'Next →';
+  }
+  function hideTour() { var ov = document.getElementById('tourOverlay'); if (ov) ov.hidden = true; }
+  var tourBtn = document.getElementById('tourBtn'); if (tourBtn) tourBtn.addEventListener('click', function () { showTour(0); });
+  var tourNextBtn = document.getElementById('tourNext'); if (tourNextBtn) tourNextBtn.addEventListener('click', function () { if (tourIdx < TOUR.length - 1) showTour(tourIdx + 1); else hideTour(); });
+  var tourSkipBtn = document.getElementById('tourSkip'); if (tourSkipBtn) tourSkipBtn.addEventListener('click', hideTour);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var ov = document.getElementById('tourOverlay'); if (ov && !ov.hidden) hideTour(); } });
+  try { if (!localStorage.getItem('jvds-studio-toured') && !EMBED) { localStorage.setItem('jvds-studio-toured', '1'); showTour(0); } } catch (e) {}
 })();
 </script>
 </body>

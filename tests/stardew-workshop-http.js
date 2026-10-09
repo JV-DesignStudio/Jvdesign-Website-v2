@@ -5,7 +5,7 @@ const EPISODES=[
   'stardew-world-ep1-setup.html','stardew-world-ep2-mods-folder.html','stardew-world-ep3-first-tile.html',
   'stardew-world-ep4-layers.html','stardew-world-ep5-tile-properties.html','stardew-world-ep6-build-and-decorate.html',
   'stardew-world-ep7-warps.html','stardew-world-ep8-new-area.html','stardew-world-ep9-package-mod.html',
-  'stardew-world-ep10-troubleshoot.html','stardew-world-ep11-play-share.html'
+  'stardew-world-ep10-troubleshoot.html','stardew-world-ep11-play-share.html','stardew-world-ep12-design.html'
 ];
 let failures=0;
 function check(name,ok,detail=''){console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:''));if(!ok)failures++;}

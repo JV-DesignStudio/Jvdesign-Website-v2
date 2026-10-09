@@ -25,6 +25,10 @@ const server=http.createServer((req,res)=>{
     await page.setViewport({width:1440,height:900});
     await page.goto(base+PAGE,{waitUntil:'load'});
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
+    // dismiss the first-run tour if it appeared
+    const tourVisible=await page.evaluate(()=>{const o=document.getElementById('tourOverlay');return !!(o&&!o.hidden);});
+    check('first-run tour shows for new visitors',tourVisible);
+    if(tourVisible)await page.click('#tourSkip');
 
     const info=await page.evaluate(()=>{
       const tabs=[...document.querySelectorAll('.sdms-tab')];
