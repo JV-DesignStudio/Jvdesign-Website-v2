@@ -82,6 +82,9 @@ const server=http.createServer((req,res)=>{
     await page.click('.sdms-tab[data-tab="export"]');
     const xPreview=await page.$eval('#xPreview',el=>el.textContent);
     check('export preview lists the mod folder',/manifest\.json/.test(xPreview)&&/\.tmx/.test(xPreview));
+    await page.select('#xMode','game');
+    const xPreviewGame=await page.$eval('#xPreview',el=>el.textContent);
+    check('loadable export preview ships the tilesheet',/planner_tiles\.png/.test(xPreviewGame),xPreviewGame.split('\n').pop());
 
     check('no browser errors',errors.length===0,errors.slice(0,2).join(' | '));
 

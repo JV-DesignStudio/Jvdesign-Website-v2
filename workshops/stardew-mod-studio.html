@@ -312,8 +312,8 @@
         <input class="sdms-input" id="xMapName" value="Farm" spellcheck="false">
         <label class="sdms-label" for="xMode">Map format</label>
         <select class="sdms-select" id="xMode">
-          <option value="safe">For Tiled (safe): a starting file you refine in the editor</option>
-          <option value="game">Try it in the game (advanced): ships the tilesheet beside the map and bakes in your tile rules</option>
+          <option value="safe">Starter map for Tiled: a .tmx you refine in the editor</option>
+          <option value="game">Loadable mod (new area): download and it plays in Stardew</option>
         </select>
         <label class="sdms-label" for="xWarp">Optional Warp value (fromX fromY toArea toX toY)</label>
         <input class="sdms-input" id="xWarp" value="" spellcheck="false" placeholder="e.g. 8 4 Town 10 20 - the area must be a real location">
@@ -1183,12 +1183,29 @@
   function manifestObj() {
     return { Name: val('mfName'), Author: val('mfAuthor'), Version: val('mfVersion'), Description: val('mfDesc'), UniqueID: val('mfId'), ContentPackFor: { UniqueID: 'Pathoschild.ContentPatcher' } };
   }
-  function contentObj() {
-    var m = val('cfMap') || 'Farm';
-    // The map's tilesheet sits in the same folder as the .tmx, so SMAPI/Content Patcher
-    // match and load it automatically. No separate Load for the tilesheet is needed.
-    var changes = [{ Action: 'Load', Target: 'Maps/' + m, FromFile: 'assets/maps/' + m + '.tmx' }];
-    return { Format: '2.9.0', LogName: val('mfName') || 'My First Farm', Changes: changes };
+  function contentObj(mode) {
+    var file = (val('xMapName') || 'Farm').replace(/[^A-Za-z0-9_.-]/g, '') || 'Farm';
+    var target = (val('cfMap') || 'Farm').replace(/[^A-Za-z0-9_.-]/g, '') || 'Farm';
+    if (mode === 'game') {
+      // A brand-new area: register a location, load its map + tilesheet, and add a door
+      // from the farm so you can actually reach it. This is the documented CustomLocations
+      // recipe (see Episode 8), so the downloaded mod is playable in the real game.
+      var locName = ((val('mfId') || 'YourName.MyFirstFarm').replace(/[^A-Za-z0-9_.-]/g, '') || 'YourName.MyFirstFarm') + '_World';
+      var entries = {};
+      entries[locName] = { DisplayName: val('mfName') || 'My World', CreateOnLoad: { MapPath: 'Maps/' + locName }, DefaultArrivalTile: { X: 3, Y: 3 } };
+      return {
+        Format: '2.9.0',
+        LogName: val('mfName') || 'My First Farm',
+        Changes: [
+          { Action: 'EditData', Target: 'Data/Locations', Entries: entries },
+          { Action: 'Load', Target: 'Maps/planner_tiles', FromFile: 'assets/maps/planner_tiles.png' },
+          { Action: 'Load', Target: 'Maps/' + locName, FromFile: 'assets/maps/' + file + '.tmx' },
+          { Action: 'EditMap', Target: 'Maps/Farm', AddWarps: ['8 4 ' + locName + ' 3 3'] }
+        ]
+      };
+    }
+    // Starter map: loads over the named map so you can peek at it, and opens in Tiled.
+    return { Format: '2.9.0', LogName: val('mfName') || 'My First Farm', Changes: [{ Action: 'Load', Target: 'Maps/' + target, FromFile: 'assets/maps/' + file + '.tmx' }] };
   }
   function refreshFiles() {
     var pre = document.getElementById('filesPreview');
@@ -1359,13 +1376,15 @@
       var folder = (val('xFolder') || 'MyFirstFarm').replace(/[^A-Za-z0-9_.-]/g, '') || 'MyFirstFarm';
       var map = (val('xMapName') || 'Farm').replace(/[^A-Za-z0-9_.-]/g, '') || 'Farm';
       var mode = val('xMode') === 'game' ? 'game' : 'safe';
+      var locName = ((val('mfId') || 'YourName.MyFirstFarm').replace(/[^A-Za-z0-9_.-]/g, '') || 'YourName.MyFirstFarm') + '_World';
       var readme = (val('mfName') || folder) + ' - made in the JVDesignStudio Stardew Mod Studio.\n\n' +
-        '1. Unzip this folder into Stardew Valley/Mods\n2. Launch the game through SMAPI\n3. Check the console lists the mod by name\n\n' +
-        (mode === 'game' ? 'This pack is set up to load in the game: the map sits beside its tilesheet (planner_tiles.png) in assets/maps, so SMAPI and Content Patcher match and load the tilesheet automatically. Your tile rules (Passable, Water, Diggable, Type) are baked into the map. The art is simple, so refine it in Tiled when you are ready.\n\n' : 'This map is a Tiled starting file with the tilesheet embedded. Open it in Tiled to refine it, then load it.\n\n') +
+        (mode === 'game'
+          ? 'This mod adds a brand-new area to Stardew and a door to reach it.\n\nHOW TO PLAY YOUR WORLD:\n1. Unzip this folder into Stardew Valley/Mods\n2. Launch the game through SMAPI and load any farm save\n3. Open the SMAPI console (press Enter) and type:  debug warp ' + locName + '\n   (or walk to tile 8,4 at the top-left of your farm to use the door)\n\nYour tile rules (Passable, Water, Diggable, Type) are baked into the map, so walls block you and water is water. The art is simple, so refine the map in Tiled when you are ready.\n\n'
+          : 'This is a starter map for Tiled with the tilesheet embedded. Open it in Tiled to refine it, then load it in-game.\n\n') +
         'Full guide: https://jvdesignstudio.co.uk/workshops/stardew-world-workshop.html\n';
       var files = [
         { name: folder + '/manifest.json', data: enc.encode(pretty(manifestObj()) + '\n') },
-        { name: folder + '/content.json', data: enc.encode(pretty(contentObj()) + '\n') },
+        { name: folder + '/content.json', data: enc.encode(pretty(contentObj(mode)) + '\n') },
         { name: folder + '/assets/maps/' + map + '.tmx', data: enc.encode(buildTMX(mode)) },
         { name: folder + '/README.txt', data: enc.encode(readme) }
       ];
