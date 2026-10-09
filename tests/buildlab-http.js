@@ -60,6 +60,9 @@ const TEMPLATES = ['robot','creature','house','car','tower','tree','sword','ches
         mobToolbar: document.querySelectorAll('.mob-toolbar .mob-tab').length,
         deskButtons: document.querySelectorAll('.template-grid .tmpl-btn').length,
         mobButtons: document.querySelectorAll('.mob-quick-grid [onclick^="quickBuild("]').length,
+        engineStatus: (document.getElementById('engineStatus')?.textContent || '').trim(),
+        exportModal: !!document.getElementById('exportPreviewModal'),
+        photoExport: !!document.querySelector('[onclick*="exportScreenshot"]'),
         wiredTypes: Array.from(document.querySelectorAll('[onclick^="quickBuild("]')).map(b=>b.getAttribute('onclick').match(/quickBuild\('([a-z]+)'\)/)?.[1]).filter(Boolean)
       }));
       check(vp.name+': title is BuildLab', /BuildLab/i.test(shell.title), shell.title);
@@ -74,6 +77,9 @@ const TEMPLATES = ['robot','creature','house','car','tower','tree','sword','ches
       const missing = TEMPLATES.filter(t=>!shell.wiredTypes.includes(t));
       check(vp.name+': every template is wired to quickBuild', missing.length === 0, missing.join(','));
       check(vp.name+': mobile tab bar uses .mob-tab (swipe fix)', shell.mobToolbar === 5, String(shell.mobToolbar));
+      check(vp.name+': engine leaves the loading state (ready or clear error)', /ready|error|could not|failed|webgl|startup|refresh/i.test(shell.engineStatus), shell.engineStatus || '(empty)');
+      check(vp.name+': export preview modal present', shell.exportModal);
+      check(vp.name+': screenshot export control present', shell.photoExport);
 
       for (const type of TEMPLATES) {
         const r = await page.evaluate(async (t)=>{
