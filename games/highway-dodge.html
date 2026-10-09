@@ -49,10 +49,17 @@ canvas{flex:1;width:100%;display:block;touch-action:none}
 .hidden{display:none}
 .toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(251,191,36,.9);color:#0a0a1a;padding:8px 20px;border-radius:8px;font-weight:700;font-size:18px;z-index:15;opacity:0;transition:opacity .15s;pointer-events:none}
 .toast.show{opacity:1}
+/* Story HUD lives inside the game shell so it never pushes the play area off-screen. */
+.game-wrap .storyrun{width:100%;margin:0;padding:6px 10px 0}
+.game-wrap .storyrun .sr-story{margin-top:6px;padding:6px 10px}
+.game-wrap .storyrun .sr-open,
+.game-wrap .storyrun .sr-objective{display:none}
+/* Game-over modal must sit above the fullscreen game shell (game-shell.js uses z-index 99990). */
+.storyrun.sr-modal{z-index:100050}
 </style>
 </head>
 <body>
-<div class="game-wrap">
+<div class="game-wrap" data-jvds-root data-storyrun-host>
   <div class="top-bar">
     <a href="../arcade.html">&larr; Arcade</a>
     <span class="title">Highway Dodge</span>
@@ -62,6 +69,7 @@ canvas{flex:1;width:100%;display:block;touch-action:none}
     <div><small>Score</small><b id="scoreHud">0</b></div>
     <div><small>Speed</small><b id="speedHud">60</b></div>
     <div><small>Near Miss</small><b id="nearHud">0</b></div>
+    <div><small>Goal</small><b id="goalHud">500</b></div>
     <div><small>Best</small><b id="bestHud">0</b></div>
   </div>
   <canvas id="game"></canvas>
@@ -84,13 +92,14 @@ canvas{flex:1;width:100%;display:block;touch-action:none}
 </div>
 
 <script src="../story-run.js"></script>
+<script src="../game-showcase.js"></script>
 <script>
 (function(){
 const C = document.getElementById('game'), ctx = C.getContext('2d');
 const $ = id => document.getElementById(id);
 const audio = window.AudioEffects ? new AudioEffects(.5) : null;
 const sys = window.GameSystem ? new GameSystem('highway-dodge','Highway Dodge','ember') : null;
-const storyRun = window.StoryRun ? new StoryRun({
+const storyRun = window.__storyRun = window.StoryRun ? new StoryRun({
   id:'highway-dodge', gameSystem:sys, title:'Highway Dodge', character:'Ember',
   open:'Ember is racing down the highway and the traffic is getting heavier.',
   objective:'Dodge as many cars as you can and keep driving.',
@@ -115,6 +124,42 @@ let best = (sys ? GameSystem.getBestScore('highway-dodge') : 0) || 0;
 let last = 0, spawnTimer = 0;
 let swipeStartX = 0, swipeStartY = 0, swiping = false;
 
+// Read-only debug handle so tests can verify death state and that same-lane
+// traffic never overlaps.
+window.__highway = {
+  get running() { return running; },
+  get dead() { return dead; },
+  get score() { return score; },
+  get playerLane() { return player ? player.lane : -1; },
+  cars() { return cars.map(c => ({ lane: c.lane, y: c.y, h: c.h })); },
+  get overlaps() {
+    let n = 0;
+    for (let i = 0; i < cars.length; i++) {
+      for (let j = i + 1; j < cars.length; j++) {
+        const a = cars[i], b = cars[j];
+        if (a.lane === b.lane && Math.abs(a.y - b.y) < (a.h + b.h) / 2 - 1) n++;
+      }
+    }
+    return n;
+  },
+  get milestone() { return milestones ? milestones.next() : null; },
+  get shake() { return shake ? shake.amount : 0; },
+  get shakeHits() { return shake ? shake.hits : 0; }
+};
+
+// A952 showcase polish: score goals that celebrate as you hit them, and a
+// screen shake on the crash. Shared implementation in ../game-showcase.js.
+const MISSION = [500, 1500, 3000, 6000];
+const milestones = window.JVDSShowcase ? new JVDSShowcase.Milestones(MISSION, function (m) {
+  toast('Goal reached: ' + m + '!');
+  try { audio?.playSuccess?.(); } catch(e) {}
+  for (let i = 0; i < 16; i++) {
+    particles.push({ x: player.x + (Math.random() - .5) * 60, y: H - player.h, vx: (Math.random() - .5) * 260, vy: -Math.random() * 260, life: 1, color: '#fbbf24', size: 3 });
+  }
+}) : null;
+const shake = window.JVDSShowcase ? new JVDSShowcase.Shake(14) : null;
+let dustTimer = 0;
+
 function fit() {
   const r = C.getBoundingClientRect();
   dpr = Math.min(devicePixelRatio || 1, 2);
@@ -130,19 +175,40 @@ function laneX(lane) { return roadL + laneW / 2 + lane * laneW; }
 
 const carColors = ['#ef4444','#3b82f6','#22c55e','#a855f7','#f97316','#ec4899','#06b6d4'];
 const truckColors = ['#64748b','#475569','#78716c','#92400e'];
+// Every car in a lane moves at the same pace (the lane multiplier is applied to
+// the live speed each frame), so traffic in a lane can never overtake or overlap.
+const LANE_SPEED = [0.85, 1.0, 1.15];
 
-function makeTraffic() {
-  const lane = Math.floor(Math.random() * LANE_COUNT);
-  const isTruck = Math.random() < .2 + dist * .00002;
-  const w = isTruck ? laneW * .72 : laneW * .52;
-  const h = isTruck ? laneW * 1.6 : laneW * 1.1;
-  const colors = isTruck ? truckColors : carColors;
-  return {
-    x: laneX(lane), y: -h, w, h, lane, isTruck,
-    speed: speed * (.55 + Math.random() * .3),
-    color: colors[Math.floor(Math.random() * colors.length)],
-    nearCounted: false
-  };
+// True when the top of the road is clear enough in this lane to drop in a car
+// of height newH without it touching the traffic already there.
+function laneClear(lane, newH) {
+  for (let i = 0; i < cars.length; i++) {
+    const c = cars[i];
+    if (c.lane !== lane) continue;
+    const gap = (c.y - c.h / 2) - (-newH / 2); // existing top vs new car's tail
+    if (gap < laneW * 0.5) return false;
+  }
+  return true;
+}
+
+function addTraffic() {
+  const order = [0, 1, 2].sort(() => Math.random() - .5);
+  for (let oi = 0; oi < order.length; oi++) {
+    const lane = order[oi];
+    const isTruck = Math.random() < .2 + dist * .00002;
+    const w = isTruck ? laneW * .72 : laneW * .52;
+    const h = isTruck ? laneW * 1.6 : laneW * 1.1;
+    if (!laneClear(lane, h)) continue;
+    const colors = isTruck ? truckColors : carColors;
+    cars.push({
+      x: laneX(lane), y: -h, w, h, lane, isTruck,
+      mul: LANE_SPEED[lane],
+      color: colors[Math.floor(Math.random() * colors.length)],
+      nearCounted: false
+    });
+    return true;
+  }
+  return false;
 }
 
 function makePickup() {
@@ -158,6 +224,9 @@ function reset() {
   cars = []; pickups = []; particles = []; roadLines = [];
   score = 0; speed = 280; dist = 0; nearMiss = 0; combo = 0; fuel = 100;
   spawnTimer = 0;
+  dustTimer = 0;
+  if (milestones) milestones.reset();
+  if (shake) shake.reset();
   for (let i = 0; i < 20; i++) {
     roadLines.push({ y: i * (H / 8), x: 0 });
   }
@@ -200,12 +269,13 @@ function startGame() {
   sys?.beginRun?.();
   if (storyRun && !storyRun.running) storyRun.begin();
   last = performance.now();
-  requestAnimationFrame(loop);
 }
 
 function endGame() {
+  if (dead) return;
   dead = true;
   running = false;
+  if (shake) shake.hit(16);
   if (score > best) {
     best = score;
     if (sys) GameSystem.saveScore('highway-dodge', best);
@@ -233,24 +303,44 @@ function hud() {
   $('speedHud').textContent = Math.round(60 + dist * .008);
   $('nearHud').textContent = nearMiss;
   $('bestHud').textContent = best;
+  const goal = milestones ? milestones.next() : null;
+  $('goalHud').textContent = goal == null ? 'Done' : goal;
   if (storyRun) storyRun.setScore(score);
 }
 
 function update(dt) {
+  particles.forEach(p => {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt * 2;
+  });
+  particles = particles.filter(p => p.life > 0);
+
   if (!running || dead) return;
   dist += speed * dt;
   speed = 280 + dist * .04;
   score += Math.ceil(dt * speed * .15);
+  if (milestones) milestones.check(score);
 
   player.x += (player.targetX - player.x) * Math.min(1, dt * 14);
   player.tilt *= .92;
 
+  // tyre smoke trailing the car
+  dustTimer -= dt;
+  if (dustTimer <= 0 && window.JVDSShowcase) {
+    JVDSShowcase.dust(particles, player.x, H - player.h * .1, 'rgba(148,163,184,.9)', 2, { drift: 40, spread: 16, up: 40, size: 2 });
+    dustTimer = .12;
+  }
+
   spawnTimer -= dt;
   if (spawnTimer <= 0) {
-    cars.push(makeTraffic());
     const gap = Math.max(.28, .9 - dist * .00004);
-    spawnTimer = gap + Math.random() * gap * .5;
-    if (Math.random() < .12) pickups.push(makePickup());
+    if (addTraffic()) {
+      spawnTimer = gap + Math.random() * gap * .5;
+      if (Math.random() < .12) pickups.push(makePickup());
+    } else {
+      spawnTimer = 0.08; // every lane is still busy; try again shortly
+    }
   }
 
   const pTop = H - player.h * 1.8;
@@ -259,7 +349,7 @@ function update(dt) {
 
   for (let i = cars.length - 1; i >= 0; i--) {
     const c = cars[i];
-    c.y += (speed - c.speed) * dt + speed * dt * .6;
+    c.y += speed * (1 - c.mul) * dt + speed * dt * .6;
 
     if (c.y > H + c.h) { cars.splice(i, 1); continue; }
 
@@ -317,13 +407,6 @@ function update(dt) {
       pickups.splice(i, 1);
     }
   }
-
-  particles.forEach(p => {
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.life -= dt * 2;
-  });
-  particles = particles.filter(p => p.life > 0);
 
   roadLines.forEach(l => {
     l.y += speed * dt;
@@ -461,6 +544,9 @@ function draw() {
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, W, H);
 
+  ctx.save();
+  if (shake) shake.apply(ctx, dpr);
+
   for (let i = 0; i < 30; i++) {
     ctx.fillStyle = 'rgba(255,255,255,' + (.02 + (i % 5) * .01) + ')';
     ctx.fillRect((i * 67 + dist * .02) % W, (i * 43) % (H * .3), 2, 2);
@@ -491,6 +577,9 @@ function draw() {
     ctx.fillStyle = 'rgba(0,0,0,.4)';
     ctx.fillRect(0, 0, W, H);
   }
+
+  ctx.restore();
+  if (shake) shake.decay();
 }
 
 function loop(now) {
@@ -499,7 +588,7 @@ function loop(now) {
   fit();
   update(dt);
   draw();
-  if (running || !dead) requestAnimationFrame(loop);
+  requestAnimationFrame(loop);
 }
 
 C.addEventListener('pointerdown', e => {

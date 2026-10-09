@@ -124,6 +124,16 @@ async function mobile(browser, base) {
     death.modalOnTop && death.modalZ > death.canvasZ,
     'modal z-' + death.modalZ + ' canvas z-' + death.canvasZ);
 
+  const show = await page.evaluate(() => ({
+    goal: (document.getElementById('goalHud') || {}).textContent,
+    milestone: window.__crossy.milestone,
+    shakeHits: window.__crossy.shakeHits
+  }));
+  check('showcase: goal is shown in the HUD', /^\d+$/.test(show.goal || ''), show.goal);
+  check('showcase: milestone progression is armed',
+    [10, 25, 50, 100, null].includes(show.milestone), String(show.milestone));
+  check('showcase: death triggers a screen shake', show.shakeHits >= 1, 'hits=' + show.shakeHits);
+
   await page.evaluate(() => document.querySelector('.sr-again')?.click());
   await sleep(500);
   const restarted = await page.evaluate(() => ({
