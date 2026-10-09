@@ -97,6 +97,7 @@
      <a href="/pages/echo.html" role="menuitem">Improve <img src="/assets/mascots/echo-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
      <a href="/quotes" role="menuitem">Quotes</a>
      <a href="/meet-the-crew.html" role="menuitem">Meet the Crew</a>
+     <a href="/meet-the-crew.html#barnaby" role="menuitem">Barnaby the Arctic Fox</a>
      <a href="/pick-your-path" role="menuitem">Pick Your Path</a>
      <a href="/devlog" role="menuitem">Dev Log</a>
      <a href="/parents" role="menuitem">For Parents</a>
@@ -132,7 +133,7 @@
       <span class="skill-tag"><span>🆕</span> New map in Tiled</span>
       <span class="skill-tag"><span>🎨</span> Fill the space</span>
       <span class="skill-tag"><span>🚪</span> Warp in</span>
-      <span class="skill-tag"><span>📦</span> Load new map</span>
+      <span class="skill-tag"><span>📦</span> Register location</span>
       <span class="skill-tag"><span>🧪</span> Walk there</span>
     </div>
     <div class="hero-btns">
@@ -168,6 +169,8 @@
     <div class="callout-icon">🐯</div>
     <div><strong>Ember says:</strong> keep it small for your first new area. A garden the size of two houses that works is worth more than a huge island that half-loads. Small and finished wins.</div>
   </div>
+
+  <div class="callout tip" style="margin:0 0 20px;border-left:3px solid #22c55e;background:rgba(34,197,94,.07);"><div class="callout-icon">🛠️</div><div><strong>Try it in the browser:</strong> sketch your new area and export it for Tiled in the <a href="stardew-mod-studio.html#map" style="color:#16a34a;font-weight:800;text-decoration:underline;">Stardew Mod Studio map editor</a>.</div></div>
 
   <!-- STEP 1 -->
   <div class="step-card open active-step" id="step-1" data-step="1">
@@ -309,29 +312,48 @@
       <div class="step-num sn-purple">4</div>
       <div class="step-title-wrap">
         <div class="step-emoji">🚪</div>
-        <div class="step-title">Warp In and Out</div>
-        <div class="step-blurb">Connect the new area to the farm</div>
+        <div class="step-title">Register the New Location</div>
+        <div class="step-blurb">Tell the game your new place exists</div>
       </div>
       <span class="step-status ss-todo">Locked</span>
     </div>
     <div class="step-body">
       <div class="big-goal">
         <div class="big-goal-icon">🎯</div>
-        <div class="big-goal-text"><strong>Goal for this step</strong><p>Make a two-way doorway between the farm and your new area.</p></div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Add your new area to the game's list of locations.</p></div>
       </div>
       <ul class="steps-list">
-        <li><span class="num-badge">1</span><span>In <strong>your farm map copy</strong>, add a doorway tile and a <strong>Warp</strong> property pointing to your new area and a safe spot.</span></li>
-        <li><span class="num-badge">2</span><span>In your <strong>new area map</strong>, add a doorway tile with a <strong>Warp</strong> property pointing back to the farm.</span></li>
-        <li><span class="num-badge">3</span><span>Because you already Load your farm from your copy (Episode 3), the new doorway appears with no extra step.</span></li>
-        <li><span class="num-badge">4</span><span>Test the round trip after loading the new area in Step 5.</span></li>
+        <li><span class="num-badge">1</span><span>A loaded map is only a picture. The game also needs a <strong>location</strong> entry, or warping there drops you into a black void.</span></li>
+        <li><span class="num-badge">2</span><span>Add an <strong>EditData</strong> change for <strong>Data/Locations</strong> with your new area and a <strong>CreateOnLoad</strong> MapPath.</span></li>
+        <li><span class="num-badge">3</span><span>Give it a <strong>DisplayName</strong> and a <strong>DefaultArrivalTile</strong> so the player lands somewhere safe.</span></li>
+        <li><span class="num-badge">4</span><span>Start the name with your mod id, like <strong>YourName_SecretGarden</strong>, so it never clashes with another mod.</span></li>
       </ul>
+      <div class="code-block">
+        <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">content.json (register the location)</span></div>
+        <pre class="code-pre">{
+  "Format": "2.9.0",
+  "Changes": [
+    {
+      "Action": "EditData",
+      "Target": "Data/Locations",
+      "Entries": {
+        "YourName_SecretGarden": {
+          "DisplayName": "Secret Garden",
+          "CreateOnLoad": { "MapPath": "Maps/YourName_SecretGarden" },
+          "DefaultArrivalTile": { "X": 3, "Y": 3 }
+        }
+      }
+    }
+  ]
+}</pre>
+      </div>
       <div class="concept-fill" id="cf-4" data-step="4">
         <div class="cf-header">
           <div class="cf-icon">✏️</div>
           <div class="cf-title">Fill in the Blanks</div>
           <div class="cf-xp-badge">+15 XP</div>
         </div>
-        <div class="cf-sentence">The farm's doorway uses a <input class="cf-blank" data-a="d2FycA==" placeholder="Type here..." size="4"> property pointing at your new map. The new map has one pointing <input class="cf-blank" data-a="YmFjaw==" placeholder="Type here..." size="4"> to the farm.</div>
+        <div class="cf-sentence">A loaded map is not enough. You must add a <input class="cf-blank" data-a="bG9jYXRpb24=" placeholder="Type here..." size="8"> entry in Data/Locations. CreateOnLoad MapPath points at your <input class="cf-blank" data-a="bWFw" placeholder="Type here..." size="3">.</div>
         <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
         <div class="cf-feedback"></div>
       </div>
@@ -341,11 +363,11 @@
           <div class="quiz-title">Knowledge Check</div>
           <div class="quiz-xp-badge">+15 XP</div>
         </div>
-        <div class="quiz-question">How many warps does a working two-way doorway need?</div>
+        <div class="quiz-question">What must you add so the game knows your new area exists?</div>
         <div class="quiz-options">
-          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>One, on the farm only</span></div>
-          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>Two, one each direction, so the player can come back</span></div>
-          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>It depends on the tileset</span></div>
+          <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>A second tilesheet</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>An entry in Data/Locations with a CreateOnLoad MapPath</span></div>
+          <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>A bigger map</span></div>
         </div>
         <div class="quiz-feedback"></div>
         <button class="quiz-submit" onclick="checkQuiz(this)">Check Answer</button>
@@ -360,32 +382,34 @@
       <div class="step-num sn-pink">5</div>
       <div class="step-title-wrap">
         <div class="step-emoji">📦</div>
-        <div class="step-title">Load the New Map</div>
-        <div class="step-blurb">One more Load in content.json</div>
+        <div class="step-title">Load the Map and Add a Warp</div>
+        <div class="step-blurb">Load your map, then wire the doorway</div>
       </div>
       <span class="step-status ss-todo">Locked</span>
     </div>
     <div class="step-body">
       <div class="big-goal">
         <div class="big-goal-icon">🎯</div>
-        <div class="big-goal-text"><strong>Goal for this step</strong><p>Tell Content Patcher about your new map.</p></div>
+        <div class="big-goal-text"><strong>Goal for this step</strong><p>Load your map and add the doorway that reaches it.</p></div>
       </div>
       <ul class="steps-list">
-        <li><span class="num-badge">1</span><span>Add a second <strong>Load</strong> change for your new map.</span></li>
-        <li><span class="num-badge">2</span><span>Target is a new game map name, for example <strong>Maps/SecretGarden</strong>. FromFile is your tmx.</span></li>
-        <li><span class="num-badge">3</span><span>The warp property uses the same name you set in Target, so they must match exactly.</span></li>
-        <li><span class="num-badge">4</span><span>Save content.json.</span></li>
+        <li><span class="num-badge">1</span><span>Add a <strong>Load</strong> change for your new map: Target <strong>Maps/YourName_SecretGarden</strong>, FromFile your tmx.</span></li>
+        <li><span class="num-badge">2</span><span>Add an <strong>EditMap</strong> change on <strong>Maps/Farm</strong> with <strong>AddWarps</strong> to send the player to your new location.</span></li>
+        <li><span class="num-badge">3</span><span>Each warp entry is five values: <strong>fromX fromY toArea toX toY</strong>. The area must match your location name exactly.</span></li>
+        <li><span class="num-badge">4</span><span>Your tilesheet sits beside the map, so it loads automatically. Save content.json.</span></li>
       </ul>
       <div class="code-block">
-        <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">content.json (two maps now)</span></div>
+        <div class="code-block-header"><span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span><span class="code-fname">content.json (load the map + add the warp)</span></div>
         <pre class="code-pre">{
-  "Format": "2.0.0",
+  "Format": "2.9.0",
   "LogName": "My First Farm",
   "Changes": [
     { "Action": "Load", "Target": "Maps/Farm",
       "FromFile": "assets/maps/Farm.tmx" },
-    { "Action": "Load", "Target": "Maps/SecretGarden",
-      "FromFile": "assets/maps/SecretGarden.tmx" }
+    { "Action": "Load", "Target": "Maps/YourName_SecretGarden",
+      "FromFile": "assets/maps/SecretGarden.tmx" },
+    { "Action": "EditMap", "Target": "Maps/Farm",
+      "AddWarps": [ "8 4 YourName_SecretGarden 3 3" ] }
   ]
 }</pre>
       </div>
@@ -395,11 +419,11 @@
           <div class="cf-title">Fill in the Blanks</div>
           <div class="cf-xp-badge">+15 XP</div>
         </div>
-        <div class="cf-sentence">Each map you add needs its own <input class="cf-blank" data-a="bG9hZA==" placeholder="Type here..." size="5"> change. The Target name must match the name used in the <input class="cf-blank" data-a="d2FycA==" placeholder="Type here..." size="4"> property.</div>
+        <div class="cf-sentence">Load your map with a <input class="cf-blank" data-a="bG9hZA==" placeholder="Type here..." size="5"> change, then send the player there with an <input class="cf-blank" data-a="ZWRpdG1hcA==" placeholder="Type here..." size="8"> change and <input class="cf-blank" data-a="YWRkd2FycHM=" placeholder="Type here..." size="9">.</div>
         <button class="cf-check-btn" onclick="checkConceptFill(this)">✏️ Check Answers</button>
         <div class="cf-feedback"></div>
       </div>
-      <div class="quiz-gate" id="quiz-5" data-step="5" data-k="Mg==">
+      <div class="quiz-gate" id="quiz-5" data-step="5" data-k="MQ==">
         <div class="quiz-header">
           <div class="quiz-icon">🧠</div>
           <div class="quiz-title">Knowledge Check</div>
@@ -408,7 +432,7 @@
         <div class="quiz-question">Your warp sends the player to a black void. Most likely cause?</div>
         <div class="quiz-options">
           <div class="quiz-opt" data-idx="0" onclick="selectQuizOpt(this)"><span class="opt-letter">A</span><span>You forgot to paint the ground</span></div>
-          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>The Target map name in content.json and the warp name do not match</span></div>
+          <div class="quiz-opt" data-idx="1" onclick="selectQuizOpt(this)"><span class="opt-letter">B</span><span>The new area is not registered in Data/Locations, or the warp area name does not match the location name</span></div>
           <div class="quiz-opt" data-idx="2" onclick="selectQuizOpt(this)"><span class="opt-letter">C</span><span>The tileset is the wrong colour</span></div>
         </div>
         <div class="quiz-feedback"></div>
