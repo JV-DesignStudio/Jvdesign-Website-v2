@@ -123,6 +123,7 @@ function renderSteps() {
       '<div class="cw-step-head">' +
         '<span class="cw-step-num">' + step.num + '</span>' +
         '<h3>' + step.title + '</h3>' +
+        (step.activity ? '<span class="cw-activity">' + step.activity + '</span>' : '') +
       '</div>' +
       '<p class="cw-goal">' + step.goal + '</p>' +
       '<ul class="cw-explain">' + step.points.map(function(p) { return '<li>' + p + '</li>'; }).join('') + '</ul>' +
