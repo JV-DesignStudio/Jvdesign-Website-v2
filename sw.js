@@ -8,7 +8,8 @@
 // v31 (A823): allow blob: in the CSP and self-host the BuildLab mobile chrome fix
 // v32 (A831): self-host Prism so the Code Snippet Generator highlights offline
 // v33 (A936): Icon Generator Help, real share links and a pinned mobile preview
-const CACHE='jvds-v33';
+// v34 (A648): precache testimonials.js for the honest social-proof strip + form
+const CACHE='jvds-v34';
 const CORE=[
   '/',
   '/offline.html',
@@ -16,6 +17,7 @@ const CORE=[
   '/style-shared.css',
   '/assets/css/tokens.css',
   '/nav.js',
+  '/testimonials.js',
   '/jvds-store.js',
   '/style-mascots.css',
   '/ember-guide.css',

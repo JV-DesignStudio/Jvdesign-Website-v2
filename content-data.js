@@ -3388,7 +3388,7 @@ window.JVDS_CONTENT = {
     {
       "id": "stardew-mod-studio",
       "title": "Stardew Mod Studio",
-      "desc": "A free browser playground for the Stardew World Workshop. Paint a map with layers and tile rules, test walking, try warps, build your manifest and content files, debug a SMAPI log and download your mod. No install needed.",
+      "desc": "A free browser playground for the Stardew World Workshop. Paint a map with layers and tile rules, use the fill and undo tools, take on challenges, test walking, try warps, build your files, debug a SMAPI log, save or share your world and download your mod. No install needed.",
       "engine": "Stardew Valley",
       "difficulty": "beginner",
       "ageRange": "10+",
@@ -3454,6 +3454,20 @@ window.JVDS_CONTENT = {
       "themeColor": "#3f7d3a",
       "cover": "/og/stardew-world-workshop.png",
       "url": "/workshops/stardew-world-ep10-troubleshoot.html"
+    },
+    {
+      "id": "stardew-world-ep11-play-share",
+      "title": "Stardew World Workshop Ep 11: Play and Share Your World",
+      "desc": "Episode 11 of the free Stardew World Workshop. Play your built world with real collision, save and name it, share a link and download a standalone world page. Ages 10+.",
+      "engine": "Stardew Valley",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#3f7d3a",
+      "cover": "/og/stardew-world-workshop.png",
+      "url": "/workshops/stardew-world-ep11-play-share.html"
     },
     {
       "id": "stardew-world-ep2-mods-folder",
@@ -5329,8 +5343,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-09T12:23:56.393Z",
-    "workshops": 263,
+    "generated": "2026-10-09T15:00:38.794Z",
+    "workshops": 264,
     "games": 43,
     "tools": 37,
     "books": 5,
@@ -5351,7 +5365,7 @@ window.JVDS_CONTENT = {
       "Python": 16,
       "Roblox": 11,
       "Scratch": 12,
-      "Stardew Valley": 13,
+      "Stardew Valley": 14,
       "TinkerCAD": 9,
       "Unity": 9,
       "Unreal": 10

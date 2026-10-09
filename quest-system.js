@@ -455,6 +455,26 @@ const QUESTS = {
       { type: 'game-score', gameId: 'nova-siege', minScore: 15000 }
     ],
     rewards: { xp: 300, badge: '☄️ Gate Hero', achievement: 'novaGateHero', cosmetic: { gameId: 'nova-siege', cosmeticId: 'solaris-hull' } }
+  },
+
+  'quest-27-stardew-world': {
+    id: 'quest-27-stardew-world',
+    title: 'Farm Architect',
+    description: 'Complete all 10 episodes of the Stardew World Workshop and build your own custom world.',
+    icon: '🧑‍🌾',
+    character: 'Ember',
+    category: 'create',
+    difficulty: 'advanced',
+    order: 27,
+    requirements: [
+      { type: 'workshop-count', workshopIds: [
+        'stardew-world-ep1-setup', 'stardew-world-ep2-mods-folder', 'stardew-world-ep3-first-tile',
+        'stardew-world-ep4-layers', 'stardew-world-ep5-tile-properties', 'stardew-world-ep6-build-and-decorate',
+        'stardew-world-ep7-warps', 'stardew-world-ep8-new-area', 'stardew-world-ep9-package-mod',
+        'stardew-world-ep10-troubleshoot', 'stardew-world-ep11-play-share'
+      ], minCount: 11 }
+    ],
+    rewards: { xp: 400, badge: '🧑‍🌾 Farm Architect', achievement: 'farmArchitect' }
   }
 };
 
@@ -475,6 +495,16 @@ const WORKSHOP_CATEGORIES = {
   'mugen-workshop': 'mugen',
   'mugen-ai-workshop': 'mugen',
   'add-your-own-stage': 'mugen',
+  'stardew-world-ep1-setup': 'stardew',
+  'stardew-world-ep2-mods-folder': 'stardew',
+  'stardew-world-ep3-first-tile': 'stardew',
+  'stardew-world-ep4-layers': 'stardew',
+  'stardew-world-ep5-tile-properties': 'stardew',
+  'stardew-world-ep6-build-and-decorate': 'stardew',
+  'stardew-world-ep7-warps': 'stardew',
+  'stardew-world-ep8-new-area': 'stardew',
+  'stardew-world-ep9-package-mod': 'stardew',
+  'stardew-world-ep10-troubleshoot': 'stardew',
 };
 
 class QuestSystem {

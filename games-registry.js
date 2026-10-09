@@ -1,6 +1,8 @@
 window.JVDS_GAMES = [
   {
     "id": "nova-siege",
+    "thumb": "assets/game-thumbs/nova-siege.webp",
+    "controlType": "Drag to fly",
     "cat": "Action",
     "file": "nova-siege.html",
     "title": "Nova Siege",
@@ -26,6 +28,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "pixel-pet-arena",
+    "thumb": "assets/game-thumbs/pixel-pet-arena.webp",
     "cat": "Action",
     "file": "pixel-pet-arena.html",
     "title": "Pixel Pet Arena",
@@ -51,6 +54,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "beat-builder-battle",
+    "thumb": "assets/game-thumbs/beat-builder-battle.webp",
     "cat": "Action",
     "file": "beat-builder-battle.html",
     "title": "Beat Builder Battle",
@@ -76,6 +80,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "creature-rescue-clinic",
+    "thumb": "assets/game-thumbs/creature-rescue-clinic.webp",
     "cat": "Chill",
     "file": "creature-rescue-clinic.html",
     "title": "Creature Rescue Clinic",
@@ -98,6 +103,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "marble-run-lab",
+    "thumb": "assets/game-thumbs/marble-run-lab.webp",
     "cat": "Puzzle",
     "file": "marble-run-lab.html",
     "title": "3D Marble Run Creator",
@@ -124,6 +130,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "backpack-quest",
+    "thumb": "assets/game-thumbs/backpack-quest.webp",
     "cat": "Strategy",
     "file": "backpack-quest.html",
     "title": "Backpack Quest",
@@ -146,6 +153,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "mini-theme-park-builder",
+    "thumb": "assets/game-thumbs/mini-theme-park-builder.webp",
     "cat": "Strategy",
     "file": "mini-theme-park-builder.html",
     "title": "Mini Theme Park Builder",
@@ -168,6 +176,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "garden-defense",
+    "thumb": "assets/game-thumbs/garden-defense.webp",
     "cat": "Strategy",
     "file": "garden-defense.html",
     "title": "Lumo's Garden Defense",
@@ -190,6 +199,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "bubble-pop",
+    "thumb": "assets/game-thumbs/bubble-pop.webp",
     "cat": "Puzzle",
     "file": "bubble-pop-galaxy.html",
     "title": "Bubble Pop Galaxy",
@@ -212,6 +222,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "neon-tiles",
+    "thumb": "assets/game-thumbs/neon-tiles.webp",
     "cat": "Action",
     "file": "neon-tiles.html",
     "title": "Neon Tiles: Beat Builder",
@@ -239,6 +250,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "bakery-empire",
+    "thumb": "assets/game-thumbs/bakery-empire.webp",
     "cat": "Chill",
     "file": "pips-bakery-empire.html",
     "title": "Pip's Bakery Rush",
@@ -265,6 +277,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "paper-toss",
+    "thumb": "assets/game-thumbs/paper-toss.webp",
     "cat": "Action",
     "file": "paper-toss-deluxe.html",
     "title": "Paper Toss: Wind Lab",
@@ -291,6 +304,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "echo-flight",
+    "thumb": "assets/game-thumbs/echo-flight.webp",
     "cat": "Action",
     "file": "echos-flight.html",
     "title": "Echo's Swim",
@@ -313,6 +327,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "pastry-match",
+    "thumb": "assets/game-thumbs/pastry-match.webp",
     "cat": "Puzzle",
     "file": "pastry-match.html",
     "title": "Pastry Match: One Order",
@@ -335,6 +350,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "dough-dash",
+    "thumb": "assets/game-thumbs/dough-dash.webp",
     "cat": "Action",
     "file": "dough-dash.html",
     "title": "Dough Dash",
@@ -357,6 +373,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "star-chef",
+    "thumb": "assets/game-thumbs/star-chef.webp",
     "cat": "Strategy",
     "file": "star-chef.html",
     "title": "Star Chef: Recipe Queue",
@@ -384,6 +401,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "bread-blocks",
+    "thumb": "assets/game-thumbs/bread-blocks.webp",
     "cat": "Puzzle",
     "file": "bread-blocks.html",
     "title": "Bread Blocks",
@@ -406,6 +424,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "lumo-firefly",
+    "thumb": "assets/game-thumbs/lumo-firefly.webp",
     "cat": "Arcade",
     "file": "lumo_firefly_night.html",
     "title": "Lumo's Firefly Shooter",
@@ -428,6 +447,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "star-connect",
+    "thumb": "assets/game-thumbs/star-connect.webp",
     "cat": "Puzzle",
     "file": "pip_star_connect.html",
     "title": "PiP's Star Connect",
@@ -436,20 +456,21 @@ window.JVDS_GAMES = [
     "cover": "Pips_Star_Connect.webp",
     "bg": "linear-gradient(135deg,#060d18,#0a1a35)",
     "kids": false,
-    "desc": "Trace real constellations with PiP, then reveal their names and kid-friendly sky facts once each route is complete.",
+    "desc": "Trace the constellation Orion with PiP, reveal its name and a real sky fact, then trace it again for a cleaner run.",
     "difficulty": "Easy to learn",
     "session": "5-10 min",
     "controls": "Tap or click stars in the correct route",
     "storyHook": "Stardust needs one constellation drawn before the sky goes dark.",
     "character": "Stardust",
     "objective": "Trace the stars in order and name the shape they make.",
-    "finishLine": "The line glows, the name appears and Stardust shows you the next sky.",
+    "finishLine": "The line glows, the name appears and PiP opens a page in the sky book.",
     "arcadeSession": "5-10 min",
     "age": "Ages 6-10",
     "learning": "Astronomy · Sequencing · Pattern recognition"
   },
   {
     "id": "arcane-citadel",
+    "thumb": "assets/game-thumbs/arcane-citadel.webp",
     "cat": "Strategy",
     "file": "arcane_citadel_page.html",
     "title": "Arcane Citadel",
@@ -472,6 +493,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "gem-match",
+    "thumb": "assets/game-thumbs/gem-match.webp",
     "cat": "Puzzle",
     "file": "gem_match.html",
     "title": "Gem Match",
@@ -494,6 +516,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "void-rush",
+    "thumb": "assets/game-thumbs/void-rush.webp",
     "cat": "Action",
     "file": "voidrush.html",
     "title": "VoidRush: Chase the Sun",
@@ -520,6 +543,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "crypt-crawlers",
+    "thumb": "assets/game-thumbs/crypt-crawlers.webp",
     "cat": "Action",
     "file": "crypt-crawlers.html",
     "title": "Crypt Crawlers",
@@ -542,6 +566,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "tiger-smash",
+    "thumb": "assets/game-thumbs/tiger-smash.webp",
     "cat": "Action",
     "file": "tiger_smash.html",
     "title": "Tiger Smash: Angle Lab",
@@ -569,6 +594,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "dungeon-delve",
+    "thumb": "assets/game-thumbs/dungeon-delve.webp",
     "cat": "Puzzle",
     "file": "dungeon-delve.html",
     "title": "Dungeon Delve: Map Logic",
@@ -596,6 +622,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "little-steps",
+    "thumb": "assets/game-thumbs/little-steps.webp",
     "cat": "Action",
     "file": "little_steps.html",
     "title": "Little Steps: Choice Trail",
@@ -623,6 +650,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "stardust",
+    "thumb": "assets/game-thumbs/stardust.webp",
     "cat": "Puzzle",
     "file": "stardust_collection.html",
     "title": "Stardust Constellation Rescue",
@@ -645,6 +673,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "critter-whack",
+    "thumb": "assets/game-thumbs/critter-whack.webp",
     "cat": "Action",
     "file": "critter-whack-page.html",
     "title": "Critter Whack: Ranger Sort",
@@ -667,33 +696,36 @@ window.JVDS_GAMES = [
   },
   {
     "id": "lumo-dash",
+    "thumb": "assets/game-thumbs/lumo-dash.webp",
+    "controlType": "Jump / slide",
     "cat": "Action",
     "file": "lumo-dash-page.html",
-    "title": "Lumo Dash: Pattern Trail",
-    "tag": "Pattern Memory · Reflexes",
+    "title": "Lumo's Dash",
+    "tag": "Endless Runner",
     "emoji": "🦊",
     "cover": "LumoDashCover.webp",
     "bg": "linear-gradient(135deg,#0f766e,#8b5cf6)",
     "kids": true,
-    "desc": "Copy glowing movement patterns across 6 named courses, dodge hazard gates and earn stars with Lumo.",
-    "age": "Ages 6-10",
-    "difficulty": "Medium",
+    "desc": "An endless runner starring Lumo the purple fox. Jump gaps and rocks, slide under branches and collect stardust as the forest speeds up.",
+    "age": "Ages 6-12",
+    "difficulty": "Easy to learn",
     "session": "3-5 min",
-    "controls": "Tap on-screen buttons in pattern order: left, jump, slide, right, dash",
-    "storyHook": "Lumo's Glow Garden has gone dark and the lantern gates need relighting.",
+    "controls": "Space/Up to jump, Down to slide, or tap and swipe on touch",
+    "storyHook": "Lumo the purple fox is dashing through the enchanted forest as the glow fades.",
     "character": "Lumo",
-    "objective": "Watch each glowing pattern and copy the moves in order to clear the course.",
-    "finishLine": "The garden glows again, Lumo bows and the next run is waiting.",
+    "objective": "Run as far as you can, jump and slide past every obstacle, and collect stardust.",
+    "finishLine": "The glow flickers out, but Lumo knows the forest path better for the next dash.",
     "arcadeSession": "3-5 min",
-    "description": "Help Lumo clear 6 glow courses: watch each pattern, copy the moves in order and keep your stars.",
+    "description": "Lumo the purple fox dashes through the enchanted forest. Jump gaps, rocks and logs, slide under low branches, and collect stardust while the world speeds up.",
     "players": "Solo",
     "status": "improved",
-    "learning": "Pattern memory · Reflexes · Gentle risk-taking",
-    "playPromise": "Watch the pattern, copy the moves in order and clear all 6 glow courses with stars to spare.",
-    "searchText": "Lumo Dash Glow Courses Pattern Memory Copy movement patterns hazard gates stars streaks Ages 6-10 educational improved learning"
+    "learning": "Reflexes · Timing · Pattern recognition",
+    "playPromise": "Jump, slide and grab stardust to see how far Lumo the purple fox can dash before the forest catches up.",
+    "searchText": "Lumo's Dash Lumo the purple fox endless runner side scroller jump slide stardust forest Ages 6-12 educational improved learning"
   },
   {
     "id": "nibble-quest",
+    "thumb": "assets/game-thumbs/nibble-quest.webp",
     "cat": "Action",
     "file": "nibble-quest-page.html",
     "title": "Nibble Quest: Route Planner",
@@ -721,6 +753,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "stack-attack",
+    "thumb": "assets/game-thumbs/stack-attack.webp",
     "cat": "Action",
     "file": "stack-attack-page.html",
     "title": "Stack Attack",
@@ -743,6 +776,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "echo-fruit",
+    "thumb": "assets/game-thumbs/echo-fruit.webp",
     "cat": "Chill",
     "file": "echo_fruit_catch.html",
     "title": "Echo's Fruit Catch: Rainbow Picnic",
@@ -765,6 +799,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "call-of-cards",
+    "thumb": "assets/game-thumbs/call-of-cards.webp",
     "cat": "Strategy",
     "file": "call_of_the_cards.html",
     "title": "Call of the Cards: Quest for the Crown",
@@ -787,6 +822,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "candy-kingdom",
+    "thumb": "assets/game-thumbs/candy-kingdom.webp",
     "file": "candy_kingdom.html",
     "title": "Candy Kingdom Adventure Online",
     "tag": "Kids TTRPG",
@@ -809,6 +845,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "biscuit-clicker",
+    "thumb": "assets/game-thumbs/biscuit-clicker.webp",
     "cat": "Chill",
     "file": "cozy-biscuit-clicker.html",
     "title": "Biscuit Tin Clicker",
@@ -831,6 +868,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "cozy-cafe-match",
+    "thumb": "assets/game-thumbs/cozy-cafe-match.webp",
     "cat": "Puzzle",
     "file": "cozy-cafe-match-game.html",
     "title": "Cozy Cafe Match",
@@ -853,6 +891,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "cozy-creatures",
+    "thumb": "assets/game-thumbs/cozy-creatures.webp",
     "cat": "Chill",
     "file": "cozy_creatures.html",
     "title": "Cozy Creatures: The Ultimate Snuggle",
@@ -875,6 +914,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "millionaire-quiz",
+    "thumb": "assets/game-thumbs/millionaire-quiz.webp",
     "cat": "Puzzle",
     "file": "millionaire-quiz.html",
     "title": "Quiz Quest",
@@ -897,6 +937,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "sky-high-friends",
+    "thumb": "assets/game-thumbs/sky-high-friends.webp",
     "cat": "Action",
     "file": "sky_high_with_friends.html",
     "title": "Sky High With Friends",
@@ -919,6 +960,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "echo-casebook",
+    "thumb": "assets/game-thumbs/echo-casebook.webp",
     "cat": "Puzzle",
     "file": "echo-casebook.html",
     "title": "Echo's Casebook: One Case",
@@ -941,6 +983,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "stardust-ruins",
+    "thumb": "assets/game-thumbs/stardust-ruins.webp",
     "cat": "Puzzle",
     "file": "stardust-ruins.html",
     "title": "Stardust Ruins: One Relic",
@@ -963,6 +1006,8 @@ window.JVDS_GAMES = [
   },
   {
     "id": "highway-dodge",
+    "thumb": "assets/game-thumbs/highway-dodge.webp",
+    "controlType": "Swipe / keys",
     "cat": "Action",
     "file": "highway-dodge.html",
     "title": "Highway Dodge",
@@ -986,31 +1031,9 @@ window.JVDS_GAMES = [
     "status": "improved"
   },
   {
-    "id": "lumo-run",
-    "cat": "Action",
-    "file": "lumo-run.html",
-    "title": "Lumo's Run",
-    "tag": "Endless Runner",
-    "emoji": "✨",
-    "bg": "linear-gradient(135deg,#0c1222,#7c3aed)",
-    "kids": false,
-    "desc": "An endless runner through an enchanted forest. Jump over gaps and rocks, slide under low branches, and collect stardust to keep running.",
-    "difficulty": "Easy to learn",
-    "session": "3-5 min",
-    "controls": "Space/Up to jump, Down to slide, or tap/swipe",
-    "objective": "Run as far as you can through the enchanted forest. Jump and slide past every obstacle.",
-    "age": "Ages 7-14",
-    "learning": "Reflexes · Timing · Pattern recognition",
-    "description": "Lumo the firefly runs through an enchanted night forest. Jump over gaps, rocks and logs, slide under low branches, and collect stardust while the world speeds up.",
-    "playPromise": "Jump, slide, collect stardust, and see how far Lumo can run before the forest catches up.",
-    "storyHook": "Lumo's glow is fading and the only way to recharge is to keep running through the enchanted forest.",
-    "character": "Lumo",
-    "finishLine": "The glow flickers out but Lumo knows the path better for the next run.",
-    "arcadeSession": "3-5 min",
-    "status": "improved"
-  },
-  {
     "id": "crossy-crew",
+    "thumb": "assets/game-thumbs/crossy-crew.webp",
+    "controlType": "Tap / swipe",
     "cat": "Action",
     "file": "crossy-crew.html",
     "title": "Crossy Crew",

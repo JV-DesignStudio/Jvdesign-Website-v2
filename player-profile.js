@@ -159,7 +159,18 @@ var WORKSHOP_KEY_TO_ID = {
     'jvds-unreal-fighter-v2': 'unreal-fighter-workshop',
     'jvds-unreal-multiplayer-v2': 'unreal-multiplayer-workshop',
     'jvds-unreal-top-down-v2': 'unreal-top-down-shooter',
-    'jvds-unreal-zombie-v2': 'unreal-zombie-survivor'
+    'jvds-unreal-zombie-v2': 'unreal-zombie-survivor',
+    'jvds-stardew-world-ep1-v2': 'stardew-world-ep1-setup',
+    'jvds-stardew-world-ep2-v2': 'stardew-world-ep2-mods-folder',
+    'jvds-stardew-world-ep3-v2': 'stardew-world-ep3-first-tile',
+    'jvds-stardew-world-ep4-v2': 'stardew-world-ep4-layers',
+    'jvds-stardew-world-ep5-v2': 'stardew-world-ep5-tile-properties',
+    'jvds-stardew-world-ep6-v2': 'stardew-world-ep6-build-and-decorate',
+    'jvds-stardew-world-ep7-v2': 'stardew-world-ep7-warps',
+    'jvds-stardew-world-ep8-v2': 'stardew-world-ep8-new-area',
+    'jvds-stardew-world-ep9-v2': 'stardew-world-ep9-package-mod',
+    'jvds-stardew-world-ep10-v2': 'stardew-world-ep10-troubleshoot',
+    'jvds-stardew-world-ep11-v2': 'stardew-world-ep11-play-share'
 };
 
 class PlayerProfile {

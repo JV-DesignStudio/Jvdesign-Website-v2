@@ -84,6 +84,18 @@ for (const f of MARKET_PAGES) {
   if (sm) add(`${f}: ${sm.length} un-replaced STAT marker(s) - run node build.js first`);
 }
 
+// 6) Catalogue pages must state the same count as marketing.json (A947). The games
+//    page curates its grid at runtime (standalone apps live elsewhere), so its
+//    advertised total is the marketing display; tools page states the tools display.
+const gamesHtml = read('pages/games.html');
+const gamesResult = (gamesHtml.match(/id="gameResultCount"[^>]*>\s*([^<]+?)\s*</) || [])[1] || '';
+const gamesShown = parseInt(gamesResult.replace(/[^0-9]/g, ''), 10);
+if (gamesShown !== parseInt(marketing.games.display.replace(/[^0-9]/g, ''), 10))
+  add(`pages/games.html: catalogue count "${gamesResult.trim()}" != marketing.games.display "${marketing.games.display}"`);
+const toolsHtml = read('pages/dev-tools.html');
+if (!toolsHtml.includes(marketing.tools.display))
+  add(`pages/dev-tools.html: does not state the tools count "${marketing.tools.display}"`);
+
 if (errors.length) {
   console.error(`\n✗ validate-stats: ${errors.length} issue(s):`);
   errors.forEach((e) => console.error('  - ' + e));
