@@ -4340,18 +4340,18 @@ window.JVDS_CONTENT = {
       "url": "/games/crypt-crawlers.html"
     },
     {
-      "id": "tiger-smash",
-      "title": "Tiger Smash: Angle Lab",
-      "tag": "Angles · Prediction",
+      "id": "ember-smash",
+      "title": "Ember Smash: Brick Forge",
+      "tag": "Reflex · Bounce",
       "emoji": "🐯",
       "category": "Action",
-      "cover": "TigerSmashCover.webp",
-      "bg": "linear-gradient(135deg,#2a1500,#4a2800)",
-      "desc": "Launch Tiger through jungle trick-shot arenas: drag to aim, predict the bounce, smash fruit targets, break crates, and earn stars.",
+      "cover": "EmberSmashCover.webp",
+      "bg": "linear-gradient(135deg,#3a0f22,#5a1230)",
+      "desc": "Ember's brick breaker: slide the forge paddle, keep the spark alive and smash glowing bricks through six forges.",
       "kids": true,
       "age": "Ages 8-12",
       "character": null,
-      "url": "/games/tiger_smash.html"
+      "url": "/games/ember-smash.html"
     },
     {
       "id": "dungeon-delve",
@@ -5357,7 +5357,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-09T16:38:54.635Z",
+    "generated": "2026-10-10T19:26:20.020Z",
     "workshops": 265,
     "games": 43,
     "tools": 37,

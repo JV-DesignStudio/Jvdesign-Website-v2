@@ -5,6 +5,8 @@
  * Nova Siege was made mobile-first and given an endless parallax space
  * background plus more enemies and bosses. This proves:
  *   - the page loads with no errors at 390 and 1440 and the canvas fits
+ *   - a real (trusted) tap on Play enters immersive/fullscreen and the play
+ *     field fills the phone width
  *   - dragging the play area moves the ship (mobile control)
  *   - the background has layered star groups scrolling at different speeds
  *     (far < mid < near), with nebulae and planets present
@@ -145,9 +147,24 @@ async function mobileDrag(browser, base) {
   const errors = watch(page);
   await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
   await page.goto(base + '/games/nova-siege.html', { waitUntil: 'load', timeout: 30000 });
-  await page.evaluate(() => { if (window.JVDSGameShell) window.JVDSGameShell.enter(); });
-  await page.evaluate(() => document.getElementById('startBtn').click());
-  await sleep(300);
+  // Drive the Play button with a real trusted click, exactly like a finger tap.
+  // The old version used a synthetic element.click() and called
+  // JVDSGameShell.enter() by hand, so it never noticed that the stage's
+  // pointerdown was eating the tap and fullscreen never happened for real users.
+  // webdriver is forced false here only so the shared shell runs its real
+  // (non-automation) path.
+  await page.evaluate(() => { try { Object.defineProperty(navigator, 'webdriver', { get: () => false }); } catch (e) {} });
+  await page.click('#startBtn');
+  await sleep(400);
+  const immersive = await page.evaluate(() => document.documentElement.classList.contains('jvds-immersive'));
+  check('mobile: tapping Play enters immersive/fullscreen mode', immersive);
+  const fill = await page.evaluate(() => {
+    const r = document.getElementById('cv').getBoundingClientRect();
+    return { w: Math.round(r.width), h: Math.round(r.height), vw: window.innerWidth, vh: window.innerHeight, ovf: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+  });
+  check('mobile: play field fills the phone width', fill.w >= fill.vw * 0.9, JSON.stringify(fill));
+  check('mobile: no horizontal overflow', fill.ovf <= 2, String(fill.ovf));
+
   const before = await page.evaluate(() => window.__nova.run.px);
   const box = await page.evaluate(() => {
     const s = document.querySelector('.stage-wrap').getBoundingClientRect();
@@ -162,8 +179,6 @@ async function mobileDrag(browser, base) {
   const after = await page.evaluate(() => window.__nova.run.px);
   await page.mouse.up();
   check('mobile: dragging the play area moves the ship', after > before + 20, before.toFixed(0) + '->' + after.toFixed(0));
-  const immersive = await page.evaluate(() => document.documentElement.classList.contains('jvds-immersive'));
-  check('mobile: play area fills the screen in immersive mode', immersive);
   check('mobile: no page errors', errors.length === 0, errors.join(' | '));
   await page.close();
 }

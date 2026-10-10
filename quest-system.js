@@ -395,17 +395,17 @@ const QUESTS = {
 
   'quest-23-tiger-collector': {
     id: 'quest-23-tiger-collector',
-    title: 'Tiger Collector',
-    description: 'Unlock 3 cosmetics in Tiger Smash.',
+    title: 'Ember Smash Champion',
+    description: 'Score 3,000 in a single Ember Smash run.',
     icon: '🐯',
-    gameId: 'tiger-smash',
+    gameId: 'ember-smash',
     category: 'gaming',
     difficulty: 'beginner',
     order: 23,
     requirements: [
-      { type: 'cosmetic-unlock-count', gameId: 'tiger-smash', minCount: 3 }
+      { type: 'game-score', gameId: 'ember-smash', minScore: 3000 }
     ],
-    rewards: { xp: 160, badge: '🐯 Tiger Collector', achievement: 'tigerCollector' }
+    rewards: { xp: 160, badge: '🐯 Ember Smash Champion', achievement: 'tigerCollector' }
   },
 
   'quest-24-pip-pixel-character': {

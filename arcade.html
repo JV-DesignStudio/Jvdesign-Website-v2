@@ -125,9 +125,9 @@
       <div class="arc-hero-speech">
         <strong>Your Play guides</strong>
         <span id="arcMascotLine">Echo brings the spark. Pip keeps it cosy.</span>        <div class="arc-route-grid" aria-label="Choose a first game">
-          <a href="games/pip_star_connect.html" class="arc-route"><b>🌙 Cosy &amp; curious</b><span>Connect stars with Pip and discover a calm first game.</span><em>Play Star Connect →</em></a>
-          <a href="games/paper-toss-deluxe.html" class="arc-route"><b>🎯 Quick challenge</b><span>Take one shot, tweak your aim, and try again.</span><em>Play Paper Toss →</em></a>
-          <a href="games/echo-casebook.html" class="arc-route"><b>🔎 Think it through</b><span>Follow clues with Echo and solve a small mystery.</span><em>Play Echo’s Casebook →</em></a>
+          <a href="games/play.html?g=star-connect" class="arc-route"><b>🌙 Cosy &amp; curious</b><span>Connect stars with Pip and discover a calm first game.</span><em>Play Star Connect →</em></a>
+          <a href="games/play.html?g=paper-toss" class="arc-route"><b>🎯 Quick challenge</b><span>Take one shot, tweak your aim, and try again.</span><em>Play Paper Toss →</em></a>
+          <a href="games/play.html?g=echo-casebook" class="arc-route"><b>🔎 Think it through</b><span>Follow clues with Echo and solve a small mystery.</span><em>Play Echo’s Casebook →</em></a>
         </div>
       </div>
     </div>
@@ -356,6 +356,10 @@
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // Every game opens on its cover page (games/play.html?g=id); the cover's
+  // Play button then drops into the game full screen. One flow for all games.
+  function playHref(g) { return 'games/play.html?g=' + encodeURIComponent(g.id); }
+
   function fmtAgo(ts) {
     if (!ts) return '';
     var s = Math.floor((Date.now() - ts) / 1000);
@@ -579,7 +583,7 @@
     if (!pick) return;
     buzz(10);
     celebrate('🎲 The dice say… ' + pick.title);
-    setTimeout(function () { location.href = 'games/' + pick.file; }, 550);
+    setTimeout(function () { location.href = playHref(pick); }, 550);
   }
 
   /* ── HOME ─────────────────────────────────────────────────── */
@@ -641,7 +645,7 @@
 
     document.getElementById('continueRail').innerHTML = recent.map(function (p) {
       var when = fmtAgo(p.save.last);
-      return '<a href="games/' + p.game.file + '">' +
+      return '<a href="' + playHref(p.game) + '">' +
                '<div class="art" style="background:' + p.game.bg + '">' + artHTML(p.game) + '</div>' +
                '<div class="lab"><b>' + esc(p.game.title) + '</b>' +
                '<span>' + (when ? when + ' · ' : '') + fmt(p.save.high) + ' best</span></div>' +
@@ -665,7 +669,7 @@
 
     wrap.innerHTML = '<div class="scores">' + ranked.map(function (p, i) {
       var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (i + 1);
-      return '<a class="srow" href="games/' + p.game.file + '">' +
+      return '<a class="srow" href="' + playHref(p.game) + '">' +
                '<div class="rk' + (i < 3 ? ' top' : '') + '">' + medal + '</div>' +
                '<div class="nm"><b>' + esc(p.game.title) + '</b>' +
                '<span>' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') +
@@ -839,7 +843,7 @@
       if (!g) return '';
       var s = smap[g.id] || {};
       var state = s.plays > 0 ? fmt(s.high || 0) + ' best' : 'Start';
-      return '<a class="start-card" href="games/' + esc(g.file) + '">' +
+      return '<a class="start-card" href="' + playHref(g) + '">' +
         '<span class="start-icon">' + p[0] + '</span>' +
         '<b>' + esc(p[1]) + '</b>' +
         '<strong>' + esc(g.title) + '</strong>' +
@@ -945,7 +949,7 @@
       var plays = (s && s.plays > 0)
         ? s.plays + ' play' + (s.plays === 1 ? '' : 's')
         : 'Not played yet';
-      return '<a class="card" href="games/' + g.file + '">' +
+      return '<a class="card" href="' + playHref(g) + '">' +
                '<div class="art" style="background:' + g.bg + '">' +
                  artHTML(g) + best + kid + info +
                '</div>' +
@@ -1069,7 +1073,7 @@
     wrap.innerHTML = '<div class="scores">' +
       played.sort(function (a, b) { return b.save.plays - a.save.plays; })
             .map(function (p) {
-        return '<a class="srow" href="games/' + p.game.file + '">' +
+        return '<a class="srow" href="' + playHref(p.game) + '">' +
                  '<div class="rk">' + (p.game.emoji || '🎮') + '</div>' +
                  '<div class="nm"><b>' + esc(p.game.title) + '</b>' +
                  '<span>' + p.save.plays + ' play' + (p.save.plays === 1 ? '' : 's') + '</span></div>' +
@@ -1356,7 +1360,7 @@
   document.getElementById('detailClose').addEventListener('click', closeDetail);
   detailBackdrop.addEventListener('click', closeDetail);
   document.getElementById('detailPlayBtn').addEventListener('click', function () {
-    if (currentDetail) { buzz(8); location.href = 'games/' + currentDetail.file; }
+    if (currentDetail) { buzz(8); location.href = playHref(currentDetail); }
   });
   document.getElementById('detailResetBtn').addEventListener('click', function () {
     if (!currentDetail) return;

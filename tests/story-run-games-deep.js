@@ -32,7 +32,7 @@ const GAMES = [
   { file: 'lumo_firefly_night.html', id: 'lumo-firefly', character: 'Lumo' },
   { file: 'voidrush.html', id: 'void-rush', character: 'Echo' },
   { file: 'crypt-crawlers.html', id: 'crypt-crawlers', character: 'Ember' },
-  { file: 'tiger_smash.html', id: 'tiger-smash', character: 'Ember' },
+  { file: 'ember-smash.html', id: 'ember-smash', character: 'Ember' },
   { file: 'little_steps.html', id: 'little-steps', character: 'Echo' },
   { file: 'critter-whack.html', id: 'critter-whack', character: 'Echo' },
   { file: 'lumo-dash.html', id: 'lumo-dash', character: 'Lumo' },

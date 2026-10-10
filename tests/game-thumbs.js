@@ -77,8 +77,8 @@ async function browserChecks(browser, base, width) {
   await page.evaluate(() => { const b = document.querySelector('[data-goto="play"]'); if (b) b.click(); });
   await sleep(600);
   for (const g of FLAGSHIPS) {
-    const info = await page.evaluate(href => {
-      const card = document.querySelector('.card[href="games/' + href + '"]');
+    const info = await page.evaluate(id => {
+      const card = document.querySelector('.card[href*="g=' + id + '"]');
       if (!card) return { card: false };
       const img = card.querySelector('.art img');
       const badge = card.querySelector('.mini-badge.controls');
@@ -87,7 +87,7 @@ async function browserChecks(browser, base, width) {
         src: img ? img.getAttribute('src') : null,
         controls: badge ? badge.textContent : null
       };
-    }, g.file);
+    }, g.id);
     check(width + ' ' + g.id + ': card renders', info.card);
     check(width + ' ' + g.id + ': card art uses the gameplay thumbnail',
       !!info.src && info.src.indexOf('game-thumbs/' + g.id + '.webp') >= 0, String(info.src));

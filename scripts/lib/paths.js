@@ -44,8 +44,10 @@ const EXCLUDE_FILES = new Set([
 ]);
 
 const GAME_ORPHANS = [
-  'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/lumo-run.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html'
+  'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/lumo-run.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html','games/tiger_smash.html','games/play.html'
   // lumo-run.html is a noindex redirect to lumo-dash.html (A967 consolidation).
+  // tiger_smash.html is a noindex redirect to ember-smash.html (Ember Smash, A980).
+  // play.html is the shared Arcade cover/launcher (noindex), not a curated game.
   // echo-casebook.html and stardust-ruins.html removed - they are curated games in content/games.json
 ];
 

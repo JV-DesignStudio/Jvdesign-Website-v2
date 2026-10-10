@@ -21,7 +21,7 @@ const dashBlock = registry.slice(dashStart - 50, dashStart + 2500);
 const hub = read('pages/games.html');
 const skyCard = hub.slice(hub.indexOf('Sky High With Friends') - 600, hub.indexOf('Sky High With Friends') + 400);
 const dashCard = hub.slice(hub.indexOf('<h3 class="game-title">Lumo Dash</h3>') - 300, hub.indexOf('<h3 class="game-title">Lumo Dash</h3>') + 400);
-const tigerCard = hub.slice(hub.indexOf('<h3 class="game-title">Tiger Smash</h3>') - 300, hub.indexOf('<h3 class="game-title">Tiger Smash</h3>') + 400);
+const emberCard = hub.slice(hub.indexOf('<h3 class="game-title">Ember Smash</h3>') - 300, hub.indexOf('<h3 class="game-title">Ember Smash</h3>') + 400);
 const dungeonCard = hub.slice(hub.indexOf('<h3 class="game-title">Dungeon Delve</h3>') - 300, hub.indexOf('<h3 class="game-title">Dungeon Delve</h3>') + 400);
 const wrapper = read('games/lumo-dash-page.html');
 const gameHtml = read('games/sky_high_with_friends.html');
@@ -48,9 +48,9 @@ for (const banned of ['endless', 'coin', 'cacti']) {
   ok('hub lumo-dash card bans "' + banned + '"', !dashCard.toLowerCase().includes(banned), 'found in hub card');
 }
 
-// 3. Hub cards: Tiger Smash stars Roar (not Squirt); Dungeon Delve is clue routes (not procedural).
-ok('hub tiger-smash names Roar', /roar/i.test(tigerCard));
-ok('hub tiger-smash bans Squirt', !/squirt/i.test(tigerCard), 'Squirt is the Sky High axolotl');
+// 3. Hub cards: Ember Smash stars Ember (not Squirt); Dungeon Delve is clue routes (not procedural).
+ok('hub ember-smash names Ember', /ember/i.test(emberCard));
+ok('hub ember-smash bans Squirt', !/squirt/i.test(emberCard), 'Squirt is the Sky High axolotl');
 ok('hub dungeon-delve bans procedural', !/procedural/i.test(dungeonCard), 'routes are clue-chosen, not generated');
 ok('hub dungeon-delve mentions clues', /clue/i.test(dungeonCard));
 
