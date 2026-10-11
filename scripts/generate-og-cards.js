@@ -93,6 +93,23 @@ const CARDS = [
   { page: 'tools/quest-board-page.html',  slug: 'tool-questlog',   title: 'QuestLog',          tag: 'Turn tasks & habits into an RPG. Earn XP, level up.',accent: '#8a5cf0', emoji: '⚔️', eyebrow: 'Free RPG App' },
   { page: 'tools/quest-board.html',       slug: 'tool-questboard', title: 'Quest Board RPG',   tag: 'Turn daily tasks into quests. Defeat boss challenges.',accent: '#8a5cf0', emoji: '🛡️', eyebrow: 'Free RPG App' },
 
+  // ── Workshops ──
+  { page: 'workshops/terraria-world-workshop.html', slug: 'terraria-world-workshop', title: 'Terraria World Workshop', tag: 'Build, shape and share your own Terraria world in TEdit.', accent: '#2e7d32', emoji: '🌳', eyebrow: 'JVDesignStudio Workshop · Terraria' },
+  { page: 'workshops/minecraft-world-workshop.html', slug: 'minecraft-world-workshop', title: 'Minecraft World Workshop', tag: 'Design a crafting recipe and a datapack in your browser.', accent: '#4f8a2c', emoji: '⛏️', eyebrow: 'JVDesignStudio Workshop · Minecraft' },
+  { page: 'workshops/minecraft-mod-studio.html', slug: 'minecraft-mod-studio', title: 'Minecraft Mod Studio', tag: 'Build a crafting recipe and a datapack, then download it.', accent: '#4f8a2c', emoji: '🛠️', eyebrow: 'JVDesignStudio Studio · Minecraft' },
+  { page: 'workshops/roblox-mod-studio.html', slug: 'roblox-mod-studio', title: 'Roblox Mod Studio', tag: 'Lay out an obby, add Lua scripts and download a .rbxmx model.', accent: '#3b82f6', emoji: '🛠️', eyebrow: 'JVDesignStudio Studio · Roblox' },
+  { page: 'workshops/openrct2-world-workshop.html', slug: 'openrct2-world-workshop', title: 'OpenRCT2 World Workshop', tag: 'Mod your own theme park with Python and JavaScript.', accent: '#d94f3d', emoji: '🎢', eyebrow: 'JVDesignStudio Workshop · OpenRCT2' },
+  { page: 'workshops/openrct2-world-ep1-setup.html', slug: 'openrct2-world-ep1-setup', title: 'OpenRCT2 Ep 1: Get Set Up', tag: 'Install OpenRCT2 and run your first plugin.', accent: '#d94f3d', emoji: '🎢', eyebrow: 'JVDesignStudio Workshop · OpenRCT2' },
+  { page: 'workshops/mugen-world-workshop.html', slug: 'mugen-world-workshop', title: 'MUGEN World Workshop', tag: 'Build your own fighter, stage and game.', accent: '#d32f2f', emoji: '🥊', eyebrow: 'JVDesignStudio Workshop · MUGEN' },
+  { page: 'workshops/mugen-mod-studio.html', slug: 'mugen-mod-studio', title: 'MUGEN Mod Studio', tag: 'Fill in a fighter def and a stage, then download it.', accent: '#d32f2f', emoji: '🥊', eyebrow: 'JVDesignStudio Studio · MUGEN' },
+  { page: 'workshops/blender-world-workshop.html', slug: 'blender-world-workshop', title: 'Blender World Workshop', tag: 'Model, rig, animate and light your first 3D scene.', accent: '#ff70b8', emoji: '🎨', eyebrow: 'JVDesignStudio Workshop · Blender' },
+  { page: 'workshops/godot-world-workshop.html', slug: 'godot-world-workshop', title: 'Godot World Workshop', tag: 'Build a platformer, a racer and a 3D level in Godot.', accent: '#478cbf', emoji: '🐙', eyebrow: 'JVDesignStudio Workshop · Godot' },
+  { page: 'workshops/godot-mod-studio.html', slug: 'godot-mod-studio', title: 'Godot Mod Studio', tag: 'Lay out a scene, add GDScript and download a Godot project.', accent: '#478cbf', emoji: '🛠️', eyebrow: 'JVDesignStudio Studio · Godot' },
+  { page: 'workshops/python-world-workshop.html', slug: 'python-world-workshop', title: 'Python World Workshop', tag: 'Build seven Python games, step by step.', accent: '#3776ab', emoji: '🐍', eyebrow: 'JVDesignStudio Workshop · Python' },
+  { page: 'workshops/python-mod-studio.html', slug: 'python-mod-studio', title: 'Python Mod Studio', tag: 'Lay out a level, add Pygame and download a real main.py.', accent: '#3776ab', emoji: '🛠️', eyebrow: 'JVDesignStudio Studio · Python' },
+  { page: 'workshops/cpp-world-workshop.html', slug: 'cpp-world-workshop', title: 'C++ World Workshop', tag: 'Build seven C++ games with SFML, step by step.', accent: '#00599c', emoji: '⚙️', eyebrow: 'JVDesignStudio Workshop · C++' },
+  { page: 'workshops/cpp-mod-studio.html', slug: 'cpp-mod-studio', title: 'C++ Mod Studio', tag: 'Lay out a level, add SFML and download a real C++ project.', accent: '#00599c', emoji: '🛠️', eyebrow: 'JVDesignStudio Studio · C++' },
+
   // ── Utility ──
   { page: '404.html',     slug: 'sys-404',     title: 'Lost in the Meadow', tag: 'Find your way back to books, games & adventures.', accent: '#6BCB77', emoji: '🌿', eyebrow: 'Page Not Found' },
   { page: 'offline.html', slug: 'sys-offline', title: "You're Offline",     tag: 'Reconnect to reach games, books & tools.',        accent: '#636e72', emoji: '📡', eyebrow: 'Offline' },
@@ -160,19 +177,25 @@ function wire(pageRel, url) {
 
 (async () => {
   if (!fs.existsSync(OGDIR)) fs.mkdirSync(OGDIR);
+  // Optional: --only=<slug> redraws and rewires a single card, so adding one
+  // page does not force a full 350-card re-render (which can wobble PNG bytes).
+  const onlyArg = (process.argv.find(a => a.startsWith('--only=')) || '').split('=')[1] || null;
+  const cards = onlyArg ? CARDS.filter(g => g.slug === onlyArg) : CARDS;
+  const art = onlyArg ? [] : ART;
+  if (onlyArg && cards.length === 0) { console.error(`No card with slug "${onlyArg}".`); process.exit(1); }
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const page = await browser.newPage();
   await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 1 });
-  for (const g of CARDS) {
+  for (const g of cards) {
     await page.setContent(html(g), { waitUntil: 'load' });
     await new Promise(r => setTimeout(r, 300));
     await page.screenshot({ path: path.join(OGDIR, `${g.slug}.png`), type: 'png', clip: { x: 0, y: 0, width: 1200, height: 630 } });
   }
   await browser.close();
-  console.log(`Generated ${CARDS.length} cards → og/`);
+  console.log(`Generated ${cards.length} cards → og/`);
 
   let wired = 0;
-  for (const g of CARDS) if (wire(g.page, OG + g.slug + '.png')) wired++;
-  for (const a of ART)   if (wire(a.page, a.url)) wired++;
-  console.log(`Wired ${wired}/${CARDS.length + ART.length} pages.`);
+  for (const g of cards) if (wire(g.page, OG + g.slug + '.png')) wired++;
+  for (const a of art)   if (wire(a.page, a.url)) wired++;
+  console.log(`Wired ${wired}/${cards.length + art.length} pages.`);
 })();

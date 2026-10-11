@@ -68,7 +68,8 @@ function generateWorkshops() {
       'gdevelop': 'GDevelop', 'defold': 'Defold', 'java-': 'Java',
       'gml': 'GML/GameMaker', 'pico8': 'PICO-8', 'blender': 'Blender',
       'mugen': 'MUGEN', 'tinkercad': 'TinkerCAD', 'minecraft': 'Minecraft',
-      'openrct2': 'OpenRCT2', 'stardew': 'Stardew Valley'
+      'openrct2': 'OpenRCT2', 'stardew': 'Stardew Valley',
+      'terraria': 'Terraria'
     };
     for (const [prefix, eng] of Object.entries(prefixes)) {
       if (slug.startsWith(prefix)) { engine = eng; break; }

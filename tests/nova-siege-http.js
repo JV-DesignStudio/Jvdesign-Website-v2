@@ -7,7 +7,15 @@
  *   - the page loads with no errors at 390 and 1440 and the canvas fits
  *   - a real (trusted) tap on Play enters immersive/fullscreen and the play
  *     field fills the phone width
- *   - dragging the play area moves the ship (mobile control)
+ *   - dragging the play area moves the ship on both X and Y (mobile control),
+ *     arrow keys still move it, and in immersive mode the redundant DOM stat
+ *     grid is hidden while the field is tall (>=640) with no overflow
+ *   - at dpr 3 the render scale fills the whole HiDPI backing store (guards the
+ *     transform-reset bug that drew the game into a small top-left square)
+ *   - progression: an equipped hull's bonus applies (Verdant +1 health), a
+ *     SHIELD star grants a shield bubble, and every premium hull has a perk
+ *   - juice: kills build a combo that multiplies score, caps at x3, resets on
+ *     a hit, and the boss exposes a fire timer for its attack telegraph
  *   - the background has layered star groups scrolling at different speeds
  *     (far < mid < near), with nebulae and planets present
  *   - the three new enemy types can spawn and the boss cycles through all
@@ -145,7 +153,7 @@ async function content(browser, base) {
 async function mobileDrag(browser, base) {
   const page = await browser.newPage();
   const errors = watch(page);
-  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 3 });
   await page.goto(base + '/games/nova-siege.html', { waitUntil: 'load', timeout: 30000 });
   // Drive the Play button with a real trusted click, exactly like a finger tap.
   // The old version used a synthetic element.click() and called
@@ -163,23 +171,119 @@ async function mobileDrag(browser, base) {
     return { w: Math.round(r.width), h: Math.round(r.height), vw: window.innerWidth, vh: window.innerHeight, ovf: document.documentElement.scrollWidth - document.documentElement.clientWidth };
   });
   check('mobile: play field fills the phone width', fill.w >= fill.vw * 0.9, JSON.stringify(fill));
+  check('mobile: field is taller than the old board (>=640)', fill.h >= 640, JSON.stringify(fill));
   check('mobile: no horizontal overflow', fill.ovf <= 2, String(fill.ovf));
+  const hudHidden = await page.evaluate(() => {
+    const h = document.querySelector('.hud');
+    return !!h && getComputedStyle(h).display === 'none';
+  });
+  check('mobile: redundant DOM stat grid hidden in immersive mode', hudHidden);
+  // HiDPI: render() must re-apply the logical -> backing-store scale every frame.
+  // If it resets to identity, the whole game draws into the top-left corner at a
+  // fraction of the element (the "small square" bug) on any dpr>1 phone.
+  const fit = await page.evaluate(() => {
+    const c = document.getElementById('cv');
+    return { scale: window.__nova.scale, lw: window.__nova.lw, lh: window.__nova.lh, cvw: c.width, cvh: c.height };
+  });
+  check('mobile: render scale fills the HiDPI backing store', Math.abs(fit.scale * fit.lw - fit.cvw) <= 1 && Math.abs(fit.scale * fit.lh - fit.cvh) <= 1, JSON.stringify(fit));
 
-  const before = await page.evaluate(() => window.__nova.run.px);
+  const before = await page.evaluate(() => ({ px: window.__nova.run.px, py: window.__nova.run.py }));
   const box = await page.evaluate(() => {
     const s = document.querySelector('.stage-wrap').getBoundingClientRect();
     return { x: s.left, y: s.top, w: s.width, h: s.height };
   });
-  // drag from left to right across the play area, holding so the ship eases over
-  const y = box.y + box.h * 0.6;
-  await page.mouse.move(box.x + box.w * 0.25, y);
+  // one continuous touch: drag right, then up, to prove the ship flies on both axes
+  await page.mouse.move(box.x + box.w * 0.25, box.y + box.h * 0.72);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.w * 0.8, y, { steps: 6 });
-  await sleep(600);
-  const after = await page.evaluate(() => window.__nova.run.px);
+  await page.mouse.move(box.x + box.w * 0.8, box.y + box.h * 0.72, { steps: 6 });
+  await sleep(500);
+  const afterX = await page.evaluate(() => window.__nova.run.px);
+  await page.mouse.move(box.x + box.w * 0.8, box.y + box.h * 0.32, { steps: 8 });
+  await sleep(500);
+  const afterY = await page.evaluate(() => window.__nova.run.py);
   await page.mouse.up();
-  check('mobile: dragging the play area moves the ship', after > before + 20, before.toFixed(0) + '->' + after.toFixed(0));
+  check('mobile: dragging the play area moves the ship on the X axis', afterX > before.px + 20, before.px.toFixed(0) + '->' + afterX.toFixed(0));
+  check('mobile: dragging the play area moves the ship on the Y axis', afterY < before.py - 20, before.py.toFixed(0) + '->' + afterY.toFixed(0));
+
+  // keyboard still works alongside touch
+  const kp = await page.evaluate(() => window.__nova.run.px);
+  await page.keyboard.down('ArrowLeft');
+  await sleep(220);
+  await page.keyboard.up('ArrowLeft');
+  const kp2 = await page.evaluate(() => window.__nova.run.px);
+  check('mobile: arrow keys still move the ship', kp2 < kp - 5, kp.toFixed(0) + '->' + kp2.toFixed(0));
   check('mobile: no page errors', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
+async function progression(browser, base) {
+  const page = await browser.newPage();
+  const errors = watch(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/nova-siege.html', { waitUntil: 'load', timeout: 30000 });
+  // Equip the Verdant hull (index 2) then start: its +1 health bonus must apply.
+  await page.evaluate(() => { window.__nova.meta.hull = 2; });
+  await page.evaluate(() => document.getElementById('startBtn').click());
+  await sleep(300);
+  const hp = await page.evaluate(() => window.__nova.run.health);
+  check('progression: equipped hull bonus applies (Verdant +1 health = 4)', hp === 4, 'hp=' + hp);
+
+  // A SHIELD star must grant a shield bubble (it used to do nothing).
+  await page.evaluate(() => {
+    const r = window.__nova.run;
+    r.shield = 0;
+    r.drops.push({ x: r.px, y: r.py, type: 'power', w: 'shield', label: 'SHIELD', c: '#4cc9f0' });
+  });
+  await sleep(350);
+  const shield = await page.evaluate(() => window.__nova.run.shield);
+  check('progression: SHIELD power-up grants a shield bubble', shield >= 1, 'shield=' + shield);
+
+  // Every premium hull advertises a perk and a non-empty mechanical bonus.
+  const hulls = await page.evaluate(() => window.__nova.hulls.map(h => ({ n: h.name, perk: h.perk, bonus: h.bonus })));
+  const premiumOk = hulls.slice(1).every(h => h.perk && h.bonus && Object.keys(h.bonus).length >= 1);
+  check('progression: every premium hull has a real perk and bonus', premiumOk, JSON.stringify(hulls));
+
+  // The title graphic must come back on a new run (it used to stay display:none).
+  await page.evaluate(() => window.__nova.forceEnd());
+  await sleep(200);
+  await page.evaluate(() => document.getElementById('startBtn').click());
+  await sleep(200);
+  const titleShown = await page.evaluate(() => getComputedStyle(document.getElementById('titleFont')).display !== 'none');
+  check('progression: title graphic restored on a new run', titleShown);
+  check('progression: no page errors', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
+async function juice(browser, base) {
+  const page = await browser.newPage();
+  const errors = watch(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/nova-siege.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => document.getElementById('startBtn').click());
+  await sleep(300);
+  // Spawn three easy kills right in the player's firing line.
+  await page.evaluate(() => {
+    const n = window.__nova, r = n.run;
+    r.combo = 0;
+    for (let i = 0; i < 3; i++) {
+      r.enemies.push({ kind: 'ufo', pattern: 'straight', x: r.px + (i - 1) * 6, y: r.py - 70 - i * 14, vy: 0.05, t: 0, hp: 1, r: n.sprites.ufo.width, spr: n.sprites.ufo, dir: 1, amp: 0, freq: 0, fire: 999 });
+    }
+  });
+  await sleep(1400);
+  const combo = await page.evaluate(() => window.__nova.combo);
+  check('juice: kills build a combo', combo >= 2, 'combo=' + combo);
+
+  const mult = await page.evaluate(() => { window.__nova.run.combo = 20; return window.__nova.comboMult; });
+  check('juice: combo multiplier caps at 3', mult === 3, 'mult=' + mult);
+
+  await page.evaluate(() => { window.__nova.run.combo = 7; window.__nova.forceEnd(); });
+  const afterHit = await page.evaluate(() => window.__nova.combo);
+  check('juice: combo resets after a hit', afterHit === 0, 'combo=' + afterHit);
+
+  await page.evaluate(() => window.__nova.forceBoss());
+  const bossFire = await page.evaluate(() => window.__nova.bossFire);
+  check('juice: boss exposes a fire timer for its telegraph', typeof bossFire === 'number', 'bossFire=' + bossFire);
+  check('juice: no page errors', errors.length === 0, errors.join(' | '));
   await page.close();
 }
 
@@ -189,6 +293,8 @@ async function mobileDrag(browser, base) {
     await parallax(browser, base);
     await content(browser, base);
     await mobileDrag(browser, base);
+    await progression(browser, base);
+    await juice(browser, base);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL NOVA SIEGE CHECKS PASSED');
   process.exit(failures ? 1 : 0);

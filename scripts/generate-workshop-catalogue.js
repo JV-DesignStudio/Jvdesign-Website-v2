@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /*
- * scripts/generate-workshop-catalogue.js (A799)
+ * scripts/generate-workshop-catalogue.js (A799, A1340)
  *
- * Renders the Complete Catalogue section of pages/workshop.html from
- * content/workshops.json so every workshop is linked from the hub.
+ * Renders the data-driven blocks of pages/workshop.html from
+ * content/workshops.json so every workshop is linked from the hub:
+ *   1. Browse by engine  (BROWSE:START / BROWSE:END)
+ *   2. Complete catalogue (CATALOGUE:START / CATALOGUE:END)
  * Cards carry data-engine / data-difficulty / data-age for the hub filters.
  * Run: node scripts/generate-workshop-catalogue.js
  * Check only (CI): node scripts/generate-workshop-catalogue.js --check
@@ -16,6 +18,8 @@ const DATA = path.join(ROOT, 'content', 'workshops.json');
 const HUB = path.join(ROOT, 'pages', 'workshop.html');
 const START = '<!-- CATALOGUE:START -->';
 const END = '<!-- CATALOGUE:END -->';
+const BROWSE_START = '<!-- BROWSE:START -->';
+const BROWSE_END = '<!-- BROWSE:END -->';
 
 const esc = (s) => String(s == null ? '' : s)
   .replace(/&/g, '&amp;')
@@ -24,6 +28,30 @@ const esc = (s) => String(s == null ? '' : s)
   .replace(/"/g, '&quot;');
 
 const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
+const ENGINE_META = {
+  'Scratch': { emoji: '🐱', color: '#FF7700' },
+  'Roblox': { emoji: '🟦', color: '#00A2FF' },
+  'Minecraft': { emoji: '⛏️', color: '#62b847' },
+  'Godot': { emoji: '🤖', color: '#478cbf' },
+  'Unity': { emoji: '🎲', color: '#5bc0f8' },
+  'Unreal': { emoji: '🔵', color: '#313131' },
+  'JavaScript': { emoji: '⚡', color: '#f7df1e' },
+  'Python': { emoji: '🐍', color: '#3776ab' },
+  'C++': { emoji: '🔧', color: '#00599c' },
+  'Java': { emoji: '☕', color: '#f89820' },
+  'GML/GameMaker': { emoji: '🕹️', color: '#a1c42a' },
+  'GDevelop': { emoji: '🎯', color: '#00bfa5' },
+  'Defold': { emoji: '⚙️', color: '#2196F3' },
+  'PICO-8': { emoji: '🎮', color: '#ff004d' },
+  'Blender': { emoji: '🎨', color: '#e8833a' },
+  'TinkerCAD': { emoji: '🖨️', color: '#f2637a' },
+  'MUGEN': { emoji: '🥊', color: '#BC4749' },
+  'OpenRCT2': { emoji: '🎢', color: '#c98a2e' },
+  'Stardew Valley': { emoji: '🌾', color: '#8bc34a' },
+  'Terraria': { emoji: '🌳', color: '#7cb342' },
+  'General': { emoji: '🧭', color: '#70A3A7' }
+};
 
 function card(e) {
   const href = '../' + String(e.url).replace(/^\//, '');
@@ -58,19 +86,66 @@ function section(entries) {
     + '</section>';
 }
 
+function browse(entries) {
+  const counts = new Map();
+  for (const e of entries) counts.set(e.engine, (counts.get(e.engine) || 0) + 1);
+  const engines = [...counts.keys()].sort((a, b) => {
+    if (a === 'General') return 1;
+    if (b === 'General') return -1;
+    return counts.get(b) - counts.get(a) || a.localeCompare(b);
+  });
+  const tiles = engines.map((eng) => {
+    const meta = ENGINE_META[eng] || { emoji: '🎮', color: '#70A3A7' };
+    const n = counts.get(eng);
+    return '      <button type="button" class="ws-engine-tile" data-engine="' + esc(eng) + '"'
+      + ' style="--eng-color:' + meta.color + '"'
+      + ' aria-label="Show ' + esc(eng) + ' workshops">\n'
+      + '        <span class="ws-engine-emoji" aria-hidden="true">' + meta.emoji + '</span>\n'
+      + '        <span class="ws-engine-name">' + esc(eng) + '</span>\n'
+      + '        <span class="ws-engine-count">' + n + (n === 1 ? ' workshop' : ' workshops') + '</span>\n'
+      + '      </button>';
+  }).join('\n');
+  return '<section class="ws-browse" id="browse-engines" aria-labelledby="ws-browse-title">\n'
+    + '  <div class="ws-browse-inner">\n'
+    + '    <div class="ws-browse-head">\n'
+    + '      <span class="ws-browse-tag">Browse by tool</span>\n'
+    + '      <h2 id="ws-browse-title">Pick the tool you want to learn</h2>\n'
+    + '      <p>Tap a tool to jump straight to its workshops in the catalogue below.</p>\n'
+    + '    </div>\n'
+    + '    <div class="ws-engine-grid">\n'
+    + tiles + '\n'
+    + '    </div>\n'
+    + '  </div>\n'
+    + '</section>';
+}
+
+function splice(html, startMarker, endMarker, want) {
+  if (!html.includes(startMarker) || !html.includes(endMarker)) return null;
+  const have = html.slice(html.indexOf(startMarker), html.indexOf(endMarker) + endMarker.length);
+  return { have, want, html: html.slice(0, html.indexOf(startMarker)) + want + html.slice(html.indexOf(endMarker) + endMarker.length) };
+}
+
 function generate({ checkOnly = false } = {}) {
   const entries = JSON.parse(fs.readFileSync(DATA, 'utf8'));
-  const want = START + '\n' + section(entries) + '\n' + END;
   let html = fs.readFileSync(HUB, 'utf8');
-  if (!html.includes(START) || !html.includes(END)) {
-    throw new Error('catalogue markers missing in pages/workshop.html');
+  let changed = false;
+
+  const blocks = [
+    [BROWSE_START, BROWSE_END, BROWSE_START + '\n' + browse(entries) + '\n' + BROWSE_END],
+    [START, END, START + '\n' + section(entries) + '\n' + END]
+  ];
+
+  for (const [s, e, want] of blocks) {
+    const res = splice(html, s, e, want);
+    if (!res) throw new Error('markers missing in pages/workshop.html: ' + s);
+    if (res.have !== want) {
+      changed = true;
+      if (!checkOnly) html = res.html;
+    }
   }
-  const have = html.slice(html.indexOf(START), html.indexOf(END) + END.length);
-  if (have === want) return { changed: false, count: entries.length };
-  if (checkOnly) return { changed: true, count: entries.length };
-  html = html.slice(0, html.indexOf(START)) + want + html.slice(html.indexOf(END) + END.length);
-  fs.writeFileSync(HUB, html);
-  return { changed: true, count: entries.length };
+
+  if (changed && !checkOnly) fs.writeFileSync(HUB, html);
+  return { changed, count: entries.length };
 }
 
 function main() {
@@ -78,15 +153,15 @@ function main() {
   const { changed, count } = generate({ checkOnly });
   if (checkOnly) {
     if (changed) {
-      console.log('  [FAIL] catalogue drift: regenerate with node scripts/generate-workshop-catalogue.js');
+      console.log('  [FAIL] catalogue/browse drift: regenerate with node scripts/generate-workshop-catalogue.js');
       process.exit(1);
     }
-    console.log('  [PASS] catalogue in sync (' + count + ' cards)');
+    console.log('  [PASS] catalogue + browse in sync (' + count + ' cards)');
     return;
   }
   console.log(changed
-    ? '  [OK] catalogue wrote ' + count + ' cards into pages/workshop.html'
-    : '  [PASS] catalogue already in sync (' + count + ' cards)');
+    ? '  [OK] wrote catalogue + browse blocks for ' + count + ' workshops into pages/workshop.html'
+    : '  [PASS] catalogue + browse already in sync (' + count + ' cards)');
 }
 
 if (require.main === module) main();

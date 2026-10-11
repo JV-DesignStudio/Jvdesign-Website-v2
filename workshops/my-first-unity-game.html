@@ -157,6 +157,52 @@
   <div class="stat"><div class="stat-num">Free</div><div class="stat-label">Always</div></div>
 </div>
 
+<section style="max-width:960px;margin:18px auto 0;padding:0 24px;">
+  <div style="border:1.5px solid rgba(91,192,248,.35);border-radius:16px;padding:18px 20px;background:rgba(91,192,248,.06)">
+    <div style="font-family:'Fredoka','Baloo 2',cursive;font-size:1.1rem;color:#5bc0f8;margin-bottom:8px">⏱️ Your first 15 minutes (no install)</div>
+    <ol style="margin:0;padding-left:22px;font-size:.9rem;color:rgba(240,234,214,.78);line-height:1.7">
+      <li>Open <a href="unity-pong-workshop.html" style="color:#5bc0f8;font-weight:700">Episode 1: Pong</a>. The live game preview runs right in your browser, so you can start with nothing installed.</li>
+      <li>Complete step 1 in the builder and watch the live canvas update as you fill in the blanks.</li>
+      <li>When you are ready to build for real, install Unity Hub and the free Unity Editor once, with a grown-up the first time.</li>
+      <li>Keep going through the quiz steps. Progress saves on this device, so you can stop and come back later.</li>
+    </ol>
+    <p style="margin:10px 0 0;font-size:.85rem;color:rgba(240,234,214,.6)">Unity itself is a free download. The browser preview means your first success never waits on an install.</p>
+  </div>
+</section>
+
+<section style="max-width:960px;margin:12px auto 0;padding:0 24px;">
+  <div class="callout info" style="margin:0;border-left:3px solid #5bc0f8;background:rgba(91,192,248,.06);border-radius:12px;padding:12px 16px;color:rgba(240,234,214,.85);font-size:.9rem"><span class="callout-icon" style="display:inline;margin-right:6px">🦊</span><strong>Lumo says:</strong> do the episodes in order. Each one adds one new idea, and they all build on the last.</div>
+</section>
+
+<section style="max-width:960px;margin:12px auto 0;padding:0 24px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+    <div style="border:1.5px solid rgba(255,255,255,.12);border-radius:14px;padding:16px;background:rgba(255,255,255,.04)">
+      <div style="font-family:'Fredoka','Baloo 2',cursive;font-size:1.05rem;color:#fff;margin-bottom:6px">Your progress</div>
+      <div id="unityProgText" style="font-size:.9rem;color:rgba(240,234,214,.7)">0 / 8 episodes complete</div>
+      <div style="height:10px;border-radius:999px;background:rgba(255,255,255,.1);margin:8px 0;overflow:hidden"><div id="unityProgFill" style="height:100%;width:0;background:#5bc0f8;border-radius:999px;transition:width .4s"></div></div>
+      <div id="unityProgSub" style="font-size:.82rem;color:rgba(240,234,214,.55)">Open Episode 1 to start.</div>
+    </div>
+    <div style="border:1.5px solid rgba(255,255,255,.12);border-radius:14px;padding:16px;background:rgba(255,255,255,.04)">
+      <div style="font-family:'Fredoka','Baloo 2',cursive;font-size:1.05rem;color:#fff;margin-bottom:6px">🔷 Unity Builder</div>
+      <div id="unityProgBadge" style="font-size:.9rem;color:rgba(240,234,214,.7)">Finish all 8 episodes to earn the badge.</div>
+      <div id="unityProgXp" style="font-size:.82rem;color:rgba(240,234,214,.55);margin-top:6px"></div>
+    </div>
+  </div>
+</section>
+
+<section style="max-width:960px;margin:12px auto 0;padding:0 24px;">
+  <a href="unity-studio.html" style="display:block;text-decoration:none;color:inherit;border:1.5px solid #5bc0f8;border-radius:16px;padding:18px 20px;background:linear-gradient(135deg,rgba(91,192,248,.14),rgba(37,99,235,.08));box-shadow:0 2px 10px rgba(0,0,0,.06)">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span style="font-size:1.9rem">🛠️</span>
+      <span style="flex:1;min-width:220px">
+        <span style="display:block;font-family:'Fredoka','Baloo 2',cursive;font-size:1.15rem;color:#2563eb">Open the Unity Studio</span>
+        <span style="display:block;font-size:.88rem;color:var(--charcoal-lt);margin-top:2px">Build a 2D platformer in your browser with GameObjects and Components, play it live, then export real C# scripts and a level that runs in Unity. No install to start.</span>
+      </span>
+      <span style="font-weight:800;color:#2563eb;white-space:nowrap">Start building →</span>
+    </div>
+  </a>
+</section>
+
 <section class="episodes">
   <div class="section-label">The Full Series</div>
   <h2 class="section-title section-title--on-dark">8 Games to Build Step by Step</h2>
@@ -584,5 +630,28 @@ document.querySelectorAll('.reveal').forEach(el => footerRevealObserver.observe(
 <script defer src="/mascots.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
+<script>
+/* Series progress dashboard for My First Unity Game (matches the Stardew/Minecraft pattern). */
+(function () {
+  var EPISODES = ['jvds-unity-pong-v2','jvds-unity-2d-platformer-v2','jvds-unity-breakout-v2','jvds-unity-top-down-v2','jvds-unity-3d-platformer-v2','jvds-unity-action-rpg-v2','jvds-unity-ui-menus-v2','jvds-unity-multiplayer-v2'];
+  function doneCount() {
+    var n = 0;
+    EPISODES.forEach(function (k) {
+      try { var d = JSON.parse(localStorage.getItem(k) || 'null'); if (d && Array.isArray(d.completed) && typeof d.total === 'number' && d.completed.length >= d.total) n++; } catch (e) {}
+    });
+    return n;
+  }
+  try {
+    var n = doneCount(), total = EPISODES.length;
+    var t = document.getElementById('unityProgText'); if (t) t.textContent = n + ' / ' + total + ' episodes complete';
+    var f = document.getElementById('unityProgFill'); if (f) f.style.width = (n / total * 100) + '%';
+    var b = document.getElementById('unityProgBadge');
+    if (b) { if (n >= total) { b.textContent = '🔷 Badge unlocked: Unity Builder!'; } else { b.textContent = (total - n) + ' episode' + (total - n === 1 ? '' : 's') + ' to go for the badge.'; } }
+    var s = document.getElementById('unityProgSub'); if (s && n > 0) s.textContent = 'Nice. Keep going, one game at a time.';
+    var p = null; try { p = JSON.parse(localStorage.getItem('jvds_profile') || 'null'); } catch (e) {}
+    var xp = document.getElementById('unityProgXp'); if (xp && p) { var st = p.state || p; xp.textContent = 'Level ' + (st.level || 1) + ' · ' + (st.globalXP || 0) + ' XP across the studio'; }
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>

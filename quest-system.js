@@ -336,14 +336,14 @@ const QUESTS = {
   'quest-19-void-survivor': {
     id: 'quest-19-void-survivor',
     title: 'Void Survivor',
-    description: 'Survive to wave 10 in VoidRush.',
+    description: 'Reach sector 4 in VoidRush.',
     icon: '🌌',
     gameId: 'void-rush',
     category: 'gaming',
     difficulty: 'advanced',
     order: 19,
     requirements: [
-      { type: 'game-metric', gameId: 'void-rush', metric: 'wave', minValue: 10 }
+      { type: 'game-level', gameId: 'void-rush', minLevel: 4 }
     ],
     rewards: { xp: 220, badge: '🌌 Void Survivor', achievement: 'voidSurvivor' }
   },

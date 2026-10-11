@@ -19,6 +19,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/blender-workshop.html"
     },
     {
+      "id": "blender-world-workshop",
+      "title": "Blender World Workshop",
+      "desc": "A free Blender series for beginners: from your first cube to a rigged, animated and lit 3D scene. Sketch a blockout in your browser, then install the free Blender and build it for real. Ages 10+.",
+      "engine": "Blender",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [
+        "3d"
+      ],
+      "steps": 6,
+      "themeColor": "#ff70b8",
+      "cover": "/og/blender-world-workshop.png",
+      "url": "/workshops/blender-world-workshop.html"
+    },
+    {
       "id": "blender-cheatsheet",
       "title": "Free Blender Shortcuts Cheat Sheet",
       "desc": "Free printable Blender shortcuts cheat sheet navigation, selection, transform, mesh editing, modifiers and materials. No sign-up needed.",
@@ -174,6 +190,20 @@ window.JVDS_CONTENT = {
       "url": "/workshops/cpp-breakout-canvas.html"
     },
     {
+      "id": "cpp-mod-studio",
+      "title": "C++ Mod Studio",
+      "desc": "A free browser playground for the C++ World Workshop. Lay out a game level on a grid, tick real SFML features, read a broken compiler error and choose the fix, then download a real C++ project (main.cpp + CMakeLists) you can build. No install and no account needed to start.",
+      "engine": "C++",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#00599c",
+      "cover": "/og/cpp-mod-studio.png",
+      "url": "/workshops/cpp-mod-studio.html"
+    },
+    {
       "id": "cpp-platformer-canvas",
       "title": "C++ Platformer Build Canvas",
       "desc": "",
@@ -260,6 +290,22 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
       "url": "/workshops/cpp-tower-part2-canvas.html"
+    },
+    {
+      "id": "cpp-world-workshop",
+      "title": "C++ World Workshop",
+      "desc": "A free C++ and SFML series for beginners: Pong, Snake, Breakout, Platformer and Tower Defence, step by step. Design your level in the browser, then build it with C++. Ages 12+.",
+      "engine": "C++",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#00599c",
+      "cover": "/og/cpp-world-workshop.png",
+      "url": "/workshops/cpp-world-workshop.html"
     },
     {
       "id": "cpp-cheatsheet",
@@ -1958,6 +2004,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/godot-gatekeeper-3d-part2-canvas.html"
     },
     {
+      "id": "godot-mod-studio",
+      "title": "Godot Mod Studio",
+      "desc": "A free browser playground for the Godot World Workshop. Lay out a 2D scene on a grid, add real GDScript, read a broken Godot Output log and choose the fix, then download a real Godot project zip you can open in the free Godot engine. No install and no account needed to start.",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "2d"
+      ],
+      "steps": 6,
+      "themeColor": "#478cbf",
+      "cover": "/og/godot-mod-studio.png",
+      "url": "/workshops/godot-mod-studio.html"
+    },
+    {
       "id": "godot-platformer-canvas",
       "title": "Godot Platformer Build Canvas",
       "desc": "",
@@ -2020,6 +2082,24 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
       "url": "/workshops/godot-racing-2-canvas.html"
+    },
+    {
+      "id": "godot-world-workshop",
+      "title": "Godot World Workshop",
+      "desc": "A free Godot series for beginners: build a platformer, a racing game and a 3D co-op level. Design your scene in the browser, then open it in the free Godot engine and finish it. Ages 10+.",
+      "engine": "Godot",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [
+        "platformer",
+        "racing",
+        "3d"
+      ],
+      "steps": 6,
+      "themeColor": "#478cbf",
+      "cover": "/og/godot-world-workshop.png",
+      "url": "/workshops/godot-world-workshop.html"
     },
     {
       "id": "godot_tutorial",
@@ -2433,6 +2513,118 @@ window.JVDS_CONTENT = {
       "url": "/workshops/minecraft-custom-mob-mod.html"
     },
     {
+      "id": "minecraft-world-ep1-setup",
+      "title": "Episode 1: What a Datapack Is: Open the Data Folder",
+      "desc": "A datapack is the friendliest Minecraft mod of all: just a folder of text files, no mod loader and no install. In this episode you make one, load it and see it work.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-world-workshop.png",
+      "url": "/workshops/minecraft-world-ep1-setup.html"
+    },
+    {
+      "id": "minecraft-world-ep2-first-recipe",
+      "title": "Episode 2: Your First Recipe: Craft Something New",
+      "desc": "A recipe is one JSON file that tells Minecraft what items combine into what. In this episode you write your first recipe and craft it in-game.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-world-workshop.png",
+      "url": "/workshops/minecraft-world-ep2-first-recipe.html"
+    },
+    {
+      "id": "minecraft-world-ep3-namespace",
+      "title": "Episode 3: The data Folder: Get Organised",
+      "desc": "As your datapack grows, the data folder is what keeps it tidy. Learn namespaces and the folder for each thing a datapack can do.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-world-workshop.png",
+      "url": "/workshops/minecraft-world-ep3-namespace.html"
+    },
+    {
+      "id": "minecraft-world-ep4-functions",
+      "title": "Episode 4: Functions: Run a List of Commands",
+      "desc": "A function is a list of commands Minecraft runs on demand. They let you build a whole sequence of actions and trigger it with one word.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-world-workshop.png",
+      "url": "/workshops/minecraft-world-ep4-functions.html"
+    },
+    {
+      "id": "minecraft-world-ep5-loot",
+      "title": "Episode 5: Loot Tables: Decide What Drops",
+      "desc": "A loot table decides what an action produces: what a block drops, what is in a chest, or what a mob leaves behind. Learn to write your own.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-world-workshop.png",
+      "url": "/workshops/minecraft-world-ep5-loot.html"
+    },
+    {
+      "id": "minecraft-world-ep6-tags-advancements",
+      "title": "Episode 6: Tags and Advancements: Group and Reward",
+      "desc": "Tags group items and blocks so your pack can talk about whole families at once. Advancements create custom goals and rewards. Together they make a pack feel like a game.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-world-workshop.png",
+      "url": "/workshops/minecraft-world-ep6-tags-advancements.html"
+    },
+    {
+      "id": "minecraft-world-ep7-debug",
+      "title": "Episode 7: Fix the Log: When It Breaks",
+      "desc": "Datapacks break in small, fixable ways. In this episode you learn to read the game log and the reload error, and fix the mistakes everyone makes.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-world-workshop.png",
+      "url": "/workshops/minecraft-world-ep7-debug.html"
+    },
+    {
+      "id": "minecraft-world-ep8-design-share",
+      "title": "Episode 8: Design and Share: Make It Yours, Share It",
+      "desc": "The final step: tie your recipes, functions, loot and advancements into one themed pack, then package and share it so other players can enjoy it.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-world-workshop.png",
+      "url": "/workshops/minecraft-world-ep8-design-share.html"
+    },
+    {
       "id": "minecraft-modding-cheatsheet",
       "title": "Free Minecraft Modding (Fabric/Java) Cheat Sheet",
       "desc": "Free printable Minecraft modding cheat sheet project structure, registering items & blocks, textures, custom mobs, loot tables and Fabric events. No sign-up needed.",
@@ -2503,6 +2695,34 @@ window.JVDS_CONTENT = {
       "url": "/workshops/minecraft-mod-starter-files.html"
     },
     {
+      "id": "minecraft-mod-studio",
+      "title": "Minecraft Mod Studio",
+      "desc": "A free browser playground for the Minecraft World Workshop. Design a crafting recipe on a 3x3 bench, add a function, fill in pack.mcmeta and your recipe file, debug a broken datapack log, then download a real datapack zip. No install and no account needed.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-mod-studio.png",
+      "url": "/workshops/minecraft-mod-studio.html"
+    },
+    {
+      "id": "minecraft-world-workshop",
+      "title": "Minecraft World Workshop",
+      "desc": "A free step-by-step Minecraft workshop series: design a crafting recipe and a datapack in your browser, then take it further with Fabric mods. Ages 10+, school-computer friendly.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#4f8a2c",
+      "cover": "/og/minecraft-world-workshop.png",
+      "url": "/workshops/minecraft-world-workshop.html"
+    },
+    {
       "id": "minecraft-custom-tool-mod",
       "title": "Super Pickaxe! Add Custom Tools to Minecraft with Fabric",
       "desc": "Build a Crystal Pickaxe and Crystal Sword in Minecraft with Fabric! Set tool material, mining speed, attack damage and durability. Free beginner Java modding workshop.",
@@ -2515,6 +2735,150 @@ window.JVDS_CONTENT = {
       "themeColor": "#6366f1",
       "cover": "/og/minecraft-custom-tool-mod.webp",
       "url": "/workshops/minecraft-custom-tool-mod.html"
+    },
+    {
+      "id": "mugen-world-ep1-setup",
+      "title": "Episode 1: Get Set Up: Enter the Arena",
+      "desc": "MUGEN is a free engine for making 2D fighting games. Before you build a fighter you need the engine in the right place and you need to know your way around the folder that holds...",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "2d"
+      ],
+      "steps": 4,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep1-setup.html"
+    },
+    {
+      "id": "mugen-world-ep10-game",
+      "title": "Episode 10: Build the Whole Game: Assemble the Game",
+      "desc": "You have a fighter, a stage and an AI. Now you put them into the select screen, choose your roster and stages, and get a full game you can share.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep10-game.html"
+    },
+    {
+      "id": "mugen-world-ep2-fighter-files",
+      "title": "Episode 2: What Makes a Fighter: Meet the Files",
+      "desc": "Six file types make one fighter. They sound scary until you know what each one does, and then it is just a checklist. This episode is your map of the whole character.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep2-fighter-files.html"
+    },
+    {
+      "id": "mugen-world-ep3-sprites-palette",
+      "title": "Episode 3: Sprites and Palette: Colour Your Fighter",
+      "desc": "Now the art. MUGEN sprites are indexed pictures: every pixel points at a colour in a palette. Change the palette and the whole fighter changes colour, with no redrawing.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep3-sprites-palette.html"
+    },
+    {
+      "id": "mugen-world-ep4-animations",
+      "title": "Episode 4: Animations: Make Them Move",
+      "desc": "An animation is a list of sprites shown in order. In this episode you read and write .air animations, learn about timing, and understand the action number that states call.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "animation"
+      ],
+      "steps": 4,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep4-animations.html"
+    },
+    {
+      "id": "mugen-world-ep5-commands",
+      "title": "Episode 5: Commands: Press the Right Buttons",
+      "desc": "Commands are how a motion like a quarter-circle punch becomes a named thing your code can react to. This episode turns button presses into moves.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep5-commands.html"
+    },
+    {
+      "id": "mugen-world-ep6-states",
+      "title": "Episode 6: States and Constants: Write the Rules",
+      "desc": "States are the heart of a fighter: what it does, when input is allowed, and what happens on a hit. This is the biggest idea in MUGEN, so we take it slowly.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep6-states.html"
+    },
+    {
+      "id": "mugen-world-ep7-hitboxes",
+      "title": "Episode 7: Hitboxes: Land the Hit",
+      "desc": "A move only counts when one fighter hitbox touches another. This episode explains Clsn1 and Clsn2, and why a move that looks right can still miss.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep7-hitboxes.html"
+    },
+    {
+      "id": "mugen-world-ep8-stage",
+      "title": "Episode 8: Make a Stage: Build the Arena",
+      "desc": "A stage is three things: a floor, a camera and a background. Build your own arena and your fighter finally has a home.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep8-stage.html"
+    },
+    {
+      "id": "mugen-world-ep9-ai",
+      "title": "Episode 9: AI: Teach It to Think",
+      "desc": "A fighter with no brain just stands there. The AI is a set of rules that decides when to attack, block and back off. Make it beatable but not boring.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-ep9-ai.html"
     },
     {
       "id": "mugen-cheatsheet",
@@ -2547,6 +2911,20 @@ window.JVDS_CONTENT = {
       "url": "/workshops/mugen-ai-workshop.html"
     },
     {
+      "id": "mugen-mod-studio",
+      "title": "MUGEN Mod Studio",
+      "desc": "A free browser playground for the MUGEN World Workshop. Fill in a fighter def, lay out a stage, preview it, read a broken log and download a real character and stage as a zip. No install and no account needed.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-mod-studio.png",
+      "url": "/workshops/mugen-mod-studio.html"
+    },
+    {
       "id": "mugen-workshop",
       "title": "MUGEN Workshop Build Your Own Fighter",
       "desc": "Learn to build MUGEN characters and stages from scratch. Free guides, templates, cheat sheets, project briefs and more. By JVDesignStudio.",
@@ -2559,6 +2937,20 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/MuguenCover.webp",
       "url": "/workshops/mugen-workshop.html"
+    },
+    {
+      "id": "mugen-world-workshop",
+      "title": "MUGEN World Workshop",
+      "desc": "A free MUGEN workshop series: build your own fighter, add a stage, give it AI and set up a complete game. Start in the browser with the MUGEN Mod Studio. Ages 10+.",
+      "engine": "MUGEN",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#d32f2f",
+      "cover": "/og/mugen-world-workshop.png",
+      "url": "/workshops/mugen-world-workshop.html"
     },
     {
       "id": "mugen-basics-workshop",
@@ -2589,6 +2981,118 @@ window.JVDS_CONTENT = {
       "url": "/workshops/mugen-game-setup-workshop.html"
     },
     {
+      "id": "openrct2-world-ep1-setup",
+      "title": "Episode 1: Get Set Up: Open the Gates",
+      "desc": "Before you can change the park, you need the park running and a place to put your mods. By the end of this episode OpenRCT2 is installed, you know where plugins live, and you ha...",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 4,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-world-ep1-setup.html"
+    },
+    {
+      "id": "openrct2-world-ep2-first-plugin",
+      "title": "Episode 2: Your First Plugin: Hello, Park",
+      "desc": "Time for your first line of real code. You will write a tiny plugin, watch the game load it, and read its message in the console. This is the moment you become a modder.",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-world-ep2-first-plugin.html"
+    },
+    {
+      "id": "openrct2-world-ep3-events",
+      "title": "Episode 3: Events and Messages: Talk to the Park",
+      "desc": "Plugins come alive when they react to the park. You will learn the events OpenRCT2 offers and make your plugin send different messages at different times.",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-world-ep3-events.html"
+    },
+    {
+      "id": "openrct2-world-ep4-read-the-park",
+      "title": "Episode 4: Money, Guests and Rides: Read the Park",
+      "desc": "Now your plugin can read the park itself. You will look at cash, park rating, how many guests are inside, and the rides they are queuing for.",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-world-ep4-read-the-park.html"
+    },
+    {
+      "id": "openrct2-world-ep5-guests",
+      "title": "Episode 5: Working with Guests: Help the Guests",
+      "desc": "Guests are entities with a position, a mood and a mind of their own. You will find guests who need help and change what happens to them.",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-world-ep5-guests.html"
+    },
+    {
+      "id": "openrct2-world-ep6-swim-rescue",
+      "title": "Episode 6: Build Swim Rescue: Save the Guests",
+      "desc": "This is the big one. You bring together events, guest positions and actions to build a real tool that catches guests in the water and saves them before they get upset.",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-world-ep6-swim-rescue.html"
+    },
+    {
+      "id": "openrct2-world-ep7-test-debug",
+      "title": "Episode 7: Test and Debug: Make It Solid",
+      "desc": "Real modders spend a lot of time reading error messages. In this episode you learn to read the console like a detective, fix the common mistakes, and protect your plugin against...",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-world-ep7-test-debug.html"
+    },
+    {
+      "id": "openrct2-world-ep8-design-share",
+      "title": "Episode 8: Design and Share: Make It Yours, Share It",
+      "desc": "The last step is the most satisfying: give your plugin a personality, package it neatly, and share it so other players can drop it into their game.",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 5,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-world-ep8-design-share.html"
+    },
+    {
       "id": "openrct2-cheatsheet",
       "title": "Free OpenRCT2 Modding Cheat Sheet",
       "desc": "Free printable OpenRCT2 plugin modding cheat sheet plugin basics, park/ride/guest API, UI windows, map and tiles and common code snippets. No sign-up needed.",
@@ -2601,6 +3105,20 @@ window.JVDS_CONTENT = {
       "themeColor": "#4ade80",
       "cover": "/og/openrct2-cheatsheet.webp",
       "url": "/workshops/openrct2-cheatsheet.html"
+    },
+    {
+      "id": "openrct2-mod-studio",
+      "title": "OpenRCT2 Mod Studio",
+      "desc": "A free browser playground for the OpenRCT2 World Workshop. Fill in a plugin, choose what it does with the park, read a broken console log and choose the fix, then download a real plugin folder as a zip. No install and no account needed.",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-mod-studio.html"
     },
     {
       "id": "openrct2-modding-builder",
@@ -2629,6 +3147,20 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/saving-guests.webp",
       "url": "/workshops/openrct2-swim-rescue.html"
+    },
+    {
+      "id": "openrct2-world-workshop",
+      "title": "OpenRCT2 World Workshop",
+      "desc": "A free OpenRCT2 modding series: get set up, then add custom shops and items with Python and write real plugins in JavaScript. Ages 10+, school-computer friendly.",
+      "engine": "OpenRCT2",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#d94f3d",
+      "cover": "/og/openrct2-world-workshop.png",
+      "url": "/workshops/openrct2-world-workshop.html"
     },
     {
       "id": "pico8-dungeon-workshop",
@@ -2807,6 +3339,23 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
       "url": "/workshops/pico8-snake-canvas.html"
+    },
+    {
+      "id": "pico8-studio",
+      "title": "PICO-8 Studio: Build a Cart in Your Browser, Then Play It for Real",
+      "desc": "A free browser studio for the PICO-8 workshop series. Pick a game (Pong, Snake, Platformer, Shooter, Dungeon, Match 3), tune it, play it live at 128x128, then export a real .p8 cartridge you can open in PICO-8 or a free compatible player. No install to start. Ages 8+.",
+      "engine": "PICO-8",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "platformer",
+        "shooter"
+      ],
+      "steps": 6,
+      "themeColor": "#ff004d",
+      "cover": "og/learn.webp",
+      "url": "/workshops/pico8-studio.html"
     },
     {
       "id": "python-game-builder",
@@ -3009,6 +3558,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/python-maze-canvas.html"
     },
     {
+      "id": "python-mod-studio",
+      "title": "Python Mod Studio",
+      "desc": "A free browser playground for the Python World Workshop. Lay out a platformer level on a grid, tick real Pygame features, read a broken Python traceback and choose the fix, then download a real Pygame project (main.py) you can run. No install and no account needed to start.",
+      "engine": "Python",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#3776ab",
+      "cover": "/og/python-mod-studio.png",
+      "url": "/workshops/python-mod-studio.html"
+    },
+    {
       "id": "python-platformer-canvas",
       "title": "Python Platformer Build Canvas",
       "desc": "",
@@ -3039,6 +3604,38 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
       "url": "/workshops/python-platformer-part2-canvas.html"
+    },
+    {
+      "id": "python-studio",
+      "title": "Python Studio: Build a Pygame Game in Your Browser, Then Run It for Real",
+      "desc": "A free browser studio for the My First Python Game series. Pick a game (Fruit Catch, Dodge, Maze, Breakout, Platformer), tune it, play it live, then download a runnable Pygame project with real main.py code. No install to start. Ages 10+.",
+      "engine": "Python",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#06d6a0",
+      "cover": "/og/my-first-python-game.webp",
+      "url": "/workshops/python-studio.html"
+    },
+    {
+      "id": "python-world-workshop",
+      "title": "Python World Workshop",
+      "desc": "A free Python and Pygame series for beginners: catch, dodge, maze, breakout and platformer games, step by step. Design your level in the browser, then run it with Python. Ages 10+.",
+      "engine": "Python",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#3776ab",
+      "cover": "/og/python-world-workshop.png",
+      "url": "/workshops/python-world-workshop.html"
     },
     {
       "id": "roblox-pirate-workshop",
@@ -3166,6 +3763,22 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/roblox-cover.webp",
       "url": "/workshops/roblox-creator-journey.html"
+    },
+    {
+      "id": "roblox-mod-studio",
+      "title": "Roblox Mod Studio",
+      "desc": "A free browser playground for the Roblox Studio series. Lay out an obby level on a grid, add real Lua scripts, read a broken Roblox Output log and choose the fix, then download a real .rbxmx model plus your scripts. No install and no account needed.",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "obby"
+      ],
+      "steps": 6,
+      "themeColor": "#3b82f6",
+      "cover": "/og/roblox-mod-studio.png",
+      "url": "/workshops/roblox-mod-studio.html"
     },
     {
       "id": "roblox-studio-cheatsheet",
@@ -3368,6 +3981,20 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
       "url": "/workshops/scratch-quiz-canvas.html"
+    },
+    {
+      "id": "scratch-studio",
+      "title": "Scratch Studio: Build a Scratch Game in Your Browser",
+      "desc": "A free browser studio for the Scratch workshops. Pick a game (Catch, Clicker, Quiz), set up the sprites and values, play it live, then export a real .sb3 project file you can open in Scratch. No install, works on a school computer. Ages 6+.",
+      "engine": "Scratch",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#ff7700",
+      "cover": "/og/my-first-scratch-game.webp",
+      "url": "/workshops/scratch-studio.html"
     },
     {
       "id": "scratch-story-workshop",
@@ -3594,6 +4221,216 @@ window.JVDS_CONTENT = {
       "themeColor": "#3f7d3a",
       "cover": "/og/stardew-world-workshop.png",
       "url": "/workshops/stardew-world-ep9-package-mod.html"
+    },
+    {
+      "id": "terraria-modding-cheatsheet",
+      "title": "Terraria World Modding Cheat Sheet",
+      "desc": "Free printable Terraria world modding cheat sheet: folder paths, tModLoader and TEdit basics, the world checklist, biome rules and the common log errors.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 0,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-modding-cheatsheet.html"
+    },
+    {
+      "id": "terraria-mod-studio",
+      "title": "Terraria World Studio",
+      "desc": "A free browser playground for the Terraria World Workshop: paint and dig tiles, build biomes, add chests, test walking, plan your world files and download your world. No install needed.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-mod-studio.html"
+    },
+    {
+      "id": "terraria-world-workshop",
+      "title": "Terraria World Workshop",
+      "desc": "A free step-by-step Terraria world workshop: edit a world in TEdit, shape biomes, decorate it, and share your own custom world. Ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-workshop.html"
+    },
+    {
+      "id": "terraria-world-ep1-setup",
+      "title": "Terraria World Workshop Ep 1: Get Set Up",
+      "desc": "Episode 1 of the free Terraria World Workshop. Install tModLoader and TEdit, find your Worlds folder, back up a world and read the load log. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep1-setup.html"
+    },
+    {
+      "id": "terraria-world-ep10-fix-it",
+      "title": "Terraria World Workshop Ep 10: Fix It",
+      "desc": "Episode 10 of the free Terraria World Workshop. Read the load log, fix version mismatches and nested folders, restore a backup world and ask for help well. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep10-fix-it.html"
+    },
+    {
+      "id": "terraria-world-ep11-play-share",
+      "title": "Terraria World Workshop Ep 11: Play &amp; Share",
+      "desc": "Episode 11 of the free Terraria World Workshop. Load your finished world in tModLoader, test it in game, fix the last issues, then save, name and share it. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep11-play-share.html"
+    },
+    {
+      "id": "terraria-world-ep12-design",
+      "title": "Terraria World Workshop Ep 12: Design Your World",
+      "desc": "Episode 12 of the free Terraria World Workshop. Plan purpose, paths, flow, balance and detail, then test your world and claim your World Builder badge. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep12-design.html"
+    },
+    {
+      "id": "terraria-world-ep2-world-file",
+      "title": "Terraria World Workshop Ep 2: Inside a World File",
+      "desc": "Episode 2 of the free Terraria World Workshop. Tour the Worlds folder and learn what a .wld file really holds: tiles, walls, chests, signs and metadata. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep2-world-file.html"
+    },
+    {
+      "id": "terraria-world-ep3-first-change",
+      "title": "Terraria World Workshop Ep 3: Your First Change",
+      "desc": "Episode 3 of the free Terraria World Workshop. Copy a world, open it in TEdit, change one tile, save it and load it back in the game. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep3-first-change.html"
+    },
+    {
+      "id": "terraria-world-ep4-layers",
+      "title": "Terraria World Workshop Ep 4: Walls &amp; Layers",
+      "desc": "Episode 4 of the free Terraria World Workshop. Learn the difference between foreground tiles and background walls, place walls in TEdit and turn a space into a safe room. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep4-layers.html"
+    },
+    {
+      "id": "terraria-world-ep5-biomes",
+      "title": "Terraria World Workshop Ep 5: Biomes &amp; Rules",
+      "desc": "Episode 5 of the free Terraria World Workshop. Learn how the game counts blocks to make biomes, place a biome patch in TEdit, test it in the game and fix one that will not trigger. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep5-biomes.html"
+    },
+    {
+      "id": "terraria-world-ep6-build-decorate",
+      "title": "Terraria World Workshop Ep 6: Build &amp; Decorate",
+      "desc": "Episode 6 of the free Terraria World Workshop. Plan a plot, build the walls and roof, add platforms and doors, then light and decorate your build with furniture and loot. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep6-build-decorate.html"
+    },
+    {
+      "id": "terraria-world-ep7-tunnels",
+      "title": "Terraria World Workshop Ep 7: Tunnels &amp; Traversal",
+      "desc": "Episode 7 of the free Terraria World Workshop. Learn why tunnels help you travel and hide, then dig a safe, walled and lit tunnel in TEdit. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep7-tunnels.html"
+    },
+    {
+      "id": "terraria-world-ep8-new-area",
+      "title": "Terraria World Workshop Ep 8: A Brand-New Area",
+      "desc": "Episode 8 of the free Terraria World Workshop. Pick an empty spot, carve out the space, build a floor and walls, connect it with a tunnel and test a brand-new area. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep8-new-area.html"
+    },
+    {
+      "id": "terraria-world-ep9-package-share",
+      "title": "Terraria World Workshop Ep 9: Package &amp; Share Your World",
+      "desc": "Episode 9 of the free Terraria World Workshop. Save and name your world, find the .wld file, zip it, write a README and share it safely with a friend. Beginner, ages 10+.",
+      "engine": "Terraria",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#2e7d32",
+      "cover": "/og/terraria-world-workshop.png",
+      "url": "/workshops/terraria-world-ep9-package-share.html"
     },
     {
       "id": "tinkercad-ep7-keychain",
@@ -3853,6 +4690,24 @@ window.JVDS_CONTENT = {
       "url": "/workshops/unity-3d-platformer.html"
     },
     {
+      "id": "unity-studio",
+      "title": "Unity Studio: Build a Game in Your Browser, Then in Unity",
+      "desc": "A free browser studio for the Unity workshop series. Pick a game (Platformer, Pong, Breakout, Top-Down Shooter, Action RPG, UI and Multiplayer), set it up the Unity way with GameObjects and Components, play it live, then export real C# scripts and a ready-to-run scene you can open in Unity. No install to start. Ages 12+.",
+      "engine": "Unity",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [
+        "platformer",
+        "shooter",
+        "rpg"
+      ],
+      "steps": 6,
+      "themeColor": "#5bc0f8",
+      "cover": "/og/my-first-unity-game.webp",
+      "url": "/workshops/unity-studio.html"
+    },
+    {
       "id": "unity-top-down-shooter",
       "title": "Unity Top-Down Shooter Learn C# with Unity",
       "desc": "Build a top-down shooter in Unity from scratch. Learn C#, MonoBehaviour, Input, Instantiate, collisions, and coroutines 10 steps, live preview, complete beginner. Free.",
@@ -4014,6 +4869,20 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/og/unreal-top-down-shooter.webp",
       "url": "/workshops/unreal-top-down-shooter.html"
+    },
+    {
+      "id": "unreal-studio",
+      "title": "Unreal Studio: Build Blueprints in Your Browser, Then in Unreal",
+      "desc": "A free browser studio for the My First Unreal Game series. Arrange Blueprint nodes, set the variables that drive the logic, play a live top-down sketch, then export a real Blueprint recipe you can follow in Unreal Engine 5. No install to start. Ages 10+.",
+      "engine": "Unreal",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#6b2800",
+      "cover": "/og/my-first-unreal-game.webp",
+      "url": "/workshops/unreal-studio.html"
     }
   ],
   "games": [
@@ -5357,32 +6226,33 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-10T19:26:20.020Z",
-    "workshops": 265,
+    "generated": "2026-10-11T17:40:33.069Z",
+    "workshops": 325,
     "games": 43,
     "tools": 37,
     "books": 5,
     "engines": {
-      "Blender": 9,
-      "C++": 16,
+      "Blender": 10,
+      "C++": 18,
       "Defold": 12,
       "GDevelop": 12,
       "General": 60,
       "GML/GameMaker": 10,
-      "Godot": 15,
+      "Godot": 17,
       "Java": 14,
       "JavaScript": 7,
-      "Minecraft": 8,
-      "MUGEN": 5,
-      "OpenRCT2": 3,
-      "PICO-8": 12,
-      "Python": 16,
-      "Roblox": 11,
-      "Scratch": 12,
+      "Minecraft": 18,
+      "MUGEN": 17,
+      "OpenRCT2": 13,
+      "PICO-8": 13,
+      "Python": 19,
+      "Roblox": 12,
+      "Scratch": 13,
       "Stardew Valley": 15,
+      "Terraria": 15,
       "TinkerCAD": 9,
-      "Unity": 9,
-      "Unreal": 10
+      "Unity": 10,
+      "Unreal": 11
     },
     "toolCategories": {
       "Make Art": 9,
