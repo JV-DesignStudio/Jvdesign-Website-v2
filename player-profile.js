@@ -200,7 +200,19 @@ var WORKSHOP_KEY_TO_ID = {
     'jvds-stardew-world-ep9-v2': 'stardew-world-ep9-package-mod',
     'jvds-stardew-world-ep10-v2': 'stardew-world-ep10-troubleshoot',
     'jvds-stardew-world-ep11-v2': 'stardew-world-ep11-play-share',
-    'jvds-stardew-world-ep12-v2': 'stardew-world-ep12-design'
+    'jvds-stardew-world-ep12-v2': 'stardew-world-ep12-design',
+    'jvds-terraria-world-ep4-v2': 'terraria-world-ep4-layers',
+    'jvds-terraria-world-ep5-v2': 'terraria-world-ep5-biomes',
+    'jvds-terraria-world-ep6-v2': 'terraria-world-ep6-build-decorate',
+    'jvds-terraria-world-ep7-v2': 'terraria-world-ep7-tunnels',
+    'jvds-terraria-world-ep8-v2': 'terraria-world-ep8-new-area',
+    'jvds-terraria-world-ep9-v2': 'terraria-world-ep9-package-share',
+    'jvds-terraria-world-ep10-v2': 'terraria-world-ep10-fix-it',
+    'jvds-terraria-world-ep11-v2': 'terraria-world-ep11-play-share',
+    'jvds-terraria-world-ep12-v2': 'terraria-world-ep12-design',
+    'jvds-roblox-sim-lockdown-1-v1': 'roblox-sim-lockdown-1-workshop',
+    'jvds-roblox-sim-lockdown-2-v1': 'roblox-sim-lockdown-2-workshop',
+    'jvds-roblox-sim-lockdown-3-v1': 'roblox-sim-lockdown-3-workshop'
 };
 
 class PlayerProfile {

@@ -1601,6 +1601,27 @@ if (typeof document !== 'undefined') {
     }
     bar.appendChild(mute); bar.appendChild(pause); if(hapticBtn) bar.appendChild(hapticBtn);
     document.body.appendChild(bar);
+    // The bar is fixed at top-right; on phones that overlapped the lifecycle
+    // (intro / game over) title. Hide it while a lifecycle screen is showing
+    // and bring it back once gameplay is on screen.
+    var queued=false;
+    var syncChrome=function(){
+      var screens=document.querySelectorAll('.arcade-lifecycle-screen');
+      var showing=false;
+      for(var i=0;i<screens.length;i++){
+        var el=screens[i];
+        if(el.classList.contains('hidden')||el.hasAttribute('hidden')) continue;
+        if(getComputedStyle(el).display!=='none'){ showing=true; break; }
+      }
+      bar.style.display=showing?'none':'flex';
+    };
+    if(window.MutationObserver){
+      var obs=new MutationObserver(function(){
+        if(queued) return; queued=true;
+        requestAnimationFrame(function(){ queued=false; syncChrome(); });
+      });
+      setTimeout(function(){ obs.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','style','hidden']}); syncChrome(); },0);
+    } else { setTimeout(syncChrome,0); }
     // Hide on tiny learners pages where controls would confuse? Keep visible but respect reduced-motion
     try{ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) bar.style.opacity='.9'; }catch(e){}
   }

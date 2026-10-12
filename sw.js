@@ -1,3 +1,4 @@
+// JVDesignStudio Service Worker v35 - A1444: bump cache so the refreshed mascot art (hero/badge) + mascots.js replace cached concept sheets.
 // JVDesignStudio Service Worker v29 - A207 school-network hardening: timeout only when cached exists, timer cleared, bump cache, Pip quest deps precached
 // v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
 // v22 (A256): precache jvds-store.js (backpack + progress) and refresh nav.js (profile chip reads jvds_profile)
@@ -9,7 +10,7 @@
 // v32 (A831): self-host Prism so the Code Snippet Generator highlights offline
 // v33 (A936): Icon Generator Help, real share links and a pinned mobile preview
 // v34 (A648): precache testimonials.js for the honest social-proof strip + form
-const CACHE='jvds-v34';
+const CACHE='jvds-v35';
 const CORE=[
   '/',
   '/offline.html',
