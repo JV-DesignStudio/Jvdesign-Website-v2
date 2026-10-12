@@ -2,7 +2,10 @@ const http=require('http'),fs=require('fs'),path=require('path');
 const puppeteer=require('puppeteer');
 const root=path.resolve(__dirname,'..');
 const EPISODES=[
-  'terraria-world-ep1-setup.html','terraria-world-ep2-world-file.html','terraria-world-ep3-first-change.html'
+  'terraria-world-ep1-setup.html','terraria-world-ep2-world-file.html','terraria-world-ep3-first-change.html',
+  'terraria-world-ep4-layers.html','terraria-world-ep5-biomes.html','terraria-world-ep6-build-decorate.html',
+  'terraria-world-ep7-tunnels.html','terraria-world-ep8-new-area.html','terraria-world-ep9-package-share.html',
+  'terraria-world-ep10-fix-it.html','terraria-world-ep11-play-share.html','terraria-world-ep12-design.html'
 ];
 let failures=0;
 function check(name,ok,detail=''){console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:''));if(!ok)failures++;}
@@ -37,7 +40,7 @@ const server=http.createServer((req,res)=>{
       sw:document.documentElement.scrollWidth
     }));
     check('hub links to the World Studio',hub.studioLinks>=2,'links '+hub.studioLinks);
-    check('hub lists the episode links',hub.episodes>=3,'links '+hub.episodes);
+    check('hub lists the episode links',hub.episodes>=12,'links '+hub.episodes);
     check('hub has the living-world hero',hub.hero);
     check('hub has the progress dashboard',hub.prog);
     check('hub has no dashes',hub.dashes===0);
