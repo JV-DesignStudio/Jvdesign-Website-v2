@@ -130,6 +130,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/blender-cheatsheet.html"
     },
     {
+      "id": "blender-mod-studio",
+      "title": "GDevelop Mod Studio",
+      "desc": "A free browser playground for the GDevelop series. Lay out a 2D game on a grid, add GDevelop events, read a broken GDevelop log and choose the fix, then download a GDevelop build sheet with the object list and event sheet. No install needed to start.",
+      "engine": "Blender",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "2d"
+      ],
+      "steps": 6,
+      "themeColor": "#7c3aed",
+      "cover": "og/learn.webp",
+      "url": "/workshops/blender-mod-studio.html"
+    },
+    {
       "id": "blender-character-workshop",
       "title": "Model a Low-Poly Character in Blender (My First 3D Model, Episode 2)",
       "desc": "Model a low-poly character in Blender with extrude, loop cuts and the mirror modifier. Free step-by-step tutorial.",
@@ -5877,13 +5893,13 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-12T15:12:02.775Z",
-    "workshops": 332,
+    "generated": "2026-10-12T15:16:09.276Z",
+    "workshops": 333,
     "games": 11,
     "tools": 37,
     "books": 5,
     "engines": {
-      "Blender": 10,
+      "Blender": 11,
       "C++": 18,
       "Defold": 13,
       "GDevelop": 13,

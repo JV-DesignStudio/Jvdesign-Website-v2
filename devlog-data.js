@@ -5,11 +5,35 @@
 // Internal/auto-generated entries archived in studio-workspace/devlog-archive-internal-2026-09-28.json
 
 const POSTS = [
-    
+    {
+        id: 440,
+        date: '12 October 2026',
+        tag: 'site',
+        emoji: '🧭',
+        title: 'Guides for every engine, and the best free tools',
+        excerpt: 'New beginner guides for GameMaker, Pico-8, C++ and Java, plus a roundup of the best free game making tools, so every young maker can find the right starting point.',
+        content: 'Step into any game engine and there is now a friendly guide waiting. Alongside the existing guides for Scratch, Minecraft, Roblox, Python, Godot and Unity, we have added GameMaker, Pico-8, C++ and Java. Each one starts with a single small game you can finish, then builds up from there.\n\nWe have also added a roundup of the best free game making tools for kids, and a single Guides hub that gathers everything in one place. If you are not sure where to begin, the roundup ranks the options by age and interest, and the hub lets you browse them all.\n\nEvery guide links straight into real workshops on the site, so a reader can go from reading to making in a couple of clicks. Nothing needs an account to start.'
+    },
 
-    
+    {
+        id: 439,
+        date: '12 October 2026',
+        tag: 'site',
+        emoji: '✉️',
+        title: 'Share what you make, and get a new idea each week',
+        excerpt: 'You can now share a finished workshop with one tap, and there is a simple newsletter sign-up on the home page if you would like a fresh project idea every week.',
+        content: 'When you finish a workshop, there is a new Share button on the finish screen. Tap it and you can send the workshop to a friend, or copy a link to show someone what you built. On a shared school computer, that link is the easiest way to keep a record of what you made.\n\nWe have also added a newsletter sign-up to the home page. One short email a week, with a fresh workshop, an idea to try, and a look at what is new in the studio. It is free, there is nothing to install, and you can unsubscribe whenever you like.\n\nFinally, the menu and the footer now have a Guides link, which takes you straight to every beginner guide on the site.'
+    },
 
-    
+    {
+        id: 438,
+        date: '12 October 2026',
+        tag: 'site',
+        emoji: '📚',
+        title: 'New beginner guides: Minecraft, Roblox, Unity and more',
+        excerpt: 'Five new free guides help a complete beginner build their first real game, from Scratch and Minecraft to Roblox, Python, Godot and Unity.',
+        content: 'We have added a set of free beginner guides, each one taking a complete beginner from a blank screen to something they can play. There is a guide for Minecraft modding, one for Roblox Studio, and one for Unity, plus a friendly guide called How to Make a Game for Kids that helps a parent or teacher choose a first step.\n\nThere is also Coding for Kids, which shows the path from drag-and-drop blocks in Scratch all the way to real code in Python and C#. And if you cannot decide between the two big ones, Roblox vs Minecraft explains how they differ and which to try first.\n\nAll of the guides now live together on one page. Open the Guides link in the menu, or visit the Guides hub, and pick the path that matches what you already love. No installs, and no account needed to start.'
+    },
 
     {
         id: 435,

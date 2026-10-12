@@ -178,7 +178,32 @@ var CANVAS_STUDIO_MAP = {
   "pico8-pong-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
   "pico8-shooter-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
   "pico8-snake-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
-  "my-first-pico8-game-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" }
+  "my-first-pico8-game-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
+  "defold-dungeon-canvas.html": { "href": "defold-mod-studio.html", "label": "Defold Mod Studio" },
+  "defold-platformer-canvas.html": { "href": "defold-mod-studio.html", "label": "Defold Mod Studio" },
+  "defold-pong-canvas.html": { "href": "defold-mod-studio.html", "label": "Defold Mod Studio" },
+  "defold-puzzle-canvas.html": { "href": "defold-mod-studio.html", "label": "Defold Mod Studio" },
+  "defold-shooter-canvas.html": { "href": "defold-mod-studio.html", "label": "Defold Mod Studio" },
+  "defold-snake-canvas.html": { "href": "defold-mod-studio.html", "label": "Defold Mod Studio" },
+  "my-first-defold-game-canvas.html": { "href": "defold-mod-studio.html", "label": "Defold Mod Studio" },
+  "java-breakout-canvas.html": { "href": "java-mod-studio.html", "label": "Java Mod Studio" },
+  "java-platformer-canvas.html": { "href": "java-mod-studio.html", "label": "Java Mod Studio" },
+  "java-pong-canvas.html": { "href": "java-mod-studio.html", "label": "Java Mod Studio" },
+  "java-rpg-part1-canvas.html": { "href": "java-mod-studio.html", "label": "Java Mod Studio" },
+  "java-rpg-part2-canvas.html": { "href": "java-mod-studio.html", "label": "Java Mod Studio" },
+  "java-rpg-part3-canvas.html": { "href": "java-mod-studio.html", "label": "Java Mod Studio" },
+  "java-space-canvas.html": { "href": "java-mod-studio.html", "label": "Java Mod Studio" },
+  "gml-breakout-canvas.html": { "href": "gml-mod-studio.html", "label": "GameMaker Mod Studio" },
+  "gml-platformer-canvas.html": { "href": "gml-mod-studio.html", "label": "GameMaker Mod Studio" },
+  "gml-pong-canvas.html": { "href": "gml-mod-studio.html", "label": "GameMaker Mod Studio" },
+  "gml-rpg-canvas.html": { "href": "gml-mod-studio.html", "label": "GameMaker Mod Studio" },
+  "gdevelop-adventure-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
+  "gdevelop-platformer-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
+  "gdevelop-pointclick-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
+  "gdevelop-pong-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
+  "gdevelop-shooter-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
+  "gdevelop-snake-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
+  "my-first-gdevelop-game-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" }
 };
 /* A1378:CANVAS_STUDIO:end */
 
@@ -266,6 +291,117 @@ function saveState() {
       completed: completed,
       codes: codes
     }));
+    savePassport(codes);
+  } catch(e) {}
+}
+
+/* ── A1382: project passport ──
+   A portable snapshot of the learner's project, so their own work can travel to
+   the next lesson (or into an exported engine project) instead of starting blank.
+   House rule: we carry what they built, we do not rewrite it. Written to
+   localStorage, which the backpack already collects. */
+var PASSPORT_SERIES = CFG.series || passportSeries(location.pathname);
+var PASSPORT_LESSON = CFG.lesson || passportLesson(location.pathname);
+// One passport per lesson, so starting a later lesson never clobbers an earlier
+// one before the learner has chosen to bring it forward.
+var PASSPORT_KEY = 'jvds.project.' + PASSPORT_SERIES + '.l' + PASSPORT_LESSON;
+var PASSPORT_PREFIX = 'jvds.project.' + PASSPORT_SERIES + '.l';
+
+function passportSeries(path) {
+  var f = (path.split('/').pop() || '').replace(/\.html$/i, '');
+  return f.replace(/-canvas$/i, '').replace(/-part\d+$/i, '').replace(/-p\d+$/i, '');
+}
+function passportLesson(path) {
+  var f = (path.split('/').pop() || '');
+  var m = f.match(/-part(\d+)-canvas\.html$/i) || f.match(/-p(\d+)-canvas\.html$/i);
+  return m ? Number(m[1]) : 1;
+}
+function passportEngine() {
+  var t = document.querySelector('.cw-lang-tag');
+  var s = t ? (t.textContent || '').replace(/[^A-Za-z0-9+#]/g, '').trim() : '';
+  return s || 'browser';
+}
+function buildPassport(codes) {
+  if (!codes) {
+    codes = {};
+    STEPS.forEach(function(s) { if (editors[s.num]) codes[s.num] = editors[s.num].value; });
+  }
+  var page = (location.pathname.split('/').pop() || '').toLowerCase();
+  var nxt = (window.CANVAS_NEXT_MAP || {})[page];
+  return {
+    format: 'jvds.project',
+    version: 1,
+    engine: passportEngine(),
+    series: PASSPORT_SERIES,
+    lesson: PASSPORT_LESSON,
+    title: (document.title || '').replace(/\s*\|\s*JVDesignStudio\s*$/i, '').trim(),
+    page: (location.pathname || ''),
+    updated: new Date().toISOString(),
+    completed: Object.keys(completed),
+    code: codes,
+    steps: STEPS.map(function(s) { return { num: s.num, title: s.title }; }),
+    next: nxt ? nxt.href : null
+  };
+}
+function savePassport(codes) {
+  try { localStorage.setItem(PASSPORT_KEY, JSON.stringify(buildPassport(codes))); } catch(e) {}
+}
+function passportNorm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+
+// Copy the learner's previous code into this lesson: match by step title first,
+// then fall back to the same position, and leave anything unmatched alone.
+function bringPassportForward(p) {
+  var prevCode = p.code || {}, prev = p.steps || [], filled = 0;
+  STEPS.forEach(function(s, i) {
+    var code = null;
+    var byTitle = prev.filter(function(ps) {
+      return passportNorm(ps.title) && passportNorm(ps.title) === passportNorm(s.title);
+    })[0];
+    if (byTitle && prevCode[byTitle.num] != null) code = prevCode[byTitle.num];
+    if (code == null && prev[i] && prevCode[prev[i].num] != null) code = prevCode[prev[i].num];
+    if (code != null && editors[s.num]) { editors[s.num].value = code; filled++; }
+  });
+  if (filled) { saveState(); updateCanvas(); }
+  return filled;
+}
+
+function maybeOfferContinue() {
+  try {
+    // Don't nag if the learner has already done real work in this lesson.
+    try { var own = JSON.parse(localStorage.getItem(CFG.storageKey)); if (own && own.completed && Object.keys(own.completed).length) return; } catch(e) {}
+    // Find the most recent earlier lesson of this series that has real progress.
+    var best = null, bestLesson = 0;
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (!k || k.indexOf(PASSPORT_PREFIX) !== 0) continue;
+      var n = Number(k.slice(PASSPORT_PREFIX.length));
+      if (!(n < PASSPORT_LESSON) || n <= bestLesson) continue;
+      try {
+        var cand = JSON.parse(localStorage.getItem(k));
+        if (cand && cand.completed && cand.completed.length) { best = cand; bestLesson = n; }
+      } catch(e) {}
+    }
+    if (!best) return;
+    var p = best;
+    var panel = document.querySelector('.cw-canvas-panel');
+    if (!panel || panel.querySelector('.cw-continue')) return;
+    var box = document.createElement('div');
+    box.className = 'cw-continue';
+    box.innerHTML = '<p class="cw-continue-head">Continue from your earlier project?</p>' +
+      '<p class="cw-continue-sub">We found your <b>' + (p.title || p.series) + '</b> work (lesson ' + p.lesson + ').</p>' +
+      '<div class="cw-continue-actions">' +
+        '<button type="button" class="cw-continue-take">Bring my code forward</button>' +
+        '<button type="button" class="cw-continue-skip">Start fresh</button>' +
+      '</div>';
+    panel.insertBefore(box, panel.firstChild);
+    box.querySelector('.cw-continue-take').onclick = function() {
+      var n = bringPassportForward(p);
+      box.querySelector('.cw-continue-sub').textContent = n
+        ? ('Brought ' + n + ' step' + (n === 1 ? '' : 's') + ' forward. Check each one and press Apply.')
+        : 'Nothing matched closely enough. Your previous code is in the project file you exported.';
+      box.classList.add('cw-continue-done');
+    };
+    box.querySelector('.cw-continue-skip').onclick = function() { box.remove(); };
   } catch(e) {}
 }
 
@@ -690,12 +826,16 @@ function resetStep(num) {
   fb.style.display = 'none';
 }
 
-function downloadGame() {
+function gameHtml() {
   var lastDone = 0;
   STEPS.forEach(function(s) { if (completed[s.num]) lastDone = s.num; });
   var target = lastDone || STEPS[currentStep].num;
   var code = completed[target] || editors[target].value;
-  var html = withArtKit(TEMPLATES[target](code));
+  return withArtKit(TEMPLATES[target](code));
+}
+
+function downloadGame() {
+  var html = gameHtml();
   var blob = new Blob([html], { type: 'text/html' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -720,7 +860,10 @@ window.CW = {
   selectQuiz: selectQuiz,
   checkQuiz: checkQuiz,
   checkFills: checkFills,
-  downloadGame: downloadGame
+  downloadGame: downloadGame,
+  gameHtml: gameHtml,
+  getPassport: buildPassport,
+  importPassport: function(p) { try { return bringPassportForward(p); } catch(e) { return 0; } }
 };
 
 /* Init */
@@ -728,6 +871,7 @@ loadState();
 renderSteps();
 updateCanvas();
 updateProgress();
+maybeOfferContinue();
 
 })();
 
@@ -795,5 +939,177 @@ updateProgress();
     html+='<a class="cw-next-btn" href="/workshop">Browse all workshops</a>';
     box.innerHTML=html;
     panel.appendChild(box);
+  }catch(e){}
+})();
+
+/* A1383:canvas-project-export - give every text engine a real project export so
+   the learner owns their code in the engine's language, plus the passport and a
+   CONTINUE.md. Pages that already ship their own export (C++) are left alone. */
+(function(){
+  try{
+    if(!window.CW || typeof window.CW.getPassport!=='function') return;
+    var panel=document.querySelector('.cw-canvas-panel');
+    if(!panel) return;
+    if(typeof window.PC_projectFiles==='function') return;
+    if(panel.querySelector('.cw-project-dl')) return;
+
+    var CRC=(function(){var t=[],n,k,c;for(n=0;n<256;n++){c=n;for(k=0;k<8;k++){c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);}t[n]=c>>>0;}return t;})();
+    function crc32(b){var c=0xFFFFFFFF;for(var i=0;i<b.length;i++){c=CRC[(c^b[i])&0xFF]^(c>>>8);}return (c^0xFFFFFFFF)>>>0;}
+    function u16(v){return [v&0xFF,(v>>8)&0xFF];}
+    function u32(v){return [v&0xFF,(v>>8)&0xFF,(v>>16)&0xFF,(v>>>24)&0xFF];}
+    function zip(files){
+      var enc=new TextEncoder(),chunks=[],central=[],off=0;
+      files.forEach(function(f){
+        var nb=enc.encode(f.name),data=f.data,crc=crc32(data);
+        var loc=[].concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(nb.length),u16(0));
+        var h=new Uint8Array(loc.length+nb.length);h.set(loc,0);h.set(nb,loc.length);chunks.push(h);chunks.push(data);
+        var cd=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),u16(nb.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(off));
+        var cdh=new Uint8Array(cd.length+nb.length);cdh.set(cd,0);cdh.set(nb,cd.length);central.push(cdh);off+=h.length+data.length;
+      });
+      var cdSize=central.reduce(function(s,c){return s+c.length;},0);
+      var eocd=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cdSize),u32(off),u16(0)));
+      var total=chunks.reduce(function(s,c){return s+c.length;},0)+cdSize+eocd.length,out=new Uint8Array(total),p=0;
+      chunks.forEach(function(c){out.set(c,p);p+=c.length;});
+      central.forEach(function(c){out.set(c,p);p+=c.length;});
+      out.set(eocd,p);return out;
+    }
+    function extFor(engine){
+      var e=(engine||'').toLowerCase();
+      if(e.indexOf('c++')>=0||e.indexOf('cpp')>=0)return 'cpp';
+      if(e.indexOf('python')>=0)return 'py';
+      if(e.indexOf('javascript')>=0||e.indexOf('js')>=0)return 'js';
+      if(e.indexOf('gdscript')>=0||e.indexOf('godot')>=0)return 'gd';
+      if(e.indexOf('gml')>=0||e.indexOf('gamemaker')>=0)return 'gml';
+      if(e.indexOf('lua')>=0||e.indexOf('defold')>=0||e.indexOf('pico')>=0||e.indexOf('mugen')>=0||e.indexOf('roblox')>=0)return 'lua';
+      return 'txt';
+    }
+    function commentFor(ext){return (ext==='py'||ext==='gd')?'#':(ext==='lua'?'--':'//');}
+    function continueDoc(p,guide){
+      var out='# Keep building: '+(p.title||'your project')+'\n\nYou made this in the browser. Continue where you left off:\n';
+      if(p.next)out+='  Next project: https://jvdesignstudio.co.uk/workshops/'+p.next+'\n';
+      if(guide)out+='  Step-by-step guide: https://jvdesignstudio.co.uk/workshops/'+guide+'\n';
+      out+='\njvds.project.json carries your work. Open a JVDesignStudio build canvas and press\n"Bring my code forward" to pick it up again.\n';
+      return out;
+    }
+    function readmeDoc(p,ext,guide){
+      var out='# '+(p.title||'My project')+'\n\nYou built this in the JVDesignStudio browser build canvas.\n\n' +
+        '## What is here\n' +
+        '- game.html - your game, ready to play now (open it in any browser)\n' +
+        '- main.'+ext+' - your lesson code, step by step\n' +
+        '- jvds.project.json - your project passport\n' +
+        '- CONTINUE.md - where to go next\n';
+      if(ext==='py') out+='- requirements.txt - the Python library you need (pygame)\n';
+      out+='\n## Play it now\nOpen game.html in a browser. That is your finished game.\n';
+      if(ext==='py') out+='\n## Run it in Python\n1. Install Python 3.\n2. pip install -r requirements.txt\n' +
+        '3. main.py holds your lesson code. When it holds the full program (the step-by-step guide shows it), run: python main.py\n';
+      out+='\n## Keep building\n' +
+        (guide?('Guide: https://jvdesignstudio.co.uk/workshops/'+guide+'\n'):'') +
+        (p.next?('Next project: https://jvdesignstudio.co.uk/workshops/'+p.next+'\n'):'') +
+        '\nYour code travels in jvds.project.json. On any build canvas press "Bring my code forward".\n';
+      return out;
+    }
+    function projectFiles(){
+      var p=window.CW.getPassport()||{},ext=extFor(p.engine),cmt=commentFor(ext);
+      var slug=(p.series||'my-project');
+      var lines=[cmt+' '+(p.title||'My project')+' - made in the JVDesignStudio build canvas.',
+        cmt+' Engine: '+(p.engine||'browser')+' | Lesson '+(p.lesson||1),
+        cmt+' Your work travels in jvds.project.json. See CONTINUE.md.',''];
+      (p.steps||[]).forEach(function(s){
+        lines.push(cmt+' --- Step '+s.num+': '+s.title+' ---');
+        lines.push((p.code&&p.code[s.num])||'');
+        lines.push('');
+      });
+      var page=(location.pathname.split('/').pop()||'').toLowerCase();
+      var guide=(window.CANVAS_GUIDE_MAP||{})[page];
+      var out=[
+        {name:slug+'/game.html', text:(window.CW.gameHtml ? window.CW.gameHtml() : '')},
+        {name:slug+'/main.'+ext, text:lines.join('\n')},
+        {name:slug+'/jvds.project.json', text:JSON.stringify(p,null,2)+'\n'},
+        {name:slug+'/CONTINUE.md', text:continueDoc(p,guide)},
+        {name:slug+'/README.md', text:readmeDoc(p,ext,guide)}
+      ];
+      if(ext==='py') out.push({name:slug+'/requirements.txt', text:'pygame>=2.5\n'});
+      return out;
+    }
+    function download(){
+      try{
+        var enc=new TextEncoder();
+        var files=projectFiles().map(function(f){return {name:f.name,data:enc.encode(f.text)};});
+        var blob=new Blob([zip(files)],{type:'application/zip'});
+        var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+        a.download='my-'+(window.CW.getPassport().series||'project')+'.zip';
+        document.body.appendChild(a);a.click();a.remove();
+        setTimeout(function(){URL.revokeObjectURL(a.href);},1500);
+      }catch(e){}
+    }
+    window.CW.projectFiles=projectFiles;
+    window.CW.downloadProject=download;
+    var btn=document.createElement('button');
+    btn.type='button';btn.className='cw-btn-dl cw-project-dl';
+    btn.textContent='Download my project (.zip)';btn.onclick=download;
+    var dls=panel.querySelectorAll('.cw-btn-dl');
+    if(dls.length) dls[dls.length-1].insertAdjacentElement('afterend',btn);
+    else panel.appendChild(btn);
+  }catch(e){}
+})();
+
+/* A1386:canvas-project-import - open an exported project (jvds.project.json or
+   the exported .zip) on any canvas, so a learner's work survives a different
+   device or a wiped school PC. This is the hook the paid "Finish it" packs use. */
+(function(){
+  try{
+    if(!window.CW || typeof window.CW.importPassport!=='function') return;
+    var panel=document.querySelector('.cw-canvas-panel');
+    if(!panel || panel.querySelector('.cw-import-btn')) return;
+    var input=document.createElement('input');
+    input.type='file';input.accept='.json,.zip,application/json,application/zip';
+    input.className='cw-import-input';input.style.display='none';
+    var btn=document.createElement('button');
+    btn.type='button';btn.className='cw-btn-dl cw-import-btn';btn.textContent='Open a saved project';
+    var note=document.createElement('p');note.className='cw-import-note';note.setAttribute('role','status');
+    // Our exports are STORE zips; read the jvds.project.json entry directly.
+    function zipPassport(bytes){
+      var dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),i=0,n=bytes.length;
+      while(i+30<=n){
+        if(dv.getUint32(i,true)!==0x04034b50) break;
+        var method=dv.getUint16(i+8,true),comp=dv.getUint32(i+18,true),nameLen=dv.getUint16(i+26,true),extraLen=dv.getUint16(i+28,true);
+        var ns=i+30,name=new TextDecoder().decode(bytes.subarray(ns,ns+nameLen)),ds=ns+nameLen+extraLen;
+        if(method!==0) return null;
+        if(/jvds\.project\.json$/i.test(name)) return new TextDecoder().decode(bytes.subarray(ds,ds+comp));
+        i=ds+comp;
+      }
+      return null;
+    }
+    function readPassportText(name,bytes){
+      if(/\.json$/i.test(name)) return new TextDecoder().decode(bytes);
+      if(/\.zip$/i.test(name)) return zipPassport(bytes);
+      return null;
+    }
+    function handleFile(file){
+      if(!file) return;
+      var reader=new FileReader();
+      reader.onload=function(){
+        try{
+          var txt=readPassportText(file.name,new Uint8Array(reader.result));
+          if(!txt) throw new Error('no passport');
+          var p=JSON.parse(txt);
+          if(!p||p.format!=='jvds.project') throw new Error('not a JVDS project');
+          var n=window.CW.importPassport(p);
+          note.textContent=n ? ('Opened '+(p.title||'your project')+'. Brought '+n+' step'+(n===1?'':'s')+' forward. Check each one and press Apply.') : 'Opened the project, but nothing matched this canvas closely enough to fill in.';
+        }catch(e){ note.textContent='That file is not a JVDS project. Use the .zip or jvds.project.json you exported.'; }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+    input.onchange=function(){ handleFile(input.files&&input.files[0]); input.value=''; };
+    btn.onclick=function(){ input.click(); };
+    var dls=panel.querySelectorAll('.cw-btn-dl');
+    if(dls.length) dls[dls.length-1].insertAdjacentElement('afterend',btn);
+    else panel.appendChild(btn);
+    btn.insertAdjacentElement('afterend',note);
+    panel.appendChild(input);
+    panel.addEventListener('dragover',function(e){e.preventDefault();panel.classList.add('cw-drop');});
+    panel.addEventListener('dragleave',function(){panel.classList.remove('cw-drop');});
+    panel.addEventListener('drop',function(e){e.preventDefault();panel.classList.remove('cw-drop');handleFile(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]);});
+    window.CW.openProject=handleFile;
   }catch(e){}
 })();

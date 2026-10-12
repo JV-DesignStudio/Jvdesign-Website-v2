@@ -38,6 +38,7 @@ function toCleanUrl(rel) {
     return '/' + base;
   }
   // Evergreen learning hubs live at /learn/<slug> (served extensionless by Pages)
+  if (rel === 'learn/index.html') return '/learn/';
   if (rel.startsWith('learn/')) return '/' + rel.replace(/\.html$/, '');
   // Exclude any .bak.html that slipped through
   if (rel.endsWith('.bak.html')) return null;

@@ -46,7 +46,8 @@ for (const fp of walk(ROOT, { ext: ".html", ignore: SKIP_DIRS })) {
   const title = titleM ? titleM[1].replace(/\s*\| JVDesignStudio\s*$/i, '').trim() : rel;
   const desc = descM ? descM[1].trim() : '';
   const aliases = ALIASES.get(rel) || [];
-  const entry = { url: rel, title: title || rel, desc: desc.slice(0, 180) };
+  const url = rel === 'learn/index.html' ? 'learn/' : rel;
+  const entry = { url, title: title || rel, desc: desc.slice(0, 180) };
   if (aliases.length) entry.aliases = aliases;
   entries.push(entry);
 }
