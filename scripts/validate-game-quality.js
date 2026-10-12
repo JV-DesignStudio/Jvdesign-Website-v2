@@ -67,4 +67,5 @@ for (const file of studioPicks) {
 }
 
 if (failed) process.exit(1);
-console.log(`Game quality gate passed for ${studioPicks.length} Flagship game(s) from docs/GAME_CURATION.json.`);
+const source = curationPresent ? 'docs/GAME_CURATION.json' : 'the games-registry.js tier flag';
+console.log(`Game quality gate passed for ${studioPicks.length} Flagship game(s) from ${source}.`);
