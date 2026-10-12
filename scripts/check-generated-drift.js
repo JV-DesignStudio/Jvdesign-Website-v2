@@ -59,6 +59,7 @@ function stripVolatile(s){
     const o=JSON.parse(s);
     delete o.throughput; delete o.learner; delete o.revenue; delete o.board; delete o.socialQueue;
     if(o.validate) delete o.validate.refs; // link count telemetry; validate-links already gates this
+    delete o.sw; // mirrors sw.js (committed on its own); its version bump is not board-data drift
     return JSON.stringify(o);
   }catch{ return s; }
 }

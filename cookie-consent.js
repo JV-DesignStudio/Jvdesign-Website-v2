@@ -41,8 +41,8 @@
     '🍪 We use <a href="/pages/privacy-policy.html" style="color:#BC4749;font-weight:700;">cookies</a> to understand how people use this site (Google Analytics). No personal data is sold.',
     '</p>',
     '<div style="display:flex;gap:8px;flex-shrink:0;">',
-    '<button id="cookie-accept" style="background:#BC4749;color:white;border:none;border-radius:10px;padding:9px 20px;font-weight:700;font-size:.85rem;cursor:pointer;box-shadow:0 3px 0 #9b3a3c;">Accept</button>',
-    '<button id="cookie-decline" style="background:transparent;color:#5a5449;border:1.5px solid #D2B48C;border-radius:10px;padding:9px 18px;font-weight:600;font-size:.85rem;cursor:pointer;">Decline</button>',
+    '<button id="cookie-accept" style="background:#BC4749;color:white;border:none;border-radius:10px;padding:9px 20px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;cursor:pointer;box-shadow:0 3px 0 #9b3a3c;">Accept</button>',
+    '<button id="cookie-decline" style="background:transparent;color:#5a5449;border:1.5px solid #D2B48C;border-radius:10px;padding:9px 18px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:.85rem;cursor:pointer;">Decline</button>',
     '</div>',
     '</div>'
   ].join('');
