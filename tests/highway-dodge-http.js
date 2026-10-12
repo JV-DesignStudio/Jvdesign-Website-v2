@@ -69,6 +69,22 @@ async function mobile(browser, base) {
   await page.evaluate(() => document.getElementById('playBtn').click());
   await sleep(300);
 
+  // A1431: the shared engine touch controls give phones visible lane buttons.
+  const lane = await page.evaluate(() => {
+    const el = document.querySelector('.gs-touch');
+    const btns = el ? el.querySelectorAll('.gs-touch-btn') : [];
+    const before = window.__highway ? window.__highway.playerLane : -1;
+    const right = btns[1];
+    if (right) {
+      right.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 21, bubbles: true, cancelable: true }));
+      right.dispatchEvent(new PointerEvent('pointerup', { pointerId: 21, bubbles: true, cancelable: true }));
+    }
+    const after = window.__highway ? window.__highway.playerLane : -1;
+    return { has: !!el, n: btns.length, before, after };
+  });
+  check('mobile: engine touch lane buttons render', lane.has && lane.n === 2, 'n=' + lane.n);
+  check('mobile: a lane button steers the car', lane.after !== lane.before, lane.before + '->' + lane.after);
+
   const root = await page.evaluate(() => {
     const r = document.querySelector('.jvds-root');
     return r ? r.className : null;

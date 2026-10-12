@@ -253,7 +253,7 @@ window.JVDS_GAMES = [
     "desc": "Solo sky-high climbing. Bounce Squirt the axolotl up the tower, ride gusts, grab coins and beat your best height.",
     "difficulty": "Easy to learn",
     "session": "3-5 min",
-    "controls": "Tap to bounce and climb",
+    "controls": "Tilt or drag to steer",
     "storyHook": "Squirt the axolotl is climbing the tower and Echo is cheering from the clouds.",
     "character": "Echo",
     "objective": "Bounce and climb as high as you can, then beat your best height.",
