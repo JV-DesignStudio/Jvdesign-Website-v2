@@ -147,6 +147,26 @@ const server = http.createServer((req, res) => {
     }
 
     check(slug + ': no runtime errors', errors.length === 0, errors.join(' | '));
+
+    // 5. mobile: the live preview must stay on screen while you tap through steps
+    const mob = await browser.newPage();
+    await mob.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    await mob.goto(base + '/workshops/' + slug + '-builder.html', { waitUntil: 'load' });
+    if (await mob.$('#cookie-decline')) { try { await mob.click('#cookie-decline'); } catch (e) {} }
+    await new Promise(r => setTimeout(r, 900));
+    await mob.evaluate(() => window.scrollTo(0, 900));
+    await new Promise(r => setTimeout(r, 250));
+    const mobLayout = await mob.evaluate(() => {
+      const vp = document.getElementById('viewport');
+      const cv = vp && vp.querySelector('canvas');
+      const r = e => e ? { top: Math.round(e.getBoundingClientRect().top), w: Math.round(e.getBoundingClientRect().width), h: Math.round(e.getBoundingClientRect().height) } : null;
+      return { vp: r(vp), cv: r(cv), sw: document.documentElement.scrollWidth, iw: innerWidth };
+    });
+    check(slug + ': mobile keeps the preview on screen', mobLayout.vp && mobLayout.vp.top >= 0 && mobLayout.vp.top < 200 && mobLayout.vp.h > 120, JSON.stringify(mobLayout.vp));
+    check(slug + ': mobile canvas fills the pinned preview', mobLayout.cv && mobLayout.cv.w > 100 && mobLayout.cv.h > 100, JSON.stringify(mobLayout.cv));
+    check(slug + ': mobile has no horizontal scroll', mobLayout.sw <= mobLayout.iw + 2, mobLayout.sw + '>' + mobLayout.iw);
+    await mob.close();
+
     await page.close();
   }
 
