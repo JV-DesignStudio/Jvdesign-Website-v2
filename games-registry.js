@@ -1,5 +1,27 @@
 window.JVDS_GAMES = [
   {
+    "id": "rustfall",
+    "thumb": "assets/game-thumbs/rustfall.webp",
+    "cat": "Action",
+    "file": "rustfall.html",
+    "title": "Rustfall",
+    "tag": "Roguelite · Survival",
+    "emoji": "☢️",
+    "bg": "linear-gradient(135deg,#1a0f0a,#5a2a12)",
+    "kids": false,
+    "desc": "Our biggest game: a post-apocalyptic roguelite. Survive the wasteland, fight through the biomes, mutate and push each run as deep as you can.",
+    "difficulty": "Challenging",
+    "session": "5-10 min",
+    "controls": "Move, aim and fight with keyboard, mouse or touch",
+    "storyHook": "The wasteland is closing in and every run is a fight for one more night.",
+    "character": "Ember",
+    "objective": "Survive the wasteland, clear the biomes and push your run as deep as you can.",
+    "finishLine": "The run ends, but your best layer is saved and the next run starts stronger.",
+    "arcadeSession": "5-10 min",
+    "age": "Ages 10-15",
+    "learning": "Risk and reward · Resource choices · Reflexes"
+  },
+  {
     "id": "echo-flight",
     "thumb": "assets/game-thumbs/echo-flight.webp",
     "cat": "Action",
