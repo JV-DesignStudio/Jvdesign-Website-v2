@@ -7,6 +7,10 @@
 (function () {
   const TOTAL = window.WORKSHOP_TOTAL || 6;
   const STORAGE_KEY = window.WORKSHOP_KEY || 'jvds-sim-lockdown';
+  // workshop-enhancements.js reads a global window.TOTAL (it falls back to 12),
+  // so publish it too or its progress restore rewrites the counter wrongly.
+  window.WORKSHOP_TOTAL = window.WORKSHOP_TOTAL || TOTAL;
+  window.TOTAL = window.TOTAL || TOTAL;
 
   let completed = new Set();
   let xp = 0, level = 1, streak = 0, bestStreak = 0, totalQuizzes = 0, correctFirst = 0;

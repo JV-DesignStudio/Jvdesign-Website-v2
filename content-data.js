@@ -438,6 +438,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/defold-dungeon-canvas.html"
     },
     {
+      "id": "defold-mod-studio",
+      "title": "Defold Mod Studio",
+      "desc": "A free browser playground for the Defold series. Lay out a 2D scene on a grid, add real Lua scripts, read a broken Defold console log and choose the fix, then download a real Defold project zip you can open in the free Defold editor. No install and no account needed to start.",
+      "engine": "Defold",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "2d"
+      ],
+      "steps": 6,
+      "themeColor": "#e0552f",
+      "cover": "og/learn.webp",
+      "url": "/workshops/defold-mod-studio.html"
+    },
+    {
       "id": "defold-platformer-canvas",
       "title": "Defold Platformer Build Canvas",
       "desc": "",
@@ -5800,15 +5816,15 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-12T12:59:01.921Z",
-    "workshops": 328,
+    "generated": "2026-10-12T13:06:46.860Z",
+    "workshops": 329,
     "games": 10,
     "tools": 37,
     "books": 5,
     "engines": {
       "Blender": 10,
       "C++": 18,
-      "Defold": 12,
+      "Defold": 13,
       "GDevelop": 12,
       "General": 60,
       "GML/GameMaker": 10,
