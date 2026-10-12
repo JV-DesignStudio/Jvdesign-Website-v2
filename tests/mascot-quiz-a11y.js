@@ -1,7 +1,8 @@
-// mascot-quiz-a11y.js: the "Find your creative guide" dialog auto-opens on the
-// home page, so keyboard and screen-reader learners must be able to use it:
-// it is a real modal, focus moves inside, Tab is trapped, Escape closes it and
-// the options/skip buttons work. Run: node tests/mascot-quiz-a11y.js
+// mascot-quiz-a11y.js: the "Find your creative guide" dialog is opt-in (A1455):
+// it must NOT auto-open on the home page, a visible trigger opens it, and the
+// dialog stays keyboard/screen-reader accessible: real modal, focus moves inside,
+// Tab is trapped, Escape closes it and the options/skip buttons work.
+// Run: node tests/mascot-quiz-a11y.js
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -30,9 +31,22 @@ function check(name, ok, detail = '') { console.log((ok ? 'PASS ' : 'FAIL ') + n
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const page = await browser.newPage();
   await page.setViewport({ width: 390, height: 844, isMobile: true });
-  await page.evaluateOnNewDocument(() => { try { localStorage.removeItem('jvds_guide'); localStorage.clear(); } catch (e) {} });
+  await page.evaluateOnNewDocument(() => { try { localStorage.clear(); } catch (e) {} });
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'networkidle0', timeout: 30000 });
   await new Promise(r => setTimeout(r, 1600));
+
+  // A1455: no blocking modal on first load; a visible opt-in trigger instead.
+  const pre = await page.evaluate(() => {
+    const b = document.getElementById('findGuide');
+    const vis = b && getComputedStyle(b).display !== 'none' && getComputedStyle(b).visibility !== 'hidden';
+    return { autoOpened: !!document.querySelector('.mascot-quiz-backdrop'), hasTrigger: !!b, triggerVisible: !!vis };
+  });
+  check('quiz does not auto-open on first load', !pre.autoOpened);
+  check('a visible Find your guide trigger exists', pre.hasTrigger && pre.triggerVisible);
+
+  // Open it with the trigger.
+  await page.click('#findGuide');
+  await new Promise(r => setTimeout(r, 200));
 
   const initial = await page.evaluate(() => {
     const bd = document.querySelector('.mascot-quiz-backdrop');
@@ -48,7 +62,7 @@ function check(name, ok, detail = '') { console.log((ok ? 'PASS ' : 'FAIL ') + n
       progress: (document.querySelector('.mascot-quiz-progress') || {}).textContent || ''
     };
   });
-  check('quiz dialog auto-opens on the home page', initial.opened);
+  check('the trigger opens the dialog', initial.opened);
   check('dialog exposes role=dialog + aria-modal', initial.isDialog && initial.ariaModal && initial.labelled);
   check('focus moves into the dialog on open', initial.focusInside, String(initial.focusInside));
   check('first option receives focus', initial.focusIsOption);
@@ -87,6 +101,19 @@ function check(name, ok, detail = '') { console.log((ok ? 'PASS ' : 'FAIL ') + n
   await new Promise(r => setTimeout(r, 150));
   const afterSkip = await page.evaluate(() => !!document.querySelector('.mascot-quiz-backdrop'));
   check('Skip closes the dialog', !afterSkip);
+
+  // A1455: a chosen guide highlights the matching hub card on load.
+  const page2 = await browser.newPage();
+  await page2.setViewport({ width: 1440, height: 900 });
+  await page2.evaluateOnNewDocument(() => { try { localStorage.setItem('jvds_guide', 'ember'); } catch (e) {} });
+  await page2.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'networkidle0', timeout: 30000 });
+  await new Promise(r => setTimeout(r, 900));
+  const hl = await page2.evaluate(() => {
+    const el = document.querySelector('.hub-card--create');
+    return el ? getComputedStyle(el).outlineStyle !== 'none' : false;
+  });
+  check('a chosen guide highlights the matching hub card', hl);
+  await page2.close();
 
   await browser.close();
   server.close();
