@@ -10,12 +10,20 @@ const sm = fs.readFileSync(path.join(SITE, 'sitemap.xml'), 'utf8');
 const locs = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
 
 function resolveFile(urlPath) {
-  if (urlPath === '/') return 'index.html';
-  const direct = urlPath.replace(/^\//, '');
-  const abs = path.join(SITE, direct);
-  if (fs.existsSync(abs) && fs.statSync(abs).isFile()) return direct;
-  const cand = 'pages' + (urlPath.endsWith('.html') ? urlPath : urlPath + '.html');
-  if (fs.existsSync(path.join(SITE, cand))) return cand;
+  const clean = decodeURIComponent(urlPath).split('?')[0];
+  if (clean === '/') return 'index.html';
+  const rel = clean.replace(/^\//, '').replace(/\/$/, '');
+  const candidates = [
+    rel,
+    'pages/' + rel,
+    'pages/' + rel + '.html',
+    rel + '/index.html',
+    rel + '.html',
+  ];
+  for (const c of candidates) {
+    const abs = path.join(SITE, c);
+    if (fs.existsSync(abs) && fs.statSync(abs).isFile()) return c;
+  }
   return null;
 }
 
