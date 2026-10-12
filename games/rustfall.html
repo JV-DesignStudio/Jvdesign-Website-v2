@@ -1215,6 +1215,7 @@ window.onerror = function (m2, s2, l2) { _showBootErr(m2, l2); return false; };
       <div class="pk-item"><span class="pk-icon">💨</span><span class="pk-text"><b>Dash</b> - <span>tap the button (bottom-right) for a quick i-framed dodge.</span></span></div>
       <div class="pk-item"><span class="pk-icon">🚪</span><span class="pk-text"><b>Clear rooms</b> - <span>kill everything to open the doors. Check the map (top-right) for what's left.</span></span></div>
       <div class="pk-item"><span class="pk-icon">💀</span><span class="pk-text"><b>Beat the boss</b> - <span>every zone ends with one. Win to open the portal to the next zone.</span></span></div>
+      <div class="pk-item"><span class="pk-icon">🔥</span><span class="pk-text"><b>Ember</b> - <span>every run makes the next one stronger. Pick a biome and go.</span></span></div>
       </div></div>
       <div class="rf-pane" data-pane="systems"><div class="pause-guide">
       <div class="pk-item"><span class="pk-icon">☢️</span><span class="pk-text"><b>Mutations</b> - <span>free upgrades between rooms. Every 5th is an Elite. Some combo together.</span></span></div>
@@ -4176,6 +4177,26 @@ const MIGRATIONS={
 function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(err){ console.warn('[Save] write failed ('+k+')',err); } }
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(err){ console.warn('[Save] read failed ('+k+')',err); return null; } }
 function lsDel(k){ try{ localStorage.removeItem(k); }catch(err){ console.warn('[Save] remove failed ('+k+')',err); } }
+// ── ARCADE BEST-SCORE BRIDGE ── the arcade hub (/arcade.html) reads one shared
+// key per game, jvds_game_<registry id>. Rustfall saves its own progress under
+// different keys, so this tiny mirror writes the best depth there. It never
+// touches the game's own saves and never throws. highScore = deepest zone
+// reached; gamesPlayed bumps once per new run; xp is a simple 10x mirror.
+const ARCADE_KEY='jvds_game_rustfall';
+function bridgeArcadeScore(countGame){
+  try{
+    let prev={}; try{ prev=JSON.parse(localStorage.getItem(ARCADE_KEY)||'{}')||{}; }catch(e){ prev={}; }
+    const depth=Math.max(
+      (typeof gameStats!=='undefined'&&gameStats&&gameStats.deepestZone)||0,
+      (typeof gameStats!=='undefined'&&gameStats&&gameStats.bestZoneReached)||0,
+      (typeof highestFloor!=='undefined'&&highestFloor)||0
+    );
+    const highScore=Math.max(Number(prev.highScore)||0, depth);
+    const gamesPlayed=(Number(prev.gamesPlayed)||0)+(countGame?1:0);
+    const xp=Math.max(Number(prev.xp)||0, highScore*10);
+    localStorage.setItem(ARCADE_KEY, JSON.stringify({ highScore:highScore, gamesPlayed:gamesPlayed, xp:xp, lastPlayed:new Date().toISOString() }));
+  }catch(err){ /* never throw: the bridge must not break the game */ }
+}
 // ── SAVE CHECKSUM ── a cheap integrity stamp (djb2-xor) over the payload WITHOUT
 // the stamp itself. loadData prefers the rolling backup when it doesn't match, so
 // a truncated or hand-edited save can't half-load into a broken economy. Saves
@@ -7382,6 +7403,7 @@ function startGame(hero){
   // identity and counts toward combos, applied before the first room.
   if(hero.signature){ const m=MUTATIONS_DEF.find(x=>x.id===hero.signature); if(m){ m.apply(player); player.runMutations.push(m.id); } }
   bumpStat('runs',1);
+  bridgeArcadeScore(true); // arcade mirror: one new game started
   rfaRunStart(hero); // playtest analytics: a fresh run begins
   document.getElementById('menu-overlay').classList.add('hidden');
   document.getElementById('overlay').classList.add('hidden');
@@ -7436,6 +7458,7 @@ function enterFloor(floorNum){
   if(player.secondWindMax) player.secondWind=player.secondWindMax; // Second Wind refreshes per floor
   if(player.keysPerFloor){ player.keys+=player.keysPerFloor; damageNumbers.push({x:CW/2,y:CH*0.62,text:'🗝️+'+player.keysPerFloor,life:50,color:"#ffd85c",size:14}); }
   gameStats.deepestZone=Math.max(gameStats.deepestZone,floorNum+1);checkAchievements();
+  bridgeArcadeScore(); // arcade mirror: new best depth may have been reached
   lastChaosMut=null;
   if(chaosMode) grantRandomMutation();   // roll a fresh mutation every floor
   showAnnounce(floorNum);
@@ -14588,6 +14611,7 @@ function buildRunRecap(){
   if(newZone)gameStats.bestZoneReached=reachedZone;
   if(newKills)gameStats.bestKills=totalKills;
   checkAchievements();saveData();
+  bridgeArcadeScore(); // arcade mirror: run ended, fold in the final best depth
   setTimeout(()=>{ try{ gameStats.newUnlocks=[]; saveData(); }catch(e){} },100);
   const muts=(player.runMutations||[]).length;
   const best=nb=>nb?' <span class="recap-best">★ BEST</span>':'';

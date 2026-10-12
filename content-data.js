@@ -2305,6 +2305,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/java-breakout-canvas.html"
     },
     {
+      "id": "java-mod-studio",
+      "title": "Java Mod Studio",
+      "desc": "A free browser playground for the Java series. Lay out a 2D game on a grid, add real Java methods, read a broken compiler log and choose the fix, then download a real Swing Java project you can run with any free JDK. No install and no account needed to start.",
+      "engine": "Java",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "2d"
+      ],
+      "steps": 6,
+      "themeColor": "#e76f00",
+      "cover": "og/learn.webp",
+      "url": "/workshops/java-mod-studio.html"
+    },
+    {
       "id": "java-platformer-canvas",
       "title": "Java Platformer Build Canvas",
       "desc": "",
@@ -5829,8 +5845,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-12T13:23:06.766Z",
-    "workshops": 329,
+    "generated": "2026-10-12T14:18:46.273Z",
+    "workshops": 330,
     "games": 11,
     "tools": 37,
     "books": 5,
@@ -5842,7 +5858,7 @@ window.JVDS_CONTENT = {
       "General": 60,
       "GML/GameMaker": 10,
       "Godot": 17,
-      "Java": 14,
+      "Java": 15,
       "JavaScript": 7,
       "Minecraft": 18,
       "MUGEN": 17,
