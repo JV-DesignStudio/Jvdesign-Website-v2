@@ -30,7 +30,10 @@ const fs = require('fs'), path = require('path'), http = require('http'), assert
     const pj = await py.evaluate(() => window.CW.projectFiles());
     const names = pj.map(f => f.name);
     assert.ok(names.some(n => n.endsWith('/main.py')), 'python export names main.py, got ' + names.join(', '));
+    assert.ok(names.some(n => n.endsWith('/game.html')), 'python export includes the playable game.html');
     assert.ok(names.some(n => n.endsWith('/jvds.project.json')), 'python export has jvds.project.json');
+    assert.ok(names.some(n => n.endsWith('/README.md')), 'python export has a README');
+    assert.ok(names.some(n => n.endsWith('/requirements.txt')), 'python export has requirements.txt');
     assert.ok(names.some(n => n.endsWith('/CONTINUE.md')), 'python export has CONTINUE.md');
     const pyMain = pj.find(f => f.name.endsWith('/main.py')).text;
     assert.ok(pyMain.trimStart().startsWith('#'), 'python source uses # comments');
