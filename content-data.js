@@ -84,6 +84,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/blender-materials-workshop.html"
     },
     {
+      "id": "blender-mod-studio",
+      "title": "Blender Mod Studio",
+      "desc": "A free browser playground for the Blender series. Lay out a 3D scene on a grid (primitives, lights, cameras), add Blender steps, read a broken Blender Python log and choose the fix, then download a real bpy script that builds the scene for you. No install needed to plan it.",
+      "engine": "Blender",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "3d"
+      ],
+      "steps": 6,
+      "themeColor": "#f5792a",
+      "cover": "og/learn.webp",
+      "url": "/workshops/blender-mod-studio.html"
+    },
+    {
       "id": "blender-world-workshop",
       "title": "Blender World Workshop",
       "desc": "A free Blender series for beginners: from your first cube to a rigged, animated and lit 3D scene. Sketch a blockout in your browser, then install the free Blender and build it for real. Ages 10+.",
@@ -128,22 +144,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#ff70b8",
       "cover": "/og/blender-cheatsheet.webp",
       "url": "/workshops/blender-cheatsheet.html"
-    },
-    {
-      "id": "blender-mod-studio",
-      "title": "GDevelop Mod Studio",
-      "desc": "A free browser playground for the GDevelop series. Lay out a 2D game on a grid, add GDevelop events, read a broken GDevelop log and choose the fix, then download a GDevelop build sheet with the object list and event sheet. No install needed to start.",
-      "engine": "Blender",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "2d"
-      ],
-      "steps": 6,
-      "themeColor": "#7c3aed",
-      "cover": "og/learn.webp",
-      "url": "/workshops/blender-mod-studio.html"
     },
     {
       "id": "blender-character-workshop",
@@ -4689,6 +4689,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/tinkercad-ep2-popit.html"
     },
     {
+      "id": "tinkercad-mod-studio",
+      "title": "TinkerCAD Mod Studio",
+      "desc": "A free browser playground for the 3D-print series. Lay out a 3D model on a grid (box, cylinder, cone, sphere, wedge, pyramid), add model steps, read a broken log and choose the fix, then download a real STL you can import into TinkerCAD or print. No install needed to start.",
+      "engine": "TinkerCAD",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "3d"
+      ],
+      "steps": 6,
+      "themeColor": "#0b7fab",
+      "cover": "og/learn.webp",
+      "url": "/workshops/tinkercad-mod-studio.html"
+    },
+    {
       "id": "unity-breakout-workshop",
       "title": "Build a Breakout Game in Unity (My First Unity Game, Episode 3)",
       "desc": "Build Breakout in Unity with C#: collisions, bricks and score. Free beginner tutorial.",
@@ -5893,8 +5909,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-12T15:17:17.112Z",
-    "workshops": 333,
+    "generated": "2026-10-12T15:46:10.569Z",
+    "workshops": 334,
     "games": 11,
     "tools": 37,
     "books": 5,
@@ -5917,7 +5933,7 @@ window.JVDS_CONTENT = {
       "Scratch": 13,
       "Stardew Valley": 15,
       "Terraria": 15,
-      "TinkerCAD": 9,
+      "TinkerCAD": 10,
       "Unity": 10,
       "Unreal": 11
     },
