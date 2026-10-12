@@ -263,3 +263,32 @@ window.JVDS_GAMES = [
     "learning": "Timing · Coordination"
   }
 ];
+
+/* ── Public quality labels (A1424) ────────────────────────────────────────
+   READY      finished, with a passing automated browser test in tests/.
+   BETA       playable and fun, still being improved.
+   EXPERIMENT early prototype, shown on purpose, not a finished release.
+   HIDDEN     not worth showing yet, so it is left out of the catalogue.
+
+   Definitions live in GAME_QUALITY.md. Change a label here (one line) and it
+   shows on the arcade cabinet automatically. */
+window.JVDS_GAME_QUALITY = {
+  "rustfall": "BETA",
+  "echo-flight": "READY",
+  "nova-siege": "BETA",
+  "arcane-citadel": "READY",
+  "tower-defence": "READY",
+  "ember-smash": "READY",
+  "gem-match": "BETA",
+  "highway-dodge": "BETA",
+  "cozy-cafe-match": "READY",
+  "biscuit-clicker": "BETA",
+  "sky-high-friends": "BETA"
+};
+(function () {
+  var labels = window.JVDS_GAME_QUALITY || {};
+  (window.JVDS_GAMES || []).forEach(function (g) {
+    g.quality = labels[g.id] || 'BETA';
+    if (g.id === 'arcane-citadel') g.tier = 'flagship';
+  });
+})();
