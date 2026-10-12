@@ -64,10 +64,11 @@ const ROOT = path.resolve(__dirname, '..');
         }
         check(b === answers.blanks.length, 'Unexpected blank count');
         check(document.getElementById('finishBanner').classList.contains('show'), 'Finish banner missing');
-        const key = window.WORKSHOP_KEY || (typeof STORAGE_KEY !== 'undefined' ? STORAGE_KEY : null);
+        const keys = [window.WORKSHOP_KEY, (typeof STORAGE_KEY !== 'undefined' ? STORAGE_KEY : null)].filter(Boolean);
+        const key = keys.find(k => { try { const d = JSON.parse(localStorage.getItem(k) || 'null'); return d && Array.isArray(d.completed) && d.completed.length; } catch (e) { return false; } }) || keys[0];
         check(key, 'Storage key missing');
         const saved = JSON.parse(localStorage.getItem(key));
-        check(saved.completed.length === cards.length, 'Completion not saved');
+        check(saved && Array.isArray(saved.completed) && saved.completed.length === cards.length, 'Completion not saved');
         return { key, saved, blanks: b, steps: cards.length };
       }, answers);
       await page.reload({ waitUntil: 'load' });
