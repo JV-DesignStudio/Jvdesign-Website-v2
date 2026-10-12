@@ -73,7 +73,7 @@ window.JVDS.announce = (function(){
     btn.addEventListener('click', function(e){ e.stopPropagation(); nav.classList.contains('open') ? closeNav() : openNav(); });
     nav.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeNav); });
     document.addEventListener('click', function(e){ if(nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target) && !e.target.closest('.nav-dropdown')) closeNav(); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNav(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && !(dd && dd.classList.contains('open'))) closeNav(); });
   }
   // More dropdown
   var moreBtn = document.getElementById('moreDropdownBtn');
@@ -103,7 +103,7 @@ window.JVDS.announce = (function(){
       a.addEventListener('click', function(){ setMore(false); });
     });
     document.addEventListener('click', function(e){ if(!dd.contains(e.target)) setMore(false); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') setMore(false); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && dd.classList.contains('open')){ setMore(false); moreBtn.focus(); } });
   }
   // Profile chip
   try {
