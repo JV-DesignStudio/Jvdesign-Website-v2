@@ -55,12 +55,14 @@ const ENGINE_META = {
 
 function card(e) {
   const href = '../' + String(e.url).replace(/^\//, '');
-  const badge = [e.engine, cap(e.difficulty), 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
+  const isStudio = /-(?:mod-)?studio$/.test(e.id || '');
+  const badge = (isStudio ? '🛠 Browser studio · ' : '') + [e.engine, cap(e.difficulty), 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
   const desc = e.desc || ('Interactive build-along for ' + e.title + '.');
   return '    <a href="' + esc(href) + '" class="course-card"'
     + ' data-engine="' + esc(e.engine) + '"'
     + ' data-difficulty="' + esc(e.difficulty) + '"'
     + ' data-age="' + esc(e.ageRange) + '"'
+    + (isStudio ? ' data-studio="true"' : '')
     + ' data-cat="tutorial">\n'
     + '      <div class="course-body">\n'
     + '        <div class="course-tag">' + esc(badge) + '</div>\n'
