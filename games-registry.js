@@ -96,6 +96,7 @@ window.JVDS_GAMES = [
   },
   {
     "id": "tower-defence",
+    "thumb": "assets/game-thumbs/tower-defence.webp",
     "cat": "Strategy",
     "file": "tower-defence.html",
     "title": "Tower Defence",

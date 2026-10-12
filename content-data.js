@@ -1858,6 +1858,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/gml-cheatsheet.html"
     },
     {
+      "id": "gml-mod-studio",
+      "title": "GameMaker (GML) Mod Studio",
+      "desc": "A free browser playground for the GameMaker series. Lay out a 2D game on a grid, add real GML behaviours, read a broken GameMaker log and choose the fix, then download real GML event code you can paste into GameMaker. No install needed to start.",
+      "engine": "GML/GameMaker",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "2d"
+      ],
+      "steps": 6,
+      "themeColor": "#6cbe45",
+      "cover": "og/learn.webp",
+      "url": "/workshops/gml-mod-studio.html"
+    },
+    {
       "id": "gml-breakout-canvas",
       "title": "GML Breakout Build Canvas",
       "desc": "",
@@ -5845,8 +5861,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-12T14:18:46.273Z",
-    "workshops": 330,
+    "generated": "2026-10-12T15:01:46.457Z",
+    "workshops": 331,
     "games": 11,
     "tools": 37,
     "books": 5,
@@ -5856,7 +5872,7 @@ window.JVDS_CONTENT = {
       "Defold": 13,
       "GDevelop": 12,
       "General": 60,
-      "GML/GameMaker": 10,
+      "GML/GameMaker": 11,
       "Godot": 17,
       "Java": 15,
       "JavaScript": 7,
