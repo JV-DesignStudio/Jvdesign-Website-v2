@@ -336,6 +336,7 @@ function buildPassport(codes) {
     lesson: PASSPORT_LESSON,
     title: (document.title || '').replace(/\s*\|\s*JVDesignStudio\s*$/i, '').trim(),
     page: (location.pathname || ''),
+    storageKey: CFG.storageKey,
     updated: new Date().toISOString(),
     completed: Object.keys(completed),
     code: codes,
@@ -345,6 +346,18 @@ function buildPassport(codes) {
 }
 function savePassport(codes) {
   try { localStorage.setItem(PASSPORT_KEY, JSON.stringify(buildPassport(codes))); } catch(e) {}
+}
+// A1401: a compact, copy-pasteable project code for devices where downloads are blocked.
+function encodeProject(p) {
+  try { return 'JVP1:' + btoa(unescape(encodeURIComponent(JSON.stringify(p)))); } catch(e) { return ''; }
+}
+function decodeProject(code) {
+  try {
+    code = String(code || '').trim();
+    if (code.indexOf('JVP1:') !== 0) return null;
+    var p = JSON.parse(decodeURIComponent(escape(atob(code.slice(5)))));
+    return (p && p.format === 'jvds.project') ? p : null;
+  } catch(e) { return null; }
 }
 function passportNorm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
 
@@ -863,7 +876,9 @@ window.CW = {
   downloadGame: downloadGame,
   gameHtml: gameHtml,
   getPassport: buildPassport,
-  importPassport: function(p) { try { return bringPassportForward(p); } catch(e) { return 0; } }
+  importPassport: function(p) { try { return bringPassportForward(p); } catch(e) { return 0; } },
+  projectCode: function() { try { return encodeProject(buildPassport()); } catch(e) { return ''; } },
+  importCode: function(code) { var p = decodeProject(code); return p ? bringPassportForward(p) : -1; }
 };
 
 /* Init */
@@ -912,7 +927,11 @@ maybeOfferContinue();
     back.className='cw-topbar-back';
     back.href='/workshop';
     back.textContent='\u2190 All workshops';
-    bar.appendChild(brand); bar.appendChild(chip); bar.appendChild(back);
+    var prog=document.createElement('a');
+    prog.className='cw-topbar-prog';
+    prog.href='/workshops/my-progress.html';
+    prog.textContent='My progress';
+    bar.appendChild(brand); bar.appendChild(chip); bar.appendChild(prog); bar.appendChild(back);
     document.body.insertBefore(bar, document.body.firstChild);
   }catch(e){}
 })();
@@ -1047,9 +1066,22 @@ maybeOfferContinue();
     var btn=document.createElement('button');
     btn.type='button';btn.className='cw-btn-dl cw-project-dl';
     btn.textContent='Download my project (.zip)';btn.onclick=download;
+    var codeBtn=document.createElement('button');
+    codeBtn.type='button';codeBtn.className='cw-btn-dl cw-project-code';
+    codeBtn.textContent='Copy my project code';
+    codeBtn.onclick=function(){
+      try{
+        var code=window.CW.projectCode();
+        if(!code) return;
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(code).then(function(){codeBtn.textContent='Copied!';setTimeout(function(){codeBtn.textContent='Copy my project code';},1500);},
+            function(){prompt('Copy your project code:',code);});
+        } else { prompt('Copy your project code:',code); }
+      }catch(e){ try{ prompt('Copy your project code:',window.CW.projectCode()); }catch(e2){} }
+    };
     var dls=panel.querySelectorAll('.cw-btn-dl');
-    if(dls.length) dls[dls.length-1].insertAdjacentElement('afterend',btn);
-    else panel.appendChild(btn);
+    if(dls.length){ dls[dls.length-1].insertAdjacentElement('afterend',btn); btn.insertAdjacentElement('afterend',codeBtn); }
+    else { panel.appendChild(btn); panel.appendChild(codeBtn); }
   }catch(e){}
 })();
 
@@ -1102,10 +1134,19 @@ maybeOfferContinue();
     }
     input.onchange=function(){ handleFile(input.files&&input.files[0]); input.value=''; };
     btn.onclick=function(){ input.click(); };
+    var pasteBtn=document.createElement('button');
+    pasteBtn.type='button';pasteBtn.className='cw-btn-dl cw-import-code';pasteBtn.textContent='Paste a project code';
+    pasteBtn.onclick=function(){
+      var code=prompt('Paste your project code:');
+      if(!code) return;
+      var n=window.CW.importCode(code);
+      note.textContent = n>0 ? ('Opened your project. Brought '+n+' step'+(n===1?'':'s')+' forward. Check each one and press Apply.')
+        : (n===0 ? 'Opened the project, but nothing matched this canvas closely enough to fill in.' : 'That is not a JVDS project code.');
+    };
     var dls=panel.querySelectorAll('.cw-btn-dl');
-    if(dls.length) dls[dls.length-1].insertAdjacentElement('afterend',btn);
-    else panel.appendChild(btn);
-    btn.insertAdjacentElement('afterend',note);
+    if(dls.length){ dls[dls.length-1].insertAdjacentElement('afterend',btn); btn.insertAdjacentElement('afterend',pasteBtn); }
+    else { panel.appendChild(btn); panel.appendChild(pasteBtn); }
+    pasteBtn.insertAdjacentElement('afterend',note);
     panel.appendChild(input);
     panel.addEventListener('dragover',function(e){e.preventDefault();panel.classList.add('cw-drop');});
     panel.addEventListener('dragleave',function(){panel.classList.remove('cw-drop');});
