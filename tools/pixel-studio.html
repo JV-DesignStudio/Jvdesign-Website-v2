@@ -22,7 +22,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
 <link rel="preload" href="../style-tool-pixel-studio.css?v=19" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="../style-tool-pixel-studio.css?v=19"></noscript>
@@ -759,7 +759,10 @@ function init(){
   setCanvasSize(32,32,false);
   setupEvents();
   if(window._firstMission){
-    applyTemplate('character'); // skip restore/start modals in first-mission flow
+    // A1459: if the visitor arrived with a doodle from the homepage canvas
+    // (#first-mission&art=...), load that art instead of the blank character
+    // template, so the toy becomes the start of the real thing.
+    if(!importEasyArtFromHash()) applyTemplate('character'); // skip restore/start modals in first-mission flow
   } else {
     setupAutosave();
     // Legacy Easy Pixel Art share link + storage migration (keeps #art= bookmarks working after unify)
@@ -771,11 +774,11 @@ function init(){
   }
 }
 function importEasyArtFromHash(){
-  var m=location.hash.match(/#art=([^&]+)/);
-  if(!m) return;
+  var m=location.hash.match(/[#&]art=([^&]+)/);
+  if(!m) return false;
   try{
     var d=JSON.parse(decodeURIComponent(atob(m[1])));
-    if(!d || !Array.isArray(d.grid) || !d.N) return;
+    if(!d || !Array.isArray(d.grid) || !d.N) return false;
     var N=Math.max(2,Math.min(128,d.N|0));
     setCanvasSize(N,N,false);
     document.getElementById('custW').value=N;document.getElementById('custH').value=N;
@@ -788,8 +791,9 @@ function importEasyArtFromHash(){
       }
     }
     renderAll(); markDirty();
-    showToast('Shared art loaded from Easy Pixel Art link');
-  }catch(e){}
+    showToast('Your drawing is here - keep going!');
+    return true;
+  }catch(e){ return false; }
 }
 function migrateEasyPixelStorage(){
   try{
@@ -1679,7 +1683,7 @@ async function exportEnginePack(){
   const sc=Math.max(1,Math.floor(512/Math.max(cW*cols,cH*rows)));
   const sheet=document.createElement("canvas"); sheet.width=cW*cols*sc; sheet.height=cH*rows*sc; const sctx=sheet.getContext("2d"); sctx.imageSmoothingEnabled=false;
   const positions=[]; frames.forEach((_,fi)=>{const c=fi%cols,r=Math.floor(fi/cols); sctx.drawImage(flattenFrame(fi),c*cW*sc,r*cH*sc,cW*sc,cH*sc); positions.push({x:c*cW*sc,y:r*cH*sc});});
-  const loadJSZip=()=> window.JSZip ? Promise.resolve(window.JSZip) : new Promise((res,rej)=>{const s=document.createElement("script"); s.src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"; s.onload=()=>res(window.JSZip); s.onerror=()=>rej(new Error("JSZip")); document.head.appendChild(s);});
+  const loadJSZip=()=> window.JSZip ? Promise.resolve(window.JSZip) : new Promise((res,rej)=>{const s=document.createElement("script"); s.src="/assets/vendor/jszip/jszip.min.js"; s.onload=()=>res(window.JSZip); s.onerror=()=>rej(new Error("JSZip")); document.head.appendChild(s);});
   try{
     const JSZip=await loadJSZip(); const zip=new JSZip();
     const blobSheet=await new Promise(r=>sheet.toBlob(b=>r(b),"image/png")); zip.file("spritesheet.png", blobSheet);
@@ -2280,7 +2284,7 @@ document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(()=>reque
       // hide nags that shouldn't appear in classroom
       localStorage.setItem('jvds_mission_dismiss','1'); // keep banner hidden in classroom unless hash
     }
-    if(location.hash==='#first-mission' || params.has('first-mission')){
+    if(location.hash.indexOf('#first-mission')===0 || params.has('first-mission')){
       window._firstMission = true;
       try{ localStorage.setItem('jvds_pixel_seen','1'); }catch(e){} // skip start modal so template auto-applies
       try{ localStorage.setItem('ember-guide-pixel-studio-seen','1'); }catch(e){} // suppress EmberGuide auto-show

@@ -28,28 +28,11 @@
 <title>Arcade Game Maker: Build a Browser Arcade Game for Free | JVDesignStudio</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>">
 <!-- Performance: preconnect to CDNs before the browser discovers them in scripts -->
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
 <!-- Preload Phaser so it starts downloading immediately (high priority) -->
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 
-<!-- Analytics, only fires after user consent -->
-<script>
-window.dataLayer=window.dataLayer||[];
-function gtag(){dataLayer.push(arguments);}
-function _initAnalytics(){
-  if(window._analyticsLoaded)return;
-  window._analyticsLoaded=true;
-  const s=document.createElement('script');
-  s.async=true;
-  s.src='https://www.googletagmanager.com/gtag/js?id=G-3JBXCCNY4C';
-  document.head.appendChild(s);
-  gtag('js',new Date());
-  gtag('config','G-3JBXCCNY4C');
-}
-// Auto-init if previously consented
-if(localStorage.getItem('jv_analytics_ok')==='1') _initAnalytics();
-</script>
+<!-- Analytics is provided by analytics-loader.js (consent-gated). -->
 <script defer src="../phaser-arcade-physics.min.js"></script>
 <!-- Offline QR code generator (MIT, Kazuhiko Arase). Replaces the api.qrserver.com dependency so share QR codes work with no network. -->
 <script defer src="../qrcode-generator.js"></script>
@@ -96,7 +79,7 @@ if(localStorage.getItem('jv_analytics_ok')==='1') _initAnalytics();
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
 </head>
 <body>
@@ -6415,9 +6398,9 @@ function _showRunSuccess() {
         setTimeout(() => runBtn.classList.remove('success'), 600);
     }
 }
-// ── Analytics (consent-gated) ────────────────────────────────────────────
+// ── Analytics (consent-gated by the shared analytics-loader.js) ──────────
 function _trackEvent(name, params) {
-    if (localStorage.getItem('jv_analytics_ok') !== '1') return;
+    if (typeof gtag !== 'function') return;
     try { gtag('event', name, params || {}); } catch(_e) {}
 }
 
@@ -20889,7 +20872,7 @@ async function _dbgRender() {
         ${_dbgRow(RunMods.picksTaken > 0, 'perks taken this run', String(RunMods.picksTaken || 0))}
         ${_dbgRow(RunMods.synergies.length > 0, 'active synergies', RunMods.synergies.length + ' active')}
         ${_dbgRow(liveConfig._dailySeed > 0, 'daily challenge', ' #' + (liveConfig._dailySeed % 10000))}
-        ${_dbgRow(true, 'analytics', localStorage.getItem('jv_analytics_ok') === '1' ? 'consented' : 'off')}</div>`;
+        ${_dbgRow(true, 'analytics', (window.JVDSCookies && JVDSCookies.status() === 'accepted') ? 'consented' : 'off')}</div>`;
 
     html += `<div><div class="sec-label" style="margin-bottom:6px;">Data</div>
         ${_dbgRow(true, 'localStorage used', (total / 1024).toFixed(1) + ' KB')}
@@ -21481,50 +21464,7 @@ window.addEventListener('online', () => {
 });
 </script>
 
-<!-- ── COOKIE CONSENT BANNER ──────────────────────────────────────────────── -->
-<div id="cookieBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:rgba(8,6,20,.97);border-top:1px solid rgba(124,58,237,.4);padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-family:'Inter',sans-serif;font-size:.78rem;color:rgba(240,234,214,.75);box-shadow:0 -4px 32px rgba(0,0,0,.5);">
- <span style="flex:1;min-width:200px;">🍪 We use analytics cookies to understand how people use this tool. <a href="/privacy-policy" target="_blank" style="color:#a78bfa;text-decoration:underline;">Privacy Policy</a></span>
- <div style="display:flex;gap:8px;flex-shrink:0;">
- <button onclick="_consentDecline()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);color:rgba(240,234,214,.6);padding:7px 16px;border-radius:8px;cursor:pointer;font-size:.75rem;font-family:'Inter',sans-serif;">Decline</button>
- <button onclick="_consentAccept()" style="background:#7c3aed;border:none;color:#fff;padding:7px 20px;border-radius:8px;cursor:pointer;font-size:.75rem;font-weight:700;font-family:'Inter',sans-serif;">Accept</button>
- </div>
-</div>
-<script>
-(function(){
-  const banner = document.getElementById('cookieBanner');
-  if (!banner) return;
-  const fab = document.getElementById('panelFab');
-  // The banner is a fixed bottom overlay and sits directly on top of the
-  // mobile "Build" FAB (same corner), making it invisible and untappable
-  // until the banner is dismissed. Push the FAB above the banner while shown.
-  function positionFab(show){
-    if (!fab) return;
-    if (show) {
-      const h = banner.getBoundingClientRect().height;
-      fab.style.bottom = (h + 14) + 'px';
-    } else {
-      fab.style.bottom = '';
-    }
-  }
-  const consent = localStorage.getItem('jv_analytics_ok');
-  if (consent === null) {
-    banner.style.display = 'flex'; // first visit, show banner
-    requestAnimationFrame(() => positionFab(true));
-    window.addEventListener('resize', () => { if (banner.style.display !== 'none') positionFab(true); });
-  }
-  window._consentAccept = () => {
-    localStorage.setItem('jv_analytics_ok','1');
-    banner.style.display = 'none';
-    positionFab(false);
-    _initAnalytics();
-  };
-  window._consentDecline = () => {
-    localStorage.setItem('jv_analytics_ok','0');
-    banner.style.display = 'none';
-    positionFab(false);
-  };
-})();
-</script>
+<!-- Cookie consent and analytics consent are handled by the shared cookie-consent.js banner. -->
 <script src="../player-profile.js"></script>
 <script src="../tool-xp.js"></script>
 <script src="../shared-modal.js"></script>

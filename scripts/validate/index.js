@@ -24,6 +24,10 @@ const STEPS = [
   { id: 'workshops', cmd: path.join(ROOT, 'validate-workshops.js'), label: 'Workshop front-matter' },
   { id: 'stats',     cmd: path.join(ROOT, 'validate-stats.js'),     label: 'Marketing counts' },
   { id: 'quests',    cmd: path.join(ROOT, 'validate-quests.js'),    label: 'Quest references' },
+  { id: 'quality',   cmd: path.join(ROOT, 'scripts/validate-game-quality.js'), label: 'Flagship game quality' },
+  { id: 'covers',    cmd: path.join(ROOT, 'validate-covers.js'),    label: 'Cover art exists' },
+  { id: 'callouts',  cmd: path.join(ROOT, 'scripts/validate-workshop-callouts.js'), label: 'Workshop tool callouts' },
+  { id: 'labels',    cmd: path.join(ROOT, 'tests/game-quality.js'), label: 'Game quality labels' },
   { id: 'public',    cmd: path.join(ROOT, 'scripts/validate-public-boundary.js'), label: 'Public boundary' },
   { id: 'drift',     cmd: path.join(ROOT, 'scripts/check-generated-drift.js'), label: 'Generated drift' },
 ].filter(s=> !s.nightly || isNightly);

@@ -46,12 +46,18 @@ for (const host of ['https://www.youtube.com', 'https://itch.io']) {
   else fail('header CSP frame-src missing ' + host);
 }
 // A798: runtime third parties the tools really use (blocked by the first
-// A781 draft, caught by tests/arcade-game-maker-smoke.js). web-vitals loads
-// as a script after consent; Phaser default sprites and the is.gd shortener
-// fetch over connect-src; the footer newsletter posts to Formspree.
-for (const host of ['https://unpkg.com', 'https://labs.phaser.io', 'https://is.gd']) {
+// A781 draft, caught by tests/arcade-game-maker-smoke.js). Phaser default
+// sprites and the is.gd shortener fetch over connect-src; the footer
+// newsletter posts to Formspree.
+for (const host of ['https://labs.phaser.io', 'https://is.gd']) {
   if (csp.includes(host)) ok('header CSP allows runtime host ' + host);
   else fail('header CSP missing runtime host ' + host);
+}
+// A781: third-party script CDNs are gone (JSZip, es-module-shims, gifenc,
+// web-vitals are self-hosted under /assets/vendor). Guard against regressions.
+for (const host of ['https://cdnjs.cloudflare.com', 'https://cdn.jsdelivr.net', 'https://unpkg.com']) {
+  if (csp.includes(host)) fail('header CSP still trusts third-party CDN ' + host);
+  else ok('header CSP does not trust third-party CDN ' + host);
 }
 if (csp.includes("form-action 'self' https://formspree.io")) ok('header CSP form-action allows the newsletter');
 else fail('header CSP form-action must allow https://formspree.io');

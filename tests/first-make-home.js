@@ -95,6 +95,15 @@ const pixel = (page, i) => page.evaluate((i) => {
     const after = await pixel(page, 0);
     check(vp.name+': click paints a pixel', before !== after, before+' -> '+after);
 
+    // A1456: the doodle is carried into Pixel Studio through the #art= hash.
+    const startHref = await page.evaluate(() => document.getElementById('fmStart').getAttribute('href'));
+    check(vp.name+': Start link carries the doodle (#art=)', /#first-mission&art=/.test(startHref), startHref.slice(0, 64)+'...');
+    const decoded = await page.evaluate((h) => {
+      const m = h.match(/[#&]art=([^&]+)/); if (!m) return null;
+      try { const d = JSON.parse(decodeURIComponent(atob(m[1]))); return { N: d.N, painted: d.grid.filter(Boolean).length }; } catch (e) { return null; }
+    }, startHref);
+    check(vp.name+': doodle decodes to the painted pixels', !!decoded && decoded.N === 8 && decoded.painted >= 1, JSON.stringify(decoded));
+
     // keyboard paint: focus canvas, move right, Enter, expect a painted cell
     const kBefore = await pixel(page, 1);
     await page.evaluate(() => document.getElementById('fmCanvas').focus());
@@ -113,6 +122,24 @@ const pixel = (page, i) => page.evaluate((i) => {
     check(vp.name+': zero runtime errors', errors.length === 0, errors.slice(0,3).join(' | '));
     await page.close();
   }
+
+  // A1456: the carried doodle actually opens inside Pixel Studio's first mission.
+  const hand = await browser.newPage();
+  await hand.setViewport({ width: 1440, height: 900 });
+  const grid = new Array(64).fill(null); grid[0] = '#F2637A';
+  const art = Buffer.from(encodeURIComponent(JSON.stringify({ N: 8, grid })), 'utf8').toString('base64');
+  await hand.goto(`http://127.0.0.1:${port}/tools/pixel-studio.html#first-mission&art=${art}`, { waitUntil: 'networkidle0', timeout: 30000 });
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  const loaded = await hand.evaluate(() => {
+    try {
+      const id = getID();
+      const d = id.data;
+      return { firstMission: window._firstMission === true, w: (typeof cW !== 'undefined' ? cW : window.cW), px: [d[0], d[1], d[2], d[3]].join(',') };
+    } catch (e) { return { error: String(e) }; }
+  });
+  check('Pixel Studio loads the doodle in the first mission', loaded.firstMission === true && loaded.w === 8 && loaded.px === '242,99,122,255', JSON.stringify(loaded));
+  await hand.close();
+
   console.log(failures ? `\n${failures} FAILURE(S)` : '\nALL FIRST-MAKE CHECKS PASSED');
   await browser.close();
   server.close();

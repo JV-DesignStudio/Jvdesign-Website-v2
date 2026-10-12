@@ -10,7 +10,8 @@
 // v32 (A831): self-host Prism so the Code Snippet Generator highlights offline
 // v33 (A936): Icon Generator Help, real share links and a pinned mobile preview
 // v34 (A648): precache testimonials.js for the honest social-proof strip + form
-const CACHE='jvds-v35';
+// v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
+const CACHE='jvds-v36';
 const CORE=[
   '/',
   '/offline.html',
@@ -72,6 +73,9 @@ const CORE=[
   '/assets/vendor/prism/components/prism-python.min.js',
   '/assets/vendor/prism/components/prism-lua.min.js',
   '/assets/vendor/prism/components/prism-java.min.js',
+  // A781: self-hosted export libraries so precached tools work offline with no CDN.
+  '/assets/vendor/jszip/jszip.min.js',
+  '/assets/vendor/gifenc/gifenc.esm.js',
   '/tools/buildlab.html',
   '/style-tool-buildlab.css',
   // Shared widget scripts those tools load, so they work on a first offline visit.
