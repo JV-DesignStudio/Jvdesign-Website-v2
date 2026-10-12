@@ -4943,6 +4943,19 @@ window.JVDS_CONTENT = {
   ],
   "games": [
     {
+      "id": "rustfall",
+      "title": "Rustfall",
+      "tag": "Roguelite · Survival",
+      "emoji": "☢️",
+      "category": "Action",
+      "bg": "linear-gradient(135deg,#1a0f0a,#5a2a12)",
+      "desc": "Our biggest game: a post-apocalyptic roguelite. Survive the wasteland, fight through the biomes, mutate and push each run as deep as you can.",
+      "kids": false,
+      "age": "Ages 10-15",
+      "character": null,
+      "url": "/games/rustfall.html"
+    },
+    {
       "id": "echo-flight",
       "title": "Echo's Swim",
       "tag": "Axolotl Swim",
@@ -5816,9 +5829,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-12T13:06:46.860Z",
+    "generated": "2026-10-12T13:23:06.766Z",
     "workshops": 329,
-    "games": 10,
+    "games": 11,
     "tools": 37,
     "books": 5,
     "engines": {
