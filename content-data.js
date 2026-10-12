@@ -834,6 +834,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/gdevelop-adventure-workshop.html"
     },
     {
+      "id": "world-builder-3d",
+      "title": "3D World Builder",
+      "desc": "A free browser 3D level blockout tool. Place floors, walls, ramps, pillars and platforms on a ground grid, spin the 3D view, then export a real OBJ mesh and a level.json you can open in Godot, Unity or Blender. No install needed to start.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "3d"
+      ],
+      "steps": 6,
+      "themeColor": "#2f9e6b",
+      "cover": "og/learn.webp",
+      "url": "/workshops/world-builder-3d.html"
+    },
+    {
       "id": "add-your-own-stage",
       "title": "Add Your Own Stage to MUGEN Beginner's Lesson",
       "desc": "A complete beginner's tutorial for building your first MUGEN stage. Step by step, no prior experience needed. Includes a free starter pack you can edit. By JVDesignStudio.",
@@ -878,22 +894,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/barrel-blast-workshop.html"
     },
     {
-      "id": "fairy-tale-builder",
-      "title": "Build a Fairy Tale Cottage in 3D: Free Beginner Builder",
-      "desc": "Design a 3D fairy tale cottage step by step: roof, windows, doors, garden and towers. A free browser builder for ages 8+, no install.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "7-9",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#e879f9",
-      "cover": "og/learn.webp",
-      "url": "/workshops/fairy-tale-builder.html"
-    },
-    {
       "id": "build-a-game-15-min",
       "title": "Build a Game in 15 Minutes: Dot Smash",
       "desc": "Build a real playable browser game in 15 minutes. A free step by step reference for total beginners: click the dot, score points, beat the clock. Copy the code, grab the starter, no sign up.",
@@ -906,36 +906,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#6366f1",
       "cover": "/GamesUpdatePromo.png",
       "url": "/workshops/build-a-game-15-min.html"
-    },
-    {
-      "id": "pirate-cannon-builder",
-      "title": "Build a Pirate Cannon Game in Your Browser: Free Builder",
-      "desc": "Build and fire a pirate cannon game in your browser. Set the ship, cannon power and targets, then play it live. Free, no install, ages 10+.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10-14",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#BC4749",
-      "cover": "/Cannon.webp",
-      "url": "/workshops/pirate-cannon-builder.html"
-    },
-    {
-      "id": "pirate-ship-builder",
-      "title": "Build a Pirate Ship Game in Your Browser: Free 3D Builder",
-      "desc": "Design a 3D pirate ship step by step, choose the hull, sails and cannons, then sail it. A free browser builder, no install, ages 10+.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10-14",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#BC4749",
-      "cover": "/Ship.webp",
-      "url": "/workshops/pirate-ship-builder.html"
     },
     {
       "id": "sci-fi-runner-builder",
@@ -952,22 +922,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/sci-fi-runner-builder.html"
     },
     {
-      "id": "steampunk-airship-builder",
-      "title": "Build a Steampunk Airship in Your Browser: Free 3D Builder",
-      "desc": "Design a steampunk airship step by step, pick the balloon, hull, propellers and fins, then fly it. Free browser builder, no install.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#BC4749",
-      "cover": "/steampunkship.webp",
-      "url": "/workshops/steampunk-airship-builder.html"
-    },
-    {
       "id": "space_invaders_tutorial",
       "title": "Build Space Invaders in Godot 4",
       "desc": "Build a complete Space Invaders clone in Godot 4 from scratch. 11 chapters, real GDScript, ages 8+. Free guide by JVDesignStudio.",
@@ -980,22 +934,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/space-invaders.webp",
       "url": "/workshops/space_invaders_tutorial.html"
-    },
-    {
-      "id": "castle-builder",
-      "title": "Castle Builder Design Your Own Medieval Fortress",
-      "desc": "Design and build your own 3D medieval castle step by step. Choose walls, towers, gates, keeps, moats and banners then light the torches. Ages 10+. Free.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10-14",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#c9a84c",
-      "cover": "og/learn.webp",
-      "url": "/workshops/castle-builder.html"
     },
     {
       "id": "castle-siege-blueprint",
@@ -1584,22 +1522,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/nuclear-blueprint.html"
     },
     {
-      "id": "phone-stand-builder",
-      "title": "Phone Stand Builder - Design Your Own 3D Printable Stand",
-      "desc": "Design and build your own 3D printable phone stand step by step. Choose style, size, angle, grip texture and export STL for printing. Free.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#22c55e",
-      "cover": "/og/hub-devtools.webp",
-      "url": "/workshops/phone-stand-builder.html"
-    },
-    {
       "id": "pixel-quest-workshop",
       "title": "Pixel Quest! Build a Zelda-Style Game in Godot",
       "desc": "Build a Zelda-style adventure game in Godot! Top-down movement, sword attacks, puzzles, and dungeons. A free beginner workshop.",
@@ -1632,22 +1554,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/race-builder.html"
     },
     {
-      "id": "race-car-builder",
-      "title": "Race Car Builder Design Your Own Race Car",
-      "desc": "Design and build your own 3D race car step by step. Choose body style, engine, wheels, aero parts and livery then race it. Ages 10+. Free.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10-14",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#e8333a",
-      "cover": "og/learn.webp",
-      "url": "/workshops/race-car-builder.html"
-    },
-    {
       "id": "racing-blueprint",
       "title": "Racing Blueprint, Build Your Own Racing Game",
       "desc": "Racing game blueprint, design your own racing game with this free guide from JVDesignStudio.",
@@ -1664,38 +1570,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/racing-blueprint.html"
     },
     {
-      "id": "robot-builder",
-      "title": "Robot Builder Design Your Own Robot",
-      "desc": "Design and build your own 3D robot step by step. Choose a head, body, arms, legs, weapons and more then power it up. Ages 8+. Free.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "7-9",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#38bdf8",
-      "cover": "/og/robot-builder.webp",
-      "url": "/workshops/robot-builder.html"
-    },
-    {
-      "id": "rocket-builder",
-      "title": "Rocket Builder Design Your Own Launch Vehicle",
-      "desc": "Design and build your own 3D rocket step by step. Choose nosecone, body, boosters, fins and engine bells then launch it. Ages 10+. Free.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10-14",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#BC4749",
-      "cover": "/RocketBuilder.webp",
-      "url": "/workshops/rocket-builder.html"
-    },
-    {
       "id": "fnaf-blueprint",
       "title": "Security Shift Blueprint, Build Five Nights at Freddy's",
       "desc": "Wire blueprints to build a Five Nights at Freddy's style survival game. Power system, animatronic AI, camera feeds, doors and night timer. Ages 13+. Free.",
@@ -1710,22 +1584,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/fnaf-blueprint.html"
     },
     {
-      "id": "space-station-builder",
-      "title": "Space Station Builder Design Your Own Orbital Outpost",
-      "desc": "Design and build your own 3D space station step by step. Choose modules, solar panels, docking ports, antennas and more then launch it into orbit. Ages 10+. Free.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10-14",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#7c3aed",
-      "cover": "og/learn.webp",
-      "url": "/workshops/space-station-builder.html"
-    },
-    {
       "id": "start-here",
       "title": "Start Here: Pick Your First Game Engine (Free Guide)",
       "desc": "New to game dev? Compare Scratch, Godot, PICO-8, Defold and Roblox, then follow a 3-step ordered track with time and skills. Free.",
@@ -1738,22 +1596,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#FF7700",
       "cover": "og/learn.webp",
       "url": "/workshops/start-here.html"
-    },
-    {
-      "id": "submarine-builder",
-      "title": "Submarine Builder Design Your Own Sub",
-      "desc": "Design and build your own 3D submarine step by step. Choose hull, conning tower, propeller, fins, sonar and more then dive! Ages 10+. Free.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10-14",
-      "type": "workshop",
-      "tags": [
-        "3d"
-      ],
-      "steps": 6,
-      "themeColor": "#0ea5e9",
-      "cover": "og/learn.webp",
-      "url": "/workshops/submarine-builder.html"
     },
     {
       "id": "learn",
@@ -1798,6 +1640,22 @@ window.JVDS_CONTENT = {
       "themeColor": "#FF6B6B",
       "cover": "/og/tiny-learners.webp",
       "url": "/workshops/tiny-learners.html"
+    },
+    {
+      "id": "voxel-studio",
+      "title": "Voxel Studio",
+      "desc": "A free browser 3D voxel builder. Spin a 3D grid, click to stack and paint cubes, then export a real OBJ mesh and a Minecraft .mcfunction of setblock commands. No install and no account needed to start.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "3d"
+      ],
+      "steps": 6,
+      "themeColor": "#7a5cff",
+      "cover": "og/learn.webp",
+      "url": "/workshops/voxel-studio.html"
     },
     {
       "id": "gml-breakout-workshop",
@@ -5560,6 +5418,182 @@ window.JVDS_CONTENT = {
       "tags": [],
       "comingSoon": false,
       "url": "/tools/unreal-cheatsheet.html"
+    },
+    {
+      "id": "rocket-builder",
+      "title": "Rocket Builder",
+      "desc": "Design a 3D rocket: nosecone, body, boosters, fins and engine bells, then launch it.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "Space",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/rocket-builder.html",
+      "aliases": [
+        "rocket maker"
+      ]
+    },
+    {
+      "id": "robot-builder",
+      "title": "Robot Builder",
+      "desc": "Design a 3D robot: head, body, arms, legs, weapons and more, then power it up.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "Characters",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/robot-builder.html",
+      "aliases": [
+        "robot maker"
+      ]
+    },
+    {
+      "id": "castle-builder",
+      "title": "Castle Builder",
+      "desc": "Design a 3D medieval castle: walls, towers, gates, keeps, moats and banners.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "Building",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/castle-builder.html",
+      "aliases": [
+        "fortress builder"
+      ]
+    },
+    {
+      "id": "space-station-builder",
+      "title": "Space Station Builder",
+      "desc": "Design a 3D space station: modules, solar panels, docking ports and antennas.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "Space",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/space-station-builder.html",
+      "aliases": [
+        "orbital outpost builder"
+      ]
+    },
+    {
+      "id": "fairy-tale-builder",
+      "title": "Fairy Tale Cottage",
+      "desc": "Design a 3D fairy tale cottage: roof, windows, doors, garden and towers.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "Building",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/fairy-tale-builder.html",
+      "aliases": [
+        "cottage builder"
+      ]
+    },
+    {
+      "id": "pirate-ship-builder",
+      "title": "Pirate Ship Builder",
+      "desc": "Design a 3D pirate ship: choose the hull, sails and cannons, then sail it.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "Vehicles",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/pirate-ship-builder.html",
+      "aliases": [
+        "ship builder"
+      ]
+    },
+    {
+      "id": "steampunk-airship-builder",
+      "title": "Steampunk Airship",
+      "desc": "Design a steampunk airship: balloon, hull, propellers and fins, then fly it.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "Vehicles",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/steampunk-airship-builder.html",
+      "aliases": [
+        "airship builder"
+      ]
+    },
+    {
+      "id": "race-car-builder",
+      "title": "Race Car Builder",
+      "desc": "Design a 3D race car: body, engine, wheels, aero parts and livery, then race it.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "Vehicles",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/race-car-builder.html",
+      "aliases": [
+        "car builder"
+      ]
+    },
+    {
+      "id": "submarine-builder",
+      "title": "Submarine Builder",
+      "desc": "Design a 3D submarine: hull, conning tower, propeller, fins and sonar, then dive.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "Vehicles",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/submarine-builder.html",
+      "aliases": [
+        "sub builder"
+      ]
+    },
+    {
+      "id": "pirate-cannon-builder",
+      "title": "Pirate Cannon Builder",
+      "desc": "Build and fire a pirate cannon game: set the ship, cannon power and targets, then play.",
+      "category": "Build Worlds",
+      "tags": [
+        "Builder",
+        "Game",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/pirate-cannon-builder.html",
+      "aliases": [
+        "cannon builder"
+      ]
+    },
+    {
+      "id": "phone-stand-builder",
+      "title": "Phone Stand Builder",
+      "desc": "Design a 3D printable phone stand: style, size, angle and grip, then export an STL to print.",
+      "category": "Build Worlds",
+      "tags": [
+        "3D",
+        "3D Print",
+        "Export"
+      ],
+      "comingSoon": false,
+      "url": "/workshops/phone-stand-builder.html",
+      "aliases": [
+        "3d print builder"
+      ]
     }
   ],
   "books": [
@@ -5909,17 +5943,17 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-12T15:56:59.428Z",
-    "workshops": 334,
+    "generated": "2026-10-12T17:50:00.865Z",
+    "workshops": 325,
     "games": 11,
-    "tools": 37,
+    "tools": 48,
     "books": 5,
     "engines": {
       "Blender": 11,
       "C++": 18,
       "Defold": 13,
       "GDevelop": 13,
-      "General": 60,
+      "General": 51,
       "GML/GameMaker": 11,
       "Godot": 17,
       "Java": 15,
@@ -5943,7 +5977,7 @@ window.JVDS_CONTENT = {
       "General": 14,
       "Make Audio": 8,
       "Plan & Write": 4,
-      "Build Worlds": 2
+      "Build Worlds": 13
     }
   }
 };

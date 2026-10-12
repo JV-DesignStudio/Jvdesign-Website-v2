@@ -37,6 +37,15 @@ function slugFromFilename(file) {
   return path.basename(file, '.html');
 }
 
+// A1409: browser 3D asset builders live in workshops/ but are catalogued as
+// Tools (they export OBJ/GLB/FBX/STL assets), so they are excluded from
+// workshops.json and appended to tools.json. Source of truth: content/3d-builders.json.
+const BUILDERS = (() => {
+  try { return JSON.parse(read(path.join(OUT, '3d-builders.json'))).builders || []; }
+  catch { return []; }
+})();
+const BUILDER_IDS = new Set(BUILDERS.map(b => b.id));
+
 /* ── WORKSHOPS ───────────────────────────────────────────── */
 
 function generateWorkshops() {
@@ -51,6 +60,9 @@ function generateWorkshops() {
 
     // Skip non-workshop pages
     if (slug === 'my-progress') continue;
+
+    // A1409: 3D asset builders are catalogued as Tools, not workshops.
+    if (BUILDER_IDS.has(slug)) continue;
 
     // Skip redirect stubs (retired or de-duplicated pages that forward elsewhere)
     if (/http-equiv=["']refresh["']/i.test(html)) continue;
@@ -238,6 +250,10 @@ function generateTools() {
     if(lower.includes('pixel')) tags.push('Pixel Art');
     if(lower.includes('3d')) tags.push('3D');
     tools.push({ id: slug, title: title.trim(), desc: desc.trim().slice(0,180), category, tags, comingSoon:false, url:`/tools/${file}` });
+  }
+  // A1409: 3D asset builders live in workshops/ but are Tools (they export assets).
+  for (const b of BUILDERS) {
+    tools.push({ id: b.id, title: b.title, desc: b.desc, category: 'Build Worlds', tags: b.tags || ['3D'], comingSoon: false, url: `/workshops/${b.id}.html` });
   }
   console.log(`  tools.json: ${tools.length} entries (indexable, noindex excluded)`);
   return tools;
