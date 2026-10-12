@@ -54,7 +54,7 @@ function buildDevlogBlock(draft, task) {
   return [
     'DEV LOG DRAFT - REVIEW/COPY',
     '',
-    `Draft file: F:/Website/studio-workspace/verification/${draft.file}`,
+    `Draft: ${draft.file}`,
     `Target: devlog-data.js post id ${draft.parsed.devlogId}`,
     `Source task: ${draft.parsed.sourceTask}`,
     '',
@@ -91,11 +91,16 @@ function main() {
   for (const [taskId, draft] of drafts.entries()) {
     const task = tasks.find((item) => item.id === taskId);
     if (!task) continue;
-    const originalDesc = stripOldBlock(task.desc);
-    task.desc = `${buildDevlogBlock(draft, task)}\n\n--- ORIGINAL TASK ---\n${originalDesc}`;
+    // Never write the private workspace path into card text (the no-private-leak gate blocks it).
+    const strip = (s) => String(s || '')
+      .replace(/F:\/Website\/studio-workspace\/verification\//g, '')
+      .replace(/F:\/Website\/studio-workspace\//g, '')
+      .replace(/\n{3,}/g, '\n\n');
+    const originalDesc = strip(stripOldBlock(task.desc));
+    task.desc = strip(`${buildDevlogBlock(draft, task)}\n\n--- ORIGINAL TASK ---\n${originalDesc}`);
     const evidenceLine = `Dev log draft visible on board card 15 September 2026: ${draft.file} -> proposed devlog id ${draft.parsed.devlogId}.`;
     if (!String(task.evidence || '').includes('Dev log draft visible on board card')) {
-      task.evidence = `${task.evidence || ''}${task.evidence ? '\n' : ''}${evidenceLine}`;
+      task.evidence = strip(`${task.evidence || ''}${task.evidence ? '\n' : ''}${evidenceLine}`);
     }
     updated++;
     console.log(`updated ${task.id}: ${task.title} (${draft.file})`);
