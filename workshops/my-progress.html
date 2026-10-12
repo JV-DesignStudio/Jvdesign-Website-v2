@@ -167,6 +167,24 @@
     </div>
   </div>
 
+  <!-- MY PROJECTS (build-along passports) -->
+  <style>
+  .mp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:12px}
+  .mp-card{display:flex;flex-direction:column;gap:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px;text-decoration:none;color:inherit;transition:border-color .2s,transform .2s}
+  .mp-card:hover{border-color:rgba(125,211,252,.5);transform:translateY(-2px)}
+  .mp-title{font-family:'Fredoka',cursive;font-size:.95rem;color:#fff}
+  .mp-meta{font-size:.74rem;color:rgba(232,234,242,.5)}
+  .mp-bar{height:6px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
+  .mp-bar-fill{display:block;height:100%;background:linear-gradient(90deg,#4ade80,#60a5fa)}
+  .mp-go{font-size:.76rem;font-weight:700;color:#7dd3fc}
+  .mp-empty{font-size:.82rem;color:rgba(232,234,242,.5)}
+  </style>
+  <div class="backup-section" id="myProjects" style="margin-top:12px">
+    <div class="backup-title">🕹️ My projects</div>
+    <div class="backup-sub">Build-along projects you started on this device. Open one to carry on where you left off.</div>
+    <div id="myProjectsList" class="mp-list"></div>
+  </div>
+
   <!-- HERO STATS -->
   <div class="stats-hero">
     <h2>⭐ <em id="totalXpDisplay">0</em> Total XP</h2>
@@ -1210,5 +1228,36 @@ initDashboard();
 <script defer src="/mascots.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
+<script>
+/* A1397: My projects - every build-along passport saved on this device. */
+(function(){
+  try{
+    var list=document.getElementById('myProjectsList');
+    if(!list) return;
+    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    var items=[];
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(!k||k.indexOf('jvds.project.')!==0) continue;
+      try{ var p=JSON.parse(localStorage.getItem(k)); if(p&&p.format==='jvds.project') items.push(p); }catch(e){}
+    }
+    if(!items.length){
+      list.innerHTML='<p class="mp-empty">No projects yet. Open a <a href="/workshop" style="color:#7dd3fc">build-along workshop</a> and start building.</p>';
+      return;
+    }
+    items.sort(function(a,b){return String(b.updated||'').localeCompare(String(a.updated||''));});
+    list.innerHTML=items.map(function(p){
+      var steps=(p.steps||[]).length, done=(p.completed||[]).length, pct=steps?Math.round(done/steps*100):0;
+      var href=(p.page && /^\/workshops\//.test(p.page)) ? p.page : '/workshop';
+      return '<a class="mp-card" href="'+esc(href)+'">'+
+        '<span class="mp-title">'+esc(p.title||p.series)+'</span>'+
+        '<span class="mp-meta">'+esc(p.engine||'')+' · Lesson '+(p.lesson||1)+' · '+done+'/'+steps+' steps</span>'+
+        '<span class="mp-bar"><span class="mp-bar-fill" style="width:'+pct+'%"></span></span>'+
+        '<span class="mp-go">Resume →</span>'+
+      '</a>';
+    }).join('');
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
