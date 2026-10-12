@@ -1,16 +1,13 @@
 #!/usr/bin/env node
 /*
- * tests/game-thumbs.js - A951 (stage 1: flagship batch)
+ * tests/game-thumbs.js
  *
- * The arcade cards now show a real gameplay thumbnail for the flagship games
- * (Crossy Crew, Highway Dodge, Lumo's Dash, Nova Siege) and a controls badge,
- * alongside the existing age and play-time badges.
- *
- * Proves:
- *   - each flagship thumbnail file exists and is a valid image
- *   - the registry carries thumb + controlType for the four
- *   - arcade.html prefers g.thumb in its card art
- *   - the rendered arcade cards use the thumbnail and show the controls badge
+ * The arcade cabinet cards show a real gameplay thumbnail for the games that
+ * have one (highway-dodge, nova-siege), so a player sees real gameplay before
+ * tapping. Proves:
+ *   - each thumbnail file exists and is a valid image
+ *   - the registry carries thumb + controlType for those games
+ *   - arcade.html prefers g.thumb in its card art and renders the cabinet cards
  *     at 390 and 1440 with no errors or overflow
  *
  * Run: node tests/game-thumbs.js
@@ -21,9 +18,7 @@ const { withServer } = require('./story-run-harness.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const FLAGSHIPS = [
-  { id: 'crossy-crew', file: 'crossy-crew.html', controls: 'Tap / swipe' },
   { id: 'highway-dodge', file: 'highway-dodge.html', controls: 'Swipe / keys' },
-  { id: 'lumo-dash', file: 'lumo-dash-page.html', controls: 'Jump / slide' },
   { id: 'nova-siege', file: 'nova-siege.html', controls: 'Drag to fly' }
 ];
 
@@ -38,7 +33,7 @@ function staticChecks() {
   const registry = fs.readFileSync(path.join(ROOT, 'games-registry.js'), 'utf8');
   const arcade = fs.readFileSync(path.join(ROOT, 'arcade.html'), 'utf8');
   check('arcade card art prefers the gameplay thumb', /g\.thumb/.test(arcade));
-  check('arcade card shows a controls badge', /mini-badge controls/.test(arcade));
+  check('arcade renders cabinet cards', /class="cab"/.test(arcade) && /arc-grid/.test(arcade));
   for (const g of FLAGSHIPS) {
     const thumb = 'assets/game-thumbs/' + g.id + '.webp';
     const file = path.join(ROOT, thumb);
@@ -72,27 +67,20 @@ async function browserChecks(browser, base, width) {
   });
   await page.setViewport({ width, height: 900 });
   await page.goto(base + '/arcade.html', { waitUntil: 'load', timeout: 30000 });
-  await sleep(600);
-  // The arcade opens on Home; the game grid renders on the Play tab.
-  await page.evaluate(() => { const b = document.querySelector('[data-goto="play"]'); if (b) b.click(); });
-  await sleep(600);
+  await page.waitForSelector('.cab', { timeout: 15000 });
+  await sleep(400);
   for (const g of FLAGSHIPS) {
-    const info = await page.evaluate(id => {
-      const card = document.querySelector('.card[href*="g=' + id + '"]');
+    const info = await page.evaluate(file => {
+      const card = document.querySelector('.cab[href="games/' + file + '"]');
       if (!card) return { card: false };
-      const img = card.querySelector('.art img');
-      const badge = card.querySelector('.mini-badge.controls');
-      return {
-        card: true,
-        src: img ? img.getAttribute('src') : null,
-        controls: badge ? badge.textContent : null
-      };
-    }, g.id);
+      const img = card.querySelector('.cab-art img');
+      const pills = [...card.querySelectorAll('.cab-pill')].map(p => p.textContent);
+      return { card: true, src: img ? img.getAttribute('src') : null, pills };
+    }, g.file);
     check(width + ' ' + g.id + ': card renders', info.card);
     check(width + ' ' + g.id + ': card art uses the gameplay thumbnail',
       !!info.src && info.src.indexOf('game-thumbs/' + g.id + '.webp') >= 0, String(info.src));
-    check(width + ' ' + g.id + ': card shows the controls badge',
-      info.controls === g.controls, String(info.controls));
+    check(width + ' ' + g.id + ': card shows a meta pill', info.card && info.pills.length > 0, (info.pills || []).join('|'));
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   check(width + ' arcade: no horizontal overflow', overflow <= 2, String(overflow));

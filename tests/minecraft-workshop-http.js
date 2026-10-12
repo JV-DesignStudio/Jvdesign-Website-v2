@@ -57,6 +57,7 @@ const server=http.createServer((req,res)=>{
         steps:document.querySelectorAll('.step-card').length,
         quizzes:document.querySelectorAll('.quiz-gate').length,
         fills:document.querySelectorAll('.concept-fill').length,
+        studio:document.querySelectorAll('a[href*="minecraft-mod-studio.html"]').length,
         firstOpen:!!document.querySelector('.step-card.open'),
         total:window.WORKSHOP_TOTAL,
         key:window.WORKSHOP_KEY,
@@ -71,6 +72,7 @@ const server=http.createServer((req,res)=>{
       check(file+': total matches steps',ep.total===ep.steps,ep.total+' vs '+ep.steps);
       check(file+': engine key set',/^jvds-minecraft-world-ep/.test(ep.key||''),ep.key);
       check(file+': shared engine hooks exposed',ep.engine);
+      check(file+': hands off to the Mod Studio',ep.studio>=1,'links '+ep.studio);
       check(file+': finish banner present',ep.finish);
       check(file+': first step open',ep.firstOpen);
       check(file+': no dashes',ep.dashes===0,'dashes '+ep.dashes);
@@ -81,6 +83,13 @@ const server=http.createServer((req,res)=>{
       const mob=await page.evaluate(()=>document.documentElement.scrollWidth);
       check(file+': 390px no overflow',mob<=392,'scrollWidth '+mob);
       await page.setViewport({width:1440,height:900});
+    }
+
+    // Every Minecraft mod/workshop page hands off to the browser Datapack Studio
+    const MOD_PAGES=['minecraft-first-item-mod.html','minecraft-custom-block-mod.html','minecraft-custom-food-mod.html','minecraft-custom-mob-mod.html','minecraft-custom-tool-mod.html','minecraft-lucky-mod.html','minecraft-mod-starter-files.html'];
+    for(const file of MOD_PAGES){
+      const html=fs.readFileSync(path.join(root,'workshops',file),'utf8');
+      check(file+': hands off to the Mod Studio',/minecraft-mod-studio\.html/.test(html));
     }
 
     // Cheat sheet still fine

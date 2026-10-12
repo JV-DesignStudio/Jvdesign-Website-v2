@@ -1636,7 +1636,7 @@ if (typeof document !== 'undefined') {
     });
     var root=document.createElement('div');
     root.id='arcade-menu'; root.className='arcade-menu';
-    root.innerHTML='<a class="arcade-menu-brand" href="../pages/games.html">JVDS <span>ARCADE</span></a>'+
+    root.innerHTML='<a class="arcade-menu-brand" href="../arcade.html">JVDS <span>ARCADE</span></a>'+
       '<button class="arcade-menu-trigger" type="button" aria-expanded="false" aria-controls="arcade-menu-panel">☰ Menu</button>'+
       '<div class="arcade-menu-panel" id="arcade-menu-panel" hidden role="menu">'+
         '<div class="arcade-menu-title">'+(game ? game.gameName : document.title.split('|')[0].trim())+'</div>'+
@@ -1646,7 +1646,7 @@ if (typeof document !== 'undefined') {
         '<button type="button" data-arcade-action="help" role="menuitem">? How to play</button>'+ 
         '<button type="button" data-arcade-action="fullscreen" role="menuitem">⛶ Fullscreen</button>'+ 
         '<button type="button" data-arcade-action="share" role="menuitem">↗ Share game</button>'+
-        '<a href="../pages/games.html" role="menuitem">← Back to Arcade</a>'+ 
+        '<a href="../arcade.html" role="menuitem">← Back to Arcade</a>'+ 
       '</div>';
     document.body.appendChild(root);
     var trigger=root.querySelector('.arcade-menu-trigger'), panel=root.querySelector('.arcade-menu-panel');

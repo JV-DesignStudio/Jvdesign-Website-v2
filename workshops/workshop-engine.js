@@ -339,6 +339,55 @@ function showFinish() {
   document.getElementById('finalLevel').textContent = level;
   document.getElementById('finalStreak').textContent = bestStreak;
   document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
+  addFinishShare();
+}
+
+/* ── SHARE A FINISHED WORKSHOP ──
+   One share action for the 99 engine workshops: a finished learner invites the
+   next maker. Uses the native share sheet when available, otherwise copies the
+   link. Dispatches jvds:shared so the first-creation funnel counts it. */
+function finishToast(text) {
+  var t = document.createElement('div');
+  t.setAttribute('role', 'status');
+  t.textContent = text;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9002;max-width:90vw;' +
+    'background:#28241e;color:#f5efe0;border:1px solid rgba(240,234,214,.18);border-radius:10px;' +
+    'padding:10px 16px;font:600 .82rem/1.4 Inter,system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35);';
+  document.body.appendChild(t);
+  setTimeout(function () { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 320); }, 2800);
+}
+
+function workshopShare() {
+  var url = location.origin + location.pathname;
+  var title = (document.title || '').split('|')[0].split(/ [- -  - ] /)[0].trim() || 'a JVDesignStudio workshop';
+  var text = 'I just finished the ' + title + ' workshop on JVDesignStudio. Try it free: ' + url;
+  try { window.dispatchEvent(new CustomEvent('jvds:shared', { detail: { workshop: PROFILE_ID } })); } catch (e) {}
+  gaTrack('workshop_share', { workshop_id: PROFILE_ID });
+  if (navigator.share) {
+    try { return navigator.share({ title: title, text: text, url: url }).catch(function () {}); } catch (e) {}
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text).then(function () {
+      finishToast('Link copied. Send it to show what you finished.');
+    }, function () { finishToast('Share this link: ' + url); });
+  }
+  finishToast('Share this link: ' + url);
+}
+
+function addFinishShare() {
+  var banner = document.getElementById('finishBanner');
+  if (!banner || banner.querySelector('.finish-share')) return;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'finish-share';
+  btn.textContent = 'Share what you made';
+  btn.style.cssText = 'display:inline-flex;align-items:center;gap:8px;background:var(--teal-dk,#4e7d80);color:#fff;' +
+    'font-family:Fredoka,Inter,sans-serif;font-weight:700;font-size:.95rem;padding:12px 26px;border:none;' +
+    'border-radius:12px;cursor:pointer;margin-top:12px;box-shadow:0 3px 0 #3d6366;';
+  btn.addEventListener('click', workshopShare);
+  var stats = banner.querySelector('.final-stats');
+  if (stats && stats.nextSibling) { banner.insertBefore(btn, stats.nextSibling); }
+  else { banner.appendChild(btn); }
 }
 
 // Fire-and-forget GA4 helper. Consent is handled centrally by

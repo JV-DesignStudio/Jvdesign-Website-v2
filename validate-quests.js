@@ -18,6 +18,17 @@ const games = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'content/games.
 // also allow real tool ids.
 const tools = new Set(JSON.parse(fs.readFileSync(path.join(ROOT, 'content/tools.json'), 'utf8')).map((t) => t.id));
 const gameRefs = new Set([...games, ...tools]);
+// Games held back from the live arcade (GAME_ORPHANS) keep their ids valid: a
+// quest may point at a game that is being reworked rather than gone.
+try {
+  const { GAME_ORPHANS } = require('./scripts/lib/paths');
+  for (const f of GAME_ORPHANS) {
+    const p = path.join(ROOT, f);
+    if (!fs.existsSync(p)) continue;
+    const h = fs.readFileSync(p, 'utf8');
+    for (const m of h.matchAll(/(?:GameSystem\(\s*|GAME_ID\s*=\s*|gameId\s*[:=]\s*)['"]([^'"]+)['"]/g)) gameRefs.add(m[1]);
+  }
+} catch (e) { /* paths helper optional */ }
 
 const refs = { workshop: new Set(), game: new Set() };
 for (const m of src.matchAll(/type:\s*'workshop'\s*,\s*id:\s*'([^']+)'/g)) refs.workshop.add(m[1]);

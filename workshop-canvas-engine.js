@@ -11,6 +11,177 @@
  *   }
  */
 'use strict';
+/* A1363:CANVAS_GUIDES:start */
+var CANVAS_GUIDE_MAP = {
+  "cpp-breakout-canvas.html": "cpp-breakout-workshop.html",
+  "cpp-platformer-canvas.html": "cpp-platformer-workshop.html",
+  "cpp-platformer-part2-canvas.html": "cpp-platformer-part2-workshop.html",
+  "cpp-pong-canvas.html": "cpp-pong-workshop.html",
+  "cpp-snake-canvas.html": "cpp-snake-workshop.html",
+  "cpp-tower-part1-canvas.html": "cpp-tower-part1-workshop.html",
+  "cpp-tower-part2-canvas.html": "cpp-tower-part2-workshop.html",
+  "defold-dungeon-canvas.html": "defold-dungeon-workshop.html",
+  "defold-platformer-canvas.html": "defold-platformer-workshop.html",
+  "defold-pong-canvas.html": "defold-pong-workshop.html",
+  "defold-puzzle-canvas.html": "defold-puzzle-workshop.html",
+  "defold-shooter-canvas.html": "defold-shooter-workshop.html",
+  "defold-snake-canvas.html": "defold-snake-workshop.html",
+  "gdevelop-adventure-canvas.html": "gdevelop-adventure-workshop.html",
+  "gdevelop-platformer-canvas.html": "gdevelop-platformer-workshop.html",
+  "gdevelop-pointclick-canvas.html": "gdevelop-pointclick-workshop.html",
+  "gdevelop-pong-canvas.html": "gdevelop-pong-workshop.html",
+  "gdevelop-shooter-canvas.html": "gdevelop-shooter-workshop.html",
+  "gdevelop-snake-canvas.html": "gdevelop-snake-workshop.html",
+  "gml-breakout-canvas.html": "gml-breakout-workshop.html",
+  "gml-platformer-canvas.html": "gml-platformer-workshop.html",
+  "gml-pong-canvas.html": "gml-pong-workshop.html",
+  "gml-rpg-canvas.html": "gml-rpg-workshop.html",
+  "godot-gatekeeper-3d-part1-canvas.html": "godot-gatekeeper-3d-part1.html",
+  "godot-gatekeeper-3d-part2-canvas.html": "godot-gatekeeper-3d-part2.html",
+  "godot-gdscript-essentials-canvas.html": "godot-gdscript-essentials.html",
+  "godot-racing-2-canvas.html": "godot-racing-workshop-2.html",
+  "godot-racing-canvas.html": "godot-racing-workshop.html",
+  "godot-tutorial-canvas.html": "godot_tutorial.html",
+  "java-breakout-canvas.html": "java-breakout-workshop.html",
+  "java-platformer-canvas.html": "java-platformer-workshop.html",
+  "java-pong-canvas.html": "java-pong-workshop.html",
+  "java-rpg-part1-canvas.html": "java-rpg-part1-workshop.html",
+  "java-rpg-part2-canvas.html": "java-rpg-part2-workshop.html",
+  "java-rpg-part3-canvas.html": "java-rpg-part3-workshop.html",
+  "java-space-canvas.html": "java-space-workshop.html",
+  "my-first-cpp-game-canvas.html": "my-first-cpp-game.html",
+  "my-first-defold-game-canvas.html": "my-first-defold-game.html",
+  "my-first-gdevelop-game-canvas.html": "my-first-gdevelop-game.html",
+  "my-first-pico8-game-canvas.html": "my-first-pico8-game.html",
+  "my-first-python-game-canvas.html": "my-first-python-game.html",
+  "my-first-scratch-game-canvas.html": "my-first-scratch-game.html",
+  "night-watch-canvas.html": "night-watch-workshop.html",
+  "pico8-dungeon-canvas.html": "pico8-dungeon-workshop.html",
+  "pico8-match3-canvas.html": "pico8-match3-workshop.html",
+  "pico8-platformer-canvas.html": "pico8-platformer-workshop.html",
+  "pico8-pong-canvas.html": "pico8-pong-workshop.html",
+  "pico8-shooter-canvas.html": "pico8-shooter-workshop.html",
+  "pico8-snake-canvas.html": "pico8-snake-workshop.html",
+  "python-breakout-canvas.html": "python-breakout-workshop.html",
+  "python-breakout-part2-canvas.html": "python-breakout-part2-workshop.html",
+  "python-catch-canvas.html": "python-catch-workshop.html",
+  "python-dodge-canvas.html": "python-dodge-workshop.html",
+  "python-maze-canvas.html": "python-maze-workshop.html",
+  "python-platformer-canvas.html": "python-platformer-workshop.html",
+  "python-platformer-part2-canvas.html": "python-platformer-part2-workshop.html",
+  "scratch-catch-canvas.html": "scratch-catch-workshop.html",
+  "scratch-clicker-canvas.html": "scratch-clicker-workshop.html",
+  "scratch-maze-canvas.html": "scratch-maze-workshop.html",
+  "scratch-platformer-canvas.html": "scratch-platformer-workshop.html",
+  "scratch-quiz-canvas.html": "scratch-quiz-workshop.html"
+};
+/* A1363:CANVAS_GUIDES:end */
+
+/* A1365:CANVAS_NEXT:start */
+var CANVAS_NEXT_MAP = {
+  "cpp-breakout-canvas.html": {
+    "href": "cpp-platformer-canvas.html",
+    "label": "C++ Platformer"
+  },
+  "cpp-platformer-canvas.html": {
+    "href": "cpp-platformer-part2-canvas.html",
+    "label": "C++ Platformer Part 2"
+  },
+  "cpp-platformer-part2-canvas.html": {
+    "href": "cpp-tower-part1-canvas.html",
+    "label": "C++ Tower Defence Part 1"
+  },
+  "cpp-pong-canvas.html": {
+    "href": "cpp-snake-canvas.html",
+    "label": "C++ Snake"
+  },
+  "cpp-snake-canvas.html": {
+    "href": "cpp-breakout-canvas.html",
+    "label": "C++ Breakout"
+  },
+  "cpp-tower-part1-canvas.html": {
+    "href": "cpp-tower-part2-canvas.html",
+    "label": "C++ Tower Defence Part 2"
+  },
+  "godot-gatekeeper-3d-part1-canvas.html": {
+    "href": "godot-gatekeeper-3d-part2-canvas.html",
+    "label": "Godot Gatekeeper 3D Part 2"
+  },
+  "java-rpg-part1-canvas.html": {
+    "href": "java-rpg-part2-canvas.html",
+    "label": "Java RPG Battle Canvas"
+  },
+  "java-rpg-part2-canvas.html": {
+    "href": "java-rpg-part3-canvas.html",
+    "label": "Java RPG Finale"
+  },
+  "python-breakout-canvas.html": {
+    "href": "python-breakout-part2-canvas.html",
+    "label": "Python Breakout Part 2"
+  },
+  "python-catch-canvas.html": {
+    "href": "python-dodge-canvas.html",
+    "label": "Python Dodge"
+  },
+  "python-dodge-canvas.html": {
+    "href": "python-maze-canvas.html",
+    "label": "Python Maze"
+  },
+  "python-maze-canvas.html": {
+    "href": "python-breakout-canvas.html",
+    "label": "Python Breakout"
+  },
+  "python-platformer-canvas.html": {
+    "href": "python-platformer-part2-canvas.html",
+    "label": "Python Platformer Part 2"
+  }
+};
+/* A1365:CANVAS_NEXT:end */
+
+/* A1378:CANVAS_STUDIO:start */
+var CANVAS_STUDIO_MAP = {
+  "cpp-breakout-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
+  "cpp-platformer-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
+  "cpp-platformer-part2-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
+  "cpp-pong-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
+  "cpp-snake-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
+  "cpp-tower-part1-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
+  "cpp-tower-part2-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
+  "my-first-cpp-game-canvas.html": { "href": "cpp-mod-studio.html", "label": "C++ Mod Studio" },
+  "godot-gatekeeper-3d-part1-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "godot-gatekeeper-3d-part2-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "godot-gdscript-essentials-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "godot-platformer-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "godot-puzzle-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "godot-racing-2-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "godot-racing-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "godot-tutorial-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "night-watch-canvas.html": { "href": "godot-mod-studio.html", "label": "Godot Mod Studio" },
+  "python-breakout-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
+  "python-breakout-part2-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
+  "python-catch-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
+  "python-dodge-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
+  "python-maze-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
+  "python-platformer-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
+  "python-platformer-part2-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
+  "my-first-python-game-canvas.html": { "href": "python-mod-studio.html", "label": "Python Mod Studio" },
+  "scratch-catch-canvas.html": { "href": "scratch-studio.html", "label": "Scratch Studio" },
+  "scratch-clicker-canvas.html": { "href": "scratch-studio.html", "label": "Scratch Studio" },
+  "scratch-maze-canvas.html": { "href": "scratch-studio.html", "label": "Scratch Studio" },
+  "scratch-platformer-canvas.html": { "href": "scratch-studio.html", "label": "Scratch Studio" },
+  "scratch-pong-canvas.html": { "href": "scratch-studio.html", "label": "Scratch Studio" },
+  "scratch-quiz-canvas.html": { "href": "scratch-studio.html", "label": "Scratch Studio" },
+  "my-first-scratch-game-canvas.html": { "href": "scratch-studio.html", "label": "Scratch Studio" },
+  "pico8-dungeon-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
+  "pico8-match3-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
+  "pico8-platformer-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
+  "pico8-pong-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
+  "pico8-shooter-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
+  "pico8-snake-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" },
+  "my-first-pico8-game-canvas.html": { "href": "pico8-studio.html", "label": "PICO-8 Studio" }
+};
+/* A1378:CANVAS_STUDIO:end */
+
 (function() {
 
 var CFG = window.CW_CONFIG;
@@ -558,4 +729,71 @@ renderSteps();
 updateCanvas();
 updateProgress();
 
+})();
+
+/* A1363:canvas-back-link: one shared canvas -> step-by-step guide back-link */
+(function(){
+  try{
+    if(!window.CANVAS_GUIDE_MAP) return;
+    var here=(location.pathname.split('/').pop()||'').toLowerCase();
+    var guide=CANVAS_GUIDE_MAP[here];
+    if(!guide) return;
+    var header=document.querySelector('.cw-header');
+    if(!header) return;
+    var a=document.createElement('a');
+    a.className='cw-guide-link';
+    a.href='/workshops/'+guide;
+    a.textContent='\u2190 Read the step-by-step guide';
+    header.appendChild(a);
+  }catch(e){}
+})();
+
+/* A1364:canvas-topbar: slim branded bar so every build-along feels part of JVDS
+   and always has a way back to the workshop hub. Injected once here so all
+   canvas pages (and any future one) inherit it. */
+(function(){
+  try{
+    if(document.querySelector('.cw-topbar')) return;
+    var bar=document.createElement('header');
+    bar.className='cw-topbar';
+    bar.setAttribute('role','banner');
+    var brand=document.createElement('a');
+    brand.className='cw-topbar-brand';
+    brand.href='/';
+    brand.innerHTML='<img src="/logo.png" alt="" width="26" height="26"><span>JVDesignStudio</span>';
+    var chip=document.createElement('span');
+    chip.className='cw-topbar-char';
+    chip.innerHTML='<img src="/assets/mascots/ember-badge.webp" alt="" width="20" height="20">Build it with Ember';
+    var back=document.createElement('a');
+    back.className='cw-topbar-back';
+    back.href='/workshop';
+    back.textContent='\u2190 All workshops';
+    bar.appendChild(brand); bar.appendChild(chip); bar.appendChild(back);
+    document.body.insertBefore(bar, document.body.firstChild);
+  }catch(e){}
+})();
+
+/* A1365:canvas-next: export hand-off to the engine guide and the next project */
+(function(){
+  try{
+    if(!window.CANVAS_GUIDE_MAP) return;
+    var here=(location.pathname.split('/').pop()||'').toLowerCase();
+    var guide=CANVAS_GUIDE_MAP[here];
+    var next=(window.CANVAS_NEXT_MAP||{})[here];
+    var studio=(window.CANVAS_STUDIO_MAP||{})[here];
+    if(!guide && !next && !studio) return;
+    var panel=document.querySelector('.cw-canvas-panel');
+    if(!panel) return;
+    var tagEl=document.querySelector('.cw-lang-tag');
+    var engineName=tagEl?((tagEl.textContent||'').replace(/[^A-Za-z0-9+#]/g,'').trim()||'your engine'):'your engine';
+    var box=document.createElement('div');
+    box.className='cw-next';
+    var html='<p class="cw-next-head">Kept your work? Keep going</p>';
+    if(studio) html+='<a class="cw-next-btn cw-next-btn--studio" href="/workshops/'+studio.href+'">Open the full '+studio.label+' \u2192</a>';
+    if(guide) html+='<a class="cw-next-btn cw-next-btn--main" href="/workshops/'+guide+'">Keep building in '+engineName+' \u2192</a>';
+    if(next) html+='<a class="cw-next-btn" href="/workshops/'+next.href+'">What to add next: '+next.label+' \u2192</a>';
+    html+='<a class="cw-next-btn" href="/workshop">Browse all workshops</a>';
+    box.innerHTML=html;
+    panel.appendChild(box);
+  }catch(e){}
 })();

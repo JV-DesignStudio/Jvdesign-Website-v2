@@ -38,12 +38,12 @@ for (const f of ['index.html', 'pages/about.html', 'pages/learn-hub.html', 'page
   }
 }
 
-// catalogue pages state the same count
-const gamesHtml = read('pages/games.html');
-const gamesHeader = (gamesHtml.match(/id="gameResultCount"[^>]*>\s*([^<]+?)\s*</) || [])[1] || '';
-check(`pages/games.html catalogue header "${gamesHeader.trim()}" matches marketing.games "${marketing.games.display}"`,
-  parseInt(gamesHeader, 10) === parseInt(marketing.games.display, 10));
-check('pages/games.html states prototypes are included', /playable browser games and experiments/i.test(gamesHtml));
+// the arcade is the single catalogue; its live count is the registry line-up
+const registry = read('games-registry.js');
+const lineup = (registry.match(/"id"\s*:/g) || []).length;
+check(`marketing.games "${marketing.games.display}" matches the live arcade line-up (${lineup})`,
+  parseInt(marketing.games.display, 10) === lineup);
+check('arcade.html reads the registry line-up', /window\.JVDS_GAMES/.test(read('arcade.html')));
 check(`pages/dev-tools.html states the tools count "${marketing.tools.display}"`, read('pages/dev-tools.html').includes(marketing.tools.display));
 
 // homepage JSON-LD must use the exact workshop count
@@ -51,7 +51,7 @@ const n = (read('index.html').match(/"numberOfItems"\s*:\s*(\d+)/) || [])[1];
 check(`index.html numberOfItems ${n} matches stats.workshops ${stats.workshops}`, Number(n) === stats.workshops);
 
 // no page may reintroduce a contradicting games count
-for (const f of ['index.html', 'pages/about.html', 'pages/press.html', 'pages/parent-guide.html', 'pages/games.html']) {
+for (const f of ['index.html', 'pages/about.html', 'pages/press.html', 'pages/parent-guide.html']) {
   const bad = (read(f).match(/\b40\s+(?:free\s+|listed\s+|browser\s+)?games?/i) || [])[0];
   check(`${f}: no stale "40 games" copy`, !bad, bad || '');
 }

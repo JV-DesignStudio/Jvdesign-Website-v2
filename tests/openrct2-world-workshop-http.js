@@ -59,6 +59,7 @@ const server=http.createServer((req,res)=>{
         steps:document.querySelectorAll('.step-card').length,
         quizzes:document.querySelectorAll('.quiz-gate').length,
         fills:document.querySelectorAll('.concept-fill').length,
+        studio:document.querySelectorAll('a[href*="openrct2-mod-studio.html"]').length,
         firstOpen:!!document.querySelector('.step-card.open'),
         total:window.WORKSHOP_TOTAL,
         key:window.WORKSHOP_KEY,
@@ -73,6 +74,7 @@ const server=http.createServer((req,res)=>{
       check(file+': total matches steps',ep.total===ep.steps,ep.total+' vs '+ep.steps);
       check(file+': engine key set',/^jvds-openrct2-world-ep/.test(ep.key||''),ep.key);
       check(file+': shared engine hooks exposed',ep.engine);
+      check(file+': hands off to the Mod Studio',ep.studio>=1,'links '+ep.studio);
       check(file+': finish banner present',ep.finish);
       check(file+': first step open',ep.firstOpen);
       check(file+': no dashes',ep.dashes===0,'dashes '+ep.dashes);
@@ -83,6 +85,13 @@ const server=http.createServer((req,res)=>{
       const mob=await page.evaluate(()=>document.documentElement.scrollWidth);
       check(file+': 390px no overflow',mob<=392,'scrollWidth '+mob);
       await page.setViewport({width:1440,height:900});
+    }
+
+    // Every OpenRCT2 lesson page hands off to the browser Mod Studio
+    const MOD_PAGES=['openrct2-modding-builder.html','openrct2-swim-rescue.html'];
+    for(const file of MOD_PAGES){
+      const html=fs.readFileSync(path.join(root,'workshops',file),'utf8');
+      check(file+': hands off to the Mod Studio',/openrct2-mod-studio\.html/.test(html));
     }
 
     // answering the first quiz on ep1 advances

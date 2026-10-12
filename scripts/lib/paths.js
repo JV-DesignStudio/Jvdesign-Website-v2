@@ -39,16 +39,35 @@ const EXCLUDE_FILES = new Set([
   'pages/freebies.html',
   'pages/my-progress.html',
   'pages/leaderboards.html',
+  'pages/games.html',
   'games/sky_high_squirt.html',
   'tools/tileset-builder.html'
 ]);
 
+// Games that live in games/ but are NOT part of the live arcade line-up.
+// They stay on disk (so nothing is lost and any can be promoted back) but are
+// excluded from the sitemap, search index and arcade grid. The live line-up is
+// games-registry.js; curated filesystem count = raw - GAME_ORPHANS.
 const GAME_ORPHANS = [
-  'games/arcane_citadel.html','games/critter-whack.html','games/lumo-dash.html','games/lumo-run.html','games/nibble-quest.html','games/stack-attack.html','games/mobile-games.html','games/sky_high_squirt.html','games/call-of-the-cards-playtest.html','games/tiger_smash.html','games/play.html'
+  'games/arcane_citadel.html','games/backpack-quest.html','games/beat-builder-battle.html',
+  'games/bread-blocks.html','games/bubble-pop-galaxy.html','games/call-of-the-cards-playtest.html',
+  'games/call_of_the_cards.html','games/candy_kingdom.html','games/cozy_creatures.html',
+  'games/creature-rescue-clinic.html','games/critter-whack-page.html','games/critter-whack.html',
+  'games/crossy-crew.html','games/crypt-crawlers.html','games/dough-dash.html',
+  'games/dungeon-delve.html','games/echo-casebook.html','games/echo_fruit_catch.html',
+  'games/garden-defense.html','games/little_steps.html','games/lumo-dash-page.html',
+  'games/lumo-dash.html','games/lumo-run.html','games/lumo_firefly_night.html',
+  'games/marble-run-lab.html','games/millionaire-quiz.html','games/mini-theme-park-builder.html',
+  'games/mobile-games.html','games/neon-tiles.html','games/nibble-quest-page.html',
+  'games/nibble-quest.html','games/paper-toss-deluxe.html','games/pastry-match.html',
+  'games/pips-bakery-empire.html','games/pip_star_connect.html','games/pixel-pet-arena.html',
+  'games/play.html','games/sky_high_squirt.html','games/stack-attack-page.html',
+  'games/stack-attack.html','games/star-chef.html','games/stardust-ruins.html',
+  'games/stardust_collection.html','games/tiger_smash.html','games/voidrush.html'
   // lumo-run.html is a noindex redirect to lumo-dash.html (A967 consolidation).
-  // tiger_smash.html is a noindex redirect to ember-smash.html (Ember Smash, A980).
+  // tiger_smash.html is a noindex redirect to ember-smash.html (A980).
   // play.html is the shared Arcade cover/launcher (noindex), not a curated game.
-  // echo-casebook.html and stardust-ruins.html removed - they are curated games in content/games.json
+  // The rest are awaiting rework before they return to the arcade line-up.
 ];
 
 const BASE_URL = 'https://jvdesignstudio.co.uk';

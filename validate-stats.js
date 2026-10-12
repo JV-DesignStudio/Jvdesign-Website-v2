@@ -67,7 +67,7 @@ const FORBID = [
   [/\b(?:30|60)\s+(?:free\s+|creative\s+|focused\s+)?tools?/i, 'stale tools count'],
   [/\b6\s+books?\s/i, 'stale books count (should be 5)'],
 ];
-const MARKET_PAGES = ['index.html', 'pages/about.html', 'pages/learn-hub.html', 'pages/parents.html', 'pages/parent-guide.html', 'pages/press.html', 'pages/teachers.html', 'pages/workshop.html', 'pages/games.html', 'pages/downloads.html', 'tools/parent-guide.html'];
+const MARKET_PAGES = ['index.html', 'pages/about.html', 'pages/learn-hub.html', 'pages/parents.html', 'pages/parent-guide.html', 'pages/press.html', 'pages/teachers.html', 'pages/workshop.html', 'pages/downloads.html', 'tools/parent-guide.html'];
 for (const f of MARKET_PAGES) {
   const html = read(f);
   for (const [re, what] of FORBID) {
@@ -87,11 +87,14 @@ for (const f of MARKET_PAGES) {
 // 6) Catalogue pages must state the same count as marketing.json (A947). The games
 //    page curates its grid at runtime (standalone apps live elsewhere), so its
 //    advertised total is the marketing display; tools page states the tools display.
-const gamesHtml = read('pages/games.html');
-const gamesResult = (gamesHtml.match(/id="gameResultCount"[^>]*>\s*([^<]+?)\s*</) || [])[1] || '';
-const gamesShown = parseInt(gamesResult.replace(/[^0-9]/g, ''), 10);
-if (gamesShown !== parseInt(marketing.games.display.replace(/[^0-9]/g, ''), 10))
-  add(`pages/games.html: catalogue count "${gamesResult.trim()}" != marketing.games.display "${marketing.games.display}"`);
+// 6) The arcade is the single catalogue (A947). Its advertised games count is
+//    the live registry line-up; the tools page states the tools display.
+const registrySrc = read('games-registry.js');
+const lineup = (registrySrc.match(/"id"\s*:/g) || []).length;
+if (lineup !== parseInt(marketing.games.display.replace(/[^0-9]/g, ''), 10))
+  add(`games-registry.js: live line-up ${lineup} != marketing.games.display "${marketing.games.display}"`);
+if (!read('arcade.html').includes('window.JVDS_GAMES'))
+  add('arcade.html: does not read the registry line-up');
 const toolsHtml = read('pages/dev-tools.html');
 if (!toolsHtml.includes(marketing.tools.display))
   add(`pages/dev-tools.html: does not state the tools count "${marketing.tools.display}"`);

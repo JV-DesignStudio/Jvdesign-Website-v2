@@ -21,7 +21,6 @@ const GAMES = [
   { file: 'beat-builder-battle.html', id: 'beat-builder-battle', character: 'Pip' },
   { file: 'neon-tiles.html', id: 'neon-tiles', character: 'Echo' },
   { file: 'paper-toss-deluxe.html', id: 'paper-toss', character: 'Pip' },
-  { file: 'echos-flight.html', id: 'echo-flight', character: 'Echo' },
   { file: 'dough-dash.html', id: 'dough-dash', character: 'Ember' },
   { file: 'lumo_firefly_night.html', id: 'lumo-firefly', character: 'Lumo' },
   { file: 'voidrush.html', id: 'void-rush', character: 'Echo' },

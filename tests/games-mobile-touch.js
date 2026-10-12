@@ -26,12 +26,10 @@ function listen(){return new Promise(r=>server.listen(port, r));}
 let failures = 0;
 function check(name, ok, detail=''){ console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:'')); if(!ok) failures++; }
 
-const gamesHtml = fs.readFileSync(path.join(root,'pages/games.html'),'utf8');
-const GAMES = [...new Set([
-  ...[...gamesHtml.matchAll(/<a[^>]*href="([^"]+)"[^>]*class="game-card/g)].map(m=>m[1]),
-  ...[...gamesHtml.matchAll(/<a[^>]*href="([^"]+)"[^>]*class="kids-card/g)].map(m=>m[1])
-])].map(h=>h.replace(/^.*\//,'')).filter(f=>f.endsWith('.html'));
-const FLAGSHIP = ['arcane_citadel_page.html','garden-defense.html','bubble-pop-galaxy.html','echo_fruit_catch.html','pip_star_connect.html','sky_high_with_friends.html'];
+const registry = fs.readFileSync(path.join(root,'games-registry.js'),'utf8');
+const GAMES = [...new Set([...registry.matchAll(/"file"\s*:\s*"([^"]+\.html)"/g)].map(m=>m[1]))];
+const arcadeHtml = fs.readFileSync(path.join(root,'arcade.html'),'utf8');
+const FLAGSHIP = ['arcane_citadel_page.html','gem_match.html','nova-siege.html','sky_high_with_friends.html','echos-flight.html','highway-dodge.html'];
 
 function wireErrors(page){
   const errors=[];
@@ -46,7 +44,7 @@ const overflow = page => page.evaluate(()=>document.documentElement.scrollWidth-
   const browser = await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox']});
 
   // 1) Sweep every catalogue game at phone and desktop.
-  check('catalogue lists games to test', GAMES.length>=20, String(GAMES.length));
+  check('line-up lists games to test', GAMES.length>=8, String(GAMES.length));
   for (const vp of [{name:'phone',width:390,height:844,isMobile:true,hasTouch:true},{name:'desktop',width:1440,height:900}]) {
     let bad=0;
     for (const f of GAMES) {
@@ -99,10 +97,9 @@ const overflow = page => page.evaluate(()=>document.documentElement.scrollWidth-
     await page.close();
   }
 
-  // 3) The catalogue must not claim tilt-to-play for games that steer by touch.
-  check('catalogue Little Players no longer says "Tilt-to-play"', !/Tilt-to-play/i.test(gamesHtml));
-  check('catalogue does not label a game "Tilt to Play"', !/Tilt to Play/i.test(gamesHtml));
-  check('Echo\'s Fruit Catch is described as tap or drag', /Tap or drag to steer/i.test(gamesHtml));
+  // 3) The arcade must not claim tilt-to-play for games that steer by touch.
+  check('arcade does not say "Tilt-to-play"', !/Tilt-to-play/i.test(arcadeHtml));
+  check('arcade does not label a game "Tilt to Play"', !/Tilt to Play/i.test(arcadeHtml));
 
   await browser.close(); server.close();
   if(failures){ console.log(`\n${failures} FAILURE(S)`); process.exit(1); }

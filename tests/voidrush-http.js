@@ -65,7 +65,9 @@ function staticChecks() {
   check('game has a void tide', /function drawTide/.test(html) && /Void tide/.test(html));
 
   const arcade = fs.readFileSync(path.join(ROOT, 'arcade.html'), 'utf8');
-  check('arcade quest states flatten saved extra', /Object\.assign\(\{[\s\S]*?\},\s*s\.extra\)/.test(arcade));
+  check('arcade reads the registry line-up', /window\.JVDS_GAMES/.test(arcade));
+  const registry = fs.readFileSync(path.join(ROOT, 'games-registry.js'), 'utf8');
+  check('void-rush is held back from the live line-up until reworked', !/"id":\s*"void-rush"/.test(registry));
   const qb = fs.readFileSync(path.join(ROOT, 'pages/quest-board.html'), 'utf8');
   check('quest-board loads void-rush and flattens extra', /'void-rush'/.test(qb) && /st\.extra/.test(qb));
 }

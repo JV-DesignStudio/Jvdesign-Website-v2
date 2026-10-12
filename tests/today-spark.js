@@ -19,7 +19,7 @@ const FULL = [
   'learn/roblox-studio-beginner-tutorials.html',
   'learn/python-games-for-kids.html',
 ];
-const WEEKLY = ['pages/workshop.html', 'pages/games.html', 'me.html'];
+const WEEKLY = ['pages/workshop.html', 'me.html'];
 
 for (const f of FULL) {
   const h = read(f);
@@ -35,7 +35,7 @@ for (const f of WEEKLY) {
 }
 
 const arcade = read('arcade.html');
-ok('arcade.html: daily + weekly', arcade.includes('daily-challenge.js') && arcade.includes('weekly-challenge.js'));
+ok('arcade.html: app reads the registry line-up + profile', arcade.includes('games-registry.js') && arcade.includes('player-profile.js'));
 
 console.log(fail === 0 ? '\nALL TODAY-SPARK CHECKS PASSED' : '\n' + fail + ' FAILURES');
 process.exit(fail ? 1 : 0);
