@@ -5909,7 +5909,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-12T15:46:10.569Z",
+    "generated": "2026-10-12T15:56:59.428Z",
     "workshops": 334,
     "games": 11,
     "tools": 37,
