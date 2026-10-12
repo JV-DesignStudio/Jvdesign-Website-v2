@@ -1,5 +1,5 @@
 /* Checks the /learn/ index hub (learn/index.html):
-   loads clean, canonical is /learn/, links all 10 guides, fits mobile. */
+   loads clean, canonical is /learn/, links all 15 guides, fits mobile. */
 const http = require('http'), fs = require('fs'), path = require('path');
 const puppeteer = require('puppeteer');
 const root = path.resolve(__dirname, '..');
@@ -48,7 +48,7 @@ const server = http.createServer((req, res) => {
     check('canonical is /learn/', s.canonical === 'https://jvdesignstudio.co.uk/learn/', s.canonical);
     check('JSON-LD present', s.jsonld);
     check('Stardust callout present', s.callout);
-    check('links all 10 guides', s.guideLinks.length >= 10, 'links ' + s.guideLinks.length);
+    check('links all 15 guides', s.guideLinks.length >= 15, 'links ' + s.guideLinks.length);
     check('page has no dashes', s.dashes === 0, 'dashes ' + s.dashes);
     check('desktop no overflow', s.sw <= 1442, s.sw + '');
 
