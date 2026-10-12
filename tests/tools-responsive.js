@@ -12,7 +12,6 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 
 const ROOT = path.join(__dirname, '..');
-const PORT = Number(process.env.TR_PORT || 8195);
 const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.avif':'image/avif','.webmanifest':'application/manifest+json'};
 
 // Every tool page on disk - no hand-maintained list to drift.
@@ -29,7 +28,10 @@ const server = http.createServer((req, res) => {
 });
 
 (async () => {
-  await new Promise(r => server.listen(PORT, r));
+  // Ephemeral port: a fixed port crashes with EADDRINUSE when the review bot
+  // runs this alongside another suite that grabbed the same port.
+  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
+  const PORT = server.address().port;
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const failures = [];
   const page = await browser.newPage();
