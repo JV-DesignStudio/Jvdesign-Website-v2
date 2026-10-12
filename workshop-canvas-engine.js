@@ -239,10 +239,61 @@ var BLANK_PLACEHOLDER = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style
   'background:#0a0e14;color:#8b96a5;font-family:system-ui,sans-serif;text-align:center;padding:24px}' +
   'strong{color:#ffc078;display:block;font-size:1.05rem;margin-bottom:6px}</style></head><body>' +
   '<div><strong>Fill in the blanks to see your game</strong>' +
-  'Replace the ??? with real code, then watch this panel come alive.</div></body></html>';
+  'Replace the ___ with real code, then watch this panel come alive.</div></body></html>';
+
+/* ── Shared preview visual layer ──
+   Injected into every generated preview so all build-along pages share one
+   richer look: a fitted rounded canvas, a glow/vignette frame, and an optional
+   drawing helper (window.CWArt) for gradients, glow and rounded shapes.
+   Everything is inline (no network requests) to keep the school-computer rule. */
+var ART_KIT = '<script id="cw-art">(function(){' +
+  'var A={};' +
+  'A.bg=function(c,w,h,top,bot){var g=c.createLinearGradient(0,0,0,h);' +
+    'g.addColorStop(0,top||"#16203c");g.addColorStop(1,bot||"#0a0d18");' +
+    'c.fillStyle=g;c.fillRect(0,0,w,h);};' +
+  'A.grid=function(c,w,h,step,col){step=step||40;c.save();c.strokeStyle=col||"rgba(255,255,255,.05)";' +
+    'c.lineWidth=1;for(var x=step;x<w;x+=step){c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke();}' +
+    'for(var y=step;y<h;y+=step){c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke();}c.restore();};' +
+  'A.glow=function(c,col,blur,fn){c.save();c.shadowColor=col||"rgba(255,119,0,.9)";c.shadowBlur=blur||14;' +
+    'try{fn(c);}finally{c.restore();}};' +
+  'A.roundRect=function(c,x,y,w,h,r){if(c.roundRect){c.beginPath();c.roundRect(x,y,w,h,r);return;}' +
+    'r=Math.min(r||6,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);' +
+    'c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();};' +
+  'A.spark=function(c,x,y,col,size){c.save();c.globalAlpha=.9;c.fillStyle=col||"#ffd166";' +
+    'c.beginPath();c.arc(x,y,size||2,0,Math.PI*2);c.fill();c.restore();};' +
+  'window.CWArt=A;})()<\/script>';
+
+var PREVIEW_CSS = '<style id="cw-polish">' +
+  'html,body{height:100%;background:radial-gradient(1200px 640px at 50% -10%,rgba(255,119,0,.12),transparent 60%),' +
+  'radial-gradient(1000px 560px at 50% 120%,rgba(96,165,250,.12),transparent 60%),#0f1220!important;}' +
+  'body{position:relative;justify-content:center;}' +
+  'canvas{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:14px;' +
+  'box-shadow:0 12px 34px rgba(0,0,0,.55),0 0 0 2px rgba(255,255,255,.06),0 0 46px rgba(255,119,0,.14);' +
+  'filter:saturate(1.14) contrast(1.05);}' +
+  '#cw-fx{position:fixed;inset:0;pointer-events:none;z-index:2147483646;' +
+  'background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px),' +
+  'radial-gradient(125% 125% at 50% 50%,transparent 52%,rgba(0,0,0,.5) 100%);}' +
+  '#cw-fx::after{content:"";position:absolute;inset:0;border-radius:16px;' +
+  'box-shadow:inset 0 0 0 2px rgba(255,119,0,.14);}' +
+  '</style>';
+
+var FX_OVERLAY = '<div id="cw-fx" aria-hidden="true"></div>';
+
+function injectHead(html, markup) {
+  return html.indexOf('</head>') !== -1 ? html.replace('</head>', markup + '</head>') : markup + html;
+}
+function injectBody(html, markup) {
+  return html.indexOf('<body>') !== -1 ? html.replace('<body>', '<body>' + markup) : markup + html;
+}
+function withArtKit(html) {
+  return html.indexOf('CWArt') !== -1 ? injectBody(html, ART_KIT) : html;
+}
+function polishPreview(html) {
+  return injectHead(withArtKit(injectBody(html, FX_OVERLAY)), PREVIEW_CSS);
+}
 
 function hasUnfilled(code) {
-  return /\?{2,}/.test(code);
+  return /\?{2,}|_{3,}/.test(code);
 }
 
 function updateCanvas() {
@@ -250,9 +301,9 @@ function updateCanvas() {
   var code = editors[step.num] ? editors[step.num].value : step.starter;
   var frame = document.getElementById('gameFrame');
   if (hasUnfilled(code)) {
-    frame.srcdoc = BLANK_PLACEHOLDER;
+    frame.srcdoc = polishPreview(BLANK_PLACEHOLDER);
   } else {
-    var html = TEMPLATES[step.num](code);
+    var html = polishPreview(TEMPLATES[step.num](code));
     frame.srcdoc = html;
   }
   saveState();
@@ -276,7 +327,7 @@ function checkStep(num) {
   if (completed[num]) return;
   var step = STEPS.find(function(s) { return s.num === num; });
   var code = editors[num].value.toLowerCase();
-  var missing = step.checks.filter(function(c) { return code.indexOf(c) === -1; });
+  var missing = step.checks.filter(function(c) { return code.indexOf(String(c).toLowerCase()) === -1; });
   var fb = document.getElementById('feedback-' + num);
 
   if (missing.length === 0) {
@@ -286,8 +337,12 @@ function checkStep(num) {
       fb.textContent = '✓ Step ' + num + ' complete! Your game just leveled up.';
       advanceStep(num);
     } else {
-      fb.textContent = '✓ Code is correct! Now answer the Knowledge Check below.';
       renderSteps();
+      var gateFb = document.getElementById('feedback-' + num);
+      if (gateFb) {
+        gateFb.className = 'cw-feedback success';
+        gateFb.textContent = '✓ Code is correct! Now answer the Knowledge Check below.';
+      }
       var quizEl = document.getElementById('quiz-opts-' + num);
       if (quizEl) quizEl.closest('.cw-quiz').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -469,7 +524,7 @@ function downloadGame() {
   STEPS.forEach(function(s) { if (completed[s.num]) lastDone = s.num; });
   var target = lastDone || STEPS[currentStep].num;
   var code = completed[target] || editors[target].value;
-  var html = TEMPLATES[target](code);
+  var html = withArtKit(TEMPLATES[target](code));
   var blob = new Blob([html], { type: 'text/html' });
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
