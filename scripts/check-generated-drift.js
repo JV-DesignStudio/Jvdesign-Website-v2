@@ -58,6 +58,7 @@ function stripVolatile(s){
   try{
     const o=JSON.parse(s);
     delete o.throughput; delete o.learner; delete o.revenue; delete o.board; delete o.socialQueue;
+    if(o.validate) delete o.validate.refs; // link count telemetry; validate-links already gates this
     return JSON.stringify(o);
   }catch{ return s; }
 }
