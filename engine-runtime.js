@@ -404,6 +404,14 @@
 
     mount.appendChild(container);
 
+    // Show the controls only when the primary pointer is coarse, so desktop
+    // layouts are untouched. Done in JS (not a media query) to keep the
+    // injected stylesheet flat and cheap to parse.
+    var coarse = root.matchMedia ? root.matchMedia('(pointer:coarse)') : null;
+    function applyPointer() { container.style.display = (coarse && coarse.matches) ? 'flex' : 'none'; }
+    applyPointer();
+    if (coarse) bind(coarse, 'change', applyPointer);
+
     return {
       el: container,
       input: input,
@@ -789,9 +797,10 @@
       '.jvdse-particle{position:fixed;z-index:2147483200;pointer-events:none;border-radius:50%;transform:translate(-50%,-50%);animation:jvdseParticle .62s ease-out forwards}' +
       '@keyframes jvdseParticle{to{transform:translate(calc(-50% + var(--jvdse-dx,0px)),calc(-50% + var(--jvdse-dy,0px)));opacity:0}}' +
       '.jvdse-flash{position:fixed;inset:0;z-index:2147483100;pointer-events:none;transition:opacity linear}' +
-      '.gs-touch{display:none}' +
-      '@media(pointer:coarse){' +
-      '.gs-touch{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:2147483000;gap:14px;align-items:flex-end;justify-content:space-between;padding:10px calc(12px + env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) calc(12px + env(safe-area-inset-left,0px));pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}' +
+      // Touch controls: hidden by default, rt.touch shows the shell only on a
+      // coarse pointer (kept as one flat block so it reads cleanly and does not
+      // wrap nested rules in a media query).
+      '.gs-touch{display:none;position:fixed;left:0;right:0;bottom:0;z-index:2147483000;gap:14px;align-items:flex-end;justify-content:space-between;padding:10px calc(12px + env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) calc(12px + env(safe-area-inset-left,0px));pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}' +
       '.gs-touch>*{pointer-events:auto}' +
       '.gs-dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:4px;touch-action:none}' +
       '.gs-dpad button{border:1px solid rgba(255,255,255,.28);background:rgba(12,16,26,.55);color:#fff;border-radius:12px;font-size:1.1rem;line-height:1;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);touch-action:none;cursor:pointer}' +
@@ -801,8 +810,7 @@
       '.gs-joy-knob{position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.34);transform:translate(-50%,-50%)}' +
       '.gs-touch-btns{display:flex;gap:12px;align-items:flex-end}' +
       '.gs-touch-btn{min-width:64px;min-height:64px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(12,16,26,.55);color:#fff;font:800 .85rem/1 Inter,system-ui,sans-serif;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);touch-action:none;cursor:pointer}' +
-      '.gs-touch-btn:active{background:rgba(255,255,255,.3)}' +
-      '}';
+      '.gs-touch-btn:active{background:rgba(255,255,255,.3)}';
     root.document.head.appendChild(css);
   }
   if (root.document) {

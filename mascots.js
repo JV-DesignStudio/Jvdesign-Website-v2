@@ -176,12 +176,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── CHOOSE YOUR GUIDE quiz (home) ──
+  // Opt-in only (A1455): the quiz opens from the "Find your guide" button, never
+  // as a blocking modal on first load. If a guide is already chosen, personalise
+  // the homepage quietly.
   if (location.pathname==='/' || location.pathname.endsWith('index.html')){
-    if (!getGuide()){
-      setTimeout(showGuideQuiz, 900);
-    } else {
-      personalizeHome();
-    }
+    if (getGuide()) personalizeHome();
   }
 
   // ── Persistent companion (workshop / tool pages) ──
@@ -373,18 +372,14 @@ function showGuideQuiz(){
 
 function personalizeHome(){
   const guide=getGuide(); if(!guide) return;
-  const paths=document.querySelectorAll('.studio-path');
-  if(!paths.length) return;
-  // Move guided path to front + highlight
-  const order={lumo:0, play:1, ember:2, stardust:3};
-  // If guide is stardust, highlight Read; otherwise highlight matched
-  paths.forEach(p=>{
-    const isMatch = (guide==='lumo' && p.classList.contains('path-learn')) ||
-                    (guide==='stardust' && p.classList.contains('path-read')) ||
-                    (guide==='ember' && p.classList.contains('path-create')) ||
-                    (guide==='play' && p.classList.contains('path-play'));
-    if(isMatch){ p.style.outline='2px solid '+MASCOT_CFG[guide].color; p.style.outlineOffset='2px'; }
-  });
+  // Current homepage destinations live on the hub cards, not the retired
+  // .studio-path row. Highlight the matching hub so the chosen guide means something.
+  const map={ lumo:'.hub-card--learn', ember:'.hub-card--create', play:'.hub-card--play', stardust:'.hub-card--read' };
+  const target=document.querySelector(map[guide]||'');
+  if(!target) return;
+  const color=(MASCOT_CFG[guide]||{}).color||'#7C6CF0';
+  target.style.outline='3px solid '+color;
+  target.style.outlineOffset='3px';
 }
 
 function addCompanion(cfg){
