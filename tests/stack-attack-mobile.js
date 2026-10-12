@@ -45,8 +45,8 @@ function check(name, ok, detail=''){
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth
   }));
-  check('runtime version 2.3.0 on mobile', m.runtimeVersion === '2.3.0', String(m.runtimeVersion));
-  check('game runs on the shared runtime on mobile', m.engineMarker === '2.3.0', String(m.engineMarker));
+  check('runtime version 2.4.0 on mobile', m.runtimeVersion === '2.4.0', String(m.runtimeVersion));
+  check('game runs on the shared runtime on mobile', m.engineMarker === '2.4.0', String(m.engineMarker));
   check('canvas visible on mobile', m.canvasVisible);
   check('start button present on mobile', m.startBtn);
   check('mobile does not overflow viewport', m.scrollWidth <= m.clientWidth + 2, m.scrollWidth + '/' + m.clientWidth);

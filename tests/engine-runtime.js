@@ -7,7 +7,7 @@ const path = require('path');
 const http = require('http');
 const puppeteer = require('puppeteer');
 const ROOT = path.resolve(__dirname, '..');
-const RUNTIME_VERSION = '2.3.0';
+const RUNTIME_VERSION = '2.4.0';
 
 const NOISE = /ServiceWorker|MIME type|Failed to load resource|net::ERR|ERR_FAILED|ERR_ABORTED|favicon/i;
 const sleep = ms => new Promise(r => setTimeout(r, ms));

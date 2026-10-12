@@ -7,10 +7,10 @@
 (function (root) {
   'use strict';
   var api = root.JVDSEngine = root.JVDSEngine || {};
-  api.version = api.version || '2.3.0';
+  api.version = api.version || '2.4.0';
   var XP_PER_LEVEL = 1000;
   api.score = {
-    version: '2.3.0',
+    version: '2.4.0',
     XP_PER_LEVEL: XP_PER_LEVEL,
     // Add run points. Returns { score, newBest, totalScore }.
     add: function (state, points) {

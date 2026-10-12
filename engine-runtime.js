@@ -21,6 +21,8 @@
  *     var coins = rt.group({ pool: true, create: () => ({ x: 0, y: 0 }), reset: (c, p) => { c.x = p.x; c.y = p.y; } });
  *     coins.spawn({ x: 40, y: 0 });
  *     coins.update(dt);
+ *     // phones: on-screen dpad / stick / buttons, hidden on desktop
+ *     rt.touch({ input: input, dpad: true, buttons: [{ label: 'Jump', code: 'Space' }] });
  *   }
  *
  * Nothing here runs on its own. Motion helpers become no-ops when the player
@@ -29,7 +31,7 @@
 (function (root) {
   'use strict';
   var api = root.JVDSEngine = root.JVDSEngine || {};
-  api.version = api.version || '2.3.0';
+  api.version = api.version || '2.4.0';
 
   function reducedMotion() {
     try { return !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches); }
@@ -213,6 +215,24 @@
       pos.forEach(function (k) { if (isDown(k)) v += 1; });
       return v < 0 ? -1 : v > 0 ? 1 : 0;
     }
+    var stick = { x: 0, y: 0, active: false };
+    // Feed a key from on-screen controls. Mirrors a real key exactly, so
+    // isDown/wasPressed need no special cases for buttons vs keyboard.
+    function setVirtual(name, isOn) {
+      name = String(name == null ? '' : name).toLowerCase();
+      if (!name) return;
+      isOn = !!isOn;
+      if (isOn && !down[name]) pressed[name] = true;
+      if (!isOn && down[name]) released[name] = true;
+      down[name] = isOn;
+    }
+    // Analogue stick state in the range -1..1 (input.stick.x / input.stick.y).
+    function setStick(x, y, active) {
+      stick.x = Math.max(-1, Math.min(1, +x || 0));
+      stick.y = Math.max(-1, Math.min(1, +y || 0));
+      stick.active = active == null ? !!(stick.x || stick.y) : !!active;
+      return stick;
+    }
     function endFrame() {
       pressed = {}; released = {};
       pointer.pressed = false; pointer.released = false;
@@ -222,12 +242,186 @@
       listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2], l[3]); });
       listeners.length = 0;
       down = {}; pressed = {}; released = {};
+      stick.x = 0; stick.y = 0; stick.active = false;
     }
 
     return {
       isDown: isDown, wasPressed: wasPressed, wasReleased: wasReleased,
       axis: axis, endFrame: endFrame, destroy: destroy,
-      get pointer() { return pointer; }
+      setVirtual: setVirtual, setStick: setStick,
+      get pointer() { return pointer; },
+      get stick() { return stick; }
+    };
+  }
+
+  // -------------------------------------------------------------- touch ----
+  // On-screen controls for phones and tablets (A1454). Controls only appear on
+  // coarse-pointer devices (the injected CSS hides them on desktop), use 44px+
+  // targets and float above the bottom safe area, so a game adds nothing but a
+  // single call:
+  //
+  //   var ctrls = rt.touch({ dpad: true, buttons: [{ label: 'Jump', code: 'Space' }] });
+  //
+  // Key controls feed the game two ways: pass an input() and the state is set
+  // on it directly, otherwise real KeyboardEvents are dispatched, so a game
+  // that already listens for keys gets on-screen controls with no changes. Each
+  // control captures its own pointer, so a direction and an action button can
+  // be held together (multi-touch). The stick is analogue.
+  function touch(o) {
+    o = o || {};
+    if (!root.document) return null;
+    var input = o.input || null;
+    var target = o.target || root.document;
+    var mount = o.container || root.document.body || root.document.documentElement;
+    if (!mount) return null;
+
+    function keyEvent(type, key, code) {
+      var ev;
+      try {
+        ev = new KeyboardEvent(type, { key: String(key), code: String(code || key), bubbles: true, cancelable: true });
+      } catch (err) {
+        ev = root.document.createEvent('Event');
+        ev.initEvent(type, true, true);
+        ev.key = String(key); ev.code = String(code || key);
+      }
+      target.dispatchEvent(ev);
+    }
+    function press(name, key, code) {
+      if (input && input.setVirtual) input.setVirtual(name, true);
+      else keyEvent('keydown', key || name, code);
+    }
+    function release(name, key, code) {
+      if (input && input.setVirtual) input.setVirtual(name, false);
+      else keyEvent('keyup', key || name, code);
+    }
+
+    var stick = { x: 0, y: 0, active: false };
+    function setStick(x, y, active) {
+      stick.x = x; stick.y = y; stick.active = !!active;
+      if (input && input.setStick) input.setStick(x, y, active);
+    }
+
+    var listeners = [];
+    function bind(el, type, fn, opts) { el.addEventListener(type, fn, opts); listeners.push([el, type, fn, opts]); }
+    function tag(el, cls) { el.className = cls; return el; }
+    var held = {};
+
+    // A press-and-hold control that maps to one key. capture() keeps the press
+    // alive even if the finger slides off the button.
+    function makeKeyButton(label, key, code, cls) {
+      var b = root.document.createElement('button');
+      b.type = 'button';
+      b.className = cls || 'gs-touch-btn';
+      b.textContent = label;
+      b.setAttribute('aria-label', label);
+      var name = String(code || key || label).toLowerCase();
+      function on() { if (held[name]) return; held[name] = { key: key, code: code }; press(name, key, code); }
+      function off() { if (!held[name]) return; var h = held[name]; delete held[name]; release(name, h.key, h.code); }
+      bind(b, 'pointerdown', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        if (b.setPointerCapture && e.pointerId != null) { try { b.setPointerCapture(e.pointerId); } catch (x) {} }
+        on();
+      });
+      bind(b, 'pointerup', function (e) { e.preventDefault(); e.stopPropagation(); off(); });
+      bind(b, 'pointercancel', off);
+      bind(b, 'lostpointercapture', off);
+      bind(b, 'contextmenu', function (e) { e.preventDefault(); });
+      return b;
+    }
+
+    var container = tag(root.document.createElement('div'), 'gs-touch');
+
+    // Direction pad (or analogue stick) on the left.
+    var dirMap = (o.dpad && typeof o.dpad === 'object')
+      ? o.dpad
+      : { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' };
+    if (o.stick) {
+      var joy = tag(root.document.createElement('div'), 'gs-joy');
+      var knob = tag(root.document.createElement('div'), 'gs-joy-knob');
+      joy.appendChild(knob);
+      var knobTravel = 34, dragId = null;
+      function joyMove(e) {
+        var r = joy.getBoundingClientRect();
+        var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        var dx = (e.clientX - cx) / (r.width / 2 || 1);
+        var dy = (e.clientY - cy) / (r.height / 2 || 1);
+        var len = Math.sqrt(dx * dx + dy * dy);
+        if (len > 1) { dx /= len; dy /= len; }
+        var dead = 0.18;
+        setStick(Math.abs(dx) < dead ? 0 : dx, Math.abs(dy) < dead ? 0 : dy, true);
+        knob.style.transform = 'translate(-50%,-50%) translate(' +
+          (dx * knobTravel).toFixed(1) + 'px,' + (dy * knobTravel).toFixed(1) + 'px)';
+      }
+      function joyEnd() {
+        dragId = null; setStick(0, 0, false);
+        knob.style.transform = 'translate(-50%,-50%)';
+      }
+      bind(joy, 'pointerdown', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        dragId = e.pointerId;
+        if (joy.setPointerCapture && e.pointerId != null) { try { joy.setPointerCapture(e.pointerId); } catch (x) {} }
+        joyMove(e);
+      });
+      bind(joy, 'pointermove', function (e) { if (dragId !== null && e.pointerId === dragId) joyMove(e); });
+      bind(joy, 'pointerup', function (e) { e.preventDefault(); e.stopPropagation(); joyEnd(); });
+      bind(joy, 'pointercancel', joyEnd);
+      bind(joy, 'lostpointercapture', joyEnd);
+      bind(joy, 'contextmenu', function (e) { e.preventDefault(); });
+      container.appendChild(joy);
+    } else if (o.dpad) {
+      var dpad = tag(root.document.createElement('div'), 'gs-dpad');
+      function gap() { var s = root.document.createElement('span'); s.className = 'gs-dpad-gap'; return s; }
+      function dirButton(dirName, arrow) {
+        var b = makeKeyButton(arrow, dirMap[dirName], dirMap[dirName], 'gs-dir ' + dirName);
+        b.setAttribute('aria-label', 'Move ' + dirName);
+        return b;
+      }
+      dpad.appendChild(gap());
+      dpad.appendChild(dirButton('up', '▲'));
+      dpad.appendChild(gap());
+      dpad.appendChild(dirButton('left', '◀'));
+      dpad.appendChild(gap());
+      dpad.appendChild(dirButton('right', '▶'));
+      dpad.appendChild(gap());
+      dpad.appendChild(dirButton('down', '▼'));
+      dpad.appendChild(gap());
+      container.appendChild(dpad);
+    }
+
+    // Action buttons on the right.
+    var buttons = o.buttons || [];
+    if (buttons.length) {
+      var row = tag(root.document.createElement('div'), 'gs-touch-btns');
+      buttons.forEach(function (cfg) {
+        if (!cfg) return;
+        if (typeof cfg === 'string') cfg = { label: cfg };
+        var key = cfg.key || cfg.code || ' ';
+        var code = cfg.code || cfg.key || 'Space';
+        row.appendChild(makeKeyButton(cfg.label || cfg.text || '•', key, code));
+      });
+      container.appendChild(row);
+    }
+
+    mount.appendChild(container);
+
+    return {
+      el: container,
+      input: input,
+      get stick() { return stick; },
+      axis: function () { return { x: stick.x, y: stick.y }; },
+      press: press,
+      release: release,
+      destroy: function () {
+        Object.keys(held).forEach(function (name) {
+          var h = held[name]; delete held[name];
+          if (input && input.setVirtual) input.setVirtual(name, false);
+          else keyEvent('keyup', h.key || name, h.code);
+        });
+        listeners.forEach(function (l) { l[0].removeEventListener(l[1], l[2], l[3]); });
+        listeners.length = 0;
+        setStick(0, 0, false);
+        if (container.parentNode) container.parentNode.removeChild(container);
+      }
     };
   }
 
@@ -594,7 +788,21 @@
       '@keyframes jvdseFloat{to{transform:translate(-50%,-160%);opacity:0}}' +
       '.jvdse-particle{position:fixed;z-index:2147483200;pointer-events:none;border-radius:50%;transform:translate(-50%,-50%);animation:jvdseParticle .62s ease-out forwards}' +
       '@keyframes jvdseParticle{to{transform:translate(calc(-50% + var(--jvdse-dx,0px)),calc(-50% + var(--jvdse-dy,0px)));opacity:0}}' +
-      '.jvdse-flash{position:fixed;inset:0;z-index:2147483100;pointer-events:none;transition:opacity linear}';
+      '.jvdse-flash{position:fixed;inset:0;z-index:2147483100;pointer-events:none;transition:opacity linear}' +
+      '.gs-touch{display:none}' +
+      '@media(pointer:coarse){' +
+      '.gs-touch{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:2147483000;gap:14px;align-items:flex-end;justify-content:space-between;padding:10px calc(12px + env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) calc(12px + env(safe-area-inset-left,0px));pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}' +
+      '.gs-touch>*{pointer-events:auto}' +
+      '.gs-dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:4px;touch-action:none}' +
+      '.gs-dpad button{border:1px solid rgba(255,255,255,.28);background:rgba(12,16,26,.55);color:#fff;border-radius:12px;font-size:1.1rem;line-height:1;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);touch-action:none;cursor:pointer}' +
+      '.gs-dpad button:active{background:rgba(255,255,255,.3)}' +
+      '.gs-dpad .up{grid-column:2;grid-row:1}.gs-dpad .left{grid-column:1;grid-row:2}.gs-dpad .right{grid-column:3;grid-row:2}.gs-dpad .down{grid-column:2;grid-row:3}' +
+      '.gs-joy{position:relative;width:120px;height:120px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(12,16,26,.5);touch-action:none;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}' +
+      '.gs-joy-knob{position:absolute;left:50%;top:50%;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.34);transform:translate(-50%,-50%)}' +
+      '.gs-touch-btns{display:flex;gap:12px;align-items:flex-end}' +
+      '.gs-touch-btn{min-width:64px;min-height:64px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(12,16,26,.55);color:#fff;font:800 .85rem/1 Inter,system-ui,sans-serif;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);touch-action:none;cursor:pointer}' +
+      '.gs-touch-btn:active{background:rgba(255,255,255,.3)}' +
+      '}';
     root.document.head.appendChild(css);
   }
   if (root.document) {
@@ -603,9 +811,10 @@
   }
 
   api.runtime = {
-    version: '2.3.0',
+    version: '2.4.0',
     loop: loop,
     input: input,
+    touch: touch,
     collide: {
       aabb: aabb, pointInRect: pointInRect, circle: circle, circleRect: circleRect,
       overlap: overlap, resolve: resolve
