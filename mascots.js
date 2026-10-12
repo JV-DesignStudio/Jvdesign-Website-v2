@@ -285,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function showGuideQuiz(){
+  const prevFocus=document.activeElement;
   const bd=document.createElement('div');
   bd.className='mascot-quiz-backdrop';
   bd.innerHTML=`
@@ -298,6 +299,24 @@ function showGuideQuiz(){
       <button class="mascot-quiz-skip" id="quizSkip">Skip , let me explore</button>
     </div>`;
   document.body.appendChild(bd);
+  function focusables(){
+    return [].slice.call(bd.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(el=>!el.disabled && el.offsetParent!==null);
+  }
+  function close(){
+    document.removeEventListener('keydown', onKey, true);
+    bd.remove();
+    try{ if(prevFocus && prevFocus.focus) prevFocus.focus(); }catch(e){}
+  }
+  function onKey(e){
+    if(e.key==='Escape'){ e.preventDefault(); close(); return; }
+    if(e.key==='Tab'){
+      const f=focusables(); if(!f.length) return;
+      const first=f[0], last=f[f.length-1];
+      if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+    }
+  }
+  document.addEventListener('keydown', onKey, true);
   const qs=[
     {q:"What sounds most fun right now?", opts:[
       {t:"Exploring a mystery forest", m:'lumo', img:'/assets/mascots/lumo-hero.webp'},
@@ -330,23 +349,25 @@ function showGuideQuiz(){
       b.addEventListener('click', ()=>{ votes[o.m]=(votes[o.m]||0)+1; idx++; if(idx<qs.length) render(); else finish(); });
       box.appendChild(b);
     });
+    const firstOpt=box.querySelector('.mascot-quiz-opt'); if(firstOpt) firstOpt.focus();
   }
   function finish(){
     let best='lumo', max=-1; Object.entries(votes).forEach(([k,v])=>{ if(v>max){max=v;best=k;} });
     setGuide(best);
     bd.innerHTML=`
-      <div class="mascot-quiz-card mascot-quiz-reveal" style="text-align:center">
+      <div class="mascot-quiz-card mascot-quiz-reveal" role="dialog" aria-modal="true" aria-label="Your creative guide" style="text-align:center">
         <img src="${MASCOT_CFG[best].img}" alt="" style="width:92px;height:92px;border-radius:50%;border:3px solid #fff;box-shadow:0 6px 20px rgba(0,0,0,.14);object-fit:cover;background:#fff;margin-bottom:10px">
         <h3 style="font-family:Fredoka,sans-serif;margin:6px 0 4px">${MASCOT_CFG[best].name} is your guide! ✨</h3>
         <p style="font-size:.88rem;color:var(--charcoal-lt);margin-bottom:14px">${best==='lumo'?'Lumo will nudge you toward the next workshop.':best==='ember'?'Ember will point you at the perfect tool.':best==='play'?'Echo & Pip will save your next game.':'Stardust will light up your next story.'}</p>
         <button class="mascot-quiz-opt" style="justify-content:center" id="quizGo">Let's go →</button>
         <div style="margin-top:8px"><button class="mascot-quiz-skip" id="quizClose2">Close</button></div>
       </div>`;
-    bd.querySelector('#quizGo').addEventListener('click', ()=>{ bd.remove(); personalizeHome(); });
-    bd.querySelector('#quizClose2').addEventListener('click', ()=> bd.remove());
+    bd.querySelector('#quizGo').addEventListener('click', ()=>{ close(); personalizeHome(); });
+    bd.querySelector('#quizClose2').addEventListener('click', ()=> close());
+    const go=bd.querySelector('#quizGo'); if(go) go.focus();
   }
-  bd.querySelector('#quizSkip').addEventListener('click', ()=> bd.remove());
-  bd.addEventListener('click', e=>{ if(e.target===bd) bd.remove(); });
+  bd.querySelector('#quizSkip').addEventListener('click', ()=> close());
+  bd.addEventListener('click', e=>{ if(e.target===bd) close(); });
   render();
 }
 

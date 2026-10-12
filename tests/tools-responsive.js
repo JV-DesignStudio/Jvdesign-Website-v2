@@ -33,6 +33,14 @@ const server = http.createServer((req, res) => {
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const failures = [];
   const page = await browser.newPage();
+  // A reused page occasionally aborts a navigation (net::ERR_ABORTED) even for
+  // pages that load fine standalone; retry before treating it as a failure.
+  async function gotoRetry(url) {
+    for (let i = 0; i < 3; i++) {
+      try { await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 15000 }); return; }
+      catch (e) { if (i === 2) throw e; await new Promise(r => setTimeout(r, 120)); }
+    }
+  }
   await page.setRequestInterception(true);
   page.on('request', req => {
     const t = req.resourceType();
@@ -47,7 +55,7 @@ const server = http.createServer((req, res) => {
         const onErr = e => errs.push(e.message);
         page.on('pageerror', onErr);
         try {
-          await page.goto(`http://127.0.0.1:${PORT}/tools/${tool}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+          await gotoRetry(`http://127.0.0.1:${PORT}/tools/${tool}`);
           await new Promise(r => setTimeout(r, 200));
         } catch (e) { errs.push('goto: ' + e.message); }
         const m = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth })).catch(() => ({ sw: -1, iw: width }));
