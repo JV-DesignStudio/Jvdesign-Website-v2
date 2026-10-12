@@ -1,8 +1,8 @@
 // ── MASCOT CONFIG ──
 var MASCOT_CFG = {
-  lumo:     { name:'Lumo',     img:'/assets/mascots/lumo.jpg',     color:'#7C6CF0', pillar:'Learn' },
-  ember:    { name:'Ember',    img:'/assets/mascots/ember.jpg',    color:'#F2637A', pillar:'Create' },
-  play:     { name:'Echo & Pip', img:'/assets/mascots/echo.jpg',  color:'#2EB5A5', pillar:'Play', img2:'/assets/mascots/pip-hero.webp' },
+  lumo:     { name:'Lumo',     img:'/assets/mascots/lumo-hero.webp',     color:'#7C6CF0', pillar:'Learn' },
+  ember:    { name:'Ember',    img:'/assets/mascots/ember-hero.webp',    color:'#F2637A', pillar:'Create' },
+  play:     { name:'Echo & Pip', img:'/assets/mascots/echo-hero.webp',  color:'#2EB5A5', pillar:'Play', img2:'/assets/mascots/pip-hero.webp' },
   stardust: { name:'Stardust', img:'/assets/mascots/stardust-hero.webp', color:'#FFD23C', pillar:'Read' },
 };
 function getGuide(){ try{ return localStorage.getItem('jvds_guide'); }catch(e){ return null; } }
@@ -125,19 +125,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const path = location.pathname.toLowerCase();
   const isWorkshop = path.includes('/workshops/') || path.includes('/workshop');
   const isTool = path.includes('/tools/');
-  if (isWorkshop || isTool){
+  const isGame = path.includes('/games/');
+  if (isWorkshop || isTool || isGame){
     const coachHost = document.querySelector('.page-hero, .hero, #main-content, main');
     if (coachHost && !document.querySelector('.mascot-coach')){
       const isScratchLike = path.includes('scratch') || path.includes('tiny-learners') || path.includes('learning-lab');
-      const mascot = isScratchLike ? 'lumo' : (isTool ? 'ember' : 'lumo');
-      const img = mascot==='ember' ? '/assets/mascots/ember.jpg' : '/assets/mascots/lumo.jpg';
-      const name = mascot==='ember' ? 'Ember' : 'Lumo';
+      const mascot = isScratchLike ? 'lumo' : (isTool ? 'ember' : (isGame ? 'pip' : 'lumo'));
+      const img = mascot==='ember' ? '/assets/mascots/ember-hero.webp' : (mascot==='pip' ? '/assets/mascots/pip-hero.webp' : '/assets/mascots/lumo-hero.webp');
+      const name = mascot==='ember' ? 'Ember' : (mascot==='pip' ? 'Pip' : 'Lumo');
       const line = mascot==='ember'
         ? "Need a hand? Try me , I love happy accidents. Hit the tool, tweak a knob, and see what happens."
-        : "Psst , follow me step by step. Tap the blocks, try it your way, no wrong answers.";
+        : (mascot==='pip'
+          ? "Go on, have a play. Break it, beat your best, then have one more go."
+          : "Psst , follow me step by step. Tap the blocks, try it your way, no wrong answers.");
       const coach = document.createElement('div');
       coach.className = 'mascot-coach' + (isTool ? ' mascot-coach--tool' : '');
-      coach.style.setProperty('--mascot-accent', mascot==='ember' ? 'var(--mascot-ember)' : 'var(--mascot-lumo)');
+      coach.style.setProperty('--mascot-accent', mascot==='ember' ? 'var(--mascot-ember)' : (mascot==='pip' ? 'var(--mascot-pip)' : 'var(--mascot-lumo)'));
       coach.innerHTML = `<img src="${img}" alt="${name}"><div class="mascot-coach-body"><strong>${name} says:</strong> ${line}</div><button class="mascot-coach-dismiss" aria-label="Dismiss">Got it</button>`;
       coachHost.insertAdjacentElement('afterend', coach);
       coach.querySelector('.mascot-coach-dismiss').addEventListener('click', () => {
@@ -161,9 +164,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if(card.querySelector('.mascot-quest-by')) return;
     const txt = (card.textContent||'').toLowerCase();
     let m='stardust', label='Stardust', img='/assets/mascots/stardust-hero.webp';
-    if (txt.includes('learn')||txt.includes('workshop')||txt.includes('scratch')||txt.includes('tiny')){ m='lumo'; label='Lumo · Learn'; img='/assets/mascots/lumo.jpg'; }
-    else if (txt.includes('tool')||txt.includes('pixel')||txt.includes('build')||txt.includes('create')||txt.includes('sprite')||txt.includes('audio')){ m='ember'; label='Ember · Create'; img='/assets/mascots/ember.jpg'; }
-    else if (txt.includes('play')||txt.includes('game')||txt.includes('arcade')||txt.includes('score')){ m='play'; label='Echo & Pip · Play'; img='/assets/mascots/echo.jpg'; }
+    if (txt.includes('learn')||txt.includes('workshop')||txt.includes('scratch')||txt.includes('tiny')){ m='lumo'; label='Lumo · Learn'; img='/assets/mascots/lumo-hero.webp'; }
+    else if (txt.includes('tool')||txt.includes('pixel')||txt.includes('build')||txt.includes('create')||txt.includes('sprite')||txt.includes('audio')){ m='ember'; label='Ember · Create'; img='/assets/mascots/ember-hero.webp'; }
+    else if (txt.includes('play')||txt.includes('game')||txt.includes('arcade')||txt.includes('score')){ m='play'; label='Echo & Pip · Play'; img='/assets/mascots/echo-hero.webp'; }
     const chip=document.createElement('div');
     chip.className='mascot-quest-by';
     chip.innerHTML=`<img src="${img}" alt="" loading="lazy"><span>${label}</span>`;
@@ -231,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(box && !box.querySelector('.mascot-search-avatar')){
       const av=document.createElement('img');
       av.className='mascot-search-avatar';
-      av.src = g==='ember' ? '/assets/mascots/ember.jpg' : g==='play' ? '/assets/mascots/echo.jpg' : g==='stardust' ? '/assets/mascots/stardust-hero.webp' : '/assets/mascots/lumo.jpg';
+      av.src = g==='ember' ? '/assets/mascots/ember-hero.webp' : g==='play' ? '/assets/mascots/echo-hero.webp' : g==='stardust' ? '/assets/mascots/stardust-hero.webp' : '/assets/mascots/lumo-hero.webp';
       av.alt=''; av.style.cssText='width:22px;height:22px;border-radius:50%;border:1px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.12);margin-right:6px;flex-shrink:0;object-fit:cover;background:#fff';
       av.loading='lazy';
       box.insertBefore(av, box.firstChild);
@@ -286,7 +289,7 @@ function showGuideQuiz(){
   bd.className='mascot-quiz-backdrop';
   bd.innerHTML=`
     <div class="mascot-quiz-card mascot-quiz-reveal" role="dialog" aria-labelledby="quizTitle quizQ" aria-modal="true">
-      <div class="mascot-quiz-crew" aria-hidden="true"><img src="/assets/mascots/lumo.jpg" alt=""><img src="/assets/mascots/ember.jpg" alt=""><img src="/assets/mascots/echo.jpg" alt=""><img src="/assets/mascots/pip-hero.webp" alt=""><img src="/assets/mascots/stardust-hero.webp" alt=""></div>
+      <div class="mascot-quiz-crew" aria-hidden="true"><img src="/assets/mascots/lumo-hero.webp" alt=""><img src="/assets/mascots/ember-hero.webp" alt=""><img src="/assets/mascots/echo-hero.webp" alt=""><img src="/assets/mascots/pip-hero.webp" alt=""><img src="/assets/mascots/stardust-hero.webp" alt=""></div>
       <h2 id="quizTitle" class="mascot-quiz-title" style="font-family:Fredoka,sans-serif;font-size:1.15rem;margin:10px 0 4px;color:var(--charcoal)">Find your creative guide</h2>
       <p class="mascot-quiz-context" style="font-size:.82rem;color:var(--charcoal-lt);margin:0 0 10px;line-height:1.4">3 quick picks - we will match you with Lumo, Ember, Echo and Pip or Stardust and personalize your homepage.</p>
       <div class="mascot-quiz-progress" aria-live="polite">Question <span id="quizStep">1</span> of 3</div>
@@ -297,21 +300,21 @@ function showGuideQuiz(){
   document.body.appendChild(bd);
   const qs=[
     {q:"What sounds most fun right now?", opts:[
-      {t:"Exploring a mystery forest", m:'lumo', img:'/assets/mascots/lumo.jpg'},
-      {t:"Building something wild", m:'ember', img:'/assets/mascots/ember.jpg'},
-      {t:"Playing with friends", m:'play', img:'/assets/mascots/echo.jpg'},
+      {t:"Exploring a mystery forest", m:'lumo', img:'/assets/mascots/lumo-hero.webp'},
+      {t:"Building something wild", m:'ember', img:'/assets/mascots/ember-hero.webp'},
+      {t:"Playing with friends", m:'play', img:'/assets/mascots/echo-hero.webp'},
       {t:"Snuggling with a cozy story", m:'stardust', img:'/assets/mascots/stardust-hero.webp'},
     ]},
     {q:"How do you like to learn?", opts:[
       {t:"Try it and see what happens", m:'play', img:'/assets/mascots/pip-hero.webp'},
-      {t:"Follow steps one by one", m:'lumo', img:'/assets/mascots/lumo.jpg'},
-      {t:"Make it look and sound perfect", m:'ember', img:'/assets/mascots/ember.jpg'},
+      {t:"Follow steps one by one", m:'lumo', img:'/assets/mascots/lumo-hero.webp'},
+      {t:"Make it look and sound perfect", m:'ember', img:'/assets/mascots/ember-hero.webp'},
       {t:"Feel it in a story", m:'stardust', img:'/assets/mascots/stardust-hero.webp'},
     ]},
     {q:"Pick a superpower!", opts:[
-      {t:"Curiosity , always asking why", m:'lumo', img:'/assets/mascots/lumo.jpg'},
-      {t:"Creation , turning ideas real", m:'ember', img:'/assets/mascots/ember.jpg'},
-      {t:"Playfulness , joy is power", m:'play', img:'/assets/mascots/echo.jpg'},
+      {t:"Curiosity , always asking why", m:'lumo', img:'/assets/mascots/lumo-hero.webp'},
+      {t:"Creation , turning ideas real", m:'ember', img:'/assets/mascots/ember-hero.webp'},
+      {t:"Playfulness , joy is power", m:'play', img:'/assets/mascots/echo-hero.webp'},
       {t:"Wonder , tiny stars, big dreams", m:'stardust', img:'/assets/mascots/stardust-hero.webp'},
     ]},
   ];
@@ -412,7 +415,7 @@ function showCelebration({mascot='stardust', title='You did it!', text='' }){
 
 function injectEmptyMascot(host, kind, text){
   if(!host || host.querySelector('.mascot-empty')) return;
-  const img = kind==='play' ? '/assets/mascots/echo.jpg' : kind==='lumo' ? '/assets/mascots/lumo.jpg' : '/assets/mascots/stardust-hero.webp';
+  const img = kind==='play' ? '/assets/mascots/echo-hero.webp' : kind==='lumo' ? '/assets/mascots/lumo-hero.webp' : '/assets/mascots/stardust-hero.webp';
   const wrap=document.createElement('div');
   wrap.className='mascot-empty mascot-empty--small';
   wrap.innerHTML=`<img src="${img}" alt="" loading="lazy"><div class="mascot-bubble mascot-bubble--light">${text}</div>`;
