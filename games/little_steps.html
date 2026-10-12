@@ -22,6 +22,7 @@
 <script src="../game-system-score.js"></script>
 <script src="../game-system-save.js"></script>
 <script src="../game-system.js"></script>
+<script src="../engine-runtime.js"></script>
 <script src="../audio-effects.js"></script>
 <link rel="preload" href="../game-system.css?v=18" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../game-system.css?v=18"></noscript>
 <link rel="stylesheet" href="../story-run.css">
@@ -48,9 +49,6 @@ canvas{flex:1;width:100%;display:block;touch-action:none}
 .btn:hover{background:#f59e0b}
 .btn-ghost{background:transparent;border:2px solid #d4a574;color:#92400e;padding:10px 24px;border-radius:12px;font-size:14px;cursor:pointer}
 .hidden{display:none}
-.dpad{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:grid;grid-template:auto auto auto / auto auto auto;gap:3px;z-index:10}
-.dpad button{background:rgba(217,119,6,.2);border:2px solid rgba(217,119,6,.3);color:#92400e;width:48px;height:42px;border-radius:10px;font-size:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.dpad .empty{visibility:hidden}
 </style>
 </head>
 <body>
@@ -67,12 +65,6 @@ canvas{flex:1;width:100%;display:block;touch-action:none}
     <div><small>Best</small><b id="bestHud">0</b></div>
   </div>
   <canvas id="game"></canvas>
-
-  <div class="dpad" id="dpad" style="display:none">
-    <button class="empty"></button><button id="dUp">▲</button><button class="empty"></button>
-    <button id="dLeft">◀</button><button class="empty"></button><button id="dRight">▶</button>
-    <button class="empty"></button><button id="dDown">▼</button><button class="empty"></button>
-  </div>
 
   <div class="overlay" id="startScreen">
     <h1>👣 Little Steps</h1>
@@ -255,7 +247,6 @@ function startGame() {
   trail = 0; stars = 0; steps = 0;
   $('startScreen').classList.add('hidden');
   $('endScreen').classList.add('hidden');
-  if ('ontouchstart' in window) $('dpad').style.display = 'grid';
   running = true;
   won = false;
   sys?.beginRun?.();
@@ -354,10 +345,12 @@ document.addEventListener('keydown', e => {
 
 $('playBtn').onclick = startGame;
 $('againBtn').onclick = nextTrail;
-$('dUp').onclick = () => move(-1, 0);
-$('dDown').onclick = () => move(1, 0);
-$('dLeft').onclick = () => move(0, -1);
-$('dRight').onclick = () => move(0, 1);
+// On-screen controls on phones (engine runtime v2.4). The pad dispatches the
+// same arrow-key events the game already listens for, so no game logic changes,
+// and the CSS hides it on desktop.
+if (window.JVDSEngine && JVDSEngine.runtime && JVDSEngine.runtime.touch) {
+  JVDSEngine.runtime.touch({ dpad: true, target: document });
+}
 $('soundBtn').onclick = function() {
   const on = localStorage.getItem('soundEnabled') !== 'false';
   localStorage.setItem('soundEnabled', on ? 'false' : 'true');

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // A939 engine runtime contract: the shared runtime kit (loop / input / collide /
-// juice / entities) exposed as JVDSEngine.runtime must behave as documented and
-// must no-op its motion helpers under prefers-reduced-motion. Run: node tests/engine-runtime.js
+// juice / entities / touch) exposed as JVDSEngine.runtime must behave as
+// documented and must no-op its motion helpers under prefers-reduced-motion.
+// Run: node tests/engine-runtime.js
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
@@ -403,6 +404,88 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     check('entities: pool reuses a freed object', grp.created === 1 && grp.reused === true && grp.freesAfterDespawn === 1, `created=${grp.created} reused=${grp.reused}`);
     check('entities: reset runs on spawn and values applied', grp.resets === 2 && grp.vals[0] === 7 && grp.vals[1] === 8, `${grp.resets} ${grp.vals.join(',')}`);
     check('entities: remove detaches an active entity', grp.removedActive === true && grp.activeCount === 1);
+
+    // 11. On-screen touch controls (A1454, engine v2.4).
+    const tc = await page.evaluate(() => {
+      const rt = window.JVDSEngine.runtime;
+      const hasTouch = typeof rt.touch === 'function';
+      const fire = (node, type, x, y, id) => {
+        let e;
+        try { e = new PointerEvent(type, { clientX: x, clientY: y, pointerId: id, bubbles: true, cancelable: true }); }
+        catch (err) { e = new MouseEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true }); }
+        node.dispatchEvent(e);
+      };
+
+      // Feed a shared input controller (the setVirtual path).
+      const input = rt.input(document);
+      const ctrls = rt.touch({ input: input, dpad: true, buttons: [{ label: 'Jump', code: 'Space' }], target: document });
+      const el = ctrls.el;
+      const inDom = !!document.querySelector('.gs-touch');
+      const leftBtn = el.querySelector('.gs-dpad .left');
+      const rightBtn = el.querySelector('.gs-dpad .right');
+      const jumpBtn = el.querySelector('.gs-touch-btn');
+
+      fire(leftBtn, 'pointerdown', 0, 0, 1);
+      const leftDown = input.isDown('arrowleft');
+      fire(leftBtn, 'pointerup', 0, 0, 1);
+      const leftUp = input.isDown('arrowleft');
+
+      // Multi-touch: hold a direction and an action together.
+      fire(leftBtn, 'pointerdown', 0, 0, 2);
+      fire(jumpBtn, 'pointerdown', 0, 0, 3);
+      const multi = input.isDown('arrowleft') && input.isDown('space');
+      fire(leftBtn, 'pointerup', 0, 0, 2);
+      const stillJump = input.isDown('space') && !input.isDown('arrowleft');
+      fire(jumpBtn, 'pointerup', 0, 0, 3);
+      const allUp = !input.isDown('space') && !input.isDown('arrowleft');
+
+      fire(rightBtn, 'pointerdown', 0, 0, 4);
+      const rightDown = input.isDown('arrowright');
+      fire(rightBtn, 'pointerup', 0, 0, 4);
+
+      // Legacy path: no input, so real KeyboardEvents are dispatched.
+      let ups = 0;
+      const onKey = e => { if (e.code === 'ArrowUp' && e.type === 'keydown') ups++; };
+      document.addEventListener('keydown', onKey);
+      const legacy = rt.touch({ dpad: true, target: document });
+      fire(legacy.el.querySelector('.gs-dpad .up'), 'pointerdown', 0, 0, 5);
+      fire(legacy.el.querySelector('.gs-dpad .up'), 'pointerup', 0, 0, 5);
+      document.removeEventListener('keydown', onKey);
+      const dispatched = ups === 1;
+      legacy.destroy();
+      const legacyGone = !document.body.contains(legacy.el);
+
+      // Analogue stick (give the pad a real box first).
+      const input2 = rt.input(document);
+      const stickCtl = rt.touch({ input: input2, stick: true });
+      const joy = stickCtl.el.querySelector('.gs-joy');
+      stickCtl.el.style.display = 'block';
+      joy.style.width = '120px'; joy.style.height = '120px';
+      const jr = joy.getBoundingClientRect();
+      const cx = jr.left + jr.width / 2, cy = jr.top + jr.height / 2;
+      fire(joy, 'pointerdown', cx + 50, cy, 6);
+      const stickX = input2.stick.x, stickActive = input2.stick.active;
+      fire(joy, 'pointerup', cx + 50, cy, 6);
+      const stickRest = input2.stick.x === 0 && input2.stick.active === false;
+
+      // Destroy releases anything held and removes the shell.
+      fire(leftBtn, 'pointerdown', 0, 0, 7);
+      const heldBefore = input.isDown('arrowleft');
+      ctrls.destroy();
+      const releasedOnDestroy = !input.isDown('arrowleft');
+      const removed = !document.body.contains(el);
+
+      return { hasTouch, inDom, leftDown, leftUp, multi, stillJump, allUp, rightDown,
+        dispatched, legacyGone, stickX, stickActive, stickRest, heldBefore, releasedOnDestroy, removed };
+    });
+    check('touch: rt.touch exposed', tc.hasTouch === true);
+    check('touch: mounts a .gs-touch shell', tc.inDom === true);
+    check('touch: dpad press/release drives input', tc.leftDown === true && tc.leftUp === false, `${tc.leftDown}/${tc.leftUp}`);
+    check('touch: right dpad button works', tc.rightDown === true);
+    check('touch: multi-touch holds direction + action', tc.multi === true && tc.stillJump === true && tc.allUp === true);
+    check('touch: falls back to KeyboardEvents without an input', tc.dispatched === true);
+    check('touch: stick reports analogue x and resets', tc.stickX > 0.5 && tc.stickActive === true && tc.stickRest === true, 'x=' + tc.stickX);
+    check('touch: destroy releases held keys and removes DOM', tc.heldBefore === true && tc.releasedOnDestroy === true && tc.removed === true && tc.legacyGone === true);
 
     check('runtime: no uncaught errors overall', errors.length === 0, errors[0] || '');
   } finally {
