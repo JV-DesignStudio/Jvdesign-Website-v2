@@ -622,6 +622,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/defold-shooter-workshop.html"
     },
     {
+      "id": "gdevelop-mod-studio",
+      "title": "GDevelop Mod Studio",
+      "desc": "A free browser playground for the GDevelop series. Lay out a 2D game on a grid, add GDevelop events, read a broken GDevelop log and choose the fix, then download a GDevelop build sheet with the object list and event sheet. No install needed to start.",
+      "engine": "GDevelop",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "2d"
+      ],
+      "steps": 6,
+      "themeColor": "#7c3aed",
+      "cover": "og/learn.webp",
+      "url": "/workshops/gdevelop-mod-studio.html"
+    },
+    {
       "id": "gdevelop-platformer-canvas",
       "title": "GDevelop Platformer Build Canvas",
       "desc": "",
@@ -5861,8 +5877,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-12T15:01:46.457Z",
-    "workshops": 331,
+    "generated": "2026-10-12T15:12:02.775Z",
+    "workshops": 332,
     "games": 11,
     "tools": 37,
     "books": 5,
@@ -5870,7 +5886,7 @@ window.JVDS_CONTENT = {
       "Blender": 10,
       "C++": 18,
       "Defold": 13,
-      "GDevelop": 12,
+      "GDevelop": 13,
       "General": 60,
       "GML/GameMaker": 11,
       "Godot": 17,
