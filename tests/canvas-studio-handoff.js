@@ -22,7 +22,7 @@ let STUDIO;
 try { STUDIO = JSON.parse(m[1]); } catch (e) { check('CANVAS_STUDIO_MAP parses as JSON', false, e.message); process.exit(1); }
 const keys = Object.keys(STUDIO);
 check('CANVAS_STUDIO_MAP parses', true, keys.length + ' entries');
-check('covers at least 46 canvases', keys.length >= 46, 'count ' + keys.length);
+check('covers at least 53 canvases', keys.length >= 53, 'count ' + keys.length);
 
 const STUDIOS = new Set();
 const missingCanvas = [], missingStudio = [];
@@ -35,8 +35,8 @@ for (const k of keys) {
 }
 check('every mapped canvas file exists', missingCanvas.length === 0, missingCanvas.join(', '));
 check('every mapped studio file exists', missingStudio.length === 0, missingStudio.join(', '));
-check('covers C++, Godot, Python, Scratch, PICO-8 and Defold studios',
-  ['cpp-mod-studio.html', 'godot-mod-studio.html', 'python-mod-studio.html', 'scratch-studio.html', 'pico8-studio.html', 'defold-mod-studio.html'].every((s) => STUDIOS.has(s)),
+check('covers C++, Godot, Python, Scratch, PICO-8, Defold and Java studios',
+  ['cpp-mod-studio.html', 'godot-mod-studio.html', 'python-mod-studio.html', 'scratch-studio.html', 'pico8-studio.html', 'defold-mod-studio.html', 'java-mod-studio.html'].every((s) => STUDIOS.has(s)),
   [...STUDIOS].join(', '));
 
 // --- Runtime: the hand-off actually renders on the page ---
@@ -56,9 +56,10 @@ const WITH_STUDIO = [
   ['scratch-pong-canvas.html', 'scratch-studio.html'],
   ['pico8-snake-canvas.html', 'pico8-studio.html'],
   ['my-first-scratch-game-canvas.html', 'scratch-studio.html'],
-  ['defold-snake-canvas.html', 'defold-mod-studio.html']
+  ['defold-snake-canvas.html', 'defold-mod-studio.html'],
+  ['java-pong-canvas.html', 'java-mod-studio.html']
 ];
-const NO_STUDIO = ['java-pong-canvas.html', 'gml-pong-canvas.html'];
+const NO_STUDIO = ['gml-pong-canvas.html', 'gdevelop-pong-canvas.html'];
 
 (async () => {
   server.listen(0);
