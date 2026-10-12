@@ -72,6 +72,17 @@ function zip(files) {
     console.log('PASS import from my-project.zip restores the code');
     await p.close();
 
+    // Paste-code import (A1401)
+    p = await loadPart2();
+    assert.ok(await p.$('.cw-import-code'), 'Paste a project code button present');
+    const code = 'JVP1:' + Buffer.from(JSON.stringify(passport)).toString('base64');
+    p.on('dialog', d => d.accept(code));
+    await p.click('.cw-import-code');
+    await p.waitForFunction(() => /Brought/.test((document.querySelector('.cw-import-note') || {}).textContent || ''), { timeout: 5000 });
+    assert.ok((await p.$eval('#editor-1', e => e.value)).includes('carriedMarker'), 'code import filled the editor');
+    console.log('PASS import from a pasted project code restores the code');
+    await p.close();
+
     assert.deepEqual(errors, [], 'no page errors: ' + errors.join(' | '));
     console.log('PASS canvas-project-import: json and zip import bring the learner\'s work forward');
   } finally {
