@@ -10,11 +10,20 @@ const games = (global.window && global.window.JVDS_GAMES) || [];
 const byId = {};
 for (const game of games) byId[game.id] = game;
 
-// docs/GAME_CURATION.json is the single source of truth for the Flagship tier.
-const curation = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs', 'GAME_CURATION.json'), 'utf8'));
-const flagshipIds = curation.flagship || [];
+// The Flagship tier comes from the private curation file docs/GAME_CURATION.json
+// when it is present (studio mirror). After A779 that file left the public repo,
+// so fall back to the public tier flag on games-registry.js. The gate must never
+// crash on a clean checkout.
+const curationPath = path.join(ROOT, 'docs', 'GAME_CURATION.json');
+const curationPresent = fs.existsSync(curationPath);
+let flagshipIds = [];
+if (curationPresent) {
+  flagshipIds = JSON.parse(fs.readFileSync(curationPath, 'utf8')).flagship || [];
+} else {
+  flagshipIds = games.filter(g => g.tier === 'flagship').map(g => g.id);
+}
 if (!flagshipIds.length) {
-  console.error('[FAIL] docs/GAME_CURATION.json has no flagship list');
+  console.error('[FAIL] no flagship tier found in docs/GAME_CURATION.json or the tier flag in games-registry.js');
   process.exit(1);
 }
 

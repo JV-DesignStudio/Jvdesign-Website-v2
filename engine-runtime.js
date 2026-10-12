@@ -17,6 +17,10 @@
  *     var loop = rt.loop({ input: input, update: step, render: draw, autostart: true });
  *     // each frame: input.isDown('arrowleft'), input.pointer.x
  *     if (rt.collide.aabb(player, coin)) rt.juice.burst(input.pointer.x, input.pointer.y);
+ *     // entities: keep the active list in one place, recycle with a pool
+ *     var coins = rt.group({ pool: true, create: () => ({ x: 0, y: 0 }), reset: (c, p) => { c.x = p.x; c.y = p.y; } });
+ *     coins.spawn({ x: 40, y: 0 });
+ *     coins.update(dt);
  *   }
  *
  * Nothing here runs on its own. Motion helpers become no-ops when the player
@@ -25,7 +29,7 @@
 (function (root) {
   'use strict';
   var api = root.JVDSEngine = root.JVDSEngine || {};
-  api.version = api.version || '2.2.0';
+  api.version = api.version || '2.3.0';
 
   function reducedMotion() {
     try { return !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches); }
@@ -483,6 +487,104 @@
     return el;
   }
 
+  // ---------------------------------------------------------- entities ----
+  // A small entity manager. An entity is any object, with an optional
+  // update(dt) and render(ctx) (or draw(ctx)). group() owns the active list,
+  // auto-removes entities flagged dead after update, and can recycle objects
+  // through a pool so bullets, coins and enemies never churn the garbage
+  // collector mid-play. Nothing is forced on the entity: no base class, no
+  // required fields.
+  function group(o) {
+    o = o || {};
+    var items = [];
+    var free = [];
+    var pooled = !!o.pool;
+    var create = typeof o.create === 'function' ? o.create : null;
+    var reset = typeof o.reset === 'function' ? o.reset : null;
+    var deadFlag = o.deadFlag || 'dead';
+    var autoRemove = o.autoRemove !== false;
+    var updateName = o.updateName || 'update';
+    var renderName = o.renderName || 'render';
+
+    function indexOf(e) { return items.indexOf(e); }
+
+    function add(e) {
+      if (!e || indexOf(e) !== -1) return e;
+      items.push(e);
+      return e;
+    }
+
+    // Produce an entity from the pool (or the factory) and add it. props are
+    // handed to reset() when given, else copied onto the entity.
+    function spawn(props) {
+      var e;
+      if (pooled && free.length) e = free.pop();
+      else if (create) e = create(props) || {};
+      else e = {};
+      if (reset) reset(e, props);
+      else if (props && typeof props === 'object') {
+        for (var k in props) { if (Object.prototype.hasOwnProperty.call(props, k)) e[k] = props[k]; }
+      }
+      if (e[deadFlag]) e[deadFlag] = false;
+      return add(e);
+    }
+
+    // Detach an entity. When pooled, it returns to the free list for reuse.
+    function despawn(e) {
+      var i = indexOf(e);
+      if (i === -1) return false;
+      items.splice(i, 1);
+      if (pooled) free.push(e);
+      return true;
+    }
+
+    function clear() { while (items.length) despawn(items[items.length - 1]); }
+
+    function update(dt, a, b) {
+      var snapshot = items.slice();
+      for (var i = 0; i < snapshot.length; i++) {
+        var e = snapshot[i];
+        if (indexOf(e) === -1) continue;          // despawned earlier this frame
+        if (typeof e[updateName] === 'function') e[updateName](dt, a, b);
+        if (autoRemove && e[deadFlag]) despawn(e); // dead this frame, recycle now
+      }
+      return items.length;
+    }
+
+    function render(ctx, a, b) {
+      var snapshot = items.slice();
+      for (var i = 0; i < snapshot.length; i++) {
+        var e = snapshot[i];
+        var fn = typeof e[renderName] === 'function' ? e[renderName]
+               : (typeof e.draw === 'function' ? e.draw : null);
+        if (fn) fn.call(e, ctx, a, b);
+      }
+      return snapshot.length;
+    }
+
+    function forEach(fn) { items.slice().forEach(fn); return items.length; }
+    function filter(fn) { return items.filter(fn); }
+    function find(fn) {
+      for (var i = 0; i < items.length; i++) { if (fn(items[i], i)) return items[i]; }
+      return undefined;
+    }
+    function removeWhere(fn) {
+      var removed = 0, snapshot = items.slice();
+      for (var i = 0; i < snapshot.length; i++) { if (fn(snapshot[i], i) && despawn(snapshot[i])) removed++; }
+      return removed;
+    }
+
+    return {
+      add: add, spawn: spawn, remove: despawn, despawn: despawn, clear: clear,
+      update: update, render: render, forEach: forEach, filter: filter,
+      find: find, removeWhere: removeWhere,
+      count: function () { return items.length; },
+      toArray: function () { return items.slice(); },
+      get items() { return items; },
+      get free() { return free.length; }
+    };
+  }
+
   function injectCss() {
     if (!root.document || root.document.getElementById('jvdse-css')) return;
     var css = root.document.createElement('style');
@@ -501,7 +603,7 @@
   }
 
   api.runtime = {
-    version: '2.2.0',
+    version: '2.3.0',
     loop: loop,
     input: input,
     collide: {
@@ -518,6 +620,8 @@
     juice: {
       shake: shake, float: float, tween: tween, burst: burst,
       easing: { outCubic: easeOutCubic, inOutQuad: easeInOutQuad, linear: easeLinear }
-    }
+    },
+    group: group,
+    entities: group
   };
 })(typeof window !== 'undefined' ? window : this);

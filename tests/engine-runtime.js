@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // A939 engine runtime contract: the shared runtime kit (loop / input / collide /
-// juice) exposed as JVDSEngine.runtime must behave as documented and must no-op
-// its motion helpers under prefers-reduced-motion. Run: node tests/engine-runtime.js
+// juice / entities) exposed as JVDSEngine.runtime must behave as documented and
+// must no-op its motion helpers under prefers-reduced-motion. Run: node tests/engine-runtime.js
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const puppeteer = require('puppeteer');
 const ROOT = path.resolve(__dirname, '..');
-const RUNTIME_VERSION = '2.2.0';
+const RUNTIME_VERSION = '2.3.0';
 
 const NOISE = /ServiceWorker|MIME type|Failed to load resource|net::ERR|ERR_FAILED|ERR_ABORTED|favicon/i;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -327,6 +327,82 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     check('save: import rejects bad input (json + array)', sv.bad === null && sv.arr === null);
     check('save: available true in a writable context', sv.avail === true);
     check('save: remove clears the key', sv.removed === true && sv.after === null);
+
+    // 10. Entities + groups (A1451, engine v2.3).
+    const grp = await page.evaluate(() => {
+      const rt = window.JVDSEngine.runtime;
+      const hasGroup = typeof rt.group === 'function' && rt.entities === rt.group;
+
+      // Plain entities with update + render hooks.
+      const seen = [];
+      const g = rt.group();
+      const mk = (x) => ({ x, dead: false, update(dt) { this.x += dt; }, render(ctx) { seen.push(this.x); } });
+      const a = g.add(mk(0));
+      const dup = g.add(a);                       // duplicate add is ignored
+      g.add(mk(10));
+      const afterAdd = g.count();
+      g.update(1);
+      const moved = [g.items[0].x, g.items[1].x];
+      const filtered = g.filter(e => e.x > 1).length;
+      const found = g.find(e => e.x === 11);
+      let eachCount = 0; g.forEach(() => { eachCount++; });
+      g.render({});
+      const rendered = seen.length;
+
+      // A dead entity is auto-removed after its update.
+      g.items[0].dead = true;
+      g.update(0);
+      const afterDead = g.count();
+
+      // removeWhere + clear.
+      g.add(mk(0)); g.add(mk(3));
+      const removedWhere = g.removeWhere(e => e.x >= 11);
+      const afterRemoveWhere = g.count();
+      g.clear();
+      const afterClear = g.count();
+
+      // spawn without a pool copies props and adds.
+      const g2 = rt.group();
+      const s = g2.spawn({ x: 42 });
+      const spawnProps = s.x === 42 && g2.count() === 1;
+
+      // Pooling recycles: create() runs once, the freed object is reused.
+      let created = 0, resets = 0;
+      const pool = rt.group({
+        pool: true,
+        create: () => { created++; return { x: 0, y: 0, dead: false }; },
+        reset: (e, p) => { resets++; e.x = p.x; e.y = p.y; }
+      });
+      const first = pool.spawn({ x: 5, y: 6 });
+      const firstRef = first;
+      first.dead = true;
+      pool.update(0);                             // auto-despawn -> free list
+      const freesAfterDespawn = pool.free;
+      const second = pool.spawn({ x: 7, y: 8 });
+      const reused = second === firstRef;
+      const activeCount = pool.count();
+      const vals = [second.x, second.y];
+
+      // despawn/remove are the same operation.
+      const removedActive = pool.remove(second);
+
+      return {
+        hasGroup, afterAdd, dupSame: dup === a, moved, filtered, foundX: found && found.x,
+        eachCount, rendered, afterDead, removedWhere, afterRemoveWhere, afterClear,
+        spawnProps, created, resets, freesAfterDespawn, reused, activeCount, vals, removedActive
+      };
+    });
+    check('entities: group + entities alias exposed', grp.hasGroup === true);
+    check('entities: add ignores duplicates', grp.afterAdd === 2 && grp.dupSame === true, 'count=' + grp.afterAdd);
+    check('entities: update drives each entity', grp.moved[0] === 1 && grp.moved[1] === 11, grp.moved.join(','));
+    check('entities: filter + find + forEach', grp.filtered === 1 && grp.foundX === 11 && grp.eachCount === 2, `${grp.filtered}/${grp.foundX}/${grp.eachCount}`);
+    check('entities: render calls the hook', grp.rendered === 2, String(grp.rendered));
+    check('entities: dead entities auto-removed after update', grp.afterDead === 1, String(grp.afterDead));
+    check('entities: removeWhere + clear', grp.removedWhere === 1 && grp.afterRemoveWhere === 2 && grp.afterClear === 0, `${grp.removedWhere}/${grp.afterRemoveWhere}/${grp.afterClear}`);
+    check('entities: spawn copies props', grp.spawnProps === true);
+    check('entities: pool reuses a freed object', grp.created === 1 && grp.reused === true && grp.freesAfterDespawn === 1, `created=${grp.created} reused=${grp.reused}`);
+    check('entities: reset runs on spawn and values applied', grp.resets === 2 && grp.vals[0] === 7 && grp.vals[1] === 8, `${grp.resets} ${grp.vals.join(',')}`);
+    check('entities: remove detaches an active entity', grp.removedActive === true && grp.activeCount === 1);
 
     check('runtime: no uncaught errors overall', errors.length === 0, errors[0] || '');
   } finally {
