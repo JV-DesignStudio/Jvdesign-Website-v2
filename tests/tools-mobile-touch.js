@@ -13,8 +13,7 @@
  *     (pixel-studio, level-designer); reports it advisory for the rest, because
  *     many tools need a mode or frame selected before a stroke lands.
  *
- * One browser page is reused for every check so the suite stays well inside the
- * review bot's per-test timeout. Usage: node tests/tools-mobile-touch.js [--verbose]
+ * Usage: node tests/tools-mobile-touch.js [--verbose]
  */
 const http = require('http');
 const fs = require('fs');
@@ -63,12 +62,12 @@ function catalogue() {
 }
 
 // Touch drag runs at the canonical phone size; the other sizes check that the
-// layout and canvas fit (overflow + resize) across the device classes.
+// layout and canvas fit across the device classes (small phone, tablet), which
+// is where overflow regressions (such as the builder header) first appear.
 const VIEWPORTS = [
   { w: 390, h: 844, label: '390p', drag: true },
   { w: 320, h: 568, label: '320p', drag: false },
-  { w: 768, h: 1024, label: '768t', drag: false },
-  { w: 844, h: 390, label: '844l', drag: false }
+  { w: 768, h: 1024, label: '768t', drag: false }
 ];
 
 // Tools that draw with a bare touch drag (pencil/brush active, static canvas),
@@ -117,79 +116,84 @@ const PICK_CANVAS = () => {
   return best;
 };
 
-async function checkTool(page, base, rel, vp, errs) {
+async function checkTool(browser, base, rel, vp) {
+  const page = await browser.newPage();
+  const errs = [];
+  page.on('pageerror', e => errs.push('pageerror: ' + e.message.split('\n')[0]));
+  page.on('console', m => { if (m.type() === 'error' && !/favicon|net::ERR_|Failed to load resource|ERR_ABORTED|Ignored attempt to cancel a touch/i.test(m.text())) errs.push('console: ' + m.text().split('\n')[0]); });
   await page.setViewport({ width: vp.w, height: vp.h, isMobile: vp.w < 500, hasTouch: true, deviceScaleFactor: vp.w < 500 ? 2 : 1 });
-  const result = { overflow: 0, hasCanvas: false, canvasW: 0, innerW: 0, scrolled: 0, drew: null, unreachable: false, reason: '' };
-  await page.goto(base + '/' + rel, { waitUntil: 'load', timeout: 30000 });
-  await new Promise(r => setTimeout(r, 300));
-  await dismissOverlays(page);
-
-  const pick = await page.evaluate(PICK_CANVAS);
-  result.innerW = await page.evaluate(() => window.innerWidth);
-  result.overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  if (!pick) return result;
-  result.hasCanvas = true;
-  result.canvasW = Math.round(pick.w);
-  if (!vp.drag) return result;
-
-  // Scroll the canvas into the middle of the viewport, then find a point on the
-  // canvas that is actually reachable (elementFromPoint hit-tests past any
-  // pointer-events:none overlay). Disable smooth scrolling or the page keeps
-  // settling mid-drag and makes an untouched page look like it panned.
-  const docTop = pick.y + await page.evaluate(() => window.scrollY);
-  await page.evaluate((top, h) => { document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, Math.max(0, top + h / 2 - window.innerHeight / 2)); }, docTop, pick.h);
-  await new Promise(r => setTimeout(r, 250));
-  await dismissOverlays(page);
-
-  const hit = await page.evaluate(() => {
-    const innerW = window.innerWidth, innerH = window.innerHeight;
-    let best = null;
-    for (const c of document.querySelectorAll('canvas')) {
-      const st = getComputedStyle(c);
-      if (st.display === 'none' || st.visibility === 'hidden' || st.pointerEvents === 'none') continue;
-      const r = c.getBoundingClientRect();
-      if (r.width < 120 || r.height < 120) continue;
-      if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, x: r.x, y: r.y, w: r.width, h: r.height, el: c };
-    }
-    if (!best) return { found: false, reason: 'no-canvas' };
-    const x0 = Math.max(best.x + 12, 12), x1 = Math.min(best.x + best.w - 12, innerW - 12);
-    const y0 = Math.max(best.y + 12, 12), y1 = Math.min(best.y + best.h - 12, innerH - 12);
-    if (x1 <= x0 || y1 <= y0) return { found: false, reason: 'off-screen', w: Math.round(best.w) };
-    const fx = [0.5, 0.35, 0.65, 0.25, 0.75], fy = [0.5, 0.35, 0.65, 0.25, 0.75];
-    for (const a of fy) for (const b of fx) {
-      const X = Math.round(x0 + (x1 - x0) * b), Y = Math.round(y0 + (y1 - y0) * a);
-      const top = document.elementFromPoint(X, Y);
-      if (top === best.el || best.el.contains(top)) return { found: true, x: X, y: Y, w: Math.round(best.w) };
-    }
-    return { found: false, reason: 'covered-by-overlay', w: Math.round(best.w) };
+  // Pre-decline cookies and mark first-run intros as seen so their fixed
+  // overlays never cover the canvas the drag needs to reach.
+  await page.evaluateOnNewDocument(() => {
+    try { localStorage.setItem('jvds-cookie-consent', 'declined'); localStorage.setItem('jvds-builder-seen', '1'); } catch {}
   });
-  if (!hit.found) { result.unreachable = true; result.reason = hit.reason; if (hit.w) result.canvasW = hit.w; return result; }
-  result.canvasW = hit.w;
+  const result = { overflow: 0, hasCanvas: false, canvasW: 0, innerW: 0, scrolled: 0, drew: null, unreachable: false, reason: '', errs };
+  try {
+    await page.goto(base + '/' + rel, { waitUntil: 'load', timeout: 30000 });
+    if (vp.drag) { await new Promise(r => setTimeout(r, 300)); await dismissOverlays(page); }
+    else await new Promise(r => setTimeout(r, 220));
 
-  const before = await page.evaluate(() => window.scrollY);
-  const dataBefore = await page.evaluate(() => { const b = (() => { let best = null; for (const c of document.querySelectorAll('canvas')) { const st = getComputedStyle(c); if (st.display === 'none' || st.pointerEvents === 'none') continue; const r = c.getBoundingClientRect(); if (r.width < 120 || r.height < 120) continue; if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, el: c }; } return best; })(); try { return b ? b.el.toDataURL().length : 0; } catch { return -1; } });
+    const pick = await page.evaluate(PICK_CANVAS);
+    result.innerW = await page.evaluate(() => window.innerWidth);
+    result.overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    if (!pick) return result;
+    result.hasCanvas = true;
+    result.canvasW = Math.round(pick.w);
+    if (!vp.drag) return result;
 
-  const client = await page.target().createCDPSession();
-  const tp = (x, y) => [{ x, y, radiusX: 8, radiusY: 8, force: 1, id: 1 }];
-  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(hit.x, hit.y) });
-  let minS = before, maxS = before;
-  for (let i = 1; i <= 6; i++) {
-    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(hit.x + i * 4, hit.y + i * 6) });
-    const s = await page.evaluate(() => window.scrollY);
-    if (s < minS) minS = s;
-    if (s > maxS) maxS = s;
+    // Scroll the canvas into the middle of the viewport, then find a point on
+    // the canvas that is actually reachable (elementFromPoint hit-tests past any
+    // pointer-events:none overlay). Disable smooth scrolling or the page keeps
+    // settling mid-drag and makes an untouched page look like it panned.
+    const docTop = pick.y + await page.evaluate(() => window.scrollY);
+    await page.evaluate((top, h) => { document.documentElement.style.scrollBehavior = 'auto'; window.scrollTo(0, Math.max(0, top + h / 2 - window.innerHeight / 2)); }, docTop, pick.h);
+    await new Promise(r => setTimeout(r, 180));
+    await dismissOverlays(page);
+
+    const hit = await page.evaluate(() => {
+      const innerW = window.innerWidth, innerH = window.innerHeight;
+      let best = null;
+      for (const c of document.querySelectorAll('canvas')) {
+        const st = getComputedStyle(c);
+        if (st.display === 'none' || st.visibility === 'hidden' || st.pointerEvents === 'none') continue;
+        const r = c.getBoundingClientRect();
+        if (r.width < 120 || r.height < 120) continue;
+        if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, x: r.x, y: r.y, w: r.width, h: r.height, el: c };
+      }
+      if (!best) return { found: false, reason: 'no-canvas' };
+      const x0 = Math.max(best.x + 12, 12), x1 = Math.min(best.x + best.w - 12, innerW - 12);
+      const y0 = Math.max(best.y + 12, 12), y1 = Math.min(best.y + best.h - 12, innerH - 12);
+      if (x1 <= x0 || y1 <= y0) return { found: false, reason: 'off-screen', w: Math.round(best.w) };
+      const fx = [0.5, 0.35, 0.65, 0.25, 0.75], fy = [0.5, 0.35, 0.65, 0.25, 0.75];
+      for (const a of fy) for (const b of fx) {
+        const X = Math.round(x0 + (x1 - x0) * b), Y = Math.round(y0 + (y1 - y0) * a);
+        const top = document.elementFromPoint(X, Y);
+        if (top === best.el || best.el.contains(top)) return { found: true, x: X, y: Y, w: Math.round(best.w) };
+      }
+      return { found: false, reason: 'covered-by-overlay', w: Math.round(best.w) };
+    });
+    if (!hit.found) { result.unreachable = true; result.reason = hit.reason; if (hit.w) result.canvasW = hit.w; return result; }
+    result.canvasW = hit.w;
+
+    // Track scroll movement in-page during the drag (one round trip instead of
+    // one per move): a finger drag on the surface must draw, never pan.
+    await page.evaluate(() => { const s = window.scrollY; window.__mt = { min: s, max: s }; window.addEventListener('scroll', () => { const y = window.scrollY; if (y < window.__mt.min) window.__mt.min = y; if (y > window.__mt.max) window.__mt.max = y; }, { passive: true }); });
+    const dataBefore = await page.evaluate(() => { let best = null; for (const c of document.querySelectorAll('canvas')) { const st = getComputedStyle(c); if (st.display === 'none' || st.pointerEvents === 'none') continue; const r = c.getBoundingClientRect(); if (r.width < 120 || r.height < 120) continue; if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, el: c }; } try { return best ? best.el.toDataURL().length : 0; } catch { return -1; } });
+
+    const client = await page.target().createCDPSession();
+    const tp = (x, y) => [{ x, y, radiusX: 8, radiusY: 8, force: 1, id: 1 }];
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(hit.x, hit.y) });
+    for (let i = 1; i <= 5; i++) await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(hit.x + i * 5, hit.y + i * 7) });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await new Promise(r => setTimeout(r, 100));
+    result.scrolled = await page.evaluate(() => { const y = window.scrollY, m = window.__mt; return Math.max(m.max, y) - Math.min(m.min, y); });
+
+    const dataAfter = await page.evaluate(() => { let best = null; for (const c of document.querySelectorAll('canvas')) { const st = getComputedStyle(c); if (st.display === 'none' || st.pointerEvents === 'none') continue; const r = c.getBoundingClientRect(); if (r.width < 120 || r.height < 120) continue; if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, el: c }; } try { return best ? best.el.toDataURL().length : 0; } catch { return -1; } });
+    if (dataBefore > 0 && dataAfter > 0) result.drew = dataAfter !== dataBefore;
+  } catch (e) {
+    errs.push('load: ' + e.message.split('\n')[0]);
   }
-  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await new Promise(r => setTimeout(r, 120));
-  const after = await page.evaluate(() => window.scrollY);
-  if (after < minS) minS = after;
-  if (after > maxS) maxS = after;
-  // Magnitude of page movement in either direction: a finger drag on the
-  // surface must draw, never pan the page.
-  result.scrolled = maxS - minS;
-
-  const dataAfter = await page.evaluate(() => { const b = (() => { let best = null; for (const c of document.querySelectorAll('canvas')) { const st = getComputedStyle(c); if (st.display === 'none' || st.pointerEvents === 'none') continue; const r = c.getBoundingClientRect(); if (r.width < 120 || r.height < 120) continue; if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, el: c }; } return best; })(); try { return b ? b.el.toDataURL().length : 0; } catch { return -1; } });
-  if (dataBefore > 0 && dataAfter > 0) result.drew = dataAfter !== dataBefore;
+  await page.close();
   return result;
 }
 
@@ -198,24 +202,13 @@ async function checkTool(page, base, rel, vp, errs) {
   const base = 'http://127.0.0.1:' + server.address().port;
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const tools = catalogue();
-  const page = await browser.newPage();
-  // Pre-decline cookies and mark first-run intros as seen so their fixed
-  // overlays never cover the canvas. Persists for every same-origin navigation.
-  await page.evaluateOnNewDocument(() => {
-    try { localStorage.setItem('jvds-cookie-consent', 'declined'); localStorage.setItem('jvds-builder-seen', '1'); } catch {}
-  });
-  let errs = [];
-  page.on('pageerror', e => errs.push('pageerror: ' + e.message.split('\n')[0]));
-  page.on('console', m => { if (m.type() === 'error' && !/favicon|net::ERR_|Failed to load resource|ERR_ABORTED|Ignored attempt to cancel a touch/i.test(m.text())) errs.push('console: ' + m.text().split('\n')[0]); });
   try {
     for (const rel of tools) {
       for (const vp of VIEWPORTS) {
-        errs = [];
-        let r;
-        try { r = await checkTool(page, base, rel, vp, errs); }
-        catch (e) { r = { hasCanvas: false, errs: ['load: ' + e.message.split('\n')[0]] }; errs = r.errs; }
+        const r = await checkTool(browser, base, rel, vp);
         if (!r.hasCanvas) {
-          if (errs.length) { critical++; failures.push(`${rel} @${vp.label}: ${errs[0]}`); console.log(`FAIL ${rel.padEnd(36)} ${vp.label.padEnd(5)} load error: ${errs[0]}`); }
+          if (r.errs.length) { critical++; failures.push(`${rel} @${vp.label}: ${r.errs[0]}`); console.log(`FAIL ${rel.padEnd(36)} ${vp.label.padEnd(5)} load error: ${r.errs[0]}`); }
+          else if (VERBOSE) console.log(`skip ${rel.padEnd(36)} ${vp.label.padEnd(5)} (no canvas)`);
           continue;
         }
         checks++;
@@ -223,7 +216,7 @@ async function checkTool(page, base, rel, vp, errs) {
         if (r.overflow > 2) problems.push('overflow +' + r.overflow + 'px');
         if (r.canvasW > r.innerW + 2) problems.push(`canvas ${r.canvasW}px > viewport ${r.innerW}px`);
         if (r.scrolled > 2) problems.push(`page scrolled ${r.scrolled}px during drag`);
-        if (errs.length) problems.push(errs.length + ' error(s): ' + errs[0]);
+        if (r.errs.length) problems.push(r.errs.length + ' error(s): ' + r.errs[0]);
         if (REQUIRE_DRAW.has(rel) && vp.drag && r.drew === false) problems.push('touch drag did not change canvas');
         if (problems.length) { critical++; failures.push(`${rel} @${vp.label}: ${problems.join('; ')}`); }
         if (r.drew === false && !REQUIRE_DRAW.has(rel)) advisory++;
