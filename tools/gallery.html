@@ -27,7 +27,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
@@ -135,6 +135,7 @@ dialog input, dialog select, dialog textarea{width:100%;margin:6px 0 12px;paddin
 <script>
 const DB='jvds-gallery-v1', STORE='creations';
 const $=s=>document.getElementById(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 let filter='all';
 async function getAll(){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const st=tx.objectStore(STORE);const req=st.getAll();req.onsuccess=()=>res(req.result||[]);req.onerror=()=>rej(req.error);tx.oncomplete=()=>db.close();});}
@@ -150,11 +151,11 @@ async function render(){
   if(!filtered.length){grid.innerHTML='<div class="empty">No '+filter+' creations. Try All.</div>';return;}
   filtered.sort((a,b)=>b.created-a.created).forEach(it=>{
     const el=document.createElement('article');el.className='card';
-    el.innerHTML=`<div class="thumb">${it.image?`<img src="${it.image}" alt="${it.title}" loading="lazy">`:`<span style="color:var(--muted);font-size:2rem">🎨</span>`}</div><div class="meta"><strong>${it.title}</strong><span>${it.tool} • ${it.character} • ${new Date(it.created).toLocaleDateString()}</span><p style="margin:6px 0 0;color:var(--muted);font-size:.85rem">${it.notes||''}</p><div style="margin-top:8px;display:flex;gap:8px"><button class="btn" data-del="${it.id}" style="min-height:32px;padding:0 10px">Delete</button><button class="btn" data-view="${it.id}" style="min-height:32px;padding:0 10px">View</button></div></div>`;
+    el.innerHTML=`<div class="thumb">${it.image?`<img src="${esc(it.image)}" alt="${esc(it.title)}" loading="lazy">`:`<span style="color:var(--muted);font-size:2rem">🎨</span>`}</div><div class="meta"><strong>${esc(it.title)}</strong><span>${esc(it.tool)} • ${esc(it.character)} • ${new Date(it.created).toLocaleDateString()}</span><p style="margin:6px 0 0;color:var(--muted);font-size:.85rem">${esc(it.notes||'')}</p><div style="margin-top:8px;display:flex;gap:8px"><button class="btn" data-del="${it.id}" style="min-height:32px;padding:0 10px">Delete</button><button class="btn" data-view="${it.id}" style="min-height:32px;padding:0 10px">View</button></div></div>`;
     grid.appendChild(el);
   });
   grid.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(confirm('Delete?')){await remove(+b.dataset.del);render();}});
-  grid.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const db=await openDB();const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).get(+b.dataset.view);req.onsuccess=()=>{const it=req.result;if(it&&it.image){const w=window.open();w.document.write('<img src="'+it.image+'" style="max-width:100%">');}}});
+  grid.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const db=await openDB();const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).get(+b.dataset.view);req.onsuccess=()=>{const it=req.result;if(it&&it.image){const w=window.open();if(w&&w.document){const img=w.document.createElement('img');img.src=it.image;img.alt=it.title||'Creation';img.style.maxWidth='100%';w.document.body.appendChild(img);}}}});
 }
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-selected','false')});c.classList.add('on');c.setAttribute('aria-selected','true');filter=c.dataset.filter;render();});
 $('btnAdd').onclick=()=>$('dlg').showModal();
