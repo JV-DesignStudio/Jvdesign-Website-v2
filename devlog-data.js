@@ -6,6 +6,36 @@
 
 const POSTS = [
     {
+        id: 443,
+        date: '13 October 2026',
+        tag: 'games',
+        emoji: '🐹',
+        title: 'Critter Whack arrives, and the arcade gets a polish pass',
+        excerpt: 'There is a new game in the arcade, plus friendlier first runs, clearer goals and calmer controls across some firm favourites.',
+        content: 'There is a new game in the arcade. Critter Whack asks you to read the ranger clue, then send each critter to the right home. It is quick to learn and runs in the browser with nothing to install.\n\nAlongside it, some favourites had a careful polish pass. Arcane Citadel now has a pause button, a gentler Calm mode and a first-run coach, so a new player gets a fair start. Nova Siege, Ember Smash, Echo\'s Swim and Highway Dodge each got a smoother opening, clearer goals and larger, calmer controls for phones and tablets.\n\nEverything still saves on the device, so a learner can pick up where they left off with no account.'
+    },
+
+    {
+        id: 442,
+        date: '13 October 2026',
+        tag: 'update',
+        emoji: '🛠️',
+        title: 'Build in the browser, then edit the real code',
+        excerpt: 'The game studios now let you change the code while the game runs, and drag pieces straight into the world.',
+        content: 'The browser game studios have grown up. You can now edit the code while the game is running and watch your change happen straight away, so you can make the player faster, add a jump or try a new idea without starting over.\n\nThere is also a drag-and-drop world, so you can place platforms, blocks and scenery with your mouse or finger and see them appear in the game. It is the same making, just with more room to experiment.\n\nAs always, it works in a plain browser on a school computer, and nothing needs to be installed to begin.'
+    },
+
+    {
+        id: 441,
+        date: '13 October 2026',
+        tag: 'site',
+        emoji: '🖼️',
+        title: 'Publish your game to the Community Gallery',
+        excerpt: 'Finish a game in the Arcade Game Maker and you can now send it in. A new Community Gallery brings learner games together in one place.',
+        content: 'When you finish a game in the Arcade Game Maker, there is a new Publish button. Send your game in and it can appear in the Community Gallery, a new page that gathers games made by young creators in one place.\n\nEvery game is looked at before it goes up, so the gallery stays friendly and safe. You can browse what other people have made, play their games and borrow an idea or two for your own.\n\nEvery game starts with one small idea. Yours could be next.'
+    },
+
+    {
         id: 440,
         date: '12 October 2026',
         tag: 'site',
