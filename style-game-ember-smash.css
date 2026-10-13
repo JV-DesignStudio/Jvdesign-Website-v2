@@ -11,9 +11,11 @@ html,body{margin:0;min-height:100%;overflow-x:hidden}
 body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 14% 8%,#f0567a 0 12rem,transparent 30rem),radial-gradient(circle at 86% 20%,#ff9d2e 0 12rem,transparent 28rem),linear-gradient(135deg,#241019,#3a0f22 52%,#12060d);color:var(--ember-cream)}
 button,a{font:inherit}
 .shell{width:min(1220px,calc(100% - 28px));margin:auto;padding:18px 0 40px}
-.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.top-actions{display:flex;gap:8px}
 .back,.round{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.12);color:#fff;text-decoration:none;border-radius:999px;padding:10px 14px;font-weight:950}
-.round{width:44px;height:44px;cursor:pointer}
+.round{width:44px;height:44px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+.round:active{transform:scale(.94)}
 .brand{display:flex;align-items:center;gap:10px;background:rgba(36,16,25,.78);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:9px 16px;box-shadow:0 18px 42px rgba(0,0,0,.28)}
 .brand span{font-size:1.25rem}
 .brand small{color:#ffc7d2;font-weight:850}
@@ -36,6 +38,19 @@ button,a{font:inherit}
 .hud p{color:#ffe3e8;line-height:1.45;font-weight:750}
 .stage{position:relative;padding:12px}
 canvas{display:block;width:100%;aspect-ratio:900/600;border-radius:22px;touch-action:none;background:#2a0f1c}
+.start-overlay{position:fixed;inset:0;z-index:2147483001;display:flex;align-items:flex-start;justify-content:center;padding:24px;overflow:auto;background:radial-gradient(circle at 50% 12%,rgba(240,86,122,.22),transparent 46%),linear-gradient(160deg,rgba(30,8,18,.94),rgba(10,4,8,.97));backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);text-align:center;transition:opacity .35s ease}
+.start-overlay.hide{opacity:0;pointer-events:none;visibility:hidden}
+.start-card{max-width:460px;display:grid;gap:12px;justify-items:center;margin:auto}
+.start-emoji{font-size:clamp(2.6rem,11vw,4rem);line-height:1;filter:drop-shadow(0 8px 20px rgba(255,122,89,.5))}
+.start-card h2{margin:0;font-size:clamp(1.9rem,7vw,3rem);letter-spacing:-.03em;background:linear-gradient(135deg,#ffcf5c,#f0567a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.start-card p{margin:0;color:#ffe3e8;line-height:1.5;font-weight:650;max-width:400px}
+.start-how{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:2px 0;padding:0;list-style:none}
+.start-how li{font-size:.78rem;font-weight:800;color:#ffd9e0;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:5px 11px}
+.start-play{border:0;border-radius:999px;padding:14px 42px;font-size:1.1rem;font-weight:1000;color:#2a0a14;background:linear-gradient(135deg,#ffcf5c,#f0567a);cursor:pointer;box-shadow:0 16px 36px rgba(240,86,122,.4);transition:transform .12s ease}
+.start-play:hover{transform:translateY(-2px)}
+.start-play:active{transform:scale(.96)}
+.start-best{margin:0;font-size:.78rem;font-weight:800;color:#ffb0c4}
+.start-best b{color:#ffcf5c}
 .complete{position:absolute;inset:12px;display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px;border-radius:22px;background:rgba(36,16,25,.82);backdrop-filter:blur(8px);z-index:4}
 .complete.show{display:flex}
 .complete h2{font-size:clamp(2rem,5vw,3.5rem);margin:0}
@@ -64,4 +79,33 @@ canvas{display:block;width:100%;aspect-ratio:900/600;border-radius:22px;touch-ac
 .stage{padding:8px;border-radius:24px}
 canvas,.complete{border-radius:18px}
 .tips{display:none}
+}
+
+/* ── Fullscreen (immersive) mode: once Play is tapped the forge owns the screen.
+   game-shell.js adds html.jvds-immersive and fixes .shell to the viewport. ── */
+html.jvds-immersive{overflow:hidden;overscroll-behavior:none}
+html.jvds-immersive .shell{height:100dvh;width:100%;max-width:none;padding:0;display:flex;flex-direction:column;overflow:hidden}
+html.jvds-immersive .shell>.storyrun{width:100%;margin:0;padding:6px 8px 0}
+html.jvds-immersive .shell>.storyrun .sr-story{display:none}
+html.jvds-immersive .top,html.jvds-immersive .hero,html.jvds-immersive .tips{display:none!important}
+html.jvds-immersive #arcade-menu{display:none!important}
+/* game-system.js pins its mute/pause cluster at top:72px (inline), which lands on
+   the HUD. Tuck it into the bottom-right corner instead. */
+html.jvds-immersive #gs-controls{top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom));right:calc(12px + env(safe-area-inset-right))}
+html.jvds-immersive .game{flex:1;min-height:0;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);gap:8px;padding:8px;width:100%}
+html.jvds-immersive .hud{grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;border-radius:16px}
+html.jvds-immersive .hud>div{padding:8px 10px;border-radius:12px}
+html.jvds-immersive .hud .primary,html.jvds-immersive .hud .ghost{grid-column:span 2;margin:0}
+html.jvds-immersive .hud p{display:none}
+html.jvds-immersive .stage{padding:0;display:flex;align-items:center;justify-content:center;min-height:0;overflow:hidden;border:0;background:transparent;box-shadow:none;border-radius:0}
+html.jvds-immersive canvas{border-radius:14px}
+/* The shared toast defaults to top:18px, which lands on the story bar in play. */
+html.jvds-immersive .toast{top:auto;bottom:calc(96px + env(safe-area-inset-bottom))}
+@media(max-width:680px){
+  html.jvds-immersive .hud{grid-template-columns:1fr 1fr}
+  html.jvds-immersive .hud>div{gap:8px}
+  html.jvds-immersive .hud .primary,html.jvds-immersive .hud .ghost{grid-column:span 1}
+  /* Keep the story bar clear of the shell's Exit button in the top-right. */
+  html.jvds-immersive .shell>.storyrun{padding-right:calc(140px + env(safe-area-inset-right))}
+  html.jvds-immersive .shell>.storyrun .sr-title{display:none}
 }
