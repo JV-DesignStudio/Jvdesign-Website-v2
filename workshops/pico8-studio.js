@@ -27,14 +27,15 @@
       'bg=' + v.bg,
       'ball_spd=' + v.ball_spd,
       'paddle_h=' + v.paddle_h,
+      'serve_y=' + ((typeof v.serve_y === 'number') ? v.serve_y : 64),
       'win=' + v.target,
       '',
       'function _init()',
-      ' px=6 py=56 ex=118 ey=56 bx=64 by=64',
+      ' px=6 py=56 ex=118 ey=56 bx=64 by=serve_y',
       ' dx=ball_spd*.7 dy=ball_spd*.5 s1=0 s2=0',
       'end',
       'function _serve(d)',
-      ' bx=64 by=64 dx=d*ball_spd*.7',
+      ' bx=64 by=serve_y dx=d*ball_spd*.7',
       ' dy=(rnd(2)-1)*ball_spd*.5',
       'end',
       'function _update()',
@@ -326,11 +327,12 @@
       emoji: '🏓', name: 'Pong',
       blurb: 'Two paddles and one ball. Keep the ball past the computer paddles. First to the target score wins.',
       controls: 'Up and Down (or W and S) move your paddle on the left. The computer plays on the right.',
-      fields: [num('paddle_h', 'Paddle size', 8, 40, 20), num('ball_spd', 'Ball speed', 1, 4, 2), num('target', 'Points to win', 3, 15, 5), col('col_paddle', 'Paddle colour', 7), col('col_ball', 'Ball colour', 10), col('bg', 'Background', 0)],
+      fields: [num('paddle_h', 'Paddle size', 8, 40, 20), num('ball_spd', 'Ball speed', 1, 4, 2), num('target', 'Points to win', 3, 15, 5), num('serve_y', 'Ball serve height', 8, 120, 64), col('col_paddle', 'Paddle colour', 7), col('col_ball', 'Ball colour', 10), col('bg', 'Background', 0)],
       lua: pongLua,
       make: function (v) {
         var s = {};
-        function serve(d) { s.bx = 64; s.by = 64; s.dx = d * v.ball_spd * 0.7; s.dy = (Math.random() * 2 - 1) * v.ball_spd * 0.5; }
+        function serveY() { var y = (typeof v.serve_y === 'number') ? v.serve_y : 64; return clamp(Math.round(y), 8, 120); }
+        function serve(d) { s.bx = 64; s.by = serveY(); s.dx = d * v.ball_spd * 0.7; s.dy = (Math.random() * 2 - 1) * v.ball_spd * 0.5; }
         s.reset = function () { s.px = 6; s.py = 64 - v.paddle_h / 2; s.ex = 118; s.ey = 64 - v.paddle_h / 2; s.s1 = 0; s.s2 = 0; s.over = false; serve(Math.random() < 0.5 ? 1 : -1); };
         s.update = function (k) {
           if (s.over) return;
@@ -759,6 +761,72 @@
     var blurb = $('psBlurb'); if (blurb) blurb.textContent = GAMES[id].blurb;
     var ctl = $('psControls'); if (ctl) ctl.textContent = GAMES[id].controls;
     renderInspector(); buildSim(); drawHud(); refrescode();
+    drawWorld(); syncCodeBox();
+  }
+
+  /* ---------- drag and drop serve point + live Lua ---------- */
+  function currentCart() { return buildCart(state.game, state.values, ($('psTitle') && $('psTitle').value) || 'my-game'); }
+  function syncCodeBox() { var ta = $('psCodeEdit'); if (ta) ta.value = currentCart(); }
+  function drawWorld() {
+    var cv = $('psWorld'); if (!cv) return;
+    var c = cv.getContext('2d');
+    c.fillStyle = '#000'; c.fillRect(0, 0, cv.width, cv.height);
+    c.strokeStyle = 'rgba(255,255,255,.2)'; c.beginPath(); c.moveTo(64, 0); c.lineTo(64, 64); c.stroke();
+    var sy = (state.game === 'pong' && typeof state.values.serve_y === 'number') ? state.values.serve_y : 64;
+    var py = Math.round((sy / 128) * 64);
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(64, py, 5, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#83769C'; c.font = '8px monospace'; c.textAlign = 'center'; c.fillText('drag', 64, Math.min(62, py + 14));
+    var msg = $('psWorldMsg');
+    if (msg) msg.textContent = state.game === 'pong' ? ('Ball serves at height ' + Math.round(sy) + '. Drag it and press Play.') : 'Serve editing is on Pong. The Lua box below works on every cart.';
+  }
+  function setServeY(sy) {
+    sy = clamp(Math.round(sy), 8, 120);
+    state.values.serve_y = sy;
+    var inp = $('psf_serve_y'); if (inp) { inp.value = sy; var v = $('psv_serve_y'); if (v) v.textContent = sy; }
+    buildSim(); refrescode(); drawWorld(); syncCodeBox();
+  }
+  function initLiveBits() {
+    if (!window.JVDSLiveEdit) return;
+    var cv = $('psWorld'), pal = $('psWorldPalette');
+    if (pal) window.JVDSLiveEdit.armPalette(pal, function () { drawWorld(); });
+    if (cv) {
+      var dragging = false;
+      function syFromEvent(e) {
+        var r = cv.getBoundingClientRect();
+        return ((e.clientY - r.top) / r.height) * 128;
+      }
+      cv.addEventListener('pointerdown', function (e) { dragging = true; try { cv.setPointerCapture(e.pointerId); } catch (x) {} if (state.game === 'pong') setServeY(syFromEvent(e)); e.preventDefault(); });
+      cv.addEventListener('pointermove', function (e) { if (dragging && state.game === 'pong') setServeY(syFromEvent(e)); });
+      ['pointerup', 'pointercancel'].forEach(function (ev) { cv.addEventListener(ev, function () { dragging = false; }); });
+      cv.addEventListener('dragover', function (e) { e.preventDefault(); });
+      cv.addEventListener('drop', function (e) { e.preventDefault(); if (state.game === 'pong') setServeY(syFromEvent(e)); });
+      cv.addEventListener('keydown', function (e) {
+        if (state.game !== 'pong') return;
+        var sy = (typeof state.values.serve_y === 'number') ? state.values.serve_y : 64, used = true;
+        if (e.key === 'ArrowUp') sy -= 8; else if (e.key === 'ArrowDown') sy += 8;
+        else if (e.key === 'Home') sy = 8; else if (e.key === 'End') sy = 120; else used = false;
+        if (used) { e.preventDefault(); setServeY(sy); }
+      });
+      drawWorld();
+    }
+    if ($('psCodeEdit')) {
+      syncCodeBox();
+      window.JVDSLiveEdit.bindCodeEditor({
+        textareaId: 'psCodeEdit', applyId: 'psCodeApply', resetId: 'psCodeReset', statusId: 'psCodeMsg',
+        getCode: currentCart,
+        getFieldMeta: function () {
+          return GAMES[state.game].fields.filter(function (f) { return f.type === 'number'; }).map(function (f) { return { key: f.k, min: f.min, max: f.max }; });
+        },
+        getValues: function () { return state.values; },
+        setValue: function (k, v) {
+          var f = null;
+          GAMES[state.game].fields.forEach(function (x) { if (x.k === k) f = x; });
+          if (f) state.values[k] = v;
+        },
+        resetValues: function () { state.values = defaultsFor(state.game); renderInspector(); buildSim(); drawWorld(); },
+        refresh: function () { renderInspector(); buildSim(); refrescode(); drawWorld(); }
+      });
+    }
   }
 
   function boot() {
@@ -821,6 +889,7 @@
     });
 
     startLoop();
+    initLiveBits();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

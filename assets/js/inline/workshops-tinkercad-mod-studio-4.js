@@ -333,7 +333,7 @@ function renderScriptList() {
     cb.type = 'checkbox'; cb.checked = !!S.scripts[s.k]; cb.style.marginTop = '3px';
     cb.addEventListener('change', function () { S.scripts[s.k] = cb.checked; renderAll(); });
     var span = document.createElement('span');
-    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--charcoal-lt);font-size:.82rem">' + esc(s.desc) + '</span>';
+    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--muted);font-size:.82rem">' + esc(s.desc) + '</span>';
     l.appendChild(cb); l.appendChild(span);
     box.appendChild(l);
   });
@@ -662,5 +662,25 @@ window.TCD_buildSTL = buildSTL;
 window.TCD_triangles = function () { return triangleCount(); };
 window.TCD_methodNames = function () { return scriptFiles().map(function (f) { return f.file; }); };
 
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+/* LiveEdit API: script code strings are comments only, no numeric constants to edit */
+var EDITABLE = [];
+var editVals = {};
+
+function applyValsToScripts() {}
+
+window.JVDS_MOD_STUDIO = {
+  getScriptCode: function () {
+    var files = scriptFiles();
+    if (!files.length) return '// Tick a step to apply it.';
+    return files.map(function (f) { return '// ' + f.file + '\n' + f.code; }).join('\n\n');
+  },
+  getFieldMeta: function () { return EDITABLE; },
+  getValues: function () { return {}; },
+  setValue: function () {},
+  resetValues: function () {},
+  refresh: function () { renderScriptPreview(); renderFiles(); renderExport(); persist(); },
+  paletteEl: null
+};
+
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function () { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('gmPalette'); }); } else { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('gmPalette'); }
 })();

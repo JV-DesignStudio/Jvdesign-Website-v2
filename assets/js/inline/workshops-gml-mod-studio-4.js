@@ -274,7 +274,7 @@ function renderScriptList() {
     cb.type = 'checkbox'; cb.checked = !!S.scripts[s.k]; cb.style.marginTop = '3px';
     cb.addEventListener('change', function () { S.scripts[s.k] = cb.checked; renderAll(); });
     var span = document.createElement('span');
-    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--charcoal-lt);font-size:.82rem">' + esc(s.desc) + '</span>';
+    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--muted);font-size:.82rem">' + esc(s.desc) + '</span>';
     l.appendChild(cb); l.appendChild(span);
     box.appendChild(l);
   });
@@ -615,5 +615,40 @@ window.GML_buildStep = buildStep;
 window.GML_buildDraw = buildDraw;
 window.GML_methodNames = function () { return scriptFiles().map(function (f) { return f.file; }); };
 
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+/* LiveEdit API: editable constants in generated code */
+var EDITABLE = [
+  { key: 'spd', min: 1, max: 20, def: 4 }
+];
+var editVals = {};
+EDITABLE.forEach(function (e) { editVals[e.key] = e.def; });
+
+/* patch buildCreate so editable values take effect */
+var _origBuildCreate = buildCreate;
+buildCreate = function () {
+  var src = _origBuildCreate();
+  var lines = src.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var m = lines[i].match(/^(spd\s*=\s*)(\d+)(;.*)/);
+    if (m) { lines[i] = m[1] + editVals.spd + m[3]; }
+  }
+  return lines.join('\n');
+};
+
+function applyValsToScripts() {
+  /* values are applied dynamically via the wrapped buildCreate */
+}
+
+window.JVDS_MOD_STUDIO = {
+  getScriptCode: function () {
+    return '// Create_0.gml\n' + buildCreate() + '\n// Step_0.gml\n' + buildStep() + '\n// Draw_0.gml\n' + buildDraw();
+  },
+  getFieldMeta: function () { return EDITABLE; },
+  getValues: function () { var o = {}; EDITABLE.forEach(function (e) { o[e.key] = editVals[e.key]; }); return o; },
+  setValue: function (k, v) { if (editVals.hasOwnProperty(k)) { editVals[k] = v; applyValsToScripts(); } },
+  resetValues: function () { EDITABLE.forEach(function (e) { editVals[e.key] = e.def; }); applyValsToScripts(); },
+  refresh: function () { renderScriptPreview(); renderFiles(); renderExport(); persist(); },
+  paletteEl: null
+};
+
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function () { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('gmPalette'); }); } else { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('gmPalette'); }
 })();

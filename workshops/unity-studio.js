@@ -456,13 +456,21 @@
     if (!g.paint) { box.innerHTML = '<span class="us-hint" style="margin:0">This game uses a fixed scene. Use Objects &amp; Components to change how it plays.</span>'; return; }
     g.palette.forEach(function (p, i) {
       var b = el('button', 'us-swatch' + (p.t === state.paintTile ? ' is-active' : ''), '<i style="background:' + p.color + '"></i>' + p.label);
-      b.type = 'button'; b.addEventListener('click', function () {
+      b.type = 'button'; b.setAttribute('data-insert', String(p.t));
+      b.setAttribute('aria-label', 'Place ' + p.label + '. Activate then click or drop on the scene.');
+      b.addEventListener('click', function () {
         state.paintTile = p.t;
         [].forEach.call(box.querySelectorAll('.us-swatch'), function (x) { x.classList.remove('is-active'); });
         b.classList.add('is-active');
       });
       box.appendChild(b);
     });
+    if (typeof window !== 'undefined' && window.JVDSLiveEdit) {
+      window.JVDSLiveEdit.armPalette(box, function (val) {
+        var t = parseInt(val, 10);
+        if (!isNaN(t)) { state.paintTile = t; }
+      });
+    }
   }
 
   function renderInspector() {
@@ -506,13 +514,80 @@
     else if (t === 6) { ctx.fillStyle = '#5bc0f8'; ctx.fillRect(x + 4, y + 2, CELL - 8, CELL - 4); }
   }
 
-  /* ---------- painter ---------- */
-  var painting = false;
+  /* ---------- painter + drag and drop ---------- */
+  var painting = false, dragMove = null;
+  function cellFromEvent(cv, clientX, clientY) {
+    var rect = cv.getBoundingClientRect();
+    var sx = (clientX - rect.left) * (cv.width / rect.width), sy = (clientY - rect.top) * (cv.height / rect.height);
+    return { c: Math.floor(sx / CELL), r: Math.floor(sy / CELL) };
+  }
+  function placeTileAt(c, r, t) {
+    if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return;
+    if (t === 6) { for (var i = 0; i < state.grid.length; i++) if (state.grid[i] === 6) state.grid[i] = 0; }
+    state.grid[r * COLS + c] = t;
+    var cv = $('usScene'); if (cv) drawGridTile(cv.getContext('2d'), c, r, t);
+    saveStore();
+  }
   function bindPaint() {
     var cv = $('usScene'); if (!cv) return;
-    cv.addEventListener('pointerdown', function (e) { if (!GAMES[state.game].paint) { handleSceneClick(e); return; } painting = true; try { cv.setPointerCapture(e.pointerId); } catch (x) {} paintAt(e.clientX, e.clientY); e.preventDefault(); });
-    cv.addEventListener('pointermove', function (e) { if (painting) paintAt(e.clientX, e.clientY); });
-    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { cv.addEventListener(ev, function () { painting = false; }); });
+    cv.tabIndex = 0;
+    cv.setAttribute('aria-label', 'Scene you can paint on. Arrow keys move the cursor, Enter places the picked tile.');
+    var keyCursor = { c: 2, r: ROWS - 2 };
+    cv.addEventListener('keydown', function (e) {
+      if (!GAMES[state.game].paint) return;
+      var moved = true;
+      if (e.key === 'ArrowLeft') keyCursor.c = Math.max(0, keyCursor.c - 1);
+      else if (e.key === 'ArrowRight') keyCursor.c = Math.min(COLS - 1, keyCursor.c + 1);
+      else if (e.key === 'ArrowUp') keyCursor.r = Math.max(0, keyCursor.r - 1);
+      else if (e.key === 'ArrowDown') keyCursor.r = Math.min(ROWS - 1, keyCursor.r + 1);
+      else if (e.key === 'Enter' || e.key === ' ') { placeTileAt(keyCursor.c, keyCursor.r, state.paintTile); renderScene(); }
+      else moved = false;
+      if (moved) e.preventDefault();
+    });
+    cv.addEventListener('pointerdown', function (e) {
+      if (!GAMES[state.game].paint) { handleSceneClick(e); return; }
+      var cell = cellFromEvent(cv, e.clientX, e.clientY);
+      if (cell.c < 0 || cell.c >= COLS || cell.r < 0 || cell.r >= ROWS) return;
+      var existing = state.grid[cell.r * COLS + cell.c];
+      // Drag an already placed coin, enemy, goal or player to move it.
+      if (existing === 3 || existing === 4 || existing === 5 || existing === 6) {
+        dragMove = { tile: existing, fromC: cell.c, fromR: cell.r, moved: false, x: e.clientX, y: e.clientY };
+        state.grid[cell.r * COLS + cell.c] = 0;
+        renderScene();
+        try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+        e.preventDefault();
+        return;
+      }
+      painting = true; try { cv.setPointerCapture(e.pointerId); } catch (x) {} paintAt(e.clientX, e.clientY);
+      e.preventDefault();
+    });
+    cv.addEventListener('pointermove', function (e) {
+      if (dragMove) {
+        if (Math.abs(e.clientX - dragMove.x) + Math.abs(e.clientY - dragMove.y) > 6) dragMove.moved = true;
+        return;
+      }
+      if (painting) paintAt(e.clientX, e.clientY);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (ev) { cv.addEventListener(ev, function (e) {
+      if (dragMove) {
+        var cell = (e.clientX !== undefined) ? cellFromEvent(cv, e.clientX, e.clientY) : { c: dragMove.fromC, r: dragMove.fromR };
+        if (!dragMove.moved) placeTileAt(dragMove.fromC, dragMove.fromR, dragMove.tile);
+        else placeTileAt(cell.c, cell.r, dragMove.tile);
+        dragMove = null; renderScene();
+        painting = false; return;
+      }
+      painting = false;
+    }); });
+    // Drop a palette chip dragged from outside the canvas.
+    cv.addEventListener('dragover', function (e) { e.preventDefault(); });
+    cv.addEventListener('drop', function (e) {
+      e.preventDefault();
+      var t = NaN;
+      try { t = parseInt(e.dataTransfer.getData('text/plain'), 10); } catch (x) {}
+      if (isNaN(t)) t = state.paintTile;
+      var cell = cellFromEvent(cv, e.clientX, e.clientY);
+      placeTileAt(cell.c, cell.r, t); renderScene();
+    });
   }
   function paintAt(clientX, clientY) {
     var cv = $('usScene'), rect = cv.getBoundingClientRect();
@@ -603,7 +678,9 @@
     if (wrap) wrap.style.display = 'block';
     if (note) note.textContent = g.paint ? '' : 'This game has a fixed scene. Press Play to try it, or use Objects & Components to change how it plays.';
     var ch = $('usControls'); if (ch) ch.textContent = g.controls;
-    renderPalette(); renderInspector(); renderScene();
+      renderPalette(); renderInspector(); renderScene();
+      var ta = (typeof document !== 'undefined') ? document.getElementById('usCodeEdit') : null;
+      if (ta) { try { ta.value = primaryCode(); } catch (x) {} }
     var c2 = $('usClearWrap'); if (c2) c2.style.display = g.paint ? 'flex' : 'none';
     var sc = $('usSample'); if (sc) sc.style.display = g.paint ? 'inline-block' : 'none';
     saveStore();
@@ -871,6 +948,36 @@
     var want = (new URLSearchParams(location.search)).get('game');
     switchGame(GAMES[want] ? want : 'platformer');
     refreshTree();
+    initLiveCode();
+  }
+
+  /* ---------- live code editing (Apply numbers back into the preview) ---------- */
+  function primaryCode() {
+    try {
+      var grid = state.grid || (GAMES[state.game].sample ? GAMES[state.game].sample() : new Array(COLS * ROWS).fill(0));
+      var files = GAMES[state.game].files(currentValues(), grid);
+      var names = Object.keys(files);
+      var pick = names[0];
+      names.forEach(function (n) { if (/Player|Controller|Paddle|Snake/i.test(n)) pick = n; });
+      return files[pick] || '';
+    } catch (x) { return ''; }
+  }
+  function initLiveCode() {
+    if (typeof window === 'undefined' || !window.JVDSLiveEdit) return;
+    var ta = $('usCodeEdit'); if (!ta) return;
+    ta.value = primaryCode();
+    window.JVDSLiveEdit.bindCodeEditor({
+      textareaId: 'usCodeEdit', applyId: 'usCodeApply', resetId: 'usCodeReset', statusId: 'usCodeMsg',
+      getCode: primaryCode,
+      getFieldMeta: function () { return GAMES[state.game].fields.map(function (f) { return { key: f.id, min: f.min, max: f.max }; }); },
+      getValues: currentValues,
+      setValue: function (k, v) {
+        state.values[k] = v;
+        var inp = $(k); if (inp && inp.type !== 'checkbox') inp.value = v;
+      },
+      resetValues: function () { state.values = defaults(state.game); renderInspector(); renderScene(); refreshTree(); },
+      refresh: function () { renderInspector(); renderScene(); refreshTree(); if (state.screen === 'play') startPlay(); }
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

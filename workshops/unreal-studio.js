@@ -337,7 +337,7 @@
   /* ==========================================================================
      State + render
      ========================================================================== */
-  var state = { game: 'shooter', vars: {}, enabled: {}, screen: 'graph', sim: null, raf: 0, input: { left: false, right: false, up: false, down: false, jump: false } };
+  var state = { game: 'shooter', vars: {}, enabled: {}, order: [], screen: 'graph', sim: null, raf: 0, input: { left: false, right: false, up: false, down: false, jump: false } };
 
   function defaultsFor(g) { var o = {}; g.vars.forEach(function (v) { o[v.id] = v.val; }); return o; }
   function enabledFor(g) { var o = {}; g.chain.forEach(function (n) { o[n] = true; }); g.required.forEach(function (n) { o[n] = true; }); return o; }
@@ -347,12 +347,21 @@
     state.game = id in GAMES ? id : 'shooter';
     state.vars = defaultsFor(g);
     state.enabled = enabledFor(g);
+    state.order = g.chain.slice();
     state.sim = null;
     [].forEach.call(document.querySelectorAll('.us-game-btn'), function (b) { b.classList.toggle('is-active', b.getAttribute('data-game') === state.game); });
     var bl = $('usGameBlurb'); if (bl) bl.textContent = g.blurb;
     renderGraph(); renderInspector();
     if (state.screen === 'play') startPlay(); else stopPlay();
     refreshTree();
+  }
+
+  function moveNode(from, to) {
+    var fi = state.order.indexOf(from), ti = state.order.indexOf(to);
+    if (fi < 0 || ti < 0) return;
+    state.order.splice(fi, 1);
+    state.order.splice(state.order.indexOf(to), 0, from);
+    renderGraph(); refreshTree(); syncCodeBox();
   }
 
   function renderGraph() {
@@ -375,10 +384,27 @@
     var ev = document.createElement('div'); ev.className = 'us-node us-node--event';
     ev.innerHTML = '<div class="us-node-head">&#9654; Event BeginPlay</div><div class="us-node-body">Fires once when the game starts. This is the entry point.</div>';
     chainEl.appendChild(ev);
-    g.chain.forEach(function (n) {
+    (state.order.length ? state.order : g.chain).forEach(function (n) {
       if (!state.enabled[n]) return;
       var d = document.createElement('div'); d.className = 'us-node';
+      d.setAttribute('draggable', 'true');
+      d.setAttribute('tabindex', '0');
+      d.setAttribute('data-node', n);
+      d.setAttribute('aria-label', NODE[n].label + '. Press arrow keys to reorder, Enter to keep.');
       d.innerHTML = '<div class="us-node-head">' + NODE[n].label + '</div><div class="us-node-body">' + NODE[n].desc + '</div>';
+      d.addEventListener('dragstart', function (e) { try { e.dataTransfer.setData('text/plain', n); } catch (x) {} });
+      d.addEventListener('dragover', function (e) { e.preventDefault(); });
+      d.addEventListener('drop', function (e) {
+        e.preventDefault();
+        var from = null;
+        try { from = e.dataTransfer.getData('text/plain'); } catch (x) {}
+        if (from && from !== n) moveNode(from, n);
+      });
+      d.addEventListener('keydown', function (e) {
+        var idx = state.order.indexOf(n);
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); if (idx > 0) { state.order.splice(idx, 1); state.order.splice(idx - 1, 0, n); renderGraph(); refreshTree(); } }
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); if (idx > -1 && idx < state.order.length - 1) { state.order.splice(idx, 1); state.order.splice(idx + 1, 0, n); renderGraph(); refreshTree(); } }
+      });
       chainEl.appendChild(d);
     });
     var end = document.createElement('div'); end.className = 'us-node us-node--end';
@@ -409,7 +435,28 @@
     var files = g.files(state.vars, enabledList());
     tree.textContent = project + '.zip\n' + Object.keys(files).map(function (n) { return '  ' + n; }).join('\n');
   }
-  function enabledList() { var g = GAMES[state.game]; return g.chain.filter(function (n) { return state.enabled[n]; }); }
+  function enabledList() { var g = GAMES[state.game]; var order = (state.order && state.order.length) ? state.order : g.chain; return order.filter(function (n) { return state.enabled[n]; }); }
+
+  /* ---------- live variable code ---------- */
+  function currentRecipeText() {
+    var g = GAMES[state.game], files = g.files(state.vars, enabledList());
+    var names = Object.keys(files);
+    return files[names[0]] || '';
+  }
+  function syncCodeBox() { var ta = $('usCodeEdit'); if (ta) ta.value = currentRecipeText(); }
+  function initLiveBits() {
+    if (!window.JVDSLiveEdit || !$('usCodeEdit')) return;
+    syncCodeBox();
+    window.JVDSLiveEdit.bindCodeEditor({
+      textareaId: 'usCodeEdit', applyId: 'usCodeApply', resetId: 'usCodeReset', statusId: 'usCodeMsg',
+      getCode: currentRecipeText,
+      getFieldMeta: function () { return GAMES[state.game].vars.map(function (v) { return { key: v.id, min: v.min, max: v.max }; }); },
+      getValues: function () { return state.vars; },
+      setValue: function (k, v) { state.vars[k] = v; var inp = $('v_' + k); if (inp) inp.value = v; },
+      resetValues: function () { state.vars = defaultsFor(GAMES[state.game]); renderInspector(); },
+      refresh: function () { renderInspector(); refreshTree(); if (state.screen === 'play') startPlay(); }
+    });
+  }
 
   /* ==========================================================================
      Play loop
@@ -492,6 +539,7 @@
     bindHold('usLeft', 'left'); bindHold('usRight', 'right'); bindHold('usUp', 'up'); bindHold('usDown', 'down'); bindHold('usJump', 'jump');
     var want = (new URLSearchParams(location.search)).get('game');
     switchGame(GAMES[want] ? want : 'shooter');
+    initLiveBits();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

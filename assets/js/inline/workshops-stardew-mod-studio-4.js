@@ -648,7 +648,7 @@
   function renderWorlds() {
     var box = document.getElementById('worldList'); if (!box) return; box.innerHTML = '';
     var ws = getWorlds();
-    if (!ws.length) { box.innerHTML = '<span style="font-size:.8rem;color:var(--charcoal-lt)">No saved worlds yet. Name one and press Save. Saved worlds appear here as little pictures.</span>'; return; }
+    if (!ws.length) { box.innerHTML = '<span style="font-size:.8rem;color:var(--muted)">No saved worlds yet. Name one and press Save. Saved worlds appear here as little pictures.</span>'; return; }
     ws.forEach(function (w, i) {
       var card = document.createElement('div'); card.className = 'sdms-worldcard';
       var cv = document.createElement('canvas'); cv.width = 120; cv.height = 80; cv.className = 'sdms-worldthumb';
@@ -1022,4 +1022,22 @@
   var tourSkipBtn = document.getElementById('tourSkip'); if (tourSkipBtn) tourSkipBtn.addEventListener('click', hideTour);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var ov = document.getElementById('tourOverlay'); if (ov && !ov.hidden) hideTour(); } });
   try { if (!localStorage.getItem('jvds-studio-toured') && !EMBED) { localStorage.setItem('jvds-studio-toured', '1'); showTour(0); } } catch (e) {}
+
+  /* LiveEdit API: no editable numeric constants in this map-editor studio */
+  var EDITABLE = [];
+  var editVals = {};
+
+  function applyValsToScripts() {}
+
+  window.JVDS_MOD_STUDIO = {
+    getScriptCode: function () {
+      return 'manifest.json\n' + pretty(manifestObj()) + '\n\ncontent.json\n' + pretty(contentObj());
+    },
+    getFieldMeta: function () { return EDITABLE; },
+    getValues: function () { return {}; },
+    setValue: function () {},
+    resetValues: function () {},
+    refresh: function () { renderMap(); refreshFiles(); refreshExportPreview(); persist(); },
+    paletteEl: null
+  };
 })();

@@ -1,0 +1,1 @@
+(function(){function r(){try{if(window.WeeklyChallenge)WeeklyChallenge.render('weeklyChallenge');}catch(e){}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',r);else r();})();

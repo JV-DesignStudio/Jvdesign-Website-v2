@@ -318,4 +318,20 @@ document.getElementById('tourBtn').addEventListener('click', function () { showT
 document.getElementById('tourNext').addEventListener('click', function () { if (tourIdx < TOUR.length - 1) showTour(tourIdx + 1); else hideTour(); });
 document.getElementById('tourSkip').addEventListener('click', hideTour);
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var ov = document.getElementById('tourOverlay'); if (ov && !ov.hidden) hideTour(); } });
+
+/* LiveEdit API: no editable numeric constants in this studio's generated code */
+var EDITABLE = [];
+var editVals = {};
+
+function applyValsToScripts() {}
+
+window.JVDS_MOD_STUDIO = {
+  getScriptCode: function () { return pluginJs(); },
+  getFieldMeta: function () { return EDITABLE; },
+  getValues: function () { return {}; },
+  setValue: function () {},
+  resetValues: function () {},
+  refresh: function () { renderAll(); },
+  paletteEl: null
+};
 })();

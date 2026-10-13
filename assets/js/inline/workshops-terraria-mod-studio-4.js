@@ -281,7 +281,7 @@
   function renderGallery() {
     var g = document.getElementById('worldsGallery'); if (!g) return;
     var arr = loadStore(); g.innerHTML = '';
-    if (!arr.length) { g.innerHTML = '<p style="font-size:.85rem;color:var(--charcoal-lt)">No saved worlds yet.</p>'; return; }
+    if (!arr.length) { g.innerHTML = '<p style="font-size:.85rem;color:var(--muted)">No saved worlds yet.</p>'; return; }
     arr.forEach(function (w, i) {
       var card = document.createElement('div'); card.className = 'twms-worldcard';
       card.innerHTML = '<canvas class="twms-worldthumb" width="144" height="96"></canvas><div class="twms-worldname">' + w.name + '</div><div class="twms-worldrow"><button class="twms-btn load">Load</button><button class="twms-btn del">Delete</button></div>';
@@ -357,4 +357,20 @@
 
   syncTools();
   render();
+
+  /* LiveEdit API: no editable numeric constants in this world-builder studio */
+  var EDITABLE = [];
+  var editVals = {};
+
+  function applyValsToScripts() {}
+
+  window.JVDS_MOD_STUDIO = {
+    getScriptCode: function () { return worldJson(); },
+    getFieldMeta: function () { return EDITABLE; },
+    getValues: function () { return {}; },
+    setValue: function () {},
+    resetValues: function () {},
+    refresh: function () { render(); },
+    paletteEl: null
+  };
 })();

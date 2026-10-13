@@ -40,6 +40,21 @@ const server=http.createServer((req,res)=>{
     check('studio has four sections',shell.tabs===4,'tabs '+shell.tabs);
     check('export button present',shell.download);
 
+    // A1511: live code editing + drag and drop blueprint graph
+    errors.length=0;
+    const le=await page.evaluate(()=>{
+      const ta=document.getElementById('usCodeEdit'),LE=window.JVDSLiveEdit;
+      const inp=document.querySelector('#usInspector input[type=number],#usInspector input[type=range]');
+      const out={helper:!!LE,len:ta?ta.value.length:0,made:null};
+      if(ta&&LE&&inp){ta.value=ta.value+'\n'+inp.id+' = '+(inp.value||'0');document.getElementById('usCodeApply').click();out.made=document.getElementById('usCodeMsg').textContent;}
+      return out;
+    });
+    check('liveedit helper + code box populated',le.helper&&le.len>20,'len '+le.len);
+    check('Apply numbers updates the preview',!!le.made&&/updated/i.test(le.made),JSON.stringify(le.made||'').slice(0,50));
+    const dragNodes=await page.evaluate(()=>document.querySelectorAll('#usGraphChain .us-node[draggable="true"]').length);
+    check('blueprint nodes are draggable',dragNodes>=1,'draggable '+dragNodes);
+    check('no errors during liveedit',errors.length===0,errors.slice(0,2).join(' | '));
+
     for(const g of GAMES){
       errors.length=0;
       const info=await page.evaluate((id)=>{

@@ -52,6 +52,19 @@ const server = http.createServer((req, res) => {
     const banner = await page.evaluate(() => !!document.getElementById('cookie-banner'));
     ok('cookie-settings link reopens the banner', banner);
 
+    const hover = await page.evaluate(() => {
+      const d = document.createElement('div');
+      d.setAttribute('data-hover', 'background:rgb(1,2,3)');
+      d.setAttribute('data-hover-out', 'background:');
+      document.body.appendChild(d);
+      d.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      const on = d.style.background;
+      d.dispatchEvent(new MouseEvent('mouseout', { bubbles: true }));
+      const off = d.style.background;
+      return { on, off };
+    });
+    ok('data-hover applies on hover and clears on out', /rgb\(1, 2, 3\)/.test(hover.on) && hover.off === '', JSON.stringify(hover));
+
     ok('no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
   } finally {
     await browser.close();

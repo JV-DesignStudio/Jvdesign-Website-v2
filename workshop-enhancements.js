@@ -138,11 +138,11 @@
       margin-right: auto;
     }
 
-    /* Reset button */
+    /* Reset button (A1457: raised from white .2 for contrast) */
     .reset-progress-btn {
       background: none;
       border: 1px solid rgba(255,255,255,.08);
-      color: rgba(255,255,255,.2);
+      color: rgba(255,255,255,.65);
       font-size: .68rem;
       padding: 4px 11px;
       border-radius: 6px;
@@ -151,7 +151,7 @@
       font-family: 'Inter',sans-serif;
       margin-top: 6px;
     }
-    .reset-progress-btn:hover { border-color: rgba(248,113,113,.35); color: rgba(248,113,113,.7); }
+    .reset-progress-btn:hover { border-color: rgba(248,113,113,.5); color: #f87171; }
 
     /* Report issue button */
     .report-issue-fab {

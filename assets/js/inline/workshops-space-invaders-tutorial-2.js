@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-space-invaders-tutorial-v2';

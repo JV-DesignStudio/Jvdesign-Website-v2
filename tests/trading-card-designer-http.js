@@ -46,7 +46,7 @@ let failures = 0;
     canvasSize: (document.getElementById('card-canvas')?.width || 0) + 'x' + (document.getElementById('card-canvas')?.height || 0),
     artEmoji: document.getElementById('artEmoji')?.value,
     headerBack: document.querySelector('.hdr-back')?.textContent.trim(),
-    newButton: document.querySelector('[onclick="newCard()"]')?.textContent.trim(),
+    newButton: document.querySelector('[onclick="newCard()"], [data-on="newCard"]')?.textContent.trim(),
     startButton: document.querySelector('#tradingWelcomeModal .m-ok')?.textContent.trim(),
     templates: document.querySelectorAll('.template-btn').length,
     typeButtons: document.querySelectorAll('.type-btn').length,

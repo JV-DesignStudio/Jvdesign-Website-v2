@@ -8,6 +8,10 @@ var S = {
   sZoffset: 200, sLeft: -200, sRight: 200
 };
 
+/* editVals is initialised by the LiveEdit block at the bottom but declared
+   here so cnsStub() can read it at first render. */
+var editVals = { life: 1000, attack: 100, defence: 100, height: 60, 'walk.fwd': 2.4, 'walk.back': -2.2, 'run.fwd': 4.6 };
+
 function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
 function slug(s, fb) { var out = String(s || '').replace(/[^A-Za-z0-9_]/g, ''); return out || fb; }
 function pretty2(o) { return JSON.stringify(o, null, 2); }
@@ -65,15 +69,15 @@ function airStub() {
 function cnsStub() {
   return '; Constants (.cns)\n' +
     '[Data]\n' +
-    'life = 1000\nattack = 100\ndefence = 100\n\n' +
+    'life = ' + editVals.life + '\nattack = ' + editVals.attack + '\ndefence = ' + editVals.defence + '\n\n' +
     '[Size]\n' +
     'xscale = 1\nyscale = 1\n' +
     'ground.back = 15\nground.front = 16\n' +
     'air.back = 12\nair.front = 12\n' +
-    'height = 60\n' +
+    'height = ' + editVals.height + '\n' +
     'head.pos = -5,-90\nmid.pos = -5,-60\nshadowoffset = 0\n\n' +
     '[Velocity]\n' +
-    'walk.fwd = 2.4\nwalk.back = -2.2\nrun.fwd = 4.6,0\n\n' +
+    'walk.fwd = ' + editVals['walk.fwd'] + '\nwalk.back = ' + editVals['walk.back'] + '\nrun.fwd = ' + editVals['run.fwd'] + ',0\n\n' +
     '[Statedef -1]\n' +
     '; Your state code goes here.\n';
 }
@@ -436,4 +440,38 @@ document.getElementById('tourBtn').addEventListener('click', function () { showT
 document.getElementById('tourNext').addEventListener('click', function () { if (tourIdx < TOUR.length - 1) showTour(tourIdx + 1); else hideTour(); });
 document.getElementById('tourSkip').addEventListener('click', hideTour);
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var ov = document.getElementById('tourOverlay'); if (ov && !ov.hidden) hideTour(); } });
+
+/* LiveEdit API: editable constants in generated fighter config */
+var EDITABLE = [
+  { key: 'life',      min: 100,  max: 5000, def: 1000 },
+  { key: 'attack',    min: 10,   max: 500,  def: 100 },
+  { key: 'defence',   min: 10,   max: 500,  def: 100 },
+  { key: 'height',    min: 20,   max: 120,  def: 60 },
+  { key: 'walk.fwd',  min: 0.5,  max: 10,   def: 2.4 },
+  { key: 'walk.back', min: -10,  max: -0.5, def: -2.2 },
+  { key: 'run.fwd',   min: 1,    max: 15,   def: 4.6 }
+];
+/* editVals already declared near the top so cnsStub() can use it at first render */
+EDITABLE.forEach(function (e) { editVals[e.key] = e.def; });
+
+function applyValsToScripts() {
+  /* cnsStub() reads editVals directly, so nothing to regex-replace */
+}
+
+window.JVDS_MOD_STUDIO = {
+  getScriptCode: function () {
+    var cf = charFolder(), sf = stageFolder();
+    return '--- ' + cf + '.def ---\n' + charDef() +
+      '\n--- ' + cf + '.cmd ---\n' + cmdStub() +
+      '\n--- ' + cf + '.cns ---\n' + cnsStub() +
+      '\n--- ' + cf + '.air ---\n' + airStub() +
+      '\n--- ' + sf + '.def ---\n' + stageDef();
+  },
+  getFieldMeta: function () { return EDITABLE; },
+  getValues: function () { var o = {}; EDITABLE.forEach(function (e) { o[e.key] = editVals[e.key]; }); return o; },
+  setValue: function (k, v) { if (editVals.hasOwnProperty(k)) { editVals[k] = v; applyValsToScripts(); } },
+  resetValues: function () { EDITABLE.forEach(function (e) { editVals[e.key] = e.def; }); applyValsToScripts(); },
+  refresh: function () { renderAll(); },
+  paletteEl: null
+};
 })();

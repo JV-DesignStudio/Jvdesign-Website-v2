@@ -39,18 +39,20 @@ PUBLIC_WORKSHOP_FILES.forEach(file => {
 const CONVERTED = [
   'add-your-own-stage.html', 'barrel-blast-workshop.html', 'blender-workshop.html',
   'cpp-tower-defence-builder.html', 'fairy-survivors-guide.html', 'fnaf-blueprint.html',
-  'gml_shooter_trainer_project.html', 'godot-racing-workshop-2.html', 'godot-racing-workshop.html',
-  'godot-gatekeeper-3d-part1.html', 'godot-gatekeeper-3d-part2.html', 'godot_tutorial.html', 'jump-jump-mario-workshop.html',
+  'gml_shooter_trainer_project.html',
+  'godot-gatekeeper-3d-part1.html', 'godot-gatekeeper-3d-part2.html', 'jump-jump-mario-workshop.html',
   'minecraft-custom-block-mod.html', 'minecraft-custom-food-mod.html', 'minecraft-custom-mob-mod.html',
   'minecraft-custom-tool-mod.html', 'minecraft-first-item-mod.html', 'minecraft-lucky-mod.html',
   'mugen-ai-workshop.html', 'mugen-workshop.html', 'night-watch-part2-workshop.html',
-  'night-watch-part3-workshop.html', 'night-watch-workshop.html', 'nuclear-blueprint.html',
+  'night-watch-part3-workshop.html', 'nuclear-blueprint.html',
   'nuclear-throne-guide.html', 'openrct2-modding-builder.html', 'openrct2-swim-rescue.html',
   'pixel-quest-workshop.html', 'python-game-builder.html', 'race-builder.html', 'racing-blueprint.html',
   'roblox-adventure-workshop.html', 'roblox-battle-workshop.html', 'roblox-horror-workshop.html',
   'roblox-obby-workshop.html', 'roblox-pirate-workshop.html', 'roblox-simulator-workshop.html',
-  'roblox-tycoon-workshop.html', 'scratch-catch-workshop.html', 'scratch-clicker-workshop.html',
-  'scratch-maze-workshop.html', 'scratch-platformer-workshop.html', 'scratch-quiz-workshop.html',
+  'roblox-tycoon-workshop.html',
+  // scratch-catch/clicker/maze/platformer/quiz are now canvas build-alongs
+  // (shared workshop-canvas-engine + workshop-engine) like js-*/java-*, so they
+  // no longer carry the inline checkbox engine this list checks for.
   'scratch-story-workshop.html', 'space_invaders_tutorial.html', 'tinkercad-ep1-spinner.html',
   'tinkercad-ep2-popit.html', 'tinkercad-ep3-blocks.html', 'tinkercad-ep4-pattern.html',
   'tinkercad-ep5-phonestand.html', 'tinkercad-ep6-marblerun.html', 'tinkercad-ep7-keychain.html',
@@ -69,7 +71,7 @@ const CONVERTED = [
 // "Missing Functions" list that drowned out real regressions in the noise.
 const BUILDER_STYLE = [
   'cpp-tower-defence-builder.html', 'fairy-survivors-guide.html', 'fnaf-blueprint.html',
-  'gml_shooter_trainer_project.html', 'godot-racing-workshop-2.html', 'godot-racing-workshop.html',
+  'gml_shooter_trainer_project.html',
   'godot-gatekeeper-3d-part1.html', 'godot-gatekeeper-3d-part2.html', 'nuclear-blueprint.html', 'nuclear-throne-guide.html',
   'openrct2-swim-rescue.html', 'python-game-builder.html', 'race-builder.html', 'racing-blueprint.html',
   'space_invaders_tutorial.html', 'unity-2d-platformer.html', 'unity-3d-platformer.html',

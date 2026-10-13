@@ -62,6 +62,23 @@ const server=http.createServer((req,res)=>{
     check('export + play canvas present',shell.download&&shell.play);
     check('palette shows all 16 colours',shell.pal===16,'swatches '+shell.pal);
 
+    // A1511: live code editing + drag and drop world
+    errors.length=0;
+    const le=await page.evaluate(()=>{
+      const ta=document.getElementById('psCodeEdit'),LE=window.JVDSLiveEdit;
+      const inp=document.querySelector('#psInspector input[type=number],#psInspector input[type=range],#psInspector select');
+      const out={helper:!!LE,len:ta?ta.value.length:0,made:null};
+      if(ta&&LE&&inp&&inp.tagName==='INPUT'){ta.value=ta.value+'\n'+inp.id+' = '+(inp.value||'0');document.getElementById('psCodeApply').click();out.made=document.getElementById('psCodeMsg').textContent;}
+      else if(ta&&LE){document.getElementById('psCodeApply').click();out.made=document.getElementById('psCodeMsg').textContent;}
+      return out;
+    });
+    check('liveedit helper + code box populated',le.helper&&le.len>20,'len '+le.len);
+    check('Apply numbers updates the preview',!!le.made&&/updated/i.test(le.made),JSON.stringify(le.made||'').slice(0,50));
+    const wb=await page.evaluate(()=>document.getElementById('psWorldMsg').textContent);
+    const wa=await page.evaluate(()=>{const cv=document.getElementById('psWorld'),r=cv.getBoundingClientRect(),at={bubbles:true,cancelable:true,clientX:r.left+r.width*0.8,clientY:r.top+r.height/2,pointerId:1,pointerType:'mouse',buttons:1};['pointerdown','pointermove','pointerup'].forEach(t=>cv.dispatchEvent(new PointerEvent(t,at)));return document.getElementById('psWorldMsg').textContent;});
+    check('drag places the object in the world',wb!==wa,JSON.stringify({wb,wa}).slice(0,80));
+    check('no errors during liveedit',errors.length===0,errors.slice(0,2).join(' | '));
+
     for(const g of GAMES){
       errors.length=0;
       const info=await page.evaluate((id)=>{

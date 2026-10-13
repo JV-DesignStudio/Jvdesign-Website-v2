@@ -51,7 +51,7 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
     const out = {
       fn: typeof sendGameToFriend === 'function',
       builder: typeof _buildExportHtml === 'function',
-      btn: !!document.querySelector('button[onclick="sendGameToFriend()"]'),
+      btn: !!document.querySelector('button[onclick="sendGameToFriend()"], button[data-on="sendGameToFriend"]'),
     };
     // Seed a finished project so the builder has something to pack.
     _engineData = { title:'Send Test Game', genre:'SHOOTER', speed:200, gravity:600, jump:450, map:null };

@@ -223,6 +223,76 @@ var codeValid = {};
 var quizPassed = {};
 var quizSelected = {};
 
+/* ── LIVE "WHAT YOUR CODE DID" LAYER ──
+   Purely additive. Names the current step over the canvas and, as the learner
+   types, shows a live line under the editor naming what the step still needs.
+   It never changes checkStep / quiz behaviour, so existing build-alongs keep
+   working exactly as before. */
+var LIVE_CSS = '<style id="cw-live-style">' +
+  '.cw-what{font-family:Fredoka,cursive;font-size:.85rem;color:#ffd166;margin:0 0 12px;padding:8px 12px;' +
+  'background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.22);border-radius:9px;line-height:1.4}' +
+  '.cw-live{margin-top:8px;font-size:.8rem;line-height:1.45;display:none}' +
+  '.cw-live.todo{display:block;color:#ffb020}' +
+  '.cw-live.ok{display:block;color:#4ade80}' +
+  '.cw-live code{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-size:.78rem}' +
+  '.cw-remix{margin-top:14px;padding:12px 14px;border-radius:11px;background:rgba(74,222,128,.08);' +
+  'border:1px solid rgba(74,222,128,.28);font-size:.82rem;color:#e8eaf2;line-height:1.5}' +
+  '.cw-remix strong{color:#4ade80}' +
+  '</style>';
+function ensureLiveStyle() {
+  try { if (!document.getElementById('cw-live-style') && document.head) document.head.insertAdjacentHTML('beforeend', LIVE_CSS); } catch (e) {}
+}
+
+function ensureWhat() {
+  var panel = document.getElementById('canvasPanel');
+  if (!panel) return null;
+  var el = document.getElementById('cwWhat');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'cwWhat';
+    el.className = 'cw-what';
+    var prog = panel.querySelector('.cw-progress');
+    if (prog && prog.parentNode === panel) panel.insertBefore(el, prog.nextSibling);
+    else panel.insertBefore(el, panel.firstChild);
+  }
+  return el;
+}
+
+function updateWhat(step) {
+  var el = ensureWhat();
+  if (el && step) el.innerHTML = 'Step ' + step.num + ': ' + step.goal;
+}
+
+function updateLive(num) {
+  var el = document.getElementById('live-' + num);
+  var step = STEPS.find(function (s) { return s.num === num; });
+  var ta = editors[num];
+  if (!el || !step || !ta) return;
+  var checks = step.checks || [];
+  if (!checks.length) { el.className = 'cw-live'; el.innerHTML = ''; return; }
+  var code = (ta.value || '').toLowerCase();
+  var missing = checks.filter(function (c) { return code.indexOf(String(c).toLowerCase()) === -1; });
+  if (missing.length === 0) {
+    el.className = 'cw-live ok';
+    el.innerHTML = '\u2705 Everything this step needs is in your code. Watch the canvas.';
+  } else {
+    el.className = 'cw-live todo';
+    el.innerHTML = 'Your code still needs: ' + missing.map(function (m) { return '<code>' + m + '</code>'; }).join(', ');
+  }
+}
+
+/* Offered once every step is complete: a plain invitation to remix and keep
+   their own version, pointing at the export buttons already on the page. */
+function offerRemix() {
+  var panel = document.getElementById('canvasPanel');
+  if (!panel || panel.querySelector('.cw-remix')) return;
+  var box = document.createElement('div');
+  box.className = 'cw-remix';
+  box.innerHTML = '<strong>Make it your own.</strong> You built the whole game. Change any number or colour, ' +
+    'then use <em>Download My Game</em> (or the project export) to keep your version. Every build-along can become a different game.';
+  panel.appendChild(box);
+}
+
 /* ── SHARED WORKSHOP ENGINE BRIDGE ──
    When the page loads workshop-engine.js, award the site-wide XP/streak
    system as each build step is completed, and mirror our own progress into
@@ -536,6 +606,11 @@ function renderSteps() {
     editors[step.num] = ta;
 
     if (isActive) {
+      var live = document.createElement('div');
+      live.className = 'cw-live';
+      live.id = 'live-' + step.num;
+      var actions = card.querySelector('.cw-actions');
+      (actions || ta).insertAdjacentElement('afterend', live);
       ta.addEventListener('input', function() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(updateCanvas, 350);
@@ -631,6 +706,8 @@ function updateCanvas() {
   if (CFG.hints && CFG.hints[currentStep] !== undefined) {
     document.getElementById('canvasHint').textContent = CFG.hints[currentStep];
   }
+  updateWhat(step);
+  updateLive(step.num);
 }
 
 function updateProgress() {
@@ -640,6 +717,7 @@ function updateProgress() {
   if (fillEl) fillEl.style.width = (count / STEPS.length * 100) + '%';
   if (textEl) textEl.textContent =
     count === STEPS.length ? 'Complete!' : 'Step ' + (currentStep + 1) + ' / ' + STEPS.length;
+  if (count === STEPS.length) offerRemix();
   wsSyncProgress();
 }
 
@@ -654,7 +732,7 @@ function checkStep(num) {
     codeValid[num] = true;
     fb.className = 'cw-feedback success';
     if (!step.quiz || quizPassed[num]) {
-      fb.textContent = '✓ Step ' + num + ' complete! Your game just leveled up.';
+      fb.textContent = '✓ Step ' + num + ' complete: ' + step.title + ' now works in your game.';
       advanceStep(num);
     } else {
       renderSteps();
@@ -791,7 +869,7 @@ function checkQuiz(num) {
     if (codeValid[num]) {
       var mainFb = document.getElementById('feedback-' + num);
       mainFb.className = 'cw-feedback success';
-      mainFb.textContent = '✓ Step ' + num + ' complete! Your game just leveled up.';
+      mainFb.textContent = '✓ Step ' + num + ' complete: ' + step.title + ' now works in your game.';
       advanceStep(num);
     }
   } else {
@@ -882,6 +960,7 @@ window.CW = {
 };
 
 /* Init */
+ensureLiveStyle();
 loadState();
 renderSteps();
 updateCanvas();

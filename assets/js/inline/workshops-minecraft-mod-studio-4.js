@@ -225,7 +225,7 @@ function renderCmdList() {
     cb.type = 'checkbox'; cb.checked = !!S.cmds[c.k]; cb.style.marginTop = '3px';
     cb.addEventListener('change', function () { S.cmds[c.k] = cb.checked; renderAll(); });
     var span = document.createElement('span');
-    span.innerHTML = '<strong>' + esc(c.label) + '</strong><br><code style="font-size:.78rem;color:var(--charcoal-lt)">/' + esc(c.line()) + '</code>';
+    span.innerHTML = '<strong>' + esc(c.label) + '</strong><br><code style="font-size:.78rem;color:var(--muted)">/' + esc(c.line()) + '</code>';
     l.appendChild(cb); l.appendChild(span);
     box.appendChild(l);
   });

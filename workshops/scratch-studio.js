@@ -128,7 +128,8 @@
       { id: 'catName', label: 'Cat name', type: 'text', value: 'Cat' },
       { id: 'catColor', label: 'Cat colour', type: 'color', value: '#f59e0b' },
       { id: 'speed', label: 'Move speed', value: 10, min: 4, max: 20, step: 1 },
-      { id: 'target', label: 'Score to win', value: 10, min: 1, max: 30, step: 1 }
+      { id: 'target', label: 'Score to win', value: 10, min: 1, max: 30, step: 1 },
+      { id: 'startX', label: 'Cat start x (-200 to 200)', value: 0, min: -200, max: 200, step: 10 }
     ],
     controls: 'Move the cat with the Left and Right arrow keys. Catch as many apples as you can.',
     guide: function (v) {
@@ -150,7 +151,7 @@
           { op: 'control_if', cond: { op: 'sensing_keypressed', inputs: { KEY_OPTION: { menu: 'sensing_keyoptions', field: 'KEY_OPTION', value: 'left arrow' } } }, sub: [{ op: 'motion_changexby', inputs: { DX: -v.speed } }] }
         ] }
       ] });
-      var cat = spriteTarget(catBlocks, v.catName, [costume(catSvg(v.catColor), 'cat', 100, 100)], 0, -110);
+      var cat = spriteTarget(catBlocks, v.catName, [costume(catSvg(v.catColor), 'cat', 100, 100)], (typeof v.startX === 'number' ? v.startX : 0), -110);
       // Apple
       var appleBlocks = new SB();
       appleBlocks.script({ op: 'event_whenflagclicked', top: true, sub: [
@@ -164,7 +165,7 @@
       var apple = spriteTarget(appleBlocks, 'Apple', [costume(appleSvg(), 'apple', 60, 60)], 0, 120);
       return { stage: stage, sprites: [cat, apple], monitors: [monitor(scoreId, 'Score')] };
     },
-    build: function (v) { return { v: v, t: 0, score: 0, win: false, cat: { x: 0, y: -110 }, apple: { x: 0, y: 170 } }; },
+    build: function (v) { return { v: v, t: 0, score: 0, win: false, cat: { x: (typeof v.startX === 'number' ? v.startX : 0), y: -110 }, apple: { x: 0, y: 170 } }; },
     sim: function (s, dt, input) {
       if (s.win) return;
       var v = s.v;
@@ -373,6 +374,73 @@
     var ctrl = $('ssControls'); if (ctrl) ctrl.textContent = t.controls;
     [].forEach.call(document.querySelectorAll('.ss-game-btn'), function (b) { b.classList.toggle('is-active', b.getAttribute('data-game') === id); });
     renderInspector(); renderBlocks(); refreshTree();
+    drawWorld(); syncCodeBox();
+  }
+
+  /* ---------- drag and drop stage + live code ---------- */
+  function drawWorld() {
+    var cv = $('ssWorld'); if (!cv) return;
+    var c = cv.getContext('2d');
+    c.fillStyle = '#dff2ff'; c.fillRect(0, 0, cv.width, cv.height);
+    c.fillStyle = '#7ec850'; c.fillRect(0, cv.height - 22, cv.width, 22);
+    var sx = (state.game === 'catch' && typeof currentValues().startX === 'number') ? currentValues().startX : 0;
+    var px = Math.round((sx + 200) / 400 * (cv.width - 40)) + 20;
+    c.fillStyle = currentValues().catColor || '#f59e0b';
+    c.beginPath(); c.arc(px, 55, 16, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#2b2b2b'; c.beginPath(); c.arc(px - 6, 52, 2.5, 0, Math.PI * 2); c.arc(px + 6, 52, 2.5, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#1b4b1b'; c.font = '12px Verdana'; c.textAlign = 'center'; c.fillText('drag me', px, 88);
+    var msg = $('ssWorldMsg');
+    if (msg) msg.textContent = state.game === 'catch' ? ('Cat starts at x ' + Math.round(sx) + '. Drag it and press Play.') : 'Stage editing is on Catch the Apple. The code box below works on every game.';
+  }
+  function setStartX(sx) {
+    sx = Math.max(-200, Math.min(200, Math.round(sx)));
+    state.values.startX = sx;
+    var inp = $('startX'); if (inp) inp.value = sx;
+    renderBlocks(); drawWorld(); syncCodeBox();
+  }
+  function currentCodeText() {
+    var v = currentValues(), t = TEMPLATES[state.game];
+    return t.guide(v).map(function (g) { return g.sprite + '\n' + g.blocks.map(function (b) { return '  ' + b; }).join('\n'); }).join('\n');
+  }
+  function syncCodeBox() { var ta = $('ssCodeEdit'); if (ta) ta.value = currentCodeText(); }
+  function initLiveBits() {
+    if (!window.JVDSLiveEdit) return;
+    var cv = $('ssWorld'), pal = $('ssWorldPalette');
+    if (pal) window.JVDSLiveEdit.armPalette(pal, function () { drawWorld(); });
+    if (cv) {
+      var dragging = false;
+      function sxFromEvent(e) {
+        var r = cv.getBoundingClientRect();
+        return ((e.clientX - r.left) / r.width) * 400 - 200;
+      }
+      cv.addEventListener('pointerdown', function (e) { dragging = true; try { cv.setPointerCapture(e.pointerId); } catch (x) {} if (state.game === 'catch') setStartX(sxFromEvent(e)); e.preventDefault(); });
+      cv.addEventListener('pointermove', function (e) { if (dragging && state.game === 'catch') setStartX(sxFromEvent(e)); });
+      ['pointerup', 'pointercancel'].forEach(function (ev) { cv.addEventListener(ev, function () { dragging = false; }); });
+      cv.addEventListener('dragover', function (e) { e.preventDefault(); });
+      cv.addEventListener('drop', function (e) { e.preventDefault(); if (state.game === 'catch') setStartX(sxFromEvent(e)); });
+      cv.addEventListener('keydown', function (e) {
+        if (state.game !== 'catch') return;
+        var sx = (typeof currentValues().startX === 'number') ? currentValues().startX : 0, used = true;
+        if (e.key === 'ArrowLeft') sx -= 20; else if (e.key === 'ArrowRight') sx += 20;
+        else if (e.key === 'Home') sx = -200; else if (e.key === 'End') sx = 200; else used = false;
+        if (used) { e.preventDefault(); setStartX(sx); }
+      });
+      drawWorld();
+    }
+    if ($('ssCodeEdit')) {
+      syncCodeBox();
+      window.JVDSLiveEdit.bindCodeEditor({
+        textareaId: 'ssCodeEdit', applyId: 'ssCodeApply', resetId: 'ssCodeReset', statusId: 'ssCodeMsg',
+        getCode: currentCodeText,
+        getFieldMeta: function () {
+          return TEMPLATES[state.game].fields.filter(function (f) { return f.type !== 'text' && f.type !== 'color'; }).map(function (f) { return { key: f.id, min: f.min, max: f.max }; });
+        },
+        getValues: currentValues,
+        setValue: function (k, v) { state.values[k] = v; var inp = $(k); if (inp) inp.value = v; },
+        resetValues: function () { state.values = defaults(state.game); renderInspector(); renderBlocks(); drawWorld(); },
+        refresh: function () { renderInspector(); renderBlocks(); drawWorld(); if (document.querySelector('#panel-play.is-active')) startPlay(); }
+      });
+    }
   }
 
   /* ==========================================================================
@@ -467,6 +535,7 @@
     document.addEventListener('keydown', function (e) { if (state.game === 'quiz' && sim && sim.asking && e.key === 'Backspace') sim.typed = sim.typed.slice(0, -1); });
     var want = (new URLSearchParams(location.search)).get('game');
     switchGame(TEMPLATES[want] ? want : 'catch');
+    initLiveBits();
   }
 
   if (typeof document === 'undefined') { if (typeof module !== 'undefined' && module.exports) module.exports = { md5: md5, makeZip: makeZip, TEMPLATES: TEMPLATES, buildSb3For: function (id, v) { state.game = id; state.values = v || defaults(id); return buildSb3(); } }; return; }

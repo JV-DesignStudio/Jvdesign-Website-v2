@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-my-first-java-game-v2';

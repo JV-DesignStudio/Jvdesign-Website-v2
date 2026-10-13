@@ -62,9 +62,10 @@
       'FALL_SPEED = ' + v.fall_speed,
       'SPAWN_EVERY = ' + v.spawn,
       'LIVES = ' + v.lives,
+      'STARTX = ' + ((typeof v.startX === 'number') ? v.startX : 0.5),
       '',
       'player = pygame.Rect(0, 0, 70, 24)',
-      'player.midbottom = (W // 2, H - 20)',
+      'player.midbottom = (int(W * STARTX), H - 20)',
       'fruits = []',
       'lives = LIVES',
       'score = 0',
@@ -76,7 +77,7 @@
       '    score = 0',
       '    frame = 0',
       '    fruits = []',
-      '    player.midbottom = (W // 2, H - 20)',
+      '    player.midbottom = (int(W * STARTX), H - 20)',
       '',
       'while True:',
       '    for event in pygame.event.get():',
@@ -121,8 +122,9 @@
       'ENEMY_SPEED = ' + v.enemy_speed,
       'SPAWN_EVERY = ' + v.spawn,
       'LIVES = ' + v.lives,
+      'STARTX = ' + ((typeof v.startX === 'number') ? v.startX : 0.5),
       '',
-      'player = pygame.Rect(W // 2, H - 60, 34, 34)',
+      'player = pygame.Rect(int(W * STARTX), H - 60, 34, 34)',
       'hazards = []',
       'lives = LIVES',
       'frame = 0',
@@ -132,7 +134,7 @@
       '    lives = LIVES',
       '    frame = 0',
       '    hazards = []',
-      '    player.x = W // 2',
+      '    player.x = int(W * STARTX)',
       '    player.y = H - 60',
       '',
       'while True:',
@@ -351,7 +353,7 @@
       python: catchPython,
       make: function (v) {
         var s = {};
-        s.reset = function () { s.px = W / 2 - 35; s.py = H - 20 - 24; s.fruits = []; s.frame = 0; s.score = 0; s.lives = v.lives; };
+        s.reset = function () { s.px = clamp(startXPx(v, W) - 35, 0, W - 70); s.py = H - 20 - 24; s.fruits = []; s.frame = 0; s.score = 0; s.lives = v.lives; };
         function hit(f) { return f.x < s.px + 70 && f.x + 28 > s.px && f.y < s.py + 24 && f.y + 28 > s.py; }
         s.update = function (k) {
           if (k.left) s.px -= v.player_speed; if (k.right) s.px += v.player_speed;
@@ -384,7 +386,7 @@
       python: dodgePython,
       make: function (v) {
         var s = {};
-        s.reset = function () { s.px = W / 2; s.py = H - 60; s.haz = []; s.frame = 0; s.lives = v.lives; };
+        s.reset = function () { s.px = clamp(startXPx(v, W) - 17, 0, W - 34); s.py = H - 60; s.haz = []; s.frame = 0; s.lives = v.lives; };
         function hit(h) { return h.x < s.px + 34 && h.x + 30 > s.px && h.y < s.py + 34 && h.y + 30 > s.py; }
         s.update = function (k) {
           if (k.left) s.px -= v.player_speed; if (k.right) s.px += v.player_speed;
@@ -449,7 +451,7 @@
       make: function (v) {
         var s = {};
         s.reset = function () {
-          s.px = W / 2 - 45; s.py = H - 34; s.bx = W / 2; s.by = H / 2; s.vx = v.ball_speed; s.vy = -v.ball_speed;
+          s.px = clamp(startXPx(v, W) - 45, 0, W - 90); s.py = H - 34; s.bx = W / 2; s.by = H / 2; s.vx = v.ball_speed; s.vy = -v.ball_speed;
           s.bricks = [];
           for (var r = 0; r < 4; r++) for (var c = 0; c < 8; c++) s.bricks.push({ x: 40 + c * 70, y: 50 + r * 28 });
         };
@@ -486,7 +488,7 @@
         var s = {};
         var plats = [{ x: 0, y: 440, w: W, h: 40 }, { x: 160, y: 360, w: 120, h: 20 }, { x: 340, y: 300, w: 120, h: 20 }, { x: 480, y: 230, w: 120, h: 20 }];
         s.plats = plats; s.goal = { x: 600, y: 180, w: 24, h: 50 };
-        s.reset = function () { s.px = 40; s.py = 380; s.vy = 0; s.onfloor = false; };
+        s.reset = function () { s.px = clamp(startXPx(v, W) - 15, 0, W - 30); s.py = 380; s.vy = 0; s.onfloor = false; };
         s.update = function (k, p) {
           var vx = 0;
           if (k.left) vx = -v.run_speed; if (k.right) vx = v.run_speed;
@@ -574,7 +576,8 @@
     out.set(eocd, p); return out;
   }
 
-  function defaultsFor(id) { var o = {}, g = GAMES[id]; g.fields.forEach(function (f) { o[f.k] = f.def; }); return o; }
+  function defaultsFor(id) { var o = {}, g = GAMES[id]; g.fields.forEach(function (f) { o[f.k] = f.def; }); if (id === 'catch' || id === 'dodge' || id === 'breakout' || id === 'platformer') { if (o.startX === undefined) o.startX = 0.5; } return o; }
+  function startXPx(v, w) { var f = (v && typeof v.startX === 'number') ? v.startX : 0.5; if (!(f >= 0) || !(f <= 1)) f = 0.5; return Math.round(f * w); }
 
   /* ============================ Node export ============================ */
   if (typeof module !== 'undefined' && module.exports) {
@@ -663,6 +666,88 @@
     renderInspector(); buildSim(); var hud = $('pyHud'); if (hud) hud.textContent = GAMES[id].emoji + ' ' + GAMES[id].name; refreshCode();
   }
 
+  function switchGame(id) {
+    if (!GAMES[id]) id = 'catch';
+    state.game = id; state.values = defaultsFor(id);
+    document.querySelectorAll('.py-game-btn').forEach(function (b) { b.classList.toggle('is-active', b.getAttribute('data-game') === id); });
+    var blurb = $('pyBlurb'); if (blurb) blurb.textContent = GAMES[id].blurb;
+    var ctl = $('pyControls'); if (ctl) ctl.textContent = GAMES[id].controls;
+    renderInspector(); buildSim(); var hud = $('pyHud'); if (hud) hud.textContent = GAMES[id].emoji + ' ' + GAMES[id].name; refreshCode();
+    drawWorld(); syncCodeBox();
+  }
+
+  /* ---------- drag and drop world strip + live code ---------- */
+  function worldSupported() { return state.game === 'catch' || state.game === 'dodge' || state.game === 'breakout' || state.game === 'platformer'; }
+  function drawWorld() {
+    var cv = $('pyWorld'); if (!cv) return;
+    var c = cv.getContext('2d'), sx = (typeof state.values.startX === 'number') ? state.values.startX : 0.5;
+    c.fillStyle = '#0d1117'; c.fillRect(0, 0, cv.width, cv.height);
+    c.strokeStyle = 'rgba(255,255,255,.15)'; c.beginPath(); c.moveTo(0, 90); c.lineTo(cv.width, 90); c.stroke();
+    var bx = Math.round(sx * (cv.width - 60)) + 30;
+    c.fillStyle = '#ffd166'; c.beginPath(); c.arc((bx + 120) % cv.width, 40, 10, 0, Math.PI * 2); c.fill();
+    c.fillStyle = state.values.col_a || '#06d6a0'; c.fillRect(bx - 24, 66, 48, 20);
+    c.fillStyle = '#fff'; c.font = '12px Inter, sans-serif'; c.textAlign = 'center';
+    c.fillText('drag me', bx, 58);
+    var msg = $('pyWorldMsg');
+    if (msg) msg.textContent = worldSupported() ? ('Player starts ' + Math.round(sx * 100) + '% across. Drag it and press Play.') : 'This game uses a fixed arena. The code box below still works.';
+  }
+  function setStartX(fx) {
+    if (!(fx >= 0) || !(fx <= 1)) return;
+    state.values.startX = Math.round(fx * 100) / 100;
+    buildSim(); refreshCode(); drawWorld(); syncCodeBox();
+  }
+  function initWorld() {
+    var cv = $('pyWorld'); if (!cv || !window.JVDSLiveEdit) return;
+    var pal = $('pyWorldPalette');
+    if (pal) window.JVDSLiveEdit.armPalette(pal, function () { drawWorld(); });
+    var dragging = false;
+    function fxFromEvent(e) {
+      var r = cv.getBoundingClientRect();
+      return ((e.clientX - r.left) / r.width);
+    }
+    cv.addEventListener('pointerdown', function (e) { dragging = true; try { cv.setPointerCapture(e.pointerId); } catch (x) {} setStartX(fxFromEvent(e)); e.preventDefault(); });
+    cv.addEventListener('pointermove', function (e) { if (dragging) setStartX(fxFromEvent(e)); });
+    ['pointerup', 'pointercancel'].forEach(function (ev) { cv.addEventListener(ev, function () { dragging = false; }); });
+    cv.addEventListener('dragover', function (e) { e.preventDefault(); });
+    cv.addEventListener('drop', function (e) { e.preventDefault(); setStartX(fxFromEvent(e)); });
+    cv.addEventListener('keydown', function (e) {
+      var sx = (typeof state.values.startX === 'number') ? state.values.startX : 0.5, used = true;
+      if (e.key === 'ArrowLeft') sx -= 0.05;
+      else if (e.key === 'ArrowRight') sx += 0.05;
+      else if (e.key === 'Home') sx = 0;
+      else if (e.key === 'End') sx = 1;
+      else used = false;
+      if (used) { e.preventDefault(); setStartX(Math.min(1, Math.max(0, sx))); }
+    });
+    drawWorld();
+  }
+  function currentCode() {
+    var t = ($('pyTitle') && $('pyTitle').value) || 'my-game';
+    return GAMES[state.game].python(sanitiseTitle(t), state.values);
+  }
+  function syncCodeBox() { var ta = $('pyCodeEdit'); if (ta) ta.value = currentCode(); }
+  function initCode() {
+    if (!window.JVDSLiveEdit || !$('pyCodeEdit')) return;
+    syncCodeBox();
+    window.JVDSLiveEdit.bindCodeEditor({
+      textareaId: 'pyCodeEdit', applyId: 'pyCodeApply', resetId: 'pyCodeReset', statusId: 'pyCodeMsg',
+      getCode: currentCode,
+      getFieldMeta: function () {
+        return GAMES[state.game].fields.map(function (f) {
+          return { key: f.k, min: (f.type === 'number') ? f.min : undefined, max: (f.type === 'number') ? f.max : undefined };
+        }).concat([{ key: 'startx', min: 0, max: 1 }, { key: 'start_x', min: 0, max: 1 }]);
+      },
+      getValues: function () { return state.values; },
+      setValue: function (k, v) {
+        if (k === 'startx' || k === 'start_x' || k === 'startX') { state.values.startX = Math.min(1, Math.max(0, v > 1 ? v / 100 : v)); return; }
+        var f = null;
+        GAMES[state.game].fields.forEach(function (x) { if (x.k === k) f = x; });
+        if (f && f.type === 'number') state.values[k] = v;
+      },
+      resetValues: function () { state.values = defaultsFor(state.game); renderInspector(); buildSim(); drawWorld(); },
+      refresh: function () { renderInspector(); buildSim(); refreshCode(); drawWorld(); }
+    });
+  }
   function boot() {
     state.values = defaultsFor(state.game);
     switchGame(state.game);
@@ -708,6 +793,7 @@
     });
 
     startLoop();
+    initWorld(); initCode();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

@@ -65,6 +65,22 @@ const server=http.createServer((req,res)=>{
     check('studio has four sections',shell.tabs===4,'tabs '+shell.tabs);
     check('export + play canvas present',shell.download&&shell.play);
 
+    // A1511: live code editing + drag and drop world
+    errors.length=0;
+    const le=await page.evaluate(()=>{
+      const ta=document.getElementById('pyCodeEdit'),LE=window.JVDSLiveEdit;
+      const inp=document.querySelector('#pyInspector input[type=number],#pyInspector input[type=range]');
+      const out={helper:!!LE,len:ta?ta.value.length:0,made:null};
+      if(ta&&LE&&inp){ta.value=ta.value+'\n'+inp.id+' = '+(inp.value||'0');document.getElementById('pyCodeApply').click();out.made=document.getElementById('pyCodeMsg').textContent;}
+      return out;
+    });
+    check('liveedit helper + code box populated',le.helper&&le.len>20,'len '+le.len);
+    check('Apply numbers updates the preview',!!le.made&&/updated/i.test(le.made),JSON.stringify(le.made||'').slice(0,50));
+    const wb=await page.evaluate(()=>document.getElementById('pyWorldMsg').textContent);
+    const wa=await page.evaluate(()=>{const cv=document.getElementById('pyWorld'),r=cv.getBoundingClientRect(),at={bubbles:true,cancelable:true,clientX:r.left+r.width*0.85,clientY:r.top+r.height/2,pointerId:1,pointerType:'mouse',buttons:1};['pointerdown','pointermove','pointerup'].forEach(t=>cv.dispatchEvent(new PointerEvent(t,at)));return document.getElementById('pyWorldMsg').textContent;});
+    check('drag places the player in the world',wb!==wa,JSON.stringify({wb,wa}).slice(0,80));
+    check('no errors during liveedit',errors.length===0,errors.slice(0,2).join(' | '));
+
     for(const g of GAMES){
       errors.length=0;
       const info=await page.evaluate((id)=>{

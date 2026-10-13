@@ -76,14 +76,17 @@ var SCRIPTS = [
     k: 'speed', n: 'Speed pad', desc: 'Touching a speed pad gives you a short burst of speed.',
     code: [
       '-- Speed pad: touching it gives a short speed boost',
+      'local BOOST_SPEED = 32',
+      'local NORMAL_SPEED = 16',
+      'local BOOST_TIME = 3',
       'for _, part in ipairs(workspace:GetDescendants()) do',
       '  if part:IsA("BasePart") and part.Name:find("Speed") then',
       '    part.Touched:Connect(function(hit)',
       '      local humanoid = hit.Parent and hit.Parent:FindFirstChildOfClass("Humanoid")',
       '      if humanoid then',
-      '        humanoid.WalkSpeed = 32',
-      '        task.wait(3)',
-      '        humanoid.WalkSpeed = 16',
+      '        humanoid.WalkSpeed = BOOST_SPEED',
+      '        task.wait(BOOST_TIME)',
+      '        humanoid.WalkSpeed = NORMAL_SPEED',
       '      end',
       '    end)',
       '  end',
@@ -304,7 +307,7 @@ function renderScriptList() {
     cb.type = 'checkbox'; cb.checked = !!S.scripts[s.k]; cb.style.marginTop = '3px';
     cb.addEventListener('change', function () { S.scripts[s.k] = cb.checked; renderAll(); });
     var span = document.createElement('span');
-    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--charcoal-lt);font-size:.82rem">' + esc(s.desc) + '</span>';
+    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--muted);font-size:.82rem">' + esc(s.desc) + '</span>';
     l.appendChild(cb); l.appendChild(span);
     box.appendChild(l);
   });
@@ -652,5 +655,41 @@ function init() {
 window.RBXS_buildRbxm = buildRbxm;
 window.RBXS_scriptNames = function () { return scriptFiles().map(function (f) { return f.file; }); };
 
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+/* LiveEdit API: editable constants in generated scripts */
+var EDITABLE = [
+  { key: 'BOOST_SPEED',  min: 16, max: 100, def: 32 },
+  { key: 'NORMAL_SPEED', min: 8,  max: 50,  def: 16 },
+  { key: 'BOOST_TIME',   min: 1,  max: 10,  def: 3 }
+];
+var editVals = {};
+EDITABLE.forEach(function (e) { editVals[e.key] = e.def; });
+
+function applyValsToScripts() {
+  SCRIPTS.forEach(function (s) {
+    var lines = s.code.split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      var m = lines[i].match(/^(\s*local )(BOOST_SPEED|NORMAL_SPEED|BOOST_TIME)(\s*=\s*)(-?\d+(?:\.\d+)?)(.*)/);
+      if (m && editVals.hasOwnProperty(m[2])) {
+        lines[i] = m[1] + m[2] + m[3] + editVals[m[2]] + (m[5] || '');
+      }
+    }
+    s.code = lines.join('\n');
+  });
+}
+
+window.JVDS_MOD_STUDIO = {
+  getScriptCode: function () {
+    var files = scriptFiles();
+    if (!files.length) return '-- Tick a script to write it.';
+    return files.map(function (f) { return '-- Scripts/' + f.file + '\n' + f.code; }).join('\n\n');
+  },
+  getFieldMeta: function () { return EDITABLE; },
+  getValues: function () { var o = {}; EDITABLE.forEach(function (e) { o[e.key] = editVals[e.key]; }); return o; },
+  setValue: function (k, v) { if (editVals.hasOwnProperty(k)) { editVals[k] = v; applyValsToScripts(); } },
+  resetValues: function () { EDITABLE.forEach(function (e) { editVals[e.key] = e.def; }); applyValsToScripts(); },
+  refresh: function () { renderScriptPreview(); renderFiles(); renderExport(); persist(); },
+  paletteEl: null
+};
+
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function () { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('rbPalette'); }); } else { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('rbPalette'); }
 })();

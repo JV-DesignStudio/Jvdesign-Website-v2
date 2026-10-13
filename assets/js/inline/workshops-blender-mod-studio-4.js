@@ -285,7 +285,7 @@ function renderScriptList() {
     cb.type = 'checkbox'; cb.checked = !!S.scripts[s.k]; cb.style.marginTop = '3px';
     cb.addEventListener('change', function () { S.scripts[s.k] = cb.checked; renderAll(); });
     var span = document.createElement('span');
-    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--charcoal-lt);font-size:.82rem">' + esc(s.desc) + '</span>';
+    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--muted);font-size:.82rem">' + esc(s.desc) + '</span>';
     l.appendChild(cb); l.appendChild(span);
     box.appendChild(l);
   });
@@ -616,5 +616,42 @@ function init() {
 window.BLD_buildScene = buildScenePy;
 window.BLD_methodNames = function () { return scriptFiles().map(function (f) { return f.file; }); };
 
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+/* LiveEdit API: editable constants in generated scripts */
+var EDITABLE = [
+  { key: 'energy',       min: 1,   max: 20,   def: 3 },
+  { key: 'resolution_x', min: 320, max: 3840, def: 1280 },
+  { key: 'resolution_y', min: 240, max: 2160, def: 720 },
+  { key: 'frame',        min: 10,  max: 300,  def: 60 }
+];
+var editVals = {};
+EDITABLE.forEach(function (e) { editVals[e.key] = e.def; });
+
+function applyValsToScripts() {
+  SCRIPTS.forEach(function (s) {
+    var lines = s.code.split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      var m = lines[i].match(/^(.*\b)(energy|resolution_x|resolution_y|frame)(\s*=\s*)(-?\d+(?:\.\d+)?)(.*)/);
+      if (m && editVals.hasOwnProperty(m[2])) {
+        lines[i] = m[1] + m[2] + m[3] + editVals[m[2]] + (m[5] || '');
+      }
+    }
+    s.code = lines.join('\n');
+  });
+}
+
+window.JVDS_MOD_STUDIO = {
+  getScriptCode: function () {
+    var files = scriptFiles();
+    if (!files.length) return '# Tick a method to write it.';
+    return files.map(function (f) { return '# ' + f.file + '\n' + f.code; }).join('\n\n');
+  },
+  getFieldMeta: function () { return EDITABLE; },
+  getValues: function () { var o = {}; EDITABLE.forEach(function (e) { o[e.key] = editVals[e.key]; }); return o; },
+  setValue: function (k, v) { if (editVals.hasOwnProperty(k)) { editVals[k] = v; applyValsToScripts(); } },
+  resetValues: function () { EDITABLE.forEach(function (e) { editVals[e.key] = e.def; }); applyValsToScripts(); },
+  refresh: function () { renderScriptPreview(); renderFiles(); renderExport(); persist(); },
+  paletteEl: null
+};
+
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function () { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('gmPalette'); }); } else { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('gmPalette'); }
 })();

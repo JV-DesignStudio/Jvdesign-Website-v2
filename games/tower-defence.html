@@ -120,9 +120,9 @@ body.large-ui .hud-btn{font-size:13px;padding:7px 11px}
   </div>
 
   <div id="speed-controls">
-    <button class="hud-btn active" aria-label="Normal speed" onclick="HG.setSpeed(1)">1×</button>
-    <button class="hud-btn" aria-label="Double speed" onclick="HG.setSpeed(2)">2×</button>
-    <button class="hud-btn" aria-label="Triple speed" onclick="HG.setSpeed(3)">3×</button>
+    <button class="hud-btn active" aria-label="Normal speed" data-on="HG.setSpeed" data-on-arg="1" data-on-num data-on-plain>1×</button>
+    <button class="hud-btn" aria-label="Double speed" data-on="HG.setSpeed" data-on-arg="2" data-on-num data-on-plain>2×</button>
+    <button class="hud-btn" aria-label="Triple speed" data-on="HG.setSpeed" data-on-arg="3" data-on-num data-on-plain>3×</button>
     <button class="hud-btn" id="seat-btn" aria-label="Upgrade the Seat" data-on="HG.upgradeCore" data-on-plain>⬆</button>
     <button class="hud-btn" aria-label="Open the Chronicle" data-on="HG.showChronicle" data-on-plain>📖</button>
   </div>
@@ -184,8 +184,8 @@ body.large-ui .hud-btn{font-size:13px;padding:7px 11px}
 <div class="overlay" id="settings-overlay" style="display:none">
   <h2 class="ov-title">Settings</h2>
   <div style="display:flex;flex-direction:column;gap:12px;margin:16px 0">
-    <label style="font-size:13px;color:#c8bce0">Music <button class="hud-btn" onclick="HG.toggleMusic(this)">On</button></label>
-    <label style="font-size:13px;color:#c8bce0">Sound <button class="hud-btn" onclick="HG.toggleSfx(this)">On</button></label>
+    <label style="font-size:13px;color:#c8bce0">Music <button class="hud-btn" data-on="HG.toggleMusic">On</button></label>
+    <label style="font-size:13px;color:#c8bce0">Sound <button class="hud-btn" data-on="HG.toggleSfx">On</button></label>
     <label style="font-size:13px;color:#c8bce0">Colour-blind bars <button class="hud-btn" onclick="HG.toggleA11y('colourBlind',this)">Off</button></label>
     <label style="font-size:13px;color:#c8bce0">Large UI <button class="hud-btn" onclick="HG.toggleA11y('largeUI',this)">Off</button></label>
   </div>
@@ -1570,7 +1570,7 @@ function buildBarHTML() {
   for (const type of BUILD_ORDER) {
     const def = BUILDINGS[type];
     const cls = (armed===type?' armed':'') + (gold<def.cost?' cant':'');
-    html += `<div class="build-btn ${cls}" role="button" aria-label="${def.name}, costs ${def.cost} gold" onclick="HG.arm('${type}')"><span class="be">${def.tiers[0].emoji}</span><span class="bn">${def.name}</span><span class="bc">🪙${def.cost}</span></div>`;
+    html += `<div class="build-btn ${cls}" role="button" aria-label="${def.name}, costs ${def.cost} gold" data-on="HG.arm" data-on-arg="${type}" data-on-plain><span class="be">${def.tiers[0].emoji}</span><span class="bn">${def.name}</span><span class="bc">🪙${def.cost}</span></div>`;
   }
   return html;
 }
@@ -1606,8 +1606,8 @@ function updatePop() {
   } else if (popBuilding.type === 'barracks') {
     html += `<button class="hud-btn" data-on="HG.toggleRole" data-on-plain>Role: ${popBuilding.role === 'archer' ? '🏹 Archer' : '⚔️ Melee'}</button> `;
   } else if (popBuilding.type === 'market') {
-    html += `<button class="hud-btn" onclick="HG.trade('buy')"${(gold < st.buy || food + TRADE_UNIT > foodCap()) ? ' disabled' : ''}>Buy ${TRADE_UNIT}🌾 🪙${st.buy}</button> `;
-    html += `<button class="hud-btn" onclick="HG.trade('sell')"${food < TRADE_UNIT ? ' disabled' : ''}>Sell ${TRADE_UNIT}🌾 +🪙${st.sell}</button> `;
+    html += `<button class="hud-btn" data-on="HG.trade" data-on-arg="buy" data-on-plain${(gold < st.buy || food + TRADE_UNIT > foodCap()) ? ' disabled' : ''}>Buy ${TRADE_UNIT}🌾 🪙${st.buy}</button> `;
+    html += `<button class="hud-btn" data-on="HG.trade" data-on-arg="sell" data-on-plain${food < TRADE_UNIT ? ' disabled' : ''}>Sell ${TRADE_UNIT}🌾 +🪙${st.sell}</button> `;
   }
   if (!under) {
     if (!maxed) html += `<button class="hud-btn" data-on="HG.upgradeSelected" data-on-plain${gold<cost?' disabled':''}>⬆ Upgrade 🪙${cost}</button> `;
@@ -1804,7 +1804,7 @@ function renderChronicle() {
   const unlocked = MILESTONES.filter(m => hasMilestone(m.id)).length;
   let html = `<div class="chronicle-sec"><h3>Kingdom</h3><p style="font-size:12px;color:#b8a8d8;text-align:left">Best night: <b style="color:#ffd85c">${meta.bestNight || 0}</b> · Milestones: <b style="color:#ffd85c">${unlocked}/${MILESTONES.length}</b> · Runs: <b style="color:#ffd85c">${meta.games || 0}</b>${(meta.daily[dateKey()] ? ' · Today: <b style="color:#9fe0c0">night ' + meta.daily[dateKey()] + '</b>' : '')}</p></div>`;
   html += '<div class="chronicle-sec"><h3>Banner</h3><div class="banner-row">';
-  for (const b of BANNERS) html += `<div class="banner-opt${meta.banner === b ? ' on' : ''}" onclick="HG.setBanner('${b}')">${b}</div>`;
+  for (const b of BANNERS) html += `<div class="banner-opt${meta.banner === b ? ' on' : ''}" data-on="HG.setBanner" data-on-arg="${b}" data-on-plain>${b}</div>`;
   html += '</div></div>';
   html += '<div class="chronicle-sec"><h3>Milestones</h3><div class="ms-grid">';
   for (const m of MILESTONES) {
@@ -1841,7 +1841,7 @@ function refreshTitle() {
   ERAS.forEach((e,i) => { const cls = i < core.level ? 'done' : i === core.level ? 'on' : ''; html += `<span class="era-pip ${cls}">${e.name}</span>`; });
   track.innerHTML = html;
   const br = document.getElementById('biome-row');
-  br.innerHTML = BIOME_ORDER.map(id => { const b = BIOMES[id]; return `<div class="banner-opt${meta.biome === id ? ' on' : ''}" title="${b.name}" aria-label="Biome: ${b.name}" onclick="HG.setBiome('${id}')">${b.emoji}</div>`; }).join('');
+  br.innerHTML = BIOME_ORDER.map(id => { const b = BIOMES[id]; return `<div class="banner-opt${meta.biome === id ? ' on' : ''}" title="${b.name}" aria-label="Biome: ${b.name}" data-on="HG.setBiome" data-on-arg="${id}" data-on-plain>${b.emoji}</div>`; }).join('');
   const sv = rawLoad(WORLD_KEY);
   document.getElementById('btn-continue').style.display = sv ? 'inline-block' : 'none';
   document.getElementById('btn-new').textContent = sv ? 'New Kingdom' : 'Begin';
@@ -1878,5 +1878,6 @@ window.HG = {
 
 </script>
 <script defer src="../cookie-consent.js"></script><script defer src="../mascots.js"></script><script defer src="../game-shell.js"></script>
+<script defer src="/assets/js/ui-delegate.js"></script>
 </body>
 </html>

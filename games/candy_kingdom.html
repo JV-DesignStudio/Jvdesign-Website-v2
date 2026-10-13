@@ -176,7 +176,7 @@ function render(){
  const result=document.getElementById('result');
  result.className='result'+(state.done?' show':'');
  result.innerHTML=state.done
-  ?'<b>Final score '+state.score+'</b><br>'+SCENE[state.ending]+'<br>Stars: '+state.stars+'/3 <button class="secondary" onclick="restart()">Play Again</button>'
+  ?'<b>Final score '+state.score+'</b><br>'+SCENE[state.ending]+'<br>Stars: '+state.stars+'/3 <button class="secondary" data-on="restart" data-on-plain>Play Again</button>'
   :'';
  document.getElementById('log').innerHTML=state.log.map(x=>'<p>'+x+'</p>').join('');
  write();
@@ -187,24 +187,7 @@ render();
 window.addEventListener('beforeunload',()=>{gameSystem.recordGamePlay(Date.now());gameSystem.saveState()});
 </script>
 <script defer src="../cookie-consent.js"></script>
-<script>
-(function(){
-  if(!window.AudioEffects)return;
-  var a=new AudioEffects(0.5);
-  try{if(localStorage.getItem('soundEnabled')==='false')a.setMasterVolume(0);}catch(e){}
-  var armed=false;
-  function arm(){armed=true;}
-  window.addEventListener('pointerdown',arm,{passive:true});
-  window.addEventListener('keydown',arm);
-  window.JVDSAudio={armed:function(){return armed},tap:function(){if(armed)try{a.playTap()}catch(e){}},success:function(){if(armed)try{a.playSuccess()}catch(e){}},error:function(){if(armed)try{a.playError()}catch(e){}},pop:function(){if(armed)try{a.playPop()}catch(e){}}};
-  if(window.GameSystem&&GameSystem.prototype&&!GameSystem.prototype.__jvdsAudioPatched){
-    GameSystem.prototype.__jvdsAudioPatched=true;
-    var orig=GameSystem.prototype.addScore;
-    GameSystem.prototype.addScore=function(){try{window.JVDSAudio.success()}catch(e){}return orig.apply(this,arguments)};
-  }
-  document.addEventListener('click',function(e){if(armed&&e.target.closest('button,.btn,a')){try{a.playTap()}catch(err){}}},true);
-})();
-</script>
+<script defer src="/assets/js/audio-init.js"></script>
 <script defer src="../game-shell.js"></script>
 </body>
 </html>

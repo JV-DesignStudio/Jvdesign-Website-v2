@@ -47,7 +47,7 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   const r = await page.evaluate(async ()=>{
     const fn = typeof exportCurrentJson === 'function';
     const buildFn = typeof _buildSaveData === 'function';
-    const btn = !!document.querySelector('button[onclick="exportCurrentJson()"]');
+    const btn = !!document.querySelector('button[onclick="exportCurrentJson()"], button[data-on="exportCurrentJson"]');
     let text = null;
     const realCreate = URL.createObjectURL, realRevoke = URL.revokeObjectURL, realClick = HTMLAnchorElement.prototype.click;
     URL.createObjectURL = (b)=>{ try { b.text().then(t=>{ text = t; }); } catch(e){} return 'blob:test'; };

@@ -59,11 +59,11 @@ const TEMPLATES = ['robot','creature','house','car','tower','tree','sword','ches
         metaCsp: document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.content || '',
         mobToolbar: document.querySelectorAll('.mob-toolbar .mob-tab').length,
         deskButtons: document.querySelectorAll('.template-grid .tmpl-btn').length,
-        mobButtons: document.querySelectorAll('.mob-quick-grid [onclick^="quickBuild("]').length,
+        mobButtons: document.querySelectorAll('.mob-quick-grid [onclick^="quickBuild("], .mob-quick-grid [data-on="quickBuild"]').length,
         engineStatus: (document.getElementById('engineStatus')?.textContent || '').trim(),
         exportModal: !!document.getElementById('exportPreviewModal'),
-        photoExport: !!document.querySelector('[onclick*="exportScreenshot"]'),
-        wiredTypes: Array.from(document.querySelectorAll('[onclick^="quickBuild("]')).map(b=>b.getAttribute('onclick').match(/quickBuild\('([a-z]+)'\)/)?.[1]).filter(Boolean)
+        photoExport: !!document.querySelector('[onclick*="exportScreenshot"], [data-on="exportScreenshot"]'),
+        wiredTypes: Array.from(document.querySelectorAll('[onclick^="quickBuild("], [data-on="quickBuild"]')).map(b=>{ const o=b.getAttribute('onclick'); return o ? o.match(/quickBuild\('([a-z]+)'\)/)?.[1] : b.getAttribute('data-on-arg'); }).filter(Boolean)
       }));
       check(vp.name+': title is BuildLab', /BuildLab/i.test(shell.title), shell.title);
       check(vp.name+': single skip link', shell.skipLinks === 1, String(shell.skipLinks));

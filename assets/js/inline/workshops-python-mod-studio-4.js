@@ -309,7 +309,7 @@ function renderFeatureList() {
     cb.type = 'checkbox'; cb.checked = !!S.features[s.k]; cb.style.marginTop = '3px';
     cb.addEventListener('change', function () { S.features[s.k] = cb.checked; renderAll(); });
     var span = document.createElement('span');
-    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--charcoal-lt);font-size:.82rem">' + esc(s.desc) + '</span>';
+    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--muted);font-size:.82rem">' + esc(s.desc) + '</span>';
     l.appendChild(cb); l.appendChild(span);
     box.appendChild(l);
   });
@@ -653,5 +653,47 @@ function init() {
 window.PMS_buildMain = buildMain;
 window.PMS_featureNames = function () { return featureFiles().map(function (f) { return f.key; }); };
 
-if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+/* LiveEdit API: editable constants in generated code */
+var EDITABLE = [
+  { key: 'speed',   min: 1,   max: 20,   def: 5 },
+  { key: 'gravity', min: 0.1, max: 3,    def: 0.8 },
+  { key: 'jump',    min: -30, max: -4,   def: -14 }
+];
+var editVals = {};
+EDITABLE.forEach(function (e) { editVals[e.key] = e.def; });
+
+/* patch generated code so editable values take effect */
+var _origBuildMain = buildMain;
+buildMain = function () {
+  var src = _origBuildMain();
+  var lines = src.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    var m;
+    m = lines[i].match(/^(speed = )(-?[\d.]+)$/);
+    if (m) { lines[i] = m[1] + editVals.speed; continue; }
+    m = lines[i].match(/^(gravity = )(-?[\d.]+)$/);
+    if (m) { lines[i] = m[1] + editVals.gravity; continue; }
+    m = lines[i].match(/^(\s*vy = )(-?[\d.]+)$/);
+    if (m) { lines[i] = m[1] + editVals.jump; continue; }
+  }
+  return lines.join('\n');
+};
+
+function applyValsToScripts() {
+  /* values are applied dynamically via the wrapped buildMain */
+}
+
+window.JVDS_MOD_STUDIO = {
+  getScriptCode: function () {
+    return buildMain();
+  },
+  getFieldMeta: function () { return EDITABLE; },
+  getValues: function () { var o = {}; EDITABLE.forEach(function (e) { o[e.key] = editVals[e.key]; }); return o; },
+  setValue: function (k, v) { if (editVals.hasOwnProperty(k)) { editVals[k] = v; applyValsToScripts(); } },
+  resetValues: function () { EDITABLE.forEach(function (e) { editVals[e.key] = e.def; }); applyValsToScripts(); },
+  refresh: function () { renderCodePreview(); renderFiles(); renderExport(); persist(); },
+  paletteEl: null
+};
+
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function () { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('pyPalette'); }); } else { init(); window.JVDS_MOD_STUDIO.paletteEl = document.getElementById('pyPalette'); }
 })();

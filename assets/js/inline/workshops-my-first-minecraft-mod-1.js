@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-my-first-minecraft-mod-v2';
