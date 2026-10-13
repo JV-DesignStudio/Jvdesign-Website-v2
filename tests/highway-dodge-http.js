@@ -133,6 +133,36 @@ async function mobile(browser, base) {
   await page.close();
 }
 
+// Regression: entering the fullscreen game shell used to let the canvas grow
+// unbounded (its bitmap size fed back into its own flex layout), and lane
+// positions changed without re-anchoring the player, stranding it off the road.
+async function desktopFullscreen(browser, base) {
+  for (const [w, h] of [[1440, 900], [1920, 1080]]) {
+    const page = await browser.newPage();
+    const errors = watchErrors(page);
+    await page.setViewport({ width: w, height: h });
+    await page.goto(base + '/games/highway-dodge.html', { waitUntil: 'load', timeout: 30000 });
+    await page.evaluate(() => { if (window.JVDSGameShell) window.JVDSGameShell.enter(); });
+    await page.evaluate(() => document.getElementById('playBtn').click());
+    await sleep(700);
+    const s = await page.evaluate(() => {
+      const r = document.getElementById('game').getBoundingClientRect();
+      const g = window.__highway;
+      return {
+        cssH: Math.round(r.height), vh: window.innerHeight,
+        playerX: g.playerX, laneW: g.laneW, roadL: g.roadL, roadR: g.roadR
+      };
+    });
+    check(`fullscreen ${w}x${h}: canvas height fits the viewport`,
+      s.cssH <= s.vh && s.cssH > 120, `cssH=${s.cssH} vh=${s.vh}`);
+    check(`fullscreen ${w}x${h}: player sits on the road`,
+      s.playerX > s.roadL && s.playerX < s.roadR,
+      `x=${Math.round(s.playerX)} road=${Math.round(s.roadL)}-${Math.round(s.roadR)}`);
+    check(`fullscreen ${w}x${h}: no page errors`, errors.length === 0, errors.join(' | '));
+    await page.close();
+  }
+}
+
 async function noOverlap(browser, base) {
   const page = await browser.newPage();
   const errors = watchErrors(page);
@@ -184,6 +214,7 @@ async function noOverlap(browser, base) {
 (async () => {
   await withServer(async ({ base, browser }) => {
     await desktop(browser, base);
+    await desktopFullscreen(browser, base);
     await mobile(browser, base);
     await noOverlap(browser, base);
   });

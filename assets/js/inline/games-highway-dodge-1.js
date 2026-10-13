@@ -20,6 +20,10 @@ const storyRun = window.__storyRun = window.StoryRun ? new StoryRun({
 let W, H, dpr;
 const LANE_COUNT = 3;
 let laneW, roadL, roadR;
+// 1 unit = the lane width of the original phone design (78 device px at dpr 1).
+// Small details (lights, road markings, pickups) scale by this so the game
+// looks the same at every screen size instead of only when the lane is 78px.
+let U = 1;
 
 let running = false, dead = false, paused = false;
 let player, cars, pickups, particles, roadLines;
@@ -48,7 +52,11 @@ window.__highway = {
   },
   get milestone() { return milestones ? milestones.next() : null; },
   get shake() { return shake ? shake.amount : 0; },
-  get shakeHits() { return shake ? shake.hits : 0; }
+  get shakeHits() { return shake ? shake.hits : 0; },
+  get playerX() { return player ? player.x : -1; },
+  get laneW() { return laneW; },
+  get roadL() { return roadL; },
+  get roadR() { return roadR; }
 };
 
 // A952 showcase polish: score goals that celebrate as you hit them, and a
@@ -64,15 +72,35 @@ const milestones = window.JVDSShowcase ? new JVDSShowcase.Milestones(MISSION, fu
 const shake = window.JVDSShowcase ? new JVDSShowcase.Shake(14) : null;
 let dustTimer = 0;
 
+let fitW = 0, fitH = 0;
+
+// Lane x positions move whenever the canvas is resized (e.g. entering
+// fullscreen after Start), so re-anchor the player, cars and pickups onto their
+// lanes. Without this the player is left behind off the new road.
+function remapLanes() {
+  if (!player) return;
+  player.x = player.targetX = laneX(player.lane);
+  cars.forEach(c => { c.x = laneX(c.lane); });
+  pickups.forEach(p => { p.x = laneX(p.lane); });
+}
+
 function fit() {
   const r = C.getBoundingClientRect();
   dpr = Math.min(devicePixelRatio || 1, 2);
-  W = Math.round(r.width * dpr);
-  H = Math.round(r.height * dpr);
+  const nW = Math.round(r.width * dpr), nH = Math.round(r.height * dpr);
+  if (nW === fitW && nH === fitH) return;   // no size change this frame
+  const resized = fitW !== 0;
+  fitW = nW; fitH = nH;
+  W = nW; H = nH;
   C.width = W; C.height = H;
-  laneW = W / (LANE_COUNT + 2);
-  roadL = laneW;
-  roadR = W - laneW;
+  // Size a lane from the width, but never let the road balloon on wide or short
+  // screens: cap the lane by the canvas height so roughly the same number of car
+  // lengths stays visible everywhere, then centre the road.
+  laneW = Math.min(W / (LANE_COUNT + 2), H / 7.5);
+  U = laneW / 78;
+  roadL = (W - laneW * LANE_COUNT) / 2;
+  roadR = roadL + laneW * LANE_COUNT;
+  if (resized) remapLanes();
 }
 
 function laneX(lane) { return roadL + laneW / 2 + lane * laneW; }
@@ -118,7 +146,7 @@ function addTraffic() {
 function makePickup() {
   const lane = Math.floor(Math.random() * LANE_COUNT);
   const type = Math.random() < .3 ? 'shield' : 'fuel';
-  return { x: laneX(lane), y: -40, lane, type, r: 18 * dpr / 2, bob: 0 };
+  return { x: laneX(lane), y: -40 * U, lane, type, r: laneW * .26, bob: 0 };
 }
 
 function reset() {
@@ -297,7 +325,7 @@ function update(dt) {
     p.y += speed * dt * .7;
     p.bob += dt * 5;
     if (p.y > H + 40) { pickups.splice(i, 1); continue; }
-    if (Math.abs(player.x - p.x) < pHalfW + 20 && Math.abs((pTop + pBot) / 2 - p.y) < player.h / 2 + 20) {
+    if (Math.abs(player.x - p.x) < pHalfW + p.r && Math.abs((pTop + pBot) / 2 - p.y) < player.h / 2 + p.r) {
       if (p.type === 'shield') {
         player.shield = 1;
         toast('Shield!');
@@ -332,14 +360,17 @@ function drawRoad() {
   ctx.fillRect(0, 0, roadL, H);
   ctx.fillRect(roadR, 0, W - roadR, H);
 
+  const edge = Math.max(2, laneW * .04);
   ctx.fillStyle = '#f59e0b';
-  ctx.fillRect(roadL - 3, 0, 3, H);
-  ctx.fillRect(roadR, 0, 3, H);
+  ctx.fillRect(roadL - edge, 0, edge, H);
+  ctx.fillRect(roadR, 0, edge, H);
 
   ctx.fillStyle = 'rgba(255,255,255,.35)';
+  const dashW = Math.max(2, laneW * .05);
+  const dashH = laneW * .4;
   roadLines.forEach(l => {
     for (let i = 1; i < LANE_COUNT; i++) {
-      ctx.fillRect(roadL + i * laneW - 2, l.y, 4, 30);
+      ctx.fillRect(roadL + i * laneW - dashW / 2, l.y, dashW, dashH);
     }
   });
 }
@@ -351,23 +382,23 @@ function drawCar(c) {
 
   ctx.fillStyle = c.color;
   ctx.beginPath();
-  ctx.roundRect(-hw, -hh, c.w, c.h, 6);
+  ctx.roundRect(-hw, -hh, c.w, c.h, 6 * U);
   ctx.fill();
 
   ctx.fillStyle = 'rgba(0,0,0,.3)';
-  ctx.fillRect(-hw + 4, -hh + 4, c.w - 8, c.h * .25);
+  ctx.fillRect(-hw + 4 * U, -hh + 4 * U, c.w - 8 * U, c.h * .25);
 
   ctx.fillStyle = '#fbbf24';
-  ctx.fillRect(-hw + 2, hh - 8, 8, 6);
-  ctx.fillRect(hw - 10, hh - 8, 8, 6);
+  ctx.fillRect(-hw + 2 * U, hh - 8 * U, 8 * U, 6 * U);
+  ctx.fillRect(hw - 10 * U, hh - 8 * U, 8 * U, 6 * U);
 
   ctx.fillStyle = '#ef4444';
-  ctx.fillRect(-hw + 2, -hh + 2, 8, 6);
-  ctx.fillRect(hw - 10, -hh + 2, 8, 6);
+  ctx.fillRect(-hw + 2 * U, -hh + 2 * U, 8 * U, 6 * U);
+  ctx.fillRect(hw - 10 * U, -hh + 2 * U, 8 * U, 6 * U);
 
   if (c.isTruck) {
     ctx.fillStyle = 'rgba(0,0,0,.15)';
-    ctx.fillRect(-hw + 3, -hh + c.h * .35, c.w - 6, c.h * .5);
+    ctx.fillRect(-hw + 3 * U, -hh + c.h * .35, c.w - 6 * U, c.h * .5);
   }
   ctx.restore();
 }
@@ -380,7 +411,7 @@ function drawPlayer() {
 
   if (player.shield > 0) {
     ctx.strokeStyle = 'rgba(34,211,238,.6)';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3 * U;
     ctx.beginPath();
     ctx.arc(0, 0, player.w * .8, 0, Math.PI * 2);
     ctx.stroke();
@@ -389,35 +420,35 @@ function drawPlayer() {
   const hw = player.w / 2, hh = player.h / 2;
 
   ctx.shadowColor = '#f59e0b';
-  ctx.shadowBlur = 18;
+  ctx.shadowBlur = 18 * U;
   ctx.fillStyle = '#f59e0b';
   ctx.beginPath();
-  ctx.roundRect(-hw, -hh, player.w, player.h, 8);
+  ctx.roundRect(-hw, -hh, player.w, player.h, 8 * U);
   ctx.fill();
   ctx.shadowBlur = 0;
 
   ctx.fillStyle = '#fbbf24';
-  ctx.fillRect(-hw + 3, -hh + player.h * .15, player.w - 6, player.h * .28);
+  ctx.fillRect(-hw + 3 * U, -hh + player.h * .15, player.w - 6 * U, player.h * .28);
 
   ctx.fillStyle = 'rgba(255,255,255,.5)';
-  ctx.fillRect(-hw + 4, -hh + 3, player.w - 8, player.h * .12);
+  ctx.fillRect(-hw + 4 * U, -hh + 3 * U, player.w - 8 * U, player.h * .12);
 
   ctx.fillStyle = '#ef4444';
-  ctx.fillRect(-hw + 3, hh - 8, 10, 6);
-  ctx.fillRect(hw - 13, hh - 8, 10, 6);
+  ctx.fillRect(-hw + 3 * U, hh - 8 * U, 10 * U, 6 * U);
+  ctx.fillRect(hw - 13 * U, hh - 8 * U, 10 * U, 6 * U);
 
-  const flame = 8 + Math.sin(dist * .05) * 5;
+  const flame = (8 + Math.sin(dist * .05) * 5) * U;
   ctx.fillStyle = 'rgba(251,146,60,.7)';
   ctx.beginPath();
-  ctx.moveTo(-hw + 8, hh);
-  ctx.lineTo(-hw + 4, hh + flame);
-  ctx.lineTo(-hw + 16, hh);
+  ctx.moveTo(-hw + 8 * U, hh);
+  ctx.lineTo(-hw + 4 * U, hh + flame);
+  ctx.lineTo(-hw + 16 * U, hh);
   ctx.closePath();
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(hw - 8, hh);
-  ctx.lineTo(hw - 4, hh + flame);
-  ctx.lineTo(hw - 16, hh);
+  ctx.moveTo(hw - 8 * U, hh);
+  ctx.lineTo(hw - 4 * U, hh + flame);
+  ctx.lineTo(hw - 16 * U, hh);
   ctx.closePath();
   ctx.fill();
 
@@ -426,16 +457,16 @@ function drawPlayer() {
 
 function drawPickup(p) {
   ctx.save();
-  ctx.translate(p.x, p.y + Math.sin(p.bob) * 4);
+  ctx.translate(p.x, p.y + Math.sin(p.bob) * 4 * U);
   ctx.fillStyle = p.type === 'shield' ? '#22d3ee' : '#22c55e';
   ctx.shadowColor = ctx.fillStyle;
-  ctx.shadowBlur = 14;
+  ctx.shadowBlur = 14 * U;
   ctx.beginPath();
-  ctx.arc(0, 0, 16, 0, Math.PI * 2);
+  ctx.arc(0, 0, 16 * U, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 16px system-ui';
+  ctx.font = 'bold ' + (16 * U) + 'px system-ui';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(p.type === 'shield' ? '🛡' : '⛽', 0, 1);
@@ -472,7 +503,7 @@ function draw() {
 
   if (combo > 1) {
     ctx.fillStyle = 'rgba(251,191,36,.8)';
-    ctx.font = 'bold 20px system-ui';
+    ctx.font = 'bold ' + (20 * U) + 'px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText('COMBO x' + combo, W / 2, H * .12);
   }
