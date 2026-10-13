@@ -241,9 +241,9 @@ function importStarterDesign(){
     <div class="hdr-right">
       <a href="../pages/workshop.html" class="back-link">← Workshop</a><a href="../pages/3d-builders.html" class="back-link" style="margin-left:8px">🏗️ All Builders</a>
       <button class="quick-btn" onclick="randomBuild()" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764">🎲 Random</button>
-      <button class="quick-btn" onclick="exportPNG()" style="background:linear-gradient(135deg,#0891b2,#155e75);box-shadow:0 3px 0 #164e63">📷 PNG</button>
-      <button class="quick-btn" onclick="openSaveModal()" style="background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03">💾 Save</button>
-      <button class="quick-btn" onclick="openLoadModal()" style="background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006">📂 Load</button>
+      <button class="quick-btn" data-on="exportPNG" data-on-plain style="background:linear-gradient(135deg,#0891b2,#155e75);box-shadow:0 3px 0 #164e63">📷 PNG</button>
+      <button class="quick-btn" data-on="openSaveModal" data-on-plain style="background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03">💾 Save</button>
+      <button class="quick-btn" data-on="openLoadModal" data-on-plain style="background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006">📂 Load</button>
       <button class="quick-btn" onclick="quickBuild()">⚡ Quick Build</button>
     </div>
   </header>
@@ -1545,7 +1545,7 @@ const STEPS = [
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-dk);letter-spacing:.1em;margin-bottom:6px">${P.standName || 'YOUR STAND'}</div>
       <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">${P.standWidth}×${P.standDepth}×${P.standHeight}mm · ${P.angle}° · ${P.standStyle}</div>
       <div style="display:flex;gap:6px;justify-content:center;margin-top:10px">
-        <button class="run-btn" style="font-size:.78rem;padding:8px;background:#0891b2;box-shadow:0 3px 0 #155e75" onclick="exportPNG()">📷 PNG</button>
+        <button class="run-btn" style="font-size:.78rem;padding:8px;background:#0891b2;box-shadow:0 3px 0 #155e75" data-on="exportPNG" data-on-plain>📷 PNG</button>
       </div>
     </div>`;
   },
@@ -1757,7 +1757,7 @@ function openSaveModal() {
   const modal = document.getElementById('modalOverlay');
   const content = document.getElementById('modalContent');
   if (!modal || !content) return;
-  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-dk);margin-bottom:12px">Save Stand</h2><input type="text" id="standSaveName" placeholder="Name your stand..." style="width:100%;padding:8px 12px;background:var(--bg3);border:1px solid rgba(34,197,94,.3);border-radius:7px;color:var(--acc-dk);font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.06em;outline:none;margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Cancel</button><button onclick="doStandSave()" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">Save</button></div>`;
+  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-dk);margin-bottom:12px">Save Stand</h2><input type="text" id="standSaveName" placeholder="Name your stand..." style="width:100%;padding:8px 12px;background:var(--bg3);border:1px solid rgba(34,197,94,.3);border-radius:7px;color:var(--acc-dk);font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.06em;outline:none;margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button data-on="closeModal" data-on-plain style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Cancel</button><button onclick="doStandSave()" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">Save</button></div>`;
   modal.classList.add('open');
   setTimeout(() => { const inp = document.getElementById('standSaveName'); if (inp) inp.focus(); }, 100);
 }
@@ -1773,7 +1773,7 @@ function openLoadModal() {
     const d = new Date(sv[k].date).toLocaleDateString();
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s" onmouseover="this.style.background='rgba(34,197,94,.05)'" onmouseout="this.style.background='transparent'" onclick="doStandLoad('${k.replace(/'/g, "\\'")}')"><div><div style="font-size:.82rem;color:var(--text)">${k}</div><div style="font-family:JetBrains Mono,monospace;font-size:.55rem;color:var(--muted)">${d}</div></div><button onclick="event.stopPropagation();doStandDel('${k.replace(/'/g, "\\'")}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:.9rem;padding:2px 5px">✕</button></div>`;
   }).join('') + '</div>';
-  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-dk);margin-bottom:12px">Load Stand</h2>${h}<div style="display:flex;justify-content:flex-end"><button onclick="closeModal()" style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button></div>`;
+  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-dk);margin-bottom:12px">Load Stand</h2>${h}<div style="display:flex;justify-content:flex-end"><button data-on="closeModal" data-on-plain style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button></div>`;
   modal.classList.add('open');
 }
 

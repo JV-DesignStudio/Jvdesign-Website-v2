@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-js-cheatsheet-v2';

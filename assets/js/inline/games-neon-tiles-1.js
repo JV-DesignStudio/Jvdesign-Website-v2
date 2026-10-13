@@ -1,0 +1,222 @@
+const gameSystem = new GameSystem('neon-tiles', 'Neon Tiles: Beat Builder', 'lumo');
+const audioEffects = new AudioEffects(0.65);
+if (localStorage.getItem('soundEnabled') === 'false') audioEffects.setMasterVolume(0);
+const storyRun = window.__storyRun || (window.__storyRun = new StoryRun({
+  id:'neon-tiles', gameSystem:gameSystem,
+  title:'Echo and the Short Track', character:'Echo',
+  open:'Echo has one short track to get right before the lights come up.',
+  objective:'Pick a track and hit the falling notes to keep your energy.',
+  beats:[{at:0,text:'First notes on the line.'},{at:0.4,text:'The track speeds up.'},{at:0.78,text:'Final bars, hold your energy.'}],
+  cap:300,
+  result:{
+    success:'The song ends, Echo counts you in and the harder track unlocks.',
+    partial:'The track survives with a wobble, and Echo keeps the lights on.',
+    fail:'The lights dim early, but Echo has your timing noted for the next run.'
+  },
+  onFinish:function(){ playing=false; paused=false; cancelAnimationFrame(raf); },
+  onRestart:function(){ startSong(); }
+}));
+const LANES = ['D','F','J','K'];
+const SAVE_KEY = 'neon_tiles_rhythm_progress_v2';
+const songs = [
+  { id:'spark', title:'Spark Starter', bpm:96, level:1, mood:'Warm-up pop', color:'#4fd6c8', pattern:[[0,0],[1,1],[2,2],[3,3],[4,0],[4.5,1],[5,2],[5.5,3],[6.5,0],[7,2],[8,1],[9,3],[10,0],[10.5,2],[11,1],[11.5,3],[12.5,0],[13,1],[13.5,2],[14,3],[15,0],[15,1],[16,2],[16,3],[17.25,0],[17.5,1],[17.75,2],[18,3],[19,1],[20,2],[21,0],[21,3],[22.5,1],[23,2],[24,0],[24,1],[25,2],[25,3],[26,0],[27,3]] },
+  { id:'metro', title:'Metro Pulse', bpm:124, level:2, mood:'City bounce', color:'#b98bff', unlock:1, pattern:[[0,0],[0.5,2],[1,1],[1.5,3],[2,0],[2.5,1],[3,2],[3.5,3],[4.5,0],[4.5,3],[5.5,1],[5.5,2],[6.5,0],[7,1],[7.5,2],[8,3],[9,0],[9.25,1],[9.5,2],[9.75,3],[10.75,3],[11.25,2],[11.75,1],[12.25,0],[13,0],[13,2],[14,1],[14,3],[15,0],[15.5,3],[16,1],[16.5,2],[17,0],[17,3],[18,1],[18.25,2],[18.5,1],[18.75,2],[20,0],[20,1],[21,2],[21,3],[22,0],[22.5,2],[23,1],[23.5,3],[24.5,0],[24.5,3],[25.5,1],[25.5,2],[27,0],[27.25,1],[27.5,2],[27.75,3]] },
+  { id:'boss', title:'Boss Laser Parade', bpm:148, level:3, mood:'Fast finale', color:'#ff5b9d', unlock:4, pattern:[[0,0],[0.5,1],[1,2],[1.5,3],[2,3],[2.5,2],[3,1],[3.5,0],[4,0],[4,2],[4.5,1],[4.5,3],[5.5,0],[5.75,1],[6,2],[6.25,3],[7,0],[7,3],[8,1],[8.25,2],[8.5,1],[8.75,2],[9.5,0],[10,1],[10.5,2],[11,3],[12,0],[12,3],[12.5,1],[12.5,2],[13.5,0],[13.75,1],[14,2],[14.25,3],[15,3],[15.25,2],[15.5,1],[15.75,0],[16.5,0],[17,2],[17.5,1],[18,3],[18.75,0],[19,1],[19.25,2],[19.5,3],[20.5,0],[20.5,3],[21,1],[21,2],[22,0],[22.25,1],[22.5,2],[22.75,3],[23.5,3],[23.75,2],[24,1],[24.25,0],[25,0],[25,1],[25.5,2],[25.5,3],[26.5,0],[26.75,1],[27,2],[27.25,3],[28,0],[28,3]] }
+];
+let progress = loadProgress();
+let selected = songs[0];
+let speedMod = 1;
+let notes = [];
+let playing = false;
+let paused = false;
+let startAt = 0;
+let pauseAt = 0;
+let raf = 0;
+let stats = resetStats();
+const travelMsBase = 1850;
+const hitY = 82;
+
+function loadProgress(){ const base={unlocked:1,best:{},daily:{streak:0,last:''}}; try{return Object.assign(base, JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));}catch(e){return base;} }
+function saveProgress(){ try{localStorage.setItem(SAVE_KEY, JSON.stringify(progress));}catch(e){} }
+function resetStats(){ return {score:0,combo:0,maxCombo:0,perfect:0,good:0,miss:0,hits:0,total:0,life:100,grade:'-',ended:false}; }
+function isUnlocked(song){ return !song.unlock || progress.unlocked >= song.unlock; }
+const gradeRank={S:5,A:4,B:3,C:2,D:1,F:0};
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function yesterdayKey(){ const d=new Date(); d.setDate(d.getDate()-1); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function dailySong(){ let h=0; const k=todayKey(); for(let i=0;i<k.length;i++) h=(h*31+k.charCodeAt(i))>>>0; return songs[h % songs.length]; }
+function dailyTarget(){ return ['A','B','B','C'][new Date().getDate() % 4]; }
+function bumpDaily(met){
+  const d=progress.daily||(progress.daily={streak:0,last:''});
+  const t=todayKey();
+  if(!met || d.last===t) return;
+  d.streak=(d.last===yesterdayKey()?d.streak:0)+1;
+  d.last=t;
+  saveProgress();
+}
+function renderDaily(){
+  const el=document.getElementById('dailyText');
+  if(!el) return;
+  const s=dailySong(), t=dailyTarget(), d=progress.daily||{streak:0,last:''};
+  const done=d.last===todayKey();
+  el.innerHTML='Today: <b style="display:inline;color:#fff">'+s.title+'</b> - reach grade '+t+'. <span class="streak">🔥 '+d.streak+' day streak</span>'+(done?' - done today ✅':'');
+}
+function beatMs(song){ return 60000 / song.bpm; }
+function songLength(song){ return (Math.max(...song.pattern.map(n=>n[0])) + 4) * beatMs(song); }
+function makeChart(song){
+  return song.pattern.map((n,i)=>({id:i,lane:n[1],time:n[0]*beatMs(song),hit:false,missed:false,el:null}));
+}
+function renderSongs(){
+  const list=document.getElementById('songList'); list.innerHTML='';
+  songs.forEach(song=>{
+    const btn=document.createElement('button');
+    btn.className='song-card '+(song.id===selected.id?'active':'')+(!isUnlocked(song)?' locked':'');
+    btn.innerHTML='<i style="background:'+song.color+'"></i><span><b>'+song.title+'</b><em>'+song.mood+' · '+song.bpm+' BPM · Lv '+song.level+'</em></span><strong>'+(progress.best[song.id]?.grade||(!isUnlocked(song)?'🔒':'-'))+'</strong>';
+    btn.onclick=()=>{ if(isUnlocked(song)){ selected=song; updateUi(); } else showCoach('Unlock this by earning more stars on earlier songs.'); };
+    list.appendChild(btn);
+  });
+}
+function buildPads(){
+  const lanes=document.getElementById('lanes'); lanes.innerHTML='';
+  const pads=document.getElementById('pads'); pads.innerHTML='';
+  LANES.forEach((key,i)=>{
+    const lane=document.createElement('div'); lane.className='lane lane'+i; lane.innerHTML='<span>'+key+'</span>'; lanes.appendChild(lane);
+    const pad=document.createElement('button'); pad.className='pad lane'+i; pad.textContent=key; pad.addEventListener('pointerdown',e=>{e.preventDefault(); hitLane(i);}); pads.appendChild(pad);
+  });
+}
+function updateUi(){
+  renderSongs();
+  renderDaily();
+  document.getElementById('nowTitle').textContent=selected.title;
+  document.getElementById('nowInfo').textContent=selected.mood+' · '+selected.bpm+' BPM · Level '+selected.level;
+  document.getElementById('bestBadge').textContent='Best: '+(progress.best[selected.id]?.score||0);
+  document.getElementById('startBtn').textContent=playing ? 'Restart Song' : 'Start Song';
+  updateHud();
+}
+function updateHud(){
+  const acc = stats.hits ? Math.round(((stats.perfect*1 + stats.good*.72) / stats.hits) * 100) : 100;
+  stats.grade = gradeFor(acc, stats.life, stats.miss);
+  document.getElementById('scoreVal').textContent=stats.score;
+  document.getElementById('comboVal').textContent=stats.combo;
+  document.getElementById('accVal').textContent=acc+'%';
+  document.getElementById('gradeVal').textContent=stats.grade;
+  document.getElementById('lifeFill').style.width=Math.max(0,stats.life)+'%';
+  document.getElementById('perfectVal').textContent=stats.perfect;
+  document.getElementById('goodVal').textContent=stats.good;
+  document.getElementById('missVal').textContent=stats.miss;
+  document.getElementById('maxComboVal').textContent=stats.maxCombo;
+  storyRun.setScore(stats.score);
+}
+function gradeFor(acc, life, miss){ if(life<=0)return 'F'; if(acc>=96 && miss===0)return 'S'; if(acc>=90)return 'A'; if(acc>=80)return 'B'; if(acc>=70)return 'C'; return 'D'; }
+function startSong(){
+  selected = selected || songs[0];
+  stats = resetStats();
+  notes = makeChart(selected);
+  stats.total = notes.length;
+  playing=true; paused=false; startAt=performance.now()+1200; pauseAt=0;
+  document.getElementById('modal').classList.remove('show');
+  document.getElementById('stage').querySelectorAll('.note').forEach(n=>n.remove());
+  notes.forEach(note=>{
+    const el=document.createElement('div'); el.className='note lane'+note.lane; el.dataset.id=note.id; el.textContent='◆';
+    document.getElementById('stage').appendChild(el); note.el=el;
+  });
+  showCoach('Get ready: D F J K or tap the pads.');
+  countdown();
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+  gameSystem.beginRun();
+  if(!storyRun.running) storyRun.begin();
+  updateUi();
+}
+function countdown(){
+  const c=document.getElementById('countdown'); c.textContent='3'; c.classList.add('show');
+  setTimeout(()=>c.textContent='2',350); setTimeout(()=>c.textContent='1',700); setTimeout(()=>{c.textContent='GO'; audioEffects.playSuccess();},1050); setTimeout(()=>c.classList.remove('show'),1400);
+}
+function now(){ return performance.now()-startAt; }
+function loop(){
+  if(!playing || paused) return;
+  const t=now(); const travel=travelMsBase / speedMod;
+  for(const note of notes){
+    if(note.hit || note.missed) continue;
+    const y = ((t - note.time + travel) / travel) * hitY;
+    if(y > 104){ miss(note); continue; }
+    if(y > -12 && note.el){ note.el.style.transform='translateY('+y+'%)'; note.el.style.opacity='1'; }
+  }
+  updateHud();
+  if(t > songLength(selected) || stats.life<=0) return endSong(stats.life>0);
+  raf=requestAnimationFrame(loop);
+}
+function hitLane(lane){
+  if(!playing || paused) return;
+  flashLane(lane);
+  const t=now();
+  const candidates=notes.filter(n=>!n.hit&&!n.missed&&n.lane===lane).map(n=>({n,delta:Math.abs(t-n.time)})).sort((a,b)=>a.delta-b.delta);
+  const best=candidates[0];
+  if(!best || best.delta>190){ badTap(); return; }
+  if(best.delta<=85) judge(best.n,'Perfect',1000,2);
+  else judge(best.n,'Good',550,1);
+}
+function judge(note,label,points,lifeGain){
+  note.hit=true; if(note.el){ note.el.classList.add(label.toLowerCase()); setTimeout(()=>note.el?.remove(),180); }
+  stats.hits++; stats[label.toLowerCase()]++;
+  stats.combo++; stats.maxCombo=Math.max(stats.maxCombo, stats.combo);
+  stats.score += Math.round(points * (1 + Math.min(stats.combo,80)/80));
+  stats.life=Math.min(100, stats.life+lifeGain);
+  showJudge(label, label==='Perfect'?'#4fd6c8':'#ffd24a');
+  audioEffects.playPop();
+  updateHud();
+}
+function miss(note){
+  note.missed=true; stats.hits++; stats.miss++; stats.combo=0; stats.life-=12;
+  if(note.el){ note.el.classList.add('missed'); setTimeout(()=>note.el?.remove(),180); }
+  showJudge('Miss','#ff5b6b'); audioEffects.playError(); updateHud();
+}
+function badTap(){ stats.combo=0; stats.life=Math.max(0, stats.life-4); showJudge('Early / empty','#ff5b6b'); updateHud(); }
+function flashLane(lane){ const el=document.querySelector('.lane.lane'+lane); if(el){ el.classList.add('hit'); setTimeout(()=>el.classList.remove('hit'),120); } const pad=document.querySelector('.pad.lane'+lane); if(pad){ pad.classList.add('hit'); setTimeout(()=>pad.classList.remove('hit'),120); } }
+function showJudge(text,color){ const j=document.getElementById('judgement'); j.textContent=text; j.style.color=color; j.classList.remove('pop'); void j.offsetWidth; j.classList.add('pop'); }
+function showCoach(text){ document.getElementById('coach').textContent=text; }
+function endSong(cleared){
+  playing=false; paused=false; cancelAnimationFrame(raf);
+  const acc = stats.hits ? Math.round(((stats.perfect + stats.good*.72) / stats.hits) * 100) : 0;
+  const grade=gradeFor(acc, stats.life, stats.miss);
+  const stars = grade==='S'?3:grade==='A'?3:grade==='B'?2:cleared?1:0;
+  const best=progress.best[selected.id]||{};
+  if(stats.score>(best.score||0)) progress.best[selected.id]={score:stats.score,grade,acc,maxCombo:stats.maxCombo,stars};
+  progress.unlocked=Math.max(progress.unlocked, Object.values(progress.best).reduce((a,b)=>a+(b.stars||0),0));
+  saveProgress();
+  gameSystem.unlockAchievement('firstSong');
+  if(stats.maxCombo>=25) gameSystem.unlockAchievement('combo25');
+  if(grade==='S') gameSystem.unlockAchievement('perfectRhythm');
+  bumpDaily(selected.id===dailySong().id && gradeRank[grade]>=gradeRank[dailyTarget()]);
+  updateUi();
+  document.getElementById('modal').classList.remove('show');
+  const outcome = !cleared ? 'fail' : (gradeRank[grade]>=gradeRank['B'] ? 'success' : 'partial');
+  storyRun.finish(outcome, stats.score);
+}
+function showResult(cleared, grade, acc, stars){
+  const m=document.getElementById('modal');
+  document.getElementById('modalEmoji').textContent=cleared?'🎵':'💥';
+  document.getElementById('modalTitle').textContent=cleared?'Song Complete':'Energy Empty';
+  document.getElementById('modalText').textContent=selected.title+' · Grade '+grade+' · '+('⭐'.repeat(stars)||'Keep practising');
+  document.getElementById('modalStats').innerHTML='<div><span>Score</span><b>'+stats.score+'</b></div><div><span>Accuracy</span><b>'+acc+'%</b></div><div><span>Max combo</span><b>'+stats.maxCombo+'</b></div><div><span>Perfect hits</span><b>'+stats.perfect+'</b></div>';
+  document.getElementById('modalPrimary').textContent='Replay Song';
+  document.getElementById('modalPrimary').onclick=startSong;
+  m.classList.add('show');
+}
+function togglePause(){
+  if(!playing) return;
+  if(!paused){ paused=true; pauseAt=performance.now(); showCoach('Paused. Press pause again to continue.'); document.getElementById('pauseBtn').textContent='▶'; }
+  else { paused=false; startAt += performance.now()-pauseAt; document.getElementById('pauseBtn').textContent='⏸'; raf=requestAnimationFrame(loop); }
+}
+function showHelp(){
+  document.getElementById('modalEmoji').textContent='🎧';
+  document.getElementById('modalTitle').textContent='How to Play';
+  document.getElementById('modalText').textContent='Pick a song. Hit notes as they cross the glowing line. D F J K work on keyboard, and the four pads work on touch screens.';
+  document.getElementById('modalStats').innerHTML='<div><span>Perfect</span><b>tiny timing window</b></div><div><span>Good</span><b>still keeps rhythm</b></div><div><span>Miss</span><b>breaks combo</b></div>';
+  document.getElementById('modalPrimary').textContent=playing?'Resume':'Start Song';
+  document.getElementById('modalPrimary').onclick=()=>{document.getElementById('modal').classList.remove('show'); if(!playing) startSong();};
+  document.getElementById('modal').classList.add('show');
+}
+document.getElementById('startBtn').addEventListener('click', startSong);
+document.getElementById('pauseBtn').addEventListener('click', togglePause);
+document.querySelectorAll('#speedButtons button').forEach(btn=>btn.addEventListener('click',()=>{ document.querySelectorAll('#speedButtons button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); speedMod=Number(btn.dataset.speed); }));
+document.addEventListener('keydown', e=>{ const k=e.key.toUpperCase(); const lane=LANES.indexOf(k); if(lane>=0){ e.preventDefault(); hitLane(lane); } if(e.key===' '){ e.preventDefault(); togglePause(); } });
+buildPads(); renderSongs(); updateUi(); showHelp();

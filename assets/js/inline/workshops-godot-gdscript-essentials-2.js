@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-godot-gdscript-v2';

@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-openrct2-cheatsheet-v2';
