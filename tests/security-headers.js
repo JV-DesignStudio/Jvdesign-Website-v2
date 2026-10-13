@@ -59,6 +59,13 @@ for (const host of ['https://cdnjs.cloudflare.com', 'https://cdn.jsdelivr.net', 
   if (csp.includes(host)) fail('header CSP still trusts third-party CDN ' + host);
   else ok('header CSP does not trust third-party CDN ' + host);
 }
+// img-src / media-src must be an explicit allowlist, never a bare https: wildcard
+// (a blanket https: lets any host be an image probe / exfil channel).
+for (const d of ['img-src', 'media-src']) {
+  const m = new RegExp(d.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' ([^;]*);').exec(csp);
+  if (m && /(^|\s)https:(\s|$)/.test(m[1].trim())) fail('header CSP ' + d + ' uses a bare https: wildcard');
+  else ok('header CSP ' + d + ' is an explicit allowlist');
+}
 if (csp.includes("form-action 'self' https://formspree.io")) ok('header CSP form-action allows the newsletter');
 else fail('header CSP form-action must allow https://formspree.io');
 
@@ -72,7 +79,8 @@ if (r301.length >= 1) ok(r301.length + ' 301 rule(s), e.g. ' + r301[0].split(/\s
 else fail('no 301 rule in _redirects');
 for (const r of r301) {
   const to = r.split(/\s+/)[1];
-  const file = path.join(ROOT, to.replace(/^\//, ''));
+  const clean = to.replace(/^\//, '').split('#')[0].split('?')[0];
+  const file = path.join(ROOT, clean);
   if (fs.existsSync(file)) ok('redirect target exists: ' + to);
   else fail('redirect target missing: ' + to);
 }
