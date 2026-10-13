@@ -29,7 +29,7 @@ const PAGES = [
   'tools/pixel-studio.html', 'tools/bitmap-font-maker.html', 'tools/game-logo-maker.html',
   'workshops/learn.html', 'workshops/start-here.html', 'games/ember-smash.html',
   'pages/workshop.html', 'pages/downloads.html', 'pages/parent-guide.html',
-  'pages/books.html', 'pages/games.html', 'pages/learn-hub.html',
+  'pages/books.html', 'pages/learn-hub.html',
   'newsletter.html', 'meet-the-crew.html', 'pages/contact.html'
 ];
 
