@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<script src="/assets/js/theme-init.js"></script>
 <meta name="description" content="BuildLab is a free 3D block builder in your browser. Place, paint and resize blocks, then export to Roblox Studio (.rbxm), Blender (GLTF/OBJ) or Unreal Engine (.obj). Game-ready templates included. No install, no account.">
 <meta name="keywords" content="3d block builder, free 3d builder, roblox model maker, buildlab, voxel builder browser, obj export, gltf export, unreal engine, blender 3d, game asset creator">
 <link rel="manifest" href="../manifest.json">
@@ -24,6 +24,7 @@
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
 <link rel="preconnect" href="https://www.googletagmanager.com">
@@ -102,7 +103,7 @@
 }
 </script>
 
-    <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
+    <link rel="stylesheet" href="../style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css">
 <link rel="stylesheet" href="/ember-guide.css">
 <script type="application/ld+json">
@@ -141,7 +142,7 @@
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
-  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" data-fallback="https://placehold.co/38x38/403B33/F0EAD6?text=JV">
  <span class="logo-name">JVDesignStudio</span>
  </a>
    <nav class="main-nav" id="mainNav" aria-label="Main">
@@ -220,6 +221,7 @@
         <div class="shape-btn" data-shape="cylinder" onclick="setShape('cylinder')"><span class="sico">🛢️</span>Cylinder</div>
         <div class="shape-btn" data-shape="sphere" onclick="setShape('sphere')"><span class="sico">🔵</span>Sphere</div>
         <div class="shape-btn" data-shape="cone" onclick="setShape('cone')"><span class="sico">🔶</span>Cone</div>
+        <div class="shape-btn" data-shape="pyramid" onclick="setShape('pyramid')"><span class="sico">🔺</span>Pyramid</div>
         <div class="shape-btn" data-shape="wedge" onclick="setShape('wedge')"><span class="sico">📐</span>Wedge</div>
         <div class="shape-btn" data-shape="flat" onclick="setShape('flat')"><span class="sico">◻️</span>Plate</div>
       </div>
@@ -721,6 +723,9 @@
       </div>
       <div class="mob-shape-btn" data-mob-shape="cone" onclick="mobSetShape('cone')">
         <span class="sico">🔶</span>Cone
+      </div>
+      <div class="mob-shape-btn" data-mob-shape="pyramid" onclick="mobSetShape('pyramid')">
+        <span class="sico">🔺</span>Pyramid
       </div>
       <div class="mob-shape-btn" data-mob-shape="wedge" onclick="mobSetShape('wedge')">
         <span class="sico">📐</span>Wedge
@@ -1323,6 +1328,27 @@ function makeGeometry(shape, w, h, d) {
         hw,-hh,-hd,  hw,-hh, hd,  hw,hh,-hd,
         // Top slope (1 tri) - vertices 14-16
         -hw,hh,-hd,  hw,hh,-hd,  -hw,-hh, hd
+      ]);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      geo.computeVertexNormals();
+      return geo;
+    }
+     case 'pyramid': {
+      // Square base with an apex at the top centre, per-face vertices for sharp normals
+      const hw=w/2, hh=h/2, hd=d/2;
+      const verts = new Float32Array([
+        // Base (2 tris, winding gives a downward normal)
+        -hw,-hh,-hd,  hw,-hh,-hd,  hw,-hh, hd,
+        -hw,-hh,-hd,  hw,-hh, hd,  -hw,-hh, hd,
+        // Front (+z)
+        -hw,-hh, hd,  hw,-hh, hd,  0,hh,0,
+        // Right (+x)
+         hw,-hh, hd,  hw,-hh,-hd,  0,hh,0,
+        // Back (-z)
+         hw,-hh,-hd,  -hw,-hh,-hd,  0,hh,0,
+        // Left (-x)
+        -hw,-hh,-hd,  -hw,-hh, hd,  0,hh,0
       ]);
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
@@ -3227,21 +3253,29 @@ function exportOBJWithMTL() {
 
   blocks.forEach((mesh, mi) => {
     const color = mesh.userData.colour || '#aaaaaa';
-    const matName = `mat_${mi}`;
+    const metallic = mesh.material ? (mesh.material.metalness || 0) : 0;
+    const roughness = (mesh.material && mesh.material.roughness !== undefined) ? mesh.material.roughness : 0.55;
+    const opacity = mesh.userData.opacity !== undefined ? mesh.userData.opacity
+      : ((mesh.material && mesh.material.opacity !== undefined) ? mesh.material.opacity : 1);
+    // Key by colour AND finish so parts that share a colour but differ in
+    // roughness/metalness/opacity still get their own material.
+    const matKey = color + '|' + metallic.toFixed(2) + '|' + roughness.toFixed(2) + '|' + opacity.toFixed(2);
 
-    if (!materials.has(color)) {
+    if (!materials.has(matKey)) {
+      const matName = `mat_${materials.size + 1}`;
       const hex = color.replace('#', '');
       const r = parseInt(hex.substring(0, 2), 16) / 255;
       const g = parseInt(hex.substring(2, 4), 16) / 255;
       const b = parseInt(hex.substring(4, 6), 16) / 255;
-      const metallic = mesh.material.metalness || 0;
-      const roughness = mesh.material.roughness || 0.5;
-
-      mtl += `\nnewmtl ${matName}\nKd ${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)}\nKs 0.5 0.5 0.5\nNs ${(1000 * (1 - roughness)).toFixed(0)}\nTr ${metallic.toFixed(2)}\n`;
-      materials.set(color, matName);
+      // Ks tracks metalness (metals throw a bright specular), Ns tracks roughness.
+      // d carries opacity; Pr/Pm are the PBR companion tokens that importer tools
+      // (Blender/three) read for roughness and metalness.
+      const ks = (0.2 + 0.8 * metallic).toFixed(3);
+      mtl += `\nnewmtl ${matName}\nKd ${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)}\nKs ${ks} ${ks} ${ks}\nNs ${(1000 * (1 - roughness)).toFixed(0)}\nd ${opacity.toFixed(3)}\nPr ${roughness.toFixed(3)}\nPm ${metallic.toFixed(3)}\n`;
+      materials.set(matKey, matName);
     }
 
-    obj += `\nusemtl ${materials.get(color)}\n`;
+    obj += `\nusemtl ${materials.get(matKey)}\n`;
     const geo = mesh.geometry.clone();
     geo.applyMatrix4(mesh.matrixWorld);
     const pos = geo.attributes.position;
@@ -4432,7 +4466,7 @@ function renderOutliner() {
   const count = document.getElementById('outlinerCount');
   const searchEl = document.getElementById('outlinerSearch');
   if (!list) return;
-  const shapeIcon = { box:'🟦', cylinder:'🛢️', sphere:'🔵', cone:'🔶', wedge:'📐', flat:'◻️' };
+  const shapeIcon = { box:'🟦', cylinder:'🛢️', sphere:'🔵', cone:'🔶', pyramid:'🔺', wedge:'📐', flat:'◻️' };
   const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
   if (count) count.textContent = blocks.length + (blocks.length===1 ? ' block' : ' blocks');
   // groups header
@@ -4794,8 +4828,8 @@ function insertAssetFromLibrary(idx) {
 // -------------------------------------------------------
 // SHARE LINKS, SCREENSHOT & AUTOSAVE
 // -------------------------------------------------------
-const SHARE_SHAPE_CODES = { box:'b', cylinder:'c', sphere:'s', cone:'k', wedge:'w', flat:'f' };
-const SHARE_CODE_SHAPES = { b:'box', c:'cylinder', s:'sphere', k:'cone', w:'wedge', f:'flat' };
+const SHARE_SHAPE_CODES = { box:'b', cylinder:'c', sphere:'s', cone:'k', pyramid:'p', wedge:'w', flat:'f' };
+const SHARE_CODE_SHAPES = { b:'box', c:'cylinder', s:'sphere', k:'cone', p:'pyramid', w:'wedge', f:'flat' };
 
 function encodeBuildData() {
   return blocks.filter(b => !b.userData.isImported).map(b => ({
