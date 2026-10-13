@@ -77,11 +77,33 @@
     return row * COLS + col;
   }
 
+  function spawnSparkle(cellIdx) {
+    var wrap = document.querySelector('.fm-canvas-wrap');
+    if (!wrap || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var rect = canvas.getBoundingClientRect();
+    var wrapRect = wrap.getBoundingClientRect();
+    var cx = ((cellIdx % COLS) + 0.5) / COLS * rect.width + (rect.left - wrapRect.left);
+    var cy = (Math.floor(cellIdx / COLS) + 0.5) / ROWS * rect.height + (rect.top - wrapRect.top);
+    var sparkColors = ['#FFD23C', '#F2637A', '#7C6CF0', '#7AC74F', '#2EB5A5'];
+    for (var s = 0; s < 3; s++) {
+      var dot = document.createElement('span');
+      dot.className = 'fm-sparkle';
+      dot.style.left = (cx + (Math.random() - 0.5) * 20) + 'px';
+      dot.style.top = (cy + (Math.random() - 0.5) * 20) + 'px';
+      dot.style.background = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+      dot.style.width = dot.style.height = (4 + Math.random() * 6) + 'px';
+      dot.style.animationDuration = (0.35 + Math.random() * 0.3) + 's';
+      wrap.appendChild(dot);
+      dot.addEventListener('animationend', function () { this.remove(); });
+    }
+  }
+
   function paint(i) {
     if (i < 0) return;
     var col = COLORS[current];
     if (grid[i] === col) return;
     grid[i] = col;
+    spawnSparkle(i);
     render();
   }
 
