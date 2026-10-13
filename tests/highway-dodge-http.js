@@ -92,10 +92,24 @@ async function mobile(browser, base) {
   check('mobile: fullscreen root is the game shell, not the canvas',
     !!root && root.includes('game-wrap'), root || 'none');
 
-  // Idle until the traffic hits the parked player.
+  // Reach the game-over state. Steer into the lane with the nearest oncoming car
+  // so a crash is guaranteed quickly instead of waiting on traffic to wander in.
   let death = null;
-  for (let i = 0; i < 80 && !death; i++) {
-    await sleep(120);
+  for (let i = 0; i < 120 && !death; i++) {
+    await sleep(100);
+    const want = await page.evaluate(() => {
+      if (!window.__highway || window.__highway.dead) return null;
+      const g = window.__highway, cars = g.cars();
+      let lane = -1, bestY = -1;
+      for (const l of [0, 1, 2]) {
+        const y = cars.reduce((m, c) => c.lane === l ? Math.max(m, c.y) : m, -1);
+        if (y > bestY) { bestY = y; lane = l; }
+      }
+      return { lane, current: g.playerLane };
+    });
+    if (want && want.lane >= 0 && want.lane !== want.current) {
+      await page.keyboard.press(want.lane < want.current ? 'ArrowLeft' : 'ArrowRight');
+    }
     death = await page.evaluate(() => {
       if (!window.__highway || !window.__highway.dead) return null;
       const m = document.querySelector('.sr-modal.show');
@@ -148,9 +162,11 @@ async function desktopFullscreen(browser, base) {
     const s = await page.evaluate(() => {
       const r = document.getElementById('game').getBoundingClientRect();
       const g = window.__highway;
+      const sr = document.querySelector('.game-wrap .storyrun');
       return {
         cssH: Math.round(r.height), vh: window.innerHeight,
-        playerX: g.playerX, laneW: g.laneW, roadL: g.roadL, roadR: g.roadR
+        playerX: g.playerX, laneW: g.laneW, roadL: g.roadL, roadR: g.roadR,
+        srHidden: !!sr && getComputedStyle(sr).display === 'none'
       };
     });
     check(`fullscreen ${w}x${h}: canvas height fits the viewport`,
@@ -158,9 +174,63 @@ async function desktopFullscreen(browser, base) {
     check(`fullscreen ${w}x${h}: player sits on the road`,
       s.playerX > s.roadL && s.playerX < s.roadR,
       `x=${Math.round(s.playerX)} road=${Math.round(s.roadL)}-${Math.round(s.roadR)}`);
+    check(`fullscreen ${w}x${h}: StoryRun bar is hidden (beats use toasts)`, s.srHidden);
     check(`fullscreen ${w}x${h}: no page errors`, errors.length === 0, errors.join(' | '));
     await page.close();
   }
+}
+
+// A1518: first-run steer tip, the fuel resource, the keepsake export and
+// reduce-motion support.
+async function learnerPolish(browser, base) {
+  const page = await browser.newPage();
+  const errors = watchErrors(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/highway-dodge.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => localStorage.removeItem('highway-tip-seen'));
+  await page.evaluate(() => document.getElementById('playBtn').click());
+  await sleep(200);
+
+  const tip = await page.evaluate(() => ({
+    shown: document.getElementById('tip').classList.contains('show'),
+    text: document.getElementById('tip').textContent || ''
+  }));
+  check('polish: first-run steer tip shows', tip.shown && /steer/i.test(tip.text), tip.text.slice(0, 40));
+
+  // Fuel drains while driving and the HUD tracks it. Sample early, before any
+  // traffic can reach the parked player.
+  const f1 = await page.evaluate(() => window.__highway.fuel);
+  await sleep(450);
+  const f2 = await page.evaluate(() => ({
+    fuel: window.__highway.fuel,
+    hud: document.getElementById('fuelHud').textContent,
+    w: document.getElementById('fuelFill').style.width
+  }));
+  check('polish: fuel drains while driving', f2.fuel < f1, f1.toFixed(1) + ' -> ' + f2.fuel.toFixed(1));
+  check('polish: fuel HUD tracks the tank', f2.hud !== '' && /%$/.test(f2.w), 'hud=' + f2.hud + ' w=' + f2.w);
+
+  let hasKeepsake = false;
+  for (let i = 0; i < 90 && !hasKeepsake; i++) {
+    await sleep(150);
+    hasKeepsake = await page.evaluate(() => !!document.querySelector('.sr-modal.show .sr-keepsake'));
+  }
+  check('polish: game-over offers a keepsake export', hasKeepsake);
+  check('polish: no page errors', errors.length === 0, errors.join(' | '));
+  await page.close();
+
+  // prefers-reduced-motion must suppress the crash shake.
+  const rm = await browser.newPage();
+  const rmErrors = watchErrors(rm);
+  await rm.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  await rm.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await rm.goto(base + '/games/highway-dodge.html', { waitUntil: 'load', timeout: 30000 });
+  await rm.evaluate(() => document.getElementById('playBtn').click());
+  let rmDead = false;
+  for (let i = 0; i < 90 && !rmDead; i++) { await sleep(150); rmDead = await rm.evaluate(() => window.__highway.dead); }
+  const rmHits = await rm.evaluate(() => window.__highway.shakeHits);
+  check('polish: prefers-reduced-motion disables the crash shake', rmDead && rmHits === 0, 'dead=' + rmDead + ' hits=' + rmHits);
+  check('polish: no page errors (reduce-motion)', rmErrors.length === 0, rmErrors.join(' | '));
+  await rm.close();
 }
 
 async function noOverlap(browser, base) {
@@ -216,6 +286,7 @@ async function noOverlap(browser, base) {
     await desktop(browser, base);
     await desktopFullscreen(browser, base);
     await mobile(browser, base);
+    await learnerPolish(browser, base);
     await noOverlap(browser, base);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL HIGHWAY DODGE CHECKS PASSED');

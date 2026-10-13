@@ -3,17 +3,29 @@ const C = document.getElementById('game'), ctx = C.getContext('2d');
 const $ = id => document.getElementById(id);
 const audio = window.AudioEffects ? new AudioEffects(.5) : null;
 const sys = window.GameSystem ? new GameSystem('highway-dodge','Highway Dodge','ember') : null;
+
+const BEATS = [
+  { at:0, text:'The first wave of traffic appears.' },
+  { at:.4, text:'Speed picks up and the lanes get busy.' },
+  { at:.8, text:'Rush hour. Every gap counts.' }
+];
+// Respect reduce-motion: no screen shake, fewer particles, no vertical flourish.
+const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
 const storyRun = window.__storyRun = window.StoryRun ? new StoryRun({
   id:'highway-dodge', gameSystem:sys, title:'Highway Dodge', character:'Ember',
   open:'Ember is racing down the highway and the traffic is getting heavier.',
   objective:'Dodge as many cars as you can and keep driving.',
-  beats:[{at:0,text:'The first wave of traffic appears.'},{at:.4,text:'Speed picks up and the lanes get busy.'},{at:.8,text:'Rush hour. Every gap counts.'}],
+  beats:BEATS,
   cap:300,
   result:{
     success:'Ember clears the rush and the highway opens up ahead.',
     partial:'A few bumps, but Ember keeps the engine running.',
     fail:'The traffic wins this time, but Ember knows the lanes now.'
   },
+  // The StoryRun bar is hidden in this game, so its beats surface as toasts.
+  onBeat:function (b) { toast(b.text); },
+  onFinish:function (outcome, score) { addKeepsakeButton(outcome, score); },
   onRestart:function(){ startGame(); }
 }) : null;
 
@@ -24,13 +36,23 @@ let laneW, roadL, roadR;
 // Small details (lights, road markings, pickups) scale by this so the game
 // looks the same at every screen size instead of only when the lane is 78px.
 let U = 1;
+// Difficulty is expressed against this reference canvas height so a car takes
+// the same time to cross the screen on any device (see update()).
+const REF_H = 650;
+let vscale = 1;
 
-let running = false, dead = false, paused = false;
+const FUEL_MAX = 100;
+const FUEL_PER_PICKUP = 42;
+const COMBO_WINDOW = 3.2;   // seconds a near-miss chain stays alive
+
+let running = false, dead = false;
 let player, cars, pickups, particles, roadLines;
-let score, speed, dist, nearMiss, combo, fuel;
+let score, speed, dist, nearMiss, combo, comboTimer, fuel;
+let scoreCarry = 0;
 let best = (sys ? GameSystem.getBestScore('highway-dodge') : 0) || 0;
-let last = 0, spawnTimer = 0;
+let last = 0, spawnTimer = 0, tipTimer = 0;
 let swipeStartX = 0, swipeStartY = 0, swiping = false;
+let endReason = 'crash';
 
 // Read-only debug handle so tests can verify death state and that same-lane
 // traffic never overlaps.
@@ -56,7 +78,12 @@ window.__highway = {
   get playerX() { return player ? player.x : -1; },
   get laneW() { return laneW; },
   get roadL() { return roadL; },
-  get roadR() { return roadR; }
+  get roadR() { return roadR; },
+  get fuel() { return fuel; },
+  get combo() { return combo; },
+  get comboTimer() { return comboTimer; },
+  get vscale() { return vscale; },
+  get endReason() { return endReason; }
 };
 
 // A952 showcase polish: score goals that celebrate as you hit them, and a
@@ -65,7 +92,8 @@ const MISSION = [500, 1500, 3000, 6000];
 const milestones = window.JVDSShowcase ? new JVDSShowcase.Milestones(MISSION, function (m) {
   toast('Goal reached: ' + m + '!');
   try { audio?.playSuccess?.(); } catch(e) {}
-  for (let i = 0; i < 16; i++) {
+  const n = reduceMotion ? 6 : 16;
+  for (let i = 0; i < n; i++) {
     particles.push({ x: player.x + (Math.random() - .5) * 60, y: H - player.h, vx: (Math.random() - .5) * 260, vy: -Math.random() * 260, life: 1, color: '#fbbf24', size: 3 });
   }
 }) : null;
@@ -100,6 +128,7 @@ function fit() {
   U = laneW / 78;
   roadL = (W - laneW * LANE_COUNT) / 2;
   roadR = roadL + laneW * LANE_COUNT;
+  vscale = H / REF_H;
   if (resized) remapLanes();
 }
 
@@ -154,9 +183,11 @@ function reset() {
   player.x = laneX(1);
   player.targetX = player.x;
   cars = []; pickups = []; particles = []; roadLines = [];
-  score = 0; speed = 280; dist = 0; nearMiss = 0; combo = 0; fuel = 100;
+  score = 0; speed = 280 * vscale; dist = 0; nearMiss = 0; combo = 0; comboTimer = 0; fuel = FUEL_MAX;
+  scoreCarry = 0;
   spawnTimer = 0;
   dustTimer = 0;
+  endReason = 'crash';
   if (milestones) milestones.reset();
   if (shake) shake.reset();
   for (let i = 0; i < 20; i++) {
@@ -172,7 +203,20 @@ function toast(msg) {
   toast.t = setTimeout(() => t.classList.remove('show'), 800);
 }
 
+// First-run steering tip: shown once, then remembered on this device.
+function maybeTip() {
+  let seen = false;
+  try { seen = localStorage.getItem('highway-tip-seen') === '1'; } catch (e) {}
+  if (seen) return;
+  const tip = $('tip');
+  if (!tip) return;
+  tip.innerHTML = 'Steer with <b>swipe</b>, the ◀ ▶ buttons,<br>or the arrow keys / A and D.';
+  tip.classList.add('show');
+  tipTimer = 4.5;
+}
+
 function burst(x, y, color, n) {
+  if (reduceMotion) n = Math.ceil(n / 3);
   for (let i = 0; i < n; i++) {
     particles.push({
       x, y, vx: (Math.random() - .5) * 300, vy: (Math.random() - .5) * 300,
@@ -200,20 +244,24 @@ function startGame() {
   $('endScreen').classList.add('hidden');
   sys?.beginRun?.();
   if (storyRun && !storyRun.running) storyRun.begin();
+  toast(BEATS[0].text);
+  maybeTip();
   last = performance.now();
 }
 
-function endGame() {
+// reason: 'crash' (hit traffic) or 'stall' (ran out of fuel).
+function endGame(reason) {
   if (dead) return;
   dead = true;
   running = false;
-  if (shake) shake.hit(16);
+  endReason = reason || 'crash';
+  if (shake && !reduceMotion) shake.hit(16);
   if (score > best) {
     best = score;
     if (sys) GameSystem.saveScore('highway-dodge', best);
   }
   sys?.saveState?.();
-  burst(player.x, H - player.h * 1.5, '#ef4444', 30);
+  if (!reduceMotion) burst(player.x, H - player.h * 1.5, endReason === 'stall' ? '#22c55e' : '#ef4444', 30);
   try { audio?.playError?.(); } catch(e) {}
   if (storyRun) {
     storyRun.finish(score > 2000 ? 'success' : 'fail', score);
@@ -223,20 +271,86 @@ function endGame() {
 }
 
 function showEnd() {
-  $('endTitle').textContent = score > 5000 ? 'Epic Run!' : score > 2000 ? 'Nice Drive!' : 'Crashed!';
+  $('endTitle').textContent = endReason === 'stall' ? 'Out of Fuel!' : score > 5000 ? 'Epic Run!' : score > 2000 ? 'Nice Drive!' : 'Crashed!';
   $('endStats').innerHTML = [
     ['Score', score], ['Near Misses', nearMiss], ['Top Speed', Math.round(60 + dist * .008)], ['Best', best]
   ].map(s => '<div><b>' + s[1] + '</b><small>' + s[0] + '</small></div>').join('');
   $('endScreen').classList.remove('hidden');
 }
 
+// A shareable/saveable keepsake card so a run can leave the browser (school-PC
+// friendly: it is a plain PNG download, no account and no upload).
+function addKeepsakeButton(outcome, runScore) {
+  const card = document.querySelector('.sr-modal.show .sr-modal-card');
+  if (!card || card.querySelector('.sr-keepsake')) return;
+  const btn = document.createElement('button');
+  btn.className = 'sr-keepsake';
+  btn.type = 'button';
+  btn.textContent = '⬇ Save your run';
+  btn.addEventListener('click', () => saveKeepsake(outcome, runScore));
+  const firstBtn = card.querySelector('.sr-again');
+  if (firstBtn) card.insertBefore(btn, firstBtn); else card.appendChild(btn);
+}
+
+function saveKeepsake(outcome, runScore) {
+  const c = document.createElement('canvas');
+  c.width = 900; c.height = 600;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, 600);
+  grad.addColorStop(0, '#0e1a2e'); grad.addColorStop(1, '#05070d');
+  g.fillStyle = grad; g.fillRect(0, 0, 900, 600);
+
+  // Stylised road down the middle
+  const roadGrad = g.createLinearGradient(360, 0, 540, 0);
+  roadGrad.addColorStop(0, '#1e293b'); roadGrad.addColorStop(.5, '#334155'); roadGrad.addColorStop(1, '#1e293b');
+  g.fillStyle = roadGrad; g.fillRect(360, 0, 180, 600);
+  g.fillStyle = '#f59e0b'; g.fillRect(356, 0, 4, 600); g.fillRect(540, 0, 4, 600);
+  g.fillStyle = 'rgba(255,255,255,.35)';
+  for (let y = 10; y < 600; y += 54) { g.fillRect(448, y, 4, 24); }
+
+  g.textAlign = 'center';
+  g.fillStyle = '#fbbf24'; g.font = '700 42px system-ui, sans-serif';
+  g.fillText('Highway Dodge', 450, 92);
+  g.fillStyle = '#94a3b8'; g.font = '700 20px system-ui, sans-serif';
+  g.fillText("Ember's run", 450, 126);
+
+  g.fillStyle = '#ffffff'; g.font = '800 108px system-ui, sans-serif';
+  g.fillText(String(runScore), 450, 300);
+  g.fillStyle = '#94a3b8'; g.font = '700 22px system-ui, sans-serif';
+  g.fillText('SCORE', 450, 338);
+
+  g.fillStyle = '#cbd5e1'; g.font = '600 22px system-ui, sans-serif';
+  const stats = 'Best ' + best + '     Near misses ' + nearMiss + '     Top speed ' + Math.round(60 + dist * .008);
+  g.fillText(stats, 450, 408);
+
+  const line = outcome === 'success' ? 'Cleared the rush.'
+    : outcome === 'stall' ? 'The tank ran dry.'
+    : 'Crashed out on the highway.';
+  g.fillStyle = '#fbbf24'; g.font = '700 26px system-ui, sans-serif';
+  g.fillText(line, 450, 466);
+
+  g.fillStyle = '#64748b'; g.font = '600 18px system-ui, sans-serif';
+  g.fillText('jvdesignstudio.co.uk', 450, 552);
+
+  c.toBlob(function (blob) {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'highway-dodge-run.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }, 'image/png');
+}
+
 function hud() {
   $('scoreHud').textContent = score;
-  $('speedHud').textContent = Math.round(60 + dist * .008);
-  $('nearHud').textContent = nearMiss;
+  $('comboHud').textContent = combo;
   $('bestHud').textContent = best;
   const goal = milestones ? milestones.next() : null;
   $('goalHud').textContent = goal == null ? 'Done' : goal;
+  $('fuelHud').textContent = Math.max(0, Math.round(fuel));
+  $('fuelFill').style.width = Math.max(0, Math.min(1, fuel / FUEL_MAX)) * 100 + '%';
+  $('fuelCell').classList.toggle('low', fuel < 30);
   if (storyRun) storyRun.setScore(score);
 }
 
@@ -248,18 +362,42 @@ function update(dt) {
   });
   particles = particles.filter(p => p.life > 0);
 
+  if (tipTimer > 0 && running && !dead) {
+    tipTimer -= dt;
+    if (tipTimer <= 0) {
+      $('tip').classList.remove('show');
+      try { localStorage.setItem('highway-tip-seen', '1'); } catch (e) {}
+    }
+  }
+
   if (!running || dead) return;
-  dist += speed * dt;
-  speed = 280 + dist * .04;
-  score += Math.ceil(dt * speed * .15);
+
+  // Difficulty runs in reference units so every screen is equally hard: a car
+  // takes the same time to cross regardless of canvas size.
+  const refSpeed = 280 + dist * .04;
+  dist += refSpeed * dt;
+  speed = refSpeed * vscale;
+  // Accumulate the running score as a fraction and only bank whole points, so
+  // the score does not depend on the frame rate (ceil-per-frame inflated it).
+  scoreCarry += dt * refSpeed * .15;
+  const gain = Math.floor(scoreCarry);
+  if (gain > 0) { score += gain; scoreCarry -= gain; }
   if (milestones) milestones.check(score);
+
+  // Fuel is a real resource: it drains faster the faster you go, and a dry tank
+  // stalls the engine. Fuel pickups top it back up.
+  fuel -= (2.3 + dist * .00005) * dt;
+  if (fuel <= 0) { fuel = 0; hud(); endGame('stall'); return; }
+
+  // Near-miss combo has a window; when it lapses the chain resets.
+  if (combo > 0) { comboTimer -= dt; if (comboTimer <= 0) combo = 0; }
 
   player.x += (player.targetX - player.x) * Math.min(1, dt * 14);
   player.tilt *= .92;
 
   // tyre smoke trailing the car
   dustTimer -= dt;
-  if (dustTimer <= 0 && window.JVDSShowcase) {
+  if (dustTimer <= 0 && window.JVDSShowcase && !reduceMotion) {
     JVDSShowcase.dust(particles, player.x, H - player.h * .1, 'rgba(148,163,184,.9)', 2, { drift: 40, spread: 16, up: 40, size: 2 });
     dustTimer = .12;
   }
@@ -300,7 +438,7 @@ function update(dt) {
         try { audio?.playPop?.(); } catch(e) {}
         continue;
       }
-      endGame();
+      endGame('crash');
       return;
     }
 
@@ -310,6 +448,7 @@ function update(dt) {
         c.nearCounted = true;
         nearMiss++;
         combo++;
+        comboTimer = COMBO_WINDOW;
         const bonus = 50 + combo * 25;
         score += bonus;
         toast('Near Miss x' + combo + ' +' + bonus);
@@ -317,7 +456,6 @@ function update(dt) {
         try { audio?.playSuccess?.(); } catch(e) {}
       }
     }
-    if (c.nearCounted && c.y > pBot + laneW) combo = 0;
   }
 
   for (let i = pickups.length - 1; i >= 0; i--) {
@@ -331,8 +469,9 @@ function update(dt) {
         toast('Shield!');
         score += 100;
       } else {
-        score += 150;
-        toast('+Fuel!');
+        fuel = Math.min(FUEL_MAX, fuel + FUEL_PER_PICKUP);
+        toast('+Fuel');
+        score += 50;
       }
       burst(p.x, p.y, p.type === 'shield' ? '#22d3ee' : '#22c55e', 12);
       try { audio?.playPop?.(); } catch(e) {}
@@ -348,17 +487,70 @@ function update(dt) {
   hud();
 }
 
+// Stable pseudo-random in [0,1) for scenery placement.
+function hash(i) { const s = Math.sin(i * 127.1) * 43758.5453; return s - Math.floor(s); }
+
+// Roadside world so the space either side of the road reads as a night highway
+// instead of an empty void. Drawn procedurally from `dist` so it scrolls with
+// no per-object state.
+function drawScenery() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0e1a2e'); g.addColorStop(1, '#070c16');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  // Soft city glow that fades out toward the horizon, no hard edge.
+  const glow = ctx.createLinearGradient(0, 0, 0, H * .32);
+  glow.addColorStop(0, 'rgba(245,158,11,.10)'); glow.addColorStop(.6, 'rgba(245,158,11,.03)'); glow.addColorStop(1, 'rgba(245,158,11,0)');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H * .32);
+
+  const cycle = Math.max(200, H / 3.2);
+  const rows = Math.ceil((H + cycle) / cycle) + 1;
+  for (let side = 0; side < 2; side++) {
+    const shoulder = side === 0 ? roadL : (W - roadR);
+    if (shoulder < 16 * U) continue;
+    for (let i = 0; i < rows; i++) {
+      const seed = i + side * 131;
+      const y = ((i * cycle + dist * .9) % (H + cycle)) - cycle / 2;
+      const size = (15 + hash(seed) * 24) * U;
+      const centre = side === 0 ? roadL * .5 : roadR + shoulder * .5;
+      const cx = centre + (hash(seed + 7) - .5) * shoulder * .7;
+      ctx.fillStyle = hash(seed + 3) > .55 ? '#14351f' : '#102a1b';
+      ctx.beginPath(); ctx.arc(cx, y, size, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,.16)';
+      ctx.beginPath(); ctx.arc(cx + size * .22, y + size * .22, size * .78, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // Reflector posts hugging the road edges.
+  const gap = Math.max(84, H / 5);
+  const count = Math.ceil((H + gap) / gap) + 1;
+  for (let side = 0; side < 2; side++) {
+    const px = side === 0 ? roadL - 4 * U : roadR + 4 * U;
+    for (let i = 0; i < count; i++) {
+      const y = ((i * gap + dist * 1.05) % (H + gap)) - gap / 2;
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(px - 1.2 * U, y, 2.4 * U, 16 * U);
+      ctx.fillStyle = side === 0 ? '#f59e0b' : '#38bdf8';
+      ctx.beginPath(); ctx.arc(px, y + 2 * U, 2.6 * U, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
 function drawRoad() {
+  // Soft amber glow spilling off the road edges.
+  const glowL = ctx.createLinearGradient(roadL - 26 * U, 0, roadL, 0);
+  glowL.addColorStop(0, 'rgba(245,158,11,0)'); glowL.addColorStop(1, 'rgba(245,158,11,.16)');
+  ctx.fillStyle = glowL; ctx.fillRect(roadL - 26 * U, 0, 26 * U, H);
+  const glowR = ctx.createLinearGradient(roadR, 0, roadR + 26 * U, 0);
+  glowR.addColorStop(0, 'rgba(245,158,11,.16)'); glowR.addColorStop(1, 'rgba(245,158,11,0)');
+  ctx.fillStyle = glowR; ctx.fillRect(roadR, 0, 26 * U, H);
+
   const grad = ctx.createLinearGradient(roadL, 0, roadR, 0);
   grad.addColorStop(0, '#1e293b');
   grad.addColorStop(.5, '#334155');
   grad.addColorStop(1, '#1e293b');
   ctx.fillStyle = grad;
   ctx.fillRect(roadL, 0, roadR - roadL, H);
-
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, roadL, H);
-  ctx.fillRect(roadR, 0, W - roadR, H);
 
   const edge = Math.max(2, laneW * .04);
   ctx.fillStyle = '#f59e0b';
@@ -473,24 +665,35 @@ function drawPickup(p) {
   ctx.restore();
 }
 
+// Near-miss combo meter: the fun bit of the game deserves more than a toast.
+function drawComboMeter() {
+  if (combo <= 0) return;
+  const barW = laneW * 3;
+  const x = roadL, y = H * .07;
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(251,191,36,.95)';
+  ctx.font = 'bold ' + (17 * U) + 'px system-ui';
+  ctx.fillText('NEAR MISS x' + combo, W / 2, y - 6 * U);
+  ctx.fillStyle = 'rgba(255,255,255,.18)';
+  ctx.fillRect(x, y, barW, 6 * U);
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillRect(x, y, barW * Math.max(0, comboTimer / COMBO_WINDOW), 6 * U);
+  ctx.restore();
+}
+
 function draw() {
   ctx.clearRect(0, 0, W, H);
 
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, W, H);
-
   ctx.save();
-  if (shake) shake.apply(ctx, dpr);
+  if (shake && !reduceMotion) shake.apply(ctx, dpr);
 
-  for (let i = 0; i < 30; i++) {
-    ctx.fillStyle = 'rgba(255,255,255,' + (.02 + (i % 5) * .01) + ')';
-    ctx.fillRect((i * 67 + dist * .02) % W, (i * 43) % (H * .3), 2, 2);
-  }
-
+  drawScenery();
   drawRoad();
   pickups.forEach(drawPickup);
   cars.forEach(drawCar);
   drawPlayer();
+  drawComboMeter();
 
   particles.forEach(p => {
     ctx.globalAlpha = Math.max(0, p.life);
@@ -501,20 +704,13 @@ function draw() {
   });
   ctx.globalAlpha = 1;
 
-  if (combo > 1) {
-    ctx.fillStyle = 'rgba(251,191,36,.8)';
-    ctx.font = 'bold ' + (20 * U) + 'px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText('COMBO x' + combo, W / 2, H * .12);
-  }
-
   if (!running && !dead) {
     ctx.fillStyle = 'rgba(0,0,0,.4)';
     ctx.fillRect(0, 0, W, H);
   }
 
   ctx.restore();
-  if (shake) shake.decay();
+  if (shake && !reduceMotion) shake.decay();
 }
 
 function loop(now) {
