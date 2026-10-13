@@ -378,26 +378,40 @@ async function depth(browser, base) {
   await sleep(140);
   const drone = await page.evaluate(() => { const d = window.__nova.run.drones[0]; return { n: window.__nova.runDrones, x: d ? Math.round(d.x) : null, y: d ? Math.round(d.y) : null }; });
   check('depth: a wingman drone is added and orbits the ship', drone.n >= 1 && drone.x != null, JSON.stringify(drone));
+  // A wave clear can open a draft mid-probe, which pauses the loop. Clear any
+  // in-run overlay so spawning and firing keep running while we sample.
+  const clearOverlays = () => page.evaluate(() => {
+    if (window.__nova.draftOpen) { const c = document.querySelector('#draftCards .card'); if (c) c.click(); }
+    if (window.__nova.shopOpen) document.getElementById('shopLeave').click();
+  });
   let droneFired = false;
   for (let i = 0; i < 40; i++) {
     await sleep(60);
+    await clearOverlays();
     droneFired = await page.evaluate(() => window.__nova.run.bullets.some(b => !b.eb && Math.hypot(b.vx, b.vy) > 3 && Math.abs(b.vx) > 1));
     if (droneFired) break;
   }
   check('depth: the wingman drone fires at the target', droneFired);
 
   // Explosive rounds: killing one enemy blasts a neighbour into pieces.
+  await clearOverlays();
+  await sleep(120);
   await page.evaluate(() => {
     const n = window.__nova, r = n.run; r.runUps.explosive = 1; r.blasts.length = 0; r.waveKills = 0; r.enemies.length = 0;
     r.enemies.push({ kind: 'ufo', pattern: 'straight', x: r.px, y: r.py - 70, vy: 0, t: 0, hp: 1, r: 8, spr: n.sprites.ufo, dir: 1, amp: 0, freq: 0, fire: 999 });
     r.enemies.push({ kind: 'ufo', pattern: 'straight', x: r.px + 18, y: r.py - 70, vy: 0, t: 0, hp: 1, r: 8, spr: n.sprites.ufo, dir: 1, amp: 0, freq: 0, fire: 999 });
   });
-  await sleep(1000);
-  const expl = await page.evaluate(() => ({ left: window.__nova.run.enemies.length }));
-  check('depth: explosive rounds chain a blast to a nearby enemy', expl.left < 2, JSON.stringify(expl));
+  let left = 2;
+  for (let i = 0; i < 30; i++) {
+    await sleep(80);
+    await clearOverlays();
+    left = await page.evaluate(() => window.__nova.run.enemies.length);
+    if (left < 2) break;
+  }
+  check('depth: explosive rounds chain a blast to a nearby enemy', left < 2, 'left=' + left);
 
   // Dismiss any draft/shop the kills may have opened, then test manual pause.
-  await page.evaluate(() => { if (window.__nova.draftOpen) { const c = document.querySelector('#draftCards .card'); if (c) c.click(); } if (window.__nova.shopOpen) document.getElementById('shopLeave').click(); });
+  await clearOverlays();
   await sleep(160);
   const paused0 = await page.evaluate(() => window.__nova.paused);
   await page.click('#pauseBtn');
