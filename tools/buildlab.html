@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
 
 <link rel="preconnect" href="https://www.googletagmanager.com">
@@ -237,6 +237,11 @@
     <div class="vp-hint" id="vpHint">Left-click: place &nbsp;&nbsp; Right-drag: orbit &nbsp;&nbsp; Scroll: zoom &nbsp;&nbsp; Middle-drag: pan &nbsp;&nbsp; Shift-drag: box select</div>
     <div class="vp-measure" id="vpMeasure" style="display:none;position:absolute;top:14px;right:14px;z-index:7;padding:6px 10px;border-radius:999px;background:rgba(12,14,30,.78);border:1px solid rgba(255,255,255,.14);font-size:.7rem;color:rgba(255,255,255,.7);backdrop-filter:blur(8px);pointer-events:none;"></div>
     <div id="marqueeBox" style="display:none;position:absolute;border:1px dashed rgba(0,212,170,.9);background:rgba(0,212,170,.12);pointer-events:none;z-index:6;"></div>
+    <div id="touchGizmo" aria-hidden="true" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:7;">
+      <button type="button" class="tg-handle tg-move" data-tg="move" aria-label="Drag to move the selected block" title="Drag to move" style="position:absolute;pointer-events:auto;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:2px solid rgba(0,212,170,.9);background:rgba(0,212,170,.22);color:#eafff9;font:700 .62rem/1 Fredoka,Inter,sans-serif;letter-spacing:.04em;cursor:grab;touch-action:none;user-select:none;backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,.35);display:none;">MOVE</button>
+      <button type="button" class="tg-handle tg-up" data-tg="up" aria-label="Drag up or down to change the block height" title="Height" style="position:absolute;pointer-events:auto;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;border:2px solid rgba(255,208,120,.9);background:rgba(255,208,120,.2);color:#fff6e6;font:700 .62rem/1 Fredoka,Inter,sans-serif;cursor:ns-resize;touch-action:none;user-select:none;backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,.35);display:none;">&#9650;&#9660;</button>
+      <button type="button" class="tg-handle tg-resize" data-tg="resize" aria-label="Drag out to grow or in to shrink the block" title="Resize" style="position:absolute;pointer-events:auto;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:12px;border:2px solid rgba(150,200,255,.9);background:rgba(150,200,255,.22);color:#eaf4ff;font:700 .58rem/1 Fredoka,Inter,sans-serif;cursor:nwse-resize;touch-action:none;user-select:none;backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,.35);display:none;">SIZE</button>
+    </div>
     <button onclick="EmberGuide.show()" aria-label="Ember guide" title="Show Ember - how to use BuildLab" style="position:absolute;bottom:18px;right:12px;z-index:8;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid var(--mascot-ember,#F2637A);background:rgba(242,99,122,.14);color:#fff;font-family:Fredoka,cursive;font-weight:700;font-size:.75rem;cursor:pointer;backdrop-filter:blur(8px);"><img src="/assets/mascots/ember-badge.webp" alt="" width="18" height="18" style="border-radius:50%;background:#fff;border:1px solid #fff;"> Help</button>
   </div>
 
@@ -2007,10 +2012,12 @@ function setupEvents() {
     const vp = document.getElementById('viewport');
     if (!vp) return;
     vp.addEventListener('touchstart', e => {
+      if (e.target && e.target.closest && e.target.closest('#touchGizmo')) return;
       swipeStartX = e.touches[0].clientX;
       swipeStartY = e.touches[0].clientY;
     }, {passive:true});
     vp.addEventListener('touchend', e => {
+      if (e.target && e.target.closest && e.target.closest('#touchGizmo')) return;
       const dx = e.changedTouches[0].clientX - swipeStartX;
       const dy = e.changedTouches[0].clientY - swipeStartY;
       if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*2) {
@@ -2164,6 +2171,8 @@ function setupEvents() {
       handleAction();
     }
   }, { passive: false });
+
+  setupTouchGizmo();
 }
 
 let mouseButton = -1;
@@ -2189,6 +2198,172 @@ function initGestureVectors() {
   _midRight = new THREE.Vector3();
   _midDir = new THREE.Vector3();
   _midUp = new THREE.Vector3(0, 1, 0);
+}
+
+// -------------------------------------------------------
+// TOUCH TRANSFORM GIZMO  (phones and tablets)
+//
+// On a touch device the desktop TransformControls gizmo is intentionally
+// off, because its handles fight tap-to-place. Instead a learner selects a
+// block, picks the Move or Resize tool, and drags a big, obvious on-screen
+// handle: MOVE follows the finger on a camera-facing plane, the arrow changes
+// height, and SIZE grows or shrinks the block. This is the touch equivalent of
+// "click the arrows to reposition it".
+// -------------------------------------------------------
+const _tgProjVec = new THREE.Vector3();
+const _tgWorldVec = new THREE.Vector3();
+const _tgTarget = new THREE.Vector3();
+const _tgNormal = new THREE.Vector3();
+let _tgDrag = null;
+let _tgBound = false;
+
+function isTouchUI() {
+  return !!(window._isMobileRender ||
+    (window.matchMedia && window.matchMedia('(pointer: coarse)').matches));
+}
+
+function tgActive() {
+  return isTouchUI() && !!selectedBlock && !selectedBlock.userData.locked &&
+    (currentTool === 'move' || currentTool === 'resize');
+}
+
+// Project a world point to canvas pixels (client space).
+function tgProjectClient(worldVec) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  _tgProjVec.copy(worldVec).project(camera);
+  return {
+    x: rect.left + (_tgProjVec.x * 0.5 + 0.5) * rect.width,
+    y: rect.top + (-_tgProjVec.y * 0.5 + 0.5) * rect.height,
+    behind: _tgProjVec.z > 1
+  };
+}
+
+function setupTouchGizmo() {
+  const el = document.getElementById('touchGizmo');
+  if (!el || _tgBound) return;
+  _tgBound = true;
+  el.querySelectorAll('.tg-handle').forEach(h => {
+    h.addEventListener('pointerdown', tgPointerDown, { passive: false });
+  });
+  window.addEventListener('pointermove', tgPointerMove, { passive: false });
+  window.addEventListener('pointerup', tgPointerUp, { passive: false });
+  window.addEventListener('pointercancel', tgPointerUp, { passive: false });
+}
+
+function updateTouchGizmo() {
+  const el = document.getElementById('touchGizmo');
+  if (!el) return;
+  if (!tgActive()) { if (el.style.display !== 'none') el.style.display = 'none'; return; }
+  const vp = document.getElementById('viewport');
+  const vpRect = vp.getBoundingClientRect();
+  const cRect = renderer.domElement.getBoundingClientRect();
+  selectedBlock.getWorldPosition(_tgWorldVec);
+  const c = tgProjectClient(_tgWorldVec);
+  if (c.behind) { el.style.display = 'none'; return; }
+
+  // Canvas pixels -> viewport-relative pixels (the overlay sits inside #viewport).
+  const cx = (cRect.left - vpRect.left) + (c.x - cRect.left);
+  const cy = (cRect.top - vpRect.top) + (c.y - cRect.top);
+  const isMove = currentTool === 'move';
+  el.style.display = 'block';
+  const moveH = el.querySelector('[data-tg="move"]');
+  const upH = el.querySelector('[data-tg="up"]');
+  const rsH = el.querySelector('[data-tg="resize"]');
+  moveH.style.display = isMove ? 'block' : 'none';
+  upH.style.display = isMove ? 'block' : 'none';
+  rsH.style.display = isMove ? 'none' : 'block';
+  moveH.style.left = cx + 'px'; moveH.style.top = cy + 'px';
+  upH.style.left = cx + 'px'; upH.style.top = (cy - 60) + 'px';
+  rsH.style.left = (cx + 46) + 'px'; rsH.style.top = (cy + 46) + 'px';
+}
+
+function tgPointerDown(e) {
+  if (!tgActive()) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const handle = e.currentTarget.dataset.tg;
+  const b = selectedBlock;
+  pushHistory('gizmo');
+  b.getWorldPosition(_tgWorldVec);
+  const c = tgProjectClient(_tgWorldVec);
+  _tgDrag = {
+    pointerId: e.pointerId,
+    handle: handle,
+    startClientX: e.clientX,
+    startClientY: e.clientY,
+    startBottom: b.position.y - (b.userData.h || 1) / 2,
+    startW: b.userData.w || 1, startH: b.userData.h || 1, startD: b.userData.d || 1,
+    startSize: Math.max(b.userData.w || 1, b.userData.h || 1, b.userData.d || 1),
+    plane: null,
+    cx: c.x, cy: c.y,
+    startDist: Math.hypot(e.clientX - c.x, e.clientY - c.y) || 48
+  };
+  try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  if (typeof toast === 'function') toast(handle === 'resize' ? 'Drag out to grow, in to shrink' : 'Drag to move');
+}
+
+function tgPointerMove(e) {
+  if (!_tgDrag || e.pointerId !== _tgDrag.pointerId) return;
+  const b = selectedBlock;
+  if (!b) { _tgDrag = null; return; }
+  e.preventDefault();
+
+  if (_tgDrag.handle === 'up') {
+    const dy = _tgDrag.startClientY - e.clientY;
+    const steps = Math.round(dy / 26);
+    const newBottom = snap(_tgDrag.startBottom + steps * GRID);
+    b.position.y = newBottom + (b.userData.h || 1) / 2;
+    window.highlight.position.copy(b.position);
+    window.highlight.rotation.copy(b.rotation);
+    try { syncPositionInputs(); } catch (err) {}
+    try { renderOutliner(); } catch (err) {}
+    requestRender(400);
+    return;
+  }
+
+  if (_tgDrag.handle === 'move') {
+    if (!_tgDrag.plane) {
+      _tgDrag.plane = new THREE.Plane();
+      camera.getWorldDirection(_tgNormal);
+      b.getWorldPosition(_tgWorldVec);
+      _tgDrag.plane.setFromNormalAndCoplanarPoint(_tgNormal, _tgWorldVec);
+    }
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    if (raycaster.ray.intersectPlane(_tgDrag.plane, _tgTarget)) {
+      b.position.x = snap(_tgTarget.x);
+      b.position.z = snap(_tgTarget.z);
+      b.position.y = snap(_tgTarget.y - (b.userData.h || 1) / 2) + (b.userData.h || 1) / 2;
+    }
+    window.highlight.position.copy(b.position);
+    window.highlight.rotation.copy(b.rotation);
+    try { syncPositionInputs(); } catch (err) {}
+    try { renderOutliner(); } catch (err) {}
+    requestRender(400);
+    return;
+  }
+
+  if (_tgDrag.handle === 'resize') {
+    const dist = Math.hypot(e.clientX - _tgDrag.cx, e.clientY - _tgDrag.cy);
+    let f = dist / _tgDrag.startDist;
+    let s = Math.round(_tgDrag.startSize * f);
+    s = Math.max(1, Math.min(24, s));
+    const d = b.userData;
+    const baseY = b.position.y - (d.h || 1) / 2;
+    d.w = s; d.h = s; d.d = s;
+    b.geometry = getCachedGeometry(d.shape, d.w, d.h, d.d);
+    b.position.y = baseY + d.h / 2;
+    selectBlock(b);
+    requestRender(400);
+  }
+}
+
+function tgPointerUp(e) {
+  if (!_tgDrag || e.pointerId !== _tgDrag.pointerId) return;
+  _tgDrag = null;
+  if (typeof toast === 'function') toast('Updated');
 }
 
 function onMouseDown(e) {
@@ -2707,14 +2882,15 @@ function exportOBJ() {
         toast('Exported ' + buildName + '.obj via worker!');
       };
       w.onerror = ()=>{ toast('Worker failed, falling back'); exportOBJFallback(); };
-      w.postMessage({ blocks: data, name: buildName });
+      w.postMessage({ blocks: data, name: buildName, scale: currentExportProfile().scale, axis: currentExportProfile().axis });
       return;
     }
   }
   exportOBJFallback();
 }
 function exportOBJFallback(){
-  let obj = `# JVDesignStudio BuildLab, ${buildName}\n`;
+  const profile = currentExportProfile();
+  let obj = `# JVDesignStudio BuildLab, ${buildName}\n# Units: 1 unit = 1 ${profile.unitShort}${profile.axis === 'z' ? ', Z-up (converted from Y-up)' : ''}\n`;
   let vOffset = 1;
   blocks.filter(b=>!b.userData.hidden).forEach((mesh, mi) => {
     const geo = mesh.geometry.clone();
@@ -2722,7 +2898,8 @@ function exportOBJFallback(){
     const pos = geo.attributes.position;
     obj += `\no block_${mi+1}\n`;
     for (let i = 0; i < pos.count; i++) {
-      obj += `v ${pos.getX(i).toFixed(3)} ${pos.getY(i).toFixed(3)} ${pos.getZ(i).toFixed(3)}\n`;
+      const v = profilePoint(profile, pos.getX(i), pos.getY(i), pos.getZ(i));
+      obj += `v ${v[0].toFixed(3)} ${v[1].toFixed(3)} ${v[2].toFixed(3)}\n`;
     }
     const idx = geo.index;
     if (idx) {
@@ -2738,7 +2915,7 @@ function exportOBJFallback(){
   a.download = buildName.replace(/\s+/g,'_') + '.obj';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-  toast('Exported ' + buildName + '.obj!');
+  toast('Exported ' + buildName + '.obj (' + profile.unitShort + ')');
 }
 
 // -------------------------------------------------------
@@ -2954,6 +3131,22 @@ function exportGLTF() {
   if (blocks.length === 0) { toast('Nothing to export!'); return; }
 
   const exporter = new GLTFExporter();
+  const profile = currentExportProfile();
+
+  // A throwaway group carrying the engine profile (unit scale + up-axis). The
+  // clones share geometry/materials with the live blocks, so nothing on screen
+  // is touched or reparented.
+  const exportGroup = new THREE.Group();
+  exportGroup.rotation.x = profile.axis === 'z' ? Math.PI / 2 : 0;
+  exportGroup.scale.setScalar(profile.scale);
+  blocks.filter(b => !b.userData.hidden).forEach((mesh) => {
+    const clone = new THREE.Mesh(mesh.geometry, mesh.material);
+    clone.position.copy(mesh.position);
+    clone.quaternion.copy(mesh.quaternion);
+    clone.scale.copy(mesh.scale);
+    exportGroup.add(clone);
+  });
+  exportGroup.updateMatrixWorld(true);
 
   const onDone = (result) => {
     // With binary:true the exporter returns an ArrayBuffer (.glb); otherwise a
@@ -2972,13 +3165,16 @@ function exportGLTF() {
     link.download = buildName.replace(/\s+/g, '_') + ext;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    toast('Exported ' + buildName + ext + ' with materials!');
+    toast('Exported ' + buildName + ext + ' (' + profile.unitShort + ')');
   };
 
-  // Export just the blocks (not lights/grid/gizmo). r128's GLTFExporter uses the
-  // 3-arg parse(input, onDone, options) signature  no onError callback.
+  // Export the profile group (not lights/grid/gizmo). This GLTFExporter build
+  // uses parse(input, onDone, onError, options), so binary is passed correctly.
   try {
-    exporter.parse(blocks, onDone, { binary: true, onlyVisible: true });
+    exporter.parse(exportGroup, onDone, (err) => {
+      console.error('GLTF export error:', err);
+      toast('Export failed  see console');
+    }, { binary: true, onlyVisible: true });
   } catch (e) {
     console.error('GLTF export error:', e);
     toast('Export failed  see console');
@@ -2991,7 +3187,8 @@ function exportGLTF() {
 function exportOBJWithMTL() {
   if (blocks.length === 0) { toast('Nothing to export!'); return; }
 
-  let obj = `# JVDesignStudio BuildLab, ${buildName}\n# Exported with materials\nmtllib ${buildName.replace(/\s+/g, '_')}.mtl\n`;
+  const profile = currentExportProfile();
+  let obj = `# JVDesignStudio BuildLab, ${buildName}\n# Exported with materials\n# Units: 1 unit = 1 ${profile.unitShort}${profile.axis === 'z' ? ', Z-up (converted from Y-up)' : ''}\nmtllib ${buildName.replace(/\s+/g, '_')}.mtl\n`;
   let mtl = `# Materials for ${buildName}\n`;
   let vOffset = 1;
   const materials = new Map();
@@ -3017,7 +3214,8 @@ function exportOBJWithMTL() {
     geo.applyMatrix4(mesh.matrixWorld);
     const pos = geo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
-      obj += `v ${pos.getX(i).toFixed(4)} ${pos.getY(i).toFixed(4)} ${pos.getZ(i).toFixed(4)}\n`;
+      const v = profilePoint(profile, pos.getX(i), pos.getY(i), pos.getZ(i));
+      obj += `v ${v[0].toFixed(4)} ${v[1].toFixed(4)} ${v[2].toFixed(4)}\n`;
     }
     const idx = geo.index;
     if (idx) {
@@ -3061,8 +3259,8 @@ function getExportWorker(){
       return [x,y,z];
     }
     self.onmessage = function(e){
-      const { blocks, name } = e.data;
-      let obj = '# JVDesignStudio BuildLab, ' + name + ' (worker, box-approx)\\n';
+      const { blocks, name, scale, axis } = e.data;
+      let obj = '# JVDesignStudio BuildLab, ' + name + ' (worker, box-approx)\\n# Units: 1 unit = 1 ' + (axis==='z'?'cm':'m') + (axis==='z'?', Z-up':'') + '\\n';
       let vOff=1;
       for(let i=0;i<blocks.length;i++){
         const b=blocks[i];
@@ -3072,7 +3270,10 @@ function getExportWorker(){
         const local = [[-hw,-hh,-hd],[hw,-hh,-hd],[hw,hh,-hd],[-hw,hh,-hd],[-hw,-hh,hd],[hw,-hh,hd],[hw,hh,hd],[-hw,hh,hd]];
         const verts=[];
         for(const lv of local){ const rv=rotateXYZ(lv,rx,ry,rz); verts.push([rv[0]+cx, rv[1]+cy, rv[2]+cz]); }
-        for(const v of verts) obj += 'v '+v[0].toFixed(4)+' '+v[1].toFixed(4)+' '+v[2].toFixed(4)+'\\n';
+        for(const v of verts){
+          let t = axis==='z' ? [v[0]*scale, -v[2]*scale, v[1]*scale] : [v[0]*scale, v[1]*scale, v[2]*scale];
+          obj += 'v '+t[0].toFixed(4)+' '+t[1].toFixed(4)+' '+t[2].toFixed(4)+'\\n';
+        }
         const f=[[1,2,3],[1,3,4],[5,8,7],[5,7,6],[1,5,6],[1,6,2],[2,6,7],[2,7,3],[3,7,8],[3,8,4],[4,8,5],[4,5,1]];
         for(const tri of f) obj += 'f '+(tri[0]+vOff)+' '+(tri[1]+vOff)+' '+(tri[2]+vOff)+'\\n';
         vOff+=8;
@@ -3095,7 +3296,7 @@ function exportOBJViaWorkerOrFallback(fallbackFn){
         toast('Exported via worker');
       };
       w.onerror = ()=>{ fallbackFn(); };
-      w.postMessage({ blocks: data, name: buildName });
+      w.postMessage({ blocks: data, name: buildName, scale: currentExportProfile().scale, axis: currentExportProfile().axis });
       return true;
     }
   }
@@ -3414,6 +3615,7 @@ function animate() {
     window.highlight.position.copy(selectedBlock.position);
     window.highlight.rotation.copy(selectedBlock.rotation);
   }
+  if (typeof updateTouchGizmo === 'function') updateTouchGizmo();
   if (csm) { if (blocks.length < 30) { /* small scenes: skip CSM, single shadow map is enough */ } else try{ csm.update(); }catch(e){} }
   renderer.render(scene, camera);
 }
@@ -4651,6 +4853,28 @@ const ENGINE_INFO = {
   }
 };
 
+// Export profiles: the chosen engine decides the units and up-axis baked into
+// OBJ and GLB exports, so the model drops into that engine without the learner
+// scaling or rotating it by hand. Generic/Godot/Unity are 1:1 metres and Y-up;
+// Roblox is studs (1 stud = 0.28 m); Unreal is centimetres and Z-up. RBXM is
+// already Roblox studs and is left untouched.
+const EXPORT_PROFILES = {
+  '':      { id: 'generic', label: 'As built', unitShort: 'm',     scale: 1,        axis: 'y' },
+  godot:   { id: 'godot',   label: 'Godot',    unitShort: 'm',     scale: 1,        axis: 'y' },
+  unity:   { id: 'unity',   label: 'Unity',    unitShort: 'm',     scale: 1,        axis: 'y' },
+  roblox:  { id: 'roblox',  label: 'Roblox',   unitShort: 'studs', scale: 1 / 0.28, axis: 'y' },
+  unreal:  { id: 'unreal',  label: 'Unreal',   unitShort: 'cm',    scale: 100,      axis: 'z' }
+};
+
+function currentExportProfile() { return EXPORT_PROFILES[_engineContext] || EXPORT_PROFILES['']; }
+
+// Scale a world point into the engine's unit and, for Z-up engines, rotate the
+// page's Y-up into Z-up (a proper rotation, so nothing is mirrored).
+function profilePoint(profile, x, y, z) {
+  const sx = x * profile.scale, sy = y * profile.scale, sz = z * profile.scale;
+  return profile.axis === 'z' ? [sx, -sz, sy] : [sx, sy, sz];
+}
+
 function setEngineContext(engine) {
   _engineContext = engine;
   try { localStorage.setItem('jvds_buildlab_engine', engine); } catch(e) {}
@@ -4747,6 +4971,12 @@ function showExportPreview(format, exportFn) {
   html += '<div style="margin-bottom:8px;"><strong>' + (formatNames[format] || format) + '</strong></div>';
   html += '<div>' + count + ' blocks &middot; ' + colours + ' colours &middot; ~' + estKB + 'KB</div>';
   if (groupsCount > 0) html += '<div>' + groupsCount + ' groups (exported as nested Models)</div>';
+  const prof = currentExportProfile();
+  if (format === 'obj' || format === 'objmtl' || format === 'gltf') {
+    html += '<div style="margin-top:4px;color:#9fb0e0;">Units: 1 unit = 1 ' + prof.unitShort
+      + (prof.axis === 'z' ? ', Z-up (rotated from the page for ' + prof.label + ')' : ', Y-up')
+      + '</div>';
+  }
   if (steps) html += steps;
   if (count > 300) {
     html += '<div style="margin-top:8px;padding:6px 8px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:6px;font-size:.75rem;color:var(--accent2);">&#x26A0; Large build &mdash; some apps may slow down with this many parts</div>';
@@ -5001,7 +5231,9 @@ Object.assign(window, {
   saveProjectFile, loadProjectFile, handleProjectFile, handleImportOBJ, handleImportGLTF, handleImportRBLX, triggerImportOBJ, triggerImportGLTF, triggerImportRBLX,
   showExportPreview, exportRBXM, exportGLTF, exportOBJ, exportOBJWithMTL, exportOBJFallback, exportScreenshot, shareBuild, renderOutliner, toggleBlockVisibility, toggleBlockLock, duplicateSingleBlock, isolateSelection, deleteSelectedOrAll, focusOutlinerSelection,
   updateAmbientLight, updateDirectionalLight, resetLighting, toggleShadows, toggleEnv,
-  addBlock, deleteBlock, selectBlock, deselectBlock, raycaster
+  addBlock, deleteBlock, selectBlock, deselectBlock, raycaster,
+  isTouchUI, tgActive, updateTouchGizmo,
+  currentExportProfile, profilePoint, setEngineContext
 });
 try{
   Object.defineProperty(window,'blocks',{get:()=>blocks, set:v=>{ blocks=v; }, configurable:true});
