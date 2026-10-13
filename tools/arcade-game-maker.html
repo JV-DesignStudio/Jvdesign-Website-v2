@@ -36,9 +36,9 @@
 <script defer src="../phaser-arcade-physics.min.js"></script>
 <!-- Offline QR code generator (MIT, Kazuhiko Arase). Replaces the api.qrserver.com dependency so share QR codes work with no network. -->
 <script defer src="../qrcode-generator.js"></script>
-<link rel="preload" href="../style-tool-arcade-game-maker.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<link rel="stylesheet" href="../style-tool-arcade-game-maker.css?v=17">
 <noscript><link rel="stylesheet" href="../style-tool-arcade-game-maker.css?v=17"></noscript>
-<link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
+<link rel="stylesheet" href="../style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css">
 <link rel="stylesheet" href="/ember-guide.css">
 <script type="application/ld+json">
@@ -80,6 +80,7 @@
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 </head>
 <body>
@@ -92,7 +93,7 @@
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
-  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" data-fallback="https://placehold.co/38x38/403B33/F0EAD6?text=JV">
  <span class="logo-name">JVDesignStudio</span>
  </a>
    <nav class="main-nav" id="mainNav" aria-label="Main">
@@ -16207,6 +16208,13 @@ function _updateLandscapeNudge(active) {
 // Player finished someone else's shared game and wants in on the fun: stop
 // playing, keep the loaded config, drop them into the editor with a remix title.
 function _goRemixShared() {
+    // A1504: in an exported/sent single-file game there is no editor on this page,
+    // so Remix opens the maker preloaded with this game instead.
+    if (window.__exportMode && window.__exportRemixUrl) {
+        try { window.open(window.__exportRemixUrl, '_blank', 'noopener'); }
+        catch (e) { location.href = window.__exportRemixUrl; }
+        return;
+    }
     const nameRow = document.getElementById('goNameRow');
     if (nameRow && nameRow.style.display !== 'none') _saveGoScore();
     const ov = document.getElementById('goOverlay');
@@ -16343,6 +16351,16 @@ async function _buildExportHtml() {
     const logoLink = root.querySelector('.logo-link');
     if (logoLink) { logoLink.href = 'https://jvdesignstudio.co.uk'; logoLink.target = '_blank'; logoLink.rel = 'noopener'; }
     // Inject auto-boot script with baked config
+    // A1504: bake the creator's challenge score and a remix link into the export
+    // so a friend can try to beat it, then make their own version in one tap.
+    let _challenge = 0;
+    try { _challenge = parseInt(localStorage.getItem('jv_best_' + (_engineData.genre || '')) || '0', 10) || 0; } catch (e) {}
+    let _remixUrl = '';
+    try {
+        const _rp = _buildSharePayload(getPayload());
+        const _enc = await _compressPayload(JSON.stringify(_rp));
+        _remixUrl = 'https://jvdesignstudio.co.uk/tools/arcade-game-maker.html?remix=' + _enc;
+    } catch (e) { console.warn('export remix link:', e); }
     const cfg = {
         title:            _engineData.title,
         genre:            _engineData.genre,
@@ -16365,7 +16383,9 @@ async function _buildExportHtml() {
         customMusic:      GameAudio.customMusic || null,
         musicOn:          document.getElementById('musicToggle').checked,
         musicStyle:       document.getElementById('musicStyle').value,
-        volume:           parseInt(document.getElementById('volumeSlider').value)
+        volume:           parseInt(document.getElementById('volumeSlider').value),
+        challenge:        _challenge,
+        remixUrl:         _remixUrl
     };
     const boot = document.createElement('script');
     boot.textContent = `(function(){window.__exportMode=true;var _c=${JSON.stringify(cfg)};
@@ -16393,6 +16413,9 @@ window.addEventListener('DOMContentLoaded',function(){
     if($('gravityY'))     { $('gravityY').value=_c.gravity||600; $('gravityRange').value=_c.gravity||600; var gv=$('gravityVal'); if(gv) gv.textContent=_c.gravity||600; }
     if($('jumpForce'))    { $('jumpForce').value=_c.jump||450; $('jumpForceRange').value=_c.jump||450; var jv=$('jumpVal'); if(jv) jv.textContent=_c.jump||450; }
     _engineData=_c;
+    // A1504: show the creator's challenge and enable one-tap remix in the export.
+    if(_c.challenge){ window._sharedFrom={name:'The maker',score:_c.challenge}; }
+    if(_c.remixUrl){ window.__exportRemixUrl=_c.remixUrl; }
     gameState.lives=liveConfig.lives;
     _updateHeartsDisplay(gameState.lives,liveConfig.lives);
     if(typeof onGenreChange==='function')        onGenreChange();
