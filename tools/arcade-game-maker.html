@@ -79,7 +79,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
 </head>
 <body>
@@ -239,21 +239,10 @@
  <div id="genre-desc" class="genre-desc"></div>
  </div>
 
- <!-- ── STARTER TEMPLATES ── -->
+ <!-- ── STARTER TEMPLATES ── one good example for every genre ── -->
  <div id="starterTemplates" style="margin-top:2px;">
- <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">✨ Start from an example</div>
- <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
- <button class="starter-btn" onclick="_loadTemplate('neon_wave')" title="Wave Survival neon cyber theme">💜 Neon Wave</button>
- <button class="starter-btn" onclick="_loadTemplate('space_survival')" title="Wave Survival space theme">🚀 Space Siege</button>
- <button class="starter-btn" onclick="_loadTemplate('cyber_invaders')" title="Space Invaders cyber theme">🤖 Cyber Invaders</button>
- <button class="starter-btn" onclick="_loadTemplate('ocean_shooter')" title="Shooter ocean theme">🌊 Ocean Shooter</button>
- <button class="starter-btn" onclick="_loadTemplate('ghost_maze')" title="Roguelike dungeon crawler">👻 Ghost Maze</button>
- <button class="starter-btn" onclick="_loadTemplate('dino_runner')" title="Auto-runner with double jump">🦕 Dino Dash</button>
- <button class="starter-btn" onclick="_loadTemplate('street_dojo')" title="1v1 Fighter cyber dojo">🥊 Street Dojo</button>
- <button class="starter-btn" onclick="_loadTemplate('wave_siege')" title="Wave Survival neon fortress">🌊 Wave Siege</button>
- <button class="starter-btn" onclick="_loadTemplate('pinball_classic')" title="Classic pinball table">🔮 Pinball Classic</button>
- <button class="starter-btn" onclick="_loadTemplate('rhythm_pop')" title="Rhythm game with pop beat">🎵 Rhythm Pop</button>
- </div>
+ <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">✨ Start from an example <span style="font-weight:500;text-transform:none;letter-spacing:0;opacity:.7;">(one per genre)</span></div>
+ <div id="starterGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;"></div>
  </div>
 
  <div class="form-group">
@@ -393,6 +382,7 @@
  <button class="btn-sm" style="flex:1;" onclick="importGameFile()" title="Load a .json or .html game file">📥 Import</button>
  <input id="importFileInput" type="file" accept=".json,.html" style="display:none;" onchange="_onImportFileChange(this)">
  </div>
+ <button class="btn-sm" style="width:100%;margin-top:5px;background:rgba(34,197,94,.15);color:#4ade80;border-color:rgba(34,197,94,.3);font-weight:700;" onclick="sendGameToFriend()" title="Send the playable game to a friend through your phone's share sheet. They open the file and play, no account needed.">📲 Send to a Friend</button>
  <!-- More tools, collapsed by default -->
  <details style="margin-top:4px;">
  <summary style="font-size:.65rem;color:var(--muted);cursor:pointer;padding:4px 0;list-style:none;display:flex;align-items:center;gap:4px;user-select:none;">
@@ -3919,7 +3909,7 @@ score += bumper.pts;
  </div>
 
  <!-- Footer -->
- <div style="text-align:center;font-size:.65rem;color:var(--muted);padding-top:8px;">🕹️ Made with love at <a href="https://jvdesignstudio.co.uk" target="_blank" style="color:var(--purple-lt);">JVDesignStudio</a></div>
+ <div style="text-align:center;font-size:.65rem;color:var(--muted);padding-top:8px;">🕹️ Made with love at <a href="https://jvdesignstudio.co.uk" target="_blank" style="color:var(--purple-lt);" rel="noopener noreferrer">JVDesignStudio</a></div>
  </div>
 </div>
 <!-- PLAYER BAR , only visible in player mode (shared game links) -->
@@ -3971,12 +3961,12 @@ score += bumper.pts;
 <script type="module">
 import { liveConfig, gameState, touchInput, gameTheme, themeInt, themeHex, _themeData, _lcDefaults, _clearTouchInput } from '../src/arcade-maker/liveConfig.js';
 import { GameAudio } from '../src/arcade-maker/GameAudio.js';
-import { GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS } from '../src/arcade-maker/genres.js';
+import { GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS, GENRE_QUALITY, GENRE_QUALITY_LABELS, GENRE_HOOKS, GENRE_VARIANT_OF } from '../src/arcade-maker/genres.js';
 import { ACH_TOAST } from '../src/arcade-maker/achievements.js';
 // The modules export clean names; the classic code below still reads the old
 // underscore-prefixed globals, so those aliases are published too.
-const _GENRE_DESCS = GENRE_DESCS, _GENRE_ICONS = GENRE_ICONS, _ACH_TOAST = ACH_TOAST;
-Object.assign(window, { liveConfig, gameState, touchInput, gameTheme, themeInt, themeHex, _themeData, _lcDefaults, _clearTouchInput, GameAudio, GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS, ACH_TOAST, _GENRE_DESCS, _GENRE_ICONS, _ACH_TOAST });
+const _GENRE_DESCS = GENRE_DESCS, _GENRE_ICONS = GENRE_ICONS, _ACH_TOAST = ACH_TOAST, _GENRE_QUALITY = GENRE_QUALITY;
+Object.assign(window, { liveConfig, gameState, touchInput, gameTheme, themeInt, themeHex, _themeData, _lcDefaults, _clearTouchInput, GameAudio, GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS, GENRE_QUALITY, GENRE_QUALITY_LABELS, GENRE_HOOKS, GENRE_VARIANT_OF, ACH_TOAST, _GENRE_DESCS, _GENRE_ICONS, _ACH_TOAST, _GENRE_QUALITY });
 </script>
 <script>
 // ── LIVE CONFIG (read every frame) ───────────────────────────────────────────
@@ -4483,8 +4473,32 @@ const PRESETS = {
     hard:   { speed:280, enemySpeed:240, spawnDelay:700,  bulletSpeed:660, obstacleSpeed:320, jumpForce:500, gravity:800, fireCooldown:130, difficultyScale:2.0, lives:2, pointsPerKill:25 },
     chaos:  { speed:420, enemySpeed:360, spawnDelay:400,  bulletSpeed:800, obstacleSpeed:480, jumpForce:600, gravity:1100,fireCooldown:80,  difficultyScale:3.0, lives:1, pointsPerKill:50 }
 };
+// ── PER-TEMPLATE DIFFICULTY (A1477) ──────────────────────────────────────────
+// Each starter template can be loaded at easy/normal/hard. The template keeps
+// its identity (title, theme, story, lives) and the difficulty scales the
+// tuning that defines the challenge: speed, spawn rate and difficultyScale.
+// normal is a no-op so the templates behave exactly as before.
+const _DIFFICULTY = {
+    easy:   { speedMul: 0.80, diffMul: 0.6, spawnMul: 1.30, label: 'Easy' },
+    normal: { speedMul: 1.00, diffMul: 1.0, spawnMul: 1.00, label: 'Normal' },
+    hard:   { speedMul: 1.28, diffMul: 1.6, spawnMul: 0.78, label: 'Hard' },
+    chaos:  { speedMul: 1.60, diffMul: 2.2, spawnMul: 0.60, label: 'Chaos' },
+};
+let _currentPreset = 'normal';
+function _templateDifficulty(key, level) {
+    const base = _TEMPLATES[key];
+    if (!base) return null;
+    const d = _DIFFICULTY[level] || _DIFFICULTY.normal;
+    const out = Object.assign({}, base);
+    out.speed = Math.round((base.speed || 200) * d.speedMul);
+    out.difficultyScale = +((((base.difficultyScale != null) ? base.difficultyScale : 1) * d.diffMul)).toFixed(2);
+    if (base.enemySpeed) out.enemySpeed = Math.round(base.enemySpeed * d.speedMul);
+    if (base.spawnDelay) out.spawnDelay = Math.round(base.spawnDelay * d.spawnMul);
+    return out;
+}
 function applyPreset(name) {
     const p = PRESETS[name]; if (!p) return;
+    _currentPreset = name;
     Object.assign(liveConfig, p);
     // Sync all Build tab inputs
     document.getElementById('playerSpeed').value = p.speed; document.getElementById('playerSpeedRange').value = p.speed; document.getElementById('speedVal').textContent = p.speed;
@@ -4639,10 +4653,139 @@ const _TEMPLATES = {
     storyWin:'Perfect rhythm! 🎵', storyLose:'Missed too many beats...',
     difficultyScale:0,
   },
+  // One example per remaining genre, so every picker choice has a good start.
+  star_dodge: {
+    genre:'DODGE', theme:'neon', title:'Star Dodge',
+    speed:240, lives:3, dodgeStarRatio:35,
+    coinsEnabled:true, particleStyle:'sparkle', particleColor:'purple',
+    storyIntro:'Dodge the falling rocks and grab every star you can!',
+    storyWin:'Star collector! ⭐', storyLose:'Crushed by the sky...',
+    difficultyScale:1,
+  },
+  brick_blitz: {
+    genre:'BREAKER', theme:'candy', title:'Brick Blitz',
+    speed:210, lives:3, brickRows:5,
+    particleStyle:'burst', particleColor:'rainbow',
+    storyIntro:'Bounce the ball and smash every brick to clear the board!',
+    storyWin:'Board cleared! 🧱', storyLose:'Out of lives...',
+    difficultyScale:1,
+  },
+  sky_flap: {
+    genre:'FLAPPY', theme:'forest', title:'Sky Flap',
+    speed:200, lives:1, pipeGap:140,
+    particleStyle:'star', particleColor:'green',
+    storyIntro:'Tap to flap and thread the gaps for as long as you can!',
+    storyWin:'Soaring high! 🐦', storyLose:'Clipped a pipe...',
+    difficultyScale:1,
+  },
+  pong_duel: {
+    genre:'PONG', theme:'cyber', title:'Pong Duel',
+    speed:200, lives:1, paddleW:80,
+    particleStyle:'burst', particleColor:'cyan',
+    storyIntro:'Out-reflect the CPU paddle and win the set!',
+    storyWin:'Match won! 🏓', storyLose:'Beaten to the ball...',
+    difficultyScale:1,
+  },
+  glow_serpent: {
+    genre:'SNAKE', theme:'neon', title:'Glow Serpent',
+    speed:200, lives:1, snakeCellSize:20, snakeSpeed:110, snakeStartLen:4,
+    snakeWallWrap:true, snakePoisonFood:true, snakeGoldenFood:true,
+    particleStyle:'sparkle', particleColor:'purple',
+    storyIntro:'Eat, grow and never bite your own tail!',
+    storyWin:'Legendary serpent! 🐍', storyLose:'Bit yourself...',
+    difficultyScale:1,
+  },
+  rock_blaster: {
+    genre:'ASTEROIDS', theme:'space', title:'Rock Blaster',
+    speed:220, lives:3, asteroidCount:6, asteroidSpeedMul:1.2, asteroidSaucer:true,
+    particleStyle:'burst', particleColor:'purple',
+    storyIntro:'Spin, thrust and blast every rock in the field!',
+    storyWin:'Field cleared! ☄️', storyLose:'Lost in the debris...',
+    difficultyScale:1,
+  },
+  neon_grand_prix: {
+    genre:'RACING', theme:'neon', title:'Neon Grand Prix',
+    speed:280, lives:3,
+    particleStyle:'burst', particleColor:'cyan',
+    storyIntro:'Drift, boost and cross the finish line first!',
+    storyWin:'Chequered flag! 🏎️', storyLose:'Spun out...',
+    difficultyScale:1,
+  },
+  sky_hopper: {
+    genre:'HOPPER', theme:'candy', title:'Sky Hopper',
+    speed:210, lives:3, doubleJump:true,
+    particleStyle:'star', particleColor:'rainbow',
+    storyIntro:'Leap from platform to platform and climb as high as you can!',
+    storyWin:'Top of the sky! 🐸', storyLose:'Fell too far...',
+    difficultyScale:1,
+  },
+  crate_shift: {
+    genre:'PUZZLE', theme:'castle', title:'Crate Shift',
+    speed:200, lives:3,
+    particleStyle:'sparkle', particleColor:'gold',
+    storyIntro:'Push every crate onto a target to solve the puzzle!',
+    storyWin:'Puzzle solved! 🧩', storyLose:'Stuck... try again.',
+    difficultyScale:0,
+  },
+  tower_guard: {
+    genre:'DEFENSE', theme:'forest', title:'Tower Guard',
+    speed:200, lives:5,
+    particleStyle:'burst', particleColor:'green',
+    storyIntro:'Place your towers and stop every wave before it reaches the gate!',
+    storyWin:'Gate held! 🗼', storyLose:'The line broke...',
+    difficultyScale:1,
+  },
+  tap_empire: {
+    genre:'CLICKER', theme:'candy', title:'Tap Empire',
+    speed:200, lives:1,
+    particleStyle:'star', particleColor:'rainbow',
+    storyIntro:'Tap the target, buy upgrades and watch your score soar!',
+    storyWin:'Empire built! 👆', storyLose:'Keep tapping!',
+    difficultyScale:0,
+  },
+  wind_shots: {
+    genre:'PAPERTOSS', theme:'cyber', title:'Wind Shots',
+    speed:200, lives:1, paperTossWindMax:140, paperTossBinWidth:70, paperTossMissLimit:5,
+    particleStyle:'burst', particleColor:'cyan',
+    storyIntro:'Flick the paper, read the wind and land every shot in the bin!',
+    storyWin:'Nothing but net! 🏀', storyLose:'Too many misses...',
+    difficultyScale:1,
+  },
+};
+
+// Balance pass record (A1477). For every genre, the lives band and difficulty
+// band its starter was tuned to, plus a one-line note on why the numbers are
+// fair. tests/arcade-game-maker-balance.js checks every genre is covered and
+// that every template stays inside sane lives/difficulty bounds.
+const _BALANCE = {
+  SHOOTER:      { lives:[2,5], diff:[0.5,2], note:'3 lives, ramps with waves' },
+  PLATFORMER:   { lives:[3,5], diff:[0.5,2], note:'3+ lives, forgiving jumps' },
+  DODGE:        { lives:[2,5], diff:[0.5,2], note:'endless with a 45s goal' },
+  BREAKER:      { lives:[2,5], diff:[0.5,2], note:'clear the board, 3 balls' },
+  RUNNER:       { lives:[1,3], diff:[0.5,2], note:'one-life run, speed ramps' },
+  FLAPPY:       { lives:[1,3], diff:[0.5,2], note:'one-life flap, gap shrinks' },
+  INVADERS:     { lives:[2,5], diff:[0.5,2], note:'3 lives, grid tightens' },
+  PONG:         { lives:[1,3], diff:[0.5,2], note:'first to 5, no life gate' },
+  SNAKE:        { lives:[1,3], diff:[0.5,2], note:'one life, speeds up with food' },
+  ASTEROIDS:    { lives:[2,5], diff:[0.5,2], note:'3 lives, rocks split' },
+  ROGUELIKE:    { lives:[3,5], diff:[0.5,2], note:'5 hp, room by room' },
+  RACING:       { lives:[2,5], diff:[0.5,2], note:'3 lives, 60s race' },
+  HOPPER:       { lives:[2,5], diff:[0.5,2], note:'3 lives, steady climb' },
+  BEAT:         { lives:[1,5], diff:[0,1],   note:'best of 3 rounds' },
+  PUZZLE:       { lives:[1,5], diff:[0,1],   note:'resets are free' },
+  RHYTHM:       { lives:[1,5], diff:[0,1],   note:'25 misses, score 2000' },
+  DEFENSE:      { lives:[3,5], diff:[0.5,2], note:'gate hp, hold 90s' },
+  PINBALL:      { lives:[2,5], diff:[0.5,2], note:'3 balls, score 5000' },
+  CLICKER:      { lives:[1,5], diff:[0,1],   note:'no fail state' },
+  MEMORY:       { lives:[1,5], diff:[0,1],   note:'timer based, no death' },
+  WAVESURVIVAL: { lives:[2,4], diff:[0.5,2.5], note:'2 lives, waves scale' },
+  PAPERTOSS:    { lives:[1,3], diff:[0,1],   note:'5 misses allowed' },
 };
 
 function _loadTemplate(key) {
-  const tpl = _TEMPLATES[key];
+  // Load at the difficulty the learner last picked (Easy/Normal/Hard/Chaos),
+  // so a template has real easy/normal/hard variants (A1477).
+  const tpl = _templateDifficulty(key, _currentPreset) || _TEMPLATES[key];
   if (!tpl) return;
   // Apply all config values to liveConfig
   Object.assign(liveConfig, tpl);
@@ -4664,6 +4807,9 @@ function _loadTemplate(key) {
     const el = document.getElementById(id);
     if (el) { el.value = tpl.speed; el.dispatchEvent(new Event('input',{bubbles:true})); }
   });
+  // onGenreChange() resets speed to the genre default; re-apply the template's
+  // (difficulty-scaled) speed so Easy/Normal/Hard actually differ (A1477).
+  if (tpl.speed != null) liveConfig.speed = tpl.speed;
   // Sync lives
   document.querySelectorAll('#pillLives .pill').forEach(p => {
     p.classList.toggle('active', +p.textContent === tpl.lives || (tpl.lives>=99 && p.textContent==='∞'));
@@ -4683,6 +4829,9 @@ function _loadTemplate(key) {
   }
   // Sync controls hint and mission strip for the loaded genre
   onGenreChange();
+  // onGenreChange() resets speed to the genre default, so re-apply the
+  // template's difficulty-scaled speed last (A1477).
+  if (tpl.speed != null) liveConfig.speed = tpl.speed;
   // Auto-load built-in song for rhythm templates
   if (tpl.genre === 'RHYTHM' && key === 'rhythm_pop') {
     setTimeout(() => _loadRhythmSong('pop'), 200);
@@ -4690,6 +4839,94 @@ function _loadTemplate(key) {
   showToast('✨ Template loaded! Hit ▶ Run to play.');
   setTimeout(() => compileAndBootEngine(), 300);
 }
+
+// ── STARTERS: one example template per genre ─────────────────────────────────
+// Every genre in GENRE_LIST must have a starter so a newcomer never lands on a
+// bare default. The grid is rendered from this map (see _renderStarters), so
+// adding a genre to genres.js without a starter fails tests/arcade-game-maker-
+// starters.js instead of silently leaving a blank button.
+const _STARTERS = {
+  SHOOTER:      'ocean_shooter',
+  PLATFORMER:   'forest_platform',
+  DODGE:        'star_dodge',
+  BREAKER:      'brick_blitz',
+  RUNNER:       'dino_runner',
+  FLAPPY:       'sky_flap',
+  INVADERS:     'cyber_invaders',
+  PONG:         'pong_duel',
+  SNAKE:        'glow_serpent',
+  ASTEROIDS:    'rock_blaster',
+  ROGUELIKE:    'ghost_maze',
+  RACING:       'neon_grand_prix',
+  HOPPER:       'sky_hopper',
+  BEAT:         'street_dojo',
+  PUZZLE:       'crate_shift',
+  RHYTHM:       'rhythm_pop',
+  DEFENSE:      'tower_guard',
+  PINBALL:      'pinball_classic',
+  CLICKER:      'tap_empire',
+  MEMORY:       'candy_memory',
+  WAVESURVIVAL: 'neon_wave',
+  PAPERTOSS:    'wind_shots',
+};
+function _starterFor(genre) {
+  const key = _STARTERS[genre];
+  return (key && _TEMPLATES[key]) ? { key: key, tpl: _TEMPLATES[key] } : null;
+}
+// Quality pills (A1473): a READY/BETA/EXPERIMENT signal on the picker cards and
+// the starter grid, read from the single GENRE_QUALITY map in genres.js.
+const _QUALITY_COLORS = { READY:'#4ade80', BETA:'#fbbf24', EXPERIMENT:'#94a3b8' };
+function _qualityPillHtml(q) {
+  if (!q) return '';
+  const col = _QUALITY_COLORS[q] || '#94a3b8';
+  return '<span class="q-pill" style="font-size:.44rem;font-weight:800;letter-spacing:.04em;padding:1px 4px;border-radius:999px;color:' + col + ';background:rgba(255,255,255,.06);border:1px solid ' + col + ';white-space:nowrap;">' + q + '</span>';
+}
+function _renderStarters() {
+  const grid = document.getElementById('starterGrid');
+  if (!grid || typeof GENRE_LIST === 'undefined') return;
+  const icons = (typeof GENRE_ICONS !== 'undefined') ? GENRE_ICONS : {};
+  const labels = (typeof GENRE_LABELS !== 'undefined') ? GENRE_LABELS : {};
+  const quals = (typeof GENRE_QUALITY !== 'undefined') ? GENRE_QUALITY : {};
+  grid.innerHTML = GENRE_LIST.map(g => {
+    const s = _starterFor(g);
+    if (!s) return '';
+    const title = ((labels[g] || s.tpl.title || g) + ', ' + (quals[g] || '')).replace(/"/g, '&quot;');
+    return '<button class="starter-btn" onclick="_loadTemplate(\'' + s.key + '\')" title="' + title +
+           ' example" style="display:flex;align-items:center;justify-content:space-between;gap:4px;">' +
+           '<span>' + (icons[g] || '🎮') + ' ' + (s.tpl.title || g) + '</span>' + _qualityPillHtml(quals[g]) + '</button>';
+  }).join('');
+}
+function _renderGenreQuality() {
+  const quals    = (typeof GENRE_QUALITY   !== 'undefined') ? GENRE_QUALITY   : {};
+  const hooks    = (typeof GENRE_HOOKS     !== 'undefined') ? GENRE_HOOKS     : {};
+  const variants = (typeof GENRE_VARIANT_OF!== 'undefined') ? GENRE_VARIANT_OF: {};
+  document.querySelectorAll('.genre-card').forEach(card => {
+    const g = card.dataset.genre;
+    if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+    // Distinct-mechanic hook in the tooltip (A1469)
+    if (hooks[g] && card.title.indexOf(hooks[g]) === -1) card.title = (card.title ? card.title + ' • ' : '') + hooks[g];
+    const q = quals[g];
+    if (q && !card.querySelector('.gc-quality')) {
+      const span = document.createElement('span');
+      span.className = 'gc-quality';
+      span.textContent = q;
+      const col = _QUALITY_COLORS[q] || '#94a3b8';
+      span.style.cssText = 'position:absolute;top:2px;right:3px;font-size:.38rem;font-weight:800;letter-spacing:.03em;padding:1px 3px;border-radius:999px;color:' + col + ';background:rgba(0,0,0,.35);border:1px solid ' + col + ';';
+      card.appendChild(span);
+    }
+    // Honest variation label for overlapping genres (A1469)
+    if (variants[g] && !card.querySelector('.gc-variant')) {
+      const v = document.createElement('span');
+      v.className = 'gc-variant';
+      v.textContent = 'variant of ' + variants[g];
+      v.style.cssText = 'position:absolute;bottom:2px;left:3px;font-size:.36rem;font-weight:700;color:#94a3b8;opacity:.9;';
+      card.appendChild(v);
+    }
+  });
+}
+function _renderMakerLabels() { _renderStarters(); _renderGenreQuality(); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _renderMakerLabels);
+else _renderMakerLabels();
 
 // ── RHYTHM BUILT-IN SONGS ────────────────────────────────────────────────────
 // Each pattern: 8 rows (lanes 0-3 used for game hits, rows 4-7 audio only) × 8 steps
@@ -5927,6 +6164,58 @@ const GENRE_ORIENTATION = {
     FLAPPY:'portrait', HOPPER:'portrait', DODGE:'portrait', RHYTHM:'portrait',
     PINBALL:'portrait', MEMORY:'portrait', CLICKER:'portrait', SNAKE:'portrait',
 };
+// ── DEFAULT WIN PER GENRE ────────────────────────────────────────────────────
+// Endless score-attack by default fails the studio quality bar (a run should be
+// winnable or finishable). Each genre gets a sensible goal so a learner can
+// actually finish a game without touching the Win settings. Genres whose scene
+// already ends itself (clear the board, solve the puzzle, win the set) are
+// marked intrinsic and keep an endless win condition.
+const _GENRE_WIN = {
+  SHOOTER:      { c:'score', target:1500 },
+  PLATFORMER:   { c:'score', target:1000 },
+  DODGE:        { c:'time',  target:45 },
+  BREAKER:      { c:'intrinsic', note:'Clear every brick to finish' },
+  RUNNER:       { c:'time',  target:60 },
+  FLAPPY:       { c:'score', target:20 },
+  INVADERS:     { c:'score', target:1500 },
+  PONG:         { c:'intrinsic', note:'Win the set' },
+  SNAKE:        { c:'score', target:250 },
+  ASTEROIDS:    { c:'score', target:2000 },
+  ROGUELIKE:    { c:'score', target:1000 },
+  RACING:       { c:'time',  target:60 },
+  HOPPER:       { c:'score', target:1500 },
+  BEAT:         { c:'intrinsic', note:'Win best of 3 rounds' },
+  PUZZLE:       { c:'intrinsic', note:'Solve the puzzle' },
+  RHYTHM:       { c:'score', target:2000 },
+  DEFENSE:      { c:'time',  target:90 },
+  PINBALL:      { c:'score', target:5000 },
+  CLICKER:      { c:'score', target:10000 },
+  MEMORY:       { c:'intrinsic', note:'Match every pair' },
+  WAVESURVIVAL: { c:'score', target:2000 },
+  PAPERTOSS:    { c:'score', target:400 },
+};
+function _applyGenreWinDefault(g) {
+  const d = _GENRE_WIN[g];
+  if (!d) return;
+  const cond = (d.c === 'score' || d.c === 'time') ? d.c : 'none';
+  liveConfig.winCondition = cond;
+  if (d.target) liveConfig.winTarget = d.target;
+  // Sync the Win Condition UI so the on-screen settings match the default goal.
+  document.querySelectorAll('#pillWinCond .pill').forEach(p => {
+    p.classList.toggle('active', (p.getAttribute('onclick') || '').includes("winCondition='" + cond + "'"));
+  });
+  const row = document.getElementById('winTargetRow');
+  const lbl = document.getElementById('winTargetLabel');
+  const rng = document.getElementById('winTargetRange');
+  if (row) row.style.display = (cond === 'none') ? 'none' : '';
+  if (cond !== 'none' && lbl && rng) {
+    if (cond === 'time') { lbl.textContent = 'Survive for (seconds)'; rng.min = 15; rng.max = 300; rng.step = 15; }
+    else                 { lbl.textContent = 'Target Score';         rng.min = 100; rng.max = 10000; rng.step = 100; }
+    rng.value = liveConfig.winTarget;
+    if (rng.nextElementSibling) rng.nextElementSibling.textContent = (cond === 'time') ? (liveConfig.winTarget + 's') : (liveConfig.winTarget + ' pts');
+  }
+}
+
 function onGenreChange() {
     const g = document.getElementById('genreMode').value;
     // Per-genre preferred phone orientation , app-immersive locks accordingly
@@ -6051,6 +6340,8 @@ function onGenreChange() {
             _showTitleScreen(_engineData);
         }
     }
+    // Give the genre a winnable default goal (A1470).
+    _applyGenreWinDefault(g);
 }
 
 function getPayload() {
@@ -9223,6 +9514,41 @@ function _saveCustomPus() {
     showToast('✓ ' + _cpuDraft.length + ' custom power-up' + (_cpuDraft.length!==1?'s':'') + ' saved!', 'success');
 }
 
+// ── Default sprites, drawn on-device (no network) ─────────────────────────────
+// These replace the old labs.phaser.io fallbacks. They are near-white so each
+// genre's setTint colours them to match the theme. Used by makeBaseScene.preload.
+function _drawDefaultShip(g) {
+    g.fillStyle(0xf1f5f9, 1);
+    g.fillTriangle(16, 1, 3, 30, 29, 30);   // hull
+    g.fillStyle(0x94a3b8, 1);
+    g.fillTriangle(16, 8, 10, 24, 22, 24);  // cockpit shade
+    g.fillStyle(0x38bdf8, 1);
+    g.fillCircle(16, 15, 3);                 // canopy
+}
+function _drawDefaultAlien(g) {
+    g.fillStyle(0xf8fafc, 1);
+    g.fillCircle(16, 13, 9);                 // head
+    g.fillTriangle(7, 17, 25, 17, 16, 31);   // body
+    g.fillStyle(0x334155, 1);
+    g.fillCircle(12, 12, 2.4);
+    g.fillCircle(20, 12, 2.4);               // eyes
+}
+function _drawDefaultOrb(g) {
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(8, 8, 7);
+    g.fillStyle(0xfacc15, 1);
+    g.fillCircle(8, 8, 4);                   // hot core
+}
+function _drawDefaultBrick(g) {
+    g.fillStyle(0xf1f5f9, 1);
+    g.fillRect(0, 0, 32, 32);
+    g.fillStyle(0xcbd5e1, 1);
+    g.fillRect(0, 0, 32, 5);
+    g.fillRect(0, 27, 32, 5);                // top/bottom bevel
+    g.lineStyle(2, 0x64748b, 1);
+    g.strokeRect(1, 1, 30, 30);
+}
+
 function makeBaseScene(data) {
     return class extends Phaser.Scene {
         preload() {
@@ -9278,39 +9604,42 @@ function makeBaseScene(data) {
                 );
             });
 
+            // Default art is DRAWN locally, never fetched from a remote host. A game
+            // with no imported sprite must work with no network at all: the School-
+            // Computer Rule, and the single-file game a friend opens offline. Shapes
+            // are near-white so the per-theme setTint still colours them.
+            const makeFallback = (key, w, h, draw) => {
+                if (this.textures.exists(key)) return;
+                const g = this.make.graphics({ x: 0, y: 0, add: false });
+                draw(g);
+                g.generateTexture(key, w, h);
+                g.destroy();
+            };
             // Player sprite, use spritesheet loader when multi-frame animation is available
             if (data.sprite && data.spriteFrameCount > 1 && data.spriteFrameW > 0) {
                 loadCustomSheet('player', data.sprite, data.spriteFrameW, data.spriteFrameW);
             } else if (data.sprite) {
                 loadCustom('player', data.sprite);
             } else {
-                this.load.crossOrigin = 'anonymous';
-                this.load.image('player', 'https://labs.phaser.io/assets/sprites/asteroids_ship.png');
-                this.load.crossOrigin = null;
+                makeFallback('player', 32, 32, _drawDefaultShip);
             }
             // Enemy sprite
             if (data.enemySprite) {
                 loadCustom('enemy', data.enemySprite);
             } else {
-                this.load.crossOrigin = 'anonymous';
-                this.load.image('enemy', 'https://labs.phaser.io/assets/sprites/ufo.png');
-                this.load.crossOrigin = null;
+                makeFallback('enemy', 32, 32, _drawDefaultAlien);
             }
             // Bullet / projectile sprite
             if (data.bulletSprite) {
                 loadCustom('laser', data.bulletSprite);
             } else {
-                this.load.crossOrigin = 'anonymous';
-                this.load.image('laser', 'https://labs.phaser.io/assets/sprites/purple_ball.png');
-                this.load.crossOrigin = null;
+                makeFallback('laser', 16, 16, _drawDefaultOrb);
             }
             // Block / tile sprite
             if (data.blockSprite) {
                 loadCustom('block', data.blockSprite);
             } else {
-                this.load.crossOrigin = 'anonymous';
-                this.load.image('block', 'https://labs.phaser.io/assets/sprites/block.png');
-                this.load.crossOrigin = null;
+                makeFallback('block', 32, 32, _drawDefaultBrick);
             }
             // Background image
             if (data.bgImage) {
@@ -15973,9 +16302,12 @@ function showVictory(score) {
 let _goIsVictory = false;
 let _gameStartTime = 0;
 
-async function exportGame() {
-    if (!_engineData) { showToast('Hit ▶ Run first, then export'); return; }
-    showToast('⏳ Bundling Phaser for offline play…');
+// Build the self-contained, offline single-file game HTML. Shared by the ⬇
+// Download button (exportGame) and the 📲 Send to a Friend button
+// (sendGameToFriend). Returns { html, filename, title } or null when there is
+// nothing to pack yet (the learner has not hit Run).
+async function _buildExportHtml() {
+    if (!_engineData) return null;
     // Clone DOM so we can strip runtime elements
     const root = document.documentElement.cloneNode(true);
     // Clear the live Phaser canvas from the clone
@@ -16129,19 +16461,70 @@ window.addEventListener('DOMContentLoaded',function(){
         const _wm = root.createElement('div');
         _wm.id = 'jvds-credit';
         _wm.style.cssText = 'position:fixed;bottom:6px;right:8px;font-size:9px;color:rgba(255,255,255,.28);font-family:Inter,sans-serif;z-index:9999;pointer-events:none;letter-spacing:.04em;';
-        _wm.innerHTML = 'Made with <a href="https://jvdesignstudio.co.uk/tools/arcade-game-maker.html" target="_blank" style="color:rgba(167,139,250,.5);text-decoration:none;">JVDesignStudio</a> - make your own';
+        _wm.innerHTML = 'Made with <a href="https://jvdesignstudio.co.uk/tools/arcade-game-maker.html" target="_blank" style="color:rgba(167,139,250,.5);text-decoration:none;" rel="noopener noreferrer">JVDesignStudio</a> - make your own';
         root.body.appendChild(_wm);
     } catch(_e) {}
-    // Serialise and download
-    const blob = new Blob(['<!DOCTYPE html>\n' + root.outerHTML], {type:'text/html;charset=utf-8'});
+    const filename = (_engineData.title || 'my-game').replace(/[^a-z0-9]/gi,'-').toLowerCase() + '.html';
+    return { html: '<!DOCTYPE html>\n' + root.outerHTML, filename: filename, title: _engineData.title || 'My Arcade Game' };
+}
+
+async function exportGame() {
+    if (!_engineData) { showToast('Hit ▶ Run first, then export'); return; }
+    showToast('⏳ Bundling Phaser for offline play…');
+    const built = await _buildExportHtml();
+    if (!built) return;
+    const blob = new Blob([built.html], {type:'text/html;charset=utf-8'});
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = (_engineData.title || 'my-game').replace(/[^a-z0-9]/gi,'-').toLowerCase() + '.html';
+    a.download = built.filename;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 5000);
     showToast('🎮 "' + _engineData.title + '" downloaded, works offline!');
     _trackEvent('share_create', { method: 'download', genre: _engineData.genre, title: _engineData.title });
+}
+
+// ── SEND TO A FRIEND ─────────────────────────────────────────────────────────
+// A share LINK needs the website to open and cannot carry custom art or audio.
+// This sends the actual game instead: the same self-contained single-file HTML
+// the ⬇ Download button makes, handed to the phone's share sheet (WhatsApp,
+// email, AirDrop) as a real file, so a friend just opens it and plays with no
+// account and no internet. Falls back to saving the file and copying an invite
+// message on browsers that cannot share files.
+async function sendGameToFriend() {
+    if (!_engineData) { showToast('Hit ▶ Run first, then send it to a friend'); return; }
+    showToast('⏳ Packing your game to send…');
+    let built = null;
+    try { built = await _buildExportHtml(); } catch (e) { console.warn('sendGameToFriend build:', e); }
+    if (!built) { showToast('Could not pack the game, try running it first', 'error'); return; }
+    const title  = built.title;
+    const invite = 'I made "' + title + '" with JVDesignStudio. Open the file to play it! 🎮';
+    const file   = new File([built.html], built.filename, { type: 'text/html' });
+
+    // 1. Share the real game file (Web Share Level 2: Android Chrome / iOS Safari)
+    try {
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            _trackEvent('share_create', { method: 'send_file', genre: _engineData.genre, title: title });
+            await navigator.share({ files: [file], title: title, text: invite });
+            showToast('📲 Game sent! They just open it and play.', 'success');
+            return;
+        }
+    } catch (e) {
+        if (e && e.name === 'AbortError') return; // friend closed the share sheet
+        console.warn('sendGameToFriend share:', e);
+    }
+
+    // 2. Fallback: save the game file and copy an invite the learner can paste.
+    //    Locked-down school devices and the packaged app often land here.
+    const blob = new Blob([built.html], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = built.filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    try { await navigator.clipboard.writeText(invite + '\n\n(Game file: ' + built.filename + ')'); } catch (e) {}
+    _trackEvent('share_create', { method: 'send_download', genre: _engineData.genre, title: title });
+    showToast('📲 Game saved as "' + built.filename + '". Attach it to send to a friend!', 'success', 6000);
 }
 
 // ── TOUCH CONTROLS ───────────────────────────────────────────────────────────
@@ -20578,8 +20961,8 @@ function _runGenreSelfTest() {
             document.getElementById('genreMode').value = g;
             onGenreChange();
             _engineData = getPayload(); _engineData.genre = g;
-            // Provide tiny placeholder sprites so scenes that load external assets
-            // (e.g. SHOOTER from labs.phaser.io) don't hang the Phaser loader.
+            // Keep the self-test fast: default textures are now drawn on-device,
+            // but the 1x1 placeholder skips sprite decoding during the sweep.
             if (!_engineData.sprite) _engineData.sprite = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
             if (!_engineData.enemySprite) _engineData.enemySprite = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
             if (!_engineData.bulletSprite) _engineData.bulletSprite = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -21480,6 +21863,18 @@ document.addEventListener('DOMContentLoaded', function(){
 <script defer src="/creation-share.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
+<script>
+// A1475: ask the service worker to precache this engine (HTML + Phaser + its
+// modules) on first visit so it opens offline on a school network. Only people
+// who open the maker download the extra size; it is not in the global precache.
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.ready.then(function (reg) {
+    var sw = navigator.serviceWorker.controller || reg.active;
+    if (sw) sw.postMessage({ type: 'precache-maker' });
+  }).catch(function () {});
+})();
+</script>
 <script>
 /* Load a starter blueprint from ?template=<key> (or ?game=<key>) so the
    JavaScript hub and workshop CTAs can open the maker with a game preselected. */
