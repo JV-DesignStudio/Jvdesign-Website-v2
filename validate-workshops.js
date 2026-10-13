@@ -2,6 +2,18 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = __dirname;
+// A1508: page behaviour now lives in external files (/assets/js/inline/*.js) so
+// the static checks below must read the page plus the scripts it references.
+function pageSource(file) {
+  const html = fs.readFileSync(path.join(ROOT, 'workshops', file), 'utf8');
+  let all = html;
+  let m;
+  const re = /\/assets\/js\/inline\/([A-Za-z0-9._-]+\.js)/g;
+  while ((m = re.exec(html))) {
+    try { all += '\n' + fs.readFileSync(path.join(ROOT, 'assets', 'js', 'inline', m[1]), 'utf8'); } catch (e) {}
+  }
+  return all;
+}
 // Coverage gate: keep the validator honest as new workshop pages are added.
 // The detailed progress checks below cover the established interactive
 // patterns; this directory-wide gate ensures every workshop HTML file still
@@ -13,12 +25,12 @@ const ALL_WORKSHOP_FILES = fs.readdirSync(path.join(ROOT, 'workshops'))
   .filter(file => file.endsWith('.html'))
   .sort();
 const PUBLIC_WORKSHOP_FILES = ALL_WORKSHOP_FILES.filter(file => {
-  const content = fs.readFileSync(path.join(ROOT, 'workshops', file), 'utf8');
+  const content = pageSource(file);
   return !/<meta\s+name=["']robots["'][^>]*noindex/i.test(content);
 });
 const coverage = { files: PUBLIC_WORKSHOP_FILES.length, missing_title: [], missing_description: [], missing_canonical: [] };
 PUBLIC_WORKSHOP_FILES.forEach(file => {
-  const content = fs.readFileSync(path.join(ROOT, 'workshops', file), 'utf8');
+  const content = pageSource(file);
   if (!/<title>[^<]+<\/title>/i.test(content)) coverage.missing_title.push(file);
   if (!/<meta\s+name=["']description["']/i.test(content)) coverage.missing_description.push(file);
   if (!/<link\s+rel=["']canonical["']/i.test(content)) coverage.missing_canonical.push(file);
@@ -69,7 +81,7 @@ const results = { valid: [], builder_style: [], missing_key: [], missing_functio
 
 CONVERTED.forEach(file => {
   try {
-    const content = fs.readFileSync(path.join(ROOT, 'workshops', file), 'utf8');
+    const content = pageSource(file);
     const isBuilder = BUILDER_STYLE.includes(file);
     const hasStorageKey = content.includes('STORAGE_KEY');
 

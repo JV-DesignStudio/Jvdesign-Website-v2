@@ -2053,7 +2053,7 @@ window.JVDS_CONTENT = {
       "tags": [
         "3d"
       ],
-      "steps": 10,
+      "steps": 6,
       "themeColor": "#0f1117",
       "cover": "/godot-teaser.webp",
       "url": "/workshops/godot-gatekeeper-3d-part1.html"
@@ -2067,7 +2067,7 @@ window.JVDS_CONTENT = {
       "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
-      "steps": 7,
+      "steps": 6,
       "themeColor": "#0f1117",
       "cover": "/godot-teaser.webp",
       "url": "/workshops/godot-gatekeeper-3d-part2.html"
@@ -2515,7 +2515,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#4f8a2c",
       "cover": "/og/minecraft-world-workshop.png",
       "url": "/workshops/minecraft-world-ep8-design-share.html"
@@ -2529,7 +2529,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#4f8a2c",
       "cover": "/og/minecraft-world-workshop.png",
       "url": "/workshops/minecraft-world-ep7-debug.html"
@@ -2543,7 +2543,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#4f8a2c",
       "cover": "/og/minecraft-world-workshop.png",
       "url": "/workshops/minecraft-world-ep4-functions.html"
@@ -2557,7 +2557,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#4f8a2c",
       "cover": "/og/minecraft-world-workshop.png",
       "url": "/workshops/minecraft-world-ep5-loot.html"
@@ -2571,7 +2571,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#4f8a2c",
       "cover": "/og/minecraft-world-workshop.png",
       "url": "/workshops/minecraft-world-ep3-namespace.html"
@@ -2585,7 +2585,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#4f8a2c",
       "cover": "/og/minecraft-world-workshop.png",
       "url": "/workshops/minecraft-world-ep6-tags-advancements.html"
@@ -2599,7 +2599,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#4f8a2c",
       "cover": "/og/minecraft-world-workshop.png",
       "url": "/workshops/minecraft-world-ep1-setup.html"
@@ -2613,7 +2613,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#4f8a2c",
       "cover": "/og/minecraft-world-workshop.png",
       "url": "/workshops/minecraft-world-ep2-first-recipe.html"
@@ -2781,7 +2781,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep9-ai.html"
@@ -2797,7 +2797,7 @@ window.JVDS_CONTENT = {
       "tags": [
         "animation"
       ],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep4-animations.html"
@@ -2811,7 +2811,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep10-game.html"
@@ -2825,7 +2825,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep5-commands.html"
@@ -2839,7 +2839,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep1-setup.html"
@@ -2853,7 +2853,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep7-hitboxes.html"
@@ -2867,7 +2867,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep8-stage.html"
@@ -2881,7 +2881,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep3-sprites-palette.html"
@@ -2895,7 +2895,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep6-states.html"
@@ -2909,7 +2909,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d32f2f",
       "cover": "/og/mugen-world-workshop.png",
       "url": "/workshops/mugen-world-ep2-fighter-files.html"
@@ -2951,7 +2951,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d94f3d",
       "cover": "/og/openrct2-world-workshop.png",
       "url": "/workshops/openrct2-world-ep6-swim-rescue.html"
@@ -2965,7 +2965,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d94f3d",
       "cover": "/og/openrct2-world-workshop.png",
       "url": "/workshops/openrct2-world-ep8-design-share.html"
@@ -2979,7 +2979,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d94f3d",
       "cover": "/og/openrct2-world-workshop.png",
       "url": "/workshops/openrct2-world-ep3-events.html"
@@ -2993,7 +2993,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 4,
+      "steps": 6,
       "themeColor": "#d94f3d",
       "cover": "/og/openrct2-world-workshop.png",
       "url": "/workshops/openrct2-world-ep1-setup.html"
@@ -3007,7 +3007,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d94f3d",
       "cover": "/og/openrct2-world-workshop.png",
       "url": "/workshops/openrct2-world-ep4-read-the-park.html"
@@ -3021,7 +3021,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d94f3d",
       "cover": "/og/openrct2-world-workshop.png",
       "url": "/workshops/openrct2-world-ep7-test-debug.html"
@@ -3035,7 +3035,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d94f3d",
       "cover": "/og/openrct2-world-workshop.png",
       "url": "/workshops/openrct2-world-ep5-guests.html"
@@ -3049,7 +3049,7 @@ window.JVDS_CONTENT = {
       "ageRange": "10+",
       "type": "workshop",
       "tags": [],
-      "steps": 5,
+      "steps": 6,
       "themeColor": "#d94f3d",
       "cover": "/og/openrct2-world-workshop.png",
       "url": "/workshops/openrct2-world-ep2-first-plugin.html"
@@ -5943,7 +5943,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-13T10:36:57.057Z",
+    "generated": "2026-10-13T11:01:50.202Z",
     "workshops": 325,
     "games": 11,
     "tools": 48,
