@@ -1,0 +1,1 @@
+(function(){function n(){try{var l=(window.JVDS_GAMES||[]).length;var el=document.getElementById('heroGameCount');if(l&&el)el.textContent=l;}catch(e){}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',n);else n();})();

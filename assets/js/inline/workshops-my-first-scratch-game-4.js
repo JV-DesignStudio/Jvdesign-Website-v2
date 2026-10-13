@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-my-first-scratch-v2';

@@ -20,7 +20,6 @@ const pages = [
   '/index.html',
   '/arcade.html',
   '/pages/workshop.html',
-  '/pages/games.html',
   '/pages/dev-tools.html',
   '/pages/books.html',
   '/pages/parents.html',

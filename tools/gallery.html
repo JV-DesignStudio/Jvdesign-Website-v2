@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<script src="/assets/js/theme-init.js"></script>
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#0a0514">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,9 +28,10 @@
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
-<link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
+<link rel="stylesheet" href="../style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css"><link rel="stylesheet" href="/ember-guide.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Tool Showcase Gallery","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/gallery.html","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"}}</script>
 <style>
@@ -64,7 +65,7 @@ dialog input, dialog select, dialog textarea{width:100%;margin:6px 0 12px;paddin
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
-  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" data-fallback="https://placehold.co/38x38/403B33/F0EAD6?text=JV">
  <span class="logo-name">JVDesignStudio</span>
  </a>
    <nav class="main-nav" id="mainNav" aria-label="Main">
@@ -81,6 +82,7 @@ dialog input, dialog select, dialog textarea{width:100%;margin:6px 0 12px;paddin
      <a href="/pages/lumo.html" role="menuitem">Learn <img src="/assets/mascots/lumo-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
      <a href="/pages/ember.html" role="menuitem">Create <img src="/assets/mascots/ember-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
      <a href="/pages/pip.html" role="menuitem">Play <img src="/assets/mascots/pip-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
+     <a href="/pages/gallery.html" role="menuitem">Community Gallery</a>
      <a href="/pages/echo.html" role="menuitem">Improve <img src="/assets/mascots/echo-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
      <a href="/quotes" role="menuitem">Quotes</a>
      <a href="/meet-the-crew.html" role="menuitem">Meet the Crew</a>
@@ -130,48 +132,9 @@ dialog input, dialog select, dialog textarea{width:100%;margin:6px 0 12px;paddin
 <script>window.addEventListener('load',function(){if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
 <script defer src="/cookie-consent.js"></script>
 <!-- /BUILD:footer-tools -->
-<script>window.addEventListener('load',()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
+<script src="/assets/js/inline/tools-gallery-2.js"></script>
 <script defer src="/cookie-consent.js"></script><script defer src="/ember-guide.js"></script><script defer src="../player-profile.js"></script><script defer src="../tool-xp.js"></script>
-<script>
-const DB='jvds-gallery-v1', STORE='creations';
-const $=s=>document.getElementById(s);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
-let filter='all';
-async function getAll(){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const st=tx.objectStore(STORE);const req=st.getAll();req.onsuccess=()=>res(req.result||[]);req.onerror=()=>rej(req.error);tx.oncomplete=()=>db.close();});}
-async function add(item){const db=await openDB();await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).add(item).onsuccess=res;tx.onerror=()=>rej(tx.onerror);tx.oncomplete=()=>db.close();});}
-async function clearAll(){const db=await openDB();await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear().onsuccess=res;tx.onerror=()=>rej(tx.onerror);tx.oncomplete=()=>db.close();});}
-async function remove(id){const db=await openDB();await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id).onsuccess=res;tx.onerror=()=>rej(tx.onerror);tx.oncomplete=()=>db.close();});}
-function fileToDataURL(f){return new Promise(res=>{if(!f)res('');else{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(f);}});}
-async function render(){
-  const items=await getAll();const grid=$('grid');const empty=$('empty');grid.innerHTML='';
-  const filtered=filter==='all'?items:items.filter(i=>i.tool===filter);
-  empty.hidden=filtered.length!==0||items.length!==0;
-  if(!items.length){$('empty').hidden=false;document.getElementById('grid').innerHTML='';return;}
-  if(!filtered.length){grid.innerHTML='<div class="empty">No '+filter+' creations. Try All.</div>';return;}
-  filtered.sort((a,b)=>b.created-a.created).forEach(it=>{
-    const el=document.createElement('article');el.className='card';
-    el.innerHTML=`<div class="thumb">${it.image?`<img src="${esc(it.image)}" alt="${esc(it.title)}" loading="lazy">`:`<span style="color:var(--muted);font-size:2rem">🎨</span>`}</div><div class="meta"><strong>${esc(it.title)}</strong><span>${esc(it.tool)} • ${esc(it.character)} • ${new Date(it.created).toLocaleDateString()}</span><p style="margin:6px 0 0;color:var(--muted);font-size:.85rem">${esc(it.notes||'')}</p><div style="margin-top:8px;display:flex;gap:8px"><button class="btn" data-del="${it.id}" style="min-height:32px;padding:0 10px">Delete</button><button class="btn" data-view="${it.id}" style="min-height:32px;padding:0 10px">View</button></div></div>`;
-    grid.appendChild(el);
-  });
-  grid.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(confirm('Delete?')){await remove(+b.dataset.del);render();}});
-  grid.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const db=await openDB();const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).get(+b.dataset.view);req.onsuccess=()=>{const it=req.result;if(it&&it.image){const w=window.open();if(w&&w.document){const img=w.document.createElement('img');img.src=it.image;img.alt=it.title||'Creation';img.style.maxWidth='100%';w.document.body.appendChild(img);}}}});
-}
-document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-selected','false')});c.classList.add('on');c.setAttribute('aria-selected','true');filter=c.dataset.filter;render();});
-$('btnAdd').onclick=()=>$('dlg').showModal();
-$('dlg').addEventListener('close',async()=>{
-  if($('dlg').returnValue==='cancel')return;
-  const title=$('fTitle').value.trim()||'Untitled';const tool=$('fTool').value;const character=$('fChar').value;const notes=$('fNotes').value.trim();
-  const file=$('fFile').files[0];const image=await fileToDataURL(file);
-  await add({title,tool,character,notes,image,created:Date.now()});$('dlg').querySelector('form').reset();if(window.ToolXP)ToolXP.award('gallery',15);render();
-});
-$('btnExport').onclick=async()=>{const items=await getAll();const blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='jvds-gallery.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);};
-$('btnClear').onclick=async()=>{if(confirm('Clear whole gallery?')){await clearAll();render();}};
-$('btnImport').onclick=()=>$('importFile').click();
-$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const txt=await f.text();try{const arr=JSON.parse(txt);for(const it of arr){delete it.id;it.created=it.created||Date.now();await add(it);}render();}catch(err){alert('Invalid JSON');}};
-render();
-document.addEventListener('DOMContentLoaded',()=>{if(window.EmberGuide)EmberGuide.init({id:'gallery',steps:[{target:'#btnAdd',title:'Add creation',text:'Echo saves in this browser - works offline, no account.'},{target:'.filters',title:'Filter',text:'Browse by tool or character.'}]})});
-</script>
+<script src="/assets/js/inline/tools-gallery-3.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
 <script defer src="/creation-share.js"></script>

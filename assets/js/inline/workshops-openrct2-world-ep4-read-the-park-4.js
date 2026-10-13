@@ -1,0 +1,1 @@
+window.WORKSHOP_TOTAL=5;window.WORKSHOP_KEY='jvds-openrct2-world-ep4-read-the-park-v2';window.WORKSHOP_PROFILE_ID='openrct2-world-ep4-read-the-park';

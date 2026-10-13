@@ -52,7 +52,7 @@
     '#jvds-keepsake-strip .jk-txt{display:flex;flex-direction:column;min-width:0}',
     '#jvds-keepsake-strip .jk-txt b{font-weight:800}',
     '#jvds-keepsake-strip .jk-sub{font-size:.68rem;color:#cbbf9f}',
-    '#jk-keep-export{background:#4e7d80;color:#fff;border:none;border-radius:999px;padding:8px 14px;',
+    '#jk-keep-export{background:#4e7d80;color:#fff;border:none;border-radius:999px;padding:8px 14px;min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;',
     'font:700 .78rem/1 Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap;box-shadow:0 2px 0 #3d6366}',
     '#jk-keep-export:hover{filter:brightness(1.08)}',
     '#jk-keep-export:focus-visible{outline:3px solid #BC4749;outline-offset:2px}',

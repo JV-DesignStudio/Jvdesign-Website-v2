@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-minecraft-lucky-mod-v2';

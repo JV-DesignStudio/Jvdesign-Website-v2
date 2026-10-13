@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-my-first-pico8-game-v2';

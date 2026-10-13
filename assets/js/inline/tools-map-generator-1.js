@@ -1,0 +1,1 @@
+location.replace("level-designer.html"+location.search+(location.hash||""));

@@ -1,0 +1,1 @@
+window.WORKSHOP_TOTAL=4;window.WORKSHOP_KEY='jvds-minecraft-world-ep4-functions-v2';window.WORKSHOP_PROFILE_ID='minecraft-world-ep4-functions';

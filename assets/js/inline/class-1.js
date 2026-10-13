@@ -1,0 +1,1 @@
+window.location.replace('/pages/class.html'+location.search+(location.hash||''));

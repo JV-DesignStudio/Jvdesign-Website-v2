@@ -109,7 +109,7 @@ function episodeHtml(series, ep, index, count) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<script src="/assets/js/theme-init.js"></script>
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="${series.themeColor}">
 <script defer src="../analytics-loader.js"></script>

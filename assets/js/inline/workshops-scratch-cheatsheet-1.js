@@ -1,0 +1,1 @@
+location.replace("../tools/scratch-cheatsheet.html"+location.search+(location.hash||""));

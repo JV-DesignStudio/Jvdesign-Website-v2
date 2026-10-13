@@ -1,0 +1,1 @@
+window.WORKSHOP_TOTAL=5;window.WORKSHOP_KEY='jvds-minecraft-world-ep8-design-share-v2';window.WORKSHOP_PROFILE_ID='minecraft-world-ep8-design-share';

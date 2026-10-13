@@ -1,0 +1,1 @@
+location.replace('https://jvdesignstudio.co.uk/games/sky_high_with_friends.html' + location.search + location.hash);

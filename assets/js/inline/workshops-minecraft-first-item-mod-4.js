@@ -1,0 +1,54 @@
+var STORAGE_KEY = 'jvds-minecraft-first-item-v2';
+var TOTAL = 10;
+var completed = new Set();
+function saveProgress(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({completed:[...completed],total:TOTAL,xp:completed.size*20,level:Math.floor(completed.size*20/100),bestStreak:0,totalQuizzes:0,correctFirst:0}));}catch(e){}}
+function loadProgress(){try{var d=JSON.parse(localStorage.getItem(STORAGE_KEY));if(d&&d.completed){d.completed.forEach(function(s){completed.add(s);var card=document.getElementById('step-'+s);if(card){card.classList.add('completed');card.classList.remove('locked','active-step');var btn=card.querySelector('.step-complete-btn');if(btn){btn.textContent='✅ Done!';btn.disabled=true;}var st=card.querySelector('.step-status');if(st){st.textContent='Done';st.className='step-status ss-done';}}});var nxt=Math.max(...d.completed)+1;if(nxt<=TOTAL){var nc=document.getElementById('step-'+nxt);if(nc){nc.classList.remove('locked');nc.classList.add('open','active-step');var ns=nc.querySelector('.step-status');if(ns){ns.textContent='Active';ns.className='step-status ss-active';}}}}}catch(e){}}
+function buildDots(){
+  const c=document.getElementById('stepDots');
+  for(let i=1;i<=TOTAL;i++){
+    const d=document.createElement('div');
+    d.className='step-dot';d.id='dot-'+i;d.textContent=i;
+    d.onclick=()=>document.getElementById('step-'+i).scrollIntoView({behavior:'smooth',block:'start'});
+    c.appendChild(d);
+  }
+}
+function updateProgress(){
+  const n=completed.size;
+  document.getElementById('progressCount').textContent=n+' / '+TOTAL+' steps';
+  document.getElementById('progressFill').style.width=((n/TOTAL)*100)+'%';
+  for(let i=1;i<=TOTAL;i++){
+    const dot=document.getElementById('dot-'+i);
+    dot.classList.toggle('done',completed.has(i));
+    const remaining=[...Array(TOTAL+1).keys()].slice(1).filter(x=>!completed.has(x));
+    dot.classList.toggle('active',!completed.has(i)&&remaining.length>0&&i===remaining[0]);
+  }
+}
+function completeStep(n){
+  completed.add(n);
+  const card=document.getElementById('step-'+n);
+  card.classList.add('completed');card.classList.remove('active-step');
+  const btn=card.querySelector('.step-complete-btn');
+  btn.textContent='✅ Done!';btn.disabled=true;
+  card.querySelector('.step-status').textContent='Done';
+  card.querySelector('.step-status').className='step-status ss-done';
+  if(n<TOTAL){
+    const next=document.getElementById('step-'+(n+1));
+    next.classList.remove('locked');
+    next.classList.add('open','active-step');
+    next.querySelector('.step-status').textContent='Active';
+    next.querySelector('.step-status').className='step-status ss-active';
+    setTimeout(()=>next.scrollIntoView({behavior:'smooth',block:'start'}),200);
+  } else {
+    document.getElementById('finishBanner').classList.add('show');
+    setTimeout(()=>document.getElementById('finishBanner').scrollIntoView({behavior:'smooth',block:'start'}),200);
+  }
+  updateProgress();
+  saveProgress();
+}
+function toggleStep(header){
+  const card=header.closest('.step-card');
+  if(card.classList.contains('locked'))return;
+  card.classList.toggle('open');
+}
+function toggleCheck(el){el.classList.toggle('checked');}
+buildDots();loadProgress();updateProgress();

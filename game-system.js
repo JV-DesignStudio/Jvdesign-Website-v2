@@ -1717,7 +1717,7 @@ if (typeof document !== 'undefined') {
     overlay.setAttribute('role','alert');
     overlay.setAttribute('aria-live','assertive');
     overlay.hidden=true;
-    overlay.innerHTML='<div class="gs-error-card"><div class="gs-error-icon">⚠️</div><h2 class="gs-error-title">Game failed to load</h2><p class="gs-error-text">Something went wrong. Check your connection and try again.</p><button type="button" class="gs-error-retry" onclick="location.reload()">↻ Reload game</button><a href="../pages/games.html" class="gs-error-link">← Back to Arcade</a></div>';
+    overlay.innerHTML='<div class="gs-error-card"><div class="gs-error-icon">⚠️</div><h2 class="gs-error-title">Game failed to load</h2><p class="gs-error-text">Something went wrong. Check your connection and try again.</p><button type="button" class="gs-error-retry" onclick="location.reload()">↻ Reload game</button><a href="/arcade.html" class="gs-error-link">← Back to Arcade</a></div>';
     function show(){
       if(!triggered) return;
       if(!overlay.hidden) return;

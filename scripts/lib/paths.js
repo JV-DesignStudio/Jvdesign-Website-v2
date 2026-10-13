@@ -33,13 +33,9 @@ const EXCLUDE_FILES = new Set([
   '404.html', 'offline.html', 'search.html',
   'games/game-template.html', 'games/cozy-biscuit-clicker.pre-app.bak.html',
   'tools/project-tracker.html', 'tools/dev-board.html',
-  'privacy-policy/index.html', 'pages/newsletter.html',
+  'privacy-policy/index.html',
   'meet-the-crew.html', 'newsletter.html',
   'tools/dialogue-tree-builder.html',
-  'pages/freebies.html',
-  'pages/my-progress.html',
-  'pages/leaderboards.html',
-  'pages/games.html',
   'games/sky_high_squirt.html',
   'tools/tileset-builder.html'
 ]);

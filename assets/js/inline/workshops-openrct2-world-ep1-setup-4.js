@@ -1,0 +1,1 @@
+window.WORKSHOP_TOTAL=4;window.WORKSHOP_KEY='jvds-openrct2-world-ep1-setup-v2';window.WORKSHOP_PROFILE_ID='openrct2-world-ep1-setup';

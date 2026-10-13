@@ -2,7 +2,7 @@
 <html lang="en-GB">
 <head>
   <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<script src="/assets/js/theme-init.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Stardust Constellation Rescue is a free educational browser game about reading symbol patterns, planning movement, and restoring constellations.">
   <meta name="robots" content="noindex, follow">
@@ -28,11 +28,12 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
   <link rel="stylesheet" href="/assets/fonts/fonts.css">
-  <link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
+  <link rel="stylesheet" href="../style-shared.css?v=17">
   <link rel="stylesheet" href="../game-system.css?v=18">
   <script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script><script src="../audio-effects.js"></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Stardust Constellation Rescue","url":"https://jvdesignstudio.co.uk/games/stardust_collection.html","description":"Read symbol patterns, collect the right stardust in order, and restore constellations in a child-friendly educational browser game.","genre":["Educational","Puzzle","Action"],"gamePlatform":"Web Browser","operatingSystem":"Any","applicationCategory":"GameApplication","playMode":"SinglePlayer","isFamilyFriendly":true,"inLanguage":"en-GB","author":{"@type":"Person","name":"J. Valentine"},"publisher":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"},"offers":{"@type":"Offer","price":"0","priceCurrency":"GBP","availability":"https://schema.org/InStock"}}</script>
@@ -89,155 +90,8 @@
     </section>
     <div class="footer-actions"><a class="btn" href="../arcade.html">More arcade games</a></div>
   </main>
-<script>
-(() => {
-  const gs = new GameSystem('stardust_collection', 'Stardust Constellation Rescue', 'stardust');
-  const FIELD_W = () => field.clientWidth;
-  const FIELD_H = () => field.clientHeight;
-  // Best score lives in the unified jvds_game_stardust_collection key.
-  const MAPS = [
-    { name:'Lantern of Lyra', pattern:['✦','◆','✦','☾'] },
-    { name:'Compass of Orion', pattern:['☾','✧','◆','✧','✦'] },
-    { name:'Crown of Cassiopeia', pattern:['◆','✦','✧','☾','◆'] },
-    { name:'Dragon Trail', pattern:['✧','☾','✦','◆','✧','✦'] },
-    { name:'Jubilee Star Gate', pattern:['✦','✧','◆','☾','✦','◆'] }
-  ];
-  const GLYPHS = ['✦','✧','◆','☾'];
-  const HAZARDS = ['☄️','🪨','🌑'];
-  const scoreEl = document.getElementById('score');
-  const livesEl = document.getElementById('lives');
-  const levelEl = document.getElementById('level');
-  const chainsEl = document.getElementById('chains');
-  const bestEl = document.getElementById('best');
-  const missionName = document.getElementById('missionName');
-  const feedback = document.getElementById('feedback');
-  const patternEl = document.getElementById('pattern');
-  const field = document.getElementById('playfield');
-  const ship = document.getElementById('ship');
-  const overlay = document.getElementById('overlay');
-  const startBtn = document.getElementById('startBtn');
-  const practiceBtn = document.getElementById('practiceBtn');
-  let best = window.GameSystem ? window.GameSystem.getBestScore('stardust_collection') : 0;
-  let running = false, practice = false, raf = 0, last = 0, spawn = 0;
-  let score = 0, lives = 3, mapIndex = 0, step = 0, chains = 0, speed = 105;
-  let x = 0, targetX = 0, objects = [], keys = {};
-  bestEl.textContent = best;
-
-  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
-  function renderHud(){ scoreEl.textContent = score; livesEl.textContent = practice ? '∞' : lives; levelEl.textContent = `${mapIndex+1}/${MAPS.length}`; chainsEl.textContent = chains; bestEl.textContent = best; }
-  function renderPattern(){
-    const map = MAPS[mapIndex];
-    missionName.textContent = map.name;
-    patternEl.innerHTML = map.pattern.map((g,i)=>`<span class="glyph ${i<step?'done':i===step?'next':''}">${g}</span>`).join('');
-  }
-  function resetShip(){ x = FIELD_W()/2 - 29; targetX = x; ship.style.left = `${x}px`; ship.style.top = `${FIELD_H()-78}px`; }
-  function clearObjects(){ objects.forEach(o => o.el.remove()); objects = []; }
-  function makeObject(){
-    const wantTarget = Math.random() < 0.42;
-    const makeHazard = !wantTarget && Math.random() < 0.28;
-    const expected = MAPS[mapIndex].pattern[step];
-    let symbol = expected, kind = 'target';
-    if (makeHazard){ symbol = HAZARDS[Math.floor(Math.random()*HAZARDS.length)]; kind = 'hazard'; }
-    else if (!wantTarget){ const wrong = GLYPHS.filter(g => g !== expected); symbol = wrong[Math.floor(Math.random()*wrong.length)]; kind = 'wrong'; }
-    const el = document.createElement('div');
-    el.className = `falling ${kind}`;
-    el.textContent = symbol;
-    const laneWidth = FIELD_W()/5;
-    const lane = Math.floor(Math.random()*5);
-    const ox = clamp(lane * laneWidth + Math.random()*(laneWidth-52), 6, FIELD_W()-56);
-    el.style.left = `${ox}px`; el.style.top = '-58px';
-    field.appendChild(el);
-    objects.push({ el, x:ox, y:-58, size:48, symbol, kind, vy:speed + Math.random()*52 });
-  }
-  function startGame(isPractice=false){
-    practice = isPractice; running = true; last = 0; spawn = 0; score = 0; lives = 3; mapIndex = 0; step = 0; chains = 0; speed = 105;
-    clearObjects(); resetShip(); renderHud(); renderPattern(); feedback.textContent = 'Collect the highlighted symbol first.'; overlay.classList.add('off'); cancelAnimationFrame(raf); raf = requestAnimationFrame(loop);
-    gs.beginRun();
-  }
-  function finish(win){
-    running = false; cancelAnimationFrame(raf); clearObjects(); best = Math.max(best, score); if (window.GameSystem && window.GameSystem.saveScore) window.GameSystem.saveScore('stardust_collection', best); renderHud();
-    overlay.querySelector('h2').textContent = win ? 'Constellation Rescue Complete!' : 'The sky map collapsed';
-    overlay.querySelector('p').textContent = win ? `You restored all five constellations with ${score} points. That took pattern reading, timing, and lane planning.` : `Final score: ${score}. Try reading the next highlighted symbol before moving lanes.`;
-    startBtn.textContent = 'Play again'; practiceBtn.textContent = 'Practice mode'; overlay.classList.remove('off');
-    if (!practice) {
-      gs.addScore(score);
-      gs.addXP(Math.max(8, Math.floor(score / 40)));
-      gs.recordGamePlay(90000);
-      gs.saveState();
-    }
-    if (win) gs.unlockAchievement('firstPlay');
-  }
-  function nextMap(){
-    score += 80 + chains * 10; mapIndex++; step = 0; speed += 18; clearObjects();
-    if (mapIndex >= MAPS.length) return finish(true);
-    feedback.textContent = 'Nice. New constellation: read the new sequence.'; renderPattern(); renderHud();
-  }
-  function collect(obj){
-    obj.el.remove(); objects = objects.filter(o => o !== obj);
-    if (obj.kind === 'hazard'){
-      chains = 0; feedback.textContent = practice ? 'Meteor hit. In practice you keep going.' : 'Meteor hit. One life lost.'; window.JVDSAudio && window.JVDSAudio.error();
-      if (!practice) lives--;
-      if (lives <= 0) return finish(false);
-      renderHud(); return;
-    }
-    const expected = MAPS[mapIndex].pattern[step];
-    if (obj.symbol === expected){
-      step++; chains++; score += 25 + chains * 5; feedback.textContent = `Correct: ${obj.symbol}. Keep the sequence going.`; window.JVDSAudio && window.JVDSAudio.success();
-      if (step >= MAPS[mapIndex].pattern.length) nextMap();
-    } else {
-      chains = 0; score = Math.max(0, score - 10); feedback.textContent = `${obj.symbol} is out of order. Look for ${expected} next.`; window.JVDSAudio && window.JVDSAudio.error();
-    }
-    renderPattern(); renderHud();
-  }
-  function loop(t){
-    if (!running) return;
-    const dt = Math.min(0.033, (t-last || 16)/1000); last = t;
-    if (keys.ArrowLeft || keys.a) targetX -= 360*dt;
-    if (keys.ArrowRight || keys.d) targetX += 360*dt;
-    targetX = clamp(targetX, 4, FIELD_W()-62); x += (targetX-x)*0.32; ship.style.left = `${x}px`;
-    spawn -= dt; if (spawn <= 0){ makeObject(); spawn = Math.max(.42, 1.08 - mapIndex*.08 - chains*.01); }
-    const shipBox = { x, y:FIELD_H()-78, w:58, h:58 };
-    objects.slice().forEach(o => {
-      o.y += o.vy*dt; o.el.style.top = `${o.y}px`;
-      if (o.y > FIELD_H()+60){ o.el.remove(); objects = objects.filter(item => item !== o); if (o.kind === 'target'){ chains = 0; feedback.textContent = 'The needed symbol slipped past. Re-read the pattern.'; renderHud(); } return; }
-      const hit = o.x < shipBox.x+shipBox.w-10 && o.x+o.size > shipBox.x+10 && o.y < shipBox.y+shipBox.h-10 && o.y+o.size > shipBox.y+10;
-      if (hit) collect(o);
-    });
-    raf = requestAnimationFrame(loop);
-  }
-  startBtn.addEventListener('click', () => startGame(false));
-  practiceBtn.addEventListener('click', () => startGame(true));
-  window.addEventListener('keydown', e => { keys[e.key] = true; if (['ArrowLeft','ArrowRight','a','d'].includes(e.key)) e.preventDefault(); });
-  window.addEventListener('keyup', e => { keys[e.key] = false; });
-  field.addEventListener('pointermove', e => { if (!running) return; const r = field.getBoundingClientRect(); targetX = clamp(e.clientX - r.left - 29, 4, FIELD_W()-62); });
-  [['touchLeft','ArrowLeft'],['touchRight','ArrowRight']].forEach(([id,key]) => {
-    const btn = document.getElementById(id);
-    btn.addEventListener('pointerdown', e => { e.preventDefault(); keys[key] = true; });
-    ['pointerup','pointerleave','pointercancel'].forEach(evt => btn.addEventListener(evt, e => { e.preventDefault(); keys[key] = false; }));
-  });
-  window.addEventListener('resize', () => { targetX = clamp(targetX, 4, FIELD_W()-62); resetShip(); });
-  resetShip(); renderPattern(); renderHud();
-  window.startGame = startGame;
-})();
-</script>
-<script>
-(function(){
-  if(!window.AudioEffects)return;
-  var a=new AudioEffects(0.5);
-  try{if(localStorage.getItem('soundEnabled')==='false')a.setMasterVolume(0);}catch(e){}
-  var armed=false;
-  function arm(){armed=true;}
-  window.addEventListener('pointerdown',arm,{passive:true});
-  window.addEventListener('keydown',arm);
-  window.JVDSAudio={armed:function(){return armed},tap:function(){if(armed)try{a.playTap()}catch(e){}},success:function(){if(armed)try{a.playSuccess()}catch(e){}},error:function(){if(armed)try{a.playError()}catch(e){}},pop:function(){if(armed)try{a.playPop()}catch(e){}}};
-  if(window.GameSystem&&GameSystem.prototype&&!GameSystem.prototype.__jvdsAudioPatched){
-    GameSystem.prototype.__jvdsAudioPatched=true;
-    var orig=GameSystem.prototype.addScore;
-    GameSystem.prototype.addScore=function(){try{window.JVDSAudio.success()}catch(e){}return orig.apply(this,arguments)};
-  }
-  document.addEventListener('click',function(e){if(armed&&e.target.closest('button,.btn,a')){try{a.playTap()}catch(err){}}},true);
-})();
-</script>
+<script src="/assets/js/inline/games-stardust-collection-1.js"></script>
+<script src="/assets/js/inline/games-stardust-collection-2.js"></script>
 <script defer src="../game-shell.js"></script>
 </body>
 </html>

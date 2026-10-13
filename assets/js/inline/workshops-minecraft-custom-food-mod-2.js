@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-minecraft-custom-food-mod-v2';

@@ -54,17 +54,17 @@ const CARDS = [
   // ── Homepage + hubs ──
   { page: 'arcade.html',                   slug: 'arcade',        title: 'JVDS Arcade',        tag: 'Every game in one app. One profile, 29 games, playable offline.', accent: '#A583CE', emoji: '🕹️', eyebrow: 'JVDesignStudio · Install the Arcade' },
   { page: 'index.html',                    slug: 'home',          title: 'JVDesignStudio',     tag: "Children's books, free browser games & creative adventures.", accent: '#BC4749', emoji: '🎨', eyebrow: 'Made with heart by J. Valentine' },
-  { page: 'pages/games.html',              slug: 'hub-games',     title: 'Free Browser Games', tag: 'Play instantly. No downloads, no sign-ups.',                  accent: '#7b6cf0', emoji: '🎮', eyebrow: 'JVDesignStudio Arcade' },
+  { page: 'arcade.html',                    slug: 'hub-games',     title: 'Free Browser Games', tag: 'Play instantly. No downloads, no sign-ups.',                  accent: '#7b6cf0', emoji: '🎮', eyebrow: 'JVDesignStudio Arcade' },
   { page: 'pages/books.html',              slug: 'hub-books',     title: "Children's Books",   tag: 'Picture books about courage, calm & curiosity.',              accent: '#F2A541', emoji: '📚', eyebrow: 'JVDesignStudio Books' },
-  { page: 'pages/freebies.html',           slug: 'hub-freebies',  title: 'Free Downloads',     tag: 'Books, games, activity kits & guides, all free.',             accent: '#6BCB77', emoji: '🎁', eyebrow: 'JVDesignStudio' },
+  { page: 'pages/downloads.html',           slug: 'hub-freebies',  title: 'Free Downloads',     tag: 'Books, games, activity kits & guides, all free.',             accent: '#6BCB77', emoji: '🎁', eyebrow: 'JVDesignStudio' },
   { page: 'pages/content_hub.html',        slug: 'hub-everything',title: 'Everything',         tag: 'Every game, book, course, tool & download in one place.',     accent: '#4895EF', emoji: '🗂️', eyebrow: 'JVDesignStudio' },
   { page: 'pages/dev-tools.html',          slug: 'hub-devtools',  title: 'Game Dev Toolbox',   tag: '20 free browser tools, sprites, music, levels & more.',       accent: '#00b894', emoji: '🛠️', eyebrow: 'JVDesignStudio' },
   { page: 'pages/videos.html',             slug: 'hub-videos',    title: 'Videos',             tag: 'Devlogs & project showcases on the Studio YouTube.',          accent: '#e74c3c', emoji: '📺', eyebrow: 'JVDesignStudio' },
   { page: 'pages/gallery.html',            slug: 'hub-gallery',   title: 'The Making Wall',    tag: 'See what people built with our free tools.',                  accent: '#c56cf0', emoji: '🖼️', eyebrow: 'JVDesignStudio' },
   { page: 'pages/merch.html',              slug: 'hub-merch',     title: 'Merch Shop',         tag: 'Exclusive designs, prints & goodies.',                        accent: '#fd79a8', emoji: '🛍️', eyebrow: 'JVDesignStudio' },
-  { page: 'pages/leaderboards.html',       slug: 'hub-leaderboards',title: 'Your Progress',    tag: 'Best scores, XP, achievements & streaks across every game.',  accent: '#F2A541', emoji: '🏆', eyebrow: 'JVDesignStudio Arcade' },
+  { page: 'me.html',                        slug: 'hub-leaderboards',title: 'Your Progress',    tag: 'Best scores, XP, achievements & streaks across every game.',  accent: '#F2A541', emoji: '🏆', eyebrow: 'JVDesignStudio Arcade' },
   { page: 'pages/quest-board.html',        slug: 'hub-questboard',title: 'Quest Board',        tag: 'Complete quests across workshops & games. Unlock rewards.',   accent: '#8a5cf0', emoji: '🗡️', eyebrow: 'JVDesignStudio' },
-  { page: 'pages/newsletter.html',         slug: 'hub-newsletter',title: 'Stay in the Loop',   tag: 'New books, games & tools, straight to your inbox.',           accent: '#63c7ff', emoji: '✉️', eyebrow: 'JVDesignStudio' },
+  { page: 'newsletter.html',               slug: 'hub-newsletter',title: 'Stay in the Loop',   tag: 'New books, games & tools, straight to your inbox.',           accent: '#63c7ff', emoji: '✉️', eyebrow: 'JVDesignStudio' },
   { page: 'pages/follow_along.html',       slug: 'hub-follow',    title: 'Follow Along',       tag: 'Studio updates on YouTube, Instagram & Itch.',                accent: '#fb5607', emoji: '🧭', eyebrow: 'JVDesignStudio' },
   { page: 'pages/about.html',              slug: 'hub-about',     title: 'About J. Valentine', tag: 'The story & values behind JVDesignStudio.',                   accent: '#BC4749', emoji: '👋', eyebrow: 'JVDesignStudio' },
   { page: 'pages/contact.html',            slug: 'hub-contact',   title: 'Contact',            tag: 'Collaborations, press & educational enquiries.',              accent: '#4895EF', emoji: '💬', eyebrow: 'JVDesignStudio' },
@@ -117,8 +117,8 @@ const CARDS = [
 
 // Pages wired to existing real artwork instead of a generated card.
 const ART = [
-  { page: 'pages/learn-hub.html',         url: OG + 'learn.png' },
-  { page: 'pages/my-progress.html',       url: OG + 'my-progress.png' },
+  { page: 'pages/workshop.html',           url: OG + 'learn.png' },
+  { page: 'me.html',                      url: OG + 'my-progress.png' },
   { page: 'pages/discovery_session.html', url: BASE + 'Discovery%20Sessions.png' },
 ];
 

@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-godot-gatekeeper3d-p2-v2';

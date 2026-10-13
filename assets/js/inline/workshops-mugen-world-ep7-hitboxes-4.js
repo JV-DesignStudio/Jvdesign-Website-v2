@@ -1,0 +1,1 @@
+window.WORKSHOP_TOTAL=4;window.WORKSHOP_KEY='jvds-mugen-world-ep7-hitboxes-v2';window.WORKSHOP_PROFILE_ID='mugen-world-ep7-hitboxes';

@@ -1,0 +1,1 @@
+window.location.replace('/pages/dev-tools.html');

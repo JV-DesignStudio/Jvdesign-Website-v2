@@ -65,12 +65,13 @@ walk(ROOT, { ext: ".html", ignore: IGNORE_DIRS }).forEach(filePath => {
         return entry && entry.display ? entry.display : m;
     });
 
-    // Perf: convert render-blocking style-shared.css to preload pattern across all pages
-    // Turns <link rel="stylesheet" href="...style-shared.css"> into preload onload version to avoid render block
-    src = src.replace(/<link\s+rel="stylesheet"\s+href="([^"]*style-shared\.css[^"]*)"\s*\/?>/gi, (m, href) => {
-        if (src.includes(`href="${href}" as="style"`)) return m; // already preload
-        return `<link rel="preload" href="${href}" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="${href}"></noscript>`;
-    });
+    // CSP (A1503): keep style-shared.css as a plain stylesheet link. The old
+    // preload + inline onload swap needed script-src 'unsafe-inline'; not worth an
+    // inline handler, so emit the plain form and downgrade any existing preload.
+    src = src.replace(/<link\s+rel="preload"\s+href="([^"]+)"\s+as="style"\s+onload="[^"]*"><noscript><link\s+rel="stylesheet"\s+href="[^"]*"><\/noscript>/gi,
+        (m, href) => `<link rel="stylesheet" href="${href}">`);
+    src = src.replace(/<link\s+rel=["']preload["']\s+href=["']([^"']+)["']\s+as=["']style["'][^>]*\sonload=["'][^"']*["'][^>]*>/gi,
+        (m, href) => `<link rel="stylesheet" href="${href}">`);
 
     if (src !== original) {
         fs.writeFileSync(filePath, src, 'utf8');

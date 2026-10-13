@@ -117,7 +117,7 @@
   }
 
   var STYLE = [
-    '#jvfb-btn{position:fixed;left:16px;z-index:9000;background:#BC4749;color:#fff;border:none;border-radius:999px;padding:10px 16px;font:700 .82rem/1 Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 3px 0 #9b3a3c,0 8px 24px rgba(64,59,51,.25)}',
+    '#jvfb-btn{position:fixed;left:16px;z-index:9000;background:#BC4749;color:#fff;border:none;border-radius:999px;padding:10px 16px;font:700 .82rem/1 Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 3px 0 #9b3a3c,0 8px 24px rgba(64,59,51,.25);display:inline-flex;align-items:center;justify-content:center;min-height:44px}',
     '#jvfb-btn:hover{filter:brightness(1.06)}',
     '#jvfb-btn:focus-visible{outline:3px solid #4e7d80;outline-offset:2px}',
     '#jvfb-panel{position:fixed;left:16px;z-index:9001;width:min(320px,calc(100vw - 32px));background:#F0EAD6;color:#403B33;border:1.5px solid #D2B48C;border-radius:14px;padding:16px;box-shadow:0 12px 40px rgba(64,59,51,.3);font:400 .85rem/1.5 Inter,system-ui,sans-serif}',

@@ -1,0 +1,657 @@
+(function () {
+'use strict';
+
+var W = 8, H = 4, CELL = 90, OX = 60, OY = 80;
+
+var PARTS = [
+  { id: 'player',   n: 'Player',   e: '🧍', c: [0.25, 0.60, 1.00], w: 40, h: 40, kind: 'player' },
+  { id: 'platform', n: 'Platform', e: '🟫', c: [0.50, 0.50, 0.55], w: 80, h: 20, kind: 'platform' },
+  { id: 'enemy',    n: 'Enemy',    e: '👾', c: [0.90, 0.25, 0.25], w: 34, h: 34, kind: 'enemy' },
+  { id: 'coin',     n: 'Coin',     e: '🟡', c: [1.00, 0.83, 0.20], w: 24, h: 24, kind: 'coin' },
+  { id: 'wall',     n: 'Wall',     e: '🧱', c: [0.55, 0.38, 0.20], w: 40, h: 60, kind: 'wall' },
+  { id: 'goal',     n: 'Goal',     e: '🏁', c: [0.20, 0.85, 0.40], w: 50, h: 60, kind: 'goal' }
+];
+var BY_ID = {};
+PARTS.forEach(function (p) { BY_ID[p.id] = p; });
+function part(id) { return BY_ID[id] || null; }
+
+var FEATURES = [
+  { k: 'move',   n: 'Move the player', desc: 'Arrow keys to walk and jump.' },
+  { k: 'coin',   n: 'Coins add score', desc: 'Collect a coin and the score goes up.' },
+  { k: 'enemy',  n: 'Enemies patrol', desc: 'Enemies walk back and forth and bump you back to the start.' },
+  { k: 'wall',   n: 'Walls block you', desc: 'Solid walls stop the player walking through them.' },
+  { k: 'win',    n: 'Reach the goal to win', desc: 'Touching the goal shows a win message.' }
+];
+
+var S = {
+  grid: new Array(W * H).fill(null),
+  active: 'platform',
+  eraser: false,
+  project: 'My First Pygame',
+  author: '',
+  features: { move: true, coin: true, enemy: true, win: true }
+};
+
+var KEY = 'jvds-python-mod-studio-v1';
+var soundOn = false, actx = null;
+function blip(freq, dur, type) {
+  if (!soundOn) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    var o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || 'square'; o.frequency.value = freq; g.gain.value = 0.03;
+    o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + (dur || 0.07));
+  } catch (e) {}
+}
+function award(amount, onceKey) {
+  try {
+    var k = 'jvds-pythonxp-' + onceKey;
+    if (localStorage.getItem(k)) return;
+    var tot = parseInt(localStorage.getItem('jvds-python-studio-xp') || '0', 10) + amount;
+    localStorage.setItem('jvds-python-studio-xp', String(tot));
+    localStorage.setItem(k, '1');
+  } catch (e) {}
+}
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify({ grid: S.grid, active: S.active, project: S.project, author: S.author, features: S.features })); } catch (e) {}
+}
+function restore() {
+  try {
+    var raw = localStorage.getItem(KEY); if (!raw) return;
+    var s = JSON.parse(raw);
+    if (Array.isArray(s.grid) && s.grid.length === W * H) S.grid = s.grid;
+    if (s.active && part(s.active)) S.active = s.active;
+    if (typeof s.project === 'string') S.project = s.project;
+    if (typeof s.author === 'string') S.author = s.author;
+    if (s.features && typeof s.features === 'object') S.features = s.features;
+  } catch (e) {}
+}
+
+/* ---------- code build ---------- */
+function slug(s, fb) { var out = String(s || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, ''); return out || fb; }
+function tuple(c) { return '(' + Math.round(c[0] * 255) + ', ' + Math.round(c[1] * 255) + ', ' + Math.round(c[2] * 255) + ')'; }
+function placedItems() {
+  var out = [];
+  for (var i = 0; i < S.grid.length; i++) {
+    var id = S.grid[i];
+    if (!id || !part(id)) continue;
+    var col = i % W, row = Math.floor(i / W);
+    var x = OX + col * CELL, y = OY + row * CELL;
+    out.push({ id: id, p: BY_ID[id], x: x, y: y, w: BY_ID[id].w, h: BY_ID[id].h });
+  }
+  return out;
+}
+function byKind(k) { return placedItems().filter(function (it) { return it.p.kind === k; }); }
+function rectLine(it) { return 'pygame.Rect(' + it.x + ', ' + it.y + ', ' + it.w + ', ' + it.h + ')'; }
+function colorConst(kind) {
+  return { platform: 'GREY', enemy: 'RED', coin: 'GOLD', wall: 'BROWN', goal: 'GREEN', player: 'BLUE' }[kind] || 'GREY';
+}
+function listVar(kind, varName) {
+  var items = byKind(kind);
+  if (!items.length) return varName + ' = []';
+  var lines = [varName + ' = ['];
+  items.forEach(function (it) { lines.push('    ' + rectLine(it) + ','); });
+  lines.push(']');
+  return lines.join('\n');
+}
+function buildMain() {
+  var name = String(S.project || 'My Game').replace(/"/g, '');
+  var players = byKind('player');
+  var start = players[0] || { x: OX, y: OY, w: 40, h: 40 };
+  var L = [];
+  L.push('import pygame');
+  L.push('import sys');
+  L.push('');
+  L.push('pygame.init()');
+  L.push('WIDTH, HEIGHT = 800, 500');
+  L.push('screen = pygame.display.set_mode((WIDTH, HEIGHT))');
+  L.push('pygame.display.set_caption("' + name + '")');
+  L.push('clock = pygame.time.Clock()');
+  L.push('font = pygame.font.SysFont(None, 28)');
+  L.push('');
+  L.push('# colours (R, G, B)');
+  L.push('BLUE = (64, 153, 255)');
+  L.push('GREY = (128, 128, 140)');
+  L.push('RED = (230, 64, 64)');
+  L.push('GOLD = (255, 212, 51)');
+  L.push('BROWN = (140, 97, 51)');
+  L.push('GREEN = (51, 217, 102)');
+  L.push('');
+  L.push('# the level (each item is a pygame.Rect)');
+  L.push(listVar('platform', 'platforms'));
+  L.push(listVar('wall', 'walls'));
+  L.push(listVar('coin', 'coins'));
+  L.push(listVar('goal', 'goals'));
+  var enemies = byKind('enemy');
+  if (enemies.length) {
+    L.push('enemies = [');
+    enemies.forEach(function (it) { L.push('    [' + rectLine(it) + ', 2],'); });
+    L.push(']');
+  } else { L.push('enemies = []'); }
+  L.push('');
+  L.push('player = pygame.Rect(' + start.x + ', ' + start.y + ', ' + start.w + ', ' + start.h + ')');
+  L.push('start_x, start_y = player.x, player.y');
+  L.push('');
+  L.push('speed = 5');
+  L.push('vy = 0');
+  L.push('gravity = 0.8');
+  L.push('on_ground = False');
+  L.push('collected = 0');
+  L.push('won = False');
+  L.push('');
+  L.push('running = True');
+  L.push('while running:');
+  L.push('    for event in pygame.event.get():');
+  L.push('        if event.type == pygame.QUIT:');
+  L.push('            running = False');
+  L.push('');
+  if (S.features.move) {
+    L.push('    # --- move the player ---');
+    L.push('    keys = pygame.key.get_pressed()');
+    L.push('    dx = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * speed');
+    L.push('    player.x += dx');
+    L.push('    if keys[pygame.K_UP] and on_ground:');
+    L.push('        vy = -14');
+    L.push('        on_ground = False');
+    L.push('    vy += gravity');
+    L.push('    player.y += vy');
+    L.push('    on_ground = False');
+    L.push('    for p in platforms:');
+    L.push('        if player.colliderect(p):');
+    L.push('            if vy > 0:');
+    L.push('                player.bottom = p.top');
+    L.push('                vy = 0');
+    L.push('                on_ground = True');
+    L.push('            elif vy < 0:');
+    L.push('                player.top = p.bottom');
+    L.push('                vy = 0');
+    L.push('');
+  }
+  if (S.features.wall) {
+    L.push('    # --- walls block you ---');
+    L.push('    for wall in walls:');
+    L.push('        if player.colliderect(wall):');
+    L.push('            player.x -= speed');
+    L.push('');
+  }
+  if (S.features.coin) {
+    L.push('    # --- collect coins ---');
+    L.push('    for coin in list(coins):');
+    L.push('        if player.colliderect(coin):');
+    L.push('            coins.remove(coin)');
+    L.push('            collected += 1');
+    L.push('');
+  }
+  if (S.features.enemy) {
+    L.push('    # --- enemies patrol and bump you back ---');
+    L.push('    for enemy in enemies:');
+    L.push('        enemy[0].x += enemy[1]');
+    L.push('        if enemy[0].x < 0 or enemy[0].right > WIDTH:');
+    L.push('            enemy[1] = -enemy[1]');
+    L.push('        if player.colliderect(enemy[0]):');
+    L.push('            player.x, player.y = start_x, start_y');
+    L.push('');
+  }
+  if (S.features.win) {
+    L.push('    # --- win when you reach the goal ---');
+    L.push('    for goal in goals:');
+    L.push('        if player.colliderect(goal):');
+    L.push('            won = True');
+    L.push('');
+  }
+  L.push('    # --- draw everything ---');
+  L.push('    screen.fill((240, 244, 250))');
+  L.push('    for p in platforms:');
+  L.push('        pygame.draw.rect(screen, GREY, p)');
+  L.push('    for wall in walls:');
+  L.push('        pygame.draw.rect(screen, BROWN, wall)');
+  L.push('    for coin in coins:');
+  L.push('        pygame.draw.circle(screen, GOLD, coin.center, coin.width // 2)');
+  L.push('    for enemy in enemies:');
+  L.push('        pygame.draw.rect(screen, RED, enemy[0])');
+  L.push('    for goal in goals:');
+  L.push('        pygame.draw.rect(screen, GREEN, goal)');
+  L.push('    pygame.draw.rect(screen, BLUE, player)');
+  L.push('    score = font.render("Coins: " + str(collected), True, (30, 30, 30))');
+  L.push('    screen.blit(score, (10, 10))');
+  L.push('    if won:');
+  L.push('        message = font.render("You win!", True, (30, 130, 60))');
+  L.push('        screen.blit(message, (WIDTH // 2 - 40, 24))');
+  L.push('    pygame.display.flip()');
+  L.push('    clock.tick(60)');
+  L.push('');
+  L.push('pygame.quit()');
+  L.push('sys.exit()');
+  return L.join('\n');
+}
+function codePreview() {
+  var lines = buildMain().split('\n');
+  return lines.slice(0, 34).join('\n') + (lines.length > 34 ? '\n... (' + (lines.length - 34) + ' more lines)' : '');
+}
+
+/* ---------- render level ---------- */
+function renderBoard() {
+  var g = document.getElementById('pyBoard'); if (!g) return;
+  g.style.gridTemplateColumns = 'repeat(' + W + ', 1fr)';
+  g.innerHTML = '';
+  S.grid.forEach(function (cell, i) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pms-cell' + (cell ? ' is-filled' : '');
+    b.setAttribute('role', 'gridcell');
+    b.setAttribute('aria-label', 'Square ' + (i + 1) + (cell && part(cell) ? ': ' + part(cell).n : ': empty'));
+    if (cell && part(cell)) {
+      var pc = part(cell).c;
+      b.textContent = part(cell).e;
+      b.style.boxShadow = 'inset 0 0 0 2px rgba(' + Math.round(pc[0] * 255) + ',' + Math.round(pc[1] * 255) + ',' + Math.round(pc[2] * 255) + ',.8)';
+    }
+    b.addEventListener('click', function () {
+      if (S.eraser) { S.grid[i] = null; }
+      else { S.grid[i] = (S.grid[i] === S.active) ? null : S.active; }
+      blip(cell ? 300 : 440, 0.05, 'triangle');
+      renderAll();
+    });
+    g.appendChild(b);
+  });
+}
+function renderPalette() {
+  var p = document.getElementById('pyPalette'); if (!p) return;
+  p.innerHTML = '';
+  PARTS.forEach(function (it) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pms-swatch' + (!S.eraser && S.active === it.id ? ' is-active' : '');
+    b.title = it.n; b.setAttribute('aria-label', it.n);
+    b.innerHTML = '<span class="pms-swatch-emoji">' + it.e + '</span><span class="pms-swatch-name">' + it.n + '</span>';
+    b.addEventListener('click', function () { S.active = it.id; S.eraser = false; renderAll(); });
+    p.appendChild(b);
+  });
+}
+function renderMini() {
+  var m = document.getElementById('pyMini'); if (!m) return;
+  m.style.gridTemplateColumns = 'repeat(' + W + ', 1fr)';
+  m.innerHTML = '';
+  S.grid.forEach(function (cell) {
+    var d = document.createElement('span');
+    d.className = 'pms-mini-cell';
+    if (cell && part(cell)) {
+      var mpc = part(cell).c;
+      d.textContent = part(cell).e;
+      d.style.background = 'rgba(' + Math.round(mpc[0] * 255) + ',' + Math.round(mpc[1] * 255) + ',' + Math.round(mpc[2] * 255) + ',.22)';
+    }
+    m.appendChild(d);
+  });
+}
+function counts() { var n = {}; S.grid.forEach(function (c) { if (c) n[c] = (n[c] || 0) + 1; }); return n; }
+function levelCheck() {
+  var ul = document.getElementById('pyLevelCheck'); if (!ul) return;
+  var c = counts();
+  var checks = [
+    ['A player to control', !!c.player],
+    ['A platform to stand on', !!c.platform],
+    ['A goal to reach', !!c.goal],
+    ['At least 4 objects placed', Object.keys(c).reduce(function (s, k) { return s + c[k]; }, 0) >= 4]
+  ];
+  ul.innerHTML = '';
+  checks.forEach(function (ch) { var li = document.createElement('li'); li.className = ch[1] ? 'done' : ''; li.textContent = ch[0]; ul.appendChild(li); });
+}
+
+/* ---------- render features ---------- */
+function renderFeatureList() {
+  var box = document.getElementById('pyScriptList'); if (!box) return;
+  box.innerHTML = '';
+  FEATURES.forEach(function (s) {
+    var l = document.createElement('label');
+    l.style.cssText = 'display:flex;gap:10px;align-items:flex-start;padding:10px 0;cursor:pointer;font-size:.88rem;border-bottom:1px solid var(--border)';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = !!S.features[s.k]; cb.style.marginTop = '3px';
+    cb.addEventListener('change', function () { S.features[s.k] = cb.checked; renderAll(); });
+    var span = document.createElement('span');
+    span.innerHTML = '<strong>' + esc(s.n) + '</strong><br><span style="color:var(--charcoal-lt);font-size:.82rem">' + esc(s.desc) + '</span>';
+    l.appendChild(cb); l.appendChild(span);
+    box.appendChild(l);
+  });
+}
+function renderCodePreview() {
+  var pre = document.getElementById('pyScriptPreview'); if (!pre) return;
+  pre.textContent = codePreview() + '\n# ... plus the drawing and the game loop';
+}
+function featureFiles() {
+  var out = [];
+  FEATURES.forEach(function (f) { if (S.features[f.k]) out.push({ name: f.n, key: f.k }); });
+  return out;
+}
+
+/* ---------- render files ---------- */
+function renderFiles() {
+  var pre = document.getElementById('pyFilesPreview'); if (!pre) return;
+  pre.textContent = codePreview();
+  renderChecklist();
+}
+function renderChecklist() {
+  var ul = document.getElementById('pyChecklist'); if (!ul) return;
+  var c = counts();
+  var checks = [
+    ['The game name has no odd symbols', /^[\w \-.]+$/.test(S.project)],
+    ['At least one object is placed', placedItems().length > 0],
+    ['There is a player', !!c.player],
+    ['A goal is placed', !!c.goal],
+    ['At least one feature is ticked', featureFiles().length > 0]
+  ];
+  ul.innerHTML = '';
+  checks.forEach(function (ch) { var li = document.createElement('li'); li.className = ch[1] ? 'done' : ''; li.textContent = ch[0]; ul.appendChild(li); });
+}
+
+/* ---------- tabs ---------- */
+function showTab(name) {
+  [].forEach.call(document.querySelectorAll('.pms-tab'), function (t) {
+    var on = t.getAttribute('data-tab') === name;
+    t.classList.toggle('is-active', on);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+  });
+  [].forEach.call(document.querySelectorAll('.pms-panel'), function (p) {
+    p.classList.toggle('is-active', p.id === 'panel-' + name);
+  });
+  if (name === 'export') { renderExport(); award(10, 'seen-export'); }
+}
+function initTabs() {
+  var tabs = [].slice.call(document.querySelectorAll('.pms-tab'));
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')); });
+    t.addEventListener('keydown', function (e) {
+      var i = tabs.indexOf(t);
+      if (e.key === 'ArrowRight') { tabs[(i + 1) % tabs.length].focus(); tabs[(i + 1) % tabs.length].click(); }
+      if (e.key === 'ArrowLeft') { tabs[(i - 1 + tabs.length) % tabs.length].focus(); tabs[(i - 1 + tabs.length) % tabs.length].click(); }
+    });
+  });
+}
+
+/* ---------- debug ---------- */
+var SCENARIOS = [
+  {
+    log: [
+      'Traceback (most recent call last):',
+      '  File "main.py", line 1, in <module>',
+      '    pygame.init()',
+      "NameError: name 'pygame' is not defined"
+    ],
+    q: 'Python does not know what pygame is. What is the fix?',
+    opts: [
+      { t: 'Add the import at the top of the file: import pygame. You must import a module before you can use it.', ok: true },
+      { t: 'Change pygame.init() to pygame.start().' },
+      { t: 'Rename the file to game.py.' }
+    ]
+  },
+  {
+    log: [
+      '  File "main.py", line 20',
+      '    player.x += dx',
+      '    ^',
+      'IndentationError: expected an indented block after \'while\' statement on line 19'
+    ],
+    q: 'Python wants an indented block. What is the fix?',
+    opts: [
+      { t: 'The lines inside your while loop must be indented (usually 4 spaces). Anything after while running: needs to sit under it.', ok: true },
+      { t: 'Delete the while line and use for instead.' },
+      { t: 'Put the whole loop on one line.' }
+    ]
+  },
+  {
+    log: [
+      'Traceback (most recent call last):',
+      '  File "main.py", line 30, in <module>',
+      '    pygame.draw.rect(screen, RED, enemy)',
+      "AttributeError: 'module' object has no attribute 'rect'"
+    ],
+    q: 'A Pygame call is spelled wrong. What is the fix?',
+    opts: [
+      { t: 'It is pygame.draw.rect, not pygame.rect. Check the spelling and the dots: pygame.draw.rect(screen, colour, rectangle).', ok: true },
+      { t: 'You cannot draw rectangles in Pygame.' },
+      { t: 'Make the colour a number instead of a tuple.' }
+    ]
+  },
+  {
+    log: [
+      'Traceback (most recent call last):',
+      '  File "main.py", line 8, in <module>',
+      "    hero = pygame.image.load('hero.png')",
+      "FileNotFoundError: No such file or directory: 'hero.png'"
+    ],
+    q: 'Python cannot find an image file. What is the fix?',
+    opts: [
+      { t: 'The file must be in the same folder as main.py, and the name must match exactly (watch capital letters). Or draw a shape instead of loading an image.', ok: true },
+      { t: 'Delete Python and reinstall it.' },
+      { t: 'Add .jpg to the end of the filename as well.' }
+    ]
+  },
+  {
+    log: [
+      'Traceback (most recent call last):',
+      '  File "main.py", line 41, in <module>',
+      '    screen.blit(score, 10, 10)',
+      "TypeError: invalid position argument for blit"
+    ],
+    q: 'The blit position is wrong. What is the fix?',
+    opts: [
+      { t: 'Give the position as a pair in brackets: screen.blit(score, (10, 10)). Two numbers need to sit inside one tuple.', ok: true },
+      { t: 'blit only works with images.' },
+      { t: 'Use screen.draw instead of blit.' }
+    ]
+  }
+];
+var dbgIndex = 0;
+function renderDebug() {
+  var logEl = document.getElementById('pyLog'); if (!logEl) return;
+  var sc = SCENARIOS[dbgIndex];
+  logEl.innerHTML = '';
+  sc.log.forEach(function (line) {
+    var el = document.createElement('span');
+    var isErr = /Error|Traceback/i.test(line) && !/^Traceback \(most recent call last\)/.test(line);
+    el.className = 'line' + (isErr ? ' err' : '');
+    el.textContent = line;
+    if (isErr) el.addEventListener('click', function () { openOptions(); });
+    logEl.appendChild(el);
+  });
+  var opts = document.getElementById('pyOptions'); opts.innerHTML = '';
+  var msg = document.getElementById('pyDebugMsg'); msg.className = 'pms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
+  document.getElementById('pyNext').style.display = 'none';
+}
+function openOptions() {
+  var opts = document.getElementById('pyOptions'); if (!opts) return;
+  opts.innerHTML = '';
+  var sc = SCENARIOS[dbgIndex];
+  var correct = sc.opts.findIndex(function (o) { return o.ok; });
+  sc.opts.forEach(function (o, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'pms-dbg-opt'; b.textContent = o.t;
+    b.addEventListener('click', function () {
+      if (i === correct) {
+        b.classList.add('is-correct');
+        var msg = document.getElementById('pyDebugMsg'); msg.className = 'pms-msg ok'; msg.textContent = 'Correct. That is exactly what the traceback is telling you.';
+        blip(660, 0.12, 'triangle'); award(15, 'debug-' + dbgIndex);
+        document.getElementById('pyNext').style.display = '';
+        [].forEach.call(opts.children, function (c, k) { if (k !== i) c.disabled = true; });
+      } else {
+        b.classList.add('is-wrong');
+        var m2 = document.getElementById('pyDebugMsg'); m2.className = 'pms-msg bad'; m2.textContent = 'Not quite. Read the red line again and try another fix.';
+        blip(180, 0.12, 'sawtooth');
+      }
+    });
+    opts.appendChild(b);
+  });
+}
+function nextProblem() { dbgIndex = (dbgIndex + 1) % SCENARIOS.length; renderDebug(); }
+
+/* ---------- export ---------- */
+function projectFiles() {
+  var folder = slug(S.project, 'my_pygame_game');
+  var by = (S.author || '').trim();
+  var readme = S.project + ' - a Pygame project made in the JVDesignStudio Python Mod Studio.\n' +
+    (by ? 'Made by: ' + by + '\n' : '') + '\n' +
+    'HOW TO RUN IT (Python is free at python.org):\n' +
+    '1. Install Python 3 (tick "Add Python to PATH" on Windows).\n' +
+    '2. Open a terminal in this folder and run:  pip install pygame\n' +
+    '3. Then run your game with:  python main.py\n\n' +
+    'Arrow keys: left and right to walk, up to jump.\n\n' +
+    'Full guide: https://jvdesignstudio.co.uk/workshops/python-world-workshop.html\n';
+  return [
+    { name: folder + '/main.py', text: buildMain() + '\n' },
+    { name: folder + '/requirements.txt', text: 'pygame\n' },
+    { name: folder + '/README.txt', text: readme }
+  ];
+}
+function renderExport() {
+  var folder = slug(S.project, 'my_pygame_game');
+  var tree = document.getElementById('pyExportTree');
+  if (tree) {
+    tree.textContent = folder + '.zip\n' +
+      '└── ' + folder + '/\n' +
+      '    ├── main.py\n' +
+      '    ├── requirements.txt\n' +
+      '    ├── README.txt\n' +
+      '    └── (your level is written inside main.py)';
+  }
+  var ul = document.getElementById('pyExportCheck');
+  if (ul) {
+    var c = counts();
+    var checks = [
+      ['main.py will be included', placedItems().length > 0],
+      ['A player is placed', !!c.player],
+      ['A goal is placed', !!c.goal],
+      [featureFiles().length ? featureFiles().length + ' feature(s) will be included' : 'No features yet (optional)', featureFiles().length > 0]
+    ];
+    ul.innerHTML = '';
+    checks.forEach(function (ch) { var li = document.createElement('li'); li.className = ch[1] ? 'done' : ''; li.textContent = ch[0]; ul.appendChild(li); });
+  }
+}
+var CRC_TABLE = (function () { var t = [], n, k, c; for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) { c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); } t[n] = c >>> 0; } return t; })();
+function crc32(bytes) { var c = 0xFFFFFFFF; for (var i = 0; i < bytes.length; i++) { c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8); } return (c ^ 0xFFFFFFFF) >>> 0; }
+function u16(v) { return [v & 0xFF, (v >> 8) & 0xFF]; }
+function u32(v) { return [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF]; }
+function makeZip(files) {
+  var enc = new TextEncoder(); var chunks = [], central = [], offset = 0;
+  files.forEach(function (f) {
+    var nameBytes = enc.encode(f.name), data = f.data, crc = crc32(data);
+    var local = [].concat(u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nameBytes.length), u16(0));
+    var header = new Uint8Array(local.length + nameBytes.length); header.set(local, 0); header.set(nameBytes, local.length);
+    chunks.push(header); chunks.push(data);
+    var cd = [].concat(u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nameBytes.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset));
+    var cdh = new Uint8Array(cd.length + nameBytes.length); cdh.set(cd, 0); cdh.set(nameBytes, cd.length);
+    central.push(cdh); offset += header.length + data.length;
+  });
+  var cdSize = central.reduce(function (s, c) { return s + c.length; }, 0);
+  var eocd = new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(cdSize), u32(offset), u16(0)));
+  var total = chunks.reduce(function (s, c) { return s + c.length; }, 0) + cdSize + eocd.length;
+  var out = new Uint8Array(total), p = 0;
+  chunks.forEach(function (c) { out.set(c, p); p += c.length; });
+  central.forEach(function (c) { out.set(c, p); p += c.length; });
+  out.set(eocd, p); return out;
+}
+function download() {
+  var msg = document.getElementById('pyExportMsg');
+  try {
+    var enc = new TextEncoder();
+    var folder = slug(S.project, 'my_pygame_game');
+    if (placedItems().length === 0) { msg.className = 'pms-msg bad'; msg.textContent = 'Place at least one object on the grid first.'; showTab('level'); return; }
+    var files = projectFiles().map(function (f) { return { name: f.name, data: enc.encode(f.text) }; });
+    var zip = makeZip(files);
+    var blob = new Blob([zip], { type: 'application/zip' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = folder + '.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+    try { var c = parseInt(localStorage.getItem('jvds_tool_export_python-mod-studio') || '0', 10) + 1; localStorage.setItem('jvds_tool_export_python-mod-studio', String(c)); } catch (e) {}
+    award(25, 'export');
+    blip(740, 0.12, 'triangle');
+    msg.className = 'pms-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Install Python and run python main.py.';
+  } catch (e) { msg.className = 'pms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
+}
+
+/* ---------- copy ---------- */
+function copyText(text, msgEl) {
+  function done() { if (msgEl) { msgEl.className = 'pms-msg ok'; msgEl.textContent = 'Copied.'; } }
+  if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); }); }
+  else { fallback(text, done); }
+}
+function fallback(text, done) {
+  try { var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done(); } catch (e) {}
+}
+
+/* ---------- render all ---------- */
+function renderAll() {
+  var pn = document.getElementById('pyProjectName'); if (pn && pn.value !== S.project) pn.value = S.project;
+  var au = document.getElementById('pyAuthor'); if (au && au.value !== S.author) au.value = S.author;
+  var er = document.getElementById('pyEraser'); if (er) { er.setAttribute('aria-pressed', S.eraser ? 'true' : 'false'); er.classList.toggle('pms-btn--primary', S.eraser); }
+  renderBoard(); renderPalette(); renderMini(); levelCheck();
+  renderFeatureList(); renderCodePreview(); renderFiles(); renderExport();
+  persist();
+}
+function setExample() {
+  S.grid = new Array(W * H).fill(null);
+  var place = function (col, row, id) { S.grid[row * W + col] = id; };
+  place(0, 3, 'player');
+  place(1, 3, 'platform'); place(2, 3, 'platform'); place(3, 3, 'platform');
+  place(3, 2, 'coin'); place(4, 2, 'coin');
+  place(5, 3, 'platform'); place(6, 3, 'platform'); place(7, 3, 'platform');
+  place(5, 2, 'enemy'); place(2, 1, 'wall');
+  place(7, 2, 'goal');
+  S.project = S.project || 'My First Pygame';
+  renderAll();
+  var msg = document.getElementById('pyMsg'); if (msg) { msg.className = 'pms-msg ok'; msg.textContent = 'Example level loaded. Click 5. Download your project when you are ready.'; }
+}
+
+/* ---------- tour ---------- */
+var TOUR = [
+  { t: 'Welcome to the Studio', b: 'This is a little Pygame project maker. In a few steps you will lay out a level, add features, write your code and download a real project you can run.' },
+  { t: '1. Lay out a level', b: 'Pick an object and click grid squares. Add a Player to control and a Goal to reach. The grid is a bird\'s eye view.' },
+  { t: '2. Add features', b: 'Tick the Python you want, like coins or enemies. Each one folds working code into your main.py.' },
+  { t: '3. Name your game', b: 'Give your game a name and check the ready list. The Studio writes the whole main.py for you.' },
+  { t: '4. Fix the error', b: 'Real Python breaks in small ways. Practise reading the traceback and choosing the fix, the same skill you use in any editor.' },
+  { t: '5. Download', b: 'Download the zip, install Python and Pygame, then run python main.py and play your game.' }
+];
+var tourIndex = 0;
+function renderTour() {
+  var t = TOUR[tourIndex];
+  document.getElementById('tourTitle').textContent = t.t;
+  document.getElementById('tourBody').textContent = t.b;
+  var dots = document.getElementById('tourDots'); dots.innerHTML = '';
+  TOUR.forEach(function (_, i) { var s = document.createElement('span'); if (i === tourIndex) s.className = 'on'; dots.appendChild(s); });
+  document.getElementById('tourNext').textContent = tourIndex === TOUR.length - 1 ? 'Done' : 'Next →';
+}
+function openTour() { tourIndex = 0; renderTour(); document.getElementById('tourOverlay').hidden = false; }
+function closeTour() { document.getElementById('tourOverlay').hidden = true; }
+
+/* ---------- init ---------- */
+function init() {
+  restore();
+  initTabs();
+  ['pyProjectName', 'pyAuthor'].forEach(function (id) {
+    var el = document.getElementById(id); if (!el) return;
+    el.addEventListener('input', function () {
+      if (id === 'pyProjectName') S.project = el.value;
+      if (id === 'pyAuthor') S.author = el.value;
+      renderFiles(); renderExport(); persist();
+    });
+  });
+  var er = document.getElementById('pyEraser'); if (er) er.addEventListener('click', function () { S.eraser = !S.eraser; renderAll(); });
+  var cl = document.getElementById('pyClear'); if (cl) cl.addEventListener('click', function () { S.grid = new Array(W * H).fill(null); renderAll(); });
+  var ex = document.getElementById('pyExample'); if (ex) ex.addEventListener('click', setExample);
+  var copyBtn = document.getElementById('pyFilesCopy'); if (copyBtn) copyBtn.addEventListener('click', function () { copyText(buildMain(), document.getElementById('pyFilesMsg')); });
+  var dl = document.getElementById('pyDownload'); if (dl) dl.addEventListener('click', download);
+  var nx = document.getElementById('pyNext'); if (nx) nx.addEventListener('click', nextProblem);
+  var tb = document.getElementById('pyTourBtn'); if (tb) tb.addEventListener('click', openTour);
+  var ts = document.getElementById('tourSkip'); if (ts) ts.addEventListener('click', closeTour);
+  var tn = document.getElementById('tourNext'); if (tn) tn.addEventListener('click', function () { if (tourIndex === TOUR.length - 1) { closeTour(); } else { tourIndex++; renderTour(); } });
+  var ov = document.getElementById('tourOverlay'); if (ov) ov.addEventListener('click', function (e) { if (e.target === ov) closeTour(); });
+  renderAll();
+  renderDebug();
+}
+
+/* expose for tests */
+window.PMS_buildMain = buildMain;
+window.PMS_featureNames = function () { return featureFiles().map(function (f) { return f.key; }); };
+
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+})();

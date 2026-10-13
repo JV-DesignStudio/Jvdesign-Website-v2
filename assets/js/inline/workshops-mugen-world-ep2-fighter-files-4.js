@@ -1,0 +1,1 @@
+window.WORKSHOP_TOTAL=5;window.WORKSHOP_KEY='jvds-mugen-world-ep2-fighter-files-v2';window.WORKSHOP_PROFILE_ID='mugen-world-ep2-fighter-files';

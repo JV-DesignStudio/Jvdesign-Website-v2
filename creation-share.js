@@ -88,7 +88,7 @@
 
   var styleEl = document.createElement('style');
   styleEl.textContent = [
-    '#jvds-share-btn{position:fixed;right:16px;z-index:9000;background:#4e7d80;color:#fff;border:none;border-radius:999px;padding:10px 16px;font:700 .82rem/1 Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 3px 0 #3d6366,0 8px 24px rgba(0,0,0,.28)}',
+    '#jvds-share-btn{position:fixed;right:16px;z-index:9000;background:#4e7d80;color:#fff;border:none;border-radius:999px;padding:10px 16px;font:700 .82rem/1 Inter,system-ui,sans-serif;cursor:pointer;box-shadow:0 3px 0 #3d6366,0 8px 24px rgba(0,0,0,.28);display:inline-flex;align-items:center;justify-content:center;min-height:44px}',
     '#jvds-share-btn:hover{filter:brightness(1.07)}',
     '#jvds-share-btn:focus-visible{outline:3px solid #BC4749;outline-offset:2px}'
   ].join('');

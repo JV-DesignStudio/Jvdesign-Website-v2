@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-minecraft-custom-mob-mod-v2';

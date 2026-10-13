@@ -1,0 +1,1 @@
+location.replace("ember-smash.html"+location.search+(location.hash||""));

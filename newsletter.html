@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<script src="/assets/js/theme-init.js"></script>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#BC4749">
 <script defer src="/analytics-loader.js"></script>
@@ -34,9 +34,10 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
-<link rel="preload" href="/style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="/style-shared.css?v=17"></noscript>
+<link rel="stylesheet" href="/style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css">
 <style>
 /* ── HERO ── */
@@ -129,7 +130,7 @@
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
-  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/38x38/403B33/F0EAD6?text=JV'">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async" data-fallback="https://placehold.co/38x38/403B33/F0EAD6?text=JV">
  <span class="logo-name">JVDesignStudio</span>
  </a>
    <nav class="main-nav" id="mainNav" aria-label="Main">
@@ -146,6 +147,7 @@
      <a href="/pages/lumo.html" role="menuitem">Learn <img src="/assets/mascots/lumo-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
      <a href="/pages/ember.html" role="menuitem">Create <img src="/assets/mascots/ember-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
      <a href="/pages/pip.html" role="menuitem">Play <img src="/assets/mascots/pip-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
+     <a href="/pages/gallery.html" role="menuitem">Community Gallery</a>
      <a href="/pages/echo.html" role="menuitem">Improve <img src="/assets/mascots/echo-badge.webp" alt="" loading="lazy" width="18" height="18" style="vertical-align:middle;border-radius:50%;margin-left:4px"></a>
      <a href="/quotes" role="menuitem">Quotes</a>
      <a href="/meet-the-crew.html" role="menuitem">Meet the Crew</a>
@@ -269,74 +271,10 @@
 
 </main>
 
-<script>
-/* Formspree AJAX submission with 8s timeout + honeypot + offline check */
-const form = document.getElementById('nlForm');
-if (form) {
-  form.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    var hp=document.getElementById('hp_website');
-    if(hp && hp.value){ return; }
-    if(typeof navigator!=='undefined' && navigator.onLine===false){
-      alert('You appear offline - please check your connection and try again, or email josh-couchman@outlook.com directly.');
-      return;
-    }
-    const btn = form.querySelector('.nl-submit');
-    btn.textContent = 'Sending...';
-    btn.disabled = true;
-    let timeoutId;
-    try {
-      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      if(controller) timeoutId = setTimeout(()=> controller.abort(), 8000);
-      const res = await fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: { 'Accept': 'application/json' },
-        signal: controller ? controller.signal : undefined
-      });
-      if(timeoutId) clearTimeout(timeoutId);
-      if (res.ok) {
-        document.getElementById('formWrap').style.display = 'none';
-        document.getElementById('successMsg').classList.add('show');
-      } else {
-        btn.textContent = '📬 Subscribe';
-        btn.disabled = false;
-        alert('Something went wrong , please try again or email josh-couchman@outlook.com directly.');
-      }
-    } catch(err) {
-      if(timeoutId) clearTimeout(timeoutId);
-      btn.textContent = '📬 Subscribe';
-      btn.disabled = false;
-      if(err && err.name === 'AbortError') alert('Request timed out after 8s , please try again.');
-      else alert('Network error , please check your connection and try again. You can also email josh-couchman@outlook.com directly.');
-    }
-  });
-}
-</script>
+<script src="/assets/js/inline/newsletter-1.js"></script>
 
 <script src="/devlog-data.js"></script>
-<script>
-(function() {
-  var grid = document.getElementById('devlogPreview');
-  if (!grid || typeof POSTS === 'undefined' || !POSTS.length) return;
-  var tagClass = {books:'tag-books',games:'tag-games',life:'tag-life',process:'tag-process',update:'tag-update'};
-  var tagLabel = {books:'\u{1F4DA} Books',games:'\u{1F3AE} Games',life:'☀️ Life',process:'\u{1F3A8} Process',update:'\u{1F4E2} Update'};
-  function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  POSTS.slice(0,3).forEach(function(post){
-    var a=document.createElement('a');
-    a.href='/devlog';
-    a.className='nl-devlog-card reveal';
-    a.innerHTML='<div class="nl-devlog-meta">'
-      +'<span class="nl-devlog-tag '+(tagClass[post.tag]||'')+'">'+( tagLabel[post.tag]||esc(post.tag) )+'</span>'
-      +'<span class="nl-devlog-date">'+esc(post.date)+'</span>'
-      +'</div>'
-      +'<div class="nl-devlog-title">'+(post.emoji?esc(post.emoji)+' ':'')+esc(post.title)+'</div>'
-      +'<div class="nl-devlog-excerpt">'+esc(post.excerpt)+'</div>'
-      +'<div class="nl-devlog-read">Read note →</div>';
-    grid.appendChild(a);
-  });
-})();
-</script>
+<script src="/assets/js/inline/newsletter-2.js"></script>
 
 <!-- BUILD:footer-content -->
 <footer class="site-footer">
@@ -381,7 +319,7 @@ if (form) {
                 <a href="/faq">FAQ</a>
                 <a href="/privacy-policy">Privacy Policy</a>
                 <a href="/terms-of-service">Terms of Service</a>
-                <a href="#" onclick="if(window.JVDSCookies){JVDSCookies.reopen()}return false;">Cookie settings</a>
+                <a href="#" data-cookie-settings>Cookie settings</a>
             </nav>
             <nav class="footer-col" aria-label="Socials">
                 <h3 class="footer-col-title">Socials</h3>

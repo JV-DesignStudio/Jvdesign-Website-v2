@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<script src="/assets/js/theme-init.js"></script>
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#0a0514">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,10 +31,11 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
-<link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
+<link rel="stylesheet" href="../style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css"><link rel="stylesheet" href="/ember-guide.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Cross-Tool Challenges","url":"https://jvdesignstudio.co.uk/tools/challenges.html","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"}}</script>
 <style>
@@ -75,47 +76,9 @@ h1{margin:6px 0 8px;font-size:clamp(1.8rem,4vw,2.6rem)}p{color:var(--muted);line
 <div id="grid" class="grid" aria-live="polite"></div>
 </main>
 <footer class="jvds-tools-footer"><a href="/">Home</a><a href="/dev-tools">Tools</a></footer>
-<script>window.addEventListener('load',()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
+<script src="/assets/js/inline/tools-challenges-1.js"></script>
 <script defer src="/cookie-consent.js"></script><script defer src="/ember-guide.js"></script><script defer src="../player-profile.js"></script><script defer src="../tool-xp.js"></script>
-<script>
-const DB='jvds-challenges-v1', STORE='progress';
-const CHALLENGES=[
-  {id:'c1',title:'Pixel Hero + Gem Match',desc:'Draw a 16×16 hero in Pixel Studio, then score 500 in Gem Match.',tools:['pixel-studio','gem-match'],xp:50,badge:'Hero Maker',period:'weekly'},
-  {id:'c2',title:'Chiptune Sprint',desc:'Make a 4-bar loop in Audio Studio, then beat Level 2 in Lumo Dash.',tools:['sound-studio','lumo-dash'],xp:40,badge:'Beat Smith',period:'weekly'},
-  {id:'c3',title:'World Seed',desc:'Build a 10×10 world in World Builder and export PNG.',tools:['level-designer'],xp:30,badge:'World Starter',period:'weekly'},
-  {id:'c4',title:'Story Sprint',desc:'Write a 3-node branching story in Story Editor, play it in Story Player.',tools:['story-editor','story-player'],xp:35,badge:'Teller',period:'weekly'},
-  {id:'c5',title:'Icon Forge',desc:'Design an app icon for your game, export 512 + 192.',tools:['icon-generator'],xp:25,badge:'Iconist',period:'weekly'},
-  {id:'c6',title:'Monthly Epic: Mini Arcade',desc:'Ship a tiny arcade game: Pixel art + Level + Sound + Playtest. Monthly, bigger XP.',tools:['pixel-studio','level-designer','sound-studio','arcade-game-maker'],xp:150,badge:'Arcade Captain',period:'monthly'}
-];
-const $=id=>document.getElementById(id);
-function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE);};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
-async function getProgress(){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).getAll();req.onsuccess=()=>{const map={};(req.result||[]).forEach(r=>map[r.id]=r);res(map);};req.onerror=()=>rej(req.error);tx.oncomplete=()=>db.close();});}
-async function setDone(id,done){const db=await openDB();await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');const st=tx.objectStore(STORE);if(done)st.put({id,ts:Date.now()}); else st.delete(id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
-function announce(m){const a=document.getElementById('jvds-announce');if(a){a.textContent=m;setTimeout(()=>a.textContent='',1500);}}
-let currentPeriod='weekly';
-async function render(){
-  const prog=await getProgress();const grid=$('grid');grid.innerHTML='';
-  const list=CHALLENGES.filter(c=>c.period===currentPeriod);
-  let doneCount=0, xp=0;
-  list.forEach(ch=>{
-    const done=!!prog[ch.id];
-    if(done){doneCount++;xp+=ch.xp;}
-    const pct=done?100:0;
-    const el=document.createElement('article');el.className='card';
-    el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><span class="badge">${ch.period} • ${ch.xp} XP</span><span class="badge" style="${done?'background:rgba(16,185,129,.2)':''}">${done?'✓ Done':'To do'}</span></div><h2>${ch.title}</h2><p class="meta">${ch.desc}</p><div style="display:flex;gap:6px;flex-wrap:wrap">${ch.tools.map(t=>`<span class="badge">${t}</span>`).join('')}</div><div class="progress" aria-hidden="true"><div class="bar" style="width:${pct}%"></div></div><div style="display:flex;gap:8px"><button class="btn ${done?'':'primary'}" data-id="${ch.id}" type="button">${done?'Undo':'Complete (offline)'}</button><span style="align-self:center;font-size:.85rem;color:var(--muted)">${ch.badge}</span></div>`;
-    grid.appendChild(el);
-  });
-  $('statDone').textContent=doneCount+' / '+list.length+' completed';
-  $('statXP').textContent=xp+' XP';
-  const streak=Object.keys(prog).length; $('statStreak').textContent='Streak '+streak;
-  grid.querySelectorAll('button[data-id]').forEach(b=>b.onclick=async()=>{const id=b.dataset.id;const was=!!prog[id];await setDone(id,!was);if(!was){if(window.ToolXP)ToolXP.award('challenge-'+id,CHALLENGES.find(c=>c.id===id).xp);announce('Challenge complete! +'+CHALLENGES.find(c=>c.id===id).xp+' XP');} else announce('Challenge undone');render();});
-}
-document.getElementById('btnWeekly').onclick=()=>{currentPeriod='weekly';render();};
-document.getElementById('btnMonthly').onclick=()=>{currentPeriod='monthly';render();};
-document.getElementById('btnReset').onclick=async()=>{if(!confirm('Reset all challenge progress?'))return;const db=await openDB();await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear().onsuccess=res;tx.onerror=()=>rej(tx.error);tx.oncomplete=()=>db.close();});announce('Challenges reset');render();};
-render();
-document.addEventListener('DOMContentLoaded',()=>{if(window.EmberGuide)EmberGuide.init({id:'challenges',steps:[{target:'#grid',title:'Pick a challenge',text:'Pip picks a fun one, Echo tracks XP - all offline.'},{target:'.stats',title:'XP & streaks',text:'Leaderboard syncs when online, but you keep XP offline.'}]})});
-</script>
+<script src="/assets/js/inline/tools-challenges-2.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
 <script defer src="/creation-share.js"></script>

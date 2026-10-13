@@ -1,0 +1,1 @@
+const STORAGE_KEY='jvds-roblox-sim-lockdown-2-v1';window.WORKSHOP_KEY=STORAGE_KEY;window.WORKSHOP_TOTAL=6;window.TOTAL=6;

@@ -1,0 +1,1 @@
+location.replace("sound-studio.html"+location.search+(location.hash||"#music"));

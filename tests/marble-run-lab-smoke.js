@@ -284,7 +284,19 @@ const server = http.createServer((req, res) => {
     server.close();
   }
 
-  const html = fs.readFileSync(path.join(ROOT, 'games', 'marble-run-lab.html'), 'utf8');
+  // A1494: the page's behavioural code now lives in /assets/js/inline/*.js
+  // (externalised to drop script-src 'unsafe-inline'). Read the page plus the
+  // local scripts it loads so these static checks still see the real code.
+  const pageBundle = (rel) => {
+    const pageHtml = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+    let all = pageHtml;
+    const re = /<script[^>]*\bsrc=["'](\/[^"']+\.js)["']/gi; let m;
+    while ((m = re.exec(pageHtml))) {
+      try { all += '\n' + fs.readFileSync(path.join(ROOT, m[1].replace(/^\//, '')), 'utf8'); } catch (e) {}
+    }
+    return all;
+  };
+  const html = pageBundle('games/marble-run-lab.html');
   ok('left turns and height code are present', /turnL/.test(html) && /computeHeights/.test(html) && /GRAV/.test(html));
   ok('the old permanent-boost speed bug is gone', !/run\.speed=\.062/.test(html));
   ok('keyboard, solver, goals and autosave are present', /keydown/.test(html) && /bfsPath/.test(html) && /renderGoals/.test(html) && /AUTOSAVE/.test(html));

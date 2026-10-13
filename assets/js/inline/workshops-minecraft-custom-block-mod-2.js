@@ -1,0 +1,1 @@
+window.WORKSHOP_KEY='jvds-minecraft-custom-block-mod-v2';

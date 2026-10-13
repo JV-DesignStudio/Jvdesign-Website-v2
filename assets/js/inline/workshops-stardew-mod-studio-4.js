@@ -1,0 +1,1025 @@
+/* Stardew Mod Studio - browser playground for the Stardew World Workshop.
+   A little map engine: layers, tile rules, brush/fill/undo, walk test, challenges,
+   named worlds + share links, warps, file builders, log debug and a zip export.
+   Browser-only by design (no install, no game). Work autosaves to localStorage.
+   Facts match the Stardew wiki (T/F tile props, Warp map property, Data/Locations). */
+(function () {
+  'use strict';
+  var SAVE_KEY = 'jvds-stardew-studio-v1';
+  var WORLDS_KEY = 'jvds-stardew-worlds-v1';
+  var EMBED = /[?&]embed=1/.test(location.search);
+
+  /* ---------- tile art ---------- */
+  var COLORS = {
+    grass: '#7bb661', dirt: '#9c7a4d', sand: '#e0cf9a', stone: '#9aa0a6', path: '#c9a26b',
+    water: '#5aa9e6', tree: '#2f6b33', bush: '#4f8f3a', building: '#8a5a44', fence: '#b98a5a',
+    crop: '#c9b24a', flower: '#e07aa8', wood: '#a9773f', gravel: '#9b9b93', rock: '#8a8f95', bridge: '#b98a5a'
+  };
+  var TILE_LABELS = {
+    grass: 'Grass', dirt: 'Dirt', sand: 'Sand', stone: 'Stone', path: 'Path', water: 'Water',
+    tree: 'Tree', bush: 'Bush', building: 'Building', fence: 'Fence', crop: 'Crop', flower: 'Flower',
+    wood: 'Wood floor', gravel: 'Gravel', rock: 'Rock', bridge: 'Bridge'
+  };
+  var TILE_ORDER = ['grass', 'dirt', 'sand', 'stone', 'path', 'water', 'tree', 'bush', 'building', 'fence', 'crop', 'flower', 'wood', 'gravel', 'rock', 'bridge'];
+  var GID = {}; TILE_ORDER.forEach(function (t, i) { GID[t] = i + 1; });
+  var T = 'T', F = 'F';
+  var RULES = {
+    grass: { passable: T, water: F, diggable: T }, dirt: { passable: T, water: F, diggable: T },
+    sand: { passable: T, water: F, diggable: F }, stone: { passable: T, water: F, diggable: F },
+    path: { passable: T, water: F, diggable: F }, water: { passable: F, water: T, diggable: F },
+    tree: { passable: F, water: F, diggable: F }, bush: { passable: F, water: F, diggable: F },
+    building: { passable: F, water: F, diggable: F }, fence: { passable: F, water: F, diggable: F },
+    crop: { passable: F, water: F, diggable: F }, flower: { passable: T, water: F, diggable: F },
+    wood: { passable: T, water: F, diggable: F }, gravel: { passable: T, water: F, diggable: F },
+    rock: { passable: F, water: F, diggable: F }, bridge: { passable: T, water: F, diggable: F }
+  };
+
+  function drawTileAt(g, x, y, s, t) {
+    g.fillStyle = COLORS[t] || COLORS.grass;
+    g.fillRect(x, y, s, s);
+    if (t === 'tree') {
+      g.fillStyle = '#5a3a22'; g.fillRect(x + s / 2 - 2, y + s - 8, 4, 7);
+      g.fillStyle = '#1f4d24'; g.beginPath(); g.arc(x + s / 2, y + s / 2 - 1, s * 0.34, 0, Math.PI * 2); g.fill();
+    } else if (t === 'bush') {
+      g.fillStyle = '#3f7a2e';
+      g.beginPath(); g.arc(x + s * 0.35, y + s * 0.55, s * 0.22, 0, Math.PI * 2); g.arc(x + s * 0.62, y + s * 0.5, s * 0.24, 0, Math.PI * 2); g.fill();
+    } else if (t === 'building') {
+      g.fillStyle = '#6d4535'; g.fillRect(x + 2, y + 7, s - 4, s - 8);
+      g.fillStyle = '#c98a2e'; g.beginPath(); g.moveTo(x + 1, y + 7); g.lineTo(x + s / 2, y + 1); g.lineTo(x + s - 1, y + 7); g.closePath(); g.fill();
+      g.fillStyle = '#3a2a1e'; g.fillRect(x + s * 0.4, y + s * 0.62, s * 0.22, s * 0.3);
+    } else if (t === 'fence') {
+      g.fillStyle = '#8a6238'; g.fillRect(x, y + s * 0.3, s, s * 0.12); g.fillRect(x, y + s * 0.62, s, s * 0.12);
+      g.fillStyle = '#6d4c2a'; g.fillRect(x + s * 0.2, y, s * 0.12, s); g.fillRect(x + s * 0.68, y, s * 0.12, s);
+    } else if (t === 'crop') {
+      g.fillStyle = '#4a7a2e'; g.fillRect(x + s * 0.28, y + s * 0.45, 2, s * 0.4); g.fillRect(x + s * 0.55, y + s * 0.4, 2, s * 0.45); g.fillRect(x + s * 0.78, y + s * 0.5, 2, s * 0.35);
+      g.fillStyle = '#e6d060'; g.fillRect(x + s * 0.25, y + s * 0.35, 4, 4); g.fillRect(x + s * 0.52, y + s * 0.3, 4, 4);
+    } else if (t === 'flower') {
+      g.fillStyle = '#fff2f8'; g.beginPath(); g.arc(x + s / 2, y + s / 2, Math.max(2, s * 0.2), 0, Math.PI * 2); g.fill();
+    } else if (t === 'stone') {
+      g.fillStyle = '#b9c0c6'; g.fillRect(x + s * 0.2, y + s * 0.25, s * 0.6, s * 0.55);
+      g.fillStyle = '#7f868c'; g.fillRect(x + s * 0.2, y + s * 0.68, s * 0.6, s * 0.12);
+    } else if (t === 'sand') {
+      g.fillStyle = 'rgba(0,0,0,.10)'; g.fillRect(x + s * 0.2, y + s * 0.3, 2, 2); g.fillRect(x + s * 0.6, y + s * 0.6, 2, 2); g.fillRect(x + s * 0.4, y + s * 0.7, 2, 2);
+    } else if (t === 'dirt') {
+      g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(x + s * 0.25, y + s * 0.3, 3, 3); g.fillRect(x + s * 0.6, y + s * 0.55, 3, 3); g.fillRect(x + s * 0.4, y + s * 0.72, 3, 3);
+    } else if (t === 'water') {
+      g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = Math.max(1, s / 10);
+      g.beginPath(); g.moveTo(x + s * 0.15, y + s * 0.58); g.lineTo(x + s * 0.85, y + s * 0.58); g.stroke();
+    } else if (t === 'path') {
+      g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x + s * 0.16, y + s * 0.16, s * 0.68, s * 0.68);
+    } else if (t === 'grass') {
+      g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x + s * 0.3, y + s * 0.7); g.lineTo(x + s * 0.3, y + s * 0.55); g.moveTo(x + s * 0.6, y + s * 0.75); g.lineTo(x + s * 0.6, y + s * 0.6); g.stroke();
+    } else if (t === 'wood') {
+      g.strokeStyle = 'rgba(0,0,0,.22)'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x, y + s / 3); g.lineTo(x + s, y + s / 3); g.moveTo(x, y + 2 * s / 3); g.lineTo(x + s, y + 2 * s / 3); g.moveTo(x + s / 2, y); g.lineTo(x + s / 2, y + s); g.stroke();
+    } else if (t === 'gravel') {
+      g.fillStyle = 'rgba(0,0,0,.22)';
+      g.fillRect(x + s * 0.2, y + s * 0.25, 3, 3); g.fillRect(x + s * 0.6, y + s * 0.4, 3, 3); g.fillRect(x + s * 0.35, y + s * 0.65, 3, 3); g.fillRect(x + s * 0.72, y + s * 0.72, 3, 3);
+      g.fillStyle = 'rgba(255,255,255,.22)'; g.fillRect(x + s * 0.5, y + s * 0.2, 2, 2); g.fillRect(x + s * 0.25, y + s * 0.5, 2, 2);
+    } else if (t === 'rock') {
+      g.fillStyle = '#6f757c'; g.beginPath(); g.arc(x + s * 0.5, y + s * 0.58, s * 0.34, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#aeb5bb'; g.beginPath(); g.arc(x + s * 0.42, y + s * 0.46, s * 0.16, 0, Math.PI * 2); g.fill();
+    } else if (t === 'bridge') {
+      g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(x + s * 0.1, y + s * 0.18, s * 0.8, s * 0.64);
+      g.fillStyle = '#7a5330'; g.fillRect(x, y + s * 0.24, s, s * 0.1); g.fillRect(x, y + s * 0.66, s, s * 0.1);
+    }
+  }
+
+  /* ---------- tabs (keyboard accessible) ---------- */
+  var tabs = [].slice.call(document.querySelectorAll('.sdms-tab'));
+  function showTab(name, focus) {
+    tabs.forEach(function (b) {
+      var on = b.getAttribute('data-tab') === name;
+      b.classList.toggle('is-active', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.setAttribute('tabindex', on ? '0' : '-1'); if (on && focus) b.focus();
+    });
+    [].slice.call(document.querySelectorAll('.sdms-panel')).forEach(function (p) { p.classList.toggle('is-active', p.id === 'panel-' + name); });
+  }
+  tabs.forEach(function (b) { b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); }); });
+  var tablist = document.querySelector('.sdms-tabs');
+  if (tablist) tablist.addEventListener('keydown', function (e) {
+    var i = tabs.indexOf(document.activeElement); if (i < 0) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); showTab(tabs[(i + 1) % tabs.length].getAttribute('data-tab'), true); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); showTab(tabs[(i - 1 + tabs.length) % tabs.length].getAttribute('data-tab'), true); }
+    else if (e.key === 'Home') { e.preventDefault(); showTab(tabs[0].getAttribute('data-tab'), true); }
+    else if (e.key === 'End') { e.preventDefault(); showTab(tabs[tabs.length - 1].getAttribute('data-tab'), true); }
+  });
+  if (location.hash && /^#(map|warps|files|debug|export)$/.test(location.hash)) showTab(location.hash.slice(1));
+  if (EMBED) {
+    document.documentElement.classList.add('sdms-embed');
+    var tabParam = (/[?&]tab=([a-z]+)/.exec(location.search) || [])[1];
+    if (tabParam && /^(map|warps|files|debug|export)$/.test(tabParam)) showTab(tabParam);
+  }
+
+  /* ---------- persistence ---------- */
+  function loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; } }
+  function persist() {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ grid: grid, rules: RULES, activeLayer: activeLayer, activeTile: activeTile, cols: MCOLS, rows: MROWS, layerVisible: layerVisible, npcs: npcs, doors: doors, fields: readFields() }));
+    } catch (e) {}
+  }
+  var FIELD_IDS = ['mfName', 'mfAuthor', 'mfVersion', 'mfId', 'mfDesc', 'cfMap', 'xFolder', 'xMapName', 'xMode', 'xWarp', 'warpAVal', 'warpBVal', 'worldName'];
+  function readFields() { var o = {}; FIELD_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) o[id] = el.value; }); return o; }
+  function applyFields(o) { if (!o) return; FIELD_IDS.forEach(function (id) { var el = document.getElementById(id); if (el && o[id] != null) el.value = o[id]; }); }
+
+  /* ---------- XP tie-in ---------- */
+  function award(amount, onceKey) {
+    try {
+      if (onceKey) { if (localStorage.getItem(onceKey)) return; localStorage.setItem(onceKey, '1'); }
+      if (window.playerProfile && window.playerProfile.addXP) window.playerProfile.addXP(amount, 'tool:stardew-mod-studio');
+    } catch (e) {}
+  }
+
+  /* =========================================================
+     1. MAP EDITOR
+     ========================================================= */
+  var MCOLS = 24, MROWS = 16, MCELL = 24;
+  var LAYERS = ['Back', 'Buildings', 'Front'];
+  var mapCanvas = document.getElementById('sdmsMap');
+  var mapCtx = mapCanvas ? mapCanvas.getContext('2d') : null;
+  var grid = { Back: new Array(MCOLS * MROWS).fill('grass'), Buildings: new Array(MCOLS * MROWS).fill(null), Front: new Array(MCOLS * MROWS).fill(null) };
+  var activeLayer = 'Back', activeTile = 'grass', tool = 'paint', brushSize = 1;
+  var layerVisible = { Back: true, Buildings: true, Front: true };
+  var paintCursor = { c: 2, r: 2 };
+  var npcs = [], activeNpc = null, doors = [];
+  var insideInterior = false;
+  var ICOLS = 10, IROWS = 8, interiorDoor = { c: ICOLS - 2, r: 4 };
+  var interior = (function () {
+    var a = new Array(ICOLS * IROWS).fill('wood');
+    function s(c, r, t) { if (c >= 0 && c < ICOLS && r >= 0 && r < IROWS) a[r * ICOLS + c] = t; }
+    for (var c = 0; c < ICOLS; c++) { s(c, 0, 'rock'); s(c, IROWS - 1, 'rock'); }
+    for (var r = 0; r < IROWS; r++) { s(0, r, 'rock'); s(ICOLS - 1, r, 'rock'); }
+    s(2, 2, 'building'); s(2, 3, 'building'); s(6, 2, 'building'); s(7, 2, 'building');
+    s(4, 5, 'flower');
+    return a;
+  })();
+  var walkOn = false, char = { c: 1, r: 1 }, painting = false, paintedOnce = false, strokePushed = false;
+  var undoStack = [], redoStack = [];
+  var TIME_TINTS = { morning: 'rgba(255,214,150,.12)', noon: null, sunset: 'rgba(255,140,60,.20)', night: 'rgba(18,26,72,.38)' };
+  var timeOfDay = 'noon';
+  var mapMsg = document.getElementById('mapMsg');
+
+  function midx(c, r) { return r * MCOLS + c; }
+  function cloneGrid(g) { return { Back: g.Back.slice(), Buildings: g.Buildings.slice(), Front: g.Front.slice() }; }
+  function pushHistory() { undoStack.push(cloneGrid(grid)); if (undoStack.length > 60) undoStack.shift(); redoStack = []; updateHistoryButtons(); }
+  function updateHistoryButtons() {
+    var u = document.getElementById('toolUndo'), r = document.getElementById('toolRedo');
+    if (u) u.disabled = undoStack.length === 0; if (r) r.disabled = redoStack.length === 0;
+  }
+  function doUndo() { if (!undoStack.length) return; redoStack.push(cloneGrid(grid)); grid = undoStack.pop(); blip(300, 0.06); afterGridChange(); }
+  function doRedo() { if (!redoStack.length) return; undoStack.push(cloneGrid(grid)); grid = redoStack.pop(); blip(560, 0.06); afterGridChange(); }
+  function afterGridChange() { renderMap(); updateHistoryButtons(); runChallenges(); persist(); }
+  function applySize(cols, rows) {
+    if (cols === MCOLS && rows === MROWS) return;
+    var oldGrid = grid, oldCols = MCOLS, oldRows = MROWS;
+    var newGrid = { Back: new Array(cols * rows).fill('grass'), Buildings: new Array(cols * rows).fill(null), Front: new Array(cols * rows).fill(null) };
+    for (var r = 0; r < Math.min(rows, oldRows); r++) for (var c = 0; c < Math.min(cols, oldCols); c++) {
+      LAYERS.forEach(function (L) { newGrid[L][r * cols + c] = oldGrid[L][r * oldCols + c]; });
+    }
+    MCOLS = cols; MROWS = rows; grid = newGrid;
+    mapCanvas.width = MCOLS * MCELL; mapCanvas.height = MROWS * MCELL;
+    undoStack = []; redoStack = []; updateHistoryButtons();
+    renderMap(); runChallenges(); persist();
+  }
+
+  function topTileAt(c, r) { for (var i = LAYERS.length - 1; i >= 0; i--) { var t = grid[LAYERS[i]][midx(c, r)]; if (t) return t; } return null; }
+
+  function renderMap() {
+    if (!mapCtx) return;
+    mapCtx.fillStyle = '#0b0f14'; mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+    // soft drop shadows for raised layers
+    mapCtx.fillStyle = 'rgba(0,0,0,.20)';
+    for (var sr = 0; sr < MROWS; sr++) for (var sc = 0; sc < MCOLS; sc++) {
+      if ((layerVisible.Buildings && grid.Buildings[midx(sc, sr)]) || (layerVisible.Front && grid.Front[midx(sc, sr)])) mapCtx.fillRect(sc * MCELL + 4, sr * MCELL + 5, MCELL, MCELL);
+    }
+    LAYERS.forEach(function (L) {
+      if (!layerVisible[L]) return;
+      for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var t = grid[L][midx(c, r)]; if (t) drawTileAt(mapCtx, c * MCELL, r * MCELL, MCELL, t); }
+    });
+    // autotiled edges: a rim where water, paths and floors meet a different tile
+    var EDGE = { water: 'rgba(255,255,255,.30)', path: 'rgba(0,0,0,.14)', gravel: 'rgba(0,0,0,.16)', wood: 'rgba(0,0,0,.20)' };
+    Object.keys(EDGE).forEach(function (type) {
+      mapCtx.strokeStyle = EDGE[type]; mapCtx.lineWidth = 2;
+      for (var er = 0; er < MROWS; er++) for (var ec = 0; ec < MCOLS; ec++) {
+        if (topTileAt(ec, er) !== type) continue;
+        var ex = ec * MCELL, ey = er * MCELL;
+        if (topTileAt(ec, er - 1) !== type) { mapCtx.beginPath(); mapCtx.moveTo(ex + 2, ey + 2); mapCtx.lineTo(ex + MCELL - 2, ey + 2); mapCtx.stroke(); }
+        if (topTileAt(ec, er + 1) !== type) { mapCtx.beginPath(); mapCtx.moveTo(ex + 2, ey + MCELL - 2); mapCtx.lineTo(ex + MCELL - 2, ey + MCELL - 2); mapCtx.stroke(); }
+        if (topTileAt(ec - 1, er) !== type) { mapCtx.beginPath(); mapCtx.moveTo(ex + 2, ey + 2); mapCtx.lineTo(ex + 2, ey + MCELL - 2); mapCtx.stroke(); }
+        if (topTileAt(ec + 1, er) !== type) { mapCtx.beginPath(); mapCtx.moveTo(ex + MCELL - 2, ey + 2); mapCtx.lineTo(ex + MCELL - 2, ey + MCELL - 2); mapCtx.stroke(); }
+      }
+    });
+    mapCtx.strokeStyle = 'rgba(255,255,255,.08)'; mapCtx.lineWidth = 1;
+    for (var c2 = 0; c2 <= MCOLS; c2++) { mapCtx.beginPath(); mapCtx.moveTo(c2 * MCELL + 0.5, 0); mapCtx.lineTo(c2 * MCELL + 0.5, MROWS * MCELL); mapCtx.stroke(); }
+    for (var r2 = 0; r2 <= MROWS; r2++) { mapCtx.beginPath(); mapCtx.moveTo(0, r2 * MCELL + 0.5); mapCtx.lineTo(MCOLS * MCELL, r2 * MCELL + 0.5); mapCtx.stroke(); }
+    if (walkOn) {
+      var cx = char.c * MCELL + MCELL / 2, cy = char.r * MCELL + MCELL / 2;
+      mapCtx.fillStyle = 'rgba(0,0,0,.25)'; mapCtx.beginPath(); mapCtx.ellipse(cx, cy + 7, MCELL * 0.3, MCELL * 0.14, 0, 0, Math.PI * 2); mapCtx.fill();
+      mapCtx.fillStyle = '#fff'; mapCtx.beginPath(); mapCtx.arc(cx, cy, MCELL * 0.32, 0, Math.PI * 2); mapCtx.fill();
+      mapCtx.fillStyle = '#3f7d3a'; mapCtx.beginPath(); mapCtx.arc(cx, cy, MCELL * 0.24, 0, Math.PI * 2); mapCtx.fill();
+    }
+    if (dragging && dragStart && dragEnd) {
+      var pc0 = Math.min(dragStart.c, dragEnd.c), pc1 = Math.max(dragStart.c, dragEnd.c), pr0 = Math.min(dragStart.r, dragEnd.r), pr1 = Math.max(dragStart.r, dragEnd.r);
+      mapCtx.fillStyle = dragging === 'copy' ? 'rgba(112,163,167,.25)' : 'rgba(255,209,102,.25)';
+      mapCtx.fillRect(pc0 * MCELL, pr0 * MCELL, (pc1 - pc0 + 1) * MCELL, (pr1 - pr0 + 1) * MCELL);
+      mapCtx.strokeStyle = dragging === 'copy' ? '#70A3A7' : '#ffd166'; mapCtx.lineWidth = 2;
+      mapCtx.strokeRect(pc0 * MCELL + 1, pr0 * MCELL + 1, (pc1 - pc0 + 1) * MCELL - 2, (pr1 - pr0 + 1) * MCELL - 2);
+    }
+    doors.forEach(function (d) { mapCtx.fillStyle = '#ffd166'; mapCtx.fillRect(d.c * MCELL + 6, d.r * MCELL + 4, MCELL - 12, MCELL - 8); });
+    npcs.forEach(function (n) {
+      if (n.path.length) { mapCtx.strokeStyle = 'rgba(224,122,168,.8)'; mapCtx.lineWidth = 2; mapCtx.beginPath(); mapCtx.moveTo(n.x * MCELL + MCELL / 2, n.y * MCELL + MCELL / 2); n.path.forEach(function (p) { mapCtx.lineTo(p.c * MCELL + MCELL / 2, p.r * MCELL + MCELL / 2); }); mapCtx.stroke(); }
+      mapCtx.fillStyle = '#e07aa8'; mapCtx.beginPath(); mapCtx.arc(n.x * MCELL + MCELL / 2, n.y * MCELL + MCELL / 2, MCELL * 0.28, 0, Math.PI * 2); mapCtx.fill();
+    });
+    if (!walkOn && !playOn) {
+      mapCtx.strokeStyle = '#ffd166'; mapCtx.lineWidth = 2;
+      mapCtx.strokeRect(paintCursor.c * MCELL + 1, paintCursor.r * MCELL + 1, MCELL - 2, MCELL - 2);
+    }
+    var tt = TIME_TINTS[timeOfDay];
+    if (tt) { mapCtx.fillStyle = tt; mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height); }
+    renderMinimap();
+  }
+
+  function setCell(c, r, t) { if (c < 0 || c >= MCOLS || r < 0 || r >= MROWS) return; grid[activeLayer][midx(c, r)] = t; }
+  function mapPaintAt(clientX, clientY) {
+    var rect = mapCanvas.getBoundingClientRect();
+    var c = Math.floor((clientX - rect.left) * (mapCanvas.width / rect.width) / MCELL);
+    var r = Math.floor((clientY - rect.top) * (mapCanvas.height / rect.height) / MCELL);
+    if (c < 0 || c >= MCOLS || r < 0 || r >= MROWS) return;
+    if (!strokePushed) { pushHistory(); strokePushed = true; }
+    var val = (tool === 'erase') ? null : activeTile;
+    var half = Math.floor(brushSize / 2);
+    for (var dy = -half; dy <= brushSize - 1 - half; dy++) for (var dx = -half; dx <= brushSize - 1 - half; dx++) setCell(c + dx, r + dy, val);
+    renderMap();
+    if (!paintedOnce && tool !== 'erase') { paintedOnce = true; award(10, 'jvds-studio-xp-paint'); }
+    runChallenges(); persist();
+  }
+  function fillAt(clientX, clientY) {
+    var rect = mapCanvas.getBoundingClientRect();
+    var c = Math.floor((clientX - rect.left) * (mapCanvas.width / rect.width) / MCELL);
+    var r = Math.floor((clientY - rect.top) * (mapCanvas.height / rect.height) / MCELL);
+    if (c < 0 || c >= MCOLS || r < 0 || r >= MROWS) return;
+    var target = grid[activeLayer][midx(c, r)], repl = (tool === 'erase') ? null : activeTile;
+    if (target === repl) return;
+    pushHistory();
+    var stack = [[c, r]];
+    while (stack.length) {
+      var p = stack.pop(), pc = p[0], pr = p[1];
+      if (pc < 0 || pc >= MCOLS || pr < 0 || pr >= MROWS) continue;
+      if (grid[activeLayer][midx(pc, pr)] !== target) continue;
+      grid[activeLayer][midx(pc, pr)] = repl;
+      stack.push([pc + 1, pr], [pc - 1, pr], [pc, pr + 1], [pc, pr - 1]);
+    }
+    renderMap(); runChallenges(); persist();
+  }
+  var dragging = null, dragStart = null, dragEnd = null, clipboard = null;
+  function cellFromEvent(e) {
+    var rect = mapCanvas.getBoundingClientRect();
+    return { c: Math.floor((e.clientX - rect.left) * (mapCanvas.width / rect.width) / MCELL), r: Math.floor((e.clientY - rect.top) * (mapCanvas.height / rect.height) / MCELL) };
+  }
+  function updateCoord(cell) {
+    var el = document.getElementById('mapCoord'); if (!el) return;
+    if (cell.c < 0 || cell.c >= MCOLS || cell.r < 0 || cell.r >= MROWS) { el.textContent = 'Tile: -, -'; return; }
+    var t = topTileAt(cell.c, cell.r);
+    el.textContent = 'Tile: ' + cell.c + ', ' + cell.r + (t ? ' · ' + TILE_LABELS[t] : ' · empty');
+  }
+  function rectBounds() {
+    return { c0: Math.max(0, Math.min(dragStart.c, dragEnd.c)), c1: Math.min(MCOLS - 1, Math.max(dragStart.c, dragEnd.c)), r0: Math.max(0, Math.min(dragStart.r, dragEnd.r)), r1: Math.min(MROWS - 1, Math.max(dragStart.r, dragEnd.r)) };
+  }
+  function commitRect() {
+    if (!dragStart || !dragEnd) return;
+    pushHistory();
+    var b = rectBounds(), val = (tool === 'erase') ? null : activeTile;
+    for (var r = b.r0; r <= b.r1; r++) for (var c = b.c0; c <= b.c1; c++) setCell(c, r, val);
+    runChallenges(); persist();
+  }
+  function commitCopy() {
+    if (!dragStart || !dragEnd) return;
+    var b = rectBounds();
+    clipboard = { w: b.c1 - b.c0 + 1, h: b.r1 - b.r0 + 1, layers: {} };
+    LAYERS.forEach(function (L) { var arr = []; for (var r = b.r0; r <= b.r1; r++) for (var c = b.c0; c <= b.c1; c++) arr.push(grid[L][midx(c, r)]); clipboard.layers[L] = arr; });
+    var pb = document.getElementById('toolPaste'); if (pb) pb.disabled = false;
+    var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Copied a ' + clipboard.w + 'x' + clipboard.h + ' area. Pick Paste and click to stamp it.';
+  }
+  function pasteAt(cell) {
+    if (!clipboard) return;
+    pushHistory();
+    for (var dy = 0; dy < clipboard.h; dy++) for (var dx = 0; dx < clipboard.w; dx++) {
+      var c = cell.c + dx, r = cell.r + dy; if (c < 0 || c >= MCOLS || r < 0 || r >= MROWS) continue;
+      LAYERS.forEach(function (L) { grid[L][midx(c, r)] = clipboard.layers[L][dy * clipboard.w + dx]; });
+    }
+    setTool('paint'); runChallenges(); persist();
+  }
+  if (mapCanvas) {
+    mapCanvas.addEventListener('pointerdown', function (e) {
+      if (mapCanvas.setPointerCapture) { try { mapCanvas.setPointerCapture(e.pointerId); } catch (x) {} }
+      var cell = cellFromEvent(e); updateCoord(cell);
+      if (tool === 'rect') { dragging = 'rect'; dragStart = cell; dragEnd = cell; renderMap(); e.preventDefault(); return; }
+      if (tool === 'copy') { dragging = 'copy'; dragStart = cell; dragEnd = cell; renderMap(); e.preventDefault(); return; }
+      if (tool === 'paste') { pasteAt(cell); blip(620, 0.06, 'triangle'); e.preventDefault(); return; }
+      if (tool === 'npc') { addNpc(cell); e.preventDefault(); return; }
+      if (tool === 'door') { toggleDoor(cell); e.preventDefault(); return; }
+      painting = true; strokePushed = false;
+      if (tool === 'fill') fillAt(e.clientX, e.clientY); else mapPaintAt(e.clientX, e.clientY);
+      blip(tool === 'erase' ? 300 : (activeTile === 'water' ? 520 : 460), 0.05, 'triangle');
+      e.preventDefault();
+    });
+    mapCanvas.addEventListener('pointermove', function (e) {
+      var cell = cellFromEvent(e); updateCoord(cell);
+      if (dragging) { dragEnd = cell; renderMap(); return; }
+      if (painting && tool !== 'fill') mapPaintAt(e.clientX, e.clientY);
+    });
+    ['pointerup', 'pointercancel'].forEach(function (ev) {
+      mapCanvas.addEventListener(ev, function () {
+        if (dragging === 'rect') commitRect(); else if (dragging === 'copy') commitCopy();
+        dragging = null; dragStart = null; dragEnd = null; painting = false; renderMap();
+      });
+    });
+    mapCanvas.addEventListener('pointerleave', function () { painting = false; var el = document.getElementById('mapCoord'); if (el) el.textContent = 'Tile: -, -'; });
+  }
+  function buildLayersUI() {
+    var box = document.getElementById('mapLayers'); if (!box) return; box.innerHTML = '';
+    LAYERS.forEach(function (L) {
+      var label = document.createElement('label'); label.className = 'sdms-check';
+      var vis = document.createElement('input'); vis.type = 'checkbox'; vis.checked = layerVisible[L]; vis.title = 'Show or hide the ' + L + ' layer'; vis.setAttribute('aria-label', 'Show ' + L + ' layer');
+      vis.addEventListener('change', function () { layerVisible[L] = vis.checked; renderMap(); persist(); });
+      var radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'sdmsLayer'; radio.value = L; radio.checked = (L === activeLayer);
+      radio.addEventListener('change', function () { activeLayer = L; persist(); });
+      label.appendChild(vis);
+      label.appendChild(radio);
+      label.appendChild(document.createTextNode(L + (L === 'Back' ? ' (ground)' : L === 'Front' ? ' (over the player)' : ' (objects)')));
+      box.appendChild(label);
+    });
+  }
+  function buildPaletteUI() {
+    var box = document.getElementById('mapPalette'); if (!box) return; box.innerHTML = '';
+    TILE_ORDER.forEach(function (t) {
+      var b = document.createElement('button'); b.type = 'button';
+      b.className = 'sd-swatch' + (t === activeTile ? ' is-active' : '');
+      b.setAttribute('data-tile', t); b.style.setProperty('--sw', COLORS[t]);
+      b.textContent = TILE_LABELS[t];
+      b.addEventListener('click', function () {
+        activeTile = t; if (tool !== 'paint') setTool('paint');
+        [].slice.call(box.children).forEach(function (x) { x.classList.remove('is-active'); });
+        b.classList.add('is-active'); buildRulesUI(); updateCompare(); persist();
+      });
+      box.appendChild(b);
+    });
+  }
+  function setTool(t) {
+    tool = t;
+    [['toolFill', 'fill'], ['toolRect', 'rect'], ['toolErase', 'erase'], ['toolCopy', 'copy'], ['toolPaste', 'paste'], ['toolNpc', 'npc'], ['toolDoor', 'door']].forEach(function (p) {
+      var b = document.getElementById(p[0]); if (b) b.classList.toggle('is-active', t === p[1]);
+    });
+  }
+  function buildRulesUI() {
+    var box = document.getElementById('mapRules'); if (!box) return; box.innerHTML = '';
+    var note = document.getElementById('mapRulesNote');
+    var rules = RULES[activeTile];
+    [['passable', 'Passable (can walk on it)'], ['water', 'Water'], ['diggable', 'Diggable (can hoe)']].forEach(function (pair) {
+      var label = document.createElement('label'); label.className = 'sdms-check';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = (rules[pair[0]] === T);
+      cb.addEventListener('change', function () { rules[pair[0]] = cb.checked ? T : F; if (walkOn) renderMap(); updateCompare(); persist(); });
+      label.appendChild(cb); label.appendChild(document.createTextNode(pair[1])); box.appendChild(label);
+    });
+    if (note) note.textContent = 'Stardew stores these as text: T means true, F means false.';
+  }
+  function updateCompare() {
+    var el = document.getElementById('comparePanel'); if (!el) return;
+    var r = RULES[activeTile];
+    el.innerHTML = 'In Tiled you would set these tile properties on <strong>' + TILE_LABELS[activeTile] + '</strong>:<br>' +
+      '<code>Passable = ' + r.passable + '</code>, <code>Water = ' + r.water + '</code>, <code>Diggable = ' + r.diggable + '</code><br><br>' +
+      'Layers used: <strong>Back</strong>, <strong>Buildings</strong>, <strong>Front</strong>.<br>' +
+      'A doorway is a map property <code>Warp</code> = <code>fromX fromY toArea toX toY</code>.';
+  }
+  var farmDoorReturn = { c: 1, r: 1 };
+  function tryMove(dc, dr) {
+    var c = char.c + dc, r = char.r + dr;
+    if (insideInterior) {
+      if (c < 0 || c >= ICOLS || r < 0 || r >= IROWS) return { ok: false, msg: 'That is the wall.' };
+      var it = interior[r * ICOLS + c];
+      if (it !== 'wood' && it !== 'flower') return { ok: false, msg: 'You bump into the furniture. The doorway out is on the right wall.' };
+      char.c = c; char.r = r;
+      if (c === interiorDoor.c && r === interiorDoor.r) { insideInterior = false; char = { c: farmDoorReturn.c, r: farmDoorReturn.r }; return { ok: true, tile: it, exited: true }; }
+      return { ok: true, tile: it };
+    }
+    if (c < 0 || c >= MCOLS || r < 0 || r >= MROWS) return { ok: false, msg: 'Edge of the map. In Stardew you would fall into the void, so paint ground to the edges or add a border warp.' };
+    var t = topTileAt(c, r);
+    if (!t) return { ok: false, msg: 'There is no tile there (empty). The game has nothing to stand on.' };
+    var rules = RULES[t] || {};
+    if (rules.water === T) return { ok: false, msg: 'That tile is Water, so you cannot walk on it.' };
+    if (rules.passable !== T) return { ok: false, msg: 'That tile is a wall (Passable = F). Change the rule or go around.' };
+    char.c = c; char.r = r;
+    for (var i = 0; i < doors.length; i++) if (doors[i].c === c && doors[i].r === r) { farmDoorReturn = { c: c, r: r }; insideInterior = true; char = { c: interiorDoor.c - 1, r: interiorDoor.r }; return { ok: true, tile: t, entered: true }; }
+    return { ok: true, tile: t };
+  }
+  function mapMove(dc, dr) {
+    var res = tryMove(dc, dr);
+    if (!res.ok) { mapMsg.className = 'sdms-msg bad'; mapMsg.textContent = res.msg; return; }
+    mapMsg.className = 'sdms-msg ok'; mapMsg.textContent = 'Step OK. You are standing on ' + TILE_LABELS[res.tile] + '.'; renderMap();
+  }
+  var walkBtn = document.getElementById('mapWalk'), dpad = document.getElementById('mapDpad');
+  if (walkBtn) walkBtn.addEventListener('click', function () {
+    walkOn = !walkOn; walkBtn.textContent = walkOn ? '■ Stop playing' : '▶ Play my world';
+    if (dpad) dpad.style.display = walkOn ? 'grid' : 'none';
+    char = { c: 1, r: 1 };
+    mapMsg.className = 'sdms-msg'; mapMsg.textContent = walkOn ? 'Use the arrow keys or the buttons to walk. Walls and water should block you.' : '';
+    renderMap();
+  });
+  var heldDirs = {};
+  function stepDir(d) { if (d === 'up') mapMove(0, -1); else if (d === 'down') mapMove(0, 1); else if (d === 'left') mapMove(-1, 0); else if (d === 'right') mapMove(1, 0); }
+  if (dpad) [].slice.call(dpad.querySelectorAll('button')).forEach(function (b) {
+    var d = b.getAttribute('data-move');
+    b.addEventListener('pointerdown', function (e) { heldDirs[d] = true; stepDir(d); e.preventDefault(); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, function () { delete heldDirs[d]; }); });
+  });
+  function dirFromKey(k) { if (k === 'ArrowUp' || k === 'w' || k === 'W') return 'up'; if (k === 'ArrowDown' || k === 's' || k === 'S') return 'down'; if (k === 'ArrowLeft' || k === 'a' || k === 'A') return 'left'; if (k === 'ArrowRight' || k === 'd' || k === 'D') return 'right'; return null; }
+  document.addEventListener('keydown', function (e) {
+    if (!walkOn) return; var pm = document.getElementById('panel-map'); if (!pm || !pm.classList.contains('is-active')) return;
+    var d = dirFromKey(e.key); if (d) { if (!heldDirs[d]) { heldDirs[d] = true; stepDir(d); } e.preventDefault(); }
+  });
+  document.addEventListener('keyup', function (e) { var d = dirFromKey(e.key); if (d) delete heldDirs[d]; });
+  setInterval(function () { if (!walkOn) return; var pm = document.getElementById('panel-map'); if (!pm || !pm.classList.contains('is-active')) return; for (var d in heldDirs) { if (heldDirs[d]) { stepDir(d); break; } } }, 170);
+  // keyboard paint cursor (when not walking or playing)
+  document.addEventListener('keydown', function (e) {
+    if (walkOn || playOn) return;
+    var pm = document.getElementById('panel-map'); if (!pm || !pm.classList.contains('is-active')) return;
+    var d = dirFromKey(e.key);
+    if (d) {
+      if (d === 'up') paintCursor.r = Math.max(0, paintCursor.r - 1);
+      else if (d === 'down') paintCursor.r = Math.min(MROWS - 1, paintCursor.r + 1);
+      else if (d === 'left') paintCursor.c = Math.max(0, paintCursor.c - 1);
+      else if (d === 'right') paintCursor.c = Math.min(MCOLS - 1, paintCursor.c + 1);
+      renderMap(); e.preventDefault();
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      pushHistory(); grid[activeLayer][midx(paintCursor.c, paintCursor.r)] = (tool === 'erase') ? null : activeTile;
+      blip(460, 0.04, 'triangle'); renderMap(); runChallenges(); persist(); e.preventDefault();
+    }
+  });
+
+  /* ---------- full-screen play mode ---------- */
+  var playOn = false, playCanvas = document.getElementById('playCanvas'), playCtx = playCanvas ? playCanvas.getContext('2d') : null;
+  var playCell = 40, playPix = { x: 0, y: 0 }, playHeld = {}, playSteps = 0;
+  var playMsgEl = document.getElementById('playMsg');
+  function playRender() {
+    if (!playCtx) return;
+    var now = Date.now() / 1000;
+    var wantW = (insideInterior ? ICOLS : MCOLS) * playCell, wantH = (insideInterior ? IROWS : MROWS) * playCell;
+    if (playCanvas.width !== wantW || playCanvas.height !== wantH) { playCanvas.width = wantW; playCanvas.height = wantH; }
+    playCtx.fillStyle = '#0b0f14'; playCtx.fillRect(0, 0, playCanvas.width, playCanvas.height);
+    if (insideInterior) {
+      for (var ir = 0; ir < IROWS; ir++) for (var ic = 0; ic < ICOLS; ic++) drawTileAt(playCtx, ic * playCell, ir * playCell, playCell, interior[ir * ICOLS + ic]);
+      playCtx.fillStyle = '#ffd166'; playCtx.fillRect(interiorDoor.c * playCell + 6, interiorDoor.r * playCell + 4, playCell - 12, playCell - 8);
+    } else {
+      playCtx.fillStyle = 'rgba(0,0,0,.20)';
+      for (var sr = 0; sr < MROWS; sr++) for (var sc = 0; sc < MCOLS; sc++) { if (grid.Buildings[midx(sc, sr)] || grid.Front[midx(sc, sr)]) playCtx.fillRect(sc * playCell + 5, sr * playCell + 6, playCell, playCell); }
+      LAYERS.forEach(function (L) { for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var t = grid[L][midx(c, r)]; if (t) drawTileAt(playCtx, c * playCell, r * playCell, playCell, t); } });
+      doors.forEach(function (d) { playCtx.fillStyle = '#ffd166'; playCtx.fillRect(d.c * playCell + 6, d.r * playCell + 4, playCell - 12, playCell - 8); });
+      npcs.forEach(function (n) {
+        var pts = [{ c: n.x, r: n.y }].concat(n.path), pos;
+        if (pts.length > 1) { var span = pts.length * 2 - 2; var k = Math.floor((now * 1.4 + (n.off || 0)) % span); var i = k < pts.length ? k : span - k; pos = pts[i]; }
+        else pos = pts[0];
+        var nx = pos.c * playCell + playCell / 2, ny = pos.r * playCell + playCell / 2;
+        playCtx.fillStyle = '#e07aa8'; playCtx.beginPath(); playCtx.arc(nx, ny, playCell * 0.3, 0, Math.PI * 2); playCtx.fill();
+        playCtx.fillStyle = '#fff'; playCtx.beginPath(); playCtx.arc(nx - playCell * 0.1, ny - playCell * 0.06, playCell * 0.06, 0, Math.PI * 2); playCtx.arc(nx + playCell * 0.1, ny - playCell * 0.06, playCell * 0.06, 0, Math.PI * 2); playCtx.fill();
+      });
+      var tt = TIME_TINTS[timeOfDay]; if (tt) { playCtx.fillStyle = tt; playCtx.fillRect(0, 0, playCanvas.width, playCanvas.height); }
+    }
+    playCtx.fillStyle = 'rgba(0,0,0,.25)'; playCtx.beginPath(); playCtx.ellipse(playPix.x, playPix.y + playCell * 0.3, playCell * 0.3, playCell * 0.14, 0, 0, Math.PI * 2); playCtx.fill();
+    playCtx.fillStyle = '#fff'; playCtx.beginPath(); playCtx.arc(playPix.x, playPix.y, playCell * 0.32, 0, Math.PI * 2); playCtx.fill();
+    playCtx.fillStyle = '#3f7d3a'; playCtx.beginPath(); playCtx.arc(playPix.x, playPix.y, playCell * 0.24, 0, Math.PI * 2); playCtx.fill();
+  }
+  function playFrame() {
+    if (!playOn) return;
+    var tx = char.c * playCell + playCell / 2, ty = char.r * playCell + playCell / 2;
+    playPix.x += (tx - playPix.x) * 0.28; playPix.y += (ty - playPix.y) * 0.28;
+    playRender(); requestAnimationFrame(playFrame);
+  }
+  function playStep(d) {
+    var dc = d === 'left' ? -1 : d === 'right' ? 1 : 0, dr = d === 'up' ? -1 : d === 'down' ? 1 : 0;
+    var res = tryMove(dc, dr);
+    if (!res.ok) { if (playMsgEl) playMsgEl.textContent = res.msg; blip(220, 0.05); }
+    else {
+      playSteps++;
+      if (res.entered || res.exited) { playPix.x = char.c * playCell + playCell / 2; playPix.y = char.r * playCell + playCell / 2; }
+      if (playMsgEl) playMsgEl.textContent = res.entered ? 'You went inside. Walk to the door on the right wall to leave.' : res.exited ? 'Back outside. Steps: ' + playSteps : 'Exploring your world. Steps: ' + playSteps;
+      blip(500, 0.04, 'triangle');
+    }
+  }
+  function openPlay() {
+    if (!playCanvas) return;
+    playCanvas.width = MCOLS * playCell; playCanvas.height = MROWS * playCell;
+    char = { c: 1, r: 1 }; playPix = { x: char.c * playCell + playCell / 2, y: char.r * playCell + playCell / 2 }; playSteps = 0;
+    var ov = document.getElementById('playOverlay'); if (ov) ov.hidden = false;
+    if (playMsgEl) playMsgEl.textContent = 'Walk with the arrow keys or the pad. Walls and water block you.';
+    playOn = true; requestAnimationFrame(playFrame);
+  }
+  function closePlay() { playOn = false; playHeld = {}; var ov = document.getElementById('playOverlay'); if (ov) ov.hidden = true; }
+  var playFullBtn = document.getElementById('playFull'); if (playFullBtn) playFullBtn.addEventListener('click', openPlay);
+  var playCloseBtn = document.getElementById('playClose'); if (playCloseBtn) playCloseBtn.addEventListener('click', closePlay);
+  var playDpad = document.getElementById('playDpad');
+  if (playDpad) [].slice.call(playDpad.querySelectorAll('button')).forEach(function (b) {
+    var d = b.getAttribute('data-move');
+    b.addEventListener('pointerdown', function (e) { playHeld[d] = true; playStep(d); e.preventDefault(); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, function () { delete playHeld[d]; }); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (!playOn) return; var d = dirFromKey(e.key);
+    if (d) { if (!playHeld[d]) { playHeld[d] = true; playStep(d); } e.preventDefault(); }
+    else if (e.key === 'Escape') { closePlay(); }
+  });
+  document.addEventListener('keyup', function (e) { if (!playOn) return; var d = dirFromKey(e.key); if (d) delete playHeld[d]; });
+  setInterval(function () { if (!playOn) return; for (var d in playHeld) { if (playHeld[d]) { playStep(d); break; } } }, 170);
+
+  /* ---------- NPCs and doors ---------- */
+  function addNpc(cell) {
+    if (cell.c < 0 || cell.c >= MCOLS || cell.r < 0 || cell.r >= MROWS) return;
+    var m = document.getElementById('mapMsg');
+    if (!activeNpc) {
+      activeNpc = { x: cell.c, y: cell.r, path: [], off: Math.random() * 10 };
+      npcs.push(activeNpc);
+      m.className = 'sdms-msg ok'; m.textContent = 'NPC placed. Click more tiles to add its walking path, then Play.';
+    } else {
+      activeNpc.path.push({ c: cell.c, r: cell.r });
+      m.className = 'sdms-msg ok'; m.textContent = 'Path point ' + activeNpc.path.length + ' added to the NPC.';
+    }
+    renderMap(); persist();
+  }
+  function toggleDoor(cell) {
+    if (cell.c < 0 || cell.c >= MCOLS || cell.r < 0 || cell.r >= MROWS) return;
+    var found = -1;
+    for (var i = 0; i < doors.length; i++) if (doors[i].c === cell.c && doors[i].r === cell.r) found = i;
+    if (found >= 0) doors.splice(found, 1); else doors.push({ c: cell.c, r: cell.r });
+    var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = found >= 0 ? 'Door removed.' : 'Door added. Step on it in Play mode to go inside.';
+    renderMap(); persist();
+  }
+  var npcBtn = document.getElementById('toolNpc'); if (npcBtn) npcBtn.addEventListener('click', function () { if (tool === 'npc') { activeNpc = null; setTool('paint'); } else { activeNpc = null; setTool('npc'); } });
+  var doorBtn = document.getElementById('toolDoor'); if (doorBtn) doorBtn.addEventListener('click', function () { setTool(tool === 'door' ? 'paint' : 'door'); });
+  [].slice.call(document.querySelectorAll('.sdms-tool[data-brush]')).forEach(function (b) {
+    b.addEventListener('click', function () {
+      brushSize = parseInt(b.getAttribute('data-brush'), 10);
+      [].slice.call(document.querySelectorAll('.sdms-tool[data-brush]')).forEach(function (x) { x.classList.remove('is-active'); });
+      b.classList.add('is-active');
+    });
+  });
+  var fillBtn = document.getElementById('toolFill'); if (fillBtn) fillBtn.addEventListener('click', function () { setTool(tool === 'fill' ? 'paint' : 'fill'); });
+  var eraseBtn = document.getElementById('toolErase'); if (eraseBtn) eraseBtn.addEventListener('click', function () { setTool(tool === 'erase' ? 'paint' : 'erase'); });
+  var rectBtn = document.getElementById('toolRect'); if (rectBtn) rectBtn.addEventListener('click', function () { setTool(tool === 'rect' ? 'paint' : 'rect'); });
+  var copyBtn = document.getElementById('toolCopy'); if (copyBtn) copyBtn.addEventListener('click', function () { setTool(tool === 'copy' ? 'paint' : 'copy'); });
+  var pasteBtn = document.getElementById('toolPaste'); if (pasteBtn) pasteBtn.addEventListener('click', function () { if (clipboard) setTool('paste'); });
+  var sizeSel = document.getElementById('mapSize');
+  if (sizeSel) sizeSel.addEventListener('change', function () { var p = sizeSel.value.split('x'); applySize(parseInt(p[0], 10), parseInt(p[1], 10)); });
+  var undoBtn = document.getElementById('toolUndo'); if (undoBtn) undoBtn.addEventListener('click', doUndo);
+  var redoBtn = document.getElementById('toolRedo'); if (redoBtn) redoBtn.addEventListener('click', doRedo);
+  var TIME_ORDER = ['morning', 'noon', 'sunset', 'night'];
+  var timeBtn = document.getElementById('toolTime');
+  if (timeBtn) timeBtn.addEventListener('click', function () { timeOfDay = TIME_ORDER[(TIME_ORDER.indexOf(timeOfDay) + 1) % TIME_ORDER.length]; timeBtn.textContent = '🕑 ' + timeOfDay.charAt(0).toUpperCase() + timeOfDay.slice(1); renderMap(); });
+  var soundOn = false, actx = null;
+  function blip(freq, dur, type) { if (!soundOn) return; try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); var o = actx.createOscillator(), g = actx.createGain(); o.type = type || 'square'; o.frequency.value = freq; g.gain.value = 0.03; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + (dur || 0.07)); } catch (e) {} }
+  var soundBtn = document.getElementById('toolSound');
+  if (soundBtn) soundBtn.addEventListener('click', function () { soundOn = !soundOn; soundBtn.textContent = soundOn ? '🔊 Sound on' : '🔇 Sound off'; soundBtn.setAttribute('aria-pressed', soundOn ? 'true' : 'false'); if (soundOn) blip(660, 0.08, 'triangle'); });
+  document.addEventListener('keydown', function (e) {
+    var pm = document.getElementById('panel-map'); if (!pm || !pm.classList.contains('is-active')) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) doRedo(); else doUndo(); }
+  });
+  var clearBtn = document.getElementById('mapClear');
+  if (clearBtn) clearBtn.addEventListener('click', function () { pushHistory(); grid[activeLayer] = new Array(MCOLS * MROWS).fill(activeLayer === 'Back' ? 'grass' : null); afterGridChange(); });
+  var resetBtn = document.getElementById('mapReset');
+  if (resetBtn) resetBtn.addEventListener('click', function () {
+    if (!window.confirm('Reset the studio? This clears your map and fields.')) return;
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    pushHistory();
+    grid = { Back: new Array(MCOLS * MROWS).fill('grass'), Buildings: new Array(MCOLS * MROWS).fill(null), Front: new Array(MCOLS * MROWS).fill(null) };
+    activeLayer = 'Back'; activeTile = 'grass'; setTool('paint'); brushSize = 1;
+    [].slice.call(document.querySelectorAll('.sdms-tool[data-brush]')).forEach(function (x) { x.classList.toggle('is-active', x.getAttribute('data-brush') === '1'); });
+    renderMap(); buildLayersUI(); buildPaletteUI(); buildRulesUI(); updateCompare(); mapMsg.textContent = ''; persist();
+  });
+
+  /* =========================================================
+     CHALLENGES
+     ========================================================= */
+  function countTile(t) { var n = 0; LAYERS.forEach(function (L) { grid[L].forEach(function (v) { if (v === t) n++; }); }); return n; }
+  var CHALLENGES = [
+    { id: 'pond', label: 'Paint a pond (4+ water tiles)', test: function () { return countTile('water') >= 4; } },
+    { id: 'path', label: 'Lay a path (6+ path tiles)', test: function () { return countTile('path') >= 6; } },
+    { id: 'tree', label: 'Plant trees (3+ trees)', test: function () { return countTile('tree') >= 3; } },
+    { id: 'build', label: 'Add a building', test: function () { return countTile('building') >= 1; } },
+    { id: 'flower', label: 'Add flowers (3+ flowers)', test: function () { return countTile('flower') >= 3; } }
+  ];
+  var challengeDone = {};
+  function runChallenges() {
+    var box = document.getElementById('challenges'); if (!box) return;
+    var allDone = true, newly = false;
+    box.innerHTML = '';
+    CHALLENGES.forEach(function (ch) {
+      var ok = ch.test();
+      if (ok && !challengeDone[ch.id]) { challengeDone[ch.id] = true; newly = true; }
+      if (!ok) allDone = false;
+      var row = document.createElement('div'); row.className = 'sdms-challenge' + (ok ? ' done' : '');
+      row.innerHTML = '<span class="tick">' + (ok ? '✓' : '○') + '</span><span>' + ch.label + '</span>';
+      box.appendChild(row);
+    });
+    if (allDone && !challengeDone._all) { challengeDone._all = true; newly = true; award(30, 'jvds-studio-xp-challenges'); }
+    if (newly) blip(880, 0.14, 'triangle');
+    if (newly && allDone) { var m = document.getElementById('challengeMsg'); m.className = 'sdms-msg ok'; m.textContent = 'All challenges done! +30 XP. Now try the Warps tab.'; }
+    else if (newly) { var m2 = document.getElementById('challengeMsg'); m2.className = 'sdms-msg ok'; m2.textContent = 'Challenge complete! Keep going.'; }
+  }
+
+  /* =========================================================
+     MY WORLDS (save / load / share)
+     ========================================================= */
+  function getWorlds() { try { return JSON.parse(localStorage.getItem(WORLDS_KEY) || '[]'); } catch (e) { return []; } }
+  function setWorlds(w) { try { localStorage.setItem(WORLDS_KEY, JSON.stringify(w)); } catch (e) {} }
+  function encodeWorld() { return btoa(unescape(encodeURIComponent(JSON.stringify({ g: grid })))).replace(/=+$/, ''); }
+  function decodeWorld(s) { try { return JSON.parse(decodeURIComponent(escape(atob(s)))).g; } catch (e) { return null; } }
+  function loadGrid(g) { if (g && g.Back && g.Back.length === MCOLS * MROWS) { pushHistory(); grid = { Back: g.Back.slice(), Buildings: g.Buildings.slice(), Front: g.Front.slice() }; afterGridChange(); } }
+  function drawThumb(cv, g) {
+    var tc = cv.getContext('2d'); var tw = cv.width / MCOLS, th = cv.height / MROWS;
+    tc.fillStyle = '#0b0f14'; tc.fillRect(0, 0, cv.width, cv.height);
+    LAYERS.forEach(function (L) { for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var t = g[L][midx(c, r)]; if (t) { tc.fillStyle = COLORS[t] || COLORS.grass; tc.fillRect(c * tw, r * th, tw, th); } } });
+  }
+  function renderMinimap() {
+    var cv = document.getElementById('sdMinimap'); if (!cv) return;
+    var g = cv.getContext('2d'); var tw = cv.width / MCOLS, th = cv.height / MROWS;
+    g.fillStyle = '#0b0f14'; g.fillRect(0, 0, cv.width, cv.height);
+    LAYERS.forEach(function (L) { if (!layerVisible[L]) return; for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var t = grid[L][midx(c, r)]; if (t) { g.fillStyle = COLORS[t] || COLORS.grass; g.fillRect(c * tw, r * th, Math.ceil(tw), Math.ceil(th)); } } });
+  }
+  function shareURL(g) { return location.origin + location.pathname + '#world=' + btoa(unescape(encodeURIComponent(JSON.stringify({ g: g })))).replace(/=+$/, ''); }
+  function renderWorlds() {
+    var box = document.getElementById('worldList'); if (!box) return; box.innerHTML = '';
+    var ws = getWorlds();
+    if (!ws.length) { box.innerHTML = '<span style="font-size:.8rem;color:var(--charcoal-lt)">No saved worlds yet. Name one and press Save. Saved worlds appear here as little pictures.</span>'; return; }
+    ws.forEach(function (w, i) {
+      var card = document.createElement('div'); card.className = 'sdms-worldcard';
+      var cv = document.createElement('canvas'); cv.width = 120; cv.height = 80; cv.className = 'sdms-worldthumb';
+      cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', 'Preview of ' + w.name);
+      drawThumb(cv, w.grid);
+      var name = document.createElement('div'); name.className = 'sdms-worldname'; name.textContent = w.name;
+      var row = document.createElement('div'); row.className = 'sdms-worldrow';
+      var load = document.createElement('button'); load.className = 'sdms-btn load'; load.textContent = 'Load'; load.title = 'Load ' + w.name;
+      load.addEventListener('click', function () { loadGrid(w.grid); var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Loaded "' + w.name + '".'; });
+      var share = document.createElement('button'); share.className = 'sdms-btn'; share.textContent = '🔗'; share.title = 'Copy a share link for ' + w.name;
+      share.addEventListener('click', function () { var url = shareURL(w.grid); if (navigator.clipboard) navigator.clipboard.writeText(url); var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Share link copied for "' + w.name + '".'; });
+      var del = document.createElement('button'); del.className = 'sdms-btn'; del.textContent = '✕'; del.title = 'Delete ' + w.name;
+      del.addEventListener('click', function () { var arr = getWorlds(); arr.splice(i, 1); setWorlds(arr); renderWorlds(); });
+      row.appendChild(load); row.appendChild(share); row.appendChild(del);
+      card.appendChild(cv); card.appendChild(name); card.appendChild(row); box.appendChild(card);
+    });
+  }
+  var worldSave = document.getElementById('worldSave');
+  if (worldSave) worldSave.addEventListener('click', function () {
+    var name = (document.getElementById('worldName').value || '').trim() || ('World ' + (getWorlds().length + 1));
+    var arr = getWorlds(); arr.unshift({ name: name, grid: cloneGrid(grid) }); setWorlds(arr.slice(0, 12)); renderWorlds();
+    var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Saved "' + name + '".';
+  });
+  var worldShare = document.getElementById('worldShare');
+  if (worldShare) worldShare.addEventListener('click', function () {
+    var url = location.origin + location.pathname + '#world=' + encodeWorld();
+    var m = document.getElementById('mapMsg');
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { m.className = 'sdms-msg ok'; m.textContent = 'Share link copied! Paste it to send your world.'; }).catch(function () { m.className = 'sdms-msg ok'; m.textContent = 'Share link: ' + url; });
+    else { m.className = 'sdms-msg ok'; m.textContent = 'Share link: ' + url; }
+  });
+  function worldPageHTML() {
+    var name = (val('worldName') || val('mfName') || 'My World').replace(/[<>&"]/g, '');
+    var t = document.createElement('canvas'); t.width = MCOLS * 24; t.height = MROWS * 24; var g = t.getContext('2d');
+    g.fillStyle = '#0b0f14'; g.fillRect(0, 0, t.width, t.height);
+    LAYERS.forEach(function (L) { for (var r = 0; r < MROWS; r++) for (var c = 0; c < MCOLS; c++) { var ty = grid[L][midx(c, r)]; if (ty) drawTileAt(g, c * 24, r * 24, 24, ty); } });
+    var img = t.toDataURL('image/png');
+    return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + name + ' | Stardew World</title><style>body{margin:0;background:#fbf8f2;font-family:Inter,system-ui,sans-serif;color:#1a1208;text-align:center;padding:24px}img{max-width:100%;border-radius:12px;border:2px solid #d2b48c;image-rendering:pixelated}h1{font-size:1.4rem}p{color:#3d3224}a{color:#4e7d80}</style></head><body><h1>' + name + '</h1><img src="' + img + '" alt="' + name + '"><p>Made in the JVDesignStudio Stardew Mod Studio. <a href="https://jvdesignstudio.co.uk/workshops/stardew-mod-studio.html">Build your own world →</a></p></body></html>';
+  }
+  var worldPageBtn = document.getElementById('worldPage');
+  if (worldPageBtn) worldPageBtn.addEventListener('click', function () {
+    try {
+      var name = (val('worldName') || val('mfName') || 'MyWorld').replace(/[^A-Za-z0-9_-]/g, '') || 'MyWorld';
+      var blob = new Blob([worldPageHTML()], { type: 'text/html' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '-world.html'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+      var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Downloaded ' + name + '-world.html. Open it or send it to share your world.';
+    } catch (e) {}
+  });
+
+  /* =========================================================
+     2. WARP SIM
+     ========================================================= */
+  var WCOLS = 10, WROWS = 8, WCELL = 28;
+  var farm = new Array(WCOLS * WROWS).fill('grass'), cabin = new Array(WCOLS * WROWS).fill('grass');
+  function widx(c, r) { return r * WCOLS + c; }
+  farm[widx(4, 3)] = 'water'; farm[widx(5, 3)] = 'water';
+  cabin[widx(3, 1)] = 'building'; cabin[widx(4, 1)] = 'building';
+  var FARM_DOOR = { c: 8, r: 4 }, CABIN_DOOR = { c: 1, r: 4 };
+  function drawMini(canvasId, data, door, hero) {
+    var cv = document.getElementById(canvasId); if (!cv) return; var g = cv.getContext('2d');
+    g.fillStyle = '#0b0f14'; g.fillRect(0, 0, cv.width, cv.height);
+    for (var r = 0; r < WROWS; r++) for (var c = 0; c < WCOLS; c++) drawTileAt(g, c * WCELL, r * WCELL, WCELL, data[widx(c, r)]);
+    g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(door.c * WCELL, door.r * WCELL, WCELL, WCELL);
+    g.fillStyle = '#ffd166'; g.fillRect(door.c * WCELL + 6, door.r * WCELL + 4, WCELL - 12, WCELL - 8);
+    if (hero) { var hx = hero.c * WCELL + WCELL / 2, hy = hero.r * WCELL + WCELL / 2; g.fillStyle = '#fff'; g.beginPath(); g.arc(hx, hy, WCELL * 0.3, 0, Math.PI * 2); g.fill(); g.fillStyle = '#3f7d3a'; g.beginPath(); g.arc(hx, hy, WCELL * 0.22, 0, Math.PI * 2); g.fill(); }
+  }
+  function parseWarp(v) {
+    var p = String(v).trim().split(/\s+/);
+    if (p.length !== 5) return null;
+    var fx = parseInt(p[0], 10), fy = parseInt(p[1], 10), tx = parseInt(p[3], 10), ty = parseInt(p[4], 10);
+    if ([fx, fy, tx, ty].some(isNaN)) return null;
+    return { fx: fx, fy: fy, area: p[2], tx: tx, ty: ty };
+  }
+  var warpMsg = document.getElementById('warpMsg');
+  function renderWarps(heroA, heroB) { drawMini('warpA', farm, FARM_DOOR, heroA); drawMini('warpB', cabin, CABIN_DOOR, heroB); }
+  var warpTest = document.getElementById('warpTest');
+  if (warpTest) warpTest.addEventListener('click', function () {
+    var a = parseWarp(document.getElementById('warpAVal').value), b = parseWarp(document.getElementById('warpBVal').value);
+    if (!a) { warpMsg.className = 'sdms-msg bad'; warpMsg.textContent = 'The Farm Warp value must have five parts: fromX fromY toArea toX toY, like 8 4 Cabin 2 4'; return; }
+    if (a.fx !== FARM_DOOR.c || a.fy !== FARM_DOOR.r) { warpMsg.className = 'sdms-msg bad'; warpMsg.textContent = 'The Farm doorway is at tile 8,4, so the value should start with "8 4".'; return; }
+    if (a.area.toLowerCase() !== 'cabin') { warpMsg.className = 'sdms-msg bad'; warpMsg.textContent = 'The Farm doorway points at "' + a.area + '", but the other map here is Cabin. Fix the area name.'; return; }
+    if (a.tx < 0 || a.tx >= WCOLS || a.ty < 0 || a.ty >= WROWS) { warpMsg.className = 'sdms-msg bad'; warpMsg.textContent = 'The landing point (' + a.tx + ', ' + a.ty + ') is off the Cabin map, so you would land in empty space.'; return; }
+    renderWarps(null, { c: a.tx, r: a.ty });
+    var back = b && b.area.toLowerCase() === 'farm';
+    warpMsg.className = 'sdms-msg ' + (back ? 'ok' : 'bad');
+    warpMsg.textContent = back
+      ? 'You stepped on Farm 8,4 and arrived on Cabin at ' + a.tx + ', ' + a.ty + '. The Cabin warp points back to Farm, so you can get home. Two-way doorway works.'
+      : 'You arrived on Cabin, but its warp does not point back to Farm, so you are stranded. Always add the return warp.';
+    if (back) award(15, 'jvds-studio-xp-warp');
+  });
+  var warpBreak = document.getElementById('warpBreak');
+  if (warpBreak) warpBreak.addEventListener('click', function () {
+    document.getElementById('warpBVal').value = '1 4 Town 3 3'; renderWarps(null, null);
+    warpMsg.className = 'sdms-msg'; warpMsg.textContent = 'Cabin now points at "Town". Test the door again to see what happens.'; persist();
+  });
+
+  /* =========================================================
+     3. FILE BUILDERS
+     ========================================================= */
+  function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+  function pretty(o) { return JSON.stringify(o, null, 2); }
+  function manifestObj() {
+    return { Name: val('mfName'), Author: val('mfAuthor'), Version: val('mfVersion'), Description: val('mfDesc'), UniqueID: val('mfId'), ContentPackFor: { UniqueID: 'Pathoschild.ContentPatcher' } };
+  }
+  function contentObj(mode) {
+    var file = (val('xMapName') || 'Farm').replace(/[^A-Za-z0-9_.-]/g, '') || 'Farm';
+    var target = (val('cfMap') || 'Farm').replace(/[^A-Za-z0-9_.-]/g, '') || 'Farm';
+    if (mode === 'game') {
+      // A brand-new area: register a location, load its map + tilesheet, and add a door
+      // from the farm so you can actually reach it. This is the documented CustomLocations
+      // recipe (see Episode 8), so the downloaded mod is playable in the real game.
+      var locName = ((val('mfId') || 'YourName.MyFirstFarm').replace(/[^A-Za-z0-9_.-]/g, '') || 'YourName.MyFirstFarm') + '_World';
+      var entries = {};
+      entries[locName] = { DisplayName: val('mfName') || 'My World', CreateOnLoad: { MapPath: 'Maps/' + locName }, DefaultArrivalTile: { X: 3, Y: 3 } };
+      return {
+        Format: '2.9.0',
+        LogName: val('mfName') || 'My First Farm',
+        Changes: [
+          { Action: 'EditData', Target: 'Data/Locations', Entries: entries },
+          { Action: 'Load', Target: 'Maps/planner_tiles', FromFile: 'assets/maps/planner_tiles.png' },
+          { Action: 'Load', Target: 'Maps/' + locName, FromFile: 'assets/maps/' + file + '.tmx' },
+          { Action: 'EditMap', Target: 'Maps/Farm', AddWarps: ['8 4 ' + locName + ' 3 3'] }
+        ]
+      };
+    }
+    // Starter map: loads over the named map so you can peek at it, and opens in Tiled.
+    return { Format: '2.9.0', LogName: val('mfName') || 'My First Farm', Changes: [{ Action: 'Load', Target: 'Maps/' + target, FromFile: 'assets/maps/' + file + '.tmx' }] };
+  }
+  function refreshFiles() {
+    var pre = document.getElementById('filesPreview');
+    if (pre) pre.textContent = 'manifest.json\n' + pretty(manifestObj()) + '\n\ncontent.json\n' + pretty(contentObj());
+    var msg = document.getElementById('mfMsg');
+    if (msg) {
+      var bad = [];
+      if (val('mfId').indexOf('.') === -1) bad.push('UniqueID should look like Author.ModName (include a dot)');
+      if (!/^\d+\.\d+\.\d+$/.test(val('mfVersion'))) bad.push('Version should look like 1.0.0');
+      if (bad.length) { msg.className = 'sdms-msg bad'; msg.textContent = bad.join('. '); }
+      else { msg.className = 'sdms-msg ok'; msg.textContent = 'Looks valid. UniqueID is one of a kind and the version is a number.'; }
+    }
+  }
+  ['mfName', 'mfAuthor', 'mfVersion', 'mfId', 'mfDesc', 'cfMap'].forEach(function (id) { var el = document.getElementById(id); if (el) el.addEventListener('input', function () { refreshFiles(); persist(); }); });
+  var copyBtn = document.getElementById('filesCopy');
+  if (copyBtn) copyBtn.addEventListener('click', function () {
+    var text = 'manifest.json\n' + pretty(manifestObj()) + '\n\ncontent.json\n' + pretty(contentObj());
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { copyBtn.textContent = 'Copied!'; setTimeout(function () { copyBtn.textContent = 'Copy manifest + content'; }, 1500); }).catch(function () {});
+  });
+
+  /* =========================================================
+     4. DEBUG GAME
+     ========================================================= */
+  var SCENARIOS = [
+    {
+      log: ['[SMAPI] Loading mods...', '[SMAPI] Loaded 2 mods:', '   Content Patcher 2.9.1 by Pathoschild', '[Content Patcher] Error: content pack "My First Farm" failed to load.', '[Content Patcher] FromFile asset "assets/maps/Farm.tmx" doesn\'t exist.', '[SMAPI] My First Farm skipped.'],
+      errIndex: 4,
+      options: ['Reinstall the whole game', 'Check the FromFile path matches the real file name and the map is in assets/maps', 'Delete Content Patcher'],
+      correct: 1, hint: 'The log names the exact file it could not find.'
+    },
+    {
+      log: ['[SMAPI] Loading mods...', '[SMAPI] Error: mod "ContentPatcher" could not be loaded.', '[SMAPI] It looks like the folder is Mods/ContentPatcher/ContentPatcher.', '[SMAPI] Move the inner folder up one level.'],
+      errIndex: 1,
+      options: ['Rename the manifest', 'Move the inner ContentPatcher folder up so there is only one level inside Mods', 'Buy the game again'],
+      correct: 1, hint: 'The message tells you the folder is nested twice.'
+    },
+    {
+      log: ['[SMAPI] Loading mods...', '[Content Patcher] Error parsing content.json for "My First Farm".', '[Content Patcher] Unexpected token } at line 8. Check for a trailing comma.', '[SMAPI] My First Farm skipped.'],
+      errIndex: 1,
+      options: ['Add more changes', 'Remove the trailing comma / fix the JSON in content.json', 'Restart the computer'],
+      correct: 1, hint: 'A trailing comma is the most common JSON mistake.'
+    }
+  ];
+  var dbgIndex = 0;
+  function renderDebug() {
+    var s = SCENARIOS[dbgIndex];
+    var logEl = document.getElementById('dbgLog'), optEl = document.getElementById('dbgOptions'), msgEl = document.getElementById('dbgMsg'), nextBtn = document.getElementById('dbgNext');
+    if (!logEl) return; logEl.innerHTML = '';
+    s.log.forEach(function (line, i) {
+      var d = document.createElement('span'); d.className = 'sdms-log' + (i === s.errIndex ? ' err' : ''); d.textContent = line;
+      if (i === s.errIndex) d.addEventListener('click', function () {
+        [].slice.call(logEl.children).forEach(function (x) { x.classList.remove('sel'); }); d.classList.add('sel');
+        msgEl.className = 'sdms-msg'; msgEl.textContent = s.hint;
+      });
+      logEl.appendChild(d);
+    });
+    optEl.innerHTML = '';
+    s.options.forEach(function (text, i) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'sdms-btn';
+      b.style.cssText = 'display:block;width:100%;margin-bottom:8px;text-align:left'; b.textContent = text;
+      b.addEventListener('click', function () {
+        if (i === s.correct) { msgEl.className = 'sdms-msg ok'; msgEl.textContent = 'Correct! That is exactly how a real modder would fix it.'; nextBtn.style.display = 'inline-block'; award(10, 'jvds-studio-xp-debug'); }
+        else { msgEl.className = 'sdms-msg bad'; msgEl.textContent = 'Not quite. Read the red line again, it names the real problem.'; }
+      });
+      optEl.appendChild(b);
+    });
+    msgEl.className = 'sdms-msg'; msgEl.textContent = 'Click the red line, then pick the fix.'; nextBtn.style.display = 'none';
+  }
+  var dbgNext = document.getElementById('dbgNext');
+  if (dbgNext) dbgNext.addEventListener('click', function () { dbgIndex = (dbgIndex + 1) % SCENARIOS.length; renderDebug(); });
+
+  /* =========================================================
+     5. EXPORT (zip)
+     ========================================================= */
+  var CRC_TABLE = (function () { var t = [], n, k, c; for (n = 0; n < 256; n++) { c = n; for (k = 0; k < 8; k++) { c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); } t[n] = c >>> 0; } return t; })();
+  function crc32(bytes) { var c = 0xFFFFFFFF; for (var i = 0; i < bytes.length; i++) { c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8); } return (c ^ 0xFFFFFFFF) >>> 0; }
+  function u16(v) { return [v & 0xFF, (v >> 8) & 0xFF]; }
+  function u32(v) { return [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >>> 24) & 0xFF]; }
+  function makeZip(files) {
+    var enc = new TextEncoder(); var chunks = [], central = [], offset = 0;
+    files.forEach(function (f) {
+      var nameBytes = enc.encode(f.name), data = f.data, crc = crc32(data);
+      var local = [].concat(u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nameBytes.length), u16(0));
+      var header = new Uint8Array(local.length + nameBytes.length); header.set(local, 0); header.set(nameBytes, local.length);
+      chunks.push(header); chunks.push(data);
+      var cd = [].concat(u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nameBytes.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset));
+      var cdh = new Uint8Array(cd.length + nameBytes.length); cdh.set(cd, 0); cdh.set(nameBytes, cd.length);
+      central.push(cdh); offset += header.length + data.length;
+    });
+    var cdSize = central.reduce(function (s, c) { return s + c.length; }, 0);
+    var eocd = new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(cdSize), u32(offset), u16(0)));
+    var total = chunks.reduce(function (s, c) { return s + c.length; }, 0) + cdSize + eocd.length;
+    var out = new Uint8Array(total), p = 0;
+    chunks.forEach(function (c) { out.set(c, p); p += c.length; });
+    central.forEach(function (c) { out.set(c, p); p += c.length; });
+    out.set(eocd, p); return out;
+  }
+  function base64ToBytes(b64) { var bin = atob(b64), len = bin.length, bytes = new Uint8Array(len); for (var i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i); return bytes; }
+  function drawWaterVariant(g, x, y, s, mask) {
+    g.fillStyle = COLORS.water; g.fillRect(x, y, s, s);
+    g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 2;
+    if (!(mask & 1)) { g.beginPath(); g.moveTo(x + 1, y + 1); g.lineTo(x + s - 1, y + 1); g.stroke(); }
+    if (!(mask & 2)) { g.beginPath(); g.moveTo(x + s - 1, y + 1); g.lineTo(x + s - 1, y + s - 1); g.stroke(); }
+    if (!(mask & 4)) { g.beginPath(); g.moveTo(x + 1, y + s - 1); g.lineTo(x + s - 1, y + s - 1); g.stroke(); }
+    if (!(mask & 8)) { g.beginPath(); g.moveTo(x + 1, y + 1); g.lineTo(x + 1, y + s - 1); g.stroke(); }
+    g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(x + s * 0.25, y + s * 0.55); g.lineTo(x + s * 0.75, y + s * 0.55); g.stroke();
+  }
+  function tilesetCanvas() {
+    var t = document.createElement('canvas'); t.width = 16 * TILE_ORDER.length; t.height = 32; var g = t.getContext('2d');
+    for (var i = 0; i < TILE_ORDER.length; i++) drawTileAt(g, i * 16, 0, 16, TILE_ORDER[i]);
+    for (var m = 0; m < 16; m++) drawWaterVariant(g, m * 16, 16, 16, m);
+    return t;
+  }
+  function tilesetBase64() { return tilesetCanvas().toDataURL('image/png').split(',')[1]; }
+  function waterMask(c, r) { var m = 0; if (r > 0 && grid.Back[midx(c, r - 1)] === 'water') m |= 1; if (c < MCOLS - 1 && grid.Back[midx(c + 1, r)] === 'water') m |= 2; if (r < MROWS - 1 && grid.Back[midx(c, r + 1)] === 'water') m |= 4; if (c > 0 && grid.Back[midx(c - 1, r)] === 'water') m |= 8; return m; }
+  function buildTMX(mode) {
+    function csvLayer(name) {
+      var rows = [];
+      for (var r = 0; r < MROWS; r++) {
+        var row = [];
+        for (var c = 0; c < MCOLS; c++) {
+          var t = grid[name][midx(c, r)], gid = 0;
+          if (t) { if (t === 'water' && name === 'Back') gid = 1 + TILE_ORDER.length + waterMask(c, r); else gid = GID[t]; }
+          row.push(gid);
+        }
+        rows.push(row.join(','));
+      }
+      return rows.join(',\n');
+    }
+    var layerXml = LAYERS.map(function (name, n) { return ' <layer id="' + (n + 1) + '" name="' + name + '" width="' + MCOLS + '" height="' + MROWS + '">\n  <data encoding="csv">' + csvLayer(name) + '</data>\n </layer>'; }).join('\n');
+    var imgW = 16 * TILE_ORDER.length, imgH = 32;
+    var imgXml = (mode === 'game')
+      ? '  <image source="planner_tiles.png" width="' + imgW + '" height="' + imgH + '"/>'
+      : '  <image format="png" width="' + imgW + '" height="' + imgH + '"><data encoding="base64">' + tilesetBase64() + '</data></image>';
+    var tilesXml = TILE_ORDER.map(function (t, i) {
+      var r = RULES[t];
+      return '  <tile id="' + i + '">\n   <properties>\n    <property name="Passable" value="' + r.passable + '"/>\n    <property name="Water" value="' + r.water + '"/>\n    <property name="Diggable" value="' + r.diggable + '"/>\n    <property name="Type" value="' + TILE_LABELS[t] + '"/>\n   </properties>\n  </tile>';
+    }).join('\n');
+    var waterProps = '';
+    for (var wm = 0; wm < 16; wm++) {
+      waterProps += '\n  <tile id="' + (TILE_ORDER.length + wm) + '">\n   <properties>\n    <property name="Passable" value="F"/>\n    <property name="Water" value="T"/>\n    <property name="Diggable" value="F"/>\n    <property name="Type" value="Water"/>\n   </properties>\n  </tile>';
+    }
+    var tilesetXml = ' <tileset firstgid="1" name="planner_tiles" tilewidth="16" tileheight="16" spacing="0" margin="0" tilecount="' + (TILE_ORDER.length + 16) + '" columns="' + TILE_ORDER.length + '">\n' + imgXml + '\n' + tilesXml + waterProps + '\n </tileset>';
+    var props = '';
+    var warp = val('xWarp');
+    var propLines = [];
+    if (mode === 'game') propLines.push('  <property name="Outdoors" value="T"/>');
+    if (warp) propLines.push('  <property name="Warp" value="' + warp.replace(/"/g, '') + '"/>');
+    if (propLines.length) props = ' <properties>\n' + propLines.join('\n') + '\n </properties>\n';
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="' + MCOLS + '" height="' + MROWS + '" tilewidth="16" tileheight="16" infinite="0" nextlayerid="4" nextobjectid="1">\n' +
+      tilesetXml + '\n' + props + layerXml + '\n</map>\n';
+  }
+  function refreshExportPreview() {
+    var pre = document.getElementById('xPreview'); if (!pre) return;
+    var folder = (val('xFolder') || 'MyFirstFarm').replace(/[^A-Za-z0-9_.-]/g, '');
+    var map = (val('xMapName') || 'Farm').replace(/[^A-Za-z0-9_.-]/g, '');
+    var game = val('xMode') === 'game';
+    pre.textContent = folder + '.zip\n└── ' + folder + '/\n    ├── manifest.json\n    ├── content.json\n    ├── README.txt\n    └── assets/\n        └── maps/\n            ├── ' + map + '.tmx\n            └── ' + (game ? 'planner_tiles.png' : '(tilesheet embedded in the tmx)');
+  }
+  ['xFolder', 'xMapName', 'xMode', 'xWarp'].forEach(function (id) { var el = document.getElementById(id); if (el) { el.addEventListener('input', function () { refreshExportPreview(); persist(); }); el.addEventListener('change', function () { refreshExportPreview(); persist(); }); } });
+  var xBtn = document.getElementById('xDownload');
+  if (xBtn) xBtn.addEventListener('click', function () {
+    var msg = document.getElementById('xMsg');
+    try {
+      var enc = new TextEncoder();
+      var folder = (val('xFolder') || 'MyFirstFarm').replace(/[^A-Za-z0-9_.-]/g, '') || 'MyFirstFarm';
+      var map = (val('xMapName') || 'Farm').replace(/[^A-Za-z0-9_.-]/g, '') || 'Farm';
+      var mode = val('xMode') === 'game' ? 'game' : 'safe';
+      var locName = ((val('mfId') || 'YourName.MyFirstFarm').replace(/[^A-Za-z0-9_.-]/g, '') || 'YourName.MyFirstFarm') + '_World';
+      var readme = (val('mfName') || folder) + ' - made in the JVDesignStudio Stardew Mod Studio.\n\n' +
+        (mode === 'game'
+          ? 'This mod adds a brand-new area to Stardew and a door to reach it.\n\nHOW TO PLAY YOUR WORLD:\n1. Unzip this folder into Stardew Valley/Mods\n2. Launch the game through SMAPI and load any farm save\n3. Open the SMAPI console (press Enter) and type:  debug warp ' + locName + '\n   (or walk to tile 8,4 at the top-left of your farm to use the door)\n\nYour tile rules (Passable, Water, Diggable, Type) are baked into the map, so walls block you and water is water. The art is simple, so refine the map in Tiled when you are ready.\n\n'
+          : 'This is a starter map for Tiled with the tilesheet embedded. Open it in Tiled to refine it, then load it in-game.\n\n') +
+        'Full guide: https://jvdesignstudio.co.uk/workshops/stardew-world-workshop.html\n';
+      var files = [
+        { name: folder + '/manifest.json', data: enc.encode(pretty(manifestObj()) + '\n') },
+        { name: folder + '/content.json', data: enc.encode(pretty(contentObj(mode)) + '\n') },
+        { name: folder + '/assets/maps/' + map + '.tmx', data: enc.encode(buildTMX(mode)) },
+        { name: folder + '/README.txt', data: enc.encode(readme) }
+      ];
+      if (mode === 'game') files.push({ name: folder + '/assets/maps/planner_tiles.png', data: base64ToBytes(tilesetBase64()) });
+      var zip = makeZip(files);
+      var blob = new Blob([zip], { type: 'application/zip' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = folder + '.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
+      try { var c = parseInt(localStorage.getItem('jvds_tool_export_stardew-mod-studio') || '0', 10) + 1; localStorage.setItem('jvds_tool_export_stardew-mod-studio', String(c)); } catch (e) {}
+      award(25, 'jvds-studio-xp-export');
+      blip(740, 0.12, 'triangle');
+      msg.className = 'sdms-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Unzip it into Stardew Valley / Mods.';
+    } catch (e) { msg.className = 'sdms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
+  });
+
+  /* =========================================================
+     INIT + restore
+     ========================================================= */
+  var saved = loadSave();
+  if (saved) {
+    try {
+      if (saved.cols && saved.rows && saved.grid && saved.grid.Back && saved.grid.Back.length === saved.cols * saved.rows) {
+        MCOLS = saved.cols; MROWS = saved.rows; mapCanvas.width = MCOLS * MCELL; mapCanvas.height = MROWS * MCELL; grid = saved.grid;
+        var ss = document.getElementById('mapSize'); if (ss) ss.value = MCOLS + 'x' + MROWS;
+      } else if (saved.grid && saved.grid.Back && saved.grid.Back.length === MCOLS * MROWS) { grid = saved.grid; }
+      if (saved.rules) { for (var k in saved.rules) { if (RULES[k] && saved.rules[k]) { RULES[k].passable = saved.rules[k].passable; RULES[k].water = saved.rules[k].water; RULES[k].diggable = saved.rules[k].diggable; } } }
+      if (saved.activeLayer) activeLayer = saved.activeLayer;
+      if (saved.activeTile) activeTile = saved.activeTile;
+      if (saved.layerVisible) { for (var lv in layerVisible) { if (typeof saved.layerVisible[lv] === 'boolean') layerVisible[lv] = saved.layerVisible[lv]; } }
+      if (Array.isArray(saved.npcs)) npcs = saved.npcs;
+      if (Array.isArray(saved.doors)) doors = saved.doors;
+      applyFields(saved.fields);
+    } catch (e) {}
+  }
+  // a shared world in the URL hash wins over the autosave
+  var hashMatch = /#world=([A-Za-z0-9+/]+)/.exec(location.hash);
+  if (hashMatch) { var hg = decodeWorld(hashMatch[1]); if (hg) grid = { Back: hg.Back.slice(), Buildings: hg.Buildings.slice(), Front: hg.Front.slice() }; }
+
+  buildLayersUI(); buildPaletteUI(); buildRulesUI(); updateCompare(); renderMap();
+  refreshFiles(); renderDebug(); refreshExportPreview(); renderWarps(null, null); renderWorlds(); runChallenges(); updateHistoryButtons();
+
+  /* ---------- guided first-run tour ---------- */
+  var TOUR = [
+    { t: 'Welcome to the Studio', b: 'This is a little map editor. In a few steps you will paint a world, set its rules, play it and save it.' },
+    { t: '1. Pick a tile', b: 'Use the Tile palette on the right to choose grass, water, trees, buildings and more. Click or drag on the map to paint.' },
+    { t: '2. Set the rules', b: 'Each tile has rules: Passable, Water and Diggable. The play test uses them, so walls block you and water is water.' },
+    { t: '3. Use the tools', b: 'Brush sizes 1 to 3, Fill for a whole area, Rect to drag a block, Copy and Paste, and Undo if you change your mind.' },
+    { t: '4. Play it', b: 'Click Play my world or Play full screen to walk around. Doors take you inside, and NPCs wander their paths.' },
+    { t: '5. Save and share', b: 'In My worlds, name and Save your world, Share a link, or Download a world page to keep or send.' }
+  ];
+  var tourIdx = 0;
+  function showTour(i) {
+    tourIdx = i;
+    var ov = document.getElementById('tourOverlay'); if (!ov) return; ov.hidden = false;
+    var ti = document.getElementById('tourTitle'), bo = document.getElementById('tourBody');
+    if (ti) ti.textContent = TOUR[i].t; if (bo) bo.textContent = TOUR[i].b;
+    var dots = document.getElementById('tourDots');
+    if (dots) { dots.innerHTML = ''; TOUR.forEach(function (_, k) { var s = document.createElement('span'); if (k === i) s.className = 'on'; dots.appendChild(s); }); }
+    var next = document.getElementById('tourNext'); if (next) next.textContent = (i === TOUR.length - 1) ? 'Done' : 'Next →';
+  }
+  function hideTour() { var ov = document.getElementById('tourOverlay'); if (ov) ov.hidden = true; }
+  var tourBtn = document.getElementById('tourBtn'); if (tourBtn) tourBtn.addEventListener('click', function () { showTour(0); });
+  var tourNextBtn = document.getElementById('tourNext'); if (tourNextBtn) tourNextBtn.addEventListener('click', function () { if (tourIdx < TOUR.length - 1) showTour(tourIdx + 1); else hideTour(); });
+  var tourSkipBtn = document.getElementById('tourSkip'); if (tourSkipBtn) tourSkipBtn.addEventListener('click', hideTour);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var ov = document.getElementById('tourOverlay'); if (ov && !ov.hidden) hideTour(); } });
+  try { if (!localStorage.getItem('jvds-studio-toured') && !EMBED) { localStorage.setItem('jvds-studio-toured', '1'); showTour(0); } } catch (e) {}
+})();

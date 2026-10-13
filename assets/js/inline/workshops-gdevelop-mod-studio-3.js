@@ -1,0 +1,1 @@
+window.addEventListener('load',function(){if('serviceWorker' in navigator && !window.__jvdsSW){window.__jvdsSW=1;navigator.serviceWorker.register('/sw.js');}});

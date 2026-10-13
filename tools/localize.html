@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<script src="/assets/js/theme-init.js"></script>
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#0a0514">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,10 +31,11 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
-<link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
+<link rel="stylesheet" href="../style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css"><link rel="stylesheet" href="/ember-guide.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Localized Content Packs","url":"https://jvdesignstudio.co.uk/tools/localize.html","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"}}</script>
 <style>
@@ -91,36 +92,9 @@ h1{margin:6px 0 8px;font-size:clamp(1.8rem,4vw,2.6rem)}h2{margin:16px 0 8px;font
 </section>
 </main>
 <footer class="jvds-tools-footer"><a href="/">Home</a><a href="/dev-tools">Tools</a></footer>
-<script>window.addEventListener('load',()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
+<script src="/assets/js/inline/tools-localize-1.js"></script>
 <script defer src="/cookie-consent.js"></script><script defer src="/ember-guide.js"></script><script defer src="../player-profile.js"></script><script defer src="../tool-xp.js"></script>
-<script>
-const PACKS={
-  en:{'pixel.title':'Pixel Studio','pixel.desc':'Draw pixel art, design characters, animate and export.','nav.play':'Play','nav.learn':'Learn','mascot.ember':'Ember - Create'},
-  es:{'pixel.title':'Estudio Píxel','pixel.desc':'Dibuja arte píxel, diseña personajes, anima y exporta.','nav.play':'Jugar','nav.learn':'Aprender','mascot.ember':'Ember - Crear'},
-  fr:{'pixel.title':'Studio Pixel','pixel.desc':'Dessine en pixel art, conçois des personnages, anime et exporte.','nav.play':'Jouer','nav.learn':'Apprendre','mascot.ember':'Ember - Créer'},
-  de:{'pixel.title':'Pixel Studio','pixel.desc':'Zeichne Pixel-Art, entwerfe Charaktere, animiere und exportiere.','nav.play':'Spielen','nav.learn':'Lernen','mascot.ember':'Ember - Erstellen'}
-};
-const KEY='jvds_locale';
-const $=id=>document.getElementById(id);
-let lang=localStorage.getItem(KEY)||'en';
-function t(k){return (PACKS[lang]&&PACKS[lang][k])||PACKS.en[k]||k;}
-function apply(){
-  $('toolTitle').textContent=t('pixel.title');
-  $('toolDesc').textContent=t('pixel.desc');
-  const preview=$('preview');preview.innerHTML='';
-  Object.keys(PACKS.en).forEach(k=>{const a=document.createElement('div');a.textContent=k;a.style.color='var(--muted)';a.style.fontFamily='monospace';const b=document.createElement('div');b.textContent=t(k);preview.appendChild(a);preview.appendChild(b);});
-  document.querySelectorAll('.lang').forEach(b=>{b.classList.toggle('on',b.dataset.lang===lang);b.setAttribute('aria-selected',b.dataset.lang===lang);});
-  $('log').textContent='Language: '+lang+' - offline pack applied. '+new Date().toLocaleTimeString();
-  const a=document.getElementById('jvds-announce');if(a){a.textContent='Language '+lang;setTimeout(()=>a.textContent='',1200);}
-}
-document.querySelectorAll('.lang').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;localStorage.setItem(KEY,lang);apply();if(window.ToolXP)ToolXP.award('localize',10);});
-$('btnUse').onclick=()=>location.href='/tools/pixel-studio.html';
-$('btnExportPack').onclick=()=>{const blob=new Blob([JSON.stringify(PACKS[lang],null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='jvds-locale-'+lang+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);};
-$('btnAddTrans').onclick=()=>{const k=prompt('Key (e.g. pixel.title):'); if(!k)return;const v=prompt('Translation for '+lang+':'); if(v===null)return;PACKS[lang][k]=v;apply();};
-$('btnReset').onclick=()=>{lang='en';localStorage.setItem(KEY,lang);apply();};
-apply();
-document.addEventListener('DOMContentLoaded',()=>{if(window.EmberGuide)EmberGuide.init({id:'localize',steps:[{target:'.langs',title:'Pick language',text:'Packs work offline - teacher can set once, class stays offline.'},{target:'#preview',title:'Live preview',text:'All tool strings translate instantly, no reload.'}]})});
-</script>
+<script src="/assets/js/inline/tools-localize-2.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
 <script defer src="/creation-share.js"></script>

@@ -1,0 +1,1 @@
+window.location.replace('/games/lumo-dash.html');

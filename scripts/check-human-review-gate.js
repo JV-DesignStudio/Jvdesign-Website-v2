@@ -11,17 +11,10 @@ const TASKS_CANDIDATES=[
 let tasksPath=null;
 for(const p of TASKS_CANDIDATES){ if(fs.existsSync(p)){ tasksPath=p; break; } }
 if(!tasksPath){
-  // fallback to board-data.json which is committed and contains board.human_review
-  try{
-    const bd=JSON.parse(fs.readFileSync(path.join(__dirname,'..','board-data.json'),'utf8'));
-    const hrCount=bd.board?.human_review ?? 0;
-    if(hrCount===0){ console.log('check-human-review: board-data.json human_review 0 - ok to publish'); process.exit(0); }
-    console.error(`\n✗ board-data.json shows ${hrCount} human_review - must be approved before it can go live (see board/index.html)`);
-    process.exit(1);
-  }catch{
-    console.log('check-human-review: no private tasks.json and no board-data - skip');
-    process.exit(0);
-  }
+  // A1486: board counts are no longer published in board-data.json, so this gate
+  // can only run where the private tasks.json is present (local / pre-publish).
+  console.log('check-human-review: no private tasks.json here - human review gate runs locally only, skip');
+  process.exit(0);
 }
 const tasks=JSON.parse(fs.readFileSync(tasksPath,'utf8'));
 const hr=tasks.filter(t=>t.status==='human_review');

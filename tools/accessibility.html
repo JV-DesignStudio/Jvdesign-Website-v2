@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<script src="/assets/js/theme-init.js"></script>
 <link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#0a0514">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,10 +32,11 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
-<link rel="preload" href="../style-shared.css?v=17" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="../style-shared.css?v=17"></noscript>
+<link rel="stylesheet" href="../style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css"><link rel="stylesheet" href="/ember-guide.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Character-Driven Accessibility","url":"https://jvdesignstudio.co.uk/tools/accessibility.html","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"}}</script>
 <style>
@@ -100,38 +101,9 @@ h1{margin:6px 0 8px;font-size:clamp(1.8rem,4vw,2.6rem)}h2{margin:16px 0 8px;font
 </section>
 </main>
 <footer class="jvds-tools-footer"><a href="/">Home</a><a href="/dev-tools">Tools</a></footer>
-<script>window.addEventListener('load',()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');});</script>
+<script src="/assets/js/inline/tools-accessibility-1.js"></script>
 <script defer src="/cookie-consent.js"></script><script defer src="/ember-guide.js"></script><script defer src="../player-profile.js"></script><script defer src="../tool-xp.js"></script>
-<script>
-const KEY='jvds_accessibility';
-const $=id=>document.getElementById(id);
-const defaults={announce:true,motion:false,contrast:false,textSize:'100'};
-let state={...defaults};
-function load(){try{const r=localStorage.getItem(KEY);if(r)state={...defaults,...JSON.parse(r)};}catch(e){}}
-function save(){localStorage.setItem(KEY,JSON.stringify(state));}
-function apply(){
-  document.documentElement.style.fontSize=state.textSize+'%';
-  $('textPreview').style.fontSize=state.textSize+'%';
-  if(state.contrast){document.body.style.setProperty('--line','rgba(255,255,255,.32)');document.body.classList.add('high-contrast');} else {document.body.style.removeProperty('--line');document.body.classList.remove('high-contrast');}
-  if(state.motion){document.documentElement.style.setProperty('--motion','none');$('motionPreview').firstElementChild.style.animation='none';} else {$('motionPreview').firstElementChild.style.animation='';}
-  $('swAnnounce').classList.toggle('on',state.announce);$('swAnnounce').setAttribute('aria-checked',state.announce);
-  $('swMotion').classList.toggle('on',state.motion);$('swMotion').setAttribute('aria-checked',state.motion);
-  $('swContrast').classList.toggle('on',state.contrast);$('swContrast').setAttribute('aria-checked',state.contrast);
-  $('textSize').value=state.textSize;
-}
-function pipSay(msg){if(!state.announce)return;const a=document.getElementById('jvds-announce');if(a){a.textContent='';setTimeout(()=>a.textContent=msg,50);} $('pipText').textContent=msg; const s=window.speechSynthesis; if(s&&state.announce){try{s.cancel();const u=new SpeechSynthesisUtterance(msg);u.rate=1;u.volume=0.7;s.speak(u);}catch(e){}}}
-function toggle(key,el){state[key]=!state[key];el.classList.toggle('on',state[key]);el.setAttribute('aria-checked',state[key]);save();apply();pipSay(key==='announce'?(state.announce?'Pip announcements on':'Pip announcements off'):key==='motion'?(state.motion?'Reduced motion on - animations off':'Animations on'):key==='contrast'?(state.contrast?'High contrast on':'High contrast off'):'Saved');}
-$('swAnnounce').onclick=()=>toggle('announce',$('swAnnounce'));
-$('swMotion').onclick=()=>toggle('motion',$('swMotion'));
-$('swContrast').onclick=()=>toggle('contrast',$('swContrast'));
-$('textSize').onchange=e=>{state.textSize=e.target.value;save();apply();pipSay('Text size '+state.textSize+' percent');};
-$('btnTestSR').onclick=()=>pipSay('Hello from Pip! This is a screen reader test - Echo says you are doing great.');
-$('btnReadPage').onclick=()=>pipSay(document.title);
-$('btnSave').onclick=()=>{save();$('saveStatus').textContent='Saved offline to '+KEY;pipSay('Settings saved offline');if(window.ToolXP)ToolXP.award('accessibility',15);};
-$('btnReset').onclick=()=>{state={...defaults};save();apply();$('saveStatus').textContent='Reset to defaults';pipSay('Settings reset');};
-load();apply();
-document.addEventListener('DOMContentLoaded',()=>{if(window.EmberGuide)EmberGuide.init({id:'accessibility',steps:[{target:'#swAnnounce',title:'Pip voices',text:'Character-driven - Pip speaks changes so screen reader users know.'},{target:'#swMotion',title:'Reduced motion',text:'Respects prefers-reduced-motion, works offline.'}]})});
-</script>
+<script src="/assets/js/inline/tools-accessibility-2.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
 <script defer src="/creation-share.js"></script>

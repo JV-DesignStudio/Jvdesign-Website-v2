@@ -39,6 +39,15 @@ async function runPage(browser, url, width) {
   await page.goto('http://127.0.0.1:8137' + url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await new Promise(r => setTimeout(r, 800));
 
+  // Dismiss a first-run welcome modal so the floating widget is not obscured:
+  // pixel-studio sets body.ps-modal-open, which intentionally hides the widget.
+  await page.evaluate(() => {
+    try { window.closeModal && window.closeModal('startModal'); } catch (e) {}
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    document.body.classList.remove('ps-modal-open');
+  });
+  await new Promise(r => setTimeout(r, 150));
+
   const visible = await page.evaluate(() => {
     const b = document.getElementById('jvfb-btn');
     if (!b) return false;
