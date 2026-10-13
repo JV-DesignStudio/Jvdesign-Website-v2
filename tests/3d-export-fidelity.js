@@ -363,6 +363,79 @@ function parseGLBHeader(buf){
     await page.close();
   }
 
+  // --- engine profiles (A1474) ---
+  // A profile converts the authoring unit to the engine unit and, for Unreal,
+  // rotates Y-up to Z-up. The default profile must change nothing, which the
+  // per-builder checks above already prove; these prove the conversions.
+  {
+    const page=await browser.newPage();
+    const errs=[];
+    page.on('pageerror',e=>errs.push(e.message.split('\n')[0].slice(0,120)));
+    await page.setRequestInterception(true);
+    page.on('request',r=>r.url().startsWith(base)||r.url().startsWith('data:')||r.url().startsWith('blob:')?r.continue():r.abort());
+    await page.setViewport({width:1440,height:900});
+    await page.goto(base+'/workshops/robot-builder.html',{waitUntil:'load'});
+    if(await page.$('#cookie-decline')){try{await page.click('#cookie-decline');}catch(e){}}
+    await new Promise(r=>setTimeout(r,1200));
+    await page.evaluate(()=>{const b=Array.from(document.querySelectorAll('button')).find(x=>/^(Let's Build!|Accept|Got it)$/i.test(x.textContent.trim())&&x.offsetParent!==null);if(b)b.click();});
+    await new Promise(r=>setTimeout(r,400));
+    await page.evaluate(async()=>{
+      const hit=re=>{const b=Array.from(document.querySelectorAll('button')).find(x=>re.test(x.textContent)&&x.offsetParent!==null&&!x.disabled);if(b){b.click();return true;}return false;};
+      if(!hit(/quick build/i))for(let i=0;i<35&&hit(/^\s*(Next|Continue)\b/i);i++){}
+      await new Promise(r=>setTimeout(r,900));
+    });
+    await new Promise(r=>setTimeout(r,1000));
+
+    const P=await page.evaluate(()=>{
+      const J=window.JVExporter;
+      const g=robotGroup;
+      const base=J.collect(g,{units:'m',name:'profiles'});
+      const out={baseSize:Array.from(base.size),baseP:Array.from(base.parts[0].P.slice(0,3)),base:J.summary(base)};
+      for(const id of ['roblox','unreal','godot','unity']){
+        const m=J.collect(g,{units:'m',name:'profiles',profile:id});
+        out[id]={axis:m.axis,units:m.units,size:Array.from(m.size),p:Array.from(m.parts[0].P.slice(0,3)),summary:J.summary(m)};
+      }
+      const mm=J.collect(g,{units:'mm',name:'profiles',profile:'unreal'});
+      out.mmToCm=Array.from(mm.size);
+      out.objUnreal=J.obj(J.collect(g,{units:'m',name:'profiles',profile:'unreal'}),'t').obj;
+      out.fbxUnreal=J.fbx(J.collect(g,{units:'m',name:'profiles',profile:'unreal'}),'t').text;
+      out.profiles=J.profiles.map(p=>p.id);
+      return out;
+    });
+
+    const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+    const ratio=(sz,f)=>sz.every((v,i)=>near(v,P.baseSize[i]*f,0.02));
+    // Z-up rotates the axes, so the bounding-box dimensions permute to (x,z,y).
+    const ratioZ=(sz,f)=>near(sz[0],P.baseSize[0]*f,0.02)&&near(sz[1],P.baseSize[2]*f,0.02)&&near(sz[2],P.baseSize[1]*f,0.02);
+    check('profiles: the exporter exposes the engine list',JSON.stringify(P.profiles)===JSON.stringify(['generic','roblox','unreal','godot','unity']),JSON.stringify(P.profiles));
+    check('profiles: generic leaves units and axis alone',P.base.units==='m'&&P.base.axis==='y','units='+P.base.units+' axis='+P.base.axis);
+    check('profiles: Roblox scales metres to studs',P.roblox.units==='studs'&&P.roblox.axis==='y'&&ratio(P.roblox.size,1/0.28),'size='+JSON.stringify(P.roblox.size)+' expected x'+(1/0.28).toFixed(3));
+    check('profiles: Unreal scales metres to centimetres',P.unreal.units==='cm'&&ratioZ(P.unreal.size,100),'size='+JSON.stringify(P.unreal.size));
+    check('profiles: Unreal sets a Z-up axis',P.unreal.axis==='z','axis='+P.unreal.axis);
+    check('profiles: Unreal rotates Y-up (x,y,z) to Z-up (x,-z,y) at the new scale',
+      near(P.unreal.p[0],P.baseP[0]*100,0.05)&&near(P.unreal.p[1],-P.baseP[2]*100,0.05)&&near(P.unreal.p[2],P.baseP[1]*100,0.05),
+      'base='+JSON.stringify(P.baseP)+' unreal='+JSON.stringify(P.unreal.p));
+    check('profiles: Godot keeps metres and Y-up',P.godot.units==='m'&&P.godot.axis==='y'&&ratio(P.godot.size,1),'size='+JSON.stringify(P.godot.size));
+    check('profiles: Unity keeps metres and Y-up',P.unity.units==='m'&&P.unity.axis==='y'&&ratio(P.unity.size,1),'size='+JSON.stringify(P.unity.size));
+    check('profiles: a millimetre build converts mm to cm, not m to cm',ratioZ(P.mmToCm,0.1),'size='+JSON.stringify(P.mmToCm));
+    check('profiles: OBJ header names the engine units',/Units: centimetres/.test(P.objUnreal),'');
+    check('profiles: FBX declares Z-up for the Unreal profile',/UpAxis",\s*"int",\s*"Integer",\s*"",\s*2/.test(P.fbxUnreal)&&/Z-up/.test(P.fbxUnreal),'');
+
+    const dialog=await page.evaluate(()=>{
+      const b=document.querySelector('[data-jv-export]'); if(!b)return {err:'no export button'};
+      b.click();
+      const sel=document.getElementById('jvProfileSelect');
+      if(!sel)return {err:'no profile select'};
+      const opts=Array.from(sel.options).map(o=>o.value);
+      sel.value='unreal'; sel.dispatchEvent(new Event('change'));
+      return {opts, note:(document.getElementById('jvProfileNote')||{}).textContent||''};
+    });
+    check('profiles: export dialog offers the engine picker',!dialog.err&&dialog.opts.length===5,dialog.err||JSON.stringify(dialog.opts));
+    check('profiles: dialog explains the chosen profile',/Unreal/i.test(dialog.note||''),dialog.note||'');
+    check('profiles: no runtime errors',errs.length===0,errs.join(' | '));
+    await page.close();
+  }
+
   await browser.close();
   server.close();
   if(failures){

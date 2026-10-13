@@ -10,9 +10,12 @@
      units        only ever used as a label, never as a conversion factor
 
    Formats: OBJ (+MTL), GLB, STL (ASCII), FBX (ASCII 7.4).
-   Axes: the data is Y-up (Three.js native) and every writer declares Y-up, so
-   no importer rotates the model. UnitScaleFactor is 1.0 on purpose, which keeps
-   FBX at exactly the same scale as OBJ and GLB instead of FBX's usual cm.
+   Axes: the data is Y-up (Three.js native) by default and every writer declares
+   that, so no importer rotates the model. An engine profile (Unreal, Roblox,
+   Godot, Unity) is the one opt-in exception: it bakes the engine's unit scale
+   and, for Unreal, a Z-up rotation, and says so in the file header. The default
+   "generic" profile changes nothing and keeps UnitScaleFactor at 1.0 so FBX
+   matches OBJ and GLB scale exactly instead of FBX's usual cm.
 */
 (function (global) {
   'use strict';
@@ -61,6 +64,40 @@
     };
   }
 
+  /* ---------- engine export profiles ----------
+     A profile only ever changes two things, and both are labelled in the file:
+       1. the unit scale baked into the vertices, converting the authoring unit
+          (metres, or millimetres for the 3D-print builders) into the engine's
+          unit: Unreal centimetres, Roblox studs, Godot/Unity metres;
+       2. the up axis, so a Z-up engine (Unreal) gets a Z-up model without the
+          learner rotating anything.
+     The default "generic" profile changes nothing, so a plain export stays
+     exactly what it always was. */
+
+  var PROFILES = [
+    { id: 'generic', label: 'As built (any engine)', engine: 'Any engine',      target: null,   axis: 'y' },
+    { id: 'roblox',  label: 'Roblox (studs)',        engine: 'Roblox Studio',   target: 'studs', axis: 'y' },
+    { id: 'unreal',  label: 'Unreal (cm, Z-up)',     engine: 'Unreal Engine',   target: 'cm',   axis: 'z' },
+    { id: 'godot',   label: 'Godot (metres)',        engine: 'Godot',           target: 'm',    axis: 'y' },
+    { id: 'unity',   label: 'Unity (metres)',        engine: 'Unity',           target: 'm',    axis: 'y' }
+  ];
+
+  var TARGET_METRES = { m: 1, cm: 0.01, mm: 0.001, studs: 0.28 };
+  var TARGET_LABEL = { m: 'metres', cm: 'centimetres', mm: 'millimetres', studs: 'studs' };
+
+  function profileById(id) {
+    for (var i = 0; i < PROFILES.length; i++) if (PROFILES[i].id === id) return PROFILES[i];
+    return PROFILES[0];
+  }
+
+  // Scale from the authoring unit to the profile's target unit. Generic = 1.
+  function profileScale(profile, authoredUnit) {
+    if (!profile || !profile.target) return 1;
+    var from = TARGET_METRES[authoredUnit] || 1;
+    var to = TARGET_METRES[profile.target] || 1;
+    return from / to;
+  }
+
   /* ---------- collect ----------
      Walks the builder's group, bakes matrixWorld into a clone of each geometry
      and returns flat triangle data. Nothing is moved or resized. */
@@ -69,6 +106,7 @@
     opts = opts || {};
     if (!root) throw new Error('JVExporter: nothing built yet.');
     var units = opts.units === 'mm' ? 'mm' : 'm';
+    var profile = opts.profile ? profileById(opts.profile) : PROFILES[0];
     // opts.name is the name the learner typed, so it has to win over the
     // group name, which is only an internal label like "castle".
     var model = (opts.name || root.name || 'model');
@@ -137,6 +175,35 @@
 
     if (!parts.length) throw new Error('JVExporter: no mesh parts found in the build.');
 
+    // Apply the engine profile: scale each vertex into the engine's unit and,
+    // for Z-up engines, rotate Y-up to Z-up (a proper rotation, so the model is
+    // never mirrored). The default profile does neither, so nothing changes.
+    var scale = profileScale(profile, units);
+    var axis = profile && profile.axis === 'z' ? 'z' : 'y';
+    if (scale !== 1 || axis === 'z') {
+      min = [Infinity, Infinity, Infinity];
+      max = [-Infinity, -Infinity, -Infinity];
+      for (var pi = 0; pi < parts.length; pi++) {
+        var pt = parts[pi];
+        for (var vi = 0; vi < pt.P.length; vi += 3) {
+          var px = pt.P[vi] * scale, py = pt.P[vi + 1] * scale, pz = pt.P[vi + 2] * scale;
+          var ox, oy, oz;
+          if (axis === 'z') { ox = px; oy = -pz; oz = py; }
+          else { ox = px; oy = py; oz = pz; }
+          pt.P[vi] = ox; pt.P[vi + 1] = oy; pt.P[vi + 2] = oz;
+          if (ox < min[0]) min[0] = ox; if (ox > max[0]) max[0] = ox;
+          if (oy < min[1]) min[1] = oy; if (oy > max[1]) max[1] = oy;
+          if (oz < min[2]) min[2] = oz; if (oz > max[2]) max[2] = oz;
+        }
+        if (axis === 'z') {
+          for (var ni = 0; ni < pt.N.length; ni += 3) {
+            var nx = pt.N[ni], ny = pt.N[ni + 1], nz = pt.N[ni + 2];
+            pt.N[ni] = nx; pt.N[ni + 1] = -nz; pt.N[ni + 2] = ny;
+          }
+        }
+      }
+    }
+
     var size = [max[0] - min[0], max[1] - min[1], max[2] - min[2]];
     var centre = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
 
@@ -144,11 +211,17 @@
     var offset = [0, 0, 0];
     if (opts.pivotToBase) offset = [-centre[0], -min[1], -centre[2]];
 
+    var outUnit = profile.target ? profile.target : units;
+
     return {
       name: model,
       fileBase: fileSafe(model, 'model'),
-      units: units,
-      unitLabel: units === 'mm' ? 'millimetres' : 'metres',
+      units: outUnit,
+      unitLabel: profile.target ? TARGET_LABEL[profile.target] : (units === 'mm' ? 'millimetres' : 'metres'),
+      authoredUnits: units,
+      profile: profile.id,
+      engine: profile.engine,
+      axis: axis,
       pivotToBase: !!opts.pivotToBase,
       offset: offset,
       parts: parts,
@@ -170,10 +243,12 @@
     return [
       '; Exported from ' + tool + ' on jvdesignstudio.co.uk',
       '; Model: ' + model.name,
-      '; Units: ' + model.unitLabel + ' (1 unit = 1 ' + (model.units === 'mm' ? 'mm' : 'm') + ')',
+      '; Units: ' + model.unitLabel + ' (1 unit = 1 ' + model.units + ')',
+      '; Engine profile: ' + model.engine + ' \u00b7 ' + (model.axis === 'z' ? 'Z-up' : 'Y-up') +
+        (model.profile === 'generic' ? ' (as built)' : ' (converted from the page for this engine)'),
       '; Pivot: ' + (model.pivotToBase ? 'moved to base centre (chosen at export)' : 'as built on the page'),
       '; Triangles: ' + model.stats.triangles + ' across ' + model.stats.parts + ' parts',
-      '; Nothing was rescaled, merged or renamed. These are the on-page units.'
+      '; Nothing was rescaled, merged or renamed beyond the unit/axis conversion your engine profile asked for.'
     ].join('\n') + '\n';
   }
 
@@ -273,16 +348,36 @@
      translation, which keeps the original hierarchy untouched. */
 
   function glb(root, model, GLTFExporterCtor) {
+    // Back-compat: glb(root, model[, Ctor]) and glb(model[, Ctor]) both work.
+    // The model is what carries the engine profile (baked scale + axis), so the
+    // GLB is rebuilt from it rather than from the live scene group. That also
+    // means exporting never reparents the learner's model.
+    if (root && root.parts && root.stats) { GLTFExporterCtor = model; model = root; }
     var Exporter = GLTFExporterCtor || (global.THREE && global.THREE.GLTFExporter);
     if (!Exporter) return Promise.reject(new Error('GLTF exporter not loaded yet. Try again in a moment.'));
-    var sceneRoot = root;
-    if (model.pivotToBase) {
-      sceneRoot = new global.THREE.Group();
-      sceneRoot.name = root.name || model.name;
-      sceneRoot.position.set(model.offset[0], model.offset[1], model.offset[2]);
-      sceneRoot.add(root);
-      sceneRoot.updateMatrixWorld(true, true);
+    var THREE = global.THREE;
+    if (!THREE) return Promise.reject(new Error('Three.js is not loaded.'));
+    var sceneRoot = new THREE.Group();
+    sceneRoot.name = model.name;
+    for (var i = 0; i < model.parts.length; i++) {
+      var part = model.parts[i];
+      var geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(part.P), 3));
+      geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(part.N), 3));
+      if (part.hasUV) geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(part.U), 2));
+      var c = part.colour;
+      var mat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(c.r, c.g, c.b),
+        metalness: c.metalness, roughness: c.roughness,
+        transparent: c.opacity < 1, opacity: c.opacity
+      });
+      var mesh = new THREE.Mesh(geo, mat);
+      mesh.name = part.name;
+      sceneRoot.add(mesh);
     }
+    // Base-pivot offset is a translation only; zero unless the learner asked.
+    sceneRoot.position.set(model.offset[0], model.offset[1], model.offset[2]);
+    sceneRoot.updateMatrixWorld(true, true);
     return new Promise(function (resolve, reject) {
       var exp = new Exporter();
       exp.parse(sceneRoot, function (result) {
@@ -315,7 +410,7 @@
     lines.push('; Units: ' + model.unitLabel + ' (UnitScaleFactor 1.0 so FBX matches OBJ and GLB exactly)');
     lines.push('; Pivot: ' + (model.pivotToBase ? 'moved to base centre (chosen at export)' : 'as built on the page'));
     lines.push('; Triangles: ' + model.stats.triangles + ' across ' + model.stats.parts + ' named parts');
-    lines.push('; Axes declared Y-up to match the data, so importers do not rotate the model.');
+    lines.push('; Axes declared ' + (model.axis === 'z' ? 'Z-up (Unreal profile)' : 'Y-up') + ' to match the data, so importers do not rotate the model.');
     lines.push('');
     lines.push('FBXHeaderExtension:  {');
     lines.push('\tFBXHeaderVersion: 1003');
@@ -325,11 +420,11 @@
     lines.push('GlobalSettings:  {');
     lines.push('\tVersion: 1000');
     lines.push('\tProperties70:  {');
-    lines.push('\t\tP: "UpAxis", "int", "Integer", "",1');
+    lines.push('\t\tP: "UpAxis", "int", "Integer", "",' + (model.axis === 'z' ? 2 : 1));
     lines.push('\t\tP: "UpAxisSign", "int", "Integer", "",1');
-    lines.push('\t\tP: "FrontAxis", "int", "Integer", "",2');
+    lines.push('\t\tP: "FrontAxis", "int", "Integer", "",' + (model.axis === 'z' ? 1 : 2));
     lines.push('\t\tP: "FrontAxisSign", "int", "Integer", "",-1');
-    lines.push('\t\tP: "CoordAxis", "int", "Integer", "",0');
+    lines.push('\t\tP: "CoordAxis", "int", "Integer", "",' + (model.axis === 'z' ? 1 : 0));
     lines.push('\t\tP: "CoordAxisSign", "int", "Integer", "",1');
     lines.push('\t\tP: "OriginalUpAxis", "int", "Integer", "",-1');
     lines.push('\t\tP: "OriginalUpAxisSign", "int", "Integer", "",1');
@@ -501,6 +596,9 @@
       corners: s.vertices,
       units: model.units,
       unitLabel: model.unitLabel,
+      profile: model.profile,
+      engine: model.engine,
+      axis: model.axis,
       pivotToBase: model.pivotToBase,
       size: model.size.map(function (n) { return round(n, 2); }),
       // minY as authored, and minY as it will land in the file once the
@@ -552,6 +650,10 @@
       '.jv-fact span{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.09em;color:#8fa2d4;margin-top:2px}',
       '.jv-export-pivot{display:flex;gap:8px;align-items:flex-start;font-size:.79rem;color:#c3cdf0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:9px 11px;margin-bottom:13px;cursor:pointer}',
       '.jv-export-pivot input{margin-top:2px;accent-color:var(--jv-acc,#8ea8ff)}',
+      '.jv-export-profile{display:flex;align-items:center;gap:9px;font-size:.79rem;color:#c3cdf0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:8px 11px;margin-bottom:10px}',
+      '.jv-export-profile span{font-weight:600;color:#e7ecff}',
+      '.jv-export-profile select{flex:1;min-width:0;background:rgba(8,10,20,.85);color:#eef2ff;border:1px solid rgba(120,140,255,.3);border-radius:7px;padding:6px 8px;font:600 .82rem Inter,system-ui,sans-serif}',
+      '.jv-export-profile-note{margin:-4px 0 12px;font-size:.72rem;color:#9fb0e0}',
       '.jv-export-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}',
       '.jv-fmt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border-radius:11px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.06);color:#eef2ff;cursor:pointer;font:600 .85rem/1.2 Inter,system-ui,sans-serif}',
       '.jv-fmt:hover:not(:disabled){background:rgba(255,255,255,.13);border-color:var(--jv-acc,#8ea8ff);transform:translateY(-1px)}',
@@ -591,12 +693,26 @@
 
   function root() { return UI && UI.getGroup ? UI.getGroup() : null; }
 
+  function profileOptions() {
+    var html = '';
+    for (var i = 0; i < PROFILES.length; i++) {
+      html += '<option value="' + PROFILES[i].id + '">' + PROFILES[i].label + '</option>';
+    }
+    return html;
+  }
+
+  function currentProfileId() {
+    var s = document.getElementById('jvProfileSelect');
+    return s && s.value ? s.value : 'generic';
+  }
+
   function modelOf(pivot) {
     var g = root();
     if (!g) throw new Error('Nothing to export yet - build something first.');
     return collect(g, {
       units: (UI && UI.units) || 'm',
       pivotToBase: !!pivot,
+      profile: currentProfileId(),
       name: (UI && UI.getName ? UI.getName() : '') || (UI && UI.tool) || 'model'
     });
   }
@@ -607,7 +723,7 @@
       [s.parts, 'parts'],
       [s.triangles, 'triangles'],
       [fmtNum(s.size[0]) + ' \u00d7 ' + fmtNum(s.size[1]) + ' \u00d7 ' + fmtNum(s.size[2]), 'size in ' + s.units],
-      ['1 unit = 1 ' + (s.units === 'mm' ? 'mm' : 'm'), 'units as built']
+      ['1 unit = 1 ' + s.units, 'units in the file']
     ];
     var html = '';
     for (var i = 0; i < cells.length; i++) {
@@ -626,16 +742,20 @@
           '<h2 id="jvExportTitle">&#8681; Export your ' + ((UI && UI.tool) || 'model') + '</h2>' +
           '<button class="jv-export-x" type="button" aria-label="Close export">&#10005;</button>' +
         '</div>' +
-        '<p class="jv-export-rule">Exactly what is on screen. Same parts, same names, same size - nothing rescaled, merged or renamed.</p>' +
+        '<p class="jv-export-rule">Exactly what is on screen: same parts, same names. The Engine choice below only converts units and up-axis for that engine.</p>' +
         '<div class="jv-export-facts" id="jvExportFacts"></div>' +
         '<label class="jv-export-pivot"><input type="checkbox" id="jvPivotToggle">' +
           '<span>Sit it flat on the floor (moves the pivot to the base centre - a nudge, never a resize)</span></label>' +
+        '<label class="jv-export-profile"><span>Engine</span>' +
+          '<select id="jvProfileSelect" aria-label="Which engine is this for?">' + profileOptions() + '</select></label>' +
+        '<p class="jv-export-profile-note" id="jvProfileNote"></p>' +
         '<div class="jv-export-grid" id="jvExportGrid"></div>' +
         '<div class="jv-export-status" id="jvExportStatus" aria-live="polite"></div>' +
       '</div>';
     back.querySelector('.jv-export-x').addEventListener('click', closeDialog);
     back.addEventListener('mousedown', function (e) { if (e.target === back) closeDialog(); });
     back.querySelector('#jvPivotToggle').addEventListener('change', refreshFacts);
+    back.querySelector('#jvProfileSelect').addEventListener('change', refreshFacts);
     document.body.appendChild(back);
 
     var grid = back.querySelector('#jvExportGrid');
@@ -674,9 +794,17 @@
       btns[j].disabled = !!(FORMATS[j].needsPng && !(UI && UI.png));
     }
     facts.innerHTML = factsHTML(model);
-    status.textContent = model.name + ' \u00b7 ' + (summary(model).minYAsBuilt === 0
+    var s = summary(model);
+    status.textContent = model.name + ' \u00b7 ' + (s.minYAsBuilt === 0
       ? 'already sitting on the floor'
-      : 'sits at Y ' + summary(model).minYAsBuilt + ' as built');
+      : 'sits at Y ' + s.minYAsBuilt + ' as built');
+    var note = back.querySelector('#jvProfileNote');
+    if (note) {
+      note.textContent = model.profile === 'generic'
+        ? 'As built: ' + model.unitLabel + ', ' + (model.axis === 'z' ? 'Z-up' : 'Y-up') + '. Nothing is changed.'
+        : model.engine + ': vertices converted to ' + model.unitLabel + ' and set ' +
+          (model.axis === 'z' ? 'Z-up' : 'Y-up') + ' so it drops straight in without rotating.';
+    }
   }
 
   function say(msg) {
@@ -773,9 +901,11 @@
     tagged: tagged,
     summary: summary,
     fileSafe: fileSafe,
+    profiles: PROFILES,
+    profileById: profileById,
     installUI: installUI,
     openDialog: openDialog,
     exportFormat: runFormat,
-    version: '1.1.0'
+    version: '1.2.0'
   };
 })(typeof window !== 'undefined' ? window : this);
