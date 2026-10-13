@@ -15652,7 +15652,11 @@ function _applyLoadData(d, opts={}) {
     // Restore user script
     if(d.userCode !== undefined) {
         const ed = document.getElementById('customCodeEditor'); if(ed) ed.value = d.userCode || '';
-        try { _compileUserCode(d.userCode || ''); } catch(e) { console.warn('User code compile failed:', e); }
+        // Security: never auto-run code that arrived in an imported or shared game.
+        // Loading it into the editor is safe; running it needs an explicit Apply & Run click.
+        _userCodeFns = null;
+        if (d.userCode && String(d.userCode).trim()) _setCodeStatus('Custom code loaded. Click Apply & Run to run it.', '');
+        else _setCodeStatus('');
     }
     // Sync genre-dependent UI; boot the engine and show a toast unless this is a
     // silent restore (e.g. autosave on page load), which leaves the game idle.
@@ -16397,16 +16401,27 @@ window.addEventListener('DOMContentLoaded',function(){
 },false);})();`;
     // Inject into <head> so __exportMode=true is set before the startup IIFE runs
     root.querySelector('head').appendChild(boot);
-    // Inject PWA manifest so exported game is installable
+    // Inject PWA manifest so exported game is installable. Icons are embedded as
+    // a data URI: the old remote icon broke offline (and was CSP-blocked), so the
+    // exported single file must not reference the network for its own icon.
+    const _icon = 'data:image/svg+xml,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="28" fill="#7c3aed"/><text x="96" y="126" font-size="96" text-anchor="middle" fill="#fff" font-family="sans-serif">🎮</text></svg>');
     const manifest = {
         name: _engineData.title, short_name: _engineData.title,
         start_url: './', display: 'fullscreen',
         background_color: '#05030f', theme_color: '#7c3aed',
-        icons: [{ src:'https://jvdesignstudio.co.uk/logo.png', sizes:'192x192', type:'image/png' }]
+        icons: [{ src: _icon, sizes: '192x192', type: 'image/svg+xml', purpose: 'any' }]
     };
     const mLink = document.createElement('link');
     mLink.rel='manifest'; mLink.href='data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(manifest));
     root.querySelector('head').appendChild(mLink);
+    // The cloned CSP meta has no manifest-src, so a data: manifest is blocked by
+    // default-src 'self' and logs a console error. Allow it in the exported game.
+    const _cspMeta = root.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    if (_cspMeta) {
+        const _csp = _cspMeta.getAttribute('content') || '';
+        if (!/manifest-src/.test(_csp)) _cspMeta.setAttribute('content', _csp + "; manifest-src 'self' data:;");
+    }
     // Inline Phaser so the exported file works offline / without CDN.
     // Read it from the SAME local file this page already loaded (resolved to an
     // absolute URL by the browser), not a CDN, so export works offline too and
@@ -16440,9 +16455,12 @@ window.addEventListener('DOMContentLoaded',function(){
     root.querySelectorAll('script[src*="qrcode-generator"],script[data-maker-only],link[data-maker-only]')
         .forEach(s => s.remove());
     // Tree-shake: strip studio chrome from exported HTML (saves ~120 KB, faster load).
-    // Exported game only needs #gameWrap/#game-container + overlays; studio panels,
-    // workshop iframes, and template markup are maker-only.
-    root.querySelectorAll('.studio-panel,.wk-overlay,.handbook-fab,#mobile-run-bar,#panelFab,.hb-tip,template').forEach(el=>el.remove());
+    // Exported game only needs #gameWrap/#game-container + overlays. IMPORTANT: the
+    // .studio-panel is NOT removed, only hidden by the export CSS, because the game
+    // runtime still reads its inputs (gameTitle, genreMode, speed, volume, music
+    // toggle). Removing it made GameAudio.setMusic() throw and Phaser never boot.
+    // Removed: workshop iframes, handbook chrome and template markup (maker-only).
+    root.querySelectorAll('.wk-overlay,.handbook-fab,#mobile-run-bar,#panelFab,.hb-tip,template').forEach(el=>el.remove());
     // Remove unused workshop tool links (keep only the game + Phaser)
     root.querySelectorAll('link[rel="preconnect"],link[rel="manifest"]').forEach(el=>{
         // keep fonts preconnect for exported title, but drop manifest
