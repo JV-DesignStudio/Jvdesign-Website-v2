@@ -29,7 +29,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
 
 <link rel="preconnect" href="https://www.googletagmanager.com">
@@ -1219,7 +1219,7 @@ function renderCharList() {
   chars.forEach((c,i)=>{
     const el=document.createElement('div');
     el.className='char-item';
-    el.innerHTML=`<div class="ci-avatar" style="background:${safeColour(c.colour)}22;overflow:hidden;">${c.img?`<img src="${c.img}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`:c.emoji}</div><span class="ci-name" style="color:${safeColour(c.colour)}">${esc(c.name)}</span><button class="ci-del" title="Set portrait" onclick="pickPortrait(${i})">🖼</button><button class="ci-del" title="Remove character" onclick="removeChar(${i})">✕</button>`;
+    el.innerHTML=`<div class="ci-avatar" style="background:${safeColour(c.colour)}22;overflow:hidden;">${c.img?`<img src="${esc(c.img)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`:c.emoji}</div><span class="ci-name" style="color:${safeColour(c.colour)}">${esc(c.name)}</span><button class="ci-del" title="Set portrait" onclick="pickPortrait(${i})">🖼</button><button class="ci-del" title="Remove character" onclick="removeChar(${i})">✕</button>`;
     list.appendChild(el);
   });
 }
@@ -1378,7 +1378,7 @@ function renderPreviewScene() {
   if(!node){scene.innerHTML='<div class="preview-end">Story not found.</div>';return;}
   const ch=chars.find(c=>c.name===node.char)||{colour:'#64748b',emoji:'📤',name:node.char||'?'};
   const avatar = ch.img
-    ? `<img src="${ch.img}" alt="" style="width:34px;height:34px;border-radius:9px;object-fit:cover;">`
+    ? `<img src="${esc(ch.img)}" alt="" style="width:34px;height:34px;border-radius:9px;object-fit:cover;">`
     : `<span style="font-size:1.4rem;">${ch.emoji}</span>`;
 
   if(node.type==='end'){
@@ -1395,7 +1395,7 @@ function renderPreviewScene() {
       return `<button class="preview-choice" disabled title="Requires ${esc(condLabel(c.cond))}" style="opacity:.4;cursor:not-allowed;">🔒 ${esc(c.text)} <small>(${esc(condLabel(c.cond))})</small></button>`;
     }).join('') + '</div>';
   } else if (node.to) {
-    choicesHTML = `<div class="preview-choices"><button class="preview-choice" onclick="previewGo('${node.to}')">Continue →</button></div>`;
+    choicesHTML = `<div class="preview-choices"><button class="preview-choice" data-go="${esc(node.to)}">Continue →</button></div>`;
   } else {
     choicesHTML = '<div class="preview-end">The End.</div>';
   }
@@ -1409,6 +1409,9 @@ function renderPreviewScene() {
     ${choicesHTML}
     ${varChipsHTML()}
   `;
+
+  const cont=scene.querySelector('[data-go]');
+  if(cont) cont.addEventListener('click',()=>previewGo(cont.getAttribute('data-go')));
 }
 
 // Pick a numbered choice: apply its effects, then move on
