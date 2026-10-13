@@ -10,9 +10,9 @@ const KEY = 'echo_swim_flappy_v1';
 // ---- state -------------------------------------------------------------
 let vw = 0, vh = 0, dpr = 1;
 let state = 'menu';               // menu | waiting | playing | over
-let echo, gates, bubbles, sparkles;
+let echo, gates, bubbles, sparkles, trail;
 let score = 0, passed = 0, collected = 0;
-let spawnX = 0, speed = 0, gapH = 0, last = 0;
+let spawnX = 0, speed = 0, last = 0, trailTimer = 0;
 let echoBest = loadBest();
 
 function loadBest(){
@@ -37,9 +37,12 @@ function fit(){
 window.addEventListener('resize', fit);
 window.addEventListener('orientationchange', fit);
 
-function gapSize(){ return Math.max(170, Math.min(235, vh * 0.32)); }
-function currentSpeed(){ return Math.min(300, 152 + passed * 2.4); }
-function spawnGap(){ return Math.max(260, Math.min(380, vw * 0.66)); }
+function gapSize(cleared){
+  const base = Math.max(200, Math.min(262, vh * 0.36));
+  return Math.max(172, base - Math.min(48, (cleared || 0) * 2.3));
+}
+function currentSpeed(){ return Math.min(286, 148 + passed * 1.9); }
+function spawnGap(){ return Math.max(272, Math.min(400, vw * 0.7)); }
 
 // ---- reset / start -----------------------------------------------------
 function reset(){
@@ -49,7 +52,8 @@ function reset(){
   gates = [];
   bubbles = [];
   sparkles = [];
-  gapH = gapSize();
+  trail = [];
+  trailTimer = 0;
   speed = currentSpeed();
   spawnX = vw + 80;
   for (let i = 0; i < 4; i++) addGate(spawnX + i * spawnGap());
@@ -57,7 +61,7 @@ function reset(){
 }
 
 function addGate(x){
-  const gap = gapH;
+  const gap = gapSize(passed);
   const margin = 46;
   const top = margin + Math.random() * Math.max(20, vh - gap - margin * 2);
   const g = { x: x, top: top, gap: gap, scored: false };
@@ -83,8 +87,8 @@ function flap(){
   if (state === 'over' ) return;
   if (state === 'waiting') { state = 'playing'; $('hint').classList.remove('show'); }
   if (state === 'playing'){
-    echo.vy = -Math.max(380, vh * 0.56);
-    echo.rot = -0.5;
+    echo.vy = -Math.max(368, vh * 0.52);
+    echo.rot = -0.45;
     if (audio) { try { audio.playPop(); } catch(e){} }
     for (let i = 0; i < 4; i++) sparkle(echo.x - 14, echo.y + 14);
   }
@@ -101,10 +105,11 @@ function step(dt){
 
   if (state !== 'playing') return;
 
-  const grav = 1500;
-  echo.vy += grav * dt;
+  const grav = 1400, maxFall = 620;
+  echo.vy = Math.min(maxFall, echo.vy + grav * dt);
   echo.y += echo.vy * dt;
-  echo.rot = Math.min(0.85, echo.rot + dt * 1.6);
+  const targetRot = Math.max(-0.5, Math.min(0.78, echo.vy / 860));
+  echo.rot += (targetRot - echo.rot) * Math.min(1, dt * 10);
 
   const sp = currentSpeed();
   for (const g of gates){
@@ -124,6 +129,15 @@ function step(dt){
     }
   }
 
+  // a soft bubble trail so Echo reads as swimming, not floating
+  trailTimer -= dt;
+  if (trailTimer <= 0){
+    trailTimer = 0.055;
+    trail.push({ x: echo.x - 32, y: echo.y + (Math.random() - .5) * 12, r: 2 + Math.random() * 3.5, life: .85 });
+  }
+  for (const p of trail){ p.life -= dt; p.x -= sp * 0.45 * dt; p.y -= 14 * dt; }
+  trail = trail.filter(p => p.life > 0);
+
   gates = gates.filter(g => g.x > -90);
   bubbles = bubbles.filter(b => b.x > -40 && !b.got);
   while (gates.length < 4){
@@ -134,8 +148,8 @@ function step(dt){
   for (const p of sparkles){ p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; }
   sparkles = sparkles.filter(p => p.life > 0);
 
-  // collisions - circle vs gate bars, with a slightly forgiving hitbox
-  const r = echo.r * 0.78;
+  // collisions - circle vs gate bars, with a forgiving hitbox
+  const r = echo.r * 0.72;
   for (const g of gates){
     const withinX = echo.x + r > g.x && echo.x - r < g.x + 72;
     if (withinX && (echo.y - r < g.top || echo.y + r > g.top + g.gap)) return crash();
@@ -210,6 +224,20 @@ function draw(){
   ctx.fillStyle = '#164e63';
   ctx.fillRect(0, vh - 26, vw, 26);
 
+  // swaying kelp to keep the lagoon alive
+  ctx.strokeStyle = 'rgba(74,222,128,.30)';
+  ctx.lineWidth = 6; ctx.lineCap = 'round';
+  for (let i = 0; i < 5; i++){
+    const kx = 30 + i * (vw - 60) / 4;
+    const sway = Math.sin(t * 0.9 + i) * 12;
+    const kh = 78 + (i % 3) * 34;
+    ctx.beginPath();
+    ctx.moveTo(kx, vh - 20);
+    ctx.quadraticCurveTo(kx + sway * .5, vh - 20 - kh * .6, kx + sway, vh - 20 - kh);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+
   // gates (coral)
   for (const g of gates) drawCoral(g);
 
@@ -222,6 +250,13 @@ function draw(){
     ctx.globalAlpha = 1;
   }
 
+  // swim trail
+  for (const p of trail){
+    ctx.globalAlpha = Math.max(0, p.life * 0.5);
+    ctx.fillStyle = '#bae6fd';
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.284); ctx.fill();
+  }
+
   // sparkles
   for (const p of sparkles){
     ctx.globalAlpha = Math.max(0, p.life * 2);
@@ -230,7 +265,7 @@ function draw(){
   }
   ctx.globalAlpha = 1;
 
-  if (echo) drawEcho(echo);
+  if (echo) drawEcho(echo, t);
 
   requestAnimationFrame(draw);
 }
@@ -257,22 +292,28 @@ function roundRect(x, y, w, h, r){
   ctx.closePath(); ctx.fill();
 }
 
-function drawEcho(e){
+function drawEcho(e, t){
+  const swim = state === 'playing';
+  const phase = (t || 0) * (swim ? 13 : 5);
+  const wag = Math.sin(phase) * (swim ? 7 : 3);
   ctx.save();
   ctx.translate(e.x, e.y);
   ctx.rotate(Math.max(-0.6, Math.min(0.9, e.rot)));
   // tail
   ctx.fillStyle = '#f472b6';
   ctx.beginPath();
-  ctx.moveTo(-38, 0); ctx.quadraticCurveTo(-64, -16, -74, 0); ctx.quadraticCurveTo(-64, 16, -38, 0);
+  ctx.moveTo(-38, 0); ctx.quadraticCurveTo(-64, -16 + wag, -74, wag); ctx.quadraticCurveTo(-64, 16 + wag, -38, 0);
   ctx.fill();
   // body
   ctx.fillStyle = '#f9a8d4';
   ctx.beginPath(); ctx.ellipse(0, 0, 40, 25, 0, 0, 6.284); ctx.fill();
-  // gill frills
+  // gill frills flutter as Echo swims
   ctx.fillStyle = '#f472b6';
-  for (const [gx, gy] of [[-20,-22],[-6,-27],[10,-26],[24,-20],[-22,22],[-8,27],[8,26],[22,20]]){
-    ctx.beginPath(); ctx.ellipse(gx, gy, 6, 13, 0, 0, 6.284); ctx.fill();
+  const frills = [[-20,-22],[-6,-27],[10,-26],[24,-20],[-22,22],[-8,27],[8,26],[22,20]];
+  for (let i = 0; i < frills.length; i++){
+    const gx = frills[i][0], gy = frills[i][1];
+    const flutter = Math.sin(phase + i * 0.9) * (swim ? 2.4 : 1);
+    ctx.beginPath(); ctx.ellipse(gx, gy + flutter, 6, 13, 0, 0, 6.284); ctx.fill();
   }
   // belly
   ctx.fillStyle = '#fbcfe8';
@@ -330,7 +371,7 @@ if (location.search.indexOf('debug') !== -1){
 
 // ---- boot --------------------------------------------------------------
 echo = { x: 0, y: 0, vy: 0, rot: 0, bob: 0, r: 20 };
-gates = []; bubbles = []; sparkles = [];
+gates = []; bubbles = []; sparkles = []; trail = [];
 fit();
 $('bestHud').textContent = echoBest;
 requestAnimationFrame(function frame(ts){
