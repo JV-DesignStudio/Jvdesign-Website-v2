@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<script>(function(){try{var t=localStorage.getItem('jvds-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>
+<script src="/assets/js/theme-init.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script src="/tool-handoff.js"></script>
 <script defer src="../analytics-loader.js"></script>
@@ -383,6 +383,7 @@
  <input id="importFileInput" type="file" accept=".json,.html" style="display:none;" onchange="_onImportFileChange(this)">
  </div>
  <button class="btn-sm" style="width:100%;margin-top:5px;background:rgba(34,197,94,.15);color:#4ade80;border-color:rgba(34,197,94,.3);font-weight:700;" onclick="sendGameToFriend()" title="Send the playable game to a friend through your phone's share sheet. They open the file and play, no account needed.">📲 Send to a Friend</button>
+ <button class="btn-sm" style="width:100%;margin-top:5px;background:rgba(201,138,46,.15);color:#e0b062;border-color:rgba(201,138,46,.35);font-weight:700;" onclick="publishToGallery()" title="Send your game to the JVDS Community Gallery for review">🏛 Publish to Gallery</button>
  <!-- More tools, collapsed by default -->
  <details style="margin-top:4px;">
  <summary style="font-size:.65rem;color:var(--muted);cursor:pointer;padding:4px 0;list-style:none;display:flex;align-items:center;gap:4px;user-select:none;">
@@ -16543,6 +16544,23 @@ async function sendGameToFriend() {
     try { await navigator.clipboard.writeText(invite + '\n\n(Game file: ' + built.filename + ')'); } catch (e) {}
     _trackEvent('share_create', { method: 'send_download', genre: _engineData.genre, title: title });
     showToast('📲 Game saved as "' + built.filename + '". Attach it to send to a friend!', 'success', 6000);
+}
+
+// ── PUBLISH TO GALLERY ───────────────────────────────────────────────────────
+// The community gallery (pages/gallery.html) is static and moderated: a learner
+// sends a game in, we check it, then it is added. This hands the learner the
+// playable file plus a cover, then opens the submission page prefilled so the
+// only thing left is their name and the two attachments.
+function publishToGallery() {
+    if (!_engineData) { showToast('Hit ▶ Run first, then publish it'); return; }
+    const title = _engineData.title || 'My Arcade Game';
+    const genre = (typeof GENRE_LABELS !== 'undefined' && GENRE_LABELS[_engineData.genre]) ? GENRE_LABELS[_engineData.genre] : (_engineData.genre || '');
+    try { exportGame(); } catch (e) { console.warn('publish export:', e); }
+    try { if (typeof generateCoverArt === 'function') generateCoverArt(); } catch (e) { console.warn('publish cover:', e); }
+    _trackEvent('share_create', { method: 'publish', genre: _engineData.genre, title: title });
+    const url = '../pages/publish.html?title=' + encodeURIComponent(title) + '&genre=' + encodeURIComponent(genre);
+    try { window.open(url, '_blank', 'noopener'); } catch (e) { location.href = url; }
+    showToast('🏛 Your game + cover are downloading. Add your name on the Publish page to send it in.', 'success', 7000);
 }
 
 // ── TOUCH CONTROLS ───────────────────────────────────────────────────────────
