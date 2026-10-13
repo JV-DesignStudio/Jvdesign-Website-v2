@@ -40,12 +40,24 @@ async function checkTool(browser, url, width) {
   await page.goto('http://127.0.0.1:8143' + url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await new Promise(r => setTimeout(r, 700));
 
-  const visible = await page.evaluate(() => {
+  const shareVisible = () => page.evaluate(() => {
     const b = document.getElementById('jvds-share-btn');
     if (!b) return false;
     const r = b.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
   });
+  let visible = await shareVisible();
+  // Some creation tools (Pixel Studio) hide the share button behind a first-run
+  // welcome dialog so it does not cover onboarding. Step through that dialog.
+  if (!visible) {
+    await page.evaluate(() => {
+      const dlg = document.querySelector('.modal-overlay.open, .modal.open, [role="dialog"]');
+      if (!dlg) return;
+      const b = [...dlg.querySelectorAll('button,a')].find(x => /start|got it|let.?s|continue|begin|close|skip/i.test(x.textContent || ''));
+      if (b) b.click();
+    });
+    for (let i = 0; i < 25 && !visible; i++) { await new Promise(r => setTimeout(r, 100)); visible = await shareVisible(); }
+  }
   let shared = null, event = false;
   if (visible) {
     await page.evaluate(() => document.getElementById('jvds-share-btn').click());
