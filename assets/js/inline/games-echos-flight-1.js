@@ -10,9 +10,9 @@ const KEY = 'echo_swim_flappy_v1';
 // ---- state -------------------------------------------------------------
 let vw = 0, vh = 0, dpr = 1;
 let state = 'menu';               // menu | waiting | playing | over
-let echo, gates, bubbles, sparkles, trail;
+let echo, gates, bubbles, sparkles, trail, pops;
 let score = 0, passed = 0, collected = 0;
-let spawnX = 0, speed = 0, last = 0, trailTimer = 0;
+let spawnX = 0, speed = 0, last = 0, trailTimer = 0, scroll = 0, shake = 0;
 let echoBest = loadBest();
 
 function loadBest(){
@@ -54,6 +54,9 @@ function reset(){
   sparkles = [];
   trail = [];
   trailTimer = 0;
+  pops = [];
+  scroll = 0;
+  shake = 0;
   speed = currentSpeed();
   spawnX = vw + 80;
   for (let i = 0; i < 4; i++) addGate(spawnX + i * spawnGap());
@@ -64,7 +67,7 @@ function addGate(x){
   const gap = gapSize(passed);
   const margin = 46;
   const top = margin + Math.random() * Math.max(20, vh - gap - margin * 2);
-  const g = { x: x, top: top, gap: gap, scored: false };
+  const g = { x: x, top: top, gap: gap, scored: false, variant: Math.floor(Math.random() * 3), ph: Math.random() * 6.28 };
   gates.push(g);
   // put a bubble in the gap about 65% of the time
   if (Math.random() < 0.65){
@@ -96,6 +99,13 @@ function flap(){
 
 // ---- update ------------------------------------------------------------
 function step(dt){
+  // parallax scroll, screen shake and score popups run in every state
+  shake = Math.max(0, shake - dt * 34);
+  if (state === 'playing') scroll += currentSpeed() * dt;
+  else if (state !== 'menu') scroll += 26 * dt;
+  for (const p of pops){ p.life -= dt; p.y -= 34 * dt; }
+  pops = pops.filter(p => p.life > 0);
+
   // ambient bubbles drift regardless of state
   if (state === 'waiting'){
     echo.bob += dt * 3;
@@ -116,6 +126,8 @@ function step(dt){
     g.x -= sp * dt;
     if (!g.scored && g.x + 72 < echo.x){
       g.scored = true; passed++; score += 1;
+      shake = Math.max(shake, 4.5);
+      pops.push({ x: echo.x + 8, y: echo.y - 26, text: '+1', life: .9 });
       if (audio) { try { audio.playSuccess(); } catch(e){} }
       sparkle(echo.x, echo.y);
     }
@@ -124,6 +136,7 @@ function step(dt){
     b.x -= sp * dt;
     if (!b.got && Math.hypot(b.x - echo.x, b.y - echo.y) < echo.r + b.r){
       b.got = true; collected++; score += 5;
+      pops.push({ x: b.x, y: b.y, text: '+5', life: .9 });
       if (audio) { try { audio.playPop(); } catch(e){} }
       for (let i = 0; i < 6; i++) sparkle(b.x, b.y);
     }
@@ -192,29 +205,42 @@ function draw(){
   fit();
   const t = performance.now() / 1000;
 
-  // lagoon background
+  ctx.save();
+  if (shake > 0.3) ctx.translate((Math.random() - .5) * shake, (Math.random() - .5) * shake);
+
+  // lagoon background (oversized so the shake never reveals an edge)
   const bg = ctx.createLinearGradient(0, 0, 0, vh);
   bg.addColorStop(0, '#38bdf8');
   bg.addColorStop(0.55, '#0ea5e9');
   bg.addColorStop(1, '#075985');
   ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, vw, vh);
+  ctx.fillRect(-8, -8, vw + 16, vh + 16);
+
+  // parallax depth: distant reefs, then mid-ground rocks
+  reefLayer(scroll * 0.12, vh * 0.60, 96, 'rgba(6,58,88,.45)');
+  reefLayer(scroll * 0.30 + 90, vh * 0.78, 58, 'rgba(8,74,102,.4)');
 
   // light rays
   ctx.save();
-  ctx.globalAlpha = 0.10;
+  ctx.globalAlpha = 0.14;
   ctx.fillStyle = '#e0f2fe';
-  for (let i = 0; i < 5; i++){
-    const bx = ((i * 137 + t * 12) % (vw + 120)) - 60;
+  for (let i = 0; i < 6; i++){
+    const bx = ((i * 131 + t * 12) % (vw + 120)) - 60;
     ctx.beginPath();
     ctx.moveTo(bx, 0); ctx.lineTo(bx + 34, 0); ctx.lineTo(bx + 90, vh); ctx.lineTo(bx + 24, vh);
     ctx.closePath(); ctx.fill();
   }
   ctx.restore();
 
-  // ambient bubbles
-  ctx.fillStyle = 'rgba(255,255,255,.18)';
-  for (let i = 0; i < 16; i++){
+  // drifting plankton specks and ambient bubbles
+  ctx.fillStyle = 'rgba(224,242,254,.45)';
+  for (let i = 0; i < 20; i++){
+    const px = ((i * 61 + t * 13) % (vw + 30)) - 15;
+    const py = ((i * 89 + t * 9) % (vh + 30)) - 15;
+    ctx.fillRect(px, py, 2, 2);
+  }
+  ctx.fillStyle = 'rgba(255,255,255,.16)';
+  for (let i = 0; i < 13; i++){
     const bx = (i * 97 + t * 20) % (vw + 40) - 20;
     const by = (i * 151 + t * 26) % (vh + 40) - 20;
     ctx.beginPath(); ctx.arc(bx, by, 3 + (i % 4) * 2, 0, 6.284); ctx.fill();
@@ -223,6 +249,17 @@ function draw(){
   // seabed
   ctx.fillStyle = '#164e63';
   ctx.fillRect(0, vh - 26, vw, 26);
+
+  // caustic light dancing on the sand
+  ctx.save();
+  ctx.globalAlpha = 0.10;
+  ctx.fillStyle = '#e0f2fe';
+  for (let i = 0; i < 6; i++){
+    const cx = ((i * 173 + t * 30) % (vw + 120)) - 60;
+    const cy = vh - 38 - (i % 3) * 9;
+    ctx.beginPath(); ctx.ellipse(cx, cy, 62 - (i % 3) * 12, 7, 0, 0, 6.284); ctx.fill();
+  }
+  ctx.restore();
 
   // swaying kelp to keep the lagoon alive
   ctx.strokeStyle = 'rgba(74,222,128,.30)';
@@ -239,7 +276,7 @@ function draw(){
   ctx.lineCap = 'butt';
 
   // gates (coral)
-  for (const g of gates) drawCoral(g);
+  for (const g of gates) drawCoral(g, t);
 
   // bubbles to collect
   for (const b of bubbles){
@@ -265,19 +302,54 @@ function draw(){
   }
   ctx.globalAlpha = 1;
 
+  // floating +score popups
+  ctx.textAlign = 'center';
+  ctx.font = '800 18px system-ui, sans-serif';
+  for (const p of pops){
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.4));
+    ctx.fillStyle = '#fef08a';
+    ctx.fillText(p.text, p.x, p.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'start';
+
   if (echo) drawEcho(echo, t);
 
+  ctx.restore();
   requestAnimationFrame(draw);
 }
 
-function drawCoral(g){
+// Rolling silhouette hills for the parallax reef layers
+function reefLayer(offset, baseY, h, color){
+  const period = 250;
+  const o = ((offset % period) + period) % period;
+  ctx.fillStyle = color;
+  for (let i = -1; i <= Math.ceil(vw / period) + 1; i++){
+    const x = i * period - o;
+    const hh = h + ((i % 3 + 3) % 3) * 24;
+    ctx.beginPath();
+    ctx.moveTo(x - period * 0.6, baseY);
+    ctx.quadraticCurveTo(x, baseY - hh, x + period * 0.6, baseY);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawCoral(g, t){
   const w = 72, gapTop = g.top, gapBot = g.top + g.gap;
-  ctx.fillStyle = '#fb7185';
+  const palettes = [
+    ['#fb7185', '#fda4af'],
+    ['#a78bfa', '#c4b5fd'],
+    ['#fb923c', '#fdba74']
+  ];
+  const pal = palettes[g.variant || 0];
+  const pulse = 1 + Math.sin((t || 0) * 3 + (g.ph || 0)) * 0.08;
+  ctx.fillStyle = pal[0];
   roundRect(g.x, 0, w, gapTop, 10);
   roundRect(g.x, gapBot, w, vh - gapBot, 10);
-  ctx.fillStyle = '#fda4af';
-  for (let y = 18; y < gapTop - 6; y += 46){ ctx.beginPath(); ctx.arc(g.x + 18 + (y % 3) * 16, y, 12, 0, 6.284); ctx.fill(); }
-  for (let y = gapBot + 24; y < vh - 8; y += 46){ ctx.beginPath(); ctx.arc(g.x + 22 + (y % 3) * 14, y, 12, 0, 6.284); ctx.fill(); }
+  ctx.fillStyle = pal[1];
+  for (let y = 18; y < gapTop - 6; y += 46){ ctx.beginPath(); ctx.arc(g.x + 18 + (y % 3) * 16, y, 12 * pulse, 0, 6.284); ctx.fill(); }
+  for (let y = gapBot + 24; y < vh - 8; y += 46){ ctx.beginPath(); ctx.arc(g.x + 22 + (y % 3) * 14, y, 12 * pulse, 0, 6.284); ctx.fill(); }
 }
 
 function roundRect(x, y, w, h, r){
@@ -371,7 +443,7 @@ if (location.search.indexOf('debug') !== -1){
 
 // ---- boot --------------------------------------------------------------
 echo = { x: 0, y: 0, vy: 0, rot: 0, bob: 0, r: 20 };
-gates = []; bubbles = []; sparkles = []; trail = [];
+gates = []; bubbles = []; sparkles = []; trail = []; pops = [];
 fit();
 $('bestHud').textContent = echoBest;
 requestAnimationFrame(function frame(ts){
