@@ -150,7 +150,32 @@ var UPGRADES=[
  {id:'speed',name:'Engine Speed',max:4,base:110,info:'Fly and dodge quicker.',cost:function(l){return this.base+Math.round(this.base*0.7*l)}},
  {id:'shield',name:'Shield Plating',max:4,base:160,info:'Start each life with a shield.',cost:function(l){return this.base+Math.round(this.base*0.9*l)}},
  {id:'magnet',name:'Credit Magnet',max:3,base:150,info:'Pull drops toward you.',cost:function(l){return this.base+Math.round(this.base*0.9*l)}},
- {id:'life',name:'Extra Health',max:3,base:280,info:'Begin with one more health.',cost:function(l){return this.base+Math.round(this.base*1.1*l)}}];
+  {id:'life',name:'Extra Health',max:3,base:280,info:'Begin with one more health.',cost:function(l){return this.base+Math.round(this.base*1.1*l)}}];
+/* A987 roguelike: run-only upgrades. These are drafted mid-run (never bought
+   with permanent credits) and reset every launch, so each run builds a
+   different ship. `rarity` weights how often a card is offered. */
+var RUN_UPGRADES=[
+ {id:'damage',name:'Overcharge',desc:'+1 blaster damage',rarity:'common',max:8},
+ {id:'rate',name:'Rapid Fire',desc:'Shots fire faster',rarity:'common',max:6},
+ {id:'multishot',name:'Wing Cannons',desc:'+1 cannon per volley',rarity:'rare',max:5},
+ {id:'speed',name:'Thrusters',desc:'Fly and dodge quicker',rarity:'common',max:5},
+ {id:'shield',name:'Aegis Cell',desc:'+1 shield charge (absorbs a hit)',rarity:'rare',max:4},
+ {id:'magnet',name:'Tractor Beam',desc:'Pull drops toward you',rarity:'common',max:3},
+ {id:'life',name:'Hull Patch',desc:'+1 health now',rarity:'rare',max:4},
+ {id:'pierce',name:'Photon Lance',desc:'Shots pierce +1 enemy',rarity:'epic',max:3},
+ {id:'crit',name:'Targeting Chip',desc:'+15% chance to crit for x2',rarity:'rare',max:4},
+ {id:'homing',name:'Seeker Rounds',desc:'Shots curve toward enemies',rarity:'epic',max:2}];
+/* A987 station shop: spend credits earned THIS run for instant upgrades. */
+var SHOP_POOL=[
+ {id:'heal',name:'Repair Kit',desc:'+1 health now',cost:55},
+ {id:'shield',name:'Shield Cell',desc:'+1 shield charge',cost:75},
+ {id:'damage',name:'Weapon Core',desc:'+1 blaster damage',cost:95},
+ {id:'rate',name:'Coolant Coil',desc:'Shots fire faster',cost:95},
+ {id:'multishot',name:'Wing Mount',desc:'+1 cannon per volley',cost:150},
+ {id:'life',name:'Hull Plating',desc:'+1 health now',cost:130},
+ {id:'magnet',name:'Tractor Coil',desc:'+1 credit magnet',cost:70},
+ {id:'pierce',name:'Lance Rounds',desc:'Shots pierce +1 enemy',cost:170},
+ {id:'crit',name:'Targeting Suite',desc:'+15% crit chance',cost:110}];
 var QUESTS=[
  {id:'kills50',name:'Swatter',text:'Destroy 50 swarm ships (total)',goal:50,key:'kills',reward:200},
  {id:'waves10',name:'Holding the Line',text:'Clear 10 waves',goal:10,key:'waves',reward:180},
@@ -165,7 +190,7 @@ function storyScore(){if(window.__storyRun)window.__storyRun.setScore(run.score)
 var gameSystem=null;try{gameSystem=new GameSystem('nova-siege','Nova Siege','pip');gameSystem.trackScore({xpDivisor:12,tiers:[[1,'firstLaunch'],[5000,'score5k'],[10000,'score10k']]});}catch(e){}
 /* A795 shared auto-pause: backgrounding a run stops the rAF loop and the
    engine shows the standard tap-to-resume overlay (styled in game-system.css). */
-try{if(typeof GameUI!=='undefined'&&GameUI.autoPause)GameUI.autoPause({pause:function(){if(typeof run==='undefined'||!run||run.over)return false;cancelAnimationFrame(raf);return true;},resume:function(){if(typeof run==='undefined'||!run||run.over)return;lastT=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);}});}catch(e){}
+try{if(typeof GameUI!=='undefined'&&GameUI.autoPause)GameUI.autoPause({pause:function(){if(typeof run==='undefined'||!run||run.over||run.paused)return false;cancelAnimationFrame(raf);return true;},resume:function(){if(typeof run==='undefined'||!run||run.over||run.paused)return;lastT=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);}});}catch(e){}
 var sfxAudio=null;
 function sfx(k){try{sfxAudio=sfxAudio||new AudioEffects(0.35);if(!sfxAudio)return;if(k==='win')sfxAudio.playSuccess();else if(k==='bad')sfxAudio.playError();else if(k==='hit'&&sfxAudio.playHit)sfxAudio.playHit();else sfxAudio.playTap();}catch(e){}}
 /* ============================ GAME ============================ */
@@ -177,7 +202,7 @@ var W=LW,H=LH;
 /* A795 DPR fit: canvas keeps its 3:4 logical space while the backing store
    matches the displayed size times DPR (capped at 2). Uniform scale keeps
    circles circular on narrow phone widths instead of CSS-stretching. */
-function nsFit(){try{var d=Math.min(window.devicePixelRatio||1,2);var wrap=cv.parentElement;var imm=document.documentElement.classList.contains('jvds-immersive');var avail=(wrap&&wrap.clientWidth)||LW;var capH=imm?Math.max(260,(wrap&&wrap.clientHeight)||window.innerHeight):Math.min(window.innerHeight*0.66,620);var cssW=Math.min(avail,LW);var cssH=cssW*LH/LW;if(cssH>capH){cssH=capH;cssW=cssH*LW/LH;}if(window.HiDPI&&HiDPI.fit){HiDPI.fit(cv,Math.round(cssW),Math.round(cssH));}else{cv.style.width=cssW+'px';cv.style.height=cssH+'px';cv.width=Math.round(cssW*d);cv.height=Math.round(cssH*d);}var s=cv.width/LW;vsScale=s;ctx.setTransform(s,0,0,s,0,0);ctx.imageSmoothingEnabled=false;}catch(e){}}
+function nsFit(){try{var d=Math.min(window.devicePixelRatio||1,2);var wrap=cv.parentElement;var imm=document.documentElement.classList.contains('jvds-immersive');var avail=(wrap&&wrap.clientWidth)||LW;var capH=imm?Math.max(260,(wrap&&wrap.clientHeight)||window.innerHeight):Math.min(window.innerHeight*0.82,920);var cssW=Math.min(avail,LW);var cssH=cssW*LH/LW;if(cssH>capH){cssH=capH;cssW=cssH*LW/LH;}if(window.HiDPI&&HiDPI.fit){HiDPI.fit(cv,Math.round(cssW),Math.round(cssH));}else{cv.style.width=cssW+'px';cv.style.height=cssH+'px';cv.width=Math.round(cssW*d);cv.height=Math.round(cssH*d);}var s=cv.width/LW;vsScale=s;ctx.setTransform(s,0,0,s,0,0);ctx.imageSmoothingEnabled=false;}catch(e){}}
 nsFit();window.addEventListener('resize',nsFit);
 var STARCOL=['#ffffff','#ff6ec7','#7CFC00','#4aa8ff','#ffaa33','#66e0ff'];
 /* A970 endless parallax space: three star layers, drifting nebulae and slow
@@ -208,18 +233,31 @@ var powerTimer=0,powerKind=null,fireSfxT=0;
 function segHit(x1,y1,x2,y2,px,py,r){var dx=x2-x1,dy=y2-y1,l2=dx*dx+dy*dy;var t=l2?Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/l2)):0;var cx=x1+t*dx,cy=y1+t*dy;return Math.hypot(px-cx,py-cy)<=r;}
 function hullBonus(k){var h=HULLS[meta.hull]||HULLS[0];return (h.bonus&&h.bonus[k])||0}
 function baseHealth(){return 3+(meta.up.life||0)+hullBonus('health')}
+/* A987 run-only stat readers: permanent meta + hull + drafted run upgrades. */
+function upLv(id){return (run&&run.runUps&&run.runUps[id])||0}
+function runDamage(){return 1+(meta.up.damage||0)+hullBonus('damage')+upLv('damage')}
+function runRate(){return Math.max(4,10-(meta.up.rate||0)-upLv('rate'))}
+function runShots(){return 1+(meta.up.multishot||0)+hullBonus('shots')+upLv('multishot')}
+function runSpeed(){return 3.4+((meta.up.speed||0)+upLv('speed'))*0.5+hullBonus('speed')}
+function runMagnet(){return (meta.up.magnet||0)+upLv('magnet')}
+function runCrit(){return upLv('crit')*0.15}
+function runPierce(){return upLv('pierce')}
 function hitR(sp){return sp===SPR.boss?22:9}
 function startRun(){
-  run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,fireT:0,shield:(meta.up.shield||0)>0?1:0,inv:90,waveKills:0,waveTarget:6,kills:0,runPower:0,over:false,hint:210,combo:0,comboT:0,bestCombo:0,bossActive:false,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0};
-  spawnT=36;boss=null;spawnQueue=0;
+  run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,fireT:0,shield:(meta.up.shield||0)>0?1:0,inv:90,waveKills:0,waveTarget:6,kills:0,runPower:0,over:false,hint:210,combo:0,comboT:0,bestCombo:0,bossActive:false,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,runUps:{},paused:false};
+  spawnT=36;boss=null;spawnQueue=0;shopStock=[];shopRerolled=0;
+  document.getElementById('draftOverlay').classList.add('hidden');
+  document.getElementById('shopOverlay').classList.add('hidden');
   meta.quests.runs++;saveMeta();qUpdate();
   document.getElementById('titleFont').style.display='';fireSfxT=0;
   document.getElementById('overlay').classList.add('hidden');
   cancelAnimationFrame(raf);lastT=0;raf=requestAnimationFrame(loop);
 }
-var spawnT=36,boss=null,spawnQueue=0;
+var spawnT=36,boss=null,spawnQueue=0,uidc=1,shopStock=[],shopRerolled=0;
 function endRun(win){
-  if(run.over)return;run.over=true;cancelAnimationFrame(raf);
+  if(run.over)return;run.over=true;cancelAnimationFrame(raf);run.paused=false;
+  document.getElementById('draftOverlay').classList.add('hidden');
+  document.getElementById('shopOverlay').classList.add('hidden');
   meta.credits+=run.credits;meta.quests.best=Math.max(meta.quests.best||0,run.score);saveMeta();
   if(window.GameSystem&&window.GameSystem.saveScore)window.GameSystem.saveScore('nova-siege',run.score,{level:run.stage});
   try{if(window.jvdsCheckNewBest)window.jvdsCheckNewBest()}catch(e){}
@@ -227,7 +265,8 @@ function endRun(win){
   try{var pp=window.playerProfile;if(pp&&pp.addXP)pp.addXP(Math.round(run.score/12),'game:nova-siege')}catch(e){}
   qUpdate();renderUpgrades();renderCredits();
   document.getElementById('titleFont').style.display='none';
-  document.getElementById('ovText').innerHTML='Score <b>'+run.score.toLocaleString()+'</b> &middot; Stage '+run.stage+' &middot; Credits banked <b>'+run.credits+'</b>.<br>Total credits: <b>'+meta.credits+'</b>. Upgrade and launch again!';
+  var upsList=[];for(var uk in run.runUps){if(run.runUps[uk]>0){var ur=null;for(var uq=0;uq<RUN_UPGRADES.length;uq++)if(RUN_UPGRADES[uq].id===uk)ur=RUN_UPGRADES[uq];upsList.push((ur?ur.name:uk)+' x'+run.runUps[uk]);}}
+  document.getElementById('ovText').innerHTML='Score <b>'+run.score.toLocaleString()+'</b> &middot; Stage '+run.stage+' &middot; Credits banked <b>'+run.credits+'</b>.<br>Total credits: <b>'+meta.credits+'</b>. Upgrade and launch again!'+(upsList.length?'<br>Run upgrades: '+upsList.join(', ')+'.':'');
   document.getElementById('startBtn').textContent='Launch Again';
   document.getElementById('overlay').classList.remove('hidden');
   if(window.__storyRun)window.__storyRun.finish(win?'success':(run.stage>1?'partial':'fail'),run.score);
@@ -280,9 +319,9 @@ function spawnBoss(){
   float(W/2,H/2-58,BOSS_NAME[type],'#ff4d5e');float(W/2,H/2-40,'WARNING!','#ff4d5e');sfx('bad');
 }
 /* ----- update ----- */
-function loop(ts){raf=requestAnimationFrame(loop);if(run.over)return;if(!lastT)lastT=ts;var dt=Math.min(2.2,(ts-lastT)/16.667);lastT=ts;update(dt);render();}
+function loop(ts){raf=requestAnimationFrame(loop);if(run.over)return;if(run.paused){render();return;}if(!lastT)lastT=ts;var dt=Math.min(2.2,(ts-lastT)/16.667);lastT=ts;update(dt);render();}
 function update(dt){
-  var spd=3.4+(meta.up.speed||0)*0.5+hullBonus('speed');
+  var spd=runSpeed();
   if(drag.active){run.px+=(drag.tx-run.px)*0.5;run.py+=(drag.ty-run.py)*0.5;}
   if(keys.left)run.px-=spd;if(keys.right)run.px+=spd;
   if(keys.up)run.py-=spd;if(keys.down)run.py+=spd;
@@ -293,15 +332,18 @@ function update(dt){
   if(run.inv>0)run.inv-=dt;
   /* fire upward, paired orbs like the original */
   run.fireT-=dt;
-  var rate=Math.max(5,10-(meta.up.rate||0)*1.0);if(powerTimer>0&&powerKind==='rapid')rate*=0.45;
+  var rate=runRate();if(powerTimer>0&&powerKind==='rapid')rate*=0.45;
   if(run.fireT<=0){
-    run.fireT=rate;var dmg=1+(meta.up.damage||0)+hullBonus('damage');
-    var shots=1+(meta.up.multishot||0)+hullBonus('shots')+((powerTimer>0&&powerKind==='spread')?2:0);
-    for(var i=0;i<shots;i++){var off=(i-(shots-1)/2)*12;run.bullets.push({x:run.px+off,y:run.py-16,vx:off*0.05,vy:-8*VS,dmg:dmg});}
+    run.fireT=rate;var dmg=runDamage();
+    var shots=runShots()+((powerTimer>0&&powerKind==='spread')?2:0);
+    var pr=runPierce();
+    for(var i=0;i<shots;i++){var off=(i-(shots-1)/2)*12;run.bullets.push({x:run.px+off,y:run.py-16,vx:off*0.05,vy:-8*VS,dmg:dmg,pierce:pr,hit:{}});}
     if(fireSfxT<=0){sfx('tap');fireSfxT=9;}
   }
   if(powerTimer>0){powerTimer-=dt;if(powerTimer<=0)powerKind=null}
-  for(var b=run.bullets.length-1;b>=0;b--){var sb=run.bullets[b];sb.x+=sb.vx*dt;sb.y+=sb.vy*dt;if(sb.y<-16)run.bullets.splice(b,1)}
+  for(var b=run.bullets.length-1;b>=0;b--){var sb=run.bullets[b];
+    if(!sb.eb&&upLv('homing')){var ht=nearestTarget(sb.x,sb.y);if(ht){var hd=Math.atan2(ht.y-sb.y,ht.x-sb.x),hc=Math.atan2(sb.vy,sb.vx),dd=Math.atan2(Math.sin(hd-hc),Math.cos(hd-hc)),tn=0.05*upLv('homing')*dt;hc+=Math.max(-tn,Math.min(tn,dd));var hs=Math.hypot(sb.vx,sb.vy)||8;sb.vx=Math.cos(hc)*hs;sb.vy=Math.sin(hc)*hs;}}
+    sb.x+=sb.vx*dt;sb.y+=sb.vy*dt;if(sb.y<-16||sb.y>H+40||sb.x<-40||sb.x>W+40)run.bullets.splice(b,1)}
   /* spawn */
   spawnT-=dt;
   if(!run.bossActive&&spawnT<=0&&run.waveKills<run.waveTarget){spawnEnemy();spawnT=Math.max(14,40-run.stage*3);}
@@ -336,18 +378,18 @@ function update(dt){
     if(en.x<16||en.x>W-16)en.dir=-en.dir;
     if(en.y>H+30){run.enemies.splice(e,1);continue}
     if(run.inv<=0&&Math.hypot(en.x-run.px,en.y-run.py)<en.r+7){hurtPlayer();burst(en.x,en.y,'#ff9f2e',12);run.enemies.splice(e,1);continue}
-    for(var s=run.bullets.length-1;s>=0;s--){var bb=run.bullets[s];if(bb.eb)continue;var py=bb.y-bb.vy*dt;if(segHit(bb.x-bb.vx*dt,py,bb.x,bb.y,en.x,en.y,en.r+3)){en.hp-=bb.dmg;run.bullets.splice(s,1);if(en.hp<=0)killEnemy(en,en.x,en.y);else burst(bb.x,bb.y,'#9fe6ff',4);break;}}
+    for(var s=run.bullets.length-1;s>=0;s--){var bb=run.bullets[s];if(bb.eb)continue;var py=bb.y-bb.vy*dt;if(segHit(bb.x-bb.vx*dt,py,bb.x,bb.y,en.x,en.y,en.r+3)){if(en.uid==null)en.uid=uidc++;bb.hit=bb.hit||{};if(bb.hit[en.uid])continue;var bd=bb.dmg;if(runCrit()&&Math.random()<runCrit()){bd*=2;float(en.x,en.y-14,'CRIT','#ffd166');}en.hp-=bd;if(bb.pierce>0){bb.pierce--;bb.hit[en.uid]=1;if(en.hp<=0)killEnemy(en,en.x,en.y);else burst(bb.x,bb.y,'#9fe6ff',4);}else{run.bullets.splice(s,1);if(en.hp<=0)killEnemy(en,en.x,en.y);else burst(bb.x,bb.y,'#9fe6ff',4);}break;}}
   }
   /* boss bullets vs boss handled via shared hit below */
   if(boss){
-    for(var s2=run.bullets.length-1;s2>=0;s2--){var b2=run.bullets[s2];if(b2.eb)continue;var py2=b2.y-b2.vy*dt;if(segHit(b2.x-b2.vx*dt,py2,b2.x,b2.y,boss.x,boss.y,boss.r+3)){boss.hp-=b2.dmg;run.bullets.splice(s2,1);burst(b2.x,b2.y,'#ffd166',3)}}
+    for(var s2=run.bullets.length-1;s2>=0;s2--){var b2=run.bullets[s2];if(b2.eb)continue;var py2=b2.y-b2.vy*dt;if(segHit(b2.x-b2.vx*dt,py2,b2.x,b2.y,boss.x,boss.y,boss.r+3)){var bd2=b2.dmg;if(runCrit()&&Math.random()<runCrit()){bd2*=2;float(boss.x,boss.y-20,'CRIT','#ffd166');}boss.hp-=bd2;run.bullets.splice(s2,1);burst(b2.x,b2.y,'#ffd166',3)}}
     if(run.inv<=0&&Math.hypot(boss.x-run.px,boss.y-run.py)<boss.r+9)hurtPlayer();
     if(boss.hp<=0)killBoss();
   }
   /* drops */
   for(var d=run.drops.length-1;d>=0;d--){
     var dr=run.drops[d];dr.y+=1.3*VS*dt;
-    if(meta.up.magnet){var mx=run.px-dr.x,my=run.py-dr.y,md=Math.hypot(mx,my);if(md<150){dr.x+=mx/md*2.2*dt;dr.y+=my/md*2.2*dt}}
+    if(runMagnet()){var mx=run.px-dr.x,my=run.py-dr.y,md=Math.hypot(mx,my)||1;if(md<150+runMagnet()*30){dr.x+=mx/md*(2.2+runMagnet()*0.6)*dt;dr.y+=my/md*(2.2+runMagnet()*0.6)*dt}}
     if(dr.y>H+16){run.drops.splice(d,1);continue}
     if(Math.hypot(dr.x-run.px,dr.y-run.py)<26){
       if(dr.type==='health'){run.health=Math.min(9,run.health+1);float(dr.x,dr.y,'+1 HP','#7CFC00');}
@@ -382,7 +424,8 @@ function killEnemy(en,x,y){
 }
 function nextWave(){
   run.waveKills=0;run.wave++;meta.quests.waves++;run.waveTarget=Math.min(26,6+run.stage+Math.floor(run.wave*0.5));
-  if(run.wave%4===0&&!run.bossActive)spawnBoss();
+  var bossNext=run.wave%4===0&&!run.bossActive;
+  if(bossNext)spawnBoss();else openDraft();
   qUpdate();
 }
 function killBoss(){
@@ -392,6 +435,95 @@ function killBoss(){
   meta.quests.bosses++;boss=null;run.bossActive=false;
   run.stage++;run.wave=1;run.waveKills=0;run.waveTarget=Math.min(26,6+run.stage);
   float(W/2,H/2,'STAGE '+run.stage,'#7CFC00');sfx('win');shake(16);qUpdate();
+  openShop();
+}
+/* ============================ ROGUELIKE RUN ============================
+   A987: after every non-boss wave the run pauses and offers a draft of three
+   run-only upgrades; after every boss the station shop opens so run credits
+   can be spent mid-run. Both freeze the loop (render only) until resolved. */
+function nearestTarget(x,y){var best=null,bd=1e9,i;for(i=0;i<run.enemies.length;i++){var e=run.enemies[i],d=Math.hypot(e.x-x,e.y-y);if(d<bd){bd=d;best=e;}}if(boss){var db=Math.hypot(boss.x-x,boss.y-y);if(db<bd){bd=db;best=boss;}}return best;}
+function applyRunUpgrade(id){
+  run.runUps[id]=(run.runUps[id]||0)+1;
+  if(id==='shield')run.shield=(run.shield||0)+1;
+  if(id==='life')run.health=Math.min(9,run.health+1);
+}
+var RARITY_W={common:6,rare:3,epic:1},RARITY_C={common:'#7CFC00',rare:'#4cc9f0',epic:'#c060ff'};
+function draftChoices(){
+  var pool=runUpgradePool(),out=[],guard=0;
+  while(out.length<3&&guard<300){guard++;if(!pool.length)break;
+    var tot=0,i;for(i=0;i<pool.length;i++)tot+=(RARITY_W[pool[i].rarity]||3);
+    var r=Math.random()*tot,pick=pool[0];
+    for(i=0;i<pool.length;i++){r-=(RARITY_W[pool[i].rarity]||3);if(r<=0){pick=pool[i];break;}}
+    out.push(pick);pool=pool.filter(function(u){return u!==pick;});
+  }
+  return out;
+}
+function openDraft(){
+  if(run.over||run.paused)return;
+  var ch=draftChoices();if(!ch.length)return;
+  run.paused=true;lastT=0;
+  var wrap=document.getElementById('draftCards');wrap.innerHTML='';
+  ch.forEach(function(u){
+    var lvl=upLv(u.id);
+    var b=document.createElement('button');b.className='card';b.type='button';
+    b.innerHTML='<span class="rar" style="color:'+(RARITY_C[u.rarity]||'#7CFC00')+'">'+u.rarity+'</span><b>'+u.name+'</b><small>'+u.desc+'</small><small>Level '+(lvl+1)+' / '+u.max+'</small>';
+    b.onclick=function(){chooseDraft(u);};
+    wrap.appendChild(b);
+  });
+  document.getElementById('draftTitle').textContent='Wave '+run.wave+' cleared';
+  document.getElementById('draftOverlay').classList.remove('hidden');
+  sfx('win');
+}
+function runUpgradePool(){return RUN_UPGRADES.filter(function(u){return upLv(u.id)<u.max;});}
+function chooseDraft(u){
+  applyRunUpgrade(u.id);renderCredits();
+  document.getElementById('draftOverlay').classList.add('hidden');
+  resumeGame();sfx('win');
+}
+function skipDraft(){
+  addCredits(50,run.px,run.py);renderCredits();
+  document.getElementById('draftOverlay').classList.add('hidden');
+  resumeGame();
+}
+function resumeGame(){run.paused=false;lastT=0;}
+function openShop(){
+  if(run.over||run.paused)return;
+  if(!shopStock.length)rollShop();
+  run.paused=true;lastT=0;
+  renderShop();
+  document.getElementById('shopOverlay').classList.remove('hidden');
+  sfx('win');
+}
+function rollShop(){
+  var pool=SHOP_POOL.slice();shopStock=[];
+  while(shopStock.length<4&&pool.length){var i=(Math.random()*pool.length)|0;shopStock.push({item:pool[i],sold:false});pool.splice(i,1);}
+}
+function renderShop(){
+  var el=document.getElementById('shopList');if(!el)return;
+  el.innerHTML='';document.getElementById('shopCredits').textContent=run.credits;
+  shopStock.forEach(function(s,idx){
+    var row=document.createElement('div');row.className='shop-row';
+    row.innerHTML='<div><b>'+s.item.name+'</b><small>'+s.item.desc+'</small></div>';
+    var btn=document.createElement('button');btn.className='buy';
+    btn.textContent=s.sold?'SOLD':(s.item.cost+' cr');
+    btn.disabled=s.sold||run.credits<s.item.cost;
+    btn.onclick=function(){buyShop(idx);};
+    row.appendChild(btn);el.appendChild(row);
+  });
+}
+function buyShop(idx){
+  var s=shopStock[idx];if(!s||s.sold||run.credits<s.item.cost)return;
+  run.credits-=s.item.cost;
+  if(s.item.id==='heal')run.health=Math.min(9,run.health+1);else applyRunUpgrade(s.item.id);
+  s.sold=true;renderShop();renderCredits();sfx('win');
+}
+function rerollShop(){
+  var cost=20;if(run.credits<cost)return;
+  run.credits-=cost;rollShop();renderShop();renderCredits();sfx('tap');
+}
+function leaveShop(){
+  document.getElementById('shopOverlay').classList.add('hidden');
+  resumeGame();
 }
 function hurtPlayer(){
   run.combo=0;
@@ -468,12 +600,15 @@ stage.addEventListener('pointercancel',dragEnd);
 window.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')keys.left=1;if(e.key==='ArrowRight')keys.right=1;if(e.key==='ArrowUp')keys.up=1;if(e.key==='ArrowDown')keys.down=1;});
 window.addEventListener('keyup',function(e){if(e.key==='ArrowLeft')keys.left=0;if(e.key==='ArrowRight')keys.right=0;if(e.key==='ArrowUp')keys.up=0;if(e.key==='ArrowDown')keys.down=0});
 document.getElementById('startBtn').onclick=function(){storyBegin();startRun()};
+document.getElementById('draftSkip').onclick=skipDraft;
+document.getElementById('shopLeave').onclick=leaveShop;
+document.getElementById('shopReroll').onclick=rerollShop;
 /* ============================ BOOT ============================ */
 function drawTitle(){var tcanvas=document.getElementById('titleFont'),tc=tcanvas.getContext('2d');tc.clearRect(0,0,tcanvas.width,tcanvas.height);ptext(tc,'NOVA',tcanvas.width/2,6,4,'#7CFC00','#ffffff','center');ptext(tc,'SIEGE',tcanvas.width/2,42,4,'#7CFC00','#ffffff','center');ptext(tc,"PIP'S ARCADE REMASTER",tcanvas.width/2,86,1,'#8fe36a','#04070c','center');}
 drawTitle();
 renderUpgrades();renderQuests();renderSkins();renderCredits();
 document.getElementById('hBest').textContent=(window.GameSystem?window.GameSystem.getBestScore('nova-siege'):0).toLocaleString();
-run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,over:true,hint:0,combo:0,comboT:0,bestCombo:0,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,inv:0,bossActive:false,shield:0,runPower:0,kills:0,waveKills:0,waveTarget:6,fireT:0};
-window.__nova={get run(){return run},get meta(){return meta},get boss(){return boss},get sprites(){return SPR},get ships(){return SHIPS},get bg(){return bg},get bossType(){return boss?boss.type:null},get enemyKinds(){return run.enemies.map(function(e){return e.kind})},get stage(){return run.stage},get scale(){return vsScale},get lw(){return LW},get lh(){return LH},get hulls(){return HULLS},get combo(){return run.combo||0},get comboMult(){return comboMult()},get bossFire(){return boss?boss.fire:null},forceBoss:function(){spawnBoss();return boss?boss.type:null},forceEnd:function(){run.health=0;hurtPlayer()}};
+run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,over:true,hint:0,combo:0,comboT:0,bestCombo:0,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,inv:0,bossActive:false,shield:0,runPower:0,kills:0,waveKills:0,waveTarget:6,fireT:0,runUps:{},paused:false};
+window.__nova={get run(){return run},get meta(){return meta},get boss(){return boss},get sprites(){return SPR},get ships(){return SHIPS},get bg(){return bg},get bossType(){return boss?boss.type:null},get enemyKinds(){return run.enemies.map(function(e){return e.kind})},get stage(){return run.stage},get scale(){return vsScale},get lw(){return LW},get lh(){return LH},get hulls(){return HULLS},get combo(){return run.combo||0},get comboMult(){return comboMult()},get bossFire(){return boss?boss.fire:null},get runUps(){return run.runUps},get paused(){return !!run.paused},get draftOpen(){var e=document.getElementById('draftOverlay');return !!e&&!e.classList.contains('hidden')},get shopOpen(){var e=document.getElementById('shopOverlay');return !!e&&!e.classList.contains('hidden')},get runCritChance(){return runCrit()},get runPierce(){return runPierce()},get runDamage(){return runDamage()},get runShots(){return runShots()},get runRate(){return runRate()},get runSpeed(){return runSpeed()},forceBoss:function(){spawnBoss();return boss?boss.type:null},forceDraft:function(){openDraft()},forceShop:function(){openShop()},forceWave:function(){nextWave()},refreshShop:function(){renderShop()},forceEnd:function(){run.health=0;hurtPlayer()}};
 hud();
 })();

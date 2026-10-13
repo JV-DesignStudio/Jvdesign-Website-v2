@@ -61,6 +61,8 @@ async function desktop(browser, base) {
   check('desktop: canvas present', info.canvas);
   check('desktop: start button present', info.start);
   check('desktop: no horizontal overflow', info.overflow <= 2, String(info.overflow));
+  const size = await page.evaluate(() => { const r = document.getElementById('cv').getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height) }; });
+  check('desktop: play field is a decent size (>=640 tall at 1440x900)', size.h >= 640 && size.w >= 380, JSON.stringify(size));
   check('desktop: no page errors', errors.length === 0, errors.join(' | '));
   await page.close();
 }
@@ -115,6 +117,9 @@ async function content(browser, base) {
     await sleep(70);
     const ks = await page.evaluate(() => window.__nova.enemyKinds);
     ks.forEach(k => kinds.add(k));
+    // A cleared wave now opens the roguelike draft, which pauses spawning. Pick
+    // the first card so the run keeps producing enemies for the rest of the probe.
+    await page.evaluate(() => { if (window.__nova.draftOpen) { const c = document.querySelector('#draftCards .card'); if (c) c.click(); } });
     if (['diver', 'gunner', 'splitter'].every(k => kinds.has(k))) break;
   }
   const newKinds = ['diver', 'gunner', 'splitter'].filter(k => kinds.has(k));
@@ -287,6 +292,66 @@ async function juice(browser, base) {
   await page.close();
 }
 
+async function roguelike(browser, base) {
+  const page = await browser.newPage();
+  const errors = watch(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/nova-siege.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => document.getElementById('startBtn').click());
+  await sleep(250);
+
+  // Clearing a wave pauses the run and offers exactly three run-upgrade cards.
+  await page.evaluate(() => { const r = window.__nova.run; r.waveKills = r.waveTarget; window.__nova.forceWave(); });
+  await sleep(160);
+  const draft = await page.evaluate(() => ({
+    paused: window.__nova.paused,
+    open: window.__nova.draftOpen,
+    cards: document.querySelectorAll('#draftCards .card').length
+  }));
+  check('roguelike: clearing a wave opens a 3-card upgrade draft and pauses the run', draft.paused && draft.open && draft.cards === 3, JSON.stringify(draft));
+
+  // Picking a card applies a run-only upgrade and resumes the run.
+  await page.click('#draftCards .card');
+  await sleep(130);
+  const picked = await page.evaluate(() => {
+    const ups = window.__nova.runUps; let total = 0; for (const k in ups) total += ups[k];
+    return { paused: window.__nova.paused, open: window.__nova.draftOpen, total };
+  });
+  check('roguelike: picking a card applies a run-only upgrade and resumes', !picked.paused && !picked.open && picked.total >= 1, JSON.stringify(picked));
+
+  // A drafted damage upgrade must feed the in-run damage stat (not the meta shop).
+  const dmg = await page.evaluate(() => {
+    const n = window.__nova, before = n.runDamage;
+    n.run.runUps.damage = (n.run.runUps.damage || 0) + 1;
+    return { before, after: n.runDamage };
+  });
+  check('roguelike: a run damage upgrade raises in-run damage by 1', dmg.after === dmg.before + 1, JSON.stringify(dmg));
+
+  // The station shop opens with stock, sells for THIS run's credits, and resumes.
+  await page.evaluate(() => { window.__nova.run.credits = 500; window.__nova.forceShop(); });
+  await sleep(160);
+  const shop = await page.evaluate(() => ({
+    paused: window.__nova.paused,
+    open: window.__nova.shopOpen,
+    rows: document.querySelectorAll('#shopList .shop-row').length
+  }));
+  check('roguelike: the in-run shop opens with stock and pauses the run', shop.paused && shop.open && shop.rows >= 1, JSON.stringify(shop));
+
+  const beforeBuy = await page.evaluate(() => window.__nova.run.credits);
+  await page.evaluate(() => window.__nova.refreshShop());
+  await page.click('#shopList .buy');
+  await sleep(130);
+  const afterBuy = await page.evaluate(() => ({ credits: window.__nova.run.credits, sold: document.querySelectorAll('#shopList .buy:disabled').length }));
+  check("roguelike: buying in the shop spends this run's credits", afterBuy.credits < beforeBuy && afterBuy.sold >= 1, JSON.stringify(afterBuy));
+
+  await page.click('#shopLeave');
+  await sleep(130);
+  const left = await page.evaluate(() => ({ paused: window.__nova.paused, open: window.__nova.shopOpen }));
+  check('roguelike: Depart closes the shop and resumes the run', !left.paused && !left.open, JSON.stringify(left));
+  check('roguelike: no page errors', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
 (async () => {
   await withServer(async ({ base, browser }) => {
     await desktop(browser, base);
@@ -295,6 +360,7 @@ async function juice(browser, base) {
     await mobileDrag(browser, base);
     await progression(browser, base);
     await juice(browser, base);
+    await roguelike(browser, base);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL NOVA SIEGE CHECKS PASSED');
   process.exit(failures ? 1 : 0);
