@@ -34,7 +34,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; media-src 'self' https: blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <!-- /BUILD:head-icons -->
 
 <link rel="preconnect" href="https://www.googletagmanager.com">
@@ -644,9 +644,18 @@ function addDefaultTerrain(){
 function autoZoom(){
   const area=document.getElementById('canvas-area');
   const mw=area.clientWidth-24,mh=area.clientHeight-24;
-  const steps=[1,2,3,4,6,8];let best=1;
-  for(const s of steps){if(gridW*TILE_SIZE*s<=mw&&gridH*TILE_SIZE*s<=mh)best=s;}
-  zoomLevel=best;document.getElementById('zoomVal').textContent=zoomLevel+'x';
+  const unitW=TILE_SIZE*gridW,unitH=TILE_SIZE*gridH;
+  const fit=Math.min(mw/unitW,mh/unitH);
+  if(fit<1){
+    // Phone / small screens: even 1x overflows, so shrink below 1x. Every draw
+    // and pointer mapping uses TS*zoomLevel, so a fractional zoom stays correct.
+    zoomLevel=Math.max(0.2,Math.round(fit*100)/100);
+  } else {
+    const steps=[1,2,3,4,6,8];let best=1;
+    for(const s of steps){if(unitW*s<=mw&&unitH*s<=mh)best=s;}
+    zoomLevel=best;
+  }
+  document.getElementById('zoomVal').textContent=zoomLevel+'x';
   panOffset={x:0,y:0};document.getElementById('canvas-wrap').style.transform='';
 }
 function resetView(){autoZoom();resizeCanvases();renderAll();updateViewportMarker();}
@@ -655,7 +664,7 @@ function resizeCanvases(){
   [canvas,cursorCanvas,pathCanvas].forEach(c=>{if(!c)return;window.HiDPI?HiDPI.fit(c,pw,ph):(c.width=pw,c.height=ph,c.style.width=pw+'px',c.style.height=ph+'px');});
 }
 function changeZoom(dir){
-  const steps=[1,2,3,4,6,8,12,16];let i=steps.indexOf(zoomLevel);if(i<0)i=1;
+  const steps=[1,2,3,4,6,8,12,16];let i=steps.findIndex(s=>s>=zoomLevel-0.001);if(i<0)i=steps.length-1;
   i=Math.max(0,Math.min(steps.length-1,i+dir));zoomLevel=steps[i];
   document.getElementById('zoomVal').textContent=zoomLevel+'x';
   resizeCanvases();renderAll();updateViewportMarker();
