@@ -5030,6 +5030,20 @@ window.JVDS_CONTENT = {
       "age": "Ages 8-14",
       "character": null,
       "url": "/games/sky_high_with_friends.html"
+    },
+    {
+      "id": "critter-whack",
+      "title": "Critter Whack: Ranger Sort",
+      "tag": "Reaction · Sorting",
+      "emoji": "🐹",
+      "category": "Action",
+      "cover": "CritterWhackCover.webp",
+      "bg": "linear-gradient(135deg,#234020,#3a6b2e)",
+      "desc": "Read the ranger clue, then tap only the critters that fit the habitat, movement or behaviour. Quick sorting fun, but watch out for hazards.",
+      "kids": true,
+      "age": "Ages 5-9",
+      "character": null,
+      "url": "/games/critter-whack-page.html"
     }
   ],
   "tools": [
@@ -5943,9 +5957,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-13T16:27:08.651Z",
+    "generated": "2026-10-13T20:13:56.243Z",
     "workshops": 325,
-    "games": 11,
+    "games": 12,
     "tools": 48,
     "books": 5,
     "engines": {
