@@ -1,3 +1,4 @@
+// JVDesignStudio Service Worker v37 - A1475: the Arcade Game Maker precaches itself (HTML + Phaser + its own modules) on demand, when its page opens, so the engine opens offline on a school network without forcing the ~2.4 MB on every visitor.
 // JVDesignStudio Service Worker v35 - A1444: bump cache so the refreshed mascot art (hero/badge) + mascots.js replace cached concept sheets.
 // JVDesignStudio Service Worker v29 - A207 school-network hardening: timeout only when cached exists, timer cleared, bump cache, Pip quest deps precached
 // v21 - A69 offline-first for tools (school-computer rule): precache Pixel Studio + Sound Studio + World Builder
@@ -11,7 +12,7 @@
 // v33 (A936): Icon Generator Help, real share links and a pinned mobile preview
 // v34 (A648): precache testimonials.js for the honest social-proof strip + form
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
-const CACHE='jvds-v36';
+const CACHE='jvds-v37';
 const CORE=[
   '/',
   '/offline.html',
@@ -44,8 +45,10 @@ const CORE=[
   '/tools/level-designer.html',
   '/style-tool-level-designer.css',
   // A675: top create tools precached for offline-first school use.
-  // arcade-game-maker is excluded on purpose: its HTML is 1.27 MB and it loads a
-  // 1 MB physics bundle, too heavy to force onto school networks. It runtime-caches.
+  // arcade-game-maker is NOT in CORE: its HTML is 1.27 MB and it loads a 1 MB
+  // physics bundle, too heavy to force on every visitor. Instead it precaches
+  // itself on demand (MAKER_DEPS below) the first time its page opens (A1475),
+  // so it opens offline on a school network after one online visit.
   '/tools/trading-card-designer.html',
   '/style-tool-trading-card-designer.css',
   '/tools/colour-palette.html',
@@ -95,6 +98,23 @@ const CORE=[
   '/tools/gallery.html'
 ];
 
+// A1475: the Arcade Game Maker precaches ITSELF on demand, the first time its
+// page opens, so only people who use the engine download its ~2.4 MB (HTML,
+// Phaser physics bundle and its own ES modules). On-demand keeps the global
+// install light for everyone else while still letting the maker open offline.
+const MAKER_DEPS=[
+  '/tools/arcade-game-maker.html',
+  '/phaser-arcade-physics.min.js',
+  '/qrcode-generator.js',
+  '/style-tool-arcade-game-maker.css',
+  '/tool-handoff.js',
+  '/assets/fonts/fonts.css',
+  '/src/arcade-maker/liveConfig.js',
+  '/src/arcade-maker/GameAudio.js',
+  '/src/arcade-maker/genres.js',
+  '/src/arcade-maker/achievements.js'
+];
+
 self.addEventListener('install',e=>{
   e.waitUntil(
     caches.open(CACHE)
@@ -111,6 +131,21 @@ self.addEventListener('activate',e=>{
       .then(keys=>Promise.all(keys.filter(k=>/^jvds-v\d+$/.test(k)&&k!==CACHE).map(k=>caches.delete(k))))
       .then(()=>self.clients.claim())
   );
+});
+
+// A1475: on-demand precache for the Arcade Game Maker. The maker page posts
+// {type:'precache-maker'} once it is controlled; we cache MAKER_DEPS so the
+// engine opens offline afterwards. Replies with 'precache-maker-done' so the
+// page (and tests) can wait for it.
+self.addEventListener('message',e=>{
+  const d=e.data||{};
+  if(d.type==='precache-maker'){
+    e.waitUntil(
+      caches.open(CACHE).then(c=>c.addAll(MAKER_DEPS)).then(()=>{
+        try{ if(e.source&&e.source.postMessage) e.source.postMessage({type:'precache-maker-done'}); }catch(_e){}
+      }).catch(err=>console.warn('[SW] maker precache failed',err))
+    );
+  }
 });
 
 async function remember(cache,request,response){

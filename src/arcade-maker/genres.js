@@ -56,4 +56,56 @@ const GENRE_LABELS = {
   WAVESURVIVAL: 'Wave Survival',
 };
 
-export { GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS };
+// Quality guidance for the maker picker (A1473). READY = finished and a good
+// first pick, BETA = playable but still being improved, EXPERIMENT = an early
+// idea. Kept in this one module so the picker, the starter grid and the tests
+// all read the same source. This is maker guidance, separate from the public
+// arcade GAME_QUALITY map in games-registry.js.
+const GENRE_QUALITY = {
+  SHOOTER:'READY', PLATFORMER:'READY', RUNNER:'READY', FLAPPY:'READY',
+  INVADERS:'READY', PONG:'READY', SNAKE:'READY', ASTEROIDS:'READY',
+  ROGUELIKE:'READY', BREAKER:'READY', RACING:'READY', HOPPER:'READY',
+  BEAT:'READY', PUZZLE:'READY', RHYTHM:'READY', DEFENSE:'READY',
+  PINBALL:'READY', WAVESURVIVAL:'BETA', DODGE:'BETA', MEMORY:'BETA',
+  CLICKER:'BETA', PAPERTOSS:'EXPERIMENT',
+};
+const GENRE_QUALITY_LABELS = {
+  READY:      'Finished, a good first pick',
+  BETA:       'Playable, still being improved',
+  EXPERIMENT: 'Early idea, try it out',
+};
+
+// Distinct core mechanic per genre (A1469). Most genres run on the shared
+// makeBaseScene, so this records what actually makes each one different, and
+// GENRE_VARIANT_OF marks the few that are a deliberate variation of another.
+// See ARCADE_GENRE_AUDIT.md for the full written audit.
+const GENRE_HOOKS = {
+  SHOOTER:      'Free rotation and thrust with momentum and bullets',
+  PLATFORMER:   'Gravity, jumping and a scrolling platform world',
+  DODGE:        'Weave through falling hazards and collect stars',
+  BREAKER:      'Angle a bouncing ball to clear a wall of bricks',
+  RUNNER:       'Auto-run and jump a single gap-timed lane',
+  FLAPPY:       'One-tap flapping through narrowing gaps',
+  INVADERS:     'Hold the line as a descending formation advances',
+  PONG:         'Rally a ball with a paddle against the CPU',
+  SNAKE:        'Grow a grid snake without biting yourself',
+  ASTEROIDS:    'Thrust in open space, large rocks split when hit',
+  ROGUELIKE:    'Twin-stick rooms, clear a room to open the next',
+  RACING:       'Lap a track, hit boost pads, beat the CPU',
+  HOPPER:       'Bounce ever upward between platforms',
+  BEAT:         '1v1 fighter with light, heavy, special and block',
+  PUZZLE:       'Push every crate onto a target',
+  RHYTHM:       'Hit lanes on the beat to build combos',
+  DEFENSE:      'Place towers to stop ten waves',
+  PINBALL:      'Flippers, bumpers and jackpot targets',
+  CLICKER:      'Tap, buy upgrades and snowball your income',
+  MEMORY:       'Flip cards and match pairs against a timer',
+  WAVESURVIVAL: 'Survive escalating waves and boss rounds',
+  PAPERTOSS:    'Flick shots with wind and physics',
+};
+const GENRE_VARIANT_OF = {
+  WAVESURVIVAL: 'SHOOTER',  // wave-based take on the top-down shooter
+  DODGE:        'RUNNER',   // avoidance loop without the auto-run
+};
+
+export { GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS, GENRE_QUALITY, GENRE_QUALITY_LABELS, GENRE_HOOKS, GENRE_VARIANT_OF };
