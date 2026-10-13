@@ -261,6 +261,29 @@ window.JVDS_GAMES = [
     "arcadeSession": "3-5 min",
     "age": "Ages 8-14",
     "learning": "Timing · Coordination"
+  },
+  {
+    "id": "critter-whack",
+    "thumb": "assets/game-thumbs/critter-whack.webp",
+    "cat": "Action",
+    "file": "critter-whack-page.html",
+    "title": "Critter Whack: Ranger Sort",
+    "tag": "Reaction · Sorting",
+    "emoji": "🐹",
+    "cover": "CritterWhackCover.webp",
+    "bg": "linear-gradient(135deg,#234020,#3a6b2e)",
+    "kids": true,
+    "desc": "Read the ranger clue, then tap only the critters that fit the habitat, movement or behaviour. Quick sorting fun, but watch out for hazards.",
+    "difficulty": "Easy to learn",
+    "session": "3-5 min",
+    "controls": "Read ranger clues, tap matching critters, avoid hazards",
+    "storyHook": "Echo is sorting the forest rescue and the wrong critter is the wrong home.",
+    "character": "Echo",
+    "objective": "Read the habitat clue and send each critter to the right place.",
+    "finishLine": "Every critter is home, your streak is counted and the forest settles.",
+    "arcadeSession": "3-5 min",
+    "age": "Ages 5-9",
+    "learning": "Reaction · Sorting"
   }
 ];
 
@@ -283,7 +306,8 @@ window.JVDS_GAME_QUALITY = {
   "highway-dodge": "BETA",
   "cozy-cafe-match": "READY",
   "biscuit-clicker": "BETA",
-  "sky-high-friends": "BETA"
+  "sky-high-friends": "BETA",
+  "critter-whack": "BETA"
 };
 (function () {
   var labels = window.JVDS_GAME_QUALITY || {};
