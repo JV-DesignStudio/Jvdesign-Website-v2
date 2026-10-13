@@ -80,6 +80,23 @@ async function probe(browser, width, height, label){
   });
   await delay(900);
 
+  // game-shell.js must NOT re-root the page. It used to pick <canvas id=game> as
+  // the immersive root (z-index 99990), which covered Rustfall's own menus so a
+  // real tap on CAMPAIGN / ENTER landed on the canvas and did nothing. Real
+  // browsers only: the shell bails under navigator.webdriver, so call enter()
+  // directly to reproduce the exact function the PLAY click runs.
+  const shellRoot = await page.evaluate(()=>{
+    if(!window.JVDSGameShell) return {shell:false};
+    window.JVDSGameShell.enter();
+    const rooted=document.getElementById('game').classList.contains('jvds-root');
+    const r=document.getElementById('play-btn').getBoundingClientRect();
+    const top=document.elementFromPoint(r.x+r.width/2, r.y+r.height/2);
+    const overCanvas=!!(top && top.id==='game');
+    window.JVDSGameShell.exit();
+    return {shell:true, rooted, overCanvas, top: top?(top.id||top.tagName):'none'};
+  });
+  check(`[${label}] game-shell does not cover the menus`, shellRoot.rooted===false && shellRoot.overCanvas===false, JSON.stringify(shellRoot));
+
   // Start the game: PLAY -> CAMPAIGN -> ENTER THE WASTELAND -> pick a biome.
   const started = await page.evaluate(()=>{
     const q=id=>document.getElementById(id);
