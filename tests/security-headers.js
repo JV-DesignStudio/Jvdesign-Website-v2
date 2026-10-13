@@ -110,7 +110,7 @@ const dupes = [];
 for (const p of pages) {
   const s = fs.readFileSync(p, 'utf8');
   if (!s.includes('<head')) continue; // fragment, not a full page
-  const count = s.split('http-equiv="Content-Security-Policy"').length - 1;
+  const count = (s.match(/<meta[^>]*http-equiv=["']Content-Security-Policy["']/gi) || []).length;
   if (count === 0) { missing.push(path.relative(ROOT, p)); continue; }
   if (count > 1) { dupes.push(path.relative(ROOT, p)); continue; }
   withCsp++;
