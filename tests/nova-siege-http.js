@@ -110,20 +110,24 @@ async function content(browser, base) {
   await page.evaluate(() => document.getElementById('startBtn').click());
   await sleep(300);
 
-  // Force a later stage so the new enemy types are eligible, then collect kinds.
+  // Force a later stage so the new enemy types are eligible. Sampling the spawn
+  // table is deterministic; the old short live window could miss a type by chance
+  // (each new kind is only ~7-12% per roll) and reported a false failure.
   await page.evaluate(() => { window.__nova.run.stage = 6; window.__nova.run.enemies.length = 0; });
-  const kinds = new Set();
-  for (let i = 0; i < 90; i++) {
-    await sleep(70);
-    const ks = await page.evaluate(() => window.__nova.enemyKinds);
-    ks.forEach(k => kinds.add(k));
+  const sampled = await page.evaluate(() => { const s = new Set(); for (let i = 0; i < 800; i++) s.add(window.__nova.pickKind()); return [...s]; });
+  const newKinds = ['diver', 'gunner', 'splitter'].filter(k => sampled.includes(k));
+  check('content: new enemy types (diver/gunner/splitter) are reachable at stage 6', newKinds.length === 3, sampled.join(','));
+  // ...and enemies really do spawn in a live run.
+  let live = 0;
+  for (let i = 0; i < 50; i++) {
+    await sleep(60);
     // A cleared wave now opens the roguelike draft, which pauses spawning. Pick
-    // the first card so the run keeps producing enemies for the rest of the probe.
+    // the first card so the run keeps producing enemies.
     await page.evaluate(() => { if (window.__nova.draftOpen) { const c = document.querySelector('#draftCards .card'); if (c) c.click(); } });
-    if (['diver', 'gunner', 'splitter'].every(k => kinds.has(k))) break;
+    live = Math.max(live, await page.evaluate(() => window.__nova.enemyKinds.length));
+    if (live > 0) break;
   }
-  const newKinds = ['diver', 'gunner', 'splitter'].filter(k => kinds.has(k));
-  check('content: new enemy types spawn (diver/gunner/splitter)', newKinds.length >= 2, newKinds.join(',') || 'none of ' + [...kinds].join(','));
+  check('content: enemies spawn in the live run', live >= 1, 'max=' + live);
 
   // Boss cycles through all three types by stage.
   const bossTypes = await page.evaluate(() => {
@@ -352,6 +356,61 @@ async function roguelike(browser, base) {
   await page.close();
 }
 
+async function depth(browser, base) {
+  const page = await browser.newPage();
+  const errors = watch(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/nova-siege.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => document.getElementById('startBtn').click());
+  await sleep(250);
+
+  // Run level starts at 1 and rises with every drafted upgrade.
+  const lv0 = await page.evaluate(() => window.__nova.runLevel);
+  await page.evaluate(() => { window.__nova.run.waveKills = window.__nova.run.waveTarget; window.__nova.forceWave(); });
+  await sleep(130);
+  await page.click('#draftCards .card');
+  await sleep(130);
+  const lv1 = await page.evaluate(() => window.__nova.runLevel);
+  check('depth: run level rises when an upgrade is taken', lv1 === lv0 + 1, lv0 + '->' + lv1);
+
+  // Wingman drone: added by the upgrade, orbits and fires at a target.
+  await page.evaluate(() => { const n = window.__nova, r = n.run; r.enemies.push({ kind: 'ufo', pattern: 'straight', x: r.px, y: r.py - 160, vy: 0, t: 0, hp: 999, r: 8, spr: n.sprites.ufo, dir: 1, amp: 0, freq: 0, fire: 999 }); n.applyRunUpgrade('drone'); });
+  await sleep(140);
+  const drone = await page.evaluate(() => { const d = window.__nova.run.drones[0]; return { n: window.__nova.runDrones, x: d ? Math.round(d.x) : null, y: d ? Math.round(d.y) : null }; });
+  check('depth: a wingman drone is added and orbits the ship', drone.n >= 1 && drone.x != null, JSON.stringify(drone));
+  let droneFired = false;
+  for (let i = 0; i < 40; i++) {
+    await sleep(60);
+    droneFired = await page.evaluate(() => window.__nova.run.bullets.some(b => !b.eb && Math.hypot(b.vx, b.vy) > 3 && Math.abs(b.vx) > 1));
+    if (droneFired) break;
+  }
+  check('depth: the wingman drone fires at the target', droneFired);
+
+  // Explosive rounds: killing one enemy blasts a neighbour into pieces.
+  await page.evaluate(() => {
+    const n = window.__nova, r = n.run; r.runUps.explosive = 1; r.blasts.length = 0; r.waveKills = 0; r.enemies.length = 0;
+    r.enemies.push({ kind: 'ufo', pattern: 'straight', x: r.px, y: r.py - 70, vy: 0, t: 0, hp: 1, r: 8, spr: n.sprites.ufo, dir: 1, amp: 0, freq: 0, fire: 999 });
+    r.enemies.push({ kind: 'ufo', pattern: 'straight', x: r.px + 18, y: r.py - 70, vy: 0, t: 0, hp: 1, r: 8, spr: n.sprites.ufo, dir: 1, amp: 0, freq: 0, fire: 999 });
+  });
+  await sleep(1000);
+  const expl = await page.evaluate(() => ({ left: window.__nova.run.enemies.length }));
+  check('depth: explosive rounds chain a blast to a nearby enemy', expl.left < 2, JSON.stringify(expl));
+
+  // Dismiss any draft/shop the kills may have opened, then test manual pause.
+  await page.evaluate(() => { if (window.__nova.draftOpen) { const c = document.querySelector('#draftCards .card'); if (c) c.click(); } if (window.__nova.shopOpen) document.getElementById('shopLeave').click(); });
+  await sleep(160);
+  const paused0 = await page.evaluate(() => window.__nova.paused);
+  await page.click('#pauseBtn');
+  await sleep(90);
+  const paused1 = await page.evaluate(() => window.__nova.paused);
+  await page.click('#pauseBtn');
+  await sleep(90);
+  const paused2 = await page.evaluate(() => window.__nova.paused);
+  check('depth: the pause button toggles pause and resume', !paused0 && paused1 && !paused2, JSON.stringify({ paused0, paused1, paused2 }));
+  check('depth: no page errors', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
 (async () => {
   await withServer(async ({ base, browser }) => {
     await desktop(browser, base);
@@ -361,6 +420,7 @@ async function roguelike(browser, base) {
     await progression(browser, base);
     await juice(browser, base);
     await roguelike(browser, base);
+    await depth(browser, base);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL NOVA SIEGE CHECKS PASSED');
   process.exit(failures ? 1 : 0);
