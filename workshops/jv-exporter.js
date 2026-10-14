@@ -619,6 +619,7 @@
   var STYLE_ID = 'jv-export-style';
 
   var FORMATS = [
+    { id: 'bundle', icon: '&#128194;', label: 'Asset bundle', sub: 'Model + README + preview (zip)' },
     { id: 'obj', icon: '&#8681;', label: 'OBJ + MTL', sub: 'Blender, Tinkercad import' },
     { id: 'glb', icon: '&#128230;', label: 'GLB', sub: 'Unity, Godot, Roblox Studio' },
     { id: 'fbx', icon: '&#127916;', label: 'FBX', sub: 'Unreal, Blender, Maya' },
@@ -661,6 +662,8 @@
       '.jv-fmt i{font-style:normal;font-size:1.05rem}',
       '.jv-fmt u{text-decoration:none;font-weight:400;font-size:.7rem;color:#9db0e2}',
       '.jv-export-status{min-height:20px;margin-top:12px;font-size:.79rem;color:var(--jv-acc,#a9c0ff)}',
+      '.jv-share-code{margin-top:11px;width:100%;padding:9px 12px;border-radius:10px;border:1px dashed rgba(120,140,255,.4);background:rgba(120,140,255,.08);color:#c7d3ff;font:600 .8rem Inter,system-ui,sans-serif;cursor:pointer}',
+      '.jv-share-code:hover{background:rgba(120,140,255,.16)}',
       '@media(max-width:480px){.jv-export-grid{grid-template-columns:repeat(auto-fit,minmax(124px,1fr))}}'
     ].join('');
     document.head.appendChild(s);
@@ -681,7 +684,7 @@
     b.type = 'button';
     b.className = 'jv-x-btn' + (host.classList.contains('hdr-right') ? ' quick-btn' : '');
     b.setAttribute('data-jv-export', '1');
-    b.title = 'Download exactly what you built, as OBJ, GLB, FBX or STL';
+    b.title = 'Download exactly what you built: a zip bundle, OBJ, GLB, FBX or STL, or a share code';
     b.innerHTML = '&#8681; Export';
     if (host.classList.contains('hdr-right')) {
       b.style.cssText = 'background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24;color:#fff';
@@ -717,6 +720,206 @@
     });
   }
 
+  /* ---------- asset bundle (model + README + preview, as one zip) ----------
+     One download a learner can keep on a school computer: the model in the
+     profile's best format, a README that names the units and how to open it,
+     and a preview picture. For locked-down devices that block downloads,
+     shareCode() hands back a copy and paste code instead. */
+
+  function strBytes(s) { return new TextEncoder().encode(String(s)); }
+
+  function dataURLBytes(url) {
+    var bin = atob(url.slice(url.indexOf(',') + 1));
+    var out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  function crc32(data) {
+    var t = crc32.table;
+    if (!t) {
+      t = crc32.table = [];
+      for (var n = 0; n < 256; n++) {
+        var c = n;
+        for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        t[n] = c >>> 0;
+      }
+    }
+    var crc = 0xFFFFFFFF;
+    for (var i = 0; i < data.length; i++) crc = (crc >>> 8) ^ t[(crc ^ data[i]) & 0xFF];
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function u16(n) { return [n & 0xFF, (n >>> 8) & 0xFF]; }
+  function u32(n) { return [n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF]; }
+
+  // Store only (no compression): every unzip tool reads it and the writer stays
+  // small enough to ship with the page. Same method used across the site.
+  function zip(files) {
+    var enc = new TextEncoder(), chunks = [], central = [], off = 0;
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var nb = enc.encode(f.name), data = f.data, crc = crc32(data);
+      var loc = [].concat(u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nb.length), u16(0));
+      var h = new Uint8Array(loc.length + nb.length); h.set(loc, 0); h.set(nb, loc.length);
+      chunks.push(h); chunks.push(data);
+      var cd = [].concat(u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(data.length), u32(data.length), u16(nb.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(off));
+      var cdh = new Uint8Array(cd.length + nb.length); cdh.set(cd, 0); cdh.set(nb, cd.length);
+      central.push(cdh); off += h.length + data.length;
+    }
+    var cdSize = 0, total = 0;
+    for (var a = 0; a < chunks.length; a++) total += chunks[a].length;
+    for (var b = 0; b < central.length; b++) { cdSize += central[b].length; total += central[b].length; }
+    var eocd = new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(cdSize), u32(off), u16(0)));
+    total += eocd.length;
+    var out = new Uint8Array(total), p = 0;
+    for (var m = 0; m < chunks.length; m++) { out.set(chunks[m], p); p += chunks[m].length; }
+    for (var q = 0; q < central.length; q++) { out.set(central[q], p); p += central[q].length; }
+    out.set(eocd, p);
+    return out;
+  }
+
+  function importSteps(profile) {
+    var id = profile ? profile.id : 'generic';
+    var steps = {
+      generic: 'Open it in any 3D app. In Blender: File, then Import, then glTF 2.0 (.glb).',
+      roblox: 'In Roblox Studio: Home, then Import 3D, then pick the .glb. Distances are in studs.',
+      unreal: 'In Unreal: Import, then choose the .glb. Distances are in centimetres and the model is Z-up.',
+      godot: 'Drag the .glb into your Godot scene. Distances are in metres.',
+      unity: 'Drop the .glb into your Unity Assets folder. Distances are in metres.'
+    };
+    return steps[id] || steps.generic;
+  }
+
+  function readmeText(model, tool, modelFile, hasPreview) {
+    var s = summary(model);
+    var profile = profileById(model.profile);
+    var lines = [];
+    lines.push('# ' + (model.name || 'my model'));
+    lines.push('');
+    lines.push('Made in the JVDesignStudio ' + (tool || '3D builder') + ' (jvdesignstudio.co.uk).');
+    lines.push('It runs in the browser with no install, so this bundle is everything you need to keep it.');
+    lines.push('');
+    lines.push('## What is in this bundle');
+    lines.push('- ' + modelFile + ': your model');
+    if (hasPreview) lines.push('- preview.png: a picture of your build');
+    lines.push('- README.md: this file');
+    lines.push('');
+    lines.push('## What it is');
+    lines.push('- Parts: ' + s.parts);
+    lines.push('- Triangles: ' + s.triangles);
+    lines.push('- Size: ' + fmtNum(s.size[0]) + ' x ' + fmtNum(s.size[1]) + ' x ' + fmtNum(s.size[2]) + ' ' + s.units);
+    lines.push('- Units in the file: 1 unit = 1 ' + s.units);
+    lines.push('- Engine profile: ' + profile.engine + ', ' + (model.axis === 'z' ? 'Z-up' : 'Y-up'));
+    lines.push('');
+    lines.push('## How to open it');
+    lines.push(importSteps(profile));
+    lines.push('');
+    lines.push('Keep building at jvdesignstudio.co.uk.');
+    return lines.join('\n') + '\n';
+  }
+
+  // A picture of the build, drawn off screen so it never disturbs the model the
+  // learner is looking at (the group is cloned, not moved).
+  function previewPNG() {
+    try {
+      var THREE = global.THREE;
+      var g = root();
+      if (!THREE || !THREE.WebGLRenderer || !g) return null;
+      var size = 512;
+      var ren = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      ren.setPixelRatio(1); ren.setSize(size, size);
+      ren.setClearColor(0x0d1220, 1);
+      var scene = new THREE.Scene();
+      var clone = g.clone(true);
+      scene.add(clone);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+      var key = new THREE.DirectionalLight(0xffffff, 0.85); key.position.set(3, 6, 4); scene.add(key);
+      var fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-4, 2, -3); scene.add(fill);
+      clone.updateWorldMatrix(true, true);
+      var box = new THREE.Box3().setFromObject(clone);
+      var centre = box.getCenter(new THREE.Vector3());
+      var dim = box.getSize(new THREE.Vector3());
+      var span = Math.max(dim.x, dim.y, dim.z) || 1;
+      var cam = new THREE.PerspectiveCamera(35, 1, span / 100, span * 100);
+      var dir = new THREE.Vector3(1, 0.65, 1).normalize();
+      cam.position.copy(centre).addScaledVector(dir, span * 2.4);
+      cam.lookAt(centre);
+      ren.render(scene, cam);
+      var url = ren.domElement.toDataURL('image/png');
+      ren.dispose();
+      if (ren.forceContextLoss) { try { ren.forceContextLoss(); } catch (e) { /* optional */ } }
+      return dataURLBytes(url);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function finishBundle(model, tool, primary, extras) {
+    var files = [{ name: primary.name, data: primary.data }];
+    if (extras) for (var i = 0; i < extras.length; i++) files.push(extras[i]);
+    var preview = previewPNG();
+    if (preview) files.push({ name: 'preview.png', data: preview });
+    files.push({ name: 'README.md', data: strBytes(readmeText(model, tool, primary.name, !!preview)) });
+    var bytes = zip(files);
+    return {
+      name: model.fileBase + '-bundle.zip',
+      entries: files.map(function (f) { return f.name; }),
+      bytes: bytes,
+      blob: new Blob([bytes], { type: 'application/zip' })
+    };
+  }
+
+  // Model first (GLB when the exporter is ready, otherwise OBJ + MTL), then the
+  // preview and README. Always resolves to a bundle a learner can keep.
+  function makeBundle(model, tool) {
+    var toolName = tool || (UI && UI.tool) || 'the 3D builder';
+    return new Promise(function (resolve) {
+      glb(root(), model).then(function (r) {
+        var bytes = r && r.buffer ? new Uint8Array(r.buffer) : null;
+        if (!bytes) throw new Error('no glb');
+        resolve(finishBundle(model, toolName, { name: tagged(model, 'glb'), data: bytes }));
+      }, function () {
+        var o = obj(model, toolName);
+        resolve(finishBundle(model, toolName,
+          { name: tagged(model, 'obj'), data: strBytes(o.obj) },
+          [{ name: tagged(model, 'mtl'), data: strBytes(o.mtl) }]));
+      });
+    });
+  }
+
+  // No download allowed? Copy this and paste it anywhere. It carries the model
+  // and the same facts the README would.
+  function shareCode(model, tool) {
+    var toolName = tool || (UI && UI.tool) || 'the 3D builder';
+    // Prefer the builder's own compact state: it reloads the exact build and is
+    // small enough to paste anywhere. Not every builder exposes one yet, so fall
+    // back to a portable code that carries the model itself.
+    if (global._builderGetState) {
+      try {
+        var st = global._builderGetState();
+        if (st && typeof st === 'object') return 'JVDS1S.' + btoa(unescape(encodeURIComponent(JSON.stringify(st))));
+      } catch (e) { /* fall through to the portable code */ }
+    }
+    var o = obj(model, toolName);
+    var payload = { v: 1, tool: toolName, name: model.name, units: model.units, profile: model.profile, obj: o.obj };
+    return 'JVDS1M.' + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  }
+
+  function copyText(txt) {
+    var big = txt.length > 20000;
+    var done = big ? 'Share code copied. It is large, so the zip bundle above may be easier to keep.'
+                   : 'Share code copied. Paste it anywhere.';
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(function () { say(done); },
+          function () { say('Copy was blocked. Your share code is ready below.'); try { window.prompt('Share code', txt); } catch (e) { /* optional */ } });
+      } else {
+        say('Share code ready. Copy it below.');
+        window.prompt('Share code', txt);
+      }
+    } catch (e) { try { window.prompt('Share code', txt); } catch (e2) { /* optional */ } }
+  }
+
   function factsHTML(model) {
     var s = summary(model);
     var cells = [
@@ -750,12 +953,18 @@
           '<select id="jvProfileSelect" aria-label="Which engine is this for?">' + profileOptions() + '</select></label>' +
         '<p class="jv-export-profile-note" id="jvProfileNote"></p>' +
         '<div class="jv-export-grid" id="jvExportGrid"></div>' +
+        '<button type="button" class="jv-share-code" id="jvShareCode">Copy share code (no download needed)</button>' +
         '<div class="jv-export-status" id="jvExportStatus" aria-live="polite"></div>' +
       '</div>';
     back.querySelector('.jv-export-x').addEventListener('click', closeDialog);
     back.addEventListener('mousedown', function (e) { if (e.target === back) closeDialog(); });
     back.querySelector('#jvPivotToggle').addEventListener('change', refreshFacts);
     back.querySelector('#jvProfileSelect').addEventListener('change', refreshFacts);
+    back.querySelector('#jvShareCode').addEventListener('click', function () {
+      var pb = back.querySelector('#jvPivotToggle');
+      var m; try { m = modelOf(pb && pb.checked); } catch (e) { say(e.message || String(e)); return; }
+      copyText(shareCode(m, (UI && UI.tool) || 'the 3D builder'));
+    });
     document.body.appendChild(back);
 
     var grid = back.querySelector('#jvExportGrid');
@@ -834,6 +1043,15 @@
         var f = fbx(model, tool);
         download(tagged(model, 'fbx'), new Blob([f.text], { type: 'application/octet-stream' }));
         say('Downloaded ' + tagged(model, 'fbx') + '. Y-up, 1 unit = 1 ' + (model.units === 'mm' ? 'mm' : 'm') + '.');
+      } else if (format === 'bundle') {
+        say('Packing your asset bundle, one moment...');
+        makeBundle(model, tool).then(function (b) {
+          download(b.name, b.blob);
+          say('Downloaded ' + b.name + ' with the model, a README and a preview picture.');
+        }, function (e) {
+          say('Bundle failed: ' + (e && e.message ? e.message : 'unknown error'));
+        });
+        return;
       } else if (format === 'png') {
         if (!UI || !UI.png) { say('PNG is not available in this builder.'); return; }
         UI.png();
@@ -906,6 +1124,12 @@
     installUI: installUI,
     openDialog: openDialog,
     exportFormat: runFormat,
-    version: '1.2.0'
+    currentModel: modelOf,
+    zip: zip,
+    makeBundle: makeBundle,
+    readmeText: readmeText,
+    previewPNG: previewPNG,
+    shareCode: shareCode,
+    version: '1.3.0'
   };
 })(typeof window !== 'undefined' ? window : this);
