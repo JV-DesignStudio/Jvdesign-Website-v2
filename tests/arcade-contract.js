@@ -25,7 +25,7 @@ const ARCADE_CSS = path.join(ROOT, 'style-arcade.css');
 const CHARACTERS = ['Lumo', 'Ember', 'Echo', 'Pip', 'Stardust'];
 const BUCKETS = ['Under 5 min', '3-5 min', '5-10 min'];
 const CONTRACT_FIELDS = ['storyHook', 'character', 'objective', 'finishLine', 'arcadeSession'];
-const MAX_LINEUP = 12;
+const MAX_LINEUP = 13;
 
 const failures = [];
 let passes = 0;

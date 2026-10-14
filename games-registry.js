@@ -284,6 +284,29 @@ window.JVDS_GAMES = [
     "arcadeSession": "3-5 min",
     "age": "Ages 5-9",
     "learning": "Reaction · Sorting"
+  },
+  {
+    "id": "crossy-crew",
+    "thumb": "assets/game-thumbs/crossy-crew.webp",
+    "controlType": "Swipe / D-pad",
+    "cat": "Action",
+    "file": "crossy-crew.html",
+    "title": "Crossy Crew",
+    "tag": "Road Hopper",
+    "emoji": "🐸",
+    "bg": "linear-gradient(135deg,#1a472a,#2e7d32)",
+    "kids": true,
+    "desc": "Pip leads the crew across busy roads and rushing rivers. Hop forward, dodge the traffic, ride the logs and see how far the crew can get.",
+    "difficulty": "Easy to learn",
+    "session": "3-5 min",
+    "controls": "Swipe, arrow keys or the on-screen D-pad to hop",
+    "storyHook": "Pip is leading the crew across the busy road and the traffic never stops.",
+    "character": "Pip",
+    "objective": "Hop the crew forward, dodge the traffic and cross the rivers safely.",
+    "finishLine": "The road finally wins, but your best distance is saved and the crew is ready to hop again.",
+    "arcadeSession": "3-5 min",
+    "age": "Ages 6-12",
+    "learning": "Timing · Looking ahead · Quick decisions"
   }
 ];
 
@@ -307,7 +330,8 @@ window.JVDS_GAME_QUALITY = {
   "cozy-cafe-match": "READY",
   "biscuit-clicker": "BETA",
   "sky-high-friends": "BETA",
-  "critter-whack": "BETA"
+  "critter-whack": "BETA",
+  "crossy-crew": "READY"
 };
 (function () {
   var labels = window.JVDS_GAME_QUALITY || {};

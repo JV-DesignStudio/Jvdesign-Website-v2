@@ -96,7 +96,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#f5792a",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/blender-mod-studio.html"
     },
     {
@@ -466,7 +466,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#e0552f",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/defold-mod-studio.html"
     },
     {
@@ -556,7 +556,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#9C27B0",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/defold-dungeon-workshop.html"
     },
     {
@@ -573,7 +573,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#00BCD4",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/defold-platformer-workshop.html"
     },
     {
@@ -587,7 +587,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#2196F3",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/defold-pong-workshop.html"
     },
     {
@@ -604,7 +604,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#FFC107",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/defold-puzzle-workshop.html"
     },
     {
@@ -618,7 +618,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#4CAF50",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/defold-snake-workshop.html"
     },
     {
@@ -634,7 +634,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#FF9800",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/defold-shooter-workshop.html"
     },
     {
@@ -650,7 +650,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#7c3aed",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/gdevelop-mod-studio.html"
     },
     {
@@ -754,7 +754,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/gdevelop-platformer-workshop.html"
     },
     {
@@ -770,7 +770,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/gdevelop-pointclick-workshop.html"
     },
     {
@@ -784,7 +784,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/gdevelop-pong-workshop.html"
     },
     {
@@ -798,7 +798,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/gdevelop-snake-workshop.html"
     },
     {
@@ -814,7 +814,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/gdevelop-shooter-workshop.html"
     },
     {
@@ -830,7 +830,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/gdevelop-adventure-workshop.html"
     },
     {
@@ -846,7 +846,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#2f9e6b",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/world-builder-3d.html"
     },
     {
@@ -1110,7 +1110,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#2196F3",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/my-first-defold-game.html"
     },
     {
@@ -1180,7 +1180,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#00bfa5",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/my-first-gdevelop-game.html"
     },
     {
@@ -1265,7 +1265,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 0,
       "themeColor": "#ff004d",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/my-first-pico8-game.html"
     },
     {
@@ -1594,7 +1594,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#FF7700",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/start-here.html"
     },
     {
@@ -1654,7 +1654,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#7a5cff",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/voxel-studio.html"
     },
     {
@@ -1760,7 +1760,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#6cbe45",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/gml-mod-studio.html"
     },
     {
@@ -2223,7 +2223,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#e76f00",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/java-mod-studio.html"
     },
     {
@@ -2421,6 +2421,78 @@ window.JVDS_CONTENT = {
       "themeColor": "#ffd166",
       "cover": "/og/js-cheatsheet.webp",
       "url": "/workshops/js-cheatsheet.html"
+    },
+    {
+      "id": "js-breakout-canvas",
+      "title": "JS Breakout Build Canvas",
+      "desc": "",
+      "engine": "JavaScript",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/js-breakout-canvas.html"
+    },
+    {
+      "id": "js-flappy-canvas",
+      "title": "JS Flappy Build Canvas",
+      "desc": "",
+      "engine": "JavaScript",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/js-flappy-canvas.html"
+    },
+    {
+      "id": "js-memory-canvas",
+      "title": "JS Memory Build Canvas",
+      "desc": "",
+      "engine": "JavaScript",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/js-memory-canvas.html"
+    },
+    {
+      "id": "js-platformer-part2-canvas",
+      "title": "JS Platformer Part 2 Build Canvas",
+      "desc": "",
+      "engine": "JavaScript",
+      "difficulty": "intermediate",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/js-platformer-part2-canvas.html"
+    },
+    {
+      "id": "js-snake-canvas",
+      "title": "JS Snake Build Canvas",
+      "desc": "",
+      "engine": "JavaScript",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/js-snake-canvas.html"
     },
     {
       "id": "minecraft-custom-block-mod",
@@ -3107,7 +3179,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/pico8-dungeon-workshop.html"
     },
     {
@@ -3123,7 +3195,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/pico8-match3-workshop.html"
     },
     {
@@ -3139,7 +3211,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/pico8-platformer-workshop.html"
     },
     {
@@ -3153,7 +3225,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/pico8-pong-workshop.html"
     },
     {
@@ -3167,7 +3239,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/pico8-snake-workshop.html"
     },
     {
@@ -3183,7 +3255,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/pico8-shooter-workshop.html"
     },
     {
@@ -3288,7 +3360,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#ff004d",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/pico8-studio.html"
     },
     {
@@ -3615,7 +3687,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#7c3aed",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/roblox-corruption-obby-workshop.html"
     },
     {
@@ -3683,6 +3755,66 @@ window.JVDS_CONTENT = {
       "url": "/workshops/roblox-simulator-workshop.html"
     },
     {
+      "id": "roblox-adventure-canvas",
+      "title": "Roblox Adventure Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-adventure-canvas.html"
+    },
+    {
+      "id": "roblox-battle-canvas",
+      "title": "Roblox Battle Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-battle-canvas.html"
+    },
+    {
+      "id": "roblox-collapse-obby-canvas",
+      "title": "Roblox Collapse Obby Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "obby"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-collapse-obby-canvas.html"
+    },
+    {
+      "id": "roblox-corruption-obby-canvas",
+      "title": "Roblox Corruption Obby Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "obby"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-corruption-obby-canvas.html"
+    },
+    {
       "id": "roblox-creator-journey",
       "title": "Roblox Creator Journey, Learn to Build Cosmetics",
       "desc": "An interactive step-by-step guide for ages 12+ to learn how to create Roblox cosmetics, t-shirts, clothing, and 3D accessories. No experience needed.",
@@ -3697,6 +3829,22 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/roblox-cover.webp",
       "url": "/workshops/roblox-creator-journey.html"
+    },
+    {
+      "id": "roblox-horror-canvas",
+      "title": "Roblox Horror Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "horror"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-horror-canvas.html"
     },
     {
       "id": "roblox-mod-studio",
@@ -3715,6 +3863,94 @@ window.JVDS_CONTENT = {
       "url": "/workshops/roblox-mod-studio.html"
     },
     {
+      "id": "roblox-obby-canvas",
+      "title": "Roblox Obby Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "obby"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-obby-canvas.html"
+    },
+    {
+      "id": "roblox-pirate-canvas",
+      "title": "Roblox Pirate Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-pirate-canvas.html"
+    },
+    {
+      "id": "roblox-sim-lockdown-1-canvas",
+      "title": "Roblox Sim Lockdown Part 1 Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-sim-lockdown-1-canvas.html"
+    },
+    {
+      "id": "roblox-sim-lockdown-2-canvas",
+      "title": "Roblox Sim Lockdown Part 2 Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "intermediate",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-sim-lockdown-2-canvas.html"
+    },
+    {
+      "id": "roblox-sim-lockdown-3-canvas",
+      "title": "Roblox Sim Lockdown Part 3 Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-sim-lockdown-3-canvas.html"
+    },
+    {
+      "id": "roblox-simulator-canvas",
+      "title": "Roblox Simulator Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "simulator"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-simulator-canvas.html"
+    },
+    {
       "id": "roblox-studio-cheatsheet",
       "title": "Roblox Studio &amp; Lua Cheat Sheet",
       "desc": "Printable Roblox Studio and Lua cheat sheet, keyboard shortcuts, common services, events, instance tricks and where scripts go. Free for kids and parents.",
@@ -3727,6 +3963,22 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/og/roblox-studio-cheatsheet.webp",
       "url": "/workshops/roblox-studio-cheatsheet.html"
+    },
+    {
+      "id": "roblox-tycoon-canvas",
+      "title": "Roblox Tycoon Build Canvas",
+      "desc": "",
+      "engine": "Roblox",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [
+        "tycoon"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/roblox-tycoon-canvas.html"
     },
     {
       "id": "roblox-sim-lockdown-1-workshop",
@@ -4559,7 +4811,7 @@ window.JVDS_CONTENT = {
       ],
       "steps": 6,
       "themeColor": "#0b7fab",
-      "cover": "og/learn.webp",
+      "cover": "/og/learn.webp",
       "url": "/workshops/tinkercad-mod-studio.html"
     },
     {
@@ -5044,6 +5296,19 @@ window.JVDS_CONTENT = {
       "age": "Ages 5-9",
       "character": null,
       "url": "/games/critter-whack-page.html"
+    },
+    {
+      "id": "crossy-crew",
+      "title": "Crossy Crew",
+      "tag": "Road Hopper",
+      "emoji": "🐸",
+      "category": "Action",
+      "bg": "linear-gradient(135deg,#1a472a,#2e7d32)",
+      "desc": "Pip leads the crew across busy roads and rushing rivers. Hop forward, dodge the traffic, ride the logs and see how far the crew can get.",
+      "kids": true,
+      "age": "Ages 6-12",
+      "character": null,
+      "url": "/games/crossy-crew.html"
     }
   ],
   "tools": [
@@ -5957,9 +6222,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-13T20:13:56.243Z",
-    "workshops": 325,
-    "games": 12,
+    "generated": "2026-10-14T14:33:32.980Z",
+    "workshops": 342,
+    "games": 13,
     "tools": 48,
     "books": 5,
     "engines": {
@@ -5971,13 +6236,13 @@ window.JVDS_CONTENT = {
       "GML/GameMaker": 11,
       "Godot": 17,
       "Java": 15,
-      "JavaScript": 7,
+      "JavaScript": 12,
       "Minecraft": 18,
       "MUGEN": 17,
       "OpenRCT2": 13,
       "PICO-8": 13,
       "Python": 19,
-      "Roblox": 15,
+      "Roblox": 27,
       "Scratch": 13,
       "Stardew Valley": 15,
       "Terraria": 15,
