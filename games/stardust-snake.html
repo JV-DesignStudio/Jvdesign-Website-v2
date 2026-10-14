@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<script src="/assets/js/theme-init.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Stardust Snake | JVDS Arcade</title>
+<meta name="description" content="Guide a trail of stardust through the night sky, collect fallen stars and grow your constellation in this classic snake game.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/games/stardust-snake.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/games/stardust-snake.html">
+<meta property="og:title" content="Stardust Snake | JVDS Arcade">
+<meta property="og:description" content="Guide a trail of stardust through the night sky, collect fallen stars and grow your constellation in this classic snake game.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Stardust Snake | JVDS Arcade">
+<meta name="twitter:description" content="Guide a trail of stardust through the night sky, collect fallen stars and grow your constellation.">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/hub-games.png">
+<link rel="manifest" href="../manifest.json">
+<link rel="icon" href="../logo.png" type="image/png">
+<script defer src="../analytics-loader.js"></script>
+<script src="../game-system-score.js"></script>
+<script src="../game-system-save.js"></script>
+<script src="../game-score.js"></script>
+<script src="../game-system.js"></script>
+<script src="../audio-effects.js"></script>
+<link rel="stylesheet" href="../game-system.css?v=18">
+<link rel="stylesheet" href="../style-mascots.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#03010f;color:#efe9ff;font-family:Inter,system-ui,-apple-system,sans-serif;overflow:hidden;height:100dvh}
+.snake-wrap{display:flex;flex-direction:column;height:100dvh;max-width:640px;margin:0 auto;position:relative;background:radial-gradient(120% 80% at 50% 0%,#0e0036 0%,#03010f 62%)}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:rgba(3,1,15,.55);z-index:10;border-bottom:1px solid rgba(167,139,250,.18)}
+.top-bar a{color:#c8b6ff;text-decoration:none;font-size:14px;font-weight:700}
+.top-bar .title{font-weight:800;font-size:16px;color:#E8A800;letter-spacing:.01em;display:flex;align-items:center;gap:6px}
+.top-bar button{background:rgba(167,139,250,.16);border:1px solid rgba(200,182,255,.35);color:#efe9ff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.hud{display:flex;justify-content:space-around;padding:6px 12px;background:rgba(3,1,15,.35);font-size:12px;z-index:10}
+.hud div{text-align:center}
+.hud small{display:block;color:#c8b6ff;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.hud b{display:block;font-size:19px;color:#E8A800;font-weight:800}
+.stage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px}
+canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box-shadow:0 0 0 1px rgba(167,139,250,.22),0 18px 50px rgba(0,0,0,.55)}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:rgba(3,1,15,.82);backdrop-filter:blur(3px);z-index:20;border-radius:14px;margin:8px}
+.overlay h1,.overlay h2{font-size:clamp(24px,7vw,34px);color:#E8A800;text-shadow:0 0 22px rgba(232,168,0,.35)}
+.overlay p{color:#c8b6ff;max-width:360px;line-height:1.55;font-size:.95rem}
+.overlay .stats{display:flex;gap:26px;margin:4px 0}
+.overlay .stats div{text-align:center}
+.overlay .stats b{display:block;font-size:24px;color:#E8A800}
+.overlay .stats small{color:#c8b6ff;font-size:12px}
+.btn{background:linear-gradient(135deg,#c98a2e,#E8A800);color:#1a1208;border:none;padding:13px 34px;border-radius:999px;font-size:16px;font-weight:800;cursor:pointer;font:inherit}
+.btn:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent;border:2px solid rgba(200,182,255,.4);color:#c8b6ff;padding:10px 24px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;font:inherit}
+.hidden{display:none!important}
+.dpad{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:grid;grid-template:auto auto auto / auto auto auto;gap:5px;z-index:12}
+.dpad button{background:rgba(232,168,0,.16);border:2px solid rgba(232,168,0,.45);color:#f6dfa0;width:56px;height:50px;border-radius:12px;font-size:20px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.dpad button:active{background:rgba(232,168,0,.4)}
+.dpad .empty{visibility:hidden}
+.coach{position:absolute;top:10px;left:12px;right:12px;display:flex;gap:8px;align-items:center;background:rgba(167,139,250,.14);border:1px solid rgba(167,139,250,.3);border-radius:12px;padding:7px 12px;font-size:.8rem;color:#e6dcff;z-index:11;pointer-events:none}
+.coach b{color:#E8A800}
+@media (pointer:coarse){.coach{display:none}}
+</style>
+</head>
+<body>
+<main class="snake-wrap" data-jvds-root>
+  <div class="top-bar">
+    <a href="../arcade.html">&larr; Arcade</a>
+    <span class="title"><span aria-hidden="true">✨</span> Stardust Snake</span>
+    <button id="restart" type="button">Restart</button>
+  </div>
+  <div class="hud">
+    <div><small>Stars</small><b id="score">0</b></div>
+    <div><small>Trail</small><b id="length">3</b></div>
+    <div><small>Best</small><b id="best">0</b></div>
+  </div>
+  <div class="stage">
+    <canvas id="game" aria-label="Stardust Snake play field"></canvas>
+
+    <div class="coach" id="coach"><b>Stardust:</b> steer your trail into the fallen stars and the night sky brightens.</div>
+
+    <div class="dpad" id="dpad">
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+      <button id="dUp" aria-label="Steer up">▲</button>
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+      <button id="dLeft" aria-label="Steer left">◀</button>
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+      <button id="dRight" aria-label="Steer right">▶</button>
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+      <button id="dDown" aria-label="Steer down">▼</button>
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+    </div>
+
+    <div class="overlay" id="startScreen">
+      <h1>✨ Stardust Snake</h1>
+      <p>A trail of stardust drifts through the empty sky. Collect the fallen stars to grow your constellation, but never drift into the edge or your own light.</p>
+      <p style="font-size:.82rem;color:#9d8ec9">Arrow keys or W A S D to steer. On a phone, swipe or use the arrows.</p>
+      <button class="btn" id="playBtn" data-jvds-play>Play</button>
+      <button class="btn-ghost" data-go="../arcade.html">Back to Arcade</button>
+    </div>
+
+    <div class="overlay hidden" id="overScreen">
+      <h2 id="overTitle">Your constellation faded</h2>
+      <div class="stats">
+        <div><b id="overScore">0</b><small>Stars</small></div>
+        <div><b id="overBest">0</b><small>Best</small></div>
+      </div>
+      <p id="overLine">Stardust gathers the light back up. Try a longer trail next time.</p>
+      <button class="btn" id="againBtn">Play again</button>
+      <button class="btn-ghost" data-go="../arcade.html">Back to Arcade</button>
+    </div>
+  </div>
+</main>
+
+<script src="/assets/js/inline/games-stardust-snake-1.js"></script>
+<script defer src="../cookie-consent.js"></script>
+<script defer src="../mascots.js"></script>
+<script defer src="../game-shell.js"></script>
+</body>
+</html>
