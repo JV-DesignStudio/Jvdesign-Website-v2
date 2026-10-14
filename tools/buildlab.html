@@ -3529,7 +3529,16 @@ function handleImportGLTF(input) {
         const json = JSON.parse(payload);
         (json.buffers || []).forEach(function(b) {
           if (b && typeof b.uri === 'string' && /^data:/i.test(b.uri)) {
-            try { const blob = dataURLtoBlob(b.uri); if (blob) b.uri = URL.createObjectURL(blob); } catch (err) {}
+            // Decode the data URI ourselves (self-contained, no shared helper)
+            // so the buffer can be fetched from a blob: URL.
+            try {
+              const parts = b.uri.split(',');
+              const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'application/octet-stream';
+              const bin = atob(parts[1] || '');
+              const bytes = new Uint8Array(bin.length);
+              for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+              b.uri = URL.createObjectURL(new Blob([bytes], { type: mime }));
+            } catch (err) {}
           }
         });
         payload = JSON.stringify(json);

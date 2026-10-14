@@ -109,7 +109,21 @@ function buildGltf() {
     check('imports add to the scene (no destructive clear)', total === 2, 'blocks=' + total);
 
     // 3. Round-trip: re-export the imported parts as OBJ text and as GLB.
-    const objText = await page.evaluate(() => window.buildOBJText());
+    const objText = await page.evaluate(async () => {
+      // Capture the real OBJ download rather than reaching into an internal
+      // helper, so this stays valid whatever the export code is called.
+      let captured = null;
+      const origCreate = URL.createObjectURL;
+      const origClick = HTMLAnchorElement.prototype.click;
+      URL.createObjectURL = function (blob) { captured = blob; return 'blob:stub'; };
+      HTMLAnchorElement.prototype.click = function () {};
+      try { window.exportOBJ(); } finally {
+        URL.createObjectURL = origCreate;
+        HTMLAnchorElement.prototype.click = origClick;
+      }
+      await new Promise((r) => setTimeout(r, 150));
+      return captured ? await captured.text() : '';
+    });
     const vLines = (objText.match(/^v /gm) || []).length;
     const fLines = (objText.match(/^f /gm) || []).length;
     check('round-trip OBJ export contains imported geometry', vLines >= 6 && fLines >= 2, 'v=' + vLines + ' f=' + fLines);
