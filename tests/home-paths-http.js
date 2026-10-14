@@ -1,13 +1,17 @@
-// home-paths-http.js (A946): the homepage "What can I do here?" section.
-// Three intent paths, each labelled with a project type (Finished game / Workshop /
-// Experiment) and ending in a clear first activity. Desktop and mobile, no overflow.
+// home-paths-http.js (A946, revised by A1534)
+// The homepage "intent paths" after the b0795e38 redesign:
+//   - the creative-journey strip: 4 steps, Imagine -> Learn -> Create -> Play,
+//     linking into /books, /workshops, /tools and /games
+//   - the "Explore the Studio" hub: 4 cards (Workshops / Tools / Games / Books)
+//   - the "Start with a beginner guide" grid: 6 guide cards linking into /learn
+// Desktop and mobile, no horizontal overflow, no runtime errors.
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const puppeteer = require('puppeteer');
 
 const root = 'F:/Website/Jvdesign-Website-v2';
-const port = 19250;
+let port;
 const mime = {'.html':'text/html','.css':'text/css','.js':'application/javascript','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.json':'application/json','.svg':'image/svg+xml','.woff2':'font/woff2','.ico':'image/x-icon'};
 const server = http.createServer((req,res)=>{
   let url = decodeURIComponent(req.url.split('?')[0]);
@@ -20,7 +24,7 @@ const server = http.createServer((req,res)=>{
     res.end(data);
   });
 });
-function listen(){return new Promise(r=>server.listen(port, r));}
+function listen(){return new Promise(r=>server.listen(0, ()=>{ port = server.address().port; r(); }));}
 let failures = 0;
 function check(name, ok, detail=''){ console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:'')); if(!ok) failures++; }
 (async()=>{
@@ -36,29 +40,47 @@ function check(name, ok, detail=''){ console.log((ok?'PASS ':'FAIL ')+name+(deta
     await new Promise(resolve => setTimeout(resolve, 900));
 
     const data = await page.evaluate(() => {
-      const sec = document.querySelector('.home-paths');
-      const cards = [...document.querySelectorAll('.home-paths .path-card')];
+      const steps = [...document.querySelectorAll('.journey-step')].map(s => ({
+        guide: (s.querySelector('.journey-guide') || {}).textContent || '',
+        strong: (s.querySelector('strong') || {}).textContent || '',
+        href: s.getAttribute('href') || ''
+      }));
+      const hubs = [...document.querySelectorAll('.hub-card')].map(c => ({
+        name: (c.querySelector('.hub-name') || {}).textContent || '',
+        href: c.getAttribute('href') || ''
+      }));
+      const guides = [...document.querySelectorAll('.home-paths .path-card')].map(c => ({
+        title: (c.querySelector('.path-title') || {}).textContent || '',
+        cta: (c.querySelector('.path-cta') || {}).textContent || '',
+        href: c.getAttribute('href') || ''
+      }));
       return {
-        exists: !!sec,
-        heading: (document.getElementById('paths-title') || {}).textContent || '',
-        cards: cards.map(c => ({
-          badge: (c.querySelector('.path-badge') || {}).textContent || '',
-          title: (c.querySelector('.path-title') || {}).textContent || '',
-          cta: (c.querySelector('.path-cta') || {}).textContent || '',
-          href: c.getAttribute('href') || ''
-        })),
+        journeyTitle: (document.getElementById('journey-title') || {}).textContent || '',
+        steps, hubs, guides,
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
       };
     });
+    const hrefs = arr => arr.map(x=>x.href).join(',');
 
-    check(vp.name+': "What can I do here?" section present', data.exists && /What can I do here\?/i.test(data.heading), data.heading);
-    check(vp.name+': three intent paths', data.cards.length===3, String(data.cards.length));
-    const titles = data.cards.map(c=>c.title.trim());
-    check(vp.name+': paths are Play / Learn / Create', ['Play a game','Learn to make one','Use a creative tool'].every(t=>titles.includes(t)), titles.join(' | '));
-    const badges = data.cards.map(c=>c.badge.trim());
-    check(vp.name+': each path carries a project-type label', ['Finished game','Workshop','Experiment'].every(b=>badges.includes(b)), badges.join(' | '));
-    check(vp.name+': every path ends in a first activity', data.cards.every(c=>/→/.test(c.cta) && c.href.length>0), data.cards.map(c=>c.href).join(', '));
-    check(vp.name+': path links point at games / workshops / tools', data.cards.map(c=>c.href).join(',').includes('/games') && data.cards.map(c=>c.href).join(',').includes('/workshops/start-here.html') && data.cards.map(c=>c.href).join(',').includes('/dev-tools'));
+    check(vp.name+': creative-journey section present', /What shall we make today\?/i.test(data.journeyTitle), data.journeyTitle);
+    check(vp.name+': four journey steps', data.steps.length===4, String(data.steps.length));
+    const stepGuides = data.steps.map(s=>s.guide.trim()).join(' | ');
+    check(vp.name+': steps run Imagine / Learn / Create / Play',
+      ['imagine with','learn with','create with','play with'].every(t=>stepGuides.toLowerCase().includes(t)), stepGuides);
+    check(vp.name+': each step points into a studio area',
+      ['/books','/workshops','/tools','/games'].every(t=>hrefs(data.steps).includes(t)), hrefs(data.steps));
+    check(vp.name+': every step has a concrete activity', data.steps.every(s=>s.strong.trim().length>3 && s.href.length>0));
+
+    check(vp.name+': hub shows four studio cards (Workshops / Tools / Games / Books)',
+      data.hubs.length===4 && ['Workshops','Tools','Games','Books'].every(n=>data.hubs.map(h=>h.name.trim()).includes(n)),
+      data.hubs.map(h=>h.name.trim()).join(' | '));
+    check(vp.name+': hub links point at the four hubs',
+      ['/workshop','/dev-tools','/games','/books'].every(t=>hrefs(data.hubs).includes(t)), hrefs(data.hubs));
+
+    check(vp.name+': beginner-guide grid has six guides', data.guides.length===6, String(data.guides.length));
+    check(vp.name+': guide cards end in a first read and link into /learn',
+      data.guides.length===6 && data.guides.every(g=>/→/.test(g.cta) && g.href.includes('/learn')), hrefs(data.guides));
+
     check(vp.name+': no horizontal overflow', data.overflow<=2, String(data.overflow));
     check(vp.name+': zero runtime errors', errors.length===0, errors.join(' | '));
     await page.close();
