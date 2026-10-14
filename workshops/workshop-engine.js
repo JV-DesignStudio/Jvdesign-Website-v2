@@ -1,9 +1,11 @@
 /* JVDesignStudio Workshop Engine
    Shared interactive engine for "My First ..." workshop pages.
-   Page must define before loading this file:
-     window.WORKSHOP_TOTAL, number of steps
-     window.WORKSHOP_KEY, localStorage key (matches my-progress.html SERIES)
-     window.WORKSHOP_PROFILE_ID, id reported to player-profile.js on completion
+   Page identity comes from <body> data attributes (CSP-proof: inline
+   scripts are hash-gated, so no per-page inline config may be relied on):
+     data-workshop-total, data-workshop-key (matches my-progress.html SERIES),
+     data-profile-id (reported to player-profile.js on completion),
+     data-orphan-key (one-time forward migration, A1425).
+   The legacy window.WORKSHOP_* globals still work as a fallback.
 
    Answer attributes on .cc-blank / .cf-blank inputs and .quiz-gate:
      data-a / data-k, base64(encodeURIComponent(value)); "|" separates accepted
@@ -11,6 +13,25 @@
      data-answer / data-correct, legacy plain-text fallback
 */
 (function () {
+/* Resolve page identity: body data attributes win (they run under any CSP),
+   legacy inline globals remain as a fallback. */
+try {
+  var bd = document.body;
+  if (bd && bd.dataset) {
+    if (bd.dataset.workshopKey) window.WORKSHOP_KEY = bd.dataset.workshopKey;
+    if (bd.dataset.workshopTotal) window.WORKSHOP_TOTAL = parseInt(bd.dataset.workshopTotal, 10) || window.WORKSHOP_TOTAL;
+    if (bd.dataset.profileId) window.WORKSHOP_PROFILE_ID = bd.dataset.profileId;
+    var orphanKey = bd.dataset.orphanKey;
+    var mappedKey = bd.dataset.workshopKey;
+    if (orphanKey && mappedKey) {
+      var oldData = null, newData = null;
+      try { oldData = localStorage.getItem(orphanKey); newData = localStorage.getItem(mappedKey); } catch (e) {}
+      if (oldData && !newData) {
+        try { localStorage.setItem(mappedKey, oldData); localStorage.removeItem(orphanKey); } catch (e) {}
+      }
+    }
+  }
+} catch (e) {}
 var TOTAL = window.WORKSHOP_TOTAL;
 var STORAGE_KEY = window.WORKSHOP_KEY;
 var PROFILE_ID = window.WORKSHOP_PROFILE_ID;

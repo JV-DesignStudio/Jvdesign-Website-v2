@@ -169,14 +169,15 @@ window.skipPlayground = function (btn) {
 
 function markPlaygroundDone(pg, fb, btn) {
   var xpAmount = parseInt(pg.dataset.xp || XP_CODE, 10);
+  streakHit();
+  var total = xpAmount + (getStreak() >= 3 ? XP_STREAK_BONUS : 0);
   fb.className = 'lp-feedback correct show';
-  fb.innerHTML = '<span class="fb-icon">✅</span><span>Nice work! +' + xpAmount + ' XP</span>';
+  fb.innerHTML = '<span class="fb-icon">✅</span><span>Nice work! +' + total + ' XP</span>';
   pg.classList.add('passed');
   btn.style.display = 'none';
   var skipBtn = pg.querySelector('.lp-skip-btn');
   if (skipBtn) skipBtn.style.display = 'none';
-  var bonus = streakHit();
-  awardXp(xpAmount, 'Code Playground');
+  awardXp(total, 'Code Playground');
   saveProgress();
 }
 
@@ -329,15 +330,16 @@ window.checkParsons = function (btn) {
 
   if (allCorrect) {
     var xpAmount = parseInt(pp.dataset.xp || XP_CODE, 10);
+    streakHit();
+    var total = xpAmount + (getStreak() >= 3 ? XP_STREAK_BONUS : 0);
     fb.className = 'pp-feedback correct show';
-    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect order! +' + xpAmount + ' XP</span>';
+    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect order! +' + total + ' XP</span>';
     pp.classList.add('passed');
     btn.disabled = true;
     var resetBtn = pp.querySelector('.pp-reset-btn');
     if (resetBtn) resetBtn.style.display = 'none';
     lines.forEach(function (l) { l.classList.add('pp-correct'); l.removeAttribute('draggable'); });
-    streakHit();
-    awardXp(xpAmount, 'Code Order');
+    awardXp(total, 'Code Order');
   } else {
     fb.className = 'pp-feedback wrong show';
     fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite right. Try rearranging the blocks!</span>';
