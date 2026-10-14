@@ -5309,6 +5309,19 @@ window.JVDS_CONTENT = {
       "age": "Ages 6-12",
       "character": null,
       "url": "/games/crossy-crew.html"
+    },
+    {
+      "id": "stardust-snake",
+      "title": "Stardust Snake",
+      "tag": "Classic · Grow",
+      "emoji": "✨",
+      "category": "Arcade",
+      "bg": "linear-gradient(135deg,#03010f,#0e0036)",
+      "desc": "Classic snake in a night sky: steer a trail of stardust into the fallen stars, grow your constellation and never drift into the edge or your own light.",
+      "kids": true,
+      "age": "Ages 6-12",
+      "character": "Stardust",
+      "url": "/games/stardust-snake.html"
     }
   ],
   "tools": [
@@ -6222,9 +6235,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-14T14:33:32.980Z",
+    "generated": "2026-10-14T15:05:16.132Z",
     "workshops": 342,
-    "games": 13,
+    "games": 14,
     "tools": 48,
     "books": 5,
     "engines": {
