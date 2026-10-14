@@ -49,6 +49,11 @@ var CANVAS_GUIDE_MAP = {
   "java-rpg-part2-canvas.html": "java-rpg-part2-workshop.html",
   "java-rpg-part3-canvas.html": "java-rpg-part3-workshop.html",
   "java-space-canvas.html": "java-space-workshop.html",
+  "js-breakout-canvas.html": "js-breakout-workshop.html",
+  "js-flappy-canvas.html": "js-flappy-workshop.html",
+  "js-memory-canvas.html": "js-memory-workshop.html",
+  "js-platformer-part2-canvas.html": "js-platformer-part2-workshop.html",
+  "js-snake-canvas.html": "js-snake-workshop.html",
   "my-first-cpp-game-canvas.html": "my-first-cpp-game.html",
   "my-first-defold-game-canvas.html": "my-first-defold-game.html",
   "my-first-gdevelop-game-canvas.html": "my-first-gdevelop-game.html",
@@ -69,6 +74,18 @@ var CANVAS_GUIDE_MAP = {
   "python-maze-canvas.html": "python-maze-workshop.html",
   "python-platformer-canvas.html": "python-platformer-workshop.html",
   "python-platformer-part2-canvas.html": "python-platformer-part2-workshop.html",
+  "roblox-adventure-canvas.html": "roblox-adventure-workshop.html",
+  "roblox-battle-canvas.html": "roblox-battle-workshop.html",
+  "roblox-collapse-obby-canvas.html": "roblox-collapse-obby-workshop.html",
+  "roblox-corruption-obby-canvas.html": "roblox-corruption-obby-workshop.html",
+  "roblox-horror-canvas.html": "roblox-horror-workshop.html",
+  "roblox-obby-canvas.html": "roblox-obby-workshop.html",
+  "roblox-pirate-canvas.html": "roblox-pirate-workshop.html",
+  "roblox-sim-lockdown-1-canvas.html": "roblox-sim-lockdown-1-workshop.html",
+  "roblox-sim-lockdown-2-canvas.html": "roblox-sim-lockdown-2-workshop.html",
+  "roblox-sim-lockdown-3-canvas.html": "roblox-sim-lockdown-3-workshop.html",
+  "roblox-simulator-canvas.html": "roblox-simulator-workshop.html",
+  "roblox-tycoon-canvas.html": "roblox-tycoon-workshop.html",
   "scratch-catch-canvas.html": "scratch-catch-workshop.html",
   "scratch-clicker-canvas.html": "scratch-clicker-workshop.html",
   "scratch-maze-canvas.html": "scratch-maze-workshop.html",
@@ -134,6 +151,70 @@ var CANVAS_NEXT_MAP = {
   "python-platformer-canvas.html": {
     "href": "python-platformer-part2-canvas.html",
     "label": "Python Platformer Part 2"
+  },
+  "js-breakout-canvas.html": {
+    "href": "js-flappy-canvas.html",
+    "label": "JS Flappy"
+  },
+  "js-flappy-canvas.html": {
+    "href": "js-memory-canvas.html",
+    "label": "JS Memory"
+  },
+  "js-memory-canvas.html": {
+    "href": "js-snake-canvas.html",
+    "label": "JS Snake"
+  },
+  "js-snake-canvas.html": {
+    "href": "js-breakout-canvas.html",
+    "label": "JS Breakout"
+  },
+  "roblox-obby-canvas.html": {
+    "href": "roblox-tycoon-canvas.html",
+    "label": "Roblox Tycoon"
+  },
+  "roblox-tycoon-canvas.html": {
+    "href": "roblox-adventure-canvas.html",
+    "label": "Roblox Adventure"
+  },
+  "roblox-adventure-canvas.html": {
+    "href": "roblox-battle-canvas.html",
+    "label": "Roblox Battle"
+  },
+  "roblox-battle-canvas.html": {
+    "href": "roblox-simulator-canvas.html",
+    "label": "Roblox Simulator"
+  },
+  "roblox-simulator-canvas.html": {
+    "href": "roblox-horror-canvas.html",
+    "label": "Roblox Horror"
+  },
+  "roblox-horror-canvas.html": {
+    "href": "roblox-pirate-canvas.html",
+    "label": "Roblox Pirate"
+  },
+  "roblox-pirate-canvas.html": {
+    "href": "roblox-collapse-obby-canvas.html",
+    "label": "Roblox Collapse Obby"
+  },
+  "roblox-collapse-obby-canvas.html": {
+    "href": "roblox-corruption-obby-canvas.html",
+    "label": "Roblox Corruption Obby"
+  },
+  "roblox-corruption-obby-canvas.html": {
+    "href": "roblox-sim-lockdown-1-canvas.html",
+    "label": "Roblox Sim Lockdown 1"
+  },
+  "roblox-sim-lockdown-1-canvas.html": {
+    "href": "roblox-sim-lockdown-2-canvas.html",
+    "label": "Roblox Sim Lockdown 2"
+  },
+  "roblox-sim-lockdown-2-canvas.html": {
+    "href": "roblox-sim-lockdown-3-canvas.html",
+    "label": "Roblox Sim Lockdown 3"
+  },
+  "roblox-sim-lockdown-3-canvas.html": {
+    "href": "roblox-obby-canvas.html",
+    "label": "Roblox Obby"
   }
 };
 /* A1365:CANVAS_NEXT:end */
@@ -203,7 +284,19 @@ var CANVAS_STUDIO_MAP = {
   "gdevelop-pong-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
   "gdevelop-shooter-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
   "gdevelop-snake-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
-  "my-first-gdevelop-game-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" }
+  "my-first-gdevelop-game-canvas.html": { "href": "gdevelop-mod-studio.html", "label": "GDevelop Mod Studio" },
+  "roblox-obby-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-tycoon-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-adventure-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-battle-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-simulator-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-horror-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-pirate-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-collapse-obby-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-corruption-obby-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-sim-lockdown-1-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-sim-lockdown-2-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" },
+  "roblox-sim-lockdown-3-canvas.html": { "href": "roblox-mod-studio.html", "label": "Roblox Mod Studio" }
 };
 /* A1378:CANVAS_STUDIO:end */
 
@@ -222,6 +315,7 @@ var debounceTimer = null;
 var codeValid = {};
 var quizPassed = {};
 var quizSelected = {};
+var cwXpLocal = 0;
 
 /* ── LIVE "WHAT YOUR CODE DID" LAYER ──
    Purely additive. Names the current step over the canvas and, as the learner
@@ -299,8 +393,15 @@ function offerRemix() {
    its saveProgress() so my-progress.html and the XP bar stay in sync. */
 function wsAwardXp(amount, label) {
   try {
-    if (window._wsEngine && window._wsEngine.awardXp) window._wsEngine.awardXp(amount, label);
-    else if (window.awardXp) window.awardXp(amount, label);
+    if (window._wsEngine && window._wsEngine.awardXp) { window._wsEngine.awardXp(amount, label); return; }
+    else if (window.awardXp) { window.awardXp(amount, label); return; }
+  } catch (e) {}
+  /* Thin-shell build-alongs load no shared XP system, so keep a local
+     ledger and mirror it into the strip (A1526). */
+  cwXpLocal += amount;
+  try {
+    var xl = document.getElementById('xpLabel');
+    if (xl) xl.textContent = cwXpLocal + ' XP';
   } catch (e) {}
 }
 function wsSaveShared() {
@@ -959,9 +1060,37 @@ window.CW = {
   importCode: function(code) { var p = decodeProject(code); return p ? bringPassportForward(p) : -1; }
 };
 
+/* A1526:canvas-progress: thin-shell build-alongs carry no shared header, so
+   inject a slim XP + progress strip (skipped when #progressCount exists).
+   wsSyncProgress then keeps it live with no per-page changes. */
+function ensureProgressStrip() {
+  try {
+    if (document.getElementById('progressCount')) return;
+    if (!document.head || !document.body) return;
+    if (!document.getElementById('cw-progress-style')) {
+      var css = document.createElement('style');
+      css.id = 'cw-progress-style';
+      css.textContent = '.cw-progress-strip{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;max-width:100%;box-sizing:border-box;padding:6px 10px;font-size:.72rem;color:#e8eaf2;background:rgba(0,0,0,.25);border-bottom:1px solid rgba(255,255,255,.08)}#xpLabel{font-weight:800;color:#ffd166}#progressCount{opacity:.85}#cwProgressTrack{width:80px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}#progressFill{display:block;height:100%;width:0;background:#4ade80}#stepDots{display:flex;gap:4px;flex-wrap:wrap;justify-content:center}.step-dot{width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,.12);font-size:.55rem;line-height:16px;text-align:center;cursor:pointer;color:#e8eaf2}.step-dot.done{background:#4ade80;color:#06281a}.step-dot.active{outline:1px solid #ffd166}';
+      document.head.appendChild(css);
+    }
+    var strip = document.createElement('div');
+    strip.className = 'cw-progress-strip';
+    var n = (CFG.steps && CFG.steps.length) || 6;
+    strip.innerHTML = '<span id="xpLabel">0 XP</span><span id="progressCount">0 / ' + n + ' steps</span>' +
+      '<span id="cwProgressTrack"><span id="progressFill"></span></span><span id="stepDots"></span>';
+    var anchor = document.querySelector('.cw-header');
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(strip, anchor);
+    else document.body.insertBefore(strip, document.body.firstChild);
+    cwXpLocal = Object.keys(completed).length * wsXpPerStep();
+    var xl = document.getElementById('xpLabel');
+    if (xl) xl.textContent = cwXpLocal + ' XP';
+  } catch (e) {}
+}
+
 /* Init */
 ensureLiveStyle();
 loadState();
+ensureProgressStrip();
 renderSteps();
 updateCanvas();
 updateProgress();
