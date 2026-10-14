@@ -62,7 +62,7 @@ for (const [key, val] of Object.entries(pkg.scripts || {})) {
 check('every npm script node target exists', missingPkg.length === 0, missingPkg.slice(0, 6).join(', '));
 
 // The game gates we care about must be in CI.
-for (const gate of ['tests/game-quality.js', 'tests/games-keep-rule.js', 'scripts/validate-game-quality.js', 'validate-covers.js']) {
+for (const gate of ['tests/game-quality.js', 'tests/games-keep-rule.js', 'scripts/validate-game-quality.js', 'validate-covers.js', 'tests/workshop-actions.js']) {
   check('CI runs ' + gate, ciSrc.includes(gate));
 }
 
