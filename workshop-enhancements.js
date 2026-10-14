@@ -654,34 +654,42 @@
       // Wait a tick for the original checkQuiz to run and set classes
       setTimeout(function () {
         var fb = gate.querySelector('.quiz-feedback');
-        if (!fb || !fb.classList.contains('wrong')) return;
+        if (!fb) return;
 
-        quizAttempts[id] = (quizAttempts[id] || 0) + 1;
-        var attempts = quizAttempts[id];
+        if (fb.classList.contains('wrong')) {
+          quizAttempts[id] = (quizAttempts[id] || 0) + 1;
+          var attempts = quizAttempts[id];
 
-        if (attempts === 1) {
-          fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite! Read the question again carefully and try another option.</span>';
-        } else if (attempts >= 2) {
-          // After 2 wrong tries, eliminate one wrong option
-          var keyRaw = gate.dataset.k || gate.dataset.a || '';
-          var correct;
-          try { correct = parseInt(decodeURIComponent(atob(keyRaw))); } catch (err) { correct = -1; }
-          var opts = gate.querySelectorAll('.quiz-opt');
-          var eliminated = false;
-          for (var i = 0; i < opts.length; i++) {
-            var o = opts[i];
-            if (parseInt(o.dataset.idx) !== correct && !o.classList.contains('disabled')) {
-              o.classList.add('disabled');
-              eliminated = true;
-              break;
+          if (attempts === 1) {
+            fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite! Read the question again carefully and try another option.</span>';
+          } else if (attempts >= 2) {
+            // After 2 wrong tries, eliminate one wrong option
+            var keyRaw = gate.dataset.k || gate.dataset.a || '';
+            var correct;
+            try { correct = parseInt(decodeURIComponent(atob(keyRaw))); } catch (err) { correct = -1; }
+            var opts = gate.querySelectorAll('.quiz-opt');
+            var eliminated = false;
+            for (var i = 0; i < opts.length; i++) {
+              var o = opts[i];
+              if (parseInt(o.dataset.idx) !== correct && !o.classList.contains('disabled')) {
+                o.classList.add('disabled');
+                eliminated = true;
+                break;
+              }
+            }
+            if (eliminated) {
+              fb.innerHTML = '<span class="fb-icon">💡</span><span>Here\'s a hint: one wrong answer has been crossed out. Try again!</span>';
+            } else {
+              fb.innerHTML = '<span class="fb-icon">💡</span><span>Almost there! Look carefully at the remaining option.</span>';
             }
           }
-          if (eliminated) {
-            fb.innerHTML = '<span class="fb-icon">💡</span><span>Here\'s a hint: one wrong answer has been crossed out. Try again!</span>';
-          } else {
-            fb.innerHTML = '<span class="fb-icon">💡</span><span>Almost there! Look carefully at the remaining option.</span>';
-          }
         }
+
+        // A1433: quiz feedback is visual only, so announce the outcome (correct
+        // or wrong) through the shared polite live region. Without this, screen
+        // reader users got no response when they answered.
+        var msg = (fb.textContent || '').replace(/\s+/g, ' ').trim();
+        if (msg && window.JVDS && typeof window.JVDS.announce === 'function') window.JVDS.announce(msg);
       }, 50);
     }, true);
 

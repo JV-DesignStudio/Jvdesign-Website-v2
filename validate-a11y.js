@@ -108,7 +108,14 @@ const CHECKS = `(() => {
 (async () => {
   let files = walk(ROOT)
     .map(f => path.relative(ROOT, f).split(path.sep).join('/'))
-    .filter(f => !EXCLUDE_FILES.has(f) && f !== 'tools/quest-board.html');
+    .filter(f => !EXCLUDE_FILES.has(f) && f !== 'tools/quest-board.html')
+    // Skip redirect stubs (meta refresh): the browser lands on the real page,
+    // so checking the stub would mislabel the destination's issues. The real
+    // page is already in the list.
+    .filter(f => {
+      try { return !/http-equiv=["']refresh["']/i.test(fs.readFileSync(path.join(ROOT, f), 'utf8')); }
+      catch { return true; }
+    });
   if (AREA) files = files.filter(f => f.startsWith(AREA + '/'));
 
   let browser;

@@ -60,6 +60,24 @@ how they map to READY / BETA / EXPERIMENT / HIDDEN.
 - No horizontal overflow at 390px or 1440px.
 - Any privacy or data claim is accurate.
 
+## Accessibility
+
+Interactive elements must be reachable and labelled for keyboard and screen
+reader users. `validate-a11y.js --strict` is the gate: it checks names, labels,
+alt text, landmarks and form fields in a real browser at 390px and 1440px, and it
+skips redirect stubs so findings point at the real page.
+
+- Menus announce their state. The nav toggle and the More dropdown expose
+  `aria-expanded`, and keyboard focus is managed while they are open.
+- Outcomes are announced. Quiz responses, scores and status messages go through
+  `window.JVDS.announce()` into the `#jvds-announce` polite live region, so a
+  screen reader user hears the result instead of only seeing it.
+
+Canvas games: the canvas is the visual surface only. The controls are real
+buttons and keys, and a win or a loss is announced through the live region.
+Realtime action games (runners, shooters) have no full screen reader play mode;
+that is a documented limitation, not a silent gap.
+
 ## The four dispositions
 
 When something is not finished, decide what to do with it. Every audit card
