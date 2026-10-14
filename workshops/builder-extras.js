@@ -4,6 +4,10 @@
 (function() {
   'use strict';
 
+  var _bxStyle = document.createElement('style');
+  _bxStyle.textContent = '.bx-gallery-item:hover{border-color:rgba(255,255,255,.25)!important}';
+  document.head.appendChild(_bxStyle);
+
   var soundEnabled = localStorage.getItem('jvds-sound') !== 'off';
 
   /* ═══════════════════════════════════════
@@ -120,9 +124,15 @@
       '<h3 style="font-family:Bebas Neue,sans-serif;font-size:1.5rem;color:#fff;margin-bottom:8px;letter-spacing:.04em">Welcome to the Builder</h3>' +
       '<p style="font-size:.85rem;color:rgba(232,238,248,.6);line-height:1.7;margin-bottom:8px">Use the <strong style="color:#fff">sidebar steps</strong> to build your creation step by step.</p>' +
       '<p style="font-size:.8rem;color:rgba(232,238,248,.45);line-height:1.6;margin-bottom:20px">Drag to orbit · Scroll to zoom · Arrow keys to navigate steps · Try <strong style="color:#fff">Random</strong> for instant inspiration!</p>' +
-      '<button style="background:linear-gradient(135deg,#e8543a,#b03020);color:#fff;font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.08em;padding:11px 36px;border:none;border-radius:8px;cursor:pointer;box-shadow:0 3px 0 #8b2015;transition:transform .1s" onmouseover="this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.transform=\'\'" onclick="this.closest(\'div\').parentElement.remove();localStorage.setItem(\'jvds-builder-seen\',\'1\')">Let\'s Build!</button>' +
+      '<button id="builderWelcomeBtn" style="background:linear-gradient(135deg,#e8543a,#b03020);color:#fff;font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.08em;padding:11px 36px;border:none;border-radius:8px;cursor:pointer;box-shadow:0 3px 0 #8b2015;transition:transform .1s">Let\'s Build!</button>' +
       '</div>';
     document.body.appendChild(overlay);
+    var btn = document.getElementById('builderWelcomeBtn');
+    if (btn) {
+      btn.onmouseover = function() { this.style.transform = 'translateY(-2px)'; };
+      btn.onmouseout = function() { this.style.transform = ''; };
+      btn.onclick = function() { this.closest('div').parentElement.remove(); localStorage.setItem('jvds-builder-seen', '1'); };
+    }
   }
 
   /* ═══════════════════════════════════════
@@ -226,8 +236,9 @@
     }).join('');
     overlay.innerHTML = '<div style="background:linear-gradient(145deg,#1a1d2a,#141722);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px 28px;max-width:380px;width:90%">' +
       '<h3 style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;margin-bottom:14px;letter-spacing:.04em">⌨️ Keyboard Shortcuts</h3>' + rows +
-      '<button style="margin-top:14px;width:100%;padding:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:rgba(232,238,248,.6);font-size:.8rem;cursor:pointer" onclick="this.closest(\'div\').parentElement.remove()">Close</button></div>';
+      '<button class="bx-close" style="margin-top:14px;width:100%;padding:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;color:rgba(232,238,248,.6);font-size:.8rem;cursor:pointer">Close</button></div>';
     document.body.appendChild(overlay);
+    overlay.querySelector('.bx-close').onclick = function() { overlay.remove(); };
     overlay.addEventListener('click', function(e) { if (e.target === e.currentTarget) overlay.remove(); });
   };
 
@@ -311,6 +322,7 @@
     if (existing) { existing.remove(); return; }
     var overlay = document.createElement('div');
     overlay.id = 'galleryOverlay';
+    overlay.className = 'bx-modal-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
     var grid = '';
     if (keys.length === 0) {
@@ -321,7 +333,7 @@
           var d = saves[k];
           var date = d.date ? new Date(d.date).toLocaleDateString() : '';
           var thumb = d.thumbnail || '';
-          return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px;cursor:pointer;transition:border-color .15s;text-align:center" onmouseover="this.style.borderColor=\'rgba(255,255,255,.25)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.08)\'" onclick="builderGalleryLoad(\'' + k.replace(/'/g, "\\'") + '\')">' +
+          return '<div class="bx-gallery-item" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px;cursor:pointer;transition:border-color .15s;text-align:center" data-action="builderGalleryLoad" data-arg="' + k.replace(/"/g, '&quot;') + '">' +
             (thumb ? '<img src="' + thumb + '" style="width:100%;height:80px;object-fit:cover;border-radius:4px;margin-bottom:6px">' : '<div style="height:80px;background:rgba(255,255,255,.03);border-radius:4px;margin-bottom:6px;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🏗️</div>') +
             '<div style="font-size:.75rem;color:#e8eef8;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + k + '</div>' +
             '<div style="font-size:.6rem;color:rgba(232,238,248,.35)">' + date + '</div>' +
@@ -330,7 +342,7 @@
     }
     overlay.innerHTML = '<div style="background:linear-gradient(145deg,#1a1d2a,#141722);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px 28px;max-width:520px;width:92%">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;letter-spacing:.04em">📁 Build Gallery</h3>' +
-      '<button style="background:none;border:none;color:rgba(232,238,248,.4);font-size:1.2rem;cursor:pointer" onclick="this.closest(\'div\').parentElement.parentElement.remove()">✕</button></div>' +
+      '<button style="background:none;border:none;color:rgba(232,238,248,.4);font-size:1.2rem;cursor:pointer" data-action="removeClosest" data-arg=".bx-modal-overlay">✕</button></div>' +
       grid + '</div>';
     document.body.appendChild(overlay);
     overlay.addEventListener('click', function(e) { if (e.target === e.currentTarget) overlay.remove(); });
@@ -475,6 +487,7 @@
     if (existing) { existing.remove(); return; }
     var overlay = document.createElement('div');
     overlay.id = 'badgeOverlay';
+    overlay.className = 'bx-modal-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
     var grid = Object.keys(ALL_BADGES).map(function(id) {
       var b = ALL_BADGES[id];
@@ -491,7 +504,7 @@
     overlay.innerHTML = '<div style="background:linear-gradient(145deg,#1a1d2a,#141722);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px 28px;max-width:520px;width:92%">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
       '<h3 style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;letter-spacing:.04em">🏅 Badges (' + earned + '/' + total + ')</h3>' +
-      '<button style="background:none;border:none;color:rgba(232,238,248,.4);font-size:1.2rem;cursor:pointer" onclick="this.closest(\'div\').parentElement.parentElement.remove()">✕</button></div>' +
+      '<button style="background:none;border:none;color:rgba(232,238,248,.4);font-size:1.2rem;cursor:pointer" data-action="removeClosest" data-arg=".bx-modal-overlay">✕</button></div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;max-height:350px;overflow-y:auto">' + grid + '</div></div>';
     document.body.appendChild(overlay);
     overlay.addEventListener('click', function(e) { if (e.target === e.currentTarget) overlay.remove(); });
@@ -543,6 +556,7 @@
     if (existing) { existing.remove(); return; }
     var overlay = document.createElement('div');
     overlay.id = 'progressOverlay';
+    overlay.className = 'bx-modal-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
     var rows = pages.map(function(p) {
       var d = builders[p.key];
@@ -558,11 +572,17 @@
     overlay.innerHTML = '<div style="background:linear-gradient(145deg,#1a1d2a,#141722);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:24px 28px;max-width:400px;width:92%">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
       '<h3 style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fff;letter-spacing:.04em">📊 Builder Progress (' + completed + '/4)</h3>' +
-      '<button style="background:none;border:none;color:rgba(232,238,248,.4);font-size:1.2rem;cursor:pointer" onclick="this.closest(\'div\').parentElement.parentElement.remove()">✕</button></div>' +
+      '<button style="background:none;border:none;color:rgba(232,238,248,.4);font-size:1.2rem;cursor:pointer" data-action="removeClosest" data-arg=".bx-modal-overlay">✕</button></div>' +
       rows +
-      '<div style="margin-top:14px;text-align:center"><button onclick="this.closest(\'div\').parentElement.parentElement.remove();builderShowBadges()" style="background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.25);color:#ffd166;padding:7px 18px;border-radius:6px;font-size:.78rem;cursor:pointer;font-weight:700">🏅 View Badges</button></div></div>';
+      '<div style="margin-top:14px;text-align:center"><button data-action="viewBadgesFromProgress" style="background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.25);color:#ffd166;padding:7px 18px;border-radius:6px;font-size:.78rem;cursor:pointer;font-weight:700">🏅 View Badges</button></div></div>';
     document.body.appendChild(overlay);
     overlay.addEventListener('click', function(e) { if (e.target === e.currentTarget) overlay.remove(); });
+  };
+
+  window.viewBadgesFromProgress = function() {
+    var o = document.getElementById('progressOverlay');
+    if (o) o.remove();
+    builderShowBadges();
   };
 
   /* ═══════════════════════════════════════

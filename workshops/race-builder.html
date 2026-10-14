@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vcYPy3Y/X/cxan3ZgFSrEffA99QQRj9Fs0fpU0e+2PQ=' 'sha256-z+R3ypxr3/+0v1uglpqPZj6RIdFUUacHJIdvTjPgzlY=' 'sha256-yi/UDm6ja1BAmj32AknUb3u/lFWvdlSn1Bl/lWv1uXc=' 'sha256-ErQaXJBW46pEeE1Q55e4WZX9hWRjHjolehTzkLEeu/w=' 'sha256-vcYPy3Y/X/cxan3ZgFSrEffA99QQRj9Fs0fpU0e+2PQ=' 'sha256-z+R3ypxr3/+0v1uglpqPZj6RIdFUUacHJIdvTjPgzlY=' 'sha256-yi/UDm6ja1BAmj32AknUb3u/lFWvdlSn1Bl/lWv1uXc=' 'sha256-ErQaXJBW46pEeE1Q55e4WZX9hWRjHjolehTzkLEeu/w=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#BC4749">
@@ -142,7 +142,7 @@
   <div class="logo">🏎️ Race Builder</div>
   <div class="hdr-right">
     <a href="../pages/workshop.html" class="back-link">← Workshop</a>
-    <button class="quick-btn" onclick="quickRace()">⚡ Quick Race</button>
+    <button class="quick-btn" data-on="quickRace" data-on-plain>⚡ Quick Race</button>
   </div>
 </header>
 
@@ -197,7 +197,7 @@
       <span class="game-top-l">🎮 Live Preview</span>
       <div class="game-top-r">
         <div class="live-wrap"><span class="live-dot"></span><span id="liveStatus">Complete Step 1 to start</span></div>
-        <button class="fs-btn" onclick="openFS()">⛶ Fullscreen</button>
+        <button class="fs-btn" data-on="openFS" data-on-plain>⛶ Fullscreen</button>
       </div>
     </div>
     <div class="game-wrap"><canvas id="gc"></canvas></div>
@@ -240,7 +240,7 @@
       <div class="fs-sep"></div>
       <div class="fs-hi"><div class="fs-hv" id="fsTime" style="color:var(--orange)">0.0</div><div class="fs-hl">Time (s)</div></div>
     </div>
-    <button class="fs-close" onclick="closeFS()">✕ Close [Esc]</button>
+    <button class="fs-close" data-on="closeFS" data-on-plain>✕ Close [Esc]</button>
   </div>
   <div class="fs-canvas-wrap"><canvas id="gcFS"></canvas></div>
   <div class="fs-foot" id="fsFoot">▶ Race!</div>
@@ -872,8 +872,8 @@ const stepDone=new Array(20).fill(false);
 function nav(i){
   const T=STEPS.length;
   return `<div class="step-nav">
-    <button class="btn-p" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back</button>
-    <button class="btn-n" onclick="go(${i+1})" ${i===T-1?'disabled':''}>Next Step ?</button>
+    <button class="btn-p" data-action="go" data-arg="${i-1}" ${i===0?'disabled':''}>← Back</button>
+    <button class="btn-n" data-action="go" data-arg="${i+1}" ${i===T-1?'disabled':''}>Next Step ?</button>
   </div>`;
 }
 
@@ -906,7 +906,7 @@ function renderStep(){
           <div class="swatch-row">`;
         inp.options.forEach(c=>{
           const sel=G.carCol===c?'sel':'';
-          html+=`<div class="swatch ${sel}" style="background:${c}" onclick="pickCol('${c}',this)"></div>`;
+          html+=`<div class="swatch ${sel}" style="background:${c}" data-action="pickCol" data-arg="${c}" data-arg2="this"></div>`;
         });
         html+=`</div></div>`;
       } else {
@@ -916,7 +916,7 @@ function renderStep(){
             placeholder="${inp.placeholder||''}"
             value="${inp.current()}"
             min="${inp.min}" max="${inp.max}" step="${inp.step||1}"
-            oninput="validateInput(this,${inp.min},${inp.max})">
+            data-action-input="validateInputSelf">
         </div>`;
       }
     });
@@ -946,7 +946,7 @@ function renderStep(){
     html+=`</div>`;
   }
 
-  html+=`<button class="run-btn" onclick="applyStep(${currentStep})">▶ Apply to Game</button>`;
+  html+=`<button class="run-btn" data-action="applyStep" data-arg="${currentStep}">▶ Apply to Game</button>`;
   if(s.interactive) html+=s.interactive;
   html+=nav(currentStep);
   body.innerHTML=html;
@@ -955,6 +955,9 @@ function renderStep(){
   document.querySelectorAll('.tb').forEach((t,i)=>t.classList.toggle('active',i===currentStep));
 }
 
+function validateInputSelf(){
+  validateInput(this, parseFloat(this.min), parseFloat(this.max));
+}
 function validateInput(el,mn,mx){
   const v=parseFloat(el.value);
   el.classList.toggle('bad',isNaN(v)||v<mn||v>mx);
@@ -1053,7 +1056,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(0)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="0">✅ Correct! Continue →</button>
     </div>`,
   onApply(v){
     G.carName=v.carName||'RACER';
@@ -1094,7 +1097,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(1)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="1">✅ Correct! Continue →</button>
     </div>`,
   onApply(v){
     G.topSpeed=v.topSpeed||4.5;
@@ -1132,7 +1135,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(2)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="2">✅ Correct! Continue →</button>
     </div>`,
   onApply(v){
     G.accel=v.accel||0.12;
@@ -1161,7 +1164,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(3)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="3">✅ Correct! Continue →</button>
     </div>
     <div class="tf-round" id="tf-4" data-step="3">
       <div class="tf-header"><div class="tf-icon">❓</div><div class="tf-title">True or False</div><div class="tf-xp-badge">+10 XP</div></div>
@@ -1208,7 +1211,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(4)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="4">✅ Correct! Continue →</button>
     </div>`,
   onApply(){
     G.f_track=true;
@@ -1245,7 +1248,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(5)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="5">✅ Correct! Continue →</button>
     </div>`,
   onApply(v){
     G.rivalCount=Math.round(v.rivalCount)||2;
@@ -1277,7 +1280,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(6)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="6">✅ Correct! Continue →</button>
     </div>
     <div class="tf-round" id="tf-7" data-step="6">
       <div class="tf-header"><div class="tf-icon">❓</div><div class="tf-title">True or False</div><div class="tf-xp-badge">+10 XP</div></div>
@@ -1327,7 +1330,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(7)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="7">✅ Correct! Continue →</button>
     </div>`,
   onApply(v){
     G.boostMult=v.boostMult||1.6;
@@ -1365,7 +1368,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(8)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="8">✅ Correct! Continue →</button>
     </div>`,
   onApply(){
     G.f_finish=true;
@@ -1396,7 +1399,7 @@ const STEPS=[
       </div>
       <div class="quiz-feedback"></div>
       <button class="quiz-submit" data-on="checkQuiz">Check Answer</button>
-      <button class="quiz-next-btn" onclick="quizUnlock(9)">✅ Correct! Continue →</button>
+      <button class="quiz-next-btn" data-action="quizUnlock" data-arg="9">✅ Correct! Continue →</button>
     </div>`,
   onApply(){
     sout('🎉 Game complete! Go back and tune any step, your changes apply live.');
@@ -1634,5 +1637,6 @@ loadProgress();
 <script defer src="/mascots.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
+<script src="workshop-actions.js"></script>
 </body>
 </html>

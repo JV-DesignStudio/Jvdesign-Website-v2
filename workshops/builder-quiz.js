@@ -126,7 +126,7 @@
       if (d) d.classList.add('show');
       try {
         if (typeof playerProfile !== 'undefined' && playerProfile.markWorkshopCompleted && CFG.profileId) {
-          playerProfile.markWorkshopCompleted(CFG.profileId, 75);
+          playerProfile.markWorkshopCompleted(CFG.profileId);
         }
       } catch (e) {}
     }
@@ -208,9 +208,9 @@
       var item = CFG.quiz[i];
       html += '<div class="bq-q" id="bq-q-' + i + '"><div class="bq-qt">' + (i + 1) + '. ' + item.q + '</div>';
       for (var j = 0; j < item.opts.length; j++) {
-        html += '<div class="bq-opt" data-i="' + j + '" onclick="bqSelect(this)"><span class="bq-letter">' + letters[j] + '</span><span>' + item.opts[j] + '</span></div>';
+        html += '<div class="bq-opt" data-i="' + j + '" data-action="bqSelect" data-arg="this"><span class="bq-letter">' + letters[j] + '</span><span>' + item.opts[j] + '</span></div>';
       }
-      html += '<button class="bq-check" disabled onclick="bqCheck(this,' + i + ')">Check Answer</button><div class="bq-fb"></div></div>';
+      html += '<button class="bq-check" disabled data-action="bqCheck" data-arg="this" data-arg2=" + i + ">Check Answer</button><div class="bq-fb"></div></div>';
     }
     html += '<div class="bq-done" id="bqDone"><div class="bq-done-t">🏆 ' + (CFG.name || 'Workshop') + ' complete!</div>' +
       '<div class="bq-done-s">Brilliant work! Your completion is saved. View your XP, badges and print a certificate on the <a href="my-progress.html">My Progress</a> page.</div></div>';

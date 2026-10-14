@@ -15,7 +15,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ldYVvKMAeyhV4ys6Iuzb3g1+9/iBu0obT8potPQMrsw=' 'sha256-ziJ9An3KV52bU3g2dZqWq8mj16bHLrV5rjKJbmPjfbs=' 'sha256-TlXIHJRUtWHz2AOkPoz6UBzFPBjq4EjA79Nl4KoC2IY=' 'sha256-Lc/mNNUd/6GoyFxrSFFR5PSBVow+hacZrdB+WbTf6nc=' 'sha256-efnuChez+sxuHRDH8pxpAvoGDcPc8sqm4qdljJQzvsQ=' 'sha256-PLk0C0vKOiQsi78IGjVVoDxZAasoymkvEAyLJjfwJWs=' 'sha256-dJWS7H8MYpMTomkyx/bH1jC9zWa3oSwwtRNCo/0NIYg=' 'sha256-CVcE9kO3oo6IMChC9DMQluj9+Iy8t5Md1Erz01Mn2XU=' 'sha256-RuMYjP0eNR8ldkuJ2Xy4neTdyISFkMyBkBJjVMZheEw=' 'sha256-UCkEX/RVFRFA1GjRSJj8OHm3GVkj0NHB8en9aVFHdsc=' 'sha256-qjF4F/VbZPUlb3wzG2WnLC8QUtssk/s+Y9A9SLSx85Y=' 'sha256-HEC5k0UcXWNwm2QOqkDMtC4xQmK8Tddt4wNp1Pplfow=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#BC4749">
@@ -153,8 +153,8 @@
     <div class="header-actions">
       <button data-on="openSaveModal" data-on-plain>💾 Save</button>
       <button data-on="openLoadModal" data-on-plain>📂 Load</button>
-      <button onclick="exportModel()">⬇ Export OBJ</button>
-      <button onclick="resetAll()">🔄 Reset</button>
+      <button data-on="exportModel" data-on-plain>⬇ Export OBJ</button>
+      <button data-on="resetAll" data-on-plain>🔄 Reset</button>
     </div>
   </header>
 
@@ -167,8 +167,8 @@
     <div class="step-list" id="stepList"></div>
     <div class="controls-panel" id="controlsPanel"></div>
     <div class="step-nav">
-      <button class="btn-prev" id="btnPrev" onclick="prevStep()">◀ Previous</button>
-      <button class="btn-next" id="btnNext" onclick="nextStep()">Next ?</button>
+      <button class="btn-prev" id="btnPrev" data-on="prevStep" data-on-plain>◀ Previous</button>
+      <button class="btn-next" id="btnNext" data-on="nextStep" data-on-plain>Next ?</button>
     </div>
   </div>
 
@@ -671,24 +671,27 @@ function renderControls() {
       html += `<div class="control-group">
         <label>${c.label} <span class="range-val" id="val_${c.key}">${params[c.key]}</span>
         <input type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${params[c.key]}"
-          oninput="updateParam('${c.key}', parseFloat(this.value))"></label>
+          data-action-input="updateParamFloat" data-arg="${c.key}"></label>
       </div>`;
     } else if (c.type === 'color') {
       html += `<div class="control-group">
         <label>${c.label}
         <input type="color" value="${params[c.key]}"
-          oninput="updateParam('${c.key}', this.value)"></label>
+          data-action-input="updateParamRaw" data-arg="${c.key}"></label>
       </div>`;
     } else if (c.type === 'toggle') {
       html += `<div class="control-group">
         <label><input type="checkbox" ${params[c.key] ? 'checked' : ''}
-          onchange="updateParam('${c.key}', this.checked)"> ${c.label}</label>
+          data-action-change="updateParamChecked" data-arg="${c.key}"> ${c.label}</label>
       </div>`;
     }
   });
   panel.innerHTML = html;
 }
 
+function updateParamFloat(v){ updateParam(this.getAttribute('data-arg'), parseFloat(v)); }
+function updateParamRaw(v){ updateParam(this.getAttribute('data-arg'), v); }
+function updateParamChecked(){ updateParam(this.getAttribute('data-arg'), this.checked); }
 function updateParam(key, val) {
   params[key] = val;
   const ve = document.getElementById('val_' + key);
@@ -701,7 +704,7 @@ function renderStepList() {
   const list = document.getElementById('stepList');
   list.innerHTML = STEPS.map((s, i) => `
     <div class="step-item ${i === currentStep ? 'active' : ''} ${i < currentStep ? 'completed' : ''}"
-         onclick="goToStep(${i})">
+         data-action="goToStep" data-arg="${i}">
       <div class="step-num">${i < currentStep ? '?' : i + 1}</div>
       <div class="step-name">${s.name}</div>
     </div>
@@ -750,7 +753,7 @@ function openSaveModal() {
     <input type="text" id="saveName" aria-label="Cannon name" placeholder="Enter a name for your cannon...">
     <div class="modal-btns">
       <button class="btn-cancel" data-on="closeModal" data-on-plain>Cancel</button>
-      <button class="btn-save-confirm" onclick="doSave()">Save</button>
+      <button class="btn-save-confirm" data-action="doSave">Save</button>
     </div>
   `;
   document.getElementById('modalOverlay').classList.add('open');
@@ -767,9 +770,9 @@ function openLoadModal() {
   } else {
     listHtml = '<div class="saves-list">' + keys.map(k => {
       const d = new Date(saves[k].date).toLocaleDateString();
-      return `<div class="save-entry" onclick="doLoad('${k.replace(/'/g,"\\'")}')">
+      return `<div class="save-entry" data-action="doLoad" data-arg="${k.replace(/"/g,'&quot;')}">
         <div><div class="save-name">${k}</div><div class="save-date">${d}</div></div>
-        <button class="del-btn" onclick="event.stopPropagation();doDelete('${k.replace(/'/g,"\\'")}')">?</button>
+        <button class="del-btn" data-action="doDelete" data-arg="${k.replace(/"/g,'&quot;')}" data-stop>?</button>
       </div>`;
     }).join('') + '</div>';
   }
@@ -949,5 +952,6 @@ if (window.JVExporter) {
 </script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
+<script src="workshop-actions.js"></script>
 </body>
 </html>

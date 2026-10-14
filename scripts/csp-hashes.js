@@ -28,7 +28,7 @@ function processFile(p) {
   while (m = scriptRx.exec(s)) {
     const body = m[1];
     if (!body.trim()) continue;
-    const h = crypto.createHash('sha256').update(body).digest('base64');
+    const h = crypto.createHash('sha256').update(body.replace(/\r\n?/g, '\n')).digest('base64');
     hashes.push("'sha256-" + h + "'");
   }
 

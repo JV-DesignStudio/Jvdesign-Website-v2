@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-dUW/pdCRRs44iJl+IgsrtzpNhswD1Wpd44QFyjJO3Hs=' 'sha256-QtWyY6i9DqBSU3OIyPEliyvdjPtagHVw+V39OyEpKBI=' 'sha256-+pu5NPhgE1pzVyGQzSoEDzj5nIcEZ6R2tyKfJKSflpE=' 'sha256-9cqSqf7LlUgz2GIIYwngqT3jWZCAzC9QD/XH8NVd4ok=' 'sha256-8O2qBQZvas5oG0ytz//efOCNurwNhizE+xU2sR5cRzE=' 'sha256-3AsSFdvuKoGQPMdsOJBpfsgoy+iU9aMr6CKT7zT8DJI=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -150,7 +150,7 @@
 
  <div class="ctrl-section">
  <h2>Artwork</h2>
- <div class="upload-zone" id="artUploadZone" onclick="id('artInput').click()">
+ <div class="upload-zone" id="artUploadZone" data-on="clickArtUpload" data-on-plain>
  <div style="font-size:2rem;margin-bottom:6px;">🎨</div>
  <div class="upload-zone-text">Click to upload artwork<br>or drag & drop an image</div>
  </div>
@@ -159,8 +159,8 @@
  <label for="artEmoji">Emoji Art (if no image)</label>
  <input type="text" id="artEmoji" value="⚔️" data-on="render" data-on-event="input" data-on-args="" maxlength="4">
  </div>
- <div class="range-row"><label for="artScale">Art Scale <span id="vArtScale">1.0</span>-</label><input type="range" min="0.3" max="2" step="0.05" value="1" id="artScale" oninput="id('vArtScale').textContent=(+this.value).toFixed(2);render()"></div>
- <div class="range-row"><label for="artY">Art Y Offset <span id="vArtY">0</span></label><input type="range" min="-80" max="80" value="0" id="artY" oninput="id('vArtY').textContent=this.value;render()"></div>
+ <div class="range-row"><label for="artScale">Art Scale <span id="vArtScale">1.0</span>-</label><input type="range" min="0.3" max="2" step="0.05" value="1" id="artScale" data-on="onArtScaleInput" data-on-event="input" data-on-args="value"></div>
+ <div class="range-row"><label for="artY">Art Y Offset <span id="vArtY">0</span></label><input type="range" min="-80" max="80" value="0" id="artY" data-on="onArtYInput" data-on-event="input" data-on-args="value"></div>
  </div>
 
  <div class="ctrl-section">
@@ -179,8 +179,8 @@
 
  <div class="ctrl-section">
  <h2>Style</h2>
- <div class="range-row"><label for="cornerR">Corner Radius <span id="vCorner">18</span></label><input type="range" min="4" max="40" value="18" id="cornerR" oninput="id('vCorner').textContent=this.value;render()"></div>
- <div class="range-row"><label for="glowI">Glow Intensity <span id="vGlow">0.6</span></label><input type="range" min="0" max="1" step="0.05" value="0.6" id="glowI" oninput="id('vGlow').textContent=(+this.value).toFixed(2);render()"></div>
+ <div class="range-row"><label for="cornerR">Corner Radius <span id="vCorner">18</span></label><input type="range" min="4" max="40" value="18" id="cornerR" data-on="onCornerInput" data-on-event="input" data-on-args="value"></div>
+ <div class="range-row"><label for="glowI">Glow Intensity <span id="vGlow">0.6</span></label><input type="range" min="0" max="1" step="0.05" value="0.6" id="glowI" data-on="onGlowInput" data-on-event="input" data-on-args="value"></div>
  </div>
 
  <div class="ctrl-section">
@@ -245,6 +245,11 @@
 <script src="../hidpi-canvas.js"></script>
 <script>
 function id(x){return document.getElementById(x);}
+function clickArtUpload(){id('artInput').click();}
+function onArtScaleInput(v){id('vArtScale').textContent=(+v).toFixed(2);render();}
+function onArtYInput(v){id('vArtY').textContent=v;render();}
+function onCornerInput(v){id('vCorner').textContent=v;render();}
+function onGlowInput(v){id('vGlow').textContent=(+v).toFixed(2);render();}
 
 // -- State --
 let cardTemplate='classic';

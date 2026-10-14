@@ -169,7 +169,7 @@
   function showLevelUp(lvl) {
     const overlay = document.createElement('div');
     overlay.className = 'levelup-overlay';
-    overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">\ud83c\udfc6</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">You\'re doing amazing, keep going!</div><button onclick="this.closest(\'.levelup-overlay\').remove()">Continue</button></div>';
+    overlay.innerHTML = '<div class="levelup-card"><div class="lvl-icon">\ud83c\udfc6</div><div class="lvl-title">Level ' + lvl + '!</div><div class="lvl-sub">You\'re doing amazing, keep going!</div><button data-action="removeClosest" data-arg=".levelup-overlay">Continue</button></div>';
     document.body.appendChild(overlay);
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   }

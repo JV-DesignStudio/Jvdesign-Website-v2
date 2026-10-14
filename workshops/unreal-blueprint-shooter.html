@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LJF5vBWOyNJpBIZOnadONgJdF8QbcHSLbfcAm7cmbPw=' 'sha256-qM6dnO7bVwB7SCI3ZYUHrq1yTshIcHclKqmBSTuMRlk=' 'sha256-52UP2PxUGnFuEbiR96cXsQMXYXUQxorxNUbJ/MRPBLw=' 'sha256-WUR5ATFYejA37FC/qaf3mu58yyk3eZH6f3cRRZkUxZU=' 'sha256-Yqg4eZFAqdJUUJaO28+dmJ9sZI0GfUsS6H7vAQXBtC0=' 'sha256-FlvsU1H9dLniyn0bvD64Vc6B3FzXnx4xb84/UsucZmQ=' 'sha256-EWFMsvYnuyRoSYRfB/VGWWhfU8sz6F6an0lopcjFEC8=' 'sha256-3PBAnK9FBVCmJv8RwxC+TYFzBM5qZ4+f+ymdAGUlSto=' 'sha256-yv/FLV7Eo8mQSajUlE+QgN6faKjZlUqbSn3CjGmt4JM=' 'sha256-Yqg4eZFAqdJUUJaO28+dmJ9sZI0GfUsS6H7vAQXBtC0=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#BC4749">
@@ -1587,7 +1587,7 @@ function showLevelUp(lv){
   let ov=document.getElementById('levelUpOverlay');
   if(!ov){
     ov=document.createElement('div');ov.id='levelUpOverlay';ov.className='levelup-overlay';
-    ov.innerHTML='<div class="levelup-card"><h2>⭐ Level Up!</h2><p id="levelUpText"></p><button onclick="closeLevelUp()">Continue</button></div>';
+    ov.innerHTML='<div class="levelup-card"><h2>⭐ Level Up!</h2><p id="levelUpText"></p><button data-action="closeLevelUp">Continue</button></div>';
     document.body.appendChild(ov);
   }
   document.getElementById('levelUpText').textContent='You reached Level '+lv+'!';
@@ -1597,8 +1597,8 @@ function closeLevelUp(){document.getElementById('levelUpOverlay')?.classList.rem
 
 function nav(i){
   return `<div class="step-nav">
-    <button class="btn-prev" onclick="go(${i-1})" ${i===0?'disabled':''}>← Back</button>
-    <button class="btn-next" onclick="go(${i+1})" ${i===TOTAL-1?'disabled':''}>Next →</button>
+    <button class="btn-prev" data-action="go" data-arg="${i-1}" ${i===0?'disabled':''}>← Back</button>
+    <button class="btn-next" data-action="go" data-arg="${i+1}" ${i===TOTAL-1?'disabled':''}>Next →</button>
   </div>`;
 }
 function go(i){
@@ -1621,7 +1621,7 @@ function renderStep(){
       ${quiz.opts.map((o,i)=>`<button class="quiz-opt" data-idx="${i}" data-on="selectQuizOpt">${o}</button>`).join('')}
       <div class="quiz-feedback" id="quizFeedback"></div>
       <button class="quiz-submit" id="quizSubmit" data-on="checkQuiz" data-on-plain disabled>Check Answer</button>
-      <button class="quiz-next-btn" id="quizNext" onclick="completeQuizStep()">✅ Continue, Unlock Feature!</button>
+      <button class="quiz-next-btn" id="quizNext" data-action="completeQuizStep">✅ Continue, Unlock Feature!</button>
     </div>`;
   }
 
@@ -1641,7 +1641,7 @@ function renderStep(){
   // Tabs
   const tabs=document.getElementById('stepsTabs');
   tabs.innerHTML=STEPS.map((_,i)=>`
-    <button class="tab-btn${i===cur?' active':''}${done.has(i)?' done':''}" onclick="go(${i})">${i+1}</button>
+    <button class="tab-btn${i===cur?' active':''}${done.has(i)?' done':''}" data-action="go" data-arg="${i}">${i+1}</button>
   `).join('');
   tabs.querySelector('.active')?.scrollIntoView({inline:'nearest',behavior:'smooth'});
   updateProg();
@@ -1785,5 +1785,6 @@ rsz();renderStep();requestAnimationFrame(loop);
 <script defer src="/mascots.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
+<script src="workshop-actions.js"></script>
 </body>
 </html>

@@ -462,6 +462,16 @@ function saveState() {
       completed: completed,
       codes: codes
     }));
+    /* A1425: ledger fingerprint so canvas XP counts in the site totals.
+       scanComponentXP only sees {xp:number, total:number, completed:[]},
+       which the engine state shape is not, so mirror a tiny read-only
+       ledger beside it. Same storage key family, no migration needed. */
+    var doneNums = Object.keys(completed).map(function(n) { return +n; });
+    localStorage.setItem(CFG.storageKey + ':ledger', JSON.stringify({
+      xp: doneNums.length * wsXpPerStep(),
+      total: STEPS.length,
+      completed: doneNums
+    }));
     savePassport(codes);
   } catch(e) {}
 }
@@ -629,13 +639,13 @@ function renderSteps() {
       '></textarea>' +
       '<div class="cw-actions">' +
         '<button class="cw-btn cw-btn-check' + (isDone ? ' done' : '') + '"' +
-          ' onclick="CW.checkStep(' + step.num + ')"' +
+          ' data-cw="checkStep" data-cw-arg="' + step.num + '"' +
           (isDone ? ' disabled' : '') + '>' +
           (isDone ? '✓ Done' : 'Apply to Canvas ▶') +
         '</button>' +
         (isDone ? '' :
-          '<button class="cw-btn cw-btn-show" onclick="CW.showSolution(' + step.num + ')">Show Solution</button>' +
-          '<button class="cw-btn cw-btn-reset" onclick="CW.resetStep(' + step.num + ')">Reset</button>'
+          '<button class="cw-btn cw-btn-show" data-cw="showSolution" data-cw-arg="' + step.num + '">Show Solution</button>' +
+          '<button class="cw-btn cw-btn-reset" data-cw="resetStep" data-cw-arg="' + step.num + '">Reset</button>'
         ) +
       '</div>' +
       '<div class="cw-feedback" id="feedback-' + step.num + '"></div>';
@@ -656,7 +666,7 @@ function renderSteps() {
       fillHtml += '</div>';
       if (!isDone) {
         fillHtml += '<div class="cw-fills-actions">' +
-          '<button class="cw-btn cw-btn-show" onclick="CW.checkFills(' + step.num + ')">Check Blanks</button>' +
+          '<button class="cw-btn cw-btn-show" data-cw="checkFills" data-cw-arg="' + step.num + '">Check Blanks</button>' +
           '<span class="cw-fills-fb" id="fills-fb-' + step.num + '"></span>' +
           '</div>';
       }
@@ -678,13 +688,13 @@ function renderSteps() {
           cls += ' selected';
         }
         qHtml += '<div class="' + cls + '"' +
-          (isDone || quizPassed[step.num] ? '' : ' onclick="CW.selectQuiz(' + step.num + ',' + oi + ')"') +
+          (isDone || quizPassed[step.num] ? '' : ' data-cw="selectQuiz" data-cw-arg="' + step.num + '" data-cw-arg2="' + oi + '"') +
           '><span class="cw-quiz-letter">' + letters[oi] + '</span>' + opt + '</div>';
       });
       qHtml += '</div>';
       if (!isDone && !quizPassed[step.num]) {
         qHtml += '<div class="cw-quiz-actions">' +
-          '<button class="cw-btn cw-btn-check" onclick="CW.checkQuiz(' + step.num + ')">Check Answer</button>' +
+          '<button class="cw-btn cw-btn-check" data-cw="checkQuiz" data-cw-arg="' + step.num + '">Check Answer</button>' +
           '</div>';
       }
       qHtml += '<div class="cw-quiz-fb" id="quiz-fb-' + step.num + '"></div>';
@@ -1086,6 +1096,20 @@ function ensureProgressStrip() {
     if (xl) xl.textContent = cwXpLocal + ' XP';
   } catch (e) {}
 }
+
+/* Delegated click handler for data-cw actions (CSP-safe, no inline handlers) */
+document.addEventListener('click', function(e) {
+  var el = e.target.closest('[data-cw]');
+  if (!el) return;
+  var action = el.getAttribute('data-cw');
+  var arg = Number(el.getAttribute('data-cw-arg'));
+  if (action === 'checkStep') checkStep(arg);
+  else if (action === 'showSolution') showSolution(arg);
+  else if (action === 'resetStep') resetStep(arg);
+  else if (action === 'checkFills') checkFills(arg);
+  else if (action === 'selectQuiz') selectQuiz(arg, Number(el.getAttribute('data-cw-arg2')));
+  else if (action === 'checkQuiz') checkQuiz(arg);
+});
 
 /* Init */
 ensureLiveStyle();
