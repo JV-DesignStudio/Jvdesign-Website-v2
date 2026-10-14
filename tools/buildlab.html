@@ -2965,7 +2965,14 @@ function exportOBJFallback(){
       for (let i = 0; i < idx.count; i += 3) {
         obj += `f ${idx.getX(i)+vOffset} ${idx.getX(i+1)+vOffset} ${idx.getX(i+2)+vOffset}\n`;
       }
+    } else {
+      // Non-indexed geometry (common for imported GLTF/GLB meshes): emit a
+      // triangle face per three vertices so a round-trip keeps its surfaces.
+      for (let i = 0; i + 2 < pos.count; i += 3) {
+        obj += `f ${i+vOffset} ${i+1+vOffset} ${i+2+vOffset}\n`;
+      }
     }
+
     vOffset += pos.count;
     geo.dispose();
   });
@@ -3493,62 +3500,114 @@ function handleImportGLTF(input) {
   if (!file) return;
 
   if (!GLTFLoader) {
-    toast('GLTFLoader not loaded - check connection');
+    toast('GLTFLoader failed to load, check connection');
     return;
+  }
+
+  // .glb is a binary container; .gltf is JSON text (often with embedded data
+  // URIs). GLTFLoader.parse only treats an ArrayBuffer as GLB binary, so a
+  // .gltf read as binary fails. Pick the reader from the extension/type.
+  const isGlb = /\.glb$/i.test(file.name) || file.type === 'model/gltf-binary';
+
+  // First material colour, tolerating multi-material meshes (material is an
+  // array) and materials without a colour.
+  function firstColour(material) {
+    const m = Array.isArray(material) ? material[0] : material;
+    if (m && m.color && m.color.isColor) return m.color.clone();
+    try { return new THREE.Color(currentColour); } catch (e) { return new THREE.Color(0x9e9e9e); }
   }
 
   const reader = new FileReader();
   reader.onload = function(e) {
     const loader = new GLTFLoader();
-    loader.parse(e.target.result, '', function(gltf) {
-      clearAll(true);
-      let importedCount = 0;
+    let payload = e.target.result;
+    if (!isGlb && typeof payload === 'string') {
+      // A .gltf often embeds its buffer as a data: URI, which the site CSP
+      // blocks for fetch (connect-src has no data:). Swap each data: buffer for
+      // a blob: URL, which connect-src already allows, before parsing.
+      try {
+        const json = JSON.parse(payload);
+        (json.buffers || []).forEach(function(b) {
+          if (b && typeof b.uri === 'string' && /^data:/i.test(b.uri)) {
+            try { const blob = dataURLtoBlob(b.uri); if (blob) b.uri = URL.createObjectURL(blob); } catch (err) {}
+          }
+        });
+        payload = JSON.stringify(json);
+      } catch (err) {
+        toast('Could not parse GLTF file');
+        return;
+      }
+    }
+    loader.parse(payload, '', function(gltf) {
+      const root = gltf.scene;
+      root.updateMatrixWorld(true);
 
-      gltf.scene.traverse(function(child) {
-        if (child.isMesh) {
-          child.material = new THREE.MeshStandardMaterial({
-            color: child.material.color || new THREE.Color(currentColour),
-            roughness: child.material.roughness !== undefined ? child.material.roughness : 0.55,
-            metalness: child.material.metalness || 0,
-            transparent: child.material.transparent || false,
-            opacity: child.material.opacity !== undefined ? child.material.opacity : 1,
-          });
-          child.castShadow = true;
-          child.receiveShadow = true;
-
-          // Calculate bounding box for sizing
-          const box = new THREE.Box3().setFromObject(child);
-          const size = box.getSize(new THREE.Vector3());
-          const center = box.getCenter(new THREE.Vector3());
-
-          child.userData = {
-            isBlock: true,
-            isImported: true,
-            shape: 'gltf',
-            colour: '#' + child.material.color.getHexString(),
-            w: size.x || 1,
-            h: size.y || 1,
-            d: size.z || 1,
-            rot: 0,
-            rotX: 0,
-            rotZ: 0,
-            blockName: child.name || '',
-            blockId: 'b_' + Math.random().toString(36).slice(2,9)
-          };
-
-          // Position relative to origin
-          child.position.copy(center);
-          scene.add(child);
-          blocks.push(child);
-          importedCount++;
-        }
-      });
-
-      if (importedCount === 0) {
+      // Collect meshes first: adding/moving children while traversing the same
+      // tree can skip siblings.
+      const sourceMeshes = [];
+      root.traverse(function(o) { if (o.isMesh && o.geometry) sourceMeshes.push(o); });
+      if (sourceMeshes.length === 0) {
         toast('No meshes found in GLTF file');
         return;
       }
 
+      // Normalise the whole model the same way the OBJ import does: centre it
+      // on X/Z, sit its base on the ground, and scale the longest axis to ~10.
+      const modelBox = new THREE.Box3().setFromObject(root);
+      const modelCentre = modelBox.getCenter(new THREE.Vector3());
+      const modelSize = modelBox.getSize(new THREE.Vector3());
+      const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
+      const scale = maxDim > 10 ? 10 / maxDim : 1;
+
+      let importedCount = 0;
+      sourceMeshes.forEach(function(src) {
+        // Bake the source world transform into a fresh geometry so each part
+        // keeps the pose it had in the file, then re-centre its own origin.
+        const geo = src.geometry.clone();
+        geo.applyMatrix4(src.matrixWorld);
+        geo.computeBoundingBox();
+        const bb = geo.boundingBox;
+        const c = bb.getCenter(new THREE.Vector3());
+        const s = bb.getSize(new THREE.Vector3());
+        geo.translate(-c.x, -c.y, -c.z);
+
+        const colour = firstColour(src.material);
+        const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+          color: colour,
+          roughness: 0.55,
+          metalness: 0.1,
+        }));
+        mesh.position.set(
+          (c.x - modelCentre.x) * scale,
+          (c.y - modelBox.min.y) * scale,
+          (c.z - modelCentre.z) * scale
+        );
+        mesh.scale.setScalar(scale);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData = {
+          isBlock: true,
+          isImported: true,
+          shape: 'gltf',
+          colour: '#' + colour.getHexString(),
+          w: (s.x || 1) * scale,
+          h: (s.y || 1) * scale,
+          d: (s.z || 1) * scale,
+          rot: 0,
+          rotX: 0,
+          rotZ: 0,
+          blockName: src.name || '',
+          blockId: 'b_' + Math.random().toString(36).slice(2,9)
+        };
+
+        scene.add(mesh);
+        blocks.push(mesh);
+        importedCount++;
+      });
+
+      // Name the build after the file (matches the OBJ import behaviour) and
+      // add to the scene rather than clearing it, so imports can be remixed
+      // with what is already on the grid.
       buildName = file.name.replace(/\.(glb|gltf)$/i, '').replace(/_/g, ' ');
       const nameInput = document.getElementById('buildNameInput');
       if (nameInput) nameInput.value = buildName;
@@ -3560,7 +3619,7 @@ function handleImportGLTF(input) {
       toast('Failed to parse GLTF file');
     });
   };
-  reader.readAsArrayBuffer(file);
+  if (isGlb) reader.readAsArrayBuffer(file); else reader.readAsText(file);
 }
 
 // -------------------------------------------------------
