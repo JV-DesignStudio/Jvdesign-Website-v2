@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-yxLp2k5GrdQsDKUdHV/jdxqgb/sTcXT1zm94Ovm4q+8=' 'sha256-/2QZvosVkG/nFCcL4hZwDnk5vccFRBAGm31rQD6Tvgo=' 'sha256-pCeec6r9A59fs0oewvnpK2KF1ZhT9S9g7cGet8IHB50=' 'sha256-VSznxa5EUHBIV/1gGQiZK3lrd/NWKUhNekPlK878dmE=' 'sha256-kXb8tRauMo304oHIJhgP3ccFuPxPLXa9+M16QV1Z1x4=' 'sha256-BJ9qC+HzUpVJLVcezuS3/QQc+Ow9F79JSg6qp2Z0nAs=' 'sha256-Syb5gFYeRn6HGeb0M/GKmXdZ+Jo/gAqaoeloxainXE8=' 'sha256-tCp9wQTVAVGc4NS76iHoMZ8amhc1yi9k3hLO7Ruqtrw=' 'sha256-pCeec6r9A59fs0oewvnpK2KF1ZhT9S9g7cGet8IHB50=' 'sha256-pJVTHANWyzHn/WnD4zckr8MovOeu6Px0c1XNxasuiW4=' 'sha256-qgua/ShVgAPYZ6GyoIsiZVXVyQwrpfrI1eOxPh6p6jY=' 'sha256-1JZ5raupZeSDCPR52Ivx+w+lyPsy1uyMFco6gemYk9A=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-yxLp2k5GrdQsDKUdHV/jdxqgb/sTcXT1zm94Ovm4q+8=' 'sha256-/2QZvosVkG/nFCcL4hZwDnk5vccFRBAGm31rQD6Tvgo=' 'sha256-pCeec6r9A59fs0oewvnpK2KF1ZhT9S9g7cGet8IHB50=' 'sha256-pVmse8NHawcAZBavlL/qm9seq7hJev9gM1QNWjg8knI=' 'sha256-kXb8tRauMo304oHIJhgP3ccFuPxPLXa9+M16QV1Z1x4=' 'sha256-BJ9qC+HzUpVJLVcezuS3/QQc+Ow9F79JSg6qp2Z0nAs=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#BC4749">
@@ -42,6 +42,7 @@
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
 <script src="jv-exporter.js"></script>
+<script src="builder-gestures.js"></script>
 <script src="builder-templates.js"></script>
 <link rel="stylesheet" href="../style-workshop-rocket-builder.css?v=17">
 <noscript><link rel="stylesheet" href="../style-workshop-rocket-builder.css?v=17"></noscript>
@@ -986,25 +987,12 @@ window.addEventListener('mousemove', function(e) {
 });
 canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
 
-let pinchDist0 = 0;
-canvas.addEventListener('touchstart', function(e) {
-  if (e.touches.length === 1) { orbit.dragging = true; orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY; }
-  if (e.touches.length === 2) { pinchDist0 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
-  e.preventDefault();
-}, { passive: false });
-canvas.addEventListener('touchend', function() { orbit.dragging = false; });
-canvas.addEventListener('touchmove', function(e) {
-  if (e.touches.length === 1 && orbit.dragging) {
-    orbit.theta -= (e.touches[0].clientX - orbit.lastX) * 0.007;
-    orbit.phi   -= (e.touches[0].clientY - orbit.lastY) * 0.007;
-    orbit.lastX = e.touches[0].clientX; orbit.lastY = e.touches[0].clientY;
-  }
-  if (e.touches.length === 2) {
-    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-    orbit.radius *= pinchDist0 / d; pinchDist0 = d;
-  }
-  e.preventDefault();
-}, { passive: false });
+BuilderGestures.attachTapSelect(canvas, camera, function () { return rocketGroup; }, {
+  onOrbit: function (dx, dy) { orbit.theta -= dx * 0.007; orbit.phi -= dy * 0.007; },
+  onPinch: function (ratio) { orbit.radius *= ratio; },
+  onDragStart: function () { orbit.dragging = true; },
+  onDragEnd: function () { orbit.dragging = false; }
+});
 
 /* -------------------------------
    RESIZE + RENDER LOOP

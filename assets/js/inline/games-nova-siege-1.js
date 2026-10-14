@@ -210,7 +210,7 @@ var W=LW,H=LH;
 /* A795 DPR fit: canvas keeps its 3:4 logical space while the backing store
    matches the displayed size times DPR (capped at 2). Uniform scale keeps
    circles circular on narrow phone widths instead of CSS-stretching. */
-function nsFit(){try{var d=Math.min(window.devicePixelRatio||1,2);var wrap=cv.parentElement;var imm=document.documentElement.classList.contains('jvds-immersive');var avail=(wrap&&wrap.clientWidth)||LW;var capH=imm?Math.max(260,(wrap&&wrap.clientHeight)||window.innerHeight):Math.min(window.innerHeight*0.82,920);var cssW=Math.min(avail,LW);var cssH=cssW*LH/LW;if(cssH>capH){cssH=capH;cssW=cssH*LW/LH;}if(window.HiDPI&&HiDPI.fit){HiDPI.fit(cv,Math.round(cssW),Math.round(cssH));}else{cv.style.width=cssW+'px';cv.style.height=cssH+'px';cv.width=Math.round(cssW*d);cv.height=Math.round(cssH*d);}var s=cv.width/LW;vsScale=s;ctx.setTransform(s,0,0,s,0,0);ctx.imageSmoothingEnabled=false;}catch(e){}}
+function nsFit(){try{var d=Math.min(window.devicePixelRatio||1,2);var wrap=cv.parentElement;var avail=(wrap&&wrap.clientWidth)||LW;var capH=Math.max(260,(wrap&&wrap.clientHeight)||window.innerHeight);var cssW=Math.min(avail,LW);var cssH=cssW*LH/LW;if(cssH>capH){cssH=capH;cssW=cssH*LW/LH;}if(window.HiDPI&&HiDPI.fit){HiDPI.fit(cv,Math.round(cssW),Math.round(cssH));}else{cv.style.width=cssW+'px';cv.style.height=cssH+'px';cv.width=Math.round(cssW*d);cv.height=Math.round(cssH*d);}var s=cv.width/LW;vsScale=s;ctx.setTransform(s,0,0,s,0,0);ctx.imageSmoothingEnabled=false;}catch(e){}}
 nsFit();window.addEventListener('resize',nsFit);
 var STARCOL=['#ffffff','#ff6ec7','#7CFC00','#4aa8ff','#ffaa33','#66e0ff'];
 /* A970 endless parallax space: three star layers, drifting nebulae and slow
@@ -254,8 +254,8 @@ function hitR(sp){return sp===SPR.boss?22:9}
 function startRun(){
   run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,fireT:0,shield:(meta.up.shield||0)>0?1:0,inv:90,waveKills:0,waveTarget:6,kills:0,runPower:0,over:false,hint:210,combo:0,comboT:0,bestCombo:0,bossActive:false,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,runUps:{},paused:false,drones:[],level:1,blasts:[]};
   spawnT=36;boss=null;spawnQueue=0;shopStock=[];shopRerolled=0;
-  document.getElementById('draftOverlay').classList.add('hidden');
   document.getElementById('shopOverlay').classList.add('hidden');
+  showMenuMain();
   updatePauseBtn();
   meta.quests.runs++;saveMeta();qUpdate();
   document.getElementById('titleFont').style.display='';fireSfxT=0;
@@ -264,9 +264,9 @@ function startRun(){
 }
 var spawnT=36,boss=null,spawnQueue=0,uidc=1,shopStock=[],shopRerolled=0;
 function endRun(win){
-  if(run.over)return;run.over=true;cancelAnimationFrame(raf);run.paused=false;
-  document.getElementById('draftOverlay').classList.add('hidden');
+  if(run.over)return;  run.over=true;cancelAnimationFrame(raf);run.paused=false;
   document.getElementById('shopOverlay').classList.add('hidden');
+  showMenuMain();
   updatePauseBtn();
   meta.credits+=run.credits;meta.quests.best=Math.max(meta.quests.best||0,run.score);saveMeta();
   if(window.GameSystem&&window.GameSystem.saveScore)window.GameSystem.saveScore('nova-siege',run.score,{level:run.stage});
@@ -450,7 +450,7 @@ function resolveBlasts(){
 function nextWave(){
   run.waveKills=0;run.wave++;meta.quests.waves++;run.waveTarget=Math.min(26,6+run.stage+Math.floor(run.wave*0.5));
   var bossNext=run.wave%4===0&&!run.bossActive;
-  if(bossNext)spawnBoss();else openDraft();
+  if(bossNext)spawnBoss();else openShop();
   qUpdate();
 }
 function killBoss(){
@@ -463,9 +463,9 @@ function killBoss(){
   openShop();
 }
 /* ============================ ROGUELIKE RUN ============================
-   A987: after every non-boss wave the run pauses and offers a draft of three
-   run-only upgrades; after every boss the station shop opens so run credits
-   can be spent mid-run. Both freeze the loop (render only) until resolved. */
+   A1527: after every wave the run pauses and the station shop opens so run
+   credits can be spent mid-run. The loop freezes (render only) until the
+   player departs. Permanent ship upgrades live on the main menu instead. */
 function nearestTarget(x,y){var best=null,bd=1e9,i;for(i=0;i<run.enemies.length;i++){var e=run.enemies[i],d=Math.hypot(e.x-x,e.y-y);if(d<bd){bd=d;best=e;}}if(boss){var db=Math.hypot(boss.x-x,boss.y-y);if(db<bd){bd=db;best=boss;}}return best;}
 function applyRunUpgrade(id){
   run.runUps[id]=(run.runUps[id]||0)+1;
@@ -474,51 +474,13 @@ function applyRunUpgrade(id){
   if(id==='life')run.health=Math.min(9,run.health+1);
   if(id==='drone')run.drones.push({ang:(run.drones.length*2.1),r:30+run.drones.length*11,fire:24,x:run.px,y:run.py});
 }
-var RARITY_W={common:6,rare:3,epic:1},RARITY_C={common:'#7CFC00',rare:'#4cc9f0',epic:'#c060ff'};
-function draftChoices(){
-  var pool=runUpgradePool(),out=[],guard=0;
-  while(out.length<3&&guard<300){guard++;if(!pool.length)break;
-    var tot=0,i;for(i=0;i<pool.length;i++)tot+=(RARITY_W[pool[i].rarity]||3);
-    var r=Math.random()*tot,pick=pool[0];
-    for(i=0;i<pool.length;i++){r-=(RARITY_W[pool[i].rarity]||3);if(r<=0){pick=pool[i];break;}}
-    out.push(pick);pool=pool.filter(function(u){return u!==pick;});
-  }
-  return out;
-}
-function openDraft(){
-  if(run.over||run.paused)return;
-  var ch=draftChoices();if(!ch.length)return;
-  run.paused=true;lastT=0;updatePauseBtn();
-  var wrap=document.getElementById('draftCards');wrap.innerHTML='';
-  ch.forEach(function(u){
-    var lvl=upLv(u.id);
-    var b=document.createElement('button');b.className='card';b.type='button';
-    b.innerHTML='<span class="rar" style="color:'+(RARITY_C[u.rarity]||'#7CFC00')+'">'+u.rarity+'</span><b>'+u.name+'</b><small>'+u.desc+'</small><small>Level '+(lvl+1)+' / '+u.max+'</small>';
-    b.onclick=function(){chooseDraft(u);};
-    wrap.appendChild(b);
-  });
-  document.getElementById('draftTitle').textContent='Wave '+run.wave+' cleared';
-  document.getElementById('draftOverlay').classList.remove('hidden');
-  sfx('win');
-}
-function runUpgradePool(){return RUN_UPGRADES.filter(function(u){return upLv(u.id)<u.max;});}
-function chooseDraft(u){
-  applyRunUpgrade(u.id);renderCredits();
-  document.getElementById('draftOverlay').classList.add('hidden');
-  resumeGame();sfx('win');
-}
-function skipDraft(){
-  addCredits(50,run.px,run.py);renderCredits();
-  document.getElementById('draftOverlay').classList.add('hidden');
-  resumeGame();
-}
 function resumeGame(){run.paused=false;lastT=0;updatePauseBtn();}
-function pauseModalOpen(){var d=document.getElementById('draftOverlay'),s=document.getElementById('shopOverlay');return (d&&!d.classList.contains('hidden'))||(s&&!s.classList.contains('hidden'));}
+function pauseModalOpen(){var s=document.getElementById('shopOverlay');return !!(s&&!s.classList.contains('hidden'));}
 function updatePauseBtn(){var b=document.getElementById('pauseBtn');if(!b)return;b.textContent=(run&&run.paused)?'Resume':'Pause';b.style.display=(run&&!run.over)?'':'none';}
 function togglePause(){if(!run||run.over||pauseModalOpen())return;if(run.paused)resumeGame();else{run.paused=true;lastT=0;updatePauseBtn();}sfx('tap');}
 function openShop(){
   if(run.over||run.paused)return;
-  if(!shopStock.length)rollShop();
+  rollShop();
   run.paused=true;lastT=0;updatePauseBtn();
   renderShop();
   document.getElementById('shopOverlay').classList.remove('hidden');
@@ -611,7 +573,7 @@ function render(){
 }
 function ptextW(str,s){return Math.max(0,String(str).length*6*s-s);}
 function pnumW(v,s){return String(v).length*6*s}
-function hud(){document.getElementById('hScore').textContent=run.score.toLocaleString();document.getElementById('hStage').textContent=run.stage;document.getElementById('hWave').textContent=run.wave;document.getElementById('hLives').textContent=run.health;document.getElementById('hCredits').textContent=run.credits;document.getElementById('hBest').textContent=(window.GameSystem?window.GameSystem.getBestScore('nova-siege'):0).toLocaleString();storyScore();}
+function hud(){var set=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v};set('hScore',run.score.toLocaleString());set('hStage',run.stage);set('hWave',run.wave);set('hLives',run.health);set('hCredits',run.credits);set('hBest',(window.GameSystem?window.GameSystem.getBestScore('nova-siege'):0).toLocaleString());storyScore();}
 /* ============================ UI ============================ */
 document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});document.querySelectorAll('.tabpane').forEach(function(x){x.classList.remove('active')});t.classList.add('active');document.getElementById('pane-'+t.dataset.tab).classList.add('active');if(t.dataset.tab==='up')renderUpgrades();if(t.dataset.tab==='quest')renderQuests();if(t.dataset.tab==='skin')renderSkins();sfx('tap');}});
 function renderCredits(){document.getElementById('credBank').textContent=meta.credits.toLocaleString();if(document.getElementById('hCredits'))document.getElementById('hCredits').textContent=(run?run.credits:0);}
@@ -619,6 +581,11 @@ function renderUpgrades(){var el=document.getElementById('upList');el.innerHTML=
 function renderQuests(){var el=document.getElementById('questList');el.innerHTML='';QUESTS.forEach(function(q){var cur=Math.min(q.goal,meta.quests[q.key]||0),done=!!meta.completed[q.id]||cur>=q.goal,pct=Math.round(cur/q.goal*100);var row=document.createElement('div');row.className='quest-row '+(done?'done':'');row.innerHTML='<b>'+(done?'[X] ':'[ ] ')+q.name+'</b><small>'+q.text+'</small>'+(done?'<small>Reward banked: '+q.reward+' cr</small>':'<div class="meter"><span style="width:'+pct+'%"></span></div><small>'+cur+' / '+q.goal+'</small>');el.appendChild(row);});}
 function qUpdate(){var changed=false;QUESTS.forEach(function(q){if(meta.completed[q.id])return;if((meta.quests[q.key]||0)>=q.goal){meta.completed[q.id]=true;meta.credits+=q.reward;changed=true;try{var pp=window.playerProfile;if(pp&&pp.addXP)pp.addXP(Math.round(q.reward/2),'game:nova-siege-quest');}catch(e){}if(run&&!run.over)float(W/2,140,'QUEST: '+q.name+' +'+q.reward+'cr','#7CFC00');}});if(changed){saveMeta();renderQuests();renderCredits();}}
 function renderSkins(){var el=document.getElementById('skinList');el.innerHTML='';HULLS.forEach(function(h,idx){var owned=h.cost===0||meta.hulls.indexOf(idx)>=0;var d=document.createElement('div');d.className='skin '+(meta.hull===idx?'sel':'')+(owned?'':' locked');var sc=document.createElement('canvas');sc.width=SHIP_ROWS[0].length;sc.height=SHIP_ROWS.length;sc.getContext('2d').drawImage(SHIPS[idx],0,0);d.appendChild(sc);if(!owned){var c=document.createElement('span');c.className='cost';c.textContent=h.cost;d.appendChild(c);}d.title=h.name+' - '+h.perk+(owned?'':' - '+h.cost+' cr');d.onclick=function(){if(owned){meta.hull=idx;saveMeta();renderSkins();document.getElementById('skinInfo').textContent=h.name+' hull equipped. '+h.perk+'.';sfx('win');}else if(meta.credits>=h.cost){meta.credits-=h.cost;meta.hulls.push(idx);meta.hull=idx;saveMeta();renderSkins();renderCredits();document.getElementById('skinInfo').textContent=h.name+' hull unlocked and equipped! '+h.perk+'.';sfx('win');}else{document.getElementById('skinInfo').textContent='You need '+(h.cost-meta.credits)+' more credits for the '+h.name+' hull ('+h.perk+').';}};el.appendChild(d);});}
+/* A1527: the main menu (title screen and death screen) is where permanent ship
+   upgrades live now; the play field owns the whole screen during a run. */
+function showMenuMain(){var m=document.getElementById('menuMain'),p=document.getElementById('menuPanel');if(m)m.classList.remove('hidden');if(p)p.classList.add('hidden');}
+function openMenu(){var m=document.getElementById('menuMain'),p=document.getElementById('menuPanel');if(m)m.classList.add('hidden');if(p)p.classList.remove('hidden');renderUpgrades();renderQuests();renderSkins();renderCredits();sfx('tap');}
+function closeMenu(){showMenuMain();sfx('tap');}
 /* ============================ INPUT ============================ */
 function canvasX(clientX){var r=cv.getBoundingClientRect();return (clientX-r.left)/r.width*W}
 function canvasY(clientY){var r=cv.getBoundingClientRect();return (clientY-r.top)/r.height*H}
@@ -634,7 +601,8 @@ stage.addEventListener('pointercancel',dragEnd);
 window.addEventListener('keydown',function(e){if(e.key==='ArrowLeft')keys.left=1;if(e.key==='ArrowRight')keys.right=1;if(e.key==='ArrowUp')keys.up=1;if(e.key==='ArrowDown')keys.down=1;if(e.key==='p'||e.key==='P')togglePause();});
 window.addEventListener('keyup',function(e){if(e.key==='ArrowLeft')keys.left=0;if(e.key==='ArrowRight')keys.right=0;if(e.key==='ArrowUp')keys.up=0;if(e.key==='ArrowDown')keys.down=0});
 document.getElementById('startBtn').onclick=function(){storyBegin();startRun()};
-document.getElementById('draftSkip').onclick=skipDraft;
+document.getElementById('menuUpBtn').onclick=openMenu;
+document.getElementById('menuBack').onclick=closeMenu;
 document.getElementById('shopLeave').onclick=leaveShop;
 document.getElementById('shopReroll').onclick=rerollShop;
 document.getElementById('pauseBtn').onclick=togglePause;
@@ -642,8 +610,7 @@ document.getElementById('pauseBtn').onclick=togglePause;
 function drawTitle(){var tcanvas=document.getElementById('titleFont'),tc=tcanvas.getContext('2d');tc.clearRect(0,0,tcanvas.width,tcanvas.height);ptext(tc,'NOVA',tcanvas.width/2,6,4,'#7CFC00','#ffffff','center');ptext(tc,'SIEGE',tcanvas.width/2,42,4,'#7CFC00','#ffffff','center');ptext(tc,"PIP'S ARCADE REMASTER",tcanvas.width/2,86,1,'#8fe36a','#04070c','center');}
 drawTitle();
 renderUpgrades();renderQuests();renderSkins();renderCredits();
-document.getElementById('hBest').textContent=(window.GameSystem?window.GameSystem.getBestScore('nova-siege'):0).toLocaleString();
 run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,over:true,hint:0,combo:0,comboT:0,bestCombo:0,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,inv:0,bossActive:false,shield:0,runPower:0,kills:0,waveKills:0,waveTarget:6,fireT:0,runUps:{},paused:false,drones:[],level:1,blasts:[]};
-window.__nova={get run(){return run},get meta(){return meta},get boss(){return boss},get sprites(){return SPR},get ships(){return SHIPS},get bg(){return bg},get bossType(){return boss?boss.type:null},get enemyKinds(){return run.enemies.map(function(e){return e.kind})},get stage(){return run.stage},get scale(){return vsScale},get lw(){return LW},get lh(){return LH},get hulls(){return HULLS},get combo(){return run.combo||0},get comboMult(){return comboMult()},get bossFire(){return boss?boss.fire:null},get runUps(){return run.runUps},get paused(){return !!run.paused},get draftOpen(){var e=document.getElementById('draftOverlay');return !!e&&!e.classList.contains('hidden')},get shopOpen(){var e=document.getElementById('shopOverlay');return !!e&&!e.classList.contains('hidden')},get runCritChance(){return runCrit()},get runPierce(){return runPierce()},get runDamage(){return runDamage()},get runShots(){return runShots()},get runRate(){return runRate()},get runSpeed(){return runSpeed()},get runDrones(){return run.drones.length},get runLevel(){return run.level||1},get blasts(){return run.blasts.length},forceBoss:function(){spawnBoss();return boss?boss.type:null},forceDraft:function(){openDraft()},forceShop:function(){openShop()},forceWave:function(){nextWave()},refreshShop:function(){renderShop()},applyRunUpgrade:function(id){applyRunUpgrade(id);},pickKind:function(){return pickKind();},forceEnd:function(){run.health=0;hurtPlayer()}};
+window.__nova={get run(){return run},get meta(){return meta},get boss(){return boss},get sprites(){return SPR},get ships(){return SHIPS},get bg(){return bg},get bossType(){return boss?boss.type:null},get enemyKinds(){return run.enemies.map(function(e){return e.kind})},get stage(){return run.stage},get scale(){return vsScale},get lw(){return LW},get lh(){return LH},get hulls(){return HULLS},get combo(){return run.combo||0},get comboMult(){return comboMult()},get bossFire(){return boss?boss.fire:null},get runUps(){return run.runUps},get paused(){return !!run.paused},get menuOpen(){var e=document.getElementById('menuPanel');return !!e&&!e.classList.contains('hidden')},get shopOpen(){var e=document.getElementById('shopOverlay');return !!e&&!e.classList.contains('hidden')},get runCritChance(){return runCrit()},get runPierce(){return runPierce()},get runDamage(){return runDamage()},get runShots(){return runShots()},get runRate(){return runRate()},get runSpeed(){return runSpeed()},get runDrones(){return run.drones.length},get runLevel(){return run.level||1},get blasts(){return run.blasts.length},forceBoss:function(){spawnBoss();return boss?boss.type:null},openMenu:function(){openMenu()},closeMenu:function(){closeMenu()},forceShop:function(){openShop()},forceWave:function(){nextWave()},refreshShop:function(){renderShop()},applyRunUpgrade:function(id){applyRunUpgrade(id);},pickKind:function(){return pickKind();},forceEnd:function(){run.health=0;hurtPlayer()}};
 hud();
 })();

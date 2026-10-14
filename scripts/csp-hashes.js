@@ -37,7 +37,7 @@ function processFile(p) {
   csp = csp.replace(
     /script-src\s[^;]*/,
     function (dir) {
-      let d = dir.replace(/\s*'unsafe-inline'\s*/g, ' ').replace(/\s+/g, ' ').trim();
+      let d = dir.replace(/\s*'unsafe-inline'\s*/g, ' ').replace(/\s*'sha256-[^']*'\s*/g, ' ').replace(/\s+/g, ' ').trim();
       if (hashStr) {
         d = d.replace(/^(script-src\s+'self')/, '$1' + hashStr);
       }

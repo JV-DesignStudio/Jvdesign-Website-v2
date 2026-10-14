@@ -307,6 +307,28 @@ window.JVDS_GAMES = [
     "arcadeSession": "3-5 min",
     "age": "Ages 6-12",
     "learning": "Timing · Looking ahead · Quick decisions"
+  },
+  {
+    "id": "stardust-snake",
+    "thumb": "assets/game-thumbs/stardust-snake.webp",
+    "cat": "Arcade",
+    "file": "stardust-snake.html",
+    "title": "Stardust Snake",
+    "tag": "Classic · Grow",
+    "emoji": "✨",
+    "bg": "linear-gradient(135deg,#03010f,#0e0036)",
+    "kids": true,
+    "desc": "Classic snake in a night sky: steer a trail of stardust into the fallen stars, grow your constellation and never drift into the edge or your own light.",
+    "difficulty": "Easy to learn",
+    "session": "3-5 min",
+    "controls": "Arrow keys or W A S D to steer, or swipe and tap the on-screen arrows",
+    "storyHook": "Stardust leaves a trail of light in the empty sky and the fallen stars are the only glow left.",
+    "character": "Stardust",
+    "objective": "Steer the stardust trail into the fallen stars and grow your constellation.",
+    "finishLine": "The trail runs out of sky, your best constellation is saved and a new trail is ready.",
+    "arcadeSession": "3-5 min",
+    "age": "Ages 6-12",
+    "learning": "Planning · Hand-eye coordination · Patience"
   }
 ];
 
@@ -331,7 +353,8 @@ window.JVDS_GAME_QUALITY = {
   "biscuit-clicker": "BETA",
   "sky-high-friends": "BETA",
   "critter-whack": "BETA",
-  "crossy-crew": "READY"
+  "crossy-crew": "READY",
+  "stardust-snake": "READY"
 };
 (function () {
   var labels = window.JVDS_GAME_QUALITY || {};

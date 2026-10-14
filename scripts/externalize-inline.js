@@ -99,7 +99,12 @@ for (const page of targetPages()) {
     const outRel = 'assets/js/inline/' + name;
     if (APPLY) fs.writeFileSync(path.join(OUTDIR, name), body.replace(/^\r?\n/, ''), 'utf8');
     written++;
-    return '<script src="/' + outRel + '"' + attrKeep(attrs) + '></script>';
+    // Emit a page-relative path (e.g. ../assets/... from games/) rather than a
+    // root-absolute one, so the page also loads when the site is served from a
+    // sub-folder (local Live Server) or via file://, not only from the domain root.
+    const prefix = path.relative(path.dirname(page), ROOT).split(path.sep).join('/');
+    const relSrc = (prefix ? prefix + '/' : '') + outRel;
+    return '<script src="' + relSrc + '"' + attrKeep(attrs) + '></script>';
   });
   if (src !== before) {
     changedFiles++;

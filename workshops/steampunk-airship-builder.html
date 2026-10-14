@@ -15,7 +15,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-eX9JIsmXhgFN0uYGibrnLKSVu2r1tQHU7pI1UuSdY/8=' 'sha256-BbCf4grCR3cLeqrCSHf2Qh1nHmGiF2cTIbTGVVKu0mw=' 'sha256-xXmb1EbUScrI4XIIycqN+DBmYXo5eyE05pjrZyCm1W8=' 'sha256-EMvPuR7JJVP+2HELwaR6czop5qXL2SHEaqqkT7QT1rM=' 'sha256-v42SKKi4EUg68mSLUVhR8X+ygvDCfPG8aDGflF+g+eE=' 'sha256-C8OB79CrdpDeKIy+cLEMD9/x6NsD0sQujUe5V8JfQns=' 'sha256-VEtUENyBYmlMjNs7nzftb3eJIsd3P0sXgw6ydwmLZy4=' 'sha256-dktpXEK4ooYeBpwHmkdasEue662AmJ5yaC1QBF+gVxc=' 'sha256-c7YNyHPp795xSwvLlFEfKd9Uf3ya4ygNdFOUS+/SiXM=' 'sha256-xXmb1EbUScrI4XIIycqN+DBmYXo5eyE05pjrZyCm1W8=' 'sha256-yXSE3VhVyQYMssHk9Mpoic0BMMQJAKhZrw8k7BTlXXU=' 'sha256-50xTpBKcuyjQbc5bryYIiq5kNYTaUEzSRD4uzL523SI=' 'sha256-qC/l3EyT0T30kxu3gzwlGn4O5ayIxCivVsaZ49Cp2+o=' 'sha256-7SolrQbch7ANRPhEoBAat2WDYL+Vhq69a61X2aJGcT0=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-eX9JIsmXhgFN0uYGibrnLKSVu2r1tQHU7pI1UuSdY/8=' 'sha256-BbCf4grCR3cLeqrCSHf2Qh1nHmGiF2cTIbTGVVKu0mw=' 'sha256-xXmb1EbUScrI4XIIycqN+DBmYXo5eyE05pjrZyCm1W8=' 'sha256-KR7Dfexca36kY8UKOSlgCzvPhj3g+eeNCz7rOeTEV78=' 'sha256-v42SKKi4EUg68mSLUVhR8X+ygvDCfPG8aDGflF+g+eE=' 'sha256-C8OB79CrdpDeKIy+cLEMD9/x6NsD0sQujUe5V8JfQns=' 'sha256-VEtUENyBYmlMjNs7nzftb3eJIsd3P0sXgw6ydwmLZy4=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#BC4749">
@@ -28,6 +28,7 @@
 <script src="../assets/vendor/three/three.min.js"></script>
 <script src="../assets/vendor/three/GLTFExporter.js"></script>
 <script src="jv-exporter.js"></script>
+<script src="builder-gestures.js"></script>
 <script src="builder-templates.js"></script>
 <link rel="stylesheet" href="../style-workshop-steampunk-airship-builder.css?v=17">
 <noscript><link rel="stylesheet" href="../style-workshop-steampunk-airship-builder.css?v=17"></noscript>
@@ -388,9 +389,10 @@ function initThree(){
   c.addEventListener('mousemove',e=>{if(!isDrag)return;cTheta-=(e.clientX-mX)*0.004;cPhi=Math.max(0.1,Math.min(Math.PI-0.1,cPhi-(e.clientY-mY)*0.004));mX=e.clientX;mY=e.clientY;});
   window.addEventListener('mouseup',()=>isDrag=false);
   c.addEventListener('wheel',e=>{cDist=Math.max(4,Math.min(40,cDist+e.deltaY*0.012));e.preventDefault();},{passive:false});
-  let tX,tY,tD;
-  c.addEventListener('touchstart',e=>{if(e.touches.length===1){tX=e.touches[0].clientX;tY=e.touches[0].clientY;}if(e.touches.length===2){const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;tD=Math.sqrt(dx*dx+dy*dy);}});
-  c.addEventListener('touchmove',e=>{e.preventDefault();if(e.touches.length===1){cTheta-=(e.touches[0].clientX-tX)*0.004;cPhi=Math.max(0.1,Math.min(Math.PI-0.1,cPhi-(e.touches[0].clientY-tY)*0.004));tX=e.touches[0].clientX;tY=e.touches[0].clientY;}if(e.touches.length===2){const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY,d=Math.sqrt(dx*dx+dy*dy);cDist=Math.max(4,Math.min(40,cDist-(d-tD)*0.025));tD=d;}},{passive:false});
+  BuilderGestures.attachTapSelect(c, camera, function(){ return shipGroup; }, {
+    onOrbit: function(dx,dy){ cTheta-=dx*0.004; cPhi=Math.max(0.1,Math.min(Math.PI-0.1,cPhi-dy*0.004)); },
+    onPinch: function(ratio,dist,prev){ cDist=Math.max(4,Math.min(40,cDist-(dist-prev)*0.025)); }
+  });
   window.addEventListener('resize',()=>{camera.aspect=vp.clientWidth/vp.clientHeight;camera.updateProjectionMatrix();renderer.setSize(vp.clientWidth,vp.clientHeight);});
 
   let t=0;

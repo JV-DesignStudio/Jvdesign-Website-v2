@@ -121,9 +121,9 @@ async function content(browser, base) {
   let live = 0;
   for (let i = 0; i < 50; i++) {
     await sleep(60);
-    // A cleared wave now opens the roguelike draft, which pauses spawning. Pick
-    // the first card so the run keeps producing enemies.
-    await page.evaluate(() => { if (window.__nova.draftOpen) { const c = document.querySelector('#draftCards .card'); if (c) c.click(); } });
+    // A cleared wave now opens the station shop, which pauses spawning. Depart
+    // so the run keeps producing enemies.
+    await page.evaluate(() => { if (window.__nova.shopOpen) document.getElementById('shopLeave').click(); });
     live = Math.max(live, await page.evaluate(() => window.__nova.enemyKinds.length));
     if (live > 0) break;
   }
@@ -182,11 +182,11 @@ async function mobileDrag(browser, base) {
   check('mobile: play field fills the phone width', fill.w >= fill.vw * 0.9, JSON.stringify(fill));
   check('mobile: field is taller than the old board (>=640)', fill.h >= 640, JSON.stringify(fill));
   check('mobile: no horizontal overflow', fill.ovf <= 2, String(fill.ovf));
-  const hudHidden = await page.evaluate(() => {
-    const h = document.querySelector('.hud');
-    return !!h && getComputedStyle(h).display === 'none';
+  const chromeHidden = await page.evaluate(() => {
+    const t = document.querySelector('.top');
+    return !t || getComputedStyle(t).display === 'none' || t.getBoundingClientRect().height === 0;
   });
-  check('mobile: redundant DOM stat grid hidden in immersive mode', hudHidden);
+  check('mobile: site chrome hidden in immersive mode', chromeHidden);
   // HiDPI: render() must re-apply the logical -> backing-store scale every frame.
   // If it resets to identity, the whole game draws into the top-left corner at a
   // fraction of the element (the "small square" bug) on any dpr>1 phone.
@@ -304,45 +304,19 @@ async function roguelike(browser, base) {
   await page.evaluate(() => document.getElementById('startBtn').click());
   await sleep(250);
 
-  // Clearing a wave pauses the run and offers exactly three run-upgrade cards.
+  // Clearing a wave pauses the run and opens the station shop with stock.
   await page.evaluate(() => { const r = window.__nova.run; r.waveKills = r.waveTarget; window.__nova.forceWave(); });
-  await sleep(160);
-  const draft = await page.evaluate(() => ({
-    paused: window.__nova.paused,
-    open: window.__nova.draftOpen,
-    cards: document.querySelectorAll('#draftCards .card').length
-  }));
-  check('roguelike: clearing a wave opens a 3-card upgrade draft and pauses the run', draft.paused && draft.open && draft.cards === 3, JSON.stringify(draft));
-
-  // Picking a card applies a run-only upgrade and resumes the run.
-  await page.click('#draftCards .card');
-  await sleep(130);
-  const picked = await page.evaluate(() => {
-    const ups = window.__nova.runUps; let total = 0; for (const k in ups) total += ups[k];
-    return { paused: window.__nova.paused, open: window.__nova.draftOpen, total };
-  });
-  check('roguelike: picking a card applies a run-only upgrade and resumes', !picked.paused && !picked.open && picked.total >= 1, JSON.stringify(picked));
-
-  // A drafted damage upgrade must feed the in-run damage stat (not the meta shop).
-  const dmg = await page.evaluate(() => {
-    const n = window.__nova, before = n.runDamage;
-    n.run.runUps.damage = (n.run.runUps.damage || 0) + 1;
-    return { before, after: n.runDamage };
-  });
-  check('roguelike: a run damage upgrade raises in-run damage by 1', dmg.after === dmg.before + 1, JSON.stringify(dmg));
-
-  // The station shop opens with stock, sells for THIS run's credits, and resumes.
-  await page.evaluate(() => { window.__nova.run.credits = 500; window.__nova.forceShop(); });
   await sleep(160);
   const shop = await page.evaluate(() => ({
     paused: window.__nova.paused,
     open: window.__nova.shopOpen,
     rows: document.querySelectorAll('#shopList .shop-row').length
   }));
-  check('roguelike: the in-run shop opens with stock and pauses the run', shop.paused && shop.open && shop.rows >= 1, JSON.stringify(shop));
+  check('roguelike: clearing a wave opens the station shop and pauses the run', shop.paused && shop.open && shop.rows >= 1, JSON.stringify(shop));
 
+  // Buying in the shop spends THIS run's credits and sells the row out.
+  await page.evaluate(() => { window.__nova.run.credits = 500; window.__nova.refreshShop(); });
   const beforeBuy = await page.evaluate(() => window.__nova.run.credits);
-  await page.evaluate(() => window.__nova.refreshShop());
   await page.click('#shopList .buy');
   await sleep(130);
   const afterBuy = await page.evaluate(() => ({ credits: window.__nova.run.credits, sold: document.querySelectorAll('#shopList .buy:disabled').length }));
@@ -352,6 +326,36 @@ async function roguelike(browser, base) {
   await sleep(130);
   const left = await page.evaluate(() => ({ paused: window.__nova.paused, open: window.__nova.shopOpen }));
   check('roguelike: Depart closes the shop and resumes the run', !left.paused && !left.open, JSON.stringify(left));
+
+  // A run upgrade must feed the in-run stat (not the permanent meta shop).
+  const dmg = await page.evaluate(() => {
+    const n = window.__nova, before = n.runDamage;
+    n.run.runUps.damage = (n.run.runUps.damage || 0) + 1;
+    return { before, after: n.runDamage };
+  });
+  check('roguelike: a run damage upgrade raises in-run damage by 1', dmg.after === dmg.before + 1, JSON.stringify(dmg));
+
+  // The permanent ship upgrades live on the main menu, not a sidebar. They open
+  // from the death screen and the title screen.
+  await page.evaluate(() => window.__nova.forceEnd());
+  await sleep(160);
+  const menu = await page.evaluate(() => {
+    const ov = document.getElementById('overlay');
+    return {
+      overlay: !!ov && !ov.classList.contains('hidden'),
+      main: !!document.getElementById('menuMain') && !document.getElementById('menuMain').classList.contains('hidden'),
+      upgradesBtn: !!document.getElementById('menuUpBtn')
+    };
+  });
+  check('roguelike: the main menu shows on death with a Ship Upgrades button', menu.overlay && menu.main && menu.upgradesBtn, JSON.stringify(menu));
+
+  await page.evaluate(() => window.__nova.openMenu());
+  await sleep(120);
+  const panel = await page.evaluate(() => ({
+    open: window.__nova.menuOpen,
+    rows: document.querySelectorAll('#upList .up-row').length
+  }));
+  check('roguelike: Ship Upgrades opens the permanent upgrade panel', panel.open && panel.rows >= 1, JSON.stringify(panel));
   check('roguelike: no page errors', errors.length === 0, errors.join(' | '));
   await page.close();
 }
@@ -364,12 +368,16 @@ async function depth(browser, base) {
   await page.evaluate(() => document.getElementById('startBtn').click());
   await sleep(250);
 
-  // Run level starts at 1 and rises with every drafted upgrade.
+  // Run level starts at 1 and rises whenever a run upgrade is taken.
   const lv0 = await page.evaluate(() => window.__nova.runLevel);
   await page.evaluate(() => { window.__nova.run.waveKills = window.__nova.run.waveTarget; window.__nova.forceWave(); });
-  await sleep(130);
-  await page.click('#draftCards .card');
-  await sleep(130);
+  await sleep(140);
+  const shopAfterWave = await page.evaluate(() => window.__nova.shopOpen);
+  check('depth: a cleared wave opens the shop', shopAfterWave, 'shopOpen=' + shopAfterWave);
+  await page.evaluate(() => { if (window.__nova.shopOpen) document.getElementById('shopLeave').click(); });
+  await sleep(120);
+  await page.evaluate(() => window.__nova.applyRunUpgrade('damage'));
+  await sleep(80);
   const lv1 = await page.evaluate(() => window.__nova.runLevel);
   check('depth: run level rises when an upgrade is taken', lv1 === lv0 + 1, lv0 + '->' + lv1);
 
@@ -378,10 +386,9 @@ async function depth(browser, base) {
   await sleep(140);
   const drone = await page.evaluate(() => { const d = window.__nova.run.drones[0]; return { n: window.__nova.runDrones, x: d ? Math.round(d.x) : null, y: d ? Math.round(d.y) : null }; });
   check('depth: a wingman drone is added and orbits the ship', drone.n >= 1 && drone.x != null, JSON.stringify(drone));
-  // A wave clear can open a draft mid-probe, which pauses the loop. Clear any
-  // in-run overlay so spawning and firing keep running while we sample.
+  // A wave clear can open the shop mid-probe, which pauses the loop. Depart so
+  // spawning and firing keep running while we sample.
   const clearOverlays = () => page.evaluate(() => {
-    if (window.__nova.draftOpen) { const c = document.querySelector('#draftCards .card'); if (c) c.click(); }
     if (window.__nova.shopOpen) document.getElementById('shopLeave').click();
   });
   let droneFired = false;
