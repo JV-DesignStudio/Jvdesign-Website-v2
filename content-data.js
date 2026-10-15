@@ -950,6 +950,20 @@ window.JVDS_CONTENT = {
       "url": "/workshops/castle-siege-blueprint.html"
     },
     {
+      "id": "cyber-security",
+      "title": "Cyber Defender! Understand Cyber Crime and Stay Safe Online",
+      "desc": "A free Lumo-led cyber security workshop. Learn what cyber crime is, who the threat actors are, how attacks work and how to stay safe. Quizzes and XP included.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 11,
+      "themeColor": "#0e7490",
+      "cover": "/og/learn.webp",
+      "url": "/workshops/cyber-security.html"
+    },
+    {
       "id": "fairy-survivors-guide",
       "title": "Fairy Survivors! Build a Vampire Survivors Game in Godot",
       "desc": "Build your own Vampire Survivors-style game in Godot! Waves of enemies, XP pickups, and level-up choices, all from scratch. Free beginner workshop.",
@@ -6249,8 +6263,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-15T11:52:48.106Z",
-    "workshops": 343,
+    "generated": "2026-10-15T12:21:47.271Z",
+    "workshops": 344,
     "games": 14,
     "tools": 48,
     "books": 5,
@@ -6259,7 +6273,7 @@ window.JVDS_CONTENT = {
       "C++": 18,
       "Defold": 13,
       "GDevelop": 13,
-      "General": 52,
+      "General": 53,
       "GML/GameMaker": 11,
       "Godot": 17,
       "Java": 15,

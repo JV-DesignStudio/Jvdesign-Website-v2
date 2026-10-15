@@ -7,6 +7,7 @@
    window.BQ quiz page, and every other complete-able progress key found
    in workshops/*.html. Canvas preview keys are intentionally absent. */
 var WORKSHOP_KEY_TO_ID = {
+    'jvds-cyber-security-v2': 'cyber-security',
     'jvds-terraria-world-ep1-v2': 'terraria-world-ep1-setup',
     'jvds-terraria-world-ep2-v2': 'terraria-world-ep2-world-file',
     'jvds-terraria-world-ep3-v2': 'terraria-world-ep3-first-change',
