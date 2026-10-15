@@ -203,14 +203,27 @@ window.CW_CONFIG = {
       goal: 'Draw the car and the road it drives on.',
       points: [
         'The canvas is 600 wide and 400 tall.',
-        'The road is a grey strip down the middle.',
+        'The road is a 200 wide grey strip down the middle.',
         'The car is a blue rectangle that sits on the road.'
       ],
       challenge: 'Set where the car starts:',
       starter: '# Where does the car start?\nvar car_x = ___\nvar car_y = 320\nvar car_w = ___\nvar car_h = 40',
       solution: '# Where does the car start?\nvar car_x = 270\nvar car_y = 320\nvar car_w = 60\nvar car_h = 40',
       checks: ['270', '60'],
-      height: 130
+      height: 130,
+      fills: {
+        text: 'The car starts at x = ___ to sit on the road. The road is ___ pixels wide.',
+        answers: ['270', '200']
+      },
+      quiz: {
+        question: 'Why is the road narrower than the canvas?',
+        options: [
+          'It is a bug in the code',
+          'The dark sides act as boundaries - driving off the road should feel wrong, adding challenge',
+          'Wider roads use too much memory'
+        ],
+        correct: 1
+      }
     },
     {
       num: 2,
@@ -219,58 +232,110 @@ window.CW_CONFIG = {
       points: [
         'Up speeds up. Down slows down.',
         'Left and Right steer the car.',
-        'The car stays on the road.'
+        'Acceleration adds 0.15 to the speed each frame; steering moves 3 pixels.'
       ],
       challenge: 'Write the controls:',
       starter: '# Speed up and slow down\nif Input.is_action_pressed("ui_up"):\n    car_speed += ___\nif Input.is_action_pressed("ui_down"):\n    car_speed -= 0.1\n\n# Steer left and right\nif Input.is_action_pressed("ui_left"):\n    car_x -= ___\nif Input.is_action_pressed("ui_right"):\n    car_x += ___',
       solution: '# Speed up and slow down\nif Input.is_action_pressed("ui_up"):\n    car_speed += 0.15\nif Input.is_action_pressed("ui_down"):\n    car_speed -= 0.1\n\n# Steer left and right\nif Input.is_action_pressed("ui_left"):\n    car_x -= 3\nif Input.is_action_pressed("ui_right"):\n    car_x += 3',
       checks: ['0.15', '3'],
-      height: 200
+      height: 200,
+      fills: {
+        text: 'The car accelerates by ___ per frame. Steering moves ___ pixels per frame for responsive control.',
+        answers: ['0.15', '3']
+      },
+      quiz: {
+        question: 'Why use gradual acceleration instead of instant max speed?',
+        options: [
+          'Instant speed would crash the canvas',
+          'Ramping up speed feels physical and gives the player a sense of weight and momentum',
+          'Godot requires gradual changes'
+        ],
+        correct: 1
+      }
     },
     {
       num: 3,
       title: 'Moving Road',
       goal: 'Make the road markings scroll so the car looks like it is moving.',
       points: [
-        'The road stays still. Only the dashes move.',
+        'The road stays still. Only the dashes scroll.',
         'Add the car speed to the dash offset each frame.',
-        'The offset wraps around so the dashes keep coming.'
+        'This parallax trick makes stationary dashes look like movement.'
       ],
       challenge: 'Scroll the road:',
       starter: '# Scroll the road markings\nroad_offset += ___\n\n# Wrap it so the dashes keep coming\nif road_offset > ___:\n    road_offset -= ___',
       solution: '# Scroll the road markings\nroad_offset += car_speed\n\n# Wrap it so the dashes keep coming\nif road_offset > 40:\n    road_offset -= 40',
       checks: ['car_speed', '40'],
-      height: 150
+      height: 150,
+      fills: {
+        text: 'The scroll offset grows by ___ each frame. This parallax trick makes stationary dashes look like ___.',
+        answers: ['car_speed', 'movement']
+      },
+      quiz: {
+        question: 'What is the parallax scrolling trick?',
+        options: [
+          'Moving the player very fast',
+          'Moving background elements at different speeds to create depth illusion without actually moving the camera',
+          'Drawing more pixels per frame'
+        ],
+        correct: 1
+      }
     },
     {
       num: 4,
       title: 'Obstacles',
       goal: 'Add red obstacles that slide toward the car.',
       points: [
-        'Obstacles start above the screen and move down.',
-        'When one passes the bottom, send it back to the top.',
+        'Obstacles start above the screen and move down with the car speed.',
+        'When one passes the bottom, send it back to the top instead of making a new one.',
         'It comes down a random lane each time.'
       ],
       challenge: 'Move and recycle the obstacles:',
       starter: '# Move each obstacle toward the car\nfor i in range(3):\n    obs[i].y += ___\n    # Send it back to the top if it goes past the bottom\n    if obs[i].y > ___:\n        obs[i].y = -60\n        obs[i].x = 220 + randi() % 160',
       solution: '# Move each obstacle toward the car\nfor i in range(3):\n    obs[i].y += car_speed\n    # Send it back to the top if it goes past the bottom\n    if obs[i].y > 420:\n        obs[i].y = -60\n        obs[i].x = 220 + randi() % 160',
       checks: ['car_speed', '420'],
-      height: 180
+      height: 180,
+      fills: {
+        text: 'Obstacles scroll at ___ speed so they match the road. Recycling obstacles off-screen avoids creating ___ objects.',
+        answers: ['car_speed', 'new']
+      },
+      quiz: {
+        question: 'Why recycle obstacles instead of creating new ones?',
+        options: [
+          'GDScript cannot create objects',
+          'Reusing existing objects avoids memory allocation overhead - this is called object pooling',
+          'New obstacles would be the same colour'
+        ],
+        correct: 1
+      }
     },
     {
       num: 5,
       title: 'Crash!',
       goal: 'Slow the car down when it hits an obstacle.',
       points: [
-        'Two rectangles crash when they overlap.',
-        'On a crash the car slows down a lot.',
+        'Two rectangles crash when all four edges overlap.',
+        'On a crash the car slows down a lot (times 0.3).',
         'The obstacle moves away so it only hits once.'
       ],
       challenge: 'Add the crash check:',
       starter: '# Check each obstacle for a crash\nfor i in range(3):\n    if car_x < obs[i].x + obs[i].w and car_x + car_w > obs[i].x and car_y < obs[i].y + obs[i].h and car_y + ___ > obs[i].y:\n        car_speed *= ___\n        obs[i].y = 420',
       solution: '# Check each obstacle for a crash\nfor i in range(3):\n    if car_x < obs[i].x + obs[i].w and car_x + car_w > obs[i].x and car_y < obs[i].y + obs[i].h and car_y + car_h > obs[i].y:\n        car_speed *= 0.3\n        obs[i].y = 420',
       checks: ['car_h', '0.3'],
-      height: 150
+      height: 150,
+      fills: {
+        text: 'AABB checks ___ edges of both rectangles. The speed penalty of ___ makes collisions feel punishing.',
+        answers: ['four', '0.3']
+      },
+      quiz: {
+        question: 'Why multiply speed by 0.3 instead of setting it to zero?',
+        options: [
+          'Zero speed crashes the engine',
+          'A dramatic slowdown feels like impact while keeping the player in motion - a full stop would feel like a freeze bug',
+          'Multiplication is faster than assignment'
+        ],
+        correct: 1
+      }
     },
     {
       num: 6,
@@ -285,7 +350,20 @@ window.CW_CONFIG = {
       starter: '# Add to the distance every frame\ndistance += car_speed\n\n# Finish a lap after enough distance\nif distance >= ___:\n    lap += 1\n    distance = 0\n    if lap_timer < best_time:\n        best_time = lap_timer\n    lap_timer = 0\n    if lap >= ___:\n        game_state = "over"',
       solution: '# Add to the distance every frame\ndistance += car_speed\n\n# Finish a lap after enough distance\nif distance >= lap_length:\n    lap += 1\n    distance = 0\n    if lap_timer < best_time:\n        best_time = lap_timer\n    lap_timer = 0\n    if lap >= 3:\n        game_state = "over"',
       checks: ['lap_length', '3'],
-      height: 190
+      height: 190,
+      fills: {
+        text: 'A lap completes every ___ distance units. The race ends after ___ laps.',
+        answers: ['3000', '3']
+      },
+      quiz: {
+        question: 'Why track best time instead of total time?',
+        options: [
+          'Total time is too large to store',
+          'Best lap time rewards consistency and improvement - players chase their own record, adding replay value',
+          'Godot only supports one timer'
+        ],
+        correct: 1
+      }
     }
   ]
 };
