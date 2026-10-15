@@ -95,6 +95,35 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
     });
     check('spot the phish accepts the correct red flags', phish.exists && phish.good, JSON.stringify(phish));
 
+    const widgets = await page.evaluate(() => {
+      const out = {};
+      const flip = document.querySelector('.cyber-flip');
+      out.flips = document.querySelectorAll('.cyber-flip').length;
+      if (flip) { flip.click(); out.flipFlipped = flip.classList.contains('flipped'); }
+      const picks = Array.prototype.slice.call(document.querySelectorAll('.cyber-pick'));
+      out.picks = picks.length;
+      out.picksGood = picks.every(function (g) {
+        var correct = (g.dataset.correct || '').split(',').map(Number);
+        Array.prototype.forEach.call(g.querySelectorAll('.cyber-pick-item'), function (it, i) { if (correct.indexOf(i) !== -1) it.click(); });
+        g.querySelector('.cyber-check').click();
+        return g.querySelector('.cyber-feedback').classList.contains('good');
+      });
+      const tfs = Array.prototype.slice.call(document.querySelectorAll('.cyber-tf'));
+      out.tfs = tfs.length;
+      out.tfsGood = tfs.every(function (g) {
+        Array.prototype.forEach.call(g.querySelectorAll('.cyber-tf-item'), function (item) {
+          var ans = item.getAttribute('data-answer');
+          item.querySelector('.cyber-tf-btns button[data-val="' + ans + '"]').click();
+        });
+        g.querySelector('.cyber-check').click();
+        return g.querySelector('.cyber-feedback').classList.contains('good');
+      });
+      return out;
+    });
+    check('flip cards toggle', widgets.flips >= 2 && widgets.flipFlipped, JSON.stringify(widgets));
+    check('tap-all-that-apply widgets accept the right picks', widgets.picks >= 2 && widgets.picksGood, 'picks ' + widgets.picks);
+    check('true/false widget accepts the right answers', widgets.tfs >= 1 && widgets.tfsGood, 'tf ' + widgets.tfs);
+
     // Regression: two wrong attempts trigger the enhancements "cross out an option"
     // hint, which reads data-k. With only data-correct the correct index parsed as
     // NaN and the hint could disable the CORRECT option, locking the question.

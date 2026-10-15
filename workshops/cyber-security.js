@@ -217,6 +217,84 @@
     });
   }
 
+  /* ---------- TAP ALL THAT APPLY ---------- */
+  function initPicks() {
+    document.querySelectorAll('.cyber-pick').forEach(function (g) {
+      var items = Array.prototype.slice.call(g.querySelectorAll('.cyber-pick-item'));
+      var check = g.querySelector('.cyber-check');
+      var fb = g.querySelector('.cyber-feedback');
+      var correct = (g.getAttribute('data-correct') || '').split(',').map(function (s) { return parseInt(s, 10); });
+      items.forEach(function (it) {
+        it.addEventListener('click', function () { it.classList.toggle('picked'); });
+      });
+      check.addEventListener('click', function () {
+        var problems = 0;
+        items.forEach(function (it, i) {
+          it.classList.remove('right', 'missed');
+          var want = correct.indexOf(i) !== -1;
+          var got = it.classList.contains('picked');
+          if (want && got) it.classList.add('right');
+          else if (!want && got) { it.classList.add('missed'); problems++; }
+          else if (want && !got) problems++;
+        });
+        if (problems === 0) {
+          fb.className = 'cyber-feedback show good';
+          fb.textContent = 'Spot on! You picked exactly the right ones.';
+        } else {
+          fb.className = 'cyber-feedback show bad';
+          fb.textContent = 'Not quite. The highlighted rows show where to look again.';
+        }
+      });
+    });
+  }
+
+  /* ---------- FLIP CARDS ---------- */
+  function initFlips() {
+    document.querySelectorAll('.cyber-flip').forEach(function (c) {
+      c.setAttribute('aria-pressed', 'false');
+      c.addEventListener('click', function () {
+        var on = c.classList.toggle('flipped');
+        c.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    });
+  }
+
+  /* ---------- TRUE OR FALSE ---------- */
+  function initTF() {
+    document.querySelectorAll('.cyber-tf').forEach(function (g) {
+      var items = Array.prototype.slice.call(g.querySelectorAll('.cyber-tf-item'));
+      var check = g.querySelector('.cyber-check');
+      var fb = g.querySelector('.cyber-feedback');
+      items.forEach(function (it) {
+        it.querySelectorAll('.cyber-tf-btns button').forEach(function (b) {
+          b.addEventListener('click', function () {
+            it.querySelectorAll('.cyber-tf-btns button').forEach(function (x) { x.classList.remove('sel'); });
+            b.classList.add('sel');
+            it.setAttribute('data-picked', b.getAttribute('data-val'));
+          });
+        });
+      });
+      check.addEventListener('click', function () {
+        var problems = 0;
+        items.forEach(function (it) {
+          it.classList.remove('right', 'missed');
+          var ans = it.getAttribute('data-answer');
+          var picked = it.getAttribute('data-picked');
+          if (!picked) { problems++; it.classList.add('missed'); }
+          else if (picked === ans) it.classList.add('right');
+          else { problems++; it.classList.add('missed'); }
+        });
+        if (problems === 0) {
+          fb.className = 'cyber-feedback show good';
+          fb.textContent = 'All correct!';
+        } else {
+          fb.className = 'cyber-feedback show bad';
+          fb.textContent = 'Some are not right yet. Think about why, then check again.';
+        }
+      });
+    });
+  }
+
   /* ---------- DEFENDER RANK ON FINISH ---------- */
   function initRank() {
     var banner = document.getElementById('finishBanner');
@@ -249,6 +327,9 @@
     document.querySelectorAll('.ws-note-area').forEach(function (a) { a.remove(); });
     buildNotes();
     initPhish();
+    initPicks();
+    initFlips();
+    initTF();
     initRank();
   }
 
