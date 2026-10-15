@@ -16,6 +16,15 @@
   if (window.JVDSShare) return;
   if (!/^\/tools\//.test(location.pathname)) return;
 
+  // A1547: same copy/paste project code on every tool, so work survives a wiped
+  // school computer. Loaded here so no tool page needs its own copy.
+  (function loadProjectCode() {
+    var s = document.createElement('script');
+    s.src = '/tool-project-code.js';
+    s.defer = true;
+    document.head.appendChild(s);
+  })();
+
   var TOOL = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
   var CREATORS = {
     'pixel-studio': 1, 'level-designer': 1,
