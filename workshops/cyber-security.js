@@ -295,6 +295,106 @@
     });
   }
 
+  /* ---------- MATCH THE PAIRS ---------- */
+  function initMatch() {
+    document.querySelectorAll('.cyber-match').forEach(function (g) {
+      var items = Array.prototype.slice.call(g.querySelectorAll('.cyber-match-item'));
+      var fb = g.querySelector('.cyber-feedback');
+      var selected = null;
+      items.forEach(function (it) {
+        it.addEventListener('click', function () {
+          if (it.classList.contains('matched')) return;
+          if (!selected) { selected = it; it.classList.add('sel'); return; }
+          if (selected === it) { it.classList.remove('sel'); selected = null; return; }
+          if (selected.parentNode === it.parentNode) {
+            selected.classList.remove('sel'); selected = it; it.classList.add('sel'); return;
+          }
+          if (selected.getAttribute('data-pair') === it.getAttribute('data-pair')) {
+            selected.classList.remove('sel');
+            selected.classList.add('matched');
+            it.classList.add('matched');
+            selected = null;
+            if (g.querySelectorAll('.cyber-match-item:not(.matched)').length === 0) {
+              fb.className = 'cyber-feedback show good';
+              fb.textContent = 'All matched! Nice work.';
+            }
+          } else {
+            var s = selected; selected = null;
+            s.classList.remove('sel');
+            s.classList.add('wrong'); it.classList.add('wrong');
+            setTimeout(function () { s.classList.remove('wrong'); it.classList.remove('wrong'); }, 700);
+          }
+        });
+      });
+    });
+  }
+
+  /* ---------- PUT IN ORDER ---------- */
+  function initOrder() {
+    document.querySelectorAll('.cyber-order').forEach(function (g) {
+      var items = Array.prototype.slice.call(g.querySelectorAll('.cyber-order-item'));
+      var fb = g.querySelector('.cyber-feedback');
+      var reset = g.querySelector('.cyber-order-reset');
+      var picked = [];
+      function refresh() {
+        items.forEach(function (it) {
+          var idx = picked.indexOf(it);
+          it.classList.toggle('picked', idx !== -1);
+          var num = it.querySelector('.cyber-order-num');
+          if (!num) { num = document.createElement('span'); num.className = 'cyber-order-num'; it.insertBefore(num, it.firstChild); }
+          num.textContent = idx === -1 ? '' : String(idx + 1);
+        });
+        if (picked.length === items.length) {
+          var correct = picked.every(function (it, i) { return parseInt(it.getAttribute('data-pos'), 10) === i + 1; });
+          fb.className = 'cyber-feedback show ' + (correct ? 'good' : 'bad');
+          fb.textContent = correct ? 'Perfect order! That is exactly how the attack unfolded.' : 'Not quite. Press Reset and try again.';
+        }
+      }
+      items.forEach(function (it) {
+        it.addEventListener('click', function () {
+          if (picked.indexOf(it) !== -1 || picked.length === items.length) return;
+          picked.push(it);
+          fb.className = 'cyber-feedback';
+          refresh();
+        });
+      });
+      if (reset) reset.addEventListener('click', function () {
+        picked = [];
+        fb.className = 'cyber-feedback';
+        refresh();
+      });
+    });
+  }
+
+  /* ---------- PASSWORD STRENGTH ---------- */
+  function initPassword() {
+    document.querySelectorAll('.cyber-password').forEach(function (g) {
+      var input = g.querySelector('.cyber-pw-input');
+      var fill = g.querySelector('.cyber-pw-fill');
+      var label = g.querySelector('.cyber-pw-label');
+      if (!input) return;
+      function tip(id, ok) { var el = g.querySelector('.cyber-pw-tip[data-tip="' + id + '"]'); if (el) el.classList.toggle('ok', ok); }
+      function update() {
+        var v = input.value;
+        var s = 0;
+        if (v.length >= 12) s++;
+        if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+        if (/[0-9]/.test(v)) s++;
+        if (/[^A-Za-z0-9]/.test(v)) s++;
+        if (!v) s = 0;
+        fill.style.width = (v ? Math.max(12, s * 25) : 0) + '%';
+        fill.setAttribute('data-level', String(s));
+        label.textContent = v ? ['', 'Weak', 'Fair', 'Good', 'Strong'][s] : '';
+        tip('len', v.length >= 12);
+        tip('case', /[A-Z]/.test(v) && /[a-z]/.test(v));
+        tip('num', /[0-9]/.test(v));
+        tip('sym', /[^A-Za-z0-9]/.test(v));
+      }
+      input.addEventListener('input', update);
+      update();
+    });
+  }
+
   /* ---------- DEFENDER RANK ON FINISH ---------- */
   function initRank() {
     var banner = document.getElementById('finishBanner');
@@ -330,6 +430,9 @@
     initPicks();
     initFlips();
     initTF();
+    initMatch();
+    initOrder();
+    initPassword();
     initRank();
   }
 

@@ -124,6 +124,41 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
     check('tap-all-that-apply widgets accept the right picks', widgets.picks >= 2 && widgets.picksGood, 'picks ' + widgets.picks);
     check('true/false widget accepts the right answers', widgets.tfs >= 1 && widgets.tfsGood, 'tf ' + widgets.tfs);
 
+    const more = await page.evaluate(() => {
+      const out = {};
+      const matches = Array.prototype.slice.call(document.querySelectorAll('.cyber-match'));
+      out.matches = matches.length;
+      out.matchesGood = matches.every(function (g) {
+        return Array.prototype.every.call(g.querySelectorAll('.cyber-match-terms .cyber-match-item'), function (t) {
+          var pair = t.getAttribute('data-pair');
+          t.click();
+          var def = g.querySelector('.cyber-match-defs .cyber-match-item[data-pair="' + pair + '"]');
+          def.click();
+          return t.classList.contains('matched') && def.classList.contains('matched');
+        }) && g.querySelector('.cyber-feedback').classList.contains('good');
+      });
+      const orders = Array.prototype.slice.call(document.querySelectorAll('.cyber-order'));
+      out.orders = orders.length;
+      out.ordersGood = orders.every(function (g) {
+        var items = Array.prototype.slice.call(g.querySelectorAll('.cyber-order-item')).sort(function (a, b) { return (+a.dataset.pos) - (+b.dataset.pos); });
+        items.forEach(function (it) { it.click(); });
+        return g.querySelector('.cyber-feedback').classList.contains('good');
+      });
+      const pw = document.querySelector('.cyber-password');
+      out.pw = !!pw;
+      if (pw) {
+        var input = pw.querySelector('.cyber-pw-input');
+        input.value = 'Tr0ub4dor&3xyz';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        out.pwLabel = pw.querySelector('.cyber-pw-label').textContent;
+        out.pwTips = pw.querySelectorAll('.cyber-pw-tip.ok').length;
+      }
+      return out;
+    });
+    check('match widgets pair correctly', more.matches >= 2 && more.matchesGood, 'matches ' + more.matches);
+    check('order widget accepts the right sequence', more.orders >= 1 && more.ordersGood, 'orders ' + more.orders);
+    check('password widget scores a strong password', more.pw && more.pwLabel === 'Strong' && more.pwTips === 4, JSON.stringify({ label: more.pwLabel, tips: more.pwTips }));
+
     // Regression: two wrong attempts trigger the enhancements "cross out an option"
     // hint, which reads data-k. With only data-correct the correct index parsed as
     // NaN and the hint could disable the CORRECT option, locking the question.
