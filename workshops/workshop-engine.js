@@ -361,6 +361,38 @@ function showFinish() {
   document.getElementById('finalStreak').textContent = bestStreak;
   document.getElementById('finalAccuracy').textContent = totalQuizzes ? Math.round(correctFirst / totalQuizzes * 100) + '%' : '0%';
   addFinishShare();
+  addNextRecommendation();
+  celebrationBurst();
+}
+
+function celebrationBurst() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var colors = ['#ff7700', '#06d6a0', '#ffd166', '#a78bfa', '#ff70b8', '#4dd9e0'];
+  var shapes = ['⭐', '✨', '🎉', '🎊', '❤️', '💫'];
+  var count = 40;
+  for (var i = 0; i < count; i++) {
+    var p = document.createElement('span');
+    p.setAttribute('aria-hidden', 'true');
+    var useEmoji = Math.random() > 0.5;
+    if (useEmoji) {
+      p.textContent = shapes[Math.floor(Math.random() * shapes.length)];
+      p.style.fontSize = (10 + Math.random() * 14) + 'px';
+    } else {
+      p.style.width = (6 + Math.random() * 6) + 'px';
+      p.style.height = p.style.width;
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    }
+    var x = 30 + Math.random() * 40;
+    var angle = -60 - Math.random() * 60;
+    var dist = 200 + Math.random() * 400;
+    var drift = -150 + Math.random() * 300;
+    p.style.cssText += ';position:fixed;left:' + x + 'vw;top:100vh;pointer-events:none;z-index:9999;' +
+      '--cdx:' + drift.toFixed(0) + 'px;--cdy:' + (-dist).toFixed(0) + 'px;--cr:' + (Math.random() * 720 - 360).toFixed(0) + 'deg;' +
+      'animation:confettiBurst ' + (1.2 + Math.random() * 0.8).toFixed(2) + 's cubic-bezier(.15,.8,.35,1) ' + (i * 25) + 'ms forwards;';
+    document.body.appendChild(p);
+    (function(el) { setTimeout(function() { el.remove(); }, 2500); })(p);
+  }
 }
 
 /* ── SHARE A FINISHED WORKSHOP ──
@@ -393,6 +425,39 @@ function workshopShare() {
     }, function () { finishToast('Share this link: ' + url); });
   }
   finishToast('Share this link: ' + url);
+}
+
+function addNextRecommendation() {
+  var banner = document.getElementById('finishBanner');
+  if (!banner || banner.querySelector('.finish-recommend')) return;
+  var links = document.querySelectorAll('a.next-ep-btn');
+  if (links.length > 0) return;
+  var path = location.pathname;
+  var recs = {
+    'scratch-catch': {title: 'Scratch Platformer', url: 'scratch-platformer-workshop.html', emoji: '🎮'},
+    'scratch-platformer': {title: 'Scratch Maze', url: 'scratch-maze-workshop.html', emoji: '🧩'},
+    'scratch-maze': {title: 'Scratch Race', url: 'scratch-race-workshop.html', emoji: '🏎️'},
+    'godot-first': {title: 'Godot Platformer', url: 'godot-platformer-workshop.html', emoji: '🤖'},
+    'js-bouncing-ball': {title: 'JS Platformer', url: 'js-platformer-workshop.html', emoji: '⚡'},
+    'python-adventure': {title: 'Python RPG', url: 'python-rpg-workshop.html', emoji: '🐍'},
+    'roblox-obby': {title: 'Roblox Tycoon', url: 'roblox-tycoon-workshop.html', emoji: '🟦'},
+    'unity-2d-platformer': {title: 'Unity 3D Runner', url: 'unity-3d-runner-workshop.html', emoji: '🎲'}
+  };
+  var key = '';
+  for (var k in recs) {
+    if (path.indexOf(k) !== -1) { key = k; break; }
+  }
+  if (!key) return;
+  var rec = recs[key];
+  var wrap = document.createElement('div');
+  wrap.className = 'finish-recommend';
+  wrap.style.cssText = 'margin-top:18px;padding:16px 20px;background:rgba(112,163,167,.1);border:1px solid rgba(112,163,167,.25);border-radius:14px;text-align:center';
+  wrap.innerHTML = '<div style="font-size:.82rem;color:var(--muted);margin-bottom:8px">Ready for the next challenge?</div>' +
+    '<a href="' + rec.url + '" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,var(--teal,#70A3A7),var(--teal-dk,#4e7d80));color:#fff;font-family:Fredoka,cursive;font-size:1rem;font-weight:700;padding:12px 28px;border-radius:12px;text-decoration:none;box-shadow:0 3px 0 #3d6366;transition:filter .15s,transform .12s">' +
+    '<span style="font-size:1.3rem">' + rec.emoji + '</span> Try: ' + rec.title + ' →</a>';
+  var stats = banner.querySelector('.final-stats');
+  if (stats) stats.parentNode.insertBefore(wrap, stats.nextSibling);
+  else banner.appendChild(wrap);
 }
 
 function addFinishShare() {
