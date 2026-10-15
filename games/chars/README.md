@@ -10,6 +10,9 @@ Required filenames (lowercase):
 - `ember.png` , the pink tiger
 - `pip.png`   , the turtle
 - `echo.png`  , the axolotl
+- `stardust.png` , the golden dream spirit (A614: slot exists so any arcade
+  game casting Stardust has a sprite; replace the placeholder with
+  hand-crafted art, no AI images)
 
 Requirements:
 - Front pose, standing, whole body visible
