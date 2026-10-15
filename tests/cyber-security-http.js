@@ -67,6 +67,34 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
     check('has a relative ui-delegate fallback (works when opened as a file)', extra.delegates.some(s => s.startsWith('..')), extra.delegates.join(', '));
     check('every step has a key-point note', extra.keyPoints === STEPS, 'key points ' + extra.keyPoints);
 
+    const notes = await page.evaluate(() => {
+      const btn = document.querySelector('.cyber-notes-btn');
+      const panel = document.querySelector('.cyber-notes-panel');
+      const stepBtns = document.querySelectorAll('.cyber-step-note-btn').length;
+      if (!btn || !panel) return { hasBtn: !!btn, hasPanel: !!panel, stepBtns };
+      btn.click();
+      const opened = panel.classList.contains('open');
+      const ta = document.getElementById('cyber-note-1');
+      ta.value = 'Phishing is the most common way in.';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      let stored = {};
+      try { stored = JSON.parse(localStorage.getItem('jvds-cyber-security-v2_notes') || '{}'); } catch (e) {}
+      const count = document.querySelector('.cyber-notes-count').textContent;
+      panel.querySelector('.cyber-notes-close').click();
+      return { hasBtn: true, hasPanel: true, opened, stepBtns, stored1: stored['1'], count };
+    });
+    check('notebook opens and saves per-step notes', notes.opened && notes.stored1 === 'Phishing is the most common way in.' && notes.count === '1', JSON.stringify(notes));
+    check('every step header has a notes button', notes.stepBtns === STEPS, 'step note buttons ' + notes.stepBtns);
+
+    const phish = await page.evaluate(() => {
+      const game = document.getElementById('phish-game');
+      if (!game) return { exists: false };
+      game.querySelectorAll('.phish-line[data-flag="1"]').forEach(l => l.click());
+      game.querySelector('.phish-check').click();
+      return { exists: true, good: game.querySelector('.phish-feedback').classList.contains('good') };
+    });
+    check('spot the phish accepts the correct red flags', phish.exists && phish.good, JSON.stringify(phish));
+
     // Regression: two wrong attempts trigger the enhancements "cross out an option"
     // hint, which reads data-k. With only data-correct the correct index parsed as
     // NaN and the hint could disable the CORRECT option, locking the question.
