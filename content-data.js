@@ -1010,6 +1010,20 @@ window.JVDS_CONTENT = {
       "url": "/workshops/jump-jump-mario-workshop.html"
     },
     {
+      "id": "my-achievements",
+      "title": "My Achievements",
+      "desc": "View your earned badges, collectibles and milestones across all JVDesignStudio workshops.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#ffd166",
+      "cover": "og/learn.webp",
+      "url": "/workshops/my-achievements.html"
+    },
+    {
       "id": "my-first-3d-model",
       "title": "My First 3D Model",
       "desc": "7 free beginner Blender workshops. Learn 3D modelling, character creation, rigging, animation, materials, lighting and a full scene. Interactive quizzes and XP. Ages 10+.",
@@ -6235,8 +6249,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-14T17:48:21.370Z",
-    "workshops": 342,
+    "generated": "2026-10-15T11:52:48.106Z",
+    "workshops": 343,
     "games": 14,
     "tools": 48,
     "books": 5,
@@ -6245,7 +6259,7 @@ window.JVDS_CONTENT = {
       "C++": 18,
       "Defold": 13,
       "GDevelop": 13,
-      "General": 51,
+      "General": 52,
       "GML/GameMaker": 11,
       "Godot": 17,
       "Java": 15,
