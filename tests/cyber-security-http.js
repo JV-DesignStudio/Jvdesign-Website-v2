@@ -60,6 +60,13 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
     check('progress starts at 0 / ' + STEPS, new RegExp('^0 / ' + STEPS).test(info.progress), info.progress);
     check('desktop no overflow', info.scrollWidth <= 1442, info.scrollWidth + '');
 
+    const extra = await page.evaluate(() => ({
+      delegates: [...document.querySelectorAll('script[src]')].filter(s => /ui-delegate\.js/.test(s.getAttribute('src'))).map(s => s.getAttribute('src')),
+      keyPoints: [...document.querySelectorAll('.step-card')].filter(c => /Key point:/.test(c.textContent)).length
+    }));
+    check('has a relative ui-delegate fallback (works when opened as a file)', extra.delegates.some(s => s.startsWith('..')), extra.delegates.join(', '));
+    check('every step has a key-point note', extra.keyPoints === STEPS, 'key points ' + extra.keyPoints);
+
     // Regression: two wrong attempts trigger the enhancements "cross out an option"
     // hint, which reads data-k. With only data-correct the correct index parsed as
     // NaN and the hint could disable the CORRECT option, locking the question.
