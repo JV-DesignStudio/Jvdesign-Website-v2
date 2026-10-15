@@ -566,6 +566,389 @@ function initKeyboardAccess() {
   });
 }
 
+/* ── PROGRESSIVE HINT SYSTEM ── */
+var hintAttempts = {};
+function getHintTier(id) { return hintAttempts[id] || 0; }
+function bumpHintTier(id) { hintAttempts[id] = (hintAttempts[id] || 0) + 1; return hintAttempts[id]; }
+
+function showProgressiveHint(challenge) {
+  var id = challenge.id || 'anon';
+  var tier = bumpHintTier(id);
+  var hint = challenge.querySelector('.cc-hint, .cf-hint');
+  if (!hint) return;
+  hint.classList.add('show');
+  if (tier >= 3) {
+    var reveal = challenge.querySelector('.ws-reveal-btn');
+    if (!reveal && !challenge.classList.contains('passed')) {
+      reveal = document.createElement('button');
+      reveal.type = 'button';
+      reveal.className = 'ws-reveal-btn';
+      reveal.textContent = 'Reveal answer';
+      reveal.addEventListener('click', function() {
+        var blanks = challenge.querySelectorAll('.cc-blank, .cf-blank');
+        blanks.forEach(function(b) { b.value = canonicalAnswer(b); b.classList.add('correct'); b.disabled = true; });
+        challenge.classList.add('passed');
+        var fb = challenge.querySelector('.cc-feedback, .cf-feedback');
+        if (fb) { fb.className = fb.className.replace(/wrong/g, '') + ' correct show'; fb.innerHTML = '<span class="fb-icon">💡</span><span>Answer revealed.</span>'; }
+        var btn = challenge.querySelector('.cc-check-btn, .cf-check-btn');
+        if (btn) btn.disabled = true;
+        reveal.remove();
+        saveProgress();
+      });
+      hint.parentNode.insertBefore(reveal, hint.nextSibling);
+    }
+  }
+  var tierText = ['Try reading the hint above.', 'Look at the code example carefully.', 'One more try, or reveal the answer.'];
+  var msg = challenge.querySelector('.ws-hint-tier');
+  if (!msg) {
+    msg = document.createElement('div');
+    msg.className = 'ws-hint-tier';
+    hint.parentNode.insertBefore(msg, hint.nextSibling);
+  }
+  msg.textContent = tierText[Math.min(tier - 1, tierText.length - 1)];
+}
+
+/* ── SOUND EFFECTS (Web Audio API) ── */
+var sfxEnabled = false;
+var sfxCtx = null;
+function initSfx() {
+  try {
+    sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+    sfxEnabled = true;
+  } catch(e) { sfxEnabled = false; }
+}
+function playSfx(type) {
+  if (!sfxEnabled || !sfxCtx) return;
+  try {
+    var osc = sfxCtx.createOscillator();
+    var gain = sfxCtx.createGain();
+    osc.connect(gain);
+    gain.connect(sfxCtx.destination);
+    gain.gain.value = 0.12;
+    var now = sfxCtx.currentTime;
+    if (type === 'correct') {
+      osc.frequency.setValueAtTime(523, now);
+      osc.frequency.setValueAtTime(659, now + 0.1);
+      osc.frequency.setValueAtTime(784, now + 0.2);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      osc.start(now); osc.stop(now + 0.4);
+    } else if (type === 'wrong') {
+      osc.frequency.setValueAtTime(330, now);
+      osc.frequency.setValueAtTime(277, now + 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.start(now); osc.stop(now + 0.35);
+    } else if (type === 'levelup') {
+      osc.frequency.setValueAtTime(523, now);
+      osc.frequency.setValueAtTime(659, now + 0.12);
+      osc.frequency.setValueAtTime(784, now + 0.24);
+      osc.frequency.setValueAtTime(1047, now + 0.36);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      osc.start(now); osc.stop(now + 0.6);
+    } else if (type === 'streak') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1108, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.start(now); osc.stop(now + 0.25);
+    }
+  } catch(e) {}
+}
+
+function buildSfxToggle() {
+  var wrap = document.querySelector('.xp-wrap');
+  if (!wrap || wrap.querySelector('.ws-sfx-toggle')) return;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ws-sfx-toggle';
+  btn.setAttribute('aria-label', 'Toggle sound effects');
+  btn.textContent = '🔇';
+  btn.title = 'Sound effects off';
+  btn.addEventListener('click', function() {
+    if (!sfxCtx) initSfx();
+    sfxEnabled = !sfxEnabled;
+    btn.textContent = sfxEnabled ? '🔊' : '🔇';
+    btn.title = sfxEnabled ? 'Sound effects on' : 'Sound effects off';
+    if (sfxEnabled) playSfx('correct');
+    try { localStorage.setItem('jvds_sfx', sfxEnabled ? '1' : '0'); } catch(e) {}
+  });
+  try {
+    if (localStorage.getItem('jvds_sfx') === '1') {
+      initSfx();
+      btn.textContent = '🔊';
+      btn.title = 'Sound effects on';
+    }
+  } catch(e) {}
+  wrap.appendChild(btn);
+}
+
+/* ── TIMED CHALLENGE MODE ── */
+var timerInterval = null;
+var timerSeconds = 0;
+var timerActive = false;
+
+function buildTimerToggle() {
+  var wrap = document.querySelector('.xp-wrap');
+  if (!wrap || wrap.querySelector('.ws-timer-toggle')) return;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ws-timer-toggle';
+  btn.textContent = '⏱️ Timer';
+  btn.title = 'Start speed-run timer';
+  btn.addEventListener('click', function() {
+    if (timerActive) { stopTimer(); btn.textContent = '⏱️ Timer'; btn.title = 'Start speed-run timer'; }
+    else { startTimer(); btn.textContent = '⏱️ Stop'; btn.title = 'Stop timer'; }
+  });
+  wrap.appendChild(btn);
+}
+
+function startTimer() {
+  timerActive = true;
+  timerSeconds = 0;
+  var display = document.querySelector('.ws-timer-display');
+  if (!display) {
+    display = document.createElement('div');
+    display.className = 'ws-timer-display';
+    var bar = document.querySelector('.progress-wrap');
+    if (bar) bar.appendChild(display);
+  }
+  display.textContent = '0:00';
+  display.style.display = '';
+  timerInterval = setInterval(function() {
+    timerSeconds++;
+    var m = Math.floor(timerSeconds / 60);
+    var s = timerSeconds % 60;
+    display.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  }, 1000);
+}
+
+function stopTimer() {
+  timerActive = false;
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+/* ── BOOKMARK / NOTES PER STEP ── */
+function initStepNotes() {
+  var cards = document.querySelectorAll('.step-card');
+  var notesKey = STORAGE_KEY + '_notes';
+  var savedNotes = {};
+  try { savedNotes = JSON.parse(localStorage.getItem(notesKey) || '{}'); } catch(e) {}
+
+  cards.forEach(function(card) {
+    var stepNum = (card.id || '').replace('step-', '');
+    if (!stepNum) return;
+    var header = card.querySelector('.step-header');
+    if (!header || header.querySelector('.ws-note-btn')) return;
+    var noteBtn = document.createElement('button');
+    noteBtn.type = 'button';
+    noteBtn.className = 'ws-note-btn';
+    noteBtn.textContent = savedNotes[stepNum] ? '📝' : '🔖';
+    noteBtn.title = 'Add a note to this step';
+    noteBtn.setAttribute('aria-label', 'Add note to step ' + stepNum);
+    noteBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var existing = card.querySelector('.ws-note-area');
+      if (existing) { existing.remove(); noteBtn.classList.remove('active'); return; }
+      var area = document.createElement('div');
+      area.className = 'ws-note-area';
+      var ta = document.createElement('textarea');
+      ta.className = 'ws-note-input';
+      ta.placeholder = 'Write your notes here...';
+      ta.rows = 3;
+      ta.value = savedNotes[stepNum] || '';
+      ta.addEventListener('input', function() {
+        savedNotes[stepNum] = ta.value;
+        try { localStorage.setItem(notesKey, JSON.stringify(savedNotes)); } catch(e) {}
+        noteBtn.textContent = ta.value ? '📝' : '🔖';
+      });
+      area.appendChild(ta);
+      var body = card.querySelector('.step-body');
+      if (body) body.insertBefore(area, body.firstChild);
+      else card.appendChild(area);
+      noteBtn.classList.add('active');
+      ta.focus();
+    });
+    header.appendChild(noteBtn);
+  });
+}
+
+/* ── DAILY STREAK ── */
+function trackDailyStreak() {
+  try {
+    var key = 'jvds_daily_streak';
+    var data = JSON.parse(localStorage.getItem(key) || 'null') || { count: 0, lastDate: '' };
+    var today = new Date().toISOString().slice(0, 10);
+    if (data.lastDate === today) return data;
+    var yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (data.lastDate === yesterday) {
+      data.count++;
+    } else if (data.lastDate !== today) {
+      data.count = 1;
+    }
+    data.lastDate = today;
+    if (data.count > (data.best || 0)) data.best = data.count;
+    localStorage.setItem(key, JSON.stringify(data));
+    return data;
+  } catch(e) { return { count: 1, lastDate: '', best: 1 }; }
+}
+
+function showDailyStreakBanner() {
+  var data = trackDailyStreak();
+  if (!data || data.count < 2) return;
+  var bar = document.querySelector('.progress-wrap');
+  if (!bar || bar.querySelector('.ws-daily-streak')) return;
+  var badge = document.createElement('div');
+  badge.className = 'ws-daily-streak';
+  badge.innerHTML = '🔥 ' + data.count + '-day streak!';
+  badge.title = 'Best: ' + (data.best || data.count) + ' days';
+  bar.appendChild(badge);
+}
+
+/* ── COLLECTIBLE REWARDS ── */
+function checkCollectibles() {
+  try {
+    var key = 'jvds_collectibles';
+    var unlocked = JSON.parse(localStorage.getItem(key) || '[]');
+    var milestones = [
+      { xp: 50, id: 'first-spark', emoji: '⚡', name: 'First Spark' },
+      { xp: 100, id: 'rising-star', emoji: '⭐', name: 'Rising Star' },
+      { xp: 250, id: 'code-crafter', emoji: '🔨', name: 'Code Crafter' },
+      { xp: 500, id: 'quiz-whiz', emoji: '🧠', name: 'Quiz Whiz' },
+      { xp: 1000, id: 'master-maker', emoji: '🏆', name: 'Master Maker' },
+      { xp: 2000, id: 'legend', emoji: '👑', name: 'Legend' }
+    ];
+    var newUnlock = null;
+    milestones.forEach(function(m) {
+      if (xp >= m.xp && unlocked.indexOf(m.id) === -1) {
+        unlocked.push(m.id);
+        newUnlock = m;
+      }
+    });
+    localStorage.setItem(key, JSON.stringify(unlocked));
+    if (newUnlock) showCollectibleUnlock(newUnlock);
+  } catch(e) {}
+}
+
+function showCollectibleUnlock(reward) {
+  var overlay = document.createElement('div');
+  overlay.className = 'ws-collectible-overlay';
+  overlay.innerHTML = '<div class="ws-collectible-card">' +
+    '<div class="ws-collectible-emoji">' + reward.emoji + '</div>' +
+    '<div class="ws-collectible-title">New Reward!</div>' +
+    '<div class="ws-collectible-name">' + reward.name + '</div>' +
+    '<div class="ws-collectible-desc">Earned at ' + reward.xp + ' XP</div>' +
+    '<button type="button">Awesome!</button></div>';
+  document.body.appendChild(overlay);
+  if (sfxEnabled) playSfx('levelup');
+  overlay.querySelector('button').addEventListener('click', function() { overlay.remove(); });
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+}
+
+/* ── TTS / READ-ALOUD TOGGLE ── */
+function buildTtsToggle() {
+  if (!('speechSynthesis' in window)) return;
+  var wrap = document.querySelector('.xp-wrap');
+  if (!wrap || wrap.querySelector('.ws-tts-toggle')) return;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ws-tts-toggle';
+  btn.textContent = '🔈 Read';
+  btn.title = 'Read step text aloud';
+  var reading = false;
+  btn.addEventListener('click', function() {
+    if (reading) {
+      speechSynthesis.cancel();
+      reading = false;
+      btn.textContent = '🔈 Read';
+      return;
+    }
+    var active = document.querySelector('.step-card.active-step.open .step-body');
+    if (!active) { finishToast('Open a step first.'); return; }
+    var text = active.innerText.slice(0, 2000);
+    var utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.9;
+    utter.onend = function() { reading = false; btn.textContent = '🔈 Read'; };
+    speechSynthesis.speak(utter);
+    reading = true;
+    btn.textContent = '⏹️ Stop';
+  });
+  wrap.appendChild(btn);
+}
+
+/* Hook sound effects into existing award/level functions */
+var _origAwardXp = awardXp;
+awardXp = function(amount, label) {
+  _origAwardXp(amount, label);
+  if (sfxEnabled) {
+    if (streak >= 3) playSfx('streak');
+    else playSfx('correct');
+  }
+  checkCollectibles();
+};
+var _origShowLevelUp = showLevelUp;
+showLevelUp = function(lvl) {
+  _origShowLevelUp(lvl);
+  if (sfxEnabled) playSfx('levelup');
+};
+
+/* Hook progressive hints into code challenge wrong answers */
+var _origCheckCC = checkCodeChallenge;
+checkCodeChallenge = function(btn) {
+  var challenge = btn.closest('.code-challenge');
+  var wasPassed = challenge && challenge.classList.contains('passed');
+  _origCheckCC(btn);
+  if (challenge && !wasPassed && !challenge.classList.contains('passed')) {
+    showProgressiveHint(challenge);
+    if (sfxEnabled) playSfx('wrong');
+  }
+};
+
+var _origCheckCF = checkConceptFill;
+checkConceptFill = function(btn) {
+  var wrap = btn.closest('.concept-fill');
+  var wasPassed = wrap && wrap.classList.contains('passed');
+  _origCheckCF(btn);
+  if (wrap && !wasPassed && !wrap.classList.contains('passed')) {
+    showProgressiveHint(wrap);
+    if (sfxEnabled) playSfx('wrong');
+  }
+};
+
+var _origCheckQuiz = checkQuiz;
+checkQuiz = function(btn) {
+  var gate = btn.closest('.quiz-gate');
+  var wasPassed = gate && gate.classList.contains('passed');
+  _origCheckQuiz(btn);
+  if (gate && !wasPassed && !gate.classList.contains('passed')) {
+    if (sfxEnabled) playSfx('wrong');
+  }
+};
+
+/* Timer bonus at completion */
+var _origShowFinish = showFinish;
+showFinish = function() {
+  _origShowFinish();
+  if (timerActive) {
+    stopTimer();
+    var m = Math.floor(timerSeconds / 60);
+    var s = timerSeconds % 60;
+    var timeStr = m + ':' + (s < 10 ? '0' : '') + s;
+    var banner = document.getElementById('finishBanner');
+    if (banner) {
+      var el = document.createElement('div');
+      el.className = 'ws-timer-result';
+      el.innerHTML = '⏱️ Speed run: <strong>' + timeStr + '</strong>';
+      if (timerSeconds < 300) el.innerHTML += ' · +10 XP speed bonus!';
+      var stats = banner.querySelector('.final-stats');
+      if (stats) stats.parentNode.insertBefore(el, stats.nextSibling);
+      if (timerSeconds < 300) {
+        xp += 10;
+        updateXpDisplay();
+        saveProgress();
+      }
+    }
+  }
+};
+
 /* pages call these from inline onclick handlers */
 window.selectQuizOpt = selectQuizOpt;
 window.checkQuiz = checkQuiz;
@@ -589,5 +972,14 @@ initKeyboardAccess();
 loadProgress();
 updateProgress();
 updateXpDisplay();
+buildSfxToggle();
+buildTimerToggle();
+buildTtsToggle();
+initStepNotes();
+showDailyStreakBanner();
 try { localStorage.setItem('jvds_last_workshop', location.pathname); } catch(e) {}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw-progress.js', { scope: '/workshops/' }).catch(function() {});
+}
 })();

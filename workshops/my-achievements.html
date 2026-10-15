@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script src="/assets/js/theme-init.js"></script>
+<link rel="manifest" href="../manifest.json">
+<meta name="theme-color" content="#ffd166">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Achievements | JVDesignStudio Workshops</title>
+<meta name="description" content="View your earned badges, collectibles and milestones across all JVDesignStudio workshops.">
+<link rel="icon" href="../logo.png" type="image/png">
+<!-- BUILD:head-icons -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<script defer src="/assets/js/ui-delegate.js"></script>
+<!-- /BUILD:head-icons -->
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<link rel="stylesheet" href="../style-workshop-bundle.css?v=18">
+<link rel="stylesheet" href="../style-shared.css?v=17">
+<link rel="stylesheet" href="/style-mascots.css">
+<style>
+body{background:var(--bg-primary,#0a0b10);color:var(--text-primary,#f0ead6)}
+.ach-wrap{max-width:800px;margin:0 auto;padding:100px 20px 60px}
+.ach-hero{text-align:center;margin-bottom:36px}
+.ach-hero h1{font-family:'Fredoka',cursive;font-size:clamp(1.8rem,5vw,2.6rem);margin:0 0 8px}
+.ach-hero p{color:var(--text-secondary,rgba(240,234,214,.65));font-size:.95rem}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+.ach-card{
+  position:relative;background:var(--bg-secondary,#1e1c18);border:1px solid rgba(240,234,214,.1);
+  border-radius:18px;padding:24px 18px;text-align:center;
+  transition:transform .2s,box-shadow .2s,border-color .2s;
+}
+.ach-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.ach-card.unlocked{border-color:rgba(255,215,102,.4)}
+.ach-card.unlocked:hover{border-color:rgba(255,215,102,.7)}
+.ach-card.locked{opacity:.4;filter:grayscale(1)}
+.ach-emoji{font-size:2.5rem;margin-bottom:8px}
+.ach-name{font-family:'Fredoka',cursive;font-weight:700;font-size:1rem;margin-bottom:4px}
+.ach-desc{font-size:.78rem;color:var(--text-secondary)}
+.ach-check{position:absolute;top:10px;right:10px;font-size:.9rem}
+.ach-section{margin-bottom:32px}
+.ach-section h2{font-family:'Fredoka',cursive;font-size:1.2rem;margin:0 0 14px;color:var(--text-primary)}
+.ach-back{display:inline-flex;align-items:center;gap:6px;color:var(--teal,#70A3A7);font-weight:700;font-size:.85rem;text-decoration:none;margin-bottom:18px}
+.ach-back:hover{text-decoration:underline}
+.ach-streak{text-align:center;margin-bottom:28px;padding:18px;background:rgba(255,119,0,.08);border:1px solid rgba(255,119,0,.25);border-radius:16px}
+.ach-streak-val{font-family:'Fredoka',cursive;font-size:2rem;font-weight:700;color:#ff7700}
+.ach-streak-label{font-size:.82rem;color:var(--text-secondary)}
+</style>
+</head>
+<body>
+
+<!-- BUILD:nav-content -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+<div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<script src="/nav.js?v=19" defer></script>
+<header class="site-header" id="siteHeader">
+<div class="header-inner">
+ <a href="/" class="logo-link">
+  <img src="/logo.png" alt="JVDesignStudio" width="181" height="160" fetchpriority="high" decoding="async">
+ <span class="logo-name">JVDesignStudio</span>
+ </a>
+   <nav class="main-nav" id="mainNav" aria-label="Main">
+    <a href="/workshops/start-here.html" class="nav-link nav-link--start" data-page="start-here">Start Here</a>
+    <a href="/workshop" class="nav-link" data-page="workshop">Workshops</a>
+    <a href="/dev-tools" class="nav-link" data-page="dev-tools">Tools</a>
+    <a href="/arcade.html" class="nav-link" data-page="arcade">Play</a>
+   </nav>
+ <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode"></button>
+ <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">☰</button>
+</div>
+</header>
+<!-- /BUILD:nav-content -->
+
+<main id="main-content" class="ach-wrap">
+  <a href="my-progress.html" class="ach-back">← Back to My Progress</a>
+  <div class="ach-hero">
+    <h1>🏆 My Achievements</h1>
+    <p>Every badge, collectible and milestone you've earned across all workshops.</p>
+  </div>
+
+  <div class="ach-streak" id="achStreak" style="display:none">
+    <div class="ach-streak-val" id="achStreakVal">0</div>
+    <div class="ach-streak-label">Day Learning Streak (Best: <span id="achStreakBest">0</span>)</div>
+  </div>
+
+  <div class="ach-section">
+    <h2>Collectible Rewards</h2>
+    <div class="ach-grid" id="achCollectibles"></div>
+  </div>
+
+  <div class="ach-section">
+    <h2>Workshop Completions</h2>
+    <div class="ach-grid" id="achCompletions"></div>
+  </div>
+</main>
+
+<script>
+(function() {
+  var milestones = [
+    { xp: 50, id: 'first-spark', emoji: '⚡', name: 'First Spark', desc: 'Earn 50 XP' },
+    { xp: 100, id: 'rising-star', emoji: '⭐', name: 'Rising Star', desc: 'Earn 100 XP' },
+    { xp: 250, id: 'code-crafter', emoji: '🔨', name: 'Code Crafter', desc: 'Earn 250 XP' },
+    { xp: 500, id: 'quiz-whiz', emoji: '🧠', name: 'Quiz Whiz', desc: 'Earn 500 XP' },
+    { xp: 1000, id: 'master-maker', emoji: '🏆', name: 'Master Maker', desc: 'Earn 1,000 XP' },
+    { xp: 2000, id: 'legend', emoji: '👑', name: 'Legend', desc: 'Earn 2,000 XP' }
+  ];
+
+  var unlocked = [];
+  try { unlocked = JSON.parse(localStorage.getItem('jvds_collectibles') || '[]'); } catch(e) {}
+
+  var grid = document.getElementById('achCollectibles');
+  milestones.forEach(function(m) {
+    var has = unlocked.indexOf(m.id) !== -1;
+    var card = document.createElement('div');
+    card.className = 'ach-card ' + (has ? 'unlocked' : 'locked');
+    card.innerHTML = '<div class="ach-emoji">' + m.emoji + '</div>' +
+      '<div class="ach-name">' + m.name + '</div>' +
+      '<div class="ach-desc">' + m.desc + '</div>' +
+      (has ? '<span class="ach-check">✅</span>' : '');
+    grid.appendChild(card);
+  });
+
+  // Completed workshops
+  var compGrid = document.getElementById('achCompletions');
+  var completed = [];
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (!k) continue;
+      try {
+        var d = JSON.parse(localStorage.getItem(k));
+        if (d && d.completed && d.total && d.completed.length === d.total) {
+          completed.push({ key: k, xp: d.xp || 0, level: d.level || 1 });
+        }
+      } catch(e) {}
+    }
+  } catch(e) {}
+
+  if (completed.length === 0) {
+    compGrid.innerHTML = '<p style="grid-column:1/-1;color:var(--text-secondary);font-size:.9rem">No workshops completed yet. Keep going!</p>';
+  } else {
+    completed.forEach(function(w) {
+      var card = document.createElement('div');
+      card.className = 'ach-card unlocked';
+      var name = w.key.replace(/_/g, ' ').replace(/workshop/gi, '').replace(/-/g, ' ').trim();
+      card.innerHTML = '<div class="ach-emoji">🎓</div>' +
+        '<div class="ach-name">' + name + '</div>' +
+        '<div class="ach-desc">' + w.xp + ' XP · Level ' + w.level + '</div>' +
+        '<span class="ach-check">✅</span>';
+      compGrid.appendChild(card);
+    });
+  }
+
+  // Daily streak
+  try {
+    var streak = JSON.parse(localStorage.getItem('jvds_daily_streak') || '{}');
+    if (streak.count > 0) {
+      document.getElementById('achStreak').style.display = '';
+      document.getElementById('achStreakVal').textContent = streak.count;
+      document.getElementById('achStreakBest').textContent = streak.best || streak.count;
+    }
+  } catch(e) {}
+})();
+</script>
+
+</body>
+</html>
