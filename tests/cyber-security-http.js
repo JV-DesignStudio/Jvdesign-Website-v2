@@ -60,6 +60,28 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
     check('progress starts at 0 / ' + STEPS, new RegExp('^0 / ' + STEPS).test(info.progress), info.progress);
     check('desktop no overflow', info.scrollWidth <= 1442, info.scrollWidth + '');
 
+    // Regression: two wrong attempts trigger the enhancements "cross out an option"
+    // hint, which reads data-k. With only data-correct the correct index parsed as
+    // NaN and the hint could disable the CORRECT option, locking the question.
+    await page.evaluate(() => {
+      const gate = document.getElementById('quiz-1');
+      const correct = parseInt(gate.dataset.correct, 10);
+      const opts = [...gate.querySelectorAll('.quiz-opt')];
+      const wrongIdx = opts.map(o => +o.dataset.idx).find(i => i !== correct);
+      for (let i = 0; i < 2; i++) {
+        opts.find(o => +o.dataset.idx === wrongIdx).click();
+        gate.querySelector('.quiz-submit').click();
+      }
+    });
+    await new Promise(r => setTimeout(r, 200));
+    const locked = await page.evaluate(() => {
+      const gate = document.getElementById('quiz-1');
+      const correct = parseInt(gate.dataset.correct, 10);
+      const correctOpt = [...gate.querySelectorAll('.quiz-opt')].find(o => +o.dataset.idx === correct);
+      return { correctDisabled: correctOpt.classList.contains('disabled'), passed: gate.classList.contains('passed') };
+    });
+    check('two wrong tries do not disable the correct option', !locked.correctDisabled && !locked.passed, JSON.stringify(locked));
+
     for (let n = 1; n <= STEPS; n++) {
       const ok = await page.evaluate((step) => {
         const card = document.getElementById('step-' + step);
