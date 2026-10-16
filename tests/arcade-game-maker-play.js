@@ -66,6 +66,21 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   exportedHtml = built.html;
   check('exported file inlines Phaser', /phaser/i.test(exportedHtml) && exportedHtml.length > 1000000, (exportedHtml.length/1024/1024).toFixed(2) + ' MB');
 
+  // ── 1b. Power Picks is opt-in (off by default, on from the panel) ───────────
+  const perks = await maker.evaluate(()=>{
+    const t = document.getElementById('perksEnabledToggle');
+    const row = document.getElementById('perkInfoRow');
+    const snap = () => ({ enabled: liveConfig.perksEnabled, checked: !!(t && t.checked), rowShown: !!(row && row.style.display !== 'none') });
+    const before = snap();
+    if (t) { t.checked = true; t.dispatchEvent(new Event('change', { bubbles: true })); }
+    const on = snap();
+    if (t) { t.checked = false; t.dispatchEvent(new Event('change', { bubbles: true })); }
+    return { before, on, off: snap() };
+  });
+  check('Power Picks defaults off', perks.before.enabled === false && perks.before.checked === false && perks.before.rowShown === false, JSON.stringify(perks.before));
+  check('Power Picks enables from the panel', perks.on.enabled === true && perks.on.rowShown === true, JSON.stringify(perks.on));
+  check('Power Picks can be turned back off', perks.off.enabled === false, JSON.stringify(perks.off));
+
   // ── 2. Play the exported file as a friend would ─────────────────────────────
   const player = await browser.newPage();
   const playerErrors = [];

@@ -48,6 +48,32 @@ function record(name, ok, detail){ results.push({name,ok,detail}); console.log((
   record('maker loads with Run button', true);
   record('no uncaught JS on load', jsErrors.length===0, jsErrors.slice(0,2).join(' | '));
 
+  // A1541: the page's inline runtime must run under a strict CSP (hashes, no
+  // 'unsafe-inline') and all UI must be wired through delegated handlers.
+  const csp = await page.evaluate(async ()=>{
+    const meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+    const content = meta ? meta.content : '';
+    const ss = (content.match(/script-src\s[^;]*/) || [''])[0];
+    // Count handler attributes in the page SOURCE (DOMParser does not execute
+    // scripts, so runtime site-chrome is excluded, matching report-inline.js).
+    let handlers = -1;
+    try {
+      const html = await (await fetch('/tools/arcade-game-maker.html', { cache: 'no-store' })).text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      handlers = doc.querySelectorAll('[onclick],[oninput],[onchange],[onerror],[onload],[onsubmit]').length;
+    } catch (e) {}
+    return {
+      hasMeta: !!meta,
+      scriptSrc: ss,
+      inlineRuns: typeof window.compileAndBootEngine === 'function' && typeof window._buildExportHtml === 'function',
+      handlers
+    };
+  });
+  record('CSP script-src has no unsafe-inline', csp.hasMeta && !/'unsafe-inline'/.test(csp.scriptSrc), csp.scriptSrc.trim().slice(0, 48));
+  record('CSP carries inline-script hashes', /'sha256-/.test(csp.scriptSrc));
+  record('inline runtime runs under that CSP', csp.inlineRuns === true);
+  record('no inline event handler attributes in source', csp.handlers === 0, 'found ' + csp.handlers);
+
   // Check critical patches are present
   const hasHaptics = await page.evaluate(()=> typeof _triggerHaptic==='function' && /hapticIntensity/.test(_triggerHaptic.toString()));
   record('haptics intensity wrapper exists', hasHaptics);
