@@ -6,7 +6,18 @@
  * background plus more enemies and bosses. This proves:
  *   - the page loads with no errors at 390 and 1440 and the canvas fits
  *   - a real (trusted) tap on Play enters immersive/fullscreen and the play
- *     field fills the phone width
+ *     field fills the phone width and height (A1612: the story strip is hidden,
+ *     the field owns the screen and the in-canvas HUD clears the Exit control)
+ *   - A1612 visual pass: sprites zoom 3 (bigger assets) with the logical width
+ *     fixed at 540 so the field stays consistent on every device
+ *   - A1617 learnability/depth/payoff: the wave-1 Pip tutorial is active on a
+ *     first run, upgrade evolutions unlock and feed the build readout, the run
+ *     report shows on game over with a persisted best score, a PNG run card and
+ *     a localStorage summary, and prefers-reduced-motion is honoured
+ *   - A1629 follow-ups: background gradients are cached (not per-frame), an
+ *     aria-live region announces run state, the colourblind bullet-shape toggle
+ *     works, a fired story beat surfaces in-canvas, clearing a wave pays a
+ *     bonus, a Bomber enemy is reachable, and bosses phase at half health
  *   - dragging the play area moves the ship on both X and Y (mobile control),
  *     arrow keys still move it, and in immersive mode the redundant DOM stat
  *     grid is hidden while the field is tall (>=640) with no overflow
@@ -63,6 +74,10 @@ async function desktop(browser, base) {
   check('desktop: no horizontal overflow', info.overflow <= 2, String(info.overflow));
   const size = await page.evaluate(() => { const r = document.getElementById('cv').getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height) }; });
   check('desktop: play field is a decent size (>=640 tall at 1440x900)', size.h >= 640 && size.w >= 380, JSON.stringify(size));
+  const zoom = await page.evaluate(() => window.__nova.sprZoom);
+  check('sprites: zoom is 3 so ship and enemy assets read bigger', zoom === 3, String(zoom));
+  const lw = await page.evaluate(() => window.__nova.lw);
+  check('desktop: logical field width stays fixed at 540 for consistent gameplay', lw === 540, String(lw));
   check('desktop: no page errors', errors.length === 0, errors.join(' | '));
   await page.close();
 }
@@ -181,12 +196,29 @@ async function mobileDrag(browser, base) {
   });
   check('mobile: play field fills the phone width', fill.w >= fill.vw * 0.9, JSON.stringify(fill));
   check('mobile: field is taller than the old board (>=640)', fill.h >= 640, JSON.stringify(fill));
+  check('mobile: field fills the phone height (>=90% of the viewport)', fill.h >= fill.vh * 0.9, JSON.stringify(fill));
   check('mobile: no horizontal overflow', fill.ovf <= 2, String(fill.ovf));
   const chromeHidden = await page.evaluate(() => {
     const t = document.querySelector('.top');
     return !t || getComputedStyle(t).display === 'none' || t.getBoundingClientRect().height === 0;
   });
   check('mobile: site chrome hidden in immersive mode', chromeHidden);
+  // A1612: the story strip is website chrome, so it is hidden during a run and
+  // the field owns the whole screen; the in-canvas HUD is inset below the shell
+  // Exit control so the two never collide.
+  const storyHidden = await page.evaluate(() => {
+    const s = document.querySelector('.wrap > .storyrun');
+    return !s || getComputedStyle(s).display === 'none';
+  });
+  check('mobile: story strip hidden in immersive so the field owns the screen', storyHidden);
+  const hud = await page.evaluate(() => {
+    const ex = document.getElementById('jvds-exit');
+    const eb = ex ? ex.getBoundingClientRect().bottom : 0;
+    const cs = window.__nova.cssScale;
+    const hudTopCss = (document.documentElement.classList.contains('jvds-immersive') ? Math.round(48 / Math.max(0.35, cs)) : 7) * cs;
+    return { exitBottom: Math.round(eb), hudTopCss: Math.round(hudTopCss) };
+  });
+  check('mobile: in-canvas HUD clears the Exit control', hud.hudTopCss >= hud.exitBottom - 2, JSON.stringify(hud));
   // HiDPI: render() must re-apply the logical -> backing-store scale every frame.
   // If it resets to identity, the whole game draws into the top-left corner at a
   // fraction of the element (the "small square" bug) on any dpr>1 phone.
@@ -432,6 +464,110 @@ async function depth(browser, base) {
   await page.close();
 }
 
+async function learnability(browser, base) {
+  const page = await browser.newPage();
+  const errors = watch(page);
+  // Fresh profile for this page so the first-run tutorial is not suppressed by
+  // meta.tutDone written by an earlier suite.
+  await page.evaluateOnNewDocument(() => { try { localStorage.removeItem('jvds-nova-siege-v1'); } catch (e) {} });
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/nova-siege.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => document.getElementById('startBtn').click());
+  await sleep(200);
+  const tut = await page.evaluate(() => window.__nova.tutorialActive);
+  check('learnability: the wave-1 Pip tutorial is active on a first run', tut, String(tut));
+
+  // Evolutions unlock from upgrade synergies and feed the HUD build readout.
+  const evo = await page.evaluate(() => {
+    const n = window.__nova;
+    n.applyRunUpgrade('multishot'); n.applyRunUpgrade('multishot'); n.applyRunUpgrade('multishot');
+    n.applyRunUpgrade('rate'); n.applyRunUpgrade('rate');
+    n.applyRunUpgrade('drone'); n.applyRunUpgrade('drone');
+    return { evos: n.evolutions, build: n.buildLabel, shots: n.runShots };
+  });
+  check('depth: Nova Spread unlocks from Extra Cannons x3 + Rapid Fire x2', evo.evos.indexOf('spread') >= 0, JSON.stringify(evo.evos));
+  check('depth: Drone Swarm unlocks from two Wingman Drones', evo.evos.indexOf('swarm') >= 0, JSON.stringify(evo.evos));
+  check('depth: the evolution feeds the live stat and the build readout', evo.shots >= 4 && /EVO/.test(evo.build), JSON.stringify(evo));
+
+  // End the run: the game-over screen shows a structured report, a shareable run
+  // card saved to localStorage, and best score that actually persists.
+  await page.evaluate(() => { window.__nova.run.score = 24680; window.__nova.forceEnd(); });
+  await sleep(250);
+  const over = await page.evaluate(() => ({
+    report: /Run report/.test(document.getElementById('ovText').textContent),
+    best: /Best\s+24,680/.test(document.getElementById('ovText').textContent),
+    cardBtn: (() => { const b = document.getElementById('runCardBtn'); return !!b && getComputedStyle(b).display !== 'none'; })(),
+    card: window.__nova.makeRunCard(),
+    saved: window.__nova.lastRunSaved,
+    modalDropped: !document.querySelector('.sr-modal.show'),
+    titleStats: (document.getElementById('titleStats') || {}).textContent || ''
+  }));
+  check('payoff: game-over shows a structured run report', over.report);
+  check('payoff: best score persists after the saveState overwrite bug', over.best, over.best ? '' : 'best missing');
+  check('payoff: the run card renders as a PNG data URL', /^data:image\/png;base64,/.test(over.card), over.card.slice(0, 24));
+  check('payoff: the run summary is saved to localStorage', over.saved);
+  check('payoff: the duplicate story modal is dropped so the report is usable', over.modalDropped);
+  check('payoff: the title screen shows best score and credits', /Best/.test(over.titleStats) && /Credits/.test(over.titleStats), over.titleStats);
+  check('learnability: no page errors', errors.length === 0, errors.join(' | '));
+  await page.close();
+
+  // prefers-reduced-motion is honoured.
+  const rm = await browser.newPage();
+  await rm.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  await rm.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await rm.goto(base + '/games/nova-siege.html', { waitUntil: 'load', timeout: 30000 });
+  const reduce = await rm.evaluate(() => window.__nova.reduceMotion);
+  check('access: prefers-reduced-motion is detected', reduce === true, String(reduce));
+  await rm.close();
+}
+
+async function followups(browser, base) {
+  const page = await browser.newPage();
+  const errors = watch(page);
+  await page.evaluateOnNewDocument(() => { try { localStorage.removeItem('jvds-nova-siege-v1'); } catch (e) {} });
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/nova-siege.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => document.getElementById('startBtn').click());
+  await sleep(350);
+
+  // A1629 perf: background gradients are built once and reused, not per frame.
+  const g1 = await page.evaluate(() => window.__nova.gradBuilds);
+  await sleep(1300);
+  const g2 = await page.evaluate(() => window.__nova.gradBuilds);
+  check('perf: background gradients are cached, not rebuilt every frame', (g2 - g1) <= 3, g1 + '->' + g2);
+
+  // A1629 a11y: a polite live region announces the live run state.
+  const live = await page.evaluate(() => { const e = document.getElementById('a11yStatus'); return { present: !!e, role: e ? e.getAttribute('role') : null, text: e ? e.textContent : '' }; });
+  check('access: an aria-live status region announces score/health', live.present && live.role === 'status' && /Score/.test(live.text), JSON.stringify(live));
+
+  // A1629 a11y: the colourblind bullet-shape toggle flips and updates aria-pressed.
+  const cb0 = await page.evaluate(() => window.__nova.cb);
+  await page.click('#cbBtn');
+  const cb1 = await page.evaluate(() => ({ on: window.__nova.cb, pressed: document.getElementById('cbBtn').getAttribute('aria-pressed'), label: document.getElementById('cbBtn').textContent }));
+  check('access: the colourblind bullet-shape toggle flips state', cb1.on === !cb0 && cb1.pressed === String(cb1.on) && /On/.test(cb1.label), JSON.stringify(cb1));
+
+  // A1629 story: a fired beat surfaces in-canvas while immersive.
+  const beat = await page.evaluate(() => { window.__storyRun.beat(1); return { text: window.__nova.beat, active: window.__nova.beatActive }; });
+  check('story: a fired beat surfaces in-canvas for the immersive HUD', /boss is closing/.test(beat.text) && beat.active, JSON.stringify(beat));
+
+  // A1629 pacing: clearing a wave awards a credit bonus.
+  const pace = await page.evaluate(() => { const n = window.__nova, before = n.run.credits; n.run.waveKills = n.run.waveTarget; n.forceWave(); return { before, after: n.run.credits }; });
+  check('pacing: clearing a wave awards a credit bonus', pace.after > pace.before, JSON.stringify(pace));
+  await page.evaluate(() => { if (window.__nova.shopOpen) document.getElementById('shopLeave').click(); });
+  await sleep(140);
+
+  // A1629 content: the Bomber is reachable at stage 6, and the boss has a phase 2.
+  const kinds = await page.evaluate(() => { window.__nova.run.stage = 6; const s = new Set(); for (let i = 0; i < 900; i++) s.add(window.__nova.pickKind()); return [...s]; });
+  check('content: the Bomber enemy is reachable at stage 6', kinds.indexOf('bomber') >= 0, kinds.join(','));
+  const phase = await page.evaluate(() => {
+    const n = window.__nova; n.forceBoss(); const b = n.boss; b.hp = Math.floor(b.maxhp * 0.4);
+    return new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => res(n.bossPhase))));
+  });
+  check('content: the boss enters a second phase at half health', phase === 2, 'phase=' + phase);
+  check('followups: no page errors', errors.length === 0, errors.join(' | '));
+  await page.close();
+}
+
 (async () => {
   await withServer(async ({ base, browser }) => {
     await desktop(browser, base);
@@ -442,6 +578,8 @@ async function depth(browser, base) {
     await juice(browser, base);
     await roguelike(browser, base);
     await depth(browser, base);
+    await learnability(browser, base);
+    await followups(browser, base);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL NOVA SIEGE CHECKS PASSED');
   process.exit(failures ? 1 : 0);

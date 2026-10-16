@@ -68,7 +68,17 @@ canvas#cv{display:block;max-width:100%;max-height:100%;margin:auto;image-renderi
 .wrap>.storyrun .sr-open,.wrap>.storyrun .sr-objective{display:none}
 /* A1527 immersive: hide the slim nav and helper line so the field owns the screen. */
 html.jvds-immersive .top,html.jvds-immersive .hero,html.jvds-immersive .mini{display:none}
+/* A1612 fullscreen: the story strip is website chrome, so during a run the field
+   fills the screen edge to edge and only the in-canvas HUD shows. */
+html.jvds-immersive .wrap>.storyrun{display:none}
+/* A1612 app-in-app: on wide screens frame the portrait field so it reads as a
+   game screen floating in space instead of a thin strip. */
+@media(min-width:760px){
+  .stage-wrap{background:radial-gradient(120% 80% at 50% 8%,#0b1c34 0%,#060b16 55%,#03060c 100%)}
+  canvas#cv{border-radius:16px;box-shadow:0 0 0 1px #1e3a52,0 0 50px rgba(76,201,240,.18),0 24px 70px rgba(0,0,0,.55)}
+}
 /* A987 station shop overlay, drawn over the field after every wave. */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .overlay h2{margin:2px 0 4px;font-size:clamp(1rem,3.4vw,1.35rem);letter-spacing:.12em;color:var(--green);font-family:Fredoka,sans-serif}
 #shopOverlay{justify-content:flex-start;overflow:auto;gap:10px;padding-top:16px;padding-bottom:16px}
 .shop-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#0a1420}
@@ -77,16 +87,19 @@ html.jvds-immersive .top,html.jvds-immersive .hero,html.jvds-immersive .mini{dis
 .pause-btn{position:absolute;left:8px;bottom:8px;z-index:5;background:rgba(3,6,12,.72);color:#bfe6f2;border:1px solid #2f6b86;border-radius:8px;padding:6px 10px;font:inherit;font-size:.72rem;font-weight:800;letter-spacing:.06em;cursor:pointer;text-transform:uppercase}
 .pause-btn:hover{border-color:var(--green);color:#dfffd0}
 </style></head><body><div class="wrap" data-storyrun-host>
+<div id="a11yStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <nav class="top"><a class="pill" href="../arcade.html">&lsaquo; Arcade</a><a class="pill" href="mobile-games.html">All Mobile Games</a></nav>
 <section class="hero"><div><div class="kicker">Dodge &bull; Shoot &bull; Upgrade</div><h1>NOVA SIEGE</h1><p>Remastered from the classic <b>Seek and Destroy</b> arcade loop, now with a roguelike run: pilot your ship, dodge the swarm and shoot the galactic army. Clear a wave and the station shop opens so you can spend the credits you just earned. Bank permanent credits between runs to unlock new hulls.</p></div></section>
 <main class="game"><section class="panel">
 <div class="stage-wrap"><canvas id="cv" width="540" height="960" aria-label="Nova Siege play field"></canvas>
 <button class="pause-btn" id="pauseBtn" type="button" aria-label="Pause game">Pause</button>
+<button class="pause-btn" id="cbBtn" type="button" aria-pressed="false" style="left:auto;right:8px" aria-label="Toggle colourblind bullet shapes">Bullet shapes: Off</button>
 <div class="overlay" id="overlay">
-<canvas id="titleFont" width="480" height="120"></canvas>
+<canvas id="titleFont" width="520" height="150"></canvas>
 <div class="menu-main" id="menuMain">
 <p id="ovText">Dodge the swarm, shoot the army, collect green health and blue power stars. Clear a wave to reach the station shop, and buy permanent ship upgrades from this menu between runs.</p>
-<div class="big"><button class="btn primary" id="startBtn" data-jvds-play>Play!</button><button class="btn" id="menuUpBtn" type="button">Ship Upgrades</button></div>
+<p id="titleStats" class="mini lt"></p>
+<div class="big"><button class="btn primary" id="startBtn" data-jvds-play>Play!</button><button class="btn" id="runCardBtn" type="button" style="display:none">Save Run Card</button><button class="btn" id="menuUpBtn" type="button">Ship Upgrades</button></div>
 </div>
 <div class="menu-panel hidden" id="menuPanel">
 <div class="menu-head"><button class="btn small" id="menuBack" type="button">&lsaquo; Back</button><div class="credits">Credits: <b id="credBank">0</b></div></div>
