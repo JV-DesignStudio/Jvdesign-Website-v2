@@ -100,7 +100,7 @@ const milestones = window.JVDSShowcase ? new JVDSShowcase.Milestones(MISSION, fu
 const shake = window.JVDSShowcase ? new JVDSShowcase.Shake(14) : null;
 let dustTimer = 0;
 
-let fitW = 0, fitH = 0;
+let fitW = -1, fitH = -1;
 
 // Lane x positions move whenever the canvas is resized (e.g. entering
 // fullscreen after Start), so re-anchor the player, cars and pickups onto their
@@ -683,6 +683,7 @@ function drawComboMeter() {
 }
 
 function draw() {
+  if (!W || !H) return;
   ctx.clearRect(0, 0, W, H);
 
   ctx.save();

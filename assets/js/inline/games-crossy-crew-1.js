@@ -473,6 +473,7 @@ function drawPlayer() {
 }
 
 function draw() {
+  if (!W || !H) return;
   ctx.clearRect(0, 0, W, H);
 
   ctx.fillStyle = '#0f172a';
