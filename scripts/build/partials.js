@@ -45,10 +45,14 @@ function runPartials({ verbose = true } = {}) {
       }
     }
     src = dedupeSkipLinks(src);
-    src = src.replace(/<link\s+rel="stylesheet"\s+href="([^"]*style-shared\.css[^"]*)"\s*\/?>/gi, (m, href) => {
-      if (src.includes(`href="${href}" as="style"`)) return m;
-      return `<link rel="preload" href="${href}" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="${href}"></noscript>`;
-    });
+    // A1503/A1609: keep style-shared.css as a plain stylesheet link. The old
+    // preload + inline onload swap needs script-src 'unsafe-inline' and is
+    // blocked under the site CSP, leaving the page unstyled. Downgrade any
+    // existing preload to the plain form (matches legacy build.js).
+    src = src.replace(/<link\s+rel="preload"\s+href="([^"]+)"\s+as="style"\s+onload="[^"]*"><noscript><link\s+rel="stylesheet"\s+href="[^"]*"><\/noscript>/gi,
+      (m, href) => `<link rel="stylesheet" href="${href}">`);
+    src = src.replace(/<link\s+rel=["']preload["']\s+href=["']([^"']+)["']\s+as=["']style["'][^>]*\sonload=["'][^"']*["'][^>]*>/gi,
+      (m, href) => `<link rel="stylesheet" href="${href}">`);
     if (src !== original) {
       fs.writeFileSync(filePath, src, 'utf8');
       if (verbose) console.log('  updated: ' + path.relative(ROOT, filePath));

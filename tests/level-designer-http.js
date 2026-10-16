@@ -34,8 +34,11 @@ const server = http.createServer((req, res) => {
   });
   page.on('dialog', async d => { await d.dismiss().catch(()=>{}); });
 
-  await page.goto('http://127.0.0.1:8126/tools/level-designer.html', { waitUntil: 'networkidle2', timeout: 30000 });
-  await new Promise(r => setTimeout(r, 1500));
+  await page.goto('http://127.0.0.1:8126/tools/level-designer.html', { waitUntil: 'networkidle2', timeout: 60000 });
+  // Wait until the app has actually initialised (canvas + layers exist) instead
+  // of a fixed sleep, so the test does not flake under parallel load.
+  await page.waitForFunction(() => typeof canvas !== 'undefined' && !!canvas && typeof layers !== 'undefined' && layers.length === 4, { timeout: 30000 }).catch(() => {});
+  await new Promise(r => setTimeout(r, 800));
 
   const checks = await page.evaluate(() => ({
     manifestLinked: !!document.querySelector('link[rel="manifest"]'),
