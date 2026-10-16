@@ -25,7 +25,7 @@ function check(name, ok, detail=''){
 let failures = 0;
 (async()=>{
   await listen();
-  const browser = await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox']});
+  const browser = await puppeteer.launch({headless:true,args:['--no-sandbox','--disable-setuid-sandbox','--autoplay-policy=no-user-gesture-required']});
   const page = await browser.newPage();
   const errors=[];
   page.on('pageerror', e=>errors.push('pageerror: '+e.message));
@@ -217,6 +217,74 @@ let failures = 0;
     return {changed:after.some((v,i)=>v!==before[i])};
   });
   check('SFX lab randomise changes controls', labRnd.changed, JSON.stringify(labRnd));
+
+  // A1589: inline on* handlers removed - mute + volume must work through delegated data-on under the real CSP
+  for(const vp of [{width:390,height:844,isMobile:true},{width:1440,height:900,isMobile:false}]){
+    await page.setViewport(vp);
+    await new Promise(resolve=>setTimeout(resolve, 150));
+    const label = vp.width+'px';
+    const mute = await page.evaluate(()=>{
+      try{closeStart&&closeStart();}catch(e){}
+      document.querySelectorAll('.ss-overlay').forEach(o=>o.style.display='none');
+      const btn=document.querySelector('.track-mute');
+      const before=tracks[0].muted;
+      btn.click();
+      return {before, after:tracks[0].muted, aria:btn.getAttribute('aria-pressed')};
+    });
+    check('mute toggles via delegation at '+label, mute.after===!mute.before && String(mute.aria)===String(mute.after), JSON.stringify(mute));
+    const vol = await page.evaluate(()=>{
+      const inp=document.querySelector('.track-vol');
+      inp.value='0.42';
+      inp.dispatchEvent(new Event('input',{bubbles:true}));
+      return {vol:tracks[0].vol};
+    });
+    check('volume updates via delegation at '+label, Math.abs(vol.vol-0.42)<0.001, JSON.stringify(vol));
+  }
+
+  // A1590: exact-length loop WAV + OGG exports (engine-friendly, no libraries)
+  for(const vp of [{width:390,height:844,isMobile:true},{width:1440,height:900,isMobile:false}]){
+    await page.setViewport(vp);
+    await new Promise(resolve=>setTimeout(resolve, 100));
+    const ctl = await page.evaluate(()=>{
+      try{ openProject(); }catch(e){}
+      const vis = el => !!(el && el.offsetParent !== null);
+      return { loop: vis(document.querySelector('[data-on="exportLoopWAV"]')), ogg: vis(document.querySelector('[data-on="exportOGG"]')) };
+    });
+    check('loop + OGG export controls visible at '+vp.width+'px', ctl.loop && ctl.ogg, JSON.stringify(ctl));
+  }
+  await page.evaluate(()=>{ try{ closeProject(); }catch(e){} });
+
+  const audioExports = await page.evaluate(async ()=>{
+    const out = {};
+    try {
+      const sr = 44100;
+      document.getElementById('loopsSelect').value = '1';
+      const full = await renderMixdown(false);
+      const trim = await renderMixdown(true);
+      out.fullLen = full.length; out.loopLen = trim.length;
+      out.tail = full.length - trim.length; out.expectedTail = 2 * sr;
+      const realCreate = URL.createObjectURL, realRevoke = URL.revokeObjectURL, realClick = HTMLAnchorElement.prototype.click;
+      const caps = [];
+      URL.createObjectURL = (b)=>{ caps.push(b); return 'blob:test'; };
+      URL.revokeObjectURL = ()=>{};
+      HTMLAnchorElement.prototype.click = function(){};
+      try {
+        await exportLoopWAV();
+        out.loopType = caps[0] && caps[0].type; out.loopSize = caps[0] && caps[0].size;
+        out.oggSupported = _oggSupported();
+        const before = caps.length;
+        out.oggRes = await exportOGG();
+        out.oggCaptured = caps.length > before;
+        out.oggType = caps[before] && caps[before].type; out.oggSize = caps[before] && caps[before].size;
+      } finally {
+        URL.createObjectURL = realCreate; URL.revokeObjectURL = realRevoke; HTMLAnchorElement.prototype.click = realClick;
+      }
+    } catch(e){ out.error = e.message; }
+    return out;
+  });
+  check('loop render trims the 2s tail', audioExports.loopLen > 0 && Math.abs(audioExports.tail - audioExports.expectedTail) <= 8, JSON.stringify({full:audioExports.fullLen,loop:audioExports.loopLen,tail:audioExports.tail}));
+  check('Loop WAV export downloads a wav', audioExports.loopType === 'audio/wav' && audioExports.loopSize > 44, JSON.stringify({type:audioExports.loopType,size:audioExports.loopSize}));
+  check('OGG export produces a file (or falls back to loop WAV)', audioExports.oggSupported ? (audioExports.oggCaptured && /ogg/.test(audioExports.oggType||'') && audioExports.oggSize > 0) : (audioExports.oggCaptured && audioExports.oggType === 'audio/wav'), JSON.stringify({supported:audioExports.oggSupported,type:audioExports.oggType,size:audioExports.oggSize,fallback:!audioExports.oggSupported,err:audioExports.error}));
 
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
   await browser.close();

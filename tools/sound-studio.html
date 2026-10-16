@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-U8JBsgMq52ysEG8V3V+hDCV07yFYmPdCaNTiE/NVSIU=' 'sha256-2PVRur0H+DEHxsbrNVjhhnmsc4eU2s+/hzdjX0O++9E=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-V+6Di0H3olkyjqpmMN9GD7PhDKbVgBR5+sraWPl0ISM=' 'sha256-2PVRur0H+DEHxsbrNVjhhnmsc4eU2s+/hzdjX0O++9E=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -624,6 +624,12 @@ body.mode-sfx #arrange-bar{display:none!important;}
       <button class="ss-btn" data-on="importProjectFile" data-on-plain>📥 Import .json</button>
       <button class="ss-btn" data-on="newSong" data-on-plain>✨ New song</button>
     </div>
+    <div class="ss-sec" style="margin-top:16px;">For games</div>
+    <p class="ss-lead" style="margin:0 0 8px;">Loop WAV is cut to the exact bar length so it repeats with no gap. OGG is smaller for the web and school devices. Both open straight in Godot, Defold and Unity, not just the Arcade Game Maker.</p>
+    <div class="proj-actions">
+      <button class="ss-btn" data-on="exportLoopWAV" data-on-plain>⬇ Loop WAV</button>
+      <button class="ss-btn" data-on="exportOGG" data-on-plain>⬇ OGG</button>
+    </div>
     <div class="ss-btns"><button class="ss-btn primary" data-on="closeProject" data-on-plain>Done</button></div>
   </div>
 </div>
@@ -1047,11 +1053,11 @@ function buildSeqGrid(){
     label.innerHTML=`
       <div class="sst-color" style="background:${t.color}" aria-hidden="true"></div>
       <span class="sst-name" style="color:${t.color}" title="${t.name}">${icon} ${t.name}</span>
-      <button class="track-mute${t.muted?' muted':''}" data-mute="${ti}" onclick="toggleMute(${ti},event)" aria-label="Mute ${t.name}" aria-pressed="${t.muted}" title="Mute ${t.name}">M</button>
-      <input type="range" class="track-vol" min="0" max="1" step="0.01" value="${t.vol}" aria-label="Volume for ${t.name}" oninput="setVol(${ti},+this.value)" data-on="event.stopPropagation" data-on-plain>
+      <button class="track-mute${t.muted?' muted':''}" data-mute="${ti}" data-on="toggleMute" data-on-args="${ti}|event" aria-label="Mute ${t.name}" aria-pressed="${t.muted}" title="Mute ${t.name}">M</button>
+      <input type="range" class="track-vol" min="0" max="1" step="0.01" value="${t.vol}" aria-label="Volume for ${t.name}" data-on="setVol" data-on-event="input" data-on-args="${ti}|nval">
       <span class="sst-meter" aria-hidden="true"><i style="background:${t.color}"></i></span>
     `;
-    label.addEventListener('click',()=>selectTrack(ti));
+    label.addEventListener('click',(e)=>{ if(e.target.closest('button,input')) return; selectTrack(ti); });
     row.appendChild(label);
 
     // Cells wrapper
@@ -1649,20 +1655,62 @@ function sendToGameMaker(){
   }).catch(()=>showToast('Render failed'));
 }
 
+function _downloadAudio(blob,name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
 function exportWAV(){
   showToast('Rendering audio');
   renderMixdown().then(buf=>{
-    const wav=bufferToWav(buf);
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(new Blob([wav],{type:'audio/wav'}));
-    a.download='sound_studio_export.wav';
-    a.click();
-    URL.revokeObjectURL(a.href);
+    _downloadAudio(new Blob([bufferToWav(buf)],{type:'audio/wav'}),'sound_studio_export.wav');
     showToast('WAV exported!');
   }).catch(()=>showToast('Export failed'));
 }
+// A1590: exact-length loop WAV (no tail) drops straight into a game engine loop
+function exportLoopWAV(){
+  showToast('Rendering loop');
+  return renderMixdown(true).then(buf=>{
+    _downloadAudio(new Blob([bufferToWav(buf)],{type:'audio/wav'}),'sound_studio_loop.wav');
+    showToast('Loop WAV exported!');
+    return buf.length;
+  }).catch(()=>{ showToast('Export failed'); return 0; });
+}
+function _oggSupported(){
+  try{
+    return typeof MediaRecorder!=='undefined' && typeof MediaRecorder.isTypeSupported==='function'
+      && (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')||MediaRecorder.isTypeSupported('audio/ogg'));
+  }catch(e){ return false; }
+}
+// A1590: OGG (Opus) export using the browser's own MediaRecorder, no libraries
+async function exportOGG(){
+  if(!_oggSupported()){ showToast('This browser can\'t make OGG , exporting a loop WAV instead','warn',5000); return exportLoopWAV(); }
+  showToast('Encoding OGG');
+  const buf=await renderMixdown(false);
+  const ac=new (window.AudioContext||window.webkitAudioContext)();
+  try{ if(ac.state==='suspended') await ac.resume(); }catch(e){}
+  const dest=ac.createMediaStreamDestination();
+  const src=ac.createBufferSource(); src.buffer=buf; src.connect(dest);
+  const mime=MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')?'audio/ogg;codecs=opus':'audio/ogg';
+  const rec=new MediaRecorder(dest.stream,{mimeType:mime});
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+  const stopped=new Promise(res=>{ rec.onstop=()=>res(); });
+  rec.start();
+  src.start();
+  await new Promise(res=>{ let done=false; const fin=()=>{ if(done)return; done=true; res(); }; src.onended=fin; setTimeout(fin,(buf.duration*1000)+500); });
+  try{ rec.stop(); }catch(e){}
+  await stopped;
+  try{ ac.close(); }catch(e){}
+  const blob=new Blob(chunks,{type:mime});
+  if(!blob.size){ showToast('OGG encoding failed , try Loop WAV','error'); return 0; }
+  _downloadAudio(blob,'sound_studio_export.ogg');
+  showToast('OGG exported!');
+  return blob.size;
+}
 
-function renderMixdown(){
+function renderMixdown(exactLoop){
   const loops=Math.max(1,Math.min(8,+document.getElementById('loopsSelect').value||2));
   const sr=44100;
   const secPerStep=(60/bpm)/4;
@@ -1677,7 +1725,7 @@ function renderMixdown(){
     for(let l=0;l<loops;l++) for(let s=0;s<steps;s++) seq.push({p:currentPattern,s});
   }
   if(!seq.length) seq=[{p:currentPattern,s:0}];
-  const duration=seq.length*secPerStep + 2; // +2s tail so release/reverb rings out
+  const duration=seq.length*secPerStep + (exactLoop?0:2); // +2s tail so release/reverb rings out (trimmed for loop exports)
   const offline=new OfflineAudioContext(2,Math.ceil(sr*duration),sr);
   seq.forEach((item,i)=>{
     const t_start=i*secPerStep;
