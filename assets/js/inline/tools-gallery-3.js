@@ -34,5 +34,53 @@ $('btnExport').onclick=async()=>{const items=await getAll();const blob=new Blob(
 $('btnClear').onclick=async()=>{if(confirm('Clear whole gallery?')){await clearAll();render();}};
 $('btnImport').onclick=()=>$('importFile').click();
 $('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const txt=await f.text();try{const arr=JSON.parse(txt);for(const it of arr){delete it.id;it.created=it.created||Date.now();await add(it);}render();}catch(err){alert('Invalid JSON');}};
-render();
+// ── Auto-collect the saves the tools already produce (A1598) ──
+// Reads the localStorage keys the tools write and turns them into gallery items,
+// de-duplicated by a `src` marker so re-opening the page does not duplicate.
+function pixelToDataURL(d){
+  try{
+    const cW=Math.max(2,Math.min(128,+d.cW||0)), cH=Math.max(2,Math.min(128,+d.cH||0));
+    const cvs=document.createElement('canvas');cvs.width=cW;cvs.height=cH;
+    const ctx=cvs.getContext('2d');
+    const f0=Array.isArray(d.frames)?d.frames[0]:null;
+    if(!Array.isArray(f0)) return '';
+    f0.forEach((ld,li)=>{
+      if(!ld) return;
+      if(Array.isArray(d.layers)&&d.layers[li]&&d.layers[li].visible===false) return;
+      try{const t=document.createElement('canvas');t.width=cW;t.height=cH;t.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(ld),cW,cH),0,0);ctx.drawImage(t,0,0);}catch(e){}
+    });
+    return cvs.toDataURL('image/png');
+  }catch(e){ return ''; }
+}
+function collectToolItems(){
+  const out=[];
+  const get=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+  const isImg=v=>typeof v==='string'&&/^data:image\//.test(v);
+  const px=get('jvds_pixel');
+  if(px){ try{ const d=JSON.parse(px); out.push({title:'Pixel Studio art',tool:'pixel',character:'ember',notes:'Saved in Pixel Studio',image:pixelToDataURL(d),created:Date.now(),src:'jvds_pixel'}); }catch(e){} }
+  const pxa=get('jvds_pixel_auto');
+  if(pxa){ try{ const d=JSON.parse(pxa); out.push({title:'Pixel Studio (autosave)',tool:'pixel',character:'ember',notes:'Autosaved draft',image:pixelToDataURL(d),created:Date.now(),src:'jvds_pixel_auto'}); }catch(e){} }
+  const sp=get('jvds_sprite_player');
+  if(isImg(sp)) out.push({title:'Sprite for the Game Maker',tool:'pixel',character:'ember',notes:'Sent from Pixel Studio',image:sp,created:Date.now(),src:'jvds_sprite_player'});
+  const sa=get('jvds_sprite_anim');
+  if(sa){ try{ const d=JSON.parse(sa); if(d&&isImg(d.sheet)) out.push({title:d.sheetName||'Sprite Animator sheet',tool:'pixel',character:'ember',notes:'Sprite Animator project',image:d.sheet,created:Date.now(),src:'jvds_sprite_anim'}); }catch(e){} }
+  const ks=get('jvds_pixel_keepsake');
+  if(ks){ try{ const arr=JSON.parse(ks); if(Array.isArray(arr)) arr.forEach((k,i)=>{ if(k&&isImg(k.thumb)) out.push({title:k.title||('Keepsake '+(i+1)),tool:'pixel',character:'ember',notes:'Keepsake',image:k.thumb,created:Date.now(),src:'jvds_pixel_keepsake:'+(k.id||i)}); }); }catch(e){} }
+  for(let i=0;i<5;i++){ const raw=get('jv_arcade_slot_'+i); if(!raw) continue; try{ const d=JSON.parse(raw); if(d&&isImg(d.thumbnail)) out.push({title:d.title||('Arcade game '+(i+1)),tool:'other',character:'pip',notes:(d.genre?d.genre+' ':'')+'arcade game',image:d.thumbnail,created:Date.now(),src:'jv_arcade_slot_'+i}); }catch(e){} }
+  const aa=get('jv_arcade_autosave');
+  if(aa){ try{ const d=JSON.parse(aa); if(d&&isImg(d.thumbnail)) out.push({title:d.title||'Arcade autosave',tool:'other',character:'pip',notes:'Arcade autosave',image:d.thumbnail,created:Date.now(),src:'jv_arcade_autosave'}); }catch(e){} }
+  return out;
+}
+async function syncFromTools(){
+  const found=collectToolItems();
+  if(!found.length) return 0;
+  const existing=await getAll();
+  const have=new Set(existing.map(i=>i.src).filter(Boolean));
+  let added=0;
+  for(const it of found){ if(it.src&&have.has(it.src)) continue; await add(it); if(it.src) have.add(it.src); added++; }
+  return added;
+}
+$('btnSync').onclick=async()=>{ const n=await syncFromTools(); await render(); const note=$('syncNote'); if(note) note.textContent=n?('Collected '+n+' creation'+(n>1?'s':'')+' from your tools'):'No new creations found in your tools yet.'; };
+
+syncFromTools().then(()=>render()).catch(()=>render());
 document.addEventListener('DOMContentLoaded',()=>{if(window.EmberGuide)EmberGuide.init({id:'gallery',steps:[{target:'#btnAdd',title:'Add creation',text:'Echo saves in this browser - works offline, no account.'},{target:'.filters',title:'Filter',text:'Browse by tool or character.'}]})});
