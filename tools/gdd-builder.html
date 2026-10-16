@@ -22,7 +22,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-tzNDtSVRrOdcjNgnq16l5p/f4wwg+Pcw6EP3n+gjnzk=' 'sha256-2vw+zreL/cBdrzYrjp6B3FR+jY58YAdfbSRnPIN4a40=' 'sha256-N0o50z6rw2CvEuILD7h0hpv2XbPvhQ4hheoOlOAEAmE=' 'sha256-uGNHwdNj9JlCYG+7taCOcds9Lot6MFV+u2tVptWZFYE=' 'sha256-t38LxhbXABqC29qqO1eEXDhFfVASbq8z89+/XruiDBI=' 'sha256-FXx31/m1xdsRcXaoqbip+5e591D/r6QH9Jn5qQiqUA0=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-tzNDtSVRrOdcjNgnq16l5p/f4wwg+Pcw6EP3n+gjnzk=' 'sha256-2vw+zreL/cBdrzYrjp6B3FR+jY58YAdfbSRnPIN4a40=' 'sha256-2iyC+ih5p1fMSKcxLTBPTlCOLSfcTPjSEOEjoHF3Wmc=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -687,6 +687,13 @@ function addCharacter(name='', emoji='🪙', role='', ability=''){
   renderCharacters();
 }
 
+function gddCharEmoji(i,v){characters[i].emoji=v;renderCharacters();}
+function gddCharField(i,k,v){characters[i][k]=v;trackProgress();}
+function gddCharDel(i){characters.splice(i,1);renderCharacters();}
+function gddMilestoneText(i,v){milestones[i].text=v;trackProgress();}
+function gddMilestoneDel(i){milestones.splice(i,1);renderMilestones();trackProgress();}
+function gddLevelText(i,v){levels[i].text=v;trackProgress();}
+function gddLevelDel(i){levels.splice(i,1);renderLevels();trackProgress();}
 function renderCharacters(){
   const container = document.getElementById('charCards');
   container.innerHTML = '';
@@ -696,15 +703,15 @@ function renderCharacters(){
     card.innerHTML = `
       <div class="char-card-head">
         <div class="char-avatar" style="background:rgba(124,58,237,.1);">
-          <select aria-label="Character emoji" style="background:none;border:none;font-size:1.3rem;cursor:pointer;padding:0;" onchange="characters[${i}].emoji=this.value;renderCharacters();">
+          <select aria-label="Character emoji" style="background:none;border:none;font-size:1.3rem;cursor:pointer;padding:0;" data-on="gddCharEmoji" data-on-event="change" data-on-args="${i}|value">
             ${CHAR_EMOJIS.map(e=>`<option value="${e}" ${e===c.emoji?'selected':''}>${e}</option>`).join('')}
           </select>
         </div>
-        <input aria-label="Character name" class="char-name-input" type="text" value="${esc(c.name)}" placeholder="Character name" oninput="characters[${i}].name=this.value;trackProgress()">
+        <input aria-label="Character name" class="char-name-input" type="text" value="${esc(c.name)}" placeholder="Character name" data-on="gddCharField" data-on-event="input" data-on-args="${i}|s:name|value">
       </div>
-      <input aria-label="Character role" class="char-field" type="text" value="${esc(c.role)}" placeholder="Role (e.g. Hero, Boss, Friend)" oninput="characters[${i}].role=this.value">
-      <input aria-label="Character ability" class="char-field" type="text" value="${esc(c.ability)}" placeholder="Special ability or trait" oninput="characters[${i}].ability=this.value">
-      <button class="char-del" onclick="characters.splice(${i},1);renderCharacters();" title="Remove">&times;</button>
+      <input aria-label="Character role" class="char-field" type="text" value="${esc(c.role)}" placeholder="Role (e.g. Hero, Boss, Friend)" data-on="gddCharField" data-on-event="input" data-on-args="${i}|s:role|value">
+      <input aria-label="Character ability" class="char-field" type="text" value="${esc(c.ability)}" placeholder="Special ability or trait" data-on="gddCharField" data-on-event="input" data-on-args="${i}|s:ability|value">
+      <button class="char-del" data-on="gddCharDel" data-on-args="${i}" title="Remove">&times;</button>
     `;
     container.appendChild(card);
   });
@@ -734,10 +741,12 @@ function renderMilestones(){
     item.className = 'milestone-item';
     const tick = _justTickedMilestone && m.id===_justTickedMilestone;
     item.innerHTML = `
-      <div class="milestone-check${m.done?' done':''}${tick?' tick':''}" role="checkbox" aria-checked="${m.done?'true':'false'}" tabindex="0" onclick="toggleMilestoneDone(${i})" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();toggleMilestoneDone(${i});}">${m.done?'\u2713':''}</div>
-      <input aria-label="Milestone" class="milestone-input" type="text" value="${esc(m.text)}" placeholder="e.g. Build the main menu" oninput="milestones[${i}].text=this.value;trackProgress()" style="${m.done?'text-decoration:line-through;color:var(--muted);':''}">
-      <button class="milestone-del" aria-label="Remove milestone" onclick="milestones.splice(${i},1);renderMilestones();trackProgress();">&times;</button>
+      <div class="milestone-check${m.done?' done':''}${tick?' tick':''}" role="checkbox" aria-checked="${m.done?'true':'false'}" tabindex="0" data-on="toggleMilestoneDone" data-on-args="${i}">${m.done?'\u2713':''}</div>
+      <input aria-label="Milestone" class="milestone-input" type="text" value="${esc(m.text)}" placeholder="e.g. Build the main menu" data-on="gddMilestoneText" data-on-event="input" data-on-args="${i}|value" style="${m.done?'text-decoration:line-through;color:var(--muted);':''}">
+      <button class="milestone-del" aria-label="Remove milestone" data-on="gddMilestoneDel" data-on-args="${i}">&times;</button>
     `;
+    const chkEl = item.querySelector('.milestone-check');
+    if (chkEl) chkEl.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleMilestoneDone(i); } });
     list.appendChild(item);
   });
   _justTickedMilestone = null;
@@ -758,8 +767,8 @@ function renderLevels(){
     item.className = 'level-item';
     item.innerHTML = `
       <div class="level-num">${i+1}</div>
-      <input aria-label="Level name" class="level-input" type="text" value="${esc(l.text)}" placeholder="Level or area name..." oninput="levels[${i}].text=this.value;trackProgress()">
-      <button class="level-del" aria-label="Remove level" onclick="levels.splice(${i},1);renderLevels();trackProgress();">&times;</button>
+      <input aria-label="Level name" class="level-input" type="text" value="${esc(l.text)}" placeholder="Level or area name..." data-on="gddLevelText" data-on-event="input" data-on-args="${i}|value">
+      <button class="level-del" aria-label="Remove level" data-on="gddLevelDel" data-on-args="${i}">&times;</button>
     `;
     list.appendChild(item);
   });

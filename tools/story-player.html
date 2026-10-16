@@ -30,7 +30,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SSBc4aIWLE8J2+NzoP2P+wmNzXnthC66orFO5PGAm80=' 'sha256-jsEgwAR65wkMi7nhuvodICTdZ2WXYF0b7PnzfHXaFFk=' 'sha256-WWUq/qRlEnj6k7E00x9OWA7Rzt7Awa+wDp7twcYMpsE=' 'sha256-SSBc4aIWLE8J2+NzoP2P+wmNzXnthC66orFO5PGAm80=' 'sha256-jsEgwAR65wkMi7nhuvodICTdZ2WXYF0b7PnzfHXaFFk=' 'sha256-WWUq/qRlEnj6k7E00x9OWA7Rzt7Awa+wDp7twcYMpsE=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SSBc4aIWLE8J2+NzoP2P+wmNzXnthC66orFO5PGAm80=' 'sha256-jsEgwAR65wkMi7nhuvodICTdZ2WXYF0b7PnzfHXaFFk=' 'sha256-8ZfF+bVR7p6YOb7AtSs9UHorkGpLPw3m56r2/LAzQMU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -86,11 +86,12 @@
   <h1 class="story-title" id="stTitle"></h1>
   <div class="story-byline">made with <a href="story-editor.html">JVDesignStudio Story Editor</a><span id="stTag"></span></div>
   <div id="scene"></div>
-  <p style="margin:12px 0 0;padding:10px 14px;border-left:3px solid #70A3A7;background:rgba(112,163,167,.10);border-radius:10px;font-size:.9rem"><strong>Use it with:</strong> make your own branching story in the <a href="story-editor.html" style="color:#4e7d80;font-weight:800">Story Editor</a> or the <a href="../workshops/fairy-tale-builder.html" style="color:#4e7d80;font-weight:800">Fairy Tale Builder</a>.</p>
+  <p class="use-it-with" style="margin:12px 0 0;padding:10px 14px;border-left:3px solid #70A3A7;background:rgba(112,163,167,.10);border-radius:10px;font-size:.9rem"><strong>Use it with:</strong> make your own branching story in the <a href="story-editor.html" style="color:#4e7d80;font-weight:800">Story Editor</a> or the <a href="../workshops/fairy-tale-builder.html" style="color:#4e7d80;font-weight:800">Fairy Tale Builder</a>.</p>
   <p class="char-touch"><img src="/assets/mascots/ember-badge.webp" alt="Ember" width="24" height="24" style="border-radius:50%;flex-shrink:0"><span><strong>Ember says:</strong> read a story, then make your own. Every path you pick shows you how branching stories work.</span></p>
   <div class="btn-row">
     <button class="m-btn m-ok" data-on="restart" data-on-plain>↺ Restart Story</button>
     <button class="m-btn m-cancel" data-on="showShare" data-on-plain>✨ Share</button>
+    <button class="m-btn m-share" data-on="showEmbed" data-on-plain>🔗 Embed</button>
   </div>
 </div>
 
@@ -114,6 +115,9 @@
 // STATE
 // ══════════════════════════════════════════════════
 let nodes = [], chars = [], varsDef = [], storyName = 'Untitled Story';
+// Embed mode (?embed=1): render chrome-free so a story can sit inside a page or game
+const STORY_EMBED = new URLSearchParams(location.search).has('embed');
+if (STORY_EMBED) document.documentElement.classList.add('story-embed');
 let currentId = null;
 let V = {};   // runtime variables (numeric internally; flags are 0/1)
 
@@ -159,6 +163,7 @@ function boot(){
   if(m){
     try{
       const d=JSON.parse(decodePayload(m[1]));
+      window._storyShareHash=m[0];
       loadFromData(d);
       history.replaceState(null,'',location.pathname+location.search);
     }catch(e){
@@ -265,7 +270,7 @@ function renderScene(){
     choicesHTML='<div class="sc-choices">'+n.choices.map((c,i)=>{
       if(!c.text) return '';
       const ok=evalCond(c.cond);
-      if(ok&&c.to) return `<button class="sc-choice" onclick="pick(${i})">${esc(c.text)}</button>`;
+      if(ok&&c.to) return `<button class="sc-choice" data-on="pick" data-on-args="${i}">${esc(c.text)}</button>`;
       if(ok&&!c.to) return `<button class="sc-choice" disabled title="Writer forgot to connect this choice">🔒 ${esc(c.text)}</button>`;
       return `<button class="sc-choice" disabled title="Requires ${esc(condLabel(c.cond))}">🔒 ${esc(c.text)} <small>(${esc(condLabel(c.cond))})</small></button>`;
     }).join('')+'</div>';
@@ -301,11 +306,21 @@ function showShare(){
   }
 }
 
+function showEmbed(){
+  const payload=window._storyShareHash||'';
+  if(!payload){ showToast('Open a shared story link to embed it.'); return; }
+  const src=location.origin+location.pathname+'?embed=1'+payload;
+  const snippet='<iframe src="'+src+'" width="100%" height="600" style="border:0;max-width:100%" title="'+esc(storyName)+'" loading="lazy"></iframe>';
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(snippet).then(()=>showToast('Embed snippet copied!'),()=>prompt('Copy this embed code:',snippet));
+  else prompt('Copy this embed code:',snippet);
+}
+
 boot();
 // Seen-key + ? help (full standard)
 (function(){
   var SEEN='jvds_storyplayer_seen';
-  try{ if(localStorage.getItem(SEEN)!=='1'){ showToast('✨ Open a shared play-link, or drop a story .json'); localStorage.setItem(SEEN,'1'); } }catch(e){}
+  try{ if(!STORY_EMBED&&localStorage.getItem(SEEN)!=='1'){ showToast('✨ Open a shared play-link, or drop a story .json'); localStorage.setItem(SEEN,'1'); } }catch(e){}
   document.addEventListener('keydown',function(e){
     if(e.key==='?'&&!e.ctrlKey&&!e.metaKey){
       var tag=(e.target.tagName||'').toLowerCase();

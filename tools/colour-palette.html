@@ -29,7 +29,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-c8PAhwtL7yHAgAedpXxk9iWfPIFzPsnPQkiIfRduGhE=' 'sha256-phBkRNpaPwXO/xzId/FDMTWgqU1Oan68PZ3jwSBgucM=' 'sha256-s1XP2E5yRydcfQ/qmija74Z9E4MMX5VXW13CY1oKiog=' 'sha256-jfGnLXhneenO4fbZjhX6jD9GxnYP8W6kgxM83iLOw2c=' 'sha256-wR6FK/iW9fQHwCaXsL+gEJtYFtC6AF6ZhhbgPgU4gM8=' 'sha256-Cjz5xrLcj8SP77flv5zCA8+7Bz6cYcq5ZLv5kZlihxQ=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-c8PAhwtL7yHAgAedpXxk9iWfPIFzPsnPQkiIfRduGhE=' 'sha256-phBkRNpaPwXO/xzId/FDMTWgqU1Oan68PZ3jwSBgucM=' 'sha256-zOczT1+RjlBshIRJKAiLAF0ie1KxKbCi/kAZ6vzTqb8=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -159,6 +159,9 @@
  <button class="pal-btn" data-on="shufflePalette" data-on-plain>🔀 Shuffle</button>
  <button class="pal-btn" data-on="shuffleUnlocked" data-on-plain>🔀 Shuffle Unlocked</button>
  <button class="pal-btn primary" data-on="savePalette" data-on-plain>💾 Save Palette</button>
+ <button class="pal-btn" data-on="exportPaletteDesignJSON" data-on-plain>⬇️ Export .json</button>
+ <button class="pal-btn" data-on="importPaletteDesignClick" data-on-plain>⬆️ Import .json</button>
+ <input type="file" id="paletteDesignFile" accept=".json,application/json" style="display:none" aria-label="Import a palette design JSON" data-on="importPaletteDesignFile" data-on-event="change" data-on-args="this">
  <button class="pal-btn" data-on="copyPaletteLink" data-on-plain>📤 Share Link</button>
  <button class="pal-btn" style="background:linear-gradient(135deg,#5b21b6,#7c3aed);color:white;border-color:#7c3aed;" data-on="sendToGameMaker" data-on-plain>🚀 🎮 🎮 Send to Game Maker</button>
  <a class="pal-btn" href="arcade-game-maker.html" style="background:#16a34a;color:white;border-color:#15803d;text-decoration:none;display:inline-flex;align-items:center;">↩ Back to Game Maker</a>
@@ -797,6 +800,35 @@ function savePalette(){
   showToast('Palette saved!');
 }
 
+/* -- design JSON round-trip (A1599) -- */
+function exportPaletteDesignJSON(){
+  if(!currentMood||!palette.length){showToast('Generate a palette first!');return;}
+  const state={mood:currentMood.id, cols:palette.map(p=>({hex:p.hex,locked:!!p.locked,adjHex:p.adjHex})), paletteSize, harmonyMode};
+  try{
+    const blob=new Blob([JSON.stringify({app:'jvds-colour-palette',v:1,state},null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='jvds-palette-design.json';a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);showToast('Design JSON exported');
+  }catch(e){ showToast('Could not export design'); }
+}
+function importPaletteDesignClick(){ const el=document.getElementById('paletteDesignFile'); if(el) el.click(); }
+function importPaletteDesignFile(input){
+  const f=input.files&&input.files[0]; input.value=''; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+    const d=JSON.parse(r.result); const st=(d&&d.state)?d.state:d;
+    if(!st||!Array.isArray(st.cols)||!st.cols.length) throw 0;
+    if(st.mood){ const m=MOODS.find(x=>x.id===st.mood); if(m) currentMood=m; }
+    palette=st.cols.map(c=>typeof c==='string'?{hex:c,locked:false}:{hex:c.hex,locked:!!c.locked,adjHex:c.adjHex});
+    paletteSize=st.paletteSize||palette.length||6;
+    harmonyMode=st.harmonyMode||'none';
+    const s=document.getElementById('adjSize'); if(s) s.value=paletteSize;
+    const v=document.getElementById('sizeVal'); if(v) v.textContent=paletteSize;
+    document.querySelectorAll('.mood-card').forEach(c=>c.classList.toggle('active',c.id==='mood-'+(currentMood?.id||'')));
+    applyAdjust(); showToast('Design imported');
+  }catch(e){ showToast('Not a valid design file'); } };
+  r.readAsText(f);
+}
+
 function renderSaved(){
   const list=document.getElementById('savedList');
   if(!saved.length){list.innerHTML='<div class="empty-state">Save a palette to see it here</div>';return;}
@@ -810,7 +842,7 @@ function renderSaved(){
         <div class="saved-name">${s.name}</div>
         <div class="saved-meta">${s.cols.length} colours ï¿½ ${s.date}</div>
       </div>
-      <button class="saved-del" onclick="deleteSaved(${i},event)" title="Delete">?</button>
+      <button class="saved-del" data-on="deleteSaved" data-on-args="${i}|event" title="Delete">?</button>
     `;
     el.addEventListener('click',()=>loadSaved(i));
     list.appendChild(el);
