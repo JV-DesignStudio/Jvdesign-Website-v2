@@ -116,7 +116,7 @@ function card(w, engine, opts) {
 }
 
 function installPill(install, engine) {
-  if (install === true) return '<span class="hub-install hub-install--app">Needs the free ' + esc(engine.name) + ' app</span>';
+  if (install === true) return '<span class="hub-install hub-install--app">Needs ' + esc(engine.needs || ('the free ' + (engine.appName || engine.name) + ' app')) + '</span>';
   if (install === false) return '<span class="hub-install hub-install--none">Nothing to install</span>';
   return '';
 }
@@ -197,10 +197,11 @@ function renderPage(engine, byId) {
       + '  </div>'
     : '';
 
+  const appLabel = engine.appName || engine.name;
   const title = engine.name + ' Workshops: Free Beginner Tutorials and Series | JVDesignStudio';
   const description = hasApp
-    ? 'Every free ' + engine.name + ' workshop in one place: start in the browser with nothing installed, then build a full game in the free '
-      + engine.name + ' app. ' + total + ' workshops, ' + band.toLowerCase() + '.'
+    ? 'Every free ' + engine.name + ' workshop in one place: start in the browser with nothing to install, then build the full game with '
+      + appLabel + '. ' + total + ' workshops, ' + band.toLowerCase() + '.'
     : 'Every free ' + engine.name + ' workshop in one place. Build games right in the browser, nothing to install. '
       + total + ' workshops, ' + band.toLowerCase() + '.';
 
