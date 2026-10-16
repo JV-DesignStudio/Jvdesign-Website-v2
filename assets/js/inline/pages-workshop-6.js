@@ -134,9 +134,11 @@
         }
 
         // Browse-by-tool tiles drive the tool filter and reveal the catalogue.
+        // Engines with a dedicated hub (data-hub) open that hub instead.
         var tiles = document.querySelectorAll('.ws-engine-tile');
         Array.prototype.forEach.call(tiles, function(tile) {
             tile.addEventListener('click', function() {
+                if (tile.dataset.hub) { window.location.href = tile.dataset.hub; return; }
                 var eng = (tile.dataset.engine || '').toLowerCase();
                 if (tool) {
                     var match = '';

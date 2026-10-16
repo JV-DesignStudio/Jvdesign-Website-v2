@@ -15,6 +15,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DATA = path.join(ROOT, 'content', 'workshops.json');
+const ENGINE_HUBS = path.join(ROOT, 'content', 'engine-hubs.json');
 const HUB = path.join(ROOT, 'pages', 'workshop.html');
 const START = '<!-- CATALOGUE:START -->';
 const END = '<!-- CATALOGUE:END -->';
@@ -88,6 +89,17 @@ function section(entries) {
     + '</section>';
 }
 
+function engineHubs() {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(ENGINE_HUBS, 'utf8'));
+    const map = new Map();
+    for (const e of cfg.engines || []) map.set(e.engine || e.name, '../workshops/engine-' + e.id + '.html');
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
 function browse(entries) {
   const counts = new Map();
   for (const e of entries) counts.set(e.engine, (counts.get(e.engine) || 0) + 1);
@@ -99,9 +111,11 @@ function browse(entries) {
   const tiles = engines.map((eng) => {
     const meta = ENGINE_META[eng] || { emoji: '🎮', color: '#70A3A7' };
     const n = counts.get(eng);
+    const hub = engineHubs().get(eng);
     return '      <button type="button" class="ws-engine-tile" data-engine="' + esc(eng) + '"'
+      + (hub ? ' data-hub="' + esc(hub) + '"' : '')
       + ' style="--eng-color:' + meta.color + '"'
-      + ' aria-label="Show ' + esc(eng) + ' workshops">\n'
+      + ' aria-label="Open the ' + esc(eng) + ' engine hub">\n'
       + '        <span class="ws-engine-emoji" aria-hidden="true">' + meta.emoji + '</span>\n'
       + '        <span class="ws-engine-name">' + esc(eng) + '</span>\n'
       + '        <span class="ws-engine-count">' + n + (n === 1 ? ' workshop' : ' workshops') + '</span>\n'
