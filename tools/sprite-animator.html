@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CBnv2jATTbYaMkbRYromGEILDPI9faYH5EBchlAs7ig=' 'sha256-X2SWNLootA1Gbm+ipmFUbb2X0p/+rm8ipYMlGh0iEcQ=' 'sha256-sJDulIiGmU7YmtiKyRrZQQEikycY8XeYR246Bux37bo=' 'sha256-CBnv2jATTbYaMkbRYromGEILDPI9faYH5EBchlAs7ig=' 'sha256-X2SWNLootA1Gbm+ipmFUbb2X0p/+rm8ipYMlGh0iEcQ=' 'sha256-sJDulIiGmU7YmtiKyRrZQQEikycY8XeYR246Bux37bo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CBnv2jATTbYaMkbRYromGEILDPI9faYH5EBchlAs7ig=' 'sha256-X2SWNLootA1Gbm+ipmFUbb2X0p/+rm8ipYMlGh0iEcQ=' 'sha256-KffSThcpHMuT2rW19/YrczouhB9ikW03PPzECsqYKYQ=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -189,6 +189,14 @@
         <button class="icon-btn" style="flex:1;" data-on="exportProjectFile" data-on-plain title="Download project as .json file">📤</button>
         <label class="icon-btn" style="flex:1;text-align:center;cursor:pointer;" title="Import a project .json file">📄<input type="file" id="projFileInput" accept=".json,application/json" style="display:none" data-on="importProjectFile" data-on-event="change" data-on-args="this"></label>
       </div>
+      <div class="proj-row" style="margin-top:6px;">
+        <button class="icon-btn" style="flex:1;background:rgba(124,58,237,.15);color:#c4b5fd;border-color:rgba(124,58,237,.3);" data-on="downloadProjectBundle" data-on-plain title="Download one project bundle you can open in Pixel Studio or Game Maker">🧩 Bundle</button>
+        <label class="icon-btn" style="flex:1;text-align:center;cursor:pointer;background:rgba(124,58,237,.15);color:#c4b5fd;border-color:rgba(124,58,237,.3);" title="Open a JVDS project bundle">📦 Open<input type="file" id="bundleFileInput" accept=".json,application/json" style="display:none" data-on="openProjectBundleFile" data-on-event="change" data-on-args="this"></label>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button class="icon-btn" style="flex:1;font-size:.62rem;" data-on="openInPixelStudio" data-on-plain title="Open this project in Pixel Studio">🎨 Pixel Studio</button>
+        <button class="icon-btn" style="flex:1;font-size:.62rem;" data-on="openInGameMaker" data-on-plain title="Open this project in the Game Maker">🎮 Game Maker</button>
+      </div>
       <div style="font-size:.55rem;color:var(--muted);margin-top:4px;" id="sheetInfo">No sheet loaded</div>
     </div>
 
@@ -298,6 +306,7 @@
 <div id="toast"></div>
 
 <script src="../hidpi-canvas.js"></script>
+<script src="/jvds-project-bundle.js"></script>
 <script>
 function id(x){return document.getElementById(x);}
 function zoomOut(){setZoom(zoom-1);}
@@ -1152,6 +1161,71 @@ function importFromPixelStudio(){
   toast(`Imported ${count} frame${count!==1?'s':''} from Pixel Studio 🎨`);
 }
 
+// -- PROJECT BUNDLE (A1587): download one file, open it here or in another tool --
+function buildProjectBundle(){
+  if(!sheetImg){toast('Load or draw a sheet first');return null;}
+  var B=window.JVDSProjectBundle;
+  var pixels=sheetCanvas?sheetCanvas.toDataURL('image/png'):null;
+  return B.make({
+    tool:'sprite-animator',
+    name:sheetName||'sprite project',
+    project:JSON.parse(serializeProject()),
+    sprite:pixels?{dataUrl:pixels,frameW:frameW,frameH:frameH,frameCount:activeFrames.length||frames.length}:null,
+    preview:pixels
+  });
+}
+function downloadProjectBundle(){
+  var bundle=buildProjectBundle();if(!bundle) return;
+  var name=window.JVDSProjectBundle.download(bundle);
+  toast('Project bundle downloaded ('+name+')');
+}
+function openProjectBundleFile(input){
+  var file=input&&input.files&&input.files[0];
+  if(input) input.value='';
+  if(!file) return;
+  window.JVDSProjectBundle.readFile(file).then(function(bundle){
+    if(!bundle){toast('That file is not a JVDS project bundle');return;}
+    applyBundleToSpriteAnimator(bundle);
+  });
+}
+function loadSheetFromDataUrl(dataUrl,fw,fh,label){
+  var img=new Image();
+  img.onload=function(){
+    sheetW=img.width;sheetH=img.height;sheetImg=img;
+    sheetName=label||'project';
+    initSheetCanvas(img);
+    id('frameW').value=Math.max(1,Math.round(fw)||32);
+    id('frameH').value=Math.max(1,Math.round(fh)||32);
+    id('offsetX').value=0;id('offsetY').value=0;id('spacing').value=0;
+    updateSheetInfo();
+    id('uploadPrompt').classList.add('hidden');
+    id('restoreBanner').classList.add('hidden');
+    layoutDirty=false;
+    rebuildFrames(true);
+    markDirty();
+    toast('Opened '+sheetName);
+  };
+  img.onerror=function(){toast('Could not read that project image');};
+  img.src=dataUrl;
+}
+function applyBundleToSpriteAnimator(bundle){
+  if(bundle.tool==='sprite-animator'&&bundle.project){
+    applyProject(bundle.project).then(function(){markDirty();toast('Opened Sprite Animator project');}).catch(function(){toast('Could not open that project');});
+    return;
+  }
+  if(bundle.sprite&&bundle.sprite.dataUrl){
+    loadSheetFromDataUrl(bundle.sprite.dataUrl,bundle.sprite.frameW||32,bundle.sprite.frameH||32,window.JVDSProjectBundle.label(bundle.tool)+' project');
+    return;
+  }
+  toast('That project has no sprite to open here');
+}
+function openInPixelStudio(){var b=buildProjectBundle();if(b) window.JVDSProjectBundle.openIn('pixel-studio',b,'pixel-studio.html');}
+function openInGameMaker(){var b=buildProjectBundle();if(b) window.JVDSProjectBundle.openIn('arcade-game-maker',b,'arcade-game-maker.html');}
+function acceptPendingBundle(){
+  var b=window.JVDSProjectBundle&&window.JVDSProjectBundle.takePending('sprite-animator');
+  if(b) applyBundleToSpriteAnimator(b);
+}
+
 // -- KEYBOARD SHORTCUTS --
 function copySpriteShareLink(){
   try{
@@ -1184,6 +1258,8 @@ document.addEventListener('keydown',e=>{
 });
 
 setupAutosaveRestore();
+acceptPendingBundle();
+window.addEventListener('focus',acceptPendingBundle);
 
 // drag & drop
 const previewArea=id('preview-area');
