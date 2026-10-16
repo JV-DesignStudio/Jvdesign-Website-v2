@@ -5263,7 +5263,7 @@ window.JVDS_CONTENT = {
       "emoji": "🚗",
       "category": "Action",
       "bg": "linear-gradient(135deg,#0a0a1a,#f59e0b)",
-      "desc": "Swerve through oncoming traffic at high speed. Dodge cars, chain near-misses for combo points, and collect shields to survive crashes.",
+      "desc": "Swerve through oncoming traffic at high speed. There is always a gap, so chain near-misses for combo points, collect fuel and coins, then spend them on new cars and upgrades in the garage.",
       "kids": false,
       "age": "Ages 8-14",
       "character": null,
@@ -5551,6 +5551,22 @@ window.JVDS_CONTENT = {
       "tags": [],
       "comingSoon": false,
       "url": "/tools/minecraft-cheatsheet.html"
+    },
+    {
+      "id": "minecraft-skin-editor",
+      "title": "Minecraft Skin Editor: Free Skin Maker and 3D Preview",
+      "desc": "Make a Minecraft skin in your browser: paint the 64x64 texture pixel by pixel, preview it on a spinning 3D player and export a PNG. Free, no install, no account.",
+      "category": "Make Art",
+      "tags": [
+        "Pixel Art",
+        "3D"
+      ],
+      "comingSoon": false,
+      "url": "/tools/minecraft-skin-editor.html",
+      "aliases": [
+        "minecraft skin maker",
+        "skin editor"
+      ]
     },
     {
       "id": "parent-guide",
@@ -6263,10 +6279,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-16T09:23:21.796Z",
+    "generated": "2026-10-16T19:06:42.157Z",
     "workshops": 344,
     "games": 14,
-    "tools": 48,
+    "tools": 49,
     "books": 5,
     "engines": {
       "Blender": 11,
@@ -6293,7 +6309,7 @@ window.JVDS_CONTENT = {
     },
     "toolCategories": {
       "Build & Ship": 3,
-      "Make Art": 6,
+      "Make Art": 7,
       "General": 14,
       "Make Audio": 8,
       "Plan & Write": 4,
