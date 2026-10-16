@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-b52wE+VhPjYD0wXqPvOaCA7YTotRrxPS7OEotAjlrFY=' 'sha256-TTj2N0BN6mCDC6c+Tz7BaDzwNJ4jjV02MVJQOli6UJo=' 'sha256-8L8wN6TsLxKaKgPBgWFTVFNkwPk5SkYHFIRyvWdaFoM=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-b52wE+VhPjYD0wXqPvOaCA7YTotRrxPS7OEotAjlrFY=' 'sha256-TTj2N0BN6mCDC6c+Tz7BaDzwNJ4jjV02MVJQOli6UJo=' 'sha256-Ppu0+kAnSLnl02ZG1DkJbwtjEThz8mVkyOe+6Y9IxTw=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -166,6 +166,7 @@
   <button class="sec-btn" id="saveIdea" title="Keep this idea in your history">⭐ Keep</button>
   <button class="sec-btn" id="shareIdea" title="Copy a share link for this idea">🔗 Share</button>
   <button class="sec-btn" id="exportIdea" title="Export this idea as JSON">⬇ JSON</button>
+  <button class="sec-btn" id="exportAllIdeas" title="Export every kept idea as one JSON file">⬇⬇ All ideas</button>
  </div>
 
  <!-- FILTERS -->
@@ -450,6 +451,14 @@ function exportIdea(){
   if(window.ToolAnalytics) ToolAnalytics.event('idea_exported', current.genre);
   flash('Exported JSON ✓');
 }
+function exportAllIdeas(){
+  if(!history.length){ flash('Keep an idea first'); return; }
+  const ideas=history.map(h=>({title:h.title,genre:h.genre,theme:h.theme,mechanic:h.mechanic,twist:h.twist}));
+  const blob=new Blob([JSON.stringify({app:'jvds-idea-collection',v:1,count:ideas.length,ideas},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='jvds-idea-collection.json'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  if(window.ToolAnalytics) ToolAnalytics.event('ideas_exported', ideas.length);
+  flash('Exported '+ideas.length+' ideas');
+}
 function shareIdea(){
   if(!current) return;
   const payload={t:current.title,g:current.genre,th:current.theme,m:current.mechanic,tw:current.twist};
@@ -531,6 +540,7 @@ document.getElementById('copyIdea').addEventListener('click', copyIdea);
 document.getElementById('saveIdea').addEventListener('click', keepIdea);
 const _shareBtn=document.getElementById('shareIdea'); if(_shareBtn) _shareBtn.addEventListener('click', shareIdea);
 const _exportBtn=document.getElementById('exportIdea'); if(_exportBtn) _exportBtn.addEventListener('click', exportIdea);
+const _exportAllBtn=document.getElementById('exportAllIdeas'); if(_exportAllBtn) _exportAllBtn.addEventListener('click', exportAllIdeas);
 
 // Welcome modal wiring + restore share
 const _giWelcome=document.getElementById('gameIdeaWelcomeModal');
