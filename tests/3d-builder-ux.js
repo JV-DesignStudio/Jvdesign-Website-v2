@@ -154,7 +154,14 @@ const server = http.createServer((req, res) => {
     await mob.goto(base + '/workshops/' + slug + '-builder.html', { waitUntil: 'load' });
     if (await mob.$('#cookie-decline')) { try { await mob.click('#cookie-decline'); } catch (e) {} }
     await new Promise(r => setTimeout(r, 900));
-    await mob.evaluate(() => window.scrollTo(0, 900));
+    // Scroll well into the builder, but not past it: the sticky preview only
+    // holds while #app is on screen, and since A1630 the step strip is compact
+    // so short builders (pirate-ship, steampunk) have a shorter #app.
+    await mob.evaluate(() => {
+      const app = document.getElementById('app');
+      const max = app ? Math.max(300, app.getBoundingClientRect().height - window.innerHeight - 40) : 700;
+      window.scrollTo(0, Math.min(700, max));
+    });
     await new Promise(r => setTimeout(r, 250));
     const mobLayout = await mob.evaluate(() => {
       const vp = document.getElementById('viewport');
@@ -175,3 +182,4 @@ const server = http.createServer((req, res) => {
   if (failures) { console.log('\n' + failures + ' CHECK(S) FAILED'); process.exit(1); }
   console.log('\nALL 3D BUILDER CHECKS PASSED');
 })().catch(e => { console.error(e); server.close(); process.exit(1); });
+
