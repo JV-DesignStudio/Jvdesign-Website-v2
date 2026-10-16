@@ -84,7 +84,7 @@ function generateWorkshops() {
 
     // A1540: engine hub pages (workshops/engine-*.html) are navigation, not
     // workshops, so they must not be counted or listed in the catalogue.
-    if (/<meta\s+name=["']jvds-kind["']\s+content=["']engine-hub["']/i.test(html)) continue;
+      if (/<meta\s+name=["']jvds-kind["']\s+content=["'](engine-hub|builder-shell)["']/i.test(html)) continue;
 
     // A1409: 3D asset builders are catalogued as Tools, not workshops.
     if (BUILDER_IDS.has(slug)) continue;

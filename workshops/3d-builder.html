@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script src="/assets/js/theme-init.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Builder: 11 Build Projects in One Place | JVDesignStudio</title>
+<meta name="description" content="Pick a 3D project (rocket, robot, castle, ship and more) and build it in your browser, then export OBJ, GLB, STL or FBX. Free, nothing to install.">
+<link rel="canonical" href="https://jvdesignstudio.co.uk/workshops/3d-builder.html">
+<meta name="robots" content="index, follow">
+<meta name="jvds-kind" content="builder-shell">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/workshops/3d-builder.html">
+<meta property="og:title" content="3D Builder: 11 Build Projects in One Place">
+<meta property="og:description" content="Pick a 3D project and build it in your browser, then export OBJ, GLB, STL or FBX. Free, nothing to install.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="../logo.png" type="image/png">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YW2T0HW+YipIwJ92q4H93mQNq9nLXA3Jen57bomHQHI='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<link rel="stylesheet" href="../style-shared.css?v=17">
+<link rel="stylesheet" href="/style-mascots.css">
+<script src="../assets/vendor/three-0.160.0/build/three.global.js"></script>
+<script src="jv-exporter.js"></script>
+<script src="builder-gestures.js"></script>
+<script src="builder-templates.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{display:flex;flex-direction:column;font-family:Inter,system-ui,sans-serif;background:var(--bg,#fbf8f2);color:var(--charcoal,#1a1208)}
+.bs-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;border-bottom:1.5px solid var(--border,rgba(64,59,51,.14));background:var(--card,#fff)}
+.bs-back{font-weight:800;color:var(--teal-dk,#4e7d80);text-decoration:none;white-space:nowrap}
+.bs-title{font-family:Fredoka,Inter,sans-serif;font-size:1.05rem;margin:0;flex:1 1 auto}
+.bs-pick{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem;color:var(--charcoal-lt,#3d3224)}
+.bs-pick select{font:inherit;padding:7px 10px;border-radius:9px;border:1.5px solid var(--border,rgba(64,59,51,.3));background:#fff;color:inherit}
+.bs-chips{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;border-bottom:1.5px solid var(--border,rgba(64,59,51,.14));background:var(--bg,#fbf8f2)}
+.bs-chip{flex:0 0 auto;font:700 .8rem Inter,system-ui,sans-serif;padding:7px 13px;border-radius:999px;border:1.5px solid var(--border,rgba(64,59,51,.2));background:#fff;color:var(--charcoal-lt,#3d3224);cursor:pointer}
+.bs-chip.on{background:var(--teal-dk,#4e7d80);border-color:var(--teal-dk,#4e7d80);color:#fff}
+.bs-main{flex:1 1 auto;min-height:0;background:var(--bg,#fbf8f2);position:relative}
+#bsHost{height:100%}
+#bsHost .bs-stage{height:100%;overflow:auto}
+.bs-frame{display:block;width:100%;height:100%;border:0}
+.bs-foot{padding:8px 16px;font-size:.8rem;color:var(--charcoal-lt,#3d3224);border-top:1.5px solid var(--border,rgba(64,59,51,.14));text-align:center}
+.bs-foot a{color:var(--teal-dk,#4e7d80);font-weight:700;text-decoration:none;margin:0 8px}
+</style>
+</head>
+<body>
+<header class="bs-bar">
+  <a class="bs-back" href="../pages/3d-builders.html">&larr; All 3D builders</a>
+  <h1 class="bs-title">3D Builder</h1>
+  <label class="bs-pick"><span>Project</span>
+    <select id="bsSelect" aria-label="Choose a 3D project"></select>
+  </label>
+</header>
+<nav class="bs-chips" id="bsChips" aria-label="3D project presets"></nav>
+<main class="bs-main">
+  <div id="bsHost"></div>
+</main>
+<p class="bs-foot">One shell, eleven projects. Migrated presets run inline; the rest load their own page underneath, so old links keep working. <a href="../pages/3d-builders.html">All 3D builders</a> <a href="/workshop">Workshops</a> <a href="/dev-tools">Tools</a></p>
+<script>
+(function () {
+  'use strict';
+  var PRESETS = [
+    ['rocket', 'Rocket'], ['robot', 'Robot'], ['pirate-ship', 'Pirate Ship'],
+    ['steampunk-airship', 'Steampunk Airship'], ['race-car', 'Race Car'], ['submarine', 'Submarine'],
+    ['castle', 'Castle'], ['fairy-tale', 'Fairy Tale Cottage'], ['pirate-cannon', 'Pirate Cannon'],
+    ['phone-stand', 'Phone Stand'], ['space-station', 'Space Station']
+  ];
+  // Presets migrated to module hosts (A1618+). Others fall back to their page.
+  var MODULES = { rocket: '/assets/js/builders/rocket.js' };
+  var ids = PRESETS.map(function (p) { return p[0]; });
+  var host = document.getElementById('bsHost');
+  var select = document.getElementById('bsSelect');
+  var chips = document.getElementById('bsChips');
+  var dispose = null, styleLinks = [];
+
+  function norm(id) { return ids.indexOf(id) >= 0 ? id : 'rocket'; }
+  function wanted() {
+    var m = /[?&]preset=([^&]+)/.exec(location.search);
+    return norm(m ? decodeURIComponent(m[1]) : 'rocket');
+  }
+  function clearCurrent() {
+    if (dispose) { try { dispose(); } catch (e) { /* already gone */ } dispose = null; }
+    styleLinks.forEach(function (l) { l.remove(); });
+    styleLinks = [];
+    host.innerHTML = '';
+  }
+  function loadStyles(list) {
+    (list || []).forEach(function (href) {
+      var l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = href; l.setAttribute('data-bs-style', '1');
+      document.head.appendChild(l); styleLinks.push(l);
+    });
+  }
+  function tidy(frame) {
+    try {
+      var d = frame.contentDocument;
+      if (!d || d.getElementById('bs-tidy')) return;
+      var s = d.createElement('style');
+      s.id = 'bs-tidy';
+      s.textContent = 'footer,.jvds-tools-footer,.main-nav,.nav-toggle,.logo-link,.back-link,#emberBar{display:none !important}';
+      d.head.appendChild(s);
+    } catch (e) { /* cross-origin: leave as-is */ }
+  }
+  function iframeFallback(id) {
+    var f = document.createElement('iframe');
+    f.className = 'bs-frame'; f.title = '3D builder'; f.src = id + '-builder.html';
+    f.addEventListener('load', function () { tidy(f); });
+    host.appendChild(f);
+    dispose = function () { f.remove(); };
+  }
+  function mountPreset(id) {
+    clearCurrent();
+    var mod = MODULES[id];
+    if (!mod) { iframeFallback(id); return; }
+    import(/* webpackIgnore: true */ mod).then(function (m) {
+      loadStyles(m.STYLES);
+      dispose = m.mount(host);
+    }, function () { iframeFallback(id); });
+  }
+  function updateUI(id) {
+    select.value = id;
+    Array.prototype.forEach.call(chips.children, function (c) {
+      var on = c.dataset.id === id;
+      c.classList.toggle('on', on);
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+  function setPreset(id) {
+    id = norm(id);
+    mountPreset(id);
+    updateUI(id);
+    try { var u = new URL(location.href); u.searchParams.set('preset', id); history.replaceState(null, '', u); } catch (e) { /* older browsers */ }
+  }
+  PRESETS.forEach(function (p) {
+    var o = document.createElement('option'); o.value = p[0]; o.textContent = p[1]; select.appendChild(o);
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'bs-chip'; b.dataset.id = p[0]; b.textContent = p[1];
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', function () { setPreset(p[0]); });
+    chips.appendChild(b);
+  });
+  select.addEventListener('change', function () { setPreset(select.value); });
+  setPreset(wanted());
+})();
+</script>
+</body>
+</html>
