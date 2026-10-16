@@ -25,7 +25,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Tc/ay5CTvQHHf6cRocTjEv25WEx0dmN/r7uJ8fGE3tg=' 'sha256-FwrshrwaJHp0e+rLxoF2dWTT6B8GzWgRkTq89K/nZUA=' 'sha256-p7lSdCW9f4bRSWFbVqPSXkqOVYKp76RdCHFpdW51tVI=' 'sha256-Tc/ay5CTvQHHf6cRocTjEv25WEx0dmN/r7uJ8fGE3tg=' 'sha256-FwrshrwaJHp0e+rLxoF2dWTT6B8GzWgRkTq89K/nZUA=' 'sha256-p7lSdCW9f4bRSWFbVqPSXkqOVYKp76RdCHFpdW51tVI=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Tc/ay5CTvQHHf6cRocTjEv25WEx0dmN/r7uJ8fGE3tg=' 'sha256-FwrshrwaJHp0e+rLxoF2dWTT6B8GzWgRkTq89K/nZUA=' 'sha256-5idugRCZ7OFJjlrLW7jzkhpzaPzbrf6gzaQP2l1rfaU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <script defer src="../analytics-loader.js"></script>
@@ -78,6 +78,9 @@
   <a href="/index.html" aria-label="Home"><img src="/logo.png" alt="JVDesignStudio" height="28" width="28" style="border-radius:6px"></a>
   <h1>Screenshot Generator</h1>
   <button class="btn btn-primary" data-on="exportPNG" data-on-plain>📥 Export PNG</button>
+  <button class="btn" data-on="exportDesignJSON" data-on-plain>⬇️ Design .json</button>
+  <button class="btn" data-on="importDesignClick" data-on-plain>⬆️ Import</button>
+  <input type="file" id="designFile" accept=".json,application/json" style="display:none" aria-label="Import a screenshot design JSON" data-on="importDesignFile" data-on-event="change" data-on-args="this">
 </div>
 <div style="max-width:1100px;margin:0 auto 12px;padding:12px 16px;border-left:3px solid #70A3A7;background:rgba(112,163,167,.10);border-radius:10px;font-size:.9rem"><strong>Use it with:</strong> turn these shots into a store page in <a href="store-page-builder.html" style="color:#4e7d80;font-weight:800">Launch Studio</a>, or browse <a href="../pages/dev-tools.html" style="color:#4e7d80;font-weight:800">all dev tools</a>.</div>
 <p class="char-touch char-touch--center"><img src="/assets/mascots/ember-badge.webp" alt="Ember" width="24" height="24" style="border-radius:50%;flex-shrink:0"><span><strong>Ember says:</strong> these are the pictures that make people want to play your game. Grab the best moments and add a bold caption.</span></p>
@@ -280,6 +283,32 @@ function loadFromLS() {
 let autosaveTimer = null;
 function scheduleAutosave() { clearTimeout(autosaveTimer); autosaveTimer = setTimeout(saveToLS, 500); }
 document.querySelectorAll('input,select,textarea').forEach(el => el.addEventListener('input', scheduleAutosave));
+
+// -- design JSON round-trip (A1599) --
+function _scrState(){
+  const g = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  return { title:g('title'), subtitle:g('subtitle'), titleColor:g('titleColor'), bgColor:g('bgColor'),
+    borderStyle:g('borderStyle'), badgeText:g('badgeText'), badgeColor:g('badgeColor') };
+}
+function exportDesignJSON(){
+  try{
+    const blob = new Blob([JSON.stringify({ app:'jvds-screenshot-generator', v:1, state:_scrState() }, null, 2)], { type:'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'jvds-screenshot-design.json'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000); showToast('Design JSON exported');
+  }catch(e){ showToast('Could not export design'); }
+}
+function importDesignClick(){ const el = document.getElementById('designFile'); if(el) el.click(); }
+function importDesignFile(input){
+  const f = input.files && input.files[0]; input.value = ''; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => { try{
+    const d = JSON.parse(r.result); const st = (d && d.state) ? d.state : d;
+    if(!st || typeof st !== 'object') throw 0;
+    Object.keys(st).forEach(k => { const el = document.getElementById(k); if(el && st[k] != null) el.value = st[k]; });
+    renderPreview(); showToast('Design imported');
+  }catch(e){ showToast('Not a valid design file'); } };
+  r.readAsText(f);
+}
 
 // ── HELP ──
 document.addEventListener('keydown', e => {

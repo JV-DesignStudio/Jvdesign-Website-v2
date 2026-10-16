@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cNgfhAyAs5jIQjussUw4Iv1KdgerNJn/O8pAF9219fY=' 'sha256-UJvLm0HsodzQXdHJ27xXfK63BFj/UfEKYBCFTaQC8WQ=' 'sha256-CY5w+5UG+WVAr/Y7tXd2U4eHySIC0gy6yN9DW026N/8=' 'sha256-AcHvSArOYpKvWmWaM+E9y+rO2j7mDMs66SbLofl+6nY=' 'sha256-A40A3aE14CU86mmj23ktPXy3rmISrTzVBVcjVfwMpIg=' 'sha256-zh1eNL+7em/Xnj87NZerwG7We4Fm+iMzLQmpSNFuzio=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cNgfhAyAs5jIQjussUw4Iv1KdgerNJn/O8pAF9219fY=' 'sha256-UJvLm0HsodzQXdHJ27xXfK63BFj/UfEKYBCFTaQC8WQ=' 'sha256-Of5Cj0+k9sTsdnLDTSxjnYpJUWD7IMAxZ2LI2fHNirY=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -210,6 +210,9 @@
       <div class="exp-grid">
         <button class="exp-btn exp-save" data-on="saveLogo" data-on-plain>💾 Save</button>
         <button class="exp-btn exp-grey" data-on="loadSaved" data-on-plain>📂 Load</button>
+        <button class="exp-btn exp-save" data-on="exportLogoJSON" data-on-plain>⬇️ Export .json</button>
+        <button class="exp-btn exp-grey" data-on="importLogoClick" data-on-plain>⬆️ Import .json</button>
+        <input type="file" id="logoDesignFile" accept=".json,application/json" style="display:none" aria-label="Import a logo design JSON" data-on="importLogoFile" data-on-event="change" data-on-args="this">
         <button class="exp-btn exp-red" data-on="deleteSaved" data-on-plain>🧹️ Delete</button>
         <button class="exp-btn exp-grey" data-on="shareLink" data-on-plain>🔗 Share Link</button>
       </div>
@@ -777,6 +780,25 @@ function applyState(d){
   const sizes={800:280,512:512,1280:640,630:500};
   if(sizes[+d.cw])setCanvasSize(+d.cw,sizes[+d.cw]);
   syncLabels();rebuildAll();render();
+}
+
+/* -- design JSON round-trip (A1599) -- */
+function exportLogoJSON(){
+  try{
+    const blob=new Blob([JSON.stringify({app:'jvds-game-logo',v:1,state:getState()},null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='jvds-logo-design.json';a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Design JSON exported');
+  }catch(e){toast('Could not export design');}
+}
+function importLogoClick(){ const el=id('logoDesignFile'); if(el) el.click(); }
+function importLogoFile(input){
+  const f=input.files&&input.files[0]; input.value=''; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+    const d=JSON.parse(r.result); const st=(d&&d.state)?d.state:d;
+    const n=normalize(st); if(!n) throw 0; applyState(n); toast('Design imported');
+  }catch(e){ toast('Not a valid design file'); } };
+  r.readAsText(f);
 }
 
 function saveLogo(){

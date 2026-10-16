@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-2QG6V1xKO28a28MlWclNuv/nuhd4qdcxc4CAj5OFl+U=' 'sha256-1+kJuXXTe0SYCMmdMT3BVf03q9LVKoI1IDAeX7j+03E=' 'sha256-HZDsuqSNBcToI9h+T6bJjQoGygMZmNiDRpbtSfDS/68=' 'sha256-2QG6V1xKO28a28MlWclNuv/nuhd4qdcxc4CAj5OFl+U=' 'sha256-1+kJuXXTe0SYCMmdMT3BVf03q9LVKoI1IDAeX7j+03E=' 'sha256-HZDsuqSNBcToI9h+T6bJjQoGygMZmNiDRpbtSfDS/68=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-2QG6V1xKO28a28MlWclNuv/nuhd4qdcxc4CAj5OFl+U=' 'sha256-1+kJuXXTe0SYCMmdMT3BVf03q9LVKoI1IDAeX7j+03E=' 'sha256-qoUcI3qJihl7aLpMrrQCBJYxGRVXio3jkANo82zQ86Q=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -211,6 +211,9 @@
     <div class="ctrl-section">
       <h2>Design</h2>
       <button class="act-btn exp-save" data-on="saveDesign" data-on-plain>💾 Save to Browser</button>
+      <button class="act-btn exp-save" data-on="exportDesignJSON" data-on-plain>⬇️ Export Design (.json)</button>
+      <button class="act-btn" data-on="importDesignClick" data-on-plain>⬆️ Import Design (.json)</button>
+      <input type="file" id="designFile" accept=".json,application/json" style="display:none" aria-label="Import an icon design JSON" data-on="importDesignFile" data-on-event="change" data-on-args="this">
       <button class="act-btn exp-reset" data-on="undo" data-on-plain>↩️ Undo</button>
       <button class="act-btn exp-reset" data-on="redo" data-on-plain>↪️ Redo</button>
       <button class="act-btn exp-reset" data-on="resetDesign" data-on-plain>Reset to Default</button>
@@ -658,6 +661,26 @@ function resetDesign(){
   try{localStorage.removeItem(LS_KEY);}catch(e){}
   state=JSON.parse(JSON.stringify(DEFAULTS));
   syncInputs();syncUI();render();toast('Reset to default');
+}
+/* -- design JSON round-trip (A1599) -- */
+function exportDesignJSON(){
+  try{
+    const blob=new Blob([JSON.stringify({app:'jvds-icon-generator',v:1,state:state},null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='jvds-icon-design.json';a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('Design JSON exported');
+  }catch(e){toast('Could not export design');}
+}
+function importDesignClick(){ const el=id('designFile'); if(el) el.click(); }
+function importDesignFile(input){
+  const f=input.files&&input.files[0]; input.value=''; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{
+    const d=JSON.parse(r.result); const st=d&&d.state?d.state:(d&&d.s?d.s:d);
+    if(!st||typeof st!=='object') throw 0;
+    state=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),st);
+    syncInputs();syncUI();render();toast('Design imported');
+  }catch(e){ toast('Not a valid design file'); } };
+  r.readAsText(f);
 }
 
 let toastT;
