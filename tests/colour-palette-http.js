@@ -97,7 +97,10 @@ function check(name, ok, detail) {
   check('all export buttons clickable without error', toastShown, await page.$eval('#toast', el => el.textContent));
 
   /* ── save / load round-trip with size sync ── */
-  await page.$eval('#adjSize', el => { el.value = 8; el.dispatchEvent(new Event('input')); });
+  // The size slider handler is delegated on document (bubble phase), so the
+  // synthetic event must bubble or setPaletteSize never runs.
+  await page.$eval('#adjSize', el => { el.value = 8; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForFunction(() => document.querySelectorAll('.swatch').length === 8, { timeout: 2000 }).catch(() => {});
   const sizeSwatches = await page.$$eval('.swatch', els => els.length);
   check('size slider renders 8 swatches', sizeSwatches === 8, String(sizeSwatches));
 
@@ -108,7 +111,7 @@ function check(name, ok, detail) {
   await page.reload({ waitUntil: 'networkidle2' });
   await page.waitForSelector('.saved-item');
   await page.evaluate(() => document.querySelector('.saved-item').click());
-  await new Promise(r => setTimeout(r, 200));
+  await page.waitForFunction(() => document.getElementById('adjSize').value === '8', { timeout: 2000 }).catch(() => {});
   const synced = await page.$eval('#adjSize', el => el.value);
   check('loading 8-colour save syncs size slider', synced === '8', 'slider=' + synced);
 
