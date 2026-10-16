@@ -34,7 +34,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-/fWIhUQ3tZNotpwuWG0cc2tW7xZFgbNBconYW3isrFk=' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-/fWIhUQ3tZNotpwuWG0cc2tW7xZFgbNBconYW3isrFk=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-3fJNGQFaIpDgp77EcnTLNreNnAhVRru0bMcX6RjSLDw=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -1274,32 +1274,49 @@ function exportPNG(){
 }
 
 function sendToGameMaker(){
-  // Build ID?value lookup using TILES definitions
+  // Collision layer: hazard -> 2, solid -> 1, everything else empty.
   const tileVal = {};
-  TILES.forEach(t => {
-    tileVal[t.id] = t.type === 'hazard' ? 2 : t.solid ? 1 : 0;
-  });
-  // Prefer 'Platforms' or 'Terrain' layer, fall back to layer[0]
+  TILES.forEach(t => { tileVal[t.id] = t.type === 'hazard' ? 2 : t.solid ? 1 : 0; });
   const srcLayer = layers.find(l => /platform|terrain/i.test(l.name)) || layers[0];
-  // Crop/pad to exactly 2015 (arcade game maker format)
   const TW = 20, TH = 15;
   const arcadeMap = Array(TW * TH).fill(0);
+  // Entities (coins, enemies, player spawn, goal) are gathered from every layer
+  // so the imported level is playable, not just collision geometry (A1586).
+  const entities = { coins: [], enemies: [], spawn: null, goal: null };
   for (let ty = 0; ty < Math.min(gridH, TH); ty++) {
     for (let tx = 0; tx < Math.min(gridW, TW); tx++) {
-      const id = srcLayer.data[ty * gridW + tx] || 0;
-      arcadeMap[ty * TW + tx] = tileVal[id] !== undefined ? tileVal[id] : (id > 0 ? 1 : 0);
+      const idx = ty * gridW + tx;
+      const sId = srcLayer.data[idx] || 0;
+      arcadeMap[ty * TW + tx] = tileVal[sId] !== undefined ? tileVal[sId] : (sId > 0 ? 1 : 0);
+      layers.forEach(l => {
+        const id = l.data ? l.data[idx] : 0;
+        if (!id) return;
+        const def = getTile(id);
+        if (def.type === 'pickup') entities.coins.push([tx, ty]);
+        else if (def.type === 'enemy') entities.enemies.push([tx, ty]);
+        else if (def.type === 'goal') {
+          if (def.label === 'Player') { if (!entities.spawn) entities.spawn = [tx, ty]; }
+          else if (!entities.goal) entities.goal = [tx, ty];
+        }
+      });
     }
   }
-  const hasTiles = arcadeMap.some(v => v > 0);
+  const hasContent = arcadeMap.some(v => v > 0) || entities.coins.length || entities.enemies.length || entities.spawn || entities.goal;
   try {
     localStorage.setItem('jvds_level_autosave', JSON.stringify({
       name: getLevelName(),
       gridW: TW, gridH: TH,
       themeId: currentTheme.id,
       layers: [{ name:'Platforms', visible:true, locked:false, data: arcadeMap }],
+      entities: entities,
       enemyPaths: {}, tileProps: {}, ts: Date.now()
     }));
-    showToast(hasTiles ? 'Sent to Game Maker. Open Game Maker > Assets > Import Last.' : 'No solid tiles found. Draw some platforms first.');
+    if (!hasContent) { showToast('Nothing to send. Draw platforms, coins or enemies first.'); return; }
+    const bits = [];
+    if (entities.coins.length) bits.push(entities.coins.length + ' coins');
+    if (entities.enemies.length) bits.push(entities.enemies.length + ' enemies');
+    if (entities.goal) bits.push('a goal');
+    showToast('Sent to Game Maker' + (bits.length ? ' (' + bits.join(', ') + ')' : '') + '. Open Game Maker > Assets > Import Last.');
   } catch(e) { showToast('Export failed, level may be too large'); }
 }
 function getLevelData(){return{meta:{name:getLevelName(),width:gridW,height:gridH,tileSize:TILE_SIZE,theme:currentTheme.id,creator:'JVDesignStudio Level Designer',site:'jvdesignstudio.co.uk',exported:new Date().toISOString()},tileDefs:TILES.filter(t=>t.id>0).map(t=>({id:t.id,label:t.label,type:t.type,solid:t.solid,color:t.color})),layers:layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:l.data})),enemyPaths,tileProps};}
