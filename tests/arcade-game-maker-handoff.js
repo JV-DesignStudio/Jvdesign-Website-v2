@@ -8,17 +8,20 @@ const puppeteer = require('puppeteer');
 const ROOT = path.resolve(__dirname, '..');
 
 (async () => {
+  const MIME = { '.html': 'text/html', '.js': 'application/javascript', '.mjs': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ico': 'image/x-icon' };
   const server = http.createServer((req, res) => {
     const p = path.resolve(ROOT, '.' + decodeURIComponent(req.url.split('?')[0]));
     if (!p.startsWith(ROOT + path.sep)) { res.writeHead(403); return res.end(); }
-    fs.readFile(p, (e, b) => { res.writeHead(e ? 404 : 200); res.end(e ? '' : b); });
+    fs.readFile(p, (e, b) => { if (e) { res.writeHead(404); return res.end(''); } res.writeHead(200, { 'Content-Type': MIME[path.extname(p)] || 'application/octet-stream' }); res.end(b); });
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
   let failures = 0;
   const check = (n, c, d) => { console.log(`${c ? '✓' : '✗'} ${n}${d ? ' - ' + d : ''}`); if (!c) failures++; };
+  const errors = [];
   try {
     const page = await browser.newPage();
+    page.on('pageerror', e => errors.push(e.message));
     await page.setRequestInterception(true);
     page.on('request', r => {
       const u = r.url();
@@ -67,6 +70,15 @@ const ROOT = path.resolve(__dirname, '..');
     check('routeImportedSprite dispatches to the slot applier', !!route.hit && route.hit.url === 'DATA' && route.hit.label === 'art', JSON.stringify(route.hit));
     check('routeImportedSprite returns the slot label', route.name === 'Enemy', route.name);
     check('routeImportedSprite clears the slot marker', route.cleared === null);
+    // A1611: the cross-tab storage listener must route through JVDSHandoff too
+    const store = await page.evaluate(() => {
+      window.__sprite = null;
+      window.JVDSHandoff.register({ player: (url, label) => { window.__sprite = { url, label }; } });
+      window.dispatchEvent(new StorageEvent('storage', { key: 'jvds_sprite_player', newValue: 'DATA:SPRITE' }));
+      return window.__sprite;
+    });
+    check('storage event routes the sprite through JVDSHandoff', !!store && store.url === 'DATA:SPRITE' && store.label === 'Workshop sprite', JSON.stringify(store));
+    check('storage listener raises no ReferenceError', errors.length === 0, errors.join(' | '));
     await page.close();
   } finally {
     await browser.close();
