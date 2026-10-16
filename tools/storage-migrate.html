@@ -26,7 +26,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8tP/QNf1HFVJyKq1MsBvdqPwdn6NWS3ww1AtM5BM1lw=' 'sha256-5i31+D44AScg9NoRTUU1gMl6qzeQfYACNW6A1Q3Y5ys=' 'sha256-vR1zU1NaUr4ajDEnM1O7Je0p/RH3gSPCpG8THIqbxZ0=' 'sha256-8tP/QNf1HFVJyKq1MsBvdqPwdn6NWS3ww1AtM5BM1lw=' 'sha256-5i31+D44AScg9NoRTUU1gMl6qzeQfYACNW6A1Q3Y5ys=' 'sha256-vR1zU1NaUr4ajDEnM1O7Je0p/RH3gSPCpG8THIqbxZ0=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8tP/QNf1HFVJyKq1MsBvdqPwdn6NWS3ww1AtM5BM1lw=' 'sha256-5i31+D44AScg9NoRTUU1gMl6qzeQfYACNW6A1Q3Y5ys=' 'sha256-Zr1HhI5qxhePErv7TljDgkKw3bQJZoszL/W0Fi4lW30=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -81,9 +81,9 @@ h1{margin:6px 0 8px;font-size:clamp(1.8rem,4vw,2.6rem)}p{color:var(--muted);line
 </section>
 <section class="card" aria-labelledby="idbTitle">
 <h2 id="idbTitle">2. IndexedDB</h2>
-<p style="font-size:.9rem">DB: <code>jvds-migrate-v1</code> • Store: <code>tools</code> - one record per original key. You can delete localStorage copies after.</p>
+<p style="font-size:.9rem">DB: <code>jvds-migrate-v1</code> • Store: <code>tools</code> - one record per original key. Restore copies the records back to localStorage, so migrating is always reversible.</p>
 <div id="idbList" class="kv">Not checked yet.</div>
-<div class="row"><button class="btn" id="btnDownload" type="button">Export JSON</button><button class="btn" id="btnClearLS" type="button">Clear Migrated localStorage</button><button class="btn" id="btnWipeIDB" type="button">Wipe IndexedDB</button></div>
+<div class="row"><button class="btn" id="btnDownload" type="button">Export JSON</button><button class="btn" id="btnRestoreIDB" type="button">Restore to localStorage</button><button class="btn" id="btnClearLS" type="button">Clear Migrated localStorage</button><button class="btn" id="btnWipeIDB" type="button">Wipe IndexedDB</button></div>
 </section>
 </div>
 <section class="card" style="margin-top:18px">
@@ -105,7 +105,7 @@ const DB_NAME='jvds-migrate-v1', STORE='tools', LS_PREFIXES=['jvds_','jvds-','jv
 const $=id=>document.getElementById(id);
 function log(m){const el=$('log');el.textContent+=(el.textContent==='Ready.'?'':'\n')+new Date().toLocaleTimeString()+' - '+m;el.scrollTop=el.scrollHeight;}
 function announce(m){const a=document.getElementById('jvds-announce');if(a){a.textContent=m;setTimeout(()=>a.textContent='',1500);} }
-function isJVDSKey(k){return k.startsWith('jvds')||k.startsWith('qb-')||k.includes('pixel')||k.includes('sound')||k.includes('level');}
+function isJVDSKey(k){return k.startsWith('jvds')||k.startsWith('jv_')||k.startsWith('qb-')||k.includes('pixel')||k.includes('sound')||k.includes('level');}
 function scanLS(){
   const out=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k)continue;if(isJVDSKey(k)){try{const v=localStorage.getItem(k);out.push({k,bytes:new Blob([v||'']).size,preview:(v||'').slice(0,80)});}catch(e){out.push({k,bytes:0,preview:'[error]'})}}}
   out.sort((a,b)=>b.bytes-a.bytes);return out;
@@ -137,6 +137,17 @@ async function clearMigrated(){
   const db=await openDB();const tx=db.transaction(STORE,'readonly');const st=tx.objectStore(STORE);const keys=await new Promise(res=>{const r=st.getAllKeys();r.onsuccess=()=>res(r.result||[])});let n=0;keys.forEach(k=>{if(localStorage.getItem(k)!==null){localStorage.removeItem(k);n++;}});log('Cleared '+n+' localStorage keys (kept IndexedDB)');announce('Cleared '+n+' localStorage');renderKV();
 }
 async function wipeIDB(){if(!confirm('Wipe IndexedDB '+DB_NAME+'?'))return;indexedDB.deleteDatabase(DB_NAME);log('IndexedDB wiped');$('idbList').textContent='Wiped.';announce('IndexedDB wiped');}
+async function restoreFromIDB(){
+  try{
+    const db=await openDB();const tx=db.transaction(STORE,'readonly');const st=tx.objectStore(STORE);
+    const entries=await new Promise(res=>{const out=[];const req=st.openCursor();req.onsuccess=e=>{const c=e.target.result;if(c){out.push([c.key,c.value]);c.continue();}else res(out);};req.onerror=()=>res(out);});
+    db.close();
+    let n=0;entries.forEach(([k,v])=>{try{if(typeof v==='string')localStorage.setItem(k,v);n++;}catch(e){}});
+    log('Restored '+n+' key(s) from IndexedDB back to localStorage');
+    announce('Restored '+n+' to localStorage');
+    renderKV();
+  }catch(e){log('Restore failed: '+e.message);$('status').textContent='Restore failed';}
+}
 async function selfTest(){
   log('Self-test: migrate round-trip…');
   localStorage.setItem('jvds_test_migrate','hello-'+Date.now());
@@ -147,6 +158,7 @@ $('btnMigrate').onclick=migrate;
 $('btnVerify').onclick=renderIDB;
 $('btnDownload').onclick=exportJSON;
 $('btnClearLS').onclick=clearMigrated;
+$('btnRestoreIDB').onclick=restoreFromIDB;
 $('btnWipeIDB').onclick=wipeIDB;
 $('btnSelfTest').onclick=selfTest;
 renderKV();renderIDB();
