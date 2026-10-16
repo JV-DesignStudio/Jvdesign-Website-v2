@@ -117,8 +117,49 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   check('fallback downloads the game when files cannot be shared', Array.isArray(r.fallbackDownloads) && r.fallbackDownloads.some(n=>/\.html$/.test(n)), (r.fallbackDownloads||[]).join(','));
   check('fallback does not share a file', r.fallbackShared === null || r.fallbackShared === undefined);
   check('exportGame still downloads the packed .html (refactor regression)', r.exportGameFn === true && (r.exportDownloads||[]).some(n=>/\.html$/.test(n)), (r.exportDownloads||[]).join(','));
-  check('no uncaught JS errors', jsErrors.length === 0, jsErrors.slice(0,2).join(' | '));
 
+  // A1585: a ?game= link must carry custom art + audio with no share worker,
+  // and fall back clearly (link drops the oversized asset) when it cannot fit.
+  const link = await page.evaluate(async ()=>{
+    const out = { errors: [] };
+    const realOpen = _openShareModal, realShort = _shortenUrl, realToast = window.showToast;
+    try {
+      _engineData = { title:'Art Round Trip', genre:'SHOOTER', speed:200, gravity:600, jump:450, map:null };
+      try { localStorage.removeItem('jv_share_backend'); } catch(e){}
+      window.showToast = ()=>{};
+      _shortenUrl = async ()=>null;
+      let captured = null;
+      _openShareModal = (url,title,fork,short,info)=>{ captured = { url, info }; };
+
+      // 1) tiny sprite that fits a link -> must round-trip, art carried
+      customSpriteDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      customSpriteFrameCount = 1; customSpriteFrameW = 1;
+      customEnemyDataUrl = null; customBulletDataUrl = null; customBlockDataUrl = null; customBgDataUrl = null;
+      await generateShareLink();
+      let p1 = null;
+      if (captured && /[?&]game=/.test(captured.url)) p1 = JSON.parse(await _decompressPayload(captured.url.split('game=')[1]));
+      out.smallCarried = !!(p1 && p1.assets && p1.assets.sprite);
+      out.smallInfoCarried = !!(captured && captured.info && captured.info.carriedArt);
+
+      // 2) incompressible sprite far too big for a URL -> dropped, offered as download
+      let rnd = ''; const chunk = new Uint8Array(8192);
+      for (let n = 0; n < 180000; n += 8192) { crypto.getRandomValues(chunk); rnd += String.fromCharCode.apply(null, chunk); }
+      customSpriteDataUrl = 'data:image/png;base64,' + btoa(rnd.slice(0, 180000));
+      captured = null;
+      await generateShareLink();
+      let p2 = null;
+      if (captured && /[?&]game=/.test(captured.url)) p2 = JSON.parse(await _decompressPayload(captured.url.split('game=')[1]));
+      out.bigCarried = !!(p2 && p2.assets);
+      out.bigInfoCarried = !!(captured && captured.info && captured.info.carriedArt);
+    } catch(e) { out.errors.push(e.message); }
+    _openShareModal = realOpen; _shortenUrl = realShort; window.showToast = realToast;
+    customSpriteDataUrl = null; customSpriteFrameCount = 1; customSpriteFrameW = 0;
+    return out;
+  });
+  check('custom art survives a ?game= link with no backend', link.smallCarried === true && link.smallInfoCarried === true, JSON.stringify(link));
+  check('oversized art is dropped from the link (UI offers Download HTML)', link.bigCarried === false && link.bigInfoCarried === false, JSON.stringify(link));
+
+  check('no uncaught JS errors', jsErrors.length === 0, jsErrors.slice(0,2).join(' | '));
   await browser.close();
   server.close();
   if(failures){ console.log('\n'+failures+' FAILURE(S)'); process.exit(1); }
