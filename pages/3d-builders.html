@@ -546,6 +546,52 @@ footer a:hover { color: var(--text-2); }
   margin-top: 8px;
 }
 
+/* ─── BUILDER FILTER ──────────────────────────── */
+.builder-filter {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.bf-search { flex: 1 1 260px; min-width: 0; display: block; }
+.bf-search input {
+  width: 100%;
+  font: inherit;
+  font-size: .9rem;
+  color: var(--text-1);
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-radius: 10px;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.bf-search input::placeholder { color: var(--text-3); }
+.bf-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.bf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.bf-chip {
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.bf-chip:hover { color: var(--text-1); border-color: var(--accent); }
+.bf-chip.is-on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.bf-count { flex: 1 1 100%; margin: 0; font-size: .78rem; color: var(--text-3); }
+.bf-empty { max-width: 1200px; margin: 0 auto; padding: 0 24px 60px; color: var(--text-2); font-size: .9rem; }
+.bcard[hidden] { display: none; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
 /* ─── RESPONSIVE ──────────────────────────────── */
 @media (max-width: 700px) {
   .stats-bar { grid-template-columns: repeat(2, 1fr); }
@@ -583,7 +629,7 @@ footer a:hover { color: var(--text-2); }
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LKtB+uYVrof/Yo7jEA8CNFGunsObGO7nFXIQO7X2oVc=' 'sha256-dXpaUugEmQeF1by2p905pry/G6f53HMZ35BzQuUtIHo=' 'sha256-zpjubdLLxVqlkdxx6IUphR2dMOENDmhLem+jA9gZctw=' 'sha256-D8mSiklMvBovx+sbSiEK+Y/fQ302SiWlgRGLbHa+Fis=' 'sha256-aC9vngTFAbLAaTs04DN/ZRGaOVzFKH4gJXQ5VE9mwFg=' 'sha256-MQP8rJGKTMoPBlIch8nLqUEOr8IhSNVAnaZzO95QWKs=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LKtB+uYVrof/Yo7jEA8CNFGunsObGO7nFXIQO7X2oVc=' 'sha256-dXpaUugEmQeF1by2p905pry/G6f53HMZ35BzQuUtIHo=' 'sha256-zpjubdLLxVqlkdxx6IUphR2dMOENDmhLem+jA9gZctw=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 </head>
@@ -729,6 +775,23 @@ footer a:hover { color: var(--text-2); }
 <div class="section-header">
   <h2>Choose Your Builder</h2>
   <p>Pick any builder below and start creating. No account needed.</p>
+</div>
+
+<div class="builder-filter">
+  <label class="bf-search">
+    <span class="visually-hidden">Search builders</span>
+    <input id="bf-q" type="search" placeholder="Search builders, e.g. rocket" autocomplete="off">
+  </label>
+  <div class="bf-chips" id="bf-chips" role="group" aria-label="Filter builders by type">
+    <button type="button" class="bf-chip is-on" data-type="all" aria-pressed="true">All</button>
+    <button type="button" class="bf-chip" data-type="vehicles" aria-pressed="false">Vehicles</button>
+    <button type="button" class="bf-chip" data-type="characters" aria-pressed="false">Characters</button>
+    <button type="button" class="bf-chip" data-type="building" aria-pressed="false">Building</button>
+    <button type="button" class="bf-chip" data-type="space" aria-pressed="false">Space</button>
+    <button type="button" class="bf-chip" data-type="print3d" aria-pressed="false">3D Print</button>
+    <button type="button" class="bf-chip" data-type="studio" aria-pressed="false">Studio</button>
+  </div>
+  <p class="bf-count" id="bf-count" aria-live="polite"></p>
 </div>
 
 <div class="builders-grid">
@@ -937,6 +1000,8 @@ footer a:hover { color: var(--text-2); }
         <span class="bcard-cta">Build a Stand</span>
       </div>
     </div>
+  </a>
+
   <a href="../workshops/voxel-studio.html" class="bcard" style="--ca:#7a5cff;--ca-rgb:122,92,255">
     <div class="bcard-thumb">
       <img width="400" height="225" loading="lazy" decoding="async"
@@ -1014,6 +1079,8 @@ footer a:hover { color: var(--text-2); }
   </a>
 
 </div>
+
+<p class="bf-empty" id="bf-empty" hidden>No builders match. Try another word.</p>
 
 <!-- FEATURES -->
 <section class="features-section">
@@ -1095,6 +1162,7 @@ footer a:hover { color: var(--text-2); }
 
 <!-- SCRIPTS -->
 <script defer src="../analytics-loader.js"></script>
+<script defer src="/assets/js/3d-builders-filter.js"></script>
 <script src="/sw-register.js"></script>
 <script defer src="../cookie-consent.js"></script>
 
