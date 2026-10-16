@@ -28,6 +28,7 @@ const STEPS = [
   { id: 'tools',    label: 'Tools hub (grid + stats from content/tools.json)',     fn: () => require('./tools-hub').runToolsHub() },
   { id: 'redirects', label: 'Redirects (redirects.json -> stubs + 404 routes)',   fn: () => require('./redirects').runRedirects() },
   { id: 'partials', label: 'Partials (inject nav/footer)',                        fn: () => require('./partials').runPartials() },
+  { id: 'hubs',     label: 'Engine hubs (workshops/engine-*.html)',               fn: () => require('../generate-engine-hubs').generate() },
   { id: 'sitemap',  label: 'Sitemap  (sitemap.xml + search-index.json)',           fn: () => require('./sitemap').runSitemap() },
   { id: 'latest',   label: 'Latest   (latest-post.json)',                         fn: () => require('./latest').runLatest() },
   { id: 'board',    label: 'Board    (board-data.json KPIs)',                     fn: () => require('./board').runBoard() },
