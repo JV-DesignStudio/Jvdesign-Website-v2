@@ -25,7 +25,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Lhs/QvZS5pBz44E2uhRYkq8KP9ycKGrGC3vCZdTcak=' 'sha256-GaHtVPXXCtdhxBLnOWwESRHxLQaHNeQB380QBWXN3DI=' 'sha256-8Lhs/QvZS5pBz44E2uhRYkq8KP9ycKGrGC3vCZdTcak=' 'sha256-GaHtVPXXCtdhxBLnOWwESRHxLQaHNeQB380QBWXN3DI=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Lhs/QvZS5pBz44E2uhRYkq8KP9ycKGrGC3vCZdTcak=' 'sha256-7y4HgOF+kz/oTnc2a+mdx8Txf7JUQ/+J/RhcWNCcpAE=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -259,6 +259,10 @@
         <div class="level-grid" id="levelGrid"></div>
       </div>
       <button data-on="clearLevelGrid" data-on-plain style="padding:6px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:16px;">Clear Grid</button>
+      <button data-on="copyLevelJSON" data-on-plain style="padding:6px 16px;border-radius:8px;border:none;background:#4e7d80;color:#fff;cursor:pointer;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:700;margin-bottom:16px;margin-left:6px;">📋 Copy as JSON</button>
+      <button data-on="downloadLevelJSON" data-on-plain style="padding:6px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:16px;margin-left:6px;">⬇ Download JSON</button>
+      <a href="level-designer.html" style="display:inline-block;padding:6px 16px;border-radius:8px;border:1.5px solid var(--border);background:var(--white);cursor:pointer;font-family:'Fredoka',cursive;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:16px;margin-left:6px;text-decoration:none;">🧱 Open World Builder</a>
+      <div style="font-size:.72rem;color:var(--muted);margin:-8px 0 16px;">Copied the JSON? Open World Builder and use Import to keep building this level with real tiles.</div>
     </div>
 
     <div class="field">
@@ -368,6 +372,9 @@ document.querySelectorAll('.hb-tab').forEach(function(btn){
 // LEVEL GRID
 // ══════════════════════════════════════
 var GRID_COLORS = ['#a8d5a2','#6db5f5','#f5c842','#ef4444','#8b5cf6'];
+// A1601: the 5 worksheet colours map to World Builder (level-designer) tile ids
+var GRID_TILES  = [1, 10, 12, 18, 22];
+var GRID_W = 20, GRID_H = 12;
 var currentColorIdx = 0;
 var grid = document.getElementById('levelGrid');
 if(grid){
@@ -376,10 +383,11 @@ if(grid){
     var el = document.elementFromPoint(x, y);
     if(el && el.classList && el.classList.contains('level-cell')){
       el.style.background = GRID_COLORS[currentColorIdx];
+      el.dataset.tile = GRID_TILES[currentColorIdx];
     }
   }
-  for(var r=0;r<12;r++){
-    for(var c=0;c<20;c++){
+  for(var r=0;r<GRID_H;r++){
+    for(var c=0;c<GRID_W;c++){
       var cell = document.createElement('div');
       cell.className = 'level-cell';
       cell.dataset.row = r;
@@ -415,7 +423,46 @@ if(grid){
 
 function clearLevelGrid(){
   if(!grid) return;
-  grid.querySelectorAll('.level-cell').forEach(function(c){ c.style.background=''; });
+  grid.querySelectorAll('.level-cell').forEach(function(c){ c.style.background=''; c.dataset.tile=''; });
+}
+
+// A1601: hand the painted grid to World Builder as an importable level file.
+function buildLevelJSON(){
+  var data = new Array(GRID_W * GRID_H).fill(0);
+  if(grid){ grid.querySelectorAll('.level-cell').forEach(function(c){
+    var t = parseInt(c.dataset.tile,10)||0;
+    if(t) data[(+c.dataset.row)*GRID_W + (+c.dataset.col)] = t;
+  }); }
+  var nameEl = document.querySelector('#ws3 input[type="text"]');
+  return {
+    meta:{ name:(nameEl && nameEl.value) || 'Worksheet Level', width:GRID_W, height:GRID_H, tileSize:24,
+           theme:'sky', creator:'JVDesignStudio Design Worksheet', site:'jvdesignstudio.co.uk', exported:new Date().toISOString() },
+    layers:[ { name:'Worksheet', visible:true, locked:false, data:data } ],
+    enemyPaths:{}, tileProps:{}
+  };
+}
+function downloadLevelJSON(){
+  var blob = new Blob([JSON.stringify(buildLevelJSON(), null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'worksheet-level.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 5000);
+}
+function copyLevelJSON(){
+  var json = JSON.stringify(buildLevelJSON(), null, 2);
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(json)
+      .then(function(){ showToast('Level JSON copied. Open World Builder and use Import.'); })
+      .catch(function(){ downloadLevelJSON(); showToast('Level JSON downloaded. Open World Builder and use Import.'); });
+  } else { downloadLevelJSON(); showToast('Level JSON downloaded. Open World Builder and use Import.'); }
+}
+function showToast(msg){
+  var t=document.getElementById('dw-toast');
+  if(!t){ t=document.createElement('div'); t.id='dw-toast'; t.setAttribute('role','status'); t.setAttribute('aria-live','polite');
+    t.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;background:#1a1208;color:#f5efe0;padding:10px 16px;border-radius:10px;font-size:.8rem;max-width:90vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35);transition:opacity .2s;';
+    document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity=1;
+  clearTimeout(t._t); t._t=setTimeout(function(){ t.style.opacity=0; }, 2800);
 }
 </script>
 
