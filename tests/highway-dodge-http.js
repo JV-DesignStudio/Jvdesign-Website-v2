@@ -281,6 +281,219 @@ async function noOverlap(browser, base) {
   await page.close();
 }
 
+// A1648: fairness. Traffic is spawned in rows that always leave a reachable
+// open lane, and rows can never merge (they keep a two-lane vertical gap), so a
+// "wall" (all three lanes blocked at one height) should never exist. The game
+// counts those frames; a long autopiloted run must report zero.
+async function fairness(browser, base) {
+  const page = await browser.newPage();
+  const errors = watchErrors(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/highway-dodge.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => { localStorage.setItem('highway-tip-seen', '1'); document.getElementById('playBtn').click(); });
+
+  let maxWalls = 0, maxRows = 0, samples = 0, runs = 0, maxCars = 0;
+  const deadline = Date.now() + 22000;
+  while (Date.now() < deadline) {
+    await sleep(70);
+    const s = await page.evaluate(() => ({
+      dead: window.__highway ? window.__highway.dead : false,
+      walls: window.__highway ? window.__highway.walls : 0,
+      rows: window.__highway ? window.__highway.rows : 0,
+      cars: window.__highway ? window.__highway.cars() : [],
+      playerLane: window.__highway ? window.__highway.playerLane : -1
+    }));
+    if (s.dead) {
+      runs++;
+      await page.evaluate(() => {
+        const btn = document.querySelector('.sr-again') || document.getElementById('againBtn');
+        if (btn) btn.click();
+      });
+      await sleep(250);
+      continue;
+    }
+    samples++;
+    maxWalls = Math.max(maxWalls, s.walls);
+    maxRows = Math.max(maxRows, s.rows);
+    maxCars = Math.max(maxCars, s.cars.length);
+
+    const danger = l => s.cars.reduce((m, c) => c.lane === l ? Math.max(m, c.y) : m, -1);
+    let best = 0;
+    for (const l of [1, 2]) if (danger(l) < danger(best)) best = l;
+    if (best !== s.playerLane) {
+      await page.keyboard.press(best < s.playerLane ? 'ArrowLeft' : 'ArrowRight');
+    }
+  }
+  check('fairness: traffic rows spawned', maxRows > 0, 'rows=' + maxRows);
+  check('fairness: sustained traffic reached a busy screen', maxCars >= 4, 'maxCars=' + maxCars);
+  check('fairness: no impossible traffic wall ever forms', maxWalls === 0,
+    'walls=' + maxWalls + ' samples=' + samples + ' runs=' + runs);
+  check('fairness: no page errors', errors.length === 0, errors.join(' | '));
+  await page.evaluate(() => { localStorage.removeItem('highway-tip-seen'); });
+  await page.close();
+}
+
+// A1648: the car shop. Coins bank per run, buy custom cars, and the choice
+// persists on the device via localStorage (no account).
+async function carShop(browser, base) {
+  const page = await browser.newPage();
+  const errors = watchErrors(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/highway-dodge.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => { localStorage.removeItem('jvds-highway-garage'); localStorage.removeItem('highway-tip-seen'); });
+  await page.reload({ waitUntil: 'load' });
+
+  const initial = await page.evaluate(() => window.__highway.garage);
+  check('shop: starts with the classic car and no coins',
+    initial.equipped === 'classic' && initial.coins === 0, JSON.stringify(initial));
+
+  const opened = await page.evaluate(() => {
+    document.getElementById('shopBtn').click();
+    const scr = document.getElementById('shopScreen');
+    const cards = document.querySelectorAll('#shopCars .shop-card');
+    return { visible: !scr.classList.contains('hidden'), cards: cards.length, list: window.__highway.carList().length };
+  });
+  check('shop: opens with one card per car', opened.visible && opened.cards === opened.list && opened.cards >= 6, JSON.stringify(opened));
+
+  const poor = await page.evaluate(() => {
+    const card = Array.from(document.querySelectorAll('#shopCars .shop-card')).find(c => c.dataset.skin === 'racer');
+    const btn = card.querySelector('.shop-buy');
+    const disabled = btn.disabled;
+    btn.click();
+    return { disabled, coins: window.__highway.coins, equipped: window.__highway.equipped };
+  });
+  check('shop: an unaffordable car cannot be bought', poor.disabled && poor.equipped === 'classic', JSON.stringify(poor));
+
+  const bought = await page.evaluate(() => {
+    window.__highway.grantCoins(500);
+    const card = Array.from(document.querySelectorAll('#shopCars .shop-card')).find(c => c.dataset.skin === 'racer');
+    card.querySelector('.shop-buy').click();
+    return { coins: window.__highway.coins, equipped: window.__highway.equipped, owned: window.__highway.garage.owned };
+  });
+  check('shop: buying a car spends coins and equips it',
+    bought.equipped === 'racer' && bought.coins === 380 && bought.owned.indexOf('racer') !== -1, JSON.stringify(bought));
+
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('jvds-highway-garage') || '{}'));
+  check('shop: the garage is saved to localStorage',
+    stored.equipped === 'racer' && (stored.owned || []).indexOf('racer') !== -1, JSON.stringify(stored));
+
+  await page.reload({ waitUntil: 'load' });
+  const after = await page.evaluate(() => window.__highway.equipped);
+  check('shop: the equipped car persists across a reload', after === 'racer', after);
+
+  // A run banks coins into the wallet.
+  await page.evaluate(() => { localStorage.setItem('highway-tip-seen', '1'); document.getElementById('playBtn').click(); });
+  let banked = 0;
+  for (let i = 0; i < 140 && !banked; i++) {
+    await sleep(120);
+    banked = await page.evaluate(() => window.__highway.dead ? window.__highway.coins : 0);
+  }
+  check('shop: a run banks coins for the shop', banked > 380, 'coins=' + banked);
+
+  check('shop: no page errors', errors.length === 0, errors.join(' | '));
+  await page.evaluate(() => { localStorage.removeItem('jvds-highway-garage'); localStorage.removeItem('highway-tip-seen'); });
+  await page.close();
+}
+
+// A1649: upgrades change the run, missions rotate by date, achievements unlock.
+async function progression(browser, base) {
+  const page = await browser.newPage();
+  const errors = watchErrors(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/highway-dodge.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => {
+    localStorage.removeItem('jvds-highway-garage');
+    localStorage.removeItem('jvds_game_highway-dodge');
+    localStorage.setItem('highway-tip-seen', '1');
+  });
+  await page.reload({ waitUntil: 'load' });
+
+  const list = await page.evaluate(() => window.__highway.upgradeList());
+  check('progress: upgrades are listed at level 0',
+    Array.isArray(list) && list.length >= 4 && list.every(u => u.level === 0 && u.cost > 0), JSON.stringify(list));
+
+  const before = await page.evaluate(() => window.__highway.fuelMax);
+  await page.evaluate(() => { window.__highway.grantCoins(3000); window.__highway.buyUpgrade('tank'); });
+  const after = await page.evaluate(() => ({ fuelMax: window.__highway.fuelMax, level: window.__highway.upgrades.tank }));
+  check('progress: a fuel upgrade raises max fuel', after.level === 1 && after.fuelMax > before, JSON.stringify({ before, after }));
+
+  await page.evaluate(() => window.__highway.buyUpgrade('shield'));
+  await page.evaluate(() => document.getElementById('playBtn').click());
+  await sleep(200);
+  const shield = await page.evaluate(() => window.__highway.shield);
+  check('progress: a shield upgrade starts a run shielded', shield >= 1, 'shield=' + shield);
+
+  // Buy a car and prove the matching achievement unlocks.
+  const unlocked = await page.evaluate(() => {
+    window.__highway.openShop();
+    const card = Array.from(document.querySelectorAll('#shopCars .shop-card')).find(c => c.dataset.skin === 'racer');
+    card.querySelector('.shop-buy').click();
+    return window.__highway.unlocked();
+  });
+  const ach = await page.evaluate(() => window.__highway.achievements());
+  check('progress: game achievements are defined', ach.length >= 4 && ach.indexOf('hd-buy-car') !== -1, ach.join(','));
+  check('progress: buying a car unlocks the New Wheels achievement', unlocked.indexOf('hd-buy-car') !== -1, unlocked.join(','));
+
+  const mission = await page.evaluate(() => {
+    const m = window.__highway.missions;
+    return { daily: m.daily && m.daily.id, goal: m.daily && m.daily.goal, weekly: m.weekly && m.weekly.id };
+  });
+  check('progress: a daily and weekly mission are active', !!mission.daily && !!mission.weekly && mission.goal > 0, JSON.stringify(mission));
+
+  check('progress: no page errors', errors.length === 0, errors.join(' | '));
+  await page.evaluate(() => { localStorage.removeItem('jvds-highway-garage'); localStorage.removeItem('highway-tip-seen'); });
+  await page.close();
+}
+
+// A1649: coins and oil slicks add depth without ever forming a wall.
+async function gameplayDepth(browser, base) {
+  const page = await browser.newPage();
+  const errors = watchErrors(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/highway-dodge.html', { waitUntil: 'load', timeout: 30000 });
+  await page.evaluate(() => { localStorage.removeItem('jvds-highway-garage'); localStorage.setItem('highway-tip-seen', '1'); });
+  await page.reload({ waitUntil: 'load' });
+  await page.evaluate(() => document.getElementById('playBtn').click());
+
+  let maxWalls = 0, samples = 0, coinPickups = 0, coinSpawns = 0, slickSpawns = 0;
+  const deadline = Date.now() + 22000;
+  while (Date.now() < deadline) {
+    await sleep(70);
+    const s = await page.evaluate(() => ({
+      dead: window.__highway.dead, walls: window.__highway.walls,
+      coinPickups: window.__highway.coinPickups, coinSpawns: window.__highway.coinSpawns,
+      slickSpawns: window.__highway.slickSpawns, H: window.__highway.H,
+      cars: window.__highway.cars(), pickups: window.__highway.pickups(), playerLane: window.__highway.playerLane
+    }));
+    if (s.dead) {
+      await page.evaluate(() => { const b = document.querySelector('.sr-again') || document.getElementById('againBtn'); if (b) b.click(); });
+      await sleep(200);
+      continue;
+    }
+    samples++;
+    maxWalls = Math.max(maxWalls, s.walls);
+    coinPickups = Math.max(coinPickups, s.coinPickups);
+    coinSpawns = Math.max(coinSpawns, s.coinSpawns);
+    slickSpawns = Math.max(slickSpawns, s.slickSpawns);
+
+    // Autopilot: take the safest lane, which is also where coins are spawned,
+    // so a long survival picks coins up as it passes through the gap.
+    const danger = l => s.cars.reduce((m, c) => c.lane === l ? Math.max(m, c.y) : m, -1);
+    let target = 0;
+    for (const l of [1, 2]) if (danger(l) < danger(target)) target = l;
+    if (target !== s.playerLane) {
+      await page.keyboard.press(target < s.playerLane ? 'ArrowLeft' : 'ArrowRight');
+    }
+  }
+  check('depth: coins appear on the road', coinSpawns > 0, 'coinSpawns=' + coinSpawns);
+  check('depth: a coin can be collected while driving', coinPickups > 0, 'coinPickups=' + coinPickups);
+  check('depth: oil slicks spawn on the road', slickSpawns > 0, 'slickSpawns=' + slickSpawns);
+  check('depth: coins and oil never create a wall', maxWalls === 0, 'walls=' + maxWalls + ' samples=' + samples);
+  check('depth: no page errors', errors.length === 0, errors.join(' | '));
+  await page.evaluate(() => { localStorage.removeItem('jvds-highway-garage'); localStorage.removeItem('highway-tip-seen'); });
+  await page.close();
+}
+
 (async () => {
   await withServer(async ({ base, browser }) => {
     await desktop(browser, base);
@@ -288,6 +501,10 @@ async function noOverlap(browser, base) {
     await mobile(browser, base);
     await learnerPolish(browser, base);
     await noOverlap(browser, base);
+    await fairness(browser, base);
+    await carShop(browser, base);
+    await progression(browser, base);
+    await gameplayDepth(browser, base);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL HIGHWAY DODGE CHECKS PASSED');
   process.exit(failures ? 1 : 0);
