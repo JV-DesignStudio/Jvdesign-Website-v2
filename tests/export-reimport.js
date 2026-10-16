@@ -49,7 +49,7 @@ const BUILDERS = fs.readdirSync(path.join(ROOT, 'workshops'))
       await page.waitForFunction(() => window.JVExporter && typeof window._builderGetState === 'function' && typeof window._builderSetState === 'function', { timeout: 15000 });
       await new Promise((r) => setTimeout(r, 400));
 
-      const result = await page.evaluate(() => {
+      const result = await page.evaluate(async () => {
         var J = window.JVExporter;
         var s1 = J.shareCodeNow();
         var d = J.decodeShareCode(s1);
@@ -68,13 +68,22 @@ const BUILDERS = fs.readdirSync(path.join(ROOT, 'workshops'))
         var msg = J.importShareCode(s1);
         var s3 = J.shareCodeNow();
         var legacy = document.querySelectorAll('[data-on="exportOBJ"],[data-on="exportGLB"],[data-on="exportSTL"],[data-on="exportModel"]').length;
+        var rev = window.THREE ? window.THREE.REVISION : '';
+        var model = J.currentModel(false);
+        var ex = {};
+        try { ex.obj = (J.obj(model, 'test').obj || '').length; } catch (e) { ex.obj = 'ERR ' + e.message; }
+        try { ex.stl = (J.stl(model, 'test').text || '').length; } catch (e) { ex.stl = 'ERR ' + e.message; }
+        try { ex.fbx = (J.fbx(model, 'test').text || '').length; } catch (e) { ex.fbx = 'ERR ' + e.message; }
+        try { var gg = await J.glb(model); ex.glb = gg && gg.buffer ? gg.buffer.byteLength : 'ERR'; } catch (e) { ex.glb = 'ERR ' + (e && e.message); }
         return {
           isState: s1.indexOf('JVDS1S.') === 0,
           changed: s2 !== s1,
           restored: s3 === s1,
           msg: msg,
           sharedUi: document.querySelectorAll('[data-jv-export]').length,
-          legacy: legacy
+          legacy: legacy,
+          rev: rev,
+          ex: ex
         };
       });
 
@@ -83,6 +92,11 @@ const BUILDERS = fs.readdirSync(path.join(ROOT, 'workshops'))
       assert.ok(result.restored, file + ' share code reimports to the same build');
       assert.ok(result.sharedUi >= 1, file + ' has the shared export UI');
       assert.equal(result.legacy, 0, file + ' has no legacy OBJ/GLB/STL buttons');
+      assert.ok(String(result.rev) === '160', file + ' loads Three r160 (got ' + result.rev + ')');
+      assert.ok(typeof result.ex.obj === 'number' && result.ex.obj > 0, file + ' OBJ export works (' + result.ex.obj + ')');
+      assert.ok(typeof result.ex.stl === 'number' && result.ex.stl > 0, file + ' STL export works (' + result.ex.stl + ')');
+      assert.ok(typeof result.ex.fbx === 'number' && result.ex.fbx > 0, file + ' FBX export works (' + result.ex.fbx + ')');
+      assert.ok(typeof result.ex.glb === 'number' && result.ex.glb > 0, file + ' GLB export works (' + JSON.stringify(result.ex) + ')');
       assert.deepEqual(errors, [], file + ' console/page errors: ' + errors.slice(0, 2).join(' | '));
       console.log('PASS ' + file + ': export + reimport round trip, one export UI');
       await page.close();

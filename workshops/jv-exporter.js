@@ -380,9 +380,11 @@
     sceneRoot.updateMatrixWorld(true, true);
     return new Promise(function (resolve, reject) {
       var exp = new Exporter();
+      // Three r160: parse(input, onDone, onError, options). The older r128 order
+      // was parse(input, onDone, options) with no onError.
       exp.parse(sceneRoot, function (result) {
         resolve({ buffer: result, name: model.fileBase + '.glb' });
-      }, { binary: true, onlyVisible: false }, function (err) { reject(err || new Error('GLB export failed.')); });
+      }, function (err) { reject(err || new Error('GLB export failed.')); }, { binary: true, onlyVisible: false });
     });
   }
 
