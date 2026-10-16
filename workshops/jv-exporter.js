@@ -664,6 +664,8 @@
       '.jv-export-status{min-height:20px;margin-top:12px;font-size:.79rem;color:var(--jv-acc,#a9c0ff)}',
       '.jv-share-code{margin-top:11px;width:100%;padding:9px 12px;border-radius:10px;border:1px dashed rgba(120,140,255,.4);background:rgba(120,140,255,.08);color:#c7d3ff;font:600 .8rem Inter,system-ui,sans-serif;cursor:pointer}',
       '.jv-share-code:hover{background:rgba(120,140,255,.16)}',
+      '.jv-export-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}',
+      '.jv-export-row .jv-share-code{margin-top:0;flex:1 1 160px;width:auto}',
       '@media(max-width:480px){.jv-export-grid{grid-template-columns:repeat(auto-fit,minmax(124px,1fr))}}'
     ].join('');
     document.head.appendChild(s);
@@ -905,6 +907,79 @@
     return 'JVDS1M.' + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
   }
 
+  // Decode a share code back to either the builder's own state (JVDS1S) or a
+  // portable model (JVDS1M). Copies may have picked up whitespace or line
+  // wrapping, so strip all whitespace before decoding.
+  function decodeShareCode(code) {
+    var s = String(code == null ? '' : code).replace(/\s+/g, '');
+    var body, kind;
+    if (s.indexOf('JVDS1S.') === 0) { kind = 'state'; body = s.slice(7); }
+    else if (s.indexOf('JVDS1M.') === 0) { kind = 'model'; body = s.slice(7); }
+    else { kind = 'state'; body = s; }
+    var json;
+    try { json = decodeURIComponent(escape(atob(body))); }
+    catch (e) { throw new Error('That does not look like a JVDS share code.'); }
+    var data;
+    try { data = JSON.parse(json); }
+    catch (e) { throw new Error('That share code is damaged and cannot be read.'); }
+    if (kind === 'state') return { kind: 'state', state: data };
+    return { kind: 'model', payload: data };
+  }
+
+  // Minimal OBJ reader for the portable (JVDS1M) code: positions + faces only,
+  // enough to show the shared model back in the builder. Rebuilds one mesh.
+  function objToMesh(objText, THREE) {
+    if (!objText || typeof objText !== 'string' || !THREE) return null;
+    var verts = [], faces = [];
+    var lines = objText.split(/\r?\n/);
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i];
+      if (l.charAt(0) === 'v' && l.charAt(1) === ' ') {
+        var a = l.slice(2).trim().split(/\s+/);
+        verts.push(parseFloat(a[0]) || 0, parseFloat(a[1]) || 0, parseFloat(a[2]) || 0);
+      } else if (l.charAt(0) === 'f' && l.charAt(1) === ' ') {
+        var idx = l.slice(2).trim().split(/\s+/).map(function (t) { return parseInt(t, 10) - 1; });
+        for (var k = 1; k + 1 < idx.length; k++) faces.push(idx[0], idx[k], idx[k + 1]);
+      }
+    }
+    if (!verts.length || !faces.length) return null;
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+    geo.setIndex(faces);
+    geo.computeVertexNormals();
+    var mat = new THREE.MeshStandardMaterial({ color: 0x9aa7c7, metalness: 0.1, roughness: 0.8 });
+    var mesh = new THREE.Mesh(geo, mat);
+    mesh.name = 'shared_model';
+    return mesh;
+  }
+
+  // Reopen a build from a share code. State codes restore the exact build via
+  // the builder's own setter; model codes drop the shared mesh into the scene.
+  function applyShareCode(code) {
+    var d = decodeShareCode(code);
+    if (d.kind === 'state') {
+      var set = global._builderSetState || global._builderApplyState;
+      if (typeof set !== 'function') throw new Error('This builder cannot reload a share code yet.');
+      set(d.state);
+      if (typeof global._builderSetState !== 'function' && typeof global._builderApplyState === 'function') {
+        global._builderSetState = global._builderApplyState;
+      }
+      return 'Reopened the build from your share code.';
+    }
+    var g = root();
+    if (!g || !global.THREE) throw new Error('This model code cannot be loaded in this builder.');
+    var mesh = objToMesh(d.payload && d.payload.obj, global.THREE);
+    if (!mesh) throw new Error('The model in that code could not be read.');
+    g.add(mesh);
+    if (global.builderScheduleAutoSave) { try { global.builderScheduleAutoSave(); } catch (e) { /* optional */ } }
+    return 'Loaded the shared model into the scene.';
+  }
+
+  // Share code for whatever is built right now (used by the UI and tests).
+  function shareCodeNow() {
+    return shareCode(modelOf(false), (UI && UI.tool) || 'the 3D builder');
+  }
+
   function copyText(txt) {
     var big = txt.length > 20000;
     var done = big ? 'Share code copied. It is large, so the zip bundle above may be easier to keep.'
@@ -953,7 +1028,10 @@
           '<select id="jvProfileSelect" aria-label="Which engine is this for?">' + profileOptions() + '</select></label>' +
         '<p class="jv-export-profile-note" id="jvProfileNote"></p>' +
         '<div class="jv-export-grid" id="jvExportGrid"></div>' +
-        '<button type="button" class="jv-share-code" id="jvShareCode">Copy share code (no download needed)</button>' +
+        '<div class="jv-export-row">' +
+          '<button type="button" class="jv-share-code" id="jvShareCode">Copy share code (no download needed)</button>' +
+          '<button type="button" class="jv-share-code" id="jvImportCode">Paste a share code to reopen a build</button>' +
+        '</div>' +
         '<div class="jv-export-status" id="jvExportStatus" aria-live="polite"></div>' +
       '</div>';
     back.querySelector('.jv-export-x').addEventListener('click', closeDialog);
@@ -964,6 +1042,13 @@
       var pb = back.querySelector('#jvPivotToggle');
       var m; try { m = modelOf(pb && pb.checked); } catch (e) { say(e.message || String(e)); return; }
       copyText(shareCode(m, (UI && UI.tool) || 'the 3D builder'));
+    });
+    back.querySelector('#jvImportCode').addEventListener('click', function () {
+      var code = '';
+      try { code = window.prompt('Paste your JVDS share code to reopen that build:', '') || ''; } catch (e) { code = ''; }
+      if (!code.trim()) return;
+      try { say(applyShareCode(code)); }
+      catch (e) { say(e && e.message ? e.message : 'That share code could not be loaded.'); }
     });
     document.body.appendChild(back);
 
@@ -1097,6 +1182,16 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closeDialog();
     });
+    // A share link can carry the build: #jvshare=<code> reopens it on load.
+    try {
+      var m = /[#&]jvshare=([^&]+)/.exec(global.location ? global.location.hash : '');
+      if (m) {
+        var code = decodeURIComponent(m[1]);
+        setTimeout(function () {
+          try { applyShareCode(code); if (UI.say) UI.say('Reopened the shared build.'); } catch (e) { /* ignore a bad link */ }
+        }, 500);
+      }
+    } catch (e) { /* optional */ }
     if (UI.ready) { try { UI.ready(); } catch (e) { /* optional handshake */ } }
     return true;
   }
@@ -1130,6 +1225,9 @@
     readmeText: readmeText,
     previewPNG: previewPNG,
     shareCode: shareCode,
-    version: '1.3.0'
+    shareCodeNow: shareCodeNow,
+    decodeShareCode: decodeShareCode,
+    importShareCode: applyShareCode,
+    version: '1.4.0'
   };
 })(typeof window !== 'undefined' ? window : this);
