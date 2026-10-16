@@ -46,6 +46,27 @@ const BUILDERS = (() => {
 })();
 const BUILDER_IDS = new Set(BUILDERS.map(b => b.id));
 
+// A1582: canvas build-alongs (workshops/*-canvas.html) are the in-page version of
+// the same project as their guide workshop, so they should carry that project's
+// age instead of the generic 10+ default. The site already links each canvas to
+// its guide with CANVAS_GUIDE_MAP (workshop-canvas-engine.js), so reuse it here;
+// the few canvases with no mapped guide fall back to the most common age for
+// their engine.
+function loadCanvasGuides() {
+  const map = new Map();
+  try {
+    const src = read(path.join(ROOT, 'workshop-canvas-engine.js'));
+    const block = src.match(/CANVAS_GUIDE_MAP\s*=\s*\{([\s\S]*?)\};/);
+    if (!block) return map;
+    const re = /"([^"]+\.html)"\s*:\s*"([^"]+\.html)"/g;
+    let m;
+    while ((m = re.exec(block[1].replace(/\/\/[^\n]*/g, '')))) {
+      map.set(m[1].replace(/\.html$/, ''), m[2].replace(/\.html$/, ''));
+    }
+  } catch { /* fall back to the engine age below */ }
+  return map;
+}
+
 /* ── WORKSHOPS ───────────────────────────────────────────── */
 
 function generateWorkshops() {
@@ -60,6 +81,10 @@ function generateWorkshops() {
 
     // Skip non-workshop pages
     if (slug === 'my-progress') continue;
+
+    // A1540: engine hub pages (workshops/engine-*.html) are navigation, not
+    // workshops, so they must not be counted or listed in the catalogue.
+    if (/<meta\s+name=["']jvds-kind["']\s+content=["']engine-hub["']/i.test(html)) continue;
 
     // A1409: 3D asset builders are catalogued as Tools, not workshops.
     if (BUILDER_IDS.has(slug)) continue;
@@ -158,6 +183,26 @@ function generateWorkshops() {
 
     if (!engines[engine]) engines[engine] = 0;
     engines[engine]++;
+  }
+
+  // A1582: a canvas page inherits the age of the project it builds.
+  const canvasGuides = loadCanvasGuides();
+  const byId = new Map(workshops.map((w) => [w.id, w]));
+  const engineAges = {};
+  for (const w of workshops) {
+    if (/-canvas$/.test(w.id) || !w.ageRange) continue;
+    const tally = engineAges[w.engine] || (engineAges[w.engine] = {});
+    tally[w.ageRange] = (tally[w.ageRange] || 0) + 1;
+  }
+  for (const w of workshops) {
+    if (!/-canvas$/.test(w.id)) continue;
+    const parent = canvasGuides.get(w.id);
+    if (parent && byId.has(parent)) {
+      w.ageRange = byId.get(parent).ageRange;
+    } else {
+      const tally = engineAges[w.engine];
+      if (tally) w.ageRange = Object.keys(tally).sort((a, b) => tally[b] - tally[a])[0];
+    }
   }
 
   // Sort by engine then title
