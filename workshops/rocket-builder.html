@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-yxLp2k5GrdQsDKUdHV/jdxqgb/sTcXT1zm94Ovm4q+8=' 'sha256-/2QZvosVkG/nFCcL4hZwDnk5vccFRBAGm31rQD6Tvgo=' 'sha256-pCeec6r9A59fs0oewvnpK2KF1ZhT9S9g7cGet8IHB50=' 'sha256-pVmse8NHawcAZBavlL/qm9seq7hJev9gM1QNWjg8knI=' 'sha256-kXb8tRauMo304oHIJhgP3ccFuPxPLXa9+M16QV1Z1x4=' 'sha256-BJ9qC+HzUpVJLVcezuS3/QQc+Ow9F79JSg6qp2Z0nAs=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-yxLp2k5GrdQsDKUdHV/jdxqgb/sTcXT1zm94Ovm4q+8=' 'sha256-/2QZvosVkG/nFCcL4hZwDnk5vccFRBAGm31rQD6Tvgo=' 'sha256-pCeec6r9A59fs0oewvnpK2KF1ZhT9S9g7cGet8IHB50=' 'sha256-yEZ8xfW4Htm7GRtguhQJIfqlNXx6HpW0seW302gNybg=' 'sha256-kXb8tRauMo304oHIJhgP3ccFuPxPLXa9+M16QV1Z1x4=' 'sha256-BJ9qC+HzUpVJLVcezuS3/QQc+Ow9F79JSg6qp2Z0nAs=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#BC4749">
@@ -39,8 +39,7 @@
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
-<script src="../assets/vendor/three/three.min.js"></script>
-<script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="../assets/vendor/three-0.160.0/build/three.global.js"></script>
 <script src="jv-exporter.js"></script>
 <script src="builder-gestures.js"></script>
 <script src="builder-templates.js"></script>
@@ -459,6 +458,7 @@
 ------------------------------- */
 const canvas = document.getElementById('rocketCanvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setClearColor(0x07090f);
@@ -627,21 +627,6 @@ function downloadRocket() {
   sout('✅ ' + name + '-rocket.obj + .mtl downloaded! Open in Blender: File → Import → Wavefront (.obj)');
 }
 
-function exportGLB() {
-  var group = rocketGroup || robotGroup || shipGroup;
-  if (!group) { toast('Build something first!'); return; }
-  if (typeof THREE.GLTFExporter === 'undefined') { toast('GLTF exporter still loading...'); return; }
-  var exporter = new THREE.GLTFExporter();
-  exporter.parse(group, function(result) {
-    var blob = new Blob([result], { type: 'application/octet-stream' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = (window.R ? R.name : window.P ? 'ship' : 'build').toLowerCase().replace(/\s+/g, '-') + '.glb';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    toast('GLB exported!');
-  }, { binary: true });
-}
 
 /* -------------------------------
    BUILD ROCKET
@@ -1468,7 +1453,7 @@ const STEPS = [
   boxes: [
     { t:'box-r', tx: '3, 2, 1, Ignition! The engines fire, the clamps release, and your rocket climbs into the void.' },
     { t:'box-c', tx: 'A complete launch vehicle needs: nosecone (aerodynamics), body (fuel/structure), fins (stability), engines (thrust), and a payload. You\'ve built all of them.' },
-    { t:'box-t', tx: 'Hit ? Export OBJin the header to download your rocket as a .objfile, open it in Blender, MeshLab, or any 3D app. Hit ? Quick Buildto reset and try a completely different design.' },
+    { t:'box-t', tx: 'Hit ? the Export button in the header to download your rocket as an OBJ, GLB or STL file, open it in Blender, MeshLab, or any 3D app. Hit ? Quick Buildto reset and try a completely different design.' },
   ],
   tasks: ['Press Launch and watch it go!'],
   html() {
@@ -1788,6 +1773,7 @@ if (window.BuilderTemplates) {
     onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
   });
 }
+window._builderSetState = window._builderSetState || window._builderApplyState;
 if (window.JVExporter) {
   JVExporter.installUI({
     tool: 'Rocket Builder',
