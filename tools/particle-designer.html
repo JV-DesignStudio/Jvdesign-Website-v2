@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z77o/IgEgwOnY+cUfobNlVFkDpMBG4RBQgenhkmvIP8=' 'sha256-TDL0y4mb9dVnpBEmMh+Qs027hCvXx57Gm+uw/qGE5io=' 'sha256-YaPhVe0Qw259odPkt1TPh5MDbalmigNy4P36OXsVQQY=' 'sha256-aSA2Tf3u01DkCH79nq2u4+gjYkIGoKsGkV1ZzDMRIrQ=' 'sha256-pVMwwNq+rYpDe3jJwZkgGDRHDaHogUgH8IHyKLaEmsQ=' 'sha256-2hxU8wSje9XWdNOQDDRRKU7H04hBSiO/UeVufT6z2dU=' 'sha256-7gnQ14ihfrYnxt1xRUgTGBs8S/Nd5q9FF6rF+K5jdek=' 'sha256-PysRccfeef2AOBv2VcN+geGXtCLE6L9uwVY25kMy/J0=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z77o/IgEgwOnY+cUfobNlVFkDpMBG4RBQgenhkmvIP8=' 'sha256-TDL0y4mb9dVnpBEmMh+Qs027hCvXx57Gm+uw/qGE5io=' 'sha256-/hevFkHF70Si9tywWpxqOr3eHmBSrNWrA45SSw8UmCI=' 'sha256-aSA2Tf3u01DkCH79nq2u4+gjYkIGoKsGkV1ZzDMRIrQ=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -288,9 +288,12 @@
       <div class="exp-group">
         <span class="exp-label">Engine export</span>
         <button class="exp-btn exp-godot" id="btnGodot">Export for Godot 4</button>
+        <button class="exp-btn exp-godot" id="btnGodot3">Export for Godot 3</button>
         <button class="exp-btn exp-unity" id="btnUnity">Export for Unity</button>
         <button class="exp-btn exp-json" id="btnRaw">{ } Export Raw JSON</button>
-        <p class="hint">Godot downloads a ready-made ParticlesMaterial + scene. Unity downloads an editor script , drop it in an Editor folder and use Tools --- JVDesign Studio.</p>
+        <button class="exp-btn exp-json" id="btnGeneric">{ } Generic Effect JSON</button>
+        <button class="exp-btn exp-json" id="btnPhaser">Export for Phaser 3</button>
+        <p class="hint">Godot 4 downloads a ParticlesMaterial + scene; Godot 3 downloads a ParticleMaterial + Particles2D scene. Unity downloads an editor script , drop it in an Editor folder and use Tools --- JVDesign Studio. Generic JSON is engine-neutral, and Phaser 3 exports a ready emitter config.</p>
       </div>
       <div class="exp-group">
         <span class="exp-label">Share / Copy</span>
@@ -1588,6 +1591,107 @@ ${hasB64?`
 `;
 }
 
+// -- Extra engine exports (A1592): generic JSON, Godot 3, Phaser 3 --
+function genericEffect(){
+  return {
+    generator:'JVDesignStudio Particle Designer',
+    generatorUrl:'https://jvdesignstudio.co.uk/tools/particle-designer.html',
+    version:1,
+    name:(P.name||'particle-effect'),
+    texture:P.texId==='custom'?{source:'embedded-data-url',data:P.texCustom||''}:{source:'none'},
+    emission:{shape:P.emitterShape,radius:P.emitterRadius,rate:P.rate,burst:P.burst,maxParticles:P.maxParticles,loop:!!P.loop},
+    lifetime:{seconds:P.lifetime,variance:P.lifetimeVar},
+    velocity:{speed:P.speed,speedVariance:P.speedVar,angleDegrees:P.angle,spreadDegrees:P.spread},
+    gravity:{x:P.gravX,y:P.gravY},
+    size:{start:P.sizeStart,end:P.sizeEnd,variance:P.sizeVar},
+    alpha:{start:P.alphaStart,end:P.alphaEnd},
+    rotation:{spinDegreesPerSecond:P.spin*57.2958},
+    drag:P.drag,
+    blend:P.blend,
+    colors:P.colorStops.map(s=>({t:s.t,color:s.c})),
+    curves:{alpha:P.curves.alpha||null,size:P.curves.size||null},
+    raw:deep(P)
+  };
+}
+function godot3Tres(){
+  const N=17,offs=[],cols=[];
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    sampleGrad(t,COL_TMP);
+    let a=P.alphaStart+(P.alphaEnd-P.alphaStart)*t;
+    if(P.curves.alpha)a*=clamp(samplePts(P.curves.alpha,t),0,1);
+    a=clamp(a,0,1);
+    offs.push(fG(t));
+    cols.push(`${fG(COL_TMP.r/255)}, ${fG(COL_TMP.g/255)}, ${fG(COL_TMP.b/255)}, ${fG(a)}`);
+  }
+  const rad=Math.PI/180;
+  const dirX=Math.cos(P.angle*rad),dirY=-Math.sin(P.angle*rad);
+  return `[gd_resource type="ParticleMaterial" load_steps=3 format=2]
+
+[sub_resource type="Gradient" id="Gradient_col"]
+offsets = PoolRealArray(${offs.join(', ')})
+colors = PoolColorArray(${cols.join(', ')})
+
+[sub_resource type="GradientTexture" id="GradientTexture_col"]
+gradient = SubResource("Gradient_col")
+
+[resource]
+direction = Vector3(${fG(dirX)}, ${fG(dirY)}, 0)
+spread = ${fG(P.spread)}
+initial_velocity = ${fG(P.speed)}
+initial_velocity_random = ${fG(P.speedVar)}
+gravity = Vector3(${fG(P.gravX)}, ${fG(-P.gravY)}, 0)
+angular_velocity = ${fG(P.spin*57.2958)}
+damping = ${fG(P.drag*100)}
+scale = ${fG(P.sizeStart/16)}
+scale_random = ${fG(P.sizeVar/16)}
+color = Color(1, 1, 1, 1)
+color_ramp = SubResource("GradientTexture_col")
+metadata/jvdesign_hint = "Made with JVDesignStudio Particle Designer (Godot 3)"
+`;
+}
+function godot3Tscn(){
+  let emit='';
+  if(P.emitterShape==='circle')emit=`emission_shape = 1\nemission_sphere_radius = ${fG(P.emitterRadius)}\n`;
+  else if(P.emitterShape==='rect'||P.emitterShape==='line')emit=`emission_shape = 2\nemission_rect_extents = Vector2(${fG(Math.max(P.emitterRadius,.5))}, ${fG(P.emitterShape==='line'?1:Math.max(P.emitterRadius,.5))})\n`;
+  const pureBurst=P.burst>0&&P.rate===0;
+  return `[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://godot3_particles_material.tres" type="Material" id=1]
+
+[node name="JVDesignParticles" type="Particles2D"]
+amount = ${P.maxParticles}
+lifetime = ${fG(P.lifetime)}
+one_shot = ${pureBurst?'true':'false'}
+explosiveness = ${fG(pureBurst?1:0)}
+randomness = ${fG(clamp(P.lifetimeVar,0,1))}
+${emit}process_material = ExtResource( 1 )
+metadata/setup_hint = "Keep godot3_particles_material.tres beside this scene. Set a texture on this node for sprite particles."
+`;
+}
+function phaserConfig(){
+  const pureBurst=P.burst>0&&P.rate===0;
+  return {
+    engine:'Phaser 3',
+    notes:'const emitter = this.add.particles(x, y, "texture-key", config);',
+    config:{
+      lifespan:{min:fU(Math.max(.05,P.lifetime*(1-P.lifetimeVar))),max:fU(P.lifetime*(1+P.lifetimeVar))},
+      speed:{min:fU(Math.max(0,P.speed-P.speedVar)),max:fU(P.speed+P.speedVar)},
+      angle:{min:fU(P.angle-P.spread/2),max:fU(P.angle+P.spread/2)},
+      gravityX:P.gravX,
+      gravityY:P.gravY,
+      scale:{start:fU(Math.max(.01,P.sizeStart/16)),end:fU(P.sizeEnd/16)},
+      alpha:{start:fU(clamp(P.alphaStart,0,1)),end:fU(clamp(P.alphaEnd,0,1))},
+      quantity:pureBurst?P.burst:1,
+      frequency:pureBurst?-1:Math.max(1,Math.round(1000/Math.max(1,P.rate))),
+      maxAliveParticles:P.maxParticles,
+      rotate:fU(P.spin*57.2958),
+      tint:P.colorStops.map(s=>parseInt(s.c.slice(1),16)),
+      blendMode:(P.blend==='lighter'||P.blend==='add')?'ADD':'NORMAL'
+    }
+  };
+}
+
 id('btnGodot').onclick=()=>{
   download(godotTres(),'godot_particles_material.tres','text/plain');
   setTimeout(()=>download(godotTscn(),'godot_particles_scene.tscn','text/plain'),350);
@@ -1600,6 +1704,19 @@ id('btnUnity').onclick=()=>{
 id('btnRaw').onclick=()=>{
   downloadJSON({cfg:P},'particle_config.json');
   toast('Raw JSON downloaded');
+};
+id('btnGodot3').onclick=()=>{
+  download(godot3Tres(),'godot3_particles_material.tres','text/plain');
+  setTimeout(()=>download(godot3Tscn(),'godot3_particles_scene.tscn','text/plain'),350);
+  toast('Godot 3 .tres + .tscn downloaded - keep both files together');
+};
+id('btnGeneric').onclick=()=>{
+  downloadJSON(genericEffect(),'particle_effect.json');
+  toast('Generic effect JSON downloaded');
+};
+id('btnPhaser').onclick=()=>{
+  downloadJSON(phaserConfig(),'particle_effect_phaser.json');
+  toast('Phaser 3 emitter config downloaded');
 };
 id('btnShare').onclick=()=>{
   const payload=Object.assign(deep(P),{texCustom:''});
