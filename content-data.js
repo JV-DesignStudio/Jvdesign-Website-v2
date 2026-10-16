@@ -345,7 +345,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "C++",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -445,7 +445,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Defold",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -475,7 +475,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Defold",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "platformer"
@@ -491,7 +491,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Defold",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -505,7 +505,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Defold",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "puzzle"
@@ -521,7 +521,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Defold",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "shooter"
@@ -537,7 +537,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Defold",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -659,7 +659,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "GDevelop",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "platformer"
@@ -689,7 +689,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "GDevelop",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -703,7 +703,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "GDevelop",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -717,7 +717,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "GDevelop",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "shooter"
@@ -1112,7 +1112,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "series",
       "tags": [
         "series"
@@ -1147,7 +1147,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "series",
       "tags": [
         "series"
@@ -1217,7 +1217,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "series",
       "tags": [
         "series"
@@ -1302,7 +1302,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "series",
       "tags": [
         "series"
@@ -1335,7 +1335,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "series",
       "tags": [
         "series"
@@ -1390,7 +1390,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "series",
       "tags": [
         "series"
@@ -1887,7 +1887,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Godot",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -1915,7 +1915,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Godot",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -1929,7 +1929,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Godot",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "3d"
@@ -1945,7 +1945,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Godot",
       "difficulty": "intermediate",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "3d"
@@ -3292,7 +3292,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "PICO-8",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -3336,7 +3336,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "PICO-8",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -3350,7 +3350,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "PICO-8",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "shooter"
@@ -3366,7 +3366,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "PICO-8",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -3816,7 +3816,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Roblox",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "obby"
@@ -3832,7 +3832,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Roblox",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "obby"
@@ -3864,7 +3864,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Roblox",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "horror"
@@ -4160,7 +4160,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Scratch",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -4174,7 +4174,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Scratch",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -4188,7 +4188,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Scratch",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -4202,7 +4202,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Scratch",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "platformer"
@@ -4218,7 +4218,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Scratch",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -4232,7 +4232,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "Scratch",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -6263,7 +6263,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-15T12:21:47.271Z",
+    "generated": "2026-10-16T09:23:21.796Z",
     "workshops": 344,
     "games": 14,
     "tools": 48,
