@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-ayPZlJvZWQDfTAPDFkL+NgZHGS5s1nTDexFipvBivWA=' 'sha256-XGMjHmYFdP20jVpIprXB9rPe8hstiIuW/4rNSHd20tU=' 'sha256-rTzsLQwcDyq9wsMBVthvyrObESVmMguoddi/XrzN75U=' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-ayPZlJvZWQDfTAPDFkL+NgZHGS5s1nTDexFipvBivWA=' 'sha256-XGMjHmYFdP20jVpIprXB9rPe8hstiIuW/4rNSHd20tU=' 'sha256-rTzsLQwcDyq9wsMBVthvyrObESVmMguoddi/XrzN75U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-C1tWJbxZGAr/eFaVaWpsS16V65sBzze1vJuuvUXTd4Y=' 'sha256-XGMjHmYFdP20jVpIprXB9rPe8hstiIuW/4rNSHd20tU=' 'sha256-rTzsLQwcDyq9wsMBVthvyrObESVmMguoddi/XrzN75U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <script defer src="../analytics-loader.js"></script>
@@ -159,6 +159,8 @@ pre[class*="language-"],code[class*="language-"]{text-shadow:none;font-family:'J
     <option value="gml">GML (GameMaker)</option>
     <option value="defold">Defold (Lua)</option>
     <option value="godotcs">Godot C#</option>
+    <option value="phaser">Phaser 3 (JS)</option>
+    <option value="maker">Arcade Game Maker</option>
   </select>
 </div>
 <div class="toolbar">
@@ -1017,6 +1019,82 @@ public static class SaveGame {
         return Json.ParseString(file.GetAsText());
     }
 }`},
+  {id:'phaser-move',cat:'Movement',lang:'phaser',title:'Phaser 3 Player Movement',desc:'Arcade physics sprite moved with the arrow keys',
+   code:`class PlayScene extends Phaser.Scene {
+  create() {
+    this.player = this.physics.add.sprite(100, 100, 'player');
+    this.cursors = this.input.keyboard.createCursorKeys();
+  }
+  update() {
+    const speed = 200;
+    this.player.setVelocity(0);
+    if (this.cursors.left.isDown)  this.player.setVelocityX(-speed);
+    else if (this.cursors.right.isDown) this.player.setVelocityX(speed);
+    if (this.cursors.up.isDown)    this.player.setVelocityY(-speed);
+    else if (this.cursors.down.isDown)  this.player.setVelocityY(speed);
+  }
+}`},
+  {id:'phaser-collide',cat:'Collision',lang:'phaser',title:'Phaser 3 Overlap',desc:'Detect the player touching a coin and collect it',
+   code:`class PlayScene extends Phaser.Scene {
+  create() {
+    this.player = this.physics.add.sprite(100, 100, 'player');
+    this.coins = this.physics.add.group();
+    const coin = this.coins.create(300, 200, 'coin');
+    this.physics.add.overlap(this.player, coin, () => {
+      coin.destroy();
+      this.score = (this.score || 0) + 10;
+    });
+  }
+}`},
+  {id:'phaser-score',cat:'Score',lang:'phaser',title:'Phaser 3 Score Text',desc:'Draw a live score and update it',
+   code:`class PlayScene extends Phaser.Scene {
+  create() {
+    this.score = 0;
+    this.scoreText = this.add.text(12, 12, 'Score: 0', { fontSize: '18px', color: '#ffffff' });
+  }
+  addPoints(n) {
+    this.score += n;
+    this.scoreText.setText('Score: ' + this.score);
+  }
+}`},
+  {id:'phaser-save',cat:'Saving',lang:'phaser',title:'Phaser 3 Save/Load',desc:'Save and load progress with localStorage',
+   code:`function saveGame(state) {
+  localStorage.setItem('myGameSave', JSON.stringify(state));
+}
+function loadGame() {
+  try { return JSON.parse(localStorage.getItem('myGameSave')); }
+  catch (e) { return null; }
+}`},
+  {id:'maker-move',cat:'Movement',lang:'maker',title:'Game Maker Sprint',desc:'Speed the player up once the score passes 100',
+   code:`// Paste straight into the Arcade Game Maker Code tab.
+function onUpdate(scene) {
+  if (scene.score > 100) liveConfig.speed = 400;
+  else liveConfig.speed = 260;
+}`},
+  {id:'maker-collide',cat:'Collision',lang:'maker',title:'Game Maker Collect',desc:'Collect an object when the player touches it',
+   code:`// Paste straight into the Arcade Game Maker Code tab.
+function onCreate(scene) {
+  const pickup = scene.physics.add.image(320, 200, 'block');
+  scene.physics.add.overlap(scene.player, pickup, () => {
+    pickup.destroy();
+    showToast('Collected!');
+  });
+}`},
+  {id:'maker-score',cat:'Score',lang:'maker',title:'Game Maker Combo',desc:'Show a combo message every 500 points',
+   code:`// Paste straight into the Arcade Game Maker Code tab.
+function onUpdate(scene) {
+  const step = Math.floor((scene.score || 0) / 500);
+  if (step > 0 && step !== scene._comboStep) {
+    scene._comboStep = step;
+    showToast('Combo x' + step + '!');
+  }
+}`},
+  {id:'maker-save',cat:'Saving',lang:'maker',title:'Game Maker Best Score',desc:'Remember the best score on this device',
+   code:`// Paste straight into the Arcade Game Maker Code tab.
+function onUpdate(scene) {
+  const best = Number(localStorage.getItem('jv_custom_best') || 0);
+  if ((scene.score || 0) > best) localStorage.setItem('jv_custom_best', scene.score);
+}`},
 ];
 
 // ------------------------------------------
@@ -1116,7 +1194,7 @@ function applyHash(){
   return any;
 }
 // GDScript/Luau map to Python grammar - syntax is Python-inspired, highlights reasonably well
-const LANG_PRISM={gdscript:'python',luau:'lua',csharp:'csharp',js:'javascript',py:'python',java:'java',cpp:'cpp',gml:'javascript',defold:'lua',godotcs:'csharp'};
+const LANG_PRISM={gdscript:'python',luau:'lua',csharp:'csharp',js:'javascript',py:'python',java:'java',cpp:'cpp',gml:'javascript',defold:'lua',godotcs:'csharp',phaser:'javascript',maker:'javascript'};
 // Each language points at the workshop that teaches it (A832)
 const WORKSHOP_LINKS={
   gdscript:{slug:'my-first-godot-game-canvas.html',name:'My First Godot Game'},
@@ -1128,7 +1206,9 @@ const WORKSHOP_LINKS={
   java:{slug:'my-first-java-game.html',name:'My First Java Game'},
   cpp:{slug:'my-first-cpp-game.html',name:'My First C++ Game'},
   gml:{slug:'my-first-gamemaker-game.html',name:'My First GameMaker Game'},
-  defold:{slug:'my-first-defold-game.html',name:'My First Defold Game'}
+  defold:{slug:'my-first-defold-game.html',name:'My First Defold Game'},
+  phaser:{slug:'my-first-browser-game.html',name:'My First Browser Game'},
+  maker:{slug:'my-first-browser-game.html',name:'My First Browser Game'}
 };
 function workshopFor(s){ return s.workshop || WORKSHOP_LINKS[s.lang] || null; }
 
@@ -1148,7 +1228,7 @@ function paramField(s,p,val){
 function optionsPanel(s){
   if(!s.params||!s.params.length) return '';
   const vals=getValues(s);
-  return `<div class="snippet-opts">${s.params.map(p=>paramField(s,p,vals[p.key])).join('')}<button class="opt-reset" onclick="resetSnippet('${s.id}')" title="Reset this snippet to its default values">Reset</button></div>`;
+  return `<div class="snippet-opts">${s.params.map(p=>paramField(s,p,vals[p.key])).join('')}<button class="opt-reset" data-on="resetSnippet" data-on-args="s:${encodeURIComponent(s.id)}" title="Reset this snippet to its default values">Reset</button></div>`;
 }
 function cardHtml(s){
   const prismLang=LANG_PRISM[s.lang]||'plaintext';
@@ -1160,7 +1240,7 @@ function cardHtml(s){
         <span class="snippet-title">${s.title}</span>
         <div style="display:flex;gap:8px;align-items:center">
           <span class="lang-badge">${s.lang.toUpperCase()}</span>
-          <button class="copy-btn" onclick="copyCode(this,'${s.id}')">Copy</button>
+          <button class="copy-btn" data-on="copyCode" data-on-args="this|s:${encodeURIComponent(s.id)}">Copy</button>
         </div>
       </div>
       <div class="snippet-desc">${s.desc}</div>
@@ -1235,7 +1315,7 @@ function showToast(msg) {
   clearTimeout(t._t); t._t = setTimeout(() => t.style.opacity = 0, 2200);
 }
 
-const MD_FENCE={gdscript:'gdscript',luau:'lua',csharp:'csharp',js:'js',py:'python',java:'java',cpp:'cpp',gml:'gml',defold:'lua',godotcs:'csharp'};
+const MD_FENCE={gdscript:'gdscript',luau:'lua',csharp:'csharp',js:'js',py:'python',java:'java',cpp:'cpp',gml:'gml',defold:'lua',godotcs:'csharp',phaser:'js',maker:'js'};
 function downloadMD() {
   const filtered = filteredSnippets();
   if (!filtered.length) { showToast('No snippets to download'); return; }

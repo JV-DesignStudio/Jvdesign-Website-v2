@@ -111,16 +111,29 @@ let failures = 0;
     const opts=[...document.querySelectorAll('#langSel option')].map(o=>o.value);
     const core=['movement','collision','score','saving'];
     const has=(lang)=> core.every(c=>SNIPPETS.some(s=>s.lang===lang&&s.cat.toLowerCase()===c));
-    return {opts, java:has('java'), cpp:has('cpp'), gml:has('gml'), defold:has('defold'), godotcs:has('godotcs'), total:SNIPPETS.length};
+    return {opts, java:has('java'), cpp:has('cpp'), gml:has('gml'), defold:has('defold'), godotcs:has('godotcs'), phaser:has('phaser'), maker:has('maker'), total:SNIPPETS.length};
   });
-  check('language filter lists the new languages', ['java','cpp','gml','defold','godotcs'].every(l=>langs.opts.includes(l)), JSON.stringify(langs.opts));
-  check('each new language has movement/collision/score/save', langs.java&&langs.cpp&&langs.gml&&langs.defold&&langs.godotcs, JSON.stringify(langs));
+  check('language filter lists the new languages', ['java','cpp','gml','defold','godotcs','phaser','maker'].every(l=>langs.opts.includes(l)), JSON.stringify(langs.opts));
+  check('each new language has movement/collision/score/save', langs.java&&langs.cpp&&langs.gml&&langs.defold&&langs.godotcs&&langs.phaser&&langs.maker, JSON.stringify(langs));
   const filteredJava = await page.evaluate(()=>{
     filterCat('all');
     document.getElementById('langSel').value='java'; filterLang();
     return {cards:document.querySelectorAll('.snippet-card').length, badges:[...new Set([...document.querySelectorAll('.lang-badge')].map(b=>b.textContent))]};
   });
   check('filtering by Java shows only Java', filteredJava.cards===4 && filteredJava.badges.length===1 && filteredJava.badges[0]==='JAVA', JSON.stringify(filteredJava));
+
+  // A1602: Phaser 3 and Arcade Game Maker sets
+  const pm = await page.evaluate(()=>{
+    filterCat('all'); document.getElementById('langSel').value='phaser'; filterLang();
+    const ph={cards:document.querySelectorAll('.snippet-card').length,badges:[...new Set([...document.querySelectorAll('.lang-badge')].map(b=>b.textContent))]};
+    document.getElementById('langSel').value='maker'; filterLang();
+    const mk={cards:document.querySelectorAll('.snippet-card').length,badges:[...new Set([...document.querySelectorAll('.lang-badge')].map(b=>b.textContent))],ids:SNIPPETS.filter(s=>s.lang==='maker').map(s=>s.id)};
+    return {ph,mk,code:adaptedCode['maker-move']||''};
+  });
+  check('Phaser 3 set renders (4 snippets, JS badge)', pm.ph.cards===4 && pm.ph.badges.length===1 && pm.ph.badges[0]==='PHASER', JSON.stringify(pm.ph));
+  check('Game Maker set renders (4 snippets, Maker badge)', pm.mk.cards===4 && pm.mk.badges.length===1 && pm.mk.badges[0]==='MAKER' && pm.mk.ids.includes('maker-move'), JSON.stringify(pm.mk));
+  check('Game Maker snippet uses the maker API (onUpdate + globals)', /onUpdate\(scene\)/.test(pm.code) && /liveConfig/.test(pm.code), pm.code.split('\n')[1]||'');
+  await page.evaluate(()=>{ document.getElementById('langSel').value='all'; filterLang(); });
 
   // A831: offline check, Prism is self-hosted and the timer snippet is correct
   const offline = await browser.newPage();
