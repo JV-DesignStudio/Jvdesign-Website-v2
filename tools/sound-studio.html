@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-Kjx3ciXeCePRINuPv3LYTilIXMBIfBY/5MD+Lk6kXt4=' 'sha256-2PVRur0H+DEHxsbrNVjhhnmsc4eU2s+/hzdjX0O++9E=' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-Kjx3ciXeCePRINuPv3LYTilIXMBIfBY/5MD+Lk6kXt4=' 'sha256-2PVRur0H+DEHxsbrNVjhhnmsc4eU2s+/hzdjX0O++9E=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-U8JBsgMq52ysEG8V3V+hDCV07yFYmPdCaNTiE/NVSIU=' 'sha256-2PVRur0H+DEHxsbrNVjhhnmsc4eU2s+/hzdjX0O++9E=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -557,6 +557,21 @@ body.mode-sfx #arrange-bar{display:none!important;}
   <div class="ss-box">
     <div class="ss-title">🎛️ Welcome to Audio Studio</div>
     <p class="ss-lead">One studio, three modes. Compose a song, build a beat, or make a single sound effect. Each row is an instrument and each square is one beat.</p>
+    <div class="ss-sec">Pick a starting point</div>
+    <div class="ss-tpl-grid">
+      <button class="ss-tpl" data-on="_loadSoundTemplate" data-on-arg="groove" data-on-plain>
+        <span class="ss-tpl-ico">&#127918;</span><span class="ss-tpl-name">Chiptune groove</span><span class="ss-tpl-desc">Drums, bass and a melody. Press Play.</span>
+      </button>
+      <button class="ss-tpl" data-on="_loadSoundTemplate" data-on-arg="fourfloor" data-on-plain>
+        <span class="ss-tpl-ico">&#129345;</span><span class="ss-tpl-name">Four-on-the-floor</span><span class="ss-tpl-desc">Steady dance beat with offbeat hats.</span>
+      </button>
+      <button class="ss-tpl" data-on="_loadSoundTemplate" data-on-arg="lofi" data-on-plain>
+        <span class="ss-tpl-ico">&#127769;</span><span class="ss-tpl-name">Lo-fi sketch</span><span class="ss-tpl-desc">Slow beat and a soft melody.</span>
+      </button>
+      <button class="ss-tpl" data-on="_loadSoundTemplate" data-on-arg="blank" data-on-plain>
+        <span class="ss-tpl-ico">&#11036;</span><span class="ss-tpl-name">Empty grid</span><span class="ss-tpl-desc">Start from nothing.</span>
+      </button>
+    </div>
     <div class="ss-sec">How it works</div>
     <ul class="ss-steps">
       <li><b>1  Pick</b>Choose <b style="display:inline;text-transform:none;letter-spacing:0;">Music</b>, <b style="display:inline;text-transform:none;letter-spacing:0;">Drums</b> or <b style="display:inline;text-transform:none;letter-spacing:0;">SFX</b> at the top of the page.</li>
@@ -1176,6 +1191,35 @@ function loadStarterBeat(){
   });
   buildGrid();
   showToast('Starter beat loaded');
+}
+
+// First-run template picker (A1546): load a working loop so a newcomer starts
+// from a real example instead of an empty grid.
+function _loadSoundTemplate(name){
+  try{ if(isPlaying) stopAll(); }catch(e){}
+  pushHistory();
+  tracks = TRACK_DEFAULTS.map(t=>({...t, fx:{...t.fx}, env:{...t.env}}));
+  steps = 16;
+  initGrid();
+  activeTrack = 0;
+  syncTransportUI();
+  const set=(ti,s,on,note)=>{ const row=grid[ti]; if(!row||!row[s]) return; row[s].on=!!on; if(note) row[s].note=note; };
+  const hits=(ti,arr)=>arr.forEach(s=>set(ti,s,true));
+  if(name==='groove'){
+    hits(0,[0,4,8,12]); hits(1,[4,12]); hits(2,[0,2,4,6,8,10,12,14]);
+    [{s:0,n:'C'},{s:4,n:'C'},{s:8,n:'G'},{s:12,n:'F'}].forEach(o=>set(3,o.s,true,o.n));
+    [{s:0,n:'C'},{s:2,n:'E'},{s:4,n:'G'},{s:6,n:'E'},{s:8,n:'C'},{s:10,n:'D'},{s:12,n:'F'},{s:14,n:'E'}].forEach(o=>set(4,o.s,true,o.n));
+  } else if(name==='fourfloor'){
+    hits(0,[0,4,8,12]); hits(1,[4,12]); hits(2,[2,6,10,14]);
+    [{s:0,n:'C'},{s:8,n:'A'}].forEach(o=>set(3,o.s,true,o.n));
+  } else if(name==='lofi'){
+    hits(0,[0,10]); hits(1,[4,12]); hits(2,[0,2,6,8,10,14]);
+    [{s:0,n:'A'},{s:6,n:'C'},{s:10,n:'E'}].forEach(o=>set(3,o.s,true,o.n));
+    [{s:2,n:'E'},{s:8,n:'C'}].forEach(o=>set(4,o.s,true,o.n));
+  }
+  buildGrid(); updateInstPanel(); updateArrangeBar();
+  closeStart();
+  showToast(name==='blank' ? 'Empty grid ready' : 'Template loaded, press Play');
 }
 
 function deleteTrack(){
