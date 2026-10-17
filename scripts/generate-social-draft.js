@@ -23,7 +23,7 @@ const vm = require('vm');
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'devlog-data.js');
 const QUEUE_DIR = path.join(ROOT, 'social-posts', 'queue');
-const SITE = 'https://jvdesignstudio.co.uk';
+const { SITE, siteUrl, primaryHref, postLinks } = require('./lib/devlog-links');
 
 const TAG_HASHTAGS = {
   games:     ['GameDev', 'IndieGame', 'KidsCoding', 'JVDesignStudio'],
@@ -80,16 +80,21 @@ function loadPosts() {
     process.exit(1);
   }
   if (!raw) raw = sandbox.POSTS || sandbox.posts || [];
-  return raw.map(p => ({
-    id: String(p.id),
-    date: p.date || '',
-    tag: p.tag || '',
-    emoji: p.emoji || '',
-    title: cleanText(p.title || ''),
-    excerpt: cleanText(p.excerpt || ''),
-    content: cleanText(p.content || ''),
-    url: p.url ? (p.url.startsWith('http') ? p.url : `${SITE}/${p.url}`) : `${SITE}/devlog#post-${p.id}`,
-  }));
+  return raw.map(p => {
+    const primary = primaryHref(p);
+    return {
+      id: String(p.id),
+      date: p.date || '',
+      tag: p.tag || '',
+      emoji: p.emoji || '',
+      title: cleanText(p.title || ''),
+      excerpt: cleanText(p.excerpt || ''),
+      content: cleanText(p.content || ''),
+      image: p.image || '',
+      links: postLinks(p),
+      url: primary ? siteUrl(primary) : `${SITE}/devlog#post-${p.id}`,
+    };
+  });
 }
 
 function truncate(str, max) {
@@ -157,6 +162,7 @@ function buildDraft(post) {
     `url: ${post.url}`,
     `queue_file: social-posts/queue/${mdName}`,
     `image: social-posts/queue/${pngName}`,
+    post.image ? `screenshot: ${post.image}` : null,
     '---',
     '',
     `## X / Threads (${xLen}/280ch)`,
@@ -174,7 +180,12 @@ function buildDraft(post) {
     newsletter,
     '```',
     '',
-  ].join('\n') };
+    '## Related links',
+    '```',
+    ...(post.links.length ? post.links.map(l => `${l.label}: ${siteUrl(l.href)}`) : ['(none yet)']),
+    '```',
+    '',
+  ].filter(x => x !== null).join('\n') };
 }
 
 function main() {

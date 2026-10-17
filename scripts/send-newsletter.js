@@ -6,18 +6,29 @@
 // Usage: node scripts/send-newsletter.js [--check]  // Friday weekly check, 3-post threshold (you chose 3)
 //        node scripts/send-newsletter.js --force      // force draft regardless of day/threshold
 const fs=require('fs'), path=require('path');
+const vm=require('vm');
 const ROOT=path.resolve(__dirname,'..');
 const DEVLOG=path.join(ROOT,'devlog-data.js');
 const OUT_DIR=path.join(ROOT,'social-posts','queue');
 const MIN_POSTS=3;
+const { SITE, siteUrl, primaryHref } = require('./lib/devlog-links');
 
 function parsePosts(src){
-  // Anchor to POSTS = [ block to avoid matching post content that looks like an entry
-  const postsBlock = (src.match(/const POSTS\s*=\s*\[([\s\S]*?)\n\];/)||[])[1] || src;
-  const re=/\{\s*id:\s*(\d+)[\s\S]*?date:\s*'([^']+)'[\s\S]*?tag:\s*'([^']+)'[\s\S]*?emoji:\s*'([^']+)'[\s\S]*?title:\s*'([^']+)'[\s\S]*?excerpt:\s*(?:'([^']*)'|"([^"]*)")/g;
-  const out=[]; let m;
-  while((m=re.exec(postsBlock))!==null) out.push({id:m[1], date:m[2], tag:m[3], emoji:m[4], title:m[5], excerpt:m[6]||m[7]});
-  return out;
+  const sandbox={console:{log:()=>{},warn:()=>{}}, window:{}};
+  vm.createContext(sandbox);
+  let raw=[];
+  try{ raw=vm.runInContext(`(function(){${src};return POSTS;})()`, sandbox, {timeout:5000})||[]; }
+  catch(e){ console.error('[newsletter] devlog parse failed:', e.message); process.exit(1); }
+  return raw.map(p=>{
+    const primary=primaryHref(p);
+    return {
+      id:String(p.id), date:p.date||'', tag:p.tag||'', emoji:p.emoji||'',
+      title:p.title||'', excerpt:p.excerpt||'',
+      image: p.image ? (p.image.startsWith('http') ? p.image : SITE + p.image) : '',
+      url: primary ? siteUrl(primary) : `${SITE}/devlog#post-${p.id}`,
+      hasLink: !!primary,
+    };
+  });
 }
 function parseDateStr(s){
   const m=String(s).match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
@@ -69,10 +80,11 @@ function buildHtml(posts, weekStr){
 <h1 style="font-family:Fredoka,cursive;">JVDesignStudio - Weekly Dev Log Digest</h1>
 <p style="color:rgba(240,234,214,.6);">${label} - ${posts.length} note${posts.length===1?'':'s'} from the dev log. One email per week max.</p>
 ${posts.map(p=> `<div style="background:#211d18;border:1px solid rgba(240,234,214,.08);border-radius:16px;padding:20px;margin:14px 0;">
+${p.image?`<img src="${p.image}" alt="" width="560" style="width:100%;max-width:560px;height:auto;border-radius:10px;display:block;margin:0 0 14px;">`:''}
 <div style="font-size:.7rem;color:#70A3A7;text-transform:uppercase;letter-spacing:.08em;">${p.tag} - ${p.date}</div>
 <h2 style="margin:6px 0;">${p.emoji} ${p.title}</h2>
 <p style="color:rgba(240,234,214,.7);">${p.excerpt}</p>
-<p><a href="https://jvdesignstudio.co.uk/devlog#post-${p.id}" style="color:#70A3A7;font-weight:700;">Read note -></a></p>
+<p style="margin:14px 0 0;">${p.hasLink?`<a href="${p.url}" style="display:inline-block;background:#4e7d80;color:#fff;font-weight:700;padding:10px 20px;border-radius:999px;text-decoration:none;">Open what this is about</a> `:''}<a href="https://jvdesignstudio.co.uk/devlog#post-${p.id}" style="color:#70A3A7;font-weight:700;margin-left:8px;">Read the note -></a></p>
 </div>`).join('\n')}
 <p style="font-size:.75rem;color:rgba(240,234,214,.4);text-align:center;margin-top:24px;">You received this because you subscribed at <a href="https://jvdesignstudio.co.uk/newsletter.html" style="color:#70A3A7;">jvdesignstudio.co.uk/newsletter</a> via Formspree. Weekly on Friday, one email per week max. Unsubscribe via the link in your Formspree confirmation email. <a href="https://jvdesignstudio.co.uk/devlog" style="color:#70A3A7;">Dev Log -></a></p>
 </body></html>`;

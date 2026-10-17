@@ -1,1 +1,1 @@
-window.location.replace('/pages/devlog.html');
+window.location.replace('/pages/devlog.html' + window.location.search + window.location.hash);

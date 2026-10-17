@@ -87,7 +87,16 @@ function parsePosts(srcText) {
     title: cleanText(p.title || ''),
     excerpt: cleanText((p.excerpt || '').trim()),
     content: cleanText(p.content || ''),
+    image: p.image || '',
   }));
+}
+
+// Where the post's screenshot is composited, or null when the post has no image.
+function photoBox(post) {
+  if (!post.image) return null;
+  const abs = path.join(ROOT, post.image.replace(/^\//, ''));
+  if (!fs.existsSync(abs)) return null;
+  return { x: 120, y: 150, w: 840, h: 430, r: 22, file: abs };
 }
 
 function wrapText(text, maxChars) {
@@ -114,18 +123,22 @@ function buildSvg(post) {
   const accent = TAG_ACCENT[post.tag] || TAG_ACCENT.site;
   const label = TAG_LABEL[post.tag] || post.tag.toUpperCase();
   const iso = shortDate(post.date);
-  const titleLines = wrapText(post.title, 28).slice(0, 3);
+  const photo = photoBox(post);
+  const titleMaxLines = photo ? 2 : 3;
+  const excerptMaxLines = photo ? 1 : 3;
+  const titleSize = photo ? 46 : 54;
+  const titleLines = wrapText(post.title, photo ? 34 : 28).slice(0, titleMaxLines);
   // pad title to keep layout stable if short
-  const excerptLines = wrapText(post.excerpt, 54).slice(0, 3);
+  const excerptLines = wrapText(post.excerpt, photo ? 76 : 54).slice(0, excerptMaxLines);
   const url = `jvdesignstudio.co.uk/devlog#post-${post.id}`;
 
   // layout constants 1080x1080, pad 60
   const W = 1080, H = 1080;
   const pad = 60;
 
-  // Title block: start y 340, line height 62
-  const titleStartY = 360;
-  const titleLineH = 64;
+  // Title block: start y 360 (or below the photo when there is a screenshot)
+  const titleStartY = photo ? 648 : 360;
+  const titleLineH = photo ? 56 : 64;
   const excerptStartY = titleStartY + titleLines.length * titleLineH + 28;
   const excerptLineH = 32;
 
@@ -165,11 +178,16 @@ function buildSvg(post) {
     <text x="90" y="23" font-family="'Inter',sans-serif" font-size="13" font-weight="800" fill="${accent}" text-anchor="middle" letter-spacing="0.8">${escXml(label)}</text>
   </g>
 
-  <!-- emoji -->
-  <text x="${W/2}" y="280" font-family="sans-serif" font-size="92" text-anchor="middle">${escXml(post.emoji)}</text>
+  <!-- screenshot frame (composited later) or emoji -->
+  ${photo ? `<rect x="${photo.x}" y="${photo.y}" width="${photo.w}" height="${photo.h}" rx="${photo.r}" fill="${accent}" opacity="0.08" stroke="${accent}" stroke-width="2"/>
+  <g transform="translate(${photo.x + 4},${photo.y + 4})">
+    <circle cx="22" cy="22" r="22" fill="#1a1612" opacity="0.78"/>
+    <text x="22" y="31" font-family="sans-serif" font-size="24" text-anchor="middle">${escXml(post.emoji)}</text>
+  </g>`
+  : `<text x="${W/2}" y="280" font-family="sans-serif" font-size="92" text-anchor="middle">${escXml(post.emoji)}</text>`}
 
   <!-- title -->
-  <text x="${W/2}" y="${titleStartY}" font-family="'Fredoka','Segoe UI',sans-serif" font-size="54" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-0.5">
+  <text x="${W/2}" y="${titleStartY}" font-family="'Fredoka','Segoe UI',sans-serif" font-size="${titleSize}" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="-0.5">
     ${titleTspans}
   </text>
 
@@ -196,7 +214,22 @@ async function generateCard(post, outPath) {
   // sharp needs explicit density for emoji/text crisp
   const png = await require('sharp')(Buffer.from(svg), { density: 300 }).png({ compressionLevel: 9 }).toBuffer();
   // Ensure 1080x1080 exactly (sharp from SVG viewBox should already be, but resize as guard)
-  const out = await require('sharp')(png).resize(1080,1080,{fit:'cover'}).png().toFile(outPath);
+  let card = await require('sharp')(png).resize(1080,1080,{fit:'cover'}).png().toBuffer();
+  // Composite the post's screenshot into the frame when it exists.
+  const photo = photoBox(post);
+  if (photo) {
+    const inset = 2;
+    const iw = photo.w - inset * 2, ih = photo.h - inset * 2;
+    const mask = Buffer.from(`<svg width="${iw}" height="${ih}" xmlns="http://www.w3.org/2000/svg"><rect width="${iw}" height="${ih}" rx="${photo.r - inset}" ry="${photo.r - inset}" fill="#fff"/></svg>`);
+    const shot = await require('sharp')(photo.file)
+      .resize(iw, ih, { fit: 'cover' })
+      .composite([{ input: mask, blend: 'dest-in' }])
+      .png().toBuffer();
+    card = await require('sharp')(card)
+      .composite([{ input: shot, left: photo.x + inset, top: photo.y + inset }])
+      .png().toBuffer();
+  }
+  const out = await require('sharp')(card).png().toFile(outPath);
   return out;
 }
 
