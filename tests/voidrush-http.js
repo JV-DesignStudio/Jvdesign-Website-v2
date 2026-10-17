@@ -24,6 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 const { withServer } = require('./story-run-harness.cjs');
+const { pageSource } = require('./page-source.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 let failures = 0;
@@ -54,7 +55,7 @@ function staticChecks() {
   check('quest-19 no longer asks for a wave metric',
     !/metric:\s*'wave'/.test(block));
 
-  const html = fs.readFileSync(path.join(ROOT, 'games/voidrush.html'), 'utf8');
+  const html = pageSource('games/voidrush.html');
   check('game writes the reached sector as save level',
     /level:\s*Math\.max\(1,\s*bestSector\)/.test(html));
   check('game honours prefers-reduced-motion', /prefers-reduced-motion/.test(html));

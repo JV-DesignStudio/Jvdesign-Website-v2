@@ -607,26 +607,95 @@ section.hero h1{text-shadow:0 2px 44px rgba(255,119,0,.18)}
   }
 }
 
-/* ── 3D builders on mobile: keep the live preview on screen ──────────────
-   The builder pages stack the controls above the 3D canvas on small screens,
-   which pushes the preview a full screen or more below the fold, so you tap
-   through steps without seeing what you are making. On phones/tablets, pin the
-   canvas under the site header and let the step controls scroll beneath it.
+/* ── 3D builders on mobile: preview first, controls within reach ─────────
+   The builder pages used to open with the reference-pack callout (inside the
+   builder header), the Ember tip bar and the injected .workshop-brief card all
+   stacked above the 3D preview, so the model sat ~540px down the page and was
+   barely visible on first load. The step list was also a full vertical column,
+   pushing the current step controls below it, and the quick controls were
+   hidden outright. On phones/tablets now: the preview is the first thing under
+   the branding bar and stays pinned; the steps become a horizontal chip strip;
+   the current step controls follow it; the quick controls become a strip below
+   the steps; the intro and tip bar drop below the builder.
    #app exists only on the builder pages, so this is scoped to them. */
 @media(max-width:860px){
   html:has(#app){overflow-x:hidden}
   body:has(#app){overflow:visible!important}
   #app{display:flex;flex-direction:column;height:auto;min-height:100vh;overflow:visible!important}
-  #app .hdr,#app .ember-builder-bar,#app .lumo-builder-bar{order:0}
+
+  /* compact branding bar: drop the tall reference-pack callout and keep the
+     action buttons on one scrollable row instead of wrapping into a block */
+  #app>header,#app>.ember-builder-bar,#app>.lumo-builder-bar{order:0}
+  #app>header{min-height:52px;flex-wrap:wrap}
+  #app>header .callout{display:none}
+  #app>header h1{flex:0 1 auto;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #app>header .hdr-btns,#app>header .hdr-right,#app>header .header-actions{
+    flex:1 1 auto;flex-wrap:nowrap;justify-content:flex-start;width:auto;max-width:100%;
+    overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+  }
+  #app>header .hdr-btns button,#app>header .hdr-right button,#app>header .header-actions button{flex:0 0 auto;min-width:0}
+
+  /* live preview first, pinned under the site header */
   #app>#viewport{
     order:1;position:sticky;top:68px;z-index:40;
     height:42vh!important;min-height:220px!important;max-height:400px!important;
     box-shadow:0 10px 26px rgba(0,0,0,.45);
   }
+
+  /* steps as a horizontal chip strip, current-step controls right below */
   #app>#sidebar{order:2;max-height:none!important;border-right:none;border-bottom:1px solid var(--border,#2a2a2a)}
-  #app>#sidebar .slist{min-height:60px}
-  #app>#sidebar .cpan{max-height:none}
-  #app>#rightbar{order:3;display:none!important}
+  #app>#sidebar :is(.slist,.step-list,#stepList){
+    display:flex;flex-direction:row;flex:0 0 auto;gap:4px;
+    min-height:0;max-height:none;padding:6px;
+    overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;
+  }
+  #app>#sidebar :is(.slist,.step-list,#stepList)>:is(.si,.step-item,.step-li){
+    flex:0 0 auto;flex-direction:column;gap:2px;justify-content:center;
+    min-width:54px;margin:0;padding:6px 8px;text-align:center;scroll-snap-align:center;
+  }
+  #app>#sidebar :is(.cpan,.cpanel,#cpan,#stepBody){max-height:none}
+  #app>#sidebar .snav button{padding:10px}
+
+  /* quick controls become a horizontal strip below the steps */
+  #app>#rightbar{
+    order:3;display:flex!important;position:static!important;flex-direction:row;flex-wrap:nowrap;
+    gap:8px;padding:8px 10px;max-height:none;width:auto!important;height:auto!important;
+    border-left:none;border-top:1px solid var(--border,#2a2a2a);
+    overflow-x:auto;overflow-y:hidden;
+  }
+  #app>#rightbar .rb-section{flex:0 0 auto;min-width:150px;max-width:220px}
+
+  /* the intro card, tip bar and coach banner sit below the builder, not above it */
+  #app>section.workshop-brief,#app>.ember-builder-bar,#app>.lumo-builder-bar,#app>.mascot-coach{order:9}
+
+  /* a starter-template banner above the builder becomes one compact row so it
+     no longer pushes the preview off the first screen (builders only). Its
+     layout is set inline on the element, so these need !important. */
+  body:has(#app) .starter-banner{
+    margin:8px 12px!important;padding:10px 12px!important;gap:10px!important;
+    flex-wrap:nowrap!important;align-items:center!important;overflow-x:auto!important;
+  }
+  body:has(#app) .starter-banner>span{font-size:1.5rem!important}
+  body:has(#app) .starter-banner>div{flex:1 1 auto!important;min-width:0!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  body:has(#app) .starter-banner>div>span{display:none!important}
+  body:has(#app) .starter-banner strong{font-size:.8rem!important;white-space:nowrap!important}
+  body:has(#app) .starter-banner a,body:has(#app) .starter-banner button{padding:8px 12px!important;font-size:.78rem!important}
+
+  /* creator workspaces stay uncluttered on a phone: the floating mascot
+     companion (bottom-right), the Did this work? pill (bottom-left), the
+     Report Issue pill, the build-quiz chip/toast and (where the quick controls
+     are now inline) the dead quick-controls toggle all sit over the canvas and
+     the step controls, so hide them here. Desktop and every other page keep
+     them. The .cpanel-family builders still need their #rbDrawerToggle, so it
+     is only hidden when #rightbar is present (it is then shown inline). */
+  body:has(#app) .mascot-companion,
+  body:has(#app) .mascot-companion-bubble,
+  body:has(#app) #jvds-feedback-widget,
+  body:has(#app) .report-issue-fab,
+  body:has(#app) .bq-chip,
+  body:has(#app) .bq-toast{display:none!important}
+  body:has(#rightbar) #rbDrawerToggle{display:none!important}
 }
 
 /* A44: tool-callout - companion tool prompt in workshop finish banners */

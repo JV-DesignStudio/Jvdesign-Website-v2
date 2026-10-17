@@ -22,7 +22,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CbWC6g25DX4oabhmH/z0f+GGYz+bLDAgv09JrzlNevk=' 'sha256-CbWC6g25DX4oabhmH/z0f+GGYz+bLDAgv09JrzlNevk=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CbWC6g25DX4oabhmH/z0f+GGYz+bLDAgv09JrzlNevk=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 
@@ -42,6 +42,8 @@
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/cpp-cheatsheet.png">
 
 <link rel="stylesheet" href="../style-tool-cpp-cheatsheet.css?v=17">
+<meta name="engine-version" content="SFML 3.0 (C++17)">
+<link rel="stylesheet" href="/cheatsheet-tools.css">
 <noscript><link rel="stylesheet" href="../style-tool-cpp-cheatsheet.css?v=17"></noscript>
 
 <link rel="stylesheet" href="../style-shared.css?v=17">
@@ -79,7 +81,7 @@
 <!-- BUILD:nav-tools -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-<script src="/nav.js?v=19" defer></script>
+<script src="/nav.js?v=20" defer></script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
@@ -136,19 +138,19 @@
         <div class="sheet-card">
             <h2>⚙️ Window Setup</h2>
             <pre><span class="k">#include</span> <span class="s">&lt;SFML/Graphics.hpp&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;optional&gt;</span>
 
 sf::<span class="tp">RenderWindow</span> window(
-    sf::<span class="fn">VideoMode</span>(<span class="f">800</span>, <span class="f">600</span>),
+    sf::<span class="fn">VideoMode</span>({<span class="f">800</span>, <span class="f">600</span>}),
     <span class="s">"My Game"</span>);
 window.<span class="fn">setFramerateLimit</span>(<span class="f">60</span>);
 
 sf::<span class="tp">Clock</span> clock;
 
 <span class="k">while</span> (window.<span class="fn">isOpen</span>()) {
-    sf::<span class="tp">Event</span> event;
-    <span class="k">while</span> (window.<span class="fn">pollEvent</span>(event)) {
-        <span class="k">if</span> (event.type ==
-            sf::<span class="tp">Event</span>::<span class="f">Closed</span>)
+    <span class="k">while</span> (<span class="k">const</span> <span class="tp">std::optional</span> event =
+           window.<span class="fn">pollEvent</span>()) {
+        <span class="k">if</span> (event-&gt;<span class="fn">is</span>&lt;sf::<span class="tp">Event</span>::<span class="tp">Closed</span>&gt;())
             window.<span class="fn">close</span>();
     }
     sf::<span class="tp">Time</span> dt = clock.<span class="fn">restart</span>();
@@ -161,26 +163,24 @@ sf::<span class="tp">Clock</span> clock;
             <h2>✏️ Drawing</h2>
             <pre><span class="c"># rectangle</span>
 sf::<span class="tp">RectangleShape</span> rect(
-    sf::<span class="fn">Vector2f</span>(<span class="f">100.f</span>, <span class="f">50.f</span>));
-rect.<span class="fn">setPosition</span>(<span class="f">200.f</span>, <span class="f">150.f</span>);
+    sf::<span class="fn">Vector2f</span>({<span class="f">100.f</span>, <span class="f">50.f</span>}));
+rect.<span class="fn">setPosition</span>({<span class="f">200.f</span>, <span class="f">150.f</span>});
 rect.<span class="fn">setFillColor</span>(sf::<span class="tp">Color</span>::<span class="f">Blue</span>);
 window.<span class="fn">draw</span>(rect);
 
 <span class="c"># circle</span>
 sf::<span class="tp">CircleShape</span> circle(<span class="f">40.f</span>);
-circle.<span class="fn">setPosition</span>(<span class="f">300.f</span>, <span class="f">200.f</span>);
+circle.<span class="fn">setPosition</span>({<span class="f">300.f</span>, <span class="f">200.f</span>});
 window.<span class="fn">draw</span>(circle);
 
-<span class="c"># sprite</span>
-sf::<span class="tp">Texture</span> tex;
-tex.<span class="fn">loadFromFile</span>(<span class="s">"player.png"</span>);
+<span class="c"># sprite (SFML 3 loads in the constructor)</span>
+<span class="k">const</span> sf::<span class="tp">Texture</span> tex(<span class="s">"player.png"</span>);
 sf::<span class="tp">Sprite</span> sprite(tex);
 window.<span class="fn">draw</span>(sprite);
 
-<span class="c"># text</span>
-sf::<span class="tp">Font</span> font;
-font.<span class="fn">loadFromFile</span>(<span class="s">"arial.ttf"</span>);
-sf::<span class="tp">Text</span> text(<span class="s">"Hello"</span>, font, <span class="f">24</span>);
+<span class="c"># text (the font is the first argument)</span>
+<span class="k">const</span> sf::<span class="tp">Font</span> font(<span class="s">"arial.ttf"</span>);
+sf::<span class="tp">Text</span> text(font, <span class="s">"Hello"</span>, <span class="f">24</span>);
 window.<span class="fn">draw</span>(text);</pre>
         </div>
 
@@ -188,19 +188,19 @@ window.<span class="fn">draw</span>(text);</pre>
             <h2>🎮 Input</h2>
             <table>
                 <tr><td>sf::Keyboard::isKeyPressed()</td><td>Poll any key state</td></tr>
-                <tr><td>sf::Keyboard::W</td><td>W key constant</td></tr>
-                <tr><td>sf::Keyboard::Space</td><td>Space key constant</td></tr>
-                <tr><td>sf::Keyboard::Escape</td><td>Escape key constant</td></tr>
+                <tr><td>sf::Keyboard::Key::W</td><td>W key constant (enum class)</td></tr>
+                <tr><td>sf::Keyboard::Key::Space</td><td>Space key constant</td></tr>
+                <tr><td>sf::Keyboard::Key::Escape</td><td>Escape key constant</td></tr>
                 <tr><td>sf::Mouse::getPosition()</td><td>Global mouse position</td></tr>
                 <tr><td>sf::Mouse::getPosition(win)</td><td>Mouse relative to window</td></tr>
-                <tr><td>event.key.code</td><td>Key that triggered event</td></tr>
-                <tr><td>event.mouseButton</td><td>Mouse button info</td></tr>
+                <tr><td>event-&gt;getIf&lt;sf::Event::KeyPressed&gt;()-&gt;code</td><td>Key that triggered event</td></tr>
+                <tr><td>event-&gt;getIf&lt;sf::Event::MouseButtonPressed&gt;()</td><td>Mouse button info</td></tr>
             </table>
             <pre><span class="k">if</span> (sf::<span class="tp">Keyboard</span>::<span class="fn">isKeyPressed</span>(
-    sf::<span class="tp">Keyboard</span>::<span class="f">W</span>))
+    sf::<span class="tp">Keyboard</span>::<span class="tp">Key</span>::<span class="f">W</span>))
     player.y -= speed;
 <span class="k">if</span> (sf::<span class="tp">Keyboard</span>::<span class="fn">isKeyPressed</span>(
-    sf::<span class="tp">Keyboard</span>::<span class="f">Left</span>))
+    sf::<span class="tp">Keyboard</span>::<span class="tp">Key</span>::<span class="f">Left</span>))
     player.x -= speed;</pre>
         </div>
 
@@ -226,8 +226,7 @@ sprite.<span class="fn">setScale</span>(<span class="f">2.f</span>, <span class=
 
         <div class="sheet-card">
             <h2>🎬 Animation (Sprite Sheet)</h2>
-            <pre>sf::<span class="tp">Texture</span> sheet;
-sheet.<span class="fn">loadFromFile</span>(<span class="s">"spritesheet.png"</span>);
+            <pre><span class="k">const</span> sf::<span class="tp">Texture</span> sheet(<span class="s">"spritesheet.png"</span>);
 
 <span class="k">int</span> frameW = <span class="f">32</span>, frameH = <span class="f">32</span>;
 <span class="k">int</span> currentFrame = <span class="f">0</span>;
@@ -266,8 +265,8 @@ sf::<span class="tp">FloatRect</span> bounds2 =
 }
 
 <span class="c"># point inside rect</span>
-<span class="k">if</span> (bounds1.<span class="fn">contains</span>(mousePos.x,
-                       mousePos.y)) {
+<span class="k">if</span> (bounds1.<span class="fn">contains</span>(
+        {mousePos.x, mousePos.y})) {
     <span class="c"># hover / click</span>
 }
 
@@ -323,17 +322,20 @@ cooldown -= dt.<span class="fn">asSeconds</span>();
         <div class="sheet-card full">
             <h2>🛠️ Common Patterns</h2>
             <pre><span class="c">── FULL GAME LOOP ──</span>
-sf::<span class="tp">RenderWindow</span> window(sf::<span class="fn">VideoMode</span>(<span class="f">800</span>,<span class="f">600</span>), <span class="s">"Game"</span>);
+sf::<span class="tp">RenderWindow</span> window(sf::<span class="fn">VideoMode</span>({<span class="f">800</span>,<span class="f">600</span>}), <span class="s">"Game"</span>);
 window.<span class="fn">setFramerateLimit</span>(<span class="f">60</span>);
 sf::<span class="tp">Clock</span> clock;
 
 <span class="k">while</span> (window.<span class="fn">isOpen</span>()) {
-    sf::<span class="tp">Event</span> e;
-    <span class="k">while</span> (window.<span class="fn">pollEvent</span>(e)) {
-        <span class="k">if</span> (e.type == sf::<span class="tp">Event</span>::<span class="f">Closed</span>) window.<span class="fn">close</span>();
-        <span class="k">if</span> (e.type == sf::<span class="tp">Event</span>::<span class="f">KeyPressed</span>
-            &amp;&amp; e.key.code == sf::<span class="tp">Keyboard</span>::<span class="f">Escape</span>)
+    <span class="k">while</span> (<span class="k">const</span> <span class="tp">std::optional</span> e =
+           window.<span class="fn">pollEvent</span>()) {
+        <span class="k">if</span> (e-&gt;<span class="fn">is</span>&lt;sf::<span class="tp">Event</span>::<span class="tp">Closed</span>&gt;())
             window.<span class="fn">close</span>();
+        <span class="k">if</span> (<span class="k">const auto</span>* key =
+            e-&gt;<span class="fn">getIf</span>&lt;sf::<span class="tp">Event</span>::<span class="tp">KeyPressed</span>&gt;())
+            <span class="k">if</span> (key-&gt;code ==
+                sf::<span class="tp">Keyboard</span>::<span class="tp">Key</span>::<span class="f">Escape</span>)
+                window.<span class="fn">close</span>();
     }
     sf::<span class="tp">Time</span> dt = clock.<span class="fn">restart</span>();
     <span class="fn">update</span>(dt);
@@ -378,9 +380,9 @@ sf::<span class="tp">FloatRect</span> overlap;
 bgX -= speed * dt.<span class="fn">asSeconds</span>();
 <span class="k">if</span> (bgX &lt;= -bgTex.<span class="fn">getSize</span>().x)
     bgX += bgTex.<span class="fn">getSize</span>().x;
-bgSprite.<span class="fn">setPosition</span>(bgX, <span class="f">0.f</span>);
+bgSprite.<span class="fn">setPosition</span>({bgX, <span class="f">0.f</span>});
 bgSprite2.<span class="fn">setPosition</span>(
-    bgX + bgTex.<span class="fn">getSize</span>().x, <span class="f">0.f</span>);
+    {bgX + bgTex.<span class="fn">getSize</span>().x, <span class="f">0.f</span>});
 
 <span class="c">── PARTICLE SYSTEM ──</span>
 <span class="k">struct</span> <span class="tp">Particle</span> {
@@ -437,5 +439,6 @@ particles.<span class="fn">erase</span>(
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
 <script defer src="/creation-share.js"></script>
+<script src="/cheatsheet-tools.js"></script>
 </body>
 </html>

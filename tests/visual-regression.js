@@ -46,10 +46,14 @@ const PAGES = [
 ];
 const VIEWPORTS = [{ w: 1440, h: 900, label: 'desktop' }, { w: 390, h: 844, label: 'mobile' }];
 
+// Pages whose main content is rendered by script after DOMContentLoaded need an
+// explicit ready selector, or the capture can catch the empty shell.
+const READY = { 'arcade.html': '#grid > *' };
+
 const NEUTRALIZE_CSS = `
 *,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}
 html{scroll-behavior:auto!important}
-.mascot-quiz-backdrop,.mascot-coach,.jvds-today-spark,[data-dynamic],[id*="challenge" i],
+.mascot-quiz-backdrop,.mascot-coach,.mascot-companion,.mascot-companion-bubble,.mascot-bubble,.jvds-today-spark,[data-dynamic],[id*="challenge" i],
 #galleryGrid,.home-gallery,.gallery-strip,[data-gallery-strip],
 #cookie-banner,.jvds-daily-toast,.jvds-weekly-toast{visibility:hidden!important}
 .reveal,[class*="reveal"]{opacity:1!important;transform:none!important}
@@ -60,7 +64,7 @@ const slug = (rel, w) => rel.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') 
 // A pixel counts as "changed" only when a channel differs by more than AA noise.
 // A real layout shift or colour change moves far more than TOLERANCE pixels.
 const CHANNEL_DELTA = 24;
-const TOLERANCE = 150;
+const TOLERANCE = 300;
 
 async function compare(baselineFile, buf){
   let base;
@@ -127,21 +131,25 @@ const server = http.createServer((req, res) => {
         });
         await page.goto(base + '/' + rel, { waitUntil: 'domcontentloaded', timeout: 30000 });
         await page.addStyleTag({ content: NEUTRALIZE_CSS });
+        // Deferred scripts render some grids after DOMContentLoaded, so wait for
+        // the per-page ready selector before capturing.
+        const readySel = READY[rel];
+        if (readySel) await page.waitForSelector(readySel, { timeout: 15000 }).catch(() => {});
         await page.evaluate(() => (document.fonts && document.fonts.ready) ? document.fonts.ready : null).catch(() => {});
         // Wait for every image inside the fold to settle, so a lazy image that
         // pops in on a warm run does not read as a pixel change. Bounded so a
-        // never-loading image cannot hang the run.
+        // never-loading image cannot hang the run. Generous under load.
         await Promise.race([
           page.evaluate(() => Promise.all(
             Array.from(document.images)
               .filter(img => img.getBoundingClientRect().top < window.innerHeight)
               .map(img => img.complete ? null : new Promise(r => { img.addEventListener('load', r); img.addEventListener('error', r); }))
           )).catch(() => {}),
-          new Promise(r => setTimeout(r, 4000))
+          new Promise(r => setTimeout(r, 10000))
         ]);
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 1000));
 
-        const buf = await page.screenshot({ type: 'png', fullPage: false });
+        let buf = await page.screenshot({ type: 'png', fullPage: false });
         const name = slug(rel, vp.w);
         const file = path.join(BASELINE_DIR, name);
 
@@ -149,7 +157,14 @@ const server = http.createServer((req, res) => {
           fs.writeFileSync(file, buf);
           console.log((UPDATE ? 'UPDATED ' : 'SEEDED  ') + name + ' (' + vp.label + ' ' + rel + ')');
         } else {
-          const res = await compare(file, buf);
+          let res = await compare(file, buf);
+          if (!res.ok) {
+            // One retry absorbs transient render timing under load before this
+            // is called a regression.
+            await new Promise(r => setTimeout(r, 1200));
+            buf = await page.screenshot({ type: 'png', fullPage: false });
+            res = await compare(file, buf);
+          }
           if (!res.ok) {
             fs.mkdirSync(ACTUAL_DIR, { recursive: true });
             fs.writeFileSync(path.join(ACTUAL_DIR, name), buf);

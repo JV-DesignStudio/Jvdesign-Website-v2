@@ -27,6 +27,8 @@ try {
     if (!fs.existsSync(p)) continue;
     const h = fs.readFileSync(p, 'utf8');
     for (const m of h.matchAll(/(?:GameSystem\(\s*|GAME_ID\s*=\s*|gameId\s*[:=]\s*)['"]([^'"]+)['"]/g)) gameRefs.add(m[1]);
+    // Games that do not call GameSystem still declare their id in markup.
+    for (const m of h.matchAll(/data-game\s*=\s*["']([^"']+)["']/g)) gameRefs.add(m[1]);
   }
 } catch (e) { /* paths helper optional */ }
 

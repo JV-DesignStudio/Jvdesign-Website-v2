@@ -84,6 +84,17 @@ walk(ROOT, { ext: ".html", ignore: IGNORE_DIRS }).forEach(filePath => {
 
 console.log(`\nDone. ${changed} file(s) updated, ${unchanged} unchanged.`);
 
+// Re-apply per-page inline-script hashes (A1541). Syncing the head-icons partial
+// above injects the base CSP without hashes, which would block every page's inline
+// <script> under script-src. Recomputing them here keeps a plain `node build.js`
+// self-contained instead of relying on a separate manual csp-hashes step.
+try {
+    const { execFileSync } = require('child_process');
+    execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'csp-hashes.js'), '--apply'], { stdio: 'inherit' });
+} catch (e) {
+    console.log('\n⚠  csp-hashes failed (see above). Inline scripts may be blocked by script-src.');
+}
+
 // Soft link-integrity check: surface broken internal links after every build.
 // Non-fatal (this repo auto-commits), but prints a clear warning so regressions
 // don't slip in silently. Run `npm run validate:links` for the gating exit code.

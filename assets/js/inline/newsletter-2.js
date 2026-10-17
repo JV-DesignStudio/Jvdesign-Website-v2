@@ -6,9 +6,10 @@
   function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   POSTS.slice(0,3).forEach(function(post){
     var a=document.createElement('a');
-    a.href='/devlog';
+    a.href='/devlog#post-'+esc(post.id);
     a.className='nl-devlog-card reveal';
-    a.innerHTML='<div class="nl-devlog-meta">'
+    a.innerHTML=(post.image?'<img class="nl-devlog-thumb" src="'+esc(post.image)+'" alt="" loading="lazy">':'')
+      +'<div class="nl-devlog-meta">'
       +'<span class="nl-devlog-tag '+(tagClass[post.tag]||'')+'">'+( tagLabel[post.tag]||esc(post.tag) )+'</span>'
       +'<span class="nl-devlog-date">'+esc(post.date)+'</span>'
       +'</div>'

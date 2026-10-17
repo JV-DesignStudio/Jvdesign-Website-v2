@@ -15,7 +15,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ldYVvKMAeyhV4ys6Iuzb3g1+9/iBu0obT8potPQMrsw=' 'sha256-ziJ9An3KV52bU3g2dZqWq8mj16bHLrV5rjKJbmPjfbs=' 'sha256-bH6AdMAM9jWj57gXJMyBQX4IQppvY9h1a8pDMx2oqho=' 'sha256-Lc/mNNUd/6GoyFxrSFFR5PSBVow+hacZrdB+WbTf6nc=' 'sha256-efnuChez+sxuHRDH8pxpAvoGDcPc8sqm4qdljJQzvsQ=' 'sha256-PLk0C0vKOiQsi78IGjVVoDxZAasoymkvEAyLJjfwJWs=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ldYVvKMAeyhV4ys6Iuzb3g1+9/iBu0obT8potPQMrsw=' 'sha256-ziJ9An3KV52bU3g2dZqWq8mj16bHLrV5rjKJbmPjfbs=' 'sha256-h/k+GZ919mMfTmSFH71uRdm5HKqW0QdM1KRon9qU6l8=' 'sha256-Lc/mNNUd/6GoyFxrSFFR5PSBVow+hacZrdB+WbTf6nc=' 'sha256-efnuChez+sxuHRDH8pxpAvoGDcPc8sqm4qdljJQzvsQ=' 'sha256-Igm9EfM62NAFcbpKw7DmIk3BJ9T395IOKv2zm+bZ5Ro=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#BC4749">
@@ -25,8 +25,7 @@
     <meta name="robots" content="index, follow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Build a Pirate Cannon Game in Your Browser: Free Builder | JVDesignStudio</title>
-<script src="../assets/vendor/three/three.min.js"></script>
-<script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="../assets/vendor/three-0.160.0/build/three.global.js"></script>
 <script src="jv-exporter.js"></script>
 <script src="builder-gestures.js"></script>
 <link rel="stylesheet" href="../style-workshop-pirate-cannon-builder.css?v=17">
@@ -93,7 +92,7 @@
 <!-- BUILD:nav-tools -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-<script src="/nav.js?v=19" defer></script>
+<script src="/nav.js?v=20" defer></script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
@@ -156,7 +155,6 @@
     <div class="header-actions">
       <button data-on="openSaveModal" data-on-plain>💾 Save</button>
       <button data-on="openLoadModal" data-on-plain>📂 Load</button>
-      <button data-on="exportModel" data-on-plain>⬇ Export OBJ</button>
       <button data-on="resetAll" data-on-plain>🔄 Reset</button>
     </div>
   </header>
@@ -237,6 +235,7 @@ function initThree() {
 
   camera = new THREE.PerspectiveCamera(45, vp.clientWidth / vp.clientHeight, 0.01, 100);
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
   renderer.setSize(vp.clientWidth, vp.clientHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -807,41 +806,7 @@ function resetAll() {
   showToast('Reset to defaults');
 }
 
-function exportModel() {
-  // Simple OBJ export
-  let objStr = '# Pirate Cannon Exported from Pirate Cannon Forge\n';
-  let vOffset = 0;
-  cannonGroup.traverse(child => {
-    if (child.isMesh && child.geometry) {
-      const geo = child.geometry.clone();
-      child.updateWorldMatrix(true, false);
-      geo.applyMatrix4(child.matrixWorld);
-      const pos = geo.attributes.position;
-      const idx = geo.index;
-      for (let i = 0; i < pos.count; i++) {
-        objStr += `v ${pos.getX(i).toFixed(6)} ${pos.getY(i).toFixed(6)} ${pos.getZ(i).toFixed(6)}\n`;
-      }
-      if (idx) {
-        for (let i = 0; i < idx.count; i += 3) {
-          objStr += `f ${idx.getX(i)+1+vOffset} ${idx.getX(i+1)+1+vOffset} ${idx.getX(i+2)+1+vOffset}\n`;
-        }
-      } else {
-        for (let i = 0; i < pos.count; i += 3) {
-          objStr += `f ${i+1+vOffset} ${i+2+vOffset} ${i+3+vOffset}\n`;
-        }
-      }
-      vOffset += pos.count;
-      geo.dispose();
-    }
-  });
-  const blob = new Blob([objStr], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'pirate_cannon.obj';
-  a.click();
-  URL.revokeObjectURL(a.href);
-  showToast('OBJ exported!');
-}
+
 
 // ============ INIT ============
 document.addEventListener('DOMContentLoaded', () => {
@@ -918,6 +883,14 @@ window.BQ={"key":"jvds-pirate-cannon-v2","name":"Pirate Cannon Forge","profileId
 <script defer src="workshop-track.js"></script>
 <script defer src="/mascots.js"></script>
 <script>
+// STATE HOOKS (share / reload)
+window._builderGetState = function () { return { params: JSON.parse(JSON.stringify(params)), step: currentStep }; };
+window._builderSetState = function (s) {
+  if (s && s.params) Object.assign(params, s.params);
+  if (s && typeof s.step === 'number') currentStep = s.step;
+  rebuildCannon(); updateUI();
+  if (window.builderScheduleAutoSave) window.builderScheduleAutoSave();
+};
 if (window.JVExporter) {
   JVExporter.installUI({
     tool: 'Pirate Cannon Forge',

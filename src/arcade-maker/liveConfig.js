@@ -148,9 +148,9 @@ const liveConfig = {
     livesStyle: 'hearts',
     scorePopups: true,
     showTimer: false,
-    // Power Picks: the in-run perk draft. On by default , it is the thing that
-    // makes two runs of the same game play differently.
-    perksEnabled: true
+    // Power Picks: the optional in-run perk draft. Off by default so a game
+    // plays straight away; turn it on in the panel for runs that branch.
+    perksEnabled: false
 };
 
 // Perk-aware accessors: RunMods multipliers fold into speed/fireCooldown at runtime.

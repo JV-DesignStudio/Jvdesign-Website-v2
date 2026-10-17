@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hBLuNFIkT+dzksFbyUtH+S9OkxOVJSivvmp7dgKE7/A=' 'sha256-biGJUBQwfOGLgQjCAwO3rif9H1947VY2E+idVDxpeUk=' 'sha256-ay1Qbgpth1+9t9WZGpOankyQemfu6RMUA3v64wgvP50=' 'sha256-SsVxR4dGSHPV85eQr97vhYWXkcxG3AfT0yMd08l2a+E=' 'sha256-t9IzuEkPNpOZ1ZgJ4X1EDO7rDhGkf+uzwQGAoudcASU=' 'sha256-HlsaY2lFHC5XyTkXH0woxni8Xc86aiKOMfloZdtnUnM=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hBLuNFIkT+dzksFbyUtH+S9OkxOVJSivvmp7dgKE7/A=' 'sha256-biGJUBQwfOGLgQjCAwO3rif9H1947VY2E+idVDxpeUk=' 'sha256-ay1Qbgpth1+9t9WZGpOankyQemfu6RMUA3v64wgvP50=' 'sha256-GR8Fbvo7kKWmZGv6kjUAEHYXtQ53D5kbUMBE2CJOj9E=' 'sha256-t9IzuEkPNpOZ1ZgJ4X1EDO7rDhGkf+uzwQGAoudcASU=' 'sha256-HlsaY2lFHC5XyTkXH0woxni8Xc86aiKOMfloZdtnUnM=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#c9a84c">
@@ -39,8 +39,7 @@
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
-<script src="../assets/vendor/three/three.min.js"></script>
-<script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="../assets/vendor/three-0.160.0/build/three.global.js"></script>
 <script src="jv-exporter.js"></script>
 <script src="builder-gestures.js"></script>
 <script src="builder-templates.js"></script>
@@ -148,7 +147,7 @@
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-<script src="/nav.js?v=19" defer></script>
+<script src="/nav.js?v=20" defer></script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
@@ -413,6 +412,7 @@
 ------------------------------- */
 const canvas = document.getElementById('castleCanvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setClearColor(0x0f0d0a);
@@ -1789,6 +1789,14 @@ if (window.BuilderTemplates) {
     onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
   });
 }
+// STATE HOOKS (share / reload)
+window._builderGetState = function () { return { params: JSON.parse(JSON.stringify(P)), step: currentStep }; };
+window._builderSetState = function (s) {
+  if (s && s.params) Object.assign(P, s.params);
+  if (s && typeof s.step === 'number') currentStep = s.step;
+  buildCastle(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+  if (window.builderScheduleAutoSave) window.builderScheduleAutoSave();
+};
 if (window.JVExporter) {
   JVExporter.installUI({
     tool: 'Castle Builder',

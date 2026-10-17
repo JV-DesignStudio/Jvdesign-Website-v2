@@ -5,7 +5,8 @@ function announce(m){const a=document.getElementById('jvds-announce');if(a){a.te
 // jvds_* / jvds-* (tools), jv_* (Arcade slots, prefs, best scores), qb-* (Game Planner).
 function isBackupKey(k){return !!k&&(k.startsWith('jvds')||k.startsWith('jv_')||k.startsWith('qb-'));}
 function collectLS(){
-  const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&isBackupKey(k)){try{out[k]=localStorage.getItem(k);}catch(e){out[k]='[error]';}}}
+  if(window.JVDSManifest) return window.JVDSManifest.collect();
+  const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('jvds')){try{out[k]=localStorage.getItem(k);}catch(e){out[k]='[error]';}}}
   return out;
 }
 function renderKV(){
@@ -36,8 +37,9 @@ async function doImport(){
     const zip=await JSZip.loadAsync(f);let n=0;for(const [name,entry] of Object.entries(zip.files)){if(entry.dir||name==='manifest.json')continue;const k=name.replace(/\.json$/,'');const v=await entry.async('string');if(!confirm('Restore '+k+'?'))continue;localStorage.setItem(k,v);n++;log('Restored '+k);}announce('Restored '+n+' from ZIP');renderKV();return;
   }
   const txt=await f.text();let parsed;try{parsed=JSON.parse(txt);}catch(e){log('Invalid JSON');return;}
-  const data=parsed.data||parsed;let n=0;for(const [k,v] of Object.entries(data)){if(!isBackupKey(k))continue;if(!confirm('Restore '+k+'?'))continue;localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v));n++;log('Restored '+k);}announce('Restored '+n);renderKV();
+  const data=parsed.data||parsed;let n=0;for(const [k,v] of Object.entries(data)){if(!(window.JVDSManifest?window.JVDSManifest.isKey(k):isBackupKey(k)))continue;if(!confirm('Restore '+k+'?'))continue;localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v));n++;log('Restored '+k);}announce('Restored '+n);renderKV();
 }
 $('btnJSON').onclick=exportJSON;$('btnZIP').onclick=exportZIP;$('btnPNG').onclick=exportPNG;$('btnPreview').onclick=previewFile;$('btnImport').onclick=doImport;$('btnScan').onclick=()=>{renderKV();log('Re-scanned');};$('btnWipe').onclick=()=>{if(!confirm('Wipe every backed-up JVDS save (jvds_*, jv_*, qb-*)? Backup first!'))return;Object.keys(collectLS()).forEach(k=>localStorage.removeItem(k));log('Wiped JVDS localStorage (jvds_*, jv_*, qb-*)');renderKV();};
+{const _bm=$('btnManifest');if(_bm)_bm.onclick=()=>{if(window.JVDSManifest){window.JVDSManifest.download();log('Manifest exported');}};const _bom=$('btnOpenManifest');if(_bom)_bom.onclick=()=>{if(window.JVDSManifest)window.JVDSManifest.openManifest();};}
 renderKV();
 document.addEventListener('DOMContentLoaded',()=>{if(window.EmberGuide)EmberGuide.init({id:'backup-restore',steps:[{target:'#btnJSON',title:'Export',text:'Echo saves JSON/ZIP/PNG - all offline, no account.'},{target:'#fileIn',title:'Import',text:'Restore on any school computer by importing the file.'}]})});

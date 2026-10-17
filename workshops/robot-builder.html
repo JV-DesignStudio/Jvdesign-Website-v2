@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NcsDYxchy+PqdQTl+kLFZjilZs8TNX2QxlwW073GolM=' 'sha256-fORiv153NY6a6UZB/wkSjkiBIsNG6Mqn48WvPeKfZms=' 'sha256-Vz6r99yl69mHTT3gsXhTUdd9u/lZoo51P4MXmsTF3ZQ=' 'sha256-Xqck6U4QzHjn7LvbyGUM+5fu0wFLkkEXqZfdX+5Es9I=' 'sha256-Sr8QfxiqgO9nz8mkwuKVHLIsMFEznaTx8BONZtwFUo0=' 'sha256-pWqgfsGHx2FlfelTIAe91B5F7R0Fi8WedxYNS7dmUU0=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NcsDYxchy+PqdQTl+kLFZjilZs8TNX2QxlwW073GolM=' 'sha256-fORiv153NY6a6UZB/wkSjkiBIsNG6Mqn48WvPeKfZms=' 'sha256-Vz6r99yl69mHTT3gsXhTUdd9u/lZoo51P4MXmsTF3ZQ=' 'sha256-q3W3mNtSnSpnSYvGeWRfgzfgDWREz0qiaaorrLb/WOM=' 'sha256-Sr8QfxiqgO9nz8mkwuKVHLIsMFEznaTx8BONZtwFUo0=' 'sha256-pWqgfsGHx2FlfelTIAe91B5F7R0Fi8WedxYNS7dmUU0=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#38bdf8">
@@ -39,8 +39,7 @@
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
-<script src="../assets/vendor/three/three.min.js"></script>
-<script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="../assets/vendor/three-0.160.0/build/three.global.js"></script>
 <script src="jv-exporter.js"></script>
 <script src="builder-gestures.js"></script>
 <script src="builder-templates.js"></script>
@@ -148,7 +147,7 @@
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-<script src="/nav.js?v=19" defer></script>
+<script src="/nav.js?v=20" defer></script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
@@ -439,6 +438,7 @@
 ═══════════════════════════════ */
 const canvas = document.getElementById('robotCanvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setClearColor(0x070b12);
@@ -605,24 +605,6 @@ function downloadRobot() {
   sout('✅ ' + name + '-robot.obj + .mtl downloaded! Open in Blender: File → Import → Wavefront (.obj)');
 }
 
-/* ═══════════════════════════════
-   BUILD ROBOT
-═══════════════════════════════ */
-function exportGLB() {
-  var group = rocketGroup || robotGroup || shipGroup;
-  if (!group) { toast('Build something first!'); return; }
-  if (typeof THREE.GLTFExporter === 'undefined') { toast('GLTF exporter still loading...'); return; }
-  var exporter = new THREE.GLTFExporter();
-  exporter.parse(group, function(result) {
-    var blob = new Blob([result], { type: 'application/octet-stream' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = (window.R ? R.name : window.P ? 'ship' : 'build').toLowerCase().replace(/\s+/g, '-') + '.glb';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    toast('GLB exported!');
-  }, { binary: true });
-}
 
 function buildRobot() {
   if (robotGroup) scene.remove(robotGroup);
@@ -1603,7 +1585,7 @@ const STEPS = [
   boxes: [
     { t:'box-r', tx: 'Initialising… Power core online. Optics calibrated. Servos active. Your robot is awake.' },
     { t:'box-c', tx: 'A complete robot needs: a head (sensors), a torso (power and processing), arms (manipulation), legs (locomotion), and a power source. You\'ve built all of them.' },
-    { t:'box-t', tx: 'Hit ⬇ Export OBJin the header to download your robot as a .objfile, open it in Blender, MeshLab, or any 3D app. Hit ⚡ Quick Buildto reset and try a completely different design.' },
+    { t:'box-t', tx: 'Hit ⬇ the Export button in the header to download your robot as an OBJ, GLB or STL file, open it in Blender, MeshLab, or any 3D app. Hit ⚡ Quick Buildto reset and try a completely different design.' },
   ],
   tasks: ['Press Power Up and watch it activate!'],
   html() {
@@ -1864,6 +1846,7 @@ if (window.BuilderTemplates) {
     onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
   });
 }
+window._builderSetState = window._builderSetState || window._builderApplyState;
 if (window.JVExporter) {
   JVExporter.installUI({
     tool: 'Robot Builder',

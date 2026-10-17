@@ -34,6 +34,8 @@ node scripts/build/index.js --only=partials --skip-validate   # just partials, f
 
 Legacy entrypoints (`build.js`, `generate-sitemap.js`) still work via `npm run build:legacy` but new code should use `scripts/build/`.
 
+The partials step injects the shared `partials/head-icons.html`, which carries a hashless CSP. Any page with an inline `<script>` therefore loses its `script-src` hash and the script is blocked. After a build, always run `node scripts/csp-hashes.js --apply`, which recomputes the hashes from each page's inline scripts, before committing.
+
 ## Board - How Everyone Knows What To Do (Backend → Trello)
 
 > One Trello `F:/Website/studio-workspace/board/index.html` - warm `var(--beige)` `BACKLOG 23 · IN_PROGRESS 1 · HUMAN_REVIEW 0` + `NEXT →` pill `board-keeper.cjs --next` `P1 → first|school|pixel` + `WIP` `👤` + `healthStrip` `Sitemap 303` `Validate 0` `First creation` - so 4 providers + you see the same single goal without asking.

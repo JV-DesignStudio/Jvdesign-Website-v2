@@ -39,7 +39,8 @@ const entityOf = (label) => {
 };
 
 // 2) Headline stat elements must show the canonical display string.
-const STAT_FILES = ['index.html', 'pages/about.html', 'pages/learn-hub.html', 'pages/parents.html'];
+// pages/learn-hub.html is a redirect to /workshop and carries no stats.
+const STAT_FILES = ['index.html', 'pages/about.html', 'pages/parents.html'];
 const STAT_RE = /class="[^"]*(?:hero-stat-num|stat-num|stat-val)[^"]*">\s*([^<]+?)\s*<\/div>\s*<div class="[^"]*(?:hero-stat-label|stat-label|stat-lbl)[^"]*">\s*([^<]+?)\s*<\/div>/g;
 for (const f of STAT_FILES) {
   const html = read(f);

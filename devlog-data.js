@@ -12,6 +12,11 @@ const POSTS = [
         emoji: '🐹',
         title: 'Critter Whack arrives, and the arcade gets a polish pass',
         excerpt: 'There is a new game in the arcade, plus friendlier first runs, clearer goals and calmer controls across some firm favourites.',
+        image: '/assets/devlog/443-games-critter-whack-page.webp',
+        links: [
+            { label: 'Play Critter Whack', href: '/games/critter-whack-page.html' },
+            { label: 'Browse the arcade', href: '/arcade.html' }
+        ],
         content: 'There is a new game in the arcade. Critter Whack asks you to read the ranger clue, then send each critter to the right home. It is quick to learn and runs in the browser with nothing to install.\n\nAlongside it, some favourites had a careful polish pass. Arcane Citadel now has a pause button, a gentler Calm mode and a first-run coach, so a new player gets a fair start. Nova Siege, Ember Smash, Echo\'s Swim and Highway Dodge each got a smoother opening, clearer goals and larger, calmer controls for phones and tablets.\n\nEverything still saves on the device, so a learner can pick up where they left off with no account.'
     },
 
@@ -22,6 +27,10 @@ const POSTS = [
         emoji: '🛠️',
         title: 'Build in the browser, then edit the real code',
         excerpt: 'The game studios now let you change the code while the game runs, and drag pieces straight into the world.',
+        image: '/assets/devlog/442-tools-arcade-game-maker.webp',
+        links: [
+            { label: 'Open the Arcade Game Maker', href: '/tools/arcade-game-maker.html' }
+        ],
         content: 'The browser game studios have grown up. You can now edit the code while the game is running and watch your change happen straight away, so you can make the player faster, add a jump or try a new idea without starting over.\n\nThere is also a drag-and-drop world, so you can place platforms, blocks and scenery with your mouse or finger and see them appear in the game. It is the same making, just with more room to experiment.\n\nAs always, it works in a plain browser on a school computer, and nothing needs to be installed to begin.'
     },
 
@@ -32,6 +41,11 @@ const POSTS = [
         emoji: '🖼️',
         title: 'Publish your game to the Community Gallery',
         excerpt: 'Finish a game in the Arcade Game Maker and you can now send it in. A new Community Gallery brings learner games together in one place.',
+        image: '/assets/devlog/441-pages-gallery.webp',
+        links: [
+            { label: 'Visit the Community Gallery', href: '/pages/gallery.html' },
+            { label: 'Make a game to share', href: '/tools/arcade-game-maker.html' }
+        ],
         content: 'When you finish a game in the Arcade Game Maker, there is a new Publish button. Send your game in and it can appear in the Community Gallery, a new page that gathers games made by young creators in one place.\n\nEvery game is looked at before it goes up, so the gallery stays friendly and safe. You can browse what other people have made, play their games and borrow an idea or two for your own.\n\nEvery game starts with one small idea. Yours could be next.'
     },
 
@@ -42,6 +56,11 @@ const POSTS = [
         emoji: '🧭',
         title: 'Guides for every engine, and the best free tools',
         excerpt: 'New beginner guides for GameMaker, Pico-8, C++ and Java, plus a roundup of the best free game making tools, so every young maker can find the right starting point.',
+        image: '/assets/devlog/440-learn-index.webp',
+        links: [
+            { label: 'See all the guides', href: '/learn/' },
+            { label: 'Best free tools for kids', href: '/learn/best-free-game-making-tools-for-kids.html' }
+        ],
         content: 'Step into any game engine and there is now a friendly guide waiting. Alongside the existing guides for Scratch, Minecraft, Roblox, Python, Godot and Unity, we have added GameMaker, Pico-8, C++ and Java. Each one starts with a single small game you can finish, then builds up from there.\n\nWe have also added a roundup of the best free game making tools for kids, and a single Guides hub that gathers everything in one place. If you are not sure where to begin, the roundup ranks the options by age and interest, and the hub lets you browse them all.\n\nEvery guide links straight into real workshops on the site, so a reader can go from reading to making in a couple of clicks. Nothing needs an account to start.'
     },
 
@@ -72,6 +91,10 @@ const POSTS = [
         emoji: '🚀',
         title: 'VoidRush: a chase-the-sun rebuild',
         excerpt: 'VoidRush has been rebuilt as a chase-the-sun runner with five handcrafted sectors, a first-run coach, a sunlight bar and a void tide.',
+        image: '/assets/devlog/435-games-voidrush.webp',
+        links: [
+            { label: 'Play VoidRush', href: '/games/voidrush.html' }
+        ],
         content: 'VoidRush has been rebuilt as a chase-the-sun runner. Instead of a fuel tank and a monster in the dark, you fly through five handcrafted sectors, steering around void blocks, chaining boost gates and collecting sun shards to keep your light alive. The run ends at the Dawn Gate, and how you play on the way decides your rank.\n\nWe made the first go friendlier. New players get a short welcome card that explains steering, floor-skimming and sunlight before they set off. A sunlight bar shows your light dipping, and a grade meter shows how close you are to the next rank. When your light runs low a void tide rises from the bottom of the screen, so staying low gets risky and climbing becomes the smart move.\n\nIt works better on the devices learners actually have. On phones and tablets an on-screen pad lets you steer without dragging, the game respects reduced-motion and high-contrast settings, and it does less work each frame so older school laptops keep a steady pace. Progress still saves on the device, no account needed.'
     },
 
@@ -132,6 +155,10 @@ const POSTS = [
         emoji: '🔧',
         title: 'Nova Siege: a remastered space shooter for the Arcade',
         excerpt: 'A classic arcade space shooter rebuilt for the browser, with touch controls, stage bosses and permanent ship upgrades.',
+        image: '/assets/devlog/358-games-nova-siege.webp',
+        links: [
+            { label: 'Play Nova Siege', href: '/games/nova-siege.html' }
+        ],
         content: 'Nova Siege began as a tribute to the old top-down space shooters and grew into one of the fullest games in the Arcade. You pilot a pixel ship with a drag of your finger or the arrow keys, dodge incoming waves and hold the line against a galactic army. Every few waves a stage boss blocks the gate. The new part is what you carry forward: credits you bank each run pay for permanent ship upgrades, and there are unlockable hulls, skins and weapons to work toward. Pip calls you in as pilot. No download, no account, just open the page and fly.'
     },
 
@@ -192,6 +219,10 @@ const POSTS = [
         emoji: '🔧',
         title: 'Pixel Studio gets a calmer desktop workspace',
         excerpt: 'The PC layout of Pixel Studio is decluttered so the drawing tools sit front and centre instead of fighting for space.',
+        image: '/assets/devlog/352-tools-pixel-studio.webp',
+        links: [
+            { label: 'Open Pixel Studio', href: '/tools/pixel-studio.html' }
+        ],
         content: 'Pixel Studio was getting cramped on desktop: the left panel held far more than its space allowed and repeated export buttons that already lived elsewhere. We tidied it. Duplicate save and export controls are gone, secondary groups fold away until you need them, the top bars are tighter, and the first-visit welcome no longer stacks on top of the guide and mission bars. Everything works exactly as before, it just breathes. The mobile layout is unchanged.'
     },
 
@@ -1486,7 +1517,7 @@ const POSTS = [
         "title": "CORRUPTED: A Roblox Workshop Where the Level Destroys Itself",
         "excerpt": "The ninth Roblox workshop is built around one idea: the level should not be there when you need it. Platforms disappear as you leave them, a neon wall closes...",
         "image": "",
-        "url": "workshops/roblox-corruption-obby-workshop.html",
+        "url": "../workshops/roblox-corruption-obby-workshop.html",
         "content": "Every obstacle course asks two questions: can you reach the end, and can you do it fast enough? CORRUPTED adds a third one: will the level still be there when you get there?\n\nThis is the ninth episode in the My First Roblox Studio Game series, and it is aimed at students who have already done some Lua scripting and want to try something with real moving parts. The central mechanic is that platforms are not permanent. As you move forward through the course, each platform far enough behind you gets faded out using TweenService and then removed from the game. The course is eating itself as you run.\n\nWhat makes this work as a learning project is that it introduces one of the most useful patterns in Roblox development: the CollectionService tag system. Instead of writing one script for each platform, you give every destroyable platform a tag called Destroyable and write one script that finds and watches all of them. Add a platform to your level, give it the tag, and it automatically joins the destruction system. That is a very different way of thinking about code than beginners usually start with, and once it clicks it changes how you design everything.\n\nThe second mechanic is the Corruption Zone, a large glowing wall that moves toward you at a constant speed using TweenService. It does not teleport. It does not appear suddenly. It closes in. The tension that creates is different from a countdown timer because you can see exactly how far away it is. When it reaches you, a RemoteEvent fires from the server to your LocalScript, which flickers the screen between purple and cyan with a warning message before you respawn at the last checkpoint.\n\nThat connection between the wall and the screen effect is the most important concept in the workshop. The wall is a server-side object: everyone in the game sees it. The screen glitch is a client-side experience: only the caught player sees it. They talk to each other through a RemoteEvent, which is how Roblox separates things that all players share from things that only one player experiences. This distinction trips up a lot of intermediate Roblox developers and the workshop builds it into the mechanic so students encounter it naturally.\n\nThe final steps cover Heartbeat-driven movement with delta time, which is the correct way to make things move at the same speed on every device regardless of frame rate. There are also flickering platforms that randomly lose their collision, adding unpredictability to the back half of the course.\n\nThe visual style is entirely up to the student. The scripts work with any colours. But the workshop suggests a neon aesthetic, deep space colours and bright edges, because the premise of a glitching simulation suits it. Surfaces that look like they are about to fail.\n\nThe series now runs to nine episodes and covers the whole path from a blank baseplate to a working obstacle course with checkpoints, a leaderboard, destructive environments, and corruption effects."
     },
     {
@@ -1497,7 +1528,8 @@ const POSTS = [
         "title": "New Workshop: Who Goes There? Build a 3D Co-op Game in Godot",
         "excerpt": "A brand new two-part Godot 4 workshop for ages 8 and up. Build a real 3D checkpoint game with a grown-up - scan visitors, manage the gate, and survive 10 day...",
         "image": "",
-        "url": "workshops/godot-gatekeeper-3d-part1.html",
+        "url": "../workshops/godot-gatekeeper-3d-part1.html",
+        "cta": "Open Part 1",
         "content": "The newest workshop is here, and it's a big one.\n\nWho Goes There? is a two-part Godot 4 project for ages 8 and up, designed to be built with a grown-up. Over 17 steps across both parts, you go from an empty 3D scene to a fully working co-op checkpoint game. Visitors walk up to your gate. You scan their temperature, check if they look unwell, and decide: let them in or turn them away. Get it wrong and your checkpoint fails.\n\nPart 1 covers all the foundations: your first 3D scene, walking around in 3D space, connecting two players over a local network, building the scanning mechanic, and wiring up the gate levers. By the end you have a playable prototype you can hand to a sibling or parent and actually play together.\n\nPart 2 adds the game layer: a coin bank shared between both players, daily rent to pay, rules that get stricter as the days go on, and a proper win or lose ending on day 10. There is also a magnifying glass tool that reveals hidden clues the thermometer misses.\n\nThe workshop fixes several things that trip up beginners in Godot 4. The survivor character uses CharacterBody3D so Godot's area detection actually works. The gate checks both directions so letting a sick visitor through is penalised, not just blocking a healthy one. The game state that both players need to read lives in an Autoload so there are no cross-scene variable errors.\n\nBoth parts are free, no account needed, and work on any computer that can run Godot 4. The progress bar saves where you are so you can come back to it across sessions.\n\nFind Part 1 and Part 2 in the Godot section of the Workshops page."
     },
     {
@@ -2081,7 +2113,7 @@ const POSTS = [
         "emoji": "✨",
         "title": "Building a Discovery Session Showing Students Who I Am in 15 Minutes",
         "excerpt": "A discovery session is the first thing a new student sees. I built mine as a full-screen interactive presentation 7 slides, live game links, and a final slid...",
-        "image": "Godot_Teaser.png",
+        "image": "/assets/devlog/18-pages-discovery-session.webp",
         "url": "discovery_session.html",
         "content": "A discovery session has one job: make someone feel something in the first few minutes. Either they want to know more or they don't.\n\nThe format is a seven-slide full-screen presentation built in raw HTML, CSS, and JavaScript. No PowerPoint, no Google Slides, no dependencies. It runs in any browser, works on a projector, and every slide links directly to the real things it describes you can click a game tile on slide four and play the game immediately, without leaving the presentation.\n\nThe slides follow a specific arc. Slide one is purely about presence: the name, the characters, the feeling. Slide two answers \"who are you?\" in four honest sentences. Slide three shows the books as a physical bookshelf. Slide four is the one students usually respond to most six clickable game tiles, each one a door into something they can play right now.\n\nSlide five covers what I actually teach: game design, web development, storytelling, design thinking, building and shipping, and the bit nobody else teaches making work that cares about people. Slide six is the mission. Slide seven hands control back to the student entirely, with six options including the Godot guide, the devlog, and the full content hub.\n\nThe technical details: custom cursor with blend-mode exclusion, CSS star field animation, smooth slide transitions using cubic-bezier easing, keyboard and touch swipe navigation, a progress bar, dot navigation. One HTML file, no external assets except Google Fonts.\n\nThe session runs about 15 minutes. The rest of the hour belongs to the student."
     },
@@ -2102,7 +2134,7 @@ const POSTS = [
         "emoji": "🌙",
         "title": "Pip's Night Sky Building a Constellation Game from a Children's Book",
         "excerpt": "A drag-and-connect constellation builder tied directly to Pip & The Great Dark. The lantern mechanic moving your cursor reveals hidden starsturned out to be ...",
-        "image": "PIP_Cover.png",
+        "image": "/assets/devlog/16-books-pip-and-the-night-sky.webp",
         "url": "../books/Pip_and_the_night_sky.html",
         "content": "The starting point for Pip's Night Sky was a single question: what would a browser game feel like if it grew directly out of a book rather than just being themed after one?\n\nPip & The Great Dark is a story about a turtle who overcomes his fear of the dark by going outside with his Dad and discovering that the night is full of wonder. The emotional core is about moving from fear to curiosity. That gave me the mechanic: the player holds up Pip's Brave Light lantern and uses it to reveal hidden stars, then connects them into constellations.\n\nThe lantern reveal is the piece I spent the most time on. Moving your cursor around the dark sky lights up an area around it, and stars that fall within that glow become visible and clickable. Stars outside the lantern's reach are completely dark or nearly so. There's a very faint ambient twinkle on undiscovered stars so you have something to aim for, but you genuinely have to explore. That mirrors the emotional journey in the book: the dark isn't empty, it's full of things worth finding, but you have to be willing to move into it.\n\nThere are eight constellations, all named after things from the story: The Turtle, The Brave Light, The Firefly, The Great Dark, Stardust, Dad's Hand, The Moon, and The Shadow. Each one has a quote from the book that appears when you complete it. Connecting the stars requires finding the right edges, wrong connections shake the screen, and right-click undoes the last line.\n\nEight constellations means the game has a natural arc without feeling endless. The names are specific enough to tie the game to the book without requiring the player to have read it first."
     },
@@ -2113,7 +2145,7 @@ const POSTS = [
         "emoji": "⚙️",
         "title": "The Godot 4 Guide 8 Modules, Free PDF, and What I Learned Writing It",
         "excerpt": "The Godot 4 beginner guide covers everything from installation to exporting your finished game across 8 modules and a bonus particle effects chapter. Writing...",
-        "image": "Godot_Teaser.png",
+        "image": "/assets/devlog/17-workshops-godot-tutorial.webp",
         "url": "../workshops/godot_tutorial.html",
         "content": "The Godot guide exists because I kept starting tutorials online and hitting walls not because the content was wrong, but because it assumed I already knew things I didn't.\n\nThe guide covers 8 modules: setting up your project, creating a player with CharacterBody2D, movement and jumping physics, building levels with TileMaps, enemy AI using RayCast2D, collectibles and HUD, finishing touches with sound and menus, and finally exporting your game to PC and HTML5. There's also a bonus chapter on particle effects for dust trails and landing impacts.\n\nEach module builds directly on the last. By the end you have a complete, exportable 2D platformer not a toy prototype but something you could actually share.\n\nThe node-and-scene architecture is Godot's most distinctive feature and the thing that trips beginners up most. I spent more time on that section than any other, because if you don't understand it, the rest of the engine doesn't make sense. GDScript is genuinely approachable for anyone who has done any Python the syntax is clean, readable, and event-driven in a way that becomes intuitive quickly.\n\nThe thing I didn't expect: writing the guide taught me Godot better than actually using it did. When you have to produce a complete sentence about how something works, the gaps in your understanding become immediately obvious. I found about a third of what I thought I knew about Godot while writing the sections about it.\n\nThe full guide is a free PDF download on the tutorial page."
     },
@@ -2124,7 +2156,7 @@ const POSTS = [
         "emoji": "🦊",
         "title": "Lumo's Firefly Shooter Building a Bubble Shooter from a Book Character",
         "excerpt": "A hex-grid bubble shooter where you play as Lumo, shooting coloured fireflies to clear the board completely. The hardest part wasn't the grid maths it was ge...",
-        "image": "Lumo_cover.png",
+        "image": "/assets/devlog/15-books-lumo-and-the-grumble-grit.webp",
         "url": "../books/lumo_and_the_grumble_grit.html",
         "content": "Lumo's Firefly Shooter started as a simple idea: take the Bust-A-Move bubble shooter format and build it around Lumo. A hex grid of coloured fireflies at the top, Lumo standing at the bottom holding his aim arrow, shoot to match three or more.\n\nThe grid maths for a hexagonal arrangement is more involved than a square grid. Cells in odd rows are offset by half a cell width, and neighbours depend on row parity. The flood-fill for matching groups has to handle rainbow bubbles that match everything, and floating disconnected clusters that drop when their support is removed.\n\nThe core design problem was making the game feel winnable. The original version cleared when four or fewer bubbles remained. Changing it to zero board must be completely empty immediately made the game feel more purposeful. But it also made it possible to get stuck with unmatchable colours. The solution was to bias the bubble queue heavily toward colours currently on the board: the next bubble is weighted four-to-one toward whatever's still up there, so you almost always have something useful.\n\nFive special bubble types ended up in the game: Rainbow (matches any colour), Bomb (clears an area with screen shake), Star (grants a power-up), Freeze (stops penalty rows for several shots), and Scatter (plants three random bubbles at the landing site). The power-ups Multi-shot, Bomb, Slow-mo, Ghost, and Freeze stack on top of those.\n\nLumo himself is drawn in canvas from an embedded image with the background removed. He bobs gently and throws a brief excitement animation whenever a match lands. The sound engine uses the Web Audio API exclusively with harmonic chord pops that grow richer with larger matches."
     },
@@ -2201,7 +2233,7 @@ const POSTS = [
         "emoji": "🐢",
         "title": "Writing Pip & The Great Dark, A Book About Fear That Isn't Scary",
         "excerpt": "Pip is a turtle who's brave in the daytime and terrified at night. Writing a book about fear for young children turned out to be one of the harder creative p...",
-        "image": "PIP_Cover.png",
+        "image": "/assets/devlog/4-books-pip-and-the-night-sky.webp",
         "url": "../books/Pip_and_the_night_sky.html",
         "content": "Pip came from a real observation: children who are completely fearless in daylight can become genuinely distressed at bedtime, and the standard adult response \"there's nothing to be scared of\" doesn't help and arguably makes things worse. It dismisses the feeling rather than validating it.\n\nSo the first decision in writing Pip was to let the fear be real. Pip is brave. He's described as brave in the very first line. But that bravery doesn't extend to the dark, and the book doesn't treat that as a contradiction or a failing. \"The dark feels large,\" he says, which I still think is one of the most accurate descriptions of childhood night fear I've come across. It's not about monsters. It's about the feeling that familiar space has become vast and unpredictable.\n\nThe structure is simple: Pip's father introduces the Brave Light a small lantern and together they go outside into the dark. What they find there isn't scary. It's beautiful. The Great Dark is hiding stars, and fireflies, and the sound of the world breathing at night. The fear doesn't disappear, exactly, but it gets context. The dark isn't a threat; it's just a different kind of space.\n\nWriting in rhyme for picture books is a technical skill I had to work at. The metre has to be consistent enough that a parent reading aloud finds a natural rhythm, but not so sing-songy that it feels cheap. The rhymes should feel inevitable rather than forced when you land on the right word, you feel it, and when you're reaching for one that almost works, you feel that too. I rewrote several spreads multiple times to get the cadence right.\n\nThe Brave Light prop in the story is deliberate. Young children often respond well to physical objects that give them a sense of agency over their fear a torch, a nightlight, a special toy. The book doesn't prescribe any of those specifically; it uses the lantern as a symbol that parents can adapt to whatever works for their child.\n\nPip ended up being the project that most clearly defined what I want the books to do: start from something emotionally true, treat the child's experience with respect, and end somewhere genuinely hopeful rather than dismissively reassuring."
     },
@@ -2223,7 +2255,7 @@ const POSTS = [
         "emoji": "🦊",
         "title": "Lumo and the Grumble Grit Writing About Anxiety Without the Word Anxiety",
         "excerpt": "Lumo is a young fox who wakes up with a heavy, grey, prickly feeling he can't explain. The Grumble Grit. Writing this book was about finding a way to name so...",
-        "image": "Lumo_Front_Cover_Concept_V001.png",
+        "image": "/assets/devlog/2-books-lumo-and-the-grumble-grit.webp",
         "url": "../books/lumo_and_the_grumble_grit.html",
         "content": "Lumo came from a very specific problem: children often experience anxiety, low mood, or just the particular heaviness of a bad day without having language for it. They can't say \"I'm feeling anxious today\" because they don't know that word yet, and even if they did, it might not be accurate. What they can say is: \"I feel like there's something heavy and grey and prickly on me.\" And adults often don't know what to do with that.\n\nThe Grumble Grit is that feeling given a name and a shape. It's not a monster it's not something that attacks Lumo or chases him. It just sits on him. Heavy and uncomfortable and impossible to shake with willpower alone. I was deliberate about not making it something to be defeated because that's not how that feeling works, and children know it. You can't defeat a bad mood by trying harder.\n\nThe resolution isn't that the Grumble Grit goes away. It's that Lumo finds small things that make it lighter. Watching fireflies. Painting. Noticing a snail wobble along a leaf. The courage the book talks about is quiet, patient courage \"not loud, not fast, solid as brick.\" Standing at your own steady pace. That's the line I'm most attached to in the whole book.\n\nI wanted the language to feel slightly otherworldly Zingle-Zangs and Ouchy-Oofs appear alongside the Grumble Grit because giving unfamiliar names to familiar feelings creates a useful distance. It makes the feeling discussable. After reading the book, a child can say \"I've got a Grumble Grit today\" and a parent immediately knows what that means and what kind of response is likely to help.\n\n24 pages is a constraint I gave myself based on typical picture book length and what I think the story needs. Lumo is short enough to read at one sitting without dragging, and long enough that the emotional arc has room to breathe. The illustration brief for the cover concepts I've been working through prioritises purple and silver Lumo's colours and a sense of soft light emerging through the grit, which is the visual metaphor I keep coming back to."
     },
@@ -2245,7 +2277,7 @@ const POSTS = [
         "emoji": "🔧",
         "title": "Elara & The Wire-Web Key Why I Wrote a Cybersafety Book",
         "excerpt": "Elara's tablet opens a portal to the Wire-Web, a vivid digital world where shadowy Snatchers collect secrets and passwords are literal keys. The goal was to ...",
-        "image": "Elara.webp",
+        "image": "/assets/devlog/11-books-elara.webp",
         "url": "../books/Elara.html",
         "content": "The problem with most cybersafety content for children is that it's built around fear. Don't do this. Watch out for that. Strangers are dangerous. Which is all true, but it's also paralyzing it makes the internet sound like a minefield that should ideally be avoided, rather than a genuinely interesting place that has specific hazards you can learn to navigate.\n\nI wanted to write the opposite of that. A book where the online world is vivid and exciting and worth being in, and where the skills you need to stay safe strong passwords, careful sharing, trusting your instincts are presented as tools for adventure rather than shields against danger.\n\nThe Wire-Web as a setting grew out of thinking about how to visualise the internet for a child who's never had to think about infrastructure. It's tangled, it's vast, it's full of pathways that connect unexpected things, and things in it have both a surface appearance and a hidden truth. The Snatcher the villain doesn't attack Elara. It collects information quietly, which is actually more accurate to how online harm tends to work.\n\nThe password mechanic is the one I'm happiest with narratively. In the Wire-Web, passwords are literal keys. Having a weak one means the doors in the Wire-Web are flimsy and easy to push through. Having a strong one long, unusual, made of words that mean something only to you means your doors are heavy and hard to breach. That's not a metaphor for effect; it's structurally accurate. Children who understand that explanation tend to remember it.\n\nThe book is coming soon to Amazon and Etsy. The page is live with a full story description, character detail, and a sample spread. I'm excited about this one. The subject matter feels genuinely important and the adventure framing feels right."
     },
@@ -2256,7 +2288,7 @@ const POSTS = [
         "emoji": "⚙️",
         "title": "Writing a Godot 4 Beginner's Guide And What I Actually Learned",
         "excerpt": "I wrote a beginner's guide to Godot 4 while learning it myself. That turns out to be a surprisingly good way to learn something writing it down forces you to...",
-        "image": "Godot_Teaser.png",
+        "image": "/assets/devlog/12-workshops-godot-tutorial.webp",
         "url": "../workshops/godot_tutorial.html",
         "content": "The Godot guide exists because I kept starting tutorials online and hitting walls not because the content was wrong, but because it assumed I already knew things I didn't. What's a node? What's a scene? What does \"export a variable\" actually mean in practice? The beginner tutorials often skip the conceptual scaffolding and go straight to code examples, which works if you've used another engine before but not if you haven't.\n\nSo I wrote the guide I wanted to find. It starts from genuinely zero: what is Godot, why is it interesting, how do you install it, and crucially what is the mental model you need before any of the specific features make sense. The node-and-scene architecture is Godot's most distinctive characteristic and the thing that trips beginners up most. I spent more time on that section than any other.\n\nThere's a specific kind of understanding that comes from writing something down rather than just reading about it. When you read, your brain can pattern-match and feel like it understands without actually stress-testing the understanding. When you write, you have to produce a complete sentence about the thing, and if there's a gap in your mental model, the sentence breaks. I found maybe a third of what I thought I understood about Godot while writing the sections about it.\n\nGDScript is genuinely approachable for people who've done any Python. The syntax is clean and readable. The main adjustment is that code in Godot lives inside nodes and fires in response to signals it's event-driven in a specific way that takes a bit of getting used to if you're coming from a more linear scripting background.\n\nThe guide covers installation, the interface, creating your first scene, adding a character, basic movement, and signals. It's a starting point, not a complete reference. The complete reference is the official documentation, which is excellent. The guide's job is to get you to a place where the official documentation makes sense."
     },

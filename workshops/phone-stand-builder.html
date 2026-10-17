@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-piWFXH7Us8rTdxgwO2eRK4xfW9Bzv7Fvz+z964V8zBg=' 'sha256-Vc6Boe+eiqgGWaHqu6VcRciI+qLzzElZhv0Ynqw8NKM=' 'sha256-W4Wr79T9/bc1iy25NDbDP8uELt1KwfYXCqQq+HQs2sI=' 'sha256-TNn+pnMxmUl2Gv3KhNb2kspCvE22tZ5JtpFasMj/XGY=' 'sha256-kVMOSUdmlvCj3f9C84zW7DHDySp5jn/nFjaLzYEZLE0=' 'sha256-Gy+TUsMQpbtFcTX4ya78zGw6rAISV3YBOefGPgv1oDc=' 'sha256-Vw0q7jWHZSvYNJ6795b9YMoFDJu4QtIihtKiJ+6+QUg=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-piWFXH7Us8rTdxgwO2eRK4xfW9Bzv7Fvz+z964V8zBg=' 'sha256-Vc6Boe+eiqgGWaHqu6VcRciI+qLzzElZhv0Ynqw8NKM=' 'sha256-W4Wr79T9/bc1iy25NDbDP8uELt1KwfYXCqQq+HQs2sI=' 'sha256-TNn+pnMxmUl2Gv3KhNb2kspCvE22tZ5JtpFasMj/XGY=' 'sha256-UaSJ8t7V3rSRMNFKQmsLbWuWI5PaBIiFXgUVV9FCC54=' 'sha256-Vw0q7jWHZSvYNJ6795b9YMoFDJu4QtIihtKiJ+6+QUg=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#22c55e">
@@ -38,8 +38,7 @@
 <link rel="preconnect" href="https://www.googletagmanager.com">
 <link rel="preconnect" href="https://www.google-analytics.com">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
-<script src="../assets/vendor/three/three.min.js"></script>
-<script src="../assets/vendor/three/GLTFExporter.js"></script>
+<script src="../assets/vendor/three-0.160.0/build/three.global.js"></script>
 <script src="jv-exporter.js"></script>
 <script src="builder-gestures.js"></script>
 <script src="builder-templates.js"></script>
@@ -147,7 +146,7 @@
 <!-- BUILD:nav-content -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div id="jvds-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-<script src="/nav.js?v=19" defer></script>
+<script src="/nav.js?v=20" defer></script>
 <header class="site-header" id="siteHeader">
 <div class="header-inner">
  <a href="/" class="logo-link">
@@ -402,52 +401,6 @@ function importStarterDesign(){
 <div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)"><div id="modalContent" style="background:var(--bg2);border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:22px;width:380px;max-width:90vw"></div></div>
 
 <script>
-/* STLExporter - minimal inline version for Three.js r128 */
-THREE.STLExporter = function() {};
-THREE.STLExporter.prototype.parse = function(scene) {
-  var triangles = 0;
-  var geometry, mesh, normalMatrixWorld = new THREE.Matrix3();
-  var output = '';
-  scene.traverse(function(object) {
-    if (!object.isMesh) return;
-    geometry = object.geometry;
-    if (!geometry.isBufferGeometry) return;
-    var index = geometry.index;
-    var positionAttribute = geometry.getAttribute('position');
-    if (!positionAttribute) return;
-    var normalAttribute = geometry.getAttribute('normal');
-    triangles += (index !== null) ? (index.count / 3) : (positionAttribute.count / 3);
-    var matrixWorld = object.matrixWorld;
-    normalMatrixWorld.getNormalMatrix(matrixWorld);
-    var va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
-    var vna = new THREE.Vector3(), vnb = new THREE.Vector3(), vnc = new THREE.Vector3();
-    for (var i = 0; i < index.count; i += 3) {
-      var a = index.getX(i), b = index.getX(i+1), c = index.getX(i+2);
-      va.fromBufferAttribute(positionAttribute, a).applyMatrix4(matrixWorld);
-      vb.fromBufferAttribute(positionAttribute, b).applyMatrix4(matrixWorld);
-      vc.fromBufferAttribute(positionAttribute, c).applyMatrix4(matrixWorld);
-      if (normalAttribute) {
-        vna.fromBufferAttribute(normalAttribute, a).applyMatrix3(normalMatrixWorld).normalize();
-        vnb.fromBufferAttribute(normalAttribute, b).applyMatrix3(normalMatrixWorld).normalize();
-        vnc.fromBufferAttribute(normalAttribute, c).applyMatrix3(normalMatrixWorld).normalize();
-      }
-      var edge1 = new THREE.Vector3().subVectors(vb, va);
-      var edge2 = new THREE.Vector3().subVectors(vc, va);
-      var n = new THREE.Vector3().copy(edge1).cross(edge2).normalize();
-      output += 'facet normal '+n.x+' '+n.y+' '+n.z+'\n';
-      output += ' outer loop\n';
-      output += '  vertex '+va.x+' '+va.y+' '+va.z+'\n';
-      output += '  vertex '+vb.x+' '+vb.y+' '+vb.z+'\n';
-      output += '  vertex '+vc.x+' '+vc.y+' '+vc.z+'\n';
-      output += ' endloop\n';
-      output += 'endfacet\n';
-    }
-  });
-  return 'solid model\n' + output + 'endsolid model\n';
-};
-</script>
-
-<script>
 'use strict';
 
 /* -------------------------------
@@ -455,6 +408,7 @@ THREE.STLExporter.prototype.parse = function(scene) {
 ------------------------------- */
 const canvas = document.getElementById('standCanvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setClearColor(0xf8f9fa);
@@ -1064,107 +1018,9 @@ function updateProfileCard() {
   </div>`;
 }
 
-/* -------------------------------
-   EXPORT STL
-------------------------------- */
-function exportSTL() {
-  var group = standGroup || new THREE.Group();
-  if (!group.children.length) { toast('Build something first!'); return; }
-  var exporter = new THREE.STLExporter();
-  var result = exporter.parse(group);
-  var blob = new Blob([result], { type: 'text/plain' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = (P.standName || 'phone-stand').toLowerCase().replace(/\s+/g, '-') + '.stl';
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast('STL exported! Ready for 3D printing.');
-}
 
-/* -------------------------------
-   EXPORT OBJ
-------------------------------- */
-function exportOBJ() {
-  if (!standGroup || !standGroup.children.length) { toast('Build something first!'); return; }
-  standGroup.updateMatrixWorld(true);
-  const name = (P.standName || 'phone-stand').toLowerCase().replace(/\s+/g, '-');
-  let obj = '# ' + P.standName + ', JV Phone Stand Builder\n# jvdesignstudio.co.uk\nmtllib ' + name + '.mtl\n';
-  let mtl = '# Materials for ' + P.standName + '\n';
-  const matMap = {};
-  let matIdx = 0, vOff = 1, meshIdx = 0;
 
-  standGroup.traverse(function(node) {
-    if (!node.isMesh) return;
-    const col = node.material.color ? node.material.color : new THREE.Color(0x888888);
-    const hex = col.getHexString();
-    if (!matMap[hex]) {
-      const mName = 'm' + (matIdx++);
-      matMap[hex] = mName;
-      mtl += '\nnewmtl ' + mName + '\n';
-      mtl += 'Kd ' + col.r.toFixed(4) + ' ' + col.g.toFixed(4) + ' ' + col.b.toFixed(4) + '\n';
-      mtl += 'Ka 0.05 0.05 0.05\nKs 0.2 0.2 0.2\nNs 25\n';
-    }
-    const g = node.geometry.clone();
-    g.applyMatrix4(node.matrixWorld);
-    if (!g.attributes.normal) g.computeVertexNormals();
-    const pos = g.attributes.position;
-    const nor = g.attributes.normal;
-    const idx = g.index;
-    const n = pos.count;
-    obj += '\ng mesh' + (meshIdx++) + '\nusemtl ' + matMap[hex] + '\n';
-    for (let i = 0; i < n; i++) {
-      obj += 'v ' + pos.getX(i).toFixed(5) + ' ' + pos.getY(i).toFixed(5) + ' ' + pos.getZ(i).toFixed(5) + '\n';
-    }
-    for (let i = 0; i < n; i++) {
-      obj += 'vn ' + nor.getX(i).toFixed(5) + ' ' + nor.getY(i).toFixed(5) + ' ' + nor.getZ(i).toFixed(5) + '\n';
-    }
-    if (idx) {
-      for (let i = 0; i < idx.count; i += 3) {
-        const a = idx.getX(i) + vOff, b = idx.getX(i+1) + vOff, c = idx.getX(i+2) + vOff;
-        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
-      }
-    } else {
-      for (let i = 0; i < n; i += 3) {
-        const a = i + vOff, b = i+1 + vOff, c = i+2 + vOff;
-        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
-      }
-    }
-    vOff += n;
-  });
 
-  const objBlob = new Blob([obj], { type: 'text/plain' });
-  const objUrl = URL.createObjectURL(objBlob);
-  const la = document.createElement('a');
-  la.href = objUrl; la.download = name + '.obj'; la.click();
-  URL.revokeObjectURL(objUrl);
-  setTimeout(function() {
-    const mtlBlob = new Blob([mtl], { type: 'text/plain' });
-    const mtlUrl = URL.createObjectURL(mtlBlob);
-    const lb = document.createElement('a');
-    lb.href = mtlUrl; lb.download = name + '.mtl'; lb.click();
-    URL.revokeObjectURL(mtlUrl);
-  }, 300);
-  toast('OBJ exported!');
-}
-
-/* -------------------------------
-   EXPORT GLB
-------------------------------- */
-function exportGLB() {
-  var group = standGroup || new THREE.Group();
-  if (!group || !group.children.length) { toast('Build something first!'); return; }
-  if (typeof THREE.GLTFExporter === 'undefined') { toast('GLTF exporter still loading...'); return; }
-  var exporter = new THREE.GLTFExporter();
-  exporter.parse(group, function(result) {
-    var blob = new Blob([result], { type: 'application/octet-stream' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = (P.standName || 'phone-stand').toLowerCase().replace(/\s+/g, '-') + '.glb';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    toast('GLB exported!');
-  }, { binary: true });
-}
 
 /* -------------------------------
    EXPORT PNG
@@ -1526,7 +1382,7 @@ const STEPS = [
   boxes: [
     { t:'box-r', tx:'STL is the standard format for 3D printing. Open the exported .stl file in your slicer (Cura, PrusaSlicer, Bambu Studio), set your print settings, and hit print!' },
     { t:'box-c', tx:'Recommended PLA print settings: 0.2mm layer height, 20% infill, 3 walls, no supports needed for most designs. Print time: roughly 30-60 minutes depending on size.' },
-    { t:'box-t', tx:'Use the STL button in the header for the green export button. OBJ and GLB are also available for 3D viewers and games.' },
+    { t:'box-t', tx:'Use the Export button in the header to download your stand as STL for printing, or OBJ and GLB for 3D viewers and games.' },
   ],
   tasks: ['Export your stand as STL'],
   html() {
@@ -1539,7 +1395,7 @@ const STEPS = [
       </div>
     </div>`;
   },
-  onApply() { exportSTL(); }
+  onApply() { if (window.jvExport) window.jvExport('stl'); }
 },
 
 ];
@@ -1872,6 +1728,7 @@ if (window.BuilderTemplates) {
     onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
   });
 }
+window._builderSetState = window._builderSetState || window._builderApplyState;
 if (window.JVExporter) {
   JVExporter.installUI({
     tool: 'Phone Stand Builder',

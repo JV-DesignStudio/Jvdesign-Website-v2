@@ -14,6 +14,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
+const { pageSource } = require('./page-source.cjs');
 
 const ROOT = path.join(__dirname, '..');
 const PORT = Number(process.env.DD_PORT || 8153);
@@ -91,7 +92,7 @@ const ENTER = (id) => { document.querySelectorAll('#map button')[id].click(); };
       await page.close();
     }
 
-    const html = fs.readFileSync(path.join(ROOT, 'games', 'dungeon-delve.html'), 'utf8');
+    const html = pageSource('games/dungeon-delve.html');
     ok('no random dungeon pool left in the page', !/pool\[\(i\+Math\.floor\(Math\.random\(\)\*pool\.length\)\)/.test(html));
     ok('the fixed delve has one key, one exit, no merchant', /fixed=\['start','monster','key','trap','shrine','treasure','exit'\]/.test(html));
   } finally {

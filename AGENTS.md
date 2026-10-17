@@ -112,7 +112,7 @@ If `--check` reports `DRIFT`, run `--sync` after fixing `tasks.json`. If `--clai
 ## 5) Repo Conventions
 
 - Static site, no build needed to view. Stack: `build.js` (partials `partials/nav-content.html` + `footer-content.html` via `<!-- BUILD:name -->`), `generate-sitemap.js`, `validate-*.js`, `board-data.json` (`package.json:6`).
-- After editing `partials/`: `node build.js`
+- After editing `partials/`: rebuild (`npm run build`, or legacy `node build.js`), then run `node scripts/csp-hashes.js --apply` to recompute the inline-script `script-src` hashes. The partials build injects the shared `head-icons` partial with a hashless CSP, so skipping this step blocks inline scripts on any page that still has one (it broke `tests/nav-gallery.js`).
 - Node 24 (` .nvmrc`), `npm ci`, `npm run validate:public` prevents private artifacts leaking into public site (`README.md:26`).
 - `pages/*.html` + `tools/*.html` + `games/*.html` + `workshops/*.html` are sitemap/search sources , adding a page means rebuilding sitemap + board data.
 - Never hand-edit `tools/quest-board.html` or `quest-board-deploy/` , edit `tools/project-tracker.html` then `node make-public.js && node make-app-bundle.js` (`README.md:68`).
