@@ -75,6 +75,16 @@ const SNAP=()=>{
       await new Promise(r=>setTimeout(r,1500));
       const after=await page.evaluate(SNAP);
       ok('website: Start loads the game', after.iframeSrc==='arcane_citadel.html' && after.playing, JSON.stringify(after));
+      const prog=await page.evaluate(()=>{try{return JSON.parse(localStorage.getItem('jvds_game_arcane-citadel_page')||'null');}catch(e){return null;}});
+      ok('website: Start records save/progress (lastPlayed)', !!prog && typeof prog.lastPlayed==='number' && prog.plays>=1, JSON.stringify(prog));
+      await page.reload({waitUntil:'load',timeout:30000});
+      await page.waitForSelector('#citadelStart',{timeout:10000});
+      await new Promise(r=>setTimeout(r,400));
+      const resume=await page.evaluate(()=>({
+        label:(document.getElementById('citadelStart')||{}).textContent||'',
+        hint:(document.getElementById('citadelResume')||{}).textContent||''
+      }));
+      ok('website: reload shows Continue + last-played hint', /Continue/.test(resume.label) && /last played/.test(resume.hint), JSON.stringify(resume));
       ok('website: no page errors', errs.length===0, errs.slice(0,2).join(' | '));
       await page.close();
     }

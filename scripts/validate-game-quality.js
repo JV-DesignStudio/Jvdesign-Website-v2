@@ -41,9 +41,28 @@ const polishSignals = {
   'games/arcane_citadel_page.html': [/quality-panel/, /hero-badges/, /boss-card/]
 };
 
+// Inline scripts were externalised to assets/js/inline/* (A1485/A1510), so the
+// page's own code now lives in linked files. Fold those in, otherwise a page
+// with a real save/progress hook can never satisfy the grep above. Only the
+// page-scoped inline scripts count, not shared libs like game-system.js.
+function linkedInlineScripts(absHtmlPath, html) {
+  let text = '';
+  const re = /<script[^>]*\ssrc=["']([^"']*assets\/js\/inline\/[^"']+)["']/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    const rel = m[1].split(/[?#]/)[0];
+    const abs = path.resolve(path.dirname(absHtmlPath), rel);
+    if (!abs.startsWith(ROOT) || !fs.existsSync(abs)) continue;
+    try { text += '\n' + fs.readFileSync(abs, 'utf8'); } catch {}
+  }
+  return text;
+}
+
 let failed = false;
 for (const file of studioPicks) {
-  const html = fs.readFileSync(path.join(ROOT, file), 'utf8');
+  const absHtmlPath = path.join(ROOT, file);
+  const html = fs.readFileSync(absHtmlPath, 'utf8');
+  const code = html + linkedInlineScripts(absHtmlPath, html);
   const checks = [
     ['quality panel', /quality-panel|gd-quality-panel/],
     ['goal label', /<b>Goal<\/b>/],
@@ -54,7 +73,7 @@ for (const file of studioPicks) {
     ['save/progress hook', /addScore|recordGamePlay|saveState|localStorage/]
   ];
   for (const [name, pattern] of checks) {
-    if (!pattern.test(html)) {
+    if (!pattern.test(code)) {
       console.error(`[FAIL] ${file}: missing ${name}`);
       failed = true;
     }
