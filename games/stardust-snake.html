@@ -66,6 +66,18 @@ canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box
 .dpad button{background:rgba(232,168,0,.16);border:2px solid rgba(232,168,0,.45);color:#f6dfa0;width:56px;height:50px;border-radius:12px;font-size:20px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
 .dpad button:active{background:rgba(232,168,0,.4)}
 .dpad .empty{visibility:hidden}
+.opts{display:flex;flex-direction:column;gap:9px;width:100%;max-width:340px}
+.opt-group{display:flex;flex-direction:column;gap:6px;align-items:center}
+.opt-label{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#9d8ec9;font-weight:800}
+.pills{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.pill{background:rgba(167,139,250,.14);border:1.5px solid rgba(200,182,255,.3);color:#d9cfff;border-radius:999px;padding:6px 14px;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
+.pill.active{background:linear-gradient(135deg,#c98a2e,#E8A800);border-color:#E8A800;color:#1a1208}
+.pill.locked{opacity:.5;cursor:not-allowed}
+.opt-check{display:flex;align-items:center;gap:8px;justify-content:center;font-size:.82rem;color:#c8b6ff;cursor:pointer}
+.opt-check input{width:16px;height:16px;accent-color:#E8A800}
+#startScreen{overflow-y:auto}
+.combo{position:absolute;top:104px;left:50%;transform:translate(-50%,-8px);background:linear-gradient(135deg,#E8A800,#ff9d2e);color:#1a1208;font-weight:900;font-size:.82rem;padding:5px 14px;border-radius:999px;z-index:14;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;box-shadow:0 6px 18px rgba(232,168,0,.4)}
+.combo.show{opacity:1;transform:translate(-50%,0)}
 .toast{position:absolute;top:52px;left:50%;transform:translate(-50%,-8px);background:rgba(232,168,0,.94);color:#1a1208;padding:8px 18px;border-radius:999px;font-weight:800;font-size:.9rem;z-index:15;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;max-width:88%;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .coach{position:absolute;top:10px;left:12px;right:12px;display:flex;gap:8px;align-items:center;background:rgba(167,139,250,.14);border:1px solid rgba(167,139,250,.3);border-radius:12px;padding:7px 12px;font-size:.8rem;color:#e6dcff;z-index:11;pointer-events:none}
@@ -79,6 +91,7 @@ canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box
     <a href="../arcade.html">&larr; Arcade</a>
     <span class="title"><span aria-hidden="true">✨</span> Stardust Snake</span>
     <span class="tools">
+      <button id="sound" type="button" aria-label="Mute or unmute sound" aria-pressed="false">🔊</button>
       <button id="pause" type="button">Pause</button>
       <button id="restart" type="button">Restart</button>
     </span>
@@ -97,6 +110,8 @@ canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box
     <canvas id="game" aria-label="Stardust Snake play field"></canvas>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <div class="combo" id="combo" aria-hidden="true"></div>
+
     <div class="coach" id="coach"><b>Stardust:</b> steer your trail into the fallen stars and the night sky brightens.</div>
 
     <div class="dpad" id="dpad">
@@ -114,7 +129,22 @@ canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box
     <div class="overlay" id="startScreen">
       <h1>✨ Stardust Snake</h1>
       <p>A trail of stardust drifts through the empty sky. Collect the fallen stars to grow your constellation, but never drift into the edge or your own light.</p>
-      <p style="font-size:.82rem;color:#9d8ec9">Arrow keys or W A S D to steer. On a phone, swipe or use the arrows.</p>
+      <div class="opts">
+        <div class="opt-group">
+          <span class="opt-label">Speed</span>
+          <div class="pills" id="diffPills" role="group" aria-label="Starting speed">
+            <button type="button" class="pill" data-diff="chill">Chill</button>
+            <button type="button" class="pill" data-diff="normal">Normal</button>
+            <button type="button" class="pill" data-diff="turbo">Turbo</button>
+          </div>
+        </div>
+        <div class="opt-group">
+          <span class="opt-label">Trail</span>
+          <div class="pills" id="palettePills" role="group" aria-label="Trail colour"></div>
+        </div>
+        <label class="opt-check"><input type="checkbox" id="wrapToggle"> Wrap around the edges</label>
+      </div>
+      <p class="hint" style="font-size:.82rem;color:#9d8ec9">Arrow keys or W A S D to steer. On a phone, swipe or use the arrows. Golden stars are worth more, dark sparks shrink your trail.</p>
       <button class="btn" id="playBtn" data-jvds-play>Play</button>
       <button class="btn-ghost" data-go="../arcade.html">Back to Arcade</button>
     </div>
