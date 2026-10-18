@@ -19,6 +19,12 @@ function resolveFile(urlPath) {
   const direct = urlPath.replace(/^\//, '');
   const abs = path.join(SITE, direct);
   if (fs.existsSync(abs) && fs.statSync(abs).isFile()) return direct;
+  // /learn/ and /learn/<slug> are served from learn/index.html and learn/<slug>.html
+  if (urlPath === '/learn' || urlPath === '/learn/') return 'learn/index.html';
+  if (urlPath.startsWith('/learn/')) {
+    const cand = 'learn/' + urlPath.slice('/learn/'.length).replace(/\.html$/, '') + '.html';
+    if (fs.existsSync(path.join(SITE, cand))) return cand;
+  }
   for (const cand of ['pages' + (urlPath.endsWith('.html') ? urlPath : urlPath + '.html')]) {
     if (fs.existsSync(path.join(SITE, cand))) return cand;
   }

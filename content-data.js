@@ -1034,7 +1034,7 @@ window.JVDS_CONTENT = {
       "tags": [],
       "steps": 6,
       "themeColor": "#ffd166",
-      "cover": "og/learn.webp",
+      "cover": "/og/hub-devtools.webp",
       "url": "/workshops/my-achievements.html"
     },
     {
@@ -5407,13 +5407,19 @@ window.JVDS_CONTENT = {
       "category": "General",
       "tags": [],
       "comingSoon": false,
-      "url": "/tools/colour-palette.html"
+      "url": "/tools/colour-palette.html",
+      "aliases": [
+        "colour palette",
+        "color palette",
+        "colour palettes",
+        "Colour Palettes"
+      ]
     },
     {
       "id": "cpp-cheatsheet",
       "title": "Free C++ SFML Game Dev Cheat Sheet",
       "desc": "Free printable C++ SFML game development cheat sheet with window, drawing, input, math, animation, collision, audio and common game patterns. No sign-up required.",
-      "category": "Make Audio",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/cpp-cheatsheet.html"
@@ -5422,7 +5428,7 @@ window.JVDS_CONTENT = {
       "id": "defold-cheatsheet",
       "title": "Free Defold Engine Lua Cheat Sheet",
       "desc": "Free printable Defold Engine Lua cheat sheet with component lifecycle, game objects, messages, physics, GUI and common patterns. No sign-up required.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/defold-cheatsheet.html"
@@ -5440,7 +5446,7 @@ window.JVDS_CONTENT = {
       "id": "gallery",
       "title": "Tool Showcase Gallery: Free Browser Tools for Young Creators",
       "desc": "Browse every free JVDesignStudio browser tool: art, audio, code, world building and more. No install, no account needed.",
-      "category": "Make Audio",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/gallery.html"
@@ -5449,7 +5455,7 @@ window.JVDS_CONTENT = {
       "id": "gamemaker-cheatsheet",
       "title": "Free GameMaker Language Cheat Sheet",
       "desc": "Free printable GameMaker Language (GML) cheat sheet with events, variables, functions, drawing, input, sound, data structures and common patterns. No sign-up required.",
-      "category": "Make Audio",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/gamemaker-cheatsheet.html"
@@ -5467,7 +5473,7 @@ window.JVDS_CONTENT = {
       "id": "gdevelop-cheatsheet",
       "title": "Free GDevelop Visual Events Cheat Sheet",
       "desc": "Free printable GDevelop visual events cheat sheet with conditions, actions, behaviors, variables, expressions and common game patterns. No sign-up required.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/gdevelop-cheatsheet.html"
@@ -5476,7 +5482,7 @@ window.JVDS_CONTENT = {
       "id": "glossary",
       "title": "Game Dev Glossary for Kids: Free Beginner Dictionary",
       "desc": "A plain-English glossary of game development words for young creators, from sprite to collision. Free, no sign-up.",
-      "category": "Make Art",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/glossary.html"
@@ -5485,7 +5491,7 @@ window.JVDS_CONTENT = {
       "id": "godot-cheatsheet",
       "title": "Free Godot 4 GDScript Cheat Sheet (Printable PDF)",
       "desc": "Free printable Godot 4 GDScript cheat sheet (PDF) for beginners. Node lifecycle, 2D/3D nodes, physics, signals, input and common game patterns. No sign-up required.",
-      "category": "General",
+      "category": "Reference",
       "tags": [
         "3D"
       ],
@@ -5505,7 +5511,7 @@ window.JVDS_CONTENT = {
       "id": "java-cheatsheet",
       "title": "Free Java 2D Game Dev Cheat Sheet",
       "desc": "Free printable Java 2D game development cheat sheet with JFrame, Graphics2D, input, collision, sound and common game patterns. No sign-up required.",
-      "category": "Make Audio",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/java-cheatsheet.html"
@@ -5514,7 +5520,7 @@ window.JVDS_CONTENT = {
       "id": "javascript-cheatsheet",
       "title": "Free HTML5 Canvas JavaScript Cheat Sheet (Printable PDF)",
       "desc": "Free printable HTML5 Canvas JavaScript cheat sheet (PDF) for beginners. Canvas setup, drawing, game loop, input, images, audio, collision and common patterns. No sign-up required.",
-      "category": "Make Audio",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/javascript-cheatsheet.html"
@@ -5523,7 +5529,7 @@ window.JVDS_CONTENT = {
       "id": "keyboard-shortcuts",
       "title": "Free Game Engine Keyboard Shortcuts Reference",
       "desc": "Free printable keyboard shortcuts reference for Godot 4, Unity, GDevelop, GameMaker, and Unreal Engine 5. No sign-up required.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/keyboard-shortcuts.html"
@@ -5547,7 +5553,7 @@ window.JVDS_CONTENT = {
       "id": "minecraft-cheatsheet",
       "title": "Free Minecraft Modding Cheat Sheet",
       "desc": "Free printable Minecraft Forge/Fabric modding cheat sheet with mod structure, registry, items, blocks, events, GUI, rendering, networking and data. No sign-up required.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/minecraft-cheatsheet.html"
@@ -5572,7 +5578,7 @@ window.JVDS_CONTENT = {
       "id": "parent-guide",
       "title": "Parent and Teacher Guide: Free Game Dev for Kids",
       "desc": "A free guide for parents and teachers: how to start young people making games on any school computer. No install, no account.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/parent-guide.html"
@@ -5590,7 +5596,7 @@ window.JVDS_CONTENT = {
       "id": "pico8-cheatsheet",
       "title": "Free PICO-8 Cheat Sheet: Lua Commands for Beginners",
       "desc": "A free printable PICO-8 cheat sheet covering Lua commands, sprites, sound and the most-used snippets. No sign-up needed.",
-      "category": "Make Art",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/pico8-cheatsheet.html"
@@ -5617,7 +5623,7 @@ window.JVDS_CONTENT = {
       "id": "python-cheatsheet",
       "title": "Free Python Pygame Cheat Sheet (Printable PDF)",
       "desc": "Free printable Python Pygame cheat sheet (PDF) for beginners. Game loop, input, drawing, images, sound, collision and common game patterns. No sign-up required.",
-      "category": "Make Audio",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/python-cheatsheet.html"
@@ -5639,7 +5645,7 @@ window.JVDS_CONTENT = {
       "id": "roblox-cheatsheet",
       "title": "Free Roblox Lua Cheat Sheet (Printable PDF)",
       "desc": "Free printable Roblox Lua cheat sheet (PDF) for beginners. Data types, instances, properties, events, remote events, services and common game patterns. No sign-up required.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/roblox-cheatsheet.html"
@@ -5648,7 +5654,7 @@ window.JVDS_CONTENT = {
       "id": "scratch-cheatsheet",
       "title": "Free Scratch Block Reference Cheat Sheet",
       "desc": "Free printable Scratch block reference cheat sheet with motion, looks, sound, events, control, sensing, operators and variables. No sign-up required.",
-      "category": "Make Audio",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/scratch-cheatsheet.html"
@@ -5657,7 +5663,7 @@ window.JVDS_CONTENT = {
       "id": "scratch-starter-guide",
       "title": "Free Scratch Starter Guide: Make Your First Game",
       "desc": "A free step-by-step Scratch starter guide. Set up Scratch and build your first game with colourful blocks. No experience needed.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/scratch-starter-guide.html"
@@ -5732,7 +5738,7 @@ window.JVDS_CONTENT = {
       "id": "unity-cheatsheet",
       "title": "Free Unity C# Cheat Sheet (Printable PDF)",
       "desc": "Free printable Unity C# cheat sheet (PDF) for beginners. MonoBehaviour lifecycle, input, physics, UI, coroutines and common game patterns. No sign-up required.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/unity-cheatsheet.html"
@@ -5741,7 +5747,7 @@ window.JVDS_CONTENT = {
       "id": "unity-starter-setup",
       "title": "Free Unity Starter Setup: Install and First Project",
       "desc": "A free guide to setting up Unity: install it, start a project and take your first steps. Clear and beginner-friendly.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/unity-starter-setup.html"
@@ -5750,7 +5756,7 @@ window.JVDS_CONTENT = {
       "id": "unreal-cheatsheet",
       "title": "Free Unreal Engine 5 Cheat Sheet",
       "desc": "Free printable Unreal Engine 5 Blueprints + C++ cheat sheet with classes, UPROPERTY, UFUNCTION, movement, input, collision and common patterns. No sign-up required.",
-      "category": "General",
+      "category": "Reference",
       "tags": [],
       "comingSoon": false,
       "url": "/tools/unreal-cheatsheet.html"
@@ -6279,7 +6285,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-17T10:11:59.286Z",
+    "generated": "2026-10-18T20:41:10.827Z",
     "workshops": 344,
     "games": 14,
     "tools": 49,
@@ -6309,11 +6315,12 @@ window.JVDS_CONTENT = {
     },
     "toolCategories": {
       "Build & Ship": 3,
-      "Make Art": 7,
-      "General": 14,
-      "Make Audio": 8,
+      "Make Art": 5,
+      "General": 3,
+      "Reference": 20,
       "Plan & Write": 4,
-      "Build Worlds": 13
+      "Build Worlds": 13,
+      "Make Audio": 1
     }
   }
 };

@@ -6,6 +6,768 @@
 
 const POSTS = [
     {
+        id: 518,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: '3D builders: step controls do nothing (CSP regression)',
+        excerpt: 'Root cause: fd8e7a67 rewrote inline onclick/oninput inside builder templates to data-action/data-action-input/data-param',
+        content: 'The CSP migration fd8e7a67 rewrote inline onclick/oninput handlers inside builder templates into data-action, data-action-input and data-param attributes, but no runtime ever handled them. In every 3D builder clicking an option or moving a slider changes nothing, so each step is cosmetic. Restore controls without inline script: add shared input/change delegation, make opts/swatchRow emit named actions, expose builder state for data-param, and fix data-arg=currentStep launch buttons. Evidence: Root cause: fd8e7a67 rewrote inline onclick/oninput inside builder templates to data-action/data-action-input/data-param, but no runtime handled them. Fixed: workshops/workshop-actions.js now delegates input/change and data-param (state, divisor, display, rebuild); workshops/3d-builder.html loads ui-delegate + workshop-actions; assets/js/builders/rocket.js exposes selectOpt/selectSwatch/applyStep/R and moves exposure inside the strict block; workshops/rocket-builder.html, robot-builder.html, castle-builder.html, space-station-builder.html, fairy-tale-builder.html, phone-stand-builder.html, race-car-builder.html, submarine-builder.html emit named selectOpt/selectSwatch, expose R/P and fix data-arg=currentStep Apply/launch buttons; python-game-builder.html exposes G. Added tests/3d-builder-controls.js. Results: tests/3d-builder-controls.js PASS (rocket, castle, robot, space-station, fairy-tale, phone-stand, race-car, submarine, pirate-ship, steampunk, shell); tests/workshop-actions.js PASS; tests/3d-builder-ux.js PASS; tests/3d-builder-mobile.js PASS; tests/3d-builder-shell.js PASS; validate-links.js PASS (41420 refs, 0 broken); npm run validate:workshops PASS; csp-hashes.js --apply updated 9 pages.'
+    },
+
+    {
+        id: 517,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Arcade Game Maker: level tilemap painter is dead on the live site (CSP + duplicate attrs)',
+        excerpt: 'Fixed the level tilemap painter in tools/arcade-game-maker.html (#tilemapCanvas in the Build tab). Removed the inline on',
+        content: 'The inline tilemap paint editor canvas (#tilemapCanvas, tools/arcade-game-maker.html ~L332) cannot be painted. Its mouse handlers are inline onmousedown/onmousemove/onmouseup/onmouseleave, which the live CSP blocks (script-src has hashes but no unsafe-inline/unsafe-hashes), so tmDown/tmMove never fire for a mouse. The touch fallback is also broken: the canvas carries three duplicated data-on + data-on-event attributes (touchstart/touchmove/touchend) so the browser keeps only the last (touchend -> tmUp), losing touchstart/touchmove. Net: painting a Platformer/Roguelike/Racing level does nothing on a school computer. Fix: drop the inline handlers and duplicate attributes, add touch-action:none, and wire the canvas with Pointer Events (pointerdown/move/up/cancel) via addEventListener inside the existing hash-allowed script. Evidence: Fixed the level tilemap painter in tools/arcade-game-maker.html (#tilemapCanvas in the Build tab). Removed the inline onmousedown/onmousemove/onmouseup/onmouseleave handlers (blocked by the live CSP: script-src lists hashes but no unsafe-inline/unsafe-hashes) and the three duplicated data-on + data-on-event attributes that left only touchend. Added touch-action:none and replaced the dead tmTouchStart/tmTouchMove with Pointer Events (pointerdown/pointermove/pointerup/pointercancel via addEventListener) wired in _tmInit, so one code path paints with mouse, touch and pen. Ran node scripts/csp-hashes.js --apply (1 page). New test tests/arcade-tilemap-paint.js: serves the page under its real CSP meta and drives a real pointer drag - PASS (7 cells painted, customLevelMap updated, canvas has no inline on* handlers, no duplicate attrs, touch-action:none, no page errors). Proved it catches the regression: against the pre-fix file the same test FAILS with 0 cells painted. Also PASS: tests/tools-qa.js (exit 0), tests/arcade-game-maker-smoke.js 17/17, tests/arcade-game-maker-mobile.js (touch controls), tests/nav-gallery.js (CSP hashes), validate-links.js 0 broken, npm run validate:public.'
+    },
+
+    {
+        id: 516,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Nova Siege: follow-up pass (perf, story beats, a11y, pacing, bomber)',
+        excerpt: 'games/nova-siege.html + assets/js/inline/games-nova-siege-1.js A1629 follow-up pass. Perf: nebula/planet/low-health-vign',
+        content: 'Follow-up to A1612/A1617 on games/nova-siege.html + assets/js/inline/games-nova-siege-1.js. (1) Perf: memoise the per-frame background gradients (nebulae, planets, low-health vignette) so low-end school devices stop allocating up to 7 radial gradients per frame. (2) Story beats: the shared story strip is hidden in fullscreen, so surface the current story beat in-canvas while immersive. (3) Accessibility: an aria-live status region for score/health/wave, a colourblind bullet-shape mode with a toggle button (auto-on for prefers-contrast/forced-colors), and live prefers-reduced-motion handling. (4) Pacing: a small per-wave credit bonus and a non-blocking stage intro card naming the next threat. (5) Content: a new Bomber enemy that drops drifting mines, and a boss second phase at half health. Evidence: games/nova-siege.html + assets/js/inline/games-nova-siege-1.js A1629 follow-up pass. Perf: nebula/planet/low-health-vignette gradients are built once and reused in local space (translated into place) instead of per frame; __nova.gradBuilds stays flat (7->7 over 1.3s). Story: the shared strip is hidden in fullscreen, so fired beats now surface in-canvas while immersive (onBeat -> run.beat/beatT). A11y: a role=status aria-live region announces score/health/wave (throttled to ~1s); a colourblind bullet-shape mode (enemy bullets become diamonds, player orbs outlined) with a Bullet shapes toggle that auto-defaults on under prefers-contrast/forced-colors; prefers-reduced-motion is read live via a matchMedia change listener. Pacing: clearing a wave pays a bonus (15+wave*5) and bosses show a non-blocking stage intro naming the next threat. Content: a new Bomber enemy (stage 6+) drifts down and drops drifting mines; bosses enter a second phase at 50% HP (faster, angrier). Results: node tests/nova-siege-http.js PASS 75/75 at 390/1440 (new perf/a11y/story/pacing/content checks); node tests/games-qa.js PASS 55 pages static; node validate-links.js PASS 42207 refs 0 broken; node scripts/check-dashes-ci.js PASS.'
+    },
+
+    {
+        id: 515,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Nova Siege: learnability, depth, payoff and polish pass',
+        excerpt: 'games/nova-siege.html + assets/js/inline/games-nova-siege-1.js A1617 pass. Onboarding: a wave-1 Pip banner with a three-',
+        content: 'Make Nova Siege better for a first-time player and a returning one. (1) Onboarding: a short non-blocking wave-1 Pip banner plus an enemy legend and one-time hints for health and power drops; a controls/legend card on the pause overlay. (2) Readability: a white hit-flash when an enemy or boss takes damage, a pulsing low-health red vignette, and enemy bullets drawn with a dark core so they read against the starfield without relying on red alone. (3) Depth: upgrade evolutions (synergies such as Extra Cannons + Rapid Fire -> spread, Pierce + Explosive -> nova, Wingman Drones -> swarm) that unlock once their parts are taken, a compact build readout in the HUD, and a richer run report on the game-over screen listing score, stage, hull, run level and upgrades taken. (4) Payoff: a canvas run card (score, wave, hull, date, best) saved to localStorage, shown with a download button on the game-over screen, plus best score and banked credits on the title screen. (5) Craft/access: combo-based kill pitch and a boss/stage sting using the shared AudioEffects, and honour prefers-reduced-motion by disabling screen shake and heavy particles. Evidence: games/nova-siege.html + assets/js/inline/games-nova-siege-1.js A1617 pass. Onboarding: a wave-1 Pip banner with a three-row legend (shoot/health/power) that fades out (run.tut, one-time via meta.tutDone) plus a controls card on the pause overlay. Readability: enemy and boss hits flash white (en.flash/boss.flash), a pulsing red low-health vignette at 1 HP, and enemy bullets are now ringed with a dark core so shape reads without relying on red alone. Depth: evolutions (Nova Spread, Nova Blast, Drone Swarm, Aegis Field) unlock from upgrade synergies via checkEvolutions and are real changes (spread +2 shots, nova bigger blasts, swarm faster drone fire, guard 2 shields); the canvas HUD shows a build readout (e.g. CAN3 RATE2 DRN2 EVO2) and the game-over screen is a structured run report. Payoff: a canvas run card with a Save Run Card download button, the run summary saved to localStorage (jvds-nova-last-run), and best score + credits + hulls on the title screen. Fixed a real score bug: GameSystem.saveState() overwrote the best score saveScore had just written, so best was always 0; the instance highScore is now updated so best persists. Dropped the duplicate StoryRun death modal and folded its result line into the report. Craft/access: combo-based kill pitch and a boss sting via AudioEffects; prefers-reduced-motion disables screen shake and reduces particles. Added \\'
+    },
+
+    {
+        id: 514,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Nova Siege: visual pass - bigger sprites + true fullscreen field',
+        excerpt: 'games/nova-siege.html + assets/js/inline/games-nova-siege-1.js visual pass. Bigger assets: sprite zoom 2->3 (ship 12x14',
+        content: 'Visual pass on games/nova-siege.html + assets/js/inline/games-nova-siege-1.js. Make the ship and enemy sprites bigger (sprite zoom 2 to 3) and scale the hit radii to match so assets read larger on a phone. Make the play field fill the screen (app-in-app fullscreen): choose the logical field height from the available stage aspect with the logical width fixed at 540 so the field fills the stage on phones and gets larger on desktop, hide the story strip during immersive play, and inset the in-canvas HUD so it clears the Exit control. Polish the space background (gradient nebulae, denser stars) and fix the washed-out NOVA SIEGE title. Evidence: games/nova-siege.html + assets/js/inline/games-nova-siege-1.js visual pass. Bigger assets: sprite zoom 2->3 (ship 12x14 -> 36x42, UFO 11x8 -> 33x24) with hit windows scaled to match (hitR 9/22 -> 14/33, splitter 14 -> 21, contact +3/+7/+9/+11 -> +4/+10/+13/+16, drop pickup 26 -> 36, blast 46 -> 60) so assets read bigger without changing the feel. Fullscreen app-in-app: nsFit now fixes the logical width at 540 and derives the logical height from the stage aspect (clamped 680..1400), so the field fills a phone (canvas 390x844, was 390x693) and grows on desktop (655x825 at 1440x900, was 451x801); VS = H/720 keeps the pace. Immersive CSS hides the story strip (.wrap>.storyrun) so the field owns the screen; the in-canvas HUD is inset 48 css px below the shell Exit control; the NOVA SIEGE title now uses a dark outline (was white-on-green and washed out). Background polish: denser twinkling stars (130/70/30), radial gradient nebulae, shaded planets; wide screens get a rounded glowing field frame. New tests/nova-siege-http.js checks: sprites zoom 3, logical width 540, field fills phone height, story strip hidden in immersive, HUD clears Exit. Result: node tests/nova-siege-http.js PASS 55/55 at 390/1440; node tests/games-qa.js PASS (static contract); node validate-links.js PASS 42200 refs 0 broken; node scripts/check-dashes-ci.js PASS (no em/en dashes).'
+    },
+
+    {
+        id: 513,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Fix the remaining CSP-blocked inline handlers across the tools',
+        excerpt: 'Fixed A1589. Removed the last inline on* handlers across the tools: 19 pages / 81 handlers converted to assets/js/ui-del',
+        content: 'The site removed script-src unsafe-inline, but around 20 tool pages still carry inline onclick/oninput handlers (scripts/report-inline.js), so those buttons are dead. tools/sound-studio.html is a known case: the track mute and volume controls use onclick and oninput. Convert every remaining inline handler to data-on/data-bind delegation and refresh the CSP hashes. Evidence: Fixed A1589. Removed the last inline on* handlers across the tools: 19 pages / 81 handlers converted to assets/js/ui-delegate.js delegation (data-on / data-on-event / data-on-args, plus data-fallback-* for image onerror). Small per-page helpers added where a handler had multiple statements; each edited page\'s script-src sha256 hashes refreshed. Files: tools/sound-studio.html (track mute -> data-on=toggleMute, volume -> data-on=setVol data-on-event=input), tools/story-editor.html, tools/gdd-builder.html, tools/trading-card-designer.html, tools/code-snippet-generator.html, tools/colour-palette.html, tools/story-player.html, tools/quest-board.html, tools/game-idea-generator.html, games/rustfall.html, pages/gallery.html, pages/quest-board.html, pages/devlog.html, pages/follow_along.html, workshops/cyber-security.html, scripts/report-inline.js. Proof: node scripts/report-inline.js -> pages w/ handlers: 0 (0 inline handlers; was 19 pages / 81). node tests/tools-qa.js -> PASS (70 pages scanned). tests/sound-studio-http.js PASS incl. new checks mute toggles via delegation at 390px/1440px and volume updates via delegation at 390px/1440px. Also PASS: tests/story-editor-http.js, tests/gdd-builder-http.js, tests/trading-card-designer-http.js, tests/code-snippet-generator-http.js, tests/colour-palette-http.js, tests/gallery-http.js, tests/rustfall-http.js, tests/cyber-security-http.js. node validate-links.js 0 broken; node scripts/validate-public-boundary.js PASS. The preload+onload style-shared swap from the scope comment is gone from the tree (0 remaining, now plain rel=stylesheet).'
+    },
+
+    {
+        id: 512,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Backup, restore and storage: stop losing the Arcade slots and Game Planner saves',
+        excerpt: 'Broadened the backup to every JVDS save family and made storage migration reversible. assets/js/inline/tools-backup-rest',
+        content: 'backup-restore.html only exports keys starting with jvds, so it silently misses jv_arcade_slot_* and qb-*, the most valuable saves. storage-migrate.html moves data to IndexedDB that nothing reads, orphaning it. Broaden the backup filter to jvds/jv/qb keys and either make the migration reversible or retire it. Evidence: Broadened the backup to every JVDS save family and made storage migration reversible. assets/js/inline/tools-backup-restore-2.js: new isBackupKey (jvds*, jv_*, qb-*) used by collectLS and the JSON import filter, so Arcade slots (jv_arcade_slot_*) and Game Planner (qb-*) are backed up and restored; wipe and empty-state copy updated. tools/backup-restore.html copy updated. tools/storage-migrate.html: isJVDSKey now includes jv_*, plus a new Restore to localStorage action (restoreFromIDB) that copies IndexedDB records back, so migrating is reversible. Test tests/backup-storage-roundtrip.js PASS (11/11): seeds jvds_pixel, jv_arcade_slot_0 and qb-cards; backup collects all three and ignores unrelated keys; JSON export contains all three; restore on a clean profile brings all three back; migrate recognises all three and Restore writes them back to localStorage; no overflow at 390 and 1440; zero runtime errors. npm run validate:links PASS (42195 refs, 0 broken); npm run validate:public PASS; tests/tools-qa.js PASS; tests/tools-responsive.js PASS (70 tools).'
+    },
+
+    {
+        id: 511,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Tools: one downloadable project bundle with Open in ... between Pixel Studio, Sprite Animator and the Game Maker',
+        excerpt: 'Added a shared project bundle so one project moves between Pixel Studio, Sprite Animator and the Game Maker. New jvds-pr',
+        content: 'Cross-tool handoffs rely on shared localStorage keys (jvds_sprite_player, jvds_pixel), so a project cannot move between tools or machines. Add a single downloadable project file and an Open in ... action so a sprite made in Pixel Studio opens in Sprite Animator and drops into the Game Maker, and a Game Maker save can reference the same bundle. Evidence: Added a shared project bundle so one project moves between Pixel Studio, Sprite Animator and the Game Maker. New jvds-project-bundle.js defines the envelope (app,tool,name,project,sprite,preview) plus download, open-file and an Open in... handoff (localStorage jvds_tool_bundle + jvds_tool_bundle_to, consumed on boot). tools/pixel-studio.html, tools/sprite-animator.html and tools/arcade-game-maker.html each gained Download project, Open project (file) and two Open in... buttons; native projects round-trip exactly, cross-tool opens the flattened sprite/sheet. Test tests/tool-project-bundle.js PASS (18/18): pixel-studio builds and downloads a *-jvds-project.json; sprite-animator opens that bundle (2 frames) and opens a downloaded file; game-maker opens the sprite bundle as art and round-trips its own bundle; no overflow at 390 and 1440; zero runtime errors. Regressions: tests/pixel-studio-runtime.js, tests/pixel-studio-http.js, tests/pixel-studio-first-mission.js PASS; tests/sprite-animator-http.js PASS; tests/arcade-game-maker-smoke.js, tests/arcade-game-maker-export.js, tests/arcade-game-maker-handoff.js, tests/arcade-maker-modules-sync.js PASS. npm run validate:links PASS (42195 refs, 0 broken); npm run validate:public PASS; tests/tools-qa.js PASS; tests/tools-responsive.js PASS (70 tools).'
+    },
+
+    {
+        id: 510,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'World Builder: importing a level into the Arcade Game Maker must keep pickups, enemies, spawn and flag',
+        excerpt: 'A1586 level handoff. tools/level-designer.html sendToGameMaker() now sends an entities payload (coins, enemies, player s',
+        content: 'sendToGameMaker() in tools/level-designer.html crops to 20x15 and keeps only solid(1)/hazard(2), discarding coins, enemies, the player spawn and the flag, so the imported level is not playable. Preserve all object layers, or emit Tiled .tmj and a real Godot TileSet, and map them to player/enemy/coin/flag positions on import. Evidence: A1586 level handoff. tools/level-designer.html sendToGameMaker() now sends an entities payload (coins, enemies, player spawn, goal) gathered from every layer as well as the collision map. tools/arcade-game-maker.html: game data carries entities; customLevelEntities is set by _applyLevelData (which overlays entities on the mini map and shows counts); _buildFromTilemap places exactly the painted coins, spawns painted enemies as stompable patrollers, uses the painted Player tile as spawn and places a goal flag; create() wires a reach-the-flag win; clearLevel resets it. Also fixed a CSP regression in both files: style-shared.css was loaded via a preload plus inline onload swap, which is blocked under script-src and left the page unstyled (the arcade header overflowed 390px). Both are now plain stylesheet links (build.js canonical form); the same pattern still exists on about 409 other pages and belongs to A1589. New test tests/arcade-level-handoff.js 17/17 PASS: the First platformer template keeps 3 coins, 1 enemy, spawn and goal; importLevelFromDesigner receives the 300-cell map plus entities; a platformer boots with the coins, enemy and goal placed, no JS errors, and the same trip holds at 390px with no horizontal scroll. Hardened tests/level-designer-http.js to wait for init instead of a fixed sleep. Regression: tests/arcade-game-maker-smoke.js 17/17, -play.js, -offline.js, -send.js, -export-boot.js, -mobile.js all PASS; tests/level-designer-http.js PASS twice; tests/tools-first-run-templates.js PASS; tests/tools-qa.js exit 0; validate-links.js 0 broken of 42606; both edited pages CSP-canonical.'
+    },
+
+    {
+        id: 509,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Arcade Game Maker: shared ?game= links must carry custom art and audio',
+        excerpt: 'A1585: ?game= / ?remix= links now carry custom art and small audio when they fit, so a friend opening the link gets the',
+        content: 'generateShareLink() compresses only the game config; custom sprites and sounds are dropped unless the SHARE_BACKEND Cloudflare worker is deployed, and it defaults to empty, so a friend opening the link sees default art and no music. Ship the share worker or make Download HTML the primary share, and make custom-asset payloads survive the round trip. Evidence: A1585: ?game= / ?remix= links now carry custom art and small audio when they fit, so a friend opening the link gets the exact game with no share worker. Added _hasCustomAssets() + _packShareGame() in tools/arcade-game-maker.html: it folds the full asset payload into the compressed share link, then drops the level map, then oversized sound, then oversized art until the link is shareable, reporting what was kept. The share modal now shows an asset banner (green when the link keeps art/sound, amber when it cannot) plus a prominent primary Download HTML (game + art + sound) button so the exact game (offline single file) is one tap away. Files: tools/arcade-game-maker.html, tests/arcade-game-maker-send.js. Proof: node tests/arcade-game-maker-send.js PASS incl. new checks \'custom art survives a ?game= link with no backend\' and \'oversized art is dropped from the link (UI offers Download HTML)\'; node tests/arcade-game-maker-offline.js PASS; node tests/arcade-game-maker-smoke.js PASS (17/17); node tests/arcade-game-maker-mobile.js PASS. node scripts/report-inline.js -> 0 pages with handlers; node tests/tools-qa.js PASS. node validate-links.js 0 broken; node scripts/validate-public-boundary.js PASS.'
+    },
+
+    {
+        id: 508,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'My First Video Game: restore Ep1 quizzes/fills + clarity polish Ep2-9',
+        excerpt: 'Ep1 restored: assets/js/inline/workshops-godot-racing-canvas-1.js and workshops/godot-racing-workshop.html now have all ',
+        content: 'Episode 1 (racing) lost its Knowledge Check and fill-in-the-blanks in A1542; restore both on all 6 steps, keeping the clearer wording and the fixed 6-step count. Then clarity-polish Episodes 2-9 (mario, nuclear, fairy, barrel, pixel, night-watch 1-3): KEEP every quiz, fill-in-the-blank, order challenge and code challenge exactly as designed, but improve wording clarity, ensure each step reads as one simple action, fix step-count mismatches, mojibake and mobile issues. Evidence: Ep1 restored: assets/js/inline/workshops-godot-racing-canvas-1.js and workshops/godot-racing-workshop.html now have all 6 steps with a Knowledge Check quiz AND fill-in-the-blanks again (plus clearer wording and the 6-step count). Clarity polish on Episodes 2-9 keeping every quiz, fill-in-the-blank, order challenge and code challenge: fixed dropped-arrow and dropped-emoji mojibake across workshops/jump-jump-mario-workshop.html, nuclear-throne-guide.html, fairy-survivors-guide.html, barrel-blast-workshop.html, pixel-quest-workshop.html, night-watch-workshop.html, night-watch-part2-workshop.html, night-watch-part3-workshop.html; corrected every series-strip \'Episode N of 6\' to \'of 9\' and consistent step counts; recomputed each page\'s inline-script CSP sha256 hashes (scripts had been blocked) with scripts/csp-hashes.js logic so the quiz/step JS runs again. Tests: validate-links.js PASS (39762 refs, 0 broken); npm run validate:workshops PASS; validate-public-boundary PASS; node tests/godot-racing-workshop-http.js PASS (6 steps incl. quiz, all templates run, no overflow 390/320); browser check of all 8 episodes: expected step cards render (mario 12, nuclear 13, fairy 12, barrel 12, pixel 12, night-watch-2 13, night-watch-3 11), 0 console/page errors, no horizontal scroll at 390 and 1440.'
+    },
+
+    {
+        id: 507,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Tools: first-run templates on the first-path tools',
+        excerpt: 'A1546 first-run template pickers. Arcade Game Maker: tools/arcade-game-maker.html first-run welcome overlay is now a sta',
+        content: 'Most toolbox tools open on a blank canvas, which stalls the first creation. Add a first-run template row (pick one to start) with 3 or more starters to the first-path tools: Pixel Studio, Audio Studio, World Builder and Arcade Game Maker. Choosing a starter loads a working example to change. Evidence: A1546 first-run template pickers. Arcade Game Maker: tools/arcade-game-maker.html first-run welcome overlay is now a starter picker with 4 examples (Ocean Defender, Forest Jump, Glow Serpent, Brick Blitz) via _arcStartFrom/_loadTemplate; the 4-step tour is opt-in from that welcome; the export strips #welcome-overlay/#tutOverlay so maker onboarding never leaks into a shared game. Audio Studio: tools/sound-studio.html #start-modal now has a Pick a starting point row with 4 starters (Chiptune groove, Four-on-the-floor, Lo-fi sketch, Empty grid) via _loadSoundTemplate; styles in style-tool-sound-studio.css, arcade picker styles in style-tool-arcade-game-maker.css. Pixel Studio (tools/pixel-studio.html) and World Builder (tools/level-designer.html) already open with 4 starters each and are now covered by the test. New test tests/tools-first-run-templates.js 24/24 PASS: each of the 4 tools shows 3+ starters on open, picking one closes the picker and loads a working scene, no JS errors, and 390px has no horizontal scroll. Arcade suite: tests/arcade-game-maker-smoke.js 17/17, -play.js, -offline.js, -send.js, -export-boot.js, -mobile.js all PASS. tests/tools-qa.js exit 0, validate-links.js 0 broken of 39762. CSP hashes refreshed for the two edited pages (scripts/csp-hashes.js reports them canonical).'
+    },
+
+    {
+        id: 506,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Nav: add For Teachers to the main navigation',
+        excerpt: 'partials/nav-content.html: added a For Teachers link (href /teachers) to the main nav and the More dropdown; style-home-',
+        content: 'pages/teachers.html is one of the strongest adoption pages (lesson plans, class tracker, starter pack, shareable class link) but it is only linked from the footer, and the More dropdown omits it. Add a For Teachers entry to the main nav and the More dropdown, matching the existing For Parents pattern, so teachers can reach it in one click. Evidence: partials/nav-content.html: added a For Teachers link (href /teachers) to the main nav and the More dropdown; style-home-entry.css: added a .nav-link--teachers pill for the homepage header. Ran the build to inline nav across 426 pages, then scripts/csp-hashes.js --apply to keep page CSP hashes in sync. Checks: validate-links.js PASS (39759 refs, 0 broken); tests/nav-mobile.js PASS at 320/375/390/844 with no horizontal overflow; tests/nav-gallery.js PASS (no uncaught JS errors); desktop header check at 1280/1440 shows zero nav/header/document overflow on index.html, pages/teachers.html and pages/dev-tools.html with the link present in both nav and dropdown.'
+    },
+
+    {
+        id: 505,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Polish My First Video Game hub + simplify Ep1 racing workshop',
+        excerpt: 'Hub workshops/my-first-video-game.html: duplicate Pixel Studio tool card fixed (now Character Designer -> tools/characte',
+        content: 'my-first-video-game.html hub needs fixing and polish (duplicate Pixel Studio tool card, stale link to pages/dev-tools.html, copy, mobile). godot-racing-workshop.html (Episode 1) needs simplifying: consistent step count (page says 6 and 8), fewer/clearer points, remove the knowledge-check gate blocking completion, keep the live canvas and save/export. Easy, simple, one action per step. Evidence: Hub workshops/my-first-video-game.html: duplicate Pixel Studio tool card fixed (now Character Designer -> tools/character-designer.html); added Stardust hero touchpoint; Steps stat now dynamic (97) from real episode totals; corrected episode step totals (racing 6, shooter 13, survivors 12, night-watch 6) and made progress read stored data.total. Ep1 workshops/godot-racing-workshop.html + assets/js/inline/workshops-godot-racing-canvas-1.js: simplified to 6 one-action steps, removed the quiz gate and fill-in-the-blanks, simpler wording, fixed mojibake emoji, fixed broken #what-is-godot anchor, step count now consistent at 6. Tests: validate-links.js PASS (38951 refs, 0 broken); npm run validate:workshops PASS; scripts/validate-public-boundary.js PASS; node tests/godot-racing-workshop-http.js PASS (6 steps, all templates run, no overflow at 390/320); hub rendered clean at 390/1440 (scrollWidth == viewport, 0 console errors).'
+    },
+
+    {
+        id: 504,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Arcade Game Maker: fix CSP-dead handlers, make Power Picks optional, repair exported games + mobile',
+        excerpt: 'Fixed tools/arcade-game-maker.html: converted the last inline handlers to data-on delegation (scripts/report-inline.js n',
+        content: 'The Arcade Game Maker relies on inline event handlers (onclick/oninput/onchange) built from JS template strings. The site CSP removed script-src unsafe-inline, so those handlers are blocked: engine buttons do nothing and the 3-card Power Picks draft pauses the scene with unclickable cards (desktop can Esc, mobile is trapped). The exported single-file game is also broken: it clones the page meta CSP (so the inlined Phaser + boot script are blocked) and carries relative CSS links that do not resolve offline. Fix: convert remaining inline handlers to data-on/data-bind delegation, ensure inline script hashes persist through the build, default Power Picks off (opt-in), make the exported game self-contained (inline CSS + standalone CSP), and improve mobile touch layout. Files: tools/arcade-game-maker.html, src/arcade-maker/liveConfig.js, style-tool-arcade-game-maker.css, scripts/build, tests/arcade-game-maker-*.js. Evidence: Fixed tools/arcade-game-maker.html: converted the last inline handlers to data-on delegation (scripts/report-inline.js now reports 0 handlers, 8 inline script blocks). Restored the 8 inline-script sha256 hashes so the page runs under script-src with no unsafe-inline: 0 CSP violations, compileAndBootEngine defined, tests/arcade-game-maker-smoke.js 17/17 PASS. Power Picks is opt-in: src/arcade-maker/liveConfig.js perksEnabled:false, panel toggle wired via data-on change (_arcChkPanel39); tests/arcade-game-maker-play.js PASS (defaults off, enables from panel). Export rebuilt in _buildExportHtml to inline CSS plus ui-delegate/tool-handoff/theme-init, strip site chrome and noscript, and rebuild a standalone CSP from inline hashes; tests/arcade-game-maker-export-boot.js PASS (boots canvas, 0 CSP errors, fully offline). Mobile: style-tool-arcade-game-maker.css wraps .vp-btn-row at 768px; tests/arcade-game-maker-mobile.js PASS (390px no horizontal scroll, fire button and joystick steer). build.js now runs scripts/csp-hashes.js --apply so hashes persist. Suites: -send.js PASS, -offline.js PASS, tests/tools-qa.js exit 0, validate-links.js 0 broken of 39759 refs.'
+    },
+
+    {
+        id: 503,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Workshop flow: build the engine hub (Godot pilot)',
+        excerpt: 'A1540 rev2 (rework after review): workshops/engine-godot.html rebuilt. Fixes: cover art on every card (was 0 images); cu',
+        content: 'Workshop home groups learners by Engine and 3D Builders, but the engine tiles only filter the page in place, so there is no hub to land on. Build the first per-engine hub page (Godot) from the existing content data so learners can pick a series or episode, then reuse the template for every engine. Evidence: A1540 rev2 (rework after review): workshops/engine-godot.html rebuilt. Fixes: cover art on every card (was 0 images); curated outcomes remove all 8 empty descriptions; unique-id sections remove the duplicated racing card; split into nothing-to-install (start 2 + browser games 6) vs needs-the-free-Godot-app (basics 2 + Zoom Zoom 2 + Who Goes There 2); honest computed age band (Ages 7 and up) instead of the wrong hardcoded Ages 10+; visible breadcrumb + All workshops link; Lumo and Pip callouts; filter bar (All / Nothing to install / Beginner) in new assets/js/engine-hub.js; style-shared plain link so no CSP console error. Files: scripts/generate-engine-hubs.js, content/engine-hubs.json, assets/js/engine-hub.js, workshops/engine-godot.html. Checks: generate-engine-hubs --check PASS; validate-links 39788 refs 0 broken; validate-workshops EXIT 0; validate-css (page) PASS; validate-js (page) PASS 0 dead JS 0 console errors; validate-contrast --strict (page) 0 invisible in 3 themes; validate-a11y --strict --area=workshops EXIT 0; tests/workshop-hub-qa.js PASS; check-generated-drift PASS (search-index regenerated).'
+    },
+
+    {
+        id: 502,
+        date: '18 October 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Arcade app: one-way sync catalogue metadata from the live website registry',
+        excerpt: 'Verified and finished the one-way catalogue sync in jvds-arcade-app (no website edits). The app sync script merges the w',
+        content: 'Low-risk alternative to making games-registry.js the whole catalogue (deferred: the website tree is mid-change by another agent and the public line-up is contractual). In sync-arcade.mjs, merge the website\'s live games-registry.js over the app\'s games-registry.full.js by id (website wins for shared ids, new public ids added), so every public game\'s title/cover/session/quality auto-syncs on each app build. EXCLUDE still applies; thumbs stripped because the app bundles no assets/game-thumbs. No website edits, no collision. Evidence: Verified and finished the one-way catalogue sync in jvds-arcade-app (no website edits). The app sync script merges the website\'s live games-registry.js over the app\'s games-registry.full.js by id (website wins for shared ids, new public ids added), strips thumb refs (the app bundles no assets/game-thumbs) and still applies EXCLUDE. Also fixed the one remaining load error: the site now loads an external sw-register.js, which stripSiteChrome did not remove, so the bundle 404ed registering /sw.js; the app now strips that tag too. Proof: node sync-arcade.mjs -> registry: 38 games (2 excluded), 10 entries refreshed from the website registry, 34 covers queued; inspecting www/games-registry.js shows 38 entries with the 10 website-shared ids all matching on title/cover/session/quality and 0 entries carrying a thumb. node audit-games.mjs (with node serve.mjs 5613) -> 38/38 games load with 0 load errors (the 6 remaining audit flags are pre-existing fit/clip notes, 0 err each). npm run build PASS (sync-game + npx cap sync, web assets copied to android). Website untouched and node validate-links.js PASS 38486 refs 0 broken.'
+    },
+
+    {
+        id: 501,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Nova Siege: roguelike run with upgrade drafts and an in-run shop',
+        excerpt: 'games/nova-siege.html + assets/js/inline/games-nova-siege-1.js: added a roguelike run. After every non-boss wave the loo',
+        content: 'Make games/nova-siege.html feel bigger and more roguelike. After every non-boss wave the run pauses and offers a draft of three random run-only upgrades (damage, fire rate, cannons, speed, shield, magnet, health, pierce, crit, homing) that reset each launch. After every boss, open a station shop where the player spends credits earned THIS run on instant upgrades, with a reroll and a Depart button. Keep the permanent between-run upgrade and hull shop. Enlarge the play field, which was capped small on desktop. Overlays must work in immersive/fullscreen mode on mobile. Evidence: games/nova-siege.html + assets/js/inline/games-nova-siege-1.js: added a roguelike run. After every non-boss wave the loop pauses and opens a 3-card draft (#draftOverlay) of run-only upgrades (RUN_UPGRADES: damage, rate, multishot, speed, shield, magnet, life, pierce, crit, homing) weighted by rarity; picking one applies it to run.runUps and resumes. After every boss, openShop() opens the station shop (#shopOverlay) where run.credits earned THIS run buy instant upgrades or a heal, with reroll (20cr) and Depart. Permanent between-run upgrades/hulls (aside panel, meta credits) are untouched. New stat readers runDamage/runRate/runShots/runSpeed/runMagnet plus pierce (bullets pass through N enemies via a per-bullet hit set and lazily assigned enemy uid), crit (x2) and homing (bullets curve to nearestTarget). Play field enlarged: non-immersive capH raised from min(innerHeight*0.66,620) to min(innerHeight*0.82,920), so at 1440x900 the canvas is 415x738 (was about 334x594). endRun hides in-run overlays and lists taken run upgrades. Tests: node tests/nova-siege-http.js PASS 40/40 at 390 and 1440 (new: desktop field 415x738 >=640 tall; draft opens 3 cards + pauses; pick applies run upgrade + resumes; run damage 2->3; shop opens 4 rows + pauses; buy spends run credits 500->390 and marks SOLD; Depart resumes). validate-links.js PASS 38486 refs 0 broken. games-qa.js PASS 54 pages. validate:public PASS. dashes clean.'
+    },
+
+    {
+        id: 500,
+        date: '18 October 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: 'Arcade app: decouple catalogue from web-curated registry + bundle Sky High',
+        excerpt: 'sync-arcade.mjs: now reads this repo\'s games-registry.full.js (new, 38 games) instead of the web-curated games-registry.',
+        content: 'The Arcade app (jvds-arcade-app) generates its game grid in sync-arcade.mjs from the website\'s games-registry.js. That file was deliberately curated from 43 to 11 games on 12 Oct (web arcade overhaul, A1376), but the app bundle is from 8 Oct and still ships 36 games. Rebuilding as-is would gut the app grid to 8 games. Give the app its own full registry (decoupled from the web-curated file), then remove Sky High With Friends from sync-arcade.mjs EXCLUDE so it ships as a playable game. Evidence: sync-arcade.mjs: now reads this repo\'s games-registry.full.js (new, 38 games) instead of the web-curated games-registry.js, so the app keeps its full catalogue; no longer EXCLUDEs sky_high_with_friends.html; also copies assets/fonts (139 woff2) and matches style-shared.css?v= cache-buster. Rebuild: registry 38 cards incl. sky-high-friends, every game file+cover resolves (0 problems), renames fixed (ember-smash, lumo-dash stubs dropped), rustfall included. Test: node audit-games.mjs -> 38/38 games load, sky-high-friends ok, 0 load errors. Browser audit: hub renders 38 cards/0 errors; games/sky_high_with_friends.html renders 6 canvases/0 errors (font 404s fixed). npm run build PASS (cap sync copied 23.5MB www). Website games-registry.js untouched.'
+    },
+
+    {
+        id: 499,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Editable studios: live code plus drag and drop world in all game studios',
+        excerpt: 'A1511 editable studios liveedit. Shared helper workshops/studio-liveedit.js (no external libs) plus live code editing an',
+        content: 'The workshop game studios (Scratch, Python, PICO-8, Unity, Unreal) only offer preset sliders and paint grids. Learners cannot type code and see the game change live, nor drag sprites and objects directly into the world. Build a shared browser-only liveedit helper plus per-studio Code editing with instant preview and a draggable world builder with mouse, touch and keyboard support that works on a locked-down school computer with no install. Evidence: A1511 editable studios liveedit. Shared helper workshops/studio-liveedit.js (no external libs) plus live code editing and drag-and-drop world wired into all five game studios: workshops/scratch-studio.js, workshops/python-studio.js, workshops/pico8-studio.js, workshops/unity-studio.js, workshops/unreal-studio.js (fixed Unreal boot never calling initLiveBits, so its code box was empty). Added liveedit coverage to tests/scratch-studio-http.js, tests/python-studio-http.js, tests/pico8-studio-http.js, tests/unity-studio-http.js, tests/unreal-studio-http.js. Results: all five PASS at 1440 and 390 (code box populated, Apply updates the preview, drag places object / palette chips draggable, no console errors, no overflow, export and tabs still work). validate-workshops.js PASS (272 pages).'
+    },
+
+    {
+        id: 498,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Surface the Community Gallery in the site navigation',
+        excerpt: 'partials/nav-content.html: added a Community Gallery link to the site More menu, injected on every built page. pages/gal',
+        content: 'The Community Gallery and the Publish flow exist but are only reachable from the arcade footer and the maker, so nobody finds them. Add a Community Gallery link to the site navigation (partials/nav-content.html, injected on every page) and make sure the gallery links back to the maker and Publish, so a creator can reach the gallery and the send-in flow from anywhere. Evidence: partials/nav-content.html: added a Community Gallery link to the site More menu, injected on every built page. pages/gallery.html: the moderation note now links to the maker and to pages/publish.html. Rebuilt the site so the nav carries the link everywhere. NEW tests/nav-gallery.js PASS 5/5: the home nav links to /pages/gallery.html, the gallery links to the maker and to Publish, the nav link is present on the gallery page, and no JS errors. Gate PASS: validate:links 37211 refs 0 broken, validate:public PASS, gallery-http 13/13, publish-http 14/14. Added npm run test:nav-gallery.'
+    },
+
+    {
+        id: 497,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Arcade Game Maker: close the loop in shared games (challenge + remix inside the export)',
+        excerpt: 'tools/arcade-game-maker.html: _buildExportHtml now bakes the creator\'s best score for the genre as a challenge and a rem',
+        content: 'An exported or sent game is a dead end: the recipient can play, but the creator\'s challenge score is not shown and there is no one-tap remix. Bake the creator\'s best score as a challenge and a remix link into the exported file, show the challenge on the intro and the game over, and make the Remix button open the maker preloaded so a friend can make their own version. Evidence: tools/arcade-game-maker.html: _buildExportHtml now bakes the creator\'s best score for the genre as a challenge and a remix link (base maker URL + ?remix=<compressed settings payload> computed at export time), and the injected export boot sets window._sharedFrom from the baked challenge and window.__exportRemixUrl from the baked link. So an exported/sent game shows the creator challenge on the intro (Beat 1,234!) and on the game over, and _goRemixShared now opens the maker preloaded when run inside an export (there is no editor on that page). NEW tests/arcade-game-maker-loop.js PASS 7/7: the export bakes a remix link, bakes the challenge, the intro shows Beat 1,234!, the game over has a Remix button, and clicking Remix opens the maker preloaded. Gate PASS: test:arcade 13/13, test:arcade-all 46/46, play 8/8, send 15/15, offline 10/10, validate:links 36412 refs 0 broken, validate:public PASS. Added npm run test:arcade-loop.'
+    },
+
+    {
+        id: 496,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Publish to Gallery: send a finished game in for review (moderated)',
+        excerpt: 'tools/arcade-game-maker.html: added a Publish to Gallery button in the Save and Share row and publishToGallery(), which ',
+        content: 'The gallery is static and moderated, so a learner cannot send a game in yet. Add a Publish to Gallery action in the maker that exports the playable file plus a cover and opens a submission page, and build pages/publish.html: a Formspree form (reusing the site endpoint) that collects the creator name, the game file and cover, a description and consent, all for review before it appears. Evidence: tools/arcade-game-maker.html: added a Publish to Gallery button in the Save and Share row and publishToGallery(), which exports the playable file + a cover and opens pages/publish.html prefilled with the title and genre. New pages/publish.html: a moderated submission page with a Formspree form (reusing the site endpoint xvkowqqw, POST multipart) collecting creator name, grown-up email, title, genre, how-to-play, the game .html and cover files and consent, with the review step explained and Pip as the checking character. Added pub-form styles to style-gallery.css. Rebuilt the site (search-index grew). NEW tests/publish-http.js PASS 14/14: form posts to Formspree with POST multipart, has all required fields plus two file inputs and a submit button, explains moderation, prefills title+genre from the query, the maker exposes publishToGallery + the button, no horizontal scroll at 390/1440 and no JS errors. Gate PASS: test:arcade 13/13, validate:links 36644 refs 0 broken, validate:public PASS. Added npm run test:publish.'
+    },
+
+    {
+        id: 495,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Mobile: shared 44px tap-target floor for buttons, nav toggles and filter chips',
+        excerpt: 'Fixed style-shared.css with mobile-only 44px floor for nav toggles (.nav-toggle/.jvds-nav-toggle) and filter chips (.fil',
+        content: '307 public pages have at least one tappable element under 40px, and most are shared controls: the nav Open menu / Dismiss buttons and filter chips such as All / Site / Games. Add a shared minimum touch size in style-shared.css (min-height and min-width about 44px with correct padding) so the long tail is fixed at the source instead of page by page. Evidence: Fixed style-shared.css with mobile-only 44px floor for nav toggles (.nav-toggle/.jvds-nav-toggle) and filter chips (.filter-btn/.filter-chip/.cat-btn etc). mobile-sweep 30-page sample: devlog.html 7->0, dev-tools.html 6->0, faq.html 6->0 small targets, no new overflow. tools-responsive.js PASS (69 tools clean at 390/1440). validate:public PASS. validate-links PASS (36412 refs, 0 broken).'
+    },
+
+    {
+        id: 494,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Mobile: fix horizontal overflow on 3d-builders hub and cards rules page',
+        excerpt: 'Fixed the only two pages with horizontal scroll in the full site-wide mobile sweep (559 pages at 390). pages/3d-builders',
+        content: 'A full-site mobile sweep found only two pages that still scroll sideways at 390px: pages/3d-builders.html by 196px (its breadcrumb nav could not shrink) and call-of-the-cards-rules.html by 59px (an unbreakable token). Make both fit the phone viewport without hiding content, and pin the fix with a regression test tests/mobile-overflow.js. Evidence: Fixed the only two pages with horizontal scroll in the full site-wide mobile sweep (559 pages at 390). pages/3d-builders.html: the page\'s own breadcrumb nav could not shrink and forced the document to 586px (196px overflow); added a max-width:640px rule so the nav wraps (site-nav-inner flex-wrap, spacer hidden, smaller crumbs). call-of-the-cards-rules.html: an unbreakable card-list token and a long URL forced 449px on phone and 335px at 320; set overflow-wrap:anywhere on body so long tokens wrap. New regression test tests/mobile-overflow.js PASS (4/4 at 390 and 320, overflow 0 on both pages). The sweep critical count fell from 3 to 1 (remaining item is the separate CSP card A1501). validate-links PASS (36644 refs, 0 broken); validate-public-boundary PASS; check-dashes-ci PASS.'
+    },
+
+    {
+        id: 493,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Community Gallery MVP: game gallery page + data (static, moderated)',
+        excerpt: 'New pages/gallery.html renders the community gallery from gallery-games.json: hero with Stardust, a moderation note, and',
+        content: 'Build the community gallery that makes the engine\'s output shareable and testable: a gallery-games.json data file and pages/gallery.html that renders each entry as a card with in-page play (iframe), Remix, Challenge and a did-it-work feedback, seeded with 3 showcase games. Static and moderated: entries are added after review (the Publish/submission flow comes next). Reuse the arcade play/cover patterns. Evidence: New pages/gallery.html renders the community gallery from gallery-games.json: hero with Stardust, a moderation note, and one card per entry showing cover/thumb, a READY/BETA/EXPERIMENT pill, author, genre, an optional Beat-X challenge line, an in-page Play (iframe stage) and a Make your own link to the maker. Added gallery-games.json (3 showcase entries) and style-gallery.css; linked it from arcade.html and added a /gallery clean-URL route. Rebuilt the site so gallery is in sitemap.xml (/gallery) and search-index.json. NEW tests/gallery-http.js PASS 13/13: renders one card per entry in order, every card has title/quality/play/make, Play opens the in-page player loading the card\'s game file, Exit closes it, no horizontal scroll at 390/1440 and no JS errors. Gate PASS: validate:links 36090 refs 0 broken, validate:public PASS. Added npm run test:gallery.'
+    },
+
+    {
+        id: 492,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Arcade Game Maker: exported game actually boots and plays (fix boot crash + play test)',
+        excerpt: 'tools/arcade-game-maker.html: _buildExportHtml no longer removes .studio-panel (only hides it), so the exported game\'s r',
+        content: 'The exported single-file game did not run. _buildExportHtml() deleted .studio-panel, but the game runtime still reads its inputs (gameTitle, genreMode, playerSpeed, volumeSlider, musicToggle), so GameAudio.setMusic() threw on a null element and Phaser never booted. The injected PWA manifest also used a remote icon that broke offline and was CSP-blocked. Fix the export so a downloaded/sent game really plays, and prove it end to end. Evidence: tools/arcade-game-maker.html: _buildExportHtml no longer removes .studio-panel (only hides it), so the exported game\'s runtime inputs (gameTitle, genreMode, playerSpeed, volumeSlider, musicToggle) exist and GameAudio.setMusic() no longer throws; Phaser now boots in the exported file. Also fixed the injected PWA manifest to use an embedded data-URI icon (the remote jvdesignstudio.co.uk icon was CSP-blocked and broke offline) and added manifest-src \'self\' data: to the exported CSP. NEW tests/arcade-game-maker-play.js PASS 8/8 end-to-end: builds SHOOTER in the maker, exports the single file (2.25 MB, Phaser inlined), serves it back, opens it as a player and confirms export mode, a live Phaser game, a rendered canvas (640px), a scene, an advancing game loop (frame 8 -> 171) and no console/page errors. Gate PASS: test:arcade 13/13, test:arcade-all 46/46, send 15/15, offline 10/10, offline-sw 6/6, modules 25/25, validate:links 36011 refs 0 broken, validate:public PASS. Added npm run test:arcade-play.'
+    },
+
+    {
+        id: 491,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Arcade game maker: do not auto-run custom code from imported or shared games',
+        excerpt: 'Changed tools/arcade-game-maker.html _applyLoadData so an imported or shared game that carries userCode is placed into t',
+        content: 'tools/arcade-game-maker.html _applyLoadData compiles d.userCode with new Function immediately on load, so loading a shared ?game= or ?remix= link or importing a file would auto-run attacker-controlled JavaScript in the page origin if script-src ever allowed eval (the current CSP without unsafe-eval blocks it, so the flaw is latent today). Change the loader so imported code is placed into the editor but not compiled; running it requires an explicit Apply and Run click. Evidence: Changed tools/arcade-game-maker.html _applyLoadData so an imported or shared game that carries userCode is placed into the custom-code editor but no longer compiled automatically; running it now needs an explicit Apply and Run click. This closes the latent share-link code-execution path (a ?game= or ?remix= link, or a file import, would have auto-run attacker JavaScript in the page origin if script-src ever allowed eval). The boot restore of the user own saved code and the Apply and Run button are unchanged. Proof: tests/arcade-game-maker-smoke.js 13/13 PASS, validate-links.js PASS (36011 refs).'
+    },
+
+    {
+        id: 490,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Remove unsafe-inline from script-src (XSS root cause)',
+        excerpt: 'Removed all 2055 inline event handlers (onclick/oninput/onchange/onerror) across 60+ HTML files. Built ui-delegate.js ev',
+        content: 'The site CSP script-src includes unsafe-inline, which is why the story share-link XSS and similar HTML-injection bugs could run script. Removing it means externalising every inline script and replacing every inline event handler (onclick=) with addEventListener, plus hashes or a nonce for generated inline script. Scope the count per page first, then migrate in batches with tests. Large multi-session refactor. Evidence: Removed all 2055 inline event handlers (onclick/oninput/onchange/onerror) across 60+ HTML files. Built ui-delegate.js event delegation runtime (20+ patterns) and handlers-to-data.js automated converter (30+ patterns). Created 68 CSP wrapper functions in tools/arcade-game-maker.html. Removed unsafe-inline from script-src in partials/head-icons.html, _headers, scripts/generate-redirect-stubs.js, assets/mascots/barnaby-sheet.html. Created scripts/csp-hashes.js to inject per-page SHA-256 hashes for inline script blocks (584 pages). Build pipeline: build.js then csp-hashes.js --apply. validate:links PASS 38622 refs 0 broken. test:tools-qa PASS tools static contract. audit:games PASS static game-page contract. validate:workshops PASS 32/32 checkbox + 21/21 builder. test:smoke 9/13 (4 pre-existing XP/localStorage timeout failures unrelated to CSP).'
+    },
+
+    {
+        id: 489,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Decide arcade game maker custom-code under CSP (eval and share-link code execution)',
+        excerpt: 'Decision recorded: keep the arcade custom-code feature disabled under the security policy and do not add unsafe-eval to',
+        content: 'tools/arcade-game-maker.html compiles user-authored JavaScript with new Function() (line 4076) and _applyLoadData runs userCode straight from an imported ?game= or ?remix= share link (line 15639). The deployed CSP has no unsafe-eval so the feature throws and is broken in production. If unsafe-eval were added, any shared remix link would execute arbitrary JS on the site origin. Decide whether to keep the feature disabled and hide its UI, or build a sandboxed worker before enabling. Do not add unsafe-eval to the site CSP. Evidence: Decision recorded: keep the arcade custom-code feature disabled under the security policy and do not add unsafe-eval to the site CSP. The dangerous auto-run from an imported or shared game was already closed in A1487: tools/arcade-game-maker.html _applyLoadData no longer compiles userCode on load, and running it needs an explicit Apply and Run click. Under the current CSP the feature cannot run at all, which is the safe state. Re-enabling it would need a sandboxed worker that still gives the user code access to the live Phaser scene, not feasible with the current engine. Proof: tests/arcade-game-maker-smoke.js 13/13 PASS.'
+    },
+
+    {
+        id: 488,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Fix DOM XSS in the story player share link',
+        excerpt: 'Fixed DOM XSS in tools/story-player.html: ch.img is now escaped in the img src, and the continue button uses a data-cont',
+        content: 'tools/story-player.html decodes an untrusted base64 story from the #s= share link and injects two fields into HTML unescaped: ch.img into an img src (attribute breakout) and n.to into an inline onclick=go(..) (JS injection). With the current unsafe-inline CSP a crafted link runs script on the site origin. Escape ch.img and render the continue button with a data attribute plus addEventListener instead of inline onclick. Also escape the same c.img field and previewGo node id in tools/story-editor.html preview. Add a regression page test that loads a weaponised payload and asserts no script runs. Evidence: Fixed DOM XSS in tools/story-player.html: ch.img is now escaped in the img src, and the continue button uses a data-continue attribute plus addEventListener instead of inline onclick. Applied the same escaping to tools/story-editor.html preview (c.img, ch.img) and its data-go continue button. Added tests/story-player-xss.js, which loads a weaponised #s= share link and asserts the attribute-breakout (window.__xss) and JS-injection (window.__xss2) payloads do not execute. The test FAILS on the pre-fix file (both payloads fire) and PASSES after the fix. Proof: tests/story-player-xss.js PASS (pre-fix FAIL reproduced), tests/story-editor-http.js PASS, tests/story-run-smoke.js PASS, validate-links.js PASS (36011 refs).'
+    },
+
+    {
+        id: 487,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Arcade Game Maker: procedural default sprites (drop the labs.phaser.io dependency)',
+        excerpt: 'tools/arcade-game-maker.html: makeBaseScene.preload() no longer fetches the default player/enemy/laser/block from labs.p',
+        content: 'makeBaseScene.preload() loads the default player/enemy/laser/block from https://labs.phaser.io when the learner has not imported art, so default-art games need the network and show the asset-error overlay offline. This breaks the School-Computer Rule and the sent single-file game. Generate the fallback textures locally with Phaser graphics instead of fetching remote URLs. Evidence: tools/arcade-game-maker.html: makeBaseScene.preload() no longer fetches the default player/enemy/laser/block from labs.phaser.io. The four fallback textures are now drawn on-device with Phaser graphics (_drawDefaultShip/_drawDefaultAlien/_drawDefaultOrb/_drawDefaultBrick), near-white so the per-theme setTint still colours them, so a default-art game boots with no network. NEW tests/arcade-game-maker-offline.js PASS 10/10 with every non-local request blocked: 0 remote requests attempted, no labs.phaser.io, canvas boots, all four textures generated on-device, no asset-error overlay, no JS errors (stable over 3 runs). Gate PASS: test:arcade 13/13, test:arcade-all 46/46 (22 genres), test:arcade-modules 25/25, export 7/7, send 15/15, test:tools-qa PASS, validate:links 36003 refs 0 broken, validate:public PASS. Added npm run test:arcade-offline.'
+    },
+
+    {
+        id: 486,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Deliver real HTTP security headers in production (GitHub Pages ignores _headers)',
+        excerpt: 'Verified the repo is host-move ready so real response headers can ship. _headers carries Strict-Transport-Security, X-Co',
+        content: 'Live https://jvdesignstudio.co.uk/ is served by GitHub Pages (response Server: GitHub.com) and returns none of the headers in _headers: no Strict-Transport-Security, X-Content-Type-Options, X-Frame-Options, Permissions-Policy, Content-Security-Policy, Cross-Origin-Opener-Policy or Cross-Origin-Resource-Policy. Only the in-page meta CSP and referrer apply, so clickjacking, MIME sniffing and HTTPS downgrade protections are absent in production. Move to a host that honours _headers (Cloudflare Pages or Netlify) or put Cloudflare in front of GitHub Pages and set the headers at the edge. Evidence: Verified the repo is host-move ready so real response headers can ship. _headers carries Strict-Transport-Security, X-Content-Type-Options, X-Frame-Options SAMEORIGIN, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy, Cross-Origin-Resource-Policy and the Content-Security-Policy with frame-ancestors; _redirects lists 301 rules whose targets all exist. Both files are honoured by Netlify and Cloudflare Pages (GitHub Pages ignores them). tests/security-headers.js PASS confirms the header CSP matches every page meta CSP minus frame-ancestors, and validate-links.js PASS. The only remaining step is the hosting switch (Cloudflare Pages or Netlify), an account and DNS change outside this repo.'
+    },
+
+    {
+        id: 485,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Arcade Game Maker: one-tap Send to a Friend (share the playable game file)',
+        excerpt: 'tools/arcade-game-maker.html: added a full-width \'Send to a Friend\' button (onclick=sendGameToFriend) to the Save & Shar',
+        content: 'The maker can build a self-contained single-file HTML game (exportGame) and share links, but there is no single action that hands the actual playable game to a friend through the OS share sheet (WhatsApp/email/AirDrop). A learner must Download HTML, leave the maker, find the file, then attach it by hand. Add a Send to a friend flow that shares the real playable game file. Evidence: tools/arcade-game-maker.html: added a full-width \'Send to a Friend\' button (onclick=sendGameToFriend) to the Save & Share row. Refactored exportGame\'s bundling into a reusable _buildExportHtml(); sendGameToFriend() packs the self-contained single-file game (Phaser inlined) and shares the real playable .html as a File via navigator.share({files}) (Web Share L2), with a Capacitor-aware fallback that saves the file and copies an invite. NEW tests/arcade-game-maker-send.js PASS 15/15: file shared (text/html, send-test-game.html), standalone doc, Phaser inlined (2.08MB), export-mode + title carried, fallback download path, and exportGame refactor regression. Gate PASS: test:arcade 13/13, test:arcade-all 46/46 (22 genres), test:arcade-modules 25/25, test:tools-qa PASS, test:arcade-export PASS, validate:links 36000 refs 0 broken, validate:public PASS. Layout: no horizontal scroll at 390 or 1440.'
+    },
+
+    {
+        id: 484,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'First make: carry the homepage doodle into Pixel Studio\'s guided mission',
+        excerpt: 'index.html: the Start making link now carries the homepage doodle. first-make.js: encodes the 8x8 grid into /tools/pixel',
+        content: 'The homepage first-make canvas is a dead end: paint a doodle, click Start making, and you land on a blank Pixel Studio. Pixel Studio already reads a base64 #art= grid, but its first-mission mode skips that import and the parser only matches \'#art=\'. Make the homepage encode its 8x8 grid into the Start making link as \'#first-mission&art=<b64>\\'
+    },
+
+    {
+        id: 483,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Homepage: make the guide quiz opt-in, not a blocking first-load modal',
+        excerpt: 'mascots.js: removed the homepage first-load auto-open (quiz is now opt-in) and personalizeHome() highlights the current ',
+        content: 'mascots.js auto-opens the \'Find your creative guide\' modal 900ms after a first visit, which blocks the homepage (and the new first-make canvas and CTA) and violates the design system rule \'no modals that block content on first load\'. Make the quiz opt-in: remove the auto-open, add a visible \'Find your guide\' button in the homepage first-make section that opens it, and update personalizeHome() to highlight the current hub cards (the old .studio-path selectors no longer exist on the homepage). Evidence: mascots.js: removed the homepage first-load auto-open (quiz is now opt-in) and personalizeHome() highlights the current .hub-card--* destinations. index.html: added a visible Find your guide button (#findGuide) in the .first-make section; first-make.js opens window.showGuideQuiz. style-home.css: .first-make-guide styles. tests/mascot-quiz-a11y.js updated: all checks passed (no auto-open, trigger opens the accessible dialog, focus trap and Escape work, choosing a guide highlights the matching hub card). validate-links.js PASS 36159 refs 0 broken.'
+    },
+
+    {
+        id: 482,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Homepage: guided first-make entry (make, save, improve)',
+        excerpt: 'index.html first-make entry + first-make.js + style-home.css: tests/first-make-home.js ALL FIRST-MAKE CHECKS PASSED at 3',
+        content: 'The homepage primary CTA sends newcomers to /workshops/start-here.html, a browse list, not a first creation. Add an interactive first-make entry on the homepage (Ember, Pixel Studio): a tiny paintable pixel preview plus a plain Draw / Save / Improve 3-step promise, with the primary CTA deep-linking to /tools/pixel-studio.html#first-mission, which already runs the guided mission (character template, coaching bar, focus mode). Point the hero primary CTA into the new entry so arrival leads to making something small and real. Evidence: index.html first-make entry + first-make.js + style-home.css: tests/first-make-home.js ALL FIRST-MAKE CHECKS PASSED at 390 and 1440 (pointer + keyboard paint, 8 colours, no horizontal overflow, 0 runtime errors). validate-links.js PASS 36159 refs 0 broken. validate-public-boundary PASS.'
+    },
+
+    {
+        id: 481,
+        date: '18 October 2026',
+        tag: 'apps',
+        emoji: '🔧',
+        title: '[Fix-before-release] Arcade app: verify fresh install, catalogue load and offline reopen',
+        excerpt: 'Verified the current Arcade bundle (jvds-arcade-app/www, 38 games) headlessly as a fresh install: clean storage, hub loa',
+        content: 'Audit P1: a September bundle showed an app-error banner and zero games explored on fresh start. Test the current build from a clean install and storage, plus reload and offline reopen. Evidence: Verified the current Arcade bundle (jvds-arcade-app/www, 38 games) headlessly as a fresh install: clean storage, hub loads the 38-game registry with NO app-error overlay (arc-debug), 0 page errors, 0 failed requests; catalogue renders 38 cards; progress persists across reload (jvds_profile xp preserved); offline reopen with all external network blocked still loads registry + 38 cards with no error overlay (hub makes 0 external requests). Found and fixed a real missing asset: style-shared.css @imports assets/css/tokens.css but sync-arcade.mjs never copied it, so every page 404d the shared --jv-* tokens; added an assets/css copy step to sync-arcade.mjs (section 7d) and rebuilt (css tokens: 1 file copied). node audit-games.mjs: 38/38 games load, 0 load errors (6 games have pre-existing small-width content clipping, logged separately). STILL NEEDS JOSH: true fresh APK install + airplane-mode reopen on Android 13+ (no adb/device in this environment), same device blocker as A688.'
+    },
+
+    {
+        id: 480,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Homepage: game count mismatch - derive from one registry',
+        excerpt: 'games-registry.js is now the single source of truth for the public game count. index.html hero game stat derives from wi',
+        content: 'Audit P1: homepage says 11 games while the games catalogue lists 28 entries. Find every hard-coded game count on the site and generate them from one authoritative registry. State whether Play Labs prototypes are included in the number. Evidence: games-registry.js is now the single source of truth for the public game count. index.html hero game stat derives from window.JVDS_GAMES.length (renders 11; fallback 11). Reconciled stale totals on pages/press.html, pages/parent-guide.html, tools/parent-guide.html and pages/discovery_session.html to 11. Added tests/game-count.js: registry length equals indexable games on disk (11), homepage derives from the registry, and the marketing stat files match. Definition: the count is the live arcade line-up (games/*.html without noindex); prototypes are excluded. tests/game-count.js ALL PASS; validate-links.js PASS (0 broken); scripts/check-dashes-ci.js PASS.'
+    },
+
+    {
+        id: 479,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Verify every homepage CTA resolves to a working, non-duplicated destination',
+        excerpt: 'Audited every homepage CTA on index.html (15 CTA-ish anchors). Before: the hero primary CTA \'Choose your first step\' and',
+        content: 'Audit: verify each homepage CTA and button lands on a working destination and is not duplicated elsewhere on the page. Evidence: Audited every homepage CTA on index.html (15 CTA-ish anchors). Before: the hero primary CTA \'Choose your first step\' and the Learn hub card both pointed at /workshop, a duplicated destination. Changed the hero CTA to /workshops/start-here.html (the engine/path picker, a better match for \'choose your first step\'), so no CTA destination repeats. Verified: a CTA duplicate scan reports none; validate-links.js 36155 internal refs 0 broken; a single href swap, so the 390 and 1440 layout is unchanged.'
+    },
+
+    {
+        id: 478,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Verify duplicate downloads/freebies and progress destinations are consolidated',
+        excerpt: 'Confirmed the A791/A792 consolidation still holds. pages/freebies.html redirects to the canonical pages/downloads.html; ',
+        content: 'Audit REMOVE/MERGE: /pages/freebies.html and /pages/downloads.html overlap, and My Progress, leaderboards and profile risk showing the same stats. Confirm the A791/A792 consolidation still holds or merge and redirect. Evidence: Confirmed the A791/A792 consolidation still holds. pages/freebies.html redirects to the canonical pages/downloads.html; pages/my-progress.html and pages/leaderboards.html redirect to the progress owner /me.html; /me.html defers the workshop scan to workshops/my-progress.html. Removed the double-hop by pointing the /freebies, /my-progress and /leaderboards routes in 404.html straight at the canonical targets. Added tests/nav-routes.js guard: tests/nav-routes.js ALL PASS; validate-links.js PASS (0 broken); scripts/check-dashes-ci.js PASS.'
+    },
+
+    {
+        id: 477,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Define one \'finished\' standard (owner, checklist, evidence) and apply it to the audit board',
+        excerpt: 'Added QUALITY_STANDARD.md, linked from AGENTS.md: one definition of finished for games, workshops, tools, apps and site ',
+        content: 'Audit: create one reliable definition of finished for every game, workshop, tool and app, with a real status, an owner, a test checklist and evidence that the core journey works. A page existing is not done. Evidence: Added QUALITY_STANDARD.md, linked from AGENTS.md: one definition of finished for games, workshops, tools, apps and site pages, with an owner, a per-type checklist and evidence rule, plus the four audit dispositions Keep-and-polish, Fix-before-release, Merge-or-simplify and Remove-or-archive. New guard tests/quality-standard.js PASS: the document defines all four dispositions and every asset checklist and stays consistent with GAME_QUALITY.md labels READY/BETA/EXPERIMENT/HIDDEN. Applied the standard to the audit board: 17 open audit cards now carry their disposition at the start of the title (for example Fix-before-release on Arcane Citadel flagship, Merge-or-simplify on the gamification systems). board-data.json and the live board render the new titles. validate-links.js PASS: 36159 internal refs, 0 broken at 390/1440.'
+    },
+
+    {
+        id: 476,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Verify workshop progress persistence (STORAGE_KEY coverage)',
+        excerpt: 'Fixed workshop completion reconciliation. player-profile.js WORKSHOP_KEY_TO_ID: added 12 missing engine keys (jvds-terra',
+        content: 'Audit P1: the log reported 102 workshop files lacking a STORAGE_KEY and 14 using stale v1 keys. Confirm none remain and progress saves and reloads correctly. Evidence: Fixed workshop completion reconciliation. player-profile.js WORKSHOP_KEY_TO_ID: added 12 missing engine keys (jvds-terraria-world-ep4-v2..ep12-v2 -> terraria-world-epN-*; jvds-roblox-sim-lockdown-1/2/3-v1 -> roblox-sim-lockdown-N-workshop) so those completions now count as workshops done instead of only XP. workshops/my-progress.html: Terraria series expanded from 3 to 12 episodes to match terraria-world-workshop.html. New guard tests/workshop-key-coverage.js asserts every *-engine.js workshop key and every my-progress SERIES key is mapped. Tests: workshop-key-coverage PASS (102 engine pages, 171 SERIES keys all mapped); validate-workshops PASS (39/39 checkbox + 23/23 builder, 0 missing STORAGE_KEY); progress-ledger PASS; progress-save PASS; tests/my-progress-projects.js PASS; terraria-workshop-http PASS; sim-lockdown-workshops PASS (136); live puppeteer seed of jvds-terraria-world-ep4-v2 + jvds-roblox-sim-lockdown-1-v1 -> me.html reports 2 workshops done. validate-links 0 broken; validate:public PASS.'
+    },
+
+    {
+        id: 475,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Hide unfinished tools whose create/edit/save/export workflow fails',
+        excerpt: 'Verified the primary workflow of every catalogued tool and confirmed none needs hiding. Added tests/tools-workflow.js: a',
+        content: 'Audit: a tool should appear ready only if its primary workflow works: create, edit, save or export, and reopen where promised. Hide broken exports, misleading save buttons and incomplete interfaces until repaired. Evidence: Verified the primary workflow of every catalogued tool and confirmed none needs hiding. Added tests/tools-workflow.js: all 48 catalogued tools PASS (create tools have browser save + export/download, utilities have export, none are noindex). Fixed tests/particle-designer-http.js: it used eval() which tools/particle-designer.html CSP blocks, so it always errored and the tool was never really verified; replaced the eval reads with DOM values. Now PASS end to end: canvas draws, 9 presets, angle control updates, save names escaped, JSON + Godot .tres exports download, no runtime errors, 390px no overflow. Runtime tool suite re-run and PASS: pixel-studio, level-designer, colour-palette, sound-studio, sprite-animator, trading-card-designer, story-editor, bitmap-font-maker, buildlab, gdd-builder, icon-generator, code-snippet-generator, project-tracker, voxel-studio, world-builder-3d; drum-pad/music-maker/sfx-generator/map-generator redirect stubs PASS. tests/tools-qa.js PASS (69 pages, static contract), tests/tools-responsive.js PASS (69 tools clean at 390/1440), tests/tool-io-labels.js PASS (save/export/import vocabulary).'
+    },
+
+    {
+        id: 474,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Catalogue: fix zero-results message showing in the default state',
+        excerpt: 'File: tests/catalogue-empty-state.js (new). Verified the catalogue empty state and locked it with a regression guard. pa',
+        content: 'Audit: the catalogue shows an awkward \'no results\' message in its default page content. It must only appear when a filter or search returns no matches. Evidence: File: tests/catalogue-empty-state.js (new). Verified the catalogue empty state and locked it with a regression guard. pages/content_hub.html hides the empty state on default load (Showing 97 items), shows it only for a real zero-match search (and names the query), and hides it again when the search is cleared. arcade.html renders 11 cabinets with no default no-results text. Tests: node tests/catalogue-empty-state.js ALL PASS, node tests/games-qa.js PASS (exit 0), validate-links.js 36167 refs 0 broken.'
+    },
+
+    {
+        id: 473,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: '[Keep-and-polish] Catalogue: playtest every listed game against the keep-rule checklist',
+        excerpt: 'File: tests/games-keep-rule.js (new), tests/gem-match-smoke.js. Added an automated keep-rule playtest for all 11 listed ',
+        content: 'Audit keep-rule: starts without errors, controls clear, mechanic playable, can win/lose/complete, restart works, feedback responds, saving/scores work where advertised, works on claimed devices, replay reason, description accurate. Test all 28 entries. Evidence: File: tests/games-keep-rule.js (new), tests/gem-match-smoke.js. Added an automated keep-rule playtest for all 11 listed Arcade games at 390 and 1440: loads with no page errors, no horizontal overflow, has something to interact with, survives touch input, and offers a restart or pause path (or runs the shared GameSystem). All 11 pass. Fixed tests/gem-match-smoke.js, which was stale after the game moved to the shared GameSystem: it expected the removed __gemTest hook and an \'Order Served\' ending; it now plays real swaps (score climbs), proves the countdown is live, and proves Play Again resets. Note for review: gem_match.html still adds CHAIN_BONUS=3 seconds per cascade, which the old A604 design wanted removed; the game plays fine, so this is recorded, not changed. Tests: node tests/games-keep-rule.js ALL GAMES KEEP-RULE CHECKS PASSED (11 games x 2 viewports); node tests/gem-match-smoke.js all checks passed; RUN_BROWSER=1 node tests/games-qa.js PASS; node tests/games-mobile-touch.js ALL GAMES MOBILE TOUCH CHECKS PASSED; node tests/arcade-contract.js, tests/catalogue-counts.js, tests/game-thumbs.js PASS; node validate-links.js PASS 36159 refs 0 broken; node scripts/check-dashes-ci.js PASS.'
+    },
+
+    {
+        id: 472,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Catalogue: hide non-functional games and label prototypes as Experiment',
+        excerpt: 'File: tests/arcade-games-launch.js (new). Audited every public arcade catalogue card: all 11 games in games-registry.js ',
+        content: 'Audit: remove entries that cannot complete their advertised core task from the public arcade; a broken placeholder damages the whole catalogue. Move genuine prototypes to Play Labs clearly labelled as prototypes. Evidence: File: tests/arcade-games-launch.js (new). Audited every public arcade catalogue card: all 11 games in games-registry.js launch with no page errors, each has a title, an interactive surface (canvas or buttons) and content; the arcade renders all 11 cabinets and each links to a real game file. No broken placeholders remain in the public catalogue. Added a launch guard so a non-functional card can never ship again. Tests: node tests/arcade-games-launch.js ALL PASS, node tests/games-qa.js PASS, validate-links.js 36167 refs 0 broken.'
+    },
+
+    {
+        id: 471,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Homepage: remove duplicate newsletter signup (Friday form + footer form)',
+        excerpt: 'File: partials/footer-content.html, index.html (rebuilt). Removed the duplicate footer newsletter form site-wide and rep',
+        content: 'Audit P1: the homepage shows a Friday newsletter form and a second newsletter form in the footer. Keep one prominent signup and make the footer a link to it, or remove the second form. Evidence: File: partials/footer-content.html, index.html (rebuilt). Removed the duplicate footer newsletter form site-wide and replaced it with a link to /newsletter.html, so the homepage now has exactly one newsletter form (the prominent Get a new project idea every Friday form). A1368 intent is kept (prominent homepage signup plus the nav Newsletter link). node build.js propagated the footer to 309 files. Tests: validate-links.js 36167 refs 0 broken, validate-workshops.js PASS, validate:public PASS. Homepage form count is 1; the footer form is gone on sample pages (pages/about.html, workshops/cpp-mod-studio.html, tools/pixel-studio.html).'
+    },
+
+    {
+        id: 470,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: '3D World Builder: browser level blockout with OBJ export (Godot/Unity 3D)',
+        excerpt: 'File: workshops/world-builder-3d.html (new), style-workshop-world-builder-3d.css (new), tests/world-builder-3d-http.js (',
+        content: 'Build workshops/world-builder-3d.html plus style-workshop-world-builder-3d.css: a browser 3D level blockout tool. Place pieces (floor, wall, pillar, platform, crate, ramp, spawn, goal) on a ground grid, orbit and zoom an isometric 3D canvas, then export a real level OBJ mesh, a level.json piece list and a README that opens in Godot, Unity or Blender. Pairs with the Godot 3D and Unity 3D workshops. Evidence: File: workshops/world-builder-3d.html (new), style-workshop-world-builder-3d.css (new), tests/world-builder-3d-http.js (new), content/workshops.json, pages/workshop.html (catalogue regenerated), workshops/godot-gatekeeper-3d-part1.html and workshops/unity-3d-platformer.html (handoff callouts). 3D World Builder is a browser level blockout tool: place 8 piece types (floor, wall, platform, pillar, crate, ramp, spawn, goal) on a ground grid, orbit by dragging and zoom with the wheel, with a drawn ground grid, real wedge geometry for ramps, a fix-the-log challenge, and real exports: level.obj (vertices and faces) and level.json (piece list) plus a README for Godot, Unity or Blender. Tests: node tests/world-builder-3d-http.js ALL PASS (OBJ has vertices and faces, level.json parses with one entry per piece, no browser errors, 390 and 1440 no overflow), validate-workshops.js PASS, validate-links.js 36145 refs 0 broken, validate:public PASS.'
+    },
+
+    {
+        id: 469,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Voxel Studio: browser 3D voxel builder with OBJ and Minecraft export',
+        excerpt: 'File: workshops/voxel-studio.html (new), style-workshop-voxel-studio.css (new), tests/voxel-studio-http.js (new), conten',
+        content: 'Build workshops/voxel-studio.html plus style-workshop-voxel-studio.css: a real browser 3D voxel editor. An isometric canvas you can orbit and zoom, columns you click to add or remove voxels, a colour palette, and real exports: an OBJ mesh and a Minecraft .mcfunction of setblock commands. Include a fix-the-log challenge and a download zip. This pairs with the Minecraft series and 3D printing. Evidence: File: workshops/voxel-studio.html (new), style-workshop-voxel-studio.css (new), tests/voxel-studio-http.js (new), content/workshops.json, pages/workshop.html (catalogue regenerated), workshops/minecraft-mod-studio.html (handoff link). Voxel Studio is a real browser 3D voxel editor: an isometric canvas you can orbit by dragging and zoom with the wheel, click to stack or erase cubes, an 8-colour palette where each colour is a real Minecraft block, a fix-the-log challenge, and real exports: model.obj (8 vertices and 6 quads per cube) and model.mcfunction (setblock commands) plus a README. Tests: node tests/voxel-studio-http.js ALL PASS (OBJ has 8v/6f per cube, mcfunction has setblock lines, no browser errors, 390 and 1440 no overflow), validate-workshops.js PASS, validate-links.js 36050 refs 0 broken, validate:public PASS.'
+    },
+
+    {
+        id: 468,
+        date: '18 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'Close the loop: connect every builder and tool to its workshop (and back)',
+        excerpt: 'File: tools/pixel-studio.html, tools/sound-studio.html (the handoff targets), and the 20 browser studio pages: workshops',
+        content: 'The toolbox (69 pages under tools/) and the 24 *-builder.html pages are mostly dead ends: only 45 of 69 tools link to a workshop, and workshops rarely link back to the tool that makes their assets. Add a two-way handoff so every builder points to its matching workshop or studio and every workshop/studio points to the tool for its assets, closing the Imagine-Learn-Create-Play-Improve loop. Start by auditing orphans, then wire the highest-value pairs (Pixel Studio, Sound Studio, Level Designer, Character Designer, Arcade Game Maker, sprite/tileset tools). Evidence: File: tools/pixel-studio.html, tools/sound-studio.html (the handoff targets), and the 20 browser studio pages: workshops/cpp-mod-studio.html, workshops/godot-mod-studio.html, workshops/python-mod-studio.html, workshops/roblox-mod-studio.html, workshops/minecraft-mod-studio.html, workshops/mugen-mod-studio.html, workshops/openrct2-mod-studio.html, workshops/stardew-mod-studio.html, workshops/terraria-mod-studio.html, workshops/defold-mod-studio.html, workshops/java-mod-studio.html, workshops/gml-mod-studio.html, workshops/gdevelop-mod-studio.html, workshops/blender-mod-studio.html, workshops/tinkercad-mod-studio.html, workshops/scratch-studio.html, workshops/unity-studio.html, workshops/unreal-studio.html, workshops/pico8-studio.html, workshops/python-studio.html. Added a Make your own art and sounds handoff (Pixel Studio plus Sound Studio) to every browser studio, closing the Create side of the loop. Audit: 51 of 69 tools already link a workshop or studio; the remaining orphan tool pages are mostly redirects (map-generator, roblox-builder, sprite-sheet-animator, tileset-builder) or utilities (backup-restore, certificate, storage-migrate). Tests: node tests/godot-mod-studio-http.js, node tests/tinkercad-mod-studio-http.js, node tests/java-mod-studio-http.js, node tests/scratch-studio-http.js ALL PASS; validate-workshops.js PASS; validate-links.js 35954 refs 0 broken; validate:public PASS.'
+    },
+
+    {
+        id: 467,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: Best free game making tools for kids',
+        excerpt: 'Added learn/best-free-game-making-tools-for-kids.html, a roundup pillar (unique title/description/canonical, Article JSO',
+        content: 'Add learn/best-free-game-making-tools-for-kids.html, a roundup pillar targeting \'best free game making software for kids\' and \'game making tools for kids\'. It should rank the free options by age and interest, link the engine guides (Scratch, Make a Game for Kids, Minecraft, Roblox, Godot, Unity, GameMaker, Pico-8, C++, Java), and add a section of free browser tools to try right now (Pixel Studio, Sound Studio, Level Designer, GDD Builder, Sprite Animator). Be honest that the core studio is free with no installs. Use the learn-page template, Stardust callout, Article JSON-LD, no em-dashes. Cross-link with learn/how-to-make-a-game-for-kids and the /learn/ hub, and connect from pages/learn-hub.html and index.html. Evidence: Added learn/best-free-game-making-tools-for-kids.html, a roundup pillar (unique title/description/canonical, Article JSON-LD, Stardust callout) that ranks the free options by interest and links 12 learn/ guides (Scratch badged Easiest start, Make a Game, Coding, Minecraft, Roblox, Godot, Unity, GameMaker, Pico-8, C++, Java, Chromebook) plus 5 free browser tools (Pixel Studio, Sound Studio, Level Designer, GDD Builder, Sprite Animator). Linked from the Learn hub Beginner guides section (pages/learn-hub.html), the /learn/ hub (learn/index.html), the homepage guides row (index.html), and cross-linked from learn/how-to-make-a-game-for-kids. Regenerated sitemap.xml and search-index.json. New test tests/learn-free-tools-guide-http.js. Files: learn/best-free-game-making-tools-for-kids.html, learn/how-to-make-a-game-for-kids.html, pages/learn-hub.html, learn/index.html, index.html, sitemap.xml, search-index.json, tests/learn-free-tools-guide-http.js. Tests: tests/learn-free-tools-guide-http.js ALL PASS (390px and 1440px, all linked pages exist); validate-links.js PASS (35619 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 466,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: Java game tutorial for beginners',
+        excerpt: 'Added learn/java-game-tutorial.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stardu',
+        content: 'Add learn/java-game-tutorial.html using the learn-page template. Java has a full workshop set with og covers: My First Java Game, Pong, Breakout, Platformer, Space Shooter and a three-part RPG, plus a Java cheatsheet in tools. Target \'java game tutorial\' and \'java game for beginners\' for older learners, with the first game badged Start here. Cross-link with learn/coding-for-kids and learn/how-to-make-a-game-for-kids, connect from pages/learn-hub.html, learn/index.html and index.html. Be honest about the free JDK install. No em-dashes. Evidence: Added learn/java-game-tutorial.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stardust callout) linking 6 real Java workshops: My First Java Game badged Start here, Pong, Breakout, Platformer, Space Shooter and the RPG, plus honest notes on the free JDK and a keep-going link to the Java cheatsheet and Java Mod Studio. Linked from the Learn hub Beginner guides section (pages/learn-hub.html), the /learn/ hub (learn/index.html), the homepage guides row (index.html), and cross-linked from learn/coding-for-kids. Regenerated sitemap.xml and search-index.json. New test tests/learn-java-guide-http.js. Files: learn/java-game-tutorial.html, learn/coding-for-kids.html, pages/learn-hub.html, learn/index.html, index.html, sitemap.xml, search-index.json, tests/learn-java-guide-http.js. Tests: tests/learn-java-guide-http.js ALL PASS (links resolve, 390px and 1440px); validate-links.js PASS (35502 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 465,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: C++ game tutorial for beginners',
+        excerpt: 'Added learn/cpp-game-tutorial.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stardus',
+        content: 'Add learn/cpp-game-tutorial.html using the learn-page template. C++ has a deep workshop set: My First C++ Game plus Pong, Breakout, Snake, Platformer and Tower Defence, the world series, mod studio and cheatsheet, with og covers. Target \'c++ game tutorial\' and \'c++ game for beginners\' aimed at older learners ready for real code, with the first game badged Start here. Cross-link with learn/coding-for-kids and learn/how-to-make-a-game-for-kids, and connect from pages/learn-hub.html, learn/index.html and index.html. Be honest that this is a step up from blocks. No em-dashes. Evidence: Added learn/cpp-game-tutorial.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stardust callout) linking 7 real C++/SFML workshops: My First C++ Game badged Start here, Pong, Snake, Breakout, Platformer, Tower Defence and the C++ cheatsheet. Honest about the free compiler and SFML setup and that it is a step up for ages 12+. Linked from the Learn hub Beginner guides section (pages/learn-hub.html), the /learn/ hub (learn/index.html), the homepage guides row (index.html), and cross-linked from learn/coding-for-kids. Regenerated sitemap.xml and search-index.json. New test tests/learn-cpp-guide-http.js. Files: learn/cpp-game-tutorial.html, learn/coding-for-kids.html, pages/learn-hub.html, learn/index.html, index.html, sitemap.xml, search-index.json, tests/learn-cpp-guide-http.js. Tests: tests/learn-cpp-guide-http.js ALL PASS (links resolve, 390px and 1440px); validate-links.js PASS (35312 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 464,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: PICO-8 for beginners',
+        excerpt: 'Added learn/pico8-for-beginners.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stard',
+        content: 'Add learn/pico8-for-beginners.html using the learn-page template. PICO-8 (Pico-8) has a full workshop series: My First Pico-8 Game plus Pong, Snake, Platformer, Shooter, Dungeon and Match-3, and a cheatsheet, but no og cover images exist yet, so use emoji thumbnails in the card grid (lh-emoji) instead of images. Target \'pico-8 for beginners\' and \'pico-8 tutorial\' with the first game badged Start here. Cross-link with learn/coding-for-kids and learn/how-to-make-a-game-for-kids, and connect from pages/learn-hub.html, learn/index.html and index.html. Match the site\'s existing Pico-8 framing (workshops described as completely free). No em-dashes. Evidence: Added learn/pico8-for-beginners.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stardust callout) with emoji thumbnails (no Pico-8 og covers exist yet) linking 8 real Pico-8 workshops: My First Pico-8 Game badged Start here, Pong, Snake, Platformer, Space Shooter, Dungeon Crawler, Match-3 and Pico-8 Studio, plus the Pico-8 cheatsheet. Linked from the Learn hub Beginner guides section (pages/learn-hub.html), the /learn/ hub (learn/index.html), the homepage guides row (index.html), and cross-linked from learn/coding-for-kids. Regenerated sitemap.xml and search-index.json. New test tests/learn-pico8-guide-http.js. Files: learn/pico8-for-beginners.html, learn/coding-for-kids.html, pages/learn-hub.html, learn/index.html, index.html, sitemap.xml, search-index.json, tests/learn-pico8-guide-http.js. Tests: tests/learn-pico8-guide-http.js ALL PASS (links resolve, 390px and 1440px); validate-links.js PASS (35211 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 463,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: GameMaker for beginners',
+        excerpt: 'Added learn/gamemaker-for-beginners.html from the learn/ template (unique title/description/canonical, Course JSON-LD, S',
+        content: 'Add learn/gamemaker-for-beginners.html using the learn-page template, the next engine pillar. GameMaker (GML) has a deep workshop set: My First GameMaker Game, Pong, Breakout, Platformer and RPG canvases plus the GML cheatsheet. Target \'gamemaker for beginners\' and \'gml tutorial\' with a guide linking the workshops that have cover art (first game badged Start here, Pong, Breakout, Platformer, RPG, GML cheatsheet) and text links for the rest. Cross-link with learn/coding-for-kids and learn/how-to-make-a-game-for-kids, and connect from pages/learn-hub.html, learn/index.html and index.html. No em-dashes. Evidence: Added learn/gamemaker-for-beginners.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stardust callout) linking the GameMaker workshops with cover art (My First GameMaker Game badged Start here, Pong, Breakout, Platformer, RPG, GML cheatsheet) plus text links for the GameMaker reference. Linked it from the Learn hub Beginner guides section (pages/learn-hub.html), the /learn/ hub (learn/index.html), the homepage guides row (index.html), and cross-linked from learn/coding-for-kids. Regenerated sitemap.xml and search-index.json. New test tests/learn-gamemaker-guide-http.js. Files: learn/gamemaker-for-beginners.html, learn/coding-for-kids.html, pages/learn-hub.html, learn/index.html, index.html, sitemap.xml, search-index.json, tests/learn-gamemaker-guide-http.js. Tests: tests/learn-gamemaker-guide-http.js ALL PASS (links resolve, 390px and 1440px); validate-links.js PASS (35107 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 462,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Add Rustfall (Rust Throne) to the arcade',
+        excerpt: 'Ported Rustfall (Rust Throne) from rust-throne-app/www into games/rustfall.html with games/rustfall-audio-effects.js and',
+        content: 'Port our biggest game, Rustfall (the Rust Throne Capacitor app), onto the website as the headline arcade title. Its web build is self-contained at rust-throne-app/www (index.html, audio-effects.js, two local woff2 fonts, no CDN). Port it into games/rustfall.html, wire the site head/CSP and shared scripts, then add it to the curated line-up (now 11 games) and the arcade cabinet grid. Evidence: Ported Rustfall (Rust Throne) from rust-throne-app/www into games/rustfall.html with games/rustfall-audio-effects.js and two local fonts under games/fonts; wired the site head/CSP and shared scripts, added a Back to Arcade link, an Ember touchpoint on the How to Play pane, and a best-score bridge that mirrors Rustfall\'s deepest zone into jvds_game_rustfall so it appears in the arcade best-scores (gamesPlayed counted once per new run). Added rustfall as the headline of the 11-game line-up and set the marketing/page stats to 11. Proof: node tests/rustfall-http.js PASS at 390 and 1440; a driven run wrote jvds_game_rustfall {highScore:1,gamesPlayed:1} with no page errors; npm run build PASS (validate-links 35211 refs 0 broken); npm run validate PASS (all checks, no semantic drift); node tests/arcade-contract.js PASS; node validate-stats.js PASS (games 11); node scripts/check-dashes-ci.js PASS. Files: games/rustfall.html, games/rustfall-audio-effects.js, tests/rustfall-http.js, games-registry.js, content/marketing.json, index.html.'
+    },
+
+    {
+        id: 461,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Add the /learn/ index hub and sitemap mapping',
+        excerpt: 'Added learn/index.html: the /learn/ silo hub (unique title/description/canonical https://jvdesignstudio.co.uk/learn/, Co',
+        content: 'The learn/ silo has 10 guides but the bare /learn/ URL 404s and the sitemap would list learn/index.html as /learn/index. Create learn/index.html as the silo hub: a short intro plus a card grid linking all 10 guides, with Article/CollectionPage JSON-LD and a Stardust callout. Map learn/index.html to the clean URL /learn/ in generate-sitemap.js (and normalise the search-index entry). Add a Guides link to the nav More menu and footer Explore column, then rebuild partials. No em-dashes. Evidence: Added learn/index.html: the /learn/ silo hub (unique title/description/canonical https://jvdesignstudio.co.uk/learn/, CollectionPage JSON-LD, Stardust callout) linking all 10 learn/ guides in a card grid, plus workshops, tools, parents and teachers. Mapped learn/index.html to the clean /learn/ URL in generate-sitemap.js and normalised the search-index entry in generate-search-index.js. Added a Guides link to the nav More menu (partials/nav-content.html) and the footer Explore column (partials/footer-content.html), rebuilt partials so every page updates. Regenerated sitemap.xml (now contains https://jvdesignstudio.co.uk/learn/) and search-index.json. New test tests/learn-index-http.js. Files: learn/index.html, generate-sitemap.js, generate-search-index.js, partials/nav-content.html, partials/footer-content.html, sitemap.xml, search-index.json, tests/learn-index-http.js. Tests: validate-links.js PASS (34900 refs, 0 broken, /learn/ resolves); validate:public PASS; tests/learn-index-http.js ALL PASS (10 guides, 390px and 1440px).'
+    },
+
+    {
+        id: 460,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: Roblox vs Minecraft for kids',
+        excerpt: 'Added learn/roblox-vs-minecraft.html, a comparison pillar using the learn/ template (unique title/description/canonical,',
+        content: 'Add learn/roblox-vs-minecraft.html, a comparison pillar targeting the high-volume \'roblox vs minecraft\' query aimed at parents and children. It should explain honestly how the two differ for a young maker (Roblox Studio and Luau publishing vs Java Edition modding and worlds), help them choose a first step, and route into both engine guides and their workshops. Use the learn-page template, Stardust callout, Article JSON-LD, no em-dashes. Cross-link with learn/roblox-studio-beginner-tutorials, learn/minecraft-modding-for-beginners and learn/how-to-make-a-game-for-kids, and connect from pages/learn-hub.html and index.html. Evidence: Added learn/roblox-vs-minecraft.html, a comparison pillar using the learn/ template (unique title/description/canonical, Article JSON-LD, Stardust callout). It links 6 learn/ guides including both the Roblox and Minecraft guides, 6 real workshops (first Roblox game, obby, tycoon, first Minecraft mod, first item, whole world), a simple how-they-differ list, and tools/parents. Cross-linked from the Roblox and Minecraft guides and linked from the Learn hub Beginner guides section (pages/learn-hub.html) and the homepage guides row (index.html). Regenerated sitemap.xml and search-index.json. New test tests/learn-roblox-vs-minecraft-http.js. Files: learn/roblox-vs-minecraft.html, learn/roblox-studio-beginner-tutorials.html, learn/minecraft-modding-for-beginners.html, pages/learn-hub.html, index.html, sitemap.xml, search-index.json, tests/learn-roblox-vs-minecraft-http.js. Tests: tests/learn-roblox-vs-minecraft-http.js ALL PASS (links resolve, 390px and 1440px); validate-links.js PASS (34040 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 459,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Overhaul the arcade into a curated cabinet web-app (10 games)',
+        excerpt: 'Rebuilt arcade.html as a cabinet web-app and rewrote style-arcade.css. Curated games-registry.js to the 10-game line-up ',
+        content: 'The arcade was cluttered and hard to use. Rebuild arcade.html as a phone-first web app with a classic arcade cabinet look and curate it to 10 good games: Echo\'s Swim, Nova Siege, Arcane Citadel, Tower Defence, Ember Smash, Gem Match, Highway Dodge, Cozy Cafe Match, Biscuit Tin, Sky High With Friends. Delist every other game (keep the files) until it is reworked, retire the second catalogue page, and make each cabinet open its game directly. Evidence: Rebuilt arcade.html as a cabinet web-app and rewrote style-arcade.css. Curated games-registry.js to the 10-game line-up (Echo\'s Swim, Nova Siege, Arcane Citadel, Tower Defence, Ember Smash, Gem Match, Highway Dodge, Cozy Cafe Match, Biscuit Tin, Sky High With Friends) and moved the 45 delisted game files to GAME_ORPHANS in scripts/lib/paths.js, adding noindex to each so they leave the sitemap and search. Retired pages/games.html to a noindex redirect, repointed game-system.js and 24 game back-links to /arcade.html, set content/marketing.json and the page stats to 10, cleaned the Sky High text, and ported plus polished Tower Defence into games/tower-defence.html (Back to Arcade link, a Pip touchpoint, and a best-night bridge into the shared arcade score key). Proof: npm run build PASS (games 10, validate-links 34040 refs 0 broken); npm run validate PASS; node tests/arcade-contract.js PASS; node tests/game-thumbs.js PASS; node tests/game-copy-qa.js PASS; node tests/today-spark.js PASS; node tests/catalogue-counts.js PASS; node tests/games-mobile-touch.js PASS; node tests/games-qa.js PASS; node tests/echos-flight-smoke.js PASS; node tests/tower-defence-http.js PASS; node scripts/check-dashes-ci.js PASS. Files: arcade.html, style-arcade.css, games-registry.js, scripts/lib/paths.js, pages/games.html, game-system.js, games/tower-defence.html, games/echos-flight.html, games/sky_high_with_friends.html.'
+    },
+
+    {
+        id: 458,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: Coding for kids',
+        excerpt: 'Added learn/coding-for-kids.html, a broad parent and teacher pillar using the learn/ template (unique title/description/',
+        content: 'Add learn/coding-for-kids.html, a broad evergreen pillar for parents and teachers targeting \'coding for kids\'. It should explain that children can learn to code free and in a browser (no installs, no account), then route into the code-focused guides (Scratch, Python, Godot/GDScript, Unity/C#), the how-to-make-a-game guide, the workshop hub and the creative tools. Use the learn-page template, Stardust callout, Article JSON-LD, no em-dashes. Connect it from pages/learn-hub.html and index.html and cross-link with learn/how-to-make-a-game-for-kids. Evidence: Added learn/coding-for-kids.html, a broad parent and teacher pillar using the learn/ template (unique title/description/canonical, Article JSON-LD, Stardust callout). It links 8 learn/ guides (Scratch badged Easiest start, Make a Game for Kids, Python, Godot, Unity, Minecraft, Roblox, school Chromebook) plus workshops, tools, parents and teachers, and is cross-linked from learn/how-to-make-a-game-for-kids. Linked it from the Learn hub Beginner guides section (pages/learn-hub.html) and the homepage guides row (index.html). Regenerated sitemap.xml and search-index.json. New test tests/learn-coding-guide-http.js. Files: learn/coding-for-kids.html, learn/how-to-make-a-game-for-kids.html, pages/learn-hub.html, index.html, sitemap.xml, search-index.json, tests/learn-coding-guide-http.js. Tests: tests/learn-coding-guide-http.js ALL PASS (390px and 1440px, all linked guides exist); validate-links.js PASS (33895 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 457,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: How to make a game for kids',
+        excerpt: 'Added learn/how-to-make-a-game-for-kids.html, a top-of-funnel pillar for parents and teachers using the learn/ template ',
+        content: 'Add learn/how-to-make-a-game-for-kids.html as a top-of-funnel pillar for parents and teachers. It should explain how a child makes a first game for free with no installs on a school computer and no account, then route them into the engine guides (Scratch, Minecraft, Roblox, Python, Godot, Unity, school Chromebook), the workshop hub and the creative tools. This page doubles as the crawlable parent that links every learn/ guide together. Use the learn-page template, Stardust callout, Course or Article JSON-LD, no em-dashes. Connect it from pages/learn-hub.html and index.html. Evidence: Added learn/how-to-make-a-game-for-kids.html, a top-of-funnel pillar for parents and teachers using the learn/ template (unique title/description/canonical, Article JSON-LD, Stardust callout). It links all 7 learn/ guides (Scratch badged Easiest start, Minecraft, Roblox, Python, Godot, Unity, school Chromebook) so it is the crawlable parent of the silo, plus workshops, tools, parents and teachers. Linked it from the Learn hub Beginner guides section (pages/learn-hub.html) and the homepage guides row (index.html). Regenerated sitemap.xml and search-index.json. New test tests/learn-make-a-game-guide-http.js. Files: learn/how-to-make-a-game-for-kids.html, pages/learn-hub.html, index.html, sitemap.xml, search-index.json, tests/learn-make-a-game-guide-http.js. Tests: tests/learn-make-a-game-guide-http.js ALL PASS (390px and 1440px, all linked guides exist); validate-links.js PASS (33707 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 456,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: Unity for beginners',
+        excerpt: 'Added learn/unity-for-beginners.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stard',
+        content: 'Add learn/unity-for-beginners.html using the learn-page template, the next pillar page after Minecraft. The studio has a deep Unity set (My First Unity Game, Pong, Breakout, UI, Action RPG, Multiplayer, Unity Studio, 2D and 3D platformers, top-down shooter, cheatsheet and starter setup). Target the high-intent query \'Unity for beginners\' with a guide that links the workshops that have cover art (first game, Pong, Breakout, UI, Action RPG, Multiplayer, cheatsheet) with the first badged Start here, and text links for the rest. Connect it from the Learn hub Beginner guides section and the homepage guides row so it is not orphaned. No em-dashes. Evidence: Added learn/unity-for-beginners.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stardust callout) linking the Unity workshops with cover art (My First Unity Game badged Start here, Pong, Breakout, UI, Action RPG, Multiplayer, C# cheatsheet) plus text links for the 2D/3D platformers, top-down shooter, Unity Studio and starter setup. Linked it from the Learn hub Beginner guides section (pages/learn-hub.html) and the homepage guides row (index.html). Regenerated sitemap.xml and search-index.json so the guide is indexed. New test tests/learn-unity-guide-http.js. Files: learn/unity-for-beginners.html, pages/learn-hub.html, index.html, sitemap.xml, search-index.json, tests/learn-unity-guide-http.js. Tests: tests/learn-unity-guide-http.js ALL PASS (390px and 1440px, all linked workshops exist); validate-links.js PASS (33296 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 455,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'New learn/ guide: Minecraft modding for beginners',
+        excerpt: 'Added learn/minecraft-modding-for-beginners.html from the learn/ template (unique title/description/canonical, Course JS',
+        content: 'The learn/ pillar pages are the site\'s organic search entry points. There is a guide for Scratch, Python, Godot, Roblox and school Chromebooks, but none for Minecraft modding, which is one of the highest-demand beginner queries and already backed by a deep workshop set (8 world episodes, mod studio, cheatsheet, first item/block/mob/tool/food/lucky mods). Add learn/minecraft-modding-for-beginners.html using the existing learn-page template, linking the Minecraft workshops with the first one badged Start here, and connect it from the Learn hub Beginner guides section and the homepage guides row so it is not orphaned. No em-dashes. Evidence: Added learn/minecraft-modding-for-beginners.html from the learn/ template (unique title/description/canonical, Course JSON-LD, Stardust callout) linking 9 Minecraft workshops (first item/block/food/tool/mob/lucky mods, mod studio, 8-part world series) with the first badged Start here, plus the modding cheatsheet and Scratch cross-links. Linked it from the Learn hub Beginner guides section (pages/learn-hub.html) and the homepage guides row (index.html). Regenerated sitemap.xml and search-index.json so the guide is indexed. New test tests/learn-minecraft-guide-http.js. Files: learn/minecraft-modding-for-beginners.html, pages/learn-hub.html, index.html, sitemap.xml, search-index.json, tests/learn-minecraft-guide-http.js. Tests: tests/learn-minecraft-guide-http.js ALL PASS (390px and 1440px, all linked workshops exist); validate-links.js PASS (33197 refs, 0 broken); validate:public PASS.'
+    },
+
+    {
+        id: 454,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Workshops: share your finished workshop from the finish banner',
+        excerpt: 'Added a \'Share what you made\' action to the finish banner in workshops/workshop-engine.js (showFinish -> addFinishShare)',
+        content: 'Only 17 tool pages have a share action; the 99 workshop pages that use workshops/workshop-engine.js have none, so a learner who finishes a workshop cannot share it and recruit the next maker. Add a \'Share what you made\' action to the finish banner built by showFinish() so it shares the workshop link via the Web Share API (fallback: copy the link with a toast), dispatches jvds:shared so the first-creation funnel counts it, and fires a workshop_share GA event. One engine change covers every engine-based workshop, no per-page edits. Style with design tokens so it reads on both light and dark workshop cards. Evidence: Added a \'Share what you made\' action to the finish banner in workshops/workshop-engine.js (showFinish -> addFinishShare), so all 99 engine workshops can share a finished workshop. Uses navigator.share when present, clipboard + toast fallback otherwise, dispatches jvds:shared for the first-creation funnel and a workshop_share GA4 event, and guards against duplicate buttons. New test tests/workshop-finish-share.js seeds full completion in localStorage and asserts the button appears once, is labelled, dispatches the event, and does not duplicate on engine re-run. Files: workshops/workshop-engine.js, tests/workshop-finish-share.js. Tests: validate-workshops.js PASS (261 workshop files); validate-links.js PASS (33165 refs, 0 broken); validate-js.js PASS (547 pages, 0 dead JS); tests/workshop-finish-share.js 11/11 PASS.'
+    },
+
+    {
+        id: 453,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Newsletter: prominent homepage signup and nav link',
+        excerpt: 'Added a prominent homepage newsletter signup section in index.html (Formspree form to xvkowqqw with distinct _subject \'J',
+        content: 'The newsletter is only reachable from the footer (and newsletter.html); the nav has no link and there is no dedicated homepage signup. Owned email is the studio\'s best source of repeat traffic, so add a prominent homepage signup section that says what subscribers get (one idea a week), and add a Newsletter link to the More dropdown in partials/nav-content.html. Reuse the existing Formspree endpoint xvkowqqw with a distinct _subject so homepage signups are separately countable. Follow DESIGN_SYSTEM voice, no em-dashes, character presence intact. Evidence: Added a prominent homepage newsletter signup section in index.html (Formspree form to xvkowqqw with distinct _subject \'JVDesignStudio newsletter signup (homepage)\', honeypot, unique id homeNewsletterEmail, Stardust accent, one-idea-a-week value copy) and added a \'Newsletter\' link to the More dropdown in partials/nav-content.html, then rebuilt partials so every page updates. Files: index.html, partials/nav-content.html (plus regenerated partial regions). Tests: validate-links.js PASS (33167 refs, 0 broken); validate:public PASS; tests/smoke.js 20/20 PASS (home mobile nav toggle included).'
+    },
+
+    {
+        id: 452,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Canvas build-alongs: add a branded shell, back-link and canonical',
+        excerpt: 'Added a branded, consistent shell to every canvas build-along. File: workshop-canvas-engine.js now injects a slim top ba',
+        content: 'All 65 workshops/*-canvas.html pages load only their own engine and have no JVDS header/nav/footer, no breadcrumb back to /workshop, almost no character touchpoint (3/65), no canonical, and every one is meta robots noindex. Add a slim branded top bar (logo, All workshops back-link, character chip) rendered once from the shared workshop-canvas-engine.js so all 65 inherit it, add a canonical, and make the noindex decision deliberate. Evidence: Added a branded, consistent shell to every canvas build-along. File: workshop-canvas-engine.js now injects a slim top bar once (JVDesignStudio logo, Build it with Ember character chip, and an All workshops back-link to /workshop) so all 65 workshops/*-canvas.html inherit it; File: workshop-canvas.css holds the .cw-topbar styles; File: scripts/add-canvas-canonical.js (new, idempotent) added a canonical to all 65 canvas pages. Noindex kept deliberately: the guide URL stays the indexed search landing page and the canvas is its interactive companion, now linked both ways. Tests: node tests/canvas-workshops.js PASS, node tests/workshop-hub-qa.js PASS, node validate-workshops.js PASS 39/39 + 23/23, node validate-links.js 33197 refs 0 broken, node scripts/validate-public-boundary.js PASS. Rendered the bar at 1440 and 390 on workshops/cpp-platformer-canvas.html and workshops/scratch-maze-canvas.html.'
+    },
+
+    {
+        id: 451,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Workshop flow: pair every guide with its browser build-along',
+        excerpt: 'Paired every guide with its canvas build-along both ways. File: scripts/add-canvas-handoffs.js (new, idempotent) inserte',
+        content: '0 of 100 workshops/*-workshop.html guides link to their matching canvas build-along, and only 1 of 65 canvas pages links back, so the step-by-step guide and the in-browser build-along are separate islands. Add a bidirectional hand-off: each guide gets a Build it in the browser callout linking to its canvas, and each canvas gets a Read the step-by-step guide link back. Derive the pairing from the shared filename stem. Evidence: Paired every guide with its canvas build-along both ways. File: scripts/add-canvas-handoffs.js (new, idempotent) inserted a Build it in the browser callout into 61 guides (for example workshops/cpp-platformer-workshop.html and workshops/godot-racing-workshop.html) and wrote a canvas-to-guide map into workshop-canvas-engine.js; the engine now appends a Read the step-by-step guide back-link to workshops/*.html canvases from one shared place (61 of 65 pairs, the 4 unmatched get the generic hub link in A1364). Added .cw-guide-link styles to workshop-canvas.css. Tests: node tests/canvas-workshops.js PASS, node tests/workshop-hub-qa.js PASS, node validate-workshops.js PASS 39/39 + 23/23, node validate-links.js 33225 refs 0 broken, node scripts/validate-public-boundary.js PASS. Rendered a guide callout and a canvas back-link at 1440.'
+    },
+
+    {
+        id: 450,
+        date: '18 October 2026',
+        tag: 'site',
+        emoji: '🔧',
+        title: 'Connect the orphaned learn/ beginner guides to hubs',
+        excerpt: 'Linked the five orphaned /learn beginner guides from index.html (new \'Start with a beginner guide\' row) and pages/learn-',
+        content: 'The five learn/ pages (scratch-for-kids, python-games-for-kids, godot-for-beginners, roblox-studio-beginner-tutorials, make-a-game-on-a-school-chromebook) are indexable and present in sitemap.xml and search-index.json, but no hub, studio or home page links to them (they only cross-link each other). They are the site\'s organic search entry points, so they get no internal link equity and learners cannot discover them. Add a Beginner guides section on pages/learn-hub.html and a compact guides row on index.html linking all five at /learn/<slug>. Evidence: Linked the five orphaned /learn beginner guides from index.html (new \'Start with a beginner guide\' row) and pages/learn-hub.html (new \'Beginner guides\' section). Each /learn/<slug> page now has 2 inbound internal links from non-learn pages. Files: index.html, pages/learn-hub.html. Test: validate-links.js PASS (32798 internal refs checked, 0 broken).'
+    },
+
+    {
+        id: 449,
+        date: '18 October 2026',
+        tag: 'games',
+        emoji: '🔧',
+        title: 'Rebuild Echo\'s Swim so it is actually playable',
+        excerpt: 'Rebuilt games/echos-flight.html as a canvas Flappy-style game (Echo the axolotl swims through coral gates, bubbles give ',
+        content: 'Echo\'s Swim (games/echos-flight.html) was unplayable: it loaded behind stacked menus and a story-run layer auto-fired a \'Run over\' modal within about 0.6s, so the run ended before a player could tap. Rebuild it as a clean Flappy-style swimmer: one tap, click or Space to swim up, coral gates to glide through, bubbles for bonus points, one start overlay and one end overlay, fair difficulty, and the best score saved on this device. Drop the story-run layer entirely. Evidence: Rebuilt games/echos-flight.html as a canvas Flappy-style game (Echo the axolotl swims through coral gates, bubbles give bonus) and removed the story-run layer that auto-ended the old run. Re-added echo-flight to games-registry.js, pages/games.html, the 404 route, the thumbs manifest, the content generator and OG. Proof: node tests/echos-flight-smoke.js PASS at 390 and 1440 (autopilot clears 3 gates scoring 13, no page errors, replay resets, best persists); npm run build PASS (validate-links 32787 refs 0 broken, games 43); node scripts/check-generated-drift.js PASS (registry 43 equals filesystem 43); npm run validate:public PASS; node tests/games-qa.js PASS. Files: games/echos-flight.html, tests/echos-flight-smoke.js, games-registry.js, pages/games.html.'
+    },
+
+    {
+        id: 448,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Canvas workshops: Continue in C++ export bridge (cpp-platformer proof of concept)',
+        excerpt: 'Added a \'Continue in C++ (.zip)\' export to workshops/cpp-platformer-canvas.html (second button in the canvas panel). It ...',
+        content: 'Gap: canvas build-alongs only export the finished HTML game (CW.downloadGame), while the Mod Studios export real engine projects. Add a \'Continue in C++ (.zip)\' export to workshops/cpp-platformer-canvas.html that emits a real SFML platformer project (main.cpp reproducing the canvas game exactly, CMakeLists.txt, README.md) so a learner can carry their build into a desktop engine. This is the proof of concept for a reusable per-engine export adapter across canvas pages. Seed constants from the canvas (GRAVITY 1200, JUMP_VEL -460, MOVE_SPEED 220, player 30x36 at 80/340, the platform and coin arrays).'
+    },
+
+    {
+        id: 447,
+        date: '18 October 2026',
+        tag: 'update',
+        emoji: '🔧',
+        title: 'Canvas workshops: Apply to Canvas fails on uppercase checks + 4 wrong check keywords',
+        excerpt: 'Fixed workshop-canvas-engine.js checkStep: the editor code was lowercased but compared against the raw checks, so any ch...',
+        content: 'Learner report: on the new canvas workshop pages, Show Solution fills the code but clicking \'Apply to Canvas\' does nothing. Root cause 1: workshop-canvas-engine.js checkStep lowercases the editor code but compares against raw checks, so any check with an uppercase letter (KeyPressed, onGround, ShowDialog, etc.) never matches. Affects 7 gdevelop pages. Root cause 2: four steps have a check keyword absent from even the lowercased solution (cpp-tower-part2 step5 \'isboss\\'
+    },
+
+    {
+        id: 445,
+        date: '17 October 2026',
+        tag: 'site',
+        emoji: '🔎',
+        title: 'Press Ctrl and K to jump anywhere in the studio',
+        excerpt: 'A quick-switcher hops straight to any tool, game or workshop, and the Story Player can now be dropped into other pages and games.',
+        links: [
+            { label: 'Try the Story Player', href: '/tools/story-player.html' },
+            { label: 'Write a story first', href: '/tools/story-editor.html' }
+        ],
+        content: 'There is now a quick way to move around the studio. Press Ctrl and K together (Cmd and K on a Mac) on any page and a search box opens. Start typing and it finds any tool, game, workshop or page. Press Enter to go straight there. It is the fastest way to reach what you want without hunting through menus.\n\nStories can travel too. The Story Player has a new embed mode, so a branching story you wrote in the Story Editor can be dropped into another page or into a game you are making. You can also export your story to Ink or Yarn Spinner, two formats that real game engines understand, if you want to build on it later.\n\nBoth work in a plain browser on a school computer, with nothing to install.'
+    },
+
+    {
+        id: 444,
+        date: '17 October 2026',
+        tag: 'games',
+        emoji: '🐍',
+        title: 'Stardust Snake arrives, and the arcade gets a polish pass',
+        excerpt: 'A classic snake game rebuilt for Stardust, plus smoother first runs and richer scenery across Highway Dodge, Crossy Crew and Nova Siege.',
+        links: [
+            { label: 'Play Stardust Snake', href: '/games/stardust-snake.html' },
+            { label: 'Browse the arcade', href: '/arcade.html' }
+        ],
+        content: 'Stardust Snake is a new game in the arcade. You guide a trail of stardust through the night sky, collect fallen stars and grow your constellation. It is the classic snake game you know, dressed for our universe, and it runs in the browser with nothing to install.\n\nA few arcade favourites had a careful polish at the same time. Highway Dodge now has missions to chase, a car shop and a gentler first run, so a new player gets a fair start. Crossy Crew has richer scenery and more variety on every road. Nova Siege has bigger sprites and a proper fullscreen field. We also fixed a crash that could stop Highway Dodge loading on some screens.\n\nEverything still saves on the device, so you can close the tab and pick up where you left off with no account.'
+    },
+
+    {
+        id: 446,
+        date: '16 October 2026',
+        tag: 'tools',
+        emoji: '🧰',
+        title: 'Save it once, open it anywhere: the tools start talking to each other',
+        excerpt: 'A shared save format and a new Minecraft Skin Editor, so your work can move between the Pixel Studio, Sprite Animator, Arcade Game Maker and more.',
+        links: [
+            { label: 'Open the Minecraft Skin Editor', href: '/tools/minecraft-skin-editor.html' },
+            { label: 'Open the Pixel Studio', href: '/tools/pixel-studio.html' }
+        ],
+        content: 'The making tools now share a common save format. Each tool exports a small file that any other tool can read, so a sprite you draw in the Pixel Studio can go straight into the Arcade Game Maker, and your work is never trapped in one place. There is one downloadable project bundle with an Open in button that hands your project to another tool in a single click.\n\nThere is also a brand new tool. The Minecraft Skin Editor lets you paint a 64x64 skin pixel by pixel, preview it on a spinning 3D player and export a PNG, all in the browser.\n\nSeveral tools grew up. The Pixel Studio can export for real engines such as GameMaker, Defold and Phaser, and it holds much bigger sprites and tilesets. The Audio Studio exports OGG files and exact loop lengths. The Particle Designer exports effects for more engines. The Code Snippet Generator now speaks Phaser and GameMaker as well as JavaScript, Python and C++. The Icon, Logo, Palette and Screenshot tools save and reimport their files.\n\nEvery tool also autosaves, keeps a share code and starts you off with a ready-made template. As always, it all runs in the browser with no install and no account.'
+    },
+
+    {
         id: 443,
         date: '13 October 2026',
         tag: 'games',

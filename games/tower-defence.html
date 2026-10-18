@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-K8QFT6qNk7HgzQPN1D6vr9HCK1zXHVlwH0/33Xw3NDM=' 'sha256-GjACcOZgMDlAz+n0k0MJfLpm9V3RLHy09jX6gtJeXAE=' 'sha256-m90hra1gVX8+P+XP+7Re4hFs1a9yYiUWj0M7CC0405o=' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-K8QFT6qNk7HgzQPN1D6vr9HCK1zXHVlwH0/33Xw3NDM=' 'sha256-Fg0vdEsL5Q1qSotklKgsz4oEekCc2YI4eiOSuza9qYA=' 'sha256-GjACcOZgMDlAz+n0k0MJfLpm9V3RLHy09jX6gtJeXAE=' 'sha256-CsIB2tV0f22UrlphoG8opKxAIV/CDx//YMeV1rQCWyA=' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Tower Defence | JVDesignStudio</title>
 <meta name="description" content="Hearthguard, a cosy tower defence. Build through the ages and hold the night back.">
@@ -17,6 +17,7 @@
 <meta name="twitter:image" content="https://jvdesignstudio.co.uk/TowerDefenceCover.png">
 <link rel="manifest" href="../manifest.json">
 <link rel="icon" href="../logo.png" type="image/png">
+<link rel="stylesheet" href="../game-system.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
@@ -123,6 +124,8 @@ body.large-ui .hud-btn{font-size:13px;padding:7px 11px}
   }
 }
 </script>
+<script defer src="../games-registry.js"></script>
+<script defer src="../assets/js/game-onboarding.js"></script>
 </head>
 <body>
 <div id="game-wrap" data-jvds-root><canvas id="game"></canvas></div>
@@ -215,6 +218,8 @@ body.large-ui .hud-btn{font-size:13px;padding:7px 11px}
   <button class="btn btn-secondary" data-on="HG.hideSettings" data-on-plain>Back</button>
 </div>
 
+<script src="../game-system-score.js"></script><script src="../game-system-save.js"></script><script src="../game-system.js"></script>
+<script>var sys = (typeof GameSystem !== 'undefined') ? new GameSystem('tower-defence','Tower Defence','Ember') : null;window.JVDSGame = sys;</script>
 <script>
 /* ── Cozy Audio Engine ── Procedural Web Audio API, zero files ───────── */
 class AudioEffects {
@@ -611,6 +616,12 @@ function bridgeArcadeScore() {
     var prev = {};
     try { prev = JSON.parse(localStorage.getItem('jvds_game_tower-defence') || '{}') || {}; } catch(e) {}
     var best = Math.max(prev.highScore || 0, (meta && meta.bestNight) || 0, night || 0);
+    if (sys) {
+      if (best > (sys.state.highScore || 0)) sys.state.highScore = best;
+      sys.state.xp = Math.max(sys.state.xp || 0, best * 20);
+      sys.saveState();
+      return;
+    }
     localStorage.setItem('jvds_game_tower-defence', JSON.stringify({
       highScore: best,
       gamesPlayed: prev.gamesPlayed || 0,
@@ -785,6 +796,7 @@ function newWorld(fromSave) {
   initKing();
   dawnSnapshot = snapshot();
   setSpeed(1);
+  if (sys) sys.beginRun();
 }
 
 function snapshot() {
@@ -971,6 +983,7 @@ function kingdomFalls() {
   audio.stopMusic(); audio.playDefeat();
   document.getElementById('defeat-stats').textContent = `You held for ${night} night${night===1?'':'s'} · reached the ${era().name}` + (dailyMode ? ` · 📅 Daily score: ${night}` : '');
   bridgeArcadeScore();
+  if (sys) { sys.addScore(night); sys.recordGamePlay(Date.now()); }
   showOverlay('defeat-overlay');
 }
 
@@ -1902,5 +1915,6 @@ window.HG = {
 </script>
 <script defer src="../cookie-consent.js"></script><script defer src="../mascots.js"></script><script defer src="../game-shell.js"></script>
 <script defer src="../assets/js/ui-delegate.js"></script>
+<script src="../jvds-funnel.js"></script>
 </body>
 </html>

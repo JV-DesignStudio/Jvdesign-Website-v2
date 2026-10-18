@@ -12,7 +12,9 @@
 // v33 (A936): Icon Generator Help, real share links and a pinned mobile preview
 // v34 (A648): precache testimonials.js for the honest social-proof strip + form
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
-const CACHE='jvds-v37';
+// v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
+// and alias the clean nav URLs, so the whole site opens offline after one online visit.
+const CACHE='jvds-v38';
 const CORE=[
   '/',
   '/offline.html',
@@ -88,6 +90,31 @@ const CORE=[
   '/feedback-widget.js',
   '/mascots.js',
   '/hidpi-canvas.js',
+  // A1691: core entry and hub pages, precached so the whole site opens offline
+  // after one online visit (school-computer rule). Heavy game pages stay out.
+  '/pages/workshop.html',
+  '/pages/learn-hub.html',
+  '/pages/dev-tools.html',
+  '/arcade.html',
+  '/learn/index.html',
+  '/pick-your-path.html',
+  '/workshops/start-here.html',
+  '/style-workshop-bundle.css',
+  '/style-workshop-hub.css',
+  '/style-workshop-welcome.css',
+  '/style-workshop.css',
+  '/style-dev-tools.css',
+  '/style-arcade.css',
+  '/assets/fonts/fonts.css',
+  '/assets/js/ui-delegate.js',
+  '/assets/js/theme-init.js',
+  '/weekly-challenge.js',
+  '/daily-challenge.js',
+  '/migrate-keys.js',
+  '/analytics-loader.js',
+  '/sw-register.js',
+  '/games-registry.js',
+  '/workshops/workshop-track.js',
   '/cookie-consent.js',
   '/assets/mascots/ember-hero.webp',
   '/assets/mascots/ember-badge.webp',
@@ -115,10 +142,34 @@ const MAKER_DEPS=[
   '/src/arcade-maker/achievements.js'
 ];
 
+// A1691: GitHub Pages serves the clean nav URLs (for example /workshop, /dev-tools,
+// /learn/) through 404.html, which a service worker cannot cache offline. After the
+// real target page is precached we copy it under the clean URL too, so the main nav
+// keeps working with the network down. Keep in sync with the clean-URL map in 404.html.
+const ALIASES={
+  '/workshop':'/pages/workshop.html',
+  '/learn-hub':'/pages/learn-hub.html',
+  '/dev-tools':'/pages/dev-tools.html',
+  '/learn/':'/learn/index.html',
+  '/games':'/arcade.html',
+  '/pick-your-path':'/pick-your-path.html',
+  '/workshops/start-here':'/workshops/start-here.html'
+};
+
 self.addEventListener('install',e=>{
   e.waitUntil(
     caches.open(CACHE)
-      .then(c=>c.addAll(CORE).catch(err=>{ console.warn('[SW] CORE precache failed', err); }))
+      // A1691: cache each entry on its own so one missing file cannot abort the
+      // whole precache and leave the site with no offline core at all.
+      .then(async c=>{
+        const results=await Promise.allSettled(CORE.map(url=>c.add(url)));
+        const failed=CORE.filter((_,i)=>results[i].status==='rejected');
+        if(failed.length) console.warn('[SW] CORE precache skipped',failed.join(', '));
+        for(const [clean,target] of Object.entries(ALIASES)){
+          try{ const r=await c.match(target); if(r) await c.put(clean,r.clone()); }
+          catch(err){ console.warn('[SW] clean-URL alias failed',clean,err); }
+        }
+      })
       .then(()=>self.skipWaiting())
   );
 });

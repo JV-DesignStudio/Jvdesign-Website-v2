@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-XKp4ftOjU4qjlmt/g8LKQjUlMd4TyZDGWOqET4QquRY=' 'sha256-4IsNJOb5dxe26egHmXY/6dvoMYxQVn+DfkqV9pDzK3w=' 'sha256-KQzyYyADCc9Y41vYkD9mG0zOMi8Vc0kxxs/g16GDVfo=' 'sha256-qOgYKRqQ5jtnllbmP6hIZClb/eDQeqwhGoxIurdvbQo=' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-IzvZLPjvziPFEU9qSZ0+ooX0kO/lb1VQZ9Nrst3FSrw=' 'sha256-XKp4ftOjU4qjlmt/g8LKQjUlMd4TyZDGWOqET4QquRY=' 'sha256-4IsNJOb5dxe26egHmXY/6dvoMYxQVn+DfkqV9pDzK3w=' 'sha256-HnKlOrW7xmeDG8BR0AZr3D/CoV7hP2lfEJBE7Opyzl8=' 'sha256-qOgYKRqQ5jtnllbmP6hIZClb/eDQeqwhGoxIurdvbQo=' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <meta name="description" content="Play Biscuit Tin Clicker, a cosy free browser clicker game by JVDesignStudio. Click, upgrade, repeat.">
 <link rel="manifest" href="../manifest.json">
 
@@ -496,6 +496,7 @@ button:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px}
 <link rel="stylesheet" href="../game-system.css?v=18">
 <link rel="stylesheet" href="../story-run.css">
 <script src="../story-run.js"></script>
+<script>window.__biscuitSys = (typeof GameSystem !== 'undefined') ? new GameSystem('biscuit-clicker','Biscuit Tin Clicker','Pip') : null;</script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -514,6 +515,8 @@ button:focus-visible{outline:3px solid var(--rose-deep);outline-offset:2px}
   }
 }
 </script>
+<script defer src="../games-registry.js"></script>
+<script defer src="../assets/js/game-onboarding.js"></script>
 </head>
 <body>
 <h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0">Biscuit Tin Clicker</h1>
@@ -1082,7 +1085,8 @@ function loadVault(){
 }
 let saveTimer=null;
 function saveVault(){bv().lastSave=Date.now();clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch(e){if(e&&e.name==='QuotaExceededError')console.warn('[vault] storage full');}},450);}
-function saveNow(){bv().lastSave=Date.now();clearTimeout(saveTimer);try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch(e){if(e&&e.name==='QuotaExceededError'){console.warn('[vault] storage full on saveNow');try{localStorage.removeItem('bt_bak_c');localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch{}}}maybeBackup();}
+function saveNow(){bv().lastSave=Date.now();clearTimeout(saveTimer);try{localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch(e){if(e&&e.name==='QuotaExceededError'){console.warn('[vault] storage full on saveNow');try{localStorage.removeItem('bt_bak_c');localStorage.setItem(VAULT_KEY,JSON.stringify(vault));}catch{}}}maybeBackup();syncSharedScore();}
+function syncSharedScore(){try{if(!window.__biscuitSys)return;var s=window.__biscuitSys;var life=Math.max(0,Math.floor(bv().lifetime||0));if(life>(s.state.highScore||0))s.state.highScore=life;s.state.xp=Math.max(s.state.xp||0,Math.floor(Math.sqrt(life)));s.saveState();}catch(e){}}
 let vault=loadVault();
 const bv=()=>vault.biscuit;
 
@@ -2612,6 +2616,7 @@ function doPrestige(){
   const starsEarned=2+starLv('star_magnet')+(ch?2:0);
   if(!confirm('Start Season '+enteringSeason+'?\n\nBiscuits, helpers and upgrades reset.\n\nYou gain:\n· Permanent x'+nextBonus+' production bonus\n· ⭐ '+starsEarned+' Season Stars'+(ch?('\n· Challenge reward: '+(CHALLENGES.find(c=>c.id===ch)||{}).reward):'')+'\n\nSeason Journal resets - finish unclaimed tiers first!'))return;
   Sfx.sfxPrestige();
+  try { if (window.__biscuitSys) { window.__biscuitSys.addScore(Math.floor(bv().lifetime||0)); window.__biscuitSys.recordGamePlay(Date.now()); window.__biscuitSys.beginRun(); } } catch(e) {}
   // Recipe Keeper: hold onto your first click upgrade through the reset.
   let kept=null;
   if(starLv('keeper')>0){for(const up of UPGRADES){if(up.type==='click'&&bv().upgrades.includes(up.id)){kept=up.id;break;}}}
@@ -4241,5 +4246,6 @@ setTimeout(function(){ if(storyRun&&!storyRun.running&&!storyRun.finished)storyB
 </script>
 
 <script src="../sw-register.js"></script><script defer src="../assets/js/ui-delegate.js"></script>
+<script src="../jvds-funnel.js"></script>
 </body>
 </html>

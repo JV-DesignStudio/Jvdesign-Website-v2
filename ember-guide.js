@@ -161,7 +161,7 @@
       bbFile.appendChild(bbBtn);
     }
     // Floating chip only if no header Help exists (so we don't duplicate)
-    if(document.querySelector('[onclick*="EmberGuide.show"]')) return;
+    if(document.querySelector('[data-on="EmberGuide.show"], [onclick*="EmberGuide.show"]')) return;
     var isCheatsheet = /cheatsheet|glossary|guide/i.test(cfg.id || '');
     if(isCheatsheet) return;
     // avoid double-floating

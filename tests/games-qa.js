@@ -15,6 +15,16 @@ for (const file of files) {
   const html = fs.readFileSync(full, 'utf8');
   const isWrapper = /<iframe\b/i.test(html);
   const hasSystem = /game-system\.js/i.test(html);
+  // Some games build GameSystem in a linked inline script (assets/js/inline/*)
+  // rather than in the HTML, so follow local scripts before deciding a page is
+  // still legacy.
+  let code = html;
+  for (const m of html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+\.js)["']/gi)) {
+    const src = m[1];
+    if (/^(https?:)?\/\//.test(src)) continue;
+    const target = src.startsWith('/') ? path.join(ROOT, src) : path.resolve(GAME_DIR, src);
+    try { code += '\n' + fs.readFileSync(target, 'utf8'); } catch (e) { /* missing script, ignore */ }
+  }
   const ids = [...html.matchAll(/\bid\s*=\s*["']([^"']+)["']/gi)].map(m => m[1]);
   const duplicateIds = ids.filter((id, i) => ids.indexOf(id) !== i && !id.includes('${'));
   check(/<title>[^<]+<\/title>/i.test(html), file, 'missing page title');
@@ -24,7 +34,7 @@ for (const file of files) {
     check(/game-system\.css/i.test(html), file, 'loads game-system.js without game-system.css');
     check((html.match(/serviceWorker\.register/g) || []).length <= 1, file, 'registers the service worker more than once');
     check(duplicateIds.length === 0, file, `duplicate ids: ${[...new Set(duplicateIds)].join(', ')}`);
-    if (!isWrapper && !/new\s+GameSystem\s*\(/.test(html)) notes.push(`${file}: legacy page needs GameSystem migration`);
+    if (!isWrapper && !/new\s+GameSystem\s*\(/.test(code)) notes.push(`${file}: legacy page needs GameSystem migration`);
   }
   if (isWrapper && hasSystem) notes.push(`${file}: iframe wrapper`);
 }

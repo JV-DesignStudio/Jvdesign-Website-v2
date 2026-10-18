@@ -341,18 +341,18 @@ window.JVDS_GAMES = [
    Definitions live in GAME_QUALITY.md. Change a label here (one line) and it
    shows on the arcade cabinet automatically. */
 window.JVDS_GAME_QUALITY = {
-  "rustfall": "BETA",
+  "rustfall": "READY",
   "echo-flight": "READY",
-  "nova-siege": "BETA",
+  "nova-siege": "READY",
   "arcane-citadel": "READY",
   "tower-defence": "READY",
   "ember-smash": "READY",
   "gem-match": "BETA",
-  "highway-dodge": "BETA",
+  "highway-dodge": "READY",
   "cozy-cafe-match": "READY",
   "biscuit-clicker": "BETA",
   "sky-high-friends": "BETA",
-  "critter-whack": "BETA",
+  "critter-whack": "READY",
   "crossy-crew": "READY",
   "stardust-snake": "READY"
 };

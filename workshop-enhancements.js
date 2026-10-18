@@ -833,8 +833,8 @@
       '<h2 style="font-family:Fredoka,Inter,sans-serif;font-size:1.1rem;margin:0 0 8px;">What you\'ll make</h2>' +
       '<p style="margin:0 0 12px;">' + b.build + '</p>' +
       '<div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">' +
-        '<div><h3 style="font-size:.86rem;margin:0 0 4px;">Before you start</h3><p style="margin:0;">' + b.before + '</p></div>' +
-        '<div><h3 style="font-size:.86rem;margin:0 0 4px;">What you\'ll learn</h3><p style="margin:0;">' + b.learn + '</p></div>' +
+        '<div><h3 style="font-size:.86rem;margin:0 0 4px;color:var(--charcoal,#1a1208);">Before you start</h3><p style="margin:0;">' + b.before + '</p></div>' +
+        '<div><h3 style="font-size:.86rem;margin:0 0 4px;color:var(--charcoal,#1a1208);">What you\'ll learn</h3><p style="margin:0;">' + b.learn + '</p></div>' +
       '</div>';
     return sec;
   }
