@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /*
- * tests/play-http.js , the shared Arcade cover/launcher page (games/play.html).
+ * tests/play-http.js , the Arcade routing contract.
  *
- * The flow contract: every arcade card opens the cover page, the cover shows
- * the game's own art and details, and pressing Play loads the game full screen
- * with an Exit path back.
+ * The 2026-10-12 overhaul (9189b4ce) made every cabinet link straight to its
+ * game file, so the old shared cover/launcher (games/play.html?g=id) became
+ * orphaned. The cover UI is retired, but old links still exist, so play.html
+ * is now a noindex redirect stub. This test pins that contract:
  *
- * Proves at 390px and 1440px:
- *   - /games/play.html?g=<id> renders the cover art, title and Play button
- *   - the card links in arcade.html route through play.html?g=<id>
- *   - pressing Play adds the full screen state and loads the real game file
- *   - Exit leaves the full screen state
- *   - an unknown game shows a friendly fallback, no page errors
- *   - no horizontal overflow
+ *   - games/play.html exists only as a noindex redirect stub
+ *   - paths.js still treats it as a non-game orphan (not sitemap/search)
+ *   - ?g=<known id> forwards to the real game file
+ *   - ?g=<unknown> forwards back to the arcade
+ *   - arcade.html cards link straight to game files, every file exists,
+ *     and the page is clean at 390px and 1440px
  *
  * Run: node tests/play-http.js
  */
@@ -29,75 +29,67 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function staticChecks() {
   const arcade = fs.readFileSync(path.join(ROOT, 'arcade.html'), 'utf8');
-  check('arcade routes cards through the cover page', /function playHref\(g\)/.test(arcade) && /play\.html\?g=/.test(arcade));
-  check('no arcade card links straight to a game file any more', !/href="games\/' \+ g\.file/.test(arcade) && !/location\.href = 'games\/' \+/.test(arcade));
-  check('cover page file exists', fs.existsSync(path.join(ROOT, 'games', 'play.html')));
-  const cover = fs.readFileSync(path.join(ROOT, 'games', 'play.html'), 'utf8');
-  check('cover page is noindex', /name="robots" content="noindex/.test(cover));
-  check('cover requests full screen on play', /requestFullscreen/.test(cover));
+  const paths = fs.readFileSync(path.join(ROOT, 'scripts', 'lib', 'paths.js'), 'utf8');
+  const stubPath = path.join(ROOT, 'games', 'play.html');
+  const stub = fs.existsSync(stubPath) ? fs.readFileSync(stubPath, 'utf8') : '';
+
+  check('cover stub exists', fs.existsSync(stubPath));
+  check('cover stub is noindex', /name="robots" content="noindex/.test(stub));
+  check('cover stub loads the redirect script', /assets\/js\/play-redirect\.js/.test(stub));
+  check('paths.js keeps play.html out of the game line-up', /games\/play\.html/.test(paths));
+  check('arcade links cards straight to game files', /href="games\/' \+ encodeURI\(g\.file\)/.test(arcade));
+  check('arcade has no cover-page routing left', !/play\.html\?g=/.test(arcade) && !/function playHref\(g\)/.test(arcade));
 }
 
-async function browserChecks(browser, base, width) {
+async function redirectCheck(browser, base, query, expected) {
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base + '/games/play.html' + query, { waitUntil: 'load', timeout: 30000 });
+  await sleep(900);
+  const url = new URL(page.url());
+  check('redirect ' + (query || '(no query)') + ' -> ' + expected, url.pathname === expected, url.pathname);
+  check('redirect ' + (query || '(no query)') + ' has no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
+  await page.close();
+}
+
+async function arcadeChecks(browser, base, width) {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   await page.setViewport({ width, height: 900 });
-  await page.goto(base + '/games/play.html?g=nova-siege', { waitUntil: 'load', timeout: 30000 });
-  await page.waitForFunction(() => window.__play && window.__play.game, { timeout: 15000 });
+  await page.goto(base + '/arcade.html', { waitUntil: 'load', timeout: 30000 });
+  await page.waitForSelector('#grid .cab', { timeout: 15000 });
+  await sleep(250);
 
-  const cover = await page.evaluate(() => {
-    const img = document.querySelector('#playCover img');
+  const result = await page.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll('#grid .cab'));
     return {
-      title: document.getElementById('playTitle').textContent,
-      img: img ? img.getAttribute('src') : null,
-      hasPlay: !!document.getElementById('playBtn'),
+      count: cards.length,
+      hrefs: cards.map(c => c.getAttribute('href')),
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
     };
   });
-  check(width + ': cover shows the game title', /Nova Siege/.test(cover.title), cover.title);
-  check(width + ': cover shows the game cover art', !!cover.img && cover.img.indexOf('NovaSiegeCover') >= 0, String(cover.img));
-  check(width + ': cover has a Play button', cover.hasPlay);
-  check(width + ': no horizontal overflow on the cover', cover.overflow <= 2, String(cover.overflow));
 
-  await page.click('#playBtn');
-  await sleep(300);
-  const playing = await page.evaluate(() => ({
-    playing: document.body.classList.contains('playing'),
-    src: document.getElementById('playFrame').getAttribute('src'),
-    exitVisible: getComputedStyle(document.getElementById('playExit')).display !== 'none'
-  }));
-  check(width + ': Play enters the full screen shell', playing.playing);
-  check(width + ': Play loads the real game file', playing.src === 'nova-siege.html', String(playing.src));
-  check(width + ': Exit control is visible while playing', playing.exitVisible);
-
-  await page.click('#playExit');
-  await sleep(200);
-  const left = await page.evaluate(() => document.body.classList.contains('playing'));
-  check(width + ': Exit leaves the full screen shell', !left);
-
+  check(width + ': arcade renders cabinets', result.count > 0, String(result.count));
+  check(width + ': every cabinet is a game file', result.hrefs.length > 0 && result.hrefs.every(h => /^games\/[^/]+\.html$/.test(h || '')), result.hrefs.slice(0, 3).join(', '));
+  check(width + ': no cabinet uses the retired cover flow', !result.hrefs.some(h => /play\.html/.test(h || '')));
+  const missing = result.hrefs.filter(h => h && !fs.existsSync(path.join(ROOT, decodeURIComponent(h))));
+  check(width + ': every cabinet file exists', missing.length === 0, missing.slice(0, 3).join(', '));
+  check(width + ': no horizontal overflow', result.overflow <= 2, String(result.overflow));
   check(width + ': no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
-  await page.close();
-}
-
-async function fallbackCheck(browser, base) {
-  const page = await browser.newPage();
-  const errors = [];
-  page.on('pageerror', e => errors.push(e.message));
-  await page.goto(base + '/games/play.html?g=does-not-exist', { waitUntil: 'load', timeout: 30000 });
-  await sleep(300);
-  const hasFallback = await page.evaluate(() => !!document.querySelector('.play-missing'));
-  check('unknown game shows a friendly fallback', hasFallback);
-  check('unknown game has no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
   await page.close();
 }
 
 (async () => {
   staticChecks();
   await withServer(async ({ base, browser }) => {
-    await browserChecks(browser, base, 390);
-    await browserChecks(browser, base, 1440);
-    await fallbackCheck(browser, base);
+    await redirectCheck(browser, base, '?g=nova-siege', '/games/nova-siege.html');
+    await redirectCheck(browser, base, '?g=does-not-exist', '/arcade.html');
+    await redirectCheck(browser, base, '', '/arcade.html');
+    await arcadeChecks(browser, base, 390);
+    await arcadeChecks(browser, base, 1440);
   });
-  console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL PLAY COVER CHECKS PASSED');
+  console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL ARCADE ROUTING CHECKS PASSED');
   process.exit(failures ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

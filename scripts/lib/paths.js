@@ -62,7 +62,7 @@ const GAME_ORPHANS = [
   'games/stardust_collection.html','games/tiger_smash.html','games/voidrush.html'
   // lumo-run.html is a noindex redirect to lumo-dash.html (A967 consolidation).
   // tiger_smash.html is a noindex redirect to ember-smash.html (A980).
-  // play.html is the shared Arcade cover/launcher (noindex), not a curated game.
+  // play.html is a noindex redirect stub for old cover links, not a curated game.
   // The rest are awaiting rework before they return to the arcade line-up.
 ];
 
