@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SJVLxFfifW3lr9gfs8rbtOFYiQU/ABLuU5wsiVo/U/g=' 'sha256-PkiVTvbgg4Z3Pa30wJcTWtuJu6isIqtrq9GLH7PoXlk=' 'sha256-hKQ44czDYDGFwLs2fHWHgrwUW7vfPi/oZQapNr//4GQ=' 'sha256-oP2tzwd1tpaSrH2pSnApMI7PPp5kmk4LwAvy5syWKlI=' 'sha256-VLFQs17URIznm5JuQrUXS/fKbpCU7kQk/AV0+IJYV2k=' 'sha256-Xl4DYisorsirLUm8avqwJ8BQXzcg8ea9+Zd2FENZOiQ=' 'sha256-k9jZt0Hc9oONtQNZeUuSXBWxDsPPb2PKQ/BYCQ3Ta+Y=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SJVLxFfifW3lr9gfs8rbtOFYiQU/ABLuU5wsiVo/U/g=' 'sha256-PkiVTvbgg4Z3Pa30wJcTWtuJu6isIqtrq9GLH7PoXlk=' 'sha256-hKQ44czDYDGFwLs2fHWHgrwUW7vfPi/oZQapNr//4GQ=' 'sha256-bcRnK4WayC6Xrwm3ro1nI2QfSberBwnS+uzuTVA5K7Y=' 'sha256-VLFQs17URIznm5JuQrUXS/fKbpCU7kQk/AV0+IJYV2k=' 'sha256-Xl4DYisorsirLUm8avqwJ8BQXzcg8ea9+Zd2FENZOiQ=' 'sha256-k9jZt0Hc9oONtQNZeUuSXBWxDsPPb2PKQ/BYCQ3Ta+Y=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#e8333a">
@@ -332,6 +332,7 @@ var P = {
   tintWindows: false, brakeCalipers: '#e8333a',
   bodyWidth: 1.8, bodyHeight: 0.6, wheelBase: 2.6, rearWingAngle: 15,
 };
+window.P = P;
 
 var carGroup = null;
 function hexToThree(hex) { return new THREE.Color(hex); }
@@ -750,16 +751,59 @@ var FACTS = {
   race: "The checkered flag has been used to signal the end of a race since 1906. The pattern was chosen because it was the easiest to see from a distance."
 };
 
+function paramPath(src) {
+  var m = /([A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*)\s*=/.exec(String(src || ''));
+  return m ? m[1] : '';
+}
+
+function paramParse(src) {
+  if (/parseFloat/.test(src)) return 'float';
+  if (/parseInt/.test(src)) return 'int';
+  return 'raw';
+}
+
 function opts(id, options, currentVal, onChange) {
+  var path = paramPath(onChange), parse = paramParse(onChange);
   return '<div class="opt-grid">' + options.map(function(o) {
-    return '<button class="opt-btn' + (currentVal === o.val ? ' sel' : '') + '" data-action="' + onChange + '" data-arg="' + o.val + '"><span class="opt-icon">' + o.icon + '</span>' + o.label + '</button>';
+    return '<button class="opt-btn' + (currentVal === o.val ? ' sel' : '') + '" data-action="selectOpt" data-arg="' + o.val + '" data-arg2="this" data-arg3="' + path + '" data-arg4="' + parse + '"><span class="opt-icon">' + o.icon + '</span>' + o.label + '</button>';
   }).join('') + '</div>';
 }
 
 function swatchRow(id, colours, currentVal, onChange) {
+  var path = paramPath(onChange);
   return '<div class="swatch-row">' + colours.map(function(c) {
-    return '<div class="swatch' + (currentVal === c ? ' sel' : '') + '" style="background:' + c + '" data-action="' + onChange + '" data-arg="' + c + '"></div>';
-  }).join('') + '</div><div class="custom-colour"><span>Custom:</span><input type="color" value="' + currentVal + '" data-action-input="' + onChange + '"></div>';
+    return '<div class="swatch' + (currentVal === c ? ' sel' : '') + '" style="background:' + c + '" data-action="selectSwatch" data-arg="' + c + '" data-arg2="this" data-arg3="' + path + '"></div>';
+  }).join('') + '</div><div class="custom-colour"><span>Custom:</span><input type="color" value="' + currentVal + '" data-action-input="selectSwatch" data-arg="' + path + '"></div>';
+}
+
+function setBuilderParam(path, value) {
+  var parts = String(path).split('.');
+  var obj = window[parts[0]];
+  if (!obj) return;
+  for (var i = 1; i < parts.length - 1; i++) obj = obj[parts[i]];
+  obj[parts[parts.length - 1]] = value;
+}
+
+function selectOpt(val, el, path, parse) {
+  if (parse === 'float') val = parseFloat(val);
+  else if (parse === 'int') val = parseInt(val, 10);
+  setBuilderParam(path, val);
+  if (el && el.closest) {
+    var grid = el.closest('.opt-grid');
+    if (grid) grid.querySelectorAll('.opt-btn').forEach(function(b) { b.classList.remove('sel'); });
+    el.classList.add('sel');
+  }
+  buildCar();
+}
+
+function selectSwatch(col, el, path) {
+  setBuilderParam(path, col);
+  if (el && el.closest) {
+    var row = el.closest('.swatch-row');
+    if (row) row.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('sel'); });
+    if (row && el.classList.contains('swatch')) el.classList.add('sel');
+  }
+  buildCar();
 }
 
 var STEPS = [
@@ -1057,7 +1101,7 @@ var STEPS = [
     return '<div style="text-align:center;padding:8px 0"><div style="font-size:2.4rem;margin-bottom:7px">\uD83C\uDFC1</div>' +
     '<div style="font-family:Bebas Neue,sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">' + (P.carName || 'YOUR CAR') + '</div>' +
     '<div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.<br>Ready to race.</div></div>' +
-    '<button class="run-btn" style="font-size:1rem;padding:12px" data-action="applyStep" data-arg="currentStep">\uD83C\uDFC1 GREEN FLAG \u2014 RACE!</button>';
+    '<button class="run-btn" style="font-size:1rem;padding:12px" data-action="applyStep" data-arg="' + currentStep + '">\uD83C\uDFC1 GREEN FLAG \u2014 RACE!</button>';
   },
   onApply: function() { startRace(); }
 },
@@ -1085,7 +1129,7 @@ function renderStep() {
     }).join('') + '</div>';
   }
   if (!s.html || !s.html().includes('run-btn')) {
-    html += '<button class="run-btn" data-action="applyStep" data-arg=" + currentStep + ">⚙️ Apply to Car</button>';
+    html += '<button class="run-btn" data-action="applyStep" data-arg="' + currentStep + '">⚙️ Apply to Car</button>';
   }
   body.innerHTML = html;
   document.querySelectorAll('.si').forEach(function(el, i) { el.classList.toggle('active', i === currentStep); });

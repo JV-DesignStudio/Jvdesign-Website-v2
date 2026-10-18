@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1nfI5Ap2U7kP89KCsvpCaKUf+rw09BZtyzKmpcoHhoI=' 'sha256-U31TEp2z3elFvS7hpUVuoHaKh8npkKEl/B8K8qvGXTw=' 'sha256-eMkoIt7jiK3Yc9xpeB1vaupO6fV2DL0x7yr2/euGvuI=' 'sha256-HdUChKQr9qX9MraaWII2mcooiiQYTp1Q9GWYqcqBZas=' 'sha256-ckqJTKyNL0XlGUViiUg/320dn31o+9YmQOsWne9Q1jE=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1nfI5Ap2U7kP89KCsvpCaKUf+rw09BZtyzKmpcoHhoI=' 'sha256-U31TEp2z3elFvS7hpUVuoHaKh8npkKEl/B8K8qvGXTw=' 'sha256-eMkoIt7jiK3Yc9xpeB1vaupO6fV2DL0x7yr2/euGvuI=' 'sha256-i1q67PQ9Zx5xVl2z2v5l7JZYZ17xjK2MUdTW8NwNmVE=' 'sha256-ckqJTKyNL0XlGUViiUg/320dn31o+9YmQOsWne9Q1jE=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="theme-color" content="#7c3aed">
@@ -463,6 +463,7 @@ const P = {
   launched: false,
   launchTime: 0,
 };
+window.P = P;
 
 let stationGroup = null;
 let stationRotating = false;
@@ -900,21 +901,64 @@ const stepDone = new Array(16).fill(false);
 
 function nav(i) { return ''; }
 
+function paramPath(src) {
+  const m = /([A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*)\s*=/.exec(String(src || ''));
+  return m ? m[1] : '';
+}
+
+function paramParse(src) {
+  if (/parseFloat/.test(src)) return 'float';
+  if (/parseInt/.test(src)) return 'int';
+  return 'raw';
+}
+
 function opts(id, options, currentVal, onChange) {
+  const path = paramPath(onChange), parse = paramParse(onChange);
   return `<div class="opt-grid">${options.map(o =>
-    `<button class="opt-btn${currentVal===o.val?' sel':''}" data-action="${onChange}" data-arg="${o.val}">
+    `<button class="opt-btn${currentVal===o.val?' sel':''}" data-action="selectOpt" data-arg="${o.val}" data-arg2="this" data-arg3="${path}" data-arg4="${parse}">
       <span class="opt-icon">${o.icon}</span>${o.label}</button>`
   ).join('')}</div>`;
 }
 
 function swatchRow(id, colours, currentVal, onChange) {
+  const path = paramPath(onChange);
   return `<div class="swatch-row">${colours.map(c =>
-    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" data-action="${onChange}" data-arg="${c}"></div>`
+    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" data-action="selectSwatch" data-arg="${c}" data-arg2="this" data-arg3="${path}"></div>`
   ).join('')}</div>
   <div class="custom-colour">
     <span>Custom:</span>
-    <input type="color" value="${currentVal}" data-action-input="${onChange}">
+    <input type="color" value="${currentVal}" data-action-input="selectSwatch" data-arg="${path}">
   </div>`;
+}
+
+function setBuilderParam(path, value) {
+  const parts = String(path).split('.');
+  let obj = window[parts[0]];
+  if (!obj) return;
+  for (let i = 1; i < parts.length - 1; i++) obj = obj[parts[i]];
+  obj[parts[parts.length - 1]] = value;
+}
+
+function selectOpt(val, el, path, parse) {
+  if (parse === 'float') val = parseFloat(val);
+  else if (parse === 'int') val = parseInt(val, 10);
+  setBuilderParam(path, val);
+  if (el && el.closest) {
+    const grid = el.closest('.opt-grid');
+    if (grid) grid.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  buildStation();
+}
+
+function selectSwatch(col, el, path) {
+  setBuilderParam(path, col);
+  if (el && el.closest) {
+    const row = el.closest('.swatch-row');
+    if (row) row.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+    if (row && el.classList.contains('swatch')) el.classList.add('sel');
+  }
+  buildStation();
 }
 
 const FACTS = {
@@ -1246,7 +1290,7 @@ const STEPS = [
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">${P.stationName || 'YOUR STATION'}</div>
       <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.<br>Ready for orbital deployment.</div>
     </div>
-    <button class="run-btn" style="font-size:1rem;padding:12px" data-action="applyStep" data-arg="currentStep">🚀 DEPLOY TO ORBIT!</button>`;
+    <button class="run-btn" style="font-size:1rem;padding:12px" data-action="applyStep" data-arg="${currentStep}">🚀 DEPLOY TO ORBIT!</button>`;
   },
   onApply() { launchStation(); }
 },
