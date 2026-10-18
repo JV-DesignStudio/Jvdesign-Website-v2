@@ -88,4 +88,96 @@
     if (el.hasAttribute('data-prevent')) e.preventDefault();
     handleClick(el, e);
   }, false);
+
+  // Form controls inside builders. These replace the old inline oninput /
+  // onchange handlers that referenced page-local state, so they are resolved
+  // the same way as data-action: a named function on window, called with the
+  // element as `this` (some helpers still read data-arg from `this`).
+  function formatParam(v, fmt) {
+    if (!fmt) return String(v);
+    var m;
+    if ((m = /^f(\d+)(.*)$/.exec(fmt))) return Number(v).toFixed(Number(m[1])) + m[2];
+    if ((m = /^int(.*)$/.exec(fmt))) return String(Math.round(Number(v))) + m[1];
+    if ((m = /^raw(.*)$/.exec(fmt))) return String(v) + m[1];
+    return String(v) + fmt;
+  }
+
+  function resolvePath(path) {
+    var parts = String(path || '').split('.');
+    var obj = window[parts[0]];
+    if (obj == null) return null;
+    for (var i = 1; i < parts.length - 1; i++) {
+      obj = obj[parts[i]];
+      if (obj == null) return null;
+    }
+    return { parent: obj, key: parts[parts.length - 1] };
+  }
+
+  // data-param="P.wallHeight" data-parse="float" data-divisor="10"
+  // data-display="whVal" data-fmt="f1m" data-rebuild="buildCastle"
+  function applyParam(el) {
+    var target = resolvePath(el.getAttribute('data-param'));
+    if (!target) return false;
+    var parse = el.getAttribute('data-parse') || (el.type === 'checkbox' ? 'checked' : 'raw');
+    var val;
+    if (parse === 'checked') {
+      val = el.checked;
+      if (el.hasAttribute('data-checked-true')) {
+        val = el.checked ? parseFloat(el.getAttribute('data-checked-true'))
+                         : parseFloat(el.getAttribute('data-checked-false') || '0');
+      }
+    } else if (parse === 'float') val = parseFloat(el.value);
+    else if (parse === 'int') val = parseInt(el.value, 10);
+    else val = el.value;
+
+    var divisor = parseFloat(el.getAttribute('data-divisor'));
+    if (isFinite(divisor) && divisor) val = val / divisor;
+
+    target.parent[target.key] = val;
+
+    var display = el.getAttribute('data-display');
+    if (display && display !== 'next') {
+      var dEl = document.getElementById(display);
+      if (dEl) dEl.textContent = formatParam(val, el.getAttribute('data-fmt'));
+    }
+
+    var rebuild = el.getAttribute('data-rebuild');
+    if (rebuild) {
+      var fn = window[rebuild];
+      if (typeof fn === 'function') fn();
+    }
+    return true;
+  }
+
+  function handleFormEvent(el, kind) {
+    if (el.hasAttribute('data-param')) {
+      var type = (el.type || '').toLowerCase();
+      // input fires continuously for range/colour; change is the settle event.
+      if (kind === 'input' && (type === 'checkbox' || type === 'radio' || el.tagName === 'SELECT')) return;
+      if (kind === 'change' && (type === 'range' || type === 'color' || type === 'number')) return;
+      applyParam(el);
+      return;
+    }
+    var attr = kind === 'input' ? 'data-action-input' : 'data-action-change';
+    var name = el.getAttribute(attr);
+    if (!name) return;
+    var fn = window[name];
+    if (typeof fn !== 'function') return;
+    var first = kind === 'input' ? el.value : el.checked;
+    fn.apply(el, [first, el].concat(collectArgs(el)));
+  }
+
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var el = t.closest('[data-param],[data-action-input]');
+    if (el) handleFormEvent(el, 'input');
+  }, false);
+
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var el = t.closest('[data-param],[data-action-change]');
+    if (el) handleFormEvent(el, 'change');
+  }, false);
 })();

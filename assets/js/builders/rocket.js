@@ -115,6 +115,7 @@ const R = {
   noseconeScale: 1.0,
   windowCount: 2,
 };
+window.R = R;
 
 let rocketGroup = null;
 let exhaustParticles = [];
@@ -697,34 +698,63 @@ const stepDone = new Array(17).fill(false);
 
 function nav(i) { return ''; }
 
+function paramPath(src) {
+  const m = /([A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*)\s*=/.exec(String(src || ''));
+  return m ? m[1] : '';
+}
+
+function paramParse(src) {
+  if (/parseFloat/.test(src)) return 'float';
+  if (/parseInt/.test(src)) return 'int';
+  return 'raw';
+}
+
 function opts(id, options, currentVal, onChange) {
+  const path = paramPath(onChange), parse = paramParse(onChange);
   return `<div class="opt-grid">${options.map(o =>
-    `<button class="opt-btn${currentVal===o.val?' sel':''}" data-action="${onChange}" data-arg="${o.val}">
+    `<button class="opt-btn${currentVal===o.val?' sel':''}" data-action="selectOpt" data-arg="${o.val}" data-arg2="this" data-arg3="${path}" data-arg4="${parse}">
       <span class="opt-icon">${o.icon}</span>${o.label}</button>`
   ).join('')}</div>`;
 }
 
 function swatchRow(id, colours, currentVal, onChange) {
+  const path = paramPath(onChange);
   return `<div class="swatch-row">${colours.map(c =>
-    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" data-action="${onChange}" data-arg="${c}"></div>`
+    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" data-action="selectSwatch" data-arg="${c}" data-arg2="this" data-arg3="${path}"></div>`
   ).join('')}</div>
   <div class="custom-colour">
     <span>Custom:</span>
-    <input type="color" value="${currentVal}" data-action-input="${onChange}">
+    <input type="color" value="${currentVal}" data-action-input="selectSwatch" data-arg="${path}">
   </div>`;
 }
 
-function selectOpt(val, el, field, rebuild) {
-  R[field] = val;
-  el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
-  if (el) el.classList.add('sel');
-  if (rebuild) buildRocket();
+function setBuilderParam(path, value) {
+  const parts = String(path).split('.');
+  let obj = window[parts[0]];
+  if (!obj) return;
+  for (let i = 1; i < parts.length - 1; i++) obj = obj[parts[i]];
+  obj[parts[parts.length - 1]] = value;
 }
 
-function selectSwatch(col, el, field) {
-  R[field] = col;
-  el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
-  if (el) el.classList.add('sel');
+function selectOpt(val, el, path, parse) {
+  if (parse === 'float') val = parseFloat(val);
+  else if (parse === 'int') val = parseInt(val, 10);
+  setBuilderParam(path, val);
+  if (el && el.closest) {
+    const grid = el.closest('.opt-grid');
+    if (grid) grid.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  buildRocket();
+}
+
+function selectSwatch(col, el, path) {
+  setBuilderParam(path, col);
+  if (el && el.closest) {
+    const row = el.closest('.swatch-row');
+    if (row) row.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+    if (row && el.classList.contains('swatch')) el.classList.add('sel');
+  }
   buildRocket();
 }
 
@@ -1046,7 +1076,7 @@ const STEPS = [
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">${R.name || 'YOUR ROCKET'}</div>
       <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.<br>Ready for launch.</div>
     </div>
-    <button class="run-btn" style="font-size:1rem;padding:12px" data-action="applyStep" data-arg="currentStep">🚀 IGNITION, LAUNCH!</button>`;
+    <button class="run-btn" style="font-size:1rem;padding:12px" data-action="applyStep" data-arg="${currentStep}">🚀 IGNITION, LAUNCH!</button>`;
   },
   onApply() { launch(); }
 },
@@ -1372,13 +1402,10 @@ if (window.JVExporter) {
 }
 function goPrev(){go(currentStep-1)}
 function goNext(){go(currentStep+1)}
-  } finally {
-    window.addEventListener = winAdd;
-    document.addEventListener = docAdd;
-    window.requestAnimationFrame = origRaf;
-  }
 
-  // Expose only the delegated handlers this builder's markup needs.
+  // Expose only the delegated handlers this builder's markup needs. This must
+  // stay inside the guarded block: the block is strict, so its function
+  // declarations are not visible after the finally.
   try { window.randomRocket = randomRocket; } catch (e) { /* not a local handler */ }
   try { window.openSaveModal = openSaveModal; } catch (e) { /* not a local handler */ }
   try { window.openLoadModal = openLoadModal; } catch (e) { /* not a local handler */ }
@@ -1388,6 +1415,18 @@ function goNext(){go(currentStep+1)}
   try { window.applyPreset = applyPreset; } catch (e) { /* not a local handler */ }
   try { window.applyRocketPreset = applyRocketPreset; } catch (e) { /* not a local handler */ }
   try { window.launch = launch; } catch (e) { /* not a local handler */ }
+  try { window.applyStep = applyStep; } catch (e) { /* not a local handler */ }
+  try { window.selectOpt = selectOpt; } catch (e) { /* not a local handler */ }
+  try { window.selectSwatch = selectSwatch; } catch (e) { /* not a local handler */ }
+  try { window.doRocketSave = doRocketSave; } catch (e) { /* not a local handler */ }
+  try { window.doRocketLoad = doRocketLoad; } catch (e) { /* not a local handler */ }
+  try { window.doRocketDel = doRocketDel; } catch (e) { /* not a local handler */ }
+  try { window.buildRocket = buildRocket; } catch (e) { /* not a local handler */ }
+  } finally {
+    window.addEventListener = winAdd;
+    document.addEventListener = docAdd;
+    window.requestAnimationFrame = origRaf;
+  }
 
   return function unmount() {
     try { ac.abort(); } catch (e) {}
@@ -1404,6 +1443,14 @@ function goNext(){go(currentStep+1)}
     try { delete window.applyPreset; } catch (e) {}
     try { delete window.applyRocketPreset; } catch (e) {}
     try { delete window.launch; } catch (e) {}
+    try { delete window.applyStep; } catch (e) {}
+    try { delete window.selectOpt; } catch (e) {}
+    try { delete window.selectSwatch; } catch (e) {}
+    try { delete window.doRocketSave; } catch (e) {}
+    try { delete window.doRocketLoad; } catch (e) {}
+    try { delete window.doRocketDel; } catch (e) {}
+    try { delete window.buildRocket; } catch (e) {}
+    try { delete window.R; } catch (e) {}
     stage.remove();
     sheet.remove();
   };
