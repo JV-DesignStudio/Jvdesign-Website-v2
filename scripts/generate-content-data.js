@@ -283,10 +283,14 @@ function generateTools() {
     const slug = file.replace('.html','');
     const title = extract(html, /<title>([^<|]+)/) || slug.replace(/-/g,' ');
     const desc = extract(html, /<meta\s+name="description"\s+content="([^"]+)"/) || '';
-    // category inference from existing hub or file path
-    let category='General';
+    // Category inference. Reference material (cheatsheets, glossaries, guides) is
+    // not a maker tool, so classify it as Reference first instead of letting a
+    // stray keyword such as "audio" in a cheatsheet blurb land it in Make Audio.
     const lower=(title+' '+desc).toLowerCase();
-    if(lower.includes('pixel')||lower.includes('sprite')||lower.includes('icon')) category='Make Art';
+    const isReference=/cheat ?sheet|glossary|keyboard shortcut|quick reference|starter guide|starter setup|parent|teacher|gallery/.test(lower);
+    let category='General';
+    if(isReference) category='Reference';
+    else if(lower.includes('pixel')||lower.includes('sprite')||lower.includes('icon')) category='Make Art';
     else if(lower.includes('audio')||lower.includes('sfx')||lower.includes('sound')||lower.includes('drum')) category='Make Audio';
     else if(lower.includes('level')||lower.includes('world')||lower.includes('map')||lower.includes('tileset')) category='Build Worlds';
     else if(lower.includes('story')||lower.includes('gdd')||lower.includes('quest')||lower.includes('error')) category='Plan & Write';
