@@ -8,6 +8,8 @@
 //      behind an unlabelled bottom-bar tab;
 //   3. a profile that blocks localStorage must not throw, must not claim the
 //      work was saved, and must still export a real PNG.
+//   4. (A1788) on a phone Save must be visible inside the scrolling Save panel,
+//      and exporting without saving must not tick "Saved".
 const fs = require('fs');
 const os = require('os');
 const http = require('http');
@@ -106,6 +108,40 @@ const VIEWPORTS = [
     check('phone: Export PNG is visible without hunting', phoneState.pngShown, phoneState.pngText);
     check('phone: the mission says where Save lives', phoneState.hintShown && /save/i.test(phoneState.hintText), phoneState.hintText);
     check('phone: no runtime errors on the mission', phoneErrors.length===0, phoneErrors.slice(0,2).join(' | '));
+
+    // A1788: Save must be inside the visible part of the scrolling Save panel,
+    // and Export must not tick "Saved" when no save happened.
+    const phoneSave = await phone.evaluate(()=>{
+      const inPanel = el=>{
+        if(!el) return null;
+        const r=el.getBoundingClientRect();
+        const c=document.querySelector('.bb-content');
+        const cr=c?c.getBoundingClientRect():{top:0,bottom:window.innerHeight};
+        const cs=getComputedStyle(el);
+        const visible=cs.display!=='none'&&cs.visibility!=='hidden'&&r.height>0&&r.top>=cr.top&&r.bottom<=cr.bottom&&r.top>=0&&r.bottom<=window.innerHeight&&r.left>=0&&r.right<=window.innerWidth;
+        return visible?{text:el.textContent.trim(),x:r.left+r.width/2,y:r.top+r.height/2}:null;
+      };
+      return {
+        save: inPanel([...document.querySelectorAll('[data-on="saveProject"]')].find(el=>el.closest('#bb3'))),
+        png: inPanel([...document.querySelectorAll('[data-on="exportPNG"]')].find(el=>el.closest('#bb3'))),
+        savedFlag: window._projectSaved===true,
+        stored:(()=>{try{return !!localStorage.getItem('jvds_pixel');}catch(e){return false;}})(),
+      };
+    });
+    check('phone: Save is visible in the Save panel after drawing', !!phoneSave.save, phoneSave.save?phoneSave.save.text:'not in the clipped panel');
+    check('phone: nothing claims a save before the learner saves', !phoneSave.savedFlag && !phoneSave.stored);
+    if(phoneSave.png){
+      await phone.touchscreen.tap(phoneSave.png.x, phoneSave.png.y);
+      await sleep(900);
+    }
+    const phoneAfterExport = await phone.evaluate(()=>({
+      dot2:(document.getElementById('fm-dot-2')||{}).textContent||'',
+      heading:(document.getElementById('fm-heading')||{}).textContent||'',
+      savedFlag: window._projectSaved===true,
+      stored:(()=>{try{return !!localStorage.getItem('jvds_pixel');}catch(e){return false;}})(),
+    }));
+    check('phone: Export does not tick Saved when no save happened', !phoneAfterExport.savedFlag && !phoneAfterExport.stored && !/✓\s*Saved/i.test(phoneAfterExport.dot2), phoneAfterExport.dot2);
+    check('phone: Export is honest that the browser copy was not saved', /not saved|blocked/i.test(phoneAfterExport.heading), phoneAfterExport.heading);
     await phone.close();
 
     // ---------- 3. Locked-down profile: no crash, no false "Saved" ----------
@@ -124,6 +160,12 @@ const VIEWPORTS = [
     await cdp.send('Browser.setDownloadBehavior', {behavior:'allow', downloadPath:downloadDir});
     await locked.goto(`http://127.0.0.1:${port}/tools/pixel-studio.html#first-mission`, {waitUntil:'networkidle2', timeout:60000});
     await sleep(2000);
+    const lockedCanvas = await locked.$('#main-canvas');
+    const lockedBox = await lockedCanvas.boundingBox();
+    await locked.mouse.click(lockedBox.x+lockedBox.width/2, lockedBox.y+lockedBox.height/2);
+    await sleep(1900);
+    const autoToast = await locked.$eval('#toast', el=>el.textContent).catch(()=> '');
+    check('locked profile: autosave names the block, not a full disk', /block/i.test(autoToast) && !/storage full/i.test(autoToast), autoToast);
     const lockedState = await locked.evaluate(()=>{
       const before = (document.getElementById('fm-heading')||{}).textContent||'';
       let ret;

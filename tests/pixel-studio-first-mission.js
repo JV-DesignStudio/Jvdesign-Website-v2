@@ -89,6 +89,7 @@ async function runAt(page, viewport) {
   ok('step 1→2: dot-1 shows tick', s1.d1.includes('✓'));
 
   const s2 = await page.evaluate(() => {
+    saveProject();
     missionTick('save');
     return { h: document.getElementById('fm-heading').textContent, d2: document.getElementById('fm-dot-2').textContent };
   });
