@@ -101,7 +101,11 @@ const SNAP = () => ({
     }
 
     // the wave logic itself: five waves, no endless, single story ending
-    const src = fs.readFileSync(path.join(ROOT, 'games', 'garden-defense.html'), 'utf8');
+    const src = [
+      fs.readFileSync(path.join(ROOT, 'games', 'garden-defense.html'), 'utf8'),
+      fs.readFileSync(path.join(ROOT, 'assets', 'js', 'inline', 'games-garden-defense-1.js'), 'utf8'),
+      fs.readFileSync(path.join(ROOT, 'assets', 'js', 'inline', 'games-garden-defense-2.js'), 'utf8')
+    ].join('\n');
     ok('no endless mode left in the page', !/endless/i.test(src));
     ok('no ten wave promise left in the page', !/10 waves|wave 10|waveIdx>10|waveIdx===10/.test(src));
     ok('the run ends after wave five', /if\(waveIdx>5\)\{ win\(\); return; \}/.test(src));

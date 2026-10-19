@@ -53,10 +53,11 @@ const server=http.createServer((req,res)=>{
       errors.length=0;
       await page.goto(base+'/workshops/'+file,{waitUntil:'load'});
       if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
+      await page.waitForFunction(()=>!!document.getElementById('step-1')||(window.CW&&document.querySelectorAll('.cw-step').length>0),{timeout:8000}).catch(()=>{});
       const m=await page.evaluate(()=>({
         nav:document.querySelectorAll('.scratch-series-nav a').length,
         hub:!!document.querySelector('.scratch-series-nav a[href="my-first-scratch-game.html"]'),
-        engine:!!document.getElementById('step-1'),
+        engine:!!(document.getElementById('step-1')||(window.CW&&document.querySelectorAll('.cw-step').length>0)),
         sw:document.documentElement.scrollWidth
       }));
       check(file+': series nav present',m.nav>=2,'links '+m.nav);
