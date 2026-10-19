@@ -25,6 +25,22 @@ const entries = JSON.parse(fs.readFileSync(DATA, 'utf8'));
 const hub = fs.readFileSync(HUB, 'utf8');
 const registered = new Set(entries.map((e) => String(e.url).replace(/^\//, '')));
 
+/* A1707: inline scripts are externalised (CSP), so CW_CONFIG now lives in
+   assets/js/inline/*.js, not in the page HTML. Read every local script the
+   page loads and search that too before calling a canvas config missing. */
+function localScriptSources(html, pageDir) {
+  const out = [];
+  const re = /<script[^>]*\bsrc=["']([^"']+)["']/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    const src = m[1].split('?')[0];
+    if (/^(https?:)?\/\//i.test(src) || src.startsWith('data:')) continue;
+    const abs = src.startsWith('/') ? path.join(SITE, src) : path.join(pageDir, src);
+    if (fs.existsSync(abs) && fs.statSync(abs).isFile() && /\.js$/i.test(abs)) out.push(abs);
+  }
+  return out;
+}
+
 ok('canvas build-along pages exist', files.length > 0, 'found ' + files.length);
 
 const missingTitle = [];
@@ -35,9 +51,11 @@ const notLinked = [];
 
 for (const file of files) {
   const html = fs.readFileSync(path.join(WORKSHOPS, file), 'utf8');
+  const external = localScriptSources(html, WORKSHOPS).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+  const config = html.includes('window.CW_CONFIG') || external.includes('window.CW_CONFIG');
   if (!/<title>[^<]+<\/title>/i.test(html)) missingTitle.push(file);
   if (!html.includes('workshop-canvas-engine.js')) missingEngine.push(file);
-  if (!html.includes('window.CW_CONFIG')) missingConfig.push(file);
+  if (!config) missingConfig.push(file);
   if (!registered.has('workshops/' + file)) notRegistered.push(file);
   if (!hub.includes('href="../workshops/' + file + '"')) notLinked.push(file);
 }
@@ -56,6 +74,13 @@ const { generate } = require('../scripts/generate-workshop-catalogue');
 const drift = generate({ checkOnly: true });
 ok('workshop hub catalogue is in sync with content/workshops.json', drift.changed === false,
   drift.changed ? 'run: node scripts/generate-workshop-catalogue.js' : '');
+
+/* A1714: canvas pages are workshop/learn pages, so the shared topbar must carry
+   Lumo (Learn), not Ember (Create). Guard the single injected chip. */
+const engineSrc = fs.readFileSync(path.join(SITE, 'workshop-canvas-engine.js'), 'utf8');
+const topbarChip = (engineSrc.match(/chip\.innerHTML\s*=\s*'([^']+)'/) || [])[1] || '';
+ok('canvas topbar shows Lumo (learn), not Ember', /lumo-badge\.webp/.test(topbarChip) && /Build it with Lumo/i.test(topbarChip),
+  topbarChip ? 'chip: ' + topbarChip : 'topbar chip not found in engine');
 
 if (failures) {
   console.log('\nFAIL canvas-workshops: ' + failures + ' check(s) failed');

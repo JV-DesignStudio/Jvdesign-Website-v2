@@ -25,14 +25,33 @@ const mapped = new Set([...mapBlock.matchAll(/'([^']+)':/g)].map((m) => m[1]));
 if (mapped.size < 100) fail('WORKSHOP_KEY_TO_ID did not parse (' + mapped.size + ' keys)');
 else ok(mapped.size + ' keys in WORKSHOP_KEY_TO_ID');
 
-const resolveKeys = (html) => {
-  const sm = html.match(/\b(?:const|let|var)\s+STORAGE_KEY\s*=\s*['"]([^'"]+)['"]/);
-  const wm = html.match(/window\.WORKSHOP_KEY\s*=\s*['"]([^'"]+)['"]/);
-  const wEq = /window\.WORKSHOP_KEY\s*=\s*STORAGE_KEY/.test(html);
+const resolveKeys = (html, external) => {
+  const body = html.match(/<body[^>]*\bdata-workshop-key\s*=\s*['"]([^'"]+)['"]/i);
+  const src = html + '\n' + (external || '');
+  const sm = src.match(/\b(?:const|let|var)\s+STORAGE_KEY\s*=\s*['"]([^'"]+)['"]/);
+  const wm = src.match(/window\.WORKSHOP_KEY\s*=\s*['"]([^'"]+)['"]/);
+  const wEq = /window\.WORKSHOP_KEY\s*=\s*STORAGE_KEY/.test(src);
   const inline = sm ? sm[1] : null;
   let engine = wm ? wm[1] : null;
   if (!engine && wEq) engine = inline;
+  if (!engine && body) engine = body[1];
   return { inline, engine };
+};
+
+/* A1707: inline configs were externalised (CSP), so window.WORKSHOP_KEY often
+   lives in assets/js/inline/*.js rather than in the page. Read every local
+   script the page loads as well as the page HTML. */
+const localScriptText = (html, dir) => {
+  const parts = [];
+  const re = /<script[^>]*\bsrc=["']([^"']+)["']/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    const s = m[1].split('?')[0];
+    if (/^(https?:)?\/\//i.test(s) || s.startsWith('data:')) continue;
+    const abs = s.startsWith('/') ? path.join(ROOT, s) : path.join(dir, s);
+    if (fs.existsSync(abs) && fs.statSync(abs).isFile()) parts.push(fs.readFileSync(abs, 'utf8'));
+  }
+  return parts.join('\n');
 };
 
 const files = fs.readdirSync(DIR).filter((f) => f.endsWith('.html'));
@@ -43,7 +62,7 @@ for (const f of files) {
   if (/<meta\s+name=["']robots["'][^>]*noindex/i.test(html)) continue;
   if (!/[a-z0-9-]*engine\.js/i.test(html)) continue;
   engines++;
-  const { inline, engine } = resolveKeys(html);
+  const { inline, engine } = resolveKeys(html, localScriptText(html, DIR));
   const key = engine || inline;
   if (!key) { unmapped.push(f + ' (no key)'); continue; }
   if (!mapped.has(key)) unmapped.push(f + ' -> ' + key);
