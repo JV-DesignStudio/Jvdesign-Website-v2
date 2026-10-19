@@ -45,6 +45,7 @@ const EXCLUDE_FILES = new Set([
 // excluded from the sitemap, search index and arcade grid. The live line-up is
 // games-registry.js; curated filesystem count = raw - GAME_ORPHANS.
 const GAME_ORPHANS = [
+  'games/cozy-cafe-match-game.html','games/cozy-biscuit-clicker.html',
   'games/arcane_citadel.html','games/backpack-quest.html','games/beat-builder-battle.html',
   'games/bread-blocks.html','games/bubble-pop-galaxy.html','games/call-of-the-cards-playtest.html',
   'games/call_of_the_cards.html','games/candy_kingdom.html','games/cozy_creatures.html',
