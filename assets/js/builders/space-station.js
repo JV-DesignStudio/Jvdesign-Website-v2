@@ -1,0 +1,1329 @@
+/* assets/js/builders/space-station.js
+ * Space Station preset module for the 3D Builder shell (workshops/3d-builder.html).
+ * Extracted from workshops/space-station-builder.html: mount(container) injects the
+ * builder markup + CSS, runs the original builder core in a guarded scope
+ * (window/document listeners and animation frames are tracked so unmount() can
+ * tear it down), and exposes only the data-on/data-action handlers the shared
+ * delegation needs. No other builder internals leak (module scope).
+ */
+export const ID = 'space-station';
+export const LABEL = 'Space Station';
+export const STYLES = ['../style-workshop-space-station-builder.css?v=17'];
+const HTML = "<div id=\"app\">\n\n  <header class=\"hdr\">\n    <h1 class=\"logo\">🛰️ Space Station Builder</h1>\n<div class=\"callout tip\" style=\"border-left:3px solid #22c55e;background:rgba(34,197,94,.07);\"><div class=\"callout-icon\">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of every step in this workshop: <a href=\"/downloads/space-station-builder-reference.zip\" download style=\"color:#16a34a;font-weight:800;text-decoration:underline;\">⬇ space-station-builder-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>\n\n    <div class=\"hdr-right\">\n      <a href=\"../pages/workshop.html\" class=\"back-link\">🎓 Workshop</a><a href=\"../pages/3d-builders.html\" class=\"back-link\" style=\"margin-left:8px\">🏗️ All Builders</a>\n      <button class=\"quick-btn\" data-on=\"randomStation\" data-on-plain style=\"background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764\">🎲 Random</button>\n      <button class=\"quick-btn\" data-on=\"quickBuild\" data-on-plain style=\"background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 3px 0 #1e3a5f\">⚡ Quick Build</button>\n    </div>\n  </header>\n  <!-- ── Ember Tip Bar ── -->\n  <div class=\"ember-builder-bar\" id=\"emberBar\" style=\"--ca-rgb:167,139,250\">\n    <svg viewBox=\"0 0 80 90\" width=\"26\" height=\"29\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\">\n      <path d=\"M20 52 Q10 80 15 88 H65 Q70 80 60 52 Q50 60 40 60 Q30 60 20 52Z\" fill=\"#12102a\"/>\n      <ellipse cx=\"40\" cy=\"36\" rx=\"16\" ry=\"17\" fill=\"#8B5CF6\"/>\n      <polygon points=\"24,22 19,8 30,18\" fill=\"#7C3AED\"/>\n      <polygon points=\"56,22 61,8 50,18\" fill=\"#7C3AED\"/>\n      <ellipse cx=\"40\" cy=\"40\" rx=\"10\" ry=\"8\" fill=\"#DDD6FE\"/>\n      <ellipse cx=\"35\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <ellipse cx=\"45\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <circle cx=\"36\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <circle cx=\"46\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <ellipse cx=\"40\" cy=\"39\" rx=\"2\" ry=\"1.4\" fill=\"#7C3AED\"/>\n    </svg>\n    <span><strong style=\"color:#a78bfa\">Ember says:</strong> <strong>Solar panel span</strong> makes the station look imposing. Add the <strong>Earth backdrop</strong> in the last step for a stunning finish!</span>\n    <button class=\"ember-bar-dismiss\" aria-label=\"Dismiss tip\" data-session-set=\"ember-bar-space-station-builder:1\" data-remove-id=\"emberBar\">✕</button>\n  </div>\n\n  <!-- ── /Ember Tip Bar ── -->\n\n  <div id=\"sidebar\">\n    <div class=\"prog-section\">\n      <div class=\"prog-lbl\">Build Progress</div>\n      <div class=\"prog-track\"><div class=\"prog-fill\" id=\"progFill\" style=\"width:3%\"></div></div>\n      <div class=\"prog-ct\" id=\"progCt\">0 / 16 steps</div>\n    </div>\n    <div class=\"slist\" id=\"stepList\"></div>\n    <div class=\"cpan\" id=\"stepBody\"></div>\n    <div class=\"snav\">\n      <button class=\"btn-p\" id=\"navPrev\" data-on=\"goPrev\" data-on-plain disabled aria-label=\"Previous step\">← Back</button>\n      <button class=\"btn-n\" id=\"navNext\" data-on=\"goNext\" data-on-plain aria-label=\"Next step\">Next →</button>\n    </div>\n  </div>\n\n  <div id=\"viewport\">\n    <div class=\"scene-top\">\n      <span class=\"scene-top-l\">🛸 Live 3D Preview</span>\n      <div class=\"scene-top-r\">\n        <div class=\"live-wrap\"><span class=\"live-dot\"></span><span id=\"liveStatus\" aria-live=\"polite\">Apply Step 1 to begin</span></div>\n      </div>\n    </div>\n    <div class=\"scene-wrap\">\n      <canvas id=\"stationCanvas\" role=\"application\" aria-label=\"3D space station preview viewport\"></canvas>\n      <div class=\"station-stats\" id=\"stationStats\"></div>\n      <div class=\"vhint\" id=\"sceneHint\">Drag to orbit · Scroll to zoom</div>\n      <div class=\"dims\" id=\"dimsOverlay\">\n        <div style=\"font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.06em;color:#fff;margin-bottom:2px\" id=\"sName\">UNNAMED</div>\n        <div>Style&nbsp;&nbsp;<span id=\"sStyle\">-</span></div>\n        <div>Modules<span id=\"sModules\">-</span></div>\n        <div>Solar&nbsp;&nbsp;<span id=\"sSolar\">-</span></div>\n        <div>Dock&nbsp;&nbsp;<span id=\"sDock\">-</span></div>\n        <div>Crew&nbsp;&nbsp;&nbsp;<span id=\"sCrew\">-</span></div>\n      </div>\n    </div>\n    <div class=\"obar\" id=\"obar\" aria-live=\"polite\">🛰️ Name your station to start building</div>\n  </div>\n\n  <div id=\"rightbar\" aria-label=\"Quick controls\">\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🎨 Colors</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-prim\">Primary</label>\n        <input type=\"color\" id=\"rb-prim\" value=\"#e0e0e0\" data-bind=\"P.primaryCol\" data-bind-type=\"value\" data-then=\"buildStation\">\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-accent\">Accent</label>\n        <input type=\"color\" id=\"rb-accent\" value=\"#a78bfa\" data-bind=\"P.accentCol\" data-bind-type=\"value\" data-then=\"buildStation\">\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-stripe-col\">Stripe</label>\n        <input type=\"color\" id=\"rb-stripe-col\" value=\"#a78bfa\" data-bind=\"P.stripeCol\" data-bind-type=\"value\" data-then=\"buildStation\">\n      </div>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🔩 Modules</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-style\">Style</label>\n        <select id=\"rb-style\" data-bind=\"P.moduleStyle\" data-bind-type=\"value\" data-then=\"buildStation\">\n          <option value=\"cylinder\">Cylinder</option>\n          <option value=\"box\">Box</option>\n        </select>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-mcount\">Count</label>\n        <input type=\"range\" min=\"2\" max=\"8\" step=\"1\" value=\"4\" id=\"rb-mcount\"\n          data-bind=\"P.moduleCount\" data-bind-type=\"int\" data-bind-display=\"rb-mcv\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-mcv\">4</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-mlen\">Length</label>\n        <input type=\"range\" min=\"1\" max=\"6\" step=\"0.5\" value=\"3\" id=\"rb-mlen\"\n          data-bind=\"P.moduleLength\" data-bind-type=\"float\" data-bind-display=\"rb-mlv\" data-bind-fmt=\"0.0m\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-mlv\">3.0m</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-mrad\">Radius</label>\n        <input type=\"range\" min=\"0.5\" max=\"2.0\" step=\"0.1\" value=\"1.0\" id=\"rb-mrad\"\n          data-bind=\"P.moduleRadius\" data-bind-type=\"float\" data-bind-display=\"rb-mrv\" data-bind-fmt=\"0.0\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-mrv\">1.0</span>\n      </div>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">☀️ Solar & Power</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-scount\">Panels</label>\n        <input type=\"range\" min=\"0\" max=\"8\" step=\"1\" value=\"4\" id=\"rb-scount\"\n          data-bind=\"P.solarPanelCount\" data-bind-type=\"int\" data-bind-display=\"rb-scv\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-scv\">4</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-ssize\">Panel Sz</label>\n        <input type=\"range\" min=\"0.5\" max=\"3.0\" step=\"0.1\" value=\"1.5\" id=\"rb-ssize\"\n          data-bind=\"P.solarPanelSize\" data-bind-type=\"float\" data-bind-display=\"rb-ssv\" data-bind-fmt=\"0.0\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-ssv\">1.5</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-rcount\">Radiators</label>\n        <input type=\"range\" min=\"0\" max=\"6\" step=\"1\" value=\"2\" id=\"rb-rcount\"\n          data-bind=\"P.radiatorCount\" data-bind-type=\"int\" data-bind-display=\"rb-rcv\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-rcv\">2</span>\n      </div>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">📡 Details</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-dcount\">Dock</label>\n        <input type=\"range\" min=\"0\" max=\"6\" step=\"1\" value=\"2\" id=\"rb-dcount\"\n          data-bind=\"P.dockingPortCount\" data-bind-type=\"int\" data-bind-display=\"rb-dcv\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-dcv\">2</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-acount\">Antenna</label>\n        <input type=\"range\" min=\"0\" max=\"6\" step=\"1\" value=\"3\" id=\"rb-acount\"\n          data-bind=\"P.antennaCount\" data-bind-type=\"int\" data-bind-display=\"rb-acv\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-acv\">3</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-cupola\">Cupola</label>\n        <input type=\"range\" min=\"0\" max=\"1.5\" step=\"0.1\" value=\"0.8\" id=\"rb-cupola\"\n          data-bind=\"P.cupolaSize\" data-bind-type=\"float\" data-bind-display=\"rb-cupv\" data-bind-fmt=\"0.0\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-cupv\">0.8</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-truss\">Truss</label>\n        <input type=\"range\" min=\"2\" max=\"16\" step=\"1\" value=\"8\" id=\"rb-truss\"\n          data-bind=\"P.trussLength\" data-bind-type=\"int\" data-bind-display=\"rb-trv\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-trv\">8m</span>\n      </div>\n      <label class=\"rb-toggle\">\n        <input type=\"checkbox\" id=\"rb-stripe-on\" data-bind=\"P.stripeOn\" data-bind-type=\"checked\" data-then=\"buildStation\">\n        Stripe band\n      </label>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🔄 Rotation</div>\n      <label class=\"rb-toggle\">\n        <input type=\"checkbox\" id=\"rb-ring\" data-bind=\"P.rotatingRing\" data-bind-type=\"checked\" data-then=\"buildStation\">\n        Rotating ring\n      </label>\n      <div class=\"rb-row\">\n        <label for=\"rb-ringrad\">Ring R</label>\n        <input type=\"range\" min=\"2\" max=\"6\" step=\"0.5\" value=\"3\" id=\"rb-ringrad\"\n          data-bind=\"P.ringRadius\" data-bind-type=\"float\" data-bind-display=\"rb-rrv\" data-bind-fmt=\"0.0\" data-then=\"buildStation\">\n        <span class=\"rv\" id=\"rb-rrv\">3.0</span>\n      </div>\n    </div>\n\n    <div style=\"padding:4px 2px\">\n      <button class=\"run-btn\" style=\"font-size:.78rem;padding:9px;margin-top:0\" data-on=\"launchStation\" data-on-plain>🚀 LAUNCH STATION</button>\n    </div>\n  </div>\n\n</div>\n<div id=\"modalOverlay\" style=\"display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)\"><div id=\"modalContent\" style=\"background:linear-gradient(145deg,#0a0818,#06040f);border:1px solid rgba(167,139,250,.3);border-radius:12px;padding:22px;width:380px;max-width:90vw\"></div></div>\n\n";
+const CSS = "/* ── Ember builder tip strip ─────────────── */\n.hdr-step-chip {\n  display: inline-flex;\n  align-items: center;\n  font-family: 'Nunito', sans-serif;\n  font-size: .72rem;\n  font-weight: 800;\n  letter-spacing: .05em;\n  padding: 3px 10px;\n  border-radius: 999px;\n  background: rgba(var(--ca-rgb, 255,255,255), .12);\n  border: 1px solid rgba(var(--ca-rgb, 255,255,255), .25);\n  color: rgba(255,255,255,.85);\n  margin-left: 10px;\n  vertical-align: middle;\n  flex-shrink: 0;\n}\n.ember-builder-bar {\n  display: flex;\n  align-items: flex-start;\n  gap: 10px;\n  padding: 8px 16px;\n  background: rgba(var(--ca-rgb,139,92,246), .07);\n  border-bottom: 1px solid rgba(var(--ca-rgb,139,92,246), .18);\n  position: relative;\n  font-size: .8rem;\n  line-height: 1.45;\n  color: rgba(255,255,255,.65);\n}\n.ember-builder-bar strong { color: rgba(255,255,255,.9); }\n.ember-builder-bar svg { flex-shrink: 0; margin-top: 1px; }\n.ember-bar-dismiss {\n  position: absolute;\n  right: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  background: none;\n  border: none;\n  color: rgba(255,255,255,.3);\n  cursor: pointer;\n  font-size: 1rem;\n  line-height: 1;\n  padding: 2px 6px;\n  border-radius: 4px;\n  transition: color .2s;\n}\n.ember-bar-dismiss:hover { color: rgba(255,255,255,.7); }\n";
+const ACTIONS = ["applyStep","goNext","goPrev","launchStation","quickBuild","randomStation","selectOpt","selectSwatch"];
+
+export function mount(container) {
+  var ac = new AbortController();
+  var rafs = [];
+  var winAdd = window.addEventListener.bind(window);
+  var docAdd = document.addEventListener.bind(document);
+  var origRaf = window.requestAnimationFrame.bind(window);
+  function opt(o) { return Object.assign({}, (o && typeof o === 'object') ? o : {}, { signal: ac.signal }); }
+  window.addEventListener = function (t, fn, o) { return winAdd(t, fn, opt(o)); };
+  document.addEventListener = function (t, fn, o) { return docAdd(t, fn, opt(o)); };
+  window.requestAnimationFrame = function (fn) { var id = origRaf(fn); rafs.push(id); return id; };
+
+  var stage = document.createElement('div');
+  stage.id = 'bsStage';
+  stage.className = 'bs-stage';
+  stage.innerHTML = HTML;
+  container.appendChild(stage);
+  var sheet = document.createElement('style');
+  sheet.setAttribute('data-bs-css', ID);
+  sheet.textContent = CSS;
+  document.head.appendChild(sheet);
+
+  try {
+'use strict';
+
+/* -------------------------------
+   THREE.JS SCENE
+------------------------------- */
+const canvas = document.getElementById('stationCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0x06040f);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x06040f, 30, 80);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 300);
+camera.position.set(0, 4, 16);
+
+const ambient = new THREE.AmbientLight(0x334466, 0.5);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff5ee, 1.3);
+sun.position.set(8, 12, 8);
+sun.castShadow = true;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x4466aa, 0.35);
+fill.position.set(-8, 3, -6);
+scene.add(fill);
+const stationGlow = new THREE.PointLight(0xa78bfa, 0, 6);
+scene.add(stationGlow);
+
+// Stars
+(function(){
+  const geo = new THREE.BufferGeometry();
+  const verts = [];
+  for (let i = 0; i < 2000; i++) {
+    verts.push((Math.random()-0.5)*140, (Math.random()-0.5)*140, (Math.random()-0.5)*140);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
+  scene.add(new THREE.Points(geo, mat));
+})();
+
+// Earth sphere
+(function(){
+  const earthGeo = new THREE.SphereGeometry(30, 48, 48);
+  const earthMat = new THREE.MeshStandardMaterial({ color: 0x1a5276, roughness: 0.8, metalness: 0.1, wireframe: false });
+  const earth = new THREE.Mesh(earthGeo, earthMat);
+  earth.position.set(0, -35, -50);
+  scene.add(earth);
+  // land patches
+  const landMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.85 });
+  for (let i = 0; i < 12; i++) {
+    const patchGeo = new THREE.SphereGeometry(4 + Math.random() * 6, 8, 8);
+    const patch = new THREE.Mesh(patchGeo, landMat);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    patch.position.set(
+      -50 * Math.sin(phi) * Math.cos(theta),
+      -35 + 30 * Math.cos(phi),
+      -50 - 30 * Math.sin(phi) * Math.sin(theta)
+    );
+    scene.add(patch);
+  }
+  // clouds
+  const cloudMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9, transparent: true, opacity: 0.3 });
+  for (let i = 0; i < 8; i++) {
+    const cGeo = new THREE.SphereGeometry(3 + Math.random() * 4, 8, 8);
+    const cloud = new THREE.Mesh(cGeo, cloudMat);
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    cloud.position.set(
+      -52 * Math.sin(phi) * Math.cos(theta),
+      -35 + 32 * Math.cos(phi),
+      -52 - 32 * Math.sin(phi) * Math.sin(theta)
+    );
+    scene.add(cloud);
+  }
+})();
+
+/* -------------------------------
+   STATION STATE
+------------------------------- */
+const P = {
+  stationName: 'Arcadia',
+  moduleCount: 4,
+  moduleLength: 3,
+  moduleRadius: 1.0,
+  moduleStyle: 'cylinder',
+  primaryCol: '#e0e0e0',
+  accentCol: '#a78bfa',
+  solarPanelCount: 4,
+  solarPanelSize: 1.5,
+  dockingPortCount: 2,
+  antennaCount: 3,
+  cupolaSize: 0.8,
+  trussLength: 8,
+  radiatorCount: 2,
+  crewCapacity: 6,
+  rotatingRing: false,
+  ringRadius: 3,
+  lightCol: '#ffffff',
+  stripeOn: false,
+  stripeCol: '#a78bfa',
+  launched: false,
+  launchTime: 0,
+};
+window.P = P;
+
+let stationGroup = null;
+let stationRotating = false;
+let starParticles = null;
+
+function hexToThree(hex) { return new THREE.Color(hex); }
+
+/* -------------------------------
+   BUILD STATION
+------------------------------- */
+function buildStation() {
+  if (stationGroup) scene.remove(stationGroup);
+  stationGroup = new THREE.Group();
+  stationGroup.name = 'space_station';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
+
+  const pMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.primaryCol), roughness: 0.35, metalness: 0.5 });
+  const aMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.accentCol), roughness: 0.3, metalness: 0.55 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.7, metalness: 0.3 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.1, metalness: 0.1, transparent: true, opacity: 0.6, emissive: new THREE.Color(0x224466), emissiveIntensity: 0.4 });
+  const solarMat = new THREE.MeshStandardMaterial({ color: 0x1a237e, roughness: 0.3, metalness: 0.6, side: THREE.DoubleSide });
+  const radiatorMat = new THREE.MeshStandardMaterial({ color: 0x333344, roughness: 0.7, metalness: 0.4, side: THREE.DoubleSide });
+  const antennaMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5, metalness: 0.6 });
+  const tipMat = new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.4, metalness: 0.3, emissive: new THREE.Color(0xff2222), emissiveIntensity: 0.5 });
+  const dockMat = new THREE.MeshStandardMaterial({ color: 0x555566, roughness: 0.5, metalness: 0.6 });
+  const ringMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.accentCol), roughness: 0.3, metalness: 0.5 });
+
+  const mc = P.moduleCount;
+  const ml = P.moduleLength;
+  const mr = P.moduleRadius;
+
+  // Central spine: modules along X axis
+  const totalLen = mc * ml;
+  const startX = -totalLen / 2;
+
+  for (let i = 0; i < mc; i++) {
+    const mx = startX + i * ml + ml / 2;
+
+    if (P.moduleStyle === 'cylinder') {
+      const mGeo = new THREE.CylinderGeometry(mr, mr, ml, 24);
+      const mod = new THREE.Mesh(mGeo, pMat.clone());
+      mod.rotation.z = Math.PI / 2;
+      mod.position.x = mx;
+      mod.castShadow = true;
+      stationGroup.add(part(mod, `module_${i}`));
+    } else {
+      const mGeo = new THREE.BoxGeometry(ml, mr * 1.8, mr * 1.8);
+      const mod = new THREE.Mesh(mGeo, pMat.clone());
+      mod.position.x = mx;
+      mod.castShadow = true;
+      stationGroup.add(part(mod, `module_${i}`));
+    }
+
+    // Connection rings between modules
+    if (i > 0) {
+      const ringGeo = new THREE.TorusGeometry(mr * 0.85, 0.06, 8, 24);
+      const ring = new THREE.Mesh(ringGeo, darkMat);
+      ring.rotation.y = Math.PI / 2;
+      ring.position.x = startX + i * ml;
+      stationGroup.add(part(ring, `module_connector_ring_${i}`));
+    }
+
+    // Accent bands on each module
+    const bandGeo = P.moduleStyle === 'cylinder'
+      ? new THREE.TorusGeometry(mr + 0.01, 0.04, 8, 24)
+      : new THREE.BoxGeometry(0.08, mr * 1.85, mr * 1.85);
+    const band = new THREE.Mesh(bandGeo, aMat.clone());
+    band.position.x = mx;
+    if (P.moduleStyle === 'cylinder') band.rotation.y = Math.PI / 2;
+    stationGroup.add(part(band, `module_accent_band_${i}`));
+
+    // Stripe
+    if (P.stripeOn) {
+      const stripeMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.stripeCol), roughness: 0.4, metalness: 0.5 });
+      if (P.moduleStyle === 'cylinder') {
+        const sGeo = new THREE.CylinderGeometry(mr + 0.015, mr + 0.015, 0.12, 24);
+        const stripe = new THREE.Mesh(sGeo, stripeMat);
+        stripe.rotation.z = Math.PI / 2;
+        stripe.position.x = mx;
+        stationGroup.add(part(stripe, `module_stripe_${i}`));
+      } else {
+        const sGeo = new THREE.BoxGeometry(ml * 0.3, mr * 1.86, mr * 1.86);
+        const stripe = new THREE.Mesh(sGeo, stripeMat);
+        stripe.position.x = mx;
+        stationGroup.add(part(stripe, `module_stripe_${i}`));
+      }
+    }
+
+    // Docking ports on end modules
+    if ((i === 0 || i === mc - 1) && P.dockingPortCount > 0) {
+      const portsPerEnd = Math.ceil(P.dockingPortCount / 2);
+      for (let p = 0; p < portsPerEnd; p++) {
+        const angle = (p / portsPerEnd) * Math.PI * 2;
+        const px = mx + (i === 0 ? -ml / 2 - 0.2 : ml / 2 + 0.2);
+        const py = Math.cos(angle) * mr * 0.6;
+        const pz = Math.sin(angle) * mr * 0.6;
+
+        const dockGeo = new THREE.CylinderGeometry(0.15, 0.18, 0.4, 12);
+        const dock = new THREE.Mesh(dockGeo, dockMat);
+        dock.rotation.z = Math.PI / 2;
+        dock.position.set(px, py, pz);
+        stationGroup.add(part(dock, `docking_port_${i===0?'fore':'aft'}_${i}_${p}`));
+
+        const rimGeo = new THREE.TorusGeometry(0.18, 0.025, 6, 16);
+        const rim = new THREE.Mesh(rimGeo, darkMat);
+        rim.rotation.y = Math.PI / 2;
+        rim.position.set(px + (i === 0 ? -0.2 : 0.2), py, pz);
+        stationGroup.add(part(rim, `docking_port_rim_${i===0?'fore':'aft'}_${i}_${p}`));
+      }
+    }
+
+    // Antennas
+    if (i === Math.floor(mc / 2) && P.antennaCount > 0) {
+      for (let a = 0; a < P.antennaCount; a++) {
+        const aAngle = (a / P.antennaCount) * Math.PI * 2;
+        const aLen = 0.8 + Math.random() * 0.5;
+        const ax = mx + Math.cos(aAngle) * mr * 0.3;
+        const az = Math.sin(aAngle) * mr * 0.3;
+
+        const aGeo = new THREE.CylinderGeometry(0.015, 0.02, aLen, 6);
+        const ant = new THREE.Mesh(aGeo, antennaMat);
+        ant.position.set(ax, mr + aLen / 2, az);
+        stationGroup.add(part(ant, `antenna_${a}`));
+
+        const tipGeo = new THREE.SphereGeometry(0.05, 8, 8);
+        const tip = new THREE.Mesh(tipGeo, tipMat);
+        tip.position.set(ax, mr + aLen + 0.05, az);
+        stationGroup.add(part(tip, `antenna_beacon_${a}`));
+      }
+    }
+
+    // Cupola on one module
+    if (i === Math.floor(mc / 2) && P.cupolaSize > 0) {
+      const cs = P.cupolaSize;
+      const cupGeo = new THREE.SphereGeometry(cs, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const cupola = new THREE.Mesh(cupGeo, glassMat);
+      cupola.position.set(mx, mr + 0.01, 0);
+      stationGroup.add(part(cupola, `cupola_dome_${i}`));
+
+      const cupRimGeo = new THREE.TorusGeometry(cs, 0.03, 8, 24);
+      const cupRim = new THREE.Mesh(cupRimGeo, darkMat);
+      cupRim.rotation.x = Math.PI / 2;
+      cupRim.position.set(mx, mr + 0.02, 0);
+      stationGroup.add(part(cupRim, `cupola_rim_${i}`));
+
+      // Cupola struts
+      for (let s = 0; s < 6; s++) {
+        const sAngle = (s / 6) * Math.PI * 2;
+        const sx = Math.cos(sAngle) * cs * 0.8;
+        const sz = Math.sin(sAngle) * cs * 0.8;
+        const strutGeo = new THREE.CylinderGeometry(0.012, 0.012, cs * 0.9, 4);
+        const strut = new THREE.Mesh(strutGeo, darkMat);
+        strut.position.set(mx + sx * 0.3, mr + cs * 0.45, sz * 0.3);
+        strut.rotation.z = Math.PI / 2;
+        strut.lookAt(mx + sx, mr + cs, sz);
+        stationGroup.add(part(strut, `cupola_strut_${s}_${i}`));
+      }
+    }
+  }
+
+  // Truss: long beam connecting solar panels
+  const trussY = mr + 1.2;
+  const trussGeo = new THREE.BoxGeometry(P.trussLength, 0.15, 0.15);
+  const truss = new THREE.Mesh(trussGeo, darkMat);
+  truss.position.y = trussY;
+  stationGroup.add(part(truss, 'truss_main'));
+
+  // Secondary truss beam
+  const truss2Geo = new THREE.BoxGeometry(P.trussLength, 0.08, 0.08);
+  const truss2 = new THREE.Mesh(truss2Geo, darkMat);
+  truss2.position.set(0, trussY - 0.3, 0);
+  stationGroup.add(part(truss2, 'truss_secondary'));
+
+  // Cross struts on truss
+  for (let t = 0; t < Math.floor(P.trussLength / 1.5); t++) {
+    const tx = -P.trussLength / 2 + t * 1.5 + 0.75;
+    const strutGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.45, 4);
+    const strut = new THREE.Mesh(strutGeo, darkMat);
+    strut.position.set(tx, trussY - 0.15, 0);
+    stationGroup.add(part(strut, `truss_strut_${t}`));
+  }
+
+  // Solar panels
+  if (P.solarPanelCount > 0) {
+    const panelSize = P.solarPanelSize;
+    const panelsPerSide = Math.ceil(P.solarPanelCount / 2);
+
+    for (let side = 0; side < 2; side++) {
+      const sideX = side === 0 ? -1 : 1;
+      for (let p = 0; p < panelsPerSide; p++) {
+        const px = sideX * (P.trussLength / 2 + panelSize / 2 + p * (panelSize + 0.15));
+        const py = trussY;
+
+        // Panel arm
+        const armGeo = new THREE.CylinderGeometry(0.025, 0.025, panelSize * 0.6, 4);
+        const arm = new THREE.Mesh(armGeo, darkMat);
+        arm.rotation.z = Math.PI / 2;
+        arm.position.set(px, py, 0);
+        stationGroup.add(part(arm, `solar_arm_${side}_${p}`));
+
+        // Solar panel surface
+        const panelGeo = new THREE.BoxGeometry(panelSize, 0.03, panelSize * 0.7);
+        const panel = new THREE.Mesh(panelGeo, solarMat.clone());
+        panel.position.set(px, py, 0);
+        panel.castShadow = true;
+        stationGroup.add(part(panel, `solar_panel_${side}_${p}`));
+
+        // Grid lines on panel
+        for (let g = 0; g < 4; g++) {
+          const gx = px - panelSize / 2 + (g + 1) * panelSize / 5;
+          const lineGeo = new THREE.BoxGeometry(0.01, 0.035, panelSize * 0.7);
+          const line = new THREE.Mesh(lineGeo, new THREE.MeshStandardMaterial({ color: 0x283593, roughness: 0.5 }));
+          line.position.set(gx, py, 0);
+          stationGroup.add(part(line, `solar_grid_v_${side}_${p}_${g}`));
+        }
+        for (let g = 0; g < 3; g++) {
+          const gz = -panelSize * 0.35 + (g + 1) * panelSize * 0.7 / 4;
+          const lineGeo = new THREE.BoxGeometry(panelSize, 0.035, 0.01);
+          const line = new THREE.Mesh(lineGeo, new THREE.MeshStandardMaterial({ color: 0x283593, roughness: 0.5 }));
+          line.position.set(px, py, gz);
+          stationGroup.add(part(line, `solar_grid_h_${side}_${p}_${g}`));
+        }
+
+        // Hinge joint
+        const hingeGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.1, 8);
+        const hinge = new THREE.Mesh(hingeGeo, darkMat);
+        hinge.rotation.x = Math.PI / 2;
+        hinge.position.set(sideX * (P.trussLength / 2), py, 0);
+        stationGroup.add(part(hinge, `solar_hinge_${side}_${p}`));
+      }
+    }
+  }
+
+  // Radiators
+  if (P.radiatorCount > 0) {
+    for (let r = 0; r < P.radiatorCount; r++) {
+      const rx = (r - (P.radiatorCount - 1) / 2) * 1.5;
+      const ry = trussY - 0.6;
+
+      // Radiator panel
+      const rGeo = new THREE.BoxGeometry(1.2, 0.02, 0.8);
+      const rad = new THREE.Mesh(rGeo, radiatorMat);
+      rad.position.set(rx, ry, 0);
+      stationGroup.add(part(rad, `radiator_panel_${r}`));
+
+      // Radiator fins (grid pattern)
+      for (let f = 0; f < 5; f++) {
+        const fx = rx - 0.5 + f * 0.25;
+        const finGeo = new THREE.BoxGeometry(0.01, 0.025, 0.8);
+        const fin = new THREE.Mesh(finGeo, new THREE.MeshStandardMaterial({ color: 0x222233, roughness: 0.8 }));
+        fin.position.set(fx, ry, 0);
+        stationGroup.add(part(fin, `radiator_fin_${r}_${f}`));
+      }
+
+      // Support strut
+      const sGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.7, 4);
+      const s = new THREE.Mesh(sGeo, darkMat);
+      s.position.set(rx, trussY - 0.3, 0);
+      stationGroup.add(part(s, `radiator_strut_${r}`));
+    }
+  }
+
+  // Rotating ring
+  if (P.rotatingRing) {
+    const rr = P.ringRadius;
+    const tubeR = 0.12;
+    const torusGeo = new THREE.TorusGeometry(rr, tubeR, 12, 48);
+    const torus = new THREE.Mesh(torusGeo, ringMat);
+    torus.rotation.x = Math.PI / 2;
+    torus.position.y = mr * 0.3;
+    stationGroup.add(part(torus, 'rotating_ring'));
+
+    // Ring spokes
+    for (let s = 0; s < 8; s++) {
+      const sAngle = (s / 8) * Math.PI * 2;
+      const spokeLen = rr;
+      const spokeGeo = new THREE.CylinderGeometry(0.025, 0.025, spokeLen, 4);
+      const spoke = new THREE.Mesh(spokeGeo, darkMat);
+      spoke.rotation.z = Math.PI / 2;
+      spoke.rotation.y = sAngle;
+      spoke.position.set(0, mr * 0.3, 0);
+      stationGroup.add(part(spoke, `ring_spoke_${s}`));
+    }
+
+    // Hub
+    const hubGeo = new THREE.CylinderGeometry(tubeR * 2, tubeR * 2, 0.3, 16);
+    const hub = new THREE.Mesh(hubGeo, aMat);
+    hub.position.y = mr * 0.3;
+    stationGroup.add(part(hub, 'ring_hub'));
+  }
+
+  // Light strip on modules
+  const lightMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.lightCol), emissive: new THREE.Color(P.lightCol), emissiveIntensity: 0.8, roughness: 0.2 });
+  for (let i = 0; i < mc; i++) {
+    const lx = startX + i * ml + ml / 2;
+    const lGeo = new THREE.BoxGeometry(ml * 0.15, 0.04, 0.04);
+    const light = new THREE.Mesh(lGeo, lightMat);
+    light.position.set(lx, mr + 0.03, 0);
+    stationGroup.add(part(light, `module_light_top_${i}`));
+    const light2 = light.clone();
+    light2.position.set(lx, -mr - 0.03, 0);
+    light2.name = `module_light_bottom_${i}`;
+    stationGroup.add(light2)
+  }
+
+  scene.add(stationGroup);
+  updateSpecCard();
+  updateStats();
+  syncRightBar();
+}
+
+/* -------------------------------
+   ORBIT CONTROLS
+------------------------------- */
+let orbit = { theta: 0.3, phi: 1.1, radius: 16, dragging: false, lastX: 0, lastY: 0 };
+
+function updateCamera() {
+  orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
+  orbit.radius = Math.max(5, Math.min(35, orbit.radius));
+  camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+  camera.position.y = orbit.radius * Math.cos(orbit.phi) + 1;
+  camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+  camera.lookAt(0, 0, 0);
+}
+
+canvas.addEventListener('mousedown', function(e) { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', function() { orbit.dragging = false; });
+window.addEventListener('mousemove', function(e) {
+  if (!orbit.dragging) return;
+  orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
+  orbit.phi   -= (e.clientY - orbit.lastY) * 0.007;
+  orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+});
+canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
+
+BuilderGestures.attachTapSelect(canvas, camera, function () { return stationGroup; }, {
+  onOrbit: function (dx, dy) { orbit.theta -= dx * 0.007; orbit.phi -= dy * 0.007; },
+  onPinch: function (ratio) { orbit.radius *= ratio; },
+  onDragStart: function () { orbit.dragging = true; },
+  onDragEnd: function () { orbit.dragging = false; }
+});
+
+/* -------------------------------
+   RESIZE + RENDER LOOP
+------------------------------- */
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+  if (!orbit.dragging) orbit.theta += 0.002;
+  updateCamera();
+
+  // Station rotation when launched
+  if (stationRotating && stationGroup) {
+    stationGroup.rotation.y += 0.003;
+  }
+
+  // Ring rotation
+  if (P.rotatingRing && stationGroup) {
+    stationGroup.children.forEach(function(child) {
+      if (child.geometry && child.geometry.type === 'TorusGeometry') {
+        child.rotation.z += 0.008;
+      }
+    });
+  }
+
+  // Star particle twinkle
+  if (starParticles) {
+    const pos = starParticles.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i);
+      pos.setY(i, y + Math.sin(frame * 0.01 + i) * 0.001);
+    }
+    pos.needsUpdate = true;
+  }
+
+  resize();
+  renderer.render(scene, camera);
+}
+animate();
+
+/* -------------------------------
+   SPEC OVERLAY
+------------------------------- */
+function updateSpecCard() {
+  document.getElementById('sName').textContent = P.stationName || 'UNNAMED';
+  document.getElementById('sStyle').textContent = P.moduleStyle === 'cylinder' ? 'Cylinder' : 'Box';
+  document.getElementById('sModules').textContent = P.moduleCount + ' 🛰️ ' + P.moduleLength + 'm';
+  document.getElementById('sSolar').textContent = P.solarPanelCount + ' panels';
+  document.getElementById('sDock').textContent = P.dockingPortCount + ' ports';
+  document.getElementById('sCrew').textContent = P.crewCapacity + ' crew';
+}
+
+function sout(m) { document.getElementById('obar').textContent = m; }
+
+/* -------------------------------
+   RIGHT BAR SYNC
+------------------------------- */
+function syncRightBar() {
+  function sv(id, val) { const e = document.getElementById(id); if (e) e.value = val; }
+  function sc(id, val) { const e = document.getElementById(id); if (e) e.checked = val; }
+  function st(id, txt) { const e = document.getElementById(id); if (e) e.textContent = txt; }
+  sv('rb-prim', P.primaryCol);
+  sv('rb-accent', P.accentCol);
+  sv('rb-stripe-col', P.stripeCol);
+  sv('rb-style', P.moduleStyle);
+  sv('rb-mcount', P.moduleCount); st('rb-mcv', P.moduleCount);
+  sv('rb-mlen', P.moduleLength); st('rb-mlv', P.moduleLength.toFixed(1) + 'm');
+  sv('rb-mrad', P.moduleRadius); st('rb-mrv', P.moduleRadius.toFixed(1));
+  sv('rb-scount', P.solarPanelCount); st('rb-scv', P.solarPanelCount);
+  sv('rb-ssize', P.solarPanelSize); st('rb-ssv', P.solarPanelSize.toFixed(1));
+  sv('rb-rcount', P.radiatorCount); st('rb-rcv', P.radiatorCount);
+  sv('rb-dcount', P.dockingPortCount); st('rb-dcv', P.dockingPortCount);
+  sv('rb-acount', P.antennaCount); st('rb-acv', P.antennaCount);
+  sv('rb-cupola', P.cupolaSize); st('rb-cupv', P.cupolaSize.toFixed(1));
+  sv('rb-truss', P.trussLength); st('rb-trv', P.trussLength + 'm');
+  sc('rb-stripe-on', P.stripeOn);
+  sc('rb-ring', P.rotatingRing);
+  sv('rb-ringrad', P.ringRadius); st('rb-rrv', P.ringRadius.toFixed(1));
+}
+
+/* -------------------------------
+   STEPS
+------------------------------- */
+let currentStep = 0;
+const stepDone = new Array(16).fill(false);
+
+function nav(i) { return ''; }
+
+function paramPath(src) {
+  const m = /([A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*)\s*=/.exec(String(src || ''));
+  return m ? m[1] : '';
+}
+
+function paramParse(src) {
+  if (/parseFloat/.test(src)) return 'float';
+  if (/parseInt/.test(src)) return 'int';
+  return 'raw';
+}
+
+function opts(id, options, currentVal, onChange) {
+  const path = paramPath(onChange), parse = paramParse(onChange);
+  return `<div class="opt-grid">${options.map(o =>
+    `<button class="opt-btn${currentVal===o.val?' sel':''}" data-action="selectOpt" data-arg="${o.val}" data-arg2="this" data-arg3="${path}" data-arg4="${parse}">
+      <span class="opt-icon">${o.icon}</span>${o.label}</button>`
+  ).join('')}</div>`;
+}
+
+function swatchRow(id, colours, currentVal, onChange) {
+  const path = paramPath(onChange);
+  return `<div class="swatch-row">${colours.map(c =>
+    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" data-action="selectSwatch" data-arg="${c}" data-arg2="this" data-arg3="${path}"></div>`
+  ).join('')}</div>
+  <div class="custom-colour">
+    <span>Custom:</span>
+    <input type="color" value="${currentVal}" data-action-input="selectSwatch" data-arg="${path}">
+  </div>`;
+}
+
+function setBuilderParam(path, value) {
+  const parts = String(path).split('.');
+  let obj = window[parts[0]];
+  if (!obj) return;
+  for (let i = 1; i < parts.length - 1; i++) obj = obj[parts[i]];
+  obj[parts[parts.length - 1]] = value;
+}
+
+function selectOpt(val, el, path, parse) {
+  if (parse === 'float') val = parseFloat(val);
+  else if (parse === 'int') val = parseInt(val, 10);
+  setBuilderParam(path, val);
+  if (el && el.closest) {
+    const grid = el.closest('.opt-grid');
+    if (grid) grid.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  buildStation();
+}
+
+function selectSwatch(col, el, path) {
+  setBuilderParam(path, col);
+  if (el && el.closest) {
+    const row = el.closest('.swatch-row');
+    if (row) row.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+    if (row && el.classList.contains('swatch')) el.classList.add('sel');
+  }
+  buildStation();
+}
+
+const FACTS = {
+  stationName: "The International Space Station has been continuously occupied since November 2000. Over 270 people from 21 countries have visited.",
+  moduleCount: "The ISS has 16 pressurized modules , each one a self-contained lab that took years to design and build.",
+  moduleLength: "The ISS modules are roughly 6.7 metres long and 4.4 metres in diameter , about the size of a school bus.",
+  moduleRadius: "The Zvezda service module is 2.9m in radius. Bigger modules mean more room for experiments and crew.",
+  moduleStyle: "Cylindrical modules are structurally stronger in vacuum. Box modules are easier to outfit internally.",
+  solarPanelCount: "The ISS solar arrays span 73 metres, larger than a Boeing 777 wingspan. They generate 75-90 kilowatts.",
+  solarPanelSize: "Each ISS solar panel wing is 34m long. They track the Sun automatically as the station orbits.",
+  dockingPortCount: "The ISS has multiple docking adapters: PMA-2, IDA-2, IDA-3, and the Russian Zvezda port.",
+  antennaCount: "The ISS uses S-band, Ku-band, and L-band antennas for voice, data, and video communication with Earth.",
+  cupolaSize: "The ISS Cupola has 7 windows and gives astronauts a 360° view , essential for robotics and docking.",
+  trussLength: "The ISS main truss (ITS) is 108.5 metres long , longer than a football field.",
+  radiatorCount: "The ISS has 6 ammonia-based thermal control radiators that dissipate waste heat into space.",
+  crewCapacity: "The ISS typically hosts 6-7 crew members. During crew rotations, up to 13 people may be aboard.",
+  rotatingRing: "No real station has a rotating ring yet, but concepts like Nautilus-X propose artificial gravity rings.",
+  ringRadius: "A 30m radius ring spinning at 4 RPM would produce roughly 0.5g , enough to prevent bone loss.",
+};
+
+const STEPS = [
+/* 1 */ {
+  title: 'Name Your Station',
+  tag: 'STEP 01 , IDENTITY',
+  intro: `Every space station needs a name. <strong>International Space Station</strong>. <strong>Mir</strong>. <strong>Tiangong</strong>. <strong>Skylab</strong>. What will your orbital outpost be called?`,
+  boxes: [
+    { t:'box-c', tx:'Station names often reflect ambition or origin. Mir means "peace" in Russian. Tiangong means "heavenly palace" in Chinese. Skylab was literally a lab in the sky.' },
+    { t:'box-t', tx:'Keep it under 14 characters , it looks best on the spec overlay and profile card.' },
+  ],
+  tasks: ['Enter a station name', 'Press Apply to lock it in'],
+  html() { return `<input class="name-input" id="stationName" aria-label="Station name" maxlength="16" placeholder="E.G. ARCADIA" value="${P.stationName==='Arcadia'?'':P.stationName}">`; },
+  onApply() { P.stationName = document.getElementById('stationName')?.value?.trim() || 'Arcadia'; buildStation(); sout('🛰️ ' + P.stationName + ' is registered. Now choose a module style.'); document.getElementById('liveStatus').textContent = 'Named!'; }
+},
+
+/* 2 */ {
+  title: 'Module Style',
+  tag: 'STEP 02 , STRUCTURE',
+  intro: `Modules are the core building blocks of your station. <strong>Cylinders</strong> are pressure-optimized (like real ISS modules). <strong>Box</strong> modules are easier to outfit and give a more futuristic look.`,
+  boxes: [
+    { t:'box-c', tx:'Real space station modules are cylindrical because a cylinder distributes internal pressure evenly. The ISS uses Unity, Destiny, Columbus, Kibo , all cylinders.' },
+    { t:'box-t', tx:'Cylinders look authentic. Boxes look sci-fi. Pick your vibe.' },
+  ],
+  tasks: ['Choose a module shape'],
+  html() {
+    const o = `(function(v,el){P.moduleStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildStation();})`;
+    return opts('style', [
+      { val:'cylinder', icon:'🔵', label:'Cylinder' },
+      { val:'box', icon:'⬜', label:'Box' },
+    ], P.moduleStyle, o);
+  },
+  onApply() { buildStation(); sout('Module style: ' + P.moduleStyle + '.'); document.getElementById('liveStatus').textContent = 'Style set!'; }
+},
+
+/* 3 */ {
+  title: 'Module Count',
+  tag: 'STEP 03 , SCALE',
+  intro: `How many modules will your station have? More modules = more labs, more crew space, more capability. But also more mass to launch and maintain.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS has 16 pressurized modules from 5 space agencies. Mir had 7. Tiangong currently has 3. Each module is launched separately and assembled in orbit.' },
+    { t:'box-t', tx:'4 modules is a solid starter station. 8 is a full-scale orbital city.' },
+  ],
+  tasks: ['Set the module count'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Modules</span>
+      <input type="range" min="2" max="8" step="1" value="${P.moduleCount}"
+        data-param="P.moduleCount" data-parse="int" data-display="mcVal" data-rebuild="buildStation">
+      <span class="slider-val" id="mcVal">${P.moduleCount}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.moduleCount + ' modules configured.'); document.getElementById('liveStatus').textContent = 'Modules set!'; }
+},
+
+/* 4 */ {
+  title: 'Module Size',
+  tag: 'STEP 04 , DIMENSIONS',
+  intro: `Set the length and radius of each module. <strong>Longer</strong> modules hold more equipment. <strong>Wider</strong> modules give more internal volume for crew.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS Destiny lab is 6.7m long and 4.4m in diameter. Columbus is 6.7m × 4.5m. Kibo is the largest at 11.2m × 4.4m with an external porch.' },
+  ],
+  tasks: ['Adjust length and radius'],
+  html() {
+    return `<div style="padding:6px 0">
+    <div class="slider-row">
+      <span class="slider-lbl">Length</span>
+      <input type="range" min="1" max="6" step="0.5" value="${P.moduleLength}"
+        data-param="P.moduleLength" data-parse="float" data-display="mlVal" data-fmt="f1m" data-rebuild="buildStation">
+      <span class="slider-val" id="mlVal">${P.moduleLength.toFixed(1)}m</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-lbl">Radius</span>
+      <input type="range" min="0.5" max="2.0" step="0.1" value="${P.moduleRadius}"
+        data-param="P.moduleRadius" data-parse="float" data-display="mrVal" data-fmt="f1" data-rebuild="buildStation">
+      <span class="slider-val" id="mrVal">${P.moduleRadius.toFixed(1)}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout('Module size adjusted.'); document.getElementById('liveStatus').textContent = 'Size set!'; }
+},
+
+/* 5 */ {
+  title: 'Body Colour',
+  tag: 'STEP 05 , LIVERY',
+  intro: `The primary colour of your station modules. White reflects sunlight and keeps modules cool. Silver is modern. Dark colours absorb heat , fine for deep-space stations.`,
+  boxes: [
+    { t:'box-c', tx:'ISS modules are white or silver to reflect solar radiation. White paint keeps the internal temperature manageable. Real thermal control is critical in space.' },
+    { t:'box-t', tx:'Pick a bold colour , you\'ll add accent colours next.' },
+  ],
+  tasks: ['Choose a primary colour'],
+  html() {
+    const o = `(function(c,el){P.primaryCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildStation();})`;
+    return swatchRow('pc', ['#e0e0e0','#f5f5f5','#1a1a2a','#c0c0c0','#e8e0d0','#2a3a5a','#8b1a1a','#a78bfa'], P.primaryCol, o);
+  },
+  onApply() { buildStation(); sout('Primary colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+
+/* 6 */ {
+  title: 'Accent Colour',
+  tag: 'STEP 06 , CONTRAST',
+  intro: `The accent colour appears on connector bands, the truss, and the rotating ring. A contrasting accent makes your station look designed and professional.`,
+  boxes: [
+    { t:'box-t', tx:'Classic combos: white modules + blue accents (ISS). Silver + gold (Tiangong). White + red (Mir). Purple is a popular sci-fi choice.' },
+  ],
+  tasks: ['Choose an accent colour'],
+  html() {
+    const o = `(function(c,el){P.accentCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildStation();})`;
+    return swatchRow('ac', ['#a78bfa','#38bdf8','#4ade80','#f5c842','#fb923c','#e8543a','#ffffff','#1a1a2a'], P.accentCol, o);
+  },
+  onApply() { buildStation(); sout('Accent colour applied!'); document.getElementById('liveStatus').textContent = 'Accent set!'; }
+},
+
+/* 7 */ {
+  title: 'Solar Panels',
+  tag: 'STEP 07 , POWER',
+  intro: `Solar panels are your station\'s lifeline. They convert sunlight into electricity. More panels = more power for experiments, life support, and communications.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS solar arrays span 73 metres , larger than a Boeing 777 wingspan. They generate 75-90 kilowatts, enough to power 40 homes. The panels track the Sun as the station orbits.' },
+    { t:'box-t', tx:'4 panels is a good starting point. 8 panels gives you serious power reserves.' },
+  ],
+  tasks: ['Set panel count and size'],
+  html() {
+    return `<div style="padding:6px 0">
+    <div class="slider-row">
+      <span class="slider-lbl">Panel Count</span>
+      <input type="range" min="0" max="8" step="1" value="${P.solarPanelCount}"
+        data-param="P.solarPanelCount" data-parse="int" data-display="spcVal" data-rebuild="buildStation">
+      <span class="slider-val" id="spcVal">${P.solarPanelCount}</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-lbl">Panel Size</span>
+      <input type="range" min="0.5" max="3.0" step="0.1" value="${P.solarPanelSize}"
+        data-param="P.solarPanelSize" data-parse="float" data-display="spsVal" data-fmt="f1" data-rebuild="buildStation">
+      <span class="slider-val" id="spsVal">${P.solarPanelSize.toFixed(1)}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.solarPanelCount + ' solar panels configured.'); document.getElementById('liveStatus').textContent = 'Solar set!'; }
+},
+
+/* 8 */ {
+  title: 'Docking Ports',
+  tag: 'STEP 08 , ACCESS',
+  intro: `Docking ports allow spacecraft to connect to your station. Crew Dragon, Soyuz, Cargo ships , they all need a port to attach to.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS has multiple docking ports: the Russian Zvezda aft port, Harmony forward and zenith ports, and the PMA adapters for Dragon and Starliner.' },
+    { t:'box-t', tx:'2-3 ports is realistic. 6 ports means your station is a busy orbital hub.' },
+  ],
+  tasks: ['Set the number of docking ports'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Docking Ports</span>
+      <input type="range" min="0" max="6" step="1" value="${P.dockingPortCount}"
+        data-param="P.dockingPortCount" data-parse="int" data-display="dpVal" data-rebuild="buildStation">
+      <span class="slider-val" id="dpVal">${P.dockingPortCount}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.dockingPortCount + ' docking ports installed.'); document.getElementById('liveStatus').textContent = 'Docking set!'; }
+},
+
+/* 9 */ {
+  title: 'Antennas',
+  tag: 'STEP 09 , COMMUNICATIONS',
+  intro: `Antennas keep your station connected to Earth. Voice, video, telemetry, science data , it all flows through these. More antennas = more bandwidth.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS uses S-band for voice, Ku-band for high-speed data and video, and L-band for navigation. The main high-gain antenna can transmit at 300 Mbps.' },
+  ],
+  tasks: ['Set antenna count'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Antennas</span>
+      <input type="range" min="0" max="6" step="1" value="${P.antennaCount}"
+        data-param="P.antennaCount" data-parse="int" data-display="anVal" data-rebuild="buildStation">
+      <span class="slider-val" id="anVal">${P.antennaCount}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.antennaCount + ' antennas installed.'); document.getElementById('liveStatus').textContent = 'Antennas set!'; }
+},
+
+/* 10 */ {
+  title: 'Cupola',
+  tag: 'STEP 10 , OBSERVATION',
+  intro: `The cupola is an observation dome , a multi-windowed dome that gives crew a panoramic view of Earth and approaching spacecraft. It\'s the most iconic feature of the ISS.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS Cupola was built by ESA and has 7 windows. It\'s used for robotics operations, Earth observation, and docking. Astronauts call it the best office in the world.' },
+    { t:'box-t', tx:'Set size to 0 to remove the cupola entirely. Bigger cupolas look more impressive but add mass.' },
+  ],
+  tasks: ['Set cupola size (0 to remove)'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Cupola Size</span>
+      <input type="range" min="0" max="1.5" step="0.1" value="${P.cupolaSize}"
+        data-param="P.cupolaSize" data-parse="float" data-display="cpVal" data-fmt="f1" data-rebuild="buildStation">
+      <span class="slider-val" id="cpVal">${P.cupolaSize.toFixed(1)}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.cupolaSize > 0 ? 'Cupola: ' + P.cupolaSize.toFixed(1) + 'm' : 'No cupola.'); document.getElementById('liveStatus').textContent = 'Cupola set!'; }
+},
+
+/* 11 */ {
+  title: 'Truss',
+  tag: 'STEP 11 , BACKBONE',
+  intro: `The truss is the structural backbone that holds your solar panels, radiators, and external equipment. A longer truss means more room for power generation.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS Integrated Truss Structure is 108.5 metres long , longer than a football field. It supports the solar arrays, thermal radiators, and external payloads.' },
+    { t:'box-t', tx:'Match the truss to your solar panel count. More panels need a longer truss.' },
+  ],
+  tasks: ['Set truss length'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Truss Length</span>
+      <input type="range" min="2" max="16" step="1" value="${P.trussLength}"
+        data-param="P.trussLength" data-parse="int" data-display="trVal" data-fmt="intm" data-rebuild="buildStation">
+      <span class="slider-val" id="trVal">${P.trussLength}m</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout('Truss length: ' + P.trussLength + 'm.'); document.getElementById('liveStatus').textContent = 'Truss set!'; }
+},
+
+/* 12 */ {
+  title: 'Radiators',
+  tag: 'STEP 12 , THERMAL',
+  intro: `Space is both freezing cold and scorching hot. Radiators dump excess heat from electronics, life support, and crew metabolism into the void.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS has 6 ammonia-based thermal control radiators that can dissipate up to 70 kilowatts. Without them, electronics would overheat within hours.' },
+    { t:'box-t', tx:'More modules and crew = more heat. Scale your radiators accordingly.' },
+  ],
+  tasks: ['Set radiator count'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Radiators</span>
+      <input type="range" min="0" max="6" step="1" value="${P.radiatorCount}"
+        data-param="P.radiatorCount" data-parse="int" data-display="rdVal" data-rebuild="buildStation">
+      <span class="slider-val" id="rdVal">${P.radiatorCount}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.radiatorCount + ' radiators installed.'); document.getElementById('liveStatus').textContent = 'Thermal set!'; }
+},
+
+/* 13 */ {
+  title: 'Crew Capacity',
+  tag: 'STEP 13 , CREW',
+  intro: `How many people can live and work on your station? More crew means more experiments, but also more life support, food, water, and oxygen.`,
+  boxes: [
+    { t:'box-c', tx:'The ISS typically hosts 6-7 crew members. During Soyuz crew rotations, up to 13 people may be aboard briefly. Each crew member needs about 1kg of food, 2.5L of water, and 0.84kg of oxygen per day.' },
+    { t:'box-t', tx:'Match crew capacity to your module count. 1-2 people per module is realistic.' },
+  ],
+  tasks: ['Set crew capacity'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Crew</span>
+      <input type="range" min="1" max="12" step="1" value="${P.crewCapacity}"
+        data-param="P.crewCapacity" data-parse="int" data-display="ccVal" data-rebuild="buildStation">
+      <span class="slider-val" id="ccVal">${P.crewCapacity}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout('Crew capacity: ' + P.crewCapacity + ' souls.'); document.getElementById('liveStatus').textContent = 'Crew set!'; }
+},
+
+/* 14 */ {
+  title: 'Rotating Ring',
+  tag: 'STEP 14 , ARTIFICIAL GRAVITY',
+  intro: `A rotating ring creates artificial gravity through centripetal acceleration. No real station has one yet, but it\'s a staple of science fiction and future station concepts.`,
+  boxes: [
+    { t:'box-c', tx:'Concepts like Nautilus-X and the Mars Transit Station propose rotating rings. A 30m radius ring at 4 RPM would produce ~0.5g , enough to prevent bone loss and muscle atrophy.' },
+    { t:'box-t', tx:'Toggle the ring on and adjust the radius. Bigger rings = more comfortable gravity.' },
+  ],
+  tasks: ['Toggle rotating ring', 'Set ring radius'],
+  html() {
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+      <span style="font-size:.78rem;color:var(--muted)">Rotating Ring:</span>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)">
+        <input type="checkbox" ${P.rotatingRing?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" data-param="P.rotatingRing" data-parse="checked" data-rebuild="buildStation">
+        Enable rotating ring
+      </label>
+    </div>
+    <div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Ring Radius</span>
+      <input type="range" min="2" max="6" step="0.5" value="${P.ringRadius}"
+        data-param="P.ringRadius" data-parse="float" data-display="rrVal" data-fmt="f1" data-rebuild="buildStation">
+      <span class="slider-val" id="rrVal">${P.ringRadius.toFixed(1)}</span>
+    </div></div>`;
+  },
+  onApply() { buildStation(); sout(P.rotatingRing ? '🔄 Rotating ring: ' + P.ringRadius.toFixed(1) + 'm radius' : 'No rotating ring.'); document.getElementById('liveStatus').textContent = P.rotatingRing ? 'Ring active!' : 'No ring'; }
+},
+
+/* 15 */ {
+  title: 'Stats & Preview',
+  tag: 'STEP 15 , REVIEW',
+  intro: `Review your station\'s capabilities. The stats reflect your design choices , more modules boost capacity, solar panels boost power, antennas boost science.`,
+  boxes: [
+    { t:'box-r', tx:'Your station is nearly complete. Review the stats on the right side of the viewport. Every choice you\'ve made contributes to the final capability profile.' },
+    { t:'box-t', tx:'Drag the 3D viewport to orbit around your station. Scroll to zoom in and out. Take a good look before launch!' },
+  ],
+  tasks: ['Review your station stats', 'Orbit the 3D preview'],
+  html() { return ''; },
+  onApply() { sout('Stats reviewed. Ready for launch!'); document.getElementById('liveStatus').textContent = 'Review done!'; }
+},
+
+/* 16 */ {
+  title: 'Launch Station!',
+  tag: 'STEP 16 , ORBIT',
+  intro: `All systems are go. Your station is fully designed. Hit the launch button to deploy it into orbit and watch it come alive.`,
+  boxes: [
+    { t:'box-r', tx:'🛰️ Deploying into orbit... Solar panels extending. Systems powering up. Welcome to space!' },
+    { t:'box-c', tx:'A complete space station needs: modules (habitation), truss (structure), solar panels (power), radiators (thermal), docking ports (access), and antennas (communication). You\'ve built all of them.' },
+  ],
+  tasks: ['Press Launch and watch it go!'],
+  html() {
+    return `<div style="text-align:center;padding:8px 0">
+      <div style="font-size:2.4rem;margin-bottom:7px">🛰️</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">${P.stationName || 'YOUR STATION'}</div>
+      <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.<br>Ready for orbital deployment.</div>
+    </div>
+    <button class="run-btn" style="font-size:1rem;padding:12px" data-action="applyStep" data-arg="${currentStep}">🚀 DEPLOY TO ORBIT!</button>`;
+  },
+  onApply() { launchStation(); }
+},
+];
+
+/* -------------------------------
+   LAUNCH STATION
+------------------------------- */
+function launchStation() {
+  P.launched = true;
+  P.launchTime = Date.now();
+  stationRotating = true;
+  buildStation();
+  sout('🛰️ ' + (P.stationName || 'STATION') + ' is now operational in orbit!');
+  document.getElementById('liveStatus').textContent = '🛰️ IN ORBIT!';
+  document.getElementById('sceneHint').textContent = 'Station is orbiting , drag to follow';
+
+  // Spawn star particles
+  if (!starParticles) {
+    const geo = new THREE.BufferGeometry();
+    const verts = [];
+    for (let i = 0; i < 500; i++) {
+      verts.push((Math.random()-0.5)*60, (Math.random()-0.5)*60, (Math.random()-0.5)*60);
+    }
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+    const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, transparent: true, opacity: 0.7 });
+    starParticles = new THREE.Points(geo, mat);
+    scene.add(starParticles);
+  }
+
+  // Toast
+  toast('🛰️ ' + (P.stationName || 'STATION') + ' is operational!');
+
+  // Mark launch step done
+  stepDone[STEPS.length - 1] = true;
+  updateProgress();
+  renderStep();
+}
+
+/* -------------------------------
+   NAVIGATION
+------------------------------- */
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i;
+  renderStep();
+  updateProgress();
+  const items = document.querySelectorAll('.si');
+  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+  document.getElementById('navPrev').disabled = (i === 0);
+  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
+  toast(STEPS[i].title);
+}
+
+function renderStep() {
+  const s = STEPS[currentStep];
+  const body = document.getElementById('stepBody');
+  let html = `<div class="step-tag">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <div class="step-intro">${s.intro}</div>`;
+  (s.boxes || []).forEach(b => { html += `<div class="box ${b.t}">${b.tx}</div>`; });
+  html += s.html ? s.html() : '';
+
+  // Educational fact
+  const factKey = ['stationName','moduleCount','moduleStyle','moduleLength','moduleRadius','solarPanelCount','solarPanelSize','dockingPortCount','antennaCount','cupolaSize','trussLength','radiatorCount','crewCapacity','rotatingRing','ringRadius',''][currentStep];
+  if (factKey && FACTS[factKey]) {
+    html += `<div style="margin:8px 0;padding:8px 11px;background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.15);border-radius:7px;font-size:.7rem;line-height:1.6;color:rgba(224,221,240,.65)">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.5rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);display:block;margin-bottom:3px">Did you know?</span>
+      ${FACTS[factKey]}
+    </div>`;
+  }
+
+  if (s.tasks) {
+    html += `<div class="task-list">${s.tasks.map(t => {
+      const done = stepDone[currentStep];
+      return `<div class="task-item${done?' done':''}"><div class="task-dot"></div>${t}</div>`;
+    }).join('')}</div>`;
+  }
+  if (!s.html || !s.html().includes('run-btn')) {
+    html += `<button class="run-btn" data-action="applyStep" data-arg="${currentStep}">⚡ Apply to Station</button>`;
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.si').forEach((el, i) => el.classList.toggle('active', i === currentStep));
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true;
+  renderStep();
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = stepDone.filter(Boolean).length;
+  const pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progCt').textContent = done + ' / 16 steps';
+  document.querySelectorAll('.si').forEach((el, i) => {
+    el.classList.toggle('done', stepDone[i]);
+    el.classList.toggle('active', i === currentStep);
+    const sn = el.querySelector('.sn');
+    if (sn) sn.textContent = stepDone[i] ? '✓' : (i + 1);
+  });
+}
+
+/* -------------------------------
+   QUICK BUILD
+------------------------------- */
+function quickBuild() {
+  P.stationName = 'ARCHON-7';
+  P.moduleCount = 6; P.moduleLength = 3; P.moduleRadius = 1.0;
+  P.moduleStyle = 'cylinder';
+  P.primaryCol = '#e0e0e0'; P.accentCol = '#a78bfa';
+  P.solarPanelCount = 6; P.solarPanelSize = 1.8;
+  P.dockingPortCount = 3; P.antennaCount = 4;
+  P.cupolaSize = 0.8; P.trussLength = 12;
+  P.radiatorCount = 3; P.crewCapacity = 8;
+  P.rotatingRing = true; P.ringRadius = 3.5;
+  P.stripeOn = true; P.stripeCol = '#a78bfa';
+  P.launched = false;
+  buildStation();
+  sout('⚡ Quick build: ARCHON-7 loaded. Press Launch at Step 16!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+  toast('Quick build: ARCHON-7 loaded!');
+}
+
+/* -------------------------------
+   RANDOM BUILD
+------------------------------- */
+function randomStation() {
+  const rnd = (mn, mx, s) => { const v = mn + Math.random() * (mx - mn); return s ? Math.round(v / s) * s : Math.round(v * 100) / 100; };
+  const styles = ['cylinder', 'box'];
+  P.stationName = 'STN-' + Math.round(100 + Math.random() * 900);
+  P.moduleCount = Math.round(2 + Math.random() * 6);
+  P.moduleLength = rnd(1.5, 5, 0.5);
+  P.moduleRadius = rnd(0.5, 1.8, 0.1);
+  P.moduleStyle = styles[Math.floor(Math.random() * styles.length)];
+  P.primaryCol = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  P.accentCol = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  P.solarPanelCount = Math.round(Math.random() * 8);
+  P.solarPanelSize = rnd(0.5, 3, 0.1);
+  P.dockingPortCount = Math.round(Math.random() * 5);
+  P.antennaCount = Math.round(Math.random() * 5);
+  P.cupolaSize = rnd(0, 1.5, 0.1);
+  P.trussLength = Math.round(2 + Math.random() * 14);
+  P.radiatorCount = Math.round(Math.random() * 5);
+  P.crewCapacity = Math.round(1 + Math.random() * 11);
+  P.rotatingRing = Math.random() > 0.5;
+  P.ringRadius = rnd(2, 6, 0.5);
+  P.stripeOn = Math.random() > 0.4;
+  P.stripeCol = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+  P.launched = false;
+  buildStation(); updateStats(); syncRightBar();
+  toast('Random station generated!');
+}
+
+/* -------------------------------
+   STATS
+------------------------------- */
+function computeStats() {
+  const science = Math.min(10, Math.round(P.moduleCount * 1.2 + (P.cupolaSize > 0 ? 2 : 0) + P.antennaCount * 0.8 + (P.rotatingRing ? 2 : 0)));
+  const capacity = Math.min(10, Math.round(P.moduleCount * 1.0 + P.crewCapacity * 0.3 + P.dockingPortCount * 0.8));
+  const power = Math.min(10, Math.round(P.solarPanelCount * 1.0 + P.solarPanelSize * 0.8 + P.radiatorCount * 0.5));
+  const range = Math.min(10, Math.round(P.moduleLength * 1.2 + P.trussLength * 0.4 + P.moduleCount * 0.5));
+  return { science: Math.max(1, science), capacity: Math.max(1, capacity), power: Math.max(1, power), range: Math.max(1, range) };
+}
+
+function updateStats() {
+  const s = computeStats();
+  const el = document.getElementById('stationStats');
+  if (!el) return;
+  const bar = (v, c) => `<div class="stat-track"><div class="stat-fill" style="width:${v * 10}%;background:${c}"></div></div>`;
+  el.innerHTML = `<div class="stat-title">Station Stats</div>` +
+    `<div class="stat-row"><span class="stat-lbl">Science</span>${bar(s.science, '#a78bfa')}<span class="stat-val">${s.science}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Capacity</span>${bar(s.capacity, '#4ade80')}<span class="stat-val">${s.capacity}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Power</span>${bar(s.power, '#f5c842')}<span class="stat-val">${s.power}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Range</span>${bar(s.range, '#38bdf8')}<span class="stat-val">${s.range}</span></div>`;
+}
+
+/* -------------------------------
+   QUIZ
+------------------------------- */
+window.BQ = {
+  key: "jvds-space-station-builder-v2",
+  name: "Space Station Builder",
+  profileId: "space-station-builder",
+  quiz: [
+    { q: "Why are real space station modules <strong>cylindrical</strong>?", opts: ["They look cooler", "Cylinders distribute internal pressure evenly", "They are cheaper to build", "Astronauts prefer round rooms"], a: 1, why: "A cylinder spreads the force of internal air pressure evenly across its surface, preventing weak points that could burst." },
+    { q: "What do <strong>solar panels</strong> on a space station do?", opts: ["Keep the station warm", "Convert sunlight into electricity", "Reflect sunlight for communication", "Protect from radiation"], a: 1, why: "Solar cells convert photons from sunlight directly into electrical current to power all station systems." },
+    { q: "Why does a space station need <strong>radiators</strong>?", opts: ["To collect solar energy", "To dump excess heat into space", "To slow the station down", "To create artificial gravity"], a: 1, why: "Electronics and crew produce heat. In vacuum, the only way to get rid of it is through infrared radiation." },
+    { q: "What is a <strong>docking port</strong>?", opts: ["A window for observing Earth", "A place where spacecraft can attach", "A fuel storage tank", "A communication antenna"], a: 1, why: "Docking ports are standardized connectors that let crew and cargo spacecraft link up with the station." },
+    { q: "Why might a future station have a <strong>rotating ring</strong>?", opts: ["To look like a wheel", "To generate artificial gravity through centripetal force", "To spin faster in orbit", "To collect more solar energy"], a: 1, why: "Rotation creates centripetal acceleration that simulates gravity, preventing bone loss and muscle atrophy in crew." },
+  ]
+};
+
+/* -------------------------------
+   PROFILE CARD
+------------------------------- */
+function getProfileCard() {
+  const s = computeStats();
+  return {
+    name: P.stationName || 'UNNAMED',
+    stats: { Science: s.science, Capacity: s.capacity, Power: s.power, Range: s.range }
+  };
+}
+window._builderGetProfile = getProfileCard;
+
+/* -------------------------------
+   TOAST
+------------------------------- */
+function toast(m) {
+  let t = document.getElementById('stationToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'stationToast';
+    t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(6,4,15,.92);border:1px solid rgba(167,139,250,.35);padding:8px 22px;font-family:Bebas Neue,sans-serif;font-size:.9rem;letter-spacing:.06em;color:var(--acc-lt);border-radius:8px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  t.textContent = m;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+}
+
+/* -------------------------------
+   STATE HOOKS
+------------------------------- */
+window._builderGetState = function() { return { params: { ...P }, step: currentStep }; };
+window._builderApplyState = function(s) {
+  if (s.params) Object.assign(P, s.params);
+  if (typeof s.step === 'number') currentStep = s.step;
+  P.launched = false; stationRotating = false;
+  buildStation(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+};
+
+/* -------------------------------
+   KEYBOARD NAV
+------------------------------- */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < STEPS.length - 1) go(currentStep + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) go(currentStep - 1); }
+  if (e.key === 'Escape') { const modal = document.getElementById('modalOverlay'); if (modal) modal.classList.remove('open'); }
+});
+
+/* -------------------------------
+   INIT
+------------------------------- */
+function init() {
+  const listEl = document.getElementById('stepList');
+  STEPS.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'si' + (i === 0 ? ' active' : '');
+    item.innerHTML = `<div class="sn">${i + 1}</div><div class="sl">${s.title}</div>`;
+    item.onclick = () => go(i);
+    listEl.appendChild(item);
+  });
+
+  document.getElementById('navPrev').disabled = true;
+  document.getElementById('navNext').disabled = false;
+
+  buildStation();
+  renderStep();
+  updateStats();
+  updateSpecCard();
+  syncRightBar();
+
+  const modal = document.getElementById('modalOverlay');
+  if (modal) modal.addEventListener('click', e => { if (e.target === e.currentTarget) modal.classList.remove('open'); });
+}
+
+init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const STATION_TEMPLATES = [
+  { id: 'archon7', emoji: '🛰️', name: 'Archon-7', note: 'Six modules, big truss and a spinning ring  -  the quick-build flagship.',
+    data: { stationName: 'ARCHON-7', moduleCount: 6, moduleLength: 3, moduleRadius: 1.0, moduleStyle: 'cylinder', primaryCol: '#e0e0e0', accentCol: '#a78bfa', solarPanelCount: 6, solarPanelSize: 1.8, dockingPortCount: 3, antennaCount: 4, cupolaSize: 0.8, trussLength: 12, radiatorCount: 3, crewCapacity: 8, rotatingRing: true, ringRadius: 3.5, stripeOn: true, stripeCol: '#a78bfa', launched: false } },
+  { id: 'orbit1', emoji: '🌍', name: 'Orbit-1', note: 'Compact three-module starter  -  easy to remix.',
+    data: { stationName: 'ORBIT-1', moduleCount: 3, moduleLength: 2.5, moduleRadius: 0.9, moduleStyle: 'cylinder', primaryCol: '#e0e0e0', accentCol: '#38bdf8', solarPanelCount: 2, solarPanelSize: 1.4, dockingPortCount: 1, antennaCount: 2, cupolaSize: 0.6, trussLength: 6, radiatorCount: 1, crewCapacity: 3, rotatingRing: false, ringRadius: 3, stripeOn: false, stripeCol: '#38bdf8', launched: false } },
+  { id: 'solarforge', emoji: '☀️', name: 'Solarforge', note: 'Panels everywhere  -  power-hungry science lab.',
+    data: { stationName: 'SOLARFORGE', moduleCount: 4, moduleLength: 3, moduleRadius: 1.0, moduleStyle: 'cylinder', primaryCol: '#fef3c7', accentCol: '#f59e0b', solarPanelCount: 8, solarPanelSize: 2.0, dockingPortCount: 2, antennaCount: 3, cupolaSize: 0.7, trussLength: 14, radiatorCount: 4, crewCapacity: 6, rotatingRing: false, ringRadius: 3, stripeOn: true, stripeCol: '#f59e0b', launched: false } },
+  { id: 'ringhaven', emoji: '💫', name: 'Ringhaven', note: 'Big spinning habitat ring and a cupola view.',
+    data: { stationName: 'RINGHAVEN', moduleCount: 5, moduleLength: 2.8, moduleRadius: 1.1, moduleStyle: 'cylinder', primaryCol: '#ddd6fe', accentCol: '#7c3aed', solarPanelCount: 4, solarPanelSize: 1.6, dockingPortCount: 2, antennaCount: 2, cupolaSize: 1.0, trussLength: 8, radiatorCount: 2, crewCapacity: 7, rotatingRing: true, ringRadius: 4.2, stripeOn: true, stripeCol: '#7c3aed', launched: false } },
+  { id: 'cargoport', emoji: '📦', name: 'Cargo Port', note: 'Wide modules and four docking ports  -  built for shuttles.',
+    data: { stationName: 'CARGO-PORT', moduleCount: 4, moduleLength: 3.5, moduleRadius: 1.2, moduleStyle: 'cylinder', primaryCol: '#d1d5db', accentCol: '#6b7280', solarPanelCount: 4, solarPanelSize: 1.5, dockingPortCount: 4, antennaCount: 4, cupolaSize: 0.6, trussLength: 10, radiatorCount: 2, crewCapacity: 4, rotatingRing: false, ringRadius: 3, stripeOn: false, stripeCol: '#6b7280', launched: false } },
+  { id: 'aurora', emoji: '🌌', name: 'Aurora', note: 'Iridescent stripes and a small crew  -  deep-space vibe.',
+    data: { stationName: 'AURORA', moduleCount: 5, moduleLength: 3, moduleRadius: 1.0, moduleStyle: 'cylinder', primaryCol: '#e0e7ff', accentCol: '#06b6d4', solarPanelCount: 6, solarPanelSize: 1.7, dockingPortCount: 2, antennaCount: 5, cupolaSize: 0.9, trussLength: 9, radiatorCount: 3, crewCapacity: 6, rotatingRing: true, ringRadius: 3.2, stripeOn: true, stripeCol: '#06b6d4', launched: false } }
+];
+
+function loadStationTemplate(t) {
+  Object.assign(P, t.data, { launched: false, launchTime: 0 });
+  buildStation(); updateStats(); updateSpecCard(); syncRightBar();
+  sout('Template loaded: ' + t.data.stationName + '. Change anything, then export.');
+  toast('Template: ' + t.data.stationName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: STATION_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadStationTemplate(t); } }; }),
+    random: randomStation,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+window._builderSetState = window._builderSetState || window._builderApplyState;
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Space Station Builder',
+    units: 'm',
+    accent: '#a78bfa',
+    getGroup: function () { return stationGroup; },
+    getName: function () { return P.stationName || 'space-station'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
+function goPrev(){go(currentStep-1)}
+function goNext(){go(currentStep+1)}
+
+  try { window.randomStation = randomStation; } catch (e) { /* not a local handler */ }
+  try { window.quickBuild = quickBuild; } catch (e) { /* not a local handler */ }
+  try { window.goPrev = goPrev; } catch (e) { /* not a local handler */ }
+  try { window.goNext = goNext; } catch (e) { /* not a local handler */ }
+  try { window.launchStation = launchStation; } catch (e) { /* not a local handler */ }
+  try { window.selectOpt = selectOpt; } catch (e) { /* not a local handler */ }
+  try { window.selectSwatch = selectSwatch; } catch (e) { /* not a local handler */ }
+  try { window.applyStep = applyStep; } catch (e) { /* not a local handler */ }
+  } finally {
+    window.addEventListener = winAdd;
+    document.addEventListener = docAdd;
+    window.requestAnimationFrame = origRaf;
+  }
+
+  return function unmount() {
+    try { ac.abort(); } catch (e) {}
+    rafs.forEach(function (id) { try { cancelAnimationFrame(id); } catch (e) {} });
+    window._builderGetState = null;
+    window._builderApplyState = null;
+    window._builderSetState = null;
+    try { delete window.randomStation; } catch (e) {}
+    try { delete window.quickBuild; } catch (e) {}
+    try { delete window.goPrev; } catch (e) {}
+    try { delete window.goNext; } catch (e) {}
+    try { delete window.launchStation; } catch (e) {}
+    try { delete window.selectOpt; } catch (e) {}
+    try { delete window.selectSwatch; } catch (e) {}
+    try { delete window.applyStep; } catch (e) {}
+    try { delete window.P; } catch (e) {}
+    stage.remove();
+    sheet.remove();
+  };
+}
