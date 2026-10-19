@@ -104,10 +104,14 @@ function walk(d, out) {
   return out;
 }
 const pages = walk(ROOT, []).filter((p) => !p.includes(path.sep + 'partials' + path.sep));
+// assets/canvas-preview.html is the canvas preview host (A1717). It must stay
+// free of any CSP so its sandboxed stage can run learner code inline; it is not
+// a content page. See scripts/canvas-preview.html + tests/canvas-preview-runtime.js.
+const contentPages = pages.filter((p) => path.relative(ROOT, p).replace(/\\/g, '/') !== 'assets/canvas-preview.html');
 let withCsp = 0;
 const missing = [];
 const dupes = [];
-for (const p of pages) {
+for (const p of contentPages) {
   const s = fs.readFileSync(p, 'utf8');
   if (!s.includes('<head')) continue; // fragment, not a full page
   const count = (s.match(/<meta[^>]*http-equiv=["']Content-Security-Policy["']/gi) || []).length;
@@ -132,7 +136,10 @@ else {
   // Meta fallback equals the header CSP minus frame-ancestors (meta-ignored, logs noise).
   const expectedMeta = csp.replace(/frame-ancestors 'self';\s*/g, '');
   const sample = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)"/);
-  if (sample && sample[1] === expectedMeta) ok('index.html meta CSP matches _headers CSP (minus frame-ancestors)');
+  // Inline-script hashes are page-specific and cannot live in _headers, so compare
+  // the policy with its 'sha256-...' tokens removed.
+  const sampledPolicy = sample ? sample[1].replace(/\s*'sha256-[^']*'/g, '').replace(/\s+/g, ' ').trim() : null;
+  if (sampledPolicy && sampledPolicy === expectedMeta.replace(/\s+/g, ' ').trim()) ok('index.html meta CSP matches _headers CSP (minus frame-ancestors)');
   else fail('index.html meta CSP differs from _headers CSP');
 }
 
