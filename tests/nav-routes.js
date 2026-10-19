@@ -23,6 +23,25 @@ check('/my-progress clean route maps to the progress owner /me.html', route('/my
 check('/leaderboards clean route maps to the progress owner /me.html', route('/leaderboards') === '/me.html', route('/leaderboards'));
 check('/me.html exists as the profile/progress owner', fs.existsSync(path.join(root, 'me.html')));
 
+// A1755: My Studio must be reachable from the global nav and footer on every
+// page type, not only from the parent guide and discovery session.
+const nav = read('partials/nav-content.html');
+const footer = read('partials/footer-content.html');
+check('global nav links to My Studio', /id="navProfileChip"/.test(nav) && /href="\/me\.html"/.test(nav));
+check('global footer links to My Studio', /href="\/me\.html"/.test(footer));
+const samplePages = ['index.html', 'arcade.html', 'me.html', 'games/gem_match.html', 'tools/pixel-studio.html', 'workshops/my-first-scratch-game.html'];
+for (const rel of samplePages) {
+  if (!fs.existsSync(path.join(root, rel))) { check(rel + ' exists for My Studio check', false); continue; }
+  const h = read(rel);
+  check(rel + ' has the My Studio nav link', /id="navProfileChip"/.test(h));
+  check(rel + ' has the My Studio footer link', /href="\/me\.html"/.test(h));
+}
+// Immersive games (A1634) skip the site chrome, so their route is the shared
+// arcade menu. Build-alongs get a persistent link on the completion panel.
+check('shared game menu links to My Studio', /href="\.\.\/me\.html"/.test(read('game-system.js')));
+check('immersive highway-dodge loads the shared game menu', /game-system\.js/.test(read('games/highway-dodge.html')));
+check('completed build-alongs link to My Studio', /href="\/me\.html"/.test(read('workshop-canvas-engine.js')));
+
 // no public page links straight at a removed route stub file
 const stubs = ['pages/freebies.html', 'pages/my-progress.html', 'pages/leaderboards.html'];
 const dirs = ['', 'pages', 'games', 'tools', 'workshops', 'books', 'learn'];
