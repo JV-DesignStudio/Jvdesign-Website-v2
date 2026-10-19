@@ -51,7 +51,16 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
     const missing = list.filter(g => !(_STARTERS[g] && _TEMPLATES[_STARTERS[g]]));
     const badKey = list.filter(g => _STARTERS[g] && !_TEMPLATES[_STARTERS[g]]);
     const buttons = Array.from(document.querySelectorAll('#starterGrid button'));
-    const coveredByButtons = new Set(buttons.map(b => (b.getAttribute('onclick')||'').match(/_loadTemplate\('([^']+)'\)/)?.[1]).filter(Boolean));
+    // A1718: the grid moved off inline handlers (report-inline: 0 inline handlers),
+    // so read the delegated data-on/data-on-arg form first and keep onclick working.
+    const starterKey = (b) => {
+      const on = b.getAttribute('onclick') || '';
+      const m = on.match(/_loadTemplate\('([^']+)'\)/);
+      if (m) return m[1];
+      if ((b.getAttribute('data-on') || '') === '_loadTemplate') return b.getAttribute('data-on-arg');
+      return null;
+    };
+    const coveredByButtons = new Set(buttons.map(starterKey).filter(Boolean));
     const btnMissing = list.filter(g => !coveredByButtons.has(_STARTERS[g]));
     const genresWithStarter = list.filter(g => _STARTERS[g]).length;
     return { total: list.length, genresWithStarter, missing, badKey, buttons: buttons.length, btnMissing };
