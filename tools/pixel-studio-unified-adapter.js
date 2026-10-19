@@ -39,7 +39,7 @@ function setStudioMode(mode){
     renderAll();
     showToast('Animate: +Frame to add frames, ▶️ Play to preview');
   }
-  localStorage.setItem('jvds_pixel_mode',mode);
+  try{ localStorage.setItem('jvds_pixel_mode',mode); }catch(e){} // A1692: storage can be blocked by school policy
   if(window.ToolAnalytics) try{ToolAnalytics.event('studio_mode_'+mode);}catch(e){}
 }
 
@@ -327,7 +327,7 @@ function updateMissionProgress(){
 }
 function checkMissionParam(){
   const hasMission = location.search.includes('mission=first-pixel-character') || location.hash.includes('mission');
-  const dismissed = localStorage.getItem('jvds_mission_dismiss')==='1';
+  const dismissed = (function(){ try{ return localStorage.getItem('jvds_mission_dismiss')==='1'; }catch(e){ return true; } })();
   const banner=document.getElementById('mission-banner');
   if(!banner) return;
   if(hasMission && !dismissed){
