@@ -179,42 +179,42 @@ window.CW_CONFIG = {
     1: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + KEYS_GLITCH + MOVE_GLITCH +
-        'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
         'function loop(){autoPlay();movePlayer();if(typeof drawZones==="function")drawZones();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES +
-        'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();if(typeof collectShards==="function")collectShards();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES + COMPLETE_SHARDS +
-        'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();collectShards();if(typeof crumblePlatforms==="function")crumblePlatforms();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES + COMPLETE_SHARDS + COMPLETE_CRUMBLE +
-        'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();collectShards();crumblePlatforms();if(typeof moveCorruption==="function")moveCorruption();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + BLADES_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES + COMPLETE_SHARDS + COMPLETE_CRUMBLE + COMPLETE_CORRUPTION +
-        'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();collectShards();crumblePlatforms();moveCorruption();if(typeof spinBlades==="function")spinBlades();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
       return wrap(CSS_GLITCH, HTML_GLITCH,
         SETUP_GLITCH + PLATFORMS_GLITCH + SHARDS_GLITCH + BLADES_GLITCH + KEYS_GLITCH + MOVE_GLITCH + COMPLETE_ZONES + COMPLETE_SHARDS + COMPLETE_CRUMBLE + COMPLETE_CORRUPTION + COMPLETE_SPIN +
-        'try{' + u + '}catch(e){}' +
+        DRAW_GLITCH + 'try{' + u + '}catch(e){}' +
         'function loop(){autoPlay();movePlayer();drawZones();collectShards();crumblePlatforms();moveCorruption();spinBlades();if(typeof drawTimer==="function")drawTimer();drawBase();requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     }

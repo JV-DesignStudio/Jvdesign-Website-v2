@@ -69,7 +69,7 @@ var DRAW_ROOMS = 'for(var ri=0;ri<rooms.length;ri++){var r=rooms[ri];ctx.fillSty
   'ctx.fillStyle=r.checked?"#22c55e":"#64748b";ctx.font="bold 11px monospace";ctx.textAlign="center";ctx.fillText(r.name+(r.checked?" [OK]":""),r.x+r.w/2,r.y+r.h/2)}';
 var DRAW_GUARD = 'ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(px+pw/2,py+pw/2,pw/2,0,Math.PI*2);ctx.fill();';
 var DRAW_HUD = 'ctx.fillStyle="#94a3b8";ctx.font="bold 14px monospace";ctx.textAlign="left";ctx.fillText("Rooms: "+(typeof checkedCount!=="undefined"?checkedCount:0)+"/4",10,390);' +
-  'if(eventAlpha>0){ctx.globalAlpha=eventAlpha;ctx.fillStyle="#f43f5e";ctx.font="bold 16px monospace";ctx.textAlign="center";ctx.fillText(eventText,200,200);ctx.globalAlpha=1}';
+  'if(typeof eventAlpha!=="undefined"&&eventAlpha>0){ctx.globalAlpha=eventAlpha;ctx.fillStyle="#f43f5e";ctx.font="bold 16px monospace";ctx.textAlign="center";ctx.fillText(eventText,200,200);ctx.globalAlpha=1}';
 
 function wrap(code) {
   return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +

@@ -87,7 +87,7 @@ window.CW_CONFIG = {
   templates: {
     1: function(u) {
       return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + KEYS +
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
         'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
         'function loop(){' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
@@ -99,7 +99,7 @@ window.CW_CONFIG = {
     },
     2: function(u) {
       return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + KEYS +
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
         'function loop(){' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
         'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
