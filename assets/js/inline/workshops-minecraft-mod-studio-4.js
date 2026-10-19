@@ -534,22 +534,40 @@ var TOUR = [
   { t: '5. Download it', b: 'Grab the zip, unzip it into your world datapacks folder, and run /reload. That is a real datapack you made.' }
 ];
 var tourIdx = 0;
+var tourReturnFocus = null;
 function showTour(i) {
   tourIdx = i;
-  var ov = document.getElementById('tourOverlay'); if (!ov) return; ov.hidden = false;
+  var ov = document.getElementById('tourOverlay'); if (!ov) return;
+  if (!tourReturnFocus) { try { tourReturnFocus = document.activeElement; } catch (e) {} }
+  ov.hidden = false;
   document.getElementById('tourTitle').textContent = TOUR[i].t;
   document.getElementById('tourBody').textContent = TOUR[i].b;
   var dots = document.getElementById('tourDots'); dots.innerHTML = '';
   TOUR.forEach(function (_, k) { var s = document.createElement('span'); if (k === i) s.className = 'on'; dots.appendChild(s); });
-  document.getElementById('tourNext').textContent = (i === TOUR.length - 1) ? 'Done' : 'Next →';
+  var next = document.getElementById('tourNext');
+  if (next) { next.textContent = (i === TOUR.length - 1) ? 'Done' : 'Next →'; next.focus(); }
 }
-function hideTour() { var ov = document.getElementById('tourOverlay'); if (ov) ov.hidden = true; }
+function hideTour() {
+  var ov = document.getElementById('tourOverlay'); if (ov) ov.hidden = true;
+  if (tourReturnFocus && tourReturnFocus.focus) { try { tourReturnFocus.focus(); } catch (e) {} }
+  tourReturnFocus = null;
+}
 
 /* ---------- init ---------- */
+var hadSavedWork = false;
+try { hadSavedWork = !!localStorage.getItem(KEY); } catch (e) {}
 restore();
+if (!hadSavedWork) {
+  S.grid = ['minecraft:diamond', null, null, 'minecraft:diamond', null, null, 'minecraft:stick', null, null];
+  S.result = 'minecraft:diamond_sword';
+}
 initTabs();
 renderAll();
 renderDebug();
+if (!hadSavedWork) {
+  var starterMsg = document.getElementById('mcMsg');
+  if (starterMsg) { starterMsg.className = 'mcms-msg ok'; starterMsg.textContent = 'We started you with the classic sword. Change any square to make it yours.'; }
+}
 
 document.getElementById('mcEraser').addEventListener('click', function () { S.eraser = !S.eraser; renderAll(); });
 document.getElementById('mcClear').addEventListener('click', function () { S.grid = [null, null, null, null, null, null, null, null, null]; renderAll(); });
@@ -580,5 +598,10 @@ document.getElementById('mcTourBtn').addEventListener('click', function () { sho
 document.getElementById('tourNext').addEventListener('click', function () { if (tourIdx < TOUR.length - 1) showTour(tourIdx + 1); else hideTour(); });
 document.getElementById('tourSkip').addEventListener('click', hideTour);
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var ov = document.getElementById('tourOverlay'); if (ov && !ov.hidden) hideTour(); } });
-try { if (!localStorage.getItem('jvds-mc-studio-toured')) { localStorage.setItem('jvds-mc-studio-toured', '1'); } } catch (e) {}
+var tourSeen = true;
+try { tourSeen = !!localStorage.getItem('jvds-mc-studio-toured'); } catch (e) {}
+if (!tourSeen) {
+  try { localStorage.setItem('jvds-mc-studio-toured', '1'); } catch (e) {}
+  showTour(0);
+}
 })();

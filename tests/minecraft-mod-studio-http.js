@@ -33,6 +33,11 @@ const server=http.createServer((req,res)=>{
     check('Skip closes the tour',await page.$eval('#tourOverlay',el=>el.hidden));
     const starter=await page.$eval('#mcRecipePreview',el=>el.textContent);
     check('first visit starts with the sword example',/diamond_sword/.test(starter));
+    check('no workshop teacher toggle in the header',!(await page.$('.teacher-toggle-btn')));
+    check('no reset progress button in the footer',!(await page.$('.reset-progress-btn')));
+    const chrome=await page.evaluate(()=>{const h=document.querySelector('.header-inner').getBoundingClientRect(),f=document.querySelector('.footer-inner').getBoundingClientRect();return {hx:Math.round(h.x),hw:Math.round(h.width),fw:Math.round(f.width)};});
+    check('header uses the 1200px site column',chrome.hx===120&&chrome.hw===1200,JSON.stringify(chrome));
+    check('footer uses the 1140px site column',chrome.fw===1140,'footer '+chrome.fw);
 
     const info=await page.evaluate(()=>{
       const tabs=[...document.querySelectorAll('.mcms-tab')];
