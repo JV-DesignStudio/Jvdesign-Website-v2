@@ -56,10 +56,42 @@ const server = http.createServer((req, res) => {
     const single = await titles();
     check('single-term "scratch" still returns matches', single.length > 0, single.length + ' results');
 
+    // A1769: plain-language intent queries should land on the thing a child
+    // means, not require the exact page title.
+    const intentCases = [
+      ['make a game', /game maker|arcade game maker|workshop|game/i],
+      ['draw a character', /pixel|sprite|character/i],
+      ['music', /sound|music|sfx|drum/i],
+      ['sound', /sound|audio|music/i],
+      ['3d model', /3d|buildlab|model|blender/i],
+      ['no install', /school|chromebook|offline|workshop|tool/i],
+      ['school chromebook', /school|chromebook|learn/i],
+      ['roblox', /roblox/i],
+      ['minecraft', /minecraft/i],
+      ['python', /python/i],
+      ['unity', /unity/i],
+      ['unreal', /unreal/i],
+      ['pixel art', /pixel|sprite|art/i],
+      ['game design', /game|gdd|design/i],
+      ['quiz', /quiz|millionaire/i],
+      ['story', /story/i],
+      ['map', /map|level|world/i],
+      ['beginner', /beginner|first|start/i],
+      ['free', /free|no account/i]
+    ];
+    for (const [q, re] of intentCases) {
+      await setQuery(q);
+      await new Promise(r => setTimeout(r, 180));
+      const rows = await titles();
+      check('intent "' + q + '" returns a relevant top result', rows.length > 0 && re.test(rows[0]), rows.slice(0, 3).join(' | '));
+    }
+
     await setQuery('zzzznomatchzzz');
     await new Promise(r => setTimeout(r, 250));
     const miss = await page.evaluate(() => ({ empty: document.getElementById('emptyState').classList.contains('show'), cards: document.querySelectorAll('#resultsGrid .result-card').length }));
     check('nonsense query shows the empty state', miss.empty && miss.cards === 0, 'cards ' + miss.cards);
+    const suggestions = await page.evaluate(() => Array.from(document.querySelectorAll('#emptyState .tag-chip')).map(e => e.textContent.trim()));
+    check('empty state offers real next searches', ['Make a game', 'Pixel art', 'Roblox'].every(s => suggestions.includes(s)), suggestions.join(' | '));
 
     await setQuery('');
     await new Promise(r => setTimeout(r, 250));
