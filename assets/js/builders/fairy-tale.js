@@ -1,0 +1,1575 @@
+/* assets/js/builders/fairy-tale.js
+ * Fairy Tale Cottage preset module for the 3D Builder shell (workshops/3d-builder.html).
+ * Extracted from workshops/fairy-tale-builder.html: mount(container) injects the
+ * builder markup + CSS, runs the original builder core in a guarded scope
+ * (window/document listeners and animation frames are tracked so unmount() can
+ * tear it down), and exposes only the data-on/data-action handlers the shared
+ * delegation needs. No other builder internals leak (module scope).
+ */
+export const ID = 'fairy-tale';
+export const LABEL = 'Fairy Tale Cottage';
+export const STYLES = ['../style-workshop-fairy-tale-builder.css?v=17'];
+const HTML = "<div id=\"app\">\n\n  <header class=\"hdr\">\n    <h1 class=\"logo\">🏡 Fairy Tale Cottage Builder</h1>\n<div class=\"callout tip\" style=\"border-left:3px solid #22c55e;background:rgba(34,197,94,.07);\"><div class=\"callout-icon\">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of every step in this workshop: <a href=\"/downloads/fairy-tale-builder-reference.zip\" download style=\"color:#16a34a;font-weight:800;text-decoration:underline;\">⬇ fairy-tale-builder-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>\n\n    <div class=\"hdr-right\">\n      <a href=\"../pages/workshop.html\" class=\"back-link\">? Workshop</a><a href=\"../pages/3d-builders.html\" class=\"back-link\" style=\"margin-left:8px\">🏗️ All Builders</a>\n      <button class=\"quick-btn\" data-on=\"randomCottage\" data-on-plain style=\"background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764\">🎲 Random</button>\n      <button class=\"quick-btn\" data-on=\"openSaveModal\" data-on-plain style=\"background:linear-gradient(135deg,#d946ef,#86198f);box-shadow:0 3px 0 #701a75\">💾 Save</button>\n      <button class=\"quick-btn\" data-on=\"openLoadModal\" data-on-plain style=\"background:linear-gradient(135deg,#c084fc,#7e22ce);box-shadow:0 3px 0 #581c87\">📂 Load</button>\n      <button class=\"quick-btn\" data-on=\"quickBuild\" data-on-plain style=\"background:linear-gradient(135deg,var(--acc),var(--acc-dk));box-shadow:0 3px 0 var(--acc-dk)\">⚡ Quick Build</button>\n    </div>\n  </header>\n  <!-- ── Ember Tip Bar ── -->\n  <div class=\"ember-builder-bar\" id=\"emberBar\" style=\"--ca-rgb:232,121,249\">\n    <svg viewBox=\"0 0 80 90\" width=\"26\" height=\"29\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\">\n      <path d=\"M20 52 Q10 80 15 88 H65 Q70 80 60 52 Q50 60 40 60 Q30 60 20 52Z\" fill=\"#12102a\"/>\n      <ellipse cx=\"40\" cy=\"36\" rx=\"16\" ry=\"17\" fill=\"#8B5CF6\"/>\n      <polygon points=\"24,22 19,8 30,18\" fill=\"#7C3AED\"/>\n      <polygon points=\"56,22 61,8 50,18\" fill=\"#7C3AED\"/>\n      <ellipse cx=\"40\" cy=\"40\" rx=\"10\" ry=\"8\" fill=\"#DDD6FE\"/>\n      <ellipse cx=\"35\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <ellipse cx=\"45\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <circle cx=\"36\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <circle cx=\"46\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <ellipse cx=\"40\" cy=\"39\" rx=\"2\" ry=\"1.4\" fill=\"#7C3AED\"/>\n    </svg>\n    <span><strong style=\"color:#e879f9\">Ember says:</strong> <strong>Roof style</strong> sets the whole mood , steep for gothic, round for whimsical. Fireflies appear when you complete the final step!</span>\n    <button class=\"ember-bar-dismiss\" aria-label=\"Dismiss tip\" data-session-set=\"ember-bar-fairy-tale-builder:1\" data-remove-id=\"emberBar\">✕</button>\n  </div>\n\n  <!-- ── /Ember Tip Bar ── -->\n\n  <div id=\"sidebar\">\n    <div class=\"prog-section\">\n      <div class=\"prog-lbl\">Build Progress</div>\n      <div class=\"prog-track\"><div class=\"prog-fill\" id=\"progFill\" style=\"width:3%\"></div></div>\n      <div class=\"prog-ct\" id=\"progCt\">0 / 16 steps</div>\n    </div>\n    <div class=\"slist\" id=\"stepList\"></div>\n    <div class=\"cpan\" id=\"stepBody\"></div>\n    <div class=\"snav\">\n      <button class=\"btn-p\" id=\"navPrev\" data-on=\"goPrev\" data-on-plain disabled aria-label=\"Previous step\">← Back</button>\n      <button class=\"btn-n\" id=\"navNext\" data-on=\"goNext\" data-on-plain aria-label=\"Next step\">Next →</button>\n    </div>\n  </div>\n\n  <div id=\"viewport\">\n    <div class=\"scene-top\">\n      <span class=\"scene-top-l\">🏡 Live 3D Preview</span>\n      <div class=\"scene-top-r\">\n        <div class=\"live-wrap\"><span class=\"live-dot\"></span><span id=\"liveStatus\" aria-live=\"polite\">Apply Step 1 to begin</span></div>\n      </div>\n    </div>\n    <div class=\"scene-wrap\">\n      <canvas id=\"cottageCanvas\" role=\"application\" aria-label=\"3D cottage preview viewport\"></canvas>\n      <div class=\"cottage-stats\" id=\"cottageStats\"></div>\n      <div class=\"vhint\" id=\"sceneHint\">Drag to orbit · Scroll to zoom</div>\n    </div>\n    <div class=\"obar\" id=\"obar\" aria-live=\"polite\">🏠 Name your cottage to start building</div>\n  </div>\n\n  <div id=\"rightbar\" aria-label=\"Quick controls\">\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🎨 Colors</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-bodyCol\">Body</label>\n        <input type=\"color\" id=\"rb-bodyCol\" value=\"#d4a574\" data-bind=\"P.bodyColor\" data-bind-type=\"value\" data-then=\"buildCottage\">\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-roofCol\">Roof</label>\n        <input type=\"color\" id=\"rb-roofCol\" value=\"#8b1a1a\" data-bind=\"P.roofColor\" data-bind-type=\"value\" data-then=\"buildCottage\">\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-doorCol\">Door</label>\n        <input type=\"color\" id=\"rb-doorCol\" value=\"#6b3a2a\" data-bind=\"P.doorColor\" data-bind-type=\"value\" data-then=\"buildCottage\">\n      </div>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🏠 Structure</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-roofStyle\">Roof</label>\n        <select id=\"rb-roofStyle\" data-bind=\"P.roofStyle\" data-bind-type=\"value\" data-then=\"buildCottage\">\n          <option value=\"pitched\">Pitched</option>\n          <option value=\"round\">Round</option>\n          <option value=\"thatch\">Thatch</option>\n        </select>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-roofH\">Height</label>\n        <input type=\"range\" min=\"1\" max=\"4\" step=\"0.1\" value=\"2\" id=\"rb-roofH\"\n          data-bind=\"P.roofHeight\" data-bind-type=\"float\" data-bind-display=\"rb-rhv\" data-bind-fmt=\"0.0\" data-then=\"buildCottage\">\n        <span class=\"rv\" id=\"rb-rhv\">2.0</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-doorStyle\">Door</label>\n        <select id=\"rb-doorStyle\" data-bind=\"P.doorStyle\" data-bind-type=\"value\" data-then=\"buildCottage\">\n          <option value=\"arch\">Arch</option>\n          <option value=\"round\">Round</option>\n          <option value=\"double\">Double</option>\n        </select>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-winCount\">Windows</label>\n        <input type=\"range\" min=\"0\" max=\"8\" step=\"1\" value=\"3\" id=\"rb-winCount\"\n          data-bind=\"P.windowCount\" data-bind-type=\"int\" data-bind-display=\"rb-wcv\" data-then=\"buildCottage\">\n        <span class=\"rv\" id=\"rb-wcv\">3</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-winStyle\">Win St</label>\n        <select id=\"rb-winStyle\" data-bind=\"P.windowStyle\" data-bind-type=\"value\" data-then=\"buildCottage\">\n          <option value=\"arch\">Arch</option>\n          <option value=\"round\">Round</option>\n          <option value=\"square\">Square</option>\n        </select>\n      </div>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🏰 Extras</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-towerC\">Towers</label>\n        <input type=\"range\" min=\"0\" max=\"3\" step=\"1\" value=\"0\" id=\"rb-towerC\"\n          data-bind=\"P.towerCount\" data-bind-type=\"int\" data-bind-display=\"rb-tcv\" data-then=\"buildCottage\">\n        <span class=\"rv\" id=\"rb-tcv\">0</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-flowerC\">Flowers</label>\n        <input type=\"range\" min=\"0\" max=\"30\" step=\"1\" value=\"12\" id=\"rb-flowerC\"\n          data-bind=\"P.flowerCount\" data-bind-type=\"int\" data-bind-display=\"rb-fcv\" data-then=\"buildCottage\">\n        <span class=\"rv\" id=\"rb-fcv\">12</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-treeC\">Trees</label>\n        <input type=\"range\" min=\"0\" max=\"10\" step=\"1\" value=\"4\" id=\"rb-treeC\"\n          data-bind=\"P.treeCount\" data-bind-type=\"int\" data-bind-display=\"rb-trev\" data-then=\"buildCottage\">\n        <span class=\"rv\" id=\"rb-trev\">4</span>\n      </div>\n      <label class=\"rb-toggle\">\n        <input type=\"checkbox\" id=\"rb-fairyLights\" data-bind=\"P.fairyLights\" data-bind-type=\"checked\" data-then=\"buildCottage\">\n        Fairy Lights\n      </label>\n      <label class=\"rb-toggle\">\n        <input type=\"checkbox\" id=\"rb-smoke\" data-bind=\"P.chimneySmoke\" data-bind-type=\"checked\" data-then=\"buildCottage\">\n        Chimney Smoke\n      </label>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🌿 Garden</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-gardenS\">Size</label>\n        <input type=\"range\" min=\"0\" max=\"6\" step=\"0.5\" value=\"2\" id=\"rb-gardenS\"\n          data-bind=\"P.gardenSize\" data-bind-type=\"float\" data-bind-display=\"rb-gsv\" data-then=\"buildCottage\">\n        <span class=\"rv\" id=\"rb-gsv\">2</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-mushC\">Mushrooms</label>\n        <input type=\"range\" min=\"0\" max=\"15\" step=\"1\" value=\"6\" id=\"rb-mushC\"\n          data-bind=\"P.mushroomCount\" data-bind-type=\"int\" data-bind-display=\"rb-mcv\" data-then=\"buildCottage\">\n        <span class=\"rv\" id=\"rb-mcv\">6</span>\n      </div>\n      <label class=\"rb-toggle\">\n        <input type=\"checkbox\" id=\"rb-mushHouse\" data-bind=\"P.mushroomHouse\" data-bind-type=\"checked\" data-then=\"buildCottage\">\n        Mushroom House\n      </label>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🏮 Lighting</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-lanternC\">Lanterns</label>\n        <input type=\"range\" min=\"0\" max=\"10\" step=\"1\" value=\"4\" id=\"rb-lanternC\"\n          data-bind=\"P.lanternCount\" data-bind-type=\"int\" data-bind-display=\"rb-lanc\" data-then=\"buildCottage\">\n        <span class=\"rv\" id=\"rb-lanc\">4</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-fenceH\">Fence</label>\n        <input type=\"range\" min=\"0\" max=\"2\" step=\"0.1\" value=\"0.5\" id=\"rb-fenceH\"\n          data-bind=\"P.fenceHeight\" data-bind-type=\"float\" data-bind-display=\"rb-fhv\" data-then=\"buildCottage\">\n        <span class=\"rv\" id=\"rb-fhv\">0.5</span>\n      </div>\n    </div>\n\n    <div style=\"padding:4px 2px\">\n      <button class=\"run-btn\" style=\"font-size:.78rem;padding:9px;margin-top:0\" data-on=\"activateCottage\" data-on-plain>✨ Light the Lanterns!</button>\n    </div>\n\n  </div>\n\n</div>\n<div id=\"modalOverlay\" style=\"display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)\"><div id=\"modalContent\" style=\"background:linear-gradient(145deg,#180e28,#0f0818);border:1px solid rgba(232,121,249,.3);border-radius:12px;padding:22px;width:380px;max-width:90vw\"></div></div>\n\n";
+const CSS = "/* ── Ember builder tip strip ─────────────── */\n.hdr-step-chip {\n  display: inline-flex;\n  align-items: center;\n  font-family: 'Nunito', sans-serif;\n  font-size: .72rem;\n  font-weight: 800;\n  letter-spacing: .05em;\n  padding: 3px 10px;\n  border-radius: 999px;\n  background: rgba(var(--ca-rgb, 255,255,255), .12);\n  border: 1px solid rgba(var(--ca-rgb, 255,255,255), .25);\n  color: rgba(255,255,255,.85);\n  margin-left: 10px;\n  vertical-align: middle;\n  flex-shrink: 0;\n}\n.ember-builder-bar {\n  display: flex;\n  align-items: flex-start;\n  gap: 10px;\n  padding: 8px 16px;\n  background: rgba(var(--ca-rgb,139,92,246), .07);\n  border-bottom: 1px solid rgba(var(--ca-rgb,139,92,246), .18);\n  position: relative;\n  font-size: .8rem;\n  line-height: 1.45;\n  color: rgba(255,255,255,.65);\n}\n.ember-builder-bar strong { color: rgba(255,255,255,.9); }\n.ember-builder-bar svg { flex-shrink: 0; margin-top: 1px; }\n.ember-bar-dismiss {\n  position: absolute;\n  right: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  background: none;\n  border: none;\n  color: rgba(255,255,255,.3);\n  cursor: pointer;\n  font-size: 1rem;\n  line-height: 1;\n  padding: 2px 6px;\n  border-radius: 4px;\n  transition: color .2s;\n}\n.ember-bar-dismiss:hover { color: rgba(255,255,255,.7); }\n";
+const ACTIONS = ["activateCottage","applyStep","closeModal","doCottageDel","doCottageLoad","doCottageSave","goNext","goPrev","openLoadModal","openSaveModal","quickBuild","randomCottage","selectOpt","selectSwatch"];
+
+export function mount(container) {
+  var ac = new AbortController();
+  var rafs = [];
+  var winAdd = window.addEventListener.bind(window);
+  var docAdd = document.addEventListener.bind(document);
+  var origRaf = window.requestAnimationFrame.bind(window);
+  function opt(o) { return Object.assign({}, (o && typeof o === 'object') ? o : {}, { signal: ac.signal }); }
+  window.addEventListener = function (t, fn, o) { return winAdd(t, fn, opt(o)); };
+  document.addEventListener = function (t, fn, o) { return docAdd(t, fn, opt(o)); };
+  window.requestAnimationFrame = function (fn) { var id = origRaf(fn); rafs.push(id); return id; };
+
+  var stage = document.createElement('div');
+  stage.id = 'bsStage';
+  stage.className = 'bs-stage';
+  stage.innerHTML = HTML;
+  container.appendChild(stage);
+  var sheet = document.createElement('style');
+  sheet.setAttribute('data-bs-css', ID);
+  sheet.textContent = CSS;
+  document.head.appendChild(sheet);
+
+  try {
+'use strict';
+
+/* -------------------------------
+   THREE.JS SCENE
+------------------------------- */
+const canvas = document.getElementById('cottageCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0x0f0818);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0f0818, 15, 45);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+camera.position.set(0, 4, 10);
+
+const ambient = new THREE.AmbientLight(0x6644aa, 0.6);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff5ee, 1.2);
+sun.position.set(5, 10, 6);
+sun.castShadow = true;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x8866cc, 0.3);
+fill.position.set(-6, 3, -4);
+scene.add(fill);
+
+(function(){
+  const geo = new THREE.BufferGeometry();
+  const verts = [];
+  for (let i = 0; i < 800; i++) {
+    verts.push((Math.random()-0.5)*80, (Math.random()-0.5)*80 + 10, (Math.random()-0.5)*80);
+  }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.08 });
+  scene.add(new THREE.Points(geo, mat));
+})();
+
+/* -------------------------------
+   COTTAGE STATE
+------------------------------- */
+const P = {
+  houseName: 'Rose Cottage',
+  bodyColor: '#d4a574',
+  roofColor: '#8b1a1a',
+  roofStyle: 'pitched',
+  roofHeight: 2,
+  chimneyHeight: 2,
+  chimneySmoke: true,
+  windowCount: 3,
+  windowStyle: 'arch',
+  doorColor: '#6b3a2a',
+  doorStyle: 'arch',
+  towerCount: 0,
+  towerHeight: 4,
+  gardenSize: 2,
+  fenceHeight: 0.5,
+  pathStyle: 'stone',
+  flowerCount: 12,
+  mushroomCount: 6,
+  lanternCount: 4,
+  fairyLights: true,
+  bridgeCount: 0,
+  mushroomHouse: false,
+  treeCount: 4,
+  activated: false,
+};
+window.P = P;
+
+let cottageGroup = null;
+let smokeParticles = [];
+let lanternLights = [];
+let fireflyParticles = [];
+
+function hexToThree(hex) { return new THREE.Color(hex); }
+
+/* -------------------------------
+   BUILD COTTAGE
+------------------------------- */
+function buildCottage() {
+  if (cottageGroup) scene.remove(cottageGroup);
+  cottageGroup = new THREE.Group();
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
+  cottageGroup.name = 'fairy_cottage';
+  smokeParticles = [];
+  lanternLights = [];
+
+  const bodyMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.bodyColor), roughness: 0.8, metalness: 0.05 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.roofColor), roughness: 0.7, metalness: 0.1 });
+  const doorMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.doorColor), roughness: 0.6, metalness: 0.05 });
+  const windowMat = new THREE.MeshStandardMaterial({ color: 0x1a2a44, roughness: 0.3, metalness: 0.2 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x88aadd, roughness: 0.1, metalness: 0.05, transparent: true, opacity: 0.7, emissive: new THREE.Color(0x223355), emissiveIntensity: 0.3 });
+  const darkWood = new THREE.MeshStandardMaterial({ color: 0x3a2218, roughness: 0.85, metalness: 0.05 });
+  const stoneMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.9, metalness: 0.05 });
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0x2d5a1e, roughness: 0.95, metalness: 0 });
+
+  const bw = 2.5, bh = 2, bd = 2;
+  const baseY = 0;
+
+  // Ground
+  const gSize = Math.max(P.gardenSize * 2.5, 6);
+  const groundGeo = new THREE.CircleGeometry(gSize, 32);
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.01;
+  ground.receiveShadow = true;
+  cottageGroup.add(part(ground, 'garden_ground'));
+
+  // House body
+  const bodyGeo = new THREE.BoxGeometry(bw, bh, bd);
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = baseY + bh / 2;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  cottageGroup.add(part(body, 'cottage'));
+
+  // Roof
+  if (P.roofStyle === 'pitched') {
+    const roofGeo = new THREE.ConeGeometry(bw * 0.85, P.roofHeight, 4);
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.position.y = baseY + bh + P.roofHeight / 2;
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    cottageGroup.add(part(roof, 'roof'));
+  } else if (P.roofStyle === 'round') {
+    const roofGeo = new THREE.SphereGeometry(bw * 0.8, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+    const roof = new THREE.Mesh(roofGeo, roofMat);
+    roof.position.y = baseY + bh;
+    roof.castShadow = true;
+    cottageGroup.add(part(roof, 'roof'));
+  } else {
+    for (let i = 0; i < 5; i++) {
+      const r = bw * 0.82 - i * 0.08;
+      const ringGeo = new THREE.TorusGeometry(r, 0.12, 6, 16);
+      const ring = new THREE.Mesh(ringGeo, roofMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = baseY + bh + 0.3 + i * (P.roofHeight / 5);
+      ring.castShadow = true;
+      cottageGroup.add(part(ring, 'roof_thatch_ring_'+i));
+    }
+    const topGeo = new THREE.ConeGeometry(bw * 0.3, P.roofHeight * 0.4, 12);
+    const top = new THREE.Mesh(topGeo, roofMat);
+    top.position.y = baseY + bh + P.roofHeight;
+    top.castShadow = true;
+    cottageGroup.add(part(top, 'roof_thatch_top'));
+  }
+
+  // Chimney
+  const chimneyGeo = new THREE.BoxGeometry(0.3, P.chimneyHeight, 0.3);
+  const chimney = new THREE.Mesh(chimneyGeo, stoneMat);
+  chimney.position.set(bw * 0.3, baseY + bh + P.chimneyHeight / 2, bd * 0.25);
+  chimney.castShadow = true;
+  cottageGroup.add(part(chimney, 'chimney'));
+  const chimneyTopGeo = new THREE.BoxGeometry(0.4, 0.1, 0.4);
+  const chimneyTop = new THREE.Mesh(chimneyTopGeo, darkWood);
+  chimneyTop.position.set(bw * 0.3, baseY + bh + P.chimneyHeight + 0.05, bd * 0.25);
+  cottageGroup.add(part(chimneyTop, 'chimney_top'));
+
+  // Smoke
+  if (P.chimneySmoke && P.activated) {
+    const smokeMat = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.3 });
+    for (let i = 0; i < 8; i++) {
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(0.08 + i * 0.03, 6, 6), smokeMat.clone());
+      puff.position.set(bw * 0.3 + (Math.random() - 0.5) * 0.1, baseY + bh + P.chimneyHeight + 0.2 + i * 0.25, bd * 0.25 + (Math.random() - 0.5) * 0.1);
+      smokeParticles.push({ mesh: puff, baseY: puff.position.y, phase: Math.random() * Math.PI * 2 });
+      cottageGroup.add(part(puff, 'chimney_smoke_'+i));
+    }
+  }
+
+  // Door
+  if (P.doorStyle === 'arch') {
+    const doorW = 0.5, doorH = 1;
+    const doorShape = new THREE.Shape();
+    doorShape.moveTo(-doorW / 2, 0);
+    doorShape.lineTo(-doorW / 2, doorH * 0.5);
+    doorShape.absarc(0, doorH * 0.5, doorW / 2, Math.PI, 0, false);
+    doorShape.lineTo(doorW / 2, 0);
+    doorShape.closePath();
+    const doorGeo = new THREE.ExtrudeGeometry(doorShape, { depth: 0.06, bevelEnabled: false });
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.set(0, baseY, bd / 2 + 0.01);
+    door.castShadow = true;
+    cottageGroup.add(part(door, 'door'));
+  } else if (P.doorStyle === 'round') {
+    const doorGeo = new THREE.CircleGeometry(0.4, 16);
+    const door = new THREE.Mesh(doorGeo, doorMat);
+    door.position.set(0, baseY + 0.5, bd / 2 + 0.01);
+    door.castShadow = true;
+    cottageGroup.add(part(door, 'door'));
+  } else {
+    for (let s = -1; s <= 1; s += 2) {
+      const doorGeo = new THREE.BoxGeometry(0.3, 0.9, 0.06);
+      const door = new THREE.Mesh(doorGeo, doorMat);
+      door.position.set(s * 0.2, baseY + 0.45, bd / 2 + 0.01);
+      door.castShadow = true;
+      cottageGroup.add(part(door, 'door_'+s));
+    }
+    const handleGeo = new THREE.SphereGeometry(0.03, 6, 6);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0xccaa44, roughness: 0.3, metalness: 0.8 });
+    const handleL = new THREE.Mesh(handleGeo, handleMat);
+    handleL.position.set(-0.07, baseY + 0.45, bd / 2 + 0.05);
+    cottageGroup.add(part(handleL, 'door_handle_left'));
+    const handleR = new THREE.Mesh(handleGeo, handleMat);
+    handleR.position.set(0.07, baseY + 0.45, bd / 2 + 0.05);
+    cottageGroup.add(part(handleR, 'door_handle_right'));
+  }
+
+  // Door step
+  const stepGeo = new THREE.BoxGeometry(0.8, 0.08, 0.3);
+  const step = new THREE.Mesh(stepGeo, stoneMat);
+  step.position.set(0, baseY - 0.04, bd / 2 + 0.15);
+  cottageGroup.add(part(step, 'door_step'));
+
+  // Windows
+  const winPositions = [];
+  const winCount = Math.max(0, Math.min(8, P.windowCount));
+  if (winCount > 0) {
+    for (let i = 0; i < winCount; i++) {
+      const side = i % 2 === 0 ? 0 : 1;
+      const angle = (i / winCount) * Math.PI * 2;
+      const wx = Math.cos(angle) * (bw / 2 + 0.01);
+      const wz = Math.sin(angle) * (bd / 2 + 0.01);
+      const wy = baseY + 1.2;
+
+      if (P.windowStyle === 'arch') {
+        const ww = 0.3, wh = 0.4;
+        const winShape = new THREE.Shape();
+        winShape.moveTo(-ww / 2, 0);
+        winShape.lineTo(-ww / 2, wh * 0.5);
+        winShape.absarc(0, wh * 0.5, ww / 2, Math.PI, 0, false);
+        winShape.lineTo(ww / 2, 0);
+        winShape.closePath();
+        const winGeo = new THREE.ExtrudeGeometry(winShape, { depth: 0.04, bevelEnabled: false });
+        const winFrame = new THREE.Mesh(winGeo, darkWood);
+        winFrame.position.set(wx, wy, wz);
+        winFrame.lookAt(wx * 5, wy, wz * 5);
+        cottageGroup.add(part(winFrame, 'window_frame_'+i));
+        const glassGeo = new THREE.CircleGeometry(0.13, 12);
+        const glass = new THREE.Mesh(glassGeo, glassMat);
+        glass.position.set(wx, wy + 0.1, wz);
+        glass.lookAt(wx * 5, wy + 0.1, wz * 5);
+        cottageGroup.add(part(glass, 'window_glass_'+i));
+      } else if (P.windowStyle === 'round') {
+        const rimGeo = new THREE.TorusGeometry(0.15, 0.03, 8, 16);
+        const rim = new THREE.Mesh(rimGeo, darkWood);
+        rim.position.set(wx, wy, wz);
+        rim.lookAt(wx * 5, wy, wz * 5);
+        cottageGroup.add(part(rim, 'window_frame_'+i));
+        const glassGeo = new THREE.CircleGeometry(0.12, 12);
+        const glass = new THREE.Mesh(glassGeo, glassMat);
+        glass.position.set(wx, wy, wz);
+        glass.lookAt(wx * 5, wy, wz * 5);
+        cottageGroup.add(part(glass, 'window_glass_'+i));
+      } else {
+        const frameGeo = new THREE.BoxGeometry(0.32, 0.36, 0.04);
+        const frame = new THREE.Mesh(frameGeo, darkWood);
+        frame.position.set(wx, wy, wz);
+        frame.lookAt(wx * 5, wy, wz * 5);
+        cottageGroup.add(part(frame, 'window_frame_'+i));
+        const glassGeo = new THREE.PlaneGeometry(0.24, 0.28);
+        const glass = new THREE.Mesh(glassGeo, glassMat);
+        glass.position.set(wx, wy, wz);
+        glass.lookAt(wx * 5, wy, wz * 5);
+        cottageGroup.add(part(glass, 'window_glass_'+i));
+        const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.02, 0.05), darkWood);
+        crossH.position.set(wx, wy, wz);
+        crossH.lookAt(wx * 5, wy, wz * 5);
+        cottageGroup.add(part(crossH, 'window_cross_h_'+i));
+        const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.28, 0.05), darkWood);
+        crossV.position.set(wx, wy, wz);
+        crossV.lookAt(wx * 5, wy, wz * 5);
+        cottageGroup.add(part(crossV, 'window_cross_v_'+i));
+      }
+    }
+  }
+
+  // Towers
+  for (let t = 0; t < P.towerCount; t++) {
+    const tAngle = (t / P.towerCount) * Math.PI * 2 + 0.8;
+    const tx = Math.cos(tAngle) * (bw * 0.9);
+    const tz = Math.sin(tAngle) * (bd * 0.9);
+    const tGeo = new THREE.CylinderGeometry(0.35, 0.4, P.towerHeight, 12);
+    const tower = new THREE.Mesh(tGeo, bodyMat.clone());
+    tower.position.set(tx, baseY + P.towerHeight / 2, tz);
+    tower.castShadow = true;
+cottageGroup.add(part(tower, 'tower_'+t));
+    const tRoofGeo = new THREE.ConeGeometry(0.5, 1.2, 8);
+    const tRoof = new THREE.Mesh(tRoofGeo, roofMat.clone());
+    tRoof.position.set(tx, baseY + P.towerHeight + 0.6, tz);
+    tRoof.castShadow = true;
+cottageGroup.add(part(tRoof, 'tower_roof_'+t));
+    // Tower window
+    const tWinGeo = new THREE.CircleGeometry(0.1, 8);
+    const tWin = new THREE.Mesh(tWinGeo, glassMat.clone());
+    tWin.position.set(tx + 0.36, baseY + P.towerHeight * 0.7, tz);
+cottageGroup.add(part(tWin, 'tower_window_'+t));
+  }
+
+  // Fence
+  if (P.fenceHeight > 0) {
+    const fenceMat = new THREE.MeshStandardMaterial({ color: 0x8b6b4a, roughness: 0.85 });
+    const fenceRadius = P.gardenSize * 2;
+    const postCount = Math.floor(fenceRadius * 8);
+    for (let i = 0; i < postCount; i++) {
+      const fAngle = (i / postCount) * Math.PI * 2;
+      const fx = Math.cos(fAngle) * fenceRadius;
+      const fz = Math.sin(fAngle) * fenceRadius;
+      const postGeo = new THREE.BoxGeometry(0.06, P.fenceHeight, 0.06);
+      const post = new THREE.Mesh(postGeo, fenceMat);
+      post.position.set(fx, baseY + P.fenceHeight / 2, fz);
+      cottageGroup.add(part(post, 'fence_post_'+i));
+    }
+    for (let r = 0; r < 2; r++) {
+      const ringGeo = new THREE.TorusGeometry(fenceRadius, 0.025, 4, postCount);
+      const ring = new THREE.Mesh(ringGeo, fenceMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = baseY + P.fenceHeight * (0.3 + r * 0.4);
+      cottageGroup.add(part(ring, 'fence_rail_'+r));
+    }
+  }
+
+  // Path
+  if (P.gardenSize > 0) {
+    const pathLen = P.gardenSize * 1.5;
+    const pathGeo = new THREE.PlaneGeometry(0.6, pathLen);
+    let pathMat;
+    if (P.pathStyle === 'stone') {
+      pathMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.9 });
+    } else if (P.pathStyle === 'cobble') {
+      pathMat = new THREE.MeshStandardMaterial({ color: 0x8a7a6a, roughness: 0.85 });
+    } else {
+      pathMat = new THREE.MeshStandardMaterial({ color: 0x8b7355, roughness: 0.95 });
+    }
+    const path = new THREE.Mesh(pathGeo, pathMat);
+    path.rotation.x = -Math.PI / 2;
+    path.position.set(0, 0.005, bd / 2 + pathLen / 2);
+cottageGroup.add(part(path, 'path'));
+    // Path stones
+    if (P.pathStyle !== 'dirt') {
+      for (let i = 0; i < Math.floor(pathLen * 3); i++) {
+        const sx = (Math.random() - 0.5) * 0.4;
+        const sz = bd / 2 + Math.random() * pathLen;
+        const stoneGeo = new THREE.CircleGeometry(0.04 + Math.random() * 0.04, 6);
+        const stone = new THREE.Mesh(stoneGeo, stoneMat.clone());
+        stone.rotation.x = -Math.PI / 2;
+        stone.position.set(sx, 0.01, sz);
+        cottageGroup.add(part(stone, 'path_stone_'+i));
+      }
+    }
+  }
+
+  // Flowers
+  const flowerColors = [0xff69b4, 0xff1493, 0xff6eb4, 0xffb6c1, 0xff00ff, 0xda70d6, 0xba55d3];
+  for (let i = 0; i < P.flowerCount; i++) {
+    const fAngle = Math.random() * Math.PI * 2;
+    const fDist = 1.5 + Math.random() * (P.gardenSize * 1.5);
+    const fx = Math.cos(fAngle) * fDist;
+    const fz = Math.sin(fAngle) * fDist;
+    const stemGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 4);
+    const stemMat = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+    const stem = new THREE.Mesh(stemGeo, stemMat);
+    stem.position.set(fx, 0.15, fz);
+cottageGroup.add(part(stem, 'flower_stem_'+i));
+    const petalColor = flowerColors[Math.floor(Math.random() * flowerColors.length)];
+    const petalGeo = new THREE.SphereGeometry(0.06, 6, 6);
+    const petalMat = new THREE.MeshStandardMaterial({ color: petalColor, roughness: 0.4 });
+    const petal = new THREE.Mesh(petalGeo, petalMat);
+    petal.position.set(fx, 0.33, fz);
+cottageGroup.add(part(petal, 'flower_'+i));
+  }
+
+  // Mushrooms
+  const mushRed = 0xcc2222;
+  const mushCap = new THREE.MeshStandardMaterial({ color: mushRed, roughness: 0.5 });
+  const mushStem = new THREE.MeshStandardMaterial({ color: 0xf5f0e0, roughness: 0.7 });
+  const mushDot = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+  for (let i = 0; i < P.mushroomCount; i++) {
+    const mAngle = Math.random() * Math.PI * 2;
+    const mDist = 1.2 + Math.random() * (P.gardenSize * 1.8);
+    const mx = Math.cos(mAngle) * mDist;
+    const mz = Math.sin(mAngle) * mDist;
+    const mScale = 0.5 + Math.random() * 0.8;
+    const mStemGeo = new THREE.CylinderGeometry(0.04 * mScale, 0.05 * mScale, 0.18 * mScale, 6);
+    const mStem = new THREE.Mesh(mStemGeo, mushStem);
+    mStem.position.set(mx, 0.09 * mScale, mz);
+cottageGroup.add(part(mStem, 'mushroom_stem_'+i));
+    const mCapGeo = new THREE.SphereGeometry(0.09 * mScale, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+    const mCap = new THREE.Mesh(mCapGeo, mushCap);
+    mCap.position.set(mx, 0.18 * mScale, mz);
+cottageGroup.add(part(mCap, 'mushroom_cap_'+i));
+    for (let d = 0; d < 3; d++) {
+      const dAngle = (d / 3) * Math.PI * 2;
+      const dotGeo = new THREE.SphereGeometry(0.02 * mScale, 4, 4);
+      const dot = new THREE.Mesh(dotGeo, mushDot);
+      dot.position.set(
+        mx + Math.cos(dAngle) * 0.06 * mScale,
+        0.2 * mScale,
+        mz + Math.sin(dAngle) * 0.06 * mScale
+      );
+      cottageGroup.add(part(dot, 'mushroom_dot_'+i+'_'+d));
+    }
+  }
+
+  // Trees
+  const treeTrunk = new THREE.MeshStandardMaterial({ color: 0x5c3a1e, roughness: 0.9 });
+  const treeLeaves = new THREE.MeshStandardMaterial({ color: 0x2d7a1e, roughness: 0.8 });
+  for (let i = 0; i < P.treeCount; i++) {
+    const tAngle = (i / P.treeCount) * Math.PI * 2 + Math.random() * 0.5;
+    const tDist = P.gardenSize * 1.8 + Math.random() * 1.5;
+    const tx = Math.cos(tAngle) * tDist;
+    const tz = Math.sin(tAngle) * tDist;
+    const tScale = 0.8 + Math.random() * 0.6;
+    const trunkGeo = new THREE.CylinderGeometry(0.08 * tScale, 0.12 * tScale, 1.5 * tScale, 6);
+    const trunk = new THREE.Mesh(trunkGeo, treeTrunk);
+    trunk.position.set(tx, 0.75 * tScale, tz);
+    trunk.castShadow = true;
+cottageGroup.add(part(trunk, 'tree_trunk_'+i));
+    const leavesGeo = new THREE.SphereGeometry(0.5 * tScale, 8, 6);
+    const leaves = new THREE.Mesh(leavesGeo, treeLeaves.clone());
+    leaves.material.color.setHex([0x2d7a1e, 0x3a8a2e, 0x1e6a14][Math.floor(Math.random() * 3)]);
+    leaves.position.set(tx, 1.7 * tScale, tz);
+    leaves.castShadow = true;
+cottageGroup.add(part(leaves, 'tree_foliage_'+i));
+  }
+
+  // Lanterns
+  const lanternMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5, metalness: 0.5 });
+  const glowMat = new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.6 });
+  for (let i = 0; i < P.lanternCount; i++) {
+    const lAngle = (i / P.lanternCount) * Math.PI * 2;
+    const lDist = P.gardenSize * 1.3;
+    const lx = Math.cos(lAngle) * lDist;
+    const lz = Math.sin(lAngle) * lDist;
+    const poleGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.8, 6);
+    const pole = new THREE.Mesh(poleGeo, lanternMat);
+    pole.position.set(lx, 0.4, lz);
+cottageGroup.add(part(pole, 'lantern_pole_'+i));
+    const lanternBody = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.1), lanternMat);
+    lanternBody.position.set(lx, 0.85, lz);
+cottageGroup.add(part(lanternBody, 'lantern_'+i));
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), glowMat.clone());
+    glow.position.set(lx, 0.85, lz);
+cottageGroup.add(part(glow, 'lantern_glow_'+i));
+    if (P.activated) {
+      const light = new THREE.PointLight(0xffaa44, 0.8, 4);
+      light.position.set(lx, 0.9, lz);
+      lanternLights.push(light);
+      cottageGroup.add(light);
+    }
+  }
+
+  // Fairy Lights
+  if (P.fairyLights) {
+    const lightColors = [0xff6699, 0x66ff99, 0x9966ff, 0xffcc44, 0x66ccff];
+    for (let i = 0; i < 20; i++) {
+      const t = i / 20;
+      const lx = (t - 0.5) * bw * 1.5;
+      const ly = baseY + bh + 0.1 + Math.sin(t * Math.PI * 3) * 0.15;
+      const lz = bd * 0.3;
+      const bulbGeo = new THREE.SphereGeometry(0.03, 4, 4);
+      const col = lightColors[i % lightColors.length];
+      const bulbMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: P.activated ? 0.9 : 0.4 });
+      const bulb = new THREE.Mesh(bulbGeo, bulbMat);
+      bulb.position.set(lx, ly, lz);
+      cottageGroup.add(part(bulb, 'fairy_light_'+i));
+    }
+    // Wire
+    const wirePoints = [];
+    for (let i = 0; i <= 20; i++) {
+      const t = i / 20;
+      wirePoints.push(new THREE.Vector3((t - 0.5) * bw * 1.5, baseY + bh + 0.1 + Math.sin(t * Math.PI * 3) * 0.15, bd * 0.3));
+    }
+    const wireGeo = new THREE.BufferGeometry().setFromPoints(wirePoints);
+    const wireMat = new THREE.LineBasicMaterial({ color: 0x333333 });
+    const wire = new THREE.Line(wireGeo, wireMat);
+    cottageGroup.add(wire);
+  }
+
+  // Mushroom House
+  if (P.mushroomHouse) {
+    const mhX = bw * 0.9;
+    const mhZ = -bd * 0.5;
+    const mhBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.3, 0.35, 0.6, 8),
+      new THREE.MeshStandardMaterial({ color: 0xf5f0d0, roughness: 0.7 })
+    );
+    mhBody.position.set(mhX, 0.3, mhZ);
+cottageGroup.add(part(mhBody, 'mushroom_house_body'));
+    const mhCap = new THREE.Mesh(
+      new THREE.SphereGeometry(0.45, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshStandardMaterial({ color: 0xcc2222, roughness: 0.5 })
+    );
+    mhCap.position.set(mhX, 0.6, mhZ);
+cottageGroup.add(part(mhCap, 'mushroom_house_roof'));
+    for (let d = 0; d < 4; d++) {
+      const dAngle = (d / 4) * Math.PI * 2;
+      const dotGeo = new THREE.SphereGeometry(0.05, 4, 4);
+      const dot = new THREE.Mesh(dotGeo, new THREE.MeshStandardMaterial({ color: 0xffffff }));
+      dot.position.set(
+        mhX + Math.cos(dAngle) * 0.3,
+        0.75,
+        mhZ + Math.sin(dAngle) * 0.3
+      );
+      cottageGroup.add(part(dot, 'mushroom_house_dot_'+d));
+    }
+    const mhDoor = new THREE.Mesh(
+      new THREE.CircleGeometry(0.1, 8),
+      new THREE.MeshStandardMaterial({ color: 0x5c3a1e })
+    );
+    mhDoor.position.set(mhX, 0.15, mhZ + 0.31);
+cottageGroup.add(part(mhDoor, 'mushroom_house_door'));
+    const mhWin = new THREE.Mesh(
+      new THREE.CircleGeometry(0.06, 6),
+      glassMat.clone()
+    );
+    mhWin.position.set(mhX + 0.25, 0.35, mhZ + 0.15);
+cottageGroup.add(part(mhWin, 'mushroom_house_window'));
+  }
+
+  // Bridge (if stream present)
+  if (P.bridgeCount > 0) {
+    for (let b = 0; b < P.bridgeCount; b++) {
+      const bZ = bd / 2 + P.gardenSize * 1.2 + b * 1.5;
+      // Stream
+      const streamGeo = new THREE.PlaneGeometry(P.gardenSize * 3, 0.6);
+      const streamMat = new THREE.MeshStandardMaterial({ color: 0x3388cc, roughness: 0.2, metalness: 0.3, transparent: true, opacity: 0.6 });
+      const stream = new THREE.Mesh(streamGeo, streamMat);
+      stream.rotation.x = -Math.PI / 2;
+      stream.position.set(0, 0.01, bZ);
+      cottageGroup.add(part(stream, 'stream_'+b));
+      // Bridge planks
+      const bridgeGeo = new THREE.BoxGeometry(0.8, 0.05, 0.7);
+      const bridge = new THREE.Mesh(bridgeGeo, darkWood.clone());
+      bridge.position.set(0, 0.1, bZ);
+      cottageGroup.add(part(bridge, 'bridge_'+b));
+      // Railings
+      for (let s = -1; s <= 1; s += 2) {
+        const railGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.3, 4);
+        const rail = new THREE.Mesh(railGeo, darkWood.clone());
+        rail.position.set(s * 0.35, 0.25, bZ);
+        cottageGroup.add(part(rail, 'bridge_rail_'+b+'_'+s));
+      }
+    }
+  }
+
+  scene.add(cottageGroup);
+  updateStats();
+  syncRightBar();
+}
+
+/* -------------------------------
+   ORBIT CONTROLS
+------------------------------- */
+let orbit = { theta: 0.3, phi: 1.1, radius: 10, dragging: false, lastX: 0, lastY: 0 };
+
+function updateCamera() {
+  orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
+  orbit.radius = Math.max(3, Math.min(20, orbit.radius));
+  camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+  camera.position.y = orbit.radius * Math.cos(orbit.phi) + 2;
+  camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+  camera.lookAt(0, 1.5, 0);
+}
+
+canvas.addEventListener('mousedown', function(e) { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', function() { orbit.dragging = false; });
+window.addEventListener('mousemove', function(e) {
+  if (!orbit.dragging) return;
+  orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
+  orbit.phi   -= (e.clientY - orbit.lastY) * 0.007;
+  orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+});
+canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
+
+BuilderGestures.attachTapSelect(canvas, camera, function () { return cottageGroup; }, {
+  onOrbit: function (dx, dy) { orbit.theta -= dx * 0.007; orbit.phi -= dy * 0.007; },
+  onPinch: function (ratio) { orbit.radius *= ratio; },
+  onDragStart: function () { orbit.dragging = true; },
+  onDragEnd: function () { orbit.dragging = false; }
+});
+
+/* -------------------------------
+   RESIZE + RENDER LOOP
+------------------------------- */
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+  if (!orbit.dragging) orbit.theta += 0.003;
+  updateCamera();
+
+  // Animate smoke
+  smokeParticles.forEach(function(p) {
+    p.mesh.position.y = p.baseY + (frame * 0.008 + p.phase) % 2;
+    p.mesh.material.opacity = Math.max(0, 0.3 - (frame * 0.008 + p.phase) % 2 * 0.12);
+    const s = 1 + ((frame * 0.008 + p.phase) % 2) * 0.5;
+    p.mesh.scale.setScalar(s);
+  });
+
+  // Animate fireflies
+  fireflyParticles.forEach(function(f) {
+    f.mesh.position.x = f.baseX + Math.sin(frame * 0.02 + f.phase) * 0.5;
+    f.mesh.position.y = f.baseY + Math.sin(frame * 0.015 + f.phase * 2) * 0.3;
+    f.mesh.position.z = f.baseZ + Math.cos(frame * 0.018 + f.phase) * 0.5;
+    f.mesh.material.opacity = 0.3 + Math.sin(frame * 0.05 + f.phase) * 0.5;
+  });
+
+  resize();
+  renderer.render(scene, camera);
+}
+animate();
+
+/* -------------------------------
+   STATS
+------------------------------- */
+function computeStats() {
+  const coziness = Math.min(10, Math.round(
+    (P.roofStyle === 'thatch' ? 3 : P.roofStyle === 'round' ? 2 : 1) +
+    (P.chimneySmoke ? 2 : 0) +
+    (P.lanternCount * 0.3) +
+    (P.fairyLights ? 2 : 0) +
+    (P.gardenSize * 0.4)
+  ));
+  const whimsy = Math.min(10, Math.round(
+    (P.towerCount * 2) +
+    (P.mushroomHouse ? 3 : 0) +
+    (P.fairyLights ? 2 : 0) +
+    (P.flowerCount * 0.1) +
+    (P.mushroomCount * 0.15)
+  ));
+  const nature = Math.min(10, Math.round(
+    (P.gardenSize * 0.8) +
+    (P.treeCount * 0.6) +
+    (P.flowerCount * 0.15) +
+    (P.mushroomCount * 0.1)
+  ));
+  const craft = Math.min(10, Math.round(
+    (P.fenceHeight * 2) +
+    (P.pathStyle === 'cobble' ? 2 : P.pathStyle === 'stone' ? 1.5 : 1) +
+    (P.windowCount * 0.4) +
+    (P.doorStyle === 'double' ? 2 : P.doorStyle === 'arch' ? 1.5 : 1)
+  ));
+  return { coziness: Math.max(1, coziness), whimsy: Math.max(1, whimsy), nature: Math.max(1, nature), craft: Math.max(1, craft) };
+}
+
+function updateStats() {
+  const s = computeStats();
+  const el = document.getElementById('cottageStats');
+  if (!el) return;
+  const bar = (v, c) => `<div class="stat-track"><div class="stat-fill" style="width:${v * 10}%;background:${c}"></div></div>`;
+  el.innerHTML = `<div class="stat-title">🏠 ${P.houseName}</div>` +
+    `<div class="stat-row"><span class="stat-lbl">Cozy</span>${bar(s.coziness, '#e879f9')}<span class="stat-val">${s.coziness}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Whimsy</span>${bar(s.whimsy, '#a78bfa')}<span class="stat-val">${s.whimsy}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Nature</span>${bar(s.nature, '#4ade80')}<span class="stat-val">${s.nature}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Craft</span>${bar(s.craft, '#f5c842')}<span class="stat-val">${s.craft}</span></div>`;
+}
+
+function sout(m) { document.getElementById('obar').textContent = m; }
+
+/* -------------------------------
+   RIGHT BAR SYNC
+------------------------------- */
+function syncRightBar() {
+  function sv(id, val) { const e = document.getElementById(id); if (e) e.value = val; }
+  function sc(id, val) { const e = document.getElementById(id); if (e) e.checked = val; }
+  function st(id, txt) { const e = document.getElementById(id); if (e) e.textContent = txt; }
+  sv('rb-bodyCol', P.bodyColor);
+  sv('rb-roofCol', P.roofColor);
+  sv('rb-doorCol', P.doorColor);
+  sv('rb-roofStyle', P.roofStyle);
+  sv('rb-roofH', P.roofHeight); st('rb-rhv', P.roofHeight.toFixed(1));
+  sv('rb-doorStyle', P.doorStyle);
+  sv('rb-winCount', P.windowCount); st('rb-wcv', P.windowCount);
+  sv('rb-winStyle', P.windowStyle);
+  sv('rb-towerC', P.towerCount); st('rb-tcv', P.towerCount);
+  sv('rb-flowerC', P.flowerCount); st('rb-fcv', P.flowerCount);
+  sv('rb-treeC', P.treeCount); st('rb-trev', P.treeCount);
+  sc('rb-fairyLights', P.fairyLights);
+  sc('rb-smoke', P.chimneySmoke);
+  sv('rb-gardenS', P.gardenSize); st('rb-gsv', P.gardenSize);
+  sv('rb-mushC', P.mushroomCount); st('rb-mcv', P.mushroomCount);
+  sc('rb-mushHouse', P.mushroomHouse);
+  sv('rb-lanternC', P.lanternCount); st('rb-lanc', P.lanternCount);
+  sv('rb-fenceH', P.fenceHeight); st('rb-fhv', P.fenceHeight);
+}
+
+/* -------------------------------
+   STEPS
+------------------------------- */
+let currentStep = 0;
+const stepDone = new Array(16).fill(false);
+
+function nav(i) { return ''; }
+
+function paramPath(src) {
+  const m = /([A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*)\s*=/.exec(String(src || ''));
+  return m ? m[1] : '';
+}
+
+function paramParse(src) {
+  if (/parseFloat/.test(src)) return 'float';
+  if (/parseInt/.test(src)) return 'int';
+  return 'raw';
+}
+
+function opts(id, options, currentVal, onChange) {
+  const path = paramPath(onChange), parse = paramParse(onChange);
+  return `<div class="opt-grid">${options.map(o =>
+    `<button class="opt-btn${currentVal===o.val?' sel':''}" data-action="selectOpt" data-arg="${o.val}" data-arg2="this" data-arg3="${path}" data-arg4="${parse}">
+      <span class="opt-icon">${o.icon}</span>${o.label}</button>`
+  ).join('')}</div>`;
+}
+
+function swatchRow(id, colours, currentVal, onChange) {
+  const path = paramPath(onChange);
+  return `<div class="swatch-row">${colours.map(c =>
+    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" data-action="selectSwatch" data-arg="${c}" data-arg2="this" data-arg3="${path}"></div>`
+  ).join('')}</div>
+  <div class="custom-colour">
+    <span>Custom:</span>
+    <input type="color" value="${currentVal}" data-action-input="selectSwatch" data-arg="${path}">
+  </div>`;
+}
+
+function setBuilderParam(path, value) {
+  const parts = String(path).split('.');
+  let obj = window[parts[0]];
+  if (!obj) return;
+  for (let i = 1; i < parts.length - 1; i++) obj = obj[parts[i]];
+  obj[parts[parts.length - 1]] = value;
+}
+
+function selectOpt(val, el, path, parse) {
+  if (parse === 'float') val = parseFloat(val);
+  else if (parse === 'int') val = parseInt(val, 10);
+  setBuilderParam(path, val);
+  if (el && el.closest) {
+    const grid = el.closest('.opt-grid');
+    if (grid) grid.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  buildCottage();
+}
+
+function selectSwatch(col, el, path) {
+  setBuilderParam(path, col);
+  if (el && el.closest) {
+    const row = el.closest('.swatch-row');
+    if (row) row.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+    if (row && el.classList.contains('swatch')) el.classList.add('sel');
+  }
+  buildCottage();
+}
+
+const FACTS = {
+  houseName: "Hobbit holes in Tolkien's world were inspired by English countryside cottages with round doors, steep hillsides, and cosy interiors nestled into the landscape.",
+  roofStyle: "Thatch roofs can last 40-60 years when properly maintained, using layers of dried vegetation like straw, reed, or heather.",
+  roofColor: "The traditional red roof tiles of Mediterranean cottages are made from local clay, fired in kilns for durability and weather resistance.",
+  roofHeight: "Steep roofs are common in snowy regions , the angle helps snow slide off rather than accumulating and collapsing the structure.",
+  chimneyHeight: "Medieval chimney designs evolved from simple holes in the roof, allowing smoke to escape while keeping rain out.",
+  chimneySmoke: "The smell of chimney smoke is associated with warmth and home in literature, from Beatrix Potter's tales to Dickens' London.",
+  windowCount: "Cottage windows were historically small to retain heat in winter and keep the interior cool in summer.",
+  windowStyle: "Arched windows became popular in Romanesque architecture and remain a hallmark of storybook cottages worldwide.",
+  doorColor: "The famous blue door of Number 10 Downing Street was chosen in 1807 to make the building easier to spot in London fog.",
+  doorStyle: "Round doors (or 'portal' doors) appear in many fairy tales and are common in traditional Irish and Cornish cottages.",
+  towerCount: "Medieval towers on cottages served as watchpoints for approaching visitors or danger, as well as storage for grain.",
+  towerHeight: "The tallest cottage tower in Europe is the 15th-century Smailholm Tower in Scotland, standing at 20 metres.",
+  gardenSize: "Cottage gardens originated in England and were designed to look natural and informal, mixing flowers, herbs, and vegetables.",
+  fenceHeight: "Stone walls in the Cotswolds were built without mortar , they've stood for centuries using only gravity and careful stacking.",
+  pathStyle: "Roman roads used layered construction , the same principle behind modern cobble paths that last hundreds of years.",
+  flowerCount: "Lavender, roses, and foxglove are classic cottage garden flowers , they attract pollinators and smell wonderful.",
+  mushroomCount: "In fairy tales, mushrooms are often portrayed as seats for fairies or markers of enchanted places in the forest.",
+  lanternCount: "Gas lanterns lit the streets of London from 1807 until electricity replaced them in the early 1900s.",
+  fairyLights: "Fairy lights (or Christmas lights) were first used commercially in 1882 by Edward H. Johnson in New York City.",
+  bridgeCount: "The oldest known stone bridge still in use is the Bridge of Arta in Greece, built in the 17th century.",
+  mushroomHouse: "In folklore, toadstools and mushrooms were believed to be where fairies gathered to dance under the moonlight.",
+  treeCount: "An oak tree can live for over 1,000 years and support hundreds of species of insects, birds, and fungi.",
+};
+
+const QUIZ = [
+  { q: "What is a <strong>thatch roof</strong> made from?", opts: ["Metal sheets", "Dried vegetation like straw or reed", "Glass panels", "Rubber membranes"], a: 1, why: "Thatch uses layers of dried plants , a building technique over 5,000 years old." },
+  { q: "Why do cottage roofs tend to be <strong>steep</strong>?", opts: ["To look taller", "To help rain and snow slide off", "To save materials", "Because builders were lazy"], a: 1, why: "Steep angles prevent water pooling and snow buildup that could collapse the roof." },
+  { q: "What is a <strong>chimney</strong> for?", opts: ["Decoration only", "Letting smoke and hot air escape from the fireplace", "Cooling the house", "Holding up the roof"], a: 1, why: "Chimneys vent smoke from indoor fireplaces, keeping the air breathable inside." },
+  { q: "What are <strong>cottage gardens</strong> known for?", opts: ["Perfectly straight rows", "Natural, informal mix of flowers and herbs", "Only growing vegetables", "Being made of concrete"], a: 1, why: "Cottage gardens embrace a wild, colourful style mixing many plant types together." },
+  { q: "In fairy tales, what do <strong>mushrooms</strong> often represent?", opts: ["Boring plants", "Seats or houses for fairies", "Poisonous food", "Building materials"], a: 1, why: "Mushrooms appear as magical objects in folklore , fairy rings, tiny chairs, and enchanted markers." },
+];
+
+/* -------------------------------
+   STEP DEFINITIONS
+------------------------------- */
+const STEPS = [
+/* 1 */
+{
+  title: 'Name Your Cottage',
+  tag: 'STEP 01 , IDENTITY',
+  intro: `Every fairy tale cottage needs a name. Rose Cottage. Whispering Willows. The Mushroom Rest. What will yours be called? A good name sets the mood for everything that follows.`,
+  boxes: [
+    { t:'box-c', tx:`Hobbit holes in Tolkien's world were inspired by English countryside cottages with round doors, steep hillsides, and cosy interiors nestled into the landscape.` },
+    { t:'box-t', tx:'Keep it under 14 characters for the best look on the stats overlay.' },
+  ],
+  tasks: ['Enter a cottage name', 'Press Apply to lock it in'],
+  html() { return `<input class="name-input" id="cottageName" aria-label="Cottage name" maxlength="20" placeholder="E.G. ROSE COTTAGE" value="${P.houseName==='Rose Cottage'?'':P.houseName}">`; },
+  onApply() { P.houseName = document.getElementById('cottageName')?.value?.trim() || 'Rose Cottage'; buildCottage(); sout('🏡 ' + P.houseName + ' is registered. Now choose a colour!'); document.getElementById('liveStatus').textContent = 'Named!'; }
+},
+/* 2 */
+{
+  title: 'House Colour',
+  tag: 'STEP 02 , COLOUR',
+  intro: `The main body colour of your cottage. Warm timber tones feel cosy. Whitewash feels Mediterranean. Pastel colours feel magical. Choose a colour that tells a story.`,
+  boxes: [
+    { t:'box-c', tx:'English cottages often use local stone or timber, giving them earthy tones. Mediterranean cottages use whitewash with colourful doors. Scandinavian cottages use red paint made from iron oxide.' },
+  ],
+  tasks: ['Choose a house colour'],
+  html() {
+    const o = `(function(c,el){P.bodyColor=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildCottage();})`;
+    return swatchRow('bc', ['#d4a574','#f5e6d3','#ffffff','#c9a87c','#8b6b4a','#a0522d','#deb887','#f0e0c8'], P.bodyColor, o);
+  },
+  onApply() { buildCottage(); sout('House colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+/* 3 */
+{
+  title: 'Roof Style',
+  tag: 'STEP 03 , ROOF',
+  intro: `The roof defines your cottage's character. A pitched roof is classic and practical. A round dome feels like a hobbit house. Thatch is ancient and charming.`,
+  boxes: [
+    { t:'box-c', tx:'Thatch roofs can last 40-60 years when properly maintained, using layers of dried vegetation like straw, reed, or heather.' },
+    { t:'box-t', tx:'Thatch looks the most fairy-tale. Round feels the most hobbit-like. Pitched is the most versatile.' },
+  ],
+  tasks: ['Choose a roof style', 'See how it changes the silhouette'],
+  html() {
+    const o = `(function(v,el){P.roofStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildCottage();})`;
+    return opts('roof', [
+      { val:'pitched', icon:'🔺', label:'Pitched' },
+      { val:'round', icon:'🟡', label:'Round' },
+      { val:'thatch', icon:'🌿', label:'Thatch' },
+    ], P.roofStyle, o);
+  },
+  onApply() { buildCottage(); sout('Roof: ' + P.roofStyle + ' style applied.'); document.getElementById('liveStatus').textContent = 'Roof set!'; }
+},
+/* 4 */
+{
+  title: 'Roof Colour',
+  tag: 'STEP 04 , CONTRAST',
+  intro: `Choose a colour for your roof. Traditional red tiles feel Mediterranean. Dark slate feels English. Natural thatch has its own golden-brown beauty.`,
+  boxes: [
+    { t:'box-t', tx:'Traditional red roof tiles of Mediterranean cottages are made from local clay, fired in kilns for durability and weather resistance.' },
+  ],
+  tasks: ['Choose a roof colour'],
+  html() {
+    const o = `(function(c,el){P.roofColor=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildCottage();})`;
+    return swatchRow('rc', ['#8b1a1a','#4a2828','#2d1f1a','#6b3a2a','#3a5a2d','#2a2a5a','#d4a574','#1a1a1a'], P.roofColor, o);
+  },
+  onApply() { buildCottage(); sout('Roof colour applied!'); document.getElementById('liveStatus').textContent = 'Roof colour set!'; }
+},
+/* 5 */
+{
+  title: 'Roof Height',
+  tag: 'STEP 05 , PROPORTIONS',
+  intro: `How tall should your roof be? A low roof keeps things compact and cosy. A tall roof adds drama and grandeur. The right height depends on the story you're telling.`,
+  boxes: [
+    { t:'box-c', tx:'Steep roofs are common in snowy regions , the angle helps snow slide off rather than accumulating and collapsing the structure.' },
+  ],
+  tasks: ['Adjust the roof height'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Roof Height</span>
+      <input type="range" min="0.5" max="4" step="0.1" value="${P.roofHeight}"
+        data-param="P.roofHeight" data-parse="float" data-display="rhVal" data-fmt="f1" data-rebuild="buildCottage">
+      <span class="slider-val" id="rhVal">${P.roofHeight.toFixed(1)}</span>
+    </div></div>`;
+  },
+  onApply() { buildCottage(); sout('Roof height: ' + P.roofHeight.toFixed(1)); document.getElementById('liveStatus').textContent = 'Height set!'; }
+},
+/* 6 */
+{
+  title: 'Chimney',
+  tag: 'STEP 06 , WARMTH',
+  intro: `A chimney means a fireplace inside , warmth, light, and the smell of wood smoke. Set its height and whether smoke curls from the top. This is the heart of a cosy cottage.`,
+  boxes: [
+    { t:'box-c', tx:'Medieval chimney designs evolved from simple holes in the roof, allowing smoke to escape while keeping rain out.' },
+    { t:'box-t', tx:'The smell of chimney smoke is associated with warmth and home in literature, from Beatrix Potter to Dickens.' },
+  ],
+  tasks: ['Set chimney height', 'Toggle smoke on or off'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Chimney Height</span>
+      <input type="range" min="0.5" max="4" step="0.1" value="${P.chimneyHeight}"
+        data-param="P.chimneyHeight" data-parse="float" data-display="chVal" data-fmt="f1" data-rebuild="buildCottage">
+      <span class="slider-val" id="chVal">${P.chimneyHeight.toFixed(1)}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;padding:8px 0">
+      <span style="font-size:.78rem;color:var(--muted)">Smoke:</span>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:var(--text)">
+        <input type="checkbox" ${P.chimneySmoke?'checked':''} style="width:16px;height:16px;accent-color:var(--acc)" data-param="P.chimneySmoke" data-parse="checked" data-rebuild="buildCottage">
+        Show chimney smoke
+      </label>
+    </div></div>`;
+  },
+  onApply() { buildCottage(); sout('Chimney set. ' + (P.chimneySmoke ? 'Smoke is curling!' : 'No smoke.')); document.getElementById('liveStatus').textContent = 'Chimney set!'; }
+},
+/* 7 */
+{
+  title: 'Door Style',
+  tag: 'STEP 07 , ENTRANCE',
+  intro: `The door is the first thing visitors see. An arch door is classic and elegant. A round door feels like a hobbit house. Double doors say "grand entrance."`,
+  boxes: [
+    { t:'box-c', tx:"Round doors (or 'portal' doors) appear in many fairy tales and are common in traditional Irish and Cornish cottages." },
+    { t:'box-t', tx:'The famous blue door of Number 10 Downing Street was chosen in 1807 to make the building easier to spot in London fog.' },
+  ],
+  tasks: ['Choose a door style', 'Pick a door colour'],
+  html() {
+    const o = `(function(v,el){P.doorStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildCottage();})`;
+    const co = `(function(c,el){P.doorColor=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildCottage();})`;
+    return opts('door', [
+      { val:'arch', icon:'🚪', label:'Arch' },
+      { val:'round', icon:'🟡', label:'Round' },
+      { val:'double', icon:'🚪', label:'Double' },
+    ], P.doorStyle, o) + swatchRow('dc', ['#6b3a2a','#2a1a10','#1a3a5a','#8b1a1a','#2d5a2d','#4a2a6a','#f5f0e0','#1a1a1a'], P.doorColor, co);
+  },
+  onApply() { buildCottage(); sout('Door: ' + P.doorStyle + ' style applied.'); document.getElementById('liveStatus').textContent = 'Door set!'; }
+},
+/* 8 */
+{
+  title: 'Windows',
+  tag: 'STEP 08 , LIGHT',
+  intro: `Windows let light in and views out. Choose how many you want and what style. Arched windows feel storybook. Round windows feel nautical. Square windows feel practical.`,
+  boxes: [
+    { t:'box-c', tx:'Cottage windows were historically small to retain heat in winter and keep the interior cool in summer.' },
+    { t:'box-t', tx:'Arched windows became popular in Romanesque architecture and remain a hallmark of storybook cottages.' },
+  ],
+  tasks: ['Set window count', 'Choose a window style'],
+  html() {
+    const o = `(function(v,el){P.windowStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildCottage();})`;
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Window Count</span>
+      <input type="range" min="0" max="8" step="1" value="${P.windowCount}"
+        data-param="P.windowCount" data-parse="int" data-display="wcVal" data-rebuild="buildCottage">
+      <span class="slider-val" id="wcVal">${P.windowCount}</span>
+    </div></div>` + opts('win', [
+      { val:'arch', icon:'🪟', label:'Arch' },
+      { val:'round', icon:'🔵', label:'Round' },
+      { val:'square', icon:'⬛', label:'Square' },
+    ], P.windowStyle, o);
+  },
+  onApply() { buildCottage(); sout(P.windowCount + ' ' + P.windowStyle + ' windows added.'); document.getElementById('liveStatus').textContent = 'Windows set!'; }
+},
+/* 9 */
+{
+  title: 'Towers',
+  tag: 'STEP 09 , TOWERS',
+  intro: `Add cylindrical towers with conical roofs to your cottage. Towers make it feel like a tiny castle or a wizard's retreat. Each tower has its own window.`,
+  boxes: [
+    { t:'box-c', tx:'Medieval towers on cottages served as watchpoints for approaching visitors or danger, as well as storage for grain.' },
+    { t:'box-t', tx:'The tallest cottage tower in Europe is the 15th-century Smailholm Tower in Scotland, standing at 20 metres.' },
+  ],
+  tasks: ['Choose how many towers to add'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Tower Count</span>
+      <input type="range" min="0" max="3" step="1" value="${P.towerCount}"
+        data-param="P.towerCount" data-parse="int" data-display="tvVal" data-rebuild="buildCottage">
+      <span class="slider-val" id="tvVal">${P.towerCount}</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-lbl">Tower Height</span>
+      <input type="range" min="2" max="7" step="0.5" value="${P.towerHeight}"
+        data-param="P.towerHeight" data-parse="float" data-display="tvhVal" data-rebuild="buildCottage">
+      <span class="slider-val" id="tvhVal">${P.towerHeight}</span>
+    </div></div>`;
+  },
+  onApply() { buildCottage(); sout(P.towerCount ? '🏰 ' + P.towerCount + ' tower(s) added!' : 'No towers, keeping it simple.'); document.getElementById('liveStatus').textContent = 'Towers set!'; }
+},
+/* 10 */
+{
+  title: 'Garden',
+  tag: 'STEP 10 , NATURE',
+  intro: `Surround your cottage with a garden. Adjust the size, add flowers, and scatter mushrooms. A garden brings life and colour to any fairy tale home.`,
+  boxes: [
+    { t:'box-c', tx:'Cottage gardens originated in England and were designed to look natural and informal, mixing flowers, herbs, and vegetables.' },
+    { t:'box-t', tx:'Lavender, roses, and foxglove are classic cottage garden flowers , they attract pollinators and smell wonderful.' },
+  ],
+  tasks: ['Set garden size', 'Add flowers and mushrooms'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Garden Size</span>
+      <input type="range" min="0" max="6" step="0.5" value="${P.gardenSize}"
+        data-param="P.gardenSize" data-parse="float" data-display="gsVal" data-rebuild="buildCottage">
+      <span class="slider-val" id="gsVal">${P.gardenSize}</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-lbl">Flowers</span>
+      <input type="range" min="0" max="30" step="1" value="${P.flowerCount}"
+        data-param="P.flowerCount" data-parse="int" data-display="fvVal" data-rebuild="buildCottage">
+      <span class="slider-val" id="fvVal">${P.flowerCount}</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-lbl">Mushrooms</span>
+      <input type="range" min="0" max="15" step="1" value="${P.mushroomCount}"
+        data-param="P.mushroomCount" data-parse="int" data-display="mvVal" data-rebuild="buildCottage">
+      <span class="slider-val" id="mvVal">${P.mushroomCount}</span>
+    </div></div>`;
+  },
+  onApply() { buildCottage(); sout('Garden set. Size: ' + P.gardenSize + ', Flowers: ' + P.flowerCount); document.getElementById('liveStatus').textContent = 'Garden set!'; }
+},
+/* 11 */
+{
+  title: 'Fence',
+  tag: 'STEP 11 , BOUNDARY',
+  intro: `Add a rustic wooden fence around your garden. It marks the edge of your cottage's world and keeps the fairy tale creatures inside (or out).`,
+  boxes: [
+    { t:'box-c', tx:'Stone walls in the Cotswolds were built without mortar , they have stood for centuries using only gravity and careful stacking.' },
+    { t:'box-t', tx:'Set fence height to 0 for no fence , an open garden feels more wild and natural.' },
+  ],
+  tasks: ['Adjust fence height'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Fence Height</span>
+      <input type="range" min="0" max="2" step="0.1" value="${P.fenceHeight}"
+        data-param="P.fenceHeight" data-parse="float" data-display="fhVal" data-rebuild="buildCottage">
+      <span class="slider-val" id="fhVal">${P.fenceHeight}</span>
+    </div></div>`;
+  },
+  onApply() { buildCottage(); sout(P.fenceHeight > 0 ? 'Fence height: ' + P.fenceHeight : 'No fence, open garden.'); document.getElementById('liveStatus').textContent = 'Fence set!'; }
+},
+/* 12 */
+{
+  title: 'Path Style',
+  tag: 'STEP 12 , JOURNEY',
+  intro: `A path leads from the door to the garden gate. Stone is classic. Cobble is rustic. Dirt is natural and simple. The path invites visitors to your cottage.`,
+  boxes: [
+    { t:'box-c', tx:'Roman roads used layered construction , the same principle behind modern cobble paths that last hundreds of years.' },
+  ],
+  tasks: ['Choose a path style'],
+  html() {
+    const o = `(function(v,el){P.pathStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildCottage();})`;
+    return opts('path', [
+      { val:'stone', icon:'🪨', label:'Stone' },
+      { val:'cobble', icon:'🧱', label:'Cobble' },
+      { val:'dirt', icon:'🟤', label:'Dirt' },
+    ], P.pathStyle, o);
+  },
+  onApply() { buildCottage(); sout('Path style: ' + P.pathStyle + '.'); document.getElementById('liveStatus').textContent = 'Path set!'; }
+},
+/* 13 */
+{
+  title: 'Lanterns & Lights',
+  tag: 'STEP 13 , GLOW',
+  intro: `Place lanterns along the garden path and add fairy lights to the roofline. These will glow warmly when you activate the cottage in the final step.`,
+  boxes: [
+    { t:'box-c', tx:'Gas lanterns lit the streets of London from 1807 until electricity replaced them in the early 1900s.' },
+    { t:'box-t', tx:'Fairy lights were first used commercially in 1882 by Edward H. Johnson in New York City.' },
+  ],
+  tasks: ['Set lantern count', 'Toggle fairy lights'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Lanterns</span>
+      <input type="range" min="0" max="10" step="1" value="${P.lanternCount}"
+        data-param="P.lanternCount" data-parse="int" data-display="lvVal" data-rebuild="buildCottage">
+      <span class="slider-val" id="lvVal">${P.lanternCount}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;padding:8px 0">
+      <span style="font-size:.78rem;color:var(--muted)">Lights:</span>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:var(--text)">
+        <input type="checkbox" ${P.fairyLights?'checked':''} style="width:16px;height:16px;accent-color:var(--acc)" data-param="P.fairyLights" data-parse="checked" data-rebuild="buildCottage">
+        Add fairy lights
+      </label>
+    </div></div>`;
+  },
+  onApply() { buildCottage(); sout(P.lanternCount + ' lantern(s) placed. ' + (P.fairyLights ? 'Fairy lights on!' : 'No fairy lights.')); document.getElementById('liveStatus').textContent = 'Lights set!'; }
+},
+/* 14 */
+{
+  title: 'Trees & Mushroom House',
+  tag: 'STEP 14 , DETAILS',
+  intro: `Add trees to frame your cottage and optionally a tiny mushroom house for the fairies. These finishing touches bring your scene to life.`,
+  boxes: [
+    { t:'box-c', tx:'An oak tree can live for over 1,000 years and support hundreds of species of insects, birds, and fungi.' },
+    { t:'box-t', tx:'In folklore, mushrooms were believed to be where fairies gathered to dance under the moonlight.' },
+  ],
+  tasks: ['Set tree count', 'Toggle mushroom house'],
+  html() {
+    return `<div style="padding:6px 0"><div class="slider-row">
+      <span class="slider-lbl">Trees</span>
+      <input type="range" min="0" max="10" step="1" value="${P.treeCount}"
+        data-param="P.treeCount" data-parse="int" data-display="treeVal" data-rebuild="buildCottage">
+      <span class="slider-val" id="treeVal">${P.treeCount}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;padding:8px 0">
+      <span style="font-size:.78rem;color:var(--muted)">Mushroom House:</span>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.78rem;color:var(--text)">
+        <input type="checkbox" ${P.mushroomHouse?'checked':''} style="width:16px;height:16px;accent-color:var(--acc)" data-param="P.mushroomHouse" data-parse="checked" data-rebuild="buildCottage">
+        Add fairy mushroom house
+      </label>
+    </div></div>`;
+  },
+  onApply() { buildCottage(); sout(P.treeCount + ' tree(s). ' + (P.mushroomHouse ? 'Mushroom house added!' : 'No mushroom house.')); document.getElementById('liveStatus').textContent = 'Trees set!'; }
+},
+/* 15 */
+{
+  title: 'Stats & Preview',
+  tag: 'STEP 15 , OVERVIEW',
+  intro: `Take a moment to admire your cottage. The stats overlay shows how cosy, whimsical, natural, and crafty your creation is. Orbit around and appreciate every detail.`,
+  boxes: [
+    { t:'box-r', tx:'Your cottage is almost complete. Take a moment to orbit around the 3D preview and see it from every angle.' },
+    { t:'box-t', tx:'Go back to any step using the sidebar to tweak colours, add more flowers, or adjust the roof.' },
+  ],
+  tasks: ['Review your cottage stats', 'Orbit around the 3D view'],
+  html() {
+    const s = computeStats();
+    return `<div style="padding:8px 0">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--acc-lt);letter-spacing:.06em;margin-bottom:8px">${P.houseName}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.7rem">
+        <div style="background:rgba(232,121,249,.08);border:1px solid rgba(232,121,249,.2);border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:1.4rem;color:var(--acc-lt)">${s.coziness}</div>
+          <div style="color:var(--muted);font-size:.6rem">Coziness</div>
+        </div>
+        <div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:1.4rem;color:#a78bfa">${s.whimsy}</div>
+          <div style="color:var(--muted);font-size:.6rem">Whimsy</div>
+        </div>
+        <div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:1.4rem;color:#4ade80">${s.nature}</div>
+          <div style="color:var(--muted);font-size:.6rem">Nature</div>
+        </div>
+        <div style="background:rgba(245,200,66,.08);border:1px solid rgba(245,200,66,.2);border-radius:6px;padding:8px;text-align:center">
+          <div style="font-size:1.4rem;color:#f5c842">${s.craft}</div>
+          <div style="color:var(--muted);font-size:.6rem">Craft</div>
+        </div>
+      </div>
+    </div>`;
+  },
+  onApply() { sout('Stats reviewed. Ready to light the lanterns!'); document.getElementById('liveStatus').textContent = 'Stats ready!'; }
+},
+/* 16 */
+{
+  title: 'Light the Lanterns!',
+  tag: 'STEP 16 , ENCHANTMENT',
+  intro: `The sun is setting. It's time to light the lanterns, watch the fairy lights glow, and see fireflies dance around your cottage. Welcome home.`,
+  boxes: [
+    { t:'box-r', tx:'✨ The lanterns glow warm. The fairy lights twinkle. Fireflies drift through the garden. Your cottage is magical.' },
+    { t:'box-c', tx:'Hit 💾 Save in the header to keep your design. Hit 🎲 Random for a surprise cottage. Hit 📦 GLB to download your cottage as a 3D file.' },
+  ],
+  tasks: ['Press Activate and watch your cottage come alive!'],
+  html() {
+    const s = computeStats();
+    return `<div style="text-align:center;padding:8px 0">
+      <div style="font-size:2.4rem;margin-bottom:7px">✨</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">${P.houseName}</div>
+      <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">Cozy: ${s.coziness} · Whimsy: ${s.whimsy} · Nature: ${s.nature} · Craft: ${s.craft}</div>
+    </div>
+    <button class="run-btn" style="font-size:1rem;padding:12px" data-action="activateCottage">✨ LIGHT THE LANTERNS!</button>`;
+  },
+  onApply() { activateCottage(); }
+},
+];
+
+/* -------------------------------
+   ACTIVATE COTTAGE
+------------------------------- */
+function activateCottage() {
+  P.activated = true;
+  if(window.builderTrack)builderTrack('activate');
+  buildCottage();
+  // Fireflies
+  fireflyParticles = [];
+  for (let i = 0; i < 15; i++) {
+    const fGeo = new THREE.SphereGeometry(0.02, 4, 4);
+    const fMat = new THREE.MeshBasicMaterial({ color: 0xffff88, transparent: true, opacity: 0.6 });
+    const fMesh = new THREE.Mesh(fGeo, fMat);
+    const bx = (Math.random() - 0.5) * 6;
+    const by = 0.5 + Math.random() * 3;
+    const bz = (Math.random() - 0.5) * 6;
+    fMesh.position.set(bx, by, bz);
+    scene.add(fMesh);
+    fireflyParticles.push({ mesh: fMesh, baseX: bx, baseY: by, baseZ: bz, phase: Math.random() * Math.PI * 2 });
+  }
+  sout('✨ ' + P.houseName + ' is magical!');
+  document.getElementById('liveStatus').textContent = 'Enchanted! ✨';
+  document.getElementById('sceneHint').textContent = 'Drag to orbit · Fireflies dancing...';
+  stepDone[STEPS.length - 1] = true;
+  updateProgress();
+  renderStep();
+}
+
+/* -------------------------------
+   NAVIGATION
+------------------------------- */
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i;
+  renderStep();
+  updateProgress();
+  const items = document.querySelectorAll('.si');
+  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+  document.getElementById('navPrev').disabled = (i === 0);
+  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
+  toast(STEPS[i].title);
+}
+
+function renderStep() {
+  const s = STEPS[currentStep];
+  const body = document.getElementById('stepBody');
+  let html = `<div class="step-tag">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <div class="step-intro">${s.intro}</div>`;
+  (s.boxes || []).forEach(b => { html += `<div class="box ${b.t}">${b.tx}</div>`; });
+  html += s.html ? s.html() : '';
+  if (s.tasks) {
+    html += `<div class="task-list">${s.tasks.map(t => {
+      const done = stepDone[currentStep];
+      return `<div class="task-item${done?' done':''}"><div class="task-dot"></div>${t}</div>`;
+    }).join('')}</div>`;
+  }
+  if (!s.html || !s.html().includes('run-btn')) {
+    html += `<button class="run-btn" data-action="applyStep" data-arg="${currentStep}">✨ Apply to Cottage</button>`;
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.si').forEach((el, i) => el.classList.toggle('active', i === currentStep));
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true;
+  renderStep();
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = stepDone.filter(Boolean).length;
+  const pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progCt').textContent = done + ' / 16 steps';
+  document.querySelectorAll('.si').forEach((el, i) => {
+    el.classList.toggle('done', stepDone[i]);
+    el.classList.toggle('active', i === currentStep);
+    const sn = el.querySelector('.sn');
+    if (sn) sn.textContent = stepDone[i] ? '✓' : (i + 1);
+  });
+}
+
+/* -------------------------------
+   QUICK BUILD
+------------------------------- */
+function quickBuild() {
+  P.houseName = 'Willow Rest';
+  P.bodyColor = '#e8d5b8'; P.roofColor = '#5a2d1a';
+  P.roofStyle = 'thatch'; P.roofHeight = 2.5;
+  P.chimneyHeight = 2; P.chimneySmoke = true;
+  P.windowCount = 4; P.windowStyle = 'arch';
+  P.doorColor = '#4a2a1a'; P.doorStyle = 'arch';
+  P.towerCount = 1; P.towerHeight = 5;
+  P.gardenSize = 3; P.fenceHeight = 0.6;
+  P.pathStyle = 'stone';
+  P.flowerCount = 18; P.mushroomCount = 8;
+  P.lanternCount = 6; P.fairyLights = true;
+  P.bridgeCount = 0; P.mushroomHouse = true;
+  P.treeCount = 5; P.activated = false;
+  buildCottage();
+  sout('⚡ Quick build: Willow Rest is ready!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+  toast('Quick build: Willow Rest loaded!');
+}
+
+/* -------------------------------
+   RANDOM BUILD
+------------------------------- */
+function randomCottage() {
+  const rnd = (mn, mx) => Math.round((mn + Math.random() * (mx - mn)) * 10) / 10;
+  const roofs = ['pitched', 'round', 'thatch'];
+  const doorStyles = ['arch', 'round', 'double'];
+  const winStyles = ['arch', 'round', 'square'];
+  const pathStyles = ['stone', 'cobble', 'dirt'];
+  const names = ['Foxglove End', 'Honeysuckle Cottage', 'Moonlit Rest', 'Thistlewood', 'Bramble Gate', 'Clover Knoll', 'Dewdrop Inn', 'Ivy Hollow', 'Starlight Nook', 'Hazelwood'];
+  Object.assign(P, {
+    houseName: names[Math.floor(Math.random() * names.length)],
+    bodyColor: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'),
+    roofColor: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'),
+    roofStyle: roofs[Math.floor(Math.random() * roofs.length)],
+    roofHeight: rnd(1, 3.5),
+    chimneyHeight: rnd(0.5, 3),
+    chimneySmoke: Math.random() > 0.3,
+    windowCount: Math.round(1 + Math.random() * 6),
+    windowStyle: winStyles[Math.floor(Math.random() * winStyles.length)],
+    doorColor: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'),
+    doorStyle: doorStyles[Math.floor(Math.random() * doorStyles.length)],
+    towerCount: Math.round(Math.random() * 2),
+    towerHeight: rnd(3, 6),
+    gardenSize: rnd(1, 5),
+    fenceHeight: Math.random() > 0.3 ? rnd(0.3, 1.5) : 0,
+    pathStyle: pathStyles[Math.floor(Math.random() * pathStyles.length)],
+    flowerCount: Math.round(3 + Math.random() * 25),
+    mushroomCount: Math.round(Math.random() * 12),
+    lanternCount: Math.round(1 + Math.random() * 8),
+    fairyLights: Math.random() > 0.3,
+    bridgeCount: Math.random() > 0.7 ? 1 : 0,
+    mushroomHouse: Math.random() > 0.5,
+    treeCount: Math.round(1 + Math.random() * 8),
+    activated: false,
+  });
+  buildCottage(); updateStats(); syncRightBar(); toast('Random cottage generated!');
+  if(window.builderTrack)builderTrack('random_build');
+}
+
+/* -------------------------------
+   SAVE / LOAD
+------------------------------- */
+function getSaves() { try { return JSON.parse(localStorage.getItem('cottageSaves') || '{}'); } catch { return {}; } }
+function setSaves(s) { localStorage.setItem('cottageSaves', JSON.stringify(s)); }
+
+function openSaveModal() {
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-lt);margin-bottom:12px">Save Cottage</h2><input type="text" id="cottageSaveName" placeholder="Name your cottage..." value="${P.houseName}" style="width:100%;padding:8px 12px;background:var(--bg3);border:1px solid rgba(232,121,249,.3);border-radius:7px;color:var(--acc-lt);font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.06em;outline:none;margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button data-on="closeModal" data-on-plain style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Cancel</button><button data-action="doCottageSave" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">Save</button></div>`;
+  modal.classList.add('open');
+  setTimeout(() => { const inp = document.getElementById('cottageSaveName'); if (inp) inp.focus(); }, 100);
+}
+
+function openLoadModal() {
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  const sv = getSaves(), ks = Object.keys(sv);
+  let h = '';
+  if (!ks.length) h = '<p style="color:var(--muted);font-size:.8rem;padding:8px 0">No saved cottages yet.</p>';
+  else h = '<div style="max-height:180px;overflow-y:auto;margin-bottom:12px">' + ks.map(k => {
+    const d = new Date(sv[k].date).toLocaleDateString();
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s" data-hover="background:rgba(232,121,249,.05)" data-hover-out="background:transparent" data-action="doCottageLoad" data-arg="${k.replace(/'/g, '&#39;')}"><div><div style="font-size:.82rem;color:var(--text)">${k}</div><div style="font-family:JetBrains Mono,monospace;font-size:.55rem;color:var(--muted)">${d}</div></div><button data-action="doCottageDel" data-arg="${k.replace(/'/g, '&#39;')}" data-stop style="background:none;border:none;color:#f87171;cursor:pointer;font-size:.9rem;padding:2px 5px">✕</button></div>`;
+  }).join('') + '</div>';
+  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-lt);margin-bottom:12px">Load Cottage</h2>${h}<div style="display:flex;justify-content:flex-end"><button data-on="closeModal" data-on-plain style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button></div>`;
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  const modal = document.getElementById('modalOverlay');
+  if (modal) modal.classList.remove('open');
+}
+
+function doCottageSave() {
+  const inp = document.getElementById('cottageSaveName');
+  if (!inp) return;
+  const n = inp.value.trim();
+  if (!n) return;
+  const sv = getSaves();
+  sv[n] = { params: { ...P }, step: currentStep, date: Date.now() };
+  setSaves(sv);
+  closeModal();
+  if(window.builderTrack)builderTrack('save');
+  toast('Cottage saved!');
+}
+
+function doCottageLoad(n) {
+  const sv = getSaves();
+  if (!sv[n]) return;
+  Object.assign(P, sv[n].params);
+  currentStep = sv[n].step || 0;
+  P.activated = false;
+  closeModal();
+  buildCottage();
+  renderStep();
+  updateProgress();
+  syncRightBar();
+  toast('Loaded: ' + n);
+}
+
+function doCottageDel(n) {
+  const sv = getSaves();
+  delete sv[n];
+  setSaves(sv);
+  openLoadModal();
+}
+
+/* -------------------------------
+   TOAST
+------------------------------- */
+function toast(m) {
+  let t = document.getElementById('cottageToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'cottageToast';
+    t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(15,8,24,.92);border:1px solid rgba(232,121,249,.35);padding:8px 22px;font-family:Bebas Neue,sans-serif;font-size:.9rem;letter-spacing:.06em;color:var(--acc-lt);border-radius:8px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  t.textContent = m;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+}
+
+/* -------------------------------
+   KEYBOARD NAV
+------------------------------- */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < STEPS.length - 1) go(currentStep + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) go(currentStep - 1); }
+  if (e.key === 'Escape') closeModal();
+});
+
+/* -------------------------------
+   INIT
+------------------------------- */
+function init() {
+  const listEl = document.getElementById('stepList');
+  STEPS.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'si' + (i === 0 ? ' active' : '');
+    item.innerHTML = `<div class="sn">${i + 1}</div><div class="sl">${s.title}</div>`;
+    item.onclick = () => go(i);
+    listEl.appendChild(item);
+  });
+
+  document.getElementById('navPrev').disabled = true;
+  document.getElementById('navNext').disabled = false;
+
+  buildCottage();
+  renderStep();
+  updateStats();
+  syncRightBar();
+  const modal = document.getElementById('modalOverlay');
+  if (modal) modal.addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+}
+
+init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const COTTAGE_TEMPLATES = [
+  { id: 'willow', emoji: '🌿', name: 'Willow Rest', note: 'Thatch roof, mushroom house and starry lights  -  the quick-build favourite.',
+    data: { houseName: 'Willow Rest', bodyColor: '#e8d5b8', roofColor: '#5a2d1a', roofStyle: 'thatch', roofHeight: 2.5, chimneyHeight: 2, chimneySmoke: true, windowCount: 4, windowStyle: 'arch', doorColor: '#4a2a1a', doorStyle: 'arch', towerCount: 1, towerHeight: 5, gardenSize: 3, fenceHeight: 0.6, pathStyle: 'stone', flowerCount: 18, mushroomCount: 8, lanternCount: 6, fairyLights: true, bridgeCount: 0, mushroomHouse: true, treeCount: 5, activated: false } },
+  { id: 'rose', emoji: '🌹', name: 'Rose Cottage', note: 'Pitched red roof and a neat stone path.',
+    data: { houseName: 'Rose Cottage', bodyColor: '#d4a574', roofColor: '#8b1a1a', roofStyle: 'pitched', roofHeight: 2, chimneyHeight: 2, chimneySmoke: true, windowCount: 3, windowStyle: 'arch', doorColor: '#6b3a2a', doorStyle: 'arch', towerCount: 0, towerHeight: 4, gardenSize: 2, fenceHeight: 0.5, pathStyle: 'stone', flowerCount: 12, mushroomCount: 6, lanternCount: 4, fairyLights: true, bridgeCount: 0, mushroomHouse: false, treeCount: 4, activated: false } },
+  { id: 'foxglove', emoji: '🦊', name: 'Foxglove End', note: 'Round roof, cobble path and lots of flowers.',
+    data: { houseName: 'Foxglove End', bodyColor: '#f0d9b5', roofColor: '#a16207', roofStyle: 'round', roofHeight: 2.2, chimneyHeight: 1.8, chimneySmoke: false, windowCount: 3, windowStyle: 'round', doorColor: '#78350f', doorStyle: 'round', towerCount: 0, towerHeight: 4, gardenSize: 2.5, fenceHeight: 0.5, pathStyle: 'cobble', flowerCount: 20, mushroomCount: 4, lanternCount: 5, fairyLights: true, bridgeCount: 1, mushroomHouse: false, treeCount: 3, activated: false } },
+  { id: 'thistle', emoji: '🌸', name: 'Thistlewood', note: 'Mossy greens and a little tower for the view.',
+    data: { houseName: 'Thistlewood', bodyColor: '#cbd5a0', roofColor: '#3f6212', roofStyle: 'pitched', roofHeight: 2.4, chimneyHeight: 2.2, chimneySmoke: true, windowCount: 4, windowStyle: 'square', doorColor: '#365314', doorStyle: 'arch', towerCount: 1, towerHeight: 6, gardenSize: 3, fenceHeight: 0.7, pathStyle: 'dirt', flowerCount: 14, mushroomCount: 10, lanternCount: 4, fairyLights: false, bridgeCount: 0, mushroomHouse: true, treeCount: 6, activated: false } },
+  { id: 'moonlit', emoji: '🌙', name: 'Moonlit Rest', note: 'Blue-grey walls and lanterns that glow at dusk.',
+    data: { houseName: 'Moonlit Rest', bodyColor: '#cbd5e1', roofColor: '#334155', roofStyle: 'pitched', roofHeight: 2.2, chimneyHeight: 2, chimneySmoke: true, windowCount: 3, windowStyle: 'arch', doorColor: '#1e293b', doorStyle: 'arch', towerCount: 0, towerHeight: 4, gardenSize: 2, fenceHeight: 0.5, pathStyle: 'stone', flowerCount: 10, mushroomCount: 6, lanternCount: 8, fairyLights: true, bridgeCount: 0, mushroomHouse: false, treeCount: 4, activated: false } },
+  { id: 'bramble', emoji: '🍄', name: 'Bramble Gate', note: 'Cottage plus bridge and a cluster of toadstools.',
+    data: { houseName: 'Bramble Gate', bodyColor: '#e7d6a8', roofColor: '#92400e', roofStyle: 'thatch', roofHeight: 2.6, chimneyHeight: 1.5, chimneySmoke: false, windowCount: 5, windowStyle: 'arch', doorColor: '#78350f', doorStyle: 'double', towerCount: 0, towerHeight: 4, gardenSize: 3.5, fenceHeight: 0.6, pathStyle: 'cobble', flowerCount: 22, mushroomCount: 12, lanternCount: 6, fairyLights: true, bridgeCount: 1, mushroomHouse: true, treeCount: 5, activated: false } }
+];
+
+function loadCottageTemplate(t) {
+  Object.assign(P, t.data, { activated: false });
+  buildCottage(); updateStats(); syncRightBar();
+  sout('Template loaded: ' + t.data.houseName + '. Change anything, then export.');
+  toast('Template: ' + t.data.houseName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: COTTAGE_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadCottageTemplate(t); } }; }),
+    random: randomCottage,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+// STATE HOOKS (share / reload)
+window._builderGetState = function () { return { params: JSON.parse(JSON.stringify(P)), step: currentStep }; };
+window._builderSetState = function (s) {
+  if (s && s.params) Object.assign(P, s.params);
+  if (s && typeof s.step === 'number') currentStep = s.step;
+  buildCottage(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+  if (window.builderScheduleAutoSave) window.builderScheduleAutoSave();
+};
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Fairy Tale Builder',
+    units: 'm',
+    accent: '#e879f9',
+    getGroup: function () { return cottageGroup; },
+    getName: function () { return P.houseName || 'cottage'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
+function goPrev(){go(currentStep-1)}
+function goNext(){go(currentStep+1)}
+
+  try { window.randomCottage = randomCottage; } catch (e) { /* not a local handler */ }
+  try { window.openSaveModal = openSaveModal; } catch (e) { /* not a local handler */ }
+  try { window.openLoadModal = openLoadModal; } catch (e) { /* not a local handler */ }
+  try { window.quickBuild = quickBuild; } catch (e) { /* not a local handler */ }
+  try { window.goPrev = goPrev; } catch (e) { /* not a local handler */ }
+  try { window.goNext = goNext; } catch (e) { /* not a local handler */ }
+  try { window.activateCottage = activateCottage; } catch (e) { /* not a local handler */ }
+  try { window.closeModal = closeModal; } catch (e) { /* not a local handler */ }
+  try { window.selectOpt = selectOpt; } catch (e) { /* not a local handler */ }
+  try { window.selectSwatch = selectSwatch; } catch (e) { /* not a local handler */ }
+  try { window.applyStep = applyStep; } catch (e) { /* not a local handler */ }
+  try { window.doCottageSave = doCottageSave; } catch (e) { /* not a local handler */ }
+  try { window.doCottageLoad = doCottageLoad; } catch (e) { /* not a local handler */ }
+  try { window.doCottageDel = doCottageDel; } catch (e) { /* not a local handler */ }
+  } finally {
+    window.addEventListener = winAdd;
+    document.addEventListener = docAdd;
+    window.requestAnimationFrame = origRaf;
+  }
+
+  return function unmount() {
+    try { ac.abort(); } catch (e) {}
+    rafs.forEach(function (id) { try { cancelAnimationFrame(id); } catch (e) {} });
+    window._builderGetState = null;
+    window._builderApplyState = null;
+    window._builderSetState = null;
+    try { delete window.randomCottage; } catch (e) {}
+    try { delete window.openSaveModal; } catch (e) {}
+    try { delete window.openLoadModal; } catch (e) {}
+    try { delete window.quickBuild; } catch (e) {}
+    try { delete window.goPrev; } catch (e) {}
+    try { delete window.goNext; } catch (e) {}
+    try { delete window.activateCottage; } catch (e) {}
+    try { delete window.closeModal; } catch (e) {}
+    try { delete window.selectOpt; } catch (e) {}
+    try { delete window.selectSwatch; } catch (e) {}
+    try { delete window.applyStep; } catch (e) {}
+    try { delete window.doCottageSave; } catch (e) {}
+    try { delete window.doCottageLoad; } catch (e) {}
+    try { delete window.doCottageDel; } catch (e) {}
+    try { delete window.P; } catch (e) {}
+    stage.remove();
+    sheet.remove();
+  };
+}
