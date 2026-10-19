@@ -1,0 +1,1471 @@
+/* assets/js/builders/phone-stand.js
+ * Phone Stand preset module for the 3D Builder shell (workshops/3d-builder.html).
+ * Extracted from workshops/phone-stand-builder.html: mount(container) injects the
+ * builder markup + CSS, runs the original builder core in a guarded scope
+ * (window/document listeners and animation frames are tracked so unmount() can
+ * tear it down), and exposes only the data-on/data-action handlers the shared
+ * delegation needs. No other builder internals leak (module scope).
+ */
+export const ID = 'phone-stand';
+export const LABEL = 'Phone Stand';
+export const STYLES = ['../style-workshop-phone-stand-builder.css?v=17'];
+const HTML = "<div id=\"app\">\n\n  <header class=\"hdr\">\n    <h1 class=\"logo\">📱 Phone Stand Builder</h1>\n<div class=\"callout tip\" style=\"border-left:3px solid #22c55e;background:rgba(34,197,94,.07);\"><div class=\"callout-icon\">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of every step in this workshop: <a href=\"/downloads/phone-stand-builder-reference.zip\" download style=\"color:#16a34a;font-weight:800;text-decoration:underline;\">⬇ phone-stand-builder-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>\n\n    <div class=\"hdr-right\">\n      <a href=\"../pages/workshop.html\" class=\"back-link\">← Workshop</a><a href=\"../pages/3d-builders.html\" class=\"back-link\" style=\"margin-left:8px\">🏗️ All Builders</a>\n      <button class=\"quick-btn\" data-on=\"randomBuild\" data-on-plain style=\"background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764\">🎲 Random</button>\n      <button class=\"quick-btn\" data-on=\"exportPNG\" data-on-plain style=\"background:linear-gradient(135deg,#0891b2,#155e75);box-shadow:0 3px 0 #164e63\">📷 PNG</button>\n      <button class=\"quick-btn\" data-on=\"openSaveModal\" data-on-plain style=\"background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03\">💾 Save</button>\n      <button class=\"quick-btn\" data-on=\"openLoadModal\" data-on-plain style=\"background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006\">📂 Load</button>\n      <button class=\"quick-btn\" data-on=\"quickBuild\" data-on-plain>⚡ Quick Build</button>\n    </div>\n  </header>\n  <!-- ── Ember Tip Bar ── -->\n  <div class=\"ember-builder-bar\" id=\"emberBar\" style=\"--ca-rgb:34,197,94\">\n    <svg viewBox=\"0 0 80 90\" width=\"26\" height=\"29\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\">\n      <path d=\"M20 52 Q10 80 15 88 H65 Q70 80 60 52 Q50 60 40 60 Q30 60 20 52Z\" fill=\"#12102a\"/>\n      <ellipse cx=\"40\" cy=\"36\" rx=\"16\" ry=\"17\" fill=\"#8B5CF6\"/>\n      <polygon points=\"24,22 19,8 30,18\" fill=\"#7C3AED\"/>\n      <polygon points=\"56,22 61,8 50,18\" fill=\"#7C3AED\"/>\n      <ellipse cx=\"40\" cy=\"40\" rx=\"10\" ry=\"8\" fill=\"#DDD6FE\"/>\n      <ellipse cx=\"35\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <ellipse cx=\"45\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <circle cx=\"36\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <circle cx=\"46\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <ellipse cx=\"40\" cy=\"39\" rx=\"2\" ry=\"1.4\" fill=\"#7C3AED\"/>\n    </svg>\n    <span><strong style=\"color:#22c55e\">Ember says:</strong> Set your <strong>phone model</strong> in step 1 , it calibrates the viewing angle and cable slot precisely. <strong>Export STL</strong> at the end for 3D printing!</span>\n    <button class=\"ember-bar-dismiss\" aria-label=\"Dismiss tip\" data-session-set=\"ember-bar-phone-stand-builder:1\" data-remove-id=\"emberBar\">✕</button>\n  </div>\n\n  <!-- ── /Ember Tip Bar ── -->\n\n  <div id=\"sidebar\">\n    <div class=\"prog-section\">\n      <div class=\"prog-lbl\">Build Progress</div>\n      <div class=\"prog-track\"><div class=\"prog-fill\" id=\"progFill\" style=\"width:3%\"></div></div>\n      <div class=\"prog-ct\" id=\"progCt\">0 / 14 steps</div>\n    </div>\n    <div class=\"slist\" id=\"stepList\"></div>\n    <div class=\"cpan\" id=\"stepBody\"></div>\n    <div class=\"snav\">\n      <button class=\"btn-p\" id=\"navPrev\" data-on=\"goPrev\" data-on-plain disabled aria-label=\"Previous step\">← Back</button>\n      <button class=\"btn-n\" id=\"navNext\" data-on=\"goNext\" data-on-plain aria-label=\"Next step\">Next →</button>\n    </div>\n  </div>\n\n  <div id=\"viewport\">\n    <div class=\"scene-top\">\n      <span class=\"scene-top-l\">🔍 Live 3D Preview</span>\n      <div class=\"scene-top-r\">\n        <div class=\"live-wrap\"><span class=\"live-dot\"></span><span id=\"liveStatus\" aria-live=\"polite\">Apply Step 1 to begin</span></div>\n      </div>\n    </div>\n    <div class=\"scene-wrap\">\n      <canvas id=\"standCanvas\" role=\"application\" aria-label=\"3D phone stand preview viewport\"></canvas>\n      <div class=\"stand-stats\" id=\"standStats\"></div>\n      <div class=\"vhint\" id=\"sceneHint\">Drag to orbit · Scroll to zoom</div>\n      <div class=\"dims\" id=\"dimsOverlay\">\n        <div style=\"font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.06em;color:var(--text);margin-bottom:2px\" id=\"sName\">UNNAMED</div>\n        <div>Style&nbsp;<span id=\"sStyle\">-</span></div>\n        <div>Width&nbsp;<span id=\"sWidth\">-</span></div>\n        <div>Depth&nbsp;<span id=\"sDepth\">-</span></div>\n        <div>Height&nbsp;<span id=\"sHeight\">-</span></div>\n        <div>Angle&nbsp;<span id=\"sAngle\">-</span></div>\n      </div>\n    </div>\n    <div class=\"obar\" id=\"obar\" aria-live=\"polite\">📐 Choose a stand style to start building</div>\n  </div>\n\n  <div id=\"rightbar\" aria-label=\"Quick controls\">\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">📐 Quick Dimensions</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-w\">Width</label>\n        <input type=\"range\" min=\"80\" max=\"150\" step=\"1\" value=\"100\" id=\"rb-w\"\n          data-bind=\"P.standWidth\" data-bind-type=\"int\" data-bind-display=\"rb-wv\" data-then=\"buildStand\">\n        <span class=\"rv\" id=\"rb-wv\">100mm</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-d\">Depth</label>\n        <input type=\"range\" min=\"60\" max=\"120\" step=\"1\" value=\"80\" id=\"rb-d\"\n          data-bind=\"P.standDepth\" data-bind-type=\"int\" data-bind-display=\"rb-dv\" data-then=\"buildStand\">\n        <span class=\"rv\" id=\"rb-dv\">80mm</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-h\">Height</label>\n        <input type=\"range\" min=\"40\" max=\"100\" step=\"1\" value=\"60\" id=\"rb-h\"\n          data-bind=\"P.standHeight\" data-bind-type=\"int\" data-bind-display=\"rb-hv\" data-then=\"buildStand\">\n        <span class=\"rv\" id=\"rb-hv\">60mm</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-a\">Angle</label>\n        <input type=\"range\" min=\"30\" max=\"80\" step=\"1\" value=\"60\" id=\"rb-a\"\n          data-bind=\"P.angle\" data-bind-type=\"int\" data-bind-display=\"rb-av\" data-then=\"buildStand\">\n        <span class=\"rv\" id=\"rb-av\">60°</span>\n      </div>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🎨 Color</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-col\">Color</label>\n        <input type=\"color\" id=\"rb-col\" value=\"#22c55e\" data-bind=\"P.color\" data-bind-type=\"value\" data-then=\"buildStand\">\n      </div>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">📱 Phone Size</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-pw\">Width</label>\n        <input type=\"range\" min=\"60\" max=\"100\" step=\"1\" value=\"75\" id=\"rb-pw\"\n          data-bind=\"P.phoneWidth\" data-bind-type=\"int\" data-bind-display=\"rb-pwv\" data-then=\"buildStand\">\n        <span class=\"rv\" id=\"rb-pwv\">75mm</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-pt\">Thick</label>\n        <input type=\"range\" min=\"6\" max=\"15\" step=\"1\" value=\"10\" id=\"rb-pt\"\n          data-bind=\"P.phoneThickness\" data-bind-type=\"int\" data-bind-display=\"rb-ptv\" data-then=\"buildStand\">\n        <span class=\"rv\" id=\"rb-ptv\">10mm</span>\n      </div>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🔧 Details</div>\n      <div class=\"rb-row\">\n        <label for=\"rb-bt\">Base</label>\n        <input type=\"range\" min=\"3\" max=\"8\" step=\"1\" value=\"4\" id=\"rb-bt\"\n          data-bind=\"P.baseThickness\" data-bind-type=\"int\" data-bind-display=\"rb-btv\" data-then=\"buildStand\">\n        <span class=\"rv\" id=\"rb-btv\">4mm</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-lh\">Lip H</label>\n        <input type=\"range\" min=\"5\" max=\"20\" step=\"1\" value=\"8\" id=\"rb-lh\"\n          data-bind=\"P.lipHeight\" data-bind-type=\"int\" data-bind-display=\"rb-lhv\" data-then=\"buildStand\">\n        <span class=\"rv\" id=\"rb-lhv\">8mm</span>\n      </div>\n      <div class=\"rb-row\">\n        <label for=\"rb-cr\">Corner</label>\n        <input type=\"range\" min=\"0\" max=\"5\" step=\"0.5\" value=\"3\" id=\"rb-cr\"\n          data-bind=\"P.cornerRadius\" data-bind-type=\"float\" data-bind-display=\"rb-crv\" data-then=\"buildStand\">\n        <span class=\"rv\" id=\"rb-crv\">3mm</span>\n      </div>\n      <label class=\"rb-toggle\">\n        <input type=\"checkbox\" id=\"rb-cable\" data-bind=\"P.cableSlot\" data-bind-type=\"checked\" data-then=\"buildStand\">\n        Cable slot\n      </label>\n      <label class=\"rb-toggle\">\n        <input type=\"checkbox\" id=\"rb-rounded\" checked data-bind=\"P.roundedCorners\" data-bind-type=\"checked\" data-then=\"buildStand\">\n        Rounded corners\n      </label>\n    </div>\n\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">📊 Profile</div>\n      <div id=\"profileCard\"></div>\n    </div>\n\n  </div>\n\n</div>\n<div id=\"modalOverlay\" style=\"display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)\"><div id=\"modalContent\" style=\"background:var(--bg2);border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:22px;width:380px;max-width:90vw\"></div></div>\n\n";
+const CSS = "/* ── Ember builder tip strip ─────────────── */\n.hdr-step-chip {\n  display: inline-flex;\n  align-items: center;\n  font-family: 'Nunito', sans-serif;\n  font-size: .72rem;\n  font-weight: 800;\n  letter-spacing: .05em;\n  padding: 3px 10px;\n  border-radius: 999px;\n  background: rgba(var(--ca-rgb, 255,255,255), .12);\n  border: 1px solid rgba(var(--ca-rgb, 255,255,255), .25);\n  color: rgba(255,255,255,.85);\n  margin-left: 10px;\n  vertical-align: middle;\n  flex-shrink: 0;\n}\n.ember-builder-bar {\n  display: flex;\n  align-items: flex-start;\n  gap: 10px;\n  padding: 8px 16px;\n  background: rgba(var(--ca-rgb,139,92,246), .07);\n  border-bottom: 1px solid rgba(var(--ca-rgb,139,92,246), .18);\n  position: relative;\n  font-size: .8rem;\n  line-height: 1.45;\n  color: rgba(255,255,255,.65);\n}\n.ember-builder-bar strong { color: rgba(255,255,255,.9); }\n.ember-builder-bar svg { flex-shrink: 0; margin-top: 1px; }\n.ember-bar-dismiss {\n  position: absolute;\n  right: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  background: none;\n  border: none;\n  color: rgba(255,255,255,.3);\n  cursor: pointer;\n  font-size: 1rem;\n  line-height: 1;\n  padding: 2px 6px;\n  border-radius: 4px;\n  transition: color .2s;\n}\n.ember-bar-dismiss:hover { color: rgba(255,255,255,.7); }\n";
+const ACTIONS = ["answerQuiz","applyStep","closeModal","doStandDel","doStandLoad","doStandSave","exportPNG","goNext","goPrev","openLoadModal","openSaveModal","quickBuild","randomBuild","selectOpt","selectSwatch"];
+
+export function mount(container) {
+  var ac = new AbortController();
+  var rafs = [];
+  var winAdd = window.addEventListener.bind(window);
+  var docAdd = document.addEventListener.bind(document);
+  var origRaf = window.requestAnimationFrame.bind(window);
+  function opt(o) { return Object.assign({}, (o && typeof o === 'object') ? o : {}, { signal: ac.signal }); }
+  window.addEventListener = function (t, fn, o) { return winAdd(t, fn, opt(o)); };
+  document.addEventListener = function (t, fn, o) { return docAdd(t, fn, opt(o)); };
+  window.requestAnimationFrame = function (fn) { var id = origRaf(fn); rafs.push(id); return id; };
+
+  var stage = document.createElement('div');
+  stage.id = 'bsStage';
+  stage.className = 'bs-stage';
+  stage.innerHTML = HTML;
+  container.appendChild(stage);
+  var sheet = document.createElement('style');
+  sheet.setAttribute('data-bs-css', ID);
+  sheet.textContent = CSS;
+  document.head.appendChild(sheet);
+
+  try {
+'use strict';
+
+/* -------------------------------
+   THREE.JS SCENE
+------------------------------- */
+const canvas = document.getElementById('standCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0xf8f9fa);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xf8f9fa, 30, 80);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+camera.position.set(0, 40, 90);
+
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff5ee, 1.2);
+sun.position.set(50, 80, 60);
+sun.castShadow = true;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xddeeff, 0.4);
+fill.position.set(-60, 20, -40);
+scene.add(fill);
+
+/* Ground grid */
+(function(){
+  const gridGeo = new THREE.BufferGeometry();
+  const verts = [];
+  const size = 100, step = 5;
+  for (let i = -size; i <= size; i += step) {
+    verts.push(-size, 0, i, size, 0, i);
+    verts.push(i, 0, -size, i, 0, size);
+  }
+  gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  const gridMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.35 });
+  scene.add(new THREE.LineSegments(gridGeo, gridMat));
+  const groundGeo = new THREE.PlaneGeometry(200, 200);
+  const groundMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 1, metalness: 0 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.1;
+  ground.receiveShadow = true;
+  scene.add(ground);
+})();
+
+/* -------------------------------
+   STAND STATE
+------------------------------- */
+const P = {
+  standName: 'My Stand',
+  standStyle: 'angled',
+  phoneWidth: 75,
+  phoneThickness: 10,
+  standWidth: 100,
+  standDepth: 80,
+  standHeight: 60,
+  angle: 60,
+  baseThickness: 4,
+  lipHeight: 8,
+  lipAngle: 15,
+  cableSlot: true,
+  cableSlotWidth: 12,
+  gripTexture: 'ridges',
+  color: '#22c55e',
+  roundedCorners: true,
+  cornerRadius: 3,
+  brandText: '',
+  brandFontSize: 12,
+};
+window.P = P;
+
+let standGroup = null;
+
+function hexToThree(hex) { return new THREE.Color(hex); }
+
+/* -------------------------------
+   BUILD STAND
+------------------------------- */
+function buildStand() {
+  if (standGroup) scene.remove(standGroup);
+  standGroup = new THREE.Group();
+  standGroup.name = 'phone_stand';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
+
+  const S = P.standStyle;
+  const sw = P.standWidth;
+  const sd = P.standDepth;
+  const sh = P.standHeight;
+  const bt = P.baseThickness;
+  const lh = P.lipHeight;
+  const la = P.lipAngle * Math.PI / 180;
+  const ang = P.angle * Math.PI / 180;
+  const pw = P.phoneWidth;
+  const pt = P.phoneThickness;
+  const col = hexToThree(P.color);
+  const cr = P.cornerRadius;
+
+  const mainMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.35, metalness: 0.15 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: col.clone().multiplyScalar(0.7), roughness: 0.4, metalness: 0.1 });
+
+  if (S === 'angled') {
+    /* Base plate */
+    const baseGeo = new THREE.BoxGeometry(sw, bt, sd);
+    const base = new THREE.Mesh(baseGeo, mainMat);
+    base.position.set(0, bt / 2, 0);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    standGroup.add(part(base, 'base'));
+
+    /* Angled back support */
+    const supportH = sh * 0.85;
+    const supportD = bt * 1.2;
+    const supportGeo = new THREE.BoxGeometry(sw, supportH, supportD);
+    const support = new THREE.Mesh(supportGeo, mainMat);
+    const supportCenterY = bt + supportH / 2;
+    const supportCenterZ = -(sd * 0.15);
+    support.position.set(0, supportCenterY, supportCenterZ);
+    support.rotation.x = -(Math.PI / 2 - ang);
+    support.castShadow = true;
+    standGroup.add(part(support, 'angled_support'));
+
+    /* Back brace */
+    const braceH = sh * 0.6;
+    const braceGeo = new THREE.BoxGeometry(sw * 0.6, braceH, bt * 0.8);
+    const brace = new THREE.Mesh(braceGeo, darkMat);
+    brace.position.set(0, bt + braceH * 0.35, -sd * 0.35);
+    brace.rotation.x = -(Math.PI / 2 - ang) * 0.5;
+    brace.castShadow = true;
+    standGroup.add(part(brace, 'back_brace'));
+
+    /* Phone lip */
+    const lipGeo = new THREE.BoxGeometry(pw + 6, lh, bt);
+    const lip = new THREE.Mesh(lipGeo, darkMat);
+    lip.position.set(0, bt + lh / 2, sd * 0.3);
+    lip.castShadow = true;
+    standGroup.add(part(lip, 'phone_lip'));
+
+    /* Lip side walls */
+    const wallH = lh * 1.2;
+    const wallGeo = new THREE.BoxGeometry(bt * 0.8, wallH, bt);
+    const wallL = new THREE.Mesh(wallGeo, darkMat);
+    wallL.position.set(-(pw / 2 + 3), bt + wallH / 2 - 1, sd * 0.3);
+    wallL.castShadow = true;
+    standGroup.add(part(wallL, 'lip_wall_left'));
+    const wallR = new THREE.Mesh(wallGeo.clone(), darkMat);
+    wallR.position.set(pw / 2 + 3, bt + wallH / 2 - 1, sd * 0.3);
+    wallR.castShadow = true;
+    standGroup.add(part(wallR, 'lip_wall_right'));
+
+    /* Cable slot */
+    if (P.cableSlot) {
+      const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
+      const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
+      const slot = new THREE.Mesh(slotGeo, slotMat);
+      slot.position.set(0, bt + lh / 2, sd * 0.3);
+      standGroup.add(part(slot, 'cable_slot'));
+    }
+
+    /* Grip texture ridges on support */
+    if (P.gripTexture === 'ridges') {
+      const ridgeCount = 8;
+      for (let i = 0; i < ridgeCount; i++) {
+        const ridgeGeo = new THREE.BoxGeometry(sw * 0.7, 0.6, 0.6);
+        const ridge = new THREE.Mesh(ridgeGeo, darkMat);
+        const t = i / (ridgeCount - 1);
+        const ry = bt + 4 + t * (supportH - 8);
+        const rz = supportCenterZ + Math.cos(ang) * (t - 0.5) * supportH * 0.3;
+        ridge.position.set(0, ry, rz);
+        ridge.rotation.x = -(Math.PI / 2 - ang);
+        standGroup.add(part(ridge, 'grip_ridge_' + i));
+      }
+    } else if (P.gripTexture === 'dots') {
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 6; c++) {
+          const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
+          const dot = new THREE.Mesh(dotGeo, darkMat);
+          const dx = (c - 2.5) * (sw * 0.12);
+          const dz = supportCenterZ + (r - 1) * 5;
+          const dy = bt + 6 + r * 6;
+          dot.position.set(dx, dy, dz);
+          standGroup.add(part(dot, 'grip_dot_' + r + '_' + c));
+        }
+      }
+    }
+
+    /* Brand text placeholder */
+    if (P.brandText) {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = 256;
+      canvas2d.height = 64;
+      const ctx = canvas2d.getContext('2d');
+      ctx.fillStyle = 'transparent';
+      ctx.fillRect(0, 0, 256, 64);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(P.brandText.substring(0, 16), 128, 32);
+      const tex = new THREE.CanvasTexture(canvas2d);
+      const textGeo = new THREE.PlaneGeometry(sw * 0.6, P.brandFontSize * 0.5);
+      const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+      const textMesh = new THREE.Mesh(textGeo, textMat);
+      textMesh.position.set(0, bt + supportH * 0.5, supportCenterZ + supportD * 0.6);
+      textMesh.rotation.x = -(Math.PI / 2 - ang) * 0.5;
+      standGroup.add(part(textMesh, 'brand_text'));
+    }
+
+  } else if (S === 'flat') {
+    /* Flat 90 degree stand */
+    const baseGeo = new THREE.BoxGeometry(sw, bt, sd);
+    const base = new THREE.Mesh(baseGeo, mainMat);
+    base.position.set(0, bt / 2, 0);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    standGroup.add(part(base, 'base'));
+
+    const backGeo = new THREE.BoxGeometry(sw, sh, bt);
+    const back = new THREE.Mesh(backGeo, mainMat);
+    back.position.set(0, bt + sh / 2, -sd * 0.35);
+    back.castShadow = true;
+    standGroup.add(part(back, 'back_panel'));
+
+    const lipGeo = new THREE.BoxGeometry(pw + 6, lh, bt);
+    const lip = new THREE.Mesh(lipGeo, darkMat);
+    lip.position.set(0, bt + lh / 2, sd * 0.3);
+    lip.castShadow = true;
+    standGroup.add(part(lip, 'phone_lip'));
+
+    const wallH = lh * 1.2;
+    const wallGeo = new THREE.BoxGeometry(bt * 0.8, wallH, bt);
+    const wallL = new THREE.Mesh(wallGeo, darkMat);
+    wallL.position.set(-(pw / 2 + 3), bt + wallH / 2 - 1, sd * 0.3);
+    standGroup.add(part(wallL, 'lip_wall_left'));
+    const wallR = new THREE.Mesh(wallGeo.clone(), darkMat);
+    wallR.position.set(pw / 2 + 3, bt + wallH / 2 - 1, sd * 0.3);
+    standGroup.add(part(wallR, 'lip_wall_right'));
+
+    if (P.cableSlot) {
+      const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
+      const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
+      const slot = new THREE.Mesh(slotGeo, slotMat);
+      slot.position.set(0, bt + lh / 2, sd * 0.3);
+      standGroup.add(part(slot, 'cable_slot'));
+    }
+
+    if (P.gripTexture === 'ridges') {
+      for (let i = 0; i < 8; i++) {
+        const ridgeGeo = new THREE.BoxGeometry(sw * 0.7, 0.6, 0.6);
+        const ridge = new THREE.Mesh(ridgeGeo, darkMat);
+        ridge.position.set(0, bt + 4 + i * (sh * 0.1), -sd * 0.35 + bt * 0.6);
+        standGroup.add(part(ridge, 'grip_ridge_' + i));
+      }
+    } else if (P.gripTexture === 'dots') {
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 6; c++) {
+          const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
+          const dot = new THREE.Mesh(dotGeo, darkMat);
+          dot.position.set((c - 2.5) * (sw * 0.12), bt + 6 + r * 6, -sd * 0.35 + bt * 0.6);
+          standGroup.add(part(dot, 'grip_dot_' + r + '_' + c));
+        }
+      }
+    }
+
+    if (P.brandText) {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = 256; canvas2d.height = 64;
+      const ctx = canvas2d.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(P.brandText.substring(0, 16), 128, 32);
+      const tex = new THREE.CanvasTexture(canvas2d);
+      const textGeo = new THREE.PlaneGeometry(sw * 0.6, P.brandFontSize * 0.5);
+      const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+      const textMesh = new THREE.Mesh(textGeo, textMat);
+      textMesh.position.set(0, bt + sh * 0.5, -sd * 0.35 + bt * 0.55);
+      standGroup.add(part(textMesh, 'brand_text'));
+    }
+
+  } else if (S === 'cradle') {
+    /* Cradle / wrap-around stand */
+    const baseGeo = new THREE.BoxGeometry(sw, bt, sd);
+    const base = new THREE.Mesh(baseGeo, mainMat);
+    base.position.set(0, bt / 2, 0);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    standGroup.add(part(base, 'base'));
+
+    const supportH = sh * 0.9;
+    const supportGeo = new THREE.BoxGeometry(sw, supportH, bt);
+    const support = new THREE.Mesh(supportGeo, mainMat);
+    support.position.set(0, bt + supportH / 2, -sd * 0.3);
+    support.castShadow = true;
+    standGroup.add(part(support, 'cradle_support'));
+
+    /* Side cradle arms */
+    const armW = bt * 1.2;
+    const armH = lh * 2.5;
+    const armD = sd * 0.7;
+    const armGeo = new THREE.BoxGeometry(armW, armH, armD);
+    const armL = new THREE.Mesh(armGeo, darkMat);
+    armL.position.set(-(pw / 2 + 3), bt + armH / 2, sd * 0.15);
+    armL.castShadow = true;
+    standGroup.add(part(armL, 'arm_left'));
+    const armR = new THREE.Mesh(armGeo.clone(), darkMat);
+    armR.position.set(pw / 2 + 3, bt + armH / 2, sd * 0.15);
+    armR.castShadow = true;
+    standGroup.add(part(armR, 'arm_right'));
+
+    /* Front lip */
+    const lipGeo = new THREE.BoxGeometry(pw + 12, lh, bt);
+    const lip = new THREE.Mesh(lipGeo, darkMat);
+    lip.position.set(0, bt + lh / 2, sd * 0.35);
+    lip.castShadow = true;
+    standGroup.add(part(lip, 'phone_lip'));
+
+    if (P.cableSlot) {
+      const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
+      const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
+      const slot = new THREE.Mesh(slotGeo, slotMat);
+      slot.position.set(0, bt + lh / 2, sd * 0.35);
+      standGroup.add(part(slot, 'cable_slot'));
+    }
+
+    if (P.gripTexture === 'ridges') {
+      for (let i = 0; i < 6; i++) {
+        const ridgeGeo = new THREE.BoxGeometry(sw * 0.6, 0.6, 0.6);
+        const ridge = new THREE.Mesh(ridgeGeo, darkMat);
+        ridge.position.set(0, bt + 4 + i * 5, -sd * 0.3 + bt * 0.6);
+        standGroup.add(part(ridge, 'grip_ridge_' + i));
+      }
+    } else if (P.gripTexture === 'dots') {
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 5; c++) {
+          const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
+          const dot = new THREE.Mesh(dotGeo, darkMat);
+          dot.position.set((c - 2) * (sw * 0.12), bt + 6 + r * 5, -sd * 0.3 + bt * 0.6);
+          standGroup.add(part(dot, 'grip_dot_' + r + '_' + c));
+        }
+      }
+    }
+
+    if (P.brandText) {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = 256; canvas2d.height = 64;
+      const ctx = canvas2d.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(P.brandText.substring(0, 16), 128, 32);
+      const tex = new THREE.CanvasTexture(canvas2d);
+      const textGeo = new THREE.PlaneGeometry(sw * 0.5, P.brandFontSize * 0.4);
+      const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+      const textMesh = new THREE.Mesh(textGeo, textMat);
+      textMesh.position.set(0, bt + supportH * 0.5, -sd * 0.3 + bt * 0.55);
+      standGroup.add(part(textMesh, 'brand_text'));
+    }
+
+  } else if (S === 'foldable') {
+    /* Foldable / hinged stand */
+    const baseGeo = new THREE.BoxGeometry(sw, bt, sd * 0.5);
+    const base = new THREE.Mesh(baseGeo, mainMat);
+    base.position.set(0, bt / 2, sd * 0.15);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    standGroup.add(part(base, 'base'));
+
+    const supportH = sh * 0.8;
+    const supportGeo = new THREE.BoxGeometry(sw, supportH, bt);
+    const support = new THREE.Mesh(supportGeo, mainMat);
+    const sAng = ang * 0.7;
+    support.position.set(0, bt + supportH * Math.cos(sAng) * 0.5, -sd * 0.1);
+    support.rotation.x = -sAng;
+    support.castShadow = true;
+    standGroup.add(part(support, 'foldable_support'));
+
+    /* Hinge accent */
+    const hingeGeo = new THREE.CylinderGeometry(bt * 0.7, bt * 0.7, sw * 0.15, 12);
+    const hingeMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.6 });
+    const hinge = new THREE.Mesh(hingeGeo, hingeMat);
+    hinge.rotation.z = Math.PI / 2;
+    hinge.position.set(0, bt, -sd * 0.1);
+    standGroup.add(part(hinge, 'hinge'));
+
+    /* Support strut */
+    const strutLen = sh * 0.5;
+    const strutGeo = new THREE.BoxGeometry(bt * 0.6, strutLen, bt * 0.6);
+    const strut = new THREE.Mesh(strutGeo, darkMat);
+    strut.position.set(0, bt + strutLen * 0.3, -sd * 0.25);
+    strut.rotation.x = -sAng * 0.4;
+    strut.castShadow = true;
+    standGroup.add(part(strut, 'strut'));
+
+    const lipGeo = new THREE.BoxGeometry(pw + 6, lh, bt);
+    const lip = new THREE.Mesh(lipGeo, darkMat);
+    lip.position.set(0, bt + lh / 2, sd * 0.35);
+    lip.castShadow = true;
+    standGroup.add(part(lip, 'phone_lip'));
+
+    if (P.cableSlot) {
+      const slotGeo = new THREE.BoxGeometry(P.cableSlotWidth, lh + 2, bt + 2);
+      const slotMat = new THREE.MeshStandardMaterial({ color: 0xf8f9fa, roughness: 1 });
+      const slot = new THREE.Mesh(slotGeo, slotMat);
+      slot.position.set(0, bt + lh / 2, sd * 0.35);
+      standGroup.add(part(slot, 'cable_slot'));
+    }
+
+    if (P.gripTexture === 'ridges') {
+      for (let i = 0; i < 6; i++) {
+        const ridgeGeo = new THREE.BoxGeometry(sw * 0.6, 0.6, 0.6);
+        const ridge = new THREE.Mesh(ridgeGeo, darkMat);
+        ridge.position.set(0, bt + 4 + i * (supportH * 0.12), -sd * 0.15);
+        ridge.rotation.x = -sAng;
+        standGroup.add(part(ridge, 'grip_ridge_' + i));
+      }
+    } else if (P.gripTexture === 'dots') {
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 5; c++) {
+          const dotGeo = new THREE.SphereGeometry(0.8, 6, 6);
+          const dot = new THREE.Mesh(dotGeo, darkMat);
+          dot.position.set((c - 2) * (sw * 0.12), bt + 6 + r * 5, -sd * 0.15);
+          standGroup.add(part(dot, 'grip_dot_' + r + '_' + c));
+        }
+      }
+    }
+
+    if (P.brandText) {
+      const canvas2d = document.createElement('canvas');
+      canvas2d.width = 256; canvas2d.height = 64;
+      const ctx = canvas2d.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(P.brandText.substring(0, 16), 128, 32);
+      const tex = new THREE.CanvasTexture(canvas2d);
+      const textGeo = new THREE.PlaneGeometry(sw * 0.5, P.brandFontSize * 0.4);
+      const textMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+      const textMesh = new THREE.Mesh(textGeo, textMat);
+      textMesh.position.set(0, bt + supportH * 0.4, -sd * 0.1 + bt * 0.55);
+      textMesh.rotation.x = -sAng * 0.5;
+      standGroup.add(part(textMesh, 'brand_text'));
+    }
+  }
+
+  /* Phone silhouette */
+  const phoneGeo = new THREE.BoxGeometry(pw, pt, 4);
+  const phoneMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.2, metalness: 0.5, transparent: true, opacity: 0.35 });
+  const phone = new THREE.Mesh(phoneGeo, phoneMat);
+  phone.position.set(0, bt + lh + pt / 2, sd * 0.25);
+  standGroup.add(part(phone, 'phone_ghost_preview'));
+
+  scene.add(standGroup);
+  updateSpecCard();
+  updateStats();
+  syncRightBar();
+}
+
+/* -------------------------------
+   ORBIT CONTROLS
+------------------------------- */
+let orbit = { theta: 0.3, phi: 1.1, radius: 90, dragging: false, lastX: 0, lastY: 0 };
+
+function updateCamera() {
+  orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
+  orbit.radius = Math.max(30, Math.min(200, orbit.radius));
+  camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+  camera.position.y = orbit.radius * Math.cos(orbit.phi) + 20;
+  camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+  camera.lookAt(0, 20, 0);
+}
+
+canvas.addEventListener('mousedown', function(e) { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', function() { orbit.dragging = false; });
+window.addEventListener('mousemove', function(e) {
+  if (!orbit.dragging) return;
+  orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
+  orbit.phi   -= (e.clientY - orbit.lastY) * 0.007;
+  orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+});
+canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.08; e.preventDefault(); }, { passive: false });
+
+BuilderGestures.attachTapSelect(canvas, camera, function () { return standGroup; }, {
+  onOrbit: function (dx, dy) { orbit.theta -= dx * 0.007; orbit.phi -= dy * 0.007; },
+  onPinch: function (ratio) { orbit.radius *= ratio; },
+  onDragStart: function () { orbit.dragging = true; },
+  onDragEnd: function () { orbit.dragging = false; }
+});
+
+/* -------------------------------
+   RESIZE + RENDER LOOP
+------------------------------- */
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+  if (!orbit.dragging) orbit.theta += 0.002;
+  updateCamera();
+  resize();
+  renderer.render(scene, camera);
+}
+animate();
+
+/* -------------------------------
+   SPEC OVERLAY
+------------------------------- */
+function updateSpecCard() {
+  document.getElementById('sName').textContent = P.standName || 'UNNAMED';
+  const styleLabels = { angled: 'Angled', flat: 'Flat (90°)', cradle: 'Cradle', foldable: 'Foldable' };
+  document.getElementById('sStyle').textContent = styleLabels[P.standStyle] || '-';
+  document.getElementById('sWidth').textContent = P.standWidth + 'mm';
+  document.getElementById('sDepth').textContent = P.standDepth + 'mm';
+  document.getElementById('sHeight').textContent = P.standHeight + 'mm';
+  document.getElementById('sAngle').textContent = P.angle + '°';
+}
+
+function sout(m) { document.getElementById('obar').textContent = m; }
+
+/* -------------------------------
+   RIGHT BAR SYNC
+------------------------------- */
+function syncRightBar() {
+  function sv(id, val) { const e = document.getElementById(id); if (e) e.value = val; }
+  function sc(id, val) { const e = document.getElementById(id); if (e) e.checked = val; }
+  function st(id, txt) { const e = document.getElementById(id); if (e) e.textContent = txt; }
+  sv('rb-w', P.standWidth); st('rb-wv', P.standWidth + 'mm');
+  sv('rb-d', P.standDepth); st('rb-dv', P.standDepth + 'mm');
+  sv('rb-h', P.standHeight); st('rb-hv', P.standHeight + 'mm');
+  sv('rb-a', P.angle); st('rb-av', P.angle + '°');
+  sv('rb-col', P.color);
+  sv('rb-pw', P.phoneWidth); st('rb-pwv', P.phoneWidth + 'mm');
+  sv('rb-pt', P.phoneThickness); st('rb-ptv', P.phoneThickness + 'mm');
+  sv('rb-bt', P.baseThickness); st('rb-btv', P.baseThickness + 'mm');
+  sv('rb-lh', P.lipHeight); st('rb-lhv', P.lipHeight + 'mm');
+  sv('rb-cr', P.cornerRadius); st('rb-crv', P.cornerRadius + 'mm');
+  sc('rb-cable', P.cableSlot);
+  sc('rb-rounded', P.roundedCorners);
+  updateProfileCard();
+}
+
+/* -------------------------------
+   PROFILE CARD
+------------------------------- */
+function computeStats() {
+  const stability = Math.min(10, Math.round(
+    (P.baseThickness / 8) * 3 + (P.standWidth / 150) * 3 + (P.standDepth / 120) * 2 + (P.angle <= 70 ? 2 : 1)
+  ));
+  const phoneFit = Math.min(10, Math.round(
+    (P.phoneWidth >= 60 && P.phoneWidth <= 85 ? 4 : 2) +
+    (P.lipHeight >= 6 ? 3 : 1) +
+    (P.phoneThickness <= 12 ? 2 : 1) +
+    (P.standWidth > P.phoneWidth + 10 ? 1 : 0)
+  ));
+  const printQuality = Math.min(10, Math.round(
+    (P.roundedCorners ? 2 : 0) +
+    (P.cornerRadius >= 2 ? 2 : 1) +
+    (P.baseThickness >= 3 ? 2 : 1) +
+    (P.gripTexture === 'smooth' ? 1 : 2) +
+    (P.standHeight >= 40 ? 2 : 1)
+  ));
+  const aesthetics = Math.min(10, Math.round(
+    (P.color !== '#22c55e' ? 1 : 2) +
+    (P.brandText ? 2 : 0) +
+    (P.roundedCorners ? 2 : 1) +
+    (P.standStyle === 'cradle' || P.standStyle === 'foldable' ? 2 : 1) +
+    (P.gripTexture !== 'smooth' ? 1 : 0)
+  ));
+  return {
+    stability: Math.max(1, stability),
+    phoneFit: Math.max(1, phoneFit),
+    printQuality: Math.max(1, printQuality),
+    aesthetics: Math.max(1, aesthetics)
+  };
+}
+
+function updateStats() {
+  const s = computeStats();
+  const el = document.getElementById('standStats');
+  if (!el) return;
+  const bar = (v, c) => `<div class="stat-track"><div class="stat-fill" style="width:${v * 10}%;background:${c}"></div></div>`;
+  el.innerHTML = `<div class="stat-title">Stand Stats</div>` +
+    `<div class="stat-row"><span class="stat-lbl">Stable</span>${bar(s.stability, '#22c55e')}<span class="stat-val">${s.stability}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Fit</span>${bar(s.phoneFit, '#38bdf8')}<span class="stat-val">${s.phoneFit}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Print</span>${bar(s.printQuality, '#f5c842')}<span class="stat-val">${s.printQuality}</span></div>` +
+    `<div class="stat-row"><span class="stat-lbl">Style</span>${bar(s.aesthetics, '#a78bfa')}<span class="stat-val">${s.aesthetics}</span></div>`;
+}
+
+function updateProfileCard() {
+  const s = computeStats();
+  const el = document.getElementById('profileCard');
+  if (!el) return;
+  const bar = (v, c) => `<div class="profile-stat-track"><div class="profile-stat-fill" style="width:${v * 10}%;background:${c}"></div></div>`;
+  el.innerHTML = `<div class="profile-card">
+    <div class="profile-name">${P.standName || 'UNNAMED'}</div>
+    <div class="profile-dims">${P.standWidth}×${P.standDepth}×${P.standHeight}mm · ${P.angle}°</div>
+    <div class="profile-stats">
+      <div class="profile-stat"><span class="profile-stat-lbl">Stability</span>${bar(s.stability, '#22c55e')}<span class="profile-stat-val">${s.stability}/10</span></div>
+      <div class="profile-stat"><span class="profile-stat-lbl">Phone Fit</span>${bar(s.phoneFit, '#38bdf8')}<span class="profile-stat-val">${s.phoneFit}/10</span></div>
+      <div class="profile-stat"><span class="profile-stat-lbl">Print Q</span>${bar(s.printQuality, '#f5c842')}<span class="profile-stat-val">${s.printQuality}/10</span></div>
+      <div class="profile-stat"><span class="profile-stat-lbl">Aesthet</span>${bar(s.aesthetics, '#a78bfa')}<span class="profile-stat-val">${s.aesthetics}/10</span></div>
+    </div>
+  </div>`;
+}
+
+
+
+
+
+/* -------------------------------
+   EXPORT PNG
+------------------------------- */
+function exportPNG() {
+  renderer.render(scene, camera);
+  canvas.toBlob(function(blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (P.standName || 'phone-stand').toLowerCase().replace(/\s+/g, '-') + '.png';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('PNG screenshot exported!');
+  });
+}
+
+/* -------------------------------
+   STEPS
+------------------------------- */
+let currentStep = 0;
+const stepDone = new Array(14).fill(false);
+
+function paramPath(src) {
+  const m = /([A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*)\s*=/.exec(String(src || ''));
+  return m ? m[1] : '';
+}
+
+function paramParse(src) {
+  if (/parseFloat/.test(src)) return 'float';
+  if (/parseInt/.test(src)) return 'int';
+  return 'raw';
+}
+
+function opts(id, options, currentVal, onChange) {
+  const path = paramPath(onChange), parse = paramParse(onChange);
+  return `<div class="opt-grid">${options.map(o =>
+    `<button class="opt-btn${currentVal===o.val?' sel':''}" data-action="selectOpt" data-arg="${o.val}" data-arg2="this" data-arg3="${path}" data-arg4="${parse}">
+      <span class="opt-icon">${o.icon}</span>${o.label}</button>`
+  ).join('')}</div>`;
+}
+
+function swatchRow(id, colours, currentVal, onChange) {
+  const path = paramPath(onChange);
+  return `<div class="swatch-row">${colours.map(c =>
+    `<div class="swatch${currentVal===c?' sel':''}" style="background:${c}" data-action="selectSwatch" data-arg="${c}" data-arg2="this" data-arg3="${path}"></div>`
+  ).join('')}</div>
+  <div class="custom-colour">
+    <span>Custom:</span>
+    <input type="color" value="${currentVal}" data-action-input="selectSwatch" data-arg="${path}">
+  </div>`;
+}
+
+function setBuilderParam(path, value) {
+  const parts = String(path).split('.');
+  let obj = window[parts[0]];
+  if (!obj) return;
+  for (let i = 1; i < parts.length - 1; i++) obj = obj[parts[i]];
+  obj[parts[parts.length - 1]] = value;
+}
+
+function selectOpt(val, el, path, parse) {
+  if (parse === 'float') val = parseFloat(val);
+  else if (parse === 'int') val = parseInt(val, 10);
+  setBuilderParam(path, val);
+  if (el && el.closest) {
+    const grid = el.closest('.opt-grid');
+    if (grid) grid.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+  buildStand();
+}
+
+function selectSwatch(col, el, path) {
+  setBuilderParam(path, col);
+  if (el && el.closest) {
+    const row = el.closest('.swatch-row');
+    if (row) row.querySelectorAll('.swatch').forEach(s => s.classList.remove('sel'));
+    if (row && el.classList.contains('swatch')) el.classList.add('sel');
+  }
+  buildStand();
+}
+
+const STEPS = [
+
+/* 1 */
+{
+  title: 'Name Your Stand',
+  tag: 'STEP 01 , IDENTITY',
+  intro: `Every great 3D print starts with a purpose. Name your phone stand so you can find it later and feel proud when someone asks where you got it.`,
+  boxes: [
+    { t:'box-c', tx:'Phone stands are one of the most popular 3D printing projects. They\'re quick to print, useful every day, and make great gifts. A good name helps you track versions when you iterate on the design.' },
+    { t:'box-t', tx:'Keep it short , you\'ll see this name on the export filename and spec card.' },
+  ],
+  tasks: ['Enter a stand name'],
+  html() { return `<input class="name-input" id="standName" aria-label="Stand name" maxlength="20" placeholder="E.G. DESK STAND" value="${P.standName==='My Stand'?'':P.standName}">`; },
+  onApply() { P.standName = document.getElementById('standName')?.value?.trim() || 'My Stand'; buildStand(); sout('✅ ' + P.standName + ' is registered.'); document.getElementById('liveStatus').textContent = 'Named!'; }
+},
+
+/* 2 */
+{
+  title: 'Stand Style',
+  tag: 'STEP 02 , STYLE',
+  intro: `Choose how your stand is shaped. <strong>Angled</strong> gives a comfortable viewing angle. <strong>Flat</strong> is a simple 90° back. <strong>Cradle</strong> wraps around the phone. <strong>Foldable</strong> has a hinge mechanism.`,
+  boxes: [
+    { t:'box-c', tx:'Angled stands (60°) are ideal for video calls. Flat stands (90°) are better for reading. Cradle stands work for all phones. Foldable stands can collapse for travel.' },
+    { t:'box-t', tx:'Angled is the most popular choice for desk use. It puts the screen at a natural viewing angle.' },
+  ],
+  tasks: ['Choose a stand style'],
+  html() {
+    const o = `(function(v,el){P.standStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildStand();})`;
+    return opts('style', [
+      { val:'angled',   icon:'📐', label:'Angled' },
+      { val:'flat',     icon:'📏', label:'Flat 90°' },
+      { val:'cradle',   icon:'📐', label:'Cradle' },
+      { val:'foldable', icon:'🪭', label:'Foldable' },
+    ], P.standStyle, o);
+  },
+  onApply() { buildStand(); sout('Style: ' + P.standStyle + ' applied.'); document.getElementById('liveStatus').textContent = 'Style set!'; }
+},
+
+/* 3 */
+{
+  title: 'Phone Size',
+  tag: 'STEP 03 , PHONE',
+  intro: `Set your phone's width and thickness. Most modern smartphones are 65-80mm wide. The iPhone 15 is 71.6mm, Samsung S24 is 70.6mm. Include any case thickness!`,
+  boxes: [
+    { t:'box-c', tx:'Most modern smartphones are 65-80mm wide. The iPhone 15 is 71.6mm, Samsung S24 is 70.6mm. Always measure with your case on , a thick case can add 3-5mm.' },
+    { t:'box-t', tx:'Add 2-3mm to your phone width for a comfortable fit. The lip should hold the phone without being too tight.' },
+  ],
+  tasks: ['Set phone width', 'Set phone thickness'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Width (mm)</span>
+        <input type="range" min="60" max="100" step="1" value="${P.phoneWidth}"
+          data-param="P.phoneWidth" data-parse="int" data-display="pwVal" data-fmt="intmm" data-rebuild="buildStand">
+        <span class="slider-val" id="pwVal">${P.phoneWidth}mm</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-lbl">Thickness (mm)</span>
+        <input type="range" min="6" max="15" step="1" value="${P.phoneThickness}"
+          data-param="P.phoneThickness" data-parse="int" data-display="ptVal" data-fmt="intmm" data-rebuild="buildStand">
+        <span class="slider-val" id="ptVal">${P.phoneThickness}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Phone: ' + P.phoneWidth + 'mm × ' + P.phoneThickness + 'mm.'); document.getElementById('liveStatus').textContent = 'Phone set!'; }
+},
+
+/* 4 */
+{
+  title: 'Stand Dimensions',
+  tag: 'STEP 04 , SCALE',
+  intro: `Set the overall size of your stand in millimetres. Width affects stability. Depth affects the footprint. Height determines how tall the back support is.`,
+  boxes: [
+    { t:'box-c', tx:'A wider base = more stability. 100mm is a good starting point. Deeper stands take up more desk space but hold the phone more securely. Taller backs support larger phones better.' },
+  ],
+  tasks: ['Set width, depth, and height'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Width (mm)</span>
+        <input type="range" min="80" max="150" step="1" value="${P.standWidth}"
+          data-param="P.standWidth" data-parse="int" data-display="swVal" data-fmt="intmm" data-rebuild="buildStand">
+        <span class="slider-val" id="swVal">${P.standWidth}mm</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-lbl">Depth (mm)</span>
+        <input type="range" min="60" max="120" step="1" value="${P.standDepth}"
+          data-param="P.standDepth" data-parse="int" data-display="sdVal" data-fmt="intmm" data-rebuild="buildStand">
+        <span class="slider-val" id="sdVal">${P.standDepth}mm</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-lbl">Height (mm)</span>
+        <input type="range" min="40" max="100" step="1" value="${P.standHeight}"
+          data-param="P.standHeight" data-parse="int" data-display="shVal" data-fmt="intmm" data-rebuild="buildStand">
+        <span class="slider-val" id="shVal">${P.standHeight}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Dimensions: ' + P.standWidth + '×' + P.standDepth + '×' + P.standHeight + 'mm.'); document.getElementById('liveStatus').textContent = 'Dimensions set!'; }
+},
+
+/* 5 */
+{
+  title: 'Viewing Angle',
+  tag: 'STEP 05 , ANGLE',
+  intro: `The angle of the back support determines how you view your phone. The optimal viewing angle for video calls is 60-70 degrees from horizontal.`,
+  boxes: [
+    { t:'box-c', tx:'The optimal viewing angle for video calls is 60-70 degrees from horizontal. Lower angles (30-45°) are good for typing. Higher angles (70-80°) are better for watching videos hands-free.' },
+    { t:'box-t', tx:'60° is the sweet spot for most desk use. It balances viewing comfort with stability.' },
+  ],
+  tasks: ['Set the viewing angle'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Angle (degrees)</span>
+        <input type="range" min="30" max="80" step="1" value="${P.angle}"
+          data-param="P.angle" data-parse="int" data-display="angVal" data-fmt="int°" data-rebuild="buildStand">
+        <span class="slider-val" id="angVal">${P.angle}°</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Angle: ' + P.angle + '°.'); document.getElementById('liveStatus').textContent = 'Angle set!'; }
+},
+
+/* 6 */
+{
+  title: 'Base Thickness',
+  tag: 'STEP 06 , BASE',
+  intro: `The base plate thickness affects stability and print time. Thicker bases are heavier and more stable but use more filament.`,
+  boxes: [
+    { t:'box-c', tx:'A 4mm base is a good balance , thick enough for stability, thin enough to print quickly. Thicker bases (6-8mm) are better for heavy phones or if you want extra weight.' },
+    { t:'box-t', tx:'For PLA printing, 3-4mm walls give excellent strength. Going thicker just adds weight and print time.' },
+  ],
+  tasks: ['Set the base thickness'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Base (mm)</span>
+        <input type="range" min="3" max="8" step="1" value="${P.baseThickness}"
+          data-param="P.baseThickness" data-parse="int" data-display="btVal" data-fmt="intmm" data-rebuild="buildStand">
+        <span class="slider-val" id="btVal">${P.baseThickness}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Base: ' + P.baseThickness + 'mm thick.'); document.getElementById('liveStatus').textContent = 'Base set!'; }
+},
+
+/* 7 */
+{
+  title: 'Phone Lip',
+  tag: 'STEP 07 , LIP',
+  intro: `The lip at the front holds your phone in place. Taller lips hold thicker phones. The angle helps the phone rest securely against the back.`,
+  boxes: [
+    { t:'box-c', tx:'The lip should be at least as tall as your phone thickness, plus 2-3mm for a secure grip. Too tall and it blocks the screen. Too short and the phone slips out.' },
+    { t:'box-t', tx:'8mm is a safe default for most phones. If you have a thick case, go to 10-12mm.' },
+  ],
+  tasks: ['Set the lip height'],
+  html() {
+    return `<div style="padding:6px 0">
+      <div class="slider-row">
+        <span class="slider-lbl">Lip Height (mm)</span>
+        <input type="range" min="5" max="20" step="1" value="${P.lipHeight}"
+          data-param="P.lipHeight" data-parse="int" data-display="lhVal" data-fmt="intmm" data-rebuild="buildStand">
+        <span class="slider-val" id="lhVal">${P.lipHeight}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Lip: ' + P.lipHeight + 'mm tall.'); document.getElementById('liveStatus').textContent = 'Lip set!'; }
+},
+
+/* 8 */
+{
+  title: 'Cable Slot',
+  tag: 'STEP 08 , CABLE',
+  intro: `Add a slot at the bottom of the lip for a charging cable. This lets you charge your phone while it's in the stand.`,
+  boxes: [
+    { t:'box-c', tx:'Most USB-C and Lightning cables are about 8-12mm wide at the connector. A 12mm slot fits virtually any cable without being too wide to hold the phone securely.' },
+    { t:'box-t', tx:'If you rarely charge while using the stand, you can skip this. But it\'s a nice-to-have feature.' },
+  ],
+  tasks: ['Toggle cable slot', 'Set slot width'],
+  html() {
+    return `<div style="padding:6px 0">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;color:var(--text);margin-bottom:8px">
+        <input type="checkbox" ${P.cableSlot?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" data-param="P.cableSlot" data-parse="checked" data-rebuild="buildStand">
+        Enable cable slot
+      </label>
+      <div class="slider-row">
+        <span class="slider-lbl">Slot Width (mm)</span>
+        <input type="range" min="8" max="20" step="1" value="${P.cableSlotWidth}"
+          data-param="P.cableSlotWidth" data-parse="int" data-display="csVal" data-fmt="intmm" data-rebuild="buildStand">
+        <span class="slider-val" id="csVal">${P.cableSlotWidth}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout(P.cableSlot ? 'Cable slot: ' + P.cableSlotWidth + 'mm wide.' : 'No cable slot.'); document.getElementById('liveStatus').textContent = 'Cable set!'; }
+},
+
+/* 9 */
+{
+  title: 'Grip Texture',
+  tag: 'STEP 09 , TEXTURE',
+  intro: `Add a texture to the back support where the phone rests. Ridges give the most grip. Dots look modern. Smooth is easiest to print.`,
+  boxes: [
+    { t:'box-c', tx:'Textured surfaces increase friction and prevent the phone from sliding. Ridges work best for vertical grip. Dots provide grip in all directions. Smooth surfaces are easiest to clean.' },
+    { t:'box-t', tx:'Ridges are the most practical choice. They print well and provide excellent grip.' },
+  ],
+  tasks: ['Choose a grip texture'],
+  html() {
+    const o = `(function(v,el){P.gripTexture=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(b=>b.classList.remove('sel'));if(el)el.classList.add('sel');buildStand();})`;
+    return opts('grip', [
+      { val:'ridges', icon:'〰️', label:'Ridges' },
+      { val:'dots',   icon:'⚫', label:'Dots' },
+      { val:'smooth', icon:'✨', label:'Smooth' },
+    ], P.gripTexture, o);
+  },
+  onApply() { buildStand(); sout('Grip: ' + P.gripTexture + '.'); document.getElementById('liveStatus').textContent = 'Grip set!'; }
+},
+
+/* 10 */
+{
+  title: 'Colour',
+  tag: 'STEP 10 , COLOUR',
+  intro: `Pick a colour for your stand. This is the filament colour you'll print with. PLA comes in hundreds of colours , pick one that matches your desk.`,
+  boxes: [
+    { t:'box-c', tx:'PLA filament is the most common 3D printing material. It comes in virtually every colour, is easy to print, biodegradable, and strong enough for a phone stand.' },
+    { t:'box-t', tx:'Bright colours make the stand a desk accent piece. Neutral colours blend in. Match your phone case!' },
+  ],
+  tasks: ['Choose a colour'],
+  html() {
+    const o = `(function(c,el){P.color=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(s=>s.classList.remove('sel'));if(el)el.classList.add('sel');buildStand();})`;
+    return swatchRow('cc', ['#22c55e','#e8543a','#38bdf8','#f5c842','#a78bfa','#fb923c','#ffffff','#1a1a2e'], P.color, o);
+  },
+  onApply() { buildStand(); sout('Colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+
+/* 11 */
+{
+  title: 'Rounded Corners',
+  tag: 'STEP 11 , CORNERS',
+  intro: `Rounded corners look better and are more comfortable to handle. They also print slightly better as the nozzle doesn't have to make sharp direction changes.`,
+  boxes: [
+    { t:'box-c', tx:'Sharp 90° corners on 3D prints can cause stress concentrations and are prone to snapping. Rounded corners distribute force more evenly and look more professional.' },
+    { t:'box-t', tx:'A 3mm radius is a good balance between aesthetics and printability. Go up to 5mm for a very smooth look.' },
+  ],
+  tasks: ['Toggle rounded corners', 'Set corner radius'],
+  html() {
+    return `<div style="padding:6px 0">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;color:var(--text);margin-bottom:8px">
+        <input type="checkbox" ${P.roundedCorners?'checked':''} style="width:18px;height:18px;accent-color:var(--acc)" data-param="P.roundedCorners" data-parse="checked" data-rebuild="buildStand">
+        Rounded corners
+      </label>
+      <div class="slider-row">
+        <span class="slider-lbl">Radius (mm)</span>
+        <input type="range" min="0" max="5" step="0.5" value="${P.cornerRadius}"
+          data-param="P.cornerRadius" data-parse="float" data-display="crVal" data-fmt="rawmm" data-rebuild="buildStand">
+        <span class="slider-val" id="crVal">${P.cornerRadius}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout(P.roundedCorners ? 'Rounded corners: ' + P.cornerRadius + 'mm radius.' : 'Sharp corners.'); document.getElementById('liveStatus').textContent = 'Corners set!'; }
+},
+
+/* 12 */
+{
+  title: 'Brand Text',
+  tag: 'STEP 12 , TEXT',
+  intro: `Add your name, logo, or a custom message to the back of the stand. This is purely decorative but makes it uniquely yours.`,
+  boxes: [
+    { t:'box-t', tx:'Short text works best , 12 characters or fewer. The text will appear on the back support of the stand.' },
+    { t:'box-c', tx:'In a slicer like Cura or PrusaSlicer, you can add embossed text as a post-processing step too. This builder bakes it into the model.' },
+  ],
+  tasks: ['Enter brand text (optional)'],
+  html() {
+    return `<div style="padding:6px 0">
+      <input class="name-input" id="brandText" maxlength="16" placeholder="YOUR NAME / LOGO" value="${P.brandText}">
+      <div class="slider-row">
+        <span class="slider-lbl">Font Size (mm)</span>
+        <input type="range" min="8" max="20" step="1" value="${P.brandFontSize}"
+          data-param="P.brandFontSize" data-parse="int" data-display="bfsVal" data-fmt="intmm">
+        <span class="slider-val" id="bfsVal">${P.brandFontSize}mm</span>
+      </div>
+    </div>`;
+  },
+  onApply() { P.brandText = document.getElementById('brandText')?.value?.trim() || ''; buildStand(); sout(P.brandText ? 'Text: "' + P.brandText + '" applied.' : 'No brand text.'); document.getElementById('liveStatus').textContent = 'Text set!'; }
+},
+
+/* 13 */
+{
+  title: 'Stats & Preview',
+  tag: 'STEP 13 , REVIEW',
+  intro: `Review your stand design. Check the stats, rotate the 3D preview, and make sure everything looks right before exporting.`,
+  boxes: [
+    { t:'box-c', tx:'A stability score of 7+ means your stand won\'t tip easily. A phone fit score of 7+ means your phone will sit securely. Print quality above 7 means it should print cleanly.' },
+    { t:'box-t', tx:'Drag the 3D view to rotate. Scroll to zoom. Check all angles before exporting.' },
+  ],
+  tasks: ['Review the 3D preview', 'Check stats are acceptable'],
+  html() {
+    const s = computeStats();
+    return `<div style="padding:6px 0">
+      <div class="profile-card">
+        <div class="profile-name">${P.standName || 'UNNAMED'}</div>
+        <div class="profile-dims">${P.standWidth}×${P.standDepth}×${P.standHeight}mm · ${P.angle}° · ${P.standStyle}</div>
+        <div class="profile-stats">
+          <div class="profile-stat"><span class="profile-stat-lbl">Stability</span><div class="profile-stat-track"><div class="profile-stat-fill" style="width:${s.stability*10}%;background:#22c55e"></div></div><span class="profile-stat-val">${s.stability}/10</span></div>
+          <div class="profile-stat"><span class="profile-stat-lbl">Phone Fit</span><div class="profile-stat-track"><div class="profile-stat-fill" style="width:${s.phoneFit*10}%;background:#38bdf8"></div></div><span class="profile-stat-val">${s.phoneFit}/10</span></div>
+          <div class="profile-stat"><span class="profile-stat-lbl">Print Q</span><div class="profile-stat-track"><div class="profile-stat-fill" style="width:${s.printQuality*10}%;background:#f5c842"></div></div><span class="profile-stat-val">${s.printQuality}/10</span></div>
+          <div class="profile-stat"><span class="profile-stat-lbl">Aesthet</span><div class="profile-stat-track"><div class="profile-stat-fill" style="width:${s.aesthetics*10}%;background:#a78bfa"></div></div><span class="profile-stat-val">${s.aesthetics}/10</span></div>
+        </div>
+      </div>
+    </div>`;
+  },
+  onApply() { buildStand(); sout('Design reviewed. Ready to export!'); document.getElementById('liveStatus').textContent = 'Reviewed!'; }
+},
+
+/* 14 */
+{
+  title: 'Export STL',
+  tag: 'STEP 14 , EXPORT',
+  intro: `Your phone stand is ready! Export as <strong>STL</strong> for 3D printing (Cura, PrusaSlicer, Bambu Studio). You can also export OBJ or GLB for 3D viewers.`,
+  boxes: [
+    { t:'box-r', tx:'STL is the standard format for 3D printing. Open the exported .stl file in your slicer (Cura, PrusaSlicer, Bambu Studio), set your print settings, and hit print!' },
+    { t:'box-c', tx:'Recommended PLA print settings: 0.2mm layer height, 20% infill, 3 walls, no supports needed for most designs. Print time: roughly 30-60 minutes depending on size.' },
+    { t:'box-t', tx:'Use the Export button in the header to download your stand as STL for printing, or OBJ and GLB for 3D viewers and games.' },
+  ],
+  tasks: ['Export your stand as STL'],
+  html() {
+    return `<div style="text-align:center;padding:8px 0">
+      <div style="font-size:2.4rem;margin-bottom:7px">📎</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--acc-dk);letter-spacing:.1em;margin-bottom:6px">${P.standName || 'YOUR STAND'}</div>
+      <div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">${P.standWidth}×${P.standDepth}×${P.standHeight}mm · ${P.angle}° · ${P.standStyle}</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin-top:10px">
+        <button class="run-btn" style="font-size:.78rem;padding:8px;background:#0891b2;box-shadow:0 3px 0 #155e75" data-on="exportPNG" data-on-plain>📷 PNG</button>
+      </div>
+    </div>`;
+  },
+  onApply() { if (window.jvExport) window.jvExport('stl'); }
+},
+
+];
+
+/* QUIZ */
+const QUIZZES = [
+  {
+    q: 'What is the most common 3D printing material for phone stands?',
+    opts: ['ABS', 'PLA', 'PETG', 'Nylon'],
+    correct: 1,
+    explain: 'PLA is the most common , it\'s easy to print, biodegradable, and strong enough for a phone stand.'
+  },
+  {
+    q: 'What is the optimal viewing angle for video calls?',
+    opts: ['30-40°', '60-70°', '80-90°', '10-20°'],
+    correct: 1,
+    explain: '60-70° from horizontal is ideal for video calls , the screen faces you naturally.'
+  },
+  {
+    q: 'What does STL stand for in 3D printing?',
+    opts: ['Standard Triangle Language', 'Stereo Lithography', 'Simple Tessellation Language', 'STandard Layout'],
+    correct: 2,
+    explain: 'STL stands for Standard Tessellation Language (or StereoLithography). It describes 3D geometry as triangles.'
+  },
+  {
+    q: 'What does the infill percentage control in 3D printing?',
+    opts: ['How fast it prints', 'How dense the inside is', 'The layer height', 'The nozzle temperature'],
+    correct: 1,
+    explain: 'Infill controls how solid the inside of the print is. 20% means 20% solid, 80% air , enough strength for a phone stand.'
+  },
+  {
+    q: 'Why are rounded corners better for 3D prints?',
+    opts: ['They print faster', 'They use less filament', 'They distribute stress more evenly', 'They look more colourful'],
+    correct: 2,
+    explain: 'Rounded corners distribute force evenly, reducing stress concentrations that can cause snapping.'
+  }
+];
+
+let quizAnswered = {};
+
+function renderQuiz(idx) {
+  const q = QUIZZES[idx];
+  if (!q) return '';
+  const answered = quizAnswered[idx];
+  return `<div class="quiz-box">
+    <div class="quiz-q">Quiz: ${q.q}</div>
+    <div class="quiz-opts">${q.opts.map((o, i) => {
+      let cls = '';
+      if (answered !== undefined) {
+        if (i === q.correct) cls = 'correct';
+        else if (i === answered && answered !== q.correct) cls = 'wrong';
+      }
+      return `<div class="quiz-opt ${cls}" data-action="answerQuiz" data-arg="${idx}" data-arg2="${i}" ${answered !== undefined ? 'style="pointer-events:none"' : ''}>${o}</div>`;
+    }).join('')}</div>
+    ${answered !== undefined ? `<div class="quiz-feedback">${answered === q.correct ? '✅ Correct! ' : '❌ Not quite. '}${q.explain}</div>` : ''}
+  </div>`;
+}
+
+function answerQuiz(qIdx, aIdx) {
+  if (quizAnswered[qIdx] !== undefined) return;
+  quizAnswered[qIdx] = aIdx;
+  renderStep();
+}
+
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i;
+  renderStep();
+  updateProgress();
+  const items = document.querySelectorAll('.si');
+  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+  document.getElementById('navPrev').disabled = (i === 0);
+  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
+  toast(STEPS[i].title);
+}
+
+function renderStep() {
+  const s = STEPS[currentStep];
+  const body = document.getElementById('stepBody');
+  let html = `<div class="step-tag">${s.tag}</div>
+    <div class="step-title">${s.title}</div>
+    <div class="step-intro">${s.intro}</div>`;
+  (s.boxes || []).forEach(b => { html += `<div class="box ${b.t}">${b.tx}</div>`; });
+  html += s.html ? s.html() : '';
+  if (s.tasks) {
+    html += `<div class="task-list">${s.tasks.map(t => {
+      const done = stepDone[currentStep];
+      return `<div class="task-item${done?' done':''}"><div class="task-dot"></div>${t}</div>`;
+    }).join('')}</div>`;
+  }
+  /* Quiz every 4 steps */
+  if ((currentStep + 1) % 4 === 0 && currentStep < 12) {
+    const quizIdx = Math.floor(currentStep / 4);
+    html += renderQuiz(quizIdx);
+  }
+  if (!s.html || !s.html().includes('run-btn')) {
+    html += `<button class="run-btn" data-action="applyStep" data-arg="${currentStep}">✅ Apply</button>`;
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.si').forEach((el, i) => el.classList.toggle('active', i === currentStep));
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true;
+  renderStep();
+  updateProgress();
+}
+
+function updateProgress() {
+  const done = stepDone.filter(Boolean).length;
+  const pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progCt').textContent = done + ' / 14 steps';
+  document.querySelectorAll('.si').forEach((el, i) => {
+    el.classList.toggle('done', stepDone[i]);
+    el.classList.toggle('active', i === currentStep);
+    const sn = el.querySelector('.sn');
+    if (sn) sn.textContent = stepDone[i] ? '✓' : (i + 1);
+  });
+}
+
+function quickBuild() {
+  P.standName = 'QUICK STAND';
+  P.standStyle = 'angled';
+  P.phoneWidth = 75;
+  P.phoneThickness = 10;
+  P.standWidth = 100;
+  P.standDepth = 80;
+  P.standHeight = 60;
+  P.angle = 60;
+  P.baseThickness = 4;
+  P.lipHeight = 8;
+  P.cableSlot = true;
+  P.cableSlotWidth = 12;
+  P.gripTexture = 'ridges';
+  P.color = '#22c55e';
+  P.roundedCorners = true;
+  P.cornerRadius = 3;
+  P.brandText = 'JVDS';
+  P.brandFontSize = 12;
+  buildStand();
+  sout('⚡ Quick build loaded!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+  toast('Quick build: QUICK STAND loaded!');
+}
+
+/* STATE HOOKS */
+window._builderGetState = function() { return { params: { ...P }, step: currentStep }; };
+window._builderApplyState = function(s) {
+  if (s.params) Object.assign(P, s.params);
+  if (typeof s.step === 'number') currentStep = s.step;
+  buildStand(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+};
+
+/* TOAST */
+function toast(m) {
+  let t = document.getElementById('standToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'standToast';
+    t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.95);border:1px solid rgba(34,197,94,.35);padding:8px 22px;font-family:Bebas Neue,sans-serif;font-size:.9rem;letter-spacing:.06em;color:var(--acc-dk);border-radius:8px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.1)';
+    document.body.appendChild(t);
+  }
+  t.textContent = m;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+}
+
+/* RANDOM */
+function randomBuild() {
+  const rnd = (mn, mx, s) => { const v = mn + Math.random() * (mx - mn); return s ? Math.round(v / s) * s : Math.round(v * 100) / 100; };
+  const styles = ['angled', 'flat', 'cradle', 'foldable'];
+  const textures = ['ridges', 'dots', 'smooth'];
+  const colours = ['#22c55e','#e8543a','#38bdf8','#f5c842','#a78bfa','#fb923c','#1a1a2e','#ffffff'];
+  Object.assign(P, {
+    standName: 'STAND-' + Math.round(100 + Math.random() * 900),
+    standStyle: styles[Math.floor(Math.random() * styles.length)],
+    phoneWidth: Math.round(65 + Math.random() * 25),
+    phoneThickness: Math.round(7 + Math.random() * 6),
+    standWidth: Math.round(80 + Math.random() * 50),
+    standDepth: Math.round(60 + Math.random() * 40),
+    standHeight: Math.round(40 + Math.random() * 50),
+    angle: Math.round(35 + Math.random() * 40),
+    baseThickness: Math.round(3 + Math.random() * 4),
+    lipHeight: Math.round(6 + Math.random() * 10),
+    cableSlot: Math.random() > 0.3,
+    cableSlotWidth: Math.round(8 + Math.random() * 10),
+    gripTexture: textures[Math.floor(Math.random() * textures.length)],
+    color: colours[Math.floor(Math.random() * colours.length)],
+    roundedCorners: Math.random() > 0.2,
+    cornerRadius: rnd(1, 5, 0.5),
+    brandText: Math.random() > 0.5 ? ['JVDS','PHONE','HELLO','WORK'][Math.floor(Math.random()*4)] : '',
+    brandFontSize: Math.round(10 + Math.random() * 8),
+  });
+  buildStand(); updateStats(); syncRightBar(); toast('Random stand generated!');
+}
+
+/* SAVE / LOAD */
+function getSaves() { try { return JSON.parse(localStorage.getItem('phoneStandSaves') || '{}'); } catch { return {}; } }
+function setSaves(s) { localStorage.setItem('phoneStandSaves', JSON.stringify(s)); }
+
+function openSaveModal() {
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-dk);margin-bottom:12px">Save Stand</h2><input type="text" id="standSaveName" placeholder="Name your stand..." style="width:100%;padding:8px 12px;background:var(--bg3);border:1px solid rgba(34,197,94,.3);border-radius:7px;color:var(--acc-dk);font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.06em;outline:none;margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button data-on="closeModal" data-on-plain style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Cancel</button><button data-action="doStandSave" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">Save</button></div>`;
+  modal.classList.add('open');
+  setTimeout(() => { const inp = document.getElementById('standSaveName'); if (inp) inp.focus(); }, 100);
+}
+
+function openLoadModal() {
+  const modal = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  const sv = getSaves(), ks = Object.keys(sv);
+  let h = '';
+  if (!ks.length) h = '<p style="color:var(--muted);font-size:.8rem;padding:8px 0">No saved stands yet.</p>';
+  else h = '<div style="max-height:180px;overflow-y:auto;margin-bottom:12px">' + ks.map(k => {
+    const d = new Date(sv[k].date).toLocaleDateString();
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s" data-hover="background:rgba(34,197,94,.05)" data-hover-out="background:transparent" data-action="doStandLoad" data-arg="${k.replace(/'/g, '&#39;')}"><div><div style="font-size:.82rem;color:var(--text)">${k}</div><div style="font-family:JetBrains Mono,monospace;font-size:.55rem;color:var(--muted)">${d}</div></div><button data-action="doStandDel" data-arg="${k.replace(/'/g, '&#39;')}" data-stop style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:.9rem;padding:2px 5px">✕</button></div>`;
+  }).join('') + '</div>';
+  content.innerHTML = `<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-dk);margin-bottom:12px">Load Stand</h2>${h}<div style="display:flex;justify-content:flex-end"><button data-on="closeModal" data-on-plain style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button></div>`;
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  const modal = document.getElementById('modalOverlay');
+  if (modal) modal.classList.remove('open');
+}
+
+function doStandSave() {
+  const inp = document.getElementById('standSaveName');
+  if (!inp) return;
+  const n = inp.value.trim();
+  if (!n) return;
+  const sv = getSaves();
+  sv[n] = { params: { ...P }, step: currentStep, date: Date.now() };
+  setSaves(sv);
+  closeModal();
+  toast('Stand saved!');
+}
+
+function doStandLoad(n) {
+  const sv = getSaves();
+  if (!sv[n]) return;
+  Object.assign(P, sv[n].params);
+  currentStep = sv[n].step || 0;
+  closeModal();
+  buildStand();
+  renderStep();
+  updateProgress();
+  syncRightBar();
+  toast('Loaded: ' + n);
+}
+
+function doStandDel(n) {
+  const sv = getSaves();
+  delete sv[n];
+  setSaves(sv);
+  openLoadModal();
+}
+
+/* KEYBOARD NAV */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < STEPS.length - 1) go(currentStep + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) go(currentStep - 1); }
+  if (e.key === 'Escape') closeModal();
+});
+
+function init() {
+  const listEl = document.getElementById('stepList');
+  STEPS.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'si' + (i === 0 ? ' active' : '');
+    item.innerHTML = `<div class="sn">${i + 1}</div><div class="sl">${s.title}</div>`;
+    item.onclick = () => go(i);
+    listEl.appendChild(item);
+  });
+
+  document.getElementById('navPrev').disabled = true;
+  document.getElementById('navNext').disabled = false;
+
+  buildStand();
+  renderStep();
+  updateStats();
+  updateSpecCard();
+  syncRightBar();
+  const modal = document.getElementById('modalOverlay');
+  if (modal) modal.addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+}
+
+init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const STAND_TEMPLATES = [
+  { id: 'quick', emoji: '📱', name: 'Quick Stand', note: 'Angled, ridged grip and a cable slot  -  the quick-build.',
+    data: { standName: 'QUICK STAND', standStyle: 'angled', angle: 60, standWidth: 100, standDepth: 80, cableSlot: true, gripTexture: 'ridges', color: '#22c55e', brandText: '' } },
+  { id: 'minimal', emoji: '⬜', name: 'Minimal', note: 'Clean and flat with no slot  -  prints fast.',
+    data: { standName: 'Minimal', standStyle: 'flat', angle: 0, standWidth: 90, standDepth: 70, cableSlot: false, gripTexture: 'none', color: '#e5e7eb', roundedCorners: true } },
+  { id: 'tall', emoji: '📐', name: 'Tall', note: 'Steeper angle for video calls.',
+    data: { standName: 'Tall', standStyle: 'angled', angle: 70, standWidth: 110, standDepth: 85, cableSlot: true, gripTexture: 'dots', color: '#38bdf8', lipHeight: 10 } },
+  { id: 'wide', emoji: '🖥️', name: 'Wide', note: 'Extra width for tablets.',
+    data: { standName: 'Wide', standStyle: 'angled', angle: 55, standWidth: 140, standDepth: 90, cableSlot: true, gripTexture: 'ridges', color: '#a78bfa', brandText: 'TABLET' } },
+  { id: 'chunky', emoji: '🧱', name: 'Chunky', note: 'Thick base and big lip  -  very sturdy.',
+    data: { standName: 'Chunky', standStyle: 'angled', angle: 60, standWidth: 100, standDepth: 80, baseThickness: 6, lipHeight: 12, cableSlot: true, gripTexture: 'lines', color: '#f59e0b' } },
+  { id: 'personal', emoji: '✏️', name: 'Personal', note: 'Add your name  -  same shape as Quick Stand.',
+    data: { standName: 'MY STAND', standStyle: 'angled', angle: 60, standWidth: 100, standDepth: 80, cableSlot: true, gripTexture: 'ridges', color: '#ec4899', brandText: 'MY NAME' } }
+];
+
+function loadStandTemplate(t) {
+  Object.assign(P, t.data);
+  if (typeof buildStand === 'function') buildStand(); if (typeof updateStats === 'function') updateStats(); if (typeof updateSpecCard === 'function') updateSpecCard(); if (typeof syncRightBar === 'function') syncRightBar();
+  if (typeof sout === 'function') sout('Template loaded: ' + t.data.standName);
+  if (typeof toast === 'function') toast('Template: ' + t.data.standName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: STAND_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadStandTemplate(t); } }; }),
+    random: randomBuild,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+window._builderSetState = window._builderSetState || window._builderApplyState;
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Phone Stand Builder',
+    units: 'mm',
+    accent: '#22c55e',
+    getGroup: function () { return standGroup; },
+    getName: function () { return P.standName || 'phone-stand'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
+function goPrev(){go(currentStep-1)}
+function goNext(){go(currentStep+1)}
+
+  try { window.randomBuild = randomBuild; } catch (e) { /* not a local handler */ }
+  try { window.exportPNG = exportPNG; } catch (e) { /* not a local handler */ }
+  try { window.openSaveModal = openSaveModal; } catch (e) { /* not a local handler */ }
+  try { window.openLoadModal = openLoadModal; } catch (e) { /* not a local handler */ }
+  try { window.quickBuild = quickBuild; } catch (e) { /* not a local handler */ }
+  try { window.goPrev = goPrev; } catch (e) { /* not a local handler */ }
+  try { window.goNext = goNext; } catch (e) { /* not a local handler */ }
+  try { window.closeModal = closeModal; } catch (e) { /* not a local handler */ }
+  try { window.selectOpt = selectOpt; } catch (e) { /* not a local handler */ }
+  try { window.selectSwatch = selectSwatch; } catch (e) { /* not a local handler */ }
+  try { window.answerQuiz = answerQuiz; } catch (e) { /* not a local handler */ }
+  try { window.applyStep = applyStep; } catch (e) { /* not a local handler */ }
+  try { window.doStandSave = doStandSave; } catch (e) { /* not a local handler */ }
+  try { window.doStandLoad = doStandLoad; } catch (e) { /* not a local handler */ }
+  try { window.doStandDel = doStandDel; } catch (e) { /* not a local handler */ }
+  } finally {
+    window.addEventListener = winAdd;
+    document.addEventListener = docAdd;
+    window.requestAnimationFrame = origRaf;
+  }
+
+  return function unmount() {
+    try { ac.abort(); } catch (e) {}
+    rafs.forEach(function (id) { try { cancelAnimationFrame(id); } catch (e) {} });
+    window._builderGetState = null;
+    window._builderApplyState = null;
+    window._builderSetState = null;
+    try { delete window.randomBuild; } catch (e) {}
+    try { delete window.exportPNG; } catch (e) {}
+    try { delete window.openSaveModal; } catch (e) {}
+    try { delete window.openLoadModal; } catch (e) {}
+    try { delete window.quickBuild; } catch (e) {}
+    try { delete window.goPrev; } catch (e) {}
+    try { delete window.goNext; } catch (e) {}
+    try { delete window.closeModal; } catch (e) {}
+    try { delete window.selectOpt; } catch (e) {}
+    try { delete window.selectSwatch; } catch (e) {}
+    try { delete window.answerQuiz; } catch (e) {}
+    try { delete window.applyStep; } catch (e) {}
+    try { delete window.doStandSave; } catch (e) {}
+    try { delete window.doStandLoad; } catch (e) {}
+    try { delete window.doStandDel; } catch (e) {}
+    try { delete window.P; } catch (e) {}
+    stage.remove();
+    sheet.remove();
+  };
+}
