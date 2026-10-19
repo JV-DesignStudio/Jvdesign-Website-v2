@@ -410,6 +410,31 @@ function wsSaveShared() {
     else if (window.saveProgress) window.saveProgress();
   } catch (e) {}
 }
+/* A1707: report a finished build-along to the shared profile ledger. Converted
+   guide pages carry a profile id (body data-profile-id) but the canvas engine
+   is what completes the steps, so markWorkshopCompleted() had no caller and
+   completions vanished from my-progress. Mark once, only when every step is
+   done, and only on pages that actually belong to a profile. */
+function wsMarkProfileComplete() {
+  if (Object.keys(completed).length < STEPS.length) return;
+  var pid = null;
+  try {
+    var bd = document.body;
+    pid = (bd && bd.dataset && bd.dataset.profileId) || window.WORKSHOP_PROFILE_ID || CFG.profileId || null;
+    /* Converted hub pages (for example my-first-cpp-game.html) carry a legacy
+       window.WORKSHOP_KEY rather than a profile id, so map that key to the id
+       the profile ledger expects. */
+    if (!pid && window.WORKSHOP_KEY && window.WORKSHOP_KEY_TO_ID) {
+      pid = window.WORKSHOP_KEY_TO_ID[window.WORKSHOP_KEY] || null;
+    }
+  } catch (e) {}
+  if (!pid) return;
+  try {
+    if (window.playerProfile && typeof window.playerProfile.markWorkshopCompleted === 'function') {
+      window.playerProfile.markWorkshopCompleted(pid);
+    }
+  } catch (e) {}
+}
 function wsXpPerStep() {
   try {
     if (window._wsEngine && window._wsEngine.XP_CODE) return window._wsEngine.XP_CODE;
@@ -473,6 +498,7 @@ function saveState() {
       completed: doneNums
     }));
     savePassport(codes);
+    wsMarkProfileComplete();
   } catch(e) {}
 }
 
@@ -802,16 +828,35 @@ function hasUnfilled(code) {
   return /\?{2,}|_{3,}/.test(code);
 }
 
+/* The live preview runs inside assets/canvas-preview.html, a same-origin host
+   with no Content-Security-Policy of its own. A srcdoc (or blob) frame inherits
+   this page's CSP, which blocks the inline game scripts and shows a blank
+   canvas; the host sidesteps that while keeping the sandboxed stage. */
+var PREVIEW_RUNNER = '/assets/canvas-preview.html';
+var previewReady = false;
+
+function showPreview(html) {
+  var frame = document.getElementById('gameFrame');
+  if (!frame) return;
+  if (previewReady) {
+    try { frame.contentWindow.postMessage({ cwPreview: html }, '*'); } catch (e) {}
+    return;
+  }
+  var onLoad = function () {
+    frame.removeEventListener('load', onLoad);
+    previewReady = true;
+    try { frame.contentWindow.postMessage({ cwPreview: html }, '*'); } catch (e) {}
+  };
+  frame.addEventListener('load', onLoad);
+  frame.src = PREVIEW_RUNNER;
+}
+
 function updateCanvas() {
   var step = STEPS[currentStep];
   var code = editors[step.num] ? editors[step.num].value : step.starter;
-  var frame = document.getElementById('gameFrame');
-  if (hasUnfilled(code)) {
-    frame.srcdoc = polishPreview(BLANK_PLACEHOLDER);
-  } else {
-    var html = polishPreview(TEMPLATES[step.num](code));
-    frame.srcdoc = html;
-  }
+  showPreview(hasUnfilled(code)
+    ? polishPreview(BLANK_PLACEHOLDER)
+    : polishPreview(TEMPLATES[step.num](code)));
   saveState();
 
   if (CFG.hints && CFG.hints[currentStep] !== undefined) {
@@ -1154,7 +1199,7 @@ maybeOfferContinue();
     brand.innerHTML='<img src="/logo.png" alt="" width="26" height="26"><span>JVDesignStudio</span>';
     var chip=document.createElement('span');
     chip.className='cw-topbar-char';
-    chip.innerHTML='<img src="/assets/mascots/ember-badge.webp" alt="" width="20" height="20">Build it with Ember';
+    chip.innerHTML='<img src="/assets/mascots/lumo-badge.webp" alt="" width="20" height="20">Build it with Lumo';
     var back=document.createElement('a');
     back.className='cw-topbar-back';
     back.href='/workshop';

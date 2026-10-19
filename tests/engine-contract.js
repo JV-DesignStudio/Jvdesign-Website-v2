@@ -2,20 +2,24 @@
 // A672 engine contract: every arcade game that loads the engine must expose the
 // versioned API, and the engine itself must satisfy boot/score/save/restart with
 // no uncaught errors. Run: node tests/engine-contract.js
+//
+// A1719 engine coverage: boot the CURATED line-up from games-registry.js, not
+// the first few .html files alphabetically on disk. The old disk-order slice
+// booted orphan/unshipped pages and could leave a live cabinet untested, so a
+// curated game could lose the engine without failing this contract.
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+const vm = require('vm');
 const puppeteer = require('puppeteer');
 const ROOT = path.resolve(__dirname, '..');
 const GAMES_DIR = path.join(ROOT, 'games');
 const ENGINE_VERSION = '2.4.0';
-const MAX_GAMES = 8;
 
-const games = fs.readdirSync(GAMES_DIR)
-  .filter(f => f.endsWith('.html'))
-  .filter(f => fs.readFileSync(path.join(GAMES_DIR, f), 'utf8').includes('game-system.js'))
-  .sort()
-  .slice(0, MAX_GAMES);
+const regCtx = { window: {} };
+vm.createContext(regCtx);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'games-registry.js'), 'utf8'), regCtx);
+const games = (regCtx.window.JVDS_GAMES || []).map(g => g.file);
 
 const NOISE = /ServiceWorker|MIME type|Failed to load resource|net::ERR|ERR_FAILED|ERR_ABORTED|favicon/i;
 

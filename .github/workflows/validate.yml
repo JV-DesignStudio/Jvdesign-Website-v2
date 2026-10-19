@@ -10,7 +10,7 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +30,9 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Performance budget (school-device profile)
+        run: node scripts/check-performance.js
 
       - name: Validate internal links
         run: npm run validate:links
@@ -64,8 +67,35 @@ jobs:
       - name: Workshop catalogue sync (hub links every workshop)
         run: npm run test:workshop-hub-qa
 
+      - name: Workshop key coverage (every completion key is consumed)
+        run: npm run test:workshop-key-coverage
+
+      - name: Workshop hub filters, search and safe resume
+        run: npm run test:workshop-hub
+
       - name: Canvas workshop build-along pages
         run: npm run test:canvas-workshops
+
+      - name: Canvas build-alongs render clean (all pages, 390/1440)
+        run: npm run test:canvas-workshops-all
+
+      - name: Canvas preview runs learner code
+        run: npm run test:canvas-preview-runtime
+
+      - name: Canvas next-step map integrity
+        run: npm run test:canvas-next-integrity
+
+      - name: Non-canvas workshop pages render clean (all pages, 390/1440)
+        run: npm run test:workshops-pages-all
+
+      - name: Build a Game in 15 Minutes demo + editor
+        run: npm run test:build-a-game-15-min
+
+      - name: Progress + save honesty (progress indicator and where it is saved)
+        run: npm run test:progress-save
+
+      - name: Security headers + redirects gate
+        run: npm run test:security-headers
 
       - name: Shared workshop action delegator guard
         run: node tests/workshop-actions.js
@@ -102,6 +132,9 @@ jobs:
 
       - name: Quality gate wiring guard
         run: node tests/validate-wiring.js
+
+      - name: CSP sync guard (page metas match the shared policy)
+        run: npm run check:csp-sync
 
       - name: Board drift + schema gate (private, skipped in CI if no tasks.json)
         run: |

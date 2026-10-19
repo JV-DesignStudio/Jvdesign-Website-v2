@@ -213,7 +213,13 @@ var WORKSHOP_KEY_TO_ID = {
     'jvds-terraria-world-ep12-v2': 'terraria-world-ep12-design',
     'jvds-roblox-sim-lockdown-1-v1': 'roblox-sim-lockdown-1-workshop',
     'jvds-roblox-sim-lockdown-2-v1': 'roblox-sim-lockdown-2-workshop',
-    'jvds-roblox-sim-lockdown-3-v1': 'roblox-sim-lockdown-3-workshop'
+    'jvds-roblox-sim-lockdown-3-v1': 'roblox-sim-lockdown-3-workshop',
+    'jvds-my-first-cpp-game-v2': 'my-first-cpp-game',
+    'jvds-my-first-defold-game-v2': 'my-first-defold-game',
+    'jvds-my-first-gdevelop-game-v2': 'my-first-gdevelop-game',
+    'jvds-my-first-pico8-game-v2': 'my-first-pico8-game',
+    'jvds-my-first-python-v2': 'my-first-python-game',
+    'jvds-my-first-scratch-v2': 'my-first-scratch-game'
 };
 
 class PlayerProfile {

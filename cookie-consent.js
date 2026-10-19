@@ -10,7 +10,7 @@
     status: function(){ return readCookie(CONSENT_KEY) || 'unset'; },
     reopen: function(){
       document.cookie = CONSENT_KEY + '=;path=/;max-age=0';
-      localStorage.removeItem(CONSENT_KEY);
+      try{ localStorage.removeItem(CONSENT_KEY); }catch(e){}
       if(typeof gtag === 'function'){ gtag('consent','update',{analytics_storage:'denied'}); }
       if(document.getElementById('cookie-banner')) return;
       location.reload();
@@ -25,7 +25,8 @@
     document.cookie = name+'='+encodeURIComponent(value)+';path=/;max-age='+maxAge+';SameSite=Lax;Secure';
   }
 
-  var saved = readCookie(CONSENT_KEY) || localStorage.getItem(CONSENT_KEY);
+  var saved = readCookie(CONSENT_KEY);
+  if(!saved){ try{ saved = localStorage.getItem(CONSENT_KEY); }catch(e){ saved = null; } }
   if(saved === 'accepted'){ grant(); return; }
   if(saved === 'declined'){ return; }
 
@@ -79,14 +80,14 @@
 
   document.getElementById('cookie-accept').addEventListener('click', function(){
     writeCookie(CONSENT_KEY, 'accepted', MAX_AGE);
-    localStorage.removeItem(CONSENT_KEY);
+    try{ localStorage.removeItem(CONSENT_KEY); }catch(e){}
     grant();
     dismiss();
   });
 
   document.getElementById('cookie-decline').addEventListener('click', function(){
     writeCookie(CONSENT_KEY, 'declined', MAX_AGE);
-    localStorage.removeItem(CONSENT_KEY);
+    try{ localStorage.removeItem(CONSENT_KEY); }catch(e){}
     dismiss();
   });
 

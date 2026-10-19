@@ -476,11 +476,17 @@ async function gameplayDepth(browser, base) {
     coinSpawns = Math.max(coinSpawns, s.coinSpawns);
     slickSpawns = Math.max(slickSpawns, s.slickSpawns);
 
-    // Autopilot: take the safest lane, which is also where coins are spawned,
-    // so a long survival picks coins up as it passes through the gap.
+    // Autopilot: chase the nearest coin in a lane with no traffic, otherwise
+    // take the safest lane, so a coin pickup is actually exercised.
     const danger = l => s.cars.reduce((m, c) => c.lane === l ? Math.max(m, c.y) : m, -1);
-    let target = 0;
-    for (const l of [1, 2]) if (danger(l) < danger(target)) target = l;
+    const coin = s.pickups.filter(p => p.type === 'coin').sort((a, b) => b.y - a.y)[0];
+    let target;
+    if (coin && danger(coin.lane) < 0) {
+      target = coin.lane;
+    } else {
+      target = 0;
+      for (const l of [1, 2]) if (danger(l) < danger(target)) target = l;
+    }
     if (target !== s.playerLane) {
       await page.keyboard.press(target < s.playerLane ? 'ArrowLeft' : 'ArrowRight');
     }

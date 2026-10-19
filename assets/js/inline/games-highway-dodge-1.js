@@ -48,9 +48,31 @@ const COMBO_WINDOW = 3.2;   // seconds a near-miss chain stays alive
 const CAR_MUL = 1.3;
 const MAX_DIST = 12000;     // "top speed" milestone distance
 
+/* ── TrafficDash parity (Core06 Game Art project) ──────────────────────────
+   A 120-second timed run with a finish bonus, drift-for-cash, nitro boost,
+   cone/barrel hazards, wrong-way traffic and a W/S throttle. Kept additive so
+   the existing endless/fuel/garage systems keep working. */
+const TIME_LIMIT = (function () {
+  try {
+    const t = parseFloat(new URLSearchParams(location.search).get('time'));
+    return t > 0 ? t : 120;
+  } catch (e) { return 120; }
+})();
+const FINISH_BONUS = 75;         // coins for surviving the full run
+const BOOST_TIME = 4.5;          // seconds of nitro per pickup
+const STUMBLE_TIME = 1.3;        // seconds of wobble after a cone
+const BOOST_MULT = 1.34;
+const STUMBLE_MULT = 0.55;
+const DRIFT_CASH_RATE = 0.45;
+const DRIFT_MIN_SPEED = 380;     // reference speed before a slide counts
+
 let running = false, dead = false, paused = false;
-let player, cars, pickups, slicks, particles, roadLines;
+let player, cars, pickups, slicks, particles, roadLines, hazards, skids;
 let score, speed, dist, nearMiss, combo, comboTimer, fuel, bestCombo, carsPassed;
+let timeLeft, throttle, boostTimer, stumbleTimer, invuln;
+let driftPoints, driftWindow, drifting, driftSkidTimer;
+let runCash, distanceCash, nearCash, pickupCash;
+let hazardTimer, wrongWaySpawns;
 let scoreCarry = 0;
 let best = (sys ? GameSystem.getBestScore('highway-dodge') : 0) || 0;
 let last = 0, spawnTimer = 0, slickTimer = 0, skyTime = 0, dustTimer = 0, slipTimer = 0;
@@ -156,6 +178,9 @@ function haptic(ms){
   try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
 }
 
+// Held-key state for the W/S throttle.
+const keys = {};
+
 /* ── Missions: one rotating goal per day, one per week, scoped to this game ── */
 function dayNum(){ return Math.floor(Date.now() / 86400000); }
 function weekNum(){ const n = new Date(); return Math.floor(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()) / 86400000 / 7); }
@@ -204,6 +229,9 @@ window.__highway = {
     for (let i = 0; i < cars.length; i++) {
       for (let j = i + 1; j < cars.length; j++) {
         const a = cars[i], b = cars[j];
+        // Wrong-way cars are deliberately oncoming, so they may pass a
+        // same-lane car head-on; the fairness guarantee is about spawn rows.
+        if (a.wrongWay || b.wrongWay) continue;
         if (a.lane === b.lane && Math.abs(a.y - b.y) < (a.h + b.h) / 2 - 1) n++;
       }
     }
@@ -222,6 +250,39 @@ window.__highway = {
   get comboTimer() { return comboTimer; },
   get vscale() { return vscale; },
   get endReason() { return endReason; },
+  // TrafficDash parity surface (A1719b).
+  get timeLeft() { return timeLeft; },
+  get timeLimit() { return TIME_LIMIT; },
+  get throttle() { return throttle; },
+  get boost() { return boostTimer; },
+  get stumble() { return stumbleTimer; },
+  get drift() { return driftPoints; },
+  get drifting() { return drifting; },
+  get runCash() { return Math.floor(runCash); },
+  get wrongWaySpawns() { return wrongWaySpawns; },
+  hazards() { return hazards.map(h => ({ lane: h.lane, y: h.y, type: h.type })); },
+  setTimeLeft(t) { timeLeft = Math.max(0, +t || 0); return timeLeft; },
+  setThrottle(v) { throttle = Math.max(-1, Math.min(1, +v || 0)); return throttle; },
+  // Deterministic spawn seams so a test can exercise one system at a time.
+  debugPickup(type, lane) {
+    const laneN = typeof lane === 'number' ? lane : (player ? player.lane : 1);
+    const p = makePickup(laneN);
+    p.type = type; p.x = laneX(laneN); p.y = H - player.h * 2.0;
+    pickups.push(p); return { type: p.type, lane: laneN };
+  },
+  debugHazard(type, lane) {
+    const laneN = typeof lane === 'number' ? lane : (player ? player.lane : 1);
+    const hz = { x: laneX(laneN), y: H - player.h * 2.0, lane: laneN, type, r: laneW * (type === 'barrel' ? .3 : .24) };
+    hazards.push(hz); return { type, lane: laneN };
+  },
+  debugWrongWay(lane) {
+    const laneN = typeof lane === 'number' ? lane : (player ? player.lane : 1);
+    const spec = VEHICLES.car;
+    const w = laneW * spec.w, h = laneW * spec.h;
+    cars.push({ x: laneX(laneN), y: H + h * 1.5, w, h, lane: laneN, type: 'car', wrongWay: true, dir: -1, color: '#ef4444', nearCounted: false, passed: true });
+    wrongWaySpawns++;
+    return laneN;
+  },
   // A1648 fairness + shop surface for the test suite.
   get walls() { return wallFrames; },
   get rows() { return spawnRows; },
@@ -288,6 +349,16 @@ function fit() {
 
 function laneX(lane) { return roadL + laneW / 2 + lane * laneW; }
 
+// Effective road speed in reference units: base speed shaped by the throttle,
+// nitro boost and cone-stumble, exactly like the Godot build.
+function effectiveSpeed(ref) {
+  const base = (ref == null) ? (280 + dist * .04) : ref;
+  const th = Math.max(.45, Math.min(1.6, 1 + throttle * .5));
+  const boost = boostTimer > 0 ? BOOST_MULT : 1;
+  const stumble = stumbleTimer > 0 ? STUMBLE_MULT : 1;
+  return base * th * boost * stumble;
+}
+
 const VEHICLES = {
   car:   { w:.54, h:1.00, colors:['#ef4444','#3b82f6','#22c55e','#a855f7','#f97316','#ec4899','#06b6d4'] },
   sport: { w:.50, h:.92,  colors:['#facc15','#fb7185','#38bdf8','#4ade80','#f472b6'] },
@@ -349,7 +420,7 @@ function topEdgeClear(minGap) {
 function makePickup(lane) {
   if (typeof lane !== 'number') lane = gapLane;
   const r = Math.random();
-  const type = r < .18 ? 'shield' : r < .48 ? 'fuel' : 'coin';
+  const type = r < .15 ? 'shield' : r < .34 ? 'fuel' : r < .54 ? 'boost' : 'coin';
   if (type === 'coin') coinSpawns++;
   return { x: laneX(lane), y: -40 * U, lane, type, r: laneW * .26, bob: 0, value: type === 'coin' ? 5 : 0 };
 }
@@ -360,13 +431,50 @@ function spawnSlick() {
   slicks.push({ x: laneX(lane), y: -30 * U, lane, r: laneW * .62 });
 }
 
+// Cones make the car wobble (stumble); a barrel is a hard crash. Both mirror
+// the TrafficDash hazards and are drawn as road-side objects.
+function spawnHazard() {
+  const lane = Math.floor(Math.random() * LANE_COUNT);
+  if (Math.random() < .22) {
+    hazards.push({ x: laneX(lane), y: -30 * U, lane, type: 'barrel', r: laneW * .3 });
+  } else {
+    const count = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < count; i++) {
+      hazards.push({ x: laneX(lane), y: -30 * U - i * 72 * U, lane, type: 'cone', r: laneW * .24 });
+    }
+  }
+}
+
+// Oncoming traffic: spawns below the player and drives up the road, like the
+// Godot build's wrong-way cars. Excluded from the wall check (see laneBlocked)
+// so it can never fake an impossible row.
+function spawnWrongWay() {
+  // Never oncoming straight into the player's current lane: pick a different one.
+  let lane = Math.floor(Math.random() * (LANE_COUNT - 1));
+  if (player && lane >= player.lane) lane++;
+  const spec = VEHICLES.car;
+  const w = laneW * spec.w, h = laneW * spec.h;
+  cars.push({
+    x: laneX(lane), y: H + h, w, h, lane, type: 'car', wrongWay: true, dir: -1,
+    color: '#ef4444', nearCounted: false, passed: true
+  });
+  wrongWaySpawns++;
+  try { audio?.playError?.(); } catch (e) {}
+}
+
 function reset() {
   player = { lane: 1, x: 0, targetX: 0, w: laneW * .48, h: laneW * 1.05, shield: lvl('shield'), tilt: 0 };
   player.x = laneX(1);
   player.targetX = player.x;
-  cars = []; pickups = []; slicks = []; particles = []; roadLines = [];
+  cars = []; pickups = []; slicks = []; particles = []; roadLines = []; hazards = []; skids = [];
   score = 0; speed = 280 * vscale; dist = 0; nearMiss = 0; combo = 0; comboTimer = 0; bestCombo = 0; carsPassed = 0;
   fuel = fuelMax();
+  timeLeft = TIME_LIMIT;
+  throttle = 0; boostTimer = 0; stumbleTimer = 0; invuln = 0;
+  driftPoints = 0; driftWindow = 0; drifting = false; driftSkidTimer = 0;
+  runCash = 0; distanceCash = 0; nearCash = 0; pickupCash = 0;
+  hazardTimer = 4 + Math.random() * 3;
+  wrongWaySpawns = 0;
   scoreCarry = 0;
   spawnTimer = 0;
   slickTimer = 3.5 + Math.random() * 3;
@@ -396,7 +504,8 @@ function toast(msg) {
 const GUIDE = [
   'Steer with a <b>swipe</b>, the ◀ ▶ buttons, or the arrow keys / A and D.',
   '<b>Ember:</b> there is always a gap. Look ahead and pick the empty lane.',
-  'Grab ⛽ fuel, 🛡 shields and 🪙 coins, then spend coins in the 🛒 Shop.'
+  'Change lanes at speed to <b>drift</b> for extra cash. Grab ⚡ nitro, 🛡 shields, ⛽ fuel and 🪙 coins.',
+  'Dodge 🚧 cones and barrels, then reach the finish before the clock runs out.'
 ];
 function startGuide(){
   let seen = false;
@@ -443,6 +552,9 @@ function moveLane(dir) {
     player.lane = newLane;
     player.targetX = laneX(newLane);
     player.tilt = dir * .3;
+    // A lane change at speed kicks off a short drift that earns cash, the way
+    // the Godot build rewards sliding sideways.
+    if (effectiveSpeed() > DRIFT_MIN_SPEED) { driftWindow = .6; }
     try { audio?.playTap?.(); } catch(e) {}
   }
 }
@@ -511,8 +623,13 @@ function endGame(reason) {
   // Achievements that are judged at run end.
   if (score >= 1000) unlock('hd-first-1000');
   if (dist >= MAX_DIST) unlock('hd-maxspeed');
-  // Coins are the shop's currency: banked from score, near-misses and combo.
-  const earned = Math.max(1, Math.floor(score / 20) + nearMiss * 2 + bestCombo * 3);
+  // Coins are the shop's currency: distance + near-misses + pickups + drift,
+  // the TrafficDash run-earnings model, plus the base score/combo bonus. A
+  // completed timed run adds the finish bonus.
+  const driftCash = Math.floor(driftPoints * DRIFT_CASH_RATE);
+  const finishBonus = endReason === 'win' ? FINISH_BONUS : 0;
+  runCash = distanceCash + nearCash + pickupCash + driftCash + finishBonus;
+  const earned = Math.max(1, Math.floor(runCash) + Math.floor(score / 20) + nearMiss * 2 + bestCombo * 3);
   garage.coins += earned;
   addMission('score', score);
   saveGarage();
@@ -520,11 +637,12 @@ function endGame(reason) {
   refreshLeaderboard();
   refreshCoins();
   sys?.saveState?.();
-  if (!reduceMotion) burst(player.x, H - player.h * 1.5, endReason === 'stall' ? '#22c55e' : '#ef4444', 30);
-  try { audio?.playError?.(); } catch(e) {}
+  if (!reduceMotion) burst(player.x, H - player.h * 1.5, endReason === 'stall' ? '#22c55e' : endReason === 'win' ? '#fbbf24' : '#ef4444', 30);
+  if (endReason === 'win') { try { audio?.playSuccess?.(); } catch (e) {} }
+  else { try { audio?.playError?.(); } catch(e) {} }
   toast('Run banked +' + earned + ' coins');
   if (storyRun) {
-    storyRun.finish(score > 2000 ? 'success' : 'fail', score);
+    storyRun.finish((endReason === 'win' || score > 2000) ? 'success' : 'fail', score);
   } else {
     showEnd(earned);
   }
@@ -532,9 +650,12 @@ function endGame(reason) {
 
 function showEnd(earned) {
   if (earned == null) earned = 0;
-  $('endTitle').textContent = endReason === 'stall' ? 'Out of Fuel!' : score > 5000 ? 'Epic Run!' : score > 2000 ? 'Nice Drive!' : 'Crashed!';
+  $('endTitle').textContent = endReason === 'win' ? 'You Made It!'
+    : endReason === 'stall' ? 'Out of Fuel!'
+    : score > 5000 ? 'Epic Run!' : score > 2000 ? 'Nice Drive!' : 'Crashed!';
   $('endStats').innerHTML = [
-    ['Score', score], ['Near Misses', nearMiss], ['Top Speed', Math.round(60 + dist * .008)], ['Coins', '+' + earned], ['Best', best]
+    ['Score', score], ['Near Misses', nearMiss], ['Drift', Math.floor(driftPoints)],
+    ['Top Speed', Math.round(60 + dist * .008)], ['Coins', '+' + earned], ['Best', best]
   ].map(s => '<div><b>' + s[1] + '</b><small>' + s[0] + '</small></div>').join('');
   $('endScreen').classList.remove('hidden');
 }
@@ -880,6 +1001,23 @@ function paintCar(g, w, h, o) {
   }
 }
 
+function fmtTime(sec) {
+  const s = Math.max(0, Math.ceil(sec));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+function liveRunCash() {
+  return distanceCash + nearCash + pickupCash + driftPoints * DRIFT_CASH_RATE;
+}
+
+function statusText() {
+  const parts = [];
+  if (boostTimer > 0) parts.push('NITRO ' + boostTimer.toFixed(1) + 's');
+  if (player && player.shield > 0) parts.push('SHIELD');
+  if (stumbleTimer > 0) parts.push('WOBBLY!');
+  return parts.join('   ');
+}
+
 function hud() {
   $('scoreHud').textContent = score;
   $('comboHud').textContent = combo;
@@ -891,6 +1029,10 @@ function hud() {
   $('fuelCell').classList.toggle('low', fuel < fuelMax() * .3);
   const coinEl = $('coinHud');
   if (coinEl) coinEl.textContent = garage.coins;
+  const tEl = $('timeHud'); if (tEl) tEl.textContent = fmtTime(timeLeft);
+  const rEl = $('runHud'); if (rEl) rEl.textContent = Math.floor(liveRunCash());
+  const dEl = $('driftHud'); if (dEl) dEl.textContent = drifting ? Math.floor(driftPoints) : '0';
+  const sEl = $('statusHud'); if (sEl) sEl.textContent = statusText();
   if (storyRun) storyRun.setScore(score);
 }
 
@@ -908,6 +1050,7 @@ function detectWall() {
 function laneBlocked(lane, y) {
   for (let i = 0; i < cars.length; i++) {
     const c = cars[i];
+    if (c.wrongWay) continue;
     if (c.lane === lane && y >= c.y - c.h / 2 && y <= c.y + c.h / 2) return true;
   }
   return false;
@@ -924,12 +1067,42 @@ function update(dt) {
   if (!running || dead) return;
 
   const refSpeed = 280 + dist * .04;
-  dist += refSpeed * dt;
-  speed = refSpeed * vscale;
-  scoreCarry += dt * refSpeed * .15;
+  const eff = effectiveSpeed(refSpeed);
+  dist += eff * dt;
+  speed = eff * vscale;
+  scoreCarry += dt * eff * .15;
+  distanceCash += eff * dt * .02;
   const gain = Math.floor(scoreCarry);
   if (gain > 0) { score += gain; scoreCarry -= gain; addMission('score', gain); }
   if (milestones) milestones.check(score);
+
+  // TrafficDash: a timed run. Reach the finish and bank a bonus.
+  timeLeft -= dt;
+  if (timeLeft <= 0) { timeLeft = 0; hud(); endGame('win'); return; }
+
+  // Throttle: W / Up to push on, S / Down to ease off.
+  const thUp = keys['w'] || keys['arrowup'];
+  const thDown = keys['s'] || keys['arrowdown'];
+  if (thUp && !thDown) throttle = Math.min(1, throttle + 3.5 * dt);
+  else if (thDown && !thUp) throttle = Math.max(-1, throttle - 3.5 * dt);
+  else throttle = throttle > 0 ? Math.max(0, throttle - 3.0 * dt) : Math.min(0, throttle + 3.0 * dt);
+
+  if (boostTimer > 0) boostTimer = Math.max(0, boostTimer - dt);
+  if (stumbleTimer > 0) stumbleTimer = Math.max(0, stumbleTimer - dt);
+  if (invuln > 0) invuln = Math.max(0, invuln - dt);
+
+  // Drift: sliding sideways at speed earns cash, with skid marks behind you.
+  if (driftWindow > 0) {
+    driftWindow -= dt;
+    drifting = true;
+    driftPoints += (eff / 600) * 12 * dt * vscale;
+    driftSkidTimer -= dt;
+    if (driftSkidTimer <= 0) { driftSkidTimer = .05; skids.push({ x: player.x, y: H - player.h * 1.3, life: 1 }); }
+  } else {
+    drifting = false;
+  }
+  skids.forEach(s => { s.y += speed * dt; s.life -= dt * 1.5; });
+  skids = skids.filter(s => s.life > 0);
 
   fuel -= (2.3 + dist * .00005) * dt;
   if (fuel <= 0) { fuel = 0; hud(); endGame('stall'); return; }
@@ -958,6 +1131,7 @@ function update(dt) {
       const gap = Math.max(.34, .92 - dist * .00004);
       spawnTimer = gap + Math.random() * gap * .4;
       if (Math.random() < .38) pickups.push(makePickup(gapLane));
+      if (dist > 1200 && Math.random() < .14) spawnWrongWay();
     } else {
       spawnTimer = 0.06;
     }
@@ -969,6 +1143,12 @@ function update(dt) {
     slickTimer = 4 + Math.random() * 4;
   }
 
+  hazardTimer -= dt;
+  if (hazardTimer <= 0) {
+    spawnHazard();
+    hazardTimer = 4 + Math.random() * 3.5;
+  }
+
   const pTop = H - player.h * 1.8;
   const pBot = H - player.h * .5;
   const pHalfW = player.w / 2;
@@ -976,9 +1156,11 @@ function update(dt) {
 
   for (let i = cars.length - 1; i >= 0; i--) {
     const c = cars[i];
-    c.y += speed * CAR_MUL * dt;
+    // Oncoming cars move at their own factor (slower than the road scroll) so a
+    // wrong-way encounter is readable, not an instant unavoidable crash.
+    c.y += speed * (c.dir < 0 ? .82 : CAR_MUL) * dt;
 
-    if (c.y > H + c.h) { cars.splice(i, 1); continue; }
+    if (c.dir < 0 ? c.y < -c.h : c.y > H + c.h) { cars.splice(i, 1); continue; }
 
     const cTop = c.y - c.h / 2;
     const cBot = c.y + c.h / 2;
@@ -1010,6 +1192,7 @@ function update(dt) {
         comboTimer = COMBO_WINDOW;
         const bonus = Math.round((50 + combo * 25) * (1 + 0.15 * lvl('combo')));
         score += bonus;
+        nearCash += bonus;
         addMission('nearMiss', 1);
         if (nearMiss >= 50) unlock('hd-near-50');
         toast('Near Miss x' + combo + ' +' + bonus);
@@ -1034,19 +1217,24 @@ function update(dt) {
         score += 100;
       } else if (p.type === 'coin') {
         garage.coins += p.value;
+        pickupCash += p.value;
         coinPickups++;
         saveGarage();
         addMission('coins', 1);
         refreshCoins();
         toast('+' + p.value + ' 🪙');
         score += 20;
+      } else if (p.type === 'boost') {
+        boostTimer = BOOST_TIME;
+        toast('Nitro!');
+        score += 100;
       } else {
         fuel = Math.min(fuelMax(), fuel + FUEL_PER_PICKUP);
         addMission('fuel', 1);
         toast('+Fuel');
         score += 50;
       }
-      burst(p.x, p.y, p.type === 'shield' ? '#22d3ee' : p.type === 'coin' ? '#fbbf24' : '#22c55e', 12);
+      burst(p.x, p.y, p.type === 'shield' ? '#22d3ee' : p.type === 'coin' ? '#fbbf24' : p.type === 'boost' ? '#38bdf8' : '#22c55e', 12);
       haptic(10);
       try { audio?.playPop?.(); } catch(e) {}
       pickups.splice(i, 1);
@@ -1061,6 +1249,38 @@ function update(dt) {
       slipTimer = 1.1;
       toast('Oil! Hold your line');
       haptic(20);
+    }
+  }
+
+  // Hazards: a cone sends the car wobbly, a barrel is a crash (shield absorbs).
+  for (let i = hazards.length - 1; i >= 0; i--) {
+    const hz = hazards[i];
+    hz.y += speed * dt;
+    if (hz.y > H + 60) { hazards.splice(i, 1); continue; }
+    if (Math.abs(player.x - hz.x) < pHalfW + hz.r * .8 && Math.abs((pTop + pBot) / 2 - hz.y) < player.h / 2 + hz.r * .8) {
+      hazards.splice(i, 1);
+      if (hz.type === 'barrel') {
+        if (player.shield > 0 || invuln > 0) {
+          player.shield = Math.max(0, player.shield - 1);
+          invuln = 1.3;
+          toast('Shield saved you!');
+          burst(hz.x, hz.y, '#22d3ee', 20);
+          haptic(25);
+        } else {
+          burst(hz.x, hz.y, '#ef4444', 24);
+          endGame('crash');
+          return;
+        }
+      } else {
+        stumbleTimer = STUMBLE_TIME;
+        throttle *= .35;
+        combo = 0;
+        toast('Cone! Wobbly...');
+        burst(hz.x, hz.y, '#f97316', 12);
+        haptic(20);
+        try { audio?.playError?.(); } catch (e) {}
+      }
+      continue;
     }
   }
 
@@ -1263,6 +1483,14 @@ function drawSlick(s) {
 function drawVehicle(c) {
   ctx.save();
   ctx.translate(c.x, c.y);
+  if (c.wrongWay) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(239,68,68,.9)';
+    ctx.lineWidth = 3 * U;
+    ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 12 * U;
+    rr(ctx, -c.w / 2, -c.h / 2, c.w, c.h, 6 * U); ctx.stroke();
+    ctx.restore();
+  }
   const lc = '#fde68a';
   const wash = ctx.createLinearGradient(0, c.h / 2, 0, c.h / 2 + 60 * U);
   wash.addColorStop(0, 'rgba(253,230,138,.2)'); wash.addColorStop(1, 'rgba(253,230,138,0)');
@@ -1326,12 +1554,22 @@ function drawPlayer() {
   paintCar(ctx, player.w, player.h, { body: skin.body, accent: skin.accent, glass: skin.glass, lights: skin.lights, style: skin.style, rainbow: skin.rainbow });
 
   const hw = player.w / 2, hh = player.h / 2;
-  const flame = (8 + Math.sin(dist * .05) * 5) * U;
-  ctx.fillStyle = 'rgba(251,146,60,.7)';
+  const nitro = boostTimer > 0;
+  const flame = ((nitro ? 18 : 8) + Math.sin(dist * .05) * 5) * U;
+  ctx.fillStyle = nitro ? 'rgba(56,189,248,.85)' : 'rgba(251,146,60,.7)';
+  if (nitro) { ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 18 * U; }
   ctx.beginPath();
   ctx.moveTo(-hw + 8 * U, hh); ctx.lineTo(-hw + 4 * U, hh + flame); ctx.lineTo(-hw + 16 * U, hh); ctx.closePath(); ctx.fill();
   ctx.beginPath();
   ctx.moveTo(hw - 8 * U, hh); ctx.lineTo(hw - 4 * U, hh + flame); ctx.lineTo(hw - 16 * U, hh); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  if (stumbleTimer > 0) {
+    ctx.fillStyle = 'rgba(249,115,22,.85)';
+    ctx.font = 'bold ' + (20 * U) + 'px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('!', 0, -hh - 6 * U);
+  }
 
   ctx.restore();
 }
@@ -1339,7 +1577,7 @@ function drawPlayer() {
 function drawPickup(p) {
   ctx.save();
   ctx.translate(p.x, p.y + Math.sin(p.bob) * 4 * U);
-  const col = p.type === 'shield' ? '#22d3ee' : p.type === 'coin' ? '#fbbf24' : '#22c55e';
+  const col = p.type === 'shield' ? '#22d3ee' : p.type === 'coin' ? '#fbbf24' : p.type === 'boost' ? '#38bdf8' : '#22c55e';
   ctx.fillStyle = col;
   ctx.shadowColor = col;
   ctx.shadowBlur = 14 * U;
@@ -1351,7 +1589,7 @@ function drawPickup(p) {
   ctx.font = 'bold ' + (16 * U) + 'px system-ui';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(p.type === 'shield' ? '🛡' : p.type === 'coin' ? '🪙' : '⛽', 0, 1);
+  ctx.fillText(p.type === 'shield' ? '🛡' : p.type === 'coin' ? '🪙' : p.type === 'boost' ? '⚡' : '⛽', 0, 1);
   ctx.restore();
 }
 
@@ -1371,6 +1609,38 @@ function drawComboMeter() {
   ctx.restore();
 }
 
+function drawSkid(s) {
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, s.life) * .5;
+  ctx.fillStyle = '#020409';
+  rr(ctx, s.x - 3 * U, s.y, 6 * U, 20 * U, 3 * U); ctx.fill();
+  ctx.restore();
+}
+
+function drawHazard(hz) {
+  ctx.save();
+  ctx.translate(hz.x, hz.y);
+  if (hz.type === 'barrel') {
+    ctx.fillStyle = '#b45309';
+    rr(ctx, -hz.r * .8, -hz.r, hz.r * 1.6, hz.r * 2, hz.r * .3); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.75)';
+    rr(ctx, -hz.r * .8, -hz.r * .2, hz.r * 1.6, hz.r * .4, hz.r * .15); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    rr(ctx, -hz.r * .8, -hz.r, hz.r * 1.6, hz.r * .35, hz.r * .2); ctx.fill();
+  } else {
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.moveTo(0, -hz.r);
+    ctx.lineTo(-hz.r * .9, hz.r);
+    ctx.lineTo(hz.r * .9, hz.r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-hz.r * .55, hz.r * .1, hz.r * 1.1, hz.r * .34);
+  }
+  ctx.restore();
+}
+
 function draw() {
   if (!W || !H) return;
   ctx.clearRect(0, 0, W, H);
@@ -1384,7 +1654,9 @@ function draw() {
   drawGuardrail();
   drawRoad();
   drawRoadProps();
+  skids.forEach(drawSkid);
   slicks.forEach(drawSlick);
+  hazards.forEach(drawHazard);
   pickups.forEach(drawPickup);
   cars.forEach(drawVehicle);
   drawPlayer();
@@ -1432,11 +1704,13 @@ C.addEventListener('pointermove', e => {
 C.addEventListener('pointerup', () => swiping = false);
 
 document.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') moveLane(-1);
   if (e.code === 'ArrowRight' || e.code === 'KeyD') moveLane(1);
   if (e.code === 'Space') { if (!running) startGame(); }
-  if (['ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyW','KeyS'].includes(e.code)) e.preventDefault();
 });
+document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
 $('playBtn').onclick = startGame;
 $('againBtn').onclick = startGame;

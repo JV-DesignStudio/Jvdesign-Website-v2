@@ -5270,34 +5270,6 @@ window.JVDS_CONTENT = {
       "url": "/games/highway-dodge.html"
     },
     {
-      "id": "cozy-cafe-match",
-      "title": "Cozy Cafe Match",
-      "tag": "Match-3 · Serve the guests",
-      "emoji": "☕",
-      "category": "Puzzle",
-      "cover": "CozyCafeCover.webp",
-      "bg": "linear-gradient(135deg,#d4a5e0,#e8d5f2)",
-      "desc": "One cosy morning in Pip's cafe: match pastries to fill each guest's craving, serve all five, then the shutters close. No grind, one warm replay.",
-      "kids": false,
-      "age": "Ages 8-14",
-      "character": null,
-      "url": "/games/cozy-cafe-match-game.html"
-    },
-    {
-      "id": "biscuit-clicker",
-      "title": "Biscuit Tin Clicker",
-      "tag": "Clicker · Idle",
-      "emoji": "🍪",
-      "category": "Chill",
-      "cover": "biscuit-tin-clicker.webp",
-      "bg": "linear-gradient(135deg,#f4a460,#c9936b)",
-      "desc": "Cosy clicker , tap biscuits, buy upgrades and fill your tin. Idle earnings while away.",
-      "kids": false,
-      "age": "Ages 8-14",
-      "character": null,
-      "url": "/games/cozy-biscuit-clicker.html"
-    },
-    {
       "id": "sky-high-friends",
       "title": "Sky High With Friends",
       "tag": "Solo Climb · Action",
@@ -6285,9 +6257,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-18T20:53:29.771Z",
+    "generated": "2026-10-19T15:39:31.506Z",
     "workshops": 344,
-    "games": 14,
+    "games": 12,
     "tools": 49,
     "books": 5,
     "engines": {

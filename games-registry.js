@@ -19,8 +19,9 @@ window.JVDS_GAMES = [
     "finishLine": "The run ends, but your best layer is saved and the next run starts stronger.",
     "arcadeSession": "5-10 min",
     "age": "Ages 10-15",
-    "learning": "Risk and reward · Resource choices · Reflexes"
-  },
+    "learning": "Risk and reward · Resource choices · Reflexes",
+    "learnHref": "/tools/gdd-builder.html",
+    "learnLabel": "Plan your own survival game"},
   {
     "id": "echo-flight",
     "thumb": "assets/game-thumbs/echo-flight.webp",
@@ -42,8 +43,9 @@ window.JVDS_GAMES = [
     "finishLine": "The coral opens, Echo reaches the far water and your best swim is saved.",
     "arcadeSession": "3-5 min",
     "age": "Ages 8-14",
-    "learning": "Timing · Rhythm · Focus"
-  },
+    "learning": "Timing · Rhythm · Focus",
+    "learnHref": "/workshops/scratch-catch-workshop.html",
+    "learnLabel": "Build a timing game in Scratch"},
   {
     "id": "nova-siege",
     "thumb": "assets/game-thumbs/nova-siege.webp",
@@ -63,6 +65,8 @@ window.JVDS_GAMES = [
     "objective": "Dodge the swarm, shoot the galactic army, and bank credits to upgrade your ship.",
     "age": "Ages 8-14",
     "learning": "Reflexes · Resource planning · Upgrade strategy",
+    "learnHref": "/tools/arcade-game-maker.html",
+    "learnLabel": "Make your own space shooter",
     "description": "A remastered top-down pixel space shooter in the classic Seek and Destroy arcade style: drag to fly, dodge the swarm, shoot the galactic army, beat stage bosses, and spend banked credits on permanent ship upgrades and unlockable hulls.",
     "playPromise": "Fly your pixel ship, clear the swarm, drop a stage boss, then spend your credits on a stronger ship and launch again.",
     "storyHook": "The Swarm is streaming out of the Nova gate and Pip needs a pilot: fly the defence ship and hold the line.",
@@ -93,7 +97,9 @@ window.JVDS_GAMES = [
     "arcadeSession": "3-5 min",
     "age": "Ages 10-15",
     "learning": "Strategy · Positioning · Upgrade planning"
-  },
+  ,
+    "learnHref": "/tools/gdd-builder.html",
+    "learnLabel": "Plan a strategy game"},
   {
     "id": "tower-defence",
     "thumb": "assets/game-thumbs/tower-defence.webp",
@@ -114,8 +120,9 @@ window.JVDS_GAMES = [
     "finishLine": "The night breaks and the kingdom stands, ready for the next age.",
     "arcadeSession": "5-10 min",
     "age": "Ages 9-15",
-    "learning": "Planning · Resource management · Strategy"
-  },
+    "learning": "Planning · Resource management · Strategy",
+    "learnHref": "/tools/level-designer.html",
+    "learnLabel": "Design a tower defence level"},
   {
     "id": "ember-smash",
     "thumb": "assets/game-thumbs/ember-smash.webp",
@@ -141,6 +148,8 @@ window.JVDS_GAMES = [
     "players": "Solo",
     "status": "improved",
     "learning": "Reflex · Bounce",
+    "learnHref": "/workshops/scratch-catch-workshop.html",
+    "learnLabel": "Build a reflex game in Scratch",
     "playPromise": "Bounce the spark off Ember's paddle, smash every glowing brick and clear all six forges.",
     "searchText": "Ember Smash: Brick Forge Reflex · Bounce Bounce the spark off Ember's paddle, smash every glowing brick and clear all six forges. Brick Forge Reflex · Bounce Ages 8-12 educational improved learning"
   },
@@ -165,8 +174,9 @@ window.JVDS_GAMES = [
     "finishLine": "The board clears, fever lands and Ember keeps your best score.",
     "arcadeSession": "Under 5 min",
     "age": "Ages 7-13",
-    "learning": "Pattern matching · Combo planning · Fast decisions"
-  },
+    "learning": "Pattern matching · Combo planning · Fast decisions",
+    "learnHref": "/workshops/js-memory-workshop.html",
+    "learnLabel": "Build a memory game"},
   {
     "id": "highway-dodge",
     "thumb": "assets/game-thumbs/highway-dodge.webp",
@@ -185,6 +195,8 @@ window.JVDS_GAMES = [
     "objective": "There is always a way through. Dodge the traffic, chain near-misses and bank coins.",
     "age": "Ages 8-14",
     "learning": "Reflexes · Risk-reward · Pattern reading",
+    "learnHref": "/workshops/scratch-maze-workshop.html",
+    "learnLabel": "Build a dodging game in Scratch",
     "description": "A high-speed lane-switching traffic dodger. Every wave of traffic leaves a gap you can reach, so no run is ever unfair. Swerve between oncoming cars, chain near-misses for combo multipliers, collect fuel, shields and coins, then spend coins on a garage of custom cars and upgrades.",
     "playPromise": "Pick a lane, find the gap, chain near-misses, and spend the coins you bank on a garage of cars and upgrades.",
     "storyHook": "Ember is on the highway and the traffic is getting heavier every second.",
@@ -192,52 +204,6 @@ window.JVDS_GAMES = [
     "finishLine": "The traffic finally catches up, but your best score is saved and the highway is waiting.",
     "arcadeSession": "3-5 min",
     "status": "improved"
-  },
-  {
-    "id": "cozy-cafe-match",
-    "thumb": "assets/game-thumbs/cozy-cafe-match.webp",
-    "cat": "Puzzle",
-    "file": "cozy-cafe-match-game.html",
-    "title": "Cozy Cafe Match",
-    "tag": "Match-3 · Serve the guests",
-    "emoji": "☕",
-    "cover": "CozyCafeCover.webp",
-    "bg": "linear-gradient(135deg,#d4a5e0,#e8d5f2)",
-    "kids": false,
-    "desc": "One cosy morning in Pip's cafe: match pastries to fill each guest's craving, serve all five, then the shutters close. No grind, one warm replay.",
-    "difficulty": "Easy to learn",
-    "session": "3-5 min",
-    "controls": "Swap tiles to match",
-    "storyHook": "Pip's cafe opens for one morning rush and 5 guests are already at the door.",
-    "character": "Pip",
-    "objective": "Match the pastries, fill the cravings and serve all 5 guests.",
-    "finishLine": "The fifth guest leaves, the tip jar is counted and Pip closes the shutters.",
-    "arcadeSession": "3-5 min",
-    "age": "Ages 8-14",
-    "learning": "Memory · Matching"
-  },
-  {
-    "id": "biscuit-clicker",
-    "thumb": "assets/game-thumbs/biscuit-clicker.webp",
-    "cat": "Chill",
-    "file": "cozy-biscuit-clicker.html",
-    "title": "Biscuit Tin Clicker",
-    "tag": "Clicker · Idle",
-    "emoji": "🍪",
-    "cover": "biscuit-tin-clicker.webp",
-    "bg": "linear-gradient(135deg,#f4a460,#c9936b)",
-    "kids": false,
-    "desc": "Cosy clicker , tap biscuits, buy upgrades and fill your tin. Idle earnings while away.",
-    "difficulty": "Easy to learn",
-    "session": "3-5 min",
-    "controls": "Tap to bake, tap upgrades",
-    "storyHook": "Pip left the biscuit tin open and the whole crew is taking turns.",
-    "character": "Pip",
-    "objective": "Tap the biscuits, buy a few upgrades and fill the tin before it closes.",
-    "finishLine": "The tin is full, Pip counts the haul and the crew thanks you.",
-    "arcadeSession": "3-5 min",
-    "age": "Ages 8-14",
-    "learning": "Incremental planning · Number sense"
   },
   {
     "id": "sky-high-friends",
@@ -260,8 +226,9 @@ window.JVDS_GAMES = [
     "finishLine": "You beat your best height, Echo cheers and the tower is ready for another climb.",
     "arcadeSession": "3-5 min",
     "age": "Ages 8-14",
-    "learning": "Timing · Coordination"
-  },
+    "learning": "Timing · Coordination",
+    "learnHref": "/workshops/scratch-platformer-workshop.html",
+    "learnLabel": "Build a platformer in Scratch"},
   {
     "id": "critter-whack",
     "thumb": "assets/game-thumbs/critter-whack.webp",
@@ -284,7 +251,9 @@ window.JVDS_GAMES = [
     "arcadeSession": "3-5 min",
     "age": "Ages 5-9",
     "learning": "Reaction · Sorting"
-  },
+  ,
+    "learnHref": "/workshops/scratch-clicker-workshop.html",
+    "learnLabel": "Build a fast-tap game"},
   {
     "id": "crossy-crew",
     "thumb": "assets/game-thumbs/crossy-crew.webp",
@@ -307,7 +276,9 @@ window.JVDS_GAMES = [
     "arcadeSession": "3-5 min",
     "age": "Ages 6-12",
     "learning": "Timing · Looking ahead · Quick decisions"
-  },
+  ,
+    "learnHref": "/workshops/scratch-maze-workshop.html",
+    "learnLabel": "Build a road-crossing game"},
   {
     "id": "stardust-snake",
     "thumb": "assets/game-thumbs/stardust-snake.webp",
@@ -329,7 +300,9 @@ window.JVDS_GAMES = [
     "arcadeSession": "3-5 min",
     "age": "Ages 6-12",
     "learning": "Planning · Hand-eye coordination · Patience"
-  }
+  ,
+    "learnHref": "/workshops/scratch-maze-workshop.html",
+    "learnLabel": "Build a grid game in Scratch"}
 ];
 
 /* ── Public quality labels (A1424) ────────────────────────────────────────
@@ -349,8 +322,6 @@ window.JVDS_GAME_QUALITY = {
   "ember-smash": "READY",
   "gem-match": "BETA",
   "highway-dodge": "READY",
-  "cozy-cafe-match": "READY",
-  "biscuit-clicker": "BETA",
   "sky-high-friends": "BETA",
   "critter-whack": "READY",
   "crossy-crew": "READY",

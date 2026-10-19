@@ -37,7 +37,7 @@ async function run(pagePath, opts) {
         activeSteps:document.querySelectorAll('.cw-step.active').length,
         editors:document.querySelectorAll('.cw-editor').length,
         hasFrame:!!frame,
-        frameDoc:!!(frame&&frame.srcdoc&&frame.srcdoc.length>50),
+        frameHost:!!(frame&&/canvas-preview\.html/.test(frame.getAttribute('src')||'')),
         xpLabel:(document.getElementById('xpLabel')||{}).textContent||'',
         progressCount:(document.getElementById('progressCount')||{}).textContent||'',
         dashCount:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length,
@@ -47,7 +47,7 @@ async function run(pagePath, opts) {
     check('build steps render',info.steps>=minSteps,'steps '+info.steps);
     check('one active step',info.activeSteps===1,'active '+info.activeSteps);
     check('each step has an editor',info.editors===info.steps,'editors '+info.editors);
-    check('live canvas iframe is present and rendered',info.hasFrame&&info.frameDoc);
+    check('live canvas iframe is present and rendered',info.hasFrame&&info.frameHost);
     check('XP bar is wired',/XP/.test(info.xpLabel),info.xpLabel);
     check('shared progress counter reads the step total',new RegExp('\\/ '+info.steps+' steps').test(info.progressCount),info.progressCount);
     check('page has no em or en dashes',info.dashCount===0,'dashes '+info.dashCount);

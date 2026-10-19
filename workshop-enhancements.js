@@ -6,6 +6,10 @@
 (function () {
   'use strict';
 
+  function siteChrome() {
+    return !!(document.body && document.body.hasAttribute('data-site-chrome'));
+  }
+
   // ── INJECTED STYLES ──────────────────────────────────────────────────────────
   const css = `
     /* Copy button */
@@ -298,6 +302,7 @@
 
   // ── TEACHER MODE ─────────────────────────────────────────────────────────────
   function initTeacherMode() {
+    if (siteChrome()) return;
     var active = localStorage.getItem('teacher_mode') === '1';
     if (active) document.body.classList.add('teacher-mode');
 
@@ -545,6 +550,7 @@
 
   // ── RESET BUTTON (footer) ────────────────────────────────────────────────────
   function initResetButton() {
+    if (siteChrome()) return;
     var footer = document.querySelector('.footer-inner');
     if (!footer) return;
     var btn = document.createElement('button');
