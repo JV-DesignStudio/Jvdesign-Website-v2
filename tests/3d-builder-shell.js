@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// tests/3d-builder-shell.js (A1549 / A1618)
+// tests/3d-builder-shell.js (A1549 / A1618 / A1619 / A1620)
 // The 3D Builder shell hosts presets from one page. Migrated presets mount a
 // module inline (assets/js/builders/<id>.js); unmigrated presets fall back to
 // their own page in a frame. Deep links work and every old builder URL still
@@ -13,11 +13,14 @@ const puppeteer = require('puppeteer');
 const ROOT = path.resolve(__dirname, '..');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.jpg': 'image/jpeg', '.ico': 'image/x-icon' };
 const PRESETS = ['rocket', 'robot', 'pirate-ship', 'steampunk-airship', 'race-car', 'submarine', 'castle', 'fairy-tale', 'pirate-cannon', 'phone-stand', 'space-station'];
-const MODULES = { rocket: 'rocket' };
+const MODULES = { rocket: 'rocket', robot: 'robot', 'race-car': 'race-car', submarine: 'submarine', castle: 'castle', 'phone-stand': 'phone-stand', 'pirate-cannon': 'pirate-cannon', 'pirate-ship': 'pirate-ship', 'space-station': 'space-station', 'steampunk-airship': 'steampunk-airship', 'fairy-tale': 'fairy-tale' };
+let FALLBACK = null; // first preset not migrated to a module; still shows via the iframe fallback
 
 (async () => {
   for (const id of PRESETS) assert.ok(fs.existsSync(path.join(ROOT, 'workshops', id + '-builder.html')), id + '-builder.html exists');
   assert.ok(fs.existsSync(path.join(ROOT, 'workshops', '3d-builder.html')), 'shell page exists');
+  FALLBACK = PRESETS.find((p) => !MODULES[p]);
+  if (!FALLBACK) assert.deepEqual(Object.keys(MODULES).sort(), PRESETS.slice().sort(), 'every preset is migrated to a module');
   for (const id of Object.values(MODULES)) assert.ok(fs.existsSync(path.join(ROOT, 'assets', 'js', 'builders', id + '.js')), 'builders/' + id + '.js exists');
 
   const server = http.createServer((req, res) => {
@@ -49,48 +52,57 @@ const MODULES = { rocket: 'rocket' };
       assert.equal(shell.options, 11, w + ': 11 options');
       assert.ok(shell.overflow <= 2, w + ': shell no overflow (' + shell.overflow + ')');
 
-      // Migrated preset mounts a module inline.
-      await page.waitForFunction(() => window._builderGetState && document.querySelector('#bsHost .bs-stage'), { timeout: 20000 });
-      const inline = await page.evaluate(() => ({
-        stage: !!document.querySelector('#bsHost .bs-stage'),
-        frame: !!document.querySelector('#bsHost iframe'),
-        state: typeof window._builderGetState
-      }));
-      assert.ok(inline.stage, w + ': rocket mounts inline (.bs-stage)');
-      assert.equal(inline.frame, false, w + ': rocket is not framed');
-      assert.equal(inline.state, 'function', w + ': rocket exposes _builderGetState');
+      // Each migrated preset mounts its module inline (rocket, robot).
+      for (const id of Object.keys(MODULES)) {
+        if (id !== 'rocket') {
+          await page.evaluate((pid) => { Array.prototype.find.call(document.querySelectorAll('.bs-chip'), (b) => b.dataset.id === pid).click(); }, id);
+        }
+        await page.waitForFunction(() => window._builderGetState && document.querySelector('#bsHost .bs-stage') && !document.querySelector('#bsHost iframe'), { timeout: 20000 });
+        const inline = await page.evaluate(() => ({
+          stage: !!document.querySelector('#bsHost .bs-stage'),
+          frame: !!document.querySelector('#bsHost iframe'),
+          state: typeof window._builderGetState,
+          leaked: ['rocketGroup', 'robotGroup', 'carGroup', 'subGroup', 'castleGroup', 'standGroup', 'carriageGroup', 'wheelAxleGroup', 'stationGroup', 'cottageGroup', 'scene', 'camera', 'renderer', 'controls'].filter((k) => window[k] !== undefined)
+        }));
+        assert.ok(inline.stage, w + ': ' + id + ' mounts inline (.bs-stage)');
+        assert.equal(inline.frame, false, w + ': ' + id + ' is not framed');
+        assert.equal(inline.state, 'function', w + ': ' + id + ' exposes _builderGetState');
+        assert.deepEqual(inline.leaked, [], w + ': ' + id + ' leaks no builder internals (' + inline.leaked.join(',') + ')');
 
-      // Export + share-code round trip work against the inlined module.
-      const rx = await page.evaluate(async () => {
-        var J = window.JVExporter;
-        var m = J.currentModel(false);
-        var out = {};
-        try { out.obj = (J.obj(m, 'test').obj || '').length; } catch (e) { out.obj = 'ERR ' + e.message; }
-        try { out.stl = (J.stl(m, 'test').text || '').length; } catch (e) { out.stl = 'ERR ' + e.message; }
-        try { out.fbx = (J.fbx(m, 'test').text || '').length; } catch (e) { out.fbx = 'ERR ' + e.message; }
-        try { var g = await J.glb(m); out.glb = g && g.buffer ? g.buffer.byteLength : 0; } catch (e) { out.glb = 'ERR ' + e.message; }
-        var s1 = J.shareCodeNow();
-        var st2 = JSON.parse(JSON.stringify(J.decodeShareCode(s1).state));
-        var k = Object.keys(st2.params).find(function (n) { return typeof st2.params[n] === 'number'; });
-        if (k) st2.params[k] = (st2.params[k] || 0) + 2;
-        window._builderSetState(st2);
-        var s2 = J.shareCodeNow();
-        J.importShareCode(s1);
-        out.roundtrip = J.shareCodeNow() === s1 && s2 !== s1;
-        return out;
-      });
-      assert.ok(typeof rx.obj === 'number' && rx.obj > 0, w + ': rocket OBJ export (' + rx.obj + ')');
-      assert.ok(typeof rx.stl === 'number' && rx.stl > 0, w + ': rocket STL export (' + rx.stl + ')');
-      assert.ok(typeof rx.fbx === 'number' && rx.fbx > 0, w + ': rocket FBX export (' + rx.fbx + ')');
-      assert.ok(typeof rx.glb === 'number' && rx.glb > 0, w + ': rocket GLB export (' + rx.glb + ')');
-      assert.ok(rx.roundtrip, w + ': rocket share-code round trip in the shell');
+        // Export + share-code round trip work against the inlined module.
+        const rx = await page.evaluate(async () => {
+          var J = window.JVExporter;
+          var m = J.currentModel(false);
+          var out = {};
+          try { out.obj = (J.obj(m, 'test').obj || '').length; } catch (e) { out.obj = 'ERR ' + e.message; }
+          try { out.stl = (J.stl(m, 'test').text || '').length; } catch (e) { out.stl = 'ERR ' + e.message; }
+          try { out.fbx = (J.fbx(m, 'test').text || '').length; } catch (e) { out.fbx = 'ERR ' + e.message; }
+          try { var g = await J.glb(m); out.glb = g && g.buffer ? g.buffer.byteLength : 0; } catch (e) { out.glb = 'ERR ' + e.message; }
+          var s1 = J.shareCodeNow();
+          var st2 = JSON.parse(JSON.stringify(J.decodeShareCode(s1).state));
+          var k = Object.keys(st2.params).find(function (n) { return typeof st2.params[n] === 'number'; });
+          if (k) st2.params[k] = (st2.params[k] || 0) + 2;
+          window._builderSetState(st2);
+          var s2 = J.shareCodeNow();
+          J.importShareCode(s1);
+          out.roundtrip = J.shareCodeNow() === s1 && s2 !== s1;
+          return out;
+        });
+        assert.ok(typeof rx.obj === 'number' && rx.obj > 0, w + ': ' + id + ' OBJ export (' + rx.obj + ')');
+        assert.ok(typeof rx.stl === 'number' && rx.stl > 0, w + ': ' + id + ' STL export (' + rx.stl + ')');
+        assert.ok(typeof rx.fbx === 'number' && rx.fbx > 0, w + ': ' + id + ' FBX export (' + rx.fbx + ')');
+        assert.ok(typeof rx.glb === 'number' && rx.glb > 0, w + ': ' + id + ' GLB export (' + rx.glb + ')');
+        assert.ok(rx.roundtrip, w + ': ' + id + ' share-code round trip in the shell');
+      }
 
-      // Switch to an unmigrated preset -> iframe fallback.
-      await page.evaluate(() => { Array.prototype.find.call(document.querySelectorAll('.bs-chip'), (b) => b.dataset.id === 'castle').click(); });
-      await page.waitForFunction(() => { var f = document.querySelector('#bsHost iframe'); return f && f.getAttribute('src') === 'castle-builder.html'; }, { timeout: 15000 });
-      const framed = await page.evaluate(() => ({ frame: !!document.querySelector('#bsHost iframe'), stage: !!document.querySelector('#bsHost .bs-stage') }));
-      assert.ok(framed.frame, w + ': castle uses the iframe fallback');
-      assert.equal(framed.stage, false, w + ': module stage removed on switch');
+      // Switch to an unmigrated preset -> iframe fallback (while any remain).
+      if (FALLBACK) {
+        await page.evaluate((pid) => { Array.prototype.find.call(document.querySelectorAll('.bs-chip'), (b) => b.dataset.id === pid).click(); }, FALLBACK);
+        await page.waitForFunction((fb) => { var f = document.querySelector('#bsHost iframe'); return f && f.getAttribute('src') === fb; }, { timeout: 15000 }, FALLBACK + '-builder.html');
+        const framed = await page.evaluate(() => ({ frame: !!document.querySelector('#bsHost iframe'), stage: !!document.querySelector('#bsHost .bs-stage') }));
+        assert.ok(framed.frame, w + ': ' + FALLBACK + ' uses the iframe fallback');
+        assert.equal(framed.stage, false, w + ': module stage removed on switch');
+      }
 
       // Switch back to the module preset -> remounts inline, previous teardown gone.
       await page.evaluate(() => { Array.prototype.find.call(document.querySelectorAll('.bs-chip'), (b) => b.dataset.id === 'rocket').click(); });
@@ -104,8 +116,13 @@ const MODULES = { rocket: 'rocket' };
     const errs = [];
     page.on('pageerror', (e) => errs.push(e.message));
     await page.goto(base + '/workshops/3d-builder.html?preset=submarine', { waitUntil: 'load' });
-    await page.waitForFunction(() => { var f = document.querySelector('#bsHost iframe'); return f && f.getAttribute('src') === 'submarine-builder.html'; }, { timeout: 15000 });
-    console.log('PASS deep link ?preset=submarine uses the submarine page');
+    await page.waitForFunction(() => window._builderGetState && document.querySelector('#bsHost .bs-stage') && !document.querySelector('#bsHost iframe'), { timeout: 20000 });
+    console.log('PASS deep link ?preset=submarine mounts the submarine module inline');
+    if (FALLBACK) {
+      await page.goto(base + '/workshops/3d-builder.html?preset=' + FALLBACK, { waitUntil: 'load' });
+      await page.waitForFunction((fb) => { var f = document.querySelector('#bsHost iframe'); return f && f.getAttribute('src') === fb; }, { timeout: 15000 }, FALLBACK + '-builder.html');
+      console.log('PASS deep link ?preset=' + FALLBACK + ' falls back to its page');
+    }
     for (const id of PRESETS) {
       const resp = await page.goto(base + '/workshops/' + id + '-builder.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
       assert.equal(resp.status(), 200, id + '-builder.html resolves');

@@ -20,8 +20,8 @@ try{
   try{ builderCount = (JSON.parse(fs.readFileSync(path.join(ROOT,'content','3d-builders.json'),'utf8')).builders||[]).length; }catch(e){}
   const expected = 38 + builderCount;
   check(curatedCount === expected, 'content/tools.json', `curated ${curatedCount} != ${expected} (38 indexable tools + ${builderCount} curated 3D builders)`);
-  check(files.length === 69, 'tools/*.html', `filesystem ${files.length} != 69 raw (38 indexable + 31 noindex)`);
-  if(curatedCount===expected && files.length===69) console.log(`  [PASS] tools count curated ${curatedCount} vs raw ${files.length}`);
+  check(files.length === 71, 'tools/*.html', `filesystem ${files.length} != 71 raw (38 indexable + 33 noindex)`);
+  if(curatedCount===expected && files.length===71) console.log(`  [PASS] tools count curated ${curatedCount} vs raw ${files.length}`);
   else console.log(`  [INFO] tools count curated ${curatedCount} vs raw ${files.length}`);
 }catch(e){ failures.push(`content/tools.json: ${e.message}`); }
 
