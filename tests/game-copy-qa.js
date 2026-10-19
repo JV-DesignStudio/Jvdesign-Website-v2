@@ -46,6 +46,23 @@ for (const id of live) {
 // 5. The arcade links straight to the registry files (no stale wrapper hub).
 ok('arcade links to the registry game files', /games\/' \+ encodeURI\(g\.file\)/.test(arcade));
 
+// 6. A1677: every catalogued game pairs with a real learning next step, and
+// Lumo is the voice that says what the player is practising.
+for (const id of live) {
+  const start = registry.indexOf('"id": "' + id + '"');
+  const nextId = registry.indexOf('"id": "', start + 5);
+  const block = registry.slice(start, nextId < 0 ? registry.length : nextId);
+  const href = (block.match(/"learnHref"\s*:\s*"([^"]+)"/) || [])[1] || '';
+  const label = (block.match(/"learnLabel"\s*:\s*"([^"]+)"/) || [])[1] || '';
+  ok(id + ': has a learning link', !!href, href || 'missing');
+  ok(id + ': learning link has a label', label.length >= 8, label || 'missing');
+  if (href) {
+    const rel = href.replace(/^\//, '');
+    ok(id + ': learning link resolves', fs.existsSync(path.join(ROOT, rel)), href);
+  }
+}
+ok('arcade gives Lumo a learning voice', /Lumo:<\/strong>/.test(arcade) && /cab-learn-link/.test(arcade));
+
 if (failures) {
   console.log('\nFAIL game-copy-qa: ' + failures + ' check(s) failed');
   process.exit(1);
