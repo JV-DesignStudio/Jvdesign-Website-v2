@@ -22,7 +22,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-B/d/7T+18v21ZKuua2SmSP1BqhbRF2tcqj9+gNJuVs0=' 'sha256-fm+cbMDhwEy/SCToazJj+BPbXKVKE4nNrBM8fX23Y8g=' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-9NsrAWsX0SQPkBXJ0OCIzZ26cPsDc6+KTDFkGwdnpoI=' 'sha256-/odV5Vs8QrvNxfYKlqo8QHy1xnlix1yDNnrIi0WhnOU=' 'sha256-soIwSFM6oIK2by7UWutGeykIQsToApCWnYpDY3DNh3I=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-B/d/7T+18v21ZKuua2SmSP1BqhbRF2tcqj9+gNJuVs0=' 'sha256-fm+cbMDhwEy/SCToazJj+BPbXKVKE4nNrBM8fX23Y8g=' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-oggaO4XJXm8LFry9TOM0uX6I1M1xThg2XnudYEmE3N4=' 'sha256-GnuRqDr0adm5DkHFB2tSTtTeyyRgNWFsjhejBD5zDuk=' 'sha256-ZK/oAGCaicWJ9OljanJvd0lMrZ8EY2YPqU5DDx9TkXU=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <link rel="stylesheet" href="../style-tool-pixel-studio.css?v=19">
@@ -245,6 +245,10 @@
   <img src="/assets/mascots/ember-badge.webp" alt="Ember" width="26" height="26" style="border-radius:50%;flex-shrink:0;">
   <div style="flex:1;min-width:160px;">
     <span id="fm-heading" style="font-size:.72rem;font-weight:800;color:#F2637A;">Step 1: Draw a pixel on your character</span>
+    <!-- A1692: on phones the Save and Export buttons live behind the bottom-bar
+         tabs, so the mission bar has to say where they are. Hidden on desktop,
+         where both buttons are always on screen. -->
+    <span id="fm-where" style="display:none;font-size:.62rem;color:var(--muted);line-height:1.35;margin-top:2px;">Tap the <strong>Save</strong> tab at the bottom when you are ready.</span>
   </div>
   <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;">
     <span id="fm-dot-1" style="padding:3px 9px;border-radius:999px;font-size:.62rem;font-weight:700;background:rgba(242,99,122,.25);border:1px solid rgba(242,99,122,.5);color:#F2637A;">1 Draw</span>
@@ -2128,9 +2132,29 @@ function saveProject(){
     }
     localStorage.setItem('jvds_pixel',serializeProject());
     if(usedKB<=3500) showToast('Saved ✓');
+    return true;
   }catch(e){
-    showToast('Storage full - download your project as .json to keep it safe');
-    exportProjectFile();
+    // A1692: school profiles can block storage outright (SecurityError). Do not
+    // pretend the work was saved; point at Export PNG, which always works.
+    var blocked=(e&&e.name==='SecurityError');
+    window._storageBlocked=!!blocked;
+    if(blocked){
+      showToast('This computer blocks browser saving. Tap Export PNG to keep your work forever.');
+      var bar=document.getElementById('bottom-bar');
+      if(bar&&getComputedStyle(bar).display!=='none'&&typeof bbTab==='function'){
+        var tab=[].slice.call(document.querySelectorAll('.bb-tab')).filter(function(b){return /save/i.test(b.textContent);})[0];
+        if(tab) bbTab(3,tab);
+      }
+      var where=document.getElementById('fm-where');
+      if(where){
+        where.innerHTML='Saving is blocked here. Tap the <strong>Save</strong> tab, then <strong>PNG</strong>.';
+        where.style.display='block';
+      }
+    } else {
+      showToast('Storage full. Tap Export PNG to keep your work forever.');
+      exportProjectFile();
+    }
+    return false;
   }
 }
 function loadProject(){
@@ -2524,7 +2548,12 @@ window.addEventListener('focus',acceptPendingBundle);
   };
   // hook into existing save/export
   var _origSave = window.saveProject;
-  window.saveProject = function(){ var r=_origSave.apply(this,arguments); try{ keepsakeAdd(); missionTick('save'); nextActionsShow(); }catch(e){} return r; };
+  window.saveProject = function(){
+    var r=_origSave.apply(this,arguments);
+    // A1692: only claim the save step when the work really persisted.
+    if(r!==false){ try{ keepsakeAdd(); missionTick('save'); nextActionsShow(); }catch(e){} }
+    return r;
+  };
   var _origPNG = window.exportPNG;
   window.exportPNG = function(){ var r=_origPNG.apply(this,arguments); try{ keepsakeAdd(); missionTick('export'); nextActionsShow(); }catch(e){} return r; };
   var _origSheet = window.exportSheet;
@@ -2563,13 +2592,42 @@ window.addEventListener('focus',acceptPendingBundle);
     var doneLabels=['','✓ Drawn','✓ Saved','✓ Exported'];
     var h=document.getElementById('fm-heading');
     if(h) h.textContent=nextHeads[fmStep]||nextHeads[3];
+    // A1692: tell phone learners which bottom-bar tab holds the next button.
+    // Desktop keeps both buttons on screen, so the hint stays hidden there.
+    var where=document.getElementById('fm-where');
+    if(where){
+      var bar=document.getElementById('bottom-bar');
+      var barVisible=bar?getComputedStyle(bar).display!=='none':false;
+      var whereText=['','Tap the <strong>Save</strong> tab at the bottom when you are ready.','Tap the <strong>Save</strong> tab, then <strong>PNG</strong> to keep your work.',''][fmStep]||'';
+      where.innerHTML=whereText;
+      where.style.display=(barVisible&&whereText)?'block':'none';
+    }
     for(var s=1;s<=fmStep;s++){
       var dot=document.getElementById('fm-dot-'+s);
       if(!dot) continue;
+      // A1692: never tick "Saved" when the browser blocked storage.
+      if(s===2&&window._storageBlocked){
+        dot.textContent='Save blocked';
+        dot.style.background='rgba(255,255,255,.05)';
+        dot.style.borderColor='var(--border2)';
+        dot.style.color='var(--muted)';
+        continue;
+      }
       dot.textContent=doneLabels[s];
       dot.style.background='rgba(46,181,165,.2)';
       dot.style.borderColor='rgba(46,181,165,.5)';
       dot.style.color='#4FD1C1';
+    }
+    // A1692: when the learner finishes drawing on a phone, open the Save tab for
+    // them instead of making them hunt for it. Desktop keeps both buttons visible.
+    if(kind==='draw'&&fmStep===1){
+      try{
+        var bar=document.getElementById('bottom-bar');
+        if(bar&&getComputedStyle(bar).display!=='none'&&typeof bbTab==='function'){
+          var tab=[].slice.call(document.querySelectorAll('.bb-tab')).filter(function(b){return /save/i.test(b.textContent);})[0];
+          if(tab&&!tab.classList.contains('on')) bbTab(3,tab);
+        }
+      }catch(e){}
     }
   };
   window.nextActionsShow = function(){
