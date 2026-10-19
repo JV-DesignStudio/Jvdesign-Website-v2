@@ -1,0 +1,1261 @@
+/* assets/js/builders/race-car.js (A1620)
+ * Race Car preset module for the 3D Builder shell (workshops/3d-builder.html).
+ * Extracted from workshops/race-car-builder.html: mount(container) injects the
+ * builder markup + CSS, runs the original builder core in a guarded scope
+ * (window/document listeners and animation frames are tracked so unmount() can
+ * tear it down), and exposes only the data-on/data-action handlers the shared
+ * delegation needs. No other builder internals leak (module scope).
+ */
+export const ID = 'race-car';
+export const LABEL = 'Race Car';
+export const STYLES = ['../style-workshop-race-car-builder.css?v=17'];
+const HTML = "<div id=\"app\">\n  <header class=\"hdr\">\n    <h1 class=\"logo\">🏁 Race Car Builder</h1>\n<div class=\"callout tip\" style=\"border-left:3px solid #22c55e;background:rgba(34,197,94,.07);\"><div class=\"callout-icon\">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of every step in this workshop: <a href=\"/downloads/race-car-builder-reference.zip\" download style=\"color:#16a34a;font-weight:800;text-decoration:underline;\">⬇ race-car-builder-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>\n\n    <div class=\"hdr-right\">\n      <a href=\"../pages/workshop.html\" class=\"back-link\">← Workshop</a><a href=\"../pages/3d-builders.html\" class=\"back-link\" style=\"margin-left:8px\">🏗️ All Builders</a>\n      <button class=\"quick-btn\" data-on=\"randomCar\" data-on-plain style=\"background:linear-gradient(135deg,#7c3aed,#4c1d95);box-shadow:0 3px 0 #3b0764\">🎲 Random</button>\n      <button class=\"quick-btn\" data-on=\"downloadPNG\" data-on-plain style=\"background:linear-gradient(135deg,#0ea5e9,#0369a1);box-shadow:0 3px 0 #0c4a6e\">📸 PNG</button>\n      <button class=\"quick-btn\" data-on=\"openProfileCard\" data-on-plain style=\"background:linear-gradient(135deg,#a78bfa,#6d28d9);box-shadow:0 3px 0 #4c1d95\">🃏 Card</button>\n      <button class=\"quick-btn\" data-on=\"openSaveModal\" data-on-plain style=\"background:linear-gradient(135deg,#b45309,#78350f);box-shadow:0 3px 0 #451a03\">💾 Save</button>\n      <button class=\"quick-btn\" data-on=\"openLoadModal\" data-on-plain style=\"background:linear-gradient(135deg,#92400e,#713f12);box-shadow:0 3px 0 #422006\">📂 Load</button>\n      <button class=\"quick-btn\" data-on=\"downloadOBJ\" data-on-plain style=\"background:linear-gradient(135deg,#2d6a4f,#1a4035);box-shadow:0 3px 0 #0d2e24\">⬇ OBJ</button>\n      <button class=\"quick-btn\" data-on=\"quickBuild\" data-on-plain>⚡ Quick Build</button>\n    </div>\n  </header>\n  <!-- ── Ember Tip Bar ── -->\n  <div class=\"ember-builder-bar\" id=\"emberBar\" style=\"--ca-rgb:232,51,58\">\n    <svg viewBox=\"0 0 80 90\" width=\"26\" height=\"29\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\">\n      <path d=\"M20 52 Q10 80 15 88 H65 Q70 80 60 52 Q50 60 40 60 Q30 60 20 52Z\" fill=\"#12102a\"/>\n      <ellipse cx=\"40\" cy=\"36\" rx=\"16\" ry=\"17\" fill=\"#8B5CF6\"/>\n      <polygon points=\"24,22 19,8 30,18\" fill=\"#7C3AED\"/>\n      <polygon points=\"56,22 61,8 50,18\" fill=\"#7C3AED\"/>\n      <ellipse cx=\"40\" cy=\"40\" rx=\"10\" ry=\"8\" fill=\"#DDD6FE\"/>\n      <ellipse cx=\"35\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <ellipse cx=\"45\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <circle cx=\"36\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <circle cx=\"46\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <ellipse cx=\"40\" cy=\"39\" rx=\"2\" ry=\"1.4\" fill=\"#7C3AED\"/>\n    </svg>\n    <span><strong style=\"color:#e8333a\">Ember says:</strong> <strong>Body style</strong> sets the baseline , low and wide for speed, high for off-road. The race animation fires when you hit the final step!</span>\n    <button class=\"ember-bar-dismiss\" aria-label=\"Dismiss tip\" data-session-set=\"ember-bar-race-car-builder:1\" data-remove-id=\"emberBar\">✕</button>\n  </div>\n\n  <!-- ── /Ember Tip Bar ── -->\n  <div id=\"sidebar\">\n    <div class=\"prog-section\">\n      <div class=\"prog-lbl\">Build Progress</div>\n      <div class=\"prog-track\"><div class=\"prog-fill\" id=\"progFill\" style=\"width:3%\"></div></div>\n      <div class=\"prog-ct\" id=\"progCt\">0 / 16 steps</div>\n    </div>\n    <div class=\"slist\" id=\"stepList\"></div>\n    <div class=\"cpan\" id=\"stepBody\"></div>\n    <div class=\"snav\">\n      <button class=\"btn-p\" id=\"navPrev\" data-on=\"goPrev\" data-on-plain disabled aria-label=\"Previous step\">← Back</button>\n      <button class=\"btn-n\" id=\"navNext\" data-on=\"goNext\" data-on-plain aria-label=\"Next step\">Next →</button>\n    </div>\n  </div>\n  <div id=\"viewport\">\n    <div class=\"scene-top\">\n      <span class=\"scene-top-l\">🏎️ Live 3D Preview</span>\n      <div class=\"scene-top-r\">\n        <div class=\"live-wrap\"><span class=\"live-dot\"></span><span id=\"liveStatus\" aria-live=\"polite\">Apply Step 1 to begin</span></div>\n      </div>\n    </div>\n    <div class=\"scene-wrap\">\n      <canvas id=\"carCanvas\" role=\"application\" aria-label=\"3D race car preview viewport\"></canvas>\n      <div class=\"car-stats\" id=\"carStats\"></div>\n      <div class=\"vhint\" id=\"sceneHint\">Drag to orbit · Scroll to zoom</div>\n      <div class=\"dims\" id=\"dimsOverlay\">\n        <div style=\"font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.06em;color:#fff;margin-bottom:2px\" id=\"sName\">UNNAMED</div>\n        <div>Body&nbsp;&nbsp;<span id=\"sBody\">-</span></div>\n        <div>Engine <span id=\"sEngine\">-</span></div>\n        <div>Wheels <span id=\"sWheels\">-</span></div>\n        <div>Aero&nbsp;&nbsp;<span id=\"sAero\">-</span></div>\n      </div>\n    </div>\n    <div class=\"obar\" id=\"obar\" aria-live=\"polite\">🏎 Choose a body style to start building</div>\n  </div>\n  <div id=\"rightbar\" aria-label=\"Quick controls\">\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🎨 Colors</div>\n      <div class=\"rb-row\"><label for=\"rb-body-col\">Body</label><input type=\"color\" id=\"rb-body-col\" value=\"#e8333a\" data-bind=\"P.primaryCol\" data-bind-type=\"value\" data-then=\"buildCar\"></div>\n      <div class=\"rb-row\"><label for=\"rb-accent-col\">Accent</label><input type=\"color\" id=\"rb-accent-col\" value=\"#ffffff\" data-bind=\"P.accentCol\" data-bind-type=\"value\" data-then=\"buildCar\"></div>\n      <div class=\"rb-row\"><label for=\"rb-wheel-col\">Wheels</label><input type=\"color\" id=\"rb-wheel-col\" value=\"#333333\" data-bind=\"P.wheelCol\" data-bind-type=\"value\" data-then=\"buildCar\"></div>\n      <div class=\"rb-row\"><label for=\"rb-brake-col\">Brakes</label><input type=\"color\" id=\"rb-brake-col\" value=\"#e8333a\" data-bind=\"P.brakeCalipers\" data-bind-type=\"value\" data-then=\"buildCar\"></div>\n      <div class=\"rb-row\"><label for=\"rb-livery-col\">Livery</label><input type=\"color\" id=\"rb-livery-col\" value=\"#ffffff\" data-bind=\"P.liveryCol\" data-bind-type=\"value\" data-then=\"buildCar\"></div>\n    </div>\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🚗 Body</div>\n      <div class=\"rb-row\"><label for=\"rb-body-style\">Style</label><select id=\"rb-body-style\" data-bind=\"P.bodyStyle\" data-bind-type=\"value\" data-then=\"buildCar\"><option value=\"formula\">Formula</option><option value=\"muscle\">Muscle</option><option value=\"offroad\">Offroad</option><option value=\"drift\">Drift</option></select></div>\n      <div class=\"rb-row\"><label for=\"rb-bw\">Width</label><input type=\"range\" min=\"12\" max=\"28\" step=\"1\" value=\"18\" id=\"rb-bw\" data-bind=\"P.bodyWidth\" data-bind-type=\"nval\" data-bind-scale=\"0.1\" data-bind-display=\"rb-bwv\" data-bind-fmt=\"0.0\" data-then=\"buildCar\"><span class=\"rv\" id=\"rb-bwv\">1.8</span></div>\n      <div class=\"rb-row\"><label for=\"rb-bh\">Height</label><input type=\"range\" min=\"3\" max=\"12\" step=\"1\" value=\"6\" id=\"rb-bh\" data-bind=\"P.bodyHeight\" data-bind-type=\"nval\" data-bind-scale=\"0.1\" data-bind-display=\"rb-bhv\" data-bind-fmt=\"0.0\" data-then=\"buildCar\"><span class=\"rv\" id=\"rb-bhv\">0.6</span></div>\n    </div>\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🔺 Aero</div>\n      <div class=\"rb-row\"><label for=\"rb-fw\">F.Wing</label><select id=\"rb-fw\" data-bind=\"P.frontWing\" data-bind-type=\"value\" data-then=\"buildCar\"><option value=\"none\">None</option><option value=\"low\">Low</option><option value=\"medium\" selected>Medium</option><option value=\"high\">High</option></select></div>\n      <div class=\"rb-row\"><label for=\"rb-rw\">R.Wing</label><select id=\"rb-rw\" data-bind=\"P.rearSpoiler\" data-bind-type=\"value\" data-then=\"buildCar\"><option value=\"none\">None</option><option value=\"low\">Low</option><option value=\"medium\" selected>Medium</option><option value=\"high\">High</option><option value=\"massive\">Massive</option></select></div>\n      <div class=\"rb-row\"><label for=\"rb-rwa\">Angle</label><input type=\"range\" min=\"0\" max=\"45\" step=\"1\" value=\"15\" id=\"rb-rwa\" data-bind=\"P.rearWingAngle\" data-bind-type=\"int\" data-bind-display=\"rb-rwav\" data-then=\"buildCar\"><span class=\"rv\" id=\"rb-rwav\">15°</span></div>\n      <div class=\"rb-row\"><label for=\"rb-sk\">Skirts</label><select id=\"rb-sk\" data-bind=\"P.sideSkirts\" data-bind-type=\"value\" data-then=\"buildCar\"><option value=\"none\">None</option><option value=\"standard\" selected>Standard</option><option value=\"wide\">Wide</option></select></div>\n    </div>\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">🔧 Engine</div>\n      <div class=\"rb-row\"><label for=\"rb-eng\">Type</label><select id=\"rb-eng\" data-bind=\"P.engineType\" data-bind-type=\"value\" data-then=\"buildCar\"><option value=\"inline4\">4-Cyl</option><option value=\"v6\" selected>V6</option><option value=\"v8\">V8</option><option value=\"v12\">V12</option><option value=\"electric\">Electric</option></select></div>\n      <div class=\"rb-row\"><label for=\"rb-exh\">Exhaust</label><select id=\"rb-exh\" data-bind=\"P.exhaustType\" data-bind-type=\"value\" data-then=\"buildCar\"><option value=\"single\">Single</option><option value=\"dual\" selected>Dual</option><option value=\"quad\">Quad</option><option value=\"sidepipes\">Side Pipes</option></select></div>\n    </div>\n    <div class=\"rb-section\">\n      <div class=\"rb-title\">✨ Details</div>\n      <div class=\"rb-row\"><label for=\"rb-rc\">Cage</label><select id=\"rb-rc\" data-bind=\"P.rollCage\" data-bind-type=\"value\" data-then=\"buildCar\"><option value=\"none\">None</option><option value=\"standard\" selected>Standard</option><option value=\"full\">Full</option></select></div>\n      <div class=\"rb-row\"><label for=\"rb-hl\">Lights</label><select id=\"rb-hl\" data-bind=\"P.headlightStyle\" data-bind-type=\"value\" data-then=\"buildCar\"><option value=\"round\">Round</option><option value=\"rectangular\">Rect</option><option value=\"led\" selected>LED</option><option value=\"none\">None</option></select></div>\n      <label class=\"rb-toggle\"><input type=\"checkbox\" id=\"rb-tint\" data-bind=\"P.tintWindows\" data-bind-type=\"checked\" data-then=\"buildCar\"> Window Tint</label>\n      <div class=\"rb-row\"><label for=\"rb-num\">Car #</label><input type=\"range\" min=\"1\" max=\"99\" step=\"1\" value=\"7\" id=\"rb-num\" data-bind=\"P.carNumber\" data-bind-type=\"int\" data-bind-display=\"rb-nv\" data-then=\"buildCar\"><span class=\"rv\" id=\"rb-nv\">7</span></div>\n    </div>\n    <div style=\"padding:4px 2px\"><button class=\"run-btn\" style=\"font-size:.78rem;padding:9px;margin-top:0\" data-on=\"startRace\" data-on-plain>🏁 RACE!</button></div>\n  </div>\n</div>\n<div id=\"modalOverlay\" style=\"display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(4px)\"><div id=\"modalContent\" style=\"background:linear-gradient(145deg,#10111a,#0a0a0f);border:1px solid rgba(232,51,58,.3);border-radius:12px;padding:22px;width:380px;max-width:90vw\"></div></div>\n\n";
+const CSS = "/* ── Ember builder tip strip ─────────────── */\n.hdr-step-chip {\n  display: inline-flex;\n  align-items: center;\n  font-family: 'Nunito', sans-serif;\n  font-size: .72rem;\n  font-weight: 800;\n  letter-spacing: .05em;\n  padding: 3px 10px;\n  border-radius: 999px;\n  background: rgba(var(--ca-rgb, 255,255,255), .12);\n  border: 1px solid rgba(var(--ca-rgb, 255,255,255), .25);\n  color: rgba(255,255,255,.85);\n  margin-left: 10px;\n  vertical-align: middle;\n  flex-shrink: 0;\n}\n.ember-builder-bar {\n  display: flex;\n  align-items: flex-start;\n  gap: 10px;\n  padding: 8px 16px;\n  background: rgba(var(--ca-rgb,139,92,246), .07);\n  border-bottom: 1px solid rgba(var(--ca-rgb,139,92,246), .18);\n  position: relative;\n  font-size: .8rem;\n  line-height: 1.45;\n  color: rgba(255,255,255,.65);\n}\n.ember-builder-bar strong { color: rgba(255,255,255,.9); }\n.ember-builder-bar svg { flex-shrink: 0; margin-top: 1px; }\n.ember-bar-dismiss {\n  position: absolute;\n  right: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  background: none;\n  border: none;\n  color: rgba(255,255,255,.3);\n  cursor: pointer;\n  font-size: 1rem;\n  line-height: 1;\n  padding: 2px 6px;\n  border-radius: 4px;\n  transition: color .2s;\n}\n.ember-bar-dismiss:hover { color: rgba(255,255,255,.7); }\n";
+const ACTIONS = ["applyStep","closeModal","doCarDel","doCarLoad","doCarSave","downloadAndClose","downloadOBJ","downloadPNG","goNext","goPrev","openLoadModal","openProfileCard","openSaveModal","quickBuild","randomCar","selectOpt","selectSwatch","startRace"];
+
+export function mount(container) {
+  var ac = new AbortController();
+  var rafs = [];
+  var winAdd = window.addEventListener.bind(window);
+  var docAdd = document.addEventListener.bind(document);
+  var origRaf = window.requestAnimationFrame.bind(window);
+  function opt(o) { return Object.assign({}, (o && typeof o === 'object') ? o : {}, { signal: ac.signal }); }
+  window.addEventListener = function (t, fn, o) { return winAdd(t, fn, opt(o)); };
+  document.addEventListener = function (t, fn, o) { return docAdd(t, fn, opt(o)); };
+  window.requestAnimationFrame = function (fn) { var id = origRaf(fn); rafs.push(id); return id; };
+
+  var stage = document.createElement('div');
+  stage.id = 'bsStage';
+  stage.className = 'bs-stage';
+  stage.innerHTML = HTML;
+  container.appendChild(stage);
+  var sheet = document.createElement('style');
+  sheet.setAttribute('data-bs-css', ID);
+  sheet.textContent = CSS;
+  document.head.appendChild(sheet);
+
+  try {
+'use strict';
+const canvas = document.getElementById('carCanvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.setClearColor(0x0a0a0f);
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x0a0a0f, 20, 60);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+camera.position.set(4, 3, 8);
+const ambient = new THREE.AmbientLight(0x334466, 0.5);
+scene.add(ambient);
+const sun = new THREE.DirectionalLight(0xfff5ee, 1.2);
+sun.position.set(5, 10, 6);
+sun.castShadow = true;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x4466aa, 0.4);
+fill.position.set(-6, 2, -4);
+scene.add(fill);
+const rim = new THREE.DirectionalLight(0xff4444, 0.3);
+rim.position.set(-3, 1, -5);
+scene.add(rim);
+
+(function(){
+  var geo = new THREE.BufferGeometry(); var verts = [];
+  for (var i = 0; i < 1200; i++) { verts.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100); }
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 })));
+})();
+
+(function(){
+  var padGeo = new THREE.CylinderGeometry(3.5, 3.5, 0.12, 48);
+  var padMat = new THREE.MeshStandardMaterial({ color: 0x14151f, roughness: 0.85 });
+  var pad = new THREE.Mesh(padGeo, padMat); pad.position.y = -0.06; pad.receiveShadow = true; scene.add(pad);
+  var gridMat = new THREE.LineBasicMaterial({ color: 0x222233, transparent: true, opacity: 0.5 });
+  for (var r = 0.8; r <= 3.2; r += 0.8) {
+    var pts = [];
+    for (var i = 0; i <= 64; i++) { var a = (i/64)*Math.PI*2; pts.push(new THREE.Vector3(Math.cos(a)*r, 0.005, Math.sin(a)*r)); }
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gridMat));
+  }
+  for (var j = 0; j < 12; j++) {
+    var a2 = (j/12)*Math.PI*2;
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(Math.cos(a2)*0.8, 0.005, Math.sin(a2)*0.8),
+      new THREE.Vector3(Math.cos(a2)*3.2, 0.005, Math.sin(a2)*3.2)
+    ]), gridMat));
+  }
+})();
+
+var P = {
+  carName: 'Lightning', bodyStyle: 'formula', primaryCol: '#e8333a', accentCol: '#ffffff',
+  engineType: 'v6', wheelStyle: '5spoke', wheelCol: '#333333',
+  frontWing: 'medium', rearSpoiler: 'medium', sideSkirts: 'standard',
+  exhaustType: 'dual', rollCage: 'standard', headlightStyle: 'led',
+  liveryStyle: 'stripes', liveryCol: '#ffffff', carNumber: 7,
+  tintWindows: false, brakeCalipers: '#e8333a',
+  bodyWidth: 1.8, bodyHeight: 0.6, wheelBase: 2.6, rearWingAngle: 15,
+};
+window.P = P;
+
+var carGroup = null;
+function hexToThree(hex) { return new THREE.Color(hex); }
+function buildCar() {
+  if (carGroup) scene.remove(carGroup);
+  carGroup = new THREE.Group();
+  carGroup.name = 'race_car';
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
+  var pMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.primaryCol), roughness: 0.3, metalness: 0.6 });
+  var sMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.accentCol), roughness: 0.35, metalness: 0.5 });
+  var darkMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.7, metalness: 0.3 });
+  var chromeMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.15, metalness: 0.9 });
+  var glassMat = new THREE.MeshStandardMaterial({ color: 0x88ccff, roughness: 0.05, metalness: 0.1, transparent: true, opacity: P.tintWindows ? 0.35 : 0.6, emissive: new THREE.Color(0x112244), emissiveIntensity: 0.2 });
+  var tireMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.wheelCol), roughness: 0.85, metalness: 0.05 });
+  var brakeMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.brakeCalipers), roughness: 0.3, metalness: 0.7 });
+  var bw = P.bodyWidth, bh = P.bodyHeight, wb = P.wheelBase, halfWB = wb / 2, halfW = bw / 2;
+  var wheelR = 0.28, wheelH = 0.18;
+
+  if (P.bodyStyle === 'formula') {
+    var nose = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.9, 8), pMat);
+    nose.rotation.x = Math.PI / 2; nose.position.set(0, bh * 0.5, halfWB + 0.4); nose.castShadow = true; carGroup.add(part(nose, 'nose'));
+    var body = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.7, bh, wb * 0.65), pMat);
+    body.position.set(0, bh * 0.5, 0); body.castShadow = true; carGroup.add(part(body, 'body'));
+    var cockpit = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.35, bh * 0.55, wb * 0.28), darkMat);
+    cockpit.position.set(0, bh * 1.1, -0.1); carGroup.add(part(cockpit, 'cockpit'));
+    var wind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.35, bh * 0.3, 0.04), glassMat);
+    wind.position.set(0, bh * 1.2, 0.35); wind.rotation.x = -0.3; carGroup.add(part(wind, 'windshield'));
+    [-1, 1].forEach(function(side) {
+      var pod = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.22, bh * 0.7, wb * 0.35), pMat);
+      pod.position.set(side * bw * 0.38, bh * 0.45, -0.15); pod.castShadow = true; carGroup.add(part(pod, `side_pod_${side>0?'right':'left'}`));
+    });
+    var cover = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.55, bh * 0.85, wb * 0.2), pMat);
+    cover.position.set(0, bh * 0.6, -halfWB * 0.55); cover.castShadow = true; carGroup.add(part(cover, 'engine_cover'));
+  } else if (P.bodyStyle === 'muscle') {
+    var body = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.85, bh * 1.4, wb * 0.9), pMat);
+    body.position.set(0, bh * 0.7, 0); body.castShadow = true; carGroup.add(part(body, 'body'));
+    var hood = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.5, bh * 0.3, wb * 0.3), pMat);
+    hood.position.set(0, bh * 1.45, halfWB * 0.35); hood.castShadow = true; carGroup.add(part(hood, 'hood'));
+    var roof = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.75, bh * 0.5, wb * 0.38), pMat);
+    roof.position.set(0, bh * 1.65, -0.1); roof.castShadow = true; carGroup.add(part(roof, 'roof'));
+    var wind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.72, bh * 0.45, 0.04), glassMat);
+    wind.position.set(0, bh * 1.55, 0.25); wind.rotation.x = -0.35; carGroup.add(part(wind, 'windshield'));
+    var rWind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.72, bh * 0.4, 0.04), glassMat);
+    rWind.position.set(0, bh * 1.55, -0.45); rWind.rotation.x = 0.3; carGroup.add(part(rWind, 'rear_windshield'));
+    var trunk = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.8, bh * 0.35, wb * 0.18), pMat);
+    trunk.position.set(0, bh * 1.1, -halfWB * 0.55); trunk.castShadow = true; carGroup.add(part(trunk, 'trunk'));
+  } else if (P.bodyStyle === 'offroad') {
+    var body = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.82, bh * 1.2, wb * 0.85), pMat);
+    body.position.set(0, bh * 0.9, 0); body.castShadow = true; carGroup.add(part(body, 'body'));
+    var roof = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.7, bh * 0.55, wb * 0.5), pMat);
+    roof.position.set(0, bh * 1.8, -0.05); roof.castShadow = true; carGroup.add(part(roof, 'roof'));
+    var wind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.68, bh * 0.5, 0.04), glassMat);
+    wind.position.set(0, bh * 1.7, 0.28); wind.rotation.x = -0.25; carGroup.add(part(wind, 'windshield'));
+    var rWind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.68, bh * 0.45, 0.04), glassMat);
+    rWind.position.set(0, bh * 1.7, -0.38); rWind.rotation.x = 0.25; carGroup.add(part(rWind, 'rear_windshield'));
+    var rack = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.65, 0.04, wb * 0.12), chromeMat);
+    rack.position.set(0, bh * 2.1, 0.2); carGroup.add(part(rack, 'roof_rack'));
+    var bar = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.6, bh * 0.25, 0.06), chromeMat);
+    bar.position.set(0, bh * 0.4, halfWB * 0.55); carGroup.add(part(bar, 'front_bumper'));
+  } else {
+    var body = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.88, bh * 1.05, wb * 0.88), pMat);
+    body.position.set(0, bh * 0.55, 0); body.castShadow = true; carGroup.add(part(body, 'body'));
+    var hood = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.75, bh * 0.25, wb * 0.35), pMat);
+    hood.position.set(0, bh * 1.15, halfWB * 0.3); hood.castShadow = true; carGroup.add(part(hood, 'hood'));
+    var roof = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.65, bh * 0.5, wb * 0.35), pMat);
+    roof.position.set(0, bh * 1.4, -0.05); roof.castShadow = true; carGroup.add(part(roof, 'roof'));
+    var wind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.62, bh * 0.42, 0.04), glassMat);
+    wind.position.set(0, bh * 1.3, 0.2); wind.rotation.x = -0.35; carGroup.add(part(wind, 'windshield'));
+    var rWind = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.62, bh * 0.38, 0.04), glassMat);
+    rWind.position.set(0, bh * 1.3, -0.38); rWind.rotation.x = 0.3; carGroup.add(part(rWind, 'rear_windshield'));
+    [-1, 1].forEach(function(side) {
+      var f = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.18, bh * 0.7, wb * 0.5), pMat);
+      f.position.set(side * bw * 0.48, bh * 0.55, -0.1); f.castShadow = true; carGroup.add(part(f, `fender_${side>0?'right':'left'}`));
+    });
+  }
+
+  var wheelPositions = [
+    { x: -halfW * 0.9, z: halfWB * 0.72 },
+    { x:  halfW * 0.9, z: halfWB * 0.72 },
+    { x: -halfW * 0.9, z: -halfWB * 0.72 },
+    { x:  halfW * 0.9, z: -halfWB * 0.72 },
+  ];
+  wheelPositions.forEach(function(wp) {
+    var tire = new THREE.Mesh(new THREE.CylinderGeometry(wheelR, wheelR, wheelH, 24), tireMat);
+    tire.rotation.z = Math.PI / 2; tire.position.set(wp.x, wheelR, wp.z); tire.castShadow = true; carGroup.add(part(tire, `wheel_tire_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}`));
+    var rimMesh = new THREE.Mesh(new THREE.CylinderGeometry(wheelR * 0.7, wheelR * 0.7, wheelH + 0.01, 16), chromeMat);
+    rimMesh.rotation.z = Math.PI / 2; rimMesh.position.set(wp.x, wheelR, wp.z); carGroup.add(part(rimMesh, `wheel_rim_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}`));
+    var spokeMat = new THREE.MeshStandardMaterial({ color: 0x888899, roughness: 0.3, metalness: 0.8 });
+    var spokeCount = P.wheelStyle === 'multisplit' ? 10 : P.wheelStyle === 'rally' ? 6 : P.wheelStyle === 'slick' ? 0 : 5;
+    for (var s = 0; s < spokeCount; s++) {
+      var a = (s / spokeCount) * Math.PI * 2;
+      var spoke = new THREE.Mesh(new THREE.BoxGeometry(0.02, wheelR * 0.65, 0.025), spokeMat);
+      spoke.position.set(wp.x, wheelR + Math.sin(a) * wheelR * 0.32, wp.z + Math.cos(a) * wheelR * 0.32);
+      spoke.rotation.x = a; carGroup.add(part(spoke, `wheel_spoke_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}_${s}`));
+    }
+    var disc = new THREE.Mesh(new THREE.CylinderGeometry(wheelR * 0.5, wheelR * 0.5, 0.03, 16), darkMat);
+    disc.rotation.z = Math.PI / 2; disc.position.set(wp.x + (wp.x > 0 ? -0.06 : 0.06), wheelR, wp.z); carGroup.add(part(disc, `brake_disc_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}`));
+    var cal = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.04), brakeMat);
+    cal.position.set(wp.x + (wp.x > 0 ? -0.05 : 0.05), wheelR + wheelR * 0.4, wp.z); carGroup.add(part(cal, `brake_caliper_${wp.x>0?'r':'l'}_${wp.z>0?'f':'r'}`));
+  });
+
+  if (P.frontWing !== 'none') {
+    var wingH = { none: 0, low: 0.04, medium: 0.08, high: 0.14 }[P.frontWing];
+    var wing = new THREE.Mesh(new THREE.BoxGeometry(bw * 1.05, wingH, 0.12), sMat);
+    wing.position.set(0, bh * 0.15 + wingH / 2, halfWB + 0.35); wing.castShadow = true; carGroup.add(part(wing, 'front_wing'));
+    [-1, 1].forEach(function(side) {
+      var ep = new THREE.Mesh(new THREE.BoxGeometry(0.03, wingH + 0.06, 0.14), sMat);
+      ep.position.set(side * bw * 0.52, bh * 0.15 + wingH / 2, halfWB + 0.35); carGroup.add(part(ep, `front_wing_endplate_${side>0?'right':'left'}`));
+    });
+    [-1, 1].forEach(function(side) {
+      var sup = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, bh * 0.15, 6), chromeMat);
+      sup.position.set(side * bw * 0.3, bh * 0.08, halfWB + 0.35); carGroup.add(part(sup, `front_wing_support_${side>0?'right':'left'}`));
+    });
+  }
+
+  if (P.rearSpoiler !== 'none') {
+    var spH = { none: 0, low: 0.06, medium: 0.1, high: 0.16, massive: 0.24 }[P.rearSpoiler];
+    var spY = bh * 1.2 + spH / 2;
+    var angle = (P.rearWingAngle || 15) * Math.PI / 180;
+    var wing = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.95, spH, 0.1), sMat);
+    wing.position.set(0, spY, -halfWB - 0.1); wing.rotation.x = -angle; wing.castShadow = true; carGroup.add(part(wing, 'rear_wing'));
+    var flap = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.9, 0.02, 0.04), pMat);
+    flap.position.set(0, spY + spH * 0.5 + 0.01, -halfWB - 0.14); flap.rotation.x = -angle; carGroup.add(part(flap, 'rear_wing_flap'));
+    [-1, 1].forEach(function(side) {
+      var ep = new THREE.Mesh(new THREE.BoxGeometry(0.03, spH + 0.06, 0.12), sMat);
+      ep.position.set(side * bw * 0.47, spY, -halfWB - 0.1); ep.rotation.x = -angle; carGroup.add(part(ep, `rear_wing_endplate_${side>0?'right':'left'}`));
+    });
+    [-1, 1].forEach(function(side) {
+      var up = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, bh * 0.55, 6), chromeMat);
+      up.position.set(side * bw * 0.35, bh * 0.95, -halfWB - 0.05); carGroup.add(part(up, `rear_wing_upright_${side>0?'right':'left'}`));
+    });
+  }
+
+  if (P.sideSkirts !== 'none') {
+    var sw = P.sideSkirts === 'wide' ? 0.08 : 0.04;
+    [-1, 1].forEach(function(side) {
+      var skirt = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.05, wb * 0.75), darkMat);
+      skirt.position.set(side * halfW * 0.95, 0.04, 0); carGroup.add(part(skirt, `side_skirt_${side>0?'right':'left'}`));
+    });
+  }
+
+  var exhMat = new THREE.MeshStandardMaterial({ color: 0x444455, roughness: 0.5, metalness: 0.7 });
+  if (P.exhaustType === 'single') {
+    var e = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.12, 12), exhMat);
+    e.rotation.x = Math.PI / 2; e.position.set(0, bh * 0.2, -halfWB - 0.12); carGroup.add(part(e, 'exhaust_single'));
+  } else if (P.exhaustType === 'dual') {
+    [-0.15, 0.15].forEach(function(xOff) {
+      var e = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.12, 12), exhMat);
+      e.rotation.x = Math.PI / 2; e.position.set(xOff, bh * 0.2, -halfWB - 0.12); carGroup.add(part(e, `exhaust_dual_${xOff}`));
+    });
+  } else if (P.exhaustType === 'quad') {
+    [-0.18, -0.06, 0.06, 0.18].forEach(function(xOff) {
+      var e = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.03, 0.12, 10), exhMat);
+      e.rotation.x = Math.PI / 2; e.position.set(xOff, bh * 0.18, -halfWB - 0.12); carGroup.add(part(e, `exhaust_quad_${xOff}`));
+    });
+  } else {
+    [-1, 1].forEach(function(side) {
+      var e = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, wb * 0.3, 10), exhMat);
+      e.rotation.x = Math.PI / 2; e.position.set(side * halfW * 0.92, bh * 0.35, 0); carGroup.add(part(e, `exhaust_side_${side>0?'right':'left'}`));
+      var cap = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 10), exhMat);
+      cap.position.set(side * halfW * 0.92, bh * 0.35, -wb * 0.15); carGroup.add(part(cap, `exhaust_cap_${side>0?'right':'left'}`));
+    });
+  }
+
+  if (P.rollCage !== 'none') {
+    var cageMat = new THREE.MeshStandardMaterial({ color: 0x555566, roughness: 0.4, metalness: 0.7 });
+    var cageH = P.rollCage === 'full' ? bh * 1.1 : bh * 0.6;
+    var cageY = bh * 0.8;
+    var hoop = new THREE.Mesh(new THREE.TorusGeometry(bw * 0.28, 0.02, 8, 16, Math.PI), cageMat);
+    hoop.position.set(0, cageY + cageH, -0.15); hoop.rotation.y = Math.PI / 2; hoop.rotation.z = Math.PI; carGroup.add(part(hoop, 'roll_hoop'));
+    [-1, 1].forEach(function(side) {
+      var bar = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, cageH * 1.1, 6), cageMat);
+      bar.position.set(side * bw * 0.22, cageY + cageH * 0.5, -0.15); bar.rotation.z = side * 0.15; carGroup.add(part(bar, `roll_cage_bar_${side>0?'right':'left'}`));
+    });
+    if (P.rollCage === 'full') {
+      var cross = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, bw * 0.56, 6), cageMat);
+      cross.position.set(0, cageY + cageH * 0.85, -0.15); cross.rotation.z = Math.PI / 2; carGroup.add(part(cross, 'roll_cage_cross'));
+      var fHoop = new THREE.Mesh(new THREE.TorusGeometry(bw * 0.24, 0.018, 8, 16, Math.PI), cageMat);
+      fHoop.position.set(0, cageY + cageH * 0.9, 0.15); fHoop.rotation.y = Math.PI / 2; fHoop.rotation.z = Math.PI; carGroup.add(part(fHoop, 'roll_hoop_front'));
+    }
+  }
+
+  if (P.headlightStyle !== 'none') {
+    var lightMat = new THREE.MeshStandardMaterial({ color: 0xffffee, emissive: new THREE.Color(0xffffcc), emissiveIntensity: 0.5, roughness: 0.1 });
+    [-1, 1].forEach(function(side) {
+      if (P.headlightStyle === 'round') {
+        var hl = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12), lightMat);
+        hl.position.set(side * bw * 0.3, bh * 0.55, halfWB + 0.05); carGroup.add(part(hl, `headlight_${side>0?'right':'left'}_${P.headlightStyle}`));
+      } else if (P.headlightStyle === 'rectangular') {
+        var hl = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 0.03), lightMat);
+        hl.position.set(side * bw * 0.3, bh * 0.55, halfWB + 0.05); carGroup.add(part(hl, `headlight_${side>0?'right':'left'}_${P.headlightStyle}`));
+      } else {
+        var hl = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.03), lightMat);
+        hl.position.set(side * bw * 0.3, bh * 0.55, halfWB + 0.05); carGroup.add(part(hl, `headlight_${side>0?'right':'left'}_${P.headlightStyle}`));
+        var strip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.01, 0.02), lightMat);
+        strip.position.set(side * bw * 0.3, bh * 0.52, halfWB + 0.05); carGroup.add(part(strip, `headlight_strip_${side>0?'right':'left'}`));
+      }
+    });
+    var tailMat = new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: new THREE.Color(0xff0000), emissiveIntensity: 0.4, roughness: 0.2 });
+    [-1, 1].forEach(function(side) {
+      var tl = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.025, 0.02), tailMat);
+      tl.position.set(side * bw * 0.3, bh * 0.5, -halfWB - 0.02); carGroup.add(part(tl, `taillight_${side>0?'right':'left'}`));
+    });
+  }
+
+  if (P.liveryStyle !== 'none') {
+    var livMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.liveryCol), roughness: 0.35, metalness: 0.4 });
+    if (P.liveryStyle === 'stripes') {
+      [-0.08, 0.08].forEach(function(xOff) {
+        var s = new THREE.Mesh(new THREE.BoxGeometry(0.04, bh * 0.02, wb * 1.1), livMat);
+        s.position.set(xOff, bh * 1.02, 0.1); carGroup.add(part(s, `livery_stripe_${xOff}`));
+      });
+    } else if (P.liveryStyle === 'flames') {
+      var flameMat = new THREE.MeshStandardMaterial({ color: hexToThree(P.liveryCol), emissive: new THREE.Color(P.liveryCol), emissiveIntensity: 0.3, roughness: 0.4 });
+      var flame = new THREE.Mesh(new THREE.BoxGeometry(bw * 0.6, bh * 0.08, wb * 0.35), flameMat);
+      flame.position.set(0, bh * 1.01, halfWB * 0.4); carGroup.add(part(flame, 'livery_flame'));
+    } else if (P.liveryStyle === 'tribal') {
+      [-1, 1].forEach(function(side) {
+        var tri = new THREE.Mesh(new THREE.BoxGeometry(0.03, bh * 0.4, wb * 0.25), livMat);
+        tri.position.set(side * halfW * 0.7, bh * 0.7, 0); carGroup.add(part(tri, `livery_tribal_${side>0?'right':'left'}_1`));
+        var tri2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, bh * 0.25, wb * 0.18), livMat);
+        tri2.position.set(side * halfW * 0.6, bh * 0.9, -0.15); tri2.rotation.z = side * 0.3; carGroup.add(part(tri2, `livery_tribal_${side>0?'right':'left'}_2`));
+      });
+    }
+  }
+
+  if (P.carNumber > 0) {
+    var numMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+    [-1, 1].forEach(function(side) {
+      var plate = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.12, 0.14), numMat);
+      plate.position.set(side * halfW * 0.82, bh * 0.8, 0.1); carGroup.add(part(plate, `number_plate_${side>0?'right':'left'}`));
+    });
+  }
+
+  scene.add(carGroup);
+  updateSpecCard(); updateStats(); syncRightBar();
+}
+
+var orbit = { theta: 0.5, phi: 1.0, radius: 8, dragging: false, lastX: 0, lastY: 0 };
+function updateCamera() {
+  orbit.phi = Math.max(0.2, Math.min(Math.PI - 0.2, orbit.phi));
+  orbit.radius = Math.max(3, Math.min(18, orbit.radius));
+  camera.position.x = orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta);
+  camera.position.y = orbit.radius * Math.cos(orbit.phi) + 1;
+  camera.position.z = orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta);
+  camera.lookAt(0, 0.5, 0);
+}
+canvas.addEventListener('mousedown', function(e) { orbit.dragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY; });
+window.addEventListener('mouseup', function() { orbit.dragging = false; });
+window.addEventListener('mousemove', function(e) {
+  if (!orbit.dragging) return;
+  orbit.theta -= (e.clientX - orbit.lastX) * 0.007;
+  orbit.phi -= (e.clientY - orbit.lastY) * 0.007;
+  orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+});
+canvas.addEventListener('wheel', function(e) { orbit.radius += e.deltaY * 0.012; e.preventDefault(); }, { passive: false });
+BuilderGestures.attachTapSelect(canvas, camera, function () { return carGroup; }, {
+  onOrbit: function (dx, dy) { orbit.theta -= dx * 0.007; orbit.phi -= dy * 0.007; },
+  onPinch: function (ratio) { orbit.radius *= ratio; },
+  onDragStart: function () { orbit.dragging = true; },
+  onDragEnd: function () { orbit.dragging = false; }
+});
+
+function resize() {
+  var w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+var frame = 0;
+var activated = false, activationTime = 0, particles = null, particleVels = [], particleLife = 0;
+
+function startRace() {
+  activated = true; activationTime = 0;
+  if (window.builderTrack) builderTrack('activate');
+  spawnParticles();
+  toast('\uD83C\uDFC1 ' + (P.carName || 'Car') + ' is racing!');
+  document.getElementById('liveStatus').textContent = 'RACING!';
+  document.getElementById('sceneHint').textContent = 'Drag to follow the car';
+  stepDone[STEPS.length - 1] = true; updateProgress(); renderStep();
+}
+
+function spawnParticles() {
+  if (particles) { scene.remove(particles); particles = null; }
+  var count = 60;
+  var geo = new THREE.BufferGeometry();
+  var pos = new Float32Array(count * 3);
+  var col = new Float32Array(count * 3);
+  particleVels = [];
+  var white = new THREE.Color(0xcccccc);
+  var gray = new THREE.Color(0x888888);
+  for (var i = 0; i < count; i++) {
+    pos[i*3] = (Math.random()-0.5) * P.bodyWidth * 0.8;
+    pos[i*3+1] = 0.2 + Math.random() * 0.5;
+    pos[i*3+2] = -P.wheelBase/2 + (Math.random()-0.5);
+    var spd = 0.01 + Math.random() * 0.03;
+    particleVels.push({ x: (Math.random()-0.5)*spd, y: spd+0.01, z: -spd*2 });
+    var c = Math.random() > 0.5 ? white : gray;
+    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  particles = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.06, vertexColors: true, transparent: true, opacity: 1, depthWrite: false }));
+  scene.add(particles);
+  particleLife = 60;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+  if (!orbit.dragging) orbit.theta += 0.003;
+  updateCamera();
+  if (activated) {
+    activationTime++;
+    if (carGroup) carGroup.position.y = Math.sin(frame * 0.08) * 0.02;
+    if (particles && particleLife > 0) {
+      var pos = particles.geometry.attributes.position;
+      for (var i = 0; i < pos.count; i++) {
+        pos.array[i*3] += particleVels[i].x;
+        pos.array[i*3+1] += particleVels[i].y;
+        pos.array[i*3+2] += particleVels[i].z;
+      }
+      pos.needsUpdate = true;
+      particles.material.opacity = Math.max(0, particleLife / 60);
+      particleLife--;
+    }
+  }
+  resize();
+  renderer.render(scene, camera);
+}
+animate();
+
+function updateSpecCard() {
+  document.getElementById('sName').textContent = P.carName || 'UNNAMED';
+  document.getElementById('sBody').textContent = { formula:'Formula', muscle:'Muscle', offroad:'Offroad', drift:'Drift' }[P.bodyStyle] || '\u2014';
+  document.getElementById('sEngine').textContent = { inline4:'4-Cyl', v6:'V6', v8:'V8', v12:'V12', electric:'Electric' }[P.engineType] || '\u2014';
+  document.getElementById('sWheels').textContent = { '5spoke':'5-Spoke', multisplit:'Multi', rally:'Rally', slick:'Slick' }[P.wheelStyle] || '\u2014';
+  document.getElementById('sAero').textContent = P.frontWing + ' / ' + P.rearSpoiler;
+}
+function sout(m) { document.getElementById('obar').textContent = m; }
+
+function syncRightBar() {
+  function sv(id, val) { var e = document.getElementById(id); if (e) e.value = val; }
+  function sc(id, val) { var e = document.getElementById(id); if (e) e.checked = val; }
+  function st(id, txt) { var e = document.getElementById(id); if (e) e.textContent = txt; }
+  sv('rb-body-col', P.primaryCol); sv('rb-accent-col', P.accentCol); sv('rb-wheel-col', P.wheelCol);
+  sv('rb-brake-col', P.brakeCalipers); sv('rb-livery-col', P.liveryCol); sv('rb-body-style', P.bodyStyle);
+  sv('rb-bw', Math.round(P.bodyWidth * 10)); st('rb-bwv', P.bodyWidth.toFixed(1));
+  sv('rb-bh', Math.round(P.bodyHeight * 10)); st('rb-bhv', P.bodyHeight.toFixed(1));
+  sv('rb-fw', P.frontWing); sv('rb-rw', P.rearSpoiler);
+  sv('rb-rwa', P.rearWingAngle); st('rb-rwav', P.rearWingAngle + '\u00B0');
+  sv('rb-sk', P.sideSkirts); sv('rb-eng', P.engineType); sv('rb-exh', P.exhaustType);
+  sv('rb-rc', P.rollCage); sv('rb-hl', P.headlightStyle); sc('rb-tint', P.tintWindows);
+  sv('rb-num', P.carNumber); st('rb-nv', P.carNumber);
+}
+
+function computeStats() {
+  var speed = 5, accel = 5, handling = 5, style = 5;
+  if (P.engineType === 'v12') { speed += 4; accel += 3; }
+  else if (P.engineType === 'v8') { speed += 3; accel += 2; }
+  else if (P.engineType === 'v6') { speed += 2; accel += 2; }
+  else if (P.engineType === 'electric') { speed += 2; accel += 4; }
+  else { speed += 1; accel += 1; }
+  if (P.bodyStyle === 'formula') { speed += 2; handling += 3; style += 2; }
+  else if (P.bodyStyle === 'muscle') { speed += 2; handling -= 1; style += 3; }
+  else if (P.bodyStyle === 'offroad') { handling += 2; speed -= 1; }
+  else if (P.bodyStyle === 'drift') { handling += 3; style += 2; }
+  if (P.frontWing === 'high') { handling += 2; speed -= 1; }
+  if (P.rearSpoiler === 'massive') { handling += 2; speed -= 1; }
+  if (P.rearSpoiler === 'high') { handling += 1; }
+  if (P.wheelStyle === 'slick') { handling += 2; }
+  if (P.wheelStyle === 'rally') { handling += 1; }
+  if (P.rollCage === 'full') { style += 1; }
+  if (P.tintWindows) { style += 1; }
+  if (P.liveryStyle !== 'none') { style += 2; }
+  return {
+    speed: Math.max(1, Math.min(10, speed)),
+    accel: Math.max(1, Math.min(10, accel)),
+    handling: Math.max(1, Math.min(10, handling)),
+    style: Math.max(1, Math.min(10, style))
+  };
+}
+
+function updateStats() {
+  var s = computeStats();
+  var el = document.getElementById('carStats');
+  if (!el) return;
+  var bar = function(v, c) { return '<div class="stat-track"><div class="stat-fill" style="width:' + (v * 10) + '%;background:' + c + '"></div></div>'; };
+  el.innerHTML = '<div class="stat-title">Car Stats</div>' +
+    '<div class="stat-row"><span class="stat-lbl">Speed</span>' + bar(s.speed, '#e8333a') + '<span class="stat-val">' + s.speed + '</span></div>' +
+    '<div class="stat-row"><span class="stat-lbl">Accel</span>' + bar(s.accel, '#fb923c') + '<span class="stat-val">' + s.accel + '</span></div>' +
+    '<div class="stat-row"><span class="stat-lbl">Handle</span>' + bar(s.handling, '#4ade80') + '<span class="stat-val">' + s.handling + '</span></div>' +
+    '<div class="stat-row"><span class="stat-lbl">Style</span>' + bar(s.style, '#a78bfa') + '<span class="stat-val">' + s.style + '</span></div>';
+}
+var currentStep = 0;
+var stepDone = new Array(16).fill(false);
+
+var FACTS = {
+  name: "The fastest F1 car ever recorded hit 372.6 km/h at the 2005 Italian Grand Prix, driven by Juan Pablo Montoya in a McLaren-Mercedes.",
+  bodyStyle: "Formula cars are designed for maximum downforce and minimal drag. Muscle cars prioritise straight-line speed and raw power. Offroad vehicles need ground clearance and rugged suspension. Drift cars are built for controlled slides.",
+  primaryCol: "Racing colours have historic significance. British Racing Green, Rosso Corsa (Italian Red), and French Blue all date back to early Grand Prix racing when each country had an assigned colour.",
+  accentCol: "Accent colours on race cars serve a functional purpose too - high-contrast stripes help pit crews quickly identify their car at 200+ mph in a pack of competitors.",
+  engine: "A V12 engine has 12 cylinders in a V layout, producing more power with smoother delivery than fewer cylinders. The Ferrari 250 GTO's V12 produced 300 bhp in 1962.",
+  wheels: "Slick tyres have no tread pattern, maximising the contact patch for grip on dry surfaces. They can generate up to 1.5g of lateral force in cornering.",
+  frontWing: "Front wings on F1 cars generate up to 40% of total downforce. They are adjusted for each circuit - high downforce for twisty tracks, low drag for long straights.",
+  rearSpoiler: "Rear spoilers work by disrupting airflow to create a downward force on the rear wheels. The angle determines the balance between downforce and drag.",
+  sideSkirts: "Side skirts seal the gap between the car's floor and the track surface, preventing air from leaking under the car and disrupting the ground effect aerodynamics.",
+  exhaust: "Formula 1 cars recover energy from exhaust gases using a turbo-hybrid system, harvesting up to 4 MJ per lap to deploy as extra electrical power.",
+  rollCage: "Roll cages are mandatory in almost all forms of motorsport. A properly constructed cage can support over 7 times the car's weight in a rollover.",
+  headlights: "Le Mans prototypes use advanced LED headlight systems capable of illuminating 300+ metres ahead, essential for 24-hour endurance racing through the night.",
+  livery: "The art of race car livery design dates to the 1920s. Iconic liveries like Gulf Oil blue-orange, Martini Racing stripes, and Marlboro red-white are instantly recognisable worldwide.",
+  details: "Window tint on race cars reduces glare and interior temperature. Brake caliper colour often indicates the brake manufacturer - red for Brembo, yellow for AP Racing.",
+  stats: "A modern F1 car produces around 1,000 bhp, weighs 798 kg, and can brake from 200 mph to 0 in under 5 seconds and 100 metres.",
+  race: "The checkered flag has been used to signal the end of a race since 1906. The pattern was chosen because it was the easiest to see from a distance."
+};
+
+function paramPath(src) {
+  var m = /([A-Za-z_$][\w$]*\.[A-Za-z_$][\w$]*)\s*=/.exec(String(src || ''));
+  return m ? m[1] : '';
+}
+
+function paramParse(src) {
+  if (/parseFloat/.test(src)) return 'float';
+  if (/parseInt/.test(src)) return 'int';
+  return 'raw';
+}
+
+function opts(id, options, currentVal, onChange) {
+  var path = paramPath(onChange), parse = paramParse(onChange);
+  return '<div class="opt-grid">' + options.map(function(o) {
+    return '<button class="opt-btn' + (currentVal === o.val ? ' sel' : '') + '" data-action="selectOpt" data-arg="' + o.val + '" data-arg2="this" data-arg3="' + path + '" data-arg4="' + parse + '"><span class="opt-icon">' + o.icon + '</span>' + o.label + '</button>';
+  }).join('') + '</div>';
+}
+
+function swatchRow(id, colours, currentVal, onChange) {
+  var path = paramPath(onChange);
+  return '<div class="swatch-row">' + colours.map(function(c) {
+    return '<div class="swatch' + (currentVal === c ? ' sel' : '') + '" style="background:' + c + '" data-action="selectSwatch" data-arg="' + c + '" data-arg2="this" data-arg3="' + path + '"></div>';
+  }).join('') + '</div><div class="custom-colour"><span>Custom:</span><input type="color" value="' + currentVal + '" data-action-input="selectSwatch" data-arg="' + path + '"></div>';
+}
+
+function setBuilderParam(path, value) {
+  var parts = String(path).split('.');
+  var obj = window[parts[0]];
+  if (!obj) return;
+  for (var i = 1; i < parts.length - 1; i++) obj = obj[parts[i]];
+  obj[parts[parts.length - 1]] = value;
+}
+
+function selectOpt(val, el, path, parse) {
+  if (parse === 'float') val = parseFloat(val);
+  else if (parse === 'int') val = parseInt(val, 10);
+  setBuilderParam(path, val);
+  if (el && el.closest) {
+    var grid = el.closest('.opt-grid');
+    if (grid) grid.querySelectorAll('.opt-btn').forEach(function(b) { b.classList.remove('sel'); });
+    el.classList.add('sel');
+  }
+  buildCar();
+}
+
+function selectSwatch(col, el, path) {
+  setBuilderParam(path, col);
+  if (el && el.closest) {
+    var row = el.closest('.swatch-row');
+    if (row) row.querySelectorAll('.swatch').forEach(function(s) { s.classList.remove('sel'); });
+    if (row && el.classList.contains('swatch')) el.classList.add('sel');
+  }
+  buildCar();
+}
+
+var STEPS = [
+{
+  title: 'Name Your Car', tag: 'STEP 01 \u00B7 IDENTITY',
+  intro: 'Every race car needs a name. Lightning. Thunderbolt. Firestorm. The greats all had names \u2014 Batmobile, Mach 5, Herbie. What will yours be called?',
+  boxes: [
+    { t:'box-c', tx: FACTS.name },
+    { t:'box-t', tx:'Keep it under 12 characters \u2014 it looks best on the spec overlay and number plate.' },
+  ],
+  tasks: ['Enter a car name', 'Press Apply to lock it in'],
+  html: function() { return '<input class="name-input" id="carName" aria-label="Car name" maxlength="14" placeholder="E.G. LIGHTNING" value="' + (P.carName === 'Lightning' ? '' : P.carName) + '">'; },
+  onApply: function() { P.carName = document.getElementById('carName')?.value?.trim() || 'Lightning'; buildCar(); sout('\uD83C\uDFCE\uFE0F ' + P.carName + ' is registered. Now choose a body style.'); document.getElementById('liveStatus').textContent = 'Named!'; }
+},
+{
+  title: 'Body Style', tag: 'STEP 02 \u00B7 CHASSIS',
+  intro: 'The body defines everything. <strong>Formula</strong> cars are low and aerodynamic. <strong>Muscle</strong> cars are big and powerful. <strong>Offroad</strong> trucks are lifted and rugged. <strong>Drift</strong> cars are wide and aggressive.',
+  boxes: [
+    { t:'box-c', tx: FACTS.bodyStyle },
+    { t:'box-t', tx:'Formula looks fastest. Muscle looks meanest. Drift looks the most aggressive. Pick what speaks to you.' },
+  ],
+  tasks: ['Choose a body style', 'See how it transforms the silhouette'],
+  html: function() {
+    var o = "(function(v,el){P.bodyStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return opts('body', [
+      { val:'formula', icon:'\uD83C\uDFCE\uFE0F', label:'Formula' },
+      { val:'muscle', icon:'\uD83D\uDD25', label:'Muscle' },
+      { val:'offroad', icon:'\uD83C\uDFD4\uFE0F', label:'Offroad' },
+      { val:'drift', icon:'\uD83D\uDCA8', label:'Drift' },
+    ], P.bodyStyle, o);
+  },
+  onApply: function() { buildCar(); sout('Body: ' + P.bodyStyle + ' style applied.'); document.getElementById('liveStatus').textContent = 'Body set!'; }
+},
+{
+  title: 'Body Color', tag: 'STEP 03 \u00B7 LIVERY',
+  intro: 'The main body colour defines your car\'s identity. <strong>Red</strong> is Ferrari. <strong>Silver</strong> is Mercedes. <strong>Orange</strong> is McLaren. Or go wild with any colour you like.',
+  boxes: [
+    { t:'box-c', tx: FACTS.primaryCol },
+    { t:'box-t', tx:'Pick a bold primary colour \u2014 you\'ll add accents and livery details in later steps.' },
+  ],
+  tasks: ['Choose a primary colour'],
+  html: function() {
+    var o = "(function(c,el){P.primaryCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return swatchRow('pc', ['#e8333a','#f5c842','#38bdf8','#4ade80','#a78bfa','#fb923c','#ffffff','#1a1a2a'], P.primaryCol, o);
+  },
+  onApply: function() { buildCar(); sout('Primary colour applied!'); document.getElementById('liveStatus').textContent = 'Colour set!'; }
+},
+{
+  title: 'Accent Color', tag: 'STEP 04 \u00B7 CONTRAST',
+  intro: 'The accent colour appears on wings, spoilers, and details. A contrasting accent makes your car look more professional and intentional.',
+  boxes: [
+    { t:'box-c', tx: FACTS.accentCol },
+    { t:'box-t', tx:'White or black accents are safest. Yellow or gold accents add flair.' },
+  ],
+  tasks: ['Choose an accent colour'],
+  html: function() {
+    var o = "(function(c,el){P.accentCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return swatchRow('ac', ['#ffffff','#1a1a2a','#e8333a','#f5c842','#38bdf8','#4ade80','#a78bfa','#c0c0c0'], P.accentCol, o);
+  },
+  onApply: function() { buildCar(); sout('Accent colour applied!'); document.getElementById('liveStatus').textContent = 'Accent set!'; }
+},
+{
+  title: 'Engine', tag: 'STEP 05 \u00B7 POWER',
+  intro: 'The heart of the car. A <strong>4-cylinder</strong> is lightweight and rev-happy. A <strong>V6</strong> is balanced. A <strong>V8</strong> is pure torque. A <strong>V12</strong> is screaming power. <strong>Electric</strong> is instant torque.',
+  boxes: [
+    { t:'box-c', tx: FACTS.engine },
+    { t:'box-t', tx:'V12 gives the best speed stats. Electric gives the best acceleration. V8 is the crowd favourite.' },
+  ],
+  tasks: ['Choose an engine type', 'See how it affects your stats'],
+  html: function() {
+    var o = "(function(v,el){P.engineType=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return opts('eng', [
+      { val:'inline4', icon:'\uD83D\uDD27', label:'4-Cyl' },
+      { val:'v6', icon:'\u2699\uFE0F', label:'V6' },
+      { val:'v8', icon:'\uD83D\uDCA5', label:'V8' },
+      { val:'v12', icon:'\uD83D\uDD25', label:'V12' },
+      { val:'electric', icon:'\u26A1', label:'Electric' },
+    ], P.engineType, o);
+  },
+  onApply: function() { buildCar(); sout('Engine: ' + P.engineType.toUpperCase() + ' installed.'); document.getElementById('liveStatus').textContent = 'Engine set!'; }
+},
+{
+  title: 'Wheels', tag: 'STEP 06 \u00B7 GRIP',
+  intro: 'Wheels connect power to the road. <strong>5-spoke</strong> is classic. <strong>Multi-split</strong> is modern. <strong>Rally</strong> is rugged. <strong>Slicks</strong> are pure track grip.',
+  boxes: [
+    { t:'box-c', tx: FACTS.wheels },
+    { t:'box-t', tx:'Slick tyres give the best handling stats. Rally wheels look tough. Multi-split looks the most technical.' },
+  ],
+  tasks: ['Choose a wheel style', 'Pick a wheel colour'],
+  html: function() {
+    var o = "(function(v,el){P.wheelStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    var co = "(function(c,el){P.wheelCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return opts('wheels', [
+      { val:'5spoke', icon:'\u2B55', label:'5-Spoke' },
+      { val:'multisplit', icon:'\uD83D\uDD32', label:'Multi-Split' },
+      { val:'rally', icon:'\uD83D\uDEDF', label:'Rally' },
+      { val:'slick', icon:'\uD83C\uDFC1', label:'Slick' },
+    ], P.wheelStyle, o) +
+    swatchRow('wc', ['#333333','#1a1a1a','#c0c0c0','#e8333a','#f5c842','#38bdf8','#ffffff','#a78bfa'], P.wheelCol, co);
+  },
+  onApply: function() { buildCar(); sout('Wheels: ' + P.wheelStyle); document.getElementById('liveStatus').textContent = 'Wheels set!'; }
+},
+{
+  title: 'Front Wing', tag: 'STEP 07 \u00B7 DOWNFORCE',
+  intro: 'The front wing pushes the nose down, giving more front-end grip. <strong>None</strong> for low drag. <strong>Low</strong> for balance. <strong>Medium</strong> for grip. <strong>High</strong> for maximum cornering.',
+  boxes: [
+    { t:'box-c', tx: FACTS.frontWing },
+    { t:'box-t', tx:'High front wings add handling but reduce top speed. Medium is the sweet spot for most tracks.' },
+  ],
+  tasks: ['Choose a front wing height'],
+  html: function() {
+    var o = "(function(v,el){P.frontWing=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return opts('fw', [
+      { val:'none', icon:'\u274C', label:'None' },
+      { val:'low', icon:'\u2796', label:'Low' },
+      { val:'medium', icon:'\u2550', label:'Medium' },
+      { val:'high', icon:'\u25AC', label:'High' },
+    ], P.frontWing, o);
+  },
+  onApply: function() { buildCar(); sout('Front wing: ' + P.frontWing); document.getElementById('liveStatus').textContent = 'Front wing set!'; }
+},
+{
+  title: 'Rear Spoiler', tag: 'STEP 08 \u00B7 AERO',
+  intro: 'The rear spoiler balances the car. Too little and the rear slides out. Too much and you lose top speed. Adjust the <strong>angle</strong> for fine-tuning.',
+  boxes: [
+    { t:'box-c', tx: FACTS.rearSpoiler },
+    { t:'box-t', tx:'Try Medium with a 15 degree angle for a balanced setup. High or Massive look dramatic but cost speed.' },
+  ],
+  tasks: ['Choose a rear spoiler', 'Adjust the wing angle'],
+  html: function() {
+    var o = "(function(v,el){P.rearSpoiler=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return '<div class="opt-grid">' + [
+      { val:'none', icon:'\u274C', label:'None' },
+      { val:'low', icon:'\u3030\uFE0F', label:'Low' },
+      { val:'medium', icon:'\u2501\u2501', label:'Medium' },
+      { val:'high', icon:'\u2593\u2593', label:'High' },
+      { val:'massive', icon:'\u2588\u2588', label:'Massive' },
+    ].map(function(o2) {
+      return '<button class="opt-btn' + (P.rearSpoiler === o2.val ? ' sel' : '') + '" data-action="' + o + '" data-arg="' + o2.val + '"><span class="opt-icon">' + o2.icon + '</span>' + o2.label + '</button>';
+    }).join('') + '</div>' +
+    '<div style="padding:6px 0"><div class="slider-row"><span class="slider-lbl">Wing Angle</span>' +
+    '<input type="range" min="0" max="45" step="1" value="' + P.rearWingAngle + '" data-param="P.rearWingAngle" data-parse="int" data-display="rwAngleVal" data-fmt="int\u00B0" data-rebuild="buildCar">' +
+    '<span class="slider-val" id="rwAngleVal">' + P.rearWingAngle + '\u00B0</span></div></div>';
+  },
+  onApply: function() { buildCar(); sout('Rear spoiler: ' + P.rearSpoiler + ' at ' + P.rearWingAngle + '\u00B0'); document.getElementById('liveStatus').textContent = 'Spoiler set!'; }
+},
+{
+  title: 'Side Skirts', tag: 'STEP 09 \u00B7 AERODYNAMICS',
+  intro: 'Side skirts seal the gap between the car and the ground, improving aerodynamic efficiency. <strong>Standard</strong> for road cars. <strong>Wide</strong> for maximum ground effect.',
+  boxes: [
+    { t:'box-c', tx: FACTS.sideSkirts },
+    { t:'box-t', tx:'Side skirts look subtle but add to the racing aesthetic. Wide skirts are common on drift and formula cars.' },
+  ],
+  tasks: ['Choose a side skirt style'],
+  html: function() {
+    var o = "(function(v,el){P.sideSkirts=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return opts('sk', [
+      { val:'none', icon:'\u274C', label:'None' },
+      { val:'standard', icon:'\u2500', label:'Standard' },
+      { val:'wide', icon:'\u2501', label:'Wide' },
+    ], P.sideSkirts, o);
+  },
+  onApply: function() { buildCar(); sout('Side skirts: ' + P.sideSkirts); document.getElementById('liveStatus').textContent = 'Skirts set!'; }
+},
+{
+  title: 'Exhaust', tag: 'STEP 10 \u00B7 SOUND',
+  intro: 'The exhaust defines the sound. <strong>Single</strong> is clean. <strong>Dual</strong> is classic. <strong>Quad</strong> is aggressive. <strong>Side pipes</strong> are pure attitude.',
+  boxes: [
+    { t:'box-c', tx: FACTS.exhaust },
+    { t:'box-t', tx:'Dual exhaust looks right on almost every car. Quad suits muscle cars. Side pipes are dramatic on drift builds.' },
+  ],
+  tasks: ['Choose an exhaust type'],
+  html: function() {
+    var o = "(function(v,el){P.exhaustType=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return opts('exh', [
+      { val:'single', icon:'\u25CB', label:'Single' },
+      { val:'dual', icon:'\u25EF\u25EF', label:'Dual' },
+      { val:'quad', icon:'\uD83D\uDD35\uD83D\uDD35\uD83D\uDD35\uD83D\uDD35', label:'Quad' },
+      { val:'sidepipes', icon:'\u25C0\u25B6', label:'Side Pipes' },
+    ], P.exhaustType, o);
+  },
+  onApply: function() { buildCar(); sout('Exhaust: ' + P.exhaustType); document.getElementById('liveStatus').textContent = 'Exhaust set!'; }
+},
+{
+  title: 'Roll Cage', tag: 'STEP 11 \u00B7 SAFETY',
+  intro: 'A roll cage protects the driver in a crash. <strong>None</strong> for a clean look. <strong>Standard</strong> is a visible hoop. <strong>Full</strong> is a complete cage structure.',
+  boxes: [
+    { t:'box-c', tx: FACTS.rollCage },
+    { t:'box-t', tx:'Full roll cages look incredible on offroad and drift builds. Standard is subtle but adds realism.' },
+  ],
+  tasks: ['Choose a roll cage style'],
+  html: function() {
+    var o = "(function(v,el){P.rollCage=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return opts('rc', [
+      { val:'none', icon:'\u274C', label:'None' },
+      { val:'standard', icon:'\u25B3', label:'Standard' },
+      { val:'full', icon:'\u2B21', label:'Full Cage' },
+    ], P.rollCage, o);
+  },
+  onApply: function() { buildCar(); sout('Roll cage: ' + P.rollCage); document.getElementById('liveStatus').textContent = 'Cage set!'; }
+},
+{
+  title: 'Headlights', tag: 'STEP 12 \u00B7 VISIBILITY',
+  intro: 'Headlights give your car its face. <strong>Round</strong> is classic. <strong>Rectangular</strong> is retro. <strong>LED</strong> is modern and aggressive. <strong>None</strong> is pure race car.',
+  boxes: [
+    { t:'box-c', tx: FACTS.headlights },
+    { t:'box-t', tx:'LED headlights look the most modern. Round suits classic builds. None is authentic for pure track cars.' },
+  ],
+  tasks: ['Choose a headlight style'],
+  html: function() {
+    var o = "(function(v,el){P.headlightStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return opts('hl', [
+      { val:'round', icon:'\u2299', label:'Round' },
+      { val:'rectangular', icon:'\u25AD', label:'Rectangular' },
+      { val:'led', icon:'\uD83D\uDCA1', label:'LED' },
+      { val:'none', icon:'\uD83D\uDEAB', label:'None' },
+    ], P.headlightStyle, o);
+  },
+  onApply: function() { buildCar(); sout('Headlights: ' + P.headlightStyle); document.getElementById('liveStatus').textContent = 'Lights set!'; }
+},
+{
+  title: 'Livery', tag: 'STEP 13 \u00B7 DECALS',
+  intro: 'Add a livery to your car. <strong>Stripes</strong> are classic racing. <strong>Flames</strong> are aggressive. <strong>Tribal</strong> is custom culture. Plus your <strong>race number</strong>.',
+  boxes: [
+    { t:'box-c', tx: FACTS.livery },
+    { t:'box-t', tx:'Stripes look great on everything. Flames suit muscle cars. Tribal works on drift builds.' },
+  ],
+  tasks: ['Choose a livery style', 'Pick a livery colour', 'Set your race number'],
+  html: function() {
+    var o = "(function(v,el){P.liveryStyle=v;el?.closest('.opt-grid')?.querySelectorAll('.opt-btn').forEach(function(b){b.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    var co = "(function(c,el){P.liveryCol=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return '<div class="opt-grid">' + [
+      { val:'none', icon:'\u274C', label:'None' },
+      { val:'stripes', icon:'\u2501\u2501', label:'Stripes' },
+      { val:'flames', icon:'\uD83D\uDD25', label:'Flames' },
+      { val:'tribal', icon:'\u25C6\u25C6', label:'Tribal' },
+    ].map(function(o2) {
+      return '<button class="opt-btn' + (P.liveryStyle === o2.val ? ' sel' : '') + '" data-action="' + o + '" data-arg="' + o2.val + '"><span class="opt-icon">' + o2.icon + '</span>' + o2.label + '</button>';
+    }).join('') + '</div>' +
+    swatchRow('lc', ['#ffffff','#f5c842','#38bdf8','#4ade80','#e8333a','#1a1a2a','#a78bfa','#fb923c'], P.liveryCol, co) +
+    '<div style="padding:6px 0"><div class="slider-row"><span class="slider-lbl">Race Number</span>' +
+    '<input type="range" min="1" max="99" step="1" value="' + P.carNumber + '" data-param="P.carNumber" data-parse="int" data-display="rnVal" data-rebuild="buildCar">' +
+    '<span class="slider-val" id="rnVal">' + P.carNumber + '</span></div></div>';
+  },
+  onApply: function() { buildCar(); sout('Livery: ' + P.liveryStyle + ' #' + P.carNumber); document.getElementById('liveStatus').textContent = 'Livery set!'; }
+},
+{
+  title: 'Details', tag: 'STEP 14 \u00B7 FINISHING TOUCHES',
+  intro: 'The final details make it yours. <strong>Window tint</strong> adds attitude. <strong>Brake caliper colour</strong> is a subtle flex. These small touches add up.',
+  boxes: [
+    { t:'box-c', tx: FACTS.details },
+    { t:'box-t', tx:'Red brake calipers look great on most builds. Tinted windows add mystery.' },
+  ],
+  tasks: ['Toggle window tint', 'Pick brake caliper colour'],
+  html: function() {
+    var co = "(function(c,el){P.brakeCalipers=c;el?.closest('.swatch-row')?.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('sel')});if(el)el.classList.add('sel');buildCar();})";
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0"><span style="font-size:.82rem;color:var(--muted)">Window Tint:</span>' +
+    '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;color:var(--text)">' +
+    '<input type="checkbox" ' + (P.tintWindows ? 'checked' : '') + ' style="width:18px;height:18px;accent-color:var(--acc)" data-param="P.tintWindows" data-parse="checked" data-rebuild="buildCar"> Dark tinted windows</label></div>' +
+    swatchRow('bc', ['#e8333a','#f5c842','#38bdf8','#4ade80','#a78bfa','#fb923c','#ffffff','#1a1a2a'], P.brakeCalipers, co);
+  },
+  onApply: function() { buildCar(); sout('Details applied! Tint: ' + (P.tintWindows ? 'on' : 'off')); document.getElementById('liveStatus').textContent = 'Details set!'; }
+},
+{
+  title: 'Stats & Preview', tag: 'STEP 15 \u00B7 PERFORMANCE',
+  intro: 'Your car\'s performance stats are calculated from every choice you\'ve made. Speed, acceleration, handling, and style \u2014 each choice matters.',
+  boxes: [
+    { t:'box-c', tx: FACTS.stats },
+    { t:'box-t', tx:'Go back and tweak any step to improve your stats. Or accept what you\'ve got and race!' },
+  ],
+  tasks: ['Review your stats', 'Make final adjustments if needed'],
+  html: function() {
+    var s = computeStats();
+    return '<div style="text-align:center;padding:10px 0"><div style="font-family:Bebas Neue,sans-serif;font-size:1.8rem;color:var(--acc-lt);letter-spacing:.08em;margin-bottom:8px">' + (P.carName || 'YOUR CAR') + '</div>' +
+    '<div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">' + P.bodyStyle.toUpperCase() + ' \u00B7 ' + P.engineType.toUpperCase() + ' \u00B7 ' + P.wheelStyle.toUpperCase() + '<br>' + P.frontWing + ' wing \u00B7 ' + P.rearSpoiler + ' spoiler \u00B7 ' + P.liveryStyle + ' livery</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:left;max-width:240px;margin:0 auto">' +
+    '<div style="background:rgba(232,51,58,.08);border:1px solid rgba(232,51,58,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Speed</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;color:var(--acc-lt)">' + s.speed + '/10</div></div>' +
+    '<div style="background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Accel</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;color:#fb923c">' + s.accel + '/10</div></div>' +
+    '<div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Handling</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;color:var(--green)">' + s.handling + '/10</div></div>' +
+    '<div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Style</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.3rem;color:var(--purple)">' + s.style + '/10</div></div>' +
+    '</div></div>';
+  },
+  onApply: function() { sout('Stats reviewed. Ready to race!'); document.getElementById('liveStatus').textContent = 'Stats reviewed!'; }
+},
+{
+  title: 'Race!', tag: 'STEP 16 \u00B7 GREEN FLAG',
+  intro: 'All set. Your car is fully designed. Hit the race button to spin the wheels and watch the smoke fly.',
+  boxes: [
+    { t:'box-r', tx: '3\u2026 2\u2026 1\u2026 GO! The wheels spin, smoke billows, and your car tears off the line.' },
+    { t:'box-c', tx: 'A complete race car needs: body (chassis), engine (power), wheels (grip), aero (downforce), and livery (identity). You\'ve built all of them.' },
+    { t:'box-t', tx:'Hit \uD83D\uDCF8 PNG in the header to save a screenshot. Hit \u2B07 OBJ to download the 3D model.' },
+  ],
+  tasks: ['Press Race and watch it go!'],
+  html: function() {
+    return '<div style="text-align:center;padding:8px 0"><div style="font-size:2.4rem;margin-bottom:7px">\uD83C\uDFC1</div>' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:1.5rem;color:var(--acc-lt);letter-spacing:.1em;margin-bottom:6px">' + (P.carName || 'YOUR CAR') + '</div>' +
+    '<div style="font-size:.76rem;color:var(--muted);margin-bottom:14px;line-height:1.7">All systems nominal.<br>Ready to race.</div></div>' +
+    '<button class="run-btn" style="font-size:1rem;padding:12px" data-action="applyStep" data-arg="' + currentStep + '">\uD83C\uDFC1 GREEN FLAG \u2014 RACE!</button>';
+  },
+  onApply: function() { startRace(); }
+},
+];
+function go(i) {
+  if (i < 0 || i >= STEPS.length) return;
+  currentStep = i; renderStep(); updateProgress();
+  var items = document.querySelectorAll('.si');
+  if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+  document.getElementById('navPrev').disabled = (i === 0);
+  document.getElementById('navNext').disabled = (i === STEPS.length - 1);
+  toast(STEPS[i].title);
+}
+
+function renderStep() {
+  var s = STEPS[currentStep];
+  var body = document.getElementById('stepBody');
+  var html = '<div class="step-tag">' + s.tag + '</div><div class="step-title">' + s.title + '</div><div class="step-intro">' + s.intro + '</div>';
+  (s.boxes || []).forEach(function(b) { html += '<div class="box ' + b.t + '">' + b.tx + '</div>'; });
+  html += s.html ? s.html() : '';
+  if (s.tasks) {
+    html += '<div class="task-list">' + s.tasks.map(function(t) {
+      var done = stepDone[currentStep];
+      return '<div class="task-item' + (done ? ' done' : '') + '"><div class="task-dot"></div>' + t + '</div>';
+    }).join('') + '</div>';
+  }
+  if (!s.html || !s.html().includes('run-btn')) {
+    html += '<button class="run-btn" data-action="applyStep" data-arg="' + currentStep + '">⚙️ Apply to Car</button>';
+  }
+  body.innerHTML = html;
+  document.querySelectorAll('.si').forEach(function(el, i) { el.classList.toggle('active', i === currentStep); });
+}
+
+function applyStep(i) {
+  STEPS[i].onApply();
+  stepDone[i] = true; renderStep(); updateProgress();
+}
+
+function updateProgress() {
+  var done = stepDone.filter(Boolean).length;
+  var pct = Math.max(3, Math.round((done / STEPS.length) * 100));
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progCt').textContent = done + ' / 16 steps';
+  document.querySelectorAll('.si').forEach(function(el, i) {
+    el.classList.toggle('done', stepDone[i]);
+    el.classList.toggle('active', i === currentStep);
+    var sn = el.querySelector('.sn');
+    if (sn) sn.textContent = stepDone[i] ? '\u2713' : (i + 1);
+  });
+}
+
+function quickBuild() {
+  P.carName = 'INFERNO'; P.bodyStyle = 'drift'; P.primaryCol = '#e8333a'; P.accentCol = '#f5c842';
+  P.engineType = 'v8'; P.wheelStyle = '5spoke'; P.wheelCol = '#1a1a1a';
+  P.frontWing = 'low'; P.rearSpoiler = 'high'; P.rearWingAngle = 25;
+  P.sideSkirts = 'wide'; P.exhaustType = 'quad'; P.rollCage = 'standard';
+  P.headlightStyle = 'led'; P.liveryStyle = 'flames'; P.liveryCol = '#f5c842';
+  P.carNumber = 13; P.tintWindows = true; P.brakeCalipers = '#f5c842';
+  P.bodyWidth = 2.0; P.bodyHeight = 0.5; P.wheelBase = 2.6;
+  activated = false;
+  if (particles) { scene.remove(particles); particles = null; }
+  buildCar();
+  sout('\u26A1 Quick build: INFERNO is ready. Press Race at Step 16!');
+  document.getElementById('liveStatus').textContent = 'Quick build active!';
+  toast('Quick build: INFERNO loaded!');
+}
+
+window._builderGetState = function() { return { params: Object.assign({}, P), step: currentStep }; };
+window._builderApplyState = function(s) {
+  if (s.params) Object.assign(P, s.params);
+  if (typeof s.step === 'number') currentStep = s.step;
+  activated = false;
+  if (particles) { scene.remove(particles); particles = null; }
+  buildCar(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+  if (window.builderScheduleAutoSave) builderScheduleAutoSave();
+};
+
+function toast(m) {
+  var t = document.getElementById('carToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'carToast';
+    t.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(10,10,15,.92);border:1px solid rgba(232,51,58,.35);padding:8px 22px;font-family:Bebas Neue,sans-serif;font-size:.9rem;letter-spacing:.06em;color:var(--acc-lt);border-radius:8px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:200;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  t.textContent = m;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(function() { t.style.opacity = '0'; }, 1800);
+}
+
+function randomCar() {
+  var rnd = function(mn, mx) { return Math.round((mn + Math.random() * (mx - mn)) * 10) / 10; };
+  var pick = function(arr) { return arr[Math.floor(Math.random() * arr.length)]; };
+  var rHex = function() { return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'); };
+  Object.assign(P, {
+    carName: 'R-' + Math.round(100 + Math.random() * 900),
+    bodyStyle: pick(['formula','muscle','offroad','drift']),
+    primaryCol: rHex(), accentCol: rHex(),
+    engineType: pick(['inline4','v6','v8','v12','electric']),
+    wheelStyle: pick(['5spoke','multisplit','rally','slick']),
+    wheelCol: rHex(),
+    frontWing: pick(['none','low','medium','high']),
+    rearSpoiler: pick(['none','low','medium','high','massive']),
+    rearWingAngle: Math.round(Math.random() * 45),
+    sideSkirts: pick(['none','standard','wide']),
+    exhaustType: pick(['single','dual','quad','sidepipes']),
+    rollCage: pick(['none','standard','full']),
+    headlightStyle: pick(['round','rectangular','led','none']),
+    liveryStyle: pick(['none','stripes','flames','tribal']),
+    liveryCol: rHex(),
+    carNumber: Math.round(1 + Math.random() * 98),
+    tintWindows: Math.random() > 0.5,
+    brakeCalipers: rHex(),
+    bodyWidth: rnd(1.4, 2.4), bodyHeight: rnd(0.4, 1.0),
+  });
+  activated = false;
+  if (particles) { scene.remove(particles); particles = null; }
+  buildCar(); updateStats(); syncRightBar(); toast('Random car generated!');
+  if (window.builderTrack) builderTrack('random_build');
+}
+
+function downloadPNG() {
+  resize(); renderer.render(scene, camera);
+  var a = document.createElement('a');
+  a.href = renderer.domElement.toDataURL('image/png');
+  a.download = (P.carName || 'car').toLowerCase().replace(/\s+/g, '-') + '.png';
+  a.click(); toast('\uD83D\uDCF8 PNG saved!');
+  if (window.builderTrack) builderTrack('export', { format: 'png' });
+}
+function downloadAndClose() { downloadPNG(); closeModal(); }
+
+function openProfileCard() {
+  var s = computeStats();
+  var modal = document.getElementById('modalOverlay');
+  var content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  content.innerHTML = '<div style="text-align:center;padding:10px">' +
+    '<div style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:var(--acc-lt);letter-spacing:.08em;margin-bottom:4px">' + (P.carName || 'UNNAMED') + '</div>' +
+    '<div style="font-family:JetBrains Mono,monospace;font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px">' + P.bodyStyle.toUpperCase() + ' \u00B7 ' + P.engineType.toUpperCase() + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">' +
+    '<div style="background:rgba(232,51,58,.08);border:1px solid rgba(232,51,58,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.45rem;color:var(--muted);text-transform:uppercase">Speed</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:var(--acc-lt)">' + s.speed + '</div></div>' +
+    '<div style="background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.45rem;color:var(--muted);text-transform:uppercase">Accel</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:#fb923c">' + s.accel + '</div></div>' +
+    '<div style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.45rem;color:var(--muted);text-transform:uppercase">Handling</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:var(--green)">' + s.handling + '</div></div>' +
+    '<div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:6px;padding:8px"><div style="font-family:JetBrains Mono,monospace;font-size:.45rem;color:var(--muted);text-transform:uppercase">Style</div><div style="font-family:Bebas Neue,sans-serif;font-size:1.2rem;color:var(--purple)">' + s.style + '</div></div>' +
+    '</div>' +
+    '<div style="font-size:.65rem;color:var(--muted);line-height:1.6">' + P.wheelStyle + ' wheels \u00B7 ' + P.frontWing + ' front \u00B7 ' + P.rearSpoiler + ' rear<br>' + P.liveryStyle + ' livery #' + P.carNumber + ' \u00B7 ' + P.rollCage + ' cage</div>' +
+    '<div style="margin-top:12px;display:flex;gap:6px;justify-content:center">' +
+    '<button data-on="closeModal" data-on-plain style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button>' +
+    '<button data-action="downloadAndClose" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">\uD83D\uDCF8 Save PNG</button>' +
+    '</div></div>';
+  modal.classList.add('open');
+}
+
+function downloadOBJ() {
+  if (!carGroup) { toast('Build your car first!'); return; }
+  if (window.builderTrack) builderTrack('export', { format: 'obj' });
+  carGroup.updateMatrixWorld(true);
+  var name = (P.carName && P.carName !== 'UNNAMED' ? P.carName : 'car').replace(/\s+/g, '-').toLowerCase();
+  sout('\u23F3 Preparing OBJ export\u2026');
+  var obj = '# ' + P.carName + ', JV Race Car Builder\n# jvdesignstudio.co.uk\nmtllib ' + name + '-car.mtl\n';
+  var mtl = '# Materials for ' + P.carName + '\n# jvdesignstudio.co.uk\n';
+  var matMap = {}, matIdx = 0, vOff = 1, meshIdx = 0;
+  carGroup.traverse(function(node) {
+    if (!node.isMesh) return;
+    var col = node.material.color ? node.material.color : new THREE.Color(0x888888);
+    var hex = col.getHexString();
+    if (!matMap[hex]) {
+      var mName = 'm' + (matIdx++);
+      matMap[hex] = mName;
+      mtl += '\nnewmtl ' + mName + '\nKd ' + col.r.toFixed(4) + ' ' + col.g.toFixed(4) + ' ' + col.b.toFixed(4) + '\nKa 0.05 0.05 0.05\nKs 0.2 0.2 0.2\nNs 25\n';
+      if (node.material.transparent) mtl += 'd ' + (node.material.opacity != null ? node.material.opacity : 1).toFixed(4) + '\n';
+    }
+    var g = node.geometry.clone();
+    g.applyMatrix4(node.matrixWorld);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    var pos = g.attributes.position, nor = g.attributes.normal, idx = g.index, n = pos.count;
+    obj += '\ng mesh' + (meshIdx++) + '\nusemtl ' + matMap[hex] + '\n';
+    for (var i = 0; i < n; i++) obj += 'v ' + pos.getX(i).toFixed(5) + ' ' + pos.getY(i).toFixed(5) + ' ' + pos.getZ(i).toFixed(5) + '\n';
+    for (var i = 0; i < n; i++) obj += 'vn ' + nor.getX(i).toFixed(5) + ' ' + nor.getY(i).toFixed(5) + ' ' + nor.getZ(i).toFixed(5) + '\n';
+    if (idx) {
+      for (var i = 0; i < idx.count; i += 3) {
+        var a = idx.getX(i) + vOff, b = idx.getX(i+1) + vOff, c = idx.getX(i+2) + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    } else {
+      for (var i = 0; i < n; i += 3) {
+        var a = i + vOff, b = i+1 + vOff, c = i+2 + vOff;
+        obj += 'f ' + a + '//' + a + ' ' + b + '//' + b + ' ' + c + '//' + c + '\n';
+      }
+    }
+    vOff += n;
+  });
+  var objBlob = new Blob([obj], { type: 'text/plain' });
+  var objUrl = URL.createObjectURL(objBlob);
+  var la = document.createElement('a');
+  la.href = objUrl; la.download = name + '-car.obj'; la.click();
+  URL.revokeObjectURL(objUrl);
+  setTimeout(function() {
+    var mtlBlob = new Blob([mtl], { type: 'text/plain' });
+    var mtlUrl = URL.createObjectURL(mtlBlob);
+    var lb = document.createElement('a');
+    lb.href = mtlUrl; lb.download = name + '-car.mtl'; lb.click();
+    URL.revokeObjectURL(mtlUrl);
+  }, 300);
+  sout('\u2705 ' + name + '-car.obj + .mtl downloaded!');
+}
+
+
+function getSaves() { try { return JSON.parse(localStorage.getItem('carSaves') || '{}'); } catch(e) { return {}; } }
+function setSaves(s) { localStorage.setItem('carSaves', JSON.stringify(s)); }
+
+function openSaveModal() {
+  var modal = document.getElementById('modalOverlay');
+  var content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  content.innerHTML = '<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-lt);margin-bottom:12px">Save Car</h2><input type="text" id="carSaveName" placeholder="Name your car..." style="width:100%;padding:8px 12px;background:var(--bg3);border:1px solid rgba(232,51,58,.3);border-radius:7px;color:var(--acc-lt);font-family:Bebas Neue,sans-serif;font-size:1rem;letter-spacing:.06em;outline:none;margin-bottom:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button data-on="closeModal" data-on-plain style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Cancel</button><button data-action="doCarSave" style="padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:Bebas Neue,sans-serif;font-size:.85rem;letter-spacing:.06em">Save</button></div>';
+  modal.classList.add('open');
+  setTimeout(function() { var inp = document.getElementById('carSaveName'); if (inp) inp.focus(); }, 100);
+}
+
+function openLoadModal() {
+  var modal = document.getElementById('modalOverlay');
+  var content = document.getElementById('modalContent');
+  if (!modal || !content) return;
+  var sv = getSaves(), ks = Object.keys(sv);
+  var h = '';
+  if (!ks.length) h = '<p style="color:var(--muted);font-size:.8rem;padding:8px 0">No saved cars yet.</p>';
+  else h = '<div style="max-height:180px;overflow-y:auto;margin-bottom:12px">' + ks.map(function(k) {
+    var d = new Date(sv[k].date).toLocaleDateString();
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s" data-hover="background:rgba(232,51,58,.05)" data-hover-out="background:transparent" data-action="doCarLoad" data-arg="' + k.replace(/'/g, '&#39;') + '"><div><div style="font-size:.82rem;color:var(--text)">' + k + '</div><div style="font-family:JetBrains Mono,monospace;font-size:.55rem;color:var(--muted)">' + d + '</div></div><button data-action="doCarDel" data-arg="' + k.replace(/'/g, '&#39;') + '" data-stop style="background:none;border:none;color:#f87171;cursor:pointer;font-size:.9rem;padding:2px 5px">\u2715</button></div>';
+  }).join('') + '</div>';
+  content.innerHTML = '<h2 style="font-family:Bebas Neue,sans-serif;color:var(--acc-lt);margin-bottom:12px">Load Car</h2>' + h + '<div style="display:flex;justify-content:flex-end"><button data-on="closeModal" data-on-plain style="padding:7px 16px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;font-size:.8rem">Close</button></div>';
+  modal.classList.add('open');
+}
+
+function closeModal() { var modal = document.getElementById('modalOverlay'); if (modal) modal.classList.remove('open'); }
+
+function doCarSave() {
+  var inp = document.getElementById('carSaveName');
+  if (!inp) return;
+  var n = inp.value.trim();
+  if (!n) return;
+  var sv = getSaves();
+  sv[n] = { params: Object.assign({}, P), step: currentStep, date: Date.now() };
+  setSaves(sv); closeModal();
+  if (window.builderTrack) builderTrack('save');
+  toast('Car saved!');
+}
+
+function doCarLoad(n) {
+  var sv = getSaves();
+  if (!sv[n]) return;
+  Object.assign(P, sv[n].params);
+  currentStep = sv[n].step || 0;
+  activated = false;
+  if (particles) { scene.remove(particles); particles = null; }
+  closeModal(); buildCar(); renderStep(); updateProgress(); syncRightBar(); updateStats();
+  toast('Loaded: ' + n);
+}
+
+function doCarDel(n) {
+  var sv = getSaves(); delete sv[n]; setSaves(sv); openLoadModal();
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < STEPS.length - 1) go(currentStep + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) go(currentStep - 1); }
+  if (e.key === 'Escape') closeModal();
+});
+
+function init() {
+  var listEl = document.getElementById('stepList');
+  STEPS.forEach(function(s, i) {
+    var item = document.createElement('div');
+    item.className = 'si' + (i === 0 ? ' active' : '');
+    item.innerHTML = '<div class="sn">' + (i + 1) + '</div><div class="sl">' + s.title + '</div>';
+    item.onclick = function() { go(i); };
+    listEl.appendChild(item);
+  });
+  document.getElementById('navPrev').disabled = true;
+  document.getElementById('navNext').disabled = false;
+  buildCar(); renderStep(); updateStats(); updateSpecCard(); syncRightBar();
+  var modal = document.getElementById('modalOverlay');
+  if (modal) modal.addEventListener('click', function(e) { if (e.target === e.currentTarget) closeModal(); });
+}
+
+init();
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const CAR_TEMPLATES = [
+  { id: 'inferno', emoji: '🔥', name: 'Inferno', note: 'Red drift car with flames  -  the quick-build.',
+    data: { carName: 'INFERNO', bodyStyle: 'drift', primaryCol: '#e8333a', accentCol: '#f5c842', engineType: 'v8', wheelStyle: '5spoke', rearSpoiler: 'high', sideSkirts: 'wide', exhaustType: 'quad', liveryStyle: 'flames', carNumber: 13 } },
+  { id: 'lightning', emoji: '⚡', name: 'Lightning', note: 'Formula style, white stripes and low wing.',
+    data: { carName: 'Lightning', bodyStyle: 'formula', primaryCol: '#e8333a', accentCol: '#ffffff', engineType: 'v6', wheelStyle: '5spoke', frontWing: 'medium', rearSpoiler: 'medium', liveryStyle: 'stripes', carNumber: 7 } },
+  { id: 'shadow', emoji: '🌑', name: 'Shadow', note: 'Matte black, tinted windows and dual exhaust.',
+    data: { carName: 'Shadow', bodyStyle: 'drift', primaryCol: '#1a1a1a', accentCol: '#22c55e', engineType: 'v8', wheelStyle: '5spoke', wheelCol: '#1a1a1a', rearSpoiler: 'high', tintWindows: true, liveryStyle: 'solid', carNumber: 9 } },
+  { id: 'arctic', emoji: '❄️', name: 'Arctic', note: 'Ice blue with white accents  -  cool and fast.',
+    data: { carName: 'Arctic', bodyStyle: 'formula', primaryCol: '#38bdf8', accentCol: '#ffffff', engineType: 'v6', wheelStyle: '5spoke', frontWing: 'low', rearSpoiler: 'high', liveryStyle: 'stripes', carNumber: 22 } },
+  { id: 'sunset', emoji: '🌅', name: 'Sunset', note: 'Orange and purple with a big rear wing.',
+    data: { carName: 'Sunset', bodyStyle: 'drift', primaryCol: '#f97316', accentCol: '#a78bfa', engineType: 'v8', wheelStyle: '5spoke', rearSpoiler: 'high', rearWingAngle: 30, liveryStyle: 'gradient', carNumber: 42 } },
+  { id: 'toxic', emoji: '☣️', name: 'Toxic', note: 'Neon green and black  -  street-racer vibe.',
+    data: { carName: 'Toxic', bodyStyle: 'drift', primaryCol: '#22c55e', accentCol: '#1a1a1a', engineType: 'v8', wheelStyle: '5spoke', wheelCol: '#22c55e', brakeCalipers: '#22c55e', tintWindows: true, liveryStyle: 'solid', carNumber: 77 } }
+];
+
+function loadCarTemplate(t) {
+  Object.assign(P, t.data);
+  if (typeof buildCar === 'function') buildCar(); if (typeof updateStats === 'function') updateStats(); if (typeof updateSpecCard === 'function') updateSpecCard(); if (typeof syncRightBar === 'function') syncRightBar();
+  if (typeof sout === 'function') sout('Template loaded: ' + t.data.carName);
+  if (typeof toast === 'function') toast('Template: ' + t.data.carName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: CAR_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadCarTemplate(t); } }; }),
+    random: randomCar,
+    onApply: function () { if (typeof go === 'function') go(0); else if (typeof renderStep === 'function') renderStep(); }
+  });
+}
+window._builderSetState = window._builderSetState || window._builderApplyState;
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Race Car Builder',
+    units: 'm',
+    accent: '#e8333a',
+    getGroup: function () { return carGroup; },
+    getName: function () { return P.carName || 'race-car'; },
+    say: sout,
+
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
+function goPrev(){go(currentStep-1)}
+function goNext(){go(currentStep+1)}
+
+  try { window.randomCar = randomCar; } catch (e) { /* not a local handler */ }
+  try { window.downloadPNG = downloadPNG; } catch (e) { /* not a local handler */ }
+  try { window.openProfileCard = openProfileCard; } catch (e) { /* not a local handler */ }
+  try { window.openSaveModal = openSaveModal; } catch (e) { /* not a local handler */ }
+  try { window.openLoadModal = openLoadModal; } catch (e) { /* not a local handler */ }
+  try { window.downloadOBJ = downloadOBJ; } catch (e) { /* not a local handler */ }
+  try { window.quickBuild = quickBuild; } catch (e) { /* not a local handler */ }
+  try { window.goPrev = goPrev; } catch (e) { /* not a local handler */ }
+  try { window.goNext = goNext; } catch (e) { /* not a local handler */ }
+  try { window.startRace = startRace; } catch (e) { /* not a local handler */ }
+  try { window.closeModal = closeModal; } catch (e) { /* not a local handler */ }
+  try { window.selectOpt = selectOpt; } catch (e) { /* not a local handler */ }
+  try { window.selectSwatch = selectSwatch; } catch (e) { /* not a local handler */ }
+  try { window.applyStep = applyStep; } catch (e) { /* not a local handler */ }
+  try { window.downloadAndClose = downloadAndClose; } catch (e) { /* not a local handler */ }
+  try { window.doCarSave = doCarSave; } catch (e) { /* not a local handler */ }
+  try { window.doCarLoad = doCarLoad; } catch (e) { /* not a local handler */ }
+  try { window.doCarDel = doCarDel; } catch (e) { /* not a local handler */ }
+  } finally {
+    window.addEventListener = winAdd;
+    document.addEventListener = docAdd;
+    window.requestAnimationFrame = origRaf;
+  }
+
+  return function unmount() {
+    try { ac.abort(); } catch (e) {}
+    rafs.forEach(function (id) { try { cancelAnimationFrame(id); } catch (e) {} });
+    window._builderGetState = null;
+    window._builderApplyState = null;
+    window._builderSetState = null;
+    try { delete window.randomCar; } catch (e) {}
+    try { delete window.downloadPNG; } catch (e) {}
+    try { delete window.openProfileCard; } catch (e) {}
+    try { delete window.openSaveModal; } catch (e) {}
+    try { delete window.openLoadModal; } catch (e) {}
+    try { delete window.downloadOBJ; } catch (e) {}
+    try { delete window.quickBuild; } catch (e) {}
+    try { delete window.goPrev; } catch (e) {}
+    try { delete window.goNext; } catch (e) {}
+    try { delete window.startRace; } catch (e) {}
+    try { delete window.closeModal; } catch (e) {}
+    try { delete window.selectOpt; } catch (e) {}
+    try { delete window.selectSwatch; } catch (e) {}
+    try { delete window.applyStep; } catch (e) {}
+    try { delete window.downloadAndClose; } catch (e) {}
+    try { delete window.doCarSave; } catch (e) {}
+    try { delete window.doCarLoad; } catch (e) {}
+    try { delete window.doCarDel; } catch (e) {}
+    try { delete window.P; } catch (e) {}
+    stage.remove();
+    sheet.remove();
+  };
+}
