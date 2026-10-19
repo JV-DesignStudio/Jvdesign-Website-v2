@@ -1,0 +1,1036 @@
+/* assets/js/builders/steampunk-airship.js
+ * Steampunk Airship preset module for the 3D Builder shell (workshops/3d-builder.html).
+ * Extracted from workshops/steampunk-airship-builder.html: mount(container) injects the
+ * builder markup + CSS, runs the original builder core in a guarded scope
+ * (window/document listeners and animation frames are tracked so unmount() can
+ * tear it down), and exposes only the data-on/data-action handlers the shared
+ * delegation needs. No other builder internals leak (module scope).
+ */
+export const ID = 'steampunk-airship';
+export const LABEL = 'Steampunk Airship';
+export const STYLES = ['../style-workshop-steampunk-airship-builder.css?v=17'];
+const HTML = "<div id=\"app\">\n  <header>\n\n    <h1>🎈 Build a Steampunk Airship</h1>\n<div class=\"callout tip\" style=\"border-left:3px solid #22c55e;background:rgba(34,197,94,.07);\"><div class=\"callout-icon\">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of the notes for this workshop: <a href=\"/downloads/steampunk-airship-builder-reference.zip\" download style=\"color:#16a34a;font-weight:800;text-decoration:underline;\">⬇ steampunk-airship-builder-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>\n\n    <div class=\"hb\">\n      <button data-on=\"randomAirship\" data-on-plain>🎲 Random</button>\n      <button data-on=\"downloadPNG\" data-on-plain>🖼️ PNG</button>\n      <button data-on=\"showProfileCard\" data-on-plain>💳 Card</button>\n      <button data-on=\"openSaveModal\" data-on-plain>💾 Save</button>\n      <button data-on=\"openLoadModal\" data-on-plain>📂 Load</button>\n      <button data-on=\"resetAll\" data-on-plain>🔄 Reset</button>\n    </div>\n  </header>\n  <!-- ── Ember Tip Bar ── -->\n  <div class=\"ember-builder-bar\" id=\"emberBar\" style=\"--ca-rgb:200,168,78\">\n    <svg viewBox=\"0 0 80 90\" width=\"26\" height=\"29\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\">\n      <path d=\"M20 52 Q10 80 15 88 H65 Q70 80 60 52 Q50 60 40 60 Q30 60 20 52Z\" fill=\"#12102a\"/>\n      <ellipse cx=\"40\" cy=\"36\" rx=\"16\" ry=\"17\" fill=\"#8B5CF6\"/>\n      <polygon points=\"24,22 19,8 30,18\" fill=\"#7C3AED\"/>\n      <polygon points=\"56,22 61,8 50,18\" fill=\"#7C3AED\"/>\n      <ellipse cx=\"40\" cy=\"40\" rx=\"10\" ry=\"8\" fill=\"#DDD6FE\"/>\n      <ellipse cx=\"35\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <ellipse cx=\"45\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <circle cx=\"36\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <circle cx=\"46\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <ellipse cx=\"40\" cy=\"39\" rx=\"2\" ry=\"1.4\" fill=\"#7C3AED\"/>\n    </svg>\n    <span><strong style=\"color:#c8a84e\">Ember says:</strong> Set the <strong>gas envelope size</strong> first , it drives the whole silhouette. Go large for maximum Victorian drama!</span>\n    <button class=\"ember-bar-dismiss\" aria-label=\"Dismiss tip\" data-session-set=\"ember-bar-steampunk-airship-builder:1\" data-remove-id=\"emberBar\">✕</button>\n  </div>\n\n  <!-- ── /Ember Tip Bar ── -->\n  <div id=\"sidebar\">\n    <div class=\"mode-toggle\">\n      <button class=\"mode-btn active\" id=\"mGuided\" data-on=\"setMode\" data-on-arg=\"guided\" data-on-plain>📘 Guided Build</button>\n      <button class=\"mode-btn\" id=\"mSandbox\" data-on=\"setMode\" data-on-arg=\"sandbox\" data-on-plain>⭐ Sandbox</button>\n    </div>\n    <!-- Guided mode -->\n    <div id=\"guided-panel\">\n      <div class=\"prog\">\n        <div class=\"prog-label\">Build Progress</div>\n        <div class=\"prog-bar\"><div class=\"prog-fill\" id=\"progFill\"></div></div>\n        <div class=\"prog-ct\" id=\"progCt\">Step 1 of 19</div>\n      </div>\n      <div class=\"slist\" id=\"stepList\"></div>\n      <div class=\"cpan\" id=\"cpan\"></div>\n      <div class=\"snav\">\n        <button class=\"bp\" id=\"bP\" data-on=\"prev\" data-on-plain aria-label=\"Previous step\">◀ Prev</button>\n        <button class=\"bn\" id=\"bN\" data-on=\"next\" data-on-plain aria-label=\"Next step\">Next ?</button>\n      </div>\n    </div>\n    <!-- Sandbox mode -->\n    <div id=\"sandbox-panel\" style=\"display:none;flex:1;overflow-y:auto;\"></div>\n  </div>\n  <div id=\"viewport\" role=\"application\" aria-label=\"3D airship preview viewport\">\n    <div class=\"toast\" id=\"toast\" aria-live=\"polite\"></div>\n    <div class=\"airship-stats\" id=\"airshipStats\"></div>\n    <div class=\"dims\">Airship: <span id=\"dL\">10</span>m × <span id=\"dW\">3</span>m × <span id=\"dH\">6</span>m</div>\n    <div class=\"vhint\">Drag to orbit · Scroll to zoom</div>\n  </div>\n</div>\n<div class=\"mo\" id=\"modalO\"><div class=\"md\" id=\"modalC\"></div></div>\n<canvas id=\"pcardOffscreen\" style=\"display:none;position:absolute\"></canvas>\n<div class=\"pcard-overlay\" id=\"profileCard\">\n  <div class=\"pcard-box\">\n    <div class=\"pcard-head\">\n      <span class=\"pcard-title\">⭐ Airship Profile Card</span>\n      <button class=\"pcard-close\" data-cls-remove-id=\"profileCard:show\">?</button>\n    </div>\n    <img loading=\"lazy\" decoding=\"async\" id=\"pcardImg\" src=\"\" alt=\"Airship profile card\">\n    <button class=\"pcard-dl\" id=\"pcardDl\">⬇ Download Profile Card</button>\n  </div>\n</div>\n\n";
+const CSS = "/* ── Ember builder tip strip ─────────────── */\n.hdr-step-chip {\n  display: inline-flex;\n  align-items: center;\n  font-family: 'Nunito', sans-serif;\n  font-size: .72rem;\n  font-weight: 800;\n  letter-spacing: .05em;\n  padding: 3px 10px;\n  border-radius: 999px;\n  background: rgba(var(--ca-rgb, 255,255,255), .12);\n  border: 1px solid rgba(var(--ca-rgb, 255,255,255), .25);\n  color: rgba(255,255,255,.85);\n  margin-left: 10px;\n  vertical-align: middle;\n  flex-shrink: 0;\n}\n.ember-builder-bar {\n  display: flex;\n  align-items: flex-start;\n  gap: 10px;\n  padding: 8px 16px;\n  background: rgba(var(--ca-rgb,139,92,246), .07);\n  border-bottom: 1px solid rgba(var(--ca-rgb,139,92,246), .18);\n  position: relative;\n  font-size: .8rem;\n  line-height: 1.45;\n  color: rgba(255,255,255,.65);\n}\n.ember-builder-bar strong { color: rgba(255,255,255,.9); }\n.ember-builder-bar svg { flex-shrink: 0; margin-top: 1px; }\n.ember-bar-dismiss {\n  position: absolute;\n  right: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  background: none;\n  border: none;\n  color: rgba(255,255,255,.3);\n  cursor: pointer;\n  font-size: 1rem;\n  line-height: 1;\n  padding: 2px 6px;\n  border-radius: 4px;\n  transition: color .2s;\n}\n.ember-bar-dismiss:hover { color: rgba(255,255,255,.7); }\n";
+const ACTIONS = ["applyLivery","closeModal","doDel","doLoad","doSave","downloadPNG","go","next","openLoadModal","openSaveModal","prev","randomAirship","resetAll","setMode","showProfileCard","takeOff","toggleSandbox","updChecked","updFloat","updRaw"];
+
+export function mount(container) {
+  var ac = new AbortController();
+  var rafs = [];
+  var winAdd = window.addEventListener.bind(window);
+  var docAdd = document.addEventListener.bind(document);
+  var origRaf = window.requestAnimationFrame.bind(window);
+  function opt(o) { return Object.assign({}, (o && typeof o === 'object') ? o : {}, { signal: ac.signal }); }
+  window.addEventListener = function (t, fn, o) { return winAdd(t, fn, opt(o)); };
+  document.addEventListener = function (t, fn, o) {
+    var r = docAdd(t, fn, opt(o));
+    // Modules mount after the page has finished loading, so a builder that waits
+    // for DOMContentLoaded would never initialise. Run that handler now instead.
+    if (t === 'DOMContentLoaded' && document.readyState !== 'loading') { try { fn.call(document, new Event('DOMContentLoaded')); } catch (e) {} }
+    return r;
+  };
+  window.requestAnimationFrame = function (fn) { var id = origRaf(fn); rafs.push(id); return id; };
+
+  var stage = document.createElement('div');
+  stage.id = 'bsStage';
+  stage.className = 'bs-stage';
+  stage.innerHTML = HTML;
+  container.appendChild(stage);
+  var sheet = document.createElement('style');
+  sheet.setAttribute('data-bs-css', ID);
+  sheet.textContent = CSS;
+  document.head.appendChild(sheet);
+
+  try {
+// ---------------------------------------
+// DATA
+// ---------------------------------------
+const STEPS=[
+  {id:'name',name:'Name Your Airship',d:'Give your airship a distinguished name'},
+  {id:'hull',name:'Hull Shape',d:'Main gondola body , length, width and depth'},
+  {id:'hullCurve',name:'Hull Curvature',d:'Bow taper, stern shape and hull roundness'},
+  {id:'balloon',name:'Gas Envelope',d:'The main lifting balloon above the hull'},
+  {id:'balloonStyle',name:'Envelope Details',d:'Ribs, panels and envelope shape'},
+  {id:'gondola',name:'Gondola Cabin',d:'The enclosed cabin on the hull'},
+  {id:'bridge',name:'Bridge / Wheelhouse',d:'The command deck at the front'},
+  {id:'engines',name:'Steam Engines',d:'Propulsion engines on the sides'},
+  {id:'propellers',name:'Propellers',d:'Main and auxiliary propellers'},
+  {id:'smokestacks',name:'Smokestacks',d:'Exhaust chimneys'},
+  {id:'wings',name:'Stabilizer Wings',d:'Side fins and tail stabilizers'},
+  {id:'rudder',name:'Rudder',d:'Steering fins at the stern'},
+  {id:'rigging',name:'Rigging & Cables',d:'Lines connecting balloon to hull'},
+  {id:'deck',name:'Deck Details',d:'Railings, planks and walkways'},
+  {id:'weapons',name:'Weapons',d:'Cannons and gun turrets'},
+  {id:'pipes',name:'Pipes & Gauges',d:'Steam pipes running along the hull'},
+  {id:'lanterns',name:'Lanterns',d:'Navigation and cabin lights'},
+  {id:'colors',name:'Colors & Materials',d:'Paint, brass, wood and fabric'},
+  {id:'extras',name:'Final Touches',d:'Anchor, flag, nameplate'},
+  {id:'takeOff',name:'Take Off!',d:'Launch your airship into the sky'},
+];
+
+let P={
+  airshipName:'HMS Ironclad',
+  // Hull
+  hullLen:10,hullW:2.5,hullDepth:1.8,
+  bowTaper:0.65,sternTaper:0.4,hullRound:0.6,
+  // Balloon
+  balloonW:3.5,balloonH:3,balloonLen:9,balloonY:3.5,
+  ribCount:6,ribDepth:0.08,balloonPointy:0.3,
+  // Gondola
+  gondolaLen:5,gondolaW:2,gondolaH:1.2,gondolaZ:0,
+  // Bridge
+  bridgeW:1.6,bridgeH:1.4,bridgeLen:1.8,bridgeZ:0,
+  // Engines
+  engineR:0.5,engineLen:1.2,engineCount:2,engineSpread:1.8,
+  // Propellers
+  propR:1.2,propBlades:4,propZ:-0.4,rearPropR:0.8,showRearProp:true,
+  // Smokestacks
+  stackR:0.15,stackH:1.5,stackCount:2,stackSpread:1.0,
+  // Wings
+  wingSpan:2.5,wingChord:1.0,wingAngle:5,tailWingSpan:1.5,tailWingChord:0.8,
+  // Rudder
+  rudderH:1.5,rudderW:0.8,
+  // Rigging
+  rigCount:4,showRigging:true,
+  // Deck
+  railH:0.3,railPosts:10,showPlanks:true,
+  // Weapons
+  cannonCount:2,cannonR:0.08,turretR:0.3,
+  // Pipes
+  pipeR:0.04,pipeCount:3,showGauges:true,
+  // Lanterns
+  lanternCount:4,lanternR:0.08,lanternGlow:true,
+  // Colors
+  hullColor:'#5a3a1e',deckColor:'#8b6b3a',balloonColor:'#8b4513',
+  brassColor:'#c8a84e',ironColor:'#555555',fabricColor:'#6b3a20',
+  glassColor:'#88aacc',smokeColor:'#444444',
+  // Extras
+  showAnchor:true,showFlag:true,showNameplate:true,flagColor:'#8b1a1a',
+};
+
+let curStep=0,mode='guided';
+let activated = false;
+let particles = null;
+let particleVels = [];
+let particleLife = 0;
+let activationTime = 0;
+let scene,camera,renderer,shipGroup;
+let isDrag=false,mX=0,mY=0,cTheta=0.5,cPhi=0.7,cDist=18;
+
+// ---------------------------------------
+// THREE SETUP
+// ---------------------------------------
+function initThree(){
+  const vp=document.getElementById('viewport');
+  scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x1a1610,0.015);
+  camera=new THREE.PerspectiveCamera(42,vp.clientWidth/vp.clientHeight,0.1,200);
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.useLegacyLights = true; // r160: keep the original r128 lighting look
+  renderer.setSize(vp.clientWidth,vp.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.1;
+  vp.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0x887755,0.4));
+  const sun=new THREE.DirectionalLight(0xffeedd,0.85);
+  sun.position.set(8,15,8);sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+  scene.add(new THREE.DirectionalLight(0x6688aa,0.25));
+  const warm=new THREE.PointLight(0xffaa44,0.35,25);warm.position.set(0,5,0);scene.add(warm);
+
+  // Sky dome
+  const skyGeo=new THREE.SphereGeometry(80,16,12);
+  const skyMat=new THREE.MeshBasicMaterial({color:0x2a2218,side:THREE.BackSide});
+  scene.add(new THREE.Mesh(skyGeo,skyMat));
+
+  // Clouds
+  for(let i=0;i<12;i++){
+    const cGeo=new THREE.SphereGeometry(2+Math.random()*3,8,6);
+    const cMat=new THREE.MeshStandardMaterial({color:0x3a3228,transparent:true,opacity:0.15+Math.random()*0.1,roughness:1});
+    const cloud=new THREE.Mesh(cGeo,cMat);
+    cloud.position.set((Math.random()-0.5)*60,-5+Math.random()*15,(Math.random()-0.5)*60);
+    cloud.scale.set(1+Math.random(),0.4+Math.random()*0.3,1+Math.random());
+    scene.add(cloud);
+  }
+
+  shipGroup=new THREE.Group();
+  scene.add(shipGroup);
+
+  const c=renderer.domElement;
+  c.addEventListener('mousedown',e=>{isDrag=true;mX=e.clientX;mY=e.clientY;});
+  c.addEventListener('mousemove',e=>{if(!isDrag)return;cTheta-=(e.clientX-mX)*0.004;cPhi=Math.max(0.1,Math.min(Math.PI-0.1,cPhi-(e.clientY-mY)*0.004));mX=e.clientX;mY=e.clientY;});
+  window.addEventListener('mouseup',()=>isDrag=false);
+  c.addEventListener('wheel',e=>{cDist=Math.max(4,Math.min(40,cDist+e.deltaY*0.012));e.preventDefault();},{passive:false});
+  BuilderGestures.attachTapSelect(c, camera, function(){ return shipGroup; }, {
+    onOrbit: function(dx,dy){ cTheta-=dx*0.004; cPhi=Math.max(0.1,Math.min(Math.PI-0.1,cPhi-dy*0.004)); },
+    onPinch: function(ratio,dist,prev){ cDist=Math.max(4,Math.min(40,cDist-(dist-prev)*0.025)); }
+  });
+  window.addEventListener('resize',()=>{camera.aspect=vp.clientWidth/vp.clientHeight;camera.updateProjectionMatrix();renderer.setSize(vp.clientWidth,vp.clientHeight);});
+
+  let t=0;
+  (function anim(){
+    requestAnimationFrame(anim);t+=0.01;
+    // Propeller spin
+    shipGroup.traverse(c=>{if(c.userData.propeller)c.rotation.z+=0.12;if(c.userData.rearProp)c.rotation.z+=0.08;});
+    const cx=cDist*Math.sin(cPhi)*Math.cos(cTheta),cy=cDist*Math.cos(cPhi),cz=cDist*Math.sin(cPhi)*Math.sin(cTheta);
+    camera.position.set(cx,cy+2,cz);camera.lookAt(0,1.5,0);
+    // Activation animation
+    if (activated && shipGroup) {
+      activationTime += 0.016;
+      shipGroup.position.y = 0.3 + Math.sin(activationTime * 0.8) * 0.2;
+      shipGroup.rotation.z = Math.sin(activationTime * 0.5) * 0.015;
+    }
+    // Particle update (steam from smokestacks)
+    if (particles && particleLife > 0) {
+      particleLife--;
+      particles.material.opacity = Math.pow(particleLife / 90, 0.5);
+      const pos = particles.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        pos.setXYZ(i, pos.getX(i) + particleVels[i].x, pos.getY(i) + particleVels[i].y, pos.getZ(i) + particleVels[i].z);
+        particleVels[i].y += 0.0003;
+      }
+      pos.needsUpdate = true;
+      if (particleLife <= 0) { scene.remove(particles); particles = null; }
+    }
+    renderer.render(scene,camera);
+  })();
+}
+
+// ---------------------------------------
+// SHIP BUILDER
+// ---------------------------------------
+function rebuild(){
+  while(shipGroup.children.length)shipGroup.remove(shipGroup.children[0]);
+  const part = (mesh, name) => { mesh.name = name; return mesh; };
+  shipGroup.name = 'steampunk_airship';
+  const p=P;
+  const hullMat=new THREE.MeshStandardMaterial({color:p.hullColor,roughness:0.7,metalness:0.05});
+  const deckMat=new THREE.MeshStandardMaterial({color:p.deckColor,roughness:0.75,metalness:0.03});
+  const brassMat=new THREE.MeshStandardMaterial({color:p.brassColor,roughness:0.3,metalness:0.85});
+  const ironMat=new THREE.MeshStandardMaterial({color:p.ironColor,roughness:0.4,metalness:0.8});
+  const fabricMat=new THREE.MeshStandardMaterial({color:p.fabricColor,roughness:0.85,metalness:0,side:THREE.DoubleSide});
+  const balloonMat=new THREE.MeshStandardMaterial({color:p.balloonColor,roughness:0.75,metalness:0.05,side:THREE.DoubleSide});
+  const glassMat=new THREE.MeshStandardMaterial({color:p.glassColor,roughness:0.1,metalness:0.3,transparent:true,opacity:0.5});
+  const smokeMat=new THREE.MeshStandardMaterial({color:p.smokeColor,roughness:0.5,metalness:0.6});
+  const HL=p.hullLen,HW=p.hullW,HD=p.hullDepth;
+
+  // --- HULL ---
+  const hullPts=[];
+  const hSegs=24;
+  for(let i=0;i<=hSegs;i++){
+    const t=i/hSegs;
+    const z=(t-0.5)*HL;
+    let w=HW*0.5;
+    if(t<0.3)w*=Math.pow(Math.max(0,t/0.3),p.bowTaper);
+    else if(t>0.7)w*=p.sternTaper+(1-p.sternTaper)*Math.pow(Math.max(0,1-(t-0.7)/0.3),0.6);
+    w*=0.5+p.hullRound*0.5;
+    hullPts.push(new THREE.Vector2(Math.max(w,0.05),z));
+  }
+  const hullGeo=new THREE.LatheGeometry(hullPts,24);
+  const hull=new THREE.Mesh(hullGeo,hullMat);
+  hull.rotation.x=-Math.PI/2;hull.castShadow=true;
+  shipGroup.add(part(hull, 'hull'));
+
+  // Keel
+  const keelGeo=new THREE.BoxGeometry(0.1,HD*0.3,HL*0.85);
+  const keel=new THREE.Mesh(keelGeo,ironMat);
+  keel.position.y=-HD*0.5;shipGroup.add(part(keel, 'keel'));
+
+  // --- DECK ---
+  const dGeo=new THREE.BoxGeometry(HW*0.8,0.08,HL*0.85);
+  const deck=new THREE.Mesh(dGeo,deckMat);
+  deck.position.y=HD*0.35;deck.castShadow=true;deck.receiveShadow=true;
+  shipGroup.add(part(deck, 'deck'));
+
+  if(p.showPlanks){
+    for(let i=-3;i<=3;i++){
+      const lGeo=new THREE.BoxGeometry(0.015,0.085,HL*0.82);
+      const l=new THREE.Mesh(lGeo,new THREE.MeshStandardMaterial({color:'#4a3018',roughness:0.9}));
+      l.position.set(i*HW*0.1,HD*0.35+0.001,0);shipGroup.add(part(l, 'deck_plank_'+i));
+    }
+  }
+
+  // Railings
+  [-1,1].forEach(side=>{
+    const rGeo=new THREE.BoxGeometry(0.03,0.03,HL*0.7);
+    const rail=new THREE.Mesh(rGeo,brassMat);
+    rail.position.set(side*HW*0.38,HD*0.35+p.railH,0);shipGroup.add(part(rail, 'deck_rail_'+side));
+    for(let i=0;i<p.railPosts;i++){
+      const t=i/(p.railPosts-1);
+      const z=(t-0.5)*HL*0.65;
+      const pGeo=new THREE.CylinderGeometry(0.015,0.015,p.railH,6);
+      const post=new THREE.Mesh(pGeo,brassMat);
+      post.position.set(side*HW*0.38,HD*0.35+p.railH*0.5,z);shipGroup.add(part(post, 'rail_post_'+side+'_'+i));
+    }
+  });
+
+  // --- GAS ENVELOPE (BALLOON) ---
+  const bGeo=new THREE.SphereGeometry(1,24,16);
+  const balloon=new THREE.Mesh(bGeo,balloonMat);
+  balloon.scale.set(p.balloonW*0.5,p.balloonH*0.5*(1-p.balloonPointy*0.3),p.balloonLen*0.5);
+  balloon.position.y=p.balloonY;balloon.castShadow=true;
+  shipGroup.add(part(balloon, 'envelope'));
+
+  // Ribs on balloon
+  for(let i=0;i<p.ribCount;i++){
+    const t=(i+0.5)/p.ribCount;
+    const z=(t-0.5)*p.balloonLen*0.85;
+    const ribGeo=new THREE.TorusGeometry(1,p.ribDepth,6,24);
+    const rib=new THREE.Mesh(ribGeo,brassMat);
+    rib.scale.set(p.balloonW*0.48,p.balloonH*0.48,1);
+    rib.position.set(0,p.balloonY,z);shipGroup.add(part(rib, 'envelope_rib_'+i));
+  }
+
+  // Nose & tail caps
+  const noseGeo=new THREE.ConeGeometry(p.balloonW*0.15,p.balloonLen*0.15,12);
+  const nose=new THREE.Mesh(noseGeo,brassMat);
+  nose.rotation.x=Math.PI/2;nose.position.set(0,p.balloonY,p.balloonLen*0.48);shipGroup.add(part(nose, 'envelope_nose'));
+  const tailGeo=new THREE.ConeGeometry(p.balloonW*0.12,p.balloonLen*0.12,12);
+  const tail=new THREE.Mesh(tailGeo,brassMat);
+  tail.rotation.x=-Math.PI/2;tail.position.set(0,p.balloonY,-p.balloonLen*0.48);shipGroup.add(part(tail, 'envelope_tail'));
+
+  // --- GONDOLA CABIN ---
+  const gGeo=new THREE.BoxGeometry(p.gondolaW,p.gondolaH,p.gondolaLen);
+  const gon=new THREE.Mesh(gGeo,hullMat);
+  gon.position.set(0,HD*0.35+p.gondolaH*0.5,p.gondolaZ);gon.castShadow=true;
+  shipGroup.add(part(gon, 'gondola'));
+  // Windows
+  const winCount=Math.floor(p.gondolaLen/1.2);
+  [-1,1].forEach(side=>{
+    for(let i=0;i<winCount;i++){
+      const z=p.gondolaZ-(p.gondolaLen*0.4)+i*(p.gondolaLen*0.8/(winCount-1||1));
+      const wGeo=new THREE.PlaneGeometry(0.3,0.25);
+      const win=new THREE.Mesh(wGeo,glassMat);
+      win.position.set(side*(p.gondolaW*0.51),HD*0.35+p.gondolaH*0.5,z);
+      win.rotation.y=side*Math.PI/2;shipGroup.add(part(win, 'window_'+side+'_'+i));
+    }
+  });
+
+  // --- BRIDGE ---
+  const brGeo=new THREE.BoxGeometry(p.bridgeW,p.bridgeH,p.bridgeLen);
+  const bridge=new THREE.Mesh(brGeo,hullMat);
+  bridge.position.set(0,HD*0.35+p.bridgeH*0.5,HL*0.35+p.bridgeZ);bridge.castShadow=true;
+  shipGroup.add(part(bridge, 'bridge'));
+  // Bridge windows (front)
+  const bwGeo=new THREE.PlaneGeometry(p.bridgeW*0.7,p.bridgeH*0.5);
+  const bWin=new THREE.Mesh(bwGeo,glassMat);
+  bWin.position.set(0,HD*0.35+p.bridgeH*0.55,HL*0.35+p.bridgeLen*0.51+p.bridgeZ);
+  shipGroup.add(part(bWin, 'bridge_window'));
+  // Wheel
+  const whGeo=new THREE.TorusGeometry(0.2,0.025,8,16);
+  const wheel=new THREE.Mesh(whGeo,brassMat);
+  wheel.position.set(0,HD*0.35+p.bridgeH*0.4,HL*0.35+p.bridgeLen*0.3+p.bridgeZ);
+  shipGroup.add(part(wheel, 'bridge_wheel'));
+
+  // --- ENGINES ---
+  for(let i=0;i<p.engineCount;i++){
+    [-1,1].forEach(side=>{
+      const eGeo=new THREE.CylinderGeometry(p.engineR,p.engineR*0.8,p.engineLen,12);
+      const eng=new THREE.Mesh(eGeo,ironMat);
+      eng.rotation.x=Math.PI/2;
+      const z=-HL*0.15-i*1.5;
+      eng.position.set(side*p.engineSpread,HD*0.1,z);eng.castShadow=true;
+      shipGroup.add(part(eng, 'engine_'+side+'_'+i));
+      // Engine housing rings
+      for(let r=0;r<2;r++){
+        const rGeo=new THREE.TorusGeometry(p.engineR*1.05,0.03,6,16);
+        const ring=new THREE.Mesh(rGeo,brassMat);
+        ring.position.set(side*p.engineSpread,HD*0.1,z+(r-0.5)*p.engineLen*0.5);
+        shipGroup.add(part(ring, 'engine_ring_'+side+'_'+i+'_'+r));
+      }
+    });
+  }
+
+  // --- PROPELLERS ---
+  [-1,1].forEach(side=>{
+    const propG=new THREE.Group();
+    propG.userData.propeller=true;
+    for(let b=0;b<p.propBlades;b++){
+      const ang=(b/p.propBlades)*Math.PI*2;
+      const blGeo=new THREE.BoxGeometry(p.propR*0.15,p.propR,0.02);
+      const blade=new THREE.Mesh(blGeo,brassMat);
+      blade.position.y=Math.cos(ang)*p.propR*0.4;
+      blade.position.x=Math.sin(ang)*p.propR*0.4;
+      blade.rotation.z=ang;
+      propG.add(part(blade, 'propeller_blade_'+side+'_'+b));
+    }
+    const hubGeo=new THREE.SphereGeometry(p.propR*0.12,8,8);
+    propG.add(part(new THREE.Mesh(hubGeo,brassMat), 'propeller_hub_'+side));
+    propG.position.set(side*p.engineSpread,HD*0.1,-HL*0.15-p.engineLen*0.6+p.propZ);
+    propG.rotation.y=Math.PI/2;
+    shipGroup.add(part(propG, 'propeller_' + side));
+  });
+
+  // Rear prop
+  if(p.showRearProp){
+    const rpG=new THREE.Group();
+    rpG.userData.rearProp=true;
+    for(let b=0;b<3;b++){
+      const ang=(b/3)*Math.PI*2;
+      const blGeo=new THREE.BoxGeometry(p.rearPropR*0.15,p.rearPropR,0.02);
+      const blade=new THREE.Mesh(blGeo,brassMat);
+      blade.position.y=Math.cos(ang)*p.rearPropR*0.4;
+      blade.position.x=Math.sin(ang)*p.rearPropR*0.4;
+      blade.rotation.z=ang;
+      rpG.add(part(blade, 'propeller_rear_blade_'+b));
+    }
+    rpG.add(part(new THREE.Mesh(new THREE.SphereGeometry(p.rearPropR*0.1,8,8),brassMat), 'propeller_rear_hub'));
+    rpG.position.set(0,HD*0.2,-HL*0.52);
+    shipGroup.add(part(rpG, 'propeller_rear'));
+  }
+
+  // --- SMOKESTACKS ---
+  for(let i=0;i<p.stackCount;i++){
+    const x=(i-(p.stackCount-1)/2)*p.stackSpread;
+    const sGeo=new THREE.CylinderGeometry(p.stackR*0.7,p.stackR,p.stackH,8);
+    const stack=new THREE.Mesh(sGeo,smokeMat);
+    stack.position.set(x,HD*0.35+p.gondolaH+p.stackH*0.5,p.gondolaZ-p.gondolaLen*0.2+i*0.5);
+    stack.castShadow=true;shipGroup.add(part(stack, 'smokestack_'+i));
+    // Cap ring
+    const capGeo=new THREE.TorusGeometry(p.stackR*0.75,0.02,6,12);
+    const cap=new THREE.Mesh(capGeo,brassMat);
+    cap.position.set(x,HD*0.35+p.gondolaH+p.stackH,p.gondolaZ-p.gondolaLen*0.2+i*0.5);
+    cap.rotation.x=Math.PI/2;shipGroup.add(part(cap, 'smokestack_cap_'+i));
+  }
+
+  // --- WINGS ---
+  [-1,1].forEach(side=>{
+    const wGeo=new THREE.BoxGeometry(p.wingSpan,0.05,p.wingChord);
+    const wing=new THREE.Mesh(wGeo,fabricMat);
+    wing.position.set(side*(HW*0.5+p.wingSpan*0.5),HD*0.2,-HL*0.25);
+    wing.rotation.z=side*p.wingAngle*Math.PI/180;wing.castShadow=true;
+    shipGroup.add(part(wing, 'wing_'+side));
+    // Struts
+    for(let s=0;s<2;s++){
+      const stGeo=new THREE.CylinderGeometry(0.02,0.02,p.wingSpan*0.8,4);
+      const strut=new THREE.Mesh(stGeo,brassMat);
+      strut.rotation.z=Math.PI/2;
+      strut.position.set(side*(HW*0.5+p.wingSpan*0.35),HD*0.2+(s-0.5)*0.15,-HL*0.25+(s-0.5)*p.wingChord*0.5);
+      shipGroup.add(part(strut, 'wing_strut_'+side+'_'+s));
+    }
+  });
+  // Tail wings
+  [-1,1].forEach(side=>{
+    const twGeo=new THREE.BoxGeometry(p.tailWingSpan,0.04,p.tailWingChord);
+    const tw=new THREE.Mesh(twGeo,fabricMat);
+    tw.position.set(side*(HW*0.3+p.tailWingSpan*0.4),HD*0.15,-HL*0.45);
+    tw.castShadow=true;shipGroup.add(part(tw, 'tail_wing_'+side));
+  });
+
+  // --- RUDDER ---
+  const rudGeo=new THREE.BoxGeometry(0.06,p.rudderH,p.rudderW);
+  const rud=new THREE.Mesh(rudGeo,fabricMat);
+  rud.position.set(0,HD*0.15+p.rudderH*0.3,-HL*0.5);rud.castShadow=true;
+  shipGroup.add(part(rud, 'rudder'));
+  const rudFrameGeo=new THREE.BoxGeometry(0.04,p.rudderH*1.05,0.04);
+  const rudFrame=new THREE.Mesh(rudFrameGeo,brassMat);
+  rudFrame.position.set(0,HD*0.15+p.rudderH*0.3,-HL*0.5);shipGroup.add(part(rudFrame, 'rudder_frame'));
+
+  // --- RIGGING ---
+  if(p.showRigging){
+    for(let i=0;i<p.rigCount;i++){
+      [-1,1].forEach(side=>{
+        const t=(i+0.5)/p.rigCount;
+        const z=(t-0.5)*p.balloonLen*0.7;
+        const curve=new THREE.CatmullRomCurve3([
+          new THREE.Vector3(side*HW*0.35,HD*0.35,z),
+          new THREE.Vector3(side*(HW*0.3+p.balloonW*0.15),p.balloonY-p.balloonH*0.2,z),
+          new THREE.Vector3(side*p.balloonW*0.05,p.balloonY-p.balloonH*0.45,z),
+        ]);
+        const rGeo=new THREE.TubeGeometry(curve,10,0.012,4,false);
+        shipGroup.add(part(new THREE.Mesh(rGeo,new THREE.MeshStandardMaterial({color:'#8a7550',roughness:0.9})), 'rigging_cable_'+i+'_'+side));
+      });
+    }
+    // Vertical main cables
+    [-1,1].forEach(side=>{
+      [0.3,-0.3].forEach(zt=>{
+        const cp0=new THREE.Vector3(side*HW*0.1,HD*0.35,HL*zt);
+        const cp1=new THREE.Vector3(side*HW*0.05,p.balloonY-p.balloonH*0.48,HL*zt);
+        const cpMid=new THREE.Vector3().addVectors(cp0,cp1).multiplyScalar(0.5);
+        const curve=new THREE.CatmullRomCurve3([cp0,cpMid,cp1]);
+        const rGeo=new THREE.TubeGeometry(curve,6,0.015,4,false);
+        shipGroup.add(part(new THREE.Mesh(rGeo,new THREE.MeshStandardMaterial({color:'#6a5a30',roughness:0.85})), 'rigging_main_'+side+'_'+zt));
+      });
+    });
+  }
+
+  // --- WEAPONS ---
+  [-1,1].forEach(side=>{
+    for(let i=0;i<p.cannonCount;i++){
+      const z=(i-(p.cannonCount-1)/2)*1.5;
+      // Turret base
+      const tbGeo=new THREE.CylinderGeometry(p.turretR,p.turretR*1.1,0.15,8);
+      const tb=new THREE.Mesh(tbGeo,ironMat);
+      tb.position.set(side*HW*0.35,HD*0.35+0.08,z);shipGroup.add(part(tb, 'turret_'+side+'_'+i));
+      // Barrel
+      const cbGeo=new THREE.CylinderGeometry(p.cannonR,p.cannonR*1.2,0.8,8);
+      const cb=new THREE.Mesh(cbGeo,ironMat);
+      cb.rotation.z=side*Math.PI/2;
+      cb.position.set(side*(HW*0.35+0.35),HD*0.35+0.15,z);cb.castShadow=true;
+      shipGroup.add(part(cb, 'cannon_'+side+'_'+i));
+    }
+  });
+
+  // --- PIPES ---
+  [-1,1].forEach(side=>{
+    for(let i=0;i<p.pipeCount;i++){
+      const y=HD*0.1+i*0.25;
+      const pGeo=new THREE.CylinderGeometry(p.pipeR,p.pipeR,HL*0.6,6);
+      const pipe=new THREE.Mesh(pGeo,brassMat);
+      pipe.rotation.x=Math.PI/2;
+      pipe.position.set(side*(HW*0.42),y,0);shipGroup.add(part(pipe, 'pipe_'+side+'_'+i));
+    }
+    if(p.showGauges){
+      for(let i=0;i<2;i++){
+        const gGeo=new THREE.CylinderGeometry(0.08,0.08,0.03,12);
+        const gauge=new THREE.Mesh(gGeo,brassMat);
+        gauge.rotation.y=Math.PI/2;
+        gauge.position.set(side*(HW*0.45),HD*0.2+i*0.35,-HL*0.1+i*1.2);
+        shipGroup.add(part(gauge, 'gauge_'+side+'_'+i));
+        const glGeo=new THREE.CircleGeometry(0.065,12);
+        const gl=new THREE.Mesh(glGeo,glassMat);
+        gl.position.set(side*(HW*0.46),HD*0.2+i*0.35,-HL*0.1+i*1.2);
+        gl.rotation.y=side*Math.PI/2;shipGroup.add(part(gl, 'gauge_glass_'+side+'_'+i));
+      }
+    }
+  });
+
+  // --- LANTERNS ---
+  for(let i=0;i<p.lanternCount;i++){
+    const t=(i+0.5)/p.lanternCount;
+    const z=(t-0.5)*HL*0.7;
+    [-1,1].forEach(side=>{
+      const lGeo=new THREE.CylinderGeometry(p.lanternR,p.lanternR*1.2,p.lanternR*3,6);
+      const mat=p.lanternGlow?
+        new THREE.MeshStandardMaterial({color:'#ff9900',emissive:'#aa6600',emissiveIntensity:0.6,roughness:0.4}):
+        new THREE.MeshStandardMaterial({color:'#aa8800',roughness:0.4});
+      const lantern=new THREE.Mesh(lGeo,mat);
+      lantern.position.set(side*HW*0.4,HD*0.35+p.railH+0.1,z);
+      shipGroup.add(part(lantern, 'lantern_'+side+'_'+i));
+      // Hook
+      const hkGeo=new THREE.TorusGeometry(0.03,0.008,4,8,Math.PI);
+      const hk=new THREE.Mesh(hkGeo,brassMat);
+      hk.position.set(side*HW*0.4,HD*0.35+p.railH+p.lanternR*1.6,z);
+      shipGroup.add(part(hk, 'lantern_hook_'+side+'_'+i));
+    });
+  }
+
+  // --- ANCHOR ---
+  if(p.showAnchor){
+    const aG=new THREE.Group();
+    const shGeo=new THREE.CylinderGeometry(0.03,0.03,1.2,6);
+    aG.add(part(new THREE.Mesh(shGeo,ironMat), 'anchor_shank'));
+    const arGeo=new THREE.TorusGeometry(0.1,0.02,6,12);
+    const ar=new THREE.Mesh(arGeo,ironMat);ar.position.y=0.6;aG.add(part(ar, 'anchor_ring'));
+    [-1,1].forEach(s=>{
+      const armGeo=new THREE.CylinderGeometry(0.02,0.02,0.4,6);
+      const arm=new THREE.Mesh(armGeo,ironMat);arm.rotation.z=s*Math.PI/4;arm.position.set(s*0.12,-0.45,0);aG.add(part(arm, 'anchor_arm_'+s));
+      const flGeo=new THREE.ConeGeometry(0.06,0.15,6);
+      const fl=new THREE.Mesh(flGeo,ironMat);fl.rotation.z=s*Math.PI/3;fl.position.set(s*0.22,-0.55,0);aG.add(part(fl, 'anchor_fluke_'+s));
+    });
+    aG.position.set(HW*0.35,-HD*0.3,HL*0.38);
+    aG.children.forEach(c=>c.castShadow=true);
+    aG.name='anchor';
+    shipGroup.add(aG);
+  }
+
+  // --- FLAG ---
+  if(p.showFlag){
+    const flagMat2=new THREE.MeshStandardMaterial({color:p.flagColor,roughness:0.9,side:THREE.DoubleSide});
+    const fpGeo=new THREE.CylinderGeometry(0.015,0.015,1.5,4);
+    const fp=new THREE.Mesh(fpGeo,brassMat);
+    fp.position.set(0,p.balloonY+p.balloonH*0.5+0.75,0);shipGroup.add(part(fp, 'flag_pole'));
+    const fGeo=new THREE.PlaneGeometry(1.0,0.6,6,3);
+    const fPos=fGeo.attributes.position;
+    for(let v=0;v<fPos.count;v++){const x=fPos.getX(v);fPos.setZ(v,Math.sin((x+0.5)*Math.PI*2)*0.1);}
+    fGeo.computeVertexNormals();
+    const flag=new THREE.Mesh(fGeo,flagMat2);
+    flag.position.set(0.5,p.balloonY+p.balloonH*0.5+1.2,0);shipGroup.add(part(flag, 'flag'));
+  }
+
+  // --- NAMEPLATE ---
+  if(p.showNameplate){
+    const npGeo=new THREE.BoxGeometry(1.5,0.3,0.03);
+    const np=new THREE.Mesh(npGeo,brassMat);
+    np.position.set(0,HD*0.1,-HL*0.5-0.02);shipGroup.add(part(np, 'nameplate'));
+  }
+
+  // Update dims
+  document.getElementById('dL').textContent=HL.toFixed(1);
+  document.getElementById('dW').textContent=(HW*2).toFixed(1);
+  document.getElementById('dH').textContent=(p.balloonY+p.balloonH*0.5+HD*0.5).toFixed(1);
+  updateStats();
+}
+
+// ---------------------------------------
+// STEP CONTROLS
+// ---------------------------------------
+function ctrlsFor(i){
+  const s=STEPS[i].id;
+  switch(s){
+    case'name':return[{t:'text',k:'airshipName',l:'Airship Name'}];
+    case'hull':return[{t:'range',k:'hullLen',l:'Length (m)',mn:4,mx:20,s:0.5},{t:'range',k:'hullW',l:'Beam Width (m)',mn:1,mx:5,s:0.1},{t:'range',k:'hullDepth',l:'Depth (m)',mn:0.5,mx:4,s:0.1}];
+    case'hullCurve':return[{t:'range',k:'bowTaper',l:'Bow Taper',mn:0.2,mx:1.2,s:0.05},{t:'range',k:'sternTaper',l:'Stern Taper',mn:0.2,mx:1,s:0.05},{t:'range',k:'hullRound',l:'Roundness',mn:0.1,mx:1,s:0.05}];
+    case'balloon':return[{t:'range',k:'balloonW',l:'Envelope Width',mn:1,mx:6,s:0.1},{t:'range',k:'balloonH',l:'Envelope Height',mn:1,mx:5,s:0.1},{t:'range',k:'balloonLen',l:'Envelope Length',mn:4,mx:16,s:0.2},{t:'range',k:'balloonY',l:'Height Above Hull',mn:2,mx:7,s:0.1}];
+    case'balloonStyle':return[{t:'range',k:'ribCount',l:'Rib Count',mn:0,mx:12,s:1},{t:'range',k:'ribDepth',l:'Rib Thickness',mn:0.02,mx:0.15,s:0.005},{t:'range',k:'balloonPointy',l:'Pointiness',mn:0,mx:0.8,s:0.05}];
+    case'gondola':return[{t:'range',k:'gondolaLen',l:'Cabin Length',mn:2,mx:8,s:0.2},{t:'range',k:'gondolaW',l:'Cabin Width',mn:1,mx:4,s:0.1},{t:'range',k:'gondolaH',l:'Cabin Height',mn:0.5,mx:2.5,s:0.1},{t:'range',k:'gondolaZ',l:'Position (fore/aft)',mn:-3,mx:3,s:0.2}];
+    case'bridge':return[{t:'range',k:'bridgeW',l:'Bridge Width',mn:0.8,mx:3,s:0.1},{t:'range',k:'bridgeH',l:'Bridge Height',mn:0.6,mx:2.5,s:0.1},{t:'range',k:'bridgeLen',l:'Bridge Length',mn:0.8,mx:3,s:0.1},{t:'range',k:'bridgeZ',l:'Position (fore/aft)',mn:-2,mx:2,s:0.1}];
+    case'engines':return[{t:'range',k:'engineR',l:'Engine Radius',mn:0.2,mx:1,s:0.05},{t:'range',k:'engineLen',l:'Engine Length',mn:0.5,mx:2.5,s:0.1},{t:'range',k:'engineCount',l:'Engine Pairs',mn:1,mx:3,s:1},{t:'range',k:'engineSpread',l:'Engine Spread',mn:1,mx:4,s:0.1}];
+    case'propellers':return[{t:'range',k:'propR',l:'Propeller Radius',mn:0.4,mx:2.5,s:0.1},{t:'range',k:'propBlades',l:'Blade Count',mn:2,mx:8,s:1},{t:'range',k:'propZ',l:'Prop Offset',mn:-1.5,mx:0.5,s:0.1},{t:'toggle',k:'showRearProp',l:'Show Rear Propeller'},{t:'range',k:'rearPropR',l:'Rear Prop Size',mn:0.3,mx:1.5,s:0.1}];
+    case'smokestacks':return[{t:'range',k:'stackR',l:'Stack Radius',mn:0.05,mx:0.4,s:0.01},{t:'range',k:'stackH',l:'Stack Height',mn:0.5,mx:3,s:0.1},{t:'range',k:'stackCount',l:'Stack Count',mn:1,mx:4,s:1},{t:'range',k:'stackSpread',l:'Spread',mn:0.3,mx:2,s:0.1}];
+    case'wings':return[{t:'range',k:'wingSpan',l:'Wing Span',mn:0.5,mx:5,s:0.1},{t:'range',k:'wingChord',l:'Wing Width',mn:0.3,mx:2,s:0.1},{t:'range',k:'wingAngle',l:'Wing Angle (°)',mn:-15,mx:30,s:1},{t:'range',k:'tailWingSpan',l:'Tail Wing Span',mn:0.3,mx:3,s:0.1},{t:'range',k:'tailWingChord',l:'Tail Wing Width',mn:0.2,mx:1.5,s:0.1}];
+    case'rudder':return[{t:'range',k:'rudderH',l:'Rudder Height',mn:0.5,mx:3,s:0.1},{t:'range',k:'rudderW',l:'Rudder Width',mn:0.3,mx:2,s:0.1}];
+    case'rigging':return[{t:'toggle',k:'showRigging',l:'Show Rigging'},{t:'range',k:'rigCount',l:'Cable Pairs',mn:2,mx:8,s:1}];
+    case'deck':return[{t:'range',k:'railH',l:'Rail Height',mn:0.1,mx:0.8,s:0.02},{t:'range',k:'railPosts',l:'Rail Posts',mn:4,mx:20,s:1},{t:'toggle',k:'showPlanks',l:'Show Plank Lines'}];
+    case'weapons':return[{t:'range',k:'cannonCount',l:'Cannons per Side',mn:0,mx:6,s:1},{t:'range',k:'cannonR',l:'Cannon Size',mn:0.04,mx:0.15,s:0.005},{t:'range',k:'turretR',l:'Turret Size',mn:0.15,mx:0.5,s:0.02}];
+    case'pipes':return[{t:'range',k:'pipeR',l:'Pipe Radius',mn:0.02,mx:0.08,s:0.005},{t:'range',k:'pipeCount',l:'Pipe Rows',mn:1,mx:6,s:1},{t:'toggle',k:'showGauges',l:'Show Pressure Gauges'}];
+    case'lanterns':return[{t:'range',k:'lanternCount',l:'Lanterns per Side',mn:0,mx:8,s:1},{t:'range',k:'lanternR',l:'Lantern Size',mn:0.04,mx:0.15,s:0.005},{t:'toggle',k:'lanternGlow',l:'Lantern Glow'}];
+    case'colors':return[{t:'presets',l:'Livery Presets'},{t:'color',k:'hullColor',l:'Hull'},{t:'color',k:'deckColor',l:'Deck'},{t:'color',k:'balloonColor',l:'Envelope'},{t:'color',k:'brassColor',l:'Brass Fittings'},{t:'color',k:'ironColor',l:'Iron/Metal'},{t:'color',k:'fabricColor',l:'Fabric/Canvas'},{t:'color',k:'glassColor',l:'Glass'},{t:'color',k:'smokeColor',l:'Smokestacks'}];
+    case'extras':return[{t:'toggle',k:'showAnchor',l:'Show Anchor'},{t:'toggle',k:'showFlag',l:'Show Flag'},{t:'color',k:'flagColor',l:'Flag Color'},{t:'toggle',k:'showNameplate',l:'Show Nameplate'}];
+    case'takeOff':return[];
+    default:return[];
+  }
+}
+
+function renderCtrl(c){
+  if(c.t==='range')return`<div class="cg"><label>${c.l} <span class="rv" id="v_${c.k}">${P[c.k]}</span><input type="range" min="${c.mn}" max="${c.mx}" step="${c.s}" value="${P[c.k]}" data-action-input="updFloat" data-arg="${c.k}"></label></div>`;
+  if(c.t==='color')return`<div class="cg"><label>${c.l}<input type="color" value="${P[c.k]}" data-action-input="updRaw" data-arg="${c.k}"></label></div>`;
+  if(c.t==='toggle')return`<div class="cg"><label><input type="checkbox" ${P[c.k]?'checked':''} data-action-change="updChecked" data-arg="${c.k}"> ${c.l}</label></div>`;
+  if(c.t==='presets')return`<div style="margin-bottom:10px"><label style="display:block;font-size:9.5px;color:var(--parch-dim);margin-bottom:4px;letter-spacing:.5px;font-weight:700">Quick liveries</label><div class="preset-row">${Object.keys(LIVERY_PRESETS).map(n=>`<button class="preset-btn" data-action="applyLivery" data-arg="${n}">${n}</button>`).join('')}</div></div>`;
+  if(c.t==='text')return`<div class="cg"><label>${c.l}<input type="text" value="${P[c.k]||''}" data-action-input="updRaw" data-arg="${c.k}" style="width:100%;padding:5px 8px;background:rgba(0,0,0,.25);border:1px solid var(--rivet);color:var(--parch);font-family:'Alegreya Sans',sans-serif;font-size:11px;border-radius:2px;outline:none"></label></div>`;
+  if(STEPS[curStep]&&STEPS[curStep].id==='takeOff')return`<div style="text-align:center;padding:16px 0"><div style="font-size:2rem;margin-bottom:12px">🎨/div><div style="font-size:12px;color:var(--parch-dim);margin-bottom:14px">Your airship is ready for departure!</div><button data-action="takeOff" style="width:100%;padding:12px;background:var(--brass);color:var(--bg);font-family:'Abril Fatface',serif;font-size:16px;border:none;border-radius:4px;cursor:pointer;letter-spacing:1px;box-shadow:0 3px 0 var(--copper-dk);transition:transform .1s,filter .15s" data-hover="filter:brightness(1.12);transform:translateY(-2px)" data-hover-out="filter:;transform:">🚀 Take Off!</button></div>`;
+  return'';
+}
+
+function renderCtrls(){
+  const cp=document.getElementById('cpan');
+  const cs=ctrlsFor(curStep);
+  const FACTS={
+    name:'Airships are lighter-than-air craft. The Hindenburg, the largest ever, was 245m long , bigger than three Boeing 747s end to end.',
+    hull:'The hull (gondola) carries crew and passengers. In real airships, it was streamlined to reduce drag during flight.',
+    hullCurve:'A tapered bow cuts through the air more efficiently. Stern tapering helps reduce turbulence behind the ship.',
+    balloon:'The gas envelope provides lift. Real airships used hydrogen (flammable but light) or helium (safe but scarce).',
+    balloonStyle:'Ribs reinforce the envelope shape and help it hold its form. More ribs mean a rounder, more rigid structure.',
+    gondola:'The gondola is where the crew lives and works. On the Hindenburg, it had a dining room, sleeping quarters and a smoking lounge!',
+    bridge:'The bridge is the command center. The captain steers from here using a wheel connected to the rudder and engine throttles.',
+    engines:'Steam engines in steampunk design convert heat into rotational energy. Real airships used diesel or petrol engines.',
+    propellers:'Propellers push the airship forward. Most airships had 2-4 engines. The Hindenburg had 4 diesel engines producing 1,600 hp each.',
+    smokestacks:'Smokestacks vent exhaust from the engines. In steampunk design, they also serve as a visual signature of steam power.',
+    wings:'Stabilizer wings prevent the airship from pitching (nose up/down) and rolling (tilting side to side).',
+    rudder:'The rudder at the stern controls left/right steering. It works just like a boat rudder but in the air instead of water.',
+    rigging:'Rigging cables connect the envelope to the hull, distributing the lift force evenly across the structure.',
+    deck:'Railings and walkways let crew access the exterior for maintenance. Plank lines add visual detail and realism.',
+    weapons:'Steampunk airships often carry cannons or tesla coils. Real military airships carried bombs and reconnaissance equipment.',
+    pipes:'Steam pipes carry pressurized steam from the boilers to the engines. Gauges monitor pressure and temperature.',
+    lanterns:'Navigation lights help other aircraft identify the airship at night. Red on port (left), green on starboard (right).',
+    colors:'Brass and copper are steampunk staples. Real airships used doped fabric (lacquered cotton) for the envelope.',
+    extras:'Flags identify the airship\'s origin. Nameplates display the vessel\'s name, often in ornate brass lettering.',
+    takeOff:'Your airship is ready! The first powered airship flight was in 1884 by the French Army\'s La France.',
+  };
+  const fact=FACTS[STEPS[curStep].id]||'';
+  let html=`<div class="ct">${STEPS[curStep].d}</div>`;
+  if(fact)html+=`<div style="background:rgba(200,168,78,.06);border:1px solid rgba(200,168,78,.12);border-radius:4px;padding:7px 10px;margin-bottom:8px;font-size:11px;line-height:1.6;color:var(--parch-dim)"><span style="color:var(--brass);font-weight:700">⭐ Did you know?</span> ${fact}</div>`;
+  html+=cs.map(renderCtrl).join('');
+  if(STEPS[curStep]&&STEPS[curStep].id==='takeOff')html+=`<div style="text-align:center;padding:16px 0"><div style="font-size:2rem;margin-bottom:12px">🎨/div><div style="font-size:12px;color:var(--parch-dim);margin-bottom:14px">Your airship is ready for departure!</div><button data-action="takeOff" style="width:100%;padding:12px;background:var(--brass);color:var(--bg);font-family:'Abril Fatface',serif;font-size:16px;border:none;border-radius:4px;cursor:pointer;letter-spacing:1px;box-shadow:0 3px 0 var(--copper-dk);transition:transform .1s,filter .15s" data-hover="filter:brightness(1.12);transform:translateY(-2px)" data-hover-out="filter:;transform:">🚀 Take Off!</button></div>`;
+  cp.innerHTML=html;
+}
+
+function updFloat(v){ upd(this.getAttribute('data-arg'), parseFloat(v)); }
+function updRaw(v){ upd(this.getAttribute('data-arg'), v); }
+function updChecked(){ upd(this.getAttribute('data-arg'), this.checked); }
+function upd(k,v){
+  P[k]=v;
+  const ve=document.getElementById('v_'+k);
+  if(ve)ve.textContent=typeof v==='number'?(Number.isInteger(v)?v:v.toFixed(3)):v;
+  rebuild();
+}
+
+// ---------------------------------------
+// SANDBOX MODE
+// ---------------------------------------
+function buildSandbox(){
+  const panel=document.getElementById('sandbox-panel');
+  let html='';
+  STEPS.forEach((step,si)=>{
+    const cs=ctrlsFor(si);
+    html+=`<div class="sandbox-group"><div class="sandbox-header" data-action="toggleSandbox" data-arg="this"><span>? ${step.name}</span><span class="arrow">?</span></div><div class="sandbox-body">${cs.map(renderCtrl).join('')}</div></div>`;
+  });
+  panel.innerHTML=html;
+}
+
+function toggleSandbox(el){
+  el.classList.toggle('open');
+  el.nextElementSibling.classList.toggle('open');
+}
+
+function setMode(m){
+  mode=m;
+  document.getElementById('mGuided').classList.toggle('active',m==='guided');
+  document.getElementById('mSandbox').classList.toggle('active',m==='sandbox');
+  document.getElementById('guided-panel').style.display=m==='guided'?'flex':'none';
+  document.getElementById('guided-panel').style.flexDirection='column';
+  document.getElementById('guided-panel').style.flex='1';
+  document.getElementById('guided-panel').style.overflow='hidden';
+  document.getElementById('sandbox-panel').style.display=m==='sandbox'?'block':'none';
+  if(m==='sandbox')buildSandbox();
+}
+
+// ---------------------------------------
+// STEP NAV
+// ---------------------------------------
+function renderSteps(){document.getElementById('stepList').innerHTML=STEPS.map((s,i)=>`<div class="si ${i===curStep?'active':''} ${i<curStep?'done':''}" data-action="go" data-arg="${i}"><div class="sn">${i<curStep?'?':(i+1)}</div><div class="sl">${s.name}</div></div>`).join('');}
+function go(i){curStep=i;updateUI();toast(STEPS[i].name);}
+function next(){if(curStep<STEPS.length-1)go(curStep+1);}
+function prev(){if(curStep>0)go(curStep-1);}
+function updateUI(){
+  renderSteps();renderCtrls();
+  document.getElementById('progFill').style.width=((curStep+1)/STEPS.length*100)+'%';
+  document.getElementById('progCt').textContent=`Step ${curStep+1} of ${STEPS.length}`;
+  document.getElementById('bP').disabled=curStep===0;
+  document.getElementById('bN').disabled=curStep===STEPS.length-1;
+  const ae=document.querySelector('.si.active');if(ae)ae.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1500);}
+
+// ---------------------------------------
+// SAVE / LOAD / EXPORT
+// ---------------------------------------
+function getSaves(){try{return JSON.parse(localStorage.getItem('airshipSaves')||'{}');}catch{return{};}}
+function setSaves(s){localStorage.setItem('airshipSaves',JSON.stringify(s));}
+function openSaveModal(){
+  document.getElementById('modalC').innerHTML=`<h2>💾 Save Airship</h2><input type="text" id="saveName" placeholder="Name your vessel..."><div class="mb"><button class="mbc" data-on="closeModal" data-on-plain>Cancel</button><button class="mbs" data-action="doSave">Save</button></div>`;
+  document.getElementById('modalO').classList.add('open');setTimeout(()=>document.getElementById('saveName').focus(),100);
+}
+function openLoadModal(){
+  const sv=getSaves(),ks=Object.keys(sv);
+  let h=!ks.length?'<p style="color:var(--parch-dim);font-size:11px;padding:8px 0">No saved airships.</p>':'<div class="saves-list">'+ks.map(k=>{const d=new Date(sv[k].date).toLocaleDateString();return`<div class="se" data-action="doLoad" data-arg="${k.replace(/"/g,'&quot;')}"><div><div class="sname">${k}</div><div class="sdate">${d}</div></div><button class="dbtn" data-action="doDel" data-arg="${k.replace(/"/g,'&quot;')}" data-stop>?</button></div>`;}).join('')+'</div>';
+  document.getElementById('modalC').innerHTML=`<h2>📂 Load Airship</h2>${h}<div class="mb"><button class="mbc" data-on="closeModal" data-on-plain>Close</button></div>`;
+  document.getElementById('modalO').classList.add('open');
+}
+function closeModal(){document.getElementById('modalO').classList.remove('open');}
+function doSave(){const n=document.getElementById('saveName').value.trim();if(!n)return;const sv=getSaves();sv[n]={params:{...P},step:curStep,date:Date.now()};setSaves(sv);closeModal();toast('Airship saved!');if(window.builderTrack)builderTrack('save');}
+function doLoad(n){const sv=getSaves();if(!sv[n])return;P={...sv[n].params};curStep=sv[n].step||0;closeModal();rebuild();updateUI();toast(`Loaded: ${n}`);}
+function doDel(n){const sv=getSaves();delete sv[n];setSaves(sv);openLoadModal();}
+function resetAll(){
+  if(!confirm('Reset all to defaults?'))return;
+  Object.assign(P,{airshipName:'HMS Ironclad',hullLen:10,hullW:2.5,hullDepth:1.8,bowTaper:0.65,sternTaper:0.4,hullRound:0.6,balloonW:3.5,balloonH:3,balloonLen:9,balloonY:3.5,ribCount:6,ribDepth:0.08,balloonPointy:0.3,gondolaLen:5,gondolaW:2,gondolaH:1.2,gondolaZ:0,bridgeW:1.6,bridgeH:1.4,bridgeLen:1.8,bridgeZ:0,engineR:0.5,engineLen:1.2,engineCount:2,engineSpread:1.8,propR:1.2,propBlades:4,propZ:-0.4,rearPropR:0.8,showRearProp:true,stackR:0.15,stackH:1.5,stackCount:2,stackSpread:1.0,wingSpan:2.5,wingChord:1.0,wingAngle:5,tailWingSpan:1.5,tailWingChord:0.8,rudderH:1.5,rudderW:0.8,rigCount:4,showRigging:true,railH:0.3,railPosts:10,showPlanks:true,cannonCount:2,cannonR:0.08,turretR:0.3,pipeR:0.04,pipeCount:3,showGauges:true,lanternCount:4,lanternR:0.08,lanternGlow:true,hullColor:'#5a3a1e',deckColor:'#8b6b3a',balloonColor:'#8b4513',brassColor:'#c8a84e',ironColor:'#555555',fabricColor:'#6b3a20',glassColor:'#88aacc',smokeColor:'#444444',showAnchor:true,showFlag:true,showNameplate:true,flagColor:'#8b1a1a'});
+  curStep=0;rebuild();updateStats();updateUI();if(mode==='sandbox')buildSandbox();toast('Reset to defaults');
+}
+
+
+
+
+// STATE HOOKS (for share/undo)
+window._builderGetState = function() { return { params: { ...P }, step: curStep, mode: mode }; };
+window._builderApplyState = function(s) {
+  if (s.params) Object.assign(P, s.params);
+  if (typeof s.step === 'number') curStep = s.step;
+  if (s.mode) setMode(s.mode);
+  rebuild(); updateStats(); updateUI();
+  if (window.builderScheduleAutoSave) builderScheduleAutoSave();
+};
+
+// ---------------------------------------
+// STATS SYSTEM
+// ---------------------------------------
+function computeStats(){
+  const p=P;
+  const altitude=Math.min(10,Math.round((p.balloonH/5*3)+(p.balloonY/7*3)+(p.balloonLen/16*2)-(p.hullDepth*0.5)));
+  const speed=Math.min(10,Math.round((p.engineCount*1.5)+(p.propR/2.5*2)+(p.propBlades*0.3)-(p.wingSpan*0.2)));
+  const firepower=Math.min(10,Math.round(p.cannonCount*1.5+p.turretR*8));
+  const range=Math.min(10,Math.round((p.hullLen/20*3)+(p.engineLen/2.5*2)+(p.gondolaLen/8*2)+(p.pipeCount*0.3)));
+  return{altitude:Math.max(1,altitude),speed:Math.max(1,speed),firepower:Math.max(1,firepower),range:Math.max(1,range)};
+}
+
+function updateStats(){
+  const s=computeStats();
+  const el=document.getElementById('airshipStats');
+  if(!el)return;
+  const bar=(v,c)=>`<div class="stat-track"><div class="stat-fill" style="width:${v*10}%;background:${c}"></div></div>`;
+  el.innerHTML=`<div class="stat-title">Airship Stats</div>`+
+    `<div class="stat-row"><span class="stat-lbl">Height</span>${bar(s.altitude,'#c8a84e')}<span class="stat-val">${s.altitude}</span></div>`+
+    `<div class="stat-row"><span class="stat-lbl">Speed</span>${bar(s.speed,'#b87333')}<span class="stat-val">${s.speed}</span></div>`+
+    `<div class="stat-row"><span class="stat-lbl">Fire</span>${bar(s.firepower,'#c0392b')}<span class="stat-val">${s.firepower}</span></div>`+
+    `<div class="stat-row"><span class="stat-lbl">Range</span>${bar(s.range,'#555')}<span class="stat-val">${s.range}</span></div>`;
+}
+
+// ---------------------------------------
+// RANDOM BUILD
+// ---------------------------------------
+function randomAirship(){
+  const rnd=(mn,mx,s)=>{const v=mn+Math.random()*(mx-mn);return s?Math.round(v/s)*s:Math.round(v*100)/100;};
+  const names=['HMS Ironclad','The Aether Pioneer','Iron Valiant','Skyward Hammer','The Brass Wanderer','Aero Dominus','Crimson Zephyr','The Gilded Hornet','Aether Tempest','The Clockwork Raven','Vanguard of the Skies','The Steam Nomad','Iron Widow','The Jade Gale','Copper Dawn','The Cloud Serpent','Nimbus Argent','The Ember Swift','Aurora Mechanica','The Drift Commander','Thundermantle','Skyforge One','The Riveted Wanderer','The Propeller Duke','Aetherstrike','The Boiler Baron','Zephyr Commandant','The Gearwork Ghost','Iron Hauler','The Aether Warden'];
+  P.airshipName=names[Math.floor(Math.random()*names.length)];
+  Object.assign(P,{
+    hullLen:rnd(5,16,0.5),hullW:rnd(1.5,4,0.1),hullDepth:rnd(1,3.5,0.1),
+    bowTaper:rnd(0.3,1,0.05),sternTaper:rnd(0.3,0.8,0.05),hullRound:rnd(0.3,0.9,0.05),
+    balloonW:rnd(2,5,0.1),balloonH:rnd(1.5,4.5,0.1),balloonLen:rnd(5,14,0.2),balloonY:rnd(2.5,6,0.1),
+    ribCount:Math.round(2+Math.random()*10),ribDepth:rnd(0.03,0.12,0.005),balloonPointy:rnd(0.1,0.6,0.05),
+    gondolaLen:rnd(3,7,0.2),gondolaW:rnd(1.2,3.5,0.1),gondolaH:rnd(0.6,2,0.1),gondolaZ:rnd(-2,2,0.2),
+    bridgeW:rnd(1,2.5,0.1),bridgeH:rnd(0.8,2,0.1),bridgeLen:rnd(1,2.5,0.1),bridgeZ:rnd(-1,1,0.1),
+    engineR:rnd(0.3,0.8,0.05),engineLen:rnd(0.6,2,0.1),engineCount:Math.round(1+Math.random()*2),engineSpread:rnd(1.2,3,0.1),
+    propR:rnd(0.6,2,0.1),propBlades:Math.round(3+Math.random()*5),propZ:rnd(-1,0.3,0.1),rearPropR:rnd(0.4,1.2,0.1),showRearProp:Math.random()>0.3,
+    stackR:rnd(0.08,0.3,0.01),stackH:rnd(0.8,2.5,0.1),stackCount:Math.round(1+Math.random()*3),stackSpread:rnd(0.4,1.5,0.1),
+    wingSpan:rnd(1,4,0.1),wingChord:rnd(0.5,1.5,0.1),wingAngle:rnd(-5,20,1),tailWingSpan:rnd(0.5,2.5,0.1),tailWingChord:rnd(0.3,1.2,0.1),
+    rudderH:rnd(0.8,2.5,0.1),rudderW:rnd(0.4,1.5,0.1),
+    rigCount:Math.round(2+Math.random()*6),showRigging:Math.random()>0.2,
+    railH:rnd(0.15,0.6,0.02),railPosts:Math.round(4+Math.random()*14),showPlanks:Math.random()>0.3,
+    cannonCount:Math.round(1+Math.random()*4),cannonR:rnd(0.05,0.12,0.005),turretR:rnd(0.2,0.4,0.02),
+    pipeR:rnd(0.025,0.06,0.005),pipeCount:Math.round(1+Math.random()*4),showGauges:Math.random()>0.3,
+    lanternCount:Math.round(2+Math.random()*5),lanternR:rnd(0.05,0.12,0.005),lanternGlow:Math.random()>0.2,
+    showAnchor:Math.random()>0.3,showFlag:Math.random()>0.2,showNameplate:Math.random()>0.3,
+  });
+  rebuild();updateStats();updateUI();toast('Random airship generated!');
+  if(window.builderTrack)builderTrack('random_build');
+}
+
+// ---------------------------------------
+// LIVERY PRESETS
+// ---------------------------------------
+const LIVERY_PRESETS = {
+  'Brass & Copper': {hullColor:'#5a3a1e',deckColor:'#8b6b3a',balloonColor:'#8b4513',brassColor:'#c8a84e',ironColor:'#555555',fabricColor:'#6b3a20',glassColor:'#88aacc',smokeColor:'#444444'},
+  'Crimson Dawn': {hullColor:'#4a1a0a',deckColor:'#6b3a2a',balloonColor:'#8b1a1a',brassColor:'#aa6633',ironColor:'#444444',fabricColor:'#8b1a1a',glassColor:'#ccaa88',smokeColor:'#333333'},
+  'Arctic Explorer': {hullColor:'#2a3a4a',deckColor:'#6a7a8a',balloonColor:'#aabbcc',brassColor:'#c0c0c0',ironColor:'#888888',fabricColor:'#8899aa',glassColor:'#aaddff',smokeColor:'#666666'},
+  'Midnight Ops': {hullColor:'#0a0a14',deckColor:'#1a1a2a',balloonColor:'#1a1a2e',brassColor:'#333344',ironColor:'#222233',fabricColor:'#1a1a2e',glassColor:'#334455',smokeColor:'#111122'},
+  'Golden Age': {hullColor:'#3a2a10',deckColor:'#8b6b3a',balloonColor:'#6b4a20',brassColor:'#f0c850',ironColor:'#8b7355',fabricColor:'#8b6b3a',glassColor:'#ffdd88',smokeColor:'#555544'},
+  'Jade Storm': {hullColor:'#1a3a2a',deckColor:'#3a6a4a',balloonColor:'#2a5a3a',brassColor:'#4a8a5a',ironColor:'#555555',fabricColor:'#3a6a4a',glassColor:'#88ccaa',smokeColor:'#334433'},
+  'Ironworks': {hullColor:'#2a2a2a',deckColor:'#444444',balloonColor:'#b87333',brassColor:'#c8a84e',ironColor:'#333333',fabricColor:'#444444',glassColor:'#88aacc',smokeColor:'#222222'},
+  'Cloud Runner': {hullColor:'#6a8aaa',deckColor:'#8a9aaa',balloonColor:'#f0f0f0',brassColor:'#c0c0c0',ironColor:'#888888',fabricColor:'#8899aa',glassColor:'#aaddff',smokeColor:'#666666'},
+  'Desert Wind': {hullColor:'#c4a870',deckColor:'#a08848',balloonColor:'#8b6b3a',brassColor:'#b87333',ironColor:'#6a5a40',fabricColor:'#a08848',glassColor:'#ddcc88',smokeColor:'#555544'},
+  'Shadow': {hullColor:'#1a0a2e',deckColor:'#2a1a3a',balloonColor:'#0a0a1a',brassColor:'#222233',ironColor:'#111122',fabricColor:'#1a0a2e',glassColor:'#334455',smokeColor:'#0a0a14'},
+};
+function applyLivery(name) {
+  const p = LIVERY_PRESETS[name];
+  if (!p) return;
+  Object.assign(P, p);
+  rebuild();
+  updateStats();
+  if (mode === 'sandbox') buildSandbox(); else renderCtrls();
+  toast((P.airshipName||'Airship') + ' ? ' + name);
+}
+
+// ---------------------------------------
+// PNG EXPORT & PROFILE CARD
+// ---------------------------------------
+function _drawStatBar(ctx, x, y, w, label, val, color) {
+  ctx.fillStyle = 'rgba(232,220,192,0.45)';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x, y + 8);
+  const barX = x + 50, barW = w - 80, barH = 8;
+  ctx.fillStyle = 'rgba(200,168,78,0.12)';
+  ctx.fillRect(barX, y, barW, barH);
+  ctx.fillStyle = color;
+  ctx.fillRect(barX, y, barW * (val / 10), barH);
+  ctx.textAlign = 'right';
+  ctx.fillText(val, x + w, y + 8);
+}
+
+function downloadPNG() {
+  renderer.render(scene, camera);
+  const url = renderer.domElement.toDataURL('image/png');
+  const a = document.createElement('a'); a.href = url; a.download = 'steampunk-airship.png'; a.click();
+  toast('Screenshot saved!');
+}
+
+function showProfileCard() {
+  renderer.render(scene, camera);
+  const stats = computeStats();
+  const oc = document.getElementById('pcardOffscreen');
+  oc.width = 400; oc.height = 540;
+  const ctx = oc.getContext('2d');
+  ctx.fillStyle = '#1a1610';
+  ctx.fillRect(0, 0, 400, 540);
+  const grd = ctx.createRadialGradient(200, 130, 10, 200, 130, 160);
+  grd.addColorStop(0, 'rgba(200,168,78,0.12)');
+  grd.addColorStop(1, 'rgba(200,168,78,0)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, 400, 280);
+  ctx.strokeStyle = 'rgba(200,168,78,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(1, 1, 398, 538);
+  const img = new Image();
+  img.onload = function() {
+    ctx.drawImage(img, 40, 16, 320, 240);
+    ctx.fillStyle = '#e8dcc0';
+    ctx.font = 'bold 28px "Abril Fatface", serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(P.airshipName || 'Steampunk Airship', 200, 284);
+    ctx.fillStyle = '#c8a84e';
+    ctx.font = '10px monospace';
+    ctx.fillText('AIRSHIP PROFILE  ·  JVDESIGNSTUDIO.CO.UK', 200, 302);
+    ctx.fillStyle = 'rgba(200,168,78,0.3)';
+    ctx.fillRect(40, 312, 320, 1);
+    _drawStatBar(ctx, 40, 326, 320, 'HEIGHT', stats.altitude, '#c8a84e');
+    _drawStatBar(ctx, 40, 352, 320, 'SPEED', stats.speed, '#b87333');
+    _drawStatBar(ctx, 40, 378, 320, 'FIRE', stats.firepower, '#c0392b');
+    _drawStatBar(ctx, 40, 404, 320, 'RANGE', stats.range, '#555555');
+    ctx.fillStyle = 'rgba(232,220,192,0.22)';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('jvdesignstudio.co.uk  ·  Airship Dockyard  ·  Free', 200, 520);
+    const cardUrl = oc.toDataURL('image/png');
+    document.getElementById('pcardImg').src = cardUrl;
+    document.getElementById('pcardDl').onclick = function() {
+      const a = document.createElement('a'); a.href = cardUrl;
+      a.download = 'steampunk-airship-profile-card.png'; a.click();
+    };
+    document.getElementById('profileCard').classList.add('show');
+  };
+  img.src = renderer.domElement.toDataURL('image/png');
+}
+
+// ---------------------------------------
+// ACTIVATION & PARTICLES
+// ---------------------------------------
+function spawnParticles() {
+  if (particles) { scene.remove(particles); particles = null; }
+  const count = 70;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  const col = new Float32Array(count * 3);
+  particleVels = [];
+  const brassC = new THREE.Color(0xc8a84e);
+  const steamC = new THREE.Color(0xccccbb);
+  for (let i = 0; i < count; i++) {
+    pos[i*3] = (Math.random()-0.5) * 6;
+    pos[i*3+1] = 3 + Math.random() * 5;
+    pos[i*3+2] = (Math.random()-0.5) * 6;
+    const spd = 0.015 + Math.random() * 0.04;
+    particleVels.push({ x: (Math.random()-0.5) * spd, y: spd + 0.005, z: (Math.random()-0.5) * spd });
+    const useBrass = Math.random() > 0.6;
+    col[i*3]   = useBrass ? brassC.r : steamC.r;
+    col[i*3+1] = useBrass ? brassC.g : steamC.g;
+    col[i*3+2] = useBrass ? brassC.b : steamC.b;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.07, vertexColors: true, transparent: true, opacity: 1, depthWrite: false });
+  particles = new THREE.Points(geo, mat);
+  scene.add(particles);
+  particleLife = 90;
+}
+
+function takeOff() {
+  activated = true;
+  activationTime = 0;
+  if(window.builderTrack)builderTrack('activate');
+  rebuild();
+  spawnParticles();
+  toast('⬆️ ' + (P.airshipName || 'Airship') + ' takes to the skies!');
+}
+
+// ---------------------------------------
+// INIT
+// ---------------------------------------
+document.addEventListener('DOMContentLoaded',()=>{initThree();rebuild();updateStats();updateUI();});
+document.getElementById('modalO').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('profileCard').addEventListener('click', e => { if (e.target === e.currentTarget) e.target.classList.remove('show'); });
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowRight'||e.key==='ArrowDown')next();if(e.key==='ArrowLeft'||e.key==='ArrowUp')prev();});
+
+/* -------------------------------
+   TEMPLATES + EXPORT
+   Both are shared modules. This block only says where the model lives, so
+   the dialog always reads the model that is actually on screen.
+------------------------------- */
+const AIRSHIP_TEMPLATES = [
+  { id: 'ironclad', emoji: '🎈', name: 'HMS Ironclad', note: 'Balloon on top, twin engines  -  the classic.',
+    data: { airshipName: 'HMS Ironclad', hullLen: 10, hullW: 2.5, engineCount: 2, balloonW: 3.5, stackCount: 2 } },
+  { id: 'aurora', emoji: '🌌', name: 'Aurora', note: 'Slim hull and sky-blue balloon.',
+    data: { airshipName: 'Aurora', hullLen: 11, hullW: 2.2, balloonW: 3.2, balloonH: 2.8, engineCount: 2, stackCount: 1 } },
+  { id: 'ember', emoji: '🔥', name: 'Ember', note: 'Red trim, big props and a short hull.',
+    data: { airshipName: 'Ember', hullLen: 9, hullW: 2.8, engineCount: 2, stackCount: 2, showRearProp: true } },
+  { id: 'leviathan', emoji: '🐋', name: 'Leviathan', note: 'Long and heavy with four engines.',
+    data: { airshipName: 'Leviathan', hullLen: 12, hullW: 3.0, engineCount: 4, balloonLen: 10, wingSpan: 3.0 } },
+  { id: 'nimbus', emoji: '☁️', name: 'Nimbus', note: 'Small gondola, big balloon  -  built for lift.',
+    data: { airshipName: 'Nimbus', hullLen: 8, hullW: 2.0, balloonW: 4.0, balloonH: 3.5, engineCount: 2, stackCount: 1 } },
+  { id: 'vanguard', emoji: '⚙️', name: 'Vanguard', note: 'Wings, rudder and rigging  -  ready for adventure.',
+    data: { airshipName: 'Vanguard', hullLen: 10, hullW: 2.6, engineCount: 2, wingSpan: 3.0, rudderH: 1.8, showRigging: true } }
+];
+function loadAirshipTemplate(t) {
+  Object.assign(P, t.data);
+  if (typeof rebuildShip === 'function') rebuildShip(); else if (typeof buildSandbox === 'function') buildSandbox();
+  if (typeof updateStats === 'function') updateStats();
+  if (typeof toast === 'function') toast('Template: ' + t.data.airshipName);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hb',
+    templates: AIRSHIP_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadAirshipTemplate(t); } }; }),
+    random: randomAirship,
+    onApply: function () { if (typeof go === 'function') go(0); }
+  });
+}
+window._builderSetState = window._builderSetState || window._builderApplyState;
+if (window.JVExporter) {
+  JVExporter.installUI({
+    tool: 'Steampunk Airship',
+    units: 'm',
+    accent: '#c9a84c',
+    getGroup: function () { return typeof shipGroup !== 'undefined' ? shipGroup : (typeof airshipGroup !== 'undefined' ? airshipGroup : null); },
+    getName: function () { return P.airshipName || 'airship'; },
+    say: toast,
+    track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
+  });
+}
+
+  try { window.randomAirship = randomAirship; } catch (e) { /* not a local handler */ }
+  try { window.downloadPNG = downloadPNG; } catch (e) { /* not a local handler */ }
+  try { window.showProfileCard = showProfileCard; } catch (e) { /* not a local handler */ }
+  try { window.openSaveModal = openSaveModal; } catch (e) { /* not a local handler */ }
+  try { window.openLoadModal = openLoadModal; } catch (e) { /* not a local handler */ }
+  try { window.resetAll = resetAll; } catch (e) { /* not a local handler */ }
+  try { window.setMode = setMode; } catch (e) { /* not a local handler */ }
+  try { window.prev = prev; } catch (e) { /* not a local handler */ }
+  try { window.next = next; } catch (e) { /* not a local handler */ }
+  try { window.closeModal = closeModal; } catch (e) { /* not a local handler */ }
+  try { window.applyLivery = applyLivery; } catch (e) { /* not a local handler */ }
+  try { window.takeOff = takeOff; } catch (e) { /* not a local handler */ }
+  try { window.toggleSandbox = toggleSandbox; } catch (e) { /* not a local handler */ }
+  try { window.go = go; } catch (e) { /* not a local handler */ }
+  try { window.doSave = doSave; } catch (e) { /* not a local handler */ }
+  try { window.doLoad = doLoad; } catch (e) { /* not a local handler */ }
+  try { window.doDel = doDel; } catch (e) { /* not a local handler */ }
+  try { window.updFloat = updFloat; } catch (e) { /* not a local handler */ }
+  try { window.updRaw = updRaw; } catch (e) { /* not a local handler */ }
+  try { window.updChecked = updChecked; } catch (e) { /* not a local handler */ }
+  } finally {
+    window.addEventListener = winAdd;
+    document.addEventListener = docAdd;
+    window.requestAnimationFrame = origRaf;
+  }
+
+  return function unmount() {
+    try { ac.abort(); } catch (e) {}
+    rafs.forEach(function (id) { try { cancelAnimationFrame(id); } catch (e) {} });
+    window._builderGetState = null;
+    window._builderApplyState = null;
+    window._builderSetState = null;
+    try { delete window.randomAirship; } catch (e) {}
+    try { delete window.downloadPNG; } catch (e) {}
+    try { delete window.showProfileCard; } catch (e) {}
+    try { delete window.openSaveModal; } catch (e) {}
+    try { delete window.openLoadModal; } catch (e) {}
+    try { delete window.resetAll; } catch (e) {}
+    try { delete window.setMode; } catch (e) {}
+    try { delete window.prev; } catch (e) {}
+    try { delete window.next; } catch (e) {}
+    try { delete window.closeModal; } catch (e) {}
+    try { delete window.applyLivery; } catch (e) {}
+    try { delete window.takeOff; } catch (e) {}
+    try { delete window.toggleSandbox; } catch (e) {}
+    try { delete window.go; } catch (e) {}
+    try { delete window.doSave; } catch (e) {}
+    try { delete window.doLoad; } catch (e) {}
+    try { delete window.doDel; } catch (e) {}
+    try { delete window.updFloat; } catch (e) {}
+    try { delete window.updRaw; } catch (e) {}
+    try { delete window.updChecked; } catch (e) {}
+    stage.remove();
+    sheet.remove();
+  };
+}
