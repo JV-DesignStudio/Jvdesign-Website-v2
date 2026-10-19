@@ -26,6 +26,14 @@ const server=http.createServer((req,res)=>{
     await page.goto(base+PAGE,{waitUntil:'load'});
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
 
+    const tourOpen=await page.$eval('#tourOverlay',el=>!el.hidden);
+    check('first visit opens the tour',tourOpen);
+    check('Quick tour sits in the hero',await page.$eval('#mcTourBtn',el=>!!el.closest('.hero-btns')));
+    if(tourOpen)await page.click('#tourSkip');
+    check('Skip closes the tour',await page.$eval('#tourOverlay',el=>el.hidden));
+    const starter=await page.$eval('#mcRecipePreview',el=>el.textContent);
+    check('first visit starts with the sword example',/diamond_sword/.test(starter));
+
     const info=await page.evaluate(()=>{
       const tabs=[...document.querySelectorAll('.mcms-tab')];
       return {
@@ -94,6 +102,8 @@ const server=http.createServer((req,res)=>{
     await page.click('.mcms-tab[data-tab="export"]');
     const tree=await page.$eval('#mcExportTree',el=>el.textContent);
     check('export preview lists the datapack files',/pack\.mcmeta/.test(tree)&&/recipe/.test(tree));
+    const where=await page.$eval('#panel-export',el=>el.textContent);
+    check('export says where the folder goes',/datapacks/.test(where)&&/\/reload/.test(where)&&/function/.test(where));
     await page.click('#mcDownload');
     const dlMsg=await page.$eval('#mcExportMsg',el=>el.textContent);
     check('download builds a datapack zip',/Downloaded/.test(dlMsg)&&/\.zip/.test(dlMsg),dlMsg.slice(0,60));
