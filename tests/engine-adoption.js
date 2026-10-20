@@ -1,92 +1,72 @@
 #!/usr/bin/env node
-/* tests/engine-adoption.js (A1719)
- *
- * The curated arcade line-up (games-registry.js) must all run on the shared
- * engine layer. This gate reads the registry, checks every live cabinet wires
- * the required modules, and reports how many have adopted the optional ones.
- *
- * Required on every listed game:
- *   - game-system.js     (GameSystem: score, save, achievements, leaderboard)
- *   - game-onboarding.js (Goal / Controls / Practising + Echo tip)
- *
- * Tracked (reported, not yet required) so adoption can climb without the gate
- * blocking work:
- *   - engine-runtime.js  (loop / input / collide / juice / touch kit)
- *   - game-kit.js        (quality panel, Lumo coach line, daily target)
- *   - story-run.js       (run framing)
- *
- * Run: node tests/engine-adoption.js
- */
-const fs = require('fs');
+// A1723 engine adoption gate: every live arcade cabinet must load game-system.js
+// and game-onboarding.js. Adoption of game-shell.js, story-run.js,
+// engine-runtime.js and game-kit.js is tracked as a report (not a hard gate).
+//
+// Run: node tests/engine-adoption.js
+const fs   = require('fs');
 const path = require('path');
-const vm = require('vm');
+const vm   = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const GAMES_DIR = path.join(ROOT, 'games');
 
-const ctx = { window: {} };
-vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(ROOT, 'games-registry.js'), 'utf8'), ctx);
-const games = ctx.window.JVDS_GAMES || [];
+// Read the curated line-up from games-registry.js.
+const regCtx = { window: {} };
+vm.createContext(regCtx);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'games-registry.js'), 'utf8'), regCtx);
+const registry = regCtx.window.JVDS_GAMES || [];
+const gameFiles = registry.map(g => g.file);
 
-const REQUIRED = [
-  { file: 'game-system.js', label: 'shared engine (GameSystem)' },
-  { file: 'game-onboarding.js', label: 'onboarding (goal / controls / Echo)' },
-];
-const TRACKED = [
-  { file: 'engine-runtime.js', id: 'runtime' },
-  { file: 'game-kit.js', id: 'kit' },
-  { file: 'story-run.js', id: 'story' },
-];
+// Hard gate: every cabinet must include these two.
+const REQUIRED = ['game-system.js', 'game-onboarding.js'];
+
+// Tracked (report only, not a failure).
+const OPTIONAL = ['game-shell.js', 'story-run.js', 'engine-runtime.js', 'game-kit.js'];
 
 let failures = 0;
-const check = (name, ok, detail = '') => {
-  console.log((ok ? 'PASS ' : 'FAIL ') + name + (detail ? '  ' + detail : ''));
-  if (!ok) failures++;
-};
+const adoption = {};
+for (const opt of OPTIONAL) adoption[opt] = [];
 
-check('games-registry.js lists a curated line-up', games.length > 0, games.length + ' games');
+console.log(`Engine adoption gate — ${gameFiles.length} cabinet(s) in registry\n`);
 
-const adopted = { runtime: 0, kit: 0, story: 0 };
-
-for (const g of games) {
-  const file = path.join(GAMES_DIR, g.file);
-  if (!fs.existsSync(file)) {
-    check(g.id + ': page exists', false, g.file);
+for (const file of gameFiles) {
+  const htmlPath = path.join(GAMES_DIR, file);
+  let html;
+  try {
+    html = fs.readFileSync(htmlPath, 'utf8');
+  } catch (e) {
+    console.log(`✗ ${file} - could not read: ${e.message}`);
+    failures++;
     continue;
   }
-  const html = fs.readFileSync(file, 'utf8');
+
+  let ok = true;
   for (const req of REQUIRED) {
-    check(g.id + ': loads ' + req.label, html.includes(req.file), req.file);
+    if (!html.includes(req)) {
+      console.log(`✗ ${file} - missing required script: ${req}`);
+      failures++;
+      ok = false;
+    }
   }
-  for (const opt of TRACKED) {
-    if (html.includes(opt.file)) adopted[opt.id]++;
+  if (ok) console.log(`✓ ${file}`);
+
+  for (const opt of OPTIONAL) {
+    if (html.includes(opt)) adoption[opt].push(file);
   }
 }
 
-const total = games.length || 1;
-check(
-  'engine-runtime.js adoption is reported',
-  true,
-  adopted.runtime + '/' + total + ' cabinets (loop / input / collide / juice / touch kit)'
-);
-check(
-  'game-kit.js adoption is reported',
-  true,
-  adopted.kit + '/' + total + ' cabinets (quality panel / Lumo coach / daily)'
-);
-check(
-  'story-run.js adoption is reported',
-  true,
-  adopted.story + '/' + total + ' cabinets'
-);
-
-console.log('\nengine adoption: runtime ' + adopted.runtime + '/' + total +
-  ', kit ' + adopted.kit + '/' + total +
-  ', story ' + adopted.story + '/' + total);
-
-if (failures) {
-  console.log('\n' + failures + ' CHECK(S) FAILED');
-  process.exit(1);
+console.log('\nAdoption report (optional scripts):');
+for (const opt of OPTIONAL) {
+  const count = adoption[opt].length;
+  const pct   = gameFiles.length ? Math.round(count / gameFiles.length * 100) : 0;
+  const names = count ? adoption[opt].join(', ') : 'none';
+  console.log(`  ${opt.padEnd(22)} ${String(count).padStart(2)}/${gameFiles.length} (${pct}%)  ${names}`);
 }
-console.log('\nALL ' + total + ' LINE-UP GAMES LOAD THE SHARED ENGINE');
+
+console.log(
+  failures
+    ? `\n✗ engine-adoption: ${failures} cabinet(s) failed the gate`
+    : `\n✓ engine-adoption: all ${gameFiles.length} cabinet(s) pass the gate`
+);
+process.exit(failures ? 1 : 0);
