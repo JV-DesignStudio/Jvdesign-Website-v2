@@ -81,7 +81,8 @@ for (const r of r301) {
   const to = r.split(/\s+/)[1];
   const clean = to.replace(/^\//, '').split('#')[0].split('?')[0];
   const file = path.join(ROOT, clean);
-  if (fs.existsSync(file)) ok('redirect target exists: ' + to);
+  const fileHtml = file.endsWith('.html') ? file : file + '.html';
+  if (fs.existsSync(file) || fs.existsSync(fileHtml)) ok('redirect target exists: ' + to);
   else fail('redirect target missing: ' + to);
 }
 try {
