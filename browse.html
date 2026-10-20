@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script src="/assets/js/theme-init.js"></script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#BC4749">
+<script defer src="analytics-loader.js"></script>
+<link rel="canonical" href="https://jvdesignstudio.co.uk/browse">
+<meta name="robots" content="index, follow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browse Everything | JVDesignStudio</title>
+<meta name="description" content="Every workshop, tool, game and book in one place. Filter by type, engine or difficulty and jump straight in.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://jvdesignstudio.co.uk/browse">
+<meta property="og:title" content="Browse Everything | JVDesignStudio">
+<meta property="og:description" content="Every workshop, tool, game and book in one place.">
+<meta property="og:image" content="https://jvdesignstudio.co.uk/og/hub-everything.png">
+<meta property="og:site_name" content="JVDesignStudio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Browse Everything | JVDesignStudio">
+<meta name="twitter:description" content="Every workshop, tool, game and book in one place.">
+<meta name="twitter:image" content="https://jvdesignstudio.co.uk/og/hub-everything.png">
+<link rel="icon" href="logo.png" type="image/png">
+<!-- BUILD:head-icons -->
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-mKaRer1Ji4vdxfQU42DpjPMS0DPB8fqLSmYCUMr6UHA=' 'sha256-P/UurGVlvfQRz/pO0hX9UVTVrbd7G8xxx2QQzK8wGjg=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<link rel="stylesheet" href="/assets/css/tokens.css">
+<script defer src="/assets/js/ui-delegate.js"></script>
+<!-- /BUILD:head-icons -->
+
+<link rel="preconnect" href="https://www.googletagmanager.com">
+<link rel="preconnect" href="https://www.google-analytics.com">
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<link rel="stylesheet" href="style-shared.css?v=18">
+<style>
+/* ── Browse page layout ────────────────────────────────────────────── */
+.browse-hero{padding:48px 20px 28px;max-width:720px;margin:0 auto;text-align:center}
+.browse-hero h1{font-family:var(--jv-font-display);font-size:clamp(1.8rem,5vw,2.6rem);color:var(--jv-text);margin:0 0 8px}
+.browse-hero p{font-size:1rem;color:var(--jv-text-muted);margin:0;line-height:1.6}
+
+/* Search bar */
+.browse-search-wrap{max-width:600px;margin:24px auto 0;position:relative}
+.browse-search-input{width:100%;box-sizing:border-box;padding:13px 48px 13px 18px;border:1.5px solid var(--jv-line);border-radius:12px;font-size:.95rem;background:var(--jv-surface);color:var(--jv-text);outline:none;font-family:inherit;transition:border-color .15s}
+.browse-search-input:focus{border-color:var(--jv-accent-ink)}
+.browse-search-clear{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--jv-text-muted);font-size:1.1rem;padding:4px;line-height:1;display:none}
+.browse-search-clear.visible{display:block}
+
+/* Type filter tabs */
+.browse-tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:20px 20px 0;max-width:900px;margin:0 auto}
+.browse-tab{padding:8px 18px;border-radius:999px;border:1.5px solid var(--jv-line);background:var(--jv-surface);color:var(--jv-text-muted);font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s,color .15s,border-color .15s;white-space:nowrap}
+.browse-tab:hover{border-color:var(--jv-accent-ink);color:var(--jv-text)}
+.browse-tab[aria-pressed="true"]{background:var(--jv-char);color:var(--jv-beige);border-color:var(--jv-char)}
+
+/* Secondary filters (engine, difficulty) */
+.browse-filters{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding:12px 20px 0;max-width:900px;margin:0 auto}
+.browse-select{padding:7px 14px;border-radius:8px;border:1.5px solid var(--jv-line);background:var(--jv-surface);color:var(--jv-text-muted);font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;outline:none;transition:border-color .15s}
+.browse-select:focus{border-color:var(--jv-accent-ink)}
+.browse-select[data-active="true"]{border-color:var(--jv-char);color:var(--jv-text)}
+#browseEngineWrap,#browseDiffWrap,#browseAgeWrap{display:none}
+#browseEngineWrap.visible,#browseDiffWrap.visible,#browseAgeWrap.visible{display:block}
+
+/* Results bar */
+.browse-meta{max-width:1160px;margin:20px auto 0;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.browse-count{font-size:.85rem;color:var(--jv-text-muted)}
+.browse-reset{font-size:.82rem;font-weight:700;color:var(--jv-char);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;display:none}
+.browse-reset.visible{display:block}
+
+/* Card grid */
+.browse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;max-width:1160px;margin:16px auto 60px;padding:0 20px}
+
+/* Cards */
+.bc{background:var(--jv-surface);border:1.5px solid var(--jv-line);border-radius:14px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:0;overflow:hidden;transition:transform .18s,box-shadow .18s,border-color .18s}
+.bc:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(64,59,51,.12);border-color:var(--jv-accent-ink)}
+.bc-head{padding:14px 16px 0}
+.bc-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center}
+.bc-type{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:999px;background:var(--jv-line);color:var(--jv-text-muted)}
+.bc-type--workshop{background:rgba(78,125,128,.15);color:var(--jv-teal-dk,#4e7d80)}
+.bc-type--tool{background:rgba(188,71,73,.12);color:var(--jv-char,#BC4749)}
+.bc-type--game{background:rgba(112,163,167,.15);color:var(--jv-teal-dk,#4e7d80)}
+.bc-type--book{background:rgba(255,171,25,.15);color:#b8820a}
+.bc-type--guide{background:rgba(91,79,207,.12);color:#5b4fcf}
+.bc-engine{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--jv-text-muted)}
+.bc-title{font-weight:700;font-size:.9rem;color:var(--jv-text);line-height:1.35;margin:0 0 6px}
+.bc-body{padding:0 16px 14px;flex:1;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+.bc-desc{font-size:.8rem;color:var(--jv-text-muted);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0}
+.bc-footer{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.bc-pill{font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--jv-line);color:var(--jv-text-muted)}
+
+/* No results */
+.browse-empty{text-align:center;padding:60px 20px;max-width:480px;margin:0 auto;color:var(--jv-text-muted)}
+.browse-empty strong{display:block;font-size:1.1rem;color:var(--jv-text);margin-bottom:8px}
+
+@media(max-width:600px){
+  .browse-grid{grid-template-columns:1fr}
+  .browse-hero{padding:32px 20px 16px}
+}
+</style>
+</head>
+<body>
+<nav id="nav-placeholder"></nav>
+<script defer src="/nav.js?v=20"></script>
+
+<main id="main-content">
+
+<div class="browse-hero">
+  <h1>Browse Everything</h1>
+  <p>Every workshop, tool, game and book in the studio - search and filter to find your next project.</p>
+</div>
+
+<div class="browse-search-wrap" role="search" aria-label="Browse content">
+  <input class="browse-search-input" id="browseSearch" type="search" placeholder="Search workshops, tools, engines, games..." autocomplete="off" aria-label="Search all content">
+  <button class="browse-search-clear" id="browseSearchClear" type="button" aria-label="Clear search">✕</button>
+</div>
+
+<div class="browse-tabs" role="group" aria-label="Filter by type">
+  <button class="browse-tab" data-type="all" aria-pressed="true">All</button>
+  <button class="browse-tab" data-type="workshop" aria-pressed="false">Workshops</button>
+  <button class="browse-tab" data-type="tool" aria-pressed="false">Tools</button>
+  <button class="browse-tab" data-type="game" aria-pressed="false">Games</button>
+  <button class="browse-tab" data-type="book" aria-pressed="false">Books</button>
+  <button class="browse-tab" data-type="guide" aria-pressed="false">Guides</button>
+</div>
+
+<div class="browse-filters">
+  <div id="browseEngineWrap">
+    <select class="browse-select" id="browseEngine" aria-label="Filter by engine">
+      <option value="">Any engine</option>
+    </select>
+  </div>
+  <div id="browseDiffWrap">
+    <select class="browse-select" id="browseDiff" aria-label="Filter by difficulty">
+      <option value="">Any level</option>
+      <option value="beginner">Beginner</option>
+      <option value="intermediate">Intermediate</option>
+      <option value="advanced">Advanced</option>
+    </select>
+  </div>
+  <div id="browseAgeWrap">
+    <select class="browse-select" id="browseAge" aria-label="Filter by age">
+      <option value="">Any age</option>
+    </select>
+  </div>
+</div>
+
+<div class="browse-meta">
+  <span class="browse-count" id="browseCount" aria-live="polite"></span>
+  <button class="browse-reset" id="browseReset" type="button">Reset all filters</button>
+</div>
+
+<div class="browse-grid" id="browseGrid" role="list" aria-label="Browse results"></div>
+
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">JVDesignStudio</div>
+      <div class="footer-tagline">Books - Games - Creative Adventures</div>
+    </div>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/dev-tools">Make - Tools</a>
+      <a href="/workshop">Learn - Workshops</a>
+      <a href="/arcade">Play - Arcade</a>
+      <a href="/browse">Browse Everything</a>
+      <a href="/parent-guide">Parent Guide</a>
+      <a href="/contact">Contact</a>
+    </nav>
+    <p class="footer-copy">© <span id="footerYear">2026</span> JVDesignStudio. All rights reserved.</p>
+  </div>
+</footer>
+
+<script defer src="cookie-consent.js"></script>
+<script defer src="mascots.js"></script>
+<script src="/jvds-funnel.js"></script>
+<script>document.getElementById('footerYear').textContent=new Date().getFullYear();</script>
+<script src="content-data.js"></script>
+<script>
+(function(){
+  var data = window.JVDS_CONTENT || {};
+
+  // ── Build flat catalogue from content-data sections ──────────────
+  var catalogue = [];
+
+  (data.workshops||[]).forEach(function(w){
+    catalogue.push({
+      type:'workshop', title:w.title, desc:w.desc||'',
+      url:w.url, engine:w.engine||'', difficulty:w.difficulty||'',
+      ageRange:w.ageRange||'', tags:(w.tags||[]).join(' ')
+    });
+  });
+
+  (data.tools||[]).forEach(function(t){
+    if(t.comingSoon) return;
+    catalogue.push({
+      type:'tool', title:t.title, desc:t.desc||'',
+      url:t.url, engine:'', difficulty:'',
+      ageRange:'', tags:(t.tags||[]).join(' ')+' '+(t.category||'')
+    });
+  });
+
+  (data.games||[]).forEach(function(g){
+    catalogue.push({
+      type:'game', title:g.title, desc:g.desc||'',
+      url:g.url, engine:'', difficulty:'',
+      ageRange:'', tags:(g.category||'')+' '+(g.tag||'')
+    });
+  });
+
+  (data.books||[]).forEach(function(b){
+    catalogue.push({
+      type:'book', title:b.title, desc:b.desc||b.theme||'',
+      url:b.url, engine:'', difficulty:'',
+      ageRange:b.ageRange||'', tags:(b.theme||'')+' '+(b.character||'')
+    });
+  });
+
+  // Also pull guides from search-index not in content-data
+  var guidesAdded = {};
+
+  // ── State ─────────────────────────────────────────────────────────
+  var state = { type:'all', query:'', engine:'', diff:'', age:'' };
+
+  // ── Engine list for workshops ─────────────────────────────────────
+  var engines = [];
+  var engineSet = {};
+  (data.workshops||[]).forEach(function(w){
+    if(w.engine && !engineSet[w.engine]){ engineSet[w.engine]=1; engines.push(w.engine); }
+  });
+  engines.sort();
+
+  // Age ranges
+  var ages = [];
+  var ageSet = {};
+  (data.workshops||[]).forEach(function(w){
+    if(w.ageRange && !ageSet[w.ageRange]){ ageSet[w.ageRange]=1; ages.push(w.ageRange); }
+  });
+
+  var engSel = document.getElementById('browseEngine');
+  engines.forEach(function(e){
+    var o = document.createElement('option'); o.value=e; o.textContent=e; engSel.appendChild(o);
+  });
+
+  var ageSel = document.getElementById('browseAge');
+  ['4-5','6-8','9-12','10+','13+','Any age'].forEach(function(a){
+    var o = document.createElement('option'); o.value=a; o.textContent=a; ageSel.appendChild(o);
+  });
+
+  // ── DOM refs ─────────────────────────────────────────────────────
+  var grid = document.getElementById('browseGrid');
+  var countEl = document.getElementById('browseCount');
+  var resetBtn = document.getElementById('browseReset');
+  var searchInput = document.getElementById('browseSearch');
+  var searchClear = document.getElementById('browseSearchClear');
+  var tabs = document.querySelectorAll('.browse-tab');
+  var diffSel = document.getElementById('browseDiff');
+  var engWrap = document.getElementById('browseEngineWrap');
+  var diffWrap = document.getElementById('browseDiffWrap');
+  var ageWrap = document.getElementById('browseAgeWrap');
+
+  // ── Filter + render ───────────────────────────────────────────────
+  function typeLabel(t){
+    return {workshop:'Workshop',tool:'Tool',game:'Game',book:'Book',guide:'Guide'}[t]||t;
+  }
+
+  function render(){
+    var q = state.query.toLowerCase();
+    var filtered = catalogue.filter(function(item){
+      if(state.type !== 'all' && item.type !== state.type) return false;
+      if(state.engine && item.engine !== state.engine) return false;
+      if(state.diff && item.difficulty !== state.diff) return false;
+      if(state.age && item.ageRange !== state.age) return false;
+      if(q){
+        var hay = (item.title+' '+item.desc+' '+item.engine+' '+item.tags+' '+item.ageRange).toLowerCase();
+        return hay.indexOf(q) !== -1;
+      }
+      return true;
+    });
+
+    countEl.textContent = filtered.length + ' result' + (filtered.length===1?'':'s');
+
+    var dirty = state.type!=='all'||q||state.engine||state.diff||state.age;
+    resetBtn.classList.toggle('visible', dirty);
+
+    if(filtered.length === 0){
+      grid.innerHTML = '<div class="browse-empty"><strong>Nothing found</strong>Try a different search or reset the filters.</div>';
+      return;
+    }
+
+    var frag = document.createDocumentFragment();
+    filtered.forEach(function(item){
+      var a = document.createElement('a');
+      a.className = 'bc';
+      a.href = item.url;
+      a.setAttribute('role','listitem');
+
+      var pills = '';
+      if(item.engine) pills += '<span class="bc-pill">'+item.engine+'</span>';
+      if(item.difficulty) pills += '<span class="bc-pill">'+item.difficulty+'</span>';
+      if(item.ageRange) pills += '<span class="bc-pill">'+item.ageRange+'</span>';
+
+      a.innerHTML =
+        '<div class="bc-head">'+
+          '<div class="bc-badges">'+
+            '<span class="bc-type bc-type--'+item.type+'">'+typeLabel(item.type)+'</span>'+
+          '</div>'+
+          '<div class="bc-title">'+escHtml(item.title)+'</div>'+
+        '</div>'+
+        '<div class="bc-body">'+
+          '<p class="bc-desc">'+escHtml(item.desc)+'</p>'+
+          (pills?'<div class="bc-footer">'+pills+'</div>':'')+
+        '</div>';
+      frag.appendChild(a);
+    });
+    grid.innerHTML = '';
+    grid.appendChild(frag);
+  }
+
+  function escHtml(s){
+    return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function updateSecondaryFilters(){
+    var show = state.type === 'workshop' || state.type === 'all';
+    engWrap.classList.toggle('visible', show);
+    diffWrap.classList.toggle('visible', show);
+    ageWrap.classList.toggle('visible', show || state.type === 'book');
+  }
+
+  // ── Events ────────────────────────────────────────────────────────
+  tabs.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      state.type = btn.dataset.type;
+      state.engine = ''; state.diff = ''; state.age = '';
+      engSel.value = ''; diffSel.value = ''; ageSel.value = '';
+      tabs.forEach(function(b){ b.setAttribute('aria-pressed', b===btn ? 'true':'false'); });
+      updateSecondaryFilters();
+      render();
+    });
+  });
+
+  searchInput.addEventListener('input', function(){
+    state.query = searchInput.value;
+    searchClear.classList.toggle('visible', !!state.query);
+    render();
+  });
+
+  searchClear.addEventListener('click', function(){
+    searchInput.value = ''; state.query = '';
+    searchClear.classList.remove('visible');
+    searchInput.focus();
+    render();
+  });
+
+  engSel.addEventListener('change', function(){
+    state.engine = engSel.value;
+    engSel.setAttribute('data-active', !!engSel.value);
+    render();
+  });
+
+  diffSel.addEventListener('change', function(){
+    state.diff = diffSel.value;
+    diffSel.setAttribute('data-active', !!diffSel.value);
+    render();
+  });
+
+  ageSel.addEventListener('change', function(){
+    state.age = ageSel.value;
+    ageSel.setAttribute('data-active', !!ageSel.value);
+    render();
+  });
+
+  resetBtn.addEventListener('click', function(){
+    state = { type:'all', query:'', engine:'', diff:'', age:'' };
+    searchInput.value = ''; searchClear.classList.remove('visible');
+    engSel.value = ''; diffSel.value = ''; ageSel.value = '';
+    tabs.forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.type==='all'?'true':'false'); });
+    engSel.removeAttribute('data-active'); diffSel.removeAttribute('data-active'); ageSel.removeAttribute('data-active');
+    updateSecondaryFilters();
+    render();
+  });
+
+  // Keyboard shortcut: / focuses search
+  document.addEventListener('keydown', function(e){
+    if(e.key==='/' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='SELECT'){
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+
+  updateSecondaryFilters();
+  render();
+})();
+</script>
+</body>
+</html>
