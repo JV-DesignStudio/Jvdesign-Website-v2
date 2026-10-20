@@ -75,7 +75,7 @@ function check(name, ok, detail=''){ console.log((ok?'PASS ':'FAIL ')+name+(deta
       data.hubs.length===4 && ['Workshops','Tools','Games','Books'].every(n=>data.hubs.map(h=>h.name.trim()).includes(n)),
       data.hubs.map(h=>h.name.trim()).join(' | '));
     check(vp.name+': hub links point at the four hubs',
-      ['/workshop','/dev-tools','/games','/books'].every(t=>hrefs(data.hubs).includes(t)), hrefs(data.hubs));
+      ['/workshop','/dev-tools','/arcade.html','/books'].every(t=>hrefs(data.hubs).includes(t)), hrefs(data.hubs));
 
     check(vp.name+': beginner-guide grid has six guides', data.guides.length===6, String(data.guides.length));
     check(vp.name+': guide cards end in a first read and link into /learn',

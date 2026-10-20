@@ -15,7 +15,7 @@ const hubCards = (html.match(/class="hub-card /g) || []).length;
 check('exactly one four-path set (hub cards)', hubCards === 4, 'hub cards=' + hubCards);
 
 const hubHrefs = [...html.matchAll(/class="hub-card[^"]*"\s+href="([^"]+)"/g)].map(m => m[1]).sort().join(',');
-check('the four paths are Learn/Play/Create/Read', hubHrefs === ['/books', '/dev-tools', '/games', '/workshop'].sort().join(','), hubHrefs);
+check('the four paths are Learn/Play/Create/Read', hubHrefs === ['/arcade.html', '/books', '/dev-tools', '/workshop'].sort().join(','), hubHrefs);
 
 check('guide teaser links to the full /learn/ hub', /href="\/learn\/"/.test(html));
 const guideCards = (html.match(/aria-labelledby="guides-title"[\s\S]*?<\/section>/)[0].match(/class="path-card /g) || []).length;
