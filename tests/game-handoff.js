@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // A1764 game handoff test: verify that the 3 target games have the required
-// endScreen ARIA attributes, JVDS_HANDOFF config, and game-handoff.js script tag.
+// endScreen ARIA attributes and game-handoff.js script tag with data-* config.
 const fs   = require('fs');
 const path = require('path');
 
@@ -19,13 +19,15 @@ let failures = 0;
 for (const t of targets) {
   const html = fs.readFileSync(path.join(GAMES, t.file), 'utf8');
   const checks = [
-    ['endScreen aria-live',    html.includes('aria-live')],
-    ['endScreen role=dialog',  html.includes('role="dialog"')],
-    ['endTitle tabindex=-1',   html.includes('tabindex="-1"')],
-    ['JVDS_HANDOFF config',    html.includes('JVDS_HANDOFF')],
-    ['game-handoff.js script', html.includes(SCRIPT)],
-    ['challengeTarget fn',     html.includes('challengeTarget')],
-    ['scoreFn',                html.includes('scoreFn')],
+    ['endScreen aria-live',            html.includes('aria-live')],
+    ['endScreen role=dialog',          html.includes('role="dialog"')],
+    ['endTitle tabindex=-1',           html.includes('tabindex="-1"')],
+    ['game-handoff.js script',         html.includes(SCRIPT)],
+    ['data-game-id',                   html.includes('data-game-id="' + t.gameId + '"')],
+    ['data-challenge-label',           html.includes('data-challenge-label=')],
+    ['data-challenge-min/max',         html.includes('data-challenge-min=') && html.includes('data-challenge-max=')],
+    ['data-score-fn',                  html.includes('data-score-fn=')],
+    ['no stale inline JVDS_HANDOFF',   !html.includes('<script>window.JVDS_HANDOFF')],
   ];
   let ok = true;
   for (const [name, pass] of checks) {
