@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wWSOpqErNtns3zu+5cJk2W3JVyqeHSy6n3AhBSEQICI=' 'sha256-NgKfUpxm409DbgrlDy1R97OSOe40/oywM/wmoTPtOfg=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wWSOpqErNtns3zu+5cJk2W3JVyqeHSy6n3AhBSEQICI=' 'sha256-NgKfUpxm409DbgrlDy1R97OSOe40/oywM/wmoTPtOfg=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com https://textures.minecraft.net; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd https://api.mojang.com https://sessionserver.mojang.com; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
@@ -41,8 +41,8 @@
 <link rel="preconnect" href="https://www.google-analytics.com">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <link rel="stylesheet" href="../style-shared.css?v=17">
-<link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=2">
-<noscript><link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=2"></noscript>
+<link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=3">
+<noscript><link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=3"></noscript>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Minecraft Skin Editor","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/minecraft-skin-editor.html","description":"Paint a Minecraft skin pixel by pixel in the browser, preview it on a 3D player and export a PNG. Free, no install, no account.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
 </script>
@@ -141,8 +141,13 @@
       <div class="ms-card">
         <h2>Tools</h2>
         <div class="ms-grid2" id="msToolGrid" role="group" aria-label="Drawing tools"></div>
-        <label class="ms-fieldlabel" for="msBrush" style="margin-top:10px">Brush size</label>
-        <div class="ms-grid3" id="msBrushGrid" role="group" aria-label="Brush size"></div>
+        <label class="ms-fieldlabel" for="msBrush" style="margin-top:10px">Brush size <span class="ms-key-hint">[ ]</span></label>
+        <div class="ms-grid4" id="msBrushGrid" role="group" aria-label="Brush size"></div>
+        <div class="ms-grid2" style="margin-top:10px">
+          <button type="button" class="ms-btn" id="msSymmetryBtn" aria-pressed="false" title="Mirror paint on both arms/legs (S)"><span class="ms-emoji" aria-hidden="true">🪞</span> Symmetry</button>
+          <button type="button" class="ms-btn" id="msLabelsBtn" aria-pressed="false" title="Show body part labels (L)"><span class="ms-emoji" aria-hidden="true">🏷️</span> Labels</button>
+        </div>
+        <p class="ms-hint">Keys: P pencil · E eraser · F fill · I pick · [ ] brush · S symmetry · + − zoom</p>
       </div>
 
       <div class="ms-card">
@@ -168,6 +173,12 @@
         </div>
         <input type="file" id="msFile" accept="image/png,image/*" hidden>
         <p class="ms-hint" id="msSizeHint">Skins are 64x64 pixels. Older 64x32 skins are converted for you.</p>
+        <label class="ms-fieldlabel" style="margin-top:10px">Load from Minecraft username</label>
+        <div class="ms-mojang-row">
+          <input type="text" id="msMojangUser" class="ms-text-input" placeholder="e.g. Notch" maxlength="16" autocomplete="off" spellcheck="false">
+          <button type="button" class="ms-btn" id="msMojangFetch">Load</button>
+        </div>
+        <p class="ms-hint">Fetches the player's current Mojang skin. Needs internet.</p>
       </div>
 
       <div class="ms-card">
@@ -181,6 +192,17 @@
         </div>
       </div>
     </aside>
+
+    <!-- mobile quick-access strip (hidden on desktop via CSS) -->
+    <div class="ms-mobile-strip" id="msMobileStrip" role="toolbar" aria-label="Quick tools">
+      <input type="color" id="msMobileColor" aria-label="Paint colour" title="Colour">
+      <button type="button" class="ms-strip-btn" data-tool="pencil" title="Pencil (P)">✏️</button>
+      <button type="button" class="ms-strip-btn" data-tool="eraser" title="Eraser (E)">🧽</button>
+      <button type="button" class="ms-strip-btn" data-tool="fill"   title="Fill (F)">🪣</button>
+      <button type="button" class="ms-strip-btn" data-tool="eyedropper" title="Pick colour (I)">💧</button>
+      <button type="button" class="ms-strip-btn" id="msStripUndo"   title="Undo">↩</button>
+      <button type="button" class="ms-strip-btn" id="msStripZoomIn" title="Zoom in (+)">🔍</button>
+    </div>
 
     <div class="ms-main">
       <section class="ms-card ms-paintwrap" aria-label="Paint area">
@@ -205,7 +227,7 @@
           <label class="ms-check"><input type="checkbox" id="msShowGrid" checked> Grid</label>
           <label class="ms-check"><input type="checkbox" id="msShowOverlay" checked> Layers</label>
         </div>
-        <p class="ms-hint">Drag the model to turn it. Scroll or pinch to zoom.</p>
+        <p class="ms-hint">Drag to turn · scroll/pinch to zoom · hover to highlight a part on the texture</p>
       </section>
     </div>
   </div>

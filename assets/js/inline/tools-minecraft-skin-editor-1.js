@@ -47,9 +47,36 @@
     rgba: [63, 169, 216, 255],
     showGrid: true,
     showOverlay: true,
-    autoRotate: true
+    autoRotate: true,
+    symmetry: false,
+    showLabels: false
   };
   var LS_KEY = 'jvds_minecraft_skin';
+
+  // ---- zoom ---------------------------------------------------------------
+  var ZOOM_STEPS = [4, 8, 16, 32];
+  var zoomIdx = 1; // default 8x
+
+  function effectiveScale() { return skinCanvas.width / SIZE; }
+
+  function applyZoom() {
+    var sc = ZOOM_STEPS[zoomIdx];
+    skinCanvas.width  = skinCanvas.height  = SIZE * sc;
+    overlayCanvas.width = overlayCanvas.height = SIZE * sc;
+    gridCache.width = gridCache.height = 0; // invalidate
+    var el = document.getElementById('msZoomVal');
+    if (el) el.textContent = sc + 'x';
+    buildGridCache(); repaintPixels(); renderOverlay();
+    try { localStorage.setItem(LS_KEY + '_zoom', zoomIdx); } catch (e) {}
+  }
+  function zoomIn()  { if (zoomIdx < ZOOM_STEPS.length - 1) { zoomIdx++; applyZoom(); } }
+  function zoomOut() { if (zoomIdx > 0)                     { zoomIdx--; applyZoom(); } }
+  function loadZoom() {
+    try {
+      var z = localStorage.getItem(LS_KEY + '_zoom');
+      if (z !== null) zoomIdx = Math.min(Math.max(+z | 0, 0), ZOOM_STEPS.length - 1);
+    } catch (e) {}
+  }
 
   function idx(x, y) { return (y * SIZE + x) * 4; }
 
@@ -102,13 +129,20 @@
   }
 
   // ---- drawing ------------------------------------------------------------
-  function paintDot(cx, cy) {
+  function paintDotAt(cx, cy, r, g, b, a) {
     var half = Math.floor(state.brush / 2);
-    var r = state.rgba[0], g = state.rgba[1], b = state.rgba[2], a = state.rgba[3];
     for (var dy = -half; dy < state.brush - half; dy++) {
       for (var dx = -half; dx < state.brush - half; dx++) {
         setPixel(cx + dx, cy + dy, r, g, b, a);
       }
+    }
+  }
+  function paintDot(cx, cy) {
+    var r = state.rgba[0], g = state.rgba[1], b = state.rgba[2], a = state.rgba[3];
+    paintDotAt(cx, cy, r, g, b, a);
+    if (state.symmetry) {
+      var sp = symmetricPixel(cx, cy);
+      if (sp) paintDotAt(sp[0], sp[1], r, g, b, a);
     }
   }
   function paintLine(x0, y0, x1, y1) {
@@ -138,6 +172,60 @@
       stack.push([px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]);
     }
   }
+  // ---- symmetry helpers ---------------------------------------------------
+  var PART_GROUPS = [
+    { name: 'RARM', g: null }, { name: 'LARM', g: null },
+    { name: 'RLEG', g: null }, { name: 'LLEG', g: null },
+    { name: 'HEAD', g: null }, { name: 'HAT',  g: null },
+    { name: 'BODY', g: null }, { name: 'JACKET', g: null }
+  ];
+  var FACE_NAMES = ['top', 'bottom', 'right', 'front', 'left', 'back'];
+  var SYMM_PARTNER = { RARM: 'LARM', LARM: 'RARM', RLEG: 'LLEG', LLEG: 'RLEG' };
+  var SYMM_FACE = { right: 'left', left: 'right', front: 'front', back: 'back', top: 'top', bottom: 'bottom' };
+
+  function initPartGroups() {
+    var map = { RARM: RARM, LARM: LARM, RLEG: RLEG, LLEG: LLEG, HEAD: HEAD, HAT: HAT, BODY: BODY, JACKET: JACKET };
+    PART_GROUPS.forEach(function (p) { p.g = map[p.name]; });
+  }
+
+  function findFace(px, py) {
+    for (var gi = 0; gi < PART_GROUPS.length; gi++) {
+      var pg = PART_GROUPS[gi];
+      for (var fi = 0; fi < FACE_NAMES.length; fi++) {
+        var r = pg.g[FACE_NAMES[fi]];
+        if (px >= r[0] && px < r[0] + r[2] && py >= r[1] && py < r[1] + r[3]) {
+          return { part: pg.name, face: FACE_NAMES[fi], rect: r, lx: px - r[0], ly: py - r[1] };
+        }
+      }
+    }
+    return null;
+  }
+
+  function symmetricPixel(px, py) {
+    var info = findFace(px, py);
+    if (!info) return null;
+    var partnerName = SYMM_PARTNER[info.part];
+    if (!partnerName) return null;
+    var partnerGroup = null;
+    for (var i = 0; i < PART_GROUPS.length; i++) {
+      if (PART_GROUPS[i].name === partnerName) { partnerGroup = PART_GROUPS[i].g; break; }
+    }
+    if (!partnerGroup) return null;
+    var mFaceName = SYMM_FACE[info.face];
+    var mRect = partnerGroup[mFaceName];
+    var mlx = (info.face === 'right' || info.face === 'left') ? info.lx : (mRect[2] - 1 - info.lx);
+    return [mRect[0] + mlx, mRect[1] + info.ly];
+  }
+
+  // ---- highlighted part (driven by 3D hover) ------------------------------
+  var highlightedPart = null;
+
+  function setHighlightedPart(name) {
+    if (highlightedPart === name) return;
+    highlightedPart = name;
+    buildGridCache(); renderOverlay();
+  }
+
   function clearSkin() {
     pushUndo();
     for (var i = 0; i < data.length; i++) data[i] = 0;
@@ -236,11 +324,83 @@
   function facePixel(x, y, rgb) { setPixel(x, y, rgb[0], rgb[1], rgb[2], 255); }
   function clearData() { for (var i = 0; i < data.length; i++) data[i] = 0; }
 
+  function templateKnight() {
+    var steel = hexToRgb('#8fa3b4'), dark = hexToRgb('#3a4a56'), visor = hexToRgb('#c8e0f4');
+    var cape = hexToRgb('#7a1a2a'), gold = hexToRgb('#e8c34a');
+    clearData();
+    fillGroup(HEAD, steel); fillGroup(BODY, steel); fillGroup(RARM, steel); fillGroup(LARM, steel);
+    fillGroup(RLEG, steel); fillGroup(LLEG, steel);
+    fillRect(HEAD.top, dark); fillRect(HEAD.back, dark);
+    // visor slit
+    fillRect([9, 12, 6, 2], visor);
+    // chest cross
+    fillRect([21, 22, 6, 1], gold); fillRect([23, 20, 2, 5], gold);
+    // cape (jacket layer back)
+    fillRect(JACKET.back, cape); fillRect(JACKET.top, cape);
+  }
+  function templateWizard() {
+    var robe = hexToRgb('#4a2a7a'), robe2 = hexToRgb('#3a1f60'), star = hexToRgb('#e8c34a');
+    var skin = hexToRgb('#f0c090'), beard = hexToRgb('#e0e0d0');
+    clearData();
+    fillGroup(HEAD, skin); fillGroup(BODY, robe); fillGroup(RARM, robe); fillGroup(LARM, robe);
+    fillGroup(RLEG, robe2); fillGroup(LLEG, robe2);
+    // hat (hat layer = very tall)
+    fillGroup(HAT, hexToRgb('#4a2a7a'));
+    fillRect(HEAD.top, hexToRgb('#4a2a7a'));
+    // eyes
+    facePixel(10, 12, hexToRgb('#3a2060')); facePixel(13, 12, hexToRgb('#3a2060'));
+    // beard
+    fillRect([8, 14, 8, 2], beard);
+    // star on chest
+    facePixel(23, 22, star); facePixel(22, 23, star); facePixel(23, 23, star); facePixel(24, 23, star);
+    facePixel(22, 24, star); facePixel(23, 24, star); facePixel(24, 24, star);
+  }
+  function templateAstronaut() {
+    var suit = hexToRgb('#dce8f0'), visor = hexToRgb('#6fd6e8'), dark = hexToRgb('#3a4a56');
+    var accent = hexToRgb('#e07a6b'), pack = hexToRgb('#9aa3ad');
+    clearData();
+    fillGroup(HEAD, suit); fillGroup(BODY, suit); fillGroup(RARM, suit); fillGroup(LARM, suit);
+    fillGroup(RLEG, suit); fillGroup(LLEG, suit);
+    // visor
+    fillRect([9, 9, 6, 5], visor);
+    fillRect([8, 11, 1, 3], visor); fillRect([15, 11, 1, 3], visor);
+    // helmet outline
+    fillRect([8, 8, 8, 1], dark); fillRect([8, 15, 8, 1], dark);
+    // accent stripes
+    fillRect([20, 20, 8, 1], accent); fillRect([20, 30, 8, 1], accent);
+    // backpack
+    fillRect(JACKET.back, pack);
+  }
+  function templateFox() {
+    var fur = hexToRgb('#d4622a'), darkfur = hexToRgb('#2a1a0a'), white = hexToRgb('#f0ede8');
+    var chest = hexToRgb('#f0d0a0');
+    clearData();
+    fillGroup(HEAD, fur); fillGroup(BODY, fur); fillGroup(RARM, fur); fillGroup(LARM, fur);
+    fillGroup(RLEG, darkfur); fillGroup(LLEG, darkfur);
+    // white muzzle
+    fillRect([9, 12, 6, 4], white);
+    // dark nose
+    facePixel(11, 13, darkfur); facePixel(12, 13, darkfur);
+    // eyes
+    facePixel(10, 11, darkfur); facePixel(13, 11, darkfur);
+    // ear tips (hat layer top)
+    fillRect(HAT.top, fur);
+    fillRect([40, 0, 2, 2], darkfur); fillRect([46, 0, 2, 2], darkfur);
+    // chest
+    fillRect(BODY.front, chest); fillRect(JACKET.front, chest);
+    // tail tip (jacket back bottom)
+    fillRect([32, 44, 8, 4], white);
+  }
+
   var TEMPLATES = [
-    { id: 'classic', label: 'Classic', fn: templateClassic },
-    { id: 'zombie', label: 'Zombie', fn: templateZombie },
-    { id: 'robot', label: 'Robot', fn: templateRobot },
-    { id: 'blank', label: 'Blank', fn: templateBlank }
+    { id: 'classic',    label: 'Classic',    fn: templateClassic },
+    { id: 'zombie',     label: 'Zombie',     fn: templateZombie },
+    { id: 'robot',      label: 'Robot',      fn: templateRobot },
+    { id: 'knight',     label: 'Knight',     fn: templateKnight },
+    { id: 'wizard',     label: 'Wizard',     fn: templateWizard },
+    { id: 'astronaut',  label: 'Astronaut',  fn: templateAstronaut },
+    { id: 'fox',        label: 'Fox',        fn: templateFox },
+    { id: 'blank',      label: 'Blank',      fn: templateBlank }
   ];
   function applyTemplate(id) {
     var t = TEMPLATES.filter(function (x) { return x.id === id; })[0];
@@ -273,14 +433,45 @@
     skinCtx.drawImage(off, 0, 0, SIZE, SIZE, 0, 0, skinCanvas.width, skinCanvas.height);
   }
 
+  var PART_LABELS = [
+    { name: 'HEAD',   label: 'Head',    color: '#6fe6dc' },
+    { name: 'HAT',    label: 'Hat',     color: '#6fe6dc' },
+    { name: 'BODY',   label: 'Body',    color: '#7cb342' },
+    { name: 'JACKET', label: 'Jacket',  color: '#7cb342' },
+    { name: 'RARM',   label: 'R.Arm',   color: '#e8c34a' },
+    { name: 'LARM',   label: 'L.Arm',   color: '#e8c34a' },
+    { name: 'RLEG',   label: 'R.Leg',   color: '#e07a6b' },
+    { name: 'LLEG',   label: 'L.Leg',   color: '#e07a6b' }
+  ];
+
   var gridCache = document.createElement('canvas');
   function buildGridCache() {
-    gridCache.width = overlayCanvas.width;
-    gridCache.height = overlayCanvas.height;
+    var px = effectiveScale();
+    gridCache.width  = SIZE * px;
+    gridCache.height = SIZE * px;
     var c = gridCache.getContext('2d');
     c.clearRect(0, 0, gridCache.width, gridCache.height);
-    if (!state.showGrid) return;
-    var px = SCALE;
+
+    // highlighted part fill (3D hover)
+    if (highlightedPart) {
+      var hg = null;
+      for (var hi = 0; hi < PART_GROUPS.length; hi++) {
+        if (PART_GROUPS[hi].name === highlightedPart) { hg = PART_GROUPS[hi].g; break; }
+      }
+      if (hg) {
+        c.fillStyle = 'rgba(111,230,220,0.18)';
+        FACE_NAMES.forEach(function (fn) {
+          var r = hg[fn];
+          c.fillRect(r[0] * px, r[1] * px, r[2] * px, r[3] * px);
+        });
+      }
+    }
+
+    if (!state.showGrid) {
+      // still draw labels if enabled, then return
+      if (state.showLabels) drawLabels(c, px);
+      return;
+    }
     c.lineWidth = 1;
     c.strokeStyle = 'rgba(255,255,255,0.08)';
     c.beginPath();
@@ -293,19 +484,57 @@
     ALL_RECTS.forEach(function (r) {
       c.strokeRect(r[0] * px + 0.5, r[1] * px + 0.5, r[2] * px - 1, r[3] * px - 1);
     });
+    if (state.showLabels) drawLabels(c, px);
+  }
+
+  function drawLabels(c, px) {
+    var groupMap = {};
+    PART_LABELS.forEach(function (pl) {
+      for (var gi = 0; gi < PART_GROUPS.length; gi++) {
+        if (PART_GROUPS[gi].name === pl.name) { groupMap[pl.name] = PART_GROUPS[gi].g; break; }
+      }
+    });
+    var fs = Math.max(8, Math.round(px * 1.1));
+    c.font = 'bold ' + fs + 'px sans-serif';
+    c.textBaseline = 'top';
+    PART_LABELS.forEach(function (pl) {
+      var g = groupMap[pl.name];
+      if (!g) return;
+      // label above the front face
+      var r = g.front;
+      var cx = (r[0] + r[2] / 2) * px;
+      var cy = r[1] * px - fs - 2;
+      if (cy < 0) cy = r[1] * px + 2;
+      c.fillStyle = 'rgba(0,0,0,0.55)';
+      var tw = c.measureText(pl.label).width;
+      c.fillRect(cx - tw / 2 - 2, cy - 1, tw + 4, fs + 2);
+      c.fillStyle = pl.color;
+      c.fillText(pl.label, cx - tw / 2, cy);
+    });
   }
 
   var hover = { x: -1, y: -1 };
   function renderOverlay() {
+    var px = effectiveScale();
     overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
     if (gridCache.width) overlayCtx.drawImage(gridCache, 0, 0);
     if (hover.x >= 0 && hover.y >= 0) {
       overlayCtx.strokeStyle = '#ffffff';
       overlayCtx.lineWidth = 2;
-      var s = SCALE * Math.max(1, state.brush);
+      var s = px * Math.max(1, state.brush);
       var ox = hover.x - Math.floor(state.brush / 2);
       var oy = hover.y - Math.floor(state.brush / 2);
-      overlayCtx.strokeRect(ox * SCALE + 1, oy * SCALE + 1, s - 2, s - 2);
+      overlayCtx.strokeRect(ox * px + 1, oy * px + 1, s - 2, s - 2);
+      // symmetry ghost
+      if (state.symmetry) {
+        var sp = symmetricPixel(hover.x, hover.y);
+        if (sp) {
+          overlayCtx.strokeStyle = 'rgba(111,230,220,0.7)';
+          var sox = sp[0] - Math.floor(state.brush / 2);
+          var soy = sp[1] - Math.floor(state.brush / 2);
+          overlayCtx.strokeRect(sox * px + 1, soy * px + 1, s - 2, s - 2);
+        }
+      }
     }
   }
 
@@ -413,7 +642,7 @@
     } else if (name === 'pencil' || name === 'fill') {
       state.rgba = hexToRgb(state.color).concat([255]);
     }
-    overlayCanvas.style.cursor = name === 'eyedropper' ? 'copy' : 'crosshair';
+    overlayCanvas.style.cursor = name === 'eyedropper' ? 'copy' : name === 'eraser' ? 'cell' : 'crosshair';
   }
   function setBrush(n) {
     state.brush = n;
@@ -449,7 +678,7 @@
       });
     }
     if (brushGrid) {
-      [1, 2, 4].forEach(function (n) {
+      [1, 2, 3, 4].forEach(function (n) {
         var b = document.createElement('button');
         b.type = 'button';
         b.className = 'ms-btn' + (n === state.brush ? ' on' : '');
@@ -672,18 +901,20 @@
     var player = new THREE.Group();
     player.position.y = -16;
 
-    function addBox(w, h, d, x, y, z, faces, mat) {
-      player.add(new THREE.Mesh(makeBox(w, h, d, x, y, z, faces), mat));
+    function addBox(w, h, d, x, y, z, faces, mat, partName) {
+      var mesh = new THREE.Mesh(makeBox(w, h, d, x, y, z, faces), mat);
+      mesh.userData.part = partName;
+      player.add(mesh);
     }
     // absolute y positions (feet at 0): legs 6, body 18, head 28, arms 18
-    addBox(8, 8, 8, 0, 28, 0, HEAD, baseMat);          // head
-    addBox(8.5, 8.5, 8.5, 0, 28, 0, HAT, overMat);      // hat layer
-    addBox(8, 12, 4, 0, 18, 0, BODY, baseMat);          // body
-    addBox(8.25, 12.25, 4.25, 0, 18, 0, JACKET, overMat);// jacket layer
-    addBox(4, 12, 4, 6, 18, 0, RARM, baseMat);          // right arm (+x)
-    addBox(4, 12, 4, -6, 18, 0, LARM, baseMat);         // left arm (-x)
-    addBox(4, 12, 4, 2, 6, 0, RLEG, baseMat);           // right leg
-    addBox(4, 12, 4, -2, 6, 0, LLEG, baseMat);          // left leg
+    addBox(8, 8, 8, 0, 28, 0, HEAD, baseMat, 'HEAD');
+    addBox(8.5, 8.5, 8.5, 0, 28, 0, HAT, overMat, 'HAT');
+    addBox(8, 12, 4, 0, 18, 0, BODY, baseMat, 'BODY');
+    addBox(8.25, 12.25, 4.25, 0, 18, 0, JACKET, overMat, 'JACKET');
+    addBox(4, 12, 4, 6, 18, 0, RARM, baseMat, 'RARM');
+    addBox(4, 12, 4, -6, 18, 0, LARM, baseMat, 'LARM');
+    addBox(4, 12, 4, 2, 6, 0, RLEG, baseMat, 'RLEG');
+    addBox(4, 12, 4, -2, 6, 0, LLEG, baseMat, 'LLEG');
 
     pivot = new THREE.Group();
     pivot.position.set(0, 16, 0);
@@ -768,6 +999,26 @@
     }, { passive: false });
     canvas.addEventListener('touchend', function () { pinch = null; });
 
+    // 3D hover → highlight body part on 2D canvas
+    var raycaster3D = new THREE.Raycaster();
+    var mouse3D = new THREE.Vector2();
+    canvas.addEventListener('pointermove', function (e) {
+      if (!threeOk || dragging) return;
+      var rect3 = canvas.getBoundingClientRect();
+      mouse3D.x = ((e.clientX - rect3.left) / rect3.width) * 2 - 1;
+      mouse3D.y = -((e.clientY - rect3.top) / rect3.height) * 2 + 1;
+      raycaster3D.setFromCamera(mouse3D, camera);
+      var hits = raycaster3D.intersectObjects(scene.children, true);
+      var found = null;
+      for (var hi = 0; hi < hits.length; hi++) {
+        var obj = hits[hi].object;
+        while (obj && !obj.userData.part) obj = obj.parent;
+        if (obj && obj.userData.part) { found = obj.userData.part; break; }
+      }
+      setHighlightedPart(found);
+    });
+    canvas.addEventListener('pointerleave', function () { setHighlightedPart(null); });
+
     if (window.ResizeObserver) {
       var ro = new ResizeObserver(function () { resize3D(); });
       var stage = document.getElementById('ms3DStage');
@@ -803,6 +1054,86 @@
       reader.readAsDataURL(f);
     });
 
+    if (byId('msZoomIn'))  byId('msZoomIn').addEventListener('click', zoomIn);
+    if (byId('msZoomOut')) byId('msZoomOut').addEventListener('click', zoomOut);
+    if (byId('msStripZoomIn')) byId('msStripZoomIn').addEventListener('click', zoomIn);
+    if (byId('msStripUndo'))   byId('msStripUndo').addEventListener('click', undo);
+
+    // mobile strip tool buttons
+    var stripBtns = document.querySelectorAll('.ms-strip-btn[data-tool]');
+    Array.prototype.forEach.call(stripBtns, function (b) {
+      b.addEventListener('click', function () { setTool(b.getAttribute('data-tool')); syncMobileStrip(); });
+    });
+    // mobile strip color - keep in sync with main color input
+    var mobileColor = byId('msMobileColor');
+    if (mobileColor) {
+      mobileColor.value = state.color;
+      mobileColor.addEventListener('input', function () { setColor(mobileColor.value); });
+    }
+    function syncMobileStrip() {
+      if (!mobileColor) return;
+      mobileColor.value = state.color;
+      Array.prototype.forEach.call(stripBtns, function (b) {
+        b.classList.toggle('on', b.getAttribute('data-tool') === state.tool);
+      });
+    }
+    // also sync when setColor is called from swatches/colorInput
+    var _origSetColor = setColor;
+    setColor = function (hex) { _origSetColor(hex); if (mobileColor) mobileColor.value = hex; };
+    syncMobileStrip();
+
+    var symmBtn = byId('msSymmetryBtn');
+    if (symmBtn) symmBtn.addEventListener('click', function () {
+      state.symmetry = !state.symmetry;
+      symmBtn.classList.toggle('on', state.symmetry);
+      toast(state.symmetry ? 'Symmetry on' : 'Symmetry off');
+    });
+
+    var labelsBtn = byId('msLabelsBtn');
+    if (labelsBtn) labelsBtn.addEventListener('click', function () {
+      state.showLabels = !state.showLabels;
+      labelsBtn.classList.toggle('on', state.showLabels);
+      buildGridCache(); renderOverlay();
+    });
+
+    // Mojang username import
+    var usernameInput = byId('msMojangUser');
+    var fetchBtn = byId('msMojangFetch');
+    if (fetchBtn && usernameInput) {
+      fetchBtn.addEventListener('click', function () {
+        var name = (usernameInput.value || '').trim();
+        if (!name) { toast('Enter a Minecraft username'); return; }
+        fetchBtn.disabled = true;
+        fetchBtn.textContent = 'Loading…';
+        fetch('https://api.mojang.com/users/profiles/minecraft/' + encodeURIComponent(name))
+          .then(function (r) { if (!r.ok) throw new Error('Player not found'); return r.json(); })
+          .then(function (profile) {
+            return fetch('https://sessionserver.mojang.com/session/minecraft/profile/' + profile.id);
+          })
+          .then(function (r) { if (!r.ok) throw new Error('Profile error'); return r.json(); })
+          .then(function (prof) {
+            var prop = prof.properties && prof.properties[0];
+            if (!prop) throw new Error('No skin data');
+            var decoded = JSON.parse(atob(prop.value));
+            var skinUrl = decoded.textures && decoded.textures.SKIN && decoded.textures.SKIN.url;
+            if (!skinUrl) throw new Error('No skin URL');
+            return new Promise(function (resolve, reject) {
+              var img = new Image(); img.crossOrigin = 'anonymous';
+              img.onload = function () { resolve(img); };
+              img.onerror = function () { reject(new Error('Could not load skin image')); };
+              img.src = skinUrl;
+            });
+          })
+          .then(function (img) {
+            importImage(img);
+            toast('Loaded ' + (usernameInput.value || '').trim() + "'s skin");
+          })
+          .catch(function (err) { toast('Could not load: ' + err.message); })
+          .then(function () { fetchBtn.disabled = false; fetchBtn.textContent = 'Load'; },
+                function () { fetchBtn.disabled = false; fetchBtn.textContent = 'Load'; });
+      });
+    }
+
     var gridToggle = byId('msShowGrid');
     if (gridToggle) gridToggle.addEventListener('change', function () {
       state.showGrid = gridToggle.checked; buildGridCache(); renderOverlay();
@@ -831,6 +1162,22 @@
       else if (e.key === 'e') setTool('eraser');
       else if (e.key === 'f') setTool('fill');
       else if (e.key === 'i') setTool('eyedropper');
+      else if (e.key === '[') setBrush(Math.max(1, state.brush - 1));
+      else if (e.key === ']') setBrush(Math.min(4, state.brush + 1));
+      else if (e.key === '+' || e.key === '=') zoomIn();
+      else if (e.key === '-' || e.key === '_') zoomOut();
+      else if (e.key === 's') {
+        state.symmetry = !state.symmetry;
+        var sb = document.getElementById('msSymmetryBtn');
+        if (sb) sb.classList.toggle('on', state.symmetry);
+        toast(state.symmetry ? 'Symmetry on' : 'Symmetry off');
+      }
+      else if (e.key === 'l') {
+        state.showLabels = !state.showLabels;
+        var lb = document.getElementById('msLabelsBtn');
+        if (lb) lb.classList.toggle('on', state.showLabels);
+        buildGridCache(); renderOverlay();
+      }
     });
   }
 
@@ -857,15 +1204,17 @@
 
   // ---- boot ---------------------------------------------------------------
   function boot() {
+    initPartGroups();
+    loadZoom();
     wire();
     init3DControls();
     init3D();
+    applyZoom(); // resize canvases to stored zoom level before first render
     var hadSaved = loadSkin();
     if (!hadSaved) { templateClassic(); renderAll(); }
     renderAll();
     updateUndoButtons();
     initGuide();
-    // Keep the 3D canvas sized once fonts/layout settle.
     setTimeout(resize3D, 400);
   }
 
