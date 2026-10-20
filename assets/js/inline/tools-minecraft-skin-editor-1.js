@@ -49,13 +49,29 @@
     showOverlay: true,
     autoRotate: true,
     symmetry: false,
-    showLabels: false
+    showLabels: false,
+    walkAnim: false
   };
   var LS_KEY = 'jvds_minecraft_skin';
   var alexModel = false;
   var colorHistory = [];
   var MAX_HISTORY = 8;
   var partClipboard = null;
+
+  // ---- view pan / zoom (canvas viewport) -------------------------------------
+  var viewScale = 1, viewPanX = 0, viewPanY = 0;
+  var _vpPanning = false, _vpPanLast = { x: 0, y: 0 };
+  var _pinchDist0 = null, _pinchScale0 = 1;
+
+  // ---- 3D limb pivot refs (for walk animation) --------------------------------
+  var _rArmPivot = null, _lArmPivot = null;
+  var _rLegPivot = null, _lLegPivot = null;
+
+  // ---- named skin gallery -----------------------------------------------------
+  var SKIN_SLOTS = 8;
+  var LS_SLOTS_KEY = 'jvds_mc_skins';
+  var skinSlots = [];
+  var skinModalOpen = false;
 
   // ---- zoom ---------------------------------------------------------------
   var ZOOM_STEPS = [4, 8, 16, 32];
@@ -130,6 +146,78 @@
   }
   function rgbToHex(r, g, b) {
     return '#' + [r, g, b].map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join('');
+  }
+
+  // ---- HSL helpers -----------------------------------------------------------
+  function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b);
+    var h = 0, s = 0, l = (max + min) / 2;
+    if (max !== min) {
+      var d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+  }
+
+  function hslToRgb(h, s, l) {
+    h /= 360; s /= 100; l /= 100;
+    var r, g, b;
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      var hue2rgb = function (p, q, t) {
+        if (t < 0) t += 1; if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+      var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      var p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+  }
+
+  function updateSliderGradients(h, s, l) {
+    var satEl = document.getElementById('msSat');
+    var litEl = document.getElementById('msLit');
+    if (satEl) {
+      var c0 = hslToRgb(h, 0, l), c1 = hslToRgb(h, 100, l);
+      satEl.style.background = 'linear-gradient(to right,rgb(' + c0 + '),rgb(' + c1 + '))';
+    }
+    if (litEl) {
+      var cl = hslToRgb(h, s, 0), cm = hslToRgb(h, s, 50), cr = hslToRgb(h, s, 100);
+      litEl.style.background = 'linear-gradient(to right,rgb(' + cl + '),rgb(' + cm + '),rgb(' + cr + '))';
+    }
+  }
+
+  function updateHslSliders() {
+    if (!state.rgba || state.rgba[3] === 0) return;
+    var hsl = rgbToHsl(state.rgba[0], state.rgba[1], state.rgba[2]);
+    var hueEl = document.getElementById('msHue');
+    var satEl = document.getElementById('msSat');
+    var litEl = document.getElementById('msLit');
+    var hexEl = document.getElementById('msHexInput');
+    if (hueEl) hueEl.value = hsl[0];
+    if (satEl) satEl.value = hsl[1];
+    if (litEl) litEl.value = hsl[2];
+    if (hexEl) hexEl.value = state.color.toUpperCase();
+    var hv = document.getElementById('msHueVal');
+    var sv = document.getElementById('msSatVal');
+    var lv = document.getElementById('msLitVal');
+    if (hv) hv.textContent = hsl[0];
+    if (sv) sv.textContent = hsl[1];
+    if (lv) lv.textContent = hsl[2];
+    updateSliderGradients(hsl[0], hsl[1], hsl[2]);
   }
 
   // ---- drawing ------------------------------------------------------------
@@ -563,6 +651,177 @@
     });
   }
 
+  // ---- view pan / zoom -------------------------------------------------------
+  function applyViewTransform() {
+    var wrap = document.getElementById('msCanvasWrap');
+    if (!wrap) return;
+    wrap.style.transform = 'translate(' + viewPanX + 'px,' + viewPanY + 'px) scale(' + viewScale + ')';
+  }
+
+  function clampPan() {
+    if (viewScale <= 1) { viewPanX = 0; viewPanY = 0; return; }
+    var stage = document.getElementById('msPaintStage');
+    if (!stage) return;
+    var hw = stage.clientWidth  * (viewScale - 1) / 2;
+    var hh = stage.clientHeight * (viewScale - 1) / 2;
+    viewPanX = Math.max(-hw, Math.min(hw, viewPanX));
+    viewPanY = Math.max(-hh, Math.min(hh, viewPanY));
+  }
+
+  function setViewScale(s, ox, oy) {
+    var stage = document.getElementById('msPaintStage');
+    var sw = stage ? stage.clientWidth  : 300;
+    var sh = stage ? stage.clientHeight : 300;
+    ox = (ox !== undefined) ? ox : sw / 2;
+    oy = (oy !== undefined) ? oy : sh / 2;
+    var old = viewScale;
+    viewScale = Math.max(1, Math.min(8, s));
+    var ratio = viewScale / old;
+    viewPanX = (ox - sw / 2) * (1 - ratio) + ratio * viewPanX;
+    viewPanY = (oy - sh / 2) * (1 - ratio) + ratio * viewPanY;
+    if (viewScale <= 1) { viewPanX = 0; viewPanY = 0; }
+    clampPan();
+    applyViewTransform();
+    var rvBtn = document.getElementById('msViewReset');
+    if (rvBtn) rvBtn.style.display = viewScale > 1 ? '' : 'none';
+  }
+
+  function initCanvasPanZoom() {
+    var stage = document.getElementById('msPaintStage');
+    if (!stage) return;
+
+    // Ctrl+scroll → view zoom
+    stage.addEventListener('wheel', function (e) {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      var rect = stage.getBoundingClientRect();
+      setViewScale(viewScale * (e.deltaY > 0 ? 0.8 : 1.25), e.clientX - rect.left, e.clientY - rect.top);
+    }, { passive: false });
+
+    // Right-click drag → pan
+    stage.addEventListener('pointerdown', function (e) {
+      if (e.button !== 2) return;
+      e.preventDefault();
+      _vpPanning = true;
+      _vpPanLast.x = e.clientX; _vpPanLast.y = e.clientY;
+      try { stage.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    stage.addEventListener('pointermove', function (e) {
+      if (!_vpPanning) return;
+      viewPanX += e.clientX - _vpPanLast.x;
+      viewPanY += e.clientY - _vpPanLast.y;
+      _vpPanLast.x = e.clientX; _vpPanLast.y = e.clientY;
+      clampPan(); applyViewTransform();
+    });
+    stage.addEventListener('pointerup',   function (e) { if (e.button === 2) _vpPanning = false; });
+    stage.addEventListener('pointercancel', function () { _vpPanning = false; });
+    stage.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+    // Two-finger pinch on canvas → view zoom/pan
+    stage.addEventListener('touchstart', function (e) {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        _pinchDist0  = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        _pinchScale0 = viewScale;
+      }
+    }, { passive: false });
+    stage.addEventListener('touchmove', function (e) {
+      if (e.touches.length !== 2 || _pinchDist0 === null) return;
+      e.preventDefault();
+      var d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      var rect = stage.getBoundingClientRect();
+      var midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+      var midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+      setViewScale(_pinchScale0 * (d / _pinchDist0), midX, midY);
+    }, { passive: false });
+    stage.addEventListener('touchend', function () { _pinchDist0 = null; });
+  }
+
+  // ---- named skin gallery ----------------------------------------------------
+  function loadSkinSlots() {
+    try {
+      var s = localStorage.getItem(LS_SLOTS_KEY);
+      if (s) skinSlots = JSON.parse(s).slice(0, SKIN_SLOTS);
+    } catch (e) { skinSlots = []; }
+  }
+  function saveSkinSlots() {
+    try { localStorage.setItem(LS_SLOTS_KEY, JSON.stringify(skinSlots)); } catch (e) {}
+  }
+  function saveToSlot(name, slotIdx) {
+    syncOffscreen();
+    var url = off.toDataURL('image/png');
+    if (slotIdx >= 0 && slotIdx < skinSlots.length) {
+      skinSlots[slotIdx].url = url;
+      skinSlots[slotIdx].name = name;
+    } else {
+      if (skinSlots.length >= SKIN_SLOTS) skinSlots.shift();
+      skinSlots.push({ name: name, url: url });
+    }
+    saveSkinSlots();
+    renderSkinGallery();
+    toast('Saved to gallery');
+  }
+  function loadFromSlot(slotIdx) {
+    if (!skinSlots[slotIdx]) return;
+    var img = new Image();
+    img.onload = function () { importImage(img); };
+    img.src = skinSlots[slotIdx].url;
+    closeSkinModal();
+  }
+  function deleteSlot(slotIdx) {
+    skinSlots.splice(slotIdx, 1);
+    saveSkinSlots();
+    renderSkinGallery();
+  }
+  function renderSkinGallery() {
+    var grid = document.getElementById('msSkinGalleryGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    skinSlots.forEach(function (slot, i) {
+      var card = document.createElement('div');
+      card.className = 'ms-skin-slot';
+      var img = document.createElement('img');
+      img.src = slot.url; img.width = 64; img.height = 64;
+      var nameIn = document.createElement('input');
+      nameIn.type = 'text'; nameIn.className = 'ms-text-input'; nameIn.value = slot.name;
+      nameIn.addEventListener('change', function () { skinSlots[i].name = nameIn.value; saveSkinSlots(); });
+      var btns = document.createElement('div');
+      btns.className = 'ms-grid2'; btns.style.marginTop = '6px';
+      var lb = document.createElement('button');
+      lb.className = 'ms-btn primary'; lb.textContent = 'Load'; lb.type = 'button';
+      lb.addEventListener('click', function () { loadFromSlot(i); });
+      var db = document.createElement('button');
+      db.className = 'ms-btn danger'; db.textContent = 'Del'; db.type = 'button';
+      db.addEventListener('click', function () { deleteSlot(i); });
+      btns.appendChild(lb); btns.appendChild(db);
+      card.appendChild(img); card.appendChild(nameIn); card.appendChild(btns);
+      grid.appendChild(card);
+    });
+    if (skinSlots.length < SKIN_SLOTS) {
+      var newCard = document.createElement('div');
+      newCard.className = 'ms-skin-slot ms-skin-new';
+      var sb = document.createElement('button');
+      sb.className = 'ms-btn primary'; sb.textContent = '+ Save current skin';
+      sb.type = 'button'; sb.style.width = '100%';
+      sb.addEventListener('click', function () {
+        var n = prompt('Name this skin:', 'Skin ' + (skinSlots.length + 1));
+        if (n !== null) saveToSlot(n || ('Skin ' + (skinSlots.length + 1)), -1);
+      });
+      newCard.appendChild(sb);
+      grid.appendChild(newCard);
+    }
+  }
+  function openSkinModal() {
+    loadSkinSlots();
+    renderSkinGallery();
+    var m = document.getElementById('msSkinModal');
+    if (m) { m.classList.add('open'); skinModalOpen = true; }
+  }
+  function closeSkinModal() {
+    var m = document.getElementById('msSkinModal');
+    if (m) { m.classList.remove('open'); skinModalOpen = false; }
+  }
+
   var hover = { x: -1, y: -1 };
   function renderOverlay() {
     var px = effectiveScale();
@@ -676,6 +935,7 @@
     highlightSwatch(hex);
     if (state.tool === 'eraser' || state.tool === 'eyedropper') setTool('pencil');
     addToHistory(hex);
+    updateHslSliders();
   }
   function highlightSwatch(hex) {
     if (!swatchWrap) return;
@@ -981,7 +1241,7 @@
   var _player = null;
   var _baseMat = null;
   var _overMat = null;
-  var _armMeshes = []; // [RARM inner, LARM inner, RARM_OUT, LARM_OUT]
+  var _armMeshes = [];
 
   function updateTexture() {
     if (!threeOk) return;
@@ -1042,10 +1302,14 @@
     addBox(8.5, 8.5, 8.5, 0, 28, 0, HAT, _overMat, 'HAT');
     addBox(8, 12, 4, 0, 18, 0, BODY, _baseMat, 'BODY');
     addBox(8.25, 12.25, 4.25, 0, 18, 0, JACKET, _overMat, 'JACKET');
-    addBox(4, 12, 4, 2, 6, 0, RLEG, _baseMat, 'RLEG');
-    addBox(4, 12, 4, -2, 6, 0, LLEG, _baseMat, 'LLEG');
-    addBox(4.25, 12.25, 4.25, 2, 6, 0, RLEG_OUT, _overMat, 'RLEG_OUT');
-    addBox(4.25, 12.25, 4.25, -2, 6, 0, LLEG_OUT, _overMat, 'LLEG_OUT');
+    // Leg pivots at hip joint (y=12 = bottom of body) for walk animation
+    _rLegPivot = new THREE.Group(); _rLegPivot.position.set( 2, 12, 0); _player.add(_rLegPivot);
+    _lLegPivot = new THREE.Group(); _lLegPivot.position.set(-2, 12, 0); _player.add(_lLegPivot);
+    function mkLeg(geo, mat, part) { var m = new THREE.Mesh(geo, mat); m.userData.part = part; return m; }
+    _rLegPivot.add(mkLeg(makeBox(4,    12,    4,    0, -6, 0, RLEG),     _baseMat, 'RLEG'));
+    _lLegPivot.add(mkLeg(makeBox(4,    12,    4,    0, -6, 0, LLEG),     _baseMat, 'LLEG'));
+    _rLegPivot.add(mkLeg(makeBox(4.25, 12.25, 4.25, 0, -6, 0, RLEG_OUT), _overMat, 'RLEG_OUT'));
+    _lLegPivot.add(mkLeg(makeBox(4.25, 12.25, 4.25, 0, -6, 0, LLEG_OUT), _overMat, 'LLEG_OUT'));
     // arms are built separately so they can be swapped on Alex/Steve toggle
     _buildArmMeshes();
 
@@ -1061,21 +1325,37 @@
 
   function _buildArmMeshes() {
     if (!_player || !_baseMat || !_overMat) return;
-    _armMeshes.forEach(function (m) { _player.remove(m); if (m.geometry) m.geometry.dispose(); });
+    // Dispose old arm meshes and pivot groups
+    _armMeshes.forEach(function (m) {
+      if (m.parent) m.parent.remove(m);
+      if (m.geometry) m.geometry.dispose();
+    });
     _armMeshes = [];
+    if (_rArmPivot) { _player.remove(_rArmPivot); _rArmPivot = null; }
+    if (_lArmPivot) { _player.remove(_lArmPivot); _lArmPivot = null; }
+
     var w = alexModel ? 3 : 4;
-    var ox = alexModel ? 5.5 : 6; // arm center x offset (body_half + arm_half)
+    var ox = alexModel ? 5.5 : 6;
     var rUV = alexModel ? RARM_ALEX : RARM;
     var lUV = alexModel ? LARM_ALEX : LARM;
     var rOutW = w + 0.25;
+
+    // Pivot at shoulder joint (y=24 = body top) so arm can swing around it
+    _rArmPivot = new THREE.Group(); _rArmPivot.position.set(ox, 24, 0);
+    _lArmPivot = new THREE.Group(); _lArmPivot.position.set(-ox, 24, 0);
+    _player.add(_rArmPivot); _player.add(_lArmPivot);
+
     function mkMesh(geo, mat, part) {
       var m = new THREE.Mesh(geo, mat); m.userData.part = part; return m;
     }
-    var rm  = mkMesh(makeBox(w, 12, 4, ox, 18, 0, rUV), _baseMat, 'RARM');
-    var lm  = mkMesh(makeBox(w, 12, 4, -ox, 18, 0, lUV), _baseMat, 'LARM');
-    var rom = mkMesh(makeBox(rOutW, 12.25, 4.25, ox, 18, 0, RARM_OUT), _overMat, 'RARM_OUT');
-    var lom = mkMesh(makeBox(rOutW, 12.25, 4.25, -ox, 18, 0, LARM_OUT), _overMat, 'LARM_OUT');
-    [rm, lm, rom, lom].forEach(function (m) { _player.add(m); _armMeshes.push(m); });
+    // Arms positioned at (0,-6,0) local to pivot so center is 6 below shoulder
+    var rm  = mkMesh(makeBox(w,     12,    4,    0, -6, 0, rUV),     _baseMat, 'RARM');
+    var lm  = mkMesh(makeBox(w,     12,    4,    0, -6, 0, lUV),     _baseMat, 'LARM');
+    var rom = mkMesh(makeBox(rOutW, 12.25, 4.25, 0, -6, 0, RARM_OUT), _overMat, 'RARM_OUT');
+    var lom = mkMesh(makeBox(rOutW, 12.25, 4.25, 0, -6, 0, LARM_OUT), _overMat, 'LARM_OUT');
+    _rArmPivot.add(rm); _rArmPivot.add(rom);
+    _lArmPivot.add(lm); _lArmPivot.add(lom);
+    _armMeshes = [rm, lm, rom, lom];
   }
   function rebuildArms() {
     if (!threeOk) return;
@@ -1115,8 +1395,25 @@
     if (!threeOk) return;
     var now = t || 0;
     if (state.autoRotate && !dragging) pivot.rotation.y += 0.008;
-    // gentle bob so the model does not look frozen
     if (state.autoRotate) pivot.position.y = 16 + Math.sin(now * 0.0018) * 0.35;
+    // Walk animation - arms and legs swing in opposite phase
+    if (state.walkAnim) {
+      var ta = now * 0.003, amp = 0.6;
+      if (_rArmPivot) _rArmPivot.rotation.x =  Math.sin(ta) * amp;
+      if (_lArmPivot) _lArmPivot.rotation.x = -Math.sin(ta) * amp;
+      if (_rLegPivot) _rLegPivot.rotation.x = -Math.sin(ta) * amp;
+      if (_lLegPivot) _lLegPivot.rotation.x =  Math.sin(ta) * amp;
+    } else {
+      // Ease limbs back to rest
+      if (_rArmPivot && Math.abs(_rArmPivot.rotation.x) > 0.001) _rArmPivot.rotation.x *= 0.85;
+      else if (_rArmPivot) _rArmPivot.rotation.x = 0;
+      if (_lArmPivot && Math.abs(_lArmPivot.rotation.x) > 0.001) _lArmPivot.rotation.x *= 0.85;
+      else if (_lArmPivot) _lArmPivot.rotation.x = 0;
+      if (_rLegPivot && Math.abs(_rLegPivot.rotation.x) > 0.001) _rLegPivot.rotation.x *= 0.85;
+      else if (_rLegPivot) _rLegPivot.rotation.x = 0;
+      if (_lLegPivot && Math.abs(_lLegPivot.rotation.x) > 0.001) _lLegPivot.rotation.x *= 0.85;
+      else if (_lLegPivot) _lLegPivot.rotation.x = 0;
+    }
     renderer.render(scene, camera);
   }
 
@@ -1329,6 +1626,63 @@
       });
     }
 
+    // Walk animation toggle
+    var walkToggle = byId('msWalkAnim');
+    if (walkToggle) walkToggle.addEventListener('change', function () { state.walkAnim = walkToggle.checked; });
+
+    // View pan/zoom: reset button
+    if (byId('msViewReset')) byId('msViewReset').addEventListener('click', function () {
+      viewScale = 1; viewPanX = 0; viewPanY = 0;
+      applyViewTransform();
+      byId('msViewReset').style.display = 'none';
+    });
+
+    // HSL sliders
+    var hueEl2  = byId('msHue'), satEl2 = byId('msSat'), litEl2 = byId('msLit');
+    var hexEl2  = byId('msHexInput');
+    var hueValEl = byId('msHueVal'), satValEl = byId('msSatVal'), litValEl = byId('msLitVal');
+    function fromHsl() {
+      var h = +(hueEl2 ? hueEl2.value : 0);
+      var s = +(satEl2 ? satEl2.value : 100);
+      var l = +(litEl2 ? litEl2.value : 50);
+      if (hueValEl) hueValEl.textContent = h;
+      if (satValEl) satValEl.textContent = s;
+      if (litValEl) litValEl.textContent = l;
+      var rgb = hslToRgb(h, s, l);
+      var hex = rgbToHex(rgb[0], rgb[1], rgb[2]);
+      state.color = hex;
+      state.rgba  = [rgb[0], rgb[1], rgb[2], 255];
+      if (colorInput) colorInput.value = hex;
+      if (colorVal)   colorVal.textContent = hex.toUpperCase();
+      if (hexEl2)     hexEl2.value = hex.toUpperCase();
+      highlightSwatch(hex);
+      if (state.tool === 'eraser' || state.tool === 'eyedropper') setTool('pencil');
+      addToHistory(hex);
+      updateSliderGradients(h, s, l);
+      var mc = byId('msMobileColor');
+      if (mc) mc.value = hex;
+    }
+    if (hueEl2) hueEl2.addEventListener('input', fromHsl);
+    if (satEl2) satEl2.addEventListener('input', fromHsl);
+    if (litEl2) litEl2.addEventListener('input', fromHsl);
+    if (hexEl2) hexEl2.addEventListener('change', function () {
+      var v = hexEl2.value.trim().replace('#', '');
+      if (/^[0-9a-f]{6}$/i.test(v) || /^[0-9a-f]{3}$/i.test(v)) setColor('#' + v.toLowerCase());
+    });
+    if (hexEl2) hexEl2.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') hexEl2.dispatchEvent(new Event('change'));
+    });
+
+    // Skin gallery
+    if (byId('msSkinGalleryBtn')) byId('msSkinGalleryBtn').addEventListener('click', openSkinModal);
+    var skinModal2 = document.getElementById('msSkinModal');
+    if (skinModal2) skinModal2.addEventListener('click', function (e) { if (e.target === skinModal2) closeSkinModal(); });
+    if (byId('msSkinModalClose')) byId('msSkinModalClose').addEventListener('click', closeSkinModal);
+    if (byId('msSkinModalSave')) byId('msSkinModalSave').addEventListener('click', function () {
+      var n = prompt('Name this skin:', 'Skin ' + (skinSlots.length + 1));
+      if (n !== null) saveToSlot(n || ('Skin ' + (skinSlots.length + 1)), -1);
+    });
+
     var gridToggle = byId('msShowGrid');
     if (gridToggle) gridToggle.addEventListener('change', function () {
       state.showGrid = gridToggle.checked; buildGridCache(); renderOverlay();
@@ -1349,6 +1703,7 @@
     if (modal) modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && modal && modal.classList.contains('open')) closeModal();
+      else if (e.key === 'Escape' && skinModalOpen) closeSkinModal();
       var tag = (e.target && e.target.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea') return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
@@ -1403,8 +1758,11 @@
     loadZoom();
     loadAlexPref();
     loadColorHistory();
+    loadSkinSlots();
     wire();
     renderColorHistory();
+    updateHslSliders();
+    initCanvasPanZoom();
     init3DControls();
     init3D();
     applyZoom(); // resize canvases to stored zoom level before first render
