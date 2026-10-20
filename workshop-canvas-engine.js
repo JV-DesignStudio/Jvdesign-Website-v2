@@ -332,6 +332,7 @@ var LIVE_CSS = '<style id="cw-live-style">' +
   '.cw-remix{margin-top:14px;padding:12px 14px;border-radius:11px;background:rgba(74,222,128,.08);' +
   'border:1px solid rgba(74,222,128,.28);font-size:.82rem;color:#e8eaf2;line-height:1.5}' +
   '.cw-remix strong{color:#4ade80}' +
+  '.cw-remix a{color:#4ade80;font-weight:700}' +
   '</style>';
 function ensureLiveStyle() {
   try { if (!document.getElementById('cw-live-style') && document.head) document.head.insertAdjacentHTML('beforeend', LIVE_CSS); } catch (e) {}
@@ -383,7 +384,8 @@ function offerRemix() {
   var box = document.createElement('div');
   box.className = 'cw-remix';
   box.innerHTML = '<strong>Make it your own.</strong> You built the whole game. Change any number or colour, ' +
-    'then use <em>Download My Game</em> (or the project export) to keep your version. Every build-along can become a different game.';
+    'then use <em>Download My Game</em> (or the project export) to keep your version. Every build-along can become a different game. ' +
+    '<a href="/me.html">See this in My Studio &rarr;</a>';
   panel.appendChild(box);
 }
 
@@ -828,10 +830,64 @@ function hasUnfilled(code) {
   return /\?{2,}|_{3,}/.test(code);
 }
 
+/* ── CSP-safe learner-code execution (A1786) ────────────────────────────────
+ * cwBlobWrap(presetup, blobSrc, afterBlob) builds a complete srcdoc HTML page
+ * that runs learner code as a blob: <script> instead of eval().
+ *
+ * WHY blob instead of eval:
+ *   eval() requires unsafe-eval in CSP. The existing canvas-preview.html
+ *   sidesteps this by having no CSP at all. That works on GitHub Pages (which
+ *   ignores _headers) but breaks on any host that sends a strict CSP, because
+ *   a srcdoc/blob frame inherits the parent page's policy.
+ *
+ *   blob: URLs are already allowed by  script-src 'self' blob:  (the global
+ *   CSP). Delivering learner code as a <script src="blob:..."> is therefore
+ *   both CSP-safe and host-portable.
+ *
+ * HOW it works:
+ *   presetup  - plain JS string: global vars, canvas/ctx setup. Runs first in
+ *               a <script> block (part of the template, not learner-authored).
+ *   blobSrc   - learner code string: delivered as a separate blob script that
+ *               runs in the iframe's global scope (can read/write all vars
+ *               declared with var in presetup).
+ *               For steps where the learner fills in an in-loop update, wrap
+ *               the code as: 'window.cwStep=function(){' + userCode + '};'
+ *               and call cwStep() in afterBlob's game loop.
+ *   afterBlob - plain JS string: game loop + requestAnimationFrame. Runs after
+ *               the blob loads (or after a syntax-error in blobSrc is caught).
+ *
+ * Syntax errors in blobSrc surface via the script's onerror event; the
+ * surrounding template code is never affected and the game loop still starts.
+ * This is the key improvement over the splice-based approach (A1722 probe):
+ * splicing user code inline makes a syntax error a parse-time failure of the
+ * entire template script, which the surrounding try/catch cannot handle.
+ *
+ * Migration: replace every  try{eval(JSON.stringify(cppToJs(u)))}catch(e){}
+ * occurrence in the per-workshop canvas JS files with the cwBlobWrap pattern.
+ * See workshops-cpp-breakout-canvas-1.js for the reference implementation.
+ * ─────────────────────────────────────────────────────────────────────────── */
+window.cwBlobWrap = function cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob) {
+  // JSON.stringify gives a valid JS string literal (escaped newlines, quotes, etc.)
+  // Replace </ to avoid premature </script> tag matching in the HTML parser.
+  var blobLiteral = JSON.stringify(blobSrc).replace(/<\//g, '<\\/');
+  var loader =
+    'var _cb=new Blob([' + blobLiteral + '],{type:"text/javascript"});' +
+    'var _cu=URL.createObjectURL(_cb);' +
+    'var _cs=document.createElement("script");_cs.src=_cu;' +
+    '_cs.onload=function(){URL.revokeObjectURL(_cu);(function(){' + afterBlob + '})();};' +
+    '_cs.onerror=function(){URL.revokeObjectURL(_cu);console.error("cwBlobWrap: user code error");(function(){' + afterBlob + '})();};' +
+    'document.head.appendChild(_cs);';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+    '</head><body>' + CANVAS_TAG + '<script>' + presetup + loader + '</script></body></html>';
+}
+
 /* The live preview runs inside assets/canvas-preview.html, a same-origin host
    with no Content-Security-Policy of its own. A srcdoc (or blob) frame inherits
    this page's CSP, which blocks the inline game scripts and shows a blank
-   canvas; the host sidesteps that while keeping the sandboxed stage. */
+   canvas; the host sidesteps that while keeping the sandboxed stage.
+   Workshops migrated to cwBlobWrap no longer need unsafe-eval; once all
+   workshops are migrated, canvas-preview.html can be served with a strict CSP
+   (script-src 'self' blob:) making previews host-portable (A1722). */
 var PREVIEW_RUNNER = '/assets/canvas-preview.html';
 var previewReady = false;
 

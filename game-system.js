@@ -1667,6 +1667,7 @@ if (typeof document !== 'undefined') {
         '<button type="button" data-arcade-action="help" role="menuitem">? How to play</button>'+ 
         '<button type="button" data-arcade-action="fullscreen" role="menuitem">⛶ Fullscreen</button>'+ 
         '<button type="button" data-arcade-action="share" role="menuitem">↗ Share game</button>'+
+        '<a href="../me.html" role="menuitem">★ My Studio</a>'+
         '<a href="../arcade.html" role="menuitem">← Back to Arcade</a>'+ 
       '</div>';
     document.body.appendChild(root);

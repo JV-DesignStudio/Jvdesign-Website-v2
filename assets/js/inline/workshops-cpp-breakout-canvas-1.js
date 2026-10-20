@@ -84,9 +84,13 @@ var SERVE_FN = 'function serve(){bx=295;by=300;bvx=3*(Math.random()<0.5?1:-1);bv
 
 var REBUILD_BRICKS = 'function rebuildBricks(){bricks=[];for(var r=0;r<brickRows;r++){for(var c=0;c<brickCols;c++){bricks.push({x:c*(brickW+brickPad)+14,y:r*(brickH+brickPad)+brickTop,w:brickW,h:brickH,alive:true,row:r})}}}';
 
-function wrap(code) {
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
-    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
+/* Reference implementation of cwBlobWrap pattern (A1786).
+ * Steps where user code runs once before the loop use blobSrc = cppToJs(u).
+ * Steps where user code runs every frame use blobSrc = 'window.cwStep=function(){'+cppToJs(u)+'};'
+ * and the afterBlob game-loop calls cwStep() in place of the old eval().
+ * cwBlobWrap is defined in workshop-canvas-engine.js. */
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
 }
 
 /* ===================================================
@@ -108,9 +112,10 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + KEYS +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+      // user code runs once before loop: sets paddle var values
+      return wbWrap(
+        SETUP + PADDLE_VARS + KEYS,
+        cppToJs(u),
         'function loop(){' +
         MOVE_PADDLE +
         DRAW_BG + DRAW_PADDLE +
@@ -118,32 +123,37 @@ window.CW_CONFIG = {
       );
     },
     2: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+      // user code runs every frame: defines in-loop movement
+      return wbWrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_PADDLE +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+      // user code runs every frame: paddle rebound logic
+      return wbWrap(
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_PADDLE +
         BALL_MOVE + WALL_BOUNCE +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        'if(window.cwStep)cwStep();' +
         'if(by>410){bx=295;by=300;bvx=3*(Math.random()<0.5?1:-1);bvy=-3}' +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
-      return wrap(
+      // user code runs once before loop: sets up brick layout vars
+      return wbWrap(
         SETUP + PADDLE_VARS + BALL_VARS + KEYS +
-        BRICK_SETUP +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        BRICK_SETUP,
+        cppToJs(u),
         'function loop(){' +
         MOVE_PADDLE +
         BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
@@ -153,31 +163,35 @@ window.CW_CONFIG = {
       );
     },
     5: function(u) {
-      return wrap(
+      // user code runs every frame: brick collision
+      return wbWrap(
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + KEYS +
         BRICK_SETUP +
-        SERVE_FN +
+        SERVE_FN,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_PADDLE +
         BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        'if(window.cwStep)cwStep();' +
         'if(by>410){lives--;serve();if(lives<=0){bx=-100;by=-100}}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PADDLE + DRAW_BALL + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
-      return wrap(
+      // user code runs every frame: win/lose state transitions
+      return wbWrap(
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + STATE_VARS + KEYS +
         BRICK_SETUP +
         SERVE_FN + REBUILD_BRICKS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState!=="play"){rebuildBricks();score=0;lives=3;serve();gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState!=="play"){rebuildBricks();score=0;lives=3;serve();gameState="play"}});',
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PADDLE +
         BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
         BRICK_COLLISION +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PADDLE + DRAW_BALL + DRAW_SCORE +
         'if(gameState==="win"){ctx.fillStyle="#4ade80";ctx.font="bold 36px monospace";ctx.textAlign="center";' +

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /*
- * validate-css.js , detects inline <style> blocks that fail to parse.
+ * validate-css.js - detects inline <style> blocks that fail to parse, and
+ * enforces the CSS sprawl gate (A1637): blocks new bespoke style-*.css files
+ * and new hardcoded hex values in inline <style> blocks.
  *
  * Brace corruption (a rule missing its closing "}") makes the browser silently
  * collapse or drop most of a stylesheet, so a page renders with no theme while
  * looking fine to a static check. This loads every page in a headless browser
  * (ground truth) and flags any inline <style> whose parsed rule count is far
- * below the number of rule-opening braces in its source , the signature of the
+ * below the number of rule-opening braces in its source - the signature of the
  * mugen-workshop / mugen-ai-workshop corruption.
  *
  * A purely static brace count is NOT reliable here: pages with large inline
@@ -28,6 +30,70 @@ const { IGNORE_DIRS } = require('./scripts/lib/paths');
 const ROOT = __dirname;
 const PORT = 0; // random available port, never collides with another run
 const CONCURRENCY = 5;
+
+/* ── Sprawl gate (A1637) ────────────────────────────────────────────────────
+ * css-gate-baseline.json records the allowed set of bespoke style-*.css files
+ * and the ceiling on unique hex values in inline <style> blocks.
+ * Any PR that adds a new style-*.css file not in that list, or pushes the
+ * inline hex count above the ceiling, fails the build here.
+ * To legitimately add a new stylesheet or token, run:
+ *   node scripts/update-css-baseline.js
+ * and commit the updated baseline alongside the new file.
+ * ────────────────────────────────────────────────────────────────────────── */
+function runSprawlGate(pages) {
+  const baselinePath = path.join(ROOT, 'css-gate-baseline.json');
+  if (!fs.existsSync(baselinePath)) return; // skip if baseline not yet created
+  const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
+  const allowedSheets = new Set(baseline.bespoke_stylesheets || []);
+  const hexCeiling = baseline.inline_hex_unique_count || 0;
+
+  // Check for new bespoke style-*.css files
+  const cssProblems = [];
+  function walkCss(dir) {
+    for (const e of fs.readdirSync(dir, {withFileTypes:true})) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) { if (!IGNORE_DIRS.has(e.name)) walkCss(full); continue; }
+      const assetsPath = path.sep + 'assets' + path.sep + 'css' + path.sep;
+      if (/^style-.+\.css$/.test(e.name) && !full.includes(assetsPath)) {
+        const rel = path.relative(ROOT, full).split(path.sep).join('/');
+        if (!allowedSheets.has(rel)) cssProblems.push(rel);
+      }
+    }
+  }
+  walkCss(ROOT);
+
+  // Count inline hex values
+  const hexSet = new Set();
+  const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/g;
+  const HEX = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g;
+  for (const fp of pages) {
+    const src = fs.readFileSync(fp, 'utf8');
+    let m;
+    styleRe.lastIndex = 0;
+    while ((m = styleRe.exec(src))) {
+      HEX.lastIndex = 0;
+      let h;
+      while ((h = HEX.exec(m[1]))) hexSet.add(h[0].toLowerCase());
+    }
+  }
+
+  const gateProblems = [];
+  if (cssProblems.length) {
+    gateProblems.push(`${cssProblems.length} new bespoke stylesheet(s) not in css-gate-baseline.json:`);
+    cssProblems.forEach(f => gateProblems.push('  ' + f));
+    gateProblems.push('  Run: node scripts/update-css-baseline.js  to allowlist after review.');
+  }
+  if (hexSet.size > hexCeiling) {
+    gateProblems.push(`Inline hex count rose from ${hexCeiling} to ${hexSet.size} (+${hexSet.size - hexCeiling}).`);
+    gateProblems.push('  Use --jv-* tokens from assets/css/tokens.css instead of raw hex.');
+    gateProblems.push('  Run: node scripts/update-css-baseline.js  if the new hex is intentional.');
+  }
+  if (gateProblems.length) {
+    console.log(`✗ validate-css sprawl gate: ${gateProblems.length > 1 ? 'multiple issues' : '1 issue'}:\n`);
+    gateProblems.forEach(p => console.log('  ' + p));
+    process.exit(1);
+  }
+}
 const IGNORE = IGNORE_DIRS;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif',
@@ -96,6 +162,7 @@ function staticStyleChecks(css) {
 (async () => {
   // ── Static pre-pass (fast, no browser) ──
   const pages = walk(ROOT);
+  runSprawlGate(pages);
   const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/g;
   const staticBroken = [];
   for (const fp of pages) {
