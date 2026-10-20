@@ -28,7 +28,7 @@ let failures = 0;
 const adoption = {};
 for (const opt of OPTIONAL) adoption[opt] = [];
 
-console.log(`Engine adoption gate — ${gameFiles.length} cabinet(s) in registry\n`);
+console.log(`Engine adoption gate - ${gameFiles.length} cabinet(s) in registry\n`);
 
 for (const file of gameFiles) {
   const htmlPath = path.join(GAMES_DIR, file);
