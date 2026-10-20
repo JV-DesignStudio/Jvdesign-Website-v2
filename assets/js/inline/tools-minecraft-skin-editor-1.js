@@ -52,6 +52,10 @@
     showLabels: false
   };
   var LS_KEY = 'jvds_minecraft_skin';
+  var alexModel = false;
+  var colorHistory = [];
+  var MAX_HISTORY = 8;
+  var partClipboard = null;
 
   // ---- zoom ---------------------------------------------------------------
   var ZOOM_STEPS = [4, 8, 16, 32];
@@ -177,16 +181,31 @@
     { name: 'RARM', g: null }, { name: 'LARM', g: null },
     { name: 'RLEG', g: null }, { name: 'LLEG', g: null },
     { name: 'HEAD', g: null }, { name: 'HAT',  g: null },
-    { name: 'BODY', g: null }, { name: 'JACKET', g: null }
+    { name: 'BODY', g: null }, { name: 'JACKET', g: null },
+    { name: 'RARM_OUT', g: null }, { name: 'LARM_OUT', g: null },
+    { name: 'RLEG_OUT', g: null }, { name: 'LLEG_OUT', g: null }
   ];
   var FACE_NAMES = ['top', 'bottom', 'right', 'front', 'left', 'back'];
-  var SYMM_PARTNER = { RARM: 'LARM', LARM: 'RARM', RLEG: 'LLEG', LLEG: 'RLEG' };
+  var SYMM_PARTNER = {
+    RARM: 'LARM', LARM: 'RARM', RLEG: 'LLEG', LLEG: 'RLEG',
+    RARM_OUT: 'LARM_OUT', LARM_OUT: 'RARM_OUT', RLEG_OUT: 'LLEG_OUT', LLEG_OUT: 'RLEG_OUT'
+  };
   var SYMM_FACE = { right: 'left', left: 'right', front: 'front', back: 'back', top: 'top', bottom: 'bottom' };
 
   function initPartGroups() {
-    var map = { RARM: RARM, LARM: LARM, RLEG: RLEG, LLEG: LLEG, HEAD: HEAD, HAT: HAT, BODY: BODY, JACKET: JACKET };
+    var map = {
+      RARM: RARM, LARM: LARM, RLEG: RLEG, LLEG: LLEG,
+      HEAD: HEAD, HAT: HAT, BODY: BODY, JACKET: JACKET,
+      RARM_OUT: RARM_OUT, LARM_OUT: LARM_OUT, RLEG_OUT: RLEG_OUT, LLEG_OUT: LLEG_OUT
+    };
     PART_GROUPS.forEach(function (p) { p.g = map[p.name]; });
   }
+
+  var PART_MAP = {
+    HEAD: HEAD, HAT: HAT, BODY: BODY, JACKET: JACKET,
+    RARM: RARM, LARM: LARM, RLEG: RLEG, LLEG: LLEG,
+    RARM_OUT: RARM_OUT, LARM_OUT: LARM_OUT, RLEG_OUT: RLEG_OUT, LLEG_OUT: LLEG_OUT
+  };
 
   function findFace(px, py) {
     for (var gi = 0; gi < PART_GROUPS.length; gi++) {
@@ -266,11 +285,38 @@
     top: R(20, 48, 4, 4), bottom: R(24, 48, 4, 4), right: R(16, 52, 4, 12),
     front: R(20, 52, 4, 12), left: R(24, 52, 4, 12), back: R(28, 52, 4, 12)
   };
+  // Alex model arm UVs (3px wide instead of 4px)
+  var RARM_ALEX = {
+    top: R(44,16,3,4), bottom: R(47,16,3,4), right: R(40,20,4,12),
+    front: R(44,20,3,12), left: R(47,20,4,12), back: R(51,20,3,12)
+  };
+  var LARM_ALEX = {
+    top: R(36,48,3,4), bottom: R(39,48,3,4), right: R(32,52,4,12),
+    front: R(36,52,3,12), left: R(39,52,4,12), back: R(43,52,3,12)
+  };
+  // Outer layer overlays for arms and legs
+  var RARM_OUT = {
+    top: R(44,32,4,4), bottom: R(48,32,4,4), right: R(40,36,4,12),
+    front: R(44,36,4,12), left: R(48,36,4,12), back: R(52,36,4,12)
+  };
+  var LARM_OUT = {
+    top: R(52,48,4,4), bottom: R(56,48,4,4), right: R(48,52,4,12),
+    front: R(52,52,4,12), left: R(56,52,4,12), back: R(60,52,4,12)
+  };
+  var RLEG_OUT = {
+    top: R(4,32,4,4), bottom: R(8,32,4,4), right: R(0,36,4,12),
+    front: R(4,36,4,12), left: R(8,36,4,12), back: R(12,36,4,12)
+  };
+  var LLEG_OUT = {
+    top: R(4,48,4,4), bottom: R(8,48,4,4), right: R(0,52,4,12),
+    front: R(4,52,4,12), left: R(8,52,4,12), back: R(12,52,4,12)
+  };
 
   function facesOf(group) { return [group.top, group.bottom, group.right, group.front, group.left, group.back]; }
   var ALL_RECTS = [].concat(
     facesOf(HEAD), facesOf(HAT), facesOf(BODY), facesOf(JACKET),
-    facesOf(RARM), facesOf(LARM), facesOf(RLEG), facesOf(LLEG)
+    facesOf(RARM), facesOf(LARM), facesOf(RLEG), facesOf(LLEG),
+    facesOf(RARM_OUT), facesOf(LARM_OUT), facesOf(RLEG_OUT), facesOf(LLEG_OUT)
   );
 
   function fillRect(rect, rgba) {
@@ -434,14 +480,18 @@
   }
 
   var PART_LABELS = [
-    { name: 'HEAD',   label: 'Head',    color: '#6fe6dc' },
-    { name: 'HAT',    label: 'Hat',     color: '#6fe6dc' },
-    { name: 'BODY',   label: 'Body',    color: '#7cb342' },
-    { name: 'JACKET', label: 'Jacket',  color: '#7cb342' },
-    { name: 'RARM',   label: 'R.Arm',   color: '#e8c34a' },
-    { name: 'LARM',   label: 'L.Arm',   color: '#e8c34a' },
-    { name: 'RLEG',   label: 'R.Leg',   color: '#e07a6b' },
-    { name: 'LLEG',   label: 'L.Leg',   color: '#e07a6b' }
+    { name: 'HEAD',     label: 'Head',     color: '#6fe6dc' },
+    { name: 'HAT',      label: 'Hat',      color: '#6fe6dc' },
+    { name: 'BODY',     label: 'Body',     color: '#7cb342' },
+    { name: 'JACKET',   label: 'Jacket',   color: '#7cb342' },
+    { name: 'RARM',     label: 'R.Arm',    color: '#e8c34a' },
+    { name: 'LARM',     label: 'L.Arm',    color: '#e8c34a' },
+    { name: 'RLEG',     label: 'R.Leg',    color: '#e07a6b' },
+    { name: 'LLEG',     label: 'L.Leg',    color: '#e07a6b' },
+    { name: 'RARM_OUT', label: 'R.Sleeve', color: '#c8a030' },
+    { name: 'LARM_OUT', label: 'L.Sleeve', color: '#c8a030' },
+    { name: 'RLEG_OUT', label: 'R.Trousers', color: '#b05040' },
+    { name: 'LLEG_OUT', label: 'L.Trousers', color: '#b05040' }
   ];
 
   var gridCache = document.createElement('canvas');
@@ -625,6 +675,7 @@
     if (colorVal) colorVal.textContent = hex.toUpperCase();
     highlightSwatch(hex);
     if (state.tool === 'eraser' || state.tool === 'eyedropper') setTool('pencil');
+    addToHistory(hex);
   }
   function highlightSwatch(hex) {
     if (!swatchWrap) return;
@@ -803,34 +854,87 @@
     toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 2200);
   }
 
-  // ---- 3D preview (three.js r128) ----------------------------------------
-  var texCanvas = document.createElement('canvas');
-  texCanvas.width = texCanvas.height = SIZE;
-  var texCtx = texCanvas.getContext('2d');
-  var renderer, scene, camera, pivot, skinTexture;
-  var camDist = 54;
-  var threeOk = false;
-
-  function updateTexture() {
-    if (!threeOk) return;
+  // ---- colour history -------------------------------------------------------
+  function addToHistory(hex) {
+    hex = hex.toLowerCase();
+    colorHistory = colorHistory.filter(function (c) { return c !== hex; });
+    colorHistory.unshift(hex);
+    if (colorHistory.length > MAX_HISTORY) colorHistory.pop();
+    renderColorHistory();
+    try { localStorage.setItem(LS_KEY + '_hist', JSON.stringify(colorHistory)); } catch (e) {}
+  }
+  function loadColorHistory() {
     try {
-      texCtx.clearRect(0, 0, SIZE, SIZE);
-      texCtx.putImageData(makeImageData(), 0, 0);
-      if (skinTexture) skinTexture.needsUpdate = true;
+      var h = localStorage.getItem(LS_KEY + '_hist');
+      if (h) colorHistory = JSON.parse(h).slice(0, MAX_HISTORY);
     } catch (e) {}
   }
-
-  function uvRect(r) {
-    var u0 = r[0] / SIZE, u1 = (r[0] + r[2]) / SIZE;
-    var v1 = 1 - r[1] / SIZE, v0 = 1 - (r[1] + r[3]) / SIZE;
-    return { u0: u0, u1: u1, v0: v0, v1: v1 };
+  function renderColorHistory() {
+    var el = document.getElementById('msColorHistory');
+    if (!el) return;
+    el.innerHTML = '';
+    colorHistory.forEach(function (hex) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ms-swatch';
+      b.style.background = hex;
+      b.setAttribute('data-color', hex);
+      b.setAttribute('aria-label', 'Recent colour ' + hex);
+      b.addEventListener('click', function () { setColor(hex); });
+      el.appendChild(b);
+    });
   }
 
+  // ---- part copy / paste ----------------------------------------------------
+  function copyPart(name) {
+    var group = PART_MAP[name];
+    if (!group) { toast('Unknown part'); return; }
+    var faces = {};
+    FACE_NAMES.forEach(function (fn) {
+      var r = group[fn];
+      var pixels = [];
+      for (var y = r[1]; y < r[1] + r[3]; y++) {
+        for (var x = r[0]; x < r[0] + r[2]; x++) {
+          var i = idx(x, y);
+          pixels.push(data[i], data[i + 1], data[i + 2], data[i + 3]);
+        }
+      }
+      faces[fn] = { rect: r.slice(), pixels: pixels };
+    });
+    partClipboard = { name: name, faces: faces };
+    toast('Copied ' + name);
+    var pb = document.getElementById('msPastePartBtn');
+    if (pb) pb.disabled = false;
+  }
+  function pastePart(name) {
+    if (!partClipboard) { toast('Nothing copied yet'); return; }
+    var dstGroup = PART_MAP[name];
+    if (!dstGroup) { toast('Unknown target part'); return; }
+    pushUndo();
+    FACE_NAMES.forEach(function (fn) {
+      var src = partClipboard.faces[fn];
+      var dstRect = dstGroup[fn];
+      var srcRect = src.rect;
+      var w = Math.min(srcRect[2], dstRect[2]);
+      var h = Math.min(srcRect[3], dstRect[3]);
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          var si = (y * srcRect[2] + x) * 4;
+          setPixel(dstRect[0] + x, dstRect[1] + y,
+            src.pixels[si], src.pixels[si + 1], src.pixels[si + 2], src.pixels[si + 3]);
+        }
+      }
+    });
+    renderAll(); scheduleAutosave();
+    toast('Pasted to ' + name);
+  }
+
+  // ---- 3D preview (three.js r128) ----------------------------------------
   // Build a box mesh whose six faces sample the skin texture. Corners are given
   // in "outside viewer" order (TL,TR,BR,BL); winding is corrected to face outward.
   function makeBox(w, h, d, cx, cy, cz, faces) {
     var hw = w / 2, hh = h / 2, hd = d / 2;
-    var pos = [], uv = [], idx = [];
+    var pos = [], uv = [], idx2 = [];
     var faceDefs = [
       { r: faces.front, n: [0, 0, 1], c: [[-hw, hh, hd], [hw, hh, hd], [hw, -hh, hd], [-hw, -hh, hd]] },
       { r: faces.back, n: [0, 0, -1], c: [[hw, hh, -hd], [-hw, hh, -hd], [-hw, -hh, -hd], [hw, -hh, -hd]] },
@@ -857,14 +961,41 @@
         pos.push(p[0] + cx, p[1] + cy, p[2] + cz);
         uv.push(uvs[i][0], uvs[i][1]);
       });
-      idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+      idx2.push(base, base + 1, base + 2, base, base + 2, base + 3);
     });
     var geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    geo.setIndex(idx);
+    geo.setIndex(idx2);
     geo.computeVertexNormals();
     return geo;
+  }
+
+  var texCanvas = document.createElement('canvas');
+  texCanvas.width = texCanvas.height = SIZE;
+  var texCtx = texCanvas.getContext('2d');
+  var renderer, scene, camera, pivot, skinTexture;
+  var camDist = 54;
+  var threeOk = false;
+  // module-level refs for rebuilding arm meshes on Alex/Steve toggle
+  var _player = null;
+  var _baseMat = null;
+  var _overMat = null;
+  var _armMeshes = []; // [RARM inner, LARM inner, RARM_OUT, LARM_OUT]
+
+  function updateTexture() {
+    if (!threeOk) return;
+    try {
+      texCtx.clearRect(0, 0, SIZE, SIZE);
+      texCtx.putImageData(makeImageData(), 0, 0);
+      if (skinTexture) skinTexture.needsUpdate = true;
+    } catch (e) {}
+  }
+
+  function uvRect(r) {
+    var u0 = r[0] / SIZE, u1 = (r[0] + r[2]) / SIZE;
+    var v1 = 1 - r[1] / SIZE, v0 = 1 - (r[1] + r[3]) / SIZE;
+    return { u0: u0, u1: u1, v0: v0, v1: v1 };
   }
 
   function init3D() {
@@ -895,35 +1026,64 @@
     skinTexture.generateMipmaps = false;
     if (THREE.sRGBEncoding) skinTexture.encoding = THREE.sRGBEncoding;
 
-    var baseMat = new THREE.MeshLambertMaterial({ map: skinTexture, alphaTest: 0.02, side: THREE.FrontSide });
-    var overMat = new THREE.MeshLambertMaterial({ map: skinTexture, alphaTest: 0.5, side: THREE.FrontSide });
+    _baseMat = new THREE.MeshLambertMaterial({ map: skinTexture, alphaTest: 0.02, side: THREE.FrontSide });
+    _overMat = new THREE.MeshLambertMaterial({ map: skinTexture, alphaTest: 0.5, side: THREE.FrontSide });
 
-    var player = new THREE.Group();
-    player.position.y = -16;
+    _player = new THREE.Group();
+    _player.position.y = -16;
 
     function addBox(w, h, d, x, y, z, faces, mat, partName) {
       var mesh = new THREE.Mesh(makeBox(w, h, d, x, y, z, faces), mat);
       mesh.userData.part = partName;
-      player.add(mesh);
+      _player.add(mesh);
     }
     // absolute y positions (feet at 0): legs 6, body 18, head 28, arms 18
-    addBox(8, 8, 8, 0, 28, 0, HEAD, baseMat, 'HEAD');
-    addBox(8.5, 8.5, 8.5, 0, 28, 0, HAT, overMat, 'HAT');
-    addBox(8, 12, 4, 0, 18, 0, BODY, baseMat, 'BODY');
-    addBox(8.25, 12.25, 4.25, 0, 18, 0, JACKET, overMat, 'JACKET');
-    addBox(4, 12, 4, 6, 18, 0, RARM, baseMat, 'RARM');
-    addBox(4, 12, 4, -6, 18, 0, LARM, baseMat, 'LARM');
-    addBox(4, 12, 4, 2, 6, 0, RLEG, baseMat, 'RLEG');
-    addBox(4, 12, 4, -2, 6, 0, LLEG, baseMat, 'LLEG');
+    addBox(8, 8, 8, 0, 28, 0, HEAD, _baseMat, 'HEAD');
+    addBox(8.5, 8.5, 8.5, 0, 28, 0, HAT, _overMat, 'HAT');
+    addBox(8, 12, 4, 0, 18, 0, BODY, _baseMat, 'BODY');
+    addBox(8.25, 12.25, 4.25, 0, 18, 0, JACKET, _overMat, 'JACKET');
+    addBox(4, 12, 4, 2, 6, 0, RLEG, _baseMat, 'RLEG');
+    addBox(4, 12, 4, -2, 6, 0, LLEG, _baseMat, 'LLEG');
+    addBox(4.25, 12.25, 4.25, 2, 6, 0, RLEG_OUT, _overMat, 'RLEG_OUT');
+    addBox(4.25, 12.25, 4.25, -2, 6, 0, LLEG_OUT, _overMat, 'LLEG_OUT');
+    // arms are built separately so they can be swapped on Alex/Steve toggle
+    _buildArmMeshes();
 
     pivot = new THREE.Group();
     pivot.position.set(0, 16, 0);
-    pivot.add(player);
+    pivot.add(_player);
     scene.add(pivot);
 
     threeOk = true;
     resize3D();
     animate3D();
+  }
+
+  function _buildArmMeshes() {
+    if (!_player || !_baseMat || !_overMat) return;
+    _armMeshes.forEach(function (m) { _player.remove(m); if (m.geometry) m.geometry.dispose(); });
+    _armMeshes = [];
+    var w = alexModel ? 3 : 4;
+    var ox = alexModel ? 5.5 : 6; // arm center x offset (body_half + arm_half)
+    var rUV = alexModel ? RARM_ALEX : RARM;
+    var lUV = alexModel ? LARM_ALEX : LARM;
+    var rOutW = w + 0.25;
+    function mkMesh(geo, mat, part) {
+      var m = new THREE.Mesh(geo, mat); m.userData.part = part; return m;
+    }
+    var rm  = mkMesh(makeBox(w, 12, 4, ox, 18, 0, rUV), _baseMat, 'RARM');
+    var lm  = mkMesh(makeBox(w, 12, 4, -ox, 18, 0, lUV), _baseMat, 'LARM');
+    var rom = mkMesh(makeBox(rOutW, 12.25, 4.25, ox, 18, 0, RARM_OUT), _overMat, 'RARM_OUT');
+    var lom = mkMesh(makeBox(rOutW, 12.25, 4.25, -ox, 18, 0, LARM_OUT), _overMat, 'LARM_OUT');
+    [rm, lm, rom, lom].forEach(function (m) { _player.add(m); _armMeshes.push(m); });
+  }
+  function rebuildArms() {
+    if (!threeOk) return;
+    _buildArmMeshes();
+    try { localStorage.setItem(LS_KEY + '_alex', alexModel ? '1' : '0'); } catch (e) {}
+  }
+  function loadAlexPref() {
+    try { alexModel = localStorage.getItem(LS_KEY + '_alex') === '1'; } catch (e) {}
   }
 
   function showPreviewFallback() {
@@ -1008,7 +1168,7 @@
       mouse3D.x = ((e.clientX - rect3.left) / rect3.width) * 2 - 1;
       mouse3D.y = -((e.clientY - rect3.top) / rect3.height) * 2 + 1;
       raycaster3D.setFromCamera(mouse3D, camera);
-      var hits = raycaster3D.intersectObjects(scene.children, true);
+      var hits = raycaster3D.intersectObjects(_player ? [_player] : scene.children, true);
       var found = null;
       for (var hi = 0; hi < hits.length; hi++) {
         var obj = hits[hi].object;
@@ -1081,6 +1241,41 @@
     var _origSetColor = setColor;
     setColor = function (hex) { _origSetColor(hex); if (mobileColor) mobileColor.value = hex; };
     syncMobileStrip();
+
+    // Alex / Steve toggle
+    var alexBtn = byId('msAlexBtn');
+    if (alexBtn) {
+      alexBtn.classList.toggle('on', alexModel);
+      alexBtn.textContent = alexModel ? 'Alex (slim)' : 'Steve (wide)';
+      alexBtn.addEventListener('click', function () {
+        alexModel = !alexModel;
+        alexBtn.classList.toggle('on', alexModel);
+        alexBtn.textContent = alexModel ? 'Alex (slim)' : 'Steve (wide)';
+        rebuildArms();
+        toast(alexModel ? 'Alex (slim) arms' : 'Steve (wide) arms');
+      });
+    }
+
+    // part copy / paste
+    var copySelEl = byId('msCopyPartSel');
+    var copyBtn   = byId('msCopyPartBtn');
+    var pasteSelEl = byId('msPastePartSel');
+    var pasteBtn   = byId('msPastePartBtn');
+    if (copyBtn && copySelEl) {
+      copyBtn.addEventListener('click', function () {
+        var v = copySelEl.value;
+        if (!v) { toast('Choose a source part first'); return; }
+        copyPart(v);
+      });
+    }
+    if (pasteBtn && pasteSelEl) {
+      pasteBtn.disabled = true;
+      pasteBtn.addEventListener('click', function () {
+        var v = pasteSelEl.value;
+        if (!v) { toast('Choose a target part first'); return; }
+        pastePart(v);
+      });
+    }
 
     var symmBtn = byId('msSymmetryBtn');
     if (symmBtn) symmBtn.addEventListener('click', function () {
@@ -1206,7 +1401,10 @@
   function boot() {
     initPartGroups();
     loadZoom();
+    loadAlexPref();
+    loadColorHistory();
     wire();
+    renderColorHistory();
     init3DControls();
     init3D();
     applyZoom(); // resize canvases to stored zoom level before first render
