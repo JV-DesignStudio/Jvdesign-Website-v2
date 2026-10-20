@@ -192,8 +192,37 @@
   }
 
   // ── Bootstrap ─────────────────────────────────────────────────────────────
+  // Config can come from window.JVDS_HANDOFF or from data-* attributes on the
+  // script tag itself (CSP-safe; no inline script needed):
+  //   <script src="../game-handoff.js"
+  //           data-game-id="stardust-snake"
+  //           data-challenge-label="stars"
+  //           data-challenge-min="5"
+  //           data-challenge-max="16"
+  //           data-score-fn="__stardustSnake.score()"></script>
+  function readDataCfg() {
+    var el = document.currentScript ||
+      document.querySelector('script[src*="game-handoff"]');
+    if (!el) return {};
+    var gameId = el.dataset.gameId || el.getAttribute('data-game-id') || '';
+    var label  = el.dataset.challengeLabel || el.getAttribute('data-challenge-label') || 'points';
+    var minV   = parseFloat(el.dataset.challengeMin || el.getAttribute('data-challenge-min') || '0') || 0;
+    var maxV   = parseFloat(el.dataset.challengeMax || el.getAttribute('data-challenge-max') || '0') || 0;
+    var scoreFnStr = el.dataset.scoreFn || el.getAttribute('data-score-fn') || '';
+    var cfg = { gameId: gameId, challengeLabel: label };
+    if (maxV > minV) {
+      cfg.challengeTarget = function (s) { return Math.round(minV + s * (maxV - minV)); };
+    }
+    if (scoreFnStr) {
+      cfg.scoreFn = function () {
+        try { return Function('return window.' + scoreFnStr)(); } catch (e) { return 0; }
+      };
+    }
+    return cfg;
+  }
+
   function init() {
-    var cfg = (typeof window !== 'undefined' && window.JVDS_HANDOFF) || {};
+    var cfg = (typeof window !== 'undefined' && window.JVDS_HANDOFF) || readDataCfg();
     var endScreen = document.getElementById('endScreen');
     if (!endScreen) return;
     injectStyles();
