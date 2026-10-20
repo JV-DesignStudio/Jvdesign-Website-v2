@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════
    Player Profile, Unified progression across all games & workshops
    ═══════════════════════════════════════════════════════════ */
 
@@ -750,4 +750,25 @@ if (typeof window !== 'undefined') window.playerProfile = playerProfile;
   on('cosmetic-unlocked', 'cosmetic_unlock', function (d) {
     return { game_id: d.gameId, cosmetic_id: d.cosmeticId };
   });
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   LAST-ACTIVITY TRACKER  (A1776)
+   Records the current page as the most-recently-visited content
+   page so the homepage continue card can offer a resume link.
+   ═══════════════════════════════════════════════════════════ */
+(function () {
+  if (typeof window === 'undefined') return;
+  var p = window.location.pathname;
+  var type = null;
+  if (/^\/workshops\//.test(p)) type = 'workshop';
+  else if (/^\/tools\//.test(p)) type = 'tool';
+  else if (/^\/games\/[^/]+\.html/.test(p)) type = 'game';
+  else if (p === '/arcade.html') type = 'game';
+  if (!type) return;
+  var dtitle = document.title || '';
+  var title = (dtitle.split('|')[0].trim() || dtitle.split('-')[0].trim() || dtitle || 'Continue').trim() || 'Continue';
+  try {
+    localStorage.setItem('jvds_last_activity', JSON.stringify({ type: type, url: p, title: title, ts: Date.now() }));
+  } catch (e) { /* storage blocked */ }
 })();
