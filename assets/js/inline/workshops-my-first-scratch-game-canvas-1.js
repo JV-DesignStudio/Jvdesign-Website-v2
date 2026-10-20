@@ -70,6 +70,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-scratch-canvas',
   downloadName: 'my-first-scratch-game.html',
+  nextStep: { url: '/workshops/scratch-platformer-canvas.html', label: 'Scratch Platformer' },
 
   hints: [
     'A yellow basket at the bottom of the stage',

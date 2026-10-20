@@ -79,6 +79,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-python-canvas',
   downloadName: 'my-first-python-game.html',
+  nextStep: { url: '/workshops/python-platformer-canvas.html', label: 'Python Platformer' },
 
   hints: [
     'A blue catcher at the bottom of a dark sky',

@@ -80,6 +80,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-godot-canvas',
   downloadName: 'my-first-godot-game.html',
+  nextStep: { url: '/workshops/godot-platformer-canvas.html', label: 'Godot Platformer' },
 
   hints: [
     'A blue basket at the bottom of a dark screen',

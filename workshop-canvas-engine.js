@@ -377,15 +377,21 @@ function updateLive(num) {
 }
 
 /* Offered once every step is complete: a plain invitation to remix and keep
-   their own version, pointing at the export buttons already on the page. */
+   their own version, pointing at the export buttons already on the page.
+   If CFG.nextStep = { url, label } is set the box also links to the
+   recommended next lesson so the learner has a clear route forward. */
 function offerRemix() {
   var panel = document.getElementById('canvasPanel');
   if (!panel || panel.querySelector('.cw-remix')) return;
   var box = document.createElement('div');
   box.className = 'cw-remix';
+  var nextHtml = '';
+  if (CFG.nextStep && CFG.nextStep.url && CFG.nextStep.label) {
+    nextHtml = ' <a href="' + CFG.nextStep.url + '">Next: ' + CFG.nextStep.label + ' &rarr;</a>';
+  }
   box.innerHTML = '<strong>Make it your own.</strong> You built the whole game. Change any number or colour, ' +
     'then use <em>Download My Game</em> (or the project export) to keep your version. Every build-along can become a different game. ' +
-    '<a href="/me.html">See this in My Studio &rarr;</a>';
+    '<a href="/me.html">See this in My Studio &rarr;</a>' + nextHtml;
   panel.appendChild(box);
 }
 

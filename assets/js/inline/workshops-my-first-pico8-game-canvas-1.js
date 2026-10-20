@@ -104,6 +104,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-pico8-canvas',
   downloadName: 'my-first-pico8-game.html',
+  nextStep: { url: '/workshops/pico8-platformer-canvas.html', label: 'Pico-8 Platformer' },
 
   hints: [
     'A blue catcher sits at the bottom of a black screen',

@@ -90,6 +90,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-cpp-canvas',
   downloadName: 'my-first-cpp-game.html',
+  nextStep: { url: '/workshops/cpp-platformer-canvas.html', label: 'C++ Platformer' },
 
   hints: [
     'A blue catcher at the bottom of a dark sky',

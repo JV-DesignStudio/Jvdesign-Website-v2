@@ -84,6 +84,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-gdevelop-canvas',
   downloadName: 'my-first-gdevelop-game.html',
+  nextStep: { url: '/workshops/gdevelop-platformer-canvas.html', label: 'GDevelop Platformer' },
 
   hints: [
     'A green basket at the bottom of a dark screen',

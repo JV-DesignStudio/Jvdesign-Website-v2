@@ -80,6 +80,7 @@ function wrap(code) {
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-defold-canvas',
   downloadName: 'my-first-defold-game.html',
+  nextStep: { url: '/workshops/defold-platformer-canvas.html', label: 'Defold Platformer' },
 
   hints: [
     'A blue catcher at the bottom of a dark screen',
