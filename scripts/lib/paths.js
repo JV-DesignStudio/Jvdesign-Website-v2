@@ -58,7 +58,7 @@ const GAME_ORPHANS = [
   'games/mobile-games.html','games/neon-tiles.html','games/nibble-quest-page.html',
   'games/nibble-quest.html','games/paper-toss-deluxe.html','games/pastry-match.html',
   'games/pips-bakery-empire.html','games/pip_star_connect.html','games/pixel-pet-arena.html',
-  'games/play.html','games/sky_high_squirt.html','games/stack-attack-page.html',
+  'games/index.html','games/play.html','games/sky_high_squirt.html','games/stack-attack-page.html',
   'games/stack-attack.html','games/star-chef.html','games/stardust-ruins.html',
   'games/stardust_collection.html','games/tiger_smash.html','games/voidrush.html'
   // lumo-run.html is a noindex redirect to lumo-dash.html (A967 consolidation).
