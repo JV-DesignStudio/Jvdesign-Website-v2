@@ -69,7 +69,7 @@ const DRIFT_MIN_SPEED = 380;     // reference speed before a slide counts
 let running = false, dead = false, paused = false;
 let player, cars, pickups, slicks, particles, roadLines, hazards, skids;
 let score, speed, dist, nearMiss, combo, comboTimer, fuel, bestCombo, carsPassed;
-let timeLeft, throttle, boostTimer, stumbleTimer, invuln;
+let timeLeft, throttle, boostTimer, stumbleTimer, invuln, starTimer;
 let driftPoints, driftWindow, drifting, driftSkidTimer;
 let runCash, distanceCash, nearCash, pickupCash;
 let hazardTimer, wrongWaySpawns;
@@ -293,6 +293,7 @@ window.__highway = {
   get missions() { return JSON.parse(JSON.stringify(garage.missions || {})); },
   get carsPassed() { return carsPassed; },
   get slip() { return slipTimer; },
+  get star() { return starTimer; },
   get shield() { return player ? player.shield : 0; },
   get coinSpawns() { return coinSpawns; },
   get coinPickups() { return coinPickups; },
@@ -420,7 +421,12 @@ function topEdgeClear(minGap) {
 function makePickup(lane) {
   if (typeof lane !== 'number') lane = gapLane;
   const r = Math.random();
-  const type = r < .15 ? 'shield' : r < .34 ? 'fuel' : r < .54 ? 'boost' : 'coin';
+  let type;
+  if (dist > 1500 && r < .10) type = 'star';
+  else if (r < .15) type = 'shield';
+  else if (r < .34) type = 'fuel';
+  else if (r < .54) type = 'boost';
+  else type = 'coin';
   if (type === 'coin') coinSpawns++;
   return { x: laneX(lane), y: -40 * U, lane, type, r: laneW * .26, bob: 0, value: type === 'coin' ? 5 : 0 };
 }
@@ -475,6 +481,7 @@ function reset() {
   runCash = 0; distanceCash = 0; nearCash = 0; pickupCash = 0;
   hazardTimer = 4 + Math.random() * 3;
   wrongWaySpawns = 0;
+  starTimer = 0;
   scoreCarry = 0;
   spawnTimer = 0;
   slickTimer = 3.5 + Math.random() * 3;
@@ -1012,6 +1019,7 @@ function liveRunCash() {
 
 function statusText() {
   const parts = [];
+  if (starTimer > 0) parts.push('⭐ 2× ' + starTimer.toFixed(1) + 's');
   if (boostTimer > 0) parts.push('NITRO ' + boostTimer.toFixed(1) + 's');
   if (player && player.shield > 0) parts.push('SHIELD');
   if (stumbleTimer > 0) parts.push('WOBBLY!');
@@ -1073,7 +1081,7 @@ function update(dt) {
   scoreCarry += dt * eff * .15;
   distanceCash += eff * dt * .02;
   const gain = Math.floor(scoreCarry);
-  if (gain > 0) { score += gain; scoreCarry -= gain; addMission('score', gain); }
+  if (gain > 0) { const g = gain * (starTimer > 0 ? 2 : 1); score += g; scoreCarry -= gain; addMission('score', g); }
   if (milestones) milestones.check(score);
 
   // TrafficDash: a timed run. Reach the finish and bank a bonus.
@@ -1090,6 +1098,7 @@ function update(dt) {
   if (boostTimer > 0) boostTimer = Math.max(0, boostTimer - dt);
   if (stumbleTimer > 0) stumbleTimer = Math.max(0, stumbleTimer - dt);
   if (invuln > 0) invuln = Math.max(0, invuln - dt);
+  if (starTimer > 0) starTimer = Math.max(0, starTimer - dt);
 
   // Drift: sliding sideways at speed earns cash, with skid marks behind you.
   if (driftWindow > 0) {
@@ -1190,7 +1199,7 @@ function update(dt) {
         nearMiss++;
         combo++;
         comboTimer = COMBO_WINDOW;
-        const bonus = Math.round((50 + combo * 25) * (1 + 0.15 * lvl('combo')));
+        const bonus = Math.round((50 + combo * 25) * (1 + 0.15 * lvl('combo')) * (starTimer > 0 ? 2 : 1));
         score += bonus;
         nearCash += bonus;
         addMission('nearMiss', 1);
@@ -1228,13 +1237,17 @@ function update(dt) {
         boostTimer = BOOST_TIME;
         toast('Nitro!');
         score += 100;
+      } else if (p.type === 'star') {
+        starTimer = 6;
+        toast('⭐ 2× Score!');
+        score += 100;
       } else {
         fuel = Math.min(fuelMax(), fuel + FUEL_PER_PICKUP);
         addMission('fuel', 1);
         toast('+Fuel');
         score += 50;
       }
-      burst(p.x, p.y, p.type === 'shield' ? '#22d3ee' : p.type === 'coin' ? '#fbbf24' : p.type === 'boost' ? '#38bdf8' : '#22c55e', 12);
+      burst(p.x, p.y, p.type === 'shield' ? '#22d3ee' : p.type === 'coin' ? '#fbbf24' : p.type === 'boost' ? '#38bdf8' : p.type === 'star' ? '#a78bfa' : '#22c55e', 12);
       haptic(10);
       try { audio?.playPop?.(); } catch(e) {}
       pickups.splice(i, 1);
@@ -1589,7 +1602,7 @@ function drawPickup(p) {
   ctx.font = 'bold ' + (16 * U) + 'px system-ui';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(p.type === 'shield' ? '🛡' : p.type === 'coin' ? '🪙' : p.type === 'boost' ? '⚡' : '⛽', 0, 1);
+  ctx.fillText(p.type === 'shield' ? '🛡' : p.type === 'coin' ? '🪙' : p.type === 'boost' ? '⚡' : p.type === 'star' ? '⭐' : '⛽', 0, 1);
   ctx.restore();
 }
 
@@ -1671,6 +1684,25 @@ function draw() {
   });
   ctx.globalAlpha = 1;
 
+  if (dist > 3000 && !reduceMotion) {
+    const rainAlpha = Math.min(0.22, (dist - 3000) / 10000);
+    ctx.save();
+    ctx.globalAlpha = rainAlpha;
+    ctx.strokeStyle = 'rgba(147,197,253,.8)';
+    ctx.lineWidth = 1;
+    const rainSeed = Math.floor(dist * 0.05);
+    for (let i = 0; i < 44; i++) {
+      const rx = ((hash(i * 5.1 + rainSeed) * W * 1.5 - W * .25) + dist * .6) % W;
+      const ry = (hash(i * 2.7 + rainSeed * .3) * H + (dist * 2.2) % 80) % H;
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 3, ry + 13);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
   if (!running && !dead) {
     ctx.fillStyle = 'rgba(0,0,0,.4)';
     ctx.fillRect(0, 0, W, H);
@@ -1701,7 +1733,20 @@ C.addEventListener('pointermove', e => {
   const dx = e.clientX - swipeStartX;
   if (Math.abs(dx) > 25) { moveLane(dx > 0 ? 1 : -1); swipeStartX = e.clientX; }
 });
-C.addEventListener('pointerup', () => swiping = false);
+C.addEventListener('pointerup', e => {
+  if (swiping && running && !dead) {
+    const dx = e.clientX - swipeStartX;
+    const dy = e.clientY - swipeStartY;
+    // Pure tap (no drag): steer left or right based on which side of the screen was touched.
+    if (Math.abs(dx) < 18 && Math.abs(dy) < 18) {
+      const rect = C.getBoundingClientRect();
+      const relX = e.clientX - rect.left;
+      if (relX < rect.width * .38) moveLane(-1);
+      else if (relX > rect.width * .62) moveLane(1);
+    }
+  }
+  swiping = false;
+});
 
 document.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;

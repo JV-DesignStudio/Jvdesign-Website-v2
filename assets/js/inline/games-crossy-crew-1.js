@@ -24,6 +24,7 @@ let cellW, cellH;
 let running = false, dead = false;
 let player, rows, cameraY, furthest, score, coins, hops;
 let echo = null, combo = 0, comboPop = 0, shield = false, magnetT = 0, slowT = 0, graceT = 0;
+let forwardStreak = 0;
 let secondUsed = false, savedPending = false, pendingReason = '';
 let best = (sys ? GameSystem.getBestScore('crossy-crew') : 0) || 0;
 let last = 0, idleTimer = 0, particles = [], popups = [], motes = [];
@@ -60,7 +61,8 @@ window.__crossy = {
   get shield() { return shield; },
   get magnet() { return magnetT > 0; },
   get slow() { return slowT > 0; },
-  get zone() { return furthest == null ? '' : biomeAt(furthest).name; }
+  get zone() { return furthest == null ? '' : biomeAt(furthest).name; },
+  get forwardStreak() { return forwardStreak; }
 };
 // Narrow test hooks so the browser suite can reach the new systems without
 // poking at canvas pixels. Not used by gameplay.
@@ -173,7 +175,7 @@ function makeTreeRow(index) {
 
 function maybePower(index) {
   if (index < 6) return null;
-  if (Math.random() < .09) return { col: Math.floor(Math.random() * COLS), kind: ['shield', 'magnet', 'slow'][Math.floor(Math.random() * 3)] };
+  if (Math.random() < .09) return { col: Math.floor(Math.random() * COLS), kind: ['shield', 'magnet', 'slow', 'dash'][Math.floor(Math.random() * 4)] };
   return null;
 }
 
@@ -264,6 +266,7 @@ function reset() {
   hopAnim = 0;
   dustTimer = 0;
   combo = 0; comboPop = 0; shield = false; magnetT = 0; slowT = 0; graceT = 0;
+  forwardStreak = 0;
   secondUsed = false; savedPending = false; pendingReason = '';
   if (milestones) milestones.reset();
   if (shake) shake.reset();
@@ -307,6 +310,17 @@ function hop(dx, dy) {
   else if (dx < 0) player.facing = 'left';
   hops++;
   hopAnim = .15;
+
+  if (dy > 0) {
+    forwardStreak++;
+    if (forwardStreak > 1 && forwardStreak % 5 === 0) {
+      const bonus = forwardStreak * 5;
+      score += bonus;
+      popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .2, text: forwardStreak + ' STREAK! +' + bonus, life: 1.2, color: '#fde047', size: 16 });
+    }
+  } else {
+    forwardStreak = 0;
+  }
 
   if (newRow > furthest) {
     const diff = newRow - furthest;
@@ -361,6 +375,7 @@ function applyPower(kind) {
   if (kind === 'shield') { shield = true; toast('Leaf shield!'); }
   else if (kind === 'magnet') { magnetT = 8; toast('Coin magnet!'); }
   else if (kind === 'slow') { slowT = 6; toast('Slow time!'); }
+  else if (kind === 'dash') { toast('Dash! Hop x2!'); hop(0, 1); hop(0, 1); }
   burst(px, py, '#a7f3d0', 12);
   popups.push({ x: px, y: py - cellH * .3, text: kind.toUpperCase(), life: 1, color: '#a7f3d0', size: 18 });
   try { audio?.playSuccess?.(); } catch(e) {}
@@ -894,9 +909,16 @@ function drawPower(row) {
   const r = cellW * .16;
   ctx.save();
   ctx.translate(cx, cy + bob);
-  ctx.shadowColor = p.kind === 'slow' ? '#93c5fd' : p.kind === 'magnet' ? '#fca5a5' : '#86efac';
+  ctx.shadowColor = p.kind === 'slow' ? '#93c5fd' : p.kind === 'magnet' ? '#fca5a5' : p.kind === 'dash' ? '#fde047' : '#86efac';
   ctx.shadowBlur = 12;
-  if (p.kind === 'shield') {
+  if (p.kind === 'dash') {
+    ctx.fillStyle = '#fde047';
+    const ar = r * .9;
+    ctx.beginPath();
+    ctx.moveTo(-ar * .2, -ar); ctx.lineTo(ar * .6, 0); ctx.lineTo(-ar * .2, ar); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-ar * .8, -ar * .7); ctx.lineTo(-ar * .1, 0); ctx.lineTo(-ar * .8, ar * .7); ctx.closePath(); ctx.fill();
+  } else if (p.kind === 'shield') {
     ctx.fillStyle = '#34d399';
     ctx.beginPath();
     ctx.moveTo(0, -r); ctx.lineTo(r, -r * .3); ctx.lineTo(r, r * .5);
@@ -1209,6 +1231,7 @@ function draw() {
     ctx.fillText('COMBO x' + combo, W / 2, H * .07);
   }
   const statusIcons = [];
+  if (shield) statusIcons.push('🍃 SHIELD');
   if (magnetT > 0) statusIcons.push('MAGNET ' + Math.ceil(magnetT) + 's');
   if (slowT > 0) statusIcons.push('SLOW ' + Math.ceil(slowT) + 's');
   if (statusIcons.length) {
