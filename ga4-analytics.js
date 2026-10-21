@@ -32,6 +32,17 @@ class GA4Analytics {
 
   generateOrGetUserId() {
     try {
+      // Only persist an analytics ID after consent is given; use a session-only
+      // ID before then so nothing is written to localStorage without consent.
+      const hasConsent = (function(){
+        try {
+          var c = document.cookie.match(/(?:^|; )jvds-cookie-consent=([^;]*)/);
+          if (c && decodeURIComponent(c[1]) === 'accepted') return true;
+          if (localStorage.getItem('jvds-cookie-consent') === 'accepted') return true;
+        } catch(e) {}
+        return false;
+      })();
+      if (!hasConsent) return 'anon_' + Date.now();
       let userId = localStorage.getItem('ga4_user_id');
       if (!userId) {
         userId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
