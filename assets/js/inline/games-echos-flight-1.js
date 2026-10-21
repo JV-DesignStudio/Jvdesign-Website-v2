@@ -14,12 +14,34 @@ let echo, gates, bubbles, sparkles, trail, pops;
 let score = 0, passed = 0, collected = 0;
 let spawnX = 0, speed = 0, last = 0, trailTimer = 0, scroll = 0, shake = 0;
 let echoBest = loadBest();
+let dailyGoal = getDailyGoal();
+let streakData = loadStreakData();
 
 function loadBest(){
   try { return (JSON.parse(localStorage.getItem(KEY) || '{}').best) | 0; } catch(e){ return 0; }
 }
 function saveBest(v){
   try { const o = JSON.parse(localStorage.getItem(KEY) || '{}'); o.best = Math.max(v, o.best|0); localStorage.setItem(KEY, JSON.stringify(o)); } catch(e){}
+}
+function getDayKey(){ return new Date().toISOString().slice(0, 10); }
+function getDailyGoal(){
+  const d = new Date();
+  const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+  return 3 + (dayOfYear % 10);
+}
+function loadStreakData(){
+  try {
+    const o = JSON.parse(localStorage.getItem(KEY) || '{}');
+    const today = getDayKey();
+    return { streak: o.streak | 0, lastDay: o.lastDay || '', doneToday: o.lastDay === today };
+  } catch(e){ return { streak: 0, lastDay: '', doneToday: false }; }
+}
+function saveStreakData(streak, day){
+  try {
+    const o = JSON.parse(localStorage.getItem(KEY) || '{}');
+    o.streak = streak; o.lastDay = day;
+    localStorage.setItem(KEY, JSON.stringify(o));
+  } catch(e){}
 }
 
 // ---- sizing / tuning ---------------------------------------------------
@@ -73,6 +95,14 @@ function addGate(x){
   if (Math.random() < 0.65){
     bubbles.push({ x: x + 34, y: top + gap / 2 + (Math.random() - .5) * gap * .5, r: 11, got: false });
   }
+}
+
+function updateDailyHint(){
+  const done = streakData.doneToday;
+  const streakStr = done && streakData.streak >= 2 ? ' (' + streakData.streak + '-day streak)' : '';
+  $('dailyHint').textContent = done
+    ? '✅ Daily complete' + streakStr
+    : '🎯 Today: beat ' + dailyGoal + ' gates';
 }
 
 function beginSwim(){
@@ -183,12 +213,27 @@ function crash(){
   for (let i = 0; i < 12; i++) sparkle(echo.x, echo.y);
   if (score > echoBest){ echoBest = score; saveBest(echoBest); }
   try { if (sys) { sys.addScore && sys.addScore(score); sys.saveState && sys.saveState(); } } catch(e){}
+
+  // daily challenge + streak
+  if (passed >= dailyGoal && !streakData.doneToday) {
+    const today = getDayKey();
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const newStreak = (streakData.lastDay === yesterday) ? streakData.streak + 1 : 1;
+    streakData = { streak: newStreak, lastDay: today, doneToday: true };
+    saveStreakData(newStreak, today);
+  }
+  const dailyDone = streakData.doneToday;
+  const dailyMsg = dailyDone
+    ? (streakData.streak >= 7 ? '🔥 ' + streakData.streak + '-day streak!' : streakData.streak >= 3 ? '🔥 ' + streakData.streak + '-day streak!' : '✅ Daily done!')
+    : '🎯 Today: beat ' + dailyGoal + ' gates';
+
   $('endTitle').textContent = passed >= 10 ? 'Great swim!' : 'Nice try!';
   $('endStats').innerHTML = [['Score', score], ['Gates', passed], ['Bubbles', collected], ['Best', echoBest]]
     .map(s => '<div><b>' + s[1] + '</b><small>' + s[0] + '</small></div>').join('');
   $('endLine').textContent = passed === 0
     ? 'Tap gently to swim up, then let Echo glide between taps.'
     : 'Echo reached ' + passed + ' gate' + (passed === 1 ? '' : 's') + '. Can you beat ' + echoBest + '?';
+  $('dailyLine').textContent = dailyMsg;
   $('endScreen').classList.remove('hidden');
   updateHud();
 }
@@ -428,6 +473,8 @@ if (location.search.indexOf('debug') !== -1){
   window.__echoSwim = {
     flap: flap,
     start: beginSwim,
+    dailyGoal: function(){ return dailyGoal; },
+    streak: function(){ return streakData; },
     state: function(){
       const ahead = gates.filter(function(g){ return g.x + 72 > echo.x; }).sort(function(a, b){ return a.x - b.x; })[0];
       return {
@@ -446,6 +493,7 @@ echo = { x: 0, y: 0, vy: 0, rot: 0, bob: 0, r: 20 };
 gates = []; bubbles = []; sparkles = []; trail = []; pops = [];
 fit();
 $('bestHud').textContent = echoBest;
+updateDailyHint();
 requestAnimationFrame(function frame(ts){
   const dt = Math.min(0.033, (ts - last) / 1000 || 0.016);
   last = ts;
