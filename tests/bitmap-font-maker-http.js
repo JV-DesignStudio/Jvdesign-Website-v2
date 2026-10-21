@@ -45,8 +45,8 @@ let failures = 0;
     gridCanvas: !!document.getElementById('grid-canvas'),
     previewCanvas: !!document.getElementById('pv-canvas'),
     gridSize: (document.getElementById('grid-canvas')?.width || 0) + 'x' + (document.getElementById('grid-canvas')?.height || 0),
-    back: document.querySelector('.hdr-back')?.textContent.trim(),
-    titleText: document.querySelector('.hdr-title')?.textContent.trim(),
+    breadcrumbNav: !!document.querySelector('nav[aria-label="Breadcrumb"]'),
+    breadcrumbCurrent: document.querySelector('nav[aria-label="Breadcrumb"] [aria-current="page"]')?.textContent.trim(),
     startButton: document.querySelector('#bitmapWelcomeModal .m-ok')?.textContent.trim(),
     charButtons: document.querySelectorAll('.char-btn').length,
     exportPng: typeof window.exportPNG === 'function',
@@ -64,7 +64,8 @@ let failures = 0;
   check('grid canvas exists', initial.gridCanvas);
   check('preview canvas exists', initial.previewCanvas);
   check('grid canvas initialized', initial.gridSize !== '0x0', initial.gridSize);
-  check('header labels clean', initial.back === '← Tools' && initial.titleText === '🔤 Bitmap Font Maker', initial.back + ' / ' + initial.titleText);
+  check('breadcrumb present', initial.breadcrumbNav, 'nav[aria-label="Breadcrumb"] not found');
+  check('breadcrumb current page', initial.breadcrumbCurrent === 'Bitmap Font Maker', initial.breadcrumbCurrent);
   check('welcome action clean', initial.startButton === 'Start drawing ✓', initial.startButton);
   check('character picker renders', initial.charButtons >= 60, String(initial.charButtons));
   check('export/share/save functions exist', initial.exportPng && initial.exportJson && initial.exportXml && initial.share && initial.save);
