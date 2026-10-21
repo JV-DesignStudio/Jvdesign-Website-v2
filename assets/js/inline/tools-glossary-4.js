@@ -1,5 +1,6 @@
 (function(){
 var terms=[
+{word:"Achievement",pos:"noun",def:"A reward you unlock by doing something special in a game or on the studio - like finishing a workshop, reaching a level, or keeping a streak going.",where:"You'll see it in My Studio, games with badge systems, and learning platforms."},
 {word:"AI",pos:"noun",def:"Short for Artificial Intelligence. It's the code that makes characters in a game think and make decisions on their own, like enemies chasing you.",where:"You'll see it in enemy behaviour, pathfinding, and NPCs that talk to you."},
 {word:"Algorithm",pos:"noun",def:"A step-by-step recipe for solving a problem. Computers follow algorithms to do things like sort a list or find the shortest path.",where:"You'll see it in pathfinding, sorting high scores, and puzzle logic."},
 {word:"Animation",pos:"noun",def:"A series of images shown really fast to make something look like it's moving - like a flipbook.",where:"You'll see it in character walks, idle poses, and attack moves."},
@@ -13,6 +14,8 @@ var terms=[
 {word:"Compile",pos:"verb",def:"Turning human-readable code into computer-readable instructions. It's like translating your ideas into a language the computer understands.",where:"You'll see it in C++, C#, Java, and other compiled languages."},
 {word:"Data",pos:"noun",def:"Information that a computer stores and uses - like scores, player names, or positions of things on screen.",where:"You'll see it everywhere: save files, settings, high scores."},
 {word:"Debug",pos:"verb",def:"Finding and fixing mistakes (bugs) in your code. It's like being a detective looking for what went wrong.",where:"You'll see it whenever something doesn't work right in your game."},
+{word:"Engine",pos:"noun",def:"The software that runs your game. It handles the game loop, physics, input, sound, and rendering so you don't have to write all that yourself. Examples: Scratch, Godot, Unity, Unreal, Roblox Studio.",where:"You'll see it when choosing a workshop path or downloading game software."},
+{word:"Export",pos:"verb",def:"Saving your work as a file you can use somewhere else - like saving a pixel art character as a PNG image, or saving a level as a JSON file to use in your game.",where:"You'll see it in Pixel Studio, the Level Designer, and most creative tools."},
 {word:"Event Handler",pos:"noun",def:"Code that waits for something to happen (an event) and then responds - like pressing a key or clicking a button.",where:"You'll see it in button clicks, keyboard input, and touch screens."},
 {word:"FPS",pos:"noun",def:"Stands for Frames Per Second - how many images your game shows each second. More FPS means smoother motion. Also means First-Person Shooter genre.",where:"You'll see it in performance settings and shooter games."},
 {word:"Frame",pos:"noun",def:"One single image in a game. Games show lots of frames really fast to create the illusion of movement.",where:"You'll see it in animations, frame rate counters, and game loops."},
@@ -34,6 +37,7 @@ var terms=[
 {word:"Pathfinding",pos:"noun",def:"The way a computer figure out the best route from point A to point B - like a GPS for game characters.",where:"You'll see it in RTS games, tower defense, and enemy AI."},
 {word:"Physics Engine",pos:"noun",def:"A system that makes things in a game move realistically - gravity, bouncing, rolling, and collisions all work because of the physics engine.",where:"You'll see it in Unity, Godot, Unreal, and games with realistic movement."},
 {word:"Pixel",pos:"noun",def:"The tiniest dot on your screen. Millions of pixels together make up the images you see. In pixel art, each pixel is placed by hand.",where:"You'll see it in pixel art games, image editing, and screen resolution."},
+{word:"Prototype",pos:"noun",def:"An early test version of a game that checks if an idea works. It might look rough, but that's fine - you're testing the fun, not making it pretty yet.",where:"You'll see it in the 'Make and Share' section of the Tools hub and in game dev workshops."},
 {word:"Procedural Generation",pos:"noun",def:"Using code to automatically create game content like levels, maps, or items instead of designing them by hand.",where:"You'll see it in roguelikes, Minecraft terrain, and space games."},
 {word:"RPG",pos:"noun",def:"Stands for Role-Playing Game. A genre where you create or control a character who goes on adventures, gains skills, and follows a story.",where:"You'll see it in games like Zelda, Pokémon, and Final Fantasy."},
 {word:"RTS",pos:"noun",def:"Stands for Real-Time Strategy. A genre where you control armies and build bases while the game keeps running - no waiting for turns.",where:"You'll see it in games like StarCraft and Age of Empires."},
@@ -43,6 +47,7 @@ var terms=[
 {word:"Server",pos:"noun",def:"A powerful computer that runs the game for online players. It keeps track of everything and makes sure everyone sees the same game.",where:"You'll see it in online multiplayer, MMOs, and cloud gaming."},
 {word:"Sound Effect",pos:"noun",def:"A short audio clip that plays when something happens - like a jump sound, an explosion, or a coin pickup.",where:"You'll see it in every game for feedback and immersion."},
 {word:"Spawn",pos:"verb",def:"When a character, enemy, or item appears in the game world. Spawning can happen at the start or when the game needs something new.",where:"You'll see it in enemy waves, item drops, and player respawns."},
+{word:"Streak",pos:"noun",def:"How many days in a row you have played a game or completed something here. Miss a day and your streak resets to zero - keep it going to earn bonus rewards.",where:"You'll see it in My Studio and the Arcade progress bar."},
 {word:"Sprite",pos:"noun",def:"A 2D image or animation used in a game • characters, objects, backgrounds, and UI elements can all be sprites.",where:"You'll see it in 2D games, Scratch, and pixel art projects."},
 {word:"Sprite Sheet",pos:"noun",def:"One big image file that holds lots of small images arranged in a grid. Each small image is a frame of animation.",where:"You'll see it in game engines, animation tools, and pixel art."},
 {word:"State Machine",pos:"noun",def:"A system that keeps track of what state something is in - like a character being idle, walking, jumping, or attacking - and only allows valid transitions.",where:"You'll see it in character controllers, AI, and game menus."},
@@ -52,6 +57,7 @@ var terms=[
 {word:"Variable",pos:"noun",def:"A named container that stores a value - like a labelled box. You can put information in it, change it, and use it later.",where:"You'll see it everywhere: health, score, speed, and inventory."},
 {word:"Velocity",pos:"noun",def:"How fast something is moving and in which direction. Speed is just a number; velocity includes direction too.",where:"You'll see it in physics code, movement systems, and projectiles."},
 {word:"Viewport",pos:"noun",def:"The area of the screen where the game world is visible. In a big world, the viewport shows only a portion of everything.",where:"You'll see it in game engine settings and camera systems."},
+{word:"XP",pos:"noun",def:"Short for Experience Points. You earn XP by playing games, finishing workshops, and completing challenges here. Earn enough and you level up.",where:"You'll see it in My Studio, the Arcade, and next to your name in the top menu."},
 {word:"Wireframe",pos:"noun",def:"A simple view of 3D models showing only the edges and vertices - no colours or textures. It looks like a skeleton of the model.",where:"You'll see it in 3D editors and debugging tools."},
 {word:"World Space",pos:"noun",def:"The actual coordinates of things in the game world. Different from screen space, which is where things appear on your monitor.",where:"You'll see it in 3D engines, camera math, and positioning code."}
 ];

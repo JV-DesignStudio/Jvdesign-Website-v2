@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Er0PNRzBcrqdqC8CCk2akNm1ImhJoPbw/sD1gEJWzQo=' 'sha256-wNsHZKMspN46jd/K1x82Y5pX5PrQ3XUOQpzdvvPehCw=' 'sha256-WBZXTubIRZbhFZGu/9fZQQlhlwKzL/QKkQceeOMpT3A=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Er0PNRzBcrqdqC8CCk2akNm1ImhJoPbw/sD1gEJWzQo=' 'sha256-wNsHZKMspN46jd/K1x82Y5pX5PrQ3XUOQpzdvvPehCw=' 'sha256-qOK71QcbB9zC7hO78mh35zJlBtky+Ah1zfNHNVRL7hY=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
@@ -2724,8 +2724,8 @@ init();
 <script src="../assets/js/strip-toggle.js"></script>
 <script>
 // -- GAME SYSTEM INTEGRATION --
-const gameSystem = new GameSystem('cozy-cafe', 'Cozy Cafe Match', 'pip');
-const audioEffects = new AudioEffects(0.7);
+const gameSystem = (typeof GameSystem !== 'undefined') ? new GameSystem('cozy-cafe', 'Cozy Cafe Match', 'pip') : null;
+const audioEffects = (typeof AudioEffects !== 'undefined') ? new AudioEffects(0.7) : null;
 
 // -- STORY RUN: one morning rush with a visible finish --
 const storyRun = window.__storyRun = new StoryRun({
@@ -2760,12 +2760,12 @@ setInterval(() => {
   if (currentScore > lastScore) {
     const xpGained = Math.floor((currentScore - lastScore) / 10);
     if (xpGained > 0) {
-      gameSystem.addXP(xpGained);
+      gameSystem?.addXP(xpGained);
       lastScore = currentScore;
     }
   }
   if (currentScore > lastBoardScore) {
-    gameSystem.addScore(currentScore - lastBoardScore);
+    gameSystem?.addScore(currentScore - lastBoardScore);
     lastBoardScore = currentScore;
   }
 }, 500);
@@ -2773,18 +2773,18 @@ setInterval(() => {
 // Check achievements
 function checkGameSystemAchievements() {
   const score = Math.floor(window.__gsBestRun || 0);
-  if (score > 0) gameSystem.unlockAchievement('firstMatch');
-  if (score >= 500) gameSystem.unlockAchievement('score500');
-  if (score >= 1000) gameSystem.unlockAchievement('score1000');
-  gameSystem.checkAchievements();
+  if (score > 0) gameSystem?.unlockAchievement('firstMatch');
+  if (score >= 500) gameSystem?.unlockAchievement('score500');
+  if (score >= 1000) gameSystem?.unlockAchievement('score1000');
+  gameSystem?.checkAchievements();
 }
 
 setInterval(checkGameSystemAchievements, 5000);
 
 // Save on page unload
 window.addEventListener('beforeunload', () => {
-  gameSystem.recordGamePlay(Date.now());
-  gameSystem.saveState();
+  gameSystem?.recordGamePlay(Date.now());
+  gameSystem?.saveState();
 });
 </script>
 
