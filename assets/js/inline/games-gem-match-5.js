@@ -59,22 +59,70 @@ const SFX = {
   newBest: ()=>{[523,659,784,1047].forEach((f,i)=>tone(f,'sine',.2,.16,i*.14))},
 };
 
+// -- Daily board (seeded by date so every day has a unique shared puzzle) --
+const DAILY_KEY = 'gem_daily_v1';
+
+function mkSeededRng(seed) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = Math.imul(31, h) + seed.charCodeAt(i) | 0;
+  return function() {
+    h += 0x6D2B79F5 | 0;
+    let t = Math.imul(h ^ h >>> 15, 1 | h);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function mkBoardSeeded(rng) {
+  const b = [];
+  for (let r = 0; r < GRID; r++) {
+    for (let c = 0; c < GRID; c++) {
+      let col, t = 0;
+      do {
+        col = COLORS[Math.floor(rng() * COLORS.length)];
+        t++;
+      } while (t < 24 && (
+        (c >= 2 && b[r*GRID+c-1] === col && b[r*GRID+c-2] === col) ||
+        (r >= 2 && b[(r-1)*GRID+c] === col && b[(r-2)*GRID+c] === col)
+      ));
+      b.push(col);
+    }
+  }
+  return b;
+}
+
+function getDailyBoard() {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const saved = JSON.parse(localStorage.getItem(DAILY_KEY) || '{}');
+    if (saved.date === today && Array.isArray(saved.board) && saved.board.length === TOTAL) {
+      return saved.board;
+    }
+  } catch(e) {}
+  const b = mkBoardSeeded(mkSeededRng(today));
+  try { localStorage.setItem(DAILY_KEY, JSON.stringify({ date: today, board: b })); } catch(e) {}
+  return b;
+}
+
+function getDailyDone() {
+  const today = new Date().toISOString().slice(0, 10);
+  try { return JSON.parse(localStorage.getItem(DAILY_KEY) || '{}').done === today; } catch(e) { return false; }
+}
+
+function markDailyDone() {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const o = JSON.parse(localStorage.getItem(DAILY_KEY) || '{}');
+    o.done = today;
+    localStorage.setItem(DAILY_KEY, JSON.stringify(o));
+  } catch(e) {}
+}
+
 // -- Board --------------------------------------------
 function rnd(){ return COLORS[Math.floor(Math.random()*COLORS.length)]; }
 
 function mkBoard(){
-  board=[];
-  for(let r=0;r<GRID;r++){
-    for(let c=0;c<GRID;c++){
-      let col,t=0;
-      do{ col=rnd();t++; }
-      while(t<24&&(
-        (c>=2&&board[r*GRID+c-1]===col&&board[r*GRID+c-2]===col)||
-        (r>=2&&board[(r-1)*GRID+c]===col&&board[(r-2)*GRID+c]===col)
-      ));
-      board.push(col);
-    }
-  }
+  board = getDailyBoard().slice();
   if(!anyMove()) forceMove();
 }
 
@@ -625,6 +673,8 @@ function endGame(){
   const isNew=score>bestScore&&score>0;
   if(isNew){bestScore=score;SFX.newBest();}
   else SFX.over();
+  if(score>=1500 && !getDailyDone()) markDailyDone();
+  updateDailyBadge();
 
   GameUI.countUp(goScore, score);
   GameUI.showMedal(goScore, score, [[1500,'🥉','Gem Fiddler'],[4000,'🥈','Gem Roller'],[8000,'🥇','Gem Sovereign']]);
@@ -748,9 +798,19 @@ async function renderLB(){
   }).join('');
 }
 
+// -- Daily badge helpers --------------------------------
+function updateDailyBadge(){
+  const done = getDailyDone();
+  const msg = done ? '✅ Daily puzzle done!' : '🎯 Today\'s daily puzzle';
+  const ssEl = $('ssDailyLine'), goEl = $('goDailyLine');
+  if(ssEl) ssEl.textContent = msg;
+  if(goEl) goEl.textContent = done ? '✅ Daily puzzle complete!' : '🎯 Daily: reach 1,500 to complete';
+}
+
 // -- Boot -----------------------------------------------
 $('ssBest').textContent=bestScore.toLocaleString();
 bestEl.textContent=bestScore.toLocaleString();
+updateDailyBadge();
 renderLB();
 
 function wait(ms){return new Promise(r=>setTimeout(r,ms));}
