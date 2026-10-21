@@ -106,6 +106,9 @@
 </div>
 </header>
 <!-- /BUILD:nav-content -->
+<!-- BUILD:breadcrumb -->
+<script src="/assets/js/breadcrumb-inject.js" defer></script>
+<!-- /BUILD:breadcrumb -->
 
 <div class="series-strip" style="--strip-gradient:linear-gradient(90deg,#9333ea,#ff3b5c,#ff8aa0,#9333ea)">
   <span>🔴 SIM LOCKDOWN · Episode 2 of 3 · <a href="my-first-roblox-studio-game.html" style="color:#fff;text-decoration:underline;">See All Episodes</a></span>
@@ -157,7 +160,7 @@
 </div>
 
 <main class="workshop">
-  <div class="callout info" style="margin:0 0 16px;border-left:3px solid #ff3b5c"><div class="callout-icon">🦊</div><div><strong>Lumo says:</strong> this episode is about one idea, a map made out of <strong>nodes</strong>. A node is just a position. Move the nodes, change the theme, and the whole course changes. Once you see it, procedural levels are easy.</div></div>
+  <div class="callout info" style="margin:0 0 16px;border-left:3px solid #ff3b5c"><div class="callout-icon">🦊</div><div><strong>Lumo says:</strong> this episode is about one idea, a map made out of <strong>nodes</strong>. A node is just a position. Move the nodes, change the theme, and the whole course changes. Once you see it, procedural levels are easy. Random is only fun when every course is fair, so we also check each map before players see it.</div></div>
 
   <!-- STEP 1 -->
   <div class="step-card open active-step" id="step-1" data-step="1">
@@ -166,12 +169,12 @@
       <div class="step-title-wrap">
         <div class="step-emoji">🎨</div>
         <div class="step-title">Give Each Map a Theme</div>
-        <div class="step-blurb">Colours, sky, material and obstacle mix, one table per theme</div>
+        <div class="step-blurb">Colours, sky, material, obstacle mix and theme-only traps</div>
       </div>
       <span class="step-status ss-active">Active</span>
     </div>
     <div class="step-body">
-      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Three themes, each with its own look and its own favourite obstacles.</p></div></div>
+      <div class="big-goal"><div class="big-goal-icon">🎯</div><div class="big-goal-text"><strong>Goal for this step</strong><p>Three themes, each with its own look, its own favourite obstacles and two traps only it can build.</p></div></div>
       <p>We store each theme as a table. A table is a labelled box of values. Here is the shape, with one theme filled in:</p>
       <div class="code-wrap">
         <div class="code-label"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> Config (ModuleScript)</div>
@@ -180,13 +183,14 @@
         <span class="prop">name</span> = <span class="str">"SECTOR::GRID"</span>,
         <span class="prop">material</span> = <span class="fn">Enum.Material.SmoothPlastic</span>,
         <span class="prop">palette</span> = { <span class="fn">Color3.fromRGB</span>(<span class="num">34</span>,<span class="num">196</span>,<span class="num">236</span>), <span class="fn">Color3.fromRGB</span>(<span class="num">153</span>,<span class="num">104</span>,<span class="num">255</span>) },
-        <span class="prop">weights</span> = { gap = <span class="num">3</span>, movers = <span class="num">3</span>, spinner = <span class="num">2</span>, hazard = <span class="num">2</span> },
+        <span class="prop">weights</span> = { gap = <span class="num">3</span>, movers = <span class="num">3</span>, spinner = <span class="num">2</span>, hazard = <span class="num">2</span>, lasergate = <span class="num">3</span>, glitch = <span class="num">2</span> },
     },
     <span class="cmt">-- CRYO (slippery ice) and FORGE (lava rock) look completely different</span>
 }
 <span class="kw">return</span> <span class="var">Config</span></div>
       </div>
       <div class="callout tip"><div class="callout-icon">💡</div><div><strong>weights</strong> are the odds. A weight of 3 means that obstacle shows up three times as often as one with weight 1. That is how one theme can feel full of spinning bars and another full of moving platforms.</div></div>
+      <div class="callout info"><div class="callout-icon">🦊</div><div><strong>Lumo says:</strong> weights alone only recolour a course. Give each theme two traps that no other theme can build: <strong>GRID</strong> laser gates and glitch tiles, <strong>CRYO</strong> snow walls and thin ice, <strong>FORGE</strong> hammer presses and pistons. The theme should change how the course plays, not just what it looks like.</div></div>
 
       <div class="concept-fill">
         <div class="cf-header"><span class="cf-icon">📝</span><div class="cf-title">Fill in the Concept</div><span class="cf-xp-badge">+15 XP</span></div>
@@ -227,6 +231,7 @@
         <li><span class="num-badge">1</span><span>Make a <code>Random</code> object so we can pick random numbers, and a list called <code>nodes</code>.</span></li>
         <li><span class="num-badge">2</span><span>Loop, and each time push the cursor forward a little and sideways a random amount.</span></li>
         <li><span class="num-badge">3</span><span>For each node, create a <strong>Part</strong> platform with <code>Instance.new</code>.</span></li>
+        <li><span class="num-badge">4</span><span>Give the path a <strong>vertical profile</strong> so it climbs or drops instead of staying flat.</span></li>
       </ul>
       <div class="code-wrap">
         <div class="code-label"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> MapGen (ModuleScript)</div>
@@ -260,6 +265,18 @@
 <span class="kw">return</span> <span class="var">mapgen</span></div>
       </div>
       <div class="callout warn"><div class="callout-icon">🔧</div><div>Platforms need to <strong>overlap</strong> or the gap is impossible to cross. Keep the sideways step small (here 20) compared to the platform width (18 to 26) so each platform touches the next.</div></div>
+      <div class="code-wrap">
+        <div class="code-label"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span> MapGen (ModuleScript)</div>
+        <div class="code-body"><span class="cmt">-- after the nodes are placed, bend the whole path upward</span>
+<span class="kw">local</span> <span class="kw">function</span> <span class="fn">addVerticalProfile</span>(<span class="var">nodes</span>, <span class="var">rng</span>)
+    <span class="kw">local</span> <span class="var">span</span> = <span class="num">10</span> + <span class="var">rng</span>:<span class="fn">NextNumber</span>() * <span class="num">14</span>     <span class="cmt">-- 10 to 24 studs in total</span>
+    <span class="kw">for</span> <span class="var">i</span>, <span class="var">node</span> <span class="kw">in</span> <span class="fn">ipairs</span>(<span class="var">nodes</span>) <span class="kw">do</span>
+        <span class="kw">local</span> <span class="var">t</span> = (<span class="var">i</span> - <span class="num">1</span>) / <span class="fn">math.max</span>(<span class="num">1</span>, #<span class="var">nodes</span> - <span class="num">1</span>)
+        <span class="var">nodes</span>[<span class="var">i</span>] = <span class="var">node</span> + <span class="fn">Vector3.new</span>(<span class="num">0</span>, <span class="var">t</span> * <span class="var">span</span>, <span class="num">0</span>)
+    <span class="kw">end</span>
+<span class="kw">end</span></div>
+      </div>
+      <div class="callout tip"><div class="callout-icon">💡</div><div>A flat course is a walk, not a race. Give every path a climb or a dip, then check the step between two nodes. If it rises more than <code>SEG_RISE</code> (5 studs here), lower it. That keeps the course vertical and still jumpable.</div></div>
 
       <div class="code-challenge" id="cc-2" data-step="2">
         <div class="cc-header"><div class="cc-icon">⌨️</div><div class="cc-title">Code Challenge</div><div class="cc-xp-badge">+20 XP</div></div>
@@ -332,6 +349,7 @@
 <span class="kw">end</span></div>
       </div>
       <div class="callout info"><div class="callout-icon">💡</div><div>Because we pick the archetype with <code>rng</code>, the same theme can be a spiral one match and an island hop the next. That is the trick that makes every play different.</div></div>
+      <div class="callout info"><div class="callout-icon">🦊</div><div><strong>Lumo says:</strong> every archetype gets the vertical pass, not just the tower. A line rolls over a hill, a zigzag climbs as it switches back, a spiral rises while it curls and an island hop steps up between platforms. No seed is allowed to spawn a flat course, because a flat course is the one map everyone can finish.</div></div>
 
       <div class="order-challenge" id="oc-3">
         <div class="oc-header"><div class="oc-icon">🔢</div><div class="oc-title">Put the build steps in order</div><div class="oc-xp-badge">+15 XP</div></div>
@@ -401,6 +419,8 @@
 <span class="kw">end</span></div>
       </div>
       <div class="callout tip"><div class="callout-icon">💡</div><div>This is the same idea as a dice roll. <code>NextNumber()</code> gives a value between 0 and 1. Multiply it by the total weight, then walk down the list subtracting until you go below zero. Whatever you land on is your obstacle.</div></div>
+      <div class="callout warn"><div class="callout-icon">⚖️</div><div><strong>Random still needs a floor.</strong> After the scatter, count the segments. At least <strong>60%</strong> of them after the first two safe ones must carry an obstacle, no more than <strong>two plain segments</strong> may sit in a row, and every course must include at least <strong>six genuinely dangerous obstacles</strong>. The last third rolls about 35% denser. That is how a seed can be surprising without coming out empty.</div></div>
+      <div class="callout info"><div class="callout-icon">🎨</div><div><strong>Tell players what will hurt.</strong> Use one colour language everywhere: <strong>red</strong> is lethal, <strong>yellow</strong> is moving or about to fire, <strong>green</strong> is safe. Timed traps get a warning beacon that grows and glows just before they fire, and crumble tiles flash yellow before they drop. A hazard with no warning is a trap for the player, not a challenge.</div></div>
 
       <div class="quiz-gate" id="quiz-4" data-step="4" data-k="Mg==">
         <div class="quiz-header"><div class="quiz-icon">🧠</div><div class="quiz-title">Knowledge Check</div><div class="quiz-xp-badge">+15 XP</div></div>
@@ -497,9 +517,10 @@
       <ul class="steps-list">
         <li><span class="num-badge">1</span><span>Play the game and note the shape and colours of round one.</span></li>
         <li><span class="num-badge">2</span><span>Wait for the next round. It should be a different theme, shape and mood.</span></li>
-        <li><span class="num-badge">3</span><span>Play a few more rounds. Every one is new, and every one is finishable.</span></li>
+        <li><span class="num-badge">3</span><span>Play a few more rounds. Every one is new, vertical, and dense enough to be a race.</span></li>
+        <li><span class="num-badge">4</span><span>Look for a warning light before a trap fires, and a red bar or press where touching means a respawn.</span></li>
       </ul>
-      <div class="callout tip"><div class="callout-icon">💡</div><div><strong>Rule of thumb:</strong> a jump in Roblox travels about 12 studs at normal speed. Keep gaps under 11, and keep upward steps to 4 studs, and your generated maps stay fair. The tower archetype climbs 4 studs each step for exactly that reason.</div></div>
+      <div class="callout tip"><div class="callout-icon">💡</div><div><strong>Rule of thumb:</strong> a jump in Roblox travels about 12 studs at normal speed. Keep gaps under 11 and upward steps to 5 studs or less, and your generated maps stay fair. The tower archetype climbs 4 studs each step for exactly that reason.</div></div>
       <div class="callout parent"><div class="callout-icon">👨‍👧</div><div><strong>Try this together:</strong> in <code>generateNodes</code>, change the loop count from 32 to 60. The courses get much longer. Then change it back. Small numbers, big changes.</div></div>
 
       <div class="quiz-gate" id="quiz-6" data-step="6" data-k="MQ==">
@@ -520,7 +541,7 @@
   <div class="finish-banner" id="finishBanner">
     <div class="confetti-row">🎉✨🎊⭐🎉</div>
     <div class="finish-title">Endless Maps!</div>
-    <p class="finish-sub">You built a generator that turns nodes into courses, with three themes and five layout shapes. Every round is new. Now Episode 3 turns it into a real party game with pushing, elimination and a final.</p>
+    <p class="finish-sub">You built a generator that turns nodes into courses, with three themes, five layout shapes and themed traps. Every round is new, and every course is checked to be vertical, dense enough and fair. Now Episode 3 turns it into a real party game with pushing, elimination and a final.</p>
     <div class="final-stats">
       <div class="final-stat"><div class="stat-val" id="finalXp">0</div><div class="stat-label">Total XP</div></div>
       <div class="final-stat"><div class="stat-val" id="finalLevel">1</div><div class="stat-label">Level</div></div>
