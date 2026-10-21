@@ -79,11 +79,16 @@ const carColors = ['#ef4444','#3b82f6','#f59e0b','#8b5cf6','#ec4899','#06b6d4','
 const trainColors = ['#dc2626','#2563eb','#facc15','#16a34a','#7c3aed'];
 const flowerColors = ['#f9a8d4','#fcd34d','#fca5a5','#c4b5fd','#fdba74'];
 
-// Biomes cycle every 40 rows: richer greens, then autumn, then twilight.
+// Biomes cycle every 40 rows: 8 environments each with distinct flora and weather.
 const BIOMES = [
-  { name:'Meadow',   grassA:'#4f9d5d', grassB:'#459153', tree:'#2f7d43', treeDark:'#1e5a2f', bg:'#123322', tint:null, water:'#2f6fb0' },
-  { name:'Autumn',   grassA:'#8b9a3f', grassB:'#7e8f37', tree:'#c06f2a', treeDark:'#8a4a1c', bg:'#2a2415', tint:'rgba(214,150,50,.10)', water:'#2b6499' },
-  { name:'Twilight', grassA:'#3a716b', grassB:'#346661', tree:'#2a5a58', treeDark:'#1e4241', bg:'#0e1e2c', tint:'rgba(46,74,150,.16)', water:'#26527e' }
+  { name:'Meadow',   grassA:'#4f9d5d', grassB:'#459153', tree:'#2f7d43', treeDark:'#1e5a2f', bg:'#123322', tint:null,                    water:'#2f6fb0', weather:null },
+  { name:'Autumn',   grassA:'#8b9a3f', grassB:'#7e8f37', tree:'#c06f2a', treeDark:'#8a4a1c', bg:'#2a2415', tint:'rgba(214,150,50,.10)',  water:'#2b6499', weather:null },
+  { name:'Twilight', grassA:'#3a716b', grassB:'#346661', tree:'#2a5a58', treeDark:'#1e4241', bg:'#0e1e2c', tint:'rgba(46,74,150,.16)',   water:'#26527e', weather:null },
+  { name:'Desert',   grassA:'#c8a86b', grassB:'#b8994f', tree:'#5a8a3a', treeDark:'#3d6025', bg:'#3d2a0e', tint:'rgba(200,140,60,.08)', water:'#4a7a9b', weather:null },
+  { name:'Snow',     grassA:'#d4e8f0', grassB:'#c2d8e6', tree:'#2d5a3a', treeDark:'#1e3f28', bg:'#0d1828', tint:'rgba(180,220,255,.08)',water:'#3a7a9a', weather:'snow' },
+  { name:'Beach',    grassA:'#d4b96e', grassB:'#c8a85a', tree:'#2a7a3a', treeDark:'#1e5828', bg:'#192e1a', tint:'rgba(200,180,100,.06)',water:'#1e88b4', weather:null },
+  { name:'City',     grassA:'#5a6068', grassB:'#505660', tree:'#3a4248', treeDark:'#2a3038', bg:'#1a1e24', tint:'rgba(30,50,80,.12)',   water:'#2a4866', weather:'rain' },
+  { name:'Night',    grassA:'#2a3a4a', grassB:'#243040', tree:'#1e2e3e', treeDark:'#141e2a', bg:'#050810', tint:'rgba(20,20,60,.20)',   water:'#182438', weather:'firefly' }
 ];
 function biomeAt(row) { return BIOMES[Math.floor(Math.max(0, row) / 40) % BIOMES.length]; }
 
@@ -141,12 +146,26 @@ function burst(x, y, color, n) {
 // fraction of a row) so a resize never leaves stale pixel sizes behind.
 function makeDecor(type, index) {
   const decor = [];
+  const biome = biomeAt(index);
   if (type === GRASS || type === SAFE) {
     for (let c = 0; c < COLS; c++) {
       const g = rnd(index * 31 + c * 7);
-      if (g < .18) decor.push({ kind: 'flower', u: c + .2 + g, v: .35 + rnd(c + index) * .3, c: pick(flowerColors) });
-      else if (g < .3) decor.push({ kind: 'tuft', u: c + .3 + g, v: .3 + rnd(c * 3 + index) * .4 });
-      else if (g < .36) decor.push({ kind: 'stone', u: c + .4, v: .6 + rnd(c + index * 5) * .2 });
+      if (biome.name === 'Desert') {
+        if (g < .10) decor.push({ kind:'sandswirl', u: c+.3+g*.4, v:.5+rnd(c+index)*.3 });
+      } else if (biome.name === 'Snow') {
+        if (g < .24) decor.push({ kind:'snowdrift', u: c+.2+g*.4, v:.52+rnd(c+index)*.3 });
+      } else if (biome.name === 'Beach') {
+        if (g < .18) decor.push({ kind:'shell', u: c+.2+g, v:.4+rnd(c+index)*.4, c:pick(['#f9e4b7','#f0c28a','#e8a87c']) });
+        else if (g < .24) decor.push({ kind:'seaweed', u: c+.4+g*.3, v:.3+rnd(c*2+index)*.4 });
+      } else if (biome.name === 'City') {
+        if (g < .10) decor.push({ kind:'puddle', u: c+.3+g*.5, v:.5+rnd(c+index)*.3 });
+      } else if (biome.name === 'Night') {
+        if (g < .08) decor.push({ kind:'mushroom', u: c+.3+g, v:.45+rnd(c+index)*.3 });
+      } else {
+        if (g < .18) decor.push({ kind: 'flower', u: c + .2 + g, v: .35 + rnd(c + index) * .3, c: biome.name === 'Twilight' ? pick(['#c4b5fd','#818cf8','#93c5fd']) : pick(flowerColors) });
+        else if (g < .3) decor.push({ kind: 'tuft', u: c + .3 + g, v: .3 + rnd(c * 3 + index) * .4 });
+        else if (g < .36) decor.push({ kind: 'stone', u: c + .4, v: .6 + rnd(c + index * 5) * .2 });
+      }
     }
   } else if (type === ROAD) {
     for (let c = 0; c < COLS; c += 2) {
@@ -165,9 +184,17 @@ function makeDecor(type, index) {
 
 function makeTreeRow(index) {
   const trees = [];
+  const biome = biomeAt(index);
+  const density = biome.name === 'City' ? .18 : biome.name === 'Desert' ? .13 : .26;
   for (let c = 0; c < COLS; c++) {
-    if (rnd(index * 53 + c * 11) < .26) {
-      trees.push({ col: c, size: .85 + rnd(index + c) * .4, lean: (rnd(c * 5 + index) - .5) * 6, conifer: rnd(index * 7 + c) < .3 });
+    if (rnd(index * 53 + c * 11) < density) {
+      let kind = 'tree';
+      if (biome.name === 'Desert') kind = 'cactus';
+      else if (biome.name === 'Beach') kind = 'palm';
+      else if (biome.name === 'City') kind = 'building';
+      else if (biome.name === 'Night' && rnd(index * 7 + c * 3) < .35) kind = 'lamp';
+      const conifer = kind === 'tree' && (biome.name === 'Snow' || rnd(index * 7 + c) < .3);
+      trees.push({ col: c, size: .85 + rnd(index + c) * .4, lean: (rnd(c * 5 + index) - .5) * 6, conifer, kind });
     }
   }
   return trees;
@@ -498,14 +525,22 @@ function update(dt) {
   popups.forEach(p => { p.y -= 34 * dt; p.life -= dt * 1.1; });
   popups = popups.filter(p => p.life > 0);
 
-  // Ambient life, tinted by the current biome: pollen in the meadow, drifting
-  // leaves in autumn, glowing fireflies at twilight.
+  // Ambient life: pollen/leaves for calm biomes; weather particles for weather biomes.
   const bioName = biomeAt(furthest || 0).name;
-  if (motes.length < 22 && Math.random() < .25) {
+  const curBiome = biomeAt(furthest || 0);
+  const wx = curBiome.weather;
+  const wxCount = motes.reduce((n, m) => n + (m.wx ? 1 : 0), 0);
+  const ambCount = motes.length - wxCount;
+  if (wx && wxCount < (wx === 'rain' ? 55 : 30) && Math.random() < (wx === 'rain' ? .85 : .35)) {
+    if (wx === 'snow') motes.push({ x: Math.random() * W, y: -4, vx: (Math.random() - .3) * 18, vy: 35 + Math.random() * 25, r: .8 + Math.random() * 1.4, life: 1, bio: bioName, wx: true, type: 'snow' });
+    else if (wx === 'rain') motes.push({ x: Math.random() * W, y: -4, vx: -8, vy: 220 + Math.random() * 80, r: .5 + Math.random() * .7, life: 1, bio: bioName, wx: true, type: 'rain' });
+    else if (wx === 'firefly') motes.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * 20, vy: (Math.random() - .5) * 12, r: 1 + Math.random() * 1.4, life: 1, bio: bioName, wx: true, type: 'firefly' });
+  }
+  if (!wx && ambCount < 22 && Math.random() < .25) {
     motes.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * 14, vy: 8 + Math.random() * 16, r: 1 + Math.random() * 1.8, life: 1, bio: bioName });
   }
-  motes.forEach(m => { m.x += m.vx * dt; m.y += m.vy * dt; m.life -= dt * .05; });
-  motes = motes.filter(m => m.life > 0 && m.y < H + 10 && m.x > -10 && m.x < W + 10);
+  motes.forEach(m => { m.x += m.vx * dt; m.y += m.vy * dt; m.life -= m.wx ? dt * .35 : dt * .05; });
+  motes = motes.filter(m => m.life > 0 && m.y < H + 20 && m.x > -20 && m.x < W + 20);
 
   if (!running || dead) return;
 
@@ -674,6 +709,40 @@ function drawDecor(decor, y, row) {
     } else if (d.kind === 'gravel') {
       ctx.fillStyle = rnd(d.u * 97 + d.v * 13) < .5 ? 'rgba(255,255,255,.10)' : 'rgba(0,0,0,.14)';
       ctx.fillRect(x, yy, 2.2, 2.2);
+    } else if (d.kind === 'snowdrift') {
+      ctx.fillStyle = 'rgba(200,230,255,.45)';
+      ctx.beginPath(); ctx.ellipse(x, yy, cellW * .22, cellH * .1, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.3)';
+      ctx.beginPath(); ctx.ellipse(x - cellW * .05, yy - cellH * .03, cellW * .12, cellH * .06, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (d.kind === 'shell') {
+      ctx.fillStyle = d.c || '#f9e4b7';
+      ctx.beginPath(); ctx.arc(x, yy, 3.5, Math.PI, 0); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.2)';
+      ctx.lineWidth = .8;
+      ctx.beginPath(); ctx.moveTo(x - 2, yy); ctx.lineTo(x, yy - 3); ctx.lineTo(x + 2, yy); ctx.stroke();
+    } else if (d.kind === 'seaweed') {
+      ctx.strokeStyle = 'rgba(20,140,80,.5)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, yy + 6); ctx.quadraticCurveTo(x - 4, yy, x + 2, yy - 6);
+      ctx.stroke();
+    } else if (d.kind === 'puddle') {
+      ctx.fillStyle = 'rgba(60,100,150,.32)';
+      ctx.beginPath(); ctx.ellipse(x, yy, cellW * .2, cellH * .08, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(180,220,255,.2)';
+      ctx.beginPath(); ctx.ellipse(x - 3, yy - 2, cellW * .06, cellH * .03, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (d.kind === 'mushroom') {
+      ctx.fillStyle = '#cc3333';
+      ctx.beginPath(); ctx.arc(x, yy - 3, 4.5, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#f5f5f5';
+      ctx.fillRect(x - 1.5, yy - 3, 3, 5);
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.beginPath(); ctx.arc(x + 1.5, yy - 5, 1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x - 1.5, yy - 6.5, .8, 0, Math.PI * 2); ctx.fill();
+    } else if (d.kind === 'sandswirl') {
+      ctx.strokeStyle = 'rgba(180,150,80,.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(x, yy, cellW * .09, 0, Math.PI * 1.6); ctx.stroke();
     }
   });
 }
@@ -706,29 +775,90 @@ function drawGrassRow(row, y) {
     const base = y + cellH * .62;
     ctx.fillStyle = 'rgba(0,0,0,.22)';
     ctx.beginPath(); ctx.ellipse(cx + 3, base + cellH * .18, cellW * .3, cellH * .12, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#7a4f2a';
-    ctx.fillRect(cx - 3, base - 2, 6, cellH * .3);
-    const s = t.size;
-    if (t.conifer) {
-      ctx.fillStyle = biome.treeDark;
-      ctx.beginPath();
-      ctx.moveTo(cx, base - cellH * .72 * s);
-      ctx.lineTo(cx - cellW * .34 * s, base + 2);
-      ctx.lineTo(cx + cellW * .34 * s, base + 2);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = biome.tree;
-      ctx.beginPath();
-      ctx.moveTo(cx, base - cellH * .66 * s);
-      ctx.lineTo(cx - cellW * .26 * s, base + 2);
-      ctx.lineTo(cx + cellW * .26 * s, base + 2);
-      ctx.closePath(); ctx.fill();
+
+    if (t.kind === 'cactus') {
+      ctx.fillStyle = '#5a8a3a';
+      ctx.fillRect(cx - cellW * .07, base - cellH * .72, cellW * .14, cellH * .72);
+      ctx.fillRect(cx - cellW * .3, base - cellH * .52, cellW * .2, cellH * .11);
+      ctx.fillRect(cx - cellW * .3, base - cellH * .63, cellW * .1, cellH * .14);
+      ctx.fillRect(cx + cellW * .09, base - cellH * .42, cellW * .2, cellH * .11);
+      ctx.fillRect(cx + cellW * .18, base - cellH * .53, cellW * .1, cellH * .14);
+      ctx.fillStyle = '#72a852';
+      ctx.fillRect(cx - cellW * .04, base - cellH * .72, cellW * .05, cellH * .72);
+    } else if (t.kind === 'palm') {
+      ctx.fillStyle = '#8b6940';
+      const lean = (rnd(t.col * 5 + t.size) - .5) * .28;
+      ctx.save(); ctx.translate(cx, base); ctx.rotate(lean);
+      ctx.fillRect(-3, -cellH * .65, 6, cellH * .65);
+      ctx.lineCap = 'round';
+      for (let a = 0; a < 7; a++) {
+        const ang = (a / 7) * Math.PI * 2;
+        ctx.strokeStyle = a % 2 === 0 ? '#2a8a3a' : '#3aaa4a';
+        ctx.lineWidth = Math.max(2, cellW * .07);
+        ctx.beginPath();
+        ctx.moveTo(0, -cellH * .62);
+        const ex = Math.cos(ang) * cellW * .55, ey = -cellH * .62 + Math.sin(ang) * cellH * .38 + cellH * .12;
+        ctx.quadraticCurveTo(Math.cos(ang) * cellW * .28, -cellH * .62 + Math.sin(ang) * cellH * .18, ex, ey);
+        ctx.stroke();
+      }
+      ctx.restore();
+    } else if (t.kind === 'building') {
+      const bw = cellW * (.38 + rnd(t.col * 3 + t.size) * .35);
+      const bh = cellH * (1.0 + rnd(t.col + t.size * 2) * .9);
+      const bx = cx - bw / 2, by = base - bh;
+      ctx.fillStyle = '#3a4050';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = '#4a5060';
+      ctx.fillRect(bx, by, bw * .35, bh);
+      const winH = cellH * .1, winW = bw * .22;
+      for (let wy = by + cellH * .12; wy < base - cellH * .08; wy += cellH * .22) {
+        for (let wx = bx + bw * .08; wx < bx + bw - winW; wx += bw * .32) {
+          ctx.fillStyle = rnd(wx * 7 + wy * 3) > .35 ? 'rgba(255,235,120,.45)' : 'rgba(80,90,110,.4)';
+          ctx.fillRect(wx, wy, winW, winH);
+        }
+      }
+    } else if (t.kind === 'lamp') {
+      ctx.fillStyle = '#5a5a6a';
+      ctx.fillRect(cx - 2, base - cellH * .78, 4, cellH * .78);
+      ctx.fillStyle = '#888898';
+      ctx.fillRect(cx - cellW * .1, base - cellH * .8, cellW * .2, cellH * .05);
+      ctx.fillStyle = 'rgba(255,240,160,.95)';
+      ctx.beginPath(); ctx.arc(cx, base - cellH * .83, cellW * .07, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,235,120,.1)';
+      ctx.beginPath(); ctx.arc(cx, base - cellH * .83, cellW * .28, 0, Math.PI * 2); ctx.fill();
     } else {
-      ctx.fillStyle = biome.treeDark;
-      ctx.beginPath(); ctx.arc(cx + t.lean * .3, base - cellH * .12, cellW * .36 * s, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = biome.tree;
-      ctx.beginPath(); ctx.arc(cx - cellW * .05, base - cellH * .2, cellW * .31 * s, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = shade(biome.tree, 40);
-      ctx.beginPath(); ctx.arc(cx - cellW * .14, base - cellH * .28, cellW * .14 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7a4f2a';
+      ctx.fillRect(cx - 3, base - 2, 6, cellH * .3);
+      const s = t.size;
+      if (t.conifer) {
+        ctx.fillStyle = biome.treeDark;
+        ctx.beginPath();
+        ctx.moveTo(cx, base - cellH * .72 * s);
+        ctx.lineTo(cx - cellW * .34 * s, base + 2);
+        ctx.lineTo(cx + cellW * .34 * s, base + 2);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = biome.tree;
+        ctx.beginPath();
+        ctx.moveTo(cx, base - cellH * .66 * s);
+        ctx.lineTo(cx - cellW * .26 * s, base + 2);
+        ctx.lineTo(cx + cellW * .26 * s, base + 2);
+        ctx.closePath(); ctx.fill();
+        if (biome.name === 'Snow') {
+          ctx.fillStyle = 'rgba(215,238,255,.82)';
+          ctx.beginPath();
+          ctx.moveTo(cx, base - cellH * .72 * s);
+          ctx.lineTo(cx - cellW * .15 * s, base - cellH * .44 * s);
+          ctx.lineTo(cx + cellW * .15 * s, base - cellH * .44 * s);
+          ctx.closePath(); ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = biome.treeDark;
+        ctx.beginPath(); ctx.arc(cx + t.lean * .3, base - cellH * .12, cellW * .36 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = biome.tree;
+        ctx.beginPath(); ctx.arc(cx - cellW * .05, base - cellH * .2, cellW * .31 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = shade(biome.tree, 40);
+        ctx.beginPath(); ctx.arc(cx - cellW * .14, base - cellH * .28, cellW * .14 * s, 0, Math.PI * 2); ctx.fill();
+      }
     }
   });
 }
@@ -1017,23 +1147,41 @@ function drawMotes() {
   ctx.save();
   motes.forEach(m => {
     const a = Math.max(0, Math.min(1, m.life));
-    if (m.bio === 'Twilight') {
+    if (m.type === 'snow') {
+      ctx.globalAlpha = a * .72;
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#e8f4ff';
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill();
+    } else if (m.type === 'rain') {
+      ctx.globalAlpha = a * .48;
+      ctx.strokeStyle = '#88aacc';
+      ctx.lineWidth = m.r;
+      ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x - 3, m.y - 8); ctx.stroke();
+    } else if (m.type === 'firefly') {
+      ctx.globalAlpha = a * (.5 + .5 * Math.abs(Math.sin(now * .005 + m.x)));
+      ctx.shadowColor = '#aaff88';
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = '#ccff88';
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    } else if (m.bio === 'Twilight') {
       ctx.globalAlpha = a * (.45 + .45 * Math.abs(Math.sin(now * .004 + m.x)));
       ctx.shadowColor = '#a5f3fc';
       ctx.shadowBlur = 8;
       ctx.fillStyle = '#d8fff8';
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
     } else if (m.bio === 'Autumn') {
       ctx.globalAlpha = a * .5;
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#e0a35a';
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill();
     } else {
       ctx.globalAlpha = a * .45;
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#fdf3c4';
+      ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.beginPath();
-    ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
-    ctx.fill();
   });
   ctx.globalAlpha = 1;
   ctx.shadowBlur = 0;
