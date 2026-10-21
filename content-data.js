@@ -5288,7 +5288,7 @@ window.JVDS_CONTENT = {
       "title": "Critter Whack: Ranger Sort",
       "tag": "Reaction · Sorting",
       "emoji": "🐹",
-      "category": "Action",
+      "category": "Classroom Activity",
       "cover": "CritterWhackCover.webp",
       "bg": "linear-gradient(135deg,#234020,#3a6b2e)",
       "desc": "Read the ranger clue, then tap only the critters that fit the habitat, movement or behaviour. Quick sorting fun, but watch out for hazards.",
@@ -5325,6 +5325,15 @@ window.JVDS_CONTENT = {
     }
   ],
   "tools": [
+    {
+      "id": "accessibility",
+      "title": "Character-Driven Accessibility",
+      "desc": "Accessibility settings with character voices. Screen reader, reduced motion, high contrast, font size - offline-first.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/accessibility.html"
+    },
     {
       "id": "arcade-game-maker",
       "title": "Arcade Game Maker: Build a Browser Arcade Game for Free",
@@ -6257,10 +6266,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-20T13:59:48.617Z",
+    "generated": "2026-10-21T12:54:12.393Z",
     "workshops": 344,
     "games": 12,
-    "tools": 49,
+    "tools": 50,
     "books": 5,
     "engines": {
       "Blender": 11,
@@ -6286,9 +6295,9 @@ window.JVDS_CONTENT = {
       "Unreal": 11
     },
     "toolCategories": {
+      "General": 4,
       "Build & Ship": 3,
       "Make Art": 5,
-      "General": 3,
       "Reference": 20,
       "Plan & Write": 4,
       "Build Worlds": 13,

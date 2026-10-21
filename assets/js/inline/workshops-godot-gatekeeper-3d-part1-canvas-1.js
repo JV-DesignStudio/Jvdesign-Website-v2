@@ -66,6 +66,10 @@ function wrap(code) {
     '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-gatekeeper1-canvas',
   downloadName: 'my-godot-gatekeeper-1.html',
@@ -81,19 +85,20 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GUARD_VARS + WALL_DATA + EXIT_VARS + KEYS +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + WALL_DATA + EXIT_VARS + KEYS,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_PLAYER + DRAW_GUARD + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GUARD_VARS + WALL_DATA + EXIT_VARS + KEYS +
+      return wbWrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + WALL_DATA + EXIT_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
         'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){' +
         'if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
@@ -102,21 +107,23 @@ window.CW_CONFIG = {
       );
     },
     3: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GUARD_VARS + WALL_DATA + EXIT_VARS + KEYS +
+      return wbWrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + WALL_DATA + EXIT_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
         'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
         'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){' +
         'if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_PLAYER + DRAW_GUARD + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS +
+      return wbWrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
         'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
@@ -125,7 +132,7 @@ window.CW_CONFIG = {
         'var tx=patrol[gTarget].x,ty=patrol[gTarget].y;var dx=tx-gx,dy=ty-gy;var dist=Math.sqrt(dx*dx+dy*dy);' +
         'if(dist<2){gTarget=(gTarget+1)%patrol.length}else{gx+=dx/dist*gSpeed;gy+=dy/dist*gSpeed}' +
         'gAngle=Math.atan2(dy,dx);' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_BG + DRAW_WALLS + DRAW_EXIT +
         'ctx.save();ctx.translate(gx+gw/2,gy+gw/2);ctx.rotate(gAngle);ctx.fillStyle="rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();' +
         DRAW_PLAYER + DRAW_GUARD + DRAW_HUD +
@@ -133,8 +140,9 @@ window.CW_CONFIG = {
       );
     },
     5: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS +
+      return wbWrap(
+        SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
@@ -144,7 +152,7 @@ window.CW_CONFIG = {
         'var tx=patrol[gTarget].x,ty=patrol[gTarget].y;var dx=tx-gx,dy=ty-gy;var dist=Math.sqrt(dx*dx+dy*dy);' +
         'if(dist<2){gTarget=(gTarget+1)%patrol.length}else{gx+=dx/dist*gSpeed;gy+=dy/dist*gSpeed}' +
         'gAngle=Math.atan2(dy,dx);' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         '}' +
         DRAW_BG + DRAW_WALLS + DRAW_EXIT +
         'ctx.save();ctx.translate(gx+gw/2,gy+gw/2);ctx.rotate(gAngle);ctx.fillStyle="rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();' +
@@ -154,9 +162,10 @@ window.CW_CONFIG = {
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + PLAYER_VARS + GUARD_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="caught"||gameState==="win")){px=40;py=360;gTarget=0;gx=200;gy=120;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="caught"||gameState==="win")){px=40;py=360;gTarget=0;gx=200;gy=120;gameState="play"}});',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
@@ -170,7 +179,7 @@ window.CW_CONFIG = {
         'var pAng=Math.atan2(pdy,pdx);var diff=Math.abs(pAng-gAngle);if(diff>Math.PI)diff=2*Math.PI-diff;' +
         'if(pDist<visionRange&&diff<visionAngle)gameState="caught";' +
         'if(px+pw>exitX&&px<exitX+exitW&&py+pw>exitY&&py<exitY+exitH)gameState="win";' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         '}' +
         DRAW_BG + DRAW_WALLS + DRAW_EXIT +
         'ctx.save();ctx.translate(gx+gw/2,gy+gw/2);ctx.rotate(gAngle);ctx.fillStyle="rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();' +

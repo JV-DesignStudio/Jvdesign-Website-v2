@@ -1221,6 +1221,7 @@
     installUI: installUI,
     openDialog: openDialog,
     exportFormat: runFormat,
+    currentGroup: root,
     currentModel: modelOf,
     zip: zip,
     makeBundle: makeBundle,

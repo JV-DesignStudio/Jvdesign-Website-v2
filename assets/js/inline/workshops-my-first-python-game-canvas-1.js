@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Python-to-JS transpiler (light transform so Python
    syntax runs in the canvas iframe)
@@ -92,70 +97,92 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + CATCHER_VARS + SPEED_VAR + KEYS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + CATCHER_VARS + SPEED_VAR + KEYS,
+        pyToJs(u),
         'function loop(){' +
         MOVE_CATCHER +
         DRAW_BG + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + CATCHER_VARS + SPEED_VAR + KEYS +
+      return wbWrap(
+        
+        SETUP + CATCHER_VARS + SPEED_VAR + KEYS,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'cx=Math.max(0,Math.min(600-cw,cx));' +
         DRAW_BG + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CATCHER_VARS + SPEED_VAR + STAR_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(sy>410)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CATCHER_VARS + SPEED_VAR + STAR_VARS + SCORE_VAR + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(sy>410)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CATCHER_VARS + SPEED_VAR + STAR_VARS + SCORE_VAR + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CATCHER_VARS + SPEED_VAR + STAR_VARS + SCORE_VAR + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE + DRAW_CONGRATS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

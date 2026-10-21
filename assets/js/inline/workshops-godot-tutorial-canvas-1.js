@@ -63,6 +63,10 @@ function wrap(code) {
     '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-tutorial-canvas',
   downloadName: 'my-godot-tutorial.html',
@@ -78,46 +82,49 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + SPRITE_VARS + COLOR_VARS + KEYS +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        SETUP + SPRITE_VARS + COLOR_VARS + KEYS,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_GRID + DRAW_SPRITE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
-      return wrap(
-        SETUP + SPRITE_VARS + COLOR_VARS + KEYS +
+      return wbWrap(
+        SETUP + SPRITE_VARS + COLOR_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'sx=Math.max(0,Math.min(400-sw,sx));sy=Math.max(0,Math.min(400-sh,sy));' +
         DRAW_BG + DRAW_GRID + DRAW_SPRITE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
-      return wrap(
-        SETUP + SPRITE_VARS + COLOR_VARS + KEYS +
+      return wbWrap(
+        SETUP + SPRITE_VARS + COLOR_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)sx-=speed;if(rightHeld)sx+=speed;' +
         'if(upHeld)sy-=speed;if(downHeld)sy+=speed;' +
         'sx=Math.max(0,Math.min(400-sw,sx));sy=Math.max(0,Math.min(400-sh,sy));' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_BG + DRAW_GRID + DRAW_SPRITE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
-      return wrap(
-        SETUP + SPRITE_VARS + COLOR_VARS + TRAIL_VARS + KEYS +
+      return wbWrap(
+        SETUP + SPRITE_VARS + COLOR_VARS + TRAIL_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'var fc=0;function loop(){fc++;' +
         'if(leftHeld)sx-=speed;if(rightHeld)sx+=speed;' +
         'if(upHeld)sy-=speed;if(downHeld)sy+=speed;' +
         'sx=Math.max(0,Math.min(400-sw,sx));sy=Math.max(0,Math.min(400-sh,sy));' +
         'if(leftHeld||rightHeld||upHeld||downHeld){rot+=0.1}' +
         'if(fc%3===0)trail.push({x:sx,y:sy,a:1});' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_BG + DRAW_GRID +
         'for(var ti=trail.length-1;ti>=0;ti--){trail[ti].a-=0.03;if(trail[ti].a<=0){trail.splice(ti,1)}else{ctx.globalAlpha=trail[ti].a;ctx.fillStyle=spriteColor;ctx.fillRect(trail[ti].x,trail[ti].y,sw,sh);ctx.globalAlpha=1}}' +
         DRAW_SPRITE +
@@ -125,15 +132,16 @@ window.CW_CONFIG = {
       );
     },
     5: function(u) {
-      return wrap(
-        SETUP + SPRITE_VARS + COLOR_VARS + TRAIL_VARS + COLLECT_VARS + KEYS +
+      return wbWrap(
+        SETUP + SPRITE_VARS + COLOR_VARS + TRAIL_VARS + COLLECT_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'var fc=0;function loop(){fc++;' +
         'if(leftHeld)sx-=speed;if(rightHeld)sx+=speed;' +
         'if(upHeld)sy-=speed;if(downHeld)sy+=speed;' +
         'sx=Math.max(0,Math.min(400-sw,sx));sy=Math.max(0,Math.min(400-sh,sy));' +
         'if(leftHeld||rightHeld||upHeld||downHeld)rot+=0.1;' +
         'if(fc%3===0)trail.push({x:sx,y:sy,a:1});' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_BG + DRAW_GRID +
         'for(var ti=trail.length-1;ti>=0;ti--){trail[ti].a-=0.03;if(trail[ti].a<=0)trail.splice(ti,1);else{ctx.globalAlpha=trail[ti].a;ctx.fillStyle=spriteColor;ctx.fillRect(trail[ti].x,trail[ti].y,sw,sh);ctx.globalAlpha=1}}' +
         'for(var ci=0;ci<coins.length;ci++){if(!coins[ci].got){ctx.fillStyle="#fbbf24";ctx.beginPath();ctx.arc(coins[ci].x,coins[ci].y,coins[ci].r,0,Math.PI*2);ctx.fill()}}' +
@@ -143,9 +151,10 @@ window.CW_CONFIG = {
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + SPRITE_VARS + COLOR_VARS + TRAIL_VARS + COLLECT_VARS + STATE_VARS + KEYS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="win"){collected=0;for(var i=0;i<coins.length;i++){coins[i].got=false;coins[i].x=Math.floor(Math.random()*360)+20;coins[i].y=Math.floor(Math.random()*360)+20}sx=176;sy=176;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="win"){collected=0;for(var i=0;i<coins.length;i++){coins[i].got=false;coins[i].x=Math.floor(Math.random()*360)+20;coins[i].y=Math.floor(Math.random()*360)+20}sx=176;sy=176;gameState="play"}});',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'var fc=0;function loop(){fc++;' +
         'if(gameState==="play"){' +
         'if(leftHeld)sx-=speed;if(rightHeld)sx+=speed;' +
@@ -154,7 +163,7 @@ window.CW_CONFIG = {
         'if(leftHeld||rightHeld||upHeld||downHeld)rot+=0.1;' +
         'if(fc%3===0)trail.push({x:sx,y:sy,a:1});' +
         'for(var ci=0;ci<coins.length;ci++){if(!coins[ci].got){var dx=sx+sw/2-coins[ci].x,dy=sy+sh/2-coins[ci].y;if(Math.sqrt(dx*dx+dy*dy)<sw/2+coins[ci].r){coins[ci].got=true;collected++}}}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         '}' +
         DRAW_BG + DRAW_GRID +
         'for(var ti=trail.length-1;ti>=0;ti--){trail[ti].a-=0.03;if(trail[ti].a<=0)trail.splice(ti,1);else{ctx.globalAlpha=trail[ti].a;ctx.fillStyle=spriteColor;ctx.fillRect(trail[ti].x,trail[ti].y,sw,sh);ctx.globalAlpha=1}}' +

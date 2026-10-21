@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Java-to-JS transpiler (light transform so Java
    syntax runs in the canvas iframe)
@@ -111,65 +116,87 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + STARS +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + STARS,
+        javaToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + KEYS + BULLET_VARS + STARS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + KEYS + BULLET_VARS + STARS,
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
         SHIP_MOVE +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SPAWN_ALIENS + STARS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SPAWN_ALIENS + STARS,
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
         SHIP_MOVE + BULLET_FIRE + BULLET_MOVE +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SCORE_VARS + SPAWN_ALIENS + STARS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SCORE_VARS + SPAWN_ALIENS + STARS,
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
         SHIP_MOVE + BULLET_FIRE + BULLET_MOVE + ALIEN_MOVE +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SCORE_VARS + WAVE_VARS + SPAWN_ALIENS + STARS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SCORE_VARS + WAVE_VARS + SPAWN_ALIENS + STARS,
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
         SHIP_MOVE + BULLET_FIRE + BULLET_MOVE + ALIEN_MOVE + COLLISION_WAVE +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP + DRAW_SCORE + DRAW_WAVE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SHIP_VARS + KEYS + BULLET_VARS + ALIEN_VARS + SCORE_VARS + WAVE_VARS + LIVES_VARS + SPAWN_ALIENS + STARS +
-        'canvas.addEventListener("click",function(){if(gameOver){gameOver=false;score=0;wave=1;lives=3;alienSpeed=2;alienDir=1;bullets=[];spawnAliens()}});' +
+        'canvas.addEventListener("click",function(){if(gameOver){gameOver=false;score=0;wave=1;lives=3;alienSpeed=2;alienDir=1;bullets=[];spawnAliens()}});',
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
         DRAW_GAME_OVER +
         SHIP_MOVE + BULLET_FIRE + BULLET_MOVE + ALIEN_MOVE + COLLISION_WAVE + WAVE_CHECK +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_ALIENS + DRAW_BULLETS + DRAW_SHIP + DRAW_SCORE + DRAW_WAVE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

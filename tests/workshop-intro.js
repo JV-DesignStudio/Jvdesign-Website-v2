@@ -18,11 +18,9 @@ ok('workshop-enhancements.js injects a .workshop-brief', /class\s*=\s*'workshop-
 ok('the brief explains what you will make, before you start and what you will learn',
   /What you'?ll make/i.test(enh) && /Before you start/i.test(enh) && /What you'?ll learn/i.test(enh));
 
-const BUILDERS = [
-  'robot-builder', 'rocket-builder', 'space-station-builder', 'submarine-builder',
-  'castle-builder', 'pirate-ship-builder', 'pirate-cannon-builder', 'race-car-builder',
-  'steampunk-airship-builder', 'phone-stand-builder', 'fairy-tale-builder', 'mugen-ai-workshop'
-];
+// The 11 3D builders now run inside workshops/3d-builder.html, so only the
+// standalone workshop (mugen) still loads the brief injector.
+const BUILDERS = ['mugen-ai-workshop'];
 for (const id of BUILDERS) {
   ok('brief map covers ' + id, new RegExp("'" + id + "'\\s*:").test(enh));
   const page = fs.readFileSync(path.join(ROOT, 'workshops', id + '.html'), 'utf8');

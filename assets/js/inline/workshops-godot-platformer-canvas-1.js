@@ -72,6 +72,10 @@ function wrap(code) {
     '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-platformer-canvas',
   downloadName: 'my-godot-platformer.html',
@@ -87,31 +91,33 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLAT_VARS + KEYS +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        SETUP + PLAYER_VARS + PLAT_VARS + KEYS,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLAT_VARS + KEYS +
+      return wbWrap(
+        SETUP + PLAYER_VARS + PLAT_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'px=Math.max(0,Math.min(570,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLAT_VARS + KEYS +
+      return wbWrap(
+        SETUP + PLAYER_VARS + PLAT_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)vx=-speed;else if(rightHeld)vx=speed;else vx=0;' +
         'px+=vx;px=Math.max(0,Math.min(570,px));' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'vy+=gravity;py+=vy;onGround=false;' +
         'for(var i=0;i<platforms.length;i++){var p=platforms[i];' +
         'if(py+ph>=p.y&&py+ph<=p.y+p.h+vy+1&&px+pw>p.x&&px<p.x+p.w&&vy>=0){py=p.y-ph;vy=0;onGround=true}}' +
@@ -120,8 +126,9 @@ window.CW_CONFIG = {
       );
     },
     4: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLAT_VARS + COIN_VARS + KEYS +
+      return wbWrap(
+        SETUP + PLAYER_VARS + PLAT_VARS + COIN_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)vx=-speed;else if(rightHeld)vx=speed;else vx=0;' +
         'px+=vx;px=Math.max(0,Math.min(570,px));' +
@@ -129,14 +136,15 @@ window.CW_CONFIG = {
         'vy+=gravity;py+=vy;onGround=false;' +
         'for(var i=0;i<platforms.length;i++){var p=platforms[i];' +
         'if(py+ph>=p.y&&py+ph<=p.y+p.h+vy+1&&px+pw>p.x&&px<p.x+p.w&&vy>=0){py=p.y-ph;vy=0;onGround=true}}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLAT_VARS + COIN_VARS + KEYS +
+      return wbWrap(
+        SETUP + PLAYER_VARS + PLAT_VARS + COIN_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)vx=-speed;else if(rightHeld)vx=speed;else vx=0;' +
         'px+=vx;px=Math.max(0,Math.min(570,px));' +
@@ -145,15 +153,16 @@ window.CW_CONFIG = {
         'for(var i=0;i<platforms.length;i++){var p=platforms[i];' +
         'if(py+ph>=p.y&&py+ph<=p.y+p.h+vy+1&&px+pw>p.x&&px<p.x+p.w&&vy>=0){py=p.y-ph;vy=0;onGround=true}}' +
         'for(var i=0;i<coins.length;i++){if(!coins[i].got){var dx=px+pw/2-coins[i].x,dy=py+ph/2-coins[i].y;if(dx*dx+dy*dy<(pw/2+coins[i].r)*(pw/2+coins[i].r)){coins[i].got=true;collected++}}}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + PLAYER_VARS + PLAT_VARS + COIN_VARS + ENEMY_VARS + STATE_VARS + KEYS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){px=80;py=300;vx=0;vy=0;collected=0;for(var i=0;i<coins.length;i++)coins[i].got=false;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){px=80;py=300;vx=0;vy=0;collected=0;for(var i=0;i<coins.length;i++)coins[i].got=false;gameState="play"}});',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)vx=-speed;else if(rightHeld)vx=speed;else vx=0;' +
@@ -166,7 +175,7 @@ window.CW_CONFIG = {
         'for(var i=0;i<enemies.length;i++){var en=enemies[i];en.x+=en.dx;if(en.x<=en.minX||en.x+en.w>=en.maxX)en.dx*=-1;' +
         'if(px+pw>en.x&&px<en.x+en.w&&py+ph>en.y&&py<en.y+en.h){gameState="over"}}' +
         'if(collected>=coins.length){gameState="win"}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         '}' +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
         'if(gameState==="win"){ctx.fillStyle="#22c55e";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("ALL COINS!",300,180);ctx.font="18px monospace";ctx.fillText("Press R to play again",300,215)}' +

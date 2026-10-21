@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Defold Lua-to-JS transpiler
    =================================================== */
@@ -120,71 +125,93 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + STARS + KEYS +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + STARS + KEYS,
+        defoldToJs(u),
         'function loop(){' +
         MOVE_SHIP +
         DRAW_BG + DRAW_STARS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + BULLET_VARS + STARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + BULLET_VARS + STARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         MOVE_BULLETS +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + STARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + STARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + SHOOT + MOVE_BULLETS +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + SHOOT + MOVE_BULLETS + MOVE_ENEMIES +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STATE_VARS + STARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STATE_VARS + STARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SHIP + SHOOT + MOVE_BULLETS + MOVE_ENEMIES + BULLET_HIT +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,230);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,260);ctx.fillText("Press R to retry",200,290)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STATE_VARS + STARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STATE_VARS + STARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SHIP + SHOOT + MOVE_BULLETS + MOVE_ENEMIES + BULLET_HIT + ENEMY_REACH + WAVE_CHECK +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_STARS + DRAW_ENEMIES + DRAW_BULLETS + DRAW_SHIP + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,230);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,260);ctx.fillText("Press R to retry",200,290)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

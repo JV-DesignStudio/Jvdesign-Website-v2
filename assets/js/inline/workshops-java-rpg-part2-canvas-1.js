@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Java-to-JS transpiler (light transform so Java
    syntax runs in the canvas iframe)
@@ -153,9 +158,10 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR,
+        javaToJs(u),
         'let battleLog="A wild "+monster.name+" appears!";' +
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS +
@@ -168,22 +174,26 @@ window.CW_CONFIG = {
         'ctx.fillStyle="#fff";ctx.font="11px Arial";ctx.fillText(monster.hp+"/"+monster.maxHp+" HP",342,205);' +
         DRAW_LOG +
         'requestAnimationFrame(draw)}draw();'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE,
+        javaToJs(u),
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
         'requestAnimationFrame(draw)}draw();'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
-        MONSTER_COUNTER +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        MONSTER_COUNTER,
+        javaToJs(u),
         CLICK_HANDLER_BASE +
         'if(battleOver)return;' +
         'if(my>=310&&my<=346){' +
@@ -194,7 +204,8 @@ window.CW_CONFIG = {
         'dmgText="-"+dmg;dmgX=395;dmgY=100;dmgTimer=30;' +
         'if(monster.hp<=0){battleOver=true;resultMsg="Victory!";battleLog=monster.name+" defeated!"}' +
         'else{monsterAttack()}}' +
-        '}});' +
+        '}}
+      )' +
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
         DRAW_DMG + DRAW_RESULT +
@@ -202,10 +213,11 @@ window.CW_CONFIG = {
       );
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
-        MONSTER_COUNTER +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        MONSTER_COUNTER,
+        javaToJs(u),
         CLICK_HANDLER_BASE +
         'if(battleOver)return;' +
         'if(my>=310&&my<=346){' +
@@ -224,7 +236,8 @@ window.CW_CONFIG = {
         'else if(mx>=380&&mx<=485){' +
         'if(Math.random()<0.6){battleLog="You fled to safety!";battleOver=true;resultMsg="Escaped!"}' +
         'else{battleLog="Could not escape!";monsterAttack()}}' +
-        '}});' +
+        '}}
+      )' +
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
         DRAW_DMG + DRAW_RESULT +
@@ -232,10 +245,11 @@ window.CW_CONFIG = {
       );
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
-        MONSTER_COUNTER + LEVELUP_LOGIC + VICTORY_CHECK +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        MONSTER_COUNTER + LEVELUP_LOGIC + VICTORY_CHECK,
+        javaToJs(u),
         CLICK_HANDLER_BASE +
         CLICK_RESTART +
         'if(battleOver)return;' +
@@ -254,7 +268,8 @@ window.CW_CONFIG = {
         'else if(mx>=380&&mx<=485){' +
         'if(Math.random()<0.6){battleLog="You fled to safety!";battleOver=true;resultMsg="Escaped!"}' +
         'else{battleLog="Could not escape!";monsterAttack()}}' +
-        '}});' +
+        '}}
+      )' +
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
         DRAW_XP_BAR + DRAW_DMG + DRAW_RESULT +
@@ -262,10 +277,11 @@ window.CW_CONFIG = {
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + HERO_OBJ + MONSTER_FACTORY + MONSTER_VAR + BATTLE_STATE +
-        MONSTER_COUNTER + LEVELUP_LOGIC + VICTORY_CHECK + RESPAWN_LOGIC +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        MONSTER_COUNTER + LEVELUP_LOGIC + VICTORY_CHECK + RESPAWN_LOGIC,
+        javaToJs(u),
         CLICK_HANDLER_BASE +
         'if(battleOver){' +
         'if(resultMsg.indexOf("Defeat")!==-1){respawn();}' +
@@ -286,7 +302,8 @@ window.CW_CONFIG = {
         'else if(mx>=380&&mx<=485){' +
         'if(Math.random()<0.6){battleLog="You fled to safety!";battleOver=true;resultMsg="Escaped!"}' +
         'else{battleLog="Could not escape!";monsterAttack()}}' +
-        '}});' +
+        '}}
+      )' +
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
         DRAW_XP_BAR + DRAW_DMG + DRAW_RESULT +

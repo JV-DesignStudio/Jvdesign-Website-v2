@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Python-to-JS transpiler (light transform so Python
    syntax runs in the canvas iframe)
@@ -91,76 +96,98 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + KEYS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + BASKET_VARS + KEYS,
+        pyToJs(u),
         'function loop(){' +
         MOVE_BASKET +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + BASKET_VARS + KEYS,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'bx=Math.max(0,Math.min(600-bw,bx));' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + FRUIT_VARS + KEYS +
-        FRUIT_RESET +
+        FRUIT_RESET,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(fy>410)resetFruit();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + KEYS +
-        FRUIT_RESET +
+        FRUIT_RESET,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + FRUIT_FALL +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(fy>410)resetFruit();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + KEYS +
-        FRUIT_RESET +
+        FRUIT_RESET,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + STATE_VARS + KEYS +
         FRUIT_RESET +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=4;resetFruit();gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=4;resetFruit();gameState="play"}});',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH + FRUIT_MISS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
         'ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220);' +
         'ctx.fillText("Press R to play again",300,260)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

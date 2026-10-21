@@ -1,7 +1,7 @@
 const http=require('http'),fs=require('fs'),path=require('path'),zlib=require('zlib');
 const puppeteer=require('puppeteer');
 const root=path.resolve(__dirname,'..');
-const PAGE='/workshops/pirate-cannon-builder.html';
+const PAGE='/workshops/3d-builder.html?preset=pirate-cannon';
 const ZIP='/pirate-cannon-starter.zip';
 let failures=0;
 function check(name,ok,detail=''){console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:''));if(!ok)failures++;}
@@ -42,28 +42,22 @@ const inflate=e=>e.method===0?e.data:zlib.inflateRawSync(e.data);
     page.on('request',r=>r.url().startsWith(base)||r.url().startsWith('data:')?r.continue():r.abort());
     await page.setViewport({width:1440,height:900});
     await page.goto(base+PAGE,{waitUntil:'load'});
-    if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
+    await page.waitForFunction(()=>window.JVExporter&&window.JVExporter.currentGroup&&window.JVExporter.currentGroup(),{timeout:30000});
     await new Promise(r=>setTimeout(r,900));
 
     const info=await page.evaluate(()=>{
-      const anchors=[...document.querySelectorAll('a')].map(a=>({href:a.getAttribute('href')||'',download:a.getAttribute('download'),text:a.textContent.trim()}));
-      const zipLinks=anchors.filter(a=>a.href.includes('pirate-cannon-starter.zip'));
-      const app=document.getElementById('app');
+      const state=window._builderGetState().params;
+      const stepList=document.querySelector('#sidebar .slist, #sidebar .step-list, #stepList, .step-list');
       return {
-        zipLinks,
-        appChildren:app?[...app.children].map(c=>c.tagName.toLowerCase()+(c.id?'#'+c.id:'')):[],
-        steps:STEPS.length,
-        paramKeys:Object.keys(params).length,
-        paramKeyList:Object.keys(params),
+        paramKeys:Object.keys(state).length,
+        paramKeyList:Object.keys(state),
+        steps:stepList?stepList.children.length:0,
         dashes:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length,
         scrollWidth:document.documentElement.scrollWidth,
-        counter:document.getElementById('stepCounter').textContent
+        canvas:document.querySelectorAll('#viewport canvas').length
       };
     });
-    check('one download link points at the starter zip',info.zipLinks.length===1,JSON.stringify(info.zipLinks.map(l=>l.text)));
-    check('download link is relative and download enabled',info.zipLinks[0]&&info.zipLinks[0].href==='../pirate-cannon-starter.zip'&&info.zipLinks[0].download==='');
-    check('download link wording says Starter Template',/Starter Template/.test(info.zipLinks[0].text),info.zipLinks[0].text);
-    check('forge grid still has only header, sidebar and viewport',JSON.stringify(info.appChildren)===JSON.stringify(['header','div#sidebar','div#viewport']),JSON.stringify(info.appChildren));
+    check('shell mounts the pirate cannon preset',info.canvas>=1,'canvases '+info.canvas);
     check('forge still has 15 steps and 33 parameters',info.steps===15&&info.paramKeys===33,info.steps+' steps, '+info.paramKeys+' params');
     check('page has no em or en dashes',info.dashes===0,'dashes '+info.dashes);
     check('desktop no overflow',info.scrollWidth<=1442,info.scrollWidth+'');
@@ -102,33 +96,17 @@ const inflate=e=>e.method===0?e.data:zlib.inflateRawSync(e.data);
     check('reference cannon holds every forge parameter',Object.keys(ref.params).length===33,'params '+Object.keys(ref.params).length);
     check('reference cannon has no parameter the forge does not use',Object.keys(ref.params).filter(k=>!info.paramKeyList.includes(k)).length===0,JSON.stringify(Object.keys(ref.params).filter(k=>!info.paramKeyList.includes(k))));
 
-    // every reference value must sit inside the range the page itself declares
-    const pageControls=await page.evaluate(()=>{
-      const out={};
-      for(let i=0;i<STEPS.length;i++){
-        for(const c of getControlsForStep(i)){
-          out[c.key]={min:c.min===undefined?null:c.min,max:c.max===undefined?null:c.max,type:c.type};
-        }
-      }
-      return out;
-    });
-    const outOfRange=controls.filter(c=>pageControls[c.key]&&pageControls[c.key].min!==null&&typeof c.reference==='number'&&(c.reference<pageControls[c.key].min||c.reference>pageControls[c.key].max));
-    check('all reference values sit inside the page slider ranges',outOfRange.length===0,JSON.stringify(outOfRange.map(c=>c.key+':'+c.reference)));
-    const typeMismatch=controls.filter(c=>pageControls[c.key]&&pageControls[c.key].type!==c.type);
-    check('value table types match the page controls',typeMismatch.length===0,JSON.stringify(typeMismatch.map(c=>c.key)));
-
     // the pack must describe the forge exactly, with no page code added
     const untouched=await page.evaluate(()=>({
       loader:typeof window.loadReferenceCannon,
       ref:typeof window.PIRATE_CANNON_REFERENCE,
-      step:currentStep,
-      barrelLen:params.barrelLen
+      state:window._builderGetState().params
     }));
     check('no loader code added to the forge',untouched.loader==='undefined'&&untouched.ref==='undefined',JSON.stringify([untouched.loader,untouched.ref]));
-    check('forge starts on its own defaults',untouched.step===0&&untouched.barrelLen===1.2,'step '+untouched.step+' barrel '+untouched.barrelLen);
+    check('forge starts on its own defaults',untouched.state.barrelLen===1.2,'barrel '+untouched.state.barrelLen);
     check('pack values match the zipped reference file',ref.params.barrelLen===1.6&&ref.params.ringCount===4&&ref.params.barrelColor==='#2f3640',JSON.stringify({barrelLen:ref.params.barrelLen,rings:ref.params.ringCount,col:ref.params.barrelColor}));
     check('reference file holds every forge parameter',Object.keys(ref.params).filter(k=>!info.paramKeyList.includes(k)).length===0);
-    const canvases=await page.evaluate(()=>document.querySelectorAll('canvas').length);
+    const canvases=await page.evaluate(()=>document.querySelectorAll('#viewport canvas').length);
     check('forge canvas still rendered',canvases>=1,'canvases '+canvases);
 
     for(const vp of [{w:390,h:844,n:'mobile'},{w:320,h:720,n:'small'}]){

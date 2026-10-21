@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Scratch-to-JS transpiler (block notation to JS)
    =================================================== */
@@ -108,56 +113,72 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + KEYS +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS,
+        scratchToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px=Math.max(0,Math.min(456,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)pvx=-pSpeed;else if(rightHeld)pvx=pSpeed;else pvx=0;' +
         'pvy+=gravity;px+=pvx;py+=pvy;' +
         'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
         'if(py>360){py=280;px=40;pvy=0}' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px=Math.max(0,Math.min(456,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)pvx=-pSpeed;else if(rightHeld)pvx=pSpeed;else pvx=0;' +
         'pvy+=gravity;' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px+=pvx;py+=pvy;' +
         'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
         'if(py>360){py=280;px=40;pvy=0}' +
         'px=Math.max(0,Math.min(456,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + COIN_VARS + SCORE_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + COIN_VARS + SCORE_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)pvx=-pSpeed;else if(rightHeld)pvx=pSpeed;else pvx=0;' +
         'pvy+=gravity;' +
@@ -165,17 +186,21 @@ window.CW_CONFIG = {
         'px+=pvx;py+=pvy;' +
         'var hit=platBelow(px,py);if(hit&&pvy>=0){py=hit.y-ph;pvy=0;onGround=true}else{onGround=false}' +
         'if(py>360){py=280;px=40;pvy=0}' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px=Math.max(0,Math.min(456,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + COIN_VARS + SCORE_VARS + STATE_VARS + PLATFORMS + KEYS + PLAT_CHECK + PLAT_COLLIDE +
         'var origCoins=coins.map(function(c){return{x:c.x,y:c.y}});' +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){px=40;py=280;pvx=0;pvy=0;score=0;coins=origCoins.map(function(c){return{x:c.x,y:c.y}});gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){px=40;py=280;pvx=0;pvy=0;score=0;coins=origCoins.map(function(c){return{x:c.x,y:c.y}});gameState="play"}});',
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)pvx=-pSpeed;else if(rightHeld)pvx=pSpeed;else pvx=0;' +
@@ -186,7 +211,8 @@ window.CW_CONFIG = {
         'if(py>360){py=280;px=40;pvy=0}' +
         'for(var ci=coins.length-1;ci>=0;ci--){var c=coins[ci];if(px+pw>c.x-coinSize/2&&px<c.x+coinSize/2&&py+ph>c.y-coinSize/2&&py<c.y+coinSize/2){coins.splice(ci,1);score++}}' +
         'if(score>=5)gameState="win";' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         'px=Math.max(0,Math.min(456,px));' +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
@@ -195,7 +221,8 @@ window.CW_CONFIG = {
         'ctx.fillText("ALL COINS COLLECTED!",240,160);ctx.fillStyle="#fff";ctx.font="18px monospace";' +
         'ctx.fillText("Press R to play again",240,195)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

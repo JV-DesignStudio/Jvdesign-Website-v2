@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Python-to-JS transpiler (light transform so Python
    syntax runs in the canvas iframe)
@@ -110,66 +115,85 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GROUND_VARS + KEYS +
-        'let px=50,py=328,pw=24,ph=32;' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+        'let px=50,py=328,pw=24,ph=32;',
+        pyToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_GROUND +
         DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GROUND_VARS + GRAVITY_CONST + KEYS +
-        'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
+        'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_GROUND + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GROUND_VARS + GRAVITY_CONST + KEYS +
-        'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
+        'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
         APPLY_GRAVITY + SIMPLE_GROUND_CHECK +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_GROUND + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GRAVITY_CONST + KEYS +
         'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
-        PLATFORM_DATA +
+        PLATFORM_DATA,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
         JUMP_LOGIC +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GRAVITY_CONST + KEYS +
         'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
-        PLATFORM_DATA + COIN_DATA + SCORE_VARS +
+        PLATFORM_DATA + COIN_DATA + SCORE_VARS,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + JUMP_LOGIC + GROUND_CHECK +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GRAVITY_CONST + KEYS +
         'let px=50,py=100,pw=24,ph=32,vy=0,onGround=false;' +
         PLATFORM_DATA + COIN_DATA + SCORE_VARS + GOAL_VARS + STATE_VARS +
@@ -177,13 +201,15 @@ window.CW_CONFIG = {
         'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState!=="play"){' +
         'px=startX;py=startY;vy=0;score=0;lives=3;levelComplete=false;' +
         'coins=[{x:155,y:255,r:8},{x:325,y:195,r:8},{x:475,y:135,r:8},{x:255,y:75,r:8}];' +
-        'gameState="play"}});' +
+        'gameState="play"}});',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + APPLY_GRAVITY + JUMP_LOGIC + GROUND_CHECK +
         'for(var i=coins.length-1;i>=0;i--){var c=coins[i];' +
         'if(px+pw>c.x-c.r&&px<c.x+c.r&&py+ph>c.y-c.r&&py<c.y+c.r){score+=10;coins.splice(i,1)}}' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_GOAL + DRAW_PLAYER + DRAW_SCORE + DRAW_LIVES +
         'if(levelComplete){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
@@ -193,7 +219,8 @@ window.CW_CONFIG = {
         'ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220);' +
         'ctx.fillText("Press R to restart",300,260)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Defold Lua-to-JS transpiler
    =================================================== */
@@ -98,77 +103,88 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + COLORS + GRID_INIT + SELECT_VARS +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + COLORS + GRID_INIT + SELECT_VARS,
+        defoldToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_GRID +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + COLORS + GRID_INIT + SELECT_VARS +
+      return wbWrap(
+        SETUP + COLORS + GRID_INIT + SELECT_VARS,
+        'window.cwStep=function(mx,my){' + defoldToJs(u) + '};',
         'canvas.addEventListener("click",function(e){var rect=canvas.getBoundingClientRect();' +
         'var mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}});' +
+        'if(typeof cwStep==="function")cwStep(mx,my);});' +
         'function loop(){' +
         DRAW_BG + DRAW_GRID +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + COLORS + GRID_INIT + SELECT_VARS +
         'canvas.addEventListener("click",function(e){var rect=canvas.getBoundingClientRect();' +
         'var mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
         'var c=Math.floor(mx/TILE),r=Math.floor(my/TILE);' +
         'if(r<0||r>=ROWS||c<0||c>=COLS)return;' +
         'if(selR===-1){selR=r;selC=c}else{' +
-        'var dr=Math.abs(r-selR),dc=Math.abs(c-selC);' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+        'var dr=Math.abs(r-selR),dc=Math.abs(c-selC);',
+        defoldToJs(u),
         'selR=-1;selC=-1}});' +
         'function loop(){' +
         DRAW_BG + DRAW_GRID +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + COLORS + GRID_INIT + SELECT_VARS + SCORE_VARS +
         MATCH_FN +
-        CLICK_HANDLER +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+        CLICK_HANDLER,
+        defoldToJs(u),
         'function clearMatches(m){for(var i=0;i<m.length;i++){grid[m[i][0]][m[i][1]]=-1;score++}}' +
         'function dropTiles(){}function refill(){for(var r=0;r<ROWS;r++){for(var c=0;c<COLS;c++){if(grid[r][c]===-1)grid[r][c]=Math.floor(Math.random()*5)}}}' +
         'function loop(){' +
         DRAW_BG + DRAW_GRID + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + COLORS + GRID_INIT + SELECT_VARS + SCORE_VARS +
         MATCH_FN + CLEAR_FN +
-        CLICK_HANDLER +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+        CLICK_HANDLER,
+        defoldToJs(u),
         DROP_FN +
         'function refill(){for(var r=0;r<ROWS;r++){for(var c=0;c<COLS;c++){if(grid[r][c]===-1)grid[r][c]=Math.floor(Math.random()*5)}}}' +
         'function loop(){' +
         DRAW_BG + DRAW_GRID + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + COLORS + GRID_INIT + SELECT_VARS + SCORE_VARS +
         MATCH_FN + CLEAR_FN + DROP_FN + REFILL_FN +
-        CLICK_HANDLER +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+        CLICK_HANDLER,
+        defoldToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_GRID + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

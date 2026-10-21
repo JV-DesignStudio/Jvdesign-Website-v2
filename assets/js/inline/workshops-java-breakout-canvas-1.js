@@ -9,6 +9,11 @@ function javaToJs(code) {
     .replace(/\.remove\(([^)]+)\)/g, '.splice($1, 1)');
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    IFRAME BUILDING BLOCKS (breakout-specific)
    =================================================== */
@@ -64,60 +69,80 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PAD_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PAD_VARS + KEYS,
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PAD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PAD_VARS + BALL_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PAD_VARS + BALL_VARS + KEYS,
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' + PAD_MOVE +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         PAD_HIT +
         DRAW_BG + DRAW_PAD + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + PAD_VARS + BALL_VARS + KEYS + BRICK_INIT +
+      return wbWrap(
+        
+        SETUP + PAD_VARS + BALL_VARS + KEYS + BRICK_INIT,
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' + PAD_MOVE + BALL_MOVE + PAD_HIT +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + PAD_VARS + BALL_VARS + KEYS + BRICK_INIT + 'let score=0;' +
+      return wbWrap(
+        
+        SETUP + PAD_VARS + BALL_VARS + KEYS + BRICK_INIT + 'let score=0;',
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' + PAD_MOVE + BALL_MOVE + PAD_HIT + BRICK_HIT +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALL + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PAD_VARS + BALL_VARS + KEYS + BRICK_INIT + LIVES_VARS +
-        'function loop(){if(!gameOver&&!won){' + PAD_MOVE + BALL_MOVE + PAD_HIT + BRICK_HIT +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        'function loop(){if(!gameOver&&!won){' + PAD_MOVE + BALL_MOVE + PAD_HIT + BRICK_HIT,
+        javaToJs(u),
         WIN_CHECK + '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES + DRAW_END +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PAD_VARS + BALL_VARS + KEYS + BRICK_INIT + LIVES_VARS +
-        'function loop(){if(!gameOver&&!won){' + PAD_MOVE + BALL_MOVE + PAD_HIT + BRICK_HIT + LIFE_LOST + WIN_CHECK + '}' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        'function loop(){if(!gameOver&&!won){' + PAD_MOVE + BALL_MOVE + PAD_HIT + BRICK_HIT + LIFE_LOST + WIN_CHECK + '}',
+        javaToJs(u),
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES + DRAW_END +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

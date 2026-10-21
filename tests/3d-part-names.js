@@ -6,17 +6,17 @@ const puppeteer=require('F:/Website/Jvdesign-Website-v2/node_modules/puppeteer')
 const root=path.resolve(__dirname,'..');
 
 const TARGETS={
-  'castle-builder':'castleGroup',
-  'space-station-builder':'stationGroup',
-  'robot-builder':'robotGroup',
-  'rocket-builder':'rocketGroup',
-  'pirate-ship-builder':'shipGroup',
-  'pirate-cannon-builder':'cannonGroup',
-  'steampunk-airship-builder':'shipGroup',
-  'race-car-builder':'carGroup',
-  'submarine-builder':'subGroup',
-  'fairy-tale-builder':'cottageGroup',
-  'phone-stand-builder':'standGroup'
+  'castle-builder':{preset:'castle'},
+  'space-station-builder':{preset:'space-station'},
+  'robot-builder':{preset:'robot'},
+  'rocket-builder':{preset:'rocket'},
+  'pirate-ship-builder':{preset:'pirate-ship'},
+  'pirate-cannon-builder':{preset:'pirate-cannon'},
+  'steampunk-airship-builder':{preset:'steampunk-airship'},
+  'race-car-builder':{preset:'race-car'},
+  'submarine-builder':{preset:'submarine'},
+  'fairy-tale-builder':{preset:'fairy-tale'},
+  'phone-stand-builder':{preset:'phone-stand'}
 };
 
 const MIME={'.html':'text/html','.css':'text/css','.js':'application/javascript','.json':'application/json',
@@ -37,36 +37,22 @@ const server=http.createServer((req,res)=>{
   const want=process.argv.slice(2);
   let problems=0;
 
-  for(const [page,gv] of Object.entries(TARGETS)){
+  for(const [page,t] of Object.entries(TARGETS)){
     if(want.length&&!want.some(w=>page.includes(w)))continue;
-    if(!gv){console.log('\n### '+page+': SKIPPED (group variable not known yet)');continue;}
+    if(!t||!t.preset){console.log('\n### '+page+': SKIPPED (preset not known yet)');continue;}
     const tab=await browser.newPage();
     const errs=[];
     tab.on('pageerror',e=>errs.push(e.message.split('\n')[0].slice(0,90)));
     await tab.setRequestInterception(true);
     tab.on('request',r=>r.url().startsWith(base)||r.url().startsWith('data:')||r.url().startsWith('blob:')?r.continue():r.abort());
     await tab.setViewport({width:1440,height:900});
-    await tab.goto(base+'/workshops/'+page+'.html',{waitUntil:'load'});
-    if(await tab.$('#cookie-decline')){try{await tab.click('#cookie-decline');}catch(e){}}
+    await tab.goto(base+'/workshops/3d-builder.html?preset='+t.preset,{waitUntil:'load'});
+    await tab.waitForFunction(()=>window.JVExporter&&window.JVExporter.currentGroup&&window.JVExporter.currentGroup(),{timeout:30000});
     await new Promise(r=>setTimeout(r,1200));
-    await tab.evaluate(()=>{
-      const b=Array.from(document.querySelectorAll('button'))
-        .find(x=>/^(Let's Build!|Accept|Got it)$/i.test(x.textContent.trim())&&x.offsetParent!==null);
-      if(b)b.click();
-    });
-    await new Promise(r=>setTimeout(r,400));
-    await tab.evaluate(async()=>{
-      const hit=re=>{const b=Array.from(document.querySelectorAll('button'))
-        .find(x=>re.test(x.textContent)&&x.offsetParent!==null&&!x.disabled);
-        if(b){b.click();return true;}return false;};
-      if(!hit(/quick build/i)) for(let i=0;i<35&&hit(/^\s*(Next|Continue)\b/i);i++){}
-      await new Promise(r=>setTimeout(r,900));
-    });
-    await new Promise(r=>setTimeout(r,1000));
 
-    const info=await tab.evaluate((gv)=>{
-      const g=(function(){ try{ return (new Function('return '+gv))(); }catch(e){ return null; } })();
-      if(!g)return {err:'group '+gv+' not found'};
+    const info=await tab.evaluate(()=>{
+      const g=window.JVExporter.currentGroup();
+      if(!g)return {err:'no live group for this preset'};
       const names=[];const unnamed=[];
       g.traverse(o=>{
         if(!o.isMesh||!o.geometry||!o.geometry.attributes||!o.geometry.attributes.position)return;
@@ -80,7 +66,7 @@ const server=http.createServer((req,res)=>{
       return {total:names.length+unnamed.length,named:names.length,unnamed:unnamed.length,
         sample:names.slice(0,14),dupes:dupes.slice(0,10),
         groupName:g.name||'(none)'};
-    },gv);
+    });
 
     console.log('\n### '+page+'  group='+info.groupName);
     if(info.err){console.log('  '+info.err);problems++;await tab.close();continue;}

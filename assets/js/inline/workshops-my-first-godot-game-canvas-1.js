@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    GDScript-to-JS transpiler (light transform so
    GDScript syntax runs in the canvas iframe)
@@ -93,71 +98,91 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + KEYS +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + BASKET_VARS + KEYS,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + BASKET_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'bx=Math.max(0,Math.min(500,bx));' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + STAR_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
         'bx=Math.max(0,Math.min(500,bx));' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(sy>410)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
         'bx=Math.max(0,Math.min(500,bx));' +
         'sy+=fallSpeed;' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(sy>410)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
         'bx=Math.max(0,Math.min(500,bx));' +
         'sy+=fallSpeed;' +
         'if(sy+sh>=by&&sy<=by+bh&&sx+sw>=bx&&sx<=bx+bw){score++;resetStar()}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(sy>410)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS +
         STAR_RESET +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;fallSpeed=3;resetStar();gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;fallSpeed=3;resetStar();gameState="play"}});',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
@@ -165,14 +190,16 @@ window.CW_CONFIG = {
         'sy+=fallSpeed;' +
         'if(sy+sh>=by&&sy<=by+bh&&sx+sw>=bx&&sx<=bx+bw){score++;resetStar();fallSpeed=Math.min(8,3+score/5)}' +
         'if(sy>410)resetStar();' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
         'ctx.fillText("GAME OVER",300,180);ctx.font="18px monospace";ctx.fillText("Score: "+score,300,215);' +
         'ctx.fillText("Press R to play again",300,250)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

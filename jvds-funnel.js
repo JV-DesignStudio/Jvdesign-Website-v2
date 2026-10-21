@@ -20,6 +20,8 @@
 
   var SESSION_PREFIX = 'jvds_funnel_';
   var NAMES = { start: 'first_create_start', complete: 'first_create_complete', share: 'first_create_share' };
+  var HUB_PAGES = ['/', '/index.html', '/arcade.html', '/workshop.html', '/dev-tools.html', '/dev-tools', '/learn-hub.html'];
+  var GAME_SECTION = /^\/(games)\//;
 
   function section() {
     var m = location.pathname.match(/^\/(tools|workshops|games|books)\//);
@@ -90,6 +92,45 @@
       navigator._jvdsFunnelWrapped = true;
     } catch (e) {}
   }
+
+  // ── Arrival hub ──────────────────────────────────────────────────────────
+  // Fire once per session when landing on a major hub page.
+  (function fireArrival() {
+    var path = location.pathname.replace(/\/+$/, '') || '/';
+    var isHub = HUB_PAGES.indexOf(path) !== -1 || HUB_PAGES.indexOf(path + '.html') !== -1;
+    if (!isHub) return;
+    if (sentThisSession('arrival_hub')) return;
+    var ok = emit('arrival_hub', { section: 'hub', page_path: path, page_id: pageId() });
+    if (ok) markSent('arrival_hub');
+  })();
+
+  // ── Play start ───────────────────────────────────────────────────────────
+  // Fire once per session on game pages when the learner interacts.
+  (function wirePlayStart() {
+    if (!GAME_SECTION.test(location.pathname)) return;
+    function onPlay() {
+      if (sentThisSession('play_start')) return;
+      var ok = emit('play_start', { section: 'games', page_path: location.pathname, page_id: pageId() });
+      if (ok) markSent('play_start');
+      document.removeEventListener('pointerdown', onPlay, true);
+      document.removeEventListener('keydown', onPlay, true);
+    }
+    document.addEventListener('pointerdown', onPlay, true);
+    document.addEventListener('keydown', onPlay, true);
+  })();
+
+  // ── Return visit ─────────────────────────────────────────────────────────
+  // Fire once per session when a learner who has visited before comes back.
+  (function fireReturn() {
+    var VISIT_KEY = 'jvds_visited';
+    var hasVisited = false;
+    try { hasVisited = !!localStorage.getItem(VISIT_KEY); } catch(e) {}
+    if (hasVisited && !sentThisSession('return_visit')) {
+      var ok = emit('return_visit', { section: section(), page_path: location.pathname, page_id: pageId() });
+      if (ok) markSent('return_visit');
+    }
+    try { localStorage.setItem(VISIT_KEY, '1'); } catch(e) {}
+  })();
 
   window.JVDSFunnel = JVDSFunnel;
 })();

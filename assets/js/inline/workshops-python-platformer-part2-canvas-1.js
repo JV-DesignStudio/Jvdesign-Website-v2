@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Python-to-JS transpiler (light transform so Python
    syntax runs in the canvas iframe)
@@ -168,79 +173,98 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + ENEMY_VARS + KEYS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + ENEMY_VARS + KEYS,
+        pyToJs(u),
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP + PLAT_COLLIDE +
         ENEMY_PATROL +
         DRAW_BG + DRAW_PLATFORMS + DRAW_ENEMIES + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + PLATFORMS + ENEMY_VARS + SCORE_VAR + KEYS +
-        RESPAWN_FN_SIMPLE +
+        RESPAWN_FN_SIMPLE,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP + PLAT_COLLIDE +
         ENEMY_PATROL +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + WIDE_PLATFORMS + ENEMY_VARS_WIDE + SCORE_VAR + KEYS +
         RESPAWN_FN_SIMPLE +
-        CAMERA_VARS +
+        CAMERA_VARS,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
         ENEMY_PATROL + STOMP_LOGIC +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + WIDE_PLATFORMS + ENEMY_VARS_WIDE + SCORE_VAR + KEYS +
         MOVING_PLATS_WIDE +
         'let deaths=0;var respawnX=60,respawnY=300;function respawn(){px=respawnX;py=respawnY;vx=0;vy=0;deaths++}' +
-        CAMERA_VARS +
+        CAMERA_VARS,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
         ENEMY_PATROL + STOMP_LOGIC +
         CAMERA_UPDATE +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'for(var i=0;i<movingPlats.length;i++){var mp=movingPlats[i];' +
           'if(px+pw>mp.x&&px<mp.x+mp.w&&py+ph>mp.y&&py<mp.y+mp.h&&vy>=0&&py+ph-vy<=mp.y+4){py=mp.y-ph;vy=0;onGround=true;jumpsLeft=2;px+=mp.vx;py+=mp.vy}}' +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_MOVING_PLATS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM +
         DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + WIDE_PLATFORMS + ENEMY_VARS_WIDE + SCORE_VAR + KEYS +
         MOVING_PLATS_WIDE +
         'let deaths=0;var respawnX=60,respawnY=300;function respawn(){px=respawnX;py=respawnY;vx=0;vy=0;deaths++}' +
-        CAMERA_VARS + SPIKE_DATA + CHECKPOINT_DATA +
+        CAMERA_VARS + SPIKE_DATA + CHECKPOINT_DATA,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
         ENEMY_PATROL + STOMP_LOGIC +
         'for(var i=0;i<movingPlats.length;i++){var mp=movingPlats[i];mp.x+=mp.vx;mp.y+=mp.vy;if(mp.vy!==0){if(mp.y<mp.minY||mp.y>mp.maxY)mp.vy=-mp.vy}if(mp.vx!==0){if(mp.x<mp.minX||mp.x>mp.maxX)mp.vx=-mp.vx}' +
           'if(px+pw>mp.x&&px<mp.x+mp.w&&py+ph>mp.y&&py<mp.y+mp.h&&vy>=0&&py+ph-vy<=mp.y+4){py=mp.y-ph;vy=0;onGround=true;jumpsLeft=2;px+=mp.vx;py+=mp.vy}}' +
         CAMERA_UPDATE +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_MOVING_PLATS_CAM + DRAW_SPIKES_CAM + DRAW_CHECKPOINTS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM +
         DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + KEYS + SCORE_VAR +
         'let deaths=0,gameWon=false;' +
         'var levels=[' +
@@ -263,8 +287,8 @@ window.CW_CONFIG = {
         'function respawn(){px=respawnX;py=respawnY;vx=0;vy=0;deaths++}' +
         'function loadLevel(n){var L=levels[n];platforms=L.platforms;enemies=JSON.parse(JSON.stringify(L.enemies));movingPlats=JSON.parse(JSON.stringify(L.movingPlats));spikes=L.spikes;checkpoints=JSON.parse(JSON.stringify(L.checkpoints));door=L.door;LEVEL_W=L.width;px=60;py=300;respawnX=60;respawnY=300;vx=0;vy=0}' +
         'loadLevel(0);' +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameWon){deaths=0;score=0;gameWon=false;currentLevel=0;loadLevel(0)}});' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameWon){deaths=0;score=0;gameWon=false;currentLevel=0;loadLevel(0)}});',
+        pyToJs(u),
         'function loop(){' +
         'if(!gameWon){' +
         'vx=0;if(leftHeld)vx=-4;if(rightHeld)vx=4;px+=vx;vy+=0.45;py+=vy;if(px<0)px=0;' +
@@ -295,7 +319,8 @@ window.CW_CONFIG = {
         'ctx.fillText("Score: "+score,300,210);ctx.fillText("Deaths: "+deaths,300,245);' +
         'ctx.font="16px monospace";ctx.fillText("Press R to play again",300,290)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

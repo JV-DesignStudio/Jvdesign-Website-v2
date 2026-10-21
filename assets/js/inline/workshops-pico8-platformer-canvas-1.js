@@ -36,6 +36,11 @@ function p8ToJs(code) {
     .replace(/\bor\b/g, '||');
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    IFRAME BUILDING BLOCKS (PICO-8 Platformer)
    =================================================== */
@@ -118,84 +123,106 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + KEYS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS,
+        p8ToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         COLLIDE_PLATS +
         'if(py>140){py=100;px=20;pvy=0}' +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + KEYS + CLEAR_PRESSED +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS + CLEAR_PRESSED,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         COLLIDE_PLATS +
         'if(py>140){py=100;px=20;pvy=0}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + KEYS + CLEAR_PRESSED +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + KEYS + CLEAR_PRESSED,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
         'if(zPressed&&grounded){pvy=jmp}' +
         COLLIDE_PLATS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(py>140){py=100;px=20;pvy=0}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_PLATS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + COINS + SCORE_VARS + KEYS + CLEAR_PRESSED +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + COINS + SCORE_VARS + KEYS + CLEAR_PRESSED,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
         'if(zPressed&&grounded){pvy=jmp}' +
         COLLIDE_PLATS + COLLECT_COINS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(py>140){py=100;px=20;pvy=0}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + PLATFORMS + COINS + SCORE_VARS + STATE_VARS + KEYS + CLEAR_PRESSED +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="win"){score=0;px=20;py=100;pvy=0;for(var i=0;i<coins.length;i++)coins[i].got=false;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="win"){score=0;px=20;py=100;pvy=0;for(var i=0;i<coins.length;i++)coins[i].got=false;gameState="play"}});',
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + APPLY_GRAVITY +
         'if(zPressed&&grounded){pvy=jmp}' +
         COLLIDE_PLATS + COLLECT_COINS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(py>140){py=100;px=20;pvy=0}' +
         '}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_PLATS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'if(gameState==="win"){ctx.fillStyle=P8PAL[11];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("all coins!",64*S,50*S);ctx.font="12px monospace";ctx.fillText("press r to replay",64*S,62*S)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

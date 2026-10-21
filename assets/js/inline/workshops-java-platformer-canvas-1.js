@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Java-to-JS transpiler (light transform so Java
    syntax runs in the canvas iframe)
@@ -86,60 +91,73 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS,
+        javaToJs(u),
         'function loop(){vy+=1;py+=vy;if(py+ph>370){py=370-ph;vy=0;onGround=true}' +
         DRAW_BG + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + KEYS,
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         PHYSICS +
         'if(py+ph>370){py=370-ph;vy=0;onGround=true}else{onGround=false}' +
         DRAW_BG + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + KEYS + PLATFORMS +
         MOVE_LOGIC.replace('if(leftHeld)', 'function handleInput(){if(leftHeld)') + '}' +
         'function loop(){handleInput();' +
-        PHYSICS +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        PHYSICS,
+        javaToJs(u),
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + KEYS + PLATFORMS + COINS +
         'function handleInput(){' + MOVE_LOGIC + '}' +
         'function loop(){handleInput();' + PHYSICS +
-        PLAT_CHECK +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        PLAT_CHECK,
+        javaToJs(u),
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + KEYS + PLATFORMS + COINS + ENEMIES +
         'function handleInput(){' + MOVE_LOGIC + '}' +
         'function loop(){handleInput();' + PHYSICS +
-        PLAT_CHECK + COIN_COLLECT +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        PLAT_CHECK + COIN_COLLECT,
+        javaToJs(u),
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_ENEMIES + DRAW_PLAYER_BLINK + DRAW_SCORE + DRAW_HEALTH +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + KEYS +
         'const platforms=[{x:0,y:370,w:1200,h:30},{x:100,y:280,w:120,h:16},{x:300,y:220,w:120,h:16},{x:480,y:300,w:100,h:16},{x:50,y:160,w:100,h:16},{x:250,y:120,w:140,h:16},{x:450,y:160,w:120,h:16},{x:650,y:250,w:120,h:16},{x:850,y:180,w:140,h:16},{x:1050,y:280,w:100,h:16}];' +
         'const coins=[{x:140,y:255,r:8,collected:false},{x:340,y:195,r:8,collected:false},{x:510,y:275,r:8,collected:false},{x:80,y:135,r:8,collected:false},{x:300,y:95,r:8,collected:false},{x:490,y:135,r:8,collected:false},{x:700,y:225,r:8,collected:false},{x:900,y:155,r:8,collected:false},{x:1080,y:255,r:8,collected:false}];let score=0;' +
@@ -147,14 +165,15 @@ window.CW_CONFIG = {
         'function handleInput(){' + MOVE_LOGIC + '}' +
         'let camera=0;' +
         'function loop(){handleInput();' + PHYSICS_WIDE +
-        PLAT_CHECK + COIN_COLLECT + ENEMY_PATROL + ENEMY_HIT +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        PLAT_CHECK + COIN_COLLECT + ENEMY_PATROL + ENEMY_HIT,
+        javaToJs(u),
         DRAW_BG + 'ctx.save();ctx.translate(-camera,0);' +
         DRAW_PLATFORMS + DRAW_COINS + DRAW_ENEMIES + DRAW_PLAYER_BLINK +
         'ctx.restore();ctx.fillStyle="#fff";ctx.font="bold 18px sans-serif";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);' +
         DRAW_HEALTH +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

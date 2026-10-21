@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Defold Lua-to-JS transpiler
    =================================================== */
@@ -105,73 +110,95 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS,
+        defoldToJs(u),
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px+=pvx;if(px<0)px=0;if(px+pw>600)px=600-pw;' +
         APPLY_GRAVITY +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'py+=pvy;onGround=false;' +
         'for(var pi=0;pi<platforms.length;pi++){var pl=platforms[pi];' +
         'if(px+pw>pl.x&&px<pl.x+pl.w&&py+ph>=pl.y&&py+ph<=pl.y+12&&pvy>=0){py=pl.y-ph;pvy=0;onGround=true}}' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORM_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + JUMP +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORM_VARS + COIN_VARS + SCORE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORM_VARS + COIN_VARS + SCORE_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + JUMP +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORM_VARS + COIN_VARS + FLAG_VARS + SCORE_VARS + STATE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORM_VARS + COIN_VARS + FLAG_VARS + SCORE_VARS + STATE_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + APPLY_GRAVITY + JUMP + COIN_COLLECT +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_COINS + DRAW_FLAG + DRAW_PLAYER + DRAW_SCORE +
         'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
         'ctx.fillText("YOU WIN!",300,180);ctx.font="18px monospace";ctx.fillText("All coins collected!",300,210);' +
         'ctx.fillText("Press R to play again",300,240)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

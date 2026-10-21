@@ -35,6 +35,10 @@ function wrap(code) {
     '<\/head><body><script>' + OUTPUT_FN + code + '<\/script><\/body><\/html>';
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_OUTPUT, '', presetup, blobSrc, afterBlob);
+}
+
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-gdscript-canvas',
   downloadName: 'my-gdscript-essentials.html',
@@ -50,9 +54,9 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        'title("Step 1: Variables & Types");' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){output("Error: "+e.message,"fail")}' +
+      return wbWrap(
+        'title("Step 1: Variables & Types");',
+        gdscriptToJs(u),
         'try{check("player_name is a string",typeof player_name,"string");' +
         'check("health is a number",typeof health,"number");' +
         'check("is_alive is boolean",typeof is_alive,"boolean");' +
@@ -60,27 +64,27 @@ window.CW_CONFIG = {
       );
     },
     2: function(u) {
-      return wrap(
-        'title("Step 2: Functions");' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){output("Error: "+e.message,"fail")}' +
+      return wbWrap(
+        'title("Step 2: Functions");',
+        gdscriptToJs(u),
         'try{check("add_numbers(3,5) is 8",add_numbers(3,5),8);' +
         'check("add_numbers(10,20) is 30",add_numbers(10,20),30);' +
         'check("greet(Hero) has name",greet("Hero").indexOf("Hero")>=0,true)}catch(e){output("Define the functions first","info")}'
       );
     },
     3: function(u) {
-      return wrap(
-        'title("Step 3: Loops");' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){output("Error: "+e.message,"fail")}' +
+      return wbWrap(
+        'title("Step 3: Loops");',
+        gdscriptToJs(u),
         'try{check("total is 55",total,55);' +
         'check("count is 10",count,10)}catch(e){output("Complete the loop first","info")}'
       );
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
         'title("Step 4: Conditions");' +
-        'let test_score=85;' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){output("Error: "+e.message,"fail")}' +
+        'let test_score=85;',
+        gdscriptToJs(u),
         'try{check("grade for 85 is B",grade,"B");' +
         'output("Testing with score = 95...","info");' +
         'test_score=95;grade="";' + gdscriptToJs(u.replace(/test_score\s*=\s*\d+/g,'')) +
@@ -88,19 +92,19 @@ window.CW_CONFIG = {
       );
     },
     5: function(u) {
-      return wrap(
-        'title("Step 5: Arrays & Dictionaries");' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){output("Error: "+e.message,"fail")}' +
+      return wbWrap(
+        'title("Step 5: Arrays & Dictionaries");',
+        gdscriptToJs(u),
         'try{check("inventory has 3 items",inventory.length,3);' +
         'check("player has name",player.name!==undefined,true);' +
         'check("player health is number",typeof player.health,"number")}catch(e){output("Define inventory and player first","info")}'
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
         'title("Step 6: Signals Pattern");' +
-        'let _signals={};function connect(sig,fn){_signals[sig]=fn}function emit(sig,data){if(_signals[sig])_signals[sig](data)}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){output("Error: "+e.message,"fail")}' +
+        'let _signals={};function connect(sig,fn){_signals[sig]=fn}function emit(sig,data){if(_signals[sig])_signals[sig](data)}',
+        gdscriptToJs(u),
         'try{output("Emitting health_changed with 50...","info");emit("health_changed",50);' +
         'output("Emitting health_changed with 0...","info");emit("health_changed",0);' +
         'check("signal system works",typeof _signals["health_changed"],"function")}catch(e){output("Connect the signal first","info")}'

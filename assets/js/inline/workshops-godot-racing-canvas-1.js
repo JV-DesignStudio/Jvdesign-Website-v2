@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    GDScript-to-JS transpiler (light transform so
    GDScript syntax runs in the canvas iframe)
@@ -104,42 +109,54 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + KEYS +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + CAR_VARS + ROAD_VARS + KEYS,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_ROAD + DRAW_CAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + CAR_VARS + ROAD_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));' +
         'carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
         DRAW_ROAD + DRAW_CAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + CAR_VARS + ROAD_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;' +
         'if(downHeld)carSpeed-=0.1;' +
         'carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
         'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
         'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_ROAD + DRAW_CAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + OBS_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + CAR_VARS + ROAD_VARS + OBS_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;' +
         'if(downHeld)carSpeed-=0.1;' +
@@ -147,14 +164,18 @@ window.CW_CONFIG = {
         'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
         'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));' +
         'roadOffset+=carSpeed;' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_ROAD + DRAW_CAR + DRAW_OBS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + OBS_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + CAR_VARS + ROAD_VARS + OBS_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;' +
         'if(downHeld)carSpeed-=0.1;' +
@@ -164,15 +185,19 @@ window.CW_CONFIG = {
         'roadOffset+=carSpeed;' +
         'for(var i=0;i<obs.length;i++){obs[i].y+=carSpeed;' +
         'if(obs[i].y>420){obs[i].y=-60;obs[i].x=220+Math.floor(Math.random()*160)}}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_ROAD + DRAW_CAR + DRAW_OBS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CAR_VARS + ROAD_VARS + OBS_VARS + LAP_VARS + STATE_VARS + KEYS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){carSpeed=0;distance=0;lap=0;lapTimer=0;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){carSpeed=0;distance=0;lap=0;lapTimer=0;gameState="play"}});',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;' +
@@ -184,7 +209,8 @@ window.CW_CONFIG = {
         'for(var i=0;i<obs.length;i++){obs[i].y+=carSpeed;' +
         'if(obs[i].y>420){obs[i].y=-60;obs[i].x=220+Math.floor(Math.random()*160)}' +
         'if(carX<obs[i].x+obs[i].w&&carX+carW>obs[i].x&&carY<obs[i].y+obs[i].h&&carY+carH>obs[i].y){carSpeed*=0.3;obs[i].y=420}}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_ROAD + DRAW_CAR + DRAW_OBS + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
@@ -192,7 +218,8 @@ window.CW_CONFIG = {
         'ctx.fillText("Best Lap: "+(bestTime===Infinity?"--":(bestTime/60).toFixed(1)+"s"),300,220);' +
         'ctx.fillText("Press R to race again",300,260)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

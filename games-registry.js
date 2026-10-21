@@ -232,7 +232,8 @@ window.JVDS_GAMES = [
   {
     "id": "critter-whack",
     "thumb": "assets/game-thumbs/critter-whack.webp",
-    "cat": "Action",
+    "cat": "Classroom Activity",
+    "classroom": true,
     "file": "critter-whack-page.html",
     "title": "Critter Whack: Ranger Sort",
     "tag": "Reaction · Sorting",
@@ -320,7 +321,7 @@ window.JVDS_GAME_QUALITY = {
   "arcane-citadel": "READY",
   "tower-defence": "READY",
   "ember-smash": "READY",
-  "gem-match": "BETA",
+  "gem-match": "READY",
   "highway-dodge": "READY",
   "sky-high-friends": "BETA",
   "critter-whack": "READY",

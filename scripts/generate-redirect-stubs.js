@@ -17,9 +17,11 @@ const PAGE_404 = path.join(ROOT, '404.html');
 const MARK = '// redirects.json';
 
 function stubFor(from, r) {
-  const toFile = path.relative(path.dirname(from), r.to).split(path.sep).join('/');
-  const canonical = 'https://jvdesignstudio.co.uk/' + r.to;
+  const query = r.query ? '?' + r.query : '';
+  const toFile = path.relative(path.dirname(from), r.to).split(path.sep).join('/') + query;
+  const canonical = 'https://jvdesignstudio.co.uk/' + r.to + query;
   const hashFrag = r.hash ? '#' + r.hash : '';
+  const searchExpr = r.query ? '(location.search?("&"+location.search.slice(1)):"")' : 'location.search';
   const title = `${r.name} moved to ${r.merged} | JVDesignStudio`;
   return `<!DOCTYPE html>
 <html lang="en">
@@ -43,7 +45,7 @@ function stubFor(from, r) {
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="/icons/icon-192.png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<script>location.replace("${toFile}"+location.search+(location.hash||"${hashFrag}"));</script>
+<script>location.replace("${toFile}"+${searchExpr}+(location.hash||"${hashFrag}"));</script>
 <meta http-equiv="refresh" content="0; url=${toFile}${hashFrag}">
 <script defer src="../analytics-loader.js"></script>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0a0514;color:#f0ead6;font-family:Inter,system-ui,sans-serif;text-align:center;padding:24px}a{color:#f5c842;font-weight:700}</style>
@@ -67,7 +69,8 @@ function patch404(src, redirects) {
       const m = line.match(new RegExp(`^(\\s*'${key.replace(/\//g, '\\/')}'\\s*:)(\\s*)'[^']*'(,)(\\s*(?://.*)?)$`));
       if (m) {
         patched++;
-        return `${m[1]}${m[2]}'/${r.to}'${m[3]}${MARK ? ' ' + MARK : ''}`;
+        const dest = '/' + r.to + (r.query ? '?' + r.query : '');
+        return `${m[1]}${m[2]}'${dest}'${m[3]}${MARK ? ' ' + MARK : ''}`;
       }
     }
     return line;

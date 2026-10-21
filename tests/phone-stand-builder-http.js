@@ -1,7 +1,7 @@
-const http=require('http'),fs=require('fs'),path=require('path'),os=require('os'),zlib=require('zlib');
+const http=require('http'),fs=require('fs'),path=require('path'),zlib=require('zlib');
 const puppeteer=require('puppeteer');
 const root=path.resolve(__dirname,'..');
-const PAGE='/workshops/phone-stand-builder.html';
+const PAGE='/workshops/3d-builder.html?preset=phone-stand';
 const ZIP='/phone-stand-starter.zip';
 let failures=0;
 function check(name,ok,detail=''){console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:''));if(!ok)failures++;}
@@ -26,28 +26,19 @@ const server=http.createServer((req,res)=>{
     page.on('request',r=>r.url().startsWith(base)||r.url().startsWith('data:')?r.continue():r.abort());
     await page.setViewport({width:1440,height:900});
     await page.goto(base+PAGE,{waitUntil:'load'});
-    if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
+    await page.waitForFunction(()=>window.JVExporter&&window.JVExporter.currentGroup&&window.JVExporter.currentGroup(),{timeout:30000});
     await new Promise(r=>setTimeout(r,600));
 
     const info=await page.evaluate(()=>{
-      const links=[...document.querySelectorAll('a')].filter(a=>(a.getAttribute('href')||'').includes('phone-stand-starter.zip'));
-      const banner=document.querySelector('.starter-banner');
+      const s=window._builderGetState();
       return {
-        links:links.map(a=>({href:a.getAttribute('href'),download:a.getAttribute('download'),text:a.textContent.trim()})),
-        banner:!!banner,
-        bannerText:banner?banner.textContent.replace(/\s+/g,' '):'',
-        hasFileInput:!!document.getElementById('starterFile'),
-        importLabel:[...document.querySelectorAll('button')].some(b=>/Import Design/.test(b.textContent)),
+        defaults:{style:s.params.standStyle,color:s.params.color,name:s.params.standName,brand:s.params.brandText},
+        canvas:document.querySelectorAll('#viewport canvas').length,
         dashes:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length,
-        scrollWidth:document.documentElement.scrollWidth,
-        defaults:{style:P.standStyle,color:P.color,name:P.standName,brand:P.brandText}
+        scrollWidth:document.documentElement.scrollWidth
       };
     });
-    check('two links point at the starter zip',info.links.length===2,JSON.stringify(info.links.map(l=>l.text)));
-    check('links are relative and download enabled',info.links.every(l=>l.href==='../phone-stand-starter.zip'&&l.download===''));
-    check('link wording says Starter Template and Download Free',info.links.some(l=>/Starter Template/.test(l.text))&&info.links.some(l=>/Download Free/.test(l.text)));
-    check('starter banner present with checklist wording',info.banner&&/checklist for all 14 steps/.test(info.bannerText));
-    check('hidden file input and Import Design button exist',info.hasFileInput&&info.importLabel);
+    check('shell mounts the phone stand preset',info.canvas>=1,'canvases '+info.canvas);
     check('builder started on its default design',info.defaults.style==='angled'&&info.defaults.color==='#22c55e',JSON.stringify(info.defaults));
     check('page has no em or en dashes',info.dashes===0,'dashes '+info.dashes);
     check('desktop no overflow',info.scrollWidth<=1440+2,info.scrollWidth+'');
@@ -82,22 +73,23 @@ const server=http.createServer((req,res)=>{
     }
     check('zip top level folder keeps the starter self contained',body.startsWith('PK')&&body.includes('PhoneStandStarter/'));
 
-    // end to end import: drop the cradle JSON on the import input
-    const tmp=path.join(os.tmpdir(),'starter-cradle-test.json');
-    fs.writeFileSync(tmp,JSON.stringify({
-      standName:'JVDS Cable Cradle',standStyle:'cradle',phoneWidth:72,phoneThickness:9,
-      standWidth:110,standDepth:90,standHeight:55,angle:55,baseThickness:5,lipHeight:10,
-      lipAngle:15,cableSlot:true,cableSlotWidth:14,gripTexture:'dots',color:'#38bdf8',
-      roundedCorners:true,cornerRadius:4,brandText:'JVDS',brandFontSize:14
-    },null,2));
-    const input=await page.$('#starterFile');
-    await input.uploadFile(tmp);
-    await page.$eval('#starterFile',el=>el.dispatchEvent(new Event('change')));
-    await page.waitForFunction(()=>P.standName==='JVDS Cable Cradle',{timeout:5000});
-    const after=await page.evaluate(()=>({style:P.standStyle,color:P.color,brand:P.brandText,name:P.standName,group:(typeof standGroup!=='undefined'&&!!standGroup)}));
+    // end to end: apply the cradle design through the shared state hook
+    await page.evaluate(()=>{
+      const s=window._builderGetState();
+      window._builderSetState({params:Object.assign({},s.params,{
+        standName:'JVDS Cable Cradle',standStyle:'cradle',phoneWidth:72,phoneThickness:9,
+        standWidth:110,standDepth:90,standHeight:55,angle:55,baseThickness:5,lipHeight:10,
+        lipAngle:15,cableSlot:true,cableSlotWidth:14,gripTexture:'dots',color:'#38bdf8',
+        roundedCorners:true,cornerRadius:4,brandText:'JVDS',brandFontSize:14
+      }),step:s.step});
+    });
+    await page.waitForFunction(()=>window._builderGetState().params.standName==='JVDS Cable Cradle',{timeout:5000});
+    const after=await page.evaluate(()=>{
+      const s=window._builderGetState().params;
+      return {style:s.standStyle,color:s.color,brand:s.brandText,name:s.standName,group:!!window.JVExporter.currentGroup()};
+    });
     check('import applied the cradle design',after.style==='cradle'&&after.color==='#38bdf8'&&after.brand==='JVDS',JSON.stringify(after));
     check('scene rebuilt after import',after.group===true);
-    fs.unlinkSync(tmp);
 
     for(const width of [390,320]){
       await page.setViewport({width,height:844,isMobile:true});

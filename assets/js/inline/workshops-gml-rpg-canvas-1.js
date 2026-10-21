@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    GML-to-JS transpiler (RPG edition)
    =================================================== */
@@ -121,9 +126,10 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + KEYS + PLAYER_VARS + WALLS + WALL_COLLIDE +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + KEYS + PLAYER_VARS + WALLS + WALL_COLLIDE,
+        gmlToJs(u),
         'function loop(){' +
         'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
         'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
@@ -132,12 +138,14 @@ window.CW_CONFIG = {
         'if(mx<0)facing="left";if(mx>0)facing="right";if(my<0)facing="up";if(my>0)facing="down";' +
         TILES_BG + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + WALL_COLLIDE + DIALOGUE +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + WALL_COLLIDE + DIALOGUE,
+        gmlToJs(u),
         'function loop(){' +
         'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
         'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
@@ -148,12 +156,14 @@ window.CW_CONFIG = {
         'updateDialogue();spacePressed=false;' +
         TILES_BG + DRAW_WALLS + DRAW_NPCS + DRAW_PLAYER + 'drawDialogue();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE,
+        gmlToJs(u),
         'function loop(){' +
         'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
         'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
@@ -171,12 +181,14 @@ window.CW_CONFIG = {
         'updateDialogue();spacePressed=false;' +
         TILES_BG + DRAW_WALLS + DRAW_NPCS + DRAW_ENEMIES + DRAW_PLAYER + 'drawDialogue();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE,
+        gmlToJs(u),
         'function loop(){' +
         'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
         'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
@@ -200,13 +212,15 @@ window.CW_CONFIG = {
         'updateDialogue();spacePressed=false;zPressed=false;' +
         TILES_BG + DRAW_WALLS + DRAW_NPCS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATTACK + DRAW_HEARTS + 'drawDialogue();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE +
-        'var warp={x:600,y:240,w:24,h:40,targetX:40,targetY:240,room:2,color:"#a855f7"};var currentRoom=1;' +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+        'var warp={x:600,y:240,w:24,h:40,targetX:40,targetY:240,room:2,color:"#a855f7"};var currentRoom=1;',
+        gmlToJs(u),
         'function loop(){' +
         'var mx=(rightHeld?1:0)-(leftHeld?1:0),my=(downHeld?1:0)-(upHeld?1:0);' +
         'if(mx!==0&&my!==0){mx*=0.707;my*=0.707}' +
@@ -235,14 +249,16 @@ window.CW_CONFIG = {
         'ctx.fillStyle="#fff";ctx.font="12px monospace";ctx.textAlign="right";ctx.fillText("Room "+currentRoom,620,36);' +
         'drawDialogue();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + KEYS + PLAYER_VARS + WALLS + NPC + ENEMIES + WALL_COLLIDE + DIALOGUE +
         'var warp={x:600,y:240,w:24,h:40,targetX:40,targetY:240,room:2,color:"#a855f7"};var currentRoom=1;' +
-        'var saveData=null;' +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+        'var saveData=null;',
+        gmlToJs(u),
         'function doSave(){saveData=JSON.stringify({px:px,py:py,hp:hp,room:currentRoom});' +
         'try{localStorage.setItem("rpg_save",saveData)}catch(e){}startDialogue("Game saved!")}' +
         'function doLoad(){try{var s=localStorage.getItem("rpg_save");if(s){var d=JSON.parse(s);px=d.px;py=d.py;hp=d.hp;currentRoom=d.room;startDialogue("Game loaded!")}}catch(e){}}' +
@@ -277,7 +293,8 @@ window.CW_CONFIG = {
         'ctx.fillStyle="#aaa";ctx.font="11px monospace";ctx.textAlign="center";ctx.fillText("Space=Save  R=Load",320,475);' +
         'drawDialogue();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

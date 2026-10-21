@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <script defer src="./analytics-loader.js"></script>
+<script defer src="/jvds-funnel.js"></script>
 <title>JVDS Arcade: Free Browser Games for Kids | JVDesignStudio</title>
 <meta name="description" content="The JVDS Arcade: twelve hand-picked browser games for kids. No download, no account. Tap a cabinet and play.">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/arcade.html">
@@ -36,14 +37,14 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4kJXKawlO8n339E9xTKwejI9iXgMlP77l9FRmJUwPRE=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-OKllTJfmWJBBZGZRWuF9svec3DbXXlmdFEnqlL8i8es=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 
-<link rel="stylesheet" href="style-shared.css?v=18">
+<link rel="stylesheet" href="style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css">
 <link rel="stylesheet" href="style-arcade.css?v=20">
 <noscript><link rel="stylesheet" href="style-arcade.css?v=20"></noscript>
@@ -153,6 +154,10 @@
   </div>
   <p class="arc-filter-count" id="arcFilterCount" role="status" aria-live="polite"></p>
   <div class="arc-grid" id="grid"></div>
+  <div id="classroomSection" style="margin-top:32px;padding:0 8px" hidden>
+    <h2 style="font-size:1rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted,#888);margin-bottom:12px">📚 Classroom Activities</h2>
+    <div class="arc-grid" id="classroomGrid"></div>
+  </div>
   <div class="arc-empty-filter" id="arcEmpty" hidden>
     <p>No games match those filters.</p>
     <button type="button" id="arcEmptyClear">Clear filters</button>
@@ -207,7 +212,8 @@
   }
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-  function games() { return window.JVDS_GAMES || []; }
+  function games() { return (window.JVDS_GAMES || []).filter(function(g){ return !g.classroom; }); }
+  function classroomGames() { return (window.JVDS_GAMES || []).filter(function(g){ return !!g.classroom; }); }
 
   // Some games save under a different id than their registry id.
   var SAVE_ID_ALIAS = {
@@ -270,13 +276,29 @@
       var q = String(g.quality || '').toUpperCase();
       if (q) meta += '<span class="cab-pill cab-q cab-q--' + q.toLowerCase() + '">' + esc(q) + '</span>';
       if (g.session) meta += '<span class="cab-pill">' + esc(g.session) + '</span>';
-      if (g.character) meta += '<span class="cab-pill">Guide: ' + esc(g.character) + '</span>';
+      if (g.difficulty) meta += '<span class="cab-pill">' + esc(g.difficulty) + '</span>';
+      if (g.age) meta += '<span class="cab-pill">' + esc(g.age) + '</span>';
       // A1677: Lumo is the learning voice. Each game says what it practises and
       // links to a real workshop or tool, so the loop does not stop at the score.
       var learn = g.learning ? '<p class="cab-learn"><strong>Lumo:</strong> practising ' + esc(g.learning) + '</p>' : '';
       var learnLink = (g.learnHref && g.learnLabel)
         ? '<a class="cab-learn-link" href="' + g.learnHref + '">Learn how: ' + esc(g.learnLabel) + ' <span aria-hidden="true">&#8594;</span></a>'
         : '';
+      // A1762: quick-look panel - objective, controls, personal best. Uses <details>
+      // so it is keyboard reachable (Space/Enter on summary) without blocking Play.
+      var save = saveOf(g.id);
+      var bestRow = '';
+      if (save) {
+        var hi = save.highScore || save.best || 0;
+        if (hi > 0) bestRow = '<span class="cab-peek-row"><b>Your best</b>' + Number(hi).toLocaleString() + '</span>';
+      }
+      var peekPanel = '<details class="cab-peek">' +
+        '<summary class="cab-peek-btn" aria-label="Quick look at ' + esc(g.title) + '">Quick look &#9660;</summary>' +
+        '<div class="cab-peek-body">' +
+        (g.objective ? '<p class="cab-peek-obj">' + esc(g.objective) + '</p>' : '') +
+        (g.controls ? '<span class="cab-peek-row"><b>Controls</b>' + esc(g.controls) + '</span>' : '') +
+        bestRow +
+        '</div></details>';
       return '<div class="cab-cell">' +
         '<a class="cab" href="games/' + encodeURI(g.file) + '" aria-label="Play ' + esc(g.title) + '">' +
         '<div class="cab-art"><div class="cab-emoji">' + emoji + '</div>' + art + '</div>' +
@@ -285,8 +307,8 @@
           '<div class="cab-meta">' + meta + '</div>' +
           '<h3 class="cab-title">' + esc(g.title) + '</h3>' +
           '<p class="cab-tag">' + esc(g.tag || g.cat || '') + '</p>' + learn +
-          '<span class="cab-play">&#9654; Play</span>' +
-        '</div></a>' + learnLink + '</div>';
+          '<span class="cab-play" aria-hidden="true">&#9654; Play</span>' +
+        '</div></a>' + learnLink + peekPanel + '</div>';
       }).join('');
     }
     var heading = document.getElementById('playHeading');
@@ -435,23 +457,49 @@
     }
     rows.sort(function (a, b) { return b.high - a.high; });
     el.className = 'arc-scores';
+    el.setAttribute('role', 'list');
     el.innerHTML = rows.map(function (r) {
-      return '<div class="arc-score"><span class="em">' + esc(r.g.emoji || '🎮') + '</span>' +
-        '<span class="t"><b>' + esc(r.g.title) + '</b><span>' + r.plays + ' play' + (r.plays === 1 ? '' : 's') + '</span></span>' +
-        '<span class="v">' + Number(r.high).toLocaleString() + '</span></div>';
+      var playsLabel = r.plays + ' play' + (r.plays === 1 ? '' : 's');
+      var scoreLabel = Number(r.high).toLocaleString();
+      return '<div class="arc-score" role="listitem" aria-label="' + esc(r.g.title) + ': best score ' + scoreLabel + ', ' + playsLabel + '">' +
+        '<span class="em" aria-hidden="true">' + esc(r.g.emoji || '🎮') + '</span>' +
+        '<span class="t"><b>' + esc(r.g.title) + '</b><span>' + playsLabel + '</span></span>' +
+        '<span class="v" aria-hidden="true">' + scoreLabel + '</span></div>';
     }).join('');
   }
 
   /* ── settings ─────────────────────────────────────────────── */
+  function focusableIn(el) {
+    return Array.from(el.querySelectorAll('button:not([disabled]),[href],input:not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])'));
+  }
+  function makeTrap(el) {
+    return function (e) {
+      if (e.key !== 'Tab') return;
+      var items = focusableIn(el);
+      if (!items.length) return;
+      var first = items[0], last = items[items.length - 1];
+      if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+      else            { if (document.activeElement === last)  { e.preventDefault(); first.focus(); } }
+    };
+  }
+  var _settingsTrap = null;
   function openSettings() {
+    var sheet = document.getElementById('settingsSheet');
     document.getElementById('settingsBackdrop').hidden = false;
-    document.getElementById('settingsSheet').hidden = false;
+    sheet.hidden = false;
     document.getElementById('arcSettingsBtn').setAttribute('aria-expanded', 'true');
+    var first = focusableIn(sheet)[0];
+    if (first) first.focus();
+    _settingsTrap = makeTrap(sheet);
+    sheet.addEventListener('keydown', _settingsTrap);
   }
   function closeSettings() {
+    var sheet = document.getElementById('settingsSheet');
     document.getElementById('settingsBackdrop').hidden = true;
-    document.getElementById('settingsSheet').hidden = true;
+    sheet.hidden = true;
     document.getElementById('arcSettingsBtn').setAttribute('aria-expanded', 'false');
+    if (_settingsTrap) { sheet.removeEventListener('keydown', _settingsTrap); _settingsTrap = null; }
+    document.getElementById('arcSettingsBtn').focus();
   }
 
   function wireSettings() {
@@ -502,7 +550,12 @@
     // iOS Safari has no beforeinstallprompt: show a one-time hint.
     var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
     if (isIos && !standalone && lsGet('jvds_arc_ios_hint', '0') !== '1') {
-      setTimeout(function () { document.getElementById('iosHint').classList.add('show'); }, 1200);
+      setTimeout(function () {
+        var hint = document.getElementById('iosHint');
+        hint.classList.add('show');
+        var btn = hint.querySelector('button');
+        if (btn) btn.focus();
+      }, 1200);
     }
   }
   function hideIos() {
@@ -522,6 +575,29 @@
     if (c) c.addEventListener('click', hideIos);
   }
 
+  function renderClassroomGrid() {
+    var section = document.getElementById('classroomSection');
+    var el = document.getElementById('classroomGrid');
+    var list = classroomGames();
+    if (!section || !el || !list.length) return;
+    section.hidden = false;
+    el.innerHTML = list.map(function (g) {
+      var emoji = esc(g.emoji || '📚');
+      var art = g.thumb ? '<img loading="lazy" decoding="async" src="' + encodeURI(g.thumb) + '" alt="" data-fallback-hide>' : '';
+      return '<div class="cab-cell">' +
+        '<a class="cab" href="games/' + encodeURI(g.file) + '" aria-label="Play ' + esc(g.title) + '">' +
+        '<div class="cab-art"><div class="cab-emoji">' + emoji + '</div>' + art + '</div>' +
+        '<div class="cab-fade"></div>' +
+        '<div class="cab-body">' +
+          '<div class="cab-meta"><span class="cab-pill cab-q cab-q--ready">READY</span>' + (g.session ? '<span class="cab-pill">' + esc(g.session) + '</span>' : '') + '</div>' +
+          '<h3 class="cab-title">' + esc(g.title) + '</h3>' +
+          '<p class="cab-tag">' + esc(g.tag || '') + '</p>' +
+          (g.desc ? '<p class="cab-learn">' + esc(g.desc) + '</p>' : '') +
+          '<span class="cab-play" aria-hidden="true">&#9654; Play</span>' +
+        '</div></a></div>';
+    }).join('');
+  }
+
   function init() {
     renderStats();
     wireFilters();
@@ -530,6 +606,7 @@
     wireInstall();
     wireOffline();
     wireIosHint();
+    renderClassroomGrid();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

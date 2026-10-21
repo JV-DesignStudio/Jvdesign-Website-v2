@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Defold Lua-to-JS transpiler (light transform so Lua
    syntax runs in the canvas iframe)
@@ -93,71 +98,93 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + CATCHER_VARS + KEYS +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + CATCHER_VARS + KEYS,
+        defoldToJs(u),
         'function loop(){' +
         MOVE_CATCHER +
         DRAW_BG + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + CATCHER_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + CATCHER_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'cx=Math.max(0,Math.min(400-cw,cx));' +
         DRAW_BG + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CATCHER_VARS + STAR_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(sy>420)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(sy>420)resetStar();' +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         STAR_MISS +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + STAR_FALL + STAR_CATCH + STAR_MISS +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_CATCHER + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

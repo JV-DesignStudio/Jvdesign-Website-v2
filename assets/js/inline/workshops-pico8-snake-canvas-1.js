@@ -36,6 +36,11 @@ function p8ToJs(code) {
     .replace(/\bor\b/g, '||');
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    IFRAME BUILDING BLOCKS (PICO-8 Snake)
    =================================================== */
@@ -109,76 +114,87 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + SNAKE_VARS + KEYS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + SNAKE_VARS + KEYS,
+        p8ToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + STATE_VARS + KEYS +
-        'function loop(){tick++;' +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+        'function loop(){tick++;',
+        p8ToJs(u),
         'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:snake[0].x+dx,y:snake[0].y+dy};head.x=(head.x+16)%16;head.y=(head.y+16)%16;snake.unshift(head);snake.pop()}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + STATE_VARS + KEYS +
         PLACE_FOOD +
         'function loop(){tick++;' +
         'if(leftPressed&&dx!==1){ndx=-1;ndy=0}if(rightPressed&&dx!==-1){ndx=1;ndy=0}' +
         'if(upPressed&&dy!==1){ndx=0;ndy=-1}if(downPressed&&dy!==-1){ndx=0;ndy=1}' +
-        'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};snake.unshift(head);' +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+        'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};snake.unshift(head);',
+        p8ToJs(u),
         '}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
         PLACE_FOOD +
         'function loop(){tick++;' +
         'if(leftPressed&&dx!==1){ndx=-1;ndy=0}if(rightPressed&&dx!==-1){ndx=1;ndy=0}' +
         'if(upPressed&&dy!==1){ndx=0;ndy=-1}if(downPressed&&dy!==-1){ndx=0;ndy=1}' +
         'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};snake.unshift(head);' +
-        'if(head.x===fx&&head.y===fy){score++;placeFood()}else{snake.pop()}' +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+        'if(head.x===fx&&head.y===fy){score++;placeFood()}else{snake.pop()}',
+        p8ToJs(u),
         '}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
         PLACE_FOOD +
         'function loop(){tick++;' +
         'if(gameState==="play"){' +
         'if(leftPressed&&dx!==1){ndx=-1;ndy=0}if(rightPressed&&dx!==-1){ndx=1;ndy=0}' +
         'if(upPressed&&dy!==1){ndx=0;ndy=-1}if(downPressed&&dy!==-1){ndx=0;ndy=1}' +
-        'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};' +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+        'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};',
+        p8ToJs(u),
         'snake.unshift(head);if(head.x===fx&&head.y===fy){score++;placeFood()}else{snake.pop()}' +
         '}}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'if(gameState==="over"){ctx.fillStyle=P8PAL[7];ctx.font="bold 24px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",192,170);ctx.font="14px monospace";ctx.fillText("Score: "+score,192,200);ctx.fillText("Press R to restart",192,224)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
         PLACE_FOOD +
         'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){snake=[{x:8,y:8}];dx=1;dy=0;ndx=1;ndy=0;score=0;moveRate=8;placeFood();gameState="play"}});' +
@@ -188,14 +204,15 @@ window.CW_CONFIG = {
         'if(upPressed&&dy!==1){ndx=0;ndy=-1}if(downPressed&&dy!==-1){ndx=0;ndy=1}' +
         'if(tick%moveRate===0){dx=ndx;dy=ndy;var head={x:(snake[0].x+dx+16)%16,y:(snake[0].y+dy+16)%16};' +
         'for(var ci=0;ci<snake.length;ci++){if(snake[ci].x===head.x&&snake[ci].y===head.y){gameState="over"}}' +
-        'if(gameState==="play"){snake.unshift(head);if(head.x===fx&&head.y===fy){score++;placeFood()}else{snake.pop()}}' +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+        'if(gameState==="play"){snake.unshift(head);if(head.x===fx&&head.y===fy){score++;placeFood()}else{snake.pop()}}',
+        p8ToJs(u),
         '}}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'if(gameState==="over"){ctx.fillStyle=P8PAL[7];ctx.font="bold 24px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",192,170);ctx.font="14px monospace";ctx.fillText("Score: "+score,192,200);ctx.fillText("Press R to restart",192,224)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

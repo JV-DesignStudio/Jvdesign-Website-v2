@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Java-to-JS transpiler (light transform so Java
    syntax runs in the canvas iframe)
@@ -115,24 +120,27 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP +
-        'let heroName="Aria",heroHp=30,heroMaxHp=30,heroAttack=5;' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        'let heroName="Aria",heroHp=30,heroMaxHp=30,heroAttack=5;',
+        javaToJs(u),
         'ctx.fillStyle="#191e3c";ctx.fillRect(0,0,480,400);' +
         'ctx.fillStyle="#e6463c";ctx.fillRect(200,150,80,100);' +
         'ctx.fillStyle="#fff";ctx.font="bold 16px sans-serif";ctx.textAlign="center";' +
         'ctx.fillText(heroName,240,290);' +
         'ctx.fillText("HP: "+heroHp+" / "+heroMaxHp,240,315);' +
         'ctx.fillText("ATK: "+heroAttack,240,340);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP +
         'let heroName="Aria",heroHp=30,heroMaxHp=30,heroAttack=5;' +
-        INVENTORY +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        INVENTORY,
+        javaToJs(u),
         'ctx.fillStyle="#191e3c";ctx.fillRect(0,0,480,400);' +
         'ctx.fillStyle="#e6463c";ctx.fillRect(200,100,80,100);' +
         'ctx.fillStyle="#fff";ctx.font="bold 16px sans-serif";ctx.textAlign="center";' +
@@ -141,35 +149,40 @@ window.CW_CONFIG = {
         'ctx.fillStyle="#ffd166";ctx.font="bold 14px sans-serif";' +
         'ctx.fillText("Inventory ("+inventory.length+")",240,300);' +
         'for(let i=0;i<inventory.length;i++){ctx.fillStyle="#adf";ctx.fillText(inventory[i],240,320+i*18)}'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + TILE + MAP_DATA + TILE_COLORS +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + TILE + MAP_DATA + TILE_COLORS,
+        javaToJs(u),
         'for(let r=0;r<map.length;r++)for(let c=0;c<map[0].length;c++){ctx.fillStyle=tileColor(map[r][c]);ctx.fillRect(c*TILE,r*TILE,TILE,TILE)}'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + TILE + HERO_VARS + MAP_DATA + TILE_COLORS + DRAW_MAP + DRAW_HERO + WALKABLE +
-        'function draw(){drawMap();drawHero()}' +
+        'function draw(){drawMap();drawHero()}',
+        'window.cwStep=function(){let r=window._cwR,c=window._cwC,e=window._cwE;' + javaToJs(u) + 'window._cwR=r;window._cwC=c;};',
         'document.addEventListener("keydown",function(e){' +
         'let r=heroRow,c=heroCol;' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e2){}' +
+        'if(typeof cwStep==="function"){window._cwE=e;window._cwR=r;window._cwC=c;cwStep();r=window._cwR;c=window._cwC;}' +
         'if(walkable(r,c)){heroRow=r;heroCol=c}' +
         'e.preventDefault();draw()});' +
         'draw();'
-      );
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + TILE + HERO_VARS + INVENTORY + MAP_DATA + TILE_COLORS +
         DRAW_MAP + DRAW_HERO + WALKABLE +
         'function draw(){drawMap();drawHero();' +
         'ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,480,24);' +
         'ctx.fillStyle="#fff";ctx.font="bold 12px sans-serif";ctx.textAlign="left";' +
-        'ctx.fillText("Gold: "+heroGold+"  Items: "+inventory.length,8,17)}' +
+        'ctx.fillText("Gold: "+heroGold+"  Items: "+inventory.length,8,17)}',
+        'window.cwStep=function(){' + javaToJs(u) + '};',
         'document.addEventListener("keydown",function(e){' +
         'let r=heroRow,c=heroCol;' +
         'if(e.code==="ArrowUp"||e.code==="KeyW")r--;' +
@@ -177,20 +190,22 @@ window.CW_CONFIG = {
         'if(e.code==="ArrowLeft"||e.code==="KeyA")c--;' +
         'if(e.code==="ArrowRight"||e.code==="KeyD")c++;' +
         'if(walkable(r,c)){heroRow=r;heroCol=c;' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e2){}}' +
+        'if(typeof cwStep==="function")cwStep();}' +
         'e.preventDefault();draw()});' +
         'draw();'
-      );
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + TILE + HERO_VARS + INVENTORY + MAP_DATA + TILE_COLORS +
-        DRAW_MAP + DRAW_HERO + WALKABLE +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        DRAW_MAP + DRAW_HERO + WALKABLE,
+        javaToJs(u),
         'function draw(){drawMap();drawHero();drawHud()}' +
         KEYS_RPG_CHEST +
         'draw();'
-      );
+      
+      )
     }
   },
 

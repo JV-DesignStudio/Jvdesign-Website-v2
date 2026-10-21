@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Scratch-to-JS transpiler (block notation to JS)
    =================================================== */
@@ -103,76 +108,98 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + SPRITE + KEYS +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + BASKET_VARS + SPRITE + KEYS,
+        scratchToJs(u),
         'function loop(){' +
         MOVE_BASKET +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + SPRITE + KEYS +
+      return wbWrap(
+        
+        SETUP + BASKET_VARS + SPRITE + KEYS,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'bx=Math.max(0,Math.min(480-bw,bx));' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + FRUIT_VARS + SPRITE + KEYS +
-        FRUIT_RESET +
+        FRUIT_RESET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(fy>370)resetFruit();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + SPRITE + KEYS +
-        FRUIT_RESET +
+        FRUIT_RESET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + FRUIT_FALL +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(fy>370)resetFruit();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + SPRITE + KEYS +
-        FRUIT_RESET +
+        FRUIT_RESET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + FRUIT_VARS + SCORE_VARS + STATE_VARS + SPRITE + KEYS +
         FRUIT_RESET +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=3;resetFruit();gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=3;resetFruit();gameState="play"}});',
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH + FRUIT_MISS +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
         'ctx.fillText("GAME OVER",240,160);ctx.font="18px monospace";ctx.fillText("Score: "+score,240,195);' +
         'ctx.fillText("Press R to play again",240,225)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

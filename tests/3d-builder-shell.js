@@ -124,10 +124,16 @@ let FALLBACK = null; // first preset not migrated to a module; still shows via t
       console.log('PASS deep link ?preset=' + FALLBACK + ' falls back to its page');
     }
     for (const id of PRESETS) {
-      const resp = await page.goto(base + '/workshops/' + id + '-builder.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
-      assert.equal(resp.status(), 200, id + '-builder.html resolves');
+      await page.goto(base + '/workshops/' + id + '-builder.html', { waitUntil: 'load', timeout: 30000 });
+      await page.waitForFunction((pid) => {
+        const u = new URL(location.href);
+        return u.pathname === '/workshops/3d-builder.html' && u.searchParams.get('preset') === pid &&
+          typeof window._builderGetState === 'function' && !!document.querySelector('#bsHost .bs-stage');
+      }, { timeout: 20000 }, id);
+      const preset = await page.evaluate(() => new URL(location.href).searchParams.get('preset'));
+      assert.equal(preset, id, id + '-builder.html lands on its shell preset');
     }
-    console.log('PASS all 11 old builder URLs resolve');
+    console.log('PASS all 11 old builder URLs redirect to their shell presets');
     assert.deepEqual(errs, []);
     await page.close();
     console.log('PASS 3d-builder-shell: module host + iframe fallback + deep link + 11 old URLs, 390/1440 clean');

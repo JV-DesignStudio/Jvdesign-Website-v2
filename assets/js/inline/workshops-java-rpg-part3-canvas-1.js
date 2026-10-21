@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Java-to-JS transpiler (light transform so Java
    syntax runs in the canvas iframe)
@@ -308,21 +313,24 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + NPC_VARS + VILLAGE_BG + DRAW_NPC + DRAW_HERO + HERO_MOVE +
         DIALOG_VARS + DIALOG_CLICK +
-        DRAW_DIALOG +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        DRAW_DIALOG,
+        javaToJs(u),
         'function loop(){moveHero();' +
         'drawVillage();drawNpc();drawHero();drawDialog();' +
         'ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,500,28);' +
         'ctx.fillStyle="#fff";ctx.font="bold 13px Arial";ctx.textAlign="left";' +
         'ctx.fillText("Aria  Lv1  \\u2764 30/30",10,18);' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + NPC_VARS + VILLAGE_BG + DRAW_NPC + DRAW_HERO + HERO_MOVE +
         DIALOG_VARS + QUEST_VARS + GOBLIN_VARS +
         DRAW_GOBLINS + DRAW_QUEST_LOG + DRAW_DIALOG +
@@ -334,18 +342,20 @@ window.CW_CONFIG = {
           'let dist=Math.abs(heroX-npcX)+Math.abs(heroY-npcY);' +
           'if(dist<80&&!questActive){dialogActive=true;dialogLine=0;return}' +
           'for(let g of goblins){if(g.alive&&mx>g.x&&mx<g.x+24&&my>g.y&&my<g.y+28){g.hp--;if(g.hp<=0){g.alive=false;if(questActive)goblinsSlain++;if(goblinsSlain>=questGoal)questComplete=true}}}' +
-        '});' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        '});',
+        javaToJs(u),
         'function loop(){moveHero();' +
         'drawVillage();drawGoblins();drawNpc();drawHero();drawQuestLog();drawDialog();' +
         'ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,500,28);' +
         'ctx.fillStyle="#fff";ctx.font="bold 13px Arial";ctx.textAlign="left";' +
         'ctx.fillText("Aria  Lv1  Goblins: "+goblinsSlain+"/"+questGoal,10,18);' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + NPC_VARS + VILLAGE_BG + DRAW_NPC + DRAW_HERO + HERO_MOVE +
         QUEST_VARS + GATE_VARS +
         DRAW_GATE + DRAW_KEY + DRAW_QUEST_LOG +
@@ -355,18 +365,19 @@ window.CW_CONFIG = {
           'let mx=e.clientX-rect.left,my=e.clientY-rect.top;' +
           'if(!keyCollected&&mx>keyX&&mx<keyX+keyW&&my>keyY&&my<keyY+keyH+10){keyCollected=true;hasKey=true}' +
           'if(hasKey&&!gateOpen&&mx>gateX&&mx<gateX+gateW&&my>gateY&&my<gateY+gateH){gateOpen=true;hasKey=false}' +
-        '});' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        '});',
+        javaToJs(u),
         'function loop(){moveHero();' +
         'drawVillage();drawKey();drawGate();drawNpc();drawHero();drawQuestLog();' +
         'ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,500,28);' +
         'ctx.fillStyle="#fff";ctx.font="bold 13px Arial";ctx.textAlign="left";' +
         'ctx.fillText("Aria  Lv3  Key: "+(hasKey?"YES":"no")+"  Gate: "+(gateOpen?"OPEN":"locked"),10,18);' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + BOSS_VARS +
         DRAW_BOSS_SCENE + DRAW_BOSS + DRAW_BATTLE_HERO + DRAW_BATTLE_UI +
         'document.addEventListener("keydown",function(e){' +
@@ -374,13 +385,14 @@ window.CW_CONFIG = {
           'let k=e.key.toLowerCase();' +
           'if(k==="a"){let dmg=heroAttack;bossHp=Math.max(0,bossHp-dmg);bossFlash=12;' +
             'battleLog="Hero hits Dragon for "+dmg+"!";' +
-            'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(ex){}' +
+            'if(typeof cwStep==="function"){window._cwDmg=dmg;cwStep();}' +
             'if(bossHp>0){setTimeout(function(){let bd=bossAttack;heroHp=Math.max(0,heroHp-bd);heroFlash=12;battleLog="Dragon hits back for "+bd+"!"},500)}' +
           '}' +
           'if(k==="d"){battleLog="Hero braces! Next hit halved.";' +
             'setTimeout(function(){let bd=Math.floor(bossAttack/2);heroHp=Math.max(0,heroHp-bd);heroFlash=8;battleLog="Dragon hits for "+bd+" (defended)!"},500)}' +
           'if(k==="p"){heroHp=Math.min(heroMaxHp,heroHp+12);battleLog="Hero drinks a Potion! +12 HP"}' +
-        '});' +
+        '});',
+        'window.cwStep=function(){let dmg=window._cwDmg;' + javaToJs(u) + '};',
         'function loop(){' +
         'drawBossScene();drawBoss();drawBattleHero();drawBattleUI();' +
         'if(bossHp<=0){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,500,400);' +
@@ -390,21 +402,24 @@ window.CW_CONFIG = {
           'ctx.fillStyle="#ef4444";ctx.font="bold 30px Arial";ctx.textAlign="center";ctx.fillText("YOU HAVE FALLEN",250,200);' +
           'ctx.fillStyle="#fff";ctx.font="16px Arial";ctx.fillText("Press R to retry",250,240)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + VICTORY_VARS +
         DRAW_VICTORY +
-        'let stats={name:"Aria",level:5,goblins:3,gold:225};' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        'let stats={name:"Aria",level:5,goblins:3,gold:225};',
+        javaToJs(u),
         'document.addEventListener("keydown",function(e){if(e.key.toLowerCase()==="r"&&victoryTimer>120){victoryTimer=0;scrollY=0}});' +
         'function loop(){drawVictory(stats);' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + RECAP_CONCEPTS +
         DRAW_RECAP +
         'let selectedCard=-1;' +
@@ -420,8 +435,8 @@ window.CW_CONFIG = {
           'for(let i=0;i<concepts.length;i++){let col=i%3,row=Math.floor(i/3);' +
             'let cx=30+col*160,cy=75+row*155;' +
             'if(mx>cx&&mx<cx+140&&my>cy&&my<cy+130){selectedCard=selectedCard===i?-1:i}}' +
-        '});' +
-        'try{eval(' + JSON.stringify(javaToJs(u)) + ')}catch(e){}' +
+        '});',
+        javaToJs(u),
         'function loop(){drawRecap();' +
         'if(selectedCard>=0){' +
           'ctx.fillStyle="rgba(0,0,0,0.85)";ctx.fillRect(50,310,400,80);' +
@@ -431,7 +446,8 @@ window.CW_CONFIG = {
           'ctx.fillStyle="#fff";ctx.font="13px Arial";ctx.fillText(concepts[selectedCard].desc,250,365);' +
           'ctx.fillStyle="#aaa";ctx.font="11px Arial";ctx.fillText("Click card again to close",250,383)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

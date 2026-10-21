@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Scratch-to-JS transpiler (block notation to JS)
    =================================================== */
@@ -107,56 +112,72 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + KEYS +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + KEYS,
+        scratchToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + KEYS,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'var ox=px,oy=py;' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + KEYS + MAZE_DATA + WALL_CHECK +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + KEYS + MAZE_DATA + WALL_CHECK,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'var ox=px,oy=py;' +
         'if(leftHeld)px-=pSpeed;if(rightHeld)px+=pSpeed;' +
         'if(upHeld)py-=pSpeed;if(downHeld)py+=pSpeed;' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GOAL_VARS + KEYS + MAZE_DATA + WALL_CHECK +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + GOAL_VARS + KEYS + MAZE_DATA + WALL_CHECK,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'var ox=px,oy=py;' +
         'if(leftHeld){px-=pSpeed;if(touchingWall(px,py))px=ox}' +
         'if(rightHeld){px+=pSpeed;if(touchingWall(px,py))px=ox}' +
         'if(upHeld){py-=pSpeed;if(touchingWall(px,py))py=oy}' +
         'if(downHeld){py+=pSpeed;if(touchingWall(px,py))py=oy}' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_WALLS + DRAW_GOAL + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GOAL_VARS + SCORE_VARS + KEYS + MAZE_DATA + WALL_CHECK +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + GOAL_VARS + SCORE_VARS + KEYS + MAZE_DATA + WALL_CHECK,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'var ox=px,oy=py;' +
         'if(leftHeld){px-=pSpeed;if(touchingWall(px,py))px=ox}' +
@@ -164,16 +185,20 @@ window.CW_CONFIG = {
         'if(upHeld){py-=pSpeed;if(touchingWall(px,py))py=oy}' +
         'if(downHeld){py+=pSpeed;if(touchingWall(px,py))py=oy}' +
         'if(px!==ox||py!==oy)moves++;' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_WALLS + DRAW_GOAL + DRAW_PLAYER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + GOAL_VARS + SCORE_VARS + STATE_VARS + KEYS + MAZE_DATA + WALL_CHECK +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){px=30;py=30;moves=0;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){px=30;py=30;moves=0;gameState="play"}});',
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'var ox=px,oy=py;' +
@@ -183,7 +208,8 @@ window.CW_CONFIG = {
         'if(downHeld){py+=pSpeed;if(touchingWall(px,py))py=oy}' +
         'if(px!==ox||py!==oy)moves++;' +
         GOAL_CHECK +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         'px=Math.max(0,Math.min(464,px));py=Math.max(0,Math.min(344,py));' +
         DRAW_BG + DRAW_WALLS + DRAW_GOAL + DRAW_PLAYER + DRAW_HUD +
@@ -192,7 +218,8 @@ window.CW_CONFIG = {
         'ctx.fillText("YOU WIN!",240,150);ctx.fillStyle="#fff";ctx.font="18px monospace";' +
         'ctx.fillText("Moves: "+moves,240,185);ctx.fillText("Press R to play again",240,215)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

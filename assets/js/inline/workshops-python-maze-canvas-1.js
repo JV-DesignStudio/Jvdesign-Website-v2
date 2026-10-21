@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Python-to-JS transpiler (light transform so Python
    syntax runs in the canvas iframe)
@@ -141,56 +146,65 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + CELL + MAZE_DATA +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + CELL + MAZE_DATA,
+        pyToJs(u),
         DRAW_MAZE +
         'function loop(){drawMaze();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CELL + MAZE_DATA + PLAYER_VARS + MOVE_TIMER +
         DRAW_MAZE +
-        KEY_HANDLER +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+        KEY_HANDLER,
+        pyToJs(u),
         'function loop(){' +
         'drawMaze();' + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CELL + MAZE_DATA + PLAYER_VARS + KEY_VARS + MOVE_TIMER +
-        DRAW_MAZE +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+        DRAW_MAZE,
+        pyToJs(u),
         KEY_HANDLER +
         'function loop(){' +
         'drawMaze();' + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CELL + MAZE_DATA + PLAYER_VARS + KEY_VARS +
         GHOST_VARS + LIVES_VARS + STATE_VARS + MOVE_TIMER +
-        DRAW_MAZE + GHOST_AI +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+        DRAW_MAZE + GHOST_AI,
+        pyToJs(u),
         KEY_HANDLER +
         'function loop(){' +
         'if(gameState==="play"){' + GHOST_TICK + GHOST_COLLIDE + '}' +
         'drawMaze();' + DRAW_PLAYER + DRAW_GHOST + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CELL + MAZE_DATA + PLAYER_VARS + KEY_VARS +
         GHOST_VARS + LIVES_VARS + STATE_VARS + MOVE_TIMER +
         DRAW_MAZE + GHOST_AI +
-        KEY_HANDLER +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+        KEY_HANDLER,
+        pyToJs(u),
         RESTART_HANDLER +
         'function loop(){' +
         'if(gameState==="play"){' + GHOST_TICK + GHOST_COLLIDE + WIN_CHECK + '}' +
@@ -200,12 +214,14 @@ window.CW_CONFIG = {
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
         'ctx.fillText("GAME OVER",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,210)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
-        SETUP + CELL + MAZE_DATA +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + CELL + MAZE_DATA,
+        pyToJs(u),
         PLAYER_VARS + KEY_VARS +
         GHOST_VARS + LIVES_VARS + STATE_VARS + MOVE_TIMER +
         DRAW_MAZE + GHOST_AI +
@@ -218,7 +234,8 @@ window.CW_CONFIG = {
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
         'ctx.fillText("GAME OVER",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,210)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

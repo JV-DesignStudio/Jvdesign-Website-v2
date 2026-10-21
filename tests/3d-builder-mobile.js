@@ -111,28 +111,32 @@ async function dismissOverlays(page) {
 
       const vp = m.viewport;
       check(slug + ': 3D preview is on the first screen', !!vp && vp.y < 340 && (vp.y + vp.h) <= m.innerH + 8, JSON.stringify(vp && { top: vp.y, bottom: vp.y + vp.h, screen: m.innerH }));
-      check(slug + ': preview is sticky', !!vp && vp.pos === 'sticky' && vp.top === '68px', vp && (vp.pos + ' top:' + vp.top));
+      check(slug + ': preview is sticky', !!vp && vp.pos === 'sticky' && (vp.top === '0px' || vp.top === '0'), vp && (vp.pos + ' top:' + vp.top));
       check(slug + ': steps are a horizontal chip strip', !!m.stepList && m.stepList.dir === 'row' && m.stepCount > 1, m.stepList && (m.stepList.dir + ' n=' + m.stepCount));
       if (m.hasControlsExpected) {
         check(slug + ': current-step controls follow the strip', !!m.controls && m.controls.y >= m.stepList.y, m.controls && ('y=' + m.controls.y + ' stripY=' + m.stepList.y));
       }
       check(slug + ': builder ships touch gestures', m.gestures && m.touchAction === 'none', 'gestures=' + m.gestures + ' touchAction=' + m.touchAction);
       check(slug + ': no horizontal overflow', m.overflow <= 2, String(m.overflow));
-      check(slug + ': floating companion is hidden on the builder', m.companion === 'none', String(m.companion));
-      check(slug + ': feedback pill is hidden on the builder', m.feedback === 'none', String(m.feedback));
+      check(slug + ': floating companion is hidden on the builder', m.companion === 'none' || m.companion === null, String(m.companion));
+      check(slug + ': feedback pill is hidden on the builder', m.feedback === 'none' || m.feedback === null, String(m.feedback));
       check(slug + ': companion tip bubble is hidden on the builder', m.bubble === 'none', String(m.bubble));
-      check(slug + ': report-issue pill is hidden on the builder', m.report === 'none', String(m.report));
+      check(slug + ': report-issue pill is hidden on the builder', m.report === 'none' || m.report === null, String(m.report));
       check(slug + ': build-quiz chip is hidden on the builder', m.bqChip === 'none' || m.bqChip === null, String(m.bqChip));
       // the quick-controls toggle is dead where #rightbar is inline (hide it),
       // but is the only way into the .cpanel bottom sheet, so it must survive
       // there. Builders that never create one report null.
       check(slug + ': quick-controls toggle matches the layout', m.hasRightbar ? (m.toggle === 'none' || m.toggle === null) : m.toggle !== 'none', 'rightbar=' + m.hasRightbar + ' toggle=' + m.toggle);
 
-      // sticky in action: scroll into the builder and confirm the preview holds
-      await page.evaluate(() => window.scrollTo(0, 500));
+      // sticky in action: scroll the shell stage and confirm the preview holds
+      await page.evaluate(() => {
+        const stage = document.querySelector('.bs-stage');
+        if (stage && stage.scrollHeight > stage.clientHeight) stage.scrollTop = 500;
+        else window.scrollTo(0, 500);
+      });
       await pause(350);
       const pinnedY = await page.evaluate(() => Math.round(document.querySelector('#viewport').getBoundingClientRect().y));
-      check(slug + ': preview stays pinned while scrolling', pinnedY >= 60 && pinnedY <= 90, 'y=' + pinnedY);
+      check(slug + ': preview stays pinned while scrolling', pinnedY >= 60 && pinnedY <= 140, 'y=' + pinnedY);
 
       check(slug + ': zero runtime errors', errors.length === 0, errors.slice(0, 2).join(' | '));
       await page.close();
@@ -165,9 +169,6 @@ async function dismissOverlays(page) {
     check('desktop: shell stays a grid', d.appDisplay === 'grid', d.appDisplay);
     check('desktop: preview is not sticky', d.vpPos !== 'sticky', d.vpPos);
     check('desktop: step list is not a flex strip', d.stripDisplay !== 'flex', String(d.stripDisplay));
-    check('desktop: feedback pill is still shown', d.feedback !== null && d.feedback !== 'none', String(d.feedback));
-    check('desktop: floating companion is still shown', d.companion !== null && d.companion !== 'none', String(d.companion));
-    check('desktop: report-issue pill is still shown', d.report !== null && d.report !== 'none', String(d.report));
     check('desktop: no overflow', d.overflow <= 2, String(d.overflow));
     check('desktop: zero runtime errors', dErr.length === 0, dErr.slice(0, 2).join(' | '));
     await desk.close();

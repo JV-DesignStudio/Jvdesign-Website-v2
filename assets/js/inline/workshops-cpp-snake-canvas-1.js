@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    C++-to-JS transpiler (light transform so C++
    syntax runs in the canvas iframe)
@@ -103,73 +108,84 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + 'let snake=[{x:10,y:10}];let dir={x:1,y:0};let nextDir={x:1,y:0};' +
-        KEYS +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        KEYS,
+        cppToJs(u),
         'function draw(){' +
         DRAW_BG + DRAW_GRID +
         'var s=snake[0];ctx.fillStyle="#06d6a0";ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2)' +
         '}draw();'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + 'let snake=[{x:10,y:10}];let dir={x:1,y:0};let nextDir={x:1,y:0};' +
         KEYS +
-        'function tick(){' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        'function tick(){',
+        cppToJs(u),
         'snake[0].x+=dir.x;snake[0].y+=dir.y;' +
         'if(snake[0].x<0)snake[0].x=GRID-1;if(snake[0].x>=GRID)snake[0].x=0;' +
         'if(snake[0].y<0)snake[0].y=GRID-1;if(snake[0].y>=GRID)snake[0].y=0;' +
         DRAW_BG + DRAW_GRID +
         'var s=snake[0];ctx.fillStyle="#06d6a0";ctx.fillRect(s.x*CELL+1,s.y*CELL+1,CELL-2,CELL-2)' +
         '}setInterval(tick,150);tick();'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS +
         KEYS + SPAWN_FOOD +
         'function tick(){' +
         MOVE_SNAKE +
         'if(newHead.x<0)newHead.x=GRID-1;if(newHead.x>=GRID)newHead.x=0;' +
-        'if(newHead.y<0)newHead.y=GRID-1;if(newHead.y>=GRID)newHead.y=0;' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){snake.unshift(newHead);snake.pop()}' +
+        'if(newHead.y<0)newHead.y=GRID-1;if(newHead.y>=GRID)newHead.y=0;',
+        cppToJs(u),
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
         '}setInterval(tick,150);tick();'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS +
         KEYS + SPAWN_FOOD +
         'function tick(){' +
         'if(gameOver)return;' +
-        MOVE_SNAKE +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        MOVE_SNAKE,
+        cppToJs(u),
         'if(!gameOver){snake.unshift(newHead);if(newHead.x===food.x&&newHead.y===food.y){score++;spawnFood()}else{snake.pop()}}' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
         'if(gameOver){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("WALL HIT!",200,200)}' +
         '}setInterval(tick,150);tick();'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS +
         KEYS + SPAWN_FOOD +
         'function tick(){' +
         'if(gameOver)return;' +
-        MOVE_SNAKE + WALL_CHECK +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        MOVE_SNAKE + WALL_CHECK,
+        cppToJs(u),
         'if(!gameOver){snake.unshift(newHead);if(newHead.x===food.x&&newHead.y===food.y){score++;spawnFood()}else{snake.pop()}}' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
         'if(gameOver){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",200,200)}' +
         '}setInterval(tick,150);tick();'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + SPEED_VARS +
         SPAWN_FOOD +
         KEYS_RESTART +
@@ -178,13 +194,14 @@ window.CW_CONFIG = {
         'function tick(){' +
         'if(gameOver){' + DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE + DRAW_HISCORE + DRAW_GAMEOVER + 'return}' +
         MOVE_SNAKE + WALL_CHECK + SELF_CHECK +
-        'if(!gameOver){snake.unshift(newHead);if(newHead.x===food.x&&newHead.y===food.y){' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){score++}' +
+        'if(!gameOver){snake.unshift(newHead);if(newHead.x===food.x&&newHead.y===food.y){',
+        cppToJs(u),
         'spawnFood();clearInterval(loopId);loopId=setInterval(tick,tickSpeed)}else{snake.pop()}}' +
         'if(gameOver&&score>highScore)highScore=score;' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE + DRAW_HISCORE + DRAW_GAMEOVER +
         '}startLoop();tick();'
-      );
+      
+      )
     }
   },
 

@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Defold Lua-to-JS transpiler
    =================================================== */
@@ -86,67 +91,78 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + SNAKE_VARS + KEYS +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + SNAKE_VARS + KEYS,
+        defoldToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + STATE_VARS + KEYS +
         'function loop(ts){' +
-        'if(ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+        'if(ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;',
+        defoldToJs(u),
         'snake[0].x=Math.max(0,Math.min(GRID-1,snake[0].x));snake[0].y=Math.max(0,Math.min(GRID-1,snake[0].y));}' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + STATE_VARS + KEYS +
         SPAWN_FOOD +
         'function loop(ts){' +
         'if(gameState==="play"&&ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;' +
-        'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);snake.pop();' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+        'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);snake.pop();',
+        defoldToJs(u),
         '}' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
         SPAWN_FOOD +
         'function loop(ts){' +
         'if(gameState==="play"&&ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;' +
-        'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){snake.pop();}' +
+        'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);',
+        defoldToJs(u),
         '}' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
         SPAWN_FOOD +
         'function loop(ts){' +
         'if(gameState==="play"&&ts-lastTick>tickRate){lastTick=ts;dx=ndx;dy=ndy;' +
         'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);' +
-        'if(head.x===food.x&&head.y===food.y){score++;spawnFood()}else{snake.pop()}' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+        'if(head.x===food.x&&head.y===food.y){score++;spawnFood()}else{snake.pop()}',
+        defoldToJs(u),
         '}' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
         SPAWN_FOOD +
         'function loop(ts){' +
@@ -154,15 +170,16 @@ window.CW_CONFIG = {
         'var head={x:snake[0].x+dx,y:snake[0].y+dy};snake.unshift(head);' +
         'if(head.x===food.x&&head.y===food.y){score++;spawnFood();tickRate=Math.max(60,150-score*5)}else{snake.pop()}' +
         'if(head.x<0||head.x>=GRID||head.y<0||head.y>=GRID){gameState="over"}' +
-        'for(var ci=1;ci<snake.length;ci++){if(head.x===snake[ci].x&&head.y===snake[ci].y)gameState="over"}' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+        'for(var ci=1;ci<snake.length;ci++){if(head.x===snake[ci].x&&head.y===snake[ci].y)gameState="over"}',
+        defoldToJs(u),
         '}' +
         DRAW_BG + DRAW_GRID + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
         'ctx.fillText("GAME OVER",200,180);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,210);' +
         'ctx.fillText("Press R to restart",200,240)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    GML-to-JS transpiler
    =================================================== */
@@ -95,46 +100,57 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING,
+        gmlToJs(u),
         'function loop(){' +
         'hsp=0;vsp=0;' +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
+      return wbWrap(
+        
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING,
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
         'vsp+=grav;' +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         PHYSICS_H + PHYSICS_V +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
+      return wbWrap(
+        
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING,
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
         'vsp+=grav;' +
         'var onGround=placeMeeting(px,py+1);' +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         PHYSICS_H + PHYSICS_V +
         'spaceJustPressed=false;' +
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
-        'var camX=0;' +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+        'var camX=0;',
+        gmlToJs(u),
         'function loop(){' +
         'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
         'vsp+=grav;' +
@@ -150,11 +166,14 @@ window.CW_CONFIG = {
         DRAW_BG + DRAW_WALLS + DRAW_PLAYER +
         'ctx.restore();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
+      return wbWrap(
+        
+        SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING,
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         'hsp=(rightHeld?1:0)-(leftHeld?1:0);hsp*=moveSpeed;' +
         'vsp+=grav;' +
@@ -164,16 +183,20 @@ window.CW_CONFIG = {
         'if(buffer>0&&coyote>0){vsp=jumpForce;coyote=0;buffer=0}' +
         PHYSICS_H + PHYSICS_V +
         'spaceJustPressed=false;' +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         COIN_CHECK + SPIKE_CHECK +
         DRAW_BG + DRAW_WALLS + DRAW_COINS + DRAW_SPIKES + DRAW_PLAYER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + LEVEL + PLAYER_VARS + KEYS + PLACE_MEETING +
-        'var won=false;' +
+        'var won=false;',
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         'if(won){' + DRAW_BG + DRAW_WALLS + DRAW_COINS + DRAW_FLAG + DRAW_PLAYER + DRAW_HUD +
         'ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("LEVEL COMPLETE!",400,180);ctx.font="16px monospace";ctx.fillText("Coins: "+coinCount+" / 5",400,220);' +
@@ -187,11 +210,13 @@ window.CW_CONFIG = {
         PHYSICS_H + PHYSICS_V +
         'spaceJustPressed=false;' +
         COIN_CHECK + SPIKE_CHECK +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(px+pw/2>flag.x&&px-pw/2<flag.x+flag.w&&py+ph/2>flag.y&&py-ph/2<flag.y+flag.h)won=true;' +
         DRAW_BG + DRAW_WALLS + DRAW_COINS + DRAW_SPIKES + DRAW_FLAG + DRAW_PLAYER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

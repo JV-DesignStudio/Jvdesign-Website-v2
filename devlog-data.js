@@ -6,6 +6,48 @@
 
 const POSTS = [
     {
+        id: 521,
+        date: '20 October 2026',
+        tag: 'tools',
+        emoji: '🚀',
+        title: 'Eleven 3D build projects, now in one friendly home',
+        excerpt: 'The 3D builders live in one place, load faster, work better on a phone, and share their models as a ready-to-open bundle.',
+        links: [
+            { label: 'Start building', href: '/workshops/3d-builder.html' },
+            { label: 'Try the Voxel Studio', href: '/workshops/voxel-studio.html' }
+        ],
+        content: 'The 3D builders have moved into one home. Pick a project such as a rocket, a robot, a castle or a ship and build it in your browser, then export a real model as OBJ, GLB, STL or FBX. Everything that used to be spread across many pages now sits together, and your saved work loads straight back in.\n\nOn a phone the builder now shows the preview first, with clear step buttons and controls you can actually reach. We also moved onto a newer 3D engine underneath, so scenes load faster and look cleaner. Every model can be downloaded as a bundle with the model, a short readme and a preview picture, ready to drop into Godot, Unity or Blender.\n\nTwo new makers join the family. The Voxel Studio lets you build with cubes and export a Minecraft setblock file. The 3D World Builder lets you block out walls, floors, ramps and pillars on a ground grid and export a level you can open in a real engine.\n\nNothing here needs an install or an account to start.'
+    },
+
+    {
+        id: 520,
+        date: '20 October 2026',
+        tag: 'update',
+        emoji: '🧭',
+        title: 'A home for every engine, and workshops that cheer you on',
+        excerpt: 'New engine hubs gather every workshop for Godot, Scratch, Roblox and more, plus hints, sound, streaks and a new Cyber Defender workshop.',
+        links: [
+            { label: 'See the Godot hub', href: '/workshops/engine-godot.html' },
+            { label: 'Play Cyber Defender', href: '/workshops/cyber-security.html' }
+        ],
+        content: 'Every engine now has a home. There is a hub page for Godot, Scratch, Roblox, Unity, Python, JavaScript and more, and each one gathers every workshop for that engine in one place, with a difficulty badge and a progress bar to show how far you have come.\n\nThe workshops themselves are friendlier. If you get stuck, a hint now appears in tiers, so you get a nudge before the full answer. You can bookmark a step and leave yourself a note. A quiz can be undone if you change your mind. There are gentle sound effects, a read-aloud option for any step and a streak counter for the days you keep learning. A new My Achievements page collects your badges, milestones and collectibles in one place.\n\nThere is also a brand new workshop. Cyber Defender is a Lumo-led cyber security workshop where you learn what cyber crime is, who the attackers are and how to stay safe online, with quizzes and a password strength builder along the way.\n\nAll of it runs in a browser on a school computer, with nothing to install.'
+    },
+
+    {
+        id: 519,
+        date: '20 October 2026',
+        tag: 'site',
+        emoji: '🍎',
+        title: 'For Teachers: a curriculum map and a safeguarding sheet',
+        excerpt: 'A new For Teachers home gathers free, no-install lessons, maps workshops to the KS2 and KS3 curriculum, and adds a printable safeguarding sheet.',
+        links: [
+            { label: 'Visit For Teachers', href: '/teachers' },
+            { label: 'Read the safeguarding sheet', href: '/teachers#safeguarding' }
+        ],
+        content: 'Teachers now have a home of their own. The For Teachers page gathers ready-made lesson plans, each with an age range, a time estimate and a printable copy, and links straight into the workshop it uses.\n\nAlongside the plans there is a curriculum map that lines each workshop up against the KS2 and KS3 computing curriculum, so it is quick to see where a session fits. There is also a printable safeguarding sheet for the IT lead or DSL, in plain language. It sets out exactly what the site does and does not do: no accounts, no personal data needed to learn, work saved in the browser only, and no adverts on the website.\n\nThe For Teachers link now sits in the main menu, and a parent and teacher guide covers how to get started at home or in class. As ever, everything is free and works on school computers with no install and no admin rights.'
+    },
+
+    {
         id: 518,
         date: '18 October 2026',
         tag: 'update',

@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    C++-to-JS transpiler (light transform so C++
    syntax runs in the canvas iframe)
@@ -101,69 +106,90 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS,
+        cppToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         CLAMP_X +
         GROUND_CHECK +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
         GROUND_CHECK +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         JUMP_LOGIC + RESPAWN +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + COINS + SCORE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + COINS + SCORE_VARS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
         GROUND_CHECK + JUMP_LOGIC + RESPAWN +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER + DRAW_COINS + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + GRAVITY + PLATFORMS + COINS + SCORE_VARS + STATE_VARS + KEYS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="won"){score=0;px=80;py=340;pvy=0;pvx=0;coins=[{x:155,y:274,s:14},{x:345,y:214,s:14},{x:515,y:154,s:14},{x:235,y:114,s:14},{x:95,y:54,s:14}];gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="won"){score=0;px=80;py=340;pvy=0;pvx=0;coins=[{x:155,y:274,s:14},{x:345,y:214,s:14},{x:515,y:154,s:14},{x:235,y:114,s:14},{x:95,y:54,s:14}];gameState="play"}});',
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + APPLY_GRAVITY + CLAMP_X +
         GROUND_CHECK + JUMP_LOGIC + RESPAWN +
         COIN_COLLECT +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_PLATFORMS + DRAW_PLAYER + DRAW_COINS + DRAW_SCORE +
         'if(gameState==="won"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
@@ -171,7 +197,8 @@ window.CW_CONFIG = {
         'ctx.font="18px monospace";ctx.fillText("Score: "+score,300,215);' +
         'ctx.fillText("Press R to play again",300,245)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

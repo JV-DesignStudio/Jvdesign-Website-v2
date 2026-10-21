@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    GDevelop-to-JS transpiler (simplified event notation)
    =================================================== */
@@ -94,78 +99,100 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + SNAKE_VARS + KEYS +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + SNAKE_VARS + KEYS,
+        gdToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_SNAKE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + SNAKE_VARS + STATE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SNAKE_VARS + STATE_VARS + KEYS,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_SNAKE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + STATE_VARS + KEYS +
-        PLACE_FOOD +
+        PLACE_FOOD,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_SNAKE +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(moveTimer===0&&snake.length>1)snake.pop();' +
         DRAW_BG + DRAW_SNAKE + DRAW_FOOD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
-        PLACE_FOOD +
+        PLACE_FOOD,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_SNAKE +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(moveTimer===0&&!(snake[0].x===foodx&&snake[0].y===foody))snake.pop();' +
         DRAW_BG + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
-        PLACE_FOOD +
+        PLACE_FOOD,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SNAKE + EAT_CHECK +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
         'ctx.fillText("GAME OVER",200,180);ctx.font="16px monospace";ctx.fillText("Score: "+score,200,210)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SNAKE_VARS + FOOD_VARS + SCORE_VARS + STATE_VARS + KEYS +
         PLACE_FOOD +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){snake=[{x:10,y:10}];dx=1;dy=0;nextDx=1;nextDy=0;score=0;moveDelay=8;placeFood();gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){snake=[{x:10,y:10}];dx=1;dy=0;nextDx=1;nextDy=0;score=0;moveDelay=8;placeFood();gameState="play"}});',
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SNAKE + EAT_CHECK + WALL_CHECK + SELF_CHECK +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_SNAKE + DRAW_FOOD + DRAW_SCORE +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";' +
         'ctx.fillText("GAME OVER",200,180);ctx.font="16px monospace";ctx.fillText("Score: "+score,200,210);' +
         'ctx.fillText("Press R to restart",200,240)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

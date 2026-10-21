@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    C++-to-JS transpiler (light transform so C++
    syntax runs in the canvas iframe)
@@ -90,7 +95,8 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DEF + DRAW_PATH + ENEMY_CLASS + TOWER_CLASS + GAME_VARS +
         NEAR_PATH + NEAREST_IN_RANGE + PLACE_TOWER + MOVE_ENEMIES +
         DRAW_TOWERS + DRAW_ENEMIES_FN + DRAW_BULLETS_FN + DRAW_HUD +
@@ -99,8 +105,8 @@ window.CW_CONFIG = {
         'wave=1;toSpawn=0;enemies.push(makeEnemy(30,60,10));enemies.push(makeEnemy(30,60,10));enemies.push(makeEnemy(30,60,10));enemies[0].x=200;enemies[0].y=200;enemies[1].x=300;enemies[1].y=280;enemies[2].x=100;enemies[2].y=120;' +
         'towers.push(makeTower(300,180));towers.push(makeTower(140,200));' +
         'function loop(ts){var dt=(ts-lastTime)/1000;if(dt>0.05)dt=0.05;lastTime=ts;' +
-        'moveEnemies(dt);' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        'moveEnemies(dt);',
+        cppToJs(u),
         // move bullets even if user hasn't written that yet
         'for(var i=0;i<bullets.length;i++){var b=bullets[i];if(!b.target||!b.target.alive){b.dead=true;continue}var dx=b.target.x-b.x,dy=b.target.y-b.y;var len=Math.sqrt(dx*dx+dy*dy);if(len<8){b.target.hp-=b.damage;if(b.target.hp<=0){b.target.alive=false;gold+=b.target.bounty}b.dead=true}else{b.x+=dx/len*b.speed*dt;b.y+=dy/len*b.speed*dt}}' +
         'bullets=bullets.filter(function(b){return!b.dead});' +
@@ -108,10 +114,12 @@ window.CW_CONFIG = {
         'for(var i=0;i<enemies.length;i++){if(!enemies[i].alive){enemies[i]=makeEnemy(30,60,10);enemies[i].x=50+Math.random()*400;enemies[i].y=100+Math.random()*200}}' +
         DRAW_BG + 'drawPath();drawTowers();drawEnemies();drawBullets();drawHud();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DEF + DRAW_PATH + ENEMY_CLASS + TOWER_CLASS + GAME_VARS +
         NEAR_PATH + NEAREST_IN_RANGE + PLACE_TOWER + MOVE_ENEMIES +
         DRAW_TOWERS + DRAW_ENEMIES_FN + DRAW_BULLETS_FN + DRAW_HUD +
@@ -123,17 +131,19 @@ window.CW_CONFIG = {
         'function fireTowers(dt){for(var i=0;i<towers.length;i++){var t=towers[i];t.cooldown-=dt;if(t.cooldown<=0){var target=nearestInRange(t);if(target){bullets.push({x:t.x,y:t.y,target:target,speed:340,damage:t.damage,dead:false});t.cooldown=t.maxCd}}}}' +
         'function loop(ts){var dt=(ts-lastTime)/1000;if(dt>0.05)dt=0.05;lastTime=ts;' +
         'moveEnemies(dt);fireTowers(dt);' +
-        // Step 2: user writes bullet homing + damage + cleanup
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        // Step 2: user writes bullet homing + damage + cleanup,
+        cppToJs(u),
         'bullets=bullets.filter(function(b){return!b.dead});' +
         // respawn for demo
         'for(var i=0;i<enemies.length;i++){if(!enemies[i].alive){enemies[i]=makeEnemy(40,55,10);enemies[i].x=-20;enemies[i].y=120;enemies[i].wp=1}}' +
         DRAW_BG + 'drawPath();drawTowers();drawEnemies();drawBullets();drawHud();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DEF + DRAW_PATH + ENEMY_CLASS + TOWER_CLASS + GAME_VARS +
         NEAR_PATH + NEAREST_IN_RANGE + PLACE_TOWER + MOVE_ENEMIES +
         DRAW_TOWERS + DRAW_ENEMIES_FN + DRAW_BULLETS_FN + DRAW_HUD +
@@ -142,14 +152,15 @@ window.CW_CONFIG = {
         'function moveBullets(dt){for(var i=0;i<bullets.length;i++){var b=bullets[i];if(!b.target||!b.target.alive){b.dead=true;continue}var dx=b.target.x-b.x,dy=b.target.y-b.y;var len=Math.sqrt(dx*dx+dy*dy);if(len<8){b.target.hp-=b.damage;if(b.target.hp<=0){b.target.alive=false;gold+=b.target.bounty}b.dead=true}else{b.x+=dx/len*b.speed*dt;b.y+=dy/len*b.speed*dt}}bullets=bullets.filter(function(b){return!b.dead})}' +
         // Step 3: user writes wave system
         'function loop(ts){var dt=(ts-lastTime)/1000;if(dt>0.05)dt=0.05;lastTime=ts;' +
-        'if(gameState==="play"){' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        'if(gameState==="play"){',
+        cppToJs(u),
         'moveEnemies(dt);fireTowers(dt);moveBullets(dt);' +
         'if(lives<=0)gameState="lost";' +
         '}' +
         DRAW_BG + 'drawPath();drawTowers();drawEnemies();drawBullets();drawHud();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
       return wrap(
@@ -169,10 +180,11 @@ window.CW_CONFIG = {
         '}' +
         DRAW_BG + 'drawPath();drawTowers();drawEnemies();drawBullets();drawHud();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DEF + DRAW_PATH + ENEMY_CLASS + TOWER_CLASS + GAME_VARS +
         NEAR_PATH + NEAREST_IN_RANGE + PLACE_TOWER + MOVE_ENEMIES +
         DRAW_TOWERS + DRAW_ENEMIES_FN + DRAW_BULLETS_FN + DRAW_HUD +
@@ -182,8 +194,8 @@ window.CW_CONFIG = {
         'canvas.addEventListener("contextmenu",function(ev){ev.preventDefault();if(gameState!=="play")return;var rect=canvas.getBoundingClientRect();var mx=ev.clientX-rect.left,my=ev.clientY-rect.top;for(var i=0;i<towers.length;i++){var t=towers[i];var dx=t.x-mx,dy=t.y-my;if(Math.sqrt(dx*dx+dy*dy)<20){var cost=40*t.level;if(gold>=cost&&t.level<3){gold-=cost;t.level++;t.damage+=4;t.range+=25;t.maxCd*=0.8}break}}});' +
         // Step 5: user writes boss wave spawning
         'var MAX_WAVE=5;' +
-        'function waveSystem(dt){var cleared=true;for(var i=0;i<enemies.length;i++)if(enemies[i].alive)cleared=false;if(toSpawn===0&&cleared){restTimer-=dt;if(restTimer<=0){wave++;if(wave>MAX_WAVE){gameState="won";return}toSpawn=4+wave*2;restTimer=5}}else if(toSpawn>0){spawnGap-=dt;if(spawnGap<=0){' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){enemies.push(makeEnemy(20+wave*8,70+wave*4,5+wave*2))}' +
+        'function waveSystem(dt){var cleared=true;for(var i=0;i<enemies.length;i++)if(enemies[i].alive)cleared=false;if(toSpawn===0&&cleared){restTimer-=dt;if(restTimer<=0){wave++;if(wave>MAX_WAVE){gameState="won";return}toSpawn=4+wave*2;restTimer=5}}else if(toSpawn>0){spawnGap-=dt;if(spawnGap<=0){',
+        cppToJs(u),
         'toSpawn--;spawnGap=0.8}}}' +
         DRAW_END + RESTART_KEY +
         'function loop(ts){var dt=(ts-lastTime)/1000;if(dt>0.05)dt=0.05;lastTime=ts;' +
@@ -193,10 +205,12 @@ window.CW_CONFIG = {
         '}' +
         DRAW_BG + 'drawPath();drawTowers();drawEnemies();drawBullets();drawHud();drawEnd();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DEF + DRAW_PATH + ENEMY_CLASS + TOWER_CLASS + GAME_VARS +
         NEAR_PATH + NEAREST_IN_RANGE + PLACE_TOWER + MOVE_ENEMIES +
         DRAW_TOWERS + DRAW_ENEMIES_FN + DRAW_BULLETS_FN + DRAW_HUD +
@@ -209,15 +223,16 @@ window.CW_CONFIG = {
         RESTART_KEY +
         'function loop(ts){var dt=(ts-lastTime)/1000;if(dt>0.05)dt=0.05;lastTime=ts;' +
         'if(gameState==="play"){' +
-        'waveSystem(dt);moveEnemies(dt);fireTowers(dt);moveBullets(dt);' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){if(lives<=0)gameState="lost"}' +
+        'waveSystem(dt);moveEnemies(dt);fireTowers(dt);moveBullets(dt);',
+        cppToJs(u),
         '}' +
         DRAW_BG + 'drawPath();drawTowers();drawEnemies();drawBullets();drawHud();' +
         // draw end screens
         'if(gameState==="won"){ctx.fillStyle="#4ade80";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("VICTORY!",300,180);ctx.font="18px monospace";ctx.fillStyle="#fff";ctx.fillText("Boss defeated! Press R to restart",300,220)}' +
         'if(gameState==="lost"){ctx.fillStyle="#ef4444";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("DEFEAT",300,180);ctx.font="18px monospace";ctx.fillStyle="#fff";ctx.fillText("Wave "+wave+" - Press R to restart",300,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

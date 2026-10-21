@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    GML-to-JS transpiler
    =================================================== */
@@ -120,9 +125,10 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + MOUSE + PAD_VARS + BALL_VARS +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + MOUSE + PAD_VARS + BALL_VARS,
+        gmlToJs(u),
         'let gameOver=false;' +
         'function loop(){if(gameOver)return;' +
         MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT +
@@ -130,13 +136,15 @@ window.CW_CONFIG = {
         'ctx.fillStyle="#0f1117";ctx.fillRect(0,0,700,520);' +
         DRAW_PAD + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + MOUSE + PAD_VARS + BALL_VARS + BRICK_COLORS +
-        'var bricks=[];' +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+        'var bricks=[];',
+        gmlToJs(u),
         'if(bricks.length===0){for(var r=0;r<5;r++){for(var c=0;c<10;c++){bricks.push({x:c*68+11,y:r*26+50,w:64,h:22,color:BRICK_COLORS[r],pts:(5-r)*10,alive:true})}}}' +
         'let gameOver=false;' +
         'function loop(){if(gameOver)return;' +
@@ -145,61 +153,72 @@ window.CW_CONFIG = {
         'ctx.fillStyle="#0f1117";ctx.fillRect(0,0,700,520);' +
         DRAW_BRICKS + DRAW_PAD + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + MOUSE + PAD_VARS + BALL_VARS + SCORE_VARS + BRICK_SETUP +
         'let gameOver=false,hitPts=0;' +
         'function loop(){if(gameOver)return;' +
-        MOVE_PAD + BALL_MOVE + WALL_BOUNCE +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+        MOVE_PAD + BALL_MOVE + WALL_BOUNCE,
+        gmlToJs(u),
         BRICK_HIT + PAD_HIT +
         'if(by>530){bx=345;by=470;bvx=[4,-4][Math.floor(Math.random()*2)];bvy=-4}' +
         'ctx.fillStyle="#0f1117";ctx.fillRect(0,0,700,520);' +
         DRAW_BRICKS + DRAW_PAD + DRAW_BALL + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + MOUSE + PAD_VARS + BALL_VARS + SCORE_VARS + BRICK_SETUP + PARTICLES +
-        'let gameOver=false,hitPts=0;' +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+        'let gameOver=false,hitPts=0;',
+        gmlToJs(u),
         'function loop(){if(gameOver)return;' +
         MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT + BRICK_HIT +
         'if(by>530){bx=345;by=470;bvx=[4,-4][Math.floor(Math.random()*2)];bvy=-4}' +
         'ctx.fillStyle="#0f1117";ctx.fillRect(0,0,700,520);' +
         DRAW_BRICKS + DRAW_PARTICLES + DRAW_PAD + DRAW_BALL + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + MOUSE + PAD_VARS + BALL_VARS + SCORE_VARS + LIVES_VARS + SHAKE_VARS + BRICK_SETUP + PARTICLES +
         'let gameOver=false,hitPts=0;' +
         'function loop(){if(gameOver)return;' +
-        MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT + BRICK_HIT +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+        MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT + BRICK_HIT,
+        gmlToJs(u),
         BALL_LOST +
         DRAW_BG + DRAW_BRICKS + DRAW_PARTICLES + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES + DRAW_END +
         DRAW_GAMEOVER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + MOUSE + PAD_VARS + BALL_VARS + SCORE_VARS + LIVES_VARS + SHAKE_VARS + BRICK_SETUP + PARTICLES +
-        'let gameOver=false,hitPts=0;' +
+        'let gameOver=false,hitPts=0;',
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         'if(!gameOver){' +
         MOVE_PAD + BALL_MOVE + WALL_BOUNCE + PAD_HIT + BRICK_HIT + BALL_LOST +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PARTICLES + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES + DRAW_END +
         DRAW_WIN + DRAW_GAMEOVER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

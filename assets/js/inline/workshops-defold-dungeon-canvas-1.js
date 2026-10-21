@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Defold Lua-to-JS transpiler
    =================================================== */
@@ -144,73 +149,95 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + MAP_DATA + PLAYER_VARS + STATE_VARS + KEYS +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + MAP_DATA + PLAYER_VARS + STATE_VARS + KEYS,
+        defoldToJs(u),
         'function loop(){' +
         MOVE_PLAYER +
         DRAW_BG + DRAW_MAP + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + MAP_DATA + PLAYER_VARS + STATE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + MAP_DATA + PLAYER_VARS + STATE_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_MAP + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + STATE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + STATE_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_MAP + DRAW_ENEMIES + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + STATE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + STATE_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + ENEMY_MOVE + ENEMY_HIT +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_MAP + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("DEFEATED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + KEY_VARS + DOOR_VARS + STATE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + KEY_VARS + DOOR_VARS + STATE_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + ENEMY_MOVE + ENEMY_HIT + ATTACK + KEY_COLLECT +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_MAP + DRAW_KEY + DRAW_DOOR + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("DEFEATED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
-        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + KEY_VARS + DOOR_VARS + STATE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + MAP_DATA + PLAYER_VARS + ENEMY_VARS + KEY_VARS + DOOR_VARS + STATE_VARS + KEYS,
+        'window.cwStep=function(){' + defoldToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + ENEMY_MOVE + ENEMY_HIT + ATTACK + KEY_COLLECT + DOOR_CHECK +
-        'try{eval(' + JSON.stringify(defoldToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_MAP + DRAW_KEY + DRAW_DOOR + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
         'if(gameState==="win"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("ESCAPED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,220)}' +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("DEFEATED!",200,190);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

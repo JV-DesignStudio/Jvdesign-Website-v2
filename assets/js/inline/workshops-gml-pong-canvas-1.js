@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    GML-to-JS transpiler (light transform so GML
    syntax runs in the canvas iframe)
@@ -118,76 +123,97 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + KEYS +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PADDLE_VARS + KEYS,
+        gmlToJs(u),
         'function loop(){' +
         MOVE_P1 +
         DRAW_BG + DRAW_NET + DRAW_PADDLES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS,
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PADDLE_VARS + BALL_VARS + KEYS +
-        'let otherY=p1Y;' +
+        'let otherY=p1Y;',
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 +
         BALL_MOVE + WALL_BOUNCE +
         'otherY=bx<300?p1Y:p2Y;' +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'bvx=Math.max(-10,Math.min(10,bvx));' +
         'if(bx<-20||bx>620){bx=292;by=192;bvx=4*(Math.random()<0.5?1:-1);bvy=[3,-3][Math.floor(Math.random()*2)]}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + KEYS +
-        SERVE_FN +
+        SERVE_FN,
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 +
         BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + AI_VARS + KEYS +
-        SERVE_FN +
+        SERVE_FN,
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 +
         BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + SCORING +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'p2Y=Math.max(0,Math.min(304,p2Y));' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + AI_VARS + STATE_VARS + KEYS +
         'let rPressed=false;document.addEventListener("keydown",function(e){if(e.code==="KeyR")rPressed=true});' +
-        SERVE_FN +
+        SERVE_FN,
+        'window.cwStep=function(){' + gmlToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_P1 +
         BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
         AI_LOGIC +
-        'try{eval(' + JSON.stringify(gmlToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(flash>0)flash--;' +
         '}else if(rPressed){score_l=0;score_r=0;flash=0;serve(1);gameState="play";rPressed=false}' +
         DRAW_BG +
@@ -197,7 +223,8 @@ window.CW_CONFIG = {
         'ctx.fillText(score_l>=7?"PLAYER 1 WINS!":"PLAYER 2 WINS!",300,200);' +
         'ctx.font="18px monospace";ctx.fillText("Press R to play again",300,240)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

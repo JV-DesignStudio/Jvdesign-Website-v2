@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Python-to-JS transpiler (light transform so Python
    syntax runs in the canvas iframe)
@@ -91,70 +96,91 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + KEYS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + KEYS,
+        pyToJs(u),
         'function loop(){' +
         MOVE_PLAYER +
         DRAW_BG + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + KEYS,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'px=Math.max(0,Math.min(600-pw,px));' +
         DRAW_BG + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + OBJECT_VARS + KEYS +
-        SPAWN_OBJECT +
+        SPAWN_OBJECT,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'for(var i=objects.length-1;i>=0;i--){if(objects[i].y>420){objects.splice(i,1)}}' +
         DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + OBJECT_VARS + SCORE_VARS + KEYS +
-        SPAWN_OBJECT +
+        SPAWN_OBJECT,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'for(var i=objects.length-1;i>=0;i--){if(objects[i].y>420){objects.splice(i,1)}}' +
         DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + OBJECT_VARS + SCORE_VARS + KEYS +
-        SPAWN_OBJECT +
+        SPAWN_OBJECT,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS +
         COLLISION_CHECK +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + OBJECT_VARS + SCORE_VARS + STATE_VARS + KEYS +
         SPAWN_OBJECT +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=3;spawnInterval=60;objects=[];spawnTimer=0;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=3;spawnInterval=60;objects=[];spawnTimer=0;gameState="play"}});',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + SPAWN_TICK + MOVE_OBJECTS + COLLISION_CHECK +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_PLAYER + DRAW_OBJECTS + DRAW_SCORE + DRAW_LIVES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";' +
@@ -162,7 +188,8 @@ window.CW_CONFIG = {
         'ctx.fillText("High Score: "+highScore,300,230);' +
         'ctx.fillText("Press R to play again",300,270)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

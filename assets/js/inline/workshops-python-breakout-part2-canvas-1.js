@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Python-to-JS transpiler (light transform so Python
    syntax runs in the canvas iframe)
@@ -115,42 +120,52 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS + BRICK_INIT +
-        SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
+        SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         PAD_MOVE + BALL_MOVE + PAD_HIT + BRICK_HIT + BALL_LOST + POWERUP_FALL + TIMER_TICK +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS + BRICK_INIT +
         SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
-        'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*3)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
+        'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*3)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         PAD_MOVE + BALL_MOVE + PAD_HIT +
         'for(var i=0;i<balls.length;i++){var bl=balls[i];for(var j=0;j<bricks.length;j++){var b=bricks[j];if(b.alive&&bl.x+bs>b.x&&bl.x<b.x+b.w&&bl.y+bs>b.y&&bl.y<b.y+b.h){b.hp--;if(b.hp<=0){b.alive=false;score+=10;spawnPowerup(b.x+b.w/2,b.y)}bl.vy=-bl.vy;break}}}' +
         BALL_LOST + POWERUP_FALL + TIMER_TICK +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS + BRICK_INIT +
         SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
         'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"},{type:"multi",color:"#fb923c"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*4)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
-        'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}}' +
+        'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}}',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         PAD_MOVE + BALL_MOVE + PAD_HIT +
@@ -159,19 +174,23 @@ window.CW_CONFIG = {
         'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
         TIMER_TICK +
         'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS + BRICK_INIT +
         SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
         'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"},{type:"multi",color:"#fb923c"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*4)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
-        'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}else if(p.type==="multi"){var ob=balls[0];if(ob){balls.push({x:ob.x,y:ob.y,vx:ob.vx+1,vy:ob.vy});balls.push({x:ob.x,y:ob.y,vx:ob.vx-1,vy:ob.vy})}}}' +
+        'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}else if(p.type==="multi"){var ob=balls[0];if(ob){balls.push({x:ob.x,y:ob.y,vx:ob.vx+1,vy:ob.vy});balls.push({x:ob.x,y:ob.y,vx:ob.vx-1,vy:ob.vy})}}}',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         PAD_MOVE + BALL_MOVE + PAD_HIT +
@@ -180,22 +199,26 @@ window.CW_CONFIG = {
         'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
         TIMER_TICK +
         'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES + DRAW_LEVEL +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS +
         'var bricks=[];var levels=[[8,8,8,8,8],[7,8,7,8,7],[6,8,6,8,6]];var level=1;' +
         'function buildLevel(pattern){bricks=[];for(var r=0;r<pattern.length;r++)for(var c=0;c<pattern[r];c++){bricks.push({x:c*75+12,y:r*28+40,w:70,h:24,hp:(r<2?2:1),color:brickColors[r%5],alive:true})}}buildLevel(levels[0]);' +
         SCORE_VARS + STATE_VARS + POWERUP_VARS + KEYS +
         'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"},{type:"multi",color:"#fb923c"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*4)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
         'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}else if(p.type==="multi"){var ob=balls[0];if(ob){balls.push({x:ob.x,y:ob.y,vx:ob.vx+1,vy:ob.vy});balls.push({x:ob.x,y:ob.y,vx:ob.vx-1,vy:ob.vy})}}}' +
-        'function checkNextLevel(){var alive=0;for(var i=0;i<bricks.length;i++)if(bricks[i].alive)alive++;if(alive===0){level++;var idx=(level-1)%levels.length;buildLevel(levels[idx]);balls=[{x:292,y:300,vx:3,vy:-3}];powerups=[]}}' +
+        'function checkNextLevel(){var alive=0;for(var i=0;i<bricks.length;i++)if(bricks[i].alive)alive++;if(alive===0){level++;var idx=(level-1)%levels.length;buildLevel(levels[idx]);balls=[{x:292,y:300,vx:3,vy:-3}];powerups=[]}}',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         PAD_MOVE + BALL_MOVE + PAD_HIT +
@@ -204,17 +227,20 @@ window.CW_CONFIG = {
         'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
         TIMER_TICK +
         'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'checkNextLevel()' +
         '}' +
         DRAW_BG + DRAW_BRICKS + DRAW_PAD + DRAW_BALLS + DRAW_POWERUPS + DRAW_SCORE + DRAW_LIVES +
         'ctx.textAlign="center";ctx.fillStyle="#888";ctx.font="14px monospace";ctx.fillText("Level "+level,300,24);' +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PAD_VARS + BALL_VARS + BRICK_COLORS +
         'var bricks=[];var levels=[[8,8,8,8,8],[7,8,7,8,7],[6,8,6,8,6]];var level=1;' +
         'function buildLevel(pattern){bricks=[];for(var r=0;r<pattern.length;r++)for(var c=0;c<pattern[r];c++){bricks.push({x:c*75+12,y:r*28+40,w:70,h:24,hp:(r<2?2:1),color:brickColors[r%5],alive:true})}}buildLevel(levels[0]);' +
@@ -222,7 +248,8 @@ window.CW_CONFIG = {
         'function spawnPowerup(bx,by){var types=[{type:"wide",color:"#4ade80"},{type:"slow",color:"#60a5fa"},{type:"life",color:"#f472b6"},{type:"multi",color:"#fb923c"}];if(Math.random()<0.2){var t=types[Math.floor(Math.random()*4)];powerups.push({x:bx,y:by,type:t.type,color:t.color})}}' +
         'function catchPowerup(p){if(p.type==="wide"){padW=padBase*2;wideTimer=300}else if(p.type==="slow"){slowTimer=180}else if(p.type==="life"){lives++}else if(p.type==="multi"){var ob=balls[0];if(ob){balls.push({x:ob.x,y:ob.y,vx:ob.vx+1,vy:ob.vy});balls.push({x:ob.x,y:ob.y,vx:ob.vx-1,vy:ob.vy})}}}' +
         'function spawnParticles(px,py,col){for(var i=0;i<6;i++){particles.push({x:px,y:py,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:20,maxLife:20,color:col})}}' +
-        'function checkNextLevel(){var alive=0;for(var i=0;i<bricks.length;i++)if(bricks[i].alive)alive++;if(alive===0){level++;var idx=(level-1)%levels.length;buildLevel(levels[idx]);balls=[{x:292,y:300,vx:3,vy:-3}];powerups=[];particles=[]}}' +
+        'function checkNextLevel(){var alive=0;for(var i=0;i<bricks.length;i++)if(bricks[i].alive)alive++;if(alive===0){level++;var idx=(level-1)%levels.length;buildLevel(levels[idx]);balls=[{x:292,y:300,vx:3,vy:-3}];powerups=[];particles=[]}}',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         PAD_MOVE + BALL_MOVE + PAD_HIT +
@@ -231,7 +258,8 @@ window.CW_CONFIG = {
         'for(var i=powerups.length-1;i>=0;i--){var p=powerups[i];if(p.y+8>=padY&&p.y-8<=padY+padH&&p.x>=padX&&p.x<=padX+padW){catchPowerup(p);powerups.splice(i,1)}}' +
         TIMER_TICK + PARTICLE_UPDATE +
         'if(slowTimer>0){for(var i=0;i<balls.length;i++){balls[i].vx*=0.98;balls[i].vy*=0.98}}' +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'checkNextLevel()' +
         '}' +
         'var ox=0,oy=0;if(shakeFrames>0){ox=Math.round((Math.random()-0.5)*6);oy=Math.round((Math.random()-0.5)*6);shakeFrames--}ctx.save();ctx.translate(ox,oy);' +
@@ -240,7 +268,8 @@ window.CW_CONFIG = {
         'ctx.restore();' +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="20px monospace";ctx.fillText("Score: "+score,300,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

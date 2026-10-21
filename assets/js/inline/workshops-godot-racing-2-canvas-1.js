@@ -71,6 +71,10 @@ function wrap(code) {
     '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-racing2-canvas',
   downloadName: 'my-godot-racing-2.html',
@@ -86,9 +90,9 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS,
+        gdscriptToJs(u),
         'function loop(){' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
         'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
@@ -98,34 +102,37 @@ window.CW_CONFIG = {
       );
     },
     2: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
+      return wbWrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
         'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
         'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));roadOffset+=carSpeed;' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'for(var i=0;i<aiCars.length;i++){aiCars[i].y=Math.max(20,Math.min(360,aiCars[i].y))}' +
         DRAW_ROAD + DRAW_CAR + DRAW_AI +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
+      return wbWrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(maxSpeed,carSpeed));' +
         'if(leftHeld)carX-=3;if(rightHeld)carX+=3;' +
         'carX=Math.max(roadX,Math.min(roadX+laneW-carW,carX));roadOffset+=carSpeed;' +
         'for(var i=0;i<aiCars.length;i++){aiCars[i].y+=carSpeed-aiCars[i].speed;if(aiCars[i].y>400)aiCars[i].y=-60;if(aiCars[i].y<-60)aiCars[i].y=400}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_ROAD + DRAW_CAR + DRAW_AI + DRAW_POWER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
+      return wbWrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'var effMax=boostTimer>0?maxSpeed+3:maxSpeed;' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(effMax,carSpeed));' +
@@ -134,14 +141,15 @@ window.CW_CONFIG = {
         'if(boostTimer>0)boostTimer--;' +
         'for(var i=0;i<aiCars.length;i++){aiCars[i].y+=carSpeed-aiCars[i].speed;if(aiCars[i].y>400)aiCars[i].y=-60;if(aiCars[i].y<-60)aiCars[i].y=400}' +
         'if(!powerUp.active){powerUp.y+=carSpeed;if(powerUp.y>420){powerUp.y=-200;powerUp.x=roadX+Math.floor(Math.random()*(laneW-30))}}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_ROAD + DRAW_CAR + DRAW_AI + DRAW_POWER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
-      return wrap(
-        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS +
+      return wbWrap(
+        SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + KEYS,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'var effMax=boostTimer>0?maxSpeed+3:maxSpeed;' +
         'if(upHeld)carSpeed+=0.15;else carSpeed*=0.98;carSpeed=Math.max(0,Math.min(effMax,carSpeed));' +
@@ -152,15 +160,16 @@ window.CW_CONFIG = {
         'for(var i=0;i<aiCars.length;i++){aiCars[i].y+=carSpeed-aiCars[i].speed;if(aiCars[i].y>400)aiCars[i].y=-60;if(aiCars[i].y<-60)aiCars[i].y=400}' +
         'if(!powerUp.active){powerUp.y+=carSpeed;if(powerUp.y>420){powerUp.y=-200;powerUp.x=roadX+Math.floor(Math.random()*(laneW-30))}}' +
         'if(!powerUp.active&&carX<powerUp.x+powerUp.w&&carX+carW>powerUp.x&&carY<powerUp.y+powerUp.h&&carY+carH>powerUp.y){powerUp.active=true;boostTimer=120}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_ROAD + DRAW_CAR + DRAW_AI + DRAW_POWER + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + CAR_VARS + ROAD_VARS + AI_VARS + POWER_VARS + MINIMAP_VARS + SCORE_VARS + STATE_VARS + KEYS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){carSpeed=0;distance=0;lap=0;place=3;boostTimer=0;drift=0;powerUp.active=false;powerUp.y=-200;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){carSpeed=0;distance=0;lap=0;place=3;boostTimer=0;drift=0;powerUp.active=false;powerUp.y=-200;gameState="play"}});',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'var effMax=boostTimer>0?maxSpeed+3:maxSpeed;' +
@@ -173,7 +182,7 @@ window.CW_CONFIG = {
         'if(!powerUp.active){powerUp.y+=carSpeed;if(powerUp.y>420){powerUp.y=-200;powerUp.x=roadX+Math.floor(Math.random()*(laneW-30))}' +
         'if(carX<powerUp.x+powerUp.w&&carX+carW>powerUp.x&&carY<powerUp.y+powerUp.h&&carY+carH>powerUp.y){powerUp.active=true;boostTimer=120}}' +
         'if(distance>=lapLength){lap++;distance=0;powerUp.active=false;powerUp.y=-200;if(lap>=3)gameState="over"}' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         '}' +
         DRAW_ROAD + DRAW_CAR + DRAW_AI + DRAW_POWER + DRAW_HUD + DRAW_MINIMAP +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +

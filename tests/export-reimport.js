@@ -15,10 +15,9 @@ const puppeteer = require('puppeteer');
 const ROOT = path.resolve(__dirname, '..');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.jpg': 'image/jpeg', '.ico': 'image/x-icon' };
 
-const BUILDERS = fs.readdirSync(path.join(ROOT, 'workshops'))
-  .filter((f) => /-builder\.html$/.test(f))
-  .filter((f) => fs.readFileSync(path.join(ROOT, 'workshops', f), 'utf8').includes('jv-exporter.js'))
-  .sort();
+const PRESETS = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', '3d-builders.json'), 'utf8')).builders
+  .map((b) => String(b.id || '').replace(/-builder$/, ''))
+  .filter(Boolean);
 
 (async () => {
   const server = http.createServer((req, res) => {
@@ -35,7 +34,7 @@ const BUILDERS = fs.readdirSync(path.join(ROOT, 'workshops'))
   const base = 'http://127.0.0.1:' + server.address().port;
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
   try {
-    for (const file of BUILDERS) {
+    for (const preset of PRESETS) {
       const page = await browser.newPage();
       await page.setViewport({ width: 1280, height: 900 });
       const errors = [];
@@ -45,7 +44,7 @@ const BUILDERS = fs.readdirSync(path.join(ROOT, 'workshops'))
       // script would still fail this test, because the builder would never
       // initialise and the waitForFunction below would time out.
       page.on('console', (m) => { if (m.type() === 'error' && !/Content Security Policy/.test(m.text())) errors.push(m.text()); });
-      await page.goto(base + '/workshops/' + file, { waitUntil: 'load', timeout: 30000 });
+      await page.goto(base + '/workshops/3d-builder.html?preset=' + preset, { waitUntil: 'load', timeout: 30000 });
       await page.waitForFunction(() => window.JVExporter && typeof window._builderGetState === 'function' && typeof window._builderSetState === 'function', { timeout: 15000 });
       await new Promise((r) => setTimeout(r, 400));
 
@@ -87,21 +86,21 @@ const BUILDERS = fs.readdirSync(path.join(ROOT, 'workshops'))
         };
       });
 
-      assert.ok(result.isState, file + ' emits a JVDS1S state code');
-      assert.ok(result.changed, file + ' share code changes when the build changes');
-      assert.ok(result.restored, file + ' share code reimports to the same build');
-      assert.ok(result.sharedUi >= 1, file + ' has the shared export UI');
-      assert.equal(result.legacy, 0, file + ' has no legacy OBJ/GLB/STL buttons');
-      assert.ok(String(result.rev) === '160', file + ' loads Three r160 (got ' + result.rev + ')');
-      assert.ok(typeof result.ex.obj === 'number' && result.ex.obj > 0, file + ' OBJ export works (' + result.ex.obj + ')');
-      assert.ok(typeof result.ex.stl === 'number' && result.ex.stl > 0, file + ' STL export works (' + result.ex.stl + ')');
-      assert.ok(typeof result.ex.fbx === 'number' && result.ex.fbx > 0, file + ' FBX export works (' + result.ex.fbx + ')');
-      assert.ok(typeof result.ex.glb === 'number' && result.ex.glb > 0, file + ' GLB export works (' + JSON.stringify(result.ex) + ')');
-      assert.deepEqual(errors, [], file + ' console/page errors: ' + errors.slice(0, 2).join(' | '));
-      console.log('PASS ' + file + ': export + reimport round trip, one export UI');
+      assert.ok(result.isState, preset + ' emits a JVDS1S state code');
+      assert.ok(result.changed, preset + ' share code changes when the build changes');
+      assert.ok(result.restored, preset + ' share code reimports to the same build');
+      assert.ok(result.sharedUi >= 1, preset + ' has the shared export UI');
+      assert.equal(result.legacy, 0, preset + ' has no legacy OBJ/GLB/STL buttons');
+      assert.ok(String(result.rev) === '160', preset + ' loads Three r160 (got ' + result.rev + ')');
+      assert.ok(typeof result.ex.obj === 'number' && result.ex.obj > 0, preset + ' OBJ export works (' + result.ex.obj + ')');
+      assert.ok(typeof result.ex.stl === 'number' && result.ex.stl > 0, preset + ' STL export works (' + result.ex.stl + ')');
+      assert.ok(typeof result.ex.fbx === 'number' && result.ex.fbx > 0, preset + ' FBX export works (' + result.ex.fbx + ')');
+      assert.ok(typeof result.ex.glb === 'number' && result.ex.glb > 0, preset + ' GLB export works (' + JSON.stringify(result.ex) + ')');
+      assert.deepEqual(errors, [], preset + ' console/page errors: ' + errors.slice(0, 2).join(' | '));
+      console.log('PASS ' + preset + ': export + reimport round trip, one export UI');
       await page.close();
     }
-    console.log('PASS export-reimport: ' + BUILDERS.length + ' builders round-trip their share codes');
+    console.log('PASS export-reimport: ' + PRESETS.length + ' presets round-trip their share codes');
   } finally {
     await browser.close();
     server.close();

@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    GDevelop-to-JS transpiler (simplified event notation)
    =================================================== */
@@ -97,76 +102,98 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + KEYS +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + BASKET_VARS + KEYS,
+        gdToJs(u),
         'function loop(){' +
         MOVE_BASKET +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + BASKET_VARS + KEYS,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'basketx=Math.max(0,Math.min(400-basketw,basketx));' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + STAR_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(stary>420)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + STAR_FALL +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(stary>420)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + STAR_FALL + STAR_CATCH +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS +
         STAR_RESET +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=3;resetStar();gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;fallSpeed=3;resetStar();gameState="play"}});',
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_BASKET + STAR_FALL + STAR_CATCH + STAR_MISS +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE + DRAW_LIVES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
         'ctx.fillText("GAME OVER",200,170);ctx.font="18px monospace";ctx.fillText("Score: "+score,200,210);' +
         'ctx.fillText("Press R to play again",200,245)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

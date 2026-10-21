@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    C++-to-JS transpiler (light transform so C++
    syntax runs in the canvas iframe)
@@ -100,99 +105,121 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PATH_DATA +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PATH_DATA,
+        cppToJs(u),
         'function loop(){' +
         DRAW_GRASS + DRAW_PATH + DRAW_PATH_DOTS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DATA + ENEMY_VARS + LIVES_VARS +
         SPAWN_ENEMY + UPDATE_ENEMIES_NO_LIVES + DRAW_ENEMIES +
         'var lastTime=performance.now();' +
-        'for(var si=0;si<3;si++)spawnEnemy();' +
+        'for(var si=0;si<3;si++)spawnEnemy();',
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'updateEnemies(dt);' +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DATA + ENEMY_VARS + TOWER_VARS + LIVES_VARS +
         MOUSE_VARS + NEAR_PATH_FN + OCCUPIED_FN +
         SPAWN_ENEMY + UPDATE_ENEMIES_NO_LIVES + DRAW_ENEMIES + DRAW_TOWERS +
         'var lastTime=performance.now();' +
-        'for(var si=0;si<3;si++)spawnEnemy();' +
+        'for(var si=0;si<3;si++)spawnEnemy();',
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
         'updateEnemies(dt);' +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();drawTowers();' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DATA + ENEMY_VARS + TOWER_VARS + LIVES_VARS +
         MOUSE_VARS + NEAR_PATH_FN + OCCUPIED_FN +
         SPAWN_ENEMY + UPDATE_ENEMIES_NO_LIVES + DRAW_ENEMIES + DRAW_TOWERS +
         'var lastTime=performance.now();' +
-        'for(var si=0;si<3;si++)spawnEnemy();' +
+        'for(var si=0;si<3;si++)spawnEnemy();',
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
         'updateEnemies(dt);' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'mouseDown=false;' +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();drawTowers();' + DRAW_GHOST + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DATA + ENEMY_VARS + TOWER_VARS + LIVES_VARS +
         MOUSE_VARS + NEAR_PATH_FN + OCCUPIED_FN +
         SPAWN_ENEMY + UPDATE_ENEMIES_NO_LIVES + DRAW_ENEMIES + DRAW_TOWERS +
         DRAW_RANGES + NEAREST_IN_RANGE +
         'var lastTime=performance.now();' +
-        'for(var si=0;si<3;si++)spawnEnemy();' +
+        'for(var si=0;si<3;si++)spawnEnemy();',
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
         'updateEnemies(dt);' +
         PLACE_TOWER +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();drawTowers();drawRanges();' + DRAW_GHOST + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PATH_DATA + ENEMY_VARS + TOWER_VARS + LIVES_VARS +
         MOUSE_VARS + NEAR_PATH_FN + OCCUPIED_FN +
         SPAWN_ENEMY + UPDATE_ENEMIES + DRAW_ENEMIES + DRAW_TOWERS +
         DRAW_RANGES + NEAREST_IN_RANGE +
-        'var lastTime=performance.now();' +
+        'var lastTime=performance.now();',
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'var now=performance.now(),dt=(now-lastTime)/1000;lastTime=now;if(dt>0.05)dt=0.05;' +
         'spawnTimer-=dt;if(spawnTimer<=0&&toSpawn>0){spawnEnemy();toSpawn--;spawnTimer=spawnInterval}' +
         'updateEnemies(dt);' +
         PLACE_TOWER +
         'for(var ti=0;ti<towers.length;ti++){var t=towers[ti];t.cooldown-=dt;if(t.cooldown<=0){var target=nearestInRange(t);if(target){target.hp-=t.damage;if(target.hp<=0){target.alive=false;gold+=target.bounty}t.cooldown=0.7}}}' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_GRASS + DRAW_PATH +
         'drawEnemies();drawTowers();drawRanges();' + DRAW_GHOST + DRAW_HUD_FULL +
         'if(lives<=0){ctx.fillStyle="rgba(0,0,0,0.7)";ctx.fillRect(0,0,600,400);ctx.fillStyle="#f87171";ctx.font="bold 36px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,190);ctx.fillStyle="#fff";ctx.font="18px monospace";ctx.fillText("The enemies broke through!",300,230)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

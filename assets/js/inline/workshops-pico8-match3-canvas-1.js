@@ -36,6 +36,11 @@ function p8ToJs(code) {
     .replace(/\bor\b/g, '||');
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    IFRAME BUILDING BLOCKS (PICO-8 Match-3)
    =================================================== */
@@ -122,80 +127,102 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + GRID_INIT + CURSOR_VARS + KEYS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + GRID_INIT + CURSOR_VARS + KEYS,
+        p8ToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_GRID +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + GRID_INIT + CURSOR_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + GRID_INIT + CURSOR_VARS + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GRID_INIT + CURSOR_VARS + KEYS +
-        SWAP_FN +
+        SWAP_FN,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_CURSOR +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GRID_INIT + CURSOR_VARS + SCORE_VARS + KEYS +
-        SWAP_FN + MATCH_FN + CLEAR_FN +
+        SWAP_FN + MATCH_FN + CLEAR_FN,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_CURSOR +
         'if(zPressed){doSwap();var m=findMatches();if(m.length>0){score+=clearMatches(m)}else{doSwap()}}' +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GRID_INIT + CURSOR_VARS + SCORE_VARS + STATE_VARS + KEYS +
-        SWAP_FN + MATCH_FN + CLEAR_FN + DROP_FN +
+        SWAP_FN + MATCH_FN + CLEAR_FN + DROP_FN,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         'if(clearTimer>0){clearTimer--;if(clearTimer===0){dropGems();var m2=findMatches();if(m2.length>0){score+=clearMatches(m2);clearTimer=15}}}else{' +
         MOVE_CURSOR +
         'if(zPressed){doSwap();var m=findMatches();if(m.length>0){score+=clearMatches(m);clearTimer=15}else{doSwap()}}' +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + GRID_INIT + CURSOR_VARS + SCORE_VARS + STATE_VARS + KEYS +
         SWAP_FN + MATCH_FN + CLEAR_FN + DROP_FN +
-        'var chain=0;' +
+        'var chain=0;',
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         'if(clearTimer>0){clearTimer--;if(clearTimer===0){dropGems();var m2=findMatches();if(m2.length>0){chain++;score+=clearMatches(m2)*(chain+1);clearTimer=15}else{chain=0}}}else{' +
         MOVE_CURSOR +
         'if(zPressed){doSwap();var m=findMatches();if(m.length>0){chain=0;score+=clearMatches(m);clearTimer=15}else{doSwap()}}' +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         CLEAR_PRESSED +
         DRAW_BG + DRAW_GRID + DRAW_CURSOR + DRAW_SCORE +
         'if(chain>0){ctx.fillStyle=P8PAL[10];ctx.font="bold 12px monospace";ctx.textAlign="right";ctx.fillText("chain x"+(chain+1),378,14)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

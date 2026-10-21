@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Python-to-JS transpiler (light transform so Python
    syntax runs in the canvas iframe)
@@ -110,66 +115,83 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + KEYS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PADDLE_VARS + KEYS,
+        pyToJs(u),
         'function loop(){' +
         MOVE_PADDLE +
         DRAW_BG + DRAW_PADDLE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS,
+        pyToJs(u),
         'function loop(){' +
         MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PADDLE + MOVE_BALL +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS,
+        pyToJs(u),
         PADDLE_BOUNCE +
         'function loop(){' +
         MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL + DRAW_BRICKS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + KEYS +
-        BRICK_VARS + PADDLE_BOUNCE +
+        BRICK_VARS + PADDLE_BOUNCE,
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL + DRAW_BRICKS + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + STATE_VARS + KEYS +
         BRICK_VARS + PADDLE_BOUNCE +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="over"||gameState==="win")){score=0;lives=3;bx=300;by=200;bvx=4;bvy=-4;' + resetBricksCode() + 'gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="over"||gameState==="win")){score=0;lives=3;bx=300;by=200;bvx=4;bvy=-4;' + resetBricksCode() + 'gameState="play"}});',
+        'window.cwStep=function(){' + pyToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PADDLE + MOVE_BALL + PADDLE_BOUNCE + BRICK_COLLIDE + BALL_LOST +
-        'try{eval(' + JSON.stringify(pyToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         CHECK_WIN +
         '}' +
         DRAW_BG + DRAW_PADDLE + DRAW_BALL + DRAW_BRICKS + DRAW_SCORE + DRAW_LIVES +
@@ -180,7 +202,8 @@ window.CW_CONFIG = {
         'ctx.fillText("YOU WIN!",300,180);ctx.font="20px monospace";ctx.fillStyle="#fff";ctx.fillText("Score: "+score,300,220);' +
         'ctx.fillText("Press R to play again",300,260)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

@@ -76,6 +76,10 @@ function wrap(code) {
     '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
 window.CW_CONFIG = {
   storageKey: 'jvds-night-watch1-canvas',
   downloadName: 'my-night-watch-1.html',
@@ -91,64 +95,69 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_DARK + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
-      return wrap(
-        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK +
+      return wbWrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'px=Math.max(8,Math.min(392-pw,px));py=Math.max(8,Math.min(392-pw,py));' +
         DRAW_DARK + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
-      return wrap(
-        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK +
+      return wbWrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
         'px=Math.max(8,Math.min(392-pw,px));py=Math.max(8,Math.min(392-pw,py));' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_DARK + DRAW_FLASH + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
-      return wrap(
-        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK +
+      return wbWrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + KEYS + MOUSE_TRACK,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
         'px=Math.max(8,Math.min(392-pw,px));py=Math.max(8,Math.min(392-pw,py));' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_DARK + DRAW_FLASH + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
-      return wrap(
-        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + EVENT_VARS + KEYS + MOUSE_TRACK +
+      return wbWrap(
+        SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + EVENT_VARS + KEYS + MOUSE_TRACK,
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
         'px=Math.max(8,Math.min(392-pw,px));py=Math.max(8,Math.min(392-pw,py));' +
         'for(var ri=0;ri<rooms.length;ri++){var r=rooms[ri];if(!r.checked&&px+pw>r.x+20&&px<r.x+r.w-20&&py+pw>r.y+20&&py<r.y+r.h-20){r.checked=true;checkedCount++}}' +
         'eventTimer++;if(eventTimer%300===0){eventText=events[Math.floor(Math.random()*events.length)];eventAlpha=1}' +
         'if(eventAlpha>0)eventAlpha-=0.01;' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         DRAW_DARK + DRAW_FLASH + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + GUARD_VARS + ROOM_DATA + WALL_DATA + EVENT_VARS + STATE_VARS + KEYS + MOUSE_TRACK +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="done"){for(var i=0;i<rooms.length;i++)rooms[i].checked=false;checkedCount=0;px=200;py=360;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="done"){for(var i=0;i<rooms.length;i++)rooms[i].checked=false;checkedCount=0;px=200;py=360;gameState="play"}});',
+        'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
@@ -156,7 +165,7 @@ window.CW_CONFIG = {
         'for(var ri=0;ri<rooms.length;ri++){var r=rooms[ri];if(!r.checked&&px+pw>r.x+20&&px<r.x+r.w-20&&py+pw>r.y+20&&py<r.y+r.h-20){r.checked=true;checkedCount++}}' +
         'eventTimer++;if(eventTimer%300===0){eventText=events[Math.floor(Math.random()*events.length)];eventAlpha=1}' +
         'if(eventAlpha>0)eventAlpha-=0.01;' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         '}' +
         DRAW_DARK + DRAW_FLASH + DRAW_ROOMS + DRAW_WALLS + DRAW_GUARD + DRAW_HUD +
         'if(gameState==="done"){ctx.fillStyle="rgba(34,197,94,0.2)";ctx.fillRect(0,0,400,400);' +

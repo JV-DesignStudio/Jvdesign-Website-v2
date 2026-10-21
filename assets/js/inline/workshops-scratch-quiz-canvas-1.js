@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Scratch-to-JS transpiler (block notation to JS)
    =================================================== */
@@ -109,42 +114,55 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + QUIZ_DATA + QUIZ_VARS + KEYS +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + QUIZ_DATA + QUIZ_VARS + KEYS,
+        scratchToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_QUESTION +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + QUIZ_DATA + QUIZ_VARS + KEYS + CLICK_HANDLER +
+      return wbWrap(
+        
+        SETUP + QUIZ_DATA + QUIZ_VARS + KEYS + CLICK_HANDLER,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + QUIZ_DATA + QUIZ_VARS + SCORE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER +
+      return wbWrap(
+        
+        SETUP + QUIZ_DATA + QUIZ_VARS + SCORE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + QUIZ_DATA + QUIZ_VARS + TIMER_VARS + STATE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER +
+      return wbWrap(
+        
+        SETUP + QUIZ_DATA + QUIZ_VARS + TIMER_VARS + STATE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE + DRAW_TIMER +
@@ -153,16 +171,20 @@ window.CW_CONFIG = {
         'ctx.fillText("QUIZ COMPLETE!",240,140);ctx.fillStyle="#fff";ctx.font="20px monospace";' +
         'ctx.fillText("Score: "+score+" / "+total,240,180)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + QUIZ_DATA + QUIZ_VARS + TIMER_VARS + STATE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER +
+      return wbWrap(
+        
+        SETUP + QUIZ_DATA + QUIZ_VARS + TIMER_VARS + STATE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         TICK_TIMER +
         'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE + DRAW_TIMER +
@@ -171,17 +193,21 @@ window.CW_CONFIG = {
         'ctx.fillText("QUIZ COMPLETE!",240,140);ctx.fillStyle="#fff";ctx.font="20px monospace";' +
         'ctx.fillText("Score: "+score+" / "+total,240,180)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + QUIZ_DATA + QUIZ_VARS + TIMER_VARS + STATE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="done"){qIndex=0;score=0;timeLeft=10;feedback="";feedTimer=0;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="done"){qIndex=0;score=0;timeLeft=10;feedback="";feedTimer=0;gameState="play"}});',
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         TICK_TIMER +
         'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         'key1=false;key2=false;key3=false;' +
         DRAW_BG + DRAW_QUESTION + DRAW_FEEDBACK + DRAW_SCORE + DRAW_TIMER +
@@ -192,7 +218,8 @@ window.CW_CONFIG = {
         'ctx.fillText(score>=4?"Amazing!":score>=2?"Good try!":"Keep practising!",240,215);' +
         'ctx.font="16px monospace";ctx.fillText("Press R to play again",240,250)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

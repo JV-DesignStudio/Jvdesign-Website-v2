@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    GDevelop-to-JS transpiler (simplified event notation)
    =================================================== */
@@ -99,63 +104,84 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS,
+        gdToJs(u),
         'function loop(){' +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_MSG +
         'clicked=false;' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+      return wbWrap(
+        
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_MSG +
         'clicked=false;' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+      return wbWrap(
+        
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         CLICK_LOGIC +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+      return wbWrap(
+        
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         CLICK_LOGIC +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
+      return wbWrap(
+        
+        SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS,
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         CLICK_LOGIC +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + ROOM_DATA + STATE_VARS + MOUSE_VARS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="win"){currentRoom=0;inventory=[];flags={cabinetOpen:false,doorOpen:false,chestOpen:false};msgText="Click objects to interact.";msgTimer=180;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="win"){currentRoom=0;inventory=[];flags={cabinetOpen:false,doorOpen:false,chestOpen:false};msgText="Click objects to interact.";msgTimer=180;gameState="play"}});',
+        'window.cwStep=function(){' + gdToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         CLICK_LOGIC +
-        'try{eval(' + JSON.stringify(gdToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         WIN_CHECK +
         '}' +
         DRAW_ROOM + DRAW_OBJECTS + DRAW_HOVER + DRAW_INVENTORY + DRAW_MSG +
@@ -164,7 +190,8 @@ window.CW_CONFIG = {
         'ctx.fillText("YOU FOUND THE CRYSTAL!",300,180);ctx.fillStyle="#fff";ctx.font="16px monospace";' +
         'ctx.fillText("Press R to play again",300,215)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

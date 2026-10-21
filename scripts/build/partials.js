@@ -8,6 +8,21 @@ const { ROOT } = require('../lib/paths');
 const { walk } = require('../lib/walk');
 
 const PARTIALS_DIR = path.join(ROOT, 'partials');
+const MARKETING = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'marketing.json'), 'utf8'));
+const STATS = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'stats.json'), 'utf8'));
+
+// One source for visitor-facing catalogue totals. Two forms:
+//   <!-- STAT:workshops -->  comment marker for visible HTML
+//   {{STAT:workshops}}      token safe inside attributes and JSON-LD strings
+//   {{STATX:workshops}}     exact generated count from content/stats.json
+function applyStats(src) {
+  const display = (key) => MARKETING[key] && MARKETING[key].display;
+  const exact = (key) => STATS[key];
+  return src
+    .replace(/<!--\s*STAT:(\w+)\s*-->/g, (m, key) => display(key) || m)
+    .replace(/\{\{\s*STAT:(\w+)\s*\}\}/g, (m, key) => display(key) || m)
+    .replace(/\{\{\s*STATX:(\w+)\s*\}\}/g, (m, key) => (exact(key) != null ? String(exact(key)) : m));
+}
 
 function runPartials({ verbose = true } = {}) {
   const partials = {};
@@ -45,6 +60,7 @@ function runPartials({ verbose = true } = {}) {
       }
     }
     src = dedupeSkipLinks(src);
+    src = applyStats(src);
     // A1503/A1609: keep style-shared.css as a plain stylesheet link. The old
     // preload + inline onload swap needs script-src 'unsafe-inline' and is
     // blocked under the site CSP, leaving the page unstyled. Downgrade any

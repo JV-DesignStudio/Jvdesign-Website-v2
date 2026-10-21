@@ -67,6 +67,10 @@ function wrap(code) {
     '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
 window.CW_CONFIG = {
   storageKey: 'jvds-my-first-scratch-canvas',
   downloadName: 'my-first-scratch-game.html',
@@ -83,71 +87,76 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + SPRITE + KEYS +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        SETUP + BASKET_VARS + SPRITE + KEYS,
+        scratchToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
-      return wrap(
-        SETUP + BASKET_VARS + SPRITE + KEYS +
+      return wbWrap(
+        SETUP + BASKET_VARS + SPRITE + KEYS,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'bx=Math.max(0,Math.min(400,bx));' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + BASKET_VARS + STAR_VARS + SPRITE + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
         'bx=Math.max(0,Math.min(400,bx));' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'if(sy>370)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + SPRITE + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
         'bx=Math.max(0,Math.min(400,bx));' +
         'sy+=fallSpeed;' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'if(sy>370)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + SPRITE + KEYS +
-        STAR_RESET +
+        STAR_RESET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
         'bx=Math.max(0,Math.min(400,bx));' +
         'sy+=fallSpeed;' +
         'if(sy+sh>=by&&sy<=by+bh&&sx+sw>=bx&&sx<=bx+bw){score++;resetStar();fallSpeed=Math.min(7,2+score/5)}' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'if(sy>370)resetStar();' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + BASKET_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + SPRITE + KEYS +
         STAR_RESET +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){score=0;fallSpeed=2;resetStar();gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){score=0;fallSpeed=2;resetStar();gameState="play"}});',
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)bx-=speed;if(rightHeld)bx+=speed;' +
@@ -155,7 +164,7 @@ window.CW_CONFIG = {
         'sy+=fallSpeed;' +
         'if(sy+sh>=by&&sy<=by+bh&&sx+sw>=bx&&sx<=bx+bw){score++;resetStar();fallSpeed=Math.min(7,2+score/5)}' +
         'if(sy>370)resetStar();' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         '}' +
         DRAW_BG + DRAW_BASKET + DRAW_STAR + DRAW_SCORE +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +

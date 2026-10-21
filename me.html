@@ -20,15 +20,15 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5CRCkOgUFRX7e36bdeE9mKZCEKtaZCdJghmkxuAZmJU=' 'sha256-m253/JF1/1LggC1cra0rubAS2dmKm9SfKiucWEpo6O0=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5CRCkOgUFRX7e36bdeE9mKZCEKtaZCdJghmkxuAZmJU=' 'sha256-2eFWJW0Fof6UqM5aUWb7MN/uTM++G+6n/++AxjUY63U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <!-- /BUILD:head-icons -->
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <link rel="stylesheet" href="style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css">
-<link rel="stylesheet" href="style-me.css?v=17">
-<noscript><link rel="stylesheet" href="style-me.css?v=17"></noscript>
+<link rel="stylesheet" href="style-me.css?v=18">
+<noscript><link rel="stylesheet" href="style-me.css?v=18"></noscript>
     <!-- Open Graph -->
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/me.html">
@@ -122,6 +122,7 @@
     <div class="xp-bar-section">
       <div class="xp-bar-header"><span id="xpLabel">0 / 100 XP</span><span id="xpPct">0%</span></div>
       <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+      <div id="nextUnlock" style="font-size:.78rem;color:rgba(240,234,214,.45);margin-top:6px;text-align:center"></div>
     </div>
   </div>
   <div id="continueRow" style="max-width:720px;margin:18px auto 0;display:none;gap:12px;flex-wrap:wrap;justify-content:center"></div>
@@ -314,6 +315,12 @@
     document.getElementById('xpFill').style.width=xpProgress.percentage+'%';
     document.getElementById('xpLabel').textContent=xpProgress.current+' / '+xpProgress.max+' XP';
     document.getElementById('xpPct').textContent=Math.round(xpProgress.percentage)+'%';
+    var needed=xpProgress.max-xpProgress.current;
+    var nu=document.getElementById('nextUnlock');
+    if(nu){
+      if(needed<=0) nu.textContent='';
+      else nu.innerHTML=needed+' XP to Level '+(xpProgress.level+1)+' - <a href="/pages/xp-rules.html" style="color:var(--teal);text-decoration:none;font-weight:700">How XP works</a>';
+    }
   }
 
   /* ── Stat Cards ── */
@@ -370,6 +377,214 @@
     return [];
   }
 
+  /* ═══ PORTFOLIO (A1775): what you made, what you earned, what is next ═══ */
+  var TOOL_SAVES=[
+    {key:'jvds_sprite_anim',label:'Sprite Animator',href:'/tools/sprite-animator.html',icon:'🎞️',array:true},
+    {key:'jvds_palettes',label:'Colour Palette',href:'/tools/colour-palette.html',icon:'🎨',array:true},
+    {key:'jvds_trading_card_library',label:'Trading Card Designer',href:'/tools/trading-card-designer.html',icon:'🃏',array:true},
+    {key:'jvds_story_slots',label:'Story Editor',href:'/tools/story-editor.html',icon:'📖',array:true},
+    {key:'jvds_sound_library',label:'Sound Studio',href:'/tools/sound-studio.html',icon:'🎵',array:true},
+    {key:'jvds_bitmapfont',label:'Bitmap Font Maker',href:'/tools/bitmap-font-maker.html',icon:'🔤'},
+    {key:'jvds_gdd',label:'GDD Builder',href:'/tools/gdd-builder.html',icon:'📋'},
+    {key:'jvds_level_slots_v2',label:'Level Designer',href:'/tools/level-designer.html',icon:'🗺️',array:true},
+    {key:'jv_arcade_slot_0',label:'Arcade Game Maker',href:'/tools/arcade-game-maker.html',icon:'🕹️'},
+    {key:'jvds_icon_gen',label:'Icon Generator',href:'/tools/icon-generator.html',icon:'🔷'},
+    {key:'jvds_game_logo',label:'Game Logo Maker',href:'/tools/game-logo-maker.html',icon:'🪧'},
+    {key:'jvds_screenshot',label:'Screenshot Generator',href:'/tools/screenshot-generator.html',icon:'📸'},
+    {key:'jvds_store_page',label:'Store Page Builder',href:'/tools/store-page-builder.html',icon:'🏪'},
+    {key:'jvds_builder_saves',label:'BuildLab',href:'/tools/buildlab.html',icon:'🧱',array:true}
+  ];
+
+  function readJSON(key){
+    try{ var raw=localStorage.getItem(key); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+  }
+  function esc(v){
+    return String(v==null?'':v).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function safeHref(u){
+    if(typeof u!=='string') return '';
+    u=u.trim();
+    if(!u||u.charAt(0)!=='/'||/^\/\//.test(u)) return '';
+    if(/[a-z][a-z0-9+.-]*:/i.test(u)||/[\s"'<>\\]/.test(u)) return '';
+    return u;
+  }
+  function when(ts){
+    if(!ts) return '';
+    var t=typeof ts==='number'?ts:Date.parse(ts);
+    if(!t||isNaN(t)) return '';
+    var days=Math.floor((Date.now()-t)/86400000);
+    if(days<=0) return 'Today';
+    if(days===1) return 'Yesterday';
+    if(days<7) return days+' days ago';
+    return new Date(t).toLocaleDateString(undefined,{day:'numeric',month:'short'});
+  }
+  function getProjects(){
+    var out=[];
+    try{
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i);
+        if(k.indexOf('jvds.project.')!==0) continue;
+        var p=readJSON(k);
+        if(!p||typeof p!=='object'||Array.isArray(p)) continue;
+        var href=safeHref(p.page);
+        if(!href) continue;
+        var steps=p.steps&&p.steps.length?p.steps.length:0;
+        var done=p.completed&&p.completed.length?p.completed.length:0;
+        out.push({title:String(p.title||'Workshop project'),href:href,updated:p.updated||'',done:done,total:steps});
+      }
+    }catch(e){}
+    out.sort(function(a,b){ return (Date.parse(b.updated)||0)-(Date.parse(a.updated)||0); });
+    return out;
+  }
+  function getPixelCreations(){
+    var arr=readJSON('jvds_pixel_keepsake');
+    if(!Array.isArray(arr)) return [];
+    return arr.filter(function(e){ return e&&e.title; }).map(function(e){
+      return {
+        title:String(e.title),
+        date:e.date||'',
+        thumb:(typeof e.thumb==='string'&&e.thumb.indexOf('data:image/')===0)?e.thumb:'',
+        href:'/tools/pixel-studio.html'
+      };
+    });
+  }
+  function getSavedToolWork(){
+    var out=[];
+    TOOL_SAVES.forEach(function(t){
+      var raw=null; try{ raw=localStorage.getItem(t.key); }catch(e){}
+      if(!raw) return;
+      var count=1;
+      if(t.array){
+        var v=readJSON(t.key);
+        if(!Array.isArray(v)) return;
+        count=v.filter(Boolean).length;
+        if(!count) return;
+      }
+      out.push({label:t.label,href:t.href,icon:t.icon,count:count});
+    });
+    return out;
+  }
+  function getLastActivity(){
+    var a=readJSON('jvds_last_activity');
+    if(!a||typeof a!=='object') return null;
+    var href=safeHref(a.url);
+    if(!href||!/^\/(tools|workshops|games)\//.test(href)) return null;
+    return {href:href,title:String(a.title||'your last page'),ts:Number(a.ts)||0};
+  }
+  function getFavouriteGames(){
+    var scores=getGameScores();
+    var out=[];
+    Object.keys(scores).forEach(function(id){
+      out.push({id:id,name:gameName(id),score:scores[id].score||0,level:scores[id].level||0});
+    });
+    out.sort(function(a,b){ return b.score-a.score; });
+    return out.slice(0,3);
+  }
+  function portfolioHasWork(){
+    return getProjects().length>0||getPixelCreations().length>0||getSavedToolWork().length>0||getCompletedWorkshops().length>0||Object.keys(getGameScores()).length>0;
+  }
+  function needsBackup(){
+    var saves=0;
+    try{ for(var i=0;i<localStorage.length;i++){ if(/^(jvds|jv_|qb-)/.test(localStorage.key(i))) saves++; } }catch(e){ return false; }
+    if(!saves) return false;
+    var last=0; try{ last=Number(localStorage.getItem('jvds_backpack_last')||0); }catch(e){ return false; }
+    return !last||(Date.now()-last>7*86400000);
+  }
+  function renderNextStep(items,certs,games){
+    var step=null;
+    var last=getLastActivity();
+    if(last){
+      step={title:'Continue: '+last.title,href:last.href,cta:'Pick it up',note:(last.ts?when(last.ts)+', ':'')+'saved in this browser',who:'Echo'};
+    }else if(items.length===0&&certs.length===0){
+      step={title:'Make your first character',href:'/tools/pixel-studio.html',cta:'Open Pixel Studio',note:'Ember says five minutes is enough for a first sprite.',who:'Ember'};
+    }else if(certs.length===0){
+      step={title:'Finish one workshop to earn a certificate',href:'/workshop',cta:'Choose a workshop',note:'Lumo keeps the steps small, so you can stop and come back.',who:'Lumo'};
+    }else if(games.length===0){
+      step={title:'Take a break and play a game',href:'/arcade.html',cta:'Open the Arcade',note:'Pip has short games for when you want to play instead of make.',who:'Pip'};
+    }else{
+      step={title:'Make something new with your tools',href:'/dev-tools',cta:'Browse the toolbox',note:'Ember can help you start the next idea.',who:'Ember'};
+    }
+    return step;
+  }
+  function renderPortfolio(s){
+    s=s||{totalXP:0};
+    var projects=getProjects(), art=getPixelCreations(), saves=getSavedToolWork();
+    var items=[];
+    projects.slice(0,3).forEach(function(p){
+      items.push({title:p.title,href:p.href,icon:'🛠️',
+        meta:'Workshop project'+(p.total?' · '+p.done+' / '+p.total+' steps':'')+(p.updated?' · '+when(p.updated):'')});
+    });
+    art.slice(0,3).forEach(function(a){
+      items.push({title:a.title,href:a.href,thumb:a.thumb,icon:'🎨',
+        meta:'Pixel art'+(a.date?' · '+when(a.date):'')});
+    });
+    saves.forEach(function(s){
+      items.push({title:s.label,href:s.href,icon:s.icon,
+        meta:s.count>1?s.count+' saves on this device':'Saved on this device'});
+    });
+    items=items.slice(0,6);
+
+    var certs=getCompletedWorkshops().slice(-4).reverse();
+    var games=getFavouriteGames();
+    var next=renderNextStep(items,certs,games);
+    var html='';
+
+    html+='<div class="overview-section pf-section" data-pf="creations"><h2>🎒 Recent creations <span class="count">'+items.length+'</span></h2>';
+    if(items.length){
+      html+='<div class="pf-grid">';
+      items.forEach(function(it){
+        html+='<a class="pf-card" href="'+esc(it.href)+'">';
+        html+='<span class="pf-art">'+(it.thumb?'<img src="'+esc(it.thumb)+'" alt="" width="44" height="44">':esc(it.icon||'✨'))+'</span>';
+        html+='<span class="pf-body"><strong>'+esc(it.title)+'</strong><span class="pf-meta">'+esc(it.meta)+'</span></span>';
+        html+='</a>';
+      });
+      html+='</div>';
+    }else{
+      html+='<div class="pf-empty">';
+      html+='<strong>Nothing here yet, and that is fine.</strong>';
+      html+='<p>Make something small and it will show up here. Each of these takes about five minutes.</p>';
+      html+='<div class="pf-start">';
+      html+='<a href="/tools/pixel-studio.html">Paint a character</a>';
+      html+='<a href="/workshop">Start a workshop</a>';
+      html+='<a href="/arcade.html">Play a game</a>';
+      html+='</div></div>';
+    }
+    html+='</div>';
+
+    html+='<div class="overview-section pf-section" data-pf="certificates"><h2>🏆 Certificates <span class="count">'+certs.length+'</span></h2>';
+    if(certs.length){
+      html+='<div class="pf-certs">';
+      certs.forEach(function(id){
+        html+='<a class="pf-cert" href="/workshops/my-progress.html"><span class="pf-cert-icon">🏆</span><span class="pf-cert-name">'+esc(wsName(id))+'</span><span class="pf-cert-go">Print</span></a>';
+      });
+      html+='</div><p class="pf-note">Open My Progress and tap the trophy on a finished workshop to print or save its certificate.</p>';
+    }else{
+      html+='<p class="pf-note">No certificates yet. Finish a workshop and Lumo will unlock one you can print. <a href="/workshop">Find a workshop</a></p>';
+    }
+    html+='</div>';
+
+    html+='<div class="overview-section pf-section" data-pf="games"><h2>🎮 Favourite games</h2>';
+    if(games.length){
+      html+='<div class="pf-games">';
+      games.forEach(function(g){
+        html+='<a class="pf-game" href="/arcade.html?q='+encodeURIComponent(g.name)+'"><span class="pf-game-name">'+esc(g.name)+'</span><span class="pf-game-score">'+Number(g.score||0).toLocaleString()+'</span><span class="pf-game-meta">'+(g.level?'Level '+g.level+' · ':'')+'best score</span></a>';
+      });
+      html+='</div><p class="pf-note">Your top scores. Tap one to play again.</p>';
+    }else{
+      html+='<p class="pf-note">Play a game and Pip will keep your best score here. <a href="/arcade.html">Open the Arcade</a></p>';
+    }
+    html+='</div>';
+
+    html+='<div class="pf-next" data-pf="next"><div class="pf-next-who">'+esc(next.who)+'</div><div class="pf-next-body"><strong>'+esc(next.title)+'</strong><span>'+esc(next.note)+'</span></div><a class="pf-next-cta" href="'+esc(next.href)+'">'+esc(next.cta)+'</a></div>';
+
+    if((items.length||certs.length||games.length||s.totalXP>0)&&needsBackup()){
+      html+='<div class="pf-backup" data-pf="backup"><div><strong>Keep your work safe</strong><span>Everything here lives in this browser. School computers can wipe it. Download a backpack before you leave.</span></div><button type="button" class="tab" data-on="exportBackup" data-on-plain>Download my backpack</button></div>';
+    }
+    return html;
+  }
+
   /* ═══ RENDER ALL ═══ */
   function render(){
     var s=getStats();
@@ -386,7 +601,7 @@
     document.getElementById('displayName').textContent=pname||'Player';
 
     // Empty invite
-    document.getElementById('emptyInvite').style.display=(s.totalXP===0)?'block':'none';
+    document.getElementById('emptyInvite').style.display=(s.totalXP===0&&!portfolioHasWork())?'block':'none';
 
     // Continue row
     var last=null;try{last=localStorage.getItem('jvds_last_workshop')||localStorage.getItem('jvds-last-workshop');}catch(e){}
@@ -418,7 +633,7 @@
   /* ═══ OVERVIEW ═══ */
   function renderOverview(s){
     var el=document.getElementById('overviewContent');
-    var html='';
+    var html=renderPortfolio(s);
 
     // Earned Badges Section
     var completedQuests=[];
@@ -636,7 +851,7 @@
   function bpMsg(t){document.getElementById('backupMsg').textContent=t;}
   function bp(){if(!window.JVDS||!JVDS.backpack)throw new Error('Backpack not loaded yet');return JVDS.backpack;}
   function reloadSoon(){setTimeout(function(){location.reload();},900);}
-  window.exportBackup=function(){try{var n=bp().download();bpMsg('Backpack downloaded ('+n+' saves). Keep it on a USB stick or in your school drive.');}catch(e){bpMsg('Download failed: '+e.message);}};
+  window.exportBackup=function(){try{var n=bp().download();try{localStorage.setItem('jvds_backpack_last',String(Date.now()));}catch(e){}bpMsg('Backpack downloaded ('+n+' saves). Keep it on a USB stick or in your school drive.');try{renderOverview(getStats());}catch(e){} }catch(e){bpMsg('Download failed: '+e.message);}};
   window.copyCode=function(){try{var code=bp().toCode();navigator.clipboard.writeText(code).then(function(){bpMsg('Backpack code copied. It can be long, so the file is safer.');},function(){bpMsg('Could not copy. Use Download my backpack instead.');});}catch(e){bpMsg('Copy failed: '+e.message);}};
   window.restoreCode=function(){try{var code=document.getElementById('restoreCode').value.trim();if(!code)return;var n=bp().fromCode(code);bpMsg('Unpacked '+n+' saves. Reloading...');reloadSoon();}catch(e){bpMsg('That code did not work. Check you copied all of it.');}};
   window.importBackup=function(e){var f=e.target.files[0];if(!f)return;bp().restoreFile(f).then(function(n){bpMsg('Unpacked '+n+' saves. Reloading...');reloadSoon();},function(err){bpMsg('That file is not a backpack ('+err.message+').');});};

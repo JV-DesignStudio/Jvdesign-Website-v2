@@ -16,15 +16,15 @@ const puppeteer=require('puppeteer');
 const root=path.resolve(__dirname,'..');
 const PAGE_DIR=path.join(root,'workshops');
 
-// Builders that load the shared exporter, with the group they build into and
-// the units their on-page dimensions are authored in.
+// Builders that load the shared exporter, with the preset they open in the
+// shell and the units their on-page dimensions are authored in.
 const TARGETS=[
-  { page:'phone-stand-builder', group:'standGroup', units:'mm' },
-  { page:'rocket-builder',        group:'rocketGroup', units:'m'  },
-  { page:'robot-builder',         group:'robotGroup',  units:'m'  },
-  { page:'castle-builder',        group:'castleGroup',   units:'m'  },
-  { page:'space-station-builder', group:'stationGroup',  units:'m'  },
-  { page:'robot-builder',         group:'robotGroup',    units:'m'  }
+  { page:'phone-stand-builder', preset:'phone-stand', units:'mm' },
+  { page:'rocket-builder',        preset:'rocket',        units:'m'  },
+  { page:'robot-builder',         preset:'robot',         units:'m'  },
+  { page:'castle-builder',        preset:'castle',        units:'m'  },
+  { page:'space-station-builder', preset:'space-station', units:'m'  },
+  { page:'robot-builder',         preset:'robot',         units:'m'  }
 ];
 
 let failures=0;
@@ -175,14 +175,16 @@ function parseGLBHeader(buf){
   const base='http://127.0.0.1:'+server.address().port;
   const browser=await puppeteer.launch({headless:true,args:['--no-sandbox','--use-gl=swiftshader','--enable-unsafe-swiftshader']});
 
-  // Every 3D builder that exports must load the shared module, or it will keep
-  // drifting onto its own bespoke writer.
-  const expected=['rocket-builder','robot-builder','pirate-ship-builder','pirate-cannon-builder',
-    'steampunk-airship-builder','race-car-builder','submarine-builder','phone-stand-builder',
-    'castle-builder','space-station-builder'];
-  for(const name of expected){
-    const html=fs.readFileSync(path.join(PAGE_DIR,name+'.html'),'utf8');
-    check(name+' loads jv-exporter.js', /jv-exporter\.js/.test(html));
+  // Every 3D builder that exports must use the shared module, or it will keep
+  // drifting onto its own bespoke writer. The shell loads jv-exporter.js once;
+  // each migrated preset module must install its UI instead of writing files.
+  const shell=fs.readFileSync(path.join(PAGE_DIR,'3d-builder.html'),'utf8');
+  check('3d-builder.html loads jv-exporter.js',/jv-exporter\.js/.test(shell));
+  const presets=['rocket','robot','pirate-ship','pirate-cannon','steampunk-airship',
+    'race-car','submarine','phone-stand','castle','space-station','fairy-tale'];
+  for(const name of presets){
+    const js=fs.readFileSync(path.join(root,'assets/js/builders',name+'.js'),'utf8');
+    check(name+' installs the shared exporter',/JVExporter\.installUI\s*\(/.test(js));
   }
 
   for(const t of TARGETS){
@@ -192,35 +194,23 @@ function parseGLBHeader(buf){
     await page.setRequestInterception(true);
     page.on('request',r=>r.url().startsWith(base)||r.url().startsWith('data:')||r.url().startsWith('blob:')?r.continue():r.abort());
     await page.setViewport({width:1440,height:900});
-    await page.goto(base+'/workshops/'+t.page+'.html',{waitUntil:'load'});
-    if(await page.$('#cookie-decline')){try{await page.click('#cookie-decline');}catch(e){}}
+    await page.goto(base+'/workshops/3d-builder.html?preset='+t.preset,{waitUntil:'load'});
+    await page.waitForFunction(()=>window.JVExporter&&window.JVExporter.currentGroup&&window.JVExporter.currentGroup(),{timeout:30000});
+    // Let autosave restore and the first build settle before measuring, so the
+    // export does not race the model.
     await new Promise(r=>setTimeout(r,1200));
-    // clear onboarding, then build the whole thing
-    await page.evaluate(()=>{
-      const b=Array.from(document.querySelectorAll('button'))
-        .find(x=>/^(Let's Build!|Accept|Got it)$/i.test(x.textContent.trim())&&x.offsetParent!==null);
-      if(b)b.click();
-    });
-    await new Promise(r=>setTimeout(r,400));
-    await page.evaluate(async()=>{
-      const hit=re=>{const b=Array.from(document.querySelectorAll('button'))
-        .find(x=>re.test(x.textContent)&&x.offsetParent!==null&&!x.disabled);
-        if(b){b.click();return true;}return false;};
-      if(!hit(/quick build/i)) for(let i=0;i<35&&hit(/^\s*(Next|Continue)\b/i);i++){}
-      await new Promise(r=>setTimeout(r,900));
-    });
     // Let any trailing rebuild (autosave restore, step Apply) finish before
     // measuring, otherwise the export races the model.
     await new Promise(r=>setTimeout(r,1200));
     // GLTFLoader is only needed here, to prove the GLB we wrote reads back as
     // the model we built. Not shipped to learners.
-    await page.addScriptTag({path:path.join(root,'node_modules/three/examples/js/loaders/GLTFLoader.js')});
+    await page.addScriptTag({url:base+'/node_modules/three/examples/js/loaders/GLTFLoader.js'});
 
-    const got=await page.evaluate(async(groupVar,units)=>{
+    const got=await page.evaluate(async(units)=>{
       const J=window.JVExporter;
       if(!J) return {err:'JVExporter not loaded'};
-      const g=(function(){ try{ return (new Function('return '+groupVar))(); }catch(e){ return null; } })();
-      if(!g) return {err:'group '+groupVar+' not found'};
+      const g=J.currentGroup();
+      if(!g) return {err:'no live group for this preset'};
 
       const asBuilt=J.collect(g,{units:units,name:'Fidelity Test'});
       const out={
@@ -280,7 +270,7 @@ function parseGLBHeader(buf){
         },err=>resolve({ok:false,err:'parse failed: '+err}));
       });
       return out;
-    },t.group,t.units);
+    },t.units);
 
     if(got.err){
       check(t.page+' exports',false,got.err);
@@ -374,21 +364,13 @@ function parseGLBHeader(buf){
     await page.setRequestInterception(true);
     page.on('request',r=>r.url().startsWith(base)||r.url().startsWith('data:')||r.url().startsWith('blob:')?r.continue():r.abort());
     await page.setViewport({width:1440,height:900});
-    await page.goto(base+'/workshops/robot-builder.html',{waitUntil:'load'});
-    if(await page.$('#cookie-decline')){try{await page.click('#cookie-decline');}catch(e){}}
+    await page.goto(base+'/workshops/3d-builder.html?preset=robot',{waitUntil:'load'});
+    await page.waitForFunction(()=>window.JVExporter&&window.JVExporter.currentGroup&&window.JVExporter.currentGroup(),{timeout:30000});
     await new Promise(r=>setTimeout(r,1200));
-    await page.evaluate(()=>{const b=Array.from(document.querySelectorAll('button')).find(x=>/^(Let's Build!|Accept|Got it)$/i.test(x.textContent.trim())&&x.offsetParent!==null);if(b)b.click();});
-    await new Promise(r=>setTimeout(r,400));
-    await page.evaluate(async()=>{
-      const hit=re=>{const b=Array.from(document.querySelectorAll('button')).find(x=>re.test(x.textContent)&&x.offsetParent!==null&&!x.disabled);if(b){b.click();return true;}return false;};
-      if(!hit(/quick build/i))for(let i=0;i<35&&hit(/^\s*(Next|Continue)\b/i);i++){}
-      await new Promise(r=>setTimeout(r,900));
-    });
-    await new Promise(r=>setTimeout(r,1000));
 
     const P=await page.evaluate(()=>{
       const J=window.JVExporter;
-      const g=robotGroup;
+      const g=J.currentGroup();
       const base=J.collect(g,{units:'m',name:'profiles'});
       const out={baseSize:Array.from(base.size),baseP:Array.from(base.parts[0].P.slice(0,3)),base:J.summary(base)};
       for(const id of ['roblox','unreal','godot','unity']){

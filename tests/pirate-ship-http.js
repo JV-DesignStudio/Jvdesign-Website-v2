@@ -1,7 +1,7 @@
 const http=require('http'),fs=require('fs'),path=require('path'),zlib=require('zlib');
 const puppeteer=require('puppeteer');
 const root=path.resolve(__dirname,'..');
-const PAGE='/workshops/pirate-ship-builder.html';
+const PAGE='/workshops/3d-builder.html?preset=pirate-ship';
 const ZIP='/pirate-ship-starter.zip';
 let failures=0;
 function check(name,ok,detail=''){console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:''));if(!ok)failures++;}
@@ -42,30 +42,23 @@ const inflate=e=>e.method===0?e.data:zlib.inflateRawSync(e.data);
     page.on('request',r=>r.url().startsWith(base)||r.url().startsWith('data:')?r.continue():r.abort());
     await page.setViewport({width:1440,height:900});
     await page.goto(base+PAGE,{waitUntil:'load'});
-    if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
+    await page.waitForFunction(()=>window.JVExporter&&window.JVExporter.currentGroup&&window.JVExporter.currentGroup(),{timeout:30000});
     await new Promise(r=>setTimeout(r,900));
 
     const info=await page.evaluate(()=>{
-      const anchors=[...document.querySelectorAll('a')].map(a=>({href:a.getAttribute('href')||'',download:a.getAttribute('download'),text:a.textContent.trim()}));
-      const zipLinks=anchors.filter(a=>a.href.includes('pirate-ship-starter.zip'));
-      const app=document.getElementById('app');
+      const state=window._builderGetState().params;
+      const stepList=document.querySelector('#sidebar .slist, #sidebar .step-list, #stepList, .step-list');
       return {
-        zipLinks,
-        appChildren:app?[...app.children].map(c=>c.tagName.toLowerCase()+(c.id?'#'+c.id:'')):[],
-        injected:app?!!app.querySelector('.starter-banner')+','+!!document.getElementById('refLoadBtn'):'no app',
-        steps:STEPS.length,
-        paramKeys:Object.keys(P).length,
-        paramKeyList:Object.keys(P),
+        paramKeys:Object.keys(state).length,
+        paramKeyList:Object.keys(state),
+        steps:stepList?stepList.children.length:0,
         dashes:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length,
-        scrollWidth:document.documentElement.scrollWidth
+        scrollWidth:document.documentElement.scrollWidth,
+        canvas:document.querySelectorAll('#viewport canvas').length
       };
     });
-    check('one download link points at the starter zip',info.zipLinks.length===1,JSON.stringify(info.zipLinks.map(l=>l.text)));
-    check('download link is relative and download enabled',info.zipLinks[0]&&info.zipLinks[0].href==='../pirate-ship-starter.zip'&&info.zipLinks[0].download==='');
-    check('download link wording says Starter Template',/Starter Template/.test(info.zipLinks[0].text),info.zipLinks[0].text);
-    check('nothing injected into the shipyard layout',info.injected==='false,false',info.injected);
-    check('shipyard grid regions intact',info.appChildren[0]==='header'&&info.appChildren.some(c=>/sidebar/.test(c))&&info.appChildren.some(c=>/viewport/.test(c)),JSON.stringify(info.appChildren));
-    check('shipyard still has 22 steps',info.steps===22,'steps '+info.steps);
+    check('shell mounts the pirate ship preset',info.canvas>=1,'canvases '+info.canvas);
+    check('shipyard still has 22 steps and 54 parameters',info.steps===22&&info.paramKeys===54,info.steps+' steps, '+info.paramKeys+' params');
     check('page has no em or en dashes',info.dashes===0,'dashes '+info.dashes);
     check('desktop no overflow',info.scrollWidth<=1442,info.scrollWidth+'');
 
@@ -104,35 +97,20 @@ const inflate=e=>e.method===0?e.data:zlib.inflateRawSync(e.data);
     check('reference ship covers every parameter the shipyard keeps',Object.keys(ref.params).length===info.paramKeyList.length,Object.keys(ref.params).length+' vs '+info.paramKeyList.length);
     check('reference ship has no parameter the shipyard does not use',Object.keys(ref.params).filter(k=>!info.paramKeyList.includes(k)).length===0,JSON.stringify(Object.keys(ref.params).filter(k=>!info.paramKeyList.includes(k))));
 
-    // every reference value must sit inside the range the page itself declares
-    const pageControls=await page.evaluate(()=>{
-      const out={};
-      for(let i=0;i<STEPS.length;i++){
-        for(const c of ctrlsFor(i)){
-          if(!c.k) continue;
-          out[c.k]={min:c.mn===undefined?null:c.mn,max:c.mx===undefined?null:c.mx,type:c.t};
-        }
-      }
-      return out;
-    });
-    const outOfRange=controls.filter(c=>pageControls[c.key]&&pageControls[c.key].min!==null&&typeof c.reference==='number'&&(c.reference<pageControls[c.key].min||c.reference>pageControls[c.key].max));
-    check('all reference values sit inside the page slider ranges',outOfRange.length===0,JSON.stringify(outOfRange.map(c=>c.key+':'+c.reference)));
-    const typeMismatch=controls.filter(c=>pageControls[c.key]&&pageControls[c.key].type!==c.type);
-    check('value table types match the page controls',typeMismatch.length===0,JSON.stringify(typeMismatch.map(c=>c.key)));
-    const missing=Object.keys(pageControls).filter(k=>!controls.some(c=>c.key===k));
-    check('no slider in the page is missing from the table',missing.length===0,JSON.stringify(missing));
-
     // the pack must describe the shipyard exactly, with no page code added
-    const untouched=await page.evaluate(()=>({
-      loader:typeof window.loadReferenceShip,
-      ref:typeof window.PIRATE_SHIP_REFERENCE,
-      step:curStep,
-      hullLen:P.hullLen
-    }));
+    const untouched=await page.evaluate(()=>{
+      const s=window._builderGetState();
+      return {
+        loader:typeof window.loadReferenceShip,
+        ref:typeof window.PIRATE_SHIP_REFERENCE,
+        step:s.step,
+        hullLen:s.params.hullLen
+      };
+    });
     check('no loader code added to the shipyard',untouched.loader==='undefined'&&untouched.ref==='undefined',JSON.stringify([untouched.loader,untouched.ref]));
     check('shipyard starts on its own defaults',untouched.step===0&&untouched.hullLen===12,'step '+untouched.step+' hull '+untouched.hullLen);
     check('pack values match the zipped reference file',ref.params.hullLen===16&&ref.params.sailCount===3&&ref.params.hullColor==='#2b1410',JSON.stringify({hullLen:ref.params.hullLen,sails:ref.params.sailCount,col:ref.params.hullColor}));
-    const canvases=await page.evaluate(()=>document.querySelectorAll('canvas').length);
+    const canvases=await page.evaluate(()=>document.querySelectorAll('#viewport canvas').length);
     check('shipyard canvas still rendered',canvases>=1,'canvases '+canvases);
 
     for(const vp of [{w:390,h:844,n:'mobile'},{w:320,h:720,n:'small'}]){

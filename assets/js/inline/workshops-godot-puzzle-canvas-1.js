@@ -80,6 +80,10 @@ function wrap(code) {
     '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-puzzle-canvas',
   downloadName: 'my-godot-puzzle.html',
@@ -95,49 +99,49 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + GRID_VARS + COLORS + BOARD_INIT +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        SETUP + GRID_VARS + COLORS + BOARD_INIT,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_BOARD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS +
-        CLICK_HANDLER +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        CLICK_HANDLER,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_BOARD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS +
-        CLICK_HANDLER + CHECK_MATCH +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        CLICK_HANDLER + CHECK_MATCH,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_BOARD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS +
-        CLICK_HANDLER + CHECK_MATCH +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        CLICK_HANDLER + CHECK_MATCH,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_BOARD + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS + STATE_VARS +
-        CLICK_HANDLER + CHECK_MATCH +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        CLICK_HANDLER + CHECK_MATCH,
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_BOARD + DRAW_HUD +
         'if(gameState==="win"){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,450);' +
@@ -147,15 +151,15 @@ window.CW_CONFIG = {
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + GRID_VARS + COLORS + BOARD_INIT + FLIP_VARS + STATE_VARS +
         CLICK_HANDLER + CHECK_MATCH +
         'document.addEventListener("keydown",function(e){if(e.code==="KeyR"){' +
         'var nd=[];for(var i=0;i<pairs;i++){nd.push(i%8);nd.push(i%8)}' +
         'for(var i=nd.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=nd[i];nd[i]=nd[j];nd[j]=t}' +
         'for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){board[r][c]={color:nd[r*cols+c],revealed:false,matched:false}}' +
-        'first=null;second=null;lockBoard=false;moves=0;matches=0;gameState="play"}});' +
-        'try{eval(' + JSON.stringify(gdscriptToJs(u)) + ')}catch(e){}' +
+        'first=null;second=null;lockBoard=false;moves=0;matches=0;gameState="play"}});',
+        gdscriptToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_BOARD + DRAW_HUD +
         'if(gameState==="win"){ctx.fillStyle="rgba(0,0,0,0.6)";ctx.fillRect(0,0,400,450);' +

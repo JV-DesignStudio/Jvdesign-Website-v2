@@ -68,6 +68,10 @@ function wrap(code) {
     '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
 window.CW_CONFIG = {
   storageKey: 'jvds-scratch-pong-canvas',
   downloadName: 'my-scratch-pong.html',
@@ -83,31 +87,33 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PAD_VARS + SPRITE + KEYS +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        SETUP + PAD_VARS + SPRITE + KEYS,
+        scratchToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_PAD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
-      return wrap(
-        SETUP + PAD_VARS + SPRITE + KEYS +
+      return wbWrap(
+        SETUP + PAD_VARS + SPRITE + KEYS,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'padX=Math.max(0,Math.min(380,padX));' +
         DRAW_BG + DRAW_PAD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
-      return wrap(
-        SETUP + PAD_VARS + BALL_VARS + SPRITE + KEYS +
+      return wbWrap(
+        SETUP + PAD_VARS + BALL_VARS + SPRITE + KEYS,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)padX-=padSpeed;if(rightHeld)padX+=padSpeed;' +
         'padX=Math.max(0,Math.min(380,padX));' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'bx+=bdx;by+=bdy;' +
         'if(bx-br<=0||bx+br>=480)bdx*=-1;' +
         'if(by-br<=0)bdy*=-1;' +
@@ -117,23 +123,25 @@ window.CW_CONFIG = {
       );
     },
     4: function(u) {
-      return wrap(
-        SETUP + PAD_VARS + BALL_VARS + SCORE_VARS + SPRITE + KEYS +
+      return wbWrap(
+        SETUP + PAD_VARS + BALL_VARS + SCORE_VARS + SPRITE + KEYS,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)padX-=padSpeed;if(rightHeld)padX+=padSpeed;' +
         'padX=Math.max(0,Math.min(380,padX));' +
         'bx+=bdx;by+=bdy;' +
         'if(bx-br<=0||bx+br>=480)bdx*=-1;' +
         'if(by-br<=0)bdy*=-1;' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'if(by+br>=360){by=180;bdx=3*(Math.random()>0.5?1:-1);bdy=-3}' +
         DRAW_BG + DRAW_PAD + DRAW_BALL + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
-      return wrap(
-        SETUP + PAD_VARS + BALL_VARS + SCORE_VARS + SPRITE + KEYS +
+      return wbWrap(
+        SETUP + PAD_VARS + BALL_VARS + SCORE_VARS + SPRITE + KEYS,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)padX-=padSpeed;if(rightHeld)padX+=padSpeed;' +
         'padX=Math.max(0,Math.min(380,padX));' +
@@ -141,16 +149,17 @@ window.CW_CONFIG = {
         'if(bx-br<=0||bx+br>=480)bdx*=-1;' +
         'if(by-br<=0)bdy*=-1;' +
         'if(by+br>=padY&&bx>=padX&&bx<=padX+padW&&bdy>0){bdy*=-1;score++;var off=(bx-(padX+padW/2))/(padW/2);bdx=off*5}' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         'if(by+br>=360){lives--;by=180;bdx=3*(Math.random()>0.5?1:-1);bdy=-3}' +
         DRAW_BG + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
         SETUP + PAD_VARS + BALL_VARS + SCORE_VARS + STATE_VARS + SPRITE + KEYS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;bx=240;by=180;bdx=3;bdy=-3;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;bx=240;by=180;bdx=3;bdy=-3;gameState="play"}});',
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)padX-=padSpeed;if(rightHeld)padX+=padSpeed;' +
@@ -160,7 +169,7 @@ window.CW_CONFIG = {
         'if(by-br<=0)bdy*=-1;' +
         'if(by+br>=padY&&bx>=padX&&bx<=padX+padW&&bdy>0){bdy*=-1;score++;var off=(bx-(padX+padW/2))/(padW/2);bdx=off*5}' +
         'if(by+br>=360){lives--;if(lives<=0){gameState="over"}else{by=180;bdx=3*(Math.random()>0.5?1:-1);bdy=-3}}' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+        'if(typeof cwStep==="function")cwStep();' +
         '}' +
         DRAW_BG + DRAW_PAD + DRAW_BALL + DRAW_SCORE + DRAW_LIVES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +

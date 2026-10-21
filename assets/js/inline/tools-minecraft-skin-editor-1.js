@@ -13,6 +13,9 @@
   var overlayCanvas = document.getElementById('msOverlay');
   var colorInput = document.getElementById('msColor');
   var colorVal = document.getElementById('msColorVal');
+  var magnifier = document.getElementById('msMagnifier');
+  var magCanvas = document.getElementById('msMagCanvas');
+  var magCtx = magCanvas ? magCanvas.getContext('2d') : null;
   var toolGrid = document.getElementById('msToolGrid');
   var brushGrid = document.getElementById('msBrushGrid');
   var swatchWrap = document.getElementById('msSwatches');
@@ -854,6 +857,47 @@
     updateTexture();
   }
 
+  // ---- magnifier lens (touch precision) ------------------------------------
+  var _isTouchDraw = false;
+
+  function showMagnifier(clientX, clientY, pixelX, pixelY) {
+    if (!magnifier || !magCtx || !magCanvas) return;
+    var HALF = 5; // show 11x11 pixel region around the touch point
+    magCtx.imageSmoothingEnabled = false;
+    magCtx.clearRect(0, 0, magCanvas.width, magCanvas.height);
+    // checkerboard background for transparent pixels
+    for (var gy = 0; gy < magCanvas.height; gy += 8) {
+      for (var gx = (gy / 8 % 2 === 0 ? 0 : 8); gx < magCanvas.width; gx += 16) {
+        magCtx.fillStyle = '#1e1e24'; magCtx.fillRect(gx, gy, 8, 8);
+      }
+    }
+    // draw zoomed skin region from the offscreen 64x64 canvas
+    var srcX = pixelX - HALF, srcY = pixelY - HALF;
+    var srcW = HALF * 2 + 1, srcH = HALF * 2 + 1;
+    magCtx.drawImage(off, srcX, srcY, srcW, srcH, 0, 0, magCanvas.width, magCanvas.height);
+    // crosshair on the active pixel
+    var pxSize = Math.round(magCanvas.width / srcW);
+    var cx = Math.floor(magCanvas.width / 2 - pxSize / 2);
+    var cy = Math.floor(magCanvas.height / 2 - pxSize / 2);
+    magCtx.strokeStyle = 'rgba(255,255,255,0.9)';
+    magCtx.lineWidth = 1.5;
+    magCtx.strokeRect(cx + 0.5, cy + 0.5, pxSize - 1, pxSize - 1);
+    // position lens above the finger, clamped to viewport
+    var lensSize = 96;
+    var lx = clientX - lensSize / 2;
+    var ly = clientY - lensSize - 20;
+    lx = Math.max(8, Math.min(window.innerWidth - lensSize - 8, lx));
+    ly = Math.max(8, ly);
+    magnifier.style.left = lx + 'px';
+    magnifier.style.top  = ly + 'px';
+    magnifier.style.display = 'block';
+  }
+
+  function hideMagnifier() {
+    if (magnifier) magnifier.style.display = 'none';
+    _isTouchDraw = false;
+  }
+
   // ---- pointer painting ---------------------------------------------------
   function eventToPixel(e) {
     var rect = overlayCanvas.getBoundingClientRect();
@@ -869,8 +913,10 @@
   function beginStroke(e) {
     var p = eventToPixel(e);
     if (!p) return;
+    if (e.pointerType === 'touch') { _isTouchDraw = true; e.preventDefault(); }
     if (state.tool === 'eyedropper') {
       pickFromPixel(p[0], p[1]);
+      if (_isTouchDraw) showMagnifier(e.clientX, e.clientY, p[0], p[1]);
       return;
     }
     pushUndo();
@@ -886,9 +932,11 @@
     }
     hover.x = p[0]; hover.y = p[1];
     repaintPixels(); renderOverlay(); updateTexture();
+    if (_isTouchDraw) showMagnifier(e.clientX, e.clientY, p[0], p[1]);
     try { overlayCanvas.setPointerCapture(e.pointerId); } catch (err) {}
   }
   function moveStroke(e) {
+    if (e.pointerType === 'touch' && drawing) e.preventDefault();
     var p = eventToPixel(e);
     if (!p) { hover.x = -1; hover.y = -1; renderOverlay(); return; }
     hover.x = p[0]; hover.y = p[1];
@@ -903,10 +951,12 @@
       repaintPixels(); updateTexture();
     }
     renderOverlay();
+    if (_isTouchDraw) showMagnifier(e.clientX, e.clientY, p[0], p[1]);
   }
   function endStroke() {
     if (drawing && strokeDirty) { scheduleAutosave(); }
     drawing = false; lastPt = null; strokeDirty = false;
+    hideMagnifier();
     try { overlayCanvas.releasePointerCapture && overlayCanvas.releasePointerCapture; } catch (err) {}
   }
 
@@ -1694,6 +1744,24 @@
     });
     var rotToggle = byId('msAutoRotate');
     if (rotToggle) rotToggle.addEventListener('change', function () { state.autoRotate = rotToggle.checked; });
+
+    // mobile view tabs
+    var tab2D  = byId('msTab2D');
+    var tab3D  = byId('msTab3D');
+    var msMain = document.querySelector('.ms-main');
+    if (tab2D && tab3D && msMain) {
+      tab2D.addEventListener('click', function () {
+        msMain.setAttribute('data-view', '2d');
+        tab2D.classList.add('active');    tab2D.setAttribute('aria-selected', 'true');
+        tab3D.classList.remove('active'); tab3D.setAttribute('aria-selected', 'false');
+      });
+      tab3D.addEventListener('click', function () {
+        msMain.setAttribute('data-view', '3d');
+        tab3D.classList.add('active');    tab3D.setAttribute('aria-selected', 'true');
+        tab2D.classList.remove('active'); tab2D.setAttribute('aria-selected', 'false');
+        setTimeout(resize3D, 60); // re-fit 3D canvas after it becomes visible
+      });
+    }
 
     // modal
     function openModal() { if (modal) modal.classList.add('open'); }

@@ -18,8 +18,12 @@ try{
   const curatedCount = Array.isArray(curated) ? curated.length : 0;
   let builderCount = 0;
   try{ builderCount = (JSON.parse(fs.readFileSync(path.join(ROOT,'content','3d-builders.json'),'utf8')).builders||[]).length; }catch(e){}
-  const expected = 38 + builderCount;
-  check(curatedCount === expected, 'content/tools.json', `curated ${curatedCount} != ${expected} (38 indexable tools + ${builderCount} curated 3D builders)`);
+  const indexable = files.filter(f => {
+    const html = fs.readFileSync(path.join(TOOLS_DIR, f), 'utf8');
+    return !(/noindex/i.test(html) && /rel=["']canonical["']/i.test(html));
+  }).length;
+  const expected = indexable + builderCount;
+  check(curatedCount === expected, 'content/tools.json', `curated ${curatedCount} != ${expected} (${indexable} indexable tools + ${builderCount} curated 3D builders)`);
   check(files.length === 71, 'tools/*.html', `filesystem ${files.length} != 71 raw (38 indexable + 33 noindex)`);
   if(curatedCount===expected && files.length===71) console.log(`  [PASS] tools count curated ${curatedCount} vs raw ${files.length}`);
   else console.log(`  [INFO] tools count curated ${curatedCount} vs raw ${files.length}`);

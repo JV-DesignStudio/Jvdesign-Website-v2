@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    Scratch-to-JS transpiler (block notation to JS)
    =================================================== */
@@ -90,77 +95,99 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + TARGET_VARS + CLICK_HANDLER +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + TARGET_VARS + CLICK_HANDLER,
+        scratchToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_TARGET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + TARGET_VARS + CLICK_HANDLER + MOVE_TARGET +
+      return wbWrap(
+        
+        SETUP + TARGET_VARS + CLICK_HANDLER + MOVE_TARGET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'clicked=false;' +
         DRAW_BG + DRAW_TARGET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + TARGET_VARS + SCORE_VARS + CLICK_HANDLER + MOVE_TARGET +
+      return wbWrap(
+        
+        SETUP + TARGET_VARS + SCORE_VARS + CLICK_HANDLER + MOVE_TARGET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         CHECK_CLICK +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_TARGET + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + TARGET_VARS + SCORE_VARS + TIMER_VARS + STATE_VARS + CLICK_HANDLER + MOVE_TARGET +
+      return wbWrap(
+        
+        SETUP + TARGET_VARS + SCORE_VARS + TIMER_VARS + STATE_VARS + CLICK_HANDLER + MOVE_TARGET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         CHECK_CLICK +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_TARGET + DRAW_SCORE + DRAW_TIMER +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
         'ctx.fillText("TIME UP!",240,160);ctx.font="18px monospace";ctx.fillText("Score: "+score,240,195)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + TARGET_VARS + SCORE_VARS + TIMER_VARS + STATE_VARS + CLICK_HANDLER + MOVE_TARGET +
+      return wbWrap(
+        
+        SETUP + TARGET_VARS + SCORE_VARS + TIMER_VARS + STATE_VARS + CLICK_HANDLER + MOVE_TARGET,
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         CHECK_CLICK + TICK_TIMER +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_TARGET + DRAW_SCORE + DRAW_TIMER +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
         'ctx.fillText("TIME UP!",240,160);ctx.font="18px monospace";ctx.fillText("Score: "+score,240,195)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + TARGET_VARS + SCORE_VARS + TIMER_VARS + STATE_VARS + CLICK_HANDLER + MOVE_TARGET +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;timeLeft=30;tr=35;moveTarget();gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;timeLeft=30;tr=35;moveTarget();gameState="play"}});',
+        'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         CHECK_CLICK + TICK_TIMER +
-        'try{eval(' + JSON.stringify(scratchToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_TARGET + DRAW_SCORE + DRAW_TIMER +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +
         'ctx.fillText("TIME UP!",240,160);ctx.font="18px monospace";ctx.fillText("Final Score: "+score,240,195);' +
         'ctx.fillText("Press R to play again",240,225)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

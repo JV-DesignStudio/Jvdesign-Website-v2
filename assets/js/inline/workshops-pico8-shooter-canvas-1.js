@@ -36,6 +36,11 @@ function p8ToJs(code) {
     .replace(/\bor\b/g, '||');
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    IFRAME BUILDING BLOCKS (PICO-8 Shooter)
    =================================================== */
@@ -128,71 +133,93 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + STARS + KEYS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + STARS + KEYS,
+        p8ToJs(u),
         'function loop(){' +
         MOVE_SHIP +
         DRAW_BG + DRAW_STARS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + BULLET_VARS + STARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + BULLET_VARS + STARS + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         MOVE_BULLETS +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + STARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + STARS + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + FIRE_BULLET + MOVE_BULLETS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         MOVE_ENEMIES +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SHIP +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STARS + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + FIRE_BULLET + MOVE_BULLETS + SPAWN_ENEMIES + MOVE_ENEMIES +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SHIP + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STARS + KEYS +
+      return wbWrap(
+        
+        SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STARS + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_SHIP + FIRE_BULLET + MOVE_BULLETS + SPAWN_ENEMIES + MOVE_ENEMIES + HIT_CHECK +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SHIP + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + SHIP_VARS + BULLET_VARS + ENEMY_VARS + SCORE_VARS + STATE_VARS + STARS + KEYS +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;wave=0;spawnRate=40;enemies=[];bullets=[];sx=60;sy=110;gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){score=0;lives=3;wave=0;spawnRate=40;enemies=[];bullets=[];sx=60;sy=110;gameState="play"}});',
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_SHIP + FIRE_BULLET + MOVE_BULLETS + SPAWN_ENEMIES + MOVE_ENEMIES + HIT_CHECK + ENEMY_HIT_SHIP +
         WAVE_CHECK +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_STARS + DRAW_BULLETS + DRAW_ENEMIES + DRAW_SHIP + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle=P8PAL[8];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("game over",64*S,55*S);ctx.fillStyle=P8PAL[7];ctx.font="12px monospace";ctx.fillText("score: "+score,64*S,65*S);ctx.fillText("press r to restart",64*S,75*S)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

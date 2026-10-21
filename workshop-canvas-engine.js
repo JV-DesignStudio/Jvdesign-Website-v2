@@ -786,7 +786,7 @@ var BLANK_PLACEHOLDER = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style
    richer look: a fitted rounded canvas, a glow/vignette frame, and an optional
    drawing helper (window.CWArt) for gradients, glow and rounded shapes.
    Everything is inline (no network requests) to keep the school-computer rule. */
-var ART_KIT = '<script id="cw-art">(function(){' +
+var ART_KIT_CODE = '(function(){' +
   'var A={};' +
   'A.bg=function(c,w,h,top,bot){var g=c.createLinearGradient(0,0,0,h);' +
     'g.addColorStop(0,top||"#16203c");g.addColorStop(1,bot||"#0a0d18");' +
@@ -801,7 +801,8 @@ var ART_KIT = '<script id="cw-art">(function(){' +
     'c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();};' +
   'A.spark=function(c,x,y,col,size){c.save();c.globalAlpha=.9;c.fillStyle=col||"#ffd166";' +
     'c.beginPath();c.arc(x,y,size||2,0,Math.PI*2);c.fill();c.restore();};' +
-  'window.CWArt=A;})()<\/script>';
+  'window.CWArt=A;})()';
+var ART_KIT = '<script id="cw-art">' + ART_KIT_CODE + '<\/script>';
 
 var PREVIEW_CSS = '<style id="cw-polish">' +
   'html,body{height:100%;background:radial-gradient(1200px 640px at 50% -10%,rgba(255,119,0,.12),transparent 60%),' +
@@ -828,8 +829,23 @@ function injectBody(html, markup) {
 function withArtKit(html) {
   return html.indexOf('CWArt') !== -1 ? injectBody(html, ART_KIT) : html;
 }
-function polishPreview(html) {
-  return injectHead(withArtKit(injectBody(html, FX_OVERLAY)), PREVIEW_CSS);
+function polishPreview(val) {
+  if (val && val.cwParts) {
+    var p = val.cwParts;
+    var needsArt = (p.presetup + p.afterBlob).indexOf('CWArt') !== -1;
+    return {
+      cwParts: {
+        css: PREVIEW_CSS + p.css,
+        canvas: p.canvas,
+        fxOverlay: FX_OVERLAY,
+        artKit: needsArt ? ART_KIT_CODE : '',
+        presetup: p.presetup,
+        blobSrc: p.blobSrc,
+        afterBlob: p.afterBlob
+      }
+    };
+  }
+  return injectHead(withArtKit(injectBody(val, FX_OVERLAY)), PREVIEW_CSS);
 }
 
 function hasUnfilled(code) {
@@ -883,8 +899,9 @@ window.cwBlobWrap = function cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc,
     '_cs.onload=function(){URL.revokeObjectURL(_cu);(function(){' + afterBlob + '})();};' +
     '_cs.onerror=function(){URL.revokeObjectURL(_cu);console.error("cwBlobWrap: user code error");(function(){' + afterBlob + '})();};' +
     'document.head.appendChild(_cs);';
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
     '</head><body>' + CANVAS_TAG + '<script>' + presetup + loader + '</script></body></html>';
+  return { html: html, cwParts: { css: CSS_GAME, canvas: CANVAS_TAG, presetup: presetup, blobSrc: blobSrc, afterBlob: afterBlob } };
 }
 
 /* The live preview runs inside assets/canvas-preview.html, a same-origin host
@@ -897,17 +914,18 @@ window.cwBlobWrap = function cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc,
 var PREVIEW_RUNNER = '/assets/canvas-preview.html';
 var previewReady = false;
 
-function showPreview(html) {
+function showPreview(val) {
   var frame = document.getElementById('gameFrame');
   if (!frame) return;
+  var msg = (val && val.cwParts) ? { cwParts: val.cwParts } : { cwPreview: val };
   if (previewReady) {
-    try { frame.contentWindow.postMessage({ cwPreview: html }, '*'); } catch (e) {}
+    try { frame.contentWindow.postMessage(msg, '*'); } catch (e) {}
     return;
   }
   var onLoad = function () {
     frame.removeEventListener('load', onLoad);
     previewReady = true;
-    try { frame.contentWindow.postMessage({ cwPreview: html }, '*'); } catch (e) {}
+    try { frame.contentWindow.postMessage(msg, '*'); } catch (e) {}
   };
   frame.addEventListener('load', onLoad);
   frame.src = PREVIEW_RUNNER;
@@ -1140,7 +1158,8 @@ function gameHtml() {
   STEPS.forEach(function(s) { if (completed[s.num]) lastDone = s.num; });
   var target = lastDone || STEPS[currentStep].num;
   var code = completed[target] || editors[target].value;
-  return withArtKit(TEMPLATES[target](code));
+  var result = TEMPLATES[target](code);
+  return withArtKit((result && result.html) ? result.html : result);
 }
 
 function downloadGame() {

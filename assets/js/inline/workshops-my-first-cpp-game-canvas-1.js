@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    C++-to-JS transpiler (light transform so C++
    syntax runs in the canvas iframe)
@@ -103,73 +108,95 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + CATCHER_VARS + KEYS +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + CATCHER_VARS + KEYS,
+        cppToJs(u),
         'function loop(){' +
         MOVE_CATCHER +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + CATCHER_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + CATCHER_VARS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + CATCHER_VARS + STAR_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + CATCHER_VARS + STAR_VARS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         MOVE_CATCHER + SPAWN_STAR + MOVE_STARS +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_CATCHER + SPAWN_STAR + MOVE_STARS +
         CATCH_CHECK +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS + DRAW_SCORE + DRAW_LIVES +
         GAME_OVER_DRAW +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + CATCHER_VARS + STAR_VARS + SCORE_VARS + STATE_VARS + KEYS +
-        RESTART_KEY +
+        RESTART_KEY,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_CATCHER + SPAWN_STAR + MOVE_STARS +
         CATCH_CHECK +
         'if(lives<=0){if(score>highScore)highScore=score;gameState="over"}' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_GROUND + DRAW_CATCHER + DRAW_STARS + DRAW_SCORE + DRAW_LIVES + DRAW_HIGH +
         GAME_OVER_DRAW +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

@@ -36,6 +36,11 @@ function p8ToJs(code) {
     .replace(/\bor\b/g, '||');
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    IFRAME BUILDING BLOCKS (PICO-8 Dungeon)
    =================================================== */
@@ -133,79 +138,101 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + WALLS + KEYS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + WALLS + KEYS,
+        p8ToJs(u),
         'function loop(){' +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + WALLS + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + WALLS + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         COLLIDE_WALLS +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + WALLS + ENEMIES + KEYS +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + WALLS + ENEMIES + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_ENEMIES + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + WALLS + ENEMIES + STATE_VARS + KEYS + CLEAR_PRESSED +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + WALLS + ENEMIES + STATE_VARS + KEYS + CLEAR_PRESSED,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES + ENEMY_TOUCH +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(hp<=0)gameState="over"' +
         '}' + CLEAR_PRESSED +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle=P8PAL[8];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("defeated!",64*S,60*S)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + WALLS + ENEMIES + STATE_VARS + KEYS + CLEAR_PRESSED +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + WALLS + ENEMIES + STATE_VARS + KEYS + CLEAR_PRESSED,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES + ENEMY_TOUCH +
         ATTACK +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(hp<=0)gameState="over"' +
         '}' + CLEAR_PRESSED +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATK + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle=P8PAL[8];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("defeated!",64*S,60*S)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + WALLS + ENEMIES + GEMS + SCORE_VARS + STATE_VARS + KEYS + CLEAR_PRESSED +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="over"||gameState==="win")){hp=3;score=0;px=60;py=60;for(var i=0;i<enemies.length;i++){enemies[i].hp=2}for(var i=0;i<gems.length;i++){gems[i].got=false}gameState="play"}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="over"||gameState==="win")){hp=3;score=0;px=60;py=60;for(var i=0;i<enemies.length;i++){enemies[i].hp=2}for(var i=0;i<gems.length;i++){gems[i].got=false}gameState="play"}});',
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_PLAYER + COLLIDE_WALLS + MOVE_ENEMIES + ENEMY_TOUCH + ATTACK + COLLECT_GEMS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'if(hp<=0)gameState="over"' +
         '}' + CLEAR_PRESSED +
         DRAW_BG + DRAW_FLOOR + DRAW_WALLS + DRAW_GEMS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_ATK + DRAW_HUD +
         'if(gameState==="over"){ctx.fillStyle=P8PAL[8];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("defeated!",64*S,60*S);ctx.font="12px monospace";ctx.fillText("press r to retry",64*S,72*S)}' +
         'if(gameState==="win"){ctx.fillStyle=P8PAL[11];ctx.font="bold 18px monospace";ctx.textAlign="center";ctx.fillText("dungeon cleared!",64*S,60*S);ctx.font="12px monospace";ctx.fillText("press r to replay",64*S,72*S)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

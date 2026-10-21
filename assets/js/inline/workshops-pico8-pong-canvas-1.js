@@ -36,6 +36,11 @@ function p8ToJs(code) {
     .replace(/\bor\b/g, '||');
 }
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    IFRAME BUILDING BLOCKS (PICO-8 Pong)
    =================================================== */
@@ -120,76 +125,98 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + KEYS +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PADDLE_VARS + KEYS,
+        p8ToJs(u),
         'function loop(){' +
         MOVE_P1 +
         DRAW_BG + DRAW_NET + DRAW_PADDLES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
-        SETUP + PADDLE_VARS + BALL_VARS + KEYS +
+      return wbWrap(
+        
+        SETUP + PADDLE_VARS + BALL_VARS + KEYS,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'bvx=Math.max(-3,Math.min(3,bvx));' +
         'if(bx<-8||bx>136){bx=62;by=62;bvx=Math.random()<.5?1:-1;bvy=Math.random()<.5?1:-1}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + KEYS +
-        SERVE_FN +
+        SERVE_FN,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + AI_VARS + KEYS +
-        SERVE_FN +
+        SERVE_FN,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + SCORING +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'p2y=Math.max(0,Math.min(128-ph,p2y));' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PADDLE_VARS + BALL_VARS + SCORE_VARS + AI_VARS + STATE_VARS + KEYS +
         'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameState==="over"){s1=0;s2=0;serve(1);gameState="play"}});' +
-        SERVE_FN +
+        SERVE_FN,
+        'window.cwStep=function(){' + p8ToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_P1 + BALL_MOVE + WALL_BOUNCE + PADDLE_HIT + SCORING +
         AI_LOGIC +
-        'try{eval(' + JSON.stringify(p8ToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         '}' +
         DRAW_BG + DRAW_NET + DRAW_PADDLES + DRAW_BALL + DRAW_SCORES +
         'if(gameState==="over"){ctx.fillStyle=P8PAL[7];ctx.font="bold 18px monospace";ctx.textAlign="center";' +
         'ctx.fillText(s1>=5?"you win!":"cpu wins!",64*S,60*S);ctx.font="12px monospace";ctx.fillText("press r to restart",64*S,72*S)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 

@@ -1,5 +1,10 @@
 'use strict';
 
+function wbWrap(presetup, blobSrc, afterBlob) {
+  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+}
+
+
 /* ===================================================
    C++-to-JS transpiler (light transform so C++
    syntax runs in the canvas iframe)
@@ -159,58 +164,73 @@ window.CW_CONFIG = {
 
   templates: {
     1: function(u) {
-      return wrap(
-        SETUP + PLAYER_VARS + PLATFORMS + ENEMY_VARS + KEYS +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+      return wbWrap(
+        
+        SETUP + PLAYER_VARS + PLATFORMS + ENEMY_VARS + KEYS,
+        cppToJs(u),
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP + PLAT_COLLIDE +
         ENEMY_PATROL +
         DRAW_BG + DRAW_PLATFORMS + DRAW_ENEMIES + DRAW_PLAYER +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     2: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + PLATFORMS + ENEMY_VARS + SCORE_VAR + KEYS +
-        RESPAWN_FN_SIMPLE +
+        RESPAWN_FN_SIMPLE,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP + PLAT_COLLIDE +
         ENEMY_PATROL +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS + DRAW_ENEMIES + DRAW_PLAYER + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     3: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + WIDE_PLATFORMS + ENEMY_VARS_WIDE + SCORE_VAR + KEYS +
         RESPAWN_FN_SIMPLE +
-        CAMERA_VARS +
+        CAMERA_VARS,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
         ENEMY_PATROL + STOMP_LOGIC +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     4: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + PLAYER_VARS + WIDE_PLATFORMS + ENEMY_VARS_WIDE + SCORE_VAR + KEYS +
         'let deaths=0;var respawnX=60,respawnY=300;function respawn(){px=respawnX;py=respawnY;vx=0;vy=0;deaths++}' +
-        CAMERA_VARS + SPIKE_DATA + CHECKPOINT_DATA +
+        CAMERA_VARS + SPIKE_DATA + CHECKPOINT_DATA,
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         PLAYER_MOVE + PLAYER_CLAMP_WIDE + PLAT_COLLIDE_RESPAWN +
         ENEMY_PATROL + STOMP_LOGIC +
         CAMERA_UPDATE +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         DRAW_BG + DRAW_PLATFORMS_CAM + DRAW_SPIKES_CAM + DRAW_CHECKPOINTS_CAM + DRAW_ENEMIES_CAM + DRAW_PLAYER_CAM +
         DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     5: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + KEYS + SCORE_VAR +
         'let deaths=0;' +
         'var levels=[' +
@@ -230,8 +250,8 @@ window.CW_CONFIG = {
         'var camX=0,respawnX=60,respawnY=300;' +
         'function respawn(){px=respawnX;py=respawnY;vx=0;vy=0;deaths++}' +
         'function loadLevel(n){var L=levels[n];platforms=L.platforms;enemies=JSON.parse(JSON.stringify(L.enemies));spikes=L.spikes;checkpoints=JSON.parse(JSON.stringify(L.checkpoints));door=L.door;LEVEL_W=L.width;px=60;py=300;respawnX=60;respawnY=300;vx=0;vy=0}' +
-        'loadLevel(0);' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+        'loadLevel(0);',
+        cppToJs(u),
         'function loop(){' +
         'vx=0;if(leftHeld)vx=-4;if(rightHeld)vx=4;px+=vx;vy+=0.45;py+=vy;if(px<0)px=0;' +
         'onGround=false;for(var i=0;i<platforms.length;i++){var p=platforms[i];if(px+pw>p.x&&px<p.x+p.w&&py+ph>p.y&&py<p.y+p.h){if(vy>0&&py+ph-vy<=p.y+4){py=p.y-ph;vy=0;onGround=true;jumpsLeft=2}else if(vy<0&&py-vy>=p.y+p.h-4){py=p.y+p.h;vy=0}}}' +
@@ -252,10 +272,12 @@ window.CW_CONFIG = {
         'ctx.fillStyle="#fff";ctx.font="bold 16px monospace";ctx.textAlign="left";ctx.fillText("Score: "+score,10,24);ctx.fillText("Deaths: "+deaths,10,44);' +
         'ctx.fillText("Level: "+(currentLevel+1)+"/"+levels.length,10,64);' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     },
     6: function(u) {
-      return wrap(
+      return wbWrap(
+        
         SETUP + KEYS + SCORE_VAR +
         'let deaths=0,startTime=Date.now(),gameWon=false;' +
         'var levels=[' +
@@ -276,7 +298,8 @@ window.CW_CONFIG = {
         'function respawn(){px=respawnX;py=respawnY;vx=0;vy=0;deaths++}' +
         'function loadLevel(n){var L=levels[n];platforms=L.platforms;enemies=JSON.parse(JSON.stringify(L.enemies));spikes=L.spikes;checkpoints=JSON.parse(JSON.stringify(L.checkpoints));door=L.door;LEVEL_W=L.width;px=60;py=300;respawnX=60;respawnY=300;vx=0;vy=0}' +
         'loadLevel(0);' +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameWon){deaths=0;score=0;startTime=Date.now();gameWon=false;currentLevel=0;loadLevel(0)}});' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&gameWon){deaths=0;score=0;startTime=Date.now();gameWon=false;currentLevel=0;loadLevel(0)}});',
+        'window.cwStep=function(){' + cppToJs(u) + '};',
         'function loop(){' +
         'if(!gameWon){' +
         'vx=0;if(leftHeld)vx=-4;if(rightHeld)vx=4;px+=vx;vy+=0.45;py+=vy;if(px<0)px=0;' +
@@ -286,7 +309,8 @@ window.CW_CONFIG = {
           'if(px+pw>en.x&&px<en.x+en.w&&py+ph>en.y&&py<en.y+en.h){if(vy>0&&py+ph-en.y<16){en.alive=false;vy=-8;score+=50}else respawn()}}' +
         'for(var i=0;i<spikes.length;i++){var s=spikes[i];if(px+pw>s.x&&px<s.x+s.w&&py+ph>s.y&&py<s.y+s.h)respawn()}' +
         'for(var i=0;i<checkpoints.length;i++){var cp=checkpoints[i];if(!cp.reached&&px+pw>cp.x&&px<cp.x+cp.w&&py+ph>cp.y&&py<cp.y+cp.h){cp.reached=true;respawnX=cp.x;respawnY=cp.y-ph}}' +
-        'try{eval(' + JSON.stringify(cppToJs(u)) + ')}catch(e){}' +
+         +
+        'if(window.cwStep)cwStep();' + +
         'camX=px-280;if(camX<0)camX=0;if(camX>LEVEL_W-600)camX=LEVEL_W-600;' +
         '}' +
         DRAW_BG +
@@ -306,7 +330,8 @@ window.CW_CONFIG = {
         'ctx.fillText("Score: "+score,300,235);ctx.fillText("Deaths: "+deaths,300,270);' +
         'ctx.font="16px monospace";ctx.fillText("Press R to play again",300,320)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
-      );
+      
+      )
     }
   },
 
