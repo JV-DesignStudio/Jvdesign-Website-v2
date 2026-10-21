@@ -68,7 +68,7 @@
     this.cap = typeof cfg.cap === 'number' && cfg.cap > 0 ? cfg.cap : DEFAULT_CAP;
     this.beats = Array.isArray(cfg.beats) ? cfg.beats.slice().sort(function (a, b) { return a.at - b.at; }) : [];
     this.result = cfg.result || {};
-    this.gameSystem = cfg.gameSystem || global.gameSystem || null;
+    this.gameSystem = cfg.gameSystem || (typeof window !== 'undefined' && window.gameSystem) || null;
 
     this.running = false;
     this.finished = false;

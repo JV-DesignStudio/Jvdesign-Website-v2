@@ -68,7 +68,7 @@ async function browserSmoke() {
   const port = server.address().port;
   let browser;
   try {
-    browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+    browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox', '--disable-service-workers'] });
     const viewports = [
       { name: 'phone portrait', width: 390, height: 844, isMobile: true },
       { name: 'phone landscape', width: 844, height: 390, isMobile: true },
