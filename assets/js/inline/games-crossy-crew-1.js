@@ -27,6 +27,18 @@ let echo = null, combo = 0, comboPop = 0, shield = false, magnetT = 0, slowT = 0
 let forwardStreak = 0;
 let secondUsed = false, savedPending = false, pendingReason = '';
 let best = (sys ? GameSystem.getBestScore('crossy-crew') : 0) || 0;
+
+const CREW = [
+  {id:'pip',      name:'Pip',      emoji:'🐢', unlock:null},
+  {id:'echo',     name:'Echo',     emoji:'🐟', unlock:{type:'score',n:200}},
+  {id:'stardust', name:'Stardust', emoji:'⭐', unlock:{type:'score',n:500}},
+  {id:'lumo',     name:'Lumo',     emoji:'🦊', unlock:{type:'score',n:1000}},
+];
+let selectedChar = 'pip';
+try { selectedChar = localStorage.getItem('jvds_cc_char') || 'pip'; } catch(e) {}
+function isUnlocked(c) { return !c.unlock || best >= c.unlock.n; }
+if (!CREW.find(c => c.id === selectedChar && isUnlocked(c))) selectedChar = 'pip';
+
 let last = 0, idleTimer = 0, particles = [], popups = [], motes = [];
 let hopAnim = 0;
 let vignette = null, vigKey = '';
@@ -62,7 +74,9 @@ window.__crossy = {
   get magnet() { return magnetT > 0; },
   get slow() { return slowT > 0; },
   get zone() { return furthest == null ? '' : biomeAt(furthest).name; },
-  get forwardStreak() { return forwardStreak; }
+  get forwardStreak() { return forwardStreak; },
+  get selectedChar() { return selectedChar; },
+  get crew() { return CREW.map(c => ({ id:c.id, name:c.name, emoji:c.emoji, unlocked:isUnlocked(c) })); }
 };
 // Narrow test hooks so the browser suite can reach the new systems without
 // poking at canvas pixels. Not used by gameplay.
@@ -457,6 +471,8 @@ function gameOver(reason) {
     if (sys) GameSystem.saveScore('crossy-crew', best);
   }
   sys?.saveState?.();
+  if (sys) { const charName = CREW.find(c => c.id === selectedChar)?.name || 'You'; sys.addToLeaderboard(charName, score); }
+  updateCrewUI();
   toast(reason);
   if (storyRun) {
     storyRun.finish(score > 200 ? 'success' : 'fail', score);
@@ -501,7 +517,92 @@ function showEnd(reason) {
   $('endStats').innerHTML = [
     ['Score', score], ['Distance', furthest], ['Coins', coins], ['Best', best]
   ].map(s => '<div><b>' + s[1] + '</b><small>' + s[0] + '</small></div>').join('');
+  const lb = sys ? sys.getLeaderboard().slice(0, 5) : [];
+  const lbWrap = $('lbWrap');
+  if (lbWrap) {
+    lbWrap.innerHTML = lb.length
+      ? '<p style="font-size:11px;color:#64748b;margin:0 0 4px;text-align:center">TOP RUNS</p>' +
+        lb.map((e, i) => '<div class="lb-row"><span>' + (i + 1) + '. ' + e.name + '</span><b>' + e.score + '</b></div>').join('')
+      : '';
+    lbWrap.style.display = lb.length ? '' : 'none';
+  }
+  const shareBtn = $('shareBtn');
+  if (shareBtn) shareBtn.style.display = '';
   $('endScreen').classList.remove('hidden');
+}
+
+function shareRunCard() {
+  const oc = document.createElement('canvas');
+  oc.width = 560; oc.height = 320;
+  const c2 = oc.getContext('2d');
+  const char = CREW.find(c => c.id === selectedChar) || CREW[0];
+  c2.fillStyle = '#0f2318'; c2.fillRect(0, 0, 560, 320);
+  c2.fillStyle = '#16a34a'; c2.fillRect(0, 0, 560, 6);
+  c2.font = '72px serif'; c2.textAlign = 'center'; c2.textBaseline = 'middle';
+  c2.fillText(char.emoji, 100, 130);
+  c2.fillStyle = '#4ade80'; c2.font = '900 26px system-ui,sans-serif'; c2.textAlign = 'left';
+  c2.fillText('Crossy Crew', 170, 72);
+  c2.fillStyle = '#86efac'; c2.font = '600 17px system-ui,sans-serif';
+  c2.fillText('Playing as ' + char.name, 170, 100);
+  const stats = [['Score', score], ['Distance', furthest + ' rows'], ['Coins', coins], ['Best', best]];
+  stats.forEach(([l, v], i) => {
+    const col = 170 + (i % 2) * 192, row = 138 + Math.floor(i / 2) * 42;
+    c2.fillStyle = '#475569'; c2.font = '500 14px system-ui,sans-serif'; c2.fillText(l, col, row);
+    c2.fillStyle = '#e2e8f0'; c2.font = '700 20px system-ui,sans-serif'; c2.fillText(v, col, row + 22);
+  });
+  c2.fillStyle = '#1e3a2e'; c2.fillRect(0, 272, 560, 48);
+  c2.fillStyle = '#4ade80'; c2.font = '500 13px system-ui,sans-serif'; c2.textAlign = 'center';
+  c2.fillText('jvdesignstudio.co.uk - Free games for young creators', 280, 300);
+  const link = document.createElement('a');
+  link.download = 'crossy-crew-' + score + '.png';
+  link.href = oc.toDataURL('image/png');
+  link.click();
+}
+
+function buildCrewSelect() {
+  const wrap = $('crewSelect');
+  if (!wrap) return;
+  updateCrewUI();
+}
+
+function updateCrewUI() {
+  const wrap = $('crewSelect');
+  if (!wrap) return;
+  wrap.innerHTML = CREW.map(c => {
+    const unlocked = isUnlocked(c);
+    const sel = selectedChar === c.id;
+    const req = c.unlock ? 'Score ' + c.unlock.n : '';
+    return '<button class="crew-btn' + (sel ? ' selected' : '') + (unlocked ? '' : ' locked') + '"' +
+      ' data-char="' + c.id + '"' + (unlocked ? '' : ' disabled') +
+      ' title="' + (unlocked ? c.name : 'Reach ' + req + ' to unlock') + '">' +
+      '<span style="font-size:26px">' + c.emoji + '</span>' +
+      '<span>' + c.name + '</span>' +
+      (unlocked ? '' : '<span style="font-size:10px;opacity:.7">' + req + '</span>') +
+      '</button>';
+  }).join('');
+  wrap.querySelectorAll('.crew-btn:not([disabled])').forEach(btn => {
+    btn.onclick = () => {
+      selectedChar = btn.dataset.char;
+      try { localStorage.setItem('jvds_cc_char', selectedChar); } catch(e) {}
+      updateCrewUI();
+    };
+  });
+}
+
+function drawPlayerEmoji(emoji) {
+  const px = player.x || player.targetX;
+  const py = (player.y || player.targetY) + cellH / 2;
+  const t = hopAnim > 0 ? Math.sin(hopAnim / .15 * Math.PI) : 0;
+  const bounce = t * 8;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.22)';
+  ctx.beginPath(); ctx.ellipse(px, py + cellH * .28, cellW * .3, cellH * .1, 0, 0, Math.PI * 2); ctx.fill();
+  const sz = Math.round(cellW * .65);
+  ctx.font = sz + 'px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, px, py - bounce);
+  ctx.restore();
 }
 
 function hud() {
@@ -1323,7 +1424,10 @@ function draw() {
   drawMotes();
 
   if (player.alive) drawEcho();
-  if (player.alive) drawPlayer();
+  if (player.alive) {
+    if (selectedChar === 'pip') drawPlayer();
+    else drawPlayerEmoji(CREW.find(c => c.id === selectedChar)?.emoji || '🐢');
+  }
 
   if (shield && player.alive) {
     const sx = player.x || player.targetX, sy = (player.y || player.targetY) + cellH / 2;
@@ -1444,4 +1548,7 @@ reset();
 fit();
 $('bestHud').textContent = best;
 requestAnimationFrame(loop);
+buildCrewSelect();
+const shareBtnEl = $('shareBtn');
+if (shareBtnEl) shareBtnEl.onclick = shareRunCard;
 })();
