@@ -50,13 +50,15 @@ const server = http.createServer((req, res) => {
     await page.goto(base + '/arcade.html', { waitUntil: 'load' });
     await page.waitForSelector('#grid .cab', { timeout: 15000 });
 
-    const registry = await page.evaluate(() => window.JVDS_GAMES || []);
+    const allGames = await page.evaluate(() => window.JVDS_GAMES || []);
+    // The grid only shows non-classroom games; classroom games appear in a separate section.
+    const registry = allGames.filter(g => !g.classroom);
     const sessionOf = g => g.session || g.arcadeSession || '';
     const titles = () => page.evaluate(() => Array.from(document.querySelectorAll('#grid .cab-title')).map(e => e.textContent));
     const count = async () => (await titles()).length;
     const wait = (ms = 120) => new Promise(r => setTimeout(r, ms));
 
-    check('registry loaded', registry.length === 12, registry.length + ' games');
+    check('registry loaded', allGames.length === 12 && registry.length === 11, allGames.length + ' total, ' + registry.length + ' playable');
     check('default view shows every game', await count() === registry.length, (await count()) + ' cards');
 
     // Age
@@ -125,8 +127,8 @@ const server = http.createServer((req, res) => {
     }));
     check('filters survive a shared URL reload', before === after && selected.age === 'Ages 8-14' && selected.genre === 'Action', before + ' then ' + after + ' | ' + selected.age + ' / ' + selected.genre);
 
-    // Empty state
-    await page.select('#arcAge', 'Ages 5-9');
+    // Empty state - Ages 6-12 has no Strategy games (all Strategy games are 9-15+)
+    await page.select('#arcAge', 'Ages 6-12');
     await page.select('#arcGenre', 'Strategy');
     await wait();
     const empty = await page.evaluate(() => ({
