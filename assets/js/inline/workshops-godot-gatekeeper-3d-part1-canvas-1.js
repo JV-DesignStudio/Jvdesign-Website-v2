@@ -61,11 +61,6 @@ var DRAW_PLAYER = 'ctx.fillStyle="#60a5fa";ctx.beginPath();ctx.arc(px+pw/2,py+pw
 var DRAW_GUARD = 'ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(gx+gw/2,gy+gw/2,gw/2,0,Math.PI*2);ctx.fill();';
 var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 14px monospace";ctx.textAlign="left";ctx.fillText("Sneak to the EXIT!",10,390);';
 
-function wrap(code) {
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
-    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
-}
-
 function wbWrap(presetup, blobSrc, afterBlob) {
   return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
 }
@@ -73,6 +68,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-gatekeeper1-canvas',
   downloadName: 'my-godot-gatekeeper-1.html',
+  nextStep: { url: '/workshops/godot-gatekeeper-3d-part2-canvas.html', label: 'Gatekeeper Part 2' },
 
   hints: [
     'A green player dot and a red guard on a tiled floor',
@@ -80,7 +76,8 @@ window.CW_CONFIG = {
     'A yellow vision cone extends from the guard',
     'Walls block the player path and create cover',
     'Getting spotted triggers an alert state',
-    'Reach the green EXIT without being caught'
+    'Reach the green EXIT without being caught',
+    'Your mod card - fill it in and take your stealth ideas home to Godot'
   ],
 
   templates: {
@@ -188,6 +185,30 @@ window.CW_CONFIG = {
         'if(gameState==="win"){ctx.fillStyle="rgba(34,197,94,0.3)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("ESCAPED!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
+    },
+    7: function(u) {
+      var lines = u.split('\n');
+      var fields = {};
+      lines.forEach(function(l) {
+        var m = l.match(/^([^:]+):\s*(.*)$/);
+        if (m && m[2].trim()) fields[m[1].trim()] = m[2].trim();
+      });
+      var html = '<style>body{font-family:monospace;background:#0f172a;color:#e2e8f0;padding:16px;margin:0}' +
+        'h2{color:#60a5fa;margin:0 0 12px}' +
+        '.card{background:#1e293b;border:2px solid #334155;border-radius:10px;padding:16px}' +
+        '.row{display:flex;gap:8px;margin:6px 0;align-items:baseline}' +
+        '.lbl{color:#94a3b8;min-width:160px;font-size:.85rem}' +
+        '.val{color:#f1f5f9;font-weight:bold}' +
+        '.tip{margin-top:14px;padding:10px;background:#0f172a;border-left:3px solid #60a5fa;font-size:.82rem;color:#94a3b8}' +
+        '</style>' +
+        '<div class="card"><h2>\uD83C\uDFE0 My Stealth Mod Card</h2>';
+      var order = ['Game name','Player colour','Guard colour','Number of guards','Vision range','Map theme','One thing to add at home'];
+      order.forEach(function(k) {
+        if (fields[k]) html += '<div class="row"><span class="lbl">' + k + '</span><span class="val">' + fields[k] + '</span></div>';
+      });
+      html += '<div class="tip">\uD83D\uDCA1 At home: open Godot, create a CharacterBody2D for your player and a NavigationAgent2D for the guard. Use Area2D with collision shapes to detect the vision cone!</div></div>';
+      var blob = 'document.body.innerHTML=' + JSON.stringify(html) + ';';
+      return cwBlobWrap('<style>body{margin:0;background:#0f172a}</style>', '<div></div>', '', blob, '');
     }
   },
 
@@ -195,14 +216,16 @@ window.CW_CONFIG = {
     {
       num: 1,
       title: 'The Scene',
+      activity: '\uD83D\uDDFA\uFE0F Build scene',
       goal: 'Set up the stealth scene: player, guard, walls and exit.',
+      checkpoint: 'You should see a blue dot at the bottom-left, a red dot in the middle, grey walls, and a green EXIT box at the top-right.',
       points: [
         'The player is a blue circle starting at the bottom-left',
         'The guard is a red circle positioned in the middle area',
         'Grey walls create corridors and cover opportunities',
         'The green EXIT zone is in the top-right corner'
       ],
-      challenge: '\ud83e\udd16 Set the player and exit positions:',
+      challenge: '\uD83E\uDD16 Set the player and exit positions:',
       starter: '# Player starts bottom-left\nvar player_x = ___\nvar player_y = ___\n\n# Exit is top-right\nvar exit_x = 360\nvar exit_y = ___',
       solution: '# Player starts bottom-left\nvar player_x = 40\nvar player_y = 360\n\n# Exit is top-right\nvar exit_x = 360\nvar exit_y = 20',
       checks: ['40', '360', '20'],
@@ -224,14 +247,16 @@ window.CW_CONFIG = {
     {
       num: 2,
       title: 'Player Movement',
+      activity: '\uD83D\uDEB6 Move it',
       goal: 'Move the player with arrow keys, blocked by walls.',
+      checkpoint: 'Move with WASD or arrows - the blue dot should slide around but stop when it hits grey walls.',
       points: [
         'WASD or arrows move the player at speed 2.5 (slow for stealth)',
         'After moving, check collision with each wall rectangle',
         'On collision: push the player back outside the wall',
         'Slower speed than action games adds tension and careful planning'
       ],
-      challenge: '\ud83e\udd16 Write wall-aware movement:',
+      challenge: '\uD83E\uDD16 Write wall-aware movement:',
       starter: '# Move the player\nif Input.is_action_pressed("ui_left"):\n    player_x -= ___\nif Input.is_action_pressed("ui_right"):\n    player_x += speed\nif Input.is_action_pressed("ui_up"):\n    player_y -= speed\nif Input.is_action_pressed("ui_down"):\n    player_y += ___',
       solution: '# Move the player\nif Input.is_action_pressed("ui_left"):\n    player_x -= speed\nif Input.is_action_pressed("ui_right"):\n    player_x += speed\nif Input.is_action_pressed("ui_up"):\n    player_y -= speed\nif Input.is_action_pressed("ui_down"):\n    player_y += speed',
       checks: ['is_action_pressed', 'speed', 'player_x', 'player_y'],
@@ -253,14 +278,16 @@ window.CW_CONFIG = {
     {
       num: 3,
       title: 'Guard Patrol',
+      activity: '\uD83D\uDC6E Patrol',
       goal: 'Make the guard walk a square patrol route between four waypoints.',
+      checkpoint: 'The red dot should now move in a square loop between four points - watch it for a full cycle.',
       points: [
         'Patrol waypoints form a rectangle the guard walks around',
         'Move toward the current target; when close, advance to the next',
         'Use <code>atan2(dy, dx)</code> to get the guard facing direction',
         'In Godot you would use a Path2D with PathFollow2D for patrol routes'
       ],
-      challenge: '\ud83e\udd16 Write the patrol logic:',
+      challenge: '\uD83E\uDD16 Write the patrol logic:',
       starter: '# Move guard toward current waypoint\nvar target = patrol[guard_target]\nvar dx = target.x - guard_x\nvar dy = target.y - guard_y\nvar dist = abs(dx) + abs(dy)\n\n# Advance to next waypoint when close\nif dist < ___:\n    guard_target = (guard_target + 1) % ___',
       solution: '# Move guard toward current waypoint\nvar target = patrol[guard_target]\nvar dx = target.x - guard_x\nvar dy = target.y - guard_y\nvar dist = abs(dx) + abs(dy)\n\n# Advance to next waypoint when close\nif dist < 4:\n    guard_target = (guard_target + 1) % 4',
       checks: ['patrol', 'guard_target', '4'],
@@ -282,14 +309,16 @@ window.CW_CONFIG = {
     {
       num: 4,
       title: 'Vision Cone',
+      activity: '\uD83D\uDC41\uFE0F Vision',
       goal: 'Draw a vision cone showing where the guard can see.',
+      checkpoint: 'A yellow triangle-ish cone should extend from the red dot in the direction it is moving. Watch it sweep around the patrol.',
       points: [
         'The cone extends visionRange (100) pixels from the guard',
         'It spans visionAngle (0.6 radians, about 34 degrees) to each side',
         'The cone points in the direction the guard faces (gAngle)',
         'In Godot you would use a polygon with raycasts for visibility'
       ],
-      challenge: '\ud83e\udd16 Set the vision cone parameters:',
+      challenge: '\uD83E\uDD16 Set the vision cone parameters:',
       starter: '# Vision cone settings\nvar vision_range = ___\nvar vision_angle = ___\n\n# Guard faces toward patrol target\nvar guard_facing = atan2(dy, dx)',
       solution: '# Vision cone settings\nvar vision_range = 100\nvar vision_angle = 0.6\n\n# Guard faces toward patrol target\nvar guard_facing = atan2(dy, dx)',
       checks: ['100', '0.6', 'vision_range', 'vision_angle'],
@@ -311,14 +340,16 @@ window.CW_CONFIG = {
     {
       num: 5,
       title: 'Detection',
+      activity: '\uD83D\uDEA8 Detect',
       goal: 'Detect when the player enters the guard vision cone.',
+      checkpoint: 'Walk into the yellow vision cone - a red overlay should flash "SPOTTED!" and freeze the game.',
       points: [
         'Check two conditions: distance < visionRange AND angle difference < visionAngle',
         'Angle to player: <code>atan2(player_y - guard_y, player_x - guard_x)</code>',
         'Compare against guard facing angle with wraparound handling',
         'On detection: set gameState to "caught" and show a red overlay'
       ],
-      challenge: '\ud83e\udd16 Write the detection check:',
+      challenge: '\uD83E\uDD16 Write the detection check:',
       starter: '# Check if player is in vision cone\nvar to_player_dist = abs(player_x - guard_x) + abs(player_y - guard_y)\nvar to_player_angle = atan2(player_y - guard_y, player_x - guard_x)\nvar angle_diff = abs(to_player_angle - guard_facing)\n\nif to_player_dist < ___ and angle_diff < ___:\n    game_state = "caught"',
       solution: '# Check if player is in vision cone\nvar to_player_dist = abs(player_x - guard_x) + abs(player_y - guard_y)\nvar to_player_angle = atan2(player_y - guard_y, player_x - guard_x)\nvar angle_diff = abs(to_player_angle - guard_facing)\n\nif to_player_dist < vision_range and angle_diff < vision_angle:\n    game_state = "caught"',
       checks: ['vision_range', 'vision_angle', 'caught', 'atan2'],
@@ -340,14 +371,16 @@ window.CW_CONFIG = {
     {
       num: 6,
       title: 'Escape!',
+      activity: '\uD83C\uDFC3 Escape!',
       goal: 'Reach the EXIT zone to win, with restart on R.',
+      checkpoint: 'Sneak past the guard and reach the green EXIT box - a green overlay should show "ESCAPED!". Press R to try again.',
       points: [
         'Check overlap with the exit rectangle for the win condition',
         'Show a green overlay with "ESCAPED!" on victory',
         'Show a red overlay with "SPOTTED!" on detection',
         'Press R resets player and guard positions for another attempt'
       ],
-      challenge: '\ud83e\udd16 Write the exit check:',
+      challenge: '\uD83E\uDD16 Write the exit check:',
       starter: '# Check if player reached the exit\nif player_x + pw > exit_x and player_x < exit_x + exit_w:\n    if player_y + pw > exit_y and player_y < exit_y + ___:\n        game_state = "___"',
       solution: '# Check if player reached the exit\nif player_x + pw > exit_x and player_x < exit_x + exit_w:\n    if player_y + pw > exit_y and player_y < exit_y + exit_h:\n        game_state = "win"',
       checks: ['exit_h', 'win', 'exit_x', 'exit_y'],
@@ -364,6 +397,28 @@ window.CW_CONFIG = {
           'More colours on screen'
         ],
         correct: 1
+      }
+    },
+    {
+      num: 7,
+      title: 'Take It Home',
+      activity: '\uD83C\uDFE0 Mod card',
+      goal: 'Fill in your Mod Card. At home, open Godot and use these choices to build your own stealth game.',
+      checkpoint: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down to use at home.',
+      points: [
+        'At home: open Godot and create a new 2D project',
+        'Add a CharacterBody2D for your player with a ColorRect child',
+        'Add a second CharacterBody2D for your guard with a NavigationAgent2D',
+        'Use Area2D nodes with collision shapes to detect the vision cone overlap'
+      ],
+      challenge: '\u270F\uFE0F Fill in your Mod Card:',
+      starter: '# My Stealth Mod Card\nGame name: ___\nPlayer colour: ___\nGuard colour: ___\nNumber of guards: ___\nVision range: ___\nMap theme: ___\nOne thing to add at home: ___',
+      solution: '# My Stealth Mod Card\nGame name: Shadow Run\nPlayer colour: green\nGuard colour: orange\nNumber of guards: 2\nVision range: 80\nMap theme: abandoned warehouse\nOne thing to add at home: noise mechanic when running',
+      checks: [],
+      height: 180,
+      fills: {
+        text: 'At home I will open ___ and my map theme will be ___.',
+        answers: ['Godot', 'abandoned warehouse']
       }
     }
   ]

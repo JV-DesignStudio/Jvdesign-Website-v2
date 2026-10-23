@@ -106,6 +106,10 @@
       : data;
     if (!keys || typeof keys !== 'object' || Array.isArray(keys)) throw new Error('Not a backpack file');
     var names = Object.keys(keys).filter(packable);
+    // A real backpack always holds at least one app save. A random JSON file
+    // such as {"name":"me"} must never be written into storage.
+    var looksLikeSaves = names.some(function (k) { return /^(jvds|jv_|qb-|wkp_|pixel|sound|level)/.test(k); });
+    if (!looksLikeSaves) throw new Error('No JVDS saves found in that file');
     names.forEach(function (k) { if (typeof keys[k] !== 'string') throw new Error('Not a backpack file'); });
     var s = ls(); if (!s) throw new Error('Storage is blocked in this browser');
     names.forEach(function (k) { s.setItem(k, keys[k]); });

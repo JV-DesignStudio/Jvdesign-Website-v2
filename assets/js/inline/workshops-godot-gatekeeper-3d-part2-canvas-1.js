@@ -15,6 +15,7 @@ function gdscriptToJs(code) {
     .replace(/\bInput\.is_action_pressed\("ui_right"\)/g, 'rightHeld')
     .replace(/\bInput\.is_action_pressed\("ui_up"\)/g, 'upHeld')
     .replace(/\bInput\.is_action_pressed\("ui_down"\)/g, 'downHeld')
+    .replace(/\bInput\.is_action_just_pressed\("ui_accept"\)/g, 'spacePressed')
     .replace(/\bfunc\s+(\w+)\s*\(([^)]*)\)\s*:/g, 'function $1($2){')
     .replace(/\belif\b/g, '} else if')
     .replace(/\bif\s+(.+):/g, 'if($1){')
@@ -31,42 +32,39 @@ var CSS_GAME = '<style>body{display:flex;flex-direction:column;align-items:cente
 var CANVAS_TAG = '<canvas id="game" width="400" height="400"></canvas>';
 var SETUP = 'const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");';
 
-var PLAYER_VARS = 'let px=40,py=360,pw=14,speed=2.5;';
-var GUARDS_INIT = 'let guards=[' +
-  '{x:160,y:100,w:14,angle:0,speed:1.2,patrol:[{x:100,y:100},{x:260,y:100}],target:0,distracted:0},' +
-  '{x:280,y:260,w:14,angle:Math.PI,speed:1,patrol:[{x:280,y:200},{x:280,y:340},{x:180,y:340},{x:180,y:200}],target:0,distracted:0}' +
+var PLAYER_VARS = 'let px=40,py=360,pw=16,speed=2.5;';
+var GUARDS_VARS = 'let guards=[' +
+  '{x:160,y:120,w:16,angle:0,speed:1.2,patrol:[{x:100,y:100},{x:260,y:100},{x:260,y:180},{x:100,y:180}],target:0},' +
+  '{x:280,y:280,w:16,angle:Math.PI,speed:1.0,patrol:[{x:180,y:240},{x:340,y:240},{x:340,y:320},{x:180,y:320}],target:0}' +
   '];';
-var VISION_VARS = 'let visionRange=90,visionAngle=0.5;';
-var WALL_DATA = 'let walls=[{x:60,y:60,w:120,h:10},{x:60,y:60,w:10,h:80},{x:240,y:150,w:10,h:120},{x:120,y:280,w:140,h:10},{x:320,y:60,w:10,h:100}];';
-var DISTRACT_VARS = 'let rocks=[{x:200,y:180,r:6,thrown:false},{x:100,y:300,r:6,thrown:false}];let throwTarget={x:0,y:0,active:false};';
-var EXIT_VARS = 'let exitX=350,exitY=10,exitW=40,exitH=30;let level=1;';
+var VISION_VARS = 'let visionRange=90,visionAngle=0.55;';
+var ROCK_VARS = 'let rocks=[],rockCooldown=0;';
+var WALL_DATA = 'let walls=[{x:60,y:60,w:80,h:12},{x:260,y:60,w:12,h:100},{x:60,y:200,w:140,h:12},{x:280,y:200,w:80,h:12},{x:160,y:300,w:12,h:80}];';
+var EXIT_VARS = 'let exitX=350,exitY=20,exitW=30,exitH=30;';
 var STATE_VARS = 'let gameState="play";';
-
 var KEYS = 'let leftHeld=false,rightHeld=false,upHeld=false,downHeld=false,spacePressed=false;' +
   'document.addEventListener("keydown",function(e){' +
     'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=true;' +
     'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=true;' +
     'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=true;' +
     'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=true;' +
-    'if(e.code==="Space")spacePressed=true;' +
+    'if(e.code==="Space"){spacePressed=true;e.preventDefault()}' +
     'e.preventDefault()});' +
   'document.addEventListener("keyup",function(e){' +
     'if(e.code==="ArrowLeft"||e.code==="KeyA")leftHeld=false;' +
     'if(e.code==="ArrowRight"||e.code==="KeyD")rightHeld=false;' +
     'if(e.code==="ArrowUp"||e.code==="KeyW")upHeld=false;' +
-    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false});';
+    'if(e.code==="ArrowDown"||e.code==="KeyS")downHeld=false;' +
+    'if(e.code==="Space")spacePressed=false});';
 
 var DRAW_BG = 'ctx.fillStyle="#1e293b";ctx.fillRect(0,0,400,400);' +
   'ctx.strokeStyle="#334155";for(var gi=0;gi<400;gi+=40){ctx.beginPath();ctx.moveTo(gi,0);ctx.lineTo(gi,400);ctx.stroke();ctx.beginPath();ctx.moveTo(0,gi);ctx.lineTo(400,gi);ctx.stroke()}';
 var DRAW_WALLS = 'ctx.fillStyle="#475569";for(var wi=0;wi<walls.length;wi++){ctx.fillRect(walls[wi].x,walls[wi].y,walls[wi].w,walls[wi].h)}';
 var DRAW_EXIT = 'ctx.fillStyle="#22c55e";ctx.fillRect(exitX,exitY,exitW,exitH);ctx.fillStyle="#fff";ctx.font="bold 10px monospace";ctx.textAlign="center";ctx.fillText("EXIT",exitX+exitW/2,exitY+18);';
 var DRAW_PLAYER = 'ctx.fillStyle="#60a5fa";ctx.beginPath();ctx.arc(px+pw/2,py+pw/2,pw/2,0,Math.PI*2);ctx.fill();';
-var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 14px monospace";ctx.textAlign="left";ctx.fillText("Level "+level+" | SPACE near rock to throw",10,390);';
-
-function wrap(code) {
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
-    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
-}
+var DRAW_GUARDS = 'for(var gi2=0;gi2<guards.length;gi2++){var g=guards[gi2];ctx.save();ctx.translate(g.x+g.w/2,g.y+g.w/2);ctx.rotate(g.angle);ctx.fillStyle="rgba(251,191,36,0.12)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(g.x+g.w/2,g.y+g.w/2,g.w/2,0,Math.PI*2);ctx.fill()}';
+var DRAW_ROCKS = 'ctx.fillStyle="#a78bfa";for(var ri=0;ri<rocks.length;ri++){ctx.beginPath();ctx.arc(rocks[ri].x,rocks[ri].y,5,0,Math.PI*2);ctx.fill()}';
+var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 13px monospace";ctx.textAlign="left";ctx.fillText("Space: throw rock | Reach EXIT",6,394);';
 
 function wbWrap(presetup, blobSrc, afterBlob) {
   return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
@@ -75,130 +73,149 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-gatekeeper2-canvas',
   downloadName: 'my-godot-gatekeeper-2.html',
+  nextStep: { url: '/workshops/godot-gdscript-essentials-canvas.html', label: 'GDScript Essentials' },
 
   hints: [
-    'Two guards patrol with overlapping vision cones',
-    'Each guard follows its own patrol route independently',
-    'Orange vision cones show where guards can see',
-    'Rocks on the ground can distract guards when thrown',
-    'Throwing a rock makes a guard investigate the noise',
-    'Multiple levels increase difficulty with tighter patrols'
+    'Two red guard dots patrol separate routes on a tiled floor',
+    'Guards move independently - their patrols overlap to create tight corridors',
+    'Yellow vision cones sweep as guards move; press Space to throw a distraction rock',
+    'Rocks land ahead of you and briefly distract nearby guards',
+    'Getting spotted by either guard triggers the caught state',
+    'Reach the green EXIT to win; press R to retry',
+    'Your mod card - plan your own multi-guard level to build at home in Godot'
   ],
 
   templates: {
     1: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARDS_INIT + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS,
+        SETUP + PLAYER_VARS + GUARDS_VARS + WALL_DATA + EXIT_VARS + KEYS,
         gdscriptToJs(u),
         'function loop(){' +
-        DRAW_BG + DRAW_WALLS + DRAW_EXIT +
-        'for(var gi=0;gi<guards.length;gi++){ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(guards[gi].x+guards[gi].w/2,guards[gi].y+guards[gi].w/2,guards[gi].w/2,0,Math.PI*2);ctx.fill()}' +
-        DRAW_PLAYER + DRAW_HUD +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_PLAYER + DRAW_GUARDS + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARDS_INIT + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS,
+        SETUP + PLAYER_VARS + GUARDS_VARS + WALL_DATA + EXIT_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
-        'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
-        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
-        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
         'if(typeof cwStep==="function")cwStep();' +
-        'for(var gi=0;gi<guards.length;gi++){var g=guards[gi];g.x=Math.max(0,Math.min(386,g.x));g.y=Math.max(0,Math.min(386,g.y))}' +
-        DRAW_BG + DRAW_WALLS + DRAW_EXIT +
-        'for(var gi=0;gi<guards.length;gi++){ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(guards[gi].x+guards[gi].w/2,guards[gi].y+guards[gi].w/2,guards[gi].w/2,0,Math.PI*2);ctx.fill()}' +
-        DRAW_PLAYER + DRAW_HUD +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_PLAYER + DRAW_GUARDS + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     3: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARDS_INIT + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS +
-        'function moveGuard(g){var t=g.patrol[g.target];var dx=t.x-g.x,dy=t.y-g.y;var d=Math.sqrt(dx*dx+dy*dy);if(d<3){g.target=(g.target+1)%g.patrol.length}else{g.x+=dx/d*g.speed;g.y+=dy/d*g.speed}g.angle=Math.atan2(dy,dx)}',
+        SETUP + PLAYER_VARS + GUARDS_VARS + VISION_VARS + WALL_DATA + EXIT_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
-        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
-        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
-        'for(var gi=0;gi<guards.length;gi++)moveGuard(guards[gi]);' +
+        'px=Math.max(0,Math.min(400-16,px));py=Math.max(0,Math.min(400-16,py));' +
+        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+16>w.x&&px<w.x+w.w&&py+16>w.y&&py<w.y+w.h){if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-16;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-16}}' +
+        'for(var gi=0;gi<guards.length;gi++){var g=guards[gi];var tx=g.patrol[g.target].x,ty=g.patrol[g.target].y;var dx=tx-g.x,dy=ty-g.y;var dist=Math.sqrt(dx*dx+dy*dy);if(dist<2){g.target=(g.target+1)%g.patrol.length}else{g.x+=dx/dist*g.speed;g.y+=dy/dist*g.speed}g.angle=Math.atan2(dy,dx)}' +
         'if(typeof cwStep==="function")cwStep();' +
-        DRAW_BG + DRAW_WALLS + DRAW_EXIT +
-        'for(var gi=0;gi<guards.length;gi++){var g=guards[gi];ctx.save();ctx.translate(g.x+g.w/2,g.y+g.w/2);ctx.rotate(g.angle);ctx.fillStyle="rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();ctx.fillStyle="#f43f5e";ctx.beginPath();ctx.arc(g.x+g.w/2,g.y+g.w/2,g.w/2,0,Math.PI*2);ctx.fill()}' +
-        DRAW_PLAYER + DRAW_HUD +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_PLAYER + DRAW_GUARDS + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     4: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARDS_INIT + VISION_VARS + WALL_DATA + DISTRACT_VARS + EXIT_VARS + KEYS +
-        'function moveGuard(g){if(g.distracted>0){g.distracted--;return}var t=g.patrol[g.target];var dx=t.x-g.x,dy=t.y-g.y;var d=Math.sqrt(dx*dx+dy*dy);if(d<3){g.target=(g.target+1)%g.patrol.length}else{g.x+=dx/d*g.speed;g.y+=dy/d*g.speed}g.angle=Math.atan2(dy,dx)}',
+        SETUP + PLAYER_VARS + GUARDS_VARS + VISION_VARS + ROCK_VARS + WALL_DATA + EXIT_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
-        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
-        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
-        'for(var gi=0;gi<guards.length;gi++)moveGuard(guards[gi]);' +
+        'px=Math.max(0,Math.min(384,px));py=Math.max(0,Math.min(384,py));' +
+        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+16>w.x&&px<w.x+w.w&&py+16>w.y&&py<w.y+w.h){if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-16;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-16}}' +
+        'if(spacePressed&&rockCooldown<=0){rocks.push({x:px+8+(rightHeld?60:leftHeld?-60:0),y:py+8+(downHeld?60:upHeld?-60:0),life:120});rockCooldown=45;spacePressed=false}' +
+        'if(rockCooldown>0)rockCooldown--;' +
+        'for(var ri=rocks.length-1;ri>=0;ri--){rocks[ri].life--;if(rocks[ri].life<=0)rocks.splice(ri,1)}' +
+        'for(var gi=0;gi<guards.length;gi++){var g=guards[gi];var tx=g.patrol[g.target].x,ty=g.patrol[g.target].y;var dx=tx-g.x,dy=ty-g.y;var dist=Math.sqrt(dx*dx+dy*dy);if(dist<2){g.target=(g.target+1)%g.patrol.length}else{g.x+=dx/dist*g.speed;g.y+=dy/dist*g.speed}g.angle=Math.atan2(dy,dx)}' +
         'if(typeof cwStep==="function")cwStep();' +
-        'spacePressed=false;' +
-        DRAW_BG + DRAW_WALLS + DRAW_EXIT +
-        'for(var ri=0;ri<rocks.length;ri++){if(!rocks[ri].thrown){ctx.fillStyle="#a78bfa";ctx.beginPath();ctx.arc(rocks[ri].x,rocks[ri].y,rocks[ri].r,0,Math.PI*2);ctx.fill()}}' +
-        'for(var gi=0;gi<guards.length;gi++){var g=guards[gi];ctx.save();ctx.translate(g.x+g.w/2,g.y+g.w/2);ctx.rotate(g.angle);ctx.fillStyle=g.distracted>0?"rgba(168,85,247,0.2)":"rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();ctx.fillStyle=g.distracted>0?"#a78bfa":"#f43f5e";ctx.beginPath();ctx.arc(g.x+g.w/2,g.y+g.w/2,g.w/2,0,Math.PI*2);ctx.fill()}' +
-        DRAW_PLAYER + DRAW_HUD +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_ROCKS + DRAW_PLAYER + DRAW_GUARDS + DRAW_HUD +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     5: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARDS_INIT + VISION_VARS + WALL_DATA + DISTRACT_VARS + EXIT_VARS + STATE_VARS + KEYS +
-        'function moveGuard(g){if(g.distracted>0){g.distracted--;return}var t=g.patrol[g.target];var dx=t.x-g.x,dy=t.y-g.y;var d=Math.sqrt(dx*dx+dy*dy);if(d<3){g.target=(g.target+1)%g.patrol.length}else{g.x+=dx/d*g.speed;g.y+=dy/d*g.speed}g.angle=Math.atan2(dy,dx)}' +
-        'function checkDetect(g){var dx=px+pw/2-(g.x+g.w/2),dy=py+pw/2-(g.y+g.w/2);var d=Math.sqrt(dx*dx+dy*dy);var a=Math.atan2(dy,dx);var diff=Math.abs(a-g.angle);if(diff>Math.PI)diff=2*Math.PI-diff;return d<visionRange&&diff<visionAngle&&g.distracted<=0}',
+        SETUP + PLAYER_VARS + GUARDS_VARS + VISION_VARS + ROCK_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS,
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
-        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
-        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
-        'for(var gi=0;gi<guards.length;gi++){moveGuard(guards[gi]);if(checkDetect(guards[gi]))gameState="caught"}' +
-        'if(spacePressed){for(var ri=0;ri<rocks.length;ri++){if(!rocks[ri].thrown){var rdx=px-rocks[ri].x,rdy=py-rocks[ri].y;if(Math.sqrt(rdx*rdx+rdy*rdy)<40){rocks[ri].thrown=true;for(var gi2=0;gi2<guards.length;gi2++){var gd=Math.sqrt(Math.pow(guards[gi2].x-rocks[ri].x,2)+Math.pow(guards[gi2].y-rocks[ri].y,2));if(gd<150)guards[gi2].distracted=180}break}}}}' +
-        'spacePressed=false;' +
+        'px=Math.max(0,Math.min(384,px));py=Math.max(0,Math.min(384,py));' +
+        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+16>w.x&&px<w.x+w.w&&py+16>w.y&&py<w.y+w.h){if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-16;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-16}}' +
+        'if(spacePressed&&rockCooldown<=0){rocks.push({x:px+8+(rightHeld?60:leftHeld?-60:0),y:py+8+(downHeld?60:upHeld?-60:0),life:120});rockCooldown=45;spacePressed=false}' +
+        'if(rockCooldown>0)rockCooldown--;' +
+        'for(var ri=rocks.length-1;ri>=0;ri--){rocks[ri].life--;if(rocks[ri].life<=0)rocks.splice(ri,1)}' +
+        'for(var gi=0;gi<guards.length;gi++){' +
+        'var g=guards[gi];' +
+        'var distracted=false;for(var rk=0;rk<rocks.length;rk++){var rdx=rocks[rk].x-g.x,rdy=rocks[rk].y-g.y;if(Math.sqrt(rdx*rdx+rdy*rdy)<80){g.angle=Math.atan2(rdy,rdx);distracted=true;break}}' +
+        'if(!distracted){var tx=g.patrol[g.target].x,ty=g.patrol[g.target].y;var dx=tx-g.x,dy=ty-g.y;var dist=Math.sqrt(dx*dx+dy*dy);if(dist<2){g.target=(g.target+1)%g.patrol.length}else{g.x+=dx/dist*g.speed;g.y+=dy/dist*g.speed}g.angle=Math.atan2(dy,dx)}' +
+        'var pdx=px+8-(g.x+8),pdy=py+8-(g.y+8);var pDist=Math.sqrt(pdx*pdx+pdy*pdy);var pAng=Math.atan2(pdy,pdx);var diff=Math.abs(pAng-g.angle);if(diff>Math.PI)diff=2*Math.PI-diff;if(pDist<visionRange&&diff<visionAngle)gameState="caught"' +
+        '}' +
+        'if(px+16>exitX&&px<exitX+exitW&&py+16>exitY&&py<exitY+exitH)gameState="win";' +
         'if(typeof cwStep==="function")cwStep();' +
         '}' +
-        DRAW_BG + DRAW_WALLS + DRAW_EXIT +
-        'for(var ri=0;ri<rocks.length;ri++){if(!rocks[ri].thrown){ctx.fillStyle="#a78bfa";ctx.beginPath();ctx.arc(rocks[ri].x,rocks[ri].y,rocks[ri].r,0,Math.PI*2);ctx.fill()}}' +
-        'for(var gi=0;gi<guards.length;gi++){var g=guards[gi];ctx.save();ctx.translate(g.x+g.w/2,g.y+g.w/2);ctx.rotate(g.angle);ctx.fillStyle=g.distracted>0?"rgba(168,85,247,0.2)":"rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();ctx.fillStyle=g.distracted>0?"#a78bfa":"#f43f5e";ctx.beginPath();ctx.arc(g.x+g.w/2,g.y+g.w/2,g.w/2,0,Math.PI*2);ctx.fill()}' +
-        DRAW_PLAYER + DRAW_HUD +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_ROCKS + DRAW_PLAYER + DRAW_GUARDS + DRAW_HUD +
         'if(gameState==="caught"){ctx.fillStyle="rgba(239,68,68,0.3)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("SPOTTED!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
+        'if(gameState==="win"){ctx.fillStyle="rgba(34,197,94,0.3)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("ESCAPED!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     6: function(u) {
       return wbWrap(
-        SETUP + PLAYER_VARS + GUARDS_INIT + VISION_VARS + WALL_DATA + DISTRACT_VARS + EXIT_VARS + STATE_VARS + KEYS +
-        'function moveGuard(g){if(g.distracted>0){g.distracted--;return}var t=g.patrol[g.target];var dx=t.x-g.x,dy=t.y-g.y;var d=Math.sqrt(dx*dx+dy*dy);if(d<3){g.target=(g.target+1)%g.patrol.length}else{g.x+=dx/d*g.speed;g.y+=dy/d*g.speed}g.angle=Math.atan2(dy,dx)}' +
-        'function checkDetect(g){var dx=px+pw/2-(g.x+g.w/2),dy=py+pw/2-(g.y+g.w/2);var d=Math.sqrt(dx*dx+dy*dy);var a=Math.atan2(dy,dx);var diff=Math.abs(a-g.angle);if(diff>Math.PI)diff=2*Math.PI-diff;return d<visionRange&&diff<visionAngle&&g.distracted<=0}' +
-        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="caught"||gameState==="win")){px=40;py=360;for(var i=0;i<guards.length;i++){guards[i].target=0;guards[i].distracted=0;guards[i].x=guards[i].patrol[0].x;guards[i].y=guards[i].patrol[0].y}for(var i=0;i<rocks.length;i++)rocks[i].thrown=false;gameState="play"}});',
+        SETUP + PLAYER_VARS + GUARDS_VARS + VISION_VARS + ROCK_VARS + WALL_DATA + EXIT_VARS + STATE_VARS + KEYS +
+        'let level=1;' +
+        'document.addEventListener("keydown",function(e){if(e.code==="KeyR"&&(gameState==="caught"||gameState==="win")){px=40;py=360;guards[0].x=160;guards[0].y=120;guards[0].target=0;guards[1].x=280;guards[1].y=280;guards[1].target=0;rocks=[];gameState="play"}});',
         'window.cwStep=function(){' + gdscriptToJs(u) + '};',
         'function loop(){' +
         'if(gameState==="play"){' +
         'if(leftHeld)px-=speed;if(rightHeld)px+=speed;if(upHeld)py-=speed;if(downHeld)py+=speed;' +
-        'px=Math.max(0,Math.min(400-pw,px));py=Math.max(0,Math.min(400-pw,py));' +
-        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+pw>w.x&&px<w.x+w.w&&py+pw>w.y&&py<w.y+w.h){if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-pw;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-pw}}' +
-        'for(var gi=0;gi<guards.length;gi++){moveGuard(guards[gi]);if(checkDetect(guards[gi]))gameState="caught"}' +
-        'if(spacePressed){for(var ri=0;ri<rocks.length;ri++){if(!rocks[ri].thrown){var rdx=px-rocks[ri].x,rdy=py-rocks[ri].y;if(Math.sqrt(rdx*rdx+rdy*rdy)<40){rocks[ri].thrown=true;for(var gi2=0;gi2<guards.length;gi2++){var gd=Math.sqrt(Math.pow(guards[gi2].x-rocks[ri].x,2)+Math.pow(guards[gi2].y-rocks[ri].y,2));if(gd<150)guards[gi2].distracted=180}break}}}}' +
-        'spacePressed=false;' +
-        'if(px+pw>exitX&&px<exitX+exitW&&py+pw>exitY&&py<exitY+exitH){gameState="win";level++}' +
+        'px=Math.max(0,Math.min(384,px));py=Math.max(0,Math.min(384,py));' +
+        'for(var wi=0;wi<walls.length;wi++){var w=walls[wi];if(px+16>w.x&&px<w.x+w.w&&py+16>w.y&&py<w.y+w.h){if(leftHeld)px=w.x+w.w;if(rightHeld)px=w.x-16;if(upHeld)py=w.y+w.h;if(downHeld)py=w.y-16}}' +
+        'if(spacePressed&&rockCooldown<=0){rocks.push({x:px+8+(rightHeld?60:leftHeld?-60:0),y:py+8+(downHeld?60:upHeld?-60:0),life:120});rockCooldown=45;spacePressed=false}' +
+        'if(rockCooldown>0)rockCooldown--;' +
+        'for(var ri=rocks.length-1;ri>=0;ri--){rocks[ri].life--;if(rocks[ri].life<=0)rocks.splice(ri,1)}' +
+        'for(var gi=0;gi<guards.length;gi++){' +
+        'var g=guards[gi];' +
+        'var distracted=false;for(var rk=0;rk<rocks.length;rk++){var rdx=rocks[rk].x-g.x,rdy=rocks[rk].y-g.y;if(Math.sqrt(rdx*rdx+rdy*rdy)<80){g.angle=Math.atan2(rdy,rdx);distracted=true;break}}' +
+        'if(!distracted){var tx=g.patrol[g.target].x,ty=g.patrol[g.target].y;var dx=tx-g.x,dy=ty-g.y;var dist=Math.sqrt(dx*dx+dy*dy);if(dist<2){g.target=(g.target+1)%g.patrol.length}else{g.x+=dx/dist*g.speed;g.y+=dy/dist*g.speed}g.angle=Math.atan2(dy,dx)}' +
+        'var pdx=px+8-(g.x+8),pdy=py+8-(g.y+8);var pDist=Math.sqrt(pdx*pdx+pdy*pdy);var pAng=Math.atan2(pdy,pdx);var diff=Math.abs(pAng-g.angle);if(diff>Math.PI)diff=2*Math.PI-diff;if(pDist<visionRange&&diff<visionAngle)gameState="caught"' +
+        '}' +
+        'if(px+16>exitX&&px<exitX+exitW&&py+16>exitY&&py<exitY+exitH)gameState="win";' +
         'if(typeof cwStep==="function")cwStep();' +
         '}' +
-        DRAW_BG + DRAW_WALLS + DRAW_EXIT +
-        'for(var ri=0;ri<rocks.length;ri++){if(!rocks[ri].thrown){ctx.fillStyle="#a78bfa";ctx.beginPath();ctx.arc(rocks[ri].x,rocks[ri].y,rocks[ri].r,0,Math.PI*2);ctx.fill()}}' +
-        'for(var gi=0;gi<guards.length;gi++){var g=guards[gi];ctx.save();ctx.translate(g.x+g.w/2,g.y+g.w/2);ctx.rotate(g.angle);ctx.fillStyle=g.distracted>0?"rgba(168,85,247,0.2)":"rgba(251,191,36,0.15)";ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,visionRange,-visionAngle,visionAngle);ctx.fill();ctx.restore();ctx.fillStyle=g.distracted>0?"#a78bfa":"#f43f5e";ctx.beginPath();ctx.arc(g.x+g.w/2,g.y+g.w/2,g.w/2,0,Math.PI*2);ctx.fill()}' +
-        DRAW_PLAYER + DRAW_HUD +
+        DRAW_BG + DRAW_WALLS + DRAW_EXIT + DRAW_ROCKS + DRAW_PLAYER + DRAW_GUARDS + DRAW_HUD +
+        'ctx.fillStyle="#94a3b8";ctx.font="12px monospace";ctx.textAlign="right";ctx.fillText("Level "+level,394,16);' +
         'if(gameState==="caught"){ctx.fillStyle="rgba(239,68,68,0.3)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("SPOTTED!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to retry",200,220)}' +
-        'if(gameState==="win"){ctx.fillStyle="rgba(34,197,94,0.3)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("LEVEL "+level+" CLEAR!",200,180);ctx.font="16px monospace";ctx.fillText("Press R for next level",200,220)}' +
+        'if(gameState==="win"){ctx.fillStyle="rgba(34,197,94,0.3)";ctx.fillRect(0,0,400,400);ctx.fillStyle="#fff";ctx.font="bold 28px monospace";ctx.textAlign="center";ctx.fillText("ESCAPED!",200,180);ctx.font="16px monospace";ctx.fillText("Press R to play again",200,220)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
+    },
+    7: function(u) {
+      var lines = u.split('\n');
+      var fields = {};
+      lines.forEach(function(l) {
+        var m = l.match(/^([^:]+):\s*(.*)$/);
+        if (m && m[2].trim()) fields[m[1].trim()] = m[2].trim();
+      });
+      var html = '<style>body{font-family:monospace;background:#0f172a;color:#e2e8f0;padding:16px;margin:0}' +
+        'h2{color:#f43f5e;margin:0 0 12px}' +
+        '.card{background:#1e293b;border:2px solid #334155;border-radius:10px;padding:16px}' +
+        '.row{display:flex;gap:8px;margin:6px 0;align-items:baseline}' +
+        '.lbl{color:#94a3b8;min-width:160px;font-size:.85rem}' +
+        '.val{color:#f1f5f9;font-weight:bold}' +
+        '.tip{margin-top:14px;padding:10px;background:#0f172a;border-left:3px solid #f43f5e;font-size:.82rem;color:#94a3b8}' +
+        '</style>' +
+        '<div class="card"><h2>\uD83C\uDFE0 My Multi-Guard Mod Card</h2>';
+      var order = ['Game name','Player colour','Number of guards','Distraction item','Map theme','Guard speed','One thing to add at home'];
+      order.forEach(function(k) {
+        if (fields[k]) html += '<div class="row"><span class="lbl">' + k + '</span><span class="val">' + fields[k] + '</span></div>';
+      });
+      html += '<div class="tip">\uD83D\uDCA1 At home: in Godot, use multiple NavigationAgent2D nodes - one per guard. Add an Area2D around the distraction landing spot and connect its body_entered signal to a function that makes nearby guards investigate.</div></div>';
+      var blob = 'document.body.innerHTML=' + JSON.stringify(html) + ';';
+      return cwBlobWrap('<style>body{margin:0;background:#0f172a}</style>', '<div></div>', '', blob, '');
     }
   },
 
@@ -206,28 +223,30 @@ window.CW_CONFIG = {
     {
       num: 1,
       title: 'Multiple Guards',
-      goal: 'Set up a stealth scene with two guards on different patrol routes.',
+      activity: '\uD83D\uDC6E Two guards',
+      goal: 'Set up the scene with two independent guards and a player.',
+      checkpoint: 'You should see a blue player dot and two red guard dots at different positions on the tiled floor.',
       points: [
-        'Each guard is stored in an array with x, y, angle, speed, and patrol waypoints',
-        'Guard 1 patrols horizontally, guard 2 patrols a square - overlapping coverage',
-        'Using an array of guard objects makes it easy to add more later',
-        'In Godot you would instance guard scenes from a PackedScene'
+        'Each guard is an object with its own position, angle, speed, patrol, and target index',
+        'Guard 1 patrols the upper portion of the map',
+        'Guard 2 patrols the lower-right portion with slightly different speed',
+        'Two guards covering different zones means no single safe corridor'
       ],
-      challenge: '\ud83e\udd16 Configure the two guards:',
-      starter: '# Guard array with different patrol routes\nvar guard_count = ___\nvar guard_1_speed = 1.2\nvar guard_2_speed = ___\n\n# Guard 2 has a longer patrol\nvar guard_2_waypoints = 4',
-      solution: '# Guard array with different patrol routes\nvar guard_count = 2\nvar guard_1_speed = 1.2\nvar guard_2_speed = 1.0\n\n# Guard 2 has a longer patrol\nvar guard_2_waypoints = 4',
-      checks: ['2', '1.2', '1.0'],
-      height: 120,
+      challenge: '\uD83E\uDD16 Set the two guard starting positions:',
+      starter: '# Guard 1 starts in upper area\nvar guard1_x = 160\nvar guard1_y = ___\n\n# Guard 2 starts in lower area\nvar guard2_x = ___\nvar guard2_y = 280',
+      solution: '# Guard 1 starts in upper area\nvar guard1_x = 160\nvar guard1_y = 120\n\n# Guard 2 starts in lower area\nvar guard2_x = 280\nvar guard2_y = 280',
+      checks: ['120', '280'],
+      height: 130,
       fills: {
-        text: 'Two guards with different ___ create varied timing windows. The slower guard gives the player more ___ to pass.',
-        answers: ['speeds', 'time']
+        text: 'Guard 1 is at y=___ and Guard 2 is at y=___. Their patrol zones ___.',
+        answers: ['120', '280', 'overlap']
       },
       quiz: {
-        question: 'Why use an array of guard objects instead of separate variables?',
+        question: 'Why do guard patrol zones overlap?',
         options: [
-          'Arrays are more colourful',
-          'An array lets you loop over all guards with one function - adding a third guard is just one more entry, not duplicating code',
-          'GDScript does not allow multiple variables'
+          'Overlapping zones look better on screen',
+          'Overlapping patrols eliminate safe waiting spots - the player must time movements across both guards',
+          'GDScript requires overlapping patrol paths'
         ],
         correct: 1
       }
@@ -235,28 +254,30 @@ window.CW_CONFIG = {
     {
       num: 2,
       title: 'Independent Patrols',
+      activity: '\uD83D\uDD04 Patrols',
       goal: 'Make each guard follow its own patrol route independently.',
+      checkpoint: 'Both red dots should move in loops - watch them for a full cycle each. Notice they are on different timings.',
       points: [
-        'Each guard has its own target index into its patrol array',
-        'The moveGuard function works on any guard object passed to it',
-        'Independent patrols create timing puzzles: wait for guard A, then rush before guard B turns',
-        'In Godot each guard instance runs its own _process function'
+        'Loop over the guards array and update each one separately',
+        'Each guard has its own patrol waypoint array and target index',
+        'Guards move at different speeds (1.2 vs 1.0) creating phase drift over time',
+        'Phase drift means gaps in the overlapping coverage change constantly'
       ],
-      challenge: '\ud83e\udd16 Write the generic patrol function:',
-      starter: '# Move any guard toward its current waypoint\nfunc move_guard(guard):\n    var target = guard.patrol[guard.___]\n    var dx = target.x - guard.x\n    var dy = target.y - guard.y\n    var dist = abs(dx) + abs(dy)\n    if dist < 4:\n        guard.target = (guard.target + 1) % guard.patrol.___',
-      solution: '# Move any guard toward its current waypoint\nfunc move_guard(guard):\n    var target = guard.patrol[guard.target]\n    var dx = target.x - guard.x\n    var dy = target.y - guard.y\n    var dist = abs(dx) + abs(dy)\n    if dist < 4:\n        guard.target = (guard.target + 1) % guard.patrol.length',
-      checks: ['target', 'length', 'patrol', 'move_guard'],
-      height: 180,
+      challenge: '\uD83E\uDD16 Update each guard toward its patrol target:',
+      starter: '# Loop through all guards\nfor guard in guards:\n    var target = guard.patrol[guard.target]\n    var dx = target.x - guard.x\n    var dy = target.y - guard.y\n    var dist = abs(dx) + abs(dy)\n    if dist < 4:\n        guard.target = (guard.target + 1) % ___\n    else:\n        guard.x += dx / dist * ___\n        guard.y += dy / dist * guard.speed',
+      solution: '# Loop through all guards\nfor guard in guards:\n    var target = guard.patrol[guard.target]\n    var dx = target.x - guard.x\n    var dy = target.y - guard.y\n    var dist = abs(dx) + abs(dy)\n    if dist < 4:\n        guard.target = (guard.target + 1) % 4\n    else:\n        guard.x += dx / dist * guard.speed\n        guard.y += dy / dist * guard.speed',
+      checks: ['guard.speed', '4', 'guard.target'],
+      height: 200,
       fills: {
-        text: 'Each guard tracks its own ___ index. The modulo wraps the index when it reaches the patrol ___.',
-        answers: ['target', 'length']
+        text: 'Each guard has ___ patrol waypoints. Different speeds cause phase ___ over time.',
+        answers: ['4', 'drift']
       },
       quiz: {
-        question: 'Why write one moveGuard function instead of separate code for each guard?',
+        question: 'Why give guards different patrol speeds?',
         options: [
-          'One function is smaller',
-          'A generic function avoids code duplication - fix a bug once and it is fixed for all guards, and adding guards needs zero new code',
-          'Multiple functions cause crashes'
+          'To make one guard harder than the other',
+          'Phase drift means the timing windows change every cycle, keeping the player engaged rather than memorising one fixed pattern',
+          'One guard has more waypoints so must be faster'
         ],
         correct: 1
       }
@@ -264,28 +285,30 @@ window.CW_CONFIG = {
     {
       num: 3,
       title: 'Vision Cones',
-      goal: 'Draw vision cones for each guard showing their line of sight.',
+      activity: '\uD83D\uDC41\uFE0F Cones',
+      goal: 'Draw a vision cone for each guard.',
+      checkpoint: 'Each red dot should now have a yellow cone sweeping in its direction of travel.',
       points: [
-        'Each guard\'s cone points in its facing direction (angle)',
-        'The cone is drawn as a filled arc: moveTo(centre), arc with half-angle',
-        'Semi-transparent fill (alpha 0.15) shows threat without blocking the view',
-        'Overlapping cones create danger zones where both guards can see'
+        'Same vision cone logic as Part 1, applied to each guard in a loop',
+        'ctx.save() and ctx.restore() keep each cone rotation isolated',
+        'Guard 1 and Guard 2 use the same visionRange and visionAngle',
+        'The cones sweep independently as guards drift out of sync'
       ],
-      challenge: '\ud83e\udd16 Set the shared vision parameters:',
-      starter: '# Vision settings shared by all guards\nvar vision_range = ___\nvar vision_half_angle = ___\n\n# Overlapping cones create danger zones\n# Guards see forward only, not behind',
-      solution: '# Vision settings shared by all guards\nvar vision_range = 90\nvar vision_half_angle = 0.5\n\n# Overlapping cones create danger zones\n# Guards see forward only, not behind',
-      checks: ['90', '0.5', 'vision_range'],
-      height: 120,
+      challenge: '\uD83E\uDD16 Draw a cone for each guard in a loop:',
+      starter: 'for guard in guards:\n    # Save, translate to guard center, rotate to guard.angle\n    ctx.save()\n    ctx.translate(guard.x + 8, guard.y + 8)\n    ctx.rotate(___)\n    # Draw the cone arc\n    ctx.beginPath()\n    ctx.moveTo(0, 0)\n    ctx.arc(0, 0, visionRange, -visionAngle, ___)\n    ctx.fill()\n    ctx.restore()',
+      solution: 'for guard in guards:\n    # Save, translate to guard center, rotate to guard.angle\n    ctx.save()\n    ctx.translate(guard.x + 8, guard.y + 8)\n    ctx.rotate(guard.angle)\n    # Draw the cone arc\n    ctx.beginPath()\n    ctx.moveTo(0, 0)\n    ctx.arc(0, 0, visionRange, -visionAngle, visionAngle)\n    ctx.fill()\n    ctx.restore()',
+      checks: ['guard.angle', 'visionAngle', 'ctx.save', 'ctx.restore'],
+      height: 200,
       fills: {
-        text: 'Vision extends ___ pixels forward. The half-angle of ___ radians keeps the cone narrow and focused.',
-        answers: ['90', '0.5']
+        text: 'ctx.save() and ctx.restore() prevent the rotation of one cone from ___ the next.',
+        answers: ['affecting']
       },
       quiz: {
-        question: 'Why are overlapping vision cones important for difficulty?',
+        question: 'Why call ctx.save() before rotating for each cone?',
         options: [
-          'They look more impressive',
-          'Overlapping zones close off shortcuts - the player must time movement to gaps where neither guard is looking',
-          'Each guard needs two cones'
+          'It makes the drawing faster',
+          'Without save/restore, each rotation compounds on the last - the second cone would be rotated by both its own angle and the first guard angle',
+          'ctx.rotate requires it'
         ],
         correct: 1
       }
@@ -293,28 +316,30 @@ window.CW_CONFIG = {
     {
       num: 4,
       title: 'Distraction Items',
-      goal: 'Pick up and throw rocks to distract guards temporarily.',
+      activity: '\uD83E\uDEA8 Distract',
+      goal: 'Throw rocks with Space to distract guards away from their patrol.',
+      checkpoint: 'Press Space - a purple dot should appear ahead of you. Throw one near a guard - the guard should turn to face it.',
       points: [
-        'Purple rocks sit on the ground; press Space near one to throw it',
-        'When thrown, nearby guards get distracted for 180 frames (3 seconds)',
-        'Distracted guards stop patrolling and their cone turns purple',
-        'Limited rocks force the player to plan which distraction matters most'
+        'Space throws a rock in the direction you are moving',
+        'Rocks have a life counter - they disappear after 120 frames (~2 seconds)',
+        'Guards within 80 pixels of a rock turn to face it instead of patrolling',
+        'Distraction creates a time window to sneak past'
       ],
-      challenge: '\ud83e\udd16 Write the rock throw logic:',
-      starter: '# Press Space near a rock to throw it\nif space_pressed:\n    for i in range(rocks.length):\n        if not rocks[i].thrown:\n            var dist = abs(player_x - rocks[i].x) + abs(player_y - rocks[i].y)\n            if dist < ___:\n                rocks[i].thrown = true\n                # Distract nearby guards\n                for g in range(guards.length):\n                    guards[g].distracted = ___',
-      solution: '# Press Space near a rock to throw it\nif space_pressed:\n    for i in range(rocks.length):\n        if not rocks[i].thrown:\n            var dist = abs(player_x - rocks[i].x) + abs(player_y - rocks[i].y)\n            if dist < 40:\n                rocks[i].thrown = true\n                # Distract nearby guards\n                for g in range(guards.length):\n                    guards[g].distracted = 180',
-      checks: ['40', '180', 'thrown', 'distracted'],
+      challenge: '\uD83E\uDD16 Write the distraction check:',
+      starter: '# For each guard, check if any rock is close\nfor guard in guards:\n    var distracted = false\n    for rock in rocks:\n        var dist = abs(rock.x - guard.x) + abs(rock.y - guard.y)\n        if dist < ___:\n            guard.angle = atan2(rock.y - guard.y, rock.x - guard.x)\n            distracted = ___\n            break\n    if not distracted:\n        # Continue normal patrol...',
+      solution: '# For each guard, check if any rock is close\nfor guard in guards:\n    var distracted = false\n    for rock in rocks:\n        var dist = abs(rock.x - guard.x) + abs(rock.y - guard.y)\n        if dist < 80:\n            guard.angle = atan2(rock.y - guard.y, rock.x - guard.x)\n            distracted = true\n            break\n    if not distracted:\n        # Continue normal patrol...',
+      checks: ['80', 'distracted', 'atan2'],
       height: 200,
       fills: {
-        text: 'The player must be within ___ pixels to pick up a rock. Distraction lasts ___ frames (3 seconds at 60fps).',
-        answers: ['40', '180']
+        text: 'Distracted guards turn to face the rock but do not ___ toward it. The distraction lasts ___ frames.',
+        answers: ['move', '120']
       },
       quiz: {
-        question: 'Why limit the number of rocks available?',
+        question: 'Why make rocks disappear after a short time?',
         options: [
-          'Unlimited rocks would be too noisy',
-          'Scarcity creates meaningful choices - the player must decide which guard to distract, adding strategy to the stealth',
-          'The array can only hold two items'
+          'To keep the memory usage low',
+          'A permanent distraction would trivialise the game - time-limited rocks force the player to move quickly during the window they create',
+          'Canvas cannot draw too many objects'
         ],
         correct: 1
       }
@@ -322,28 +347,30 @@ window.CW_CONFIG = {
     {
       num: 5,
       title: 'Detection System',
-      goal: 'Check all guards for player detection using distance and angle.',
+      activity: '\uD83D\uDEA8 Detect',
+      goal: 'Trigger caught state if either guard spots the player.',
+      checkpoint: 'Walk into either guard cone - a red SPOTTED overlay should appear. Rocks should still distract guards.',
       points: [
-        'Loop through each guard and check if the player is in its cone',
-        'Skip distracted guards: they cannot detect the player',
-        'Both distance AND angle must match for detection',
-        'Handle angle wraparound: angles near -PI and +PI are actually close'
+        'Check vision cone detection for every guard in the loop',
+        'If any guard spots the player, set gameState to "caught"',
+        'Distraction check runs first - a guard looking at a rock cannot spot the player',
+        'This gives distraction its strategic value'
       ],
-      challenge: '\ud83e\udd16 Write the multi-guard detection:',
-      starter: '# Check each guard for detection\nfor i in range(guards.length):\n    if guards[i].distracted > 0:\n        continue\n    var dx = player_x - guards[i].x\n    var dy = player_y - guards[i].y\n    var dist = abs(dx) + abs(dy)\n    if dist < ___ :\n        game_state = "___"',
-      solution: '# Check each guard for detection\nfor i in range(guards.length):\n    if guards[i].distracted > 0:\n        continue\n    var dx = player_x - guards[i].x\n    var dy = player_y - guards[i].y\n    var dist = abs(dx) + abs(dy)\n    if dist < vision_range:\n        game_state = "caught"',
-      checks: ['vision_range', 'caught', 'distracted', 'continue'],
+      challenge: '\uD83E\uDD16 Write detection for all guards:',
+      starter: '# Check each guard for player detection\nfor guard in guards:\n    var pdx = player_x - guard.x\n    var pdy = player_y - guard.y\n    var pDist = abs(pdx) + abs(pdy)\n    var pAngle = atan2(pdy, pdx)\n    var diff = abs(pAngle - guard.angle)\n    if pDist < ___ and diff < visionAngle:\n        game_state = "___"',
+      solution: '# Check each guard for player detection\nfor guard in guards:\n    var pdx = player_x - guard.x\n    var pdy = player_y - guard.y\n    var pDist = abs(pdx) + abs(pdy)\n    var pAngle = atan2(pdy, pdx)\n    var diff = abs(pAngle - guard.angle)\n    if pDist < visionRange and diff < visionAngle:\n        game_state = "caught"',
+      checks: ['visionRange', 'caught', 'guard.angle'],
       height: 180,
       fills: {
-        text: 'Distracted guards ___ detection checks. The continue keyword ___ to the next loop iteration.',
-        answers: ['skip', 'jumps']
+        text: 'Detection loops over ___ guards. Distraction runs ___ detection, so a rock effectively blocks the vision cone.',
+        answers: ['all', 'before']
       },
       quiz: {
-        question: 'Why skip distracted guards in the detection loop?',
+        question: 'What makes the distraction mechanic feel fair?',
         options: [
-          'Distracted guards are deleted',
-          'A distracted guard is investigating the noise, not watching - skipping them rewards the player for using their limited rocks',
-          'The loop runs faster with fewer checks'
+          'The rock glows a bright colour',
+          'Distraction is checked before detection - so the guard is already looking away before any detection check runs, with no frame where both happen',
+          'The distraction radius is larger than the vision cone'
         ],
         correct: 1
       }
@@ -351,30 +378,54 @@ window.CW_CONFIG = {
     {
       num: 6,
       title: 'Levels & Victory',
-      goal: 'Add level progression: escape triggers the next level with faster guards.',
+      activity: '\uD83C\uDFC6 Levels',
+      goal: 'Reach EXIT to win; press R to restart. Level counter displayed.',
+      checkpoint: 'Sneak past both guards to the green EXIT. The green ESCAPED overlay should appear. Press R to try again.',
       points: [
-        'Reaching the exit increments the level counter',
-        'Each level could increase guard speed or reduce vision gaps',
-        'Win screen shows the level cleared; R resets for the next attempt',
-        'Progressive difficulty keeps the challenge growing as the player improves'
+        'Check player overlap with the exit rectangle',
+        'Win state shows a green overlay; caught state shows red',
+        'Press R to reset player, guards and rocks',
+        'Level counter in corner gives a sense of progression for multiple playthroughs'
       ],
-      challenge: '\ud83e\udd16 Write the level progression:',
-      starter: '# Check exit collision\nif player_x + pw > exit_x and player_x < exit_x + exit_w:\n    if player_y + pw > exit_y and player_y < exit_y + exit_h:\n        game_state = "win"\n        level += ___\n\n# Increase difficulty each level\n# guard_speed = 1.0 + level * 0.2',
-      solution: '# Check exit collision\nif player_x + pw > exit_x and player_x < exit_x + exit_w:\n    if player_y + pw > exit_y and player_y < exit_y + exit_h:\n        game_state = "win"\n        level += 1\n\n# Increase difficulty each level\n# guard_speed = 1.0 + level * 0.2',
-      checks: ['level', 'win', 'exit_x', 'exit_y'],
-      height: 160,
+      challenge: '\uD83E\uDD16 Write the exit check and win state:',
+      starter: '# Check exit overlap\nif player_x + 16 > exit_x and player_x < exit_x + exit_w:\n    if player_y + 16 > exit_y and player_y < exit_y + ___:\n        game_state = "___"',
+      solution: '# Check exit overlap\nif player_x + 16 > exit_x and player_x < exit_x + exit_w:\n    if player_y + 16 > exit_y and player_y < exit_y + exit_h:\n        game_state = "win"',
+      checks: ['exit_h', 'win'],
+      height: 120,
       fills: {
-        text: 'Level progression adds ___ to the counter on each escape. Guard speed increases by ___ per level.',
-        answers: ['1', '0.2']
+        text: 'The game has three states: play, ___, and ___.',
+        answers: ['caught', 'win']
       },
       quiz: {
-        question: 'What makes stealth level design effective?',
+        question: 'What skill does this level build toward in Godot?',
         options: [
-          'More guards in every level',
-          'Good stealth levels offer multiple valid paths, clear patrol patterns to learn, and rewards for creative solutions like distractions',
-          'Bigger maps are always better'
+          'Shader programming',
+          'NavigationAgent2D with multiple agents, Area2D-based detection, and signal-driven distraction responses',
+          'AnimationPlayer keyframes'
         ],
         correct: 1
+      }
+    },
+    {
+      num: 7,
+      title: 'Take It Home',
+      activity: '\uD83C\uDFE0 Mod card',
+      goal: 'Fill in your Mod Card. At home, open Godot and build your multi-guard stealth level.',
+      checkpoint: 'Fill in as many fields as you like, then hit Apply to see your card.',
+      points: [
+        'At home: duplicate your Part 1 Godot project and add a second guard node',
+        'Use NavigationAgent2D on each guard for path-following',
+        'Add an Area2D for the distraction zone - connect body_entered to an investigate function',
+        'Export your distraction radius and vision angle as @export variables for easy tuning'
+      ],
+      challenge: '\u270F\uFE0F Fill in your Mod Card:',
+      starter: '# My Multi-Guard Mod Card\nGame name: ___\nPlayer colour: ___\nNumber of guards: ___\nDistraction item: ___\nMap theme: ___\nGuard speed: ___\nOne thing to add at home: ___',
+      solution: '# My Multi-Guard Mod Card\nGame name: Night Shift\nPlayer colour: purple\nNumber of guards: 3\nDistraction item: coin\nMap theme: office building\nGuard speed: 1.5\nOne thing to add at home: alert state where guard calls backup',
+      checks: [],
+      height: 180,
+      fills: {
+        text: 'At home I will make ___ guards. My distraction item will be a ___.',
+        answers: ['3', 'coin']
       }
     }
   ]

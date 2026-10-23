@@ -67,11 +67,6 @@ var DRAW_ENEMIES = 'ctx.fillStyle="#f43f5e";for(var i=0;i<enemies.length;i++){ct
 
 var DRAW_HUD = 'ctx.fillStyle="#fff";ctx.font="bold 18px monospace";ctx.textAlign="left";ctx.fillText("Coins: "+collected+"/"+coins.length,10,24);';
 
-function wrap(code) {
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
-    '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
-}
-
 function wbWrap(presetup, blobSrc, afterBlob) {
   return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
 }
@@ -79,6 +74,7 @@ function wbWrap(presetup, blobSrc, afterBlob) {
 window.CW_CONFIG = {
   storageKey: 'jvds-godot-platformer-canvas',
   downloadName: 'my-godot-platformer.html',
+  nextStep: { url: '/workshops/godot-racing-canvas.html', label: 'Godot Racing' },
 
   hints: [
     'A blue square standing on a green platform',
@@ -86,7 +82,8 @@ window.CW_CONFIG = {
     'Pressing Up makes the player jump with gravity pulling them back',
     'Multiple platforms at different heights to jump between',
     'Golden coins float above platforms waiting to be collected',
-    'Red enemies patrol platforms and reset the player on touch'
+    'Red enemies patrol platforms and reset the player on touch',
+    'Your mod card - fill it in and take your ideas home to Godot'
   ],
 
   templates: {
@@ -182,6 +179,32 @@ window.CW_CONFIG = {
         'if(gameState==="over"){ctx.fillStyle="#f43f5e";ctx.font="bold 32px monospace";ctx.textAlign="center";ctx.fillText("GAME OVER",300,180);ctx.font="18px monospace";ctx.fillText("Press R to try again",300,215)}' +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
+    },
+    7: function(u) {
+      var lines = u.split('\n');
+      var fields = {};
+      lines.forEach(function(l) {
+        var m = l.match(/^([^:]+):\s*(.*)$/);
+        if (m && m[2].trim()) fields[m[1].trim()] = m[2].trim();
+      });
+      var html = '<style>body{font-family:monospace;background:#0f172a;color:#e2e8f0;padding:16px;margin:0}' +
+        'h2{color:#60a5fa;margin:0 0 12px}' +
+        '.card{background:#1e293b;border:2px solid #334155;border-radius:10px;padding:16px}' +
+        '.row{display:flex;gap:8px;margin:6px 0;align-items:baseline}' +
+        '.lbl{color:#94a3b8;min-width:160px;font-size:.85rem}' +
+        '.val{color:#f1f5f9;font-weight:bold}' +
+        '.tip{margin-top:14px;padding:10px;background:#0f172a;border-left:3px solid #60a5fa;font-size:.82rem;color:#94a3b8}' +
+        '</style>' +
+        '<div class="card"><h2>\uD83C\uDFE0 My Platformer Mod Card</h2>';
+      var order = ['Game name','Player colour','Enemy colour','Number of platforms','Coins to collect','Special move','One thing to add at home'];
+      order.forEach(function(k) {
+        if (fields[k]) {
+          html += '<div class="row"><span class="lbl">' + k + '</span><span class="val">' + fields[k] + '</span></div>';
+        }
+      });
+      html += '<div class="tip">\uD83D\uDCA1 At home: open Godot, create a new 2D project, add a CharacterBody2D with a ColorRect child. Paste your movement code from Step 2 and start building!</div></div>';
+      var blob = 'document.body.innerHTML=' + JSON.stringify(html) + ';';
+      return cwBlobWrap('<style>body{margin:0;background:#0f172a}</style>', '<div id="out"></div>', '', blob, '');
     }
   },
 
@@ -189,14 +212,16 @@ window.CW_CONFIG = {
     {
       num: 1,
       title: 'Player & Ground',
+      activity: '\uD83C\uDFD7\uFE0F Build it',
       goal: 'Place a blue player on a green ground platform.',
+      checkpoint: 'You should see a blue square sitting on a green bar at the bottom of the canvas.',
       points: [
         'The ground spans the full 600px width at y=370',
         'The player is a 30x30 blue square starting at x=80, y=300',
         'In Godot you would use a CharacterBody2D with a CollisionShape2D',
         'Higher platforms are placed at various heights for jumping'
       ],
-      challenge: '\ud83e\udd16 Set the player position:',
+      challenge: '\uD83E\uDD16 Set the player position:',
       starter: '# Set the player position\nvar player_x = ___\nvar player_y = 300\nvar player_w = ___\nvar player_h = 30',
       solution: '# Set the player position\nvar player_x = 80\nvar player_y = 300\nvar player_w = 30\nvar player_h = 30',
       checks: ['80', '300', '30'],
@@ -218,14 +243,16 @@ window.CW_CONFIG = {
     {
       num: 2,
       title: 'Running Left & Right',
+      activity: '\uD83D\uDD79\uFE0F Move it',
       goal: 'Move the player horizontally with arrow keys.',
+      checkpoint: 'Press the left and right arrow keys - the blue square should slide smoothly side to side.',
       points: [
         'In Godot: <code>Input.is_action_pressed("ui_left")</code> for held keys',
         'Set velocity to -speed or +speed while a key is held',
         'When no key is pressed, velocity is 0 (instant stop)',
         'Clamp x to keep the player on screen (0 to 570)'
       ],
-      challenge: '\ud83e\udd16 Write the horizontal movement:',
+      challenge: '\uD83E\uDD16 Write the horizontal movement:',
       starter: '# Move left and right\nif Input.is_action_pressed("ui_left"):\n    velocity_x = ___\nelif Input.is_action_pressed("ui_right"):\n    velocity_x = ___\nelse:\n    velocity_x = 0',
       solution: '# Move left and right\nif Input.is_action_pressed("ui_left"):\n    velocity_x = -speed\nelif Input.is_action_pressed("ui_right"):\n    velocity_x = speed\nelse:\n    velocity_x = 0',
       checks: ['is_action_pressed', 'velocity_x', 'speed'],
@@ -247,14 +274,16 @@ window.CW_CONFIG = {
     {
       num: 3,
       title: 'Gravity & Jumping',
+      activity: '\u2B06\uFE0F Jump!',
       goal: 'Add gravity and let the player jump with Up.',
+      checkpoint: 'Press Up - the player should arc upward and fall back down. They can only jump from the ground.',
       points: [
         'Gravity adds 0.5 to vertical velocity each frame',
         'Jumping sets vy to -10 (negative = upward)',
         'The player can only jump when <code>on_ground</code> is true',
         'Platform collision: when falling onto a platform, snap to its top'
       ],
-      challenge: '\ud83e\udd16 Write the jump:',
+      challenge: '\uD83E\uDD16 Write the jump:',
       starter: '# Jump when on ground\nif Input.is_action_just_pressed("ui_up") and on_ground:\n    velocity_y = ___\n    on_ground = false\n\n# Gravity pulls down\nvelocity_y += ___',
       solution: '# Jump when on ground\nif Input.is_action_just_pressed("ui_up") and on_ground:\n    velocity_y = -10\n    on_ground = false\n\n# Gravity pulls down\nvelocity_y += 0.5',
       checks: ['-10', '0.5', 'on_ground'],
@@ -276,14 +305,16 @@ window.CW_CONFIG = {
     {
       num: 4,
       title: 'Collecting Coins',
+      activity: '\uD83E\uDE99 Collect',
       goal: 'Place golden coins above platforms and collect them on touch.',
+      checkpoint: 'Jump up to a coin - it should disappear and the counter in the top-left should go up.',
       points: [
         'Four coins float above different platforms',
         'Circle-rectangle collision uses distance between centres',
         'On collect: mark the coin as "got" and increment the counter',
         'In Godot you would use Area2D for the coin pickup zone'
       ],
-      challenge: '\ud83e\udd16 Write the coin collection:',
+      challenge: '\uD83E\uDD16 Write the coin collection:',
       starter: '# Check each coin\nfor i in range(4):\n    if not coins[i].got:\n        # Distance check\n        coins[i].got = ___\n        collected += ___',
       solution: '# Check each coin\nfor i in range(4):\n    if not coins[i].got:\n        # Distance check\n        coins[i].got = true\n        collected += 1',
       checks: ['got', 'true', 'collected', '1'],
@@ -305,14 +336,16 @@ window.CW_CONFIG = {
     {
       num: 5,
       title: 'Patrolling Enemies',
+      activity: '\uD83D\uDC7E Enemies',
       goal: 'Add red enemies that pace back and forth on platforms.',
+      checkpoint: 'Two red rectangles should be moving back and forth on platforms. Touch one to see game over.',
       points: [
         'Each enemy has a min/max x range and reverses at the edges',
         'Movement: <code>enemy.x += enemy.dx</code> each frame',
         'When x reaches minX or maxX, flip dx: <code>enemy.dx *= -1</code>',
         'Touching an enemy triggers game over'
       ],
-      challenge: '\ud83e\udd16 Write the enemy patrol:',
+      challenge: '\uD83E\uDD16 Write the enemy patrol:',
       starter: '# Move and bounce enemies\nenemy.x += enemy.dx\nif enemy.x <= enemy.min_x or enemy.x + enemy.w >= enemy.max_x:\n    enemy.dx *= ___',
       solution: '# Move and bounce enemies\nenemy.x += enemy.dx\nif enemy.x <= enemy.min_x or enemy.x + enemy.w >= enemy.max_x:\n    enemy.dx *= -1',
       checks: ['enemy.dx', '-1', 'min_x', 'max_x'],
@@ -333,15 +366,17 @@ window.CW_CONFIG = {
     },
     {
       num: 6,
-      title: 'Win Condition & Restart',
+      title: 'Win & Restart',
+      activity: '\uD83C\uDFC6 Finish it',
       goal: 'Win when all coins are collected, game over on enemy touch, R to restart.',
+      checkpoint: 'Collect all 4 coins to see the win screen. Get hit by an enemy to see game over. Press R to reset.',
       points: [
         'When <code>collected >= coins.length</code>, show "ALL COINS!" and stop play',
         'Touching an enemy sets game_state to "over"',
         'Pressing R resets position, velocity, coins, and state',
         'A state machine ("play" / "win" / "over") controls the loop'
       ],
-      challenge: '\ud83e\udd16 Write the win check:',
+      challenge: '\uD83E\uDD16 Write the win check:',
       starter: '# Check win condition\nif collected >= ___:\n    game_state = "___"',
       solution: '# Check win condition\nif collected >= coins.length:\n    game_state = "win"',
       checks: ['collected', 'coins', 'win'],
@@ -358,6 +393,28 @@ window.CW_CONFIG = {
           'It runs faster with three states'
         ],
         correct: 1
+      }
+    },
+    {
+      num: 7,
+      title: 'Take It Home',
+      activity: '\uD83C\uDFE0 Mod card',
+      goal: 'Fill in your Mod Card. At home, open Godot and use these choices to build your own platformer.',
+      checkpoint: 'Fill in as many fields as you want - then hit Apply to see your card. Screenshot it or write it down to use at home.',
+      points: [
+        'At home: open Godot and create a new 2D project',
+        'Add a CharacterBody2D node with a ColorRect child for your player',
+        'Paste your movement code from Step 2 into the _physics_process function',
+        'Use your mod card choices to change colours, speed, and add your own twist'
+      ],
+      challenge: '\u270F\uFE0F Fill in your Mod Card - change anything you want to make this game yours:',
+      starter: '# My Platformer Mod Card\nGame name: ___\nPlayer colour: ___\nEnemy colour: ___\nNumber of platforms: ___\nCoins to collect: ___\nSpecial move: ___\nOne thing to add at home: ___',
+      solution: '# My Platformer Mod Card\nGame name: Jump Quest\nPlayer colour: purple\nEnemy colour: orange\nNumber of platforms: 6\nCoins to collect: 5\nSpecial move: double jump\nOne thing to add at home: moving platforms',
+      checks: [],
+      height: 180,
+      fills: {
+        text: 'At home I will open ___ and add my special move: ___.',
+        answers: ['Godot', 'double jump']
       }
     }
   ]

@@ -1369,7 +1369,7 @@ window.JVDS_CONTENT = {
     {
       "id": "my-first-scratch-game",
       "title": "My First Scratch Game",
-      "desc": "6 free parent & child Scratch workshops. Build a platformer, quiz, catch game, maze, story and clicker no experience needed. Ages 6+.",
+      "desc": "6 free parent & child Scratch workshops. Build a platformer, quiz, catch game, maze, story and clicker no experience needed. Ages 7+.",
       "engine": "General",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -4099,7 +4099,7 @@ window.JVDS_CONTENT = {
     {
       "id": "scratch-catch-workshop",
       "title": "Don't Drop It! Build a Fruit Catch Game in Scratch",
-      "desc": "Build your first Scratch game! A free parent & child workshop. Move a basket to catch falling fruit, add a score counter and game-over screen. Ages 6+.",
+      "desc": "Build your first Scratch game! A free parent & child workshop. Move a basket to catch falling fruit, add a score counter and game-over screen. Ages 7+.",
       "engine": "Scratch",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -6266,7 +6266,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-21T18:00:25.242Z",
+    "generated": "2026-10-23T10:38:33.159Z",
     "workshops": 344,
     "games": 12,
     "tools": 50,
