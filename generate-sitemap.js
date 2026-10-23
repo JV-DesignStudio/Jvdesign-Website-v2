@@ -98,8 +98,14 @@ for (const fp of walk(ROOT, { ext: ".html", ignore: IGNORE_DIRS })) {
   if (robotsNoindex(html)) continue;
 
   const date = lastMod[rel] || new Date(fs.statSync(fp).mtime).toISOString().slice(0, 10);
-  const clean = toCleanUrl(rel);
+  let clean = toCleanUrl(rel);
   if (!clean) continue; // excluded (e.g. .bak.html)
+  // Prefer the canonical tag as the URL source of truth
+  const canonMatch = html.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i);
+  if (canonMatch && canonMatch[1].startsWith(BASE)) {
+    const canonPath = canonMatch[1].slice(BASE.length) || '/';
+    clean = canonPath.startsWith('/') ? canonPath : '/' + canonPath;
+  }
   const isHome = clean === '/';
   let priority = PRIORITY_MAP[clean] || (clean.startsWith('/workshops/') || clean.startsWith('/tools/') || clean.startsWith('/games/') ? '0.5' : '0.5');
   if (LOW_PRIORITY_SUFFIX.some(s => clean.includes(s))) priority = '0.3';

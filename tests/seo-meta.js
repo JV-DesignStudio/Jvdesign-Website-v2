@@ -77,9 +77,10 @@ for (const { rel, clean, html } of pages) {
   const desc = ((dm && (dm[2] !== undefined ? dm[2] : dm[3])) || '').trim();
   if (!desc) missing.desc.push(rel); else (descs[desc] = descs[desc] || []).push(rel);
 
-  const wantUrl = BASE_URL + clean;
   const canonTag = (html.match(/<link[^>]*rel=["']canonical["'][^>]*>/i) || [])[0] || '';
   const canon = (canonTag.match(/href=["']([^"']+)["']/i) || [])[1] || '';
+  // Use canonical as the authoritative URL when it points to our domain; fall back to computed clean URL
+  const wantUrl = (canon && canon.startsWith(BASE_URL)) ? canon : BASE_URL + clean;
   if (!canon) missing.canonical.push(rel);
   else {
     (canonical[canon] = canonical[canon] || []).push(rel);
