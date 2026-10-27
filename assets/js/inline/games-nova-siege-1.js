@@ -197,6 +197,12 @@ var QUESTS=[
  {id:'score10k',name:'Nova Ace',text:'Reach 10,000 score in one run',goal:10000,key:'best',reward:500},
  {id:'power3',name:'Overcharged',text:'Collect 3 power stars in one run',goal:3,key:'powerups',reward:250},
  {id:'runs10',name:'Veteran Pilot',text:'Launch 10 runs',goal:10,key:'runs',reward:300}];
+/* ============================ WAVE MODIFIERS ============================ */
+var WAVE_MODS=[
+ {id:'bonus',name:'BONUS WAVE',tag:'2x CREDITS',col:'#ffd166'},
+ {id:'elite',name:'ELITE WAVE',tag:'BUFFED ENEMIES',col:'#ff4d5e'},
+ {id:'dark',name:'DARK ZONE',tag:'NO HEALTH DROPS',col:'#c060ff'},
+ {id:'rush',name:'RUSH WAVE',tag:'FASTER SPAWNS',col:'#ff9f2e'}];
 /* ============================ STORY + SYSTEM ============================ */
 var storyRun=window.__storyRun=new StoryRun({id:'nova-siege',character:'Pip',title:'Pip and the Nova Gate',open:'The Swarm is streaming out of the Nova gate and Pip needs a pilot: fly the defence ship and hold the line.',objective:'Dodge the swarm, shoot the galactic army and bank credits to upgrade your ship.',cap:300,beats:[{at:0,text:'First wave inbound. Fly and fire!'},{at:0.4,text:'The swarm thickens and a boss is closing.'},{at:0.8,text:'The Nova gate glows: one last push to hold the line.'}],result:{success:'The gate collapses and Pip tees up a bigger ship for next time.',partial:'You hold most of the line; the swarm regroups, but the credits are banked.',fail:'The swarm breaks through this time, but your upgrades are still there for the next launch.'},onBeat:function(b){if(typeof run!=='undefined'&&run){run.beat=b.text;run.beatT=170;}},onRestart:function(){startRun()}});
 function storyBegin(){if(window.__storyRun&&!window.__storyRun.running)window.__storyRun.begin()}
@@ -297,7 +303,7 @@ function checkEvolutions(){
 }
 function hitR(sp){return sp===SPR.boss?33:14}
 function startRun(){
-  run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,fireT:0,shield:(meta.up.shield||0)>0?1:0,inv:90,waveKills:0,waveTarget:6,kills:0,runPower:0,over:false,hint:210,combo:0,comboT:0,bestCombo:0,bossActive:false,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,runUps:{},evos:[],tut:(meta.tutDone?0:330),beat:'',beatT:0,introMain:'',introSub:'',introT:0,paused:false,drones:[],level:1,blasts:[],rings:[]};
+  run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,fireT:0,shield:(meta.up.shield||0)>0?1:0,inv:90,waveKills:0,waveTarget:6,kills:0,runPower:0,over:false,hint:210,combo:0,comboT:0,bestCombo:0,bossActive:false,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,runUps:{},evos:[],tut:(meta.tutDone?0:330),beat:'',beatT:0,introMain:'',introSub:'',introT:0,paused:false,drones:[],level:1,blasts:[],rings:[],waveMod:null,laserT:0};
   spawnT=36;boss=null;spawnQueue=0;shopStock=[];shopRerolled=0;killSfxT=0;
   document.getElementById('shopOverlay').classList.add('hidden');
   showMenuMain();var rcb=document.getElementById('runCardBtn');if(rcb)rcb.style.display='none';
@@ -399,10 +405,30 @@ function pickKind(){
 function spawnEnemy(){
   var kind=pickKind();
   var pattern=kind==='diver'?'dive':(kind==='gunner'?'hover':(kind==='bomber'?'bomber':(kind==='splitter'?'straight':(Math.random()<0.45?'sine':(Math.random()<0.5?'swoop':'straight')))));
-  var hp=kind==='splitter'?4:kind==='gunner'?3:kind==='bomber'?3:kind==='orb'?2:1;
+  var hp=(kind==='splitter'?4:kind==='gunner'?3:kind==='bomber'?3:kind==='orb'?2:1)+(run.waveMod&&run.waveMod.id==='elite'?1:0);
   var vy=(kind==='diver'?rnd(1.7,2.4)+run.stage*0.12:(kind==='splitter'?rnd(0.5,0.8):(kind==='bomber'?rnd(0.6,0.9):rnd(0.8,1.5)+run.stage*0.1)))*VS;
   var e={kind:kind,pattern:pattern,x:rnd(40,W-40),y:-30,vy:vy,t:0,hp:hp,r:kind==='splitter'?21:hitR(SPR[kind]),spr:SPR[kind],dir:Math.random()<0.5?-1:1,amp:rnd(24,60),freq:rnd(0.02,0.05),fire:rnd(50,110)};
   run.enemies.push(e);
+}
+function makeEnemy(x,y){
+  var kind=pickKind();
+  var pattern=kind==='diver'?'dive':(kind==='gunner'?'hover':(kind==='bomber'?'bomber':(kind==='splitter'?'straight':(Math.random()<0.45?'sine':(Math.random()<0.5?'swoop':'straight')))));
+  var hp=(kind==='splitter'?4:kind==='gunner'?3:kind==='bomber'?3:kind==='orb'?2:1)+(run.waveMod&&run.waveMod.id==='elite'?1:0);
+  var vy=(kind==='diver'?rnd(1.7,2.4)+run.stage*0.12:(kind==='splitter'?rnd(0.5,0.8):(kind==='bomber'?rnd(0.6,0.9):rnd(0.8,1.5)+run.stage*0.1)))*VS;
+  return{kind:kind,pattern:pattern,x:x,y:y,vy:vy,t:0,hp:hp,r:kind==='splitter'?21:hitR(SPR[kind]),spr:SPR[kind],dir:Math.random()<0.5?-1:1,amp:rnd(24,60),freq:rnd(0.02,0.05),fire:rnd(50,110)};
+}
+var FORMATIONS=['v','line','pincer','arrow'];
+var nextFormation=0,formationCooldown=0;
+function spawnFormation(){
+  var type=FORMATIONS[nextFormation%FORMATIONS.length];nextFormation++;
+  var cx=rnd(W*0.2,W*0.8),pts=[];
+  if(type==='v'){pts=[[cx,0],[cx-50,35],[cx+50,35],[cx-100,70],[cx+100,70]];}
+  else if(type==='line'){for(var i=0;i<6;i++)pts.push([W*0.1+i*(W*0.8/5),-20]);}
+  else if(type==='pincer'){for(var i=0;i<3;i++)pts.push([W*0.06+i*42,-i*28]);for(var i=0;i<3;i++)pts.push([W*0.94-i*42,-i*28]);}
+  else{pts=[[cx,-10],[cx-44,-40],[cx+44,-40],[cx-88,-70],[cx+88,-70],[cx,-70]];}
+  float(W/2,H*0.32,type.toUpperCase()+' FORMATION','#8fe36a');
+  for(var i=0;i<pts.length;i++){var e=makeEnemy(pts[i][0],pts[i][1]);run.enemies.push(e);run.waveKills++;}/* count toward wave so we don't over-spawn */
+  run.waveKills=Math.max(0,run.waveKills-pts.length);/* actually subtract so formation kills count */
 }
 function spawnBoss(){
   run.bossActive=true;
@@ -442,13 +468,18 @@ function update(dt){
   for(var dn0=0;dn0<run.drones.length;dn0++){var dno=run.drones[dn0];dno.ang+=0.028*dt;dno.x=run.px+Math.cos(dno.ang)*dno.r;dno.y=run.py+Math.sin(dno.ang)*dno.r;dno.fire-=dt;if(dno.fire<=0){var dnt=nearestTarget(dno.x,dno.y);if(dnt){var dna=Math.atan2(dnt.y-dno.y,dnt.x-dno.x);run.bullets.push({x:dno.x,y:dno.y,vx:Math.cos(dna)*7*VS,vy:Math.sin(dna)*7*VS,dmg:1,hit:{}});dno.fire=hasEvo('swarm')?28:46;}else dno.fire=14;}}
   /* spawn */
   spawnT-=dt;
-  if(!run.bossActive&&spawnT<=0&&run.waveKills<run.waveTarget){spawnEnemy();spawnT=Math.max(8,28-run.stage*3);}
+  if(!run.bossActive&&spawnT<=0&&run.waveKills<run.waveTarget){
+    formationCooldown-=dt;
+    if(formationCooldown<=0&&run.wave>1&&Math.random()<0.12&&run.enemies.length<4){spawnFormation();formationCooldown=220;}
+    else{spawnEnemy();}
+    spawnT=Math.max(8,28-run.stage*3)*(run.waveMod&&run.waveMod.id==='rush'?0.55:1);
+  }
   /* boss */
   if(boss){
     boss.t+=dt;if(boss.flash>0)boss.flash-=dt;
     if(!boss.phase2&&boss.hp<=boss.maxhp*0.5){boss.phase2=true;boss.fire=Math.min(boss.fire,20);float(boss.x,boss.y-30,'RAGE!','#ffd166');sfx('boss');}
-    if(boss.y<96*VS)boss.y+=boss.vy*dt;
-    else{boss.x+=boss.dir*(0.9+run.stage*0.12)*(boss.phase2?1.35:1)*dt;if(boss.x>W-60)boss.dir=-1;if(boss.x<60)boss.dir=1;}
+    if(boss.y<96*VS)boss.y+=boss.vy*slowMult*dt;
+    else{boss.x+=boss.dir*(0.9+run.stage*0.12)*(boss.phase2?1.35:1)*slowMult*dt;if(boss.x>W-60)boss.dir=-1;if(boss.x<60)boss.dir=1;}
     boss.fire-=dt;
     if(boss.fire<=0&&boss.y>=90*VS){
       if(boss.type===1){ /* Nova Spinner: rotating radial ring */
@@ -466,9 +497,12 @@ function update(dt){
       if(boss.phase2)boss.fire*=0.65;
     }
   }
+  /* laser beam damage */
+  if(powerKind==='laser'){run.laserT-=dt;if(run.laserT<=0){run.laserT=5;for(var le=run.enemies.length-1;le>=0;le--){var len=run.enemies[le];if(Math.abs(len.x-run.px)<22&&len.y<run.py){len.hp-=2;len.flash=4;burst(len.x,len.y,'#4cc9f0',3);if(len.hp<=0)killEnemy(len,len.x,len.y);}}}if(boss&&Math.abs(boss.x-run.px)<22){boss.hp-=0.6;boss.flash=3;}}
+  var slowMult=(powerKind==='slow')?0.35:1;
   /* enemies */
   for(var e=run.enemies.length-1;e>=0;e--){
-    var en=run.enemies[e];en.t+=dt;en.y+=en.vy*dt;if(en.flash>0)en.flash-=dt;
+    var en=run.enemies[e];en.t+=dt;en.y+=en.vy*slowMult*dt;if(en.flash>0)en.flash-=dt;
     if(en.pattern==='sine')en.x+=Math.sin(en.t*en.freq)*en.amp*0.05;
     else if(en.pattern==='swoop')en.x+=en.dir*1.1*dt;
     else if(en.pattern==='dive')en.x+=Math.max(-1.9,Math.min(1.9,(run.px-en.x)*0.03))*dt;
@@ -493,7 +527,19 @@ function update(dt){
     if(Math.hypot(dr.x-run.px,dr.y-run.py)<36){
       if(dr.type==='health'){run.health=Math.min(9,run.health+1);float(dr.x,dr.y,'+1 HP','#7CFC00');}
       else if(dr.type==='credit'){addCredits(dr.v,dr.x,dr.y);}
-      else{if(dr.w==='shield'){run.shield=Math.max(run.shield,1);}else{powerKind=dr.w;powerTimer=440;}run.runPower++;meta.quests.powerups=Math.max(meta.quests.powerups||0,run.runPower);float(dr.x,dr.y,dr.label,dr.c);}
+      else{
+        if(dr.w==='shield'){run.shield=Math.max(run.shield,1);}
+        else if(dr.w==='nova'){/* Nova Bomb: nuke all on-screen enemies */
+          var toKill=run.enemies.slice();shake(22);
+          for(var nk=0;nk<toKill.length;nk++)killEnemy(toKill[nk],toKill[nk].x,toKill[nk].y,true);
+          burst(W/2,H/2,'#ff4d5e',80);deathRing(W/2,H/2,'#ff4d5e',W*0.7);
+          if(boss){boss.hp=Math.max(1,boss.hp-40);boss.flash=20;burst(boss.x,boss.y,'#ff4d5e',40);}
+        }
+        else if(dr.w==='laser'){powerKind='laser';powerTimer=280;run.laserT=0;}
+        else if(dr.w==='slow'){powerKind='slow';powerTimer=360;}
+        else{powerKind=dr.w;powerTimer=440;}
+        run.runPower++;meta.quests.powerups=Math.max(meta.quests.powerups||0,run.runPower);float(dr.x,dr.y,dr.label,dr.c);
+      }
       sfx('win');run.drops.splice(d,1);
     }
   }
@@ -517,14 +563,16 @@ function killEnemy(en,x,y,noBlast){
   if(!noBlast&&upLv('explosive'))run.blasts.push({x:x,y:y,r:hasEvo('nova')?84:60,dmg:upLv('explosive'),life:16,resolved:false});
   var pts=en.kind==='splitter'?150:en.kind==='bomber'?100:en.kind==='gunner'?90:en.kind==='diver'?60:en.kind==='orb'?80:40;
   var gained=Math.round(pts*addCombo(x,y));run.score+=gained;float(x,y,'+'+gained,'#bfe9ff');
-  addCredits(en.kind==='splitter'?22:en.kind==='bomber'?16:en.kind==='orb'?14:8);
+  var crMult=run.waveMod&&run.waveMod.id==='bonus'?2:1;
+  addCredits((en.kind==='splitter'?22:en.kind==='bomber'?16:en.kind==='orb'?14:8)*crMult);
   if(en.kind==='splitter'){for(var sc=0;sc<2;sc++){run.enemies.push({kind:'ufo',pattern:'swoop',x:Math.max(24,Math.min(W-24,x+(sc?26:-26))),y:y,vy:1.4,t:0,hp:1,r:hitR(SPR.ufo),spr:SPR.ufo,dir:sc?1:-1,amp:24,freq:0.03,fire:80});}}
   meta.quests.kills++;run.waveKills++;run.kills++;
   if(upLv('vampire')&&run.health<9&&Math.random()<upLv('vampire')*0.08){run.health++;float(x,y,'+1 HP','#7CFC00');}
   var luck=upLv('luck')*0.06,roll=Math.random();
-  if(roll<0.12+luck)run.drops.push({x:x,y:y,type:'health'});
-  else if(roll<0.3+luck)run.drops.push({x:x,y:y,type:'credit',v:25});
-  else if(roll<0.36+luck){var pw=[['rapid','RAPID','#ffd166'],['spread','SPREAD','#7ef27e'],['shield','SHIELD','#4cc9f0']][(Math.random()*3)|0];run.drops.push({x:x,y:y,type:'power',w:pw[0],label:pw[1],c:pw[2]});}
+  var darkZone=run.waveMod&&run.waveMod.id==='dark';
+  if(!darkZone&&roll<0.12+luck)run.drops.push({x:x,y:y,type:'health'});
+  else if(roll<(darkZone?0.42:0.3)+luck)run.drops.push({x:x,y:y,type:'credit',v:25});
+  else if(roll<(darkZone?0.50:0.36)+luck){var pw=[['rapid','RAPID','#ffd166'],['spread','SPREAD','#7ef27e'],['shield','SHIELD','#4cc9f0'],['nova','NOVA BOMB','#ff4d5e'],['laser','LASER','#4cc9f0'],['slow','TIME SLOW','#c060ff']][(Math.random()*6)|0];run.drops.push({x:x,y:y,type:'power',w:pw[0],label:pw[1],c:pw[2]});}
   qUpdate();
   if(!run.bossActive&&run.waveKills>=run.waveTarget)nextWave();
 }
@@ -539,7 +587,9 @@ function resolveBlasts(){
 }
 function nextWave(){
   run.waveKills=0;run.wave++;meta.quests.waves++;run.waveTarget=Math.min(40,8+run.stage*2+run.wave);
-  /* A1629 pacing: a small completion bonus keeps early upgrades/hulls reachable. */
+  /* roll a wave modifier on ~40% of waves (not wave 1) */
+  run.waveMod=null;
+  if(run.wave>1&&Math.random()<0.4){run.waveMod=WAVE_MODS[(Math.random()*WAVE_MODS.length)|0];float(W/2,H*0.45,run.waveMod.name,run.waveMod.col);float(W/2,H*0.5,run.waveMod.tag,run.waveMod.col);shake(6);}
   var bonus=15+run.wave*5;addCredits(bonus,W/2,H*0.6);float(W/2,H*0.6-22,'WAVE BONUS','#ffd166');
   var bossNext=run.wave%4===0&&!run.bossActive;
   if(bossNext)spawnBoss();else openShop();
@@ -664,6 +714,10 @@ function render(){
     }
     if(meta.cb){ctx.fillStyle='#8fe6ff';ctx.strokeStyle='#0a2a33';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(sb.x-3,sb.y,4,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(sb.x+3,sb.y,4,0,Math.PI*2);ctx.fill();ctx.stroke();continue;}
     ctx.fillStyle='#8fe6ff';ctx.beginPath();ctx.arc(sb.x-3,sb.y,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(sb.x+3,sb.y,4,0,Math.PI*2);ctx.fill();}
+  /* laser beam */
+  if(powerKind==='laser'){var la=Math.min(1,powerTimer/280);ctx.globalAlpha=la*0.9;ctx.strokeStyle='#4cc9f0';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(run.px,run.py-24);ctx.lineTo(run.px,0);ctx.stroke();ctx.globalAlpha=la*0.35;ctx.strokeStyle='#ffffff';ctx.lineWidth=14;ctx.beginPath();ctx.moveTo(run.px,run.py-24);ctx.lineTo(run.px,0);ctx.stroke();ctx.globalAlpha=1;}
+  /* slow tint overlay */
+  if(powerKind==='slow'){ctx.globalAlpha=0.12;ctx.fillStyle='#c060ff';ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;}
   /* player + flame */
   if(!(run.inv>0&&Math.floor(run.inv/5)%2===0)){var fl=run.flame<3?run.py+14:run.py+19;ctx.fillStyle=run.flame<3?'#ff8c1a':'#ffd166';ctx.fillRect(run.px-6,fl,12,7);drawSpr(SHIPS[meta.hull]||SHIPS[0],run.px,run.py);}
   if(shieldOn()||run.shield>0){ctx.strokeStyle='#4cc9f0';ctx.lineWidth=3;ctx.beginPath();ctx.arc(run.px,run.py,30,0,Math.PI*2);ctx.stroke()}
@@ -698,6 +752,7 @@ function render(){
   ptext(ctx,String(run.health),x1+lw2+sp,hudY,s,'#ff4d5e','#04070c');
   ptext(ctx,'WAVE '+run.wave+'  STAGE '+run.stage+'  LVL '+(run.level||1),pad,hudY+16,s,'#8fe36a','#04070c');
   var bl=buildLabel();if(bl)ptext(ctx,bl,pad,hudY+30,1,'#4cc9f0','#04070c');
+  if(run.waveMod)ptext(ctx,run.waveMod.tag,W-pad,hudY+16,1,run.waveMod.col,'#04070c','right');
   if((run.combo||0)>=2){var cm=Math.round(comboMult()*10)/10;ptext(ctx,'COMBO x'+cm,W/2,hudY,2,cm>=2?'#ffd166':'#7CFC00','#04070c','center')}
   ctx.setTransform(vsScale,0,0,vsScale,0,0);
 }
@@ -766,7 +821,7 @@ document.getElementById('cbBtn').onclick=toggleCB;
 function drawTitle(){var tcanvas=document.getElementById('titleFont'),tc=tcanvas.getContext('2d');tc.clearRect(0,0,tcanvas.width,tcanvas.height);var ol='#04120a';ptext(tc,'NOVA',tcanvas.width/2,10,6,'#7CFC00',ol,'center');ptext(tc,'SIEGE',tcanvas.width/2,58,6,'#7CFC00',ol,'center');ptext(tc,"PIP'S ARCADE REMASTER",tcanvas.width/2,118,2,'#8fe36a',ol,'center');}
 drawTitle();
 renderUpgrades();renderQuests();renderSkins();renderCredits();renderTitleStats();renderCB();
-run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,over:true,hint:0,combo:0,comboT:0,bestCombo:0,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,inv:0,bossActive:false,shield:0,runPower:0,kills:0,waveKills:0,waveTarget:6,fireT:0,runUps:{},evos:[],tut:0,beat:'',beatT:0,introMain:'',introSub:'',introT:0,paused:false,drones:[],level:1,blasts:[],rings:[]};
+run={score:0,stage:1,wave:1,health:baseHealth(),credits:0,px:W/2,py:H-80,over:true,hint:0,combo:0,comboT:0,bestCombo:0,bullets:[],enemies:[],drops:[],parts:[],floats:[],flame:0,shakeT:0,shakeMag:0,inv:0,bossActive:false,shield:0,runPower:0,kills:0,waveKills:0,waveTarget:6,fireT:0,runUps:{},evos:[],tut:0,beat:'',beatT:0,introMain:'',introSub:'',introT:0,paused:false,drones:[],level:1,blasts:[],rings:[],waveMod:null,laserT:0};
 window.__nova={get run(){return run},get meta(){return meta},get boss(){return boss},get sprites(){return SPR},get ships(){return SHIPS},get bg(){return bg},get bossType(){return boss?boss.type:null},get enemyKinds(){return run.enemies.map(function(e){return e.kind})},get stage(){return run.stage},get scale(){return vsScale},get lw(){return LW},get lh(){return H},get sprZoom(){return SS},get cssScale(){return cssScale},get hulls(){return HULLS},get combo(){return run.combo||0},get comboMult(){return comboMult()},get bossFire(){return boss?boss.fire:null},get runUps(){return run.runUps},get tutorialActive(){return !!(run&&run.tut>0)},get evolutions(){return (run&&run.evos)?run.evos.slice():[]},get reduceMotion(){return reduceMotion},get buildLabel(){return buildLabel()},makeRunCard:function(){return makeRunCard().toDataURL('image/png')},get lastRunSaved(){try{return !!localStorage.getItem(LASTKEY)}catch(e){return false}},get paused(){return !!run.paused},get menuOpen(){var e=document.getElementById('menuPanel');return !!e&&!e.classList.contains('hidden')},get shopOpen(){var e=document.getElementById('shopOverlay');return !!e&&!e.classList.contains('hidden')},get runCritChance(){return runCrit()},get runPierce(){return runPierce()},get runDamage(){return runDamage()},get runShots(){return runShots()},get runRate(){return runRate()},get runSpeed(){return runSpeed()},get runDrones(){return run.drones.length},get runLevel(){return run.level||1},get blasts(){return run.blasts.length},get gradBuilds(){return gradBuilds},get bossPhase(){return boss?(boss.phase2?2:1):0},get cb(){return !!meta.cb},get beat(){return run?run.beat:''},get beatActive(){return !!(run&&run.beatT>0)},get introActive(){return !!(run&&run.introT>0)},forceBoss:function(){spawnBoss();return boss?boss.type:null},openMenu:function(){openMenu()},closeMenu:function(){return closeMenu()},forceShop:function(){openShop()},forceWave:function(){nextWave()},refreshShop:function(){renderShop()},applyRunUpgrade:function(id){applyRunUpgrade(id);},pickKind:function(){return pickKind();},forceEnd:function(){run.health=0;hurtPlayer()}};
 hud();
 })();
