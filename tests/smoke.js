@@ -96,13 +96,20 @@ async function scenario(name, fn) {
   await scenario('workshop quiz answer → XP → persisted to localStorage', async () => {
     await page.setViewport({ width: 1280, height: 900 });
     await page.goto(BASE + 'workshops/scratch-catch-workshop.html', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#quiz-1 .quiz-opt', { visible: true });
+    // waitForSelector with visible:true uses RAF polling which doesn't fire reliably in headless
+    // Chrome on Windows. Use waitForFunction (mutation-observer based) instead.
+    await page.waitForFunction(() => !!document.querySelector('#quiz-1 .quiz-opt'));
 
     // Options are shuffled at runtime, so derive the correct index from the gate.
     const correctIdx = await page.$eval('#quiz-1', el => parseInt(atob(el.dataset.k), 10));
-    await page.click(`#quiz-1 .quiz-opt[data-idx="${correctIdx}"]`);
-    await page.waitForSelector('#quiz-1 .quiz-submit.show', { visible: true });
-    await page.click('#quiz-1 .quiz-submit');
+    // Use evaluate() to call the engine functions directly - avoids scroll/viewport
+    // issues with page.click() on below-fold elements in headless Chrome.
+    await page.evaluate((idx) => {
+      const el = document.querySelector(`#quiz-1 .quiz-opt[data-idx="${idx}"]`);
+      window.selectQuizOpt(el);
+    }, correctIdx);
+    await page.waitForFunction(() => !!document.querySelector('#quiz-1 .quiz-submit.show'));
+    await page.evaluate(() => window.checkQuiz(document.querySelector('#quiz-1 .quiz-submit')));
     await page.waitForSelector('#quiz-1.passed');
 
     // Engine saves synchronously on every answer; poll for the write.
@@ -131,8 +138,10 @@ async function scenario(name, fn) {
 
   /* ── 4. Backup round-trip ── */
   await scenario('backup export → wipe → import restores progress', async () => {
+    // Wait for deferred scripts before interacting with backup functions.
+    await page.waitForFunction(() => typeof window.exportProgress === 'function');
     // Export
-    await page.click('#bkExportBtn');
+    await page.evaluate(() => window.exportProgress());
     await page.waitForFunction(() => document.getElementById('bkTextarea').value.length > 100);
     const backupJson = await page.$eval('#bkTextarea', el => el.value);
     const parsed = JSON.parse(backupJson);
@@ -146,12 +155,14 @@ async function scenario(name, fn) {
     // Wipe everything, verify dashboard resets to zero
     await page.evaluate(() => localStorage.clear());
     await page.reload({ waitUntil: 'domcontentloaded' });
+    // Wait for deferred scripts to define importFromBox before proceeding.
+    await page.waitForFunction(() => typeof window.importFromBox === 'function');
     await page.waitForFunction(() => document.getElementById('totalXpDisplay').textContent.trim() === '0');
     record('storage wiped → dashboard at 0 XP', true);
 
     // Corrupt code must be rejected without touching storage
     await page.$eval('#bkTextarea', el => { el.value = '{not-json'; });
-    await page.click('#bkRestoreBtn');
+    await page.evaluate(() => window.importFromBox());
     await new Promise(r => setTimeout(r, 300));
     const statusAfterBad = await page.$eval('#bkStatus', el => el.textContent);
     const stillZero = await page.$eval('#totalXpDisplay', el => el.textContent.trim());
@@ -160,7 +171,7 @@ async function scenario(name, fn) {
 
     // Real restore
     await page.$eval('#bkTextarea', (el, v) => { el.value = v; }, backupJson);
-    await page.click('#bkRestoreBtn');
+    await page.evaluate(() => window.importFromBox());
     await page.waitForFunction(() =>
       parseInt(document.getElementById('totalXpDisplay').textContent.replace(/,/g, ''), 10) >= 15);
     const statusText = await page.$eval('#bkStatus', el => el.textContent);

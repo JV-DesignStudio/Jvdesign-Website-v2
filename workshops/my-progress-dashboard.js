@@ -1,0 +1,935 @@
+const SERIES = [
+  {
+    name: 'Scratch',
+    icon: '🐱',
+    color: '#ff7700',
+    tag: 'scratch',
+    seriesPage: 'my-first-scratch-game.html',
+    desc: 'Visual coding for beginners. Drag-and-drop block programming',
+    episodes: [
+      { key: 'jvds-scratch-catch-v2', name: 'Fruit Catch Game', url: 'scratch-catch-workshop.html', ep: 1, badge: '🍎' },
+      { key: 'jvds-scratch-platformer-v2', name: 'Platformer Game', url: 'scratch-platformer-workshop.html', ep: 2, badge: '🏃' },
+      { key: 'jvds-scratch-quiz-v2', name: 'Quiz Game', url: 'scratch-quiz-workshop.html', ep: 3, badge: '❓' },
+      { key: 'jvds-scratch-maze-v2', name: 'Maze Runner', url: 'scratch-maze-workshop.html', ep: 4, badge: '🏰' },
+      { key: 'jvds-scratch-clicker-v2', name: 'Idle Clicker', url: 'scratch-clicker-workshop.html', ep: 5, badge: '👆' },
+      { key: 'jvds-scratch-story-v2', name: 'Story Adventure', url: 'scratch-story-workshop.html', ep: 6, badge: '📖' }
+    ]
+  },
+  {
+    name: 'Roblox Studio',
+    icon: '🎮',
+    color: '#00b4ff',
+    tag: 'roblox',
+    seriesPage: 'my-first-roblox-studio-game.html',
+    desc: 'Build & publish real Roblox games with Lua scripting',
+    episodes: [
+      { key: 'jvds-roblox-obby-v2', name: 'Obby Course', url: 'roblox-obby-workshop.html', ep: 1, badge: '🏃' },
+      { key: 'jvds-roblox-tycoon-v2', name: 'Tycoon Game', url: 'roblox-tycoon-workshop.html', ep: 2, badge: '🏭' },
+      { key: 'jvds-roblox-simulator-v2', name: 'Pet Simulator', url: 'roblox-simulator-workshop.html', ep: 3, badge: '🐾' },
+      { key: 'jvds-roblox-battle-v2', name: 'Battle Royale', url: 'roblox-battle-workshop.html', ep: 4, badge: '⚔️' },
+      { key: 'jvds-roblox-horror-v2', name: 'Horror Maze', url: 'roblox-horror-workshop.html', ep: 5, badge: '👻' },
+      { key: 'jvds-roblox-adventure-v2', name: 'Island Quest RPG', url: 'roblox-adventure-workshop.html', ep: 6, badge: '🏝️' },
+      { key: 'jvds-roblox-pirate-v2', name: 'Pirate Adventure', url: 'roblox-pirate-workshop.html', ep: 7, badge: '🏴‍☠️' },
+      { key: 'jvds-roblox-creator-v2', name: 'Creator Journey', url: 'roblox-creator-journey.html', ep: 8, badge: '🎨' }
+    ]
+  },
+  {
+    name: 'Godot Engine',
+    icon: '🕹️',
+    color: '#06d6a0',
+    tag: 'godot',
+    seriesPage: 'my-first-video-game.html',
+    desc: 'Game development with GDScript. 2D games from scratch',
+    episodes: [
+      { key: 'jvds-godot-racing-v2', name: 'Zoom Zoom Racing', url: 'godot-racing-workshop.html', ep: 1, badge: '🏎️' },
+      { key: 'jvds-jump-jump-mario-v2', name: 'Jump Jump Platformer', url: 'jump-jump-mario-workshop.html', ep: 2, badge: '🍄' },
+      { key: 'jvds-nuclear-throne-v2', name: 'Bang Bang Shooter', url: 'nuclear-throne-guide.html', ep: 3, badge: '🔫' },
+      { key: 'jvds-fairy-survivors-v2', name: 'Fairy Survivors', url: 'fairy-survivors-guide.html', ep: 4, badge: '🧚' },
+      { key: 'jvds-barrel-blast-v2', name: 'Barrel Blast', url: 'barrel-blast-workshop.html', ep: 5, badge: '🛢️' },
+      { key: 'jvds-pixel-quest-v2', name: 'Pixel Quest RPG', url: 'pixel-quest-workshop.html', ep: 6, badge: '⚔️' },
+      { key: 'jvds-night-watch-v2', name: 'Night Watch Part 1', url: 'night-watch-workshop.html', ep: 7, badge: '🔦' },
+      { key: 'jvds-night-watch-p2-v2', name: 'Night Watch Part 2', url: 'night-watch-part2-workshop.html', ep: 8, badge: '🌙' },
+      { key: 'jvds-night-watch-p3-v2', name: 'Night Watch Part 3', url: 'night-watch-part3-workshop.html', ep: 9, badge: '🌅' }
+    ]
+  },
+  {
+    name: 'MUGEN',
+    icon: '⚔️',
+    color: '#f87171',
+    tag: 'mugen',
+    seriesPage: 'my-first-fighting-game.html',
+    desc: 'Build your own fighting game characters and stages. Create complete fighting games.',
+    episodes: [
+      { key: 'jvds-mugen-basics-v2', name: 'Fighter Basics', url: 'mugen-basics-workshop.html', ep: 1, badge: '🥊' },
+      { key: 'jvds-mugen-v2', name: 'Custom Fighter', url: 'mugen-workshop.html', ep: 2, badge: '🥋' },
+      { key: 'jvds-mugen-ai-v2', name: 'Fighter AI Programming', url: 'mugen-ai-workshop.html', ep: 3, badge: '🧠' },
+      { key: 'jvds-mugen-stage-v2', name: 'Custom Stage Design', url: 'add-your-own-stage.html', ep: 4, badge: '🎭' },
+      { key: 'jvds-mugen-game-v2', name: 'Complete Game Setup', url: 'mugen-game-setup-workshop.html', ep: 5, badge: '👑' }
+    ]
+  },
+  {
+    name: 'Unity',
+    icon: '🔷',
+    color: '#5bc0f8',
+    tag: 'unity',
+    seriesPage: 'my-first-unity-game.html',
+    desc: 'C# game development in Unity. Build 2D and 3D games from scratch.',
+    episodes: [
+      { key: 'jvds-unity-pong-v2', name: 'Pong Game', url: 'unity-pong-workshop.html', ep: 1, badge: '🏓' },
+      { key: 'jvds-unity-2d-platformer-v2', name: '2D Platformer', url: 'unity-2d-platformer.html', ep: 2, badge: '🏃' },
+      { key: 'jvds-unity-breakout-v2', name: 'Breakout Game', url: 'unity-breakout-workshop.html', ep: 3, badge: '🧱' },
+      { key: 'jvds-unity-top-down-v2', name: 'Top-Down Shooter', url: 'unity-top-down-shooter.html', ep: 4, badge: '🔫' },
+      { key: 'jvds-unity-3d-platformer-v2', name: '3D Platformer', url: 'unity-3d-platformer.html', ep: 5, badge: '🌍' },
+      { key: 'jvds-unity-action-rpg-v2', name: 'Action RPG', url: 'unity-action-rpg-workshop.html', ep: 6, badge: '⚔️' },
+      { key: 'jvds-unity-ui-menus-v2', name: 'UI & Menus', url: 'unity-ui-workshop.html', ep: 7, badge: '📋' },
+      { key: 'jvds-unity-multiplayer-v2', name: 'Multiplayer Basics', url: 'unity-multiplayer-workshop.html', ep: 8, badge: '🌐' }
+    ]
+  },
+  {
+    name: 'Unreal Engine',
+    icon: '🔷️',
+    color: '#60a5fa',
+    tag: 'unreal',
+    seriesPage: 'my-first-unreal-game.html',
+    desc: 'AAA game engine with Blueprints and C++. Learn professional game development.',
+    episodes: [
+      { key: 'jvds-unreal-basics-v2', name: 'Blueprint Basics', url: 'unreal-basics-workshop.html', ep: 1, badge: '📘' },
+      { key: 'jvds-unreal-bp-shooter-v2', name: 'Blueprint Shooter', url: 'unreal-blueprint-shooter.html', ep: 2, badge: '🎯' },
+      { key: 'jvds-unreal-clicker-v2', name: 'Blueprint Clicker', url: 'unreal-clicker-builder.html', ep: 3, badge: '👆' },
+      { key: 'jvds-unreal-2d-platformer-v2', name: '2D Platformer', url: 'unreal-2d-platformer.html', ep: 4, badge: '🎮' },
+      { key: 'jvds-unreal-fighter-v2', name: 'Fighting Game', url: 'unreal-fighter-workshop.html', ep: 5, badge: '🥋' },
+      { key: 'jvds-unreal-zombie-v2', name: 'Zombie Survivor', url: 'unreal-zombie-survivor.html', ep: 6, badge: '🧟' },
+      { key: 'jvds-unreal-top-down-v2', name: 'Top-Down Shooter (C++)', url: 'unreal-top-down-shooter.html', ep: 7, badge: '💻' },
+      { key: 'jvds-unreal-advanced-v2', name: 'Advanced Systems', url: 'unreal-advanced-workshop.html', ep: 8, badge: '⚡' },
+      { key: 'jvds-unreal-multiplayer-v2', name: 'Multiplayer Basics', url: 'unreal-multiplayer-workshop.html', ep: 9, badge: '🌐' }
+    ]
+  },
+  {
+    name: 'JavaScript',
+    icon: '🟨',
+    color: '#ffd166',
+    tag: 'javascript',
+    seriesPage: 'my-first-browser-game.html',
+    desc: 'Build browser games with vanilla JavaScript. No frameworks needed.',
+    episodes: [
+      { key: 'jvds-js-flappy-v2', name: 'Flappy Bird Clone', url: 'js-flappy-workshop.html', ep: 1, badge: '🐦' },
+      { key: 'jvds-js-memory-v2', name: 'Memory Match Game', url: 'js-memory-workshop.html', ep: 2, badge: '🧠' },
+      { key: 'jvds-js-breakout-v2', name: 'Breakout Game', url: 'js-breakout-workshop.html', ep: 3, badge: '🧱' },
+      { key: 'jvds-js-snake-v2', name: 'Snake Game', url: 'js-snake-workshop.html', ep: 4, badge: '🐍' },
+      { key: 'jvds-js-platformer-v2', name: 'Browser Platformer', url: 'js-platformer-builder.html', ep: 5, badge: '🌐' },
+      { key: 'jvds-js-platformer2-v2', name: 'Platformer Part 2', url: 'js-platformer-part2-workshop.html', ep: 6, badge: '🌲' }
+    ]
+  },
+  {
+    name: 'Python',
+    icon: '🐍',
+    color: '#06d6a0',
+    tag: 'python',
+    seriesPage: 'my-first-python-game.html',
+    desc: 'Build games with Python & Pygame. No experience needed.',
+    episodes: [
+      { key: 'jvds-python-catch-v2', name: 'Fruit Catch Game', url: 'python-catch-workshop.html', ep: 1, badge: '🍎' },
+      { key: 'jvds-python-platformer-v2', name: 'Simple Platformer', url: 'python-platformer-workshop.html', ep: 2, badge: '🏃' },
+      { key: 'jvds-python-dodge-v2', name: 'Dodge & Collect', url: 'python-dodge-workshop.html', ep: 3, badge: '🎯' },
+      { key: 'jvds-python-maze-v2', name: 'Maze Explorer', url: 'python-maze-workshop.html', ep: 4, badge: '🏰' },
+      { key: 'jvds-python-breakout-v2', name: 'Breakout Game', url: 'python-breakout-workshop.html', ep: 5, badge: '🧱' },
+      { key: 'jvds-python-breakout2-v2', name: 'Breakout Part 2', url: 'python-breakout-part2-workshop.html', ep: 6, badge: '⚡' },
+      { key: 'jvds-python-platformer2-v2', name: 'Platformer Part 2', url: 'python-platformer-part2-workshop.html', ep: 7, badge: '🌲' },
+      { key: 'jvds-python-game-v2', name: 'Dodge & Collect Builder', url: 'python-game-builder.html', ep: 8, badge: '🎯' }
+    ]
+  },
+  {
+    name: 'Java',
+    icon: '☕',
+    color: '#f59e0b',
+    tag: 'java',
+    seriesPage: 'my-first-java-game.html',
+    desc: 'Game development with Java. Start with the fundamentals.',
+    episodes: [
+      { key: 'jvds-java-platformer-v2', name: 'Simple Platformer', url: 'java-platformer-workshop.html', ep: 1, badge: '🏃' },
+      { key: 'jvds-java-breakout-v2', name: 'Brick Breaker', url: 'java-breakout-workshop.html', ep: 2, badge: '🧱' },
+      { key: 'jvds-java-space-v2', name: 'Space Shooter', url: 'java-space-workshop.html', ep: 3, badge: '👾' },
+      { key: 'jvds-java-pong-v2', name: 'Pong Classic', url: 'java-pong-workshop.html', ep: 4, badge: '🏓' },
+      { key: 'jvds-java-rpg-part1-v2', name: 'RPG Quest Part 1', url: 'java-rpg-part1-workshop.html', ep: 5, badge: '🗡️' },
+      { key: 'jvds-java-rpg-part2-v2', name: 'RPG Quest Part 2', url: 'java-rpg-part2-workshop.html', ep: 6, badge: '🏰' },
+      { key: 'jvds-java-rpg-part3-v2', name: 'RPG Quest Part 3', url: 'java-rpg-part3-workshop.html', ep: 7, badge: '👑' }
+    ]
+  },
+  {
+    name: 'C++',
+    icon: '⚙️',
+    color: '#a78bfa',
+    tag: 'cpp',
+    seriesPage: 'my-first-cpp-game.html',
+    desc: 'Game programming with C++ & SFML. Learn systems programming.',
+    episodes: [
+      { key: 'jvds-cpp-pong-v2', name: 'Pong Game', url: 'cpp-pong-workshop.html', ep: 1, badge: '🏓' },
+      { key: 'jvds-cpp-snake-v2', name: 'Snake Game', url: 'cpp-snake-workshop.html', ep: 2, badge: '🐍' },
+      { key: 'jvds-cpp-breakout-v2', name: 'Breakout Game', url: 'cpp-breakout-workshop.html', ep: 3, badge: '🧱' },
+      { key: 'jvds-cpp-platformer-v2', name: 'Simple Platformer', url: 'cpp-platformer-workshop.html', ep: 4, badge: '🏃' },
+      { key: 'jvds-cpp-platformer2-v2', name: 'Platformer Part 2', url: 'cpp-platformer-part2-workshop.html', ep: 5, badge: '🌲' },
+      { key: 'jvds-cpp-tower-part1-v2', name: 'Tower Defence Part 1', url: 'cpp-tower-part1-workshop.html', ep: 6, badge: '🏰' },
+      { key: 'jvds-cpp-tower-part2-v2', name: 'Tower Defence Part 2', url: 'cpp-tower-part2-workshop.html', ep: 7, badge: '⚔️' },
+      { key: 'jvds-cpp-tower-defence-v2', name: 'Tower Defence Builder', url: 'cpp-tower-defence-builder.html', ep: 8, badge: '🏰' }
+    ]
+  },
+  {
+    name: 'GameMaker (GML)',
+    icon: '🎯',
+    color: '#fb923c',
+    tag: 'gml',
+    seriesPage: 'my-first-gamemaker-game.html',
+    desc: 'Game creation with GameMaker and GML scripting. No experience needed.',
+    episodes: [
+      { key: 'jvds-gml-pong-v2', name: 'Pong Game', url: 'gml-pong-workshop.html', ep: 1, badge: '🏓' },
+      { key: 'jvds-gml-platformer-v2', name: 'Simple Platformer', url: 'gml-platformer-workshop.html', ep: 2, badge: '🏃' },
+      { key: 'jvds-gml-breakout-v2', name: 'Breakout Game', url: 'gml-breakout-workshop.html', ep: 3, badge: '🧱' },
+      { key: 'jvds-gml-shooter-v2', name: 'Space Shooter', url: 'gml_shooter_trainer_project.html', ep: 4, badge: '👾' },
+      { key: 'jvds-gml-rpg-v2', name: 'RPG Basics', url: 'gml-rpg-workshop.html', ep: 5, badge: '📖' }
+    ]
+  },
+  {
+    name: 'OpenRCT2',
+    icon: '🎢',
+    color: '#4ade80',
+    tag: 'openrct2',
+    seriesPage: '../pages/workshop.html',
+    desc: 'Modding RollerCoaster Tycoon with JavaScript & Python',
+    episodes: [
+      { key: 'jvds-openrct2-modding-v2', name: 'Python Modding', url: 'openrct2-modding-builder.html', ep: 1, badge: '🎡' },
+      { key: 'jvds-openrct2-swim-v2', name: 'Swim Rescue (JS)', url: 'openrct2-swim-rescue.html', ep: 2, badge: '🎈' }
+    ]
+  },
+  {
+    name: 'Blender',
+    icon: '🎨',
+    color: '#ff70b8',
+    tag: 'blender',
+    seriesPage: 'blender-world-workshop.html',
+    desc: '3D modelling, materials, lighting & animation. No experience needed.',
+    episodes: [
+      { key: 'jvds-blender-cube-v2', name: 'Simple Cube Scene', url: 'blender-cube-workshop.html', ep: 1, badge: '📦' },
+      { key: 'jvds-blender-character-v2', name: 'Character Basics', url: 'blender-character-workshop.html', ep: 2, badge: '🧑' },
+      { key: 'jvds-blender-rigging-v2', name: 'Rigging & Bones', url: 'blender-rigging-workshop.html', ep: 3, badge: '🦴' },
+      { key: 'jvds-blender-animation-v2', name: 'Character Animation', url: 'blender-animation-workshop.html', ep: 4, badge: '🎬' },
+      { key: 'jvds-blender-materials-v2', name: 'Materials & Textures', url: 'blender-materials-workshop.html', ep: 5, badge: '🎨' },
+      { key: 'jvds-blender-lighting-v2', name: 'Lighting & Effects', url: 'blender-lighting-workshop.html', ep: 6, badge: '💡' },
+      { key: 'jvds-blender-scene-v2', name: 'Complete Scene', url: 'blender-scene-workshop.html', ep: 7, badge: '🌍' },
+      { key: 'jvds-blender-v2', name: 'Blender Beginners Course', url: 'blender-workshop.html', ep: 8, badge: '🐵' }
+    ]
+  },
+  {
+    name: 'TinkerCAD',
+    icon: '🔧',
+    color: '#f59e0b',
+    tag: 'tinkercad',
+    seriesPage: 'my-first-3d-prints-fidget-toy.html',
+    desc: '3D design and printing for beginners',
+    episodes: [
+      { key: 'jvds-3d-print-ep1-v2', name: 'Simple Spinner', url: 'tinkercad-ep1-spinner.html', ep: 1, badge: '🌀' },
+      { key: 'jvds-3d-print-ep2-v2', name: 'Pop-It Fidget', url: 'tinkercad-ep2-popit.html', ep: 2, badge: '🫧' },
+      { key: 'jvds-3d-print-ep3-v2', name: 'Magnetic Blocks', url: 'tinkercad-ep3-blocks.html', ep: 3, badge: '🧲' },
+      { key: 'jvds-3d-print-ep4-v2', name: 'Pattern Pop-It', url: 'tinkercad-ep4-pattern.html', ep: 4, badge: '✨' },
+      { key: 'jvds-3d-print-ep5-v2', name: 'Phone Stand', url: 'tinkercad-ep5-phonestand.html', ep: 5, badge: '📱' },
+      { key: 'jvds-3d-print-ep6-v2', name: 'Marble Run', url: 'tinkercad-ep6-marblerun.html', ep: 6, badge: '🎯' },
+      { key: 'jvds-3d-print-ep7-v2', name: 'Custom Keychain', url: 'tinkercad-ep7-keychain.html', ep: 7, badge: '🏷️' },
+      { key: 'jvds-3d-print-ep8-v2', name: 'Geometric Shapes', url: 'tinkercad-ep8-shapes.html', ep: 8, badge: '🔷' }
+    ]
+  },
+  {
+    name: 'Minecraft Modding',
+    icon: '⛏️',
+    color: '#2d5a1b',
+    tag: 'minecraft',
+    seriesPage: 'my-first-minecraft-mod.html',
+    desc: 'Create custom items, blocks, mobs, and tools for Minecraft Java Edition',
+    episodes: [
+      { key: 'jvds-minecraft-first-item-v2', name: 'First Item Mod', url: 'minecraft-first-item-mod.html', ep: 1, badge: '💎' },
+      { key: 'jvds-minecraft-custom-block-v2', name: 'Custom Block', url: 'minecraft-custom-block-mod.html', ep: 2, badge: '🪨' },
+      { key: 'jvds-minecraft-custom-food-v2', name: 'Custom Food', url: 'minecraft-custom-food-mod.html', ep: 3, badge: '🍎' },
+      { key: 'jvds-minecraft-custom-tool-v2', name: 'Custom Tool', url: 'minecraft-custom-tool-mod.html', ep: 4, badge: '⚒️' },
+      { key: 'jvds-minecraft-custom-mob-v2', name: 'Custom Mob', url: 'minecraft-custom-mob-mod.html', ep: 5, badge: '🐲' },
+      { key: 'jvds-minecraft-lucky-v2', name: 'Lucky Block', url: 'minecraft-lucky-mod.html', ep: 6, badge: '🎰' }
+    ]
+  },
+  {
+    name: 'More Godot',
+    icon: '🕹️',
+    color: '#06d6a0',
+    tag: 'godot-extra',
+    seriesPage: '../pages/workshop.html',
+    desc: 'Standalone Godot projects beyond the main series',
+    episodes: [
+      { key: 'jvds-godot-gdscript-v2', name: 'GDScript Essentials', url: 'godot-gdscript-essentials.html', ep: 0, badge: '📘' },
+      { key: 'jvds-godot-tutorial-v2', name: 'How To Godot 4', url: 'godot_tutorial.html', ep: 1, badge: '📘' },
+      { key: 'jvds-godot-racing2-v2', name: 'Racing Bonus: Loops & Explosions', url: 'godot-racing-workshop-2.html', ep: 2, badge: '🏁' },
+      { key: 'jvds-space-invaders-v2', name: 'Space Invaders', url: 'space_invaders_tutorial.html', ep: 3, badge: '👾' },
+      { key: 'jvds-race-builder-v2', name: 'Race Builder', url: 'race-builder.html', ep: 4, badge: '🏎️' },
+      { key: 'jvds-racing-blueprint-v2', name: 'Racing Blueprint', url: 'racing-blueprint.html', ep: 5, badge: '📐' },
+      { key: 'jvds-fnaf-blueprint-v2', name: 'FNAF Blueprint', url: 'fnaf-blueprint.html', ep: 6, badge: '🐻' },
+      { key: 'jvds-nuclear-blueprint-v2', name: 'Nuclear Roguelite', url: 'nuclear-blueprint.html', ep: 7, badge: '☢️' },
+      { key: 'jvds-godot-gatekeeper3d-p1-v2', name: 'Who Goes There? Part 1', url: 'godot-gatekeeper-3d-part1.html', ep: 8, badge: '🛡️' },
+      { key: 'jvds-godot-gatekeeper3d-p2-v2', name: 'Who Goes There? Part 2', url: 'godot-gatekeeper-3d-part2.html', ep: 9, badge: '🏆' }
+    ]
+  },
+  {
+    name: 'Builders & Blueprints',
+    icon: '🔨️',
+    color: '#ffd166',
+    tag: 'builders',
+    seriesPage: '../pages/workshop.html',
+    desc: 'Standalone builder workshops. Design, tweak and play, then pass the knowledge check',
+    episodes: [
+      { key: 'jvds-castle-siege-v2', name: 'Castle Siege Blueprint', url: 'castle-siege-blueprint.html', ep: 1, badge: '🏰' },
+      { key: 'jvds-diablo-blueprint-v2', name: 'Hellfire Descent ARPG', url: 'diablo-blueprint.html', ep: 2, badge: '🔥' },
+      { key: 'jvds-pirate-cannon-v2', name: 'Pirate Cannon Forge', url: 'pirate-cannon-builder.html', ep: 3, badge: '💣' },
+      { key: 'jvds-pirate-ship-v2', name: 'Pirate Ship Shipyard', url: 'pirate-ship-builder.html', ep: 4, badge: '🏴‍☠️' },
+      { key: 'jvds-steampunk-airship-v2', name: 'Steampunk Airship', url: 'steampunk-airship-builder.html', ep: 5, badge: '🎈' },
+      { key: 'jvds-robot-builder-v2', name: 'Robot Builder', url: 'robot-builder.html', ep: 6, badge: '🤖' },
+      { key: 'jvds-rocket-builder-v2', name: 'Rocket Builder', url: 'rocket-builder.html', ep: 7, badge: '🚀' },
+      { key: 'jvds-scifi-runner-v2', name: 'Sci-Fi Endless Runner', url: 'sci-fi-runner-builder.html', ep: 8, badge: '👾' }
+    ]
+  },
+  {
+    name: 'Stardew World Workshop',
+    icon: '🧑‍🌾',
+    color: '#3f7d3a',
+    tag: 'stardew',
+    seriesPage: 'stardew-world-workshop.html',
+    desc: 'Build, decorate and import your own custom Stardew Valley world with Tiled and Content Patcher',
+    episodes: [
+      { key: 'jvds-stardew-world-ep1-v2', name: 'Get Set Up', url: 'stardew-world-ep1-setup.html', ep: 1, badge: '🌱' },
+      { key: 'jvds-stardew-world-ep2-v2', name: 'Inside a Mod', url: 'stardew-world-ep2-mods-folder.html', ep: 2, badge: '📦' },
+      { key: 'jvds-stardew-world-ep3-v2', name: 'Your First Change', url: 'stardew-world-ep3-first-tile.html', ep: 3, badge: '🧱' },
+      { key: 'jvds-stardew-world-ep4-v2', name: 'Layers Explained', url: 'stardew-world-ep4-layers.html', ep: 4, badge: '🗂️' },
+      { key: 'jvds-stardew-world-ep5-v2', name: 'Tile Properties', url: 'stardew-world-ep5-tile-properties.html', ep: 5, badge: '🚶' },
+      { key: 'jvds-stardew-world-ep6-v2', name: 'Build & Decorate', url: 'stardew-world-ep6-build-and-decorate.html', ep: 6, badge: '🌳' },
+      { key: 'jvds-stardew-world-ep7-v2', name: 'Warps & Doors', url: 'stardew-world-ep7-warps.html', ep: 7, badge: '🚪' },
+      { key: 'jvds-stardew-world-ep8-v2', name: 'A Brand-New Area', url: 'stardew-world-ep8-new-area.html', ep: 8, badge: '🏝️' },
+      { key: 'jvds-stardew-world-ep9-v2', name: 'Package Your Mod', url: 'stardew-world-ep9-package-mod.html', ep: 9, badge: '🗜️' },
+      { key: 'jvds-stardew-world-ep10-v2', name: 'Fix It & Finish', url: 'stardew-world-ep10-troubleshoot.html', ep: 10, badge: '🧑‍🌾' },
+      { key: 'jvds-stardew-world-ep11-v2', name: 'Play & Share Your World', url: 'stardew-world-ep11-play-share.html', ep: 11, badge: '🏆' },
+      { key: 'jvds-stardew-world-ep12-v2', name: 'Design Your World', url: 'stardew-world-ep12-design.html', ep: 12, badge: '🎨' }
+    ]
+  },
+  {
+    name: 'Terraria World Workshop',
+    icon: '🌳',
+    color: '#2e7d32',
+    tag: 'terraria',
+    seriesPage: 'terraria-world-workshop.html',
+    desc: 'Build, shape and share your own Terraria world with TEdit',
+    episodes: [
+      { key: 'jvds-terraria-world-ep1-v2', name: 'Get Set Up', url: 'terraria-world-ep1-setup.html', ep: 1, badge: '🌳' },
+      { key: 'jvds-terraria-world-ep2-v2', name: 'Inside a World File', url: 'terraria-world-ep2-world-file.html', ep: 2, badge: '🗺️' },
+      { key: 'jvds-terraria-world-ep3-v2', name: 'Your First Change', url: 'terraria-world-ep3-first-change.html', ep: 3, badge: '⛏️' },
+      { key: 'jvds-terraria-world-ep4-v2', name: 'Walls & Layers', url: 'terraria-world-ep4-layers.html', ep: 4, badge: '🧱' },
+      { key: 'jvds-terraria-world-ep5-v2', name: 'Biomes & Rules', url: 'terraria-world-ep5-biomes.html', ep: 5, badge: '🌲' },
+      { key: 'jvds-terraria-world-ep6-v2', name: 'Build & Decorate', url: 'terraria-world-ep6-build-decorate.html', ep: 6, badge: '🏗️' },
+      { key: 'jvds-terraria-world-ep7-v2', name: 'Tunnels & Traversal', url: 'terraria-world-ep7-tunnels.html', ep: 7, badge: '🕳️' },
+      { key: 'jvds-terraria-world-ep8-v2', name: 'A Brand-New Area', url: 'terraria-world-ep8-new-area.html', ep: 8, badge: '🌟' },
+      { key: 'jvds-terraria-world-ep9-v2', name: 'Package & Share Your World', url: 'terraria-world-ep9-package-share.html', ep: 9, badge: '📦' },
+      { key: 'jvds-terraria-world-ep10-v2', name: 'Fix It', url: 'terraria-world-ep10-fix-it.html', ep: 10, badge: '🔧' },
+      { key: 'jvds-terraria-world-ep11-v2', name: 'Play & Share', url: 'terraria-world-ep11-play-share.html', ep: 11, badge: '🏆' },
+      { key: 'jvds-terraria-world-ep12-v2', name: 'Design Your World', url: 'terraria-world-ep12-design.html', ep: 12, badge: '🎨' }
+    ]
+  },
+  {
+    name: 'Minecraft World Workshop',
+    icon: '⛏️',
+    color: '#4f8a2c',
+    tag: 'minecraft-world',
+    seriesPage: 'minecraft-world-workshop.html',
+    desc: 'Build your own Minecraft datapack, from a first recipe to tags and advancements, with no install needed',
+    episodes: [
+      { key: 'jvds-minecraft-world-ep1-setup-v2', name: 'What a Datapack Is', url: 'minecraft-world-ep1-setup.html', ep: 1, badge: '📦' },
+      { key: 'jvds-minecraft-world-ep2-first-recipe-v2', name: 'Your First Recipe', url: 'minecraft-world-ep2-first-recipe.html', ep: 2, badge: '🧪' },
+      { key: 'jvds-minecraft-world-ep3-namespace-v2', name: 'The data Folder', url: 'minecraft-world-ep3-namespace.html', ep: 3, badge: '🗂️' },
+      { key: 'jvds-minecraft-world-ep4-functions-v2', name: 'Functions', url: 'minecraft-world-ep4-functions.html', ep: 4, badge: '📜' },
+      { key: 'jvds-minecraft-world-ep5-loot-v2', name: 'Loot Tables', url: 'minecraft-world-ep5-loot.html', ep: 5, badge: '🎁' },
+      { key: 'jvds-minecraft-world-ep6-tags-advancements-v2', name: 'Tags & Advancements', url: 'minecraft-world-ep6-tags-advancements.html', ep: 6, badge: '🏷️' },
+      { key: 'jvds-minecraft-world-ep7-debug-v2', name: 'Fix the Log', url: 'minecraft-world-ep7-debug.html', ep: 7, badge: '🔍' },
+      { key: 'jvds-minecraft-world-ep8-design-share-v2', name: 'Design and Share', url: 'minecraft-world-ep8-design-share.html', ep: 8, badge: '🚀' }
+    ]
+  },
+  {
+    name: 'OpenRCT2 World Workshop',
+    icon: '🎢',
+    color: '#d94f3d',
+    tag: 'openrct2-world',
+    seriesPage: 'openrct2-world-workshop.html',
+    desc: 'Mod your own theme park: write real OpenRCT2 plugins in JavaScript, from hello world to a guest rescue tool',
+    episodes: [
+      { key: 'jvds-openrct2-world-ep1-setup-v2', name: 'Get Set Up', url: 'openrct2-world-ep1-setup.html', ep: 1, badge: '🎢' },
+      { key: 'jvds-openrct2-world-ep2-first-plugin-v2', name: 'Your First Plugin', url: 'openrct2-world-ep2-first-plugin.html', ep: 2, badge: '📜' },
+      { key: 'jvds-openrct2-world-ep3-events-v2', name: 'Events and Messages', url: 'openrct2-world-ep3-events.html', ep: 3, badge: '🔔' },
+      { key: 'jvds-openrct2-world-ep4-read-the-park-v2', name: 'Money, Guests & Rides', url: 'openrct2-world-ep4-read-the-park.html', ep: 4, badge: '📊' },
+      { key: 'jvds-openrct2-world-ep5-guests-v2', name: 'Working with Guests', url: 'openrct2-world-ep5-guests.html', ep: 5, badge: '🧍' },
+      { key: 'jvds-openrct2-world-ep6-swim-rescue-v2', name: 'Build Swim Rescue', url: 'openrct2-world-ep6-swim-rescue.html', ep: 6, badge: '🛟' },
+      { key: 'jvds-openrct2-world-ep7-test-debug-v2', name: 'Test and Debug', url: 'openrct2-world-ep7-test-debug.html', ep: 7, badge: '🔍' },
+      { key: 'jvds-openrct2-world-ep8-design-share-v2', name: 'Design and Share', url: 'openrct2-world-ep8-design-share.html', ep: 8, badge: '🚀' }
+    ]
+  },
+  {
+    name: 'MUGEN World Workshop',
+    icon: '🥊',
+    color: '#d32f2f',
+    tag: 'mugen-world',
+    seriesPage: 'mugen-world-workshop.html',
+    desc: 'Build a whole 2D fighting game: a fighter, a stage, AI and the full game, all in MUGEN',
+    episodes: [
+      { key: 'jvds-mugen-world-ep1-setup-v2', name: 'Get Set Up', url: 'mugen-world-ep1-setup.html', ep: 1, badge: '🥊' },
+      { key: 'jvds-mugen-world-ep2-fighter-files-v2', name: 'What Makes a Fighter', url: 'mugen-world-ep2-fighter-files.html', ep: 2, badge: '📄' },
+      { key: 'jvds-mugen-world-ep3-sprites-palette-v2', name: 'Sprites and Palette', url: 'mugen-world-ep3-sprites-palette.html', ep: 3, badge: '🎨' },
+      { key: 'jvds-mugen-world-ep4-animations-v2', name: 'Animations', url: 'mugen-world-ep4-animations.html', ep: 4, badge: '🏃' },
+      { key: 'jvds-mugen-world-ep5-commands-v2', name: 'Commands', url: 'mugen-world-ep5-commands.html', ep: 5, badge: '🎮' },
+      { key: 'jvds-mugen-world-ep6-states-v2', name: 'States and Constants', url: 'mugen-world-ep6-states.html', ep: 6, badge: '🧠' },
+      { key: 'jvds-mugen-world-ep7-hitboxes-v2', name: 'Hitboxes', url: 'mugen-world-ep7-hitboxes.html', ep: 7, badge: '🎯' },
+      { key: 'jvds-mugen-world-ep8-stage-v2', name: 'Make a Stage', url: 'mugen-world-ep8-stage.html', ep: 8, badge: '🏙️' },
+      { key: 'jvds-mugen-world-ep9-ai-v2', name: 'Teach It AI', url: 'mugen-world-ep9-ai.html', ep: 9, badge: '🤖' },
+      { key: 'jvds-mugen-world-ep10-game-v2', name: 'Build the Whole Game', url: 'mugen-world-ep10-game.html', ep: 10, badge: '🕹️' }
+    ]
+  }
+];
+
+/* Series lengths are computed so badge requirements always match the SERIES list above */
+const SERIES_LEN = {};
+SERIES.forEach(s => { SERIES_LEN[s.tag] = s.episodes.length; });
+const GODOT_TOTAL = (SERIES_LEN['godot'] || 0) + (SERIES_LEN['godot-extra'] || 0);
+
+/* Custom-art opt-in registries. Emoji render by default (no network requests).
+   To use custom art, drop the PNG in the site root and flip the matching entry to true:
+     ART_BADGES['first-game'] = true;   ->  loads ../badge-first-game.png
+     ART_SERIES['scratch']    = true;   ->  loads ../logo-scratch.png
+     ART_EP['badge-ep-scratch-catch'] = true;  ->  loads ../badge-ep-scratch-catch.png */
+const ART_BADGES = {};
+const ART_SERIES = {};
+const ART_EP = {};
+
+const BADGES = [
+  { id: 'first-game', icon: '🎮', name: 'First Game', desc: 'Complete your first workshop', check: d => d.completed >= 1 },
+  { id: 'quiz-master', icon: '🧠', name: 'Quiz Master', desc: 'Get 90%+ accuracy in any workshop', check: d => d.anyHighAccuracy },
+  { id: 'streak-5', icon: '🔥', name: 'On Fire', desc: 'Get a 5+ answer streak', check: d => d.bestStreak >= 5 },
+  { id: 'streak-10', icon: '💥', name: 'Unstoppable', desc: 'Get a 10+ answer streak', check: d => d.bestStreak >= 10 },
+  { id: 'level-5', icon: '⭐', name: 'Rising Star', desc: 'Reach Level 5', check: d => d.level >= 5 },
+  { id: 'level-10', icon: '🌟', name: 'Superstar', desc: 'Reach Level 10', check: d => d.level >= 10 },
+  { id: 'scratch-complete', icon: '🐱', name: 'Scratch Pro', desc: 'Complete all ' + SERIES_LEN.scratch + ' Scratch workshops', check: d => d.scratchDone >= SERIES_LEN.scratch },
+  { id: 'roblox-complete', icon: '🎮', name: 'Roblox Pro', desc: 'Complete all ' + SERIES_LEN.roblox + ' Roblox workshops', check: d => d.robloxDone >= SERIES_LEN.roblox },
+  { id: 'godot-complete', icon: '🕹️', name: 'Godot Pro', desc: 'Complete all ' + GODOT_TOTAL + ' Godot workshops', check: d => d.godotDone >= GODOT_TOTAL },
+  { id: 'mugen-complete', icon: '⚔️', name: 'Fighter Master', desc: 'Complete all ' + SERIES_LEN.mugen + ' MUGEN workshops', check: d => d.mugenDone >= SERIES_LEN.mugen },
+  { id: 'unity-complete', icon: '🔷', name: 'Unity Master', desc: 'Complete all ' + SERIES_LEN.unity + ' Unity workshops', check: d => d.unityDone >= SERIES_LEN.unity },
+  { id: 'unreal-complete', icon: '🔷️', name: 'Unreal Master', desc: 'Complete all ' + SERIES_LEN.unreal + ' Unreal workshops', check: d => d.unrealDone >= SERIES_LEN.unreal },
+  { id: 'gml-complete', icon: '🎯', name: 'GameMaker Master', desc: 'Complete all ' + SERIES_LEN.gml + ' GameMaker workshops', check: d => d.gmlDone >= SERIES_LEN.gml },
+  { id: 'python-complete', icon: '🐍', name: 'Python Master', desc: 'Complete all ' + SERIES_LEN.python + ' Python workshops', check: d => d.pythonDone >= SERIES_LEN.python },
+  { id: 'java-complete', icon: '☕', name: 'Java Master', desc: 'Complete all ' + SERIES_LEN.java + ' Java workshops', check: d => d.javaDone >= SERIES_LEN.java },
+  { id: 'javascript-complete', icon: '🟨', name: 'JavaScript Master', desc: 'Complete all ' + SERIES_LEN.javascript + ' JavaScript workshops', check: d => d.javascriptDone >= SERIES_LEN.javascript },
+  { id: 'cpp-complete', icon: '⚙️', name: 'C++ Master', desc: 'Complete all ' + SERIES_LEN.cpp + ' C++ workshops', check: d => d.cppDone >= SERIES_LEN.cpp },
+  { id: 'blender-complete', icon: '🎨', name: '3D Artist Pro', desc: 'Complete all ' + SERIES_LEN.blender + ' Blender workshops', check: d => d.blenderDone >= SERIES_LEN.blender },
+  { id: 'builders-complete', icon: '🔨️', name: 'Master Builder', desc: 'Complete all ' + SERIES_LEN.builders + ' Builder workshops', check: d => d.buildersDone >= SERIES_LEN.builders },
+  { id: 'multi-tool', icon: '🔧', name: 'Multi-Tool', desc: 'Complete workshops in 3+ engines', check: d => d.enginesUsed >= 3 },
+  { id: 'polyglot', icon: '🌍', name: 'Polyglot', desc: 'Complete workshops in 5+ engines', check: d => d.enginesUsed >= 5 },
+  { id: 'completionist', icon: '👑', name: 'Completionist', desc: 'Complete every workshop', check: d => d.completed >= SERIES.reduce((n, s) => n + s.episodes.length, 0) }
+];
+
+const XP_PER_LEVEL = 100;
+
+function getData(key) {
+  try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch(e) { return null; }
+}
+
+function isComplete(data) {
+  if (!data || !data.completed || data.completed.length === 0) return false;
+  if (!data.total) return false;
+  return data.completed.length >= data.total;
+}
+
+function getEpStatus(data) {
+  if (!data) return 'todo';
+  if (isComplete(data)) return 'done';
+  if (data.completed && data.completed.length > 0) return 'progress';
+  if (data.xp && data.xp > 0) return 'progress';
+  return 'todo';
+}
+
+function buildDashboard() {
+  let totalXp = 0, bestStreak = 0, totalQuizzes = 0, totalCorrect = 0;
+  let anyHighAccuracy = false;
+  const tagDone = {};
+
+  SERIES.forEach(series => {
+    if (!tagDone[series.tag]) tagDone[series.tag] = 0;
+    series.episodes.forEach(ep => {
+      const d = getData(ep.key);
+      const status = getEpStatus(d);
+      if (d) {
+        totalXp += d.xp || 0;
+        if (d.bestStreak && d.bestStreak > bestStreak) bestStreak = d.bestStreak;
+        totalQuizzes += d.totalQuizzes || 0;
+        totalCorrect += d.correctFirst || 0;
+        if (d.totalQuizzes > 0 && (d.correctFirst / d.totalQuizzes) >= 0.9) anyHighAccuracy = true;
+      }
+      if (status === 'done') {
+        tagDone[series.tag]++;
+      }
+    });
+  });
+
+  const enginesUsed = Object.values(tagDone).filter(n => n > 0).length;
+  const level = Math.floor(totalXp / XP_PER_LEVEL) + 1;
+  const xpInLevel = totalXp % XP_PER_LEVEL;
+
+  // ── Unified ledgers: the player profile is the single source ──
+  // Workshop XP (scanned from progress keys) + game XP (jvds_game_* states)
+  // + bonus XP (challenges & tools), and the workshops-done count from the
+  // reconciled completedWorkshops array (A791). Falls back to the
+  // workshop-only sums if player-profile.js failed to load.
+  let shownXp = totalXp, shownLevel = level, gameBonusXp = 0;
+  // Workshops-done headline reads the single profile ledger when available;
+  // the SERIES sum below is only the degraded fallback if it failed to load.
+  let shownCompleted = Object.values(tagDone).reduce((n, v) => n + v, 0);
+  if (typeof playerProfile !== 'undefined' && playerProfile.getStats) {
+    try {
+      const ps = playerProfile.getStats();
+      shownXp = ps.totalXP;
+      shownLevel = ps.level;
+      shownCompleted = ps.workshopsCompleted;
+      gameBonusXp = (ps.gameXP || 0) + (ps.bonusXP || 0);
+    } catch (e) { /* keep workshop-only totals */ }
+  }
+  const accuracy = totalQuizzes > 0 ? Math.round(totalCorrect / totalQuizzes * 100) : 0;
+
+  document.getElementById('totalXpDisplay').textContent = shownXp.toLocaleString();
+  document.getElementById('globalLevel').textContent = shownLevel;
+  document.getElementById('completedCount').textContent = shownCompleted;
+  document.getElementById('globalStreak').textContent = bestStreak;
+  document.getElementById('globalAccuracy').textContent = accuracy + '%';
+  document.getElementById('xpTotalFill').style.width = ((shownXp % XP_PER_LEVEL) / XP_PER_LEVEL * 100) + '%';
+  document.getElementById('xpLevelLabel').textContent = (shownXp % XP_PER_LEVEL) + ' / ' + XP_PER_LEVEL + ' XP to Level ' + (shownLevel + 1);
+  const srcNote = document.getElementById('xpSourceNote');
+  if (srcNote) srcNote.textContent = gameBonusXp > 0 ? ('includes ' + gameBonusXp.toLocaleString() + ' XP from games, tools & challenges') : '';
+
+  // Badges
+  const badgeData = {
+    completed: shownCompleted, bestStreak, level: shownLevel, anyHighAccuracy, enginesUsed,
+    scratchDone: tagDone.scratch || 0, robloxDone: tagDone.roblox || 0,
+    godotDone: (tagDone.godot || 0) + (tagDone['godot-extra'] || 0),
+    mugenDone: tagDone.mugen || 0, unityDone: tagDone.unity || 0,
+    unrealDone: tagDone.unreal || 0, pythonDone: tagDone.python || 0, javaDone: tagDone.java || 0,
+    javascriptDone: tagDone.javascript || 0, cppDone: tagDone.cpp || 0, blenderDone: tagDone.blender || 0,
+    gmlDone: tagDone.gml || 0, buildersDone: tagDone.builders || 0
+  };
+  const grid = document.getElementById('badgesGrid');
+  grid.innerHTML = '';
+  BADGES.forEach(b => {
+    const earned = b.check(badgeData);
+    // Render the emoji directly. To use custom art, add ../badge-<id>.png and set ART_BADGES[id]=true.
+    const iconHtml = (ART_BADGES[b.id])
+      ? '<img loading="lazy" decoding="async" src="../badge-' + b.id + '.png" alt="' + b.name + '" style="width:40px;height:40px;object-fit:contain;">'
+      : '<span style="font-size:2rem">' + b.icon + '</span>';
+    grid.innerHTML += '<div class="badge-card ' + (earned ? 'earned' : 'locked') + '"><div class="badge-icon">' + iconHtml + '</div><div class="badge-name">' + b.name + '</div><div class="badge-desc">' + b.desc + '</div></div>';
+  });
+
+  // Series, render into categorised containers
+  const beginnerTags = ['scratch','roblox','godot'];
+  const engineTags = ['unity','unreal','mugen','godot-extra'];
+  const beginnerContainer = document.getElementById('beginnerContainer');
+  const engineContainer = document.getElementById('engineContainer');
+  const toolContainer = document.getElementById('toolContainer');
+  beginnerContainer.innerHTML = ''; engineContainer.innerHTML = ''; toolContainer.innerHTML = '';
+  SERIES.forEach(series => {
+    const container = beginnerTags.includes(series.tag) ? beginnerContainer : engineTags.includes(series.tag) ? engineContainer : toolContainer;
+    const eps = series.episodes;
+    const doneCount = eps.filter(ep => getEpStatus(getData(ep.key)) === 'done').length;
+    let html = '<div class="series-section">';
+    const seriesIconHtml = (ART_SERIES[series.tag])
+      ? '<img loading="lazy" decoding="async" src="../logo-' + series.tag + '.png" alt="' + series.name + '" style="width:24px;height:24px;object-fit:contain;vertical-align:-4px;">'
+      : '<span>' + series.icon + '</span>';
+    const titleInner = '<span class="st-icon">' + seriesIconHtml + '</span> ' + series.name;
+    html += series.seriesPage
+      ? '<a href="' + series.seriesPage + '" class="series-title" title="View the ' + series.name + ' series">' + titleInner + '<span class="st-go">View series →</span></a>'
+      : '<div class="series-title">' + titleInner + '</div>';
+    if (series.desc) html += '<div style="font-size:.82rem;color:rgba(232,234,242,.4);margin:-8px 0 12px;padding-left:2px">' + series.desc + '</div>';
+    html += '<div class="series-progress"><div class="series-bar"><div class="series-fill" style="width:' + (doneCount / eps.length * 100) + '%;background:' + series.color + '"></div></div><span class="series-count">' + doneCount + ' / ' + eps.length + '</span></div>';
+    html += '<div class="ep-grid">';
+    eps.forEach(ep => {
+      const d = getData(ep.key);
+      const status = getEpStatus(d);
+      const xp = d ? (d.xp || 0) : 0;
+      const statusClass = status === 'done' ? 'ep-status-done' : status === 'progress' ? 'ep-status-progress' : 'ep-status-todo';
+      const statusText = status === 'done' ? '✓ Done' : status === 'progress' ? 'In Progress' : 'Not Started';
+      const numClass = status === 'done' ? 'ep-num-done' : status === 'progress' ? 'ep-num-progress' : 'ep-num-todo';
+      const stepsCompleted = d && d.completed ? d.completed.length : 0;
+      const stepsTotal = d && d.total ? d.total : 0;
+      const stepsPct = stepsTotal > 0 ? Math.round(stepsCompleted / stepsTotal * 100) : 0;
+      html += '<a href="' + ep.url + '" class="ep-card ' + (status === 'done' ? 'done' : '') + '">';
+      const epImgName = ep.key.replace('jvds-','badge-ep-').replace(/-v2$/,'');
+      const epBadgeHtml = (ART_EP[epImgName])
+        ? '<img loading="lazy" decoding="async" src="../' + epImgName + '.png" alt="' + ep.name + '" style="width:28px;height:28px;object-fit:contain;">'
+        : '<span>' + (ep.badge || ep.ep) + '</span>';
+      html += '<div class="ep-num ' + numClass + '">' + epBadgeHtml + '</div>';
+      html += '<div class="ep-info"><div class="ep-name">' + ep.name + '</div>';
+      if (status === 'progress' && stepsTotal > 0) {
+        html += '<div class="ep-xp"><strong>' + xp + ' XP</strong> · ' + stepsCompleted + ' / ' + stepsTotal + ' steps</div>';
+        html += '<div class="ep-progress-bar"><div class="ep-progress-fill" style="width:' + stepsPct + '%"></div></div>';
+      } else {
+        html += '<div class="ep-xp">' + (xp > 0 ? '<strong>' + xp + ' XP</strong>' : 'No XP yet') + '</div>';
+      }
+      html += '</div>';
+      html += '<span class="ep-status ' + statusClass + '">' + statusText + '</span>';
+      if (status === 'done') html += '<button class="ep-cert-btn" data-action="showCert" data-arg="' + ep.key + '" data-arg2="' + ep.name.replace(/"/g, '&quot;') + '" data-arg3="' + ep.url + '" data-stop>🏆</button>';
+      html += '</a>';
+    });
+    html += '</div></div>';
+    container.innerHTML += html;
+  });
+
+  if (shownCompleted === 0 && totalXp === 0) {
+    beginnerContainer.innerHTML += '<div class="no-progress">No progress yet! <a href="../pages/workshop.html">Start a workshop</a> and your XP will show up here.</div>';
+  }
+
+  // CONTINUE WHERE YOU LEFT OFF
+  let bestContinue = null;
+  SERIES.forEach(series => {
+    series.episodes.forEach(ep => {
+      const d = getData(ep.key);
+      if (!d) return;
+      const status = getEpStatus(d);
+      if (status === 'progress') {
+        const stepsCompleted = d.completed ? d.completed.length : 0;
+        const total = d.total || 0;
+        const xpVal = d.xp || 0;
+        if (!bestContinue || xpVal > bestContinue.xp) {
+          bestContinue = { name: ep.name, url: ep.url, series: series.name, icon: series.icon, stepsCompleted, total, xp: xpVal };
+        }
+      }
+    });
+  });
+  const contSection = document.getElementById('continueSection');
+  if (bestContinue) {
+    contSection.style.display = 'block';
+    document.getElementById('continueIcon').textContent = bestContinue.icon;
+    document.getElementById('continueTitle').textContent = bestContinue.name;
+    document.getElementById('continueDetail').textContent = bestContinue.series + ' · ' + (bestContinue.total > 0 ? bestContinue.stepsCompleted + ' / ' + bestContinue.total + ' steps done' : bestContinue.xp + ' XP earned so far');
+    document.getElementById('continueLink').href = bestContinue.url;
+  }
+}
+
+let currentCert = null;
+function showCert(key, workshopName, url) {
+  const d = getData(key);
+  const name = localStorage.getItem('jvds-player-name') || 'Amazing Coder';
+  const xp = d ? (d.xp || 0) : 0;
+  const level = d ? (d.level || 1) : 1;
+  const acc = d && d.totalQuizzes > 0 ? Math.round(d.correctFirst / d.totalQuizzes * 100) + '%' : '-';
+  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  currentCert = { name, workshop: workshopName, xp, level, acc, date };
+  document.getElementById('certName').textContent = name;
+  document.getElementById('certWorkshop').textContent = workshopName;
+  document.getElementById('certXp').textContent = xp;
+  document.getElementById('certLevel').textContent = level;
+  document.getElementById('certAccuracy').textContent = acc;
+  document.getElementById('certDate').textContent = date;
+  var certNext = document.getElementById('certNext');
+  if (certNext) {
+    certNext.hidden = true;
+    if (url && window.JVDS_trackPosition) {
+      var pos = JVDS_trackPosition(url);
+      if (pos && pos.next) {
+        certNext.hidden = false;
+        certNext.href = '../' + pos.next.url;
+        certNext.innerHTML = '<span class="cn-track">' + pos.track.icon + ' ' + pos.track.title + '</span>' +
+          ' Next up: <strong>' + pos.next.name + '</strong> <span class="cn-arrow">&rarr;</span>';
+      } else if (pos) {
+        certNext.hidden = false;
+        certNext.href = 'learn.html';
+        certNext.innerHTML = '<span class="cn-track">&#127942; Track complete: ' + pos.track.title + '</span>' +
+          ' <span class="cn-arrow">See what else &rarr;</span>';
+      }
+    }
+  }
+  document.getElementById('certOverlay').classList.add('show');
+}
+
+function closeCert() {
+  document.getElementById('certOverlay').classList.remove('show');
+}
+
+/* Render the current certificate to a branded 1200x1200 PNG and share/download it. */
+function drawCertCanvas() {
+  const c = currentCert || { name: 'Amazing Coder', workshop: 'a JVDesignStudio workshop', xp: 0, level: 1, acc: '-', date: '' };
+  const S = 1200;
+  const cv = document.createElement('canvas');
+  cv.width = S; cv.height = S;
+  const ctx = cv.getContext('2d');
+  // background
+  ctx.fillStyle = '#fbf7ee'; ctx.fillRect(0, 0, S, S);
+  // gold double border
+  ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 10;
+  ctx.strokeRect(56, 56, S - 112, S - 112);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(80, 80, S - 160, S - 160);
+  const cx = S / 2;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#b58f2e';
+  ctx.font = '600 30px Inter, sans-serif';
+  ctx.fillText('J V D E S I G N S T U D I O', cx, 210);
+  ctx.fillStyle = '#d4af37';
+  ctx.font = '700 66px Fredoka, sans-serif';
+  ctx.fillText('Certificate of Completion', cx, 300);
+  ctx.fillStyle = '#8a7a55';
+  ctx.font = '400 30px Inter, sans-serif';
+  ctx.fillText('This certifies that', cx, 380);
+  // name
+  ctx.fillStyle = '#2a2a2a';
+  ctx.font = '700 78px Fredoka, sans-serif';
+  ctx.fillText(c.name, cx, 480);
+  ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 3;
+  const nameW = Math.min(720, ctx.measureText(c.name).width + 120);
+  ctx.beginPath(); ctx.moveTo(cx - nameW / 2, 508); ctx.lineTo(cx + nameW / 2, 508); ctx.stroke();
+  // workshop
+  ctx.fillStyle = '#555';
+  ctx.font = '400 34px Inter, sans-serif';
+  ctx.fillText('successfully completed', cx, 575);
+  ctx.fillStyle = '#2a2a2a';
+  ctx.font = '700 46px Fredoka, sans-serif';
+  wrapText(ctx, c.workshop, cx, 640, 900, 56);
+  // stats row
+  const stats = [[c.xp + '', 'XP EARNED'], ['Lvl ' + c.level, 'LEVEL'], [c.acc, 'ACCURACY']];
+  const bx = [cx - 340, cx, cx + 340];
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = '#d4af37';
+    ctx.font = '700 58px Fredoka, sans-serif';
+    ctx.fillText(stats[i][0], bx[i], 850);
+    ctx.fillStyle = '#8a7a55';
+    ctx.font = '700 22px Inter, sans-serif';
+    ctx.fillText(stats[i][1], bx[i], 895);
+  }
+  // date + url
+  ctx.fillStyle = '#8a7a55';
+  ctx.font = '400 28px Inter, sans-serif';
+  if (c.date) ctx.fillText('Awarded ' + c.date, cx, 1000);
+  ctx.fillStyle = '#b58f2e';
+  ctx.font = '700 30px Fredoka, sans-serif';
+  ctx.fillText('jvdesignstudio.co.uk', cx, 1080);
+  return cv;
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = String(text).split(' ');
+  let line = '', lines = [];
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  const startY = y - (lines.length - 1) * lineHeight / 2;
+  lines.forEach((ln, i) => ctx.fillText(ln, x, startY + i * lineHeight));
+}
+
+async function shareCert() {
+  const btn = document.getElementById('certShareBtn');
+  const orig = btn.textContent;
+  btn.textContent = '⏳ Making image...';
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+  const cv = drawCertCanvas();
+  const fname = 'jvds-certificate-' + ((currentCert && currentCert.workshop) || 'workshop').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.png';
+  cv.toBlob(async function (blob) {
+    if (!blob) { btn.textContent = orig; return; }
+    const file = new File([blob], fname, { type: 'image/png' });
+    // One-tap share on supported devices (mobile), else download
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'My JVDesignStudio certificate',
+          text: 'I completed ' + ((currentCert && currentCert.workshop) || 'a workshop') + ' on jvdesignstudio.co.uk!' });
+        btn.textContent = orig; return;
+      } catch (e) { /* user cancelled or unsupported, fall through to download */ }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname; document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    btn.textContent = '✓ Image saved!';
+    setTimeout(() => btn.textContent = orig, 2200);
+  }, 'image/png');
+}
+
+function saveName() {
+  const name = document.getElementById('playerName').value.trim();
+  if (name) {
+    localStorage.setItem('jvds-player-name', name);
+    document.querySelector('.name-save').textContent = '✓ Saved!';
+    setTimeout(() => document.querySelector('.name-save').textContent = 'Save', 2000);
+  }
+}
+
+// Load saved name
+const savedName = localStorage.getItem('jvds-player-name');
+if (savedName) document.getElementById('playerName').value = savedName;
+
+// Close cert on escape or backdrop click
+document.getElementById('certOverlay').addEventListener('click', e => { if (e.target === document.getElementById('certOverlay')) closeCert(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCert(); });
+
+/* ── BACKUP & RESTORE ─────────────────────────────────────────
+   Everything the dashboard reads (and everything else this site
+   saves: profile, scores, consent) lives in localStorage on THIS
+   device only. Export wraps it in a versioned envelope; restore
+   writes it back after a confirm. No server involved. */
+const BK_APP_TAG = 'jvdesignstudio-progress';
+const BK_VERSION = 1;
+
+function bkStatus(msg) { document.getElementById('bkStatus').textContent = msg; }
+
+// A256: one backpack for the whole site (jvds-store.js). It leaves out
+// secrets (GitHub tokens) and per-device choices (cookie consent), which the
+// old "copy every key" export used to put in the file.
+function backpack() {
+  if (!window.JVDS || !JVDS.backpack) throw new Error('backpack not loaded yet, try again in a second');
+  return JVDS.backpack;
+}
+
+function collectProgress() {
+  return backpack().collect();
+}
+
+function exportProgress() {
+  try {
+    const json = JSON.stringify(collectProgress(), null, 2);
+    document.getElementById('bkTextarea').value = json;
+    const fname = 'my-jvds-backpack-' + new Date().toISOString().slice(0, 10) + '.json';
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    bkStatus('✓ Backup file downloading , the code below can also be copied to move progress manually.');
+  } catch (e) {
+    bkStatus('⚠️ Could not create backup: ' + e.message);
+  }
+}
+
+// Returns true if the backup was applied. Shared by file import and paste.
+function applyBundle(text) {
+  let b;
+  try { b = JSON.parse(text); } catch (e) {
+    bkStatus('⚠️ That does not look like a valid backup file.');
+    return false;
+  }
+  // Backpacks from me.html and older My Progress files both open here
+  const saves = b && (b.format === 'jvds-backpack' ? b.keys : (b.app === BK_APP_TAG ? b.data : null));
+  if (!saves || typeof saves !== 'object') {
+    bkStatus('⚠️ That is not a JVDesignStudio backpack.');
+    return false;
+  }
+  const n = Object.keys(saves).length;
+  const stamp = b.savedAt || b.exportedAt;
+  const when = stamp ? new Date(stamp).toLocaleDateString('en-GB') : 'unknown date';
+  if (!confirm('Unpack backpack from ' + when + '? Its ' + n + ' saves will overwrite matching current progress.')) return false;
+  let applied = 0;
+  try { applied = backpack().restore(b); } catch (e) {
+    bkStatus('⚠️ Could not unpack: ' + e.message);
+    return false;
+  }
+  bkStatus('✓ Restored ' + applied + ' entries from ' + when + '. Dashboard refreshed!');
+  if (typeof playerProfile !== 'undefined' && playerProfile.refreshXP) { try { playerProfile.refreshXP(); } catch (e) {} }
+  buildDashboard();
+  const sn = saves['jvds-player-name'];
+  if (sn) document.getElementById('playerName').value = sn;
+  return true;
+}
+
+function importFromBox() {
+  const t = document.getElementById('bkTextarea').value.trim();
+  if (!t) { bkStatus('Paste a backup code into the box first, or export one above.'); return; }
+  applyBundle(t);
+}
+
+document.getElementById('bkFileInput').addEventListener('change', function () {
+  const f = this.files && this.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function () { applyBundle(String(reader.result)); };
+  reader.onerror = function () { bkStatus('⚠️ Could not read that file.'); };
+  reader.readAsText(f);
+  this.value = ''; // allow re-selecting the same file later
+});
+
+function initDashboard(){
+  if(typeof playerProfile !== 'undefined' && playerProfile.getStats){
+    buildDashboard();
+    // keep in sync if profile later migrates or gains XP
+    window.addEventListener('profile-saved', buildDashboard);
+    window.addEventListener('xp-gained', buildDashboard);
+    window.addEventListener('level-up', buildDashboard);
+  } else {
+    // player-profile.js is deferred; poll until it arrives, then render with unified XP
+    let tries=0;
+    const iv=setInterval(()=>{
+      if(typeof playerProfile !== 'undefined' && playerProfile.getStats){
+        clearInterval(iv);
+        buildDashboard();
+        window.addEventListener('profile-saved', buildDashboard);
+        window.addEventListener('xp-gained', buildDashboard);
+        window.addEventListener('level-up', buildDashboard);
+      } else if(tries++>40){
+        clearInterval(iv);
+        buildDashboard();
+      }
+    },100);
+    window.addEventListener('load', ()=>{ clearInterval(iv); buildDashboard(); });
+  }
+}
+initDashboard();
+
+/* A1397/A1399: My projects render */
+/* A1397/A1399: My projects - every build-along passport saved on this device. */
+(function(){
+  try{
+    var list=document.getElementById('myProjectsList');
+    if(!list) return;
+    function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    function when(iso){ if(!iso) return ''; var d=new Date(iso); if(isNaN(d.getTime())) return ''; return ' · '+d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}); }
+    function render(){
+      var items=[];
+      for(var i=0;i<localStorage.length;i++){
+        var k=localStorage.key(i);
+        if(!k||k.indexOf('jvds.project.')!==0) continue;
+        try{ var p=JSON.parse(localStorage.getItem(k)); if(p&&p.format==='jvds.project') items.push({k:k,p:p}); }catch(e){}
+      }
+      if(!items.length){
+        list.innerHTML='<p class="mp-empty">No projects yet. Open a <a href="/workshop" style="color:#7dd3fc">build-along workshop</a> and start building.</p>';
+        return;
+      }
+      items.sort(function(a,b){return String(b.p.updated||'').localeCompare(String(a.p.updated||''));});
+      list.innerHTML=items.map(function(it){
+        var p=it.p, steps=(p.steps||[]).length, done=(p.completed||[]).length, pct=steps?Math.round(done/steps*100):0;
+        var href=(p.page && /^\/workshops\//.test(p.page)) ? p.page : '/workshop';
+        return '<div class="mp-card">'+
+          '<a class="mp-open" href="'+esc(href)+'">'+
+            '<span class="mp-title">'+esc(p.title||p.series)+'</span>'+
+            '<span class="mp-meta">'+esc(p.engine||'')+' · Lesson '+(p.lesson||1)+' · '+done+'/'+steps+' steps'+when(p.updated)+'</span>'+
+            '<span class="mp-bar"><span class="mp-bar-fill" style="width:'+pct+'%"></span></span>'+
+            '<span class="mp-go">Resume →</span>'+
+          '</a>'+
+          '<button type="button" class="mp-del" data-key="'+esc(it.k)+'" data-state="'+esc(p.storageKey||'')+'" aria-label="Delete this project">Delete</button>'+
+        '</div>';
+      }).join('');
+    }
+    list.addEventListener('click',function(e){
+      var b=e.target.closest('.mp-del');
+      if(!b) return;
+      e.preventDefault();
+      if(!confirm('Delete this project? This clears its saved code on this device.')) return;
+      try{
+        localStorage.removeItem(b.getAttribute('data-key'));
+        var s=b.getAttribute('data-state'); if(s) localStorage.removeItem(s);
+      }catch(err){}
+      render();
+    });
+    render();
+  }catch(e){}
+})();
