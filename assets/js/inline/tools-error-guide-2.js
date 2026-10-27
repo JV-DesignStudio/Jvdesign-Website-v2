@@ -87,6 +87,18 @@ if(searchInput){
 var noResultsClear = document.getElementById('noResultsClear');
 if(noResultsClear) noResultsClear.addEventListener('click', clearSearch);
 
+// ── Quick-find chips: click a chip → fill search and trigger ──
+document.querySelectorAll('.qf-chip').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    var q = chip.getAttribute('data-search') || chip.textContent.trim();
+    if(searchInput){
+      searchInput.value = q;
+      searchInput.dispatchEvent(new Event('input'));
+      searchInput.focus();
+    }
+  });
+});
+
 // ── Badge counts derive from the DOM ──
 sections.forEach(function(s){
   var badge = s.querySelector('.engine-badge');

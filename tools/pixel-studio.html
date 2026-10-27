@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-B/d/7T+18v21ZKuua2SmSP1BqhbRF2tcqj9+gNJuVs0=' 'sha256-fm+cbMDhwEy/SCToazJj+BPbXKVKE4nNrBM8fX23Y8g=' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-e30KvuJP0ZLSywQ93hfXiPf3Tzxkpq+WwXB/h+UQs3I=' 'sha256-GnuRqDr0adm5DkHFB2tSTtTeyyRgNWFsjhejBD5zDuk=' 'sha256-pcbfc8HYonNbNQHDmW7zrrow3njY1FkbP9NpFSUDPFM=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-S1wghdHeiwPBubUdKwkq0IZPay60ThXeR88hFZUXLRM=' 'sha256-GnuRqDr0adm5DkHFB2tSTtTeyyRgNWFsjhejBD5zDuk=' 'sha256-pcbfc8HYonNbNQHDmW7zrrow3njY1FkbP9NpFSUDPFM=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -226,6 +226,12 @@
 .stamp-thumb-wrap img:hover{border-color:var(--accent3);}
 .stamp-use-btn{padding:2px 6px;border-radius:999px;border:1px solid rgba(0,212,170,.35);background:rgba(0,212,170,.1);color:var(--accent3);font-size:.5rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
 .stamp-use-btn:hover{background:rgba(0,212,170,.2);}
+/* AUD-CT-02: first-visit export pulse */
+@keyframes ps-export-pulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--accent-rgb,124,58,237),.5);}50%{box-shadow:0 0 0 6px rgba(var(--accent-rgb,124,58,237),0);}}
+.ps-export-pulse{animation:ps-export-pulse 1.5s ease 3;}
+/* AUD-CT-02: draw hint layout */
+#draw-hint{display:none;}
+#canvas-wrap{position:relative;}
 .studio-notice-drawer{border-bottom:1px solid var(--border2);background:rgba(13,13,20,.72);}
 .studio-notice-drawer summary{min-height:28px;display:flex;align-items:center;gap:7px;padding:4px 14px;cursor:pointer;list-style:none;font-size:.62rem;font-weight:800;color:var(--muted);}
 .studio-notice-drawer summary::-webkit-details-marker{display:none;}
@@ -444,7 +450,8 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
     <!-- Always-visible primary actions: never scrolls out of reach -->
     <div id="left-sticky">
       <div style="font-size:.52rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Keep</div>
-      <button class="ab ab-p" data-on="exportPNG" data-on-plain title="Download this frame as a PNG (best for shared PCs)">⬇️ Export PNG</button>
+      <!-- AUD-CT-02: id added so first-visit hint JS can target it -->
+      <button id="exportPNGBtn" class="ab ab-p" data-on="exportPNG" data-on-plain title="Download this frame as a PNG (best for shared PCs)">⬇️ Export PNG</button>
       <div class="ab-grid">
         <button class="ab ab-g" data-on="exportSheet" data-on-plain title="Download all frames as one spritesheet + JSON">🗂️ Sheet</button>
         <button class="ab ab-s" data-on="saveProject" data-on-plain title="Save in this browser only">💾 Save</button>
@@ -463,6 +470,12 @@ document.addEventListener('jvds:quest-awarded', pipQuestCheck);
       <canvas id="main-canvas"></canvas>
       <canvas id="onion-canvas"></canvas>
       <canvas id="cursor-canvas"></canvas>
+      <!-- AUD-CT-02: first-visit draw hint, fades on first stroke -->
+      <div id="draw-hint" aria-hidden="true" style="display:none;position:absolute;inset:0;pointer-events:none;align-items:center;justify-content:center;z-index:10;">
+        <div style="background:rgba(0,0,0,.55);color:#fff;border-radius:10px;padding:10px 18px;font-family:'Fredoka',cursive;font-size:1rem;font-weight:700;text-align:center;letter-spacing:.01em;line-height:1.4;">
+          Click or drag to draw<br><span style="font-size:.72rem;font-weight:400;opacity:.8;">Pencil is ready - pick a colour on the left</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2381,9 +2394,43 @@ function acceptPendingBundle(){
 const SEEN_KEY='jvds_pixel_seen';
 
 function openStart(){ openModal('startModal'); }
-function dismissStart(){ closeModal('startModal'); markSeen(); }
+// AUD-CT-02: _dismissingFromTemplate flag prevents recursion when applyTemplate calls dismissStart.
+var _dismissingFromTemplate=false;
+function dismissStart(fromTemplate){
+  _dismissingFromTemplate=!!fromTemplate;
+  closeModal('startModal');
+  markSeen();
+  // If user clicked "Start drawing" without picking a template, apply blank canvas automatically
+  // so there is always a clear, ready canvas to draw on.
+  if(!fromTemplate && !_dismissingFromTemplate){
+    _dismissingFromTemplate=true;
+    applyTemplate('blank');
+    _dismissingFromTemplate=false;
+  }
+  _dismissingFromTemplate=false;
+  // AUD-CT-02: show draw hint on the canvas and pulse Export PNG for first-time visitors
+  _showFirstVisitHints();
+}
 function markSeen(){ try{ localStorage.setItem(SEEN_KEY,'1'); }catch(e){} }
 function hasSeen(){ try{ return localStorage.getItem(SEEN_KEY)==='1'; }catch(e){ return true; } }
+// AUD-CT-02: show canvas draw hint and export pulse on first visit only
+function _showFirstVisitHints(){
+  var hint=document.getElementById('draw-hint');
+  if(hint){ hint.style.display='flex'; }
+  var btn=document.getElementById('exportPNGBtn');
+  if(btn){ btn.classList.add('ps-export-pulse'); }
+  // Remove hint on first stroke
+  var mc=document.getElementById('main-canvas');
+  if(mc){
+    function onFirstDraw(){
+      var h=document.getElementById('draw-hint'); if(h) h.style.display='none';
+      mc.removeEventListener('mousedown',onFirstDraw);
+      mc.removeEventListener('touchstart',onFirstDraw);
+    }
+    mc.addEventListener('mousedown',onFirstDraw);
+    mc.addEventListener('touchstart',onFirstDraw);
+  }
+}
 
 /* Write one pixel straight into a template frame's layer. */
 function tplPx(fi,li,x,y,col,a){
@@ -2438,7 +2485,8 @@ var TEMPLATES=window.TEMPLATES||{
 
 function applyTemplate(id){
   const t=TEMPLATES[id];
-  if(!t){ dismissStart(); return; }
+  // AUD-CT-02: pass true so dismissStart does not recursively call applyTemplate again
+  if(!t){ dismissStart(true); return; }
   cW=t.w; cH=t.h;
   fps=t.fps||8;
   layers=t.layerNames.map(n=>({name:n,visible:true}));
@@ -2457,7 +2505,8 @@ function applyTemplate(id){
   document.querySelectorAll('.size-btn').forEach(b=>b.classList.toggle('on', b.textContent===String(cW)&&cW===cH));
 
   autoZoom(); resizeCanvases(); renderLayerList(); renderFrameList(); renderAll();
-  dismissStart();
+  // AUD-CT-02: fromTemplate=true so dismissStart does not re-call applyTemplate
+  dismissStart(true);
   markDirty();
   showToast(t.toast);
 }

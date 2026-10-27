@@ -67,7 +67,7 @@ const DRIFT_CASH_RATE = 0.45;
 const DRIFT_MIN_SPEED = 380;     // reference speed before a slide counts
 
 let running = false, dead = false, paused = false;
-let player, cars, pickups, slicks, particles, roadLines, hazards, skids;
+let player, cars, pickups, slicks, particles, roadLines, hazards, skids, floats;
 let score, speed, dist, nearMiss, combo, comboTimer, fuel, bestCombo, carsPassed;
 let timeLeft, throttle, boostTimer, stumbleTimer, invuln, starTimer;
 let driftPoints, driftWindow, drifting, driftSkidTimer;
@@ -77,6 +77,12 @@ let scoreCarry = 0;
 let best = (sys ? GameSystem.getBestScore('highway-dodge') : 0) || 0;
 let last = 0, spawnTimer = 0, slickTimer = 0, skyTime = 0, dustTimer = 0, slipTimer = 0;
 let swipeStartX = 0, swipeStartY = 0, swiping = false;
+let tiltActive = false, tiltGamma = 0, tiltBaseline = 0, tiltSetupDone = false;
+let playerPrevX = 0, playerVX = 0;
+let slipstreamTimer = 0, slipstreamActive = false;
+let rushHourActive = false, rushHourTimer = 0;
+const RUSH_HOUR_DURATION = 15;   // seconds of Rush Hour
+const RUSH_HOUR_AT = 60;         // seconds remaining when it triggers
 let endReason = 'crash';
 // Fairness accounting: `wallFrames` counts frames where all three lanes were
 // blocked at the same height. The spawner makes that impossible; the counter
@@ -325,8 +331,8 @@ let fitW = -1, fitH = -1;
 // cars and pickups onto their lanes.
 function remapLanes() {
   if (!player) return;
-  player.x = player.targetX = laneX(player.lane);
-  cars.forEach(c => { c.x = laneX(c.lane); });
+  player.x = player.targetX = Math.max(roadL + player.w * 0.55, Math.min(roadR - player.w * 0.55, player.x));
+  cars.forEach(c => { c.x = laneX(c.lane) + (c.xOff || 0); });
   pickups.forEach(p => { p.x = laneX(p.lane); });
   slicks.forEach(s => { s.x = laneX(s.lane); });
 }
@@ -357,7 +363,8 @@ function effectiveSpeed(ref) {
   const th = Math.max(.45, Math.min(1.6, 1 + throttle * .5));
   const boost = boostTimer > 0 ? BOOST_MULT : 1;
   const stumble = stumbleTimer > 0 ? STUMBLE_MULT : 1;
-  return base * th * boost * stumble;
+  const slip = slipstreamActive ? 1.18 : 1;
+  return base * th * boost * stumble * slip;
 }
 
 const VEHICLES = {
@@ -380,16 +387,28 @@ function nextGapLane() {
   return Math.max(0, Math.min(LANE_COUNT - 1, g));
 }
 
-function spawnCar(lane) {
+function spawnCar(lane, yOff) {
   const trucky = Math.random() < .18 + dist * .000015;
   const types = trucky ? TRUCKISH : ['car','car','sport','van','bike'];
   const type = types[Math.floor(Math.random() * types.length)];
   const spec = VEHICLES[type];
   const w = laneW * spec.w, h = laneW * spec.h;
+  const xOff = (Math.random() - 0.5) * laneW * 0.22;
+  // 14% of cars slowly drift into an adjacent lane once on screen
+  let driftTargetX = null, driftRate = 0, driftTilt = 0;
+  if (!trucky && Math.random() < 0.14 && dist > 600) {
+    const dDir = Math.random() < 0.5 ? -1 : 1;
+    const dLane = Math.max(0, Math.min(LANE_COUNT - 1, lane + dDir));
+    if (dLane !== lane) {
+      driftTargetX = laneX(dLane) + (Math.random() - 0.5) * laneW * 0.18;
+      driftRate = laneW * (0.55 + Math.random() * 0.4);
+    }
+  }
   cars.push({
-    x: laneX(lane), y: -h / 2, w, h, lane, type, isTruck: trucky,
+    x: laneX(lane) + xOff, xOff, y: -h / 2 + (yOff || 0), w, h, lane, type, isTruck: trucky,
     color: spec.colors[Math.floor(Math.random() * spec.colors.length)],
-    nearCounted: false, passed: false
+    nearCounted: false, passed: false,
+    driftTargetX, driftRate, driftTilt
   });
 }
 
@@ -405,7 +424,7 @@ function spawnRow() {
   }
   for (let lane = 0; lane < LANE_COUNT; lane++) {
     if (open.indexOf(lane) !== -1) continue;
-    spawnCar(lane);
+    spawnCar(lane, (Math.random() - 0.5) * laneW * 0.38);
   }
   gapLane = g;
   spawnRows++;
@@ -472,12 +491,15 @@ function reset() {
   player = { lane: 1, x: 0, targetX: 0, w: laneW * .48, h: laneW * 1.05, shield: lvl('shield'), tilt: 0 };
   player.x = laneX(1);
   player.targetX = player.x;
-  cars = []; pickups = []; slicks = []; particles = []; roadLines = []; hazards = []; skids = [];
+  cars = []; pickups = []; slicks = []; particles = []; roadLines = []; hazards = []; skids = []; floats = [];
   score = 0; speed = 280 * vscale; dist = 0; nearMiss = 0; combo = 0; comboTimer = 0; bestCombo = 0; carsPassed = 0;
   fuel = fuelMax();
   timeLeft = TIME_LIMIT;
   throttle = 0; boostTimer = 0; stumbleTimer = 0; invuln = 0;
   driftPoints = 0; driftWindow = 0; drifting = false; driftSkidTimer = 0;
+  playerPrevX = 0; playerVX = 0;
+  slipstreamTimer = 0; slipstreamActive = false;
+  rushHourActive = false; rushHourTimer = 0;
   runCash = 0; distanceCash = 0; nearCash = 0; pickupCash = 0;
   hazardTimer = 4 + Math.random() * 3;
   wrongWaySpawns = 0;
@@ -509,9 +531,9 @@ function toast(msg) {
 
 /* ── Onboarding: a short guided first run, shown once per device ── */
 const GUIDE = [
-  'Steer with a <b>swipe</b>, the ◀ ▶ buttons, or the arrow keys / A and D.',
-  '<b>Ember:</b> there is always a gap. Look ahead and pick the empty lane.',
-  'Change lanes at speed to <b>drift</b> for extra cash. Grab ⚡ nitro, 🛡 shields, ⛽ fuel and 🪙 coins.',
+  'Steer by <b>tilting your phone</b>, swiping, the ◀ ▶ buttons, or the arrow keys / A and D.',
+  '<b>Ember:</b> there is always a gap. Thread close to traffic for danger-zone bonus points.',
+  '<b>Tilt hard or swipe fast</b> to drift for extra cash. Grab ⚡ nitro, 🛡 shields, ⛽ fuel and 🪙 coins.',
   'Dodge 🚧 cones and barrels, then reach the finish before the clock runs out.'
 ];
 function startGuide(){
@@ -552,18 +574,18 @@ function burst(x, y, color, n) {
   }
 }
 
+function spawnFloat(x, y, text, color) {
+  if (reduceMotion) return;
+  floats.push({ x, y, text, color: color || '#fbbf24', life: 1, vy: -78 * U });
+}
+
 function moveLane(dir) {
   if (!running || dead || paused) return;
-  const newLane = Math.max(0, Math.min(LANE_COUNT - 1, player.lane + dir));
-  if (newLane !== player.lane) {
-    player.lane = newLane;
-    player.targetX = laneX(newLane);
-    player.tilt = dir * .3;
-    // A lane change at speed kicks off a short drift that earns cash, the way
-    // the Godot build rewards sliding sideways.
-    if (effectiveSpeed() > DRIFT_MIN_SPEED) { driftWindow = .6; }
-    try { audio?.playTap?.(); } catch(e) {}
-  }
+  player.targetX = Math.max(roadL + player.w * 0.55, Math.min(roadR - player.w * 0.55, player.targetX + dir * laneW * 0.9));
+  player.lane = Math.max(0, Math.min(LANE_COUNT - 1, Math.round((player.targetX - roadL - laneW / 2) / laneW)));
+  player.tilt = dir * .28;
+  if (effectiveSpeed() > DRIFT_MIN_SPEED * 0.6) driftWindow = Math.max(driftWindow, 0.45);
+  try { audio?.playTap?.(); } catch(e) {}
 }
 
 /* ── Engine hum ── */
@@ -605,6 +627,7 @@ function startGame() {
   $('startScreen').classList.add('hidden');
   $('endScreen').classList.add('hidden');
   $('shopScreen').classList.add('hidden');
+  if (!tiltSetupDone && typeof DeviceOrientationEvent !== 'undefined') { tiltSetupDone = true; initTilt(); }
   sys?.beginRun?.();
   rotateMissions();
   if (storyRun && !storyRun.running) storyRun.begin();
@@ -1021,6 +1044,8 @@ function statusText() {
   const parts = [];
   if (starTimer > 0) parts.push('⭐ 2× ' + starTimer.toFixed(1) + 's');
   if (boostTimer > 0) parts.push('NITRO ' + boostTimer.toFixed(1) + 's');
+  if (slipstreamActive) parts.push('💨 SLIPSTREAM');
+  if (rushHourActive) parts.push('🚨 RUSH HOUR ×1.5');
   if (player && player.shield > 0) parts.push('SHIELD');
   if (stumbleTimer > 0) parts.push('WOBBLY!');
   return parts.join('   ');
@@ -1069,6 +1094,8 @@ function update(dt) {
 
   particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt * 2; });
   particles = particles.filter(p => p.life > 0);
+  floats.forEach(f => { f.y += f.vy * dt; f.life -= dt * 1.5; });
+  floats = floats.filter(f => f.life > 0);
 
   updateGuide(dt);
 
@@ -1081,12 +1108,29 @@ function update(dt) {
   scoreCarry += dt * eff * .15;
   distanceCash += eff * dt * .02;
   const gain = Math.floor(scoreCarry);
-  if (gain > 0) { const g = gain * (starTimer > 0 ? 2 : 1); score += g; scoreCarry -= gain; addMission('score', g); }
+  if (gain > 0) { const g = Math.floor(gain * (starTimer > 0 ? 2 : 1) * (slipstreamActive ? 1.5 : 1) * (rushHourActive ? 1.5 : 1)); score += g; scoreCarry -= gain; addMission('score', g); }
   if (milestones) milestones.check(score);
 
   // TrafficDash: a timed run. Reach the finish and bank a bonus.
   timeLeft -= dt;
   if (timeLeft <= 0) { timeLeft = 0; hud(); endGame('win'); return; }
+
+  // Rush Hour: at the 60-second mark a harder wave fires for 15s
+  if (!rushHourActive && timeLeft <= RUSH_HOUR_AT && rushHourTimer === 0) {
+    rushHourActive = true;
+    rushHourTimer = RUSH_HOUR_DURATION;
+    toast('🚨 RUSH HOUR! ×1.5 score');
+    spawnFloat(W / 2, H * 0.42, '🚨 RUSH HOUR', '#f97316');
+    haptic(40);
+    try { audio?.playLevelUp?.(); } catch(e) {}
+  }
+  if (rushHourActive) {
+    rushHourTimer = Math.max(0, rushHourTimer - dt);
+    if (rushHourTimer === 0) {
+      rushHourActive = false;
+      toast('Rush hour over');
+    }
+  }
 
   // Throttle: W / Up to push on, S / Down to ease off.
   const thUp = keys['w'] || keys['arrowup'];
@@ -1097,6 +1141,20 @@ function update(dt) {
 
   if (boostTimer > 0) boostTimer = Math.max(0, boostTimer - dt);
   if (stumbleTimer > 0) stumbleTimer = Math.max(0, stumbleTimer - dt);
+
+  // Continuous keyboard steering (held key = smooth movement across the road)
+  if (!tiltActive) {
+    const steerL = keys['arrowleft'] || keys['a'];
+    const steerR = keys['arrowright'] || keys['d'];
+    if (steerL && !steerR) {
+      player.targetX = Math.max(roadL + player.w * 0.55, player.targetX - 3.0 * laneW * dt);
+      player.lane = Math.max(0, Math.min(LANE_COUNT - 1, Math.round((player.targetX - roadL - laneW / 2) / laneW)));
+    }
+    if (steerR && !steerL) {
+      player.targetX = Math.min(roadR - player.w * 0.55, player.targetX + 3.0 * laneW * dt);
+      player.lane = Math.max(0, Math.min(LANE_COUNT - 1, Math.round((player.targetX - roadL - laneW / 2) / laneW)));
+    }
+  }
   if (invuln > 0) invuln = Math.max(0, invuln - dt);
   if (starTimer > 0) starTimer = Math.max(0, starTimer - dt);
 
@@ -1122,8 +1180,27 @@ function update(dt) {
 
   if (slipTimer > 0) slipTimer -= dt;
   const grip = (14 + 3.5 * lvl('grip')) * (slipTimer > 0 ? 0.3 : 1);
+  // Tilt steering: map device gamma directly to targetX for free-range movement
+  if (tiltActive) {
+    const TILT_RANGE = 28;
+    const g = Math.max(-TILT_RANGE, Math.min(TILT_RANGE, tiltGamma - tiltBaseline));
+    const roadMid = (roadL + roadR) / 2;
+    const maxOff = (roadR - roadL) / 2 - player.w * 0.55;
+    player.targetX = Math.max(roadL + player.w * 0.55, Math.min(roadR - player.w * 0.55, roadMid + (g / TILT_RANGE) * maxOff));
+    player.lane = Math.max(0, Math.min(LANE_COUNT - 1, Math.round((player.targetX - roadL - laneW / 2) / laneW)));
+  }
+  playerPrevX = player.x;
   player.x += (player.targetX - player.x) * Math.min(1, dt * grip);
-  player.tilt *= .92;
+  playerVX = (player.x - playerPrevX) / dt;
+  // Fast lateral movement triggers drift (tilt hard or quick swipe)
+  if (Math.abs(playerVX) > 90 * U && effectiveSpeed() > DRIFT_MIN_SPEED * 0.6) {
+    driftWindow = Math.max(driftWindow, 0.28);
+  }
+  if (tiltActive) {
+    player.tilt = Math.max(-0.28, Math.min(0.28, playerVX * 0.00055));
+  } else {
+    player.tilt *= .92;
+  }
 
   engineUpdate();
 
@@ -1137,10 +1214,10 @@ function update(dt) {
   if (spawnTimer <= 0) {
     if (topEdgeClear(laneW * 2.0)) {
       spawnRow();
-      const gap = Math.max(.34, .92 - dist * .00004);
+      const gap = Math.max(.34, .92 - dist * .00004) * (rushHourActive ? 0.62 : 1);
       spawnTimer = gap + Math.random() * gap * .4;
-      if (Math.random() < .38) pickups.push(makePickup(gapLane));
-      if (dist > 1200 && Math.random() < .14) spawnWrongWay();
+      if (Math.random() < (rushHourActive ? 0.28 : 0.38)) pickups.push(makePickup(gapLane));
+      if ((dist > 1200 && Math.random() < .14) || (rushHourActive && Math.random() < .18)) spawnWrongWay();
     } else {
       spawnTimer = 0.06;
     }
@@ -1168,6 +1245,24 @@ function update(dt) {
     // Oncoming cars move at their own factor (slower than the road scroll) so a
     // wrong-way encounter is readable, not an instant unavoidable crash.
     c.y += speed * (c.dir < 0 ? .82 : CAR_MUL) * dt;
+    if (c.nearStreakTimer > 0) c.nearStreakTimer = Math.max(0, c.nearStreakTimer - dt);
+
+    // Lane-changing AI: slowly drift toward driftTargetX
+    if (c.driftTargetX !== null && c.driftTargetX !== undefined) {
+      const dx = c.driftTargetX - c.x;
+      if (Math.abs(dx) < 2) {
+        c.driftTargetX = null;
+        c.driftTilt = 0;
+      } else {
+        const move = Math.sign(dx) * Math.min(Math.abs(dx), c.driftRate * dt);
+        c.x += move;
+        c.driftTilt = Math.sign(dx) * 0.14;
+        c.lane = Math.max(0, Math.min(LANE_COUNT - 1, Math.round((c.x - roadL - laneW / 2) / laneW)));
+      }
+    } else if (c.driftTilt) {
+      c.driftTilt *= 0.88;
+      if (Math.abs(c.driftTilt) < 0.01) c.driftTilt = 0;
+    }
 
     if (c.dir < 0 ? c.y < -c.h : c.y > H + c.h) { cars.splice(i, 1); continue; }
 
@@ -1196,6 +1291,7 @@ function update(dt) {
       const gap = Math.abs(player.x - c.x) - pHalfW - cHalfW;
       if (gap > 0 && gap < laneW * .25) {
         c.nearCounted = true;
+        c.nearStreakTimer = 0.45;
         nearMiss++;
         combo++;
         comboTimer = COMBO_WINDOW;
@@ -1205,11 +1301,39 @@ function update(dt) {
         addMission('nearMiss', 1);
         if (nearMiss >= 50) unlock('hd-near-50');
         toast('Near Miss x' + combo + ' +' + bonus);
+        spawnFloat(c.x + (Math.random() - 0.5) * 30 * U, c.y, '+' + bonus + ' ×' + combo, combo >= 5 ? '#f97316' : '#fbbf24');
         burst(player.x, pTop, '#fbbf24', 8);
         haptic(12);
         try { audio?.playCombo?.(combo); } catch(e) {}
+      } else if (!c.wrongWay && gap >= laneW * .25 && gap < laneW * .55) {
+        // Danger zone: threading close without a full near-miss earns continuous score
+        const dg = Math.round(dt * eff * 0.055 * (starTimer > 0 ? 2 : 1));
+        if (dg > 0) { score += dg; nearCash += dg; }
       }
     }
+  }
+
+  // Slipstream: drafting tight behind a car builds a speed boost and score multiplier
+  let inDraftZone = false;
+  cars.forEach(c => { c.inDraft = false; });
+  for (let i = 0; i < cars.length; i++) {
+    const c = cars[i];
+    if (c.wrongWay) continue;
+    const horizClose = Math.abs(player.x - c.x) < laneW * 0.34;
+    const justAhead = c.y < pTop - 2 && c.y > pTop - laneW * 1.9;
+    if (horizClose && justAhead) { c.inDraft = true; inDraftZone = true; break; }
+  }
+  if (inDraftZone) {
+    slipstreamTimer = Math.min(1.2, slipstreamTimer + dt);
+    if (slipstreamTimer > 0.72 && !slipstreamActive) {
+      slipstreamActive = true;
+      toast('Slipstream! +speed +score');
+      spawnFloat(player.x, H - player.h * 2.2, '💨 SLIPSTREAM', '#22d3ee');
+      haptic(18);
+    }
+  } else {
+    slipstreamTimer = Math.max(0, slipstreamTimer - dt * 2.8);
+    if (slipstreamTimer === 0) slipstreamActive = false;
   }
 
   detectWall();
@@ -1223,6 +1347,7 @@ function update(dt) {
       if (p.type === 'shield') {
         player.shield += 1;
         toast('Shield!');
+        spawnFloat(p.x, p.y, '🛡 Shield', '#22d3ee');
         score += 100;
       } else if (p.type === 'coin') {
         garage.coins += p.value;
@@ -1232,19 +1357,23 @@ function update(dt) {
         addMission('coins', 1);
         refreshCoins();
         toast('+' + p.value + ' 🪙');
+        spawnFloat(p.x, p.y, '+' + p.value + ' 🪙', '#fbbf24');
         score += 20;
       } else if (p.type === 'boost') {
         boostTimer = BOOST_TIME;
         toast('Nitro!');
+        spawnFloat(p.x, p.y, '⚡ NITRO', '#38bdf8');
         score += 100;
       } else if (p.type === 'star') {
         starTimer = 6;
         toast('⭐ 2× Score!');
+        spawnFloat(p.x, p.y, '⭐ 2×', '#a78bfa');
         score += 100;
       } else {
         fuel = Math.min(fuelMax(), fuel + FUEL_PER_PICKUP);
         addMission('fuel', 1);
         toast('+Fuel');
+        spawnFloat(p.x, p.y, '⛽ +Fuel', '#22c55e');
         score += 50;
       }
       burst(p.x, p.y, p.type === 'shield' ? '#22d3ee' : p.type === 'coin' ? '#fbbf24' : p.type === 'boost' ? '#38bdf8' : p.type === 'star' ? '#a78bfa' : '#22c55e', 12);
@@ -1496,6 +1625,7 @@ function drawSlick(s) {
 function drawVehicle(c) {
   ctx.save();
   ctx.translate(c.x, c.y);
+  if (c.driftTilt) ctx.rotate(c.driftTilt);
   if (c.wrongWay) {
     ctx.save();
     ctx.strokeStyle = 'rgba(239,68,68,.9)';
@@ -1509,6 +1639,43 @@ function drawVehicle(c) {
   wash.addColorStop(0, 'rgba(253,230,138,.2)'); wash.addColorStop(1, 'rgba(253,230,138,0)');
   ctx.fillStyle = wash;
   ctx.beginPath(); ctx.moveTo(-c.w * .5, c.h / 2); ctx.lineTo(c.w * .5, c.h / 2); ctx.lineTo(c.w * 1.1, c.h / 2 + 60 * U); ctx.lineTo(-c.w * 1.1, c.h / 2 + 60 * U); ctx.closePath(); ctx.fill();
+
+  if (c.nearStreakTimer > 0 && !reduceMotion) {
+    // Near-miss streak: brief cyan halo + side streaks when player just threaded this car
+    const st = c.nearStreakTimer / 0.45;
+    ctx.save();
+    ctx.globalAlpha = st * 0.72;
+    ctx.strokeStyle = '#22d3ee';
+    ctx.lineWidth = 3 * U;
+    ctx.shadowColor = '#22d3ee';
+    ctx.shadowBlur = 16 * U;
+    rr(ctx, -c.w / 2 - 4 * U, -c.h / 2 - 4 * U, c.w + 8 * U, c.h + 8 * U, 6 * U);
+    ctx.stroke();
+    // Side streak lines extending outward
+    const sLen = (18 + st * 32) * U;
+    ctx.lineWidth = 2 * U;
+    ctx.beginPath(); ctx.moveTo(-c.w * 0.6, 0); ctx.lineTo(-c.w * 0.6 - sLen, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(c.w * 0.6, 0); ctx.lineTo(c.w * 0.6 + sLen, 0); ctx.stroke();
+    ctx.restore();
+  }
+
+  if (c.inDraft) {
+    // Slipstream glow: cyan speed-wash streaming behind the car
+    const sw = ctx.createLinearGradient(0, c.h / 2, 0, c.h / 2 + 80 * U);
+    sw.addColorStop(0, 'rgba(34,211,238,.55)'); sw.addColorStop(1, 'rgba(34,211,238,0)');
+    ctx.fillStyle = sw;
+    ctx.beginPath(); ctx.moveTo(-c.w * .55, c.h / 2); ctx.lineTo(c.w * .55, c.h / 2); ctx.lineTo(c.w * 1.3, c.h / 2 + 80 * U); ctx.lineTo(-c.w * 1.3, c.h / 2 + 80 * U); ctx.closePath(); ctx.fill();
+    // Speed lines
+    ctx.save();
+    ctx.strokeStyle = 'rgba(34,211,238,.7)'; ctx.lineWidth = 1.5 * U;
+    const lineOff = (dist * 0.08) % (14 * U);
+    for (let li = 0; li < 5; li++) {
+      const lx = -c.w * 0.4 + li * c.w * 0.2;
+      const ly = c.h / 2 + lineOff + li * 3 * U;
+      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + 18 * U); ctx.stroke();
+    }
+    ctx.restore();
+  }
 
   if (c.isTruck || c.type === 'bus') {
     const hw = c.w / 2, hh = c.h / 2;
@@ -1546,6 +1713,24 @@ function drawVehicle(c) {
 function drawPlayer() {
   const py = H - player.h * 1.3;
   const skin = currentSkin();
+
+  // Motion trail - cyan smear stretching upward at high speed
+  if (!reduceMotion) {
+    const eff = effectiveSpeed();
+    const bt = Math.max(0, Math.min(1, (eff - 380) / 260));
+    if (bt > 0) {
+      const trailH = player.h * 1.8 * bt;
+      const tg = ctx.createLinearGradient(player.x, py - player.h * 0.5, player.x, py - player.h * 0.5 - trailH);
+      const col = slipstreamActive ? 'rgba(34,211,238,' : 'rgba(147,197,253,';
+      tg.addColorStop(0, col + (bt * 0.32) + ')');
+      tg.addColorStop(1, col + '0)');
+      ctx.fillStyle = tg;
+      ctx.beginPath();
+      ctx.ellipse(player.x, py - player.h * 0.5 - trailH * 0.5, player.w * 0.38, trailH * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   ctx.save();
   ctx.translate(player.x, py);
   ctx.rotate(player.tilt + (slipTimer > 0 ? Math.sin(skyTime * .03) * .08 : 0));
@@ -1606,6 +1791,39 @@ function drawPickup(p) {
   ctx.restore();
 }
 
+function drawSpeedEffect() {
+  const eff = effectiveSpeed();
+  const t = Math.max(0, Math.min(1, (eff - 320) / 300)); // 0 at slow, 1 at top
+  if (t <= 0) return;
+
+  // Road-surface speed streaks
+  const count = reduceMotion ? 8 : 24;
+  ctx.save();
+  for (let i = 0; i < count; i++) {
+    const seed = i * 4.37 + Math.floor(dist * 0.05) * 4.37;
+    const x = roadL + hash(seed) * (roadR - roadL);
+    const y = ((hash(seed + 1.1) + dist * 0.0058) % 1) * H;
+    const len = (12 + t * 58 + hash(seed + 2.2) * 28) * U;
+    ctx.globalAlpha = t * (0.18 + hash(seed + 3.3) * 0.26);
+    ctx.strokeStyle = hash(seed + 4.4) > 0.55 ? 'rgba(226,232,240,.95)' : 'rgba(147,197,253,.95)';
+    ctx.lineWidth = (0.7 + hash(seed + 5.5) * 1.5) * U;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - U, y + len); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // Edge vignette - screen tunnels inward at speed
+  if (t > 0.12) {
+    const vt = (t - 0.12) / 0.88;
+    const vg = ctx.createRadialGradient(W / 2, H * 0.52, H * 0.12, W / 2, H * 0.52, H * 0.8);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(0.65, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,4,16,' + (vt * 0.65) + ')');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
 function drawComboMeter() {
   if (combo <= 0) return;
   const barW = laneW * 3;
@@ -1654,6 +1872,30 @@ function drawHazard(hz) {
   ctx.restore();
 }
 
+function drawTiltHorizon() {
+  if (!tiltActive || reduceMotion) return;
+  const TILT_RANGE = 28;
+  const g = Math.max(-TILT_RANGE, Math.min(TILT_RANGE, tiltGamma - tiltBaseline));
+  if (Math.abs(g) < 0.5) return;
+  // Subtle canvas roll: rotate around the road's vanishing point (top-center)
+  const t = g / TILT_RANGE;        // -1 … +1
+  const rollRad = t * 0.055;       // max ~3° tilt
+  const vx = W / 2, vy = H * 0.25; // vanishing point anchor
+  ctx.save();
+  ctx.translate(vx, vy);
+  ctx.rotate(rollRad);
+  ctx.translate(-vx, -vy);
+  // Horizon tilt line: a coloured band that shifts with lean
+  const hY = H * 0.25 + t * H * 0.04;
+  const hg = ctx.createLinearGradient(0, hY - 12, 0, hY + 14);
+  hg.addColorStop(0, 'rgba(56,189,248,0)');
+  hg.addColorStop(0.4, 'rgba(56,189,248,' + (Math.abs(t) * 0.12) + ')');
+  hg.addColorStop(1, 'rgba(56,189,248,0)');
+  ctx.fillStyle = hg;
+  ctx.fillRect(0, hY - 12, W, 26);
+  ctx.restore();
+}
+
 function draw() {
   if (!W || !H) return;
   ctx.clearRect(0, 0, W, H);
@@ -1662,6 +1904,7 @@ function draw() {
   if (shake && !reduceMotion) shake.apply(ctx, dpr);
 
   drawSky();
+  drawTiltHorizon();
   drawVerge();
   drawStreetlights();
   drawGuardrail();
@@ -1673,6 +1916,7 @@ function draw() {
   pickups.forEach(drawPickup);
   cars.forEach(drawVehicle);
   drawPlayer();
+  drawSpeedEffect();
   drawComboMeter();
 
   particles.forEach(p => {
@@ -1681,6 +1925,14 @@ function draw() {
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
     ctx.fill();
+  });
+  floats.forEach(f => {
+    ctx.globalAlpha = Math.max(0, f.life);
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold ' + Math.round(13 * U) + 'px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(f.text, f.x, f.y);
   });
   ctx.globalAlpha = 1;
 
@@ -1722,6 +1974,29 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+/* ── Tilt steering (DeviceOrientation) ── */
+function initTilt() {
+  const attach = function() {
+    window.addEventListener('deviceorientation', function(e) {
+      if (e.gamma == null) return;
+      if (!tiltActive) {
+        tiltActive = true;
+        tiltBaseline = e.gamma;
+        toast('Tilt to steer!');
+        const tb = $('tiltBtn');
+        if (tb) { tb.textContent = '🔄 Recal'; }
+      }
+      tiltGamma = e.gamma;
+    });
+  };
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(function(r) { if (r === 'granted') attach(); }).catch(function(){});
+  } else if (typeof DeviceOrientationEvent !== 'undefined') {
+    attach();
+  }
+}
+window.__initTilt = function() { if (!tiltSetupDone) { tiltSetupDone = true; initTilt(); } else if (tiltActive) { tiltBaseline = tiltGamma; toast('Tilt calibrated!'); } };
+
 C.addEventListener('pointerdown', e => {
   if (!running && !dead) { startGame(); return; }
   swipeStartX = e.clientX;
@@ -1729,9 +2004,16 @@ C.addEventListener('pointerdown', e => {
   swiping = true;
 });
 C.addEventListener('pointermove', e => {
-  if (!swiping) return;
+  if (!swiping || !running || dead) return;
   const dx = e.clientX - swipeStartX;
-  if (Math.abs(dx) > 25) { moveLane(dx > 0 ? 1 : -1); swipeStartX = e.clientX; }
+  if (Math.abs(dx) > 3) {
+    const cssW = C.getBoundingClientRect().width || 1;
+    const roadPxPerCss = (roadR - roadL) / cssW;
+    player.targetX = Math.max(roadL + player.w * 0.55, Math.min(roadR - player.w * 0.55, player.targetX + dx * roadPxPerCss * 1.5));
+    player.lane = Math.max(0, Math.min(LANE_COUNT - 1, Math.round((player.targetX - roadL - laneW / 2) / laneW)));
+    player.tilt = Math.max(-0.28, Math.min(0.28, player.tilt + Math.sign(dx) * 0.05));
+    swipeStartX = e.clientX;
+  }
 });
 C.addEventListener('pointerup', e => {
   if (swiping && running && !dead) {

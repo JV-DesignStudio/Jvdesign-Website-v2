@@ -40,6 +40,7 @@ function isUnlocked(c) { return !c.unlock || best >= c.unlock.n; }
 if (!CREW.find(c => c.id === selectedChar && isUnlocked(c))) selectedChar = 'pip';
 
 let last = 0, idleTimer = 0, particles = [], popups = [], motes = [];
+let lastBiomeName = '';
 let hopAnim = 0;
 let vignette = null, vigKey = '';
 
@@ -308,6 +309,7 @@ function reset() {
   dustTimer = 0;
   combo = 0; comboPop = 0; shield = false; magnetT = 0; slowT = 0; graceT = 0;
   forwardStreak = 0;
+  lastBiomeName = '';
   secondUsed = false; savedPending = false; pendingReason = '';
   if (milestones) milestones.reset();
   if (shake) shake.reset();
@@ -384,6 +386,7 @@ function hop(dx, dy) {
     comboPop = 1;
     score += 20 * combo;
     popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .3, text: 'COMBO x' + combo, life: 1, color: '#fde047', size: 18 });
+    if (shake) shake.hit(4 + combo);
     try { audio?.playSuccess?.(); } catch(e) {}
   } else if (combo > 0 && fromRow.type === GRASS) {
     combo = 0;
@@ -396,6 +399,7 @@ function hop(dx, dy) {
     burst(player.col * cellW + cellW / 2, screenY(player.row) + cellH / 2, '#fbbf24', 10);
     popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .4, text: '+50', life: 1, color: '#fbbf24', size: 20 });
     toast('+Coin!');
+    vibrate(18);
     try { audio?.playSuccess?.(); } catch(e) {}
   } else {
     try { audio?.playTap?.(); } catch(e) {}
@@ -571,13 +575,18 @@ function updateCrewUI() {
   wrap.innerHTML = CREW.map(c => {
     const unlocked = isUnlocked(c);
     const sel = selectedChar === c.id;
-    const req = c.unlock ? 'Score ' + c.unlock.n : '';
+    let progressHtml = '';
+    if (!unlocked && c.unlock) {
+      const pct = Math.min(100, Math.round(best / c.unlock.n * 100));
+      progressHtml = '<div class="unlock-bar"><div class="unlock-fill" style="width:' + pct + '%"></div></div>' +
+        '<span style="font-size:10px;opacity:.7">' + best + ' / ' + c.unlock.n + '</span>';
+    }
     return '<button class="crew-btn' + (sel ? ' selected' : '') + (unlocked ? '' : ' locked') + '"' +
       ' data-char="' + c.id + '"' + (unlocked ? '' : ' disabled') +
-      ' title="' + (unlocked ? c.name : 'Reach ' + req + ' to unlock') + '">' +
+      ' title="' + (unlocked ? c.name : 'Score ' + c.unlock.n + ' to unlock') + '">' +
       '<span style="font-size:26px">' + c.emoji + '</span>' +
       '<span>' + c.name + '</span>' +
-      (unlocked ? '' : '<span style="font-size:10px;opacity:.7">' + req + '</span>') +
+      progressHtml +
       '</button>';
   }).join('');
   wrap.querySelectorAll('.crew-btn:not([disabled])').forEach(btn => {
@@ -644,6 +653,12 @@ function update(dt) {
   motes = motes.filter(m => m.life > 0 && m.y < H + 20 && m.x > -20 && m.x < W + 20);
 
   if (!running || dead) return;
+
+  const curBiomeName = biomeAt(furthest || 0).name;
+  if (lastBiomeName && curBiomeName !== lastBiomeName) {
+    popups.push({ x: W / 2, y: H * .25, text: curBiomeName.toUpperCase(), life: 1.8, color: '#a5f3fc', size: 22 });
+  }
+  lastBiomeName = curBiomeName;
 
   const targetCamY = Math.max(0, furthest - 4);
   cameraY += (targetCamY - cameraY) * Math.min(1, dt * 5);
@@ -1221,23 +1236,26 @@ function drawCoin(row) {
   const cx = row.hasCoin * cellW + cellW / 2;
   const cy = screenY(row.index) + cellH / 2;
   const bob = Math.sin(performance.now() * .005 + row.index) * 2;
+  const spin = Math.abs(Math.cos(performance.now() * .007 + row.index * 2.1)) * .9 + .1;
   ctx.save();
+  ctx.translate(cx, cy + bob);
+  ctx.scale(spin, 1);
   ctx.shadowColor = '#fbbf24';
   ctx.shadowBlur = 12;
   ctx.fillStyle = '#fbbf24';
-  ctx.beginPath(); ctx.arc(cx, cy + bob, cellW * .13, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(0, 0, cellW * .13, 0, Math.PI * 2); ctx.fill();
   ctx.shadowBlur = 0;
   ctx.fillStyle = '#fde68a';
-  ctx.beginPath(); ctx.arc(cx - 2, cy + bob - 2, cellW * .05, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(-2, -2, cellW * .05, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = '#b45309';
   ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.arc(cx, cy + bob, cellW * .09, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, cellW * .09, 0, Math.PI * 2); ctx.stroke();
   const sr = cellW * (.13 + .04 * Math.sin(performance.now() * .004 + row.index));
   ctx.strokeStyle = 'rgba(255,255,255,.7)';
   ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.moveTo(cx - sr, cy + bob); ctx.lineTo(cx + sr, cy + bob);
-  ctx.moveTo(cx, cy + bob - sr); ctx.lineTo(cx, cy + bob + sr);
+  ctx.moveTo(-sr, 0); ctx.lineTo(sr, 0);
+  ctx.moveTo(0, -sr); ctx.lineTo(0, sr);
   ctx.stroke();
   ctx.restore();
 }
@@ -1469,6 +1487,15 @@ function draw() {
   }
   if (vignette) { ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H); }
 
+  if (idleTimer > 3 && running && !dead) {
+    const danger = Math.min(1, (idleTimer - 3) / 3);
+    const pulse = .55 + .45 * Math.sin(performance.now() * .009 * (1 + danger * 2));
+    const vig2 = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .22, W / 2, H / 2, Math.max(W, H) * .65);
+    vig2.addColorStop(0, 'rgba(239,68,68,0)');
+    vig2.addColorStop(1, 'rgba(239,68,68,' + (danger * .38 * pulse).toFixed(3) + ')');
+    ctx.fillStyle = vig2;
+    ctx.fillRect(0, 0, W, H);
+  }
   if (idleTimer > 4 && running && !dead) {
     ctx.fillStyle = 'rgba(239,68,68,.85)';
     ctx.font = '900 ' + Math.round(cellH * .5) + 'px system-ui,sans-serif';
@@ -1504,21 +1531,28 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
-let swStartX = 0, swStartY = 0;
+function vibrate(ms) { try { navigator.vibrate?.(ms); } catch(e) {} }
+
+let swStartX = 0, swStartY = 0, swActive = false;
 C.addEventListener('pointerdown', e => {
   if (!running && !dead) { startGame(); return; }
   swStartX = e.clientX;
   swStartY = e.clientY;
+  swActive = true;
 });
 C.addEventListener('pointerup', e => {
-  if (!running) return;
+  if (!running || !swActive) return;
+  swActive = false;
   const dx = e.clientX - swStartX;
   const dy = e.clientY - swStartY;
   const adx = Math.abs(dx), ady = Math.abs(dy);
-  if (adx < 10 && ady < 10) { hop(0, 1); return; }
-  if (adx > ady) hop(dx > 0 ? 1 : -1, 0);
-  else hop(0, dy < 0 ? 1 : -1);
+  if (adx < 18 && ady < 18) { hop(0, 1); return; }
+  // Require 1.3:1 dominance ratio to avoid diagonal misfires
+  if (adx > ady * 1.3) hop(dx > 0 ? 1 : -1, 0);
+  else if (ady > adx * 1.3) hop(0, dy < 0 ? 1 : -1);
+  else hop(0, 1); // ambiguous diagonal → hop forward
 });
+C.addEventListener('pointercancel', () => { swActive = false; });
 
 document.addEventListener('keydown', e => {
   if (e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); if (!running && !dead) startGame(); else hop(0, 1); }
@@ -1528,15 +1562,41 @@ document.addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); if (!running) startGame(); else hop(0, 1); }
 });
 
+function showHowToPlay() {
+  $('startScreen').classList.add('hidden');
+  $('howToPlay').classList.remove('hidden');
+}
+function hideHowToPlay() {
+  $('howToPlay').classList.add('hidden');
+  $('startScreen').classList.remove('hidden');
+  try { localStorage.setItem('jvds_cc_seen_howto', '1'); } catch(e) {}
+}
+try { if (!localStorage.getItem('jvds_cc_seen_howto')) showHowToPlay(); } catch(e) {}
+$('gotItBtn').onclick = hideHowToPlay;
+$('helpBtn').onclick = showHowToPlay;
+
 $('playBtn').onclick = startGame;
 $('againBtn').onclick = startGame;
 const saveBtnEl = $('saveBtn'), giveUpBtnEl = $('giveUpBtn');
 if (saveBtnEl) saveBtnEl.onclick = revive;
 if (giveUpBtnEl) giveUpBtnEl.onclick = surrender;
-$('dUp').onclick = () => hop(0, 1);
-$('dDown').onclick = () => hop(0, -1);
-$('dLeft').onclick = () => hop(-1, 0);
-$('dRight').onclick = () => hop(1, 0);
+function bindDpad(id, dx, dy) {
+  const btn = $(id);
+  if (!btn) return;
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    btn.classList.add('pressed');
+    hop(dx, dy);
+    vibrate(8);
+  });
+  btn.addEventListener('pointerup', () => btn.classList.remove('pressed'));
+  btn.addEventListener('pointercancel', () => btn.classList.remove('pressed'));
+  btn.addEventListener('pointerleave', () => btn.classList.remove('pressed'));
+}
+bindDpad('dUp', 0, 1);
+bindDpad('dDown', 0, -1);
+bindDpad('dLeft', -1, 0);
+bindDpad('dRight', 1, 0);
 $('soundBtn').onclick = function() {
   const on = localStorage.getItem('soundEnabled') !== 'false';
   localStorage.setItem('soundEnabled', on ? 'false' : 'true');

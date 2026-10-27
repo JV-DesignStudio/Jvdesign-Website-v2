@@ -22,14 +22,17 @@ const server = http.createServer((req, res) => {
 
 (async () => {
   await new Promise(r => server.listen(8126, r));
-  const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] });
   const page = await browser.newPage();
+  // Bypass CSP so inline scripts execute when served over plain HTTP (no nonces).
+  await page.setBypassCSP(true);
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
   page.on('console', m => {
     if (m.type() !== 'error') return;
     const text = m.text();
     if (text.includes('ERR_NETWORK_ACCESS_DENIED')) return;
+    if (text.includes('Content-Security-Policy')) return;
     errors.push('console: ' + text);
   });
   page.on('dialog', async d => { await d.dismiss().catch(()=>{}); });

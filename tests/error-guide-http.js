@@ -64,10 +64,10 @@ function check(name, ok, detail) {
       return s.querySelector('.engine-badge').textContent.trim() === (n + ' Error' + (n === 1 ? '' : 's'));
     })
   }));
-  check('24 error cards render', struct.cards === 24, String(struct.cards));
+  check('26 error cards render', struct.cards === 26, String(struct.cards));
   check('6 engine tabs', struct.tabs === 6, String(struct.tabs));
   check('exactly one engine visible on load', struct.visibleSections === 1, String(struct.visibleSections));
-  check('every card has a Copy fix button', struct.copyButtons === 24, String(struct.copyButtons));
+  check('every card has a Copy fix button', struct.copyButtons === 26, String(struct.copyButtons));
   check('Ember tour target (#searchInput) exists', struct.tourTarget);
   check('tabs carry role=tab + aria-selected', struct.tabsRole);
   check('search count is aria-live', struct.liveCount);
@@ -95,7 +95,7 @@ function check(name, ok, detail) {
     noResultsHidden: document.getElementById('noResults').hidden
   }));
   check('search shows all engines', search.sections === 6, String(search.sections));
-  check('search keeps only matching cards', search.cards > 0 && search.cards < 24, String(search.cards));
+  check('search keeps only matching cards', search.cards > 0 && search.cards < 26, String(search.cards));
   check('search count reports matches', /error(s)? found/.test(search.count), search.count);
   check('no-results hidden while there are matches', search.noResultsHidden === true, String(search.noResultsHidden));
 
