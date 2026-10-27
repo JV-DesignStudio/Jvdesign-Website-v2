@@ -3,6 +3,7 @@
   var stage = document.getElementById('cw-stage');
 
   function injectBlob(doc, code, onDone) {
+    if (!doc || !doc.createElement) { if (onDone) onDone(); return; }
     var blob = new Blob([code], { type: 'text/javascript' });
     var url = URL.createObjectURL(blob);
     var s = doc.createElement('script');
@@ -26,6 +27,7 @@
     stage.addEventListener('load', function onload() {
       stage.removeEventListener('load', onload);
       var doc = stage.contentDocument;
+      if (!doc) return;
       var steps = [];
       if (cfg.artKit) steps.push(cfg.artKit);
       steps.push(cfg.presetup);
