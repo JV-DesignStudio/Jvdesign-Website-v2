@@ -6266,7 +6266,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-23T10:38:33.159Z",
+    "generated": "2026-10-23T10:41:58.476Z",
     "workshops": 344,
     "games": 12,
     "tools": 50,
