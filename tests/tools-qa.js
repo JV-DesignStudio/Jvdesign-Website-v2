@@ -34,8 +34,14 @@ for(const file of files){
   const hasViewport = /<meta[^>]+name=["']viewport["']/i.test(html);
   const noZoom = /user-scalable\s*=\s*no|maxim(?:um)?-scale\s*=\s*1/i.test(html);
   const title = /<title>[^<]+<\/title>/i.test(html);
-  const ids = [...html.matchAll(/\bid\s*=\s*["']([^"']+)["']/gi)].map(m=>m[1]);
-  const dups = ids.filter((id,i)=> ids.indexOf(id)!==i && !id.includes('${'));
+  // Strip <script> blocks before scanning to avoid false positives from JS template literals
+  const htmlNoScript = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+  // Match id= only as an HTML attribute (not data-*-id= or JS variable assignments)
+  const ids = [...htmlNoScript.matchAll(/(?<![a-z-])id\s*=\s*["']([^"']+)["']/gi)]
+    .filter(m => { const pre = htmlNoScript.slice(Math.max(0,m.index-1),m.index); return !/[-a-zA-Z]/.test(pre); })
+    .filter(m => !m[1].includes('${'))
+    .map(m=>m[1]);
+  const dups = ids.filter((id,i)=> ids.indexOf(id)!==i);
   check(title, file, 'missing title');
   check(hasViewport, file, 'missing viewport');
   check(!noZoom, file, 'viewport disables zoom');
