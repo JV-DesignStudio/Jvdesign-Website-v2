@@ -94,6 +94,16 @@ let coinPickups = 0, coinSpawns = 0, slickSpawns = 0;
 let guideOn = false, guideStep = 0, guideTimer = 0;
 // Engine hum.
 let engine = null;
+// Visual feedback timers
+let flashTimer = 0;          // near-miss screen-edge flash
+let driftFloatTimer = 0;     // periodic drift score float
+let driftWindowEarned = 0;   // coins earned in current drift window
+let crashCamTimer = 0;       // crash slow-mo duration
+let crashCamEarned = 0;      // earned coins deferred until crash cam ends
+let boostSmokeTimer = 0;     // nitro exhaust particle timer
+let driftSmokeTimer = 0;     // drift tire-smoke particle timer
+let lightningTimer = 0;      // seconds until next lightning strike
+let lightningFlash = 0;      // current flash brightness 0-1
 
 /* ── Garage: coins, cars, upgrades and missions, saved on this device ── */
 const GARAGE_KEY = 'jvds-highway-garage';
@@ -516,6 +526,10 @@ function reset() {
   endReason = 'crash';
   if (milestones) milestones.reset();
   if (shake) shake.reset();
+  flashTimer = 0; driftFloatTimer = 0; driftWindowEarned = 0;
+  crashCamTimer = 0; crashCamEarned = 0;
+  boostSmokeTimer = 0; driftSmokeTimer = 0;
+  lightningTimer = 4 + Math.random() * 8; lightningFlash = 0;
   for (let i = 0; i < 20; i++) {
     roadLines.push({ y: i * (H / 8), x: 0 });
   }
@@ -608,8 +622,11 @@ function engineUpdate(){
   if (!engine) return;
   try {
     const v = audio.getVolume ? audio.getVolume() : 0;
-    engine.osc.frequency.value = 55 + Math.min(1, dist / MAX_DIST) * 95;
-    engine.g.gain.value = 0.05 * v;
+    const speedFrac = Math.min(1, dist / MAX_DIST);
+    const th = Math.max(0, throttle);
+    const boostPitch = boostTimer > 0 ? 20 : 0;
+    engine.osc.frequency.value = 55 + speedFrac * 95 + th * 28 + boostPitch;
+    engine.g.gain.value = (0.036 + th * 0.022 + (boostTimer > 0 ? 0.015 : 0)) * v;
   } catch (e) {}
 }
 function engineStop(){
@@ -671,6 +688,12 @@ function endGame(reason) {
   if (endReason === 'win') { try { audio?.playSuccess?.(); } catch (e) {} }
   else { try { audio?.playError?.(); } catch(e) {} }
   toast('Run banked +' + earned + ' coins');
+  // Crash cam: slow-mo pause before end screen (deferred in loop)
+  if (endReason === 'crash' && !reduceMotion) {
+    crashCamEarned = earned;
+    crashCamTimer = 0.4;
+    return;
+  }
   if (storyRun) {
     storyRun.finish((endReason === 'win' || score > 2000) ? 'success' : 'fail', score);
   } else {
@@ -695,10 +718,16 @@ function refreshLeaderboard() {
   if (!el || !sys) return;
   let board = [];
   try { board = sys.getLeaderboard() || []; } catch (e) { board = []; }
-  const top = board.slice(0, 3).map(r => Math.floor(r.score || 0).toLocaleString());
-  el.textContent = top.length
-    ? '🏁 Your top runs: ' + top.join('  ·  ')
-    : '🏁 No runs yet. Hit Start Driving to set your first score.';
+  if (!board.length) {
+    el.innerHTML = '🏁 No runs yet. Hit <b>Start Driving</b> to set your first score.';
+    return;
+  }
+  const pb = Math.floor(board[0].score || 0);
+  const runs = board.length;
+  const prev = board.slice(1, 3).map(r => Math.floor(r.score || 0).toLocaleString());
+  el.innerHTML =
+    '<span style="font-size:24px;font-weight:900;color:#fbbf24;letter-spacing:-.5px">🏆 ' + pb.toLocaleString() + '</span>' +
+    '<span style="font-size:11px;color:#64748b;display:block;margin-top:1px">Personal best · ' + runs + ' run' + (runs !== 1 ? 's' : '') + (prev.length ? '  ·  Previous: ' + prev.join('  ·  ') : '') + '</span>';
 }
 
 function refreshCoins() {
@@ -1160,13 +1189,35 @@ function update(dt) {
 
   // Drift: sliding sideways at speed earns cash, with skid marks behind you.
   if (driftWindow > 0) {
+    if (!drifting) { haptic(15); driftWindowEarned = 0; driftFloatTimer = 0.5; } // drift start
     driftWindow -= dt;
     drifting = true;
-    driftPoints += (eff / 600) * 12 * dt * vscale;
+    const driftGain = (eff / 600) * 12 * dt * vscale;
+    driftPoints += driftGain;
+    driftWindowEarned += driftGain;
     driftSkidTimer -= dt;
     if (driftSkidTimer <= 0) { driftSkidTimer = .05; skids.push({ x: player.x, y: H - player.h * 1.3, life: 1 }); }
+    // Tire smoke burst from rear wheel positions
+    if (!reduceMotion) {
+      driftSmokeTimer -= dt;
+      if (driftSmokeTimer <= 0) {
+        driftSmokeTimer = 0.055;
+        const wy = H - player.h * 0.65;
+        for (let s = -1; s <= 1; s += 2) {
+          particles.push({ x: player.x + s * player.w * 0.22, y: wy, vx: s * (18 + Math.random() * 52), vy: -(28 + Math.random() * 68), life: 0.65 + Math.random() * 0.35, color: 'rgba(148,163,184,0.6)', size: (4 + Math.random() * 5) * U });
+        }
+      }
+    }
+    // Periodic float showing drift earnings mid-slide
+    driftFloatTimer -= dt;
+    if (driftFloatTimer <= 0 && driftWindowEarned > 0.5) {
+      driftFloatTimer = 0.65;
+      spawnFloat(player.x + (Math.random() - 0.5) * 28 * U, H - player.h * 2.1, '+' + Math.floor(driftWindowEarned * DRIFT_CASH_RATE) + ' DRIFT', '#f97316');
+      driftWindowEarned = 0;
+    }
   } else {
     drifting = false;
+    driftWindowEarned = 0;
   }
   skids.forEach(s => { s.y += speed * dt; s.life -= dt * 1.5; });
   skids = skids.filter(s => s.life > 0);
@@ -1179,7 +1230,7 @@ function update(dt) {
   if (combo >= 10) unlock('hd-combo-10');
 
   if (slipTimer > 0) slipTimer -= dt;
-  const grip = (14 + 3.5 * lvl('grip')) * (slipTimer > 0 ? 0.3 : 1);
+  const grip = (tiltActive ? 22 : 14 + 3.5 * lvl('grip')) * (slipTimer > 0 ? 0.3 : 1);
   // Tilt steering: map device gamma directly to targetX for free-range movement
   if (tiltActive) {
     const TILT_RANGE = 28;
@@ -1209,6 +1260,25 @@ function update(dt) {
     JVDSShowcase.dust(particles, player.x, H - player.h * .1, 'rgba(148,163,184,.9)', 2, { drift: 40, spread: 16, up: 40, size: 2 });
     dustTimer = .12;
   }
+  // Nitro exhaust: blue particle stream from exhaust pipes during boost
+  if (boostTimer > 0 && !reduceMotion) {
+    boostSmokeTimer -= dt;
+    if (boostSmokeTimer <= 0) {
+      boostSmokeTimer = 0.03;
+      const ey = H - player.h * 0.62;
+      for (let s = -1; s <= 1; s += 2) {
+        particles.push({ x: player.x + s * player.w * 0.2, y: ey, vx: (Math.random() - 0.5) * 70, vy: 60 + Math.random() * 100, life: 0.45 + Math.random() * 0.3, color: '#38bdf8', size: (2.2 + Math.random() * 3.5) * U });
+      }
+    }
+  }
+  // Decrement visual timers
+  if (flashTimer > 0) flashTimer = Math.max(0, flashTimer - dt);
+  // Lightning countdown in final stretch
+  if (running && timeLeft < 20 && !reduceMotion) {
+    lightningTimer -= dt;
+    if (lightningTimer <= 0) { lightningFlash = 1; lightningTimer = 2.5 + Math.random() * 4; }
+  }
+  if (lightningFlash > 0) lightningFlash = Math.max(0, lightningFlash - dt * 9);
 
   spawnTimer -= dt;
   if (spawnTimer <= 0) {
@@ -1303,7 +1373,8 @@ function update(dt) {
         toast('Near Miss x' + combo + ' +' + bonus);
         spawnFloat(c.x + (Math.random() - 0.5) * 30 * U, c.y, '+' + bonus + ' ×' + combo, combo >= 5 ? '#f97316' : '#fbbf24');
         burst(player.x, pTop, '#fbbf24', 8);
-        haptic(12);
+        haptic(combo >= 5 ? [20, 10, 20] : 12);
+        flashTimer = Math.max(flashTimer, 0.22);
         try { audio?.playCombo?.(combo); } catch(e) {}
       } else if (!c.wrongWay && gap >= laneW * .25 && gap < laneW * .55) {
         // Danger zone: threading close without a full near-miss earns continuous score
@@ -1460,6 +1531,25 @@ function drawSky() {
   ctx.fillStyle = 'rgba(148,163,184,.35)';
   ctx.beginPath(); ctx.arc(mx - mr * .3, my - mr * .2, mr * .22, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.arc(mx + mr * .25, my + mr * .3, mr * .16, 0, Math.PI * 2); ctx.fill();
+
+  // Dynamic time-of-day overlays
+  const rushFrac = rushHourActive ? Math.min(1, rushHourTimer / RUSH_HOUR_DURATION) :
+    (running && timeLeft < RUSH_HOUR_AT ? Math.min(1, (RUSH_HOUR_AT - timeLeft) / 18) : 0);
+  const stormFrac = running ? Math.max(0, Math.min(1, (30 - timeLeft) / 22)) : 0;
+  if (rushFrac > 0) {
+    ctx.save();
+    ctx.globalAlpha = rushFrac * 0.2;
+    const rg = ctx.createLinearGradient(0, 0, 0, H);
+    rg.addColorStop(0, 'rgba(239,68,68,0)'); rg.addColorStop(0.45, 'rgba(220,60,30,0.7)'); rg.addColorStop(1, 'rgba(249,115,22,1)');
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+  if (stormFrac > 0) {
+    ctx.save();
+    ctx.globalAlpha = stormFrac * 0.28;
+    ctx.fillStyle = '#0a0e16'; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
 
   const glow = ctx.createLinearGradient(0, H * .12, 0, H * .34);
   glow.addColorStop(0, 'rgba(245,158,11,.12)'); glow.addColorStop(1, 'rgba(245,158,11,0)');
@@ -1822,6 +1912,27 @@ function drawSpeedEffect() {
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, W, H);
   }
+  // Radial warp lines from vanishing point at high speed
+  if (t > 0.28 && !reduceMotion) {
+    const vx = W / 2, vy = H * 0.22;
+    const lc = Math.floor(6 + t * 14);
+    ctx.save();
+    for (let i = 0; i < lc; i++) {
+      const angle = (i / lc) * Math.PI * 2;
+      const base = H * (0.2 + t * 0.16);
+      const len = base * (0.65 + hash(i * 3.1 + Math.floor(dist * 0.018)) * 0.7);
+      const cos = Math.cos(angle), sin = Math.sin(angle);
+      ctx.globalAlpha = t * (0.07 + hash(i * 7.3) * 0.09);
+      ctx.strokeStyle = boostTimer > 0 ? 'rgba(56,189,248,0.9)' : 'rgba(226,232,240,0.9)';
+      ctx.lineWidth = (0.5 + t * 1.1) * U;
+      ctx.beginPath();
+      ctx.moveTo(vx + cos * len * 0.82, vy + sin * len * 0.82);
+      ctx.lineTo(vx + cos * len, vy + sin * len);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
 }
 
 function drawComboMeter() {
@@ -1896,6 +2007,29 @@ function drawTiltHorizon() {
   ctx.restore();
 }
 
+function drawNearMissFlash() {
+  if (flashTimer <= 0 || reduceMotion) return;
+  const alpha = (flashTimer / 0.22) * 0.46;
+  const fg = ctx.createRadialGradient(W / 2, H / 2, H * 0.08, W / 2, H / 2, H * 0.74);
+  fg.addColorStop(0, 'rgba(251,191,36,0)');
+  fg.addColorStop(0.52, 'rgba(251,191,36,0)');
+  fg.addColorStop(1, 'rgba(251,191,36,' + alpha.toFixed(3) + ')');
+  ctx.fillStyle = fg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawNitroOverlay() {
+  if (boostTimer <= 0 || reduceMotion) return;
+  const pulse = 0.55 + 0.45 * Math.sin(skyTime * 0.013);
+  const alpha = Math.min(1, boostTimer / BOOST_TIME) * pulse * 0.24;
+  const ng = ctx.createRadialGradient(W / 2, H * 0.5, H * 0.14, W / 2, H * 0.5, H * 0.76);
+  ng.addColorStop(0, 'rgba(56,189,248,0)');
+  ng.addColorStop(0.48, 'rgba(56,189,248,0)');
+  ng.addColorStop(1, 'rgba(56,189,248,' + alpha.toFixed(3) + ')');
+  ctx.fillStyle = ng;
+  ctx.fillRect(0, 0, W, H);
+}
+
 function draw() {
   if (!W || !H) return;
   ctx.clearRect(0, 0, W, H);
@@ -1917,6 +2051,8 @@ function draw() {
   cars.forEach(drawVehicle);
   drawPlayer();
   drawSpeedEffect();
+  drawNearMissFlash();
+  drawNitroOverlay();
   drawComboMeter();
 
   particles.forEach(p => {
@@ -1936,8 +2072,8 @@ function draw() {
   });
   ctx.globalAlpha = 1;
 
-  if (dist > 3000 && !reduceMotion) {
-    const rainAlpha = Math.min(0.22, (dist - 3000) / 10000);
+  if ((dist > 3000 || (running && timeLeft < 30)) && !reduceMotion) {
+    const rainAlpha = Math.min(0.26, Math.max((dist - 3000) / 10000, running ? (30 - timeLeft) / 120 : 0));
     ctx.save();
     ctx.globalAlpha = rainAlpha;
     ctx.strokeStyle = 'rgba(147,197,253,.8)';
@@ -1955,6 +2091,12 @@ function draw() {
     ctx.restore();
   }
 
+  // Lightning flash in final countdown
+  if (lightningFlash > 0) {
+    ctx.fillStyle = 'rgba(210,225,255,' + (lightningFlash * 0.38).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+
   if (!running && !dead) {
     ctx.fillStyle = 'rgba(0,0,0,.4)';
     ctx.fillRect(0, 0, W, H);
@@ -1965,10 +2107,18 @@ function draw() {
 }
 
 function loop(now) {
-  const dt = Math.min(.05, (now - last) / 1000);
+  const rawDt = Math.min(.05, (now - last) / 1000);
   last = now;
   skyTime = now;
   fit();
+  if (crashCamTimer > 0) {
+    crashCamTimer = Math.max(0, crashCamTimer - rawDt);
+    if (crashCamTimer === 0) {
+      if (storyRun) storyRun.finish(score > 2000 ? 'success' : 'fail', score);
+      else showEnd(crashCamEarned);
+    }
+  }
+  const dt = crashCamTimer > 0 ? rawDt * 0.15 : rawDt;
   update(dt);
   draw();
   requestAnimationFrame(loop);
@@ -2004,7 +2154,7 @@ C.addEventListener('pointerdown', e => {
   swiping = true;
 });
 C.addEventListener('pointermove', e => {
-  if (!swiping || !running || dead) return;
+  if (!swiping || !running || dead || tiltActive) return;
   const dx = e.clientX - swipeStartX;
   if (Math.abs(dx) > 3) {
     const cssW = C.getBoundingClientRect().width || 1;
@@ -2019,12 +2169,17 @@ C.addEventListener('pointerup', e => {
   if (swiping && running && !dead) {
     const dx = e.clientX - swipeStartX;
     const dy = e.clientY - swipeStartY;
-    // Pure tap (no drag): steer left or right based on which side of the screen was touched.
+    // Pure tap (no drag): recalibrate tilt if active, otherwise lane-steer.
     if (Math.abs(dx) < 18 && Math.abs(dy) < 18) {
-      const rect = C.getBoundingClientRect();
-      const relX = e.clientX - rect.left;
-      if (relX < rect.width * .38) moveLane(-1);
-      else if (relX > rect.width * .62) moveLane(1);
+      if (tiltActive) {
+        tiltBaseline = tiltGamma;
+        toast('Tilt calibrated!');
+      } else {
+        const rect = C.getBoundingClientRect();
+        const relX = e.clientX - rect.left;
+        if (relX < rect.width * .38) moveLane(-1);
+        else if (relX > rect.width * .62) moveLane(1);
+      }
     }
   }
   swiping = false;
