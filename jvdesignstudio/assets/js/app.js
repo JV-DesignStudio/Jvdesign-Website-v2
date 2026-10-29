@@ -217,8 +217,10 @@ async function bootWorkspace() {
           mascotAvatar:  track.mascotAvatar,
           mascotName:    track.mascot,
           storefront: [
-            { label: '🎮 itch.io games', url: 'https://jvdesignstudio.itch.io' },
-            { label: '☕ Ko-fi',          url: 'https://ko-fi.com/jvdesignstudio' },
+            { label: '🎮 itch.io games',    url: 'https://jvdesignstudio.itch.io' },
+            { label: '📚 Picture books',    url: 'https://www.amazon.co.uk/s?k=jvdesignstudio' },
+            { label: '🛒 KDP books',        url: 'https://www.amazon.co.uk/s?k=jvdesignstudio' },
+            { label: '☕ Ko-fi',            url: 'https://ko-fi.com/jvdesignstudio' },
           ],
         });
       }

@@ -91,6 +91,42 @@ function buildShirtDesignSVG() {
 </svg>`;
 }
 
+/**
+ * Build a minimal ASCII STL file for a mascot figure placeholder.
+ * Players can open this in any slicer (Cura, PrusaSlicer) as a base template.
+ * Each mascot gets a labelled flat disc - a starting point for remixing.
+ */
+function buildMascotSTL(mascotName, mascotEmoji) {
+  // Flat cylinder approximated as a 16-sided prism (printable coaster/token shape)
+  const R = 20, H = 3, SIDES = 16;
+  const triangles = [];
+  for (let i = 0; i < SIDES; i++) {
+    const a0 = (i / SIDES) * 2 * Math.PI;
+    const a1 = ((i + 1) / SIDES) * 2 * Math.PI;
+    const x0 = R * Math.cos(a0), y0 = R * Math.sin(a0);
+    const x1 = R * Math.cos(a1), y1 = R * Math.sin(a1);
+    // Top face
+    triangles.push(`  facet normal 0 0 1\n    outer loop\n      vertex 0 0 ${H}\n      vertex ${x0.toFixed(4)} ${y0.toFixed(4)} ${H}\n      vertex ${x1.toFixed(4)} ${y1.toFixed(4)} ${H}\n    endloop\n  endfacet`);
+    // Bottom face
+    triangles.push(`  facet normal 0 0 -1\n    outer loop\n      vertex 0 0 0\n      vertex ${x1.toFixed(4)} ${y1.toFixed(4)} 0\n      vertex ${x0.toFixed(4)} ${y0.toFixed(4)} 0\n    endloop\n  endfacet`);
+    // Side face (two triangles)
+    triangles.push(`  facet normal ${Math.cos((a0+a1)/2).toFixed(4)} ${Math.sin((a0+a1)/2).toFixed(4)} 0\n    outer loop\n      vertex ${x0.toFixed(4)} ${y0.toFixed(4)} 0\n      vertex ${x1.toFixed(4)} ${y1.toFixed(4)} 0\n      vertex ${x1.toFixed(4)} ${y1.toFixed(4)} ${H}\n    endloop\n  endfacet`);
+    triangles.push(`  facet normal ${Math.cos((a0+a1)/2).toFixed(4)} ${Math.sin((a0+a1)/2).toFixed(4)} 0\n    outer loop\n      vertex ${x0.toFixed(4)} ${y0.toFixed(4)} 0\n      vertex ${x1.toFixed(4)} ${y1.toFixed(4)} ${H}\n      vertex ${x0.toFixed(4)} ${y0.toFixed(4)} ${H}\n    endloop\n  endfacet`);
+  }
+  return `solid jvds_${mascotName.toLowerCase()}_token\n` + triangles.join('\n') + `\nendsolid jvds_${mascotName.toLowerCase()}_token`;
+}
+
+/** Trigger STL download */
+function downloadSTL(stlContent, filename) {
+  const blob = new Blob([stlContent], { type: 'model/stl' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 /** Trigger SVG download */
 function downloadSVG(svgContent, filename) {
   const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
@@ -123,6 +159,14 @@ export function checkPrintableUnlock(newLevel, prevLevel) {
       body:  'You earned a heat-transfer shirt design. Take it to a print shop or iron it on yourself.',
       btnLabel: '🎽 Download Shirt Design',
       onDownload: () => downloadSVG(buildShirtDesignSVG(), 'jvds-shirt-design.svg'),
+    });
+  }
+  if (prevLevel < 15 && newLevel >= 15) {
+    showPrintablePopup({
+      title: 'Level 15 Unlocked!',
+      body:  'You earned a 3D printable mascot token template. Open it in any slicer (Cura, PrusaSlicer) and print your own Lumo figure.',
+      btnLabel: '🖨️ Download 3D Token (STL)',
+      onDownload: () => downloadSTL(buildMascotSTL('Lumo', '🦊'), 'jvds-lumo-token.stl'),
     });
   }
 }
