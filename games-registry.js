@@ -281,6 +281,29 @@ window.JVDS_GAMES = [
     "learnHref": "/workshops/scratch-maze-workshop.html",
     "learnLabel": "Build a road-crossing game"},
   {
+    "id": "lumo-hive",
+    "thumb": "assets/game-thumbs/lumo-hive.webp",
+    "cat": "Action",
+    "file": "lumo-hive.html",
+    "title": "Lumo's Hive Strike",
+    "tag": "Formation Shooter",
+    "emoji": "🐝",
+    "bg": "linear-gradient(135deg,#0d0620,#3b0764)",
+    "kids": true,
+    "desc": "Lumo holds the night garden against the Hive. Dodge the dive swarm, chain combos and clear the formation - like Galaga, but with bees and a purple fox.",
+    "difficulty": "Easy to learn",
+    "session": "3-5 min",
+    "controls": "A/D or arrow keys to move, Space to shoot (or on-screen buttons)",
+    "storyHook": "The Hive has come for the night garden and Lumo is the last line of defence.",
+    "character": "Lumo",
+    "objective": "Clear each wave's formation - shoot the drones, dodge the dives and chain kills for big combos.",
+    "finishLine": "The last bee falls, Lumo lights the garden again and your best run is saved.",
+    "arcadeSession": "3-5 min",
+    "age": "Ages 7-14",
+    "learning": "Reflexes · Pattern reading · Combos",
+    "learnHref": "/tools/arcade-game-maker.html",
+    "learnLabel": "Make your own shooter"},
+  {
     "id": "stardust-snake",
     "thumb": "assets/game-thumbs/stardust-snake.webp",
     "cat": "Arcade",
@@ -315,7 +338,7 @@ window.JVDS_GAMES = [
    Definitions live in GAME_QUALITY.md. Change a label here (one line) and it
    shows on the arcade cabinet automatically. */
 window.JVDS_GAME_QUALITY = {
-  "rustfall": "READY",
+  "rustfall": "HIDDEN",
   "echo-flight": "READY",
   "nova-siege": "READY",
   "arcane-citadel": "READY",
@@ -323,10 +346,12 @@ window.JVDS_GAME_QUALITY = {
   "ember-smash": "READY",
   "gem-match": "READY",
   "highway-dodge": "READY",
-  "sky-high-friends": "BETA",
+  "sky-high-friends": "HIDDEN",
   "critter-whack": "READY",
   "crossy-crew": "READY",
-  "stardust-snake": "READY"
+  "stardust-snake": "READY",
+  "lumo-hive": "BETA",
+  "lumo-firefly": "HIDDEN"
 };
 (function () {
   var labels = window.JVDS_GAME_QUALITY || {};
