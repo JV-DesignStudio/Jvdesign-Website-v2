@@ -9,7 +9,9 @@ import { SoundFX, ParticleEngine } from './core/fx.js';
 import { openProfileModal, openMascotVault, checkLoreUnlocks } from './core/ui.js';
 import { PlayerStats, showTrackCompletionPopup } from './core/stats.js';
 import { mountMobileToolbar } from './core/mobile-keys.js';
-import { checkPrintableUnlock } from './core/printables.js';
+import { checkPrintableUnlock }   from './core/printables.js';
+import { showHint }               from './core/ai-assistant.js';
+import { openProfileManager }     from './core/profiles.js';
 
 /* ── Service Worker registration ── */
 if ('serviceWorker' in navigator) {
@@ -43,6 +45,7 @@ async function bootDashboard() {
   // HUD buttons
   document.getElementById('btn-profile')?.addEventListener('click', openProfileModal);
   document.getElementById('btn-vault')?.addEventListener('click', openMascotVault);
+  document.getElementById('btn-profiles')?.addEventListener('click', openProfileManager);
 
   let data;
   try {
@@ -228,6 +231,7 @@ async function bootWorkspace() {
       }
     } else if (results.some(r => !r.passed)) {
       SoundFX.playFailure();
+      showHint(results, logs, track?.mascotId ?? 'lumo');
     }
   }
 

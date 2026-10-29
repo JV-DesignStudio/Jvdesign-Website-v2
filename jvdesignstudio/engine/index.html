@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JV-Engine Starter</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #1a1a1a;
+      --beige:    #F0EAD6;
+      --teal:     #70A3A7;
+      --charcoal: #403B33;
+      --rose:     #BC4749;
+      --gold:     #f39c12;
+      --font:     system-ui, sans-serif;
+      --mono:     'Courier New', monospace;
+    }
+    body { background: var(--bg); color: var(--beige); font-family: var(--font); min-height: 100vh; }
+    header {
+      display: flex; align-items: center; gap: 1rem;
+      padding: .6rem 1.5rem;
+      background: var(--charcoal);
+      border-bottom: 1px solid #524c42;
+      position: sticky; top: 0; z-index: 10;
+    }
+    h1 { font-size: 1.2rem; }
+    .stat { font-size: .8rem; margin-left: auto; display: flex; gap: .75rem; }
+    .stat span { background: rgba(255,255,255,.07); padding: .2rem .6rem; border-radius: 4px; }
+    main { max-width: 960px; margin: 2rem auto; padding: 0 1.5rem; }
+    h2 { font-size: 1.4rem; margin-bottom: 1rem; }
+    #tree-container { min-height: 200px; overflow-x: auto; }
+    .hint { color: #70A3A7; font-size: .85rem; margin-bottom: .75rem; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>🚀 JV-Engine</h1>
+  <div class="stat">
+    <span id="xp-display">0 XP</span>
+    <span id="level-display">Lvl 1</span>
+  </div>
+</header>
+<main>
+  <h2 id="track-title">Loading track...</h2>
+  <p class="hint">Click an unlocked node to open its quest in the workspace.</p>
+  <div id="tree-container"></div>
+</main>
+
+<script type="module">
+  import { GameState }         from '../assets/js/core/state.js';
+  import { SkillTreeRenderer } from '../assets/js/core/skill-tree.js';
+
+  const state = GameState.get();
+  const level = Math.floor(Math.sqrt((state.xp ?? 0) / 50)) + 1;
+  document.getElementById('xp-display').textContent    = `${state.xp ?? 0} XP`;
+  document.getElementById('level-display').textContent = `Lvl ${level}`;
+
+  const res   = await fetch('./example-track.json');
+  const track = await res.json();
+  document.getElementById('track-title').textContent = track.title;
+
+  // Override workspace URL so nodes link to the engine workspace
+  const renderer = new SkillTreeRenderer('tree-container', track, {
+    workspacePath: './workspace.html',
+  });
+  renderer.render();
+</script>
+</body>
+</html>

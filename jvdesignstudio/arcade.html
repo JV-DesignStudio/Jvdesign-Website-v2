@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Quests - JVDesignStudio</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./assets/css/variables.css">
+  <link rel="stylesheet" href="./assets/css/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    .arcade-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      padding: 1.5rem 0 3rem;
+    }
+    .quest-card {
+      background: var(--charcoal);
+      border: var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      transition: border-color .15s;
+    }
+    .quest-card:hover { border-color: var(--teal); }
+    .quest-card-header {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+    .quest-card-avatar { font-size: 1.8rem; flex-shrink: 0; }
+    .quest-card-title {
+      font-weight: 700;
+      font-size: .9rem;
+      color: var(--beige);
+      line-height: 1.3;
+    }
+    .quest-card-meta {
+      font-size: .72rem;
+      color: var(--charcoal-light);
+    }
+    .quest-card-actions {
+      display: flex;
+      gap: .4rem;
+      margin-top: .25rem;
+    }
+    .arcade-toolbar {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      padding: 1rem 0 .5rem;
+      align-items: center;
+    }
+    .arcade-empty {
+      text-align: center;
+      color: var(--charcoal-light);
+      padding: 3rem 1rem;
+      font-size: .9rem;
+    }
+    .arcade-empty em { display: block; font-size: 3rem; margin-bottom: 1rem; font-style: normal; }
+    #share-toast {
+      position: fixed; bottom: 1.5rem; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--charcoal); border: 1px solid var(--teal);
+      color: var(--beige); padding: .55rem 1.25rem;
+      border-radius: var(--radius-lg); font-size: .85rem;
+      opacity: 0; transition: opacity .3s, transform .3s;
+      pointer-events: none; z-index: 9999; white-space: nowrap;
+    }
+    #share-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+  <header class="hud-header">
+    <a href="./index.html" class="nav-back">← Back</a>
+    <h1 class="site-title">Community Quests</h1>
+    <div class="hud-stats">
+      <div class="hud-stat"><span class="icon">⚡</span> <span id="hud-xp">0 XP</span></div>
+      <div class="hud-stat"><span class="icon">⭐</span> <span id="hud-level">Lvl 1</span></div>
+    </div>
+  </header>
+
+  <div class="container">
+    <section class="hero" style="padding:2rem 0 1rem;text-align:left">
+      <h2 class="hero-heading" style="font-size:1.6rem">Player-Built Quests</h2>
+      <p class="hero-sub" style="margin:0">Import quests built with the Quest Builder, share your own via URL or <code>.jvtrack</code> file.</p>
+    </section>
+
+    <div class="arcade-toolbar">
+      <button id="btn-import-file" class="btn-teal">📂 Import .jvtrack</button>
+      <button id="btn-import-url"  class="btn-clear">🔗 Load from URL hash</button>
+      <button id="btn-open-builder" class="btn-clear">🛠️ Open Quest Builder</button>
+    </div>
+
+    <div id="arcade-grid" class="arcade-grid">
+      <p class="arcade-empty"><em>🕹️</em>No community quests yet.<br>Import a <code>.jvtrack</code> file or paste a share link to get started.</p>
+    </div>
+  </div>
+
+  <div id="share-toast"></div>
+
+  <footer class="site-footer">
+    <span>© 2026 JVDesignStudio</span>
+    <a href="./index.html">Main Tracks</a>
+  </footer>
+
+  <script type="module">
+    import { GameState }         from './assets/js/core/state.js';
+    import { SkillTreeRenderer } from './assets/js/core/skill-tree.js';
+    import { CommunityLibrary, importTrackFile, readShareURL, exportTrackFile, buildShareURL } from './assets/js/core/community.js';
+
+    /* HUD */
+    const state = GameState.get();
+    const level = Math.floor(Math.sqrt((state.xp ?? 0) / 50)) + 1;
+    document.getElementById('hud-xp').textContent    = `${state.xp} XP`;
+    document.getElementById('hud-level').textContent = `Lvl ${level}`;
+
+    /* Check for shared track in URL hash */
+    const sharedTrack = readShareURL();
+    if (sharedTrack) {
+      CommunityLibrary.add(sharedTrack);
+      history.replaceState(null, '', location.pathname); // clean up hash
+      showToast(`"${sharedTrack.title}" imported from share link!`);
+    }
+
+    renderGrid();
+
+    function renderGrid() {
+      const tracks = CommunityLibrary.getAll();
+      const grid   = document.getElementById('arcade-grid');
+      if (!tracks.length) {
+        grid.innerHTML = `<p class="arcade-empty"><em>🕹️</em>No community quests yet.<br>Import a <code>.jvtrack</code> file or paste a share link to get started.</p>`;
+        return;
+      }
+      grid.innerHTML = tracks.map(t => `
+        <div class="quest-card">
+          <div class="quest-card-header">
+            <span class="quest-card-avatar">${t.mascotAvatar ?? '🎮'}</span>
+            <div>
+              <div class="quest-card-title">${escH(t.title ?? t.id)}</div>
+              <div class="quest-card-meta">${(t.nodes ?? []).length} quest${t.nodes?.length !== 1 ? 's' : ''} &middot; ${escH(t.mascot ?? 'Community')}</div>
+            </div>
+          </div>
+          ${t.description ? `<div style="font-size:.78rem;color:#b0a898;line-height:1.5">${escH(t.description)}</div>` : ''}
+          <div class="quest-card-actions">
+            <button class="btn-teal" style="font-size:.78rem" onclick="playTrack('${t.id}')">▶ Play</button>
+            <button class="btn-clear" style="font-size:.78rem" onclick="shareTrack('${t.id}')">🔗 Share</button>
+            <button class="btn-clear" style="font-size:.78rem" onclick="exportTrack('${t.id}')">💾 Export</button>
+            <button class="btn-clear" style="font-size:.78rem;color:#BC4749" onclick="removeTrack('${t.id}')">✕</button>
+          </div>
+        </div>`).join('');
+    }
+
+    window.playTrack = id => {
+      const track = CommunityLibrary.find(id);
+      if (!track?.nodes?.length) return;
+      window.location.href = `workspace.html?node=${track.nodes[0].id}&customTrackId=${id}`;
+    };
+
+    window.shareTrack = id => {
+      const track = CommunityLibrary.find(id);
+      if (!track) return;
+      const url = buildShareURL(track);
+      navigator.clipboard?.writeText(url).catch(() => {});
+      showToast('Share link copied to clipboard!');
+    };
+
+    window.exportTrack = id => {
+      const track = CommunityLibrary.find(id);
+      if (track) exportTrackFile(track);
+    };
+
+    window.removeTrack = id => {
+      if (!confirm('Remove this track from your library?')) return;
+      CommunityLibrary.remove(id);
+      renderGrid();
+    };
+
+    document.getElementById('btn-import-file').onclick = async () => {
+      try {
+        const track = await importTrackFile();
+        CommunityLibrary.add(track);
+        renderGrid();
+        showToast(`"${track.title}" added to library!`);
+      } catch (e) { alert(e.message); }
+    };
+
+    document.getElementById('btn-import-url').onclick = () => {
+      const input = prompt('Paste a JVDesignStudio share URL or hash:')?.trim();
+      if (!input) return;
+      let hash = input;
+      try {
+        const url = new URL(input);
+        hash = new URLSearchParams(url.hash.slice(1)).get('share') ?? input;
+      } catch {}
+      const track = (await import('./assets/js/core/community.js')).decodeTrack(hash);
+      if (!track) { alert('Invalid share link or hash.'); return; }
+      CommunityLibrary.add(track);
+      renderGrid();
+      showToast(`"${track.title}" imported!`);
+    };
+
+    document.getElementById('btn-open-builder').onclick = () => {
+      window.open('./tools/quest-builder.html', '_blank');
+    };
+
+    function showToast(msg) {
+      const el = document.getElementById('share-toast');
+      el.textContent = msg;
+      el.classList.add('visible');
+      setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
+    function escH(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>

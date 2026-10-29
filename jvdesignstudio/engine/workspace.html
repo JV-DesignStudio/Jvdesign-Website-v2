@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quest - JV-Engine</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #1a1a1a;
+      --beige:    #F0EAD6;
+      --teal:     #70A3A7;
+      --charcoal: #403B33;
+      --rose:     #BC4749;
+      --font:     system-ui, sans-serif;
+      --mono:     'Courier New', monospace;
+    }
+    body { background: var(--bg); color: var(--beige); font-family: var(--font);
+           height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    header { display: flex; align-items: center; gap: 1rem; padding: .5rem 1rem;
+             background: var(--charcoal); border-bottom: 1px solid #524c42; flex-shrink: 0; }
+    header a { color: var(--teal); text-decoration: none; font-size: .85rem; }
+    header h1 { font-size: 1rem; }
+    .workspace { display: grid; grid-template-columns: 280px 1fr 280px;
+                 flex: 1; overflow: hidden; }
+    .pane { display: flex; flex-direction: column; border-right: 1px solid var(--charcoal); overflow: hidden; }
+    .pane:last-child { border-right: none; }
+    .pane-title { padding: .4rem .75rem; background: var(--charcoal);
+                  font-size: .75rem; font-weight: 600; color: var(--teal);
+                  text-transform: uppercase; letter-spacing: .05em; flex-shrink: 0; }
+    .pane-body { padding: .75rem; overflow-y: auto; flex: 1; font-size: .84rem; line-height: 1.6; }
+    #code-editor { flex: 1; background: #111; color: var(--beige);
+                   font-family: var(--mono); font-size: .85rem;
+                   padding: .75rem; border: none; resize: none; outline: none; width: 100%; }
+    .editor-toolbar { padding: .4rem .5rem; background: #1e1e1e;
+                      border-top: 1px solid var(--charcoal); display: flex;
+                      gap: .4rem; flex-shrink: 0; }
+    .btn { padding: .35rem .85rem; border: none; border-radius: 4px;
+           font-family: inherit; font-size: .8rem; cursor: pointer; font-weight: 600; }
+    .btn-run { background: var(--teal); color: #000; }
+    .btn-run:hover { filter: brightness(1.1); }
+    #terminal-console { flex: 1; font-family: var(--mono); font-size: .78rem;
+                        overflow-y: auto; padding: .5rem .75rem; }
+    .log-ok    { color: #70A3A7; }
+    .log-error { color: var(--rose); }
+    .log-warn  { color: var(--gold, #f39c12); }
+    .log-info  { color: #524c42; }
+    .log-section { color: #524c42; font-size: .7rem; text-transform: uppercase;
+                   margin: .4rem 0 .15rem; }
+    .test-result.pass { color: #70A3A7; }
+    .test-result.fail { color: var(--rose); }
+    #quest-title { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; }
+    .task-item { margin: .25rem 0; display: flex; gap: .4rem; }
+    .task-dot  { color: var(--teal); }
+    #fx-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 9998; }
+  </style>
+</head>
+<body>
+<header>
+  <a href="./index.html">← Track</a>
+  <h1 id="quest-title">Loading...</h1>
+</header>
+
+<div class="workspace">
+  <!-- Briefing -->
+  <div class="pane">
+    <div class="pane-title">📋 Quest</div>
+    <div class="pane-body">
+      <div id="mascot-line" style="font-size:1.4rem;margin-bottom:.4rem"></div>
+      <div id="briefing-body"></div>
+      <ul id="task-list" style="list-style:none;margin-top:.75rem;padding:0"></ul>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <div class="pane" style="border-right:1px solid var(--charcoal)">
+    <div class="pane-title">✏️ Editor</div>
+    <textarea id="code-editor" spellcheck="false"></textarea>
+    <div class="editor-toolbar">
+      <button id="btn-run" class="btn btn-run">▶ Run (Ctrl+Enter)</button>
+    </div>
+  </div>
+
+  <!-- Console -->
+  <div class="pane">
+    <div class="pane-title">🖥️ Console</div>
+    <div id="terminal-console"><div class="log-info">// Run your code to see output</div></div>
+  </div>
+</div>
+
+<canvas id="fx-canvas"></canvas>
+
+<script type="module">
+  import { GameState }                 from '../assets/js/core/state.js';
+  import { CodeEvaluator }            from '../assets/js/core/evaluator.js';
+  import { SoundFX, ParticleEngine }  from '../assets/js/core/fx.js';
+  import { mountMobileToolbar }       from '../assets/js/core/mobile-keys.js';
+  import { showHint }                 from '../assets/js/core/ai-assistant.js';
+
+  const params  = new URLSearchParams(location.search);
+  const nodeId  = params.get('node');
+
+  mountMobileToolbar(document.getElementById('code-editor'));
+
+  const res   = await fetch('./example-track.json');
+  const track = await res.json();
+  const node  = track.nodes?.find(n => n.id === nodeId);
+
+  if (!node) {
+    document.getElementById('quest-title').textContent = 'Node not found';
+  } else {
+    document.getElementById('quest-title').textContent = node.title;
+    document.getElementById('mascot-line').textContent = track.mascotAvatar ?? '🚀';
+    document.getElementById('briefing-body').innerHTML = node.briefing ?? '';
+    document.getElementById('task-list').innerHTML = (node.testCases ?? []).map(tc =>
+      `<li class="task-item"><span class="task-dot">○</span> ${escH(tc.description)}</li>`
+    ).join('');
+
+    const editor = document.getElementById('code-editor');
+    const savedCode = sessionStorage.getItem(`jve_${nodeId}`);
+    editor.value = savedCode ?? node.initialCode ?? '';
+    editor.addEventListener('input', () => sessionStorage.setItem(`jve_${nodeId}`, editor.value));
+
+    async function runTests() {
+      const console_ = document.getElementById('terminal-console');
+      console_.innerHTML = '<div class="log-info">Running...</div>';
+      const { logs, results } = await CodeEvaluator.run(editor.value, node.testCases ?? []);
+
+      const logLines = logs.map(l => {
+        const cls = l.startsWith('[error]') ? 'log-error' : l.startsWith('[warn]') ? 'log-warn' : 'log-ok';
+        return `<div class="${cls}">${escH(l)}</div>`;
+      });
+      if (!logLines.length) logLines.push('<div class="log-info">// No output</div>');
+
+      const resultLines = results.map(r =>
+        `<div class="test-result ${r.passed?'pass':'fail'}">${r.passed?'✅':'❌'} ${escH(r.description)}${r.error?` <span class="log-error">(${escH(r.error)})</span>`:''}</div>`
+      );
+
+      console_.innerHTML = ['<div class="log-section">Console</div>', ...logLines,
+        results.length ? '<div class="log-section">Tests</div>' : '', ...resultLines].filter(Boolean).join('');
+
+      results.forEach((r, i) => {
+        const dot = document.querySelectorAll('.task-dot')[i];
+        if (dot) dot.textContent = r.passed ? '✓' : '○';
+      });
+
+      const allPassed = results.length && results.every(r => r.passed);
+      if (allPassed) {
+        SoundFX.playSuccess(); ParticleEngine.burst();
+        GameState.markCompleted(nodeId, node.xp ?? 50);
+        const newLevel = GameState.calcLevel(GameState.get().xp);
+        if (newLevel > GameState.calcLevel(GameState.get().xp - (node.xp ?? 50))) SoundFX.playLevelUp();
+      } else {
+        SoundFX.playFailure();
+        showHint(results, logs, track.mascotId ?? 'lumo');
+      }
+    }
+
+    document.getElementById('btn-run').onclick = runTests;
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runTests(); }
+    });
+  }
+
+  function escH(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
