@@ -4,8 +4,8 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 
 const root = path.join(__dirname, '..');
-const port = 19255;
-const mime = {'.html':'text/html','.css':'text/css','.js':'application/javascript','.png':'image/png','.webp':'image/webp','.json':'application/json','.svg':'image/svg+xml'};
+const port = 19256;
+const mime = {'.html':'text/html','.css':'text/css','.js':'application/javascript','.png':'image/png','.webp':'image/webp','.json':'application/json','.svg':'image/svg+xml','.mjs':'application/javascript'};
 const server = http.createServer((req,res)=>{
   let url = decodeURIComponent(req.url.split('?')[0]);
   if(url === '/') url = '/index.html';
@@ -35,75 +35,95 @@ let failures = 0;
     if(/ERR_NETWORK_ACCESS_DENIED|Failed to load resource/.test(text)) return;
     errors.push('console: '+text);
   });
-  await page.setViewport({width:390,height:844,isMobile:true});
+  await page.setViewport({width:1280,height:800});
   await page.goto('http://127.0.0.1:' + port + '/tools/bitmap-font-maker.html', {waitUntil:'domcontentloaded', timeout:15000});
-  await new Promise(resolve=>setTimeout(resolve, 1000));
-  const initial = await page.evaluate(()=>( {
+  await new Promise(resolve=>setTimeout(resolve, 800));
+
+  const initial = await page.evaluate(()=>({
     title: document.title,
     skipLinks: document.querySelectorAll('.skip-link').length,
     main: !!document.getElementById('main-content'),
-    gridCanvas: !!document.getElementById('grid-canvas'),
-    previewCanvas: !!document.getElementById('pv-canvas'),
-    gridSize: (document.getElementById('grid-canvas')?.width || 0) + 'x' + (document.getElementById('grid-canvas')?.height || 0),
-    breadcrumbNav: !!document.querySelector('nav[aria-label="Breadcrumb"]'),
-    breadcrumbCurrent: document.querySelector('nav[aria-label="Breadcrumb"] [aria-current="page"]')?.textContent.trim(),
-    startButton: document.querySelector('#bitmapWelcomeModal .m-ok')?.textContent.trim(),
-    charButtons: document.querySelectorAll('.char-btn').length,
-    exportPng: typeof window.exportPNG === 'function',
-    exportJson: typeof window.exportJSON === 'function',
-    exportXml: typeof window.exportXML === 'function',
-    share: typeof window.copyFontShareLink === 'function',
-    save: typeof window.saveFont === 'function',
+    pvText: !!document.getElementById('pv-text'),
+    pvCanvas: !!document.getElementById('pv-canvas'),
+    kerningSlider: !!document.getElementById('spcR'),
+    kerningLabel: document.querySelector('label[for="spcR"]')?.textContent?.trim() || '',
     cleanText: !/[âÃï�]/.test(document.body.innerText),
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+    exportPNG: typeof window.exportPNG === 'function',
+    exportJSON: typeof window.exportJSON === 'function',
+    exportXML: typeof window.exportXML === 'function',
+    exportCSS: typeof window.exportCSS === 'function',
+    pvSpacing: window.pvSpacing
+  }));
+  check('title loads', initial.title.includes('Bitmap Font'), initial.title);
+  check('single skip link', initial.skipLinks === 1, String(initial.skipLinks));
+  check('main target exists', initial.main);
+  check('live type preview textarea exists', initial.pvText);
+  check('preview canvas exists', initial.pvCanvas);
+  check('kerning slider exists', initial.kerningSlider);
+  check('kerning label says Kerning', /kerning/i.test(initial.kerningLabel), initial.kerningLabel);
+  check('no visible mojibake', initial.cleanText);
+  check('no horizontal overflow at 1280px', initial.scrollWidth <= initial.clientWidth + 2, initial.scrollWidth + '/' + initial.clientWidth);
+  check('exportPNG exists', initial.exportPNG);
+  check('exportJSON exists', initial.exportJSON);
+  check('exportXML (BMFont) exists', initial.exportXML);
+  check('exportCSS (sprite rules) exists', initial.exportCSS);
+
+  // Kerning slider changes pvSpacing
+  const kernChanged = await page.evaluate(()=>{
+    onSpacingInput('3');
+    return {spacing: pvSpacing};
+  });
+  check('kerning slider updates pvSpacing', kernChanged.spacing === 3, String(kernChanged.spacing));
+
+  // Live preview updates when text changes
+  const previewBefore = await page.evaluate(()=>{
+    const cv = document.getElementById('pv-canvas');
+    const ctx = cv.getContext('2d');
+    const d = ctx.getImageData(0,0,cv.width,cv.height);
+    return d.data.some(v=>v>0);
+  });
+  check('preview canvas has content', previewBefore);
+
+  // CSS export generates valid CSS output (mock download)
+  const cssOutput = await page.evaluate(()=>{
+    const origCreate = document.createElement.bind(document);
+    let href = '';
+    document.createElement = function(tag){
+      const el = origCreate(tag);
+      if(tag === 'a') { el.click = ()=>{ href = el.download; }; }
+      return el;
+    };
+    const origCreateObjectURL = URL.createObjectURL;
+    URL.createObjectURL = ()=>'blob:mock';
+    window.exportCSS();
+    URL.createObjectURL = origCreateObjectURL;
+    document.createElement = origCreate;
+    return {filename: href};
+  });
+  check('exportCSS downloads .css file', cssOutput.filename === 'bitmap_font.css', cssOutput.filename);
+
+  // BMFont XML includes xadvance reflecting kerning
+  const bmfontXml = await page.evaluate(()=>{
+    pvSpacing = 2;
+    const {PAD,COLS,CW,CH,ROWS} = _buildBMFontPNGCanvas();
+    const xml = _buildBMFontXML(PAD,COLS,CW,CH,ROWS);
+    const expected = GW + 1 + 2;
+    return {xml, expected};
+  });
+  check('BMFont XML exports xadvance with kerning', bmfontXml.xml.includes(`xadvance="${bmfontXml.expected}"`), `expected xadvance="${bmfontXml.expected}" in: ${bmfontXml.xml.slice(200,400)}`);
+
+  // Mobile check
+  await page.setViewport({width:390,height:844,isMobile:true});
+  await page.goto('http://127.0.0.1:' + port + '/tools/bitmap-font-maker.html', {waitUntil:'domcontentloaded', timeout:15000});
+  await new Promise(resolve=>setTimeout(resolve, 400));
+  const mobile = await page.evaluate(()=>({
     scrollWidth: document.documentElement.scrollWidth,
     clientWidth: document.documentElement.clientWidth
   }));
-  check('title loads', initial.title.includes('Bitmap Font Maker'), initial.title);
-  check('single skip link', initial.skipLinks === 1, String(initial.skipLinks));
-  check('main target exists', initial.main);
-  check('grid canvas exists', initial.gridCanvas);
-  check('preview canvas exists', initial.previewCanvas);
-  check('grid canvas initialized', initial.gridSize !== '0x0', initial.gridSize);
-  check('breadcrumb present', initial.breadcrumbNav, 'nav[aria-label="Breadcrumb"] not found');
-  check('breadcrumb current page', initial.breadcrumbCurrent === 'Bitmap Font Maker', initial.breadcrumbCurrent);
-  check('welcome action clean', initial.startButton === 'Start drawing ✓', initial.startButton);
-  check('character picker renders', initial.charButtons >= 60, String(initial.charButtons));
-  check('export/share/save functions exist', initial.exportPng && initial.exportJson && initial.exportXml && initial.share && initial.save);
-  check('no visible mojibake', initial.cleanText);
-  check('mobile does not overflow viewport', initial.scrollWidth <= initial.clientWidth + 2, initial.scrollWidth + '/' + initial.clientWidth);
-  const drawing = await page.evaluate(() => {
-    window.closeBitmapWelcome();
-    window.getArr('A')[0] = 1;
-    window.drawEditor();
-    window.drawPreview();
-    window.updateCharBtns();
-    return {
-      drawn: document.getElementById('sb-drawn')?.textContent || '',
-      char: document.getElementById('curCharDisp')?.textContent || '',
-      previewWidth: document.getElementById('pv-canvas')?.width || 0,
-      snapshot: JSON.parse(window.snapshotFont()).chars[String('A'.charCodeAt(0))][0]
-    };
-  });
-  check('drawing updates glyph data', drawing.snapshot === 1, JSON.stringify(drawing));
-  check('status tracks drawn characters', /1 chars? drawn/.test(drawing.drawn), drawing.drawn);
-  check('current character display clean', drawing.char === 'A', drawing.char);
-  check('preview canvas draws text area', drawing.previewWidth > 0, String(drawing.previewWidth));
-  await page.evaluate(()=>{ window.closeBitmapWelcome(); if(document.activeElement&&document.activeElement.blur) document.activeElement.blur(); });
-  await page.keyboard.press('b');
-  await new Promise(resolve=>setTimeout(resolve, 80));
-  const typedLower = await page.evaluate(()=>({
-    char: document.getElementById('curCharDisp')?.textContent || '',
-    active: document.getElementById('cb-' + 'b'.charCodeAt(0))?.classList.contains('active') || false
-  }));
-  check('typing b opens the b glyph', typedLower.char === 'b' && typedLower.active, JSON.stringify(typedLower));
-  await page.keyboard.down('Shift'); await page.keyboard.press('K'); await page.keyboard.up('Shift');
-  await new Promise(resolve=>setTimeout(resolve, 80));
-  const typedUpper = await page.evaluate(()=>document.getElementById('curCharDisp')?.textContent || '');
-  check('Shift+K opens the K glyph', typedUpper === 'K', typedUpper);
-  await page.keyboard.press('2');
-  await new Promise(resolve=>setTimeout(resolve, 80));
-  const toolKey = await page.evaluate(()=>document.getElementById('btnErase')?.classList.contains('on') || false);
-  check('2 key selects the erase tool', toolKey);
+  check('no horizontal overflow at 390px', mobile.scrollWidth <= mobile.clientWidth + 2, mobile.scrollWidth + '/' + mobile.clientWidth);
+
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   server.close();

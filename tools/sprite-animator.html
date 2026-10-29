@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob: 'sha256-+jDWgrF45St6liTGgw56JoY34b103A0Wb8UoL86cYuo=' 'sha256-yTkpcasNL44Ch9ejsvbTQSkNt6aDCtH7aREPpOy9v+E=' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -164,7 +164,9 @@
       <button class="pb-btn pb-prev" data-on="prevFrame" data-on-plain title="Previous frame">?</button>
       <button class="pb-btn pb-play" id="playBtn" aria-label="Play or pause" data-on="togglePlay" data-on-plain style="min-width:44px;min-height:44px">▶</button>
       <button class="pb-btn pb-next" data-on="nextFrame" data-on-plain title="Next frame">?|</button>
-      <button class="pb-btn pb-loop on" id="loopBtn" aria-label="Toggle loop" data-on="toggleLoop" data-on-plain>💾</button>
+      <button class="pb-btn pb-loop on" id="loopFwd" aria-label="Forward loop" data-on="setLoopMode" data-on-arg="forward" data-on-plain title="Loop forward">▶▶</button>
+      <button class="pb-btn pb-loop" id="loopRev" aria-label="Reverse loop" data-on="setLoopMode" data-on-arg="reverse" data-on-plain title="Loop reverse">◀◀</button>
+      <button class="pb-btn pb-loop" id="loopPing" aria-label="Ping-pong loop" data-on="setLoopMode" data-on-arg="pingpong" data-on-plain title="Ping-pong">⇄</button>
       <button class="pb-btn pb-loop" id="onionBtn" data-on="toggleOnion" data-on-plain title="Onion skin, ghost of previous/next frame">?</button>
       <button class="pb-btn pb-loop" id="drawBtn" data-on="toggleDrawMode" data-on-plain title="Draw mode, edit pixels on the current frame">✏️</button>
       <div class="pb-label">FPS</div>
@@ -177,9 +179,8 @@
       </div>
       <div class="bg-toggle">
         <div class="bg-opt on" style="background:repeating-conic-gradient(#333 0% 25%,#111 0% 50%);background-size:8px 8px;" data-on="setBg" data-on-arg="checker" data-on-plain title="Checker"></div>
-        <div class="bg-opt" style="background:#000;" data-on="setBg" data-on-arg="black" data-on-plain title="Black"></div>
-        <div class="bg-opt" style="background:#fff;border:1px solid #ccc;" data-on="setBg" data-on-arg="white" data-on-plain title="White"></div>
-        <div class="bg-opt" style="background:#1a1a2e;" data-on="setBg" data-on-arg="dark" data-on-plain title="Dark"></div>
+        <div class="bg-opt" style="background:#1a1a1a;" data-on="setBg" data-on-arg="dark" data-on-plain title="Dark"></div>
+        <div class="bg-opt" style="background:#F0EAD6;border:1px solid #ccc;" data-on="setBg" data-on-arg="beige" data-on-plain title="Beige"></div>
       </div>
       <div class="frame-counter">Frame <span id="currentFrameNum">1</span> / <span id="totalFrameNum">0</span></div>
     </div>
@@ -328,7 +329,7 @@ let frameW=32, frameH=32, offsetX=0, offsetY=0, spacing=0;
 let frames=[]; // {x,y,enabled}
 let activeFrames=[];
 let currentFrame=0;
-let playing=false, looping=true;
+let playing=false, loopMode='forward', pingDir=1;
 let fps=12, zoom=2;
 let animTimer=null;
 let bgMode='checker';
@@ -563,7 +564,7 @@ function drawFrame(){
       ctx.fillStyle='#333';ctx.fillRect(x,y,s,s);ctx.fillRect(x+s,y+s,s,s);
       ctx.fillStyle='#111';ctx.fillRect(x+s,y,s,s);ctx.fillRect(x,y+s,s,s);
     }
-  } else {ctx.fillStyle=bgMode==='white'?'#fff':bgMode==='dark'?'#1a1a2e':'#000';ctx.fillRect(0,0,LW,LH);}
+  } else {ctx.fillStyle=bgMode==='beige'?'#F0EAD6':bgMode==='dark'?'#1a1a1a':'#1a1a1a';ctx.fillRect(0,0,LW,LH);}
 
   // Onion skin: ghost previous (pink) and next (green) frames under the current one
   if(onionSkin&&!playing&&activeFrames.length>1){
@@ -601,8 +602,15 @@ function scheduleNext(){
 
   animTimer=setTimeout(()=>{
     if(activeFrames.length===0){playing=false;return;}
-    currentFrame=(currentFrame+1)%activeFrames.length;
-    if(!looping&&currentFrame===0){playing=false;id('playBtn').textContent='▶';id('playBtn').style.background='var(--accent)';return;}
+    if(loopMode==='reverse'){
+      currentFrame=(currentFrame-1+activeFrames.length)%activeFrames.length;
+    } else if(loopMode==='pingpong'){
+      currentFrame+=pingDir;
+      if(currentFrame>=activeFrames.length){pingDir=-1;currentFrame=Math.max(0,activeFrames.length-2);}
+      else if(currentFrame<0){pingDir=1;currentFrame=Math.min(1,activeFrames.length-1);}
+    } else {
+      currentFrame=(currentFrame+1)%activeFrames.length;
+    }
     drawFrame();
     scheduleNext();
   },1000/frameFps);
@@ -610,10 +618,16 @@ function scheduleNext(){
 
 function prevFrame(){currentFrame=(currentFrame-1+activeFrames.length)%activeFrames.length;drawFrame();}
 function nextFrame(){currentFrame=(currentFrame+1)%activeFrames.length;drawFrame();}
-function toggleLoop(){looping=!looping;id('loopBtn').classList.toggle('on',looping);markDirty();}
+function setLoopMode(mode){
+  loopMode=mode; pingDir=1;
+  [['loopFwd','forward'],['loopRev','reverse'],['loopPing','pingpong']].forEach(([elId,m])=>{
+    const el=document.getElementById(elId);if(el)el.classList.toggle('on',m===mode);
+  });
+  markDirty();
+}
 function setFps(v){fps=+v;id('fpsVal').textContent=v;markDirty();}
 function setZoom(v){zoom=Math.min(16,Math.max(1,v));id('zoomVal').textContent=zoom+'×';drawFrame();markDirty();}
-function setBg(m){bgMode=m;document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===m));drawFrame();markDirty();}
+function setBg(m){bgMode=m;document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','dark','beige'][i]===m));drawFrame();markDirty();}
 
 // -- EXPORT --
 function exportJSON(){
@@ -696,7 +710,7 @@ function manifestJSON(positions,sheetW2,sheetH2){
     spritesheet:{width:sheetW2,height:sheetH2},
     frameSize:{width:frameW,height:frameH},
     fps,
-    loop:looping,
+    loopMode,
     frameCount:activeFrames.length,
     frames:activeFrames.map((fi,i)=>({
       id:i,name:frameName(i),
@@ -771,7 +785,7 @@ ${subs}
 [resource]
 animations = [{
 "frames": [${framesSrc}],
-"loop": ${looping?'true':'false'},
+"loop": ${loopMode!=='forward'?'false':'true'},
 "name": &"default",
 "speed": ${fps}.0
 }]
@@ -832,7 +846,7 @@ unity-texturepacker/*.json TexturePacker JSON array format. In Unity, import spr
                            this JSON together (e.g. with a free TexturePacker importer asset),
                            or read the frame rects from animation.json directly.
 
-Exported ${activeFrames.length} frames @ ${fps} FPS, loop ${looping?'on':'off'}.
+Exported ${activeFrames.length} frames @ ${fps} FPS, loop mode: ${loopMode}.
 `);
     await downloadZip(zip,'engine-pack.zip');
     toast('Engine pack exported! Godot · Aseprite · Unity formats');
@@ -852,7 +866,7 @@ function serializeProject(){
     sheetName,
     frameW,frameH,offsetX,offsetY,spacing,
     frames:frames.map(f=>({x:f.x,y:f.y,e:!!f.enabled,fps:f.fps||null})),
-    fps,zoom,bgMode,looping,currentFrame
+    fps,zoom,bgMode,loopMode,currentFrame
   });
 }
 
@@ -873,9 +887,11 @@ function applyProject(d){
       id('offsetX').value=offsetX;id('offsetY').value=offsetY;id('spacing').value=spacing;
       frames=(Array.isArray(d.frames)?d.frames:[]).map(f=>({x:+f.x||0,y:+f.y||0,enabled:f.e!==false,fps:f.fps||null}));
       setFps(Math.min(60,Math.max(1,+d.fps||12)));id('fpsSlider').value=fps;
-      bgMode=['checker','black','white','dark'].includes(d.bgMode)?d.bgMode:'checker';
-      document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','black','white','dark'][i]===bgMode));
-      looping=d.looping!==false;id('loopBtn').classList.toggle('on',looping);
+      bgMode=['checker','dark','beige'].includes(d.bgMode)?d.bgMode:'checker';
+      document.querySelectorAll('.bg-opt').forEach((el,i)=>el.classList.toggle('on',['checker','dark','beige'][i]===bgMode));
+      loopMode=['forward','reverse','pingpong'].includes(d.loopMode)?d.loopMode:(d.looping===false?'forward':'forward');
+      pingDir=1;
+      setLoopMode(loopMode);
       layoutDirty=true; // restored layouts are custom by definition
       updateSheetInfo();
       id('uploadPrompt').classList.add('hidden');

@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' blob: 'sha256-XkP0UloxPqOJslSgI6fZ7XQwqbYrzIgjqy7GmxHiYfg=' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -213,8 +213,8 @@
       <div class="pv-ctrl">
         <label for="scaleR">Scale <span id="vScale">3</span>×</label>
         <input type="range" min="1" max="8" value="3" id="scaleR" data-on="onScaleInput" data-on-event="input" data-on-args="value">
-        <label for="spcR">Spacing <span id="vSpc">1</span>px</label>
-        <input type="range" min="-2" max="8" value="1" id="spcR" data-on="onSpacingInput" data-on-event="input" data-on-args="value">
+        <label for="spcR">Kerning <span id="vSpc">1</span>px</label>
+        <input type="range" min="-2" max="8" value="1" id="spcR" aria-label="Kerning" data-on="onSpacingInput" data-on-event="input" data-on-args="value">
         <label for="lgR">Line Gap <span id="vLg">2</span></label>
         <input type="range" min="0" max="16" value="2" id="lgR" data-on="onLineGapInput" data-on-event="input" data-on-args="value">
       </div>
@@ -225,6 +225,7 @@
       <button class="exp-btn ep-png" data-on="exportPNG" data-on-plain>📥 PNG Spritesheet</button>
       <button class="exp-btn ep-json" data-on="exportJSON" data-on-plain>{ } JSON Atlas</button>
       <button class="exp-btn ep-xml" data-on="exportXML" data-on-plain title="Downloads .fnt + PNG as a ZIP - ready for Unity, Godot, Phaser, LibGDX">📦 BMFont Bundle</button>
+      <button class="exp-btn ep-css" data-on="exportCSS" data-on-plain title="CSS @font-face sprite rules for web projects">🎨 CSS Sprites</button>
       <button class="exp-btn ep-save" data-on="saveFont" data-on-plain>💾 Save to Browser</button>
       <button class="exp-btn ep-save" data-on="copyFontShareLink" data-on-plain style="background:var(--accent2);color:#000;">🔗 Share Link</button>
     </div>
@@ -264,11 +265,11 @@ let toastT;
 function toast(msg){const el=id('toast');el.textContent=msg;el.style.opacity=1;clearTimeout(toastT);toastT=setTimeout(()=>el.style.opacity=0,2600);}
 
 // -- State --
-let GW=8,GH=8; // grid width, height
+var GW=8,GH=8;
 let currentChar='A';
 let drawTool='pen';
 let clipboard=null;
-let pvScale=3,pvSpacing=1,pvLineGap=2;
+var pvScale=3,pvSpacing=1,pvLineGap=2;
 
 // -- Undo / Autosave --
 let undoStack=[],redoStack=[];
@@ -670,7 +671,7 @@ function _buildBMFontXML(PAD,COLS,CW,CH,ROWS){
   xml+=`  <chars count="${ALL_CHARS.length}">\n`;
   ALL_CHARS.split('').forEach((c,i)=>{
     const col=i%COLS,row=Math.floor(i/COLS);
-    xml+=`    <char id="${c.charCodeAt(0)}" x="${col*CW+PAD}" y="${row*CH+PAD}" width="${GW}" height="${GH}" xoffset="0" yoffset="0" xadvance="${GW+1}" page="0" chnl="15"/>\n`;
+    xml+=`    <char id="${c.charCodeAt(0)}" x="${col*CW+PAD}" y="${row*CH+PAD}" width="${GW}" height="${GH}" xoffset="0" yoffset="0" xadvance="${GW+1+pvSpacing}" page="0" chnl="15"/>\n`;
   });
   xml+=`  </chars>\n</font>`;
   return xml;
@@ -721,6 +722,32 @@ function exportXML(){
       });
     });
   });
+}
+
+function exportCSS(){
+  const {canvas,PAD,COLS,CW,CH}=_buildBMFontPNGCanvas();
+  const xadv=GW+1+pvSpacing;
+  let css='/* Bitmap Font Maker CSS Sprites - JVDesignStudio\n';
+  css+='   Use with: <span class="bfm-char bfm-A"></span>\n';
+  css+='   Pair with bitmap_font.png from BMFont Bundle export */\n\n';
+  css+='.bfm-char {\n';
+  css+='  display: inline-block;\n';
+  css+='  background-image: url("bitmap_font.png");\n';
+  css+='  background-repeat: no-repeat;\n';
+  css+=`  width: ${GW}px;\n`;
+  css+=`  height: ${GH}px;\n`;
+  css+=`  margin-right: ${pvSpacing}px;\n`;
+  css+='}\n\n';
+  ALL_CHARS.split('').forEach((c,i)=>{
+    const col=i%COLS,row=Math.floor(i/COLS);
+    const x=col*CW+PAD,y=row*CH+PAD;
+    const safe=c==='.'?'dot':c==='"'?'dquote':c==="'"?'squote':c==='/'?'slash':c==='\\'?'bslash':c==='*'?'star':c===':'?'colon':c==='?'?'question':c==='!'?'excl':c==='@'?'at':c==='#'?'hash':c==='$'?'dollar':c==='%'?'pct':c==='^'?'caret':c==='&'?'amp':c==='('?'lparen':c===')'?'rparen':c==='['?'lbrack':c===']'?'rbrack':c==='{'?'lcurl':c==='}'?'rcurl':c==='<'?'lt':c==='>'?'gt':c==='|'?'pipe':c==='`'?'backtick':c==='~'?'tilde':c==='+'?'plus':c==='-'?'minus':c==='='?'eq':c===' '?'space':c;
+    css+=`.bfm-${safe} { background-position: -${x}px -${y}px; }\n`;
+  });
+  const blob=new Blob([css],{type:'text/css'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bitmap_font.css';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  toast('CSS sprites exported!');
 }
 
 function copyFontShareLink(){
