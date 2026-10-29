@@ -81,6 +81,57 @@
   function prefKey(k) { return 'jvds_sd_snake_' + k; }
   function loadPref(k, d) { try { var v = localStorage.getItem(prefKey(k)); return v == null ? d : v; } catch (e) { return d; } }
   function savePref(k, v) { try { localStorage.setItem(prefKey(k), String(v)); } catch (e) {} }
+
+  // ── Daily challenge + streak ──────────────────────────────────────────────
+  function getDayKey() { return new Date().toISOString().slice(0, 10); }
+  function getDailyGoal() {
+    var d = new Date();
+    var dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+    return 5 + (dayOfYear % 8); // 5-12 stars
+  }
+  var dailyGoal = getDailyGoal();
+  var streakData = (function () {
+    try {
+      var o = JSON.parse(localStorage.getItem(prefKey('streak')) || '{}');
+      var today = getDayKey();
+      return { streak: o.streak | 0, lastDay: o.lastDay || '', doneToday: o.lastDay === today };
+    } catch (e) { return { streak: 0, lastDay: '', doneToday: false }; }
+  }());
+  function saveStreakData(streak, day) {
+    try {
+      var o = JSON.parse(localStorage.getItem(prefKey('streak')) || '{}');
+      o.streak = streak; o.lastDay = day;
+      localStorage.setItem(prefKey('streak'), JSON.stringify(o));
+    } catch (e) {}
+  }
+  function updateDailyHint() {
+    var el = document.getElementById('dailyHint');
+    if (!el) return;
+    var streakStr = streakData.doneToday && streakData.streak >= 2 ? ' (' + streakData.streak + '-day streak)' : '';
+    el.textContent = streakData.doneToday
+      ? '✅ Daily done' + streakStr
+      : '🌟 Today: collect ' + dailyGoal + ' stars';
+  }
+  function checkDailyOnEnd(runScore) {
+    if (runScore >= dailyGoal && !streakData.doneToday) {
+      var today = getDayKey();
+      var d = new Date(); d.setDate(d.getDate() - 1);
+      var yesterday = d.toISOString().slice(0, 10);
+      var newStreak = streakData.lastDay === yesterday ? streakData.streak + 1 : 1;
+      streakData = { streak: newStreak, lastDay: today, doneToday: true };
+      saveStreakData(newStreak, today);
+    }
+    var el = document.getElementById('dailyLine');
+    if (!el) return;
+    if (streakData.doneToday) {
+      el.textContent = streakData.streak >= 7 ? '🔥 ' + streakData.streak + '-day streak!'
+        : streakData.streak >= 3 ? '🔥 ' + streakData.streak + '-day streak!'
+        : '✅ Daily done! ' + runScore + '/' + dailyGoal + ' stars';
+    } else {
+      el.textContent = '🌟 Today: ' + runScore + '/' + dailyGoal + ' stars - keep going!';
+    }
+    updateDailyHint();
+  }
   function loadAch() {
     try { return JSON.parse(localStorage.getItem(prefKey('ach')) || '{}') || {}; } catch (e) { return {}; }
   }
@@ -515,6 +566,7 @@
     if (newBest) best = score;
     saveBest();
     if (sys && sys.saveState) { try { sys.saveState(); } catch (e) {} }
+    checkDailyOnEnd(score);
     buildPalettePills();
     hud();
     if (storyRun) {
@@ -695,6 +747,7 @@
   updateDiffPills();
   buildPalettePills();
   updateSound();
+  updateDailyHint();
   loopHandle = requestAnimationFrame(loop);
 
   // exposed for the automated smoke test

@@ -62,6 +62,25 @@
             return !!(currentQuery || (tool && tool.value) || (experience && experience.value !== 'all') ||
                 (difficulty && difficulty.value) || currentAge !== 'all' || noInstallOnly);
         }
+        /* Fuzzy search: score a query token against a haystack string.
+           Returns true if token matches exactly (fast path) OR if trigram
+           overlap is >= 50% of the token's trigrams (handles ~1-2 char typos). */
+        function fuzzyToken(token, hay) {
+            if (hay.indexOf(token) !== -1) return true;
+            if (token.length < 3) return false; // too short for trigram
+            var tris = {};
+            var count = 0;
+            for (var i = 0; i < token.length - 2; i++) {
+                tris[token.slice(i, i + 3)] = true; count++;
+            }
+            if (count === 0) return false;
+            var hits = 0;
+            for (var tri in tris) {
+                if (hay.indexOf(tri) !== -1) hits++;
+            }
+            return (hits / count) >= 0.5;
+        }
+
         function applyFilters() {
             document.body.classList.toggle('ws-finder-active', isActive());
             var parts = currentQuery ? currentQuery.split(/\s+/) : [];
@@ -70,7 +89,7 @@
             Array.prototype.forEach.call(cards, function(card) {
                 var hay = (card.textContent + ' ' + (card.getAttribute('href') || '') + ' ' +
                     (card.dataset.age || '') + ' ' + (card.dataset.engine || '')).toLowerCase();
-                var searchOk = !parts.length || parts.every(function(p) { return hay.indexOf(p) !== -1; });
+                var searchOk = !parts.length || parts.every(function(p) { return fuzzyToken(p, hay); });
                 var toolOk = !toolName || hay.indexOf(toolName) !== -1;
                 var expOk = !experience || experience.value !== 'first' || /my-first|my first/i.test(hay);
                 var diffOk = !difficulty || !difficulty.value || card.dataset.difficulty === difficulty.value;

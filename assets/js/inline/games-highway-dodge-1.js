@@ -2199,6 +2199,7 @@ $('againBtn').onclick = startGame;
 $('shopBtn').onclick = openShop;
 if ($('startShopBtn')) $('startShopBtn').onclick = openShop;
 if ($('shopCloseBtn')) $('shopCloseBtn').onclick = closeShop;
+if ($('endShopBtn')) $('endShopBtn').onclick = openShop;
 document.querySelectorAll('.shop-tab').forEach(b => b.addEventListener('click', () => setTab(b.getAttribute('data-tab'))));
 if (window.JVDSEngine && JVDSEngine.runtime && JVDSEngine.runtime.touch) {
   JVDSEngine.runtime.touch({ buttons: [{ label: '◀', code: 'ArrowLeft' }, { label: '▶', code: 'ArrowRight' }] });

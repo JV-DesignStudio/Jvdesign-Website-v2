@@ -36,7 +36,7 @@ body{background:#1a472a;color:#e2e8f0;font-family:system-ui,-apple-system,sans-s
 .hud div{text-align:center}
 .hud b{display:block;font-size:18px;color:#86efac}
 canvas{flex:1;width:100%;min-height:0;min-width:0;display:block;touch-action:none}
-.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.72);z-index:20;gap:16px;padding:24px;text-align:center}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.62);backdrop-filter:blur(2px);z-index:20;gap:16px;padding:24px;text-align:center}
 .overlay h1,.overlay #endTitle{font-size:32px;color:#4ade80}
 .overlay p{color:#94a3b8;max-width:340px;line-height:1.5}
 .overlay .stats{display:flex;gap:24px;margin:12px 0}
@@ -51,6 +51,8 @@ canvas{flex:1;width:100%;min-height:0;min-width:0;display:block;touch-action:non
 .toast.show{opacity:1}
 .dpad{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:none;grid-template:auto auto auto / auto auto auto;gap:6px;z-index:12}
 @media (pointer:coarse){.dpad{display:grid}}
+.kb-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:12px;color:rgba(148,163,184,.55);pointer-events:none;z-index:11;white-space:nowrap}
+@media (pointer:coarse){.kb-hint{display:none}}
 .dpad button{background:rgba(22,163,74,.38);border:2px solid rgba(34,197,94,.55);color:#bbf7d0;width:72px;height:64px;border-radius:14px;font-size:26px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;transition:background .08s,transform .08s;will-change:transform}
 .dpad button:active,.dpad button.pressed{background:rgba(34,197,94,.75);transform:scale(.92)}
 .dpad .empty{visibility:hidden}
@@ -117,6 +119,7 @@ canvas{flex:1;width:100%;min-height:0;min-width:0;display:block;touch-action:non
   </div>
   <canvas id="game"></canvas>
   <div class="toast" id="toast"></div>
+  <div class="kb-hint" id="kbHint">Arrow keys or WASD to hop</div>
 
   <div class="dpad" id="dpad" style="display:none">
     <button class="empty"></button>
@@ -134,16 +137,20 @@ canvas{flex:1;width:100%;min-height:0;min-width:0;display:block;touch-action:non
     <h1>🐢 Crossy Crew</h1>
     <p>Pip and Echo need to cross busy roads, railways and rushing rivers. Hop forward, dodge traffic and trains, ride the logs, and see how far you can go.</p>
     <div id="crewSelect"></div>
-    <p style="font-size:13px;color:#64748b">Tap/Swipe or Arrow keys to hop. Tap the canvas to start.</p>
+    <p id="dailyHint" style="font-size:13px;color:#86efac;font-weight:700;min-height:1.2em"></p>
     <button class="btn" id="playBtn">Start Hopping</button>
-    <button class="btn-ghost" data-go="../arcade.html">Back to Games</button>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn-ghost" data-go="../arcade.html">Back to Games</button>
+      <button class="btn-ghost" id="htpLink" style="font-size:13px">How to Play</button>
+    </div>
   </div>
 
   <div class="overlay hidden" id="endScreen" role="dialog" aria-live="polite" aria-atomic="true" aria-labelledby="endTitle">
     <h2 id="endTitle" tabindex="-1">Squished!</h2>
     <div class="stats" id="endStats"></div>
+    <div id="unlockProgress"></div>
     <div id="lbWrap" style="display:none"></div>
-    <button class="btn-ghost" id="shareBtn" style="display:none;font-size:14px">&#128190; Save run card</button>
+    <p id="dailyLine" style="font-size:13px;color:#86efac;font-weight:700;min-height:1.2em"></p>
     <button class="btn" id="againBtn">Hop Again</button>
     <button class="btn-ghost" data-go="../arcade.html">Back to Games</button>
   </div>
@@ -165,7 +172,7 @@ canvas{flex:1;width:100%;min-height:0;min-width:0;display:block;touch-action:non
 
   <div class="overlay hidden" id="saveMeScreen">
     <h2>Save me?</h2>
-    <p id="saveMeText">Spend 5 coins to be put back on solid ground?</p>
+    <p id="saveMeText">Spend 3 coins to be put back on solid ground?</p>
     <button class="btn" id="saveBtn">Use 5 coins</button>
     <button class="btn-ghost" id="giveUpBtn">Let it end</button>
   </div>

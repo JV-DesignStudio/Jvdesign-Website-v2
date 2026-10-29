@@ -864,3 +864,29 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
   else run();
 })();
+
+/* ── Workshop HUD + Reader auto-loader ─────────────────────────────────────
+   Injects the persistent player card HUD on all workshop pages.
+   On individual article pages (body[data-workshop-key]) also loads the
+   floating TOC and Next Quest recommender. */
+(function () {
+  function loadScript(src) {
+    if (document.querySelector('script[src="' + src + '"]')) return;
+    var s = document.createElement('script');
+    s.src = src;
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+
+  var isWorkshopArea = /\/workshops?[\/?#]|\/workshop$/i.test(window.location.pathname);
+  if (!isWorkshopArea) return;
+
+  loadScript('/assets/js/workshop-hud.js');
+
+  var isArticlePage = !!(document.body && (document.body.dataset.workshopKey || document.body.dataset.profileId));
+  if (isArticlePage) loadScript('/assets/js/workshop-reader.js');
+
+  var isBuilderPage = !!(document.querySelector('#bsHost, [data-bs-css]') ||
+    /\b(rocket|robot|race|pirate|castle|submarine|airship|station|fairy|cannon|phone)\b.*builder/i.test(document.title));
+  if (isBuilderPage) loadScript('/assets/js/builder-test-btn.js');
+})();

@@ -6,6 +6,16 @@
 
 const POSTS = [
     {
+        id: 523,
+        date: '29 October 2026',
+        tag: 'tools',
+        emoji: '🔧',
+        title: 'AUD-014: explain the weakness of local saving',
+        excerpt: 'workshops/my-progress.html updated: backup-sub section now explicitly distinguishes artwork from XP/badges/certificates,',
+        content: 'Progress is stored in the browser with backup and transfer options, but browser-local data can be lost when site data is cleared, a profile changes or a learner moves device. Explain saving in child-friendly language, provide tested backup and restore paths, validate imported files and distinguish saved artwork from XP and achievements. Evidence: workshops/my-progress.html updated: backup-sub section now explicitly distinguishes artwork from XP/badges/certificates, explains in child-friendly language why browser-local data can be lost (clearing cookies, private windows, school IT resets, device switch), and gives clear step-by-step backup/restore guidance pointing to the Download my backpack button and code/file restore path. No new dependencies; existing backup and restore functions unchanged.'
+    },
+
+    {
         id: 522,
         date: '22 October 2026',
         tag: 'site',

@@ -1,30 +1,67 @@
 /* pages-workshop-13.js - Progress dashboard, sort, difficulty badges, high-contrast toggle */
 (function () {
-  /* ── Progress Dashboard ── */
-  var dash = document.getElementById('wsProgressDashboard');
-  if (dash) {
+  /* ── Progress Dashboard (reads playerProfile when available) ── */
+  function renderDash() {
+    var dash = document.getElementById('wsProgressDashboard');
+    if (!dash) return;
     try {
-      var totalXp = 0, totalCompleted = 0, maxLevel = 1;
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (!k || k.indexOf('workshop') === -1 && k.indexOf('ws_') === -1) continue;
-        try {
-          var d = JSON.parse(localStorage.getItem(k));
-          if (d && d.xp) { totalXp += d.xp; if (d.level > maxLevel) maxLevel = d.level; }
-          if (d && d.completed && d.total && d.completed.length === d.total) totalCompleted++;
-        } catch (e) {}
+      var stats = null;
+      if (window.playerProfile && typeof window.playerProfile.getStats === 'function') {
+        stats = window.playerProfile.getStats();
       }
-      var streak = { count: 0 };
-      try { streak = JSON.parse(localStorage.getItem('jvds_daily_streak') || '{}'); } catch (e) {}
+      var totalXp = 0, totalCompleted = 0, level = 1, streak = 0, xpPct = 0, xpCur = 0, xpMax = 100;
+
+      if (stats) {
+        totalXp = stats.totalXP || 0;
+        totalCompleted = stats.workshopsCompleted || 0;
+        level = stats.level || 1;
+        streak = stats.dailyStreak || 0;
+        if (stats.xpProgress) {
+          xpCur = stats.xpProgress.current || 0;
+          xpMax = stats.xpProgress.max || 100;
+          xpPct = stats.xpProgress.percentage || 0;
+        }
+      } else {
+        // Legacy fallback: scan localStorage
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (!k || (k.indexOf('workshop') === -1 && k.indexOf('ws_') === -1)) continue;
+          try {
+            var d = JSON.parse(localStorage.getItem(k));
+            if (d && d.xp) { totalXp += d.xp; if ((d.level || 1) > level) level = d.level; }
+            if (d && d.completed && d.total && d.completed.length === d.total) totalCompleted++;
+          } catch (_) {}
+        }
+        try { var st = JSON.parse(localStorage.getItem('jvds_daily_streak') || '{}'); streak = st.count || 0; } catch (_) {}
+        xpCur = totalXp % 100; xpMax = 100; xpPct = xpCur;
+      }
 
       if (totalXp > 0 || totalCompleted > 0) {
         document.getElementById('wsDashXp').textContent = totalXp;
         document.getElementById('wsDashCompleted').textContent = totalCompleted;
-        document.getElementById('wsDashStreak').textContent = streak.count || 0;
-        document.getElementById('wsDashLevel').textContent = maxLevel;
+        document.getElementById('wsDashStreak').textContent = streak;
+        document.getElementById('wsDashLevel').textContent = level;
+        // Animated XP bar
+        var xpLabel = document.getElementById('wsDashXpLabel');
+        var xpFill = document.getElementById('wsDashXpFill');
+        var xpTrack = document.getElementById('wsDashXpTrack');
+        if (xpLabel) xpLabel.textContent = xpCur + ' / ' + xpMax;
+        if (xpTrack) { xpTrack.setAttribute('aria-valuenow', xpPct.toFixed(0)); xpTrack.setAttribute('aria-valuemax', 100); }
+        if (xpFill) {
+          xpFill.style.width = '0%';
+          requestAnimationFrame(function () { requestAnimationFrame(function () { xpFill.style.width = xpPct.toFixed(1) + '%'; }); });
+        }
         dash.style.display = '';
       }
-    } catch (e) {}
+    } catch (_) {}
+  }
+
+  // Wait for playerProfile to initialise (it's deferred)
+  if (window.playerProfile) {
+    renderDash();
+  } else {
+    window.addEventListener('load', renderDash);
+    setTimeout(renderDash, 800); // fallback
   }
 
   /* ── Sort ── */
