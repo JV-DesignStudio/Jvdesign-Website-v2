@@ -5311,6 +5311,19 @@ window.JVDS_CONTENT = {
       "url": "/games/crossy-crew.html"
     },
     {
+      "id": "lumo-hive",
+      "title": "Lumo's Hive Strike",
+      "tag": "Formation Shooter",
+      "emoji": "🐝",
+      "category": "Action",
+      "bg": "linear-gradient(135deg,#0d0620,#3b0764)",
+      "desc": "Lumo holds the night garden against the Hive. Dodge the dive swarm, chain combos and clear the formation - like Galaga, but with bees and a purple fox.",
+      "kids": true,
+      "age": "Ages 7-14",
+      "character": "Lumo",
+      "url": "/games/lumo-hive.html"
+    },
+    {
       "id": "stardust-snake",
       "title": "Stardust Snake",
       "tag": "Classic · Grow",
@@ -6266,9 +6279,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-27T21:36:48.518Z",
+    "generated": "2026-10-29T14:40:47.924Z",
     "workshops": 344,
-    "games": 12,
+    "games": 13,
     "tools": 50,
     "books": 5,
     "engines": {
