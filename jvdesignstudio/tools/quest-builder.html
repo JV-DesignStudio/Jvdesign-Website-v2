@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quest Builder - JVDesignStudio Dev Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #1a1a1a;
+      --surface: #242424;
+      --surface-2: #2e2e2e;
+      --border: #403B33;
+      --border-light: #524c42;
+      --beige: #F0EAD6;
+      --teal: #70A3A7;
+      --rose: #BC4749;
+      --gold: #f39c12;
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --heading: 'Fredoka', cursive, sans-serif;
+      --r: 6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--beige); font-family: var(--font); font-size: .9rem; min-height: 100vh; }
+
+    /* ── App shell ── */
+    .app { display: grid; grid-template-columns: 400px 1fr; grid-template-rows: auto 1fr; height: 100vh; overflow: hidden; }
+    .topbar {
+      grid-column: 1 / -1;
+      background: #111;
+      border-bottom: 1px solid var(--border);
+      padding: .6rem 1.25rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .topbar h1 { font-family: var(--heading); font-size: 1.25rem; color: var(--teal); }
+    .topbar a { color: var(--border-light); text-decoration: none; font-size: .8rem; }
+    .topbar a:hover { color: var(--beige); }
+
+    /* ── Panels ── */
+    .panel { overflow-y: auto; padding: 1.25rem; }
+    .panel-left  { background: var(--surface); border-right: 1px solid var(--border); }
+    .panel-right { background: var(--bg); display: grid; grid-template-rows: 1fr 1fr; gap: 0; }
+
+    /* ── Form ── */
+    .field { margin-bottom: .9rem; }
+    label { display: block; font-size: .75rem; text-transform: uppercase; letter-spacing: .07em; color: var(--border-light); margin-bottom: .3rem; }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      color: var(--beige);
+      font-family: var(--font);
+      font-size: .85rem;
+      padding: .4rem .65rem;
+      outline: none;
+      transition: border-color .15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--teal); }
+    textarea { resize: vertical; min-height: 70px; }
+    select option { background: #2e2e2e; }
+    select[multiple] { min-height: 90px; }
+
+    /* ── Section headers ── */
+    .section-head {
+      font-family: var(--heading);
+      font-size: .95rem;
+      color: var(--teal);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: .4rem;
+      margin: 1.1rem 0 .75rem;
+    }
+    .section-head:first-child { margin-top: 0; }
+
+    /* ── Test case rows ── */
+    #test-cases { display: flex; flex-direction: column; gap: .5rem; }
+    .test-row {
+      display: grid; grid-template-columns: 1fr 1fr auto;
+      gap: .4rem; align-items: start;
+    }
+    .test-row input { font-size: .8rem; }
+    .btn-icon {
+      background: none; border: 1px solid var(--border);
+      color: var(--rose); border-radius: var(--r);
+      width: 28px; height: 28px; cursor: pointer;
+      font-size: .85rem; display: grid; place-items: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .btn-icon:hover { background: rgba(188,71,73,.15); }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .9rem; border-radius: var(--r); font-size: .82rem; font-weight: 600; cursor: pointer; border: none; font-family: var(--font); transition: opacity .15s; }
+    .btn-teal  { background: var(--teal);  color: #000; }
+    .btn-gold  { background: var(--gold);  color: #000; }
+    .btn-ghost { background: transparent; color: var(--beige); border: 1px solid var(--border); }
+    .btn:hover { opacity: .82; }
+    .btn-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+
+    /* ── Right: sandbox + output ── */
+    .sandbox-pane, .output-pane {
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .sandbox-pane { border-bottom: 1px solid var(--border); }
+
+    .pane-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .4rem 1rem;
+      background: #111;
+      border-bottom: 1px solid var(--border);
+      font-size: .75rem; color: var(--border-light);
+      flex-shrink: 0;
+    }
+
+    #sandbox-editor {
+      flex: 1; width: 100%; background: #0d1117; color: var(--beige);
+      font-family: var(--mono); font-size: .82rem; line-height: 1.7;
+      border: none; outline: none; resize: none; padding: .75rem 1rem;
+      tab-size: 2;
+    }
+
+    /* ── JSON output ── */
+    .output-pane { background: #0a0a0a; }
+    #json-output {
+      flex: 1; overflow-y: auto;
+      padding: .75rem 1rem;
+      font-family: var(--mono); font-size: .78rem;
+      color: var(--beige); line-height: 1.7;
+      white-space: pre-wrap; word-break: break-all;
+    }
+    .json-key   { color: var(--teal); }
+    .json-str   { color: #f1fa8c; }
+    .json-num   { color: #bd93f9; }
+    .json-bool  { color: var(--gold); }
+
+    /* ── Test result lines ── */
+    .result-pass { color: var(--teal); }
+    .result-fail { color: var(--rose); }
+    .result-info { color: var(--border-light); }
+
+    /* ── Sandbox results ── */
+    #sandbox-results {
+      padding: .5rem 1rem;
+      font-family: var(--mono); font-size: .78rem;
+      border-top: 1px solid var(--border);
+      background: #111;
+      min-height: 36px;
+      flex-shrink: 0;
+    }
+
+    /* ── Copy badge ── */
+    .copy-badge {
+      font-size: .7rem; background: var(--teal); color: #000;
+      padding: 1px 7px; border-radius: 99px; opacity: 0;
+      transition: opacity .3s;
+    }
+    .copy-badge.show { opacity: 1; }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; height: auto; }
+      .panel-right { grid-template-rows: 360px 300px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <h1>⚒ Quest Builder</h1>
+    <a href="../index.html">← Back to Platform</a>
+    <span style="margin-left:auto;font-size:.75rem;color:var(--border-light)">Dev Tool &mdash; not visible to learners</span>
+  </header>
+
+  <!-- Left: Form -->
+  <div class="panel panel-left">
+
+    <div class="section-head">Quest Metadata</div>
+
+    <div class="field">
+      <label>Node ID <span style="color:var(--rose)">*</span></label>
+      <input type="text" id="f-id" placeholder="node-601" />
+    </div>
+    <div class="field">
+      <label>Title <span style="color:var(--rose)">*</span></label>
+      <input type="text" id="f-title" placeholder="The Variable Crystal" />
+    </div>
+    <div class="field">
+      <label>Mascot</label>
+      <select id="f-mascot">
+        <option value="Lumo">🦊 Lumo (Logic)</option>
+        <option value="Pip">🐢 Pip (Mechanics)</option>
+        <option value="Ember">🐅 Ember (Creation)</option>
+        <option value="Echo">🦎 Echo (Optimization)</option>
+        <option value="Stardust">✨ Stardust (Cosmic)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>XP Reward</label>
+      <input type="number" id="f-xp" value="75" min="10" max="500" step="5" />
+    </div>
+    <div class="field">
+      <label>Prerequisites (node IDs, comma-separated)</label>
+      <input type="text" id="f-prereqs" placeholder="node-101, node-102" />
+    </div>
+
+    <div class="section-head">Briefing</div>
+    <div class="field">
+      <label>Briefing HTML (supports &lt;code&gt; tags)</label>
+      <textarea id="f-briefing" rows="4" placeholder="Lumo needs your help! Write a function &lt;code&gt;add(a, b)&lt;/code&gt; that returns the sum."></textarea>
+    </div>
+
+    <div class="section-head">Initial Code</div>
+    <div class="field">
+      <textarea id="f-starter" rows="5" style="font-family:var(--mono);font-size:.8rem" placeholder="function add(a, b) {&#10;  // Your code here&#10;}"></textarea>
+    </div>
+
+    <div class="section-head">Test Cases</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:.3rem;margin-bottom:.4rem">
+      <span style="font-size:.7rem;color:var(--border-light)">Description</span>
+      <span style="font-size:.7rem;color:var(--border-light)">Assertion (JS expression)</span>
+      <span></span>
+    </div>
+    <div id="test-cases"></div>
+    <button class="btn btn-ghost" id="btn-add-test" style="margin-top:.6rem;width:100%">+ Add Test Case</button>
+
+    <div class="btn-row">
+      <button class="btn btn-teal" id="btn-generate">Generate JSON</button>
+      <button class="btn btn-gold" id="btn-run-sandbox">Run in Sandbox</button>
+    </div>
+
+  </div>
+
+  <!-- Right: sandbox + JSON output -->
+  <div class="panel-right">
+
+    <!-- Sandbox -->
+    <div class="sandbox-pane">
+      <div class="pane-bar">
+        <span>Sandbox - write a solution to test your assertions</span>
+        <button class="btn btn-teal" id="btn-run-inline" style="padding:.2rem .65rem;font-size:.72rem">Run (Ctrl+Enter)</button>
+      </div>
+      <textarea id="sandbox-editor" spellcheck="false" placeholder="// Write a passing solution here to verify your test cases&#10;function add(a, b) {&#10;  return a + b;&#10;}"></textarea>
+      <div id="sandbox-results"><span class="result-info">// Run to see test results</span></div>
+    </div>
+
+    <!-- JSON output -->
+    <div class="output-pane">
+      <div class="pane-bar">
+        <span>Generated JSON</span>
+        <span class="copy-badge" id="copy-badge">Copied!</span>
+        <button class="btn btn-ghost" id="btn-copy" style="padding:.2rem .65rem;font-size:.72rem">Copy JSON</button>
+      </div>
+      <div id="json-output"><span style="color:var(--border-light)">// Click "Generate JSON" to see output</span></div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+/* ── Worker-based evaluator (inline, no imports needed) ── */
+const WORKER_SRC = `
+self.onmessage = function(e) {
+  const { userCode, testCases } = e.data;
+  const logs = [];
+  const customConsole = {
+    log:   (...a) => logs.push(a.map(String).join(' ')),
+    warn:  (...a) => logs.push('[warn] ' + a.map(String).join(' ')),
+    error: (...a) => logs.push('[error] ' + a.map(String).join(' ')),
+  };
+  try { new Function('console', userCode)(customConsole); } catch(err) { logs.push('[error] ' + err.message); }
+  const results = testCases.map(test => {
+    try {
+      const val = new Function('userCode','console', userCode + '; return (' + test.assertion + ');')(userCode, customConsole);
+      return { description: test.description, passed: !!val, error: null };
+    } catch(err) {
+      return { description: test.description, passed: false, error: err.message };
+    }
+  });
+  self.postMessage({ logs, results });
+};
+`;
+
+function runEval(userCode, testCases, timeoutMs = 3000) {
+  return new Promise((resolve) => {
+    let blob, url, worker;
+    try {
+      blob   = new Blob([WORKER_SRC], { type: 'application/javascript' });
+      url    = URL.createObjectURL(blob);
+      worker = new Worker(url);
+    } catch {
+      // Fallback (file://)
+      const logs = [];
+      const cc = { log: (...a)=>logs.push(a.join(' ')), warn:(...a)=>logs.push('[warn] '+a.join(' ')), error:(...a)=>logs.push('[error] '+a.join(' ')) };
+      try { new Function('console', userCode)(cc); } catch(e) { logs.push('[error] '+e.message); }
+      const results = testCases.map(t => {
+        try { return { description:t.description, passed:!!new Function('userCode','console',userCode+'; return ('+t.assertion+');')(userCode,cc), error:null }; }
+        catch(e) { return { description:t.description, passed:false, error:e.message }; }
+      });
+      return resolve({ logs, results });
+    }
+    const timer = setTimeout(() => { worker.terminate(); URL.revokeObjectURL(url); resolve({ logs:['Timed out'], results:[] }); }, timeoutMs);
+    worker.onmessage = e => { clearTimeout(timer); worker.terminate(); URL.revokeObjectURL(url); resolve(e.data); };
+    worker.onerror   = e => { clearTimeout(timer); worker.terminate(); URL.revokeObjectURL(url); resolve({ logs:['Worker error: '+e.message], results:[] }); };
+    worker.postMessage({ userCode, testCases });
+  });
+}
+
+/* ── State ── */
+let testRows = [];
+
+/* ── Test case row management ── */
+function addTestRow(desc = '', assertion = '') {
+  const id  = Date.now() + Math.random();
+  const row = document.createElement('div');
+  row.className = 'test-row';
+  row.dataset.id = id;
+  row.innerHTML = `
+    <input type="text" class="tc-desc"      placeholder="add(1,2) returns 3" value="${esc(desc)}" />
+    <input type="text" class="tc-assertion" placeholder="add(1, 2) === 3"    value="${esc(assertion)}" />
+    <button class="btn-icon" title="Remove">✕</button>`;
+  row.querySelector('.btn-icon').onclick = () => { row.remove(); syncTestRows(); };
+  document.getElementById('test-cases').appendChild(row);
+  syncTestRows();
+}
+
+function syncTestRows() {
+  testRows = [...document.querySelectorAll('.test-row')].map(r => ({
+    description: r.querySelector('.tc-desc').value.trim(),
+    assertion:   r.querySelector('.tc-assertion').value.trim(),
+  }));
+}
+
+document.getElementById('btn-add-test').onclick = () => addTestRow();
+document.getElementById('test-cases').addEventListener('input', syncTestRows);
+addTestRow();
+
+/* ── JSON Generation ── */
+function buildNode() {
+  syncTestRows();
+  const prereqRaw = document.getElementById('f-prereqs').value.trim();
+  const prereqs   = prereqRaw ? prereqRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  return {
+    id:           document.getElementById('f-id').value.trim() || 'node-XXX',
+    title:        document.getElementById('f-title').value.trim() || 'Untitled Quest',
+    mascot:       document.getElementById('f-mascot').value,
+    xp:           Number(document.getElementById('f-xp').value) || 75,
+    prerequisites: prereqs,
+    briefing:     document.getElementById('f-briefing').value.trim(),
+    initialCode:  document.getElementById('f-starter').value,
+    testCases:    testRows.filter(t => t.description && t.assertion),
+  };
+}
+
+function syntaxHighlight(json) {
+  return json
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, (m) => {
+      let cls = 'json-num';
+      if (/^"/.test(m)) cls = /:$/.test(m) ? 'json-key' : 'json-str';
+      else if (/true|false/.test(m)) cls = 'json-bool';
+      return `<span class="${cls}">${m}</span>`;
+    });
+}
+
+document.getElementById('btn-generate').onclick = () => {
+  const node = buildNode();
+  const json = JSON.stringify(node, null, 2);
+  document.getElementById('json-output').innerHTML = syntaxHighlight(json);
+};
+
+/* ── Copy ── */
+document.getElementById('btn-copy').onclick = async () => {
+  const node = buildNode();
+  const json = JSON.stringify(node, null, 2);
+  try {
+    await navigator.clipboard.writeText(json);
+    const badge = document.getElementById('copy-badge');
+    badge.classList.add('show');
+    setTimeout(() => badge.classList.remove('show'), 1500);
+  } catch {
+    prompt('Copy this JSON:', json);
+  }
+};
+
+/* ── Sandbox run ── */
+async function runSandbox() {
+  syncTestRows();
+  const userCode  = document.getElementById('sandbox-editor').value;
+  const testCases = testRows.filter(t => t.description && t.assertion);
+  if (!testCases.length) {
+    document.getElementById('sandbox-results').innerHTML = '<span class="result-info">No test cases defined yet.</span>';
+    return;
+  }
+  document.getElementById('sandbox-results').innerHTML = '<span class="result-info">Running...</span>';
+  const { logs, results } = await runEval(userCode, testCases);
+
+  const lines = [];
+  if (logs.length) lines.push(...logs.map(l => `<span class="result-info">${esc(l)}</span>`));
+  results.forEach(r => {
+    const icon = r.passed ? '✅' : '❌';
+    const err  = r.error ? ` <em style="color:var(--border-light)">(${esc(r.error)})</em>` : '';
+    lines.push(`<span class="${r.passed ? 'result-pass' : 'result-fail'}">${icon} ${esc(r.description)}${err}</span>`);
+  });
+  document.getElementById('sandbox-results').innerHTML = lines.join('<br>');
+
+  // Auto-update JSON when all pass
+  if (results.length && results.every(r => r.passed)) {
+    const node = buildNode();
+    const json = JSON.stringify(node, null, 2);
+    document.getElementById('json-output').innerHTML = syntaxHighlight(json);
+  }
+}
+
+document.getElementById('btn-run-sandbox').onclick = runSandbox;
+document.getElementById('btn-run-inline').onclick  = runSandbox;
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSandbox(); }
+});
+
+/* ── Sync test rows on form changes too ── */
+['f-id','f-title','f-xp','f-briefing','f-starter','f-prereqs'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', () => {
+    // Re-generate if output pane is non-empty
+    if (document.getElementById('json-output').textContent.trim().startsWith('{')) {
+      const node = buildNode();
+      document.getElementById('json-output').innerHTML = syntaxHighlight(JSON.stringify(node, null, 2));
+    }
+  });
+});
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

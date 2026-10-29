@@ -2,10 +2,16 @@
  * app.js - Application entry point.
  * Detects page context (index.html vs workspace.html) and dispatches accordingly.
  */
-import { GameState }        from './core/state.js';
-import { CodeEvaluator }    from './core/evaluator.js';
-import { SkillTreeRenderer } from './core/skill-tree.js';
+import { GameState }           from './core/state.js';
+import { CodeEvaluator }       from './core/evaluator.js';
+import { SkillTreeRenderer }   from './core/skill-tree.js';
 import { SoundFX, ParticleEngine } from './core/fx.js';
+import { openProfileModal }    from './core/ui.js';
+
+/* ── Service Worker registration ── */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+}
 
 async function loadJSON(url) {
   const res = await fetch(url);
@@ -30,6 +36,9 @@ function updateHUD(state) {
 async function bootDashboard() {
   const state = GameState.get();
   updateHUD(state);
+
+  // Profile button
+  document.getElementById('btn-profile')?.addEventListener('click', openProfileModal);
 
   let data;
   try {
