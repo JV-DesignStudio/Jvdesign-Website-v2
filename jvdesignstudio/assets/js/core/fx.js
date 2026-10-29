@@ -1,121 +1,149 @@
 /**
- * fx.js — Lightweight audio & particle effects.
- * Uses Web Audio API — no files needed for SFX, synthesized on the fly.
+ * fx.js - Web Audio synthesizer and canvas particle engine.
+ * No external audio files; all sounds are synthesized on the fly.
  */
 
-const AudioContext = window.AudioContext || window.webkitAudioContext;
+const AC = window.AudioContext || window.webkitAudioContext;
 
-export const FX = {
+export const SoundFX = {
   _ctx: null,
-  _enabled: true,
 
-  _getCtx() {
-    if (!this._ctx && AudioContext) {
-      try { this._ctx = new AudioContext(); } catch { /* unsupported */ }
+  _ctx() {
+    if (!this.__ctx && AC) {
+      try { this.__ctx = new AC(); } catch { /* unsupported */ }
     }
-    return this._ctx;
+    return this.__ctx;
   },
 
-  enable(val) { this._enabled = val; },
+  _resume(ctx) {
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  },
 
-  playSFX(type) {
-    if (!this._enabled) return;
-    const ctx = this._getCtx();
+  /** Ascending two-tone chord: E5 -> A5, sine wave, 0.15s */
+  playSuccess() {
+    const ctx = this._resume(this._ctx());
     if (!ctx) return;
-    if (ctx.state === 'suspended') ctx.resume();
-    const fn = this._sounds[type] ?? this._sounds.xp;
-    try { fn(ctx); } catch { /* silence audio errors */ }
-  },
-
-  _sounds: {
-    xp(ctx) {
+    [[659.25, 0], [880, 0.08]].forEach(([freq, delay]) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
+      o.type = 'sine';
       o.connect(g); g.connect(ctx.destination);
-      o.frequency.setValueAtTime(880, ctx.currentTime);
-      o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.12);
-      g.gain.setValueAtTime(0.15, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-      o.start(); o.stop(ctx.currentTime + 0.25);
-    },
-    levelup(ctx) {
-      [523, 659, 784, 1047].forEach((freq, i) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        const t = ctx.currentTime + i * 0.1;
-        o.frequency.setValueAtTime(freq, t);
-        g.gain.setValueAtTime(0.15, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-        o.start(t); o.stop(t + 0.3);
-      });
-    },
-    achievement(ctx) {
-      [660, 880, 1100].forEach((freq, i) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = 'triangle';
-        o.connect(g); g.connect(ctx.destination);
-        const t = ctx.currentTime + i * 0.08;
-        o.frequency.setValueAtTime(freq, t);
-        g.gain.setValueAtTime(0.12, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-        o.start(t); o.stop(t + 0.4);
-      });
-    },
-    error(ctx) {
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'sawtooth';
-      o.connect(g); g.connect(ctx.destination);
-      o.frequency.setValueAtTime(220, ctx.currentTime);
-      o.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.2);
-      g.gain.setValueAtTime(0.1, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-      o.start(); o.stop(ctx.currentTime + 0.25);
-    },
-    pass(ctx) {
-      [784, 988].forEach((freq, i) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        const t = ctx.currentTime + i * 0.12;
-        o.frequency.setValueAtTime(freq, t);
-        g.gain.setValueAtTime(0.12, t);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-        o.start(t); o.stop(t + 0.25);
-      });
-    },
+      const t = ctx.currentTime + delay;
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.15, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      o.start(t); o.stop(t + 0.15);
+    });
   },
 
-  /* ── Confetti burst (CSS-based, no canvas) ── */
-  confetti(x = window.innerWidth / 2, y = window.innerHeight / 2, count = 24) {
-    const colors = ['#7c3aed','#f59e0b','#10b981','#ef4444','#60a5fa'];
-    for (let i = 0; i < count; i++) {
-      const el = document.createElement('div');
-      const angle = (Math.PI * 2 * i) / count;
-      const dist = 80 + Math.random() * 80;
-      const dx = Math.cos(angle) * dist;
-      const dy = Math.sin(angle) * dist;
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      Object.assign(el.style, {
-        position: 'fixed',
-        left: `${x}px`, top: `${y}px`,
-        width: '8px', height: '8px',
-        borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-        background: color,
-        pointerEvents: 'none',
-        zIndex: 9999,
-        transition: 'all 0.8s cubic-bezier(0.25,0.46,0.45,0.94)',
-        transform: 'scale(1)',
-        opacity: '1',
+  /** Low sawtooth buzz: 150Hz -> 100Hz, 0.25s */
+  playFailure() {
+    const ctx = this._resume(this._ctx());
+    if (!ctx) return;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.setValueAtTime(150, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.25);
+    g.gain.setValueAtTime(0.12, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    o.start(); o.stop(ctx.currentTime + 0.25);
+  },
+
+  /** Arpeggiated C-Major: C5, E5, G5, C6, triangle wave */
+  playLevelUp() {
+    const ctx = this._resume(this._ctx());
+    if (!ctx) return;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'triangle';
+      o.connect(g); g.connect(ctx.destination);
+      const t = ctx.currentTime + i * 0.1;
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.13, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      o.start(t); o.stop(t + 0.35);
+    });
+  },
+};
+
+export const ParticleEngine = {
+  /**
+   * Render a confetti burst on the canvas element with id "fx-canvas".
+   * @param {number} count - number of particles (default 60)
+   */
+  burst(count = 60) {
+    const canvas = document.getElementById('fx-canvas');
+    if (!canvas) return;
+
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.pointerEvents = 'none';
+
+    const ctx = canvas.getContext('2d');
+    const cx  = canvas.width  / 2;
+    const cy  = canvas.height * 0.35;
+
+    const COLORS = ['#70A3A7', '#F0EAD6', '#BC4749', '#f39c12', '#403B33', '#ffffff'];
+
+    const particles = Array.from({ length: count }, () => ({
+      x:   cx + (Math.random() - 0.5) * 20,
+      y:   cy,
+      vx:  (Math.random() - 0.5) * 10,
+      vy:  -(Math.random() * 8 + 4),
+      r:   Math.random() * 5 + 3,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      shape: Math.random() > 0.5 ? 'rect' : 'circle',
+      alpha: 1,
+      rot:  Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.2,
+    }));
+
+    let frame;
+    const GRAVITY = 0.35;
+    const DRAG    = 0.98;
+
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+
+      particles.forEach(p => {
+        p.vy += GRAVITY;
+        p.vx *= DRAG;
+        p.x  += p.vx;
+        p.y  += p.vy;
+        p.rot += p.spin;
+        p.alpha -= 0.014;
+        if (p.alpha <= 0) return;
+        alive = true;
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.fillStyle   = p.color;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+
+        if (p.shape === 'rect') {
+          ctx.fillRect(-p.r, -p.r * 0.4, p.r * 2, p.r * 0.8);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, p.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
       });
-      document.body.appendChild(el);
-      requestAnimationFrame(() => {
-        el.style.transform = `translate(${dx}px, ${dy}px) scale(0)`;
-        el.style.opacity = '0';
-      });
-      setTimeout(() => el.remove(), 900);
-    }
+
+      if (alive) {
+        frame = requestAnimationFrame(tick);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    };
+
+    cancelAnimationFrame(frame);
+    requestAnimationFrame(tick);
   },
 };

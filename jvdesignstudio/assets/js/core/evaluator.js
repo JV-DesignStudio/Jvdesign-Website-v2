@@ -1,90 +1,121 @@
 /**
- * evaluator.js — Sandboxed JS/pseudo-code evaluation + test runner.
- * Runs student code in a Worker-isolated iframe to prevent page escapes.
+ * evaluator.js - Sandboxed code runner using a dynamically-created Web Worker.
+ * No iframes; the Worker is created on the fly via createObjectURL.
+ *
+ * API: CodeEvaluator.run(userCode, testCases, timeoutMs?)
+ *      -> Promise<{ logs: string[], results: Array<{ description, passed, error }> }>
  */
 
-export class Evaluator {
-  constructor() {
-    this._iframe = null;
-    this._pending = new Map();
-    this._msgId = 0;
+const WORKER_SRC = `
+self.onmessage = function(e) {
+  const { userCode, testCases } = e.data;
+  const logs = [];
+
+  const customConsole = {
+    log:   (...a) => logs.push(a.map(String).join(' ')),
+    warn:  (...a) => logs.push('[warn] ' + a.map(String).join(' ')),
+    error: (...a) => logs.push('[error] ' + a.map(String).join(' ')),
+  };
+
+  // Execute user code first, capturing console output
+  try {
+    new Function('console', userCode)(customConsole);
+  } catch (err) {
+    logs.push('[error] ' + err.message);
   }
 
-  /* Lazy-create a sandboxed iframe for execution */
-  _getFrame() {
-    if (this._iframe) return this._iframe;
-
-    const frame = document.createElement('iframe');
-    frame.sandbox = 'allow-scripts';
-    frame.style.display = 'none';
-    frame.srcdoc = `<!DOCTYPE html><html><head></head><body><script>
-      const logs = [];
-      const origLog = console.log;
-      console.log = (...args) => {
-        logs.push(args.map(String).join(' '));
-        origLog(...args);
-      };
-      window.addEventListener('message', (e) => {
-        logs.length = 0;
-        let error = null, result = undefined;
-        try {
-          result = (new Function(e.data.code))();
-        } catch (err) {
-          error = err.message;
-        }
-        parent.postMessage({ id: e.data.id, logs: [...logs], error, result: String(result ?? '') }, '*');
-      });
-    <\/script></body></html>`;
-
-    document.body.appendChild(frame);
-    this._iframe = frame;
-
-    window.addEventListener('message', (e) => {
-      if (e.source !== frame.contentWindow) return;
-      const cb = this._pending.get(e.data.id);
-      if (cb) { cb(e.data); this._pending.delete(e.data.id); }
-    });
-
-    return frame;
-  }
-
-  /**
-   * Run code and return { logs, error, result }.
-   * Timeout after 4 s to catch infinite loops.
-   */
-  run(code, timeout = 4000) {
-    return new Promise((resolve) => {
-      const id = ++this._msgId;
-      const timer = setTimeout(() => {
-        this._pending.delete(id);
-        // Recreate frame to kill any runaway loop
-        if (this._iframe) { this._iframe.remove(); this._iframe = null; }
-        resolve({ logs: [], error: 'Execution timed out (possible infinite loop)', result: '' });
-      }, timeout);
-
-      this._pending.set(id, (data) => {
-        clearTimeout(timer);
-        resolve(data);
-      });
-
-      this._getFrame().contentWindow.postMessage({ id, code }, '*');
-    });
-  }
-
-  /**
-   * Run tests against student code.
-   * tests: Array<{ description, code, expect }>
-   *   code is appended after student code and must produce a value.
-   *   expect is compared with String(result).
-   */
-  async runTests(studentCode, tests) {
-    const results = [];
-    for (const test of tests) {
-      const combined = `${studentCode}\n;(function(){ return (${test.code}); })()`;
-      const { result, error } = await this.run(combined);
-      const pass = !error && String(result).trim() === String(test.expect).trim();
-      results.push({ description: test.description, pass, error });
+  // Run each test assertion
+  const results = testCases.map(test => {
+    try {
+      const val = new Function(
+        'userCode', 'console',
+        userCode + '; return (' + test.assertion + ');'
+      )(userCode, customConsole);
+      return { description: test.description, passed: !!val, error: null };
+    } catch (err) {
+      return { description: test.description, passed: false, error: err.message };
     }
-    return results;
-  }
-}
+  });
+
+  self.postMessage({ logs, results });
+};
+`;
+
+export const CodeEvaluator = {
+  /**
+   * @param {string} userCode - Student's code string.
+   * @param {Array<{description: string, assertion: string}>} testCases
+   * @param {number} timeoutMs - Kill worker after this many ms (default 2000).
+   * @returns {Promise<{logs: string[], results: Array<{description, passed, error}>}>}
+   */
+  run(userCode, testCases = [], timeoutMs = 2000) {
+    return new Promise((resolve) => {
+      let blob, url, worker;
+
+      try {
+        blob   = new Blob([WORKER_SRC], { type: 'application/javascript' });
+        url    = URL.createObjectURL(blob);
+        worker = new Worker(url);
+      } catch (err) {
+        // Worker not available (e.g. file:// protocol) - fall back to iframe eval
+        return resolve(this._fallback(userCode, testCases));
+      }
+
+      const timer = setTimeout(() => {
+        worker.terminate();
+        URL.revokeObjectURL(url);
+        resolve({
+          logs: ['[error] Execution timed out - possible infinite loop'],
+          results: testCases.map(t => ({
+            description: t.description,
+            passed: false,
+            error: 'Timed out',
+          })),
+        });
+      }, timeoutMs);
+
+      worker.onmessage = (e) => {
+        clearTimeout(timer);
+        worker.terminate();
+        URL.revokeObjectURL(url);
+        resolve(e.data);
+      };
+
+      worker.onerror = (err) => {
+        clearTimeout(timer);
+        worker.terminate();
+        URL.revokeObjectURL(url);
+        resolve({
+          logs: [`[error] Worker error: ${err.message}`],
+          results: testCases.map(t => ({
+            description: t.description,
+            passed: false,
+            error: err.message,
+          })),
+        });
+      };
+
+      worker.postMessage({ userCode, testCases });
+    });
+  },
+
+  /** Fallback for file:// or sandboxed environments where Workers are blocked. */
+  _fallback(userCode, testCases) {
+    const logs = [];
+    const customConsole = {
+      log:   (...a) => logs.push(a.map(String).join(' ')),
+      warn:  (...a) => logs.push('[warn] ' + a.map(String).join(' ')),
+      error: (...a) => logs.push('[error] ' + a.map(String).join(' ')),
+    };
+    try { new Function('console', userCode)(customConsole); } catch (e) { logs.push('[error] ' + e.message); }
+    const results = testCases.map(test => {
+      try {
+        const val = new Function('userCode', 'console', userCode + '; return (' + test.assertion + ');')(userCode, customConsole);
+        return { description: test.description, passed: !!val, error: null };
+      } catch (e) {
+        return { description: test.description, passed: false, error: e.message };
+      }
+    });
+    return { logs, results };
+  },
+};

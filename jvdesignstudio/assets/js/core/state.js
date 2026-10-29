@@ -1,143 +1,129 @@
 /**
- * state.js — Persistent player state via localStorage.
- * No framework, no server. Everything lives in the browser.
+ * state.js - Persistent player state via localStorage.
+ * Key: jv_studio_player_v1
+ * Level formula: floor(sqrt(xp / 50)) + 1
  */
-const STATE_KEY = 'jvds_rpg_state';
+
+const STORAGE_KEY = 'jv_studio_player_v1';
 
 const DEFAULT_STATE = {
-  version: 1,
-  player: {
-    name: 'Adventurer',
-    level: 1,
-    xp: 0,
-    xpToNext: 100,
-    rank: 'bronze',   // bronze | silver | gold | diamond
-    streak: 0,
-    lastActiveDate: null,
-  },
-  progress: {},        // { [trackId]: { completed: [lessonId,...], xpEarned: n } }
-  achievements: [],    // earned achievement ids
-  skillTree: {},       // { [nodeId]: true }
-  settings: {
-    sound: true,
-    theme: 'dark',
-  },
+  xp: 0,
+  streak: 0,
+  lastActiveDate: null,
+  completedNodes: [],
+  unlockedBadges: [],
+  currentTrack: 'web-dev-adventurer',
 };
 
-export const State = {
-  _state: null,
-
-  load() {
+export const GameState = {
+  /** Returns parsed state from localStorage, or the default schema. */
+  get() {
     try {
-      const raw = localStorage.getItem(STATE_KEY);
-      this._state = raw ? { ...DEFAULT_STATE, ...JSON.parse(raw) } : { ...DEFAULT_STATE };
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { ...DEFAULT_STATE };
+      const parsed = JSON.parse(raw);
+      return { ...DEFAULT_STATE, ...parsed };
     } catch {
-      this._state = { ...DEFAULT_STATE };
+      return { ...DEFAULT_STATE };
     }
-    this._checkStreak();
-    return this;
   },
 
-  save() {
+  /** Serializes and writes state to localStorage. */
+  save(state) {
     try {
-      localStorage.setItem(STATE_KEY, JSON.stringify(this._state));
-    } catch { /* storage full — graceful no-op */ }
-    return this;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch { /* storage full - silent fail */ }
   },
 
-  get(path) {
-    return path.split('.').reduce((o, k) => o?.[k], this._state);
+  /** Level formula: floor(sqrt(xp / 50)) + 1 */
+  calcLevel(xp) {
+    return Math.floor(Math.sqrt(xp / 50)) + 1;
   },
 
-  set(path, value) {
-    const keys = path.split('.');
-    let obj = this._state;
-    for (let i = 0; i < keys.length - 1; i++) {
-      if (obj[keys[i]] === undefined) obj[keys[i]] = {};
-      obj = obj[keys[i]];
-    }
-    obj[keys[keys.length - 1]] = value;
-    this.save();
-    return this;
-  },
-
-  /* XP & levelling */
+  /**
+   * Increments XP, calculates level change, updates streak, saves.
+   * Returns { state, leveledUp, newLevel }.
+   */
   addXP(amount) {
-    const p = this._state.player;
-    p.xp += amount;
-    let levelled = false;
-    while (p.xp >= p.xpToNext) {
-      p.xp -= p.xpToNext;
-      p.level += 1;
-      p.xpToNext = Math.floor(p.xpToNext * 1.4);
-      levelled = true;
-      this._updateRank(p.level);
+    const state = this.get();
+    const oldLevel = this.calcLevel(state.xp);
+    state.xp += amount;
+    const newLevel = this.calcLevel(state.xp);
+    this.updateStreak(state);
+    this.save(state);
+    return { state, leveledUp: newLevel > oldLevel, newLevel };
+  },
+
+  /**
+   * Idempotently marks a node complete and awards XP.
+   * Returns the result of addXP (or null if already completed).
+   */
+  markCompleted(nodeId, xpReward) {
+    const state = this.get();
+    if (state.completedNodes.includes(nodeId)) {
+      return { state, leveledUp: false, newLevel: this.calcLevel(state.xp) };
     }
-    this.save();
-    return { levelled, level: p.level, xp: p.xp, xpToNext: p.xpToNext };
+    state.completedNodes.push(nodeId);
+    this.save(state);
+    return this.addXP(xpReward);
   },
 
-  _updateRank(level) {
-    const p = this._state.player;
-    if (level >= 40) p.rank = 'diamond';
-    else if (level >= 20) p.rank = 'gold';
-    else if (level >= 10) p.rank = 'silver';
-    else p.rank = 'bronze';
-  },
+  /**
+   * Compares lastActiveDate (YYYY-MM-DD) to today.
+   * Increments streak if consecutive day; resets to 1 if broken.
+   * Mutates and saves the provided state object.
+   */
+  updateStreak(state) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (state.lastActiveDate === today) return;
 
-  /* Lesson progress */
-  markLessonComplete(trackId, lessonId, xp = 50) {
-    if (!this._state.progress[trackId]) {
-      this._state.progress[trackId] = { completed: [], xpEarned: 0 };
+    if (state.lastActiveDate) {
+      const last = new Date(state.lastActiveDate);
+      const now  = new Date(today);
+      const diffDays = Math.round((now - last) / 86400000);
+      state.streak = diffDays === 1 ? (state.streak || 0) + 1 : 1;
+    } else {
+      state.streak = 1;
     }
-    const t = this._state.progress[trackId];
-    if (!t.completed.includes(lessonId)) {
-      t.completed.push(lessonId);
-      t.xpEarned += xp;
+    state.lastActiveDate = today;
+  },
+
+  /** Serialises current state to JSON string for download/copy. */
+  exportSave() {
+    const state = this.get();
+    return JSON.stringify(state, null, 2);
+  },
+
+  /**
+   * Restores state from a JSON string.
+   * Returns true on success, false if validation fails.
+   */
+  importSave(jsonString) {
+    try {
+      const parsed = JSON.parse(jsonString);
+      // Basic validation: must have the key fields
+      const required = ['xp', 'streak', 'completedNodes', 'unlockedBadges'];
+      for (const key of required) {
+        if (!(key in parsed)) return false;
+      }
+      this.save({ ...DEFAULT_STATE, ...parsed });
+      return true;
+    } catch {
+      return false;
     }
-    this.save();
-    return this.addXP(xp);
   },
 
-  isLessonComplete(trackId, lessonId) {
-    return this._state.progress[trackId]?.completed.includes(lessonId) ?? false;
-  },
-
-  trackProgress(trackId) {
-    return this._state.progress[trackId] ?? { completed: [], xpEarned: 0 };
-  },
-
-  /* Achievements */
-  unlockAchievement(id) {
-    if (this._state.achievements.includes(id)) return false;
-    this._state.achievements.push(id);
-    this.save();
-    return true;
-  },
-
-  /* Skill tree */
-  unlockSkill(nodeId) {
-    this._state.skillTree[nodeId] = true;
-    this.save();
-  },
-
-  hasSkill(nodeId) {
-    return !!this._state.skillTree[nodeId];
-  },
-
-  /* Streak */
-  _checkStreak() {
-    const p = this._state.player;
-    const today = new Date().toDateString();
-    if (p.lastActiveDate === today) return;
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    p.streak = p.lastActiveDate === yesterday ? p.streak + 1 : 1;
-    p.lastActiveDate = today;
-    this.save();
+  unlockBadge(badgeId) {
+    const state = this.get();
+    if (!state.unlockedBadges.includes(badgeId)) {
+      state.unlockedBadges.push(badgeId);
+      this.save(state);
+      return true;
+    }
+    return false;
   },
 
   reset() {
-    this._state = { ...DEFAULT_STATE };
-    this.save();
+    this.save({ ...DEFAULT_STATE });
   },
 };

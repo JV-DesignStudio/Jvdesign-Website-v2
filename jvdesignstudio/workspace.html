@@ -1,305 +1,68 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workspace — JVDesignStudio</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./assets/css/main.css">
-  <link rel="stylesheet" href="./assets/css/workspace.css">
+  <title>JVDesignStudio Workspace</title>
+  <link rel="stylesheet" href="assets/css/variables.css">
+  <link rel="stylesheet" href="assets/css/workspace.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<div class="workspace">
-
-  <!-- Top nav -->
-  <nav class="workspace-nav">
-    <a href="./index.html" class="nav-logo" style="font-size:1rem">⚔️ JVDesignStudio</a>
-    <span id="track-title" style="color:var(--color-text-muted);font-size:.9rem"></span>
-    <div class="hud" style="margin-left:auto;padding:.4rem .75rem">
-      <div class="hud-avatar">?</div>
-      <div>
-        <div class="hud-level">Lv 1</div>
-        <div class="hud-xp-bar"><div class="hud-xp-fill" style="width:0%"></div></div>
-      </div>
-      <span data-streak style="font-size:.7rem;color:var(--color-accent)">🔥 0</span>
+  <header class="hud-header">
+    <a href="index.html" class="nav-back">← Skill Tree</a>
+    <div id="quest-title" class="hud-title">Loading Quest...</div>
+    <div class="hud-stats">
+      <div class="hud-stat"><span class="icon">⚡</span> <span id="hud-xp">0 XP</span></div>
+      <div class="hud-stat"><span class="icon">⭐</span> <span id="hud-level">Lvl 1</span></div>
+      <div class="hud-stat"><span class="icon">🔥</span> <span id="hud-streak">0 Days</span></div>
     </div>
-  </nav>
+  </header>
 
-  <!-- Sidebar: step list -->
-  <aside class="workspace-sidebar">
-    <div class="step-list">
-      <h4>Lessons</h4>
-      <div id="step-nav"></div>
-    </div>
-    <!-- Workspace XP -->
-    <div class="ws-xp-row">
-      <span>XP</span>
-      <div class="ws-xp-bar"><div class="ws-xp-fill" id="ws-xp-fill" style="width:0%"></div></div>
-      <span id="ws-xp-label">0 / 100</span>
-    </div>
-  </aside>
+  <main class="workspace-grid">
 
-  <!-- Main: lesson + editor -->
-  <main class="workspace-main">
-
-    <!-- Lesson panel (inside editor column) -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;height:100%;overflow:hidden">
-
-      <!-- Left: lesson content -->
-      <div class="lesson-panel" id="lesson-panel">
-        <p style="color:var(--color-text-muted)">Loading lesson…</p>
-      </div>
-
-      <!-- Right: code editor -->
-      <div class="editor-wrapper" style="display:flex;flex-direction:column;border-left:1px solid var(--color-border)">
-        <div class="editor-tabs">
-          <div class="editor-tab active">main.js</div>
+    <!-- Left: Briefing & Objectives -->
+    <section class="pane pane-briefing">
+      <div class="mascot-card">
+        <span id="mascot-avatar" class="avatar">🦊</span>
+        <div>
+          <h3 id="mascot-name">Lumo</h3>
+          <p id="mascot-role">Logic Guide</p>
         </div>
-        <textarea id="code-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
       </div>
-    </div>
-
-    <!-- Output console -->
-    <div class="output-panel">
-      <div class="output-toolbar">
-        <span>Console</span>
-        <button onclick="document.getElementById('output-console').innerHTML=''" style="margin-left:auto;background:none;border:none;color:var(--color-text-muted);cursor:pointer;font-size:.75rem">Clear</button>
+      <div id="briefing-body" class="briefing-body"></div>
+      <div class="tasks-container">
+        <h4>Task Checkpoints:</h4>
+        <ul id="task-list" class="task-list"></ul>
       </div>
-      <div id="output-console"><div class="output-line-info">// Output appears here</div></div>
-    </div>
+    </section>
 
-    <!-- Test results -->
-    <div id="test-results" style="padding:.5rem 1rem;border-top:1px solid var(--color-border);background:var(--color-surface);max-height:100px;overflow-y:auto;display:none"></div>
+    <!-- Center: Monospace Editor -->
+    <section class="pane pane-editor">
+      <div class="pane-bar">
+        <span>solution.js</span>
+        <button id="btn-run" class="btn btn-teal">Run Tests (Ctrl+Enter)</button>
+      </div>
+      <textarea id="code-editor" class="code-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+    </section>
 
-    <!-- Action bar -->
-    <div class="action-bar">
-      <button class="run-btn" id="btn-run">▶ Run</button>
-      <button class="check-btn" id="btn-check">✔ Check Answer</button>
-      <button class="hint-btn" id="btn-hint">💡 Hint</button>
-      <button id="btn-next" class="btn btn-ghost" style="display:none">Next →</button>
-    </div>
+    <!-- Right: Terminal Output & Execution Logs -->
+    <section class="pane pane-terminal">
+      <div class="pane-bar">
+        <span>Test Console</span>
+        <button onclick="document.getElementById('terminal-console').innerHTML=''" class="btn-clear">Clear</button>
+      </div>
+      <div id="terminal-console" class="terminal-console">
+        <div class="log-info">// Run your code to see output here</div>
+      </div>
+    </section>
 
   </main>
-</div>
 
-<style>
-  .test-result { display:flex;gap:.5rem;align-items:center;font-size:.8rem;padding:.2rem 0; }
-  .test-result.pass { color:var(--color-success); }
-  .test-result.fail { color:var(--color-danger); }
-  .test-error { color:var(--color-text-muted);font-size:.75rem; }
-</style>
+  <!-- Overlay canvas for particle effects -->
+  <canvas id="fx-canvas" class="fx-canvas"></canvas>
 
-<script type="module">
-import { State }     from './assets/js/core/state.js';
-import { Evaluator } from './assets/js/core/evaluator.js';
-import { UI }        from './assets/js/core/ui.js';
-import { FX }        from './assets/js/core/fx.js';
-
-/* ── Bootstrap ── */
-State.load();
-const player = State.get('player');
-UI.updateHUD(player);
-
-const params  = new URLSearchParams(location.search);
-const trackId = params.get('track') ?? 'js-foundations';
-const ev      = new Evaluator();
-
-let trackData   = null;
-let lessons     = [];
-let currentIdx  = 0;
-let hintUsed    = false;
-
-/* ── Load Track ── */
-async function loadTrack() {
-  try {
-    const allTracks = await fetch('./data/tracks.json').then(r => r.json());
-    trackData = allTracks.find(t => t.id === trackId);
-    if (!trackData) throw new Error('Track not found');
-  } catch {
-    document.getElementById('lesson-panel').innerHTML = '<p style="color:var(--color-danger)">Track not found.</p>';
-    return;
-  }
-
-  document.getElementById('track-title').textContent = trackData.name;
-
-  // Try to load detailed lesson file; fall back to stub lessons
-  try {
-    lessons = await fetch(`./tracks/${trackId}.json`).then(r => r.json());
-  } catch {
-    lessons = (trackData.lessons ?? []).map(l => ({
-      ...l,
-      content: `<h2>${l.title}</h2><p>Lesson content coming soon. For now, practice writing <code>console.log('hello')</code> in the editor.</p>`,
-      starterCode: `// ${l.title}\nconsole.log('Hello, world!');`,
-      tests: [{ description: 'console.log is called', code: 'typeof console.log', expect: 'function' }],
-      hint: 'Try using console.log() to print a message.',
-    }));
-  }
-
-  renderStepNav();
-  loadLesson(0);
-}
-
-/* ── Step Nav ── */
-function renderStepNav() {
-  const nav = document.getElementById('step-nav');
-  nav.innerHTML = lessons.map((l, i) => {
-    const done = State.isLessonComplete(trackId, l.id);
-    return `<div class="step-item ${done ? 'done' : ''}" data-idx="${i}">
-      <div class="step-dot"></div>
-      <span>${l.title}</span>
-    </div>`;
-  }).join('');
-
-  nav.querySelectorAll('.step-item').forEach(el => {
-    el.addEventListener('click', () => loadLesson(+el.dataset.idx));
-  });
-}
-
-/* ── Load a Lesson ── */
-function loadLesson(idx) {
-  if (idx < 0 || idx >= lessons.length) return;
-  currentIdx = idx;
-  hintUsed = false;
-  const lesson = lessons[idx];
-
-  // Highlight active step
-  document.querySelectorAll('.step-item').forEach((el, i) => {
-    el.classList.toggle('active', i === idx);
-  });
-
-  // Render content
-  document.getElementById('lesson-panel').innerHTML = lesson.content ?? `<h2>${lesson.title}</h2>`;
-
-  // Set starter code (keep user's code if they've visited)
-  const savedCode = sessionStorage.getItem(`code_${trackId}_${lesson.id}`);
-  document.getElementById('code-editor').value = savedCode ?? lesson.starterCode ?? '';
-
-  // Reset UI
-  document.getElementById('output-console').innerHTML = '<div class="output-line-info">// Output appears here</div>';
-  const tr = document.getElementById('test-results');
-  tr.style.display = 'none'; tr.innerHTML = '';
-  document.getElementById('btn-next').style.display = State.isLessonComplete(trackId, lesson.id) ? 'inline-flex' : 'none';
-}
-
-/* ── Save code on edit ── */
-document.getElementById('code-editor').addEventListener('input', e => {
-  const lesson = lessons[currentIdx];
-  if (lesson) sessionStorage.setItem(`code_${trackId}_${lesson.id}`, e.target.value);
-});
-
-/* ── Run ── */
-document.getElementById('btn-run').addEventListener('click', async () => {
-  const code = document.getElementById('code-editor').value;
-  const { logs, error } = await ev.run(code);
-  UI.renderOutput(logs, error, document.getElementById('output-console'));
-  if (error) FX.playSFX('error');
-});
-
-/* ── Check Answer ── */
-document.getElementById('btn-check').addEventListener('click', async () => {
-  const lesson  = lessons[currentIdx];
-  const code    = document.getElementById('code-editor').value;
-  const tests   = lesson.tests ?? [];
-
-  if (!tests.length) {
-    // No tests — just mark complete
-    markComplete(lesson);
-    return;
-  }
-
-  const results = await ev.runTests(code, tests);
-  const tr = document.getElementById('test-results');
-  UI.renderTestResults(results, tr);
-  tr.style.display = 'block';
-
-  const allPass = results.every(r => r.pass);
-  if (allPass) {
-    markComplete(lesson);
-  } else {
-    FX.playSFX('error');
-  }
-});
-
-function markComplete(lesson) {
-  const wasNew = !State.isLessonComplete(trackId, lesson.id);
-  if (!wasNew) {
-    document.getElementById('btn-next').style.display = 'inline-flex';
-    return;
-  }
-
-  const xp = lesson.xp ?? 50;
-  const { levelled, level } = State.markLessonComplete(trackId, lesson.id, hintUsed ? Math.floor(xp * 0.7) : xp);
-
-  UI.updateHUD(State.get('player'));
-  UI.showXPToast(hintUsed ? Math.floor(xp * 0.7) : xp, lesson.title);
-  FX.playSFX('pass');
-  FX.confetti();
-
-  if (levelled) UI.showLevelUp(level);
-
-  // Achievement: first lesson
-  if (State.unlockAchievement('first-lesson')) {
-    showAchievementById('first-lesson');
-  }
-  if (!hintUsed && State.unlockAchievement('hint-free')) {
-    showAchievementById('hint-free');
-  }
-
-  // Update ws XP bar
-  const p = State.get('player');
-  const pct = Math.round((p.xp / p.xpToNext) * 100);
-  document.getElementById('ws-xp-fill').style.width = `${pct}%`;
-  document.getElementById('ws-xp-label').textContent = `${p.xp} / ${p.xpToNext}`;
-
-  // Update step nav
-  renderStepNav();
-  document.getElementById('btn-next').style.display = 'inline-flex';
-}
-
-async function showAchievementById(id) {
-  try {
-    const list = await fetch('./data/achievements.json').then(r => r.json());
-    const a = list.find(x => x.id === id);
-    if (a) UI.showAchievement(a);
-  } catch { /* silent */ }
-}
-
-/* ── Hint ── */
-document.getElementById('btn-hint').addEventListener('click', () => {
-  const lesson = lessons[currentIdx];
-  if (!lesson?.hint) return;
-  hintUsed = true;
-  const panel = document.getElementById('lesson-panel');
-  const existing = panel.querySelector('.hint-box');
-  if (existing) return;
-  const box = document.createElement('div');
-  box.className = 'hint-box';
-  box.style.cssText = 'margin-top:1rem;padding:.75rem 1rem;background:rgba(245,158,11,0.1);border:1px solid var(--color-accent);border-radius:8px;font-size:.85rem;color:var(--color-accent-light)';
-  box.innerHTML = `<strong>💡 Hint:</strong> ${lesson.hint}`;
-  panel.appendChild(box);
-});
-
-/* ── Next ── */
-document.getElementById('btn-next').addEventListener('click', () => {
-  if (currentIdx + 1 < lessons.length) {
-    loadLesson(currentIdx + 1);
-  } else {
-    // Track complete!
-    State.unlockAchievement(`all-${trackId}`);
-    document.getElementById('lesson-panel').innerHTML = `
-      <div style="text-align:center;padding:3rem 1rem">
-        <div style="font-size:4rem">🏆</div>
-        <h2 style="margin-top:1rem">Track Complete!</h2>
-        <p style="color:var(--color-text-muted);margin-top:.5rem">You finished <strong>${trackData?.name}</strong>.</p>
-        <a href="./index.html" class="btn btn-primary" style="margin-top:1.5rem">Back to Tracks</a>
-      </div>`;
-    FX.playSFX('levelup');
-    FX.confetti(window.innerWidth / 2, 200, 60);
-  }
-});
-
-loadTrack();
-</script>
+  <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>

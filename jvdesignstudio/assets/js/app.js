@@ -1,94 +1,260 @@
 /**
- * app.js — Index page entry point.
- * Bootstraps state, renders track grid, wires HUD.
+ * app.js - Application entry point.
+ * Detects page context (index.html vs workspace.html) and dispatches accordingly.
  */
-import { State } from './core/state.js';
-import { UI } from './core/ui.js';
-import { FX } from './core/fx.js';
+import { GameState }        from './core/state.js';
+import { CodeEvaluator }    from './core/evaluator.js';
+import { SkillTreeRenderer } from './core/skill-tree.js';
+import { SoundFX, ParticleEngine } from './core/fx.js';
 
 async function loadJSON(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Failed to load ${url}`);
-  return r.json();
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} loading ${url}`);
+  return res.json();
 }
 
-async function boot() {
-  State.load();
-  const player = State.get('player');
-  UI.updateHUD(player);
+/* ── Shared HUD update ── */
+function updateHUD(state) {
+  const level  = GameState.calcLevel(state.xp);
+  const xpEl   = document.getElementById('hud-xp');
+  const lvlEl  = document.getElementById('hud-level');
+  const strEl  = document.getElementById('hud-streak');
+  if (xpEl)  xpEl.textContent   = `${state.xp} XP`;
+  if (lvlEl) lvlEl.textContent  = `Lvl ${level}`;
+  if (strEl) strEl.textContent  = `${state.streak} Day${state.streak !== 1 ? 's' : ''}`;
+}
 
-  // Sound toggle
-  const soundToggle = document.getElementById('sound-toggle');
-  if (soundToggle) {
-    const soundOn = State.get('settings.sound') ?? true;
-    FX.enable(soundOn);
-    soundToggle.textContent = soundOn ? '🔊' : '🔇';
-    soundToggle.addEventListener('click', () => {
-      const next = !FX._enabled;
-      FX.enable(next);
-      State.set('settings.sound', next);
-      soundToggle.textContent = next ? '🔊' : '🔇';
-    });
-  }
+/* ═══════════════════════════════════════════════
+   DASHBOARD ROUTING  (index.html)
+═══════════════════════════════════════════════ */
+async function bootDashboard() {
+  const state = GameState.get();
+  updateHUD(state);
 
-  // Load tracks
-  const grid = document.getElementById('track-grid');
-  if (!grid) return;
-
-  let tracks = [];
+  let data;
   try {
-    tracks = await loadJSON('./data/tracks.json');
+    data = await loadJSON('./data/tracks.json');
   } catch (e) {
-    grid.innerHTML = `<p style="color:var(--color-text-muted)">Could not load tracks.</p>`;
+    const c = document.getElementById('skill-tree-container');
+    if (c) c.innerHTML = `<p style="color:var(--rose);padding:1rem">Could not load tracks: ${e.message}</p>`;
     return;
   }
 
-  renderTracks(tracks, grid);
-}
+  const tracks = data.tracks ?? [];
 
-function renderTracks(tracks, grid) {
-  grid.innerHTML = '';
-  tracks.forEach(track => {
-    const prog = State.trackProgress(track.id);
-    const total = track.lessonCount ?? 1;
-    const done = prog.completed.length;
-    const pct = Math.round((done / total) * 100);
+  // Build track selector tabs if multiple tracks exist
+  const tabsEl = document.getElementById('track-tabs');
+  if (tabsEl && tracks.length > 1) {
+    tabsEl.innerHTML = tracks.map((t, i) =>
+      `<button class="track-tab ${i === 0 ? 'active' : ''}" data-track="${t.id}">
+         ${t.mascotAvatar ?? ''} ${t.title}
+       </button>`
+    ).join('');
 
-    const card = document.createElement('article');
-    card.className = 'card track-card';
-    card.dataset.track = track.id;
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', `Open ${track.name} track`);
+    tabsEl.addEventListener('click', e => {
+      const btn = e.target.closest('.track-tab');
+      if (!btn) return;
+      tabsEl.querySelectorAll('.track-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const track = tracks.find(t => t.id === btn.dataset.track);
+      if (track) renderTree(track);
+    });
+  }
 
-    if (track.badge) {
-      card.innerHTML += `<span class="track-badge ${track.badge.type}">${track.badge.label}</span>`;
+  // Render the first (or current) track
+  const savedTrack = state.currentTrack ?? tracks[0]?.id;
+  const active = tracks.find(t => t.id === savedTrack) ?? tracks[0];
+  if (active) renderTree(active);
+
+  function renderTree(track) {
+    const renderer = new SkillTreeRenderer('skill-tree-container', track);
+    renderer.render();
+
+    // Update track info text
+    const infoEl = document.getElementById('track-info');
+    if (infoEl) {
+      infoEl.innerHTML = `
+        <span class="mascot-chip">${track.mascotAvatar ?? ''}</span>
+        <strong>${track.title}</strong>
+        <span>${track.description ?? ''}</span>`;
     }
-
-    card.innerHTML += `
-      <div class="track-icon">${track.icon}</div>
-      <h3>${track.name}</h3>
-      <p>${track.description}</p>
-      <div class="track-meta">
-        <span>📚 ${total} lessons</span>
-        <span>⚡ ${track.xpReward ?? 500} XP</span>
-        ${track.difficulty ? `<span class="pill pill-purple">${track.difficulty}</span>` : ''}
-      </div>
-      <div class="track-progress">
-        <div class="track-progress-fill" style="width:${pct}%"></div>
-      </div>
-      ${done > 0 ? `<div style="font-size:.75rem;color:var(--color-text-dim);margin-top:6px">${done}/${total} complete</div>` : ''}
-    `;
-
-    card.addEventListener('click', () => {
-      window.location.href = `workspace.html?track=${track.id}`;
-    });
-    card.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') card.click();
-    });
-
-    grid.appendChild(card);
-  });
+  }
 }
 
-boot().catch(console.error);
+/* ═══════════════════════════════════════════════
+   WORKSPACE ROUTING  (workspace.html?node=...)
+═══════════════════════════════════════════════ */
+async function bootWorkspace() {
+  const params  = new URLSearchParams(window.location.search);
+  const nodeId  = params.get('node');
+
+  if (!nodeId) {
+    document.getElementById('quest-title').textContent = 'No quest selected.';
+    return;
+  }
+
+  // Load state
+  const state = GameState.get();
+  updateHUD(state);
+
+  // Find the node in tracks
+  let node, track;
+  try {
+    const data = await loadJSON('./data/tracks.json');
+    for (const t of (data.tracks ?? [])) {
+      const found = t.nodes?.find(n => n.id === nodeId);
+      if (found) { node = found; track = t; break; }
+    }
+  } catch (e) {
+    document.getElementById('quest-title').textContent = 'Error loading quest data.';
+    return;
+  }
+
+  if (!node) {
+    document.getElementById('quest-title').textContent = `Quest "${nodeId}" not found.`;
+    return;
+  }
+
+  // Populate mascot / briefing
+  document.getElementById('quest-title').textContent   = node.title ?? nodeId;
+  document.getElementById('mascot-avatar').textContent = track?.mascotAvatar ?? '🦊';
+  document.getElementById('mascot-name').textContent   = node.mascot ?? track?.mascot ?? 'Guide';
+  document.getElementById('mascot-role').textContent   = track?.mascotRole ?? '';
+  document.getElementById('briefing-body').innerHTML   = node.briefing ?? '';
+
+  // Task checkpoints
+  const taskList = document.getElementById('task-list');
+  if (taskList) {
+    taskList.innerHTML = (node.testCases ?? []).map(tc =>
+      `<li class="task-item" data-desc="${tc.description}">
+         <span class="task-dot">○</span> ${tc.description}
+       </li>`
+    ).join('');
+  }
+
+  // Load initial code (restore session edit if any)
+  const editor = document.getElementById('code-editor');
+  const saved  = sessionStorage.getItem(`jvds_code_${nodeId}`);
+  editor.value = saved ?? node.initialCode ?? '';
+
+  // Save edits to sessionStorage
+  editor.addEventListener('input', () => {
+    sessionStorage.setItem(`jvds_code_${nodeId}`, editor.value);
+  });
+
+  // ── Run Tests ──
+  async function runTests() {
+    const userCode = editor.value;
+    const console_ = document.getElementById('terminal-console');
+    console_.innerHTML = '<div class="log-info">Running...</div>';
+
+    const { logs, results } = await CodeEvaluator.run(userCode, node.testCases ?? []);
+
+    // Render console logs
+    const logLines = logs.map(l => {
+      const cls = l.startsWith('[error]') ? 'log-error' : l.startsWith('[warn]') ? 'log-warn' : 'log-ok';
+      return `<div class="${cls}">${escHtml(l)}</div>`;
+    });
+    if (!logLines.length) logLines.push('<div class="log-info">// No console output</div>');
+
+    // Render test results
+    const resultLines = results.map(r => {
+      const icon = r.passed ? '✅' : '❌';
+      const err  = r.error ? ` <span class="log-error">(${escHtml(r.error)})</span>` : '';
+      return `<div class="test-result ${r.passed ? 'pass' : 'fail'}">${icon} ${escHtml(r.description)}${err}</div>`;
+    });
+
+    console_.innerHTML = [
+      '<div class="log-section">Console:</div>',
+      ...logLines,
+      results.length ? '<div class="log-section">Tests:</div>' : '',
+      ...resultLines,
+    ].filter(Boolean).join('');
+
+    // Update task dots
+    results.forEach((r, i) => {
+      const dot = taskList?.querySelectorAll('.task-dot')[i];
+      if (dot) dot.textContent = r.passed ? '✓' : '○';
+    });
+
+    const allPassed = results.length > 0 && results.every(r => r.passed);
+
+    if (allPassed) {
+      SoundFX.playSuccess();
+      ParticleEngine.burst();
+      const { leveledUp, newLevel } = GameState.markCompleted(nodeId, node.xp ?? 50);
+      updateHUD(GameState.get());
+      checkAchievements();
+      if (leveledUp) {
+        SoundFX.playLevelUp();
+        showBanner(`Level Up! You reached Level ${newLevel} 🎉`);
+      } else {
+        showBanner(`Quest Complete! +${node.xp ?? 50} XP ⚡`);
+      }
+    } else if (results.some(r => !r.passed)) {
+      SoundFX.playFailure();
+    }
+  }
+
+  document.getElementById('btn-run').addEventListener('click', runTests);
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      runTests();
+    }
+  });
+
+  // Mark already-completed tasks on load
+  const alreadyDone = GameState.get().completedNodes.includes(nodeId);
+  if (alreadyDone) {
+    taskList?.querySelectorAll('.task-dot').forEach(d => d.textContent = '✓');
+  }
+}
+
+/* ── Achievement checker ── */
+async function checkAchievements() {
+  const state = GameState.get();
+  let data;
+  try { data = await loadJSON('./data/achievements.json'); } catch { return; }
+
+  for (const ach of (data.achievements ?? [])) {
+    if (state.unlockedBadges.includes(ach.id)) continue;
+    if (evalCondition(ach.condition, state)) {
+      if (GameState.unlockBadge(ach.id)) {
+        showBanner(`Achievement: ${ach.badgeIcon} ${ach.title}`);
+      }
+    }
+  }
+}
+
+function evalCondition(condition, state) {
+  try {
+    const completedTracks = [];
+    return new Function('completedNodes', 'streak', 'unlockedBadges', 'completedTracks',
+      `return (${condition});`
+    )(state.completedNodes, state.streak, state.unlockedBadges, completedTracks);
+  } catch { return false; }
+}
+
+/* ── Toast banner ── */
+function showBanner(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast-banner';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.add('visible'), 50);
+  setTimeout(() => { el.classList.remove('visible'); setTimeout(() => el.remove(), 400); }, 3000);
+}
+
+/* ── Escape HTML ── */
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ── Boot ── */
+if (document.getElementById('skill-tree-container')) {
+  bootDashboard().catch(console.error);
+} else if (document.getElementById('code-editor')) {
+  bootWorkspace().catch(console.error);
+}
