@@ -6,8 +6,6 @@
 const AC = window.AudioContext || window.webkitAudioContext;
 
 export const SoundFX = {
-  _ctx: null,
-
   _ctx() {
     if (!this.__ctx && AC) {
       try { this.__ctx = new AC(); } catch { /* unsupported */ }

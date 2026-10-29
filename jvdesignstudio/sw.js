@@ -25,6 +25,7 @@ const STATIC_ASSETS = [
   './assets/js/core/stats.js',
   './assets/js/core/mobile-keys.js',
   './assets/js/core/printables.js',
+  './assets/js/core/lore.js',
   './assets/js/core/community.js',
   './assets/js/core/ai-assistant.js',
   './assets/js/core/profiles.js',

@@ -46,7 +46,9 @@ export async function checkLoreUnlocks(completedNodeId) {
   }
 
   if (changed) {
-    GameState.set('unlockedLore', unlocked);
+    const s = GameState.get();
+    s.unlockedLore = unlocked;
+    GameState.save(s);
   }
 }
 
