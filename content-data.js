@@ -5569,6 +5569,15 @@ window.JVDS_CONTENT = {
       ]
     },
     {
+      "id": "palette-studio",
+      "title": "Palette Studio: Color Palette Generator",
+      "desc": "Build game colour palettes in seconds. Pick a base colour, choose a harmony, or extract colours from an image. Export as CSS, HEX, PNG or JSON. Free, no install.",
+      "category": "General",
+      "tags": [],
+      "comingSoon": false,
+      "url": "/tools/palette-studio.html"
+    },
+    {
       "id": "parent-guide",
       "title": "Parent and Teacher Guide: Free Game Dev for Kids",
       "desc": "A free guide for parents and teachers: how to start young people making games on any school computer. No install, no account.",
@@ -6279,10 +6288,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-29T14:40:47.924Z",
+    "generated": "2026-10-29T16:54:00.927Z",
     "workshops": 344,
     "games": 13,
-    "tools": 50,
+    "tools": 51,
     "books": 5,
     "engines": {
       "Blender": 11,
@@ -6308,7 +6317,7 @@ window.JVDS_CONTENT = {
       "Unreal": 11
     },
     "toolCategories": {
-      "General": 4,
+      "General": 5,
       "Build & Ship": 3,
       "Make Art": 5,
       "Reference": 20,
