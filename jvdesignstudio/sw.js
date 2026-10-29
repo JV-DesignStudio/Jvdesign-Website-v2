@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
   './manifest.json',
   './data/tracks.json',
   './data/achievements.json',
+  './data/lore.json',
   './assets/css/variables.css',
   './assets/css/main.css',
   './assets/css/workspace.css',
@@ -21,6 +22,9 @@ const STATIC_ASSETS = [
   './assets/js/core/skill-tree.js',
   './assets/js/core/fx.js',
   './assets/js/core/ui.js',
+  './assets/js/core/stats.js',
+  './assets/js/core/mobile-keys.js',
+  './assets/js/core/printables.js',
 ];
 
 /* ── Install: pre-cache all static assets ── */

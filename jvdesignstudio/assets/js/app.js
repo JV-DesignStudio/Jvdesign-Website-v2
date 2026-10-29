@@ -6,7 +6,10 @@ import { GameState }           from './core/state.js';
 import { CodeEvaluator }       from './core/evaluator.js';
 import { SkillTreeRenderer }   from './core/skill-tree.js';
 import { SoundFX, ParticleEngine } from './core/fx.js';
-import { openProfileModal }    from './core/ui.js';
+import { openProfileModal, openMascotVault, checkLoreUnlocks } from './core/ui.js';
+import { PlayerStats, showTrackCompletionPopup } from './core/stats.js';
+import { mountMobileToolbar } from './core/mobile-keys.js';
+import { checkPrintableUnlock } from './core/printables.js';
 
 /* ── Service Worker registration ── */
 if ('serviceWorker' in navigator) {
@@ -37,8 +40,9 @@ async function bootDashboard() {
   const state = GameState.get();
   updateHUD(state);
 
-  // Profile button
+  // HUD buttons
   document.getElementById('btn-profile')?.addEventListener('click', openProfileModal);
+  document.getElementById('btn-vault')?.addEventListener('click', openMascotVault);
 
   let data;
   try {
@@ -105,6 +109,7 @@ async function bootWorkspace() {
   // Load state
   const state = GameState.get();
   updateHUD(state);
+  PlayerStats.startSession();
 
   // Find the node in tracks
   let node, track;
@@ -141,8 +146,9 @@ async function bootWorkspace() {
     ).join('');
   }
 
-  // Load initial code (restore session edit if any)
+  // Mobile touch toolbar
   const editor = document.getElementById('code-editor');
+  mountMobileToolbar(editor);
   const saved  = sessionStorage.getItem(`jvds_code_${nodeId}`);
   editor.value = saved ?? node.initialCode ?? '';
 
@@ -157,6 +163,7 @@ async function bootWorkspace() {
     const console_ = document.getElementById('terminal-console');
     console_.innerHTML = '<div class="log-info">Running...</div>';
 
+    PlayerStats.recordRun();
     const { logs, results } = await CodeEvaluator.run(userCode, node.testCases ?? []);
 
     // Render console logs
@@ -194,8 +201,27 @@ async function bootWorkspace() {
       const { leveledUp, newLevel } = GameState.markCompleted(nodeId, node.xp ?? 50);
       updateHUD(GameState.get());
       checkAchievements();
+      checkLoreUnlocks(nodeId);
+      PlayerStats.recordQuestCleared(nodeId);
+      // Check if this node completes its track
+      const allTrackNodes = track?.nodes?.map(n => n.id) ?? [];
+      const completedSet  = new Set(GameState.get().completedNodes);
+      if (allTrackNodes.length && allTrackNodes.every(id => completedSet.has(id))) {
+        PlayerStats.recordTrackCompleted(track.id);
+        showTrackCompletionPopup({
+          trackTitle:    track.title,
+          mascotAvatar:  track.mascotAvatar,
+          mascotName:    track.mascot,
+          storefront: [
+            { label: '🎮 itch.io games', url: 'https://jvdesignstudio.itch.io' },
+            { label: '☕ Ko-fi',          url: 'https://ko-fi.com/jvdesignstudio' },
+          ],
+        });
+      }
       if (leveledUp) {
         SoundFX.playLevelUp();
+        const prevLevel = newLevel - 1;
+        checkPrintableUnlock(newLevel, prevLevel);
         showBanner(`Level Up! You reached Level ${newLevel} 🎉`);
       } else {
         showBanner(`Quest Complete! +${node.xp ?? 50} XP ⚡`);
