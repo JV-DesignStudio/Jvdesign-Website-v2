@@ -43,7 +43,7 @@ self.onmessage = function(e) {
 
 export const CodeEvaluator = {
   /**
-   * @param {string} userCode - Student's code string.
+   * @param {string} userCode - The player's code string.
    * @param {Array<{description: string, assertion: string}>} testCases
    * @param {number} timeoutMs - Kill worker after this many ms (default 2000).
    * @returns {Promise<{logs: string[], results: Array<{description, passed, error}>}>}
