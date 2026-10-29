@@ -7,6 +7,7 @@ import { CodeEvaluator }       from './core/evaluator.js';
 import { SkillTreeRenderer }   from './core/skill-tree.js';
 import { SoundFX, ParticleEngine } from './core/fx.js';
 import { openProfileModal, openMascotVault, checkLoreUnlocks } from './core/ui.js';
+import { openStickerAlbum, checkLoreUnlocks as checkLoreUnlocksAlbum } from './core/lore.js';
 import { PlayerStats, showTrackCompletionPopup } from './core/stats.js';
 import { mountMobileToolbar } from './core/mobile-keys.js';
 import { checkPrintableUnlock }   from './core/printables.js';
@@ -44,7 +45,7 @@ async function bootDashboard() {
 
   // HUD buttons
   document.getElementById('btn-profile')?.addEventListener('click', openProfileModal);
-  document.getElementById('btn-vault')?.addEventListener('click', openMascotVault);
+  document.getElementById('btn-vault')?.addEventListener('click', openStickerAlbum);
   document.getElementById('btn-profiles')?.addEventListener('click', openProfileManager);
 
   let data;
@@ -204,7 +205,7 @@ async function bootWorkspace() {
       const { leveledUp, newLevel } = GameState.markCompleted(nodeId, node.xp ?? 50);
       updateHUD(GameState.get());
       checkAchievements();
-      checkLoreUnlocks(nodeId);
+      checkLoreUnlocksAlbum(nodeId);
       PlayerStats.recordQuestCleared(nodeId);
       // Check if this node completes its track
       const allTrackNodes = track?.nodes?.map(n => n.id) ?? [];
