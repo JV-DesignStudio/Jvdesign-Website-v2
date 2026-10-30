@@ -87,15 +87,42 @@ class GameSystem {
   }
 
   saveState() {
+    // A1991: a failed save must never be silent. Full or blocked storage is
+    // common on school computers, so warn the learner and point at the backpack.
+    let ok = true;
     if (typeof window !== 'undefined' && window.JVDSEngine && window.JVDSEngine.save) {
-      window.JVDSEngine.save.persist(this.storageKey, this.state);
-      return;
+      ok = window.JVDSEngine.save.persist(this.storageKey, this.state) !== false;
+    } else {
+      try {
+        localStorage.setItem(this.storageKey, JSON.stringify(this.state));
+      } catch (e) {
+        console.error('Failed to save game state:', e);
+        ok = false;
+      }
     }
+    if (!ok) this.warnSaveFailed();
+    return ok;
+  }
+
+  // A1991: one visible, non-blocking notice per game, in plain language.
+  warnSaveFailed() {
+    this.saveFailed = true;
+    GameSystem.storageFailed = true;
+    if (typeof document === 'undefined' || this._saveFailedShown) return;
+    this._saveFailedShown = true;
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(this.state));
-    } catch (e) {
-      console.error('Failed to save game state:', e);
-    }
+      if (document.getElementById('jvds-save-failed')) return;
+      const el = document.createElement('div');
+      el.id = 'jvds-save-failed';
+      el.setAttribute('role', 'alert');
+      el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9500;max-width:520px;margin:0 auto;' +
+        'background:#3a2420;color:#fff3e8;border:1px solid #BC4749;border-radius:12px;padding:12px 14px;' +
+        'font:600 .85rem/1.45 Inter,system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.4);';
+      el.innerHTML = '\u26a0\ufe0f <strong>This computer is not saving your game progress.</strong> ' +
+        'Browser storage may be full or blocked. Your score still works, but it will be lost when you close this tab. ' +
+        '<a href="/me.html" style="color:#ffd9d4;text-decoration:underline">Open My Studio</a> and download your backpack to keep your work.';
+      document.body.appendChild(el);
+    } catch (e) {}
   }
 
   resetState() {
