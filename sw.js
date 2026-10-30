@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v39 - A1998: refresh creation-share.js so the
+// share-link warning reaches returning visitors on their next online load.
 // JVDesignStudio Service Worker v37 - A1475: the Arcade Game Maker precaches itself (HTML + Phaser + its own modules) on demand, when its page opens, so the engine opens offline on a school network without forcing the ~2.4 MB on every visitor.
 // JVDesignStudio Service Worker v35 - A1444: bump cache so the refreshed mascot art (hero/badge) + mascots.js replace cached concept sheets.
 // JVDesignStudio Service Worker v29 - A207 school-network hardening: timeout only when cached exists, timer cleared, bump cache, Pip quest deps precached
@@ -14,7 +16,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v38';
+const CACHE='jvds-v39';
 const CORE=[
   '/',
   '/offline.html',

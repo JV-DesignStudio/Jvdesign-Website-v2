@@ -52,7 +52,9 @@ function safePath(urlPath) {
   let revision = 1;
   let offline = false;
   const swSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  const cacheFor = rev => rev === 1 ? 'jvds-v38' : 'jvds-v39';
+  const cacheMatch = swSource.match(/const CACHE\s*=\s*'(jvds-v(\d+))'/);
+  if (!cacheMatch) throw new Error('sw.js has no numbered jvds cache name');
+  const cacheFor = rev => rev === 1 ? cacheMatch[1] : 'jvds-v' + (Number(cacheMatch[2]) + 1);
 
   const server = http.createServer((req, res) => {
     if (offline) { req.socket.destroy(); return; }
@@ -60,7 +62,7 @@ function safePath(urlPath) {
     if (urlPath === '/sw.js') {
       const body = revision === 1
         ? swSource
-        : swSource.replace('jvds-v38', 'jvds-v39') + '\n// published update ' + revision + '\n';
+        : swSource.replace(cacheMatch[1], cacheFor(2)) + '\n// published update ' + revision + '\n';
       res.setHeader('Content-Type', 'text/javascript');
       res.setHeader('Cache-Control', 'no-store');
       return res.end(body);
