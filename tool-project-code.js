@@ -123,9 +123,27 @@
     var banner = document.getElementById('cookie-banner');
     return 16 + (banner ? banner.offsetHeight + 12 : 0);
   }
+  function bottomBar() {
+    var bar = document.getElementById('bottom-bar');
+    if (bar) return bar;
+    var tabs = document.querySelector('.bb-tabs');
+    return tabs ? tabs.parentElement : null;
+  }
   function place() {
     var btn = document.getElementById('jvds-project-btn');
-    if (btn) btn.style.bottom = (baseBottom() + 56) + 'px';
+    if (!btn) return;
+    btn.style.display = '';
+    var base = baseBottom();
+    var bar = bottomBar();
+    if (bar) {
+      var st = getComputedStyle(bar);
+      if (st.display !== 'none' && bar.getBoundingClientRect().height > 0) {
+        // A2012: the phone toolbar owns the bottom of the screen.
+        if (window.innerWidth <= 699) { btn.style.display = 'none'; return; }
+        base += Math.min(bar.getBoundingClientRect().height, window.innerHeight * 0.5) + 10;
+      }
+    }
+    btn.style.bottom = (base + 56) + 'px';
   }
 
   function open() {
@@ -204,6 +222,13 @@
     document.body.appendChild(btn);
     place();
     window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, { passive: true });
+    window.addEventListener('orientationchange', place);
+    document.addEventListener('click', function () { setTimeout(place, 0); }, true);
+    try {
+      var bar = bottomBar();
+      if (bar && window.ResizeObserver) new ResizeObserver(place).observe(bar);
+    } catch (e) {}
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);

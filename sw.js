@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v40 - A2012: refresh the floating tool helpers so
+// they step aside from mobile bottom toolbars instead of covering export.
 // JVDesignStudio Service Worker v39 - A1998: refresh creation-share.js so the
 // share-link warning reaches returning visitors on their next online load.
 // JVDesignStudio Service Worker v37 - A1475: the Arcade Game Maker precaches itself (HTML + Phaser + its own modules) on demand, when its page opens, so the engine opens offline on a school network without forcing the ~2.4 MB on every visitor.
@@ -16,7 +18,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v39';
+const CACHE='jvds-v40';
 const CORE=[
   '/',
   '/offline.html',

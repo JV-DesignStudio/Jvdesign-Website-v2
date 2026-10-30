@@ -208,9 +208,29 @@
     });
   }
 
+  // A2012: the floating button must not sit on top of a tool's own bottom
+  // toolbar (Level Designer keeps export in a File tab there), so lift it clear.
+  function bottomBar() {
+    var bar = document.getElementById('bottom-bar');
+    if (bar) return bar;
+    var tabs = document.querySelector('.bb-tabs');
+    return tabs ? tabs.parentElement : null;
+  }
   function place() {
+    var base = 16;
     var banner = document.getElementById('cookie-banner');
-    var base = 16 + (banner ? banner.offsetHeight + 12 : 0);
+    if (banner && banner.offsetHeight) base += banner.offsetHeight + 12;
+    btn.style.display = '';
+    var bar = bottomBar();
+    if (bar) {
+      var st = getComputedStyle(bar);
+      if (st.display !== 'none' && bar.getBoundingClientRect().height > 0) {
+        // A2012: on a phone the tool's bottom toolbar already carries its own
+        // save / share / export. Step aside rather than cover its tabs.
+        if (window.innerWidth <= 699) { btn.style.display = 'none'; return; }
+        base += Math.min(bar.getBoundingClientRect().height, window.innerHeight * 0.5) + 10;
+      }
+    }
     btn.style.bottom = base + 'px';
   }
 
@@ -242,6 +262,14 @@
   document.body.appendChild(btn);
   place();
   window.addEventListener('resize', place);
+  window.addEventListener('scroll', place, { passive: true });
+  window.addEventListener('orientationchange', place);
+  // The toolbar grows when a tab (for example File) opens: re-place on size change.
+  try {
+    var bar = bottomBar();
+    if (bar && window.ResizeObserver) new ResizeObserver(place).observe(bar);
+  } catch (e) {}
+  document.addEventListener('click', function () { setTimeout(place, 0); }, true);
 
   window.JVDSShare = {
     share: share,

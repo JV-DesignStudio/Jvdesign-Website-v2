@@ -141,8 +141,26 @@
   }
 
   var strip = null;
+  // A2012: tools with their own bottom toolbar (Level Designer) already offer
+  // save and export there. A floating strip on a phone would cover that toolbar,
+  // so it steps aside on narrow screens while the toolbar is on screen.
+  function bottomBar() {
+    var bar = document.getElementById('bottom-bar');
+    if (bar) return bar;
+    var tabs = document.querySelector('.bb-tabs');
+    return tabs ? tabs.parentElement : null;
+  }
+  function barVisible() {
+    var bar = bottomBar();
+    if (!bar) return false;
+    return getComputedStyle(bar).display !== 'none' && bar.getBoundingClientRect().height > 0;
+  }
   function place() {
     if (!strip) return;
+    // A2012: on a phone the tool's own bottom toolbar offers save and export,
+    // so the floating strip would only cover it.
+    if (window.innerWidth <= 699 && barVisible()) { strip.style.display = 'none'; return; }
+    strip.style.display = '';
     var banner = document.getElementById('cookie-banner');
     var base = 16 + (banner ? banner.offsetHeight + 12 : 0);
     /* Sit above the fixed feedback (bottom-left) and share (bottom-right)
@@ -171,6 +189,13 @@
     document.getElementById('jk-keep-export').addEventListener('click', exportNow);
     place();
     window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, { passive: true });
+    window.addEventListener('orientationchange', place);
+    document.addEventListener('click', function () { setTimeout(place, 0); }, true);
+    try {
+      var bar = bottomBar();
+      if (bar && window.ResizeObserver) new ResizeObserver(place).observe(bar);
+    } catch (e) {}
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
