@@ -1571,6 +1571,48 @@
     Array.prototype.forEach.call(stripBtns, function (b) {
       b.addEventListener('click', function () { setTool(b.getAttribute('data-tool')); syncMobileStrip(); });
     });
+    // mobile skin-tone swatches
+    var toneBtns = document.querySelectorAll('.ms-tone-btn[data-tone]');
+    Array.prototype.forEach.call(toneBtns, function (b) {
+      b.addEventListener('click', function () { setColor(b.getAttribute('data-tone')); });
+    });
+
+    // mobile jump-to-part buttons: pan the canvas view to centre on each region
+    var PART_CENTERS = {
+      HEAD: { x: 12, y: 12 },  // centre of HEAD front face region
+      BODY: { x: 24, y: 26 },  // centre of BODY front face region
+      ARMS: { x: 46, y: 26 },  // centre of RARM front face region
+      LEGS: { x:  6, y: 26 }   // centre of RLEG front face region
+    };
+    var partBtns = document.querySelectorAll('.ms-part-btn[data-part]');
+    Array.prototype.forEach.call(partBtns, function (b) {
+      b.addEventListener('click', function () {
+        var key = b.getAttribute('data-part');
+        var pc = PART_CENTERS[key];
+        if (!pc) return;
+        var stage = document.getElementById('msPaintStage');
+        if (!stage) return;
+        var sc = ZOOM_STEPS[zoomIdx];
+        var canvasPx = SIZE * sc; // canvas element size in CSS px
+        // Where this part centre sits in canvas coords vs stage centre
+        var partCX = pc.x * sc;
+        var partCY = pc.y * sc;
+        var stageCX = stage.clientWidth  / 2;
+        var stageCY = stage.clientHeight / 2;
+        // We want canvasCentre+pan = stageCentre, so pan = stageCentre - canvasCentre
+        // But canvas is always centered at stage centre (transform-origin: center).
+        // Pan offsets shift the canvas from its centre. To put partC at stage centre:
+        viewPanX = (canvasPx / 2 - partCX) * viewScale;
+        viewPanY = (canvasPx / 2 - partCY) * viewScale;
+        clampPan();
+        applyViewTransform();
+        // Bump view scale up a little if it's at default so the part is comfortably large
+        if (viewScale < 1.5 && window.innerWidth < 768) {
+          setViewScale(2, stageCX, stageCY);
+        }
+      });
+    });
+
     // mobile strip color - keep in sync with main color input
     var mobileColor = byId('msMobileColor');
     if (mobileColor) {
@@ -1824,6 +1866,13 @@
   function boot() {
     initPartGroups();
     loadZoom();
+    // On small screens with no saved zoom preference, default to 16x so each pixel
+    // is large enough to tap accurately with a finger.
+    try {
+      if (window.innerWidth < 600 && localStorage.getItem(LS_KEY + '_zoom') === null) {
+        zoomIdx = 2; // 16x
+      }
+    } catch (_) {}
     loadAlexPref();
     loadColorHistory();
     loadSkinSlots();
