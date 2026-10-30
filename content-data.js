@@ -3171,10 +3171,10 @@ window.JVDS_CONTENT = {
     {
       "id": "openrct2-swim-rescue",
       "title": "OpenRCT2 Swim Rescue Save Your Guests with JavaScript",
-      "desc": "Write a real OpenRCT2 plugin in JavaScript detect when guests fall into water and save them before they drown. 13 steps, live simulation. Ages 11+. Free.",
+      "desc": "Write a real OpenRCT2 plugin in JavaScript detect when guests fall into water and save them before they drown. 13 steps, live simulation. Ages 10+. Free.",
       "engine": "OpenRCT2",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -5219,7 +5219,7 @@ window.JVDS_CONTENT = {
       "id": "tower-defence",
       "title": "Tower Defence",
       "tag": "Build · Defend",
-      "emoji": "🏰",
+      "emoji": "🗼",
       "category": "Strategy",
       "bg": "linear-gradient(135deg,#0a0b10,#3a2a5a)",
       "desc": "Build a kingdom through the ages and hold back the endless night: place defenders, upgrade them and survive each wave.",
@@ -6288,7 +6288,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-30T13:23:25.276Z",
+    "generated": "2026-10-30T13:36:50.488Z",
     "workshops": 344,
     "games": 13,
     "tools": 51,
