@@ -28,12 +28,13 @@ const PUBLIC_WORKSHOP_FILES = ALL_WORKSHOP_FILES.filter(file => {
   const content = pageSource(file);
   return !/<meta\s+name=["']robots["'][^>]*noindex/i.test(content);
 });
-const coverage = { files: PUBLIC_WORKSHOP_FILES.length, missing_title: [], missing_description: [], missing_canonical: [] };
+const coverage = { files: PUBLIC_WORKSHOP_FILES.length, missing_title: [], missing_description: [], missing_canonical: [], missing_age: [] };
 PUBLIC_WORKSHOP_FILES.forEach(file => {
   const content = pageSource(file);
   if (!/<title>[^<]+<\/title>/i.test(content)) coverage.missing_title.push(file);
   if (!/<meta\s+name=["']description["']/i.test(content)) coverage.missing_description.push(file);
   if (!/<link\s+rel=["']canonical["']/i.test(content)) coverage.missing_canonical.push(file);
+  // Age label deferred: checked after CONVERTED/BUILDER_STYLE are defined (see below).
 });
 
 const CONVERTED = [
@@ -81,6 +82,16 @@ const BUILDER_STYLE = [
 
 const results = { valid: [], builder_style: [], missing_key: [], missing_functions: [], errors: [] };
 
+// Age label check: only structured workshop sequences (not cheatsheets, mod studios, utility pages).
+// Catches the AUD-DF-03 / AUD-3D-04 / AUD-AM-07 class of contradictory age labelling.
+[...new Set([...CONVERTED, ...BUILDER_STYLE])].forEach(file => {
+  if (!PUBLIC_WORKSHOP_FILES.includes(file)) return;
+  const content = pageSource(file);
+  const descMatch = /(<meta\s+name=["']description["'][^>]*content=["'][^"']*ages\s*\d)/i.test(content);
+  const bodyAgeMatch = /pill-age|ep-badge[^>]*>[\s\S]{0,60}ages\s*\d|hero-eyebrow[^>]*>[\s\S]{0,80}ages\s*\d|<span[^>]*>[^<]*ages\s+\d/i.test(content);
+  if (!descMatch && !bodyAgeMatch) coverage.missing_age.push(file);
+});
+
 CONVERTED.forEach(file => {
   try {
     const content = pageSource(file);
@@ -119,10 +130,11 @@ CONVERTED.forEach(file => {
   }
 });
 
-console.log(`✓ Valid (checkbox-style): ${results.valid.length}/${CONVERTED.length - BUILDER_STYLE.length}`);console.log(`✓ Workshop coverage: ${coverage.files} HTML files checked for title, description and canonical metadata`);
+console.log(`✓ Valid (checkbox-style): ${results.valid.length}/${CONVERTED.length - BUILDER_STYLE.length}`);console.log(`✓ Workshop coverage: ${coverage.files} HTML files checked for title, description, canonical and age metadata`);
 if (coverage.missing_title.length) console.log('  Missing title: ' + coverage.missing_title.join(', '));
 if (coverage.missing_description.length) console.log('  Missing description: ' + coverage.missing_description.join(', '));
 if (coverage.missing_canonical.length) console.log('  Missing canonical: ' + coverage.missing_canonical.join(', '));
+if (coverage.missing_age.length) console.log('  Missing age label (add "Ages N+" to meta description or a .pill-age / .ep-badge span): ' + coverage.missing_age.join(', '));
 console.log(`✓ Builder-style (different pattern by design, STORAGE_KEY present): ${results.builder_style.length}/${BUILDER_STYLE.length}`);
 console.log(`✗ Missing STORAGE_KEY: ${results.missing_key.length}`);
 if (results.missing_key.length > 0) console.log('  Files: ' + results.missing_key.join(', '));
@@ -131,5 +143,5 @@ if (results.missing_functions.length > 0) console.log('  Files: ' + results.miss
 console.log(`✗ Read Errors: ${results.errors.length}`);
 if (results.errors.length > 0) results.errors.forEach(e => console.log(`  ${e.file}: ${e.error}`));
 
-const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0 || coverage.missing_title.length > 0 || coverage.missing_description.length > 0 || coverage.missing_canonical.length > 0;
+const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0 || coverage.missing_title.length > 0 || coverage.missing_description.length > 0 || coverage.missing_canonical.length > 0 || coverage.missing_age.length > 0;
 if (hasFailures) process.exitCode = 1;

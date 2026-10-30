@@ -32,11 +32,68 @@ how they map to READY / BETA / EXPERIMENT / HIDDEN.
 
 ### Workshop
 
-- Lumo is present in the copy or a callout.
-- The quiz or lesson runs to the end and gives a result.
-- Progress saves under the workshop's STORAGE_KEY and shows on the progress hub.
-- A clear next step is offered at the end.
-- Works at 390px and 1440px, and a test passes.
+A workshop is finished when a learner can follow it independently -- no adult
+repairing broken steps, no AI filling gaps -- and end with something they made.
+
+#### Structural (machine-checked by `validate-workshops.js`)
+
+- `STORAGE_KEY` is defined and progress saves under it; the progress hub reflects it.
+- Checkbox-style workshops have `toggleStep` and `completeStep`.
+- Builder-style workshops have `go(i)` or `renderStep()`.
+- All public workshops: `<title>`, `<meta name="description">`, `<link rel="canonical">` are present.
+- An age label appears in the meta description ("Ages N+") and in the page body (`.pill-age` or equivalent).
+
+#### Educational (verified by a human tester)
+
+**Learning outcome.** The page states, before the first step, what the learner
+will be able to make, do or explain when they finish. "You will build a
+platformer with three levels" is a learning outcome. A catalogue blurb is not.
+
+**Defined deliverable.** There is one clear finished thing: a running game, a
+saved PNG, an exported file. The learner knows when they are done without
+being told. A 37-step workshop with no win condition fails this gate.
+
+**Prerequisites listed.** If the workshop assumes prior tools, accounts,
+installs or knowledge, these are listed at the top with links where relevant.
+"Requires Scratch account" counts. Discovering a required install mid-lesson
+does not.
+
+**Age label consistent.** The meta description, the hero/badge, and every
+per-episode badge show the same age range. Contradictions (Ages 8+ in catalogue,
+Ages 11+ on the page) must be resolved before release.
+
+**Verified end-to-end.** The steps have been run on a clean setup -- no cached
+files, no saved progress -- by someone who did not write them. Code examples
+compile or execute as shown. Every code blank has a correct answer. Quizzes
+run to the final screen and record a result.
+
+**Recovery support.** At least one step that is known to go wrong has a
+"Stuck? Try this" note or equivalent. Common mistakes are named, not just
+the correct path.
+
+**Challenge extension.** A learner who finishes the main path is offered one
+further step: something to customise, break or extend independently. This is
+the signal that the workshop builds independence, not copy-paste dependency.
+
+**Lumo present.** Lumo appears in the copy, a callout, or a hint panel at
+at least one meaningful point in the learning journey.
+
+**Responsive.** Works at 390px and 1440px without horizontal scroll; interactive
+elements are usable by touch and mouse.
+
+#### Release gate
+
+A workshop must pass all structural checks AND a named tester must record:
+
+```
+WORKSHOP: <filename>  TESTER: <name>  DATE: <YYYY-MM-DD>
+Platform: <browser+OS>  Age proxy: <student/self/N-year-old>
+PASS/FAIL  Notes: <any step that needed repair>
+```
+
+This record lives in the task evidence before the card reaches Human Review.
+Until it exists the workshop must not appear in the public catalogue with a
+"Ready" label, regardless of step count, visual quality, or previous audit passes.
 
 ### Tool
 
