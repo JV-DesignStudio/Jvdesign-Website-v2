@@ -6302,7 +6302,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-30T14:54:49.947Z",
+    "generated": "2026-10-30T15:20:38.010Z",
     "workshops": 345,
     "games": 13,
     "tools": 51,
