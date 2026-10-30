@@ -107,7 +107,7 @@ window.JVDS_GAMES = [
     "file": "tower-defence.html",
     "title": "Tower Defence",
     "tag": "Build · Defend",
-    "emoji": "🏰",
+    "emoji": "🗼",
     "bg": "linear-gradient(135deg,#0a0b10,#3a2a5a)",
     "kids": false,
     "desc": "Build a kingdom through the ages and hold back the endless night: place defenders, upgrade them and survive each wave.",
