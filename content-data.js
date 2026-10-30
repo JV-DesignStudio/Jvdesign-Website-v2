@@ -2747,6 +2747,20 @@ window.JVDS_CONTENT = {
       "url": "/workshops/minecraft-mod-studio.html"
     },
     {
+      "id": "minecraft-setup-check",
+      "title": "Minecraft Modding: Check Your Computer Before You Start",
+      "desc": "Check your computer is ready for Minecraft modding with Fabric and Java. Covers Java 21, IntelliJ IDEA, disk space, install permissions and common Gradle errors. Free setup guide for learners and teachers.",
+      "engine": "Minecraft",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#62b847",
+      "cover": "/og/learn.webp",
+      "url": "/workshops/minecraft-setup-check.html"
+    },
+    {
       "id": "minecraft-world-workshop",
       "title": "Minecraft World Workshop",
       "desc": "A free step-by-step Minecraft workshop series: design a crafting recipe and a datapack in your browser, then take it further with Fabric mods. Ages 10+, school-computer friendly.",
@@ -6288,8 +6302,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-30T13:36:50.488Z",
-    "workshops": 344,
+    "generated": "2026-10-30T14:54:49.947Z",
+    "workshops": 345,
     "games": 13,
     "tools": 51,
     "books": 5,
@@ -6303,7 +6317,7 @@ window.JVDS_CONTENT = {
       "Godot": 17,
       "Java": 15,
       "JavaScript": 12,
-      "Minecraft": 18,
+      "Minecraft": 19,
       "MUGEN": 17,
       "OpenRCT2": 13,
       "PICO-8": 13,
