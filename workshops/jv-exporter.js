@@ -611,6 +611,152 @@
     };
   }
 
+  /* ---------- print check ----------
+     An STL download only proves a file exists. This checks the shape the file
+     will contain before the learner opens a slicer: closed edges, degenerate
+     faces, real size, bed fit, a flat base and how much overhang needs support.
+     It can never replace the slicer preview, so the wording keeps "exported"
+     and "ready to print" as two different claims. */
+
+  function printCheck(model) {
+    var checks = [];
+    function add(id, label, status, detail) {
+      checks.push({ id: id, label: label, status: status, detail: detail || '' });
+    }
+    var unitToMm = { mm: 1, cm: 10, m: 1000, studs: 280 };
+    var mmPer = unitToMm[model.units] || 1;
+    var sizeMm = model.size.map(function (n) { return round(n * mmPer, 1); });
+
+    if (model.profile !== 'generic' || model.axis !== 'y') {
+      add('profile', 'As built for printing', 'fail',
+        'This file was converted for ' + model.engine + '. Choose "As built (any engine)" so the STL keeps millimetres and Y-up.');
+    } else {
+      add('profile', 'As built for printing', 'pass', 'No engine conversion was applied.');
+    }
+
+    if (model.authoredUnits !== 'mm') {
+      add('units', 'Millimetre build', 'fail',
+        'This builder works in ' + (model.authoredUnits === 'm' ? 'metres' : model.authoredUnits) +
+        '. STL has no units, so a slicer reads 1 unit as 1 mm and the print would be the wrong size.');
+    } else {
+      add('units', 'Millimetre build', 'pass', 'The file is already in millimetres.');
+    }
+
+    var bed = [220, 220, 250];
+    var fitsBed = sizeMm[0] <= bed[0] && sizeMm[2] <= bed[1] && sizeMm[1] <= bed[2];
+    add('bed', 'Fits a common print bed', fitsBed ? 'pass' : 'fail',
+      sizeMm[0] + ' x ' + sizeMm[2] + ' mm footprint, ' + sizeMm[1] + ' mm tall. Bed limit: ' +
+      bed[0] + ' x ' + bed[1] + ' mm footprint and ' + bed[2] + ' mm tall.');
+
+    var boundary = 0, nonmanifold = 0, degenerate = 0, shells = 0, volume = 0;
+    var areaTotal = 0, baseArea = 0, overhangArea = 0;
+    var minY = model.min[1] + model.offset[1];
+    var eps = 0.05 / mmPer;
+    var q = 100000;
+    var ox = model.offset[0], oy = model.offset[1], oz = model.offset[2];
+
+    for (var p = 0; p < model.parts.length; p++) {
+      var P = model.parts[p].P;
+      var map = {}, pos = [], idx = [];
+      for (var v = 0; v < P.length; v += 3) {
+        var vx = P[v] + ox, vy = P[v + 1] + oy, vz = P[v + 2] + oz;
+        var k = Math.round(vx * q) + ',' + Math.round(vy * q) + ',' + Math.round(vz * q);
+        if (map[k] === undefined) {
+          map[k] = pos.length / 3;
+          pos.push(vx, vy, vz);
+        }
+        idx.push(map[k]);
+      }
+
+      var parent = [];
+      for (var n = 0; n < pos.length / 3; n++) parent.push(n);
+      function find(a) { while (parent[a] !== a) { parent[a] = parent[parent[a]]; a = parent[a]; } return a; }
+      function unit(a, b) { a = find(a); b = find(b); if (a !== b) parent[b] = a; }
+
+      var edges = {};
+      for (var t = 0; t < idx.length; t += 3) {
+        var a = idx[t], b = idx[t + 1], c = idx[t + 2];
+        var ax = pos[a * 3], ay = pos[a * 3 + 1], az = pos[a * 3 + 2];
+        var bx = pos[b * 3], by = pos[b * 3 + 1], bz = pos[b * 3 + 2];
+        var cx = pos[c * 3], cy = pos[c * 3 + 1], cz = pos[c * 3 + 2];
+        var ux1 = bx - ax, uy1 = by - ay, uz1 = bz - az;
+        var vx1 = cx - ax, vy1 = cy - ay, vz1 = cz - az;
+        var nx = uy1 * vz1 - uz1 * vy1;
+        var ny = uz1 * vx1 - ux1 * vz1;
+        var nz = ux1 * vy1 - uy1 * vx1;
+        var ar = 0.5 * Math.sqrt(nx * nx + ny * ny + nz * nz);
+        if (a === b || b === c || a === c || ar < 1e-9) {
+          degenerate++;
+        } else {
+          areaTotal += ar;
+          volume += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
+          var normalY = ny / (2 * ar);
+          if (normalY < -0.65 && Math.min(ay, by, cy) > minY + eps) overhangArea += ar;
+          if (normalY < -0.5 && Math.max(ay, by, cy) <= minY + eps) baseArea += ar;
+        }
+        function edge(i, j) {
+          var lo = Math.min(i, j), hi = Math.max(i, j);
+          var ek = lo + ':' + hi;
+          edges[ek] = (edges[ek] || 0) + 1;
+          unit(i, j);
+        }
+        edge(a, b); edge(b, c); edge(c, a);
+      }
+
+      for (var ek in edges) {
+        if (!Object.prototype.hasOwnProperty.call(edges, ek)) continue;
+        if (edges[ek] === 1) boundary++;
+        else if (edges[ek] > 2) nonmanifold++;
+      }
+
+      var roots = {};
+      for (var r = 0; r < parent.length; r++) roots[find(r)] = 1;
+      shells += Object.keys(roots).length;
+    }
+
+    var closed = boundary === 0 && nonmanifold === 0;
+    add('watertight', 'Closed, watertight shape', closed ? 'pass' : 'fail',
+      closed ? 'Every edge is shared by exactly two faces.' :
+        boundary + ' open edges and ' + nonmanifold + ' edges shared by more than two faces.');
+    add('degenerate', 'No broken triangles', degenerate === 0 ? 'pass' : 'fail',
+      degenerate === 0 ? 'All triangles have a real area.' : degenerate + ' triangles have no area.');
+
+    var baseMm2 = baseArea * mmPer * mmPer;
+    add('base', 'Sits flat on the bed', baseMm2 > 0.01 ? 'pass' : 'fail',
+      baseMm2 > 0.01 ? 'Flat contact area: ' + round(baseMm2, 1) + ' mm2.' :
+        'No flat bottom face at the lowest point. The slicer may balance it on a corner or need supports.');
+
+    var overhangPct = areaTotal > 0 ? overhangArea / areaTotal * 100 : 0;
+    add('overhang', 'Manageable overhang', overhangPct > 35 ? 'warn' : 'pass',
+      round(overhangPct, 1) + '% of the surface faces downward. Most slicers add supports automatically; check the preview.');
+
+    add('shells', 'Separate pieces', shells > 1 ? 'warn' : 'pass',
+      shells + ' closed piece' + (shells === 1 ? '' : 's') + '. A slicer merges them where they overlap; check the preview.');
+
+    var volumeCm3 = Math.abs(volume) * Math.pow(mmPer, 3) / 1000;
+    add('material', 'Solid volume', 'pass', round(volumeCm3, 1) + ' cm3 before infill. Actual filament depends on your slicer settings.');
+
+    var fails = 0, warns = 0;
+    for (var ci = 0; ci < checks.length; ci++) {
+      if (checks[ci].status === 'fail') fails++;
+      else if (checks[ci].status === 'warn') warns++;
+    }
+    return {
+      ok: fails === 0,
+      verdict: fails ? 'not-ready' : (warns ? 'ready-check' : 'ready'),
+      sizeMm: sizeMm,
+      watertight: closed,
+      boundaryEdges: boundary,
+      nonManifoldEdges: nonmanifold,
+      degenerateTriangles: degenerate,
+      shells: shells,
+      baseAreaMm2: round(baseMm2, 1),
+      overhangPct: round(overhangPct, 1),
+      volumeCm3: round(volumeCm3, 1),
+      checks: checks
+    };
+  }
+
   /* ---------- shared export UI ----------
      One Export button and one dialog, byte-for-byte the same on every builder.
      A builder calls installUI() with where its model lives and nothing else;
@@ -651,6 +797,19 @@
       '.jv-fact{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:7px 9px}',
       '.jv-fact b{display:block;font:700 1.02rem/1.15 Bebas Neue,Inter,sans-serif;color:#fff;letter-spacing:.03em}',
       '.jv-fact span{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.09em;color:#8fa2d4;margin-top:2px}',
+      '.jv-print{margin-bottom:12px;border:1px solid rgba(120,140,255,.22);border-radius:10px;padding:10px 12px;background:rgba(14,18,34,.55)}',
+      '.jv-print[hidden]{display:none}',
+      '.jv-print-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}',
+      '.jv-print-head h3{margin:0;font:700 .9rem/1.2 Inter,system-ui,sans-serif;color:#e7ecff}',
+      '.jv-print-head strong{font:700 .7rem/1 Inter,system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em}',
+      '.jv-print-lead{margin:0 0 7px;font-size:.72rem;color:#9fb0e0}',
+      '.jv-print-list{list-style:none;margin:0;padding:0;display:grid;gap:3px}',
+      '.jv-print-list li{font-size:.76rem;line-height:1.4;color:#c3cdf0}',
+      '.jv-print-list b{display:inline-block;min-width:44px;font-weight:800}',
+      '.jv-print-list span{color:#8fa2d4}',
+      '.jv-pc-ok{color:#7ee2a8}',
+      '.jv-pc-warn{color:#f5c842}',
+      '.jv-pc-fail{color:#ff8b8b}',
       '.jv-export-pivot{display:flex;gap:8px;align-items:flex-start;font-size:.79rem;color:#c3cdf0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:9px 11px;margin-bottom:13px;cursor:pointer}',
       '.jv-export-pivot input{margin-top:2px;accent-color:var(--jv-acc,#8ea8ff)}',
       '.jv-export-profile{display:flex;align-items:center;gap:9px;font-size:.79rem;color:#c3cdf0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:8px 11px;margin-bottom:10px}',
@@ -1024,6 +1183,7 @@
         '</div>' +
         '<p class="jv-export-rule">Exactly what is on screen: same parts, same names. The Engine choice below only converts units and up-axis for that engine.</p>' +
         '<div class="jv-export-facts" id="jvExportFacts"></div>' +
+        '<div class="jv-print" id="jvPrintPanel" hidden></div>' +
         '<label class="jv-export-pivot"><input type="checkbox" id="jvPivotToggle">' +
           '<span>Sit it flat on the floor (moves the pivot to the base centre - a nudge, never a resize)</span></label>' +
         '<label class="jv-export-profile"><span>Engine</span>' +
@@ -1070,6 +1230,24 @@
     return back;
   }
 
+  function printPanelHTML(model) {
+    var pc = printCheck(model);
+    var verdict = pc.verdict === 'ready' ? 'Ready to print' :
+      (pc.verdict === 'ready-check' ? 'Ready, with notes' : 'Not ready to print');
+    var rows = '';
+    for (var i = 0; i < pc.checks.length; i++) {
+      var c = pc.checks[i];
+      var cls = c.status === 'pass' ? 'ok' : (c.status === 'warn' ? 'warn' : 'fail');
+      var word = c.status === 'pass' ? 'OK' : (c.status === 'warn' ? 'Check' : 'Fix');
+      rows += '<li><b class="jv-pc-' + cls + '">' + word + '</b> ' + c.label +
+        (c.detail ? ' <span>' + c.detail + '</span>' : '') + '</li>';
+    }
+    return '<div class="jv-print-head"><h3>Print check (STL)</h3>' +
+      '<strong class="jv-pc-' + (pc.ok ? 'ok' : 'fail') + '">' + verdict + '</strong></div>' +
+      '<p class="jv-print-lead">A finished STL download is not the same as a file that is ready to print. This checks the shape first.</p>' +
+      '<ul class="jv-print-list">' + rows + '</ul>';
+  }
+
   function refreshFacts() {
     var back = document.getElementById('jvExportBackdrop');
     if (!back) return;
@@ -1090,10 +1268,22 @@
       btns[j].disabled = !!(FORMATS[j].needsPng && !(UI && UI.png));
     }
     facts.innerHTML = factsHTML(model);
+    var pp = back.querySelector('#jvPrintPanel');
+    if (pp) {
+      if (model.authoredUnits === 'mm') {
+        pp.hidden = false;
+        pp.innerHTML = printPanelHTML(model);
+      } else {
+        pp.hidden = true;
+        pp.innerHTML = '';
+      }
+    }
     var s = summary(model);
+    var pc = model.authoredUnits === 'mm' ? printCheck(model) : null;
     status.textContent = model.name + ' \u00b7 ' + (s.minYAsBuilt === 0
       ? 'already sitting on the floor'
-      : 'sits at Y ' + s.minYAsBuilt + ' as built');
+      : 'sits at Y ' + s.minYAsBuilt + ' as built') +
+      (pc ? ' \u00b7 print check: ' + (pc.verdict === 'ready' ? 'ready' : pc.verdict === 'ready-check' ? 'ready, with notes' : 'not ready') : '');
     var note = back.querySelector('#jvProfileNote');
     if (note) {
       note.textContent = model.profile === 'generic'
@@ -1125,7 +1315,17 @@
       } else if (format === 'stl') {
         var s = stl(model, tool);
         download(tagged(model, 'stl'), new Blob([s.text], { type: 'text/plain' }));
-        say('Downloaded ' + tagged(model, 'stl') + ' for 3D printing. STL keeps the shape, not the colours.');
+        var pc = printCheck(model);
+        if (pc.ok) {
+          say('Downloaded ' + tagged(model, 'stl') + '. Export complete. Print check: ' +
+            (pc.verdict === 'ready' ? 'ready to print.' : 'ready, with notes. Read the list before slicing.'));
+        } else {
+          var first = '';
+          for (var fi = 0; fi < pc.checks.length; fi++) {
+            if (pc.checks[fi].status === 'fail') { first = pc.checks[fi].label + '. ' + pc.checks[fi].detail; break; }
+          }
+          say('Downloaded ' + tagged(model, 'stl') + '. Export complete, but the print check says not ready. ' + first);
+        }
       } else if (format === 'fbx') {
         var f = fbx(model, tool);
         download(tagged(model, 'fbx'), new Blob([f.text], { type: 'application/octet-stream' }));
@@ -1215,6 +1415,7 @@
     download: download,
     tagged: tagged,
     summary: summary,
+    printCheck: printCheck,
     fileSafe: fileSafe,
     profiles: PROFILES,
     profileById: profileById,
@@ -1231,6 +1432,6 @@
     shareCodeNow: shareCodeNow,
     decodeShareCode: decodeShareCode,
     importShareCode: applyShareCode,
-    version: '1.4.0'
+    version: '1.5.0'
   };
 })(typeof window !== 'undefined' ? window : this);

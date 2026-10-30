@@ -12,9 +12,16 @@
 //
 // Budgets are deliberately generous. The point is to catch a page doubling in
 // weight or a layout that starts jumping, not to chase a lab score.
+//
+// A2017: text responses are served gzip encoded when the browser asks for it,
+// because GitHub Pages and Netlify both compress HTML, CSS and JS in transit.
+// Measuring uncompressed text overstated first paint by about a second on the
+// school-device profile and hid the real bottleneck, which is render-blocking
+// CSS, not bytes on the wire. Images keep their real size.
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
+const zlib = require('zlib');
 const puppeteer = require('puppeteer');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -25,6 +32,7 @@ const JSON_OUT = jsonArg > -1 ? process.argv[jsonArg + 1] : null;
 const PORT = 19270;
 
 const MIME = {'.html':'text/html','.css':'text/css','.js':'application/javascript','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.svg':'image/svg+xml','.json':'application/json','.woff2':'font/woff2','.woff':'font/woff','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.mp3':'audio/mpeg','.ogg':'audio/ogg','.wav':'audio/wav'};
+const COMPRESSIBLE = /^text\/|javascript|json|svg|xml/;
 
 function serve() {
   const server = http.createServer((req, res) => {
@@ -34,8 +42,15 @@ function serve() {
     if (!file.startsWith(path.normalize(ROOT))) { res.writeHead(403); res.end('Forbidden'); return; }
     fs.readFile(file, (err, data) => {
       if (err) { res.writeHead(404); res.end('Not found'); return; }
-      res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
-      res.end(data);
+      const type = MIME[path.extname(file)] || 'application/octet-stream';
+      const headers = { 'Content-Type': type };
+      let body = data;
+      if (COMPRESSIBLE.test(type) && /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''))) {
+        body = zlib.gzipSync(data);
+        headers['Content-Encoding'] = 'gzip';
+      }
+      res.writeHead(200, headers);
+      res.end(body);
     });
   });
   return new Promise(resolve => server.listen(PORT, () => resolve(server)));
@@ -44,7 +59,7 @@ function serve() {
 // Runs before any page script. Buffered observers catch entries emitted before
 // this script would otherwise get a chance to subscribe.
 function installObservers() {
-  window.__jvdsPerf = { lcp: 0, cls: 0, tbt: 0 };
+  window.__jvdsPerf = { lcp: 0, cls: 0, tbt: 0, shifts: [] };
   try {
     new PerformanceObserver(list => {
       for (const e of list.getEntries()) window.__jvdsPerf.lcp = Math.max(window.__jvdsPerf.lcp, e.startTime);
@@ -53,8 +68,19 @@ function installObservers() {
   try {
     new PerformanceObserver(list => {
       for (const e of list.getEntries()) {
-        if (!e.hadRecentInput) window.__jvdsPerf.cls += e.value;
+        if (e.hadRecentInput) continue;
+        window.__jvdsPerf.shifts.push({ t: e.startTime, v: e.value });
       }
+      // CLS is the largest session window, not the sum of every shift on the
+      // page. A window ends after a 1 s gap or when it passes 5 s.
+      let best = 0, start = 0, last = 0, sum = 0;
+      for (const s of window.__jvdsPerf.shifts) {
+        if (sum && (s.t - last > 1000 || s.t - start > 5000)) { best = Math.max(best, sum); start = s.t; sum = 0; }
+        if (!sum) start = s.t;
+        sum += s.v;
+        last = s.t;
+      }
+      window.__jvdsPerf.cls = Math.max(best, sum);
     }).observe({ type: 'layout-shift', buffered: true });
   } catch (e) {}
   try {
@@ -65,7 +91,13 @@ function installObservers() {
 }
 
 async function measure(browser, url, viewport, profile) {
-  const page = await browser.newPage();
+  // Each measurement gets its own browser context and an empty cache, so it is
+  // a genuine first visit. Sharing one profile meant the 1440 run reused what
+  // the 390 run had downloaded and reported a warm revisit instead of a cold
+  // load (A2017).
+  const context = await browser.createBrowserContext();
+  const page = await context.newPage();
+  await page.setCacheEnabled(false);
   await page.setViewport(viewport);
   await page.evaluateOnNewDocument(installObservers);
   const cdp = await page.createCDPSession();
@@ -99,6 +131,7 @@ async function measure(browser, url, viewport, profile) {
   });
   metrics.wallMs = Date.now() - started;
   await page.close();
+  await context.close();
   return metrics;
 }
 

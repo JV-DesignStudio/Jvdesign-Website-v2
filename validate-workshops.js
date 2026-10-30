@@ -87,7 +87,11 @@ const results = { valid: [], builder_style: [], missing_key: [], missing_functio
 [...new Set([...CONVERTED, ...BUILDER_STYLE])].forEach(file => {
   if (!PUBLIC_WORKSHOP_FILES.includes(file)) return;
   const content = pageSource(file);
-  const descMatch = /(<meta\s+name=["']description["'][^>]*content=["'][^"']*ages\s*\d)/i.test(content);
+  // Read the description up to its own closing quote. A pattern like [^"']*
+  // stops at the first apostrophe, so "beginner's" or "Freddy's" hid the age
+  // label that followed it and reported a false gap.
+  const descTag = content.match(/<meta\s+name=["']description["'][^>]*content=(["'])([\s\S]*?)\1/i);
+  const descMatch = !!(descTag && /ages\s*\d/i.test(descTag[2]));
   const bodyAgeMatch = /pill-age|ep-badge[^>]*>[\s\S]{0,60}ages\s*\d|hero-eyebrow[^>]*>[\s\S]{0,80}ages\s*\d|<span[^>]*>[^<]*ages\s+\d/i.test(content);
   if (!descMatch && !bodyAgeMatch) coverage.missing_age.push(file);
 });

@@ -20,7 +20,7 @@ const HINT_RULES = [
     pattern: /is not defined|ReferenceError/i,
     hints: [
       "A variable can't be used before it's declared. Check you spelled its name exactly right.",
-      "Try logging the variable name to the console — does it exist in this scope?",
+      "Try logging the variable name to the console - does it exist in this scope?",
       "Lumo says: 'Variables are like boxes. Make sure you created the box before you reach into it.'",
     ],
   },
@@ -29,7 +29,7 @@ const HINT_RULES = [
     hints: [
       "You're calling something as a function that isn't one. Is it a method? Check the object type.",
       "Try `typeof yourThing` to see what kind of value it is before you call it.",
-      "Echo says: 'If it doesn't behave like a function, it probably isn't one — yet.'",
+      "Echo says: 'If it doesn't behave like a function, it probably isn't one - yet.'",
     ],
   },
   {
@@ -37,13 +37,13 @@ const HINT_RULES = [
     hints: [
       "Something is `undefined` or `null` when you expected a value. Log the variable one step earlier.",
       "Check that you're returning the right thing from the function above this one.",
-      "Pip says: 'Undefined is like frame zero — nothing exists until you create it.'",
+      "Pip says: 'Undefined is like frame zero - nothing exists until you create it.'",
     ],
   },
   {
     pattern: /SyntaxError|Unexpected token|Unexpected end/i,
     hints: [
-      "There's a syntax error — a missing `{`, `}`, `(`, `)`, or `;` somewhere.",
+      "There's a syntax error - a missing `{`, `}`, `(`, `)`, or `;` somewhere.",
       "Check the line the error points to and the line just above it.",
       "Ember says: 'Every open bracket needs a matching close. Count them like brushstrokes.'",
     ],
@@ -59,9 +59,9 @@ const HINT_RULES = [
   {
     pattern: /array|\.length|\.map|\.filter|\.reduce/i,
     hints: [
-      "Working with an array — make sure you're not accidentally mutating the original.",
+      "Working with an array - make sure you're not accidentally mutating the original.",
       "`.map()` gives a new array back; `.forEach()` gives nothing back. Which do you need?",
-      "Echo says: 'Arrays love chaining. But each method returns something — check what that something is.'",
+      "Echo says: 'Arrays love chaining. But each method returns something - check what that something is.'",
     ],
   },
   {
@@ -84,7 +84,7 @@ const HINT_RULES = [
     // Default fallback
     pattern: /./,
     hints: [
-      "Read the error message carefully — it often tells you the exact line and type of problem.",
+      "Read the error message carefully - it often tells you the exact line and type of problem.",
       "Try adding `console.log()` calls to trace where your values go wrong.",
       "Stardust says: 'Every bug is a clue. The error message is the first clue. Read it twice.'",
     ],
@@ -197,7 +197,7 @@ export const LLMBridge = {
 
   /**
    * Ask Ollama for a short hint. Falls back to rule-based hint on any error.
-   * Never sends personal data — only the failing assertion description and error.
+   * Never sends personal data - only the failing assertion description and error.
    */
   async askOllama(failedResult, mascotId = 'lumo') {
     const endpoint = localStorage.getItem('jvds_llm_endpoint') ?? OLLAMA_DEFAULT;
@@ -220,7 +220,7 @@ export const LLMBridge = {
       const data = await res.json();
       return { hint: data.response?.trim() ?? '', persona };
     } catch {
-      // Silently fall back — player never sees network errors
+      // Silently fall back - player never sees network errors
       return getHint([failedResult], [], mascotId);
     }
   },

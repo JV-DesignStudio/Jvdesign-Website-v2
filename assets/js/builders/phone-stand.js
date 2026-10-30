@@ -164,8 +164,10 @@ function buildStand() {
     const braceH = sh * 0.6;
     const braceGeo = new THREE.BoxGeometry(sw * 0.6, braceH, bt * 0.8);
     const brace = new THREE.Mesh(braceGeo, darkMat);
-    brace.position.set(0, bt + braceH * 0.35, -sd * 0.35);
-    brace.rotation.x = -(Math.PI / 2 - ang) * 0.5;
+    const braceTilt = (Math.PI / 2 - ang) * 0.5;
+    const braceReach = (braceH / 2) * Math.cos(braceTilt) + (bt * 0.4) * Math.sin(braceTilt);
+    brace.position.set(0, 0.5 + braceReach, -sd * 0.35);
+    brace.rotation.x = -braceTilt;
     brace.castShadow = true;
     standGroup.add(part(brace, 'back_brace'));
 
@@ -491,6 +493,7 @@ function buildStand() {
   const phoneMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.2, metalness: 0.5, transparent: true, opacity: 0.35 });
   const phone = new THREE.Mesh(phoneGeo, phoneMat);
   phone.position.set(0, bt + lh + pt / 2, sd * 0.25);
+  phone.userData.jvExcludeFromExport = true;
   standGroup.add(part(phone, 'phone_ghost_preview'));
 
   scene.add(standGroup);
@@ -1056,13 +1059,13 @@ const STEPS = [
 {
   title: 'Export STL',
   tag: 'STEP 14 , EXPORT',
-  intro: `Your phone stand is ready! Export as <strong>STL</strong> for 3D printing (Cura, PrusaSlicer, Bambu Studio). You can also export OBJ or GLB for 3D viewers.`,
+  intro: `Your phone stand is ready! Open the Export dialog, choose <strong>STL</strong> and read the <strong>Print check</strong> before you open your slicer (Cura, PrusaSlicer, Bambu Studio). You can also export OBJ or GLB for 3D viewers.`,
   boxes: [
-    { t:'box-r', tx:'STL is the standard format for 3D printing. Open the exported .stl file in your slicer (Cura, PrusaSlicer, Bambu Studio), set your print settings, and hit print!' },
-    { t:'box-c', tx:'Recommended PLA print settings: 0.2mm layer height, 20% infill, 3 walls, no supports needed for most designs. Print time: roughly 30-60 minutes depending on size.' },
-    { t:'box-t', tx:'Use the Export button in the header to download your stand as STL for printing, or OBJ and GLB for 3D viewers and games.' },
+    { t:'box-r', tx:'A downloaded STL is not automatically ready to print. The print check tests the shape for open edges, real size, bed fit and a flat base, then says Ready or Not ready.' },
+    { t:'box-c', tx:'Recommended PLA print settings: 0.2mm layer height, 20% infill, 3 walls. Most designs need no supports, but always check the slicer preview before printing.' },
+    { t:'box-t', tx:'Use the Export button in the header. Choose STL for printing, or OBJ and GLB for 3D viewers and games.' },
   ],
-  tasks: ['Export your stand as STL'],
+  tasks: ['Export your stand as STL', 'Read the print check before slicing'],
   html() {
     return `<div style="text-align:center;padding:8px 0">
       <div style="font-size:2.4rem;margin-bottom:7px">📎</div>
@@ -1073,7 +1076,7 @@ const STEPS = [
       </div>
     </div>`;
   },
-  onApply() { if (window.jvExport) window.jvExport('stl'); }
+  onApply() { if (window.jvExport) window.jvExport(); }
 },
 
 ];

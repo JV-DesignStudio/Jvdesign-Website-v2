@@ -58,7 +58,7 @@ for (const filePath of walk(ROOT)) {
   // '...phaser...' don't get matched as real src attributes.
   const html = raw.replace(/(<script\b[^>]*>)[\s\S]*?<\/script\s*>/gi, '$1');
 
-  // 1 & 4 — <script src="..."> references + duplicate detection
+  // 1 & 4 - <script src="..."> references + duplicate detection
   const scriptSrcs = [];
   for (const m of html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/gi)) {
     const ref = m[1];
@@ -81,7 +81,7 @@ for (const filePath of walk(ROOT)) {
     }
   }
 
-  // 2 — <link rel="stylesheet" href="...">
+  // 2 - <link rel="stylesheet" href="...">
   for (const m of html.matchAll(/<link\b[^>]*\brel="stylesheet"[^>]*\bhref="([^"]+)"/gi)) {
     const ref = m[1];
     if (isTemplate(ref)) continue;
@@ -100,7 +100,7 @@ for (const filePath of walk(ROOT)) {
     }
   }
 
-  // 3 — url(...) inside inline <style> blocks
+  // 3 - url(...) inside inline <style> blocks
   for (const styleM of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
     for (const urlM of styleM[1].matchAll(/url\(\s*['"]?([^'")\s]+)['"]?\s*\)/g)) {
       const ref = urlM[1];
@@ -116,7 +116,7 @@ for (const filePath of walk(ROOT)) {
 // ── report ────────────────────────────────────────────────────────────────────
 
 if (issues.length === 0) {
-  console.log('validate:script-refs  OK — no missing scripts, stylesheets or broken css url() references found');
+  console.log('validate:script-refs  OK - no missing scripts, stylesheets or broken css url() references found');
   process.exit(0);
 }
 
@@ -140,7 +140,7 @@ if (hasError) {
   console.log('\nFix missing files or references before publishing.');
   process.exit(1);
 } else {
-  // only warnings (duplicates) — exit 0 so it doesn't block releases for now
+  // only warnings (duplicates) - exit 0 so it doesn't block releases for now
   console.log('\nNo blocking errors. Review duplicate warnings above.');
   process.exit(0);
 }

@@ -721,9 +721,9 @@ function renderSteps() {
         } else if (quizSelected[step.num] === oi) {
           cls += ' selected';
         }
-        qHtml += '<div class="' + cls + '"' +
-          (isDone || quizPassed[step.num] ? '' : ' data-cw="selectQuiz" data-cw-arg="' + step.num + '" data-cw-arg2="' + oi + '"') +
-          '><span class="cw-quiz-letter">' + letters[oi] + '</span>' + opt + '</div>';
+        qHtml += '<button type="button" class="' + cls + '"' +
+          (isDone || quizPassed[step.num] ? ' disabled' : ' data-cw="selectQuiz" data-cw-arg="' + step.num + '" data-cw-arg2="' + oi + '"') +
+          '><span class="cw-quiz-letter">' + letters[oi] + '</span>' + opt + '</button>';
       });
       qHtml += '</div>';
       if (!isDone && !quizPassed[step.num]) {
@@ -760,16 +760,10 @@ function renderSteps() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(updateCanvas, 350);
       });
-      ta.addEventListener('keydown', function(e) {
-        if (e.key === 'Tab') {
-          e.preventDefault();
-          var s = this.selectionStart, end = this.selectionEnd;
-          this.value = this.value.substring(0, s) + '  ' + this.value.substring(end);
-          this.selectionStart = this.selectionEnd = s + 2;
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(updateCanvas, 350);
-        }
-      });
+      // A2009: this editor used to swallow Tab to insert two spaces, which
+      // trapped keyboard users inside the textarea. Apply to Canvas, Show
+      // Solution and the Knowledge Check were then unreachable, so Tab now moves
+      // focus as it does everywhere else on the page. Indentation uses spaces.
     }
   });
 }
@@ -1000,7 +994,16 @@ function advanceStep(num) {
     cwCelebrate(num);
   }
   var next = document.getElementById('card-' + STEPS[currentStep].num);
-  if (next) next.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (next) {
+    next.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Re-rendering replaces the button the learner just pressed, so focus would
+    // drop to the body and a keyboard user would have to start tabbing from the
+    // top again. Carry focus into the next step's editor instead.
+    var nextEditor = next.querySelector('textarea');
+    if (nextEditor && !nextEditor.disabled) {
+      setTimeout(function() { try { nextEditor.focus({ preventScroll: true }); } catch (e) { nextEditor.focus(); } }, 60);
+    }
+  }
 }
 
 /* ── Celebrations ── */
@@ -1290,7 +1293,11 @@ maybeOfferContinue();
     prog.href='/workshops/my-progress.html';
     prog.textContent='My progress';
     bar.appendChild(brand); bar.appendChild(chip); bar.appendChild(prog); bar.appendChild(back);
-    document.body.insertBefore(bar, document.body.firstChild);
+    // Keep "Skip to main content" first in the tab order: drop the bar in after
+    // it instead of becoming the very first focusable thing on the page.
+    var skip = document.querySelector('.skip-link');
+    if (skip && skip.parentNode) skip.parentNode.insertBefore(bar, skip.nextSibling);
+    else document.body.insertBefore(bar, document.body.firstChild);
   }catch(e){}
 })();
 

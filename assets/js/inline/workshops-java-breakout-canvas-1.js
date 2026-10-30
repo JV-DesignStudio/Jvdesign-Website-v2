@@ -10,7 +10,10 @@ function javaToJs(code) {
 }
 
 function wbWrap(presetup, blobSrc, afterBlob) {
-  return cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc, afterBlob);
+  // These pointed at CSS_GAME / CANVAS_TAG, which no longer exist in this file,
+  // so every preview threw a ReferenceError. The breakout build blocks below
+  // declare PREVIEW_CSS and TAG.
+  return cwBlobWrap(PREVIEW_CSS, TAG, presetup, blobSrc, afterBlob);
 }
 
 

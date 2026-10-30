@@ -5,9 +5,9 @@
  * CI gate: every published tool, game, and workshop in the content registries
  * must be either:
  *   (a) present in search-index.json, OR
- *   (b) noindex on disk (intentionally excluded — embed frames, redirect stubs, etc.)
+ *   (b) noindex on disk (intentionally excluded - embed frames, redirect stubs, etc.)
  *
- * A registry item that passes neither check is a real gap — a page that is
+ * A registry item that passes neither check is a real gap - a page that is
  * listed as live but invisible to both search and the site indexer.
  *
  * Run standalone:  node scripts/validate-search-coverage.js
@@ -55,7 +55,7 @@ function run({ verbose = true } = {}) {
       checked++;
       const rel = item.url.replace(/^\//, '').toLowerCase();
       if (indexed.has(rel)) continue;
-      // Not in search index — is it intentionally noindex on disk?
+      // Not in search index - is it intentionally noindex on disk?
       if (isNoindex(item.url)) { skippedNoindex++; continue; }
       missing.push({ label, id: item.id || item.title, url: item.url });
     }
@@ -67,7 +67,7 @@ function run({ verbose = true } = {}) {
 
   if (verbose) {
     if (missing.length === 0) {
-      console.log(`✓ validate:search-coverage  ${checked} registry items checked — all indexed or intentionally noindex (${skippedNoindex} noindex excluded)`);
+      console.log(`✓ validate:search-coverage  ${checked} registry items checked - all indexed or intentionally noindex (${skippedNoindex} noindex excluded)`);
     } else {
       console.error(`✗ validate:search-coverage  ${missing.length} item(s) are published (not noindex) but absent from search-index.json:\n`);
       for (const m of missing) {

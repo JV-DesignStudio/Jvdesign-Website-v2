@@ -22,10 +22,10 @@ window.JVDS_CONTENT = {
     {
       "id": "blender-workshop",
       "title": "Blender Beginners, Learn 3D Modelling From Scratch",
-      "desc": "Learn Blender from scratch! Navigate the interface, model in 3D, add materials, lighting and render your very own scene. A parent and child workshop no experience needed.",
+      "desc": "Learn Blender from scratch! Navigate the interface, model in 3D, add materials, lighting and render your very own scene. A parent and child workshop no experience needed. Ages 10+.",
       "engine": "Blender",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "3d"
@@ -852,10 +852,10 @@ window.JVDS_CONTENT = {
     {
       "id": "add-your-own-stage",
       "title": "Add Your Own Stage to MUGEN Beginner's Lesson",
-      "desc": "A complete beginner's tutorial for building your first MUGEN stage. Step by step, no prior experience needed. Includes a free starter pack you can edit. By JVDesignStudio.",
+      "desc": "A complete beginner's tutorial for building your first MUGEN stage. Step by step, no prior experience needed. Includes a free starter pack you can edit. By JVDesignStudio. Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -866,10 +866,10 @@ window.JVDS_CONTENT = {
     {
       "id": "nuclear-throne-guide",
       "title": "Bang Bang! Build a Shooter Game in Godot",
-      "desc": "Build a top-down shooter in Godot inspired by Nuclear Throne! Weapons, enemies, rooms, and roguelike progression, all from scratch. Free.",
+      "desc": "Build a top-down shooter in Godot inspired by Nuclear Throne! Weapons, enemies, rooms, and roguelike progression, all from scratch. Free. Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "shooter"
@@ -882,10 +882,10 @@ window.JVDS_CONTENT = {
     {
       "id": "barrel-blast-workshop",
       "title": "Barrel Blast! Build a Donkey Kong-Style Game in Godot",
-      "desc": "Build a Donkey Kong-style game in Godot! Roll barrels, climb platforms, and build classic arcade action from scratch. Free beginner workshop.",
+      "desc": "Build a Donkey Kong-style game in Godot! Roll barrels, climb platforms, and build classic arcade action from scratch. Free beginner workshop. Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -966,10 +966,10 @@ window.JVDS_CONTENT = {
     {
       "id": "fairy-survivors-guide",
       "title": "Fairy Survivors! Build a Vampire Survivors Game in Godot",
-      "desc": "Build your own Vampire Survivors-style game in Godot! Waves of enemies, XP pickups, and level-up choices, all from scratch. Free beginner workshop.",
+      "desc": "Build your own Vampire Survivors-style game in Godot! Waves of enemies, XP pickups, and level-up choices, all from scratch. Free beginner workshop. Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -1010,10 +1010,10 @@ window.JVDS_CONTENT = {
     {
       "id": "jump-jump-mario-workshop",
       "title": "Jump Jump! Build a Mario-Style Game in Godot",
-      "desc": "Build a Mario-style platformer in Godot! Jump on enemies, collect coins, and create your own levels. A free beginner game dev workshop.",
+      "desc": "Build a Mario-style platformer in Godot! Jump on enemies, collect coins, and create your own levels. A free beginner game dev workshop. Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "platformer"
@@ -1233,7 +1233,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "series",
       "tags": [
         "series"
@@ -1508,10 +1508,10 @@ window.JVDS_CONTENT = {
     {
       "id": "night-watch-part2-workshop",
       "title": "Night Watch! Part 2, More Animatronics & Multiple Nights in Godot",
-      "desc": "Part 2 of the FNAF-style Godot workshop! Add Bonnie, Chica & Foxy, multiple nights, a main menu, audio cues, hallway lights, and a death screen. Free beginner workshop.",
+      "desc": "Part 2 of the FNAF-style Godot workshop! Add Bonnie, Chica & Foxy, multiple nights, a main menu, audio cues, hallway lights, and a death screen. Free beginner workshop. Ages 10+.",
       "engine": "General",
       "difficulty": "intermediate",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -1522,10 +1522,10 @@ window.JVDS_CONTENT = {
     {
       "id": "night-watch-part3-workshop",
       "title": "Night Watch! Part 3, Polish Your Horror Game in Godot",
-      "desc": "Part 3 of the FNAF-style Godot workshop! Add camera static, flickering lights, screen shake, custom sprites, sound effects, a power warning, and more. Polish your horror game!",
+      "desc": "Part 3 of the FNAF-style Godot workshop! Add camera static, flickering lights, screen shake, custom sprites, sound effects, a power warning, and more. Polish your horror game! Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "horror"
@@ -1538,10 +1538,10 @@ window.JVDS_CONTENT = {
     {
       "id": "nuclear-blueprint",
       "title": "Nuclear Blueprint Build & Play Your Own Roguelite",
-      "desc": "Nuclear-style game blueprint, design a top-down survival game with this free guide.",
+      "desc": "Nuclear-style game blueprint, design a top-down survival game with this free guide. Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -1552,10 +1552,10 @@ window.JVDS_CONTENT = {
     {
       "id": "pixel-quest-workshop",
       "title": "Pixel Quest! Build a Zelda-Style Game in Godot",
-      "desc": "Build a Zelda-style adventure game in Godot! Top-down movement, sword attacks, puzzles, and dungeons. A free beginner workshop.",
+      "desc": "Build a Zelda-style adventure game in Godot! Top-down movement, sword attacks, puzzles, and dungeons. A free beginner workshop. Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "puzzle"
@@ -1584,10 +1584,10 @@ window.JVDS_CONTENT = {
     {
       "id": "racing-blueprint",
       "title": "Racing Blueprint, Build Your Own Racing Game",
-      "desc": "Racing game blueprint, design your own racing game with this free guide from JVDesignStudio.",
+      "desc": "Racing game blueprint, design your own racing game with this free guide from JVDesignStudio. Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "racing"
@@ -4931,10 +4931,10 @@ window.JVDS_CONTENT = {
     {
       "id": "unity-2d-platformer",
       "title": "Unity 2D Platformer Characters, Physics & Scenes",
-      "desc": "Build a 2D platformer in Unity from scratch. Learn C#, Rigidbody2D, collisions, animations, scene management, and more 10 steps, live preview, complete beginner. Free.",
+      "desc": "Build a 2D platformer in Unity from scratch. Learn C#, Rigidbody2D, collisions, animations, scene management, and more 10 steps, live preview, complete beginner. Free. Ages 10+.",
       "engine": "Unity",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "platformer",
@@ -4949,10 +4949,10 @@ window.JVDS_CONTENT = {
     {
       "id": "unity-3d-platformer",
       "title": "Unity 3D Platformer C#, Physics & Scenes",
-      "desc": "Build a 3D platformer in Unity from scratch. Learn C#, CharacterController, 3D physics, camera systems, lighting, audio and more 25 steps, live preview, complete beginner. Free.",
+      "desc": "Build a 3D platformer in Unity from scratch. Learn C#, CharacterController, 3D physics, camera systems, lighting, audio and more 25 steps, live preview, complete beginner. Free. Ages 10+.",
       "engine": "Unity",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "platformer",
@@ -4998,10 +4998,10 @@ window.JVDS_CONTENT = {
     {
       "id": "unity-top-down-shooter",
       "title": "Unity Top-Down Shooter Learn C# with Unity",
-      "desc": "Build a top-down shooter in Unity from scratch. Learn C#, MonoBehaviour, Input, Instantiate, collisions, and coroutines 10 steps, live preview, complete beginner. Free.",
+      "desc": "Build a top-down shooter in Unity from scratch. Learn C#, MonoBehaviour, Input, Instantiate, collisions, and coroutines 10 steps, live preview, complete beginner. Free. Ages 10+.",
       "engine": "Unity",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "shooter"
@@ -5070,10 +5070,10 @@ window.JVDS_CONTENT = {
     {
       "id": "unreal-2d-platformer",
       "title": "Unreal 2D Platformer Blueprint, Build & Play",
-      "desc": "Build a 2D platformer in Unreal Engine using Blueprints. Connect nodes step by step, unlock features, play live in browser. Free interactive course.",
+      "desc": "Build a 2D platformer in Unreal Engine using Blueprints. Connect nodes step by step, unlock features, play live in browser. Free interactive course. Ages 10+.",
       "engine": "Unreal",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "platformer",
@@ -5087,10 +5087,10 @@ window.JVDS_CONTENT = {
     {
       "id": "unreal-clicker-builder",
       "title": "Unreal Blueprint Clicker, Learn Blueprints",
-      "desc": "Build a clicker game in Unreal Engine 5 using Blueprints. Connect nodes, type values, unlock coins, upgrades and idle income, 25 steps, fully interactive.",
+      "desc": "Build a clicker game in Unreal Engine 5 using Blueprints. Connect nodes, type values, unlock coins, upgrades and idle income, 25 steps, fully interactive. Ages 10+.",
       "engine": "Unreal",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -5101,10 +5101,10 @@ window.JVDS_CONTENT = {
     {
       "id": "unreal-blueprint-shooter",
       "title": "Unreal Blueprint Top-Down Shooter Learn Blueprints",
-      "desc": "Build a Nuclear Throne-style top-down shooter in Unreal Engine 5 using Blueprints. Connect nodes, type values, unlock the game 30 steps, fully interactive.",
+      "desc": "Build a Nuclear Throne-style top-down shooter in Unreal Engine 5 using Blueprints. Connect nodes, type values, unlock the game 30 steps, fully interactive. Ages 10+.",
       "engine": "Unreal",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [
         "shooter"
@@ -6302,7 +6302,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-30T16:43:46.903Z",
+    "generated": "2026-10-30T18:40:45.547Z",
     "workshops": 345,
     "games": 13,
     "tools": 51,

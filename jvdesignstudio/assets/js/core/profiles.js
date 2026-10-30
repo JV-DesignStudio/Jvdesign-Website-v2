@@ -107,7 +107,7 @@ export function generateQRSVG(text, opts = {}) {
 export function downloadProfileQR(label = 'my-profile') {
   const state = GameState.get();
   const payload = JSON.stringify({ jvds: 1, state });
-  // Clamp payload — QR has a ~2953 byte limit at level M
+  // Clamp payload - QR has a ~2953 byte limit at level M
   if (payload.length > 2800) {
     // Strip speedrunTimes and large arrays to fit
     const compact = { jvds: 1, state: {
@@ -123,7 +123,7 @@ export function downloadProfileQR(label = 'my-profile') {
 
 function _downloadQR(text, label) {
   const svg = generateQRSVG(text);
-  if (!svg) { alert('Profile is too large for a QR code — use Export instead.'); return; }
+  if (!svg) { alert('Profile is too large for a QR code - use Export instead.'); return; }
   const blob = new Blob([svg], { type: 'image/svg+xml' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');

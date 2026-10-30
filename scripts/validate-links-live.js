@@ -34,7 +34,7 @@ const CRITICAL_ROUTES = [
   '/tools',
   '/learn',
   '/workshops/start-here.html',
-  // Privacy policy — both routes must resolve (one should redirect or return 200)
+  // Privacy policy - both routes must resolve (one should redirect or return 200)
   '/pages/privacy-policy.html',
   '/privacy-policy',
   '/privacy-policy/',

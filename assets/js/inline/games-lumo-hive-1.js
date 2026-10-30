@@ -33,9 +33,10 @@
   let score = 0, wave = 1, lives = 3, combo = 1, comboTimer = 0;
   let shootCool = 0, waveClearT = 0;
   let rapidT = 0, multiT = 0;
+  let won = false, wavePerfect = true, goldFlash = 0, shakeUntil = 0;
   let best = parseInt(localStorage.getItem('jvds_lhs_best') || '0');
 
-  const lumo = { x: W / 2, y: H - 55, invT: 0 };
+  const lumo = { x: W / 2, y: H - 55, invT: 0, flash: 0 };
   let bullets = []; // {x,y,vy,owner,c}
   let enemies = [];
   let particles = [];
@@ -53,7 +54,7 @@
   // ── ENEMY TYPES ────────────────────────────────────────────────────────────
   function typeHP(t) { return { drone: 1, guard: 2, queen: 3 }[t]; }
   function typeScore(t) { return { drone: 10, guard: 25, queen: 50 }[t]; }
-  function typeColor(t) { return { drone: '#fbbf24', guard: '#fb923c', queen: '#a78bfa' }[t]; }
+  function typeColor(t) { return { drone: '#fbbf24', guard: '#f97316', queen: '#7c3aed' }[t]; }
   function rowType(row) { return row === 0 ? 'queen' : row === 1 ? 'guard' : 'drone'; }
 
   function formPos(row, col) {
@@ -94,28 +95,41 @@
   function startGame() {
     score = 0; wave = 1; lives = 3; combo = 1; comboTimer = 0;
     shootCool = 0; rapidT = 0; multiT = 0;
+    won = false; wavePerfect = true; goldFlash = 0; shakeUntil = 0;
     bullets = []; particles = []; powerups = [];
-    lumo.x = W / 2; lumo.invT = 0;
+    lumo.x = W / 2; lumo.invT = 0; lumo.flash = 0;
     boss = null;
     buildFormation();
     diveTimer = 0; nextDive = 2.8;
     gameState = 'playing';
     $('startScreen').classList.add('hidden');
     $('endScreen').classList.add('hidden');
+    $('againBtn').textContent = 'Try Again';
     sys?.beginRun?.();
     hud();
   }
 
-  function endGame() {
+  function endGame(victory) {
     gameState = 'dead';
     if (score > best) { best = score; localStorage.setItem('jvds_lhs_best', best); }
+    hud();
     checkDailyOnEnd(score);
-    const stars = score > 3000 ? '★★★' : score > 1200 ? '★★☆' : score > 400 ? '★☆☆' : '☆☆☆';
-    $('endTitle').textContent = lives > 0 ? 'Hive Cleared! 🎉' : 'Hive Wins!';
-    $('endStats').innerHTML =
-      `<div><b>${score}</b><small>Score</small></div>` +
-      `<div><b>W${wave}</b><small>Wave</small></div>` +
-      `<div><b>${stars}</b><small>Rating</small></div>`;
+    if (victory) {
+      $('endTitle').textContent = 'You protected the Logic Garden!';
+      $('endStats').innerHTML =
+        `<div><b>${score}</b><small>Score</small></div>` +
+        `<div><b>${best}</b><small>Best</small></div>` +
+        `<div><b>W${wave}</b><small>Wave</small></div>`;
+      $('againBtn').textContent = 'Play Again';
+    } else {
+      const stars = score > 3000 ? '★★★' : score > 1200 ? '★★☆' : score > 400 ? '★☆☆' : '☆☆☆';
+      $('endTitle').textContent = 'Hive Wins!';
+      $('endStats').innerHTML =
+        `<div><b>${score}</b><small>Score</small></div>` +
+        `<div><b>W${wave}</b><small>Wave</small></div>` +
+        `<div><b>${stars}</b><small>Rating</small></div>`;
+      $('againBtn').textContent = 'Try Again';
+    }
     $('endScreen').classList.remove('hidden');
     sys?.addScore?.(score);
     sys?.saveState?.();
@@ -171,6 +185,7 @@
   function tryShoot() {
     if (gameState !== 'playing' || shootCool > 0) return;
     shootCool = rapidT > 0 ? 0.11 : 0.26;
+    lumo.flash = 0.18;
     const vy = -530;
     if (multiT > 0) {
       bullets.push({ x: lumo.x - 11, y: lumo.y - 22, vy, owner: 'player', c: '#c084fc' });
@@ -219,6 +234,18 @@
     }
   }
 
+  function hexBurst(px, py, c, n) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const spd = 60 + Math.random() * 150;
+      particles.push({
+        x: px, y: py, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+        a: 1, decay: 2.5, c, r: 2.5 + Math.random() * 2.5,
+        shape: 'hex', rot: Math.random() * Math.PI
+      });
+    }
+  }
+
   // ── UPDATE ──────────────────────────────────────────────────────────────────
   let last = performance.now();
 
@@ -239,8 +266,10 @@
 
     shootCool -= dt;
     if (lumo.invT > 0) lumo.invT -= dt;
+    if (lumo.flash > 0) lumo.flash -= dt;
     if (rapidT > 0) rapidT -= dt;
     if (multiT > 0) multiT -= dt;
+    if (goldFlash > 0) goldFlash = Math.max(0, goldFlash - dt * 1.6);
 
     // Combo decay
     if (combo > 1) {
@@ -353,12 +382,18 @@
           sfx('playPop');
           addScore(30);
           if (boss.hp <= 0) {
-            burst(boss.x, boss.y, '#f97316', '#fef08a', 40);
+            const bx = boss.x, by = boss.y;
+            burst(bx, by, '#a855f7', '#fef08a', 40);
+            hexBurst(bx, by, '#a855f7', 16);
             sfx('playSuccess');
             addScore(600);
             boss = null;
-            showToast('Queen defeated! +600');
-            beginWaveClear();
+            if (wave >= 10) {
+              winGame();
+            } else {
+              showToast('Queen defeated! +600');
+              beginWaveClear();
+            }
           }
           continue;
         }
@@ -377,6 +412,7 @@
             if (e.hp <= 0) {
               addScore(typeScore(e.type) * combo);
               bumpCombo();
+              hexBurst(e.x, e.y, typeColor(e.type), 6 + Math.floor(Math.random() * 3));
               if (Math.random() < 0.15) dropPowerup(e.x, e.y);
               enemies.splice(j, 1);
             }
@@ -420,16 +456,19 @@
       const p = particles[i];
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.vy += 70 * dt;
-      p.a -= dt * 1.9;
+      if (p.shape === 'hex') p.rot += dt * 5;
+      p.a -= dt * (p.decay || 1.9);
       if (p.a <= 0) particles.splice(i, 1);
     }
 
     // ── Wave clear check ────────────────────────────────────────────────────
-    if (!boss && enemies.length === 0 && gameState === 'playing') beginWaveClear();
+    if (!won && !boss && enemies.length === 0 && gameState === 'playing') beginWaveClear();
   }
 
   function hitPlayer() {
     lives--;
+    wavePerfect = false;
+    shakeUntil = performance.now() + 300;
     lumo.invT = 2.2;
     burst(lumo.x, lumo.y, '#c084fc', '#ffffff', 18);
     sfx('playError');
@@ -458,18 +497,24 @@
     gameState = 'waveclear';
     waveClearT = 1.6;
     addScore(100 * wave);
-    showToast('Wave ' + wave + ' cleared! ✨');
+    if (wavePerfect) {
+      goldFlash = 1;
+      showToast('Wave Clear! ✨');
+    } else {
+      showToast('Wave ' + wave + ' cleared! ✨');
+    }
     sfx('playSuccess');
   }
 
   function nextWave() {
     wave++;
+    wavePerfect = true;
     bullets = bullets.filter(b => b.owner === 'player');
     powerups = [];
     boss = null;
     if (wave % 5 === 0) {
       spawnBoss();
-      showToast('👑 Queen Boss!');
+      showToast(wave >= 10 ? 'Final wave! Defeat the Queen' : '👑 Queen Boss!');
     } else {
       buildFormation();
       diveTimer = 0; nextDive = 2.2;
@@ -479,34 +524,61 @@
     hud();
   }
 
+  function winGame() {
+    won = true;
+    lumo.invT = 2.2;
+    setTimeout(() => { bullets = bullets.filter(b => b.owner === 'player'); }, 0);
+    showToast('You protected the Logic Garden!');
+    sfx('playSuccess');
+    setTimeout(() => { if (gameState !== 'dead') endGame(true); }, 1400);
+  }
+
   // ── DRAW ────────────────────────────────────────────────────────────────────
-  const STARS = Array.from({ length: 55 }, () => ({
-    sx: Math.random() * W, sy: Math.random() * H * 0.75,
-    r: Math.random() * 1.4 + 0.3, a: Math.random() * 0.5 + 0.25
+  const STARS = Array.from({ length: 40 }, () => ({
+    sx: Math.random() * W, sy: Math.random() * H,
+    r: Math.random() * 1.2 + 0.4, a: 0.3 + Math.random() * 0.5
   }));
 
+  function hexPath(cx, cy, r) {
+    x.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI / 3 * i - Math.PI / 6;
+      const px = cx + r * Math.cos(a), py = cy + r * Math.sin(a);
+      if (i === 0) x.moveTo(px, py); else x.lineTo(px, py);
+    }
+    x.closePath();
+  }
+
   function draw() {
-    x.clearRect(0, 0, W, H);
+    const now = performance.now();
+    let sx = 0, sy = 0;
+    if (now < shakeUntil) {
+      const m = 6 * ((shakeUntil - now) / 300);
+      sx = (Math.random() * 2 - 1) * m;
+      sy = (Math.random() * 2 - 1) * m;
+    }
 
-    // Sky gradient
+    x.clearRect(-12, -12, W + 24, H + 24);
+    x.save();
+    x.translate(sx, sy);
+
+    // Deep space gradient
     const sky = x.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, '#0d0620');
-    sky.addColorStop(0.55, '#1a0a3a');
-    sky.addColorStop(1, '#0b1428');
+    sky.addColorStop(0, '#0f0c29');
+    sky.addColorStop(1, '#1a1a2e');
     x.fillStyle = sky;
-    x.fillRect(0, 0, W, H);
+    x.fillRect(-12, -12, W + 24, H + 24);
 
-    // Stars
-    const t = performance.now() * 0.001;
+    // Stars (static)
+    x.fillStyle = '#ffffff';
     for (const s of STARS) {
-      x.globalAlpha = s.a + Math.sin(t + s.sx) * 0.15;
-      x.fillStyle = '#ffffff';
+      x.globalAlpha = s.a;
       x.beginPath(); x.arc(s.sx, s.sy, s.r, 0, Math.PI * 2); x.fill();
     }
     x.globalAlpha = 1;
 
-    // Honeycomb background
-    drawHiveBg();
+    // Logic Garden floor
+    drawGardenFloor();
 
     // Power-ups
     for (const p of powerups) {
@@ -528,24 +600,54 @@
 
     // Bullets
     for (const b of bullets) {
-      const r = b.owner === 'player' ? 4 : 5;
-      x.beginPath(); x.arc(b.x, b.y, r, 0, Math.PI * 2);
-      x.fillStyle = b.c;
-      x.shadowColor = b.c; x.shadowBlur = b.owner === 'player' ? 14 : 8;
-      x.fill(); x.shadowBlur = 0;
+      if (b.owner === 'player') {
+        x.strokeStyle = 'rgba(192,132,252,0.5)';
+        x.lineWidth = 2.5;
+        x.lineCap = 'round';
+        x.beginPath(); x.moveTo(b.x, b.y + 10); x.lineTo(b.x, b.y); x.stroke();
+        const g = x.createRadialGradient(b.x, b.y, 0, b.x, b.y, 6);
+        g.addColorStop(0, '#f5d0fe');
+        g.addColorStop(0.45, '#c084fc');
+        g.addColorStop(1, 'rgba(192,132,252,0)');
+        x.fillStyle = g;
+        x.beginPath(); x.arc(b.x, b.y, 6, 0, Math.PI * 2); x.fill();
+      } else {
+        x.beginPath(); x.arc(b.x, b.y, 5, 0, Math.PI * 2);
+        x.fillStyle = b.c;
+        x.shadowColor = b.c; x.shadowBlur = 8;
+        x.fill(); x.shadowBlur = 0;
+      }
     }
 
     // Particles
     for (const p of particles) {
       x.globalAlpha = Math.max(0, p.a);
       x.fillStyle = p.c;
-      x.beginPath(); x.arc(p.x, p.y, p.r, 0, Math.PI * 2); x.fill();
+      if (p.shape === 'hex') {
+        x.save();
+        x.translate(p.x, p.y);
+        x.rotate(p.rot || 0);
+        hexPath(0, 0, p.r);
+        x.fill();
+        x.restore();
+      } else {
+        x.beginPath(); x.arc(p.x, p.y, p.r, 0, Math.PI * 2); x.fill();
+      }
     }
     x.globalAlpha = 1;
 
     // Lumo (blink when invincible)
     if (gameState !== 'dead' && (lumo.invT <= 0 || Math.floor(lumo.invT * 8) % 2 === 0)) {
       drawLumo();
+    }
+
+    // Perfect wave gold flash
+    if (goldFlash > 0) {
+      const gf = x.createLinearGradient(0, 0, 0, 110);
+      gf.addColorStop(0, 'rgba(250,204,21,' + (0.55 * goldFlash).toFixed(3) + ')');
+      gf.addColorStop(1, 'rgba(250,204,21,0)');
+      x.fillStyle = gf;
+      x.fillRect(0, 0, W, 110);
     }
 
     // Wave-clear flash
@@ -570,28 +672,23 @@
       if (rapidT > 0) { x.fillText('⚡ ' + rapidT.toFixed(1) + 's', px2, H - 8); px2 += 65; }
       if (multiT > 0) { x.fillText('✨ ' + multiT.toFixed(1) + 's', px2, H - 8); }
     }
+
+    x.restore();
   }
 
-  function drawHiveBg() {
-    x.strokeStyle = 'rgba(124,58,237,0.07)';
-    x.lineWidth = 0.6;
-    const hw = 20, hh = 11;
-    for (let row = 0; row < 10; row++) {
-      for (let col = 0; col < 12; col++) {
-        const ox = (row % 2) * hw;
-        drawHex(ox + col * hw * 2 + hw, row * hh * 1.5 + 30, hw - 2);
+  function drawGardenFloor() {
+    const top = H * 0.75;
+    const r = 20, hw = Math.sqrt(3) * r, vh = 1.5 * r;
+    x.strokeStyle = 'rgba(124,58,237,0.12)';
+    x.lineWidth = 0.8;
+    let row = 0;
+    for (let cy = top; cy < H + r; cy += vh, row++) {
+      const off = (row % 2) ? hw / 2 : 0;
+      for (let cx = off; cx < W + hw; cx += hw) {
+        hexPath(cx, cy, r);
+        x.stroke();
       }
     }
-  }
-
-  function drawHex(cx, cy, r) {
-    x.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const a = Math.PI / 3 * i - Math.PI / 6;
-      i === 0 ? x.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
-        : x.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
-    }
-    x.closePath(); x.stroke();
   }
 
   function drawBee(e) {
@@ -599,37 +696,65 @@
     x.translate(e.x, e.y);
     if (e.state === 'dive') x.rotate(e.angle + Math.PI / 2);
 
-    const r = e.type === 'queen' ? 13 : e.type === 'guard' ? 11 : 9;
+    const r = e.type === 'queen' ? 14 : e.type === 'guard' ? 12 : 9;
     const c = typeColor(e.type);
     const t = performance.now() * 0.003;
+    const flap = Math.sin(t * 9 + e.col * 0.7) * 0.25;
 
-    // Wings (animated flap)
-    const wFlap = Math.sin(t * 8 + e.col) * 0.25;
-    x.fillStyle = 'rgba(255,255,255,0.28)';
-    x.beginPath(); x.ellipse(-r * 0.95, -r * 0.05, r * 0.7 + wFlap * r * 0.3, r * 0.38, -0.35, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.ellipse(r * 0.95, -r * 0.05, r * 0.7 + wFlap * r * 0.3, r * 0.38, 0.35, 0, Math.PI * 2); x.fill();
+    // Wings behind the body
+    const wingA = e.type === 'queen' ? 0.2 : 0.32;
+    x.fillStyle = 'rgba(255,255,255,' + wingA + ')';
+    x.beginPath(); x.ellipse(-r * 0.85, -r * 0.1, r * 0.75 + flap * r * 0.4, r * 0.38, -0.5, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.ellipse(r * 0.85, -r * 0.1, r * 0.75 + flap * r * 0.4, r * 0.38, 0.5, 0, Math.PI * 2); x.fill();
 
-    // Body glow
-    x.shadowColor = c; x.shadowBlur = 8;
-    x.fillStyle = c;
-    x.beginPath(); x.ellipse(0, 0, r * 0.65, r, 0, 0, Math.PI * 2); x.fill();
-    x.shadowBlur = 0;
-
-    // Stripes
-    if (e.type !== 'queen') {
-      x.fillStyle = 'rgba(0,0,0,0.3)';
-      for (let i = -1; i <= 1; i++) {
-        x.fillRect(-r * 0.5, i * r * 0.32 - 1.5, r, 3);
-      }
+    // Antennae (drones)
+    if (e.type === 'drone') {
+      x.strokeStyle = '#fde68a';
+      x.lineWidth = 1.4;
+      x.lineCap = 'round';
+      x.beginPath(); x.moveTo(-r * 0.35, -r * 0.8); x.quadraticCurveTo(-r * 0.7, -r * 1.5, -r * 0.4, -r * 1.7); x.stroke();
+      x.beginPath(); x.moveTo(r * 0.35, -r * 0.8); x.quadraticCurveTo(r * 0.7, -r * 1.5, r * 0.4, -r * 1.7); x.stroke();
     }
 
-    // Queen crown
+    // Hex body
+    if (e.type === 'queen') { x.shadowColor = c; x.shadowBlur = 14; }
+    x.fillStyle = c;
+    hexPath(0, 0, r);
+    x.fill();
+    x.shadowBlur = 0;
+
+    // Glowing outline for the queen
+    if (e.type === 'queen') {
+      x.strokeStyle = 'rgba(216,180,254,0.9)';
+      x.lineWidth = 1.5;
+      hexPath(0, 0, r);
+      x.stroke();
+    }
+
+    // Stripes
+    x.strokeStyle = 'rgba(0,0,0,0.25)';
+    x.lineWidth = 2;
+    x.beginPath(); x.moveTo(-r * 0.62, -r * 0.22); x.lineTo(r * 0.62, -r * 0.22); x.stroke();
+    x.beginPath(); x.moveTo(-r * 0.62, r * 0.22); x.lineTo(r * 0.62, r * 0.22); x.stroke();
+
+    // Eyes
+    x.fillStyle = '#1e0a2e';
+    x.beginPath(); x.arc(-r * 0.3, -r * 0.45, r * 0.13, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.arc(r * 0.3, -r * 0.45, r * 0.13, 0, Math.PI * 2); x.fill();
+
+    // Guard stinger
+    if (e.type === 'guard') {
+      x.fillStyle = '#7c2d12';
+      x.beginPath(); x.moveTo(-r * 0.18, r * 0.9); x.lineTo(0, r * 1.5); x.lineTo(r * 0.18, r * 0.9); x.closePath(); x.fill();
+    }
+
+    // Queen crown (3 triangles)
     if (e.type === 'queen') {
       x.fillStyle = '#fef08a';
-      x.beginPath();
-      x.moveTo(-7, -r - 1); x.lineTo(-7, -r + 4); x.lineTo(-3.5, -r - 6);
-      x.lineTo(0, -r + 2); x.lineTo(3.5, -r - 6); x.lineTo(7, -r + 4); x.lineTo(7, -r - 1);
-      x.closePath(); x.fill();
+      for (const ox of [-r * 0.55, 0, r * 0.55]) {
+        x.beginPath(); x.moveTo(ox - 4, -r * 0.9); x.lineTo(ox, -r * 1.5); x.lineTo(ox + 4, -r * 0.9); x.closePath(); x.fill();
+      }
+      x.fillRect(-r * 0.75, -r * 0.98, r * 1.5, 2.5);
     }
 
     // HP pips (guards/queens with >1 hp)
@@ -648,38 +773,46 @@
     x.save(); x.translate(b.x, b.y);
 
     const pulse = 0.7 + Math.sin(performance.now() * 0.004) * 0.3;
-    x.shadowColor = '#f97316'; x.shadowBlur = 22 * pulse;
-
-    // Body
-    x.fillStyle = b.invT > 0 ? '#ffffff' : '#ea580c';
-    x.beginPath(); x.ellipse(0, 0, 30, 38, 0, 0, Math.PI * 2); x.fill();
-    x.shadowBlur = 0;
-
-    // Stripes
-    x.fillStyle = 'rgba(0,0,0,0.25)';
-    for (let i = -1; i <= 1; i++) {
-      x.fillRect(-22, i * 12 - 2, 44, 4);
-    }
 
     // Wings
-    x.fillStyle = 'rgba(254,215,170,0.45)';
-    x.beginPath(); x.ellipse(-40, -4, 30, 17, -0.3, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.ellipse(40, -4, 30, 17, 0.3, 0, Math.PI * 2); x.fill();
+    x.fillStyle = 'rgba(196,132,252,0.35)';
+    x.beginPath(); x.ellipse(-36, -6, 28, 16, -0.4, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.ellipse(36, -6, 28, 16, 0.4, 0, Math.PI * 2); x.fill();
 
-    // Crown
-    x.fillStyle = '#fef08a';
-    x.beginPath();
-    x.moveTo(-16, -40); x.lineTo(-16, -30); x.lineTo(-8, -46);
-    x.lineTo(0, -32); x.lineTo(8, -46); x.lineTo(16, -30); x.lineTo(16, -40);
-    x.closePath(); x.fill();
+    // Body glow
+    x.shadowColor = '#a855f7';
+    x.shadowBlur = 22 * pulse;
+    x.fillStyle = b.invT > 0 ? '#ffffff' : '#7c3aed';
+    hexPath(0, 0, 34);
+    x.fill();
+    x.shadowBlur = 0;
+
+    // Glowing outline
+    x.strokeStyle = 'rgba(216,180,254,0.9)';
+    x.lineWidth = 2.5;
+    hexPath(0, 0, 34);
+    x.stroke();
+
+    // Stripes
+    x.strokeStyle = 'rgba(0,0,0,0.25)';
+    x.lineWidth = 3;
+    x.beginPath(); x.moveTo(-26, -8); x.lineTo(26, -8); x.stroke();
+    x.beginPath(); x.moveTo(-26, 8); x.lineTo(26, 8); x.stroke();
 
     // Eyes
-    x.fillStyle = '#1e0a00';
-    x.beginPath(); x.arc(-10, -6, 7, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.arc(10, -6, 7, 0, Math.PI * 2); x.fill();
-    x.fillStyle = '#fff';
-    x.beginPath(); x.arc(-8, -8, 2.5, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.arc(12, -8, 2.5, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#fef08a';
+    x.beginPath(); x.arc(-11, -8, 5, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.arc(11, -8, 5, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#1e0a2e';
+    x.beginPath(); x.arc(-11, -8, 2, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.arc(11, -8, 2, 0, Math.PI * 2); x.fill();
+
+    // Crown (3 triangles)
+    x.fillStyle = '#fef08a';
+    for (const ox of [-18, 0, 18]) {
+      x.beginPath(); x.moveTo(ox - 7, -32); x.lineTo(ox, -46); x.lineTo(ox + 7, -32); x.closePath(); x.fill();
+    }
+    x.fillRect(-26, -34, 52, 4);
 
     x.restore();
 
@@ -688,52 +821,62 @@
     const bx = b.x - bw / 2, by2 = b.y + 46;
     x.fillStyle = 'rgba(0,0,0,.55)'; x.fillRect(bx - 1, by2 - 1, bw + 2, bh + 2);
     const hpPct = b.hp / b.maxHp;
-    const barCol = hpPct > 0.5 ? '#f97316' : '#ef4444';
+    const barCol = hpPct > 0.5 ? '#a855f7' : '#ef4444';
     x.fillStyle = barCol; x.fillRect(bx, by2, bw * hpPct, bh);
     x.font = '10px system-ui'; x.textAlign = 'center'; x.fillStyle = '#fef08a';
     x.fillText('QUEEN  ' + b.hp + '/' + b.maxHp, b.x, by2 + bh + 10);
   }
 
   function drawLumo() {
+    const t = performance.now() * 0.001;
+    const shot = lumo.flash > 0 ? 1 : 0;
+    const glow = 0.35 + Math.sin(t * 6) * 0.15 + shot * 0.5;
     x.save(); x.translate(lumo.x, lumo.y);
 
-    // Glow aura
-    x.shadowColor = '#c084fc'; x.shadowBlur = 18;
-
-    // Body (rounded purple square)
-    x.fillStyle = '#7c3aed';
+    // Bushy tail behind the body
+    x.strokeStyle = '#a855f7';
+    x.lineWidth = 5;
+    x.lineCap = 'round';
     x.beginPath();
-    x.roundRect(-10, -10, 20, 20, 5);
+    x.moveTo(7, 5);
+    x.quadraticCurveTo(24, 8, 21, -7);
+    x.stroke();
+    x.fillStyle = '#a855f7';
+    x.beginPath(); x.arc(21, -7, 6, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#c084fc';
+    x.beginPath(); x.arc(22, -9, 3, 0, Math.PI * 2); x.fill();
+
+    // Body glow
+    x.shadowColor = '#c084fc';
+    x.shadowBlur = 8 + shot * 14;
+
+    // Silver body
+    x.fillStyle = '#e2e8f0';
+    x.beginPath();
+    x.roundRect(-11, -12, 22, 22, 7);
     x.fill();
-
-    // Tail
     x.shadowBlur = 0;
-    x.fillStyle = '#6d28d9';
-    x.beginPath(); x.ellipse(16, 4, 10, 6, 0.5, 0, Math.PI * 2); x.fill();
-    x.fillStyle = '#f0abfc';
-    x.beginPath(); x.arc(22, 5, 4, 0, Math.PI * 2); x.fill();
 
-    // Ears
-    x.fillStyle = '#9333ea';
-    x.beginPath(); x.moveTo(-10, -10); x.lineTo(-17, -23); x.lineTo(-3, -10); x.closePath(); x.fill();
-    x.beginPath(); x.moveTo(10, -10); x.lineTo(17, -23); x.lineTo(3, -10); x.closePath(); x.fill();
-    x.fillStyle = '#f0abfc';
-    x.beginPath(); x.moveTo(-10, -12); x.lineTo(-14, -21); x.lineTo(-4, -12); x.closePath(); x.fill();
-    x.beginPath(); x.moveTo(10, -12); x.lineTo(14, -21); x.lineTo(4, -12); x.closePath(); x.fill();
+    // Pointy ears
+    x.fillStyle = '#e2e8f0';
+    x.beginPath(); x.moveTo(-10, -10); x.lineTo(-15, -25); x.lineTo(-2, -12); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(10, -10); x.lineTo(15, -25); x.lineTo(2, -12); x.closePath(); x.fill();
+    x.fillStyle = '#a855f7';
+    x.beginPath(); x.moveTo(-9, -12); x.lineTo(-12, -21); x.lineTo(-4, -13); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(9, -12); x.lineTo(12, -21); x.lineTo(4, -13); x.closePath(); x.fill();
 
-    // Eyes
-    x.fillStyle = '#fef08a';
-    x.beginPath(); x.arc(-4, -3, 3.5, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.arc(4, -3, 3.5, 0, Math.PI * 2); x.fill();
-    x.fillStyle = '#1e0a2e';
-    x.beginPath(); x.arc(-4, -3, 1.8, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.arc(4, -3, 1.8, 0, Math.PI * 2); x.fill();
-
-    // Cannon
-    x.fillStyle = '#e879f9';
-    x.shadowColor = '#e879f9'; x.shadowBlur = 10;
-    x.fillRect(-3, -24, 6, 14);
+    // Glowing eyes (brighter when shooting)
+    x.fillStyle = '#7c3aed';
+    x.shadowColor = '#7c3aed';
+    x.shadowBlur = 4 + glow * 10;
+    const er = 2.2 + shot * 1.2;
+    x.beginPath(); x.arc(-4, -3, er, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.arc(4, -3, er, 0, Math.PI * 2); x.fill();
     x.shadowBlur = 0;
+
+    // Nose
+    x.fillStyle = '#a855f7';
+    x.beginPath(); x.arc(0, 2, 2, 0, Math.PI * 2); x.fill();
 
     x.restore();
   }
