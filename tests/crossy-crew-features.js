@@ -68,7 +68,7 @@ const check = (name, ok, detail = '') => {
   const pow = await page.evaluate(() => ({ m: window.__crossy.magnet, s: window.__crossy.slow }));
   check('coin magnet and slow time engage', pow.m && pow.s, JSON.stringify(pow));
 
-  // Second chance: killed with enough coins offers a revive that spends 5 coins.
+  // Second chance: killed with enough coins offers a revive that spends 3 coins.
   await page.evaluate(() => window.__crossyTest.restart());
   await sleep(150);
   await page.evaluate(() => window.__crossyTest.setCoins(20));
@@ -81,7 +81,7 @@ const check = (name, ok, detail = '') => {
     await page.evaluate(() => document.getElementById('saveBtn').click());
     await sleep(150);
     const r = await page.evaluate(() => ({ running: window.__crossy.running, dead: window.__crossy.dead, coins: Number(document.getElementById('coinsHud').textContent) }));
-    check('second chance revives the run and spends 5 coins', r.running && !r.dead && r.coins === before - 5, JSON.stringify(r) + ' before=' + before);
+    check('second chance revives the run and spends 3 coins', r.running && !r.dead && r.coins === before - 3, JSON.stringify(r) + ' before=' + before);
   }
 
   // A fresh run with no coins ends cleanly (no save-me) and shows the end screen.

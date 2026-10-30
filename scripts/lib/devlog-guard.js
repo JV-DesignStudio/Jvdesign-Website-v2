@@ -32,6 +32,19 @@ const MARKERS = [
   ['admin annotation', /\[[^\]]*\b(josh|force|opencode)\b[^\]]*\]/i],
 ];
 
+// Titles are what readers see in the feed, so they get their own stricter gate.
+// Board language (ticket ids, audit refs, file paths) must never reach a title.
+const TITLE_MARKERS = [
+  ['ticket id', /\bA\d{3,}\b/],
+  ['audit ref', /AUD-\d|\[AUD|^AUD/i],
+  ['file path in title', /\.(html|js|css|json)\b|validate:|\btests\//i],
+  ['evidence in title', /Evidence:/i],
+];
+
+function titleMarkers(title) {
+  return TITLE_MARKERS.filter(([, re]) => re.test(String(title || ''))).map(([name]) => name);
+}
+
 function readSource(srcPath) {
   return fs.readFileSync(srcPath || DEVLOG, 'utf8');
 }
@@ -120,10 +133,12 @@ function isInternalText(...parts) {
 }
 function isPublicationClean(post) {
   // Title is what readers see in the feed and on cards, so gate on title (plus hard markers).
-  return post && post.markers.length === 0 && !isInternalText(post.title);
+  return post && post.markers.length === 0 &&
+    titleMarkers(post.title).length === 0 &&
+    !isInternalText(post.title);
 }
 function findUnpublishable(posts) {
   return posts.filter(p => !isPublicationClean(p));
 }
 
-module.exports = { ROOT, DEVLOG, MARKERS, INTERNAL_WORDS, INTERNAL_FILE, readSource, parseEntries, markersIn, loadPosts, findDrafts, isInternalText, isPublicationClean, findUnpublishable };
+module.exports = { ROOT, DEVLOG, MARKERS, TITLE_MARKERS, titleMarkers, INTERNAL_WORDS, INTERNAL_FILE, readSource, parseEntries, markersIn, loadPosts, findDrafts, isInternalText, isPublicationClean, findUnpublishable };

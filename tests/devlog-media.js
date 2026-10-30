@@ -34,17 +34,47 @@ function resolve(href) {
   var h = String(href || '').trim();
   if (!h) return null;
   if (isExternal(h) || h.charAt(0) === '#') return { ext: true };
+  var hash = '';
+  var hi = h.indexOf('#');
+  if (hi >= 0) { hash = h.slice(hi + 1); h = h.slice(0, hi); }
   var abs = h.charAt(0) === '/'
     ? path.join(ROOT, h)
     : path.join(ROOT, 'pages', h.replace(/^\.\//, ''));
-  return { ext: false, abs: abs };
+  return { ext: false, abs: abs, hash: hash };
+}
+
+function existingFile(p) {
+  if (fs.existsSync(p) && fs.statSync(p).isFile()) return p;
+  if (fs.existsSync(p + '.html')) return p + '.html';
+  if (fs.existsSync(path.join(p, 'index.html'))) return path.join(p, 'index.html');
+  return null;
 }
 
 function exists(p) {
-  if (fs.existsSync(p)) return true;
-  if (fs.existsSync(p + '.html')) return true;
-  if (fs.existsSync(path.join(p, 'index.html'))) return true;
-  return false;
+  return !!existingFile(p);
+}
+
+function redirectTarget(html) {
+  var m = html.match(/http-equiv=["']refresh["']\s+content=["']\d+;\s*url=([^"']+)["']/i);
+  return m ? m[1].trim() : null;
+}
+
+function anchorExists(p, hash, depth) {
+  if (!hash) return true;
+  depth = depth || 0;
+  var file = existingFile(p);
+  if (!file) return false;
+  var html = fs.readFileSync(file, 'utf8');
+  var safe = hash.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (new RegExp("(?:id|name)=[\"']" + safe + "[\"']").test(html)) return true;
+  // A root page may just redirect to the real /pages/ copy (e.g. /teachers).
+  if (depth >= 3) return false;
+  var target = redirectTarget(html);
+  if (!target) return false;
+  var abs = target.charAt(0) === '/'
+    ? path.join(ROOT, target)
+    : path.join(path.dirname(file), target);
+  return anchorExists(abs, hash, depth + 1);
 }
 
 posts.forEach(function (p) {
@@ -59,6 +89,7 @@ posts.forEach(function (p) {
     checkedLinks++;
     var u = resolve(p.url);
     if (u && !u.ext && !exists(u.abs)) errors.push('post ' + p.id + ': url not found: ' + p.url);
+    else if (u && !u.ext && !anchorExists(u.abs, u.hash)) errors.push('post ' + p.id + ': anchor not found: ' + p.url);
   }
   if (p.links) {
     if (!Array.isArray(p.links)) { errors.push('post ' + p.id + ': links is not an array'); return; }
@@ -69,6 +100,7 @@ posts.forEach(function (p) {
       checkedLinks++;
       var lr = resolve(l.href);
       if (lr && !lr.ext && !exists(lr.abs)) errors.push('post ' + p.id + ': links[' + i + '] not found: ' + l.href);
+      else if (lr && !lr.ext && !anchorExists(lr.abs, lr.hash)) errors.push('post ' + p.id + ': links[' + i + '] anchor not found: ' + l.href);
     });
   }
 });

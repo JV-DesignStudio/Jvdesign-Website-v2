@@ -32,7 +32,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LPPJOKovteBmNieoVVE7tyiB6DLYLqimuUHlwZ8z6rM=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-loaaDW7AdfllnhhZooWlhksvus1ioAos4hnV473Uixo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -150,6 +150,9 @@
         <div class="empty-emoji">🔍</div>
         <p class="empty-msg">No posts in this category yet.</p>
     </div>
+    <div class="load-more-wrap" id="loadMoreWrap" hidden>
+        <button class="load-more-btn" id="loadMoreBtn" type="button">Load more posts</button>
+    </div>
 </section>
 
 <!-- POST MODAL -->
@@ -266,6 +269,8 @@ const TAG_EMOJIS = {
 let currentFilter = 'all';
 let currentPostIdx = 0;
 let filteredPosts = [];
+const PAGE_SIZE = 24;
+let visibleCount = PAGE_SIZE;
 
 // DOM
 const postsGrid   = document.getElementById('postsGrid');
@@ -273,6 +278,8 @@ const filterCount = document.getElementById('filterCount');
 const emptyState  = document.getElementById('emptyState');
 const backdrop    = document.getElementById('modalBackdrop');
 const modal       = document.getElementById('modal');
+const loadMoreWrap = document.getElementById('loadMoreWrap');
+const loadMoreBtn  = document.getElementById('loadMoreBtn');
 
 // ── Build hero stats ───────────────────────────────
 function buildHeroStats(){
@@ -299,7 +306,8 @@ function readerExcerpt(post){
 }
 
 // ── Render grid ────────────────────────────────────
-function renderPosts(){
+function renderPosts(reset){
+    if(reset !== false) visibleCount = PAGE_SIZE;
     filteredPosts = currentFilter === 'all'
         ? [...POSTS]
         : POSTS.filter(p => p.tag === currentFilter);
@@ -308,7 +316,9 @@ function renderPosts(){
     postsGrid.innerHTML = '';
     emptyState.classList.toggle('show', filteredPosts.length === 0);
 
-    filteredPosts.forEach((post, i) => {
+    const shown = filteredPosts.slice(0, visibleCount);
+
+    shown.forEach((post, i) => {
         const card = document.createElement('div');
         card.className = 'post-card reveal';
         card.dataset.tag = post.tag;
@@ -334,10 +344,18 @@ function renderPosts(){
         postsGrid.appendChild(card);
     });
 
+    if(loadMoreWrap){
+        const remaining = filteredPosts.length - shown.length;
+        loadMoreWrap.hidden = remaining <= 0;
+        if(loadMoreBtn && remaining > 0){
+            loadMoreBtn.textContent = 'Load more posts (' + remaining + ' left)';
+        }
+    }
+
     // Pad grid so it doesn't look lopsided when not a multiple of 3
-    if(filteredPosts.length > 0 && (filteredPosts.length < 3 || filteredPosts.length % 3 !== 0)){
+    if(shown.length > 0 && (shown.length < 3 || shown.length % 3 !== 0)){
         if(currentFilter === 'all'){
-            const needed = filteredPosts.length % 3 === 0 ? 0 : 3 - (filteredPosts.length % 3);
+            const needed = shown.length % 3 === 0 ? 0 : 3 - (shown.length % 3);
             for(let i = 0; i < needed; i++){
                 const pad = document.createElement('div');
                 pad.style.cssText = 'visibility:hidden;min-height:280px';
@@ -463,7 +481,13 @@ function openFromHash(){
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
     renderPosts();
     const fIdx = filteredPosts.findIndex(p => String(p.id) === m[1]);
-    if(fIdx >= 0) openModal(fIdx);
+    if(fIdx >= 0){
+        if(fIdx >= visibleCount){
+            visibleCount = Math.ceil((fIdx + 1) / PAGE_SIZE) * PAGE_SIZE;
+            renderPosts(false);
+        }
+        openModal(fIdx);
+    }
 }
 
 function escHtml(str){
@@ -484,9 +508,13 @@ document.getElementById('filterInner').addEventListener('click', e=>{
     renderPosts();
 });
 
+if(loadMoreBtn) loadMoreBtn.addEventListener('click', ()=>{
+    visibleCount += PAGE_SIZE;
+    renderPosts(false);
+});
+
 document.getElementById('btnPrev').addEventListener('click',()=>{ if(currentPostIdx>0){currentPostIdx--;renderModal();} });
-document.getElementById('btnNext').addEventListener('click',()=>{ if(currentPostIdx<filteredPosts.length-1){currentPostIdx++;renderModal();} });
-document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+document.getElementById('btnNext').addEventListener('click',()=>{ if(currentPostIdx<filteredPosts.length-1){currentPostIdx++;renderModal();} });document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
 document.getElementById('modalBackdrop').addEventListener('click', e=>{ if(e.target===backdrop) closeModal(); });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); if(e.key==='ArrowLeft') document.getElementById('btnPrev').click(); if(e.key==='ArrowRight') document.getElementById('btnNext').click(); });
 

@@ -5318,7 +5318,7 @@ window.JVDS_CONTENT = {
       "emoji": "🐸",
       "category": "Action",
       "bg": "linear-gradient(135deg,#1a472a,#2e7d32)",
-      "desc": "Pip leads the crew across busy roads and rushing rivers. Hop forward, dodge the traffic, ride the logs and see how far the crew can get.",
+      "desc": "Pip and Echo, brother and sister, lead the crew across busy roads and rushing rivers. Hop forward, dodge the traffic, ride the logs and see how far the crew can get.",
       "kids": true,
       "age": "Ages 6-12",
       "character": null,
@@ -6302,7 +6302,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-30T18:40:45.547Z",
+    "generated": "2026-10-30T20:15:56.636Z",
     "workshops": 345,
     "games": 13,
     "tools": 51,

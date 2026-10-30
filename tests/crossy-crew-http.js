@@ -93,19 +93,24 @@ async function mobile(browser, base) {
   check('mobile: D-pad down is reachable', reach.down === 'dDown', String(reach.down));
 
   const col0 = await page.evaluate(() => window.__crossy.col);
-  await page.evaluate(() => document.getElementById('dLeft').click());
+  // The D-pad listens for pointerdown (a real tap), not click.
+  const press = id => page.evaluate(sel => {
+    const b = document.getElementById(sel);
+    b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'touch' }));
+  }, id);
+  await press('dLeft');
   await sleep(150);
   const colL = await page.evaluate(() => window.__crossy.col);
-  await page.evaluate(() => document.getElementById('dRight').click());
-  await page.evaluate(() => document.getElementById('dRight').click());
+  await press('dRight');
+  await press('dRight');
   await sleep(150);
   const colR = await page.evaluate(() => window.__crossy.col);
   check('mobile: left hop moves the frog left', colL === col0 - 1, col0 + '->' + colL);
   check('mobile: right hops move the frog right', colR === colL + 2, colL + '->' + colR);
 
-  // Idle for longer than the game's 6s "too slow" timer (or a traffic hit) to
-  // reach the game-over screen.
-  await sleep(7200);
+  // End the run through the test hook: the game deliberately has no idle kill.
+  await page.evaluate(() => window.__crossyTest.kill('Test splat'));
+  await sleep(400);
   const death = await page.evaluate(() => {
     const m = document.querySelector('.sr-modal.show');
     const c = document.getElementById('game');
