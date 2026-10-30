@@ -29,6 +29,7 @@ const STEPS = [
   { id: 'callouts',  cmd: path.join(ROOT, 'scripts/validate-workshop-callouts.js'), label: 'Workshop tool callouts' },
   { id: 'labels',    cmd: path.join(ROOT, 'tests/game-quality.js'), label: 'Game quality labels' },
   { id: 'public',    cmd: path.join(ROOT, 'scripts/validate-public-boundary.js'), label: 'Public boundary' },
+  { id: 'script-refs', cmd: path.join(ROOT, 'scripts/validate-script-refs.js'), label: 'Script & CSS refs' },
   { id: 'drift',     cmd: path.join(ROOT, 'scripts/check-generated-drift.js'), label: 'Generated drift' },
 ].filter(s=> !s.nightly || isNightly);
 
