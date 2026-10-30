@@ -7,6 +7,10 @@
 
   // Virtual canvas (portrait, scaled to fill)
   const W = 360, H = 620;
+  const IS_TOUCH = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const PLAYER_Y = IS_TOUCH ? H - 100 : H - 55;
+  const LUMO_MIN_X = 21, LUMO_MAX_X = W - 36;
 
   function fit() {
     const r = C.getBoundingClientRect();
@@ -18,7 +22,43 @@
   addEventListener('resize', fit);
   setTimeout(fit, 50);
 
-  function sfx(n) { try { audio?.[n]?.(); } catch (e) { } }
+  let soundMuted = false;
+
+  function sfx(n, ...args) {
+    if (soundMuted) return;
+    try { audio?.[n]?.(...args); } catch (e) { }
+  }
+
+  const music = {
+    timer: null, step: 0,
+    start() {
+      if (this.timer || soundMuted || !audio) return;
+      const ctx = audio.getContext();
+      if (!ctx) return;
+      this.timer = setInterval(() => {
+        if (soundMuted || !audio || !audio.getVolume()) return;
+        const c = audio.getContext();
+        if (!c) return;
+        const notes = [220.00, 277.18, 329.63, 440.00, 523.25, 440.00, 329.63, 277.18, 246.94, 293.66, 349.23, 440.00, 349.23, 293.66, 246.94, 220.00];
+        const t = c.currentTime;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = notes[this.step % notes.length];
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.linearRampToValueAtTime(0.05 * audio.getVolume(), t + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start(t);
+        osc.stop(t + 0.3);
+        this.step++;
+      }, 320);
+    },
+    stop() {
+      if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    }
+  };
 
   function showToast(msg) {
     const t = $('toast');
@@ -34,14 +74,24 @@
   let shootCool = 0, waveClearT = 0;
   let rapidT = 0, multiT = 0;
   let won = false, wavePerfect = true, goldFlash = 0, shakeUntil = 0;
+  let finalWaveT = 0, hitStopT = 0;
+  let focus = 0, beamT = 0, beamX = 0;
+  let paused = false, helpOrigin = 'start', tookHit = false;
+  let bestCombo = 1, perfectWaves = 0, bossesKilled = 0;
+  let waveSpeed = 1, waveDiveRate = 1, waveHpBonus = 0, waveDoubleDive = false, waveLabel = '';
   let best = parseInt(localStorage.getItem('jvds_lhs_best') || '0');
 
-  const lumo = { x: W / 2, y: H - 55, invT: 0, flash: 0 };
+  const lumo = { x: W / 2, y: PLAYER_Y, invT: 0, flash: 0 };
   let bullets = []; // {x,y,vy,owner,c}
   let enemies = [];
   let particles = [];
+  let floaters = [];
   let powerups = [];
   let boss = null;
+
+  // Idle start-screen formation
+  let idleEnemies = [];
+  let idleFormX = 0, idleFormVx = 12;
 
   // Formation geometry
   const ROWS = 5, COLS = 8;
@@ -62,15 +112,26 @@
     return { fx: FX0 + (col + hex) * FDX, fy: FY0 + row * FDY };
   }
 
+  function applyWaveMods() {
+    waveSpeed = 1; waveDiveRate = 1; waveHpBonus = 0; waveDoubleDive = false; waveLabel = '';
+    if (wave === 2) { waveSpeed = 1.15; waveLabel = 'Swift'; }
+    else if (wave === 3) { waveDiveRate = 0.75; waveLabel = 'Swarm'; }
+    else if (wave === 4) { waveDiveRate = 0.8; waveDoubleDive = true; waveLabel = 'Crossfire'; }
+    else if (wave === 6) { waveHpBonus = 1; waveLabel = 'Armored'; }
+    else if (wave === 7) { waveDiveRate = 0.7; waveLabel = 'Crossfire'; }
+    else if (wave === 8) { waveSpeed = 1.25; waveDiveRate = 0.85; waveLabel = 'Rush'; }
+    else if (wave === 9) { waveDiveRate = 0.65; waveDoubleDive = true; waveLabel = 'Onslaught'; }
+  }
+
   // ── BUILD FORMATION ────────────────────────────────────────────────────────
   function buildFormation() {
     enemies = [];
     formX = 0;
-    formVx = Math.min(60, 28 + wave * 2.5);
+    formVx = Math.min(72, (28 + wave * 2.5) * waveSpeed);
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const type = rowType(r);
-        const hp = typeHP(type);
+        const hp = typeHP(type) + (type === 'drone' ? 0 : waveHpBonus);
         const { fx, fy } = formPos(r, c);
         enemies.push({
           row: r, col: c, type, hp, maxHp: hp,
@@ -78,7 +139,27 @@
           fx, fy,
           state: 'enter',
           enterDelay: (r * COLS + c) * 0.038,
-          divePath: null, angle: 0, shootCool: 0
+          divePath: null, angle: 0, shootCool: 0, warnT: 0
+        });
+      }
+    }
+  }
+
+  // ── IDLE FORMATION ────────────────────────────────────────────────────────
+  function buildIdleFormation() {
+    idleEnemies = [];
+    const rows = 4, cols = 7;
+    const dx = 32, dy = 34;
+    const x0 = (W - (cols - 1) * dx) / 2, y0 = 154;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const type = rowType(r);
+        const hp = typeHP(type);
+        idleEnemies.push({
+          row: r, col: c, type, hp, maxHp: hp,
+          x: x0 + (c + (r % 2) * 0.5) * dx, y: y0 + r * dy,
+          fx: 0, fy: 0, state: 'form', enterDelay: 0,
+          divePath: null, angle: 0, shootCool: 0, warnT: 0
         });
       }
     }
@@ -95,22 +176,27 @@
   function startGame() {
     score = 0; wave = 1; lives = 3; combo = 1; comboTimer = 0;
     shootCool = 0; rapidT = 0; multiT = 0;
-    won = false; wavePerfect = true; goldFlash = 0; shakeUntil = 0;
-    bullets = []; particles = []; powerups = [];
+    won = false; wavePerfect = true; goldFlash = 0; shakeUntil = 0; finalWaveT = 0;
+    hitStopT = 0; focus = 0; beamT = 0; paused = false;
+    tookHit = false; bestCombo = 1; perfectWaves = 0; bossesKilled = 0;
+    bullets = []; particles = []; floaters = []; powerups = [];
     lumo.x = W / 2; lumo.invT = 0; lumo.flash = 0;
     boss = null;
+    applyWaveMods();
     buildFormation();
     diveTimer = 0; nextDive = 2.8;
     gameState = 'playing';
     $('startScreen').classList.add('hidden');
     $('endScreen').classList.add('hidden');
     $('againBtn').textContent = 'Try Again';
+    music.start();
     sys?.beginRun?.();
     hud();
   }
 
   function endGame(victory) {
     gameState = 'dead';
+    music.stop();
     if (score > best) { best = score; localStorage.setItem('jvds_lhs_best', best); }
     hud();
     checkDailyOnEnd(score);
@@ -130,9 +216,36 @@
         `<div><b>${stars}</b><small>Rating</small></div>`;
       $('againBtn').textContent = 'Try Again';
     }
+    showMedals(buildMedals(victory));
     $('endScreen').classList.remove('hidden');
     sys?.addScore?.(score);
     sys?.saveState?.();
+  }
+
+  function buildMedals(victory) {
+    const medals = [];
+    if (victory) medals.push('Logic Garden Saved');
+    if (victory && !tookHit) medals.push('Untouchable');
+    if (bestCombo >= 5) medals.push('Chain x' + bestCombo);
+    if (perfectWaves >= 3) medals.push(perfectWaves + ' Perfect Waves');
+    if (bossesKilled >= 2) medals.push('Double Queen');
+    else if (bossesKilled === 1) medals.push('Queen Slayer');
+    if (!medals.length) medals.push('Keep going');
+    return medals;
+  }
+
+  function showMedals(medals) {
+    let el = $('endMedals');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'endMedals';
+      el.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:320px;';
+      const stats = $('endStats');
+      if (stats && stats.parentNode) stats.parentNode.insertBefore(el, stats.nextSibling);
+    }
+    el.innerHTML = medals.map(m =>
+      '<span style="background:rgba(192,132,252,.18);border:1px solid rgba(192,132,252,.5);color:#e9d5ff;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700">' + m + '</span>'
+    ).join('');
   }
 
   function hud() {
@@ -143,9 +256,23 @@
     $('bestHud').textContent = best;
   }
 
+  function pauseGame() {
+    paused = true;
+    music.stop();
+    for (const k in keys) keys[k] = false;
+    leftHeld.v = false;
+    rightHeld.v = false;
+  }
+
+  function resumeGame() {
+    paused = false;
+    if (gameState === 'playing' || gameState === 'waveclear') music.start();
+  }
+
   // ── INPUT ──────────────────────────────────────────────────────────────────
   const keys = {};
   addEventListener('keydown', e => {
+    if (paused) return;
     keys[e.code] = true;
     if (e.code === 'Space') { e.preventDefault(); tryShoot(); }
     if ((e.code === 'Enter' || e.code === 'Space') && gameState === 'idle') startGame();
@@ -162,7 +289,7 @@
     if (e.buttons && pointerX !== null) {
       const canvasW = C.getBoundingClientRect().width;
       const dx = (e.clientX - pointerX) / canvasW * W;
-      lumo.x = Math.max(16, Math.min(W - 16, lumo.x + dx));
+      lumo.x = Math.max(LUMO_MIN_X, Math.min(LUMO_MAX_X, lumo.x + dx));
       pointerX = e.clientX;
     }
   });
@@ -183,18 +310,46 @@
   if (ctrlShoot) ctrlShoot.addEventListener('pointerdown', e => { e.preventDefault(); tryShoot(); });
 
   function tryShoot() {
-    if (gameState !== 'playing' || shootCool > 0) return;
+    if (paused || gameState !== 'playing' || shootCool > 0) return;
+    if (focus >= 100) { fireLogicBeam(); return; }
     shootCool = rapidT > 0 ? 0.11 : 0.26;
     lumo.flash = 0.18;
     const vy = -530;
     if (multiT > 0) {
-      bullets.push({ x: lumo.x - 11, y: lumo.y - 22, vy, owner: 'player', c: '#c084fc' });
-      bullets.push({ x: lumo.x, y: lumo.y - 26, vy, owner: 'player', c: '#e879f9' });
-      bullets.push({ x: lumo.x + 11, y: lumo.y - 22, vy, owner: 'player', c: '#c084fc' });
+      bullets.push({ x: lumo.x - 9, y: lumo.y - 28, vy, owner: 'player', c: '#c084fc' });
+      bullets.push({ x: lumo.x, y: lumo.y - 32, vy, owner: 'player', c: '#e879f9' });
+      bullets.push({ x: lumo.x + 9, y: lumo.y - 28, vy, owner: 'player', c: '#c084fc' });
     } else {
-      bullets.push({ x: lumo.x, y: lumo.y - 26, vy, owner: 'player', c: '#e879f9' });
+      bullets.push({ x: lumo.x, y: lumo.y - 30, vy, owner: 'player', c: '#e879f9' });
     }
     sfx('playTap');
+  }
+
+  function fireLogicBeam() {
+    focus = 0;
+    beamT = 0.4;
+    beamX = lumo.x;
+    shootCool = 0.5;
+    lumo.flash = 0.3;
+    hitStopT = 0.05;
+    shakeUntil = performance.now() + 220;
+    sfx('playLevelUp');
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      if (bullets[i].owner === 'enemy') bullets.splice(i, 1);
+    }
+    for (let j = enemies.length - 1; j >= 0; j--) {
+      const e = enemies[j];
+      if (e.state === 'enter' && e.enterDelay > 0) continue;
+      if (Math.abs(e.x - beamX) > 30) continue;
+      if (damageEnemy(e, 3)) enemies.splice(j, 1);
+    }
+    if (boss && Math.abs(boss.x - beamX) < 55) {
+      boss.hp -= 6;
+      boss.invT = 0.15;
+      addScore(180);
+      spawnFloater(boss.x, boss.y, '+180');
+      if (boss.hp <= 0) finishBoss();
+    }
   }
 
   // ── DIVE AI ────────────────────────────────────────────────────────────────
@@ -216,13 +371,11 @@
   }
 
   function triggerDive() {
-    const pool = enemies.filter(e => e.state === 'form');
+    const pool = enemies.filter(e => e.state === 'form' && e.warnT <= 0);
     if (!pool.length) return;
     const lower = pool.filter(e => e.row >= 2);
     const e = (lower.length ? lower : pool)[Math.floor(Math.random() * (lower.length || pool.length))];
-    e.state = 'dive';
-    e.divePath = makeDivePath(e);
-    e.shootCool = 0.3 + Math.random() * 0.4;
+    e.warnT = 0.38;
   }
 
   // ── PARTICLES ──────────────────────────────────────────────────────────────
@@ -246,15 +399,36 @@
     }
   }
 
+  function spawnFloater(px, py, text, color) {
+    floaters.push({ x: px, y: py, text, a: 1, vy: -55, color: color || '#fef08a' });
+  }
+
   // ── UPDATE ──────────────────────────────────────────────────────────────────
   let last = performance.now();
 
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    if (gameState === 'playing' || gameState === 'waveclear') update(dt);
+    if (paused) { requestAnimationFrame(loop); return; }
+    if (hitStopT > 0) {
+      hitStopT -= dt;
+      draw();
+      requestAnimationFrame(loop);
+      return;
+    }
+    if (gameState === 'idle') updateIdle(dt);
+    else if (gameState === 'playing' || gameState === 'waveclear') update(dt);
     draw();
     requestAnimationFrame(loop);
+  }
+
+  function updateIdle(dt) {
+    if (REDUCED_MOTION) return;
+    idleFormX += idleFormVx * dt;
+    if (idleFormX > 20 || idleFormX < -20) {
+      idleFormX = Math.max(-20, Math.min(20, idleFormX));
+      idleFormVx *= -1;
+    }
   }
 
   function update(dt) {
@@ -262,11 +436,12 @@
     const spd = 220;
     if (keys['ArrowLeft'] || keys['KeyA'] || leftHeld.v) lumo.x -= spd * dt;
     if (keys['ArrowRight'] || keys['KeyD'] || rightHeld.v) lumo.x += spd * dt;
-    lumo.x = Math.max(16, Math.min(W - 16, lumo.x));
+    lumo.x = Math.max(LUMO_MIN_X, Math.min(LUMO_MAX_X, lumo.x));
 
     shootCool -= dt;
     if (lumo.invT > 0) lumo.invT -= dt;
     if (lumo.flash > 0) lumo.flash -= dt;
+    if (beamT > 0) beamT = Math.max(0, beamT - dt);
     if (rapidT > 0) rapidT -= dt;
     if (multiT > 0) multiT -= dt;
     if (goldFlash > 0) goldFlash = Math.max(0, goldFlash - dt * 1.6);
@@ -275,6 +450,13 @@
     if (combo > 1) {
       comboTimer -= dt;
       if (comboTimer <= 0) { combo = 1; hud(); }
+    }
+
+    // Final wave fanfare holds the wave before play resumes
+    if (finalWaveT > 0) {
+      finalWaveT -= dt;
+      if (finalWaveT <= 0) { finalWaveT = 0; gameState = 'playing'; }
+      return;
     }
 
     // Wave clear countdown
@@ -294,9 +476,10 @@
       diveTimer += dt;
       if (diveTimer >= nextDive) {
         diveTimer = 0;
-        nextDive = 1.6 + Math.random() * 2.0;
+        nextDive = (1.6 + Math.random() * 2.0) * waveDiveRate;
         triggerDive();
-        if (wave >= 3 && Math.random() < 0.4) triggerDive();
+        if (waveDoubleDive && Math.random() < 0.6) triggerDive();
+        else if (wave >= 3 && Math.random() < 0.35) triggerDive();
       }
     }
 
@@ -319,6 +502,15 @@
       } else if (e.state === 'form') {
         e.x = e.fx + formX;
         e.y = e.fy;
+        if (e.warnT > 0) {
+          e.warnT -= dt;
+          if (e.warnT <= 0) {
+            e.warnT = 0;
+            e.state = 'dive';
+            e.divePath = makeDivePath(e);
+            e.shootCool = 0.3 + Math.random() * 0.4;
+          }
+        }
       } else if (e.state === 'dive') {
         const p = e.divePath;
         p.t += p.spd * dt;
@@ -381,20 +573,9 @@
           burst(boss.x, boss.y, '#f97316', '#fef08a', 6);
           sfx('playPop');
           addScore(30);
-          if (boss.hp <= 0) {
-            const bx = boss.x, by = boss.y;
-            burst(bx, by, '#a855f7', '#fef08a', 40);
-            hexBurst(bx, by, '#a855f7', 16);
-            sfx('playSuccess');
-            addScore(600);
-            boss = null;
-            if (wave >= 10) {
-              winGame();
-            } else {
-              showToast('Queen defeated! +600');
-              beginWaveClear();
-            }
-          }
+          spawnFloater(boss.x, boss.y, '+30');
+          addFocus(4);
+          if (boss.hp <= 0) finishBoss();
           continue;
         }
 
@@ -406,16 +587,9 @@
           const r = e.type === 'queen' ? 14 : e.type === 'guard' ? 12 : 10;
           if (Math.hypot(b.x - e.x, b.y - e.y) < r + 5) {
             bullets.splice(i, 1);
-            e.hp--;
-            burst(e.x, e.y, typeColor(e.type), '#fef08a', 7);
             sfx('playPop');
-            if (e.hp <= 0) {
-              addScore(typeScore(e.type) * combo);
-              bumpCombo();
-              hexBurst(e.x, e.y, typeColor(e.type), 6 + Math.floor(Math.random() * 3));
-              if (Math.random() < 0.15) dropPowerup(e.x, e.y);
-              enemies.splice(j, 1);
-            }
+            const dead = damageEnemy(e, 1);
+            if (dead) enemies.splice(j, 1);
             hit = true;
             break;
           }
@@ -447,6 +621,7 @@
       if (p.y > H + 20) { powerups.splice(i, 1); continue; }
       if (Math.hypot(p.x - lumo.x, p.y - lumo.y) < 22) {
         applyPowerup(p.type);
+        spawnFloater(p.x, p.y, { rapid: 'Rapid fire', shield: 'Shield', multi: 'Multi-shot' }[p.type] || 'Power-up');
         powerups.splice(i, 1);
       }
     }
@@ -461,13 +636,63 @@
       if (p.a <= 0) particles.splice(i, 1);
     }
 
+    // ── Floating score numbers ─────────────────────────────────────────────
+    for (let i = floaters.length - 1; i >= 0; i--) {
+      const f = floaters[i];
+      f.y += f.vy * dt;
+      f.a -= dt * 1.4;
+      if (f.a <= 0) floaters.splice(i, 1);
+    }
+
     // ── Wave clear check ────────────────────────────────────────────────────
     if (!won && !boss && enemies.length === 0 && gameState === 'playing') beginWaveClear();
+  }
+
+  function damageEnemy(e, dmg) {
+    e.hp -= dmg;
+    burst(e.x, e.y, typeColor(e.type), '#fef08a', 4);
+    if (e.hp > 0) return false;
+    const gained = Math.round(typeScore(e.type) * combo);
+    const prevCombo = combo;
+    addScore(gained);
+    spawnFloater(e.x, e.y, '+' + gained);
+    bumpCombo();
+    if (combo > 3 && combo > prevCombo) spawnFloater(e.x, e.y - 16, 'x' + combo, '#c084fc');
+    hexBurst(e.x, e.y, typeColor(e.type), 6 + Math.floor(Math.random() * 3));
+    addFocus(e.type === 'queen' ? 22 : e.type === 'guard' ? 14 : 8);
+    if (Math.random() < 0.15) dropPowerup(e.x, e.y);
+    return true;
+  }
+
+  function addFocus(amount) {
+    if (focus >= 100) return;
+    focus = Math.min(100, focus + amount);
+    if (focus >= 100) sfx('playLevelUp');
+  }
+
+  function finishBoss() {
+    const bx = boss.x, by = boss.y;
+    burst(bx, by, '#a855f7', '#fef08a', 40);
+    hexBurst(bx, by, '#a855f7', 16);
+    sfx('playSuccess');
+    addScore(600);
+    spawnFloater(bx, by - 12, '+600');
+    hitStopT = 0.09;
+    bossesKilled++;
+    boss = null;
+    if (wave >= 10) {
+      winGame();
+    } else {
+      showToast('Queen defeated! +600');
+      beginWaveClear();
+    }
   }
 
   function hitPlayer() {
     lives--;
     wavePerfect = false;
+    tookHit = true;
+    if (focus > 0) focus = Math.max(0, focus - 20);
     shakeUntil = performance.now() + 300;
     lumo.invT = 2.2;
     burst(lumo.x, lumo.y, '#c084fc', '#ffffff', 18);
@@ -479,7 +704,13 @@
 
   function addScore(pts) { score += Math.round(pts); hud(); }
 
-  function bumpCombo() { combo = Math.min(8, combo + 1); comboTimer = 2.2; hud(); }
+  function bumpCombo() {
+    combo = Math.min(8, combo + 1);
+    comboTimer = 2.2;
+    if (combo > bestCombo) bestCombo = combo;
+    if (combo >= 2) sfx('playCombo', combo);
+    hud();
+  }
 
   function dropPowerup(px, py) {
     const types = ['rapid', 'shield', 'multi'];
@@ -498,7 +729,9 @@
     waveClearT = 1.6;
     addScore(100 * wave);
     if (wavePerfect) {
+      perfectWaves++;
       goldFlash = 1;
+      addFocus(10);
       showToast('Wave Clear! ✨');
     } else {
       showToast('Wave ' + wave + ' cleared! ✨');
@@ -509,18 +742,26 @@
   function nextWave() {
     wave++;
     wavePerfect = true;
+    applyWaveMods();
     bullets = bullets.filter(b => b.owner === 'player');
     powerups = [];
     boss = null;
+    let holdFinal = false;
     if (wave % 5 === 0) {
       spawnBoss();
-      showToast(wave >= 10 ? 'Final wave! Defeat the Queen' : '👑 Queen Boss!');
+      sfx('playLevelUp');
+      if (wave >= 10) {
+        finalWaveT = 2.0;
+        holdFinal = true;
+      } else {
+        showToast('👑 Queen Boss!');
+      }
     } else {
       buildFormation();
-      diveTimer = 0; nextDive = 2.2;
-      showToast('Wave ' + wave);
+      diveTimer = 0; nextDive = 2.2 * waveDiveRate;
+      showToast('Wave ' + wave + (waveLabel ? ': ' + waveLabel : ''));
     }
-    gameState = 'playing';
+    gameState = holdFinal ? 'waveclear' : 'playing';
     hud();
   }
 
@@ -536,7 +777,10 @@
   // ── DRAW ────────────────────────────────────────────────────────────────────
   const STARS = Array.from({ length: 40 }, () => ({
     sx: Math.random() * W, sy: Math.random() * H,
-    r: Math.random() * 1.2 + 0.4, a: 0.3 + Math.random() * 0.5
+    r: Math.random() * 1.2 + 0.4,
+    baseA: 0.3 + Math.random() * 0.5,
+    phase: Math.random() * Math.PI * 2,
+    speed: 0.4 + Math.random() * 0.8
   }));
 
   function hexPath(cx, cy, r) {
@@ -552,7 +796,7 @@
   function draw() {
     const now = performance.now();
     let sx = 0, sy = 0;
-    if (now < shakeUntil) {
+    if (!REDUCED_MOTION && now < shakeUntil) {
       const m = 6 * ((shakeUntil - now) / 300);
       sx = (Math.random() * 2 - 1) * m;
       sy = (Math.random() * 2 - 1) * m;
@@ -569,16 +813,24 @@
     x.fillStyle = sky;
     x.fillRect(-12, -12, W + 24, H + 24);
 
-    // Stars (static)
+    // Twinkling stars
     x.fillStyle = '#ffffff';
     for (const s of STARS) {
-      x.globalAlpha = s.a;
+      const twinkle = REDUCED_MOTION ? 0 : Math.sin(now * 0.001 * s.speed + s.phase) * 0.18;
+      x.globalAlpha = s.baseA + twinkle;
       x.beginPath(); x.arc(s.sx, s.sy, s.r, 0, Math.PI * 2); x.fill();
     }
     x.globalAlpha = 1;
 
     // Logic Garden floor
     drawGardenFloor();
+
+    // Idle start-screen formation
+    if (gameState === 'idle') {
+      x.globalAlpha = 0.7;
+      for (const e of idleEnemies) drawBee(e, idleFormX);
+      x.globalAlpha = 1;
+    }
 
     // Power-ups
     for (const p of powerups) {
@@ -636,9 +888,51 @@
     }
     x.globalAlpha = 1;
 
+    // Floating score numbers
+    x.font = 'bold 14px system-ui';
+    x.textAlign = 'center';
+    for (const f of floaters) {
+      x.globalAlpha = Math.max(0, f.a);
+      x.fillStyle = f.color;
+      x.fillText(f.text, f.x, f.y);
+    }
+    x.globalAlpha = 1;
+
+    // Logic Beam
+    if (beamT > 0) {
+      const a = Math.min(1, beamT * 3);
+      const bw = 30 + (0.4 - beamT) * 60;
+      const bg = x.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, 'rgba(232,121,249,0)');
+      bg.addColorStop(0.15, 'rgba(192,132,252,' + (0.55 * a).toFixed(3) + ')');
+      bg.addColorStop(0.85, 'rgba(192,132,252,' + (0.55 * a).toFixed(3) + ')');
+      bg.addColorStop(1, 'rgba(232,121,249,0)');
+      x.fillStyle = bg;
+      x.fillRect(beamX - bw / 2, 0, bw, H);
+      x.fillStyle = 'rgba(255,255,255,' + (0.7 * a).toFixed(3) + ')';
+      x.fillRect(beamX - 3, 0, 6, H);
+    }
+
     // Lumo (blink when invincible)
     if (gameState !== 'dead' && (lumo.invT <= 0 || Math.floor(lumo.invT * 8) % 2 === 0)) {
       drawLumo();
+    }
+
+    // Logic charge meter
+    if ((gameState === 'playing' || gameState === 'waveclear') && focus > 0) {
+      const fw = 58, fh = 5;
+      const cx = Math.max(fw / 2 + 2, Math.min(W - fw / 2 - 2, lumo.x));
+      const fx0 = cx - fw / 2, fy0 = lumo.y - 44;
+      x.fillStyle = 'rgba(0,0,0,.5)';
+      x.fillRect(fx0 - 1, fy0 - 1, fw + 2, fh + 2);
+      x.fillStyle = focus >= 100 ? '#fef08a' : '#c084fc';
+      x.fillRect(fx0, fy0, fw * (focus / 100), fh);
+      if (focus >= 100) {
+        x.font = 'bold 10px system-ui';
+        x.textAlign = 'center';
+        x.fillStyle = '#fef08a';
+        x.fillText('LOGIC READY', cx, fy0 - 5);
+      }
     }
 
     // Perfect wave gold flash
@@ -651,7 +945,7 @@
     }
 
     // Wave-clear flash
-    if (gameState === 'waveclear') {
+    if (gameState === 'waveclear' && finalWaveT <= 0) {
       x.fillStyle = 'rgba(124,58,237,0.12)';
       x.fillRect(0, 0, W, H);
       x.fillStyle = '#e879f9';
@@ -661,6 +955,25 @@
       x.font = '17px system-ui';
       x.fillStyle = '#c084fc';
       x.fillText('Score: ' + score, W / 2, H / 2 + 18);
+    }
+
+    // Final wave fanfare
+    if (finalWaveT > 0) {
+      let fa = 1;
+      if (finalWaveT > 1.7) fa = (2.0 - finalWaveT) / 0.3;
+      else if (finalWaveT < 0.5) fa = finalWaveT / 0.5;
+      fa = Math.max(0, Math.min(1, fa));
+      x.fillStyle = 'rgba(6,4,18,' + (0.78 * fa).toFixed(3) + ')';
+      x.fillRect(0, 0, W, H);
+      x.globalAlpha = fa;
+      x.textAlign = 'center';
+      x.fillStyle = '#fef08a';
+      x.font = 'bold 38px system-ui';
+      x.fillText('FINAL WAVE', W / 2, H / 2 - 10);
+      x.fillStyle = '#e879f9';
+      x.font = '18px system-ui';
+      x.fillText('Defeat the Queen', W / 2, H / 2 + 28);
+      x.globalAlpha = 1;
     }
 
     // Power-up status strip
@@ -691,9 +1004,9 @@
     }
   }
 
-  function drawBee(e) {
+  function drawBee(e, offsetX) {
     x.save();
-    x.translate(e.x, e.y);
+    x.translate(e.x + (offsetX || 0), e.y);
     if (e.state === 'dive') x.rotate(e.angle + Math.PI / 2);
 
     const r = e.type === 'queen' ? 14 : e.type === 'guard' ? 12 : 9;
@@ -765,6 +1078,16 @@
       }
     }
 
+    // Dive telegraph
+    if (e.warnT > 0) {
+      const pulse = 0.55 + Math.sin(performance.now() * 0.03) * 0.35;
+      x.strokeStyle = 'rgba(254,240,138,' + pulse.toFixed(3) + ')';
+      x.lineWidth = 2;
+      x.beginPath(); x.arc(0, 0, r + 6, 0, Math.PI * 2); x.stroke();
+      x.fillStyle = 'rgba(254,240,138,' + pulse.toFixed(3) + ')';
+      x.beginPath(); x.moveTo(0, r + 6); x.lineTo(-4, r + 11); x.lineTo(4, r + 11); x.closePath(); x.fill();
+    }
+
     x.restore();
   }
 
@@ -830,53 +1153,209 @@
   function drawLumo() {
     const t = performance.now() * 0.001;
     const shot = lumo.flash > 0 ? 1 : 0;
-    const glow = 0.35 + Math.sin(t * 6) * 0.15 + shot * 0.5;
-    x.save(); x.translate(lumo.x, lumo.y);
+    const ready = focus >= 100 ? 1 : 0;
 
-    // Bushy tail behind the body
-    x.strokeStyle = '#a855f7';
-    x.lineWidth = 5;
-    x.lineCap = 'round';
+    const FUR = '#a274b9';
+    const FUR_DARK = '#5a3d58';
+    const FUR_LIGHT = '#e7d0e9';
+    const LINE = '#3a2745';
+    const CLOAK = '#2a2430';
+    const CLOAK_LIGHT = '#423a42';
+    const PAW = '#4a2c38';
+    const EYE = '#5b3a78';
+    const PUPIL = '#231027';
+    const NOSE = '#251427';
+
+    x.save();
+    x.translate(lumo.x, lumo.y);
+
+    // Soft aura when charged or firing
+    if (shot || ready) {
+      x.fillStyle = ready ? 'rgba(254,240,138,.10)' : 'rgba(192,132,252,.10)';
+      x.beginPath(); x.ellipse(0, -4, 29, 35, 0, 0, Math.PI * 2); x.fill();
+    }
+
+    // Bushy purple tail with cream tip, behind everything
+    x.fillStyle = FUR;
+    x.strokeStyle = LINE;
+    x.lineWidth = 1.5;
     x.beginPath();
-    x.moveTo(7, 5);
-    x.quadraticCurveTo(24, 8, 21, -7);
-    x.stroke();
-    x.fillStyle = '#a855f7';
-    x.beginPath(); x.arc(21, -7, 6, 0, Math.PI * 2); x.fill();
-    x.fillStyle = '#c084fc';
-    x.beginPath(); x.arc(22, -9, 3, 0, Math.PI * 2); x.fill();
-
-    // Body glow
-    x.shadowColor = '#c084fc';
-    x.shadowBlur = 8 + shot * 14;
-
-    // Silver body
-    x.fillStyle = '#e2e8f0';
+    x.moveTo(7, 8);
+    x.bezierCurveTo(22, 18, 35, 6, 31, -10);
+    x.bezierCurveTo(29, -21, 19, -25, 16, -15);
+    x.bezierCurveTo(14, -7, 12, 2, 7, 8);
+    x.closePath();
+    x.fill(); x.stroke();
+    x.fillStyle = FUR_LIGHT;
     x.beginPath();
-    x.roundRect(-11, -12, 22, 22, 7);
+    x.moveTo(16, -14);
+    x.bezierCurveTo(18, -26, 30, -26, 33, -14);
+    x.bezierCurveTo(35, -6, 30, -1, 25, -3);
+    x.bezierCurveTo(21, -5, 18, -9, 16, -14);
+    x.closePath();
     x.fill();
+    x.beginPath(); x.moveTo(22, -23); x.lineTo(24, -30); x.lineTo(27, -23); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(28, -21); x.lineTo(32, -27); x.lineTo(33, -19); x.closePath(); x.fill();
+
+    // Cloak, hood and shoulders
+    x.fillStyle = CLOAK;
+    x.strokeStyle = LINE;
+    x.lineWidth = 1.5;
+    x.beginPath();
+    x.moveTo(-15, -2);
+    x.quadraticCurveTo(-24, 12, -19, 23);
+    x.lineTo(19, 23);
+    x.quadraticCurveTo(24, 12, 15, -2);
+    x.quadraticCurveTo(0, -10, -15, -2);
+    x.closePath();
+    x.fill(); x.stroke();
+    x.beginPath();
+    x.moveTo(-16, 2);
+    x.quadraticCurveTo(-24, -14, -14, -26);
+    x.quadraticCurveTo(0, -38, 14, -26);
+    x.quadraticCurveTo(24, -14, 16, 2);
+    x.quadraticCurveTo(0, -6, -16, 2);
+    x.closePath();
+    x.fill();
+    x.strokeStyle = 'rgba(255,255,255,.08)';
+    x.lineWidth = 1;
+    x.beginPath(); x.moveTo(-16, 2); x.quadraticCurveTo(-24, -14, -14, -26); x.stroke();
+    x.beginPath(); x.moveTo(16, 2); x.quadraticCurveTo(24, -14, 14, -26); x.stroke();
+
+    // Feet peeking out below the cloak
+    x.fillStyle = PAW;
+    x.strokeStyle = LINE;
+    x.lineWidth = 1;
+    x.beginPath(); x.roundRect(-9, 18, 7, 6, 3); x.fill(); x.stroke();
+    x.beginPath(); x.roundRect(2, 18, 7, 6, 3); x.fill(); x.stroke();
+
+    // Big pointed ears, behind the head
+    const ear = (s) => {
+      x.save();
+      x.scale(s, 1);
+      x.fillStyle = FUR;
+      x.strokeStyle = LINE;
+      x.lineWidth = 1.5;
+      x.beginPath(); x.moveTo(12, -16); x.lineTo(21, -38); x.lineTo(2, -22); x.closePath();
+      x.fill(); x.stroke();
+      x.fillStyle = FUR_DARK;
+      x.beginPath(); x.moveTo(21, -38); x.lineTo(16, -27); x.lineTo(11, -30); x.closePath(); x.fill();
+      x.fillStyle = FUR_LIGHT;
+      x.beginPath(); x.moveTo(16.5, -31); x.lineTo(12.5, -18.5); x.lineTo(6, -22); x.closePath(); x.fill();
+      x.fillStyle = '#fff';
+      x.globalAlpha = 0.55;
+      x.beginPath(); x.moveTo(12, -21); x.quadraticCurveTo(14, -25, 16, -27); x.lineTo(13, -26); x.closePath(); x.fill();
+      x.globalAlpha = 1;
+      x.restore();
+    };
+    ear(-1); ear(1);
+
+    // Body
+    x.fillStyle = FUR;
+    x.strokeStyle = LINE;
+    x.lineWidth = 1.5;
+    x.beginPath();
+    x.moveTo(-11, 2);
+    x.quadraticCurveTo(-14, 13, -8, 20);
+    x.lineTo(8, 20);
+    x.quadraticCurveTo(14, 13, 11, 2);
+    x.closePath();
+    x.fill(); x.stroke();
+
+    // Cream chest
+    x.fillStyle = FUR_LIGHT;
+    x.beginPath(); x.ellipse(0, 12, 7.5, 8, 0, 0, Math.PI * 2); x.fill();
+
+    // Head
+    x.fillStyle = FUR;
+    x.strokeStyle = LINE;
+    x.lineWidth = 1.5;
+    x.shadowColor = ready ? '#facc15' : '#c084fc';
+    x.shadowBlur = 4 + shot * 10 + ready * 8;
+    x.beginPath(); x.ellipse(0, -10, 14.5, 14, 0, 0, Math.PI * 2); x.fill();
     x.shadowBlur = 0;
+    x.stroke();
 
-    // Pointy ears
-    x.fillStyle = '#e2e8f0';
-    x.beginPath(); x.moveTo(-10, -10); x.lineTo(-15, -25); x.lineTo(-2, -12); x.closePath(); x.fill();
-    x.beginPath(); x.moveTo(10, -10); x.lineTo(15, -25); x.lineTo(2, -12); x.closePath(); x.fill();
-    x.fillStyle = '#a855f7';
-    x.beginPath(); x.moveTo(-9, -12); x.lineTo(-12, -21); x.lineTo(-4, -13); x.closePath(); x.fill();
-    x.beginPath(); x.moveTo(9, -12); x.lineTo(12, -21); x.lineTo(4, -13); x.closePath(); x.fill();
+    // Forehead tuft
+    x.fillStyle = FUR;
+    x.beginPath(); x.moveTo(-3.5, -22); x.lineTo(0, -27); x.lineTo(3.5, -22); x.closePath(); x.fill();
 
-    // Glowing eyes (brighter when shooting)
-    x.fillStyle = '#7c3aed';
-    x.shadowColor = '#7c3aed';
-    x.shadowBlur = 4 + glow * 10;
-    const er = 2.2 + shot * 1.2;
-    x.beginPath(); x.arc(-4, -3, er, 0, Math.PI * 2); x.fill();
-    x.beginPath(); x.arc(4, -3, er, 0, Math.PI * 2); x.fill();
-    x.shadowBlur = 0;
+    // Cheek fur tufts
+    x.fillStyle = FUR;
+    x.beginPath(); x.moveTo(-13, -6); x.lineTo(-19, -2); x.lineTo(-13, 0); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(13, -6); x.lineTo(19, -2); x.lineTo(13, 0); x.closePath(); x.fill();
 
-    // Nose
-    x.fillStyle = '#a855f7';
-    x.beginPath(); x.arc(0, 2, 2, 0, Math.PI * 2); x.fill();
+    // Cream muzzle and cheeks
+    x.fillStyle = FUR_LIGHT;
+    x.beginPath(); x.ellipse(0, -2, 10.5, 7.5, 0, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.arc(-7, -3, 5, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.arc(7, -3, 5, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.moveTo(-2.4, -8); x.lineTo(2.4, -8); x.lineTo(3.5, -1); x.lineTo(-3.5, -1); x.closePath(); x.fill();
+
+    // Large purple eyes
+    const eyeY = -9.5;
+    for (const ex of [-5.5, 5.5]) {
+      x.fillStyle = '#f6eef9';
+      x.beginPath(); x.ellipse(ex, eyeY, 3.9, 4.7, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = ready ? '#7c3aed' : EYE;
+      x.shadowColor = ready ? '#facc15' : '#c084fc';
+      x.shadowBlur = 2 + shot * 6;
+      x.beginPath(); x.ellipse(ex, eyeY, 3.2, 4, 0, 0, Math.PI * 2); x.fill();
+      x.shadowBlur = 0;
+      x.fillStyle = PUPIL;
+      x.beginPath(); x.ellipse(ex, eyeY, 1.7, 2.7, 0, 0, Math.PI * 2); x.fill();
+      x.fillStyle = '#fff';
+      x.beginPath(); x.arc(ex + 1.2, eyeY - 1.6, 0.95, 0, Math.PI * 2); x.fill();
+      x.fillStyle = 'rgba(255,255,255,.65)';
+      x.beginPath(); x.arc(ex - 1.1, eyeY + 1.3, 0.6, 0, Math.PI * 2); x.fill();
+      if (ready) {
+        x.fillStyle = '#fef08a';
+        x.beginPath(); x.arc(ex + 1.7, eyeY + 1.5, 0.85, 0, Math.PI * 2); x.fill();
+      }
+    }
+    // Nose and smile
+    x.fillStyle = NOSE;
+    x.beginPath();
+    x.moveTo(-2.3, -1.4); x.quadraticCurveTo(0, -3.2, 2.3, -1.4);
+    x.quadraticCurveTo(1.2, 1.2, 0, 1.7); x.quadraticCurveTo(-1.2, 1.2, -2.3, -1.4);
+    x.closePath(); x.fill();
+    x.strokeStyle = '#4a3157';
+    x.lineWidth = 0.9;
+    x.beginPath(); x.moveTo(0, 1.7); x.quadraticCurveTo(-2, 4, -4.2, 2.6); x.stroke();
+    x.beginPath(); x.moveTo(0, 1.7); x.quadraticCurveTo(2, 4, 4.2, 2.6); x.stroke();
+
+    // Blush
+    x.fillStyle = 'rgba(192,132,252,.22)';
+    x.beginPath(); x.ellipse(-9.5, 0, 2.8, 1.6, 0, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.ellipse(9.5, 0, 2.8, 1.6, 0, 0, Math.PI * 2); x.fill();
+
+    // Cloak knot and ties
+    x.fillStyle = CLOAK_LIGHT;
+    x.strokeStyle = LINE;
+    x.lineWidth = 1;
+    x.beginPath(); x.arc(0, 6, 2.6, 0, Math.PI * 2); x.fill(); x.stroke();
+    x.strokeStyle = CLOAK;
+    x.lineWidth = 2.4;
+    x.beginPath(); x.moveTo(-1, 8); x.lineTo(-3.5, 14); x.stroke();
+    x.beginPath(); x.moveTo(1, 8); x.lineTo(3.5, 14); x.stroke();
+
+    // Paws holding the cloak
+    x.fillStyle = PAW;
+    x.beginPath(); x.ellipse(-5.5, 13, 1.8, 2.3, -0.3, 0, Math.PI * 2); x.fill();
+    x.beginPath(); x.ellipse(5.5, 13, 1.8, 2.3, 0.3, 0, Math.PI * 2); x.fill();
+
+    // Focus spark between the ears while charging or firing
+    if (shot || ready) {
+      const sy = -32;
+      x.fillStyle = ready ? '#fef08a' : '#e879f9';
+      x.shadowColor = ready ? '#facc15' : '#c084fc';
+      x.shadowBlur = 10 + shot * 8;
+      x.beginPath();
+      x.moveTo(0, sy - 5); x.lineTo(1.5, sy - 1.5); x.lineTo(5, sy); x.lineTo(1.5, sy + 1.5);
+      x.lineTo(0, sy + 5); x.lineTo(-1.5, sy + 1.5); x.lineTo(-5, sy); x.lineTo(-1.5, sy - 1.5);
+      x.closePath(); x.fill();
+      x.shadowBlur = 0;
+    }
 
     x.restore();
   }
@@ -928,16 +1407,75 @@
   // ── UI WIRING ───────────────────────────────────────────────────────────────
   $('playBtn').onclick = startGame;
   $('againBtn').onclick = startGame;
-  $('htpLink').onclick = () => { $('startScreen').classList.add('hidden'); $('howToPlay').classList.remove('hidden'); };
-  $('gotItBtn').onclick = () => { $('howToPlay').classList.add('hidden'); $('startScreen').classList.remove('hidden'); };
-  $('helpBtn').onclick = () => { $('howToPlay').classList.remove('hidden'); };
+  $('htpLink').onclick = () => {
+    helpOrigin = 'start';
+    pauseGame();
+    $('startScreen').classList.add('hidden');
+    $('howToPlay').classList.remove('hidden');
+  };
+  $('gotItBtn').onclick = () => {
+    $('howToPlay').classList.add('hidden');
+    if (helpOrigin === 'play') {
+      resumeGame();
+    } else if (helpOrigin === 'end') {
+      paused = false;
+    } else {
+      paused = false;
+      $('startScreen').classList.remove('hidden');
+    }
+  };
+  $('helpBtn').onclick = () => {
+    helpOrigin = (gameState === 'playing' || gameState === 'waveclear') ? 'play' : (gameState === 'dead' ? 'end' : 'start');
+    pauseGame();
+    $('howToPlay').classList.remove('hidden');
+  };
   $('soundBtn').onclick = () => {
-    if (audio) { audio.muted = !audio.muted; $('soundBtn').textContent = audio.muted ? '🔇' : '🔊'; }
+    soundMuted = !soundMuted;
+    $('soundBtn').textContent = soundMuted ? '🔇' : '🔊';
+    if (soundMuted) music.stop();
+    else if (gameState === 'playing' || gameState === 'waveclear') music.start();
   };
   document.querySelectorAll('[data-go]').forEach(el => {
     el.addEventListener('click', () => { location.href = el.dataset.go; });
   });
 
+  if (typeof GameUI !== 'undefined' && GameUI.autoPause) {
+    GameUI.autoPause({
+      pause: () => { pauseGame(); return true; },
+      resume: () => {
+        if (!$('howToPlay').classList.contains('hidden')) { paused = true; return; }
+        resumeGame();
+      }
+    });
+  }
+
+  const titleH1 = document.querySelector('#startScreen h1');
+  if (titleH1 && !titleH1.querySelector('.lumo-badge-icon')) {
+    titleH1.textContent = "Lumo's Hive Strike";
+    const icon = document.createElement('img');
+    icon.className = 'lumo-badge-icon';
+    icon.src = '../assets/mascots/lumo-badge.webp';
+    icon.alt = '';
+    icon.width = 38; icon.height = 38;
+    icon.style.cssText = 'width:38px;height:38px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;border:2px solid rgba(192,132,252,.5);background:#f3eef6;';
+    titleH1.insertBefore(icon, titleH1.firstChild);
+  }
+
+  const hint = document.createElement('p');
+  hint.id = 'logicHint';
+  hint.style.cssText = 'font-size:12px;color:#c084fc;font-weight:700;max-width:300px;';
+  hint.textContent = 'Chain kills to charge the Logic Beam, then shoot to unleash it.';
+  if ($('startScreen') && $('playBtn')) $('startScreen').insertBefore(hint, $('playBtn'));
+
+  const tipGrid = document.querySelector('#howToPlay .tip-grid');
+  if (tipGrid && !tipGrid.querySelector('.tip-logic')) {
+    const tip = document.createElement('div');
+    tip.className = 'tip tip-logic';
+    tip.innerHTML = '<span class="tip-icon">⚡</span><b>Logic Beam</b><small>Chain kills, then shoot to unleash</small>';
+    tipGrid.appendChild(tip);
+  }
+
+  buildIdleFormation();
   updateDailyHint();
   hud();
   requestAnimationFrame(loop);

@@ -31,15 +31,14 @@
 body{background:#0a0a1a;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;height:100dvh}
 .game-wrap{display:flex;flex-direction:column;height:100dvh;max-width:520px;margin:0 auto;position:relative}
 /* One slim bar, then the canvas takes every other pixel. */
-.top-bar{display:flex;align-items:center;gap:10px;padding:6px 12px;background:rgba(0,0,0,.6);z-index:10}
-.top-bar a{color:#cbd5e1;text-decoration:none;font-size:13px;white-space:nowrap}
+.top-bar{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(0,0,0,.5);flex-shrink:0;z-index:10}
+.top-bar a{color:#94a3b8;font-size:14px;white-space:nowrap;text-decoration:none;margin-right:auto}
 .top-bar .title{display:none}
-.hud{display:flex;flex:1;justify-content:center;gap:14px;min-width:0}
-.hud>div{text-align:center;min-width:0}
+.hud{display:flex;justify-content:space-around;padding:4px 12px;background:rgba(0,0,0,.4);flex-shrink:0;z-index:9}
+.hud>div{min-width:0;text-align:center;font-size:11px}
 .hud small{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8}
 .hud b{display:block;font-size:15px;color:#fbbf24;line-height:1.15}
-/* Keep the strip clear of the floating Exit/menu chrome on phones. */
-@media (max-width:560px){ .hud{gap:10px} .hud .hide-sm{display:none} .hud b{font-size:14px} }
+@media (max-width:560px){ .hud b{font-size:14px} }
 .hud .fuel-track{display:block;width:42px;height:4px;margin:3px auto 0;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden}
 .hud .fuel-fill{display:block;height:100%;width:100%;border-radius:3px;background:#22c55e;transition:width .12s linear}
 .hud-fuel.low .fuel-fill{background:#ef4444}
@@ -75,6 +74,8 @@ canvas{flex:1;width:100%;min-height:0;min-width:0;display:block;touch-action:non
 /* Garage (cars, upgrades, missions) */
 .overlay h2{font-size:26px}
 .hd-lb{font-size:12px;color:#94a3b8;margin:0;max-width:340px}
+.tip-row{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:12px;color:#64748b;margin:8px 0 14px}
+.tip-row span{white-space:nowrap}
 .shop-coins{font-size:14px;color:#cbd5e1}
 .shop-coins b{color:#fbbf24}
 .shop-tabs{display:flex;gap:6px;background:rgba(148,163,184,.12);border-radius:10px;padding:4px}
@@ -140,18 +141,20 @@ canvas{flex:1;width:100%;min-height:0;min-width:0;display:block;touch-action:non
     <a href="../arcade.html">&larr; Arcade</a>
     <button class="btn-ghost" id="soundBtn">🔊</button>
     <button class="btn-ghost" id="tiltBtn" onclick="window.__initTilt&&__initTilt()" title="Enable tilt steering / recalibrate">📱 Tilt</button>
-    <button class="btn-ghost" id="shopBtn">🛒 Shop</button>
-    <div class="hud">
-      <div><small>Score</small><b id="scoreHud">0</b></div>
-      <div><small>Time</small><b id="timeHud">2:00</b></div>
-      <div class="hud-fuel" id="fuelCell"><small>Fuel</small><b id="fuelHud">100</b><span class="fuel-track"><i class="fuel-fill" id="fuelFill"></i></span></div>
-      <div><small>Combo</small><b id="comboHud">0</b></div>
-      <div class="hide-sm"><small>Run</small><b id="runHud">0</b></div>
-      <div class="hide-sm"><small>Drift</small><b id="driftHud">0</b></div>
-      <div class="hide-sm"><small>Goal</small><b id="goalHud">500</b></div>
-      <div class="hide-sm"><small>Coins</small><b id="coinHud">0</b></div>
-      <div class="hide-sm"><small>Best</small><b id="bestHud">0</b></div>
-    </div>
+  </div>
+  <div class="hud">
+    <div><small>Score</small><b id="scoreHud">0</b></div>
+    <div><small>Time</small><b id="timeHud">2:00</b></div>
+    <div class="hud-fuel" id="fuelCell"><small>Fuel</small><b id="fuelHud">100</b><span class="fuel-track"><i class="fuel-fill" id="fuelFill"></i></span></div>
+    <div><small>Combo</small><b id="comboHud">0</b></div>
+  </div>
+  <div class="hidden" aria-hidden="true">
+    <b id="runHud">0</b>
+    <b id="driftHud">0</b>
+    <b id="goalHud">500</b>
+    <b id="coinHud">0</b>
+    <b id="bestHud">0</b>
+    <button id="shopBtn">Shop</button>
   </div>
   <div class="hud-status" id="statusHud" aria-live="polite"></div>
   <canvas id="game"></canvas>
@@ -160,12 +163,18 @@ canvas{flex:1;width:100%;min-height:0;min-width:0;display:block;touch-action:non
 
   <div class="overlay" id="startScreen">
     <h1>🚗 Highway Dodge</h1>
-    <p>Weave through traffic, drift for cash and reach the finish before the timer runs out. Chain near-misses, grab ⚡ nitro, 🛡 shields and ⛽ fuel, and watch out for cones and barrels. There is always a gap, so keep looking ahead.</p>
-    <p style="font-size:13px;color:#64748b">Tilt your phone, swipe, or use arrow keys / A/D to steer freely. W/S or ↑/↓ to throttle. Tap the 📱 Tilt button to enable or recalibrate. Tilt hard for drift. Thread close to cars for danger-zone score.</p>
+    <p>Weave through rush-hour traffic, drift for coins and reach the finish before time runs out.</p>
+    <div class="tip-row">
+      <span>🎮 Tilt or swipe to steer</span>
+      <span>💨 Thread gaps for near-miss bonus</span>
+      <span>⚡ Grab nitro and fuel</span>
+    </div>
     <button class="btn" id="playBtn">Start Driving</button>
-    <button class="btn-ghost" id="startShopBtn">🛒 Garage · <b id="startCoins">0</b> coins</button>
-    <p class="hd-lb" id="lbLine">🏁 No runs yet. Hit Start Driving to set your first score.</p>
-    <button class="btn-ghost" data-go="../arcade.html">Back to Games</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+      <button class="btn-ghost" id="startShopBtn">🛒 Garage · <b id="startCoins">0</b> coins</button>
+      <button class="btn-ghost" data-go="../arcade.html">Back to Games</button>
+    </div>
+    <p class="hd-lb" id="lbLine">🏁 No runs yet.</p>
   </div>
 
   <div class="overlay hidden" id="shopScreen">

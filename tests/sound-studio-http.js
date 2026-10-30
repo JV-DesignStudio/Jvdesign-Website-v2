@@ -286,6 +286,227 @@ let failures = 0;
   check('Loop WAV export downloads a wav', audioExports.loopType === 'audio/wav' && audioExports.loopSize > 44, JSON.stringify({type:audioExports.loopType,size:audioExports.loopSize}));
   check('OGG export produces a file (or falls back to loop WAV)', audioExports.oggSupported ? (audioExports.oggCaptured && /ogg/.test(audioExports.oggType||'') && audioExports.oggSize > 0) : (audioExports.oggCaptured && audioExports.oggType === 'audio/wav'), JSON.stringify({supported:audioExports.oggSupported,type:audioExports.oggType,size:audioExports.oggSize,fallback:!audioExports.oggSupported,err:audioExports.error}));
 
+  // A2103: sound kit export (song loop + every SFX + manifest in one zip)
+  const kit = await page.evaluate(async()=>{
+    const out={};
+    const hasNeedle=(bytes,n)=>{ outer: for(let i=0;i<=bytes.length-n.length;i++){ for(let j=0;j<n.length;j++){ if(bytes[i+j]!==n[j]) continue outer; } return true; } return false; };
+    try{
+      const built=await buildSoundKit();
+      out.sounds=built.manifest.sounds.length;
+      out.expected=SFX_CATS.reduce((n,c)=>n+c.sounds.length,0);
+      out.categories=[...new Set(built.manifest.sounds.map(s=>s.category))].length;
+      out.hasSong=!!built.manifest.song&&/\.wav$/.test(built.manifest.song.file);
+      out.songDuration=built.manifest.song&&built.manifest.song.duration;
+      out.hasManifestFile=built.files.some(f=>f.name==='sounds.json');
+      out.zipSize=built.zip.size;
+      out.zipType=built.zip.type;
+      const bytes=new Uint8Array(await built.zip.arrayBuffer());
+      out.sig=Array.from(bytes.slice(0,4));
+      out.hasManifestName=hasNeedle(bytes,new TextEncoder().encode('sounds.json'));
+      out.hasSfxName=hasNeedle(bytes,new TextEncoder().encode('sfx/'));
+      out.hasWav=hasNeedle(bytes,new TextEncoder().encode('RIFF'));
+    }catch(e){ out.error=e.message; }
+    return out;
+  });
+  check('sound kit covers every SFX and the song', !kit.error && kit.sounds===kit.expected && kit.categories>=6 && kit.hasSong && kit.songDuration>0, JSON.stringify({sounds:kit.sounds,expected:kit.expected,cats:kit.categories,song:kit.hasSong,dur:kit.songDuration,err:kit.error}));
+  check('sound kit zip is valid and carries the manifest', kit.sig && kit.sig[0]===0x50 && kit.sig[1]===0x4B && kit.zipType==='application/zip' && kit.zipSize>1000 && kit.hasManifestFile && kit.hasManifestName && kit.hasSfxName && kit.hasWav, JSON.stringify({sig:kit.sig,size:kit.zipSize,type:kit.zipType,manifest:kit.hasManifestFile,name:kit.hasManifestName,sfx:kit.hasSfxName,wav:kit.hasWav}));
+
+  // A2104: load your own audio + record a take
+  const myAudio = await page.evaluate(async()=>{
+    const out={};
+    try{
+      const off=new OfflineAudioContext(1,4410,44100);
+      const o=off.createOscillator(); const g=off.createGain(); g.gain.value=0.2;
+      o.connect(g); g.connect(off.destination); o.start(0); o.stop(0.1);
+      const buf=await off.startRendering();
+      const file=new File([bufferToWav(buf)],'unit_tone.wav',{type:'audio/wav'});
+      const before=mySamples.length;
+      await loadSfxFile(file);
+      out.loadedBuf=!!sfxLastBuf && sfxLastName==='unit_tone';
+      out.sampleAdded=mySamples.length===before+1;
+      out.buttons=document.querySelectorAll('#mySampleBtns .sfx-vbtn').length;
+      out.dlEnabled=!document.getElementById('sfxDlBtn').disabled;
+      out.sendEnabled=!document.getElementById('sfxSendBtn').disabled;
+      out.status=document.getElementById('mySfxStatus').textContent;
+    }catch(e){ out.error=e.message; }
+    return out;
+  });
+  check('load your own audio becomes a usable sound', !myAudio.error && myAudio.loadedBuf && myAudio.sampleAdded && myAudio.buttons>=1 && myAudio.dlEnabled && myAudio.sendEnabled, JSON.stringify(myAudio));
+
+  const micDenied = await page.evaluate(async()=>{
+    const out={};
+    const orig=Object.getOwnPropertyDescriptor(navigator,'mediaDevices');
+    if(typeof MediaRecorder==='undefined'){ window.MediaRecorder=function(){}; window.MediaRecorder.isTypeSupported=()=>false; }
+    try{
+      Object.defineProperty(navigator,'mediaDevices',{configurable:true,value:{getUserMedia:()=>Promise.reject(Object.assign(new Error('blocked'),{name:'NotAllowedError'}))}});
+      await toggleRecord();
+      out.status=document.getElementById('mySfxStatus').textContent;
+      out.errClass=document.getElementById('mySfxStatus').classList.contains('err');
+      out.recording=document.getElementById('recBtn').classList.contains('recording');
+    }catch(e){ out.error=e.message; }
+    finally{ try{ if(orig) Object.defineProperty(navigator,'mediaDevices',orig); else delete navigator.mediaDevices; }catch(e){} }
+    return out;
+  });
+  check('blocked microphone shows a readable message', !micDenied.error && /Microphone blocked/.test(micDenied.status||'') && micDenied.errClass && !micDenied.recording, JSON.stringify(micDenied));
+
+  // A2105: swing, sequence length and quantize
+  const swingTest = await page.evaluate(async()=>{
+    const out={};
+    try{
+      songMode=false;
+      document.body.classList.remove('song-mode');
+      document.getElementById('loopsSelect').value='1';
+      setSwing(0);
+      const base=await renderMixdown(true);
+      out.zero=swingOffset(0);
+      setSwing(40);
+      out.stepSec=(60/bpm)/4;
+      out.on=swingOffset(1);
+      out.slider=document.getElementById('swingSlider').value;
+      out.label=document.getElementById('swingVal').textContent;
+      out.model=JSON.parse(snapshotState()).swing;
+      const swung=await renderMixdown(true);
+      out.baseLen=base.length; out.swungLen=swung.length;
+      const a=base.getChannelData(0), b=swung.getChannelData(0);
+      let diff=0;
+      for(let i=0;i<Math.min(a.length,b.length,40000);i+=37) diff+=Math.abs(a[i]-b[i]);
+      out.diff=diff;
+      setSwing(0);
+    }catch(e){ out.error=e.message; }
+    return out;
+  });
+  check('swing delays odd steps and keeps the loop length', !swingTest.error && swingTest.zero===0 && Math.abs(swingTest.on-swingTest.stepSec*0.4)<1e-6 && swingTest.baseLen===swingTest.swungLen && swingTest.diff>1e-4 && swingTest.slider==='40' && swingTest.label==='40%' && Math.abs(swingTest.model-0.4)<1e-9, JSON.stringify(swingTest));
+
+  const quantTest = await page.evaluate(()=>{
+    const out={};
+    try{
+      setSteps(16);
+      openPianoRoll();
+      const ti=activeTrack, oct=tracks[ti].oct;
+      for(let s=0;s<steps;s++) grid[ti][s]={on:false,note:'C',len:1,vel:1,oct};
+      grid[ti][0]={on:true,note:'C',len:3,vel:1,oct};
+      quantizePattern();
+      out.snapped=grid[ti][0].len;
+      const last=steps-1;
+      grid[ti][last]={on:true,note:'C',len:8,vel:1,oct};
+      quantizePattern();
+      out.clamped=grid[ti][last].len;
+      closePianoRoll();
+    }catch(e){ out.error=e.message; }
+    return out;
+  });
+  check('quantize snaps and clamps note lengths', !quantTest.error && quantTest.snapped===4 && quantTest.clamped===1, JSON.stringify(quantTest));
+
+  const lengthTest = await page.evaluate(async()=>{
+    const out={};
+    try{
+      songMode=false;
+      document.body.classList.remove('song-mode');
+      document.getElementById('loopsSelect').value='1';
+      setSteps(8);
+      out.rows=grid.every(r=>r.length===8);
+      out.patterns=patterns.every(p=>p.grid.every(r=>r.length===8));
+      const buf=await renderMixdown(true);
+      out.len=buf.length;
+      out.expected=Math.round(8*((60/bpm)/4)*44100);
+      setSteps(16);
+      out.after=grid.every(r=>r.length===16);
+      out.select=document.getElementById('stepsSelect').value;
+    }catch(e){ out.error=e.message; }
+    return out;
+  });
+  check('sequence length 8/16/32 resizes the grid and the render', !lengthTest.error && lengthTest.rows && lengthTest.patterns && Math.abs(lengthTest.len-lengthTest.expected)<=8 && lengthTest.after && lengthTest.select==='16', JSON.stringify(lengthTest));
+
+  // A2106: per-track mixer (pan, solo, sends, limiter, normalize)
+  const mixSolo = await page.evaluate(async()=>{
+    const out={};
+    try{
+      songMode=false; document.body.classList.remove('song-mode');
+      document.getElementById('loopsSelect').value='1';
+      document.getElementById('stepsSelect').value='16';
+      setSteps(16);
+      tracks.forEach(t=>{ t.muted=false; t.solo=false; t.sendReverb=0; t.sendDelay=0; t.pan=0; });
+      for(let ti=0;ti<tracks.length;ti++) for(let s=0;s<steps;s++) grid[ti][s]={on:false,note:'C',len:1,vel:1,oct:tracks[ti].oct};
+      patterns[currentPattern].grid=grid;
+      const ti=4;
+      grid[ti][0]={on:true,note:'C',len:1,vel:1,oct:tracks[ti].oct};
+      const energy=buf=>{ const d=buf.getChannelData(0); let e=0; for(let i=0;i<d.length;i+=13) e+=d[i]*d[i]; return e; };
+      const noSolo=await renderMixdown(true);
+      out.e1=energy(noSolo);
+      tracks[3].solo=true;
+      const solo=await renderMixdown(true);
+      out.e2=energy(solo);
+      tracks[3].solo=false;
+    }catch(e){ out.error=e.message; }
+    return out;
+  });
+  check('solo mutes the other tracks in the mix', !mixSolo.error && mixSolo.e1>0.001 && mixSolo.e2<1e-7, JSON.stringify(mixSolo));
+
+  const mixPanSends = await page.evaluate(async()=>{
+    const out={};
+    try{
+      songMode=false; document.body.classList.remove('song-mode');
+      document.getElementById('loopsSelect').value='1';
+      const ti=4;
+      tracks.forEach(t=>{ t.muted=false; t.solo=false; t.sendReverb=0; t.sendDelay=0; t.pan=0; });
+      for(let k=0;k<tracks.length;k++) for(let s=0;s<steps;s++) grid[k][s]={on:false,note:'C',len:1,vel:1,oct:tracks[k].oct};
+      patterns[currentPattern].grid=grid;
+      grid[ti][0]={on:true,note:'C',len:1,vel:1,oct:tracks[ti].oct};
+      const chE=(buf,c)=>{ const d=buf.getChannelData(c); let e=0; for(let i=0;i<d.length;i+=13) e+=d[i]*d[i]; return e; };
+      tracks[ti].pan=-1; const L=await renderMixdown(true);
+      out.lL=chE(L,0); out.lR=chE(L,1);
+      tracks[ti].pan=1; const R=await renderMixdown(true);
+      out.rL=chE(R,0); out.rR=chE(R,1);
+      tracks[ti].pan=0;
+      const tailE=buf=>{ const d=buf.getChannelData(0), sr=44100; let e=0; for(let i=Math.floor(sr*0.5);i<Math.floor(sr*0.9);i+=7) e+=d[i]*d[i]; return e; };
+      tracks[ti].sendReverb=0; tracks[ti].sendDelay=0;
+      const dry=await renderMixdown(true);
+      out.dryTail=tailE(dry);
+      tracks[ti].sendReverb=0.9; const wet=await renderMixdown(true);
+      out.revTail=tailE(wet);
+      tracks[ti].sendReverb=0; tracks[ti].sendDelay=0.9; const echo=await renderMixdown(true);
+      out.echoTail=tailE(echo);
+      tracks[ti].sendDelay=0;
+    }catch(e){ out.error=e.message; }
+    return out;
+  });
+  check('pan moves a track left and right', !mixPanSends.error && mixPanSends.lL>0.001 && mixPanSends.lR<mixPanSends.lL*0.05 && mixPanSends.rR>0.001 && mixPanSends.rL<mixPanSends.rR*0.05, JSON.stringify(mixPanSends));
+  check('reverb and echo sends add tail energy', !mixPanSends.error && mixPanSends.revTail>mixPanSends.dryTail*2 && mixPanSends.echoTail>mixPanSends.dryTail*2, JSON.stringify(mixPanSends));
+
+  const mixNorm = await page.evaluate(async()=>{
+    const out={};
+    try{
+      const ti=4;
+      tracks.forEach(t=>{ t.muted=false; t.solo=false; t.sendReverb=0; t.sendDelay=0; t.pan=0; });
+      tracks[ti].vol=0.2;
+      const peak=buf=>{ let p=0; for(let c=0;c<buf.numberOfChannels;c++){ const d=buf.getChannelData(c); for(let i=0;i<d.length;i++){ const a=Math.abs(d[i]); if(a>p)p=a; } } return p; };
+      normalizeExport=false; const dry=await renderMixdown(true);
+      out.dry=peak(dry);
+      normalizeExport=true; const norm=await renderMixdown(true);
+      out.norm=peak(norm);
+      normalizeExport=false;
+      tracks[ti].vol=0.7;
+    }catch(e){ out.error=e.message; }
+    return out;
+  });
+  check('normalize lifts export peak near full scale', !mixNorm.error && mixNorm.dry<0.9 && mixNorm.norm>0.95 && mixNorm.norm<=1.0 && mixNorm.norm>mixNorm.dry, JSON.stringify(mixNorm));
+
+  const mixUi = await page.evaluate(()=>{
+    const t=tracks[activeTrack];
+    t.pan=-0.5; t.solo=true; t.sendReverb=0.4; t.sendDelay=0.2;
+    updateInstPanel();
+    const out={
+      pan:document.getElementById('panVal').textContent,
+      solo:document.getElementById('soloBtn').getAttribute('aria-pressed'),
+      rev:document.getElementById('sendRevVal').textContent,
+      del:document.getElementById('sendDelVal').textContent,
+      knob:document.getElementById('panKnob').value
+    };
+    t.pan=0; t.solo=false; t.sendReverb=0; t.sendDelay=0; updateInstPanel();
+    return out;
+  });
+  check('mixer controls reflect the selected track', mixUi.pan==='L50' && String(mixUi.solo)==='true' && mixUi.rev==='40%' && mixUi.del==='20%' && mixUi.knob==='-50', JSON.stringify(mixUi));
+
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   server.close();

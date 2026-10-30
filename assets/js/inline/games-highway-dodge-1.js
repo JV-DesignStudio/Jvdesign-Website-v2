@@ -45,8 +45,18 @@ const COMBO_WINDOW = 3.2;   // seconds a near-miss chain stays alive
 // Oncoming traffic drives a little faster than the road scrolls so it reads as
 // moving cars, not markings on a belt. Every lane uses the same factor, so a
 // spawn row never shears apart (that shear is what used to close the gap).
-const CAR_MUL = 1.3;
+const CAR_MUL = 1.18;
 const MAX_DIST = 12000;     // "top speed" milestone distance
+// Speed ramps with distance, but slowly and with a hard ceiling. The old
+// `280 + dist * .04` compounded (dist grows with speed) and nearly tripled the
+// pace inside 25 seconds, which made the run unreadable on a phone.
+const SPEED_BASE = 280;
+const SPEED_RAMP = .012;
+const SPEED_MAX = 400;
+
+function baseSpeed() {
+  return Math.min(SPEED_MAX, SPEED_BASE + dist * SPEED_RAMP);
+}
 
 /* ── TrafficDash parity (Core06 Game Art project) ──────────────────────────
    A 120-second timed run with a finish bonus, drift-for-cash, nitro boost,
@@ -369,7 +379,7 @@ function laneX(lane) { return roadL + laneW / 2 + lane * laneW; }
 // Effective road speed in reference units: base speed shaped by the throttle,
 // nitro boost and cone-stumble, exactly like the Godot build.
 function effectiveSpeed(ref) {
-  const base = (ref == null) ? (280 + dist * .04) : ref;
+  const base = (ref == null) ? baseSpeed() : ref;
   const th = Math.max(.45, Math.min(1.6, 1 + throttle * .5));
   const boost = boostTimer > 0 ? BOOST_MULT : 1;
   const stumble = stumbleTimer > 0 ? STUMBLE_MULT : 1;
@@ -398,7 +408,7 @@ function nextGapLane() {
 }
 
 function spawnCar(lane, yOff) {
-  const trucky = Math.random() < .18 + dist * .000015;
+  const trucky = Math.random() < Math.min(.4, .16 + dist * .00001);
   const types = trucky ? TRUCKISH : ['car','car','sport','van','bike'];
   const type = types[Math.floor(Math.random() * types.length)];
   const spec = VEHICLES[type];
@@ -424,7 +434,7 @@ function spawnCar(lane, yOff) {
 
 function spawnRow() {
   const g = nextGapLane();
-  const twoCars = Math.random() < (dist > 1400 ? .8 : .3);
+  const twoCars = Math.random() < Math.min(.6, .18 + dist * .00004);
   let open;
   if (twoCars) {
     open = [g];
@@ -1130,7 +1140,7 @@ function update(dt) {
 
   if (!running || dead) return;
 
-  const refSpeed = 280 + dist * .04;
+  const refSpeed = baseSpeed();
   const eff = effectiveSpeed(refSpeed);
   dist += eff * dt;
   speed = eff * vscale;
@@ -1222,7 +1232,7 @@ function update(dt) {
   skids.forEach(s => { s.y += speed * dt; s.life -= dt * 1.5; });
   skids = skids.filter(s => s.life > 0);
 
-  fuel -= (2.3 + dist * .00005) * dt;
+  fuel -= (2.0 + dist * .00003) * dt;
   if (fuel <= 0) { fuel = 0; hud(); endGame('stall'); return; }
 
   if (combo > 0) { comboTimer -= dt; if (comboTimer <= 0) combo = 0; }
@@ -1284,7 +1294,7 @@ function update(dt) {
   if (spawnTimer <= 0) {
     if (topEdgeClear(laneW * 2.0)) {
       spawnRow();
-      const gap = Math.max(.34, .92 - dist * .00004) * (rushHourActive ? 0.62 : 1);
+      const gap = Math.max(.55, .98 - dist * .000025) * (rushHourActive ? 0.75 : 1);
       spawnTimer = gap + Math.random() * gap * .4;
       if (Math.random() < (rushHourActive ? 0.28 : 0.38)) pickups.push(makePickup(gapLane));
       if ((dist > 1200 && Math.random() < .14) || (rushHourActive && Math.random() < .18)) spawnWrongWay();

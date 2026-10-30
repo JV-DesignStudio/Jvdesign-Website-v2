@@ -26,6 +26,25 @@ function check(name, ok, detail = '') {
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// A parked car in the middle lane survives every one-car row (the spawner always
+// leaves lane 1 open), so a test that needs a crash steers into the nearest car.
+async function steerIntoTraffic(page) {
+  const want = await page.evaluate(() => {
+    const g = window.__highway;
+    if (!g || g.dead) return null;
+    const cars = g.cars();
+    let lane = -1, bestY = -1;
+    for (const l of [0, 1, 2]) {
+      const y = cars.reduce((m, c) => c.lane === l ? Math.max(m, c.y) : m, -1);
+      if (y > bestY) { bestY = y; lane = l; }
+    }
+    return lane >= 0 ? { lane, current: g.playerLane } : null;
+  });
+  if (want && want.lane !== want.current) {
+    await page.keyboard.press(want.lane < want.current ? 'ArrowLeft' : 'ArrowRight');
+  }
+}
+
 function watchErrors(page) {
   const errors = [];
   page.on('pageerror', e => errors.push('pageerror: ' + e.message));
@@ -94,40 +113,32 @@ async function mobile(browser, base) {
 
   // Reach the game-over state. Steer into the lane with the nearest oncoming car
   // so a crash is guaranteed quickly instead of waiting on traffic to wander in.
-  let death = null;
-  for (let i = 0; i < 120 && !death; i++) {
+  let dead = false;
+  for (let i = 0; i < 120 && !dead; i++) {
     await sleep(100);
-    const want = await page.evaluate(() => {
-      if (!window.__highway || window.__highway.dead) return null;
-      const g = window.__highway, cars = g.cars();
-      let lane = -1, bestY = -1;
-      for (const l of [0, 1, 2]) {
-        const y = cars.reduce((m, c) => c.lane === l ? Math.max(m, c.y) : m, -1);
-        if (y > bestY) { bestY = y; lane = l; }
-      }
-      return { lane, current: g.playerLane };
-    });
-    if (want && want.lane >= 0 && want.lane !== want.current) {
-      await page.keyboard.press(want.lane < want.current ? 'ArrowLeft' : 'ArrowRight');
-    }
-    death = await page.evaluate(() => {
-      if (!window.__highway || !window.__highway.dead) return null;
-      const m = document.querySelector('.sr-modal.show');
-      const c = document.getElementById('game');
-      const center = document.elementFromPoint(195, 420);
-      return {
-        shown: !!m,
-        modalZ: m ? parseInt(getComputedStyle(m).zIndex, 10) : null,
-        canvasZ: parseInt(getComputedStyle(c).zIndex, 10) || 0,
-        modalOnTop: !!(m && center && m.contains(center))
-      };
-    });
+    await steerIntoTraffic(page);
+    dead = await page.evaluate(() => !!(window.__highway && window.__highway.dead));
   }
-  check('mobile: reaching the end shows the game-over state', !!death);
-  check('mobile: game-over modal is shown', !!(death && death.shown));
+  check('mobile: reaching the end shows the game-over state', dead);
+
+  // The crash cam holds the game-over modal back for about 0.4s after `dead`, so
+  // sample the modal once the pause has resolved rather than on the death frame.
+  await sleep(800);
+  const modal = await page.evaluate(() => {
+    const m = document.querySelector('.sr-modal.show');
+    const c = document.getElementById('game');
+    const center = document.elementFromPoint(195, 420);
+    return {
+      shown: !!m,
+      modalZ: m ? parseInt(getComputedStyle(m).zIndex, 10) : null,
+      canvasZ: parseInt(getComputedStyle(c).zIndex, 10) || 0,
+      modalOnTop: !!(m && center && m.contains(center))
+    };
+  });
+  check('mobile: game-over modal is shown', modal.shown);
   check('mobile: game-over modal sits above the fullscreen canvas',
-    !!(death && death.modalOnTop && death.modalZ > death.canvasZ),
-    death ? 'modal z-' + death.modalZ + ' canvas z-' + death.canvasZ : 'n/a');
+    modal.modalOnTop && modal.modalZ > modal.canvasZ,
+    'modal z-' + modal.modalZ + ' canvas z-' + modal.canvasZ);
 
   const show = await page.evaluate(() => ({
     goal: (document.getElementById('goalHud') || {}).textContent,
@@ -210,9 +221,10 @@ async function learnerPolish(browser, base) {
   check('polish: fuel HUD tracks the tank', f2.hud !== '' && /%$/.test(f2.w), 'hud=' + f2.hud + ' w=' + f2.w);
 
   let hasKeepsake = false;
-  for (let i = 0; i < 90 && !hasKeepsake; i++) {
+  for (let i = 0; i < 120 && !hasKeepsake; i++) {
     await sleep(150);
     hasKeepsake = await page.evaluate(() => !!document.querySelector('.sr-modal.show .sr-keepsake'));
+    if (!hasKeepsake) await steerIntoTraffic(page);
   }
   check('polish: game-over offers a keepsake export', hasKeepsake);
   check('polish: no page errors', errors.length === 0, errors.join(' | '));
@@ -226,7 +238,11 @@ async function learnerPolish(browser, base) {
   await rm.goto(base + '/games/highway-dodge.html', { waitUntil: 'load', timeout: 30000 });
   await rm.evaluate(() => document.getElementById('playBtn').click());
   let rmDead = false;
-  for (let i = 0; i < 90 && !rmDead; i++) { await sleep(150); rmDead = await rm.evaluate(() => window.__highway.dead); }
+  for (let i = 0; i < 120 && !rmDead; i++) {
+    await sleep(150);
+    rmDead = await rm.evaluate(() => window.__highway.dead);
+    if (!rmDead) await steerIntoTraffic(rm);
+  }
   const rmHits = await rm.evaluate(() => window.__highway.shakeHits);
   check('polish: prefers-reduced-motion disables the crash shake', rmDead && rmHits === 0, 'dead=' + rmDead + ' hits=' + rmHits);
   check('polish: no page errors (reduce-motion)', rmErrors.length === 0, rmErrors.join(' | '));
@@ -381,11 +397,13 @@ async function carShop(browser, base) {
   const after = await page.evaluate(() => window.__highway.equipped);
   check('shop: the equipped car persists across a reload', after === 'racer', after);
 
-  // A run banks coins into the wallet.
+  // A run banks coins into the wallet. Steer into the nearest oncoming car so a
+  // parked player cannot survive long enough for the sample loop to time out.
   await page.evaluate(() => { localStorage.setItem('highway-tip-seen', '1'); document.getElementById('playBtn').click(); });
   let banked = 0;
-  for (let i = 0; i < 140 && !banked; i++) {
+  for (let i = 0; i < 200 && !banked; i++) {
     await sleep(120);
+    await steerIntoTraffic(page);
     banked = await page.evaluate(() => window.__highway.dead ? window.__highway.coins : 0);
   }
   check('shop: a run banks coins for the shop', banked > 380, 'coins=' + banked);
