@@ -65,21 +65,35 @@ check(
   lineupCount === stats.games
 );
 
-// 5. No public page should contain a numeric claim that contradicts marketing.json
-const mGames = marketing.games.display;        // e.g. "12"
-const mWorkshops = marketing.workshops.display; // e.g. "180+"
-const pages = [
-  'index.html', 'arcade.html',
-  'pages/parents.html', 'pages/about.html', 'pages/learn-hub.html',
+// 5. No public page should contain a hardcoded game count that contradicts marketing.json
+// Each entry: [file, regex that must NOT match if marketing.games.display is authoritative]
+const mGames = parseInt(marketing.games.display.replace(/[^0-9]/g, ''), 10);
+const gameCountPages = [
+  ['index.html',          /heroGameCount[^>]*>(\d+)</],
+  ['arcade.html',         /(twelve|thirteen|\d+) hand-picked/i],
+  ['pages/parents.html',  /stat-num[^>]*>(\d+)<[^>]*>[\s\S]*?Browser Games/],
+  ['pages/about.html',    /stat-num[^>]*>(\d+)<[^>]*>[\s\S]*?Browser Games|pillar-sub[^>]*>(\d+) listed games/],
+  ['pages/press.html',    /pressGameCount[^>]*>(\d+)</],
 ];
 // Known-bad stale numbers the task found (these must not appear as game counts):
 const staleGameClaims = ['28 total', '16 Play Labs', '8 Studio Picks', '25 games', '40 games'];
-for (const f of pages) {
+for (const [f] of gameCountPages) {
   const fp = path.join(ROOT, f);
   if (!fs.existsSync(fp)) continue;
   const html = fs.readFileSync(fp, 'utf8');
   for (const bad of staleGameClaims) {
     check(`${f}: no stale game claim "${bad}"`, !html.includes(bad));
+  }
+  // Check that any inline number visible before JS runs matches marketing.games.display
+  const numericGamePattern = /(?:heroGameCount|pressGameCount)[^>]*>(\d+)<|>(\d+)<[^<]*(?:Browser Games|listed games)/g;
+  let m;
+  while ((m = numericGamePattern.exec(html)) !== null) {
+    const found = parseInt(m[1] || m[2], 10);
+    check(
+      `${f}: hardcoded game count (${found}) matches marketing.json (${mGames})`,
+      found === mGames,
+      `found ${found}, expected ${mGames}`
+    );
   }
 }
 
