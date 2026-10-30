@@ -30,6 +30,7 @@ const STEPS = [
   { id: 'partials', label: 'Partials (inject nav/footer)',                        fn: () => require('./partials').runPartials() },
   { id: 'hubs',     label: 'Engine hubs (workshops/engine-*.html)',               fn: () => require('../generate-engine-hubs').generate() },
   { id: 'sitemap',  label: 'Sitemap  (sitemap.xml + search-index.json)',           fn: () => require('./sitemap').runSitemap() },
+  { id: 'coverage', label: 'Coverage (registry items present in search index)',   fn: () => { const m = require('../validate-search-coverage').run({ verbose: true }); if (m.length) { const e = new Error(`${m.length} registry item(s) missing from search-index.json`); e.missing = m; throw e; } } },
   { id: 'latest',   label: 'Latest   (latest-post.json)',                         fn: () => require('./latest').runLatest() },
   { id: 'board',    label: 'Board    (board-data.json KPIs)',                     fn: () => require('./board').runBoard() },
 ];
