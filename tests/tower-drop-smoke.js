@@ -75,6 +75,7 @@ const server = http.createServer((req, res) => {
       return {
         back: document.querySelector('header a')?.getAttribute('href'),
         overlayVisible: !document.getElementById('overlay').classList.contains('hidden'),
+        pipLoaded: (() => { const i = document.querySelector('.pip-start'); return !!i && i.complete && i.naturalWidth > 0; })(),
         canvasInside: c.width <= s.width + 1 && c.height <= s.height + 1 && c.width > 100,
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth,
@@ -84,6 +85,7 @@ const server = http.createServer((req, res) => {
     check('title is Tower Drop', /Tower Drop/.test(layout.title), layout.title);
     check('back link points at the arcade', layout.back === '../arcade.html', layout.back);
     check('start overlay is showing', layout.overlayVisible);
+    check('Pip portrait loads on the start screen', layout.pipLoaded);
     check('canvas fits inside the stage at 390px', layout.canvasInside);
     check('no horizontal page overflow at 390px', layout.scrollWidth <= layout.clientWidth + 2, layout.scrollWidth + '/' + layout.clientWidth);
     check('no page or CSP errors at 390px', phone.errors.length === 0, phone.errors.slice(0, 2).join(' | '));
@@ -99,7 +101,7 @@ const server = http.createServer((req, res) => {
       window.__towerDrop.aim(s.topCx);
       window.__towerDrop.drop();
     });
-    await wait(400);
+    await page.waitForFunction(() => window.__towerDrop.snapshot().score === 1, { timeout: 8000 });
     snap = await page.evaluate(() => window.__towerDrop.snapshot());
     check('perfect drop scores a floor', snap.score === 1, JSON.stringify(snap));
     check('perfect drop keeps the platform width', snap.width === 150, String(snap.width));
@@ -110,7 +112,7 @@ const server = http.createServer((req, res) => {
       window.__towerDrop.aim(s.topCx + 30);
       window.__towerDrop.drop();
     });
-    await wait(400);
+    await page.waitForFunction(() => window.__towerDrop.snapshot().score === 2, { timeout: 8000 });
     snap = await page.evaluate(() => window.__towerDrop.snapshot());
     check('off-centre drop adds a floor', snap.score === 2, JSON.stringify(snap));
     check('overlap becomes the new width', snap.width === 120, String(snap.width));
@@ -121,7 +123,8 @@ const server = http.createServer((req, res) => {
       window.__towerDrop.aim(s.topCx + s.width + 40);
       window.__towerDrop.drop();
     });
-    await wait(1200);
+    await page.waitForFunction(() => window.__towerDrop.snapshot().state === 'over', { timeout: 8000 });
+    await wait(150);
     const over = await page.evaluate(() => ({
       snap: window.__towerDrop.snapshot(),
       endVisible: !document.getElementById('end').classList.contains('hidden'),

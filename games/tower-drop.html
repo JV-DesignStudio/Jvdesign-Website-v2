@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-QsY1zjWWDC6xVHqV+0N62dGka+ZuuXSsOTnwbtw2UTk=' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-z+p+Pqq7u63F/PJ26mNdIjPWzwBxYfacKuyyh0sKbQ0=' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Tower Drop | JVDS Arcade</title>
 <meta name="description" content="Tower Drop is a one-button stacking game. Tap to drop the swinging platform and build the tallest tower you can. Starring Pip.">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/tower-drop.html">
@@ -31,10 +31,11 @@
   .overlay .label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#a5b4fc}
   .overlay .pip{font-size:13px;color:#a5b4fc}
   .overlay .best{font-size:14px;color:#f5efe0}
+  .overlay .pip-start{width:82px;height:auto;margin-bottom:-8px;filter:drop-shadow(0 10px 24px rgba(74,222,128,.28))}
   button{background:#7c3aed;color:#fff;border:none;border-radius:999px;padding:14px 36px;font:inherit;font-weight:800;font-size:17px;cursor:pointer;box-shadow:0 6px 0 #4c1d95;transition:transform .08s,box-shadow .08s;margin-top:6px}
   button:active{transform:translateY(4px);box-shadow:0 2px 0 #4c1d95}
   button:focus-visible{outline:3px solid #4ade80;outline-offset:3px}
-  @media (max-height:520px){.overlay h1{font-size:26px}.overlay .big{font-size:38px}button{padding:10px 28px;font-size:15px}}
+  @media (max-height:520px){.overlay h1{font-size:26px}.overlay .big{font-size:38px}.overlay .pip-start{width:58px}button{padding:10px 28px;font-size:15px}}
 </style>
 </head>
 <body>
@@ -50,6 +51,7 @@
     <canvas id="game" aria-label="Tower Drop game area" role="img"></canvas>
 
     <div class="overlay" id="overlay">
+      <img class="pip-start" src="chars/pip.png" width="170" height="219" alt="Pip the turtle">
       <h1>🐾 Tower Drop</h1>
       <p>Tap, click or press space to drop the swinging platform. Line it up, keep the overlap and build as high as you can.</p>
       <button id="startBtn" type="button">Play</button>
@@ -108,8 +110,93 @@
   var overTimer = 0;
   var clock = 0;
   var stars = [];
+  var motes = [];
+  var puffs = [];
+  var bursts = [];
+  var sparks = [];
+  var trail = [];
+  var clouds = [];
+  var pipMood = 'idle';
+  var pipTimer = 0;
+  var pipImg = new Image();
+  pipImg.src = 'chars/pip.png';
+  var bgLayer = document.createElement('canvas');
+  var bgCtx = bgLayer.getContext('2d');
+
+  function makeGlow(rgb) {
+    var c = document.createElement('canvas');
+    c.width = c.height = 256;
+    var g = c.getContext('2d');
+    var rg = g.createRadialGradient(128, 128, 4, 128, 128, 128);
+    rg.addColorStop(0, 'rgba(' + rgb + ',0.55)');
+    rg.addColorStop(1, 'rgba(' + rgb + ',0)');
+    g.fillStyle = rg;
+    g.fillRect(0, 0, 256, 256);
+    return c;
+  }
+  var glowPurple = makeGlow('168,85,247');
+  var glowGreen = makeGlow('74,222,128');
+
+  function drawGlow(img, x, y, size, alpha) {
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+    ctx.globalAlpha = 1;
+  }
+
+  function paintBackground() {
+    bgLayer.width = VW * 2;
+    bgLayer.height = VH * 2;
+    var g = bgCtx;
+    g.setTransform(2, 0, 0, 2, 0, 0);
+
+    var sky = g.createLinearGradient(0, 0, 0, VH);
+    sky.addColorStop(0, '#0d0b22');
+    sky.addColorStop(0.45, '#1a1a2e');
+    sky.addColorStop(0.8, '#2a1d4a');
+    sky.addColorStop(1, '#3a2550');
+    g.fillStyle = sky;
+    g.fillRect(0, 0, VW, VH);
+
+    var aurora = g.createRadialGradient(VW * 0.18, 30, 8, VW * 0.18, 30, 230);
+    aurora.addColorStop(0, 'rgba(74,222,128,0.10)');
+    aurora.addColorStop(1, 'rgba(74,222,128,0)');
+    g.fillStyle = aurora;
+    g.fillRect(0, 0, VW, 380);
+
+    var mx = VW - 74, my = 96;
+    var halo = g.createRadialGradient(mx, my, 8, mx, my, 84);
+    halo.addColorStop(0, 'rgba(245,239,224,0.28)');
+    halo.addColorStop(0.36, 'rgba(245,239,224,0.12)');
+    halo.addColorStop(1, 'rgba(245,239,224,0)');
+    g.fillStyle = halo;
+    g.beginPath();
+    g.arc(mx, my, 84, 0, Math.PI * 2);
+    g.fill();
+
+    g.globalAlpha = 0.88;
+    g.fillStyle = '#f5efe0';
+    g.beginPath();
+    g.arc(mx, my, 26, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 0.45;
+    g.fillStyle = '#d9cbb2';
+    g.beginPath();
+    g.arc(mx - 8, my - 6, 5, 0, Math.PI * 2);
+    g.arc(mx + 9, my + 5, 3.5, 0, Math.PI * 2);
+    g.arc(mx + 2, my - 11, 3, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 1;
+
+    var v = g.createRadialGradient(VW / 2, VH * 0.46, VH * 0.3, VW / 2, VH * 0.5, VH * 0.8);
+    v.addColorStop(0, 'rgba(8,6,20,0)');
+    v.addColorStop(1, 'rgba(8,6,20,0.52)');
+    g.fillStyle = v;
+    g.fillRect(0, 0, VW, VH);
+  }
 
   for (var s = 0; s < 42; s++) stars.push({ x: Math.random() * VW, y: Math.random() * VH, r: Math.random() * 1.4 + 0.4, p: Math.random() * 6.28 });
+  for (var mo = 0; mo < 26; mo++) motes.push({ x: Math.random() * VW, y: Math.random() * VH, r: Math.random() * 1.8 + 0.6, s: Math.random() * 9 + 4, p: Math.random() * 6.28, c: Math.random() > 0.4 ? '#a7f3d0' : '#fcd34d' });
+  for (var cl = 0; cl < 5; cl++) clouds.push({ x: Math.random() * VW, y: 50 + Math.random() * 260, s: 0.55 + Math.random() * 0.9, sp: 3 + Math.random() * 6, a: 0.035 + Math.random() * 0.05 });
 
   try { best = Number(localStorage.getItem(KEY)) || 0; } catch (e) { best = 0; }
   bestEl.textContent = best;
@@ -124,6 +211,7 @@
     canvas.style.width = Math.round(VW * scale) + 'px';
     canvas.style.height = Math.round(VH * scale) + 'px';
     ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);
+    paintBackground();
   }
 
   function roundRect(x, y, w, h, r) {
@@ -143,7 +231,7 @@
   }
 
   function reset() {
-    floors = [{ cx: VW / 2, w: 150, color: '#6d28d9', flash: 0 }];
+    floors = [{ cx: VW / 2, w: 150, color: '#6d28d9', flash: 0, land: 0 }];
     platform.cx = VW / 2;
     platform.w = 150;
     phase = -Math.PI / 2;
@@ -153,8 +241,14 @@
     score = 0;
     debris = [];
     popups = [];
+    puffs = [];
+    bursts = [];
+    sparks = [];
+    trail = [];
     shake = 0;
     overTimer = 0;
+    pipMood = 'idle';
+    pipTimer = 0;
     scoreEl.textContent = '0';
   }
 
@@ -174,6 +268,36 @@
     });
   }
 
+  function addPuffs(cx, worldTop, perfect) {
+    var n = perfect ? 10 : 6;
+    for (var i = 0; i < n; i++) {
+      puffs.push({
+        x: cx + (Math.random() - 0.5) * 34,
+        y: worldTop + (Math.random() - 0.5) * 8,
+        vx: (Math.random() - 0.5) * 90,
+        vy: -18 - Math.random() * 44,
+        r: 2 + Math.random() * 3.5,
+        life: 0.45 + Math.random() * 0.3,
+        max: 0.75,
+        c: perfect ? '#4ade80' : '#cbb8ff'
+      });
+    }
+  }
+
+  function addBurst(cx, worldTop) {
+    bursts.push({ x: cx, y: worldTop, life: 0.7, max: 0.7 });
+    for (var i = 0; i < 14; i++) {
+      var a = (Math.PI * 2 * i) / 14 + Math.random() * 0.25;
+      var sp = 55 + Math.random() * 95;
+      sparks.push({
+        x: cx, y: worldTop,
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 20,
+        life: 0.5 + Math.random() * 0.35, max: 0.85,
+        c: i % 3 === 0 ? '#fcd34d' : '#4ade80'
+      });
+    }
+  }
+
   function resolveDrop() {
     var top = floors[floors.length - 1];
     var w = platform.w;
@@ -186,6 +310,8 @@
       state = 'fall';
       overTimer = 0;
       shake = 0.55;
+      pipMood = 'worried';
+      pipTimer = 0;
       addDebris(cx - w / 2, cx + w / 2, BASE_Y - floors.length * FLOOR_H, '#a855f7', false);
       return;
     }
@@ -202,16 +328,20 @@
       else if (right < cx + w / 2 - 0.5) addDebris(right, cx + w / 2, worldTop, color, true);
     }
 
-    floors.push({ cx: newCx, w: newW, color: color, flash: perfect ? 1 : 0 });
+    floors.push({ cx: newCx, w: newW, color: color, flash: perfect ? 1 : 0, land: 0.45 });
     score = floors.length - 1;
     scoreEl.textContent = score;
     platform.cx = newCx;
     platform.w = newW;
     dropOffset = 0;
     state = 'swing';
+    pipMood = 'cheer';
+    pipTimer = perfect ? 1 : 0.38;
+    addPuffs(newCx, worldTop, perfect);
 
     if (perfect) {
-      popups.push({ text: 'PERFECT!', x: newCx, y: worldTop, life: 1, max: 1 });
+      addBurst(newCx, worldTop);
+      popups = [{ text: 'PERFECT!', x: newCx, y: worldTop, life: 1, max: 1 }];
     }
   }
 
@@ -271,6 +401,41 @@
 
     for (var i = 0; i < floors.length; i++) {
       if (floors[i].flash > 0) floors[i].flash = Math.max(0, floors[i].flash - dt * 1.8);
+      if (floors[i].land > 0) floors[i].land = Math.max(0, floors[i].land - dt * 3.2);
+    }
+
+    pipTimer = Math.max(0, pipTimer - dt);
+    if (pipMood !== 'worried' && pipTimer <= 0) pipMood = 'idle';
+
+    for (var pf = puffs.length - 1; pf >= 0; pf--) {
+      var pu = puffs[pf];
+      pu.x += pu.vx * dt;
+      pu.y += pu.vy * dt;
+      pu.vy += 70 * dt;
+      pu.r += 16 * dt;
+      pu.life -= dt;
+      if (pu.life <= 0) puffs.splice(pf, 1);
+    }
+
+    for (var b = bursts.length - 1; b >= 0; b--) {
+      bursts[b].life -= dt;
+      if (bursts[b].life <= 0) bursts.splice(b, 1);
+    }
+
+    for (var sp = sparks.length - 1; sp >= 0; sp--) {
+      var k = sparks[sp];
+      k.vy += 230 * dt;
+      k.x += k.vx * dt;
+      k.y += k.vy * dt;
+      k.life -= dt;
+      if (k.life <= 0) sparks.splice(sp, 1);
+    }
+
+    trail.push({ x: platform.cx, y: platform.y, w: platform.w, life: 0.26 });
+    if (trail.length > 7) trail.shift();
+    for (var tr = trail.length - 1; tr >= 0; tr--) {
+      trail[tr].life -= dt;
+      if (trail[tr].life <= 0) trail.splice(tr, 1);
     }
 
     for (var d = debris.length - 1; d >= 0; d--) {
@@ -292,18 +457,7 @@
   }
 
   function drawBackground() {
-    var g = ctx.createLinearGradient(0, 0, 0, VH);
-    g.addColorStop(0, '#101026');
-    g.addColorStop(0.55, '#1a1a2e');
-    g.addColorStop(1, '#261b3f');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, VW, VH);
-
-    var glow = ctx.createRadialGradient(VW / 2, VH - 40, 20, VW / 2, VH - 40, 320);
-    glow.addColorStop(0, 'rgba(168,85,247,0.20)');
-    glow.addColorStop(1, 'rgba(168,85,247,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, VW, VH);
+    ctx.drawImage(bgLayer, 0, 0, VW, VH);
 
     for (var i = 0; i < stars.length; i++) {
       var st = stars[i];
@@ -311,6 +465,62 @@
       ctx.fillStyle = '#e9d5ff';
       ctx.beginPath();
       ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    for (var c = 0; c < clouds.length; c++) drawCloud(clouds[c]);
+
+    drawGlow(glowPurple, VW / 2, BASE_Y + cam, 700, 0.6);
+    drawHill(VH - 24 + cam * 0.16, '#241a3f', 24, 88, 0);
+    drawHill(VH + 8 + cam * 0.3, '#1b1430', 32, 68, 44);
+    drawMotes();
+  }
+
+  function drawCloud(c) {
+    var span = VW + 180;
+    var x = ((c.x + clock * c.sp) % span) - 90;
+    var y = c.y + cam * 0.04;
+    if (y < -90 || y > VH + 90) return;
+    ctx.save();
+    ctx.globalAlpha = c.a;
+    ctx.fillStyle = '#c4b5fd';
+    ctx.beginPath();
+    ctx.ellipse(x, y, 48 * c.s, 15 * c.s, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 30 * c.s, y - 9 * c.s, 28 * c.s, 13 * c.s, 0, 0, Math.PI * 2);
+    ctx.ellipse(x - 30 * c.s, y - 4 * c.s, 22 * c.s, 11 * c.s, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawHill(base, color, amp, step, phase) {
+    if (base > VH + 90) return;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, VH);
+    for (var x = 0; x <= VW; x += 10) {
+      var y = base - Math.sin((x + phase) / step) * amp - Math.cos((x + phase) / (step * 2.2)) * amp * 0.45;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(VW, VH);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawMotes() {
+    for (var i = 0; i < motes.length; i++) {
+      var m = motes[i];
+      var y = ((m.y + cam * 0.22 + clock * m.s) % (VH + 60)) - 30;
+      var x = m.x + Math.sin(clock * 0.6 + m.p) * 12;
+      var a = 0.16 + 0.3 * (0.5 + 0.5 * Math.sin(clock * 1.8 + m.p));
+      ctx.fillStyle = m.c;
+      ctx.globalAlpha = a * 0.16;
+      ctx.beginPath();
+      ctx.arc(x, y, m.r * 3.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = a;
+      ctx.beginPath();
+      ctx.arc(x, y, m.r, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -349,12 +559,31 @@
       ctx.fill();
       ctx.globalAlpha = 1;
     }
+
+    if (fl.land > 0) {
+      ctx.globalAlpha = fl.land * 0.35;
+      ctx.fillStyle = '#ffffff';
+      roundRect(x, y, fl.w, h, 6);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
   }
 
   function drawPlatform() {
     var h = FLOOR_H - 4;
     var x = platform.cx - platform.w / 2;
     var y = platform.y;
+
+    for (var t = 0; t < trail.length; t++) {
+      var g = trail[t];
+      ctx.globalAlpha = (g.life / 0.26) * 0.07;
+      ctx.fillStyle = '#a855f7';
+      roundRect(g.x - g.w / 2, g.y, g.w, h, 6);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    drawGlow(glowPurple, platform.cx, y + h / 2, Math.max(110, platform.w * 1.5), 0.55);
 
     ctx.save();
     ctx.shadowColor = 'rgba(168,85,247,0.55)';
@@ -395,17 +624,105 @@
     }
   }
 
+  function drawPuffs() {
+    for (var i = 0; i < puffs.length; i++) {
+      var p = puffs[i];
+      ctx.globalAlpha = Math.max(0, p.life / p.max) * 0.55;
+      ctx.fillStyle = p.c;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y + cam, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawBursts() {
+    for (var i = 0; i < bursts.length; i++) {
+      var b = bursts[i];
+      var t = 1 - b.life / b.max;
+      var r = 10 + t * 74;
+      ctx.globalAlpha = (1 - t) * 0.85;
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 3 - t * 2;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y + cam + 10, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawSparks() {
+    for (var i = 0; i < sparks.length; i++) {
+      var k = sparks[i];
+      ctx.globalAlpha = Math.max(0, k.life / k.max);
+      ctx.fillStyle = k.c;
+      ctx.beginPath();
+      ctx.arc(k.x, k.y + cam, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPip() {
+    if (!pipImg.complete || !pipImg.naturalWidth) return;
+    var h = 84;
+    var w = h * pipImg.naturalWidth / pipImg.naturalHeight;
+    var x = 56;
+    var base = VH - 26;
+    var hop = 0, tilt = 0, sx = 1, sy = 1;
+    if (pipMood === 'cheer') {
+      var t = Math.min(1, pipTimer * 2.2);
+      hop = Math.abs(Math.sin(clock * 15)) * 11 * t;
+      sy = 1 + 0.05 * t;
+    } else if (pipMood === 'worried') {
+      tilt = Math.sin(clock * 24) * 0.05;
+    } else {
+      hop = Math.sin(clock * 2) * 1.5;
+    }
+
+    ctx.globalAlpha = 0.34;
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.ellipse(x, base + 4, w * 0.34, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    drawGlow(glowGreen, x, base - h * 0.5, h * 1.7, 0.7);
+
+    ctx.save();
+    ctx.translate(x, base - hop);
+    ctx.rotate(tilt);
+    ctx.scale(sx, sy);
+    ctx.drawImage(pipImg, -w / 2, -h, w, h);
+    ctx.restore();
+
+    if (pipMood === 'cheer') {
+      ctx.globalAlpha = Math.min(1, pipTimer * 2) * 0.9;
+      ctx.fillStyle = '#4ade80';
+      ctx.beginPath();
+      ctx.arc(x + w * 0.52, base - h + 12 - hop, 2.4, 0, Math.PI * 2);
+      ctx.arc(x + w * 0.7, base - h + 24 - hop, 1.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
   function drawPopups() {
     for (var i = 0; i < popups.length; i++) {
       var p = popups[i];
       var t = 1 - p.life / p.max;
+      var pop = Math.min(1, t * 5);
       ctx.save();
+      ctx.translate(p.x, p.y + cam - 18 - t * 34);
+      ctx.scale(0.6 + pop * 0.4, 0.6 + pop * 0.4);
       ctx.globalAlpha = Math.min(1, p.life * 1.6);
       ctx.fillStyle = '#4ade80';
+      ctx.shadowColor = 'rgba(74,222,128,0.7)';
+      ctx.shadowBlur = 12;
       ctx.font = '800 20px Inter, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(p.text, p.x, p.y + cam - 18 - t * 34);
+      ctx.fillText(p.text, 0, 0);
       ctx.restore();
     }
   }
@@ -418,11 +735,19 @@
     }
     drawBackground();
 
+    var top = floors[floors.length - 1];
+    var topY = BASE_Y - floors.length * FLOOR_H + cam;
+    drawGlow(glowPurple, top.cx, topY + 12, 340, 0.42);
+
     for (var i = 0; i < floors.length; i++) drawFloor(floors[i], i);
 
     if (state !== 'over' && state !== 'fall') drawPlatform();
     drawDebris();
+    drawPuffs();
+    drawBursts();
+    drawSparks();
     drawPopups();
+    drawPip();
     ctx.restore();
   }
 
