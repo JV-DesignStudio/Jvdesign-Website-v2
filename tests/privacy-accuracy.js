@@ -47,5 +47,21 @@ const q = fs.readFileSync(path.join(ROOT, 'questlog-pwa', 'privacy-policy.html')
 check('QuestLog policy uses the consent-gated loader', /analytics-loader\.js/.test(q) && !gtagDirect.test(q));
 check('QuestLog policy loads the cookie banner', /cookie-consent\.js/.test(q));
 
+// A1997: every page that can run analytics must also offer the consent choice.
+// Redirect stubs are excluded, they leave the page before anything can be shown.
+const redirectStub = /http-equiv=["']refresh["']|location\.replace\(/i;
+const missingConsent = walk(ROOT).filter((f) => {
+  const src = fs.readFileSync(f, 'utf8');
+  if (!/analytics-loader\.js/.test(src)) return false;
+  if (redirectStub.test(src)) return false;
+  return !/cookie-consent\.js/.test(src);
+});
+check('every analytics page loads the cookie banner', missingConsent.length === 0, missingConsent.slice(0, 6).map((f) => path.relative(ROOT, f)).join(', '));
+
+// Declining must never reach the loader, and the loader must never be called on boot.
+const consent = fs.readFileSync(path.join(ROOT, 'cookie-consent.js'), 'utf8');
+check('declining consent does not grant analytics', !/declined[\s\S]{0,200}_loadGtag/.test(consent));
+check('consent can be withdrawn after accepting', /reopen:/.test(consent));
+
 console.log(fails ? `\nprivacy-accuracy: FAIL (${fails})` : '\nprivacy-accuracy: PASS');
 process.exit(fails ? 1 : 0);
