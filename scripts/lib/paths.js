@@ -60,7 +60,8 @@ const GAME_ORPHANS = [
   'games/pips-bakery-empire.html','games/pip_star_connect.html','games/pixel-pet-arena.html',
   'games/index.html','games/play.html','games/sky_high_squirt.html','games/stack-attack-page.html',
   'games/stack-attack.html','games/star-chef.html','games/stardust-ruins.html',
-  'games/stardust_collection.html','games/tiger_smash.html','games/voidrush.html'
+  'games/stardust_collection.html','games/tiger_smash.html','games/voidrush.html',
+  'games/tower-drop.html',
   // lumo-run.html is a noindex redirect to lumo-dash.html (A967 consolidation).
   // tiger_smash.html is a noindex redirect to ember-smash.html (A980).
   // play.html is a noindex redirect stub for old cover links, not a curated game.
