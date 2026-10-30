@@ -1150,7 +1150,7 @@
       for (var i = 0; i < data.length; i++) data[i] = loaded[i];
       renderAll();
     };
-    img.onerror = function () {};
+    img.onerror = function () { templateClassic(); renderAll(); };
     img.src = url;
     return true;
   }
