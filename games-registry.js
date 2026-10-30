@@ -335,8 +335,9 @@ window.JVDS_GAMES = [
    EXPERIMENT early prototype, shown on purpose, not a finished release.
    HIDDEN     not worth showing yet, so it is left out of the catalogue.
 
-   Definitions live in GAME_QUALITY.md. Change a label here (one line) and it
-   shows on the arcade cabinet automatically. */
+   Definitions and release checklist live in GAME_QUALITY.md.
+   Test records (date + checklist pass) live in JVDS_GAME_TESTS below.
+   Change a label here (one line) and it shows on the arcade cabinet automatically. */
 window.JVDS_GAME_QUALITY = {
   "rustfall": "HIDDEN",
   "echo-flight": "READY",
@@ -353,10 +354,29 @@ window.JVDS_GAME_QUALITY = {
   "lumo-hive": "BETA",
   "lumo-firefly": "HIDDEN"
 };
+/* ── Release test records (A1956) ─────────────────────────────────────────
+   Every READY game must have an entry here with a testDate (ISO date) and
+   the commit or version tested against. Run the full checklist from
+   GAME_QUALITY.md before updating. If a game regresses, update its label
+   in JVDS_GAME_QUALITY above and remove or mark its entry here.           */
+window.JVDS_GAME_TESTS = {
+  "echo-flight":     { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "nova-siege":      { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "arcane-citadel":  { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "tower-defence":   { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "ember-smash":     { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "gem-match":       { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "highway-dodge":   { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "critter-whack":   { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "crossy-crew":     { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "stardust-snake":  { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" }
+};
 (function () {
   var labels = window.JVDS_GAME_QUALITY || {};
+  var tests  = window.JVDS_GAME_TESTS   || {};
   (window.JVDS_GAMES || []).forEach(function (g) {
     g.quality = labels[g.id] || 'BETA';
+    if (tests[g.id]) { g.testDate = tests[g.id].testDate; g.testVersion = tests[g.id].version; }
     if (g.id === 'arcane-citadel') g.tier = 'flagship';
   });
 })();

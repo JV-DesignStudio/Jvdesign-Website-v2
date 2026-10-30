@@ -13,25 +13,38 @@ the same four words are used in the studio's own workflow.
 
 ## What READY means
 
-A game is READY only when all of these are true:
+A game is READY only when the full release checklist passes. Run every item manually
+on the day of release or re-test, then record the result in `window.JVDS_GAME_TESTS`
+in `games-registry.js` with `testDate` (ISO date) and `version` (short commit hash).
 
-- It starts with no page errors.
-- The controls are clear in the first few seconds.
-- The main mechanic is playable from start to a win, a loss or a finish.
-- Restart works.
-- Sound and visual feedback respond to what the player does.
-- Saving or high scores work wherever the page promises them.
-- It works on the devices it claims to support, tested at 390px and 1440px.
-- There is a passing automated test for it in `tests/`.
+### Release checklist (A1956)
 
-If a game fails one of these it goes back to BETA. If it fails several, or it is
-not worth maintaining yet, it becomes HIDDEN and leaves the catalogue.
+- **Opens without error** - no console errors on load; CSP violations count as failures.
+- **Start works** - the player can reach the first playable moment from the title or main screen.
+- **Play works** - the core mechanic runs without freezing, NaN scores or broken collision.
+- **Lose works** - a losing condition triggers and shows the player their result.
+- **Win works** (where applicable) - a win or completion state is reachable and shows correctly.
+- **Restart works** - the player can start again from the result screen without reloading the page.
+- **Controls match the advertised input** - keyboard, touch or mouse controls work as described on the page.
+- **Scores, rewards and achievements behave correctly** - no negative scores, no reward on first frame, unlock logic matches description.
+- **Save and offline behaviour match the description** - if the page promises high score persistence, confirm it survives a reload.
+- **Mobile layout checked at 390px** - game is playable at phone width if the page does not say desktop-only.
+- **Desktop layout checked at 1440px** - no overflow or broken UI at wide viewport.
+- **No critical blocker** - the player can always reach a win, loss or end state; the game cannot get permanently stuck.
+- **Automated test passes** - there is a passing automated test for it in `tests/`.
+
+If a game fails one or two items it goes back to BETA. If it fails several, or it
+is not worth maintaining yet, it becomes HIDDEN and leaves the catalogue.
 
 ## Where the labels live
 
-The public list is the `window.JVDS_GAME_QUALITY` map at the bottom of
-`games-registry.js`. The arcade reads it and renders the pill on each card. Change
-one line to change a label, and the cabinet updates on the next load.
+The public list is the `window.JVDS_GAME_QUALITY` map in `games-registry.js`.
+The arcade reads it and renders the pill on each card. Change one line to change
+a label, and the cabinet updates on the next load.
+
+Test records (date, commit, checklist pass) live in `window.JVDS_GAME_TESTS` in the
+same file. Every READY game must have an entry. When a game regresses: update its
+label back to BETA, and remove or mark its test record stale.
 
 `tests/game-quality.js` checks that every listed game has a valid label, that the
 arcade renders it, and that this document still defines all four words.
