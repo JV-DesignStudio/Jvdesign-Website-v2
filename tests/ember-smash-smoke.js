@@ -25,6 +25,7 @@ const ok = (name, cond, detail) => {
   ok('page is the Ember Smash brick breaker', /Ember Smash/.test(html) && !/Tiger Smash/.test(html));
   ok('loads the shared game system and run layer', /game-system\.js/.test(html) && /story-run\.js/.test(html));
   ok('uses the shared brick-breaker css', /style-game-ember-smash\.css/.test(html));
+  ok('offers the forge editor from the start card and HUD', /id="forgeEditor"/.test(html) && /id="forgeOpenStart"/.test(html) && /id="forgeHud"/.test(html));
 
   await withServer(async ({ base, browser }) => {
     for (const vp of [{ name: '390px', width: 390, height: 844 }, { name: '1440px', width: 1440, height: 900 }]) {
