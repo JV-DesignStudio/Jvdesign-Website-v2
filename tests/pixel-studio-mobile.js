@@ -269,7 +269,42 @@ const ok = (name, cond) => { console.log((cond ? 'PASS ' : 'FAIL ') + name); if 
     ok('tap: mobile play button toggles playback', false);
   }
 
-  // 10. Tap outside canvas (header area) does not paint or error
+  // 10. Mobile parity for clip/hold/loop and export origin
+  await page.evaluate(() => { const b=document.querySelectorAll('.bb-tab')[3]; if(b) bbTab(3,b); });
+  await new Promise(r => setTimeout(r, 120));
+  const frameParity = await page.evaluate(() => {
+    const c=document.getElementById('frameClipM'), h=document.getElementById('frameHoldM'), l=document.getElementById('animLoopM');
+    if(!c||!h||!l) return {exists:false};
+    c.value='attack'; c.dispatchEvent(new Event('change',{bubbles:true}));
+    h.value='3'; h.dispatchEvent(new Event('change',{bubbles:true}));
+    l.checked=false; l.dispatchEvent(new Event('change',{bubbles:true}));
+    return {
+      exists:true,
+      clip:frameMeta[currentFrame].clip,
+      hold:frameMeta[currentFrame].hold,
+      loop:animLoop,
+      desktopClip:document.getElementById('frameClip').value,
+      desktopHold:document.getElementById('frameHold').value,
+      desktopLoop:document.getElementById('animLoop').checked
+    };
+  });
+  ok('mobile: Frames tab exposes Clip/Hold/Loop', frameParity.exists);
+  ok('mobile: Clip/Hold/Loop update frameMeta and desktop', frameParity.exists && frameParity.clip==='attack' && frameParity.hold===3 && frameParity.loop===false && frameParity.desktopClip==='attack' && frameParity.desktopHold==='3' && frameParity.desktopLoop===false);
+
+  await page.evaluate(() => { const b=document.querySelectorAll('.bb-tab')[5]; if(b) bbTab(5,b); });
+  await new Promise(r => setTimeout(r, 120));
+  const originParity = await page.evaluate(() => {
+    const s=document.getElementById('exportOriginM'), hint=document.getElementById('exportSizeHintM');
+    if(!s||!hint) return {exists:false};
+    s.value='7'; s.dispatchEvent(new Event('change',{bubbles:true}));
+    return {exists:true, origin:exportOrigin, desktop:document.getElementById('exportOrigin').value, hint:hint.textContent};
+  });
+  ok('mobile: Save tab exposes Origin and output size', originParity.exists);
+  ok('mobile: Origin updates desktop and hint', originParity.exists && originParity.origin===7 && originParity.desktop==='7' && /PNG \d+×\d+/.test(originParity.hint) && !/NaN/.test(originParity.hint));
+  const parityScroll = await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
+  ok('mobile: no horizontal scroll after parity controls', parityScroll);
+
+  // 11. Tap outside canvas (header area) does not paint or error
   await stroke(10, 60, 30, 70);
   await new Promise(r => setTimeout(r, 100));
   ok('tap: touch on header is harmless', errors.filter(e => e.includes('pageerror')).length === 0);
