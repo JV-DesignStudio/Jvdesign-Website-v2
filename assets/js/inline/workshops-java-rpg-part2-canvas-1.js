@@ -25,7 +25,7 @@ function javaToJs(code) {
    IFRAME BUILDING BLOCKS (RPG battle system)
    =================================================== */
 
-var CSS_BATTLE = '<style>body{margin:0;overflow:hidden;background:#14100c;font-family:Arial,sans-serif}canvas{display:block;cursor:pointer}</style>';
+var CSS_GAME = '<style>body{margin:0;overflow:hidden;background:#14100c;font-family:Arial,sans-serif}canvas{display:block;cursor:pointer}</style>';
 
 var CANVAS_TAG = '<canvas id="game" width="500" height="400"></canvas>';
 
@@ -135,7 +135,7 @@ var RESPAWN_LOGIC = 'function respawn(){' +
   'hero.hp=Math.floor(hero.maxHp/2);hero.gold=Math.floor(hero.gold/2);hero.defending=false;}';
 
 function wrap(code) {
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_BATTLE +
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + CSS_GAME +
     '<\/head><body>' + CANVAS_TAG + '<script>' + code + '<\/script><\/body><\/html>';
 }
 
@@ -204,8 +204,7 @@ window.CW_CONFIG = {
         'dmgText="-"+dmg;dmgX=395;dmgY=100;dmgTimer=30;' +
         'if(monster.hp<=0){battleOver=true;resultMsg="Victory!";battleLog=monster.name+" defeated!"}' +
         'else{monsterAttack()}}' +
-        '}}
-      )' +
+        '}});' +
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
         DRAW_DMG + DRAW_RESULT +
@@ -236,8 +235,7 @@ window.CW_CONFIG = {
         'else if(mx>=380&&mx<=485){' +
         'if(Math.random()<0.6){battleLog="You fled to safety!";battleOver=true;resultMsg="Escaped!"}' +
         'else{battleLog="Could not escape!";monsterAttack()}}' +
-        '}}
-      )' +
+        '}});' +
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
         DRAW_DMG + DRAW_RESULT +
@@ -268,8 +266,7 @@ window.CW_CONFIG = {
         'else if(mx>=380&&mx<=485){' +
         'if(Math.random()<0.6){battleLog="You fled to safety!";battleOver=true;resultMsg="Escaped!"}' +
         'else{battleLog="Could not escape!";monsterAttack()}}' +
-        '}}
-      )' +
+        '}});' +
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
         DRAW_XP_BAR + DRAW_DMG + DRAW_RESULT +
@@ -302,8 +299,7 @@ window.CW_CONFIG = {
         'else if(mx>=380&&mx<=485){' +
         'if(Math.random()<0.6){battleLog="You fled to safety!";battleOver=true;resultMsg="Escaped!"}' +
         'else{battleLog="Could not escape!";monsterAttack()}}' +
-        '}}
-      )' +
+        '}});' +
         'function draw(){' +
         DRAW_BG + DRAW_HERO_STATS + DRAW_MONSTER + DRAW_MONSTER_FACE + DRAW_LOG + DRAW_ACTIONS +
         DRAW_XP_BAR + DRAW_DMG + DRAW_RESULT +
