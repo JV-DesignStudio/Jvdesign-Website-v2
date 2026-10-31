@@ -2,6 +2,18 @@
 const C = document.getElementById('game'), ctx = C.getContext('2d');
 const $ = id => document.getElementById(id);
 const audio = window.AudioEffects ? new AudioEffects(.5) : null;
+const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+let reduceMotion = !!(motionQuery && motionQuery.matches);
+if (motionQuery) {
+  const onMotionChange = e => { reduceMotion = e.matches; };
+  if (motionQuery.addEventListener) motionQuery.addEventListener('change', onMotionChange);
+  else if (motionQuery.addListener) motionQuery.addListener(onMotionChange);
+}
+function announce(msg) {
+  const el = $('a11yStatus');
+  if (!el) return;
+  el.textContent = msg;
+}
 const sys = window.GameSystem ? new GameSystem('crossy-crew','Crossy Crew','pip') : null;
 const storyRun = window.__storyRun = window.StoryRun ? new StoryRun({
   id:'crossy-crew', gameSystem:sys, title:'Crossy Crew', character:'Pip',
@@ -109,6 +121,7 @@ const milestones = window.JVDSShowcase ? new JVDSShowcase.Milestones(MISSION, fu
   popups.push({ x: W / 2, y: H * .3, text: 'GOAL ' + m, life: 1.4, color: '#bbf7d0', size: 26 });
 }) : null;
 const shake = window.JVDSShowcase ? new JVDSShowcase.Shake(14) : null;
+function shakeHit(n) { if (shake && !reduceMotion) shake.hit(n); }
 let dustTimer = 0;
 
 // Read-only debug handle so tests can verify mobile movement, death state and
@@ -289,7 +302,8 @@ function makeRow(index) {
 
   if (index > 20 && r < .13) {
     const dir = Math.random() < .5 ? 1 : -1;
-    const spd = (1.8 + Math.random() * 0.8 + difficulty * 0.8) * dir;
+    const railMult = biome.name === 'City' ? 1.18 : 1;
+    const spd = (1.8 + Math.random() * 0.8 + difficulty * 0.8) * dir * railMult;
     const count = Math.random() < .35 ? 2 : 1;
     const trains = [];
     for (let i = 0; i < count; i++) {
@@ -307,7 +321,8 @@ function makeRow(index) {
 
   if (r < .5) {
     const dir = Math.random() < .5 ? 1 : -1;
-    const spd = (0.55 + Math.random() * .7 + difficulty * 1.2) * dir;
+    const roadMult = biome.name === 'Desert' ? 1.1 : biome.name === 'Snow' ? .88 : 1;
+    const spd = (0.55 + Math.random() * .7 + difficulty * 1.2) * dir * roadMult;
     const count = 2 + Math.floor(Math.random() * 2 + difficulty);
     const gap = COLS / count;
     const cars = [];
@@ -325,7 +340,8 @@ function makeRow(index) {
 
   if (r < .78 && index > 10) {
     const dir = Math.random() < .5 ? 1 : -1;
-    const spd = (0.4 + Math.random() * .5 + difficulty * .7) * dir;
+    const riverMult = biome.name === 'Beach' ? 1.15 : 1;
+    const spd = (0.4 + Math.random() * .5 + difficulty * .7) * dir * riverMult;
     const count = 2 + Math.floor(Math.random() * 2);
     const gap = COLS / count;
     const logs = [];
@@ -457,7 +473,7 @@ function hop(dx, dy) {
     comboPop = 1;
     score += 20 * combo;
     popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .3, text: 'COMBO x' + combo, life: 1, color: '#fde047', size: 18 });
-    if (shake) shake.hit(4 + combo);
+    shakeHit(4 + combo);
     // flash the nearby vehicle yellow
     nearMissFlash.push({ rowIdx: player.row - dy, timer: 0.18 });
     try { audio?.playSuccess?.(); } catch(e) {}
@@ -486,6 +502,30 @@ function hop(dx, dy) {
   idleTimer = 0;
   syncPlayerPos();
   hud();
+  if (dy > 0 && biomeAt(player.row).name === 'Snow' && Math.random() < .25) trySnowSlide();
+}
+
+// Snow landing: a short slide onto the next safe row. It never pushes Pip into
+// traffic or a tree, so the surprise stays fun rather than punishing.
+function trySnowSlide() {
+  const nextRow = getRow(player.row + 1);
+  if ((nextRow.type !== GRASS && nextRow.type !== SAFE) || nextRow.items.some(t => t.col === player.col)) return;
+  player.row += 1;
+  hops++;
+  hopAnim = .15;
+  hopPath.push({ col: player.col, row: player.row });
+  if (echo) { echo.col = player.col; echo.row = player.row - 1; echo.hopAnim = .15; }
+  syncPlayerPos();
+  burst(player.col * cellW + cellW / 2, screenY(player.row) + cellH / 2, '#dbeafe', 8);
+  if (player.row > furthest) {
+    const diff = player.row - furthest;
+    furthest = player.row;
+    score += diff * 10;
+    if (milestones) milestones.check(furthest);
+  }
+  toast('Icy slide!');
+  announce('Icy slide. Hops ' + hops + '.');
+  hud();
 }
 
 function applyPower(kind) {
@@ -496,6 +536,8 @@ function applyPower(kind) {
   else if (kind === 'dash') { toast('Dash! Hop x2!'); hop(0, 1); hop(0, 1); }
   burst(px, py, '#a7f3d0', 12);
   popups.push({ x: px, y: py - cellH * .3, text: kind.toUpperCase(), life: 1, color: '#a7f3d0', size: 18 });
+  const powerNames = { shield: 'Leaf shield', magnet: 'Coin magnet', slow: 'Slow time', dash: 'Dash' };
+  announce((powerNames[kind] || kind) + ' picked up.');
   try { audio?.playSuccess?.(); } catch(e) {}
 }
 
@@ -510,6 +552,7 @@ function startGame() {
   sys?.beginRun?.();
   if (storyRun && !storyRun.running) storyRun.begin();
   last = performance.now();
+  announce('Run started. Hop with the arrow keys, WASD, or the on-screen buttons.');
 }
 
 function die(reason) {
@@ -541,7 +584,7 @@ function gameOver(reason) {
   dead = true;
   running = false;
   savedPending = false;
-  if (shake) shake.hit(20);
+  shakeHit(20);
   // shatter burst - many coloured fragments in all directions
   const sx = player.x || player.targetX, sy = player.y || player.targetY;
   const shatterColors = ['#ef4444','#fbbf24','#86efac','#93c5fd','#f9a8d4'];
@@ -551,6 +594,7 @@ function gameOver(reason) {
     particles.push({ x: sx, y: sy + cellH / 2, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 60, life: 1, color: shatterColors[i % shatterColors.length], size: 2 + Math.random() * 4 });
   }
   try { audio?.playError?.(); } catch(e) {}
+  const prevBest = best;
   if (score > best) {
     best = score;
     if (sys) GameSystem.saveScore('crossy-crew', best);
@@ -559,11 +603,14 @@ function gameOver(reason) {
   }
   sys?.saveState?.();
   if (sys) { const charName = CREW.find(c => c.id === selectedChar)?.name || 'You'; sys.addToLeaderboard(charName, score); }
-  checkDailyOnEnd(score);
+  checkDailyOnEnd(hops);
   updateCrewUI();
   toast(reason);
+  const newlyUnlocked = CREW.find(c => c.unlock && prevBest < c.unlock.n && best >= c.unlock.n);
+  announce('Run over. ' + reason + ' Score ' + score + ', distance ' + furthest + ' rows.' + (newlyUnlocked ? ' Unlocked ' + newlyUnlocked.name + '.' : ''));
   if (storyRun) {
     storyRun.finish(score > 200 ? 'success' : 'fail', score);
+    enhanceEndModal(reason);
   } else {
     showEnd(reason);
   }
@@ -592,6 +639,7 @@ function revive() {
   syncPlayerPos();
   hud();
   toast('Second chance!');
+  announce('Second chance. Back on solid ground with ' + coins + ' coins left.');
 }
 
 function surrender() {
@@ -624,6 +672,87 @@ function showEnd(reason) {
   $('endScreen').classList.remove('hidden');
 }
 
+// StoryRun owns the game-over modal, so add the run summary and crew controls
+// into that same card instead of stacking a second overlay on top of it.
+function enhanceEndModal(reason) {
+  const modal = storyRun && storyRun._modal;
+  const card = modal && modal.querySelector('.sr-modal-card');
+  if (!card || card.querySelector('#ccEndExtra')) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'ccEndExtra';
+  wrap.className = 'cc-end-extra';
+
+  const cause = document.createElement('p');
+  cause.className = 'cc-end-cause';
+  cause.textContent = reason || 'Run over';
+  wrap.appendChild(cause);
+
+  const daily = streakData.doneToday ? 'Done' : Math.min(hops, dailyGoal) + '/' + dailyGoal;
+  const grid = document.createElement('div');
+  grid.className = 'cc-end-grid';
+  [['Best', best], ['Distance', furthest + ' rows'], ['Coins', coins], ['Daily hops', daily]].forEach(([label, value]) => {
+    const cell = document.createElement('div');
+    const small = document.createElement('small');
+    const b = document.createElement('b');
+    small.textContent = label;
+    b.textContent = value;
+    cell.appendChild(small);
+    cell.appendChild(b);
+    grid.appendChild(cell);
+  });
+  wrap.appendChild(grid);
+
+  const nextLocked = CREW.find(c => c.unlock && !isUnlocked(c));
+  const next = document.createElement('p');
+  next.className = 'cc-end-next';
+  next.textContent = nextLocked
+    ? 'Next unlock: ' + nextLocked.name + ' at ' + nextLocked.unlock.n + ' points (' + best + ' now)'
+    : 'All four crew members are unlocked.';
+  wrap.appendChild(next);
+
+  const actions = document.createElement('div');
+  actions.className = 'cc-end-actions';
+  const share = document.createElement('button');
+  share.type = 'button';
+  share.className = 'cc-end-btn';
+  share.textContent = 'Save run card';
+  share.addEventListener('click', shareRunCard);
+  const change = document.createElement('button');
+  change.type = 'button';
+  change.className = 'cc-end-btn cc-end-btn-alt';
+  change.textContent = 'Change crew';
+  change.addEventListener('click', returnToCrewSelect);
+  actions.appendChild(share);
+  actions.appendChild(change);
+  wrap.appendChild(actions);
+
+  const again = card.querySelector('.sr-again');
+  if (again) card.insertBefore(wrap, again);
+  else card.appendChild(wrap);
+}
+
+function returnToCrewSelect() {
+  if (storyRun) {
+    storyRun.stop();
+    if (storyRun._modal && storyRun._modal.parentNode) storyRun._modal.parentNode.removeChild(storyRun._modal);
+    storyRun._modal = null;
+    storyRun.finished = true;
+    storyRun.elapsed = 0;
+    if (storyRun._hud) storyRun._hud();
+  }
+  reset();
+  running = false;
+  dead = false;
+  $('endScreen').classList.add('hidden');
+  $('saveMeScreen').classList.add('hidden');
+  updateCrewUI();
+  updateDailyHint();
+  $('startScreen').classList.remove('hidden');
+  hud();
+  announce('Crew picker opened. Choose a character or start hopping.');
+}
+
 function shareRunCard() {
   const oc = document.createElement('canvas');
   oc.width = 560; oc.height = 320;
@@ -650,6 +779,7 @@ function shareRunCard() {
   link.download = 'crossy-crew-' + score + '.png';
   link.href = oc.toDataURL('image/png');
   link.click();
+  announce('Run card saved as a PNG image.');
 }
 
 function buildCrewSelect() {
@@ -830,12 +960,12 @@ function update(dt) {
   const wx = curBiome.weather;
   const wxCount = motes.reduce((n, m) => n + (m.wx ? 1 : 0), 0);
   const ambCount = motes.length - wxCount;
-  if (wx && wxCount < (wx === 'rain' ? 55 : 30) && Math.random() < (wx === 'rain' ? .85 : .35)) {
+  if (!reduceMotion && wx && wxCount < (wx === 'rain' ? 55 : 30) && Math.random() < (wx === 'rain' ? .85 : .35)) {
     if (wx === 'snow') motes.push({ x: Math.random() * W, y: -4, vx: (Math.random() - .3) * 18, vy: 35 + Math.random() * 25, r: .8 + Math.random() * 1.4, life: 1, bio: bioName, wx: true, type: 'snow' });
     else if (wx === 'rain') motes.push({ x: Math.random() * W, y: -4, vx: -8, vy: 220 + Math.random() * 80, r: .5 + Math.random() * .7, life: 1, bio: bioName, wx: true, type: 'rain' });
     else if (wx === 'firefly') motes.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * 20, vy: (Math.random() - .5) * 12, r: 1 + Math.random() * 1.4, life: 1, bio: bioName, wx: true, type: 'firefly' });
   }
-  if (!wx && ambCount < 22 && Math.random() < .25) {
+  if (!reduceMotion && !wx && ambCount < 22 && Math.random() < .25) {
     motes.push({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * 14, vy: 8 + Math.random() * 16, r: 1 + Math.random() * 1.8, life: 1, bio: bioName });
   }
   motes.forEach(m => { m.x += m.vx * dt; m.y += m.vy * dt; m.life -= m.wx ? dt * .35 : dt * .05; });
@@ -1070,21 +1200,89 @@ function drawGrassRow(row, y) {
     ctx.fillStyle = ((row.index + c) % 2 === 0) ? biome.grassA : biome.grassB;
     ctx.fillRect(c * cellW, y, cellW + 1, cellH + 1);
   }
-  ctx.fillStyle = 'rgba(255,255,255,.035)';
-  for (let c = 0; c < COLS; c += 2) ctx.fillRect(c * cellW, y, cellW + 1, cellH + 1);
-  ctx.strokeStyle = 'rgba(255,255,255,.10)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
+  // Soft organic patches so the grid reads as ground, not tiles.
+  ctx.globalAlpha = .30;
+  for (let c = 0; c < COLS; c++) {
+    for (let k = 0; k < 2; k++) {
+      const s = rnd(row.index * 67 + c * 13 + k * 5);
+      const gx = (c + .12 + s * .8) * cellW;
+      const gy = y + cellH * (.14 + rnd(row.index * 11 + c * 7 + k) * .72);
+      const gr = cellW * (.12 + s * .17);
+      ctx.fillStyle = k === 0 ? shade(biome.grassA, 12) : shade(biome.grassA, -12);
+      ctx.beginPath();
+      ctx.ellipse(gx, gy, gr, gr * .48, s * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // Top light, bottom shade gives each row a little thickness.
+  const lg = ctx.createLinearGradient(0, y, 0, y + cellH);
+  lg.addColorStop(0, 'rgba(255,255,255,.10)');
+  lg.addColorStop(.32, 'rgba(255,255,255,.015)');
+  lg.addColorStop(1, 'rgba(0,0,0,.12)');
+  ctx.fillStyle = lg;
+  ctx.fillRect(0, y, W, cellH + 1);
+
+  // Grass blades in two green tones instead of flat white strokes.
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 1.2;
   for (let c = 0; c < COLS; c++) {
     for (let k = 0; k < 3; k++) {
       const bx = (c + rnd(row.index * 13 + c * 5 + k)) * cellW;
-      const by = y + cellH * (.2 + rnd(c * 7 + k * 3 + row.index) * .7);
-      ctx.moveTo(bx, by + 3); ctx.lineTo(bx - 2, by - 2);
+      const by = y + cellH * (.18 + rnd(c * 7 + k * 3 + row.index) * .72);
+      const lean = (rnd(c * 3 + k * 9 + row.index) - .5) * 3.6;
+      ctx.strokeStyle = k % 2 ? shade(biome.grassA, -20) : shade(biome.grassA, 24);
+      ctx.globalAlpha = .55;
+      ctx.beginPath();
+      ctx.moveTo(bx, by + 4);
+      ctx.quadraticCurveTo(bx + lean * .4, by, bx + lean, by - 4);
+      ctx.stroke();
     }
   }
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,.05)';
-  ctx.fillRect(0, y, W, cellH * .18);
+  ctx.globalAlpha = 1;
+
+  // Biome flourishes on the ground itself.
+  if (biome.name === 'Desert') {
+    ctx.strokeStyle = 'rgba(110,84,38,.16)';
+    ctx.lineWidth = 1;
+    for (let c = 0; c < COLS; c++) {
+      const rx = (c + .18) * cellW;
+      const ry = y + cellH * (.34 + rnd(row.index + c) * .36);
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.quadraticCurveTo(rx + cellW * .2, ry - 3, rx + cellW * .42, ry);
+      ctx.stroke();
+    }
+  } else if (biome.name === 'Snow') {
+    for (let i = 0; i < 12; i++) {
+      const sx = rnd(row.index * 7 + i * 3) * W;
+      const sy = y + rnd(i * 11 + row.index) * cellH;
+      ctx.fillStyle = 'rgba(255,255,255,' + (.22 + rnd(i + row.index) * .42).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(sx, sy, .8 + rnd(i) * .9, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (biome.name === 'City') {
+    ctx.strokeStyle = 'rgba(0,0,0,.13)';
+    ctx.lineWidth = 1;
+    for (let c = 0; c < COLS; c++) {
+      ctx.beginPath();
+      ctx.moveTo(c * cellW, y);
+      ctx.lineTo(c * cellW, y + cellH);
+      ctx.moveTo(c * cellW, y + cellH * .5);
+      ctx.lineTo(c * cellW + cellW, y + cellH * .5);
+      ctx.stroke();
+    }
+  } else if (biome.name === 'Beach') {
+    ctx.strokeStyle = 'rgba(255,255,255,.10)';
+    ctx.lineWidth = 1;
+    for (let c = 0; c < COLS; c++) {
+      const rx = (c + .1) * cellW;
+      const ry = y + cellH * (.3 + rnd(row.index * 3 + c) * .4);
+      ctx.beginPath();
+      ctx.arc(rx + cellW * .2, ry, cellW * .18, Math.PI * .15, Math.PI * .85);
+      ctx.stroke();
+    }
+  }
   drawDecor(row.decor, y, row);
 
   row.items.forEach(t => {
@@ -1141,8 +1339,13 @@ function drawGrassRow(row, y) {
       ctx.fillRect(cx - cellW * .1, base - cellH * .8, cellW * .2, cellH * .05);
       ctx.fillStyle = 'rgba(255,240,160,.95)';
       ctx.beginPath(); ctx.arc(cx, base - cellH * .83, cellW * .07, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = 'rgba(255,235,120,.1)';
-      ctx.beginPath(); ctx.arc(cx, base - cellH * .83, cellW * .28, 0, Math.PI * 2); ctx.fill();
+      const lampR = cellW * (biome.name === 'Night' ? .58 : .3);
+      const lampGlow = ctx.createRadialGradient(cx, base - cellH * .83, 1, cx, base - cellH * .83, lampR);
+      const lampAlpha = biome.name === 'Night' ? .24 : .1;
+      lampGlow.addColorStop(0, 'rgba(255,235,120,' + lampAlpha + ')');
+      lampGlow.addColorStop(1, 'rgba(255,235,120,0)');
+      ctx.fillStyle = lampGlow;
+      ctx.beginPath(); ctx.arc(cx, base - cellH * .83, lampR, 0, Math.PI * 2); ctx.fill();
     } else {
       ctx.fillStyle = '#7a4f2a';
       ctx.fillRect(cx - 3, base - 2, 6, cellH * .3);
@@ -1169,77 +1372,149 @@ function drawGrassRow(row, y) {
           ctx.closePath(); ctx.fill();
         }
       } else {
+        // Layered canopy: dark under-story, mid foliage, sun-lit crown.
         ctx.fillStyle = biome.treeDark;
-        ctx.beginPath(); ctx.arc(cx + t.lean * .3, base - cellH * .12, cellW * .36 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + t.lean * .3, base - cellH * .1, cellW * .37 * s, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = biome.tree;
-        ctx.beginPath(); ctx.arc(cx - cellW * .05, base - cellH * .2, cellW * .31 * s, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = shade(biome.tree, 40);
-        ctx.beginPath(); ctx.arc(cx - cellW * .14, base - cellH * .28, cellW * .14 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx - cellW * .16, base - cellH * .2, cellW * .26 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + cellW * .18, base - cellH * .22, cellW * .24 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = shade(biome.tree, 26);
+        ctx.beginPath(); ctx.arc(cx - cellW * .02, base - cellH * .3, cellW * .22 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = shade(biome.tree, 54);
+        ctx.beginPath(); ctx.arc(cx - cellW * .14, base - cellH * .36, cellW * .12 * s, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(0,0,0,.10)';
+        ctx.beginPath(); ctx.arc(cx + cellW * .12, base - cellH * .06, cellW * .21 * s, 0, Math.PI * 2); ctx.fill();
       }
     }
   });
 }
 
 function drawRoadRow(row, y) {
-  ctx.fillStyle = '#3f434b';
+  const bio = row.biome || biomeAt(row.index);
+  const night = bio.name === 'Night' || bio.name === 'City' || bio.name === 'Twilight';
+  ctx.fillStyle = night ? '#343840' : '#3d414a';
   ctx.fillRect(0, y, W, cellH + 1);
-  ctx.fillStyle = 'rgba(0,0,0,.18)';
+
+  // Kerb lip at the top, hard seam at the bottom.
+  ctx.fillStyle = 'rgba(0,0,0,.24)';
   ctx.fillRect(0, y, W, 2);
-  ctx.fillRect(0, y + cellH - 2, W, 2);
+  ctx.fillStyle = 'rgba(255,255,255,.07)';
+  ctx.fillRect(0, y + 2, W, 1);
+
+  // Asphalt grain.
+  for (let i = 0; i < 28; i++) {
+    const sx = rnd(row.index * 31 + i * 7) * W;
+    const sy = y + rnd(row.index * 17 + i * 13) * cellH;
+    const a = rnd(i * 5 + row.index) * .11 + .03;
+    ctx.fillStyle = i % 3 === 0
+      ? 'rgba(255,255,255,' + a.toFixed(3) + ')'
+      : 'rgba(0,0,0,' + (a * 1.7).toFixed(3) + ')';
+    ctx.fillRect(sx, sy, 1 + (i % 2), 1);
+  }
+
+  // Worn wheel tracks.
+  ctx.fillStyle = 'rgba(0,0,0,.06)';
+  ctx.fillRect(0, y + cellH * .30, W, cellH * .14);
+  ctx.fillRect(0, y + cellH * .62, W, cellH * .12);
+
+  const lg = ctx.createLinearGradient(0, y, 0, y + cellH);
+  lg.addColorStop(0, 'rgba(255,255,255,.07)');
+  lg.addColorStop(.5, 'rgba(255,255,255,0)');
+  lg.addColorStop(1, 'rgba(0,0,0,.18)');
+  ctx.fillStyle = lg;
+  ctx.fillRect(0, y, W, cellH + 1);
+
   drawDecor(row.decor, y, row);
 
-  ctx.strokeStyle = 'rgba(250,250,210,.5)';
+  ctx.strokeStyle = 'rgba(250,250,210,.55)';
   ctx.lineWidth = Math.max(2, cellH * .04);
-  ctx.setLineDash([cellW * .32, cellW * .3]);
+  ctx.setLineDash([cellW * .34, cellW * .3]);
   ctx.beginPath();
   ctx.moveTo(0, y + cellH / 2);
   ctx.lineTo(W, y + cellH / 2);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  row.items.forEach(v => { v._rowIdx = row.index; drawVehicle(v, y, row.speed > 0); });
+  row.items.forEach(v => { v._rowIdx = row.index; drawVehicle(v, y, row.speed > 0, night); });
 }
 
-function drawVehicle(v, y, dir) {
+function drawVehicle(v, y, dir, night) {
   const x = v.x * cellW, w = v.w * cellW, h = v.h * cellH;
   const top = y + (cellH - h) / 2;
-  ctx.fillStyle = 'rgba(0,0,0,.28)';
-  fillRR(x + 3, top + h * .62, w, h * .34, 4, 'rgba(0,0,0,.28)');
+  const r = Math.min(7, h * .4);
 
-  // check near-miss flash
+  // Contact shadow sits under the car and to the right.
+  fillRR(x + 4, top + h * .66, w, h * .32, r, 'rgba(0,0,0,.30)');
+
+  // Headlight cone points the way the car is travelling.
+  const hx = dir ? x + w - 3 : x + 3;
+  const hy = top + h / 2;
+  const reach = w * .55;
+  if (night) {
+    const glow = ctx.createRadialGradient(hx, hy, 1, hx + (dir ? reach : -reach), hy, reach);
+    glow.addColorStop(0, 'rgba(255,240,180,.30)');
+    glow.addColorStop(1, 'rgba(255,240,180,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.ellipse(hx + (dir ? reach * .55 : -reach * .55), hy, reach, h * .85, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   const isFlashing = nearMissFlash.some(f => f.rowIdx === (v._rowIdx || -999));
   if (isFlashing) {
     ctx.save(); ctx.globalAlpha = 0.7;
     fillRR(x - 2, top - 2, w + 4, h + 4, Math.min(9, h * .4), '#fde047');
     ctx.restore();
   }
+
   if (v.kind === 'truck') {
-    fillRR(x, top, w * .7, h, 4, v.color);
-    fillRR(x, top, w * .7, h * .42, 4, shade(v.color, 34));
-    fillRR(x + w * .7, top + h * .08, w * .3, h * .92, 4, shade(v.color, -26));
-    ctx.fillStyle = '#bfe3ff';
-    fillRR(dir ? x + w * .74 : x + w * .74, top + h * .2, w * .2, h * .34, 2, '#bfe3ff');
+    // Cargo box with panel ribs.
+    fillRR(x, top, w * .68, h, r, v.color);
+    fillRR(x + 2, top + 2, w * .68 - 4, h * .34, r * .7, shade(v.color, 30));
+    ctx.strokeStyle = 'rgba(0,0,0,.12)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) {
+      const rx = x + (w * .68) * (i / 4);
+      ctx.beginPath(); ctx.moveTo(rx, top + 3); ctx.lineTo(rx, top + h - 3); ctx.stroke();
+    }
+    // Cab, window and bumper.
+    fillRR(x + w * .68, top + h * .06, w * .31, h * .88, r * .8, shade(v.color, -30));
+    fillRR(x + w * .72, top + h * .16, w * .22, h * .30, 3, 'rgba(160,210,240,.82)');
+    fillRR(x + w * .70, top + h * .86, w * .28, h * .1, 2, '#2a3038');
   } else {
-    fillRR(x, top, w, h, Math.min(7, h * .4), v.color);
-    fillRR(x + w * .06, top + h * .06, w * .88, h * .34, 4, shade(v.color, 40));
-    fillRR(x + w * .24, top + h * .14, w * .5, h * .44, 4, 'rgba(20,26,40,.55)');
-    ctx.fillStyle = 'rgba(191,227,255,.75)';
-    fillRR(x + w * .28, top + h * .18, w * .42, h * .16, 2, 'rgba(191,227,255,.75)');
+    // Body, roof and windscreen with a glass gradient.
+    fillRR(x, top, w, h, r, shade(v.color, -20));
+    fillRR(x + w * .04, top + h * .04, w * .92, h * .92, r * .9, v.color);
+    fillRR(x + w * .08, top + h * .08, w * .84, h * .34, r * .7, shade(v.color, 44));
+    fillRR(x + w * .25, top + h * .16, w * .46, h * .42, 4, 'rgba(18,28,45,.75)');
+    const glass = ctx.createLinearGradient(0, top + h * .16, 0, top + h * .58);
+    glass.addColorStop(0, 'rgba(196,228,255,.72)');
+    glass.addColorStop(.5, 'rgba(120,170,215,.22)');
+    glass.addColorStop(1, 'rgba(180,220,255,.5)');
+    ctx.fillStyle = glass;
+    rr(x + w * .27, top + h * .18, w * .42, h * .19, 3); ctx.fill();
+    // Bonnet crease.
+    ctx.strokeStyle = 'rgba(255,255,255,.14)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + w * .12, top + h * .62); ctx.lineTo(x + w * .88, top + h * .62); ctx.stroke();
   }
-  // subtle outline so vehicles read against dark road
+
+  // Wheels tucked under the body.
+  const ww = Math.max(3, w * .11), wh = Math.max(3, h * .16);
+  [[x + w * .14, top], [x + w * .72, top], [x + w * .14, top + h - wh], [x + w * .72, top + h - wh]]
+    .forEach(([wx, wy]) => fillRR(wx, wy, ww, wh, 2, '#1b202a'));
+
+  // Outline so vehicles hold up against dark asphalt.
   ctx.strokeStyle = 'rgba(255,255,255,.18)';
   ctx.lineWidth = 1;
-  rr(x, top, w, h, Math.min(7, h * .4)); ctx.stroke();
+  rr(x, top, w, h, r); ctx.stroke();
 
-  ctx.fillStyle = '#1f2430';
-  fillRR(x + w * .16, top + h * .02, w * .13, h * .16, 2, '#1f2430');
-  fillRR(x + w * .71, top + h * .02, w * .13, h * .16, 2, '#1f2430');
-  fillRR(x + w * .16, top + h * .82, w * .13, h * .16, 2, '#1f2430');
-  fillRR(x + w * .71, top + h * .82, w * .13, h * .16, 2, '#1f2430');
-
-  ctx.fillStyle = '#fef08a';
-  if (dir) { fillRR(x + w - 5, top + 3, 4, 4, 1, '#fef08a'); fillRR(x + w - 5, top + h - 7, 4, 4, 1, '#fef08a'); }
-  else { fillRR(x + 1, top + 3, 4, 4, 1, '#fef08a'); fillRR(x + 1, top + h - 7, 4, 4, 1, '#fef08a'); }
+  // Headlights at the front, tail lights behind.
+  const lightY = [top + h * .18, top + h * .70];
+  lightY.forEach(ly => {
+    fillRR(dir ? x + w - 5 : x + 1, ly, 4, 4, 1, '#fff7c2');
+    fillRR(dir ? x + w - 6 : x + 2, ly + 5, 4, 3, 1, '#e5484d');
+  });
 }
 
 function drawRiverRow(row, y) {
@@ -1250,19 +1525,44 @@ function drawRiverRow(row, y) {
   ctx.fillStyle = g;
   ctx.fillRect(0, y, W, cellH + 1);
 
-  ctx.fillStyle = 'rgba(255,255,255,.14)';
-  ctx.fillRect(0, y, W, 2);
-  ctx.fillRect(0, y + cellH - 2, W, 2);
-
   const t = performance.now() * .002;
-  ctx.strokeStyle = 'rgba(160,205,255,.35)';
-  ctx.lineWidth = 1.4;
-  for (let k = 0; k < 3; k++) {
+
+  // Broken foam along both banks.
+  ctx.lineWidth = 1.6;
+  for (let b = 0; b < 2; b++) {
+    const by = b === 0 ? y + 3 : y + cellH - 3;
+    ctx.strokeStyle = b === 0 ? 'rgba(225,245,255,.34)' : 'rgba(185,225,255,.22)';
     ctx.beginPath();
-    for (let wx = 0; wx <= W; wx += 20) {
-      const yy = y + cellH * (.28 + k * .22) + Math.sin(wx * .04 + t * (1 + k * .3) + row.index) * 3;
+    for (let wx = 0; wx <= W; wx += 14) {
+      const yy = by + Math.sin(wx * .05 + t * .9 + b * 2 + row.index) * 1.7;
       if (wx === 0) ctx.moveTo(wx, yy); else ctx.lineTo(wx, yy);
     }
+    ctx.stroke();
+  }
+
+  // Layered swell: smooth, low waves so the water reads as moving, not scratched.
+  for (let k = 0; k < 5; k++) {
+    const fade = k % 2 === 0 ? .20 : .13;
+    ctx.strokeStyle = 'rgba(170,215,255,' + fade + ')';
+    ctx.lineWidth = k % 2 === 0 ? 1.6 : 1;
+    ctx.beginPath();
+    for (let wx = 0; wx <= W; wx += 8) {
+      const yy = y + cellH * (.18 + k * .16) + Math.sin(wx * .035 + t * (1 + k * .3) + row.index) * 3.2;
+      if (wx === 0) ctx.moveTo(wx, yy); else ctx.lineTo(wx, yy);
+    }
+    ctx.stroke();
+  }
+
+  // A few long crest glints catch the light.
+  for (let g = 0; g < 4; g++) {
+    const seed = g * 9.7 + row.index * 1.3;
+    const gx = ((rnd(seed) * W + t * 18) % W + W) % W;
+    const gy = y + cellH * (.22 + rnd(seed + .4) * .58);
+    ctx.strokeStyle = 'rgba(255,255,255,.16)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(gx, gy);
+    ctx.quadraticCurveTo(gx + 7, gy - 1.2, gx + 15, gy);
     ctx.stroke();
   }
   const nowp = performance.now();
@@ -1281,24 +1581,71 @@ function drawRiverRow(row, y) {
     const x = log.x * cellW, w = log.w * cellW, h = log.h * cellH;
     const top = y + (cellH - h) / 2;
     const onThisLog = player.onLog === log && player._logEdgeDanger;
-    fillRR(x + 3, top + h * .7, w, h * .3, 6, 'rgba(0,0,0,.22)');
+
+    // Water shadow under the log.
+    fillRR(x + 4, top + h * .72, w, h * .32, 6, 'rgba(6,24,42,.26)');
+    // Wake foam at both ends.
+    ctx.strokeStyle = 'rgba(225,247,255,.42)';
+    ctx.lineWidth = 1.6;
+    for (let s = 0; s < 2; s++) {
+      const ex = s === 0 ? x + 1 : x + w - 1;
+      const dirF = s === 0 ? -1 : 1;
+      ctx.beginPath(); ctx.arc(ex + dirF * 3, top + h / 2, h * .34, s === 0 ? -.5 : Math.PI - .5, s === 0 ? .5 : Math.PI + .5); ctx.stroke();
+    }
+
     fillRR(x, top, w, h, h * .42, onThisLog ? '#c0432a' : '#8a5a2b');
     fillRR(x + h * .12, top + h * .1, Math.max(0, w - h * .24), h * .45, h * .3, onThisLog ? '#d96040' : '#a9713a');
+    // Top rim light along the bark.
+    fillRR(x + h * .2, top + 1, Math.max(0, w - h * .4), h * .08, h * .05, 'rgba(255,236,198,.22)');
+
+    // Cut ends with growth rings.
     ctx.fillStyle = '#6f4520';
     ctx.beginPath(); ctx.ellipse(x + h * .42, top + h / 2, h * .18, h * .42, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(x + w - h * .42, top + h / 2, h * .18, h * .42, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(80,48,20,.5)';
+    ctx.strokeStyle = 'rgba(48,28,12,.55)';
+    ctx.lineWidth = 1;
+    [x + h * .42, x + w - h * .42].forEach(ex => {
+      for (let ri = 1; ri <= 2; ri++) {
+        ctx.beginPath();
+        ctx.ellipse(ex, top + h / 2, h * .18 * (ri / 3), h * .42 * (ri / 3), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    });
+
+    // Bark grain.
+    ctx.strokeStyle = 'rgba(80,48,20,.45)';
     ctx.lineWidth = 1.2;
-    for (let i = 1; i <= 2; i++) {
-      const gx = x + w * (i / 3);
-      ctx.beginPath(); ctx.moveTo(gx, top + h * .2); ctx.lineTo(gx + 6, top + h * .8); ctx.stroke();
+    for (let i = 1; i <= 3; i++) {
+      const gx = x + w * (i / 4);
+      ctx.beginPath();
+      ctx.moveTo(gx, top + h * .22);
+      ctx.quadraticCurveTo(gx + 3, top + h * .5, gx + 1, top + h * .78);
+      ctx.stroke();
     }
+    // A little moss catching the sun.
+    ctx.fillStyle = 'rgba(96,150,74,.4)';
+    ctx.beginPath(); ctx.ellipse(x + w * .34, top + h * .2, h * .16, h * .08, 0, 0, Math.PI * 2); ctx.fill();
   });
 }
 
 function drawRailRow(row, y) {
   ctx.fillStyle = '#6a6154';
   ctx.fillRect(0, y, W, cellH + 1);
+
+  // Ballast grain and a soft top light.
+  for (let i = 0; i < 22; i++) {
+    const sx = rnd(row.index * 23 + i * 5) * W;
+    const sy = y + rnd(row.index * 19 + i * 11) * cellH;
+    const a = rnd(i + row.index * 3) * .16 + .05;
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,' + a.toFixed(3) + ')' : 'rgba(0,0,0,' + a.toFixed(3) + ')';
+    ctx.fillRect(sx, sy, 1 + (i % 2), 1);
+  }
+  const rlg = ctx.createLinearGradient(0, y, 0, y + cellH);
+  rlg.addColorStop(0, 'rgba(255,255,255,.07)');
+  rlg.addColorStop(1, 'rgba(0,0,0,.16)');
+  ctx.fillStyle = rlg;
+  ctx.fillRect(0, y, W, cellH + 1);
+
   drawDecor(row.decor, y, row);
 
   ctx.fillStyle = '#4b3b2a';
@@ -1313,9 +1660,10 @@ function drawRailRow(row, y) {
   ctx.fillRect(0, y + cellH * .66, W, 1);
 
   // check if any train is off-screen but close (incoming warning)
+  const warnRange = (row.biome && row.biome.name === 'City') ? cellW * 1.6 : cellW * 3;
   const hasIncoming = row.items.some(tr => {
     const tl = tr.x * cellW, tr2 = tl + tr.w * cellW;
-    return (tr2 < 0 && tr2 > -cellW * 3) || (tl > W && tl < W + cellW * 3);
+    return (tr2 < 0 && tr2 > -warnRange) || (tl > W && tl < W + warnRange);
   });
   const blinkRate = hasIncoming ? .03 : .01;
   const blinkSize = hasIncoming ? 6 : 4;
@@ -1326,26 +1674,57 @@ function drawRailRow(row, y) {
   ctx.beginPath(); ctx.arc(W - 7, y + cellH * .5, blinkSize, 0, Math.PI * 2); ctx.fill();
   ctx.shadowBlur = 0;
 
+  const trainNight = (row.biome && row.biome.name === 'Night') || (row.biome && row.biome.name === 'City');
   row.items.forEach(tr => {
     const x = tr.x * cellW, w = tr.w * cellW, h = tr.h * cellH;
     const top = y + (cellH - h) / 2;
-    fillRR(x + 3, top + h * .68, w, h * .32, 4, 'rgba(0,0,0,.28)');
-    fillRR(x, top, w, h, Math.min(7, h * .35), tr.color);
-    fillRR(x, top + h * .58, w, h * .34, Math.min(6, h * .3), shade(tr.color, -42));
-    ctx.fillStyle = '#0f172a';
-    for (let i = 0; i < tr.cars; i++) {
-      const cwx = x + w * (.12 + i * .68 / tr.cars);
-      fillRR(cwx, top + h * .16, w * .5 / tr.cars, h * .3, 2, 'rgba(191,227,255,.8)');
+    const nose = row.speed > 0 ? x + w : x;
+    const nDir = row.speed > 0 ? -1 : 1;
+
+    fillRR(x + 4, top + h * .7, w, h * .3, 4, 'rgba(0,0,0,.30)');
+
+    // Headlight beam down the track.
+    if (trainNight) {
+      const reach = w * .35;
+      const glow = ctx.createRadialGradient(nose, top + h * .5, 1, nose + (row.speed > 0 ? reach : -reach), top + h * .5, reach);
+      glow.addColorStop(0, 'rgba(255,246,190,.34)');
+      glow.addColorStop(1, 'rgba(255,246,190,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.ellipse(nose + nDir * reach * .5, top + h * .5, reach, h * .8, 0, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.fillStyle = '#fef08a';
-    const fx = row.speed > 0 ? x + w - 7 : x + 2;
-    ctx.beginPath(); ctx.arc(fx, top + h * .5, 3.2, 0, Math.PI * 2); ctx.fill();
+
+    // Body, roof highlight and dark underframe.
+    fillRR(x, top, w, h, Math.min(7, h * .35), tr.color);
+    fillRR(x + 3, top + 2, Math.max(0, w - 6), h * .3, Math.min(6, h * .26), shade(tr.color, 30));
+    fillRR(x, top + h * .60, w, h * .3, Math.min(6, h * .26), shade(tr.color, -46));
+
+    // Carriage windows with a warm glow.
+    const gap = w * .68 / tr.cars;
+    for (let i = 0; i < tr.cars; i++) {
+      const cwx = x + w * .12 + i * gap + (i > 0 ? gap * .12 : 0);
+      const ww = Math.min(gap * .62, w * .22);
+      fillRR(cwx, top + h * .14, ww, h * .3, 2, 'rgba(16,26,42,.9)');
+      fillRR(cwx + 1, top + h * .16, Math.max(0, ww - 2), h * .24, 2, 'rgba(255,225,150,.72)');
+    }
+
+    // Yellow front warning stripe and headlight.
+    fillRR(row.speed > 0 ? x + w - 8 : x + 3, top + h * .08, 5, h * .84, 2, 'rgba(250,240,160,.85)');
+    ctx.fillStyle = '#fff7c2';
+    ctx.beginPath(); ctx.arc(nose + nDir * 3, top + h * .5, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.2)';
+    ctx.lineWidth = 1;
+    rr(x, top, w, h, Math.min(7, h * .35)); ctx.stroke();
   });
 }
 
 function drawSafeRow(row, y) {
   const biome = biomeAt(0);
   ctx.fillStyle = biome.grassA;
+  ctx.fillRect(0, y, W, cellH + 1);
+  const slg = ctx.createLinearGradient(0, y, 0, y + cellH);
+  slg.addColorStop(0, 'rgba(255,255,255,.10)');
+  slg.addColorStop(1, 'rgba(0,0,0,.12)');
+  ctx.fillStyle = slg;
   ctx.fillRect(0, y, W, cellH + 1);
   ctx.fillStyle = 'rgba(255,255,255,.06)';
   ctx.fillRect(0, y, W, 3);
@@ -1373,7 +1752,7 @@ function drawPower(row) {
   if (!p) return;
   const cx = p.col * cellW + cellW / 2;
   const cy = screenY(row.index) + cellH / 2;
-  const bob = Math.sin(performance.now() * .005 + row.index) * 2;
+  const bob = reduceMotion ? 0 : Math.sin(performance.now() * .005 + row.index) * 2;
   const r = cellW * .16;
   ctx.save();
   ctx.translate(cx, cy + bob);
@@ -1458,13 +1837,21 @@ function drawCoin(row) {
   if (row.hasCoin < 0) return;
   const cx = row.hasCoin * cellW + cellW / 2;
   const cy = screenY(row.index) + cellH / 2;
-  const bob = Math.sin(performance.now() * .005 + row.index) * 2;
-  const spin = Math.max(0.1, Math.abs(Math.cos(performance.now() * .007 + row.index * 2.1))) * .9 + .1;
+  const bob = reduceMotion ? 0 : Math.sin(performance.now() * .005 + row.index) * 2;
+  const spin = reduceMotion ? 1 : Math.max(0.1, Math.abs(Math.cos(performance.now() * .007 + row.index * 2.1))) * .9 + .1;
+  // Soft halo so coins read as pickups from a distance, and stronger at night.
+  const nightCoin = biomeAt(furthest || row.index).name === 'Night';
+  const haloR = cellW * (nightCoin ? .46 : .34);
+  const halo = ctx.createRadialGradient(cx, cy + bob, 1, cx, cy + bob, haloR);
+  halo.addColorStop(0, nightCoin ? 'rgba(253,224,71,.38)' : 'rgba(253,224,71,.22)');
+  halo.addColorStop(1, 'rgba(253,224,71,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(cx, cy + bob, haloR, 0, Math.PI * 2); ctx.fill();
   ctx.save();
   ctx.translate(cx, cy + bob);
   ctx.scale(spin, 1);
   ctx.shadowColor = '#fbbf24';
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = nightCoin ? 18 : 12;
   ctx.fillStyle = '#fbbf24';
   ctx.beginPath(); ctx.arc(0, 0, cellW * .13, 0, Math.PI * 2); ctx.fill();
   ctx.shadowBlur = 0;
@@ -1591,10 +1978,11 @@ function drawPlayer() {
   const SHELL = '#8a6a45', SHELL_D = '#63492c', SHELL_L = '#a98459';
   const EYE = '#22331d';
 
+  // Contact shadow shrinks and lifts as Pip leaves the ground.
   ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,.28)';
+  ctx.fillStyle = 'rgba(0,0,0,' + (.30 - t * .14).toFixed(3) + ')';
   ctx.beginPath();
-  ctx.ellipse(px, py + cellH * .3, R * 1.05, Rb * .42, 0, 0, Math.PI * 2);
+  ctx.ellipse(px + t * 5, py + cellH * .3, R * 1.05 * (1 - t * .22), Rb * .42 * (1 - t * .22), 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
@@ -1611,6 +1999,8 @@ function drawPlayer() {
   ell(R * .5, Rb * .92, R * .34, Rb * .2, 0, SKIN_D);
 
   if (showBack) {
+    ctx.fillStyle = 'rgba(18,38,20,.42)';
+    ctx.beginPath(); ctx.ellipse(0, Rb * .12, R * 1.06, Rb * 1.02, 0, 0, Math.PI * 2); ctx.fill();
     ell(0, Rb * .18, R * .88, Rb * .84, 0, SKIN);
     ell(0, Rb * .12, R * 1.0, Rb * .96, 0, SHELL_D);
     ell(0, Rb * .08, R * .86, Rb * .8, 0, SHELL);
@@ -1625,6 +2015,10 @@ function drawPlayer() {
     ell(0, hy - Rb * .12, R * .58, Rb * .5, 0, CLOAK_L);
     ell(0, Rb * .98, R * .18, Rb * .14, 0, SKIN);
   } else {
+    // Dark silhouette edge so Pip stays readable against bright grass.
+    ctx.fillStyle = 'rgba(18,38,20,.42)';
+    ctx.beginPath(); ctx.ellipse(0, Rb * .2, R * .97, Rb * .95, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, hy, R * .93, Rb * .89, 0, 0, Math.PI * 2); ctx.fill();
     if (side) {
       ell(-dirx * R * .68, Rb * .14, R * .42, Rb * .8, 0, SHELL);
       ell(-dirx * R * .76, Rb * .14, R * .28, Rb * .6, 0, SHELL_D);
@@ -1642,6 +2036,11 @@ function drawPlayer() {
     ell(-R * .12, hy + Rb * .04, R * .5, Rb * .44, 0, SKIN_L);
     ell(-R * .42, hy + Rb * .1, R * .1, Rb * .09, 0, SPOT);
     ell(R * .44, hy - Rb * .16, R * .09, Rb * .08, 0, SPOT);
+
+    // Warm rim light along the brow of the hood.
+    ctx.strokeStyle = 'rgba(255,248,220,.24)';
+    ctx.lineWidth = Math.max(1, R * .05);
+    ctx.beginPath(); ctx.arc(-R * .04, hy + Rb * .04, R * .72, Math.PI * 1.04, Math.PI * 1.7); ctx.stroke();
 
     const brow = hy + Rb * .16;
     const eyeR = R * .2;
@@ -1727,18 +2126,28 @@ function draw() {
   const tint = biomeAt(furthest || 0).tint;
   if (tint) { ctx.fillStyle = tint; ctx.fillRect(0, 0, W, H); }
 
-  const key = W + 'x' + H;
+  // Screen-space key light from the top-left; the lower edge falls into shade.
+  const lightGrad = ctx.createLinearGradient(0, 0, W * .9, H);
+  lightGrad.addColorStop(0, 'rgba(255,255,255,.05)');
+  lightGrad.addColorStop(.5, 'rgba(255,255,255,0)');
+  lightGrad.addColorStop(1, 'rgba(0,0,0,.10)');
+  ctx.fillStyle = lightGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  const nightBiome = biomeAt(furthest || 0).name === 'Night';
+  const key = W + 'x' + H + ':' + (nightBiome ? 'night' : 'day');
   if (vigKey !== key) {
     vigKey = key;
-    vignette = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .72);
+    const inner = Math.min(W, H) * (nightBiome ? .2 : .35);
+    vignette = ctx.createRadialGradient(W / 2, H / 2, inner, W / 2, H / 2, Math.max(W, H) * .72);
     vignette.addColorStop(0, 'rgba(0,0,0,0)');
-    vignette.addColorStop(1, 'rgba(0,0,0,.38)');
+    vignette.addColorStop(1, nightBiome ? 'rgba(0,0,0,.58)' : 'rgba(0,0,0,.38)');
   }
   if (vignette) { ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H); }
 
   if (idleTimer > 4 && running && !dead) {
     const danger = Math.min(1, (idleTimer - 4) / 5);
-    const pulse = .55 + .45 * Math.sin(performance.now() * .009 * (1 + danger * 2));
+    const pulse = reduceMotion ? 1 : .55 + .45 * Math.sin(performance.now() * .009 * (1 + danger * 2));
     const vig2 = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .22, W / 2, H / 2, Math.max(W, H) * .65);
     vig2.addColorStop(0, 'rgba(239,68,68,0)');
     vig2.addColorStop(1, 'rgba(239,68,68,' + (danger * .38 * pulse).toFixed(3) + ')');
@@ -1830,6 +2239,9 @@ $('againBtn').onclick = startGame;
 const saveBtnEl = $('saveBtn'), giveUpBtnEl = $('giveUpBtn');
 if (saveBtnEl) saveBtnEl.onclick = revive;
 if (giveUpBtnEl) giveUpBtnEl.onclick = surrender;
+const endShareEl = $('endShareBtn'), endCrewEl = $('endCrewBtn');
+if (endShareEl) endShareEl.onclick = shareRunCard;
+if (endCrewEl) endCrewEl.onclick = returnToCrewSelect;
 function bindDpad(id, dx, dy) {
   const btn = $(id);
   if (!btn) return;
@@ -1847,12 +2259,21 @@ bindDpad('dUp', 0, 1);
 bindDpad('dDown', 0, -1);
 bindDpad('dLeft', -1, 0);
 bindDpad('dRight', 1, 0);
+function applySoundSetting() {
+  const on = localStorage.getItem('soundEnabled') !== 'false';
+  if (audio) audio.setMasterVolume(on ? .5 : 0);
+  const btn = $('soundBtn');
+  if (!btn) return;
+  btn.textContent = on ? '🔊' : '🔇';
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  btn.setAttribute('aria-label', on ? 'Mute sound' : 'Turn sound on');
+}
 $('soundBtn').onclick = function() {
   const on = localStorage.getItem('soundEnabled') !== 'false';
   localStorage.setItem('soundEnabled', on ? 'false' : 'true');
-  if (audio) audio.setMasterVolume(on ? 0 : .5);
-  $('soundBtn').textContent = on ? '🔇' : '🔊';
+  applySoundSetting();
 };
+applySoundSetting();
 
 reset();
 fit();

@@ -93,6 +93,39 @@ const check = (name, ok, detail = '') => {
   const ended = await page.evaluate(() => ({ save: !document.getElementById('saveMeScreen').classList.contains('hidden'), dead: window.__crossy.dead }));
   check('no second chance without coins, and the run ends', !ended.save && ended.dead, JSON.stringify(ended));
 
+  // The game-over card must show the real run summary, not just a generic modal.
+  const endUi = await page.evaluate(() => {
+    const card = document.querySelector('.sr-modal-card');
+    const buttons = card ? [...card.querySelectorAll('button')] : [];
+    return {
+      summary: !!document.getElementById('ccEndExtra'),
+      share: buttons.some(b => b.textContent === 'Save run card'),
+      crew: buttons.some(b => b.textContent === 'Change crew'),
+      aria: document.getElementById('game').getAttribute('aria-label') || '',
+      live: !!document.getElementById('a11yStatus')
+    };
+  });
+  check('game over shows the run summary', endUi.summary);
+  check('game over offers Save run card and Change crew', endUi.share && endUi.crew, JSON.stringify(endUi));
+  check('canvas has an accessible label and live status', endUi.aria.length > 20 && endUi.live);
+
+  await page.evaluate(() => {
+    const card = document.querySelector('.sr-modal-card');
+    const btn = card && [...card.querySelectorAll('button')].find(b => b.textContent === 'Change crew');
+    if (btn) btn.click();
+  });
+  await sleep(180);
+  const picker = await page.evaluate(() => ({
+    start: !document.getElementById('startScreen').classList.contains('hidden'),
+    modal: !!document.querySelector('.sr-modal.show'),
+    running: window.__crossy.running
+  }));
+  check('Change crew returns to the crew picker', picker.start && !picker.modal && !picker.running, JSON.stringify(picker));
+
+  await page.evaluate(() => document.getElementById('playBtn').click());
+  await sleep(180);
+  check('a new run starts from the crew picker', await page.evaluate(() => window.__crossy.running));
+
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 
   await browser.close();
