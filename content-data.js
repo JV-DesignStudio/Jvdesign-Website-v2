@@ -5965,7 +5965,7 @@ window.JVDS_CONTENT = {
       "emoji": "🦊",
       "cover": "lumo-front-cover-concept-v001.webp",
       "desc": "A purple fox learns that carrying something heavy doesn't mean stopping , it means finding a quieter kind of strong.",
-      "status": "published",
+      "status": "coming-soon",
       "url": "/books/lumo_and_the_grumble_grit.html"
     },
     {
@@ -5977,7 +5977,7 @@ window.JVDS_CONTENT = {
       "emoji": "🐢",
       "cover": "pip-cover.webp",
       "desc": "A small tortoise afraid of the night sky discovers that the dark holds wonder, not just danger.",
-      "status": "published",
+      "status": "coming-soon",
       "url": "/books/Pip_and_the_night_sky.html"
     },
     {
@@ -6001,7 +6001,7 @@ window.JVDS_CONTENT = {
       "emoji": "🔮",
       "cover": "Elara.webp",
       "desc": "A heartwarming story about safe online exploration, clever thinking, and trusting the right people.",
-      "status": "published",
+      "status": "coming-soon",
       "url": "/books/Elara.html"
     },
     {
@@ -6013,7 +6013,7 @@ window.JVDS_CONTENT = {
       "emoji": "✨",
       "cover": "front-cover-concept.webp",
       "desc": "A magical journey through the cosmos sparking wonder, curiosity, and a sense of belonging in the universe.",
-      "status": "published",
+      "status": "coming-soon",
       "url": "/books/Stardust.html"
     }
   ],
@@ -6511,7 +6511,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-31T18:31:32.847Z",
+    "generated": "2026-10-31T19:31:48.642Z",
     "workshops": 345,
     "games": 13,
     "tools": 51,

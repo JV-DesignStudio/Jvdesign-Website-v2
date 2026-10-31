@@ -49,8 +49,8 @@ check('every book card states a status badge',
 
 const published = cards.filter(c => c.badgeClass === 'published');
 const preview = cards.filter(c => c.badgeClass === 'preview');
-check('published books are labelled Published', published.length === 4, published.length + ' published');
-check('the in-progress book is labelled Preview', preview.length === 1,
+check('no book is labelled Published while print editions are pending', published.length === 0, published.length + ' published');
+check('every book with sample pages is labelled Preview', preview.length === 5,
   preview.map(c => c.title).join(', ') || 'none');
 check('no book uses a vague or outdated status badge',
   cards.every(c => ['published', 'preview'].includes(c.badgeClass)),
@@ -58,12 +58,14 @@ check('no book uses a vague or outdated status badge',
 
 // a preview is a teaser, never sold as a finished read
 for (const c of preview) {
-  check('preview book "' + c.title + '" is offered as a teaser', /teaser/i.test(c.cta), c.cta);
+  check('preview book "' + c.title + '" is offered as a peek inside', /peek inside|teaser/i.test(c.cta), c.cta);
 }
 for (const c of published) {
   check('published book "' + c.title + '" is not a teaser',
     /read the book/i.test(c.cta) && !/teaser|preview/i.test(c.cta), c.cta);
 }
+check('no card promises the full book while it is still coming soon',
+  cards.every(c => !/read the book/i.test(c.cta)), cards.map(c => c.cta).join(' | '));
 
 check('the shelf no longer shows a Coming Soon badge', !/book-badge coming/.test(shelf));
 check('status badges are visually distinguished',
