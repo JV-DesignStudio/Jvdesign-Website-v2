@@ -329,7 +329,9 @@ let failures = 0;
     try{
       const built=await buildSoundKit();
       out.sounds=built.manifest.sounds.length;
-      out.expected=SFX_CATS.reduce((n,c)=>n+c.sounds.length,0);
+      out.builtins=SFX_CATS.reduce((n,c)=>n+c.sounds.length,0);
+      out.extra=built.manifest.sounds.filter(s=>s.source!=='builtin').length;
+      out.expected=out.builtins+out.extra;
       out.categories=[...new Set(built.manifest.sounds.map(s=>s.category))].length;
       out.hasSong=!!built.manifest.song&&/\.wav$/.test(built.manifest.song.file);
       out.songDuration=built.manifest.song&&built.manifest.song.duration;
@@ -368,6 +370,27 @@ let failures = 0;
     return out;
   });
   check('load your own audio becomes a usable sound', !myAudio.error && myAudio.loadedBuf && myAudio.sampleAdded && myAudio.buttons>=1 && myAudio.dlEnabled && myAudio.sendEnabled, JSON.stringify(myAudio));
+
+  const userKit = await page.evaluate(async()=>{
+    const out={};
+    const hasNeedle=(bytes,n)=>{ outer: for(let i=0;i<=bytes.length-n.length;i++){ for(let j=0;j<n.length;j++){ if(bytes[i+j]!==n[j]) continue outer; } return true; } return false; };
+    try{
+      const built=await buildSoundKit(null,{builtins:false});
+      out.builtins=built.manifest.sounds.filter(s=>s.source==='builtin').length;
+      const user=built.manifest.sounds.find(s=>s.source==='user'&&/unit_tone/i.test(s.name));
+      const lab=built.manifest.sounds.find(s=>s.source==='lab');
+      out.user=user?user.file:'';
+      out.lab=lab?lab.file:'';
+      out.hasUserFile=!!(user&&built.files.some(f=>f.name===user.file));
+      out.hasLabFile=!!(lab&&built.files.some(f=>f.name===lab.file));
+      out.hasSong=built.files.some(f=>/_loop\.wav$/.test(f.name));
+      const bytes=new Uint8Array(await built.zip.arrayBuffer());
+      out.zipHasUser=hasNeedle(bytes,new TextEncoder().encode('my/'));
+      out.zipHasLab=hasNeedle(bytes,new TextEncoder().encode('lab/'));
+    }catch(e){ out.error=e.message; }
+    return out;
+  });
+  check('sound kit includes My Sounds and the Sound Lab sound', !userKit.error && userKit.builtins===0 && /^my\//.test(userKit.user) && /^lab\//.test(userKit.lab) && userKit.hasUserFile && userKit.hasLabFile && userKit.hasSong && userKit.zipHasUser && userKit.zipHasLab, JSON.stringify(userKit));
 
   const micDenied = await page.evaluate(async()=>{
     const out={};
