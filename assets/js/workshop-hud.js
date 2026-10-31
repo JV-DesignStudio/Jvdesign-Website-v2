@@ -90,7 +90,7 @@
     }
     .jvhud-progress-link {
       display: block; text-align: center; font-size: .76rem; font-weight: 700;
-      color: var(--jv-teal, #70A3A7); text-decoration: none;
+      color: #8CC7CB; text-decoration: none;
       border-top: 1px solid rgba(255,255,255,.08); padding-top: 10px;
     }
     .jvhud-progress-link:hover { opacity: .8; }
