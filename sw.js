@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v42 - A2177: ship arcade engine v2.1, so the
+// cache-first maker HTML and its modules refresh for returning visitors.
 // JVDesignStudio Service Worker v41 - engine: Custom Sandbox modules and the
 // player-only export changed cache-first JS/CSS, so bump the cache.
 // JVDesignStudio Service Worker v40 - A2012: refresh the floating tool helpers so
@@ -20,7 +22,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v41';
+const CACHE='jvds-v42';
 const CORE=[
   '/',
   '/offline.html',
