@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-3TRQhDwh7pgrF1CyNBRC64Y4/cpBq51SkvIPnyNsp0Y=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-h8+upFLNrJQX+/59nElHD8RZPPv+5xiLHkZzpZ+ebVo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -218,6 +218,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
         <button class="tool-btn" data-tool="resize" data-on="setTool" data-on-arg="resize" data-on-plain title="Resize , click a block then drag the handles to change its size">  <span class="ico">↔️</span>Resize</button>
         <button class="tool-btn" data-tool="delete" data-on="setTool" data-on-arg="delete" data-on-plain title="Delete , click a block to remove it (Ctrl+Z to undo)">  <span class="ico">🗑️</span>Delete</button>
         <button class="tool-btn" data-tool="select" data-on="setTool" data-on-arg="select" data-on-plain title="Select , click to select, Ctrl+click for multi-select, then move/copy/delete together">  <span class="ico">👆</span>Select</button>
+        <button class="tool-btn" data-tool="measure" data-on="setTool" data-on-arg="measure" data-on-plain title="Measure , click two points to read the distance in metres">  <span class="ico">&#x1F4CF;</span>Measure</button>
       </div>
     </div>
 
@@ -263,11 +264,18 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       <button class="mob-mode-btn" id="mobModeOrbit" data-mob-mode="orbit" aria-pressed="false">🔄 Orbit</button>
     </div>
     <div class="vp-measure" id="vpMeasure" style="display:none;position:absolute;top:14px;right:14px;z-index:7;padding:6px 10px;border-radius:999px;background:rgba(12,14,30,.78);border:1px solid rgba(255,255,255,.14);font-size:.7rem;color:rgba(255,255,255,.7);backdrop-filter:blur(8px);pointer-events:none;"></div>
+    <div class="vp-measure" id="measureHud" style="display:none;position:absolute;top:52px;right:14px;z-index:7;padding:6px 10px;border-radius:999px;background:rgba(0,212,170,.16);border:1px solid rgba(0,212,170,.55);font-size:.72rem;color:#eafff9;backdrop-filter:blur(8px);pointer-events:none;"></div>
     <div id="marqueeBox" style="display:none;position:absolute;border:1px dashed rgba(0,212,170,.9);background:rgba(0,212,170,.12);pointer-events:none;z-index:6;"></div>
     <div id="touchGizmo" aria-hidden="true" style="display:none;position:absolute;inset:0;pointer-events:none;z-index:7;">
       <button type="button" class="tg-handle tg-move" data-tg="move" aria-label="Drag to move the selected block" title="Drag to move" style="position:absolute;pointer-events:auto;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:2px solid rgba(0,212,170,.9);background:rgba(0,212,170,.22);color:#eafff9;font:700 .62rem/1 Fredoka,Inter,sans-serif;letter-spacing:.04em;cursor:grab;touch-action:none;user-select:none;backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,.35);display:none;">MOVE</button>
       <button type="button" class="tg-handle tg-up" data-tg="up" aria-label="Drag up or down to change the block height" title="Height" style="position:absolute;pointer-events:auto;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;border:2px solid rgba(255,208,120,.9);background:rgba(255,208,120,.2);color:#fff6e6;font:700 .62rem/1 Fredoka,Inter,sans-serif;cursor:ns-resize;touch-action:none;user-select:none;backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,.35);display:none;">&#9650;&#9660;</button>
       <button type="button" class="tg-handle tg-resize" data-tg="resize" aria-label="Drag out to grow or in to shrink the block" title="Resize" style="position:absolute;pointer-events:auto;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:12px;border:2px solid rgba(150,200,255,.9);background:rgba(150,200,255,.22);color:#eaf4ff;font:700 .58rem/1 Fredoka,Inter,sans-serif;cursor:nwse-resize;touch-action:none;user-select:none;backdrop-filter:blur(4px);box-shadow:0 2px 10px rgba(0,0,0,.35);display:none;">SIZE</button>
+    </div>
+    <div class="vp-zoom" id="vpZoom" role="group" aria-label="Camera zoom">
+      <button type="button" class="vp-zoom-btn" id="vpZoomIn" data-on="zoomIn" data-on-plain aria-label="Zoom in" title="Zoom in (+)">+</button>
+      <button type="button" class="vp-zoom-btn" id="vpZoomOut" data-on="zoomOut" data-on-plain aria-label="Zoom out" title="Zoom out (-)">&minus;</button>
+      <button type="button" class="vp-zoom-btn vp-zoom-frame" id="vpZoomFrame" data-on="frameAll" data-on-plain aria-label="Frame the whole build" title="Frame all (F)">&#9633;</button>
+      <button type="button" class="vp-zoom-btn" id="vpOrtho" data-on="toggleOrtho" data-on-plain aria-label="Toggle orthographic view" title="Orthographic view (O)" aria-pressed="false">O</button>
     </div>
     <button data-on="EmberGuide.show" data-on-plain aria-label="Ember guide" title="Show Ember - how to use BuildLab" style="position:absolute;bottom:18px;right:12px;z-index:8;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px solid var(--mascot-ember,#F2637A);background:rgba(242,99,122,.14);color:#fff;font-family:Fredoka,cursive;font-weight:700;font-size:.75rem;cursor:pointer;backdrop-filter:blur(8px);"><img src="/assets/mascots/ember-badge.webp" alt="" width="18" height="18" style="border-radius:50%;background:#fff;border:1px solid #fff;"> Help</button>
   </div>
@@ -352,6 +360,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
           <div><strong>Ctrl+D</strong> - Duplicate</div>
           <div><strong>Ctrl+A</strong> - Select All</div>
           <div><strong>F</strong> - Frame All</div>
+          <div><strong>+ / -</strong> - Zoom In / Out</div>
           <div><strong>Tab</strong> - Cycle Tools</div>
           <div><strong>1 / 3 / 7 / 5</strong> - Front / Right / Top / Persp</div>
           <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">
@@ -371,6 +380,18 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
         <div class="stat-item"><div class="stat-val" id="colourCount">0</div><div class="stat-lab">Colours</div></div>
         <div class="stat-item"><div class="stat-val" id="shapeCount">0</div><div class="stat-lab">Shapes</div></div>
       </div>
+      <div id="polyStats" style="font-size:.6rem;color:var(--muted);margin-top:4px;">0 triangles · 0 vertices</div>
+      <div class="prop-row" style="margin-top:6px;">
+        <div class="prop-label">Block size</div>
+        <select id="blockScaleSelect" aria-label="Metres per block" data-on="setBlockScale" data-on-event="change" data-on-args="value" style="background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:.75rem;font-family:'Inter',sans-serif;">
+          <option value="0.25">0.25 m</option>
+          <option value="0.5">0.5 m</option>
+          <option value="1" selected>1 m</option>
+          <option value="2">2 m</option>
+        </select>
+      </div>
+      <div style="font-size:.58rem;color:var(--muted);margin-top:2px;">1 block = <span id="blockUnitValue">1</span> m. Exports convert to studs or cm.</div>
+      <div id="pivotStatus" style="font-size:.6rem;color:var(--muted);margin-top:4px;">Pivot: no visible parts</div>
       <div class="prop-row" style="margin-top:8px;">
         <div class="prop-label">Snap Grid</div>
         <div style="display:flex;gap:4px;align-items:center;">
@@ -430,22 +451,31 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
         <div style="flex:1;"><div class="prop-label">Z</div><input type="number" id="propZ" step="0.5" data-on="updatePosition" data-on-event="input" data-on-args="s:z|value" data-on="updatePosition" data-on-event="change" data-on-args="s:z|value" style="width:100%;padding:4px 6px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.72rem;font-family:'Inter',sans-serif;box-sizing:border-box;"></div>
       </div>
       <div class="prop-row">
-        <div class="prop-label">Width</div>
-        <input type="range" class="prop-slider" id="propW" min="0.5" max="8" step="0.5" value="1" data-on="updateProp" data-on-event="input" data-on-args="s:w|value">
-        <div class="prop-val" id="propWVal">1</div>
+        <div class="prop-label">Width (blocks)</div>
+        <input type="range" class="prop-slider" id="propW" min="0.1" max="20" step="0.1" value="1" data-on="updateProp" data-on-event="input" data-on-args="s:w|value">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" class="prop-num" id="propWNum" min="0.1" max="50" step="0.1" value="1" aria-label="Width in metres" data-on="updateProp" data-on-event="input" data-on-args="s:w|value">
+          <div class="prop-val" id="propWVal">1</div>
+        </div>
       </div>
       <div class="prop-row">
-        <div class="prop-label">Height</div>
-        <input type="range" class="prop-slider" id="propH" min="0.5" max="8" step="0.5" value="1" data-on="updateProp" data-on-event="input" data-on-args="s:h|value">
-        <div class="prop-val" id="propHVal">1</div>
+        <div class="prop-label">Height (blocks)</div>
+        <input type="range" class="prop-slider" id="propH" min="0.1" max="20" step="0.1" value="1" data-on="updateProp" data-on-event="input" data-on-args="s:h|value">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" class="prop-num" id="propHNum" min="0.1" max="50" step="0.1" value="1" aria-label="Height in metres" data-on="updateProp" data-on-event="input" data-on-args="s:h|value">
+          <div class="prop-val" id="propHVal">1</div>
+        </div>
       </div>
       <div class="prop-row">
-        <div class="prop-label">Depth</div>
-        <input type="range" class="prop-slider" id="propD" min="0.5" max="8" step="0.5" value="1" data-on="updateProp" data-on-event="input" data-on-args="s:d|value">
-        <div class="prop-val" id="propDVal">1</div>
+        <div class="prop-label">Depth (blocks)</div>
+        <input type="range" class="prop-slider" id="propD" min="0.1" max="20" step="0.1" value="1" data-on="updateProp" data-on-event="input" data-on-args="s:d|value">
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input type="number" class="prop-num" id="propDNum" min="0.1" max="50" step="0.1" value="1" aria-label="Depth in metres" data-on="updateProp" data-on-event="input" data-on-args="s:d|value">
+          <div class="prop-val" id="propDVal">1</div>
+        </div>
       </div>
       <div class="prop-row">
-        <div class="prop-label">Rotate</div>
+        <div class="prop-label">Rotate (degrees)</div>
         <div style="display:flex;gap:6px;align-items:center;">
           <div style="flex:1;"><div style="font-size:.55rem;color:var(--muted);">X</div>
           <input type="range" class="prop-slider" id="propRotX" min="0" max="345" step="15" value="0" data-on="updateProp" data-on-event="input" data-on-args="s:rotX|value">
@@ -456,6 +486,11 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
           <div style="flex:1;"><div style="font-size:.55rem;color:var(--muted);">Z</div>
           <input type="range" class="prop-slider" id="propRotZ" min="0" max="345" step="15" value="0" data-on="updateProp" data-on-event="input" data-on-args="s:rotZ|value">
           <div class="prop-val" id="propRotZVal">0</div></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <input type="number" class="prop-num" id="propRotXNum" min="0" max="360" step="1" value="0" aria-label="Rotate X in degrees" data-on="updateProp" data-on-event="input" data-on-args="s:rotX|value">
+          <input type="number" class="prop-num" id="propRotNum" min="0" max="360" step="1" value="0" aria-label="Rotate Y in degrees" data-on="updateProp" data-on-event="input" data-on-args="s:rot|value">
+          <input type="number" class="prop-num" id="propRotZNum" min="0" max="360" step="1" value="0" aria-label="Rotate Z in degrees" data-on="updateProp" data-on-event="input" data-on-args="s:rotZ|value">
         </div>
       </div>
       <div class="prop-row">
@@ -544,6 +579,11 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
         <div class="detail-body">
           <button class="action-btn btn-primary" data-on="openNameModal" data-on-plain>&#x1F3F7;&#xFE0F; Name It</button>
           <button class="action-btn btn-success" data-on="saveSlotOpen" data-on-plain>&#x1F4BE; Save Slot</button>
+          <div style="display:flex;gap:6px;margin:6px 0;">
+            <button class="action-btn btn-secondary" style="flex:1;margin:0;font-size:.72rem;" data-on="centreBuildAtOrigin" data-on-plain title="Centre the build on X and Z so the pivot is on the middle of the footprint">Centre X/Z</button>
+            <button class="action-btn btn-secondary" style="flex:1;margin:0;font-size:.72rem;" data-on="pivotBuildToBase" data-on-plain title="Move the build so its lowest point sits at 0">Base to 0</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--muted);margin-bottom:8px;cursor:pointer;"><input type="checkbox" data-origin-toggle data-on="toggleOriginBase" data-on-event="change" data-on-args="checked" style="accent-color:var(--accent3);"> Export with base centre at 0,0,0</label>
           <button class="action-btn btn-secondary" style="background:rgba(124,58,237,.12);color:#c4b5fd;border:1px solid rgba(124,58,237,.3);font-size:.8rem;" data-on="saveProjectFile" data-on-plain>💾 Export .buildlab</button>
           <button class="action-btn btn-secondary" style="background:rgba(124,58,237,.08);color:#c4b5fd;border:1px solid rgba(124,58,237,.2);font-size:.8rem;" data-on="loadProjectFile" data-on-plain>📂 Import .buildlab</button>
           <input type="file" id="projectFileInput" accept=".buildlab,.json" style="display:none" data-on="handleProjectFile" data-on-event="change" data-on-args="this">
@@ -563,11 +603,14 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
               <div style="margin-bottom:4px;"><strong style="color:#5bc0f8;">&#x1F4E6; GLTF (.glb)</strong> &rarr; Blender, Unreal, Godot, Unity &mdash; universal</div>
               <div style="margin-bottom:4px;"><strong style="color:#f5a623;">&#x1F5A5; OBJ / MTL</strong> &rarr; Unreal, Blender, Godot, Maya &mdash; drag &amp; import</div>
             </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);margin-bottom:8px;cursor:pointer;"><input type="checkbox" data-merge-toggle data-on="toggleMergeExport" data-on-event="change" data-on-args="checked" style="accent-color:var(--accent3);"> Merge blocks by material (fewer parts)</label>
             <button class="action-btn btn-secondary" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);font-size:.8rem;" data-on="exportPreviewRBXM" data-on-plain>&#x1F535; Export RBXM (Roblox)</button>
             <button class="action-btn btn-secondary" style="background:rgba(91,192,248,.12);color:var(--accent);border:1px solid rgba(91,192,248,.3);font-size:.8rem;" data-on="exportPreviewGLTF" data-on-plain>&#x1F3A8; Export GLTF (.glb)</button>
             <button class="action-btn btn-secondary" style="background:rgba(91,192,248,.08);color:var(--accent);border:1px solid rgba(91,192,248,.2);font-size:.8rem;" data-on="exportPreviewOBJMTL" data-on-plain>&#x1F5A5;&#xFE0F; Export OBJ+MTL</button>
             <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportPreviewOBJ" data-on-plain>&#x1F4C4; Export OBJ Only</button>
             <button class="action-btn btn-secondary" style="background:rgba(0,212,170,.12);color:var(--accent3);border:1px solid rgba(0,212,170,.3);font-size:.8rem;" data-on="exportBundle" data-on-plain title="Download one zip: model + README + preview photo">&#x1F4E6; Asset bundle (.zip)</button>
+            <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportManifest" data-on-plain title="Parts, names, bounds, materials and triangle counts for a pipeline">&#x1F4CB; Manifest (.json)</button>
+            <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportCollisionProxy" data-on-plain title="One collision box per part, same units as the model">&#x1F6E1;&#xFE0F; Collision proxy (.obj)</button>
           </div>
           <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
             <div class="panel-title" style="font-size:.65rem;">Import Formats</div>
@@ -620,6 +663,30 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
             <button class="action-btn btn-secondary mirror-axis-btn" data-axis="z" data-on="setMirrorAxis" data-on-arg="z" data-on-plain style="flex:1;padding:5px;font-size:.7rem;">Z</button>
           </div>
           <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="mirrorSelected" data-on-plain>&#x1F504; Mirror Selected</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="panel-section">
+      <details>
+        <summary><span class="panel-title" style="margin:0;">Array / Repeat</span></summary>
+        <div class="detail-body">
+          <div style="display:flex;gap:4px;margin-bottom:8px;">
+            <button class="action-btn btn-secondary array-axis-btn active" data-axis="x" data-on="setArrayAxis" data-on-arg="x" data-on-plain style="flex:1;padding:5px;font-size:.7rem;">X</button>
+            <button class="action-btn btn-secondary array-axis-btn" data-axis="y" data-on="setArrayAxis" data-on-arg="y" data-on-plain style="flex:1;padding:5px;font-size:.7rem;">Y</button>
+            <button class="action-btn btn-secondary array-axis-btn" data-axis="z" data-on="setArrayAxis" data-on-arg="z" data-on-plain style="flex:1;padding:5px;font-size:.7rem;">Z</button>
+          </div>
+          <div class="prop-row" style="flex-direction:row;gap:6px;align-items:center;">
+            <div style="flex:1;"><div class="prop-label">Copies</div>
+              <input type="number" class="prop-num" id="arrayCount" min="1" max="20" step="1" value="3" aria-label="Array copies" style="width:100%;">
+            </div>
+            <div style="flex:1;"><div class="prop-label">Step (m)</div>
+              <input type="number" class="prop-num" id="arrayStep" min="0.1" max="20" step="0.1" value="1" aria-label="Array step in metres" style="width:100%;">
+            </div>
+          </div>
+          <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="arraySelected" data-on-plain>&#x1F4DA; Duplicate Array</button>
         </div>
       </details>
     </div>
@@ -710,6 +777,32 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       <button class="mob-tool-btn" data-mob-tool="select" data-on="mobSetTool" data-on-arg="select" data-on-plain>
         <span class="ico">&#x1F446;</span>Select
       </button>
+      <button class="mob-tool-btn" data-mob-tool="measure" data-on="mobSetTool" data-on-arg="measure" data-on-plain>
+        <span class="ico">&#x1F4CF;</span>Measure
+      </button>
+      <button class="mob-tool-btn" data-on="toggleMobileMulti" data-on-plain aria-pressed="false">
+        <span class="ico">&#x2611;</span>Multi
+      </button>
+    </div>
+    <div class="mob-prop-label" style="margin-top:12px;">Selection nudge</div>
+    <div class="mob-action-grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--text);border:1px solid rgba(0,212,170,.25);" data-on="nudgeXMinus" data-on-plain>X-</button>
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--text);border:1px solid rgba(0,212,170,.25);" data-on="nudgeXPlus" data-on-plain>X+</button>
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--text);border:1px solid rgba(0,212,170,.25);" data-on="nudgeZMinus" data-on-plain>Z-</button>
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--text);border:1px solid rgba(0,212,170,.25);" data-on="nudgeZPlus" data-on-plain>Z+</button>
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--text);border:1px solid rgba(0,212,170,.25);" data-on="nudgeYMinus" data-on-plain>Down</button>
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--text);border:1px solid rgba(0,212,170,.25);" data-on="nudgeYPlus" data-on-plain>Up</button>
+      <button class="mob-action-btn" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);" data-on="rotateSelectionY" data-on-plain>Rotate 90</button>
+      <button class="mob-action-btn" style="background:rgba(233,69,96,.12);color:var(--accent);border:1px solid rgba(233,69,96,.3);" data-on="deleteSelectionMobile" data-on-plain>Delete</button>
+    </div>
+    <div class="mob-prop-row">
+      <div class="mob-prop-label">Block size</div>
+      <select id="mobBlockScale" data-on="setBlockScale" data-on-event="change" data-on-args="value" aria-label="Metres per block" style="width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);font-size:.8rem;">
+        <option value="0.25">0.25 m</option>
+        <option value="0.5">0.5 m</option>
+        <option value="1" selected>1 m</option>
+        <option value="2">2 m</option>
+      </select>
     </div>
     <div class="mob-prop-label" style="margin-top:14px;">Scene look</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;">
@@ -782,19 +875,19 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       </div>
       <div class="mob-prop-row">
         <div class="mob-prop-label">Width</div>
-        <input type="range" class="mob-prop-slider" id="mobPropW" min="0.5" max="8" step="0.5" value="1"
+        <input type="range" class="mob-prop-slider" id="mobPropW" min="0.1" max="20" step="0.1" value="1"
                data-on="onMobPropW" data-on-event="input" data-on-args="value">
         <div class="mob-prop-val" id="mobPropWVal">1</div>
       </div>
       <div class="mob-prop-row">
         <div class="mob-prop-label">Height</div>
-        <input type="range" class="mob-prop-slider" id="mobPropH" min="0.5" max="8" step="0.5" value="1"
+        <input type="range" class="mob-prop-slider" id="mobPropH" min="0.1" max="20" step="0.1" value="1"
                data-on="onMobPropH" data-on-event="input" data-on-args="value">
         <div class="mob-prop-val" id="mobPropHVal">1</div>
       </div>
       <div class="mob-prop-row">
         <div class="mob-prop-label">Depth</div>
-        <input type="range" class="mob-prop-slider" id="mobPropD" min="0.5" max="8" step="0.5" value="1"
+        <input type="range" class="mob-prop-slider" id="mobPropD" min="0.1" max="20" step="0.1" value="1"
                data-on="onMobPropD" data-on-event="input" data-on-args="value">
         <div class="mob-prop-val" id="mobPropDVal">1</div>
       </div>
@@ -875,6 +968,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       <button class="mob-action-btn" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);" data-on="mobPaste" data-on-plain>&#x1F4DD; Paste</button>
       <button class="mob-action-btn" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);" data-on="duplicateSelectedBlocks" data-on-plain>&#x2398; Dupl</button>
       <button class="mob-action-btn" style="background:rgba(233,69,96,.12);color:var(--accent);border:1px solid rgba(233,69,96,.3);" data-on="mirrorSelected" data-on-plain>&#x1F504; Mirror</button>
+      <button class="mob-action-btn" style="background:rgba(0,212,170,.12);color:var(--accent3);border:1px solid rgba(0,212,170,.3);" data-on="mobArrayX" data-on-plain>&#x1F4DA; Array X</button>
     </div>
     <div class="mob-action-grid" style="grid-template-columns:1fr 1fr;margin-bottom:14px;">
       <button class="mob-action-btn" style="background:rgba(124,58,237,.12);color:#c4b5fd;border:1px solid rgba(124,58,237,.3);font-size:.7rem;" data-on="groupSelectedBlocks" data-on-plain>&#x1F4CB; Group</button>
@@ -905,6 +999,9 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       <button class="mob-action-btn" style="background:rgba(124,58,237,.1);color:#c4b5fd;border:1px solid rgba(124,58,237,.25);" data-on="mobCopyShareCode" data-on-plain>📋 Copy code</button>
       <button class="mob-action-btn" style="background:rgba(124,58,237,.1);color:#c4b5fd;border:1px solid rgba(124,58,237,.25);" data-on="mobImportShareCode" data-on-plain>📥 Import code</button>
       <button class="mob-action-btn" style="background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--border);" data-on="EmberGuide.show" data-on-plain>❓ Help</button>
+      <label style="grid-column:1 / -1;display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--muted);padding:4px 2px;cursor:pointer;"><input type="checkbox" data-merge-toggle data-on="toggleMergeExport" data-on-event="change" data-on-args="checked" style="width:18px;height:18px;accent-color:var(--accent3);"> Merge blocks by material on export</label>
+      <button class="mob-action-btn" style="background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);" data-on="exportManifest" data-on-plain>&#x1F4CB; Manifest (.json)</button>
+      <button class="mob-action-btn" style="background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);" data-on="exportCollisionProxy" data-on-plain>&#x1F6E1;&#xFE0F; Collision</button>
       <button class="mob-action-btn" style="background:rgba(245,166,35,.12);color:var(--accent2);border:1px solid rgba(245,166,35,.3);" data-on="exportPreviewRBXM" data-on-plain>&#x1F535; RBLX (Roblox)</button>
       <button class="mob-action-btn" style="background:rgba(91,192,248,.14);color:#5bc0f8;border:1px solid rgba(91,192,248,.35);" data-on="exportPreviewGLTF" data-on-plain>&#x1F3A8; GLTF (.glb)</button>
       <button class="mob-action-btn" style="background:rgba(91,192,248,.08);color:#5bc0f8;border:1px solid rgba(91,192,248,.2);" data-on="exportPreviewOBJMTL" data-on-plain>&#x1F5A5;&#xFE0F; OBJ+MTL</button>
@@ -1028,6 +1125,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CSM } from 'three/addons/csm/CSM.js';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 // Attach BVH to THREE for accelerated raycast
@@ -1046,9 +1144,14 @@ window.TransformControls = TransformControls;
 // STATE
 // -------------------------------------------------------
 let scene, camera, renderer, raycaster, pointer;
+let perspCamera = null, orthoCamera = null, orthoMode = false, viewAspect = 1.5;
+let multiPivot = null, multiStart = null;
 let csm = null;
 let blocks = []; // {mesh, data:{x,y,z,w,h,d,colour,shape,rot}}
 let currentTool = 'add';
+let measurePoints = [];
+let measureVisual = null;
+let mobileMulti = false;
 let currentColour = '#e94560';
 let currentShape = 'box';
 let selectedBlock = null;
@@ -1069,6 +1172,7 @@ function getPooledMaterial(colour, metalness=0.1, roughness=0.55, opacity=1) {
     opacity: opacity,
     polygonOffset: false
   });
+  m.name = 'mat_' + String(colour).replace('#', '');
   // BVH: compute bounds for raycast acceleration
   // (geometry bounds are per-shape, not material)
   materialCache.set(key, m);
@@ -1085,12 +1189,40 @@ let isRightDrag = false, isMidDrag = false;
 let prevMX = 0, prevMY = 0;
 let camTheta = 0.6, camPhi = 0.8, camDist = 18;
 let camTarget = null;
+// Zoom range. The old 3..60 clamp made big builds hard to inspect and let the
+// camera slip so close that a wheel notch threw the view across the scene.
+const CAM_MIN_DIST = 2.5, CAM_MAX_DIST = 60;
+function clampCamDist(value) {
+  return Math.max(CAM_MIN_DIST, Math.min(CAM_MAX_DIST, value));
+}
 
 // Grid & snap
 let GRID = 1;
+const ROTATION_SNAP = Math.PI / 12; // 15 degrees
+let _shiftSnapBypass = false;
+
+function updateGizmoSnaps() {
+  if (!transformControls) return;
+  const grid = GRID > 0 ? GRID : null;
+  transformControls.translationSnap = _shiftSnapBypass ? null : grid;
+  transformControls.rotationSnap = _shiftSnapBypass ? null : ROTATION_SNAP;
+  transformControls.scaleSnap = _shiftSnapBypass ? null : 0.1;
+}
+
+function gizmoSnapState() {
+  return {
+    grid: GRID,
+    bypass: _shiftSnapBypass,
+    translation: transformControls ? transformControls.translationSnap : null,
+    rotation: transformControls ? transformControls.rotationSnap : null,
+    scale: transformControls ? transformControls.scaleSnap : null
+  };
+}
+
 function setGridSize(val) {
   GRID = parseFloat(val);
   document.getElementById('gridSizeVal').textContent = GRID > 0 ? GRID : 'Off';
+  updateGizmoSnaps();
   toast('Grid snap: ' + (GRID > 0 ? GRID : 'Off'));
 }
 const COLOURS = [
@@ -1147,7 +1279,10 @@ function init() {
   scene.background = new THREE.Color(0x1a1a2e);
   scene.fog = new THREE.FogExp2(0x1a1a2e, (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 0.018 : 0.025);
 
-  camera = new THREE.PerspectiveCamera(45, (vp.clientWidth||800)/(vp.clientHeight||600), 0.1, 200);
+  viewAspect = (vp.clientWidth || 800) / (vp.clientHeight || 600);
+  perspCamera = new THREE.PerspectiveCamera(45, viewAspect, 0.1, 500);
+  orthoCamera = new THREE.OrthographicCamera(-7 * viewAspect, 7 * viewAspect, 7, -7, 0.1, 1000);
+  camera = perspCamera;
   camTarget = new THREE.Vector3(0, 1, 0);
   updateCamera();
 
@@ -1177,15 +1312,31 @@ function init() {
   // Gizmo/Transform controls (desktop only  on touch they fight tap-to-place,
   // and the mobile drawer already has Move/Resize tools)
   transformControls = new TransformControls(camera, renderer.domElement);
-  transformControls.addEventListener('change', () => { requestRender(); try{ syncPositionInputs(); }catch(e){} });
+  transformControls.addEventListener('change', () => {
+    if (multiStart) applyMultiTransform();
+    try { syncPositionInputs(); } catch (e) {}
+    requestRender();
+  });
   transformControls.addEventListener('dragging-changed', (e) => {
     if (e.value) {
       if (selectedBlock && selectedBlock.userData.locked) { transformControls.detach(); toast('Locked'); return; }
       pushHistory('gizmo');
-    } // snapshot once when a drag starts
+      if (multiSelectionActive()) beginMultiTransform();
+    } else if (multiStart) {
+      setTimeout(() => { try { endMultiTransform(); } catch (err) { console.warn('multi transform failed', err); } }, 0);
+    } else {
+      // Commit rotate/scale back into the block data so RBXM, save slots and
+      // share codes agree with the live GLB/OBJ transforms.
+      setTimeout(() => { try { bakeGizmoTransform(); } catch (err) { console.warn('gizmo bake failed', err); } }, 0);
+    }
     requestRender();
   });
   scene.add(transformControls);
+  multiPivot = new THREE.Object3D();
+  multiPivot.name = 'MultiSelectionPivot';
+  multiPivot.visible = false;
+  scene.add(multiPivot);
+  updateGizmoSnaps();
   setEngineStatus('3D engine ready. Place a block to begin.');
 
   // Lighting (enhanced)
@@ -1304,8 +1455,13 @@ function init() {
   function handleViewportResize() {
     const w = vp.clientWidth || 800;
     const h = vp.clientHeight || 600;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    viewAspect = w / h;
+    if (camera.isPerspectiveCamera) {
+      camera.aspect = viewAspect;
+      camera.updateProjectionMatrix();
+    } else {
+      updateCamera();
+    }
     renderer.setSize(w, h);
     requestRender(200);
   }
@@ -1332,6 +1488,18 @@ function updateCamera() {
   const z = camTarget.z + camDist * Math.sin(camPhi) * Math.cos(camTheta);
   camera.position.set(x, y, z);
   camera.lookAt(camTarget);
+  if (camera.isOrthographicCamera) {
+    // Match the 45 degree perspective framing at the same orbit distance, so
+    // toggling ortho keeps the apparent size stable.
+    const half = Math.max(0.5, camDist * Math.tan(22.5 * Math.PI / 180));
+    camera.left = -half * viewAspect;
+    camera.right = half * viewAspect;
+    camera.top = half;
+    camera.bottom = -half;
+    camera.near = 0.1;
+    camera.far = 1000;
+    camera.updateProjectionMatrix();
+  }
   if (typeof requestRender === 'function') requestRender();
 }
 
@@ -1407,6 +1575,440 @@ function getCachedGeometry(shape,w,h,d){
 function snap(v) { return Math.round(v / GRID) * GRID; }
 
 // -------------------------------------------------------
+// EXPORT PART COLLECTOR
+// One source of truth for every exporter, save slot and share code. It reads
+// world transforms, so grouped, moved and gizmo-edited parts agree everywhere.
+// The build is authored with 1 unit = 1 metre; RBXM converts to Roblox studs.
+// -------------------------------------------------------
+const ROBLOX_STUDS_PER_UNIT = 1 / 0.28;
+let mergeExport = localStorage.getItem('buildlab_merge') === '1';
+let blockMetres = parseFloat(localStorage.getItem('buildlab_block_m') || '1');
+if (!isFinite(blockMetres) || blockMetres <= 0) blockMetres = 1;
+
+function syncBlockScaleUI() {
+  const sel = document.getElementById('blockScaleSelect');
+  if (sel) sel.value = String(blockMetres);
+  const mob = document.getElementById('mobBlockScale');
+  if (mob) mob.value = String(blockMetres);
+  const note = document.getElementById('blockUnitValue');
+  if (note) note.textContent = blockMetres;
+}
+
+function setBlockScale(value) {
+  const v = parseFloat(value);
+  blockMetres = (isFinite(v) && v > 0) ? v : 1;
+  try { localStorage.setItem('buildlab_block_m', String(blockMetres)); } catch (e) {}
+  syncBlockScaleUI();
+  updateStats();
+  toast('1 block = ' + blockMetres + ' m');
+}
+
+function worldRotationDegrees(quat) {
+  const e = new THREE.Euler().setFromQuaternion(quat, 'XYZ');
+  const deg = v => {
+    let x = v * 180 / Math.PI;
+    x = ((x % 360) + 360) % 360;
+    return +x.toFixed(2);
+  };
+  return { x: deg(e.x), y: deg(e.y), z: deg(e.z) };
+}
+
+function collectExportParts(opts) {
+  opts = opts || {};
+  return blocks.filter(b => (opts.includeHidden || !b.userData.hidden) && !(opts.excludeImported && b.userData.isImported))
+    .map((mesh, i) => {
+      mesh.updateWorldMatrix(true, false);
+      const pos = new THREE.Vector3();
+      const quat = new THREE.Quaternion();
+      const scl = new THREE.Vector3();
+      mesh.matrixWorld.decompose(pos, quat, scl);
+      const d = mesh.userData;
+      const material = mesh.material;
+      return {
+        mesh,
+        index: i,
+        position: pos,
+        quaternion: quat,
+        scale: scl,
+        rotation: worldRotationDegrees(quat),
+        width: Math.max(0.001, (d.w || 1) * Math.abs(scl.x)),
+        height: Math.max(0.001, (d.h || 1) * Math.abs(scl.y)),
+        depth: Math.max(0.001, (d.d || 1) * Math.abs(scl.z)),
+        name: d.blockName || '',
+        shape: d.shape || 'box',
+        colour: d.colour || '#aaaaaa',
+        metalness: material ? (material.metalness || 0) : 0,
+        roughness: (material && material.roughness !== undefined) ? material.roughness : 0.55,
+        opacity: d.opacity !== undefined ? d.opacity : ((material && material.opacity !== undefined) ? material.opacity : 1),
+        hidden: !!d.hidden,
+        imported: !!d.isImported
+      };
+    });
+}
+
+function exportPartLabel(part, i) {
+  const raw = part && part.name ? part.name : ((part && part.shape ? part.shape : 'part') + '_' + (i + 1));
+  const safe = String(raw).replace(/[^A-Za-z0-9_.-]+/g, '_').replace(/^_+|_+$/g, '');
+  return safe || ('part_' + (i + 1));
+}
+
+function partMaterialKey(part) {
+  return part.colour + '|' + part.metalness.toFixed(2) + '|' + part.roughness.toFixed(2) + '|' + part.opacity.toFixed(2);
+}
+
+// Merge visible parts that share a colour and finish into one geometry per
+// material. Used by the optional "fewer parts" export for GLB and OBJ.
+function mergedExportGroups(offset) {
+  offset = offset || new THREE.Vector3(0, 0, 0);
+  const map = new Map();
+  collectExportParts().forEach((part, i) => {
+    const key = partMaterialKey(part);
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        material: part.mesh.material,
+        colour: part.colour,
+        metalness: part.metalness,
+        roughness: part.roughness,
+        opacity: part.opacity,
+        name: 'Merged_' + String(part.colour).replace('#', ''),
+        geometries: [],
+        names: []
+      });
+    }
+    const entry = map.get(key);
+    const geo = part.mesh.geometry.clone();
+    geo.applyMatrix4(part.mesh.matrixWorld);
+    geo.translate(offset.x, offset.y, offset.z);
+    const flat = geo.index ? geo.toNonIndexed() : geo;
+    if (flat !== geo) geo.dispose();
+    if (!flat.attributes.normal) flat.computeVertexNormals();
+    if (!flat.attributes.uv) {
+      flat.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(flat.attributes.position.count * 2), 2));
+    }
+    Object.keys(flat.attributes).forEach(attr => {
+      if (attr !== 'position' && attr !== 'normal' && attr !== 'uv') flat.deleteAttribute(attr);
+    });
+    flat.clearGroups();
+    entry.geometries.push(flat);
+    entry.names.push(exportPartLabel(part, i));
+  });
+
+  const out = [];
+  map.forEach(entry => {
+    let merged = null;
+    try { merged = mergeGeometries(entry.geometries, false); } catch (e) { merged = null; }
+    if (!merged) merged = entry.geometries[0];
+    if (merged) {
+      out.push({
+        geometry: merged,
+        material: entry.material,
+        name: entry.name,
+        colour: entry.colour,
+        metalness: entry.metalness,
+        roughness: entry.roughness,
+        opacity: entry.opacity,
+        count: entry.names.length
+      });
+    }
+    entry.geometries.forEach(g => { if (g !== merged) g.dispose(); });
+  });
+  return out;
+}
+
+function getPolyStats() {
+  let tris = 0;
+  let verts = 0;
+  blocks.forEach(b => {
+    if (b.userData.hidden) return;
+    const g = b.geometry;
+    if (!g || !g.attributes.position) return;
+    const count = g.attributes.position.count;
+    verts += count;
+    tris += g.index ? g.index.count / 3 : count / 3;
+  });
+  return { tris: Math.round(tris), verts: Math.round(verts) };
+}
+
+// -------------------------------------------------------
+// IMPORTED GEOMETRY ROUND-TRIP
+// Imported meshes are baked to world space and stored as compact typed arrays
+// so save slots, share codes, autosave and project files can restore them.
+// -------------------------------------------------------
+function typedArrayToBase64(arr) {
+  const bytes = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(bin);
+}
+
+function base64ToTypedArray(b64, Type) {
+  const bin = atob(b64 || '');
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Type(bytes.buffer);
+}
+
+function serializeImportedPart(mesh) {
+  mesh.updateWorldMatrix(true, false);
+  const geo = mesh.geometry.clone();
+  geo.applyMatrix4(mesh.matrixWorld);
+  const posAttr = geo.attributes.position;
+  const count = posAttr.count;
+  const pos = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    pos[i * 3] = posAttr.getX(i);
+    pos[i * 3 + 1] = posAttr.getY(i);
+    pos[i * 3 + 2] = posAttr.getZ(i);
+  }
+  let normals = null;
+  if (geo.attributes.normal) {
+    const nAttr = geo.attributes.normal;
+    normals = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      normals[i * 3] = nAttr.getX(i);
+      normals[i * 3 + 1] = nAttr.getY(i);
+      normals[i * 3 + 2] = nAttr.getZ(i);
+    }
+  }
+  let uvs = null;
+  if (geo.attributes.uv) {
+    const uvAttr = geo.attributes.uv;
+    uvs = new Float32Array(uvAttr.count * 2);
+    for (let i = 0; i < uvAttr.count; i++) {
+      uvs[i * 2] = uvAttr.getX(i);
+      uvs[i * 2 + 1] = uvAttr.getY(i);
+    }
+  }
+  let indices = null;
+  if (geo.index) {
+    indices = new Uint32Array(geo.index.count);
+    for (let i = 0; i < geo.index.count; i++) indices[i] = geo.index.getX(i);
+  }
+  const bbox = new THREE.Box3().setFromBufferAttribute(posAttr);
+  const size = bbox.getSize(new THREE.Vector3());
+  const d = mesh.userData;
+  const data = {
+    p: typedArrayToBase64(pos),
+    n: normals ? typedArrayToBase64(normals) : null,
+    u: uvs ? typedArrayToBase64(uvs) : null,
+    i: indices ? typedArrayToBase64(indices) : null,
+    w: +size.x.toFixed(4),
+    h: +size.y.toFixed(4),
+    d: +size.z.toFixed(4),
+    colour: d.colour || (mesh.material && mesh.material.color ? '#' + mesh.material.color.getHexString() : '#aaaaaa'),
+    metalness: mesh.material ? (mesh.material.metalness || 0) : 0,
+    roughness: mesh.material && mesh.material.roughness !== undefined ? mesh.material.roughness : 0.55,
+    opacity: d.opacity !== undefined ? d.opacity : 1,
+    name: d.blockName || '',
+    hidden: !!d.hidden
+  };
+  geo.dispose();
+  return data;
+}
+
+function serializeImportedParts() {
+  return blocks.filter(b => b.userData.isImported).map(serializeImportedPart);
+}
+
+function addImportedPartFromData(data) {
+  if (!data || !data.p) return null;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(base64ToTypedArray(data.p, Float32Array), 3));
+  if (data.n) {
+    geo.setAttribute('normal', new THREE.BufferAttribute(base64ToTypedArray(data.n, Float32Array), 3));
+  } else {
+    geo.computeVertexNormals();
+  }
+  if (data.i) {
+    geo.setIndex(new THREE.BufferAttribute(base64ToTypedArray(data.i, Uint32Array), 1));
+  }
+  if (data.u) {
+    geo.setAttribute('uv', new THREE.BufferAttribute(base64ToTypedArray(data.u, Float32Array), 2));
+  }
+  const colour = data.colour || currentColour;
+  const opacity = data.opacity !== undefined ? data.opacity : 1;
+  const material = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(colour),
+    metalness: data.metalness !== undefined ? data.metalness : 0.1,
+    roughness: data.roughness !== undefined ? data.roughness : 0.55,
+    transparent: opacity < 1,
+    opacity: opacity
+  });
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData = {
+    isBlock: true,
+    isImported: true,
+    shape: 'imported',
+    colour: colour,
+    w: data.w || 1,
+    h: data.h || 1,
+    d: data.d || 1,
+    rot: 0,
+    rotX: 0,
+    rotZ: 0,
+    opacity: opacity,
+    hidden: !!data.hidden,
+    blockName: data.name || '',
+    blockId: 'b_' + Math.random().toString(36).slice(2, 9)
+  };
+  mesh.visible = !data.hidden;
+  scene.add(mesh);
+  blocks.push(mesh);
+  return mesh;
+}
+
+function loadImportedParts(list) {
+  if (!Array.isArray(list) || !list.length) return 0;
+  let added = 0;
+  list.forEach(data => { if (addImportedPartFromData(data)) added++; });
+  return added;
+}
+
+function groupIndexForBlock(mesh) {
+  return groups.findIndex(g => g.blockIds.includes(mesh.userData.blockId));
+}
+
+function rebuildGroups(names, entries) {
+  groups = [];
+  groupObjects = [];
+  if (!Array.isArray(names) || !names.length || !Array.isArray(entries)) return;
+  const byIndex = new Map();
+  entries.forEach(entry => {
+    if (!entry || !entry.mesh || entry.gi === undefined || entry.gi === null || entry.gi < 0) return;
+    if (!byIndex.has(entry.gi)) byIndex.set(entry.gi, []);
+    byIndex.get(entry.gi).push(entry.mesh);
+  });
+  byIndex.forEach((meshes, gi) => {
+    if (!meshes.length) return;
+    const name = names[gi] || ('Group ' + (gi + 1));
+    const blockIds = meshes.map(m => m.userData.blockId);
+    groups.push({name, blockIds});
+    const gObj = new THREE.Group();
+    gObj.name = name;
+    gObj.userData.isGroup = true;
+    gObj.userData.blockIds = blockIds.slice();
+    scene.add(gObj);
+    meshes.forEach(m => { scene.remove(m); gObj.add(m); });
+    groupObjects.push(gObj);
+  });
+  try { renderGroupsList(); } catch (e) {}
+  try { renderOutliner(); } catch (e) {}
+}
+
+function syncMergeToggles() {
+  document.querySelectorAll('[data-merge-toggle]').forEach(el => { el.checked = mergeExport; });
+}
+
+function toggleMergeExport(value) {
+  mergeExport = !!value;
+  try { localStorage.setItem('buildlab_merge', mergeExport ? '1' : '0'); } catch (e) {}
+  syncMergeToggles();
+  toast(mergeExport ? 'Merge by material on: fewer parts on export' : 'Merge by material off');
+}
+
+// -------------------------------------------------------
+// CENTRE AND PIVOT
+// -------------------------------------------------------
+function topLevelBuildObjects() {
+  const tops = new Set();
+  blocks.forEach(b => {
+    if (b.parent && b.parent !== scene) tops.add(b.parent);
+    else if (b.parent === scene) tops.add(b);
+  });
+  return Array.from(tops);
+}
+
+function buildWorldBox() {
+  const visible = blocks.filter(b => !b.userData.hidden);
+  if (!visible.length) return null;
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3();
+  visible.forEach(b => box.expandByObject(b));
+  if (box.isEmpty()) return null;
+  return box;
+}
+
+function shiftBuild(dx, dy, dz) {
+  if (!blocks.length || (!dx && !dy && !dz)) return;
+  pushHistory('pivot');
+  topLevelBuildObjects().forEach(obj => {
+    obj.position.x += dx;
+    obj.position.y += dy;
+    obj.position.z += dz;
+  });
+  scene.updateMatrixWorld(true);
+  updateStats();
+  try { renderOutliner(); } catch (e) {}
+  try { syncPositionInputs(); } catch (e) {}
+  requestRender();
+}
+
+function centreBuildAtOrigin() {
+  const box = buildWorldBox();
+  if (!box) { toast('Nothing to centre yet'); return; }
+  const cx = (box.min.x + box.max.x) / 2;
+  const cz = (box.min.z + box.max.z) / 2;
+  shiftBuild(-cx, 0, -cz);
+  toast('Centred on X and Z at the origin');
+}
+
+function pivotBuildToBase() {
+  const box = buildWorldBox();
+  if (!box) { toast('Nothing to ground yet'); return; }
+  shiftBuild(0, -box.min.y, 0);
+  toast('Base moved to 0: pivot sits at the base');
+}
+
+// Optional non-destructive export origin: move the whole model so its base
+// centre becomes 0,0,0 in the exported file without moving the scene.
+let exportOriginBase = localStorage.getItem('buildlab_origin_base') === '1';
+
+function exportOriginOffset() {
+  if (!exportOriginBase) return new THREE.Vector3(0, 0, 0);
+  const box = buildWorldBox();
+  if (!box) return new THREE.Vector3(0, 0, 0);
+  return new THREE.Vector3(
+    -(box.min.x + box.max.x) / 2,
+    -box.min.y,
+    -(box.min.z + box.max.z) / 2
+  );
+}
+
+function syncOriginToggles() {
+  document.querySelectorAll('[data-origin-toggle]').forEach(el => { el.checked = exportOriginBase; });
+}
+
+function toggleOriginBase(value) {
+  exportOriginBase = !!value;
+  try { localStorage.setItem('buildlab_origin_base', exportOriginBase ? '1' : '0'); } catch (e) {}
+  syncOriginToggles();
+  toast(exportOriginBase ? 'Exports will use the base centre as 0,0,0' : 'Exports keep the build position');
+}
+
+function pivotStatus() {
+  const box = buildWorldBox();
+  if (!box) return {text: 'Pivot: no visible parts', centred: false, grounded: false};
+  const cx = (box.min.x + box.max.x) / 2;
+  const cz = (box.min.z + box.max.z) / 2;
+  const centred = Math.abs(cx) <= 0.01 && Math.abs(cz) <= 0.01;
+  const grounded = Math.abs(box.min.y) <= 0.01;
+  let text;
+  if (centred && grounded) text = 'Pivot: centred on X/Z, base at 0';
+  else {
+    const bits = [];
+    if (!centred) bits.push('X/Z off by ' + (cx * blockMetres).toFixed(2) + ', ' + (cz * blockMetres).toFixed(2) + ' m');
+    if (!grounded) bits.push('base at ' + (box.min.y * blockMetres).toFixed(2) + ' m');
+    text = 'Pivot: ' + bits.join(' · ');
+  }
+  return {text, centred, grounded, centre: {x: cx, z: cz}, minY: box.min.y};
+}
+
+// -------------------------------------------------------
 // BLOCK MANAGEMENT
 // -------------------------------------------------------
 function addBlock(x, y, z, w=1, h=1, d=1, colour=currentColour, shape=currentShape, rot=0, rotX=0, rotZ=0) {
@@ -1431,9 +2033,8 @@ function deleteBlock(mesh) {
     if (mesh.geometry.disposeBoundsTree) try{ mesh.geometry.disposeBoundsTree(); }catch(e){}
     mesh.geometry.dispose();
     // pooled materials are shared - do not dispose
-  } else {
-    mesh.geometry.dispose(); mesh.material.dispose();
   }
+  // Imported geometry is kept alive so undo can re-add the mesh reference.
   blocks = blocks.filter(b => b !== mesh);
   if (selectedBlock === mesh) {
     selectedBlock = null;
@@ -1444,9 +2045,139 @@ function deleteBlock(mesh) {
   requestRender();
 }
 
+function multiSelectionActive() {
+  return selectedBlocks.length > 1 && !!multiPivot;
+}
+
+function selectionWorldBox() {
+  if (!selectedBlocks.length) return null;
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3();
+  selectedBlocks.forEach(mesh => box.expandByObject(mesh));
+  return box.isEmpty() ? null : box;
+}
+
+function attachSelectionGizmo() {
+  if (!transformControls) return;
+  if (multiSelectionActive()) {
+    const box = selectionWorldBox();
+    if (box) {
+      const centre = box.getCenter(new THREE.Vector3());
+      multiPivot.position.copy(centre);
+      multiPivot.rotation.set(0, 0, 0);
+      multiPivot.scale.set(1, 1, 1);
+      multiPivot.updateMatrixWorld(true);
+      transformControls.attach(multiPivot);
+      return;
+    }
+  }
+  if (selectedBlock) transformControls.attach(selectedBlock);
+  else transformControls.detach();
+}
+
+function beginMultiTransform() {
+  if (!multiSelectionActive()) return;
+  multiPivot.updateMatrixWorld(true);
+  multiStart = {
+    pivotInverse: multiPivot.matrixWorld.clone().invert(),
+    items: selectedBlocks.map(mesh => {
+      mesh.updateWorldMatrix(true, false);
+      const parent = mesh.parent || scene;
+      parent.updateMatrixWorld(true);
+      return {
+        mesh,
+        world: mesh.matrixWorld.clone(),
+        parentInverse: parent.matrixWorld.clone().invert()
+      };
+    })
+  };
+}
+
+function applyMultiTransform() {
+  if (!multiStart || !multiPivot) return;
+  multiPivot.updateMatrixWorld(true);
+  const delta = new THREE.Matrix4().multiplyMatrices(multiPivot.matrixWorld, multiStart.pivotInverse);
+  multiStart.items.forEach(item => {
+    const target = new THREE.Matrix4().multiplyMatrices(delta, item.world);
+    const local = new THREE.Matrix4().multiplyMatrices(item.parentInverse, target);
+    local.decompose(item.mesh.position, item.mesh.quaternion, item.mesh.scale);
+    item.mesh.updateMatrixWorld(true);
+  });
+  updateMultiHighlights();
+  requestRender();
+}
+
+function endMultiTransform() {
+  if (!multiStart) return;
+  multiStart.items.forEach(item => bakeMeshTransform(item.mesh));
+  multiStart = null;
+  attachSelectionGizmo();
+  syncSelectedInputs();
+  updateStats();
+  requestRender();
+}
+
+function syncSelectedInputs() {
+  const m = selectedBlock;
+  if (!m) return;
+  const d = m.userData;
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  [['W', d.w], ['H', d.h], ['D', d.d], ['Rot', d.rot || 0], ['RotX', d.rotX || 0], ['RotZ', d.rotZ || 0]]
+    .forEach(pair => {
+      setVal('prop' + pair[0], pair[1]);
+      setVal('prop' + pair[0] + 'Num', pair[1]);
+      setTxt('prop' + pair[0] + 'Val', pair[1]);
+    });
+  setTxt('propYVal', +(m.position.y - (d.h || 1) / 2).toFixed(2));
+}
+
+function bakeMeshTransform(mesh) {
+  if (!mesh || mesh.userData.isImported) return;
+  const d = mesh.userData;
+  const s = mesh.scale;
+  if (Math.abs(s.x - 1) > 1e-4 || Math.abs(s.y - 1) > 1e-4 || Math.abs(s.z - 1) > 1e-4) {
+    d.w = Math.max(0.1, +(d.w * Math.abs(s.x)).toFixed(3));
+    d.h = Math.max(0.1, +(d.h * Math.abs(s.y)).toFixed(3));
+    d.d = Math.max(0.1, +(d.d * Math.abs(s.z)).toFixed(3));
+    mesh.scale.set(1, 1, 1);
+    mesh.geometry = getCachedGeometry(d.shape, d.w, d.h, d.d);
+  }
+  const e = new THREE.Euler().setFromQuaternion(mesh.quaternion, 'XYZ');
+  const deg = v => {
+    let x = v * 180 / Math.PI;
+    x = ((x % 360) + 360) % 360;
+    return +x.toFixed(2);
+  };
+  d.rotX = deg(e.x);
+  d.rot = deg(e.y);
+  d.rotZ = deg(e.z);
+  mesh.rotation.set(e.x, e.y, e.z);
+}
+
+function bakeGizmoTransform() {
+  if (!selectedBlock) return;
+  bakeMeshTransform(selectedBlock);
+  if (window.highlight) {
+    selectedBlock.updateWorldMatrix(true, false);
+    window.highlight.position.setFromMatrixPosition(selectedBlock.matrixWorld);
+    window.highlight.quaternion.setFromRotationMatrix(selectedBlock.matrixWorld);
+    window.highlight.scale.set(
+      (selectedBlock.userData.w || 1) * 1.05,
+      (selectedBlock.userData.h || 1) * 1.05,
+      (selectedBlock.userData.d || 1) * 1.05
+    );
+  }
+  syncSelectedInputs();
+  updateStats();
+  requestRender();
+}
+
 function selectBlock(mesh) {
   selectedBlock = mesh;
-  window.highlight.position.copy(mesh.position);
+  mesh.updateWorldMatrix(true, false);
+  window.highlight.position.setFromMatrixPosition(mesh.matrixWorld);
+  window.highlight.quaternion.setFromRotationMatrix(mesh.matrixWorld);
   window.highlight.scale.set(
     (mesh.userData.w||1) * 1.05,
     (mesh.userData.h||1) * 1.05,
@@ -1463,7 +2194,7 @@ function selectBlock(mesh) {
 
   if (mesh.userData.isImported) {
     // Imported OBJ, disable all sliders, show info label
-    ['propW','propH','propD','propRot'].forEach(id => {
+    ['propW','propH','propD','propRot','propRotX','propRotZ','propWNum','propHNum','propDNum','propRotNum','propRotXNum','propRotZNum'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = true;
     });
@@ -1482,27 +2213,13 @@ function selectBlock(mesh) {
     }
   } else {
     // Native block, enable sliders, remove any imported note
-    ['propW','propH','propD','propRot'].forEach(id => {
+    ['propW','propH','propD','propRot','propRotX','propRotZ','propWNum','propHNum','propDNum','propRotNum','propRotXNum','propRotZNum'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.disabled = false;
     });
     const note = document.getElementById('importedNote');
     if (note) note.remove();
-
-    document.getElementById('propW').value = mesh.userData.w || 1;
-    document.getElementById('propH').value = mesh.userData.h || 1;
-    document.getElementById('propD').value = mesh.userData.d || 1;
-    document.getElementById('propRot').value = mesh.userData.rot || 0;
-    document.getElementById('propRotX').value = mesh.userData.rotX || 0;
-    document.getElementById('propRotZ').value = mesh.userData.rotZ || 0;
-    document.getElementById('propWVal').textContent = mesh.userData.w || 1;
-    document.getElementById('propHVal').textContent = mesh.userData.h || 1;
-    document.getElementById('propDVal').textContent = mesh.userData.d || 1;
-    document.getElementById('propRotVal').textContent = (mesh.userData.rot || 0) + '';
-    document.getElementById('propRotXVal').textContent = (mesh.userData.rotX || 0) + '';
-    document.getElementById('propRotZVal').textContent = (mesh.userData.rotZ || 0) + '';
-    const yBase = Math.round(mesh.position.y - (mesh.userData.h||1)/2);
-    document.getElementById('propYVal').textContent = yBase;
+    syncSelectedInputs();
 
     // Update material sliders
     if (mesh.material) {
@@ -1521,7 +2238,7 @@ function selectBlock(mesh) {
   // Attach gizmo to selected block (desktop only  on touch the gizmo handles
   // fight tap-to-place; mobile uses the drawer's Move/Resize tools instead)
   if (transformControls && !isMobileRender) {
-    transformControls.attach(mesh);
+    attachSelectionGizmo();
     transformControls.setMode(gizmoMode);
     updateGizmoUI();
   }
@@ -1545,8 +2262,14 @@ function deselectBlock() {
   selectedBlock = null;
   selectedBlocks = [];
   clearMultiHighlights();
+  multiStart = null;
   if (transformControls) {
     transformControls.detach();
+  }
+  if (multiPivot) {
+    multiPivot.position.set(0, 0, 0);
+    multiPivot.rotation.set(0, 0, 0);
+    multiPivot.scale.set(1, 1, 1);
   }
   document.getElementById('propPanel').style.display = 'none';
   try { renderOutliner(); } catch(e) {}
@@ -1565,6 +2288,9 @@ function clearMultiHighlights() {
 }
 
 function toggleMultiSelect(mesh) {
+  if (selectedBlocks.length === 0 && selectedBlock && selectedBlock !== mesh) {
+    selectedBlocks = [selectedBlock];
+  }
   const idx = selectedBlocks.indexOf(mesh);
   if (idx >= 0) {
     selectedBlocks.splice(idx, 1);
@@ -1582,6 +2308,81 @@ function toggleMultiSelect(mesh) {
   }
 }
 
+function toggleMobileMulti() {
+  mobileMulti = !mobileMulti;
+  const btn = document.querySelector('[data-on="toggleMobileMulti"]');
+  if (btn) {
+    btn.classList.toggle('active', mobileMulti);
+    btn.setAttribute('aria-pressed', mobileMulti ? 'true' : 'false');
+    btn.style.background = mobileMulti ? 'rgba(0,212,170,.25)' : '';
+    btn.style.borderColor = mobileMulti ? 'var(--accent3)' : '';
+  }
+  toast(mobileMulti ? 'Multi-select on: tap blocks to add or remove' : 'Multi-select off');
+}
+
+function mobileSelection() {
+  if (selectedBlocks.length) return selectedBlocks.slice();
+  return selectedBlock ? [selectedBlock] : [];
+}
+
+function nudgeSelection(dx, dy, dz) {
+  const sel = mobileSelection();
+  if (!sel.length) { toast('Select blocks first'); return; }
+  pushHistory('nudge');
+  const delta = new THREE.Vector3(dx, dy, dz);
+  sel.forEach(mesh => {
+    const parent = mesh.parent || scene;
+    parent.updateMatrixWorld(true);
+    const inverse = new THREE.Matrix4().copy(parent.matrixWorld).invert();
+    const local = delta.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(inverse));
+    mesh.position.add(local);
+    mesh.updateMatrixWorld(true);
+  });
+  updateMultiHighlights();
+  if (selectedBlock) selectBlock(selectedBlock);
+  updateStats();
+  requestRender();
+}
+
+function rotateSelectionY() {
+  const sel = mobileSelection();
+  if (!sel.length) { toast('Select blocks first'); return; }
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3();
+  sel.forEach(mesh => box.expandByObject(mesh));
+  if (box.isEmpty()) return;
+  const centre = box.getCenter(new THREE.Vector3());
+  pushHistory('rotate-selection');
+  const delta = new THREE.Matrix4().makeTranslation(centre.x, centre.y, centre.z)
+    .multiply(new THREE.Matrix4().makeRotationY(Math.PI / 2))
+    .multiply(new THREE.Matrix4().makeTranslation(-centre.x, -centre.y, -centre.z));
+  sel.forEach(mesh => {
+    mesh.updateWorldMatrix(true, false);
+    const parent = mesh.parent || scene;
+    parent.updateMatrixWorld(true);
+    const target = new THREE.Matrix4().multiplyMatrices(delta, mesh.matrixWorld);
+    const local = new THREE.Matrix4().multiplyMatrices(parent.matrixWorld.clone().invert(), target);
+    local.decompose(mesh.position, mesh.quaternion, mesh.scale);
+    mesh.updateMatrixWorld(true);
+  });
+  sel.forEach(mesh => bakeMeshTransform(mesh));
+  updateMultiHighlights();
+  if (selectedBlock) selectBlock(selectedBlock);
+  updateStats();
+  requestRender();
+  toast('Rotated selection 90 degrees');
+}
+
+function deleteSelectionMobile() {
+  if (selectedBlocks.length) { deleteSelectedBlocks(); return; }
+  if (selectedBlock) { deleteSelected(); return; }
+  toast('Select blocks first');
+}
+
+function nudgeStep() {
+  return GRID > 0 ? GRID : 1;
+}
+
 function updateMultiHighlights() {
   clearMultiHighlights();
   selectedBlocks.forEach(mesh => {
@@ -1592,8 +2393,9 @@ function updateMultiHighlights() {
     );
     const mat = new THREE.MeshBasicMaterial({ color: 0x00d4aa, wireframe: true, transparent: true, opacity: 0.5 });
     const hl = new THREE.Mesh(box, mat);
-    hl.position.copy(mesh.position);
-    hl.rotation.copy(mesh.rotation);
+    mesh.updateWorldMatrix(true, false);
+    hl.position.setFromMatrixPosition(mesh.matrixWorld);
+    hl.quaternion.setFromRotationMatrix(mesh.matrixWorld);
     scene.add(hl);
     _multiHighlights.push(hl);
   });
@@ -1648,24 +2450,30 @@ function duplicateSelectedBlocks() {
 }
 
 function updateProp(prop, val) {
-  if (!selectedBlock) return;
-  if (selectedBlock.userData.isImported) return;
+  if (!selectedBlock || selectedBlock.userData.isImported) return;
+  let n = parseFloat(val);
+  if (!isFinite(n)) return;
   pushHistory('resize');
   const d = selectedBlock.userData;
-  const baseY = selectedBlock.position.y - (d.h || 1) / 2;
-  if (prop === 'w') { d.w = parseFloat(val); document.getElementById('propWVal').textContent = val; }
-  if (prop === 'h') { d.h = parseFloat(val); document.getElementById('propHVal').textContent = val; }
-  if (prop === 'd') { d.d = parseFloat(val); document.getElementById('propDVal').textContent = val; }
-  if (prop === 'rot')  { d.rot = parseFloat(val);  document.getElementById('propRotVal').textContent = val + ''; }
-  if (prop === 'rotX') { d.rotX = parseFloat(val); document.getElementById('propRotXVal').textContent = val + ''; }
-  if (prop === 'rotZ') { d.rotZ = parseFloat(val); document.getElementById('propRotZVal').textContent = val + ''; }
-
-  const newGeo = getCachedGeometry(d.shape, d.w, d.h, d.d);
-  // pooled geometries are shared - do not dispose old
-  selectedBlock.geometry = newGeo;
-  selectedBlock.rotation.set((d.rotX||0) * Math.PI / 180, (d.rot||0) * Math.PI / 180, (d.rotZ||0) * Math.PI / 180);
-  selectedBlock.position.y = baseY + d.h / 2;
-  selectBlock(selectedBlock);
+  const block = selectedBlock;
+  const baseY = block.position.y - (d.h || 1) / 2;
+  if (prop === 'w' || prop === 'h' || prop === 'd') {
+    n = Math.max(0.1, Math.min(50, n));
+    d[prop] = +n.toFixed(3);
+    // pooled geometries are shared - do not dispose the old one
+    block.geometry = getCachedGeometry(d.shape, d.w, d.h, d.d);
+    block.position.y = baseY + d.h / 2;
+  } else if (prop === 'rot' || prop === 'rotX' || prop === 'rotZ') {
+    n = ((n % 360) + 360) % 360;
+    d[prop] = +n.toFixed(2);
+    block.rotation.set((d.rotX || 0) * Math.PI / 180, (d.rot || 0) * Math.PI / 180, (d.rotZ || 0) * Math.PI / 180);
+  }
+  if (window.highlight) {
+    window.highlight.scale.set((d.w || 1) * 1.05, (d.h || 1) * 1.05, (d.d || 1) * 1.05);
+  }
+  syncSelectedInputs();
+  updateStats();
+  requestRender();
 }
 
 function duplicateSelected() {
@@ -2151,7 +2959,9 @@ function setupEvents() {
         const hits = raycaster.intersectObjects(blocks);
         if (hits.length > 0) {
           const mesh = hits[0].object;
+          selectedBlocks = [mesh];
           selectBlock(mesh);
+          updateMultiHighlights();
           pushHistory('move');
           isMoveDrag = true;
           movePlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -mesh.position.y);
@@ -2245,8 +3055,8 @@ function setupEvents() {
         window._lastMidX = midX;
         window._lastMidY = midY;
       } else {
-        // Pinch: zoom
-        camDist = Math.max(3, Math.min(60, camDist - (newDist - lastTouchDist) * 0.05));
+        // Pinch: proportional zoom, so a small pinch close in stays gentle.
+        if (lastTouchDist > 0) camDist = clampCamDist(camDist * (lastTouchDist / newDist));
         window._lastMidX = undefined;
         window._lastMidY = undefined;
         updateCamera();
@@ -2519,7 +3329,9 @@ function onMouseDown(e) {
       const hits = raycaster.intersectObjects(blocks);
       if (hits.length > 0) {
         const mesh = hits[0].object;
+        selectedBlocks = [mesh];
         selectBlock(mesh);
+        updateMultiHighlights();
         pushHistory('move');
         isMoveDrag = true;
         // Horizontal drag plane at the block's base Y
@@ -2668,11 +3480,36 @@ function performMarqueeSelect(x1,y1,x2,y2, additive) {
 
 function onWheel(e) {
   e.preventDefault();
-  camDist = Math.max(3, Math.min(60, camDist + e.deltaY * 0.02));
+  let delta = e.deltaY;
+  if (e.deltaMode === 1) delta *= 16;        // lines
+  else if (e.deltaMode === 2) delta *= 100;  // pages
+  // Proportional zoom: a notch changes distance by a percentage, so it feels
+  // the same up close and far away. Trackpad pinch arrives as ctrl+wheel with
+  // tiny deltas, so it gets a bigger step.
+  const step = e.ctrlKey ? 0.018 : 0.0022;
+  camDist = clampCamDist(camDist * Math.exp(delta * step));
   updateCamera();
 }
 
+function zoomBy(factor) {
+  camDist = clampCamDist(camDist * factor);
+  updateCamera();
+  if (typeof requestRender === 'function') requestRender(300);
+}
+
+function zoomIn() {
+  zoomBy(1 / 1.22);
+}
+
+function zoomOut() {
+  zoomBy(1.22);
+}
+
 function updateGhost() {
+  if (currentTool !== 'add') {
+    if (window.ghost) window.ghost.visible = false;
+    return;
+  }
   raycaster.setFromCamera(pointer, camera);
   const targets = [...blocks, ...scene.children.filter(c => c.userData.isGround)];
   const hits = raycaster.intersectObjects(targets);
@@ -2712,10 +3549,92 @@ function updateGhost() {
   }
 }
 
+function clearMeasure() {
+  measurePoints = [];
+  if (measureVisual) {
+    scene.remove(measureVisual);
+    measureVisual.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) obj.material.dispose();
+    });
+    measureVisual = null;
+  }
+  const hud = document.getElementById('measureHud');
+  if (hud) { hud.style.display = 'none'; hud.textContent = ''; }
+}
+
+function measureDistance(a, b) {
+  return a.distanceTo(b) * blockMetres;
+}
+
+function addMeasurePoint(point) {
+  if (!point) return 0;
+  const hud = document.getElementById('measureHud');
+  if (measurePoints.length === 1) {
+    const first = measurePoints[0];
+    const dist = measureDistance(first, point);
+    const group = new THREE.Group();
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([first, point]);
+    const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({color: 0x00d4aa, depthTest: false}));
+    line.renderOrder = 999;
+    group.add(line);
+    [first, point].forEach(p => {
+      const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.06, 10, 8),
+        new THREE.MeshBasicMaterial({color: 0x00d4aa, depthTest: false})
+      );
+      dot.position.copy(p);
+      dot.renderOrder = 1000;
+      group.add(dot);
+    });
+    scene.add(group);
+    measureVisual = group;
+    measurePoints = [];
+    if (hud) {
+      hud.style.display = '';
+      hud.textContent = 'Measure: ' + dist.toFixed(2) + ' m';
+    }
+    toast('Distance: ' + dist.toFixed(2) + ' m');
+    requestRender();
+    return dist;
+  }
+
+  if (measureVisual) {
+    scene.remove(measureVisual);
+    measureVisual.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) obj.material.dispose();
+    });
+    measureVisual = null;
+  }
+  measurePoints = [point];
+  const marker = new THREE.Mesh(
+    new THREE.SphereGeometry(0.07, 10, 8),
+    new THREE.MeshBasicMaterial({color: 0x00d4aa, depthTest: false})
+  );
+  marker.position.copy(point);
+  marker.renderOrder = 1000;
+  scene.add(marker);
+  measureVisual = marker;
+  if (hud) {
+    hud.style.display = '';
+    hud.textContent = 'Measure: click a second point';
+  }
+  toast('First point set. Click a second point.');
+  requestRender();
+  return 0;
+}
+
 function handleAction() {
   raycaster.setFromCamera(pointer, camera);
   const blockHits = raycaster.intersectObjects(blocks);
   const groundHits = raycaster.intersectObjects(scene.children.filter(c => c.userData.isGround));
+
+  if (currentTool === 'measure') {
+    const hit = blockHits[0] || groundHits[0];
+    if (hit) addMeasurePoint(hit.point.clone());
+    return;
+  }
 
   if (currentTool === 'add') {
     let px, py, pz;
@@ -2757,11 +3676,13 @@ function handleAction() {
   } else if (currentTool === 'select' || currentTool === 'resize' || currentTool === 'move') {
     if (blockHits.length > 0) {
       const mesh = blockHits[0].object;
-      if (window._ctrlHeld) {
-        // Ctrl+click: toggle in/out of multi-selection
+      if (window._ctrlHeld || mobileMulti) {
+        // Ctrl+click or mobile Multi mode: toggle in/out of multi-selection
         toggleMultiSelect(mesh);
       } else {
+        selectedBlocks = [mesh];
         selectBlock(mesh);
+        updateMultiHighlights();
       }
     } else {
       deselectBlock();
@@ -2775,9 +3696,12 @@ function handleAction() {
 function setTool(tool) {
   currentTool = tool;
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+  const activeBtn = document.querySelector(`[data-tool="${tool}"]`);
+  if (activeBtn) activeBtn.classList.add('active');
   window.ghost.visible = false;
   if (tool !== 'select' && tool !== 'resize' && tool !== 'move') deselectBlock();
+  clearMeasure();
+  if (tool === 'measure') toast('Click two points to measure a distance');
 }
 
 function setShape(shape) {
@@ -2833,6 +3757,15 @@ function updateStats() {
   const shapes = new Set(blocks.map(b => b.userData.shape)).size;
   document.getElementById('colourCount').textContent = colours;
   document.getElementById('shapeCount').textContent = shapes;
+  const poly = getPolyStats();
+  const polyEl = document.getElementById('polyStats');
+  if (polyEl) polyEl.textContent = poly.tris.toLocaleString() + ' triangles · ' + poly.verts.toLocaleString() + ' vertices';
+  const pivotEl = document.getElementById('pivotStatus');
+  if (pivotEl) {
+    const ps = pivotStatus();
+    pivotEl.textContent = ps.text;
+    pivotEl.style.color = (ps.centred && ps.grounded) ? 'var(--accent3)' : 'var(--accent2)';
+  }
   // Performance warning
   const countEl = document.getElementById('blockCount');
   if (blocks.length > 500) {
@@ -2857,7 +3790,9 @@ function updateStats() {
     else {
       const b = new THREE.Box3(); blocks.forEach(m=>{ if(!m.userData.hidden) b.expandByObject(m); });
       const sz = b.getSize(new THREE.Vector3());
-      meas.textContent = blocks.length + ' blocks · ' + sz.x.toFixed(1) + '×' + sz.y.toFixed(1) + '×' + sz.z.toFixed(1);
+      const visibleCount = blocks.filter(m => !m.userData.hidden).length;
+      meas.textContent = visibleCount + ' blocks · ' + (sz.x * blockMetres).toFixed(2) + '×' + (sz.y * blockMetres).toFixed(2) + '×' + (sz.z * blockMetres).toFixed(2) + ' m';
+      meas.title = '1 block = ' + blockMetres + ' m. Exports convert to studs for Roblox or cm for Unreal.';
       meas.style.display='';
     }
   }
@@ -2919,22 +3854,32 @@ function setSlots(slots) { localStorage.setItem('jvds_builder_saves', JSON.strin
 function saveToSlot(idx) {
   const slots = getSlots();
   while (slots.length <= idx) slots.push(null);
+  const parts = collectExportParts({includeHidden: true, excludeImported: true});
+  const imports = serializeImportedParts();
   slots[idx] = {
     name: buildName,
     date: new Date().toLocaleDateString(),
-    count: blocks.length,
-    blocks: blocks.map(b => ({
-      x: b.position.x, y: b.position.y - (b.userData.h||1)/2,
-      z: b.position.z,
-      w: b.userData.w||1, h: b.userData.h||1, d: b.userData.d||1,
-      colour: b.userData.colour, shape: b.userData.shape, rot: b.userData.rot||0,
-      rotX: b.userData.rotX||0, rotZ: b.userData.rotZ||0,
-      m: b.material ? (b.material.metalness||0) : 0,
-      r: b.material ? (b.material.roughness ?? 0.55) : 0.55,
-      o: b.userData.opacity !== undefined ? b.userData.opacity : 1
+    count: parts.length + imports.length,
+    groups: groups.map(g => g.name),
+    imports: imports,
+    blocks: parts.map(p => ({
+      x: +p.position.x.toFixed(3),
+      y: +(p.position.y - p.height / 2).toFixed(3),
+      z: +p.position.z.toFixed(3),
+      w: +p.width.toFixed(3), h: +p.height.toFixed(3), d: +p.depth.toFixed(3),
+      colour: p.colour, shape: p.shape,
+      rot: p.rotation.y, rotX: p.rotation.x, rotZ: p.rotation.z,
+      name: p.name, hidden: p.hidden,
+      gi: groupIndexForBlock(p.mesh),
+      m: p.metalness, r: p.roughness, o: p.opacity
     }))
   };
-  setSlots(slots);
+  try {
+    setSlots(slots);
+  } catch (e) {
+    toast('This build is too large for browser save. Export .buildlab instead.');
+    return;
+  }
   renderSaveSlots();
   closeModal('saveModal');
   toast('Saved to slot ' + (idx+1) + '!');
@@ -2947,9 +3892,13 @@ function loadSlot(idx) {
   pushHistory();
   clearAll(true);
   buildName = slot.name;
+  const loaded = [];
   slot.blocks.forEach(b => {
     const mesh = addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
+    loaded.push(mesh || null);
     if (mesh && mesh.material) {
+      if (b.name) mesh.userData.blockName = b.name;
+      if (b.hidden) { mesh.visible = false; mesh.userData.hidden = true; }
       if (b.m !== undefined) mesh.material.metalness = b.m;
       if (b.r !== undefined) mesh.material.roughness = b.r;
       if (b.o !== undefined) {
@@ -2960,6 +3909,9 @@ function loadSlot(idx) {
       }
     }
   });
+  rebuildGroups(slot.groups || [], slot.blocks.map((b, i) => ({mesh: loaded[i], gi: b.gi})));
+  loadImportedParts(slot.imports);
+  updateStats();
   toast('Loaded: ' + buildName);
 }
 
@@ -2999,70 +3951,136 @@ function renderModalSaveSlots() {
 // EXPORT OBJ
 // -------------------------------------------------------
 function exportOBJ() {
-  // offload large builds to worker to keep UI responsive
-  if(blocks.length > 150 && window.Worker){
-    const w = getExportWorker();
-    if(w){
-      toast('Exporting in background…');
-      const data = blocks.filter(b=>!b.userData.hidden).map(m=>({x:m.position.x, y:m.position.y, z:m.position.z, w:m.userData.w, h:m.userData.h, d:m.userData.d, rot:m.userData.rot||0, rotX:m.userData.rotX||0, rotZ:m.userData.rotZ||0}));
-      w.onmessage = (e)=>{
-        const blob=new Blob([e.data.obj],{type:'text/plain'});
-        const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=buildName.replace(/\s+/g,'_')+'.obj'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),3000);
-        toast('Exported ' + buildName + '.obj via worker!');
-      };
-      w.onerror = ()=>{ toast('Worker failed, falling back'); exportOBJFallback(); };
-      w.postMessage({ blocks: data, name: buildName, scale: currentExportProfile().scale, axis: currentExportProfile().axis });
-      return;
+  if (!blocks.some(b => !b.userData.hidden)) { toast('Nothing to export!'); return; }
+  // Accurate OBJ for every size. The old >150 block path silently replaced
+  // every shape with a box, which is worse than a short pause.
+  const count = collectExportParts().length;
+  if (count > 150) {
+    toast('Building OBJ: 0%');
+    buildOBJTextAsync(percent => {
+      if (percent % 10 === 0) toast('Building OBJ: ' + percent + '%');
+    }).then(downloadOBJText);
+  } else {
+    exportOBJFallback();
+  }
+}
+function objGeometryText(geo, label, profile, vOffset) {
+  let text = `\no ${label}\n`;
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const v = profilePoint(profile, pos.getX(i), pos.getY(i), pos.getZ(i));
+    text += `v ${v[0].toFixed(3)} ${v[1].toFixed(3)} ${v[2].toFixed(3)}\n`;
+  }
+  const idx = geo.index;
+  if (idx) {
+    for (let i = 0; i < idx.count; i += 3) {
+      text += `f ${idx.getX(i)+vOffset} ${idx.getX(i+1)+vOffset} ${idx.getX(i+2)+vOffset}\n`;
+    }
+  } else {
+    // Non-indexed geometry (common for imported GLTF/GLB or merged meshes):
+    // emit one triangle face per three vertices.
+    for (let i = 0; i + 2 < pos.count; i += 3) {
+      text += `f ${i+vOffset} ${i+1+vOffset} ${i+2+vOffset}\n`;
     }
   }
-  exportOBJFallback();
+  return {text, vOffset: vOffset + pos.count};
 }
+
+function objHeaderText(profile) {
+  return `# JVDesignStudio BuildLab, ${buildName}\n# Units: 1 block = ${blockMetres} m = ${(profile.scale * blockMetres).toFixed(3)} ${profile.unitShort}${profile.axis === 'z' ? ', Z-up (converted from Y-up)' : ''}${exportOriginBase ? '\n# Origin: base centre at 0,0,0' : ''}\n`;
+}
+
 function buildOBJText(){
   const profile = currentExportProfile();
-  let obj = `# JVDesignStudio BuildLab, ${buildName}\n# Units: 1 unit = 1 ${profile.unitShort}${profile.axis === 'z' ? ', Z-up (converted from Y-up)' : ''}\n`;
+  const origin = exportOriginOffset();
+  let obj = objHeaderText(profile);
   let vOffset = 1;
-  blocks.filter(b=>!b.userData.hidden).forEach((mesh, mi) => {
-    const geo = mesh.geometry.clone();
-    geo.applyMatrix4(mesh.matrixWorld);
-    const pos = geo.attributes.position;
-    obj += `\no block_${mi+1}\n`;
-    for (let i = 0; i < pos.count; i++) {
-      const v = profilePoint(profile, pos.getX(i), pos.getY(i), pos.getZ(i));
-      obj += `v ${v[0].toFixed(3)} ${v[1].toFixed(3)} ${v[2].toFixed(3)}\n`;
-    }
-    const idx = geo.index;
-    if (idx) {
-      for (let i = 0; i < idx.count; i += 3) {
-        obj += `f ${idx.getX(i)+vOffset} ${idx.getX(i+1)+vOffset} ${idx.getX(i+2)+vOffset}\n`;
-      }
-    } else {
-      // Non-indexed geometry (common for imported GLTF/GLB meshes): emit a
-      // triangle face per three vertices so a round-trip keeps its surfaces.
-      for (let i = 0; i + 2 < pos.count; i += 3) {
-        obj += `f ${i+vOffset} ${i+1+vOffset} ${i+2+vOffset}\n`;
-      }
-    }
-    vOffset += pos.count;
-    geo.dispose();
-  });
+  if (mergeExport) {
+    mergedExportGroups(origin).forEach((entry, i) => {
+      const part = objGeometryText(entry.geometry, exportPartLabel({ name: entry.name, shape: 'merged' }, i), profile, vOffset);
+      obj += part.text;
+      vOffset = part.vOffset;
+      entry.geometry.dispose();
+    });
+  } else {
+    collectExportParts().forEach((part, i) => {
+      const geo = part.mesh.geometry.clone();
+      geo.applyMatrix4(part.mesh.matrixWorld);
+      geo.translate(origin.x, origin.y, origin.z);
+      const piece = objGeometryText(geo, exportPartLabel(part, i), profile, vOffset);
+      obj += piece.text;
+      vOffset = piece.vOffset;
+      geo.dispose();
+    });
+  }
   return obj;
 }
-function exportOBJFallback(){
+
+// Chunked OBJ build for large scenes: yields to the browser between groups of
+// parts so the page keeps painting and the progress toast updates.
+function buildOBJTextAsync(onProgress) {
+  return new Promise(resolve => {
+    const profile = currentExportProfile();
+    const origin = exportOriginOffset();
+    const header = objHeaderText(profile);
+    let vOffset = 1;
+    const items = [];
+    if (mergeExport) {
+      mergedExportGroups(origin).forEach((entry, i) => {
+        items.push({geo: entry.geometry, label: exportPartLabel({ name: entry.name, shape: 'merged' }, i)});
+      });
+    } else {
+      collectExportParts().forEach((part, i) => {
+        const geo = part.mesh.geometry.clone();
+        geo.applyMatrix4(part.mesh.matrixWorld);
+        geo.translate(origin.x, origin.y, origin.z);
+        items.push({geo, label: exportPartLabel(part, i)});
+      });
+    }
+    if (!items.length) { resolve(header); return; }
+    let index = 0;
+    const pieces = [];
+    function tick() {
+      const end = Math.min(items.length, index + 12);
+      for (; index < end; index++) {
+        const item = items[index];
+        const piece = objGeometryText(item.geo, item.label, profile, vOffset);
+        pieces.push(piece.text);
+        vOffset = piece.vOffset;
+        item.geo.dispose();
+      }
+      if (onProgress) onProgress(Math.round(index / items.length * 100));
+      if (index < items.length) setTimeout(tick, 0);
+      else resolve(header + pieces.join(''));
+    }
+    tick();
+  });
+}
+
+function downloadOBJText(text) {
   const profile = currentExportProfile();
-  const obj = buildOBJText();
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([obj], { type: 'text/plain' }));
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
   a.download = buildName.replace(/\s+/g,'_') + '.obj';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   toast('Exported ' + buildName + '.obj (' + profile.unitShort + ')');
+}
+function exportOBJFallback(){
+  downloadOBJText(buildOBJText());
 }
 
 // -------------------------------------------------------
 // EXPORT, RBXM (Roblox Model XML)
 // -------------------------------------------------------
 function exportRBXM() {
-  if (blocks.length === 0) { toast('Nothing to export!'); return; }
+  if (!blocks.some(b => !b.userData.hidden)) { toast('Nothing to export!'); return; }
+
+  // Bake any live gizmo rotate/scale into block data first so RBXM, save slots
+  // and share codes all describe the same transforms as the GLB and OBJ paths.
+  blocks.forEach(b => bakeMeshTransform(b));
+  const RBX_SCALE = ROBLOX_STUDS_PER_UNIT * blockMetres;
+  const origin = exportOriginOffset();
 
   // Convert hex colour to Roblox Color3 floats
   function hexToRgb(hex) {
@@ -3148,12 +4166,15 @@ function exportRBXM() {
     const groupMeshes = g.blockIds.map(id => blocks.find(b => b.userData.blockId === id)).filter(Boolean);
     let gPartIdx = 0;
     groupMeshes.forEach(mesh => {
+      if (mesh.userData.hidden) return;
       groupedBlockIds.add(mesh.userData.blockId);
       const d = mesh.userData;
-      const w = d.w || 1, h = d.h || 1, depth = d.d || 1;
-      const px = mesh.position.x.toFixed(3);
-      const py = mesh.position.y.toFixed(3);
-      const pz = mesh.position.z.toFixed(3);
+      const w = (d.w || 1) * RBX_SCALE, h = (d.h || 1) * RBX_SCALE, depth = (d.d || 1) * RBX_SCALE;
+      const wp = new THREE.Vector3();
+      mesh.getWorldPosition(wp);
+      const px = ((wp.x + origin.x) * RBX_SCALE).toFixed(3);
+      const py = ((wp.y + origin.y) * RBX_SCALE).toFixed(3);
+      const pz = ((wp.z + origin.z) * RBX_SCALE).toFixed(3);
       const rgb = hexToRgb(d.colour || '#aaaaaa');
       const brick = nearestBrick(d.colour || '#aaaaaa');
       const rx = (d.rotX || 0) * Math.PI / 180;
@@ -3203,11 +4224,14 @@ function exportRBXM() {
   let parts = '';
   blocks.forEach((mesh, i) => {
     if (groupedBlockIds.has(mesh.userData.blockId)) return; // skip grouped parts
+    if (mesh.userData.hidden) return;
     const d = mesh.userData;
-    const w = d.w || 1, h = d.h || 1, depth = d.d || 1;
-    const px = mesh.position.x.toFixed(3);
-    const py = mesh.position.y.toFixed(3);
-    const pz = mesh.position.z.toFixed(3);
+    const w = (d.w || 1) * RBX_SCALE, h = (d.h || 1) * RBX_SCALE, depth = (d.d || 1) * RBX_SCALE;
+    const wp = new THREE.Vector3();
+    mesh.getWorldPosition(wp);
+    const px = ((wp.x + origin.x) * RBX_SCALE).toFixed(3);
+    const py = ((wp.y + origin.y) * RBX_SCALE).toFixed(3);
+    const pz = ((wp.z + origin.z) * RBX_SCALE).toFixed(3);
     const rgb = hexToRgb(d.colour || '#aaaaaa');
     const brick = nearestBrick(d.colour || '#aaaaaa');
     const rx = (d.rotX || 0) * Math.PI / 180;
@@ -3246,7 +4270,8 @@ function exportRBXM() {
     </Item>`;
   });
 
-  const rbxm = `<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
+  const rbxm = `<!-- JVDesignStudio BuildLab. Units: 1 block = ${blockMetres} m = ${RBX_SCALE.toFixed(3)} studs. -->
+<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">
   <Meta name="ExplicitAutoJoints">true</Meta>
   <Item class="Model" referent="RBXROOT">
     <Properties>
@@ -3268,27 +4293,45 @@ function exportRBXM() {
 // EXPORT GLTF (Professional format with materials)
 // -------------------------------------------------------
 function exportGLTF() {
-  if (blocks.length === 0) { toast('Nothing to export!'); return; }
+  if (!blocks.some(b => !b.userData.hidden)) { toast('Nothing to export!'); return; }
 
   const exporter = new GLTFExporter();
   const profile = currentExportProfile();
 
-  // A throwaway group carrying the engine profile (unit scale + up-axis). The
-  // clones share geometry/materials with the live blocks, so nothing on screen
-  // is touched or reparented.
+  // A throwaway group carrying the engine profile (unit scale + up-axis). Parts
+  // are placed with world transforms so grouped and moved builds stay put, and
+  // each one keeps its part name in the GLB node.
   const exportGroup = new THREE.Group();
+  exportGroup.name = buildName || 'BuildLab';
   exportGroup.rotation.x = profile.axis === 'z' ? Math.PI / 2 : 0;
-  exportGroup.scale.setScalar(profile.scale);
-  blocks.filter(b => !b.userData.hidden).forEach((mesh) => {
-    const clone = new THREE.Mesh(mesh.geometry, mesh.material);
-    clone.position.copy(mesh.position);
-    clone.quaternion.copy(mesh.quaternion);
-    clone.scale.copy(mesh.scale);
-    exportGroup.add(clone);
-  });
+  exportGroup.scale.setScalar(profile.scale * blockMetres);
+  const origin = exportOriginOffset();
+  const tempGeometries = [];
+  if (mergeExport) {
+    mergedExportGroups(origin).forEach((entry, i) => {
+      const clone = new THREE.Mesh(entry.geometry, entry.material);
+      clone.name = entry.name || ('Merged_' + (i + 1));
+      tempGeometries.push(entry.geometry);
+      exportGroup.add(clone);
+    });
+  } else {
+    collectExportParts().forEach((part, i) => {
+      const clone = new THREE.Mesh(part.mesh.geometry, part.mesh.material);
+      clone.position.copy(part.position).add(origin);
+      clone.quaternion.copy(part.quaternion);
+      clone.scale.copy(part.scale);
+      clone.name = part.name || (part.shape + '_' + (i + 1));
+      exportGroup.add(clone);
+    });
+  }
   exportGroup.updateMatrixWorld(true);
+  const disposeTempGeometries = () => {
+    tempGeometries.forEach(g => { try { g.dispose(); } catch (e) {} });
+    tempGeometries.length = 0;
+  };
 
   const onDone = (result) => {
+    disposeTempGeometries();
     // With binary:true the exporter returns an ArrayBuffer (.glb); otherwise a
     // JSON object (.gltf). Handle both so a partial result still downloads.
     let blob, ext;
@@ -3312,10 +4355,12 @@ function exportGLTF() {
   // uses parse(input, onDone, onError, options), so binary is passed correctly.
   try {
     exporter.parse(exportGroup, onDone, (err) => {
+      disposeTempGeometries();
       console.error('GLTF export error:', err);
       toast('Export failed  see console');
     }, { binary: true, onlyVisible: true });
   } catch (e) {
+    disposeTempGeometries();
     console.error('GLTF export error:', e);
     toast('Export failed  see console');
   }
@@ -3325,24 +4370,17 @@ function exportGLTF() {
 // EXPORT OBJ with MTL (Materials)
 // -------------------------------------------------------
 function exportOBJWithMTL() {
-  if (blocks.length === 0) { toast('Nothing to export!'); return; }
+  if (!blocks.some(b => !b.userData.hidden)) { toast('Nothing to export!'); return; }
 
   const profile = currentExportProfile();
-  let obj = `# JVDesignStudio BuildLab, ${buildName}\n# Exported with materials\n# Units: 1 unit = 1 ${profile.unitShort}${profile.axis === 'z' ? ', Z-up (converted from Y-up)' : ''}\nmtllib ${buildName.replace(/\s+/g, '_')}.mtl\n`;
+  const origin = exportOriginOffset();
+  let obj = `# JVDesignStudio BuildLab, ${buildName}\n# Exported with materials\n# Units: 1 block = ${blockMetres} m = ${(profile.scale * blockMetres).toFixed(3)} ${profile.unitShort}${profile.axis === 'z' ? ', Z-up (converted from Y-up)' : ''}${exportOriginBase ? '\n# Origin: base centre at 0,0,0' : ''}\nmtllib ${buildName.replace(/\s+/g, '_')}.mtl\n`;
   let mtl = `# Materials for ${buildName}\n`;
   let vOffset = 1;
   const materials = new Map();
 
-  blocks.forEach((mesh, mi) => {
-    const color = mesh.userData.colour || '#aaaaaa';
-    const metallic = mesh.material ? (mesh.material.metalness || 0) : 0;
-    const roughness = (mesh.material && mesh.material.roughness !== undefined) ? mesh.material.roughness : 0.55;
-    const opacity = mesh.userData.opacity !== undefined ? mesh.userData.opacity
-      : ((mesh.material && mesh.material.opacity !== undefined) ? mesh.material.opacity : 1);
-    // Key by colour AND finish so parts that share a colour but differ in
-    // roughness/metalness/opacity still get their own material.
+  function materialFor(color, metallic, roughness, opacity) {
     const matKey = color + '|' + metallic.toFixed(2) + '|' + roughness.toFixed(2) + '|' + opacity.toFixed(2);
-
     if (!materials.has(matKey)) {
       const matName = `mat_${materials.size + 1}`;
       const hex = color.replace('#', '');
@@ -3356,10 +4394,12 @@ function exportOBJWithMTL() {
       mtl += `\nnewmtl ${matName}\nKd ${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)}\nKs ${ks} ${ks} ${ks}\nNs ${(1000 * (1 - roughness)).toFixed(0)}\nd ${opacity.toFixed(3)}\nPr ${roughness.toFixed(3)}\nPm ${metallic.toFixed(3)}\n`;
       materials.set(matKey, matName);
     }
+    return materials.get(matKey);
+  }
 
-    obj += `\nusemtl ${materials.get(matKey)}\n`;
-    const geo = mesh.geometry.clone();
-    geo.applyMatrix4(mesh.matrixWorld);
+  function writePiece(geo, label, color, metallic, roughness, opacity) {
+    const matName = materialFor(color, metallic, roughness, opacity);
+    obj += `\no ${label}\nusemtl ${matName}\n`;
     const pos = geo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const v = profilePoint(profile, pos.getX(i), pos.getY(i), pos.getZ(i));
@@ -3370,10 +4410,28 @@ function exportOBJWithMTL() {
       for (let i = 0; i < idx.count; i += 3) {
         obj += `f ${idx.getX(i) + vOffset} ${idx.getX(i + 1) + vOffset} ${idx.getX(i + 2) + vOffset}\n`;
       }
+    } else {
+      for (let i = 0; i + 2 < pos.count; i += 3) {
+        obj += `f ${i + vOffset} ${i + 1 + vOffset} ${i + 2 + vOffset}\n`;
+      }
     }
     vOffset += pos.count;
-    geo.dispose();
-  });
+  }
+
+  if (mergeExport) {
+    mergedExportGroups(origin).forEach((entry, i) => {
+      writePiece(entry.geometry, exportPartLabel({ name: entry.name, shape: 'merged' }, i), entry.colour, entry.metalness, entry.roughness, entry.opacity);
+      entry.geometry.dispose();
+    });
+  } else {
+    collectExportParts().forEach((part, i) => {
+      const geo = part.mesh.geometry.clone();
+      geo.applyMatrix4(part.mesh.matrixWorld);
+      geo.translate(origin.x, origin.y, origin.z);
+      writePiece(geo, exportPartLabel(part, i), part.colour, part.metalness, part.roughness, part.opacity);
+      geo.dispose();
+    });
+  }
 
   // Download OBJ
   const objBlob = new Blob([obj], { type: 'text/plain' });
@@ -4053,7 +5111,23 @@ let _lastHistoryKey = null, _lastHistoryTime = 0;
 function captureState() {
   return {
     blocks: blocks.map(b => {
-      if (b.userData.isImported) return { imported: true, mesh: b };
+      if (b.userData.isImported) {
+        return {
+          imported: true,
+          mesh: b,
+          position: b.position.toArray(),
+          quaternion: b.quaternion.toArray(),
+          scale: b.scale.toArray(),
+          visible: b.visible,
+          ud: {
+            blockName: b.userData.blockName || '',
+            hidden: !!b.userData.hidden,
+            locked: !!b.userData.locked,
+            opacity: b.userData.opacity !== undefined ? b.userData.opacity : 1,
+            blockId: b.userData.blockId || ''
+          }
+        };
+      }
       return {
         x: b.position.x, y: b.position.y - (b.userData.h||1)/2, z: b.position.z,
         w: b.userData.w||1, h: b.userData.h||1, d: b.userData.d||1,
@@ -4105,7 +5179,12 @@ function restoreState(state) {
     // geometry is cached (getCachedGeometry) - keep in cache
     // material is pooled (getPooledMaterial) - keep in cache
   });
-  blocks = blocks.filter(b => b.userData.isImported);
+  const wantedImported = new Set(importedRecords.map(r => r.mesh).filter(Boolean));
+  blocks.filter(b => b.userData.isImported && !wantedImported.has(b)).forEach(b => {
+    if (b.parent && b.parent !== scene) b.parent.remove(b);
+    scene.remove(b);
+  });
+  blocks = blocks.filter(b => b.userData.isImported && wantedImported.has(b));
 
   // Add back from records
   nativeRecords.forEach(r => {
@@ -4122,6 +5201,22 @@ function restoreState(state) {
     if (r.blockName) m.userData.blockName = r.blockName;
     if (r.robloxMat) m.userData.robloxMaterial = r.robloxMat;
     if (r.blockId) m.userData.blockId = r.blockId;
+  });
+
+  // Re-add imported meshes that were deleted since the snapshot, and restore
+  // their transform (they are referenced, not rebuilt, so undo stays cheap).
+  importedRecords.forEach(r => {
+    const b = r.mesh;
+    if (!b) return;
+    if (b.parent && b.parent !== scene) b.parent.remove(b);
+    if (!blocks.includes(b)) blocks.push(b);
+    scene.add(b);
+    if (Array.isArray(r.position)) b.position.fromArray(r.position);
+    if (Array.isArray(r.quaternion)) b.quaternion.fromArray(r.quaternion);
+    if (Array.isArray(r.scale)) b.scale.fromArray(r.scale);
+    if (r.ud) Object.assign(b.userData, r.ud);
+    b.visible = r.visible !== undefined ? r.visible : !b.userData.hidden;
+    b.updateMatrixWorld(true);
   });
 
   // Restore groups if available - rebuild true THREE.Group hierarchy
@@ -4310,20 +5405,25 @@ document.addEventListener('keydown', (e) => {
     if (!mod) { frameAll(); e.preventDefault(); return; }
   }
 
+  // + / -: zoom in and out from the keyboard
+  if (!mod && (e.key === '+' || e.key === '=')) { zoomIn(); e.preventDefault(); return; }
+  if (!mod && (e.key === '-' || e.key === '_')) { zoomOut(); e.preventDefault(); return; }
+
   // Tab: Cycle tools
   if (e.key === 'Tab') {
-    const tools = ['add','paint','move','resize','select','delete'];
+    const tools = ['add','paint','move','resize','select','delete','measure'];
     const idx = tools.indexOf(currentTool);
     setTool(tools[(idx + 1) % tools.length]);
     e.preventDefault(); return;
   }
 
-  // 1/3/5/7: View presets
+  // 1/3/5/7: View presets, O: orthographic
   if (!mod) {
     if (e.key === '1') { setCameraView('front'); e.preventDefault(); return; }
     if (e.key === '3') { setCameraView('right'); e.preventDefault(); return; }
     if (e.key === '7') { setCameraView('top'); e.preventDefault(); return; }
     if (e.key === '5') { setCameraView('perspective'); e.preventDefault(); return; }
+    if (e.key === 'o' || e.key === 'O') { toggleOrtho(); e.preventDefault(); return; }
   }
 
   // Delete / Backspace
@@ -4344,7 +5444,41 @@ document.addEventListener('keyup', (e) => {
   window._ctrlHeld = e.ctrlKey || e.metaKey;
 });
 
+// Hold Shift while dragging the gizmo to move, rotate or scale freely.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Shift' && !_shiftSnapBypass) {
+    _shiftSnapBypass = true;
+    updateGizmoSnaps();
+  }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'Shift' && _shiftSnapBypass) {
+    _shiftSnapBypass = false;
+    updateGizmoSnaps();
+  }
+});
+
 // Camera view presets
+function toggleOrtho() {
+  if (!perspCamera || !orthoCamera) return;
+  orthoMode = !orthoMode;
+  camera = orthoMode ? orthoCamera : perspCamera;
+  if (camera.isPerspectiveCamera) {
+    camera.aspect = viewAspect;
+    camera.updateProjectionMatrix();
+  }
+  if (transformControls) transformControls.camera = camera;
+  if (csm && 'camera' in csm) { try { csm.camera = camera; } catch (e) {} }
+  updateCamera();
+  const btn = document.getElementById('vpOrtho');
+  if (btn) {
+    btn.classList.toggle('active', orthoMode);
+    btn.setAttribute('aria-pressed', orthoMode ? 'true' : 'false');
+  }
+  toast(orthoMode ? 'Orthographic view' : 'Perspective view');
+  requestRender();
+}
+
 function setCameraView(view) {
   if (view === 'front')      { camTheta = 0;    camPhi = Math.PI / 2; }
   else if (view === 'right') { camTheta = -Math.PI/2; camPhi = Math.PI / 2; }
@@ -4360,9 +5494,16 @@ function frameAll(silent) {
   blocks.forEach(b => box.expandByObject(b));
   const center = box.getCenter(new THREE.Vector3());
   const size = box.getSize(new THREE.Vector3());
-  const maxDim = Math.max(size.x, size.y, size.z);
+  // Fit the bounding sphere to whichever field of view is tighter. Portrait
+  // phones have a narrow horizontal FOV, so width drives the distance there.
+  const radius = Math.max(size.length() / 2, 0.75);
+  const isOrtho = !!camera.isOrthographicCamera;
+  const vFov = (isOrtho ? 45 : camera.fov) * Math.PI / 180;
+  const aspect = isOrtho ? viewAspect : (camera.aspect || 1);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
+  const fitFov = Math.max(0.2, Math.min(vFov, hFov));
   camTarget.copy(center);
-  camDist = Math.max(maxDim * 2.8, 8);
+  camDist = clampCamDist((radius / Math.sin(fitFov / 2)) * 1.35);
   // Always reset to a clear 3/4-view angle so the model is actually visible
   camTheta = 0.7;
   camPhi = 0.75;
@@ -4498,6 +5639,22 @@ function groupSelectedBlocks() {
   const name = prompt('Group name:', 'Group ' + (groups.length + 1));
   if (!name) return;
   const blockIds = selectedBlocks.map(b => b.userData.blockId).filter(Boolean);
+  // A block can only live in one group. Remove it from any old group first so
+  // RBXM and the outliner do not list the same part twice.
+  const moving = new Set(blockIds);
+  for (let i = groups.length - 1; i >= 0; i--) {
+    const old = groups[i];
+    old.blockIds = old.blockIds.filter(id => !moving.has(id));
+    if (!old.blockIds.length) {
+      const oldObj = groupObjects[i];
+      if (oldObj) {
+        [...oldObj.children].forEach(child => { oldObj.remove(child); scene.add(child); });
+        scene.remove(oldObj);
+      }
+      groups.splice(i, 1);
+      groupObjects.splice(i, 1);
+    }
+  }
   groups.push({ name, blockIds });
   // true THREE.Group - attach meshes so group transform moves children
   try {
@@ -4811,9 +5968,21 @@ function focusOutlinerSelection() {
   updateCamera();
   toast('Focused');
 }
+function buildProjectData() {
+  return {
+    v: 3,
+    name: buildName,
+    created: new Date().toISOString(),
+    blocks: encodeBuildData(),
+    groups: groups.map(group => group.name),
+    imports: serializeImportedParts(),
+    origin: exportOriginBase,
+    thumb: null
+  };
+}
 function saveProjectFile() {
   if (!blocks.length) { toast('Nothing to save'); return; }
-  const payload = { v:2, name: buildName, created: new Date().toISOString(), blocks: encodeBuildData(), groups: groups, thumb: null };
+  const payload = buildProjectData();
   // try thumbnail via canvas
   try {
     requestRender(100); renderer.render(scene,camera);
@@ -4869,6 +6038,61 @@ function handleProjectFile(input){
   r.readAsText(f);
 }
 
+// v3 project loader: blocks, groups, imported geometry and export origin.
+function loadProjectData(data) {
+  const arr = Array.isArray(data.blocks) ? data.blocks : (Array.isArray(data.b) ? data.b : []);
+  const imports = Array.isArray(data.imports) ? data.imports : (Array.isArray(data.im) ? data.im : []);
+  if (!arr.length && !imports.length) throw new Error('no blocks');
+  pushHistory();
+  clearAll(true);
+  buildName = data.name || data.n || 'Loaded Build';
+  document.getElementById('buildNameInput').value = buildName;
+  if (typeof data.origin === 'boolean') {
+    exportOriginBase = data.origin;
+    syncOriginToggles();
+  }
+  const decoded = decodeBuildData(arr);
+  const loaded = [];
+  decoded.forEach(b => {
+    const m = addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
+    loaded.push(m || null);
+    if (m) {
+      if (b.name) m.userData.blockName = b.name;
+      if (b.hidden) { m.visible = false; m.userData.hidden = true; }
+      if (m.material) {
+        m.material.metalness = b.metalness || 0;
+        m.material.roughness = b.roughness !== undefined ? b.roughness : 0.55;
+        if (b.opacity !== undefined && b.opacity < 1) {
+          m.material.transparent = true;
+          m.material.opacity = b.opacity;
+          m.material.needsUpdate = true;
+          m.userData.opacity = b.opacity;
+        }
+      }
+    }
+  });
+  const groupNames = Array.isArray(data.groups)
+    ? data.groups.map(g => (typeof g === 'string' ? g : (g && g.name) || ''))
+    : [];
+  rebuildGroups(groupNames, decoded.map((b, i) => ({mesh: loaded[i], gi: b.gi})));
+  const imported = loadImportedParts(imports);
+  updateStats();
+  toast('Loaded ' + (arr.length + imported) + ' parts');
+  return arr.length + imported;
+}
+function handleProjectFileV3(input) {
+  const f = input.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      loadProjectData(JSON.parse(e.target.result));
+      input.value = '';
+    } catch (err) { toast('Failed to load: ' + err.message); }
+  };
+  reader.readAsText(f);
+}
+
 // -------------------------------------------------------
 // MIRROR / SYMMETRY
 // -------------------------------------------------------
@@ -4912,6 +6136,82 @@ function mirrorSelected() {
   selectedBlocks = newBlocks;
   updateMultiHighlights();
   toast('Mirrored ' + newBlocks.length + ' blocks across ' + mirrorAxis.toUpperCase() + ' axis');
+}
+
+// -------------------------------------------------------
+// ARRAY / REPEAT
+// -------------------------------------------------------
+let arrayAxis = 'x';
+
+function setArrayAxis(axis) {
+  arrayAxis = axis;
+  document.querySelectorAll('.array-axis-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector('.array-axis-btn[data-axis="' + axis + '"]');
+  if (btn) btn.classList.add('active');
+  toast('Array axis: ' + axis.toUpperCase());
+}
+
+function cloneBlockAtWorld(mesh, position) {
+  const d = mesh.userData;
+  if (d.isImported) return null;
+  mesh.updateWorldMatrix(true, false);
+  const p = new THREE.Vector3();
+  const q = new THREE.Quaternion();
+  const s = new THREE.Vector3();
+  mesh.matrixWorld.decompose(p, q, s);
+  const e = new THREE.Euler().setFromQuaternion(q, 'XYZ');
+  const deg = v => { let x = v * 180 / Math.PI; x = ((x % 360) + 360) % 360; return +x.toFixed(2); };
+  const w = (d.w || 1) * Math.abs(s.x);
+  const h = (d.h || 1) * Math.abs(s.y);
+  const depth = (d.d || 1) * Math.abs(s.z);
+  const m = addBlock(position.x, position.y - h / 2, position.z, w, h, depth, d.colour, d.shape, deg(e.y), deg(e.x), deg(e.z));
+  if (m) {
+    if (mesh.material) {
+      m.material.metalness = mesh.material.metalness || 0;
+      m.material.roughness = mesh.material.roughness !== undefined ? mesh.material.roughness : 0.55;
+      if (mesh.userData.opacity !== undefined && mesh.userData.opacity < 1) {
+        m.material.transparent = true;
+        m.material.opacity = mesh.userData.opacity;
+        m.material.needsUpdate = true;
+        m.userData.opacity = mesh.userData.opacity;
+      }
+    }
+    if (d.blockName) m.userData.blockName = d.blockName;
+  }
+  return m;
+}
+
+function arraySelected() {
+  const sel = selectedBlocks.length ? selectedBlocks : (selectedBlock ? [selectedBlock] : []);
+  if (!sel.length) { toast('Select blocks first'); return; }
+  const countEl = document.getElementById('arrayCount');
+  const stepEl = document.getElementById('arrayStep');
+  const count = Math.max(1, Math.min(20, parseInt(countEl ? countEl.value : '3', 10) || 3));
+  const step = Math.max(0.1, parseFloat(stepEl ? stepEl.value : '1') || 1);
+  pushHistory();
+  const created = [];
+  sel.slice().forEach(mesh => {
+    mesh.updateWorldMatrix(true, false);
+    const base = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
+    for (let i = 1; i <= count; i++) {
+      const offset = new THREE.Vector3();
+      if (arrayAxis === 'x') offset.x = step * i;
+      else if (arrayAxis === 'y') offset.y = step * i;
+      else offset.z = step * i;
+      const copy = cloneBlockAtWorld(mesh, base.clone().add(offset));
+      if (copy) {
+        if (copy.userData.blockName) copy.userData.blockName = copy.userData.blockName + ' ' + i;
+        created.push(copy);
+      }
+    }
+  });
+  if (!created.length) { toast('Array skipped imported parts'); return; }
+  selectedBlocks = created;
+  selectedBlock = created[0];
+  selectBlock(selectedBlock);
+  updateMultiHighlights();
+  updateStats();
+  toast('Created ' + created.length + ' array copies');
 }
 
 // Mobile copy/paste (no keyboard needed)
@@ -4980,19 +6280,22 @@ const SHARE_SHAPE_CODES = { box:'b', cylinder:'c', sphere:'s', cone:'k', pyramid
 const SHARE_CODE_SHAPES = { b:'box', c:'cylinder', s:'sphere', k:'cone', p:'pyramid', w:'wedge', f:'flat' };
 
 function encodeBuildData() {
-  return blocks.filter(b => !b.userData.isImported).map(b => ({
-    x: +b.position.x.toFixed(2),
-    y: +(b.position.y - (b.userData.h || 1) / 2).toFixed(2),
-    z: +b.position.z.toFixed(2),
-    w: b.userData.w || 1, h: b.userData.h || 1, d: b.userData.d || 1,
-    c: (b.userData.colour || '#aaaaaa').replace('#', ''),
-    s: SHARE_SHAPE_CODES[b.userData.shape] || 'b',
-    r: b.userData.rot || 0,
-    rx: b.userData.rotX || 0,
-    rz: b.userData.rotZ || 0,
-    mt: +(b.material ? b.material.metalness : 0).toFixed(2),
-    rh: +(b.material ? b.material.roughness : 0.55).toFixed(2),
-    op: +(b.userData.opacity !== undefined ? b.userData.opacity : 1).toFixed(2)
+  return collectExportParts({ excludeImported: true, includeHidden: true }).map(p => ({
+    x: +p.position.x.toFixed(2),
+    y: +(p.position.y - p.height / 2).toFixed(2),
+    z: +p.position.z.toFixed(2),
+    w: +p.width.toFixed(2), h: +p.height.toFixed(2), d: +p.depth.toFixed(2),
+    c: (p.colour || '#aaaaaa').replace('#', ''),
+    s: SHARE_SHAPE_CODES[p.shape] || 'b',
+    r: +p.rotation.y.toFixed(1),
+    rx: +p.rotation.x.toFixed(1),
+    rz: +p.rotation.z.toFixed(1),
+    mt: +p.metalness.toFixed(2),
+    rh: +p.roughness.toFixed(2),
+    op: +p.opacity.toFixed(2),
+    nm: p.name || undefined,
+    hd: p.hidden || undefined,
+    gi: groupIndexForBlock(p.mesh)
   }));
 }
 
@@ -5007,7 +6310,10 @@ function decodeBuildData(arr) {
     rotZ: b.rz || 0,
     metalness: b.mt !== undefined ? b.mt : 0,
     roughness: b.rh !== undefined ? b.rh : 0.55,
-    opacity: b.op !== undefined ? b.op : 1
+    opacity: b.op !== undefined ? b.op : 1,
+    name: b.nm || '',
+    hidden: !!b.hd,
+    gi: b.gi !== undefined ? b.gi : -1
   }));
 }
 
@@ -5015,16 +6321,30 @@ function decodeBuildData(arr) {
 // the asset bundle. Returns { code, count, url } or null when empty.
 function buildSharePayload() {
   const data = encodeBuildData();
-  if (!data.length) return null;
-  const payload = JSON.stringify({ n: buildName, v: 1, b: data });
-  const code = btoa(unescape(encodeURIComponent(payload)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  return { code, count: data.length, url: location.origin + location.pathname + '#b=' + code };
+  const imports = serializeImportedParts();
+  if (!data.length && !imports.length) return null;
+  function encode(payload) {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  const payload = {n: buildName, v: 2, b: data, g: groups.map(group => group.name), im: imports};
+  let code = encode(payload);
+  // Share codes are pasted text. If imported geometry makes the code too big,
+  // drop the imports and tell the receiver to ask for a .buildlab file.
+  if (code.length > 7000 && imports.length) {
+    payload.im = [];
+    payload.ib = true;
+    code = encode(payload);
+  }
+  return { code, count: data.length + payload.im.length, url: location.origin + location.pathname + '#b=' + code };
 }
 function decodeShareCode(code) {
   try {
     const data = JSON.parse(decodeURIComponent(escape(atob(String(code).replace(/-/g, '+').replace(/_/g, '/')))));
-    if (!data || !Array.isArray(data.b) || !data.b.length) return null;
+    if (!data) return null;
+    if (!Array.isArray(data.blocks) && !Array.isArray(data.b) && !Array.isArray(data.im)) return null;
+    if (!Array.isArray(data.b) && Array.isArray(data.blocks)) data.b = data.blocks;
+    if (!Array.isArray(data.b)) data.b = [];
     return data;
   } catch (e) { return null; }
 }
@@ -5032,25 +6352,37 @@ function decodeShareCode(code) {
 // the paste-a-code importer alike. Returns the block count, or 0 on failure.
 function importShareCodeData(data) {
   const arr = data && (Array.isArray(data.blocks) ? data.blocks : (Array.isArray(data.b) ? data.b : null));
-  if (!arr || !arr.length) return 0;
+  const imports = data && Array.isArray(data.im) ? data.im : [];
+  if ((!arr || !arr.length) && !imports.length) return 0;
   clearAll(true);
   buildName = data.n || data.name || 'Shared Build';
   const nameInput = document.getElementById('buildNameInput');
   if (nameInput) nameInput.value = buildName;
-  decodeBuildData(arr).forEach(b => {
+  const decoded = decodeBuildData(arr);
+  const loaded = [];
+  decoded.forEach(b => {
     const mesh = addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
-    if (mesh && mesh.material) {
-      mesh.material.metalness = b.metalness || 0;
-      mesh.material.roughness = b.roughness !== undefined ? b.roughness : 0.55;
-      if (b.opacity !== undefined && b.opacity < 1) {
-        mesh.material.transparent = true;
-        mesh.material.opacity = b.opacity;
-        mesh.material.needsUpdate = true;
-        mesh.userData.opacity = b.opacity;
+    loaded.push(mesh || null);
+    if (mesh) {
+      if (b.name) mesh.userData.blockName = b.name;
+      if (b.hidden) { mesh.visible = false; mesh.userData.hidden = true; }
+      if (mesh.material) {
+        mesh.material.metalness = b.metalness || 0;
+        mesh.material.roughness = b.roughness !== undefined ? b.roughness : 0.55;
+        if (b.opacity !== undefined && b.opacity < 1) {
+          mesh.material.transparent = true;
+          mesh.material.opacity = b.opacity;
+          mesh.material.needsUpdate = true;
+          mesh.userData.opacity = b.opacity;
+        }
       }
     }
   });
-  return arr.length;
+  rebuildGroups(data.g || [], decoded.map((b, i) => ({mesh: loaded[i], gi: b.gi})));
+  const imported = loadImportedParts(imports);
+  updateStats();
+  if (data.ib) toast('Imported models were too large for this share code. Ask for the .buildlab file.');
+  return (arr ? arr.length : 0) + imported;
 }
 function shareBuild() {
   const p = buildSharePayload();
@@ -5113,7 +6445,12 @@ function autosave() {
   clearTimeout(_autosaveTimer);
   _autosaveTimer = setTimeout(() => {
     try {
-      localStorage.setItem('buildlab_autosave', JSON.stringify({ name: buildName, blocks: encodeBuildData() }));
+      localStorage.setItem('buildlab_autosave', JSON.stringify({
+        name: buildName,
+        blocks: encodeBuildData(),
+        groups: groups.map(group => group.name),
+        imports: serializeImportedParts()
+      }));
     } catch (e) { /* storage full or blocked  non-fatal */ }
   }, 800);
 }
@@ -5121,23 +6458,35 @@ function autosave() {
 function restoreAutosave() {
   try {
     const d = JSON.parse(localStorage.getItem('buildlab_autosave') || 'null');
-    if (!d || !Array.isArray(d.blocks) || !d.blocks.length) return false;
+    const hasBlocks = d && Array.isArray(d.blocks) && d.blocks.length;
+    const hasImports = d && Array.isArray(d.imports) && d.imports.length;
+    if (!d || (!hasBlocks && !hasImports)) return false;
     buildName = d.name || buildName;
     const nameInput = document.getElementById('buildNameInput');
     if (nameInput) nameInput.value = buildName;
-    decodeBuildData(d.blocks).forEach(b => {
+    const decoded = decodeBuildData(d.blocks || []);
+    const loaded = [];
+    decoded.forEach(b => {
       const mesh = addBlock(b.x, b.y, b.z, b.w, b.h, b.d, b.colour, b.shape, b.rot, b.rotX, b.rotZ);
-      if (mesh && mesh.material) {
-        mesh.material.metalness = b.metalness || 0;
-        mesh.material.roughness = b.roughness !== undefined ? b.roughness : 0.55;
-        if (b.opacity !== undefined && b.opacity < 1) {
-          mesh.material.transparent = true;
-          mesh.material.opacity = b.opacity;
-          mesh.material.needsUpdate = true;
-          mesh.userData.opacity = b.opacity;
+      loaded.push(mesh || null);
+      if (mesh) {
+        if (b.name) mesh.userData.blockName = b.name;
+        if (b.hidden) { mesh.visible = false; mesh.userData.hidden = true; }
+        if (mesh.material) {
+          mesh.material.metalness = b.metalness || 0;
+          mesh.material.roughness = b.roughness !== undefined ? b.roughness : 0.55;
+          if (b.opacity !== undefined && b.opacity < 1) {
+            mesh.material.transparent = true;
+            mesh.material.opacity = b.opacity;
+            mesh.material.needsUpdate = true;
+            mesh.userData.opacity = b.opacity;
+          }
         }
       }
     });
+    rebuildGroups(d.groups || [], decoded.map((b, i) => ({mesh: loaded[i], gi: b.gi})));
+    loadImportedParts(d.imports);
+    updateStats();
     return true;
   } catch (e) { return false; }
 }
@@ -5203,7 +6552,8 @@ function currentExportProfile() { return EXPORT_PROFILES[_engineContext] || EXPO
 // Scale a world point into the engine's unit and, for Z-up engines, rotate the
 // page's Y-up into Z-up (a proper rotation, so nothing is mirrored).
 function profilePoint(profile, x, y, z) {
-  const sx = x * profile.scale, sy = y * profile.scale, sz = z * profile.scale;
+  const scale = profile.scale * blockMetres;
+  const sx = x * scale, sy = y * scale, sz = z * scale;
   return profile.axis === 'z' ? [sx, -sz, sy] : [sx, sy, sz];
 }
 
@@ -5252,11 +6602,139 @@ function setEngineContext(engine) {
 // -------------------------------------------------------
 // EXPORT PREVIEW (enhanced with engine-specific instructions)
 // -------------------------------------------------------
+// -------------------------------------------------------
+// PRE-EXPORT PREFLIGHT
+// Warn about the things that make a game asset need cleanup later.
+// -------------------------------------------------------
+function buildPreflight(format) {
+  const rows = [];
+  const visible = blocks.filter(b => !b.userData.hidden);
+  if (!visible.length) rows.push({level: 'error', text: 'No visible blocks to export.'});
+
+  const box = buildWorldBox();
+  if (box) {
+    const cx = (box.min.x + box.max.x) / 2;
+    const cz = (box.min.z + box.max.z) / 2;
+    const off = Math.abs(cx) > 0.01 || Math.abs(cz) > 0.01;
+    const floating = Math.abs(box.min.y) > 0.01;
+    if (off || floating) {
+      const bits = [];
+      if (off) bits.push('footprint centre x ' + (cx * blockMetres).toFixed(2) + ' m, z ' + (cz * blockMetres).toFixed(2) + ' m');
+      if (floating) bits.push('base y ' + (box.min.y * blockMetres).toFixed(2) + ' m');
+      rows.push({level: 'warn', text: 'Pivot is off the origin: ' + bits.join(', ') + '. Use Centre X/Z and Base to 0, or turn on export origin.'});
+    }
+    if (exportOriginBase) {
+      rows.push({level: 'info', text: 'Export origin: base centre will be 0,0,0. The scene itself will not move.'});
+    }
+  }
+
+  const hiddenCount = blocks.length - visible.length;
+  if (hiddenCount > 0) {
+    rows.push({level: 'info', text: hiddenCount + ' hidden block' + (hiddenCount === 1 ? '' : 's') + ' will be left out.'});
+  }
+
+  const names = new Map();
+  visible.forEach(b => {
+    const n = (b.userData.blockName || '').trim();
+    if (n) names.set(n, (names.get(n) || 0) + 1);
+  });
+  const duplicates = Array.from(names.entries()).filter(pair => pair[1] > 1).map(pair => pair[0] + ' (' + pair[1] + ')');
+  if (duplicates.length) {
+    rows.push({level: 'warn', text: 'Duplicate part names: ' + duplicates.slice(0, 5).join(', ') + '. Rename them so the import is not ambiguous.'});
+  }
+
+  const poly = getPolyStats();
+  if (poly.tris > 150000) {
+    rows.push({level: 'warn', text: poly.tris.toLocaleString() + ' triangles is very heavy for one prop. Check the budget or simplify shapes.'});
+  } else if (poly.tris > 50000) {
+    rows.push({level: 'info', text: poly.tris.toLocaleString() + ' triangles. Fine for a hero prop, heavy for a small pickup.'});
+  }
+
+  const tiny = visible.filter(b => Math.min(b.userData.w || 1, b.userData.h || 1, b.userData.d || 1) < 0.05);
+  if (tiny.length) {
+    rows.push({level: 'warn', text: tiny.length + ' part' + (tiny.length === 1 ? ' is' : 's are') + ' thinner than 0.05 blocks. They may disappear at game scale.'});
+  }
+
+  if (GRID > 0) {
+    const offGrid = visible.filter(b => {
+      const p = new THREE.Vector3();
+      b.getWorldPosition(p);
+      const snapAxis = v => Math.abs(v - Math.round(v / GRID) * GRID) > 0.01;
+      return snapAxis(p.x) || snapAxis(p.z);
+    });
+    if (offGrid.length) {
+      rows.push({level: 'info', text: offGrid.length + ' part' + (offGrid.length === 1 ? ' is' : 's are') + ' off the ' + GRID + ' m grid. Use the gizmo snap or type the position.'});
+    }
+  }
+
+  if (visible.length > 1 && visible.length <= 400) {
+    const boxes = visible.map(b => new THREE.Box3().setFromObject(b));
+    const inter = new THREE.Box3();
+    const size = new THREE.Vector3();
+    let overlaps = 0;
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        if (!boxes[i].intersectsBox(boxes[j])) continue;
+        inter.copy(boxes[i]).intersect(boxes[j]);
+        inter.getSize(size);
+        if (size.x * size.y * size.z > 0.001) overlaps++;
+      }
+    }
+    if (overlaps > 0) {
+      rows.push({level: 'warn', text: overlaps + ' pair' + (overlaps === 1 ? '' : 's') + ' of parts overlap. Interior faces may be hidden but still exported.'});
+    }
+  }
+
+  const mergeable = format === 'gltf' || format === 'obj' || format === 'objmtl';
+  if (visible.length > 20) {
+    if (mergeable && !mergeExport) {
+      rows.push({level: 'warn', text: visible.length + ' separate meshes will be exported. Turn on Merge by material for fewer draw calls.'});
+    } else if (!mergeable) {
+      rows.push({level: 'info', text: visible.length + ' separate parts will be exported. Roblox treats each one as a Part.'});
+    }
+  }
+
+  if (format === 'rbxm') {
+    const loss = {};
+    visible.forEach(b => {
+      const shape = b.userData.shape;
+      if (shape && shape !== 'box' && shape !== 'cylinder' && shape !== 'sphere') {
+        loss[shape] = (loss[shape] || 0) + 1;
+      }
+    });
+    const parts = Object.entries(loss).map(pair => pair[1] + ' ' + pair[0]);
+    if (parts.length) {
+      rows.push({level: 'warn', text: 'RBXM has no Part shape for ' + parts.join(', ') + '. Those parts export as Blocks. Use GLB if the silhouette matters.'});
+    }
+  }
+
+  if (format === 'obj' && visible.length > 150) {
+    rows.push({level: 'info', text: 'Large OBJ: built in chunks with a progress toast, so the page stays responsive.'});
+  }
+
+  return rows;
+}
+
+let _lastExportPreview = null;
+function refreshExportPreview() {
+  if (_lastExportPreview) showExportPreview(_lastExportPreview.format, _lastExportPreview.fn);
+}
+
 function showExportPreview(format, exportFn) {
-  const count = blocks.length;
-  const colours = new Set(blocks.map(b => b.userData.colour)).size;
-  const groupsCount = groups.length;
-  const estKB = Math.round(count * 0.5);
+  _lastExportPreview = {format, fn: exportFn};
+  const visibleBlocks = blocks.filter(b => !b.userData.hidden);
+  const count = visibleBlocks.length;
+  const hiddenCount = blocks.length - count;
+  const colours = new Set(visibleBlocks.map(b => b.userData.colour)).size;
+  const groupsCount = groups.filter(g => g.blockIds.some(id => visibleBlocks.some(b => b.userData.blockId === id))).length;
+  const poly = getPolyStats();
+  const estKB = Math.max(1, Math.round(count * 1.2));
+  const mergeable = (format === 'gltf' || format === 'obj' || format === 'objmtl');
+  const mergedPartCount = mergeable && mergeExport
+    ? new Set(visibleBlocks.map(b => (b.userData.colour || '') + '|' + (b.material ? (b.material.metalness || 0).toFixed(2) : '0') + '|' + (b.material ? (b.material.roughness ?? 0.55).toFixed(2) : '0.55') + '|' + (b.userData.opacity !== undefined ? b.userData.opacity : 1))).size
+    : count;
+  const preflight = buildPreflight(format);
+  const hasError = preflight.some(row => row.level === 'error');
 
   const engineSteps = {
     roblox: {
@@ -5301,25 +6779,59 @@ function showExportPreview(format, exportFn) {
 
   let html = '<div style="text-align:left;">';
   html += '<div style="margin-bottom:8px;"><strong>' + (formatNames[format] || format) + '</strong></div>';
-  html += '<div>' + count + ' blocks &middot; ' + colours + ' colours &middot; ~' + estKB + 'KB</div>';
-  if (groupsCount > 0) html += '<div>' + groupsCount + ' groups (exported as nested Models)</div>';
+  html += '<div>' + count + ' blocks';
+  if (mergedPartCount !== count) html += ' &middot; ' + mergedPartCount + ' merged parts';
+  html += ' &middot; ' + colours + ' colours &middot; ~' + estKB + 'KB</div>';
+  html += '<div>' + poly.tris.toLocaleString() + ' triangles &middot; ' + poly.verts.toLocaleString() + ' vertices</div>';
+  if (groupsCount > 0) {
+    html += '<div>' + groupsCount + ' group' + (groupsCount === 1 ? '' : 's')
+      + (format === 'rbxm' ? ' (exported as nested Models)' : ' (flattened on export)') + '</div>';
+  }
   const prof = currentExportProfile();
-  if (format === 'obj' || format === 'objmtl' || format === 'gltf') {
-    html += '<div style="margin-top:4px;color:#9fb0e0;">Units: 1 unit = 1 ' + prof.unitShort
+  if (format === 'rbxm') {
+    html += '<div style="margin-top:4px;color:#9fb0e0;">Units: 1 block = ' + blockMetres + ' m = ' + (ROBLOX_STUDS_PER_UNIT * blockMetres).toFixed(3) + ' studs</div>';
+  } else if (format === 'obj' || format === 'objmtl' || format === 'gltf') {
+    html += '<div style="margin-top:4px;color:#9fb0e0;">Units: 1 block = ' + blockMetres + ' m = ' + (prof.scale * blockMetres).toFixed(3) + ' ' + prof.unitShort
       + (prof.axis === 'z' ? ', Z-up (rotated from the page for ' + prof.label + ')' : ', Y-up')
       + '</div>';
   }
+  if (mergeable && mergeExport) {
+    html += '<div style="margin-top:4px;color:#9fb0e0;">Merge by material is on: one mesh per material</div>';
+  }
+  if (preflight.length) {
+    html += '<div style="margin-top:10px;padding:8px 10px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:rgba(0,0,0,.18);">'
+      + '<div style="font-size:.65rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Preflight</div>';
+    preflight.forEach(row => {
+      const color = row.level === 'error' ? '#ff7a8a' : row.level === 'warn' ? 'var(--accent2)' : '#9fb0e0';
+      const mark = row.level === 'error' ? '\u2716' : row.level === 'warn' ? '\u26A0' : 'i';
+      html += '<div style="display:flex;gap:6px;margin:3px 0;font-size:.72rem;line-height:1.45;color:' + color + ';"><span>' + mark + '</span><span>' + escapeHTML(row.text) + '</span></div>';
+    });
+    html += '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">'
+      + '<button type="button" class="modal-cancel" style="flex:0 0 auto;padding:6px 10px;font-size:.7rem;" data-on="centreBuildAtOrigin" data-on-plain>Centre X/Z</button>'
+      + '<button type="button" class="modal-cancel" style="flex:0 0 auto;padding:6px 10px;font-size:.7rem;" data-on="pivotBuildToBase" data-on-plain>Base to 0</button>'
+      + '<button type="button" class="modal-cancel" style="flex:0 0 auto;padding:6px 10px;font-size:.7rem;" data-on="refreshExportPreview" data-on-plain>Refresh check</button>'
+      + '</div></div>';
+  }
   if (steps) html += steps;
   if (count > 300) {
-    html += '<div style="margin-top:8px;padding:6px 8px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:6px;font-size:.75rem;color:var(--accent2);">&#x26A0; Large build &mdash; some apps may slow down with this many parts</div>';
+    html += '<div style="margin-top:8px;padding:6px 8px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);border-radius:6px;font-size:.75rem;color:var(--accent2);">&#x26A0; Large build, some apps may slow down with this many parts</div>';
   }
   html += '</div>';
 
   document.getElementById('exportPreviewContent').innerHTML = html;
-  document.getElementById('exportPreviewConfirm').onclick = function() {
-    closeModal('exportPreviewModal');
-    exportFn();
-  };
+  const confirm = document.getElementById('exportPreviewConfirm');
+  if (hasError) {
+    confirm.disabled = true;
+    confirm.textContent = 'Fix errors first';
+    confirm.onclick = null;
+  } else {
+    confirm.disabled = false;
+    confirm.textContent = 'Export';
+    confirm.onclick = function() {
+      closeModal('exportPreviewModal');
+      exportFn();
+    };
+  }
   blOpenModal('exportPreviewModal');
 }
 
@@ -5382,19 +6894,21 @@ function buildBundleReadme() {
   const safe = bundleSafeName();
   const profile = currentExportProfile();
   const count = blocks.filter(b => !b.userData.hidden).length;
-  const colours = new Set(blocks.map(b => b.userData.colour)).size;
+  const colours = new Set(blocks.filter(b => !b.userData.hidden).map(b => b.userData.colour)).size;
+  const poly = getPolyStats();
   const lines = [];
   lines.push(buildName + ' - BuildLab asset bundle');
   lines.push('Made with JVDesignStudio BuildLab (jvdesignstudio.co.uk)');
   lines.push('');
   lines.push('Files in this zip:');
-  lines.push('- ' + safe + '.obj - the 3D model (' + count + ' blocks, ' + colours + ' colours)');
+  lines.push('- ' + safe + '.obj - the 3D model (' + count + ' blocks, ' + colours + ' colours, ' + poly.tris + ' triangles)');
+  lines.push('- ' + safe + '_collision.obj - one collision box per part');
   lines.push('- preview.png - a photo of the finished model');
+  lines.push('- manifest.json - parts, names, bounds, materials and triangle counts');
   lines.push('- README.txt - this file');
   lines.push('');
-  lines.push('Model profile: ' + profile.label + ' - 1 unit = 1 ' + profile.unitShort
-    + (profile.axis === 'z' ? ', Z-up (rotated from Y-up for ' + profile.label + ')' : ', Y-up')
-    + (profile.scale !== 1 ? ', scale x' + profile.scale : ''));
+  lines.push('Model profile: ' + profile.label + ' - 1 block = ' + blockMetres + ' m = ' + (profile.scale * blockMetres).toFixed(3) + ' ' + profile.unitShort
+    + (profile.axis === 'z' ? ', Z-up (rotated from Y-up for ' + profile.label + ')' : ', Y-up'));
   lines.push('');
   const info = (_engineContext && ENGINE_INFO[_engineContext]) || null;
   if (info) {
@@ -5412,20 +6926,135 @@ function buildBundleReadme() {
   lines.push('Tip: keep the .obj with this README. The photo shows what the model should look like.');
   return lines.join('\n');
 }
+
+// Machine-readable asset report for a game pipeline.
+function buildManifest() {
+  const profile = currentExportProfile();
+  const parts = collectExportParts();
+  const box = buildWorldBox();
+  const poly = getPolyStats();
+  const materialKeys = new Set();
+  const m = blockMetres;
+  const partRows = parts.map((part, i) => {
+    materialKeys.add(partMaterialKey(part));
+    const g = part.mesh.geometry;
+    const tris = g.index ? g.index.count / 3 : g.attributes.position.count / 3;
+    const groupIndex = groupIndexForBlock(part.mesh);
+    return {
+      name: part.name || exportPartLabel(part, i),
+      shape: part.shape,
+      imported: part.imported,
+      group: groupIndex >= 0 ? (groups[groupIndex] && groups[groupIndex].name) || '' : '',
+      position: [ +(part.position.x * m).toFixed(3), +(part.position.y * m).toFixed(3), +(part.position.z * m).toFixed(3) ],
+      rotation: [ part.rotation.x, part.rotation.y, part.rotation.z ],
+      size: [ +(part.width * m).toFixed(3), +(part.height * m).toFixed(3), +(part.depth * m).toFixed(3) ],
+      colour: part.colour,
+      metalness: +part.metalness.toFixed(2),
+      roughness: +part.roughness.toFixed(2),
+      opacity: +part.opacity.toFixed(2),
+      triangles: Math.round(tris)
+    };
+  });
+  return {
+    tool: 'JVDesignStudio BuildLab',
+    name: buildName,
+    generated: new Date().toISOString(),
+    units: {
+      scene: 'metres',
+      blockMetres: m,
+      blocks: '1 block = ' + m + ' m',
+      exportProfile: profile.id,
+      exportUnit: profile.unitShort,
+      studsPerMetre: +ROBLOX_STUDS_PER_UNIT.toFixed(4),
+      upAxis: profile.axis === 'z' ? 'Z' : 'Y'
+    },
+    origin: {
+      mode: exportOriginBase ? 'base-centre' : 'scene-position',
+      bounds: box ? {
+        min: box.min.toArray().map(v => +(v * m).toFixed(3)),
+        max: box.max.toArray().map(v => +(v * m).toFixed(3))
+      } : null
+    },
+    counts: {
+      blocks: parts.length,
+      hidden: blocks.length - parts.length,
+      triangles: poly.tris,
+      vertices: poly.verts,
+      materials: materialKeys.size,
+      groups: groups.length
+    },
+    groups: groups.map(group => ({name: group.name, parts: group.blockIds.length})),
+    parts: partRows
+  };
+}
+
+function exportManifest() {
+  if (!blocks.some(b => !b.userData.hidden)) { toast('Nothing to export!'); return; }
+  const blob = new Blob([JSON.stringify(buildManifest(), null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = bundleSafeName() + '_manifest.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast('Manifest exported');
+}
+
+// One collision box per part, in the same units as the model export. Cheap
+// enough for blocky props and far more useful than no collision at all.
+function buildCollisionOBJText() {
+  const profile = currentExportProfile();
+  const origin = exportOriginOffset();
+  let obj = `# JVDesignStudio BuildLab collision proxy\n# Units: 1 block = ${blockMetres} m = ${(profile.scale * blockMetres).toFixed(3)} ${profile.unitShort}\n`;
+  let vOffset = 1;
+  collectExportParts().forEach((part, i) => {
+    const geo = new THREE.BoxGeometry(part.width, part.height, part.depth);
+    const matrix = new THREE.Matrix4().compose(part.position, part.quaternion, new THREE.Vector3(1, 1, 1));
+    geo.applyMatrix4(matrix);
+    geo.translate(origin.x, origin.y, origin.z);
+    obj += `\no collision_${exportPartLabel(part, i)}\n`;
+    const pos = geo.attributes.position;
+    for (let v = 0; v < pos.count; v++) {
+      const p = profilePoint(profile, pos.getX(v), pos.getY(v), pos.getZ(v));
+      obj += `v ${p[0].toFixed(3)} ${p[1].toFixed(3)} ${p[2].toFixed(3)}\n`;
+    }
+    const idx = geo.index;
+    for (let f = 0; f < idx.count; f += 3) {
+      obj += `f ${idx.getX(f) + vOffset} ${idx.getX(f + 1) + vOffset} ${idx.getX(f + 2) + vOffset}\n`;
+    }
+    vOffset += pos.count;
+    geo.dispose();
+  });
+  return obj;
+}
+
+function exportCollisionProxy() {
+  if (!blocks.some(b => !b.userData.hidden)) { toast('Nothing to export!'); return; }
+  const text = buildCollisionOBJText();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type: 'text/plain'}));
+  a.download = bundleSafeName() + '_collision.obj';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast('Collision proxy exported');
+}
+
 // Build the zip without downloading (test-friendly). Returns
 // { blob, files } or null when there is nothing to pack.
 async function buildBundleZip() {
   if (!blocks.length) return null;
   const safe = bundleSafeName();
   const modelName = safe + '.obj';
+  const collisionName = safe + '_collision.obj';
   const [JSZipCtor, png] = await Promise.all([loadJSZip(), renderPreviewBlob()]);
   if (!png) { toast('Photo failed, so the bundle is missing its preview.'); return null; }
   const zip = new JSZipCtor();
   zip.file(modelName, buildOBJText());
+  zip.file(collisionName, buildCollisionOBJText());
   zip.file('README.txt', buildBundleReadme());
   zip.file('preview.png', png);
+  zip.file('manifest.json', JSON.stringify(buildManifest(), null, 2));
   const blob = await zip.generateAsync({ type: 'blob' });
-  return { blob, files: [modelName, 'README.txt', 'preview.png'] };
+  return { blob, files: [modelName, collisionName, 'README.txt', 'preview.png', 'manifest.json'] };
 }
 async function exportBundle() {
   if (!blocks.length) { toast('Nothing to export!'); return null; }
@@ -5463,6 +7092,9 @@ function bootBuilder() {
     if (!started) return;
 
     renderAssetLibrary();
+    syncMergeToggles();
+    syncOriginToggles();
+    syncBlockScaleUI();
     if (loadFromHash()) {
       toast('🔗 Loaded shared build');
     } else if (restoreAutosave()) {
@@ -5660,8 +7292,20 @@ Object.assign(window, {
   updateProp, updateBlockName, updateMaterial, applyPreset, moveBlockY, duplicateSelected, deleteSelected,
   undo, redo, selectAllBlocks, deleteSelectedBlocks, duplicateSelectedBlocks, groupSelectedBlocks, ungroupAll, mirrorSelected, setMirrorAxis, moveGroup,
   openNameModal, saveName, closeModal, saveSlotOpen, renderSaveSlots, renderGroupsList, highlightGroup, toggleGroupVisibility, duplicateGroup, deleteGroup,
-  quickBuild, setCameraView, frameAll, openWelcome, clearAll, addToAssetLibrary, clearAssetLibrary, renderAssetLibrary, insertAssetFromLibrary, loadAssetFromLibrary,
-  saveProjectFile, loadProjectFile, handleProjectFile, handleImportOBJ, handleImportGLTF, handleImportRBLX, triggerImportOBJ, triggerImportGLTF, triggerImportRBLX,
+  quickBuild, setCameraView, frameAll, zoomIn, zoomOut, openWelcome, clearAll, addToAssetLibrary, clearAssetLibrary, renderAssetLibrary, insertAssetFromLibrary, loadAssetFromLibrary,
+  centreBuildAtOrigin, pivotBuildToBase, toggleMergeExport, collectExportParts, mergedExportGroups, getPolyStats, bakeGizmoTransform,
+  toggleOriginBase, exportOriginOffset, pivotStatus, gizmoSnapState, updateGizmoSnaps,
+  buildPreflight, refreshExportPreview,
+  buildManifest, exportManifest, buildCollisionOBJText, exportCollisionProxy, serializeImportedParts, loadImportedParts, rebuildGroups, groupIndexForBlock,
+  buildProjectData, loadProjectData, addImportedPartFromData,
+  restoreAutosave, autosave, pushHistory,
+  setBlockScale, syncBlockScaleUI,
+  toggleOrtho,
+  multiSelectionActive, beginMultiTransform, applyMultiTransform, endMultiTransform, attachSelectionGizmo,
+  toggleMobileMulti, mobileSelection, nudgeSelection, rotateSelectionY, deleteSelectionMobile,
+  setArrayAxis, arraySelected, cloneBlockAtWorld,
+  clearMeasure, addMeasurePoint, measureDistance,
+  saveProjectFile, loadProjectFile, handleProjectFile: handleProjectFileV3, handleImportOBJ, handleImportGLTF, handleImportRBLX, triggerImportOBJ, triggerImportGLTF, triggerImportRBLX,
   showExportPreview, exportRBXM, exportGLTF, exportOBJ, exportOBJWithMTL, exportOBJFallback, exportScreenshot, shareBuild, renderOutliner, toggleBlockVisibility, toggleBlockLock, duplicateSingleBlock, isolateSelection, deleteSelectedOrAll, focusOutlinerSelection,
   buildOBJText, dataURLtoBlob, renderPreviewBlob, loadJSZip, bundleSafeName, bundlePlainText, buildBundleReadme, buildBundleZip, exportBundle,
   buildSharePayload, decodeShareCode, importShareCodeData, getShareCode, copyShareCode, importShareCode, loadFromHash,
@@ -5676,6 +7320,8 @@ try{
   Object.defineProperty(window,'groupObjects',{get:()=>groupObjects, configurable:true});
   Object.defineProperty(window,'scene',{get:()=>scene, configurable:true});
   Object.defineProperty(window,'camera',{get:()=>camera, configurable:true});
+  Object.defineProperty(window,'multiPivot',{get:()=>multiPivot, configurable:true});
+  Object.defineProperty(window,'transformControls',{get:()=>transformControls, configurable:true});
   Object.defineProperty(window,'renderer',{get:()=>renderer, configurable:true});
   Object.defineProperty(window,'csm',{get:()=>csm, configurable:true});
   Object.defineProperty(window,'materialCache',{get:()=>materialCache, configurable:true});
@@ -5918,7 +7564,16 @@ Object.assign(window, {
   mobExportBundle: function() { exportBundle(); window.mobClose(); },
   mobCopyShareCode: function() { copyShareCode(); window.mobClose(); },
   mobImportShareCode: function() { importShareCode(); window.mobClose(); },
-  mobQuickBuild: function(name) { quickBuild(name); window.mobClose(); }
+  mobQuickBuild: function(name) { quickBuild(name); window.mobClose(); },
+  mobArrayX: function() { setArrayAxis('x'); arraySelected(); window.mobClose(); },
+  nudgeXMinus: function() { nudgeSelection(-nudgeStep(), 0, 0); },
+  nudgeXPlus: function() { nudgeSelection(nudgeStep(), 0, 0); },
+  nudgeYMinus: function() { nudgeSelection(0, -nudgeStep(), 0); },
+  nudgeYPlus: function() { nudgeSelection(0, nudgeStep(), 0); },
+  nudgeZMinus: function() { nudgeSelection(0, 0, -nudgeStep()); },
+  nudgeZPlus: function() { nudgeSelection(0, 0, nudgeStep()); },
+  rotateSelectionY: rotateSelectionY,
+  deleteSelectionMobile: deleteSelectionMobile
 });
 
 // Restore the learner's chosen scene look once the scene is ready.
