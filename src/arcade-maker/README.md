@@ -148,3 +148,5 @@ it to regenerate modules; edit the module files directly.
   every third, user variables, and ALL/ANY rules with multiple actions.
 - **A2168**: player-only export shell: the studio panel becomes a hidden minimal form,
   studio init is skipped in export mode, and maker-only CSS is dropped.
+- **A2170**: in-maker sandbox entity placement: star, chaser, spawn and goal on the
+  tilemap canvas, a spawn start and a "Reach the goal" win mode.

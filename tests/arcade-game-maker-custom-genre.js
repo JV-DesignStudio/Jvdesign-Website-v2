@@ -180,7 +180,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   });
   check('sandbox UI renders variables and rules', sbUi.vars === 1 && sbUi.rules === 2 && sbUi.condRows >= 4,
     JSON.stringify(sbUi));
-  check('sandbox offers three win modes', sbUi.winModes === 3, String(sbUi.winModes));
+  check('sandbox offers four win modes', sbUi.winModes === 4, String(sbUi.winModes));
 
   await bootCustom({ customStarTarget: 3, customEnemyCount: 0, customEnemySpeed: 0,
     customWinMode: 'score', customWinValue: 9999, customGoldStars: false, customFastEnemies: false });
@@ -248,6 +248,42 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(700);
   const goldScore = await page.evaluate(() => window._phaserGame.scene.getScenes(true)[0].score);
   check('the gold star is worth 300', goldScore >= 300, String(goldScore));
+
+  // 9. In-maker entity placement, spawn start and goal win.
+  const placed = await page.evaluate(() => {
+    document.getElementById('genreMode').value = 'CUSTOM';
+    onGenreChange();
+    customLevelEntities = null;
+    tmSetEntity('star');  _paintEntity(3 * 20 + 2);
+    tmSetEntity('enemy'); _paintEntity(4 * 20 + 5);
+    tmSetEntity('spawn'); _paintEntity(1 * 20 + 1);
+    tmSetEntity('goal');  _paintEntity(10 * 20 + 10);
+    return JSON.parse(JSON.stringify(customLevelEntities));
+  });
+  check('editor places stars and chasers', placed.coins.length === 1 && placed.coins[0].join(',') === '2,3' &&
+    placed.enemies.length === 1 && placed.enemies[0].join(',') === '5,4', JSON.stringify(placed));
+  check('editor places a spawn and a goal', placed.spawn.join(',') === '1,1' && placed.goal.join(',') === '10,10',
+    JSON.stringify({ spawn: placed.spawn, goal: placed.goal }));
+
+  await bootCustom({ customWinMode: 'goal', customWinValue: 0, customStarTarget: 1,
+    customEnemyCount: 0, customEnemySpeed: 0, customGoldStars: false, customFastEnemies: false });
+  const goalStart = await page.evaluate(() => {
+    const sc = window._phaserGame.scene.getScenes(true)[0];
+    return { x: Math.round(sc.actor.x), y: Math.round(sc.actor.y), mode: sc._winMode, hasGoal: !!sc._goal };
+  });
+  check('the sandbox starts the player at the spawn', Math.abs(goalStart.x - 48) <= 8 && Math.abs(goalStart.y - 40) <= 8,
+    JSON.stringify(goalStart));
+  check('the goal win mode creates a goal marker', goalStart.mode === 'goal' && goalStart.hasGoal === true);
+  await page.evaluate(() => {
+    const sc = window._phaserGame.scene.getScenes(true)[0];
+    if (sc._goal) sc.actor.setPosition(sc._goal.x, sc._goal.y);
+  });
+  await sleep(700);
+  const goalWin = await page.evaluate(() => {
+    const sc = window._phaserGame.scene.getScenes(true)[0];
+    return { done: sc._done, overlay: document.getElementById('goOverlay').classList.contains('show') };
+  });
+  check('reaching the goal wins the run', goalWin.done === true && goalWin.overlay === true, JSON.stringify(goalWin));
 
   check('no uncaught JS errors', jsErrors.length === 0, jsErrors.slice(0,2).join(' | '));
 
