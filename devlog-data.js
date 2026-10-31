@@ -2,7 +2,7 @@
 // Edit this file to add, update, or remove posts.
 // Both devlog.html and newsletter.html load this automatically.
 // Public posts only: hand-written for learners and parents. Never publish ticket titles or evidence text.
-// Internal/auto-generated entries archived in studio-workspace/devlog-archive-internal-2026-09-28.json
+// Internal/auto-generated entries archived in studio-workspace/devlog-archive-internal-*.json
 
 const POSTS = [
 
