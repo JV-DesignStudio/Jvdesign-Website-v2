@@ -8,8 +8,8 @@
  */
 export const ID = 'pirate-ship';
 export const LABEL = 'Pirate Ship';
-export const STYLES = ['../style-workshop-pirate-ship-builder.css?v=17'];
-const HTML = "<div id=\"app\">\n  <header>\n\n    <h1>🏴‍☠️ Build a Pirate Ship Game</h1>\n<div class=\"callout tip\" style=\"border-left:3px solid #22c55e;background:rgba(34,197,94,.07);\"><div class=\"callout-icon\">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of the notes for this workshop: <a href=\"/downloads/pirate-ship-builder-reference.zip\" download style=\"color:#16a34a;font-weight:800;text-decoration:underline;\">⬇ pirate-ship-builder-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>\n\n    <div class=\"hdr-btns\">\n      <button data-on=\"randomShip\" data-on-plain>🎲 Random</button>\n      <button data-on=\"downloadPNG\" data-on-plain>🖼️ PNG</button>\n      <button data-on=\"showProfileCard\" data-on-plain>💳 Card</button>\n      <button data-on=\"openSaveModal\" data-on-plain>💾 Save</button>\n      <button data-on=\"openLoadModal\" data-on-plain>📂 Load</button>\n      <button data-on=\"resetAll\" data-on-plain>🔄 Reset</button>\n    </div>\n  </header>\n  <!-- ── Ember Tip Bar ── -->\n  <div class=\"ember-builder-bar\" id=\"emberBar\" style=\"--ca-rgb:212,168,67\">\n    <svg viewBox=\"0 0 80 90\" width=\"26\" height=\"29\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\">\n      <path d=\"M20 52 Q10 80 15 88 H65 Q70 80 60 52 Q50 60 40 60 Q30 60 20 52Z\" fill=\"#12102a\"/>\n      <ellipse cx=\"40\" cy=\"36\" rx=\"16\" ry=\"17\" fill=\"#8B5CF6\"/>\n      <polygon points=\"24,22 19,8 30,18\" fill=\"#7C3AED\"/>\n      <polygon points=\"56,22 61,8 50,18\" fill=\"#7C3AED\"/>\n      <ellipse cx=\"40\" cy=\"40\" rx=\"10\" ry=\"8\" fill=\"#DDD6FE\"/>\n      <ellipse cx=\"35\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <ellipse cx=\"45\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <circle cx=\"36\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <circle cx=\"46\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <ellipse cx=\"40\" cy=\"39\" rx=\"2\" ry=\"1.4\" fill=\"#7C3AED\"/>\n    </svg>\n    <span><strong style=\"color:#d4a843\">Ember says:</strong> Start with <strong>hull width</strong> , everything else scales from it. The animated ocean appears once you finish all 22 steps!</span>\n    <button class=\"ember-bar-dismiss\" aria-label=\"Dismiss tip\" data-session-set=\"ember-bar-pirate-ship-builder:1\" data-remove-id=\"emberBar\">✕</button>\n  </div>\n\n  <!-- ── /Ember Tip Bar ── -->\n  <div id=\"sidebar\">\n    <div class=\"prog\">\n      <div class=\"prog-label\">Shipyard Progress</div>\n      <div class=\"prog-bar\"><div class=\"prog-fill\" id=\"progFill\"></div></div>\n      <div class=\"prog-count\" id=\"progCount\">Step 1 of 22</div>\n    </div>\n    <div class=\"step-list\" id=\"stepList\"></div>\n    <div class=\"cpanel\" id=\"cpanel\"></div>\n    <div class=\"snav\">\n      <button class=\"bp\" id=\"bPrev\" data-on=\"prev\" data-on-plain aria-label=\"Previous step\">◀ Prev</button>\n      <button class=\"bn\" id=\"bNext\" data-on=\"next\" data-on-plain aria-label=\"Next step\">Next ?</button>\n    </div>\n  </div>\n  <div id=\"viewport\" role=\"application\" aria-label=\"3D ship preview viewport\">\n    <div class=\"toast\" id=\"toast\" aria-live=\"polite\"></div>\n    <div class=\"ship-stats\" id=\"shipStats\"></div>\n    <div class=\"dims\">Ship: <span id=\"dL\">12</span>m × <span id=\"dW\">4</span>m × <span id=\"dH\">3</span>m</div>\n    <div class=\"vhint\">Drag to orbit · Scroll to zoom</div>\n  </div>\n</div>\n<div class=\"mo\" id=\"modalO\"><div class=\"md\" id=\"modalC\"></div></div>\n<canvas id=\"pcardOffscreen\" style=\"display:none;position:absolute\"></canvas>\n<div class=\"pcard-overlay\" id=\"profileCard\">\n  <div class=\"pcard-box\">\n    <div class=\"pcard-head\">\n      <span class=\"pcard-title\">⭐⚓ Ship Profile Card</span>\n      <button class=\"pcard-close\" data-cls-remove-id=\"profileCard:show\">?</button>\n    </div>\n    <img loading=\"lazy\" decoding=\"async\" id=\"pcardImg\" src=\"\" alt=\"Ship profile card\">\n    <button class=\"pcard-dl\" id=\"pcardDl\">⬇ Download Profile Card</button>\n  </div>\n</div>\n\n";
+export const STYLES = ['../style-workshop-pirate-ship-builder.css?v=17', '../style-workshop-builder-shared.css?v=1'];
+const HTML = "<div id=\"app\">\n  <header class=\"hdr\">\n\n    <h1 class=\"logo\">🏴‍☠️ Pirate Ship Builder</h1>\n<div class=\"callout tip\" style=\"border-left:3px solid #22c55e;background:rgba(34,197,94,.07);\"><div class=\"callout-icon\">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of the notes for this workshop: <a href=\"/downloads/pirate-ship-builder-reference.zip\" download style=\"color:#16a34a;font-weight:800;text-decoration:underline;\">⬇ pirate-ship-builder-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>\n\n    <div class=\"hdr-right\"><a href=\"../pages/workshop.html\" class=\"back-link\">← Workshop</a><a href=\"../pages/3d-builders.html\" class=\"back-link\" style=\"margin-left:8px\">🏗️ All Builders</a>\n      <button class=\"quick-btn\" data-on=\"randomShip\" data-on-plain>🎲 Random</button>\n      <button class=\"quick-btn\" data-on=\"openSaveModal\" data-on-plain>💾 Save</button>\n      <button class=\"quick-btn\" data-on=\"openLoadModal\" data-on-plain>📂 Load</button>\n    </div>\n  </header>\n  <!-- ── Ember Tip Bar ── -->\n  <div class=\"ember-builder-bar\" id=\"emberBar\" style=\"--ca-rgb:212,168,67\">\n    <svg viewBox=\"0 0 80 90\" width=\"26\" height=\"29\" xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\">\n      <path d=\"M20 52 Q10 80 15 88 H65 Q70 80 60 52 Q50 60 40 60 Q30 60 20 52Z\" fill=\"#12102a\"/>\n      <ellipse cx=\"40\" cy=\"36\" rx=\"16\" ry=\"17\" fill=\"#8B5CF6\"/>\n      <polygon points=\"24,22 19,8 30,18\" fill=\"#7C3AED\"/>\n      <polygon points=\"56,22 61,8 50,18\" fill=\"#7C3AED\"/>\n      <ellipse cx=\"40\" cy=\"40\" rx=\"10\" ry=\"8\" fill=\"#DDD6FE\"/>\n      <ellipse cx=\"35\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <ellipse cx=\"45\" cy=\"34\" rx=\"3.5\" ry=\"4\" fill=\"#1e1a40\"/>\n      <circle cx=\"36\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <circle cx=\"46\" cy=\"33\" r=\"1.2\" fill=\"#fff\"/>\n      <ellipse cx=\"40\" cy=\"39\" rx=\"2\" ry=\"1.4\" fill=\"#7C3AED\"/>\n    </svg>\n    <span><strong style=\"color:#d4a843\">Ember says:</strong> Start with <strong>hull width</strong> , everything else scales from it. The animated ocean appears once you finish all 22 steps!</span>\n    <button class=\"ember-bar-dismiss\" aria-label=\"Dismiss tip\" data-session-set=\"ember-bar-pirate-ship-builder:1\" data-remove-id=\"emberBar\">✕</button>\n  </div>\n\n  <!-- ── /Ember Tip Bar ── -->\n  <div id=\"sidebar\">\n    <div class=\"prog-section\">\n      <div class=\"prog-lbl\">Shipyard Progress</div>\n      <div class=\"prog-track\"><div class=\"prog-fill\" id=\"progFill\"></div></div>\n      <div class=\"prog-ct\" id=\"progCount\">Step 1 of 22</div>\n    </div>\n    <div class=\"slist\" id=\"stepList\"></div>\n    <div class=\"cpan\" id=\"cpanel\"></div>\n    <div class=\"snav\">\n      <button class=\"btn-p\" id=\"bPrev\" data-on=\"prev\" data-on-plain aria-label=\"Previous step\">◀ Prev</button>\n      <button class=\"btn-n\" id=\"bNext\" data-on=\"next\" data-on-plain aria-label=\"Next step\">Next ?</button>\n    </div>\n  </div>\n  <div id=\"viewport\" role=\"application\" aria-label=\"3D ship preview viewport\"><div class=\"scene-top\"><span class=\"scene-top-l\">🎥 Live 3D Preview</span><div class=\"scene-top-r\"><div class=\"live-wrap\"><span class=\"live-dot\"></span><span id=\"liveStatus\" aria-live=\"polite\">Drag to orbit</span></div></div></div><div class=\"scene-wrap\">\n    <div class=\"toast\" id=\"toast\" aria-live=\"polite\"></div>\n    <div class=\"builder-stats\" id=\"shipStats\"></div>\n    <div class=\"dims\">Ship: <span id=\"dL\">12</span>m × <span id=\"dW\">4</span>m × <span id=\"dH\">3</span>m</div>\n    <div class=\"vhint\">Drag to orbit · Scroll to zoom</div></div><div class=\"obar\" id=\"obar\" aria-live=\"polite\">Drag to orbit · Scroll to zoom</div></div>\n  <div id=\"rightbar\" aria-label=\"Quick controls\"></div>\n</div>\n<div class=\"mo\" id=\"modalO\"><div class=\"md\" id=\"modalC\"></div></div>\n<canvas id=\"pcardOffscreen\" style=\"display:none;position:absolute\"></canvas>\n<div class=\"pcard-overlay\" id=\"profileCard\">\n  <div class=\"pcard-box\">\n    <div class=\"pcard-head\">\n      <span class=\"pcard-title\">⭐⚓ Ship Profile Card</span>\n      <button class=\"pcard-close\" data-cls-remove-id=\"profileCard:show\">?</button>\n    </div>\n    <img loading=\"lazy\" decoding=\"async\" id=\"pcardImg\" src=\"\" alt=\"Ship profile card\">\n    <button class=\"pcard-dl\" id=\"pcardDl\">⬇ Download Profile Card</button>\n  </div>\n</div>\n\n";
 const CSS = "/* ── Ember builder tip strip ─────────────── */\n.hdr-step-chip {\n  display: inline-flex;\n  align-items: center;\n  font-family: 'Nunito', sans-serif;\n  font-size: .72rem;\n  font-weight: 800;\n  letter-spacing: .05em;\n  padding: 3px 10px;\n  border-radius: 999px;\n  background: rgba(var(--ca-rgb, 255,255,255), .12);\n  border: 1px solid rgba(var(--ca-rgb, 255,255,255), .25);\n  color: rgba(255,255,255,.85);\n  margin-left: 10px;\n  vertical-align: middle;\n  flex-shrink: 0;\n}\n.ember-builder-bar {\n  display: flex;\n  align-items: flex-start;\n  gap: 10px;\n  padding: 8px 16px;\n  background: rgba(var(--ca-rgb,139,92,246), .07);\n  border-bottom: 1px solid rgba(var(--ca-rgb,139,92,246), .18);\n  position: relative;\n  font-size: .8rem;\n  line-height: 1.45;\n  color: rgba(255,255,255,.65);\n}\n.ember-builder-bar strong { color: rgba(255,255,255,.9); }\n.ember-builder-bar svg { flex-shrink: 0; margin-top: 1px; }\n.ember-bar-dismiss {\n  position: absolute;\n  right: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  background: none;\n  border: none;\n  color: rgba(255,255,255,.3);\n  cursor: pointer;\n  font-size: 1rem;\n  line-height: 1;\n  padding: 2px 6px;\n  border-radius: 4px;\n  transition: color .2s;\n}\n.ember-bar-dismiss:hover { color: rgba(255,255,255,.7); }\n";
 const ACTIONS = ["applyLivery","closeModal","doDel","doLoad","doSave","downloadPNG","go","next","openLoadModal","openSaveModal","prev","randomShip","resetAll","setSail","showProfileCard","updChecked","updFloat","updRaw"];
 
@@ -126,7 +126,7 @@ let isDrag=false,mX=0,mY=0,cTheta=0.5,cPhi=0.75,cDist=20;
 // THREE SETUP
 // ---------------------------------------
 function initThree(){
-  const vp=document.getElementById('viewport');
+  const vp=document.querySelector('#viewport .scene-wrap')||document.getElementById('viewport');
   scene=new THREE.Scene();
   scene.fog=new THREE.FogExp2(0x0a1628,0.012);
   camera=new THREE.PerspectiveCamera(40,vp.clientWidth/vp.clientHeight,0.1,200);
@@ -759,8 +759,8 @@ function renderCtrls(){
     setSail:'Your ship is ready! In the age of sail, a crew of 200+ would work together to operate a vessel like this.',
   };
   const fact=FACTS[STEPS[curStep].id]||'';
-  let h=`<div class="ct">${STEPS[curStep].d}</div>`;
-  if(fact)h+=`<div style="background:rgba(212,168,67,.06);border:1px solid rgba(212,168,67,.15);border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:.72rem;line-height:1.6;color:var(--parchment-dim)"><span style="color:var(--gold);font-weight:700">⭐ Did you know?</span> ${fact}</div>`;
+  let h=`<div class="step-tag">Step ${curStep+1}</div><div class="step-title">${STEPS[curStep].name}</div><div class="step-intro">${STEPS[curStep].d}</div>`;
+  if(fact)h+=`<div class="box box-c"><span><strong>Did you know?</strong> ${fact}</span></div>`;
   cs.forEach(c=>{
     if(c.t==='presets'){
       h += `<div style="margin-bottom:10px"><label style="display:block;font-size:10px;color:var(--parchment-dim);margin-bottom:4px;letter-spacing:1px">Quick liveries</label><div class="preset-row">${Object.keys(LIVERY_PRESETS).map(n=>`<button class="preset-btn" data-action="applyLivery" data-arg="${n}">${n}</button>`).join('')}</div></div>`;
@@ -779,6 +779,27 @@ function renderCtrls(){
     return;
   }
   cp.innerHTML=h;
+  renderQuick();
+}
+
+function renderQuick(){
+  const rb=document.getElementById('rightbar'); if(!rb) return;
+  const color=(k,l)=>`<div class="rb-row"><label>${l}</label><input type="color" value="${P[k]}" data-action-input="updRaw" data-arg="${k}"></div>`;
+  const range=(k,l,mn,mx,st)=>`<div class="rb-row"><label>${l}</label><input type="range" min="${mn}" max="${mx}" step="${st}" value="${P[k]}" data-action-input="updFloat" data-arg="${k}"><span class="rv" data-quick-val="${k}">${P[k]}</span></div>`;
+  rb.innerHTML=`
+    <div class="rb-section"><div class="rb-title">🎨 Colors</div>
+      ${color('hullColor','Hull')}${color('deckColor','Deck')}${color('sailColor','Sails')}${color('trimColor','Trim')}${color('waterColor','Water')}
+    </div>
+    <div class="rb-section"><div class="rb-title">📐 Size</div>
+      ${range('hullLen','Length',6,20,1)}${range('hullBeam','Beam',2,7,0.5)}${range('hullDepth','Depth',1.5,5,0.5)}
+    </div>
+    <div class="rb-section"><div class="rb-title">🏴 Livery</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">${Object.keys(LIVERY_PRESETS).map(n=>`<button class="preset-btn" data-action="applyLivery" data-arg="${n}">${n}</button>`).join('')}</div>
+    </div>
+    <div class="rb-section"><div class="rb-title">⚡ Actions</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><button class="preset-btn" data-on="downloadPNG" data-on-plain>🖼️ PNG</button><button class="preset-btn" data-on="showProfileCard" data-on-plain>💳 Card</button><button class="preset-btn" data-on="resetAll" data-on-plain>🔄 Reset</button></div>
+    </div>
+    <div style="padding:4px 2px"><button class="run-btn" style="font-size:.78rem;padding:9px;margin-top:0" data-action="setSail">⛵ Set Sail</button></div>`;
 }
 
 function updFloat(v){ upd(this.getAttribute('data-arg'), parseFloat(v)); }
@@ -788,6 +809,8 @@ function upd(k,v){
   P[k]=v;
   const ve=document.getElementById('v_'+k);
   if(ve) ve.textContent=typeof v==='number'?(Number.isInteger(v)?v:v.toFixed(3)):v;
+  const qv=typeof v==='number'?(Number.isInteger(v)?v:v.toFixed(2)):v;
+  document.querySelectorAll('[data-quick-val="'+k+'"]').forEach(function(e){e.textContent=qv;});
   rebuildShip();
 }
 
@@ -1083,7 +1106,7 @@ function loadShipTemplate(t) {
 }
 if (window.BuilderTemplates) {
   BuilderTemplates.install({
-    mount: '.hdr-btns',
+    mount: '.hdr-right',
     templates: SHIP_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadShipTemplate(t); } }; }),
     random: randomShip,
     onApply: function () { if (typeof go === 'function') go(0); }

@@ -143,7 +143,7 @@ window.CW_CONFIG = {
       challenge: '🤖 Set up the grid dimensions:',
       starter: '# Grid dimensions\nvar cols = 4\nvar rows = ___\nvar cell_size = ___\nvar total_cards = cols * rows',
       solution: '# Grid dimensions\nvar cols = 4\nvar rows = 4\nvar cell_size = 80\nvar total_cards = cols * rows',
-      checks: ['4', '80', '16'],
+      checks: ['rows = 4', 'cell_size = 80'],
       height: 120,
       fills: {
         text: 'A 4x4 grid has ___ cards total. With 8 pairs that means ___ unique images.',

@@ -141,7 +141,7 @@ window.CW_CONFIG = {
     3: function(u) {
       return wbWrap(
         
-        SETUP + QUIZ_DATA + QUIZ_VARS + SCORE_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER,
+        SETUP + QUIZ_DATA + QUIZ_VARS + KEYS + CLICK_HANDLER + CHECK_ANSWER,
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         'if(key1)checkAns(0);if(key2)checkAns(1);if(key3)checkAns(2);' +

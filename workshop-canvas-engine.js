@@ -898,10 +898,14 @@ window.cwBlobWrap = function cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc,
   return { html: html, cwParts: { css: CSS_GAME, canvas: CANVAS_TAG, presetup: presetup, blobSrc: blobSrc, afterBlob: afterBlob } };
 }
 
-/* The live preview runs inside assets/canvas-preview.html, a same-origin host
+/* The live preview runs inside assets/canvas-preview.html, a separate host
    with no Content-Security-Policy of its own. A srcdoc (or blob) frame inherits
-   this page's CSP, which blocks the inline game scripts and shows a blank
+   the workshop page CSP, which blocks the inline game scripts and shows a blank
    canvas; the host sidesteps that while keeping the sandboxed stage.
+   The stage is sandboxed with allow-scripts only (opaque origin), so the host
+   cannot read its contentDocument. The host builds a bootstrap inside the stage
+   that loads each code part as a blob: script (A2122), which keeps learner code
+   away from the workshop page storage and cookies.
    Workshops migrated to cwBlobWrap no longer need unsafe-eval; once all
    workshops are migrated, canvas-preview.html can be served with a strict CSP
    (script-src 'self' blob:) making previews host-portable (A1722). */

@@ -134,6 +134,27 @@ CONVERTED.forEach(file => {
   }
 });
 
+// A2028: every published (catalogue-linked, indexable) workshop needs a visible
+// outcome statement: your project, what you learn, what you finish with and how
+// to extend it.
+const outcomeMissing = [];
+try {
+  const catalogue = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'workshops.json'), 'utf8'));
+  catalogue.forEach(entry => {
+    const file = path.basename(entry.url || '');
+    if (!file || !PUBLIC_WORKSHOP_FILES.includes(file)) return;
+    const block = pageSource(file).match(/<!-- WS-OUTCOME:START -->([\s\S]*?)<!-- WS-OUTCOME:END -->/);
+    const ok = block
+      && block[1].includes('<dt>Your project</dt>')
+      && block[1].includes("<dt>You'll learn</dt>")
+      && block[1].includes('<dt>Finish with</dt>')
+      && block[1].includes('<dt>Then extend it</dt>');
+    if (!ok) outcomeMissing.push(file);
+  });
+} catch (err) {
+  console.log('  Could not check workshop outcomes: ' + err.message);
+}
+
 console.log(`✓ Valid (checkbox-style): ${results.valid.length}/${CONVERTED.length - BUILDER_STYLE.length}`);console.log(`✓ Workshop coverage: ${coverage.files} HTML files checked for title, description, canonical and age metadata`);
 if (coverage.missing_title.length) console.log('  Missing title: ' + coverage.missing_title.join(', '));
 if (coverage.missing_description.length) console.log('  Missing description: ' + coverage.missing_description.join(', '));
@@ -147,5 +168,93 @@ if (results.missing_functions.length > 0) console.log('  Files: ' + results.miss
 console.log(`✗ Read Errors: ${results.errors.length}`);
 if (results.errors.length > 0) results.errors.forEach(e => console.log(`  ${e.file}: ${e.error}`));
 
-const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0 || coverage.missing_title.length > 0 || coverage.missing_description.length > 0 || coverage.missing_canonical.length > 0 || coverage.missing_age.length > 0;
+console.log(`- Missing outcome statement: ${outcomeMissing.length}`);
+if (outcomeMissing.length > 0) console.log('  Files: ' + outcomeMissing.join(', '));
+// A2037: every published tutorial must declare a completion condition, a
+// finish screen and a next step. Registry lives in content/workshop-completion.json;
+// rebuild with node scripts/build-workshop-completion.js after adding a workshop.
+let completionMissing = [];
+try {
+  const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'workshop-completion.json'), 'utf8'));
+  registry.workshops.forEach(entry => {
+    if (entry.mode === 'reference') return;
+    if (!entry.condition || entry.condition === 'none' || !entry.conditionText || !entry.next || !entry.next.url) {
+      completionMissing.push(entry.id + ' (no condition/next)');
+      return;
+    }
+    let src;
+    try { src = pageSource(path.basename(entry.page)); } catch (e) { completionMissing.push(entry.id + ' (missing page)'); return; }
+    if (entry.mode === 'engine' || entry.mode === 'steps') {
+      if (!/id=["']finishBanner["']/.test(src) || !/WS-FINISH:START/.test(src)) completionMissing.push(entry.id + ' (no finish screen)');
+    } else if (entry.mode === 'builder') {
+      const ok = entry.hasFinishBanner
+        ? (/id=["']finishBanner["']/.test(src) && /WS-FINISH:START/.test(src))
+        : /id="wsFinish"/.test(src);
+      if (!ok) completionMissing.push(entry.id + ' (no finish line)');
+    } else if (entry.mode === 'canvas') {
+      if (!/workshop-canvas-engine\.js/.test(src)) completionMissing.push(entry.id + ' (canvas engine not loaded)');
+    }
+  });
+  console.log(`- Workshop completion condition: ${registry.workshops.filter(w => w.mode !== 'reference').length - completionMissing.length}/${registry.workshops.filter(w => w.mode !== 'reference').length} tutorials have a finish screen and next step`);
+  if (completionMissing.length) console.log('  Missing: ' + completionMissing.join(', '));
+} catch (err) {
+  completionMissing = ['registry: ' + err.message];
+  console.log('  Could not check workshop completion: ' + err.message);
+}
+
+// A2029: every tutorial must carry the gradual-release moves (See it,
+// Understand it, Build it, Fix it, Own it), so a learner is never left with
+// copy-the-reference as the only route.
+let releaseMissing = [];
+try {
+  const release = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'workshop-gradual-release.json'), 'utf8'));
+  const stages = ['see', 'understand', 'build', 'fix', 'own'];
+  release.workshops.forEach(entry => {
+    let src;
+    try { src = pageSource(path.basename(entry.page)); } catch (e) { releaseMissing.push(entry.id + ' (missing page)'); return; }
+    const block = src.match(/<!-- WS-RELEASE:START -->([\s\S]*?)<!-- WS-RELEASE:END -->/);
+    if (!block) { releaseMissing.push(entry.id + ' (no release block)'); return; }
+    const body = block[1];
+    const missingStages = stages.filter(stage => !body.includes('data-stage="' + stage + '"'));
+    if (missingStages.length) releaseMissing.push(entry.id + ' (missing ' + missingStages.join(', ') + ')');
+    else if (!/reference solution/i.test(body)) releaseMissing.push(entry.id + ' (no reference-solution note)');
+  });
+  console.log('- Workshop gradual release: ' + (release.workshops.length - releaseMissing.length) + '/' + release.workshops.length + ' tutorials carry the five moves');
+  if (releaseMissing.length) console.log('  Missing: ' + releaseMissing.join(', '));
+} catch (err) {
+  releaseMissing = ['registry: ' + err.message];
+  console.log('  Could not check workshop gradual release: ' + err.message);
+}
+
+let contentIntegrity = { configs: 0, steps: 0, issues: [] };
+try {
+  contentIntegrity = require('./tests/workshop-content-integrity.js').run();
+  console.log(`- Workshop content integrity: ${contentIntegrity.configs} configs / ${contentIntegrity.steps} steps checked, ${contentIntegrity.issues.length} problems`);
+  contentIntegrity.issues.forEach(issue => console.log(`  ${issue.file} | ${issue.kind} | ${issue.detail || ''}`));
+} catch (err) {
+  console.log('  Could not check workshop content integrity: ' + err.message);
+}
+
+let debugging = { entries: 0, stale: [], missing: [] };
+try {
+  const data = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'workshop-debugging.json'), 'utf8'));
+  const START = '<!-- WS-DEBUG:START -->';
+  const END = '<!-- WS-DEBUG:END -->';
+  data.forEach(entry => {
+    const file = path.join(ROOT, String(entry.page || '').replace(/^\//, ''));
+    if (!fs.existsSync(file)) { debugging.missing.push(entry.series || entry.page); return; }
+    const html = fs.readFileSync(file, 'utf8');
+    const start = html.indexOf(START);
+    const end = html.indexOf(END);
+    if (start < 0 || end < start) { debugging.stale.push(entry.series || entry.page); return; }
+    debugging.entries++;
+  });
+  console.log(`- Workshop debugging tasks: ${debugging.entries}/${data.length} coding series with a hint-first debug task`);
+  if (debugging.missing.length) console.log('  Missing page: ' + debugging.missing.join(', '));
+  if (debugging.stale.length) console.log('  No stamped block (run node scripts/apply-workshop-debugging.js): ' + debugging.stale.join(', '));
+} catch (err) {
+  console.log('  Could not check workshop debugging tasks: ' + err.message);
+}
+
+const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0 || coverage.missing_title.length > 0 || coverage.missing_description.length > 0 || coverage.missing_canonical.length > 0 || coverage.missing_age.length > 0 || outcomeMissing.length > 0 || completionMissing.length > 0 || releaseMissing.length > 0 || contentIntegrity.issues.length > 0 || debugging.missing.length > 0 || debugging.stale.length > 0;
 if (hasFailures) process.exitCode = 1;

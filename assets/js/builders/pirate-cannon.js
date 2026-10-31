@@ -8,8 +8,8 @@
  */
 export const ID = 'pirate-cannon';
 export const LABEL = 'Pirate Cannon';
-export const STYLES = ['../style-workshop-pirate-cannon-builder.css?v=17'];
-const HTML = "<div id=\"app\">\n  <header id=\"main-content\">\n\n    <h1>💣 Build a Pirate Cannon Game</h1>\n<div class=\"callout tip\" style=\"border-left:3px solid #22c55e;background:rgba(34,197,94,.07);\"><div class=\"callout-icon\">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of the notes for this workshop: <a href=\"/downloads/pirate-cannon-builder-reference.zip\" download style=\"color:#16a34a;font-weight:800;text-decoration:underline;\">⬇ pirate-cannon-builder-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>\n\n    <div class=\"header-actions\">\n      <button data-on=\"openSaveModal\" data-on-plain>💾 Save</button>\n      <button data-on=\"openLoadModal\" data-on-plain>📂 Load</button>\n      <button data-on=\"resetAll\" data-on-plain>🔄 Reset</button>\n    </div>\n  </header>\n\n  <div id=\"sidebar\">\n    <div class=\"step-progress\">\n      <div class=\"progress-label\">Forge Progress</div>\n      <div class=\"progress-bar\"><div class=\"progress-fill\" id=\"progressFill\"></div></div>\n      <div class=\"step-counter\" id=\"stepCounter\">Step 1 of 15</div>\n    </div>\n    <div class=\"step-list\" id=\"stepList\"></div>\n    <div class=\"controls-panel\" id=\"controlsPanel\"></div>\n    <div class=\"step-nav\">\n      <button class=\"btn-prev\" id=\"btnPrev\" data-on=\"prevStep\" data-on-plain>◀ Previous</button>\n      <button class=\"btn-next\" id=\"btnNext\" data-on=\"nextStep\" data-on-plain>Next ?</button>\n    </div>\n  </div>\n\n  <div id=\"viewport\">\n    <div class=\"step-toast\" id=\"stepToast\"></div>\n    <div class=\"dim-display\" id=\"dimDisplay\">Workshop: <span id=\"wsWidth\">3</span>m × <span id=\"wsDepth\">3</span>m × <span id=\"wsHeight\">2.5</span>m</div>\n    <div class=\"viewport-hint\">Drag to orbit · Scroll to zoom</div>\n  </div>\n</div>\n\n<!-- Save/Load Modal -->\n<div class=\"modal-overlay\" id=\"modalOverlay\">\n  <div class=\"modal\" id=\"modalContent\"></div>\n</div>\n\n";
+export const STYLES = ['../style-workshop-pirate-cannon-builder.css?v=17', '../style-workshop-builder-shared.css?v=1'];
+const HTML = "<div id=\"app\">\n  <header class=\"hdr\" id=\"main-content\">\n\n    <h1 class=\"logo\">💥 Pirate Cannon Builder</h1>\n<div class=\"callout tip\" style=\"border-left:3px solid #22c55e;background:rgba(34,197,94,.07);\"><div class=\"callout-icon\">📦</div><div><strong>Workshop reference pack:</strong> download an offline copy of the notes for this workshop: <a href=\"/downloads/pirate-cannon-builder-reference.zip\" download style=\"color:#16a34a;font-weight:800;text-decoration:underline;\">⬇ pirate-cannon-builder-reference.zip</a>. Every code block also has a <strong>Copy</strong> button.</div></div>\n\n    <div class=\"hdr-right\"><a href=\"../pages/workshop.html\" class=\"back-link\">← Workshop</a><a href=\"../pages/3d-builders.html\" class=\"back-link\" style=\"margin-left:8px\">🏗️ All Builders</a>\n      <button class=\"quick-btn\" data-on=\"openSaveModal\" data-on-plain>💾 Save</button>\n      <button class=\"quick-btn\" data-on=\"openLoadModal\" data-on-plain>📂 Load</button>\n    </div>\n  </header>\n\n  <div id=\"sidebar\">\n    <div class=\"prog-section\">\n      <div class=\"prog-lbl\">Forge Progress</div>\n      <div class=\"prog-track\"><div class=\"prog-fill\" id=\"progressFill\"></div></div>\n      <div class=\"prog-ct\" id=\"stepCounter\">Step 1 of 15</div>\n    </div>\n    <div class=\"slist\" id=\"stepList\"></div>\n    <div class=\"cpan\" id=\"controlsPanel\"></div>\n    <div class=\"snav\">\n      <button class=\"btn-p\" id=\"btnPrev\" data-on=\"prevStep\" data-on-plain>◀ Previous</button>\n      <button class=\"btn-n\" id=\"btnNext\" data-on=\"nextStep\" data-on-plain>Next ?</button>\n    </div>\n  </div>\n\n  <div id=\"viewport\"><div class=\"scene-top\"><span class=\"scene-top-l\">🎥 Live 3D Preview</span><div class=\"scene-top-r\"><div class=\"live-wrap\"><span class=\"live-dot\"></span><span id=\"liveStatus\" aria-live=\"polite\">Drag to orbit</span></div></div></div><div class=\"scene-wrap\">\n    <div class=\"step-toast\" id=\"stepToast\"></div>\n    <div class=\"dims\" id=\"dimDisplay\">Workshop: <span id=\"wsWidth\">3</span>m × <span id=\"wsDepth\">3</span>m × <span id=\"wsHeight\">2.5</span>m</div>\n    <div class=\"vhint\">Drag to orbit · Scroll to zoom</div></div><div class=\"obar\" id=\"obar\" aria-live=\"polite\">Drag to orbit · Scroll to zoom</div></div>\n  <div id=\"rightbar\" aria-label=\"Quick controls\"></div>\n</div>\n\n<!-- Save/Load Modal -->\n<div class=\"modal-overlay\" id=\"modalOverlay\">\n  <div class=\"modal\" id=\"modalContent\"></div>\n</div>\n\n";
 const CSS = "";
 const ACTIONS = ["closeModal","doDelete","doLoad","doSave","goToStep","nextStep","openLoadModal","openSaveModal","prevStep","resetAll","updateParamChecked","updateParamFloat","updateParamRaw"];
 
@@ -84,7 +84,7 @@ let isMouseDown = false, mouseX = 0, mouseY = 0, camTheta = 0.6, camPhi = 0.8, c
 
 // ============ THREE.JS SETUP ============
 function initThree() {
-  const vp = document.getElementById('viewport');
+  const vp = document.querySelector('#viewport .scene-wrap') || document.getElementById('viewport');
   scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x0d1f2d, 0.15);
 
@@ -499,7 +499,7 @@ function getControlsForStep(stepIdx) {
 function renderControls() {
   const panel = document.getElementById('controlsPanel');
   const ctrls = getControlsForStep(currentStep);
-  let html = `<div class="control-title">${STEPS[currentStep].desc}</div>`;
+  let html = `<div class="step-tag">Step ${currentStep+1}</div><div class="step-title">${STEPS[currentStep].name}</div><div class="step-intro">${STEPS[currentStep].desc}</div>`;
   ctrls.forEach(c => {
     if (c.type === 'range') {
       html += `<div class="control-group">
@@ -521,6 +521,21 @@ function renderControls() {
     }
   });
   panel.innerHTML = html;
+  renderQuick();
+}
+
+function renderQuick(){
+  const rb = document.getElementById('rightbar'); if (!rb) return;
+  const color = (k,l) => `<div class="rb-row"><label>${l}</label><input type="color" value="${params[k]}" data-action-input="updateParamRaw" data-arg="${k}"></div>`;
+  const range = (k,l,mn,mx,st) => `<div class="rb-row"><label>${l}</label><input type="range" min="${mn}" max="${mx}" step="${st}" value="${params[k]}" data-action-input="updateParamFloat" data-arg="${k}"><span class="rv" data-quick-val="${k}">${params[k]}</span></div>`;
+  rb.innerHTML = `
+    <div class="rb-section"><div class="rb-title">🎨 Colors</div>
+      ${color('barrelColor','Barrel')}${color('carriageColor','Carriage')}${color('wheelColor','Wheels')}${color('metalColor','Metal')}${color('ropeColor','Rope')}
+    </div>
+    <div class="rb-section"><div class="rb-title">📐 Size</div>
+      ${range('barrelLen','Barrel',0.5,3,0.05)}${range('carriageLen','Carriage',0.5,1.8,0.05)}${range('wheelR','Wheels',0.1,0.45,0.01)}
+    </div>
+    <div style="padding:4px 2px"><button class="run-btn" style="font-size:.78rem;padding:9px;margin-top:0" data-on="resetAll" data-on-plain">↺ Reset Cannon</button></div>`;
 }
 
 function updateParamFloat(v){ updateParam(this.getAttribute('data-arg'), parseFloat(v)); }
@@ -530,6 +545,8 @@ function updateParam(key, val) {
   params[key] = val;
   const ve = document.getElementById('val_' + key);
   if (ve) ve.textContent = typeof val === 'number' ? (Number.isInteger(val) ? val : val.toFixed(3)) : val;
+  const qv = typeof val === 'number' ? (Number.isInteger(val) ? val : val.toFixed(2)) : val;
+  document.querySelectorAll('[data-quick-val="' + key + '"]').forEach(function (e) { e.textContent = qv; });
   rebuildCannon();
 }
 
@@ -690,12 +707,38 @@ window._builderSetState = function (s) {
   rebuildCannon(); updateUI();
   if (window.builderScheduleAutoSave) window.builderScheduleAutoSave();
 };
+const CANNON_TEMPLATES = [
+  { id:'classic', emoji:'\uD83C\uDFF4', name:'Classic Deck Gun', note:'Short naval barrel on a wooden carriage.',
+    data:{ barrelLen:1.2, barrelOuterR:0.12, barrelInnerR:0.06, barrelTaper:0.15, carriageLen:0.9, carriageW:0.35, carriageH:0.18, wheelR:0.2, barrelColor:'#3a3a3a', carriageColor:'#6d4c2a' } },
+  { id:'long-nine', emoji:'\uD83D\uDDFF', name:'Long Nine', note:'A long, slim barrel that reaches across the water.',
+    data:{ barrelLen:2.2, barrelOuterR:0.1, barrelInnerR:0.045, barrelTaper:0.08, carriageLen:1.4, carriageW:0.38, wheelR:0.24, barrelColor:'#2c2c2c', carriageColor:'#5a3f22' } },
+  { id:'siege', emoji:'\uD83D\uDCA3', name:'Siege Mortar', note:'Wide bore, high arc, built to lob heavy shot.',
+    data:{ barrelLen:0.8, barrelOuterR:0.2, barrelInnerR:0.12, barrelTaper:0.3, muzzleFlare:0.08, carriageLen:1.1, carriageW:0.5, carriageH:0.25, wheelR:0.28, barrelColor:'#444444', carriageColor:'#6b4a2a' } },
+  { id:'pocket', emoji:'\uD83E\uDD5B', name:'Pocket Pistol', note:'Tiny deck gun for close quarters.',
+    data:{ barrelLen:0.55, barrelOuterR:0.06, barrelInnerR:0.03, barrelTaper:0.1, carriageLen:0.5, carriageW:0.2, carriageH:0.1, wheelR:0.12, metalColor:'#c9a84c', barrelColor:'#5a5a5a' } },
+  { id:'fortress', emoji:'\uD83C\uDFF0', name:'Iron Fortress', note:'Heavy reinforced barrel on a broad carriage.',
+    data:{ barrelLen:1.8, barrelOuterR:0.16, barrelInnerR:0.08, barrelTaper:0.2, ringCount:4, ringSize:0.02, carriageLen:1.6, carriageW:0.55, carriageH:0.28, wheelR:0.3, barrelColor:'#222222', carriageColor:'#4a3320', metalColor:'#777777' } }
+];
+function loadCannonTemplate(t) {
+  Object.assign(params, t.data);
+  rebuildCannon();
+  updateUI();
+  showToast('Template: ' + t.name);
+  if (window.builderTrack) builderTrack('quick_build');
+}
+if (window.BuilderTemplates) {
+  BuilderTemplates.install({
+    mount: '.hdr-right',
+    templates: CANNON_TEMPLATES.map(function (t) { return { id: t.id, emoji: t.emoji, name: t.name, note: t.note, apply: function () { loadCannonTemplate(t); } }; }),
+    onApply: function () { if (typeof goToStep === 'function') goToStep(0); }
+  });
+}
 if (window.JVExporter) {
   JVExporter.installUI({
     tool: 'Pirate Cannon Forge',
     units: 'm',
     accent: '#c9a84c',
-    mount: '.header-actions',
+    mount: '.hdr-right',
     getGroup: function () { return cannonGroup; },
     getName: function () { return 'pirate-cannon'; },
     track: function () { if (window.builderTrack) window.builderTrack.apply(null, arguments); }
