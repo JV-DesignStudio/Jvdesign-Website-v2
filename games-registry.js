@@ -271,7 +271,7 @@ window.JVDS_GAMES = [
     "session": "3-5 min",
     "controls": "Swipe, arrow keys or the on-screen D-pad to hop",
     "storyHook": "Pip and Echo, brother and sister, are leading the crew across the busy road and the traffic never stops.",
-    "character": "Pip and Echo",
+    "character": "Pip",
     "objective": "Hop the crew forward, dodge the traffic and cross the rivers safely.",
     "finishLine": "The road finally wins, but your best distance is saved and the crew is ready to hop again.",
     "arcadeSession": "3-5 min",
