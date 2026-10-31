@@ -157,3 +157,10 @@ it to regenerate modules; edit the module files directly.
 - **A2179**: the roguelike win is intrinsic (the dungeon's final boss), so a saved
   score/time target cannot end a run on a room clear, and the Power Picks loadout
   waits until the first room is cleared.
+- **A2173**: sandbox rules v2. A rule can now repeat (`repeat`: `1`, `N` or `-1`
+  for endless), wait a `cooldown` between fires, start after `after` seconds, and
+  carry nested `groups` (`{ match:'all'|'any', conds:[...] }`) beside the leaf
+  `conds`. Actions add `setVar` (set, not add). Legacy rules without the new
+  fields still fire once. The shared Event Rules tab stays separate on purpose:
+  it is genre-agnostic and runs on top of every genre scene, while sandbox
+  variables only exist in CUSTOM. Export and save carry the whole rule object.

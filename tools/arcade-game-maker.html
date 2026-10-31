@@ -36,7 +36,9 @@
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 
 <!-- Analytics is provided by analytics-loader.js (consent-gated). -->
-<script defer src="../phaser-arcade-physics.min.js"></script>
+<!-- A2175: Phaser is lazy-loaded on the first Play press (ensurePhaser) so the
+     maker's first paint does not wait for ~1 MB of engine code. The export path
+     still fetches this same file to embed it in the downloaded game. -->
 <!-- Offline QR code generator (MIT, Kazuhiko Arase). Replaces the api.qrserver.com dependency so share QR codes work with no network. -->
 <script defer src="../qrcode-generator.js"></script>
 <link rel="stylesheet" href="../style-tool-arcade-game-maker.css?v=17">
@@ -82,7 +84,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-BZpp3XRJe/SoEKKtW+bbIWMN2+dy8oYlDuEa4OhL45w=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-uXHlckkmf+ApFy8mh1WZPtOKa5BSCjwFsa3ND9joC/k=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-4cQ/Wq+F/Zohycj2ANrwVnuobpEniKpU+bZSXgMSF6g=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-uXHlckkmf+ApFy8mh1WZPtOKa5BSCjwFsa3ND9joC/k=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -4110,6 +4112,36 @@ let currentPhaserGame = null;
 let currentStory = null;   // imported from Story Editor
 let _engineData  = null;   // payload used for last boot (needed by export + replay)
 
+// A2175: keep Phaser off the initial load path. It is fetched the first time a
+// game actually starts, then cached for every later run on the page. The export
+// code resolves the same URL directly so a game can be exported before it is run.
+const PHASER_SRC = '../phaser-arcade-physics.min.js';
+let _phaserLoadPromise = null;
+function ensurePhaser() {
+    if (window.Phaser && typeof window.Phaser.Game === 'function') return Promise.resolve();
+    if (_phaserLoadPromise) return _phaserLoadPromise;
+    _phaserLoadPromise = new Promise(function(resolve, reject) {
+        const el = document.createElement('script');
+        el.src = PHASER_SRC;
+        el.onload = function() {
+            if (window.Phaser && typeof window.Phaser.Game === 'function') resolve();
+            else { _phaserLoadPromise = null; reject(new Error('Phaser loaded but did not initialise')); }
+        };
+        el.onerror = function() {
+            _phaserLoadPromise = null;
+            reject(new Error('Phaser could not be loaded'));
+        };
+        document.head.appendChild(el);
+    });
+    return _phaserLoadPromise;
+}
+function _phaserSrcUrl() {
+    const tag = Array.from(document.querySelectorAll('script[src]'))
+        .map(s => s.src)
+        .find(src => src && src.includes('phaser'));
+    try { return tag || new URL(PHASER_SRC, location.href).href; } catch (e) { return PHASER_SRC; }
+}
+
 // ── EVENTS RUNTIME STATE ──────────────────────────────────────────────────────
 const _evtFired = new Set();   // IDs of one-shot rules that have already triggered this session
 
@@ -5107,7 +5139,7 @@ function _arcCustomSync(key, id, el) {
 // ── CUSTOM SANDBOX v2: win modes, variables and ALL/ANY rules (A2165) ────────
 const _SB_BUILTIN = [['stars','Stars'],['lives','Lives'],['time','Time (s)']];
 const _SB_OPS = ['>=','<=','==','!=','>','<'];
-const _SB_ACTIONS = [['addScore','Add score'],['addVar','Add to variable'],['addLife','Add life'],['spawnStar','Spawn a star'],['win','Win'],['lose','Lose']];
+const _SB_ACTIONS = [['addScore','Add score'],['addVar','Add to variable'],['setVar','Set variable'],['addLife','Add life'],['spawnStar','Spawn a star'],['win','Win'],['lose','Lose']];
 function _sbEsc(s){ return escapeHtml(String(s == null ? '' : s)); }
 function _sbVarOptions(sel) {
     const vars = Array.isArray(liveConfig.customVars) ? liveConfig.customVars : [];
@@ -5155,7 +5187,8 @@ function _sbVarDel(id) {
     liveConfig.customVars = (liveConfig.customVars || []).filter(v => v.id !== id);
     (liveConfig.customRules || []).forEach(r => {
         r.conds = (r.conds || []).filter(c => c.left !== id);
-        (r.actions || []).forEach(a => { if (a.type === 'addVar' && a.target === id) { a.type = 'addScore'; a.target = ''; } });
+        (r.groups || []).forEach(g => { g.conds = (g.conds || []).filter(c => c.left !== id); });
+        (r.actions || []).forEach(a => { if ((a.type === 'addVar' || a.type === 'setVar') && a.target === id) { a.type = 'addScore'; a.target = ''; } });
     });
     _sbRender(); _scheduleAutoSave();
 }
@@ -5163,7 +5196,9 @@ function _sbRuleAdd() {
     const n = (liveConfig.customRules || []).length + 1;
     liveConfig.customRules = (liveConfig.customRules || []).concat({
         id: 'r' + Date.now() + '_' + n, enabled: true, match: 'all',
+        after: 0, repeat: 1, cooldown: 0,
         conds: [{ left: 'stars', op: '>=', right: 1 }],
+        groups: [],
         actions: [{ type: 'addScore', target: '', amount: 100 }]
     });
     _sbRender(); _scheduleAutoSave();
@@ -5171,7 +5206,10 @@ function _sbRuleAdd() {
 function _sbRuleDel(id) { liveConfig.customRules = (liveConfig.customRules || []).filter(r => r.id !== id); _sbRender(); _scheduleAutoSave(); }
 function _sbRuleField(id, field, val) {
     const r = _sbRule(id); if (!r) return;
-    r[field] = field === 'enabled' ? !!val : val;
+    if (field === 'enabled') r.enabled = !!val;
+    else if (field === 'repeat') r.repeat = Math.max(-1, Math.min(99, parseInt(val, 10) || 1));
+    else if (field === 'cooldown' || field === 'after') r[field] = Math.max(0, parseFloat(val) || 0);
+    else r[field] = val;
     _scheduleAutoSave();
 }
 function _sbCondAdd(rid) { const r = _sbRule(rid); if (!r) return; r.conds = (r.conds || []).concat({ left: 'stars', op: '>=', right: 1 }); _sbRender(); _scheduleAutoSave(); }
@@ -5182,15 +5220,44 @@ function _sbCondSet(rid, idx, field, val) {
     r.conds[idx][field] = field === 'right' ? (parseInt(v, 10) || 0) : v;
     _scheduleAutoSave();
 }
+function _sbGroupAdd(rid) {
+    const r = _sbRule(rid); if (!r) return;
+    r.groups = (r.groups || []).concat({ id: 'g' + Date.now(), match: 'any', conds: [{ left: 'time', op: '>=', right: 5 }] });
+    _sbRender(); _scheduleAutoSave();
+}
+function _sbGroupDel(rid, gi) {
+    const r = _sbRule(rid); if (!r || !r.groups) return;
+    r.groups.splice(Number(gi) || 0, 1); _sbRender(); _scheduleAutoSave();
+}
+function _sbGroupMatch(rid, gi, val) {
+    const r = _sbRule(rid); const g = r && r.groups && r.groups[Number(gi)];
+    if (!g) return; g.match = val === 'all' ? 'all' : 'any'; _scheduleAutoSave();
+}
+function _sbGroupCondAdd(rid, gi) {
+    const r = _sbRule(rid); const g = r && r.groups && r.groups[Number(gi)];
+    if (!g) return; g.conds = (g.conds || []).concat({ left: 'lives', op: '<=', right: 3 });
+    _sbRender(); _scheduleAutoSave();
+}
+function _sbGroupCondDel(rid, gi, ci) {
+    const r = _sbRule(rid); const g = r && r.groups && r.groups[Number(gi)];
+    if (!g || !g.conds) return; g.conds.splice(Number(ci) || 0, 1); _sbRender(); _scheduleAutoSave();
+}
+function _sbGroupCondSet(rid, gi, ci, field, val) {
+    const r = _sbRule(rid); const g = r && r.groups && r.groups[Number(gi)];
+    const c = g && g.conds && g.conds[Number(ci)]; if (!c) return;
+    const v = (val && typeof val === 'object') ? val.value : val;
+    c[field] = field === 'right' ? (parseInt(v, 10) || 0) : v;
+    _scheduleAutoSave();
+}
 function _sbActAdd(rid) { const r = _sbRule(rid); if (!r) return; r.actions = (r.actions || []).concat({ type: 'addScore', target: '', amount: 100 }); _sbRender(); _scheduleAutoSave(); }
 function _sbActDel(rid, idx) { const r = _sbRule(rid); if (!r) return; r.actions.splice(Number(idx) || 0, 1); _sbRender(); _scheduleAutoSave(); }
 function _sbActSet(rid, idx, field, val) {
     const r = _sbRule(rid); if (!r || !r.actions[idx]) return;
     const a = r.actions[idx];
     const v = (val && typeof val === 'object') ? val.value : val;
-    if (field === 'type') { a.type = v; if (a.type !== 'addVar') a.target = ''; }
+    if (field === 'type') { a.type = v; if (a.type !== 'addVar' && a.type !== 'setVar') a.target = ''; }
     else if (field === 'target') a.target = v;
-    else a.amount = parseInt(v, 10) || 0;
+    else a.amount = Math.round((parseFloat(v) || 0) * 100) / 100;
     _sbRender(); _scheduleAutoSave();
 }
 function _sbCondRow(rid, c, i) {
@@ -5201,9 +5268,29 @@ function _sbCondRow(rid, c, i) {
         '<input class="sb-num" type="number" value="' + (Number(c.right) || 0) + '" data-on="_sbCondSet" data-on-args="s:' + rid + '|s:' + i + '|s:right|this" data-on-event="change">' +
         '<button class="sb-x" data-on="_sbCondDel" data-on-args="s:' + rid + '|s:' + i + '" data-on-plain aria-label="Remove condition">✕</button></div>';
 }
+function _sbGroupCondRow(rid, gi, c, i) {
+    return '<div class="sb-row">' +
+        '<select class="sb-sel" data-on="_sbGroupCondSet" data-on-args="s:' + rid + '|s:' + gi + '|s:' + i + '|s:left|this" data-on-event="change">' + _sbVarOptions(c.left) + '</select>' +
+        '<select class="sb-sel" style="flex:0 0 54px;" data-on="_sbGroupCondSet" data-on-args="s:' + rid + '|s:' + gi + '|s:' + i + '|s:op|this" data-on-event="change">' +
+            _SB_OPS.map(o => '<option' + (o === c.op ? ' selected' : '') + '>' + o + '</option>').join('') + '</select>' +
+        '<input class="sb-num" type="number" value="' + (Number(c.right) || 0) + '" data-on="_sbGroupCondSet" data-on-args="s:' + rid + '|s:' + gi + '|s:' + i + '|s:right|this" data-on-event="change">' +
+        '<button class="sb-x" data-on="_sbGroupCondDel" data-on-args="s:' + rid + '|s:' + gi + '|s:' + i + '" data-on-plain aria-label="Remove group condition">✕</button></div>';
+}
+function _sbGroupBlock(rid, g, gi) {
+    return '<div class="sb-group" style="border:1px solid rgba(167,139,250,.28);border-radius:6px;padding:4px;margin-top:4px;background:rgba(124,58,237,.06);">' +
+        '<div class="sb-row" style="align-items:center;">' +
+        '<span class="sb-tag">GROUP</span>' +
+        '<select class="sb-sel" style="flex:0 0 64px;" data-on="_sbGroupMatch" data-on-args="s:' + rid + '|s:' + gi + '|value" data-on-event="change">' +
+        '<option value="all"' + (g.match === 'any' ? '' : ' selected') + '>ALL</option><option value="any"' + (g.match === 'any' ? ' selected' : '') + '>ANY</option></select>' +
+        '<span class="sb-tag">OF</span>' +
+        '<button class="sb-x" style="margin-left:auto;" data-on="_sbGroupDel" data-on-args="s:' + rid + '|s:' + gi + '" data-on-plain aria-label="Remove group">✕</button></div>' +
+        (g.conds || []).map((c, ci) => _sbGroupCondRow(rid, gi, c, ci)).join('') +
+        '<button class="sb-x" style="color:var(--cyan);font-size:.58rem;padding:2px 3px;" data-on="_sbGroupCondAdd" data-on-args="s:' + rid + '|s:' + gi + '" data-on-plain>+ condition</button>' +
+        '</div>';
+}
 function _sbActRow(rid, a, i) {
-    const needsTarget = a.type === 'addVar';
-    const needsAmount = ['addScore','addVar','addLife','spawnStar'].indexOf(a.type) !== -1;
+    const needsTarget = a.type === 'addVar' || a.type === 'setVar';
+    const needsAmount = ['addScore','addVar','setVar','addLife','spawnStar'].indexOf(a.type) !== -1;
     return '<div class="sb-row">' +
         '<select class="sb-sel" data-on="_sbActSet" data-on-args="s:' + rid + '|s:' + i + '|s:type|this" data-on-event="change">' +
             _SB_ACTIONS.map(x => '<option value="' + x[0] + '"' + (x[0] === a.type ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select>' +
@@ -5224,8 +5311,11 @@ function _sbRender() {
         '<button class="sb-x" data-on="_sbVarDel" data-on-arg="' + v.id + '" data-on-plain aria-label="Remove variable">✕</button></div>'
     ).join('') : '<div style="font-size:.6rem;color:var(--muted);">No variables yet.</div>';
     const rules = Array.isArray(liveConfig.customRules) ? liveConfig.customRules : [];
-    rulesEl.innerHTML = rules.length ? rules.map(r =>
-        '<div class="sb-rule">' +
+    rulesEl.innerHTML = rules.length ? rules.map(r => {
+        const rep = (r.repeat === undefined ? 1 : Number(r.repeat));
+        const repOpts = [['1','Once'],['2','Twice'],['3','3 times'],['5','5 times'],['-1','Endless']];
+        if (!repOpts.some(o => o[0] === String(rep))) repOpts.push([String(rep), String(rep) + ' times']);
+        return '<div class="sb-rule">' +
         '<div class="sb-head">' +
         '<input type="checkbox" ' + (r.enabled ? 'checked' : '') + ' data-on="_sbRuleField" data-on-args="s:' + r.id + '|s:enabled|checked" data-on-event="change">' +
         '<span class="sb-tag">WHEN</span>' +
@@ -5233,13 +5323,22 @@ function _sbRender() {
         '<option value="all"' + (r.match === 'any' ? '' : ' selected') + '>ALL</option><option value="any"' + (r.match === 'any' ? ' selected' : '') + '>ANY</option></select>' +
         '<span class="sb-tag">OF</span>' +
         '<button class="sb-x" style="margin-left:auto;" data-on="_sbRuleDel" data-on-arg="' + r.id + '" data-on-plain aria-label="Remove rule">✕</button></div>' +
+        '<div class="sb-row" style="flex-wrap:wrap;gap:4px;align-items:center;font-size:.55rem;color:var(--muted);">' +
+        '<span>Run</span>' +
+        '<select class="sb-sel" style="flex:0 0 82px;" data-on="_sbRuleField" data-on-args="s:' + r.id + '|s:repeat|value" data-on-event="change">' +
+        repOpts.map(o => '<option value="' + o[0] + '"' + (String(rep) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' +
+        '<span>cool</span><input class="sb-num" style="width:52px;" type="number" min="0" step="0.5" value="' + (Number(r.cooldown) || 0) + '" data-on="_sbRuleField" data-on-args="s:' + r.id + '|s:cooldown|this" data-on-event="change">' +
+        '<span>start after</span><input class="sb-num" style="width:52px;" type="number" min="0" step="0.5" value="' + (Number(r.after) || 0) + '" data-on="_sbRuleField" data-on-args="s:' + r.id + '|s:after|this" data-on-event="change">' +
+        '<span>s</span></div>' +
         (r.conds || []).map((c, i) => _sbCondRow(r.id, c, i)).join('') +
         '<button class="sb-x" style="color:var(--cyan);font-size:.58rem;padding:2px 3px;" data-on="_sbCondAdd" data-on-arg="' + r.id + '" data-on-plain>+ condition</button>' +
+        (r.groups || []).map((g, gi) => _sbGroupBlock(r.id, g, gi)).join('') +
+        '<button class="sb-x" style="color:var(--cyan);font-size:.58rem;padding:2px 3px;" data-on="_sbGroupAdd" data-on-arg="' + r.id + '" data-on-plain>+ AND/OR group</button>' +
         '<div class="sb-tag" style="margin-top:4px;">THEN</div>' +
         (r.actions || []).map((a, i) => _sbActRow(r.id, a, i)).join('') +
         '<button class="sb-x" style="color:var(--cyan);font-size:.58rem;padding:2px 3px;" data-on="_sbActAdd" data-on-arg="' + r.id + '" data-on-plain>+ action</button>' +
-        '</div>'
-    ).join('') : '<div style="font-size:.6rem;color:var(--muted);">No rules yet. Try: when Stars ≥ 1 then Add score 100.</div>';
+        '</div>';
+    }).join('') : '<div style="font-size:.6rem;color:var(--muted);">No rules yet. Try: when Stars ≥ 1 then Add score 100.</div>';
 }
 // A2171: save and continue a Custom Sandbox run.
 function _readSandboxCheckpoint() {
@@ -7126,10 +7225,12 @@ function _showWelcomeOverlay() {
 
     const overlay = document.getElementById('welcome-overlay');
     if (overlay) {
+        // A2175: show the starter picker as soon as the studio is ready. The old
+        // 800ms delay pushed the largest text paint past the school-device budget.
         setTimeout(() => {
             overlay.classList.add('show');
             try { localStorage.setItem('jv_arcade_visited', '1'); } catch (e) {}
-        }, 800);
+        }, 0);
     }
 }
 
@@ -7380,11 +7481,8 @@ function togglePause() {
 }
 
 function compileAndBootEngine() {
-    if (typeof Phaser === 'undefined') {
-        document.getElementById('engine-branding').textContent = '⚠️ Phaser failed to load, check connection & refresh';
-        showToast('⚠ Phaser engine not loaded, check your internet connection', 'error');
-        return;
-    }
+    // A2175: Phaser is deliberately not loaded this early. The intro screen only
+    // needs the config, and closeIntro() downloads the engine just before boot.
     // Guard against rapid re-fires (mashed Run/Restart button or held 'R' key)
     // racing the transition/boot sequence below. 700ms matches the title-screen
     // transition duration so a double-tap can't queue two boots.
@@ -7594,6 +7692,17 @@ function _launchPhaserGame() {
     }
 
     const _startGame = () => {
+        // A2175: Phaser is fetched on first Play, not on page load.
+        if (!window.Phaser || typeof window.Phaser.Game !== 'function') {
+            const _sp = document.getElementById('gameLoadingSpinner');
+            if (_sp) _sp.style.display = 'flex';
+            ensurePhaser().then(_startGame).catch(function(e) {
+                console.error('Phaser load failed', e);
+                if (_sp) _sp.style.display = 'none';
+                _gameError('Game engine failed to load', 'The game engine could not be downloaded. Check your connection and press Play again.', true);
+            });
+            return;
+        }
         try {
             _gameStartTime = Date.now();
             window._phaserGame = null;
@@ -7792,7 +7901,19 @@ function closeIntro() {
     document.getElementById('introOverlay').classList.remove('show');
     document.body.classList.remove('overlay-active');
     _updateLandscapeNudge(true);
-    _maybeStoryIntro(() => _maybeCutscene('before', () => _runCountdown(() => _launchPhaserGame())));
+    // A2175: download Phaser on Start, not on page load. Keep the spinner up
+    // while it arrives so the first run does not look frozen.
+    const _sp = document.getElementById('gameLoadingSpinner');
+    if (_sp) _sp.style.display = 'flex';
+    ensurePhaser().then(() => {
+        _maybeStoryIntro(() => _maybeCutscene('before', () => _runCountdown(() => _launchPhaserGame())));
+    }).catch((e) => {
+        console.error('Phaser load failed', e);
+        if (_sp) _sp.style.display = 'none';
+        const eb = document.getElementById('engine-branding');
+        if (eb) eb.textContent = '⚠️ Phaser failed to load, check connection & refresh';
+        showToast('⚠ Phaser engine not loaded, check your internet connection', 'error');
+    });
 }
 function _autoCloseIntro() {
     const ov = document.getElementById('introOverlay');
@@ -10333,7 +10454,45 @@ function sceneCustom(data) {
     };
 }
 
-// A2165: run the sandbox's ALL/ANY rules once per run, then check score/time wins.
+// A2173: sandbox rules v2 - repeat/cooldown, timed starts, set-variable and
+// nested ALL/ANY groups. Legacy rules (no repeat/groups) still fire once.
+function _sbCmpValue(a, op, b) {
+    switch (op) {
+        case '>=': return a >= b;
+        case '<=': return a <= b;
+        case '>':  return a > b;
+        case '<':  return a < b;
+        case '==': return a === b;
+        case '!=': return a !== b;
+        default:   return false;
+    }
+}
+function _sbReadRuleValue(key, scene, vars, elapsed) {
+    if (key === 'stars') return scene._collected || 0;
+    if (key === 'lives') return gameState.lives || 0;
+    if (key === 'time') return elapsed;
+    const v = vars.find(x => x.id === key);
+    return v ? (Number(v.value) || 0) : 0;
+}
+function _sbEvalCondList(conds, match, read) {
+    const list = Array.isArray(conds) ? conds : [];
+    if (!list.length) return false;
+    const results = list.map(c => _sbCmpValue(read(c.left), c.op, Number(c.right) || 0));
+    return match === 'any' ? results.some(Boolean) : results.every(Boolean);
+}
+function _sbEvalRule(r, read) {
+    const parts = [];
+    (r.conds || []).forEach(c => parts.push(_sbCmpValue(read(c.left), c.op, Number(c.right) || 0)));
+    (r.groups || []).forEach(g => parts.push(_sbEvalCondList(g.conds, g.match || 'any', read)));
+    if (!parts.length) return false;
+    return r.match === 'any' ? parts.some(Boolean) : parts.every(Boolean);
+}
+function _sbRuleMaxRuns(r) {
+    const n = Number(r.repeat);
+    if (n === -1) return -1;
+    if (!Number.isFinite(n) || n <= 0) return 1;
+    return Math.min(99, Math.round(n));
+}
 function _sbSpawnStar(scene) {
     if (!scene || !scene.stars || !scene.textures.exists('_custom_star')) return;
     const s = scene.stars.create(Phaser.Math.Between(28, GW - 28), Phaser.Math.Between(40, GH - 28), '_custom_star');
@@ -10341,59 +10500,60 @@ function _sbSpawnStar(scene) {
     s.body.setCircle(9, 0, 0);
     s.setDepth(2);
 }
+function _sbRunRuleActions(scene, r, vars) {
+    for (const a of (r.actions || [])) {
+        if (a.type === 'addScore') {
+            scene._addScore(Number(a.amount) || 0);
+        } else if (a.type === 'addVar') {
+            const v = vars.find(x => x.id === a.target);
+            if (v) v.value = (Number(v.value) || 0) + (Number(a.amount) || 0);
+        } else if (a.type === 'setVar') {
+            const v = vars.find(x => x.id === a.target);
+            if (v) v.value = Number(a.amount) || 0;
+        } else if (a.type === 'addLife') {
+            gameState.lives = Math.max(0, (gameState.lives || 0) + (Number(a.amount) || 0));
+            _updateHeartsDisplay(gameState.lives, liveConfig.lives);
+            if (gameState.lives <= 0) { scene._done = true; showGameOver(scene.score); return true; }
+        } else if (a.type === 'spawnStar') {
+            const n = Math.max(1, Number(a.amount) || 1);
+            for (let i = 0; i < n; i++) _sbSpawnStar(scene);
+        } else if (a.type === 'win') {
+            scene._done = true; showVictory(scene.score); return true;
+        } else if (a.type === 'lose') {
+            scene._done = true; showGameOver(scene.score); return true;
+        }
+    }
+    return false;
+}
 function _sbRulesTick(scene) {
     if (!scene || scene._done) return;
     const rules = Array.isArray(liveConfig.customRules) ? liveConfig.customRules : [];
     if (!rules.length) return;
+    if (!scene._ruleState) scene._ruleState = Object.create(null);
     if (!scene._ruleFired) scene._ruleFired = new Set();
     const vars = Array.isArray(liveConfig.customVars) ? liveConfig.customVars : [];
-    const elapsed = Math.floor((Date.now() - (_gameStartTime || Date.now())) / 1000);
-    const read = (key) => {
-        if (key === 'stars') return scene._collected || 0;
-        if (key === 'lives') return gameState.lives || 0;
-        if (key === 'time') return elapsed;
-        const v = vars.find(x => x.id === key);
-        return v ? (Number(v.value) || 0) : 0;
-    };
+    const now = Date.now();
+    const started = _gameStartTime || now;
+    const elapsedMs = now - started;
+    const elapsed = Math.floor(elapsedMs / 1000);
+    const read = key => _sbReadRuleValue(key, scene, vars, elapsed);
     for (const r of rules) {
-        if (!r || !r.enabled || scene._ruleFired.has(r.id)) continue;
-        const conds = Array.isArray(r.conds) ? r.conds : [];
-        if (!conds.length) continue;
-        const results = conds.map(c => {
-            const a = read(c.left), b = Number(c.right) || 0;
-            switch (c.op) {
-                case '>=': return a >= b;
-                case '<=': return a <= b;
-                case '>':  return a > b;
-                case '<':  return a < b;
-                case '==': return a === b;
-                case '!=': return a !== b;
-                default:   return false;
-            }
-        });
-        const ok = r.match === 'any' ? results.some(Boolean) : results.every(Boolean);
-        if (!ok) continue;
+        if (!r || !r.enabled) continue;
+        if (!scene._ruleState[r.id]) scene._ruleState[r.id] = { count: 0, lastAt: 0 };
+        const st = scene._ruleState[r.id];
+        const max = _sbRuleMaxRuns(r);
+        if (max > 0 && st.count >= max) continue;
+        if (elapsedMs < Math.max(0, Number(r.after) || 0) * 1000) continue;
+        const cd = Math.max(0, Number(r.cooldown) || 0);
+        // A repeating rule with no cooldown still gets a small floor so it
+        // cannot fire on every frame and melt the game.
+        const cdMs = (max === -1 || max > 1) ? Math.max(250, cd * 1000) : cd * 1000;
+        if (st.count > 0 && now - st.lastAt < cdMs) continue;
+        if (!_sbEvalRule(r, read)) continue;
+        st.count++;
+        st.lastAt = now;
         scene._ruleFired.add(r.id);
-        for (const a of (r.actions || [])) {
-            if (a.type === 'addScore') {
-                scene._addScore(Number(a.amount) || 0);
-            } else if (a.type === 'addVar') {
-                const v = vars.find(x => x.id === a.target);
-                if (v) v.value = (Number(v.value) || 0) + (Number(a.amount) || 0);
-            } else if (a.type === 'addLife') {
-                gameState.lives = Math.max(0, (gameState.lives || 0) + (Number(a.amount) || 0));
-                _updateHeartsDisplay(gameState.lives, liveConfig.lives);
-                if (gameState.lives <= 0) { scene._done = true; showGameOver(scene.score); break; }
-            } else if (a.type === 'spawnStar') {
-                const n = Math.max(1, Number(a.amount) || 1);
-                for (let i = 0; i < n; i++) _sbSpawnStar(scene);
-            } else if (a.type === 'win') {
-                scene._done = true; showVictory(scene.score); break;
-            } else if (a.type === 'lose') {
-                scene._done = true; showGameOver(scene.score); break;
-            }
-        }
-        if (scene._done) return;
+        if (_sbRunRuleActions(scene, r, vars)) return;
         scene._hud();
     }
 }
@@ -17604,9 +17764,7 @@ window.addEventListener('DOMContentLoaded',function(){
     // the fallback when this browser cannot compress/decompress.
     let _usedCompression = false;
     try {
-        const localPhaserUrl = Array.from(document.querySelectorAll('script[src]'))
-            .map(s => s.src)
-            .find(src => src && src.includes('phaser'));
+        const localPhaserUrl = _phaserSrcUrl();
         if (localPhaserUrl && typeof CompressionStream === 'function' && typeof DecompressionStream === 'function') {
             const resp = await fetch(localPhaserUrl);
             if (resp.ok) {
@@ -17650,13 +17808,12 @@ window.__playerReady=(async function(){await load(await inflate(P));await load(a
                 if (resp.ok) {
                     const phaserSrc = await resp.text();
                     // Find the <script src="...phaser..."> tag in the clone and swap it for an inline block
+                    const inlinePhaser = document.createElement('script');
+                    inlinePhaser.textContent = phaserSrc;
                     const phaserScript = Array.from(root.querySelectorAll('script[src]'))
                         .find(s => s.src && s.src.includes('phaser'));
-                    if (phaserScript) {
-                        const inlinePhaser = document.createElement('script');
-                        inlinePhaser.textContent = phaserSrc;
-                        phaserScript.parentNode.replaceChild(inlinePhaser, phaserScript);
-                    }
+                    if (phaserScript) phaserScript.parentNode.replaceChild(inlinePhaser, phaserScript);
+                    else root.querySelector('head').appendChild(inlinePhaser);
                 }
             }
         } catch(e) {
