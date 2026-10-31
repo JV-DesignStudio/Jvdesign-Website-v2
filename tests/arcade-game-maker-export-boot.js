@@ -46,6 +46,9 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   await maker.setViewport({width:1280,height:900});
   await maker.goto(BASE+'tools/arcade-game-maker.html', {waitUntil:'domcontentloaded'});
   await maker.waitForSelector('#runGameBtn', {timeout:15000});
+  // The classic runtime is one large inline script; wait until it has defined
+  // the export builder rather than assuming a fixed delay (A2140).
+  await maker.waitForFunction(() => typeof window._buildExportHtml === 'function', {timeout:15000});
   await new Promise(r=>setTimeout(r,400));
   exportHtml = await maker.evaluate(async ()=>{
     _engineData = { title:'Export Boot Test', genre:'SHOOTER', speed:200, gravity:600, jump:450, map:null };
@@ -54,6 +57,37 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   });
   await maker.close();
   check('export builder produced HTML', exportHtml.length > 1000, 'len=' + exportHtml.length);
+
+  // A2159: the single-file export inlines Phaser (~1 MB) plus the whole engine
+  // script (~1.1 MB), so ~2.2 MB is the current floor. Keep a deliberate hard
+  // ceiling with headroom above today's ~2.4 MB; warn earlier. The real fix is
+  // the player-only runtime (tracked on the board), not shaving markup.
+  const SOFT_CEILING = 2_600_000;
+  const HARD_CEILING = 2_800_000;
+  const kb = n => Math.round(n / 1024) + 'KB';
+  const scripts = [...exportHtml.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+    .map(m => ({ len: m[1].length, text: m[1] }));
+  // Phaser is a UMD bundle with no literal "Phaser" identifier in its head, so
+  // identify it as the largest inline script and the engine by its scene helpers.
+  const phaserScript = scripts.slice().sort((a, b) => b.len - a.len)[0];
+  const engineScript = scripts.find(s => /function makeBaseScene/.test(s.text));
+  const cssBytes = [...exportHtml.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/g)]
+    .reduce((n, m) => n + m[1].length, 0);
+  const scriptBytes = scripts.reduce((n, s) => n + s.len, 0);
+  const markupBytes = Math.max(0, exportHtml.length - scriptBytes - cssBytes);
+  console.log('  [info] export breakdown: total ' + kb(exportHtml.length) +
+    ', Phaser ' + kb(phaserScript ? phaserScript.len : 0) +
+    ', engine ' + kb(engineScript ? engineScript.len : 0) +
+    ', CSS ' + kb(cssBytes) + ', markup ' + kb(markupBytes));
+
+  check('export inlines Phaser and the game engine', !!phaserScript && !!engineScript &&
+    phaserScript.len > 500000 && engineScript.len > 500000);
+  check('export is under the hard size ceiling', exportHtml.length < HARD_CEILING,
+    kb(exportHtml.length) + ' / ' + kb(HARD_CEILING));
+  if (exportHtml.length >= SOFT_CEILING) {
+    console.log('  [warn] export is ' + kb(exportHtml.length) + ', within ' + kb(HARD_CEILING - SOFT_CEILING) +
+      ' of the hard ceiling. Next feature should start the player-only runtime.');
+  }
 
   // Static checks on the packed file.
   check('export keeps no relative local script src', !/<script[^>]*\bsrc=["'](?:\.\.?\/|\/(?!\/))/i.test(exportHtml));
