@@ -58,35 +58,34 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   await maker.close();
   check('export builder produced HTML', exportHtml.length > 1000, 'len=' + exportHtml.length);
 
-  // A2159: the single-file export inlines Phaser (~1 MB) plus the whole engine
-  // script (~1.1 MB), so ~2.2 MB is the current floor. Keep a deliberate hard
-  // ceiling with headroom above today's ~2.4 MB; warn earlier. The real fix is
-  // the player-only runtime (tracked on the board), not shaving markup.
-  const SOFT_CEILING = 2_600_000;
-  const HARD_CEILING = 2_800_000;
+  // A2163: the player payload is gzipped + base64 (Phaser and the engine script)
+  // and inflated into Blob scripts at boot. The export should now be about half
+  // its old size, with the raw engine no longer present in the HTML.
+  const SOFT_CEILING = 1_400_000;
+  const HARD_CEILING = 1_500_000;
   const kb = n => Math.round(n / 1024) + 'KB';
   const scripts = [...exportHtml.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
     .map(m => ({ len: m[1].length, text: m[1] }));
-  // Phaser is a UMD bundle with no literal "Phaser" identifier in its head, so
-  // identify it as the largest inline script and the engine by its scene helpers.
-  const phaserScript = scripts.slice().sort((a, b) => b.len - a.len)[0];
-  const engineScript = scripts.find(s => /function makeBaseScene/.test(s.text));
+  const payload = exportHtml.match(/var P="([^"]+)",E="([^"]+)"/);
+  const phaserB64 = payload ? payload[1].length : 0;
+  const engineB64 = payload ? payload[2].length : 0;
   const cssBytes = [...exportHtml.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/g)]
     .reduce((n, m) => n + m[1].length, 0);
   const scriptBytes = scripts.reduce((n, s) => n + s.len, 0);
   const markupBytes = Math.max(0, exportHtml.length - scriptBytes - cssBytes);
   console.log('  [info] export breakdown: total ' + kb(exportHtml.length) +
-    ', Phaser ' + kb(phaserScript ? phaserScript.len : 0) +
-    ', engine ' + kb(engineScript ? engineScript.len : 0) +
+    ', Phaser gzip-base64 ' + kb(phaserB64) +
+    ', engine gzip-base64 ' + kb(engineB64) +
     ', CSS ' + kb(cssBytes) + ', markup ' + kb(markupBytes));
 
-  check('export inlines Phaser and the game engine', !!phaserScript && !!engineScript &&
-    phaserScript.len > 500000 && engineScript.len > 500000);
-  check('export is under the hard size ceiling', exportHtml.length < HARD_CEILING,
+  check('export uses the compressed player payload', !!payload &&
+    /DecompressionStream\('gzip'\)/.test(exportHtml) && phaserB64 > 100000 && engineB64 > 100000,
+    phaserB64 + ' / ' + engineB64);
+  check('raw engine script is not shipped in the export', !/function makeBaseScene/.test(exportHtml));
+  check('export is under the 1.5 MB player ceiling', exportHtml.length < HARD_CEILING,
     kb(exportHtml.length) + ' / ' + kb(HARD_CEILING));
   if (exportHtml.length >= SOFT_CEILING) {
-    console.log('  [warn] export is ' + kb(exportHtml.length) + ', within ' + kb(HARD_CEILING - SOFT_CEILING) +
-      ' of the hard ceiling. Next feature should start the player-only runtime.');
+    console.log('  [warn] export is ' + kb(exportHtml.length) + ', close to the 1.5 MB ceiling.');
   }
 
   // Static checks on the packed file.
@@ -128,7 +127,10 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
       errShown: !!(errOv && errOv.style.display !== 'none' && getComputedStyle(errOv).display !== 'none'),
       handlers: document.querySelectorAll('[onclick],[oninput],[onchange],[onerror],[onload],[onsubmit],[onkeydown],[onfocus]').length,
       stylesheets: document.querySelectorAll('link[rel="stylesheet"]').length,
-      chrome: document.querySelectorAll('#cookie-banner,#jvds-feedback-widget,#emberGuideOverlay,#jvds-keepsake-strip,[data-ember-floating]').length
+      chrome: document.querySelectorAll('#cookie-banner,#jvds-feedback-widget,#emberGuideOverlay,#jvds-keepsake-strip,[data-ember-floating]').length,
+      studioPanels: document.querySelectorAll('.studio-panel,#tab-build,#tab-code').length,
+      tabButtons: document.querySelectorAll('.tab-btn').length,
+      minimalForm: !!document.getElementById('studioPanel') && document.getElementById('studioPanel').style.display === 'none'
     };
   });
 
@@ -140,6 +142,9 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   check('exported DOM has no inline event handlers', r.handlers === 0, 'found ' + r.handlers);
   check('exported DOM has no stylesheet links (all inlined)', r.stylesheets === 0, 'found ' + r.stylesheets);
   check('exported DOM has no leftover site chrome', r.chrome === 0, 'found ' + r.chrome);
+  check('exported DOM has no studio panel or editor tabs', r.studioPanels === 0 && r.tabButtons === 0,
+    'panels=' + r.studioPanels + ' tabs=' + r.tabButtons);
+  check('exported runtime keeps a hidden minimal form', r.minimalForm === true);
   check('no CSP console errors in the exported game', cspErrors.length === 0, cspErrors.slice(0,2).join(' | '));
   check('no uncaught JS errors in the exported game', jsErrors.length === 0, jsErrors.slice(0,2).join(' | '));
   check('no remote request attempted (fully offline)', remote.length === 0, remote.slice(0,3).join(' | '));
