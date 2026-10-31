@@ -335,8 +335,15 @@ function generate({ checkOnly = false } = {}) {
   const results = [];
   for (const engine of config.engines) {
     const file = path.join(OUTDIR, 'engine-' + engine.id + '.html');
-    const want = renderPage(engine, byId);
+    let want = renderPage(engine, byId);
     const have = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+    // A2030: the engine hub is generated, so a stamped "Debug It" task would be
+    // lost on the next build. Carry the existing block across regeneration; the
+    // apply script owns its content.
+    const debugBlock = have && have.match(/<!-- WS-DEBUG:START -->[\s\S]*?<!-- WS-DEBUG:END -->/);
+    if (debugBlock && !want.includes('<!-- WS-DEBUG:START -->')) {
+      want = want.replace(/<\/main>/, '\n\n' + debugBlock[0] + '\n</main>');
+    }
     const changed = have !== want;
     if (changed && !checkOnly) fs.writeFileSync(file, want);
     results.push({ file: path.relative(ROOT, file).split(path.sep).join('/'), changed });

@@ -15,6 +15,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DATA = path.join(ROOT, 'content', 'workshops.json');
+const OUTCOMES = path.join(ROOT, 'content', 'workshop-outcomes.json');
 const ENGINE_HUBS = path.join(ROOT, 'content', 'engine-hubs.json');
 const HUB = path.join(ROOT, 'pages', 'workshop.html');
 const START = '<!-- CATALOGUE:START -->';
@@ -54,11 +55,24 @@ const ENGINE_META = {
   'General': { emoji: '🧭', color: '#70A3A7' }
 };
 
-function card(e) {
+function loadOutcomes() {
+  try {
+    const list = JSON.parse(fs.readFileSync(OUTCOMES, 'utf8'));
+    return new Map(list.map((o) => [o.id, o]));
+  } catch {
+    return new Map();
+  }
+}
+
+function card(e, outcomes) {
   const href = '../' + String(e.url).replace(/^\//, '');
   const isStudio = /-(?:mod-)?studio$/.test(e.id || '');
   const badge = (isStudio ? '🛠 Browser studio · ' : '') + [e.engine, cap(e.difficulty), 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
   const desc = e.desc || ('Interactive build-along for ' + e.title + '.');
+  const outcome = outcomes.get(e.id);
+  const outcomeLine = outcome
+    ? '        <div class="course-outcome"><strong>Finish with</strong> ' + esc(outcome.finish) + '. <strong>Extend it by</strong> ' + esc(outcome.extend) + '.</div>\n'
+    : '';
   return '    <a href="' + esc(href) + '" class="course-card"'
     + ' data-engine="' + esc(e.engine) + '"'
     + ' data-difficulty="' + esc(e.difficulty) + '"'
@@ -69,11 +83,12 @@ function card(e) {
     + '        <div class="course-tag">' + esc(badge) + '</div>\n'
     + '        <div class="course-title">' + esc(e.title) + '</div>\n'
     + '        <div class="course-desc">' + esc(desc) + '</div>\n'
+    + outcomeLine
     + '      </div>\n'
     + '    </a>';
 }
 
-function section(entries) {
+function section(entries, outcomes) {
   return '<section class="courses-section" id="catalogue" data-format="courses">\n'
     + '  <div class="ws-section-head reveal">\n'
     + '    <span class="ws-section-icon">📖</span>\n'
@@ -84,7 +99,7 @@ function section(entries) {
     + '    <span class="ws-section-count">' + entries.length + ' Workshops</span>\n'
     + '  </div>\n'
     + '  <div class="courses-grid" id="catalogueGrid">\n'
-    + entries.map(card).join('\n')
+    + entries.map((e) => card(e, outcomes)).join('\n')
     + '\n  </div>\n'
     + '</section>';
 }
@@ -144,12 +159,13 @@ function splice(html, startMarker, endMarker, want) {
 
 function generate({ checkOnly = false } = {}) {
   const entries = JSON.parse(fs.readFileSync(DATA, 'utf8'));
+  const outcomes = loadOutcomes();
   let html = fs.readFileSync(HUB, 'utf8');
   let changed = false;
 
   const blocks = [
     [BROWSE_START, BROWSE_END, BROWSE_START + '\n' + browse(entries) + '\n' + BROWSE_END],
-    [START, END, START + '\n' + section(entries) + '\n' + END]
+    [START, END, START + '\n' + section(entries, outcomes) + '\n' + END]
   ];
 
   for (const [s, e, want] of blocks) {

@@ -14,6 +14,7 @@ try{ require('./lib/build-lock').acquire('check:drift'); }
 catch(e){ console.error('\n  '+e.message+'\n'); process.exit(3); }
 const GENERATED=[
   'content/workshops.json',
+  'content/workshop-outcomes.json',
   'content/games.json',
   'content/tools.json',
   'content/books.json',
@@ -102,6 +103,7 @@ if(!isQuick){
   const before=snapshot();
   try{
     sh('node scripts/generate-content-data.js');
+    sh('node scripts/build-workshop-outcomes.js');
     sh('node scripts/build-content-data.js');
     sh('node generate-search-index.js');
     sh('node generate-sitemap.js');

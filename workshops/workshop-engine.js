@@ -430,6 +430,9 @@ function workshopShare() {
 function addNextRecommendation() {
   var banner = document.getElementById('finishBanner');
   if (!banner || banner.querySelector('.finish-recommend')) return;
+  /* A2037: the stamped finish block already names the next workshop, so do not
+     add a second recommendation beside it. */
+  if (banner.querySelector('.ws-finish-next')) return;
   var links = document.querySelectorAll('a.next-ep-btn');
   if (links.length > 0) return;
   var path = location.pathname;
