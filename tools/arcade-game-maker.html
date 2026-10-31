@@ -82,7 +82,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-+qRXWM1m3QJwOkhNlrjNxgvn6cb8feeSLa4xnU8JBh4=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-uXHlckkmf+ApFy8mh1WZPtOKa5BSCjwFsa3ND9joC/k=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-BZpp3XRJe/SoEKKtW+bbIWMN2+dy8oYlDuEa4OhL45w=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-uXHlckkmf+ApFy8mh1WZPtOKa5BSCjwFsa3ND9joC/k=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -6654,7 +6654,7 @@ const _GENRE_WIN = {
   PONG:         { c:'intrinsic', note:'Win the set' },
   SNAKE:        { c:'score', target:250 },
   ASTEROIDS:    { c:'score', target:2000 },
-  ROGUELIKE:    { c:'score', target:1000 },
+  ROGUELIKE:    { c:'intrinsic', note:'Clear every floor and beat the final boss' },
   RACING:       { c:'time',  target:60 },
   HOPPER:       { c:'score', target:1500 },
   BEAT:         { c:'intrinsic', note:'Win best of 3 rounds' },
@@ -7664,8 +7664,11 @@ function _launchPhaserGame() {
                             _setPhysicsSpeed(s, spd);
                             if (s.time) s.time.timeScale = spd;
                         }
-                        // Win condition check
-                        if (!s._winTriggered && liveConfig.winCondition !== 'none') {
+                        // Win condition check. The roguelike runs its own
+                        // floor/boss victory, so a saved score/time target must
+                        // not end a dungeon run on a room clear (A2179).
+                        const _intrinsicScene = s.scene && s.scene.key === 'RoguelikeScene';
+                        if (!s._winTriggered && liveConfig.winCondition !== 'none' && !_intrinsicScene) {
                             const score = s.score !== undefined ? s.score : (s.pScore || 0);
                             if (liveConfig.winCondition === 'score' && score >= liveConfig.winTarget) {
                                 s._winTriggered = true;
@@ -8819,6 +8822,10 @@ function _scorePopup(scene, pts, anchor) {
 
 function _sceneCheckWin(scene, score) {
     if (scene._winTriggered) return;
+    // The roguelike runs its own floor and boss route and calls showVictory when
+    // the final boss falls. A saved score/time target from an older project must
+    // not cut a dungeon run short the moment a room is cleared (A2179).
+    if (scene && scene.scene && scene.scene.key === 'RoguelikeScene') return;
     const wc = liveConfig.winCondition;
     if (wc === 'none') return;
     if (wc === 'score' && score >= liveConfig.winTarget) {
@@ -9711,9 +9718,14 @@ function _ppUpdateOrbitals(scene, delta) {
 /* ── Per-frame driver, called from _sceneTickBase ───────────────────────── */
 function _ppTick(scene, score) {
     if (!liveConfig.perksEnabled) return;
+    const genre = (_engineData && _engineData.genre) || '';
     // The very first choice happens before the player has scored anything, so
     // that even a 20-second run has a build decision in it.
     if (!RunMods._loadoutDone && !_ppOpen && !window._selftestActive) {
+        // The roguelike already builds the run room by room (weapon upgrades and
+        // chests), and a draft over the first frame buries the first room. Wait
+        // until the learner has cleared it and moved on (A2179).
+        if (genre === 'ROGUELIKE' && !(scene && scene._room > 0)) return;
         RunMods._loadoutDone = true;
         _ppOfferPicks(scene, { loadout: true });
         return;

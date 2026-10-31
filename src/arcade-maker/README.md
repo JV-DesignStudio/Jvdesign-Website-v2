@@ -154,3 +154,6 @@ it to regenerate modules; edit the module files directly.
   score, lives, remaining stars/chasers, goal, player position, elapsed time and variables.
 - **A2172**: exported Custom Sandbox test, and a `v:1` schema marker on project saves,
   share payloads and the export config.
+- **A2179**: the roguelike win is intrinsic (the dungeon's final boss), so a saved
+  score/time target cannot end a run on a room clear, and the Power Picks loadout
+  waits until the first room is cleared.
