@@ -20,12 +20,21 @@ Never make `jvdesignstudio.co.uk` depend on `npx vite build`.
 |---|---|---|
 | `liveConfig.js` | `liveConfig` (default too), `gameState`, `touchInput`, `gameTheme`, `themeInt`, `themeHex`, `_themeData`, `_lcDefaults`, `_clearTouchInput` | All tunable game config, run state, theme data and Tower Defence defaults |
 | `GameAudio.js` | `GameAudio` (default too) | Web Audio SFX synthesis, music, custom buffers |
-| `genres.js` | `GENRE_LIST`, `GENRE_DESCS`, `GENRE_ICONS`, `GENRE_LABELS` | The 22-genre roster plus description/icon/label maps |
+| `genres.js` | `GENRE_LIST`, `GENRE_DESCS`, `GENRE_ICONS`, `GENRE_LABELS`, `GENRE_RECOMMENDED` | The 23-genre roster, the six "start here" genres, and the description/icon/label maps |
 | `achievements.js` | `ACH_TOAST` | Achievement toast labels |
 
 `GENRE_LIST` is the single roster. The `#genreMode` select, the picker grid and every
 `for (const g of …)` loop should agree with it. `tests/arcade-game-maker-all-genres.js`
 reads the select at runtime, so adding a genre to the maker automatically gets it tested.
+
+`GENRE_RECOMMENDED` (A2140) is the six genres the Build tab shows first. They must stay
+in `GENRE_LIST` and be marked `READY`; `tests/arcade-game-maker-genre-data.js` guards
+both. Everything else opens from "Show all 23 genres", so a newcomer meets a small,
+confident choice rather than the whole roster at once.
+
+`CUSTOM` (A2157) is the Custom Sandbox: a blank top-down arena with a star target,
+chasing enemies and enemy speed. It is the first make-your-own-mechanic genre; its
+scene is `sceneCustom` in the maker, not a module, because it shares the same globals.
 
 ## How the HTML consumes them
 
@@ -75,6 +84,11 @@ clean names and the bootstrap publishes both, so neither naming style breaks.
 npm run test:arcade          # core smoke: page loads, 3 genres boot, patches present
 npm run test:arcade-all      # every genre in #genreMode boots Phaser with no JS errors
 npm run test:arcade-modules  # single source of truth: no inline duplicates; modules load
+npm run test:arcade-onboarding  # one first-run flow; no welcome + tour stack
+npm run test:arcade-genre-data  # every genre has label/icon/desc/hook; picker matches
+npm run test:arcade-audit-fixes # progressive Build tab, buttons, checklist, code copy
+npm run test:arcade-export-fidelity # exported game keeps code, achs, cuts, boss, entities
+npm run test:arcade-custom # Custom Sandbox settings, star win, chaser hit
 npm run validate:links
 ```
 
@@ -101,6 +115,13 @@ it to regenerate modules; edit the module files directly.
 - Keep the `liveConfig._base` accessor trick (`speed` / `fireCooldown` fold in RunMods
   multipliers) until every call site uses the getters.
 - There is no `www/` or `sync-maker.mjs` in this repo; those live in `jvds-game-maker-app`.
+- **Export size (A2163/A2168):** the player payload gzips Phaser and the engine
+  script and inflates them into Blob scripts. The studio panel is replaced with a
+  hidden minimal form and maker-only mascot/guide CSS is dropped, so a download is
+  ~1.0 MB (359 KB + 356 KB base64 payloads, 203 KB CSS, 43 KB markup). The raw
+  inline fallback is ~2.4 MB. `tests/arcade-game-maker-export-boot.js` prints the
+  breakdown and enforces 1.5 MB. The payload still carries the engine code, so the
+  tree-shaken player-only runtime (A2160) remains the next size win.
 
 ## History
 
@@ -113,3 +134,17 @@ it to regenerate modules; edit the module files directly.
 - **A763**: extracted `genres.js` and `achievements.js`; deduplicated `ACH_LABELS` and the
   title-screen maps.
 - **A761**: this contract document.
+- **A2140**: one first-run flow, six recommended genres by default, real button cards,
+  honest describe-your-game copy, visible `onUpdate` errors, slimmer export, genre-data
+  guard, Echo's prototype checklist.
+- **A2154**: export and project-JSON round-trip now keep user code, custom achievements,
+  cutscenes, boss phases and placed level entities; exported eval is allowed only when
+  the project has custom code.
+- **A2157**: added the Custom Sandbox genre: star target, chasing enemies, enemy speed,
+  imported art and placed entities, with its own scene and test.
+- **A2163**: exported players gzip Phaser and the engine script into Blob scripts, cutting
+  a download from ~2.4 MB to ~1.1 MB while keeping the full offline game.
+- **A2165**: Custom Sandbox v2: collect/score/time win modes, gold stars and fast chasers
+  every third, user variables, and ALL/ANY rules with multiple actions.
+- **A2168**: player-only export shell: the studio panel becomes a hidden minimal form,
+  studio init is skipped in export mode, and maker-only CSS is dropped.

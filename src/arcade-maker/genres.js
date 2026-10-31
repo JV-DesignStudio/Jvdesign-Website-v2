@@ -10,7 +10,7 @@ const GENRE_LIST = [
   'SHOOTER', 'PLATFORMER', 'DODGE', 'BREAKER', 'RUNNER', 'FLAPPY', 'INVADERS',
   'PONG', 'SNAKE', 'ASTEROIDS', 'ROGUELIKE', 'RACING', 'HOPPER', 'BEAT',
   'PUZZLE', 'RHYTHM', 'DEFENSE', 'PINBALL', 'CLICKER', 'MEMORY', 'WAVESURVIVAL',
-  'PAPERTOSS',
+  'PAPERTOSS', 'CUSTOM',
 ];
 
 const GENRE_DESCS = {
@@ -36,6 +36,7 @@ const GENRE_DESCS = {
   MEMORY:       'Flip cards and find matching pairs before time runs out.',
   WAVESURVIVAL: 'Survive endless waves of enemies, how long can you last?',
   PAPERTOSS:    'Toss paper balls into the bin, watch the wind, score big!',
+  CUSTOM:       'A blank arena. Collect stars, dodge chasers, invent the rest.',
 };
 
 const GENRE_ICONS = {
@@ -43,7 +44,7 @@ const GENRE_ICONS = {
   FLAPPY: '🐦', INVADERS: '👾', PONG: '🏓', SNAKE: '🐍', ASTEROIDS: '☄️',
   ROGUELIKE: '⚔️', RACING: '🏎️', HOPPER: '🐸', BEAT: '🥊', PUZZLE: '🧩',
   RHYTHM: '🎵', DEFENSE: '🗼', PINBALL: '🔮', CLICKER: '👆', MEMORY: '🃏',
-  WAVESURVIVAL: '🌊', PAPERTOSS: '🏀',
+  WAVESURVIVAL: '🌊', PAPERTOSS: '🏀', CUSTOM: '🧪',
 };
 
 const GENRE_LABELS = {
@@ -53,8 +54,13 @@ const GENRE_LABELS = {
   ROGUELIKE: 'Roguelike Dungeon', RACING: 'Top-Down Racing', HOPPER: 'Endless Hopper',
   BEAT: '1v1 Fighter', PUZZLE: 'Puzzle', RHYTHM: 'Rhythm', DEFENSE: 'Tower Defense',
   PINBALL: 'Pinball', CLICKER: 'Idle Clicker', MEMORY: 'Card Memory',
-  WAVESURVIVAL: 'Wave Survival',
+  WAVESURVIVAL: 'Wave Survival', PAPERTOSS: 'Paper Toss',
+  CUSTOM: 'Custom Sandbox',
 };
+
+// Six finished genres that span different play styles. The maker shows these
+// first so a newcomer meets a small, confident choice instead of all 22 at once.
+const GENRE_RECOMMENDED = ['SHOOTER', 'PLATFORMER', 'RUNNER', 'BREAKER', 'SNAKE', 'RACING'];
 
 // Quality guidance for the maker picker (A1473). READY = finished and a good
 // first pick, BETA = playable but still being improved, EXPERIMENT = an early
@@ -67,7 +73,7 @@ const GENRE_QUALITY = {
   ROGUELIKE:'READY', BREAKER:'READY', RACING:'READY', HOPPER:'READY',
   BEAT:'READY', PUZZLE:'READY', RHYTHM:'READY', DEFENSE:'READY',
   PINBALL:'READY', WAVESURVIVAL:'BETA', DODGE:'BETA', MEMORY:'BETA',
-  CLICKER:'BETA', PAPERTOSS:'EXPERIMENT',
+  CLICKER:'BETA', PAPERTOSS:'EXPERIMENT', CUSTOM:'BETA',
 };
 const GENRE_QUALITY_LABELS = {
   READY:      'Finished, a good first pick',
@@ -102,10 +108,11 @@ const GENRE_HOOKS = {
   MEMORY:       'Flip cards and match pairs against a timer',
   WAVESURVIVAL: 'Survive escalating waves and boss rounds',
   PAPERTOSS:    'Flick shots with wind and physics',
+  CUSTOM:       'Blank arena with your own star target and chasing enemies',
 };
 const GENRE_VARIANT_OF = {
   WAVESURVIVAL: 'SHOOTER',  // wave-based take on the top-down shooter
   DODGE:        'RUNNER',   // avoidance loop without the auto-run
 };
 
-export { GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS, GENRE_QUALITY, GENRE_QUALITY_LABELS, GENRE_HOOKS, GENRE_VARIANT_OF };
+export { GENRE_LIST, GENRE_DESCS, GENRE_ICONS, GENRE_LABELS, GENRE_QUALITY, GENRE_QUALITY_LABELS, GENRE_HOOKS, GENRE_VARIANT_OF, GENRE_RECOMMENDED };

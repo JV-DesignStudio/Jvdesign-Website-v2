@@ -37,6 +37,11 @@ const liveConfig = {
     maxEnemies:12, bossWaves:true,
     // Platformer options
     wallJump:false, platformerEnemyCount:4,
+    // Custom Sandbox options (A2157/A2165)
+    customStarTarget:8, customEnemyCount:4, customEnemySpeed:70,
+    customWinMode:'collect', customWinValue:0,
+    customGoldStars:false, customFastEnemies:false,
+    customVars:[], customRules:[],
     // Breaker options
     brickRows:4,
     // Invaders options

@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v41 - engine: Custom Sandbox modules and the
+// player-only export changed cache-first JS/CSS, so bump the cache.
 // JVDesignStudio Service Worker v40 - A2012: refresh the floating tool helpers so
 // they step aside from mobile bottom toolbars instead of covering export.
 // JVDesignStudio Service Worker v39 - A1998: refresh creation-share.js so the
@@ -18,7 +20,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v40';
+const CACHE='jvds-v41';
 const CORE=[
   '/',
   '/offline.html',

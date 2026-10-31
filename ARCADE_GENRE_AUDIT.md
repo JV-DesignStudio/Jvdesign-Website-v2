@@ -1,6 +1,6 @@
 # Arcade Game Maker genre audit (A1469)
 
-Most of the maker's 22 genres run on the shared `makeBaseScene` in
+Most of the maker's 23 genres run on the shared `makeBaseScene` in
 `tools/arcade-game-maker.html`. Sharing the base is fine, but a learner should
 know which genres genuinely play differently and which are a deliberate
 variation of another. This audit records, per genre, the mechanic that makes it
@@ -14,7 +14,7 @@ guards it.
 ## Shared base or its own scene
 
 - **Own scene** (fully separate gameplay): RACING, HOPPER, BEAT, PUZZLE, RHYTHM,
-  DEFENSE, PINBALL.
+  DEFENSE, PINBALL, CUSTOM.
 - **Shared base** (same top-down infrastructure, distinct rules on top):
   SHOOTER, PLATFORMER, DODGE, BREAKER, RUNNER, FLAPPY, INVADERS, PONG, SNAKE,
   ASTEROIDS, ROGUELIKE, CLICKER, MEMORY, WAVESURVIVAL, PAPERTOSS.
@@ -48,10 +48,11 @@ rule that defines the loop, listed below.
 | MEMORY | Distinct | Flip cards and match pairs against a timer |
 | WAVESURVIVAL | Variation of SHOOTER | Survive escalating waves and boss rounds |
 | PAPERTOSS | Distinct | Flick shots with wind and physics |
+| CUSTOM | Distinct | Blank arena: collect a star target while chasers follow |
 
 ## Verdicts
 
-- **Distinct (20):** the mechanic above is the reason to pick this genre and it
+- **Distinct (21):** the mechanic above is the reason to pick this genre and it
   does not overlap another well enough to confuse a learner.
 - **Variation (2):** WAVESURVIVAL is the wave-based take on SHOOTER, and DODGE
   is the avoidance loop without the auto-run of RUNNER. Both are labelled in the

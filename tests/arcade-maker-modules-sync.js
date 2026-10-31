@@ -136,7 +136,7 @@ function record(name, ok, detail){ results.push({ name, ok, detail }); console.l
     record('_lcDefaults snapshot exists', out.lc.hasDefaults === true);
     record('GameAudio module has all SFX methods', out.ga.methods > 30, 'methods ' + out.ga.methods);
     record('GameAudio sounds map intact', /laser/.test(out.ga.sounds) && out.ga.hasStartMusic);
-    record('genres module has 22 genres', out.g.listLen === 22, 'count ' + out.g.listLen);
+    record('genres module has 23 genres', out.g.listLen === 23, 'count ' + out.g.listLen);
     record('every genre has icon + desc', out.g.everyGenreHasIcon && out.g.everyGenreHasDesc);
     record('genres maps all populated', out.g.icons === out.g.listLen && out.g.descs === out.g.listLen, `${out.g.icons}/${out.g.descs}`);
     record('achievements module populated', out.a.count >= 20 && out.a.hasSnake, 'count ' + out.a.count);
