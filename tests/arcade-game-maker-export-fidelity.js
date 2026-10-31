@@ -60,6 +60,7 @@ const server = http.createServer((req,res)=>{
 
     // Project JSON round-trip: the same data must survive save then load.
     const save = _buildSaveData();
+    const share = _buildSharePayload(getPayload());
     _customAchs = []; _cutSlides = []; _bossPhases = []; customLevelEntities = null;
     _applyLoadData(save, { skipBoot: true });
     const roundTrip = {
@@ -79,7 +80,7 @@ const server = http.createServer((req,res)=>{
     liveConfig.cutsceneSlides = [];
     _bossPhases = [];
     const b = await _buildExportHtml();
-    return { a: a && a.html, b: b && b.html, roundTrip };
+    return { a: a && a.html, b: b && b.html, roundTrip, saveV: save.v, shareV: share.v };
   });
   exportWithCode = built.a || '';
   exportNoCode = built.b || '';
@@ -90,6 +91,8 @@ const server = http.createServer((req,res)=>{
   check('safe export produced HTML', exportNoCode.length > 1000, exportNoCode.length + ' bytes');
   check('custom code is embedded in the export', /Fidelity Test/.test(exportWithCode) && /__exportCodeRan/.test(exportWithCode));
   check('project JSON keeps custom code', /__exportCodeRan/.test(rt.userCode));
+  check('project save carries schema v1', built.saveV === 1, String(built.saveV));
+  check('share payload carries schema v1', built.shareV === 1, String(built.shareV));
   check('project JSON keeps custom achievement', rt.ach === 1, String(rt.ach));
   check('project JSON keeps cutscene and timing', rt.cut === 1 && rt.cutWhen === 'after', rt.cut + '/' + rt.cutWhen);
   check('project JSON keeps boss phases', rt.boss === 1, String(rt.boss));

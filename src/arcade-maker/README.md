@@ -152,3 +152,5 @@ it to regenerate modules; edit the module files directly.
   tilemap canvas, a spawn start and a "Reach the goal" win mode.
 - **A2171**: sandbox checkpoints: save a run from the pause menu and continue it with
   score, lives, remaining stars/chasers, goal, player position, elapsed time and variables.
+- **A2172**: exported Custom Sandbox test, and a `v:1` schema marker on project saves,
+  share payloads and the export config.

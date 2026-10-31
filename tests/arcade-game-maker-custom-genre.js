@@ -73,9 +73,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       actions: [{ type: 'addScore', target: '', amount: 25 }] }];
     const d = _buildSaveData();
     return { star: d.liveConfig.customStarTarget, enemy: d.liveConfig.customEnemyCount,
-      vars: (d.liveConfig.customVars || []).length, rules: (d.liveConfig.customRules || []).length };
+      vars: (d.liveConfig.customVars || []).length, rules: (d.liveConfig.customRules || []).length, v: d.v };
   });
   check('sandbox values survive project save', save.star === 7 && save.enemy === 2, save.star + '/' + save.enemy);
+  check('project save carries schema v1', save.v === 1, String(save.v));
   check('sandbox variables and rules survive project save', save.vars === 1 && save.rules === 1,
     save.vars + '/' + save.rules);
 
