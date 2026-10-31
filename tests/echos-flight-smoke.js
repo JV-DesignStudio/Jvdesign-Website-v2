@@ -44,6 +44,7 @@ const SNAP = () => ({
   gates: Number(document.getElementById('gateHud').textContent),
   best: Number(document.getElementById('bestHud').textContent),
   stats: document.querySelectorAll('#endStats div').length,
+  lives: window.__echoSwim ? window.__echoSwim.state().hearts : -1,
   canvasW: document.getElementById('game').width,
   canvasH: document.getElementById('game').height,
 });
@@ -85,6 +86,7 @@ const AUTOPILOT = async (want) => {
       ok(vp.name + ': opens on a clear start screen', start.startShown && !start.endShown);
       ok(vp.name + ': canvas is sized', start.canvasW > 0 && start.canvasH > 0, start.canvasW + 'x' + start.canvasH);
       ok(vp.name + ': best HUD is a number', Number.isFinite(start.best), String(start.best));
+      ok(vp.name + ': starts with three lives', start.lives === 3, String(start.lives));
 
       // Start button hides the overlay and shows the tap hint
       await page.evaluate(() => document.getElementById('startBtn').click());
@@ -97,6 +99,28 @@ const AUTOPILOT = async (want) => {
       ok(vp.name + ': a tapped run clears coral gates', (run && run.passed >= 3) || (run && run.error), run ? 'passed=' + run.passed + (run.error ? ' ' + run.error : '') : 'no run');
       ok(vp.name + ': gates add to the score', run && run.score >= run.passed, run ? JSON.stringify({ score: run.score, passed: run.passed }) : '');
       ok(vp.name + ': autopilot never auto-ended the run', run && run.phase !== 'over', run ? 'phase=' + run.phase : '');
+
+      // Wall hits are forgiving: a coral graze costs a life and bounces Echo
+      // back into the gap instead of instantly ending the swim.
+      const wall = await page.evaluate(async () => {
+        const g = window.__echoSwim;
+        const startHearts = g.state().hearts;
+        let first = null;
+        for (let i = 0; i < 700; i++) {
+          const s = g.state();
+          if (s.hearts < startHearts) { first = s; break; }
+          if (s.y > 30) g.flap();
+          await new Promise(r => setTimeout(r, 16));
+        }
+        const afterGraze = g.state();
+        for (let i = 0; i < 700 && g.state().phase !== 'over'; i++) {
+          if (g.state().y > 30) g.flap();
+          await new Promise(r => setTimeout(r, 16));
+        }
+        return { startHearts, first: first && { hearts: first.hearts, phase: first.phase }, afterGraze, end: g.state() };
+      });
+      ok(vp.name + ': a coral graze costs a life, not the whole run', wall.first && wall.first.hearts === wall.startHearts - 1 && wall.first.phase === 'playing', JSON.stringify({ startHearts: wall.startHearts, first: wall.first, afterGraze: wall.afterGraze.phase }));
+      ok(vp.name + ': the run only ends once all lives are gone', wall.end.phase === 'over' && wall.end.hearts <= 0, JSON.stringify({ phase: wall.end.phase, hearts: wall.end.hearts }));
 
       // Stop tapping: Echo sinks and the run ends with a visible end screen
       let end = null;
@@ -114,6 +138,30 @@ const AUTOPILOT = async (want) => {
       await new Promise(r => setTimeout(r, 250));
       const replay = await page.evaluate(SNAP);
       ok(vp.name + ': swim again resets to a fresh run', !replay.startShown && !replay.endShown && replay.score === 0 && replay.gates === 0, JSON.stringify({ score: replay.score, gates: replay.gates }));
+
+      // Rotating mid-swim must refit the canvas and keep the run alive
+      await page.evaluate(() => window.__echoSwim.flap());
+      await new Promise(r => setTimeout(r, 200));
+      const beforeRotate = await page.evaluate(() => window.__echoSwim.state());
+      await page.setViewport({ width: vp.height, height: vp.width, isMobile: vp.width < 700 });
+      await new Promise(r => setTimeout(r, 150));
+      const rotated = await page.evaluate(SNAP);
+      const rotatedState = await page.evaluate(() => window.__echoSwim.state());
+      ok(vp.name + ': rotating mid-swim refits the canvas and keeps the run alive',
+        rotatedState.phase !== 'over' && !rotated.endShown && rotated.lives > 0 && rotated.canvasW > 0 && rotated.canvasH > 0,
+        JSON.stringify({ before: beforeRotate.phase, after: rotatedState.phase, hearts: rotated.lives, canvas: rotated.canvasW + 'x' + rotated.canvasH }));
+      await page.setViewport({ width: vp.width, height: vp.height, isMobile: vp.width < 700 });
+      await new Promise(r => setTimeout(r, 200));
+
+      // A fresh run that is never tapped sinks to the seabed and ends
+      await page.evaluate(() => window.__echoSwim.flap());
+      let sank = false;
+      for (let t = 0; t < 50; t++) {
+        const s = await page.evaluate(SNAP);
+        if (s.endShown) { sank = true; break; }
+        await new Promise(r => setTimeout(r, 150));
+      }
+      ok(vp.name + ': sinking to the seabed still ends the run', sank);
 
       ok(vp.name + ': no sideways scrolling', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
       ok(vp.name + ': no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));

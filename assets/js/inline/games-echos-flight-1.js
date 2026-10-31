@@ -13,6 +13,8 @@ let state = 'menu';               // menu | waiting | playing | over
 let echo, gates, bubbles, sparkles, trail, pops;
 let score = 0, passed = 0, collected = 0;
 let spawnX = 0, speed = 0, last = 0, trailTimer = 0, scroll = 0, shake = 0;
+const MAX_HEARTS = 3;
+let hearts = MAX_HEARTS, invuln = 0;
 let echoBest = loadBest();
 let dailyGoal = getDailyGoal();
 let streakData = loadStreakData();
@@ -56,8 +58,33 @@ function fit(){
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-window.addEventListener('resize', fit);
-window.addEventListener('orientationchange', fit);
+function refitPlayfield(){
+  fit();
+  if (!echo) return;
+  // a rotate must never drop Echo through the seabed or leave the gates stranded
+  echo.x = Math.max(echo.r + 24, Math.min(vw * 0.32, vw - 120));
+  if (state === 'playing' || state === 'waiting'){
+    for (const g of gates){
+      if (g.top < 40 || g.top + g.gap > vh - 30){
+        g.top = Math.max(46, Math.min(vh - g.gap - 46, g.top));
+      }
+    }
+  }
+  if (state === 'playing'){
+    const ahead = gates.filter(g => g.x + 72 > echo.x).sort((a, b) => a.x - b.x)[0];
+    if (ahead){
+      const safeTop = ahead.top + echo.r + 6;
+      const safeBot = ahead.top + ahead.gap - echo.r - 6;
+      if (echo.y < safeTop || echo.y > safeBot){
+        echo.y = (safeTop + safeBot) / 2;
+        echo.vy = Math.min(echo.vy, 0);
+      }
+    }
+  }
+  echo.y = Math.max(echo.r + 2, Math.min(vh - echo.r - 4, echo.y));
+}
+window.addEventListener('resize', refitPlayfield);
+window.addEventListener('orientationchange', refitPlayfield);
 
 function gapSize(cleared){
   const base = Math.max(200, Math.min(262, vh * 0.36));
@@ -70,6 +97,7 @@ function spawnGap(){ return Math.max(272, Math.min(400, vw * 0.7)); }
 function reset(){
   fit();
   score = 0; passed = 0; collected = 0;
+  hearts = MAX_HEARTS; invuln = 0;
   echo = { x: vw * 0.32, y: vh * 0.45, vy: 0, rot: 0, r: 20, bob: Math.random() * 6.28 };
   gates = [];
   bubbles = [];
@@ -176,7 +204,15 @@ function step(dt){
   trailTimer -= dt;
   if (trailTimer <= 0){
     trailTimer = 0.055;
-    trail.push({ x: echo.x - 32, y: echo.y + (Math.random() - .5) * 12, r: 2 + Math.random() * 3.5, life: .85 });
+    // bubbles leave from the tail tip, which swings with Echo as she turns
+    const cos = Math.cos(echo.rot), sin = Math.sin(echo.rot);
+    const jitter = (Math.random() - .5) * 10;
+    trail.push({
+      x: echo.x - 72 * cos - jitter * sin,
+      y: echo.y - 72 * sin + jitter * cos,
+      r: 2 + Math.random() * 3.5,
+      life: .85
+    });
   }
   for (const p of trail){ p.life -= dt; p.x -= sp * 0.45 * dt; p.y -= 14 * dt; }
   trail = trail.filter(p => p.life > 0);
@@ -191,13 +227,20 @@ function step(dt){
   for (const p of sparkles){ p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; }
   sparkles = sparkles.filter(p => p.life > 0);
 
-  // collisions - circle vs gate bars, with a forgiving hitbox
-  const r = echo.r * 0.72;
-  for (const g of gates){
-    const withinX = echo.x + r > g.x && echo.x - r < g.x + 72;
-    if (withinX && (echo.y - r < g.top || echo.y + r > g.top + g.gap)) return crash();
-  }
+  // keep Echo under the surface before testing the coral
   if (echo.y - echo.r < 0) { echo.y = echo.r; echo.vy = 0; }
+
+  // collisions - circle vs gate bars. A graze costs a heart and bounces Echo
+  // back into the gap, so one touch does not end the whole swim.
+  if (invuln > 0) invuln = Math.max(0, invuln - dt);
+  const r = echo.r * 0.72;
+  if (invuln <= 0){
+    for (const g of gates){
+      const withinX = echo.x + r > g.x && echo.x - r < g.x + 72;
+      if (withinX && (echo.y - r < g.top || echo.y + r > g.top + g.gap)) { bump(g); break; }
+    }
+  }
+  if (state !== 'playing') return;
   if (echo.y + echo.r > vh) return crash();
 
   updateHud();
@@ -205,6 +248,22 @@ function step(dt){
 
 function sparkle(x, y){
   sparkles.push({ x: x, y: y, vx: -20 - Math.random()*40, vy: -20 + Math.random()*40, life: .5, r: 2 + Math.random()*3 });
+}
+
+function bump(g){
+  hearts--;
+  updateHud();
+  if (hearts <= 0) return crash();
+  invuln = 1.15;
+  // slide Echo back into the gap and give a soft upward bounce
+  const mid = g.top + g.gap / 2;
+  echo.y = Math.max(g.top + echo.r + 4, Math.min(g.top + g.gap - echo.r - 4, mid));
+  echo.vy = -Math.max(240, vh * 0.34);
+  echo.rot = -0.25;
+  shake = Math.max(shake, 9);
+  pops.push({ x: echo.x, y: echo.y - 32, text: 'Bonk!', life: .9 });
+  for (let i = 0; i < 8; i++) sparkle(echo.x, echo.y);
+  if (audio) { try { audio.playError(); } catch(e){} }
 }
 
 function crash(){
@@ -261,9 +320,24 @@ function draw(){
   ctx.fillStyle = bg;
   ctx.fillRect(-8, -8, vw + 16, vh + 16);
 
+  // vignette: sink the edges so Echo and the coral hold their shape
+  const vg = ctx.createRadialGradient(vw * 0.45, vh * 0.4, Math.min(vw, vh) * 0.18, vw * 0.5, vh * 0.5, Math.max(vw, vh) * 0.8);
+  vg.addColorStop(0, 'rgba(3,26,40,0)');
+  vg.addColorStop(0.6, 'rgba(3,26,40,.14)');
+  vg.addColorStop(1, 'rgba(2,16,28,.6)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(-8, -8, vw + 16, vh + 16);
+
   // parallax depth: distant reefs, then mid-ground rocks
   reefLayer(scroll * 0.12, vh * 0.60, 96, 'rgba(6,58,88,.45)');
   reefLayer(scroll * 0.30 + 90, vh * 0.78, 58, 'rgba(8,74,102,.4)');
+
+  // depth haze: gates fade up out of the darker right edge as they arrive
+  const haze = ctx.createLinearGradient(vw * 0.6, 0, vw + 8, 0);
+  haze.addColorStop(0, 'rgba(2,18,30,0)');
+  haze.addColorStop(1, 'rgba(2,18,30,.4)');
+  ctx.fillStyle = haze;
+  ctx.fillRect(vw * 0.6, 0, vw * 0.4 + 8, vh);
 
   // light rays
   ctx.save();
@@ -347,18 +421,29 @@ function draw(){
   }
   ctx.globalAlpha = 1;
 
-  // floating +score popups
+  drawLives();
+
+  if (echo) drawEcho(echo, t);
+
+  // floating +score popups, drawn last so Echo never covers them
   ctx.textAlign = 'center';
   ctx.font = '800 18px system-ui, sans-serif';
+  ctx.lineJoin = 'round';
+  // dark halo first, so the yellow score popup survives the bright water
+  ctx.strokeStyle = 'rgba(3,22,34,.9)';
+  ctx.lineWidth = 5;
   for (const p of pops){
     ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.4));
-    ctx.fillStyle = '#fef08a';
+    ctx.strokeText(p.text, p.x, p.y);
+  }
+  ctx.fillStyle = '#fef08a';
+  for (const p of pops){
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.4));
     ctx.fillText(p.text, p.x, p.y);
   }
   ctx.globalAlpha = 1;
+  ctx.lineJoin = 'miter';
   ctx.textAlign = 'start';
-
-  if (echo) drawEcho(echo, t);
 
   ctx.restore();
   requestAnimationFrame(draw);
@@ -389,16 +474,28 @@ function drawCoral(g, t){
   ];
   const pal = palettes[g.variant || 0];
   const pulse = 1 + Math.sin((t || 0) * 3 + (g.ph || 0)) * 0.08;
+
+  // dark rim first so the coral separates from the bright water
+  ctx.strokeStyle = 'rgba(4,24,36,.8)';
+  ctx.lineWidth = 6;
+  if (roundRectPath(g.x, 0, w, gapTop, 10)) ctx.stroke();
+  if (roundRectPath(g.x, gapBot, w, vh - gapBot, 10)) ctx.stroke();
+
   ctx.fillStyle = pal[0];
   roundRect(g.x, 0, w, gapTop, 10);
   roundRect(g.x, gapBot, w, vh - gapBot, 10);
+
+  // nubs get a dark halo too, so the coral cap reads as a raised edge
+  ctx.fillStyle = 'rgba(4,24,36,.7)';
+  for (let y = 18; y < gapTop - 6; y += 46){ ctx.beginPath(); ctx.arc(g.x + 18 + (y % 3) * 16, y, 12 * pulse + 2.5, 0, 6.284); ctx.fill(); }
+  for (let y = gapBot + 24; y < vh - 8; y += 46){ ctx.beginPath(); ctx.arc(g.x + 22 + (y % 3) * 14, y, 12 * pulse + 2.5, 0, 6.284); ctx.fill(); }
   ctx.fillStyle = pal[1];
   for (let y = 18; y < gapTop - 6; y += 46){ ctx.beginPath(); ctx.arc(g.x + 18 + (y % 3) * 16, y, 12 * pulse, 0, 6.284); ctx.fill(); }
   for (let y = gapBot + 24; y < vh - 8; y += 46){ ctx.beginPath(); ctx.arc(g.x + 22 + (y % 3) * 14, y, 12 * pulse, 0, 6.284); ctx.fill(); }
 }
 
-function roundRect(x, y, w, h, r){
-  if (h <= 0) return;
+function roundRectPath(x, y, w, h, r){
+  if (h <= 0) return false;
   r = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -406,46 +503,170 @@ function roundRect(x, y, w, h, r){
   ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath(); ctx.fill();
+  ctx.closePath();
+  return true;
+}
+
+function roundRect(x, y, w, h, r){
+  if (roundRectPath(x, y, w, h, r)) ctx.fill();
+}
+
+function heartPath(){
+  ctx.beginPath();
+  ctx.moveTo(0, 9);
+  ctx.bezierCurveTo(-14, -1, -7, -13, 0, -5);
+  ctx.bezierCurveTo(7, -13, 14, -1, 0, 9);
+  ctx.closePath();
+}
+
+function drawLives(){
+  const n = Math.max(0, hearts);
+  for (let i = 0; i < MAX_HEARTS; i++){
+    ctx.save();
+    ctx.translate(20 + i * 26, 22);
+    heartPath();
+    if (i < n){
+      ctx.fillStyle = '#fb7185';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.7)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = 'rgba(255,255,255,.5)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
 }
 
 function drawEcho(e, t){
   const swim = state === 'playing';
-  const phase = (t || 0) * (swim ? 13 : 5);
-  const wag = Math.sin(phase) * (swim ? 7 : 3);
+  const phase = (t || 0) * (swim ? 12 : 5);
+  const wag = Math.sin(phase) * (swim ? 6 : 2.5);
+
+  // a soft ring says "still safe" without flickering her whole body
+  if (invuln > 0 && swim){
+    const pulse = 1 + Math.sin((t || 0) * 6) * 0.07;
+    ctx.save();
+    ctx.translate(e.x, e.y);
+    ctx.strokeStyle = 'rgba(186,230,253,' + (0.2 + Math.min(1, invuln) * 0.35).toFixed(3) + ')';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, 42 * pulse, 0, 6.284); ctx.stroke();
+    ctx.restore();
+  }
+
   ctx.save();
   ctx.translate(e.x, e.y);
   ctx.rotate(Math.max(-0.6, Math.min(0.9, e.rot)));
-  // tail
+
+  // dark silhouette a step larger, so the whole axolotl keeps an outline
+  ctx.save();
+  ctx.scale(1.09, 1.13);
+  ctx.fillStyle = 'rgba(4,22,33,.85)';
+  ctx.beginPath();
+  ctx.moveTo(-24, -2);
+  ctx.quadraticCurveTo(-48, -26 + wag, -70, -14 + wag);
+  ctx.quadraticCurveTo(-80, -6 + wag, -70, 2 + wag);
+  ctx.quadraticCurveTo(-58, 12 + wag, -70, 22 + wag);
+  ctx.quadraticCurveTo(-46, 26 + wag, -24, 4);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-2, 2, 30, 21, 0, 0, 6.284); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(17, -1, 25, 22, 0, 0, 6.284); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-16, 17, 7, 5, -0.2, 0, 6.284); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(6, 18, 7, 5, 0.15, 0, 6.284); ctx.fill();
+  ctx.restore();
+
+  // finned tail
   ctx.fillStyle = '#f472b6';
   ctx.beginPath();
-  ctx.moveTo(-38, 0); ctx.quadraticCurveTo(-64, -16 + wag, -74, wag); ctx.quadraticCurveTo(-64, 16 + wag, -38, 0);
-  ctx.fill();
-  // body
+  ctx.moveTo(-24, -2);
+  ctx.quadraticCurveTo(-48, -26 + wag, -70, -14 + wag);
+  ctx.quadraticCurveTo(-80, -6 + wag, -70, 2 + wag);
+  ctx.quadraticCurveTo(-58, 12 + wag, -70, 22 + wag);
+  ctx.quadraticCurveTo(-46, 26 + wag, -24, 4);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.22)';
+  ctx.beginPath();
+  ctx.moveTo(-34, 0);
+  ctx.quadraticCurveTo(-50, -12 + wag, -64, -6 + wag);
+  ctx.quadraticCurveTo(-54, 2 + wag, -64, 12 + wag);
+  ctx.quadraticCurveTo(-50, 12 + wag, -34, 3);
+  ctx.closePath(); ctx.fill();
+
+  // body and belly
   ctx.fillStyle = '#f9a8d4';
-  ctx.beginPath(); ctx.ellipse(0, 0, 40, 25, 0, 0, 6.284); ctx.fill();
-  // gill frills flutter as Echo swims
-  ctx.fillStyle = '#f472b6';
-  const frills = [[-20,-22],[-6,-27],[10,-26],[24,-20],[-22,22],[-8,27],[8,26],[22,20]];
-  for (let i = 0; i < frills.length; i++){
-    const gx = frills[i][0], gy = frills[i][1];
-    const flutter = Math.sin(phase + i * 0.9) * (swim ? 2.4 : 1);
-    ctx.beginPath(); ctx.ellipse(gx, gy + flutter, 6, 13, 0, 0, 6.284); ctx.fill();
-  }
-  // belly
+  ctx.beginPath(); ctx.ellipse(-2, 2, 30, 21, 0, 0, 6.284); ctx.fill();
   ctx.fillStyle = '#fbcfe8';
-  ctx.beginPath(); ctx.ellipse(4, 6, 26, 13, 0, 0, 6.284); ctx.fill();
-  // cheek
-  ctx.fillStyle = 'rgba(244,114,182,.7)';
-  ctx.beginPath(); ctx.arc(16, 6, 5, 0, 6.284); ctx.fill();
-  // eye
-  ctx.fillStyle = '#111827';
-  ctx.beginPath(); ctx.arc(18, -6, 4, 0, 6.284); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, 9, 21, 11, 0, 0, 6.284); ctx.fill();
+
+  // little arms / legs
+  ctx.fillStyle = '#f472b6';
+  ctx.beginPath(); ctx.ellipse(-16, 17, 7, 5, -0.2, 0, 6.284); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(6, 18, 7, 5, 0.15, 0, 6.284); ctx.fill();
+
+  // feathery gills, three each side, fanning back from the head
+  const gills = [
+    [4, -16, -26, -40, -6],
+    [12, -19, -6, -50, 2],
+    [20, -19, 10, -48, 8],
+    [6, 15, -22, 34, -6],
+    [15, 17, -4, 40, 2],
+    [23, 16, 10, 36, 8]
+  ];
+  ctx.lineCap = 'round';
+  // dark under-stroke keeps the feathery gills readable over the lagoon
+  ctx.strokeStyle = 'rgba(4,22,33,.75)';
+  ctx.lineWidth = 9;
+  for (let i = 0; i < gills.length; i++){
+    const b = gills[i];
+    const flutter = Math.sin(phase + i * 0.8) * (swim ? 2.2 : 1);
+    const tx = b[2] + flutter, ty = b[3];
+    const mx = (b[0] + tx) / 2 + b[4], my = (b[1] + ty) / 2;
+    ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.quadraticCurveTo(mx, my, tx, ty); ctx.stroke();
+  }
+  ctx.strokeStyle = '#f472b6';
+  ctx.lineWidth = 4;
+  for (let i = 0; i < gills.length; i++){
+    const b = gills[i];
+    const flutter = Math.sin(phase + i * 0.8) * (swim ? 2.2 : 1);
+    const tx = b[2] + flutter, ty = b[3];
+    const mx = (b[0] + tx) / 2 + b[4], my = (b[1] + ty) / 2;
+    ctx.beginPath(); ctx.moveTo(b[0], b[1]); ctx.quadraticCurveTo(mx, my, tx, ty); ctx.stroke();
+    ctx.fillStyle = '#fb7bb5';
+    for (let k = 1; k <= 3; k++){
+      const u = k / 3.6;
+      const px = (1-u)*(1-u)*b[0] + 2*(1-u)*u*mx + u*u*tx;
+      const py = (1-u)*(1-u)*b[1] + 2*(1-u)*u*my + u*u*ty;
+      ctx.beginPath(); ctx.ellipse(px, py, 3.4, 6 - u * 2, b[4] < 0 ? -0.7 : 0.7, 0, 6.284); ctx.fill();
+    }
+  }
+  ctx.lineCap = 'butt';
+
+  // wide axolotl head
+  ctx.fillStyle = '#f9a8d4';
+  ctx.beginPath(); ctx.ellipse(17, -1, 25, 22, 0, 0, 6.284); ctx.fill();
+
+  // rosy cheeks
+  ctx.fillStyle = 'rgba(244,114,182,.55)';
+  ctx.beginPath(); ctx.arc(8, 8, 5.5, 0, 6.284); ctx.fill();
+  ctx.beginPath(); ctx.arc(30, 8, 5.5, 0, 6.284); ctx.fill();
+
+  // big shiny eyes
+  ctx.fillStyle = '#1f2937';
+  ctx.beginPath(); ctx.ellipse(9, -4, 5.5, 6.5, 0, 0, 6.284); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(28, -4, 5.5, 6.5, 0, 0, 6.284); ctx.fill();
   ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.arc(19.5, -7.5, 1.4, 0, 6.284); ctx.fill();
-  // smile
-  ctx.strokeStyle = '#9d174d'; ctx.lineWidth = 2; ctx.beginPath();
-  ctx.arc(20, 4, 7, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.arc(10.5, -6, 2, 0, 6.284); ctx.fill();
+  ctx.beginPath(); ctx.arc(29.5, -6, 2, 0, 6.284); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.6)';
+  ctx.beginPath(); ctx.arc(7.5, -1.5, 1.1, 0, 6.284); ctx.fill();
+  ctx.beginPath(); ctx.arc(26.5, -1.5, 1.1, 0, 6.284); ctx.fill();
+
+  // friendly smile
+  ctx.strokeStyle = '#9d174d';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(18, 3, 8, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
   ctx.restore();
 }
 
@@ -482,6 +703,8 @@ if (location.search.indexOf('debug') !== -1){
         y: echo ? echo.y : 0,
         passed: passed,
         score: score,
+        hearts: hearts,
+        invuln: invuln,
         next: ahead ? { x: ahead.x, top: ahead.top, gap: ahead.gap, center: ahead.top + ahead.gap / 2 } : null
       };
     }
