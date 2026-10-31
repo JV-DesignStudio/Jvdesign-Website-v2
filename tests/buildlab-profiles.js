@@ -93,8 +93,8 @@ function check(name, ok, detail=''){
       return out;
     });
 
-    check('generic OBJ names metres in its header', /# Units: 1 unit = 1 m\b/.test(files.generic_obj), (files.generic_obj||'').split('\n')[2]||'');
-    check('Unreal OBJ names centimetres and Z-up', /# Units: 1 unit = 1 cm, Z-up/.test(files.unreal_obj), (files.unreal_obj||'').split('\n')[3]||'');
+    check('generic OBJ names metres in its header', /# Units: 1 block = 1 m = 1\.000 m\b/.test(files.generic_obj), (files.generic_obj||'').split('\n')[2]||'');
+    check('Unreal OBJ names centimetres and Z-up', /# Units: 1 block = 1 m = 100\.000 cm, Z-up/.test(files.unreal_obj), (files.unreal_obj||'').split('\n')[3]||'');
     const peak = t => { let m=0; (t||'').split('\n').forEach(l=>{ if(l.startsWith('v ')){ l.slice(2).split(' ').forEach(n=>{ const v=Math.abs(parseFloat(n)); if(v>m)m=v; }); } }); return m; };
     const gm = peak(files.generic_obj), um = peak(files.unreal_obj);
     check('Unreal OBJ vertices are scaled to centimetres', gm>0 && um>0 && near(um/gm,100,1), 'generic='+gm.toFixed(2)+' unreal='+um.toFixed(2));

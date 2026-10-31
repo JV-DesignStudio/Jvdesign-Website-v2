@@ -290,13 +290,12 @@
       RARM_OUT: RARM_OUT, LARM_OUT: LARM_OUT, RLEG_OUT: RLEG_OUT, LLEG_OUT: LLEG_OUT
     };
     PART_GROUPS.forEach(function (p) { p.g = map[p.name]; });
+    // Built here, after the region vars are assigned. Building it at parse time
+    // captured undefined and broke part focus, copy and paste.
+    PART_MAP = map;
   }
 
-  var PART_MAP = {
-    HEAD: HEAD, HAT: HAT, BODY: BODY, JACKET: JACKET,
-    RARM: RARM, LARM: LARM, RLEG: RLEG, LLEG: LLEG,
-    RARM_OUT: RARM_OUT, LARM_OUT: LARM_OUT, RLEG_OUT: RLEG_OUT, LLEG_OUT: LLEG_OUT
-  };
+  var PART_MAP = null;
 
   function findFace(px, py) {
     for (var gi = 0; gi < PART_GROUPS.length; gi++) {
@@ -539,12 +538,18 @@
     { id: 'fox',        label: 'Fox',        fn: templateFox },
     { id: 'blank',      label: 'Blank',      fn: templateBlank }
   ];
+  function markTemplate(id) {
+    Array.prototype.forEach.call(document.querySelectorAll('.ms-template-btn'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-template') === id);
+    });
+  }
   function applyTemplate(id) {
     var t = TEMPLATES.filter(function (x) { return x.id === id; })[0];
     if (!t) return;
     pushUndo();
     t.fn();
     renderAll(); scheduleAutosave();
+    markTemplate(id);
     toast(t.label + ' base applied');
   }
 
@@ -568,6 +573,50 @@
     skinCtx.imageSmoothingEnabled = false;
     skinCtx.clearRect(0, 0, skinCanvas.width, skinCanvas.height);
     skinCtx.drawImage(off, 0, 0, SIZE, SIZE, 0, 0, skinCanvas.width, skinCanvas.height);
+    renderMini();
+  }
+
+  // ---- front-view preview (mini player + base skin thumbnails) -------------
+  var miniCanvas = document.getElementById('msMini');
+
+  function drawFrontView(src, ctx, scale, ox, oy) {
+    ctx.imageSmoothingEnabled = false;
+    // one skin pixel is one unit; the front view is 16 wide by 32 tall
+    var parts = [
+      { r: RARM.front,     x: 0,  y: 8,  w: 4, h: 12 },
+      { r: LARM.front,     x: 12, y: 8,  w: 4, h: 12 },
+      { r: RLEG.front,     x: 4,  y: 20, w: 4, h: 12 },
+      { r: LLEG.front,     x: 8,  y: 20, w: 4, h: 12 },
+      { r: RARM_OUT.front, x: 0,  y: 8,  w: 4, h: 12 },
+      { r: LARM_OUT.front, x: 12, y: 8,  w: 4, h: 12 },
+      { r: RLEG_OUT.front, x: 4,  y: 20, w: 4, h: 12 },
+      { r: LLEG_OUT.front, x: 8,  y: 20, w: 4, h: 12 },
+      { r: HEAD.front,     x: 4,  y: 0,  w: 8, h: 8 },
+      { r: BODY.front,     x: 4,  y: 8,  w: 8, h: 12 },
+      { r: HAT.front,      x: 4,  y: 0,  w: 8, h: 8 },
+      { r: JACKET.front,   x: 4,  y: 8,  w: 8, h: 12 }
+    ];
+    parts.forEach(function (p) {
+      var r = p.r;
+      ctx.drawImage(src, r[0], r[1], r[2], r[3],
+        ox + p.x * scale, oy + p.y * scale, p.w * scale, p.h * scale);
+    });
+  }
+
+  function renderMini() {
+    if (!miniCanvas || !miniCanvas.getContext) return;
+    var ctx = miniCanvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, miniCanvas.width, miniCanvas.height);
+    drawFrontView(off, ctx, 2, (miniCanvas.width - 32) / 2, 0);
+  }
+
+  function skinCanvasFromData() {
+    var c = document.createElement('canvas');
+    c.width = c.height = SIZE;
+    var cx = c.getContext('2d');
+    try { cx.putImageData(makeImageData(), 0, 0); } catch (e) {}
+    return c;
   }
 
   var PART_LABELS = [
@@ -689,6 +738,60 @@
     if (rvBtn) rvBtn.style.display = viewScale > 1 ? '' : 'none';
   }
 
+  var currentPart = 'WHOLE';
+
+  function updatePartButtons(key) {
+    currentPart = key || '';
+    Array.prototype.forEach.call(document.querySelectorAll('.ms-part-btn'), function (b) {
+      var on = b.getAttribute('data-part') === key;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  // Zoom the paint stage onto one body part so each skin pixel is finger-sized.
+  function focusPart(key) {
+    var stage = document.getElementById('msPaintStage');
+    if (!stage) return;
+    if (!key || key === 'WHOLE') {
+      viewScale = 1; viewPanX = 0; viewPanY = 0;
+      applyViewTransform();
+      updatePartButtons('WHOLE');
+      var resetWhole = document.getElementById('msViewReset');
+      if (resetWhole) resetWhole.style.display = 'none';
+      return;
+    }
+    var partName = key === 'ARMS' ? 'RARM' : key === 'LEGS' ? 'RLEG' : key;
+    var group = PART_MAP[partName];
+    if (!group || !group.front) return;
+    var r = group.front;
+    var sw = stage.clientWidth || 300, sh = stage.clientHeight || 300;
+    var base = sw / SIZE;
+    var fit = Math.min(sw / (r[2] * base), sh / (r[3] * base)) * 0.9;
+    var sc = Math.max(1, Math.min(8, fit));
+    viewScale = sc;
+    var cx = r[0] + r[2] / 2, cy = r[1] + r[3] / 2;
+    viewPanX = -(cx / SIZE - 0.5) * sw * sc;
+    viewPanY = -(cy / SIZE - 0.5) * sh * sc;
+    clampPan();
+    applyViewTransform();
+    updatePartButtons(key);
+    var resetBtn = document.getElementById('msViewReset');
+    if (resetBtn) resetBtn.style.display = sc > 1 ? '' : 'none';
+  }
+
+  function startGesture() {
+    var pts = Array.from(_ptrs.values());
+    if (pts.length < 2) return;
+    var a = pts[0], b = pts[1];
+    _gesture = {
+      dist0: Math.hypot(b.x - a.x, b.y - a.y) || 1,
+      scale0: viewScale,
+      mid0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+    };
+    updatePartButtons(null);
+  }
+
   function initCanvasPanZoom() {
     var stage = document.getElementById('msPaintStage');
     if (!stage) return;
@@ -703,7 +806,7 @@
 
     // Right-click drag → pan
     stage.addEventListener('pointerdown', function (e) {
-      if (e.button !== 2) return;
+      if (e.button !== 2 || e.pointerType === 'touch') return;
       e.preventDefault();
       _vpPanning = true;
       _vpPanLast.x = e.clientX; _vpPanLast.y = e.clientY;
@@ -720,24 +823,47 @@
     stage.addEventListener('pointercancel', function () { _vpPanning = false; });
     stage.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
-    // Two-finger pinch on canvas → view zoom/pan
-    stage.addEventListener('touchstart', function (e) {
-      if (e.touches.length === 2) {
+    // Touch: one finger paints, two fingers pinch to zoom and pan. Capture phase
+    // so the gesture is recognised before the canvas starts a stroke.
+    stage.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'touch') return;
+      _ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (_ptrs.size >= 2) {
         e.preventDefault();
-        _pinchDist0  = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        _pinchScale0 = viewScale;
+        cancelStroke();
+        startGesture();
       }
-    }, { passive: false });
-    stage.addEventListener('touchmove', function (e) {
-      if (e.touches.length !== 2 || _pinchDist0 === null) return;
+    }, true);
+
+    stage.addEventListener('pointermove', function (e) {
+      if (!_ptrs.has(e.pointerId)) return;
+      _ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (!_gesture) return;
       e.preventDefault();
-      var d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      var pts = Array.from(_ptrs.values());
+      if (pts.length < 2) return;
+      var a = pts[0], b = pts[1];
+      var dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      var mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
       var rect = stage.getBoundingClientRect();
-      var midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-      var midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-      setViewScale(_pinchScale0 * (d / _pinchDist0), midX, midY);
-    }, { passive: false });
-    stage.addEventListener('touchend', function () { _pinchDist0 = null; });
+      setViewScale(_gesture.scale0 * (dist / _gesture.dist0), mid.x - rect.left, mid.y - rect.top);
+      viewPanX += mid.x - _gesture.mid0.x;
+      viewPanY += mid.y - _gesture.mid0.y;
+      clampPan(); applyViewTransform();
+      _gesture.mid0 = mid;
+    }, true);
+
+    function releasePointer(e) {
+      if (!_ptrs.has(e.pointerId)) return;
+      _ptrs.delete(e.pointerId);
+      if (_ptrs.size < 2) _gesture = null;
+      if (e.type === 'pointercancel' && e.pointerId === activePointerId) cancelStroke();
+    }
+    stage.addEventListener('pointerup', releasePointer, true);
+    stage.addEventListener('pointercancel', releasePointer, true);
+    window.addEventListener('blur', function () {
+      _ptrs.clear(); _gesture = null; cancelStroke();
+    });
   }
 
   // ---- named skin gallery ----------------------------------------------------
@@ -908,12 +1034,26 @@
     return [x, y];
   }
 
-  var drawing = false, lastPt = null, strokeDirty = false;
+  // ---- pointer bookkeeping ------------------------------------------------
+  // One active pointer paints. A second finger turns the gesture into pinch/pan
+  // and the in-progress stroke is rolled back, so zooming never damages a skin.
+  var _ptrs = new Map();
+  var _gesture = null;
+  var _handPanning = false, _handLast = { x: 0, y: 0 };
+  var drawing = false, lastPt = null, strokeDirty = false, activePointerId = null;
 
   function beginStroke(e) {
     var p = eventToPixel(e);
     if (!p) return;
     if (e.pointerType === 'touch') { _isTouchDraw = true; e.preventDefault(); }
+    if (state.tool === 'hand') {
+      _handPanning = true;
+      _handLast.x = e.clientX; _handLast.y = e.clientY;
+      activePointerId = e.pointerId;
+      overlayCanvas.style.cursor = 'grabbing';
+      try { overlayCanvas.setPointerCapture(e.pointerId); } catch (err) {}
+      return;
+    }
     if (state.tool === 'eyedropper') {
       pickFromPixel(p[0], p[1]);
       if (_isTouchDraw) showMagnifier(e.clientX, e.clientY, p[0], p[1]);
@@ -922,31 +1062,40 @@
     pushUndo();
     drawing = true;
     strokeDirty = true;
+    activePointerId = e.pointerId;
     lastPt = p;
-    if (state.tool === 'fill') {
-      floodFill(p[0], p[1]);
-    } else if (state.tool === 'eraser') {
-      paintDot(p[0], p[1]);
-    } else {
-      paintDot(p[0], p[1]);
-    }
+    paintDot(p[0], p[1]);
     hover.x = p[0]; hover.y = p[1];
     repaintPixels(); renderOverlay(); updateTexture();
     if (_isTouchDraw) showMagnifier(e.clientX, e.clientY, p[0], p[1]);
     try { overlayCanvas.setPointerCapture(e.pointerId); } catch (err) {}
   }
+  function cancelStroke() {
+    _handPanning = false;
+    if (!drawing) return;
+    if (undoStack.length) data = undoStack.pop();
+    drawing = false; lastPt = null; strokeDirty = false; activePointerId = null;
+    hideMagnifier();
+    renderAll(); updateUndoButtons();
+  }
   function moveStroke(e) {
+    if (_gesture) return;
+    if (_handPanning) {
+      e.preventDefault();
+      viewPanX += e.clientX - _handLast.x;
+      viewPanY += e.clientY - _handLast.y;
+      _handLast.x = e.clientX; _handLast.y = e.clientY;
+      clampPan(); applyViewTransform();
+      return;
+    }
+    if (e.pointerType === 'touch' && drawing && e.pointerId !== activePointerId) return;
     if (e.pointerType === 'touch' && drawing) e.preventDefault();
     var p = eventToPixel(e);
     if (!p) { hover.x = -1; hover.y = -1; renderOverlay(); return; }
     hover.x = p[0]; hover.y = p[1];
     if (drawing && state.tool !== 'fill' && state.tool !== 'eyedropper') {
       var from = lastPt || p;
-      if (state.tool === 'eraser') {
-        paintLine(from[0], from[1], p[0], p[1]);
-      } else {
-        paintLine(from[0], from[1], p[0], p[1]);
-      }
+      paintLine(from[0], from[1], p[0], p[1]);
       lastPt = p;
       repaintPixels(); updateTexture();
     }
@@ -955,18 +1104,25 @@
   }
   function endStroke() {
     if (drawing && strokeDirty) { scheduleAutosave(); }
-    drawing = false; lastPt = null; strokeDirty = false;
+    _handPanning = false;
+    drawing = false; lastPt = null; strokeDirty = false; activePointerId = null;
+    overlayCanvas.style.cursor = state.tool === 'hand' ? 'grab' : state.tool === 'eyedropper' ? 'copy' : state.tool === 'eraser' ? 'cell' : 'crosshair';
     hideMagnifier();
-    try { overlayCanvas.releasePointerCapture && overlayCanvas.releasePointerCapture; } catch (err) {}
   }
 
-  overlayCanvas.addEventListener('pointerdown', function (e) { e.preventDefault(); beginStroke(e); });
+  overlayCanvas.addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // A second touch means pinch/pan, not a stroke.
+    if (e.pointerType === 'touch' && (_ptrs.size >= 2 || _gesture)) return;
+    beginStroke(e);
+  });
   overlayCanvas.addEventListener('pointermove', moveStroke);
-  overlayCanvas.addEventListener('pointerup', endStroke);
+  overlayCanvas.addEventListener('pointerup', function (e) {
+    if (e.pointerId === activePointerId || e.pointerType !== 'touch') endStroke();
+  });
   overlayCanvas.addEventListener('pointercancel', endStroke);
   overlayCanvas.addEventListener('pointerleave', function () { hover.x = -1; hover.y = -1; renderOverlay(); });
-  // Prevent the page from scrolling while a finger paints the texture.
-  overlayCanvas.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });
 
   function pickFromPixel(x, y) {
     var c = getPixel(x, y);
@@ -1003,13 +1159,22 @@
     } else if (name === 'pencil' || name === 'fill') {
       state.rgba = hexToRgb(state.color).concat([255]);
     }
-    overlayCanvas.style.cursor = name === 'eyedropper' ? 'copy' : name === 'eraser' ? 'cell' : 'crosshair';
+    Array.prototype.forEach.call(document.querySelectorAll('.ms-strip-btn[data-tool]'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-tool') === name);
+    });
+    overlayCanvas.style.cursor = name === 'eyedropper' ? 'copy' : name === 'eraser' ? 'cell' : name === 'hand' ? 'grab' : 'crosshair';
+    if (name !== 'hand') _handPanning = false;
   }
   function setBrush(n) {
     state.brush = n;
     Array.prototype.forEach.call(brushGrid.children, function (b) {
       b.classList.toggle('on', +b.getAttribute('data-brush') === n);
     });
+    var stripBrush = document.getElementById('msStripBrush');
+    if (stripBrush) {
+      stripBrush.textContent = n + 'px';
+      stripBrush.setAttribute('aria-label', 'Brush size ' + n + (n === 1 ? ' pixel' : ' pixels'));
+    }
     renderOverlay();
   }
 
@@ -1025,7 +1190,8 @@
       { id: 'pencil', label: 'Pencil', emoji: '✏️' },
       { id: 'eraser', label: 'Eraser', emoji: '🧽' },
       { id: 'fill', label: 'Fill', emoji: '🪣' },
-      { id: 'eyedropper', label: 'Pick', emoji: '💧' }
+      { id: 'eyedropper', label: 'Pick', emoji: '💧' },
+      { id: 'hand', label: 'Move', emoji: '✋' }
     ];
     if (toolGrid) {
       TOOLS.forEach(function (t) {
@@ -1065,8 +1231,23 @@
       TEMPLATES.forEach(function (t) {
         var b = document.createElement('button');
         b.type = 'button';
-        b.className = 'ms-btn';
-        b.textContent = t.label;
+        b.className = 'ms-template-btn';
+        b.setAttribute('data-template', t.id);
+        b.setAttribute('aria-label', t.label + ' base skin');
+        var cv = document.createElement('canvas');
+        cv.width = 32; cv.height = 64;
+        var saved = data;
+        data = new Uint8ClampedArray(SIZE * SIZE * 4);
+        try {
+          t.fn();
+          drawFrontView(skinCanvasFromData(), cv.getContext('2d'), 2, 0, 0);
+        } finally {
+          data = saved;
+        }
+        var label = document.createElement('span');
+        label.textContent = t.label;
+        b.appendChild(cv);
+        b.appendChild(label);
         b.addEventListener('click', function () { applyTemplate(t.id); });
         templateGrid.appendChild(b);
       });
@@ -1083,6 +1264,38 @@
     cx.drawImage(srcCanvas, 0, 0, SIZE, SIZE);
     return cx.getImageData(0, 0, SIZE, SIZE).data;
   }
+  // Old 64x32 skins keep the same top half as modern skins; the game mirrors the
+  // right arm and leg into the lower half. Rebuild that here instead of stretching.
+  function mirrorRightToLeft(partName) {
+    var group = PART_MAP[partName];
+    if (!group) return;
+    FACE_NAMES.forEach(function (fn) {
+      var r = group[fn];
+      for (var y = r[1]; y < r[1] + r[3]; y++) {
+        for (var x = r[0]; x < r[0] + r[2]; x++) {
+          var sp = symmetricPixel(x, y);
+          if (!sp) continue;
+          var si = idx(x, y), di = idx(sp[0], sp[1]);
+          data[di] = data[si];
+          data[di + 1] = data[si + 1];
+          data[di + 2] = data[si + 2];
+          data[di + 3] = data[si + 3];
+        }
+      }
+    });
+  }
+  function convertLegacySkin(img) {
+    var c = document.createElement('canvas');
+    c.width = c.height = SIZE;
+    var cx = c.getContext('2d');
+    cx.imageSmoothingEnabled = false;
+    cx.clearRect(0, 0, SIZE, SIZE);
+    cx.drawImage(img, 0, 0);
+    var d = cx.getImageData(0, 0, SIZE, SIZE).data;
+    for (var i = 0; i < data.length; i++) data[i] = d[i];
+    mirrorRightToLeft('RARM');
+    mirrorRightToLeft('RLEG');
+  }
   function importImage(img) {
     var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
     if (!(w === 64 && (h === 64 || h === 32)) && !(w === 128 && h === 128)) {
@@ -1090,10 +1303,14 @@
       return;
     }
     pushUndo();
-    var flipped = pixelsFromCanvas(img);
-    for (var i = 0; i < data.length; i++) data[i] = flipped[i];
+    if (w === 64 && h === 32) {
+      convertLegacySkin(img);
+    } else {
+      var flipped = pixelsFromCanvas(img);
+      for (var i = 0; i < data.length; i++) data[i] = flipped[i];
+    }
     renderAll(); scheduleAutosave();
-    toast('Skin imported');
+    toast(w === 64 && h === 32 ? 'Old skin converted' : 'Skin imported');
   }
   function exportSkin() {
     syncOffscreen();
@@ -1369,6 +1586,7 @@
     scene.add(pivot);
 
     threeOk = true;
+    update3DVisibility();
     resize3D();
     animate3D();
   }
@@ -1440,9 +1658,14 @@
   }
 
   var lastFrame = 0;
+  var threeVisible = true;
+  function update3DVisibility() {
+    var main = document.querySelector('.ms-main');
+    threeVisible = window.innerWidth > 760 || !main || main.getAttribute('data-view') === '3d';
+  }
   function animate3D(t) {
     requestAnimationFrame(animate3D);
-    if (!threeOk) return;
+    if (!threeOk || !threeVisible || document.hidden) return;
     var now = t || 0;
     if (state.autoRotate && !dragging) pivot.rotation.y += 0.008;
     if (state.autoRotate) pivot.position.y = 16 + Math.sin(now * 0.0018) * 0.35;
@@ -1531,13 +1754,27 @@
       var stage = document.getElementById('ms3DStage');
       if (stage) ro.observe(stage);
     }
-    window.addEventListener('resize', resize3D);
-    window.addEventListener('orientationchange', function () { setTimeout(resize3D, 200); });
+    window.addEventListener('resize', function () { update3DVisibility(); resize3D(); });
+    window.addEventListener('orientationchange', function () {
+      update3DVisibility();
+      setTimeout(resize3D, 200);
+    });
   }
 
   // ---- wiring -------------------------------------------------------------
   function wire() {
     buildControls();
+    var msMain = document.querySelector('.ms-main');
+    function setView(view) {
+      if (!msMain) return;
+      msMain.setAttribute('data-view', view);
+      var t2 = document.getElementById('msTab2D');
+      var t3 = document.getElementById('msTab3D');
+      if (t2) { t2.classList.toggle('active', view === '2d'); t2.setAttribute('aria-selected', view === '2d' ? 'true' : 'false'); }
+      if (t3) { t3.classList.toggle('active', view === '3d'); t3.setAttribute('aria-selected', view === '3d' ? 'true' : 'false'); }
+      update3DVisibility();
+      if (view === '3d') setTimeout(resize3D, 60);
+    }
     if (colorInput) colorInput.addEventListener('input', function () { setColor(colorInput.value); });
     var byId = function (id) { return document.getElementById(id); };
 
@@ -1577,41 +1814,31 @@
       b.addEventListener('click', function () { setColor(b.getAttribute('data-tone')); });
     });
 
-    // mobile jump-to-part buttons: pan the canvas view to centre on each region
-    var PART_CENTERS = {
-      HEAD: { x: 12, y: 12 },  // centre of HEAD front face region
-      BODY: { x: 24, y: 26 },  // centre of BODY front face region
-      ARMS: { x: 46, y: 26 },  // centre of RARM front face region
-      LEGS: { x:  6, y: 26 }   // centre of RLEG front face region
-    };
+    // mobile part picker: zoom the paint stage onto one body part
     var partBtns = document.querySelectorAll('.ms-part-btn[data-part]');
     Array.prototype.forEach.call(partBtns, function (b) {
       b.addEventListener('click', function () {
         var key = b.getAttribute('data-part');
-        var pc = PART_CENTERS[key];
-        if (!pc) return;
-        var stage = document.getElementById('msPaintStage');
-        if (!stage) return;
-        var sc = ZOOM_STEPS[zoomIdx];
-        var canvasPx = SIZE * sc; // canvas element size in CSS px
-        // Where this part centre sits in canvas coords vs stage centre
-        var partCX = pc.x * sc;
-        var partCY = pc.y * sc;
-        var stageCX = stage.clientWidth  / 2;
-        var stageCY = stage.clientHeight / 2;
-        // We want canvasCentre+pan = stageCentre, so pan = stageCentre - canvasCentre
-        // But canvas is always centered at stage centre (transform-origin: center).
-        // Pan offsets shift the canvas from its centre. To put partC at stage centre:
-        viewPanX = (canvasPx / 2 - partCX) * viewScale;
-        viewPanY = (canvasPx / 2 - partCY) * viewScale;
-        clampPan();
-        applyViewTransform();
-        // Bump view scale up a little if it's at default so the part is comfortably large
-        if (viewScale < 1.5 && window.innerWidth < 768) {
-          setViewScale(2, stageCX, stageCY);
+        if (key !== 'WHOLE' && msMain && msMain.getAttribute('data-view') === '3d') {
+          setView('2d');
         }
+        focusPart(key);
       });
     });
+
+    // mobile brush cycle (1 to 4 skin pixels)
+    if (byId('msStripBrush')) byId('msStripBrush').addEventListener('click', function () {
+      setBrush(state.brush >= 4 ? 1 : state.brush + 1);
+    });
+
+    // always-visible primary action
+    if (byId('msStripExport')) byId('msStripExport').addEventListener('click', function () {
+      saveSkin(true);
+      exportSkin();
+    });
+
+    // tap the mini player to see the full 3D preview
+    if (byId('msMiniBtn')) byId('msMiniBtn').addEventListener('click', function () { setView('3d'); });
 
     // mobile strip color - keep in sync with main color input
     var mobileColor = byId('msMobileColor');
@@ -1620,11 +1847,15 @@
       mobileColor.addEventListener('input', function () { setColor(mobileColor.value); });
     }
     function syncMobileStrip() {
-      if (!mobileColor) return;
-      mobileColor.value = state.color;
+      if (mobileColor) mobileColor.value = state.color;
       Array.prototype.forEach.call(stripBtns, function (b) {
         b.classList.toggle('on', b.getAttribute('data-tool') === state.tool);
       });
+      var sb = byId('msStripBrush');
+      if (sb) {
+        sb.textContent = state.brush + 'px';
+        sb.setAttribute('aria-label', 'Brush size ' + state.brush + (state.brush === 1 ? ' pixel' : ' pixels'));
+      }
     }
     // also sync when setColor is called from swatches/colorInput
     var _origSetColor = setColor;
@@ -1680,53 +1911,13 @@
       buildGridCache(); renderOverlay();
     });
 
-    // Mojang username import
-    var usernameInput = byId('msMojangUser');
-    var fetchBtn = byId('msMojangFetch');
-    if (fetchBtn && usernameInput) {
-      fetchBtn.addEventListener('click', function () {
-        var name = (usernameInput.value || '').trim();
-        if (!name) { toast('Enter a Minecraft username'); return; }
-        fetchBtn.disabled = true;
-        fetchBtn.textContent = 'Loading…';
-        fetch('https://api.mojang.com/users/profiles/minecraft/' + encodeURIComponent(name))
-          .then(function (r) { if (!r.ok) throw new Error('Player not found'); return r.json(); })
-          .then(function (profile) {
-            return fetch('https://sessionserver.mojang.com/session/minecraft/profile/' + profile.id);
-          })
-          .then(function (r) { if (!r.ok) throw new Error('Profile error'); return r.json(); })
-          .then(function (prof) {
-            var prop = prof.properties && prof.properties[0];
-            if (!prop) throw new Error('No skin data');
-            var decoded = JSON.parse(atob(prop.value));
-            var skinUrl = decoded.textures && decoded.textures.SKIN && decoded.textures.SKIN.url;
-            if (!skinUrl) throw new Error('No skin URL');
-            return new Promise(function (resolve, reject) {
-              var img = new Image(); img.crossOrigin = 'anonymous';
-              img.onload = function () { resolve(img); };
-              img.onerror = function () { reject(new Error('Could not load skin image')); };
-              img.src = skinUrl;
-            });
-          })
-          .then(function (img) {
-            importImage(img);
-            toast('Loaded ' + (usernameInput.value || '').trim() + "'s skin");
-          })
-          .catch(function (err) { toast('Could not load: ' + err.message); })
-          .then(function () { fetchBtn.disabled = false; fetchBtn.textContent = 'Load'; },
-                function () { fetchBtn.disabled = false; fetchBtn.textContent = 'Load'; });
-      });
-    }
-
     // Walk animation toggle
     var walkToggle = byId('msWalkAnim');
     if (walkToggle) walkToggle.addEventListener('change', function () { state.walkAnim = walkToggle.checked; });
 
     // View pan/zoom: reset button
     if (byId('msViewReset')) byId('msViewReset').addEventListener('click', function () {
-      viewScale = 1; viewPanX = 0; viewPanY = 0;
-      applyViewTransform();
-      byId('msViewReset').style.display = 'none';
+      focusPart('WHOLE');
     });
 
     // HSL sliders
@@ -1788,22 +1979,40 @@
     if (rotToggle) rotToggle.addEventListener('change', function () { state.autoRotate = rotToggle.checked; });
 
     // mobile view tabs
-    var tab2D  = byId('msTab2D');
-    var tab3D  = byId('msTab3D');
-    var msMain = document.querySelector('.ms-main');
-    if (tab2D && tab3D && msMain) {
-      tab2D.addEventListener('click', function () {
-        msMain.setAttribute('data-view', '2d');
-        tab2D.classList.add('active');    tab2D.setAttribute('aria-selected', 'true');
-        tab3D.classList.remove('active'); tab3D.setAttribute('aria-selected', 'false');
-      });
-      tab3D.addEventListener('click', function () {
-        msMain.setAttribute('data-view', '3d');
-        tab3D.classList.add('active');    tab3D.setAttribute('aria-selected', 'true');
-        tab2D.classList.remove('active'); tab2D.setAttribute('aria-selected', 'false');
-        setTimeout(resize3D, 60); // re-fit 3D canvas after it becomes visible
-      });
+    if (byId('msTab2D')) byId('msTab2D').addEventListener('click', function () { setView('2d'); });
+    if (byId('msTab3D')) byId('msTab3D').addEventListener('click', function () {
+      // bring the part view back to whole skin so the 3D tab opens on the full player
+      closeSheet();
+      setView('3d');
+    });
+
+    // mobile controls sheet
+    var sideEl = byId('msSide');
+    var backdropEl = byId('msSheetBackdrop');
+    var moreBtn = byId('msTabMore');
+    function openSheet() {
+      if (!sideEl) return;
+      sideEl.classList.add('open');
+      sideEl.setAttribute('role', 'dialog');
+      sideEl.setAttribute('aria-modal', 'true');
+      if (backdropEl) backdropEl.hidden = false;
+      if (moreBtn) moreBtn.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
     }
+    function closeSheet() {
+      if (!sideEl) return;
+      sideEl.classList.remove('open');
+      sideEl.removeAttribute('role');
+      sideEl.removeAttribute('aria-modal');
+      if (backdropEl) backdropEl.hidden = true;
+      if (moreBtn) moreBtn.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+    if (moreBtn) moreBtn.addEventListener('click', function () {
+      if (sideEl && sideEl.classList.contains('open')) closeSheet(); else openSheet();
+    });
+    if (byId('msSheetClose')) byId('msSheetClose').addEventListener('click', closeSheet);
+    if (backdropEl) backdropEl.addEventListener('click', closeSheet);
 
     // modal
     function openModal() { if (modal) modal.classList.add('open'); }
@@ -1814,6 +2023,7 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && modal && modal.classList.contains('open')) closeModal();
       else if (e.key === 'Escape' && skinModalOpen) closeSkinModal();
+      else if (e.key === 'Escape' && sideEl && sideEl.classList.contains('open')) closeSheet();
       var tag = (e.target && e.target.tagName || '').toLowerCase();
       if (tag === 'input' || tag === 'textarea') return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
@@ -1822,6 +2032,7 @@
       else if (e.key === 'e') setTool('eraser');
       else if (e.key === 'f') setTool('fill');
       else if (e.key === 'i') setTool('eyedropper');
+      else if (e.key === 'h') setTool('hand');
       else if (e.key === '[') setBrush(Math.max(1, state.brush - 1));
       else if (e.key === ']') setBrush(Math.min(4, state.brush + 1));
       else if (e.key === '+' || e.key === '=') zoomIn();
@@ -1847,14 +2058,17 @@
     (function tryInit() {
       if (window.EmberGuide) {
         try {
-          window.EmberGuide.init({
-            id: 'minecraft-skin-editor',
-            steps: [
-              { target: '#msPaintStage', title: 'Paint the texture', text: 'This is your skin laid flat. Drag to paint, and use the tools on the left.' },
-              { target: '#ms3DStage', title: 'See it in 3D', text: 'Your player updates as you paint. Drag the model to turn it around.' },
-              { target: '#msExportBtn', title: 'Export your skin', text: 'Press Export PNG to keep the file and use it in Minecraft.' }
-            ]
-          });
+          var small = window.matchMedia && window.matchMedia('(max-width:760px)').matches;
+          var steps = small ? [
+            { target: '#msPartStrip', title: 'Pick a part', text: 'Tap Head, Body, Arms or Legs to zoom in. Each square is one skin pixel.' },
+            { target: '#msPaintStage', title: 'Paint the texture', text: 'Drag to paint. Pinch with two fingers to zoom, and the bottom bar has your tools.' },
+            { target: '#msStripExport', title: 'Save and export', text: 'Press Save & Export to keep the PNG and use it in Minecraft.' }
+          ] : [
+            { target: '#msPaintStage', title: 'Paint the texture', text: 'This is your skin laid flat. Drag to paint, and use the tools on the left.' },
+            { target: '#ms3DStage', title: 'See it in 3D', text: 'Your player updates as you paint. Drag the model to turn it around.' },
+            { target: '#msExportBtn', title: 'Export your skin', text: 'Press Export PNG to keep the file and use it in Minecraft.' }
+          ];
+          window.EmberGuide.init({ id: 'minecraft-skin-editor', steps: steps });
         } catch (e) {}
         return;
       }
@@ -1863,14 +2077,28 @@
   }
 
   // ---- boot ---------------------------------------------------------------
+  function isCompact() {
+    if (!window.matchMedia) return false;
+    if (window.matchMedia('(max-width:760px)').matches) return true;
+    // short landscape phones use the side-by-side layout, but still paint with a finger
+    return window.innerWidth <= 1000 && window.innerHeight <= 520 && window.innerWidth > window.innerHeight;
+  }
+
   function boot() {
     initPartGroups();
     loadZoom();
     // On small screens with no saved zoom preference, default to 16x so each pixel
-    // is large enough to tap accurately with a finger.
+    // is sharp when the stage is zoomed to a body part.
     try {
       if (window.innerWidth < 600 && localStorage.getItem(LS_KEY + '_zoom') === null) {
         zoomIdx = 2; // 16x
+      }
+    } catch (_) {}
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        state.autoRotate = false;
+        var spinBox = document.getElementById('msAutoRotate');
+        if (spinBox) spinBox.checked = false;
       }
     } catch (_) {}
     loadAlexPref();
@@ -1884,10 +2112,25 @@
     init3D();
     applyZoom(); // resize canvases to stored zoom level before first render
     var hadSaved = loadSkin();
-    if (!hadSaved) { templateClassic(); renderAll(); }
+    if (!hadSaved) { templateClassic(); renderAll(); markTemplate('classic'); }
     renderAll();
     updateUndoButtons();
     initGuide();
+    // Phones start on the head: 64 px of texture squeezed into 340 px is too small
+    // for a finger, an 8x8 face at part zoom is comfortable.
+    try {
+      if (isCompact()) {
+        setTimeout(function () { focusPart('HEAD'); }, 40);
+      }
+    } catch (_) {}
+    var _lastViewportW = window.innerWidth;
+    window.addEventListener('resize', function () {
+      if (window.innerWidth === _lastViewportW) return;
+      _lastViewportW = window.innerWidth;
+      if (isCompact() && currentPart && currentPart !== 'WHOLE') {
+        focusPart(currentPart);
+      }
+    });
     setTimeout(resize3D, 400);
   }
 
@@ -1902,6 +2145,10 @@
     setTool: setTool,
     setBrush: setBrush,
     applyTemplate: applyTemplate,
+    focusPart: focusPart,
+    getView: function () {
+      return { scale: viewScale, panX: viewPanX, panY: viewPanY, part: currentPart, threeVisible: threeVisible };
+    },
     undo: undo,
     redo: redo,
     exportSkin: exportSkin,

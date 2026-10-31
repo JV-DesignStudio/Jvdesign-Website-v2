@@ -5,8 +5,13 @@ var tabs = Array.prototype.slice.call(document.querySelectorAll('.engine-tab'));
 var sections = Array.prototype.slice.call(document.querySelectorAll('.engine-section'));
 var searchInput = document.getElementById('searchInput');
 var searchCount = document.getElementById('searchCount');
+var searchClear = document.getElementById('searchClear');
 var noResults = document.getElementById('noResults');
 var noResultsTerm = document.getElementById('noResultsTerm');
+
+function syncClear(){
+  if(searchClear) searchClear.hidden = !(searchInput && searchInput.value);
+}
 
 function resetCards(){
   document.querySelectorAll('.error-card').forEach(function(c){ c.classList.remove('hidden'); });
@@ -31,6 +36,7 @@ function showEngine(engine){
   });
   if(searchInput) searchInput.value = '';
   if(searchCount) searchCount.textContent = '';
+  syncClear();
   resetCards();
 }
 
@@ -58,6 +64,7 @@ tabs.forEach(function(tab, i){
 
 if(searchInput){
   searchInput.addEventListener('input', function(){
+    syncClear();
     var q = this.value.toLowerCase().trim();
     if(!q){
       var active = document.querySelector('.engine-tab.active') || tabs[0];
@@ -86,6 +93,15 @@ if(searchInput){
 
 var noResultsClear = document.getElementById('noResultsClear');
 if(noResultsClear) noResultsClear.addEventListener('click', clearSearch);
+
+if(searchClear) searchClear.addEventListener('click', clearSearch);
+
+var heroFind = document.getElementById('heroFind');
+if(heroFind) heroFind.addEventListener('click', function(){
+  if(!searchInput) return;
+  searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  searchInput.focus();
+});
 
 // ── Quick-find chips: click a chip → fill search and trigger ──
 document.querySelectorAll('.qf-chip').forEach(function(chip){

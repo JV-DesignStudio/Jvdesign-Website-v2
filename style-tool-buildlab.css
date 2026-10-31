@@ -8,12 +8,22 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+body{display:flex;flex-direction:column;}
 
 /* -- MAIN LAYOUT -- */
-#app{display:grid;grid-template-columns:220px 1fr 240px;height:calc(100vh - 68px - 32px);height:calc(100dvh - 68px - 32px);}
+/* Fill whatever is left under the site header and footer. The old fixed
+   calc(100dvh - 100px) assumed exactly 100px of chrome, so an extra banner
+   pushed the canvas, footer and bottom controls off-screen. */
+#app{display:grid;grid-template-columns:220px 1fr 240px;flex:1 1 auto;min-height:0;height:auto;}
+.jvds-tools-footer{flex:0 0 auto;}
+/* BuildLab is a full-height workspace; guidance lives in the Ember Help button
+   in the viewport, so the in-flow Ember tip banner only steals canvas height. */
+.mascot-coach--tool{display:none!important;}
 
 /* -- LEFT PANEL -- */
-#left-panel{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+#left-panel{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(233,69,96,.45) transparent;}
+#left-panel::-webkit-scrollbar{width:6px;}
+#left-panel::-webkit-scrollbar-thumb{background:rgba(233,69,96,.45);border-radius:999px;}
 .panel-section{padding:12px;}
 .panel-title{font-size:.6rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
 
@@ -62,6 +72,13 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 .engine-error-panel button{border:0;border-radius:999px;background:var(--accent);color:#fff;font-family:'Fredoka',cursive;font-weight:700;padding:10px 18px;cursor:pointer;box-shadow:0 4px 0 #9b1a30;}
 .engine-error .crosshair{display:none;}
 .vp-hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:.68rem;color:rgba(255,255,255,.25);letter-spacing:.05em;pointer-events:none;white-space:normal;max-width:min(90vw, 640px);text-align:center;line-height:1.3;}
+.vp-zoom{position:absolute;top:50%;right:12px;z-index:9;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;}
+.vp-zoom-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;border-radius:11px;border:1px solid rgba(255,255,255,.18);background:rgba(12,14,30,.78);color:#eaf4ff;font:700 1.2rem/1 Inter,system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:background .15s,transform .1s;}
+.vp-zoom-btn:hover{background:rgba(233,69,96,.42);}
+.vp-zoom-btn:active{transform:scale(.94);}
+.vp-zoom-btn:focus-visible{outline:2px solid var(--accent3);outline-offset:2px;}
+.vp-zoom-btn.active{background:var(--accent3);color:#0f3460;border-color:var(--accent3);}
+.vp-zoom-frame{font-size:.95rem;}
 .vp-toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(15,15,30,.95);border:1px solid var(--accent);border-radius:8px;padding:7px 18px;font-size:.8rem;font-weight:700;color:var(--accent2);pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
 .vp-toast.show{opacity:1;}
 .crosshair{position:absolute;top:50%;left:50%;width:16px;height:16px;transform:translate(-50%,-50%);pointer-events:none;opacity:.4;}
@@ -77,6 +94,8 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
 .prop-label{font-size:.6rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
 .prop-input{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-size:.8rem;font-family:'Inter',sans-serif;width:100%;}
 .prop-input:focus{outline:none;border-color:var(--accent3);}
+.prop-num{width:70px;flex:0 0 auto;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:4px 6px;color:var(--text);font-size:.72rem;font-family:'Inter',sans-serif;box-sizing:border-box;}
+.prop-num:focus{outline:none;border-color:var(--accent3);}
 .prop-slider{width:100%;accent-color:var(--accent);}
 .prop-val{font-size:.72rem;color:var(--accent2);font-weight:700;text-align:right;}
 
@@ -136,10 +155,11 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
   html,body{overflow:hidden;}
   #app{
     display:flex;flex-direction:column;
-    height:calc(100vh - 68px);
-    height:calc(100dvh - 68px);
+    flex:1 1 auto;min-height:0;height:auto;
+    padding-bottom:58px;
     position:relative;
   }
+  body:has(#cookie-banner) #app{padding-bottom:0;}
   #left-panel,#right-panel{display:none !important;}
   #viewport{flex:1;position:relative;}
 
@@ -313,8 +333,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
   .site-header .theme-toggle,.site-header .nav-toggle{padding-inline:8px;}
   #app{
     display:flex;flex-direction:column;
-    height:calc(100vh - 68px);
-    height:calc(100dvh - 68px);
+    flex:1 1 auto;min-height:0;height:auto;
     position:relative;
   }
   #left-panel,#right-panel{display:none !important;}
@@ -335,6 +354,16 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',sans-serif;background:
   .z-btn,.lb{ min-width:32px; min-height:32px; }
   .buildlab-status{top:10px;left:10px;right:10px;max-width:none;border-radius:16px;font-size:.68rem;}
   .buildlab-status strong{font-size:.84rem;}
+}
+/* Narrow views: keep the status pill and the Build/Orbit pill from stacking
+   on top of each other at the top of the canvas. */
+@media(max-width:900px){
+  .buildlab-status{left:10px;right:auto;max-width:calc(100% - 210px);}
+  .buildlab-status strong{flex:0 0 auto;white-space:nowrap;}
+  .mob-mode-toggle{left:auto;right:10px;transform:none;}
+  .vp-toast{top:62px;max-width:calc(100% - 24px);white-space:normal;text-align:center;}
+  .vp-zoom{right:8px;}
+  .vp-zoom-btn{width:44px;height:44px;}
 }
 .skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;}
 .skip-link:focus{left:50%;transform:translateX(-50%);top:8px;width:auto;height:auto;padding:10px 20px;background:#BC4749;color:white;font-weight:700;font-size:.9rem;border-radius:8px;z-index:9999;text-decoration:none;white-space:nowrap;}

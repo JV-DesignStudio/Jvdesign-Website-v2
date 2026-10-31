@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const os = require('os');
 const http = require('http');
 const path = require('path');
@@ -117,10 +117,10 @@ async function waitForZip(dir, before, timeout=25000){
 
     // README names units/profile for the picked engine (no download needed).
     const readmeGeneric = await page.evaluate(()=>window.buildBundleReadme());
-    check('README names the model and generic units', readmeGeneric.includes(safe + '.obj') && /1 unit = 1 m/.test(readmeGeneric) && /How to import/.test(readmeGeneric), readmeGeneric.split('\n')[0]);
+    check('README names the model and generic units', readmeGeneric.includes(safe + '.obj') && /1 block = 1 m/.test(readmeGeneric) && /How to import/.test(readmeGeneric), readmeGeneric.split('\n')[0]);
     await page.evaluate(()=>window.setEngineContext('unreal'));
     const readmeUnreal = await page.evaluate(()=>window.buildBundleReadme());
-    check('README follows the engine profile (cm, Z-up)', /1 unit = 1 cm/.test(readmeUnreal) && /Z-up/.test(readmeUnreal) && /Unreal/.test(readmeUnreal), readmeUnreal.split('\n').find(l=>/Model profile/.test(l)) || '');
+    check('README follows the engine profile (cm, Z-up)', /1 block = 1 m = 100\.000 cm/.test(readmeUnreal) && /Z-up/.test(readmeUnreal) && /Unreal/.test(readmeUnreal), readmeUnreal.split('\n').find(l=>/Model profile/.test(l)) || '');
     await page.evaluate(()=>window.setEngineContext(''));
 
     // One-click bundle: click the real button, catch the real download.
@@ -137,7 +137,7 @@ async function waitForZip(dir, before, timeout=25000){
       const obj = await zip.file(safe + '.obj').async('string');
       check('model is the BuildLab OBJ', obj.startsWith('# JVDesignStudio BuildLab') && /^v /m.test(obj), obj.slice(0, 60).replace(/\n/g, ' | '));
       const readme = await zip.file('README.txt').async('string');
-      check('packed README names units and import steps', /1 unit = 1 m/.test(readme) && /How to import/.test(readme));
+      check('packed README names units and import steps', /1 block = 1 m/.test(readme) && /How to import/.test(readme));
       const png = await zip.file('preview.png').async('nodebuffer');
       check('preview PNG is a real photo', png.length > 2000 && png[0] === 0x89 && png[1] === 0x50, 'bytes='+png.length);
     }

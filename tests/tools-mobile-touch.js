@@ -111,7 +111,9 @@ const PICK_CANVAS = () => {
     if (st.display === 'none' || st.visibility === 'hidden' || st.pointerEvents === 'none') continue;
     const r = c.getBoundingClientRect();
     if (r.width < 120 || r.height < 120) continue;
-    if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, x: r.x, y: r.y, w: r.width, h: r.height, el: c };
+    // clientWidth is the untransformed layout width, so a canvas that is zoomed
+    // inside an overflow-hidden stage does not look wider than the phone.
+    if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, x: r.x, y: r.y, w: r.width, h: r.height, cw: c.clientWidth, el: c };
   }
   return best;
 };
@@ -138,7 +140,7 @@ async function checkTool(browser, base, rel, vp) {
     result.overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (!pick) return result;
     result.hasCanvas = true;
-    result.canvasW = Math.round(pick.w);
+    result.canvasW = Math.round(pick.cw || pick.w);
     if (!vp.drag) return result;
 
     // Scroll the canvas into the middle of the viewport, then find a point on
@@ -158,7 +160,7 @@ async function checkTool(browser, base, rel, vp) {
         if (st.display === 'none' || st.visibility === 'hidden' || st.pointerEvents === 'none') continue;
         const r = c.getBoundingClientRect();
         if (r.width < 120 || r.height < 120) continue;
-        if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, x: r.x, y: r.y, w: r.width, h: r.height, el: c };
+        if (!best || r.width * r.height > best.area) best = { area: r.width * r.height, x: r.x, y: r.y, w: r.width, h: r.height, cw: c.clientWidth, el: c };
       }
       if (!best) return { found: false, reason: 'no-canvas' };
       const x0 = Math.max(best.x + 12, 12), x1 = Math.min(best.x + best.w - 12, innerW - 12);
@@ -168,12 +170,12 @@ async function checkTool(browser, base, rel, vp) {
       for (const a of fy) for (const b of fx) {
         const X = Math.round(x0 + (x1 - x0) * b), Y = Math.round(y0 + (y1 - y0) * a);
         const top = document.elementFromPoint(X, Y);
-        if (top === best.el || best.el.contains(top)) return { found: true, x: X, y: Y, w: Math.round(best.w) };
+        if (top === best.el || best.el.contains(top)) return { found: true, x: X, y: Y, w: Math.round(best.w), cw: best.cw };
       }
-      return { found: false, reason: 'covered-by-overlay', w: Math.round(best.w) };
+      return { found: false, reason: 'covered-by-overlay', w: Math.round(best.w), cw: best.cw };
     });
-    if (!hit.found) { result.unreachable = true; result.reason = hit.reason; if (hit.w) result.canvasW = hit.w; return result; }
-    result.canvasW = hit.w;
+    if (!hit.found) { result.unreachable = true; result.reason = hit.reason; if (hit.cw) result.canvasW = hit.cw; return result; }
+    result.canvasW = hit.cw || hit.w;
 
     // Track scroll movement in-page during the drag (one round trip instead of
     // one per move): a finger drag on the surface must draw, never pan.

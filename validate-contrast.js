@@ -134,7 +134,12 @@ const STATES = [
 ];
 
 (async () => {
-  const files = walk(ROOT).map(f => path.relative(ROOT, f).split(path.sep).join('/'));
+  // Optional narrowing for quick iterations while fixing a page type:
+  //   JVDS_CONTRAST_PAGES="pages/books.html,index.html" node validate-contrast.js
+  const FILTER = (process.env.JVDS_CONTRAST_PAGES || '').split(',').map(s => s.trim()).filter(Boolean);
+  let files = walk(ROOT).map(f => path.relative(ROOT, f).split(path.sep).join('/'));
+  if (FILTER.length) files = files.filter(f => FILTER.some(needle => f.includes(needle)));
+  if (!files.length) { console.error('No pages matched JVDS_CONTRAST_PAGES'); process.exit(2); }
 
   const server = http.createServer((req, res) => {
     let url = decodeURIComponent(req.url.split('?')[0]);
