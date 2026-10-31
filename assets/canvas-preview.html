@@ -11,17 +11,14 @@ html,body{margin:0;height:100%;background:#0f1220;overflow:hidden}
 </style>
 </head>
 <body>
-<!-- A same-origin preview host so learner game code can run. A srcdoc/blob
-     frame would inherit the page Content-Security-Policy and block the inline
-     game scripts, leaving a blank canvas. This document is served with no CSP
-     of its own, so the sandboxed stage inside it can execute inline scripts.
-     allow-same-origin is required so that blob: URLs created inside the stage
-     can be loaded as <script src="blob:..."> by cwBlobWrap (A1786). Without it
-     the stage has an opaque origin and treats its own blob: URLs as cross-origin.
-     This host has no CSP of its own, so same-origin access from the stage is
-     limited to this null-body document: learner code cannot reach cookies or
-     storage that belong to the workshop page. -->
-<iframe id="cw-stage" sandbox="allow-scripts allow-same-origin" title="Workshop preview"></iframe>
+<!-- A separate preview host so learner code is not loaded in the workshop
+     page. This document is served with no CSP of its own, so the stage can run
+     the bootstrap in canvas-preview-host.js. The stage is sandboxed with
+     allow-scripts only, which gives it an opaque origin: learner code cannot
+     reach the workshop page cookies or storage. The bootstrap runs inside that
+     origin and loads each code part as a blob: script, which works without
+     allow-same-origin (A2122). -->
+<iframe id="cw-stage" sandbox="allow-scripts" title="Workshop preview"></iframe>
 <script src="/assets/js/canvas-preview-host.js"></script>
 </body>
 </html>
