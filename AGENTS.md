@@ -108,6 +108,7 @@ If `--check` reports `DRIFT`, run `--sync` after fixing `tasks.json`. If `--clai
 - **Learners first.** Meta-work (board, pipeline, validators, generators) stays under about 20% of each week. If a card only exists to fix the board, question it before doing it.
 - **No automated content rewrites without a reviewed diff.** Scripts may *report* (dashes, drift, links); a person reviews and applies fixes. Nothing auto-commits, nothing runs `git add -u`/`-A` for you.
 - **Dev Log and social posts are written by hand**, for learners and parents. Never publish ticket titles, drift fixes or evidence text. The bot social queue and auto devlog promotion are retired (archived in `F:/Website/studio-workspace/social-archive/` and `devlog-archive-bot-posts.json`).
+- **Every new dev log post ships a picture of what changed.** Capture the real page with `node scripts/capture-devlog-images.cjs --id <post-id> --url <path>` (add `--viewport` for narrow game columns), paste the reported `image: '/assets/devlog/...'` line into `devlog-data.js`, and keep both in the reviewed diff. `tests/devlog-media.js` fails posts from id 525 on if the image is missing.
 
 ## 5) Repo Conventions
 

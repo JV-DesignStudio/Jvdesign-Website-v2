@@ -107,6 +107,10 @@ const roadTile = () => svg(120, 64, `
 
 const sprites = {
   'ember-car.png': car(64, 104, { body: '#dc2626', body2: '#f97316', dark: '#7f1d1d', stripe: '#fbbf24' }),
+  'stardust-car.png': car(64, 104, { body: '#e0b52e', body2: '#ffd23c', dark: '#9a6b00', stripe: '#fff7d6' }),
+  'lumo-car.png': car(64, 104, { body: '#6d5ce0', body2: '#9a8cf7', dark: '#40318f', stripe: '#e0dbff' }),
+  'pip-car.png': car(64, 104, { body: '#68b53f', body2: '#96e06a', dark: '#356b1b', stripe: '#eaffd6' }),
+  'echo-car.png': car(64, 104, { body: '#249c8e', body2: '#5fd6c7', dark: '#176b62', stripe: '#d9fbf6' }),
   'traffic-sedan-red.png': car(56, 96, { body: '#b91c1c', body2: '#dc2626', dark: '#7f1d1d' }),
   'traffic-sedan-blue.png': car(56, 96, { body: '#1d4ed8', body2: '#3b82f6', dark: '#1e3a8a' }),
   'traffic-van-white.png': car(60, 112, { body: '#cbd5e1', body2: '#f1f5f9', dark: '#64748b', round: 0.12 }),

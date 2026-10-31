@@ -17,6 +17,9 @@
  *   node scripts/capture-devlog-images.cjs --all          # every target in TARGETS below
  *   node scripts/capture-devlog-images.cjs --id 441       # url looked up from TARGETS
  *   node scripts/capture-devlog-images.cjs --id 435 --url /games/voidrush.html --force
+ *   node scripts/capture-devlog-images.cjs --id 525 --url /games/echos-flight.html --viewport
+ *       --viewport keeps the full 1600x900 frame. Use it for narrow, mobile-first
+ *       pages (game columns) where cropping the area would upscale a 520px slice.
  */
 'use strict';
 const fs = require('fs');
@@ -44,6 +47,7 @@ const TARGETS = {
   441: { url: '/pages/gallery.html', note: 'Community Gallery' },
   442: { url: '/tools/arcade-game-maker.html', note: 'browser game studios' },
   443: { url: '/games/critter-whack-page.html', note: 'Critter Whack' },
+  525: { url: '/games/echos-flight.html?debug=1', note: "Echo's Swim", viewport: true, autopilot: 2200 },
 };
 
 const START_SELECTORS = [
@@ -52,8 +56,9 @@ const START_SELECTORS = [
   '[data-start]', '.pz-play', '.rune-btn',
 ];
 const OVERLAY_SELECTORS = [
-  '#welcome', '#introModal', '.welcome-modal', '.intro-overlay', '#guideOverlay',
-  '[data-dismiss]', '.modal-close', '#coachClose', '#tourClose',
+  '.jvds-hide', '#cookie-decline', '#cookie-accept', '#welcome', '#introModal',
+  '.welcome-modal', '.intro-overlay', '#guideOverlay', '[data-dismiss]', '.modal-close',
+  '#coachClose', '#tourClose',
 ];
 const AREA_SELECTORS = ['.game-frame-wrap', '.game-wrap', '.stage-wrap', '.gallery-grid', 'main', '.wrap'];
 
@@ -65,6 +70,7 @@ function parseArgs(argv) {
     if (argv[i] === '--all') o.all = true;
     if (argv[i] === '--force') o.force = true;
     if (argv[i] === '--out') o.out = argv[i + 1];
+    if (argv[i] === '--viewport') o.viewport = true;
   }
   return o;
 }
@@ -94,7 +100,8 @@ async function pickArea(page) {
   return null;
 }
 
-async function capture(page, base, url) {
+async function capture(page, base, job) {
+  const url = job.url;
   const target = base + (url.startsWith('/') ? url : '/' + url);
   await page.setViewport({ width: 1600, height: 900, deviceScaleFactor: 1 });
   // 'domcontentloaded' + a fixed settle. Fresh page per job (see main) avoids the
@@ -103,8 +110,30 @@ async function capture(page, base, url) {
   await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => {});
   await new Promise(r => setTimeout(r, 3000));
   await clickFirst(page, OVERLAY_SELECTORS);
+  await clickFirst(page, OVERLAY_SELECTORS);
   await clickFirst(page, START_SELECTORS);
-  await new Promise(r => setTimeout(r, 1500));
+  await new Promise(r => setTimeout(r, 1200));
+  // Optional short autopilot for games that only show their art once a run is
+  // really moving (needs the ?debug hook). Pass autopilot:<ms> on the target.
+  if (job.autopilot) {
+    await page.evaluate(async (ms) => {
+      const g = window.__echoSwim || window.__gameHook;
+      if (!g) return;
+      if (g.start) g.start();
+      await new Promise(r => setTimeout(r, 120));
+      if (g.flap) g.flap();
+      const end = performance.now() + ms;
+      while (performance.now() < end) {
+        const s = g.state ? g.state() : null;
+        if (!s || s.phase === 'over') break;
+        const centre = s.next ? s.next.center : (s.vh ? s.vh / 2 : 300);
+        if (s.y > centre && g.flap) g.flap();
+        await new Promise(r => setTimeout(r, 16));
+      }
+    }, job.autopilot, { timeout: 30000 }).catch(() => {});
+    await new Promise(r => setTimeout(r, 200));
+  }
+  if (job.viewport) return { buffer: await page.screenshot(), mode: 'viewport' };
   const area = await pickArea(page);
   if (area) {
     const box = await area.boundingBox().catch(() => null);
@@ -135,14 +164,14 @@ async function main() {
   let jobs = [];
 
   if (opts.all) {
-    jobs = Object.entries(TARGETS).map(([id, t]) => ({ id, url: t.url }));
+    jobs = Object.entries(TARGETS).map(([id, t]) => ({ id, url: t.url, viewport: t.viewport, autopilot: t.autopilot }));
   } else if (opts.id) {
     const t = TARGETS[opts.id];
     const url = opts.url || (t && t.url);
     if (!url) { console.error(`No url for post ${opts.id}. Pass --url or add it to TARGETS.`); process.exit(1); }
-    jobs = [{ id: opts.id, url }];
+    jobs = [{ id: opts.id, url, viewport: opts.viewport || (t && t.viewport), autopilot: t && t.autopilot }];
   } else if (opts.url) {
-    jobs = [{ id: 'manual', url: opts.url, out: opts.out }];
+    jobs = [{ id: 'manual', url: opts.url, out: opts.out, viewport: opts.viewport }];
   } else {
     console.error('Usage: node scripts/capture-devlog-images.cjs --id <id> [--url <path>] | --all');
     process.exit(1);
@@ -153,7 +182,7 @@ async function main() {
 
   await withServer(async ({ base, browser }) => {
     for (const job of jobs) {
-      const slug = slugify(job.url.replace(/^\//, '').replace(/\.html$/, '').replace(/[\/]/g, '-')) || 'shot';
+      const slug = slugify(job.url.replace(/[?#].*$/, '').replace(/^\//, '').replace(/\.html$/, '').replace(/[\/]/g, '-')) || 'shot';
       const name = job.out ? job.out : `${job.id}-${slug}.webp`;
       const outPath = path.join(OUT, name);
       if (fs.existsSync(outPath) && !opts.force) {
@@ -163,7 +192,7 @@ async function main() {
       }
       const page = await browser.newPage();
       try {
-        const shot = await withTimeout(capture(page, base, job.url), 45000, `id ${job.id}`);
+        const shot = await withTimeout(capture(page, base, job), 45000, `id ${job.id}`);
         const optimized = await optimize(shot.buffer);
         fs.writeFileSync(outPath, optimized);
         const kb = Math.round(fs.statSync(outPath).size / 1024);

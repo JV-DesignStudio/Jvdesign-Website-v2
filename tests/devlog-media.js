@@ -77,6 +77,16 @@ function anchorExists(p, hash, depth) {
   return anchorExists(abs, hash, depth + 1);
 }
 
+// Every new post must ship a picture of what actually changed. Capture it with
+// scripts/capture-devlog-images.cjs, then paste the reported image: line.
+var MIN_IMAGE_POST_ID = 525;
+var missingImage = posts
+  .filter(function (p) { return Number(p.id) >= MIN_IMAGE_POST_ID && !p.image; })
+  .map(function (p) { return p.id; });
+if (missingImage.length) {
+  errors.push('posts from id ' + MIN_IMAGE_POST_ID + ' need an image: - run scripts/capture-devlog-images.cjs, missing on ' + missingImage.join(', '));
+}
+
 posts.forEach(function (p) {
   if (p.image) {
     checkedImages++;
