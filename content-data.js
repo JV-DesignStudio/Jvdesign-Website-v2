@@ -6019,13 +6019,79 @@ window.JVDS_CONTENT = {
   ],
   "characters": [
     {
+      "id": "stardust",
+      "name": "Stardust",
+      "role": "Imagine",
+      "verb": "Imagine",
+      "species": "Dream spirit",
+      "emoji": "✨",
+      "color": "#FFC733",
+      "colorName": "Golden",
+      "palette": [
+        {
+          "name": "Main",
+          "hex": "#FFC733"
+        },
+        {
+          "name": "Core glow",
+          "hex": "#FFE566"
+        },
+        {
+          "name": "Edge shade",
+          "hex": "#FF9800"
+        },
+        {
+          "name": "Sparkle",
+          "hex": "#FFF4B8"
+        }
+      ],
+      "art": {
+        "badge": "/assets/mascots/stardust-badge.webp",
+        "hero": "/assets/mascots/stardust-hero.webp",
+        "sheet": "/assets/mascots/stardust-sheet.png"
+      },
+      "desc": "A tiny speck of stardust drifting through the cosmos, searching for where they belong. Stardust represents wonder, curiosity, and the joy of exploration.",
+      "books": [
+        "stardusts-cosmic-adventure"
+      ],
+      "games": [
+        "stardust"
+      ],
+      "tools": []
+    },
+    {
       "id": "lumo",
       "name": "Lumo",
-      "species": "Fox",
+      "role": "Learn",
+      "verb": "Learn",
+      "species": "Purple fox",
       "emoji": "🦊",
-      "color": "#6b4fa0",
+      "color": "#8B5CF6",
       "colorName": "Purple",
-      "desc": "A quiet fox who carries the Grumble-Grit , a heavy stone representing invisible struggles. Lumo teaches that strength isn't about never struggling, but about finding quieter ways to keep going.",
+      "palette": [
+        {
+          "name": "Main fur",
+          "hex": "#8B5CF6"
+        },
+        {
+          "name": "Light fur",
+          "hex": "#D0B0FF"
+        },
+        {
+          "name": "Dark fur",
+          "hex": "#4A1A90"
+        },
+        {
+          "name": "Cloak",
+          "hex": "#1C1C1C"
+        }
+      ],
+      "art": {
+        "badge": "/assets/mascots/lumo-badge.webp",
+        "hero": "/assets/mascots/lumo-hero.webp",
+        "sheet": "/assets/mascots/lumo-sheet.png"
+      },
+      "desc": "A quiet fox who carries the Grumble-Grit, a heavy stone representing invisible struggles. Lumo teaches that strength is not about never struggling, but about finding quieter ways to keep going.",
       "books": [
         "lumo-and-the-grumble-grit"
       ],
@@ -6037,13 +6103,81 @@ window.JVDS_CONTENT = {
       "tools": []
     },
     {
+      "id": "ember",
+      "name": "Ember",
+      "role": "Create",
+      "verb": "Create",
+      "species": "Pink tiger",
+      "emoji": "🐯",
+      "color": "#E8608A",
+      "colorName": "Pink",
+      "palette": [
+        {
+          "name": "Main fur",
+          "hex": "#E8608A"
+        },
+        {
+          "name": "Light fur",
+          "hex": "#F8A8BE"
+        },
+        {
+          "name": "Stripes",
+          "hex": "#C04070"
+        },
+        {
+          "name": "Eyes",
+          "hex": "#3DB850"
+        },
+        {
+          "name": "Cape",
+          "hex": "#2A2A2A"
+        }
+      ],
+      "art": {
+        "badge": "/assets/mascots/ember-badge.webp",
+        "hero": "/assets/mascots/ember-hero.webp",
+        "sheet": "/assets/mascots/ember-sheet.png"
+      },
+      "desc": "A brave pink tiger with green eyes and a dark cape. Ember helps a learner build, experiment and make a first version without waiting for perfect.",
+      "books": [],
+      "games": [],
+      "tools": [
+        "pixel-studio"
+      ]
+    },
+    {
       "id": "pip",
       "name": "Pip",
-      "species": "Tortoise",
+      "role": "Play",
+      "verb": "Play",
+      "species": "Turtle",
       "emoji": "🐢",
-      "color": "#f5a623",
-      "colorName": "Amber",
-      "desc": "A small tortoise who fears the night sky but discovers it holds wonder, not just danger. Pip represents curiosity overcoming fear.",
+      "color": "#5EC47E",
+      "colorName": "Green",
+      "palette": [
+        {
+          "name": "Main skin",
+          "hex": "#5EC47E"
+        },
+        {
+          "name": "Shell",
+          "hex": "#3D6830"
+        },
+        {
+          "name": "Cloak",
+          "hex": "#2A5538"
+        },
+        {
+          "name": "Plastron",
+          "hex": "#B8E8CA"
+        }
+      ],
+      "art": {
+        "badge": "/assets/mascots/pip-badge.webp",
+        "hero": "/assets/mascots/pip-hero.webp",
+        "sheet": "/assets/mascots/pip-sheet.jpg"
+      },
+      "desc": "A small turtle who fears the night sky but discovers it holds wonder, not just danger. Pip represents curiosity overcoming fear and the courage to try one more time.",
       "books": [
         "pip-and-the-night-sky"
       ],
@@ -6056,10 +6190,39 @@ window.JVDS_CONTENT = {
     {
       "id": "echo",
       "name": "Echo",
+      "role": "Improve",
+      "verb": "Improve",
       "species": "Axolotl",
       "emoji": "🦎",
-      "color": "#3EC9A7",
-      "colorName": "Teal",
+      "color": "#4E9E5F",
+      "colorName": "Green",
+      "palette": [
+        {
+          "name": "Main skin",
+          "hex": "#F2A8BC"
+        },
+        {
+          "name": "Gills",
+          "hex": "#FF90A8"
+        },
+        {
+          "name": "Cloak",
+          "hex": "#2D6B3A"
+        },
+        {
+          "name": "Eyes",
+          "hex": "#5B2D8A"
+        },
+        {
+          "name": "Compass",
+          "hex": "#B8860B"
+        }
+      ],
+      "art": {
+        "badge": "/assets/mascots/echo-badge.webp",
+        "hero": "/assets/mascots/echo-hero.webp",
+        "sheet": "/assets/mascots/echo-sheet.jpg"
+      },
       "desc": "An adventurous axolotl who faces choices one small try at a time. Echo represents courage, thinking differently, and the power of small steps.",
       "books": [
         "echo-and-the-mountain-of-choices"
@@ -6071,28 +6234,74 @@ window.JVDS_CONTENT = {
       "tools": []
     },
     {
-      "id": "stardust",
-      "name": "Stardust",
-      "species": "Stardust particle",
-      "emoji": "✨",
-      "color": "#A78BFA",
-      "colorName": "Violet",
-      "desc": "A tiny speck of stardust drifting through the cosmos, searching for where they belong. Stardust represents wonder, curiosity, and the joy of exploration.",
-      "books": [
-        "stardusts-cosmic-adventure"
+      "id": "barnaby",
+      "name": "Barnaby",
+      "role": "Guest",
+      "verb": "Play",
+      "species": "Arctic fox",
+      "emoji": "❄️",
+      "color": "#3B5B7A",
+      "colorName": "Arctic blue",
+      "palette": [
+        {
+          "name": "Snow",
+          "hex": "#FFFFFF"
+        },
+        {
+          "name": "Cream",
+          "hex": "#F8F0E6"
+        },
+        {
+          "name": "Light fur",
+          "hex": "#E6D5C3"
+        },
+        {
+          "name": "Eyes",
+          "hex": "#3B5B7A"
+        },
+        {
+          "name": "Socks",
+          "hex": "#FF6B6B"
+        }
       ],
-      "games": [
-        "stardust"
-      ],
+      "art": {
+        "badge": "/assets/mascots/barnaby-badge.webp",
+        "hero": "/assets/mascots/barnaby-hero.webp",
+        "sheet": "/assets/mascots/barnaby-sheet.png"
+      },
+      "desc": "The arctic fox who forgot how to play while sorting socks. Barnaby is a guest crew member, kept visually separate from Lumo the purple fox.",
+      "books": [],
+      "games": [],
       "tools": []
     },
     {
       "id": "elara",
       "name": "Elara",
-      "species": "Human",
-      "emoji": "🔮",
-      "color": "#c8b0e8",
+      "role": "Guest",
+      "verb": "Explore",
+      "species": "Human explorer",
+      "emoji": "🗝️",
+      "color": "#C8B0E8",
       "colorName": "Lavender",
+      "palette": [
+        {
+          "name": "Lavender",
+          "hex": "#C8B0E8"
+        },
+        {
+          "name": "Warm cream",
+          "hex": "#F0EAD6"
+        },
+        {
+          "name": "Deep teal",
+          "hex": "#4E7D80"
+        }
+      ],
+      "art": {
+        "badge": "/assets/mascots/crew-together-hero.webp",
+        "hero": "/assets/mascots/crew-together-hero.webp",
+        "sheet": "/assets/mascots/crew-together-hero.webp"
+      },
       "desc": "A clever explorer who navigates the Wire-Web with a magical key, learning about online safety and trusting the right people.",
       "books": [
         "elara-and-the-wire-web-key"
@@ -6302,7 +6511,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-10-30T21:08:46.179Z",
+    "generated": "2026-10-31T18:31:32.847Z",
     "workshops": 345,
     "games": 13,
     "tools": 51,
