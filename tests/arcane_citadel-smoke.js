@@ -58,6 +58,12 @@ const open=async(page)=>page.goto(BASE+'/games/arcane_citadel.html',{waitUntil:'
       ok('Boss charge warning element present', ui.warn);
       ok('polish hooks exposed', ui.hasHooks);
 
+      const menu=await page.evaluate(()=>{
+        const vis=a=>{const b=document.querySelector('#arcade-menu [data-arcade-action="'+a+'"]');return b?!b.hidden:null;};
+        return {pause:vis('pause'),restart:vis('restart'),sound:vis('sound'),help:vis('help')};
+      });
+      ok('arcade menu exposes pause/restart/sound/help', menu.pause&&menu.restart&&menu.sound&&menu.help, JSON.stringify(menu));
+
       // calm toggle flips the flag + persists
       await page.click('#citadel-calm');
       await new Promise(r=>setTimeout(r,150));
@@ -70,10 +76,57 @@ const open=async(page)=>page.goto(BASE+'/games/arcane_citadel.html',{waitUntil:'
       await new Promise(r=>setTimeout(r,300));
       const gridOpen=await page.evaluate(()=>document.getElementById('screen-spell').style.display!=='none');
       ok('spell select opens', gridOpen);
+      const spellA11y=await page.evaluate(()=>{
+        const c=document.querySelector('.spell-choice');
+        return {tab:c?c.tabIndex:null,role:c?c.getAttribute('role'):null,label:c?c.getAttribute('aria-label'):null};
+      });
+      ok('spell cards are keyboard focusable', spellA11y.tab===0&&spellA11y.role==='button'&&/Choose/.test(spellA11y.label||''), JSON.stringify(spellA11y));
       await page.keyboard.press('1');
       await new Promise(r=>setTimeout(r,500));
       const started=await page.evaluate(()=>({state:window.__citadelPolish.state(),spell:document.getElementById('spell-name-hud').textContent}));
       ok('number key picks element and starts the game', started.state==='playing'&&started.spell.length>1, JSON.stringify(started));
+
+      // The arena must be the whole viewport. The StoryRun card and one-night
+      // banner once sat in normal flow and pushed the canvas down, clipping the
+      // bottom of the play area.
+      const arena=await page.evaluate(()=>{
+        const c=document.getElementById('gameCanvas').getBoundingClientRect();
+        const run=document.querySelector('.storyrun:not(.sr-modal)');
+        const story=run&&run.querySelector('.sr-story');
+        const banner=document.getElementById('oneNightBanner');
+        return {top:Math.round(c.top),bottom:Math.round(c.bottom),cw:Math.round(c.width),vw:innerWidth,vh:innerHeight,
+          storyPos:run?getComputedStyle(run).position:null,
+          storyDisplay:story?getComputedStyle(story).display:null,
+          bannerVisibility:banner?getComputedStyle(banner).visibility:null};
+      });
+      ok('desktop: arena fills the viewport (nothing clipped)', arena.top===0&&Math.abs(arena.bottom-arena.vh)<=1&&Math.abs(arena.cw-arena.vw)<=1, JSON.stringify(arena));
+      ok('desktop: story-run overlay takes no layout space', arena.storyPos==='fixed'&&arena.storyDisplay==='none', JSON.stringify(arena));
+      ok('desktop: one-night banner is hidden during play', arena.bannerVisibility==='hidden', arena.bannerVisibility);
+
+      const shopModes=await page.evaluate(()=>{
+        const shop=()=>document.querySelector('.citadel-shop');
+        window.setCitadelMode('quick');
+        window.showWaveComplete();
+        const quick=shop()?getComputedStyle(shop()).display:null;
+        window.startNextWave();
+        window.setCitadelMode('deep');
+        window.showWaveComplete();
+        const deep=shop()?getComputedStyle(shop()).display:null;
+        const card=document.querySelector('.shop-card');
+        window.startNextWave();
+        window.setCitadelMode('quick');
+        return {quick,deep,cardTab:card?card.tabIndex:null,cardRole:card?card.getAttribute('role'):null};
+      });
+      ok('Quick Night hides the shop; Deep Night shows it', shopModes.quick==='none'&&shopModes.deep!=='none', JSON.stringify(shopModes));
+      ok('shop cards are keyboard focusable', shopModes.cardTab===0&&shopModes.cardRole==='button', JSON.stringify(shopModes));
+
+      await page.click('#arcade-menu .arcade-menu-trigger');
+      await page.click('#arcade-menu [data-arcade-action="pause"]');
+      await new Promise(r=>setTimeout(r,150));
+      const menuPaused=await page.evaluate(()=>window.__citadelPolish.isPaused());
+      ok('arcade menu pause action works', menuPaused);
+      await page.evaluate(()=>window.__citadelPolish.resume());
+      await new Promise(r=>setTimeout(r,100));
 
       // pause via button, then resume
       await page.click('#citadel-pause');
@@ -119,22 +172,46 @@ const open=async(page)=>page.goto(BASE+'/games/arcane_citadel.html',{waitUntil:'
       const summary=await page.evaluate(()=>({echo:!!document.getElementById('citadel-echo'),share:!!document.getElementById('citadel-share'),maker:!!(document.querySelector('#citadel-echo a')||{}).href}));
       ok('run summary shows Echo next-step and share', summary.echo&&summary.share&&summary.maker, JSON.stringify(summary));
 
+      const card=await page.evaluate(()=>({
+        btn:!!document.getElementById('citadel-card'),
+        data:(window.__citadelPolish.runCardDataURL()||'').slice(0,22)
+      }));
+      ok('run summary offers a PNG run card', card.btn&&card.data==='data:image/png;base64,', JSON.stringify(card));
+
       ok('desktop: no page errors', errs.length===0, errs.slice(0,2).join(' | '));
       await page.close();
     }
 
     // ── Phone: plays with no errors ──
     {
-      const errs=[]; const page=await newPage(browser,{width:390,height:844,isMobile:true,hasTouch:true},errs);
+      const errs=[]; const page=await newPage(browser,{width:390,height:844,isMobile:true,hasTouch:true,deviceScaleFactor:2},errs);
       await open(page); await new Promise(r=>setTimeout(r,700));
       await page.evaluate(()=>{document.querySelector('.rune-btn').click();});
       await new Promise(r=>setTimeout(r,250));
       await page.evaluate(()=>{document.querySelector('.spell-choice').click();});
       await new Promise(r=>setTimeout(r,900));
-      const st=await page.evaluate(()=>({state:window.__citadelPolish.state(),canvas:document.querySelectorAll('canvas').length,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
+      const st=await page.evaluate(()=>{
+        const c=document.getElementById('gameCanvas').getBoundingClientRect();
+        const cv=document.getElementById('gameCanvas');
+        return {state:window.__citadelPolish.state(),canvas:document.querySelectorAll('canvas').length,overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+          top:Math.round(c.top),bottom:Math.round(c.bottom),cw:Math.round(c.width),vw:innerWidth,vh:innerHeight,
+          px:cv.width,dpr:window.devicePixelRatio};
+      });
       ok('phone: game starts', st.state==='playing', JSON.stringify(st));
       ok('phone: canvas present', st.canvas>0);
+      ok('phone: arena fills the viewport (nothing clipped)', st.top===0&&Math.abs(st.bottom-st.vh)<=1&&Math.abs(st.cw-st.vw)<=1, JSON.stringify(st));
+      ok('phone: canvas renders at device pixel ratio', st.px===Math.round(st.vw*Math.min(st.dpr,2))&&st.dpr>1, JSON.stringify({px:st.px,dpr:st.dpr,vw:st.vw}));
       ok('phone: no horizontal overflow', st.overflow<=2, 'overflow='+st.overflow);
+      const mute=await page.evaluate(()=>{
+        document.getElementById('mute-btn').click();
+        return {muted:window.__citadelPolish.muted(),ls:localStorage.getItem('jvds_citadel_muted'),pressed:document.getElementById('mute-btn').getAttribute('aria-pressed')};
+      });
+      ok('phone: mute toggles and persists', mute.muted===true&&mute.ls==='1'&&mute.pressed==='true', JSON.stringify(mute));
+      await page.reload({waitUntil:'load',timeout:30000});
+      await page.waitForSelector('#mute-btn',{timeout:10000});
+      await new Promise(r=>setTimeout(r,500));
+      const muteAfter=await page.evaluate(()=>({muted:window.__citadelPolish.muted(),label:document.getElementById('mute-btn').textContent}));
+      ok('phone: mute preference survives a reload', muteAfter.muted===true, JSON.stringify(muteAfter));
       ok('phone: no page errors', errs.length===0, errs.slice(0,2).join(' | '));
       await page.close();
     }

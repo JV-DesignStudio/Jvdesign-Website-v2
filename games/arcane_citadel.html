@@ -15,7 +15,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-M82cVJylRxLxChJyjw02d4fzdOdkg9VE99r64ZWQZWI=' 'sha256-9QuJzLp5NbtslE5MCKz/X0znI9pF7nul0MXVDk+QgJ4=' 'sha256-g5HXQW9xbKwg02NDT6Jl3jDtgAwrRmwta7pBPHa0FH8=' 'sha256-dAWEFJWckf8Hcl0uvibhou6NkUorWvR7LqfUVP7iO6Y=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xiNH+/io4NXPlbJLowqF7RrExLA2RzMHStmpm7DQ/J8=' 'sha256-OeBQW6aJfek/0XXRd7eZ1l4L9oJBBlmCBaG3BykULiQ=' 'sha256-b+7ZW6QWYr8IvnI9qY1CCrmeCfzkXt24y3hi9L2pYy0=' 'sha256-ZI1dyVVR6+OJoCBtNUF0p0Pz1dMzSIX0Zivak0vHxkY=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -54,6 +54,56 @@
    joystick reads raw touch events, so the browser must not claim the gesture. */
 html,body{touch-action:none;overscroll-behavior:none}
 canvas{touch-action:none}
+/* The arena is the whole screen. The shared StoryRun card and the one-night
+   banner used to sit in normal flow, pushing the canvas down (up to ~266px on
+   phones) and clipping the bottom of the arena. Every game layer is now
+   positioned, so the canvas always fills the viewport and nothing is cut off. */
+#gameCanvas{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;z-index:0}
+#hud{z-index:3}
+#player-hp-wrap,#boss-bar-wrap,#minimap{z-index:3}
+.screen,#screen-spell,#screen-wave{z-index:2}
+#boss-intro{z-index:4}
+#lb-btn{top:104px;z-index:4}
+#mute-btn{position:fixed!important;top:62px!important;right:14px!important}
+/* Keep the HUD clear of the fixed back link and the Arcade menu. */
+#spell-hud{margin-left:96px}
+#wave-badge{margin-right:250px}
+#controls-hint{display:none}
+/* The game ships its own pause button; drop the duplicate injected chrome so
+   it cannot sit on top of the arena buttons. */
+#gs-controls{display:none!important}
+.gs-fullscreen-btn{bottom:134px!important;right:14px!important}
+/* StoryRun: spend no layout and keep only the clock pill over the arena. */
+.storyrun:not(.sr-modal){position:fixed!important;left:50%!important;top:auto!important;bottom:134px!important;transform:translateX(-50%)!important;z-index:9990!important;width:min(360px,calc(100vw - 24px))!important;margin:0!important;padding:0!important;pointer-events:none!important}
+.storyrun:not(.sr-modal) .sr-bar{background:rgba(12,5,30,.82);border:1px solid rgba(160,80,255,.38);color:#efe6ff;border-radius:999px;padding:7px 12px;box-shadow:0 8px 24px rgba(0,0,0,.4);backdrop-filter:blur(10px)}
+.storyrun:not(.sr-modal) .sr-story{display:none}
+.storyrun:not(.sr-modal) .sr-guide{background:linear-gradient(135deg,#9040ee,#5b21b6)}
+.storyrun:not(.sr-modal) .sr-title{color:#efe6ff;font-size:.78rem}
+.storyrun:not(.sr-modal) .sr-clock{background:rgba(160,80,255,.2);border:1px solid rgba(160,80,255,.35);min-width:60px;padding:3px 9px}
+.storyrun:not(.sr-modal) .sr-time{color:#fff;font-size:.9rem}
+.storyrun:not(.sr-modal):not(.is-running){display:none!important}
+/* Keyboard focus for the card grids (they are divs, not native buttons). */
+.spell-choice:focus-visible,.shop-card:focus-visible{outline:3px solid #ffd166;outline-offset:3px}
+.shop-card.cant-afford:focus-visible{outline-color:rgba(255,209,102,.45)}
+/* One-night banner: a toast for the start screen, not a layout bar. */
+#oneNightBanner{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:9996;max-width:calc(100vw - 24px);padding:8px 14px;text-align:center;font-weight:800;font-size:.78rem;color:#ffd166;background:rgba(26,16,53,.9);border:1px solid #ffd166;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.4);backdrop-filter:blur(8px);pointer-events:none;transition:opacity .4s ease,visibility .4s ease}
+body.citadel-in-play #oneNightBanner{opacity:0;visibility:hidden}
+@media(max-width:600px){
+  body>a[href="../games"]{display:none}
+  #hud{flex-wrap:wrap;gap:6px 10px;padding:6px 10px 8px}
+  #hud .hud-sep{display:none}
+  #hud .hud-label{white-space:nowrap;font-size:7px}
+  #hud .hud-val{font-size:1rem;line-height:1}
+  #spell-hud{display:none}
+  .hud-block{order:1}
+  #wave-badge{order:2;margin-left:auto;margin-right:96px}
+  #hp-bar-wrap{order:5;flex:1 1 100%;max-width:none}
+  #mute-btn{top:56px!important;right:8px!important}
+  #lb-btn{top:96px!important;right:8px!important}
+  #citadel-pause{top:84px!important}
+  .storyrun:not(.sr-modal){bottom:132px!important}
+  .gs-fullscreen-btn{display:none!important}
+}
 </style>
 </head>
 <body><h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0">Arcane Citadel</h1>
@@ -196,10 +246,12 @@ canvas{touch-action:none}
         </div>
         <div class="divider"></div>
         <div id="wc-relics" style="margin-bottom:10px;min-height:20px;"></div>
-        <div class="shop-title">⚜ The Arcane Stall</div>
-        <div class="shop-sub">Upgrades are unique to your chosen element</div>
-        <div class="shop-coins">You have <span id="shop-coins-display">0</span> ✦ coins</div>
-        <div class="shop-grid" id="shop-grid"></div>
+        <div class="citadel-shop">
+            <div class="shop-title">⚜ The Arcane Stall</div>
+            <div class="shop-sub">Upgrades are unique to your chosen element</div>
+            <div class="shop-coins">You have <span id="shop-coins-display">0</span> ✦ coins</div>
+            <div class="shop-grid" id="shop-grid"></div>
+        </div>
         <button class="shop-skip" data-on="startNextWave" data-on-plain>→ Enter Wave <span id="wc-next">2</span></button>
     </div>
 </div>
@@ -413,6 +465,7 @@ const ELEMENT_UPGRADES = {
 // SOUND, Web Audio API, no files needed
 // ══════════════════════════════════════════════════════════
 let audioCtx=null, sfxMuted=false;
+try{ sfxMuted=localStorage.getItem('jvds_citadel_muted')==='1'; }catch(e){}
 function getACtx(){
     if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
     if(audioCtx.state==='suspended') audioCtx.resume();
@@ -467,22 +520,42 @@ const SFX={
     playerHit: ()=>{ playNoise(0.14,0.15,500); playTone(160,'sawtooth',0.1,0.18,0.01,0.15); },
 };
 
+function syncMuteBtn(){
+    const btn=document.getElementById('mute-btn');
+    if(!btn) return;
+    btn.textContent=sfxMuted?'🔇':'🔊';
+    btn.setAttribute('aria-pressed',sfxMuted?'true':'false');
+    btn.title=sfxMuted?'Turn sound on':'Mute sound';
+}
 function toggleMute(){
     sfxMuted=!sfxMuted;
-    const btn=document.getElementById('mute-btn');
-    if(btn) btn.textContent=sfxMuted?'🔇':'🔊';
+    try{ localStorage.setItem('jvds_citadel_muted', sfxMuted?'1':'0'); }catch(e){}
+    syncMuteBtn();
 }
 // ══════════════════════════════════════════════════════════
 const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
 const mmCv   = document.getElementById('mmCanvas');
 const mmCtx  = mmCv.getContext('2d');
-let W=0, H=0;
+let W=0, H=0, DPR=1, SAFE_TOP=0;
 
-function resize(){
-    W=canvas.width=window.innerWidth;
-    H=canvas.height=window.innerHeight;
+function measureSafeTop(){
+    const hud=document.getElementById('hud');
+    SAFE_TOP=hud?Math.min(160,Math.ceil(hud.getBoundingClientRect().height)+8):0;
+}
+function applyCanvasSize(){
+    W=Math.max(1,window.innerWidth);
+    H=Math.max(1,window.innerHeight);
+    // Cap the pixel ratio so low-end school laptops still hit a steady frame rate.
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=Math.round(W*DPR);
+    canvas.height=Math.round(H*DPR);
+    if(ctx.setTransform) ctx.setTransform(DPR,0,0,DPR,0,0);
     mmCv.width=mmCv.height=110;
+    measureSafeTop();
+}
+function resize(){
+    applyCanvasSize();
     if(tower){tower.x=W/2;tower.y=H/2;}
 }
 window.addEventListener('resize',resize);
@@ -595,6 +668,9 @@ function showSpellSelect(){
     Object.values(SPELLS).forEach(sp=>{
         const card=document.createElement('div');
         card.className='spell-choice';
+        card.tabIndex=0;
+        card.setAttribute('role','button');
+        card.setAttribute('aria-label','Choose '+sp.name+': '+sp.flavor);
         card.style.setProperty('--sc',sp.glowColor);
         card.style.borderColor=sp.borderColor;
         card.innerHTML=`
@@ -603,6 +679,9 @@ function showSpellSelect(){
             <div class="sc-flavor">${sp.flavor}</div>
             <div class="sc-tag" style="background:${sp.tagBg};color:${sp.tagColor}">${sp.tag}</div>`;
         card.addEventListener('click',()=>pickSpell(sp.id));
+        card.addEventListener('keydown',e=>{
+            if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); pickSpell(sp.id); }
+        });
         grid.appendChild(card);
     });
 }
@@ -620,12 +699,10 @@ function pickSpell(id){
 // INIT / RESET
 // ══════════════════════════════════════════════════════════
 function initGame(){
-    W=canvas.width=window.innerWidth;
-    H=canvas.height=window.innerHeight;
-    mmCv.width=mmCv.height=110;
+    applyCanvasSize();
 
     player={
-        x:W/2,y:H/2-120,r:12,angle:0,
+        x:W/2,y:Math.max(SAFE_TOP+40,H/2-120),r:12,angle:0,
         speed:3.5,dmg:chosenSpell.dmg,
         fireRate:chosenSpell.fireRate,
         fireRateBonus:0,rangeBonus:0,
@@ -754,9 +831,9 @@ function spawnWaveEnemies(){
 function spawnBoss(){
     const def=getBossDef(wave);
     const hp=Math.round(def.hpMult*(wave*1.8+wave*wave*0.05));
-    // Enter from the top-center for drama
+    // Enter from the top-center for drama, clear of the HUD strip
     const en={
-        x:W/2, y:-def.r-20,
+        x:W/2, y:SAFE_TOP+def.r+10,
         r:def.r, hp, maxHp:hp,
         speed:def.speedBase, color:def.color, glowColor:def.glowColor,
         type:'megaboss', name:def.name, subtitle:def.subtitle,
@@ -811,11 +888,12 @@ function updateBossBar(){
 
 function spawnEnemy(){
     const side=Math.floor(Math.random()*4),pad=72;
+    const minY=SAFE_TOP+pad, spanY=Math.max(40,H-SAFE_TOP-pad*2);
     let x,y;
-    if(side===0){x=Math.random()*W;y=-pad;}
-    else if(side===1){x=W+pad;y=Math.random()*H;}
+    if(side===0){x=Math.random()*W;y=SAFE_TOP+30;}
+    else if(side===1){x=W+pad;y=minY+Math.random()*spanY;}
     else if(side===2){x=Math.random()*W;y=H+pad;}
-    else{x=-pad;y=Math.random()*H;}
+    else{x=-pad;y=minY+Math.random()*spanY;}
 
     const roll=Math.random();
     let type,hp,speed,r,color,pts,coinDrop,extra={};
@@ -858,7 +936,8 @@ function spawnEnemy(){
 // ══════════════════════════════════════════════════════════
 function spawnMinionNear(bx,by,type,w){
     const a=Math.random()*Math.PI*2,dist=80+Math.random()*60;
-    const x=bx+Math.cos(a)*dist,y=by+Math.sin(a)*dist;
+    const x=Math.max(20,Math.min(W-20,bx+Math.cos(a)*dist));
+    const y=Math.max(SAFE_TOP+30,Math.min(H-20,by+Math.sin(a)*dist));
     let hp,speed,r,color,pts,coinDrop;
     if(type==='hexblade'){hp=w*4;speed=0.35+w*0.05;r=20+Math.random()*4;color='#8866aa';pts=200;coinDrop=2;}
     else if(type==='golem'){hp=w*3;speed=0.32+w*0.05;r=20+Math.random()*3;color='#887766';pts=180;coinDrop=2;}
@@ -897,6 +976,10 @@ function buildShop(){
         const atSpeedCap=item.stat==='fireRateBonus'&&(player.fireRateBonus||0)>=0.75;
         const card=document.createElement('div');
         card.className='shop-card'+(afford?'':' cant-afford');
+        card.tabIndex=0;
+        card.setAttribute('role','button');
+        card.setAttribute('aria-disabled',afford?'false':'true');
+        card.setAttribute('aria-label',item.name+': '+item.desc+' Costs '+cost+' coins');
         const owned=shopOwned[item.id]||0;
         card.innerHTML=`
             ${owned>0?`<div class="sc-owned-badge">${owned}/${item.maxOwned===99?'∞':item.maxOwned}</div>`:''}
@@ -904,7 +987,12 @@ function buildShop(){
             <div class="sc-n">${item.name}</div>
             <div class="sc-d">${item.desc}${atSpeedCap?' <strong style="color:#ffcc66">(cast speed already capped, no effect)</strong>':''}</div>
             <div class="sc-c">${cost} ✦</div>`;
-        if(afford) card.addEventListener('click',()=>buyItem(item,cost));
+        if(afford){
+            card.addEventListener('click',()=>buyItem(item,cost));
+            card.addEventListener('keydown',e=>{
+                if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); buyItem(item,cost); }
+            });
+        }
         grid.appendChild(card);
     }
     document.getElementById('shop-coins-display').textContent=coins;
@@ -934,7 +1022,8 @@ function showWaveComplete(){
     const wcPrefix=document.getElementById('wc-prefix');
     if(wcPrefix) wcPrefix.textContent=isBossWave(wave)?'⚔ Boss ':'✦ Wave ';
     const waveSubEl=document.querySelector('.wave-sub');
-    if(waveSubEl) waveSubEl.textContent=isBossWave(wave)?'The beast is slain, you have earned this.':'The darkness regroups, spend wisely';
+    if(waveSubEl) waveSubEl.textContent=isBossWave(wave)?'The beast is slain, you have earned this.':
+        (window.__citadelMode==='deep'?'The darkness regroups, spend wisely':'The darkness regroups, brace for the next wave.');
     document.getElementById('wc-kills').textContent=waveKills;
     document.getElementById('wc-score').textContent=score.toLocaleString();
     document.getElementById('wc-earned').textContent=waveCoinsEarned;
@@ -1291,8 +1380,8 @@ function update(dt){
     const mag=Math.hypot(mx,my);
     player._moving=mag>0;
     if(mag>0){
-        player.x=Math.max(player.r,Math.min(W-player.r,player.x+(mx/mag)*player.speed*dtF));
-        player.y=Math.max(player.r,Math.min(H-player.r,player.y+(my/mag)*player.speed*dtF));
+    player.x=Math.max(player.r,Math.min(W-player.r,player.x+(mx/mag)*player.speed*dtF));
+    player.y=Math.max(SAFE_TOP+player.r,Math.min(H-player.r,player.y+(my/mag)*player.speed*dtF));
     }
 
     // ── Auto-aim ──
@@ -1563,7 +1652,7 @@ function update(dt){
         if(en.x<-margin||en.x>W+margin||en.y<-margin||en.y>H+margin){
             en.hp-=en.maxHp*0.12;
             en.x=Math.max(margin,Math.min(W-margin,en.x));
-            en.y=Math.max(margin,Math.min(H-margin,en.y));
+            en.y=Math.max(SAFE_TOP+margin,Math.min(H-margin,en.y));
             en.vx*=-0.4; en.vy*=-0.4;
             if(en.hp<=0) killEnemy(en);
         }
@@ -2439,7 +2528,7 @@ function restartGame(){
 // LOOP
 // ══════════════════════════════════════════════════════════
 function loop(ts=0){draw(ts);animID=requestAnimationFrame(loop);}
-resize();loop();
+resize();loop();syncMuteBtn();
 </script>
 <script src="../assets/js/strip-toggle.js"></script>
 
@@ -2449,6 +2538,28 @@ resize();loop();
 window.addEventListener('DOMContentLoaded', function() {
 const gameSystem = window.gameSystem = new GameSystem('arcane-citadel', 'Arcane Citadel', 'wizard');
 const soundManager = window.soundManager = new SoundManager(gameSystem);
+
+// The shared Arcade menu is built before this page creates its GameSystem, so
+// its Pause/Restart/Sound/Help items start hidden. Register real actions and
+// reveal them now that the game instance exists.
+function revealArcadeActions(){
+  try{
+    if(window.JVDSArcade && JVDSArcade.register) JVDSArcade.register({
+      pause:function(){ if(window.__citadelTogglePause) window.__citadelTogglePause(); },
+      restart:function(){ restartGame(); },
+      sound:function(){ toggleMute(); },
+      help:function(){ if(window.__citadelHelp) window.__citadelHelp(); }
+    });
+  }catch(e){}
+  var menu=document.getElementById('arcade-menu');
+  if(menu){
+    ['pause','restart','sound','help'].forEach(function(a){
+      var b=menu.querySelector('[data-arcade-action="'+a+'"]');
+      if(b) b.hidden=false;
+    });
+  }
+}
+revealArcadeActions();
 
 const storyRun = window.__storyRun = new StoryRun({
   id: 'arcane-citadel',
@@ -2490,7 +2601,7 @@ window.addEventListener('beforeunload', () => {
   window.__citadelMode = window.__citadelMode || 'quick';
   const isQuick = () => window.__citadelMode !== 'deep';
   const style=document.createElement('style');
-  style.textContent='.citadel-quick #shop,.citadel-quick .shop,.citadel-quick .shop-panel,.citadel-quick .upgrades{display:none !important}.citadel-quick #waveCounter::after{content:" Night 1/1"}';
+  style.textContent='.citadel-quick .citadel-shop,.citadel-quick #shop,.citadel-quick .shop,.citadel-quick .shop-panel,.citadel-quick .upgrades{display:none !important}.citadel-quick #waveCounter::after{content:" Night 1/1"}';
   document.head.appendChild(style);
   const applyClass=()=>document.documentElement.classList.toggle('citadel-quick', isQuick());
   applyClass();
@@ -2501,7 +2612,8 @@ window.addEventListener('beforeunload', () => {
     ? 'Quick Night: hold three waves, then Malgrath at the gate.'
     : 'Deep Night: endless waves, all four bosses, shop open at every wave.';
   banner.textContent=bannerText();
-  banner.style.cssText='background:#1a1035;color:#ffd166;padding:10px 14px;text-align:center;font-weight:800;border-bottom:2px solid #ffd166;';
+  /* Styled in the page-level stylesheet as a fixed toast: the old inline
+     block bar sat in normal flow and pushed the game canvas down. */
   if(document.body) document.body.prepend(banner); else document.addEventListener('DOMContentLoaded',()=>document.body.prepend(banner));
   const fixHud=()=>{ if(!isQuick()) return; const el=document.getElementById('waveCounter')||document.querySelector('.wave-counter'); if(el) el.textContent='Night 1/1'; };
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', fixHud); else fixHud();
@@ -2579,6 +2691,7 @@ window.addEventListener('beforeunload', () => {
     '#citadel-echo b{color:#ffd166}'+
     '#citadel-echo a{color:#8fe3ff;font-weight:800;text-decoration:none}'+
     '#citadel-share{margin:8px auto 0;display:block;background:rgba(90,40,160,.4);color:#fff;border:1px solid rgba(160,80,255,.5);border-radius:12px;padding:11px 16px;font:800 .85rem Inter,sans-serif;cursor:pointer}'+
+    '#citadel-card{margin:8px auto 0;display:block;background:rgba(255,209,102,.12);color:#ffd166;border:1px solid rgba(255,209,102,.5);border-radius:12px;padding:11px 16px;font:800 .85rem Inter,sans-serif;cursor:pointer}'+
     '.spell-choice{position:relative}'+
     '.citadel-mastered{position:absolute;top:6px;right:8px;font-size:.66rem;font-weight:800;color:#ffd166;background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.4);border-radius:999px;padding:2px 7px}'+
     '.citadel-recommended{display:inline-block;margin-left:6px;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0a0618;background:#ffd166;border-radius:999px;padding:2px 7px}';
@@ -2631,6 +2744,7 @@ window.addEventListener('beforeunload', () => {
   var _startGame=startGame;
   window.startGame=function(){
     _startGame.apply(this,arguments);
+    document.body.classList.add('citadel-in-play');
     var coach=byId('citadel-coach'); if(coach) coach.remove();
     if(calm&&tower){ var add=Math.round(tower.maxHp*0.6); tower.maxHp+=add; tower.hp=tower.maxHp; try{updateHUD();}catch(e){} }
   };
@@ -2674,6 +2788,86 @@ window.addEventListener('beforeunload', () => {
     try{ window.prompt('Copy your run:',text); }catch(e){}
   }
   function flashShare(msg){ var b=byId('citadel-share'); if(b){ b.textContent=msg; setTimeout(function(){ b.textContent='↗ Share your run'; },1800); } }
+  function drawRunCard(){
+    var c=document.createElement('canvas'); c.width=1080; c.height=1350;
+    var x=c.getContext('2d');
+    var bg=x.createLinearGradient(0,0,1080,1350);
+    bg.addColorStop(0,'#241044'); bg.addColorStop(.55,'#120726'); bg.addColorStop(1,'#05010c');
+    x.fillStyle=bg; x.fillRect(0,0,1080,1350);
+    var seed=1234;
+    function rnd(){ seed=(seed*9301+49297)%233280; return seed/233280; }
+    for(var i=0;i<110;i++){
+      var px=rnd()*1080, py=rnd()*1350, rr=rnd()*2.4+0.6;
+      x.globalAlpha=.25+rnd()*.6;
+      x.fillStyle=rnd()<.35?'#ffd166':'#c9a6ff';
+      x.beginPath(); x.arc(px,py,rr,0,Math.PI*2); x.fill();
+    }
+    x.globalAlpha=1;
+    x.strokeStyle='#9040ee'; x.lineWidth=12; x.strokeRect(44,44,992,1262);
+    x.strokeStyle='rgba(255,209,102,.55)'; x.lineWidth=3; x.strokeRect(64,64,952,1222);
+    x.textAlign='center';
+    x.fillStyle='#ffd166'; x.font='900 66px "Cinzel Decorative", Cinzel, serif'; x.fillText('ARCANE CITADEL',540,190);
+    x.fillStyle='rgba(201,166,255,.9)'; x.font='800 30px Inter, sans-serif'; x.fillText('A NIGHT AT THE GATE',540,242);
+    var sp=chosenSpell||null;
+    x.font='120px serif'; x.fillText(sp?sp.emoji:'🏰',540,430);
+    x.fillStyle='#efe6ff'; x.font='900 64px Cinzel, serif'; x.fillText(sp?sp.name:'Mage',540,540);
+    x.fillStyle='rgba(201,166,255,.75)'; x.font='700 26px Inter, sans-serif';
+    x.fillText(window.__citadelMode==='deep'?'DEEP NIGHT':'QUICK NIGHT',540,592);
+    var stats=[['SCORE',score.toLocaleString()],['WAVE',String(wave)],['SLAIN',String(killCount)]];
+    for(var s=0;s<stats.length;s++){
+      var cx=250+s*290;
+      x.fillStyle='rgba(160,80,255,.18)'; x.fillRect(cx-120,690,240,200);
+      x.strokeStyle='rgba(160,80,255,.35)'; x.lineWidth=2; x.strokeRect(cx-120,690,240,200);
+      x.fillStyle='#c9a6ff'; x.font='800 22px Inter, sans-serif'; x.fillText(stats[s][0],cx,735);
+      x.fillStyle='#ffd166'; x.font='900 60px "Cinzel Decorative", Cinzel, serif'; x.fillText(stats[s][1],cx,800);
+    }
+    var won=window.__storyRun&&window.__storyRun.finished&&window.__storyRun.outcome==='success';
+    x.fillStyle='#efe6ff'; x.font='700 34px Inter, sans-serif';
+    x.fillText(won?('The gate held for '+wave+' wave'+(wave===1?'':'s')+'.'):('The gate fell at wave '+wave+'.'),540,990);
+    x.fillStyle='rgba(201,166,255,.75)'; x.font='600 26px Inter, sans-serif';
+    x.fillText('Score '+score.toLocaleString()+' with '+(sp?sp.name:'a mage'),540,1040);
+    var d=new Date();
+    x.fillStyle='rgba(201,166,255,.55)'; x.font='600 24px Inter, sans-serif';
+    x.fillText(d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}),540,1112);
+    x.fillStyle='#ffd166'; x.font='800 26px Inter, sans-serif';
+    x.fillText('jvdesignstudio.co.uk/games/arcane_citadel_page.html',540,1212);
+    return c;
+  }
+  function saveRunCard(){
+    var c=drawRunCard();
+    var name='arcane-citadel-run-'+new Date().toISOString().slice(0,10)+'.png';
+    function dataURLtoBlob(){
+      var parts=c.toDataURL('image/png').split(',');
+      var bin=atob(parts[1]), arr=new Uint8Array(bin.length);
+      for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+      return new Blob([arr],{type:'image/png'});
+    }
+    function download(blob){
+      try{
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a'); a.href=url; a.download=name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(url); },2000);
+      }catch(e){}
+    }
+    try{
+      if(c.toBlob){
+        c.toBlob(function(blob){
+          if(!blob){ download(dataURLtoBlob()); return; }
+          if(navigator.share&&navigator.canShare){
+            try{
+              var file=new File([blob],name,{type:'image/png'});
+              if(navigator.canShare({files:[file]})){
+                navigator.share({files:[file],title:'Arcane Citadel run'}).catch(function(){ download(blob); });
+                return;
+              }
+            }catch(e){}
+          }
+          download(blob);
+        },'image/png');
+      } else { download(dataURLtoBlob()); }
+    }catch(e){}
+  }
   function buildRunSummary(){
     var screen=byId('screen-gameover'); if(!screen||byId('citadel-echo')) return;
     var m=mastery();
@@ -2684,22 +2878,27 @@ window.addEventListener('beforeunload', () => {
       '<div style="margin-top:8px"><a href="../tools/arcade-game-maker.html">Build your own tower defence →</a></div>');
     var share=el('button','citadel-share',null,'↗ Share your run');
     share.type='button'; share.addEventListener('click',shareRun);
+    var cardBtn=el('button','citadel-card',null,'🖼 Save run card');
+    cardBtn.type='button'; cardBtn.addEventListener('click',saveRunCard);
     var anchor=byId('go-rank-msg')||byId('go-relics');
     if(anchor) anchor.insertAdjacentElement('afterend',echo); else screen.appendChild(echo);
     screen.appendChild(share);
+    screen.appendChild(cardBtn);
   }
   var _gameOver=gameOver;
-  window.gameOver=function(){ _gameOver.apply(this,arguments); buildRunSummary(); };
+  window.gameOver=function(){ _gameOver.apply(this,arguments); document.body.classList.remove('citadel-in-play'); buildRunSummary(); };
 
   // ── EMBER FIRST-RUN COACH ──
-  function showCoach(){
-    if(LS.get('jvds_citadel_coach','0')==='1') return;
+  function showCoach(force){
+    if(!force && LS.get('jvds_citadel_coach','0')==='1') return;
+    var oldCoach=byId('citadel-coach'); if(oldCoach) oldCoach.remove();
     var c=el('div','citadel-coach',null,
       '<b>Ember says:</b> Move with WASD or drag. Your spells aim themselves at the nearest enemy. Hold the gate for three waves, then Malgrath comes.'+
       '<div><button type="button" id="citadel-coach-ok">Got it</button></div>');
     document.body.appendChild(c);
     byId('citadel-coach-ok').addEventListener('click',function(){ LS.set('jvds_citadel_coach','1'); c.remove(); });
   }
+  window.__citadelHelp=function(){ showCoach(true); };
 
   // ── START SCREEN: recommended Quick Night + Calm toggle ──
   function decorateStart(){
@@ -2739,6 +2938,8 @@ window.addEventListener('beforeunload', () => {
     warnVisible:function(){return warn.style.display==='block';},
     setActiveBossForTest:function(b){ activeBoss=b; },
     reducedMotion:function(){return reduced;},
+    muted:function(){return sfxMuted;},
+    runCardDataURL:function(){ try{ return drawRunCard().toDataURL('image/png'); }catch(e){ return ''; } },
     state:function(){return gameState;}
   };
 
