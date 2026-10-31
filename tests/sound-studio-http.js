@@ -67,6 +67,42 @@ let failures = 0;
   check('export and handoff functions exist', initial.exportFn && initial.gameMakerFn && initial.shareFn && initial.sfxSendFn);
   check('mode switcher renders', initial.modes === 3, String(initial.modes));
   check('mobile does not overflow viewport', initial.scrollWidth <= initial.clientWidth + 2, `${initial.scrollWidth}/${initial.clientWidth}`);
+  const mobileChrome = await page.evaluate(()=>{
+    const title=document.querySelector('.sfx-shelf-title');
+    const shelfBar=document.querySelector('.sfx-shelf-bar');
+    const hint=document.getElementById('modeHint');
+    const modes=document.querySelector('.ss-modes');
+    const tr=document.getElementById('transport');
+    const trBox=tr?tr.getBoundingClientRect():null;
+    const items=tr?[...tr.children].filter(el=>el.getBoundingClientRect().width>0):[];
+    return {
+      titleW: title?Math.round(title.getBoundingClientRect().width):0,
+      shelfH: shelfBar?Math.round(shelfBar.getBoundingClientRect().height):0,
+      modesOverflow: modes?Math.max(0,modes.scrollWidth-modes.clientWidth):0,
+      hintBottom: hint?Math.round(hint.getBoundingClientRect().bottom):0,
+      modesBottom: modes?Math.round(modes.getBoundingClientRect().bottom):0,
+      trOverflow: tr?Math.max(0,tr.scrollWidth-tr.clientWidth):0,
+      trBottom: trBox?Math.round(trBox.bottom):0,
+      maxItemRight: items.length?Math.round(Math.max(...items.map(el=>el.getBoundingClientRect().right))):0,
+      vw: document.documentElement.clientWidth
+    };
+  });
+  check('mobile shelf header not crushed', mobileChrome.titleW>=120 && mobileChrome.shelfH<=64, JSON.stringify(mobileChrome));
+  check('mobile mode hint wraps inside the mode bar', mobileChrome.modesOverflow<=1 && mobileChrome.hintBottom<=mobileChrome.modesBottom+1, JSON.stringify(mobileChrome));
+  const trNav = await page.evaluate(()=>{
+    const tr=document.getElementById('transport');
+    const l=document.querySelector('.tr-nav-l'), r=document.querySelector('.tr-nav-r');
+    const before=tr.scrollLeft;
+    if(window.scrollTransport) window.scrollTransport(1);
+    return {left:!!l,right:!!r,before,overflow:tr.scrollWidth-tr.clientWidth,
+      rightBtnRight:r?Math.round(r.getBoundingClientRect().right):0,
+      vw:document.documentElement.clientWidth};
+  });
+  await new Promise(resolve=>setTimeout(resolve, 450));
+  const trScrolled = await page.evaluate(()=>document.getElementById('transport').scrollLeft);
+  check('mobile transport has scroll controls', trNav.left && trNav.right && trNav.overflow>0 && trScrolled>trNav.before, JSON.stringify({...trNav,after:trScrolled}));
+  check('mobile transport right control stays on screen', trNav.rightBtnRight>0 && trNav.rightBtnRight<=trNav.vw+1, JSON.stringify(trNav));
+  await page.evaluate(()=>{ const tr=document.getElementById('transport'); tr.style.scrollBehavior='auto'; tr.scrollLeft=0; tr.style.scrollBehavior=''; });
   check('no known broken placeholder text', !initial.badText);
   await page.evaluate(() => closeStart());
   await page.click('#playBtn');
