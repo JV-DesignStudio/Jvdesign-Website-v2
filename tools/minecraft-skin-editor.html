@@ -134,7 +134,12 @@
   </section>
 
   <div class="ms-app">
-    <aside class="ms-side" aria-label="Skin editor controls">
+    <div class="ms-sheet-backdrop" id="msSheetBackdrop" hidden></div>
+    <aside class="ms-side" id="msSide" aria-label="Skin editor controls">
+      <div class="ms-sheet-head">
+        <span>Tools and files</span>
+        <button type="button" class="ms-sheet-close" id="msSheetClose" aria-label="Close controls">×</button>
+      </div>
       <div class="ms-card ms-ember">
         <img src="../games/chars/ember.png" alt="" width="42" height="42" loading="lazy">
         <p><strong>Ember says:</strong> start with a base skin, then change a few pixels at a time. Small edits make a big difference.</p>
@@ -154,7 +159,7 @@
         <div style="margin-top:6px">
           <button type="button" class="ms-btn" id="msAlexBtn" style="width:100%" title="Toggle between Steve (4px) and Alex (3px) arm width">Steve (wide)</button>
         </div>
-        <p class="ms-hint">P pencil · E eraser · F fill · I pick · S symmetry · +− zoom</p>
+        <p class="ms-hint">P pencil · E eraser · F fill · I pick · H move · S symmetry · +− zoom</p>
       </div>
 
       <div class="ms-card">
@@ -207,12 +212,7 @@
         </div>
         <input type="file" id="msFile" accept="image/png,image/*" hidden>
         <p class="ms-hint" id="msSizeHint">Skins are 64x64 pixels. Older 64x32 skins are converted for you.</p>
-        <label class="ms-fieldlabel" style="margin-top:10px">Load from Minecraft username</label>
-        <div class="ms-mojang-row">
-          <input type="text" id="msMojangUser" class="ms-text-input" placeholder="e.g. Notch" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Minecraft username">
-          <button type="button" class="ms-btn" id="msMojangFetch">Load</button>
-        </div>
-        <p class="ms-hint">Fetches the player's current Mojang skin. Needs internet.</p>
+        <p class="ms-hint">On a phone, export the PNG then import it in Minecraft: Dressing Room, Classic Skins, Owned, then Import.</p>
       </div>
 
       <div class="ms-card">
@@ -268,31 +268,43 @@
     <div class="ms-view-tabs" id="msViewTabs" role="tablist" aria-label="Switch between 2D painting and 3D preview">
       <button type="button" class="ms-view-tab active" id="msTab2D" role="tab" aria-selected="true">🖌️ 2D Paint</button>
       <button type="button" class="ms-view-tab" id="msTab3D" role="tab" aria-selected="false">🧊 3D Preview</button>
+      <button type="button" class="ms-view-tab ms-view-tab--more" id="msTabMore" aria-haspopup="dialog" aria-expanded="false" aria-controls="msSide">More</button>
     </div>
 
-    <!-- mobile quick-access strip (hidden on desktop via CSS) -->
-    <div class="ms-mobile-strip" id="msMobileStrip" role="toolbar" aria-label="Quick tools">
-      <input type="color" id="msMobileColor" aria-label="Paint colour" title="Colour">
-      <button type="button" class="ms-strip-btn" data-tool="pencil" title="Pencil (P)">✏️</button>
-      <button type="button" class="ms-strip-btn" data-tool="eraser" title="Eraser (E)">🧽</button>
-      <button type="button" class="ms-strip-btn" data-tool="fill"   title="Fill (F)">🪣</button>
-      <button type="button" class="ms-strip-btn" data-tool="eyedropper" title="Pick colour (I)">💧</button>
-      <button type="button" class="ms-strip-btn" id="msStripUndo"   title="Undo">↩</button>
-      <button type="button" class="ms-strip-btn" id="msStripZoomIn" title="Zoom in (+)">🔍</button>
-    </div>
-    <!-- mobile skin-tone swatches (hidden on desktop via CSS) -->
-    <div class="ms-tone-strip" id="msToneStrip" role="group" aria-label="Skin tone quick colours">
+    <!-- mobile part picker and skin tones (hidden on desktop via CSS) -->
+    <div class="ms-part-strip" id="msPartStrip" role="group" aria-label="Zoom to a body part">
+      <button type="button" class="ms-part-btn on" data-part="WHOLE" aria-pressed="true">Whole</button>
+      <button type="button" class="ms-part-btn" data-part="HEAD" aria-pressed="false">Head</button>
+      <button type="button" class="ms-part-btn" data-part="BODY" aria-pressed="false">Body</button>
+      <button type="button" class="ms-part-btn" data-part="ARMS" aria-pressed="false">Arms</button>
+      <button type="button" class="ms-part-btn" data-part="LEGS" aria-pressed="false">Legs</button>
+      <span class="ms-tone-divider" aria-hidden="true"></span>
       <button type="button" class="ms-tone-btn" data-tone="#FDDBB4" style="background:#FDDBB4" aria-label="Light skin tone"></button>
       <button type="button" class="ms-tone-btn" data-tone="#E8B88A" style="background:#E8B88A" aria-label="Medium-light skin tone"></button>
       <button type="button" class="ms-tone-btn" data-tone="#C9905F" style="background:#C9905F" aria-label="Medium skin tone"></button>
       <button type="button" class="ms-tone-btn" data-tone="#9B6343" style="background:#9B6343" aria-label="Medium-dark skin tone"></button>
       <button type="button" class="ms-tone-btn" data-tone="#6B3E26" style="background:#6B3E26" aria-label="Dark skin tone"></button>
       <button type="button" class="ms-tone-btn" data-tone="#3A2A1A" style="background:#3A2A1A" aria-label="Deep skin tone"></button>
-      <span class="ms-tone-divider" aria-hidden="true"></span>
-      <button type="button" class="ms-part-btn" data-part="HEAD"  aria-label="Jump to Head">Head</button>
-      <button type="button" class="ms-part-btn" data-part="BODY"  aria-label="Jump to Body">Body</button>
-      <button type="button" class="ms-part-btn" data-part="ARMS"  aria-label="Jump to Arms">Arms</button>
-      <button type="button" class="ms-part-btn" data-part="LEGS"  aria-label="Jump to Legs">Legs</button>
+    </div>
+
+    <!-- mobile fixed action bar (hidden on desktop via CSS) -->
+    <div class="ms-mobile-strip" id="bottom-bar" role="toolbar" aria-label="Quick tools">
+      <div class="ms-strip-row">
+        <input type="color" id="msMobileColor" aria-label="Paint colour" title="Colour">
+        <button type="button" class="ms-strip-btn" data-tool="pencil" title="Pencil (P)" aria-label="Pencil">✏️</button>
+        <button type="button" class="ms-strip-btn" id="msStripUndo" title="Undo" aria-label="Undo">↩</button>
+        <button type="button" class="ms-strip-btn" data-tool="eraser" title="Eraser (E)" aria-label="Eraser">🧽</button>
+        <button type="button" class="ms-strip-btn" data-tool="fill" title="Fill (F)" aria-label="Fill">🪣</button>
+        <button type="button" class="ms-strip-btn" data-tool="eyedropper" title="Pick colour (I)" aria-label="Pick colour">💧</button>
+        <button type="button" class="ms-strip-btn" data-tool="hand" title="Move the canvas (H)" aria-label="Move the canvas">✋</button>
+      </div>
+      <div class="ms-strip-row ms-strip-actions">
+        <button type="button" class="ms-strip-btn" id="msStripBrush" title="Brush size" aria-label="Brush size 1 pixel">1px</button>
+        <button type="button" class="ms-mini-btn" id="msMiniBtn" aria-label="Open the 3D preview">
+          <canvas id="msMini" width="44" height="64" aria-hidden="true"></canvas>
+        </button>
+        <button type="button" class="ms-strip-export" id="msStripExport">Save &amp; Export</button>
+      </div>
     </div>
 
     <div class="ms-main" data-view="2d">
@@ -311,7 +323,7 @@
           </div>
           <button type="button" class="ms-btn ms-view-reset" id="msViewReset" style="display:none" title="Reset view zoom and pan">⊙ Reset view</button>
         </div>
-        <p class="ms-hint">Drag to paint · Ctrl+scroll or pinch to zoom view · right-drag to pan</p>
+        <p class="ms-hint">Drag to paint · Pinch or Ctrl+scroll to zoom · Two-finger or right-drag to pan</p>
       </section>
 
       <section class="ms-card ms-previewwrap" aria-label="3D preview">
