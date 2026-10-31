@@ -39,10 +39,13 @@ const ctx = { window: {} };
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(REGISTRY, 'utf8'), ctx);
 const games = ctx.window.JVDS_GAMES || [];
+// Only non-hidden games are rendered (arcade.html filters HIDDEN and shows
+// classroom games in their own section). The contract applies to those.
+const liveGames = games.filter(g => String(g.quality || '').toUpperCase() !== 'HIDDEN');
 const arcade = fs.readFileSync(ARCADE, 'utf8');
 const arcadeCss = fs.readFileSync(ARCADE_CSS, 'utf8');
 
-console.log('Arcade contract: ' + games.length + ' live games in the line-up\n');
+console.log('Arcade contract: ' + liveGames.length + ' live games in the line-up (' + games.length + ' in the registry)\n');
 
 /* ── 1. the line-up is curated and unique ─────────────────────── */
 ok('the arcade line-up is curated (1 to ' + MAX_LINEUP + ' games)', games.length >= 1 && games.length <= MAX_LINEUP, games.length + ' games');
@@ -50,7 +53,7 @@ ok('game ids are unique', new Set(games.map(g => g.id)).size === games.length);
 ok('every line-up entry points at a different file', new Set(games.map(g => g.file)).size === games.length);
 
 /* ── 2. every entry carries the contract ──────────────────────── */
-for (const g of games) {
+for (const g of liveGames) {
   const missing = CONTRACT_FIELDS.filter(k => !g[k]);
   ok(g.id + ': full card contract', missing.length === 0, 'missing ' + missing.join(', '));
   ok(g.id + ': story hook is one sentence', sentence(g.storyHook), JSON.stringify(g.storyHook));
@@ -62,7 +65,7 @@ for (const g of games) {
 }
 
 /* ── 3. honest session labels ─────────────────────────────────── */
-for (const g of games) {
+for (const g of liveGames) {
   ok(g.id + ': session label is one of the three buckets', BUCKETS.includes(g.session), g.session);
   ok(g.id + ': arcade label matches its session label', g.session === g.arcadeSession, g.session + ' vs ' + g.arcadeSession);
 }
@@ -124,7 +127,7 @@ if (process.env.SKIP_BROWSER === '1') {
             };
           });
           ok(vp.name + ': no sideways scrolling', m.scrollWidth <= m.innerWidth + 1, m.scrollWidth + ' > ' + m.innerWidth);
-          ok(vp.name + ': all line-up cards render', m.cards === games.length, m.cards + ' cards');
+          ok(vp.name + ': all line-up cards render', m.cards === liveGames.length, m.cards + ' cards');
           ok(vp.name + ': every card shows a title', m.withTitle === m.cards, m.withTitle + '/' + m.cards);
           ok(vp.name + ': every card shows a tag', m.withTag === m.cards, m.withTag + '/' + m.cards);
           ok(vp.name + ': every card names its guide', m.withGuide === m.cards, m.withGuide + '/' + m.cards);
@@ -146,3 +149,4 @@ function finish() {
   console.log(failures.length ? '\nARCADE CONTRACT FAILURES (' + failures.length + '):\n  ' + failures.slice(0, 12).join('\n  ') : '\nALL ARCADE CONTRACT CHECKS PASSED');
   process.exit(failures.length ? 1 : 0);
 }
+

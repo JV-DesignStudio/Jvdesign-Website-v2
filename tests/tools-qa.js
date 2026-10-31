@@ -24,9 +24,14 @@ try{
   }).length;
   const expected = indexable + builderCount;
   check(curatedCount === expected, 'content/tools.json', `curated ${curatedCount} != ${expected} (${indexable} indexable tools + ${builderCount} curated 3D builders)`);
-  check(files.length === 71, 'tools/*.html', `filesystem ${files.length} != 71 raw (38 indexable + 33 noindex)`);
-  if(curatedCount===expected && files.length===71) console.log(`  [PASS] tools count curated ${curatedCount} vs raw ${files.length}`);
-  else console.log(`  [INFO] tools count curated ${curatedCount} vs raw ${files.length}`);
+  // The curated count above is the real gate. The raw file count is reported
+  // but not asserted: it changes whenever a noindex landing page is added or
+  // removed, which does not affect the catalogue.
+  if (curatedCount === expected) {
+    console.log(`  [PASS] tools count curated ${curatedCount} vs ${files.length} files (${indexable} indexable + ${files.length - indexable} noindex)`);
+  } else {
+    console.log(`  [INFO] tools count curated ${curatedCount} vs ${files.length} files`);
+  }
 }catch(e){ failures.push(`content/tools.json: ${e.message}`); }
 
 for(const file of files){
