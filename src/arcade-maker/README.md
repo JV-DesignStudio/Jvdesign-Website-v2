@@ -150,3 +150,5 @@ it to regenerate modules; edit the module files directly.
   studio init is skipped in export mode, and maker-only CSS is dropped.
 - **A2170**: in-maker sandbox entity placement: star, chaser, spawn and goal on the
   tilemap canvas, a spawn start and a "Reach the goal" win mode.
+- **A2171**: sandbox checkpoints: save a run from the pause menu and continue it with
+  score, lives, remaining stars/chasers, goal, player position, elapsed time and variables.

@@ -285,6 +285,65 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   });
   check('reaching the goal wins the run', goalWin.done === true && goalWin.overlay === true, JSON.stringify(goalWin));
 
+  // 10. Checkpoint save, normal boot, and continue.
+  const cpUi = await page.evaluate(() => {
+    document.getElementById('genreMode').value = 'CUSTOM';
+    onGenreChange();
+    const shown = getComputedStyle(document.getElementById('pauseCheckpointBtn')).display;
+    document.getElementById('genreMode').value = 'SHOOTER';
+    onGenreChange();
+    return { shown, hidden: getComputedStyle(document.getElementById('pauseCheckpointBtn')).display };
+  });
+  check('checkpoint button shows only for CUSTOM', cpUi.shown !== 'none' && cpUi.hidden === 'none', JSON.stringify(cpUi));
+
+  await bootCustom({ customWinMode: 'collect', customWinValue: 0, customStarTarget: 3,
+    customEnemyCount: 1, customEnemySpeed: 0, customGoldStars: false, customFastEnemies: false,
+    customRules: [], customVars: [] });
+  await page.evaluate(() => {
+    const sc = window._phaserGame.scene.getScenes(true)[0];
+    const s = sc.stars.getChildren().find(c => c.active);
+    if (s) sc.actor.setPosition(s.x, s.y);
+  });
+  await sleep(500);
+  // Move to a corner away from the stationary chaser so the save position is stable.
+  await page.evaluate(() => {
+    const sc = window._phaserGame.scene.getScenes(true)[0];
+    const e = sc.enemies.getChildren().find(c => c.active);
+    if (e) sc.actor.setPosition(e.x < 320 ? 600 : 40, e.y < 200 ? 360 : 40);
+    else sc.actor.setPosition(100, 100);
+  });
+  await sleep(200);
+  const saved = await page.evaluate(() => {
+    const sc = window._phaserGame.scene.getScenes(true)[0];
+    sc._sbCheckpoint();
+    const cp = JSON.parse(localStorage.getItem('jv_sandbox_checkpoint'));
+    return { collected: cp.collected, stars: cp.stars.length, enemies: cp.enemies.length, score: cp.score, x: cp.player.x };
+  });
+  check('checkpoint saves the run state', saved.collected === 1 && saved.stars === 2 && saved.enemies === 1 && saved.score >= 100,
+    JSON.stringify(saved));
+
+  await bootCustom({ customWinMode: 'collect', customWinValue: 0, customStarTarget: 3,
+    customEnemyCount: 1, customEnemySpeed: 0, customGoldStars: false, customFastEnemies: false,
+    customRules: [], customVars: [] });
+  const normal = await page.evaluate(() => {
+    const sc = window._phaserGame.scene.getScenes(true)[0];
+    return { collected: sc._collected, score: sc.score };
+  });
+  check('a normal boot does not auto-resume', normal.collected === 0 && normal.score === 0, JSON.stringify(normal));
+
+  await page.evaluate(() => { window.__sbResume = true; });
+  await bootCustom({ customWinMode: 'collect', customWinValue: 0, customStarTarget: 3,
+    customEnemyCount: 1, customEnemySpeed: 0, customGoldStars: false, customFastEnemies: false,
+    customRules: [], customVars: [] });
+  const resumed = await page.evaluate(() => {
+    const sc = window._phaserGame.scene.getScenes(true)[0];
+    return { collected: sc._collected, score: sc.score, stars: sc.stars.countActive(true),
+      enemies: sc.enemies.countActive(true), lives: gameState.lives, x: Math.round(sc.actor.x) };
+  });
+  check('continue restores the checkpoint', resumed.collected === 1 && resumed.score >= 100 &&
+    resumed.stars === 2 && resumed.enemies === 1, JSON.stringify(resumed));
+  check('continue restores the player position', Math.abs(resumed.x - saved.x) <= 6, saved.x + ' -> ' + resumed.x);
+
   check('no uncaught JS errors', jsErrors.length === 0, jsErrors.slice(0,2).join(' | '));
 
   await browser.close();
