@@ -374,6 +374,22 @@ function runBatchGenerate(){closeModal('genModal');let count=Math.max(1,Math.min
 
 // STAMP
 function updateStampBtn(){const el=document.getElementById('stampFrameNum');if(el) el.textContent=currentFrame+1;}
+// The character preview is smooth vector art at 192px. When it is stamped onto
+// a 32/64px game canvas we threshold alpha and pull edge colours from opaque
+// neighbours, so the result reads as pixel art instead of a soft downscale.
+function pixelCleanID(id){
+  const w=id.width,h=id.height,d=id.data,src=new Uint8ClampedArray(d);
+  const nb=(x,y)=>{if(x<0||y<0||x>=w||y>=h)return null;const i=(y*w+x)*4;return src[i+3]>0?[src[i+3],src[i],src[i+1],src[i+2]]:null;};
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i=(y*w+x)*4,a=src[i+3];
+    if(a<96){d[i+3]=0;continue;}
+    d[i+3]=255;
+    if(a<250){
+      const n=[nb(x-1,y),nb(x+1,y),nb(x,y-1),nb(x,y+1)].filter(Boolean).sort((p,q)=>q[0]-p[0]);
+      if(n.length){d[i]=n[0][1];d[i+1]=n[0][2];d[i+2]=n[0][3];}
+    }
+  }
+}
 function stampToCanvas(fi){
   const frameIdx=(fi!==undefined)?fi:currentFrame;
   while(frames.length<=frameIdx) frames.push(layers.map(()=>null));
@@ -383,7 +399,9 @@ function stampToCanvas(fi){
   const tmp=document.createElement('canvas');tmp.width=cW;tmp.height=cH;
   const tctx=tmp.getContext('2d');tctx.imageSmoothingEnabled=false;
   tctx.drawImage(charCanvasUnified,0,0,cW,cH);
-  const src=tctx.getImageData(0,0,cW,cH).data;
+  const cleaned=tctx.getImageData(0,0,cW,cH);
+  pixelCleanID(cleaned);
+  const src=cleaned.data;
   const dst=frames[frameIdx][0];
   for(let i=0;i<cW*cH;i++){const si=i*4;if(src[si+3]===0)continue;dst.data[si]=src[si];dst.data[si+1]=src[si+1];dst.data[si+2]=src[si+2];dst.data[si+3]=src[si+3];}
   if(fi===undefined){if(layers.length<2) addLayer();currentLayer=1;renderLayerList();renderFrameList();renderAll();showToast('Stamped to frame '+(frameIdx+1)+'!');}
