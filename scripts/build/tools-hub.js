@@ -23,6 +23,9 @@ const { ROOT } = require('../lib/paths');
 const esc = s => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+const DIFFICULTY_LABEL = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
+const difficultyLabel = d => DIFFICULTY_LABEL[d] || DIFFICULTY_LABEL.beginner;
+
 function relUrl(url) {
   const u = String(url || '');
   return u.startsWith('/') ? '..' + u : u;
@@ -49,7 +52,10 @@ function renderCard(tool, card, pipelineTitle) {
         ${thumb}
     </div>
     <div class="tool-body">
-        <span class="tool-type">${esc(pipelineTitle)}</span>
+        <div class="tool-meta">
+            <span class="tool-type">${esc(pipelineTitle)}</span>
+            <span class="tool-difficulty" data-difficulty="${esc(card.difficulty || 'beginner')}">${esc(difficultyLabel(card.difficulty))}</span>
+        </div>
         <h3 class="tool-title">${esc(name)}</h3>
         <p class="tool-desc">${esc(card.cardDesc)}</p>
 ${merged}        <div class="tool-tags">${tags}</div>
