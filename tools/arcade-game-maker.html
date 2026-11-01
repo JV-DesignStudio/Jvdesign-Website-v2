@@ -85,7 +85,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-SxXgsn+QybFxPmoNQWMNgYt3OdjHg66m9GPED/ZCejg=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-uXHlckkmf+ApFy8mh1WZPtOKa5BSCjwFsa3ND9joC/k=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-yekvNZkiuzRdRpykALma7GUhtdLK0Xg6xpc84kLMlbM=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-uXHlckkmf+ApFy8mh1WZPtOKa5BSCjwFsa3ND9joC/k=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -381,6 +381,13 @@
  <!-- A2157: Custom Sandbox settings, only shown for the CUSTOM genre. -->
  <span class="sec-label" id="customSandboxLabel" style="display:none;">🧪 Sandbox Settings</span>
  <div class="form-group" id="customSandboxGroup" style="display:none;">
+ <label for="sbCoreLoop">Core loop</label>
+ <select id="sbCoreLoop" data-on="_sbCoreLoop" data-on-event="change" data-on-args="this" style="width:100%;max-width:100%;box-sizing:border-box;background:rgba(0,0,0,.35);border:1px solid var(--border2);border-radius:6px;color:var(--text);font:inherit;font-size:.7rem;padding:5px 7px;">
+ <option value="topdown">Top-down collect</option>
+ <option value="platformer">Platformer</option>
+ <option value="autorun">Auto-run</option>
+ </select>
+ <div id="sbCoreLoopHint" style="font-size:.58rem;color:var(--muted);line-height:1.5;">Ember says: move with the arrows or WASD and collect every star.</div>
  <label>Stars to collect</label>
  <div class="range-row">
  <input type="range" aria-label="Stars to collect" id="customStarTargetRange" min="3" max="20" value="8" data-on="_arcCustomSync" data-on-args="s:customStarTarget|s:customStarTargetRange|this" data-on-event="input">
@@ -5142,6 +5149,9 @@ function _arcCustomSync(key, id, el) {
 }
 
 // ── CUSTOM SANDBOX v2: win modes, variables and ALL/ANY rules (A2165) ────────
+// A2174: the sandbox picks one core loop. The choice lives in liveConfig so it
+// follows the same project/save/export path as every other sandbox setting.
+const _SB_LOOPS = ['topdown','platformer','autorun'];
 const _SB_BUILTIN = [['stars','Stars'],['lives','Lives'],['time','Time (s)']];
 const _SB_OPS = ['>=','<=','==','!=','>','<'];
 const _SB_ACTIONS = [['addScore','Add score'],['addVar','Add to variable'],['setVar','Set variable'],['addLife','Add life'],['spawnStar','Spawn a star'],['win','Win'],['lose','Lose']];
@@ -5154,7 +5164,27 @@ function _sbVarOptions(sel) {
 function _sbVar(id) { return (liveConfig.customVars || []).find(v => v.id === id); }
 function _sbRule(id) { return (liveConfig.customRules || []).find(r => r.id === id); }
 function _sbWinValueDefault(mode) { return mode === 'time' ? 30 : (mode === 'goal' ? 0 : 500); }
+function _sbSyncCoreUI() {
+    const loop = (_SB_LOOPS.indexOf(liveConfig.customCoreLoop) !== -1) ? liveConfig.customCoreLoop : 'topdown';
+    const sel = document.getElementById('sbCoreLoop');
+    if (sel && sel.value !== loop) sel.value = loop;
+    const hint = document.getElementById('sbCoreLoopHint');
+    if (hint) {
+        hint.textContent = loop === 'platformer'
+            ? 'Ember says: run and jump to collect every star. Up or Space jumps.'
+            : (loop === 'autorun'
+                ? 'Ember says: you move on your own. Jump with Space or Up and time it right.'
+                : 'Ember says: move with the arrows or WASD and collect every star.');
+    }
+}
+function _sbCoreLoop(el) {
+    const v = el && _SB_LOOPS.indexOf(el.value) !== -1 ? el.value : 'topdown';
+    liveConfig.customCoreLoop = v;
+    _sbSyncCoreUI();
+    _scheduleAutoSave();
+}
 function _sbSyncWinUI() {
+    _sbSyncCoreUI();
     const mode = liveConfig.customWinMode || 'collect';
     const sel = document.getElementById('sbWinMode'); if (sel) sel.value = mode;
     const val = document.getElementById('sbWinValue');
@@ -10231,10 +10261,16 @@ function sceneCustom(data) {
             this._winMode = liveConfig.customWinMode || 'collect';
             this._winValue = Number(liveConfig.customWinValue) || (this._winMode === 'time' ? 30 : 500);
             this._ruleFired = new Set();
+            // A2174: one sandbox, three core loops. Anything not in the list falls
+            // back to the original top-down arena so old saves keep working.
+            const _loopWanted = String(liveConfig.customCoreLoop || 'topdown');
+            this._coreLoop = _SB_LOOPS.indexOf(_loopWanted) !== -1 ? _loopWanted : 'topdown';
+            this._jumpWasDown = false;
             this._drawBg();
             this.scoreText = this._makeScoreText();
             this.cursors = this.input.keyboard.createCursorKeys();
             this.wasd = this.input.keyboard.addKeys({ up:'W', left:'A', down:'S', right:'D' });
+            this.jumpKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
             // A drawn star, so the sandbox needs no assets at all.
             if (!this.textures.exists('_custom_star')) {
@@ -10261,13 +10297,31 @@ function sceneCustom(data) {
 
             const size = Math.round(29 * (liveConfig.playerScale || 1));
             const _spawn = (customLevelEntities && Array.isArray(customLevelEntities.spawn)) ? customLevelEntities.spawn : null;
-            const _sx = _spawn ? (Math.max(0, Math.min(19, _spawn[0])) + 0.5) * (GW / 20) : GW/2;
-            const _sy = _spawn ? (Math.max(0, Math.min(14, _spawn[1])) + 0.5) * (GH / 15) : GH/2;
+            let _sx, _sy;
+            if (_spawn) {
+                _sx = (Math.max(0, Math.min(19, _spawn[0])) + 0.5) * (GW / 20);
+                _sy = (Math.max(0, Math.min(14, _spawn[1])) + 0.5) * (GH / 15);
+            } else if (this._coreLoop === 'autorun') {
+                _sx = 48; _sy = GH - 64;
+            } else if (this._coreLoop === 'platformer') {
+                _sx = GW / 2; _sy = GH - 64;
+            } else {
+                _sx = GW / 2; _sy = GH / 2;
+            }
             this.actor = this.physics.add.sprite(_sx, _sy, 'player');
             this.actor.setDisplaySize(size, size);
             this.actor.body.setSize(Math.round(size*0.8), Math.round(size*0.8), true);
-            this.actor.setCollideWorldBounds(true).setDrag(200).setMaxVelocity(400);
+            this.actor.setCollideWorldBounds(true);
+            if (this._coreLoop === 'topdown') {
+                this.actor.setDrag(200).setMaxVelocity(400);
+            } else {
+                // Jumping loops need gravity, no drag and a higher vertical cap.
+                this.actor.body.setDrag(0, 0);
+                this.actor.setMaxVelocity(600, 900);
+                this.actor.body.setGravityY(Math.max(120, Number(liveConfig.gravity) || 600));
+            }
             this._applyPlayerColour(this.actor);
+            if (this._coreLoop !== 'topdown') this._buildSandboxFloor();
 
             const placedStars = (customLevelEntities && Array.isArray(customLevelEntities.coins)) ? customLevelEntities.coins : [];
             const placedEnemies = (customLevelEntities && Array.isArray(customLevelEntities.enemies)) ? customLevelEntities.enemies : [];
@@ -10277,8 +10331,22 @@ function sceneCustom(data) {
             this.stars = this.physics.add.group({ allowGravity:false, immovable:true });
             for (let i = 0; i < this._target; i++) {
                 const p = placedStars[i];
-                const x = p ? _cellX(p[0]) : Phaser.Math.Between(28, GW - 28);
-                const y = p ? _cellY(p[1]) : Phaser.Math.Between(40, GH - 28);
+                let x, y;
+                if (p) {
+                    x = _cellX(p[0]);
+                    y = _cellY(p[1]);
+                    // Keep a placed star out of the floor on the jumping loops.
+                    if (this._coreLoop !== 'topdown' && y > GH - 30) y = GH - 34;
+                } else if (this._coreLoop === 'autorun') {
+                    x = Phaser.Math.Between(70, GW - 32);
+                    y = GH - Phaser.Math.Between(34, 150);
+                } else if (this._coreLoop === 'platformer') {
+                    x = Phaser.Math.Between(28, GW - 28);
+                    y = Phaser.Math.Between(60, GH - 80);
+                } else {
+                    x = Phaser.Math.Between(28, GW - 28);
+                    y = Phaser.Math.Between(40, GH - 28);
+                }
                 const gold = !!liveConfig.customGoldStars && (i % 3 === 2);
                 const s = this.stars.create(x, y, gold ? '_custom_star_gold' : '_custom_star');
                 s.setData('gold', gold);
@@ -10289,8 +10357,18 @@ function sceneCustom(data) {
             this.enemies = this.physics.add.group({ allowGravity:false });
             for (let i = 0; i < this._enemyCount; i++) {
                 const p = placedEnemies[i];
-                const x = p ? _cellX(p[0]) : Phaser.Math.Between(40, GW - 40);
-                const y = p ? _cellY(p[1]) : Phaser.Math.Between(50, GH - 40);
+                let x, y;
+                if (p) {
+                    x = _cellX(p[0]);
+                    y = _cellY(p[1]);
+                    if (this._coreLoop !== 'topdown' && y > GH - 60) y = GH - 64;
+                } else if (this._coreLoop === 'topdown') {
+                    x = Phaser.Math.Between(40, GW - 40);
+                    y = Phaser.Math.Between(50, GH - 40);
+                } else {
+                    x = Phaser.Math.Between(80, GW - 40);
+                    y = GH - 64;
+                }
                 const fast = !!liveConfig.customFastEnemies && (i % 3 === 2);
                 const e = this.enemies.create(x, y, 'enemy');
                 e.setDisplaySize(fast ? 20 : 26, fast ? 20 : 26);
@@ -10299,6 +10377,10 @@ function sceneCustom(data) {
                 e.setData('speed', this._enemySpeed * (fast ? 1.6 : 1));
                 e.setData('fast', fast);
                 e.setDepth(3);
+                this._sbConfigureEnemyBody(e);
+            }
+            if (this._coreLoop !== 'topdown' && this._sbPlatforms) {
+                this.physics.add.collider(this.enemies, this._sbPlatforms);
             }
 
             // A2170: a placed goal wins on contact when the win mode is 'goal'.
@@ -10342,14 +10424,68 @@ function sceneCustom(data) {
                     showGameOver(this.score);
                     return;
                 }
-                this.actor.setPosition(GW/2, GH/2);
-                this.actor.body.setVelocity(0, 0);
+                this._sbResetActor();
             });
 
             const _cp = window.__sbResume ? _readSandboxCheckpoint() : null;
             window.__sbResume = false;
             if (_cp) this._sbRestore(_cp);
             this._hud();
+        }
+        // A2174: the platformer and auto-run loops stand on a simple floor with a
+        // few platforms. The top-down loop keeps the open arena.
+        _buildSandboxFloor() {
+            this._sbPlatforms = this.physics.add.staticGroup();
+            const T = 16;
+            const groundY = GH - T / 2;
+            const tileCol = themeInt(2, 0x334155);
+            this._sbPlatforms.create(GW / 2, groundY, 'block').setDisplaySize(GW, T).setTint(tileCol).refreshBody();
+            if (this._coreLoop === 'platformer') {
+                const platCol = themeInt(1, 0x4ade80);
+                [[0.25, 0.7, 0.24], [0.6, 0.54, 0.2], [0.82, 0.74, 0.16]].forEach(p => {
+                    this._sbPlatforms.create(GW * p[0], GH * p[1], 'block')
+                        .setDisplaySize(GW * p[2], T).setTint(platCol).refreshBody();
+                });
+            }
+            this.physics.add.collider(this.actor, this._sbPlatforms);
+        }
+        _sbConfigureEnemyBody(e) {
+            if (!e || !e.body) return;
+            if (this._coreLoop === 'topdown') {
+                e.body.setAllowGravity(false);
+                return;
+            }
+            e.body.setAllowGravity(true);
+            e.body.setGravityY(Math.max(120, Number(liveConfig.gravity) || 600));
+            e.setCollideWorldBounds(true);
+        }
+        _sbOnGround() {
+            const b = this.actor && this.actor.body;
+            return !!(b && (b.blocked.down || b.touching.down));
+        }
+        _sbJumpRequested() {
+            const touchUp = !!touchInput.up;
+            const pressed = (this.cursors && Phaser.Input.Keyboard.JustDown(this.cursors.up))
+                || (this.jumpKey && Phaser.Input.Keyboard.JustDown(this.jumpKey))
+                || (touchUp && !this._jumpWasDown);
+            this._jumpWasDown = touchUp;
+            return pressed;
+        }
+        _sbResetActor() {
+            const sp = (customLevelEntities && Array.isArray(customLevelEntities.spawn)) ? customLevelEntities.spawn : null;
+            let x, y;
+            if (sp) {
+                x = (Math.max(0, Math.min(19, sp[0])) + 0.5) * (GW / 20);
+                y = (Math.max(0, Math.min(14, sp[1])) + 0.5) * (GH / 15);
+            } else if (this._coreLoop === 'autorun') {
+                x = 48; y = GH - 64;
+            } else if (this._coreLoop === 'platformer') {
+                x = GW / 2; y = GH - 64;
+            } else {
+                x = GW / 2; y = GH / 2;
+            }
+            this.actor.setPosition(x, y);
+            this.actor.body.setVelocity(0, 0);
         }
         _sbCheckpoint() {
             const stars = this.stars.getChildren().filter(s => s.active)
@@ -10392,6 +10528,7 @@ function sceneCustom(data) {
                 e.setData('speed', Number(p[2]) || 0);
                 e.setData('fast', fast);
                 e.setDepth(3);
+                this._sbConfigureEnemyBody(e);
             });
             this.score = Number(cp.score) || 0;
             this._collected = Number(cp.collected) || 0;
@@ -10432,9 +10569,7 @@ function sceneCustom(data) {
             }
             this.scoreText.setText(info);
         }
-        update() {
-            if (this._done) return;
-            const sp = liveConfig.speed || 220;
+        _sbUpdateTopdown(sp) {
             let vx = 0, vy = 0;
             const k = this.cursors, w = this.wasd;
             if ((k && k.left.isDown) || (w && w.left.isDown) || touchInput.left)  vx -= 1;
@@ -10451,6 +10586,52 @@ function sceneCustom(data) {
                     if (spd > 0) this.physics.moveToObject(e, this.actor, spd);
                 });
             }
+        }
+        _sbUpdatePlatformer(sp) {
+            let vx = 0;
+            const k = this.cursors, w = this.wasd;
+            if ((k && k.left.isDown) || (w && w.left.isDown) || touchInput.left)  vx -= 1;
+            if ((k && k.right.isDown) || (w && w.right.isDown) || touchInput.right) vx += 1;
+            this.actor.body.setVelocityX(vx * sp);
+            if (vx) this.actor.setFlipX(vx < 0);
+            if (this._sbJumpRequested() && this._sbOnGround()) {
+                this.actor.body.setVelocityY(-(Number(liveConfig.jumpForce) || 450));
+                GameAudio.play('jump');
+            }
+            this.enemies.children.iterate(e => {
+                if (!e || !e.active) return;
+                const spd = Number(e.getData('speed')) || this._enemySpeed;
+                if (spd > 0 && e.body) {
+                    const dir = this.actor.x < e.x ? -1 : 1;
+                    e.body.setVelocityX(dir * spd);
+                    e.setFlipX(dir < 0);
+                }
+            });
+        }
+        _sbUpdateAutorun(sp) {
+            this.actor.body.setVelocityX(sp);
+            this.actor.setFlipX(false);
+            if (this._sbJumpRequested() && this._sbOnGround()) {
+                this.actor.body.setVelocityY(-(Number(liveConfig.jumpForce) || 450));
+                GameAudio.play('jump');
+            }
+            // Loop back to the left edge so a short screen still feels endless.
+            if (this.actor.x >= GW - 16) {
+                this.actor.setX(16);
+                this.actor.body.setVelocityY(0);
+            }
+            this.enemies.children.iterate(e => {
+                if (!e || !e.active) return;
+                const spd = Number(e.getData('speed')) || this._enemySpeed;
+                if (spd > 0 && e.body) e.body.setVelocityX(-spd);
+            });
+        }
+        update() {
+            if (this._done) return;
+            const sp = liveConfig.speed || 220;
+            if (this._coreLoop === 'platformer') this._sbUpdatePlatformer(sp);
+            else if (this._coreLoop === 'autorun') this._sbUpdateAutorun(sp);
+            else this._sbUpdateTopdown(sp);
             _sceneTickBase(this, this.score);
             _sbRulesTick(this);
             _sbCheckWin(this);
