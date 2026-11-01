@@ -210,14 +210,21 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   // Checkpoints use the same sandbox path on the jumping loops.
   await bootSandbox('platformer', 3);
   await collectOneStar();
-  await maker.evaluate(() => window._phaserGame.scene.getScenes(true)[0]._sbCheckpoint());
+  // Read the scene in the same frame as the checkpoint write. Another star can be
+  // collected on a slow frame, so capture what was actually saved rather than assume 1.
+  const platCheckpoint = await maker.evaluate(() => {
+    const sc = window._phaserGame.scene.getScenes(true)[0];
+    sc._sbCheckpoint();
+    return { collected: sc._collected, done: sc._done };
+  });
   await bootSandbox('platformer', 3);
   const platNormal = await sandboxScene();
   check('platformer normal boot does not auto-resume', platNormal.collected === 0 && platNormal.done === false, JSON.stringify(platNormal));
   await maker.evaluate(() => { window.__sbResume = true; });
   await bootSandbox('platformer', 3);
   const platResume = await sandboxScene();
-  check('platformer continue restores the checkpoint', platResume.loop === 'platformer' && platResume.collected === 1 && platResume.done === false, JSON.stringify(platResume));
+  check('platformer checkpoint captured a live run', platCheckpoint.collected >= 1 && platCheckpoint.done === false, JSON.stringify(platCheckpoint));
+  check('platformer continue restores the checkpoint', platResume.loop === 'platformer' && platResume.collected === platCheckpoint.collected && platResume.done === false, JSON.stringify({ saved: platCheckpoint, resumed: platResume }));
 
   await bootSandbox('autorun', 1);
   const autoStart = await sandboxScene();
