@@ -85,7 +85,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-S04ACpLFgFiQxsy3Ta8kn2ND1za3RqlebTawFYJa/uQ=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-uXHlckkmf+ApFy8mh1WZPtOKa5BSCjwFsa3ND9joC/k=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -365,7 +365,7 @@
  <button class="btn-sm" data-on="tmClear" data-on-plain title="Clear all">🗑</button>
  </div>
  <div id="tmCustomHint" style="display:none;font-size:.62rem;color:var(--muted);line-height:1.4;">
- Place stars, chasers, a spawn and a goal. Pick "Reach the goal" in Sandbox Settings to win at the goal. Empty cells are scattered for you.
+ Place pickups, enemies, a spawn and a goal. Pick an entity tool to paint them, then a tile tool to paint the level again. Empty cells are scattered for you.
  </div>
  <!-- Grid canvas -->
  <canvas id="tilemapCanvas" width="322" height="242"
@@ -978,11 +978,15 @@ score += bumper.pts; <span class="c-comment">// 100-200</span></pre>
  <button class="asset-btn" data-on="seSetEraser" data-on-plain id="seEraserBtn" style="flex:1;min-width:60px;">⬜ Erase</button>
  <button class="asset-btn" data-on="seClear" data-on-plain style="flex:1;min-width:50px;">✕ Clear</button>
  </div>
- <div style="display:flex;flex-wrap:wrap;gap:5px;">
- <button class="asset-btn import" data-on="seApply" data-on-arg="player" data-on-plain style="flex:1;">✓ Player</button>
- <button class="asset-btn import" data-on="seApply" data-on-arg="enemy" data-on-plain  style="flex:1;">✓ Enemy</button>
- </div>
- <div style="font-size:.58rem;color:var(--muted);line-height:1.6;">Paint each frame. Multi-frame = animated walk cycle in-game. Right-click to erase.</div>
+  <div style="display:flex;flex-wrap:wrap;gap:5px;">
+  <button class="asset-btn import" data-on="seApply" data-on-arg="player" data-on-plain style="flex:1;">✓ Player</button>
+  <button class="asset-btn import" data-on="seApply" data-on-arg="enemy" data-on-plain  style="flex:1;">✓ Enemy</button>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:5px;">
+  <button class="asset-btn" data-on="sePreviewAnimation" data-on-plain style="flex:1;min-width:68px;">Play preview</button>
+  <button class="asset-btn" data-on="seAddFrame" data-on-plain style="flex:1;min-width:60px;">+ Frame</button>
+  </div>
+  <div style="font-size:.58rem;color:var(--muted);line-height:1.6;">Paint each frame. Multi-frame = animated walk cycle in-game. Up to 8 frames per entity. Right-click to erase.</div>
  </div>
  </div>
  </div>
@@ -4132,6 +4136,20 @@ let customSpriteDataUrl   = null;
 let customSpriteFrameCount = 1;   // >1 when a multi-frame animated sprite is imported
 let customSpriteFrameW    = 0;    // width of each frame in the spritesheet
 let customEnemyDataUrl    = null;
+let customEnemyFrameCount = 1;    // A2185: enemy sheet keeps the same model as the player
+let customEnemyFrameW     = 0;
+// A2185: one sheet per entity. The cap keeps the exported single-file game under
+// its size ceiling, so never raise this without re-measuring the export.
+const SB_MAX_ENTITY_FRAMES = 8;
+function _sbClampFrameCount(n) {
+    const v = Math.round(Number(n) || 1);
+    return Math.max(1, Math.min(SB_MAX_ENTITY_FRAMES, v));
+}
+function _sbFrameWidth(count, width) {
+    const c = _sbClampFrameCount(count);
+    const w = Math.round(Number(width) || 0);
+    return (c > 1 && w > 0) ? w : 0;
+}
 let customBulletDataUrl   = null;
 let customBlockDataUrl    = null;
 let customBgDataUrl       = null;
@@ -6848,6 +6866,8 @@ function _applyGenreWinDefault(g) {
 
 function onGenreChange() {
     const g = document.getElementById('genreMode').value;
+    // A2185: undo history belongs to one genre's sandbox placement.
+    _sbResetEntityHistory();
     // Per-genre preferred phone orientation , app-immersive locks accordingly
     window.__gmOrientation = GENRE_ORIENTATION[g] || 'landscape';
     _syncGenrePicker(); // sync visual picker, genre description, mobile run bar
@@ -6867,12 +6887,15 @@ function onGenreChange() {
     const tmCustom = document.getElementById('tmCustomTools');
     const tmCustomHint = document.getElementById('tmCustomHint');
     const isCustom = g === 'CUSTOM';
-    if (tmStd)  tmStd.style.display  = (isRacing || isCustom) ? 'none' : 'flex';
+    const isPlacement = _isPlacementGenre(g);
+    if (tmStd)  tmStd.style.display  = (!isCustom && !isRacing) ? 'flex' : 'none';
     if (tmRac)  tmRac.style.display  = (!isCustom && isRacing) ? 'flex' : 'none';
     if (tmHint) tmHint.style.display = (!isCustom && isRacing) ? '' : 'none';
-    if (tmCustom) tmCustom.style.display = isCustom ? 'flex' : 'none';
-    if (tmCustomHint) tmCustomHint.style.display = isCustom ? '' : 'none';
-    if (isCustom) tmRender();
+    if (tmCustom) tmCustom.style.display = isPlacement ? 'flex' : 'none';
+    if (tmCustomHint) tmCustomHint.style.display = isPlacement ? '' : 'none';
+    _tmMode = isCustom ? 'entity' : 'tile';
+    if (isCustom) tmSetEntity(_tmEntityTool);
+    if (isCustom || isPlacement) tmRender();
 
     const showGrav = ['PLATFORMER','RUNNER','FLAPPY'].includes(g);
     const showJump = ['PLATFORMER','RUNNER','FLAPPY'].includes(g);
@@ -7037,6 +7060,8 @@ function getPayload() {
         spriteFrameCount: customSpriteFrameCount || 1,
         spriteFrameW: customSpriteFrameW || 0,
         enemySprite: customEnemyDataUrl,
+        enemySpriteFrameCount: customEnemyFrameCount || 1,
+        enemySpriteFrameW: customEnemyFrameW || 0,
         bulletSprite: customBulletDataUrl,
         blockSprite: customBlockDataUrl,
         bgImage: customBgDataUrl,
@@ -8983,7 +9008,16 @@ function scenePaperToss(data) {
 
 function getScene(data) {
     const scenes = { SHOOTER:sceneShooter, PLATFORMER:scenePlatformer, DODGE:sceneDodge, BREAKER:sceneBreaker, RUNNER:sceneRunner, FLAPPY:sceneFlappy, INVADERS:sceneInvaders, PONG:scenePong, SNAKE:sceneSnake, ASTEROIDS:sceneAsteroids, ROGUELIKE:sceneRoguelike, RACING:sceneRacing, HOPPER:sceneHopper, BEAT:sceneBeatEmUp, PUZZLE:scenePuzzle, RHYTHM:sceneRhythm, DEFENSE:sceneTowerDefense, PINBALL:scenePinball, CLICKER:sceneClicker, MEMORY:sceneMemory, WAVESURVIVAL:sceneWaveSurvival, PAPERTOSS:scenePaperToss, CUSTOM:sceneCustom };
-    return scenes[data.genre] ? scenes[data.genre](data) : sceneShooter(data);
+    const base = scenes[data.genre] ? scenes[data.genre](data) : sceneShooter(data);
+    // A2178: every supported genre gets the same placement layer after its own
+    // create() runs. CUSTOM and the unsupported genres opt out inside the helper.
+    return class extends base {
+        create() {
+            super.create();
+            try { _applyScenePlacement(this, data); }
+            catch (e) { console.warn('Placed entities:', e); }
+        }
+    };
 }
 
 // ── Shared scene helpers, used by makeBaseScene AND standalone scenes ─────────
@@ -10378,6 +10412,7 @@ function sceneCustom(data) {
                 this.actor.body.setGravityY(Math.max(120, Number(liveConfig.gravity) || 600));
             }
             this._applyPlayerColour(this.actor);
+            this._setupActorAnim(this.actor);
             if (this._coreLoop !== 'topdown') this._buildSandboxFloor();
 
             const placedStars = (customLevelEntities && Array.isArray(customLevelEntities.coins)) ? customLevelEntities.coins : [];
@@ -10434,6 +10469,7 @@ function sceneCustom(data) {
                 e.setData('speed', this._enemySpeed * (fast ? 1.6 : 1));
                 e.setData('fast', fast);
                 e.setDepth(3);
+                this._setupEnemyAnim(e);
                 this._sbConfigureEnemyBody(e);
             }
             if (this._coreLoop !== 'topdown' && this._sbPlatforms) {
@@ -10923,6 +10959,19 @@ function makeBaseScene(data) {
                         }
                     } catch(e) { console.warn('Player anim setup:', e); }
                 }
+                // A2185: enemy uses the same one-sheet model as the player.
+                if (data.enemySpriteFrameCount > 1 && this.textures.exists('enemy')) {
+                    try {
+                        if (!this.anims.exists('enemy_walk')) {
+                            this.anims.create({
+                                key: 'enemy_walk',
+                                frames: this.anims.generateFrameNumbers('enemy', { start:0, end:data.enemySpriteFrameCount-1 }),
+                                frameRate: Math.min(12, data.enemySpriteFrameCount * 3),
+                                repeat: -1
+                            });
+                        }
+                    } catch(e) { console.warn('Enemy anim setup:', e); }
+                }
             });
 
             // Surface asset load failures visibly instead of silent black sprites
@@ -10956,8 +11005,10 @@ function makeBaseScene(data) {
             } else {
                 makeFallback('player', 32, 32, _drawDefaultShip);
             }
-            // Enemy sprite
-            if (data.enemySprite) {
+            // Enemy sprite, spritesheet loader when animation frames exist
+            if (data.enemySprite && data.enemySpriteFrameCount > 1 && data.enemySpriteFrameW > 0) {
+                loadCustomSheet('enemy', data.enemySprite, data.enemySpriteFrameW, data.enemySpriteFrameW);
+            } else if (data.enemySprite) {
                 loadCustom('enemy', data.enemySprite);
             } else {
                 makeFallback('enemy', 32, 32, _drawDefaultAlien);
@@ -11213,6 +11264,13 @@ function makeBaseScene(data) {
             // The animation key is created in preload's load.once('complete') callback
             if (this.anims.exists('player_walk')) {
                 try { sprite.anims.play('player_walk', true); } catch(e) {}
+            }
+        }
+        // A2185: same helper for the enemy sheet. Safe when there is no animation.
+        _setupEnemyAnim(sprite) {
+            if (!sprite || !this.anims) return;
+            if (this.anims.exists('enemy_walk')) {
+                try { sprite.anims.play('enemy_walk', true); } catch(e) {}
             }
         }
         // ── Particle burst ────────────────────────────────────────────────────
@@ -15047,9 +15105,11 @@ function _applySpriteDataUrl(url, label, frameCount, frameW) {
     // Validate data URL size (post-encode bloat ~33%)
     const kb = Math.round(url.length*0.75/1024);
     if (kb > 2200) showToast('⚠️ Sprite large (~'+kb+' KB) , may hit storage limit. Consider a smaller image.', 'warn', 5000);
+    const _wantFrames = Math.max(1, Math.round(Number(frameCount) || 1));
     customSpriteDataUrl    = url;
-    customSpriteFrameCount = frameCount || 1;
-    customSpriteFrameW     = frameW     || 0;
+    customSpriteFrameCount = _sbClampFrameCount(_wantFrames);
+    customSpriteFrameW     = _sbFrameWidth(_wantFrames, frameW);
+    if (_wantFrames > SB_MAX_ENTITY_FRAMES) showToast('Animation capped at ' + SB_MAX_ENTITY_FRAMES + ' frames per entity', 'warn', 5000);
     const th=document.getElementById('spriteThumb'); th.innerHTML='';
     const img=new Image();
     img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;';
@@ -15082,9 +15142,13 @@ function importEnemyFromUpload(input) {
     if (!file.type.startsWith('image/')) { showToast('⚠️ Not an image , use PNG/JPG', 'error'); input.value=''; return; }
     const r=new FileReader(); r.onload=e=>_applyEnemyDataUrl(e.target.result,file.name); r.onerror=()=>showToast('⚠️ Could not read file', 'error'); r.readAsDataURL(file);
 }
-function _applyEnemyDataUrl(url, label) {
+function _applyEnemyDataUrl(url, label, frameCount, frameW) {
     const kb=Math.round(url.length*0.75/1024);
+    const _wantFrames = Math.max(1, Math.round(Number(frameCount) || 1));
     customEnemyDataUrl=url;
+    customEnemyFrameCount=_sbClampFrameCount(_wantFrames);
+    customEnemyFrameW=_sbFrameWidth(_wantFrames, frameW);
+    if (_wantFrames > SB_MAX_ENTITY_FRAMES) showToast('Animation capped at ' + SB_MAX_ENTITY_FRAMES + ' frames per entity', 'warn', 5000);
     const th=document.getElementById('enemyThumb'); th.innerHTML='';
     const img=new Image();
     img.onload=()=>{ th.appendChild(img); img.style.cssText='max-width:100%;max-height:100%;image-rendering:pixelated;'; if(img.naturalWidth>1024||img.naturalHeight>1024) showToast('⚠️ Enemy image big , will be downscaled', 'warn'); };
@@ -15098,6 +15162,8 @@ function _applyEnemyDataUrl(url, label) {
 }
 function clearEnemySprite() {
     customEnemyDataUrl=null;
+    customEnemyFrameCount=1;
+    customEnemyFrameW=0;
     document.getElementById('enemyThumb').innerHTML='<div class="no-art">Default</div>';
     document.getElementById('enemyInfoName').textContent='Using default UFO';
     document.getElementById('enemyInfoDesc').textContent='Replace enemies with your own pixel art.';
@@ -15262,6 +15328,7 @@ function _applyLevelData(data) {
     // Preserve solid (1) and hazard/spike (2) tile types, don't flatten to 0/1
     customLevelMap=Array.from(bl.data).map(v=>Math.min(2,Math.max(0,v|0)));
     customLevelEntities=(data.entities && (data.entities.coins||data.entities.enemies||data.entities.spawn||data.entities.goal)) ? data.entities : null;
+    _sbResetEntityHistory();
     document.getElementById('levelDesignerGrid').value=JSON.stringify(customLevelMap);
     const w=data.gridW||20,h=data.gridH||15;
     const mini=document.getElementById('levelMini'); mini.innerHTML='';
@@ -15861,10 +15928,17 @@ const TM_COLS=20, TM_ROWS=15;
 let _tmData     = Array(TM_COLS*TM_ROWS).fill(0);
 let _tmTool     = 1;      // 0=erase 1=solid 2=hazard 'flood'=flood-fill
 let _tmEntityTool = 'star'; // A2170: CUSTOM sandbox entity tool
+let _tmMode = 'tile';       // A2178: which canvas tool is active, tile or entity
 let _tmLastTool = 1;      // last numeric tool, used as paint value for flood fill
 let _tmPainting = false;
 let _tmHistory  = [];     // undo stack  (each entry is a full _tmData snapshot)
 let _tmFuture   = [];     // redo stack
+// A2185: entity placement has its own undo stack so add, move and erase all
+// work in the sandbox. Genre change and project load reset both stacks.
+let _sbEntHistory = [];
+let _sbEntFuture  = [];
+let _sbEntDrag    = null;
+const SB_ENTITY_UNDO_LIMIT = 60;
 
 // Tile colours for the editor canvas
 // 0=empty/grass  1=solid/road  2=hazard/wall  3=start/finish  4=boost  5=oil
@@ -15878,25 +15952,217 @@ const TM_COLORS_RACING = { 0:'#1a3520', 1:'#374151', 2:'#b91c1c', 3:'#fbbf24', 4
 function _isCustomGenre() {
     return (document.getElementById('genreMode') || {}).value === 'CUSTOM';
 }
+// A2178: the genres that can place entities. CUSTOM already had placement;
+// these are the scenes with their own free enemy/pickup list to seed.
+const SB_PLACEMENT_GENRES = ['SHOOTER','PLATFORMER','RUNNER','DODGE','INVADERS','ASTEROIDS','ROGUELIKE','WAVESURVIVAL','BEAT','DEFENSE','CUSTOM'];
+function _isPlacementGenre(g) {
+    return SB_PLACEMENT_GENRES.indexOf(String(g || '')) !== -1;
+}
+// One state shape for every placement genre, so save, export and continue
+// all read the same {coins, enemies, spawn, goal} object. Missing or old
+// projects normalise to an empty placement instead of breaking the scene.
+function _sbNormaliseEntities(src) {
+    const out = { coins: [], enemies: [], spawn: null, goal: null };
+    if (!src || typeof src !== 'object') return out;
+    const cell = (v, max) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? Math.max(0, Math.min(max, Math.round(n))) : null;
+    };
+    const pair = (v, maxX, maxY) => {
+        if (!Array.isArray(v) || v.length < 2) return null;
+        const c = cell(v[0], maxX), r = cell(v[1], maxY);
+        return (c === null || r === null) ? null : [c, r];
+    };
+    const fill = (target, list) => {
+        const seen = {};
+        (Array.isArray(list) ? list : []).forEach(v => {
+            const p = pair(v, TM_COLS - 1, TM_ROWS - 1);
+            if (!p) return;
+            const key = p[0] + ',' + p[1];
+            if (seen[key]) return;
+            seen[key] = 1;
+            target.push(p);
+        });
+    };
+    fill(out.coins, src.coins);
+    fill(out.enemies, src.enemies);
+    out.spawn = pair(src.spawn, TM_COLS - 1, TM_ROWS - 1);
+    out.goal = pair(src.goal, TM_COLS - 1, TM_ROWS - 1);
+    return out;
+}
+function _sbPlacementHas(p) {
+    return !!(p && ((p.coins && p.coins.length) || (p.enemies && p.enemies.length) || p.spawn || p.goal));
+}
+function _sbCellWorld(cell, cols, rows) {
+    cols = cols || TM_COLS; rows = rows || TM_ROWS;
+    return { x: (cell[0] + 0.5) * (GW / cols), y: (cell[1] + 0.5) * (GH / rows) };
+}
+function _sbPlacementTexture(scene, key) {
+    if (!scene || !scene.textures || scene.textures.exists(key)) return;
+    const g = scene.make.graphics({ x: 0, y: 0, add: false });
+    if (key === '_sb_goal') {
+        g.fillStyle(0x22c55e, 1); g.fillCircle(9, 9, 8);
+        g.fillStyle(0xffffff, 1); g.fillCircle(9, 9, 4);
+    } else if (key === '_sb_enemy') {
+        g.fillStyle(0xef4444, 1); g.fillCircle(13, 13, 12);
+        g.fillStyle(0x7f1d1d, 1); g.fillCircle(13, 13, 6);
+    } else {
+        g.fillStyle(0xfbbf24, 1); g.fillCircle(9, 9, 7);
+        g.fillStyle(0xfff7cc, 1); g.fillCircle(9, 9, 3);
+    }
+    g.generateTexture(key, key === '_sb_enemy' ? 26 : 18, key === '_sb_enemy' ? 26 : 18);
+    g.destroy();
+}
+// A2178: apply the shared placement to any supported scene. Existing genre
+// rules keep running; placed entities sit on top of them as a small overlay.
+function _applyScenePlacement(scene, data) {
+    if (!scene || !scene.add || !scene.physics) return null;
+    const genre = (data && data.genre) || (document.getElementById('genreMode') || {}).value || '';
+    if (!_isPlacementGenre(genre) || genre === 'CUSTOM') return null;
+    const placed = _sbNormaliseEntities(data && data.entities);
+    if (!_sbPlacementHas(placed)) return null;
+    const actor = scene.actor || scene._p1 || null;
+    const result = { spawn: null, enemies: 0, pickups: 0, goal: null };
+
+    if (placed.spawn) {
+        result.spawn = _sbCellWorld(placed.spawn);
+        if (actor && actor.setPosition) {
+            if (actor.body && actor.body.reset) actor.body.reset(result.spawn.x, result.spawn.y);
+            else actor.setPosition(result.spawn.x, result.spawn.y);
+            if (actor.body && actor.body.setVelocity) actor.body.setVelocity(0, 0);
+        }
+    }
+
+    _sbPlacementTexture(scene, '_sb_enemy');
+    _sbPlacementTexture(scene, '_sb_pickup');
+    _sbPlacementTexture(scene, '_sb_goal');
+    const enemyTex = scene.textures.exists('enemy') ? 'enemy' : '_sb_enemy';
+    const enemyGroup = scene.physics.add.group({ allowGravity: false });
+    scene._sbPlacedEnemies = enemyGroup;
+    placed.enemies.forEach(cell => {
+        const p = _sbCellWorld(cell);
+        const e = enemyGroup.create(p.x, p.y, enemyTex);
+        e.setDisplaySize(26, 26);
+        if (e.body) { e.body.setSize(22, 22, true); e.body.allowGravity = false; }
+        if (enemyTex === 'enemy' && !(data && data.enemySprite)) { try { e.setTint(0xef4444); } catch (_) {} }
+        if (typeof scene._setupEnemyAnim === 'function') scene._setupEnemyAnim(e);
+        else if (scene.anims && scene.anims.exists('enemy_walk')) { try { e.anims.play('enemy_walk', true); } catch (_) {} }
+        e.setDepth(4);
+        result.enemies++;
+    });
+
+    const pickupGroup = scene.physics.add.group({ allowGravity: false });
+    scene._sbPlacedPickups = pickupGroup;
+    placed.coins.forEach(cell => {
+        const p = _sbCellWorld(cell);
+        const s = pickupGroup.create(p.x, p.y, '_sb_pickup');
+        if (s.body) { s.body.setSize(16, 16, true); s.body.allowGravity = false; }
+        s.setDepth(4);
+        result.pickups++;
+    });
+
+    let goalObj = null;
+    if (placed.goal) {
+        const p = _sbCellWorld(placed.goal);
+        goalObj = scene.physics.add.image(p.x, p.y, '_sb_goal');
+        if (goalObj.body) { goalObj.body.setSize(16, 16, true); goalObj.body.allowGravity = false; }
+        goalObj.setDepth(4);
+        result.goal = p;
+    }
+
+    scene._sbPlacement = result;
+    if (!actor) return result;
+
+    scene.physics.add.overlap(actor, enemyGroup, (_, e) => {
+        if (!e || !e.active) return;
+        try { _burst(e.x, e.y, 0xef4444); } catch (_) {}
+        e.destroy();
+        if (typeof scene._onHit === 'function') scene._onHit(actor);
+    });
+    scene.physics.add.overlap(actor, pickupGroup, (_, s) => {
+        if (!s || !s.active) return;
+        s.destroy();
+        const mul = (typeof scene._puScoreMul === 'function') ? scene._puScoreMul() : 1;
+        const pts = (Number(liveConfig.pointsPerKill) || 10) * mul;
+        if (typeof scene.score === 'number') scene.score += pts;
+        if (scene.scoreText && scene.scoreText.setText) scene.scoreText.setText('Score: ' + Math.round(scene.score || 0));
+        try { _scorePopup(scene, Math.round(pts), null); } catch (_) {}
+        try { GameAudio.play('score'); } catch (_) {}
+    });
+    if (goalObj) {
+        scene.physics.add.overlap(actor, goalObj, () => {
+            if (scene._sbGoalDone) return;
+            scene._sbGoalDone = true;
+            try { showVictory(scene.score || 0); } catch (_) {}
+        });
+    }
+    return result;
+}
+// A2185: entity placement history is a stack of the same normalised shape that
+// save and export use, so undo can never drift into a different model.
+function _sbEntitySnapshot() {
+    return JSON.stringify(_sbNormaliseEntities(customLevelEntities));
+}
+function _sbPushEntityHistory() {
+    _sbEntHistory.push(_sbEntitySnapshot());
+    if (_sbEntHistory.length > SB_ENTITY_UNDO_LIMIT) _sbEntHistory.shift();
+    _sbEntFuture = [];
+}
+function _sbResetEntityHistory() {
+    _sbEntHistory = [];
+    _sbEntFuture = [];
+    _sbEntDrag = null;
+}
+function _sbApplyEntitySnapshot(json) {
+    customLevelEntities = json ? JSON.parse(json) : null;
+    _sbEntDrag = null;
+    tmRender();
+    _scheduleAutoSave();
+}
+// Which single entity, if any, sits in this cell.
+function _sbEntityAt(idx) {
+    if (idx === null || idx === undefined) return null;
+    const col = idx % TM_COLS, row = Math.floor(idx / TM_COLS);
+    const ents = _sbNormaliseEntities(customLevelEntities);
+    const at = p => !!(p && p[0] === col && p[1] === row);
+    if (at(ents.spawn)) return 'spawn';
+    if (at(ents.goal)) return 'goal';
+    if (ents.coins.some(at)) return 'star';
+    if (ents.enemies.some(at)) return 'enemy';
+    return null;
+}
+// One entity per cell: clear the cell, then write the requested kind if any.
+function _sbPlaceKindAt(idx, kind) {
+    if (idx === null || idx === undefined) return;
+    const col = idx % TM_COLS, row = Math.floor(idx / TM_COLS);
+    const ents = _sbNormaliseEntities(customLevelEntities);
+    const keep = p => !(p[0] === col && p[1] === row);
+    const coins = ents.coins.filter(keep);
+    const enemies = ents.enemies.filter(keep);
+    let spawn = at(ents.spawn) ? null : ents.spawn;
+    let goal = at(ents.goal) ? null : ents.goal;
+    function at(p) { return !!(p && p[0] === col && p[1] === row); }
+    if (kind === 'star') coins.push([col, row]);
+    else if (kind === 'enemy') enemies.push([col, row]);
+    else if (kind === 'spawn') spawn = [col, row];
+    else if (kind === 'goal') goal = [col, row];
+    customLevelEntities = { coins: coins, enemies: enemies, spawn: spawn, goal: goal };
+}
+function _sbEraseEntityAt(idx) {
+    const found = _sbEntityAt(idx);
+    if (found) _sbPlaceKindAt(idx, null);
+    return found;
+}
 // A2170: one entity per cell. Painting replaces whatever was there.
 function _paintEntity(idx) {
     if (idx === null || idx === undefined) return;
-    const col = idx % TM_COLS, row = Math.floor(idx / TM_COLS);
-    const ents = (customLevelEntities && typeof customLevelEntities === 'object') ? customLevelEntities : {};
-    const coins = (ents.coins || []).filter(p => !(p[0] === col && p[1] === row));
-    const enemies = (ents.enemies || []).filter(p => !(p[0] === col && p[1] === row));
-    let spawn = (ents.spawn && !(ents.spawn[0] === col && ents.spawn[1] === row)) ? ents.spawn : null;
-    let goal = (ents.goal && !(ents.goal[0] === col && ents.goal[1] === row)) ? ents.goal : null;
-    if (_tmEntityTool === 'star') coins.push([col, row]);
-    else if (_tmEntityTool === 'enemy') enemies.push([col, row]);
-    else if (_tmEntityTool === 'spawn') spawn = [col, row];
-    else if (_tmEntityTool === 'goal') goal = [col, row];
-    customLevelEntities = { coins: coins, enemies: enemies, spawn: spawn, goal: goal };
+    _sbPlaceKindAt(idx, _tmEntityTool);
     tmRender();
     _scheduleAutoSave();
 }
 function tmSetEntity(tool) {
     _tmEntityTool = tool || 'star';
+    _tmMode = 'entity';
     ['star', 'enemy', 'spawn', 'goal', 'erase'].forEach(t => {
         const b = document.getElementById('tmEnt_' + t);
         if (!b) return;
@@ -15906,8 +16172,10 @@ function tmSetEntity(tool) {
         b.style.borderColor = on ? 'rgba(0,212,170,.6)' : '';
     });
 }
-function _tmRenderEntities(ctx, cvs, CW, CH) {
-    ctx.fillStyle = '#0a0c18'; ctx.fillRect(0, 0, cvs.width, cvs.height);
+function _tmRenderEntities(ctx, cvs, CW, CH, overlay) {
+    if (!overlay) {
+        ctx.fillStyle = '#0a0c18'; ctx.fillRect(0, 0, cvs.width, cvs.height);
+    }
     ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = 0.5;
     for (let x = 0; x <= TM_COLS; x++) { ctx.beginPath(); ctx.moveTo(x*CW,0); ctx.lineTo(x*CW,cvs.height); ctx.stroke(); }
     for (let y = 0; y <= TM_ROWS; y++) { ctx.beginPath(); ctx.moveTo(0,y*CH); ctx.lineTo(cvs.width,y*CH); ctx.stroke(); }
@@ -15931,8 +16199,9 @@ function tmRender() {
     const cvs=_tmCanvas(); if(!cvs) return;
     const ctx=cvs.getContext('2d');
     const CW=Math.floor(cvs.width/TM_COLS), CH=Math.floor(cvs.height/TM_ROWS);
-    if (_isCustomGenre()) { _tmRenderEntities(ctx, cvs, CW, CH); return; }
-    const isRacing = (document.getElementById('genreMode')||{}).value === 'RACING';
+    const _genre=(document.getElementById('genreMode')||{}).value||'';
+    if (_genre === 'CUSTOM') { _tmRenderEntities(ctx, cvs, CW, CH); return; }
+    const isRacing = _genre === 'RACING';
     const colors = isRacing ? TM_COLORS_RACING : TM_COLORS;
     ctx.fillStyle=colors[0]; ctx.fillRect(0,0,cvs.width,cvs.height);
     _tmData.forEach((v,i)=>{
@@ -15951,6 +16220,9 @@ function tmRender() {
     ctx.strokeStyle='rgba(255,255,255,.07)'; ctx.lineWidth=0.5;
     for(let x=0;x<=TM_COLS;x++){ctx.beginPath();ctx.moveTo(x*CW,0);ctx.lineTo(x*CW,cvs.height);ctx.stroke();}
     for(let y=0;y<=TM_ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CH);ctx.lineTo(cvs.width,y*CH);ctx.stroke();}
+    // A2178: placed entities sit over the painted tiles for the genres
+    // that can use them, so one canvas authors both layers.
+    if (_isPlacementGenre(_genre)) _tmRenderEntities(ctx, cvs, CW, CH, true);
 }
 function _tmCoord(e) {
     const cvs=_tmCanvas(); if(!cvs) return null;
@@ -15971,12 +16243,31 @@ function _tmSync() {
     customLevelMap=_tmData.slice();
     document.getElementById('levelDesignerGrid').value=JSON.stringify(customLevelMap);
 }
+// A2178: CUSTOM is always in entity mode. Other placement genres switch to
+// entity mode when an entity tool is picked and back to tiles with a tile tool.
+function _tmEntityMode() {
+    const g = (document.getElementById('genreMode') || {}).value || '';
+    if (g === 'CUSTOM') return true;
+    return _isPlacementGenre(g) && _tmMode === 'entity';
+}
 // Stroke-based painting: push history once at stroke start, paint freely during move
 function tmDown(e) {
     const idx = _tmCoord(e);
-    if (_isCustomGenre()) {
+    if (_tmEntityMode()) {
+        if (idx === null) return;
         _tmPainting = true;
-        if (idx !== null) _paintEntity(idx);
+        _sbPushEntityHistory();
+        const found = _sbEntityAt(idx);
+        if (_tmEntityTool === 'erase') {
+            _sbEraseEntityAt(idx);
+        } else if (found) {
+            // Dragging an existing entity moves it instead of overwriting it.
+            _sbEntDrag = { kind: found, idx: idx };
+            _sbPlaceKindAt(idx, found);
+        } else {
+            _sbPlaceKindAt(idx, _tmEntityTool);
+        }
+        tmRender(); _scheduleAutoSave();
         return;
     }
     if (_tmTool === 'flood') { tmFloodFill(idx); return; }
@@ -15987,11 +16278,26 @@ function tmMove(e) {
     if (!_tmPainting) return;
     const idx = _tmCoord(e);
     if (idx === null) return;
-    if (_isCustomGenre()) { _paintEntity(idx); return; }
+    if (_tmEntityMode()) {
+        if (_sbEntDrag) {
+            if (idx !== _sbEntDrag.idx) {
+                const from = _sbEntDrag.idx;
+                _sbEraseEntityAt(from);
+                _sbPlaceKindAt(idx, _sbEntDrag.kind);
+                _sbEntDrag.idx = idx;
+                tmRender(); _scheduleAutoSave();
+            }
+            return;
+        }
+        if (_tmEntityTool === 'erase') _sbEraseEntityAt(idx);
+        else _sbPlaceKindAt(idx, _tmEntityTool);
+        tmRender(); _scheduleAutoSave();
+        return;
+    }
     if (_tmData[idx] === _tmTool) return; // skip no-op cells
     _tmData[idx] = _tmTool; tmRender(); _tmSync();
 }
-function tmUp()     { _tmPainting = false; }
+function tmUp()     { _tmPainting = false; _sbEntDrag = null; }
 // Pointer Events give one path for mouse, touch and pen. Inline on* handlers are
 // blocked by the site CSP (script-src has hashes, no unsafe-inline/unsafe-hashes),
 // and the old duplicated data-on-event attributes kept only touchend, so painting
@@ -16012,6 +16318,7 @@ function _tmWireCanvas() {
 
 function tmSetTool(t) {
     _tmTool = t;
+    _tmMode = 'tile';
     if (typeof t === 'number') _tmLastTool = t; // remember for flood fill
     // Standard tool buttons
     const toolMap = {1:'solid', 2:'hazard', 0:'erase', flood:'flood'};
@@ -16047,21 +16354,36 @@ function tmFloodFill(idx) {
     tmRender(); _tmSync();
 }
 function tmUndo() {
+    if (_tmEntityMode()) {
+        if (!_sbEntHistory.length) { showToast('Nothing to undo'); return; }
+        _sbEntFuture.push(_sbEntitySnapshot());
+        _sbApplyEntitySnapshot(_sbEntHistory.pop());
+        showToast('↩ Undo placement');
+        return;
+    }
     if (!_tmHistory.length) { showToast('Nothing to undo'); return; }
     _tmFuture.push(_tmData.slice());
     _tmData = _tmHistory.pop();
     tmRender(); _tmSync(); showToast('↩ Undo');
 }
 function tmRedo() {
+    if (_tmEntityMode()) {
+        if (!_sbEntFuture.length) { showToast('Nothing to redo'); return; }
+        _sbEntHistory.push(_sbEntitySnapshot());
+        _sbApplyEntitySnapshot(_sbEntFuture.pop());
+        showToast('↪ Redo placement');
+        return;
+    }
     if (!_tmFuture.length) { showToast('Nothing to redo'); return; }
     _tmHistory.push(_tmData.slice());
     _tmData = _tmFuture.pop();
     tmRender(); _tmSync(); showToast('↪ Redo');
 }
 function tmClear() {
-    if (_isCustomGenre()) {
+    if (_tmEntityMode()) {
+        _sbPushEntityHistory();
         customLevelEntities = null; tmRender(); _scheduleAutoSave();
-        showToast('Sandbox entities cleared');
+        showToast('Placed entities cleared');
         return;
     }
     _tmPushHistory();
@@ -16593,6 +16915,7 @@ function _buildSaveData() {
         map: customLevelMap || null,
         sprite: customSpriteDataUrl, spriteFrameCount: customSpriteFrameCount||1, spriteFrameW: customSpriteFrameW||0,
         enemySprite: customEnemyDataUrl,
+        enemySpriteFrameCount: customEnemyFrameCount||1, enemySpriteFrameW: customEnemyFrameW||0,
         bulletSprite: customBulletDataUrl, blockSprite: customBlockDataUrl, bgImage: customBgDataUrl,
         liveConfig: Object.assign({}, liveConfig, {
             // Accessors above would otherwise serialise this run's buffed values.
@@ -17164,7 +17487,7 @@ function _applyLoadData(d, opts={}) {
     } catch(_e) {} // level map preview is non-critical, never abort the load
     // Sprites, each wrapped so a corrupt data-URL can't abort the rest
     try { if(d.sprite) _applySpriteDataUrl(d.sprite,'Saved sprite', d.spriteFrameCount||1, d.spriteFrameW||0); } catch(e) { console.warn('Load sprite failed:', e); }
-    try { if(d.enemySprite)  _applyEnemyDataUrl(d.enemySprite,'Saved enemy sprite'); }  catch(e) { console.warn('Load enemy sprite failed:', e); }
+    try { if(d.enemySprite)  _applyEnemyDataUrl(d.enemySprite,'Saved enemy sprite', d.enemySpriteFrameCount||1, d.enemySpriteFrameW||0); }  catch(e) { console.warn('Load enemy sprite failed:', e); }
     try { if(d.bulletSprite) _applyBulletDataUrl(d.bulletSprite,'Saved bullet sprite'); } catch(e) { console.warn('Load bullet sprite failed:', e); }
     try { if(d.blockSprite)  _applyBlockDataUrl(d.blockSprite,'Saved tile/block sprite'); } catch(e) { console.warn('Load block sprite failed:', e); }
     try { if(d.bgImage)      _applyBgDataUrl(d.bgImage,'Saved background'); }           catch(e) { console.warn('Load background failed:', e); }
@@ -17219,6 +17542,9 @@ function _applyLoadData(d, opts={}) {
     }
     // A2154: restore the creator-only data that lives outside liveConfig.
     customLevelEntities = d.entities || null;
+    // A2185: placement undo history belongs to the project that was open, not
+    // to the next one. Genre changes reset it too.
+    _sbResetEntityHistory();
     if (Array.isArray(d.customAchs)) {
         _customAchs = d.customAchs.slice();
         try { _saveCustomAchs(); } catch(e) {}
@@ -17424,6 +17750,12 @@ function _migrateProjectPayload(d) {
     if (!out.bossPhases && Array.isArray(out.bosses)) out.bossPhases = out.bosses;
     if (!out.entities && out.levelEntities) out.entities = out.levelEntities;
     if (out.userCode === undefined && typeof out.code === 'string') out.userCode = out.code;
+    // A2185: old projects have no enemy animation fields. Normalise both sheets
+    // to one sheet + frameCount + frameW, capped, so the export size stays bounded.
+    out.spriteFrameCount = _sbClampFrameCount(out.spriteFrameCount);
+    out.spriteFrameW = _sbFrameWidth(out.spriteFrameCount, out.spriteFrameW);
+    out.enemySpriteFrameCount = _sbClampFrameCount(out.enemySpriteFrameCount);
+    out.enemySpriteFrameW = _sbFrameWidth(out.enemySpriteFrameCount, out.enemySpriteFrameW);
     if (!out.title) out.title = 'My Arcade Game';
     if (!out.genre) out.genre = 'SHOOTER';
     if (out.speed == null || !Number.isFinite(+out.speed)) out.speed = 200;
@@ -17481,6 +17813,8 @@ function _buildFullSharePayload(d) {
         spriteFrameCount: customSpriteFrameCount || 1,
         spriteFrameW:     customSpriteFrameW || 0,
         enemySprite:      customEnemyDataUrl || null,
+        enemySpriteFrameCount: customEnemyFrameCount || 1,
+        enemySpriteFrameW: customEnemyFrameW || 0,
         bulletSprite:     customBulletDataUrl || null,
         blockSprite:      customBlockDataUrl || null,
         bgImage:          customBgDataUrl || null,
@@ -18102,6 +18436,8 @@ async function _buildExportHtml() {
         spriteFrameCount: customSpriteFrameCount || 1,
         spriteFrameW:     customSpriteFrameW     || 0,
         enemySprite:      customEnemyDataUrl   || null,
+        enemySpriteFrameCount: customEnemyFrameCount || 1,
+        enemySpriteFrameW: customEnemyFrameW || 0,
         bulletSprite:     customBulletDataUrl  || null,
         blockSprite:      customBlockDataUrl   || null,
         bgImage:          customBgDataUrl      || null,
@@ -18141,7 +18477,7 @@ function __playerBoot(){
     Object.assign(liveConfig,_c.liveConfig);
     gameTheme.cols=_c.theme.cols; gameTheme.name=_c.theme.name;
     if(_c.sprite)            { customSpriteDataUrl=_c.sprite; customSpriteFrameCount=_c.spriteFrameCount||1; customSpriteFrameW=_c.spriteFrameW||0; }
-    if(_c.enemySprite)       customEnemyDataUrl=_c.enemySprite;
+    if(_c.enemySprite)       { customEnemyDataUrl=_c.enemySprite; customEnemyFrameCount=Math.max(1,Math.min(8,Math.round(_c.enemySpriteFrameCount||1))); customEnemyFrameW=(customEnemyFrameCount>1)?Math.round(_c.enemySpriteFrameW||0):0; }
     if(_c.bulletSprite)      customBulletDataUrl=_c.bulletSprite;
     if(_c.blockSprite)       customBlockDataUrl=_c.blockSprite;
     if(_c.bgImage)           customBgDataUrl=_c.bgImage;
@@ -18951,6 +19287,7 @@ let _seErasing  = false;
 let _sePainting = false;
 let _seTool     = 'pencil';           // 'pencil' | 'fill'
 let _seHistory  = [];                 // undo stack (pixel snapshots, max 40)
+let _sePreviewTimer = null;           // A2185: animation preview on the existing canvas
 
 const SE_PALETTE = [
     '#00d4aa','#a78bfa','#f87171','#fbbf24',
@@ -18979,6 +19316,7 @@ function seInit() {
     // Mouse events , history is pushed once per stroke; Fill commits instantly
     cvs.addEventListener('mousedown',  e => {
         const p = _sePos(e); if (!p) return;
+        seStopPreview();
         if (_seTool === 'fill' && !_seEraseMode) { _sePushHistory(); _seFlood(p.x, p.y); return; }
         _sePushHistory();
         _sePainting = true; _seErasing = e.button === 2 || _seEraseMode; sePaint(e);
@@ -18992,6 +19330,7 @@ function seInit() {
     cvs.addEventListener('touchstart', e => {
         e.preventDefault();
         const p = _sePos(e.touches[0]); if (!p) return;
+        seStopPreview();
         if (_seTool === 'fill' && !_seEraseMode) { _sePushHistory(); _seFlood(p.x, p.y); return; }
         _sePushHistory();
         _sePainting = true; _seErasing = _seEraseMode; sePaintTouch(e);
@@ -19026,6 +19365,7 @@ function _sePushHistory() {
     if (_seHistory.length > 40) _seHistory.shift();
 }
 function seUndo() {
+    seStopPreview();
     const prev = _seHistory.pop();
     if (!prev) { showToast('Nothing to undo'); return; }
     _sePixels = prev;
@@ -19096,7 +19436,7 @@ function seSetEraser() {
     if (_seEraseMode) document.querySelectorAll('#sePalette .se-swatch').forEach(s=>s.classList.remove('active'));
 }
 
-function seRender() {
+function seRender(pixelsOverride) {
     const cvs = document.getElementById('spriteEdCanvas');
     if (!cvs) return;
     const ctx = cvs.getContext('2d');
@@ -19110,7 +19450,7 @@ function seRender() {
         }
     }
     // Pixels
-    _sePixels.forEach((col, i) => {
+    (pixelsOverride || _sePixels).forEach((col, i) => {
         if (!col) return;
         ctx.fillStyle = col;
         ctx.fillRect((i % SE_SIZE) * cw, Math.floor(i / SE_SIZE) * ch, cw, ch);
@@ -19125,18 +19465,49 @@ function seRender() {
 }
 
 function seClear() {
+    seStopPreview();
     _sePixels = Array(SE_SIZE * SE_SIZE).fill(null);
     seRender();
     showToast('Canvas cleared');
 }
 
+// A2185: preview the authored frames on the editor canvas that is already there.
+// No second Phaser game, no extra DOM canvas, no second copy of the sheet.
+function sePreviewAnimation() {
+    if (_sePreviewTimer) { seStopPreview(); return; }
+    if (_seFrameCount < 2) { showToast('Add a second frame first'); return; }
+    _seAllFrames[_seFrameIdx] = _sePixels.slice();
+    let f = _seFrameIdx;
+    const fps = Math.min(12, _seFrameCount * 3);
+    _sePreviewTimer = setInterval(() => {
+        f = (f + 1) % _seFrameCount;
+        seRender(_seAllFrames[f] || Array(SE_SIZE * SE_SIZE).fill(null));
+    }, Math.max(70, Math.round(1000 / fps)));
+    showToast('Previewing ' + _seFrameCount + ' frames, press again to stop');
+}
+function seStopPreview() {
+    if (!_sePreviewTimer) return;
+    clearInterval(_sePreviewTimer);
+    _sePreviewTimer = null;
+    seRender();
+}
+function seAddFrame() {
+    if (_seFrameCount >= SB_MAX_ENTITY_FRAMES) {
+        showToast('Animation capped at ' + SB_MAX_ENTITY_FRAMES + ' frames per entity', 'warn');
+        return;
+    }
+    seSetFrameCount(_seFrameCount + 1);
+    seNavFrame(1);
+}
+
 function seApply(slot) {
     if (_sePixels.every(p => p === null)) { showToast('Draw something first!'); return; }
+    seStopPreview();
     // Save current frame before exporting
     _seAllFrames[_seFrameIdx] = _sePixels.slice();
     const scale = 3;
     const frameSize = SE_SIZE * scale; // 24px per frame
-    const numFrames = _seFrameCount || 1;
+    const numFrames = _sbClampFrameCount(_seFrameCount || 1);
 
     // Build a horizontal sprite sheet: width = frameSize × numFrames, height = frameSize
     const out = document.createElement('canvas');
@@ -19166,12 +19537,14 @@ function seApply(slot) {
         showToast(numFrames > 1 ? `🎨 Animated sprite (${numFrames} frames) applied!` : '🎨 Player sprite applied, hit ▶ Run!');
     } else {
         customEnemyDataUrl = dataUrl;
+        customEnemyFrameCount = numFrames;
+        customEnemyFrameW = numFrames > 1 ? frameSize : 0;
         const thumb = document.getElementById('enemyThumb');
         if (thumb) thumb.innerHTML = `<img src="${dataUrl}" alt="${label} preview" style="image-rendering:pixelated;width:100%;height:100%;object-fit:contain;">`;
         document.getElementById('enemyInfoName').textContent = label;
-        document.getElementById('enemyStatus').textContent = '✓ Enemy applied';
+        document.getElementById('enemyStatus').textContent = numFrames > 1 ? `✓ Enemy animation (${numFrames} frames)` : '✓ Enemy applied';
         document.getElementById('enemyStatus').className = 'asset-status ok';
-        showToast('🎨 Enemy sprite applied, hit ▶ Run!');
+        showToast(numFrames > 1 ? `🎨 Animated enemy (${numFrames} frames) applied!` : '🎨 Enemy sprite applied, hit ▶ Run!');
     }
 }
 
@@ -20000,6 +20373,8 @@ let _seFrameIdx   = 0;
 let _seAllFrames  = [Array(64).fill(null)]; // array of frames, each 64 pixels
 
 function seSetFrameCount(n) {
+    seStopPreview();
+    n = _sbClampFrameCount(n);
     // Save current frame first
     _seAllFrames[_seFrameIdx] = _sePixels.slice();
     // Resize allFrames to n
@@ -20024,6 +20399,7 @@ function seSetFrameCount(n) {
     seRender();
 }
 function seNavFrame(dir) {
+    seStopPreview();
     // Save current frame
     _seAllFrames[_seFrameIdx] = _sePixels.slice();
     _seFrameIdx = (_seFrameIdx + dir + _seFrameCount) % _seFrameCount;
@@ -20072,6 +20448,18 @@ function sceneHopper(data) {
                         }
                     } catch(e) { console.warn('Hopper anim setup:', e); }
                 }
+                if (data.enemySpriteFrameCount > 1 && this.textures.exists('enemy')) {
+                    try {
+                        if (!this.anims.exists('enemy_walk')) {
+                            this.anims.create({
+                                key: 'enemy_walk',
+                                frames: this.anims.generateFrameNumbers('enemy', { start:0, end:data.enemySpriteFrameCount-1 }),
+                                frameRate: Math.min(12, data.enemySpriteFrameCount * 3),
+                                repeat: -1
+                            });
+                        }
+                    } catch(e) { console.warn('Hopper enemy anim setup:', e); }
+                }
             });
 
             if (data.sprite && data.spriteFrameCount > 1 && data.spriteFrameW > 0) {
@@ -20079,7 +20467,9 @@ function sceneHopper(data) {
             } else if (data.sprite) {
                 loadCustom('player', data.sprite);
             }
-            if (data.enemySprite) {
+            if (data.enemySprite && data.enemySpriteFrameCount > 1 && data.enemySpriteFrameW > 0) {
+                loadCustomSheet('enemy', data.enemySprite, data.enemySpriteFrameW, data.enemySpriteFrameW);
+            } else if (data.enemySprite) {
                 loadCustom('enemy', data.enemySprite);
             }
         }
@@ -20408,6 +20798,18 @@ function sceneBeatEmUp(data) {
                         }
                     } catch(e) { console.warn('Beat anim setup:', e); }
                 }
+                if (data.enemySpriteFrameCount > 1 && this.textures.exists('enemy')) {
+                    try {
+                        if (!this.anims.exists('enemy_walk')) {
+                            this.anims.create({
+                                key: 'enemy_walk',
+                                frames: this.anims.generateFrameNumbers('enemy', { start:0, end:data.enemySpriteFrameCount-1 }),
+                                frameRate: Math.min(12, data.enemySpriteFrameCount * 3),
+                                repeat: -1
+                            });
+                        }
+                    } catch(e) { console.warn('Beat enemy anim setup:', e); }
+                }
             });
 
             if (data.sprite && data.spriteFrameCount > 1 && data.spriteFrameW > 0) {
@@ -20415,7 +20817,11 @@ function sceneBeatEmUp(data) {
             } else if (data.sprite) {
                 loadCustom('player', data.sprite);
             }
-            if (data.enemySprite) { loadCustom('enemy', data.enemySprite); }
+            if (data.enemySprite && data.enemySpriteFrameCount > 1 && data.enemySpriteFrameW > 0) {
+                loadCustomSheet('enemy', data.enemySprite, data.enemySpriteFrameW, data.enemySpriteFrameW);
+            } else if (data.enemySprite) {
+                loadCustom('enemy', data.enemySprite);
+            }
         }
 
         create() {
@@ -23542,7 +23948,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
                 if (d.assets) {
                     try {
                         if (d.assets.sprite)          _applySpriteDataUrl(d.assets.sprite, 'Shared sprite', d.assets.spriteFrameCount||1, d.assets.spriteFrameW||0);
-                        if (d.assets.enemySprite)     _applyEnemyDataUrl(d.assets.enemySprite, 'Shared enemy');
+                        if (d.assets.enemySprite)     _applyEnemyDataUrl(d.assets.enemySprite, 'Shared enemy', d.assets.enemySpriteFrameCount||1, d.assets.enemySpriteFrameW||0);
                         if (d.assets.bulletSprite)    _applyBulletDataUrl(d.assets.bulletSprite, 'Shared bullet');
                         if (d.assets.blockSprite)     _applyBlockDataUrl(d.assets.blockSprite, 'Shared tile');
                         if (d.assets.bgImage)         _applyBgDataUrl(d.assets.bgImage, 'Shared background');
