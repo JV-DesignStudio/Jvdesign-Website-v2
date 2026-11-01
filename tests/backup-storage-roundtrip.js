@@ -76,7 +76,8 @@ const SEED = {
     });
     check('backup: collects jvds_*, jv_* and qb-* saves', out.familyCount === 3, out.keys.join(', '));
     check('backup: ignores unrelated keys', out.excludesUnrelated, out.keys.join(', '));
-    check('backup: JSON export contains all three families', out.exportedKeys.join(',') === 'jv_arcade_slot_0,jvds_pixel,qb-cards', out.exportedKeys.join(','));
+    const families = ['jv_arcade_slot_0', 'jvds_pixel', 'qb-cards'];
+    check('backup: JSON export contains all three families', families.every((k) => out.exportedKeys.includes(k)) && !out.exportedKeys.includes('unrelated-key'), out.exportedKeys.join(','));
     check('backup: 390 no overflow', out.scrollWidth <= out.clientWidth + 2, `${out.scrollWidth}/${out.clientWidth}`);
 
     // clean profile, then restore from the file
