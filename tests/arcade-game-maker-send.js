@@ -123,9 +123,13 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   const link = await page.evaluate(async ()=>{
     const out = { errors: [] };
     const realOpen = _openShareModal, realShort = _shortenUrl, realToast = window.showToast;
+    // A1998 added a share-warning modal that waits for a click; auto-confirm it so
+    // the test exercises the share-link builder, not the dialog.
+    const realWarning = window.JVDSShareWarning;
     try {
       _engineData = { title:'Art Round Trip', genre:'SHOOTER', speed:200, gravity:600, jump:450, map:null };
       try { localStorage.removeItem('jv_share_backend'); } catch(e){}
+      window.JVDSShareWarning = { confirm: async () => true };
       window.showToast = ()=>{};
       _shortenUrl = async ()=>null;
       let captured = null;
@@ -153,6 +157,7 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
       out.bigInfoCarried = !!(captured && captured.info && captured.info.carriedArt);
     } catch(e) { out.errors.push(e.message); }
     _openShareModal = realOpen; _shortenUrl = realShort; window.showToast = realToast;
+    window.JVDSShareWarning = realWarning;
     customSpriteDataUrl = null; customSpriteFrameCount = 1; customSpriteFrameW = 0;
     return out;
   });
