@@ -48,13 +48,13 @@ function check(name, ok, detail=''){ console.log((ok?'PASS ':'FAIL ')+name+(deta
     });
 
     check(vp.name+': Start Here is in the main navigation', data.navStart.includes('Start Here'), data.navStart.join(' | '));
-    check(vp.name+': three intent routes present', data.routes.length===3, String(data.routes.length));
+    check(vp.name+': intent routes present', data.routes.length>=3, String(data.routes.length));
     const titles = data.routes.map(r=>r.title.trim());
-    check(vp.name+': routes are Play / Make / Create',
-      ['I want to play a game','I want to make a game','I want to draw or create'].every(t=>titles.includes(t)), titles.join(' | '));
+    check(vp.name+': routes cover play, code, art, 3D, modding and creating',
+      ['My first game','Learn to code','Draw something','Build something in 3D','Mod Minecraft','Just play something'].every(t=>titles.includes(t)), titles.join(' | '));
     check(vp.name+': every route ends in a first activity', data.routes.every(r=>/→/.test(r.cta) && r.href.length>0), data.routes.map(r=>r.cta).join(' | '));
-    check(vp.name+': routes point at a game, a workshop and a tool',
-      data.routes.some(r=>/\/games\//.test(r.href)) && data.routes.some(r=>/workshop/.test(r.href)) && data.routes.some(r=>/pixel-studio/.test(r.href)),
+    check(vp.name+': routes point at a workshop, a tool and the arcade',
+      data.routes.some(r=>/workshop/.test(r.href)) && data.routes.some(r=>/pixel-studio/.test(r.href)) && data.routes.some(r=>/arcade/.test(r.href)),
       data.routes.map(r=>r.href).join(', '));
     check(vp.name+': no horizontal overflow', data.overflow<=2, String(data.overflow));
     check(vp.name+': zero runtime errors', errors.length===0, errors.join(' | '));

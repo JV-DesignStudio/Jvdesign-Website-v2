@@ -23,7 +23,11 @@ function scratchToJs(code) {
     .replace(/set x to \[([^\]]+)\]/g, 'sprite.x=$1;')
     .replace(/set y to \[([^\]]+)\]/g, 'sprite.y=$1;')
     .replace(/go to x: \[([^\]]+)\] y: \[([^\]]+)\]/g, 'sprite.x=$1;sprite.y=$2;')
-    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, '$1=$2;')
+    .replace(/set \[([^\]]+)\] to \[([^\]]+)\]/g, function (m, name, val) {
+      // Numbers stay numbers; a bare word is a string ("over"), not a variable.
+      if (/^-?\d+(\.\d+)?$/.test(val) || /[^\w$.\s]/.test(val)) return name + '=' + val + ';';
+      return name + '="' + val + '";';
+    })
     .replace(/change \[([^\]]+)\] by \[([^\]]+)\]/g, '$1+=$2;')
     .replace(/if <touching \[Edge\]\?> then/g, 'if(sprite.x<0||sprite.x>460||sprite.y<0||sprite.y>340){')
     .replace(/if <([^>]+)> then/g, 'if($1){')
@@ -32,6 +36,8 @@ function scratchToJs(code) {
     .replace(/move \[([^\]]+)\] steps/g, 'sprite.x+=$1*Math.cos(sprite.dir*Math.PI/180);sprite.y+=$1*Math.sin(sprite.dir*Math.PI/180);')
     .replace(/turn right \[([^\]]+)\] degrees/g, 'sprite.dir+=$1;')
     .replace(/pick random \[([^\]]+)\] to \[([^\]]+)\]/g, '(Math.floor(Math.random()*($2-$1+1))+$1)')
+    // Anything left like "set [fx] to pick random ..." is an expression, not a bracket pair.
+    .replace(/set \[([^\]]+)\] to ([^\n;]+)/g, function (m, name, expr) { return name + '=' + expr.trim() + ';'; })
     .replace(/\/\/.*$/gm, '');
 }
 
@@ -125,8 +131,7 @@ window.CW_CONFIG = {
         SETUP + BASKET_VARS + SPRITE + KEYS,
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'bx=Math.max(0,Math.min(480-bw,bx));' +
         DRAW_BG + DRAW_BASKET +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -141,8 +146,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(fy>370)resetFruit();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -157,8 +161,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + FRUIT_FALL +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         'if(fy>370)resetFruit();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
@@ -173,8 +176,7 @@ window.CW_CONFIG = {
         'window.cwStep=function(){' + scratchToJs(u) + '};',
         'function loop(){' +
         MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
         'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       
@@ -190,8 +192,7 @@ window.CW_CONFIG = {
         'function loop(){' +
         'if(gameState==="play"){' +
         MOVE_BASKET + FRUIT_FALL + FRUIT_CATCH + FRUIT_MISS +
-         +
-        'if(window.cwStep)cwStep();' + +
+        'if(window.cwStep)cwStep();' +
         '}' +
         DRAW_BG + DRAW_BASKET + DRAW_FRUIT + DRAW_SCORE + DRAW_LIVES +
         'if(gameState==="over"){ctx.fillStyle="#fff";ctx.font="bold 32px monospace";ctx.textAlign="center";' +

@@ -30,7 +30,9 @@
       's.onerror=function(){URL.revokeObjectURL(u);_run(i+1);};' +
       'document.head.appendChild(s);' +
       '}' +
-      '_run(0);';
+      '_run(0);' +
+      // A1981: Escape leaves the preview so keyboard users are never trapped.
+      'document.addEventListener("keydown",function(e){if(e.key==="Escape"){parent.postMessage({cwPreviewEscape:true},"*");}});';
     return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + (cfg.css || '') +
       '</head><body>' + (cfg.canvas || '') + (cfg.fxOverlay || '') +
       '<script>' + boot + '</script></body></html>';
@@ -42,6 +44,10 @@
       stage.srcdoc = buildStage(e.data.cwParts);
     } else if (typeof e.data.cwPreview === 'string') {
       stage.srcdoc = e.data.cwPreview;
+    } else if (e.data.cwPreviewEscape) {
+      parent.postMessage({ cwPreviewEscape: true }, '*');
+    } else if (e.data.cwPreviewFocus) {
+      try { stage.focus(); } catch (err) {}
     }
   });
 })();

@@ -380,11 +380,21 @@ function updateLive(num) {
    their own version, pointing at the export buttons already on the page.
    If CFG.nextStep = { url, label } is set the box also links to the
    recommended next lesson so the learner has a clear route forward. */
-function offerRemix() {
+function offerRemix(focusIt) {
   var panel = document.getElementById('canvasPanel');
-  if (!panel || panel.querySelector('.cw-remix')) return;
+  if (!panel) return;
+  var existing = panel.querySelector('.cw-remix');
+  if (existing) {
+    if (focusIt) { try { existing.focus(); } catch (e) {} }
+    return;
+  }
   var box = document.createElement('div');
   box.className = 'cw-remix';
+  // A2009/A1981: the finish card must reach a screen reader, and a keyboard
+  // user finishing the last step should land on it instead of the body.
+  box.setAttribute('role', 'status');
+  box.setAttribute('aria-live', 'polite');
+  box.setAttribute('tabindex', '-1');
   var nextHtml = '';
   if (CFG.nextStep && CFG.nextStep.url && CFG.nextStep.label) {
     nextHtml = ' <a href="' + CFG.nextStep.url + '">Next: ' + CFG.nextStep.label + ' &rarr;</a>';
@@ -392,8 +402,47 @@ function offerRemix() {
   box.innerHTML = '<strong>Make it your own.</strong> You built the whole game. Change any number or colour, ' +
     'then use <em>Download My Game</em> (or the project export) to keep your version. Every build-along can become a different game. ' +
     '<a href="/me.html">See this in My Studio &rarr;</a>' + nextHtml;
-  panel.appendChild(box);
+  // Sit just above the export button so Tab from the finish card reaches it.
+  var exportBtn = panel.querySelector('.cw-btn-dl');
+  if (exportBtn && exportBtn.parentNode === panel) panel.insertBefore(box, exportBtn);
+  else panel.appendChild(box);
+  if (focusIt) { try { box.focus(); } catch (e) {} }
 }
+var finishFocusPending = false;
+
+/* A1981: the live preview is a nested sandboxed frame. When it sat in the tab
+   order, Tab entered it and could not leave, so "Download My Game" and the
+   finish links were unreachable without a mouse. Take the frame out of the tab
+   order and give it an explicit play button plus an Escape route back. */
+function ensurePreviewKeyboardExit() {
+  var frame = document.getElementById('gameFrame');
+  if (!frame || frame.dataset.cwKb === '1') return;
+  frame.dataset.cwKb = '1';
+  frame.setAttribute('tabindex', '-1');
+  var wrap = frame.closest('.cw-canvas-frame') || frame;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'cw-play-preview';
+  btn.textContent = 'Play the preview';
+  btn.setAttribute('aria-label', 'Play the preview. Press Escape to come back to the page.');
+  btn.style.cssText = 'display:block;width:100%;margin:0 0 8px;padding:10px 14px;border:1.5px solid rgba(255,255,255,.28);border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font:700 .9rem Inter,system-ui,sans-serif;cursor:pointer';
+  btn.addEventListener('click', function () {
+    try { frame.focus(); } catch (e) {}
+    try { frame.contentWindow.postMessage({ cwPreviewFocus: true }, '*'); } catch (e) {}
+  });
+  var hint = document.createElement('p');
+  hint.className = 'cw-preview-hint';
+  hint.textContent = 'The preview is visual. Press Escape to come back to the page.';
+  hint.style.cssText = 'margin:0 0 10px;font-size:.78rem;line-height:1.4;color:rgba(255,255,255,.75)';
+  wrap.parentNode.insertBefore(btn, wrap);
+  wrap.parentNode.insertBefore(hint, wrap);
+}
+
+window.addEventListener('message', function (e) {
+  if (!e.data || !e.data.cwPreviewEscape) return;
+  var btn = document.querySelector('.cw-play-preview');
+  if (btn) { try { btn.focus(); } catch (err) {} }
+});
 
 /* ── SHARED WORKSHOP ENGINE BRIDGE ──
    When the page loads workshop-engine.js, award the site-wide XP/streak
@@ -682,7 +731,7 @@ function renderSteps() {
           '<button class="cw-btn cw-btn-reset" data-cw="resetStep" data-cw-arg="' + step.num + '">Reset</button>'
         ) +
       '</div>' +
-      '<div class="cw-feedback" id="feedback-' + step.num + '"></div>';
+      '<div class="cw-feedback" id="feedback-' + step.num + '" role="status" aria-live="polite"></div>';
 
     if (step.fills && (isActive || isDone)) {
       var parts = step.fills.text.split('___');
@@ -701,7 +750,7 @@ function renderSteps() {
       if (!isDone) {
         fillHtml += '<div class="cw-fills-actions">' +
           '<button class="cw-btn cw-btn-show" data-cw="checkFills" data-cw-arg="' + step.num + '">Check Blanks</button>' +
-          '<span class="cw-fills-fb" id="fills-fb-' + step.num + '"></span>' +
+          '<span class="cw-fills-fb" id="fills-fb-' + step.num + '" role="status" aria-live="polite"></span>' +
           '</div>';
       }
       fillHtml += '</div>';
@@ -722,6 +771,7 @@ function renderSteps() {
           cls += ' selected';
         }
         qHtml += '<button type="button" class="' + cls + '"' +
+          ' aria-pressed="' + (quizSelected[step.num] === oi ? 'true' : 'false') + '"' +
           (isDone || quizPassed[step.num] ? ' disabled' : ' data-cw="selectQuiz" data-cw-arg="' + step.num + '" data-cw-arg2="' + oi + '"') +
           '><span class="cw-quiz-letter">' + letters[oi] + '</span>' + opt + '</button>';
       });
@@ -731,7 +781,7 @@ function renderSteps() {
           '<button class="cw-btn cw-btn-check" data-cw="checkQuiz" data-cw-arg="' + step.num + '">Check Answer</button>' +
           '</div>';
       }
-      qHtml += '<div class="cw-quiz-fb" id="quiz-fb-' + step.num + '"></div>';
+      qHtml += '<div class="cw-quiz-fb" id="quiz-fb-' + step.num + '" role="status" aria-live="polite"></div>';
       if (codeValid[step.num] && !quizPassed[step.num] && !isDone) {
         qHtml += '<div class="cw-gate-msg">Code looks good! Answer the quiz to complete this step.</div>';
       }
@@ -951,7 +1001,10 @@ function updateProgress() {
   if (fillEl) fillEl.style.width = (count / STEPS.length * 100) + '%';
   if (textEl) textEl.textContent =
     count === STEPS.length ? 'Complete!' : 'Step ' + (currentStep + 1) + ' / ' + STEPS.length;
-  if (count === STEPS.length) offerRemix();
+  if (count === STEPS.length) {
+    offerRemix(finishFocusPending);
+    finishFocusPending = false;
+  }
   wsSyncProgress();
 }
 
@@ -988,6 +1041,8 @@ function checkStep(num) {
 function advanceStep(num) {
   var firstTime = !completed[num];
   completed[num] = editors[num].value;
+  var allDone = Object.keys(completed).length === STEPS.length;
+  if (allDone) finishFocusPending = true;
   if (currentStep < STEPS.length - 1) currentStep++;
   updateProgress();
   renderSteps();
@@ -997,7 +1052,8 @@ function advanceStep(num) {
     wsSaveShared();
     cwCelebrate(num);
   }
-  var next = document.getElementById('card-' + STEPS[currentStep].num);
+  // The finish card already took focus (A1981); do not drag it back to a step.
+  var next = allDone ? null : document.getElementById('card-' + STEPS[currentStep].num);
   if (next) {
     next.scrollIntoView({ behavior: 'smooth', block: 'center' });
     // Re-rendering replaces the button the learner just pressed, so focus would
@@ -1090,6 +1146,7 @@ function selectQuiz(num, idx) {
   var opts = document.querySelectorAll('#quiz-opts-' + num + ' .cw-quiz-opt');
   opts.forEach(function(el, i) {
     el.className = 'cw-quiz-opt' + (i === idx ? ' selected' : '');
+    el.setAttribute('aria-pressed', i === idx ? 'true' : 'false');
   });
 }
 
@@ -1250,6 +1307,7 @@ loadState();
 ensureProgressStrip();
 renderSteps();
 updateCanvas();
+ensurePreviewKeyboardExit();
 updateProgress();
 maybeOfferContinue();
 
