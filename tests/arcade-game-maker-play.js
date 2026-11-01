@@ -120,6 +120,157 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   check('game loop is advancing (engine is running)', snap.frame >= 0 && frame2 > snap.frame, 'frame ' + snap.frame + ' -> ' + frame2);
   check('no uncaught errors while playing', playerErrors.length === 0, playerErrors.slice(0,2).join(' | '));
 
+  // ── 3. A2176 accessibility: captions, reduced motion, one-button assist ────
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  // The player page was opened last, so the maker tab is throttled in the
+  // background. Bring it forward or Phaser stops stepping the sandbox.
+  await maker.bringToFront();
+  await sleep(300);
+  const a11yUi = await maker.evaluate(() => {
+    const ids = ['a11yCaptionsToggle', 'a11yReducedMotionToggle', 'a11yAssistToggle'];
+    const found = ids.map(id => !!document.getElementById(id));
+    const set = (id, v) => { const el = document.getElementById(id); if (!el) return null; el.checked = v; el.dispatchEvent(new Event('change', { bubbles: true })); return el.checked; };
+    const cap = set('a11yCaptionsToggle', true);
+    const motion = set('a11yReducedMotionToggle', true);
+    const assist = set('a11yAssistToggle', true);
+    return { found, checked: [cap, motion, assist], live: { captions: liveConfig.a11yCaptions, motion: liveConfig.a11yReducedMotion, assist: liveConfig.a11yAssist } };
+  });
+  check('maker shows the three accessibility toggles', a11yUi.found.every(Boolean), JSON.stringify(a11yUi.found));
+  check('accessibility toggles write into liveConfig', a11yUi.checked.every(Boolean) && a11yUi.live.captions === true && a11yUi.live.motion === true && a11yUi.live.assist === true, JSON.stringify(a11yUi.live));
+
+  const bootSandbox = async (loop, target, opts = {}) => {
+    await sleep(800); // compileAndBootEngine has a 700ms re-entry guard
+    await maker.evaluate((o) => {
+      Object.assign(liveConfig, {
+        customCoreLoop: o.loop,
+        customStarTarget: o.target,
+        customEnemyCount: 0,
+        customEnemySpeed: 0,
+        customWinMode: 'collect',
+        customWinValue: 0,
+        customGoldStars: false,
+        customFastEnemies: false,
+        customRules: [],
+        customVars: [],
+        a11yCaptions: true,
+        a11yReducedMotion: o.reducedMotion === true,
+        a11yAssist: o.assist === true
+      });
+      customLevelEntities = null;
+      gameState.lives = liveConfig.lives;
+      document.getElementById('genreMode').value = 'CUSTOM';
+      onGenreChange();
+      compileAndBootEngine();
+      const io = document.getElementById('introOverlay');
+      if (io && io.classList.contains('show') && typeof closeIntro === 'function') closeIntro();
+    }, { loop, target, reducedMotion: opts.reducedMotion, assist: opts.assist });
+    await maker.waitForFunction(() => {
+      const g = window._phaserGame;
+      const sc = g && g.scene && g.scene.getScene && g.scene.getScene('CustomScene');
+      return !!(sc && sc.sys && sc.sys.isActive());
+    }, { timeout: 20000 });
+    await sleep(800);
+  };
+  const probeEffects = () => maker.evaluate(() => {
+    const sc = window._phaserGame.scene.getScene('CustomScene');
+    const before = sc.children.list.length;
+    let shakes = 0;
+    const orig = sc.cameras.main.shake;
+    sc.cameras.main.shake = function () { shakes++; };
+    const canvas = document.querySelector('#gameWrap canvas');
+    if (canvas) canvas.style.filter = 'brightness(1.5)';
+    _burst(100, 100, 0xff0000, 8);
+    _spawnParticles(sc, 100, 100, { count: 8 });
+    _zoomPulse(1.1, 100);
+    _shake(8, 200);
+    _chromaFlash(1);
+    const res = {
+      particles: sc.children.list.length - before,
+      shakes,
+      filter: canvas ? canvas.style.filter : '',
+      reduced: _a11yReducedMotion()
+    };
+    sc.cameras.main.shake = orig;
+    if (canvas) canvas.style.filter = '';
+    return res;
+  });
+
+  await bootSandbox('topdown', 3, { reducedMotion: true });
+  const rmOn = await probeEffects();
+  check('reduced motion suppresses particles, shake and flash', rmOn.particles === 0 && rmOn.shakes === 0 && rmOn.filter === 'brightness(1.5)', JSON.stringify(rmOn));
+
+  await bootSandbox('topdown', 3, { reducedMotion: false });
+  const rmOff = await probeEffects();
+  check('effects still run when reduced motion is off', rmOff.particles > 0 && rmOff.shakes > 0 && rmOff.filter !== 'brightness(1.5)', JSON.stringify(rmOff));
+
+  await bootSandbox('topdown', 2, { reducedMotion: true });
+  const capStart = await maker.evaluate(() => {
+    const el = document.getElementById('sbCaptions');
+    return { text: el ? el.textContent : '', live: el ? el.getAttribute('aria-live') : '' };
+  });
+  check('captions are a polite live region', capStart.live === 'polite', capStart.live);
+  check('start caption names the goal', /Collect 2 stars/.test(capStart.text), capStart.text);
+  await maker.evaluate(() => {
+    const sc = window._phaserGame.scene.getScene('CustomScene');
+    const s = sc.stars.getChildren().find(c => c.active);
+    if (s) {
+      sc.actor.setPosition(s.x, s.y);
+      if (sc.actor.body && sc.actor.body.reset) sc.actor.body.reset(s.x, s.y);
+    }
+  });
+  await sleep(600);
+  const capStar = await maker.evaluate(() => {
+    const sc = window._phaserGame.scene.getScene('CustomScene');
+    return {
+      text: document.getElementById('sbCaptions').textContent,
+      collected: sc._collected
+    };
+  });
+  check('collecting a star names the event in the caption', capStar.collected === 1 && /Star 1 of 2/.test(capStar.text), JSON.stringify(capStar));
+  const capCheckpoint = await maker.evaluate(() => {
+    const sc = window._phaserGame.scene.getScene('CustomScene');
+    sc._sbCheckpoint();
+    return document.getElementById('sbCaptions').textContent;
+  });
+  check('saving a checkpoint names the event', /Checkpoint saved/.test(capCheckpoint), capCheckpoint);
+
+  await bootSandbox('platformer', 1, { assist: true, reducedMotion: true });
+  await maker.evaluate(() => {
+    const sc = window._phaserGame.scene.getScene('CustomScene');
+    const t = sc._sbAssistTarget();
+    if (t) t.setPosition(60, 80);
+  });
+  await sleep(300);
+  const assistBefore = await maker.evaluate(() => {
+    const sc = window._phaserGame.scene.getScene('CustomScene');
+    return { x: sc.actor.x, starX: (sc._sbAssistTarget() || {}).x, assist: liveConfig.a11yAssist };
+  });
+  await maker.bringToFront();
+  await maker.keyboard.down('Space');
+  await sleep(1000);
+  const assistHeld = await maker.evaluate(() => {
+    const sc = window._phaserGame.scene.getScene('CustomScene');
+    return { x: sc.actor.x, collected: sc._collected };
+  });
+  await maker.keyboard.up('Space');
+  await sleep(450);
+  const assistReleased = await maker.evaluate(() => window._phaserGame.scene.getScene('CustomScene').actor.x);
+  await sleep(450);
+  const assistStill = await maker.evaluate(() => window._phaserGame.scene.getScene('CustomScene').actor.x);
+  check('assist mode is on for the running game', assistBefore.assist === true);
+  check('one button moves the player toward the star', assistHeld.x < assistBefore.x - 5 || assistHeld.collected > 0, JSON.stringify({ before: assistBefore, held: assistHeld }));
+  check('releasing the one button stops the player', Math.abs(assistStill - assistReleased) < 3, assistReleased + ' -> ' + assistStill);
+
+  const exportedA11y = await maker.evaluate(async () => {
+    liveConfig.a11yCaptions = true;
+    liveConfig.a11yReducedMotion = true;
+    liveConfig.a11yAssist = true;
+    const b = await _buildExportHtml();
+    return b ? b.html : null;
+  });
+  check('export keeps the accessibility settings', !!exportedA11y && /"a11yCaptions":true/.test(exportedA11y) && /"a11yReducedMotion":true/.test(exportedA11y) && /"a11yAssist":true/.test(exportedA11y));
+  check('export keeps the caption live region', !!exportedA11y && /id="sbCaptions"[^>]*aria-live="polite"/.test(exportedA11y));
+
   await browser.close();
   server.close();
   if(failures){ console.log('\n'+failures+' FAILURE(S)'); process.exit(1); }

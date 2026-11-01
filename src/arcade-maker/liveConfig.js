@@ -83,6 +83,11 @@ const liveConfig = {
     juiceChroma:    true,
     juiceZoom:      false, juiceZoomScale: 1.06,
     juiceComboFlash:true,
+    // ── Accessibility (A2176) ─────────────────────────────────────
+    // Captions on by default so key sandbox events are named out loud.
+    a11yCaptions:   true,
+    a11yReducedMotion: false,
+    a11yAssist:     false,
     // ── Visual Themes ─────────────────────────────────────────────
     theme: 'space',
     // ── Parallax Backgrounds ──────────────────────────────────────
