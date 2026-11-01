@@ -10,6 +10,7 @@ const path = require('path');
 
 const { ROOT, IGNORE_DIRS: SKIP_DIRS, EXCLUDE_FILES: LIB_EXCLUDE, GAME_ORPHANS } = require('./scripts/lib/paths');
 const { walk } = require('./scripts/lib/walk');
+const { buildTime } = require('./scripts/lib/build-time');
 const SKIP_FILES = new Set([...LIB_EXCLUDE, ...GAME_ORPHANS, 'games/game-template.html', '404.html', 'offline.html', 'search.html']);
 
 // A680: registry-fed aliases. The curated tool registry (content/tools.json) plus
@@ -52,5 +53,5 @@ for (const fp of walk(ROOT, { ext: ".html", ignore: SKIP_DIRS })) {
   entries.push(entry);
 }
 entries.sort((a, b) => a.url.localeCompare(b.url));
-fs.writeFileSync(path.join(ROOT, 'search-index.json'), JSON.stringify({ generated: new Date().toISOString(), count: entries.length, pages: entries }, null, 1));
+fs.writeFileSync(path.join(ROOT, 'search-index.json'), JSON.stringify({ generated: buildTime(), count: entries.length, pages: entries }, null, 1));
 console.log(`✓ generate-search-index: ${entries.length} pages → search-index.json`);

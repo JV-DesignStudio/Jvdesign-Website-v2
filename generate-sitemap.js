@@ -8,7 +8,7 @@
  *    (So mobile-games, pitch, 404, etc. are excluded automatically , no manual list.)
  *  - Plus an explicit EXCLUDE set for dev templates that carry no robots meta.
  *  - <lastmod> comes from each file's last git commit date (accurate + automatic),
- *    falling back to filesystem mtime for files not yet committed.
+ *    falling back to the reproducible build time for files not yet committed.
  *  - index.html gets priority 1.0 / weekly; everything else 0.5 / monthly.
  *
  * Output is sorted by URL for stable, reviewable diffs.
@@ -20,6 +20,7 @@ const { execFileSync } = require('child_process');
 
 const { ROOT, IGNORE_DIRS, EXCLUDE_FILES: LIB_EXCLUDE, GAME_ORPHANS, BASE_URL: BASE } = require('./scripts/lib/paths');
 const { walk } = require('./scripts/lib/walk');
+const { buildTime } = require('./scripts/lib/build-time');
 const EXCLUDE_FILES = new Set([...LIB_EXCLUDE, ...GAME_ORPHANS, 'games/game-template.html', 'games/cozy-biscuit-clicker.pre-app.bak.html']);
 const PRIORITY_MAP = {
   // Hub pages , higher crawl priority
@@ -97,7 +98,7 @@ for (const fp of walk(ROOT, { ext: ".html", ignore: IGNORE_DIRS })) {
   const html = fs.readFileSync(fp, 'utf8');
   if (robotsNoindex(html)) continue;
 
-  const date = lastMod[rel] || new Date(fs.statSync(fp).mtime).toISOString().slice(0, 10);
+  const date = lastMod[rel] || buildTime().slice(0, 10);
   let clean = toCleanUrl(rel);
   if (!clean) continue; // excluded (e.g. .bak.html)
   // Prefer the canonical tag as the URL source of truth
