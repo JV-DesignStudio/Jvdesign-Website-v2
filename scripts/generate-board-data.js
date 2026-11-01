@@ -8,6 +8,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { buildTime } = require('./lib/build-time');
 
 const ROOT = path.resolve(__dirname, '..');
 const CONTENT = path.join(ROOT, 'content');
@@ -131,7 +132,7 @@ function getSwVersion(){
 
 // Link validation , live refs from validate-links and timestamp (no placeholder)
 function validateSummary() {
-  let lastRun = new Date().toISOString().slice(0,10);
+  let lastRun = buildTime().slice(0,10);
   try{
     const {execSync} = require('child_process');
     const iso = execSync('git log -1 --format=%cs', {encoding:'utf8', cwd: require('path').resolve(__dirname,'..')}).trim();
@@ -166,10 +167,12 @@ function socialQueueCount(){
 const mascots = mascotsKPI();
 const board = { human_review: 0, in_progress: 0, backlog: 0, total: 0, note: 'private - see studio-workspace' };
 const socialQueue = socialQueueCount();
-// A1486: board telemetry (throughput/learner/revenue) is private and is not
-// carried into the published board-data.json; emit neutral stubs instead.
+// A1486/A2044: live throughput, learner and revenue telemetry is private. It
+// lives in studio-workspace/board-telemetry.json and the private board server
+// merges it when it serves /board-data.json. The public file carries neutral
+// stubs only, so the public build has a single writer and stays reproducible.
 const data = {
-  generated: new Date().toISOString(),
+  generated: buildTime(),
   sitemap: { urls: sitemapCount, lastmod: lastModSitemap() },
   searchIndex: { count: searchIndex ? searchIndex.count : 0 },
   socialQueue: { count: socialQueue, dir: 'social-posts/queue' },
@@ -190,9 +193,9 @@ const data = {
   validate: validateSummary(),
   site: { css: cssCount, pages: pagesCount },
   sw: { version: getSwVersion(), file: 'sw.js' },
-  throughput: { d7:0,d30:0,wipMaxAge:0,medianLead:null,p90Lead:null,updated:new Date().toISOString(), note:'private' },
-  learner: { generated:new Date().toISOString(), wins:{today:0,week:0,toolUses:0,workshopCompletions:0,note:'stub'}, note:'stub' },
-  revenue: { generated:new Date().toISOString(), bmc:{count:0,total:0,last7d:0},kofi:{count:0,total:0,last7d:0}, last7d:'private', total:'0', private:true },
+  throughput: { d7:0,d30:0,wipMaxAge:0,medianLead:null,p90Lead:null,updated:null, note:'private - served from board-telemetry.json' },
+  learner: { generated:null, wins:{today:0,week:0,toolUses:0,workshopCompletions:0,note:'stub'}, note:'stub' },
+  revenue: { generated:null, bmc:{count:0,total:0,last7d:0},kofi:{count:0,total:0,last7d:0}, last7d:'private', total:'0', private:true },
 };
 
 const out = path.join(ROOT, 'board-data.json');

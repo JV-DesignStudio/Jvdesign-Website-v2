@@ -12,22 +12,7 @@ const ROOT=path.resolve(__dirname,'..');
 // Serialise with other agents - the generators rewrite shared files.
 try{ require('./lib/build-lock').acquire('check:drift'); }
 catch(e){ console.error('\n  '+e.message+'\n'); process.exit(3); }
-const GENERATED=[
-  'content/workshops.json',
-  'content/workshop-outcomes.json',
-  'content/games.json',
-  'content/tools.json',
-  'content/books.json',
-  'content/characters.json',
-  'content/paths.json',
-  'content/stats.json',
-  'content-data.js',
-  'search-index.json',
-  'sitemap.xml',
-  'board-data.json',
-  'latest-post.json',
-  'devlog-data.js'
-];
+const { GENERATED } = require('./lib/generated-files');
 function sh(cmd){ return execSync(cmd,{cwd:ROOT, encoding:'utf8', stdio:'pipe'}); }
 function snapshot(){
   const m={};

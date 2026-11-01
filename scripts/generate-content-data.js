@@ -19,6 +19,7 @@ const path = require('path');
 
 const { ROOT, IGNORE_DIRS } = require('./lib/paths');
 const { walk } = require('./lib/walk');
+const { buildTime } = require('./lib/build-time');
 const OUT = path.join(ROOT, 'content');
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -653,7 +654,7 @@ function generatePaths() {
 
 function generateStats(workshops, games, tools, books) {
   const stats = {
-    generated: new Date().toISOString(),
+    generated: buildTime(),
     workshops: workshops.length,
     games: games.length,
     tools: tools.filter(t => !t.comingSoon).length,
