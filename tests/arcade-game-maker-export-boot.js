@@ -50,11 +50,34 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   // the export builder rather than assuming a fixed delay (A2140).
   await maker.waitForFunction(() => typeof window._buildExportHtml === 'function', {timeout:15000});
   await new Promise(r=>setTimeout(r,400));
-  exportHtml = await maker.evaluate(async ()=>{
+  const built = await maker.evaluate(async ()=>{
     _engineData = { title:'Export Boot Test', genre:'SHOOTER', speed:200, gravity:600, jump:450, map:null };
-    const built = await _buildExportHtml();
-    return built ? built.html : '';
+    const first = await _buildExportHtml();
+    // A2185: the largest realistic project is a fully animated player AND enemy
+    // (8 frames each, one sheet each). Measure that, so the ceiling cannot creep.
+    const makeSheet = (frames, size) => {
+      const c = document.createElement('canvas');
+      c.width = size * frames; c.height = size;
+      const x = c.getContext('2d');
+      for (let f = 0; f < frames; f++) {
+        x.fillStyle = 'hsl(' + Math.round(f * 360 / frames) + ',70%,55%)';
+        x.fillRect(f * size + 2, 2, size - 4, size - 4);
+        x.fillStyle = 'rgba(255,255,255,.8)';
+        x.fillRect(f * size + size / 2 - 2, size / 2 - 2, 4, 4);
+      }
+      return c.toDataURL('image/png');
+    };
+    customSpriteDataUrl = makeSheet(8, 64);
+    customSpriteFrameCount = 8;
+    customSpriteFrameW = 64;
+    customEnemyDataUrl = makeSheet(8, 64);
+    customEnemyFrameCount = 8;
+    customEnemyFrameW = 64;
+    const animated = await _buildExportHtml();
+    return { first: first ? first.html : '', animated: animated ? animated.html : '' };
   });
+  exportHtml = built.first;
+  const animatedExport = built.animated;
   await maker.close();
   check('export builder produced HTML', exportHtml.length > 1000, 'len=' + exportHtml.length);
 
@@ -87,6 +110,14 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   if (exportHtml.length >= SOFT_CEILING) {
     console.log('  [warn] export is ' + kb(exportHtml.length) + ', close to the 1.5 MB ceiling.');
   }
+  check('fully animated player plus enemy export produced HTML', animatedExport.length > 1000,
+    'len=' + animatedExport.length);
+  check('fully animated player plus enemy export is under the 1.5 MB ceiling',
+    animatedExport.length < HARD_CEILING,
+    kb(animatedExport.length) + ' / ' + kb(HARD_CEILING));
+  check('fully animated player plus enemy export keeps headroom',
+    animatedExport.length < SOFT_CEILING,
+    kb(animatedExport.length) + ' / ' + kb(SOFT_CEILING));
 
   // Static checks on the packed file.
   check('export keeps no relative local script src', !/<script[^>]*\bsrc=["'](?:\.\.?\/|\/(?!\/))/i.test(exportHtml));

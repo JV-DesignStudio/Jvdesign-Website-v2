@@ -49,6 +49,34 @@ const server = http.createServer((req,res)=>{
   await maker.waitForFunction(() => typeof window._buildExportHtml === 'function', {timeout:20000});
   const built = await maker.evaluate(async () => {
     _engineData = { title:'Fidelity Test', genre:'PLATFORMER', speed:200, gravity:600, jump:450, map:null };
+    // A2185: author frames in the existing editor, preview on the same canvas.
+    _sePixels[0] = '#ffffff';
+    seSetFrameCount(9);
+    const authorCap = _seFrameCount;
+    sePreviewAnimation();
+    const previewOn = !!_sePreviewTimer;
+    sePreviewAnimation();
+    const previewOff = !_sePreviewTimer;
+    seApply('enemy');
+    const authoredEnemyFrames = customEnemyFrameCount;
+    seSetFrameCount(1);
+    // A2185: one sheet per entity, authored frames, same model as save/export.
+    const makeSheet = (frames, size) => {
+      const c = document.createElement('canvas');
+      c.width = size * frames; c.height = size;
+      const x = c.getContext('2d');
+      for (let f = 0; f < frames; f++) {
+        x.fillStyle = 'hsl(' + Math.round(f * 360 / frames) + ',70%,55%)';
+        x.fillRect(f * size + 2, 2, size - 4, size - 4);
+      }
+      return c.toDataURL('image/png');
+    };
+    customSpriteDataUrl = makeSheet(3, 16);
+    customSpriteFrameCount = 3;
+    customSpriteFrameW = 16;
+    customEnemyDataUrl = makeSheet(2, 16);
+    customEnemyFrameCount = 2;
+    customEnemyFrameW = 16;
     // Creator-only data that lives outside liveConfig.
     customLevelEntities = { coins:[[3,2]], enemies:[], spawn:[1,1], goal:[5,5] };
     _customAchs = [{ id:'a1', label:'Fidelity achievement', trigger:'score', target:1, unlocked:false }];
@@ -69,7 +97,12 @@ const server = http.createServer((req,res)=>{
       cutWhen: liveConfig.cutsceneWhen,
       boss: _bossPhases.length,
       entities: !!customLevelEntities,
-      userCode: (document.getElementById('customCodeEditor') || {}).value || ''
+      userCode: (document.getElementById('customCodeEditor') || {}).value || '',
+      playerFrames: customSpriteFrameCount,
+      playerFrameW: customSpriteFrameW,
+      enemyFrames: customEnemyFrameCount,
+      enemyFrameW: customEnemyFrameW,
+      cappedFrames: _sbClampFrameCount(99)
     };
 
     // Now a plain project, to prove eval is only allowed when code exists.
@@ -80,7 +113,8 @@ const server = http.createServer((req,res)=>{
     liveConfig.cutsceneSlides = [];
     _bossPhases = [];
     const b = await _buildExportHtml();
-    return { a: a && a.html, b: b && b.html, roundTrip, saveV: save.v, shareV: share.v };
+    return { a: a && a.html, b: b && b.html, roundTrip, saveV: save.v, shareV: share.v,
+    authorCap, previewOn, previewOff, authoredEnemyFrames };
   });
   exportWithCode = built.a || '';
   exportNoCode = built.b || '';
@@ -97,6 +131,16 @@ const server = http.createServer((req,res)=>{
   check('project JSON keeps cutscene and timing', rt.cut === 1 && rt.cutWhen === 'after', rt.cut + '/' + rt.cutWhen);
   check('project JSON keeps boss phases', rt.boss === 1, String(rt.boss));
   check('project JSON keeps placed entities', rt.entities === true);
+  check('project JSON keeps player animation frames', rt.playerFrames === 3 && rt.playerFrameW === 16,
+    rt.playerFrames + 'x' + rt.playerFrameW);
+  check('project JSON keeps enemy animation frames', rt.enemyFrames === 2 && rt.enemyFrameW === 16,
+    rt.enemyFrames + 'x' + rt.enemyFrameW);
+  check('frame cap applies to every entity', rt.cappedFrames === 8, String(rt.cappedFrames));
+  check('editor authoring stops at the frame cap', built.authorCap === 8, String(built.authorCap));
+  check('animation preview starts and stops on the existing canvas',
+    built.previewOn === true && built.previewOff === true);
+  check('authored enemy frames are applied to the enemy sheet', built.authoredEnemyFrames === 8,
+    String(built.authoredEnemyFrames));
   // Check the CSP meta tag itself, not the whole file: the maker source also
   // contains the string 'unsafe-eval' in the code that builds the policy.
   const cspTag = (html) => (html.match(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*>/i) || [''])[0];
@@ -134,6 +178,10 @@ const server = http.createServer((req,res)=>{
     cutWhen: liveConfig.cutsceneWhen || '',
     boss: (liveConfig.bossPhases || []).map(p => p.label),
     entities: customLevelEntities ? (customLevelEntities.coins || []).length : -1,
+    playerFrames: customSpriteFrameCount,
+    playerFrameW: customSpriteFrameW,
+    enemyFrames: customEnemyFrameCount,
+    enemyFrameW: customEnemyFrameW,
     canvas: !!document.querySelector('#game-container canvas'),
     sceneCount: (window._phaserGame && window._phaserGame.scene) ? window._phaserGame.scene.scenes.length : 0
   }));
@@ -144,6 +192,10 @@ const server = http.createServer((req,res)=>{
   check('cutscene survived with its timing', r.cuts.length === 1 && r.cuts[0] === 'Fidelity cutscene' && r.cutWhen === 'after', r.cuts.join(','));
   check('boss phases survived', r.boss.length === 1 && r.boss[0] === 'Fidelity phase', r.boss.join(','));
   check('placed level entities survived', r.entities === 1, String(r.entities));
+  check('player animation data survived export', r.playerFrames === 3 && r.playerFrameW === 16,
+    r.playerFrames + 'x' + r.playerFrameW);
+  check('enemy animation data survived export', r.enemyFrames === 2 && r.enemyFrameW === 16,
+    r.enemyFrames + 'x' + r.enemyFrameW);
   check('exported game still boots a scene', r.canvas === true && r.sceneCount > 0, 'scenes=' + r.sceneCount);
   check('no CSP console errors', cspErrors.length === 0, cspErrors.slice(0,2).join(' | '));
   check('no uncaught JS errors', jsErrors.length === 0, jsErrors.slice(0,2).join(' | '));

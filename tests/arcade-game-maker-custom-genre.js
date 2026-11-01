@@ -255,16 +255,61 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     document.getElementById('genreMode').value = 'CUSTOM';
     onGenreChange();
     customLevelEntities = null;
-    tmSetEntity('star');  _paintEntity(3 * 20 + 2);
-    tmSetEntity('enemy'); _paintEntity(4 * 20 + 5);
-    tmSetEntity('spawn'); _paintEntity(1 * 20 + 1);
-    tmSetEntity('goal');  _paintEntity(10 * 20 + 10);
+    _sbResetEntityHistory();
+    const place = (tool, idx) => { tmSetEntity(tool); _sbPushEntityHistory(); _paintEntity(idx); };
+    place('star',  3 * 20 + 2);
+    place('enemy', 4 * 20 + 5);
+    place('spawn', 1 * 20 + 1);
+    place('goal',  10 * 20 + 10);
     return JSON.parse(JSON.stringify(customLevelEntities));
   });
   check('editor places stars and chasers', placed.coins.length === 1 && placed.coins[0].join(',') === '2,3' &&
     placed.enemies.length === 1 && placed.enemies[0].join(',') === '5,4', JSON.stringify(placed));
   check('editor places a spawn and a goal', placed.spawn.join(',') === '1,1' && placed.goal.join(',') === '10,10',
     JSON.stringify({ spawn: placed.spawn, goal: placed.goal }));
+
+  // A2185: add, move and erase all undo/redo, and genre change resets history.
+  const history = await page.evaluate(() => {
+    const snap = () => JSON.parse(JSON.stringify(customLevelEntities));
+    tmUndo();
+    const afterUndo = snap();
+    tmRedo();
+    const afterRedo = snap();
+    _sbPushEntityHistory();
+    _sbEraseEntityAt(4 * 20 + 5);
+    _sbPlaceKindAt(6 * 20 + 6, 'enemy');
+    const moved = snap();
+    tmUndo();
+    const afterMoveUndo = snap();
+    tmRedo();
+    const afterMoveRedo = snap();
+    _sbPushEntityHistory();
+    _sbEraseEntityAt(3 * 20 + 2);
+    const erased = snap();
+    tmUndo();
+    const afterEraseUndo = snap();
+    tmRedo();
+    const afterEraseRedo = snap();
+    onGenreChange();
+    const historyAfterGenre = _sbEntHistory.length;
+    // Restore the original placement for the goal checks below.
+    customLevelEntities = { coins:[[2,3]], enemies:[[5,4]], spawn:[1,1], goal:[10,10] };
+    return { afterUndo, afterRedo, moved, afterMoveUndo, afterMoveRedo,
+      erased, afterEraseUndo, afterEraseRedo, historyAfterGenre, final: snap() };
+  });
+  check('undo reverses the last add', history.afterUndo.goal === null, JSON.stringify(history.afterUndo));
+  check('redo restores the last add', history.afterRedo.goal.join(',') === '10,10', JSON.stringify(history.afterRedo));
+  check('moving an entity updates its cell', history.moved.enemies.length === 1 &&
+    history.moved.enemies[0].join(',') === '6,6', JSON.stringify(history.moved.enemies));
+  check('undo reverses a move', history.afterMoveUndo.enemies[0].join(',') === '5,4',
+    JSON.stringify(history.afterMoveUndo.enemies));
+  check('redo replays a move', history.afterMoveRedo.enemies[0].join(',') === '6,6',
+    JSON.stringify(history.afterMoveRedo.enemies));
+  check('erasing removes the entity', history.erased.coins.length === 0, JSON.stringify(history.erased.coins));
+  check('undo restores an erased entity', history.afterEraseUndo.coins.length === 1 &&
+    history.afterEraseUndo.coins[0].join(',') === '2,3', JSON.stringify(history.afterEraseUndo.coins));
+  check('redo re-applies an erase', history.afterEraseRedo.coins.length === 0, JSON.stringify(history.afterEraseRedo.coins));
+  check('genre change clears placement history', history.historyAfterGenre === 0, String(history.historyAfterGenre));
 
   await bootCustom({ customWinMode: 'goal', customWinValue: 0, customStarTarget: 1,
     customEnemyCount: 0, customEnemySpeed: 0, customGoldStars: false, customFastEnemies: false });

@@ -135,8 +135,13 @@ async function waitStable(page) {
       if (ov && ov.classList.contains('show')) { if (typeof closeIntro === 'function') closeIntro(); else ov.classList.remove('show'); }
       const tut = document.getElementById('tutOverlay');
       if (tut) { tut.classList.remove('show'); tut.style.display = 'none'; }
-      const wel = document.getElementById('welcome-overlay');
-      if (wel) { wel.classList.remove('show'); wel.style.display = 'none'; }
+      // The welcome picker can sit in its own fixed layer outside
+      // #welcome-overlay, so clear every layer that can swallow a touch.
+      ['welcome-overlay', 'welcome-picker'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.classList.remove('show'); el.style.display = 'none'; }
+      });
+      document.querySelectorAll('.welcome-tpl, .welcome-backdrop').forEach(el => { el.style.display = 'none'; });
     });
     await page.waitForFunction(() => {
       const ov = document.getElementById('introOverlay');
@@ -165,6 +170,11 @@ async function waitStable(page) {
       return !!z && z.getBoundingClientRect().width > 0;
     }, { timeout: 10000 });
     const zr = await page.evaluate(() => { const r = document.getElementById('tc-joy-zone').getBoundingClientRect(); return { x: r.left + r.width * 0.6, y: r.top + Math.min(r.height * 0.5, 320) }; });
+    // Guard: a welcome layer must not be the element under the touch point.
+    await page.waitForFunction((p) => {
+      const el = document.elementFromPoint(p.x, p.y);
+      return !!el && !!el.closest('#tc-joy-zone');
+    }, { timeout: 10000 }, zr).catch(() => {});
     await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: zr.x, y: zr.y, id: 1 }] });
     await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: zr.x - 60, y: zr.y, id: 1 }] });
     await page.waitForFunction(() => {
