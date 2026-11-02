@@ -41,6 +41,11 @@ const server=http.createServer((req,res)=>{
       firstWin:/first 15 minutes/i.test(document.body.innerText),
       cheat:!!document.querySelector('a[href="js-cheatsheet.html"]'),
       maker:!!document.querySelector('a[href*="arcade-game-maker"]'),
+      pathSteps:document.querySelectorAll('.ws-path-step').length,
+      pathLabels:[...document.querySelectorAll('.ws-path-step .ws-path-label')].map(e=>e.textContent.trim()),
+      pathLinks:[...document.querySelectorAll('.ws-path-link')].map(a=>a.getAttribute('href')),
+      pathBefore:/A browser and a text editor/.test(document.body.innerText),
+      pathNext:/Episode 1: Flappy Bird/.test(document.body.innerText),
       dashes:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length,
       sw:document.documentElement.scrollWidth
     }),EPISODES);
@@ -50,9 +55,24 @@ const server=http.createServer((req,res)=>{
     check('hub has the first 15 minutes block',hub.firstWin);
     check('hub links the cheat sheet',hub.cheat);
     check('hub links the Arcade Game Maker',hub.maker);
+    check('hub has four path steps',hub.pathSteps===4,'steps '+hub.pathSteps);
+    check('path steps are before/during/after/next',hub.pathLabels.join(',')==='Before,During,After,Next',hub.pathLabels.join(','));
+    check('path block links a tool and the next workshop',hub.pathLinks.includes('/tools/arcade-game-maker.html')&&hub.pathLinks.includes('/workshops/js-flappy-workshop.html'),hub.pathLinks.join(' '));
+    check('hub path names the starting point',hub.pathBefore);
+    check('hub path names the next workshop',hub.pathNext);
     check('hub has no dashes',hub.dashes===0,'dashes '+hub.dashes);
     check('hub desktop no overflow',hub.sw<=1442,hub.sw+'');
     check('hub no browser errors',errors.length===0,errors.slice(0,2).join(' | '));
+
+    await page.setViewport({width:390,height:844,isMobile:true});
+    await page.reload({waitUntil:'load'});
+    const hubMob=await page.evaluate(()=>({
+      sw:document.documentElement.scrollWidth,
+      steps:document.querySelectorAll('.ws-path-step').length
+    }));
+    check('hub 390px no overflow',hubMob.sw<=392,'scrollWidth '+hubMob.sw);
+    check('hub 390px keeps four path steps',hubMob.steps===4,'steps '+hubMob.steps);
+    await page.setViewport({width:1440,height:900});
 
     // Episodes carry the shared series nav and stay inside the viewport.
     for(const file of EPISODES){
