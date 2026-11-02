@@ -1,5 +1,5 @@
 {
-  "_comment": "A1772 performance budget. Measured by scripts/check-performance.js on a throttled school-device profile (4x CPU, 1.5 Mbps, 150 ms). Values are regression guards: roughly 1.5x the measured cold first-visit baseline. Raise a budget only with a measured reason in review. 2026-11-01 (A2187): the /tools/arcade-game-maker.html budgets are now measured instead of the old LCP 6000 / TBT 4000 defaults. Quiet cold runs measured LCP 4304 to 5100 ms at 390 and 3472 to 5076 ms at 1440 (A2175 measured 4604 and 4960 ms); the 5700 ms LCP budget is about 1.12x the worst quiet run and stays under the old 6000 default, so a real regression fails instead of the default hiding it. TBT stays 4000 ms (measured 1462 to 2351 ms) and transfer stays 1400 KB (measured 571 to 660 KB) to leave room for the animation authoring work in A2185. Repeat runs on this shared machine drifted well above these numbers while an Epic install and a parallel Puppeteer suite were running, and the committed page drifted with them, so only quiet runs were used. No other page budget changed. 2026-11-02 (A2233): Pixel Studio now paints the welcome panel with the page instead of waiting for the app script, and the consent space is reserved before first paint. Quiet measured runs on the school profile were LCP 1976 / 2316 ms and CLS 0.020 / 0.036 at 390 / 1440, so the page budget moves from LCP 5000 / CLS 0.22 to LCP 2600 / CLS 0.1. The 2600 ms budget keeps a margin above the 2316 ms quiet run while still failing a return toward the old 3.3 to 3.8 s first paint, and the 2500 ms good threshold is met in the measured runs. No other page budget changed. 2026-11-02 (A2020): INP is now measured from a real click (Event Timing) instead of standing TBT in for it. The INP budgets sit well above the 200 ms Core Web Vitals target and above the quiet measured value, so only a real regression fails while a busy shared machine or CI runner does not produce a false failure. The measured baseline is committed in performance-baseline.json and summarised in PERFORMANCE.md. The homepage LCP budget moved 2800 -> 3000 ms because three quiet A2020 runs measured 2428, 2464 and 2544 ms and a busy fourth run measured 2804 ms; 3000 ms keeps a margin above the quiet range and still fails a return to the old 4500 ms first paint.",
+  "_comment": "A1772 performance budget. Measured by scripts/check-performance.js on a throttled school-device profile (4x CPU, 1.5 Mbps, 150 ms). Values are regression guards: roughly 1.5x the measured cold first-visit baseline. Raise a budget only with a measured reason in review. 2026-11-01 (A2187): the /tools/arcade-game-maker.html budgets are now measured instead of the old LCP 6000 / TBT 4000 defaults. Quiet cold runs measured LCP 4304 to 5100 ms at 390 and 3472 to 5076 ms at 1440 (A2175 measured 4604 and 4960 ms); the 5700 ms LCP budget is about 1.12x the worst quiet run and stays under the old 6000 default, so a real regression fails instead of the default hiding it. TBT stays 4000 ms (measured 1462 to 2351 ms) and transfer stays 1400 KB (measured 571 to 660 KB) to leave room for the animation authoring work in A2185. Repeat runs on this shared machine drifted well above these numbers while an Epic install and a parallel Puppeteer suite were running, and the committed page drifted with them, so only quiet runs were used. No other page budget changed. 2026-11-02 (A2233): Pixel Studio now paints the welcome panel with the page instead of waiting for the app script, and the consent space is reserved before first paint. Quiet measured runs on the school profile were LCP 1976 / 2316 ms and CLS 0.020 / 0.036 at 390 / 1440, so the page budget moves from LCP 5000 / CLS 0.22 to LCP 2600 / CLS 0.1. The 2600 ms budget keeps a margin above the 2316 ms quiet run while still failing a return toward the old 3.3 to 3.8 s first paint, and the 2500 ms good threshold is met in the measured runs. No other page budget changed. 2026-11-02 (A2020): INP is now measured from a real click (Event Timing) instead of standing TBT in for it. The INP budgets sit well above the 200 ms Core Web Vitals target and above the quiet measured value, so only a real regression fails while a busy shared machine or CI runner does not produce a false failure. The measured baseline is committed in performance-baseline.json and summarised in PERFORMANCE.md. The homepage LCP budget moved 2800 -> 3000 ms because three quiet A2020 runs measured 2428, 2464 and 2544 ms and a busy fourth run measured 2804 ms; 3000 ms keeps a margin above the quiet range and still fails a return to the old 4500 ms first paint. 2026-11-02 (A1821): the representative set grew from five templates to twelve, adding the 3D builder, a workshop, books, the dev log and the parents page, and keeping the old dev-tools and arcade-maker guards. Budgets for the new pages come from quiet measured runs on this profile: 3D builder LCP 4600/4780 ms, workshop 2052/2228 ms, books 1600/1800 ms, dev log 2980/3896 ms, parents 2084/2544 ms. The 3D builder keeps an explicit heavy-engine LCP budget (5500 ms) instead of the 6000 ms default because a deferred engine measured worse (5208/5372 ms): its largest paint is the builder itself, so the engine has to arrive before it can paint. Dev log CLS dropped from 0.181/0.222 to 0.000/0.001 and dev-tools CLS from 0.282 to 0.202 by moving late layout out of the first paint, so the dev-tools CLS budget tightens from 0.4 to 0.3. No other budget moved.",
   "_method": "A2017 changed two things in the harness so the numbers model a real first visit. Text responses are gzip encoded (GitHub Pages and Netlify both compress HTML, CSS and JS in transit) and every measurement now starts in a fresh browser context with an empty cache. Before this, the 1440 run reused the 390 run's downloads and reported a warm revisit, which also made the desktop CLS figure jump between 0.114 and 0.332. Budgets below were re-set from three cold runs on 2026-10-30, except the arcade maker page, which was re-set from measured runs on 2026-11-01 (A2187). The launch target for LCP on the homepage and the workshop hub is 2.5 s; those two budgets sit just above it so a regression toward the old 4.5 s first paint fails the gate.",
   "profile": { "latencyMs": 150, "downloadKbps": 1500, "uploadKbps": 750, "cpuSlowdown": 4 },
   "viewports": [
@@ -8,22 +8,32 @@
   ],
   "pages_list": [
     "/",
-    "/pages/workshop.html",
-    "/pages/dev-tools.html",
     "/arcade.html",
     "/games/echos-flight.html",
+    "/tools/arcade-game-maker.html",
     "/tools/pixel-studio.html",
-    "/tools/arcade-game-maker.html"
+    "/workshops/3d-builder.html",
+    "/workshops/my-first-browser-game.html",
+    "/pages/workshop.html",
+    "/pages/books.html",
+    "/pages/devlog.html",
+    "/pages/parents.html",
+    "/pages/dev-tools.html"
   ],
   "_targets": { "lcp": 2500, "inp": 200, "cls": 0.1 },
   "default": { "lcp": 6000, "inp": 500, "cls": 0.3, "tbt": 1500, "transferKB": 1800 },
   "pages": {
     "/": { "lcp": 3000, "inp": 350, "cls": 0.1, "tbt": 400, "transferKB": 800 },
     "/pages/workshop.html": { "lcp": 2800, "inp": 400, "cls": 0.2, "tbt": 600, "transferKB": 900 },
-    "/pages/dev-tools.html": { "lcp": 5000, "inp": 350, "cls": 0.4, "tbt": 500, "transferKB": 1000 },
+    "/pages/dev-tools.html": { "lcp": 5000, "inp": 350, "cls": 0.3, "tbt": 500, "transferKB": 1000 },
     "/arcade.html": { "lcp": 2500, "inp": 400, "cls": 0.15, "tbt": 700, "transferKB": 800 },
     "/games/echos-flight.html": { "lcp": 2500, "inp": 250, "cls": 0.1, "tbt": 400, "transferKB": 400 },
     "/tools/pixel-studio.html": { "lcp": 2600, "inp": 250, "cls": 0.1, "tbt": 600, "transferKB": 600 },
-    "/tools/arcade-game-maker.html": { "lcp": 5700, "inp": 350, "cls": 0.35, "tbt": 4000, "transferKB": 1400 }
+    "/tools/arcade-game-maker.html": { "lcp": 5700, "inp": 350, "cls": 0.35, "tbt": 4000, "transferKB": 1400 },
+    "/workshops/3d-builder.html": { "lcp": 5500, "inp": 300, "cls": 0.1, "tbt": 1600, "transferKB": 700 },
+    "/workshops/my-first-browser-game.html": { "lcp": 2800, "inp": 300, "cls": 0.15, "tbt": 600, "transferKB": 500 },
+    "/pages/books.html": { "lcp": 3000, "inp": 300, "cls": 0.1, "tbt": 400, "transferKB": 1000 },
+    "/pages/devlog.html": { "lcp": 4500, "inp": 300, "cls": 0.1, "tbt": 600, "transferKB": 800 },
+    "/pages/parents.html": { "lcp": 3000, "inp": 300, "cls": 0.1, "tbt": 400, "transferKB": 500 }
   }
 }

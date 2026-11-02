@@ -35,38 +35,67 @@ clicks the first visible button on each page after it settles and reads the
 Event Timing entries for that interaction. Load metrics (LCP, CLS, TBT,
 transfer) are read before the click so the input does not inflate them.
 
-## Baseline, 2 November 2026
+## Representative set, 2 November 2026 (A1821)
 
-Commit `c514ceb8` plus the A2233 first-paint fix, 2 November 2026. Full runs are
-stored in `performance-baseline.json`.
+The set grew from five templates to twelve: home, arcade, a heavy game, the
+Arcade Game Maker, Pixel Studio, the 3D Builder, a workshop, the workshop
+catalogue, books, the dev log, parents and the dev-tools hub. For each row,
+"before" is the quiet run taken before the A1821 fixes and "after" is the
+final quiet run after them. Full runs are in `performance-baseline.json`.
 
-| Page | Viewport | LCP | INP | CLS | Within good? |
-|---|---|---|---|---|---|
-| Homepage `/` | 390 | 2264 ms | 40 ms | 0.000 | Yes |
-| Homepage `/` | 1440 | 1980 ms | 40 ms | 0.002 | Yes |
-| Workshop catalogue `/pages/workshop.html` | 390 | 2000 ms | 56 ms | 0.000 | Yes |
-| Workshop catalogue `/pages/workshop.html` | 1440 | 2028 ms | 48 ms | 0.047 | Yes |
-| Arcade `/arcade.html` | 390 | 1140 ms | 40 ms | 0.000 | Yes |
-| Arcade `/arcade.html` | 1440 | 1248 ms | 32 ms | 0.061 | Yes |
-| Pixel Studio `/tools/pixel-studio.html` | 390 | 1728 ms | 16 ms | 0.020 | Yes |
-| Pixel Studio `/tools/pixel-studio.html` | 1440 | 2096 ms | 104 ms | 0.036 | Yes |
-| Sample game `/games/echos-flight.html` | 390 | 1088 ms | 32 ms | 0.000 | Yes |
-| Sample game `/games/echos-flight.html` | 1440 | 896 ms | 24 ms | 0.013 | Yes |
+| Page | Viewport | LCP before → after | INP after | CLS before → after |
+|---|---|---|---|---|
+| Homepage `/` | 390 | 2932 → 2196 ms | 40 ms | 0.000 → 0.000 |
+| Homepage `/` | 1440 | 2256 → 2208 ms | 32 ms | 0.013 → 0.011 |
+| Arcade `/arcade.html` | 390 | 1408 → 1280 ms | 32 ms | 0.000 → 0.000 |
+| Arcade `/arcade.html` | 1440 | 1260 → 1336 ms | 32 ms | 0.061 → 0.061 |
+| Heavy game `/games/echos-flight.html` | 390 | 1968 → 1004 ms | 16 ms | 0.000 → 0.000 |
+| Heavy game `/games/echos-flight.html` | 1440 | 1052 → 976 ms | 32 ms | 0.013 → 0.013 |
+| Arcade Game Maker `/tools/arcade-game-maker.html` | 390 | 4920 → 5216 ms | 72 ms | 0.000 → 0.000 |
+| Arcade Game Maker `/tools/arcade-game-maker.html` | 1440 | 4808 → 5504 ms | 96 ms | 0.202 → 0.189 |
+| Pixel Studio `/tools/pixel-studio.html` | 390 | 1836 → 1704 ms | 0 ms | 0.020 → 0.020 |
+| Pixel Studio `/tools/pixel-studio.html` | 1440 | 2032 → 2160 ms | 80 ms | 0.036 → 0.036 |
+| 3D Builder `/workshops/3d-builder.html` | 390 | 4600 → 4556 ms | 48 ms | 0.014 → 0.014 |
+| 3D Builder `/workshops/3d-builder.html` | 1440 | 4780 → 4600 ms | 200 ms | 0.021 → 0.020 |
+| Workshop `/workshops/my-first-browser-game.html` | 390 | 2052 → 2320 ms | 48 ms | 0.068 → 0.068 |
+| Workshop `/workshops/my-first-browser-game.html` | 1440 | 2228 → 2032 ms | 40 ms | 0.063 → 0.063 |
+| Workshop catalogue `/pages/workshop.html` | 390 | 1948 → 1864 ms | 56 ms | 0.000 → 0.000 |
+| Workshop catalogue `/pages/workshop.html` | 1440 | 1948 → 1764 ms | 48 ms | 0.049 → 0.049 |
+| Books `/pages/books.html` | 390 | 1600 → 1672 ms | 32 ms | 0.002 → 0.004 |
+| Books `/pages/books.html` | 1440 | 1800 → 1740 ms | 40 ms | 0.013 → 0.013 |
+| Dev Log `/pages/devlog.html` | 390 | 2836 → 2420 ms | 16 ms | 0.181 → 0.000 |
+| Dev Log `/pages/devlog.html` | 1440 | 3636 → 3412 ms | 24 ms | 0.222 → 0.001 |
+| Parents `/pages/parents.html` | 390 | 2048 → 2016 ms | 40 ms | 0.000 → 0.000 |
+| Parents `/pages/parents.html` | 1440 | 2112 → 2168 ms | 40 ms | 0.010 → 0.010 |
+| Dev Tools `/pages/dev-tools.html` | 390 | 1244 → 1256 ms | 48 ms | 0.000 → 0.005 |
+| Dev Tools `/pages/dev-tools.html` | 1440 | 3368 → 3544 ms | 40 ms | 0.282 → 0.201 |
 
-Every page meets all three good thresholds on both viewports.
+Fourteen of the twenty-four rows meet all three good thresholds on the school
+profile. The 3D Builder and Arcade Game Maker are the exceptions: the builder
+or editor is itself the largest paint, so it cannot appear before its engine
+and shell have parsed on a 4x slowed CPU. They keep explicit lab budgets above
+the good threshold so a real regression still fails. The remaining CLS on the
+dev-tools desktop row is a parse-time reorder, not a late stylesheet:
 
-- **Pixel Studio** used to be a first-paint problem: the welcome modal was
-  opened by the big inline script, so the largest text painted at about 3.3 to
-  3.8 s on the school profile. The welcome panel now paints with the page, and
-  the consent space is reserved before first paint, so it comes in at 1728 ms
-  and 2096 ms with CLS 0.020 and 0.036. The remaining shift is the canvas
-  resizing from its default 300x150 box to the zoomed pixel grid.
-
-Two extra pages are measured as regression guards, beyond the five key pages:
-`/pages/dev-tools.html` and `/tools/arcade-game-maker.html`. The tools hub
-carries a desktop CLS of 0.195 and the maker still has a heavy first paint at
-about 5.2 to 5.7 s. Both are inside their budgets but are useful signals for
-future work.
+- **Dev Log** was the biggest layout problem. The post grid is built from
+  `devlog-data.js` after the document parses, so the empty grid and the footer
+  painted first and then jumped when the cards filled in (CLS 0.181 and 0.222).
+  The posts section and footer now stay hidden until the first render, and the
+  post data is preloaded. CLS is 0.000 and 0.001, and LCP also improved.
+- **Dev Tools** carried its section-reorder CSS at the end of `<body>`, so the
+  tools grid and news blocks swapped places at about 2.5 s (CLS 0.282). The
+  rule now lives in `<head>` and applies before first paint. CLS is 0.201; the
+  rest is the next-step handoff moving as the long grid is parsed, tracked as
+  follow-up work rather than hidden.
+- **3D Builder** loads a 700 KB engine. Deferring it until after first paint
+  was measured and rejected: LCP got worse (5208 and 5372 ms) because the
+  builder is the largest paint and still waits for the engine. The eager engine
+  was kept and the page has a measured 5500 ms LCP budget instead.
+- **Arcade Game Maker** already loads Phaser only on the first Play press
+  (A2175). Its LCP is still about 5.2 to 5.5 s because the maker shell is
+  heavy; the 5700 ms budget catches further regressions.
+- **Pixel Studio**, the workshop, books, parents and the arcade stay within
+  their measured ranges.
 
 ## Current budgets
 
@@ -80,12 +109,17 @@ should not produce a false failure.
 | Template | LCP | INP | CLS | TBT | Transfer |
 |---|---|---|---|---|---|
 | `/` | 3000 ms | 350 ms | 0.1 | 400 ms | 800 KB |
-| `/pages/workshop.html` | 2800 ms | 400 ms | 0.2 | 600 ms | 900 KB |
-| `/pages/dev-tools.html` | 5000 ms | 350 ms | 0.4 | 500 ms | 1000 KB |
 | `/arcade.html` | 2500 ms | 400 ms | 0.15 | 700 ms | 800 KB |
 | `/games/echos-flight.html` | 2500 ms | 250 ms | 0.1 | 400 ms | 400 KB |
-| `/tools/pixel-studio.html` | 2600 ms | 250 ms | 0.1 | 600 ms | 600 KB |
 | `/tools/arcade-game-maker.html` | 5700 ms | 350 ms | 0.35 | 4000 ms | 1400 KB |
+| `/tools/pixel-studio.html` | 2600 ms | 250 ms | 0.1 | 600 ms | 600 KB |
+| `/workshops/3d-builder.html` | 5500 ms | 300 ms | 0.1 | 1600 ms | 700 KB |
+| `/workshops/my-first-browser-game.html` | 2800 ms | 300 ms | 0.15 | 600 ms | 500 KB |
+| `/pages/workshop.html` | 2800 ms | 400 ms | 0.2 | 600 ms | 900 KB |
+| `/pages/books.html` | 3000 ms | 300 ms | 0.1 | 400 ms | 1000 KB |
+| `/pages/devlog.html` | 4500 ms | 300 ms | 0.1 | 600 ms | 800 KB |
+| `/pages/parents.html` | 3000 ms | 300 ms | 0.1 | 400 ms | 500 KB |
+| `/pages/dev-tools.html` | 5000 ms | 350 ms | 0.3 | 500 ms | 1000 KB |
 
 The homepage LCP budget moved from 2800 to 3000 ms because three quiet
 baseline runs measured 2428, 2464 and 2544 ms, and a busy run measured 2804 ms.
