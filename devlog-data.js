@@ -7,6 +7,20 @@
 const POSTS = [
 
     {
+        id: 522,
+        date: '1 November 2026',
+        tag: 'tools',
+        emoji: '🎮',
+        title: 'Deeper rules, a fairer roguelike and a faster start in the Game Maker',
+        excerpt: 'Build games with repeating rules, variables and timers. The roguelike now ends when you clear the dungeon, and the maker opens faster while every game still exports as one small file you can keep.',
+        image: '/assets/devlog/522-tools-arcade-game-maker.webp',
+        links: [
+            { label: 'Open the Game Maker', href: '/tools/arcade-game-maker.html' }
+        ],
+        content: 'The Game Maker is where you pick a genre, press Start and get a real game you can change, save and download. This update makes the parts you touch most feel stronger, without changing how any of it works.\n\nRules can do a lot more. A rule can repeat, wait for a cooldown, start after a timer, or set a variable instead of only adding to it. You can group conditions with ALL and ANY, so a door can open only when two things are true at once. Older projects still open, and their rules still fire once, exactly as before.\n\nThe roguelike plays more like a dungeon should. Clearing a room no longer ends the run by accident, because the win now comes from clearing the dungeon itself. Power Picks wait until you have cleared the first room, so you meet the room before you meet a card menu.\n\nThe maker also opens faster. The game engine loads when you press Start instead of while the welcome screen is still drawing, which matters on a school laptop. When you export, your game is still one file, under 1.5 MB, and it still opens offline with your code, achievements, cutscenes, boss fights and placed objects inside.\n\nThere are quieter improvements too. You can place and move objects on the map, continue from a checkpoint, undo and redo your changes, and save the whole project. Captions, reduced motion and an assist option help more players follow what is happening, and every genre can export and start again.\n\nTry a small idea this week: make a key that opens a door only after you have collected two stars. That is a rule with a condition group and a variable, and it takes about a minute to build.'
+    },
+
+    {
         id: 521,
         date: '20 October 2026',
         tag: 'tools',
