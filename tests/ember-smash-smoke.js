@@ -58,7 +58,13 @@ const ok = (name, cond, detail) => {
       await page.waitForFunction(() => window.__emberSmash && !window.__emberSmash.state().stuck, { timeout: 3000 }).catch(() => {});
       const moving = await page.evaluate(() => new Promise((res) => {
         const a = window.__emberSmash.state();
-        setTimeout(() => res({ a, b: window.__emberSmash.state() }), 300);
+        const t0 = Date.now();
+        const tick = () => {
+          const b = window.__emberSmash.state();
+          if (b.bx !== a.bx || b.by !== a.by || b.alive < a.alive || Date.now() - t0 > 2500) return res({ a, b });
+          setTimeout(tick, 60);
+        };
+        tick();
       }));
       ok(vp.name + ': the spark serves and moves',
         !moving.a.stuck && (moving.b.bx !== moving.a.bx || moving.b.by !== moving.a.by || moving.b.alive < moving.a.alive),
@@ -76,6 +82,35 @@ const ok = (name, cond, detail) => {
       ok(vp.name + ': no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
       await page.close();
     }
+
+    // prefers-reduced-motion: reduce must stop the decorative embers, particle
+    // bursts, brick debris and screen shake while the game stays playable.
+    const rm = await browser.newPage();
+    const rmErrors = [];
+    rm.on('pageerror', (e) => rmErrors.push(e.message));
+    if (typeof rm.emulateMediaFeatures === 'function') {
+      await rm.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+    }
+    await rm.setViewport({ width: 390, height: 844, isMobile: true });
+    await rm.goto(base + '/games/ember-smash.html', { waitUntil: 'load', timeout: 30000 });
+    await rm.waitForSelector('#canvas', { timeout: 10000 });
+    await rm.waitForFunction(() => !!window.__emberSmash, { timeout: 10000 });
+    const bootRM = await rm.evaluate(() => window.__emberSmash.state());
+    ok('reduce motion: the game detects the preference', bootRM.reducedMotion === true, JSON.stringify(bootRM));
+    ok('reduce motion: no ambient embers at boot', bootRM.embers === 0, String(bootRM.embers));
+
+    await rm.evaluate(() => {
+      const c = document.getElementById('canvas'), r = c.getBoundingClientRect();
+      c.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + r.width / 2, clientY: r.top + r.height - 16, bubbles: true }));
+    });
+    await new Promise((r) => setTimeout(r, 3000));
+    const afterRM = await rm.evaluate(() => window.__emberSmash.state());
+    ok('reduce motion: the ball still plays', afterRM.alive < bootRM.alive || afterRM.score > 0, JSON.stringify(afterRM));
+    ok('reduce motion: no particles, debris or shake keep running',
+      afterRM.particles === 0 && afterRM.debris === 0 && afterRM.shake === 0 && afterRM.embers === 0,
+      JSON.stringify({ particles: afterRM.particles, debris: afterRM.debris, shake: afterRM.shake, embers: afterRM.embers }));
+    ok('reduce motion: no page errors', rmErrors.length === 0, rmErrors.slice(0, 2).join(' | '));
+    await rm.close();
   });
 
   console.log(failures ? `\n${failures} FAILED` : '\nEmber Smash smoke: all checks passed');
