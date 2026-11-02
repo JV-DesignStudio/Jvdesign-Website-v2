@@ -13,14 +13,10 @@ const APPLY = process.argv.includes('--apply');
 const IGN = new Set(['node_modules', '.git', '.claude', 'tmp', 'quest-board-deploy',
   '.aider.tags.cache.v4', 'assets', 'partials']);
 
-let updated = 0, total = 0;
-
-function processFile(p) {
-  let s = fs.readFileSync(p, 'utf8');
-
+function processHtml(s) {
   const cspRx = /(<meta\s+http-equiv="Content-Security-Policy"\s+content=")(.*?)(")/i;
   const cspMatch = cspRx.exec(s);
-  if (!cspMatch) return;
+  if (!cspMatch) return s;
 
   const hashes = [];
   const scriptRx = /<script(?!\s[^>]*\bsrc\b)[^>]*>([\s\S]*?)<\/script>/gi;
@@ -46,7 +42,14 @@ function processFile(p) {
   );
 
   const newMeta = cspMatch[1] + csp + cspMatch[3];
-  const newS = s.replace(cspMatch[0], newMeta);
+  return s.replace(cspMatch[0], newMeta);
+}
+
+let updated = 0, total = 0;
+
+function processFile(p) {
+  const s = fs.readFileSync(p, 'utf8');
+  const newS = processHtml(s);
   if (newS !== s) {
     total++;
     if (APPLY) { fs.writeFileSync(p, newS, 'utf8'); updated++; }
@@ -61,7 +64,11 @@ const walk = (d) => {
     else if (e.name.endsWith('.html')) processFile(q);
   }
 };
-walk(ROOT);
 
-console.log((APPLY ? 'Updated ' : 'Would update ') + total + ' pages.');
-if (!APPLY) console.log('Re-run with --apply to write.');
+if (require.main === module) {
+  walk(ROOT);
+  console.log((APPLY ? 'Updated ' : 'Would update ') + total + ' pages.');
+  if (!APPLY) console.log('Re-run with --apply to write.');
+}
+
+module.exports = { processHtml };

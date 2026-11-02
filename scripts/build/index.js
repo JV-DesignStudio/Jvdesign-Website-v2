@@ -32,6 +32,7 @@ const STEPS = [
   { id: 'completion', label: 'Completion (workshop finish screens)',              fn: () => { require('../build-workshop-completion'); require('../apply-workshop-completion').apply(); } },
   { id: 'hubs',     label: 'Engine hubs (workshops/engine-*.html)',               fn: () => require('../generate-engine-hubs').generate() },
   { id: 'debugging', label: 'Debugging (Debug It tasks on coding series)',        fn: () => require('../apply-workshop-debugging').apply() },
+  { id: 'csp',      label: 'CSP      (recompute inline-script hashes)',            fn: () => execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'csp-hashes.js'), '--apply'], { stdio: 'inherit' }) },
   { id: 'sitemap',  label: 'Sitemap  (sitemap.xml + search-index.json)',           fn: () => require('./sitemap').runSitemap() },
   { id: 'coverage', label: 'Coverage (registry items present in search index)',   fn: () => { const m = require('../validate-search-coverage').run({ verbose: true }); if (m.length) { const e = new Error(`${m.length} registry item(s) missing from search-index.json`); e.missing = m; throw e; } } },
   { id: 'latest',   label: 'Latest   (latest-post.json)',                         fn: () => require('./latest').runLatest() },
