@@ -155,6 +155,28 @@ try {
   console.log('  Could not check workshop outcomes: ' + err.message);
 }
 
+// A2191: the reference implementation of the workshop page standard. The
+// Stuck? Try this recovery block and the next-step link live on this page so a
+// series slice has one reviewed pattern to copy.
+let standardMissing = [];
+try {
+  const reference = 'my-first-browser-game.html';
+  const src = pageSource(reference);
+  const stuck = src.match(/<!-- WS-STUCK:START -->([\s\S]*?)<!-- WS-STUCK:END -->/);
+  const next = src.match(/<!-- WS-NEXT:START -->([\s\S]*?)<!-- WS-NEXT:END -->/);
+  const stuckItems = stuck ? (stuck[1].match(/class="ws-stuck-item"/g) || []).length : 0;
+  if (!stuck) standardMissing.push(reference + ' (no Stuck? Try this block)');
+  else {
+    if (stuckItems < 3) standardMissing.push(reference + ' (fewer than three recovery items)');
+    if (!/What you'll see:/.test(stuck[1]) || !/Fix:/.test(stuck[1])) standardMissing.push(reference + ' (recovery item without symptom and fix)');
+  }
+  if (!next) standardMissing.push(reference + ' (no next-step block)');
+  else if (!/class="next-route"/.test(next[1]) || !/href="[^"#]+\.html"/.test(next[1])) standardMissing.push(reference + ' (next step has no real local link)');
+  if (!standardMissing.length) console.log('- Workshop page standard: reference page carries outcome, Stuck? Try this and next step');
+} catch (err) {
+  standardMissing.push('reference page: ' + err.message);
+}
+
 console.log(`✓ Valid (checkbox-style): ${results.valid.length}/${CONVERTED.length - BUILDER_STYLE.length}`);console.log(`✓ Workshop coverage: ${coverage.files} HTML files checked for title, description, canonical and age metadata`);
 if (coverage.missing_title.length) console.log('  Missing title: ' + coverage.missing_title.join(', '));
 if (coverage.missing_description.length) console.log('  Missing description: ' + coverage.missing_description.join(', '));
@@ -170,6 +192,8 @@ if (results.errors.length > 0) results.errors.forEach(e => console.log(`  ${e.fi
 
 console.log(`- Missing outcome statement: ${outcomeMissing.length}`);
 if (outcomeMissing.length > 0) console.log('  Files: ' + outcomeMissing.join(', '));
+console.log(`- Missing workshop page standard: ${standardMissing.length}`);
+if (standardMissing.length > 0) console.log('  Files: ' + standardMissing.join(', '));
 // A2037: every published tutorial must declare a completion condition, a
 // finish screen and a next step. Registry lives in content/workshop-completion.json;
 // rebuild with node scripts/build-workshop-completion.js after adding a workshop.
@@ -256,5 +280,5 @@ try {
   console.log('  Could not check workshop debugging tasks: ' + err.message);
 }
 
-const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0 || coverage.missing_title.length > 0 || coverage.missing_description.length > 0 || coverage.missing_canonical.length > 0 || coverage.missing_age.length > 0 || outcomeMissing.length > 0 || completionMissing.length > 0 || releaseMissing.length > 0 || contentIntegrity.issues.length > 0 || debugging.missing.length > 0 || debugging.stale.length > 0;
+const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0 || coverage.missing_title.length > 0 || coverage.missing_description.length > 0 || coverage.missing_canonical.length > 0 || coverage.missing_age.length > 0 || outcomeMissing.length > 0 || standardMissing.length > 0 || completionMissing.length > 0 || releaseMissing.length > 0 || contentIntegrity.issues.length > 0 || debugging.missing.length > 0 || debugging.stale.length > 0;
 if (hasFailures) process.exitCode = 1;

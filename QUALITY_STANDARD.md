@@ -35,6 +35,10 @@ how they map to READY / BETA / EXPERIMENT / HIDDEN.
 A workshop is finished when a learner can follow it independently -- no adult
 repairing broken steps, no AI filling gaps -- and end with something they made.
 
+The four required blocks (outcome panel, `Stuck? Try this`, creative extension
+and next step), their markup and the series rollout order are defined in
+`WORKSHOP_PAGE_STANDARD.md` (A2191).
+
 #### Structural (machine-checked by `validate-workshops.js`)
 
 - `STORAGE_KEY` is defined and progress saves under it; the progress hub reflects it.
@@ -68,12 +72,14 @@ compile or execute as shown. Every code blank has a correct answer. Quizzes
 run to the final screen and record a result.
 
 **Recovery support.** At least one step that is known to go wrong has a
-"Stuck? Try this" note or equivalent. Common mistakes are named, not just
-the correct path.
+`Stuck? Try this` block in the form defined by `WORKSHOP_PAGE_STANDARD.md`.
+Common mistakes are named with the symptom and a fix, not just the correct
+path.
 
 **Challenge extension.** A learner who finishes the main path is offered one
 further step: something to customise, break or extend independently. This is
-the signal that the workshop builds independence, not copy-paste dependency.
+the `Then extend it` field of the outcome panel, not a second list. It is the
+signal that the workshop builds independence, not copy-paste dependency.
 
 **Lumo present.** Lumo appears in the copy, a callout, or a hint panel at
 at least one meaningful point in the learning journey.

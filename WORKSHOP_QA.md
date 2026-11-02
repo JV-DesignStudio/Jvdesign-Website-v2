@@ -2,6 +2,8 @@
 
 Every workshop must pass this checklist before it is marked published/released.
 Run it in a private/incognito window with no previous browser data for a fresh-start test.
+The four required page blocks (outcome, `Stuck? Try this`, creative extension and
+next step) are defined in `WORKSHOP_PAGE_STANDARD.md`.
 
 ## Before publishing
 
@@ -12,6 +14,9 @@ Run it in a private/incognito window with no previous browser data for a fresh-s
 - [ ] All buttons work: next step, previous step, restart, reset, export (where present)
 - [ ] All internal links and "continue" links resolve to a real page
 - [ ] Progress indicator updates correctly as steps are completed
+- [ ] An outcome panel names the project, the concept and why it works, the finish and one extension
+- [ ] A `Stuck? Try this` block names at least three real mistakes with a fix for each
+- [ ] The next-step link points at the next workshop and the pathway hub
 - [ ] Completion state triggers correctly on the final step and awards XP (where applicable)
 - [ ] Mobile layout checked at 390px - no overflow, no clipped buttons
 - [ ] Keyboard navigation: Tab reaches all interactive elements in logical order
