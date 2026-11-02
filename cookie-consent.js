@@ -1,4 +1,9 @@
 (function(){
+  // A2233: a page may load this early so the banner reserves space before the
+  // first paint, then the shared footer partial loads it again. Run once.
+  if (window.__jvdsCookieConsentLoaded) return;
+  window.__jvdsCookieConsentLoaded = true;
+
   var CONSENT_KEY = 'jvds-cookie-consent';
   var MAX_AGE = 365 * 24 * 60 * 60;
 

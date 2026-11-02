@@ -37,28 +37,30 @@ transfer) are read before the click so the input does not inflate them.
 
 ## Baseline, 2 November 2026
 
-Commit `72c87d58`. Full runs are stored in `performance-baseline.json`.
+Commit `c514ceb8` plus the A2233 first-paint fix, 2 November 2026. Full runs are
+stored in `performance-baseline.json`.
 
 | Page | Viewport | LCP | INP | CLS | Within good? |
 |---|---|---|---|---|---|
-| Homepage `/` | 390 | 2528 ms | 48 ms | 0.000 | Yes |
-| Homepage `/` | 1440 | 2244 ms | 48 ms | 0.002 | Yes |
-| Workshop catalogue `/pages/workshop.html` | 390 | 1844 ms | 64 ms | 0.000 | Yes |
-| Workshop catalogue `/pages/workshop.html` | 1440 | 2228 ms | 56 ms | 0.047 | Yes |
-| Arcade `/arcade.html` | 390 | 1292 ms | 64 ms | 0.000 | Yes |
-| Arcade `/arcade.html` | 1440 | 1300 ms | 24 ms | 0.061 | Yes |
-| Pixel Studio `/tools/pixel-studio.html` | 390 | 3328 ms | 16 ms | 0.089 | LCP over |
-| Pixel Studio `/tools/pixel-studio.html` | 1440 | 3840 ms | 112 ms | 0.129 | LCP and CLS over |
-| Sample game `/games/echos-flight.html` | 390 | 1140 ms | 32 ms | 0.000 | Yes |
-| Sample game `/games/echos-flight.html` | 1440 | 928 ms | 32 ms | 0.013 | Yes |
+| Homepage `/` | 390 | 2264 ms | 40 ms | 0.000 | Yes |
+| Homepage `/` | 1440 | 1980 ms | 40 ms | 0.002 | Yes |
+| Workshop catalogue `/pages/workshop.html` | 390 | 2000 ms | 56 ms | 0.000 | Yes |
+| Workshop catalogue `/pages/workshop.html` | 1440 | 2028 ms | 48 ms | 0.047 | Yes |
+| Arcade `/arcade.html` | 390 | 1140 ms | 40 ms | 0.000 | Yes |
+| Arcade `/arcade.html` | 1440 | 1248 ms | 32 ms | 0.061 | Yes |
+| Pixel Studio `/tools/pixel-studio.html` | 390 | 1728 ms | 16 ms | 0.020 | Yes |
+| Pixel Studio `/tools/pixel-studio.html` | 1440 | 2096 ms | 104 ms | 0.036 | Yes |
+| Sample game `/games/echos-flight.html` | 390 | 1088 ms | 32 ms | 0.000 | Yes |
+| Sample game `/games/echos-flight.html` | 1440 | 896 ms | 24 ms | 0.013 | Yes |
 
-Homepage, workshop catalogue, Arcade and the sample game meet all three good
-thresholds on both viewports. One page needs follow-up work:
+Every page meets all three good thresholds on both viewports.
 
-- **Pixel Studio** is a first-paint problem, not an interaction problem. Its
-  welcome modal is opened by the big inline script, so the largest text paints
-  at about 3.3 to 3.8 s on the school profile. The desktop CLS of 0.129 comes
-  from the app shell and notice drawer being inserted after load. INP is fine.
+- **Pixel Studio** used to be a first-paint problem: the welcome modal was
+  opened by the big inline script, so the largest text painted at about 3.3 to
+  3.8 s on the school profile. The welcome panel now paints with the page, and
+  the consent space is reserved before first paint, so it comes in at 1728 ms
+  and 2096 ms with CLS 0.020 and 0.036. The remaining shift is the canvas
+  resizing from its default 300x150 box to the zoomed pixel grid.
 
 Two extra pages are measured as regression guards, beyond the five key pages:
 `/pages/dev-tools.html` and `/tools/arcade-game-maker.html`. The tools hub
@@ -82,7 +84,7 @@ should not produce a false failure.
 | `/pages/dev-tools.html` | 5000 ms | 350 ms | 0.4 | 500 ms | 1000 KB |
 | `/arcade.html` | 2500 ms | 400 ms | 0.15 | 700 ms | 800 KB |
 | `/games/echos-flight.html` | 2500 ms | 250 ms | 0.1 | 400 ms | 400 KB |
-| `/tools/pixel-studio.html` | 5000 ms | 250 ms | 0.22 | 600 ms | 600 KB |
+| `/tools/pixel-studio.html` | 2600 ms | 250 ms | 0.1 | 600 ms | 600 KB |
 | `/tools/arcade-game-maker.html` | 5700 ms | 350 ms | 0.35 | 4000 ms | 1400 KB |
 
 The homepage LCP budget moved from 2800 to 3000 ms because three quiet
