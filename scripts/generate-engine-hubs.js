@@ -198,7 +198,22 @@ function renderPage(engine, byId) {
     : '';
 
   const appLabel = engine.appName || engine.name;
-  const title = engine.name + ' Workshops: Free Beginner Tutorials and Series | JVDesignStudio';
+  // A1818: one clear search intent per hub. The old "Free Beginner Tutorials
+  // and Series" tail was identical on every engine page, so they competed with
+  // each other and with the /learn beginner guides. Each engine now names the
+  // job its catalogue does (3D, modding, fighters, plugins, game code).
+  const TITLE_TAIL = {
+    blender: 'Free Step-by-Step 3D Tutorials',
+    tinkercad: 'Free Step-by-Step 3D Tutorials',
+    minecraft: 'Free Step-by-Step Modding Tutorials',
+    'stardew-valley': 'Free Step-by-Step Modding Tutorials',
+    terraria: 'Free Step-by-Step Modding Tutorials',
+    mugen: 'Free Step-by-Step Fighter Tutorials',
+    openrct2: 'Free Step-by-Step Plugin Tutorials',
+    general: 'Free Step-by-Step Tutorials',
+  };
+  const hubName = engine.name === 'General' ? 'Game Making' : engine.name;
+  const title = hubName + ' Workshops: ' + (TITLE_TAIL[id] || 'Free Step-by-Step Game Tutorials') + ' | JVDesignStudio';
   const description = hasApp
     ? 'Every free ' + engine.name + ' workshop in one place: start in the browser with nothing to install, then build the full game with '
       + appLabel + '. ' + total + ' workshops, ' + band.toLowerCase() + '.'
