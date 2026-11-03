@@ -76,7 +76,19 @@ const SNAP = () => ({
   srClock: (document.querySelector('[data-storyrun] .sr-time') || {}).textContent || '',
   modal: !!document.querySelector('.sr-modal.show'),
   modalScore: (document.querySelector('.sr-modal.show .sr-stats b') || {}).textContent || '',
-  title: document.title
+  title: document.title,
+  won: window.__stardustSnake.won(),
+  shields: window.__stardustSnake.shields(),
+  magnet: window.__stardustSnake.magnet(),
+  theme: window.__stardustSnake.theme(),
+  compass: window.__stardustSnake.compass(),
+  ghost: window.__stardustSnake.ghostLength(),
+  mode: window.__stardustSnake.mode(),
+  rockCount: window.__stardustSnake.rocks().length,
+  a11y: window.__stardustSnake.a11y(),
+  goalLadder: window.__stardustSnake.goalLadder(),
+  dailyGoal: window.__stardustSnake.dailyGoal(),
+  seed: window.__stardustSnake.seed()
 });
 
 async function feedUntil(page, target, type, guard = 200) {
@@ -119,7 +131,11 @@ async function playViewport(browser, base, vp) {
   await page.evaluate(() => window.__stardustSnake.setDir(1, 0));
   const moved = await feedUntil(page, beforeEat.eatCount + 2, 'normal');
   check(vp.name + ': eating a star as it moves grows the trail', moved.len >= beforeEat.len + 2, 'len=' + moved.len);
-  await page.evaluate(() => { for (let i = 0; i < 3; i++) window.__stardustSnake.feedNow('normal'); });
+  await page.evaluate(() => {
+    window.__stardustSnake.setWrap(true);
+    for (let i = 0; i < 3; i++) window.__stardustSnake.feedNow('normal');
+    window.__stardustSnake.setWrap(false);
+  });
   await sleep(60);
   const fed = await page.evaluate(SNAP);
   check(vp.name + ': eating stars grows the trail', fed.len >= 8, 'len=' + fed.len);
@@ -232,6 +248,7 @@ async function extrasCheck(browser, base) {
   check('extras: the best score persists across reloads', persisted.bestGame >= runScore && Number(persisted.domBest) >= runScore, 'best=' + persisted.bestGame + ' run=' + runScore);
   check('extras: a rising best unlocks more trail colours', persisted.unlockedPalettes >= 1, 'open=' + persisted.unlockedPalettes);
   check('extras: the First Spark achievement is stored', persisted.achievements.indexOf('first-star') >= 0, persisted.achievements.join(','));
+  check('extras: the best run ghost survives a reload', persisted.ghost > 0, 'ghost=' + persisted.ghost);
 
   // Wrap mode sends the trail across the seam instead of ending the run.
   await page.evaluate(() => window.__stardustSnake.setWrap(true));
@@ -278,6 +295,70 @@ async function reduceMotionCheck(browser, base) {
   await page.close();
 }
 
+async function featuresCheck(browser, base) {
+  const page = await browser.newPage();
+  const errors = watchErrors(page);
+  await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await page.goto(base + '/games/stardust-snake.html?seed=smoketest&goal=7', { waitUntil: 'load', timeout: 30000 });
+  await page.waitForFunction(() => !!window.__stardustSnake, { timeout: 10000 });
+  await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
+
+  const boot = await page.evaluate(SNAP);
+  check('features: a challenge link sets the daily goal', boot.dailyGoal === 7, String(boot.dailyGoal));
+  check('features: the compass points at the next star', boot.compass && typeof boot.compass.angle === 'number', JSON.stringify(boot.compass));
+  check('features: the endless goal ladder has more than four steps', boot.goalLadder > 4, 'steps=' + boot.goalLadder);
+
+  await page.click('#modePills .pill[data-mode="nebula"]');
+  const nebula = await page.evaluate(SNAP);
+  check('features: Nebula mode adds rocks', nebula.mode === 'nebula' && nebula.rockCount > 0, nebula.mode + '/' + nebula.rockCount);
+  await page.click('#modePills .pill[data-mode="classic"]');
+
+  await page.keyboard.press('Enter');
+  await sleep(220);
+  const started = await page.evaluate(SNAP);
+  check('features: Enter starts the run', started.running && !started.startShown, JSON.stringify({ running: started.running, startShown: started.startShown }));
+
+  const startSpeed = started.speed;
+  await page.evaluate(() => window.__stardustSnake.setWrap(true));
+  await page.evaluate(() => window.__stardustSnake.feedNow('speed'));
+  await sleep(40);
+  const sped = await page.evaluate(SNAP);
+  check('features: a slow star eases the trail', sped.speed <= startSpeed && sped.lastEat === 'speed', startSpeed + ' -> ' + sped.speed);
+
+  await page.evaluate(() => window.__stardustSnake.feedNow('shield'));
+  await sleep(30);
+  const shield = await page.evaluate(SNAP);
+  check('features: a shield star grants a shield', shield.shields >= 1, 'shields=' + shield.shields);
+
+  await page.evaluate(() => window.__stardustSnake.feedNow('magnet'));
+  await sleep(30);
+  const magnet = await page.evaluate(SNAP);
+  check('features: a magnet star pulls stars closer', magnet.magnet > 0, 'magnet=' + magnet.magnet);
+
+  await page.evaluate(() => { for (let i = 0; i < 8; i++) window.__stardustSnake.feedNow('normal'); });
+  await sleep(60);
+  const themed = await page.evaluate(SNAP);
+  check('features: the sky theme changes as the trail grows', themed.theme >= 1, 'theme=' + themed.theme);
+
+  const link = await page.evaluate(() => window.__stardustSnake.shareLink());
+  check('features: the challenge link carries seed and goal', /seed=smoketest/.test(link) && /goal=7/.test(link), link);
+
+  await page.evaluate(() => {
+    const box = document.getElementById('a11yBox');
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+  });
+  await page.evaluate(() => window.__stardustSnake.feedNow('normal'));
+  await sleep(40);
+  const a11y = await page.evaluate(SNAP);
+  const live = await page.evaluate(() => (document.getElementById('srStatus') || {}).textContent || '');
+  check('features: text mode turns on', a11y.a11y === true);
+  check('features: text mode announces the run', /star/i.test(live), live.slice(0, 60));
+
+  check('features: no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
+  await page.close();
+}
+
 function staticChecks() {
   const fs = require('fs');
   const path = require('path');
@@ -290,6 +371,9 @@ function staticChecks() {
   check('page carries no inline game script (CSP safe)', !/<script(?![^>]*\bsrc=)[^>]*>\s*\(function/.test(html));
   check('page offers a sound toggle', /id="sound"/.test(html));
   check('page offers difficulty + trail options', /id="diffPills"/.test(html) && /id="palettePills"/.test(html) && /id="wrapToggle"/.test(html));
+  check('page offers sky mode, haptics and text mode', /id="modePills"/.test(html) && /id="hapticsBox"/.test(html) && /id="a11yBox"/.test(html) && /id="srStatus"/.test(html));
+  check('page offers a challenge share button and pause overlay', /id="shareBtn"/.test(html) && /id="pauseOverlay"/.test(html));
+  check('page carries a run summary slot', /id="endSummary"/.test(html));
   check('registry lists stardust-snake with the Stardust guide', /"id":\s*"stardust-snake"/.test(registry) && /"character":\s*"Stardust"/.test(registry));
   check('registry gives the game a quality label', /"stardust-snake":\s*"(READY|BETA|EXPERIMENT)"/.test(registry));
 }
@@ -300,6 +384,7 @@ function staticChecks() {
     await playViewport(browser, base, { name: 'phone 390px', width: 390, height: 844 });
     await playViewport(browser, base, { name: 'desktop 1440px', width: 1440, height: 900 });
     await extrasCheck(browser, base);
+    await featuresCheck(browser, base);
     await reduceMotionCheck(browser, base);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL STARDUST SNAKE CHECKS PASSED');

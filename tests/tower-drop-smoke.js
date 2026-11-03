@@ -90,10 +90,31 @@ const server = http.createServer((req, res) => {
     check('no horizontal page overflow at 390px', layout.scrollWidth <= layout.clientWidth + 2, layout.scrollWidth + '/' + layout.clientWidth);
     check('no page or CSP errors at 390px', phone.errors.length === 0, phone.errors.slice(0, 2).join(' | '));
 
+    await page.click('#muteBtn');
+    await wait(100);
+    const muteState = await page.evaluate(() => ({
+      snap: window.__towerDrop.snapshot(),
+      stored: localStorage.getItem('jvds-tower-drop-mute'),
+      label: document.getElementById('muteBtn').textContent
+    }));
+    check('mute toggles and persists', muteState.snap.muted === true && muteState.stored === '1' && /muted/i.test(muteState.label), JSON.stringify(muteState));
+
     await page.click('#startBtn');
     await wait(200);
     let snap = await page.evaluate(() => window.__towerDrop.snapshot());
     check('Play starts the game', snap.state === 'swing' && snap.score === 0, JSON.stringify(snap));
+
+    await page.evaluate(() => window.__towerDrop.pause());
+    await wait(80);
+    const pausedState = await page.evaluate(() => ({
+      snap: window.__towerDrop.snapshot(),
+      shown: !document.getElementById('paused').classList.contains('hidden')
+    }));
+    check('pause freezes the run and shows the overlay', pausedState.snap.paused === true && pausedState.shown, JSON.stringify(pausedState));
+    await page.evaluate(() => window.__towerDrop.resume());
+    await wait(80);
+    const resumedState = await page.evaluate(() => window.__towerDrop.snapshot());
+    check('resume returns to play', resumedState.paused === false && resumedState.state === 'swing', JSON.stringify(resumedState));
 
     // perfect drop: aim at the top floor centre, then drop
     await page.evaluate(() => {
@@ -117,6 +138,27 @@ const server = http.createServer((req, res) => {
     check('off-centre drop adds a floor', snap.score === 2, JSON.stringify(snap));
     check('overlap becomes the new width', snap.width === 120, String(snap.width));
 
+    // perfect drop after a shrink repairs some width (A2405)
+    await page.evaluate(() => {
+      const s = window.__towerDrop.snapshot();
+      window.__towerDrop.aim(s.topCx);
+      window.__towerDrop.drop();
+    });
+    await page.waitForFunction(() => window.__towerDrop.snapshot().score === 3, { timeout: 8000 });
+    snap = await page.evaluate(() => window.__towerDrop.snapshot());
+    check('perfect drop repairs the platform width', snap.width === 134, String(snap.width));
+
+    // consecutive perfects build a combo multiplier
+    await page.evaluate(() => {
+      const s = window.__towerDrop.snapshot();
+      window.__towerDrop.aim(s.topCx);
+      window.__towerDrop.drop();
+    });
+    await page.waitForFunction(() => window.__towerDrop.snapshot().score === 4, { timeout: 8000 });
+    snap = await page.evaluate(() => window.__towerDrop.snapshot());
+    check('consecutive perfects build a combo', snap.combo === 2 && snap.bestCombo === 2, JSON.stringify({ combo: snap.combo, bestCombo: snap.bestCombo }));
+    check('combo raises the score faster', snap.points === 42, String(snap.points));
+
     // miss completely: game over and best score saved
     await page.evaluate(() => {
       const s = window.__towerDrop.snapshot();
@@ -133,9 +175,17 @@ const server = http.createServer((req, res) => {
       stored: localStorage.getItem('jvds-tower-drop-best')
     }));
     check('a full miss ends the game', over.snap.state === 'over', over.snap.state);
-    check('game over shows the final score', over.finalScore === '2', over.finalScore);
+    check('game over shows the final score', over.finalScore === '4', over.finalScore);
     check('game over screen is visible', over.endVisible);
-    check('best score is saved to localStorage', over.stored === '2', String(over.stored));
+    check('best score is saved to localStorage', over.stored === '4', String(over.stored));
+
+    const boardNow = await page.evaluate(() => ({
+      snap: window.__towerDrop.snapshot(),
+      rows: document.querySelectorAll('#board li').length,
+      stored: localStorage.getItem('jvds-tower-drop-scores')
+    }));
+    check('run is saved to the local leaderboard', boardNow.snap.scores.length >= 1 && boardNow.rows >= 1 && !!boardNow.stored, JSON.stringify({ rows: boardNow.rows }));
+    check('leaderboard keeps the run score', boardNow.snap.scores[0].points === 42 && boardNow.snap.scores[0].floors === 4, JSON.stringify(boardNow.snap.scores[0]));
 
     // reload: best score persists and a fresh run starts at zero
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -144,15 +194,49 @@ const server = http.createServer((req, res) => {
     const persisted = await page.evaluate(() => ({
       best: document.getElementById('best').textContent,
       snap: window.__towerDrop.snapshot(),
-      overlayVisible: !document.getElementById('overlay').classList.contains('hidden')
+      overlayVisible: !document.getElementById('overlay').classList.contains('hidden'),
+      muteStored: localStorage.getItem('jvds-tower-drop-mute')
     }));
-    check('best score survives a reload', persisted.best === '2', persisted.best);
+    check('best score survives a reload', persisted.best === '4', persisted.best);
     check('reload returns to the start screen at zero', persisted.overlayVisible && persisted.snap.score === 0);
+    check('mute survives a reload', persisted.snap.muted === true && persisted.muteStored === '1', JSON.stringify({ muted: persisted.snap.muted }));
+    check('leaderboard survives a reload', persisted.snap.scores.length >= 1, String(persisted.snap.scores.length));
+
+    // daily challenge: deterministic date seed and a saved daily best
+    await page.evaluate(() => window.__towerDrop.startDaily());
+    await wait(150);
+    const daily = await page.evaluate(() => window.__towerDrop.snapshot());
+    check('daily challenge starts in daily mode', daily.mode === 'daily' && /^\d{4}-\d{2}-\d{2}$/.test(daily.dailyKey), JSON.stringify({ mode: daily.mode, key: daily.dailyKey }));
+    await page.evaluate(() => {
+      const s = window.__towerDrop.snapshot();
+      window.__towerDrop.aim(s.topCx);
+      window.__towerDrop.drop();
+    });
+    await page.waitForFunction(() => window.__towerDrop.snapshot().score === 1, { timeout: 8000 });
+    await page.evaluate(() => {
+      const s = window.__towerDrop.snapshot();
+      window.__towerDrop.aim(s.topCx + s.width + 40);
+      window.__towerDrop.drop();
+    });
+    await page.waitForFunction(() => window.__towerDrop.snapshot().state === 'over', { timeout: 8000 });
+    const dailyStored = await page.evaluate(() => ({
+      raw: localStorage.getItem('jvds-tower-drop-daily'),
+      today: window.__towerDrop.todayKey()
+    }));
+    let dailyParsed = null;
+    try { dailyParsed = JSON.parse(dailyStored.raw); } catch (e) { dailyParsed = null; }
+    check('daily seed and best persist for today', !!dailyParsed && dailyParsed.date === dailyStored.today && dailyParsed.points > 0, JSON.stringify(dailyParsed));
 
     await page.close();
 
     // desktop: layout + no errors
     const desktop = await open({ width: 1280, height: 900, isMobile: false });
+    await desktop.page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+    await desktop.page.reload({ waitUntil: 'domcontentloaded' });
+    await desktop.page.waitForFunction(() => !!window.__towerDrop, { timeout: 5000 });
+    await wait(150);
+    const rm = await desktop.page.evaluate(() => window.__towerDrop.snapshot());
+    check('reduced motion preference is honoured', rm.reducedMotion === true, String(rm.reducedMotion));
     const wide = await desktop.page.evaluate(() => {
       const canvas = document.getElementById('game').getBoundingClientRect();
       const stage = document.getElementById('stage').getBoundingClientRect();

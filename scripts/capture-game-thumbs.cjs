@@ -76,7 +76,7 @@ async function pickTarget(page) {
   return null;
 }
 
-const STRIP = '#cookie-banner,.jvds-launch,#jvds-exit,.gs-fullscreen-btn,.gs-resume,.arcade-menu,.mascot-companion,#jvds-feedback-widget,.mascot-quiz-backdrop';
+const STRIP = '#cookie-banner,.jvds-launch,#jvds-exit,.gs-fullscreen-btn,.gs-resume,.arcade-menu,#jvds-action-dock,.mascot-companion,#jvds-feedback-widget,.mascot-quiz-backdrop';
 
 async function capture(browser, base, game, sharp) {
   const page = await browser.newPage();
