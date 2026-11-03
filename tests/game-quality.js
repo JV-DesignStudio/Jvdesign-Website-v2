@@ -38,11 +38,13 @@ for (const g of games) {
 check('every listed game has a valid label', games.every(g => ALLOWED.includes(g.quality)));
 check('at least one READY game', counts.READY > 0, 'READY ' + counts.READY);
 check('at least one BETA game', counts.BETA > 0, 'BETA ' + counts.BETA);
-check('no HIDDEN game is listed', counts.HIDDEN === 0, 'HIDDEN ' + counts.HIDDEN);
+// A HIDDEN game stays in the registry so un-hiding is one line, but it must never
+// reach the public grid. The arcade owns that filter (checked below).
 
-// 2. the arcade renders the label
+// 2. the arcade renders the label and filters HIDDEN out
 const arcade = fs.readFileSync(path.join(root, 'arcade.html'), 'utf8');
 check('arcade renders the quality pill', /cab-q--/.test(arcade) && /g\.quality/.test(arcade));
+check('arcade filters HIDDEN games out of the grid', /toUpperCase\(\)\s*!==\s*'HIDDEN'/.test(arcade));
 check('arcade explains the labels', /qualityLegend/.test(arcade) && /Experiment/i.test(arcade));
 
 // 3. the definitions are documented

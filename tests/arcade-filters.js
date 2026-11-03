@@ -49,16 +49,21 @@ const server = http.createServer((req, res) => {
     await page.setViewport({ width: 1280, height: 1000 });
     await page.goto(base + '/arcade.html', { waitUntil: 'load' });
     await page.waitForSelector('#grid .cab', { timeout: 15000 });
+    // Dismiss the fixed consent banner first: on a short viewport it overlays the
+    // filter toolbar, so a real click would land on the banner instead.
+    if (await page.$('#cookie-decline')) { try { await page.click('#cookie-decline'); } catch (e) {} }
 
     const allGames = await page.evaluate(() => window.JVDS_GAMES || []);
-    // The grid only shows non-classroom games; classroom games appear in a separate section.
-    const registry = allGames.filter(g => !g.classroom);
+    // The grid shows non-classroom games the arcade has not hidden; classroom games
+    // appear in a separate section. Derive both counts from the live registry so the
+    // test never goes stale when a game is added or re-labelled.
+    const registry = allGames.filter(g => !g.classroom && String(g.quality || '').toUpperCase() !== 'HIDDEN');
     const sessionOf = g => g.session || g.arcadeSession || '';
     const titles = () => page.evaluate(() => Array.from(document.querySelectorAll('#grid .cab-title')).map(e => e.textContent));
     const count = async () => (await titles()).length;
     const wait = (ms = 120) => new Promise(r => setTimeout(r, ms));
 
-    check('registry loaded', allGames.length === 12 && registry.length === 11, allGames.length + ' total, ' + registry.length + ' playable');
+    check('registry loaded', allGames.length > 0 && registry.length > 0, allGames.length + ' total, ' + registry.length + ' playable');
     check('default view shows every game', await count() === registry.length, (await count()) + ' cards');
 
     // Age
