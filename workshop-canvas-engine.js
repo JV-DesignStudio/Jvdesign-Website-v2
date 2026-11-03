@@ -311,6 +311,8 @@ var TEMPLATES = CFG.templates;
 var currentStep = 0;
 var completed = {};
 var editors = {};
+var attempts = {};
+var solutionSeen = {};
 var debounceTimer = null;
 var codeValid = {};
 var quizPassed = {};
@@ -529,6 +531,8 @@ function loadState() {
     if (state) {
       currentStep = state.currentStep || 0;
       completed = state.completed || {};
+      attempts = state.attempts || {};
+      solutionSeen = state.solutionSeen || {};
     }
   } catch(e) {}
 }
@@ -542,7 +546,9 @@ function saveState() {
     localStorage.setItem(CFG.storageKey, JSON.stringify({
       currentStep: currentStep,
       completed: completed,
-      codes: codes
+      codes: codes,
+      attempts: attempts,
+      solutionSeen: solutionSeen
     }));
     /* A1425: ledger fingerprint so canvas XP counts in the site totals.
        scanComponentXP only sees {xp:number, total:number, completed:[]},
@@ -727,7 +733,10 @@ function renderSteps() {
           (isDone ? '✓ Done' : 'Apply to Canvas ▶') +
         '</button>' +
         (isDone ? '' :
-          '<button class="cw-btn cw-btn-show" data-cw="showSolution" data-cw-arg="' + step.num + '">Show Solution</button>' +
+          ((attempts[step.num] || 0) >= 2 ?
+            '<button class="cw-btn cw-btn-show" data-cw="showSolution" data-cw-arg="' + step.num + '">' +
+              (solutionSeen[step.num] ? 'Show Solution Again' : 'Show Solution') +
+            '</button>' : '') +
           '<button class="cw-btn cw-btn-reset" data-cw="resetStep" data-cw-arg="' + step.num + '">Reset</button>'
         ) +
       '</div>' +
@@ -1032,9 +1041,14 @@ function checkStep(num) {
       if (quizEl) quizEl.closest('.cw-quiz').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   } else {
+    attempts[num] = (attempts[num] || 0) + 1;
+    saveState();
     fb.className = 'cw-feedback error';
+    var attemptsLeft = Math.max(0, 2 - attempts[num]);
     fb.textContent = 'Almost! Make sure your code includes: ' +
-      missing.map(function(m) { return '"' + m + '"'; }).join(', ');
+      missing.map(function(m) { return '"' + m + '"'; }).join(', ') +
+      (attemptsLeft > 0 ? ' (' + attemptsLeft + ' more ' + (attemptsLeft === 1 ? 'try' : 'tries') + ' before hint unlocks)' : '');
+    renderSteps();
   }
 }
 
@@ -1202,6 +1216,8 @@ function checkFills(num) {
 function showSolution(num) {
   var step = STEPS.find(function(s) { return s.num === num; });
   editors[num].value = step.solution;
+  solutionSeen[num] = true;
+  saveState();
   updateCanvas();
   var fb = document.getElementById('feedback-' + num);
   fb.className = 'cw-feedback success';
