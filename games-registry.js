@@ -362,7 +362,7 @@ window.JVDS_GAME_QUALITY = {
 window.JVDS_GAME_TESTS = {
   "echo-flight":     { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
   "nova-siege":      { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
-  "arcane-citadel":  { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
+  "arcane-citadel":  { testDate: "2026-11-03", version: "baec11ca+a2380", checklist: "PASS" },
   "tower-defence":   { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
   "ember-smash":     { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },
   "gem-match":       { testDate: "2026-10-30", version: "f38b7585", checklist: "PASS" },

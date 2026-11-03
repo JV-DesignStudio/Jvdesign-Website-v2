@@ -15,7 +15,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xiNH+/io4NXPlbJLowqF7RrExLA2RzMHStmpm7DQ/J8=' 'sha256-OeBQW6aJfek/0XXRd7eZ1l4L9oJBBlmCBaG3BykULiQ=' 'sha256-b+7ZW6QWYr8IvnI9qY1CCrmeCfzkXt24y3hi9L2pYy0=' 'sha256-ZI1dyVVR6+OJoCBtNUF0p0Pz1dMzSIX0Zivak0vHxkY=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/nVSH3egz81t0x5lSDnrNOJkE4IGPtpqm5abq/hFVtU=' 'sha256-OeBQW6aJfek/0XXRd7eZ1l4L9oJBBlmCBaG3BykULiQ=' 'sha256-b89SsDEUgOurgPlp5vOVktQPMc1oICGt+/H+PyyG6Qg=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -547,7 +547,7 @@ function applyCanvasSize(){
     W=Math.max(1,window.innerWidth);
     H=Math.max(1,window.innerHeight);
     // Cap the pixel ratio so low-end school laptops still hit a steady frame rate.
-    DPR=Math.min(window.devicePixelRatio||1,2);
+    DPR=Math.min(window.devicePixelRatio||1,window.__citadelMaxDPR||2);
     canvas.width=Math.round(W*DPR);
     canvas.height=Math.round(H*DPR);
     if(ctx.setTransform) ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -604,10 +604,12 @@ let shopOwned={};
 // LEADERBOARD, localStorage, auto-saves on game over
 // ══════════════════════════════════════════════════════════
 function saveScore(scoreVal, waveVal, spellName){
-    const entry={score:scoreVal, wave:waveVal, spell:spellName, date:Date.now()};
+    const entry={score:scoreVal, wave:waveVal, spell:spellName,
+        kills:killCount, streak:bestKillStreak, relics:activeRelics.map(r=>r.id),
+        mode:window.__citadelMode||'quick', calm:!!window.__citadelCalm, date:Date.now()};
     let rank=null;
     try{
-        const st=JSON.parse(localStorage.getItem('jvds_game_arcane-citadel')||'null')||{};
+        const st=JSON.parse(localStorage.getItem('jvds_citadel_leaderboard')||'null')||{};
         const arr=Array.isArray(st.scores)?st.scores:[];
         arr.push(entry);
         arr.sort((a,b)=>b.score-a.score);
@@ -615,7 +617,7 @@ function saveScore(scoreVal, waveVal, spellName){
         st.scores=arr.slice(0,20);
         st.highScore=Math.max(st.highScore||0,scoreVal);
         st.lastPlayed=new Date().toISOString();
-        localStorage.setItem('jvds_game_arcane-citadel',JSON.stringify(st));
+        localStorage.setItem('jvds_citadel_leaderboard',JSON.stringify(st));
     }catch(e){}
     return rank;
 }
@@ -624,7 +626,7 @@ function loadLB(){
     const el=document.getElementById('lb-rows');
     if(!el)return;
     let arr=[];
-    try{ arr=(JSON.parse(localStorage.getItem('jvds_game_arcane-citadel')||'null')||{}).scores||[]; }catch(e){}
+    try{ arr=(JSON.parse(localStorage.getItem('jvds_citadel_leaderboard')||'null')||{}).scores||[]; }catch(e){}
     if(!arr.length){
         el.innerHTML='<div class="lb-empty">No runs yet, go survive some waves!</div>';
         return;
@@ -636,7 +638,7 @@ function loadLB(){
             <div class="lb-rank">${medals[i]||'#'+(i+1)}</div>
             <div class="lb-name">${e.spell||'?'}</div>
             <div class="lb-score">${Number(e.score).toLocaleString()}</div>
-            <div class="lb-meta">W${e.wave}${e.date?' · '+fmt(e.date):''}</div>
+            <div class="lb-meta">W${e.wave}${e.kills?' · '+e.kills+' slain':''}${e.mode&&e.mode!=='quick'?' · '+e.mode:''}${e.calm?' · calm':''}${e.date?' · '+fmt(e.date):''}</div>
         </div>`).join('');
 }
 
@@ -806,8 +808,10 @@ function calcWaveSize(w){
     return postBoss ? Math.max(6, 6+w*3) : 6+w*3+Math.floor(w*w*0.15);
 }
 
+let spawnEpoch=0;
 function spawnWaveEnemies(){
     const count=calcWaveSize(wave);
+    const epoch=++spawnEpoch;
     waveEnemiesTotal=count;waveKills=0;waveCoinsEarned=0;waveSpawned=0;
     waveCompleteFired=false;
     activeBoss=null;bossPhaseTriggered=false;
@@ -815,12 +819,14 @@ function spawnWaveEnemies(){
     if(isBossWave(wave)){
         showBossIntro(getBossDef(wave));
         setTimeout(()=>{
+            if(epoch!==spawnEpoch) return;
             if(gameState==='playing'){spawnBoss();waveSpawned++;}
         },2200);
     } else {
         const interval=Math.max(120,900-wave*48);
         for(let i=0;i<count;i++){
             setTimeout(()=>{
+                if(epoch!==spawnEpoch) return;
                 waveSpawned++; // always increment so count is accurate
                 if(gameState==='playing') spawnEnemy();
             },i*interval);
@@ -962,12 +968,26 @@ function buildShop(){
     grid.innerHTML='';
     const spell=chosenSpell.id;
     const elUpgrades=(ELEMENT_UPGRADES[spell]||[]);
-    const pool=[...UNIVERSAL_UPGRADES,...elUpgrades]
-        .filter(i=>(shopOwned[i.id]||0)<i.maxOwned)
-        .sort(()=>Math.random()-.5)
-        .slice(0,9); // show 9 items in a 3-col grid
+    const affordNow=i=>coins>=itemCost(i);
+    // Grouped and sorted so the stall reads at a glance: what helps the gate
+    // first, then what fits this element, and anything you can buy now on top.
+    const byCost=(a,b)=>(affordNow(b)-affordNow(a))||(itemCost(a)-itemCost(b))||a.name.localeCompare(b.name);
+    const universal=UNIVERSAL_UPGRADES.filter(i=>(shopOwned[i.id]||0)<i.maxOwned).sort(byCost);
+    const element=elUpgrades.filter(i=>(shopOwned[i.id]||0)<i.maxOwned).sort(byCost);
+    const uniShown=universal.slice(0,6);
+    const pool=[];
+    if(uniShown.length){ pool.push({group:'Keep the gate'}); uniShown.forEach(i=>pool.push(i)); }
+    const elShown=element.slice(0,Math.max(3,9-uniShown.length));
+    if(elShown.length){ pool.push({group:'Your element'}); elShown.forEach(i=>pool.push(i)); }
 
     for(const item of pool){
+        if(item.group){
+            const head=document.createElement('div');
+            head.className='shop-group';
+            head.textContent=item.group;
+            grid.appendChild(head);
+            continue;
+        }
         const cost=itemCost(item);
         const afford=coins>=cost;
         // Cast-speed upgrades share one capped pool (see effRate in the auto-fire
@@ -979,12 +999,13 @@ function buildShop(){
         card.tabIndex=0;
         card.setAttribute('role','button');
         card.setAttribute('aria-disabled',afford?'false':'true');
-        card.setAttribute('aria-label',item.name+': '+item.desc+' Costs '+cost+' coins');
         const owned=shopOwned[item.id]||0;
+        card.setAttribute('aria-label',item.name+': '+item.desc+' Level '+owned+' of '+(item.maxOwned===99?'many':item.maxOwned)+'. Costs '+cost+' coins');
         card.innerHTML=`
             ${owned>0?`<div class="sc-owned-badge">${owned}/${item.maxOwned===99?'∞':item.maxOwned}</div>`:''}
             <div class="sc-icon">${item.icon}</div>
             <div class="sc-n">${item.name}</div>
+            <div class="sc-lv">Lv ${owned}/${item.maxOwned===99?'max':item.maxOwned}</div>
             <div class="sc-d">${item.desc}${atSpeedCap?' <strong style="color:#ffcc66">(cast speed already capped, no effect)</strong>':''}</div>
             <div class="sc-c">${cost} ✦</div>`;
         if(afford){
@@ -1036,7 +1057,7 @@ function showWaveComplete(){
     }else if(wcr){wcr.innerHTML='';}
     buildShop();
     document.getElementById('screen-wave').classList.add('show');
-    if(window.__storyRun && window.__citadelMode!=='deep' && wave>=4) window.__storyRun.finish('success',score);
+    if(window.__storyRun && (window.__citadelMode==='quick'||window.__citadelMode==='daily') && wave>=4) window.__storyRun.finish('success',score);
 }
 
 function startNextWave(){
@@ -1087,7 +1108,10 @@ function updateHUD(){
 // ══════════════════════════════════════════════════════════
 canvas.addEventListener('touchstart',e=>{
     e.preventDefault();const t=e.touches[0];
-    joystick={active:true,startX:t.clientX,startY:t.clientY,currX:t.clientX,currY:t.clientY};
+    // Optional fixed base (bottom left) for players who like a stable thumb.
+    const fixed=document.body.classList.contains('citadel-fixedstick');
+    const bx=fixed?88:t.clientX, by=fixed?(window.innerHeight-116):t.clientY;
+    joystick={active:true,startX:bx,startY:by,currX:t.clientX,currY:t.clientY,fixed:fixed};
 },{passive:false});
 canvas.addEventListener('touchmove',e=>{
     e.preventDefault();
@@ -1375,7 +1399,7 @@ function update(dt){
     if(keys['d']||keys['arrowright'])mx+=1;
     if(joystick.active){
         const dx=joystick.currX-joystick.startX,dy=joystick.currY-joystick.startY,d=Math.hypot(dx,dy);
-        if(d>8){mx+=dx/d;my+=dy/d;}
+        if(d>14){mx+=dx/d;my+=dy/d;}
     }
     const mag=Math.hypot(mx,my);
     player._moving=mag>0;
@@ -2476,9 +2500,12 @@ function hexPath(x,y,r){
 // ══════════════════════════════════════════════════════════
 function gameOver(){
     gameState='dead';
-    window.__gsScore=(window.__gsScore||0)+score;
-    window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
-    if(typeof gameSystem!=='undefined'){gameSystem.addScore(score);gameSystem.recordGamePlay(Date.now());}
+    // Practice Gate is a no-score mode: keep it out of the profile and XP.
+    if(window.__citadelMode!=='practice'){
+        window.__gsScore=(window.__gsScore||0)+score;
+        window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
+        if(typeof gameSystem!=='undefined'){gameSystem.addScore(score);gameSystem.recordGamePlay(Date.now());}
+    }
     SFX.gameOver();
     // Clear all gameplay objects so nothing renders behind the game over screen
     enemies=[]; projectiles=[]; arcs=[]; scorchPools=[]; vortexZones=[]; poisonClouds=[];
@@ -2596,80 +2623,108 @@ window.addEventListener('beforeunload', () => {
 <script defer src="../mascots.js"></script>
 
 <script>
-// A606 one-night patch: hold one night, Malgrath at the gate
-(function(){
-  window.__citadelMode = window.__citadelMode || 'quick';
-  const isQuick = () => window.__citadelMode !== 'deep';
-  const style=document.createElement('style');
-  style.textContent='.citadel-quick .citadel-shop,.citadel-quick #shop,.citadel-quick .shop,.citadel-quick .shop-panel,.citadel-quick .upgrades{display:none !important}.citadel-quick #waveCounter::after{content:" Night 1/1"}';
-  document.head.appendChild(style);
-  const applyClass=()=>document.documentElement.classList.toggle('citadel-quick', isQuick());
-  applyClass();
-  window.setCitadelMode=(m)=>{ window.__citadelMode=(m==='deep')?'deep':'quick'; applyClass(); if(banner) banner.textContent=bannerText(); fixHud(); };
-  const banner=document.createElement('div');
-  banner.id='oneNightBanner';
-  const bannerText=()=> isQuick()
-    ? 'Quick Night: hold three waves, then Malgrath at the gate.'
-    : 'Deep Night: endless waves, all four bosses, shop open at every wave.';
-  banner.textContent=bannerText();
-  /* Styled in the page-level stylesheet as a fixed toast: the old inline
-     block bar sat in normal flow and pushed the game canvas down. */
-  if(document.body) document.body.prepend(banner); else document.addEventListener('DOMContentLoaded',()=>document.body.prepend(banner));
-  const fixHud=()=>{ if(!isQuick()) return; const el=document.getElementById('waveCounter')||document.querySelector('.wave-counter'); if(el) el.textContent='Night 1/1'; };
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', fixHud); else fixHud();
-  setTimeout(fixHud, 800);
-  window.__citadelTest={
-    win:()=>{
-      const ov=document.getElementById('testVictory')||document.createElement('div');
-      ov.setAttribute('id','testVictory'); ov.className='show'; ov.innerHTML='<h2>Citadel held!</h2><p>Malgrath falls, Ember thanks you. The gate holds for one night.</p><button data-test="testAgainBtn">Hold again</button>';
-      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99';
-      if(!document.getElementById('testVictory')) document.body.appendChild(ov);
-      else ov.classList.add('show');
-      const btn=ov.querySelector('[data-test="testAgainBtn"]'); if(btn) btn.onclick=()=>{ ov.classList.remove('show'); location.reload(); };
-      if(typeof gameSystem!=='undefined'){ try{ gameSystem.addScore(1200); gameSystem.recordGamePlay(Date.now()); }catch(e){} }
-    },
-    lose:()=>{
-      const ov=document.getElementById('testVictory')||document.createElement('div');
-      ov.setAttribute('id','testVictory'); ov.innerHTML='<h2>Gate breached</h2><p>Malgrath pushed through, but Ember shows you what held: three waves, then the boss. Try again.</p><button data-test="testAgainBtn">Hold again</button>';
-      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99';
-      ov.classList.add('show');
-      if(!document.getElementById('testVictory')) document.body.appendChild(ov);
-      const btn=ov.querySelector('[data-test="testAgainBtn"]'); if(btn) btn.onclick=()=>{ ov.classList.remove('show'); location.reload(); };
-    }
-  };
-  let origBoss=null, lastMode=null;
-  const cap=setInterval(()=>{
-    try{
-      if(typeof isBossWave==='function' && !origBoss) origBoss=window.isBossWave;
-      if(origBoss && lastMode!==window.__citadelMode){
-        lastMode=window.__citadelMode;
-        window.isBossWave = isQuick()? ((w)=> w===4) : origBoss;
-      }
-      if(isQuick() && typeof wave!=='undefined' && wave>4){ wave=4; }
-    }catch(e){}
-  },400);
-})();
-</script>
-
-<script>
-// ── Flagship polish: pause, calm mode, Ember coach, boss charge telegraph, run
-// summary and share, Echo next-step, keyboard play, reduced-motion and low-end
-// guards, and persistent element mastery. Additive: it wraps the core game
-// functions, so the run logic itself is untouched.
+// A606 one-night patch: hold one night, Malgrath at the gate.
+// Citadel addons (A2380): the one-night mode controller and the flagship polish
+// now live in this single ordered module. It also adds relic choice and a codex,
+// mid-run resume, Daily Night, playable mastery rewards, wave bounties, Practice
+// Gate, Boss Rush, an accessibility pack, save export, and touch/gamepad QoL.
+// Additive: it wraps the core game functions so the run logic itself is untouched.
 (function(){
   'use strict';
   var LS={
     get:function(k,d){try{var v=localStorage.getItem(k);return v==null?d:v;}catch(e){return d;}},
-    set:function(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+    set:function(k,v){try{localStorage.setItem(k,v);}catch(e){}},
+    json:function(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}}
   };
+  function el(tag,id,cssText,html){var e=document.createElement(tag);if(id)e.id=id;if(cssText)e.style.cssText=cssText;if(html!=null)e.innerHTML=html;return e;}
+  function byId(id){return document.getElementById(id);}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+  function pad2(n){return (n<10?'0':'')+n;}
+
   var reduced=false;
   try{ reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+
+  // ── SETTINGS (device-local, no account) ──
+  var DEFAULTS={contrast:false,markers:false,bigtext:false,fixedstick:false,tappause:true,sfx:0.85,music:0};
+  var settings=Object.assign({},DEFAULTS,LS.json('jvds_citadel_settings',{}));
+  function saveSettings(){ LS.set('jvds_citadel_settings',JSON.stringify(settings)); }
+
   var calm=LS.get('jvds_citadel_calm','0')==='1';
   window.__citadelCalm=calm;
 
-  function el(tag,id,cssText,html){var e=document.createElement(tag);if(id)e.id=id;if(cssText)e.style.cssText=cssText;if(html!=null)e.innerHTML=html;return e;}
-  function byId(id){return document.getElementById(id);}
+  // ── AUDIO: one volume for effects, one for the optional ambient pad ──
+  var _playTone=playTone, _playNoise=playNoise, musicNode=null;
+  window.playTone=function(f,t,v,d,a,de,fe){ return _playTone(f,t,(v||0)*settings.sfx,d,a,de,fe); };
+  window.playNoise=function(v,d,ff){ return _playNoise((v||0)*settings.sfx,d,ff); };
+  function startMusic(){
+    if(settings.music<=0||musicNode) return;
+    try{
+      if(sfxMuted) return;
+      var ac=getACtx();
+      var gain=ac.createGain(); gain.gain.value=0.045*settings.music; gain.connect(ac.destination);
+      var o1=ac.createOscillator(), o2=ac.createOscillator(), o3=ac.createOscillator();
+      o1.type='sine'; o2.type='sine'; o3.type='triangle';
+      o1.frequency.value=110; o2.frequency.value=164.81; o3.frequency.value=220;
+      o1.connect(gain); o2.connect(gain); o3.connect(gain);
+      o1.start(); o2.start(); o3.start();
+      musicNode={gain:gain,osc:[o1,o2,o3]};
+    }catch(e){ musicNode=null; }
+  }
+  function stopMusic(){
+    if(!musicNode) return;
+    try{ musicNode.osc.forEach(function(o){o.stop();}); musicNode.gain.disconnect(); }catch(e){}
+    musicNode=null;
+  }
+  function setMusicVolume(v){ settings.music=clamp(v,0,1); saveSettings(); if(settings.music<=0){ stopMusic(); } else if(gameState==='playing'||gameState==='shop'){ startMusic(); } }
+  var _toggleMute=toggleMute;
+  window.toggleMute=function(){
+    var r=_toggleMute.apply(this,arguments);
+    if(sfxMuted){ stopMusic(); }
+    else if(settings.music>0&&(gameState==='playing'||gameState==='shop')){ startMusic(); }
+    return r;
+  };
 
+  // ── MODE CONTROLLER ──
+  var MODE_TEXT={
+    quick:'Quick Night: hold three waves, then Malgrath at the gate.',
+    daily:'Daily Night: one fixed element, one attempt, the same run for everyone today.',
+    deep:'Deep Night: endless waves, all four bosses, shop open at every wave.',
+    practice:'Practice Gate: no score, no pressure. Set the pace and learn the waves.',
+    rush:'Boss Rush: all four bosses back to back, the Stall opens between fights.'
+  };
+  function mode(){ return window.__citadelMode||'quick'; }
+  function isQuick(){ return mode()==='quick'||mode()==='daily'; }
+  function isPractice(){ return mode()==='practice'; }
+  function isRush(){ return mode()==='rush'; }
+  function isDaily(){ return mode()==='daily'; }
+  var origBossWave=isBossWave, origGetBossDef=getBossDef;
+  window.isBossWave=function(w){ if(isQuick()) return w===4; if(isRush()) return true; return origBossWave(w); };
+  window.getBossDef=function(w){
+    if(isRush()) return BOSS_DEFS[clamp(Math.floor(w/5)-1,0,BOSS_DEFS.length-1)]||BOSS_DEFS[0];
+    return origGetBossDef(w);
+  };
+
+  var banner=el('div','oneNightBanner');
+  function applyMode(){
+    var m=mode();
+    window.__citadelMode=m;
+    document.documentElement.classList.toggle('citadel-quick',isQuick());
+    document.body.classList.toggle('citadel-practice',m==='practice');
+    document.body.classList.toggle('citadel-rush',m==='rush');
+    if(banner) banner.textContent=MODE_TEXT[m]||MODE_TEXT.quick;
+    updateModeButtons();
+  }
+  window.setCitadelMode=function(m){
+    window.__citadelMode=(m==='deep'||m==='practice'||m==='rush'||m==='daily')?m:'quick';
+    applyMode();
+  };
+  (function(){
+    if(document.body) document.body.prepend(banner);
+    else document.addEventListener('DOMContentLoaded',function(){ document.body.prepend(banner); });
+  })();
+
+  // ── STYLES ──
   var css=document.createElement('style');
   css.textContent=
     '#citadel-pause{position:fixed;left:12px;top:64px;z-index:9998;background:rgba(0,0,0,.55);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:10px;padding:10px 14px;font:800 .82rem/1 Inter,system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(6px)}'+
@@ -2682,19 +2737,76 @@ window.addEventListener('beforeunload', () => {
     '.citadel-pause-card button.ghost{background:rgba(90,40,160,.35)}'+
     '#citadel-charge-warn{position:fixed;top:96px;left:50%;transform:translateX(-50%);z-index:9997;display:none;background:rgba(150,10,20,.86);color:#ffdede;border:1px solid rgba(255,80,80,.7);border-radius:999px;padding:8px 16px;font:800 .8rem Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase;animation:citpulse .5s infinite alternate}'+
     '@keyframes citpulse{from{opacity:.55}to{opacity:1}}'+
-    '#citadel-coach{position:fixed;left:12px;right:12px;bottom:64px;z-index:100003;max-width:460px;margin:0 auto;background:#170b2e;border:1px solid rgba(160,80,255,.45);border-radius:14px;padding:14px 16px;color:#efe6ff;font-size:.85rem;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.5)}'+
+    '#citadel-coach{position:fixed;left:12px;right:12px;bottom:64px;z-index:100003;max-width:460px;margin:0 auto;background:#170b2e;border:1px solid rgba(160,80,255,.45);border-radius:14px;padding:14px 16px;color:#efe6ff;font-size:.85rem;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none}'+
     '#citadel-coach b{color:#ffd166}'+
-    '#citadel-coach button{margin-top:10px;background:linear-gradient(135deg,#9040ee,#5b21b6);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:800 .82rem Inter,sans-serif;cursor:pointer}'+
+    '#citadel-coach button{margin-top:10px;background:linear-gradient(135deg,#9040ee,#5b21b6);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:800 .82rem Inter,sans-serif;cursor:pointer;pointer-events:auto}'+
+    '.citadel-quick .citadel-shop,.citadel-quick #shop,.citadel-quick .shop,.citadel-quick .shop-panel,.citadel-quick .upgrades{display:none!important}'+
+    '.citadel-quick #waveCounter::after{content:" Night 1/1"}'+
     '.citadel-calm-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;color:rgba(210,180,255,.85);font-size:.8rem;cursor:pointer}'+
     '.citadel-calm-row input{width:18px;height:18px}'+
     '#citadel-echo{margin:12px auto 4px;max-width:360px;text-align:left;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.35);border-radius:12px;padding:12px 14px;color:#f3e7c8;font-size:.82rem;line-height:1.5}'+
     '#citadel-echo b{color:#ffd166}'+
     '#citadel-echo a{color:#8fe3ff;font-weight:800;text-decoration:none}'+
-    '#citadel-share{margin:8px auto 0;display:block;background:rgba(90,40,160,.4);color:#fff;border:1px solid rgba(160,80,255,.5);border-radius:12px;padding:11px 16px;font:800 .85rem Inter,sans-serif;cursor:pointer}'+
-    '#citadel-card{margin:8px auto 0;display:block;background:rgba(255,209,102,.12);color:#ffd166;border:1px solid rgba(255,209,102,.5);border-radius:12px;padding:11px 16px;font:800 .85rem Inter,sans-serif;cursor:pointer}'+
+    '#citadel-share,#citadel-card,#citadel-build{margin:8px auto 0;display:block;font:800 .85rem Inter,sans-serif;cursor:pointer}'+
+    '#citadel-share{background:rgba(90,40,160,.4);color:#fff;border:1px solid rgba(160,80,255,.5);border-radius:12px;padding:11px 16px}'+
+    '#citadel-card{background:rgba(255,209,102,.12);color:#ffd166;border:1px solid rgba(255,209,102,.5);border-radius:12px;padding:11px 16px}'+
+    '#citadel-build{background:rgba(40,120,160,.28);color:#9fe6ff;border:1px solid rgba(120,220,255,.45);border-radius:12px;padding:11px 16px}'+
     '.spell-choice{position:relative}'+
     '.citadel-mastered{position:absolute;top:6px;right:8px;font-size:.66rem;font-weight:800;color:#ffd166;background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.4);border-radius:999px;padding:2px 7px}'+
-    '.citadel-recommended{display:inline-block;margin-left:6px;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0a0618;background:#ffd166;border-radius:999px;padding:2px 7px}';
+    '.citadel-mastery-line{margin-top:4px;font-size:.62rem;letter-spacing:.04em;color:rgba(255,209,102,.85)}'+
+    '.shop-group{grid-column:1/-1;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,209,102,.82);margin:2px 0 0;padding-top:3px;border-top:1px solid rgba(255,209,102,.18)}'+
+    '.sc-lv{font-size:.56rem;letter-spacing:.06em;color:rgba(255,209,102,.72);margin-top:-1px}'+
+    '.citadel-recommended{display:inline-block;margin-left:6px;font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0a0618;background:#ffd166;border-radius:999px;padding:2px 7px}'+
+    '#citadel-modes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px;max-width:520px;flex:1 1 100%}'+
+    '.citadel-extra-btn{background:rgba(40,22,80,.7);color:#dcc8ff;border:1px solid rgba(160,80,255,.42);border-radius:10px;padding:9px 13px;font:800 .74rem Inter,sans-serif;cursor:pointer}'+
+    '.citadel-extra-btn:hover{background:rgba(70,36,130,.85)}'+
+    '.citadel-extra-btn[disabled]{opacity:.45;cursor:not-allowed}'+
+    '.citadel-extra-btn.resume{background:rgba(255,209,102,.16);border-color:rgba(255,209,102,.6);color:#ffd166}'+
+    '#citadel-mode-note{margin-top:8px;font-size:.66rem;color:rgba(200,170,240,.75);text-align:center;max-width:520px;flex:1 1 100%}'+
+    '#citadel-bounty{position:fixed;left:12px;top:150px;z-index:9996;background:rgba(20,8,42,.84);border:1px solid rgba(255,209,102,.5);border-radius:999px;padding:6px 12px;color:#ffe6a6;font:800 .7rem Inter,sans-serif;letter-spacing:.03em;pointer-events:none;max-width:min(240px,60vw)}'+
+    '#citadel-bounty.done{border-color:rgba(120,255,160,.6);color:#b7ffcf}'+
+    '#citadel-toast{position:fixed;left:50%;bottom:104px;transform:translateX(-50%);z-index:100010;background:rgba(20,8,42,.94);border:1px solid rgba(255,209,102,.55);border-radius:999px;padding:9px 16px;color:#ffe6a6;font:800 .78rem Inter,sans-serif;max-width:calc(100vw - 32px);text-align:center;transition:opacity .25s;pointer-events:none}'+
+    '.citadel-modal-overlay{position:fixed;inset:0;z-index:100020;display:flex;align-items:center;justify-content:center;background:rgba(6,3,18,.86);backdrop-filter:blur(5px);padding:16px}'+
+    '.citadel-modal{background:#170b2e;border:1px solid rgba(160,80,255,.45);border-radius:18px;padding:20px 22px;color:#efe6ff;max-width:520px;width:100%;max-height:86vh;overflow:auto}'+
+    '.citadel-modal h2{margin:0 0 4px;font-family:Cinzel,serif;font-size:1.25rem}'+
+    '.citadel-modal p{margin:0 0 12px;font-size:.8rem;color:#c9b6e6;line-height:1.5}'+
+    '.citadel-modal label{display:flex;align-items:center;gap:9px;margin:9px 0;font-size:.82rem;cursor:pointer}'+
+    '.citadel-modal input[type=checkbox]{width:18px;height:18px}'+
+    '.citadel-modal input[type=range]{width:100%;margin:4px 0 10px}'+
+    '.citadel-modal .citadel-btn{background:linear-gradient(135deg,#9040ee,#5b21b6);color:#fff;border:0;border-radius:10px;padding:10px 14px;font:800 .8rem Inter,sans-serif;cursor:pointer;margin:4px 6px 0 0}'+
+    '.citadel-modal .citadel-btn.ghost{background:rgba(90,40,160,.35)}'+
+    '.citadel-modal textarea{width:100%;min-height:90px;border-radius:10px;border:1px solid rgba(160,80,255,.5);background:#0d061b;color:#efe6ff;padding:10px;font:600 .72rem/1.4 monospace}'+
+    '.citadel-modal .citadel-note{font-size:.7rem;color:rgba(200,170,240,.7);margin-top:8px}'+
+    '.citadel-relic-panel{background:#170b2e;border:1px solid rgba(255,209,102,.5);border-radius:18px;padding:20px;max-width:640px;width:100%;text-align:center}'+
+    '.citadel-relic-panel h2{margin:0 0 4px;font-family:Cinzel,serif;color:#ffd166;font-size:1.3rem}'+
+    '.citadel-relic-panel p{margin:0 0 14px;font-size:.8rem;color:#c9b6e6}'+
+    '.citadel-relic-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}'+
+    '@media(max-width:520px){.citadel-relic-grid{grid-template-columns:1fr}}'+
+    '.citadel-relic-card{background:rgba(50,26,90,.85);border:1.5px solid rgba(160,80,255,.45);border-radius:12px;padding:12px 10px;color:#efe6ff;cursor:pointer;text-align:center;font:inherit}'+
+    '.citadel-relic-card:hover,.citadel-relic-card:focus-visible{border-color:#ffd166;outline:none;transform:translateY(-2px)}'+
+    '.citadel-relic-card .ic{font-size:1.7rem;display:block;margin-bottom:4px}'+
+    '.citadel-relic-card .nm{font-weight:800;font-size:.78rem;display:block;margin-bottom:3px}'+
+    '.citadel-relic-card .ds{font-size:.68rem;color:#c9b6e6;line-height:1.4}'+
+    '.citadel-relic-card .ra{font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;margin-top:6px;display:block}'+
+    '.citadel-codex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}'+
+    '.citadel-codex-item{background:rgba(40,22,80,.6);border:1px solid rgba(160,80,255,.3);border-radius:10px;padding:8px 9px;font-size:.68rem;color:#dcc8ff;line-height:1.35}'+
+    '.citadel-codex-item.seen{border-color:rgba(255,209,102,.5);color:#ffe6a6}'+
+    '.citadel-codex-item b{display:block;font-size:.74rem;margin-bottom:2px}'+
+    '.citadel-mode-end{position:fixed;inset:0;z-index:100015;display:flex;align-items:center;justify-content:center;background:rgba(4,2,12,.9);padding:16px}'+
+    '.citadel-mode-end .card{background:#170b2e;border:1px solid rgba(255,209,102,.55);border-radius:18px;padding:24px;text-align:center;color:#efe6ff;max-width:420px}'+
+    '.citadel-mode-end h2{margin:0 0 6px;font-family:Cinzel,serif;color:#ffd166}'+
+    '.citadel-mode-end p{font-size:.82rem;color:#c9b6e6;line-height:1.5}'+
+    '.citadel-mode-end button{display:block;width:100%;margin:8px 0;background:linear-gradient(135deg,#9040ee,#5b21b6);color:#fff;border:0;border-radius:12px;padding:11px;font:800 .85rem Inter,sans-serif;cursor:pointer}'+
+    '.citadel-mode-end button.ghost{background:rgba(90,40,160,.35)}'+
+    'body.citadel-contrast #hud{background:rgba(4,2,12,.97);border-bottom:2px solid #fff}'+
+    'body.citadel-contrast #hud .hud-val,body.citadel-contrast #hud .hud-label{color:#fff!important;text-shadow:0 0 3px #000}'+
+    'body.citadel-contrast .shop-card{border-color:#fff!important;background:rgba(12,6,30,.96)!important}'+
+    'body.citadel-contrast #citadel-bounty,body.citadel-contrast #citadel-coach,body.citadel-contrast .citadel-pause-card{border-width:2px}'+
+    'body.citadel-bigtext #hud .hud-val{font-size:1.45em}'+
+    'body.citadel-bigtext #hud .hud-label{font-size:1.08em}'+
+    'body.citadel-bigtext #citadel-bounty{font-size:.86rem}'+
+    'body.citadel-lowfx #citadel-bounty{box-shadow:none}'+
+    '@media(max-height:700px){#screen-start{justify-content:flex-start!important;padding-top:14px!important;padding-bottom:14px!important}}';
   document.head.appendChild(css);
 
   // ── PAUSE + AUTO-PAUSE ──
@@ -2704,12 +2816,13 @@ window.addEventListener('beforeunload', () => {
     '<div class="citadel-pause-card"><h2>Paused</h2><p>The gate waits for you.</p>'+
     '<button type="button" id="citadel-resume">▶ Resume</button>'+
     '<button type="button" class="ghost" id="citadel-restart">↺ Restart run</button>'+
+    '<button type="button" class="ghost" id="citadel-settings-pause">⚙ Settings</button>'+
     '<button type="button" class="ghost" id="citadel-quit">✕ Back to Arcade</button></div>');
   var warn=el('div','citadel-charge-warn',null,'⚠ Boss is charging');
   var paused=false;
   function pause(){
     if(gameState!=='playing')return;
-    paused=true; gameState='paused'; overlay.classList.add('show'); warn.style.display='none';
+    paused=true; gameState='paused'; overlay.classList.add('show'); warn.style.display='none'; snapshotRun();
   }
   function resume(){ if(!paused)return; paused=false; gameState='playing'; overlay.classList.remove('show'); }
   function togglePause(){ paused?resume():pause(); }
@@ -2726,60 +2839,417 @@ window.addEventListener('beforeunload', () => {
     } else { warn.style.display='none'; lastWarnBoss=null; }
   }
 
-  // ── CALM MODE ──
-  function calmNewEnemies(from){ if(!calm)return; for(var i=from;i<enemies.length;i++){ var e=enemies[i]; if(e&&!e._calmed){ e.speed*=0.7; e._calmed=true; } } }
-  function applyCalmToEnemies(){ if(calm) calmNewEnemies(0); }
+  // ── CALM MODE (rebalanced: a friendlier pace, not a free win) ──
+  function calmEnemy(e){ if(!calm||!e||e._calmed) return; e.speed*=0.7; e._calmed=true; }
   function setCalm(on){
     calm=!!on; window.__citadelCalm=calm; LS.set('jvds_citadel_calm',calm?'1':'0');
-    if(calm && tower){ var add=Math.round(tower.maxHp*0.6); tower.maxHp+=add; tower.hp=Math.min(tower.hp+add,tower.maxHp); try{updateHUD();}catch(e){} applyCalmToEnemies(); }
+    if(calm && tower && gameState==='playing'){ var add=Math.round(tower.maxHp*0.25); tower.maxHp+=add; tower.hp=Math.min(tower.hp+add,tower.maxHp); try{updateHUD();}catch(e){} }
+    if(calm){ for(var i=0;i<enemies.length;i++) calmEnemy(enemies[i]); }
     var cb=byId('citadel-calm'); if(cb) cb.checked=calm;
   }
   window.__citadelSetCalm=setCalm;
+
+  // ── PRACTICE PACE ──
+  var practice=Object.assign({speed:1,hp:1},LS.json('jvds_citadel_practice',{}));
+  function savePractice(){ LS.set('jvds_citadel_practice',JSON.stringify(practice)); }
+  function tuneEnemy(e){
+    if(!e) return;
+    calmEnemy(e);
+    if(isPractice()){
+      e.speed*=practice.speed;
+      e.hp=Math.max(1,Math.round(e.hp*practice.hp));
+      e.maxHp=e.hp;
+    }
+  }
   var _spawnEnemy=spawnEnemy;
-  window.spawnEnemy=function(){ var n=enemies.length; _spawnEnemy.apply(this,arguments); calmNewEnemies(n); };
+  window.spawnEnemy=function(){ var n=enemies.length; _spawnEnemy.apply(this,arguments); if(enemies[n]) tuneEnemy(enemies[n]); };
   var _spawnMinionNear=spawnMinionNear;
-  window.spawnMinionNear=function(){ var n=enemies.length; _spawnMinionNear.apply(this,arguments); calmNewEnemies(n); };
+  window.spawnMinionNear=function(){ var n=enemies.length; _spawnMinionNear.apply(this,arguments); if(enemies[n]) tuneEnemy(enemies[n]); };
   var _spawnBoss=spawnBoss;
   window.spawnBoss=function(){ _spawnBoss.apply(this,arguments); if(calm&&activeBoss){ activeBoss.chargeSpeed*=0.8; activeBoss.chargeInterval*=1.25; } };
+
+  // ── MASTERY (now pays: coins at 3 clears, a free relic at 10) ──
+  function mastery(){ return LS.json('jvds_citadel_mastery',{})||{}; }
+  function markMastery(id){ var m=mastery(); m[id]=(m[id]||0)+1; LS.set('jvds_citadel_mastery',JSON.stringify(m)); }
+  function masteryTier(id){ var n=mastery()[id]||0; return n>=10?2:n>=3?1:0; }
+  function masteryLine(id){ var t=masteryTier(id); return t>=2?'Mastery 2: starts with a relic':t>=1?'Mastery 1: starts with +5 coins':''; }
+  function applyMasteryPerk(){
+    if(!chosenSpell||isPractice()||isDaily()) return;
+    var t=masteryTier(chosenSpell.id);
+    if(t>=1){ coins+=5; try{updateHUD();}catch(e){} }
+    if(t>=2){
+      var avail=RELICS.filter(function(r){return !activeRelics.some(function(a){return a.id===r.id;});});
+      if(avail.length){
+        var pick=avail[Math.floor(Math.random()*avail.length)];
+        activeRelics.push(pick); try{ pick.apply(player); }catch(e){}
+        if(pick.id==='r_fortress'&&tower){ tower.maxHp+=50; tower.hp=Math.min(tower.hp+50,tower.maxHp); }
+        markSeen(pick.id);
+      }
+    }
+  }
+
+  // ── RELIC CHOICE + CODEX ──
+  var relicChoiceOpen=false, codexSeen=LS.json('jvds_citadel_codex',{})||{};
+  function markSeen(id){ codexSeen[id]=true; LS.set('jvds_citadel_codex',JSON.stringify(codexSeen)); }
+  function pickRelics(available,n){
+    var pool=available.slice(), out=[];
+    while(out.length<n&&pool.length){
+      var weights=pool.map(function(r){return r.rarity==='common'?5:r.rarity==='uncommon'?2.5:1;});
+      var total=weights.reduce(function(a,b){return a+b;},0), rand=Math.random()*total, idx=pool.length-1;
+      for(var i=0;i<pool.length;i++){ rand-=weights[i]; if(rand<=0){ idx=i; break; } }
+      out.push(pool.splice(idx,1)[0]);
+    }
+    return out;
+  }
+  var _tryDropRelic=tryDropRelic;
+  window.tryDropRelic=function(en){
+    // Keep the first wave clean so a new player meets the controls first.
+    if(wave<2||relicChoiceOpen) return;
+    var chance=RELIC_CHANCE_MAP[en.type]??RELIC_DROP_CHANCE;
+    if(Math.random()>chance) return;
+    var available=RELICS.filter(function(r){return !activeRelics.some(function(a){return a.id===r.id;});});
+    if(!available.length) return;
+    showRelicChoice(pickRelics(available,3));
+  };
+  function showRelicChoice(picks){
+    if(relicChoiceOpen||!picks.length) return;
+    relicChoiceOpen=true;
+    var prevState=gameState;
+    var ov=el('div','citadel-relic-overlay','');
+    ov.className='citadel-modal-overlay';
+    var cards=picks.map(function(r,i){
+      return '<button type="button" class="citadel-relic-card" data-relic="'+i+'" role="button" aria-label="Take '+esc(r.name)+': '+esc(r.desc)+'">'+
+        '<span class="ic">'+r.icon+'</span><span class="nm">'+esc(r.name)+'</span>'+
+        '<span class="ds">'+esc(r.desc)+'</span>'+
+        '<span class="ra" style="color:'+(RARITY_COLOR[r.rarity]||'#ccc')+'">'+esc(r.rarity)+'</span></button>';
+    }).join('');
+    ov.innerHTML='<div class="citadel-relic-panel" role="dialog" aria-modal="true" aria-label="Choose a relic">'+
+      '<h2>A relic answers</h2><p>Pick one, or leave it for the next run.</p>'+
+      '<div class="citadel-relic-grid">'+cards+'</div>'+
+      '<button type="button" class="citadel-btn ghost" id="citadel-relic-skip" style="margin-top:14px;background:rgba(90,40,160,.35);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:800 .8rem Inter,sans-serif;cursor:pointer">Leave it</button></div>';
+    document.body.appendChild(ov);
+    picks.forEach(function(r,i){
+      var b=ov.querySelector('[data-relic="'+i+'"]');
+      if(!b) return;
+      var take=function(){ closeRelicChoice(prevState); applyRelic(r); };
+      b.addEventListener('click',take);
+      b.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); take(); } });
+    });
+    var skip=byId('citadel-relic-skip'); if(skip) skip.addEventListener('click',function(){ closeRelicChoice(prevState); });
+    var first=ov.querySelector('.citadel-relic-card'); if(first) first.focus();
+  }
+  function closeRelicChoice(){
+    var ov=byId('citadel-relic-overlay'); if(ov) ov.remove();
+    relicChoiceOpen=false;
+  }
+  function applyRelic(r){
+    if(!r) return;
+    activeRelics.push(r);
+    try{ r.apply(player); }catch(e){}
+    if(r.id==='r_fortress'&&tower){ tower.maxHp+=50; tower.hp=Math.min(tower.hp+50,tower.maxHp); try{updateHUD();}catch(e){} }
+    markSeen(r.id);
+    try{ SFX.relicDrop(); }catch(e){}
+    toast(r.icon+' '+r.name+' joined the run');
+  }
+  function showCodex(){
+    var items=RELICS.map(function(r){
+      var seen=!!codexSeen[r.id];
+      return '<div class="citadel-codex-item'+(seen?' seen':'')+'"><b>'+(seen?esc(r.name):'???')+'</b>'+
+        (seen?esc(r.desc):'Not found yet. Keep an eye on rare foes.')+
+        (seen?'<div style="margin-top:4px;color:'+(RARITY_COLOR[r.rarity]||'#ccc')+';text-transform:uppercase;letter-spacing:.06em">'+esc(r.rarity)+'</div>':'')+'</div>';
+    }).join('');
+    showModal('Relic Codex','<h2>Relic Codex</h2><p>Relics are found on the battlefield. You have seen '+Object.keys(codexSeen).length+' of '+RELICS.length+'.</p><div class="citadel-codex-grid">'+items+'</div>');
+  }
+
+  // ── SAVE SNAPSHOT + RESUME ──
+  var resuming=false;
+  function snapshotRun(){
+    if(resuming||isPractice()||isDaily()) return;
+    if(gameState!=='playing'&&gameState!=='shop'&&gameState!=='paused') return;
+    if(!chosenSpell||!tower) return;
+    var snap={mode:mode(),spell:chosenSpell.id,wave:wave,score:score,kills:killCount,coins:coins,
+      owned:shopOwned,towerHp:tower.hp,towerMax:tower.maxHp,playerHp:playerHp,
+      relics:activeRelics.map(function(r){return r.id;}),ts:Date.now()};
+    LS.set('jvds_citadel_resume',JSON.stringify(snap));
+    updateModeButtons();
+  }
+  function clearResume(){ try{ localStorage.removeItem('jvds_citadel_resume'); }catch(e){} updateModeButtons(); }
+  function applyOwnedUpgrades(){
+    var pool=UNIVERSAL_UPGRADES.concat(ELEMENT_UPGRADES[chosenSpell.id]||[]);
+    Object.keys(shopOwned).forEach(function(id){
+      var def=pool.filter(function(i){return i.id===id;})[0];
+      if(!def) return;
+      var n=shopOwned[id];
+      if(def.stat==='_heal'||def.stat==='_maxhp') return;
+      for(var k=0;k<n;k++){ player[def.stat]=(player[def.stat]||0)+def.inc; }
+    });
+  }
+  function resumeRun(){
+    var s=LS.json('jvds_citadel_resume',null);
+    if(!s||!s.spell||!SPELLS[s.spell]) return;
+    window.setCitadelMode(s.mode||'quick');
+    chosenSpell=SPELLS[s.spell];
+    resuming=true;
+    initGame();
+    enemies=[];projectiles=[];arcs=[];poisonClouds=[];scorchPools=[];vortexZones=[];
+    score=s.score||0; wave=s.wave||1; killCount=s.kills||0; coins=s.coins||0;
+    shopOwned=s.owned||{};
+    tower.maxHp=s.towerMax||tower.maxHp; tower.hp=clamp(s.towerHp||tower.hp,1,tower.maxHp);
+    playerHp=clamp(s.playerHp||100,1,playerMaxHp);
+    activeRelics=(s.relics||[]).map(function(id){return RELICS.filter(function(r){return r.id===id;})[0];}).filter(Boolean);
+    activeRelics.forEach(function(r){ try{ r.apply(player); }catch(e){} });
+    applyOwnedUpgrades();
+    var sp=byId('screen-start'); if(sp) sp.classList.add('hidden');
+    var ss=byId('screen-spell'); if(ss) ss.style.display='none';
+    var go=byId('screen-gameover'); if(go) go.classList.add('hidden');
+    var sw=byId('screen-wave'); if(sw) sw.classList.remove('show');
+    byId('spell-icon').textContent=chosenSpell.emoji;
+    byId('spell-name-hud').textContent=chosenSpell.name;
+    byId('spell-name-hud').style.color=chosenSpell.color;
+    document.body.classList.add('citadel-in-play');
+    gameState='playing';
+    if(animID) cancelAnimationFrame(animID);
+    waveEnemiesTotal=calcWaveSize(wave);
+    spawnWaveEnemies();
+    resetBounty();
+    updateHUD(); updatePlayerHpBar();
+    loop();
+    resuming=false;
+    toast('Run resumed at wave '+wave);
+  }
+
+  // ── WAVE BOUNTIES ──
+  var bounty=null, bountyEl=null;
+  var BOUNTY_VERB={lightning:'zap',fire:'burn',water:'soak',poison:'rot',wind:'blast',ice:'freeze'};
+  function resetBounty(){
+    if(isPractice()){ if(bountyEl) bountyEl.remove(); bounty=null; return; }
+    var total=Math.max(1,waveEnemiesTotal||calcWaveSize(wave));
+    var boss=isBossWave(wave);
+    bounty={wave:wave,target:boss?1:Math.max(3,Math.round(total*0.6)),reward:3+wave*2,done:false,boss:boss};
+    renderBounty();
+  }
+  function renderBounty(){
+    if(isPractice()||!bounty){ if(bountyEl) bountyEl.remove(); return; }
+    if(!bountyEl){ bountyEl=el('div','citadel-bounty'); document.body.appendChild(bountyEl); }
+    var verb=bounty.boss?'break':(BOUNTY_VERB[chosenSpell?chosenSpell.id:'lightning']||'beat');
+    bountyEl.textContent=bounty.done?'Bounty paid':'Bounty: '+verb+' '+bounty.target+' foes for +'+bounty.reward+' coins';
+    bountyEl.classList.toggle('done',!!bounty.done);
+  }
+  function checkBounty(){
+    if(!bounty||bounty.done||gameState!=='playing') return;
+    if(waveKills>=bounty.target){
+      bounty.done=true; coins+=bounty.reward; try{updateHUD();}catch(e){}
+      try{ SFX.waveComplete(); }catch(e){}
+      toast('Bounty paid: +'+bounty.reward+' coins');
+      renderBounty();
+    }
+  }
+
+  // ── DAILY NIGHT ──
+  function todayKey(){ var d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+  function dailySpellId(){
+    var ids=Object.keys(SPELLS), s=todayKey(), h=2166136261;
+    for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); }
+    return ids[((h>>>0)%ids.length)];
+  }
+  function dailyState(){ return LS.json('jvds_citadel_daily',{date:'',best:0,streak:0,last:'',played:false}); }
+  function startDaily(){
+    var d=dailyState();
+    if(d.date===todayKey()&&d.played){ toast('Today\'s Daily Night is played. A new one arrives tomorrow.'); return; }
+    window.setCitadelMode('daily');
+    clearResume();
+    var id=dailySpellId();
+    d.date=todayKey(); d.played=true; LS.set('jvds_citadel_daily',JSON.stringify(d));
+    useSeed(true);
+    var card=byId('screen-start'); if(card) card.classList.add('hidden');
+    chosenSpell=SPELLS[id];
+    byId('spell-icon').textContent=chosenSpell.emoji;
+    byId('spell-name-hud').textContent=chosenSpell.name;
+    byId('spell-name-hud').style.color=chosenSpell.color;
+    startGame();
+  }
+  var realRandom=Math.random;
+  function mulberry32(a){
+    return function(){
+      a|=0; a=(a+0x6D2B79F5)|0;
+      var t=Math.imul(a^(a>>>15),1|a);
+      t=(t+Math.imul(t^(t>>>7),61|t))^t;
+      return ((t^(t>>>14))>>>0)/4294967296;
+    };
+  }
+  function dailySeed(){ var s=todayKey(), h=2166136261; for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  function useSeed(on){ Math.random=on?mulberry32(dailySeed()):realRandom; }
+  function recordDaily(){
+    if(!isDaily()) return;
+    var d=dailyState(), today=todayKey();
+    d.best=Math.max(d.best||0,score);
+    if(d.last!==today){
+      var y=new Date(); y.setDate(y.getDate()-1);
+      var yk=y.getFullYear()+'-'+pad2(y.getMonth()+1)+'-'+pad2(y.getDate());
+      d.streak=(d.last===yk)?(d.streak||0)+1:1;
+      d.last=today;
+    }
+    d.date=today; d.played=true;
+    LS.set('jvds_citadel_daily',JSON.stringify(d));
+  }
+
+  // ── BOSS RUSH ──
+  function clears(){ return LS.json('jvds_citadel_clears',[]); }
+  function markClear(id){
+    var c=clears();
+    if(c.indexOf(id)<0){ c.push(id); LS.set('jvds_citadel_clears',JSON.stringify(c)); }
+    updateModeButtons();
+  }
+  function rushUnlocked(){ return clears().length>=2; }
+  function startRush(){
+    if(!rushUnlocked()){ toast('Clear Quick Night with two elements to unlock Boss Rush.'); return; }
+    window.setCitadelMode('rush');
+    showSpellSelect();
+  }
+  function finishRush(){
+    if(gameState==='dead') return;
+    gameState='dead'; if(animID) cancelAnimationFrame(animID);
+    clearResume(); useSeed(false); stopMusic();
+    try{ saveScore(score,wave,chosenSpell?chosenSpell.emoji+' '+chosenSpell.name:'?'); }catch(e){}
+    var ov=el('div','citadel-mode-end','');
+    ov.className='citadel-mode-end';
+    ov.innerHTML='<div class="card"><h2>Boss Rush complete</h2><p>All four bosses fall in one night. Ember thinks that deserves a rest.</p>'+
+      '<p style="color:#ffd166;font-weight:800">Score '+score.toLocaleString()+' · '+killCount+' slain</p>'+
+      '<button type="button" id="citadel-rush-again">Run it again</button>'+
+      '<button type="button" class="ghost" id="citadel-rush-arcade">Back to Arcade</button></div>';
+    document.body.appendChild(ov);
+    byId('citadel-rush-again').addEventListener('click',function(){ ov.remove(); restartGame(); });
+    byId('citadel-rush-arcade').addEventListener('click',function(){ location.href='../arcade.html'; });
+  }
+
+  // ── START / WAVE WRAPPERS ──
   var _startGame=startGame;
   window.startGame=function(){
+    if(!isDaily()) useSeed(false);
     _startGame.apply(this,arguments);
     document.body.classList.add('citadel-in-play');
     var coach=byId('citadel-coach'); if(coach) coach.remove();
-    if(calm&&tower){ var add=Math.round(tower.maxHp*0.6); tower.maxHp+=add; tower.hp=tower.maxHp; try{updateHUD();}catch(e){} }
+    if(calm&&tower){ var add=Math.round(tower.maxHp*0.25); tower.maxHp+=add; tower.hp=tower.maxHp; try{updateHUD();}catch(e){} }
+    if(isRush()){ wave=5; enemies=[]; try{ updateHUD(); }catch(e){} spawnWaveEnemies(); }
+    applyMasteryPerk();
+    resetBounty();
+    snapshotRun();
+    startMusic();
+  };
+  var _startNextWave=startNextWave;
+  window.startNextWave=function(){
+    if(isRush()){
+      byId('screen-wave').classList.remove('show');
+      if(wave>=20){ finishRush(); return; }
+      wave+=5;
+      try{ byId('hud-wave').textContent=wave; }catch(e){}
+      playerHp=playerMaxHp; updatePlayerHpBar();
+      gameState='playing'; enemies=[];
+      spawnWaveEnemies(); resetBounty(); snapshotRun();
+      return;
+    }
+    _startNextWave.apply(this,arguments);
+    resetBounty();
+    snapshotRun();
+  };
+  var _showWaveComplete=showWaveComplete;
+  window.showWaveComplete=function(){
+    _showWaveComplete.apply(this,arguments);
+    try{
+      if(chosenSpell && isDaily() && wave>=4){ markMastery(chosenSpell.id); markClear(chosenSpell.id); recordDaily(); clearResume(); useSeed(false); stopMusic(); }
+      else if(chosenSpell && mode()==='quick' && wave>=4){ markMastery(chosenSpell.id); markClear(chosenSpell.id); clearResume(); }
+      if(isRush() && wave>=20){ finishRush(); }
+      else {
+        if(isRush()){ var nextWave=byId('wc-next'); if(nextWave) nextWave.textContent=String(wave+5); }
+        snapshotRun();
+      }
+    }catch(e){}
   };
 
-  // ── LOW-END / REDUCED-MOTION GUARDS ──
+  // ── SCORE / STATS ──
+  var _saveScore=saveScore;
+  window.saveScore=function(){
+    if(isPractice()) return null;
+    var rank=_saveScore.apply(this,arguments);
+    try{
+      var stats=LS.json('jvds_citadel_stats',{})||{};
+      var id=chosenSpell?chosenSpell.id:'unknown';
+      var row=stats[id]||{bestWave:0,bestScore:0};
+      row.bestWave=Math.max(row.bestWave,wave);
+      row.bestScore=Math.max(row.bestScore,score);
+      stats[id]=row; LS.set('jvds_citadel_stats',JSON.stringify(stats));
+    }catch(e){}
+    if(isDaily()) recordDaily();
+    return rank;
+  };
+
+  // ── LOW-END / REDUCED-MOTION / ADAPTIVE QUALITY ──
   var _spawnParticles=spawnParticles;
-  window.spawnParticles=function(x,y,color,count,spd){ if(reduced) count=Math.min(count,3); if(particles.length>260) return; _spawnParticles(x,y,color,count,spd); };
-  var _draw=draw;
-  window.draw=function(ts){ if(reduced) shakeAmt=0; _draw(ts); };
-  var _update=update;
-  window.update=function(dt){ _update(dt); telegraphTick(); };
-
-  // ── PERSISTENT ELEMENT MASTERY ──
-  function mastery(){ try{ return JSON.parse(LS.get('jvds_citadel_mastery','{}'))||{}; }catch(e){ return {}; } }
-  function markMastery(id){ var m=mastery(); m[id]=(m[id]||0)+1; LS.set('jvds_citadel_mastery',JSON.stringify(m)); }
-  var _showWaveComplete=showWaveComplete;
-  window.showWaveComplete=function(){ _showWaveComplete.apply(this,arguments); try{ if(chosenSpell && window.__citadelMode!=='deep' && wave>=4) markMastery(chosenSpell.id); }catch(e){} };
-  function decorateSpellCards(){
-    var m=mastery(); var cards=document.querySelectorAll('.spell-choice');
-    Array.prototype.forEach.call(cards,function(card){
-      var nameEl=card.querySelector('.sc-name'); var name=nameEl?nameEl.textContent:'';
-      var sp=Object.values(SPELLS).filter(function(s){return s.name===name;})[0];
-      if(sp&&m[sp.id]&&!card.querySelector('.citadel-mastered')){
-        var b=el('span'); b.className='citadel-mastered'; b.textContent='★ Mastered'; card.appendChild(b);
+  window.spawnParticles=function(x,y,color,count,spd){
+    if(reduced) count=Math.min(count,3);
+    var cap=lowQuality?150:260;
+    if(particles.length>cap) return;
+    return _spawnParticles(x,y,color,count,spd);
+  };
+  var lowQuality=false, frameSamples=[], lastFrameTs=0;
+  function qualityTick(ts){
+    if(lowQuality||reduced||!ts) return;
+    if(lastFrameTs){
+      var gap=ts-lastFrameTs;
+      if(gap>0&&gap<200) frameSamples.push(gap);
+      if(frameSamples.length>=120){
+        var total=0; for(var i=0;i<frameSamples.length;i++) total+=frameSamples[i];
+        if(total/frameSamples.length>26&&DPR>1){
+          lowQuality=true; window.__citadelMaxDPR=1; try{ applyCanvasSize(); }catch(e){}
+          document.body.classList.add('citadel-lowfx');
+        }
+        frameSamples=[];
       }
-    });
+    }
+    lastFrameTs=ts;
   }
-  var _showSpellSelect=showSpellSelect;
-  window.showSpellSelect=function(){ _showSpellSelect.apply(this,arguments); decorateSpellCards(); };
 
-  // ── RUN SUMMARY + SHARE + ECHO NEXT STEP ──
+  // ── ACCESSIBILITY OVERLAY (draw wrapper) ──
+  var _draw=draw;
+  window.draw=function(ts){
+    if(reduced) shakeAmt=0;
+    qualityTick(ts);
+    _draw(ts);
+    if((settings.markers||settings.contrast)&&Array.isArray(enemies)) drawA11y();
+  };
+  function drawA11y(){
+    try{
+      ctx.save();
+      for(var i=0;i<enemies.length;i++){
+        var e=enemies[i];
+        if(!e||e._dead) continue;
+        if(settings.contrast){
+          ctx.strokeStyle='#ffffff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+3,0,Math.PI*2); ctx.stroke();
+        }
+        if(settings.markers){
+          var x=e.x, y=e.y-e.r-9, c='#ffd166';
+          ctx.fillStyle=c; ctx.strokeStyle='#1a0a2e'; ctx.lineWidth=1.5;
+          ctx.beginPath();
+          if(e.type==='golem'){ ctx.rect(x-4,y-4,8,8); }
+          else if(e.type==='imp'){ ctx.moveTo(x,y-5); ctx.lineTo(x+5,y+4); ctx.lineTo(x-5,y+4); ctx.closePath(); }
+          else if(e.type==='wraith'){ ctx.moveTo(x,y-6); ctx.lineTo(x+5,y); ctx.lineTo(x,y+6); ctx.lineTo(x-5,y); ctx.closePath(); }
+          else if(e.type==='hexblade'){ ctx.moveTo(x-6,y); ctx.lineTo(x+6,y); ctx.moveTo(x,y-6); ctx.lineTo(x,y+6); }
+          else if(e.type==='voidling'){ ctx.arc(x,y,4,0,Math.PI*2); }
+          else { ctx.arc(x,y,3,0,Math.PI*2); }
+          ctx.fill(); ctx.stroke();
+        }
+      }
+      if(settings.contrast&&player){ ctx.strokeStyle='#ffd166'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(player.x,player.y,player.r+4,0,Math.PI*2); ctx.stroke(); }
+      ctx.restore();
+    }catch(e){}
+  }
+
+  // ── RELIC BAR + SUMMARY COPY ──
+  function modeLabel(){ var m=mode(); return m==='deep'?'Deep Night':m==='daily'?'Daily Night':m==='practice'?'Practice Gate':m==='rush'?'Boss Rush':'Quick Night'; }
   function runShareText(){
     var sp=chosenSpell?chosenSpell.name:'a mage';
-    var mode=window.__citadelMode==='deep'?'a Deep Night':'the Quick Night';
-    return 'I held the Citadel for '+wave+' wave'+(wave===1?'':'s')+' with '+sp+' ('+mode+'), score '+score.toLocaleString()+'. Play Arcane Citadel: https://jvdesignstudio.co.uk/games/arcane_citadel_page.html';
+    var build=activeRelics.length?' Relics: '+activeRelics.map(function(r){return r.name;}).join(', ')+'.':'';
+    return 'I held the Citadel for '+wave+' wave'+(wave===1?'':'s')+' with '+sp+' ('+modeLabel()+'), score '+score.toLocaleString()+'.'+build+' Play Arcane Citadel: https://jvdesignstudio.co.uk/games/arcane_citadel_page.html';
   }
   function shareRun(){
     var text=runShareText();
@@ -2788,6 +3258,12 @@ window.addEventListener('beforeunload', () => {
     try{ window.prompt('Copy your run:',text); }catch(e){}
   }
   function flashShare(msg){ var b=byId('citadel-share'); if(b){ b.textContent=msg; setTimeout(function(){ b.textContent='↗ Share your run'; },1800); } }
+  function copyBuild(){
+    var relics=activeRelics.length?activeRelics.map(function(r){return r.name+' ('+r.rarity+')';}).join(', '):'no relics';
+    var text=modeLabel()+' with '+(chosenSpell?chosenSpell.name:'a mage')+'. Score '+score.toLocaleString()+', wave '+wave+', '+killCount+' slain. Relics: '+relics+'.';
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text); toast('Build copied'); return; } }catch(e){}
+    try{ window.prompt('Copy your build:',text); }catch(e){}
+  }
   function drawRunCard(){
     var c=document.createElement('canvas'); c.width=1080; c.height=1350;
     var x=c.getContext('2d');
@@ -2812,7 +3288,7 @@ window.addEventListener('beforeunload', () => {
     x.font='120px serif'; x.fillText(sp?sp.emoji:'🏰',540,430);
     x.fillStyle='#efe6ff'; x.font='900 64px Cinzel, serif'; x.fillText(sp?sp.name:'Mage',540,540);
     x.fillStyle='rgba(201,166,255,.75)'; x.font='700 26px Inter, sans-serif';
-    x.fillText(window.__citadelMode==='deep'?'DEEP NIGHT':'QUICK NIGHT',540,592);
+    x.fillText(modeLabel().toUpperCase(),540,592);
     var stats=[['SCORE',score.toLocaleString()],['WAVE',String(wave)],['SLAIN',String(killCount)]];
     for(var s=0;s<stats.length;s++){
       var cx=250+s*290;
@@ -2823,12 +3299,15 @@ window.addEventListener('beforeunload', () => {
     }
     var won=window.__storyRun&&window.__storyRun.finished&&window.__storyRun.outcome==='success';
     x.fillStyle='#efe6ff'; x.font='700 34px Inter, sans-serif';
-    x.fillText(won?('The gate held for '+wave+' wave'+(wave===1?'':'s')+'.'):('The gate fell at wave '+wave+'.'),540,990);
+    x.fillText(won?('The gate held for '+wave+' wave'+(wave===1?'':'s')+'.'):('The gate fell at wave '+wave+'.'),540,960);
+    var relicText=activeRelics.length?('Relics: '+activeRelics.map(function(r){return r.name;}).join(', ')):'No relics found';
+    x.fillStyle='rgba(201,166,255,.8)'; x.font='600 24px Inter, sans-serif';
+    x.fillText(relicText.length>64?relicText.slice(0,61)+'...':relicText,540,1020);
     x.fillStyle='rgba(201,166,255,.75)'; x.font='600 26px Inter, sans-serif';
-    x.fillText('Score '+score.toLocaleString()+' with '+(sp?sp.name:'a mage'),540,1040);
+    x.fillText('Score '+score.toLocaleString()+' with '+(sp?sp.name:'a mage'),540,1066);
     var d=new Date();
     x.fillStyle='rgba(201,166,255,.55)'; x.font='600 24px Inter, sans-serif';
-    x.fillText(d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}),540,1112);
+    x.fillText(d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}),540,1120);
     x.fillStyle='#ffd166'; x.font='800 26px Inter, sans-serif';
     x.fillText('jvdesignstudio.co.uk/games/arcane_citadel_page.html',540,1212);
     return c;
@@ -2872,35 +3351,186 @@ window.addEventListener('beforeunload', () => {
     var screen=byId('screen-gameover'); if(!screen||byId('citadel-echo')) return;
     var m=mastery();
     var unbeaten=Object.values(SPELLS).filter(function(s){return !m[s.id];});
-    var tip=unbeaten.length? 'Malgrath got through. Try '+unbeaten[0].name+' next, or spend coins before the boss.' : 'You have held the gate with every element. Push a Deep Night next.';
+    var next=unbeaten.length?unbeaten[0].name:'a new element';
+    var tip=isQuick()
+      ? 'Malgrath got through. Quick Night has no shop, so try '+next+' next, or pick Deep Night to spend coins before the boss.'
+      : 'Malgrath got through. Try '+next+' next, and spend coins before the boss.';
     var echo=el('div','citadel-echo',null,
-      '<b>Echo:</b> '+tip+
+      '<b>Echo:</b> '+esc(tip)+
       '<div style="margin-top:8px"><a href="../tools/arcade-game-maker.html">Build your own tower defence →</a></div>');
     var share=el('button','citadel-share',null,'↗ Share your run');
     share.type='button'; share.addEventListener('click',shareRun);
     var cardBtn=el('button','citadel-card',null,'🖼 Save run card');
     cardBtn.type='button'; cardBtn.addEventListener('click',saveRunCard);
+    var buildBtn=el('button','citadel-build',null,'📋 Copy build');
+    buildBtn.type='button'; buildBtn.addEventListener('click',copyBuild);
     var anchor=byId('go-rank-msg')||byId('go-relics');
     if(anchor) anchor.insertAdjacentElement('afterend',echo); else screen.appendChild(echo);
     screen.appendChild(share);
     screen.appendChild(cardBtn);
+    screen.appendChild(buildBtn);
   }
   var _gameOver=gameOver;
-  window.gameOver=function(){ _gameOver.apply(this,arguments); document.body.classList.remove('citadel-in-play'); buildRunSummary(); };
+  window.gameOver=function(){
+    _gameOver.apply(this,arguments);
+    document.body.classList.remove('citadel-in-play');
+    if(isDaily()) recordDaily();
+    useSeed(false); stopMusic(); clearResume();
+    buildRunSummary();
+  };
+  var _restartGame=restartGame;
+  window.restartGame=function(){
+    useSeed(false); stopMusic();
+    return _restartGame.apply(this,arguments);
+  };
+  var _update=update;
+  window.update=function(dt){
+    if(relicChoiceOpen) return;
+    _update(dt);
+    telegraphTick();
+    checkBounty();
+  };
 
-  // ── EMBER FIRST-RUN COACH ──
+  // ── COACH ──
   function showCoach(force){
     if(!force && LS.get('jvds_citadel_coach','0')==='1') return;
     var oldCoach=byId('citadel-coach'); if(oldCoach) oldCoach.remove();
     var c=el('div','citadel-coach',null,
-      '<b>Ember says:</b> Move with WASD or drag. Your spells aim themselves at the nearest enemy. Hold the gate for three waves, then Malgrath comes.'+
+      '<b>Ember says:</b> Move with WASD, a gamepad or drag. Your spells aim themselves at the nearest enemy. Hold the gate for three waves, then Malgrath comes. Quick Night has no shop, so pick Deep Night if you want upgrades.'+
       '<div><button type="button" id="citadel-coach-ok">Got it</button></div>');
     document.body.appendChild(c);
     byId('citadel-coach-ok').addEventListener('click',function(){ LS.set('jvds_citadel_coach','1'); c.remove(); });
   }
   window.__citadelHelp=function(){ showCoach(true); };
 
-  // ── START SCREEN: recommended Quick Night + Calm toggle ──
+  // ── MODALS ──
+  function showModal(title,html){
+    var old=byId('citadel-modal'); if(old) old.remove();
+    var ov=el('div','citadel-modal','');
+    ov.className='citadel-modal-overlay';
+    var card=el('div','citadel-modal-card','');
+    card.className='citadel-modal';
+    card.innerHTML=html+'<div style="text-align:right;margin-top:14px"><button type="button" class="citadel-btn ghost" id="citadel-modal-close">Close</button></div>';
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+    ov.addEventListener('click',function(e){ if(e.target===ov) ov.remove(); });
+    byId('citadel-modal-close').addEventListener('click',function(){ ov.remove(); });
+    card.setAttribute('role','dialog'); card.setAttribute('aria-modal','true'); card.setAttribute('aria-label',title);
+    return card;
+  }
+  function settingsHtml(){
+    return '<h2>Display and sound</h2><p>These stay on this device. No account, no tracking.</p>'+
+      '<label><input type="checkbox" id="citadel-set-contrast" '+(settings.contrast?'checked':'')+'> High contrast UI and enemy outlines</label>'+
+      '<label><input type="checkbox" id="citadel-set-markers" '+(settings.markers?'checked':'')+'> Colourblind enemy markers</label>'+
+      '<label><input type="checkbox" id="citadel-set-bigtext" '+(settings.bigtext?'checked':'')+'> Bigger HUD text</label>'+
+      '<label><input type="checkbox" id="citadel-set-tappause" '+(settings.tappause?'checked':'')+'> Double-tap to pause on touch</label>'+
+      '<label><input type="checkbox" id="citadel-set-fixedstick" '+(settings.fixedstick?'checked':'')+'> Fixed joystick in the bottom left</label>'+
+      '<div style="margin-top:6px"><div style="font-size:.78rem;font-weight:800">Sound effects</div><input type="range" id="citadel-set-sfx" min="0" max="100" value="'+Math.round(settings.sfx*100)+'"></div>'+
+      '<div><div style="font-size:.78rem;font-weight:800">Music</div><input type="range" id="citadel-set-music" min="0" max="100" value="'+Math.round(settings.music*100)+'"></div>'+
+      '<div style="margin-top:10px"><button type="button" class="citadel-btn" id="citadel-set-export">Export save code</button>'+
+      '<button type="button" class="citadel-btn ghost" id="citadel-set-import">Import save code</button></div>'+
+      '<div class="citadel-note">A save code carries your scores, mastery, codex and daily streak between school machines. Nothing leaves the browser unless you copy it.</div>';
+  }
+  function openSettings(){
+    var card=showModal('Display and sound',settingsHtml());
+    function bind(id,fn){ var e=byId(id); if(e) e.addEventListener('change',fn); }
+    bind('citadel-set-contrast',function(e){ settings.contrast=e.target.checked; saveSettings(); applySettings(); });
+    bind('citadel-set-markers',function(e){ settings.markers=e.target.checked; saveSettings(); applySettings(); });
+    bind('citadel-set-bigtext',function(e){ settings.bigtext=e.target.checked; saveSettings(); applySettings(); });
+    bind('citadel-set-tappause',function(e){ settings.tappause=e.target.checked; saveSettings(); });
+    bind('citadel-set-fixedstick',function(e){ settings.fixedstick=e.target.checked; saveSettings(); applySettings(); });
+    bind('citadel-set-sfx',function(e){ settings.sfx=clamp(Number(e.target.value)/100,0,1); saveSettings(); });
+    bind('citadel-set-music',function(e){ setMusicVolume(Number(e.target.value)/100); });
+    byId('citadel-set-export').addEventListener('click',exportSave);
+    byId('citadel-set-import').addEventListener('click',openImport);
+    void card;
+  }
+  function applySettings(){
+    document.body.classList.toggle('citadel-contrast',!!settings.contrast);
+    document.body.classList.toggle('citadel-bigtext',!!settings.bigtext);
+    document.body.classList.toggle('citadel-fixedstick',!!settings.fixedstick);
+    if(settings.music<=0) stopMusic();
+  }
+
+  // ── SAVE EXPORT / IMPORT ──
+  var SAVE_KEYS=['jvds_game_arcane-citadel','jvds_citadel_leaderboard','jvds_citadel_mastery','jvds_citadel_codex','jvds_citadel_clears','jvds_citadel_daily','jvds_citadel_stats','jvds_citadel_settings','jvds_citadel_calm','jvds_citadel_muted'];
+  function b64url(s){ return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+  function unb64url(s){ s=String(s).replace(/-/g,'+').replace(/_/g,'/'); return decodeURIComponent(escape(atob(s))); }
+  function makeSaveCode(){
+    var obj={};
+    SAVE_KEYS.forEach(function(k){ var v=null; try{ v=localStorage.getItem(k); }catch(e){} if(v!=null) obj[k]=v; });
+    return 'CIT1-'+b64url(JSON.stringify(obj));
+  }
+  function applySaveCode(raw){
+    raw=String(raw||'').trim();
+    if(raw.indexOf('CIT1-')!==0) return false;
+    try{
+      var obj=JSON.parse(unb64url(raw.slice(5)));
+      Object.keys(obj).forEach(function(k){ if(SAVE_KEYS.indexOf(k)>=0) localStorage.setItem(k,obj[k]); });
+      return true;
+    }catch(e){ return false; }
+  }
+  function exportSave(){
+    var code=makeSaveCode();
+    var copied=false;
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(code); copied=true; } }catch(e){}
+    if(!copied){ try{ window.prompt('Copy your save code:',code); }catch(e){} }
+    toast(copied?'Save code copied':'Copy the code from the box');
+  }
+  function openImport(){
+    var card=showModal('Import save code',
+      '<h2>Import a save code</h2><p>Paste a CIT1 code from another machine. This replaces this device\'s Arcane Citadel save, then reloads the page.</p>'+
+      '<textarea id="citadel-import-text" aria-label="Save code"></textarea>'+
+      '<div style="margin-top:10px"><button type="button" class="citadel-btn" id="citadel-import-go">Import and reload</button></div>');
+    byId('citadel-import-go').addEventListener('click',function(){
+      var raw=(byId('citadel-import-text').value||'').trim();
+      if(raw.indexOf('CIT1-')!==0){ toast('That does not look like a CIT1 save code'); return; }
+      if(!applySaveCode(raw)){ toast('That save code could not be read'); return; }
+      location.reload();
+    });
+    void card;
+  }
+
+  // ── TOAST ──
+  var toastTimer=null;
+  function toast(msg){
+    var t=byId('citadel-toast');
+    if(!t){ t=el('div','citadel-toast'); document.body.appendChild(t); }
+    t.textContent=msg;
+    t.style.opacity='1';
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){ t.style.opacity='0'; },2200);
+  }
+
+  // ── START SCREEN EXTRAS ──
+  function extraButton(label,fn,cls,disabled,title){
+    var b=el('button',null,null,label);
+    b.type='button'; b.className='citadel-extra-btn'+(cls?' '+cls:'');
+    if(disabled) b.disabled=true;
+    if(title) b.title=title;
+    b.addEventListener('click',fn);
+    return b;
+  }
+  function updateModeButtons(){
+    var row=byId('citadel-modes'); if(!row) return;
+    while(row.firstChild) row.removeChild(row.firstChild);
+    var snap=LS.json('jvds_citadel_resume',null);
+    if(snap&&snap.spell&&SPELLS[snap.spell]){
+      row.appendChild(extraButton('▶ Resume wave '+snap.wave,function(){ resumeRun(); },'resume'));
+    }
+    row.appendChild(extraButton('🗓 Daily Night',startDaily));
+    var daily=dailyState();
+    row.appendChild(extraButton('🧪 Practice Gate',function(){ window.setCitadelMode('practice'); showSpellSelect(); }));
+    row.appendChild(extraButton('👑 Boss Rush',startRush,'',!rushUnlocked(),rushUnlocked()?'Four bosses back to back':'Clear Quick Night with two elements to unlock'));
+    row.appendChild(extraButton('📖 Relic Codex',showCodex));
+    row.appendChild(extraButton('⚙ Settings',openSettings));
+    var note=byId('citadel-mode-note');
+    if(!note){ note=el('div','citadel-mode-note'); if(row.parentElement) row.parentElement.insertBefore(note,row.nextSibling); }
+    var m=mastery();
+    var clearsCount=clears().length;
+    var element=SPELLS[dailySpellId()]?SPELLS[dailySpellId()].name:'a mystery';
+    note.textContent='Daily Night today: '+element+'. Streak '+((dailyState().streak)||0)+'. Mastery clears '+clearsCount+' of '+Object.keys(SPELLS).length+'. '+(m&&Object.keys(m).length?'Your elements remember you.':'');
+  }
   function decorateStart(){
     var start=byId('screen-start'); if(!start) return;
     var quick=Array.prototype.filter.call(start.querySelectorAll('button'),function(b){return /Quick Night/.test(b.textContent);})[0];
@@ -2909,13 +3539,36 @@ window.addEventListener('beforeunload', () => {
       quick.appendChild(tag); quick.style.borderColor='#ffd166';
     }
     if(!byId('citadel-calm-row')&&quick&&quick.parentElement){
-      var row=el('label','citadel-calm-row',null,'<input type="checkbox" id="citadel-calm"> Calm mode: slower enemies, stronger gate');
+      var row=el('label','citadel-calm-row',null,'<input type="checkbox" id="citadel-calm"> Calm mode: slower enemies, a little more gate HP');
       row.className='citadel-calm-row';
       quick.parentElement.insertAdjacentElement('afterend',row);
       byId('citadel-calm').checked=calm;
       byId('citadel-calm').addEventListener('change',function(e){ setCalm(e.target.checked); });
     }
+    if(!byId('citadel-modes')&&quick&&quick.parentElement){
+      var modes=el('div','citadel-modes'); quick.parentElement.appendChild(modes);
+    }
+    updateModeButtons();
   }
+
+  // ── RELIC / MASTERY BADGES ON SPELL CARDS ──
+  function decorateSpellCards(){
+    var m=mastery(); var cards=document.querySelectorAll('.spell-choice');
+    Array.prototype.forEach.call(cards,function(card){
+      var nameEl=card.querySelector('.sc-name'); var name=nameEl?nameEl.textContent:'';
+      var sp=Object.values(SPELLS).filter(function(s){return s.name===name;})[0];
+      if(!sp) return;
+      if(m[sp.id]&&!card.querySelector('.citadel-mastered')){
+        var b=el('span'); b.className='citadel-mastered'; b.textContent='★ Mastered'; card.appendChild(b);
+      }
+      var line=masteryLine(sp.id);
+      if(line&&!card.querySelector('.citadel-mastery-line')){
+        var l=el('div','citadel-mastery-line',null,esc(line)); card.appendChild(l);
+      }
+    });
+  }
+  var _showSpellSelect=showSpellSelect;
+  window.showSpellSelect=function(){ _showSpellSelect.apply(this,arguments); decorateSpellCards(); };
 
   // ── KEYBOARD PLAY ──
   document.addEventListener('keydown',function(e){
@@ -2931,7 +3584,64 @@ window.addEventListener('beforeunload', () => {
     if((k==='r'||k==='R')&&gameState==='dead'){ restartGame(); }
   });
 
-  // Test hooks for the automated smoke test (no gameplay effect).
+  // ── TOUCH: double-tap pause (quick tap, no drag) ──
+  var tapStart={x:0,y:0,t:0,moved:false}, lastTapEnd=0;
+  canvas.addEventListener('touchstart',function(e){
+    var t=e.touches[0]; if(!t) return;
+    tapStart={x:t.clientX,y:t.clientY,t:Date.now(),moved:false};
+  },{passive:true});
+  canvas.addEventListener('touchmove',function(e){
+    var t=e.touches[0]; if(!t) return;
+    if(Math.hypot(t.clientX-tapStart.x,t.clientY-tapStart.y)>14) tapStart.moved=true;
+  },{passive:true});
+  canvas.addEventListener('touchend',function(){
+    if(!settings.tappause||gameState!=='playing'||tapStart.moved) return;
+    if(Date.now()-tapStart.t>300) return;
+    var now=Date.now();
+    if(now-lastTapEnd<380){ togglePause(); lastTapEnd=0; }
+    else lastTapEnd=now;
+  },{passive:true});
+
+  // ── GAMEPAD ──
+  var padOwned={}, padHeld={};
+  function setPadKey(k,on){
+    if(on){ if(!keys[k]){ keys[k]=true; padOwned[k]=true; } }
+    else if(padOwned[k]){ keys[k]=false; padOwned[k]=false; }
+  }
+  function clearPadKeys(){ Object.keys(padOwned).forEach(function(k){ if(padOwned[k]){ keys[k]=false; padOwned[k]=false; } }); }
+  function pollPad(){
+    var ae=document.activeElement;
+    if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)){ clearPadKeys(); return; }
+    var pads=[]; try{ pads=navigator.getGamepads?navigator.getGamepads():[]; }catch(e){}
+    var p=null; for(var i=0;i<pads.length;i++){ if(pads[i]&&pads[i].connected){ p=pads[i]; break; } }
+    if(!p){ clearPadKeys(); padHeld={}; return; }
+    var ax=p.axes[0]||0, ay=p.axes[1]||0, dz=0.3;
+    setPadKey('a',ax<-dz); setPadKey('d',ax>dz); setPadKey('w',ay<-dz); setPadKey('s',ay>dz);
+    var start=p.buttons[9]&&p.buttons[9].pressed;
+    if(start&&!padHeld.start&&(gameState==='playing'||paused)) togglePause();
+    padHeld.start=start;
+  }
+  setInterval(pollPad,60);
+
+  // ── TEST / DEBUG HOOKS ──
+  window.__citadelTest={
+    win:function(){
+      var ov=byId('testVictory')||el('div','testVictory');
+      ov.className='show'; ov.innerHTML='<h2>Citadel held!</h2><p>Malgrath falls, Ember thanks you. The gate holds for one night.</p><button data-test="testAgainBtn">Hold again</button>';
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99';
+      if(!byId('testVictory')) document.body.appendChild(ov);
+      var btn=ov.querySelector('[data-test="testAgainBtn"]'); if(btn) btn.onclick=function(){ ov.classList.remove('show'); location.reload(); };
+      if(typeof gameSystem!=='undefined'){ try{ gameSystem.addScore(1200); gameSystem.recordGamePlay(Date.now()); }catch(e){} }
+    },
+    lose:function(){
+      var ov=byId('testVictory')||el('div','testVictory');
+      ov.innerHTML='<h2>Gate breached</h2><p>Malgrath pushed through, but Ember shows you what held: three waves, then the boss. Try again.</p><button data-test="testAgainBtn">Hold again</button>';
+      ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:99';
+      ov.classList.add('show');
+      if(!byId('testVictory')) document.body.appendChild(ov);
+      var btn=ov.querySelector('[data-test="testAgainBtn"]'); if(btn) btn.onclick=function(){ ov.classList.remove('show'); location.reload(); };
+    }
+  };
   window.__citadelPolish={
     mastery:mastery, markMastery:markMastery, setCalm:setCalm, calm:function(){return calm;},
     pause:pause, resume:resume, togglePause:togglePause, isPaused:function(){return paused;},
@@ -2940,7 +3650,14 @@ window.addEventListener('beforeunload', () => {
     reducedMotion:function(){return reduced;},
     muted:function(){return sfxMuted;},
     runCardDataURL:function(){ try{ return drawRunCard().toDataURL('image/png'); }catch(e){ return ''; } },
-    state:function(){return gameState;}
+    state:function(){return gameState;},
+    mode:mode, isRush:isRush, isPractice:isPractice, dailySpellId:dailySpellId,
+    snapshot:function(){ return LS.json('jvds_citadel_resume',null); },
+    bounty:function(){ return bounty; },
+    settings:function(){ return settings; },
+    exportCode:makeSaveCode, importCode:applySaveCode,
+    resumeRun:resumeRun, clearResume:clearResume, saveSnapshot:snapshotRun,
+    masteryTier:masteryTier, dailyPlayed:function(){ return dailyState().played; }
   };
 
   // ── INIT ──
@@ -2949,16 +3666,21 @@ window.addEventListener('beforeunload', () => {
   document.body.appendChild(warn);
   byId('citadel-resume').addEventListener('click',resume);
   byId('citadel-restart').addEventListener('click',function(){ resume(); restartGame(); });
+  byId('citadel-settings-pause').addEventListener('click',openSettings);
   byId('citadel-quit').addEventListener('click',function(){ location.href='../arcade.html'; });
   pauseBtn.addEventListener('click',togglePause);
   document.addEventListener('gs-toggle-pause',togglePause);
   document.addEventListener('click',function(e){ var t=e.target; if(t&&t.closest&&t.closest('#gs-pause-btn')) togglePause(); },true);
-  document.addEventListener('visibilitychange',function(){ if(document.hidden) pause(); });
-  window.addEventListener('blur',function(){ pause(); });
+  document.addEventListener('visibilitychange',function(){ if(document.hidden){ snapshotRun(); pause(); } });
+  window.addEventListener('blur',function(){ snapshotRun(); pause(); });
+  window.addEventListener('pagehide',snapshotRun);
+  applyMode();
+  applySettings();
   decorateStart();
   showCoach();
 })();
 </script>
+
 </body>
 </html>
 
