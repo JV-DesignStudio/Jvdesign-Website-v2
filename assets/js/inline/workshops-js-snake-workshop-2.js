@@ -133,6 +133,8 @@ window.CW_CONFIG = {
       starter: '// New head = current head position + direction\nconst head = { x: ???, y: ??? };\n// Add head to front of snake array\n// Remove the last tail segment\n',
       solution: 'const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };\nsnake.unshift(head);\nsnake.pop();',
       checks: ['unshift', 'pop', 'snake[0]'],
+      test: 'var startX=snake[0].x;loop(lastTick+200);done(snake[0].x!==startX,"the snake did not move on a tick");',
+      testDelay: 60,
       height: 100,
       fills: {
         text: 'Arrays grow at the front with ___ and shrink at the back with ___. One step happens every ___ milliseconds.',
@@ -161,6 +163,8 @@ window.CW_CONFIG = {
       starter: '// Listen for arrow keys, push direction into inputQueue\ndocument.addEventListener("keydown", function(e) {\n  const map = {\n    ArrowUp:    {x: 0, y:-1},\n    ArrowDown:  {x: 0, y: 1},\n    ArrowLeft:  {x:-1, y: 0},\n    ArrowRight: {x: 1, y: 0}\n  };\n  // if this key is in the map, queue it\n  \n});',
       solution: 'document.addEventListener("keydown", function(e) {\n  const map = {\n    ArrowUp:    {x: 0, y:-1},\n    ArrowDown:  {x: 0, y: 1},\n    ArrowLeft:  {x:-1, y: 0},\n    ArrowRight: {x: 1, y: 0}\n  };\n  if (map[e.key]) inputQueue.push(map[e.key]);\n});',
       checks: ['addeventlistener', 'keydown', 'inputqueue.push'],
+      test: 'document.dispatchEvent(new KeyboardEvent("keydown",{key:"ArrowLeft"}));loop(lastTick+200);done(dir.x===1&&dir.y===0&&(typeof dead==="undefined"||!dead),"a reverse keypress changed direction or killed the snake");',
+      testDelay: 60,
       height: 200,
       quiz: {
         question: 'Why is a queue better than a single <code>nextDir</code> variable?',
@@ -185,6 +189,8 @@ window.CW_CONFIG = {
       starter: '// Return a random {x, y} that doesn\'t overlap the snake\nfunction spawnFood() {\n  while (true) {\n    const f = {\n      x: ???,\n      y: ???\n    };\n    // if f is NOT on the snake, return it\n    \n  }\n}',
       solution: 'function spawnFood() {\n  while (true) {\n    const f = {\n      x: Math.floor(Math.random() * GRID),\n      y: Math.floor(Math.random() * GRID)\n    };\n    if (!snake.some(c => c.x === f.x && c.y === f.y)) return f;\n  }\n}',
       checks: ['math.random', 'some', 'return'],
+      test: 'if(typeof spawnFood!=="function"){done(false,"spawnFood is missing");return;}var bad=0;for(var i=0;i<40;i++){var f=spawnFood();if(snake.some(function(c){return c.x===f.x&&c.y===f.y}))bad++;}if(bad){done(false,"food spawned on the snake");return;}food={x:snake[0].x+dir.x,y:snake[0].y+dir.y};var len=snake.length;loop(lastTick+200);done(snake.length>len,"eating food did not grow the snake");',
+      testDelay: 60,
       height: 190,
       fills: {
         text: 'The safe-spawn check uses the array method ___. Growth happens by skipping the ___.',
@@ -213,6 +219,8 @@ window.CW_CONFIG = {
       starter: '// Read the wrap checkbox\nconst wrapMode = document.getElementById("wrap").checked;\n\n// If wrap: modulo both axes\n// Else: check out-of-bounds -> dead = true; return;\n\n// Self-collision: if head overlaps body -> dead = true; return;\n',
       solution: 'const wrapMode = document.getElementById("wrap").checked;\nif (wrapMode) {\n  head.x = (head.x + GRID) % GRID;\n  head.y = (head.y + GRID) % GRID;\n} else if (head.x < 0 || head.x > GRID-1 || head.y < 0 || head.y > GRID-1) {\n  dead = true; return;\n}\nif (snake.some(c => c.x === head.x && c.y === head.y)) {\n  dead = true; return;\n}',
       checks: ['%', 'dead', 'some'],
+      test: 'snake=[{x:24,y:12},{x:23,y:12},{x:22,y:12}];dir={x:1,y:0};inputQueue=[];dead=false;var w=document.getElementById("wrap");if(w)w.checked=false;loop(lastTick+200);done(dead===true,"the snake did not die when it hit the wall");',
+      testDelay: 60,
       height: 200,
       quiz: {
         question: 'Why add <code>GRID</code> before taking <code>% GRID</code>?',

@@ -277,11 +277,147 @@ function checkQuiz(btn) {
 }
 
 /* ── CODE CHALLENGE SYSTEM ── */
+/* A2264: a challenge may carry data-test (a JS test body) and optionally
+   data-test-code (a program with __BLANKS__ replaced by the learner's values).
+   When present, matching answers are only a prefilter; the challenge passes
+   only when the code really runs and the test says so. The test runs in the
+   same sandboxed preview host the canvas build-alongs use. */
+var ccTests = {};
+var ccRunner = null;
+
+function ensureCcRunner() {
+  if (ccRunner) return ccRunner;
+  ccRunner = document.createElement('iframe');
+  ccRunner.id = 'cc-test-runner';
+  ccRunner.title = 'Code test';
+  ccRunner.setAttribute('aria-hidden', 'true');
+  ccRunner.tabIndex = -1;
+  ccRunner.style.cssText = 'position:absolute;width:1px;height:1px;left:-9999px;top:0;border:0';
+  ccRunner.src = '/assets/canvas-preview.html';
+  document.body.appendChild(ccRunner);
+  return ccRunner;
+}
+
+function assembledChallengeCode(challenge) {
+  var blanks = challenge.querySelectorAll('.cc-blank');
+  var values = [];
+  blanks.forEach(function(b) { values.push(b.value); });
+  var tpl = challenge.getAttribute('data-test-code');
+  if (tpl) return tpl.replace(/__BLANKS__/g, JSON.stringify(values));
+  var area = challenge.querySelector('.cc-code-area');
+  if (!area) return '';
+  var clone = area.cloneNode(true);
+  var cloneBlanks = clone.querySelectorAll('.cc-blank');
+  cloneBlanks.forEach(function(b, i) {
+    b.parentNode.replaceChild(document.createTextNode(values[i] || ''), b);
+  });
+  return clone.textContent;
+}
+
+function runChallengeTest(challenge, cb) {
+  var src = challenge.getAttribute('data-test');
+  if (!src) { cb(true); return; }
+  var key = challenge.id || ('cc-' + Math.random().toString(36).slice(2));
+  var delay = Number(challenge.getAttribute('data-test-delay')) || 350;
+  var timeout = Number(challenge.getAttribute('data-test-timeout')) || 3000;
+  challenge.dataset.ccTesting = '1';
+  ccTests[key] = {
+    cb: cb,
+    el: challenge,
+    send: null,
+    timer: setTimeout(function() {
+      if (!ccTests[key]) return;
+      clearInterval(ccTests[key].sendTimer);
+      delete ccTests[key];
+      delete challenge.dataset.ccTesting;
+      cb(false, 'The test timed out.');
+    }, timeout + 2500)
+  };
+  var send = function() {
+    if (!ccTests[key]) return;
+    try {
+      ensureCcRunner().contentWindow.postMessage({
+        cwParts: { css: '', canvas: '', presetup: '', blobSrc: assembledChallengeCode(challenge), afterBlob: '' },
+        cwTest: { num: key, src: src, delay: delay, timeout: timeout }
+      }, '*');
+    } catch (e) {
+      clearTimeout(ccTests[key].timer);
+      clearInterval(ccTests[key].sendTimer);
+      delete ccTests[key];
+      delete challenge.dataset.ccTesting;
+      cb(false, 'The test could not start.');
+    }
+  };
+  ccTests[key].send = send;
+  // The runner is a fresh iframe, so its first load event can belong to
+  // about:blank. The host posts cwHostReady when it is really up; retry as a
+  // fallback in case that message is missed.
+  var tries = 0;
+  ccTests[key].sendTimer = setInterval(function() {
+    if (!ccTests[key] || ++tries > 6) { clearInterval(ccTests[key] && ccTests[key].sendTimer); return; }
+    send();
+  }, 500);
+  send();
+}
+
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.cwHostReady) {
+    Object.keys(ccTests).forEach(function(k) {
+      if (ccTests[k] && ccTests[k].send) ccTests[k].send();
+    });
+    return;
+  }
+  var r = e.data && e.data.cwTestResult;
+  if (!r || !ccTests[r.num]) return;
+  var t = ccTests[r.num];
+  clearTimeout(t.timer);
+  clearInterval(t.sendTimer);
+  delete ccTests[r.num];
+  if (t.el) delete t.el.dataset.ccTesting;
+  t.cb(!!r.pass, r.detail || '');
+});
+
+function passCodeChallenge(challenge, btn) {
+  var fb = challenge.querySelector('.cc-feedback');
+  var hint = challenge.querySelector('.cc-hint');
+  fb.className = 'cc-feedback correct show';
+  fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
+  challenge.classList.add('passed');
+  btn.disabled = true;
+  challenge.querySelectorAll('.cc-blank').forEach(function(b){ b.value = canonicalAnswer(b); b.disabled = true; });
+  if (hint) hint.classList.remove('show');
+  streak++;
+  if (streak > bestStreak) bestStreak = streak;
+  correctFirst++;
+  totalQuizzes++;
+  var bonus = XP_CODE;
+  var label = 'Code challenge';
+  if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
+  awardXp(bonus, label);
+  saveProgress();
+}
+
+function failCodeChallenge(challenge, btn, detail) {
+  var fb = challenge.querySelector('.cc-feedback');
+  var hint = challenge.querySelector('.cc-hint');
+  fb.className = 'cc-feedback wrong show';
+  if (detail) {
+    fb.innerHTML = '<span class="fb-icon">❌</span><span></span>';
+    fb.querySelector('span:last-child').textContent =
+      'Your answers look right, but the code did not do what this step needs: ' + detail;
+  } else {
+    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers are not quite right, check the highlighted blanks and try again.</span>';
+  }
+  if (hint) hint.classList.add('show');
+  streak = 0;
+  updateXpDisplay();
+  totalQuizzes++;
+  saveProgress();
+}
+
 function checkCodeChallenge(btn) {
   var challenge = btn.closest('.code-challenge');
   var blanks = challenge.querySelectorAll('.cc-blank');
-  var fb = challenge.querySelector('.cc-feedback');
-  var hint = challenge.querySelector('.cc-hint');
   var allCorrect = true;
 
   blanks.forEach(function(b) {
@@ -295,30 +431,20 @@ function checkCodeChallenge(btn) {
     }
   });
 
-  if (allCorrect) {
-    fb.className = 'cc-feedback correct show';
-    fb.innerHTML = '<span class="fb-icon">✅</span><span>Perfect! Your code is correct.</span>';
-    challenge.classList.add('passed');
-    btn.disabled = true;
-    blanks.forEach(function(b){ b.value = canonicalAnswer(b); b.disabled = true; });
-    if (hint) hint.classList.remove('show');
-    streak++;
-    if (streak > bestStreak) bestStreak = streak;
-    correctFirst++;
-    totalQuizzes++;
-    var bonus = XP_CODE;
-    var label = 'Code challenge';
-    if (streak >= 3) { bonus += XP_STREAK_BONUS; label += ' + 🔥 streak bonus'; }
-    awardXp(bonus, label);
-  } else {
-    fb.className = 'cc-feedback wrong show';
-    fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers are not quite right, check the highlighted blanks and try again.</span>';
-    if (hint) hint.classList.add('show');
-    streak = 0;
-    updateXpDisplay();
-    totalQuizzes++;
+  if (!allCorrect) { failCodeChallenge(challenge, btn, ''); return; }
+
+  if (challenge.getAttribute('data-test')) {
+    var fb = challenge.querySelector('.cc-feedback');
+    fb.className = 'cc-feedback show';
+    fb.textContent = 'Checking that your code really works...';
+    runChallengeTest(challenge, function(pass, detail) {
+      if (pass) passCodeChallenge(challenge, btn);
+      else failCodeChallenge(challenge, btn, detail);
+    });
+    return;
   }
-  saveProgress();
+
+  passCodeChallenge(challenge, btn);
 }
 
 /* ── CONCEPT FILL SYSTEM ── */
@@ -899,7 +1025,7 @@ checkCodeChallenge = function(btn) {
   var challenge = btn.closest('.code-challenge');
   var wasPassed = challenge && challenge.classList.contains('passed');
   _origCheckCC(btn);
-  if (challenge && !wasPassed && !challenge.classList.contains('passed')) {
+  if (challenge && !wasPassed && !challenge.classList.contains('passed') && challenge.dataset.ccTesting !== '1') {
     showProgressiveHint(challenge);
     if (sfxEnabled) playSfx('wrong');
   }

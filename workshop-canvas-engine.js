@@ -318,6 +318,11 @@ var codeValid = {};
 var quizPassed = {};
 var quizSelected = {};
 var cwXpLocal = 0;
+/* A2264: steps may carry an executable test. The test runs inside the same
+   sandboxed preview as the learner's code and reports pass/fail back here.
+   Token checks stay as a fast prefilter; they are never the proof on their own
+   when a test exists. */
+var cwStepTests = {};
 
 /* ── LIVE "WHAT YOUR CODE DID" LAYER ──
    Purely additive. Names the current step over the canvas and, as the learner
@@ -371,7 +376,9 @@ function updateLive(num) {
   var missing = checks.filter(function (c) { return code.indexOf(String(c).toLowerCase()) === -1; });
   if (missing.length === 0) {
     el.className = 'cw-live ok';
-    el.innerHTML = '\u2705 Everything this step needs is in your code. Watch the canvas.';
+    el.innerHTML = step.test
+      ? '\u2705 Your code has the right pieces. Press Apply to prove it works.'
+      : '\u2705 Everything this step needs is in your code. Watch the canvas.';
   } else {
     el.className = 'cw-live todo';
     el.innerHTML = 'Your code still needs: ' + missing.map(function (m) { return '<code>' + m + '</code>'; }).join(', ');
@@ -441,7 +448,9 @@ function ensurePreviewKeyboardExit() {
 }
 
 window.addEventListener('message', function (e) {
-  if (!e.data || !e.data.cwPreviewEscape) return;
+  if (!e.data) return;
+  if (e.data.cwTestResult) { settleStepTest(e.data.cwTestResult); return; }
+  if (!e.data.cwPreviewEscape) return;
   var btn = document.querySelector('.cw-play-preview');
   if (btn) { try { btn.focus(); } catch (err) {} }
 });
@@ -970,11 +979,14 @@ window.cwBlobWrap = function cwBlobWrap(CSS_GAME, CANVAS_TAG, presetup, blobSrc,
    (script-src 'self' blob:) making previews host-portable (A1722). */
 var PREVIEW_RUNNER = '/assets/canvas-preview.html';
 var previewReady = false;
+var previewSeq = 0;
 
-function showPreview(val) {
+function showPreview(val, test) {
   var frame = document.getElementById('gameFrame');
   if (!frame) return;
   var msg = (val && val.cwParts) ? { cwParts: val.cwParts } : { cwPreview: val };
+  if (test) msg.cwTest = test;
+  var seq = ++previewSeq;
   if (previewReady) {
     try { frame.contentWindow.postMessage(msg, '*'); } catch (e) {}
     return;
@@ -982,6 +994,9 @@ function showPreview(val) {
   var onLoad = function () {
     frame.removeEventListener('load', onLoad);
     previewReady = true;
+    // A newer preview (for example the test page) may have been requested
+    // while this frame was loading. Never let the older one overwrite it.
+    if (seq !== previewSeq) return;
     try { frame.contentWindow.postMessage(msg, '*'); } catch (e) {}
   };
   frame.addEventListener('load', onLoad);
@@ -989,6 +1004,9 @@ function showPreview(val) {
 }
 
 function updateCanvas() {
+  // A test owns the preview until it reports back; a late typing debounce must
+  // not replace the page the test is running in.
+  if (Object.keys(cwStepTests).length) return;
   var step = STEPS[currentStep];
   var code = editors[step.num] ? editors[step.num].value : step.starter;
   showPreview(hasUnfilled(code)
@@ -1018,37 +1036,95 @@ function updateProgress() {
 }
 
 function checkStep(num) {
-  if (completed[num]) return;
+  if (completed[num] || cwStepTests[num]) return;
   var step = STEPS.find(function(s) { return s.num === num; });
   var code = editors[num].value.toLowerCase();
   var missing = step.checks.filter(function(c) { return code.indexOf(String(c).toLowerCase()) === -1; });
-  var fb = document.getElementById('feedback-' + num);
 
-  if (missing.length === 0) {
-    codeValid[num] = true;
-    fb.className = 'cw-feedback success';
-    if (!step.quiz || quizPassed[num]) {
-      fb.textContent = '✓ Step ' + num + ' complete: ' + step.title + ' now works in your game.';
-      advanceStep(num);
-    } else {
-      renderSteps();
-      var gateFb = document.getElementById('feedback-' + num);
-      if (gateFb) {
-        gateFb.className = 'cw-feedback success';
-        gateFb.textContent = '✓ Code is correct! Now answer the Knowledge Check below.';
-      }
-      var quizEl = document.getElementById('quiz-opts-' + num);
-      if (quizEl) quizEl.closest('.cw-quiz').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  } else {
+  if (missing.length !== 0) {
     attempts[num] = (attempts[num] || 0) + 1;
     saveState();
+    renderSteps();
+    var fb = document.getElementById('feedback-' + num);
+    if (fb) {
+      fb.className = 'cw-feedback error';
+      var attemptsLeft = Math.max(0, 2 - attempts[num]);
+      fb.textContent = 'Almost! Make sure your code includes: ' +
+        missing.map(function(m) { return '"' + m + '"'; }).join(', ') +
+        (attemptsLeft > 0 ? ' (' + attemptsLeft + ' more ' + (attemptsLeft === 1 ? 'try' : 'tries') + ' before hint unlocks)' : '');
+    }
+    return;
+  }
+
+  if (step.test) { runStepTest(num, step); return; }
+  passStep(num, step);
+}
+
+/* The code contains the right words. Prove it does the right thing. */
+function runStepTest(num, step) {
+  clearTimeout(debounceTimer);
+  debounceTimer = null;
+  var fb = document.getElementById('feedback-' + num);
+  var delay = Number(step.testDelay) || 350;
+  var timeout = Number(step.testTimeout) || 3000;
+  cwStepTests[num] = { timer: null };
+  if (fb) {
+    fb.className = 'cw-feedback';
+    fb.textContent = 'Checking that your code really works...';
+  }
+  var test = { num: num, src: step.test, delay: delay, timeout: timeout };
+  showPreview(polishPreview(TEMPLATES[num](editors[num].value)), test);
+  cwStepTests[num].timer = setTimeout(function() {
+    if (!cwStepTests[num]) return;
+    delete cwStepTests[num];
+    failStepTest(num, 'The preview did not finish checking. Press Apply to try again.');
+  }, timeout + 1500);
+}
+
+function settleStepTest(result) {
+  var num = result && result.num;
+  if (!cwStepTests[num]) return;
+  clearTimeout(cwStepTests[num].timer);
+  delete cwStepTests[num];
+  var step = STEPS.find(function(s) { return s.num === num; });
+  if (!step) return;
+  if (result.pass) {
+    passStep(num, step);
+  } else {
+    failStepTest(num, result.detail || 'the game did not behave the way this step needs.');
+  }
+}
+
+function passStep(num, step) {
+  codeValid[num] = true;
+  var fb = document.getElementById('feedback-' + num);
+  if (fb) fb.className = 'cw-feedback success';
+  if (!step.quiz || quizPassed[num]) {
+    if (fb) fb.textContent = '✓ Step ' + num + ' complete: ' + step.title + ' now works in your game.';
+    advanceStep(num);
+  } else {
+    renderSteps();
+    var gateFb = document.getElementById('feedback-' + num);
+    if (gateFb) {
+      gateFb.className = 'cw-feedback success';
+      gateFb.textContent = '✓ Code is correct! Now answer the Knowledge Check below.';
+    }
+    var quizEl = document.getElementById('quiz-opts-' + num);
+    if (quizEl) quizEl.closest('.cw-quiz').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function failStepTest(num, detail) {
+  attempts[num] = (attempts[num] || 0) + 1;
+  saveState();
+  renderSteps();
+  var fb = document.getElementById('feedback-' + num);
+  if (fb) {
     fb.className = 'cw-feedback error';
     var attemptsLeft = Math.max(0, 2 - attempts[num]);
-    fb.textContent = 'Almost! Make sure your code includes: ' +
-      missing.map(function(m) { return '"' + m + '"'; }).join(', ') +
+    fb.textContent = 'Almost! Your code has the right pieces but it did not do what this step needs: ' +
+      detail +
       (attemptsLeft > 0 ? ' (' + attemptsLeft + ' more ' + (attemptsLeft === 1 ? 'try' : 'tries') + ' before hint unlocks)' : '');
-    renderSteps();
   }
 }
 
