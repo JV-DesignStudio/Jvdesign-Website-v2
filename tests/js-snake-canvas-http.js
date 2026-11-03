@@ -55,7 +55,7 @@ const server=http.createServer((req,res)=>{
       let stored2={};
       try{stored2=JSON.parse(localStorage.getItem('jvds-js-snake-canvas')||'{}');}catch(e){}
       const solutionSeenStored=!!(stored2.solutionSeen&&stored2.solutionSeen[1]);
-      const dashes=(document.body.innerText.match(/[–—]/g)||[]).length;
+      const dashes=(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length;
       const sw=document.documentElement.scrollWidth;
       return {showOnLoad,applyBtns,showAfter2,attemptsStored,solutionSeenStored,dashes,sw};
     });
