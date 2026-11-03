@@ -157,6 +157,9 @@
   }
   function place() {
     if (!strip) return;
+    // A2376: inside the shared dock the keepsake controls are one part of the
+    // row, so the dock owns placement.
+    if (document.getElementById('jvds-action-dock')) { strip.style.display = ''; return; }
     // A2012: on a phone the tool's own bottom toolbar offers save and export,
     // so the floating strip would only cover it.
     if (window.innerWidth <= 699 && barVisible()) { strip.style.display = 'none'; return; }
@@ -183,9 +186,10 @@
       '<b>Your work saves on this device</b>' +
       '<span class="jk-sub">No account needed. On shared PCs, export to keep it forever.</span>' +
       '</span>' +
-      '<button id="jk-keep-export" type="button">Export to keep</button>' +
-      '<a id="jk-keep-cert" href="/tools/certificate.html">Certificate</a>';
-    document.body.appendChild(strip);
+      '<button id="jk-keep-export" type="button" title="Export to keep">Export to keep</button>' +
+      '<a id="jk-keep-cert" href="/tools/certificate.html" title="Get a certificate">Certificate</a>';
+    if (window.JVDSDock) window.JVDSDock.add(strip);
+    else document.body.appendChild(strip);
     document.getElementById('jk-keep-export').addEventListener('click', exportNow);
     place();
     window.addEventListener('resize', place);

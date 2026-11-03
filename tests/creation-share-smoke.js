@@ -39,6 +39,16 @@ async function checkTool(browser, url, width) {
   await page.setViewport({ width, height: 900 });
   await page.goto('http://127.0.0.1:8143' + url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await new Promise(r => setTimeout(r, 700));
+  /* Pixel Studio hides the helper behind its first-run/focus states. Clear
+     those so the smoke test exercises the share control itself. */
+  await page.evaluate(() => {
+    try { window.closeModal && window.closeModal('startModal'); } catch (e) {}
+    try { window.closeStart && window.closeStart(); } catch (e) {}
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('#start-overlay.show').forEach(m => m.classList.remove('show'));
+    document.body.classList.remove('ps-modal-open', 'ps-focus');
+  });
+  await new Promise(r => setTimeout(r, 150));
 
   const shareVisible = () => page.evaluate(() => {
     const b = document.getElementById('jvds-share-btn');
@@ -62,6 +72,12 @@ async function checkTool(browser, url, width) {
   if (visible) {
     await page.evaluate(() => document.getElementById('jvds-share-btn').click());
     await new Promise(r => setTimeout(r, 200));
+    /* A1998: sharing asks first. Confirm the public-link warning. */
+    const confirm = await page.$('#jvds-share-warn .jvds-share-warn-go');
+    if (confirm) {
+      await confirm.click();
+      await new Promise(r => setTimeout(r, 200));
+    }
     const s = await page.evaluate(() => window.__shared);
     shared = s;
     event = await page.evaluate(() => window.__sharedEvent);

@@ -386,7 +386,10 @@ function addCompanion(cfg){
   const img=document.createElement('img');
   img.className='mascot-companion';
   img.src=cfg.img; img.alt=cfg.name; img.title=cfg.name+' , click for a tip';
-  document.body.appendChild(img);
+  /* A2376: sit inside the shared action dock when one is present, so the
+     character does not float separately over the bottom of the page. */
+  const dock=document.getElementById('jvds-action-dock');
+  (dock||document.body).appendChild(img);
   let bubble=null, idleTimer=null;
   function showTip(text, ms=4200){
     if(bubble) bubble.remove();

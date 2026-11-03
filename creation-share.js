@@ -217,10 +217,13 @@
     return tabs ? tabs.parentElement : null;
   }
   function place() {
+    btn.style.display = '';
+    /* A2376: inside the shared dock the dock owns placement, including lifting
+       clear of a tool bottom bar. */
+    if (document.getElementById('jvds-action-dock')) return;
     var base = 16;
     var banner = document.getElementById('cookie-banner');
     if (banner && banner.offsetHeight) base += banner.offsetHeight + 12;
-    btn.style.display = '';
     var bar = bottomBar();
     if (bar) {
       var st = getComputedStyle(bar);
@@ -257,9 +260,11 @@
   btn.id = 'jvds-share-btn';
   btn.type = 'button';
   btn.textContent = 'Share your creation';
+  btn.title = 'Share what you made';
   btn.setAttribute('aria-label', 'Share what you made');
   btn.addEventListener('click', share);
-  document.body.appendChild(btn);
+  if (window.JVDSDock) window.JVDSDock.add(btn);
+  else document.body.appendChild(btn);
   place();
   window.addEventListener('resize', place);
   window.addEventListener('scroll', place, { passive: true });

@@ -133,6 +133,8 @@
     var btn = document.getElementById('jvds-project-btn');
     if (!btn) return;
     btn.style.display = '';
+    /* A2376: the shared dock positions its own controls. */
+    if (document.getElementById('jvds-action-dock')) return;
     var base = baseBottom();
     var bar = bottomBar();
     if (bar) {
@@ -217,9 +219,11 @@
     btn.id = 'jvds-project-btn';
     btn.type = 'button';
     btn.textContent = 'Move your work';
+    btn.title = 'Move your work to another device';
     btn.setAttribute('aria-label', 'Move your work to another device with a project code');
     btn.addEventListener('click', open);
-    document.body.appendChild(btn);
+    if (window.JVDSDock) window.JVDSDock.add(btn);
+    else document.body.appendChild(btn);
     place();
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, { passive: true });

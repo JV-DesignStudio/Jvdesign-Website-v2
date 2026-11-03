@@ -72,6 +72,7 @@ function createServer() {
 
           const result = await page.evaluate(() => {
             const strip = document.getElementById('jvds-keepsake-strip');
+            const dock = document.getElementById('jvds-action-dock');
             const btn = document.getElementById('jk-keep-export');
             const cert = document.getElementById('jk-keep-cert');
             const rect = strip ? strip.getBoundingClientRect() : null;
@@ -80,6 +81,8 @@ function createServer() {
               hasBtn: Boolean(btn),
               btnText: btn ? btn.textContent.trim() : '',
               certHref: cert ? cert.getAttribute('href') : '',
+              inDock: Boolean(strip && dock && dock.contains(strip)),
+              dockHidden: !dock || getComputedStyle(dock).display === 'none',
               position: strip ? getComputedStyle(strip).position : '',
               inside: rect ? (rect.left >= -1 && rect.right <= window.innerWidth + 1) : false,
               overflow: Math.max(0, document.documentElement.scrollWidth - window.innerWidth)
@@ -88,10 +91,11 @@ function createServer() {
 
           if (!result.hasStrip) failures.push(`${label}: keepsake strip missing`);
           if (!result.hasBtn) failures.push(`${label}: export button missing`);
-          if (result.btnText !== 'Export to keep') failures.push(`${label}: export label "${result.btnText}"`);
+          if (!/Export to keep/.test(result.btnText)) failures.push(`${label}: export label "${result.btnText}"`);
           if (!/certificate\.html/.test(result.certHref)) failures.push(`${label}: certificate link missing`);
-          if (result.position !== 'fixed') failures.push(`${label}: strip not fixed (${result.position})`);
-          if (!result.inside) failures.push(`${label}: strip outside viewport`);
+          if (!result.inDock) failures.push(`${label}: strip is not in the shared action dock`);
+          if (!result.dockHidden && result.position === 'fixed') failures.push(`${label}: strip still floats separately (${result.position})`);
+          if (!result.dockHidden && !result.inside) failures.push(`${label}: docked strip outside viewport`);
           if (result.overflow > 4) failures.push(`${label}: horizontal overflow ${result.overflow}px`);
           if (pageErrors.length) failures.push(`${label}: page errors: ${pageErrors.slice(0, 2).join(' | ')}`);
 

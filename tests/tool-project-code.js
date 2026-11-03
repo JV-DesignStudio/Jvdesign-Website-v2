@@ -75,11 +75,13 @@ const check = (name, ok, extra = '') => { console.log((ok ? 'PASS ' : 'FAIL ') +
     check('no horizontal overflow @390', ov390 <= 1, 'overflow=' + ov390);
     await page.close();
 
-    const landing = await browser.newPage();
-    await landing.goto(base + '/tools/pixel-studio-landing.html', { waitUntil: 'load', timeout: 25000 }).catch(() => {});
+    /* The old *-landing wrappers now meta-refresh to their real tool, so use a
+       page outside /tools/ for the negative case. */
+    const outside = await browser.newPage();
+    await outside.goto(base + '/index.html', { waitUntil: 'load', timeout: 25000 }).catch(() => {});
     await new Promise(r => setTimeout(r, 700));
-    check('control is not injected on a landing page', await landing.evaluate(() => !document.getElementById('jvds-project-btn')));
-    await landing.close();
+    check('control is not injected outside /tools/', await outside.evaluate(() => !document.getElementById('jvds-project-btn')));
+    await outside.close();
   } finally { await browser.close(); server.close(); }
 
   console.log('\n' + (failures ? 'FAILED ' + failures : 'ALL PROJECT-CODE CHECKS PASSED'));
