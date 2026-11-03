@@ -2,8 +2,10 @@
 var MASCOT_CFG = {
   lumo:     { name:'Lumo',     img:'/assets/mascots/lumo-hero.webp',     color:'#7C6CF0', pillar:'Learn' },
   ember:    { name:'Ember',    img:'/assets/mascots/ember-hero.webp',    color:'#F2637A', pillar:'Create' },
+  pip:      { name:'Pip',      img:'/assets/mascots/pip-hero.webp',      color:'#7AC74F', pillar:'Play' },
+  echo:     { name:'Echo',     img:'/assets/mascots/echo-hero.webp',     color:'#2EB5A5', pillar:'Improve' },
   play:     { name:'Echo & Pip', img:'/assets/mascots/echo-hero.webp',  color:'#2EB5A5', pillar:'Play', img2:'/assets/mascots/pip-hero.webp' },
-  stardust: { name:'Stardust', img:'/assets/mascots/stardust-hero.webp', color:'#FFD23C', pillar:'Read' },
+  stardust: { name:'Stardust', img:'/assets/mascots/stardust-hero.webp', color:'#FFD23C', pillar:'Imagine' },
 };
 function getGuide(){ try{ return localStorage.getItem('jvds_guide'); }catch(e){ return null; } }
 function setGuide(id){

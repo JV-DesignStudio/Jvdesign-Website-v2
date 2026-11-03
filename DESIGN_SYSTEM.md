@@ -135,6 +135,31 @@ Separators are CSS-generated `/` marks so they are hidden from screen readers.
 
 ---
 
+## Character roles
+
+One role per character, in this order. The role is the word the learner should
+remember, and it is the same word used in the nav, the character pages, the crew
+page and `mascots.js`.
+
+| Character | Role | Appears with |
+|---|---|---|
+| Stardust | Imagine | Books, stories and Pick Your Path |
+| Lumo | Learn | Workshops |
+| Ember | Create | Tools |
+| Pip | Play | Games and the arcade |
+| Echo | Improve | Progress, feedback and next steps |
+
+The shared nav ties the journey to the characters: Learn shows Lumo, Create shows
+Ember, Play shows Pip and Echo, and Read shows Stardust. Every character page
+carries its role as a pill above the banner, and `pages/meet-the-crew.html` shows
+the role under each name.
+
+`tests/character-roles.js` keeps the roles honest. It fails if `mascots.js`,
+`partials/nav-content.html`, the character pages, the crew page, the homepage or
+the section hubs drift apart.
+
+---
+
 ## Token reference
 
 Key tokens used by these components. Full list in `assets/css/tokens.css`.
