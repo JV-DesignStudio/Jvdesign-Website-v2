@@ -520,7 +520,7 @@ function refreshUI() {
   document.getElementById("xp-count").textContent = totalXP;
 
   STEPS.forEach((step, i) => {
-    const card = document.getElementById(`card-${i}`);
+    const card = document.getElementById(`gk-gk-card-${i}`);
     const dot  = document.getElementById(`dot-${i}`);
     const done = state.completed.includes(i);
     const prev = i === 0 || state.completed.includes(i - 1);
@@ -556,7 +556,7 @@ function buildCard(step, i) {
   const lockText = done ? "" : (prevDone ? "" : "🔒 LOCKED");
 
   const card = document.createElement("div");
-  card.id = `card-${i}`;
+  card.id = `gk-gk-card-${i}`;
   card.className = `step-card${step.bonus ? " bonus" : ""}${done ? " done" : (prevDone ? " active" : " locked")}`;
 
   // Header
@@ -652,7 +652,7 @@ function completeStep(i) {
     launchConfetti();
   } else {
     // Scroll to next card
-    const nextCard = document.getElementById(`card-${i + 1}`);
+    const nextCard = document.getElementById(`gk-gk-card-${i + 1}`);
     if (nextCard) {
       setTimeout(() => nextCard.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     }

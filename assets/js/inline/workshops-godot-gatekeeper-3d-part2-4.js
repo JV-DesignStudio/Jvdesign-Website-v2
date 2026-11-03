@@ -376,7 +376,7 @@ function refreshUI() {
   document.getElementById("xp-count").textContent = totalXP;
 
   STEPS.forEach((_, i) => {
-    const card = document.getElementById(`card-${i}`);
+    const card = document.getElementById(`gk-gk-card-${i}`);
     const dot  = document.getElementById(`dot-${i}`);
     const done = state.completed.includes(i);
     const prev = i === 0 || state.completed.includes(i - 1);
@@ -409,7 +409,7 @@ function buildCard(step, i) {
   const done = state.completed.includes(i);
 
   const card = document.createElement("div");
-  card.id = `card-${i}`;
+  card.id = `gk-gk-card-${i}`;
   card.className = `step-card${done ? " done" : (prevDone ? " active" : " locked")}`;
 
   const hdr = document.createElement("div");
@@ -495,7 +495,7 @@ function completeStep(i) {
   if (allDone) {
     launchConfetti();
   } else {
-    const nextCard = document.getElementById(`card-${i + 1}`);
+    const nextCard = document.getElementById(`gk-gk-card-${i + 1}`);
     if (nextCard) setTimeout(() => nextCard.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
   }
 }
