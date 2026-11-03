@@ -426,20 +426,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/cpp-tower-part2-workshop.html"
     },
     {
-      "id": "cpp-cheatsheet",
-      "title": "Free C++ &amp; SFML Cheat Sheet",
-      "desc": "Free printable C++ & SFML cheat sheet variables, window setup, drawing shapes, event handling, collision and the most-used code snippets. No sign-up needed.",
-      "engine": "C++",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#a78bfa",
-      "cover": "/og/cpp-cheatsheet.webp",
-      "url": "/workshops/cpp-cheatsheet.html"
-    },
-    {
       "id": "defold-dungeon-canvas",
       "title": "Defold Dungeon Build Canvas",
       "desc": "",
@@ -976,20 +962,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#f5f5f0",
       "cover": "/og/fairy-survivors-guide.webp",
       "url": "/workshops/fairy-survivors-guide.html"
-    },
-    {
-      "id": "gdscript-cheatsheet",
-      "title": "Free GDScript &amp; Godot 4 Cheat Sheet",
-      "desc": "Free printable GDScript & Godot 4 cheat sheet variables, functions, signals, nodes and common code snippets. No sign-up needed.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#403B33",
-      "cover": "/og/gdscript-cheatsheet.webp",
-      "url": "/workshops/gdscript-cheatsheet.html"
     },
     {
       "id": "diablo-blueprint",
@@ -1762,20 +1734,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/gml-rpg-workshop.html"
     },
     {
-      "id": "gml-cheatsheet",
-      "title": "Free GameMaker (GML) Cheat Sheet",
-      "desc": "Free printable GameMaker (GML) cheat sheet variables, events, movement, collision, instances and common code snippets. No sign-up needed.",
-      "engine": "GML/GameMaker",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#fb923c",
-      "cover": "/og/gml-cheatsheet.webp",
-      "url": "/workshops/gml-cheatsheet.html"
-    },
-    {
       "id": "gml-mod-studio",
       "title": "GameMaker (GML) Mod Studio",
       "desc": "A free browser playground for the GameMaker series. Lay out a 2D game on a grid, add real GML behaviours, read a broken GameMaker log and choose the fix, then download real GML event code you can paste into GameMaker. No install needed to start.",
@@ -2437,20 +2395,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/js-snake-workshop.html"
     },
     {
-      "id": "js-cheatsheet",
-      "title": "Free JavaScript Game Dev Cheat Sheet",
-      "desc": "Free printable JavaScript game dev cheat sheet variables, Canvas API, game loop, keyboard input, collision detection and common code snippets. No sign-up needed.",
-      "engine": "JavaScript",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#ffd166",
-      "cover": "/og/js-cheatsheet.webp",
-      "url": "/workshops/js-cheatsheet.html"
-    },
-    {
       "id": "js-breakout-canvas",
       "title": "JS Breakout Build Canvas",
       "desc": "",
@@ -2549,20 +2493,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#10b981",
       "cover": "/og/minecraft-custom-mob-mod.webp",
       "url": "/workshops/minecraft-custom-mob-mod.html"
-    },
-    {
-      "id": "minecraft-modding-cheatsheet",
-      "title": "Free Minecraft Modding (Fabric/Java) Cheat Sheet",
-      "desc": "Free printable Minecraft modding cheat sheet project structure, registering items & blocks, textures, custom mobs, loot tables and Fabric events. No sign-up needed.",
-      "engine": "Minecraft",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#2d5a1b",
-      "cover": "/og/minecraft-modding-cheatsheet.webp",
-      "url": "/workshops/minecraft-modding-cheatsheet.html"
     },
     {
       "id": "minecraft-first-item-mod",
@@ -3522,20 +3452,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/python-platformer-workshop.html"
     },
     {
-      "id": "python-cheatsheet",
-      "title": "Free Python &amp; Pygame Cheat Sheet",
-      "desc": "Free printable Python &amp; Pygame cheat sheet variables, game setup, drawing, event handling, collision detection and common code snippets. No sign-up needed.",
-      "engine": "Python",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#4b8bbe",
-      "cover": "/og/python-cheatsheet.webp",
-      "url": "/workshops/python-cheatsheet.html"
-    },
-    {
       "id": "python-breakout-canvas",
       "title": "Python Breakout Build Canvas",
       "desc": "",
@@ -3991,20 +3907,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
       "url": "/workshops/roblox-simulator-canvas.html"
-    },
-    {
-      "id": "roblox-studio-cheatsheet",
-      "title": "Roblox Studio &amp; Lua Cheat Sheet",
-      "desc": "Printable Roblox Studio and Lua cheat sheet, keyboard shortcuts, common services, events, instance tricks and where scripts go. Free for kids and parents.",
-      "engine": "Roblox",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#BC4749",
-      "cover": "/og/roblox-studio-cheatsheet.webp",
-      "url": "/workshops/roblox-studio-cheatsheet.html"
     },
     {
       "id": "roblox-tycoon-canvas",
@@ -4915,20 +4817,6 @@ window.JVDS_CONTENT = {
       "url": "/workshops/unity-ui-workshop.html"
     },
     {
-      "id": "unity-cheatsheet",
-      "title": "Free Unity &amp; C# Cheat Sheet",
-      "desc": "Free printable Unity & C# cheat sheet variables, MonoBehaviour lifecycle, components, input and common code snippets. No sign-up needed.",
-      "engine": "Unity",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#403B33",
-      "cover": "/og/unity-cheatsheet.webp",
-      "url": "/workshops/unity-cheatsheet.html"
-    },
-    {
       "id": "unity-2d-platformer",
       "title": "Unity 2D Platformer Characters, Physics & Scenes",
       "desc": "Build a 2D platformer in Unity from scratch. Learn C#, Rigidbody2D, collisions, animations, scene management, and more 10 steps, live preview, complete beginner. Free. Ages 10+.",
@@ -5052,20 +4940,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/og/unreal-zombie-survivor.webp",
       "url": "/workshops/unreal-zombie-survivor.html"
-    },
-    {
-      "id": "unreal-cheatsheet",
-      "title": "Free Unreal Engine Cheat Sheet",
-      "desc": "Free printable Unreal Engine cheat sheet Blueprint nodes, C++ classes, components, input and common patterns. No sign-up needed.",
-      "engine": "Unreal",
-      "difficulty": "beginner",
-      "ageRange": "10+",
-      "type": "workshop",
-      "tags": [],
-      "steps": 0,
-      "themeColor": "#403B33",
-      "cover": "/og/unreal-cheatsheet.webp",
-      "url": "/workshops/unreal-cheatsheet.html"
     },
     {
       "id": "unreal-2d-platformer",
@@ -6502,33 +6376,33 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-01T21:05:30.000Z",
-    "workshops": 345,
+    "generated": "2026-11-03T11:56:33.000Z",
+    "workshops": 336,
     "games": 13,
     "tools": 50,
     "books": 5,
     "engines": {
       "Blender": 11,
-      "C++": 18,
+      "C++": 17,
       "Defold": 13,
       "GDevelop": 13,
-      "General": 53,
-      "GML/GameMaker": 11,
+      "General": 52,
+      "GML/GameMaker": 10,
       "Godot": 17,
       "Java": 15,
-      "JavaScript": 12,
-      "Minecraft": 19,
+      "JavaScript": 11,
+      "Minecraft": 18,
       "MUGEN": 17,
       "OpenRCT2": 13,
       "PICO-8": 13,
-      "Python": 19,
-      "Roblox": 27,
+      "Python": 18,
+      "Roblox": 26,
       "Scratch": 13,
       "Stardew Valley": 15,
       "Terraria": 15,
       "TinkerCAD": 10,
-      "Unity": 10,
-      "Unreal": 11
+      "Unity": 9,
+      "Unreal": 10
     },
     "toolCategories": {
       "General": 4,
