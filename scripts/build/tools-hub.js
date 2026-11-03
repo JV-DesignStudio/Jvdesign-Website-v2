@@ -9,8 +9,9 @@
  *
  * and writes the generated partials:
  *
- *   partials/tools-grid.html   the category blocks + tool cards
- *   partials/tools-stats.html  the CTA stat chips
+ *   partials/tools-grid.html    the category blocks + tool cards
+ *   partials/tools-stats.html   the CTA stat chips
+ *   partials/tools-intents.html the four intent paths above the grid (A2272)
  *
  * Add a tool or a merge by editing content/tools-hub.json (and the catalog
  * if it is a new page), then run `npm run build`. The hub cards, counts and
@@ -65,6 +66,56 @@ ${merged}        <div class="tool-tags">${tags}</div>
 </a>`;
 }
 
+function renderIntentPaths(cfg, byId) {
+  const paths = Array.isArray(cfg.intentPaths) ? cfg.intentPaths : [];
+  if (paths.length !== 4) throw new Error(`tools-hub: expected 4 intentPaths, found ${paths.length}`);
+
+  const blocks = paths.map(p => {
+    if (!p.id || !p.title || !Array.isArray(p.steps)) {
+      throw new Error('tools-hub: every intentPath needs id, title and steps');
+    }
+    if (p.steps.length !== 3) {
+      throw new Error(`tools-hub: intentPath "${p.id}" needs exactly 3 steps, found ${p.steps.length}`);
+    }
+    const steps = p.steps.map((s, i) => {
+      const tool = byId[s.tool];
+      if (!tool) throw new Error(`tools-hub: intentPath "${p.id}" step ${i + 1} names "${s.tool}" which is not in content/tools.json`);
+      if (!cfg.cards[s.tool]) throw new Error(`tools-hub: intentPath "${p.id}" step ${i + 1} names "${s.tool}" which has no hub card`);
+      const isFinish = i === p.steps.length - 1;
+      if (isFinish && !/^(share|export)$/i.test(s.finish || '')) {
+        throw new Error(`tools-hub: intentPath "${p.id}" must end with finish "Share" or "Export"`);
+      }
+      if (!isFinish && s.finish) {
+        throw new Error(`tools-hub: intentPath "${p.id}" step ${i + 1} has a finish label but is not the last step`);
+      }
+      const href = relUrl(tool.url) + (s.anchor ? '#' + s.anchor : '');
+      const finish = isFinish ? `\n                    <span class="intent-finish">${esc(s.finish)}</span>` : '';
+      return `                <li class="intent-step${isFinish ? ' intent-step--finish' : ''}">
+                    <a href="${esc(href)}" class="intent-step-link">
+                        <span class="intent-step-num" aria-hidden="true">${i + 1}</span>
+                        <span class="intent-step-body">
+                            <strong>${esc(s.title)}</strong>
+                            <span>${esc(s.desc)}</span>
+                        </span>${finish}
+                    </a>
+                </li>`;
+    }).join('\n');
+
+    return `    <article class="intent-path" data-intent="${esc(p.id)}">
+        <div class="intent-head">
+            <span class="intent-emoji" aria-hidden="true">${p.emoji}</span>
+            <h3 class="intent-title">${esc(p.title)}</h3>
+            <p class="intent-blurb">${esc(p.blurb)}</p>
+        </div>
+        <ol class="intent-steps">
+${steps}
+        </ol>
+    </article>`;
+  });
+
+  return `<div class="intent-grid">\n${blocks.join('\n')}\n</div>\n`;
+}
+
 function build() {
   const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'tools.json'), 'utf8'));
   const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'tools-hub.json'), 'utf8'));
@@ -108,16 +159,19 @@ ${cards.join('\n')}
     ...(cfg.staticStats || []).map(s => `<span class="cta-stat-chip">${esc(s)}</span>`),
   ].join('\n        ');
 
+  const intents = renderIntentPaths(cfg, byId);
+
   const dir = path.join(ROOT, 'partials');
   fs.writeFileSync(path.join(dir, 'tools-grid.html'), blocks.join('\n\n') + '\n', 'utf8');
   fs.writeFileSync(path.join(dir, 'tools-stats.html'), '        ' + stats + '\n', 'utf8');
-  return { core, merged };
+  fs.writeFileSync(path.join(dir, 'tools-intents.html'), intents, 'utf8');
+  return { core, merged, intents: cfg.intentPaths.length };
 }
 
 function runToolsHub() {
-  const { core, merged } = build();
-  console.log(`  tools hub: ${core} core tools, ${merged} merged in`);
-  return { core, merged };
+  const { core, merged, intents } = build();
+  console.log(`  tools hub: ${core} core tools, ${merged} merged in, ${intents} intent paths`);
+  return { core, merged, intents };
 }
 
 if (require.main === module) {

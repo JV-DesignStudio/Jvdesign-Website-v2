@@ -117,5 +117,30 @@ ok('Palette Studio is an Asset Pipeline card', paletteCard);
 const eg = fs.readFileSync(path.join(ROOT, 'tools', 'error-guide.html'), 'utf8');
 ok('tools/error-guide.html has an Echo callout', /Echo says/.test(eg));
 
+// A2272: four intent paths above the grid. Each is a 3-step route through
+// existing tool pages and ends in a share or export step.
+const intentBlocks = [...html.matchAll(/<article class="intent-path"[\s\S]*?<\/article>/g)].map((m) => m[0]);
+ok('hub has four intent paths', intentBlocks.length === 4, 'found ' + intentBlocks.length);
+for (const title of ['Make a character', 'Make a game', 'Make music and sound', 'Get unstuck']) {
+  ok('intent path present: "' + title + '"',
+    intentBlocks.some((b) => b.includes('class="intent-title">' + title + '</h3>')));
+}
+let intentStepTotal = 0;
+let intentFinishTotal = 0;
+const intentHrefs = [];
+for (const block of intentBlocks) {
+  const steps = [...block.matchAll(/<a href="([^"]+)" class="intent-step-link">/g)].map((m) => m[1]);
+  intentStepTotal += steps.length;
+  intentHrefs.push(...steps);
+  intentFinishTotal += [...block.matchAll(/class="intent-finish">\s*(Share|Export)\s*</g)].length;
+  ok('intent path has 3 steps', steps.length === 3, 'found ' + steps.length);
+}
+ok('every intent path has exactly 3 steps', intentStepTotal === 12, 'found ' + intentStepTotal);
+ok('every intent path ends in a share or export step', intentFinishTotal === 4, 'found ' + intentFinishTotal);
+const missingIntent = intentHrefs
+  .map((h) => h.replace(/^\.\.\//, '').split('#')[0])
+  .filter((h) => !fs.existsSync(path.join(ROOT, h)));
+ok('all intent step links resolve to real files', missingIntent.length === 0, missingIntent.join(', ') || 'all resolve');
+
 console.log(failures === 0 ? 'ALL DEV-TOOLS SEARCH CHECKS PASSED' : failures + ' FAILURES');
 process.exit(failures === 0 ? 0 : 1);

@@ -40,15 +40,26 @@ const server = http.createServer((req, res) => {
       const d = await page.evaluate(() => {
         const q = sel => document.querySelector(sel);
         const tools = q('#tools'), handoff = q('.hub-handoff--create');
+        const audioBtn = q('.filter-btn[data-filter="audio pipeline"]');
+        if (audioBtn) audioBtn.click();
+        const visibleCats = [...document.querySelectorAll('.tool-category')].filter(c => c.style.display !== 'none');
+        const visibleCards = visibleCats.reduce((n, c) => n + c.querySelectorAll('[data-tool-card]').length, 0);
+        const visibleCatCount = visibleCats.length;
+        const allBtn = q('.filter-btn[data-filter="all"]');
+        if (allBtn) allBtn.click();
         return {
+          visibleCats: visibleCatCount,
+          visibleCards,
           title: document.title,
           tools: !!tools,
           cards: document.querySelectorAll('#tools [data-tool-card]').length,
           start: !!q('.hub-start'),
           path: !!q('#toolPathTitle'),
           handoff: !!handoff,
+          intents: document.querySelectorAll('.hub-intents .intent-path').length,
           bodyDisplay: getComputedStyle(document.body).display,
           toolsY: tools ? Math.round(tools.getBoundingClientRect().top) : -1,
+          intentsY: q('.hub-intents') ? Math.round(q('.hub-intents').getBoundingClientRect().top) : -1,
           handoffY: handoff ? Math.round(handoff.getBoundingClientRect().top) : -1,
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         };
@@ -59,7 +70,10 @@ const server = http.createServer((req, res) => {
       check(vp.width + ' tool cards present', d.cards >= 10, 'cards=' + d.cards);
       check(vp.width + ' start and guided path present', d.start && d.path);
       check(vp.width + ' next-step handoff present', d.handoff);
+      check(vp.width + ' has four intent paths', d.intents === 4, 'intents=' + d.intents);
+      check(vp.width + ' pipeline filter still works', d.visibleCats === 1 && d.visibleCards === 1, 'cats=' + d.visibleCats + ' cards=' + d.visibleCards);
       check(vp.width + ' reorder CSS is applied before paint', d.bodyDisplay === 'flex', d.bodyDisplay);
+      check(vp.width + ' intent paths sit above the tool grid', d.intentsY >= 0 && d.toolsY > d.intentsY, 'intents=' + d.intentsY + ' tools=' + d.toolsY);
       check(vp.width + ' tools grid sits above the handoff', d.toolsY >= 0 && d.handoffY > d.toolsY, 'tools=' + d.toolsY + ' handoff=' + d.handoffY);
       check(vp.width + ' no horizontal overflow', d.overflow <= 2, 'overflow=' + d.overflow);
       check(vp.width + ' no browser errors', errors.length === 0, errors.slice(0, 2).join(' | '));
