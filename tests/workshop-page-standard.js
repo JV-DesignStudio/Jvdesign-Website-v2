@@ -24,7 +24,25 @@ const CASES = [
   { page: 'workshops/scratch-maze-workshop.html', next: 'scratch-clicker-workshop.html' },
   { page: 'workshops/scratch-clicker-workshop.html', next: 'scratch-story-workshop.html' },
   { page: 'workshops/scratch-story-workshop.html', next: 'my-first-scratch-game.html' },
-  { page: 'workshops/scratch-studio.html', next: 'my-first-scratch-game.html' }
+  { page: 'workshops/scratch-studio.html', next: 'my-first-scratch-game.html' },
+  { page: 'workshops/build-a-game-15-min.html', next: 'js-flappy-workshop.html' },
+  { page: 'workshops/js-flappy-workshop.html', next: 'js-memory-workshop.html' },
+  { page: 'workshops/js-memory-workshop.html', next: 'js-breakout-workshop.html' },
+  { page: 'workshops/js-breakout-workshop.html', next: 'js-snake-workshop.html' },
+  { page: 'workshops/js-snake-workshop.html', next: 'js-platformer-builder.html' },
+  { page: 'workshops/js-platformer-builder.html', next: 'js-platformer-part2-workshop.html' },
+  { page: 'workshops/js-platformer-part2-workshop.html', next: 'my-first-browser-game.html' },
+  { page: 'workshops/python-catch-workshop.html', next: 'python-platformer-workshop.html' },
+  { page: 'workshops/python-platformer-workshop.html', next: 'python-dodge-workshop.html' },
+  { page: 'workshops/python-dodge-workshop.html', next: 'python-maze-workshop.html' },
+  { page: 'workshops/python-maze-workshop.html', next: 'python-breakout-workshop.html' },
+  { page: 'workshops/python-breakout-workshop.html', next: 'python-breakout-part2-workshop.html' },
+  { page: 'workshops/python-breakout-part2-workshop.html', next: 'python-platformer-part2-workshop.html' },
+  { page: 'workshops/python-platformer-part2-workshop.html', next: 'my-first-python-game.html' },
+  { page: 'workshops/python-world-workshop.html', next: 'my-first-python-game.html' },
+  { page: 'workshops/python-game-builder.html', next: 'python-studio.html' },
+  { page: 'workshops/python-studio.html', next: 'python-game-builder.html' },
+  { page: 'workshops/python-mod-studio.html', next: 'python-studio.html' }
 ];
 
 for (const { page, next } of CASES) {
