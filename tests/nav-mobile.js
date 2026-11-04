@@ -27,6 +27,17 @@ async function test(browser, base, w, h, label) {
     await page.click('#navToggle'); await delay(150);
     const open = await page.evaluate(() => document.getElementById('mainNav').classList.contains('open'));
     check(`[${label}] hamburger opens nav`, open);
+    const tap = await page.evaluate(() => {
+      const rect = (el) => { const r = el.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height) }; };
+      const links = [...document.querySelectorAll('.main-nav a')].filter(el => el.offsetParent !== null);
+      return {
+        toggle: rect(document.getElementById('navToggle')),
+        links: links.length,
+        short: links.map(el => Object.assign({ text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 24) }, rect(el))).filter(l => l.h < 44)
+      };
+    });
+    check(`[${label}] nav toggle is at least 44x44`, tap.toggle.w >= 44 && tap.toggle.h >= 44, tap.toggle.w + 'x' + tap.toggle.h);
+    check(`[${label}] open drawer links are at least 44px tall`, tap.short.length === 0, tap.links + ' links' + (tap.short.length ? ', small: ' + tap.short.slice(0, 4).map(l => l.text + ':' + l.h).join(', ') : ''));
     await page.keyboard.press('Escape'); await delay(150);
     const closed = await page.evaluate(() => !document.getElementById('mainNav').classList.contains('open'));
     check(`[${label}] Escape closes nav`, closed);
