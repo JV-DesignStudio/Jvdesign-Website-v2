@@ -24,7 +24,10 @@ const HUBS = [
   { path: '/arcade.html', css: '/style-arcade.css' },
   { path: '/learn/index.html', css: '/style-shared.css' },
   { path: '/pick-your-path.html', css: '/style-shared.css' },
-  { path: '/workshops/start-here.html', css: '/style-workshop.css' }
+  { path: '/workshops/start-here.html', css: '/style-workshop.css' },
+  { path: '/workshops/my-first-browser-game.html', css: '/style-workshop-bundle.css' },
+  { path: '/workshops/my-first-python-game.html', css: '/style-workshop-bundle.css' },
+  { path: '/workshops/my-first-cpp-game.html', css: '/style-workshop-bundle.css' }
 ];
 const CLEAN_URLS = { '/workshop': '/pages/workshop.html', '/dev-tools': '/pages/dev-tools.html', '/learn/': '/learn/index.html', '/games': '/arcade.html' };
 
