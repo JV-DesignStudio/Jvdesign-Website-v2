@@ -51,9 +51,9 @@
 </header>
 <section class="hero"><div><p class="eyebrow">Brick Forge · Arcade</p><h1>Bounce the spark, smash every brick.</h1><p>Ember slides her forge paddle to keep the spark alive. Angle it into the glowing bricks, clear the whole wall and carry your streak into the next forge. When you are ready, forge your own wall and send the link to a friend.</p></div><aside><span>Level Goal</span><strong id="goal">Clear every brick</strong><small id="levelName">First Spark</small></aside></section>
 <section class="game">
-<aside class="panel hud"><div><span>Score</span><strong id="score">0</strong></div><div><span>Level</span><strong id="level">1/6</strong></div><div><span>Lives</span><strong id="lives">♥♥♥</strong></div><div><span>Bricks</span><strong id="bricks">0</strong></div><button id="next" class="primary">Next level</button><button id="retry" class="ghost">Restart</button><button id="forgeHud" class="ghost">Forge your own</button><p id="hint">Move with the mouse, your finger or the arrow keys. Click or press Space to serve the spark.</p></aside>
+<aside class="panel hud"><div><span>Score</span><strong id="score">0</strong></div><div><span>Level</span><strong id="level">1/6</strong></div><div><span>Lives</span><strong id="lives">♥♥♥</strong></div><div><span>Bricks</span><strong id="bricks">0</strong></div><div><span>Time</span><strong id="timer">0:00</strong></div><button id="next" class="primary" hidden>Next level</button><button id="pause" class="ghost">Pause</button><button id="retry" class="ghost">Restart</button><button id="forgeHud" class="ghost">Forge your own</button><p id="runStats" class="run-stats">Accuracy 100% · Best combo x1</p><p id="hint">Move with the mouse, your finger or the arrow keys. Click or press Space to serve the spark.</p></aside>
 <section class="panel stage">
-  <canvas id="canvas" width="900" height="600" aria-label="Ember Smash play field"></canvas>
+  <canvas id="canvas" width="900" height="600" role="application" tabindex="0" aria-label="Ember Smash play field" aria-describedby="hint"></canvas>
   <div id="complete" class="complete"></div>
 </section>
 <aside class="panel tips"><strong>Ember's smash guide</strong><div><b>🧱 Bricks</b><span>Hit a brick once to crack it, twice to smash the gold ones.</span><b>🔥 The spark</b><span>Where it lands on the paddle sets the angle. Aim your bounce.</span><b>♥ Lives</b><span>Miss the spark and Ember loses a life. Three misses ends the run.</span><b>⭐ Spark upgrades</b><span>Clear a forge to pick one of three upgrades for the rest of the run.</span><b>🛠️ Your forge</b><span>Forge your own wall from the HUD, play it and share the link.</span></div></aside>
@@ -70,7 +70,17 @@
     </ul>
     <button id="playBtn" class="start-play" data-jvds-play>Play fullscreen</button>
     <button id="forgeOpenStart" class="start-forge" type="button">Forge your own wall</button>
-    <p class="start-best">Best score <b id="startBest">0</b></p>
+    <div id="forgeSelect" class="start-forges" role="group" aria-label="Choose a campaign forge"></div>
+    <div class="start-modes">
+      <button id="endlessBtn" class="start-mode" type="button" aria-pressed="false">Endless: off</button>
+      <button id="dailyBtn" class="start-mode" type="button">Daily forge</button>
+      <button id="motionBtn" class="start-mode" type="button" aria-pressed="false">Motion: full</button>
+    </div>
+    <p class="start-best">Best score <b id="startBest">0</b> · Daily <b id="dailyBest">0</b></p>
+    <div class="start-runs-wrap">
+      <span class="start-runs-title">Recent runs</span>
+      <ol id="runList" class="start-runs"></ol>
+    </div>
   </div>
 </div>
 <div id="forgeEditor" class="forge-overlay" role="dialog" aria-modal="true" aria-labelledby="forgeTitle">
@@ -84,9 +94,13 @@
     <div class="forge-tools" role="group" aria-label="Brick brush">
       <button type="button" data-brush="1" aria-pressed="true">Brick</button>
       <button type="button" data-brush="2" aria-pressed="false">Gold brick</button>
+      <button type="button" data-brush="checker" aria-pressed="false">Checker</button>
+      <button type="button" data-brush="random" aria-pressed="false">Random</button>
       <button type="button" data-brush="." aria-pressed="false">Erase</button>
       <button type="button" id="forgeClear">Clear</button>
       <button type="button" id="forgeStarter">Starter wall</button>
+      <button type="button" id="forgeUndo" disabled>Undo</button>
+      <button type="button" id="forgeRedo" disabled>Redo</button>
     </div>
     <div class="forge-actions">
       <button id="forgePlay" class="primary" type="button">Play my forge</button>
@@ -105,6 +119,18 @@
     <p id="upgradeMsg" class="forge-msg" aria-live="polite"></p>
   </div>
 </div>
+<div id="pauseOverlay" class="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+  <div class="pause-card">
+    <p class="pause-eyebrow">Paused</p>
+    <h2 id="pauseTitle">The forge is warm</h2>
+    <p class="pause-intro">The spark waits for you. Press P or Escape to carry on.</p>
+    <div class="pause-actions">
+      <button id="pauseResume" class="primary" type="button">Resume</button>
+      <button id="pauseRestart" class="ghost" type="button">Restart from forge 1</button>
+    </div>
+  </div>
+</div>
+<div id="srStatus" class="sr-only" role="status" aria-live="polite"></div>
 </main>
 <div id="toast" class="toast">Ready</div>
 <script src="../story-run.js"></script>
