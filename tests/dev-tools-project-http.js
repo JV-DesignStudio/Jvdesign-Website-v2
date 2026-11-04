@@ -37,7 +37,7 @@ const server=http.createServer((req,res)=>{
       const arcadeLink=links.find(a=>a.href.includes('arcade-game-maker'));
       const times=[...document.querySelectorAll('.hub-project-step-time')].map(el=>el.textContent.trim());
       const sw=document.documentElement.scrollWidth;
-      const dashes=(document.body.innerText.match(/[–—]/g)||[]).length;
+      const dashes=(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length;
       return {
         present:!!proj,
         stepCount:steps.length,
