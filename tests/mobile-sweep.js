@@ -37,6 +37,19 @@ const CONCURRENCY = parseInt(getArg('concurrency', '6'), 10);
 const ROOTS = ['tools', 'games', 'workshops', 'pages', 'books', 'learn'];
 const SKIP_DIR = /^(node_modules|quest-board-deploy|generated-images|\.worktrees|\.git|partials|assets|generated-images)$/;
 
+// Meta-refresh shims (for example tools/world-builder-3d.html) navigate away
+// mid-evaluate, which used to record a loadError and a false CRITICAL hit.
+// Detect them from the file on disk before starting Puppeteer, then skip them.
+function redirectTarget(rel) {
+  let html;
+  try { html = fs.readFileSync(path.join(ROOT, rel), 'utf8'); } catch (e) { return ''; }
+  const m = html.match(/<meta[^>]+http-equiv=["']?refresh["']?[^>]*content=["'][^"']*url=([^"'>\s]+)/i);
+  if (!m) return '';
+  let target = m[1].trim();
+  if (!/^([a-z]+:)?\//i.test(target)) target = path.posix.join(path.posix.dirname(rel), target);
+  return target;
+}
+
 function discover() {
   const pages = [];
   for (const f of fs.readdirSync(ROOT)) {
@@ -69,6 +82,13 @@ const server = http.createServer((req, res) => {
 });
 
 async function audit(browser, base, rel) {
+  const redirect = redirectTarget(rel);
+  const rec = { page: rel, overflow: 0, hasViewport: false, controls: 0, smallTargets: [], tinyText: 0, errors: [], chars: 0, ok: true };
+  if (redirect) {
+    rec.redirect = redirect;
+    return rec;
+  }
+
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message.split('\n')[0].slice(0, 120)));
@@ -77,11 +97,10 @@ async function audit(browser, base, rel) {
   page.on('request', r => { const t = r.resourceType(); if (t === 'media') r.abort(); else r.continue(); });
   await page.setViewport({ width: WIDTH, height: HEIGHT, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
 
-  const rec = { page: rel, overflow: 0, hasViewport: false, controls: 0, smallTargets: [], tinyText: 0, errors: [], chars: 0, ok: true };
-  try {
+  const measure = async () => {
     await page.goto(base + '/' + rel, { waitUntil: 'load', timeout: 25000 });
     await new Promise(r => setTimeout(r, 250));
-    const m = await page.evaluate(() => {
+    return page.evaluate(() => {
       const doc = document.documentElement;
       const hasViewport = !!document.querySelector('meta[name="viewport"]');
       const main = document.querySelector('main') || document.body;
@@ -111,6 +130,17 @@ async function audit(browser, base, rel) {
       }
       return { overflow: doc.scrollWidth - doc.clientWidth, hasViewport, controls, small, tiny, chars: main.textContent.trim().length };
     });
+  };
+  try {
+    let m;
+    try {
+      m = await measure();
+    } catch (e) {
+      // A late navigation can destroy the execution context mid-evaluate.
+      // Retry once on the new document instead of reporting a false loadError.
+      if (!/Execution context was destroyed|navigat/i.test(e.message)) throw e;
+      m = await measure();
+    }
     rec.overflow = m.overflow; rec.hasViewport = m.hasViewport; rec.controls = m.controls;
     rec.smallTargets = m.small.slice(0, 6); rec.smallCount = m.small.length; rec.tinyText = m.tiny; rec.chars = m.chars;
   } catch (e) {
@@ -141,9 +171,10 @@ async function audit(browser, base, rel) {
     await Promise.all(Array.from({ length: CONCURRENCY }, worker));
   } finally { await browser.close().catch(() => {}); await new Promise(r => server.close(r)); }
 
-  const isCritical = r => !r.ok || !r.hasViewport || r.overflow > 2 || r.errors.length > 0 || (r.controls === 0 && r.chars < 80);
+  const isCritical = r => !r.redirect && (!r.ok || !r.hasViewport || r.overflow > 2 || r.errors.length > 0 || (r.controls === 0 && r.chars < 80));
   const crit = results.filter(isCritical);
   const warn = results.filter(r => !isCritical(r) && (r.smallCount > 0 || r.tinyText > 0));
+  const redirects = results.filter(r => r.redirect);
 
   const reasons = r => {
     const out = [];
@@ -156,7 +187,11 @@ async function audit(browser, base, rel) {
   };
 
   console.log('\n=== MOBILE SWEEP ' + WIDTH + 'x' + HEIGHT + ' , ' + results.length + ' pages ===');
-  console.log('CRITICAL: ' + crit.length + '   WARN (targets/text): ' + warn.length + '   clean: ' + (results.length - crit.length - warn.length));
+  console.log('CRITICAL: ' + crit.length + '   WARN (targets/text): ' + warn.length + '   REDIRECT stubs: ' + redirects.length + '   clean: ' + (results.length - crit.length - warn.length - redirects.length));
+  if (redirects.length) {
+    console.log('\n--- REDIRECT stubs (skipped, not critical) ---');
+    redirects.forEach(r => console.log(`${r.page.padEnd(46)} -> ${r.redirect}`));
+  }
   console.log('\n--- CRITICAL (ranked) ---');
   crit.sort((a, b) => (b.overflow - a.overflow) || (a.page < b.page ? -1 : 1));
   crit.forEach(r => console.log(`${r.page.padEnd(46)} ${reasons(r)}`));
