@@ -61,8 +61,14 @@ const MIME = {
       const info = await page.evaluate(() => {
         const text = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
         const tags = [...document.querySelectorAll('.course-card .course-tag')].map(text);
+        const ladder = [...document.querySelectorAll('.hub-ladder li')].map((li) => ({
+          title: text(li.querySelector('a')),
+          level: text(li.querySelector('.hub-ladder-level')),
+          href: (li.querySelector('a') || {}).getAttribute ? li.querySelector('a').getAttribute('href') : ''
+        }));
         return {
           tags,
+          ladder,
           ageNote: text(document.querySelector('.hub-age-note')),
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
         };
@@ -71,8 +77,23 @@ const MIME = {
       assert.ok(info.tags.length > 0, width + 'px has workshop cards');
       assert.ok(info.tags.every((tag) => /Ages 10\+/.test(tag)), width + 'px every card shows Ages 10+');
       assert.ok(info.tags.every((tag) => !/10-14/.test(tag)), width + 'px no card shows the old age band');
-      assert.ok(info.tags.every((tag) => /Beginner/.test(tag)), width + 'px every card names the difficulty');
+      assert.ok(info.tags.every((tag) => /(Beginner|Intermediate|Advanced)/.test(tag)), width + 'px every card names a level');
       assert.ok(/Recommended age: 10\+/.test(info.ageNote), width + 'px hub note names the recommended age');
+
+      const expectedLadder = [
+        ['Pong', 'Beginner'],
+        ['Snake', 'Beginner+'],
+        ['Space Shooter', 'Intermediate'],
+        ['Puzzle Match', 'Intermediate'],
+        ['Dungeon Crawler', 'Advanced'],
+        ['Platformer', 'Advanced capstone']
+      ];
+      assert.equal(info.ladder.length, expectedLadder.length, width + 'px ladder length');
+      expectedLadder.forEach(([title, level], i) => {
+        assert.equal(info.ladder[i].title, title, width + 'px ladder title ' + i);
+        assert.equal(info.ladder[i].level, level, width + 'px ladder level ' + i);
+        assert.ok(/^defold-.+-workshop\.html$/.test(info.ladder[i].href), width + 'px ladder href ' + i);
+      });
       assert.ok(/Beginner/.test(info.ageNote), width + 'px hub note names the difficulty separately');
       assert.ok(/adult/i.test(info.ageNote), width + 'px hub note names adult support');
       assert.ok(info.overflow <= 2, width + 'px horizontal overflow ' + info.overflow);
