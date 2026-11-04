@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ayRZRHQ1ra14c7zBLjB9teSPybALd3vsT/oT1267O0g=' 'sha256-Z4JQnrLsKaQJW4uExUgLXxrEPaa3NYKC5QUWgaln3g4=' 'sha256-G6OiOiwglzbCkWYDImKtqVZ/XNqyrgc2tFKERlgaSeA=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ayRZRHQ1ra14c7zBLjB9teSPybALd3vsT/oT1267O0g=' 'sha256-StlTyEJc0pcVy4BT5N67NfbNlMIt5FS0tsPozsd5Gdg=' 'sha256-G6OiOiwglzbCkWYDImKtqVZ/XNqyrgc2tFKERlgaSeA=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <meta name="description" content="Play Sky High With Friends, a fun free browser game by JVDesignStudio.">
 <link rel="icon" href="../logo.png" type="image/png">
 <meta name="theme-color" content="#BC4749">
@@ -1443,6 +1443,16 @@
       <button class="toggle-btn" id="ghost-toggle">ON</button>
     </div>
 
+    <div class="setting-row">
+      <span class="setting-label">Reminders</span>
+      <button class="toggle-btn" id="notifications-toggle">ON</button>
+    </div>
+
+    <div class="setting-row hidden" id="privacy-options-row">
+      <span class="setting-label">Ad Privacy</span>
+      <button class="toggle-btn" id="privacy-options-btn">Manage</button>
+    </div>
+
     <div class="setting-row hidden" id="tilt-row">
       <span class="setting-label">Tilt Calibration</span>
       <button class="toggle-btn" id="tilt-recal-btn">Recalibrate</button>
@@ -1481,7 +1491,7 @@
    Version lives in /version.json (single source of truth) and is stamped
    here by release.mjs - `node release.mjs --notes "..."` does a full release.
    ============================================================================ */
-const GAME_VERSION = { v: '4.2', code: 17, date: '2026-09-28', codename: 'Skylight' };
+const GAME_VERSION = { v: '4.3', code: 18, date: '2026-11-04', codename: 'Clear Skies' };
 const GAME_VERSION_STR = 'v' + GAME_VERSION.v + (GAME_VERSION.codename ? ' "' + GAME_VERSION.codename + '" ' : ' ') + '(build ' + GAME_VERSION.code + ')';
 
 const canvas = document.getElementById('game');
@@ -1672,7 +1682,6 @@ function defaultSave() {
     bestHeight: 0,
     lifetimeCoins: 0,
     coins: 0,
-    iap: { removeAds: false, coinPack500: false, starterPack: false },
     unlockedChars: ['turtle'],
     owned: { hat: ['none'], skin: ['default'], aura: ['none'] },
     equipped: {
@@ -1698,14 +1707,13 @@ function defaultSave() {
     bestStreak: 0,
     // Daily wheel - reset each calendar day
     dailySpinDate: null,   // 'YYYY-MM-DD' of last spin (replaces old boolean dailySpin)
-    settings: { sound: true, music: true, controls: 'tilt', haptics: true, shake: true, particles: true, ghost: true },
+    settings: { sound: true, music: true, controls: 'tilt', haptics: true, shake: true, particles: true, ghost: true, notifications: true },
     firstPlayTs: Date.now(),
     tutorialDone: false,
   };
 }
 
 let save = loadSave();
-cloudLoad().then(()=>{ try{ persist(); }catch(e){} });
 
 function loadSave() {
   try {
@@ -1730,20 +1738,6 @@ function loadSave() {
 function persist() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
   catch (e) { console.warn('Save failed', e); }
-  cloudSave();
-}
-// Cloud saves stub - hook Play Games Saved Games when plugin available, else no-op
-function cloudSave(){
-  try{
-    const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames;
-    if(pg && pg.saveGameState){ pg.saveGameState({ key: SAVE_KEY, data: JSON.stringify(save) }).catch(()=>{}); }
-  }catch(e){}
-}
-async function cloudLoad(){
-  try{
-    const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames;
-    if(pg && pg.loadGameState){ const r = await pg.loadGameState({ key: SAVE_KEY }); if(r && r.data){ const d=JSON.parse(r.data); Object.assign(save, d); } }
-  }catch(e){}
 }
 
 /* ---------- Sound system ----------
@@ -1957,13 +1951,13 @@ const ACHIEVEMENTS = [
   { id: 'nearMiss10',   name: 'Untouchable',      desc: '10 near misses in one run',       icon: '🎯', check: (s, r) => r && r.nearMisses >= 10 },
   { id: 'collect50',    name: 'Coin Collector',  desc: 'Collect 50 coins in one run',       icon: '🪙', check: (s, r) => r && r.runCoins >= 50 },
   { id: 'lifetime500',  name: 'Treasure Hunter', desc: 'Collect 500 coins lifetime',        icon: '💰', check: (s) => s.lifetimeCoins >= 500 },
-  { id: 'allChars',     name: 'Whole Family',    desc: 'Unlock all 4 characters',           icon: '👨‍👩‍👧‍👦', check: (s) => s.unlockedChars.length >= 4 },
+  { id: 'allChars',     name: 'Whole Family',    desc: 'Unlock all 6 characters',           icon: '👨‍👩‍👧‍👦', check: (s) => s.unlockedChars.length >= 6 },
   { id: 'level5',       name: 'Apprentice',      desc: 'Reach Level 5',                     icon: '🌱', check: (s) => s.level >= 5 },
   { id: 'level10',      name: 'Expert',          desc: 'Reach Level 10',                    icon: '🌿', check: (s) => s.level >= 10 },
   { id: 'level20',      name: 'Master',          desc: 'Reach Level 20',                    icon: '🌳', check: (s) => s.level >= 20 },
   { id: 'streak3',      name: 'Habit Forming',   desc: 'Play 3 days in a row',              icon: '🔥', check: (s) => s.bestStreak >= 3 },
   { id: 'streak7',      name: 'Dedicated',       desc: 'Play 7 days in a row',              icon: '💪', check: (s) => s.bestStreak >= 7 },
-  { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Buy 5 cosmetics',                   icon: '🛍️', check: (s) => (s.owned.hat.length + s.owned.skin.length + s.owned.aura.length) >= 8 }, // 3 defaults + 5
+  { id: 'shopaholic',   name: 'Shopaholic',      desc: 'Buy 5 cosmetics',                   icon: '🛍️', check: (s) => (s.owned.hat.filter(id => id !== 'none').length + s.owned.skin.filter(id => id !== 'default').length + s.owned.aura.filter(id => id !== 'none').length) >= 5 },
   { id: 'anniversary',  name: 'Full Circle',     desc: 'Come back on the day you first started, a year or more later (unlocks Keepsake aura)', icon: '🎂', check: (s) => {
     if (!s.firstPlayTs) return false;
     const first = new Date(s.firstPlayTs), now = new Date();
@@ -5605,7 +5599,7 @@ function die() {
   const runScore = Math.floor(state.heightM) + state.runCoins * 5;
   window.__gsScore = (window.__gsScore || 0) + runScore;
   window.__gsBestRun = Math.max(window.__gsBestRun || 0, runScore);
-  if (typeof gameSystem !== 'undefined' && !state.recordedRun) {
+  if (typeof gameSystem !== 'undefined' && gameSystem && !state.recordedRun) {
     gameSystem.recordGamePlay(Date.now());
     state.recordedRun = true;
   }
@@ -5652,8 +5646,6 @@ function die() {
   }
 
   persist();
-  // Leaderboard - submit when new best
-  try{ const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames; if(pg && pg.submitScore && isNewBest) pg.submitScore({ leaderboardId: 'sky_high_leaderboard', score: save.bestHeight }); }catch(e){}
   try{ if(typeof gtag==='function' && isNewBest) gtag('event','new_best', { height_m: save.bestHeight }); }catch(e){}
 
   // Confetti burst behind the panel when it's a new best
@@ -5702,23 +5694,8 @@ function die() {
 
   evaluateMissions();
 
-  // Record death telemetry (local ring buffer + GA4)
+  // Record death telemetry (local ring buffer only)
   if (typeof SkyTelemetry !== 'undefined') SkyTelemetry.recordDeath();
-
-  // Leaderboards: only where the Play Games bridge is active
-  const boardsBtn = document.getElementById('boards-btn');
-  if (window.playGames) {
-    window.playGames.refreshAvailability().then(av => {
-      if (state.mode === 'dead') boardsBtn.classList.toggle('hidden', !av);
-    });
-    // Submit scores to Play Games (fire-and-forget, never blocks the panel):
-    // weekly board for weekly runs, plus all-time and the jumper's own board
-    if (window.playGames.available()) {
-      if (state.weekly) window.playGames.submitWeekly(state.heightM);
-      window.playGames.submitBest(save.bestHeight);
-      window.playGames.submitCharacter(state.character, save.bestHeight);
-    }
-  }
 
   document.getElementById('gameover').classList.remove('hidden');
 
@@ -6220,12 +6197,8 @@ document.getElementById('pause-btn').addEventListener('click', pauseGame);
 document.getElementById('resume-btn').addEventListener('click', resumeGame);
 document.getElementById('pz-restart-btn').addEventListener('click', () => startGame(state.weekly));
 document.getElementById('pz-quit-btn').addEventListener('click', quitToMenu);
-document.getElementById('pz-leaderboard-btn').addEventListener('click', async ()=>{
-  try{
-    const pg = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PlayGames;
-    if(pg && pg.showLeaderboard){ await pg.showLeaderboard({ leaderboardId: 'sky_high_leaderboard' }); }
-    else showToast('Leaderboards available on mobile');
-  }catch(e){ showToast('Leaderboard unavailable'); }
+document.getElementById('pz-leaderboard-btn').addEventListener('click', ()=>{
+  showToast('Leaderboards are coming in a future update');
 });
 document.getElementById('pause-sound-toggle').addEventListener('click', toggleSound);
 document.getElementById('pause-music-toggle').addEventListener('click', () => {
@@ -6411,7 +6384,7 @@ function refreshSettings() {
   document.querySelectorAll('#controls-seg .seg-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.val === (save.settings.controls||'tilt'));
   });
-  for(const id of ['haptics','shake','particles','ghost']){
+  for(const id of ['haptics','shake','particles','ghost','notifications']){
     const btn=document.getElementById(id+'-toggle');
     if(btn){ const on = save.settings[id]!==false; btn.textContent=on?'ON':'OFF'; btn.classList.toggle('off', !on); }
   }
@@ -6459,13 +6432,16 @@ document.querySelectorAll('#controls-seg .seg-btn').forEach(b=>{
     SFX.click();
   });
 });
-for(const id of ['haptics','shake','particles','ghost']){
+for(const id of ['haptics','shake','particles','ghost','notifications']){
   const btn=document.getElementById(id+'-toggle');
   if(btn) btn.addEventListener('click', ()=>{
     const cur = save.settings[id]!==false;
     save.settings[id] = !cur;
     persist();
     refreshSettings();
+    if(id==='notifications' && typeof window.squirtNotificationsRefresh==='function'){
+      window.squirtNotificationsRefresh();
+    }
     SFX.click();
   });
 }
@@ -6524,10 +6500,7 @@ document.getElementById('missions-back-btn').addEventListener('click', closeMiss
 
 document.getElementById('boards-btn').addEventListener('click', () => {
   SFX.click();
-  if (!(window.playGames && window.playGames.available())) return;
-  // weekly runs open the weekly board; normal runs open your jumper's board
-  if (state.weekly) window.playGames.showWeekly();
-  else window.playGames.showCharacter(state.character);
+  showToast('Leaderboards are coming in a future update');
 });
 
 /* Fullscreen: the canvas backs the entire viewport. W/H become the CSS
