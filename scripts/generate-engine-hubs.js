@@ -101,7 +101,7 @@ function coverFor(w, engine) {
 
 function card(w, engine, opts) {
   const href = w.id + '.html';
-  const meta = [engine.engine, cap(w.difficulty), 'Ages ' + w.ageRange].filter(Boolean).join(' · ');
+  const meta = [engine.engine, w.levelLabel || cap(w.difficulty), 'Ages ' + w.ageRange].filter(Boolean).join(' · ');
   const tag = opts.badge ? opts.badge + ' · ' + meta : meta;
   const desc = (w.desc && w.desc.trim()) ? w.desc : (opts.note || ('A guided ' + engine.name + ' build-along.'));
   const install = opts.install === true ? 'true' : 'false';
@@ -197,6 +197,17 @@ function renderPage(engine, byId) {
       + '  </div>'
     : '';
 
+  const ladder = engine.ladder
+    ? '  <section class="hub-ladder" aria-labelledby="s-ladder">\n'
+      + '    <h2 id="s-ladder">' + esc(engine.name) + ' skill ladder</h2>\n'
+      + '    <ol>\n'
+      + engine.ladder.map((item) => '      <li><a href="' + esc(item.href) + '">' + esc(item.title) + '</a>'
+        + '<span class="hub-ladder-level">' + esc(item.level) + '</span>'
+        + '<span class="hub-ladder-note">' + esc(item.note) + '</span></li>').join('\n')
+      + '\n    </ol>\n'
+      + '  </section>'
+    : '';
+
   const appLabel = engine.appName || engine.name;
   // A1818: one clear search intent per hub. The old "Free Beginner Tutorials
   // and Series" tail was identical on every engine page, so they competed with
@@ -275,6 +286,14 @@ ${marker('head-icons', readPartial('head-icons'))}
 .hub-facts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .hub-fact{font-size:.76rem;font-weight:800;padding:5px 12px;border-radius:999px;background:var(--bg-secondary);border:1.5px solid var(--border-lt);color:var(--text-secondary)}
 .hub-age-note{max-width:620px;margin:12px auto 0;font-size:.86rem;line-height:1.5;color:var(--text-secondary)}
+.hub-ladder{max-width:820px;margin:18px auto 0;padding:0 20px}
+.hub-ladder h2{font-family:Fredoka,'Baloo 2',cursive;font-size:1.15rem;margin:0 0 10px;color:var(--text-primary)}
+.hub-ladder ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.hub-ladder li{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;background:var(--bg-secondary);border:1.5px solid var(--border-lt);border-radius:10px;padding:10px 14px}
+.hub-ladder a{font-weight:800;color:var(--teal-dk);text-decoration:none}
+.hub-ladder a:hover{text-decoration:underline}
+.hub-ladder-level{font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--hub-color) 15%,var(--bg-secondary));border:1px solid var(--hub-color);color:var(--text-primary)}
+.hub-ladder-note{flex:1 1 240px;font-size:.86rem;color:var(--text-secondary)}
 .hub-filter{max-width:1100px;margin:12px auto 0;padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .hub-filter-label{font-size:.82rem;font-weight:800;color:var(--text-secondary)}
 .hub-filter button{font:inherit;font-size:.82rem;font-weight:800;padding:7px 14px;border-radius:999px;border:1.5px solid var(--border-lt);background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer}
@@ -325,6 +344,8 @@ ${marker('nav-content', readPartial('nav-content'))}
   </section>
 
 ${say('lumo', engine)}
+
+${ladder}
 
 ${filterBar}
 

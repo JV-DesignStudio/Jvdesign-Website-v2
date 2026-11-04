@@ -67,7 +67,7 @@ function loadOutcomes() {
 function card(e, outcomes) {
   const href = '../' + String(e.url).replace(/^\//, '');
   const isStudio = /-(?:mod-)?studio$/.test(e.id || '');
-  const badge = (isStudio ? '🛠 Browser studio · ' : '') + [e.engine, cap(e.difficulty), 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
+  const badge = (isStudio ? '🛠 Browser studio · ' : '') + [e.engine, e.levelLabel || cap(e.difficulty), 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
   const desc = e.desc || ('Interactive build-along for ' + e.title + '.');
   const outcome = outcomes.get(e.id);
   const outcomeLine = outcome
