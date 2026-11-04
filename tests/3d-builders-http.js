@@ -84,6 +84,27 @@ const visibleCards = (page) => page.evaluate(() =>
       return /0 of 14/.test(t);
     }));
 
+    // A1919: every builder carries an age recommendation and a challenge level,
+    // and the page defines the three levels in one place.
+    const tiers = await page.evaluate(() => {
+      const cards = [].slice.call(document.querySelectorAll('.builders-grid > .bcard'));
+      const legend = [].slice.call(document.querySelectorAll('.age-levels .age-level')).map((el) => el.dataset.tier);
+      const bad = cards.filter((c) => {
+        const t = c.querySelector('.bcard-tier');
+        return !t || !/^Ages /.test(t.textContent.trim()) || ['guided', 'design', 'advanced'].indexOf(t.dataset.tier) === -1;
+      }).length;
+      return {
+        cards: cards.length,
+        withTier: cards.filter((c) => !!c.querySelector('.bcard-tier')).length,
+        bad,
+        legend,
+        hero: ((document.querySelector('.pill') || {}).textContent || '').trim()
+      };
+    });
+    check('every builder card shows an age and level', tiers.withTier === tiers.cards && tiers.bad === 0, tiers.withTier + '/' + tiers.cards + ', bad=' + tiers.bad);
+    check('age legend defines all three levels', ['guided', 'design', 'advanced'].every((t) => tiers.legend.indexOf(t) !== -1), tiers.legend.join(', '));
+    check('hero names the three challenge levels', /3 challenge levels/.test(tiers.hero), tiers.hero);
+
     for (const w of [390, 1440]) {
       await page.setViewport({ width: w, height: 900, isMobile: w === 390, hasTouch: w === 390 });
       await new Promise(r => setTimeout(r, 150));

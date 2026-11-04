@@ -39,6 +39,10 @@ const server = http.createServer((req, res) => {
       const d = await page.evaluate(() => ({
         title: document.title,
         chips: document.querySelectorAll('#bsChips .bs-chip').length,
+        labelledChips: [].slice.call(document.querySelectorAll('#bsChips .bs-chip'))
+          .filter((c) => c.dataset.age && c.dataset.level && /Ages|Guided|Challenge/.test(c.textContent + ' ' + (c.title || ''))).length,
+        labelledOptions: [].slice.call(document.querySelectorAll('#bsSelect option'))
+          .filter((o) => /Ages \d/.test(o.textContent)).length,
         frame: !!document.querySelector('#bsHost iframe'),
         three: !!window.THREE,
         exporter: !!(window.JVExporter && window.JVExporter.makeBundle),
@@ -47,6 +51,8 @@ const server = http.createServer((req, res) => {
       check(vp.width + ' page returns 200', res && res.status() === 200, res ? String(res.status()) : 'no response');
       check(vp.width + ' has a title', /3D Builder/i.test(d.title), d.title);
       check(vp.width + ' has all 11 presets', d.chips === 11, 'chips=' + d.chips);
+      check(vp.width + ' every preset shows an age and level', d.labelledChips === 11, 'labelled=' + d.labelledChips);
+      check(vp.width + ' preset picker lists the ages', d.labelledOptions === 11, 'options=' + d.labelledOptions);
       check(vp.width + ' first preset mounts inline', !d.frame);
       check(vp.width + ' engine loaded', d.three);
       check(vp.width + ' shared exporter loaded', d.exporter);
