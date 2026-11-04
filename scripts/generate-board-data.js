@@ -55,7 +55,7 @@ function countGlob(dir) {
     if (base === 'games') {
       const {GAME_ORPHANS} = require('./lib/paths');
       const ignore = new Set(GAME_ORPHANS.map(p=> path.basename(p)));
-      return fs.readdirSync(dir).filter(f => f.endsWith('.html') && !ignore.has(f)).length;
+      return fs.readdirSync(dir).filter(f => f.endsWith('.html') && !f.endsWith('.bak.html') && !ignore.has(f)).length;
     }
     return fs.readdirSync(dir).filter(f => f.endsWith('.html')).length;
   } catch { return 0; }

@@ -661,7 +661,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "GDevelop",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -719,7 +719,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "GDevelop",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -746,10 +746,10 @@ window.JVDS_CONTENT = {
     {
       "id": "gdevelop-pointclick-workshop",
       "title": "Point &amp; Click , Build an Adventure in GDevelop",
-      "desc": "Build a Point & Click adventure in GDevelop! A free parent & child workshop. Inventory, puzzles, dialogue. No coding needed. Ages 9+.",
+      "desc": "Build a Point & Click adventure in GDevelop! A free parent & child workshop. Inventory, puzzles, dialogue. No coding needed. Ages 8+.",
       "engine": "GDevelop",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "puzzle"
@@ -806,10 +806,10 @@ window.JVDS_CONTENT = {
     {
       "id": "gdevelop-adventure-workshop",
       "title": "Top-Down Adventure , Build an RPG in GDevelop",
-      "desc": "Build a Top-Down Adventure in GDevelop! A free parent & child workshop. Movement, NPCs, quests. No coding needed. Ages 9+.",
+      "desc": "Build a Top-Down Adventure in GDevelop! A free parent & child workshop. Movement, NPCs, quests. No coding needed. Ages 8+.",
       "engine": "GDevelop",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "rpg"
@@ -1148,10 +1148,10 @@ window.JVDS_CONTENT = {
     {
       "id": "my-first-gamemaker-game",
       "title": "My First GameMaker Game",
-      "desc": "5 free beginner GameMaker game workshops. Build real 2D games with GML, Pong, a platformer, Breakout, a live-code space shooter and an RPG. No experience needed. Ages 9+.",
+      "desc": "5 free beginner GameMaker game workshops. Build real 2D games with GML, Pong, a platformer, Breakout, a live-code space shooter and an RPG. No experience needed. Ages 10+.",
       "engine": "General",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "series",
       "tags": [
         "platformer",
@@ -1690,10 +1690,10 @@ window.JVDS_CONTENT = {
     {
       "id": "gml-pong-workshop",
       "title": "Build a Pong Game in GameMaker (My First GameMaker Game, Episode 1)",
-      "desc": "Build Pong in GameMaker with GML: sprites, events and collision. Free beginner tutorial, ages 9+.",
+      "desc": "Build Pong in GameMaker with GML: sprites, events and collision. Free beginner tutorial, ages 10+.",
       "engine": "GML/GameMaker",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -1785,7 +1785,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "GML/GameMaker",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "10-14",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -3157,10 +3157,10 @@ window.JVDS_CONTENT = {
     {
       "id": "pico8-match3-workshop",
       "title": "Build a Match-3 Game in Pico-8",
-      "desc": "Build a Match-3 puzzle game in Pico-8! A free parent & child workshop. Swap gems, create combos, race the clock with real Lua code. Ages 9+.",
+      "desc": "Build a Match-3 puzzle game in Pico-8! A free parent & child workshop. Swap gems, create combos, race the clock with real Lua code. Ages 8+.",
       "engine": "PICO-8",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "puzzle"
@@ -3173,10 +3173,10 @@ window.JVDS_CONTENT = {
     {
       "id": "pico8-platformer-workshop",
       "title": "Build a Platformer in Pico-8",
-      "desc": "Build a platformer in Pico-8! A free parent & child workshop. Gravity, jumping, enemies, coins and a finish flag with real Lua code. Ages 9+.",
+      "desc": "Build a platformer in Pico-8! A free parent & child workshop. Gravity, jumping, enemies, coins and a finish flag with real Lua code. Ages 8+.",
       "engine": "PICO-8",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "platformer"
@@ -3250,7 +3250,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "PICO-8",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [],
       "steps": 6,
@@ -3264,7 +3264,7 @@ window.JVDS_CONTENT = {
       "desc": "",
       "engine": "PICO-8",
       "difficulty": "beginner",
-      "ageRange": "10+",
+      "ageRange": "7-9",
       "type": "workshop",
       "tags": [
         "platformer"
@@ -6376,7 +6376,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-03T19:51:08.000Z",
+    "generated": "2026-11-04T14:16:05.000Z",
     "workshops": 336,
     "games": 13,
     "tools": 50,
