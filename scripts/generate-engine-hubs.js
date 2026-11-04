@@ -199,13 +199,32 @@ function renderPage(engine, byId) {
 
   const ladder = engine.ladder
     ? '  <section class="hub-ladder" aria-labelledby="s-ladder">\n'
-      + '    <h2 id="s-ladder">' + esc(engine.name) + ' skill ladder</h2>\n'
+      + '    <h2 id="s-ladder">' + esc(engine.ladderTitle || (engine.name + ' skill ladder')) + '</h2>\n'
       + '    <ol>\n'
       + engine.ladder.map((item) => '      <li><a href="' + esc(item.href) + '">' + esc(item.title) + '</a>'
         + '<span class="hub-ladder-level">' + esc(item.level) + '</span>'
         + '<span class="hub-ladder-note">' + esc(item.note) + '</span></li>').join('\n')
       + '\n    </ol>\n'
       + '  </section>'
+    : '';
+
+  // A1925: optional self-check that points a learner at the next workshop.
+  // The steps live in the config and are read by the page script.
+  const checkpoint = engine.checkpoint
+    ? (() => {
+      const cp = engine.checkpoint;
+      const steps = Array.isArray(cp.steps) ? cp.steps : [];
+      const skills = Array.isArray(cp.skills) ? cp.skills : [];
+      const first = steps[0] || { href: '#', label: 'Start', text: 'Start here.' };
+      return '  <section class="hub-checkpoint" data-engine-check data-engine="' + esc(id) + '" data-steps="' + esc(JSON.stringify(steps)) + '" aria-labelledby="s-ready">\n'
+        + '    <h2 id="s-ready">' + esc(cp.title || 'Ready for the next course?') + '</h2>\n'
+        + '    <p>' + esc(cp.blurb || '') + '</p>\n'
+        + '    <div class="hp-skills">\n'
+        + skills.map((s, i) => '      <label class="hp-skill"><input type="checkbox" data-skill="' + i + '"> ' + esc(s) + '</label>').join('\n')
+        + '\n    </div>\n'
+        + '    <p class="hp-next"><span data-next-text>' + esc(first.text) + '</span> <a href="' + esc(first.href) + '" data-next-link>' + esc(first.label) + ' &rarr;</a></p>\n'
+        + '  </section>';
+    })()
     : '';
 
   const appLabel = engine.appName || engine.name;
@@ -309,6 +328,14 @@ ${marker('head-icons', readPartial('head-icons'))}
 .course-cover--browser{display:flex;align-items:center;justify-content:center;font-size:2.6rem;line-height:1}
 .hub-foot{max-width:820px;margin:26px auto 44px;padding:0 20px;text-align:center;color:var(--text-secondary)}
 .hub-foot a{color:var(--teal);font-weight:800}
+.hub-checkpoint{max-width:820px;margin:18px auto 0;padding:14px 18px;background:var(--bg-secondary);border:1.5px solid var(--border-lt);border-radius:12px}
+.hub-checkpoint h2{font-family:Fredoka,'Baloo 2',cursive;font-size:1.15rem;margin:0 0 6px;color:var(--text-primary)}
+.hub-checkpoint>p{margin:0 0 10px;font-size:.86rem;line-height:1.5;color:var(--text-secondary)}
+.hp-skills{display:grid;gap:2px}
+.hp-skill{display:flex;align-items:flex-start;gap:10px;padding:4px 0;font-size:.88rem;line-height:1.45;color:var(--text-primary);cursor:pointer}
+.hp-skill input{flex:0 0 auto;width:18px;height:18px;margin-top:2px;accent-color:var(--teal-dk)}
+.hp-next{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--border-lt);font-size:.88rem;line-height:1.5;color:var(--text-secondary)}
+.hp-next a{font-weight:800;color:var(--teal-dk)}
 @media(max-width:640px){.hub-say{flex-direction:column;align-items:center;text-align:center}}
 </style>
 ${jsonld}
@@ -338,6 +365,8 @@ ${say('lumo', engine)}
 
 ${ladder}
 
+${checkpoint}
+
 ${filterBar}
 
   <div class="hub-body">
@@ -352,6 +381,7 @@ ${marker('footer-content', readPartial('footer-content'))}
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
 <script defer src="/assets/js/engine-hub.js"></script>
+${engine.checkpoint && engine.checkpoint.script ? '<script defer src="' + esc(engine.checkpoint.script) + '"></script>' : ''}
 </body>
 </html>
 `;
