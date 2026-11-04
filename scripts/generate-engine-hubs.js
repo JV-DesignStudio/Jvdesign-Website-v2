@@ -274,6 +274,7 @@ ${marker('head-icons', readPartial('head-icons'))}
 .hub-hero-sub{max-width:640px;margin:0 auto 16px;color:var(--text-secondary);font-size:1.02rem;line-height:1.6}
 .hub-facts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .hub-fact{font-size:.76rem;font-weight:800;padding:5px 12px;border-radius:999px;background:var(--bg-secondary);border:1.5px solid var(--border-lt);color:var(--text-secondary)}
+.hub-age-note{max-width:620px;margin:12px auto 0;font-size:.86rem;line-height:1.5;color:var(--text-secondary)}
 .hub-filter{max-width:1100px;margin:12px auto 0;padding:0 20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .hub-filter-label{font-size:.82rem;font-weight:800;color:var(--text-secondary)}
 .hub-filter button{font:inherit;font-size:.82rem;font-weight:800;padding:7px 14px;border-radius:999px;border:1.5px solid var(--border-lt);background:var(--bg-secondary);color:var(--text-secondary);cursor:pointer}
@@ -320,6 +321,7 @@ ${marker('nav-content', readPartial('nav-content'))}
       <span class="hub-fact">${total} workshops</span>
       ${hasApp ? '' : '<span class="hub-fact">Nothing to install</span>'}
     </div>
+    ${engine.ageNote ? '<p class="hub-age-note">' + esc(engine.ageNote) + '</p>' : ''}
   </section>
 
 ${say('lumo', engine)}
