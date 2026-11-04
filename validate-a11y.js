@@ -129,7 +129,8 @@ const CHECKS = `(() => {
     for (;;) {
       const rel = queue.pop(); if (!rel) break;
       try {
-        await page.goto('file:///' + path.join(ROOT, rel).split(path.sep).join('/'), { waitUntil: 'load', timeout: 20000 });
+        await page.goto('file:///' + path.join(ROOT, rel).split(path.sep).join('/'), { waitUntil: 'domcontentloaded', timeout: 20000 });
+        await new Promise(resolve => setTimeout(resolve, 400));
         const found = new Set();
         for (const vp of VIEWPORTS) {
           await page.setViewport(vp);
