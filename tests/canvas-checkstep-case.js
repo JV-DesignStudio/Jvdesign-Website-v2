@@ -1,9 +1,9 @@
-// canvas-checkstep-case.js - regression guard for the canvas workshop "Apply to Canvas" gate.
+// canvas-checkstep-case.js - regression guard for the canvas workshop "Check my code" gate.
 //
 // Learner-facing bug (A1350): workshop-canvas-engine.js checkStep() lowercased the
 // editor code but compared it against the raw checks, so any check containing an
 // uppercase letter (KeyPressed, onGround, ShowDialog, ...) could never match. On the
-// gdevelop canvas pages, Show Solution filled the code yet Apply to Canvas always
+// gdevelop canvas pages, Show Solution filled the code yet Check my code always
 // answered "Almost!". A few steps also listed a check keyword that was not in the
 // step solution at all (isboss, gameover, bomb).
 //
@@ -53,7 +53,7 @@ const mime = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/jav
           window.CW.checkStep(step.num);
           const fb = document.getElementById('feedback-' + step.num);
           const text = fb ? fb.textContent : '';
-          if (/Almost!/.test(text)) out.push(step.num + ':' + text.replace('Almost! ', ''));
+          if (fb && fb.classList.contains('error')) out.push(step.num + ':' + text);
         });
         return out;
       });
@@ -72,7 +72,7 @@ const mime = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/jav
       ta.value = step.solution.toLowerCase();
       window.CW.checkStep(2);
       const fb = document.getElementById('feedback-2');
-      return fb && !/Almost!/.test(fb.textContent);
+      return fb && !fb.classList.contains('error');
     });
     check('mixed-case checks match whatever case the learner types', lowerOK);
   } finally {

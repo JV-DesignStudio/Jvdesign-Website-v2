@@ -739,7 +739,7 @@ function renderSteps() {
         '<button class="cw-btn cw-btn-check' + (isDone ? ' done' : '') + '"' +
           ' data-cw="checkStep" data-cw-arg="' + step.num + '"' +
           (isDone ? ' disabled' : '') + '>' +
-          (isDone ? '✓ Done' : 'Apply to Canvas ▶') +
+          (isDone ? '✓ Done' : 'Check my code ▶') +
         '</button>' +
         (isDone ? '' :
           ((attempts[step.num] || 0) >= 2 ?
@@ -829,7 +829,7 @@ function renderSteps() {
         debounceTimer = setTimeout(updateCanvas, 350);
       });
       // A2009: this editor used to swallow Tab to insert two spaces, which
-      // trapped keyboard users inside the textarea. Apply to Canvas, Show
+      // trapped keyboard users inside the textarea. Check my code, Show
       // Solution and the Knowledge Check were then unreachable, so Tab now moves
       // focus as it does everywhere else on the page. Indentation uses spaces.
     }
@@ -1035,24 +1035,139 @@ function updateProgress() {
   wsSyncProgress();
 }
 
+/* ── Error feedback (A2266) ──
+   A failed check should tell the learner what to fix, not just which
+   token is missing. Diagnose syntax first, then name the behaviour from
+   the step's own explanation, and show expected vs actual. */
+var CHECK_LABELS = {
+  'addeventlistener': 'an event listener',
+  'mousedown': 'a click handler',
+  'keydown': 'a keyboard handler',
+  'fillrect': 'a fillRect call',
+  'fillstyle': 'a fillStyle colour',
+  'requestanimationframe': 'requestAnimationFrame',
+  'localstorage': 'localStorage',
+  'setitem': 'saving with localStorage',
+  'gravity': 'gravity',
+  'vy': 'a velocity value',
+  'vx': 'a velocity value',
+  'dead': 'the dead flag',
+  'score': 'the score',
+  'passed': 'the passed flag',
+  'push': 'adding an item to a list',
+  'filter': 'removing items with filter',
+  'classlist': 'a class change',
+  'settimeout': 'setTimeout',
+  'math.random': 'a random value'
+};
+
+function stripTags(s) {
+  return String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function shortText(s, max) {
+  s = stripTags(s);
+  max = max || 96;
+  return s.length > max ? s.slice(0, max - 1).replace(/[,;:]?$/, '') + '...' : s;
+}
+
+function endSentence(s) {
+  s = String(s || '').trim();
+  return /[.!?]$/.test(s) ? s : s + '.';
+}
+
+/* Light syntax scan: catch the common typo before we blame the logic. */
+function codeScan(code) {
+  var stack = [];
+  var pairs = { ')': '(', ']': '[', '}': '{' };
+  var inString = null, escaped = false, lineComment = false, blockComment = false;
+  for (var i = 0; i < code.length; i++) {
+    var ch = code.charAt(i), next = code.charAt(i + 1);
+    if (lineComment) { if (ch === '\n') lineComment = false; continue; }
+    if (blockComment) { if (ch === '*' && next === '/') { blockComment = false; i++; } continue; }
+    if (inString) {
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === inString) inString = null;
+      continue;
+    }
+    if (ch === '/' && next === '/') { lineComment = true; i++; continue; }
+    if (ch === '/' && next === '*') { blockComment = true; i++; continue; }
+    if (ch === '"' || ch === "'" || ch === '`') { inString = ch; continue; }
+    if (ch === '(' || ch === '[' || ch === '{') { stack.push(ch); continue; }
+    if (ch === ')' || ch === ']' || ch === '}') {
+      if (stack[stack.length - 1] !== pairs[ch]) return 'mismatch';
+      stack.pop();
+    }
+  }
+  if (inString) return 'quote';
+  if (blockComment) return 'comment';
+  if (stack.length) return 'open';
+  return '';
+}
+
+/* Name the behaviour using the step's own explanation, so a missing
+   token becomes a missing idea. */
+function behaviourFor(token, step) {
+  var key = String(token).toLowerCase();
+  if (step.checkHelp && step.checkHelp[key]) return step.checkHelp[key];
+  if (CHECK_LABELS[key]) return CHECK_LABELS[key];
+  var points = step.points || [];
+  for (var i = 0; i < points.length; i++) {
+    if (String(points[i]).toLowerCase().indexOf(key) !== -1) return shortText(points[i]);
+  }
+  return '`' + token + '`';
+}
+
+function attemptsHint(num) {
+  var left = Math.max(0, 2 - (attempts[num] || 0));
+  return left > 0 ? ' (' + left + ' more ' + (left === 1 ? 'try' : 'tries') + ' before the hint unlocks)' : '';
+}
+
+function syntaxError(raw) {
+  var scan = codeScan(raw);
+  if (scan === 'quote') return 'Syntax error: a quote is not closed. Check the last line you changed.';
+  if (scan === 'comment') return 'Syntax error: a comment is not closed. Add the missing */.';
+  if (scan === 'mismatch') return 'Syntax error: a bracket does not match. Check your ( ) [ ] { } pairs.';
+  if (scan === 'open') return 'Syntax error: a bracket is not closed. Check the last line you changed.';
+  return '';
+}
+
+function contentError(raw) {
+  var stripped = raw.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  if (!stripped) return 'Your editor is empty. Add the code from the challenge first.';
+  if (/\?{2,}|_{3,}/.test(raw)) return 'You still have a blank to fill. Replace ___ with real code, then check again.';
+  return '';
+}
+
+function failStep(num, message) {
+  attempts[num] = (attempts[num] || 0) + 1;
+  saveState();
+  renderSteps();
+  var fb = document.getElementById('feedback-' + num);
+  if (fb) {
+    fb.className = 'cw-feedback error';
+    fb.textContent = message + attemptsHint(num);
+  }
+}
+
 function checkStep(num) {
   if (completed[num] || cwStepTests[num]) return;
   var step = STEPS.find(function(s) { return s.num === num; });
-  var code = editors[num].value.toLowerCase();
-  var missing = step.checks.filter(function(c) { return code.indexOf(String(c).toLowerCase()) === -1; });
+  var raw = editors[num].value;
+  var code = raw.toLowerCase();
 
+  var syntax = syntaxError(raw);
+  if (syntax) { failStep(num, syntax); return; }
+
+  var missing = step.checks.filter(function(c) { return code.indexOf(String(c).toLowerCase()) === -1; });
   if (missing.length !== 0) {
-    attempts[num] = (attempts[num] || 0) + 1;
-    saveState();
-    renderSteps();
-    var fb = document.getElementById('feedback-' + num);
-    if (fb) {
-      fb.className = 'cw-feedback error';
-      var attemptsLeft = Math.max(0, 2 - attempts[num]);
-      fb.textContent = 'Almost! Make sure your code includes: ' +
-        missing.map(function(m) { return '"' + m + '"'; }).join(', ') +
-        (attemptsLeft > 0 ? ' (' + attemptsLeft + ' more ' + (attemptsLeft === 1 ? 'try' : 'tries') + ' before hint unlocks)' : '');
-    }
+    var content = contentError(raw);
+    if (content) { failStep(num, content); return; }
+    var labels = missing.map(function(m) { return behaviourFor(m, step); });
+    var list = labels.length === 1 ? labels[0]
+      : labels.slice(0, -1).join(', ') + ' and ' + labels[labels.length - 1];
+    failStep(num, 'Not yet. Expected ' + list + '. Actual: not found in your code.');
     return;
   }
 
@@ -1077,7 +1192,7 @@ function runStepTest(num, step) {
   cwStepTests[num].timer = setTimeout(function() {
     if (!cwStepTests[num]) return;
     delete cwStepTests[num];
-    failStepTest(num, 'The preview did not finish checking. Press Apply to try again.');
+    failStepTest(num, 'the preview did not finish checking');
   }, timeout + 1500);
 }
 
@@ -1121,10 +1236,12 @@ function failStepTest(num, detail) {
   var fb = document.getElementById('feedback-' + num);
   if (fb) {
     fb.className = 'cw-feedback error';
-    var attemptsLeft = Math.max(0, 2 - attempts[num]);
-    fb.textContent = 'Almost! Your code has the right pieces but it did not do what this step needs: ' +
-      detail +
-      (attemptsLeft > 0 ? ' (' + attemptsLeft + ' more ' + (attemptsLeft === 1 ? 'try' : 'tries') + ' before hint unlocks)' : '');
+    var step = STEPS.find(function(s) { return s.num === num; });
+    var name = (step && (step.testName || step.title)) || ('Step ' + num);
+    fb.textContent = 'Not yet. Test "' + name + '" failed. Expected: ' +
+      endSentence(shortText(step && step.goal ? step.goal : 'the behaviour in this step', 120)) +
+      ' Actual: ' + endSentence(shortText(detail || 'the game did not behave that way', 120)) +
+      attemptsHint(num);
   }
 }
 
@@ -1297,7 +1414,7 @@ function showSolution(num) {
   updateCanvas();
   var fb = document.getElementById('feedback-' + num);
   fb.className = 'cw-feedback success';
-  fb.textContent = 'Solution filled in - study it, then click "Apply to Canvas" when ready.';
+  fb.textContent = 'Solution filled in - study it, then click "Check my code" when ready.';
 }
 
 function resetStep(num) {

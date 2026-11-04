@@ -64,9 +64,7 @@ window.CW_CONFIG = {
       return wrap(
         SETUP_BASIC + BIRD_OBJ +
         'try{' + u + '}catch(e){}' +
-        'function loop(){bird.vy+=gravity;bird.y+=bird.vy;if(bird.y>476)bird.y=476;' +
-        DRAW_SKY + DRAW_BIRD +
-        'requestAnimationFrame(loop)}requestAnimationFrame(loop);'
+        'function loop(){requestAnimationFrame(loop)}requestAnimationFrame(loop);'
       );
     },
     2: function(u) {
@@ -130,16 +128,17 @@ window.CW_CONFIG = {
     {
       num: 1,
       title: 'Canvas & First Draw',
-      goal: 'Set up a 400x500 canvas and draw a sky-blue background.',
+      goal: 'Paint the sky and the bird on the 400x500 canvas.',
       points: [
-        'The <code>&lt;canvas&gt;</code> element is a blank pixel surface JS draws on every frame',
+        'The <code>&lt;canvas&gt;</code> element is a blank pixel surface JavaScript draws on every frame',
         '<code>getContext("2d")</code> gives you the drawing toolkit',
         '<code>fillRect(x, y, width, height)</code> paints a filled rectangle'
       ],
-      challenge: 'Write the click handler that makes the bird flap upward:',
-      starter: '// Make the bird respond to clicks\ncanvas.addEventListener("mousedown", function() {\n  // Set bird velocity to jump upward\n  // (negative = up on canvas)\n  \n});\n// Also listen for spacebar\ndocument.addEventListener("keydown", function(e) {\n  if (e.code === "Space") {\n    // Same jump\n    \n  }\n});',
-      solution: 'canvas.addEventListener("mousedown", function() {\n  bird.vy = -8;\n});\ndocument.addEventListener("keydown", function(e) {\n  if (e.code === "Space") {\n    bird.vy = -8;\n  }\n});',
-      checks: ['addeventlistener', 'mousedown', 'vy'],
+      challenge: 'Paint the sky, then draw the bird as a yellow square. Fill in the two canvas methods:',
+      starter: '// 1. Paint the sky background\nctx.___ = "#70c5ce";\nctx.___(0, 0, 400, 500);\n\n// 2. Draw the bird as a yellow square\nctx.___ = "#ffd166";\nctx.___(bird.x, bird.y, bird.size, bird.size);',
+      solution: 'ctx.fillStyle = "#70c5ce";\nctx.fillRect(0, 0, 400, 500);\n\nctx.fillStyle = "#ffd166";\nctx.fillRect(bird.x, bird.y, bird.size, bird.size);',
+      checks: ['fillstyle', 'fillrect'],
+      checkHelp: { fillstyle: 'a fillStyle colour', fillrect: 'a fillRect call' },
       height: 200,
       fills: {
         text: 'The drawing toolkit comes from canvas.___("2d"). Rectangles are drawn with ctx.___(x, y, w, h).',
@@ -168,6 +167,7 @@ window.CW_CONFIG = {
       starter: '// Apply gravity to the bird each frame\n// Step 1: velocity increases by gravity\n\n// Step 2: position changes by velocity\n',
       solution: 'bird.vy += gravity;\nbird.y += bird.vy;',
       checks: ['bird.vy', 'gravity', 'bird.y'],
+      checkHelp: { 'bird.vy': 'adding gravity to the bird velocity', gravity: 'the gravity value', 'bird.y': 'moving the bird by its velocity' },
       height: 90,
       fills: {
         text: 'Gravity grows the ___. Velocity moves the ___. The loop reschedules itself with ___.',
@@ -196,6 +196,7 @@ window.CW_CONFIG = {
       starter: '// Flap function: set bird velocity upward\nfunction flap() {\n  // Set vy to jump upward (negative = up)\n  \n}\n\n// Listen for mouse clicks\ncanvas.addEventListener("mousedown", ___);\n\n// Listen for spacebar\ndocument.addEventListener("keydown", function(e) {\n  if (e.code === "Space") ___();\n});',
       solution: 'function flap() {\n  bird.vy = -8;\n}\n\ncanvas.addEventListener("mousedown", flap);\n\ndocument.addEventListener("keydown", function(e) {\n  if (e.code === "Space") flap();\n});',
       checks: ['addeventlistener', 'mousedown', 'keydown', 'vy'],
+      checkHelp: { addeventlistener: 'listening for input', mousedown: 'a click handler', keydown: 'a keyboard handler', vy: 'setting the flap velocity' },
       height: 220,
       quiz: {
         question: 'One flap function with two event listeners is better than two copies because -',
@@ -220,6 +221,7 @@ window.CW_CONFIG = {
       starter: '// Spawn a new pipe every 90 frames\nframes++;\nif (frames % ___ === 0) {\n  pipes.push({ x: 400, gapY: 100 + Math.random() * 300 });\n}\n// Move all pipes left\nfor (const p of pipes) p.x -= ___;\n// Remove pipes that scrolled off screen\npipes = pipes.filter(function(p) { return p.x > -60; });',
       solution: 'frames++;\nif (frames % 90 === 0) {\n  pipes.push({ x: 400, gapY: 100 + Math.random() * 300 });\n}\nfor (const p of pipes) p.x -= 2.4;\npipes = pipes.filter(function(p) { return p.x > -60; });',
       checks: ['frames', 'push', 'filter'],
+      checkHelp: { frames: 'counting frames', push: 'adding a new pipe', filter: 'removing off-screen pipes' },
       height: 180,
       fills: {
         text: 'New pipes appear every ___ frames. Off-screen pipes are removed with ___.',
@@ -248,6 +250,7 @@ window.CW_CONFIG = {
       starter: '// Check each pipe for collision and scoring\nfor (const p of pipes) {\n  var topH = p.gapY - GAP / 2;\n  // Die if bird hits top pipe OR bottom pipe\n  if (hits(bird.x, bird.y, 24, 24, p.x, 0, 52, topH) ||\n      hits(bird.x, bird.y, 24, 24, p.x, p.gapY + GAP/2, 52, 500))\n    dead = true;\n  // Score when pipe passes the bird\n  if (!p.passed && p.x + 52 < bird.x) {\n    p.___ = true;\n    ___++;\n  }\n}\n// Floor death\nif (bird.y > 476) dead = true;',
       solution: 'for (const p of pipes) {\n  var topH = p.gapY - GAP / 2;\n  if (hits(bird.x, bird.y, 24, 24, p.x, 0, 52, topH) ||\n      hits(bird.x, bird.y, 24, 24, p.x, p.gapY + GAP/2, 52, 500))\n    dead = true;\n  if (!p.passed && p.x + 52 < bird.x) {\n    p.passed = true;\n    score++;\n  }\n}\nif (bird.y > 476) dead = true;',
       checks: ['dead', 'passed', 'score'],
+      checkHelp: { dead: 'setting the dead flag on a collision', passed: 'marking a pipe as scored', score: 'adding a point' },
       height: 230,
       fills: {
         text: 'The overlap test is called ___ collision. A pipe scores once thanks to its ___ flag.',
@@ -276,6 +279,7 @@ window.CW_CONFIG = {
       starter: '// Draw game over screen when dead\nif (dead) {\n  ctx.fillStyle = "rgba(0,0,0,0.5)";\n  ctx.fillRect(0, 0, 400, 500);\n  ctx.fillStyle = "#fff";\n  ctx.font = "bold 30px sans-serif";\n  ctx.textAlign = "center";\n  ctx.fillText("Game Over", 200, ___);\n  ctx.font = "18px sans-serif";\n  ctx.fillText("Score " + ___ + "  Best " + best, 200, 250);\n  ctx.fillText("Click or Space to retry", 200, 285);\n}',
       solution: 'if (dead) {\n  ctx.fillStyle = "rgba(0,0,0,0.5)";\n  ctx.fillRect(0, 0, 400, 500);\n  ctx.fillStyle = "#fff";\n  ctx.font = "bold 30px sans-serif";\n  ctx.textAlign = "center";\n  ctx.fillText("Game Over", 200, 210);\n  ctx.font = "18px sans-serif";\n  ctx.fillText("Score " + score + "  Best " + best, 200, 250);\n  ctx.fillText("Click or Space to retry", 200, 285);\n}',
       checks: ['dead', 'filltext', 'score'],
+      checkHelp: { dead: 'checking the game-over state', filltext: 'drawing the game-over text', score: 'showing the score' },
       height: 230,
       quiz: {
         question: '<code>localStorage</code> survives closing the browser. Which feature of THIS website uses the same trick?',
