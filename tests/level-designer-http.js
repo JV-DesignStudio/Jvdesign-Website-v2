@@ -141,6 +141,39 @@ const server = http.createServer((req, res) => {
     return !nav.classList.contains('open') && btn.getAttribute('aria-expanded') === 'false';
   });
 
+  // Save and restore a real project, not just generation. Write the same
+  // autosave payload the app writes, reload, accept the restore prompt, and
+  // confirm the name and a painted tile survived the reload.
+  await page.evaluate(() => {
+    setLevelName('Restore Lab');
+    currentLayer = 1;
+    pushUndo('restore-test');
+    setCell(4, 4, 7);
+    renderAll();
+    localStorage.setItem('jvds_level_autosave', JSON.stringify({
+      name: getLevelName(), gridW, gridH, themeId: currentTheme.id,
+      layers: layers.map(l => ({ name: l.name, visible: l.visible, locked: l.locked, data: Array.from(l.data) })),
+      enemyPaths, tileProps, ts: Date.now()
+    }));
+  });
+  await page.reload({ waitUntil: 'networkidle2', timeout: 60000 });
+  await page.waitForFunction(() => typeof layers !== 'undefined' && layers.length > 0, { timeout: 30000 }).catch(() => {});
+  await new Promise(r => setTimeout(r, 500));
+  const promptShown = await page.evaluate(() => {
+    const shown = document.getElementById('modal-overlay').classList.contains('show');
+    document.getElementById('modal-confirm-btn').click();
+    return shown;
+  });
+  await new Promise(r => setTimeout(r, 300));
+  const restored = await page.evaluate(() => ({
+    name: getLevelName(),
+    tile: getCell(4, 4),
+    w: gridW,
+    h: gridH
+  }));
+  const restorePass = promptShown && restored.name === 'Restore Lab' && restored.tile === 7;
+  console.log('restore:', JSON.stringify({ promptShown, ...restored }));
+
   console.log('checks:', JSON.stringify(checks));
   results.forEach(l => console.log(l));
   console.log('hamburger opens:', navOpened, '| closes:', navClosed);
@@ -152,7 +185,7 @@ const server = http.createServer((req, res) => {
   }
   const fails = results.filter(l => l.startsWith('FAIL')).length;
   const pass = fails === 0 && checks.manifestIsDedicated && checks.levelNameFieldPresent &&
-               checks.canvasReady && navOpened && navClosed && errors.length === 0;
+               checks.canvasReady && navOpened && navClosed && restorePass && errors.length === 0;
   console.log(pass ? 'HTTP RUNTIME CHECKS PASSED' : 'FAILURES PRESENT');
   await browser.close();
   server.close();
