@@ -32,10 +32,11 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-iWnCiW5xNCZZuNqTrS2Tc78UUS/3DW5MpJXxBNxxZ2A=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-iWnCiW5xNCZZuNqTrS2Tc78UUS/3DW5MpJXxBNxxZ2A=' 'sha256-pcLNC6UyKaE0fxFocEHRCN2VFruudNnVKT+bhwuE3kU=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
+<script defer src="/assets/js/tool-kit.js"></script>
 <!-- /BUILD:head-icons -->
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <link rel="stylesheet" href="../style-shared.css?v=17">
@@ -89,6 +90,7 @@ h1{margin:6px 0 8px;font-size:clamp(1.8rem,4vw,2.6rem)}h2{margin:16px 0 8px;font
 <div class="row"><button class="switch" id="swContrast" role="switch" aria-checked="false" aria-label="High contrast"><span class="knob"></span></button><span>High contrast (strong borders, larger focus ring)</span></div>
 <label style="display:block;margin-top:12px">Text size<select id="textSize" style="margin-left:8px;padding:8px;border-radius:8px;background:#0b1220;color:#fff;border:1px solid var(--line)"><option value="100">100% - Default</option><option value="115">115% - Large</option><option value="130">130% - Extra large</option><option value="150">150% - Huge</option></select></label>
 <div class="preview" id="textPreview"><p style="margin:0">Preview: The quick brown fox jumps over the lazy dog. School computers, no install.</p></div>
+<div class="row"><button class="switch" id="swFont" role="switch" aria-checked="false" aria-label="Easier reading font"><span class="knob"></span></button><span>Easier reading font (wider spacing, rounded system font)</span></div>
 </section>
 <section class="card">
 <h2>Keyboard & focus</h2>
@@ -109,5 +111,19 @@ h1{margin:6px 0 8px;font-size:clamp(1.8rem,4vw,2.6rem)}h2{margin:16px 0 8px;font
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>
 <script defer src="/creation-share.js"></script>
+<script>
+(function(){
+ var KEY='jvds_accessibility', b=document.getElementById('swFont');
+ if(!b) return;
+ function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}}
+ function paint(){var s=read(), on=!!s.font; b.classList.toggle('on',on); b.setAttribute('aria-checked',on?'true':'false');}
+ b.addEventListener('click',function(){
+   var s=read(); s.font=!s.font; localStorage.setItem(KEY,JSON.stringify(s)); paint();
+   if(window.JVDSToolKit) window.JVDSToolKit.applyAccessibility();
+   var st=document.getElementById('saveStatus'); if(st) st.textContent=s.font?'Easier reading font on':'Easier reading font off';
+ });
+ paint();
+})();
+</script>
 </body>
 </html>
