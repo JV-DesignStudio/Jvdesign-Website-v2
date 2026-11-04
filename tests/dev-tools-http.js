@@ -36,6 +36,9 @@ const server = http.createServer((req, res) => {
       page.on('request', r => r.url().startsWith(base) || r.url().startsWith('data:') ? r.continue() : r.abort());
       await page.setViewport(vp);
       const res = await page.goto(base + '/pages/dev-tools.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      // Start every viewport from a clean first-visit state.
+      await page.evaluate(() => { try { localStorage.removeItem('jvds_last_activity'); } catch (e) {} });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
       await new Promise(r => setTimeout(r, 700));
       const d = await page.evaluate(() => {
         const q = sel => document.querySelector(sel);
@@ -61,6 +64,8 @@ const server = http.createServer((req, res) => {
           toolsY: tools ? Math.round(tools.getBoundingClientRect().top) : -1,
           intentsY: q('.hub-intents') ? Math.round(q('.hub-intents').getBoundingClientRect().top) : -1,
           handoffY: handoff ? Math.round(handoff.getBoundingClientRect().top) : -1,
+          resumeExists: !!q('#resumeLast'),
+          resumeHidden: q('#resumeLast') ? q('#resumeLast').hidden : null,
           overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         };
       });
@@ -75,10 +80,72 @@ const server = http.createServer((req, res) => {
       check(vp.width + ' reorder CSS is applied before paint', d.bodyDisplay === 'flex', d.bodyDisplay);
       check(vp.width + ' intent paths sit above the tool grid', d.intentsY >= 0 && d.toolsY > d.intentsY, 'intents=' + d.intentsY + ' tools=' + d.toolsY);
       check(vp.width + ' tools grid sits above the handoff', d.toolsY >= 0 && d.handoffY > d.toolsY, 'tools=' + d.toolsY + ' handoff=' + d.handoffY);
+      check(vp.width + ' resume card is hidden for a first visit', d.resumeExists && d.resumeHidden === true, 'exists=' + d.resumeExists + ' hidden=' + d.resumeHidden);
       check(vp.width + ' no horizontal overflow', d.overflow <= 2, 'overflow=' + d.overflow);
       check(vp.width + ' no browser errors', errors.length === 0, errors.slice(0, 2).join(' | '));
+
+      // A2297: a returning learner sees one resume card for the last tool.
+      await page.evaluate(() => {
+        localStorage.setItem('jvds_last_activity', JSON.stringify({ type: 'tool', url: '/tools/pixel-studio.html', title: 'Pixel Studio', ts: Date.now() }));
+      });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+      await new Promise(r => setTimeout(r, 400));
+      const r = await page.evaluate(() => {
+        const el = document.getElementById('resumeLast');
+        const go = el && el.querySelector('[data-resume-go]');
+        const name = el && el.querySelector('[data-resume-name]');
+        const fresh = el && el.querySelector('.resume-last__new');
+        return {
+          hidden: el ? el.hidden : null,
+          href: go ? go.getAttribute('href') : null,
+          name: name ? name.textContent.trim() : '',
+          fresh: fresh ? fresh.getAttribute('href') : null,
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+      check(vp.width + ' resume card appears after a tool visit', r.hidden === false);
+      check(vp.width + ' resume link reopens the last tool', r.href === '/tools/pixel-studio.html', r.href || 'no href');
+      check(vp.width + ' resume card names the last tool', r.name === 'Pixel Studio', r.name);
+      check(vp.width + ' resume card offers a start-new route', r.fresh === '#tools', r.fresh || 'none');
+      check(vp.width + ' resume card no horizontal overflow', r.overflow <= 2, 'overflow=' + r.overflow);
       await page.close();
     }
+
+    // A2297: the homepage card uses the same last-activity record.
+    const home = await browser.newPage();
+    if (home.setBypassServiceWorker) await home.setBypassServiceWorker(true);
+    await home.setRequestInterception(true);
+    home.on('request', r => r.url().startsWith(base) || r.url().startsWith('data:') ? r.continue() : r.abort());
+    await home.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    await home.goto(base + '/index.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await home.evaluate(() => { try { localStorage.removeItem('jvds_last_activity'); } catch (e) {} });
+    await home.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await new Promise(r => setTimeout(r, 400));
+    const first = await home.evaluate(() => {
+      const card = document.getElementById('continue-card');
+      return { exists: !!card, hidden: card ? card.hidden : null };
+    });
+    check('homepage resume card is hidden for a first visit', first.exists && first.hidden === true, 'exists=' + first.exists + ' hidden=' + first.hidden);
+    await home.evaluate(() => {
+      localStorage.setItem('jvds_last_activity', JSON.stringify({ type: 'tool', url: '/tools/pixel-studio.html', title: 'Pixel Studio', ts: Date.now() }));
+    });
+    await home.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await new Promise(r => setTimeout(r, 400));
+    const again = await home.evaluate(() => {
+      const card = document.getElementById('continue-card');
+      const link = document.getElementById('continue-card-link');
+      const title = document.getElementById('continue-card-title');
+      const fresh = document.querySelector('.continue-card__new');
+      return {
+        hidden: card ? card.hidden : null,
+        href: link ? link.getAttribute('href') : null,
+        title: title ? title.textContent.trim() : '',
+        fresh: fresh ? fresh.getAttribute('href') : null,
+      };
+    });
+    check('homepage resume card appears after a tool visit', again.hidden === false && again.href === '/tools/pixel-studio.html', 'hidden=' + again.hidden + ' href=' + again.href);
+    check('homepage resume card names the tool and offers start-new', /Pixel Studio/.test(again.title) && again.fresh === '#start-here', 'title=' + again.title + ' fresh=' + again.fresh);
+    await home.close();
   } finally {
     await browser.close();
     server.close();
