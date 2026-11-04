@@ -64,6 +64,21 @@ function runPartials({ verbose = true } = {}) {
     return head + src.slice(markerIdx);
   }
 
+  // cookie-consent.js is loaded early on some pages so the banner reserves
+  // space before first paint, then the shared footer partial loads it again.
+  // The script is idempotent, but the duplicate fetch is wasted and trips the
+  // script-refs warning, so keep the first include only.
+  function dedupeCookieConsent(src) {
+    const seen = new Set();
+    return src.replace(/[ \t]*<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>\s*<\/script>[ \t]*\r?\n?/gi, (tag, ref) => {
+      const key = ref.split('?')[0].toLowerCase();
+      if (!key.endsWith('/cookie-consent.js')) return tag;
+      if (seen.has(key)) return '';
+      seen.add(key);
+      return tag;
+    });
+  }
+
   let changed = 0, unchanged = 0, skippedMtime = 0;
   for (const filePath of walk(ROOT)) {
     // mtime skip - if file newer than partials and no BUILD marker, skip read
@@ -76,6 +91,7 @@ function runPartials({ verbose = true } = {}) {
       src = injectPartial(src, name, content);
     }
     src = dedupeSkipLinks(src);
+    src = dedupeCookieConsent(src);
     src = applyStats(src);
     // A1503/A1609: keep style-shared.css as a plain stylesheet link. The old
     // preload + inline onload swap needs script-src 'unsafe-inline' and is
