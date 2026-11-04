@@ -66,6 +66,11 @@ let failures = 0;
   check('sequencer cells render', initial.cells >= 8, String(initial.cells));
   check('export and handoff functions exist', initial.exportFn && initial.gameMakerFn && initial.shareFn && initial.sfxSendFn);
   check('mode switcher renders', initial.modes === 3, String(initial.modes));
+  const intro = await page.evaluate(()=>{
+    const el=document.querySelector('.ss-intro');
+    return { present: !!el, display: el?getComputedStyle(el).display:'', text: el?el.textContent:'' };
+  });
+  check('intro separates Music and SFX and explains the handoff', intro.present && intro.display !== 'none' && /SFX/.test(intro.text) && /Music/.test(intro.text) && /WAV/.test(intro.text) && /Game Maker/.test(intro.text), intro.text.replace(/\s+/g,' ').slice(0,90));
   check('mobile does not overflow viewport', initial.scrollWidth <= initial.clientWidth + 2, `${initial.scrollWidth}/${initial.clientWidth}`);
   const mobileChrome = await page.evaluate(()=>{
     const title=document.querySelector('.sfx-shelf-title');
