@@ -10,6 +10,8 @@ const path = require('path');
 
 const ROOT    = path.resolve(__dirname, '..');
 const STRICT  = process.argv.includes('--strict');
+const { GAME_ORPHANS } = require('./lib/paths');
+const GAME_ORPHAN_SET = new Set(GAME_ORPHANS.map((p) => '/' + p.replace(/^\/+/, '')));
 
 let issues = 0;
 
@@ -31,6 +33,16 @@ function loadJson(rel) {
 function fileExists(rel) {
   // rel is an absolute-style site path e.g. /games/rustfall.html
   return fs.existsSync(path.join(ROOT, rel.replace(/^\//, '')));
+}
+
+function isNoindex(rel) {
+  try {
+    const html = fs.readFileSync(path.join(ROOT, rel.replace(/^\//, '')), 'utf8');
+    const m = html.match(/<meta\s+name=["']robots["']\s+content=["']([^"']*)["']/i);
+    return m ? /noindex/i.test(m[1]) : false;
+  } catch (e) {
+    return false;
+  }
 }
 
 function listHtmlFiles(dir) {
@@ -93,6 +105,9 @@ function checkCatalogue(name, entries, dirHint, opts = {}) {
     const filesOnDisk = listHtmlFiles(dirHint);
     const orphans = filesOnDisk.filter(f => {
       if (cataloguedUrls.has(f)) return false;
+      // Intentionally hidden pages (noindex) are referenced by GAME_ORPHANS or
+      // their own robots meta; they are not catalogue debt.
+      if (isNoindex(f)) return false;
       if (orphanIgnorePatterns.some(p => typeof p === 'function' ? p(f) : p.test(f))) return false;
       return true;
     });
@@ -113,6 +128,8 @@ checkCatalogue(
     orphanIgnorePatterns: [
       // section index / nav pages - not catalogue entries
       /\/games\/(index|play|mobile-games)\.html$/,
+      // intentionally hidden game pages
+      u => GAME_ORPHAN_SET.has(u),
       // sub-detail pages (e.g. lumo-dash-page.html) - supplemental, not catalogue root
       /-page\.html$/,
       // standalone playtest / special pages
@@ -145,6 +162,8 @@ checkCatalogue(
       u => engineHubUrls.has(u) || /\/workshops\/engine-/.test(u),
       // 3D builder pages catalogued as tools, not workshops
       u => threeDBuilderIds.has(path.basename(u, '.html')),
+      // 3D Builders hub; its individual builders are catalogued as tools
+      /\/workshops\/3d-builder\.html$/,
       // section / meta pages
       /my-progress|my-achievements|start-here|tiny-learners/,
       // cheatsheets are companion reference pages, not workshop entries
