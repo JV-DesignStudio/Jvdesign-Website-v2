@@ -317,6 +317,12 @@ var debounceTimer = null;
 var codeValid = {};
 var quizPassed = {};
 var quizSelected = {};
+/* A2282: optional predict-before-run stage. It never blocks progress. */
+var predictSelected = {};
+var predictText = {};
+var predictPassed = {};
+/* A2284: optional explain-it-back answer, kept with the step. */
+var explainText = {};
 var cwXpLocal = 0;
 /* A2264: steps may carry an executable test. The test runs inside the same
    sandboxed preview as the learner's code and reports pass/fail back here.
@@ -340,6 +346,41 @@ var LIVE_CSS = '<style id="cw-live-style">' +
   'border:1px solid rgba(74,222,128,.28);font-size:.82rem;color:#e8eaf2;line-height:1.5}' +
   '.cw-remix strong{color:#4ade80}' +
   '.cw-remix a{color:#4ade80;font-weight:700}' +
+  '.cw-predict{margin:0 0 14px;padding:12px 14px;border-radius:11px;background:rgba(112,163,167,.1);border:1px solid rgba(112,163,167,.34)}' +
+  '.cw-predict-head{font-family:Fredoka,cursive;font-size:.95rem;color:#9ccfd2;margin-bottom:6px}' +
+  '.cw-predict-q{font-size:.88rem;color:#e8eaf2;line-height:1.5;margin-bottom:9px}' +
+  '.cw-predict-opts{display:grid;gap:7px;margin-bottom:9px}' +
+  '.cw-predict-opt{text-align:left;padding:8px 11px;border-radius:8px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);color:#e8eaf2;font:600 .84rem Inter,system-ui,sans-serif;cursor:pointer}' +
+  '.cw-predict-opt.selected{border-color:#9ccfd2;background:rgba(112,163,167,.22)}' +
+  '.cw-predict-opt.correct{border-color:#4ade80;background:rgba(74,222,128,.16)}' +
+  '.cw-predict-opt.wrong{border-color:#ff7b93;background:rgba(255,84,112,.14)}' +
+  '.cw-predict-input{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.25);color:#fff;font:inherit;margin-bottom:9px}' +
+  '.cw-predict-actions{margin-bottom:8px}' +
+  '.cw-predict-fb{font-size:.82rem;line-height:1.4;min-height:1.2em}' +
+  '.cw-predict-fb.ok{color:#4ade80}' +
+  '.cw-predict-fb.no{color:#ffb020}' +
+  '.cw-explain-back{margin-top:14px;padding:12px 14px;border-radius:11px;background:rgba(156,207,210,.08);border:1px solid rgba(156,207,210,.28)}' +
+  '.cw-explain-back-head{font-family:Fredoka,cursive;font-size:.92rem;color:#9ccfd2;margin-bottom:5px}' +
+  '.cw-explain-back-q{font-size:.84rem;color:#e8eaf2;line-height:1.45;margin:0 0 8px}' +
+  '.cw-explain-back-input{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.22);color:#fff;font:inherit;resize:vertical;min-height:58px}' +
+  '.cw-explain-back-actions{margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}' +
+  '.cw-explain-back-fb{font-size:.8rem;color:#4ade80}' +
+  '.cw-sol-notes{margin-top:12px;padding:11px 13px;border-radius:10px;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.24)}' +
+  '.cw-sol-notes-head{font-family:Fredoka,cursive;font-size:.9rem;color:#4ade80;margin-bottom:6px}' +
+  '.cw-sol-notes ul{margin:0;padding-left:18px;font-size:.82rem;line-height:1.5;color:#e8eaf2}' +
+  '.cw-sol-notes li{margin:3px 0}' +
+  '.cw-report{margin-top:12px;font-size:.8rem}' +
+  '.cw-report summary{cursor:pointer;color:rgba(232,234,242,.5);font-weight:600}' +
+  '.cw-report summary:hover{color:#9ccfd2}' +
+  '.cw-report-body{margin-top:8px}' +
+  '.cw-report-label{display:block;margin-bottom:5px;color:rgba(232,234,242,.7)}' +
+  '.cw-report-note{width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.22);color:#fff;font:inherit;resize:vertical;min-height:46px}' +
+  '.cw-report-actions{margin-top:7px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}' +
+  '.cw-report-fb{font-size:.78rem}' +
+  '.cw-report-fb.ok{color:#4ade80}' +
+  '.cw-expect{margin:0 0 10px;font-size:.84rem;color:rgba(232,234,242,.82);line-height:1.45}' +
+  '.cw-expect strong{color:#9ccfd2}' +
+  '.cw-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}' +
   '</style>';
 function ensureLiveStyle() {
   try { if (!document.getElementById('cw-live-style') && document.head) document.head.insertAdjacentHTML('beforeend', LIVE_CSS); } catch (e) {}
@@ -360,9 +401,27 @@ function ensureWhat() {
   return el;
 }
 
+function ensureCanvasDesc() {
+  var panel = document.getElementById('canvasPanel');
+  if (!panel) return null;
+  var el = document.getElementById('cwCanvasDesc');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'cwCanvasDesc';
+    el.className = 'cw-sr';
+    el.setAttribute('aria-live', 'polite');
+    var prog = panel.querySelector('.cw-progress');
+    if (prog && prog.parentNode === panel) panel.insertBefore(el, prog.nextSibling);
+    else panel.insertBefore(el, panel.firstChild);
+  }
+  return el;
+}
+
 function updateWhat(step) {
   var el = ensureWhat();
   if (el && step) el.innerHTML = 'Step ' + step.num + ': ' + step.goal;
+  var desc = ensureCanvasDesc();
+  if (desc && step) desc.textContent = 'What you should see: ' + stripTags(step.expect || step.goal);
 }
 
 function updateLive(num) {
@@ -542,6 +601,10 @@ function loadState() {
       completed = state.completed || {};
       attempts = state.attempts || {};
       solutionSeen = state.solutionSeen || {};
+      predictSelected = state.predictSelected || {};
+      predictText = state.predictText || {};
+      predictPassed = state.predictPassed || {};
+      explainText = state.explainText || {};
     }
   } catch(e) {}
 }
@@ -557,7 +620,11 @@ function saveState() {
       completed: completed,
       codes: codes,
       attempts: attempts,
-      solutionSeen: solutionSeen
+      solutionSeen: solutionSeen,
+      predictSelected: predictSelected,
+      predictText: predictText,
+      predictPassed: predictPassed,
+      explainText: explainText
     }));
     /* A1425: ledger fingerprint so canvas XP counts in the site totals.
        scanComponentXP only sees {xp:number, total:number, completed:[]},
@@ -704,6 +771,39 @@ function getSavedCode(num) {
   } catch(e) { return null; }
 }
 
+function renderPredict(step, show) {
+  var p = step.predict;
+  if (!p || !show) return '';
+  var num = step.num;
+  var html = '<div class="cw-predict"><div class="cw-predict-head">🔮 Predict first</div>' +
+    '<div class="cw-predict-q">' + p.question + '</div>';
+  if (p.options && p.options.length) {
+    html += '<div class="cw-predict-opts" id="predict-opts-' + num + '">';
+    p.options.forEach(function(opt, oi) {
+      var cls = 'cw-predict-opt';
+      if (predictPassed[num]) {
+        if (oi === p.correct) cls += ' correct';
+        else if (predictSelected[num] === oi) cls += ' wrong';
+      } else if (predictSelected[num] === oi) {
+        cls += ' selected';
+      }
+      html += '<button type="button" class="' + cls + '"' +
+        (predictPassed[num] ? ' disabled' : ' data-cw="selectPredict" data-cw-arg="' + num + '" data-cw-arg2="' + oi + '"') +
+        '>' + opt + '</button>';
+    });
+    html += '</div>';
+  } else {
+    html += '<input class="cw-predict-input" id="predict-input-' + num + '" type="text" ' +
+      'placeholder="Type your guess" value="' + String(predictText[num] || '').replace(/"/g, '&quot;') + '"' +
+      (predictPassed[num] ? ' disabled' : '') + '>';
+  }
+  if (!predictPassed[num]) {
+    html += '<div class="cw-predict-actions"><button class="cw-btn cw-btn-show" data-cw="checkPredict" data-cw-arg="' + num + '">Lock in my prediction</button></div>';
+  }
+  html += '<div class="cw-predict-fb" id="predict-fb-' + num + '" role="status" aria-live="polite"></div></div>';
+  return html;
+}
+
 function renderSteps() {
   var panel = document.getElementById('stepsPanel');
   panel.innerHTML = '';
@@ -717,6 +817,7 @@ function renderSteps() {
 
     var isDone = !!completed[step.num];
     var isActive = (i === currentStep);
+    var predictHtml = renderPredict(step, isActive);
 
     card.innerHTML =
       '<div class="cw-step-head">' +
@@ -726,6 +827,8 @@ function renderSteps() {
       '</div>' +
       '<p class="cw-goal">' + step.goal + '</p>' +
       (step.checkpoint ? '<p class="cw-checkpoint"><strong>Checkpoint:</strong> ' + step.checkpoint + '</p>' : '') +
+      ((isActive || isDone) ? '<p class="cw-expect"><strong>What you should see:</strong> ' + (step.expect || step.goal) + '</p>' : '') +
+      predictHtml +
       '<ul class="cw-explain">' + step.points.map(function(p) { return '<li>' + p + '</li>'; }).join('') + '</ul>' +
       '<div class="cw-challenge">' + step.challenge + '</div>' +
       '<textarea class="cw-editor" id="editor-' + step.num + '"' +
@@ -806,6 +909,35 @@ function renderSteps() {
       qHtml += '</div>';
       card.innerHTML += qHtml;
     }
+
+    if (step.solutionNotes && solutionSeen[step.num] && (isActive || isDone)) {
+      card.innerHTML += '<div class="cw-sol-notes"><div class="cw-sol-notes-head">Why each line is there</div><ul>' +
+        step.solutionNotes.map(function(n) { return '<li>' + n + '</li>'; }).join('') + '</ul></div>';
+    }
+
+    if (step.explain && (isActive || isDone)) {
+      card.innerHTML += '<div class="cw-explain-back">' +
+        '<div class="cw-explain-back-head">🗣️ Explain it back</div>' +
+        '<p class="cw-explain-back-q">' + step.explain + '</p>' +
+        '<textarea class="cw-explain-back-input" id="explain-' + step.num + '" rows="2" ' +
+          'placeholder="In your own words...">' + escapeHtml(explainText[step.num] || '') + '</textarea>' +
+        '<div class="cw-explain-back-actions">' +
+          '<button class="cw-btn cw-btn-show" data-cw="saveExplain" data-cw-arg="' + step.num + '">Save my answer</button>' +
+          '<span class="cw-explain-back-fb" id="explain-fb-' + step.num + '" role="status" aria-live="polite"></span>' +
+        '</div></div>';
+    }
+
+    card.innerHTML += '<details class="cw-report">' +
+      '<summary>Something wrong with this step?</summary>' +
+      '<div class="cw-report-body">' +
+        '<label class="cw-report-label" for="report-note-' + step.num + '">What went wrong? One line is enough.</label>' +
+        '<textarea class="cw-report-note" id="report-note-' + step.num + '" rows="2" ' +
+          'placeholder="The canvas stays blank when I press Check..."></textarea>' +
+        '<div class="cw-report-actions">' +
+          '<button class="cw-btn cw-btn-show" data-cw="reportStep" data-cw-arg="' + step.num + '">Send report</button>' +
+          '<span class="cw-report-fb" id="report-fb-' + step.num + '" role="status" aria-live="polite"></span>' +
+        '</div>' +
+      '</div></details>';
 
     panel.appendChild(card);
 
@@ -1063,6 +1195,10 @@ var CHECK_LABELS = {
 
 function stripTags(s) {
   return String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function shortText(s, max) {
@@ -1348,6 +1484,81 @@ function cwMilestone(title, sub) {
   }, 2200);
 }
 
+function selectPredict(num, idx) {
+  if (predictPassed[num]) return;
+  predictSelected[num] = idx;
+  var opts = document.querySelectorAll('#predict-opts-' + num + ' .cw-predict-opt');
+  for (var i = 0; i < opts.length; i++) {
+    opts[i].className = 'cw-predict-opt' + (i === idx ? ' selected' : '');
+    opts[i].setAttribute('aria-pressed', i === idx ? 'true' : 'false');
+  }
+  saveState();
+}
+
+function checkPredict(num) {
+  var step = STEPS.find(function(s) { return s.num === num; });
+  if (!step || !step.predict) return;
+  var p = step.predict;
+  var fb = document.getElementById('predict-fb-' + num);
+  var ok = false, answer = '';
+  if (p.options && p.options.length) {
+    if (predictSelected[num] === undefined) {
+      if (fb) { fb.className = 'cw-predict-fb no'; fb.textContent = 'Pick an answer first.'; }
+      return;
+    }
+    ok = predictSelected[num] === p.correct;
+    answer = p.options[p.correct];
+  } else {
+    var input = document.getElementById('predict-input-' + num);
+    var val = input ? input.value.trim() : '';
+    if (!val) { if (fb) { fb.className = 'cw-predict-fb no'; fb.textContent = 'Type your guess first.'; } return; }
+    predictText[num] = val;
+    var accepted = String(p.answer || '').toLowerCase().split('|');
+    ok = accepted.some(function(a) { return a.trim() && val.toLowerCase().indexOf(a.trim()) !== -1; });
+    answer = String(p.answer || '').split('|')[0];
+  }
+  predictPassed[num] = true;
+  saveState();
+  renderSteps();
+  var newFb = document.getElementById('predict-fb-' + num);
+  if (newFb) {
+    newFb.className = 'cw-predict-fb ' + (ok ? 'ok' : 'no');
+    newFb.textContent = ok ? 'You predicted it. Now check your code.' : 'Not quite. The answer is: ' + answer + '.';
+  }
+}
+
+function saveExplain(num) {
+  var input = document.getElementById('explain-' + num);
+  var fb = document.getElementById('explain-fb-' + num);
+  if (!input) return;
+  explainText[num] = input.value.trim();
+  saveState();
+  if (fb) fb.textContent = explainText[num] ? 'Saved with this step.' : 'Cleared.';
+}
+
+function reportStep(num) {
+  var step = STEPS.find(function(s) { return s.num === num; });
+  var input = document.getElementById('report-note-' + num);
+  var fb = document.getElementById('report-fb-' + num);
+  var note = input ? input.value.trim() : '';
+  var workshop = location.pathname.split('/').pop() || CFG.storageKey || 'workshop';
+  var all = [];
+  try {
+    all = JSON.parse(localStorage.getItem('jvds_stuck_reports') || '[]');
+    if (!Array.isArray(all)) all = [];
+  } catch (e) { all = []; }
+  all.push({
+    workshop: workshop,
+    step: num,
+    title: step ? step.title : '',
+    note: note || 'No note',
+    at: new Date().toISOString()
+  });
+  try { localStorage.setItem('jvds_stuck_reports', JSON.stringify(all.slice(-100))); } catch (e) {}
+  if (fb) { fb.className = 'cw-report-fb ok'; fb.textContent = 'Reported. It stays on this device.'; }
+  if (input) input.value = '';
+}
+
 function selectQuiz(num, idx) {
   quizSelected[num] = idx;
   var opts = document.querySelectorAll('#quiz-opts-' + num + ' .cw-quiz-opt');
@@ -1412,9 +1623,12 @@ function showSolution(num) {
   solutionSeen[num] = true;
   saveState();
   updateCanvas();
+  renderSteps();
   var fb = document.getElementById('feedback-' + num);
-  fb.className = 'cw-feedback success';
-  fb.textContent = 'Solution filled in - study it, then click "Check my code" when ready.';
+  if (fb) {
+    fb.className = 'cw-feedback success';
+    fb.textContent = 'Solution filled in - study the notes, then click "Check my code" when ready.';
+  }
 }
 
 function resetStep(num) {
@@ -1508,6 +1722,10 @@ document.addEventListener('click', function(e) {
   else if (action === 'checkFills') checkFills(arg);
   else if (action === 'selectQuiz') selectQuiz(arg, Number(el.getAttribute('data-cw-arg2')));
   else if (action === 'checkQuiz') checkQuiz(arg);
+  else if (action === 'selectPredict') selectPredict(arg, Number(el.getAttribute('data-cw-arg2')));
+  else if (action === 'checkPredict') checkPredict(arg);
+  else if (action === 'saveExplain') saveExplain(arg);
+  else if (action === 'reportStep') reportStep(arg);
 });
 
 /* Init */
@@ -1516,6 +1734,12 @@ loadState();
 ensureProgressStrip();
 renderSteps();
 updateCanvas();
+var cwFrame = document.getElementById('gameFrame');
+if (cwFrame) {
+  cwFrame.setAttribute('aria-label', 'Your game canvas');
+  cwFrame.setAttribute('aria-describedby', 'cwCanvasDesc');
+}
+ensureCanvasDesc();
 ensurePreviewKeyboardExit();
 updateProgress();
 maybeOfferContinue();

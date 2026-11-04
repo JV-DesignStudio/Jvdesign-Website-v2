@@ -98,6 +98,34 @@ canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box
 .sr-summary-stats b{color:#ffd24a}
 #endSummary{margin:10px 0;max-width:340px;width:100%}
 @media (pointer:coarse){.coach{display:none}}
+/* Two-player pads: P1 left, P2 right, only visible for touch. */
+.dpad.p2{left:auto;right:12px;transform:none}
+.dpad.p1-duo{left:12px;transform:none}
+/* Star map + cosmetic shop */
+.star-map{position:absolute;inset:0;background:rgba(3,1,15,.97);z-index:30;overflow-y:auto;padding:18px 16px 40px;color:#efe9ff}
+.star-map h2{margin:6px 0 10px;color:#E8A800;font-size:1.3rem}
+.star-map h3{margin:16px 0 6px;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:#9d8ec9}
+.sm-close{float:right;background:rgba(167,139,250,.16);border:1px solid rgba(200,182,255,.35);color:#efe9ff;border-radius:999px;padding:6px 14px;font:inherit;font-weight:700;cursor:pointer}
+.sm-list{display:flex;flex-direction:column;gap:6px}
+.sm-row{display:flex;justify-content:space-between;gap:10px;align-items:center;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:10px;padding:8px 10px;font-size:.84rem}
+.sm-row b{color:#ffd24a}
+.sm-row .on{color:#7dffd4;font-weight:800}
+.sm-row .off{color:#9d8ec9}
+.sm-row button{background:linear-gradient(135deg,#c98a2e,#E8A800);border:0;color:#1a1208;border-radius:999px;padding:5px 12px;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer}
+.sm-row button[disabled]{opacity:.45;cursor:not-allowed}
+.sm-pips{display:flex;gap:4px;flex-wrap:wrap}
+.sm-pips i{width:10px;height:10px;border-radius:50%;background:rgba(200,182,255,.25)}
+.sm-pips i.on{background:#ffd24a}
+.key-panel{display:none;gap:6px;flex-wrap:wrap;justify-content:center}
+.key-panel.open{display:flex}
+.key-panel button{background:rgba(167,139,250,.14);border:1.5px solid rgba(200,182,255,.3);color:#d9cfff;border-radius:8px;padding:5px 10px;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer}
+.key-panel button.listening{border-color:#E8A800;color:#ffe9a0}
+.music-wrap{display:flex;align-items:center;gap:8px;justify-content:center;font-size:.8rem;color:#c8b6ff}
+.music-wrap input{width:110px;accent-color:#E8A800}
+body.hc .coach{background:#000;border-color:#fff;color:#fff}
+body.hc .hud small,body.hc .hint{color:#fff}
+.sm-empty{font-size:.8rem;color:#9d8ec9}
+@media (hover:hover) and (pointer:fine){.dpad{display:none}}
 </style>
 <script type="application/ld+json">
 {
@@ -141,6 +169,8 @@ canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box
     <div><small>Trail</small><b id="length">3</b></div>
     <div><small>Best</small><b id="best">0</b></div>
     <div><small>Goal</small><b id="goal">5</b></div>
+    <div class="time-box hidden" id="timeBox"><small>Time</small><b id="timeLeft">1:30</b></div>
+    <div class="time-box hidden" id="p2Box"><small>P2 Stars</small><b id="p2Score">0</b></div>
   </div>
 
   <div class="stage">
@@ -177,6 +207,10 @@ canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box
           <div class="pills" id="modePills" role="group" aria-label="Sky mode">
             <button type="button" class="pill" data-mode="classic">Classic</button>
             <button type="button" class="pill" data-mode="nebula">Nebula</button>
+            <button type="button" class="pill" data-mode="nightfall">Nightfall</button>
+            <button type="button" class="pill" data-mode="mission">Mission</button>
+            <button type="button" class="pill" data-mode="zen">Zen</button>
+            <button type="button" class="pill" data-mode="duo">Duo</button>
           </div>
         </div>
         <div class="opt-group">
@@ -194,6 +228,21 @@ canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box
         <label class="opt-check"><input type="checkbox" id="wrapToggle"> Wrap around the edges</label>
         <label class="opt-check"><input type="checkbox" id="hapticsBox"> Vibrate on a phone</label>
         <label class="opt-check"><input type="checkbox" id="a11yBox"> Text mode for screen readers</label>
+        <label class="opt-check"><input type="checkbox" id="ghostRaceBox"> Race your best ghost</label>
+        <label class="opt-check"><input type="checkbox" id="hcBox"> High contrast</label>
+        <label class="opt-check"><input type="checkbox" id="largeBox"> Larger trail symbols</label>
+        <div class="music-wrap">
+          <span>Music</span>
+          <input type="range" id="musicVol" min="0" max="1" step="0.05" value="0.35" aria-label="Music volume">
+          <button id="musicBtn" type="button" class="share-btn" style="padding:5px 12px" aria-pressed="false">🎵</button>
+        </div>
+        <button class="share-btn" id="keysBtn" type="button">Change keys</button>
+        <div class="key-panel" id="keyPanel">
+          <button type="button" data-bind="up">Up</button>
+          <button type="button" data-bind="left">Left</button>
+          <button type="button" data-bind="down">Down</button>
+          <button type="button" data-bind="right">Right</button>
+        </div>
       </div>
       <div class="legend" aria-hidden="true">
         <span><i style="background:#ffd24a"></i>Star</span>
@@ -201,23 +250,55 @@ canvas{display:block;touch-action:none;border-radius:14px;background:#05010f;box
         <span><i style="background:#6fd3ff"></i>Slow</span>
         <span><i style="background:#7dffd4"></i>Shield</span>
         <span><i style="background:#d9a0ff"></i>Magnet</span>
+        <span><i style="background:#9d8ec9"></i>Ghost</span>
+        <span><i style="background:#bfeaff"></i>Freeze</span>
+        <span><i style="background:#ffd24a"></i>Double</span>
+        <span><i style="background:#ff7a3c"></i>Bomb</span>
         <span><i style="background:#b3123a"></i>Dark spark</span>
+        <span><i style="background:#6b4bb0"></i>Wormhole</span>
       </div>
       <p class="hint" style="font-size:.82rem;color:#9d8ec9">Arrow keys or W A S D to steer. Enter starts, P pauses. On a phone, swipe or use the arrows. The compass points to the next star.</p>
       <p id="dailyHint" style="font-size:13px;color:#c4b5fd;font-weight:700;min-height:1.2em"></p>
       <button class="btn" id="playBtn" data-jvds-play>Play</button>
+      <button class="btn-ghost hidden" id="resumeBtn" type="button">Continue last run</button>
       <button class="share-btn" id="shareBtn" type="button">Copy challenge link</button>
+      <button class="share-btn" id="starMapBtn" type="button">Star map</button>
       <button class="btn-ghost" data-go="../arcade.html">Back to Arcade</button>
     </div>
 
-    <div class="overlay hidden" id="endScreen" role="dialog" aria-live="polite" aria-atomic="true" aria-labelledby="endTitle">
+    <div class="overlay hidden" id="endScreen" role="dialog" aria-modal="true" aria-live="polite" aria-atomic="true" aria-labelledby="endTitle">
       <h2 id="endTitle" tabindex="-1">Your constellation faded</h2>
       <p id="endLine">Stardust gathers the light back up. Try a longer trail next time.</p>
       <p id="dailyLine" style="font-size:13px;color:#c4b5fd;font-weight:700;min-height:1.2em"></p>
       <div id="endSummary"></div>
       <button class="btn" id="againBtn">Play again</button>
+      <button class="share-btn" id="shareScoreBtn" type="button">Share score</button>
       <button class="btn-ghost" data-go="../arcade.html">Back to Arcade</button>
     </div>
+
+    <div class="dpad p2 hidden" id="dpad2">
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+      <button id="d2Up" aria-label="Player two steer up">▲</button>
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+      <button id="d2Left" aria-label="Player two steer left">◀</button>
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+      <button id="d2Right" aria-label="Player two steer right">▶</button>
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+      <button id="d2Down" aria-label="Player two steer down">▼</button>
+      <button class="empty" tabindex="-1" aria-hidden="true"></button>
+    </div>
+  </div>
+
+  <div class="star-map hidden" id="starMap" role="dialog" aria-modal="true" aria-label="Star map">
+    <button class="sm-close" id="starMapClose" type="button">Close</button>
+    <h2>Star map</h2>
+    <p id="smSummary" style="font-size:.85rem;color:#c8b6ff"></p>
+    <h3>Achievements</h3>
+    <div class="sm-list" id="smAch"></div>
+    <h3>Constellations</h3>
+    <div class="sm-list" id="smMissions"></div>
+    <h3>Cosmetics shop</h3>
+    <div class="sm-list" id="smShop"></div>
   </div>
 </main>
 

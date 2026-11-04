@@ -253,7 +253,7 @@ async function workshopJourney(browser, origin) {
     await page.keyboard.up('Shift');
     if (!(await isCw(page, 'checkStep', step.num))) {
       const apply = await tabToCw(page, 'checkStep', step.num);
-      if (!apply.ok) { stuck.push('step ' + step.num + ': Apply to Canvas unreachable'); continue; }
+      if (!apply.ok) { stuck.push('step ' + step.num + ': Check my code unreachable'); continue; }
     }
     await page.keyboard.press('Enter');
 

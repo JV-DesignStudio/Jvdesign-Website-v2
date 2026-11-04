@@ -12,7 +12,7 @@
      3. No clickable element is mouse only (div or span with a click action and
         no native focus, role or tabindex).
      4. A learner can finish a whole canvas workshop from step 1 to saved
-        completion with the keyboard alone: Show Solution, Apply to Canvas,
+        completion with the keyboard alone: Show Solution, Check my code,
         answer the Knowledge Check, next step, ledger written and restored.
 
    Run: node tests/keyboard-journey.js
@@ -180,7 +180,7 @@ async function workshopJourney(browser, origin) {
     await page.keyboard.up('Shift');
     if (!(await isCw(page, 'checkStep', step.num))) {
       const apply = await tabUntil(page, 'checkStep', step.num);
-      if (!apply.ok) { stuck.push('step ' + step.num + ': Apply to Canvas unreachable'); continue; }
+      if (!apply.ok) { stuck.push('step ' + step.num + ': Check my code unreachable'); continue; }
     }
     await page.keyboard.press('Enter');
 
