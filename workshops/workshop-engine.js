@@ -404,7 +404,7 @@ function failCodeChallenge(challenge, btn, detail) {
   if (detail) {
     fb.innerHTML = '<span class="fb-icon">❌</span><span></span>';
     fb.querySelector('span:last-child').textContent =
-      'Your answers look right, but the code did not do what this step needs: ' + detail;
+      'Not yet. Test failed. Expected: the code to behave like the step asks. Actual: ' + detail;
   } else {
     fb.innerHTML = '<span class="fb-icon">❌</span><span>Some answers are not quite right, check the highlighted blanks and try again.</span>';
   }

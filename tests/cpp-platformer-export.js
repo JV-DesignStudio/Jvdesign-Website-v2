@@ -38,8 +38,8 @@ const check = (name, ok, detail = '') => { console.log((ok ? 'PASS ' : 'FAIL ') 
     await page.goto(base + pagePath, { waitUntil: 'load' });
     await page.waitForFunction(() => window.CW && window.PC_projectFiles, { timeout: 8000 });
 
-    const hasButton = await page.evaluate(() => !!Array.from(document.querySelectorAll('.cw-canvas-panel .cw-btn-dl')).find((b) => /Continue in C\+\+/.test(b.textContent)));
-    check('has a "Continue in C++" button', hasButton);
+    const hasButton = await page.evaluate(() => !!document.querySelector('.cw-canvas-panel .cw-btn-dl[data-on="CW.downloadGame"]'));
+    check('has a Continue in C++ export button', hasButton);
 
     const files = await page.evaluate(() => window.PC_projectFiles().map((f) => ({ name: f.name, text: f.text })));
     const byName = {};
@@ -80,7 +80,7 @@ const check = (name, ok, detail = '') => { console.log((ok ? 'PASS ' : 'FAIL ') 
         ta.disabled = false; ta.readOnly = false; ta.value = step.solution;
         window.CW.checkStep(step.num);
         const fb = document.getElementById('feedback-' + step.num);
-        if (fb && /Almost!/.test(fb.textContent)) bad.push(step.num);
+        if (fb && fb.classList.contains('error')) bad.push(step.num);
       });
       return bad;
     });

@@ -60,7 +60,7 @@ const MIME = {
     });
     await page.waitForFunction(() => {
       const fb = document.getElementById('feedback-1');
-      return fb && /did not do what this step needs/.test(fb.textContent);
+      return fb && fb.classList.contains('error');
     }, { timeout: 8000 });
     const afterCheat = await page.evaluate(() => document.getElementById('progressCount').textContent);
     assert.ok(!/^1 \//.test(afterCheat), 'a token-only answer must not complete the step');
@@ -152,7 +152,7 @@ const MIME = {
     });
     await page.waitForFunction(() => {
       const fb = document.querySelector('#cc-a2264 .cc-feedback');
-      return fb && /did not do what this step needs/.test(fb.textContent);
+      return fb && fb.classList.contains('wrong');
     }, { timeout: 8000 });
     const ccFailed = await page.evaluate(() => !document.getElementById('cc-a2264').classList.contains('passed'));
     assert.ok(ccFailed, 'a matching blank with wrong behaviour must not pass');
