@@ -22,7 +22,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v42';
+const CACHE='jvds-v43';
 const CORE=[
   '/',
   '/offline.html',
@@ -107,6 +107,10 @@ const CORE=[
   '/learn/index.html',
   '/pick-your-path.html',
   '/workshops/start-here.html',
+  // A2289: flagship courses precached so a dropped school network cannot end a lesson.
+  '/workshops/my-first-browser-game.html',
+  '/workshops/my-first-python-game.html',
+  '/workshops/my-first-cpp-game.html',
   '/style-workshop-bundle.css',
   '/style-workshop-hub.css',
   '/style-workshop-welcome.css',
