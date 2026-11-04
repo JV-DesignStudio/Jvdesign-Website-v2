@@ -13,9 +13,20 @@ function field(desc, label){
   const m=String(desc||'').match(new RegExp(label+':\\s*([^\\n]+)'));
   return m?m[1].trim():'';
 }
+function isBad(v){
+  const s=String(v==null?'':v).trim();
+  return !s || s==='[object Object]' || s.includes('[object Object]');
+}
+function firstSentence(s,max){
+  const text=String(s||'').replace(/\s+/g,' ').trim();
+  if(!text) return '';
+  const m=text.match(/^(.{20,}?[.!?])(?:\s|$)/);
+  return (m?m[1]:text).slice(0,max||160);
+}
 function firstLineAfter(desc, label){
   const s=String(desc||''); const i=s.indexOf(label+':'); if(i<0) return '';
-  return s.slice(i+label.length+1).trim().split(/\n\n|\n[A-Z][A-Z /]+ - |\nWHEN /)[0].trim();
+  const v=s.slice(i+label.length+1).trim().split(/\n\n|\n[A-Z][A-Z /]+ - |\nWHEN /)[0].trim();
+  return isBad(v)?'':v;
 }
 function friendly(title, excerpt){
   const clean=String(excerpt||'').replace(/^File:\s*/,'').replace(/\s+/g,' ').trim();
@@ -39,19 +50,37 @@ function makePack(t){
   const isDev=String(t.desc||'').includes('DEV LOG DRAFT - REVIEW/COPY');
   const isSocial=String(t.desc||'').includes('COPY-READY SOCIAL / NEWSLETTER CARD') || String(t.title||'').startsWith('Social:');
   if(!isDev && !isSocial) return null;
+  const stripBad=(value)=>String(value||'')
+    .replace(/\[object Object\]/g,'')
+    .replace(/Evidence:\s*(?=\n|$)/gi,'Evidence: see card evidence.')
+    .replace(/[ \t]{2,}/g,' ')
+    .replace(/\n{3,}/g,'\n\n')
+    .trim();
+  if(String(t.desc||'').includes('[object Object]')) t.desc=stripBad(t.desc);
+  if(typeof t.evidence==='string' && t.evidence.includes('[object Object]')) t.evidence=stripBad(t.evidence);
+  if(t.evidence && typeof t.evidence==='object'){
+    for(const key of Object.keys(t.evidence)){
+      if(typeof t.evidence[key]==='string' && t.evidence[key].includes('[object Object]')) t.evidence[key]=stripBad(t.evidence[key]);
+    }
+  }
   const pack=t.commsPack||{};
   const title=t.title.replace(/^Social:\s*/,'');
   let devlog={...pack.devlog}; let social={...pack.social}; let newsletter=pack.newsletter||''; let image=pack.image||'';
   let kind=isDev?'devlog':'social';
   if(isDev){
+    const content=firstLineAfter(t.desc,'Content');
+    const excerpt=firstLineAfter(t.desc,'Excerpt') || firstSentence(content,160);
     devlog={
       id:(String(t.desc).match(/Target: devlog-data\.js post id (\d+)/)||[])[1]||'',
       title:(String(t.desc).match(/Title:\s*(.+)/)||[])[1]||title,
       date:(String(t.desc).match(/Date:\s*(.+)/)||[])[1]||'',
       tag:(String(t.desc).match(/Tag:\s*(.+)/)||[])[1]||t.tag,
-      excerpt:firstLineAfter(t.desc,'Excerpt'),
-      content:firstLineAfter(t.desc,'Content')
+      excerpt,
+      content
     };
+    if(String(t.desc||'').includes('[object Object]')){
+      t.desc=String(t.desc).replace(/Excerpt:\s*\n?\s*\[object Object\]/ig,`Excerpt:\n${excerpt||'(missing excerpt)'}`);
+    }
   }
   if(isSocial){
     image=field(t.desc,'Image card')||image;

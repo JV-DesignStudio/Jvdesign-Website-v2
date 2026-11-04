@@ -26,6 +26,18 @@ function field(entry, name) {
   return match ? unescapeJsString(match[1]) : '';
 }
 
+function cleanField(value) {
+  const text = String(value || '').trim();
+  return text === '[object Object]' ? '' : text;
+}
+
+function firstSentence(value, max) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  const match = text.match(/^(.{20,}?[.!?])(?:\s|$)/);
+  return (match ? match[1] : text).slice(0, max || 160);
+}
+
 function latestDrafts() {
   const files = fs.readdirSync(DRAFT_DIR)
     .filter((file) => /^devlog-draft-A\d+-\d+\.json$/.test(file))
@@ -49,8 +61,8 @@ function buildDevlogBlock(draft, task) {
   const date = field(entry, 'date') || draft.parsed.date || '';
   const tag = field(entry, 'tag') || task.tag || '';
   const emoji = field(entry, 'emoji') || '';
-  const excerpt = field(entry, 'excerpt');
-  const content = field(entry, 'content');
+  const content = cleanField(field(entry, 'content'));
+  const excerpt = cleanField(field(entry, 'excerpt')) || firstSentence(content, 160);
   return [
     'DEV LOG DRAFT - REVIEW/COPY',
     '',

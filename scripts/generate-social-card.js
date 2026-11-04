@@ -67,6 +67,7 @@ function shortDate(d) {
 }
 function cleanText(v) { return String(v || '').replace(/[\u2013\u2014]/g, ' - '); }
 function escXml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function relPath(p) { return path.relative(ROOT, p).split(path.sep).join('/'); }
 
 function parsePosts(srcText) {
   const sandbox = { console: { log: () => {}, warn: () => {} }, window: {} };
@@ -245,7 +246,7 @@ async function main() {
     return parseInt(b.id,10) - parseInt(a.id,10);
   });
   let selected = posts;
-  if (opts.id) selected = posts.filter(p=>p.id===opts.id);
+  if (opts.id) selected = posts.filter(p=>String(p.id)===String(opts.id));
   else if (!opts.all) selected = posts.slice(0, opts.latest);
 
   if (!fs.existsSync(QUEUE_DIR)) fs.mkdirSync(QUEUE_DIR, {recursive:true});
@@ -264,20 +265,20 @@ async function main() {
     const exists = sameIdPng ? true : fs.existsSync(outPath);
 
     if (opts.check) {
-      if (exists && !opts.force) { console.log(`✓ exists: ${path.relative(ROOT, target)} (id=${p.id})`); skipped++; }
-      else { console.log(`○ would create: ${path.relative(ROOT, outPath)} - "${p.title}" (${p.date})`); would++; }
+      if (exists && !opts.force) { console.log(`✓ exists: ${relPath(target)} (id=${p.id})`); skipped++; }
+      else { console.log(`○ would create: ${relPath(outPath)} - "${p.title}" (${p.date})`); would++; }
       continue;
     }
-    if (exists && !opts.force) { console.log(`↷ skip exists: ${path.relative(ROOT, target)}`); skipped++; continue; }
-    const finalPath = opts.force && sameIdPng ? path.join(QUEUE_DIR, sameIdPng) : outPath;
-    // if forcing and slug changed, remove old if name differs
-    if (opts.force && sameIdPng && sameIdPng !== path.basename(finalPath) && sameIdPng !== pngName) {
+    if (exists && !opts.force) { console.log(`↷ skip exists: ${relPath(target)}`); skipped++; continue; }
+    const finalPath = opts.force ? outPath : (sameIdPng ? path.join(QUEUE_DIR, sameIdPng) : outPath);
+    // if forcing and the slug/date changed, remove the old file
+    if (opts.force && sameIdPng && sameIdPng !== path.basename(finalPath)) {
       try { fs.unlinkSync(path.join(QUEUE_DIR, sameIdPng)); }catch{}
     }
     try {
       await generateCard(p, finalPath);
       const stat = fs.statSync(finalPath);
-      console.log(`✓ card: ${path.relative(ROOT, finalPath)} - "${p.title}" (${p.date}) ${Math.round(stat.size/1024)}kB 1080x1080`);
+      console.log(`✓ card: ${relPath(finalPath)} - "${p.title}" (${p.date}) ${Math.round(stat.size/1024)}kB 1080x1080`);
       created++;
       existing.add(path.basename(finalPath));
       existingIds.add(p.id);
@@ -309,7 +310,7 @@ async function main() {
     if (would>0) console.log('Run without --check to create.');
     process.exit(0);
   }
-  console.log(`\ndone: ${created} created, ${skipped} skipped, ${posts.length} total posts, queue dir ${path.relative(ROOT, QUEUE_DIR)}`);
+  console.log(`\ndone: ${created} created, ${skipped} skipped, ${posts.length} total posts, queue dir ${relPath(QUEUE_DIR)}`);
 }
 
 main().catch(e=>{ console.error(e); process.exit(1); });

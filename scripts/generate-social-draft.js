@@ -24,6 +24,7 @@ const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'devlog-data.js');
 const QUEUE_DIR = path.join(ROOT, 'social-posts', 'queue');
 const { SITE, siteUrl, primaryHref, postLinks } = require('./lib/devlog-links');
+const socialGuard = require('./lib/social-guard');
 
 const TAG_HASHTAGS = {
   games:     ['GameDev', 'IndieGame', 'KidsCoding', 'JVDesignStudio'],
@@ -64,7 +65,11 @@ function shortDate(d) {
 }
 
 function cleanText(v) {
-  return String(v || '').replace(/[--]/g, '-').trim();
+  if (v && typeof v === 'object') {
+    v = v.text || v.excerpt || v.content || v.summary || (Array.isArray(v) ? v.join(' ') : '');
+  }
+  const text = String(v == null ? '' : v).replace(/\[object Object\]/g, '').replace(/[--]/g, '-').trim();
+  return text;
 }
 
 function loadPosts() {
@@ -146,8 +151,17 @@ function buildDraft(post) {
   const newsletter = buildNewsletterBlurb(post);
 
   const xLen = [...xCopy].length; // emoji-aware length
+  const issues = Array.from(new Set([
+    ...socialGuard.issues(xCopy).map((issue) => 'X: ' + issue),
+    ...socialGuard.issues(igCopy).map((issue) => 'Instagram: ' + issue),
+    ...socialGuard.issues(newsletter).map((issue) => 'newsletter: ' + issue),
+  ]));
+  const warning = issues.length
+    ? ['> **COPY CHECK: internal language found (' + issues.join(', ') + '). Rewrite before posting.**', '']
+    : [];
 
-  return { mdName, pngName, content: [
+  return { mdName, pngName, issues, content: [
+    ...warning,
     `# ${post.emoji} ${post.title}`,
     '',
     '> **Status: DRAFT - must pass board review before posting**',
@@ -198,7 +212,7 @@ function main() {
     return parseInt(b.id, 10) - parseInt(a.id, 10);
   });
 
-  if (opts.id) posts = posts.filter(p => p.id === opts.id);
+  if (opts.id) posts = posts.filter(p => String(p.id) === String(opts.id));
   else if (!opts.all) posts = posts.slice(0, opts.latest);
 
   if (!fs.existsSync(QUEUE_DIR)) fs.mkdirSync(QUEUE_DIR, { recursive: true });
@@ -207,7 +221,7 @@ function main() {
 
   let created = 0, skipped = 0, would = 0;
   for (const p of posts) {
-    const { mdName, content } = buildDraft(p);
+    const { mdName, content, issues } = buildDraft(p);
     const hasMd = [...existing].some(f => f.endsWith('.md') && f.includes(`-${p.id}-`));
     const outPath = path.join(QUEUE_DIR, mdName);
 
@@ -220,6 +234,7 @@ function main() {
     if (hasMd && !opts.force) { console.log(`↷ skip: md exists for id=${p.id}`); skipped++; continue; }
 
     fs.writeFileSync(outPath, content, 'utf8');
+    if (issues.length) console.log(`  copy check: ${issues.join(', ')}`);
     console.log(`✓ draft: social-posts/queue/${mdName} - "${p.title}"`);
     created++;
     existing.add(mdName);
