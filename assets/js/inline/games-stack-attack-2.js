@@ -7,6 +7,7 @@ const soundManager = new SoundManager(gameSystem);
 gameSystem.trackScore({ xpDivisor: 10, tiers: [[1, 'firstStack'], [100, 'score100'], [300, 'score300'], [500, 'score500']] });
 
 window.addEventListener('beforeunload', () => {
+  if (!gameSystem) return;
   gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
 });

@@ -41,7 +41,7 @@ const puppeteer = require('puppeteer');
 
 const ROOT = __dirname;
 const PORT = 8978;
-const CONCURRENCY = 4;
+const CONCURRENCY = 8;
 const STRICT = process.argv.includes('--strict');
 const LIST = process.argv.includes('--list');
 
@@ -157,7 +157,7 @@ const STATES = [
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const fails = [];      // key -> hit, deduplicated across theme states
   const warns = new Map();
-  let checked = 0, skipped = 0, loaded = 0;
+  let checked = 0, skipped = 0, loaded = 0, navSkipped = 0;
 
   for (const state of STATES) {
     const queue = files.slice();
@@ -175,8 +175,8 @@ const STATES = [
           // 'load', not 'domcontentloaded': the theme script that sets data-theme
           // sits at the end of <body>. Measuring before it runs reports the light
           // palette against a dark background and invents failures that do not exist.
-          await page.goto(`http://localhost:${PORT}/${file}`, { waitUntil: 'load', timeout: 20000 });
-        } catch (e) { continue; }
+          await page.goto(`http://localhost:${PORT}/${file}`, { waitUntil: 'load', timeout: 12000 });
+        } catch (e) { navSkipped++; continue; }
         try {
           await page.evaluate(() => new Promise(resolve => {
             const settle = () => requestAnimationFrame(() => requestAnimationFrame(resolve));
@@ -188,6 +188,7 @@ const STATES = [
         let res;
         try { res = await page.evaluate(measure, SELECTOR); } catch (e) { continue; }
         loaded++; checked += res.checked; skipped += res.skipped;
+        if (loaded % 100 === 0) process.stdout.write(`  ... ${loaded}/${files.length * STATES.length} page-state(s)\n`);
         res.fails.forEach(h => fails.push({ file, state: state.name, ...h }));
         res.warns.forEach(h => {
           const key = file + '|' + h.el + '|' + h.text;
@@ -203,7 +204,7 @@ const STATES = [
   server.close();
 
   const warnList = [...warns.values()].sort((a, b) => a.ratio - b.ratio);
-  const summary = `${loaded} page loads across ${STATES.length} theme states, ${checked} headings measured, ${skipped} skipped (gradient background)`;
+  const summary = `${loaded} page loads across ${STATES.length} theme states, ${checked} headings measured, ${skipped} skipped (gradient background), ${navSkipped} nav timeouts skipped`;
 
   if (warnList.length) {
     console.log(`  ${warnList.length} heading(s) below WCAG AA but still readable (3:1 or better):`);

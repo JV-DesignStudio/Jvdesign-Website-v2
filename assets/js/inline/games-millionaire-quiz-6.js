@@ -9,6 +9,7 @@ window.addEventListener('beforeunload', () => {
   // renderResults() already records the run once (guarded by state._scored)
   // the moment a completed quiz's results screen shows; only fall back to
   // recording here for a tab closed mid-quiz, before that ever happened.
+  if (!gameSystem) return;
   if (!state._scored) gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
 });

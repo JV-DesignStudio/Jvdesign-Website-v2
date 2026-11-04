@@ -17,6 +17,7 @@ JVDSArcade.register({
 gameSystem.trackScore({ xpDivisor: 10, tiers: [[1, 'firstMatch'], [500, 'score500'], [1000, 'score1000'], [2000, 'score2000']] });
 
 window.addEventListener('beforeunload', () => {
+  if (!gameSystem) return;
   gameSystem.recordGamePlay(Date.now());
   gameSystem.saveState();
 });

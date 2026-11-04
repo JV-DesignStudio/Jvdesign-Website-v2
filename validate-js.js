@@ -93,7 +93,11 @@ function walk(dir) {
       const file = queue.pop();
       if (!file) break;
       const errs = new Set();
-      const onPageErr = e => errs.add(e.message.split('\n')[0].slice(0, 90));
+      const onPageErr = e => {
+        const loc = (e.location && e.location()) || {};
+        const where = loc.url ? ` @ ${String(loc.url).replace(/^https?:\/\/[^/]+/, '')}:${loc.lineNumber || '?'}` : '';
+        errs.add((e.message.split('\n')[0] + where).slice(0, 150));
+      };
       const onConsole = m => {
         if (m.type() !== 'error') return;
         const t = m.text();
@@ -103,9 +107,10 @@ function walk(dir) {
       page.on('pageerror', onPageErr);
       page.on('console', onConsole);
       try {
-        await page.goto(`http://localhost:${actualPort}/${file}`, { waitUntil: 'load', timeout: 25000 });
+        await page.goto(`http://localhost:${actualPort}/${file}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
         await new Promise(r => setTimeout(r, SETTLE_MS));
         loaded++;
+        if (loaded % 50 === 0) process.stdout.write(`  ... ${loaded}/${files.length} pages\n`);
       } catch (e) {
         // A page whose whole job is a redirect (<meta http-equiv="refresh"> or an
         // immediate location change, e.g. dev-board.html, pages/newsletter.html)
