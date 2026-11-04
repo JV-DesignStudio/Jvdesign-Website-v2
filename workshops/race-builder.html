@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vcYPy3Y/X/cxan3ZgFSrEffA99QQRj9Fs0fpU0e+2PQ=' 'sha256-z+R3ypxr3/+0v1uglpqPZj6RIdFUUacHJIdvTjPgzlY=' 'sha256-WeLyaspPxhaz5/QmqVwWC1dgKAArxCbg3upgED0w85s=' 'sha256-ErQaXJBW46pEeE1Q55e4WZX9hWRjHjolehTzkLEeu/w=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vcYPy3Y/X/cxan3ZgFSrEffA99QQRj9Fs0fpU0e+2PQ=' 'sha256-z+R3ypxr3/+0v1uglpqPZj6RIdFUUacHJIdvTjPgzlY=' 'sha256-KIZElb9K9jVyPzwB1jgxr5zL0yz/pKcguQnMGXN5ums=' 'sha256-ErQaXJBW46pEeE1Q55e4WZX9hWRjHjolehTzkLEeu/w=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -1069,14 +1069,23 @@ const stepDone=new Array(20).fill(false);
 
 function nav(i){
   const T=STEPS.length;
+  const locked=i<T-1 && !stepDone[i];
   return `<div class="step-nav">
-    <button class="btn-p" data-action="go" data-arg="${i-1}" ${i===0?'disabled':''}>← Back</button>
-    <button class="btn-n" data-action="go" data-arg="${i+1}" ${i===T-1?'disabled':''}>Next Step ?</button>
+    <button class="btn-p" data-action="go" data-arg="${i-1}" ${i===0?'disabled':''}>&larr; Back</button>
+    <button class="btn-n" data-action="go" data-arg="${i+1}" ${(i===T-1||locked)?'disabled':''}>Next Step &rarr;</button>
   </div>`;
 }
 
 function go(i){
   if(i<0||i>=STEPS.length) return;
+  if(i>currentStep){
+    for(let j=0;j<i;j++){
+      if(!stepDone[j]){
+        sout('Apply Step '+(j+1)+' to unlock this step.');
+        return;
+      }
+    }
+  }
   currentStep=i;
   renderStep();
   updateProgress();
@@ -1653,7 +1662,13 @@ const XP_PER_LEVEL=100;
 
 function saveProgress(){
   try{
-    const d={completed:stepDone.map((v,i)=>v?i:-1).filter(i=>i>=0),total:STEPS.length,stepDone,totalXp,workshopLevel,xp:totalXp,level:workshopLevel,ts:Date.now()};
+    const config={
+      carName:G.carName,carCol:G.carCol,topSpeed:G.topSpeed,accel:G.accel,handling:G.handling,
+      laps:G.laps,rivalCount:G.rivalCount,boostMult:G.boostMult,
+      f_car:G.f_car,f_physics:G.f_physics,f_track:G.f_track,f_rivals:G.f_rivals,
+      f_boost:G.f_boost,f_laps:G.f_laps,f_finish:G.f_finish
+    };
+    const d={completed:stepDone.map((v,i)=>v?i:-1).filter(i=>i>=0),total:STEPS.length,stepDone,totalXp,workshopLevel,xp:totalXp,level:workshopLevel,config,ts:Date.now()};
     localStorage.setItem(STORAGE_KEY,JSON.stringify(d));
   }catch(e){}
 }
@@ -1663,8 +1678,20 @@ function loadProgress(){
     if(!raw) return;
     const d=JSON.parse(raw);
     if(d.stepDone) d.stepDone.forEach((v,i)=>{stepDone[i]=v;});
-    if(d.totalXp) totalXp=d.totalXp;
-    if(d.workshopLevel) workshopLevel=d.workshopLevel;
+    if(d.totalXp!==undefined) totalXp=d.totalXp;
+    if(d.workshopLevel!==undefined) workshopLevel=d.workshopLevel;
+    if(d.config){
+      ['carName','carCol','topSpeed','accel','handling','laps','rivalCount','boostMult'].forEach(k=>{
+        if(d.config[k]!==undefined) G[k]=d.config[k];
+      });
+      ['f_car','f_physics','f_track','f_rivals','f_boost','f_laps','f_finish'].forEach(k=>{
+        if(typeof d.config[k]==='boolean') G[k]=d.config[k];
+      });
+      initCars();
+      initBoostPads();
+      updateHeroCard();
+      renderStep();
+    }
     updateProgress();
     updateXpDisplay();
   }catch(e){}
@@ -1710,6 +1737,9 @@ function showLevelUp(){
 function selectQuizOpt(el){
   el.closest('.quiz-options').querySelectorAll('.quiz-opt').forEach(o=>o.classList.remove('selected'));
   el.classList.add('selected');
+  const gate=el.closest('.quiz-gate');
+  const submit=gate&&gate.querySelector('.quiz-submit');
+  if(submit) submit.classList.add('show');
 }
 
 function checkQuiz(btn){
@@ -1809,8 +1839,8 @@ function checkTF(btn){
 }
 
 /* -- Bridge functions -- */
-function quizUnlock(n){ go(n+1); }
-function completeStep(n){ go(n+1); }
+function quizUnlock(n){ applyStep(currentStep); go(n+1); }
+function completeStep(n){ applyStep(currentStep); go(n+1); }
 
 loadProgress();
 

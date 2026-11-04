@@ -210,7 +210,7 @@
       for (var j = 0; j < item.opts.length; j++) {
         html += '<div class="bq-opt" data-i="' + j + '" data-action="bqSelect" data-arg="this"><span class="bq-letter">' + letters[j] + '</span><span>' + item.opts[j] + '</span></div>';
       }
-      html += '<button class="bq-check" disabled data-action="bqCheck" data-arg="this" data-arg2=" + i + ">Check Answer</button><div class="bq-fb"></div></div>';
+      html += '<button class="bq-check" disabled data-action="bqCheck" data-arg="this" data-arg2="' + i + '">Check Answer</button><div class="bq-fb"></div></div>';
     }
     html += '<div class="bq-done" id="bqDone"><div class="bq-done-t">🏆 ' + (CFG.name || 'Workshop') + ' complete!</div>' +
       '<div class="bq-done-s">Brilliant work! Your completion is saved. View your XP, badges and print a certificate on the <a href="my-progress.html">My Progress</a> page.</div></div>';
