@@ -164,6 +164,13 @@ const STATES = [
     const workers = Array.from({ length: CONCURRENCY }, async () => {
       const page = await browser.newPage();
       await page.setViewport({ width: 1440, height: 900 });
+      // External analytics/fonts are never rendered content we measure. Blocking
+      // them keeps the contrast gate fast and stops school-network timeouts.
+      await page.setRequestInterception(true);
+      page.on('request', (req) => {
+        if (/googletagmanager|google-analytics|fonts\.googleapis/.test(req.url())) req.abort();
+        else req.continue();
+      });
       await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: state.scheme }]);
       if (state.saved) {
         await page.evaluateOnNewDocument(v => { try { localStorage.setItem('jvds-theme', v); } catch (e) {} }, state.saved);
