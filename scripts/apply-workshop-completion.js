@@ -67,6 +67,22 @@ function closingBlock(entry) {
   ].join('\n');
 }
 
+function blockMatches(block, entry, bannerMode, html) {
+  if (!block || /style=/.test(block)) return false;
+  if (bannerMode) {
+    const banner = html.match(/<div[^>]*id=["']finishBanner["'][^>]*>/i);
+    if (!banner || html.indexOf(START) < banner.index) return false;
+    if (!/<div[^>]*class="[^"]*ws-finish/.test(block)) return false;
+    if (!block.includes('Finished when: ' + esc(entry.conditionText))) return false;
+  } else {
+    if (!/<section[^>]*id="wsFinish"/.test(block)) return false;
+    if (!block.includes(esc(entry.conditionText))) return false;
+  }
+  if (!block.includes('href="' + esc(entry.next.url) + '"')) return false;
+  if (!block.includes('my-progress.html')) return false;
+  return true;
+}
+
 function stripBlock(html) {
   const start = html.indexOf(START);
   const end = html.indexOf(END);
@@ -143,12 +159,19 @@ function apply(options) {
     }
 
     const original = fs.readFileSync(file, 'utf8');
+    const start = original.indexOf(START);
+    const end = original.indexOf(END);
+    const existing = start >= 0 && end > start ? original.slice(start, end) : '';
+    const bannerMode = entry.mode !== 'builder' || entry.hasFinishBanner;
+    /* Leave a hand-tuned block alone when it already says the right thing.
+       Builder-shell pages use their own utility classes, so rewriting a
+       matching block would churn another task's work. */
+    if (blockMatches(existing, entry, bannerMode, original)) { clean.push(entry.id); continue; }
     /* Always start from a page with no stamped block, then place the current
        one. That keeps a mode change (a page moving to the shared canvas
        engine, or a builder later gaining a finish banner) clean instead of
        leaving the old block at the wrong spot. */
     const stripped = stripBlock(original);
-    const bannerMode = entry.mode !== 'builder' || entry.hasFinishBanner;
     const want = bannerMode ? inlineBlock(entry) : closingBlock(entry);
     let next = bannerMode ? insertIntoFinishBanner(stripped, want) : insertClosing(stripped, want);
 

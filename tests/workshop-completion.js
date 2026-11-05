@@ -91,7 +91,7 @@ for (const w of tracked) {
     const bannerEnd = html.indexOf('</div>', open);
     check(w.id + ': finish condition sits inside the finish banner', start > open);
     const block = html.slice(start, html.indexOf('<!-- WS-FINISH:END -->'));
-    if (!/class="ws-finish-next"[^>]*href="([^"]+)"/.test(block)) fail(w.id + ': finish block has no next link');
+    if (!/class="[^"]*\bws-finish-next\b[^"]*"[^>]*href="([^"]+)"/.test(block)) fail(w.id + ': finish block has no next link');
     else if (!block.includes('Finished when:')) fail(w.id + ': finish block has no condition sentence');
     if (!nextTargetExists(w)) dotted.push(w.id + ' -> ' + w.next.url);
     void bannerEnd;
@@ -101,7 +101,7 @@ for (const w of tracked) {
       if (!/id=["']finishBanner["']/.test(html)) fail(w.id + ': no #finishBanner');
       else if (!/WS-FINISH:START/.test(html)) fail(w.id + ': no finish condition in the banner');
     } else if (!/id="wsFinish"/.test(html)) fail(w.id + ': no #wsFinish closing finish line');
-    if (!/class="ws-finish-next"[^>]*href="([^"]+)"/.test(html)) fail(w.id + ': ' + where + ' has no next link');
+    if (!/class="[^"]*\bws-finish-next\b[^"]*"[^>]*href="([^"]+)"/.test(html)) fail(w.id + ': ' + where + ' has no next link');
     if (!nextTargetExists(w)) dotted.push(w.id + ' -> ' + w.next.url);
   } else if (w.mode === 'canvas') {
     check(w.id + ': canvas page loads the canvas engine', /workshop-canvas-engine\.js/.test(html));
@@ -109,6 +109,18 @@ for (const w of tracked) {
 }
 check('every finish link points at a real page', dotted.length === 0);
 if (dotted.length) console.log('  broken: ' + dotted.join(', '));
+
+const inlineFinish = [];
+for (const w of tracked) {
+  if (!['engine', 'steps', 'builder'].includes(w.mode)) continue;
+  const html = page(w.page);
+  const start = html.indexOf('<!-- WS-FINISH:START -->');
+  const end = html.indexOf('<!-- WS-FINISH:END -->');
+  if (start < 0 || end < start) continue;
+  if (/style=/.test(html.slice(start, end))) inlineFinish.push(w.id);
+}
+check('finish blocks use shared CSS classes, not inline styles', inlineFinish.length === 0);
+if (inlineFinish.length) console.log('  inline: ' + inlineFinish.slice(0, 12).join(', '));
 
 check('canvas engine ships a finish box with a next link', /cw-remix/.test(page('workshop-canvas-engine.js')) && /See this in My Studio|Next:/.test(page('workshop-canvas-engine.js')));
 check('engine finish banner does not double up the next link', /ws-finish-next/.test(page('workshops/workshop-engine.js')));
