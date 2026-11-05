@@ -30,6 +30,7 @@
     'sky-high-friends': 'Steer with small corrections; big drags cost you height.',
     'critter-whack': 'Read the habitat clue first, then sort. Speed follows the rule.',
     'crossy-crew': 'Plan the next two hops, not only the one in front of you.',
+    'lumo-firefly': 'Rescue a firefly between shots to keep the combo alive without wasting a burst.',
     'stardust-snake': 'Leave yourself an exit lane before you turn for the next star.'
   };
 

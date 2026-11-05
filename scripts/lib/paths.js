@@ -53,7 +53,7 @@ const GAME_ORPHANS = [
   'games/crypt-crawlers.html','games/dough-dash.html',
   'games/dungeon-delve.html','games/echo-casebook.html','games/echo_fruit_catch.html',
   'games/garden-defense.html','games/little_steps.html','games/lumo-dash-page.html',
-  'games/lumo-dash.html','games/lumo-run.html','games/lumo_firefly_night.html',
+  'games/lumo-dash.html','games/lumo-run.html',
   'games/marble-run-lab.html','games/millionaire-quiz.html','games/mini-theme-park-builder.html',
   'games/mobile-games.html','games/neon-tiles.html','games/nibble-quest-page.html',
   'games/nibble-quest.html','games/paper-toss-deluxe.html','games/pastry-match.html',

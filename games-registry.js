@@ -304,6 +304,29 @@ window.JVDS_GAMES = [
     "learnHref": "/tools/arcade-game-maker.html",
     "learnLabel": "Make your own shooter"},
   {
+    "id": "lumo-firefly",
+    "thumb": "assets/game-thumbs/lumo-firefly.webp",
+    "cat": "Action",
+    "file": "lumo_firefly_night.html",
+    "title": "Lumo's Firefly Shooter",
+    "tag": "Night Garden Shooter",
+    "emoji": "🌻",
+    "bg": "linear-gradient(135deg,#0d0620,#14532d)",
+    "kids": true,
+    "desc": "Aim Lumo's lantern, fire light orbs, rescue fireflies and clear three short waves of shadow bugs. Chain combos, find power-ups and keep the garden glow alive.",
+    "difficulty": "Easy to learn",
+    "session": "3-5 min",
+    "controls": "Drag or arrow keys to aim, tap/click/Space to shoot, plus burst and slow pollen",
+    "storyHook": "The night garden has gone dark and shadow bugs are eating the glow.",
+    "character": "Lumo",
+    "objective": "Guard the garden, rescue fireflies and clear three short waves of shadow bugs.",
+    "finishLine": "The garden glows again, your best run is saved and the next wave is ready.",
+    "arcadeSession": "3-5 min",
+    "age": "Ages 7-12",
+    "learning": "Aiming · Timing · Combo planning",
+    "learnHref": "/tools/arcade-game-maker.html",
+    "learnLabel": "Make your own shooter"},
+  {
     "id": "stardust-snake",
     "thumb": "assets/game-thumbs/stardust-snake.webp",
     "cat": "Arcade",
@@ -352,7 +375,7 @@ window.JVDS_GAME_QUALITY = {
   "crossy-crew": "READY",
   "stardust-snake": "READY",
   "lumo-hive": "BETA",
-  "lumo-firefly": "HIDDEN"
+  "lumo-firefly": "BETA"
 };
 /* ── Release test records (A1956) ─────────────────────────────────────────
    Every READY game must have an entry here with a testDate (ISO date) and

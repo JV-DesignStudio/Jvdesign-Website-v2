@@ -22,7 +22,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v43';
+const CACHE='jvds-v44';
 const CORE=[
   '/',
   '/offline.html',
@@ -126,6 +126,17 @@ const CORE=[
   '/analytics-loader.js',
   '/sw-register.js',
   '/games-registry.js',
+  '/games/lumo_firefly_night.html',
+  '/style-game-lumo_firefly_night.css',
+  '/assets/js/inline/games-lumo-firefly-night-1.js',
+  '/story-run.js',
+  '/story-run.css',
+  '/game-system.js',
+  '/game-system.css',
+  '/game-system-score.js',
+  '/game-system-save.js',
+  '/audio-effects.js',
+  '/game-shell.js',
   '/workshops/workshop-track.js',
   '/cookie-consent.js',
   '/assets/mascots/ember-hero.webp',
