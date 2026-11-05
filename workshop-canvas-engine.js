@@ -309,6 +309,15 @@ if (!CFG) return;
 var STEPS = CFG.steps;
 var TEMPLATES = CFG.templates;
 
+/* A2304: saved code and completed steps are keyed by step number, so inserting
+   or renumbering a step would silently apply old work to the wrong step. A
+   course can bump CFG.version (default 1) when its steps change. Older saves
+   with no version are treated as the current version, so existing learners keep
+   their progress. A bump either uses CFG.migrations[oldVersion](state, steps)
+   to remap the save, or resets it with a clear message. */
+var COURSE_VERSION = CFG.version || 1;
+var versionNotice = '';
+
 var currentStep = 0;
 var completed = {};
 var editors = {};
@@ -594,9 +603,33 @@ function wsSyncProgress() {
   }
 }
 
+function migrateState(state) {
+  if (!state) return null;
+  var stored = state.version == null ? COURSE_VERSION : +state.version;
+  if (stored === COURSE_VERSION) return state;
+  var migrate = CFG.migrations && CFG.migrations[stored];
+  if (typeof migrate === 'function') {
+    try {
+      var next = migrate(state, STEPS) || state;
+      next.version = COURSE_VERSION;
+      /* Persist the remapped save now so getSavedCode() reads the new shape. */
+      try { localStorage.setItem(CFG.storageKey, JSON.stringify(next)); } catch(e) {}
+      return next;
+    } catch(e) {}
+  }
+  /* Numbering changed and there is no safe remap, so keep nothing that could
+     land on the wrong step. The learner is told instead of being confused. */
+  try {
+    localStorage.removeItem(CFG.storageKey);
+    localStorage.removeItem(CFG.storageKey + ':ledger');
+  } catch(e) {}
+  versionNotice = 'This workshop has been updated since your last visit. Your old saved work was not loaded, so you can start fresh from step 1.';
+  return null;
+}
+
 function loadState() {
   try {
-    var state = JSON.parse(localStorage.getItem(CFG.storageKey));
+    var state = migrateState(JSON.parse(localStorage.getItem(CFG.storageKey)));
     if (state) {
       currentStep = state.currentStep || 0;
       completed = state.completed || {};
@@ -617,6 +650,7 @@ function saveState() {
       if (editors[s.num]) codes[s.num] = editors[s.num].value;
     });
     localStorage.setItem(CFG.storageKey, JSON.stringify({
+      version: COURSE_VERSION,
       currentStep: currentStep,
       completed: completed,
       codes: codes,
@@ -1862,11 +1896,23 @@ document.addEventListener('click', function(e) {
   else if (action === 'resumeStep') resumeStep(arg);
 });
 
+function mountVersionNotice() {
+  if (!versionNotice) return;
+  var panel = document.getElementById('stepsPanel');
+  if (!panel || panel.querySelector('.cw-version-note')) return;
+  var note = document.createElement('p');
+  note.className = 'cw-version-note';
+  note.setAttribute('role', 'status');
+  note.textContent = versionNotice;
+  panel.insertBefore(note, panel.firstChild);
+}
+
 /* Init */
 ensureLiveStyle();
 loadState();
 ensureProgressStrip();
 renderSteps();
+mountVersionNotice();
 updateCanvas();
 var cwFrame = document.getElementById('gameFrame');
 if (cwFrame) {

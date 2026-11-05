@@ -36,6 +36,21 @@ var TOTAL = window.WORKSHOP_TOTAL;
 var STORAGE_KEY = window.WORKSHOP_KEY;
 var PROFILE_ID = window.WORKSHOP_PROFILE_ID;
 
+/* A2304: completed step numbers are saved by index, so inserting a step would
+   shift old progress onto the wrong step. A page can bump data-workshop-version
+   (default 1) when its steps change. Saves with no version are treated as the
+   current version, so existing learners keep their progress. A bump either uses
+   window.WORKSHOP_MIGRATIONS[oldVersion](data) to remap, or resets the save
+   with a clear message instead of misaligning it. */
+var VERSION = 1;
+var versionNotice = '';
+try {
+  var versionBody = document.body;
+  if (versionBody && versionBody.dataset && versionBody.dataset.workshopVersion) {
+    VERSION = parseInt(versionBody.dataset.workshopVersion, 10) || 1;
+  }
+} catch (e) {}
+
 var completed = new Set();
 var xp = 0;
 var level = 1;
@@ -80,6 +95,7 @@ function correctIndex(gate) {
 function saveProgress() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      version: VERSION,
       completed: [...completed], total: TOTAL, xp: xp, level: level, streak: streak,
       bestStreak: bestStreak, totalQuizzes: totalQuizzes, correctFirst: correctFirst,
       quizzesPassed: [...document.querySelectorAll('.quiz-gate.passed')].map(function(q){ return q.id; }),
@@ -94,6 +110,21 @@ function loadProgress() {
   try {
     var data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
     if (!data) return;
+    var stored = data.version == null ? VERSION : +data.version;
+    if (stored !== VERSION) {
+      var migrate = window.WORKSHOP_MIGRATIONS && window.WORKSHOP_MIGRATIONS[stored];
+      if (typeof migrate === 'function') {
+        try {
+          data = migrate(data) || data;
+          data.version = VERSION;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {}
+      } else {
+        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+        versionNotice = 'This workshop has been updated since your last visit. Your old saved progress was not loaded, so you can start fresh from step 1.';
+        return;
+      }
+    }
     if (data.xp) { xp = data.xp; level = data.level || 1; streak = data.streak || 0; bestStreak = data.bestStreak || 0; totalQuizzes = data.totalQuizzes || 0; correctFirst = data.correctFirst || 0; }
     if (data.completed && data.completed.length) {
       data.completed.forEach(function(n) {
@@ -1096,9 +1127,23 @@ window._wsEngine = {
   awardXp: awardXp, saveProgress: saveProgress, updateXpDisplay: updateXpDisplay
 };
 
+function mountVersionNotice() {
+  if (!versionNotice) return;
+  var host = document.getElementById('step-1');
+  if (!host || !host.parentNode) return;
+  if (host.parentNode.querySelector('.ws-version-note')) return;
+  var note = document.createElement('p');
+  note.className = 'ws-version-note';
+  note.setAttribute('role', 'status');
+  note.textContent = versionNotice;
+  note.style.cssText = 'margin:0 0 16px;padding:10px 14px;border:1px solid var(--gold,#c98a2e);border-radius:10px;background:var(--gold-lt,#faf1e0);color:var(--charcoal,#1a1208);font-size:.86rem;line-height:1.5';
+  host.parentNode.insertBefore(note, host);
+}
+
 shuffleQuizOptions();
 initKeyboardAccess();
 loadProgress();
+mountVersionNotice();
 updateProgress();
 updateXpDisplay();
 buildSfxToggle();
