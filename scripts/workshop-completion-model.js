@@ -40,6 +40,8 @@ const REFERENCE_IDS = new Set([
   'my-first-unity-game', 'my-first-unreal-game', 'my-first-video-game'
 ]);
 
+const CLASS_ONLY = new Set(['roblox-creator-journey']);
+
 const ENGINE_HUBS = {
   'Blender': 'engine-blender.html',
   'C++': 'engine-cpp.html',
@@ -186,6 +188,7 @@ function build() {
       finishSelector: cond.selector,
       storageKey: storageKeyFor(mode, src),
       hasFinishBanner: /id=["']finishBanner["']/.test(src),
+      classOnly: CLASS_ONLY.has(entry.id) || undefined,
       next: mode === 'reference' ? null : resolveNext(entry, src, catalogueById)
     });
   }

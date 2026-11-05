@@ -67,6 +67,26 @@ function closingBlock(entry) {
   ].join('\n');
 }
 
+function closingBlockClassOnly(entry) {
+  const next = entry.next;
+  return [
+    START,
+    `<section class="ws-finish" id="wsFinish" aria-labelledby="ws-finish-title" data-workshop-finish="${esc(entry.id)}">`,
+    '  <div class="ws-finish-inner">',
+    '    <p class="ws-finish-kicker"><img src="/assets/mascots/echo-badge.webp" alt="" width="22" height="22" loading="lazy"> Echo\'s finish line</p>',
+    '    <h2 class="ws-finish-title" id="ws-finish-title">You\'re finished when...</h2>',
+    `    <p class="ws-finish-condition">${esc(entry.conditionText)}</p>`,
+    '    <p class="ws-finish-body">That is the proof you finished: the thing you made plays or opens outside this page. Save or download it, then show it to someone.</p>',
+    '    <div class="ws-finish-actions">',
+    `      <a class="ws-finish-next" href="${esc(next.url)}">Next step: ${esc(next.label)} &rarr;</a>`,
+    '      <a class="ws-finish-progress" href="my-progress.html">See my progress</a>',
+    '    </div>',
+    '  </div>',
+    '</section>',
+    END
+  ].join('\n');
+}
+
 function stripBlock(html) {
   const start = html.indexOf(START);
   const end = html.indexOf(END);
@@ -149,7 +169,9 @@ function apply(options) {
        leaving the old block at the wrong spot. */
     const stripped = stripBlock(original);
     const bannerMode = entry.mode !== 'builder' || entry.hasFinishBanner;
-    const want = bannerMode ? inlineBlock(entry) : closingBlock(entry);
+    const want = bannerMode
+      ? inlineBlock(entry)
+      : (entry.classOnly ? closingBlockClassOnly(entry) : closingBlock(entry));
     let next = bannerMode ? insertIntoFinishBanner(stripped, want) : insertClosing(stripped, want);
 
     if (!next) next = insertClosing(stripped, want);
