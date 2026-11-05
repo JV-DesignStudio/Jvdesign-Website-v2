@@ -92,6 +92,19 @@ html.jvds-immersive .wrap>.storyrun{display:none}
   .pill{padding:10px 14px}
   .pause-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 14px;font-size:.8rem}
 }
+/* Mode, difficulty, help, pause and local leaderboard. */
+.modes{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%}
+.modebtn{flex:1 1 auto;min-width:84px;border:1px solid var(--line);background:#0d2233;color:#9fd8ea;border-radius:8px;padding:7px 8px;font:inherit;font-size:.7rem;font-weight:800;letter-spacing:.04em;cursor:pointer}
+.modebtn.active{background:var(--green);border-color:var(--green);color:#052a06}
+.modebtn[aria-pressed="true"]{box-shadow:0 0 12px #7cfc0044}
+.lb{width:100%;border:1px solid var(--line);border-radius:10px;background:#0a1420;padding:6px 8px;font-size:.72rem;color:#bfe6f2;line-height:1.45}
+.lb b{color:#ffd166}
+.lb .lb-title{display:block;color:#8fe36a;font-size:.68rem;letter-spacing:.08em;margin-bottom:2px}
+#pauseOverlay{z-index:6;pointer-events:none}
+#pauseOverlay .big,#pauseOverlay h2,#pauseOverlay p{pointer-events:auto}
+.pause-btn{z-index:7}
+#helpOverlay .quote{max-width:520px;text-align:left}
+.btn:focus-visible,.buy:focus-visible,.tab:focus-visible,.pill:focus-visible,.pause-btn:focus-visible,.modebtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 </style>
 <script type="application/ld+json">
 {
@@ -126,7 +139,16 @@ html.jvds-immersive .wrap>.storyrun{display:none}
 <div class="menu-main" id="menuMain">
 <p id="ovText">Dodge the swarm, shoot the army, collect green health and blue power stars. Clear a wave to reach the station shop, and buy permanent ship upgrades from this menu between runs.</p>
 <p id="titleStats" class="mini lt"></p>
-<div class="big"><button class="btn primary" id="startBtn" data-jvds-play>Play!</button><button class="btn" id="runCardBtn" type="button" style="display:none">Save Run Card</button><button class="btn" id="menuUpBtn" type="button">Ship Upgrades</button></div>
+<div class="modes" role="group" aria-label="Game mode">
+<button class="modebtn active" id="modeClassic" type="button" data-mode="classic" aria-pressed="true">Classic</button>
+<button class="modebtn" id="modeDaily" type="button" data-mode="daily" aria-pressed="false">Daily</button>
+<button class="modebtn" id="modeBoss" type="button" data-mode="bossrush" aria-pressed="false">Boss Rush</button>
+<button class="modebtn" id="modeZen" type="button" data-mode="zen" aria-pressed="false">Zen</button>
+</div>
+<button class="btn small" id="diffBtn" type="button">Difficulty: Pilot</button>
+<p id="dailyStats" class="mini lt"></p>
+<div class="big"><button class="btn primary" id="startBtn" data-jvds-play>Play!</button><button class="btn" id="runCardBtn" type="button" style="display:none">Save Run Card</button><button class="btn" id="menuUpBtn" type="button">Ship Upgrades</button><button class="btn small" id="helpBtn" type="button">How to Play</button></div>
+<div id="leaderboard" class="lb" aria-label="Local high scores"></div>
 </div>
 <div class="menu-panel hidden" id="menuPanel">
 <div class="menu-head"><button class="btn small" id="menuBack" type="button">&lsaquo; Back</button><div class="credits">Credits: <b id="credBank">0</b></div></div>
@@ -136,7 +158,30 @@ html.jvds-immersive .wrap>.storyrun{display:none}
 <div class="tabpane" id="pane-skin"><p class="mini">Unlock hulls with credits, then pick your look.</p><div class="skins" id="skinList"></div><div class="quote" id="skinInfo">Starter hull equipped.</div></div>
 </div>
 </div>
-<div class="overlay hidden" id="shopOverlay" aria-label="Station shop"><h2>Station Shop</h2><div class="credits">Run credits: <b id="shopCredits">0</b></div><div id="shopList"></div><div class="big" style="width:min(360px,94%)"><button class="btn" id="shopReroll">Reroll (20 cr)</button><button class="btn primary" id="shopLeave">Depart &rsaquo;</button></div></div>
+<div class="overlay hidden" id="shopOverlay" aria-label="Station shop"><h2>Station Shop</h2><div class="credits">Run credits: <b id="shopCredits">0</b></div><div id="shopList"></div><div class="big" style="width:min(360px,94%)"><button class="btn" id="shopReroll" type="button">Reroll (20 cr)</button><button class="btn primary" id="shopLeave" type="button">Depart &rsaquo;</button></div></div>
+<div class="overlay hidden" id="helpOverlay" aria-label="How to play Nova Siege">
+<h2>How to Play</h2>
+<p class="mini lt">Pip says: keep moving, trust the auto-fire and grab every green cross you can.</p>
+<div class="quote">
+<b>Fly:</b> drag anywhere on the field, or use the arrow keys / W A S D.<br>
+<b>Fire:</b> automatic. Your cannons never stop.<br>
+<b>Pause:</b> tap Pause, press P or press Escape.<br>
+<b>Pickups:</b> green cross = health, blue star = power, gold coin = credits.<br>
+<b>Modifiers:</b> deal with whatever the wave throws at you and clear the swarm.<br>
+<b>Modes:</b> Classic is the full run, Daily is one seeded challenge a day, Boss Rush is back-to-back bosses, Zen is practice with no damage.
+</div>
+<div class="big" style="width:min(320px,90%)"><button class="btn primary" id="helpClose" type="button">Got it</button></div>
+</div>
+<div class="overlay hidden" id="pauseOverlay" aria-label="Pause menu">
+<h2>Paused</h2>
+<p class="mini lt">Pip says: take a breath, then get back out there.</p>
+<div class="big">
+<button class="btn primary" id="pauseResume" type="button">Resume</button>
+<button class="btn" id="pauseRestart" type="button">Restart Run</button>
+<button class="btn" id="pauseMute" type="button">Sound: On</button>
+<button class="btn" id="pauseQuit" type="button">Quit to Title</button>
+</div>
+</div>
 </div>
 <p class="mini">Touch: drag anywhere to fly, your ship fires on its own. Keyboard: &larr; &rarr; &uarr; &darr;. Collect green crosses for health and blue stars for weapon power.</p>
 </section></main></div>
