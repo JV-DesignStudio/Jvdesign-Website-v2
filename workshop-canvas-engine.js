@@ -5,9 +5,10 @@
  *   {
  *     storageKey: 'jvds-snake-canvas',
  *     downloadName: 'my-snake-game.html',
- *     steps: [ { num, title, goal, points[], challenge, starter, solution, checks[], height, fills?, quiz? } ],
+ *     steps: [ { num, title, goal, points[], challenge, starter, solution, checks[], height, fills?, quiz?, minutes? } ],
  *     templates: { 1: fn(userCode) => fullHTML, 2: fn(userCode) => fullHTML, ... },
- *     hints: [ 'Step 1 hint', 'Step 2 hint', ... ]
+ *     hints: [ 'Step 1 hint', 'Step 2 hint', ... ]      // legacy single hint
+ *       or   [ { nudge, concept, next }, ... ]        // three tiers, one per step
  *   }
  */
 'use strict';
@@ -764,6 +765,38 @@ function maybeOfferContinue() {
   } catch(e) {}
 }
 
+/* A2287: returning to a lesson points at the last completed step. */
+function maybeShowResume() {
+  try {
+    var state = JSON.parse(localStorage.getItem(CFG.storageKey));
+    if (!state || !state.completed) return;
+    var last = lastCompletedNum();
+    if (!last || last >= STEPS.length) return;
+    var nextNum = last + 1;
+    var panel = document.querySelector('.cw-canvas-panel');
+    if (!panel || panel.querySelector('.cw-resume')) return;
+    var box = document.createElement('div');
+    box.className = 'cw-resume';
+    box.setAttribute('role', 'status');
+    box.innerHTML = '<p class="cw-resume-head">Welcome back.</p>' +
+      '<p class="cw-resume-sub">You finished step ' + last + '. Pick up at step ' + nextNum + '.</p>' +
+      '<button type="button" class="cw-resume-go" data-cw="resumeStep" data-cw-arg="' + nextNum + '">Continue at step ' + nextNum + '</button>';
+    panel.insertBefore(box, panel.firstChild);
+  } catch (e) {}
+}
+
+function resumeStep(num) {
+  var card = document.getElementById('card-' + num);
+  if (!card) return;
+  var ta = card.querySelector('textarea');
+  if (ta && !ta.disabled) {
+    try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
+  }
+  try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+  var box = document.querySelector('.cw-resume');
+  if (box) box.remove();
+}
+
 function getSavedCode(num) {
   try {
     var state = JSON.parse(localStorage.getItem(CFG.storageKey));
@@ -804,9 +837,27 @@ function renderPredict(step, show) {
   return html;
 }
 
+/* ── A2287: session pacing ──
+   A learner should know how long a step takes and where a natural stop is.
+   A step can declare minutes; otherwise we estimate from its starter code and
+   reading points. Completed progress also drives the "you stopped here" mark. */
+function stepMinutes(step) {
+  if (step && typeof step.minutes === 'number' && step.minutes > 0) return Math.round(step.minutes);
+  var points = (step && step.points) ? step.points.length : 0;
+  var lines = String((step && step.starter) || '').split('\n').length;
+  return Math.max(3, Math.min(20, Math.round((1.5 + lines * 0.45 + points * 0.6) * 1.4)));
+}
+
+function lastCompletedNum() {
+  var nums = Object.keys(completed).map(Number).filter(function (n) { return n > 0; });
+  return nums.length ? Math.max.apply(null, nums) : 0;
+}
+
 function renderSteps() {
   var panel = document.getElementById('stepsPanel');
   panel.innerHTML = '';
+  var lastDone = lastCompletedNum();
+  var allDone = lastDone >= STEPS.length;
   STEPS.forEach(function(step, i) {
     var card = document.createElement('div');
     card.className = 'cw-step';
@@ -825,7 +876,8 @@ function renderSteps() {
         '<h3>' + step.title + '</h3>' +
         (step.activity ? '<span class="cw-activity">' + step.activity + '</span>' : '') +
       '</div>' +
-      '<p class="cw-goal">' + step.goal + '</p>' +
+      '<p class="cw-goal">' + step.goal + ' <span class="cw-step-time" title="Estimated time for this step">~' + stepMinutes(step) + ' min</span></p>' +
+      (step.num === lastDone && !allDone && i < STEPS.length - 1 ? '<p class="cw-last-done-tag">You stopped here. Pick up again any time.</p>' : '') +
       (step.checkpoint ? '<p class="cw-checkpoint"><strong>Checkpoint:</strong> ' + step.checkpoint + '</p>' : '') +
       ((isActive || isDone) ? '<p class="cw-expect"><strong>What you should see:</strong> ' + (step.expect || step.goal) + '</p>' : '') +
       predictHtml +
@@ -940,6 +992,19 @@ function renderSteps() {
       '</div></details>';
 
     panel.appendChild(card);
+
+    // Every three steps, mark a natural place to pause for a real lesson.
+    if ((i + 1) % 3 === 0 && i < STEPS.length - 1) {
+      var minsSoFar = 0;
+      for (var mi = 0; mi <= i; mi++) minsSoFar += stepMinutes(STEPS[mi]);
+      var brk = document.createElement('div');
+      brk.className = 'cw-break';
+      brk.setAttribute('role', 'note');
+      brk.innerHTML = '<span class="cw-break-line" aria-hidden="true"></span>' +
+        '<span class="cw-break-text">Good place to stop. About ' + minsSoFar + ' min so far. Come back whenever you like.</span>' +
+        '<span class="cw-break-line" aria-hidden="true"></span>';
+      panel.appendChild(brk);
+    }
 
     var ta = document.getElementById('editor-' + step.num);
     var saved = getSavedCode(step.num);
@@ -1146,11 +1211,78 @@ function updateCanvas() {
     : polishPreview(TEMPLATES[step.num](code)));
   saveState();
 
-  if (CFG.hints && CFG.hints[currentStep] !== undefined) {
-    document.getElementById('canvasHint').textContent = CFG.hints[currentStep];
-  }
+  renderCanvasHint();
   updateWhat(step);
   updateLive(step.num);
+}
+
+/* ── A2271: progressive three-tier hints ──
+   A hint is either a plain string (rendered as before) or up to three tiers
+   revealed one at a time: a nudge, the idea, then the next line. Each step
+   starts collapsed, and a step with fewer than three tiers never shows an
+   empty button for the missing one. Tier state is per step and is not saved,
+   so hints reset when the learner moves to a new step. */
+var hintTierState = {};
+var hintTierStep = -1;
+
+function hintTiers(raw) {
+  if (raw == null) return [];
+  if (typeof raw === 'string') return raw.trim() ? [raw] : [];
+  var list = Array.isArray(raw) ? raw :
+    (typeof raw === 'object' ? [raw.nudge, raw.concept, raw.next] : []);
+  return list.filter(function (t) { return typeof t === 'string' && t.trim(); });
+}
+
+function hintTierLabel(index) {
+  return ['Need a nudge?', 'Show the idea', 'Show the next line'][index] || 'Show the next hint';
+}
+
+function renderCanvasHint() {
+  var box = document.getElementById('canvasHint');
+  if (!box) return;
+  var raw = CFG.hints ? CFG.hints[currentStep] : undefined;
+  var tiers = hintTiers(raw);
+  if (!tiers.length) { box.innerHTML = ''; box.hidden = true; return; }
+  box.hidden = false;
+  box.setAttribute('aria-live', 'polite');
+
+  // Legacy flat strings keep the original single-hint behaviour, no button.
+  if (typeof raw === 'string') {
+    box.textContent = tiers[0];
+    return;
+  }
+
+  if (hintTierStep !== currentStep) {
+    hintTierStep = currentStep;
+    hintTierState[currentStep] = 0;
+  }
+  var shown = Math.min(hintTierState[currentStep] || 0, tiers.length);
+
+  box.innerHTML = '';
+  for (var i = 0; i < shown; i++) {
+    var line = document.createElement('p');
+    line.className = 'cw-hint-tier';
+    line.textContent = tiers[i];
+    box.appendChild(line);
+  }
+  if (shown < tiers.length) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cw-btn cw-btn-show cw-hint-next';
+    btn.setAttribute('data-cw', 'revealHint');
+    btn.setAttribute('data-cw-arg', String(currentStep));
+    btn.textContent = hintTierLabel(shown);
+    box.appendChild(btn);
+  }
+}
+
+function revealHint(index) {
+  var raw = CFG.hints ? CFG.hints[index] : undefined;
+  var tiers = hintTiers(raw);
+  if (typeof raw === 'string' || !tiers.length) return;
+  var shown = hintTierState[index] || 0;
+  if (shown < tiers.length) hintTierState[index] = shown + 1;
+  renderCanvasHint();
 }
 
 function updateProgress() {
@@ -1726,6 +1858,8 @@ document.addEventListener('click', function(e) {
   else if (action === 'checkPredict') checkPredict(arg);
   else if (action === 'saveExplain') saveExplain(arg);
   else if (action === 'reportStep') reportStep(arg);
+  else if (action === 'revealHint') revealHint(arg);
+  else if (action === 'resumeStep') resumeStep(arg);
 });
 
 /* Init */
@@ -1743,6 +1877,7 @@ ensureCanvasDesc();
 ensurePreviewKeyboardExit();
 updateProgress();
 maybeOfferContinue();
+maybeShowResume();
 
 })();
 

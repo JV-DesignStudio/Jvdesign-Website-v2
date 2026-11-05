@@ -85,12 +85,35 @@ window.CW_CONFIG = {
   downloadName: 'my-memory-game.html',
 
   hints: [
-    'A 4x4 grid of cards appears - your game board is ready',
-    'The cards are shuffled - no two games are the same',
-    'Click a card to flip it and reveal the emoji underneath',
-    'Two cards flipped - if they match, they stay face up!',
-    'Track your moves and time - can you clear the board?',
-    'Your best score is saved - challenge yourself to beat it!'
+    {
+      nudge: 'The board is built from the deck array, not typed by hand.',
+      concept: 'Loop over the deck, create a card div for each emoji, and append it to the grid.',
+      next: 'Use document.createElement("div"), set innerHTML for the faces, then grid.appendChild(card).'
+    },
+    {
+      nudge: 'Every game should start with a different order.',
+      concept: 'Walk the array backwards and swap each card with a random earlier one.',
+      next: 'Use var j = Math.floor(Math.random() * (i + 1)); then swap arr[i] and arr[j].'
+    },
+    {
+      nudge: 'Adding one class is enough to start the CSS animation.',
+      next: 'Write card.classList.add("flipped");.'
+    },
+    {
+      nudge: 'Two faces are either the same or different.',
+      concept: 'Compare the emoji data, keep matches, and flip non-matches back after a short delay.',
+      next: 'Use a.dataset.emoji === b.dataset.emoji, add "matched", else setTimeout to remove "flipped".'
+    },
+    {
+      nudge: 'The player wants to know how many moves and how long it took.',
+      concept: 'Count each pair check, and start a one second timer on the first click.',
+      next: 'Use setInterval(..., 1000) for the timer and check matchedPairs === totalPairs to win.'
+    },
+    {
+      nudge: 'One good game should be worth remembering.',
+      concept: 'Save the move count only when it beats the stored best.',
+      next: 'Use localStorage.setItem("memoryBest", moves) when moves is lower than Number(prevBest).'
+    }
   ],
 
   templates: {

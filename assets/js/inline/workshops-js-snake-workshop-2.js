@@ -54,12 +54,36 @@ window.CW_CONFIG = {
   downloadName: 'my-snake-game.html',
 
   hints: [
-    'Click the canvas, then use arrow keys to play',
-    'Click the canvas and try steering with arrow keys',
-    'The snake eats food and grows - try it!',
-    'Try hitting a wall, then toggle Wrap mode',
-    'Open on your phone to test swipe controls',
-    'Watch the snake body fade from head to tail'
+    {
+      nudge: 'Watch the green blocks. One cell should move on every tick.',
+      concept: 'Each tick builds a new head from the current head plus direction, then drops the old tail.',
+      next: 'Use snake[0].x + dir.x for the head, then call snake.unshift(head) and snake.pop().'
+    },
+    {
+      nudge: 'Arrow keys should be remembered, not just overwrite the last one.',
+      concept: 'Push each arrow direction onto inputQueue instead of setting dir directly.',
+      next: 'Inside the keydown handler add if (map[e.key]) inputQueue.push(map[e.key]).'
+    },
+    {
+      nudge: 'Food should never appear under the snake.',
+      concept: 'Pick a random cell and keep retrying until it is not on the snake. Eating skips the tail pop.',
+      next: 'Use Math.floor(Math.random() * GRID), then if (!snake.some(c => c.x === f.x && c.y === f.y)) return f.'
+    },
+    {
+      nudge: 'There are two ways to die: the walls and your own body.',
+      concept: 'Wrap uses modulo. Classic mode sets dead when the head leaves the grid, and a self-bite also sets dead.',
+      next: 'Wrap with (head.x + GRID) % GRID, else check the bounds and set dead = true. Then check snake.some(...).'
+    },
+    {
+      nudge: 'A swipe is just a direction. Which way did the finger move furthest?',
+      concept: 'Save where the touch starts, compare dx and dy on release, then push into the same inputQueue.',
+      next: 'Store {x: e.touches[0].clientX, y: e.touches[0].clientY}, then push {x: dx > 0 ? 1 : -1, y: 0} or the vertical version.'
+    },
+    {
+      nudge: 'The head should glow brighter than the tail.',
+      concept: 'Use forEach with the segment index so lightness drops as you move along the body.',
+      next: 'Inside forEach set ctx.fillStyle = "hsl(155, 70%, " + (55 - Math.min(35, i * 1.5)) + "%)".'
+    }
   ],
 
   templates: {

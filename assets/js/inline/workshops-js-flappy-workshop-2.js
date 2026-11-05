@@ -51,12 +51,36 @@ window.CW_CONFIG = {
   downloadName: 'my-flappy-game.html',
 
   hints: [
-    'A sky-blue canvas appears - your game screen is ready',
-    'Watch the bird fall with gravity - click to flap!',
-    'Click or press Space to flap the bird upward',
-    'Pipes scroll from the right - dodge through the gaps',
-    'Hit a pipe or the floor and it is game over',
-    'Your best score saves in the browser - try to beat it!'
+    {
+      nudge: 'The canvas needs a sky colour before anything else.',
+      concept: 'fillStyle chooses the paint, and fillRect paints a rectangle.',
+      next: 'Set ctx.fillStyle = "#70c5ce"; then ctx.fillRect(0, 0, 400, 500);, and repeat with yellow for the bird.'
+    },
+    {
+      nudge: 'The bird should speed up as it falls.',
+      concept: 'Each frame, gravity adds to velocity, then velocity moves the bird.',
+      next: 'Write bird.vy += gravity; then bird.y += bird.vy;.'
+    },
+    {
+      nudge: 'A flap is one upward push, not a slow nudge.',
+      concept: 'Set the velocity to a negative number so the bird goes up straight away.',
+      next: 'In flap() write bird.vy = -8;, then pass flap to mousedown and call it on Space.'
+    },
+    {
+      nudge: 'Pipes need to appear, move, and disappear.',
+      concept: 'Spawn on a frame counter, move every pipe left, and remove ones past the screen.',
+      next: 'Use frames % 90 === 0 to push, p.x -= 2.4 to move, and pipes.filter(p => p.x > -60).'
+    },
+    {
+      nudge: 'The bird can hit a pipe or the floor.',
+      concept: 'Test the bird rectangle against both pipe rectangles, and score once per pipe with a passed flag.',
+      next: 'Set dead = true on overlap and the floor, then p.passed = true; score++;.'
+    },
+    {
+      nudge: 'When it is over, show the player what happened.',
+      concept: 'Draw a dark overlay with fillText, and keep the best score in localStorage.',
+      next: 'Use ctx.fillText("Game Over", 200, 210) and ctx.fillText("Score " + score + "  Best " + best, 200, 250).'
+    }
   ],
 
   templates: {

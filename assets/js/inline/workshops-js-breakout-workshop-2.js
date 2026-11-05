@@ -74,12 +74,36 @@ window.CW_CONFIG = {
   downloadName: 'my-breakout-game.html',
 
   hints: [
-    'A dark canvas appears - move your mouse to see the paddle follow',
-    'The ball bounces off three walls - watch it ricochet around',
-    'Hit the paddle to send the ball back up - angle matters!',
-    'Neon bricks glow and shatter when the ball hits them',
-    'Particles explode out of broken bricks - satisfying!',
-    'Three lives, three levels - can you clear them all?'
+    {
+      nudge: 'The paddle should follow the pointer across the canvas.',
+      concept: 'Mouse events use page coordinates, so subtract the canvas position before setting paddle.x.',
+      next: 'Use e.clientX - rect.left - paddle.w / 2, then clamp with 400 - paddle.w.'
+    },
+    {
+      nudge: 'The ball should keep moving and change direction at the walls.',
+      concept: 'Each frame it moves by vx and vy. Hitting a wall reverses the matching velocity.',
+      next: 'Set ball.vx = -ball.vx on the side walls and ball.vy = -ball.vy on the top.'
+    },
+    {
+      nudge: 'Where the ball hits the paddle should change its angle.',
+      concept: 'Map the hit point from the paddle centre to a value between -1 and 1, then scale vx.',
+      next: 'Use ball.vx = hit * 5; and force the ball upward with -Math.abs(ball.vy).'
+    },
+    {
+      nudge: 'Bricks should vanish when the ball reaches them.',
+      concept: 'Check each brick rectangle for overlap, then mark it dead and bounce the ball.',
+      next: 'Inside the overlap check set b.alive = false; and ball.vy = -ball.vy;.'
+    },
+    {
+      nudge: 'A broken brick should burst into small pieces.',
+      concept: 'Push several particles with random velocity and a life counter, then fade them out.',
+      next: 'Push 8 particles with vx and vy of (Math.random() - 0.5) * 4 and life: 30.'
+    },
+    {
+      nudge: 'Missing the ball should cost a life, then move you to the next level.',
+      concept: 'Reset the ball when a life is lost, and respawn the bricks when all are gone.',
+      next: 'Decrease lives, set ball.vy = -3 - level on the new level, and set bricks[i].alive = true.'
+    }
   ],
 
   templates: {

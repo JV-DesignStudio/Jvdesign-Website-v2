@@ -80,12 +80,36 @@ window.CW_CONFIG = {
   downloadName: 'my-platformer-part2.html',
 
   hints: [
-    'Your game engine is alive - a red player on solid ground',
-    'Double jump lets you reach higher platforms - tap jump twice!',
-    'Slide down walls slowly and kick off them to reach new areas',
-    'Watch the layers scroll at different speeds - depth from motion',
-    'Levels built from text - each character is a tile on screen',
-    'Stomp enemies, grab coins, beat the clock - your platformer is complete!'
+    {
+      nudge: 'The player should fall until it meets the ground.',
+      concept: 'Each frame, gravity changes vy, the arrow keys set vx, then both are added to the position.',
+      next: 'Use player.vy += gravity;, player.vx = moveSpeed; on the right key, then player.x += vx and player.y += vy.'
+    },
+    {
+      nudge: 'One jump is not enough for the higher platforms.',
+      concept: 'Track how many jumps are left and spend one on each press, resetting on landing.',
+      next: 'Check player.jumpsLeft > 0, then player.vy = jumpForce; and player.jumpsLeft--;.'
+    },
+    {
+      nudge: 'A wall should slow the fall and let the player kick off it.',
+      concept: 'Detect the wall side, scale vy down while touching it, then push vx away on a wall jump.',
+      next: 'Use player.vy *= 0.4 when sliding and player.vx = onWall * -5 on the wall jump.'
+    },
+    {
+      nudge: 'Closer layers should move faster than distant ones.',
+      concept: 'Offset each layer by camX times its own speed so near shapes shift more.',
+      next: 'Set var offset = camX * layer.speed;, then draw each shape at s.x - offset.'
+    },
+    {
+      nudge: 'A level can be drawn as text.',
+      concept: 'Read each character, then make a tile, coin, or enemy at a position based on the row and column.',
+      next: 'Use levelStr[r].charAt(c), then multiply columns and rows by TILE for the pixel position.'
+    },
+    {
+      nudge: 'The player needs a way to win and lose.',
+      concept: 'Stomp only when falling, count the timer in real seconds, and win when every coin is collected.',
+      next: 'Set en.alive = false when player.vy > 0, use Date.now() for the timer, and set won = true when allGot.'
+    }
   ],
 
   templates: {
