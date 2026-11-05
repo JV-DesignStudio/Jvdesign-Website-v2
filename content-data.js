@@ -1062,6 +1062,22 @@ window.JVDS_CONTENT = {
       "url": "/workshops/my-first-browser-game.html"
     },
     {
+      "id": "_a2503-orig-my-first-browser-game",
+      "title": "My First Browser Game",
+      "desc": "6 free beginner JavaScript game workshops. Build Flappy Bird, a memory game, Breakout, Snake and a platformer , right in the browser. Interactive quizzes and XP. Ages 10+.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [
+        "platformer"
+      ],
+      "steps": 6,
+      "themeColor": "#ffd166",
+      "cover": "/og/my-first-browser-game.webp",
+      "url": "/workshops/_a2503-orig-my-first-browser-game.html"
+    },
+    {
       "id": "my-first-cpp-game",
       "title": "My First C++ Game",
       "desc": "7 free beginner C++ game workshops with SFML. Build Pong, Snake, Breakout, a platformer and a two-part tower defence. Interactive quizzes and XP. Ages 12+.",
@@ -1112,6 +1128,24 @@ window.JVDS_CONTENT = {
       "themeColor": "#2196F3",
       "cover": "/og/learn.webp",
       "url": "/workshops/my-first-defold-game.html"
+    },
+    {
+      "id": "_a2503-orig-my-first-defold-game",
+      "title": "My First Defold Game",
+      "desc": "6 free Defold game engine workshops. Build a pong clone, snake, dungeon crawler, space shooter, puzzle match and platformer with Lua scripting. Ages 10+.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10-14",
+      "type": "workshop",
+      "tags": [
+        "platformer",
+        "shooter",
+        "puzzle"
+      ],
+      "steps": 6,
+      "themeColor": "#2196F3",
+      "cover": "/og/learn.webp",
+      "url": "/workshops/_a2503-orig-my-first-defold-game.html"
     },
     {
       "id": "my-first-defold-game-canvas",
@@ -1182,6 +1216,23 @@ window.JVDS_CONTENT = {
       "themeColor": "#00bfa5",
       "cover": "/og/learn.webp",
       "url": "/workshops/my-first-gdevelop-game.html"
+    },
+    {
+      "id": "_a2503-orig-my-first-gdevelop-game",
+      "title": "My First GDevelop Game",
+      "desc": "6 free parent & child GDevelop workshops. Build a Pong, Snake, Platformer, Shooter, Point & Click and Top-Down Adventure no coding needed. Ages 8+.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "platformer",
+        "shooter"
+      ],
+      "steps": 6,
+      "themeColor": "#00bfa5",
+      "cover": "/og/learn.webp",
+      "url": "/workshops/_a2503-orig-my-first-gdevelop-game.html"
     },
     {
       "id": "my-first-gdevelop-game-canvas",
@@ -1269,6 +1320,23 @@ window.JVDS_CONTENT = {
       "url": "/workshops/my-first-pico8-game.html"
     },
     {
+      "id": "_a2503-orig-my-first-pico8-game",
+      "title": "My First Pico-8 Game",
+      "desc": "6 free parent & child Pico-8 workshops. Build Pong, Snake, a dungeon crawler, space shooter, match-3 and platformer no experience needed. Ages 8+.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "platformer",
+        "shooter"
+      ],
+      "steps": 6,
+      "themeColor": "#ff004d",
+      "cover": "/og/learn.webp",
+      "url": "/workshops/_a2503-orig-my-first-pico8-game.html"
+    },
+    {
       "id": "my-first-pico8-game-canvas",
       "title": "My First PICO-8 Game Build Canvas",
       "desc": "",
@@ -1339,6 +1407,26 @@ window.JVDS_CONTENT = {
       "url": "/workshops/my-first-roblox-studio-game.html"
     },
     {
+      "id": "_a2503-orig-my-first-roblox-studio-game",
+      "title": "My First Roblox Studio Game",
+      "desc": "13 free parent & child Roblox Studio workshops. Build an obby, tycoon, simulator, battle game, horror maze, pirate adventure, RPG and a Fall Guys style party game, no experience needed. Ages 7+.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "rpg",
+        "horror",
+        "tycoon",
+        "simulator",
+        "obby"
+      ],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "/og/my-first-roblox-studio-game.webp",
+      "url": "/workshops/_a2503-orig-my-first-roblox-studio-game.html"
+    },
+    {
       "id": "my-first-scratch-game",
       "title": "My First Scratch Game",
       "desc": "6 free parent & child Scratch workshops. Build a platformer, quiz, catch game, maze, story and clicker no experience needed. Ages 7+.",
@@ -1355,6 +1443,23 @@ window.JVDS_CONTENT = {
       "themeColor": "#FF7700",
       "cover": "/og/my-first-scratch-game.webp",
       "url": "/workshops/my-first-scratch-game.html"
+    },
+    {
+      "id": "_a2503-orig-my-first-scratch-game",
+      "title": "My First Scratch Game",
+      "desc": "6 free parent & child Scratch workshops. Build a platformer, quiz, catch game, maze, story and clicker no experience needed. Ages 7+.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "7-9",
+      "type": "workshop",
+      "tags": [
+        "platformer",
+        "narrative"
+      ],
+      "steps": 6,
+      "themeColor": "#FF7700",
+      "cover": "/og/my-first-scratch-game.webp",
+      "url": "/workshops/_a2503-orig-my-first-scratch-game.html"
     },
     {
       "id": "my-first-scratch-game-canvas",
@@ -1387,6 +1492,20 @@ window.JVDS_CONTENT = {
       "themeColor": "#BC4749",
       "cover": "/the-workshop.webp",
       "url": "/workshops/my-first-series.html"
+    },
+    {
+      "id": "_a2503-orig-my-first-series",
+      "title": "My First Series Parent & Child Game Building Workshops",
+      "desc": "Free parent & child game building workshops. No experience needed. Build real games together in Godot, Scratch, Roblox, Minecraft, Unity, Unreal & GameMaker. Ages 5+.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "4-6",
+      "type": "workshop",
+      "tags": [],
+      "steps": 6,
+      "themeColor": "#BC4749",
+      "cover": "/the-workshop.webp",
+      "url": "/workshops/_a2503-orig-my-first-series.html"
     },
     {
       "id": "my-first-unity-game",
@@ -5212,6 +5331,19 @@ window.JVDS_CONTENT = {
       "url": "/games/lumo-hive.html"
     },
     {
+      "id": "lumo-firefly",
+      "title": "Lumo's Firefly Shooter",
+      "tag": "Night Garden Shooter",
+      "emoji": "🌻",
+      "category": "Action",
+      "bg": "linear-gradient(135deg,#0d0620,#14532d)",
+      "desc": "Aim Lumo's lantern, fire light orbs, rescue fireflies and clear three short waves of shadow bugs. Chain combos, find power-ups and keep the garden glow alive.",
+      "kids": true,
+      "age": "Ages 7-12",
+      "character": "Lumo",
+      "url": "/games/lumo_firefly_night.html"
+    },
+    {
       "id": "stardust-snake",
       "title": "Stardust Snake",
       "tag": "Classic · Grow",
@@ -6376,9 +6508,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-04T22:28:28.000Z",
-    "workshops": 336,
-    "games": 13,
+    "generated": "2026-11-05T08:21:04.000Z",
+    "workshops": 343,
+    "games": 14,
     "tools": 50,
     "books": 5,
     "engines": {
@@ -6386,7 +6518,7 @@ window.JVDS_CONTENT = {
       "C++": 17,
       "Defold": 13,
       "GDevelop": 13,
-      "General": 52,
+      "General": 59,
       "GML/GameMaker": 10,
       "Godot": 17,
       "Java": 15,
