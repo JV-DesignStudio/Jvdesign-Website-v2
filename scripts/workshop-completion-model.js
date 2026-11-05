@@ -40,8 +40,6 @@ const REFERENCE_IDS = new Set([
   'my-first-unity-game', 'my-first-unreal-game', 'my-first-video-game'
 ]);
 
-const CLASS_ONLY = new Set(['roblox-creator-journey']);
-
 const ENGINE_HUBS = {
   'Blender': 'engine-blender.html',
   'C++': 'engine-cpp.html',
@@ -162,6 +160,17 @@ const CONDITION = {
   reference: { code: 'none', text: 'Reference page, no step tracking.', selector: '' }
 };
 
+const CONDITION_OVERRIDES = {
+  'build-a-game-15-min': 'your Dot Smash game plays in the browser and you can change the speed or target.',
+  'castle-siege-blueprint': 'your castle siege blueprint is wired and the level runs when you press Launch.',
+  'diablo-blueprint': 'your ARPG blueprint is wired and the descent runs when you press Begin Descent.',
+  'roblox-creator-journey': 'your shirt, clothing or accessory is saved and you know where to find it in Roblox.',
+  'sci-fi-runner-builder': 'your runner plays in the browser and you can change its speed, hazards or shields.',
+  'space_invaders_tutorial': 'your Space Invaders game runs and you can move, shoot and score in your own build.',
+  'unreal-2d-platformer': 'your Unreal project plays and the player can run and jump with your blueprints.',
+  'unreal-zombie-survivor': 'your Unreal project plays and the first wave spawns with your blueprints.'
+};
+
 function build() {
   const outcomes = JSON.parse(fs.readFileSync(OUTCOMES, 'utf8'));
   const catalogue = JSON.parse(fs.readFileSync(CATALOGUE, 'utf8'));
@@ -184,11 +193,10 @@ function build() {
       kind: entry.kind,
       mode,
       condition: cond.code,
-      conditionText: cond.text,
+      conditionText: CONDITION_OVERRIDES[entry.id] || cond.text,
       finishSelector: cond.selector,
       storageKey: storageKeyFor(mode, src),
       hasFinishBanner: /id=["']finishBanner["']/.test(src),
-      classOnly: CLASS_ONLY.has(entry.id) || undefined,
       next: mode === 'reference' ? null : resolveNext(entry, src, catalogueById)
     });
   }

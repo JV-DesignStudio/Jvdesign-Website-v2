@@ -36,11 +36,11 @@ function inlineBlock(entry) {
   const next = entry.next;
   return [
     START,
-    `<div class="ws-finish" data-workshop-finish="${esc(entry.id)}" style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border,rgba(64,59,51,.14));font-family:Inter,system-ui,sans-serif">`,
-    `  <p class="ws-finish-condition" style="font-size:.82rem;color:var(--charcoal-lt,#3d3224);margin:0 0 10px">Finished when: ${esc(entry.conditionText)}</p>`,
-    '  <div class="ws-finish-actions" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">',
-    `    <a class="ws-finish-next" href="${esc(next.url)}" style="display:inline-flex;align-items:center;gap:8px;background:var(--teal-dk,#4e7d80);color:#fff;font-weight:700;font-size:.9rem;padding:10px 20px;border-radius:10px;text-decoration:none">Next step: ${esc(next.label)} &rarr;</a>`,
-    '    <a class="ws-finish-progress" href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--border,rgba(64,59,51,.14));color:inherit;font-weight:700;font-size:.9rem;padding:10px 20px;border-radius:10px;text-decoration:none">See my progress</a>',
+    `<div class="ws-finish" data-workshop-finish="${esc(entry.id)}">`,
+    `  <p class="ws-finish-condition">Finished when: ${esc(entry.conditionText)}</p>`,
+    '  <div class="ws-finish-actions">',
+    `    <a class="ws-finish-next" href="${esc(next.url)}">Next step: ${esc(next.label)} &rarr;</a>`,
+    '    <a class="ws-finish-progress" href="my-progress.html">See my progress</a>',
     '  </div>',
     '</div>',
     END
@@ -48,26 +48,6 @@ function inlineBlock(entry) {
 }
 
 function closingBlock(entry) {
-  const next = entry.next;
-  return [
-    START,
-    `<section class="ws-finish" id="wsFinish" aria-labelledby="ws-finish-title" data-workshop-finish="${esc(entry.id)}" style="max-width:820px;margin:0 auto 48px;padding:0 20px">`,
-    '  <div class="ws-finish-inner" style="background:var(--card,#fff);border:1.5px solid var(--border,rgba(64,59,51,.14));border-radius:16px;padding:26px 24px;text-align:center;font-family:Inter,system-ui,sans-serif">',
-    '    <p class="ws-finish-kicker" style="display:inline-flex;align-items:center;gap:8px;margin:0 0 8px;font-size:.78rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--teal-dk,#4e7d80)"><img src="/assets/mascots/echo-badge.webp" alt="" width="22" height="22" loading="lazy"> Echo\'s finish line</p>',
-    '    <h2 class="ws-finish-title" id="ws-finish-title" style="font-family:Fredoka,cursive;font-size:1.5rem;margin:0 0 8px;color:var(--charcoal,#1a1208)">You\'re finished when...</h2>',
-    `    <p class="ws-finish-condition" style="font-size:1rem;line-height:1.6;margin:0 0 8px;color:var(--charcoal,#1a1208)">${esc(entry.conditionText)}</p>`,
-    '    <p class="ws-finish-body" style="font-size:.9rem;line-height:1.6;margin:0 0 18px;color:var(--charcoal-lt,#3d3224)">That is the proof you finished: the thing you made plays or opens outside this page. Save or download it, then show it to someone.</p>',
-    '    <div class="ws-finish-actions" style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">',
-    `      <a class="ws-finish-next" href="${esc(next.url)}" style="display:inline-flex;align-items:center;gap:8px;background:var(--teal-dk,#4e7d80);color:#fff;font-weight:700;font-size:.9rem;padding:10px 20px;border-radius:10px;text-decoration:none">Next step: ${esc(next.label)} &rarr;</a>`,
-    '      <a class="ws-finish-progress" href="my-progress.html" style="display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--border,rgba(64,59,51,.14));color:inherit;font-weight:700;font-size:.9rem;padding:10px 20px;border-radius:10px;text-decoration:none">See my progress</a>',
-    '    </div>',
-    '  </div>',
-    '</section>',
-    END
-  ].join('\n');
-}
-
-function closingBlockClassOnly(entry) {
   const next = entry.next;
   return [
     START,
@@ -169,9 +149,7 @@ function apply(options) {
        leaving the old block at the wrong spot. */
     const stripped = stripBlock(original);
     const bannerMode = entry.mode !== 'builder' || entry.hasFinishBanner;
-    const want = bannerMode
-      ? inlineBlock(entry)
-      : (entry.classOnly ? closingBlockClassOnly(entry) : closingBlock(entry));
+    const want = bannerMode ? inlineBlock(entry) : closingBlock(entry);
     let next = bannerMode ? insertIntoFinishBanner(stripped, want) : insertClosing(stripped, want);
 
     if (!next) next = insertClosing(stripped, want);
