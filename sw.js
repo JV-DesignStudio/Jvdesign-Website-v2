@@ -1,3 +1,5 @@
+// JVDesignStudio Service Worker v45 - A2107: precache studio-midi.js so Audio
+// Studio can export and import .mid files offline on a school network.
 // JVDesignStudio Service Worker v42 - A2177: ship arcade engine v2.1, so the
 // cache-first maker HTML and its modules refresh for returning visitors.
 // JVDesignStudio Service Worker v41 - engine: Custom Sandbox modules and the
@@ -22,7 +24,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v44';
+const CACHE='jvds-v45';
 const CORE=[
   '/',
   '/offline.html',
@@ -52,6 +54,7 @@ const CORE=[
   '/quest-system.js',
   '/tools/sound-studio.html',
   '/style-tool-sound-studio.css',
+  '/assets/js/studio-midi.js',
   '/tools/level-designer.html',
   '/style-tool-level-designer.css',
   // A675: top create tools precached for offline-first school use.

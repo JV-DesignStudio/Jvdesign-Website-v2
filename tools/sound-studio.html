@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-8IFbJXJ3a2Fso7wMMY9i4SPjICMnN0E83Aww3gp/ubs=' 'sha256-Uys4iDQIlTJGrrJLbCLMwuQ2n7MTxLgzLMrFCNiEJ/8=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-mWoRT04S0wn32n9rOQFOe34j4dD74VBBi+ixaYu4qDQ=' 'sha256-Uys4iDQIlTJGrrJLbCLMwuQ2n7MTxLgzLMrFCNiEJ/8=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -431,6 +431,7 @@ body.mode-sfx #arrange-bar{display:none!important;}
   <button class="t-btn" id="projectBtn" style="padding:5px 10px;font-size:.7rem;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text);cursor:pointer;font-family:'Fredoka',cursive;" data-on="openProject" data-on-plain title="Save, share and export your song">💾 Project ▾</button>
   <button class="t-btn tr-nav tr-nav-r" data-on="scrollTransport" data-on-arg="1" data-on-num data-on-plain aria-label="Scroll transport controls right" title="Scroll controls right">›</button>
   <input type="file" id="projectFileInput" accept=".json,application/json" style="display:none" data-on="handleProjectFile" data-on-event="change" data-on-args="this">
+  <input type="file" id="midiFileInput" accept=".mid,.midi,audio/midi,audio/x-midi" style="display:none" data-on="handleMidiFile" data-on-event="change" data-on-args="this">
 </div>
 
 <main id="main-content"><div id="app">
@@ -725,6 +726,8 @@ body.mode-sfx #arrange-bar{display:none!important;}
       <button class="ss-btn" data-on="copySoundShareLink" data-on-plain>🔗 Copy share link</button>
       <button class="ss-btn" data-on="exportProject" data-on-plain>⬇ Export .json</button>
       <button class="ss-btn" data-on="importProjectFile" data-on-plain>📥 Import .json</button>
+      <button class="ss-btn" data-on="exportMIDI" data-on-plain title="Download this pattern as a .mid file for any music editor">⬇ Export .mid</button>
+      <button class="ss-btn" data-on="importMIDI" data-on-plain title="Load notes from a .mid file into this pattern">📥 Import .mid</button>
       <button class="ss-btn" data-on="newSong" data-on-plain>✨ New song</button>
     </div>
     <div class="ss-sec" style="margin-top:16px;">For games</div>
@@ -753,6 +756,7 @@ body.mode-sfx #arrange-bar{display:none!important;}
   </div>
 </div>
 
+<script src="../assets/js/studio-midi.js"></script>
 <script>
 // ------------------------------------------
 // AUDIO CONTEXT
@@ -2265,6 +2269,61 @@ function handleProjectFile(input){
   };
   reader.readAsText(f);
   input.value='';
+}
+// A2107: MIDI export/import. A .mid is tiny, opens in any music editor and
+// carries a pattern between tools with no account or install.
+function exportMIDI(){
+  if(!window.StudioMIDI){ showToast('MIDI helper did not load'); return; }
+  try{
+    const bytes=StudioMIDI.encode({bpm, steps, tracks, grid, name:projectName});
+    _downloadAudio(new Blob([bytes],{type:'audio/midi'}),'sound_studio_pattern.mid');
+    showToast('Pattern exported as MIDI ✓');
+  }catch(e){ showToast('MIDI export failed'); }
+}
+function importMIDI(){ document.getElementById('midiFileInput').click(); }
+function handleMidiFile(input){
+  const f=input.files && input.files[0];
+  if(!f) return;
+  if(!window.StudioMIDI){ showToast('MIDI helper did not load'); input.value=''; return; }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const d=StudioMIDI.decode(reader.result);
+      pushHistory();
+      importMidiData(d);
+      showToast('MIDI imported ✓');
+    }catch(e){ showToast('Could not read that MIDI file'); }
+  };
+  reader.onerror=()=>showToast('Could not read that MIDI file');
+  reader.readAsArrayBuffer(f);
+  input.value='';
+}
+function importMidiData(d){
+  const tickStep=(d.ppq||StudioMIDI.PPQ)/4;
+  const inst=(d.tracks||[]).filter(t=>!t.isConductor);
+  let maxStep=0;
+  inst.forEach(mt=>(mt.notes||[]).forEach(n=>{
+    maxStep=Math.max(maxStep, Math.round(n.startTicks/tickStep));
+  }));
+  if(maxStep>=steps) steps = maxStep<8 ? 8 : (maxStep<16 ? 16 : 32);
+  bpm=Math.max(60,Math.min(200,Math.round(d.bpm||bpm)));
+  const g=tracks.map((t,ti)=>Array.from({length:steps},()=>({on:false,note:'C',len:1,vel:1,oct:t.oct})));
+  inst.slice(0,tracks.length).forEach((mt,ti)=>{
+    (mt.notes||[]).forEach(n=>{
+      const step=Math.round(n.startTicks/tickStep);
+      if(step<0||step>=steps) return;
+      const note=StudioMIDI.midiToNote(n.midi);
+      const len=Math.max(1,Math.min(Math.round(n.durTicks/tickStep)||1,steps-step));
+      g[ti][step]={on:true,note:note.name,oct:note.oct,len,vel:Math.max(0.01,Math.min(1,(n.velocity||100)/127))};
+    });
+  });
+  patterns[currentPattern].grid=g;
+  grid=g;
+  syncTransportUI();
+  buildGrid();
+  updateInstPanel();
+  updateArrangeBar();
+  updateUndoRedoBtns();
 }
 function normalizeGrid(g,trs){
   return trs.map((t,ti)=>{
