@@ -244,11 +244,74 @@
   <a href="../workshops/my-progress.html" class="ws-dash-link">View full progress →</a>
 </div>
 <script defer src="../player-profile.js"></script>
+<script defer src="/assets/js/quest-core/layout.js"></script>
 <script defer src="../daily-challenge.js"></script>
 <script defer src="../migrate-keys.js"></script>
 <script defer src="/assets/js/workshop-hud.js"></script>
 <script src="/assets/js/inline/pages-workshop-2.js"></script>
 <script src="/assets/js/inline/pages-workshop-3.js"></script>
+
+<!-- QUEST 00: STUDIO IGNITION (A2554) -->
+<style>
+  .quest00{max-width:1100px;margin:0 auto 8px;padding:0 20px}
+  .quest00-inner{background:linear-gradient(135deg,rgba(112,163,167,.1),rgba(201,138,46,.08));border:1.5px solid var(--border,rgba(64,59,51,.14));border-radius:18px;padding:22px}
+  .quest00-kicker{display:inline-block;font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-dk,#4e7d80)}
+  .quest00 h2{font-family:Fredoka,Inter,sans-serif;font-size:1.45rem;margin:6px 0 6px;color:var(--charcoal,#1a1208)}
+  .quest00-intro{font-size:.95rem;line-height:1.6;color:var(--jv-text-muted,#5a5449);margin:0 0 14px;max-width:760px}
+  .quest00-skip{float:right;background:transparent;border:1px solid var(--border,rgba(64,59,51,.2));color:var(--jv-text-muted,#5a5449);border-radius:999px;padding:7px 14px;font:inherit;font-size:.8rem;font-weight:700;cursor:pointer}
+  .quest00-companions{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}
+  .quest00-comp{display:flex;align-items:center;gap:9px;padding:9px 14px;border-radius:999px;border:1.5px solid var(--border,rgba(64,59,51,.16));background:var(--card,#fff);color:var(--charcoal,#1a1208);font:inherit;font-size:.86rem;font-weight:700;cursor:pointer}
+  .quest00-comp img{width:30px;height:30px;border-radius:50%;object-fit:cover}
+  .quest00-comp[aria-pressed="true"]{border-color:var(--teal-dk,#4e7d80);box-shadow:0 0 0 2px rgba(112,163,167,.28)}
+  .quest00-comp small{display:block;font-weight:600;font-size:.68rem;color:var(--jv-text-muted,#5a5449)}
+  .quest00-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:16px;align-items:start}
+  .quest00-grid .quest-pane-tabs{display:none;grid-column:1/-1;gap:8px}
+  .quest00-pane label{display:block;font-size:.78rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--jv-text-muted,#5a5449);margin:0 0 6px}
+  .quest00-pane textarea{width:100%;box-sizing:border-box;min-height:92px;padding:11px 13px;border-radius:10px;border:1.5px solid var(--border,rgba(64,59,51,.18));background:var(--card,#fff);color:var(--charcoal,#1a1208);font-family:'JetBrains Mono',monospace;font-size:.9rem;line-height:1.5;resize:vertical}
+  .quest00-status{min-height:2.6em;font-size:.88rem;line-height:1.5;color:var(--jv-text-muted,#5a5449);margin:10px 0 0}
+  .quest00-status.is-good{color:#2f7d4f;font-weight:700}
+  .quest00-status.is-bad{color:#a3352f;font-weight:700}
+  .quest00-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .quest00-btn{padding:10px 18px;border-radius:10px;border:1.5px solid var(--border,rgba(64,59,51,.18));background:var(--card,#fff);color:var(--charcoal,#1a1208);font:inherit;font-size:.92rem;font-weight:700;cursor:pointer}
+  .quest00-btn.primary{background:var(--teal-dk,#4e7d80);border-color:var(--teal-dk,#4e7d80);color:#fff}
+  .quest00-btn:disabled{opacity:.6;cursor:default}
+  #quest00Canvas{display:block;width:100%;height:auto;border-radius:12px;background:var(--beige,#F0EAD6)}
+  .quest00-badge{display:inline-block;margin:10px 0 0;padding:7px 13px;border-radius:999px;background:var(--gold-lt,#faf1e0);border:1.5px solid var(--gold,#c98a2e);color:#7a4f12;font-size:.82rem;font-weight:800}
+  @media(max-width:820px){
+    .quest00-inner{padding:16px}
+    .quest00-grid{display:block}
+    .quest00-grid .quest-pane-tabs{display:flex}
+    .quest00-grid [data-quest-pane]{display:none}
+    .quest00-grid[data-active-pane="code"] [data-quest-pane="code"],
+    .quest00-grid[data-active-pane="preview"] [data-quest-pane="preview"]{display:block}
+    .quest00-preview{margin-top:12px}
+    .quest00-skip{float:none;display:inline-block;margin-bottom:8px}
+  }
+</style>
+<section class="quest00" id="quest00" aria-labelledby="quest00-title" hidden>
+  <div class="quest00-inner">
+    <button type="button" class="quest00-skip" id="quest00Skip">Skip for now</button>
+    <span class="quest00-kicker">Quest 00 &middot; Studio Ignition</span>
+    <h2 id="quest00-title">Pick a companion and make your first thing</h2>
+    <p class="quest00-intro">Choose who guides you. Change one line, press Run, then finish to earn 50 XP and the Studio Pioneer badge. This shows once, and you can skip it.</p>
+    <div class="quest00-companions" id="quest00Companions" role="group" aria-label="Choose a companion"></div>
+    <div class="quest00-grid" data-quest-layout>
+      <div class="quest00-pane" data-quest-pane="code">
+        <label for="quest00Code">Your line</label>
+        <textarea id="quest00Code" spellcheck="false" rows="3">headline = "My first quest"</textarea>
+        <p class="quest00-status" id="quest00Status" role="status" aria-live="polite">Change the words in the quotes, then press Run.</p>
+        <div class="quest00-actions">
+          <button type="button" class="quest00-btn primary" id="quest00Run">Run</button>
+          <button type="button" class="quest00-btn primary" id="quest00Save">Finish (+50 XP)</button>
+        </div>
+      </div>
+      <div class="quest00-pane quest00-preview" data-quest-pane="preview">
+        <canvas id="quest00Canvas" width="420" height="260" aria-label="Your companion card preview"></canvas>
+        <p class="quest00-badge" id="quest00Badge" hidden>Studio Pioneer badge unlocked</p>
+      </div>
+    </div>
+  </div>
+</section>
 
 <section id="workshop-finder" class="ws-finder" aria-labelledby="workshop-finder-title">
     <div class="ws-finder-shell">
@@ -3351,5 +3414,8 @@ Google listing: title, description, difficulty, and "Free" price.
 
 <!-- ── Progress dashboard, sort, difficulty badges, high-contrast toggle ── -->
 <script src="/assets/js/inline/pages-workshop-13.js"></script>
+
+<!-- Quest 00: Studio Ignition first-run onboarding (A2554) -->
+<script src="/assets/js/inline/pages-workshop-14.js"></script>
 </body>
 </html>
