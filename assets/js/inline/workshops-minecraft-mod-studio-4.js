@@ -168,7 +168,7 @@ function renderGrid() {
   g.innerHTML = '';
   S.grid.forEach(function (cell, i) {
     var b = document.createElement('button');
-    b.type = 'button'; b.className = 'mcms-cell' + (cell ? ' is-filled' : '');
+    b.type = 'button'; b.className = 'ms-cell' + (cell ? ' is-filled' : '');
     b.setAttribute('role', 'gridcell');
     b.setAttribute('aria-label', 'Bench square ' + (i + 1) + (cell ? ': ' + item(cell).n : ': empty'));
     b.textContent = cell ? emoji(cell) : '';
@@ -188,7 +188,7 @@ function renderPalette() {
   ITEMS.forEach(function (it) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'mcms-swatch' + (!S.eraser && S.active === it.id ? ' is-active' : '');
+    b.className = 'ms-swatch' + (!S.eraser && S.active === it.id ? ' is-active' : '');
     b.title = it.n;
     b.setAttribute('aria-label', it.n);
     b.textContent = it.e;
@@ -274,19 +274,19 @@ function renderChecklist() {
 
 /* ---------- tabs ---------- */
 function showTab(name) {
-  [].forEach.call(document.querySelectorAll('.mcms-tab'), function (t) {
+  [].forEach.call(document.querySelectorAll('.ms-tab'), function (t) {
     var on = t.getAttribute('data-tab') === name;
     t.classList.toggle('is-active', on);
     t.setAttribute('aria-selected', on ? 'true' : 'false');
     t.tabIndex = on ? 0 : -1;
   });
-  [].forEach.call(document.querySelectorAll('.mcms-panel'), function (p) {
+  [].forEach.call(document.querySelectorAll('.ms-panel'), function (p) {
     p.classList.toggle('is-active', p.id === 'panel-' + name);
   });
   if (name === 'export') { renderExport(); award(10, 'seen-export'); }
 }
 function initTabs() {
-  var tabs = [].slice.call(document.querySelectorAll('.mcms-tab'));
+  var tabs = [].slice.call(document.querySelectorAll('.ms-tab'));
   tabs.forEach(function (t) {
     t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')); });
     t.addEventListener('keydown', function (e) {
@@ -374,7 +374,7 @@ function renderDebug() {
     logEl.appendChild(el);
   });
   var opts = document.getElementById('mcOptions'); opts.innerHTML = '';
-  var msg = document.getElementById('mcDebugMsg'); msg.className = 'mcms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
+  var msg = document.getElementById('mcDebugMsg'); msg.className = 'ms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
   document.getElementById('mcNext').style.display = 'none';
   dbgState = 0;
 }
@@ -385,17 +385,17 @@ function openOptions() {
   var correct = (sc.correct === 0) ? 0 : sc.opts.findIndex(function (o) { return o.ok; });
   sc.opts.forEach(function (o, i) {
     var b = document.createElement('button');
-    b.type = 'button'; b.className = 'mcms-dbg-opt'; b.textContent = o.t;
+    b.type = 'button'; b.className = 'ms-dbg-opt'; b.textContent = o.t;
     b.addEventListener('click', function () {
       if (i === correct) {
         b.classList.add('is-correct');
-        var msg = document.getElementById('mcDebugMsg'); msg.className = 'mcms-msg ok'; msg.textContent = 'Correct. That is exactly what the log is telling you.';
+        var msg = document.getElementById('mcDebugMsg'); msg.className = 'ms-msg ok'; msg.textContent = 'Correct. That is exactly what the log is telling you.';
         blip(660, 0.12, 'triangle'); award(15, 'debug-' + dbgIndex);
         document.getElementById('mcNext').style.display = '';
         [].forEach.call(opts.children, function (c, k) { if (k !== i) c.disabled = true; });
       } else {
         b.classList.add('is-wrong');
-        var m2 = document.getElementById('mcDebugMsg'); m2.className = 'mcms-msg bad'; m2.textContent = 'Not quite. Read the log line again and try another fix.';
+        var m2 = document.getElementById('mcDebugMsg'); m2.className = 'ms-msg bad'; m2.textContent = 'Not quite. Read the log line again and try another fix.';
         blip(180, 0.12, 'sawtooth');
       }
     });
@@ -469,7 +469,7 @@ function download() {
     var rec = slug(S.recipe, 'my_recipe');
     var fn = slug(S.funcName, 'hello');
     var r = buildRecipe();
-    if (!r) { msg.className = 'mcms-msg bad'; msg.textContent = 'Add at least one ingredient on the Crafting bench first.'; showTab('bench'); return; }
+    if (!r) { msg.className = 'ms-msg bad'; msg.textContent = 'Add at least one ingredient on the Crafting bench first.'; showTab('bench'); return; }
     var readme = S.pack + ' - a Minecraft datapack made in the JVDesignStudio Minecraft Mod Studio.\n\n' +
       'HOW TO USE IT:\n' +
       '1. Unzip this folder so the folder "' + folder + '" (the one holding pack.mcmeta) sits inside\n' +
@@ -493,13 +493,13 @@ function download() {
     try { var c = parseInt(localStorage.getItem('jvds_tool_export_minecraft-mod-studio') || '0', 10) + 1; localStorage.setItem('jvds_tool_export_minecraft-mod-studio', String(c)); } catch (e) {}
     award(25, 'export');
     blip(740, 0.12, 'triangle');
-    msg.className = 'mcms-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Unzip it into saves/<world>/datapacks.';
-  } catch (e) { msg.className = 'mcms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
+    msg.className = 'ms-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Unzip it into saves/<world>/datapacks.';
+  } catch (e) { msg.className = 'ms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
 }
 
 /* ---------- copy helpers ---------- */
 function copyText(text, msgEl) {
-  function done() { if (msgEl) { msgEl.className = 'mcms-msg ok'; msgEl.textContent = 'Copied.'; } }
+  function done() { if (msgEl) { msgEl.className = 'ms-msg ok'; msgEl.textContent = 'Copied.'; } }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
   } else { fallback(text, done); }
@@ -518,7 +518,7 @@ function renderAll() {
   var rn = document.getElementById('mcRecipeName'); if (rn && rn.value !== S.recipe) rn.value = S.recipe;
   var fm = document.getElementById('mcFormat'); if (fm && String(fm.value) !== String(S.format)) fm.value = String(S.format);
   var fnEl = document.getElementById('mcFuncName'); if (fnEl && fnEl.value !== S.funcName) fnEl.value = S.funcName;
-  var er = document.getElementById('mcEraser'); if (er) { er.setAttribute('aria-pressed', S.eraser ? 'true' : 'false'); er.classList.toggle('mcms-btn--primary', S.eraser); }
+  var er = document.getElementById('mcEraser'); if (er) { er.setAttribute('aria-pressed', S.eraser ? 'true' : 'false'); er.classList.toggle('ms-btn--primary', S.eraser); }
   renderGrid(); renderPalette(); renderResultSelect(); renderRecipe();
   renderCmdList(); renderFunc(); renderFiles(); renderExport();
   persist();
@@ -566,7 +566,7 @@ renderAll();
 renderDebug();
 if (!hadSavedWork) {
   var starterMsg = document.getElementById('mcMsg');
-  if (starterMsg) { starterMsg.className = 'mcms-msg ok'; starterMsg.textContent = 'We started you with the classic sword. Change any square to make it yours.'; }
+  if (starterMsg) { starterMsg.className = 'ms-msg ok'; starterMsg.textContent = 'We started you with the classic sword. Change any square to make it yours.'; }
 }
 
 document.getElementById('mcEraser').addEventListener('click', function () { S.eraser = !S.eraser; renderAll(); });
@@ -575,7 +575,7 @@ document.getElementById('mcExample').addEventListener('click', function () {
   S.grid = ['minecraft:diamond', null, null, 'minecraft:diamond', null, null, 'minecraft:stick', null, null];
   S.result = 'minecraft:diamond_sword'; S.count = 1; S.active = 'minecraft:diamond';
   renderAll();
-  var m = document.getElementById('mcMsg'); m.className = 'mcms-msg ok'; m.textContent = 'That is the classic sword shape: two diamonds above one stick.';
+  var m = document.getElementById('mcMsg'); m.className = 'ms-msg ok'; m.textContent = 'That is the classic sword shape: two diamonds above one stick.';
 });
 document.getElementById('mcResultSelect').addEventListener('change', function () { S.result = this.value; renderAll(); });
 document.getElementById('mcCount').addEventListener('input', function () { var n = parseInt(this.value, 10); S.count = (n >= 1 && n <= 64) ? n : 1; renderRecipe(); renderExport(); persist(); });

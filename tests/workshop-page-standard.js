@@ -42,7 +42,21 @@ const CASES = [
   { page: 'workshops/python-world-workshop.html', next: 'my-first-python-game.html' },
   { page: 'workshops/python-game-builder.html', next: 'python-studio.html' },
   { page: 'workshops/python-studio.html', next: 'python-game-builder.html' },
-  { page: 'workshops/python-mod-studio.html', next: 'python-studio.html' }
+  { page: 'workshops/python-mod-studio.html', next: 'python-studio.html' },
+  { page: 'workshops/blender-mod-studio.html', next: 'engine-blender.html' },
+  { page: 'workshops/cpp-mod-studio.html', next: 'engine-cpp.html' },
+  { page: 'workshops/defold-mod-studio.html', next: 'engine-defold.html' },
+  { page: 'workshops/gdevelop-mod-studio.html', next: 'engine-gdevelop.html' },
+  { page: 'workshops/gml-mod-studio.html', next: 'engine-gml-gamemaker.html' },
+  { page: 'workshops/godot-mod-studio.html', next: 'engine-godot.html' },
+  { page: 'workshops/java-mod-studio.html', next: 'engine-java.html' },
+  { page: 'workshops/minecraft-mod-studio.html', next: 'engine-minecraft.html' },
+  { page: 'workshops/mugen-mod-studio.html', next: 'engine-mugen.html' },
+  { page: 'workshops/openrct2-mod-studio.html', next: 'engine-openrct2.html' },
+  { page: 'workshops/roblox-mod-studio.html', next: 'engine-roblox.html' },
+  { page: 'workshops/stardew-mod-studio.html', next: 'stardew-world-workshop.html' },
+  { page: 'workshops/terraria-mod-studio.html', next: 'engine-terraria.html' },
+  { page: 'workshops/tinkercad-mod-studio.html', next: 'engine-tinkercad.html' }
 ];
 
 for (const { page, next } of CASES) {

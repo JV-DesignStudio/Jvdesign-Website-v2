@@ -26,9 +26,9 @@ const server=http.createServer((req,res)=>{
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
 
     const st=await page.evaluate(()=>({
-      tabs:document.querySelectorAll('.gdms-tab').length,
-      cells:document.querySelectorAll('#gmBoard .gdms-cell').length,
-      swatches:document.querySelectorAll('#gmPalette .gdms-swatch').length,
+      tabs:document.querySelectorAll('.ms-tab').length,
+      cells:document.querySelectorAll('#gmBoard .ms-cell').length,
+      swatches:document.querySelectorAll('#gmPalette .ms-swatch').length,
       scripts:document.querySelectorAll('#gmScriptList input[type=checkbox]').length,
       log:!!document.getElementById('gmLog'),
       exportBtn:!!document.getElementById('gmDownload'),
@@ -46,11 +46,11 @@ const server=http.createServer((req,res)=>{
     check('studio has no dashes',st.dashes===0,'dashes '+st.dashes);
     check('studio desktop no overflow',st.sw<=1442,st.sw+'');
 
-    await page.click('.gdms-tab[data-tab="scripts"]');
+    await page.click('.ms-tab[data-tab="scripts"]');
     const onScripts=await page.evaluate(()=>document.getElementById('panel-scripts').classList.contains('is-active'));
     check('tabs switch panels',onScripts);
 
-    await page.click('.gdms-tab[data-tab="scene"]');
+    await page.click('.ms-tab[data-tab="scene"]');
     await page.click('#gmExample');
     const objects=await page.evaluate(()=>window.GDV_buildObjects&&window.GDV_buildObjects());
     check('builds a GDevelop object list',/OBJECTS TO CREATE/.test(objects)&&/Player/.test(objects)&&/WHERE TO PLACE THEM/.test(objects),'len '+(objects||'').length);
@@ -59,9 +59,9 @@ const server=http.createServer((req,res)=>{
     const scripts=await page.evaluate(()=>window.GDV_methodNames&&window.GDV_methodNames());
     check('writes GDevelop event names',Array.isArray(scripts)&&scripts.includes('player.event')&&scripts.includes('coin.event'),JSON.stringify(scripts));
 
-    await page.click('.gdms-tab[data-tab="debug"]');
+    await page.click('.ms-tab[data-tab="debug"]');
     await page.click('#gmLog .err');
-    await page.click('#gmOptions .gdms-dbg-opt');
+    await page.click('#gmOptions .ms-dbg-opt');
     const dbg=await page.evaluate(()=>({correct:!!document.querySelector('#gmOptions .is-correct'),next:document.getElementById('gmNext').style.display}));
     check('debug accepts a correct fix',dbg.correct&&dbg.next!=='none');
 

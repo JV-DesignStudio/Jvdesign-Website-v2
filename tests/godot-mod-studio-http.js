@@ -26,9 +26,9 @@ const server=http.createServer((req,res)=>{
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
 
     const st=await page.evaluate(()=>({
-      tabs:document.querySelectorAll('.gms-tab').length,
-      cells:document.querySelectorAll('#gmBoard .gms-cell').length,
-      swatches:document.querySelectorAll('#gmPalette .gms-swatch').length,
+      tabs:document.querySelectorAll('.ms-tab').length,
+      cells:document.querySelectorAll('#gmBoard .ms-cell').length,
+      swatches:document.querySelectorAll('#gmPalette .ms-swatch').length,
       scripts:document.querySelectorAll('#gmScriptList input[type=checkbox]').length,
       log:!!document.getElementById('gmLog'),
       exportBtn:!!document.getElementById('gmDownload'),
@@ -48,11 +48,11 @@ const server=http.createServer((req,res)=>{
     check('studio has no dashes',st.dashes===0,'dashes '+st.dashes);
     check('studio desktop no overflow',st.sw<=1442,st.sw+'');
 
-    await page.click('.gms-tab[data-tab="scripts"]');
+    await page.click('.ms-tab[data-tab="scripts"]');
     const onScripts=await page.evaluate(()=>document.getElementById('panel-scripts').classList.contains('is-active'));
     check('tabs switch panels',onScripts);
 
-    await page.click('.gms-tab[data-tab="scene"]');
+    await page.click('.ms-tab[data-tab="scene"]');
     await page.click('#gmExample');
     const scene=await page.evaluate(()=>window.GMS_buildScene&&window.GMS_buildScene());
     check('builds a real Godot scene',/^\[gd_scene/.test(scene)&&/CharacterBody2D/.test(scene)&&/Area2D/.test(scene),'len '+(scene||'').length);
@@ -61,9 +61,9 @@ const server=http.createServer((req,res)=>{
     const scripts=await page.evaluate(()=>window.GMS_scriptNames&&window.GMS_scriptNames());
     check('writes GDScript files',Array.isArray(scripts)&&scripts.includes('player.gd')&&scripts.includes('coin.gd'),JSON.stringify(scripts));
 
-    await page.click('.gms-tab[data-tab="debug"]');
+    await page.click('.ms-tab[data-tab="debug"]');
     await page.click('#gmLog .err');
-    await page.click('#gmOptions .gms-dbg-opt');
+    await page.click('#gmOptions .ms-dbg-opt');
     const dbg=await page.evaluate(()=>({correct:!!document.querySelector('#gmOptions .is-correct'),next:document.getElementById('gmNext').style.display}));
     check('debug accepts a correct fix',dbg.correct&&dbg.next!=='none');
 

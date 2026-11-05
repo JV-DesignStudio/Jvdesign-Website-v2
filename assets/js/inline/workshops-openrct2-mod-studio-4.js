@@ -66,7 +66,7 @@ function renderActs() {
   box.innerHTML = '';
   ACTS.forEach(function (a) {
     var l = document.createElement('label');
-    l.className = 'rctms-check';
+    l.className = 'ms-check';
     var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!S.acts[a.k]; cb.style.marginTop = '3px';
     cb.addEventListener('change', function () { S.acts[a.k] = cb.checked; renderAll(); });
     var span = document.createElement('span'); span.textContent = a.label;
@@ -110,7 +110,7 @@ function renderScene() {
   box.innerHTML = '';
   var n = 5;
   for (var i = 0; i < n; i++) {
-    var g = document.createElement('div'); g.className = 'rctms-guest';
+    var g = document.createElement('div'); g.className = 'ms-guest';
     g.style.background = ['#3757c9', '#c93a6a', '#f0a030', '#2fa07a', '#7b6cf0'][i % 5];
     box.appendChild(g);
   }
@@ -121,15 +121,15 @@ function renderAll() { syncInputs(); render(); persist(); }
 
 /* ---------- tabs ---------- */
 function showTab(name) {
-  [].forEach.call(document.querySelectorAll('.rctms-tab'), function (t) {
+  [].forEach.call(document.querySelectorAll('.ms-tab'), function (t) {
     var on = t.getAttribute('data-tab') === name;
     t.classList.toggle('is-active', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1;
   });
-  [].forEach.call(document.querySelectorAll('.rctms-panel'), function (p) { p.classList.toggle('is-active', p.id === 'panel-' + name); });
+  [].forEach.call(document.querySelectorAll('.ms-panel'), function (p) { p.classList.toggle('is-active', p.id === 'panel-' + name); });
   if (name === 'export') renderExport();
 }
 function initTabs() {
-  var tabs = [].slice.call(document.querySelectorAll('.rctms-tab'));
+  var tabs = [].slice.call(document.querySelectorAll('.ms-tab'));
   tabs.forEach(function (t) {
     t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')); });
     t.addEventListener('keydown', function (e) {
@@ -202,7 +202,7 @@ function renderDebug() {
     logEl.appendChild(el);
   });
   var opts = document.getElementById('dbgOptions'); opts.innerHTML = '';
-  var msg = document.getElementById('dbgMsg'); msg.className = 'rctms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
+  var msg = document.getElementById('dbgMsg'); msg.className = 'ms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
   document.getElementById('dbgNext').style.display = 'none';
 }
 function openOptions() {
@@ -212,17 +212,17 @@ function openOptions() {
   var correct = sc.opts.findIndex(function (o) { return o.ok; });
   sc.opts.forEach(function (o, i) {
     var b = document.createElement('button');
-    b.type = 'button'; b.className = 'rctms-dbg-opt'; b.textContent = o.t;
+    b.type = 'button'; b.className = 'ms-dbg-opt'; b.textContent = o.t;
     b.addEventListener('click', function () {
       if (i === correct) {
         b.classList.add('is-correct');
-        var msg = document.getElementById('dbgMsg'); msg.className = 'rctms-msg ok'; msg.textContent = 'Correct. That is exactly what the console is telling you.';
+        var msg = document.getElementById('dbgMsg'); msg.className = 'ms-msg ok'; msg.textContent = 'Correct. That is exactly what the console is telling you.';
         document.getElementById('dbgNext').style.display = '';
         [].forEach.call(opts.children, function (c, k) { if (k !== i) c.disabled = true; });
         award(15, 'debug-' + dbgIndex);
       } else {
         b.classList.add('is-wrong');
-        var m2 = document.getElementById('dbgMsg'); m2.className = 'rctms-msg bad'; m2.textContent = 'Not quite. Read the log line again and try another fix.';
+        var m2 = document.getElementById('dbgMsg'); m2.className = 'ms-msg bad'; m2.textContent = 'Not quite. Read the log line again and try another fix.';
       }
     });
     opts.appendChild(b);
@@ -268,14 +268,14 @@ function download() {
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
     try { localStorage.setItem('jvds_tool_export_openrct2-mod-studio', String(parseInt(localStorage.getItem('jvds_tool_export_openrct2-mod-studio') || '0', 10) + 1)); } catch (e) {}
     award(25, 'export');
-    msg.className = 'rctms-msg ok'; msg.textContent = 'Downloaded ' + f + '.zip. Drop the .js into your OpenRCT2 plugin folder.';
-  } catch (e) { msg.className = 'rctms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
+    msg.className = 'ms-msg ok'; msg.textContent = 'Downloaded ' + f + '.zip. Drop the .js into your OpenRCT2 plugin folder.';
+  } catch (e) { msg.className = 'ms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
 }
 function award(amount, onceKey) {
   try { var k = 'jvds-rctxp-' + onceKey; if (localStorage.getItem(k)) return; localStorage.setItem('jvds-openrct2-studio-xp', String(parseInt(localStorage.getItem('jvds-openrct2-studio-xp') || '0', 10) + amount)); localStorage.setItem(k, '1'); } catch (e) {}
 }
 function copyText(text, msgEl) {
-  function done() { if (msgEl) { msgEl.className = 'rctms-msg ok'; msgEl.textContent = 'Copied.'; } }
+  function done() { if (msgEl) { msgEl.className = 'ms-msg ok'; msgEl.textContent = 'Copied.'; } }
   if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); }); }
   else fallback(text, done);
 }

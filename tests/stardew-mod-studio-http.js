@@ -31,7 +31,7 @@ const server=http.createServer((req,res)=>{
     if(tourVisible)await page.click('#tourSkip');
 
     const info=await page.evaluate(()=>{
-      const tabs=[...document.querySelectorAll('.sdms-tab')];
+      const tabs=[...document.querySelectorAll('.ms-tab')];
       return {
         tabs:tabs.length,
         role:tabs.map(x=>x.getAttribute('role')),
@@ -68,18 +68,18 @@ const server=http.createServer((req,res)=>{
     check('walk test reveals the movement pad',dpadShown);
 
     // tab switching works
-    await page.click('.sdms-tab[data-tab="warps"]');
+    await page.click('.ms-tab[data-tab="warps"]');
     const warpsActive=await page.$eval('#panel-warps',el=>el.classList.contains('is-active'));
     check('warps tab activates its panel',warpsActive);
     await page.click('#warpTest');
     const warpMsg=await page.$eval('#warpMsg',el=>el.textContent.trim());
     check('warp test reports a two-way doorway',/get home|stranded/i.test(warpMsg),warpMsg.slice(0,60));
 
-    await page.click('.sdms-tab[data-tab="files"]');
+    await page.click('.ms-tab[data-tab="files"]');
     const filesPreview=await page.$eval('#filesPreview',el=>el.textContent);
     check('file builders render a live preview',/manifest\.json/.test(filesPreview)&&/content\.json/.test(filesPreview));
 
-    await page.click('.sdms-tab[data-tab="export"]');
+    await page.click('.ms-tab[data-tab="export"]');
     const xPreview=await page.$eval('#xPreview',el=>el.textContent);
     check('export preview lists the mod folder',/manifest\.json/.test(xPreview)&&/\.tmx/.test(xPreview));
     await page.select('#xMode','game');
@@ -94,7 +94,7 @@ const server=http.createServer((req,res)=>{
     const emb=await page.evaluate(()=>({
       header:getComputedStyle(document.querySelector('.site-header')).display==='none',
       hero:getComputedStyle(document.querySelector('.hero')).display==='none',
-      tabs:getComputedStyle(document.querySelector('.sdms-tabs')).display==='none',
+      tabs:getComputedStyle(document.querySelector('.ms-tabs')).display==='none',
       warps:document.getElementById('panel-warps').classList.contains('is-active')
     }));
     check('embed hides the site chrome',emb.header&&emb.hero&&emb.tabs);

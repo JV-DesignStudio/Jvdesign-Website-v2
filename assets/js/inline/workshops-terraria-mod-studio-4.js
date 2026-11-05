@@ -124,7 +124,7 @@
   map.addEventListener('pointerup', function () { painting = false; });
   map.addEventListener('pointercancel', function () { painting = false; });
 
-  var biodiversity = [].slice.call(document.querySelectorAll('.twms-tool[data-tile]'));
+  var biodiversity = [].slice.call(document.querySelectorAll('.ms-tool[data-tile]'));
   biodiversity.forEach(function (b) {
     b.addEventListener('click', function () {
       biodiversity.forEach(function (x) { x.classList.remove('is-active'); x.setAttribute('aria-pressed', 'false'); });
@@ -132,7 +132,7 @@
       current = b.getAttribute('data-tile'); tool = 'paint'; objMode = null; syncTools();
     });
   });
-  var objButtons = [].slice.call(document.querySelectorAll('.twms-tool[data-obj]'));
+  var objButtons = [].slice.call(document.querySelectorAll('.ms-tool[data-obj]'));
   objButtons.forEach(function (b) {
     b.addEventListener('click', function () {
       var on = b.classList.contains('is-active');
@@ -210,7 +210,7 @@
       note: 'Open the .wld in TEdit, paint using plan data, then save.'
     };
     document.getElementById('filesPreview').textContent = JSON.stringify(files, null, 2);
-    var m = document.getElementById('filesMsg'); if (m) { m.className = 'twms-msg ok'; m.textContent = 'World files built for ' + name + ' (' + size + ').'; }
+    var m = document.getElementById('filesMsg'); if (m) { m.className = 'ms-msg ok'; m.textContent = 'World files built for ' + name + ' (' + size + ').'; }
   });
 
   /* Debug tab */
@@ -225,12 +225,12 @@
     var box = document.getElementById('logConsole'); if (!box) return;
     LOG.forEach(function (l) {
       var s = document.createElement('span');
-      s.className = 'twms-log' + (l.err ? ' err' : '');
+      s.className = 'ms-log' + (l.err ? ' err' : '');
       s.textContent = l.t;
       if (l.err) s.addEventListener('click', function () {
-        box.querySelectorAll('.twms-log').forEach(function (x) { x.classList.remove('sel'); });
+        box.querySelectorAll('.ms-log').forEach(function (x) { x.classList.remove('sel'); });
         s.classList.add('sel');
-        var m = document.getElementById('logMsg'); if (m) { m.className = 'twms-msg bad'; m.textContent = l.fix; }
+        var m = document.getElementById('logMsg'); if (m) { m.className = 'ms-msg bad'; m.textContent = l.fix; }
       });
       box.appendChild(s);
     });
@@ -264,13 +264,13 @@
   document.getElementById('xDownload').addEventListener('click', function () {
     download('my-terraria-world.json', worldJson(), 'application/json');
     try { var a = document.createElement('a'); a.href = map.toDataURL('image/png'); a.download = 'world-plan.png'; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
-    var m = document.getElementById('xMsg'); if (m) { m.className = 'twms-msg ok'; m.textContent = 'Downloaded world.json and world-plan.png.'; }
+    var m = document.getElementById('xMsg'); if (m) { m.className = 'ms-msg ok'; m.textContent = 'Downloaded world.json and world-plan.png.'; }
   });
   document.getElementById('xSaveWorld').addEventListener('click', function () {
     var name = (document.getElementById('wName').value || 'MyWorld').replace(/[^\w\- ]/g, '').trim() || 'MyWorld';
     var html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + name + ' | Terraria World</title><style>body{margin:0;background:#fbf8f2;font-family:Inter,system-ui,sans-serif;color:#1a1208;text-align:center;padding:24px}h1{font-size:1.4rem}p{color:#3d3224}a{color:#2e7d32}</style></head><body><h1>' + name + '</h1><img src="world-plan.png" alt="' + name + ' plan" style="max-width:100%;border-radius:12px;border:2px solid #b5895a;image-rendering:pixelated"><p>Made in the JVDesignStudio Terraria World Studio. <a href="https://jvdesignstudio.co.uk/workshops/terraria-mod-studio.html">Build your own world</a></p></body></html>';
     download('world-preview.html', html, 'text/html');
-    var m = document.getElementById('xMsg'); if (m) { m.className = 'twms-msg ok'; m.textContent = 'Downloaded world-preview.html'; }
+    var m = document.getElementById('xMsg'); if (m) { m.className = 'ms-msg ok'; m.textContent = 'Downloaded world-preview.html'; }
   });
   updateExport();
 
@@ -283,8 +283,8 @@
     var arr = loadStore(); g.innerHTML = '';
     if (!arr.length) { g.innerHTML = '<p style="font-size:.85rem;color:var(--muted)">No saved worlds yet.</p>'; return; }
     arr.forEach(function (w, i) {
-      var card = document.createElement('div'); card.className = 'twms-worldcard';
-      card.innerHTML = '<canvas class="twms-worldthumb" width="144" height="96"></canvas><div class="twms-worldname">' + w.name + '</div><div class="twms-worldrow"><button class="twms-btn load">Load</button><button class="twms-btn del">Delete</button></div>';
+      var card = document.createElement('div'); card.className = 'ms-worldcard';
+      card.innerHTML = '<canvas class="ms-worldthumb" width="144" height="96"></canvas><div class="ms-worldname">' + w.name + '</div><div class="ms-worldrow"><button class="ms-btn load">Load</button><button class="ms-btn del">Delete</button></div>';
       var cv = card.querySelector('canvas'), c2 = cv.getContext('2d');
       var cw = cv.width / COLS, ch = cv.height / ROWS;
       for (var r = 0; r < ROWS; r++) for (var c = 0; c < COLS; c++) { var t = w.tiles[r * COLS + c]; c2.fillStyle = (t === 'air') ? '#0b0f14' : (COLORS[t] || '#5cae4a'); c2.fillRect(c * cw, r * ch, Math.ceil(cw), Math.ceil(ch)); }
@@ -297,12 +297,12 @@
     var name = (document.getElementById('wName').value || 'MyWorld').replace(/[^\w\- ]/g, '').trim() || 'MyWorld';
     var arr = loadStore(); arr.push({ name: name, tiles: tiles.slice(), walls: walls.slice() }); if (arr.length > 12) arr.shift();
     saveStore(arr); renderGallery();
-    var m = document.getElementById('xMsg'); if (m) { m.className = 'twms-msg ok'; m.textContent = 'Saved "' + name + '" to My worlds.'; }
+    var m = document.getElementById('xMsg'); if (m) { m.className = 'ms-msg ok'; m.textContent = 'Saved "' + name + '" to My worlds.'; }
   });
   renderGallery();
 
   /* Tabs */
-  var TABS = [].slice.call(document.querySelectorAll('.twms-tab'));
+  var TABS = [].slice.call(document.querySelectorAll('.ms-tab'));
   function switchTab(name) {
     TABS.forEach(function (t) {
       var on = t.getAttribute('data-tab') === name;
@@ -330,7 +330,7 @@
     var tb = q.get('tab');
     if (tb) switchTab(tb);
     EMBED = q.get('embed') === '1';
-    if (EMBED) document.body.classList.add('twms-embed');
+    if (EMBED) document.body.classList.add('ms-embed');
   } catch (e) {}
 
   /* First-run tour */

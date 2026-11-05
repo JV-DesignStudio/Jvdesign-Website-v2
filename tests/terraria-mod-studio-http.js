@@ -31,7 +31,7 @@ const server=http.createServer((req,res)=>{
     if(tourVisible)await page.click('#tourSkip');
 
     const info=await page.evaluate(()=>{
-      const tabs=[...document.querySelectorAll('.twms-tab')];
+      const tabs=[...document.querySelectorAll('.ms-tab')];
       return {
         tabs:tabs.length,
         role:tabs.map(x=>x.getAttribute('role')),
@@ -55,7 +55,7 @@ const server=http.createServer((req,res)=>{
     check('desktop no overflow',info.scrollWidth<=1442,info.scrollWidth+'');
 
     // painting changes the map
-    await page.click('.twms-tool[data-tile="water"]');
+    await page.click('.ms-tool[data-tile="water"]');
     const before=await page.$eval('#twmsMap',c=>c.toDataURL());
     const box=await page.$eval('#twmsMap',c=>{const r=c.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
     await page.mouse.click(box.x+box.w*0.5,box.y+box.h*0.5);
@@ -68,19 +68,19 @@ const server=http.createServer((req,res)=>{
     check('walk test reveals the movement pad',dpadShown);
 
     // tab switching works
-    await page.click('.twms-tab[data-tab="objects"]');
+    await page.click('.ms-tab[data-tab="objects"]');
     const objActive=await page.$eval('#panel-objects',el=>el.classList.contains('is-active'));
     check('objects tab activates its panel',objActive);
     await page.click('#biomeTest');
     const biomeMsg=await page.$eval('#biomeMsg',el=>el.textContent.trim());
     check('biome check reports a biome',/forest|snow|desert|biome/i.test(biomeMsg),biomeMsg.slice(0,60));
 
-    await page.click('.twms-tab[data-tab="files"]');
+    await page.click('.ms-tab[data-tab="files"]');
     await page.click('#filesBuild');
     const filesPreview=await page.$eval('#filesPreview',el=>el.textContent);
     check('file builders render a live preview',/world\.json/.test(filesPreview)&&/seed/.test(filesPreview));
 
-    await page.click('.twms-tab[data-tab="export"]');
+    await page.click('.ms-tab[data-tab="export"]');
     const xPreview=await page.$eval('#xPreview',el=>el.textContent);
     check('export preview lists the world files',/world\.json/.test(xPreview)&&/\.png/.test(xPreview));
     await page.select('#xMode','share');
@@ -95,7 +95,7 @@ const server=http.createServer((req,res)=>{
     const emb=await page.evaluate(()=>({
       header:document.querySelector('.site-header')?getComputedStyle(document.querySelector('.site-header')).display==='none':true,
       hero:getComputedStyle(document.querySelector('.hero')).display==='none',
-      tabs:getComputedStyle(document.querySelector('.twms-tabs')).display==='none',
+      tabs:getComputedStyle(document.querySelector('.ms-tabs')).display==='none',
       objects:document.getElementById('panel-objects').classList.contains('is-active')
     }));
     check('embed hides the site chrome',emb.header&&emb.hero&&emb.tabs);
