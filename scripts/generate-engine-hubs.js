@@ -146,16 +146,17 @@ function say(voice, engine) {
 function renderSections(engine, byId, showInstallPill) {
   const blocks = [];
   engine.sections.forEach((s, si) => {
-    const cards = s.workshops.map((wid, i) => {
+    const ids = s.workshops.filter((wid) => byId.has(wid));
+    if (!ids.length) return;
+    const cards = ids.map((wid, i) => {
       const w = byId.get(wid);
-      if (!w) throw new Error('engine-hubs.json: unknown workshop id "' + wid + '" in section "' + s.id + '" for ' + engine.id);
       let badge = '';
-      if (s.kind === 'start' && s.workshops.length > 1) badge = 'Step ' + (i + 1) + ' of ' + s.workshops.length;
+      if (s.kind === 'start' && ids.length > 1) badge = 'Step ' + (i + 1) + ' of ' + ids.length;
       else if (s.kind === 'series') badge = 'Episode ' + (i + 1);
       const note = engine.notes && engine.notes[wid];
       return card(w, engine, { badge, note, install: s.install });
     });
-    const count = s.workshops.length + ' workshop' + (s.workshops.length === 1 ? '' : 's');
+    const count = ids.length + ' workshop' + (ids.length === 1 ? '' : 's');
     blocks.push('  <section class="hub-section" data-hub-section aria-labelledby="s-' + s.id + '">\n'
       + sectionHead(s.icon || '📦', s.title, s.blurb, showInstallPill ? installPill(s.install, engine) : '', count, 's-' + s.id) + '\n'
       + '  <div class="courses-grid" data-hub-grid>\n' + cards.join('\n') + '\n  </div>\n'
@@ -167,7 +168,10 @@ function renderSections(engine, byId, showInstallPill) {
 
 function renderPage(engine, byId) {
   const id = engine.id;
-  const allIds = [...new Set(engine.sections.flatMap((s) => s.workshops))];
+  const sections = engine.sections
+    .map((s) => ({ ...s, workshops: s.workshops.filter((wid) => byId.has(wid)) }))
+    .filter((s) => s.workshops.length);
+  const allIds = [...new Set(sections.flatMap((s) => s.workshops))];
   const total = allIds.length;
   const band = ageBand(allIds, byId);
 
@@ -180,7 +184,7 @@ function renderPage(engine, byId) {
   // per-section install pill when install differs between sections. An engine
   // where everything runs in the browser (Scratch) gets neither, since repeating
   // "Nothing to install" and a "Beginner" filter on every card helps no one.
-  const installs = engine.sections.map((s) => s.install === true);
+  const installs = sections.map((s) => s.install === true);
   const hasApp = installs.some(Boolean);
   const mixedInstall = hasApp && installs.some((v) => v === false);
   const levels = new Set(allIds.map((wid) => (byId.get(wid) || {}).difficulty).filter(Boolean));
