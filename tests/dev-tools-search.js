@@ -93,12 +93,17 @@ for (const c of cats) {
 }
 ok('hub has a 3D filter chip', chips.includes('3d builders'));
 
-// A1669: a guided first-game sequence links art -> sound -> level -> ship.
-const pathSteps = [...html.matchAll(/class="tool-path-step"[\s\S]*?href="([^"]+)"/g)].map((m) => m[1]);
-ok('guided first-game path has 4 steps', pathSteps.length === 4, 'found ' + pathSteps.length);
-for (const target of ['pixel-studio.html', 'sound-studio.html', 'level-designer.html', 'arcade-game-maker.html']) {
-  ok('guided path links to ' + target, pathSteps.some((h) => h.includes(target)));
+// A2600: one guided first-project path only. The hub used to carry a second
+// "Your first game in 20 minutes" path that repeated the route with a
+// conflicting time claim, so a learner met two competing starts.
+const projectBlocks = [...html.matchAll(/class="hub-project hub-start"/g)].length;
+ok('hub has one guided project', projectBlocks === 1, 'found ' + projectBlocks);
+const projectSteps = [...html.matchAll(/class="hub-project-step"[\s\S]*?href="([^"]+)"/g)].map((m) => m[1]);
+ok('guided project has 3 steps', projectSteps.length === 3, 'found ' + projectSteps.length);
+for (const target of ['pixel-studio.html', 'sound-studio.html', 'arcade-game-maker.html']) {
+  ok('guided project links to ' + target, projectSteps.some((h) => h.includes(target)));
 }
+ok('no duplicate 20-minute path remains', !/class="tool-path-step"/.test(html) && !/in 20 minutes/i.test(html));
 
 // A1679: close the journey loop. The hub must carry Stardust (Imagine) and an
 // Echo next-step, plus a Continue strip that reads the tools' saved work.

@@ -57,7 +57,7 @@ const server = http.createServer((req, res) => {
           tools: !!tools,
           cards: document.querySelectorAll('#tools [data-tool-card]').length,
           start: !!q('.hub-start'),
-          path: !!q('#toolPathTitle'),
+          path: !!q('#first-project .hub-project-steps'),
           handoff: !!handoff,
           intents: document.querySelectorAll('.hub-intents .intent-path').length,
           bodyDisplay: getComputedStyle(document.body).display,
