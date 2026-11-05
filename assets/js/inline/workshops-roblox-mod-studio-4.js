@@ -231,7 +231,7 @@ function renderBoard() {
   S.grid.forEach(function (cell, i) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'rbxs-cell' + (cell ? ' is-filled' : '');
+    b.className = 'ms-cell' + (cell ? ' is-filled' : '');
     b.setAttribute('role', 'gridcell');
     b.setAttribute('aria-label', 'Square ' + (i + 1) + (cell && part(cell) ? ': ' + part(cell).n : ': empty'));
     if (cell && part(cell)) {
@@ -254,9 +254,9 @@ function renderPalette() {
   PARTS.forEach(function (it) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'rbxs-swatch' + (!S.eraser && S.active === it.id ? ' is-active' : '');
+    b.className = 'ms-swatch' + (!S.eraser && S.active === it.id ? ' is-active' : '');
     b.title = it.n; b.setAttribute('aria-label', it.n);
-    b.innerHTML = '<span class="rbxs-swatch-emoji">' + it.e + '</span><span class="rbxs-swatch-name">' + it.n + '</span>';
+    b.innerHTML = '<span class="ms-swatch-emoji">' + it.e + '</span><span class="ms-swatch-name">' + it.n + '</span>';
     b.style.borderColor = 'rgba(0,0,0,.2)';
     b.addEventListener('click', function () { S.active = it.id; S.eraser = false; renderAll(); });
     p.appendChild(b);
@@ -268,7 +268,7 @@ function renderMini() {
   m.innerHTML = '';
   S.grid.forEach(function (cell) {
     var d = document.createElement('span');
-    d.className = 'rbxs-mini-cell';
+    d.className = 'ms-mini-cell';
     if (cell && part(cell)) {
       var mpc = part(cell).c;
       d.textContent = part(cell).e;
@@ -347,19 +347,19 @@ function renderChecklist() {
 
 /* ---------- tabs ---------- */
 function showTab(name) {
-  [].forEach.call(document.querySelectorAll('.rbxs-tab'), function (t) {
+  [].forEach.call(document.querySelectorAll('.ms-tab'), function (t) {
     var on = t.getAttribute('data-tab') === name;
     t.classList.toggle('is-active', on);
     t.setAttribute('aria-selected', on ? 'true' : 'false');
     t.tabIndex = on ? 0 : -1;
   });
-  [].forEach.call(document.querySelectorAll('.rbxs-panel'), function (p) {
+  [].forEach.call(document.querySelectorAll('.ms-panel'), function (p) {
     p.classList.toggle('is-active', p.id === 'panel-' + name);
   });
   if (name === 'export') { renderExport(); award(10, 'seen-export'); }
 }
 function initTabs() {
-  var tabs = [].slice.call(document.querySelectorAll('.rbxs-tab'));
+  var tabs = [].slice.call(document.querySelectorAll('.ms-tab'));
   tabs.forEach(function (t) {
     t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')); });
     t.addEventListener('keydown', function (e) {
@@ -447,7 +447,7 @@ function renderDebug() {
     logEl.appendChild(el);
   });
   var opts = document.getElementById('rbOptions'); opts.innerHTML = '';
-  var msg = document.getElementById('rbDebugMsg'); msg.className = 'rbxs-msg'; msg.textContent = 'Click the red line, then pick the fix.';
+  var msg = document.getElementById('rbDebugMsg'); msg.className = 'ms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
   document.getElementById('rbNext').style.display = 'none';
 }
 function openOptions() {
@@ -457,17 +457,17 @@ function openOptions() {
   var correct = sc.opts.findIndex(function (o) { return o.ok; });
   sc.opts.forEach(function (o, i) {
     var b = document.createElement('button');
-    b.type = 'button'; b.className = 'rbxs-dbg-opt'; b.textContent = o.t;
+    b.type = 'button'; b.className = 'ms-dbg-opt'; b.textContent = o.t;
     b.addEventListener('click', function () {
       if (i === correct) {
         b.classList.add('is-correct');
-        var msg = document.getElementById('rbDebugMsg'); msg.className = 'rbxs-msg ok'; msg.textContent = 'Correct. That is exactly what the Output is telling you.';
+        var msg = document.getElementById('rbDebugMsg'); msg.className = 'ms-msg ok'; msg.textContent = 'Correct. That is exactly what the Output is telling you.';
         blip(660, 0.12, 'triangle'); award(15, 'debug-' + dbgIndex);
         document.getElementById('rbNext').style.display = '';
         [].forEach.call(opts.children, function (c, k) { if (k !== i) c.disabled = true; });
       } else {
         b.classList.add('is-wrong');
-        var m2 = document.getElementById('rbDebugMsg'); m2.className = 'rbxs-msg bad'; m2.textContent = 'Not quite. Read the Output line again and try another fix.';
+        var m2 = document.getElementById('rbDebugMsg'); m2.className = 'ms-msg bad'; m2.textContent = 'Not quite. Read the Output line again and try another fix.';
         blip(180, 0.12, 'sawtooth');
       }
     });
@@ -533,7 +533,7 @@ function download() {
   try {
     var enc = new TextEncoder();
     var folder = slug(S.level, 'my_model');
-    if (placedParts().length === 0) { msg.className = 'rbxs-msg bad'; msg.textContent = 'Place at least one block on the grid first.'; showTab('level'); return; }
+    if (placedParts().length === 0) { msg.className = 'ms-msg bad'; msg.textContent = 'Place at least one block on the grid first.'; showTab('level'); return; }
     var by = (S.author || '').trim();
     var readme = S.level + ' - a Roblox model made in the JVDesignStudio Roblox Mod Studio.\n' +
       (by ? 'Made by: ' + by + '\n' : '') + '\n' +
@@ -555,13 +555,13 @@ function download() {
     try { var c = parseInt(localStorage.getItem('jvds_tool_export_roblox-mod-studio') || '0', 10) + 1; localStorage.setItem('jvds_tool_export_roblox-mod-studio', String(c)); } catch (e) {}
     award(25, 'export');
     blip(740, 0.12, 'triangle');
-    msg.className = 'rbxs-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Insert the .rbxmx into Roblox Studio.';
-  } catch (e) { msg.className = 'rbxs-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
+    msg.className = 'ms-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Insert the .rbxmx into Roblox Studio.';
+  } catch (e) { msg.className = 'ms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
 }
 
 /* ---------- copy ---------- */
 function copyText(text, msgEl) {
-  function done() { if (msgEl) { msgEl.className = 'rbxs-msg ok'; msgEl.textContent = 'Copied.'; } }
+  function done() { if (msgEl) { msgEl.className = 'ms-msg ok'; msgEl.textContent = 'Copied.'; } }
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
   } else { fallback(text, done); }
@@ -577,7 +577,7 @@ function fallback(text, done) {
 function renderAll() {
   var ln = document.getElementById('rbLevelName'); if (ln && ln.value !== S.level) ln.value = S.level;
   var au = document.getElementById('rbAuthor'); if (au && au.value !== S.author) au.value = S.author;
-  var er = document.getElementById('rbEraser'); if (er) { er.setAttribute('aria-pressed', S.eraser ? 'true' : 'false'); er.classList.toggle('rbxs-btn--primary', S.eraser); }
+  var er = document.getElementById('rbEraser'); if (er) { er.setAttribute('aria-pressed', S.eraser ? 'true' : 'false'); er.classList.toggle('ms-btn--primary', S.eraser); }
   renderBoard(); renderPalette(); renderMini(); renderLevelCheck();
   renderScriptList(); renderScriptPreview(); renderFiles(); renderExport();
   persist();
@@ -595,7 +595,7 @@ function setExample() {
   place(5, 3, 'finish');
   S.level = S.level || 'My First Obby';
   renderAll();
-  var msg = document.getElementById('rbMsg'); if (msg) { msg.className = 'rbxs-msg ok'; msg.textContent = 'Example level loaded. Click 5. Download your model when you are ready.'; }
+  var msg = document.getElementById('rbMsg'); if (msg) { msg.className = 'ms-msg ok'; msg.textContent = 'Example level loaded. Click 5. Download your model when you are ready.'; }
 }
 
 /* ---------- tour ---------- */

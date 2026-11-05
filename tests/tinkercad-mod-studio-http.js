@@ -26,9 +26,9 @@ const server=http.createServer((req,res)=>{
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
 
     const st=await page.evaluate(()=>({
-      tabs:document.querySelectorAll('.tcms-tab').length,
-      cells:document.querySelectorAll('#gmBoard .tcms-cell').length,
-      swatches:document.querySelectorAll('#gmPalette .tcms-swatch').length,
+      tabs:document.querySelectorAll('.ms-tab').length,
+      cells:document.querySelectorAll('#gmBoard .ms-cell').length,
+      swatches:document.querySelectorAll('#gmPalette .ms-swatch').length,
       scripts:document.querySelectorAll('#gmScriptList input[type=checkbox]').length,
       log:!!document.getElementById('gmLog'),
       exportBtn:!!document.getElementById('gmDownload'),
@@ -46,11 +46,11 @@ const server=http.createServer((req,res)=>{
     check('studio has no dashes',st.dashes===0,'dashes '+st.dashes);
     check('studio desktop no overflow',st.sw<=1442,st.sw+'');
 
-    await page.click('.tcms-tab[data-tab="scripts"]');
+    await page.click('.ms-tab[data-tab="scripts"]');
     const onScripts=await page.evaluate(()=>document.getElementById('panel-scripts').classList.contains('is-active'));
     check('tabs switch panels',onScripts);
 
-    await page.click('.tcms-tab[data-tab="scene"]');
+    await page.click('.ms-tab[data-tab="scene"]');
     await page.click('#gmExample');
     const stl=await page.evaluate(()=>window.TCD_buildSTL&&window.TCD_buildSTL());
     check('builds an ASCII STL',/^solid jvds_model/.test(stl)&&/endsolid jvds_model\s*$/.test(stl),'len '+(stl||'').length);
@@ -63,9 +63,9 @@ const server=http.createServer((req,res)=>{
     const scripts=await page.evaluate(()=>window.TCD_methodNames&&window.TCD_methodNames());
     check('writes step names',Array.isArray(scripts)&&scripts.includes('flat.step')&&scripts.includes('bed.step'),JSON.stringify(scripts));
 
-    await page.click('.tcms-tab[data-tab="debug"]');
+    await page.click('.ms-tab[data-tab="debug"]');
     await page.click('#gmLog .err');
-    await page.click('#gmOptions .tcms-dbg-opt');
+    await page.click('#gmOptions .ms-dbg-opt');
     const dbg=await page.evaluate(()=>({correct:!!document.querySelector('#gmOptions .is-correct'),next:document.getElementById('gmNext').style.display}));
     check('debug accepts a correct fix',dbg.correct&&dbg.next!=='none');
 

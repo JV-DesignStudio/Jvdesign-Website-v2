@@ -27,7 +27,7 @@ const server=http.createServer((req,res)=>{
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
 
     const info=await page.evaluate(()=>{
-      const tabs=[...document.querySelectorAll('.rctms-tab')];
+      const tabs=[...document.querySelectorAll('.ms-tab')];
       return {
         tabs:tabs.length,
         role:tabs.map(x=>x.getAttribute('role')),
@@ -56,7 +56,7 @@ const server=http.createServer((req,res)=>{
     check('renaming updates the plugin',/name: "Day Greeter"/.test(js2));
 
     // adding a park action updates the code
-    await page.click('.rctms-tab[data-tab="does"]');
+    await page.click('.ms-tab[data-tab="does"]');
     const doesActive=await page.$eval('#panel-does',el=>el.classList.contains('is-active'));
     check('does tab activates its panel',doesActive);
     await page.evaluate(()=>{const boxes=[...document.querySelectorAll('#pActs input[type="checkbox"]')];boxes[3].click();});
@@ -67,23 +67,23 @@ const server=http.createServer((req,res)=>{
     check('changing the event updates the code',/context\.subscribe\("interval\.tick"/.test(js4));
 
     // files tab
-    await page.click('.rctms-tab[data-tab="files"]');
+    await page.click('.ms-tab[data-tab="files"]');
     const files=await page.$eval('#pFiles',el=>el.textContent);
     check('files preview shows the plugin and README',/\.js/.test(files)&&/README\.txt/.test(files));
     const checklist=await page.$$eval('#pChecklist li',ls=>ls.length);
     check('ready check lists the plugin rules',checklist>=3,'items '+checklist);
 
     // debug tab
-    await page.click('.rctms-tab[data-tab="debug"]');
+    await page.click('.ms-tab[data-tab="debug"]');
     await page.click('#dbgLog .err');
-    const optCount=await page.$$eval('#dbgOptions .rctms-dbg-opt',o=>o.length);
+    const optCount=await page.$$eval('#dbgOptions .ms-dbg-opt',o=>o.length);
     check('clicking the error reveals fixes',optCount>=3,'options '+optCount);
-    await page.click('#dbgOptions .rctms-dbg-opt');
+    await page.click('#dbgOptions .ms-dbg-opt');
     const dbgOk=await page.$eval('#dbgMsg',el=>el.classList.contains('ok'));
     check('choosing the right fix is accepted',dbgOk);
 
     // export tab
-    await page.click('.rctms-tab[data-tab="export"]');
+    await page.click('.ms-tab[data-tab="export"]');
     const tree=await page.$eval('#xTree',el=>el.textContent);
     check('export preview lists the plugin files',/\.js/.test(tree)&&/README/.test(tree));
     await page.click('#xDownload');

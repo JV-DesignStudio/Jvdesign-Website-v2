@@ -87,17 +87,17 @@
   }
 
   /* ---------- tabs (keyboard accessible) ---------- */
-  var tabs = [].slice.call(document.querySelectorAll('.sdms-tab'));
+  var tabs = [].slice.call(document.querySelectorAll('.ms-tab'));
   function showTab(name, focus) {
     tabs.forEach(function (b) {
       var on = b.getAttribute('data-tab') === name;
       b.classList.toggle('is-active', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
       b.setAttribute('tabindex', on ? '0' : '-1'); if (on && focus) b.focus();
     });
-    [].slice.call(document.querySelectorAll('.sdms-panel')).forEach(function (p) { p.classList.toggle('is-active', p.id === 'panel-' + name); });
+    [].slice.call(document.querySelectorAll('.ms-panel')).forEach(function (p) { p.classList.toggle('is-active', p.id === 'panel-' + name); });
   }
   tabs.forEach(function (b) { b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); }); });
-  var tablist = document.querySelector('.sdms-tabs');
+  var tablist = document.querySelector('.ms-tabs');
   if (tablist) tablist.addEventListener('keydown', function (e) {
     var i = tabs.indexOf(document.activeElement); if (i < 0) return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); showTab(tabs[(i + 1) % tabs.length].getAttribute('data-tab'), true); }
@@ -107,7 +107,7 @@
   });
   if (location.hash && /^#(map|warps|files|debug|export)$/.test(location.hash)) showTab(location.hash.slice(1));
   if (EMBED) {
-    document.documentElement.classList.add('sdms-embed');
+    document.documentElement.classList.add('ms-embed');
     var tabParam = (/[?&]tab=([a-z]+)/.exec(location.search) || [])[1];
     if (tabParam && /^(map|warps|files|debug|export)$/.test(tabParam)) showTab(tabParam);
   }
@@ -299,7 +299,7 @@
     clipboard = { w: b.c1 - b.c0 + 1, h: b.r1 - b.r0 + 1, layers: {} };
     LAYERS.forEach(function (L) { var arr = []; for (var r = b.r0; r <= b.r1; r++) for (var c = b.c0; c <= b.c1; c++) arr.push(grid[L][midx(c, r)]); clipboard.layers[L] = arr; });
     var pb = document.getElementById('toolPaste'); if (pb) pb.disabled = false;
-    var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Copied a ' + clipboard.w + 'x' + clipboard.h + ' area. Pick Paste and click to stamp it.';
+    var m = document.getElementById('mapMsg'); m.className = 'ms-msg ok'; m.textContent = 'Copied a ' + clipboard.w + 'x' + clipboard.h + ' area. Pick Paste and click to stamp it.';
   }
   function pasteAt(cell) {
     if (!clipboard) return;
@@ -340,7 +340,7 @@
   function buildLayersUI() {
     var box = document.getElementById('mapLayers'); if (!box) return; box.innerHTML = '';
     LAYERS.forEach(function (L) {
-      var label = document.createElement('label'); label.className = 'sdms-check';
+      var label = document.createElement('label'); label.className = 'ms-check';
       var vis = document.createElement('input'); vis.type = 'checkbox'; vis.checked = layerVisible[L]; vis.title = 'Show or hide the ' + L + ' layer'; vis.setAttribute('aria-label', 'Show ' + L + ' layer');
       vis.addEventListener('change', function () { layerVisible[L] = vis.checked; renderMap(); persist(); });
       var radio = document.createElement('input'); radio.type = 'radio'; radio.name = 'sdmsLayer'; radio.value = L; radio.checked = (L === activeLayer);
@@ -377,7 +377,7 @@
     var note = document.getElementById('mapRulesNote');
     var rules = RULES[activeTile];
     [['passable', 'Passable (can walk on it)'], ['water', 'Water'], ['diggable', 'Diggable (can hoe)']].forEach(function (pair) {
-      var label = document.createElement('label'); label.className = 'sdms-check';
+      var label = document.createElement('label'); label.className = 'ms-check';
       var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = (rules[pair[0]] === T);
       cb.addEventListener('change', function () { rules[pair[0]] = cb.checked ? T : F; if (walkOn) renderMap(); updateCompare(); persist(); });
       label.appendChild(cb); label.appendChild(document.createTextNode(pair[1])); box.appendChild(label);
@@ -415,15 +415,15 @@
   }
   function mapMove(dc, dr) {
     var res = tryMove(dc, dr);
-    if (!res.ok) { mapMsg.className = 'sdms-msg bad'; mapMsg.textContent = res.msg; return; }
-    mapMsg.className = 'sdms-msg ok'; mapMsg.textContent = 'Step OK. You are standing on ' + TILE_LABELS[res.tile] + '.'; renderMap();
+    if (!res.ok) { mapMsg.className = 'ms-msg bad'; mapMsg.textContent = res.msg; return; }
+    mapMsg.className = 'ms-msg ok'; mapMsg.textContent = 'Step OK. You are standing on ' + TILE_LABELS[res.tile] + '.'; renderMap();
   }
   var walkBtn = document.getElementById('mapWalk'), dpad = document.getElementById('mapDpad');
   if (walkBtn) walkBtn.addEventListener('click', function () {
     walkOn = !walkOn; walkBtn.textContent = walkOn ? '■ Stop playing' : '▶ Play my world';
     if (dpad) dpad.style.display = walkOn ? 'grid' : 'none';
     char = { c: 1, r: 1 };
-    mapMsg.className = 'sdms-msg'; mapMsg.textContent = walkOn ? 'Use the arrow keys or the buttons to walk. Walls and water should block you.' : '';
+    mapMsg.className = 'ms-msg'; mapMsg.textContent = walkOn ? 'Use the arrow keys or the buttons to walk. Walls and water should block you.' : '';
     renderMap();
   });
   var heldDirs = {};
@@ -538,10 +538,10 @@
     if (!activeNpc) {
       activeNpc = { x: cell.c, y: cell.r, path: [], off: Math.random() * 10 };
       npcs.push(activeNpc);
-      m.className = 'sdms-msg ok'; m.textContent = 'NPC placed. Click more tiles to add its walking path, then Play.';
+      m.className = 'ms-msg ok'; m.textContent = 'NPC placed. Click more tiles to add its walking path, then Play.';
     } else {
       activeNpc.path.push({ c: cell.c, r: cell.r });
-      m.className = 'sdms-msg ok'; m.textContent = 'Path point ' + activeNpc.path.length + ' added to the NPC.';
+      m.className = 'ms-msg ok'; m.textContent = 'Path point ' + activeNpc.path.length + ' added to the NPC.';
     }
     renderMap(); persist();
   }
@@ -550,15 +550,15 @@
     var found = -1;
     for (var i = 0; i < doors.length; i++) if (doors[i].c === cell.c && doors[i].r === cell.r) found = i;
     if (found >= 0) doors.splice(found, 1); else doors.push({ c: cell.c, r: cell.r });
-    var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = found >= 0 ? 'Door removed.' : 'Door added. Step on it in Play mode to go inside.';
+    var m = document.getElementById('mapMsg'); m.className = 'ms-msg ok'; m.textContent = found >= 0 ? 'Door removed.' : 'Door added. Step on it in Play mode to go inside.';
     renderMap(); persist();
   }
   var npcBtn = document.getElementById('toolNpc'); if (npcBtn) npcBtn.addEventListener('click', function () { if (tool === 'npc') { activeNpc = null; setTool('paint'); } else { activeNpc = null; setTool('npc'); } });
   var doorBtn = document.getElementById('toolDoor'); if (doorBtn) doorBtn.addEventListener('click', function () { setTool(tool === 'door' ? 'paint' : 'door'); });
-  [].slice.call(document.querySelectorAll('.sdms-tool[data-brush]')).forEach(function (b) {
+  [].slice.call(document.querySelectorAll('.ms-tool[data-brush]')).forEach(function (b) {
     b.addEventListener('click', function () {
       brushSize = parseInt(b.getAttribute('data-brush'), 10);
-      [].slice.call(document.querySelectorAll('.sdms-tool[data-brush]')).forEach(function (x) { x.classList.remove('is-active'); });
+      [].slice.call(document.querySelectorAll('.ms-tool[data-brush]')).forEach(function (x) { x.classList.remove('is-active'); });
       b.classList.add('is-active');
     });
   });
@@ -591,7 +591,7 @@
     pushHistory();
     grid = { Back: new Array(MCOLS * MROWS).fill('grass'), Buildings: new Array(MCOLS * MROWS).fill(null), Front: new Array(MCOLS * MROWS).fill(null) };
     activeLayer = 'Back'; activeTile = 'grass'; setTool('paint'); brushSize = 1;
-    [].slice.call(document.querySelectorAll('.sdms-tool[data-brush]')).forEach(function (x) { x.classList.toggle('is-active', x.getAttribute('data-brush') === '1'); });
+    [].slice.call(document.querySelectorAll('.ms-tool[data-brush]')).forEach(function (x) { x.classList.toggle('is-active', x.getAttribute('data-brush') === '1'); });
     renderMap(); buildLayersUI(); buildPaletteUI(); buildRulesUI(); updateCompare(); mapMsg.textContent = ''; persist();
   });
 
@@ -615,14 +615,14 @@
       var ok = ch.test();
       if (ok && !challengeDone[ch.id]) { challengeDone[ch.id] = true; newly = true; }
       if (!ok) allDone = false;
-      var row = document.createElement('div'); row.className = 'sdms-challenge' + (ok ? ' done' : '');
+      var row = document.createElement('div'); row.className = 'ms-challenge' + (ok ? ' done' : '');
       row.innerHTML = '<span class="tick">' + (ok ? '✓' : '○') + '</span><span>' + ch.label + '</span>';
       box.appendChild(row);
     });
     if (allDone && !challengeDone._all) { challengeDone._all = true; newly = true; award(30, 'jvds-studio-xp-challenges'); }
     if (newly) blip(880, 0.14, 'triangle');
-    if (newly && allDone) { var m = document.getElementById('challengeMsg'); m.className = 'sdms-msg ok'; m.textContent = 'All challenges done! +30 XP. Now try the Warps tab.'; }
-    else if (newly) { var m2 = document.getElementById('challengeMsg'); m2.className = 'sdms-msg ok'; m2.textContent = 'Challenge complete! Keep going.'; }
+    if (newly && allDone) { var m = document.getElementById('challengeMsg'); m.className = 'ms-msg ok'; m.textContent = 'All challenges done! +30 XP. Now try the Warps tab.'; }
+    else if (newly) { var m2 = document.getElementById('challengeMsg'); m2.className = 'ms-msg ok'; m2.textContent = 'Challenge complete! Keep going.'; }
   }
 
   /* =========================================================
@@ -650,17 +650,17 @@
     var ws = getWorlds();
     if (!ws.length) { box.innerHTML = '<span style="font-size:.8rem;color:var(--muted)">No saved worlds yet. Name one and press Save. Saved worlds appear here as little pictures.</span>'; return; }
     ws.forEach(function (w, i) {
-      var card = document.createElement('div'); card.className = 'sdms-worldcard';
-      var cv = document.createElement('canvas'); cv.width = 120; cv.height = 80; cv.className = 'sdms-worldthumb';
+      var card = document.createElement('div'); card.className = 'ms-worldcard';
+      var cv = document.createElement('canvas'); cv.width = 120; cv.height = 80; cv.className = 'ms-worldthumb';
       cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', 'Preview of ' + w.name);
       drawThumb(cv, w.grid);
-      var name = document.createElement('div'); name.className = 'sdms-worldname'; name.textContent = w.name;
-      var row = document.createElement('div'); row.className = 'sdms-worldrow';
-      var load = document.createElement('button'); load.className = 'sdms-btn load'; load.textContent = 'Load'; load.title = 'Load ' + w.name;
-      load.addEventListener('click', function () { loadGrid(w.grid); var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Loaded "' + w.name + '".'; });
-      var share = document.createElement('button'); share.className = 'sdms-btn'; share.textContent = '🔗'; share.title = 'Copy a share link for ' + w.name;
-      share.addEventListener('click', function () { var url = shareURL(w.grid); if (navigator.clipboard) navigator.clipboard.writeText(url); var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Share link copied for "' + w.name + '".'; });
-      var del = document.createElement('button'); del.className = 'sdms-btn'; del.textContent = '✕'; del.title = 'Delete ' + w.name;
+      var name = document.createElement('div'); name.className = 'ms-worldname'; name.textContent = w.name;
+      var row = document.createElement('div'); row.className = 'ms-worldrow';
+      var load = document.createElement('button'); load.className = 'ms-btn load'; load.textContent = 'Load'; load.title = 'Load ' + w.name;
+      load.addEventListener('click', function () { loadGrid(w.grid); var m = document.getElementById('mapMsg'); m.className = 'ms-msg ok'; m.textContent = 'Loaded "' + w.name + '".'; });
+      var share = document.createElement('button'); share.className = 'ms-btn'; share.textContent = '🔗'; share.title = 'Copy a share link for ' + w.name;
+      share.addEventListener('click', function () { var url = shareURL(w.grid); if (navigator.clipboard) navigator.clipboard.writeText(url); var m = document.getElementById('mapMsg'); m.className = 'ms-msg ok'; m.textContent = 'Share link copied for "' + w.name + '".'; });
+      var del = document.createElement('button'); del.className = 'ms-btn'; del.textContent = '✕'; del.title = 'Delete ' + w.name;
       del.addEventListener('click', function () { var arr = getWorlds(); arr.splice(i, 1); setWorlds(arr); renderWorlds(); });
       row.appendChild(load); row.appendChild(share); row.appendChild(del);
       card.appendChild(cv); card.appendChild(name); card.appendChild(row); box.appendChild(card);
@@ -670,14 +670,14 @@
   if (worldSave) worldSave.addEventListener('click', function () {
     var name = (document.getElementById('worldName').value || '').trim() || ('World ' + (getWorlds().length + 1));
     var arr = getWorlds(); arr.unshift({ name: name, grid: cloneGrid(grid) }); setWorlds(arr.slice(0, 12)); renderWorlds();
-    var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Saved "' + name + '".';
+    var m = document.getElementById('mapMsg'); m.className = 'ms-msg ok'; m.textContent = 'Saved "' + name + '".';
   });
   var worldShare = document.getElementById('worldShare');
   if (worldShare) worldShare.addEventListener('click', function () {
     var url = location.origin + location.pathname + '#world=' + encodeWorld();
     var m = document.getElementById('mapMsg');
-    if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { m.className = 'sdms-msg ok'; m.textContent = 'Share link copied! Paste it to send your world.'; }).catch(function () { m.className = 'sdms-msg ok'; m.textContent = 'Share link: ' + url; });
-    else { m.className = 'sdms-msg ok'; m.textContent = 'Share link: ' + url; }
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { m.className = 'ms-msg ok'; m.textContent = 'Share link copied! Paste it to send your world.'; }).catch(function () { m.className = 'ms-msg ok'; m.textContent = 'Share link: ' + url; });
+    else { m.className = 'ms-msg ok'; m.textContent = 'Share link: ' + url; }
   });
   function worldPageHTML() {
     var name = (val('worldName') || val('mfName') || 'My World').replace(/[<>&"]/g, '');
@@ -694,7 +694,7 @@
       var blob = new Blob([worldPageHTML()], { type: 'text/html' });
       var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '-world.html'; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
-      var m = document.getElementById('mapMsg'); m.className = 'sdms-msg ok'; m.textContent = 'Downloaded ' + name + '-world.html. Open it or send it to share your world.';
+      var m = document.getElementById('mapMsg'); m.className = 'ms-msg ok'; m.textContent = 'Downloaded ' + name + '-world.html. Open it or send it to share your world.';
     } catch (e) {}
   });
 
@@ -727,13 +727,13 @@
   var warpTest = document.getElementById('warpTest');
   if (warpTest) warpTest.addEventListener('click', function () {
     var a = parseWarp(document.getElementById('warpAVal').value), b = parseWarp(document.getElementById('warpBVal').value);
-    if (!a) { warpMsg.className = 'sdms-msg bad'; warpMsg.textContent = 'The Farm Warp value must have five parts: fromX fromY toArea toX toY, like 8 4 Cabin 2 4'; return; }
-    if (a.fx !== FARM_DOOR.c || a.fy !== FARM_DOOR.r) { warpMsg.className = 'sdms-msg bad'; warpMsg.textContent = 'The Farm doorway is at tile 8,4, so the value should start with "8 4".'; return; }
-    if (a.area.toLowerCase() !== 'cabin') { warpMsg.className = 'sdms-msg bad'; warpMsg.textContent = 'The Farm doorway points at "' + a.area + '", but the other map here is Cabin. Fix the area name.'; return; }
-    if (a.tx < 0 || a.tx >= WCOLS || a.ty < 0 || a.ty >= WROWS) { warpMsg.className = 'sdms-msg bad'; warpMsg.textContent = 'The landing point (' + a.tx + ', ' + a.ty + ') is off the Cabin map, so you would land in empty space.'; return; }
+    if (!a) { warpMsg.className = 'ms-msg bad'; warpMsg.textContent = 'The Farm Warp value must have five parts: fromX fromY toArea toX toY, like 8 4 Cabin 2 4'; return; }
+    if (a.fx !== FARM_DOOR.c || a.fy !== FARM_DOOR.r) { warpMsg.className = 'ms-msg bad'; warpMsg.textContent = 'The Farm doorway is at tile 8,4, so the value should start with "8 4".'; return; }
+    if (a.area.toLowerCase() !== 'cabin') { warpMsg.className = 'ms-msg bad'; warpMsg.textContent = 'The Farm doorway points at "' + a.area + '", but the other map here is Cabin. Fix the area name.'; return; }
+    if (a.tx < 0 || a.tx >= WCOLS || a.ty < 0 || a.ty >= WROWS) { warpMsg.className = 'ms-msg bad'; warpMsg.textContent = 'The landing point (' + a.tx + ', ' + a.ty + ') is off the Cabin map, so you would land in empty space.'; return; }
     renderWarps(null, { c: a.tx, r: a.ty });
     var back = b && b.area.toLowerCase() === 'farm';
-    warpMsg.className = 'sdms-msg ' + (back ? 'ok' : 'bad');
+    warpMsg.className = 'ms-msg ' + (back ? 'ok' : 'bad');
     warpMsg.textContent = back
       ? 'You stepped on Farm 8,4 and arrived on Cabin at ' + a.tx + ', ' + a.ty + '. The Cabin warp points back to Farm, so you can get home. Two-way doorway works.'
       : 'You arrived on Cabin, but its warp does not point back to Farm, so you are stranded. Always add the return warp.';
@@ -742,7 +742,7 @@
   var warpBreak = document.getElementById('warpBreak');
   if (warpBreak) warpBreak.addEventListener('click', function () {
     document.getElementById('warpBVal').value = '1 4 Town 3 3'; renderWarps(null, null);
-    warpMsg.className = 'sdms-msg'; warpMsg.textContent = 'Cabin now points at "Town". Test the door again to see what happens.'; persist();
+    warpMsg.className = 'ms-msg'; warpMsg.textContent = 'Cabin now points at "Town". Test the door again to see what happens.'; persist();
   });
 
   /* =========================================================
@@ -785,8 +785,8 @@
       var bad = [];
       if (val('mfId').indexOf('.') === -1) bad.push('UniqueID should look like Author.ModName (include a dot)');
       if (!/^\d+\.\d+\.\d+$/.test(val('mfVersion'))) bad.push('Version should look like 1.0.0');
-      if (bad.length) { msg.className = 'sdms-msg bad'; msg.textContent = bad.join('. '); }
-      else { msg.className = 'sdms-msg ok'; msg.textContent = 'Looks valid. UniqueID is one of a kind and the version is a number.'; }
+      if (bad.length) { msg.className = 'ms-msg bad'; msg.textContent = bad.join('. '); }
+      else { msg.className = 'ms-msg ok'; msg.textContent = 'Looks valid. UniqueID is one of a kind and the version is a number.'; }
     }
   }
   ['mfName', 'mfAuthor', 'mfVersion', 'mfId', 'mfDesc', 'cfMap'].forEach(function (id) { var el = document.getElementById(id); if (el) el.addEventListener('input', function () { refreshFiles(); persist(); }); });
@@ -825,24 +825,24 @@
     var logEl = document.getElementById('dbgLog'), optEl = document.getElementById('dbgOptions'), msgEl = document.getElementById('dbgMsg'), nextBtn = document.getElementById('dbgNext');
     if (!logEl) return; logEl.innerHTML = '';
     s.log.forEach(function (line, i) {
-      var d = document.createElement('span'); d.className = 'sdms-log' + (i === s.errIndex ? ' err' : ''); d.textContent = line;
+      var d = document.createElement('span'); d.className = 'ms-log' + (i === s.errIndex ? ' err' : ''); d.textContent = line;
       if (i === s.errIndex) d.addEventListener('click', function () {
         [].slice.call(logEl.children).forEach(function (x) { x.classList.remove('sel'); }); d.classList.add('sel');
-        msgEl.className = 'sdms-msg'; msgEl.textContent = s.hint;
+        msgEl.className = 'ms-msg'; msgEl.textContent = s.hint;
       });
       logEl.appendChild(d);
     });
     optEl.innerHTML = '';
     s.options.forEach(function (text, i) {
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'sdms-btn';
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'ms-btn';
       b.style.cssText = 'display:block;width:100%;margin-bottom:8px;text-align:left'; b.textContent = text;
       b.addEventListener('click', function () {
-        if (i === s.correct) { msgEl.className = 'sdms-msg ok'; msgEl.textContent = 'Correct! That is exactly how a real modder would fix it.'; nextBtn.style.display = 'inline-block'; award(10, 'jvds-studio-xp-debug'); }
-        else { msgEl.className = 'sdms-msg bad'; msgEl.textContent = 'Not quite. Read the red line again, it names the real problem.'; }
+        if (i === s.correct) { msgEl.className = 'ms-msg ok'; msgEl.textContent = 'Correct! That is exactly how a real modder would fix it.'; nextBtn.style.display = 'inline-block'; award(10, 'jvds-studio-xp-debug'); }
+        else { msgEl.className = 'ms-msg bad'; msgEl.textContent = 'Not quite. Read the red line again, it names the real problem.'; }
       });
       optEl.appendChild(b);
     });
-    msgEl.className = 'sdms-msg'; msgEl.textContent = 'Click the red line, then pick the fix.'; nextBtn.style.display = 'none';
+    msgEl.className = 'ms-msg'; msgEl.textContent = 'Click the red line, then pick the fix.'; nextBtn.style.display = 'none';
   }
   var dbgNext = document.getElementById('dbgNext');
   if (dbgNext) dbgNext.addEventListener('click', function () { dbgIndex = (dbgIndex + 1) % SCENARIOS.length; renderDebug(); });
@@ -967,8 +967,8 @@
       try { var c = parseInt(localStorage.getItem('jvds_tool_export_stardew-mod-studio') || '0', 10) + 1; localStorage.setItem('jvds_tool_export_stardew-mod-studio', String(c)); } catch (e) {}
       award(25, 'jvds-studio-xp-export');
       blip(740, 0.12, 'triangle');
-      msg.className = 'sdms-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Unzip it into Stardew Valley / Mods.';
-    } catch (e) { msg.className = 'sdms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
+      msg.className = 'ms-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Unzip it into Stardew Valley / Mods.';
+    } catch (e) { msg.className = 'ms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
   });
 
   /* =========================================================

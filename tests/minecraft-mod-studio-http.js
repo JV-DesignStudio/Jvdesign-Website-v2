@@ -40,14 +40,14 @@ const server=http.createServer((req,res)=>{
     check('footer uses the 1140px site column',chrome.fw===1140,'footer '+chrome.fw);
 
     const info=await page.evaluate(()=>{
-      const tabs=[...document.querySelectorAll('.mcms-tab')];
+      const tabs=[...document.querySelectorAll('.ms-tab')];
       return {
         tabs:tabs.length,
         role:tabs.map(x=>x.getAttribute('role')),
         sel:tabs.map(x=>x.getAttribute('aria-selected')),
         ti:tabs.map(x=>x.getAttribute('tabindex')),
-        cells:document.querySelectorAll('.mcms-cell').length,
-        swatches:document.querySelectorAll('.mcms-swatch').length,
+        cells:document.querySelectorAll('.ms-cell').length,
+        swatches:document.querySelectorAll('.ms-swatch').length,
         dashes:(document.body.innerText.match(/[\u2013\u2014]/g)||[]).length,
         scrollWidth:document.documentElement.scrollWidth
       };
@@ -68,8 +68,8 @@ const server=http.createServer((req,res)=>{
     check('recipe has a pattern and key',/"pattern"/.test(recipe)&&/"key"/.test(recipe));
 
     // placing an ingredient updates the recipe
-    await page.click('.mcms-swatch[aria-label="Emerald"]');
-    await page.click('.mcms-cell');
+    await page.click('.ms-swatch[aria-label="Emerald"]');
+    await page.click('.ms-cell');
     const recipe2=await page.$eval('#mcRecipePreview',el=>el.textContent);
     check('placing an ingredient updates the recipe',/minecraft:emerald/.test(recipe2));
 
@@ -79,7 +79,7 @@ const server=http.createServer((req,res)=>{
     check('changing the result updates the recipe',/minecraft:golden_apple/.test(recipe3));
 
     // function tab
-    await page.click('.mcms-tab[data-tab="func"]');
+    await page.click('.ms-tab[data-tab="func"]');
     const fnActive=await page.$eval('#panel-func',el=>el.classList.contains('is-active'));
     check('function tab activates its panel',fnActive);
     await page.evaluate(()=>{const cbs=document.querySelectorAll('#mcCmdList input[type="checkbox"]');cbs[1].click();});
@@ -87,7 +87,7 @@ const server=http.createServer((req,res)=>{
     check('ticking a command adds it to the function',/time set day/.test(fnPreview),fnPreview.split('\n')[0]);
 
     // files tab
-    await page.click('.mcms-tab[data-tab="files"]');
+    await page.click('.ms-tab[data-tab="files"]');
     const filesPreview=await page.$eval('#mcFilesPreview',el=>el.textContent);
     check('file builder renders pack.mcmeta',/pack\.mcmeta/.test(filesPreview));
     check('file builder renders the recipe path',/data\/hello\/recipe\//.test(filesPreview));
@@ -95,16 +95,16 @@ const server=http.createServer((req,res)=>{
     check('ready check lists datapack rules',checklist.length>=4,'items '+checklist.length);
 
     // debug tab
-    await page.click('.mcms-tab[data-tab="debug"]');
+    await page.click('.ms-tab[data-tab="debug"]');
     await page.click('#mcLog .err');
-    const optCount=await page.$$eval('#mcOptions .mcms-dbg-opt',o=>o.length);
+    const optCount=await page.$$eval('#mcOptions .ms-dbg-opt',o=>o.length);
     check('clicking the error reveals fixes',optCount>=3,'options '+optCount);
-    await page.click('#mcOptions .mcms-dbg-opt');
+    await page.click('#mcOptions .ms-dbg-opt');
     const dbgOk=await page.$eval('#mcDebugMsg',el=>el.classList.contains('ok'));
     check('choosing the right fix is accepted',dbgOk);
 
     // export tab
-    await page.click('.mcms-tab[data-tab="export"]');
+    await page.click('.ms-tab[data-tab="export"]');
     const tree=await page.$eval('#mcExportTree',el=>el.textContent);
     check('export preview lists the datapack files',/pack\.mcmeta/.test(tree)&&/recipe/.test(tree));
     const where=await page.$eval('#panel-export',el=>el.textContent);

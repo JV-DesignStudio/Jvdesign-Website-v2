@@ -26,9 +26,9 @@ const server=http.createServer((req,res)=>{
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
 
     const st=await page.evaluate(()=>({
-      tabs:document.querySelectorAll('.pms-tab').length,
-      cells:document.querySelectorAll('#pyBoard .pms-cell').length,
-      swatches:document.querySelectorAll('#pyPalette .pms-swatch').length,
+      tabs:document.querySelectorAll('.ms-tab').length,
+      cells:document.querySelectorAll('#pyBoard .ms-cell').length,
+      swatches:document.querySelectorAll('#pyPalette .ms-swatch').length,
       features:document.querySelectorAll('#pyScriptList input[type=checkbox]').length,
       log:!!document.getElementById('pyLog'),
       exportBtn:!!document.getElementById('pyDownload'),
@@ -48,11 +48,11 @@ const server=http.createServer((req,res)=>{
     check('studio has no dashes',st.dashes===0,'dashes '+st.dashes);
     check('studio desktop no overflow',st.sw<=1442,st.sw+'');
 
-    await page.click('.pms-tab[data-tab="scripts"]');
+    await page.click('.ms-tab[data-tab="scripts"]');
     const onScripts=await page.evaluate(()=>document.getElementById('panel-scripts').classList.contains('is-active'));
     check('tabs switch panels',onScripts);
 
-    await page.click('.pms-tab[data-tab="level"]');
+    await page.click('.ms-tab[data-tab="level"]');
     await page.click('#pyExample');
     const code=await page.evaluate(()=>window.PMS_buildMain&&window.PMS_buildMain());
     check('builds a real main.py',/^import pygame/.test(code)&&/pygame\.Rect\(/.test(code)&&/while running:/.test(code)&&/pygame\.draw\.rect/.test(code),'len '+(code||'').length);
@@ -60,9 +60,9 @@ const server=http.createServer((req,res)=>{
     const feats=await page.evaluate(()=>window.PMS_featureNames&&window.PMS_featureNames());
     check('writes chosen features',Array.isArray(feats)&&feats.includes('move')&&feats.includes('coin'),JSON.stringify(feats));
 
-    await page.click('.pms-tab[data-tab="debug"]');
+    await page.click('.ms-tab[data-tab="debug"]');
     await page.click('#pyLog .err');
-    await page.click('#pyOptions .pms-dbg-opt');
+    await page.click('#pyOptions .ms-dbg-opt');
     const dbg=await page.evaluate(()=>({correct:!!document.querySelector('#pyOptions .is-correct'),next:document.getElementById('pyNext').style.display}));
     check('debug accepts a correct fix',dbg.correct&&dbg.next!=='none');
 

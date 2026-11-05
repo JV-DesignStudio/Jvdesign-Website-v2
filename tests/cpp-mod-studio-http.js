@@ -26,9 +26,9 @@ const server=http.createServer((req,res)=>{
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
 
     const st=await page.evaluate(()=>({
-      tabs:document.querySelectorAll('.cms-tab').length,
-      cells:document.querySelectorAll('#cBoard .cms-cell').length,
-      swatches:document.querySelectorAll('#cPalette .cms-swatch').length,
+      tabs:document.querySelectorAll('.ms-tab').length,
+      cells:document.querySelectorAll('#cBoard .ms-cell').length,
+      swatches:document.querySelectorAll('#cPalette .ms-swatch').length,
       features:document.querySelectorAll('#cFeatureList input[type=checkbox]').length,
       log:!!document.getElementById('cLog'),
       exportBtn:!!document.getElementById('cDownload'),
@@ -48,11 +48,11 @@ const server=http.createServer((req,res)=>{
     check('studio has no dashes',st.dashes===0,'dashes '+st.dashes);
     check('studio desktop no overflow',st.sw<=1442,st.sw+'');
 
-    await page.click('.cms-tab[data-tab="features"]');
+    await page.click('.ms-tab[data-tab="features"]');
     const onFeat=await page.evaluate(()=>document.getElementById('panel-features').classList.contains('is-active'));
     check('tabs switch panels',onFeat);
 
-    await page.click('.cms-tab[data-tab="level"]');
+    await page.click('.ms-tab[data-tab="level"]');
     await page.click('#cExample');
     const code=await page.evaluate(()=>window.CMS_buildMain&&window.CMS_buildMain());
     check('builds a real main.cpp',/#include <SFML\/Graphics\.hpp>/.test(code)&&/sf::RenderWindow/.test(code)&&/while \(window\.isOpen\(\)\)/.test(code)&&/sf::RectangleShape/.test(code),'len '+(code||'').length);
@@ -62,9 +62,9 @@ const server=http.createServer((req,res)=>{
     const feats=await page.evaluate(()=>window.CMS_featureNames&&window.CMS_featureNames());
     check('writes chosen features',Array.isArray(feats)&&feats.includes('move')&&feats.includes('ball'),JSON.stringify(feats));
 
-    await page.click('.cms-tab[data-tab="debug"]');
+    await page.click('.ms-tab[data-tab="debug"]');
     await page.click('#cLog .err');
-    await page.click('#cOptions .cms-dbg-opt');
+    await page.click('#cOptions .ms-dbg-opt');
     const dbg=await page.evaluate(()=>({correct:!!document.querySelector('#cOptions .is-correct'),next:document.getElementById('cNext').style.display}));
     check('debug accepts a correct fix',dbg.correct&&dbg.next!=='none');
 

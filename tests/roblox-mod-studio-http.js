@@ -26,9 +26,9 @@ const server=http.createServer((req,res)=>{
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
 
     const st=await page.evaluate(()=>({
-      tabs:document.querySelectorAll('.rbxs-tab').length,
-      cells:document.querySelectorAll('#rbBoard .rbxs-cell').length,
-      swatches:document.querySelectorAll('#rbPalette .rbxs-swatch').length,
+      tabs:document.querySelectorAll('.ms-tab').length,
+      cells:document.querySelectorAll('#rbBoard .ms-cell').length,
+      swatches:document.querySelectorAll('#rbPalette .ms-swatch').length,
       scripts:document.querySelectorAll('#rbScriptList input[type=checkbox]').length,
       log:!!document.getElementById('rbLog'),
       exportBtn:!!document.getElementById('rbDownload'),
@@ -49,12 +49,12 @@ const server=http.createServer((req,res)=>{
     check('studio desktop no overflow',st.sw<=1442,st.sw+'');
 
     // tab switching
-    await page.click('.rbxs-tab[data-tab="scripts"]');
+    await page.click('.ms-tab[data-tab="scripts"]');
     const onScripts=await page.evaluate(()=>document.getElementById('panel-scripts').classList.contains('is-active'));
     check('tabs switch panels',onScripts);
 
     // example level + real model build
-    await page.click('.rbxs-tab[data-tab="level"]');
+    await page.click('.ms-tab[data-tab="level"]');
     await page.click('#rbExample');
     const model=await page.evaluate(()=>window.RBXS_buildRbxm&&window.RBXS_buildRbxm());
     check('builds a real .rbxm model',/^<roblox /.test(model)&&/class="Part"/.test(model),'len '+(model||'').length);
@@ -64,9 +64,9 @@ const server=http.createServer((req,res)=>{
     check('writes Lua script files',Array.isArray(scripts)&&scripts.includes('kill_brick.lua')&&scripts.includes('win_pad.lua'),JSON.stringify(scripts));
 
     // debug: pick the correct fix
-    await page.click('.rbxs-tab[data-tab="debug"]');
+    await page.click('.ms-tab[data-tab="debug"]');
     await page.click('#rbLog .err');
-    await page.click('#rbOptions .rbxs-dbg-opt');
+    await page.click('#rbOptions .ms-dbg-opt');
     const dbg=await page.evaluate(()=>({correct:!!document.querySelector('#rbOptions .is-correct'),next:document.getElementById('rbNext').style.display}));
     check('debug accepts a correct fix',dbg.correct&&dbg.next!=='none');
 

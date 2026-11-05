@@ -27,7 +27,7 @@ const server=http.createServer((req,res)=>{
     if(await page.$('#cookie-decline'))await page.click('#cookie-decline');
 
     const info=await page.evaluate(()=>{
-      const tabs=[...document.querySelectorAll('.mgnms-tab')];
+      const tabs=[...document.querySelectorAll('.ms-tab')];
       return {
         tabs:tabs.length,
         role:tabs.map(x=>x.getAttribute('role')),
@@ -57,7 +57,7 @@ const server=http.createServer((req,res)=>{
     check('renaming the fighter rewrites its def',/cmd = DragonFighter\.cmd/.test(charDef2)&&/anim = DragonFighter\.air/.test(charDef2),charDef2.split('\n')[0]);
 
     // stage tab
-    await page.click('.mgnms-tab[data-tab="stage"]');
+    await page.click('.ms-tab[data-tab="stage"]');
     const stageActive=await page.$eval('#panel-stage',el=>el.classList.contains('is-active'));
     check('stage tab activates its panel',stageActive);
     const stageDef=await page.$eval('#sDefPreview',el=>el.textContent);
@@ -67,7 +67,7 @@ const server=http.createServer((req,res)=>{
     check('changing the floor height updates the stage def',/zoffset = 240/.test(stageDef2));
 
     // files tab
-    await page.click('.mgnms-tab[data-tab="files"]');
+    await page.click('.ms-tab[data-tab="files"]');
     const files=await page.$eval('#filesPreview',el=>el.textContent);
     check('files preview lists the character folder',/chars\/DragonFighter\/DragonFighter\.def/.test(files));
     check('files preview lists the stage folder',/stages\/MyStage\/MyStage\.def/.test(files));
@@ -76,16 +76,16 @@ const server=http.createServer((req,res)=>{
     check('ready check lists the mod rules',checklist>=3,'items '+checklist);
 
     // debug tab
-    await page.click('.mgnms-tab[data-tab="debug"]');
+    await page.click('.ms-tab[data-tab="debug"]');
     await page.click('#dbgLog .err');
-    const optCount=await page.$$eval('#dbgOptions .mgnms-dbg-opt',o=>o.length);
+    const optCount=await page.$$eval('#dbgOptions .ms-dbg-opt',o=>o.length);
     check('clicking the error reveals fixes',optCount>=3,'options '+optCount);
-    await page.click('#dbgOptions .mgnms-dbg-opt');
+    await page.click('#dbgOptions .ms-dbg-opt');
     const dbgOk=await page.$eval('#dbgMsg',el=>el.classList.contains('ok'));
     check('choosing the right fix is accepted',dbgOk);
 
     // export tab
-    await page.click('.mgnms-tab[data-tab="export"]');
+    await page.click('.ms-tab[data-tab="export"]');
     const tree=await page.$eval('#xTree',el=>el.textContent);
     check('export preview lists chars and stages',/chars\//.test(tree)&&/stages\//.test(tree));
     await page.click('#xDownload');

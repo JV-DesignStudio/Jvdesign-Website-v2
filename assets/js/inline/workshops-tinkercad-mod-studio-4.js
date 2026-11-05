@@ -263,7 +263,7 @@ function renderBoard() {
   S.grid.forEach(function (cell, i) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'tcms-cell' + (cell ? ' is-filled' : '');
+    b.className = 'ms-cell' + (cell ? ' is-filled' : '');
     b.setAttribute('role', 'gridcell');
     b.setAttribute('aria-label', 'Square ' + (i + 1) + (cell && part(cell) ? ': ' + part(cell).n : ': empty'));
     if (cell && part(cell)) {
@@ -286,9 +286,9 @@ function renderPalette() {
   PARTS.forEach(function (it) {
     var b = document.createElement('button');
     b.type = 'button';
-    b.className = 'tcms-swatch' + (!S.eraser && S.active === it.id ? ' is-active' : '');
+    b.className = 'ms-swatch' + (!S.eraser && S.active === it.id ? ' is-active' : '');
     b.title = it.n; b.setAttribute('aria-label', it.n);
-    b.innerHTML = '<span class="tcms-swatch-emoji">' + it.e + '</span><span class="tcms-swatch-name">' + esc(it.n) + '</span>';
+    b.innerHTML = '<span class="ms-swatch-emoji">' + it.e + '</span><span class="ms-swatch-name">' + esc(it.n) + '</span>';
     b.addEventListener('click', function () { S.active = it.id; S.eraser = false; renderAll(); });
     p.appendChild(b);
   });
@@ -299,7 +299,7 @@ function renderMini() {
   m.innerHTML = '';
   S.grid.forEach(function (cell) {
     var d = document.createElement('span');
-    d.className = 'tcms-mini-cell';
+    d.className = 'ms-mini-cell';
     if (cell && part(cell)) {
       var mpc = part(cell).c;
       d.textContent = part(cell).e;
@@ -370,19 +370,19 @@ function renderChecklist() {
 
 /* ---------- tabs ---------- */
 function showTab(name) {
-  [].forEach.call(document.querySelectorAll('.tcms-tab'), function (t) {
+  [].forEach.call(document.querySelectorAll('.ms-tab'), function (t) {
     var on = t.getAttribute('data-tab') === name;
     t.classList.toggle('is-active', on);
     t.setAttribute('aria-selected', on ? 'true' : 'false');
     t.tabIndex = on ? 0 : -1;
   });
-  [].forEach.call(document.querySelectorAll('.tcms-panel'), function (p) {
+  [].forEach.call(document.querySelectorAll('.ms-panel'), function (p) {
     p.classList.toggle('is-active', p.id === 'panel-' + name);
   });
   if (name === 'export') { renderExport(); award(10, 'seen-export'); }
 }
 function initTabs() {
-  var tabs = [].slice.call(document.querySelectorAll('.tcms-tab'));
+  var tabs = [].slice.call(document.querySelectorAll('.ms-tab'));
   tabs.forEach(function (t) {
     t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')); });
     t.addEventListener('keydown', function (e) {
@@ -466,7 +466,7 @@ function renderDebug() {
     logEl.appendChild(el);
   });
   var opts = document.getElementById('gmOptions'); opts.innerHTML = '';
-  var msg = document.getElementById('gmDebugMsg'); msg.className = 'tcms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
+  var msg = document.getElementById('gmDebugMsg'); msg.className = 'ms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
   document.getElementById('gmNext').style.display = 'none';
 }
 function openOptions() {
@@ -476,17 +476,17 @@ function openOptions() {
   var correct = sc.opts.findIndex(function (o) { return o.ok; });
   sc.opts.forEach(function (o, i) {
     var b = document.createElement('button');
-    b.type = 'button'; b.className = 'tcms-dbg-opt'; b.textContent = o.t;
+    b.type = 'button'; b.className = 'ms-dbg-opt'; b.textContent = o.t;
     b.addEventListener('click', function () {
       if (i === correct) {
         b.classList.add('is-correct');
-        var msg = document.getElementById('gmDebugMsg'); msg.className = 'tcms-msg ok'; msg.textContent = 'Correct. That is exactly what the Output is telling you.';
+        var msg = document.getElementById('gmDebugMsg'); msg.className = 'ms-msg ok'; msg.textContent = 'Correct. That is exactly what the Output is telling you.';
         blip(660, 0.12, 'triangle'); award(15, 'debug-' + dbgIndex);
         document.getElementById('gmNext').style.display = '';
         [].forEach.call(opts.children, function (c, k) { if (k !== i) c.disabled = true; });
       } else {
         b.classList.add('is-wrong');
-        var m2 = document.getElementById('gmDebugMsg'); m2.className = 'tcms-msg bad'; m2.textContent = 'Not quite. Read the Output line again and try another fix.';
+        var m2 = document.getElementById('gmDebugMsg'); m2.className = 'ms-msg bad'; m2.textContent = 'Not quite. Read the Output line again and try another fix.';
         blip(180, 0.12, 'sawtooth');
       }
     });
@@ -561,7 +561,7 @@ function download() {
   try {
     var enc = new TextEncoder();
     var folder = slug(S.project, 'my_3d_model');
-    if (placedItems().length === 0) { msg.className = 'tcms-msg bad'; msg.textContent = 'Place at least one shape on the grid first.'; showTab('scene'); return; }
+    if (placedItems().length === 0) { msg.className = 'ms-msg bad'; msg.textContent = 'Place at least one shape on the grid first.'; showTab('scene'); return; }
     var files = projectFiles().map(function (f) { return { name: f.name, data: f.bytes ? f.bytes : enc.encode(f.text) }; });
     var zip = makeZip(files);
     var blob = new Blob([zip], { type: 'application/zip' });
@@ -571,13 +571,13 @@ function download() {
     try { var c = parseInt(localStorage.getItem('jvds_tool_export_tinkercad-mod-studio') || '0', 10) + 1; localStorage.setItem('jvds_tool_export_tinkercad-mod-studio', String(c)); } catch (e) {}
     award(25, 'export');
     blip(740, 0.12, 'triangle');
-    msg.className = 'tcms-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Import model.stl into TinkerCAD or a slicer.';
-  } catch (e) { msg.className = 'tcms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
+    msg.className = 'ms-msg ok'; msg.textContent = 'Downloaded ' + folder + '.zip. Import model.stl into TinkerCAD or a slicer.';
+  } catch (e) { msg.className = 'ms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
 }
 
 /* ---------- copy ---------- */
 function copyText(text, msgEl) {
-  function done() { if (msgEl) { msgEl.className = 'tcms-msg ok'; msgEl.textContent = 'Copied.'; } }
+  function done() { if (msgEl) { msgEl.className = 'ms-msg ok'; msgEl.textContent = 'Copied.'; } }
   if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); }); }
   else { fallback(text, done); }
 }
@@ -589,7 +589,7 @@ function fallback(text, done) {
 function renderAll() {
   var pn = document.getElementById('gmProjectName'); if (pn && pn.value !== S.project) pn.value = S.project;
   var au = document.getElementById('gmAuthor'); if (au && au.value !== S.author) au.value = S.author;
-  var er = document.getElementById('gmEraser'); if (er) { er.setAttribute('aria-pressed', S.eraser ? 'true' : 'false'); er.classList.toggle('tcms-btn--primary', S.eraser); }
+  var er = document.getElementById('gmEraser'); if (er) { er.setAttribute('aria-pressed', S.eraser ? 'true' : 'false'); er.classList.toggle('ms-btn--primary', S.eraser); }
   renderBoard(); renderPalette(); renderMini(); sceneCheck();
   renderScriptList(); renderScriptPreview(); renderFiles(); renderExport();
   persist();
@@ -603,7 +603,7 @@ function setExample() {
   S.grid[2 * W + 4] = 'cone';
   S.grid[0 * W + 5] = 'pyramid';
   renderAll();
-  var msg = document.getElementById('gmMsg'); if (msg) { msg.className = 'tcms-msg ok'; msg.textContent = 'Example model loaded. Click 5. Download your model when you are ready.'; }
+  var msg = document.getElementById('gmMsg'); if (msg) { msg.className = 'ms-msg ok'; msg.textContent = 'Example model loaded. Click 5. Download your model when you are ready.'; }
 }
 
 /* ---------- tour ---------- */

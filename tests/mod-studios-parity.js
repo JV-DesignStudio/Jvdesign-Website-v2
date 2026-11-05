@@ -1,10 +1,11 @@
 /* Mod studios parity guard.
    Every workshops/*-mod-studio.html must:
    - link the shared workshop shell (style-workshop.css)
-   - link a per-engine stylesheet (style-workshop-<engine>-mod-studio.css)
-   - have that stylesheet on disk
+   - link the ONE shared mod-studio stylesheet (style-workshop-mod-studio.css)
+   - carry a data-ms accent and fewer than 15 inline styles
    - render with no horizontal overflow at 1440 and 390 and no console errors
-   Keeps the 15 studios on one path so a new studio cannot ship unstyled. */
+   Keeps the 15 studios on one path so a new studio cannot ship unstyled or
+   reintroduce a per-engine CSS copy. */
 const http = require('http'), fs = require('fs'), path = require('path');
 const { execSync } = require('child_process');
 const puppeteer = require('puppeteer');
@@ -31,18 +32,23 @@ function committedModStudios() {
 const pages = committedModStudios();
 (async () => {
   if (!pages.length) { console.log('FAIL no mod studio pages found'); process.exit(1); }
-  const missingCss = [], missingShell = [], missingGranular = [];
+  const missingSheet = [], missingShell = [], missingAccent = [], tooManyInline = [], strayCopies = [];
   for (const p of pages) {
     const html = fs.readFileSync(path.join(root, 'workshops', p), 'utf8');
     if (!/style-workshop\.css/.test(html)) missingShell.push(p);
-    const m = html.match(/style-workshop-[a-z0-9-]+-mod-studio\.css/);
-    if (!m) { missingGranular.push(p); continue; }
-    if (!fs.existsSync(path.join(root, m[0]))) missingCss.push(p + ' -> ' + m[0]);
-    if (/style-mod-studio-polish\.css/.test(html)) missingGranular.push(p + ' (still links shared polish)');
+    if (!/style-workshop-mod-studio\.css/.test(html)) missingSheet.push(p);
+    if (!/<body[^>]+data-ms="[a-z0-9]+"/.test(html)) missingAccent.push(p);
+    const inline = (html.match(/\sstyle="/g) || []).length;
+    if (inline >= 15) tooManyInline.push(p + ' (' + inline + ')');
+    const copies = html.match(/style-workshop-[a-z0-9-]+-mod-studio\.css/g) || [];
+    for (const c of copies) if (c !== 'style-workshop-mod-studio.css') strayCopies.push(p + ' -> ' + c);
   }
   check('every committed mod studio links the workshop shell', missingShell.length === 0, missingShell.join(', '));
-  check('every committed mod studio links a per-engine stylesheet', missingGranular.length === 0, missingGranular.join(', '));
-  check('every referenced per-engine stylesheet exists', missingCss.length === 0, missingCss.join(', '));
+  check('every committed mod studio links the shared mod-studio stylesheet', missingSheet.length === 0, missingSheet.join(', '));
+  check('the shared mod-studio stylesheet exists', fs.existsSync(path.join(root, 'style-workshop-mod-studio.css')));
+  check('no mod studio links a per-engine CSS copy', strayCopies.length === 0, strayCopies.join(', '));
+  check('every committed mod studio sets a data-ms accent', missingAccent.length === 0, missingAccent.join(', '));
+  check('every committed mod studio is under 15 inline styles', tooManyInline.length === 0, tooManyInline.join(', '));
 
   server.listen(0);
   await new Promise(r => server.once('listening', r));

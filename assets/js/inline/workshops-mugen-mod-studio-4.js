@@ -194,16 +194,16 @@ function drawStage() {
 
 /* ---------- tabs ---------- */
 function showTab(name) {
-  [].forEach.call(document.querySelectorAll('.mgnms-tab'), function (t) {
+  [].forEach.call(document.querySelectorAll('.ms-tab'), function (t) {
     var on = t.getAttribute('data-tab') === name;
     t.classList.toggle('is-active', on); t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1;
   });
-  [].forEach.call(document.querySelectorAll('.mgnms-panel'), function (p) { p.classList.toggle('is-active', p.id === 'panel-' + name); });
+  [].forEach.call(document.querySelectorAll('.ms-panel'), function (p) { p.classList.toggle('is-active', p.id === 'panel-' + name); });
   if (name === 'stage') drawStage();
   if (name === 'export') renderExport();
 }
 function initTabs() {
-  var tabs = [].slice.call(document.querySelectorAll('.mgnms-tab'));
+  var tabs = [].slice.call(document.querySelectorAll('.ms-tab'));
   tabs.forEach(function (t) {
     t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')); });
     t.addEventListener('keydown', function (e) {
@@ -276,7 +276,7 @@ function renderDebug() {
     logEl.appendChild(el);
   });
   var opts = document.getElementById('dbgOptions'); opts.innerHTML = '';
-  var msg = document.getElementById('dbgMsg'); msg.className = 'mgnms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
+  var msg = document.getElementById('dbgMsg'); msg.className = 'ms-msg'; msg.textContent = 'Click the red line, then pick the fix.';
   document.getElementById('dbgNext').style.display = 'none';
 }
 function openOptions() {
@@ -286,17 +286,17 @@ function openOptions() {
   var correct = (sc.correct === 0) ? 0 : sc.opts.findIndex(function (o) { return o.ok; });
   sc.opts.forEach(function (o, i) {
     var b = document.createElement('button');
-    b.type = 'button'; b.className = 'mgnms-dbg-opt'; b.textContent = o.t;
+    b.type = 'button'; b.className = 'ms-dbg-opt'; b.textContent = o.t;
     b.addEventListener('click', function () {
       if (i === correct) {
         b.classList.add('is-correct');
-        var msg = document.getElementById('dbgMsg'); msg.className = 'mgnms-msg ok'; msg.textContent = 'Correct. That is exactly what the log is telling you.';
+        var msg = document.getElementById('dbgMsg'); msg.className = 'ms-msg ok'; msg.textContent = 'Correct. That is exactly what the log is telling you.';
         document.getElementById('dbgNext').style.display = '';
         [].forEach.call(opts.children, function (c, k) { if (k !== i) c.disabled = true; });
         award(15, 'debug-' + dbgIndex);
       } else {
         b.classList.add('is-wrong');
-        var m2 = document.getElementById('dbgMsg'); m2.className = 'mgnms-msg bad'; m2.textContent = 'Not quite. Read the log line again and try another fix.';
+        var m2 = document.getElementById('dbgMsg'); m2.className = 'ms-msg bad'; m2.textContent = 'Not quite. Read the log line again and try another fix.';
       }
     });
     opts.appendChild(b);
@@ -378,14 +378,14 @@ function download() {
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1500);
     try { localStorage.setItem('jvds_tool_export_mugen-mod-studio', String(parseInt(localStorage.getItem('jvds_tool_export_mugen-mod-studio') || '0', 10) + 1)); } catch (e) {}
     award(25, 'export');
-    msg.className = 'mgnms-msg ok'; msg.textContent = 'Downloaded my-mugen-mod.zip. Unzip the chars and stages folders into MUGEN.';
-  } catch (e) { msg.className = 'mgnms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
+    msg.className = 'ms-msg ok'; msg.textContent = 'Downloaded my-mugen-mod.zip. Unzip the chars and stages folders into MUGEN.';
+  } catch (e) { msg.className = 'ms-msg bad'; msg.textContent = 'Something went wrong building the zip. Try again.'; }
 }
 function award(amount, onceKey) {
   try { var k = 'jvds-mgnxp-' + onceKey; if (localStorage.getItem(k)) return; localStorage.setItem('jvds-mugen-studio-xp', String(parseInt(localStorage.getItem('jvds-mugen-studio-xp') || '0', 10) + amount)); localStorage.setItem(k, '1'); } catch (e) {}
 }
 function copyText(text, msgEl) {
-  function done() { if (msgEl) { msgEl.className = 'mgnms-msg ok'; msgEl.textContent = 'Copied.'; } }
+  function done() { if (msgEl) { msgEl.className = 'ms-msg ok'; msgEl.textContent = 'Copied.'; } }
   if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); }); }
   else fallback(text, done);
 }
