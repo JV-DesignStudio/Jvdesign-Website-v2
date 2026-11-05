@@ -15,7 +15,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-rglL2X+97xJ59r/yawNT3hUVmzFohycvjwcPtGmMJmo=' 'sha256-OeBQW6aJfek/0XXRd7eZ1l4L9oJBBlmCBaG3BykULiQ=' 'sha256-b89SsDEUgOurgPlp5vOVktQPMc1oICGt+/H+PyyG6Qg=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ysNpm0CX7/dh6LYX0AsktZsyt5c0TNH4DjdWf67NS1A=' 'sha256-OeBQW6aJfek/0XXRd7eZ1l4L9oJBBlmCBaG3BykULiQ=' 'sha256-oH/o11nQCnrZ+ks7PKmiZSVI8aoyV09Hv8BGAFl3ZQg=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -342,6 +342,11 @@ const RELICS = [
     {id:'r_echo',      icon:'📜', name:'Tome of Echoes',     desc:'10% chance: a kill triggers a free bonus cast', rarity:'rare',   apply(p){p._echo=true;}},
     {id:'r_overload',  icon:'⚡', name:'Lich\'s Capacitor',  desc:'Every 10 kills: next shot is instant + 3× dmg',rarity:'rare',   apply(p){p._overload=true;p._overloadKills=0;}},
     {id:'r_necro',     icon:'💀', name:'Necromancer\'s Seal',desc:'Slain Golems and Hexblades fight for you briefly',rarity:'rare', apply(p){p._necro=true;}},
+    // Added with the Citadel depth pass (A2519).
+    {id:'r_candle',    icon:'🕯️', name:'Last Candle',       desc:'Survive one fall at 40% gate HP',             rarity:'rare',     apply(p){p._candle=true;p._candleUsed=false;}},
+    {id:'r_bossbane',  icon:'🗡️', name:'Bossbane Sigil',    desc:'+25% spell damage against bosses',           rarity:'uncommon', apply(p){p._bossbane=true;}},
+    {id:'r_mirror',    icon:'🪞', name:'Mirror Ward',        desc:'Reflect 25% of melee damage at the gate',     rarity:'uncommon', apply(p){p._mirror=1;}},
+    {id:'r_lucky',     icon:'🍀', name:'Lucky Coin',         desc:'+2 coins at the start of every wave',         rarity:'common',   apply(p){p._lucky=true;}},
 ];
 const RELIC_DROP_CHANCE = 0.065;
 // Drop chance per enemy type
@@ -409,6 +414,8 @@ const UNIVERSAL_UPGRADES = [
     {id:'dmgflat',  icon:'📜', name:'Dark Inscription',desc:'All spell damage +1',                       baseCost:5, maxOwned:99,stat:'dmg',           inc:1},
     {id:'wardstone',icon:'🛡️', name:'Ward Stone',      desc:'Reduce damage taken by Citadel 10%',        baseCost:6, maxOwned:5, stat:'wardBonus',     inc:0.1},
     {id:'soulharvest',icon:'✨',name:'Soul Harvest',   desc:'Every 4th kill restores +8 HP to Citadel',  baseCost:7, maxOwned:3, stat:'soulHarvest',   inc:1},
+    {id:'wardregen', icon:'🌿', name:'Warding Circle',  desc:'The gate mends 1 HP every 6 seconds',        baseCost:6, maxOwned:4, stat:'gateRegen',     inc:1},
+    {id:'fortune',   icon:'🍀', name:'Fortune Rune',    desc:'Wave bounties pay +2 coins',                 baseCost:5, maxOwned:3, stat:'bountyBonus',   inc:2},
 ];
 
 const ELEMENT_UPGRADES = {
@@ -558,6 +565,10 @@ function applyCanvasSize(){
 function resize(){
     applyCanvasSize();
     if(tower){tower.x=W/2;tower.y=H/2;}
+    if(player){
+        player.x=Math.max(player.r,Math.min(W-player.r,player.x));
+        player.y=Math.max(SAFE_TOP+player.r,Math.min(H-player.r,player.y));
+    }
 }
 window.addEventListener('resize',resize);
 
@@ -593,13 +604,14 @@ function updatePlayerHpBar(){
     if(num) num.textContent=`${Math.max(0,playerHp)} / ${playerMaxHp}`;
 }
 let enemies=[],projectiles=[],arcs=[],particles=[],poisonClouds=[],scorchPools=[],vortexZones=[],stars=[];
-let lastShot=0,animID=null,shakeAmt=0;
+let lastShot=0,shotCool=0,animID=null,shakeAmt=0;
 
 const keys={};
-window.addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;});
+function isTypingTarget(t){ return !!(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)); }
+window.addEventListener('keydown',e=>{ if(isTypingTarget(e.target))return; keys[e.key.toLowerCase()]=true; });
 window.addEventListener('keyup',  e=>{keys[e.key.toLowerCase()]=false;});
 let joystick={active:false,startX:0,startY:0,currX:0,currY:0};
-let shopOwned={};
+let shopOwned={},shopPage=0;
 
 // ══════════════════════════════════════════════════════════
 // LEADERBOARD, localStorage, auto-saves on game over
@@ -623,6 +635,11 @@ function saveScore(scoreVal, waveVal, spellName){
     return rank;
 }
 
+function lbEsc(value){
+    return String(value==null?'':value).replace(/[&<>"]/g,function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+}
 function loadLB(){
     const el=document.getElementById('lb-rows');
     if(!el)return;
@@ -637,9 +654,9 @@ function loadLB(){
     el.innerHTML=arr.slice(0,10).map((e,i)=>`
         <div class="lb-row ${i===0?'top1':i===1?'top2':i===2?'top3':''}">
             <div class="lb-rank">${medals[i]||'#'+(i+1)}</div>
-            <div class="lb-name">${e.spell||'?'}</div>
+            <div class="lb-name">${lbEsc(e.spell||'?')}</div>
             <div class="lb-score">${Number(e.score).toLocaleString()}</div>
-            <div class="lb-meta">W${e.wave}${e.kills?' · '+e.kills+' slain':''}${e.mode&&e.mode!=='quick'?' · '+e.mode:''}${e.calm?' · calm':''}${e.date?' · '+fmt(e.date):''}</div>
+            <div class="lb-meta">W${Number(e.wave)||0}${e.kills?' · '+Number(e.kills)+' slain':''}${e.mode&&e.mode!=='quick'?' · '+lbEsc(e.mode):''}${e.calm?' · calm':''}${e.date?' · '+fmt(e.date):''}</div>
         </div>`).join('');
 }
 
@@ -732,8 +749,8 @@ function initGame(){
     playerHp=playerMaxHp=100; playerHpTimer=0;
     score=0;wave=1;killCount=0;coins=0;
     waveKills=0;waveCoinsEarned=0;waveSpawned=0;
-    lastShot=0;shakeAmt=0;killStreak=0;bestKillStreak=0;
-    shopOwned={};
+    lastShot=0;shotCool=0;shakeAmt=0;killStreak=0;bestKillStreak=0;
+    shopOwned={};shopPage=0;
 
     // Floating ember motes
     stars=Array.from({length:60},()=>({
@@ -809,29 +826,34 @@ function calcWaveSize(w){
     return postBoss ? Math.max(6, 6+w*3) : 6+w*3+Math.floor(w*w*0.15);
 }
 
-let spawnEpoch=0;
+let spawnEpoch=0, spawnQueue=[], spawnClock=0;
 function spawnWaveEnemies(){
     const count=calcWaveSize(wave);
     const epoch=++spawnEpoch;
     waveEnemiesTotal=count;waveKills=0;waveCoinsEarned=0;waveSpawned=0;
     waveCompleteFired=false;
     activeBoss=null;bossPhaseTriggered=false;
+    spawnQueue=[];spawnClock=0;
 
+    // Spawns are processed inside update() against simulated time, so pausing,
+    // opening the relic choice or answering a browser prompt never skips a foe.
     if(isBossWave(wave)){
         showBossIntro(getBossDef(wave));
-        setTimeout(()=>{
-            if(epoch!==spawnEpoch) return;
-            if(gameState==='playing'){spawnBoss();waveSpawned++;}
-        },2200);
+        spawnQueue.push({at:2200,epoch:epoch,boss:true});
     } else {
         const interval=Math.max(120,900-wave*48);
-        for(let i=0;i<count;i++){
-            setTimeout(()=>{
-                if(epoch!==spawnEpoch) return;
-                waveSpawned++; // always increment so count is accurate
-                if(gameState==='playing') spawnEnemy();
-            },i*interval);
-        }
+        for(let i=0;i<count;i++) spawnQueue.push({at:i*interval,epoch:epoch,boss:false});
+    }
+}
+
+function pumpSpawnQueue(dt){
+    if(!spawnQueue.length||!isFinite(dt))return;
+    spawnClock+=Math.min(dt,100);
+    while(spawnQueue.length&&spawnQueue[0].at<=spawnClock){
+        const job=spawnQueue.shift();
+        if(job.epoch!==spawnEpoch) continue;
+        waveSpawned++;
+        if(job.boss) spawnBoss(); else spawnEnemy();
     }
 }
 
@@ -973,8 +995,11 @@ function buildShop(){
     // Grouped and sorted so the stall reads at a glance: what helps the gate
     // first, then what fits this element, and anything you can buy now on top.
     const byCost=(a,b)=>(affordNow(b)-affordNow(a))||(itemCost(a)-itemCost(b))||a.name.localeCompare(b.name);
-    const universal=UNIVERSAL_UPGRADES.filter(i=>(shopOwned[i.id]||0)<i.maxOwned).sort(byCost);
-    const element=elUpgrades.filter(i=>(shopOwned[i.id]||0)<i.maxOwned).sort(byCost);
+    // Rotating the pool on every reroll keeps every eligible upgrade reachable
+    // even after the first six slots fill up on a long Deep Night.
+    const rotate=arr=>{ if(!arr.length)return arr; const n=shopPage%arr.length; return n?arr.slice(n).concat(arr.slice(0,n)):arr; };
+    const universal=rotate(UNIVERSAL_UPGRADES.filter(i=>(shopOwned[i.id]||0)<i.maxOwned).sort(byCost));
+    const element=rotate(elUpgrades.filter(i=>(shopOwned[i.id]||0)<i.maxOwned).sort(byCost));
     const uniShown=universal.slice(0,6);
     const pool=[];
     if(uniShown.length){ pool.push({group:'Keep the gate'}); uniShown.forEach(i=>pool.push(i)); }
@@ -1001,6 +1026,7 @@ function buildShop(){
         card.setAttribute('role','button');
         card.setAttribute('aria-disabled',afford?'false':'true');
         const owned=shopOwned[item.id]||0;
+        card.dataset.item=item.id;
         card.setAttribute('aria-label',item.name+': '+item.desc+' Level '+owned+' of '+(item.maxOwned===99?'many':item.maxOwned)+'. Costs '+cost+' coins');
         card.innerHTML=`
             ${owned>0?`<div class="sc-owned-badge">${owned}/${item.maxOwned===99?'∞':item.maxOwned}</div>`:''}
@@ -1009,16 +1035,38 @@ function buildShop(){
             <div class="sc-lv">Lv ${owned}/${item.maxOwned===99?'max':item.maxOwned}</div>
             <div class="sc-d">${item.desc}${atSpeedCap?' <strong style="color:#ffcc66">(cast speed already capped, no effect)</strong>':''}</div>
             <div class="sc-c">${cost} ✦</div>`;
+        const refocus=()=>{
+            const again=grid.querySelector('[data-item="'+item.id+'"]');
+            if(again) try{again.focus();}catch(e){}
+        };
         if(afford){
-            card.addEventListener('click',()=>buyItem(item,cost));
+            card.addEventListener('click',()=>{buyItem(item,cost);refocus();});
             card.addEventListener('keydown',e=>{
-                if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); buyItem(item,cost); }
+                if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); buyItem(item,cost); refocus(); }
+            });
+        } else {
+            // A silent refusal felt like the click was broken. Say why, out loud,
+            // and leave focus where it was.
+            const explain=()=>{
+                const coinsEl=document.getElementById('shop-coins-display');
+                if(!coinsEl)return;
+                coinsEl.textContent='Need '+(cost-coins)+' more ✦ (you have '+coins+')';
+                clearTimeout(card._costMsg);
+                card._costMsg=setTimeout(()=>{coinsEl.textContent=coins;},1600);
+            };
+            card.addEventListener('click',explain);
+            card.addEventListener('keydown',e=>{
+                if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); explain(); }
             });
         }
         grid.appendChild(card);
     }
-    document.getElementById('shop-coins-display').textContent=coins;
+    const coinsEl=document.getElementById('shop-coins-display');
+    coinsEl.textContent=coins;
+    coinsEl.setAttribute('aria-live','polite');
+    coinsEl.setAttribute('aria-atomic','true');
 }
+window.__citadelReroll=function(){ shopPage++; buildShop(); return shopPage; };
 
 function buyItem(item,cost){
     if(coins<cost)return;
@@ -1037,6 +1085,7 @@ function buyItem(item,cost){
 function showWaveComplete(){
     if(gameState!=='playing')return;
     gameState='shop';
+    shopPage=0;
     SFX.waveComplete();
     // Clear lingering visual effects so they don't show behind the shop
     scorchPools=[]; vortexZones=[]; poisonClouds=[]; projectiles=[]; arcs=[];
@@ -1058,11 +1107,12 @@ function showWaveComplete(){
     }else if(wcr){wcr.innerHTML='';}
     buildShop();
     document.getElementById('screen-wave').classList.add('show');
-    if(window.__storyRun && (window.__citadelMode==='quick'||window.__citadelMode==='daily') && wave>=4) window.__storyRun.finish('success',score);
+    if(window.__storyRun && (window.__citadelMode==='quick'||window.__citadelMode==='daily'||window.__citadelMode==='roulette') && wave>=4) window.__storyRun.finish('success',score);
 }
 
 function startNextWave(){
     document.getElementById('screen-wave').classList.remove('show');
+    shopPage=0;
     wave++;
     document.getElementById('hud-wave').textContent=wave;
     // Restore player HP between waves
@@ -1127,6 +1177,9 @@ function nearestEnemy(x,y,exclude=[]){
     let best=null,bestD=Infinity;
     for(const en of enemies){
         if(exclude.includes(en))continue;
+        // Phased wraiths and already-queued kills are immune, so aiming at them
+        // wasted shots and made auto-aim feel broken.
+        if(en._dead||en.phased)continue;
         const d=Math.hypot(en.x-x,en.y-y);
         if(d<bestD){bestD=d;best=en;}
     }
@@ -1284,7 +1337,7 @@ function fireLightning(px,py,target,pl){
     function chain(fx,fy,tgt,remaining){
         if(!tgt||hit.has(tgt))return;
         hit.add(tgt);
-        tgt.hp-=pl.dmg;
+        tgt.hp-=pl.dmg*(pl._bossbane&&tgt.type==='megaboss'?1.25:1);
         shakeAmt=Math.max(shakeAmt,3+pl.dmg);
         spawnArc(fx,fy,tgt.x,tgt.y,'#a0d8ff',2.5,240);
         spawnArc(fx,fy,tgt.x,tgt.y,'#e8f6ff',0.8,90);
@@ -1292,7 +1345,7 @@ function fireLightning(px,py,target,pl){
         if(pl.aoeBlast){
             for(const e2 of enemies){
                 if(!hit.has(e2)&&Math.hypot(e2.x-tgt.x,e2.y-tgt.y)<60){
-                    e2.hp-=Math.ceil(pl.dmg*0.5);spawnArc(tgt.x,tgt.y,e2.x,e2.y,'#ffd080',1.2,100);
+                    e2.hp-=Math.ceil(pl.dmg*0.5*(pl._bossbane&&e2.type==='megaboss'?1.25:1));spawnArc(tgt.x,tgt.y,e2.x,e2.y,'#ffd080',1.2,100);
                 }
             }
         }
@@ -1391,6 +1444,7 @@ function fireIceShard(px,py,target,pl){
 let lastTime=0;
 function update(dt){
     const dtF=Math.min(dt,100)/16.67;
+    pumpSpawnQueue(dt);
 
     // ── Movement ──
     let mx=0,my=0;
@@ -1420,10 +1474,13 @@ function update(dt){
     }
 
     // ── Auto-fire ──
-    // Windwalker's Coil, moving grants a 25% cast-speed boost
+    // Windwalker's Coil, moving grants a 25% cast-speed boost.
+    // The cooldown is measured in simulated frames, not wall-clock time, so a
+    // paused run cannot bank a burst of instant shots when it resumes.
     const momentumBonus=(player._momentum&&player._moving)?0.25:0;
     const effRate=Math.max(80,chosenSpell.fireRate*(1-Math.min(player.fireRateBonus+momentumBonus,.75)));
-    if((Date.now()-lastShot>effRate||player._overloadReady)&&target){
+    shotCool-=dtF;
+    if((shotCool<=0||player._overloadReady)&&target){
         const maxR=260+player.rangeBonus*200;
         if(Math.hypot(target.x-player.x,target.y-player.y)<maxR){
             // Wrath Brand, below 30% citadel HP, boost damage
@@ -1456,6 +1513,7 @@ function update(dt){
             player.dmg=baseDmg;
 
             lastShot=Date.now();
+            shotCool=Math.max(1,effRate/16.67);
         }
     }
 
@@ -1626,6 +1684,16 @@ function update(dt){
                 en.x+=en.chargeVx*dtF;
                 en.y+=en.chargeVy*dtF;
                 en.chargeLeft-=dtF;
+                // A charge used to fly straight off the arena and leave the boss
+                // stranded outside the play field. Bounce it off the wall instead.
+                const chargeX=Math.max(en.r,Math.min(W-en.r,en.x));
+                const chargeY=Math.max(SAFE_TOP+en.r,Math.min(H-en.r,en.y));
+                if(chargeX!==en.x||chargeY!==en.y){
+                    en.x=chargeX;en.y=chargeY;
+                    en.isCharging=false;en.chargeLeft=0;
+                    shakeAmt=Math.max(shakeAmt,8);
+                    spawnParticles(en.x,en.y,en.color,10,4);
+                }
                 spawnParticles(en.x+(Math.random()-.5)*en.r,en.y+(Math.random()-.5)*en.r,en.color,2,2);
                 if(en.chargeLeft<=0) en.isCharging=false;
                 // Hit player during charge
@@ -1672,9 +1740,14 @@ function update(dt){
         const maxSpd=22;
         if(Math.abs(en.vx)>maxSpd) en.vx=Math.sign(en.vx)*maxSpd;
         if(Math.abs(en.vy)>maxSpd) en.vy=Math.sign(en.vy)*maxSpd;
-        // Soft boundary
+        // Soft boundary. Only foes that have already entered the arena take
+        // the bounce damage; freshly spawned enemies begin off-screen and used
+        // to lose 12% HP before the player ever saw them.
         const margin=en.r;
-        if(en.x<-margin||en.x>W+margin||en.y<-margin||en.y>H+margin){
+        const insideArena=en.x>=-margin&&en.x<=W+margin&&en.y>=SAFE_TOP+margin&&en.y<=H-margin;
+        if(insideArena) en._entered=true;
+        const outside=en.x<-margin||en.x>W+margin||en.y<-margin||en.y>H+margin;
+        if(outside&&en._entered){
             en.hp-=en.maxHp*0.12;
             en.x=Math.max(margin,Math.min(W-margin,en.x));
             en.y=Math.max(SAFE_TOP+margin,Math.min(H-margin,en.y));
@@ -1705,6 +1778,12 @@ function update(dt){
                 const baseDmg=en.type==='boss'?28:en.type==='golem'?18:en.type==='hexblade'?22:en.type==='cultist'?10:en.type==='imp'?4:9;
                 const dmg=Math.round(baseDmg*(1-(player.wardBonus||0)));
                 tower.hp-=dmg;
+                // Mirror Ward relic: a melee attacker takes a share of the damage.
+                if(player._mirror){
+                    en.hp-=Math.max(1,Math.round(dmg*0.25*player._mirror));
+                    spawnArc(en.x,en.y,tower.x,tower.y,'#ccaaff',1.6,110);
+                    if(en.hp<=0)killEnemy(en);
+                }
                 killStreak=0;
                 shakeAmt=Math.max(shakeAmt,10);
                 spawnParticles(en.x,en.y,'#ff3366',10,5);
@@ -1756,6 +1835,8 @@ function update(dt){
                     const diff=Math.abs(((hitAngle-en.shieldAngle+Math.PI*3)%(Math.PI*2))-Math.PI);
                     if(diff<0.8){dmgMult=0.15;spawnParticles(en.x,en.y,'#ccaaff',4,3);} // blocked
                 }
+                // Bossbane Sigil relic: mages hit bosses harder.
+                if(en.type==='megaboss'&&p.pl._bossbane) dmgMult*=1.25;
                 // Apply hit
                 if(p.type==='fire'){
                     en.hp-=p.dmg*dmgMult;
@@ -1925,7 +2006,12 @@ function update(dt){
     // ── Shake ──
     shakeAmt*=Math.pow(0.82,dtF);
     // ── Stars ──
-    for(const s of stars)s.tw+=0.022*dtF;
+    for(const s of stars){
+        s.tw+=0.022*dtF;
+        s.y-=s.speed*dtF;
+        s.x+=s.drift*dtF;
+        if(s.y<-10){s.y=H+10;s.x=Math.random()*W;}
+    }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2006,17 +2092,17 @@ function draw(ts){
     ctx.fillStyle=fog;ctx.fillRect(0,H*0.44,W,H*0.14);
 
     // ── EMBER MOTES ──
+    // Position and twinkle are advanced in update() with simulated time so
+    // motion is identical on 30, 60 and 144 Hz screens.
     for(const s of stars){
-        s.y-=s.speed;s.x+=s.drift;
-        if(s.y<-10){s.y=H+10;s.x=Math.random()*W;}
-        const b=0.3+0.7*(0.5+0.5*Math.sin(s.tw));s.tw+=0.04;
+        const b=0.3+0.7*(0.5+0.5*Math.sin(s.tw));
         ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
         ctx.fillStyle=s.color.replace(')',`,${b*0.7})`).replace('rgb','rgba');
         ctx.shadowBlur=4;ctx.shadowColor=s.color;ctx.fill();ctx.shadowBlur=0;
     }
 
     // ── BOSS WAVE RED ATMOSPHERE ──
-    if(wave%5===0&&gameState==='playing'){
+    if(isBossWave(wave)&&gameState==='playing'){
         const bossAtmos=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.75);
         const bpulse=0.5+0.5*Math.sin(Date.now()*0.003);
         bossAtmos.addColorStop(0,`rgba(140,0,0,${0.12+bpulse*0.06})`);
@@ -2500,6 +2586,9 @@ function hexPath(x,y,r){
 // GAME OVER
 // ══════════════════════════════════════════════════════════
 function gameOver(){
+    // Guard against a second call from a same-frame tower hit or boss charge.
+    // Duplicate calls used to write two leaderboard rows and award score twice.
+    if(gameState==='dead')return;
     gameState='dead';
     // Practice Gate is a no-score mode: keep it out of the profile and XP.
     if(window.__citadelMode!=='practice'){
@@ -2647,7 +2736,7 @@ window.addEventListener('beforeunload', () => {
   try{ reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
 
   // ── SETTINGS (device-local, no account) ──
-  var DEFAULTS={contrast:false,markers:false,bigtext:false,fixedstick:false,tappause:true,sfx:0.85,music:0};
+  var DEFAULTS={contrast:false,markers:false,bigtext:false,fixedstick:false,tappause:true,haptics:false,sfx:0.85,music:0};
   var settings=Object.assign({},DEFAULTS,LS.json('jvds_citadel_settings',{}));
   function saveSettings(){ LS.set('jvds_citadel_settings',JSON.stringify(settings)); }
 
@@ -2692,16 +2781,29 @@ window.addEventListener('beforeunload', () => {
     daily:'Daily Night: one fixed element, one attempt, the same run for everyone today.',
     deep:'Deep Night: endless waves, all four bosses, shop open at every wave.',
     practice:'Practice Gate: no score, no pressure. Set the pace and learn the waves.',
-    rush:'Boss Rush: all four bosses back to back, the Stall opens between fights.'
+    rush:'Boss Rush: all four bosses back to back, the Stall opens between fights.',
+    roulette:'Relic Roulette: two random relics, no Stall, three waves then Malgrath.',
+    duel:'Boss Duel: one boss, no Stall. Choose your element and break the siege.'
   };
   function mode(){ return window.__citadelMode||'quick'; }
-  function isQuick(){ return mode()==='quick'||mode()==='daily'; }
+  function isQuick(){ return mode()==='quick'||mode()==='daily'||mode()==='roulette'; }
   function isPractice(){ return mode()==='practice'; }
   function isRush(){ return mode()==='rush'; }
   function isDaily(){ return mode()==='daily'; }
+  function isRoulette(){ return mode()==='roulette'; }
+  function isDuel(){ return mode()==='duel'; }
   var origBossWave=isBossWave, origGetBossDef=getBossDef;
-  window.isBossWave=function(w){ if(isQuick()) return w===4; if(isRush()) return true; return origBossWave(w); };
+  window.isBossWave=function(w){
+    if(isDuel()) return w===5;
+    if(isQuick()) return w===4;
+    if(isRush()) return true;
+    return origBossWave(w);
+  };
   window.getBossDef=function(w){
+    if(isDuel()){
+      var tier=clamp(clears().length,0,BOSS_DEFS.length-1);
+      return BOSS_DEFS[tier]||BOSS_DEFS[0];
+    }
     if(isRush()) return BOSS_DEFS[clamp(Math.floor(w/5)-1,0,BOSS_DEFS.length-1)]||BOSS_DEFS[0];
     return origGetBossDef(w);
   };
@@ -2713,11 +2815,13 @@ window.addEventListener('beforeunload', () => {
     document.documentElement.classList.toggle('citadel-quick',isQuick());
     document.body.classList.toggle('citadel-practice',m==='practice');
     document.body.classList.toggle('citadel-rush',m==='rush');
+    document.body.classList.toggle('citadel-duel',m==='duel');
+    document.body.classList.toggle('citadel-roulette',m==='roulette');
     if(banner) banner.textContent=MODE_TEXT[m]||MODE_TEXT.quick;
     updateModeButtons();
   }
   window.setCitadelMode=function(m){
-    window.__citadelMode=(m==='deep'||m==='practice'||m==='rush'||m==='daily')?m:'quick';
+    window.__citadelMode=(m==='deep'||m==='practice'||m==='rush'||m==='daily'||m==='roulette'||m==='duel')?m:'quick';
     applyMode();
   };
   (function(){
@@ -2743,6 +2847,19 @@ window.addEventListener('beforeunload', () => {
     '#citadel-coach button{margin-top:10px;background:linear-gradient(135deg,#9040ee,#5b21b6);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:800 .82rem Inter,sans-serif;cursor:pointer;pointer-events:auto}'+
     '.citadel-quick .citadel-shop,.citadel-quick #shop,.citadel-quick .shop,.citadel-quick .shop-panel,.citadel-quick .upgrades{display:none!important}'+
     '.citadel-quick #waveCounter::after{content:" Night 1/1"}'+
+    '.citadel-duel .citadel-shop,.citadel-duel .citadel-shop *{display:none!important}'+
+    '#citadel-run-timer{position:fixed;left:12px;top:108px;z-index:9996;background:rgba(20,8,42,.78);border:1px solid rgba(160,80,255,.4);border-radius:999px;padding:5px 11px;color:#dcc8ff;font:800 .68rem Inter,system-ui,sans-serif;letter-spacing:.05em;pointer-events:none;display:none}'+
+    'body.citadel-in-play #citadel-run-timer{display:block}'+
+    '#citadel-pause-stats{margin:0 0 12px;padding:10px 12px;background:rgba(90,40,160,.25);border:1px solid rgba(160,80,255,.4);border-radius:10px;font-size:.74rem;line-height:1.5;color:#dcc8ff;text-align:left}'+
+    '#citadel-pause-copy{display:block;width:100%;margin:8px 0;background:rgba(40,120,160,.3);color:#9fe6ff;border:1px solid rgba(120,220,255,.45);border-radius:12px;padding:11px;font:800 .85rem Inter,sans-serif;cursor:pointer}'+
+    '.citadel-best-line{margin-top:4px;font-size:.6rem;letter-spacing:.03em;color:rgba(150,220,255,.85)}'+
+    '.citadel-mastery-track{height:5px;border-radius:99px;background:rgba(255,209,102,.16);margin-top:5px;overflow:hidden}'+
+    '.citadel-mastery-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#c98a2e,#ffd166)}'+
+    '.citadel-grade{margin:0 auto 10px;max-width:360px;text-align:center;background:rgba(160,80,255,.14);border:1px solid rgba(200,140,255,.45);border-radius:12px;padding:10px 14px;color:#efe6ff;font:800 .8rem Inter,system-ui,sans-serif}'+
+    '.citadel-grade b{color:#ffd166;font-size:1.15rem}'+
+    '#citadel-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}'+
+    '#citadel-shop-reroll{display:block;width:100%;margin:10px 0 0;background:rgba(255,209,102,.12);color:#ffe6a6;border:1px dashed rgba(255,209,102,.5);border-radius:10px;padding:9px 12px;font:800 .74rem Inter,system-ui,sans-serif;cursor:pointer}'+
+    '#citadel-shop-reroll:disabled{opacity:.45;cursor:not-allowed}'+
     '.citadel-calm-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;color:rgba(210,180,255,.85);font-size:.8rem;cursor:pointer}'+
     '.citadel-calm-row input{width:18px;height:18px}'+
     '#citadel-echo{margin:12px auto 4px;max-width:360px;text-align:left;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.35);border-radius:12px;padding:12px 14px;color:#f3e7c8;font-size:.82rem;line-height:1.5}'+
@@ -2814,18 +2931,36 @@ window.addEventListener('beforeunload', () => {
   var pauseBtn=el('button','citadel-pause',null,'⏸ Pause');
   pauseBtn.type='button';
   var overlay=el('div','citadel-pause-overlay',null,
-    '<div class="citadel-pause-card"><h2>Paused</h2><p>The gate waits for you.</p>'+
+    '<div class="citadel-pause-card" role="document"><h2 id="citadel-pause-title">Paused</h2><p>The gate waits for you.</p>'+
+    '<div id="citadel-pause-stats">Wave 1 · 0 slain</div>'+
     '<button type="button" id="citadel-resume">▶ Resume</button>'+
+    '<button type="button" id="citadel-pause-copy">📋 Copy build</button>'+
     '<button type="button" class="ghost" id="citadel-restart">↺ Restart run</button>'+
     '<button type="button" class="ghost" id="citadel-settings-pause">⚙ Settings</button>'+
     '<button type="button" class="ghost" id="citadel-quit">✕ Back to Arcade</button></div>');
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-labelledby','citadel-pause-title');
   var warn=el('div','citadel-charge-warn',null,'⚠ Boss is charging');
-  var paused=false;
+  var paused=false, pausePrevFocus=null;
+  function pauseStats(){
+    var s=byId('citadel-pause-stats'); if(!s) return;
+    var relics=activeRelics.length?activeRelics.map(function(r){return r.icon+' '+r.name;}).join(', '):'no relics yet';
+    s.innerHTML='<b>'+modeLabel()+'</b> · Wave '+wave+' · '+killCount+' slain<br>'+
+      'Score '+score.toLocaleString()+' · '+coins+' ✦ · '+esc(relics)+
+      (typeof runMs==='number'?'<br>Run time '+fmtTime(runMs):'');
+  }
   function pause(){
     if(gameState!=='playing')return;
-    paused=true; gameState='paused'; overlay.classList.add('show'); warn.style.display='none'; snapshotRun();
+    pausePrevFocus=document.activeElement;
+    paused=true; gameState='paused'; pauseStats(); overlay.classList.add('show'); warn.style.display='none'; snapshotRun();
+    var rb=byId('citadel-resume'); if(rb) try{rb.focus();}catch(e){}
   }
-  function resume(){ if(!paused)return; paused=false; gameState='playing'; overlay.classList.remove('show'); }
+  function resume(){
+    if(!paused)return;
+    paused=false; gameState='playing'; overlay.classList.remove('show');
+    if(pausePrevFocus&&pausePrevFocus.focus) try{pausePrevFocus.focus();}catch(e){}
+  }
   function togglePause(){ paused?resume():pause(); }
   window.__citadelTogglePause=togglePause;
 
@@ -2836,9 +2971,18 @@ window.addEventListener('beforeunload', () => {
     var aboutToCharge=b && !b.isCharging && b.chargeTimer>0 && b.chargeTimer<26;
     if(aboutToCharge){
       warn.style.display='block';
-      if(lastWarnBoss!==b){ lastWarnBoss=b; try{ playTone(160,'square',.05,.16); }catch(e){} }
+      if(lastWarnBoss!==b){
+        lastWarnBoss=b;
+        try{ playTone(160,'square',.05,.16); }catch(e){}
+        if(settings.haptics&&navigator.vibrate) try{ navigator.vibrate(55); }catch(e){}
+      }
     } else { warn.style.display='none'; lastWarnBoss=null; }
   }
+  var _bossHitPlayer=bossHitPlayer;
+  window.bossHitPlayer=function(){
+    if(settings.haptics&&navigator.vibrate) try{ navigator.vibrate(35); }catch(e){}
+    return _bossHitPlayer.apply(this,arguments);
+  };
 
   // ── CALM MODE (rebalanced: a friendlier pace, not a free win) ──
   function calmEnemy(e){ if(!calm||!e||e._calmed) return; e.speed*=0.7; e._calmed=true; }
@@ -2970,6 +3114,7 @@ window.addEventListener('beforeunload', () => {
     if(!chosenSpell||!tower) return;
     var snap={mode:mode(),spell:chosenSpell.id,wave:wave,score:score,kills:killCount,coins:coins,
       owned:shopOwned,towerHp:tower.hp,towerMax:tower.maxHp,playerHp:playerHp,
+      candle:!!(player&&player._candleUsed),
       relics:activeRelics.map(function(r){return r.id;}),ts:Date.now()};
     LS.set('jvds_citadel_resume',JSON.stringify(snap));
     updateModeButtons();
@@ -2999,6 +3144,7 @@ window.addEventListener('beforeunload', () => {
     playerHp=clamp(s.playerHp||100,1,playerMaxHp);
     activeRelics=(s.relics||[]).map(function(id){return RELICS.filter(function(r){return r.id===id;})[0];}).filter(Boolean);
     activeRelics.forEach(function(r){ try{ r.apply(player); }catch(e){} });
+    if(player) player._candleUsed=!!s.candle;
     applyOwnedUpgrades();
     var sp=byId('screen-start'); if(sp) sp.classList.add('hidden');
     var ss=byId('screen-spell'); if(ss) ss.style.display='none';
@@ -3026,7 +3172,7 @@ window.addEventListener('beforeunload', () => {
     if(isPractice()){ if(bountyEl) bountyEl.remove(); bounty=null; return; }
     var total=Math.max(1,waveEnemiesTotal||calcWaveSize(wave));
     var boss=isBossWave(wave);
-    bounty={wave:wave,target:boss?1:Math.max(3,Math.round(total*0.6)),reward:3+wave*2,done:false,boss:boss};
+    bounty={wave:wave,target:boss?1:Math.max(3,Math.round(total*0.6)),reward:3+wave*2+(player?(player.bountyBonus||0):0),done:false,boss:boss};
     renderBounty();
   }
   function renderBounty(){
@@ -3123,22 +3269,198 @@ window.addEventListener('beforeunload', () => {
     byId('citadel-rush-arcade').addEventListener('click',function(){ location.href='../arcade.html'; });
   }
 
+  // ── A2519 DEPTH PASS: new modes, records, timer and feedback ──
+  function fmtTime(ms){ var t=Math.max(0,Math.floor((ms||0)/1000)); var m=Math.floor(t/60), s=t%60; return (m<10?'0':'')+m+':'+(s<10?'0':'')+s; }
+  var runMs=0, runTimerEl=null, runTimerPaint=-1;
+  window.__citadelTimeText='';
+  function timerPaint(force){
+    if(!runTimerEl) return;
+    if(!force&&runMs-runTimerPaint<250) return;
+    runTimerPaint=runMs;
+    var txt=fmtTime(runMs);
+    window.__citadelTimeText=txt;
+    runTimerEl.textContent='⏱ '+txt;
+  }
+  function announce(msg){
+    var live=byId('citadel-sr');
+    if(!live) return;
+    live.textContent='';
+    setTimeout(function(){ live.textContent=msg; },30);
+  }
+  function elementRecord(id){
+    var stats=LS.json('jvds_citadel_stats',{})||{};
+    return stats[id]||null;
+  }
+
+  // ── BOSS CODEX ──
+  var bossSeen=LS.json('jvds_citadel_bosses',{})||{}, lastBossName='';
+  function recordBoss(name){
+    if(!name) return;
+    var row=bossSeen[name]||{count:0,last:0};
+    row.count=(row.count||0)+1; row.last=Date.now();
+    bossSeen[name]=row; LS.set('jvds_citadel_bosses',JSON.stringify(bossSeen));
+  }
+  function showBossCodex(){
+    var items=BOSS_DEFS.map(function(b){
+      var row=bossSeen[b.name];
+      return '<div class="citadel-codex-item'+(row?' seen':'')+'"><b>'+esc(row?b.name:'???')+'</b>'+
+        (row?esc(b.subtitle)+'<div style="margin-top:4px;color:#ffd166">Felled '+row.count+' time'+(row.count===1?'':'s')+'</div>':'Not faced yet. It waits at wave '+(b.tier*5)+'.')+'</div>';
+    }).join('');
+    showModal('Boss Codex','<h2>Boss Codex</h2><p>Every boss you have broken at the gate. You have met '+Object.keys(bossSeen).length+' of '+BOSS_DEFS.length+'.</p><div class="citadel-codex-grid">'+items+'</div>');
+  }
+
+  // ── DAILY RECORD ──
+  function showDailyLog(){
+    var d=dailyState();
+    var element=SPELLS[dailySpellId()]?SPELLS[dailySpellId()].name:'a mystery';
+    showModal('Daily Night record',
+      '<h2>Daily Night record</h2>'+
+      '<p>One attempt each day, the same seed and element for everyone.</p>'+
+      '<div class="citadel-codex-grid">'+
+      '<div class="citadel-codex-item seen"><b>Today</b>'+esc(element)+'<div style="margin-top:4px">'+(d.date===todayKey()&&d.played?'Played':'Waiting')+'</div></div>'+
+      '<div class="citadel-codex-item seen"><b>Best score</b>'+(d.best||0).toLocaleString()+'</div>'+
+      '<div class="citadel-codex-item seen"><b>Streak</b>'+((d.streak||0)+' day'+(d.streak===1?'':'s'))+'</div></div>');
+  }
+
+  // ── RUN GRADE ──
+  function computeGrade(){
+    if(isPractice()||isDuel()) return null;
+    if(wave>=20||score>=10000) return {g:'S',label:'Archmage of the Gate'};
+    if(wave>=12||score>=6000) return {g:'A',label:'Gate Warden'};
+    if(wave>=6||score>=3000) return {g:'B',label:'Battle Mage'};
+    if(wave>=3||score>=1200) return {g:'C',label:'Apprentice'};
+    return {g:'D',label:'First Night'};
+  }
+  function showRunGrade(){
+    var old=byId('citadel-grade'); if(old) old.remove();
+    var grade=computeGrade(); if(!grade) return;
+    var box=el('div','citadel-grade',null,'Run grade <b>'+grade.g+'</b> · '+esc(grade.label)+' · '+fmtTime(runMs));
+    var anchor=byId('go-rank-msg');
+    if(anchor&&anchor.parentElement) anchor.parentElement.insertBefore(box,anchor.nextSibling);
+    else { var go=byId('screen-gameover'); if(go) go.appendChild(box); }
+  }
+
+  // ── STREAK PURSE + GATE REGEN ──
+  var streakPaid=0, gateRegenClock=0;
+  function resetRunCounters(){ streakPaid=0; gateRegenClock=0; runMs=0; window.__citadelTimeText=''; runTimerPaint=-1; timerPaint(true); }
+  function streakPurseTick(){
+    if(killStreak<streakPaid) streakPaid=0;
+    if(killStreak>=streakPaid+10){
+      streakPaid=Math.floor(killStreak/10)*10;
+      var pay=2*(streakPaid/10);
+      coins+=pay;
+      try{ updateHUD(); }catch(e){}
+      toast('Streak purse: '+killStreak+' in a row, +'+pay+' coins');
+    }
+  }
+  function gateRegenTick(dt){
+    if(!player||!player.gateRegen||gameState!=='playing') return;
+    gateRegenClock+=dt;
+    if(gateRegenClock>=6000){
+      gateRegenClock=0;
+      if(tower&&tower.hp<tower.maxHp){ tower.hp=Math.min(tower.maxHp,tower.hp+player.gateRegen); try{updateHUD();}catch(e){} }
+    }
+  }
+
+  // ── SHOP REROLL ──
+  function ensureShopReroll(){
+    var shop=document.querySelector('.citadel-shop'); if(!shop) return;
+    var btn=byId('citadel-shop-reroll');
+    if(!btn){
+      btn=el('button','citadel-shop-reroll',null,'🎲 Reroll the stall · 2 ✦');
+      btn.type='button';
+      var grid=byId('shop-grid');
+      if(grid&&grid.parentElement) grid.parentElement.insertBefore(btn,grid.nextSibling); else shop.appendChild(btn);
+      btn.addEventListener('click',function(){
+        if(coins<2){ toast('Reroll needs 2 coins. You have '+coins+'.'); return; }
+        coins-=2; try{updateHUD();}catch(e){}
+        if(window.__citadelReroll) window.__citadelReroll();
+        toast('Stall rerolled');
+        announce('Stall rerolled. New upgrades shown.');
+      });
+    }
+    btn.disabled=coins<2;
+  }
+
+  // ── NEW MODES ──
+  function startRoulette(){ window.setCitadelMode('roulette'); clearResume(); showSpellSelect(); }
+  function startDuel(){ window.setCitadelMode('duel'); clearResume(); showSpellSelect(); }
+  function grantRouletteRelics(){
+    if(!isRoulette()) return;
+    var avail=RELICS.filter(function(r){return !activeRelics.some(function(a){return a.id===r.id;});});
+    var picks=pickRelics(avail,2);
+    picks.forEach(function(r){ try{ applyRelic(r); }catch(e){} });
+  }
+  function payLucky(){
+    if(player&&player._lucky){ coins+=2; try{updateHUD();}catch(e){} toast('Lucky Coin: +2 coins'); }
+  }
+  function finishDuel(){
+    if(gameState==='dead') return;
+    gameState='dead';
+    clearResume(); useSeed(false); stopMusic();
+    try{ saveScore(score,wave,chosenSpell?chosenSpell.emoji+' '+chosenSpell.name:'?'); }catch(e){}
+    try{
+      if(window.gameSystem){
+        window.__gsScore=(window.__gsScore||0)+score;
+        window.__gsBestRun=Math.max(window.__gsBestRun||0,score);
+        window.gameSystem.addScore(score);
+        window.gameSystem.recordGamePlay(Date.now());
+      }
+    }catch(e){}
+    var ov=el('div','citadel-duel-end','');
+    ov.className='citadel-mode-end';
+    ov.innerHTML='<div class="card"><h2>Boss Duel won</h2><p>'+esc(lastBossName||'The boss')+
+      ' falls. Ember salutes a clean duel.</p><p style="color:#ffd166;font-weight:800">Score '+score.toLocaleString()+' · '+killCount+' slain · '+fmtTime(runMs)+'</p>'+
+      '<button type="button" id="citadel-duel-again">Duel again</button>'+
+      '<button type="button" class="ghost" id="citadel-duel-arcade">Back to Arcade</button></div>';
+    document.body.appendChild(ov);
+    byId('citadel-duel-again').addEventListener('click',function(){ ov.remove(); restartGame(); });
+    byId('citadel-duel-arcade').addEventListener('click',function(){ location.href='../arcade.html'; });
+    announce('Boss Duel won. Score '+score.toLocaleString()+'.');
+  }
+  var _killEnemy=killEnemy;
+  window.killEnemy=function(en){
+    try{
+      if(en&&en.type==='megaboss'&&en.def&&!en._seenRecorded){
+        en._seenRecorded=true;
+        lastBossName=en.def.name;
+        recordBoss(en.def.name);
+      }
+    }catch(e){}
+    return _killEnemy.apply(this,arguments);
+  };
+  var _showBossIntro=showBossIntro;
+  window.showBossIntro=function(def){
+    if(def) announce('Boss incoming: '+def.name+'. '+def.subtitle+'.');
+    return _showBossIntro.apply(this,arguments);
+  };
+
   // ── START / WAVE WRAPPERS ──
   var _startGame=startGame;
   window.startGame=function(){
     if(!isDaily()) useSeed(false);
     _startGame.apply(this,arguments);
     document.body.classList.add('citadel-in-play');
+    resetRunCounters();
     var coach=byId('citadel-coach'); if(coach) coach.remove();
     if(calm&&tower){ var add=Math.round(tower.maxHp*0.25); tower.maxHp+=add; tower.hp=tower.maxHp; try{updateHUD();}catch(e){} }
     if(isRush()){ wave=5; enemies=[]; try{ updateHUD(); }catch(e){} spawnWaveEnemies(); }
+    else if(isDuel()){ wave=5; enemies=[]; try{ updateHUD(); }catch(e){} spawnWaveEnemies(); }
     applyMasteryPerk();
+    grantRouletteRelics();
+    payLucky();
     resetBounty();
     snapshotRun();
     startMusic();
+    announce(modeLabel()+' begins. Protect the gate.');
   };
   var _startNextWave=startNextWave;
   window.startNextWave=function(){
+    if(isDuel()){
+      byId('screen-wave').classList.remove('show');
+      finishDuel();
+      return;
+    }
     if(isRush()){
       byId('screen-wave').classList.remove('show');
       if(wave>=20){ finishRush(); return; }
@@ -3146,24 +3468,34 @@ window.addEventListener('beforeunload', () => {
       try{ byId('hud-wave').textContent=wave; }catch(e){}
       playerHp=playerMaxHp; updatePlayerHpBar();
       gameState='playing'; enemies=[];
-      spawnWaveEnemies(); resetBounty(); snapshotRun();
+      spawnWaveEnemies(); resetBounty(); payLucky(); snapshotRun();
       return;
     }
     _startNextWave.apply(this,arguments);
     resetBounty();
+    payLucky();
     snapshotRun();
+    announce('Wave '+wave+' begins.');
   };
   var _showWaveComplete=showWaveComplete;
   window.showWaveComplete=function(){
     _showWaveComplete.apply(this,arguments);
     try{
+      ensureShopReroll();
+      if(chosenSpell && isDuel() && wave===5){
+        markMastery(chosenSpell.id); markClear(chosenSpell.id); clearResume(); useSeed(false);
+        announce('Boss Duel won. '+lastBossName+' falls.');
+        setTimeout(finishDuel,350);
+        return;
+      }
       if(chosenSpell && isDaily() && wave>=4){ markMastery(chosenSpell.id); markClear(chosenSpell.id); recordDaily(); clearResume(); useSeed(false); stopMusic(); }
-      else if(chosenSpell && mode()==='quick' && wave>=4){ markMastery(chosenSpell.id); markClear(chosenSpell.id); clearResume(); }
+      else if(chosenSpell && (mode()==='quick'||isRoulette()) && wave>=4){ markMastery(chosenSpell.id); markClear(chosenSpell.id); clearResume(); }
       if(isRush() && wave>=20){ finishRush(); }
       else {
         if(isRush()){ var nextWave=byId('wc-next'); if(nextWave) nextWave.textContent=String(wave+5); }
         snapshotRun();
       }
+      announce('Wave '+wave+' complete. '+(isQuick()&&wave>=4?'The gate holds.':'The stall is open.'));
     }catch(e){}
   };
 
@@ -3246,7 +3578,7 @@ window.addEventListener('beforeunload', () => {
   }
 
   // ── RELIC BAR + SUMMARY COPY ──
-  function modeLabel(){ var m=mode(); return m==='deep'?'Deep Night':m==='daily'?'Daily Night':m==='practice'?'Practice Gate':m==='rush'?'Boss Rush':'Quick Night'; }
+  function modeLabel(){ var m=mode(); return m==='deep'?'Deep Night':m==='daily'?'Daily Night':m==='practice'?'Practice Gate':m==='rush'?'Boss Rush':m==='roulette'?'Relic Roulette':m==='duel'?'Boss Duel':'Quick Night'; }
   function runShareText(){
     var sp=chosenSpell?chosenSpell.name:'a mage';
     var build=activeRelics.length?' Relics: '+activeRelics.map(function(r){return r.name;}).join(', ')+'.':'';
@@ -3305,7 +3637,7 @@ window.addEventListener('beforeunload', () => {
     x.fillStyle='rgba(201,166,255,.8)'; x.font='600 24px Inter, sans-serif';
     x.fillText(relicText.length>64?relicText.slice(0,61)+'...':relicText,540,1020);
     x.fillStyle='rgba(201,166,255,.75)'; x.font='600 26px Inter, sans-serif';
-    x.fillText('Score '+score.toLocaleString()+' with '+(sp?sp.name:'a mage'),540,1066);
+    x.fillText('Score '+score.toLocaleString()+' with '+(sp?sp.name:'a mage')+(window.__citadelTimeText?' · '+window.__citadelTimeText:''),540,1066);
     var d=new Date();
     x.fillStyle='rgba(201,166,255,.55)'; x.font='600 24px Inter, sans-serif';
     x.fillText(d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}),540,1120);
@@ -3349,13 +3681,21 @@ window.addEventListener('beforeunload', () => {
     }catch(e){}
   }
   function buildRunSummary(){
-    var screen=byId('screen-gameover'); if(!screen||byId('citadel-echo')) return;
+    var screen=byId('screen-gameover'); if(!screen) return;
+    // A second death used to reuse the first run's Echo/share buttons and stale
+    // advice, because the old nodes were never removed. Rebuild fresh each time.
+    ['citadel-echo','citadel-share','citadel-card','citadel-build'].forEach(function(id){
+      var node=byId(id); if(node) node.remove();
+    });
     var m=mastery();
     var unbeaten=Object.values(SPELLS).filter(function(s){return !m[s.id];});
     var next=unbeaten.length?unbeaten[0].name:'a new element';
-    var tip=isQuick()
-      ? 'Malgrath got through. Quick Night has no shop, so try '+next+' next, or pick Deep Night to spend coins before the boss.'
-      : 'Malgrath got through. Try '+next+' next, and spend coins before the boss.';
+    var tip;
+    if(isPractice()) tip='Practise the boss wave you keep losing, then take a scored run.';
+    else if(isDuel()) tip='Try a different element next duel. Each boss reads your openings.';
+    else if(isQuick()) tip='Malgrath got through. Quick Night has no shop, so try '+next+' next, or pick Deep Night to spend coins before the boss.';
+    else tip='Malgrath got through. Try '+next+' next, and spend coins before the boss.';
+    if(runMs>0) tip+=' You held the gate for '+fmtTime(runMs)+'.';
     var echo=el('div','citadel-echo',null,
       '<b>Echo:</b> '+esc(tip)+
       '<div style="margin-top:8px"><a href="../tools/arcade-game-maker.html">Build your own tower defence →</a></div>');
@@ -3373,21 +3713,62 @@ window.addEventListener('beforeunload', () => {
   }
   var _gameOver=gameOver;
   window.gameOver=function(){
+    // Last Candle relic: a single rescue before the run truly ends.
+    if(player&&player._candle&&!player._candleUsed&&chosenSpell){
+      player._candleUsed=true;
+      tower.hp=Math.max(1,Math.round(tower.maxHp*0.4));
+      playerHp=playerMaxHp;
+      enemies=[];projectiles=[];arcs=[];poisonClouds=[];scorchPools=[];vortexZones=[];
+      try{ updateHUD(); updatePlayerHpBar(); }catch(e){}
+      toast('🕯️ Last Candle flares. The gate holds at 40%.');
+      announce('Last Candle saved the gate. Play on.');
+      return;
+    }
     _gameOver.apply(this,arguments);
     document.body.classList.remove('citadel-in-play');
     if(isDaily()) recordDaily();
     useSeed(false); stopMusic(); clearResume();
     buildRunSummary();
+    showRunGrade();
+    announce('The gate fell at wave '+wave+'. Score '+score.toLocaleString()+'.');
   };
   var _restartGame=restartGame;
   window.restartGame=function(){
     useSeed(false); stopMusic();
+    var grade=byId('citadel-grade'); if(grade) grade.remove();
+    resetRunCounters();
+    if(isDaily()){
+      // Daily Night is one attempt per day. Restart used to drop the player into
+      // the normal spell picker while keeping the daily seed, which let a run be
+      // replayed with any element. Send them back to the start screen instead.
+      window.setCitadelMode('quick');
+      gameState='start';
+      spawnEpoch++; spawnQueue=[]; spawnClock=0;
+      enemies=[];projectiles=[];arcs=[];particles=[];poisonClouds=[];scorchPools=[];vortexZones=[];activeBoss=null;
+      var go1=byId('screen-gameover'); if(go1) go1.classList.add('hidden');
+      var sw1=byId('screen-wave'); if(sw1) sw1.classList.remove('show');
+      var st1=byId('screen-start'); if(st1) st1.classList.remove('hidden');
+      document.body.classList.remove('citadel-in-play');
+      try{ updateHUD(); }catch(e){}
+      toast('Daily Night is done for today. A new one arrives tomorrow.');
+      announce('Daily Night is complete for today.');
+      return;
+    }
+    gameState='spell';
+    spawnEpoch++; spawnQueue=[]; spawnClock=0;
+    enemies=[];projectiles=[];arcs=[];particles=[];poisonClouds=[];scorchPools=[];vortexZones=[];activeBoss=null;
+    var bar=byId('boss-bar-wrap'); if(bar) bar.style.display='none';
+    var php=byId('player-hp-wrap'); if(php) php.style.display='none';
+    document.body.classList.remove('citadel-in-play');
     return _restartGame.apply(this,arguments);
   };
   var _update=update;
   window.update=function(dt){
     if(relicChoiceOpen) return;
     _update(dt);
+    runMs+=dt; timerPaint();
+    streakPurseTick();
+    gateRegenTick(dt);
     telegraphTick();
     checkBounty();
   };
@@ -3407,6 +3788,7 @@ window.addEventListener('beforeunload', () => {
   // ── MODALS ──
   function showModal(title,html){
     var old=byId('citadel-modal'); if(old) old.remove();
+    var returnFocus=document.activeElement;
     var ov=el('div','citadel-modal','');
     ov.className='citadel-modal-overlay';
     var card=el('div','citadel-modal-card','');
@@ -3414,9 +3796,18 @@ window.addEventListener('beforeunload', () => {
     card.innerHTML=html+'<div style="text-align:right;margin-top:14px"><button type="button" class="citadel-btn ghost" id="citadel-modal-close">Close</button></div>';
     ov.appendChild(card);
     document.body.appendChild(ov);
-    ov.addEventListener('click',function(e){ if(e.target===ov) ov.remove(); });
-    byId('citadel-modal-close').addEventListener('click',function(){ ov.remove(); });
+    function close(){
+      document.removeEventListener('keydown',onKey,true);
+      ov.remove();
+      if(returnFocus&&returnFocus.focus) try{returnFocus.focus();}catch(e){}
+    }
+    function onKey(e){ if(e.key==='Escape'){ e.preventDefault(); close(); } }
+    ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+    byId('citadel-modal-close').addEventListener('click',close);
+    document.addEventListener('keydown',onKey,true);
     card.setAttribute('role','dialog'); card.setAttribute('aria-modal','true'); card.setAttribute('aria-label',title);
+    var first=card.querySelector('input,textarea,select,button.citadel-btn');
+    if(first) try{first.focus();}catch(e){}
     return card;
   }
   function settingsHtml(){
@@ -3426,6 +3817,7 @@ window.addEventListener('beforeunload', () => {
       '<label><input type="checkbox" id="citadel-set-bigtext" '+(settings.bigtext?'checked':'')+'> Bigger HUD text</label>'+
       '<label><input type="checkbox" id="citadel-set-tappause" '+(settings.tappause?'checked':'')+'> Double-tap to pause on touch</label>'+
       '<label><input type="checkbox" id="citadel-set-fixedstick" '+(settings.fixedstick?'checked':'')+'> Fixed joystick in the bottom left</label>'+
+      '<label><input type="checkbox" id="citadel-set-haptics" '+(settings.haptics?'checked':'')+'> Gentle vibration on phone (boss charge, taking a hit)</label>'+
       '<div style="margin-top:6px"><div style="font-size:.78rem;font-weight:800">Sound effects</div><input type="range" id="citadel-set-sfx" min="0" max="100" value="'+Math.round(settings.sfx*100)+'"></div>'+
       '<div><div style="font-size:.78rem;font-weight:800">Music</div><input type="range" id="citadel-set-music" min="0" max="100" value="'+Math.round(settings.music*100)+'"></div>'+
       '<div style="margin-top:10px"><button type="button" class="citadel-btn" id="citadel-set-export">Export save code</button>'+
@@ -3440,6 +3832,7 @@ window.addEventListener('beforeunload', () => {
     bind('citadel-set-bigtext',function(e){ settings.bigtext=e.target.checked; saveSettings(); applySettings(); });
     bind('citadel-set-tappause',function(e){ settings.tappause=e.target.checked; saveSettings(); });
     bind('citadel-set-fixedstick',function(e){ settings.fixedstick=e.target.checked; saveSettings(); applySettings(); });
+    bind('citadel-set-haptics',function(e){ settings.haptics=e.target.checked; saveSettings(); });
     bind('citadel-set-sfx',function(e){ settings.sfx=clamp(Number(e.target.value)/100,0,1); saveSettings(); });
     bind('citadel-set-music',function(e){ setMusicVolume(Number(e.target.value)/100); });
     byId('citadel-set-export').addEventListener('click',exportSave);
@@ -3465,9 +3858,13 @@ window.addEventListener('beforeunload', () => {
   function applySaveCode(raw){
     raw=String(raw||'').trim();
     if(raw.indexOf('CIT1-')!==0) return false;
+    if(raw.length>20000) return false; // a real save code is far smaller; refuse junk
     try{
       var obj=JSON.parse(unb64url(raw.slice(5)));
-      Object.keys(obj).forEach(function(k){ if(SAVE_KEYS.indexOf(k)>=0) localStorage.setItem(k,obj[k]); });
+      if(!obj||typeof obj!=='object'||Array.isArray(obj)) return false;
+      Object.keys(obj).forEach(function(k){
+        if(SAVE_KEYS.indexOf(k)>=0&&typeof obj[k]==='string') localStorage.setItem(k,obj[k]);
+      });
       return true;
     }catch(e){ return false; }
   }
@@ -3522,15 +3919,20 @@ window.addEventListener('beforeunload', () => {
     row.appendChild(extraButton('🗓 Daily Night',startDaily));
     var daily=dailyState();
     row.appendChild(extraButton('🧪 Practice Gate',function(){ window.setCitadelMode('practice'); showSpellSelect(); }));
+    row.appendChild(extraButton('🎲 Relic Roulette',startRoulette,'','','Two random relics, no shop, three waves'));
+    row.appendChild(extraButton('⚔ Boss Duel',startDuel,'','','One boss, no shop'));
     row.appendChild(extraButton('👑 Boss Rush',startRush,'',!rushUnlocked(),rushUnlocked()?'Four bosses back to back':'Clear Quick Night with two elements to unlock'));
     row.appendChild(extraButton('📖 Relic Codex',showCodex));
+    row.appendChild(extraButton('💀 Boss Codex',showBossCodex));
+    row.appendChild(extraButton('🗓 Daily Record',showDailyLog));
     row.appendChild(extraButton('⚙ Settings',openSettings));
     var note=byId('citadel-mode-note');
     if(!note){ note=el('div','citadel-mode-note'); if(row.parentElement) row.parentElement.insertBefore(note,row.nextSibling); }
     var m=mastery();
     var clearsCount=clears().length;
     var element=SPELLS[dailySpellId()]?SPELLS[dailySpellId()].name:'a mystery';
-    note.textContent='Daily Night today: '+element+'. Streak '+((dailyState().streak)||0)+'. Mastery clears '+clearsCount+' of '+Object.keys(SPELLS).length+'. '+(m&&Object.keys(m).length?'Your elements remember you.':'');
+    var gateBoss=BOSS_DEFS[0]?BOSS_DEFS[0].name:'Malgrath';
+    note.textContent='Daily Night today: '+element+'. Your best: '+(daily.best||0).toLocaleString()+'. Streak '+((daily.streak)||0)+'. Gate boss: '+gateBoss+'. Mastery clears '+clearsCount+' of '+Object.keys(SPELLS).length+'. '+(m&&Object.keys(m).length?'Your elements remember you.':'');
   }
   function decorateStart(){
     var start=byId('screen-start'); if(!start) return;
@@ -3566,6 +3968,22 @@ window.addEventListener('beforeunload', () => {
       if(line&&!card.querySelector('.citadel-mastery-line')){
         var l=el('div','citadel-mastery-line',null,esc(line)); card.appendChild(l);
       }
+      // Personal record for this element, from the saved per-element stats.
+      var rec=elementRecord(sp.id);
+      if(rec&&!card.querySelector('.citadel-best-line')){
+        var best=el('div',null,null,'Best: wave '+rec.bestWave+' · '+Number(rec.bestScore||0).toLocaleString()+' pts');
+        best.className='citadel-best-line';
+        card.appendChild(best);
+      }
+      // Visible progress toward Mastery 1 (3 clears) and Mastery 2 (10).
+      var seenCount=m[sp.id]||0;
+      if(!card.querySelector('.citadel-mastery-track')){
+        var pct=Math.min(100,Math.round(seenCount/10*100));
+        var track=el('div',null,null,'<div class="citadel-mastery-fill" style="width:'+pct+'%"></div>');
+        track.className='citadel-mastery-track';
+        track.title=seenCount+' of 10 clears. Mastery 1 at 3, Mastery 2 at 10.';
+        card.appendChild(track);
+      }
     });
   }
   var _showSpellSelect=showSpellSelect;
@@ -3573,6 +3991,8 @@ window.addEventListener('beforeunload', () => {
 
   // ── KEYBOARD PLAY ──
   document.addEventListener('keydown',function(e){
+    var ae=document.activeElement;
+    if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return; // typing in the import box must never move the mage
     var k=e.key;
     if((k==='p'||k==='P')&&(gameState==='playing'||paused)){ togglePause(); return; }
     if(k==='Escape'&&paused){ resume(); return; }
@@ -3658,14 +4078,33 @@ window.addEventListener('beforeunload', () => {
     settings:function(){ return settings; },
     exportCode:makeSaveCode, importCode:applySaveCode,
     resumeRun:resumeRun, clearResume:clearResume, saveSnapshot:snapshotRun,
-    masteryTier:masteryTier, dailyPlayed:function(){ return dailyState().played; }
+    masteryTier:masteryTier, dailyPlayed:function(){ return dailyState().played; },
+    bossCodex:function(){ return bossSeen; }, grade:function(){ return computeGrade(); },
+    runMs:function(){ return runMs; }, shopPage:function(){ return shopPage; }
+  };
+  // Narrow, prefixed hooks for tests only.
+  window.__citadelFeatures={
+    grade:computeGrade, bossSeen:function(){ return bossSeen; },
+    bounty:function(){ return bounty; }, resetBounty:resetBounty,
+    runMs:function(){ return runMs; }, topEnemy:function(){ return enemies[enemies.length-1]||null; },
+    killBoss:function(){ var b=activeBoss; if(b){ b.hp=0; killEnemy(b); } return !!b; },
+    shopPage:function(){ return shopPage; }, grantRoulette:grantRouletteRelics,
+    regenTick:function(dt){ gateRegenTick(dt); }, streakTick:streakPurseTick
   };
 
   // ── INIT ──
   document.body.appendChild(pauseBtn);
   document.body.appendChild(overlay);
   document.body.appendChild(warn);
+  runTimerEl=el('div','citadel-run-timer',null,'⏱ 00:00');
+  document.body.appendChild(runTimerEl);
+  timerPaint(true);
+  var srLive=el('div','citadel-sr');
+  srLive.setAttribute('aria-live','polite');
+  srLive.setAttribute('aria-atomic','true');
+  document.body.appendChild(srLive);
   byId('citadel-resume').addEventListener('click',resume);
+  byId('citadel-pause-copy').addEventListener('click',copyBuild);
   byId('citadel-restart').addEventListener('click',function(){ resume(); restartGame(); });
   byId('citadel-settings-pause').addEventListener('click',openSettings);
   byId('citadel-quit').addEventListener('click',function(){ location.href='../arcade.html'; });
