@@ -404,7 +404,7 @@ table.rally-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width
   <div class="rally-wrap">
     <p class="rally-eyebrow">🏁 Godot 4 + Blender · Age 10+ · Beginner</p>
     <h1>Low-Poly Rally: <span>build a DiRT-style</span> 3D rally game</h1>
-    <p class="rally-sub">Make a small car, a muddy stage, and the camera that makes it feel fast. You will build chase, bonnet and cockpit views with spring follow, corner look-ahead, speed FOV and impact shake. Then you will time a stage from start gate to finish.</p>
+    <p class="rally-sub">Make a small car, a muddy stage, and the camera that makes it feel fast. You will build chase, bonnet and cockpit views with spring follow, corner look-ahead, speed FOV and impact shake. Then you will run it as an A-to-B sprint, with a countdown, sector splits and a saved best time.</p>
     <div class="rally-pills">
       <span class="rally-pill hot">6 build steps</span>
       <span class="rally-pill">Godot 4 (free)</span>
@@ -415,6 +415,7 @@ table.rally-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width
     <div class="rally-cta">
       <a href="#steps" class="rally-btn">▶ Start the rally</a>
       <a href="#cameras" class="rally-btn ghost">📷 Jump to the camera rig</a>
+      <a href="../low-poly-rally-starter.zip" download class="rally-btn ghost">↓ Free starter project</a>
     </div>
   </div>
 </section>
@@ -423,6 +424,7 @@ table.rally-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width
   <section class="rally-section" id="before">
     <h2>Before you start</h2>
     <p class="rally-lede">Two quick checks, then you are ready to build.</p>
+    <div class="rally-note"><b>Want a head start?</b> Download the free <a href="../low-poly-rally-starter.zip" download style="color:var(--rally-teal);font-weight:700">Low Poly Rally starter project</a>, unzip it, and open <span class="rinline">project.godot</span> in Godot 4. The car, stage, camera rig and HUD are already wired. You can still follow every step and change the parts you want.</div>
     <div class="rally-grid">
       <div class="rally-card">
         <span class="tag">For the learner</span>
@@ -454,7 +456,7 @@ table.rally-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width
     <dl class="ws-outcome-list">
       <div class="ws-outcome-item"><dt>Your project</dt><dd>Low-Poly Rally: Build a DiRT-Style 3D Rally Game in Godot</dd></div>
       <div class="ws-outcome-item"><dt>You'll learn</dt><dd>Build a low-poly 3D rally racing game in Godot with DiRT-style cameras. Model the car in Blender, set up VehicleBody3D physics, add chase, bonnet and cockpit views, dynamic FOV, impact shake and stage timing.</dd></div>
-      <div class="ws-outcome-item"><dt>Finish with</dt><dd>a playable rally stage with a timed run and three working cameras</dd></div>
+      <div class="ws-outcome-item"><dt>Finish with</dt><dd>a playable A-to-B rally sprint with a best time and three working cameras</dd></div>
       <div class="ws-outcome-item"><dt>Then extend it</dt><dd>adding a co-driver, a night stage or a replay camera of your own</dd></div>
     </dl>
   </div>
@@ -546,7 +548,7 @@ table.rally-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width
           <li>Put the origin of every wheel at the centre of that wheel. Put the car origin at the middle of the chassis, at ground level.</li>
           <li>Apply rotation and scale to everything with <span class="rinline">Ctrl+A</span>.</li>
         </ol>
-        <div class="rally-note warn"><b>Which way is forward?</b> Point the nose of the car along Blender <strong>+Y</strong>. The glTF exporter turns that into Godot's forward direction, which is <strong>-Z</strong>. If the car drives backwards later, rotate the model 180 degrees before you touch the code.</div>
+        <div class="rally-note warn"><b>Which way is forward?</b> Point the nose of the car along Blender <strong>-Y</strong>. The glTF exporter turns that into Godot <strong>+Z</strong>, which is VehicleBody3D's forward. If the car drives backwards later, rotate the model 180 degrees before you touch the code.</div>
         <p>Add a little colour with materials. Flat colours suit low-poly. Give the body a bright rally colour, the glass a dark blue, and the wheels a dark grey.</p>
         <div class="rcode"><pre><code># Export
 File -> Export -> glTF 2.0 (.glb)
@@ -616,11 +618,13 @@ Name it: rally-car.glb</code></pre></div>
           <span class="rally-pill"><span class="rinline">camera_next</span> C</span>
         </div>
         <div class="rcode"><pre><code>extends VehicleBody3D
+class_name RallyCar
 # car.gd
 
-@export var engine_power := 900.0
-@export var brake_power := 35.0
-@export var handbrake_power := 70.0
+@export var engine_power := 50.0
+@export var brake_power := 25.0
+@export var reverse_power := 35.0
+@export var handbrake_power := 25.0
 @export var max_steer := 0.5
 @export var steer_speed := 3.5
 @export var top_speed_kmh := 140.0
@@ -628,6 +632,7 @@ Name it: rally-car.glb</code></pre></div>
 
 @onready var start_transform := global_transform
 @onready var ground_ray: RayCast3D = $GroundRay
+@onready var rear_wheels: Array[VehicleWheel3D] = [$Wheel_RL, $Wheel_RR]
 
 var steer := 0.0
 var surface_grip := 1.0
@@ -643,20 +648,35 @@ func _physics_process(delta: float) -> void:
     var throttle := Input.get_action_strength("accelerate")
     var brake_input := Input.get_action_strength("brake")
     var handbrake := Input.is_action_pressed("handbrake")
-    var steer_input := Input.get_axis("steer_left", "steer_right")
+    # Positive steering turns left, so ask for left as the positive action.
+    var steer_input := Input.get_axis("steer_right", "steer_left")
 
     # Slowly turn the wheels instead of snapping them.
     steer = move_toward(steer, steer_input * max_steer, steer_speed * delta)
     steering = steer
 
-    if linear_velocity.length() * 3.6 &lt; top_speed_kmh:
-        engine_force = throttle * engine_power * surface_grip
+    var speed := linear_velocity.length()
+    if brake_input &gt; 0.01:
+        engine_force = 0.0
+        brake = brake_input * brake_power
+        # At a standstill, the brake pedal becomes reverse.
+        if speed &lt; 0.6:
+            engine_force = -reverse_power * brake_input
+    elif speed * 3.6 &lt; top_speed_kmh:
+        # A little extra push at low speed so the car gets moving.
+        var boost := 1.0
+        if speed &lt; 5.0 and speed &gt; 0.1:
+            boost = clampf(5.0 / speed, 1.0, 2.0)
+        engine_force = throttle * engine_power * boost * surface_grip
+        brake = 0.0
     else:
         engine_force = 0.0
+        brake = 0.0
 
-    brake = brake_input * brake_power
     if handbrake:
         brake = handbrake_power
+        for wheel in rear_wheels:
+            wheel.wheel_friction_slip = 1.4
 
     if Input.is_action_just_pressed("reset"):
         reset_to_start()
@@ -666,7 +686,7 @@ func _read_surface() -> void:
         surface_grip = 0.6
         return
 
-    var collider := ground_ray.get_collider()
+    var collider := ground_ray.get_collider() as Node
     if collider and collider.is_in_group("gravel"):
         surface_grip = 0.75
     elif collider and collider.is_in_group("mud"):
@@ -722,22 +742,13 @@ func _apply_grip() -> void:
     for wheel in wheels:
         wheel.wheel_friction_slip = slip
 
-# Then call _apply_grip() at the end of _physics_process().</code></pre></div>
-        <div class="rally-note"><b>Handbrake feel:</b> the handbrake slows the rear wheels and drops rear grip. In code, set a lower friction slip on the rear wheels while the handbrake is held, and a higher brake value. Release it and the grip snaps back.</div>
-        <h3 style="font-size:1rem;margin:12px 0 6px">Reset and checkpoints</h3>
-        <p>Nobody wants to restart the whole stage because they rolled on a crest. Place an <span class="rinline">Area3D</span> at each sector with a collision shape wider than the road. When the car enters it, store a new start transform. When the player presses <span class="rinline">R</span>, reset there.</p>
-        <div class="rcode"><pre><code># checkpoint.gd, attached to each checkpoint Area3D
-extends Area3D
-
-@export var car: VehicleBody3D
-
-func _ready() -> void:
-    body_entered.connect(_on_body_entered)
-
-func _on_body_entered(body: Node3D) -> void:
-    if body == car:
-        car.start_transform = global_transform</code></pre></div>
-        <div class="rally-note win"><b>Pip's test:</b> drive the stage badly on purpose. Hit a bank, roll on a crest, then press R. If reset drops you somewhere unfair, move the checkpoint.</div>
+# Then call _apply_grip() in the else branch of the handbrake check in
+# _physics_process(), so the handbrake keeps its low rear grip.</code></pre></div>
+        <div class="rally-note"><b>Handbrake feel:</b> the handbrake slows the rear wheels and drops rear grip. In code, set a lower friction slip on the rear wheels while the handbrake is held, and a higher brake value. Release it and the full grip comes back.</div>
+        <h3 style="font-size:1rem;margin:12px 0 6px">Restart from A</h3>
+        <p>A sprint is one clean run from A to B. If you crash, press <span class="rinline">R</span> and start again. The sprint timer resets the car to its start transform, puts it back on the line and runs the countdown again. No checkpoints and no respawns halfway.</p>
+        <div class="rally-note"><b>Why no checkpoints?</b> A checkpoint reset would let you skip the part you crashed on, which is not a sprint time. If you want a longer rally later, add service points that reset the car but add a penalty to the clock.</div>
+        <div class="rally-note win"><b>Pip's test:</b> drive badly on purpose, roll the car, then press R. The car should be back at A, still, with the countdown running. If it keeps moving, the frozen flag is not being set.</div>
       </div>
     </article>
 
@@ -791,7 +802,7 @@ func _on_body_entered(body: Node3D) -> void:
 
 enum View { CHASE, BONNET, COCKPIT }
 
-@export var car: VehicleBody3D
+@export var car: RallyCar
 @export var spring_arm: SpringArm3D
 @export var shake_pivot: Node3D
 @export var camera: Camera3D
@@ -804,8 +815,8 @@ enum View { CHASE, BONNET, COCKPIT }
 @export var corner_look := 1.8
 
 @export_group("Fixed views")
-@export var bonnet_offset := Vector3(0.0, 1.05, -0.15)
-@export var cockpit_offset := Vector3(0.35, 1.05, 0.15)
+@export var bonnet_offset := Vector3(0.0, 1.05, 1.4)
+@export var cockpit_offset := Vector3(0.35, 1.15, -0.2)
 
 @export_group("Feel")
 @export var base_fov := 62.0
@@ -816,7 +827,7 @@ enum View { CHASE, BONNET, COCKPIT }
 @export var trauma_decay := 1.4
 @export var shake_strength := 0.09
 
-var view: View = View.CHASE
+var view := View.CHASE
 var trauma := 0.0
 var _noise := FastNoiseLite.new()
 
@@ -833,7 +844,7 @@ func _unhandled_input(event: InputEvent) -> void:
         _set_view((view + 2) % 3)
 
 func _set_view(next_view: int) -> void:
-    view = next_view as View
+    view = next_view
     if view == View.CHASE:
         spring_arm.collision_mask = 1
         spring_arm.spring_length = chase_distance
@@ -857,9 +868,11 @@ func _physics_process(delta: float) -> void:
 
 func _update_chase(delta: float) -> void:
     var speed := car.linear_velocity.length()
-    var forward := -car.global_transform.basis.z
+    # VehicleBody3D forward is +Z, so the car basis Z axis is the way ahead.
+    var forward := car.global_transform.basis.z
     var flat_forward := Vector3(forward.x, 0.0, forward.z).normalized()
-    var steer := Input.get_axis("steer_left", "steer_right")
+    # Positive steering is left, and +X is the model's left side.
+    var steer := Input.get_axis("steer_right", "steer_left")
 
     var pivot := car.global_position + Vector3.UP * chase_height
     var look_target := pivot + flat_forward * (1.0 + speed * 0.03)
@@ -874,7 +887,10 @@ func _update_chase(delta: float) -> void:
     )
 
 func _update_fixed(offset: Vector3) -> void:
+    # The camera looks down its local -Z. Turn the rig around so that -Z
+    # points the same way as the car's +Z forward.
     var desired := car.global_transform
+    desired.basis = desired.basis.rotated(Vector3.UP, PI)
     desired.origin += car.global_transform.basis * offset
     global_transform = desired
 
@@ -910,7 +926,7 @@ func _update_shake(delta: float) -> void:
     ) * deg_to_rad(3.0) * shake</code></pre></div>
 
         <div class="rally-note"><b>Why the spring arm?</b> It casts a shape backward from the pivot. If a bank or tree is in the way, the camera slides in closer instead of showing the inside of a hill. Excluding the car's own body stops it from colliding with the car.</div>
-        <div class="rally-note warn"><b>If the chase camera faces the wrong way:</b> the model is probably facing the wrong way. Godot's forward is -Z. Swap <span class="rinline">looking_at(look_target - pivot)</span> for the opposite direction only after you have checked the car model.</div>
+        <div class="rally-note warn"><b>If the chase camera faces the wrong way:</b> the model is probably facing the wrong way. VehicleBody3D's forward is +Z (Vector3.MODEL_FRONT). Swap <span class="rinline">looking_at(look_target - pivot)</span> for the opposite direction only after you have checked the car model.</div>
         <div class="rally-note win"><b>Pip's camera test:</b> drive the same corner in all three views. Chase should swing smoothly. Bonnet should feel planted and busy. Cockpit should be the most intense. If all three feel the same, the fixed views are not actually rigid.</div>
       </div>
     </article>
@@ -919,58 +935,164 @@ func _update_shake(delta: float) -> void:
       <div class="rstep-top">
         <div class="rstep-num">6</div>
         <div>
-          <h2 class="rstep-title">Time the stage and finish the run</h2>
-          <p class="rstep-goal">A start gate, sector splits, a finish time and a reason to try again.</p>
+          <h2 class="rstep-title">Run it as an A-to-B sprint</h2>
+          <p class="rstep-goal">A countdown at A, a clock, a finish at B and a best time to beat.</p>
         </div>
       </div>
       <div class="rstep-body">
-        <p>Rally timing is simple: the clock starts when the car crosses the start gate, records a split at each sector and stops at the finish. Add an <span class="rinline">Area3D</span> for the start, three for the sectors and one for the finish. Put a visible model under each one.</p>
+        <p>A rally sprint is a single run from A to B. The car waits at A, a short countdown runs, then the clock starts. The run ends when the car crosses the finish at B. No laps and no respawns. If you crash, press <span class="rinline">R</span> and run it again from A.</p>
+        <p>Add an <span class="rinline">Area3D</span> at A for the start sign, three along the route for splits and one at B for the finish. The start sign shows the line. The countdown is what starts the clock.</p>
         <div class="rcode"><pre><code>extends Node
-# stage_timer.gd
+# stage_timer.gd - the A-to-B sprint
 
+signal countdown_updated(value: float)
+signal race_started
 signal split_taken(number: int, seconds: float)
-signal stage_finished(total: float, splits: Array)
+signal stage_finished(total: float, splits: Array, best: float, is_new_best: bool)
+signal time_updated(seconds: float)
 
-@export var car: VehicleBody3D
-@export var start_gate: Area3D
+enum State { COUNTDOWN, RUNNING, FINISHED }
+
+@export var countdown_seconds := 3.0
+@export var car: RallyCar
 @export var finish_gate: Area3D
 @export var sectors: Array[Area3D] = []
 
-var running := false
+const BEST_PATH := "user://low_poly_rally_best.cfg"
+
+var state := State.COUNTDOWN
+var countdown_left := 3.0
 var start_time := 0.0
 var splits: Array[float] = []
 var next_sector := 0
+var best_time := 0.0
 
 func _ready() -> void:
-    start_gate.body_entered.connect(_on_start)
-    finish_gate.body_entered.connect(_on_finish)
+    if finish_gate != null:
+        finish_gate.body_entered.connect(_on_finish)
     for i in sectors.size():
         sectors[i].body_entered.connect(_on_sector.bind(i))
+    load_best()
+    restart_race()
 
-func _on_start(body: Node3D) -> void:
-    if body != car or running:
+func _process(delta: float) -> void:
+    if Input.is_action_just_pressed("reset"):
+        restart_race()
         return
-    running = true
-    start_time = _now()
+
+    if state == State.COUNTDOWN:
+        countdown_left -= delta
+        countdown_updated.emit(countdown_left)
+        if countdown_left &lt;= 0.0:
+            state = State.RUNNING
+            start_time = _now()
+            car.frozen = false
+            race_started.emit()
+    elif state == State.RUNNING:
+        time_updated.emit(_now() - start_time)
+
+func restart_race() -> void:
+    state = State.COUNTDOWN
+    countdown_left = countdown_seconds
     splits.clear()
     next_sector = 0
+    car.reset_to_start()
+    car.frozen = true
+    countdown_updated.emit(countdown_left)
+    time_updated.emit(0.0)
 
 func _on_sector(body: Node3D, index: int) -> void:
-    if body != car or not running or index != next_sector:
+    if body != car or state != State.RUNNING or index != next_sector:
         return
     splits.append(_now() - start_time)
     next_sector += 1
     split_taken.emit(index + 1, splits[-1])
 
 func _on_finish(body: Node3D) -> void:
-    if body != car or not running:
+    if body != car or state != State.RUNNING:
         return
-    running = false
-    stage_finished.emit(_now() - start_time, splits)
+    state = State.FINISHED
+    car.frozen = true
+    var total := _now() - start_time
+    var is_new_best := best_time &lt;= 0.0 or total &lt; best_time
+    if is_new_best:
+        best_time = total
+        save_best(total)
+    stage_finished.emit(total, splits, best_time, is_new_best)
+
+func load_best() -> void:
+    var cfg := ConfigFile.new()
+    if cfg.load(BEST_PATH) == OK:
+        best_time = float(cfg.get_value("sprint", "best_time", 0.0))
+
+func save_best(total: float) -> void:
+    var cfg := ConfigFile.new()
+    cfg.set_value("sprint", "best_time", total)
+    cfg.save(BEST_PATH)
 
 func _now() -> float:
     return Time.get_ticks_msec() / 1000.0</code></pre></div>
-        <p>Connect <span class="rinline">split_taken</span> and <span class="rinline">stage_finished</span> to your HUD labels. Keep the HUD small in the corners so it does not cover the road. Show the current sector, the last split and the elapsed time.</p>
+        <p><b>Two small changes in car.gd:</b> the <span class="rinline">class_name RallyCar</span> from step 3 is what lets the sprint timer refer to your car. Add <span class="rinline">var frozen := true</span>, then put this at the top of <span class="rinline">_physics_process</span> so the car waits on the line. Delete the old reset block because the sprint timer now owns R.</p>
+        <div class="rcode"><pre><code>class_name RallyCar
+...
+var frozen := true
+
+func _physics_process(delta: float) -> void:
+    if frozen:
+        engine_force = 0.0
+        brake = brake_power
+        steering = 0.0
+        return
+
+    _read_surface()
+    # ... the rest of the driving code stays the same</code></pre></div>
+        <h3 style="font-size:1rem;margin:12px 0 6px">Show the clock and the best time</h3>
+        <p>Keep the HUD in the corners. The countdown can sit in the middle, but only for a few seconds. The best time is read from the same file, so it survives a restart.</p>
+        <div class="rcode"><pre><code>extends CanvasLayer
+# hud.gd
+
+@onready var time_label: Label = $TimeLabel
+@onready var split_label: Label = $SplitLabel
+@onready var result_label: Label = $ResultLabel
+@onready var countdown_label: Label = $CountdownLabel
+@onready var stage_timer: Node = get_node_or_null("../StageTimer")
+
+func _ready() -> void:
+    stage_timer.connect("countdown_updated", _on_countdown)
+    stage_timer.connect("race_started", _on_race_started)
+    stage_timer.connect("split_taken", _on_split)
+    stage_timer.connect("stage_finished", _on_finish)
+    stage_timer.connect("time_updated", _on_time)
+    _show_best(float(stage_timer.get("best_time")))
+
+func _on_countdown(value: float) -> void:
+    countdown_label.visible = true
+    countdown_label.text = str(ceili(value)) if value &gt; 0.0 else "GO!"
+
+func _on_race_started() -> void:
+    countdown_label.text = "GO!"
+    await get_tree().create_timer(0.8).timeout
+    countdown_label.visible = false
+    result_label.visible = false
+
+func _on_time(seconds: float) -> void:
+    time_label.text = "TIME  %0.2f" % seconds
+
+func _on_split(number: int, seconds: float) -> void:
+    split_label.text = "SPLIT %d  %0.2f" % [number, seconds]
+
+func _on_finish(total: float, splits: Array, best: float, is_new_best: bool) -> void:
+    time_label.text = "FINISH  %0.2f" % total
+    result_label.visible = true
+    result_label.text = "NEW BEST!" if is_new_best else "BEST  %0.2f" % best
+    var parts := PackedStringArray()
+    for s in splits:
+        parts.append("%0.2f" % s)
+    split_label.text = "Splits: " + ", ".join(parts)
+
+func _show_best(best: float) -> void:
+    result_label.visible = true
+    result_label.text = "BEST  %0.2f" % best if best &gt; 0.0 else "BEST  --"</code></pre></div>
         <h3 style="font-size:1rem;margin:12px 0 6px">Add pacenotes, not a sat nav</h3>
         <p>A co-driver calls the corner before you see it. You do not need voice acting for the first version. A small text callout above the road is enough. Give each corner a severity from 1 to 6, where 1 is a hairpin and 6 is flat out.</p>
         <div class="rtable-wrap">
@@ -985,7 +1107,7 @@ func _now() -> float:
           </table>
         </div>
         <div class="rally-note"><b>Simple build:</b> put an <span class="rinline">Area3D</span> 40 m before each corner. On <span class="rinline">body_entered</span>, show the note for three seconds. After that, hide it. That is enough to change how the stage feels.</div>
-        <div class="rally-note win"><b>Echo's finish check:</b> start the stage, hit every sector in order, then cross the finish. Check the split list and the total. Then restart and confirm the timer resets. A timer that keeps running after a restart is worse than no timer.</div>
+        <div class="rally-note win"><b>Echo's finish check:</b> start a run, cross the finish at B, then press R. The countdown should restart, the car should be back at A, and the best time should still be there. If the clock starts before GO, or the best time resets on restart, the sprint state machine is wrong.</div>
       </div>
     </article>
 
@@ -1024,6 +1146,7 @@ func _now() -> float:
     <p style="margin:0 0 6px;font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#ffb98a">Finish in Godot</p>
     <h2 id="ws-export-title" style="font-family:'Fredoka',cursive;font-size:1.3rem;margin:0 0 8px;color:#fff">Make it a game you can keep</h2>
     <ol style="font-size:.9rem;line-height:1.75;margin:0;padding-left:20px;color:var(--rally-muted)">
+      <li>Download the free <a href="../low-poly-rally-starter.zip" download style="color:var(--rally-teal);font-weight:700">low-poly-rally-starter.zip</a> if you want the finished scene layout.</li>
       <li>Press <strong>F5</strong> and drive the full stage. Check the start, every split and the finish.</li>
       <li>Test all three cameras with <strong>C</strong>. Make sure the chase camera does not clip on the tightest bend.</li>
       <li>Open <strong>Project &gt; Export</strong>, add a <strong>Windows Desktop</strong> or <strong>Web</strong> preset, then choose <strong>Export Project</strong>.</li>

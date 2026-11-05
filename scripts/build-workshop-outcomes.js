@@ -86,7 +86,7 @@ const OVERRIDES = {
     extend: 'changing the background, torch animation or stage music'
   },
   'godot-rally-workshop': {
-    finish: 'a playable rally stage with a timed run and three working cameras',
+    finish: 'a playable A-to-B rally sprint with a best time and three working cameras',
     extend: 'adding a co-driver, a night stage or a replay camera of your own'
   }
 };
