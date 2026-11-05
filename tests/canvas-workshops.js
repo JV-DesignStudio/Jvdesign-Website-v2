@@ -49,8 +49,15 @@ const missingConfig = [];
 const notRegistered = [];
 const notLinked = [];
 
+const redirectStubs = [];
 for (const file of files) {
   const html = fs.readFileSync(path.join(WORKSHOPS, file), 'utf8');
+  // A2338: redirect stubs replace redundant canvas pages whose content already
+  // lives in the workshop page. Skip them for engine/config/hub checks.
+  if (/http-equiv="refresh"/.test(html) && /location\.replace/.test(html)) {
+    redirectStubs.push(file);
+    continue;
+  }
   const external = localScriptSources(html, WORKSHOPS).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
   const config = html.includes('window.CW_CONFIG') || external.includes('window.CW_CONFIG');
   if (!/<title>[^<]+<\/title>/i.test(html)) missingTitle.push(file);
@@ -86,4 +93,6 @@ if (failures) {
   console.log('\nFAIL canvas-workshops: ' + failures + ' check(s) failed');
   process.exit(1);
 }
-console.log('\nPASS canvas-workshops: ' + files.length + ' build-along pages registered, linked and in sync');
+const live = files.length - redirectStubs.length;
+console.log('\nPASS canvas-workshops: ' + live + ' build-along pages registered, linked and in sync' +
+  (redirectStubs.length ? ' (' + redirectStubs.length + ' consolidated into workshop pages)' : ''));
