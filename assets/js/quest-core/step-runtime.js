@@ -241,6 +241,7 @@
 
   global.QuestRuntime = {
     mount: mount,
+    awardOnce: awardOnce,
     normaliseHex: normaliseHex,
     readFillStyle: readFillStyle,
     pixelHex: pixelHex,
