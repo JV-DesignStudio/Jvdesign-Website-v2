@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-rC8ptrMSDrtL0yTVt51xzJoD8X8v847UhwaDJcvAAfo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-foml45yrpQR6hy454R8AqhquSLkRB6sKt8NtFs2woo4=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -255,6 +255,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
     <div class="buildlab-status" id="buildlabStatus" role="status" aria-live="polite">
       <strong>BuildLab</strong>
       <span id="engineStatus">3D engine loading...</span>
+      <span id="autosaveStatus" style="margin-left:8px;padding:1px 8px;border-radius:999px;background:rgba(0,212,170,.15);border:1px solid rgba(0,212,170,.35);font-size:.68rem;white-space:nowrap;">Not saved yet</span>
     </div>
     <div class="crosshair"></div>
     <div class="vp-toast" id="toast"></div>
@@ -6442,17 +6443,35 @@ function loadFromHash() {
 }
 
 let _autosaveTimer = null;
+let _savedAt = null;
+function paintSaveStatus(iso) {
+  const el = document.getElementById('autosaveStatus');
+  if (!el) return;
+  if (!iso) { el.textContent = 'Not saved yet'; return; }
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) { el.textContent = 'Not saved yet'; return; }
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  el.textContent = 'Saved locally at ' + hh + ':' + mm;
+  el.title = 'This build is saved in your browser on this device only.';
+}
 function autosave() {
   clearTimeout(_autosaveTimer);
   _autosaveTimer = setTimeout(() => {
     try {
+      _savedAt = new Date().toISOString();
       localStorage.setItem('buildlab_autosave', JSON.stringify({
         name: buildName,
         blocks: encodeBuildData(),
         groups: groups.map(group => group.name),
-        imports: serializeImportedParts()
+        imports: serializeImportedParts(),
+        savedAt: _savedAt
       }));
-    } catch (e) { /* storage full or blocked  non-fatal */ }
+      paintSaveStatus(_savedAt);
+    } catch (e) {
+      const el = document.getElementById('autosaveStatus');
+      if (el) { el.textContent = 'Could not save on this device'; el.title = 'Storage is full or blocked.'; }
+    }
   }, 800);
 }
 
@@ -6488,6 +6507,7 @@ function restoreAutosave() {
     rebuildGroups(d.groups || [], decoded.map((b, i) => ({mesh: loaded[i], gi: b.gi})));
     loadImportedParts(d.imports);
     updateStats();
+    paintSaveStatus(d.savedAt);
     return true;
   } catch (e) { return false; }
 }
