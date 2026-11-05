@@ -36,6 +36,9 @@ function registryAliases() {
 }
 
 const ALIASES = registryAliases();
+// A2593: the Create hub is published at /create, so search links use the clean
+// friendly path instead of the underlying pages/dev-tools.html file.
+const URL_OVERRIDES = { 'pages/dev-tools.html': 'create' };
 const entries = [];
 for (const fp of walk(ROOT, { ext: ".html", ignore: SKIP_DIRS })) {
   const rel = path.relative(ROOT, fp).replace(/\\/g, '/');
@@ -47,7 +50,7 @@ for (const fp of walk(ROOT, { ext: ".html", ignore: SKIP_DIRS })) {
   const title = titleM ? titleM[1].replace(/\s*\| JVDesignStudio\s*$/i, '').trim() : rel;
   const desc = descM ? descM[1].trim() : '';
   const aliases = ALIASES.get(rel) || [];
-  const url = rel === 'learn/index.html' ? 'learn/' : rel;
+  const url = URL_OVERRIDES[rel] || (rel === 'learn/index.html' ? 'learn/' : rel);
   const entry = { url, title: title || rel, desc: desc.slice(0, 180) };
   if (aliases.length) entry.aliases = aliases;
   entries.push(entry);

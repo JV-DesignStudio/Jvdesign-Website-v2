@@ -20,6 +20,20 @@ const path = require('path');
 const ROOT = __dirname;
 const { IGNORE_DIRS } = require('./scripts/lib/paths');
 
+// Clean URLs (/create, /workshop, /books) are served on GitHub Pages by the
+// route map in 404.html. Read that map so a link to a clean route resolves to
+// its real .html target, not only to the pages/<name>.html naming convention.
+const CLEAN_ROUTES = (() => {
+  const map = {};
+  const notFound = path.join(ROOT, '404.html');
+  if (!fs.existsSync(notFound)) return map;
+  const src = fs.readFileSync(notFound, 'utf8');
+  const block = src.match(/var map = \{([\s\S]*?)\n  \};/);
+  if (!block) return map;
+  for (const m of block[1].matchAll(/'([^']+)'\s*:\s*'([^']+)'/g)) map[m[1]] = m[2];
+  return map;
+})();
+
 function walk(dir) {
   let out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -54,6 +68,9 @@ for (const filePath of walk(ROOT)) {
       // special case: pages/ style , /games maps to pages/games.html
       const pagesVariant = path.join(ROOT, 'pages', clean.replace(/^\//,'') + '.html');
       const candidates = tryPaths.map(p => p.startsWith('/') ? path.join(ROOT, p) : path.resolve(dir, p)).concat(pagesVariant);
+      // clean-route map: /create -> /pages/dev-tools.html
+      const routeTarget = CLEAN_ROUTES[clean];
+      if (routeTarget) candidates.push(path.join(ROOT, routeTarget.split('?')[0]));
       if (candidates.some(p => fs.existsSync(p))) { refCount++; continue; }
       // also allow clean "/" root
       if (clean === '/' || clean === '') { refCount++; continue; }

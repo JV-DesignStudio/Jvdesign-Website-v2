@@ -33,7 +33,8 @@ check('/games.html legacy path points at the arcade page', route('/games.html') 
 check('/pages/games.html legacy path points at the arcade page', route('/pages/games.html') === '/arcade.html', route('/pages/games.html'));
 check('/learn-hub clean route points at the Learn hub', route('/learn-hub') === '/pages/workshop.html', route('/learn-hub'));
 check('/workshop clean route points at the Learn hub', route('/workshop') === '/pages/workshop.html', route('/workshop'));
-check('/dev-tools clean route points at the Create hub', route('/dev-tools') === '/pages/dev-tools.html', route('/dev-tools'));
+check('/create clean route points at the Create hub', route('/create') === '/pages/dev-tools.html', route('/create'));
+check('/dev-tools is the old path and redirects to /create', route('/dev-tools') === '/create', route('/dev-tools'));
 check('/books clean route points at the Read hub', route('/books') === '/pages/books.html', route('/books'));
 check('/pages/freebies.html legacy path points at Downloads', route('/pages/freebies.html') === '/pages/downloads.html', route('/pages/freebies.html'));
 
@@ -46,17 +47,19 @@ const redirect = from => {
 check('_redirects sends /games to the arcade', redirect('/games') === '/arcade.html', redirect('/games'));
 check('_redirects sends /freebies to Downloads', redirect('/freebies') === '/downloads', redirect('/freebies'));
 check('_redirects sends /learn-hub to the Learn hub', redirect('/learn-hub') === '/workshop', redirect('/learn-hub'));
+check('_redirects sends /dev-tools to /create', redirect('/dev-tools') === '/create', redirect('/dev-tools'));
+check('_redirects serves /create from the hub file', /^\/create\s+\/pages\/dev-tools\.html\s+200$/m.test(redirects), '');
 
 const arcade = read('arcade.html');
 check('arcade page canonical is /arcade.html', /<link rel="canonical" href="https:\/\/jvdesignstudio\.co\.uk\/arcade\.html"/.test(arcade));
 
 const hasDoor = (html, href, label) => new RegExp('href="' + href + '"[^>]*>\\s*' + label + '(\\s|<)').test(html);
 check('nav Learn label points at /workshop', hasDoor(nav, '/workshop', 'Learn'));
-check('nav Create label points at /dev-tools', hasDoor(nav, '/dev-tools', 'Create'));
+check('nav Create label points at /create', hasDoor(nav, '/create', 'Create'));
 check('nav Play label points at /arcade.html', hasDoor(nav, '/arcade.html', 'Play'));
 check('nav Read label points at /books', hasDoor(nav, '/books', 'Read'));
 check('footer Learn label points at /workshop', hasDoor(footer, '/workshop', 'Learn'));
-check('footer Create label points at /dev-tools', hasDoor(footer, '/dev-tools', 'Create'));
+check('footer Create label points at /create', hasDoor(footer, '/create', 'Create'));
 check('footer Play label points at /arcade.html', hasDoor(footer, '/arcade.html', 'Play'));
 check('footer Read label points at /books', hasDoor(footer, '/books', 'Read'));
 check('nav has no Games or Arcade door label', !/href="[^"]*"[^>]*>\s*(Games|Arcade)\s*</.test(nav));

@@ -175,6 +175,7 @@ const MAKER_DEPS=[
 const ALIASES={
   '/workshop':'/pages/workshop.html',
   '/learn-hub':'/pages/learn-hub.html',
+  '/create':'/pages/dev-tools.html',
   '/dev-tools':'/pages/dev-tools.html',
   '/learn/':'/learn/index.html',
   '/games':'/arcade.html',

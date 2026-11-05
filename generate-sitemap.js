@@ -25,7 +25,7 @@ const EXCLUDE_FILES = new Set([...LIB_EXCLUDE, ...GAME_ORPHANS, 'games/game-temp
 const PRIORITY_MAP = {
   // Hub pages , higher crawl priority
   '/': 1.0,
-  '/workshop': 0.9, '/games': 0.9, '/books': 0.9, '/dev-tools': 0.8, '/freebies': 0.8, '/downloads': 0.8,
+  '/workshop': 0.9, '/games': 0.9, '/books': 0.9, '/create': 0.8, '/dev-tools': 0.8, '/freebies': 0.8, '/downloads': 0.8,
   '/about': 0.7, '/parents': 0.6, '/contact': 0.5, '/arcade': 0.7
 };
 const LOW_PRIORITY_SUFFIX = ['privacy-policy', 'terms-of-service', 'arcade-privacy', 'biscuit-tin-privacy', 'cozy-cafe-privacy', 'game-maker-privacy', 'pocket-crew-privacy', 'questlog-privacy', 'sky-high-squirt-privacy'];
