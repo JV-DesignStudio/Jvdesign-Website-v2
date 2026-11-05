@@ -33,21 +33,59 @@ let W, H, dpr;
 const COLS = 9;
 const VISIBLE_ROWS = 12;
 let cellW, cellH;
-let running = false, dead = false;
+let running = false, dead = false, paused = false;
 let player, rows, cameraY, furthest, score, coins, hops;
 let echo = null, combo = 0, comboPop = 0, shield = false, magnetT = 0, slowT = 0, graceT = 0;
+let doubleT = 0;
 let forwardStreak = 0;
 let secondUsed = false, savedPending = false, pendingReason = '';
 let best = (sys ? GameSystem.getBestScore('crossy-crew') : 0) || 0;
+let bestDistance = 0, bestCombo = 0, goldenCaught = 0, checkpointsReached = 0;
+let timeLeft = 0, mode = 'classic', modeCfg = null, modeScoreMul = 1;
+let maxCombo = 0;
+let seededRand = null, runSeed = '';
+let unlockedBadges = {};
+let storageOk = true;
+let dailyBest = 0;
+const REVIVE_COST = 3;
+
+// ── Run modes ─────────────────────────────────────────────────────────────
+const MODES = {
+  classic:   { label: 'Classic',     desc: 'Endless traffic, trains and rivers. Keep hopping as far as you can.', scorer: 1,   revive: true,  hazards: true,  time: 0 },
+  daily:     { label: 'Daily',       desc: 'One seeded crossing a day. Everyone meets the same road.',          scorer: 1,   revive: true,  hazards: true,  time: 0, seed: 'daily' },
+  timeattack:{ label: 'Time Attack', desc: '90 seconds on the clock. Every hop counts, and stopping loses.',      scorer: 1.5, revive: true,  hazards: true,  time: 90 },
+  onelife:   { label: 'One Life',    desc: 'No second chances and faster traffic. Score is worth 1.5x.',          scorer: 1.5, revive: false, hazards: true,  faster: true },
+  practice:  { label: 'Practice',    desc: 'Slow roads only, no rivers or trains. A safe place to learn.',        scorer: .5,  revive: true,  hazards: true,  slow: true, noBest: true, noHazards: true }
+};
+try { const savedMode = localStorage.getItem('jvds_cc_mode'); if (savedMode && MODES[savedMode]) mode = savedMode; } catch (e) {}
+modeCfg = MODES[mode] || MODES.classic;
+modeScoreMul = modeCfg.scorer || 1;
+
+function seededFrom(seedStr) {
+  let h = 2166136261;
+  for (let i = 0; i < seedStr.length; i++) { h ^= seedStr.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return function () {
+    h += 0x6D2B79F5;
+    let t = h;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function rand() { return seededRand ? seededRand() : Math.random(); }
 
 // ── Daily challenge + streak ──────────────────────────────────────────────
-function getDayKey() { return new Date().toISOString().slice(0, 10); }
+function getDayKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function getDailyGoal() {
   const d = new Date();
   const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
   return 30 + (dayOfYear % 40); // 30-69 hops
 }
-const dailyGoal = getDailyGoal();
+let dailyGoal = getDailyGoal();
+let dailyTodayKey = getDayKey();
 const CC_STREAK_KEY = 'jvds_cc_streak';
 let streakData = (function () {
   try {
@@ -71,11 +109,15 @@ function updateDailyHint() {
     ? '✅ Daily done' + streakStr
     : '🏁 Today: hop ' + dailyGoal + ' steps';
 }
+function dayKeyOffset(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 function checkDailyOnEnd(runScore) {
   if (runScore >= dailyGoal && !streakData.doneToday) {
     const today = getDayKey();
-    const d = new Date(); d.setDate(d.getDate() - 1);
-    const yesterday = d.toISOString().slice(0, 10);
+    const yesterday = dayKeyOffset(-1);
     const newStreak = streakData.lastDay === yesterday ? streakData.streak + 1 : 1;
     streakData = { streak: newStreak, lastDay: today, doneToday: true };
     saveStreakData(newStreak, today);
@@ -91,15 +133,96 @@ function checkDailyOnEnd(runScore) {
 }
 
 const CREW = [
-  {id:'pip',      name:'Pip',      emoji:'🐢', unlock:null},
-  {id:'echo',     name:'Echo',     emoji:'🐟', unlock:{type:'score',n:100}},
-  {id:'stardust', name:'Stardust', emoji:'⭐', unlock:{type:'score',n:250}},
-  {id:'lumo',     name:'Lumo',     emoji:'🦊', unlock:{type:'score',n:500}},
+  {id:'pip',      name:'Pip',      emoji:'🐢', unlock:null, perk:'+1 starting coin', perkId:'pip'},
+  {id:'echo',     name:'Echo',     emoji:'🐟', unlock:{type:'score',n:100}, perk:'+1 coin per pickup', perkId:'echo'},
+  {id:'stardust', name:'Stardust', emoji:'⭐', unlock:{type:'score',n:250}, perk:'Powers last 25% longer', perkId:'stardust'},
+  {id:'lumo',     name:'Lumo',     emoji:'🦊', unlock:{type:'score',n:500}, perk:'Bigger coin magnet', perkId:'lumo'},
 ];
 let selectedChar = 'pip';
 try { selectedChar = localStorage.getItem('jvds_cc_char') || 'pip'; } catch(e) {}
 function isUnlocked(c) { return !c.unlock || best >= c.unlock.n; }
 if (!CREW.find(c => c.id === selectedChar && isUnlocked(c))) selectedChar = 'pip';
+
+// Crew perks are small, readable bonuses. They never change a losing condition,
+// so a new player still meets the same honest rules on every character.
+let perkStartCoins = 0, perkCoinBonus = 0, perkPowerMul = 1, perkMagnetRange = 2;
+function applyCrewPerk() {
+  perkStartCoins = selectedChar === 'pip' ? 1 : 0;
+  perkCoinBonus = selectedChar === 'echo' ? 1 : 0;
+  perkPowerMul = selectedChar === 'stardust' ? 1.25 : 1;
+  perkMagnetRange = selectedChar === 'lumo' ? 3 : 2;
+}
+
+// ── Badges, records and daily best ────────────────────────────────────────
+const BADGES = [
+  { id:'first10',  label:'First 10',   test: () => furthest >= 10 },
+  { id:'rows25',   label:'25 rows',    test: () => furthest >= 25 },
+  { id:'score500', label:'500 pts',    test: () => score >= 500 },
+  { id:'combo5',   label:'Combo x5',   test: () => maxCombo >= 5 },
+  { id:'golden3',  label:'3 gold flies', test: () => goldenCaught >= 3 },
+  { id:'dailyDone', label:'Daily done', test: () => streakData.doneToday }
+];
+try {
+  const raw = localStorage.getItem('jvds_cc_badges');
+  const parsed = raw ? JSON.parse(raw) : {};
+  unlockedBadges = parsed && typeof parsed === 'object' ? parsed : {};
+} catch (e) { unlockedBadges = {}; }
+function saveBadges() {
+  try { localStorage.setItem('jvds_cc_badges', JSON.stringify(unlockedBadges)); } catch (e) { storageOk = false; }
+}
+function unlockBadges() {
+  let fresh = [];
+  BADGES.forEach(b => {
+    if (!unlockedBadges[b.id] && b.test()) { unlockedBadges[b.id] = true; fresh.push(b.label); }
+  });
+  if (fresh.length) {
+    saveBadges();
+    renderBadges();
+    toast('Badge: ' + fresh[0]);
+    announce('Badge unlocked: ' + fresh.join(', ') + '.');
+  }
+}
+function renderBadges() {
+  const els = [$('badgeRow'), $('badgeEnd'), $('ccEndBadges')];
+  const html = BADGES.map(b => '<span class="badge' + (unlockedBadges[b.id] ? '' : ' locked') + '">' + (unlockedBadges[b.id] ? '★ ' : '☆ ') + b.label + '</span>').join('');
+  els.forEach(el => { if (el) el.innerHTML = html; });
+}
+try { bestDistance = parseInt(localStorage.getItem('jvds_cc_bestdist'), 10) || 0; } catch (e) { bestDistance = 0; }
+try { bestCombo = parseInt(localStorage.getItem('jvds_cc_bestcombo'), 10) || 0; } catch (e) { bestCombo = 0; }
+function loadDailyBest() {
+  try {
+    const o = JSON.parse(localStorage.getItem('jvds_cc_daily') || '{}');
+    dailyBest = o.date === getDayKey() ? (o.best | 0) : 0;
+  } catch (e) { dailyBest = 0; }
+}
+function saveDailyBest(value) {
+  if (value <= dailyBest) return;
+  dailyBest = value;
+  try { localStorage.setItem('jvds_cc_daily', JSON.stringify({ date: getDayKey(), best: value })); } catch (e) { storageOk = false; }
+}
+function saveRecords() {
+  if (furthest > bestDistance) {
+    bestDistance = furthest;
+    try { localStorage.setItem('jvds_cc_bestdist', String(bestDistance)); } catch (e) { storageOk = false; }
+  }
+  if (maxCombo > bestCombo) {
+    bestCombo = maxCombo;
+    try { localStorage.setItem('jvds_cc_bestcombo', String(bestCombo)); } catch (e) { storageOk = false; }
+  }
+  if (mode === 'daily') saveDailyBest(score);
+}
+loadDailyBest();
+
+const TIPS = [
+  'Pip says: time the gap, not the panic. Wait for the car to pass.',
+  'Echo says: logs move under you. Keep your balance and hop early.',
+  'Lumo says: coins are worth 50 points, and 3 coins can save a run.',
+  'Stardust says: combos reward forward hops. Backwards steps reset them.',
+  'Pip says: golden flies are rare. Grab one for 200 points and 2 coins.',
+  'Echo says: checkpoints every 40 rows top up your shield and coins.',
+  'Lumo says: Practice mode has gentle roads if the traffic feels too fast.',
+  'Stardust says: Time Attack is 90 seconds. Do not stop on the grass.'
+];
 
 let last = 0, idleTimer = 0, particles = [], popups = [], motes = [];
 let nearMissFlash = []; // {row, x, timer}
@@ -113,7 +236,9 @@ let vignette = null, vigKey = '';
 
 const MISSION = [10, 25, 50, 100];
 const milestones = window.JVDSShowcase ? new JVDSShowcase.Milestones(MISSION, function (m) {
-  toast('Goal reached: ' + m + ' rows!');
+  award(100);
+  coins += 2;
+  toast('Goal reached: ' + m + ' rows! +100');
   try { audio?.playSuccess?.(); } catch(e) {}
   for (let i = 0; i < 14; i++) {
     particles.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH / 2, vx: (Math.random() - .5) * 240, vy: -Math.random() * 240, life: 1, color: '#86efac', size: 3 });
@@ -131,6 +256,8 @@ window.__crossy = {
   get row() { return player ? player.row : -1; },
   get hops() { return hops; },
   get score() { return score; },
+  get best() { return best; },
+  get coins() { return coins; },
   get dead() { return dead; },
   get running() { return running; },
   get milestone() { return milestones ? milestones.next() : null; },
@@ -145,7 +272,22 @@ window.__crossy = {
   get zone() { return furthest == null ? '' : biomeAt(furthest).name; },
   get forwardStreak() { return forwardStreak; },
   get selectedChar() { return selectedChar; },
-  get crew() { return CREW.map(c => ({ id:c.id, name:c.name, emoji:c.emoji, unlocked:isUnlocked(c) })); }
+  get crew() { return CREW.map(c => ({ id:c.id, name:c.name, emoji:c.emoji, unlocked:isUnlocked(c) })); },
+  get mode() { return mode; },
+  get modeLabel() { return modeCfg ? modeCfg.label : 'Classic'; },
+  get bestDistance() { return bestDistance; },
+  get bestCombo() { return bestCombo; },
+  get maxCombo() { return maxCombo; },
+  get golden() { return goldenCaught; },
+  get checkpoints() { return checkpointsReached; },
+  get doubleCoins() { return doubleT > 0; },
+  get timeLeft() { return timeLeft; },
+  get paused() { return paused; },
+  get reduceMotion() { return reduceMotion; },
+  get dailyGoal() { return dailyGoal; },
+  get dailyBest() { return dailyBest; },
+  get badges() { return Object.assign({}, unlockedBadges); },
+  get storageOk() { return storageOk; }
 };
 // Narrow test hooks so the browser suite can reach the new systems without
 // poking at canvas pixels. Not used by gameplay.
@@ -154,7 +296,34 @@ window.__crossyTest = {
   grant: k => applyPower(k),
   kill: r => die(r || 'Test splat'),
   restart: () => startGame(),
-  forcePowerRow: () => { const r = getRow(player.row); r.hasPower = { col: player.col, kind: 'shield' }; }
+  pause: () => pauseGame(),
+  resume: () => resumeGame(),
+  setMode: m => { if (MODES[m]) setMode(m); },
+  addScore: n => { score += n; hud(); },
+  setFurthest: n => { furthest = Math.max(0, n); hud(); },
+  setTime: n => { timeLeft = Math.max(0, n); hud(); },
+  rowsSummary: n => {
+    const out = [];
+    for (let i = 1; i <= n; i++) out.push(getRow(i).type);
+    return out;
+  },
+  forceGoldenRow: () => {
+    const r = getRow(player.row + 1);
+    r.type = GRASS; r.items = (r.items || []).filter(t => t.col !== player.col);
+    r.hasGolden = player.col; r.hasCoin = -1; r.hasPower = null;
+  },
+  forceCoinRow: () => {
+    const r = getRow(player.row + 1);
+    r.type = GRASS; r.items = (r.items || []).filter(t => t.col !== player.col);
+    r.hasCoin = player.col; r.hasGolden = -1; r.hasPower = null;
+  },
+  forceCheckpointRow: () => {
+    const r = getRow(player.row + 1);
+    r.type = SAFE; r.checkpoint = true; r._visited = false;
+    r.items = []; r.hasCoin = -1; r.hasGolden = -1; r.hasPower = null;
+  },
+  forcePowerRow: () => { const r = getRow(player.row); r.hasPower = { col: player.col, kind: 'shield' }; },
+  rowInfo: n => { const r = getRow(n); return { type: r.type, checkpoint: !!r.checkpoint, golden: r.hasGolden != null ? r.hasGolden : -1, coin: r.hasCoin != null ? r.hasCoin : -1, power: r.hasPower || null }; }
 };
 
 const ROAD = 'road', RIVER = 'river', GRASS = 'grass', SAFE = 'safe', RAIL = 'rail';
@@ -184,15 +353,21 @@ function shade(hex, amt) {
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
+let lastCanvasW = 0, lastCanvasH = 0;
 function fit() {
   const r = C.getBoundingClientRect();
   dpr = Math.min(devicePixelRatio || 1, 2);
   W = Math.round(r.width * dpr);
   H = Math.round(r.height * dpr);
-  C.width = W; C.height = H;
   cellW = W / COLS;
   cellH = H / VISIBLE_ROWS;
-  vigKey = '';
+  // Resizing the canvas every frame clears it and costs layout work, so only
+  // touch the backing store when the CSS box actually changed.
+  if (W !== lastCanvasW || H !== lastCanvasH) {
+    lastCanvasW = W; lastCanvasH = H;
+    C.width = W; C.height = H;
+    vigKey = '';
+  }
 }
 
 function rr(x, y, w, h, r) {
@@ -285,70 +460,82 @@ function makeTreeRow(index) {
 
 function maybePower(index) {
   if (index < 6) return null;
-  if (Math.random() < .09) return { col: Math.floor(Math.random() * COLS), kind: ['shield', 'magnet', 'slow', 'dash'][Math.floor(Math.random() * 4)] };
+  if (rand() < .09) return { col: Math.floor(rand() * COLS), kind: ['shield', 'magnet', 'slow', 'dash', 'doublecoins'][Math.floor(rand() * 5)] };
   return null;
 }
 
 function makeRow(index) {
   if (index <= 0) return { type: SAFE, items: [], decor: makeDecor(SAFE, 0), hasCoin: -1, index };
 
-  const difficulty = Math.min(1, index / 100);
+  const difficulty = Math.min(1, index / 100) + (modeCfg && modeCfg.faster ? .18 : 0);
   const biome = biomeAt(index);
-  const r = Math.random();
+  const practice = !!(modeCfg && modeCfg.noHazards);
+  const r = rand();
+  const coinChance = () => rand();
 
-  if (index % 8 === 0) {
-    return { type: GRASS, items: makeTreeRow(index), decor: makeDecor(GRASS, index), biome, index, hasCoin: Math.random() < .3 ? Math.floor(Math.random() * COLS) : -1, hasPower: maybePower(index) };
+  // Biome checkpoints: a safe rest row every 40 rows, with a bonus.
+  if (index % 40 === 0) {
+    return {
+      type: SAFE, items: [], decor: makeDecor(SAFE, index), biome, index, checkpoint: true,
+      hasCoin: rand() < .5 ? Math.floor(rand() * COLS) : -1,
+      hasPower: rand() < .35 ? { col: Math.floor(rand() * COLS), kind: 'shield' } : null
+    };
   }
 
-  if (index > 20 && r < .13) {
-    const dir = Math.random() < .5 ? 1 : -1;
+  if (!practice && index % 8 === 0) {
+    return { type: GRASS, items: makeTreeRow(index), decor: makeDecor(GRASS, index), biome, index, hasCoin: coinChance() < .3 ? Math.floor(rand() * COLS) : -1, hasPower: maybePower(index), hasGolden: rand() < .06 ? Math.floor(rand() * COLS) : -1 };
+  }
+
+  if (!practice && index > 20 && r < .13) {
+    const dir = rand() < .5 ? 1 : -1;
     const railMult = biome.name === 'City' ? 1.18 : 1;
-    const spd = (1.8 + Math.random() * 0.8 + difficulty * 0.8) * dir * railMult;
-    const count = Math.random() < .35 ? 2 : 1;
+    const spd = (1.8 + rand() * 0.8 + difficulty * 0.8) * dir * railMult;
+    const count = rand() < .35 ? 2 : 1;
     const trains = [];
     for (let i = 0; i < count; i++) {
       trains.push({
-        x: i * COLS * .62 + (Math.random() - .5),
-        w: 2.4 + Math.random() * 1.8,
+        x: i * COLS * .62 + (rand() - .5),
+        w: 2.4 + rand() * 1.8,
         h: .62,
         color: trainColors[(index + i) % trainColors.length],
-        cars: Math.round(2 + Math.random() * 2),
+        cars: Math.round(2 + rand() * 2),
         flash: 0
       });
     }
     return { type: RAIL, items: trains, speed: spd, biome, decor: makeDecor(RAIL, index), index, hasCoin: -1, warnFlash: 0 };
   }
 
-  if (r < .5) {
-    const dir = Math.random() < .5 ? 1 : -1;
+  if (r < (practice ? .72 : .5)) {
+    const dir = rand() < .5 ? 1 : -1;
     const roadMult = biome.name === 'Desert' ? 1.1 : biome.name === 'Snow' ? .88 : 1;
-    const spd = (0.55 + Math.random() * .7 + difficulty * 1.2) * dir * roadMult;
-    const count = 2 + Math.floor(Math.random() * 2 + difficulty);
+    const slowMul = modeCfg && modeCfg.slow ? .6 : 1;
+    const spd = (0.55 + rand() * .7 + difficulty * 1.2) * dir * roadMult * slowMul;
+    const count = 2 + Math.floor(rand() * 2 + difficulty);
     const gap = COLS / count;
     const cars = [];
     for (let i = 0; i < count; i++) {
-      const truck = difficulty > .12 && Math.random() < .22;
-      const cw = truck ? (1.9 + Math.random() * .7) : (1.0 + Math.random() * .5);
+      const truck = difficulty > .12 && rand() < .22;
+      const cw = truck ? (1.9 + rand() * .7) : (1.0 + rand() * .5);
       cars.push({
-        x: i * gap + (Math.random() - .5) * .7,
+        x: i * gap + (rand() - .5) * .7,
         w: cw, h: truck ? .74 : .62,
         color: pick(carColors), kind: truck ? 'truck' : 'car'
       });
     }
-    return { type: ROAD, items: cars, speed: spd, biome, decor: makeDecor(ROAD, index), index, hasCoin: Math.random() < .25 ? Math.floor(Math.random() * COLS) : -1 };
+    return { type: ROAD, items: cars, speed: spd, biome, decor: makeDecor(ROAD, index), index, hasCoin: coinChance() < .25 ? Math.floor(rand() * COLS) : -1, hasGolden: rand() < .03 ? Math.floor(rand() * COLS) : -1 };
   }
 
-  if (r < .78 && index > 10) {
-    const dir = Math.random() < .5 ? 1 : -1;
+  if (!practice && r < .78 && index > 10) {
+    const dir = rand() < .5 ? 1 : -1;
     const riverMult = biome.name === 'Beach' ? 1.15 : 1;
-    const spd = (0.4 + Math.random() * .5 + difficulty * .7) * dir * riverMult;
-    const count = 2 + Math.floor(Math.random() * 2);
+    const spd = (0.4 + rand() * .5 + difficulty * .7) * dir * riverMult;
+    const count = 2 + Math.floor(rand() * 2);
     const gap = COLS / count;
     const logs = [];
     for (let i = 0; i < count; i++) {
       logs.push({
-        x: i * gap + (Math.random() - .5) * .9,
-        w: Math.max(1.2, 1.5 + Math.random() * 1.4 - difficulty * .3),
+        x: i * gap + (rand() - .5) * .9,
+        w: Math.max(1.2, 1.5 + rand() * 1.4 - difficulty * .3),
         h: .68
       });
     }
@@ -359,10 +546,10 @@ function makeRow(index) {
       const minLeft = prev.x + prev.w + 1.5;
       if (cur.x < minLeft) cur.x = minLeft;
     }
-    return { type: RIVER, items: logs, speed: spd, biome, decor: makeDecor(RIVER, index), index, hasCoin: Math.random() < .3 ? Math.floor(Math.random() * COLS) : -1 };
+    return { type: RIVER, items: logs, speed: spd, biome, decor: makeDecor(RIVER, index), index, hasCoin: coinChance() < .3 ? Math.floor(rand() * COLS) : -1 };
   }
 
-  return { type: GRASS, items: makeTreeRow(index), decor: makeDecor(GRASS, index), biome, index, hasCoin: Math.random() < .35 ? Math.floor(Math.random() * COLS) : -1, hasPower: maybePower(index) };
+  return { type: GRASS, items: makeTreeRow(index), decor: makeDecor(GRASS, index), biome, index, hasCoin: coinChance() < .35 ? Math.floor(rand() * COLS) : -1, hasPower: maybePower(index), hasGolden: rand() < .07 ? Math.floor(rand() * COLS) : -1 };
 }
 
 function getRow(index) {
@@ -371,6 +558,7 @@ function getRow(index) {
 }
 
 function reset() {
+  applyCrewPerk();
   player = { col: Math.floor(COLS / 2), row: 0, x: 0, y: 0, targetX: 0, targetY: 0, onLog: null, alive: true, facing: 'up' };
   rows = {};
   rows[0] = { type: SAFE, items: [], decor: makeDecor(SAFE, 0), hasCoin: -1, index: 0 };
@@ -378,7 +566,7 @@ function reset() {
   cameraY = 0;
   furthest = 0;
   score = 0;
-  coins = 0;
+  coins = perkStartCoins;
   hops = 0;
   idleTimer = 0;
   particles = [];
@@ -387,7 +575,12 @@ function reset() {
   hopAnim = 0;
   dustTimer = 0;
   combo = 0; comboPop = 0; shield = false; magnetT = 0; slowT = 0; graceT = 0;
+  doubleT = 0;
   forwardStreak = 0;
+  maxCombo = 0;
+  goldenCaught = 0;
+  checkpointsReached = 0;
+  paused = false;
   lastBiomeName = '';
   secondUsed = false; savedPending = false; pendingReason = '';
   hopPath = []; ghostIdx = 0;
@@ -406,8 +599,13 @@ function screenY(row) {
   return H - (row - cameraY) * cellH - cellH;
 }
 
+function award(points) {
+  if (!isFinite(points)) return;
+  score += Math.round(points * modeScoreMul);
+}
+
 function hop(dx, dy) {
-  if (!running || dead) return;
+  if (!running || dead || paused) return;
   const newCol = player.col + dx;
   const newRow = player.row + dy;
 
@@ -445,7 +643,7 @@ function hop(dx, dy) {
     forwardStreak++;
     if (forwardStreak >= 3 && forwardStreak % 5 === 0) {
       const bonus = forwardStreak * 5;
-      score += bonus;
+      award(bonus);
       popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .2, text: forwardStreak + ' STREAK! +' + bonus, life: 1.2, color: '#fde047', size: 16 });
     }
   } else {
@@ -455,13 +653,14 @@ function hop(dx, dy) {
   if (newRow > furthest) {
     const diff = newRow - furthest;
     furthest = newRow;
-    score += diff * 10;
+    award(diff * 10);
     if (milestones) milestones.check(furthest);
   }
 
   // Near-miss: leaving a busy road or rail just as a vehicle sweeps through.
+  // Only forward hops count, so hopping back and forth cannot farm combos.
   let near = false;
-  if (fromRow.type === ROAD || fromRow.type === RAIL) {
+  if (dy > 0 && (fromRow.type === ROAD || fromRow.type === RAIL)) {
     for (const v of fromRow.items) {
       const vl = v.x * cellW, vr = vl + v.w * cellW;
       const gap = Math.max(vl - oldPx, oldPx - vr);
@@ -470,8 +669,14 @@ function hop(dx, dy) {
   }
   if (near) {
     combo++;
+    maxCombo = Math.max(maxCombo, combo);
     comboPop = 1;
-    score += 20 * combo;
+    award(20 * combo);
+    if (combo === 5 || combo === 10) {
+      const comboBonus = combo === 5 ? 250 : 500;
+      award(comboBonus);
+      toast('Combo bonus +' + comboBonus);
+    }
     popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .3, text: 'COMBO x' + combo, life: 1, color: '#fde047', size: 18 });
     shakeHit(4 + combo);
     // flash the nearby vehicle yellow
@@ -483,15 +688,43 @@ function hop(dx, dy) {
 
   if (targetRow.hasCoin === newCol) {
     targetRow.hasCoin = -1;
-    coins++;
-    score += 50;
+    const coinGain = (1 + perkCoinBonus) * (doubleT > 0 ? 2 : 1);
+    coins += coinGain;
+    award(50);
     burst(player.col * cellW + cellW / 2, screenY(player.row) + cellH / 2, '#fbbf24', 10);
-    popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .4, text: '+50', life: 1, color: '#fbbf24', size: 20 });
-    toast('+Coin!');
+    popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .4, text: '+' + coinGain + ' coin' + (coinGain > 1 ? 's' : ''), life: 1, color: '#fbbf24', size: 20 });
+    toast(doubleT > 0 ? 'Double coins!' : '+Coin!');
     vibrate(18);
     try { audio?.playSuccess?.(); } catch(e) {}
   } else {
     try { audio?.playTap?.(); } catch(e) {}
+  }
+
+  // Golden fly: a rare, valuable pickup that can sit on grass or a road.
+  if (targetRow.hasGolden === newCol) {
+    targetRow.hasGolden = -1;
+    goldenCaught++;
+    award(200);
+    coins += 2 * (doubleT > 0 ? 2 : 1);
+    burst(player.col * cellW + cellW / 2, screenY(player.row) + cellH / 2, '#fde047', 22);
+    popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .3, text: 'GOLDEN! +200', life: 1.4, color: '#fde047', size: 22 });
+    toast('Golden fly! +200');
+    announce('Golden fly collected. 200 points and 2 coins.');
+    vibrate(24);
+    try { audio?.playSuccess?.(); } catch(e) {}
+  }
+
+  // Checkpoint: a safe rest row every 40 rows. The first visit restocks you.
+  if (targetRow.checkpoint && !targetRow._visited) {
+    targetRow._visited = true;
+    checkpointsReached++;
+    award(100);
+    coins += 2;
+    shield = true;
+    toast('Checkpoint! Shield topped up');
+    popups.push({ x: W / 2, y: screenY(player.row) + cellH * .3, text: 'CHECKPOINT', life: 1.4, color: '#a7f3d0', size: 22 });
+    announce('Checkpoint reached. 100 points, 2 coins and a fresh leaf shield.');
+    try { audio?.playSuccess?.(); } catch(e) {}
   }
 
   if (targetRow.hasPower && targetRow.hasPower.col === newCol) {
@@ -502,6 +735,7 @@ function hop(dx, dy) {
   idleTimer = 0;
   syncPlayerPos();
   hud();
+  unlockBadges();
   if (dy > 0 && biomeAt(player.row).name === 'Snow' && Math.random() < .25) trySnowSlide();
 }
 
@@ -520,7 +754,7 @@ function trySnowSlide() {
   if (player.row > furthest) {
     const diff = player.row - furthest;
     furthest = player.row;
-    score += diff * 10;
+    award(diff * 10);
     if (milestones) milestones.check(furthest);
   }
   toast('Icy slide!');
@@ -531,32 +765,43 @@ function trySnowSlide() {
 function applyPower(kind) {
   const px = player.col * cellW + cellW / 2, py = screenY(player.row) + cellH / 2;
   if (kind === 'shield') { shield = true; toast('Leaf shield!'); }
-  else if (kind === 'magnet') { magnetT = 8; toast('Coin magnet!'); }
-  else if (kind === 'slow') { slowT = 6; toast('Slow time!'); }
+  else if (kind === 'magnet') { magnetT = 8 * perkPowerMul; toast('Coin magnet!'); }
+  else if (kind === 'slow') { slowT = 6 * perkPowerMul; toast('Slow time!'); }
+  else if (kind === 'doublecoins') { doubleT = 10 * perkPowerMul; toast('Double coins!'); }
   else if (kind === 'dash') { toast('Dash! Hop x2!'); hop(0, 1); hop(0, 1); }
   burst(px, py, '#a7f3d0', 12);
   popups.push({ x: px, y: py - cellH * .3, text: kind.toUpperCase(), life: 1, color: '#a7f3d0', size: 18 });
-  const powerNames = { shield: 'Leaf shield', magnet: 'Coin magnet', slow: 'Slow time', dash: 'Dash' };
+  const powerNames = { shield: 'Leaf shield', magnet: 'Coin magnet', slow: 'Slow time', dash: 'Dash', doublecoins: 'Double coins' };
   announce((powerNames[kind] || kind) + ' picked up.');
   try { audio?.playSuccess?.(); } catch(e) {}
 }
 
 function startGame() {
+  modeCfg = MODES[mode] || MODES.classic;
+  modeScoreMul = modeCfg.scorer || 1;
+  seededRand = modeCfg.seed === 'daily' ? seededFrom('cc-daily-' + getDayKey()) : null;
+  runSeed = modeCfg.seed === 'daily' ? getDayKey() : '';
   reset();
   running = true;
   dead = false;
+  paused = false;
+  timeLeft = modeCfg.time || 0;
   $('startScreen').classList.add('hidden');
   $('endScreen').classList.add('hidden');
+  $('pauseScreen').classList.add('hidden');
+  $('saveMeScreen').classList.add('hidden');
   if ('ontouchstart' in window) $('dpad').style.display = 'grid';
   const kbHint = $('kbHint'); if (kbHint) kbHint.style.display = 'none';
   sys?.beginRun?.();
   if (storyRun && !storyRun.running) storyRun.begin();
   last = performance.now();
-  announce('Run started. Hop with the arrow keys, WASD, or the on-screen buttons.');
+  updateModeUI();
+  hud();
+  announce('Run started in ' + modeCfg.label + ' mode. Hop with the arrow keys, WASD, or the on-screen buttons.');
 }
 
 function die(reason) {
-  if (!player.alive || savedPending) return;
+  if (!player.alive || savedPending || paused) return;
   if (shield) {
     shield = false;
     graceT = 1.4;
@@ -566,14 +811,18 @@ function die(reason) {
     try { audio?.playError?.(); } catch(e) {}
     return;
   }
-  if (!secondUsed && coins >= 3) {
+  if (modeCfg && modeCfg.revive !== false && !secondUsed && coins >= REVIVE_COST) {
     savedPending = true;
     pendingReason = reason;
     running = false;
     dead = true;
     const t = $('saveMeText');
-    if (t) t.textContent = 'Spend 3 coins to be put back on solid ground? You have ' + coins + ' coins.';
+    if (t) t.textContent = 'Spend ' + REVIVE_COST + ' coins to be put back on solid ground? You have ' + coins + ' coins.';
+    const btn = $('saveBtn');
+    if (btn) btn.textContent = 'Use ' + REVIVE_COST + ' coins';
     $('saveMeScreen').classList.remove('hidden');
+    setTimeout(() => { try { btn && btn.focus(); } catch(e) {} }, 40);
+    announce('Second chance offered. Spend ' + REVIVE_COST + ' coins or let the run end.');
     return;
   }
   gameOver(reason);
@@ -583,63 +832,99 @@ function gameOver(reason) {
   player.alive = false;
   dead = true;
   running = false;
+  paused = false;
   savedPending = false;
+  $('pauseScreen').classList.add('hidden');
   shakeHit(20);
   // shatter burst - many coloured fragments in all directions
   const sx = player.x || player.targetX, sy = player.y || player.targetY;
   const shatterColors = ['#ef4444','#fbbf24','#86efac','#93c5fd','#f9a8d4'];
-  for (let i = 0; i < 32; i++) {
-    const ang = (i / 32) * Math.PI * 2;
+  const shatterCount = reduceMotion ? 8 : 32;
+  for (let i = 0; i < shatterCount; i++) {
+    const ang = (i / shatterCount) * Math.PI * 2;
     const spd = 120 + Math.random() * 220;
     particles.push({ x: sx, y: sy + cellH / 2, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 60, life: 1, color: shatterColors[i % shatterColors.length], size: 2 + Math.random() * 4 });
   }
   try { audio?.playError?.(); } catch(e) {}
   const prevBest = best;
-  if (score > best) {
-    best = score;
-    if (sys) GameSystem.saveScore('crossy-crew', best);
-    // save ghost path for next run
-    try { ghostPath = hopPath.slice(); localStorage.setItem('jvds_cc_ghost', JSON.stringify(ghostPath.slice(0, 600))); } catch(e) {}
+  const recordable = !(modeCfg && modeCfg.noBest);
+  if (recordable) {
+    if (score > best) {
+      best = score;
+      if (sys) GameSystem.saveScore('crossy-crew', best);
+    }
+    // Ghost path is saved on a new best score or a new best distance.
+    if (score > prevBest || furthest > bestDistance) {
+      try { ghostPath = hopPath.slice(); localStorage.setItem('jvds_cc_ghost', JSON.stringify(ghostPath.slice(0, 600))); } catch(e) { storageOk = false; }
+    }
+    saveRecords();
   }
   sys?.saveState?.();
-  if (sys) { const charName = CREW.find(c => c.id === selectedChar)?.name || 'You'; sys.addToLeaderboard(charName, score); }
+  if (sys && recordable) { const charName = CREW.find(c => c.id === selectedChar)?.name || 'You'; sys.addToLeaderboard(charName, score); }
   checkDailyOnEnd(hops);
+  unlockBadges();
   updateCrewUI();
+  renderBadges();
   toast(reason);
   const newlyUnlocked = CREW.find(c => c.unlock && prevBest < c.unlock.n && best >= c.unlock.n);
   announce('Run over. ' + reason + ' Score ' + score + ', distance ' + furthest + ' rows.' + (newlyUnlocked ? ' Unlocked ' + newlyUnlocked.name + '.' : ''));
   if (storyRun) {
-    storyRun.finish(score > 200 ? 'success' : 'fail', score);
+    const outcome = recordable && score > 200 ? 'success' : (score > 80 ? 'partial' : 'fail');
+    const timedOut = !!(modeCfg && modeCfg.time && timeLeft <= 0);
+    // Practice must not feed the shared high score or XP: only the story card
+    // is useful there.
+    const storySystem = storyRun.gameSystem;
+    if (!recordable) storyRun.gameSystem = null;
+    storyRun.finish(outcome, score, timedOut);
+    storyRun.gameSystem = storySystem;
     enhanceEndModal(reason);
   } else {
     showEnd(reason);
   }
 }
 
+// Find the closest solid row and column so a revive never drops the player back
+// into the traffic or river that just ended the run.
+function findSolidSpot(fromRow, fromCol) {
+  const colOffsets = [0, -1, 1, -2, 2];
+  for (let d = 0; d <= 3; d++) {
+    const candidates = d === 0 ? [fromRow] : [fromRow - d, fromRow + d];
+    for (const r of candidates) {
+      if (r < 0) continue;
+      const row = getRow(r);
+      if (row.type !== GRASS && row.type !== SAFE) continue;
+      for (const off of colOffsets) {
+        const col = fromCol + off;
+        if (col < 0 || col >= COLS) continue;
+        if (!row.items.some(t => t.col === col)) return { row: r, col };
+      }
+    }
+  }
+  return { row: Math.max(0, fromRow), col: Math.max(0, Math.min(COLS - 1, fromCol)) };
+}
+
 function revive() {
   secondUsed = true;
   savedPending = false;
-  coins = Math.max(0, coins - 3);
+  coins = Math.max(0, coins - REVIVE_COST);
+  const spot = findSolidSpot(player.row - 1, player.col);
+  player.row = spot.row;
+  player.col = spot.col;
+  player.onLog = null;
   dead = false;
   running = true;
+  paused = false;
   player.alive = true;
   graceT = 2;
   combo = 0;
   idleTimer = 0;
-  player.row -= 1;
-  const r = getRow(player.row);
-  if (r.items) {
-    const px = player.col * cellW + cellW / 2;
-    r.items = r.items.filter(v => { const vl = v.x * cellW, vr = vl + v.w * cellW; return !(px > vl - cellW * .6 && px < vr + cellW * .6); });
-  }
-  player.onLog = null;
   $('saveMeScreen').classList.add('hidden');
   $('endScreen').classList.add('hidden');
   last = performance.now();
   syncPlayerPos();
   hud();
   toast('Second chance!');
-  announce('Second chance. Back on solid ground with ' + coins + ' coins left.');
+  announce('Second chance. Back on solid ground at row ' + player.row + ' with ' + coins + ' coins left.');
 }
 
 function surrender() {
@@ -651,7 +936,7 @@ function surrender() {
 function showEnd(reason) {
   $('endTitle').textContent = score > 500 ? 'Epic Crossing!' : score > 200 ? 'Nice Hops!' : (reason || 'Squished!');
   $('endStats').innerHTML = [
-    ['Score', score], ['Hops', hops], ['Distance', furthest + ' rows'], ['Best', best]
+    ['Score', score], ['Hops', hops], ['Distance', furthest + ' rows'], ['Best', best], ['Mode', modeCfg ? modeCfg.label : 'Classic']
   ].map(s => '<div><b>' + s[1] + '</b><small>' + s[0] + '</small></div>').join('');
   // unlock progress line
   const nextLocked = CREW.find(c => c.unlock && !isUnlocked(c));
@@ -691,7 +976,7 @@ function enhanceEndModal(reason) {
   const daily = streakData.doneToday ? 'Done' : Math.min(hops, dailyGoal) + '/' + dailyGoal;
   const grid = document.createElement('div');
   grid.className = 'cc-end-grid';
-  [['Best', best], ['Distance', furthest + ' rows'], ['Coins', coins], ['Daily hops', daily]].forEach(([label, value]) => {
+  [['Mode', modeCfg ? modeCfg.label : 'Classic'], ['Best', best], ['Distance', furthest + ' rows'], ['Best distance', bestDistance + ' rows'], ['Coins', coins], ['Max combo', 'x' + maxCombo], ['Daily hops', daily], ['Golden flies', goldenCaught]].forEach(([label, value]) => {
     const cell = document.createElement('div');
     const small = document.createElement('small');
     const b = document.createElement('b');
@@ -703,12 +988,20 @@ function enhanceEndModal(reason) {
   });
   wrap.appendChild(grid);
 
+  const badgeWrap = document.createElement('div');
+  badgeWrap.id = 'ccEndBadges';
+  badgeWrap.className = 'badge-row';
+  badgeWrap.setAttribute('aria-label', 'Badges unlocked');
+  renderBadges();
+  wrap.appendChild(badgeWrap);
+
   const nextLocked = CREW.find(c => c.unlock && !isUnlocked(c));
   const next = document.createElement('p');
   next.className = 'cc-end-next';
-  next.textContent = nextLocked
-    ? 'Next unlock: ' + nextLocked.name + ' at ' + nextLocked.unlock.n + ' points (' + best + ' now)'
-    : 'All four crew members are unlocked.';
+  const nextRowTarget = Math.max(10, Math.ceil((bestDistance + 1) / 5) * 5);
+  next.textContent = (nextLocked
+    ? 'Next unlock: ' + nextLocked.name + ' at ' + nextLocked.unlock.n + ' points (' + best + ' now). '
+    : 'All four crew members are unlocked. ') + 'Next goal: reach ' + nextRowTarget + ' rows.';
   wrap.appendChild(next);
 
   const actions = document.createElement('div');
@@ -730,6 +1023,12 @@ function enhanceEndModal(reason) {
   const again = card.querySelector('.sr-again');
   if (again) card.insertBefore(wrap, again);
   else card.appendChild(wrap);
+  if (modal) {
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+  }
+  renderBadges();
+  setTimeout(() => { try { if (again) again.focus(); } catch(e) {} }, 60);
 }
 
 function returnToCrewSelect() {
@@ -765,7 +1064,7 @@ function shareRunCard() {
   c2.fillStyle = '#4ade80'; c2.font = '900 26px system-ui,sans-serif'; c2.textAlign = 'left';
   c2.fillText('Crossy Crew', 170, 72);
   c2.fillStyle = '#86efac'; c2.font = '600 17px system-ui,sans-serif';
-  c2.fillText('Playing as ' + char.name, 170, 100);
+  c2.fillText('Playing as ' + char.name + ' - ' + (modeCfg ? modeCfg.label : 'Classic'), 170, 100);
   const stats = [['Score', score], ['Distance', furthest + ' rows'], ['Coins', coins], ['Best', best]];
   stats.forEach(([l, v], i) => {
     const col = 170 + (i % 2) * 192, row = 138 + Math.floor(i / 2) * 42;
@@ -776,10 +1075,15 @@ function shareRunCard() {
   c2.fillStyle = '#4ade80'; c2.font = '500 13px system-ui,sans-serif'; c2.textAlign = 'center';
   c2.fillText('jvdesignstudio.co.uk - Free games for young creators', 280, 300);
   const link = document.createElement('a');
-  link.download = 'crossy-crew-' + score + '.png';
-  link.href = oc.toDataURL('image/png');
-  link.click();
-  announce('Run card saved as a PNG image.');
+  const safeScore = Number.isFinite(score) ? score : 0;
+  link.download = 'crossy-crew-' + safeScore + '.png';
+  try {
+    link.href = oc.toDataURL('image/png');
+    link.click();
+    announce('Run card saved as a PNG image.');
+  } catch (e) {
+    announce('Run card could not be saved on this device.');
+  }
 }
 
 function buildCrewSelect() {
@@ -802,7 +1106,8 @@ function updateCrewUI() {
     }
     return '<button class="crew-btn' + (sel ? ' selected' : '') + (unlocked ? '' : ' locked') + '"' +
       ' data-char="' + c.id + '"' + (unlocked ? '' : ' disabled') +
-      ' title="' + (unlocked ? c.name : 'Score ' + c.unlock.n + ' to unlock') + '">' +
+      ' aria-pressed="' + (sel ? 'true' : 'false') + '"' +
+      ' title="' + (unlocked ? c.name + ': ' + c.perk : 'Score ' + c.unlock.n + ' to unlock') + '">' +
       '<span style="font-size:26px">' + c.emoji + '</span>' +
       '<span>' + c.name + '</span>' +
       progressHtml +
@@ -811,17 +1116,84 @@ function updateCrewUI() {
   wrap.querySelectorAll('.crew-btn:not([disabled])').forEach(btn => {
     btn.onclick = () => {
       selectedChar = btn.dataset.char;
-      try { localStorage.setItem('jvds_cc_char', selectedChar); } catch(e) {}
+      try { localStorage.setItem('jvds_cc_char', selectedChar); } catch(e) { storageOk = false; }
+      applyCrewPerk();
       updateCrewUI();
+      updateModeUI();
     };
   });
+}
+
+// ── Mode picker, tips and records on the start screen ─────────────────────
+function setMode(next) {
+  if (!MODES[next]) return;
+  mode = next;
+  modeCfg = MODES[next];
+  modeScoreMul = modeCfg.scorer || 1;
+  try { localStorage.setItem('jvds_cc_mode', mode); } catch (e) { storageOk = false; }
+  updateModeUI();
+  updateDailyHint();
+  announce('Mode set to ' + modeCfg.label + '. ' + modeCfg.desc);
+}
+function buildModeSelect() {
+  const wrap = $('modeSelect');
+  if (!wrap) return;
+  wrap.innerHTML = Object.keys(MODES).map(k =>
+    '<button type="button" class="mode-btn" data-mode="' + k + '" aria-pressed="' + (mode === k ? 'true' : 'false') + '" title="' + MODES[k].desc + '">' + MODES[k].label + '</button>'
+  ).join('');
+  wrap.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.onclick = () => setMode(btn.dataset.mode);
+  });
+  updateModeUI();
+}
+function updateModeUI() {
+  modeCfg = MODES[mode] || MODES.classic;
+  const name = $('modeName');
+  if (name) name.textContent = modeCfg.label;
+  const desc = $('modeDesc');
+  if (desc) desc.textContent = modeCfg.desc;
+  const time = $('timeHud');
+  if (time) {
+    if (modeCfg.time) { time.style.display = ''; time.textContent = 'Time ' + fmtTime(timeLeft || modeCfg.time); }
+    else time.style.display = 'none';
+  }
+  const goal = $('modeGoal');
+  if (goal) {
+    if (modeCfg.time) goal.textContent = 'Score multiplier ' + modeScoreMul + 'x';
+    else if (mode === 'daily') goal.textContent = 'Daily goal ' + dailyGoal + ' hops';
+    else if (mode === 'onelife') goal.textContent = 'No second chance, ' + modeScoreMul + 'x score';
+    else if (mode === 'practice') goal.textContent = 'No best score, gentle roads';
+    else goal.textContent = 'Daily: hop ' + dailyGoal + ' steps';
+  }
+  const wrap = $('modeSelect');
+  if (wrap) wrap.querySelectorAll('.mode-btn').forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.mode === mode ? 'true' : 'false'));
+}
+function fmtTime(sec) {
+  sec = Math.max(0, Math.ceil(sec));
+  return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+}
+function updateRecordUI() {
+  const record = $('recordLine');
+  if (record) {
+    record.textContent = 'Best score ' + best + ' · best distance ' + bestDistance + ' rows · best combo x' + bestCombo +
+      (dailyBest ? ' · daily best ' + dailyBest : '');
+  }
+  const tip = $('tipLine');
+  if (tip) {
+    const d = new Date();
+    const dayOfYear = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+    tip.textContent = '💡 ' + TIPS[dayOfYear % TIPS.length];
+  }
+  const note = $('storageNote');
+  if (note) note.style.display = storageOk ? 'none' : '';
+  renderBadges();
 }
 
 function drawPlayerEcho() {
   const px = player.x || player.targetX;
   const py = (player.y || player.targetY) + cellH / 2;
   const t = hopAnim > 0 ? Math.sin(hopAnim / .15 * Math.PI) : 0;
-  const bounce = t * 8;
+  const bounce = reduceMotion ? 0 : t * 8;
   const R = cellW * .28, Rb = cellH * .28;
   const TEAL = '#2eb5a5', TEAL_D = '#1f8f83', TEAL_L = '#63d8cb', GILL = '#ff9db0', EYE = '#12303a';
   ctx.save();
@@ -854,7 +1226,7 @@ function drawPlayerStardust() {
   const px = player.x || player.targetX;
   const py = (player.y || player.targetY) + cellH / 2;
   const t = hopAnim > 0 ? Math.sin(hopAnim / .15 * Math.PI) : 0;
-  const bounce = t * 8;
+  const bounce = reduceMotion ? 0 : t * 8;
   const R = cellW * .3, Rb = cellH * .3;
   const glow = Math.sin(performance.now() * .005) * .12 + .88;
   ctx.save();
@@ -891,7 +1263,7 @@ function drawPlayerLumo() {
   const px = player.x || player.targetX;
   const py = (player.y || player.targetY) + cellH / 2;
   const t = hopAnim > 0 ? Math.sin(hopAnim / .15 * Math.PI) : 0;
-  const bounce = t * 8;
+  const bounce = reduceMotion ? 0 : t * 8;
   const sw = 1 - t * .12, sq = 1 + t * .18;
   const R = cellW * .3, Rb = cellH * .3;
   const OR = '#e07b30', OR_L = '#f5a55c', OR_D = '#b85a18', CR = '#f5f0e8', BLK = '#1c1008';
@@ -937,19 +1309,33 @@ function hud() {
   $('scoreHud').textContent = score;
   $('hopsHud').textContent = hops;
   $('coinsHud').textContent = coins;
-  $('bestHud').textContent = best;
+  $('bestHud').textContent = Math.max(best, score);
   const goal = milestones ? milestones.next() : null;
   $('goalHud').textContent = goal == null ? 'Done' : goal;
+  const name = $('modeName');
+  if (name) name.textContent = modeCfg ? modeCfg.label : 'Classic';
+  const time = $('timeHud');
+  if (time) {
+    if (modeCfg && modeCfg.time) {
+      time.style.display = '';
+      time.textContent = 'Time ' + fmtTime(timeLeft);
+      time.classList.toggle('urgent', timeLeft <= 10);
+    } else {
+      time.style.display = 'none';
+    }
+  }
   if (storyRun) storyRun.setScore(score);
 }
 
 function update(dt) {
+  if (paused) return;
   particles.forEach(p => {
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.life -= dt * 2;
   });
   particles = particles.filter(p => p.life > 0);
+  if (particles.length > 240) particles.splice(0, particles.length - 240);
 
   popups.forEach(p => { p.y -= 34 * dt; p.life -= dt * 1.1; });
   popups = popups.filter(p => p.life > 0);
@@ -973,6 +1359,25 @@ function update(dt) {
 
   if (!running || dead) return;
 
+  // Daily rollover: keep the target and seed honest if midnight passes mid-session.
+  const todayKey = getDayKey();
+  if (todayKey !== dailyTodayKey) {
+    dailyTodayKey = todayKey;
+    dailyGoal = getDailyGoal();
+    loadDailyBest();
+    updateDailyHint();
+    updateRecordUI();
+  }
+
+  // Time Attack is a hard stop: when the clock reaches zero the run ends.
+  if (modeCfg && modeCfg.time) {
+    timeLeft = Math.max(0, timeLeft - dt);
+    if (timeLeft <= 0) {
+      gameOver('Time up!');
+      return;
+    }
+  }
+
   const curBiomeName = biomeAt(furthest || 0).name;
   if (lastBiomeName && curBiomeName !== lastBiomeName) {
     popups.push({ x: W / 2, y: H * .08, text: curBiomeName.toUpperCase(), life: 1.8, color: '#a5f3fc', size: 22 });
@@ -990,6 +1395,7 @@ function update(dt) {
   if (graceT > 0) graceT = Math.max(0, graceT - dt);
   if (magnetT > 0) magnetT = Math.max(0, magnetT - dt);
   if (slowT > 0) slowT = Math.max(0, slowT - dt);
+  if (doubleT > 0) doubleT = Math.max(0, doubleT - dt);
   if (echo) {
     echo.targetX = echo.col * cellW + cellW / 2;
     echo.targetY = screenY(echo.row) + cellH / 2;
@@ -1097,17 +1503,21 @@ function update(dt) {
 }
 
 function collectNearbyCoins() {
-  for (let r = player.row - 2; r <= player.row + 2; r++) {
+  let got = 0;
+  for (let r = player.row - perkMagnetRange; r <= player.row + perkMagnetRange; r++) {
     const row = rows[r];
     if (!row || row.hasCoin < 0) continue;
-    if (Math.abs(row.hasCoin - player.col) <= 2) {
+    if (Math.abs(row.hasCoin - player.col) <= perkMagnetRange) {
       row.hasCoin = -1;
-      coins++;
-      score += 50;
-      popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .4, text: '+50', life: 1, color: '#fbbf24', size: 18 });
+      const coinGain = (1 + perkCoinBonus) * (doubleT > 0 ? 2 : 1);
+      coins += coinGain;
+      got += coinGain;
+      award(50);
+      popups.push({ x: player.col * cellW + cellW / 2, y: screenY(player.row) + cellH * .4, text: '+' + coinGain + ' coin' + (coinGain > 1 ? 's' : ''), life: 1, color: '#fbbf24', size: 18 });
       try { audio?.playTap?.(); } catch(e) {}
     }
   }
+  if (got) { toast('Magnet +' + got); unlockBadges(); }
 }
 
 function drawDecor(decor, y, row) {
@@ -1718,7 +2128,7 @@ function drawRailRow(row, y) {
 }
 
 function drawSafeRow(row, y) {
-  const biome = biomeAt(0);
+  const biome = row.biome || biomeAt(row.index);
   ctx.fillStyle = biome.grassA;
   ctx.fillRect(0, y, W, cellH + 1);
   const slg = ctx.createLinearGradient(0, y, 0, y + cellH);
@@ -1729,6 +2139,22 @@ function drawSafeRow(row, y) {
   ctx.fillStyle = 'rgba(255,255,255,.06)';
   ctx.fillRect(0, y, W, 3);
   drawDecor(row.decor, y, row);
+
+  // A checkpoint gets a checkered banner so a rest row is obvious from a distance.
+  if (row.checkpoint) {
+    const cx = W / 2, base = y + cellH * .5;
+    ctx.fillStyle = 'rgba(0,0,0,.22)';
+    ctx.fillRect(cx - cellW * .8, base - cellH * .3, cellW * 1.6, cellH * .6);
+    for (let i = 0; i < 8; i++) {
+      ctx.fillStyle = i % 2 ? '#f8fafc' : '#16a34a';
+      ctx.fillRect(cx - cellW * .72 + i * cellW * .18, base - cellH * .24, cellW * .18, cellH * .48);
+    }
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '800 ' + Math.round(cellH * .2) + 'px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('CHECKPOINT', cx, base - cellH * .34);
+    return;
+  }
 
   const cx = 1 * cellW + cellW / 2;
   const base = y + cellH * .78;
@@ -1776,6 +2202,14 @@ function drawPower(row) {
     ctx.strokeStyle = '#ef4444';
     ctx.lineWidth = r * .5;
     ctx.beginPath(); ctx.arc(0, 0, r * .8, Math.PI * .15, Math.PI * .85, true); ctx.stroke();
+  } else if (p.kind === 'doublecoins') {
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath(); ctx.arc(-r * .26, r * .1, r * .52, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * .3, -r * .16, r * .52, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#b45309';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(-r * .26, r * .1, r * .3, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(r * .3, -r * .16, r * .3, 0, Math.PI * 2); ctx.stroke();
   } else {
     ctx.fillStyle = '#bfdbfe';
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
@@ -1792,7 +2226,7 @@ function drawEcho() {
   const ex = echo.x || echo.targetX;
   const ey = echo.y || echo.targetY;
   const t = echo.hopAnim > 0 ? Math.sin(echo.hopAnim / .15 * Math.PI) : 0;
-  const bounce = t * 7;
+  const bounce = reduceMotion ? 0 : t * 7;
   const R = cellW * .24, Rb = cellH * .24;
   const TEAL = '#2eb5a5', TEAL_D = '#1f8f83', TEAL_L = '#63d8cb', GILL = '#ff9db0', EYE = '#12303a';
 
@@ -1870,6 +2304,32 @@ function drawCoin(row) {
   ctx.restore();
 }
 
+function drawGolden(row) {
+  if (row.hasGolden == null || row.hasGolden < 0) return;
+  const cx = row.hasGolden * cellW + cellW / 2;
+  const cy = screenY(row.index) + cellH / 2;
+  const bob = reduceMotion ? 0 : Math.sin(performance.now() * .006 + row.index) * 3;
+  const wing = reduceMotion ? 0 : Math.sin(performance.now() * .02) * .5;
+  ctx.save();
+  ctx.translate(cx, cy + bob);
+  const halo = ctx.createRadialGradient(0, 0, 1, 0, 0, cellW * .42);
+  halo.addColorStop(0, 'rgba(253,224,71,.5)');
+  halo.addColorStop(1, 'rgba(253,224,71,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath(); ctx.arc(0, 0, cellW * .42, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.beginPath(); ctx.ellipse(-cellW * .13, -cellH * .04, cellW * .11, cellH * .07, -.5 + wing, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cellW * .13, -cellH * .04, cellW * .11, cellH * .07, .5 - wing, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fbbf24';
+  ctx.beginPath(); ctx.ellipse(0, 0, cellW * .075, cellH * .12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fde047';
+  ctx.beginPath(); ctx.arc(0, -cellH * .12, cellW * .055, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#92400e';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(0, -cellH * .09); ctx.lineTo(0, cellH * .1); ctx.stroke();
+  ctx.restore();
+}
+
 function drawMotes() {
   if (!motes.length) return;
   const now = performance.now();
@@ -1939,6 +2399,21 @@ function drawGhost() {
   ctx.restore();
 }
 
+function drawGhostDelta() {
+  if (!ghostPath.length || hops <= 0 || !running) return;
+  const gStep = Math.min(ghostPath.length - 1, hops - 1);
+  const g = ghostPath[gStep];
+  if (!g) return;
+  const delta = player.row - g.row;
+  const text = delta === 0 ? 'GHOST LEVEL' : (delta > 0 ? 'GHOST +' + delta : 'GHOST ' + delta);
+  ctx.save();
+  ctx.font = '800 ' + Math.round(cellH * .2) + 'px system-ui,sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = delta >= 0 ? 'rgba(134,239,172,.85)' : 'rgba(148,163,184,.8)';
+  ctx.fillText(text, W - cellW * .16, cellH * .62);
+  ctx.restore();
+}
+
 function drawRow(row) {
   const y = screenY(row.index);
   if (y > H + cellH || y < -cellH * 2) return;
@@ -1950,6 +2425,7 @@ function drawRow(row) {
   else drawSafeRow(row, y);
 
   if (row.hasCoin >= 0) drawCoin(row);
+  if (row.hasGolden >= 0) drawGolden(row);
   if (row.hasPower) drawPower(row);
 }
 
@@ -1966,7 +2442,7 @@ function drawPlayer() {
   const px = player.x || player.targetX;
   const py = (player.y || player.targetY) + cellH / 2;
   const t = hopAnim > 0 ? Math.sin(hopAnim / .15 * Math.PI) : 0;
-  const bounce = t * 8;
+  const bounce = reduceMotion ? 0 : t * 8;
   const sw = 1 - t * .12, sq = 1 + t * .18;
   const R = cellW * .3, Rb = cellH * .3;
   const face = player.facing || 'up';
@@ -2086,6 +2562,7 @@ function draw() {
   drawMotes();
 
   if (running) drawGhost();
+  if (running) drawGhostDelta();
   if (player.alive) drawEcho();
   if (player.alive) {
     if (selectedChar === 'pip') drawPlayer();
@@ -2171,6 +2648,7 @@ function draw() {
   if (shield) statusIcons.push('🍃 SHIELD');
   if (magnetT > 0) statusIcons.push('MAGNET ' + Math.ceil(magnetT) + 's');
   if (slowT > 0) statusIcons.push('SLOW ' + Math.ceil(slowT) + 's');
+  if (doubleT > 0) statusIcons.push('2X COINS ' + Math.ceil(doubleT) + 's');
   if (statusIcons.length) {
     ctx.fillStyle = 'rgba(167,243,208,.95)';
     ctx.font = '800 ' + Math.round(cellH * .24) + 'px system-ui,sans-serif';
@@ -2180,7 +2658,52 @@ function draw() {
   if (shake) shake.decay();
 }
 
+function pauseStoryRun() {
+  if (!storyRun || !storyRun.running) return;
+  storyRun.stop();
+}
+function resumeStoryRun() {
+  if (!storyRun || storyRun.finished || storyRun.running) return;
+  storyRun.running = true;
+  storyRun._last = 0;
+  try { storyRun._loop(performance.now()); } catch (e) { /* story HUD only */ }
+}
+function pauseGame() {
+  if (!running || dead || paused) return;
+  paused = true;
+  running = false;
+  pauseStoryRun();
+  $('pauseScreen').classList.remove('hidden');
+  const btn = $('pauseBtn');
+  if (btn) btn.setAttribute('aria-pressed', 'true');
+  const resume = $('resumeBtn');
+  setTimeout(() => { try { resume && resume.focus(); } catch (e) {} }, 40);
+  announce('Game paused. Press Escape or P to keep hopping.');
+}
+function resumeGame() {
+  if (!paused || dead) return;
+  paused = false;
+  running = true;
+  $('pauseScreen').classList.add('hidden');
+  const btn = $('pauseBtn');
+  if (btn) btn.setAttribute('aria-pressed', 'false');
+  resumeStoryRun();
+  last = performance.now();
+  announce('Game resumed.');
+}
+function togglePause() {
+  const pauseOpen = $('pauseScreen') && !$('pauseScreen').classList.contains('hidden');
+  if (pauseOpen) resumeGame(); else pauseGame();
+}
+
 function loop(now) {
+  if (document.hidden) {
+    // Background tabs should not keep simulating traffic and killing the run.
+    if (running && !paused && !dead) pauseGame();
+    last = now;
+    requestAnimationFrame(loop);
+    return;
+  }
   const dt = Math.min(.05, (now - last) / 1000);
   last = now;
   fit();
@@ -2193,7 +2716,7 @@ function vibrate(ms) { try { navigator.vibrate?.(ms); } catch(e) {} }
 
 let swStartX = 0, swStartY = 0, swActive = false;
 C.addEventListener('pointerdown', e => {
-  if (!running && !dead) { startGame(); return; }
+  if (!running && !dead && !paused) { startGame(); return; }
   swStartX = e.clientX;
   swStartY = e.clientY;
   swActive = true;
@@ -2213,26 +2736,71 @@ C.addEventListener('pointerup', e => {
 C.addEventListener('pointercancel', () => { swActive = false; });
 
 document.addEventListener('keydown', e => {
+  const helpOpen = $('howToPlay') && !$('howToPlay').classList.contains('hidden');
+  const pauseOpen = $('pauseScreen') && !$('pauseScreen').classList.contains('hidden');
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    if (helpOpen) hideHowToPlay();
+    else if (pauseOpen) resumeGame();
+    else if (running && !dead) pauseGame();
+    return;
+  }
+  if (helpOpen || pauseOpen) return;
+  if (e.code === 'KeyP') {
+    e.preventDefault();
+    if (running && !dead) pauseGame();
+    else if (paused) resumeGame();
+    return;
+  }
   if (e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); if (!running && !dead) startGame(); else hop(0, 1); }
   if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); hop(0, -1); }
   if (e.code === 'ArrowLeft' || e.code === 'KeyA') { e.preventDefault(); hop(-1, 0); }
   if (e.code === 'ArrowRight' || e.code === 'KeyD') { e.preventDefault(); hop(1, 0); }
-  if (e.code === 'Space') { e.preventDefault(); if (!running) startGame(); else hop(0, 1); }
+  if (e.code === 'Space') { e.preventDefault(); if (paused) resumeGame(); else if (!running && !dead) startGame(); else hop(0, 1); }
 });
 
+let helpPausedRun = false;
 function showHowToPlay() {
+  helpPausedRun = false;
+  if (running && !dead) {
+    helpPausedRun = true;
+    pauseGame();
+    $('pauseScreen').classList.add('hidden');
+  }
   $('startScreen').classList.add('hidden');
   $('howToPlay').classList.remove('hidden');
+  const btn = $('gotItBtn');
+  setTimeout(() => { try { btn && btn.focus(); } catch (e) {} }, 40);
 }
 function hideHowToPlay() {
   $('howToPlay').classList.add('hidden');
-  $('startScreen').classList.remove('hidden');
-  try { localStorage.setItem('jvds_cc_seen_howto', '1'); } catch(e) {}
+  try { localStorage.setItem('jvds_cc_seen_howto', '1'); } catch(e) { storageOk = false; }
+  if (helpPausedRun) {
+    helpPausedRun = false;
+    resumeGame();
+  } else {
+    $('startScreen').classList.remove('hidden');
+  }
+  const link = $('htpLink');
+  setTimeout(() => { try { link && link.focus(); } catch (e) {} }, 30);
 }
 $('gotItBtn').onclick = hideHowToPlay;
 const htpLinkEl = $('htpLink');
 if (htpLinkEl) htpLinkEl.onclick = showHowToPlay;
 $('helpBtn').onclick = showHowToPlay;
+
+const pauseBtnEl = $('pauseBtn');
+if (pauseBtnEl) pauseBtnEl.onclick = togglePause;
+const resumeBtnEl = $('resumeBtn');
+if (resumeBtnEl) resumeBtnEl.onclick = resumeGame;
+const restartBtnEl = $('restartBtn');
+if (restartBtnEl) restartBtnEl.onclick = () => { $('pauseScreen').classList.add('hidden'); paused = false; const pb = $('pauseBtn'); if (pb) pb.setAttribute('aria-pressed', 'false'); startGame(); };
+const pauseCrewEl = $('pauseCrewBtn');
+if (pauseCrewEl) pauseCrewEl.onclick = () => { resumeGame(); returnToCrewSelect(); };
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && running && !dead && !paused) pauseGame();
+});
 
 $('playBtn').onclick = startGame;
 $('againBtn').onclick = startGame;
@@ -2275,10 +2843,19 @@ $('soundBtn').onclick = function() {
 };
 applySoundSetting();
 
+// Detect storage early so the start screen can tell the truth when saving is
+// blocked by a locked-down school browser.
+try {
+  localStorage.setItem('__cc_probe', '1');
+  localStorage.removeItem('__cc_probe');
+} catch (e) { storageOk = false; }
+
 reset();
 fit();
 $('bestHud').textContent = best;
 requestAnimationFrame(loop);
 buildCrewSelect();
+buildModeSelect();
 updateDailyHint();
+updateRecordUI();
 })();
