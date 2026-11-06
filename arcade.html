@@ -37,7 +37,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-C+RE36Ci85E9YgHMnDtIv83Ec76lMPkhoDHv63Hg0QU=' 'sha256-Trskgjr7L18czt2pzSoO9GWA/0KAUyj+nS4WGoCRvhc=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-C+RE36Ci85E9YgHMnDtIv83Ec76lMPkhoDHv63Hg0QU=' 'sha256-jayfJRjLcxyudaLnj1JqlrkKGgh9TMUrUXycZhBEVag=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -348,6 +348,89 @@
   var offlineReady = {};
   var offlineScanDone = false;
 
+  // A1961: character-led collections. The arcade used to be one flat wall of
+  // cabinets. Every game already names its guide in games-registry.js, so the
+  // same data now groups the line-up into shelves led by the five characters.
+  var COLLECTIONS = [
+    { key: 'Pip',      id: 'pip',      badge: 'assets/mascots/pip-badge.webp',
+      title: "Pip's quick plays",
+      blurb: 'Bouncy, easy-to-pick-up games for a spare five minutes.' },
+    { key: 'Echo',     id: 'echo',     badge: 'assets/mascots/echo-badge.webp',
+      title: "Echo's challenges",
+      blurb: 'Time your moves, then work out how to do better next run.' },
+    { key: 'Lumo',     id: 'lumo',     badge: 'assets/mascots/lumo-badge.webp',
+      title: "Lumo's brain games",
+      blurb: 'Clever games that make you think while you play.' },
+    { key: 'Ember',    id: 'ember',    badge: 'assets/mascots/ember-badge.webp',
+      title: "Ember's action shelf",
+      blurb: 'Build, dodge and smash. Reflexes welcome.' },
+    { key: 'Stardust', id: 'stardust', badge: 'assets/mascots/stardust-badge.webp',
+      title: "Stardust's spark",
+      blurb: 'Dreamy games with a little bit of wonder.' }
+  ];
+
+  function cardHtml(g) {
+    var emoji = esc(g.emoji || '🎮');
+    var art = (g.thumb || g.cover)
+      ? '<img loading="lazy" decoding="async" src="' + encodeURI(g.thumb || g.cover) + '" alt="" data-fallback-hide>'
+      : '';
+    var badge = g.id === 'arcane-citadel' ? '<span class="cab-badge">Studio Pick</span>' : '';
+    var meta = '';
+    var q = String(g.quality || '').toUpperCase();
+    if (q) meta += '<span class="cab-pill cab-q cab-q--' + q.toLowerCase() + '">' + esc(q) + '</span>';
+    if (g.session) meta += '<span class="cab-pill">' + esc(g.session) + '</span>';
+    if (g.difficulty) meta += '<span class="cab-pill">' + esc(g.difficulty) + '</span>';
+    if (g.age) meta += '<span class="cab-pill">' + esc(g.age) + '</span>';
+    if (offlineReady[g.id]) meta += '<span class="cab-pill cab-offline">Ready offline</span>';
+    // A1677: Lumo is the learning voice. Each game says what it practises and
+    // links to a real workshop or tool, so the loop does not stop at the score.
+    var learn = g.learning ? '<p class="cab-learn"><strong>Lumo:</strong> practising ' + esc(g.learning) + '</p>' : '';
+    var learnLink = (g.learnHref && g.learnLabel)
+      ? '<a class="cab-learn-link" href="' + g.learnHref + '">Learn how: ' + esc(g.learnLabel) + ' <span aria-hidden="true">&#8594;</span></a>'
+      : '';
+    // A1762: quick-look panel - objective, controls, personal best. Uses <details>
+    // so it is keyboard reachable (Space/Enter on summary) without blocking Play.
+    var save = saveOf(g.id);
+    var bestRow = '';
+    if (save) {
+      var hi = save.highScore || save.best || 0;
+      if (hi > 0) bestRow = '<span class="cab-peek-row"><b>Your best</b>' + Number(hi).toLocaleString() + '</span>';
+    }
+    var peekPanel = '<details class="cab-peek">' +
+      '<summary class="cab-peek-btn" aria-label="Quick look at ' + esc(g.title) + '">Quick look &#9660;</summary>' +
+      '<div class="cab-peek-body">' +
+      (g.objective ? '<p class="cab-peek-obj">' + esc(g.objective) + '</p>' : '') +
+      (g.controls ? '<span class="cab-peek-row"><b>Controls</b>' + esc(g.controls) + '</span>' : '') +
+      bestRow +
+      '</div></details>';
+    return '<div class="cab-cell">' +
+      '<a class="cab" data-game="' + esc(g.id) + '" href="games/' + encodeURI(g.file) + '" aria-label="Play ' + esc(g.title) + '">' +
+      '<div class="cab-art"><div class="cab-emoji">' + emoji + '</div>' + art + '</div>' +
+      '<div class="cab-fade"></div>' + badge +
+      '<div class="cab-body">' +
+        '<div class="cab-meta">' + meta +
+          (g.character ? '<span class="cab-pill cab-guide">Guide: ' + esc(g.character) + '</span>' : '') +
+        '</div>' +
+        '<h3 class="cab-title">' + esc(g.title) + '</h3>' +
+        '<p class="cab-tag">' + esc(g.tag || g.cat || '') + '</p>' + learn +
+        '<span class="cab-play" aria-hidden="true">&#9654; Play</span>' +
+      '</div></a>' + learnLink + peekPanel + '</div>';
+  }
+
+  function collectionHtml(meta, list) {
+    return '<section class="arc-collection" aria-labelledby="collection-' + meta.id + '">' +
+      '<div class="arc-collection-head">' +
+        '<img class="arc-collection-badge" src="' + meta.badge + '" alt="" width="34" height="34" loading="lazy" decoding="async">' +
+        '<div class="arc-collection-copy">' +
+          '<h3 class="arc-collection-title" id="collection-' + meta.id + '">' + esc(meta.title) + '</h3>' +
+          '<p class="arc-collection-blurb">' + esc(meta.blurb) + '</p>' +
+        '</div>' +
+        '<span class="arc-collection-count" aria-hidden="true">' + list.length + ' ' + (list.length === 1 ? 'game' : 'games') + '</span>' +
+      '</div>' +
+      '<div class="arc-collection-grid">' + list.map(cardHtml).join('') + '</div>' +
+    '</section>';
+  }
+
   function renderGrid(filtered) {
     var el = document.getElementById('grid');
     if (!el) return;
@@ -355,62 +438,34 @@
     if (!list.length) {
       el.innerHTML = '';
       el.style.display = 'none';
+      el.classList.remove('arc-grid--collections');
     } else {
       el.style.display = '';
-      el.innerHTML = list.map(function (g) {
-      var emoji = esc(g.emoji || '🎮');
-      var art = (g.thumb || g.cover)
-        ? '<img loading="lazy" decoding="async" src="' + encodeURI(g.thumb || g.cover) + '" alt="" data-fallback-hide>'
-        : '';
-      var badge = g.id === 'arcane-citadel' ? '<span class="cab-badge">Studio Pick</span>' : '';
-      var meta = '';
-      var q = String(g.quality || '').toUpperCase();
-      if (q) meta += '<span class="cab-pill cab-q cab-q--' + q.toLowerCase() + '">' + esc(q) + '</span>';
-      if (g.session) meta += '<span class="cab-pill">' + esc(g.session) + '</span>';
-      if (g.difficulty) meta += '<span class="cab-pill">' + esc(g.difficulty) + '</span>';
-      if (g.age) meta += '<span class="cab-pill">' + esc(g.age) + '</span>';
-      if (offlineReady[g.id]) meta += '<span class="cab-pill cab-offline">Ready offline</span>';
-      // A1677: Lumo is the learning voice. Each game says what it practises and
-      // links to a real workshop or tool, so the loop does not stop at the score.
-      var learn = g.learning ? '<p class="cab-learn"><strong>Lumo:</strong> practising ' + esc(g.learning) + '</p>' : '';
-      var learnLink = (g.learnHref && g.learnLabel)
-        ? '<a class="cab-learn-link" href="' + g.learnHref + '">Learn how: ' + esc(g.learnLabel) + ' <span aria-hidden="true">&#8594;</span></a>'
-        : '';
-      // A1762: quick-look panel - objective, controls, personal best. Uses <details>
-      // so it is keyboard reachable (Space/Enter on summary) without blocking Play.
-      var save = saveOf(g.id);
-      var bestRow = '';
-      if (save) {
-        var hi = save.highScore || save.best || 0;
-        if (hi > 0) bestRow = '<span class="cab-peek-row"><b>Your best</b>' + Number(hi).toLocaleString() + '</span>';
+      if (hasFilters()) {
+        el.classList.remove('arc-grid--collections');
+        el.innerHTML = list.map(cardHtml).join('');
+      } else {
+        el.classList.add('arc-grid--collections');
+        var known = {};
+        var html = COLLECTIONS.map(function (meta) {
+          known[meta.key] = true;
+          var items = list.filter(function (g) { return g.character === meta.key; });
+          return items.length ? collectionHtml(meta, items) : '';
+        }).join('');
+        var rest = list.filter(function (g) { return !known[g.character]; });
+        if (rest.length) {
+          html += collectionHtml({ id: 'more', badge: 'assets/mascots/stardust-badge.webp',
+            title: 'More from the studio', blurb: 'Games that do not have a guide yet.' }, rest);
+        }
+        el.innerHTML = html;
       }
-      var peekPanel = '<details class="cab-peek">' +
-        '<summary class="cab-peek-btn" aria-label="Quick look at ' + esc(g.title) + '">Quick look &#9660;</summary>' +
-        '<div class="cab-peek-body">' +
-        (g.objective ? '<p class="cab-peek-obj">' + esc(g.objective) + '</p>' : '') +
-        (g.controls ? '<span class="cab-peek-row"><b>Controls</b>' + esc(g.controls) + '</span>' : '') +
-        bestRow +
-        '</div></details>';
-      return '<div class="cab-cell">' +
-        '<a class="cab" data-game="' + esc(g.id) + '" href="games/' + encodeURI(g.file) + '" aria-label="Play ' + esc(g.title) + '">' +
-        '<div class="cab-art"><div class="cab-emoji">' + emoji + '</div>' + art + '</div>' +
-        '<div class="cab-fade"></div>' + badge +
-        '<div class="cab-body">' +
-          '<div class="cab-meta">' + meta +
-            (g.character ? '<span class="cab-pill cab-guide">Guide: ' + esc(g.character) + '</span>' : '') +
-          '</div>' +
-          '<h3 class="cab-title">' + esc(g.title) + '</h3>' +
-          '<p class="cab-tag">' + esc(g.tag || g.cat || '') + '</p>' + learn +
-          '<span class="cab-play" aria-hidden="true">&#9654; Play</span>' +
-        '</div></a>' + learnLink + peekPanel + '</div>';
-      }).join('');
     }
     var heading = document.getElementById('playHeading');
     var total = games().length;
     if (heading) {
-      heading.textContent = list.length === total
-        ? list.length + (list.length === 1 ? ' game' : ' games') + ' ready to play'
-        : list.length + ' of ' + total + ' games match';
+      heading.textContent = hasFilters()
+        ? list.length + ' of ' + total + ' games match'
+        : total + ' games across ' + COLLECTIONS.length + ' guides';
     }
   }
 
@@ -494,7 +549,7 @@
     if (count) {
       count.textContent = hasFilters()
         ? list.length + ' of ' + games().length + ' games shown'
-        : games().length + ' games, ready to play';
+        : games().length + ' games, grouped by guide';
     }
     var empty = document.getElementById('arcEmpty');
     if (empty) empty.hidden = list.length !== 0;
