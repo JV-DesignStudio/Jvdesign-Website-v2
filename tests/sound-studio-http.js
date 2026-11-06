@@ -66,6 +66,14 @@ let failures = 0;
   check('sequencer cells render', initial.cells >= 8, String(initial.cells));
   check('export and handoff functions exist', initial.exportFn && initial.gameMakerFn && initial.shareFn && initial.sfxSendFn);
   check('mode switcher renders', initial.modes === 3, String(initial.modes));
+  // A2628: the save state is visible before the learner saves. The update is
+  // checked after the My Songs library test saves a real song.
+  const keepState = await page.evaluate(() => {
+    const pill=document.querySelector('[data-keep-pill]');
+    const root=document.querySelector('[data-keep-state]');
+    return {has:!!pill,note:root?root.textContent:'',fn:typeof window.saveToLibrary==='function'};
+  });
+  check('save state is visible', keepState.has && keepState.fn && /browser/i.test(keepState.note), JSON.stringify(keepState));
   const intro = await page.evaluate(()=>{
     const el=document.querySelector('.ss-intro');
     return { present: !!el, display: el?getComputedStyle(el).display:'', text: el?el.textContent:'' };
@@ -167,9 +175,10 @@ let failures = 0;
     document.getElementById('projName').value='Unit Test Song';
     await window.saveToLibrary();
     const list=await window.libAll();
-    return {count:list.length, name:list[0]&&list[0].name};
+    return {count:list.length, name:list[0]&&list[0].name, keep:(document.querySelector('[data-keep-pill]')?.textContent||'')};
   });
   check('My Songs library saves a named song', lib.count>=1 && lib.name==='Unit Test Song', JSON.stringify(lib));
+  check('save state updates after saving', lib.keep==='Kept on this device', lib.keep);
 
   // A818: waveform canvas + per-track meters
   const viz = await page.evaluate(()=>{

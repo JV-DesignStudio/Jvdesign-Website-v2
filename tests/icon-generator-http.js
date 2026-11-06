@@ -67,6 +67,16 @@ const URL_BASE = 'http://127.0.0.1:'+port+'/tools/icon-generator.html';
       check(vp.name+': workflow brief present', shell.brief && shell.stepCount === 4, 'brief='+shell.brief+' steps='+shell.stepCount);
       check(vp.name+': no horizontal overflow', shell.overflow <= 2, String(shell.overflow));
 
+      // A2628: the save state is visible and updates when the learner saves.
+      const keep = await page.evaluate(()=>{
+        const pill=document.querySelector('[data-keep-pill]');
+        const root=document.querySelector('[data-keep-state]');
+        const before=pill?pill.textContent:'';
+        try{ window.saveDesign(); }catch(e){}
+        return {has:!!pill,before,after:pill?pill.textContent:'',note:root?root.textContent:''};
+      });
+      check(vp.name+': save state is visible and updates', keep.has && keep.after==='Kept on this device' && /browser/i.test(keep.note), JSON.stringify({before:keep.before,after:keep.after}));
+
       // A936: on phones the live preview must come before the controls and stay pinned
       if (vp.name === 'mobile') {
         const layout = await page.evaluate(()=>{

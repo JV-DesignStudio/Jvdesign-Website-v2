@@ -59,12 +59,56 @@
     return ok;
   }
 
+  // A2618: privacy-safe, local-only funnel ledger. These steps never call
+  // gtag or fetch; they only write counters in localStorage so the first
+  // creation path survives a reload and can be inspected on this device.
+  // Nothing leaves the device, so this works without consent. The GA4 events
+  // above stay consent-gated as before.
+  var LOCAL_KEY = 'jvds_funnel_local';
+  var LOCAL_STEPS = ['home_first_make_opened', 'studio_opened', 'first_pixel_painted', 'first_save', 'first_export'];
+
+  function readLocal() {
+    try {
+      var o = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
+      if (!o || typeof o !== 'object' || Array.isArray(o)) o = { v: 1, counts: {}, order: [], firstSeen: Date.now() };
+      if (!o.counts || typeof o.counts !== 'object' || Array.isArray(o.counts)) o.counts = {};
+      if (!Array.isArray(o.order)) o.order = [];
+      if (!o.firstSeen) o.firstSeen = Date.now();
+      return o;
+    } catch (e) {
+      return { v: 1, counts: {}, order: [], firstSeen: Date.now() };
+    }
+  }
+  function writeLocal(o) {
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(o)); return true; } catch (e) { return false; }
+  }
+  function localStep(step, detail) {
+    if (!step) return false;
+    var o = readLocal();
+    o.lastSeen = Date.now();
+    o.counts[step] = (o.counts[step] || 0) + 1;
+    if (o.order.indexOf(step) === -1) o.order.push(step);
+    if (detail && typeof detail === 'object' && detail.surface) o.lastSurface = String(detail.surface);
+    return writeLocal(o);
+  }
+  function localOnce(step, detail) {
+    var o = readLocal();
+    if (o.counts[step] > 0) return false;
+    return localStep(step, detail);
+  }
+  function localReport() { return readLocal(); }
+
   var JVDSFunnel = {
     start: function (d) { return fire('start', d); },
     complete: function (d) { return fire('complete', d); },
     share: function (d) { return fire('share', d); },
     raw: function (name, params) { return emit(name, params || {}); },
-    steps: function () { return Object.keys(NAMES); }
+    steps: function () { return Object.keys(NAMES); },
+    local: localStep,
+    localOnce: localOnce,
+    localReport: localReport,
+    LOCAL_KEY: LOCAL_KEY,
+    LOCAL_STEPS: LOCAL_STEPS
   };
 
   function onFirstInteraction() {
@@ -130,6 +174,93 @@
       if (ok) markSent('return_visit');
     }
     try { localStorage.setItem(VISIT_KEY, '1'); } catch(e) {}
+  })();
+
+  // A2618: wire the local first-creation steps without editing each tool page.
+  (function wireLocalFunnel() {
+    var path = location.pathname.replace(/\/+$/, '') || '/';
+    var isHome = path === '/' || path === '/index.html';
+    var isPixel = /^\/tools\/pixel-studio(\.html)?$/.test(location.pathname);
+
+    // Pixel Studio opened.
+    if (isPixel) localOnce('studio_opened', { surface: 'tools' });
+
+    // Homepage first-make opened: the section scrolls into view, or the CTA is used.
+    if (isHome) {
+      var sectionEl = document.getElementById('first-make');
+      if (sectionEl && typeof IntersectionObserver === 'function') {
+        try {
+          var io = new IntersectionObserver(function (entries) {
+            for (var i = 0; i < entries.length; i++) {
+              if (entries[i].isIntersecting) {
+                localOnce('home_first_make_opened', { surface: 'site' });
+                io.disconnect();
+                return;
+              }
+            }
+          }, { threshold: 0.4 });
+          io.observe(sectionEl);
+        } catch (e) {}
+      }
+      document.addEventListener('click', function (e) {
+        var t = e.target && e.target.closest
+          ? e.target.closest('#fmStart, #first-make a[href*="pixel-studio"], [data-first-make]')
+          : null;
+        if (t) localOnce('home_first_make_opened', { surface: 'site' });
+      }, true);
+    }
+
+    // First pixel painted: a real pointer, touch or mouse on Pixel Studio's canvas.
+    if (isPixel) {
+      var paint = function (e) {
+        var t = e.target;
+        if (t && t.id === 'main-canvas') localOnce('first_pixel_painted', { surface: 'tools' });
+      };
+      document.addEventListener('pointerdown', paint, true);
+      document.addEventListener('touchstart', paint, true);
+      document.addEventListener('mousedown', paint, true);
+    }
+
+    // First save: any Save control, or Ctrl/Cmd+S.
+    document.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest
+        ? e.target.closest('[data-on="saveProject"],[data-on="saveStory"],[data-on="invokeSave"]')
+        : null;
+      if (t) localStep('first_save', { surface: section() });
+    }, true);
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        localStep('first_save', { surface: section() });
+      }
+    }, true);
+
+    // First export/download: export controls, download links and the shared
+    // standalone-export event from creation-standalone.js.
+    document.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest
+        ? e.target.closest('[data-on^="export"],a[download],[data-on="downloadProjectBundle"],[data-on="sendGameToFriend"]')
+        : null;
+      if (t) localStep('first_export', { surface: section() });
+    }, true);
+    window.addEventListener('jvds:standalone-exported', function () {
+      localStep('first_export', { surface: section() });
+    });
+  })();
+
+  // Dev-only view: /me.html?funnel=1 shows the local first-creation ledger.
+  (function renderDevFunnel() {
+    if (!/[?&]funnel=1/.test(location.search)) return;
+    if (!/\/(me|me\.html)$/.test(location.pathname)) return;
+    var report = localReport();
+    var steps = LOCAL_STEPS.map(function (s) { return s + ': ' + (report.counts[s] || 0); }).join(' | ');
+    var box = document.createElement('div');
+    box.id = 'jvds-funnel-debug';
+    box.setAttribute('role', 'status');
+    box.style.cssText = 'max-width:900px;margin:16px auto;padding:12px 16px;border:1px solid rgba(64,59,51,.2);' +
+      'border-radius:10px;background:#fffdf8;color:#1a1208;font:600 .8rem/1.45 Inter,system-ui,sans-serif;';
+    box.textContent = 'First-creation funnel (local only): ' + (steps || 'no steps yet') +
+      '. Order: ' + (report.order.join(' -> ') || 'none') + '.';
+    (document.body || document.documentElement).appendChild(box);
   })();
 
   window.JVDSFunnel = JVDSFunnel;

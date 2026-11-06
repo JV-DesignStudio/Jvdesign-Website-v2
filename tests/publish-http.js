@@ -76,6 +76,86 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   check('title prefills from the maker', r.titleVal === 'Test Rocket', r.titleVal);
   check('genre prefills from the maker', r.genreVal === 'Space Shooter', r.genreVal);
 
+  // A2640: under-13 submissions need a parent or guardian to agree.
+  const age = await page.evaluate(()=>{
+    const f = document.getElementById('publishForm');
+    const radios = Array.from(f.querySelectorAll('input[name="age"]'));
+    const block = document.getElementById('guardianBlock');
+    const gname = document.getElementById('guardianName');
+    return {
+      radios: radios.map(x=>x.value),
+      hiddenAtStart: block.hidden,
+      nameRequiredAtStart: !!(gname && gname.required),
+      makerConsentRequired: !!(f.querySelector('[name="consent"]') || {}).required,
+      hasGuardianName: !!f.querySelector('[name="guardian_name"]'),
+      hasGuardianConsent: !!f.querySelector('[name="guardian_consent"]')
+    };
+  });
+  check('age question offers 13+ and under 13', age.radios.includes('13+') && age.radios.includes('under13'), age.radios.join(','));
+  check('guardian fields are wired for the form response', age.hasGuardianName && age.hasGuardianConsent);
+  check('guardian block is hidden and optional until under 13 is chosen', age.hiddenAtStart === true && age.nameRequiredAtStart === false);
+  check('maker consent is still required', age.makerConsentRequired === true);
+
+  const under = await page.evaluate(()=>{
+    const f = document.getElementById('publishForm');
+    const radio = f.querySelector('input[name="age"][value="under13"]');
+    radio.checked = true; radio.dispatchEvent(new Event('change', {bubbles:true}));
+    const gname = document.getElementById('guardianName');
+    const gconsent = document.getElementById('guardianConsent');
+    return {
+      hidden: document.getElementById('guardianBlock').hidden,
+      nameRequired: gname.required,
+      consentRequired: gconsent.required,
+      valid: f.checkValidity()
+    };
+  });
+  check('choosing under 13 reveals the guardian block', under.hidden === false);
+  check('under 13 makes guardian name and consent required', under.nameRequired === true && under.consentRequired === true);
+  check('under 13 is invalid until the guardian agrees', under.valid === false);
+
+  const blocked = await page.evaluate(()=>{
+    const f = document.getElementById('publishForm');
+    const ev = new Event('submit', {bubbles:true, cancelable:true});
+    f.dispatchEvent(ev);
+    return ev.defaultPrevented;
+  });
+  check('submit is blocked until guardian consent is ticked', blocked === true);
+
+  const agreed = await page.evaluate(()=>{
+    const f = document.getElementById('publishForm');
+    const g = document.getElementById('guardianConsent');
+    g.checked = true; g.dispatchEvent(new Event('change', {bubbles:true}));
+    return { required: g.required, checked: g.checked };
+  });
+  check('guardian consent can be ticked and is recorded in the form', agreed.required === true && agreed.checked === true);
+
+  const over = await page.evaluate(()=>{
+    const f = document.getElementById('publishForm');
+    const radio = f.querySelector('input[name="age"][value="13+"]');
+    radio.checked = true; radio.dispatchEvent(new Event('change', {bubbles:true}));
+    const gname = document.getElementById('guardianName');
+    const gconsent = document.getElementById('guardianConsent');
+    return {
+      hidden: document.getElementById('guardianBlock').hidden,
+      nameRequired: gname.required,
+      consentRequired: gconsent.required,
+      consentChecked: gconsent.checked
+    };
+  });
+  check('choosing 13+ hides the guardian block', over.hidden === true);
+  check('13+ does not require guardian details', over.nameRequired === false && over.consentRequired === false);
+  check('guardian consent is cleared when not needed', over.consentChecked === false);
+
+  // The real path is an emailed submission plus a human check, not auto-publish.
+  const publishSrc = fs.readFileSync(path.join(ROOT, 'pages/publish.html'), 'utf8');
+  const privacySrc = fs.readFileSync(path.join(ROOT, 'pages/privacy-policy.html'), 'utf8');
+  const safetySrc = fs.readFileSync(path.join(ROOT, 'pages/child-safety.html'), 'utf8');
+  check('publish page never writes the gallery directly', !/gallery-games/.test(publishSrc));
+  check('publish page states nothing goes live automatically', /nothing goes live automatically/i.test(publishSrc));
+  check('privacy policy describes gallery submissions and guardian consent', /Community Gallery, the form asks for/.test(privacySrc) && /a parent or guardian has to add their name and agree/.test(privacySrc));
+  check('child safety page describes under-13 guardian consent', /under 13/i.test(safetySrc) && /a parent or guardian must add their name/i.test(safetySrc));
+  check('child safety page states a person checks every game', /a person reads the submission before it can appear/i.test(safetySrc));
+
   // Layout at phone + desktop.
   for (const w of [390, 1440]) {
     await page.setViewport({width:w, height:880});
@@ -90,7 +170,7 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   await page.waitForSelector('#runGameBtn', {timeout:15000});
   const maker = await page.evaluate(()=>({
     fn: typeof publishToGallery === 'function',
-    btn: !!document.querySelector('button[onclick="publishToGallery()"]')
+    btn: !!document.querySelector('[data-on="publishToGallery"]') || !!document.querySelector('button[onclick="publishToGallery()"]')
   }));
   check('maker has a publishToGallery function', maker.fn === true);
   check('maker has a Publish to Gallery button', maker.btn === true);

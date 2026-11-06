@@ -1,1 +1,1 @@
-window.location.replace('/pages/teachers.html');
+window.location.replace('/');

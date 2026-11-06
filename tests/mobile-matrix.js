@@ -28,7 +28,7 @@ const PAGES = [
   'index.html', 'pick-your-path.html', 'arcade.html',
   'tools/pixel-studio.html', 'tools/bitmap-font-maker.html', 'tools/game-logo-maker.html',
   'workshops/learn.html', 'workshops/start-here.html', 'games/ember-smash.html',
-  'pages/workshop.html', 'pages/downloads.html', 'pages/parent-guide.html',
+  'pages/workshop.html', 'pages/downloads.html',
   'pages/books.html', 'pages/learn-hub.html',
   'newsletter.html', 'meet-the-crew.html', 'pages/contact.html'
 ];

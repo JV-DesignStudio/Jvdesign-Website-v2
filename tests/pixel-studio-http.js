@@ -35,6 +35,16 @@ const server = http.createServer((req, res) => {
     installBtns: document.querySelectorAll('.js-install').length,
     hamburgerSingleBound: true
   }));
+  // A2628: the save state is visible and updates when the learner saves.
+  const keepState = await page.evaluate(() => {
+    const pill = document.querySelector('[data-keep-pill]');
+    const root = document.querySelector('[data-keep-state]');
+    const before = pill ? pill.textContent : '';
+    try { window.saveProject(); } catch (e) {}
+    return { has: !!pill, before, after: pill ? pill.textContent : '', note: root ? root.textContent : '' };
+  });
+  console.log('keep state:', JSON.stringify(keepState));
+
   // hamburger toggle works (the old double-bind bug)
   await page.setViewport({ width: 390, height: 780 });
   await new Promise(r => setTimeout(r, 200));
@@ -95,7 +105,9 @@ const server = http.createServer((req, res) => {
   } else {
     console.log('NO RUNTIME ERRORS over HTTP');
   }
-  const pass = checks.framesReady && checks.manifestIsDedicated && navOpened && navClosed && questOk && errors.length === 0;
+  const keepOk = keepState.has && keepState.after === 'Kept on this device' && /browser/i.test(keepState.note);
+  console.log('keep state visible and updates:', keepOk ? 'PASS' : 'FAIL');
+  const pass = checks.framesReady && checks.manifestIsDedicated && navOpened && navClosed && questOk && keepOk && errors.length === 0;
   console.log(pass ? 'HTTP RUNTIME CHECKS PASSED' : 'FAILURES PRESENT');
   await browser.close();
   server.close();

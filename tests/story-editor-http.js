@@ -52,11 +52,13 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      cleanText:!/â|Ã|ï|�/.test(document.body.innerText),
      previewBtn:[...document.querySelectorAll('button')].some(b=>b.textContent.includes('▶ Preview')),
      exportFns: ['exportJSON','exportScript','exportGodot','exportUnity','copyPlayLink','sendToGameMaker'].every(k=>typeof window[k]==='function'),
-     escapedSlot:(document.getElementById('saveSlots')?.textContent||'').includes('<img src=x') && !document.getElementById('saveSlots')?.querySelector('img'),
-     scrollWidth:document.documentElement.scrollWidth,
-     clientWidth:document.documentElement.clientWidth
-   };
- });
+      escapedSlot:(document.getElementById('saveSlots')?.textContent||'').includes('<img src=x') && !document.getElementById('saveSlots')?.querySelector('img'),
+      keepState:(document.querySelector('[data-keep-pill]')?.textContent||''),
+      keepNote:(document.querySelector('[data-keep-state]')?.textContent||''),
+      scrollWidth:document.documentElement.scrollWidth,
+      clientWidth:document.documentElement.clientWidth
+    };
+  });
   const mobileFlow=await page.evaluate(()=>{
     const out=[];const rec=(name,cond,detail='')=>out.push({name,ok:!!cond,detail:String(detail)});
     const shown=el=>!!el&&getComputedStyle(el).display!=='none';
@@ -103,6 +105,7 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  check('preview shows edited dialogue', flow.firstPreview);
  check('preview reaches a clean ending', flow.endPreview);
  check('save slot records the story', flow.savedSlot);
+ check('save state is visible and updates', data.keepState==='Kept on this device' && /browser/i.test(data.keepNote), data.keepState);
  check('saved slot name escaped', data.escapedSlot);
  check('mobile does not overflow viewport', data.scrollWidth<=data.clientWidth+2, `${data.scrollWidth}/${data.clientWidth}`);
  check('zero runtime errors', errors.length===0, errors.join(' | '));

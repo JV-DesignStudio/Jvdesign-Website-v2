@@ -26,7 +26,6 @@ const PAGES = [
   'arcade.html',
   'pages/books.html',
   'pages/devlog.html',
-  'pages/parents.html',
   'pages/privacy-policy.html',
   'browse.html',
 ].filter((f) => !process.env.JVDS_CONTRAST_PAGES || process.env.JVDS_CONTRAST_PAGES.split(',').map((s) => s.trim()).some((needle) => f.includes(needle)));

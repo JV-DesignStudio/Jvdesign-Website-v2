@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-9kaITu9nt4I9udXrZMihcytQQgRJTrMfsjjRckWrCs8=' 'sha256-Uys4iDQIlTJGrrJLbCLMwuQ2n7MTxLgzLMrFCNiEJ/8=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-yrffJ/NLb9lNGu/Bs2UgMHbdzynyRW/GB1BhRXUuS1o=' 'sha256-Uys4iDQIlTJGrrJLbCLMwuQ2n7MTxLgzLMrFCNiEJ/8=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -355,6 +355,10 @@ body.mode-sfx #arrange-bar{display:none!important;}
   </div>
 </div>
 
+<div data-keep-state="dirty" role="status" aria-live="polite" style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px auto 0;padding:0 12px;max-width:900px;font-size:.6rem;color:var(--muted);line-height:1.4;">
+  <span data-keep-pill style="display:inline-block;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--muted);font-weight:700;white-space:nowrap;">Not saved yet</span>
+  <span>Save keeps it in this browser. Download makes a file you keep. Nothing leaves this device.</span>
+</div>
 <nav class="ss-modes" aria-label="Studio mode">
   <button class="ss-mode on" data-mode="music" data-on="setMode" data-on-arg="music" data-on-plain aria-pressed="true">🎵 Music</button>
   <button class="ss-mode" data-mode="drums" data-on="setMode" data-on-arg="drums" data-on-plain aria-pressed="false">🥁 Drums</button>
@@ -1999,6 +2003,7 @@ function exportWAV(){
   showToast('Rendering audio');
   renderMixdown().then(buf=>{
     _downloadAudio(new Blob([bufferToWav(buf)],{type:'audio/wav'}),'sound_studio_export.wav');
+    jvdsKeepState('downloaded');
     showToast('WAV exported!');
   }).catch(()=>showToast('Export failed'));
 }
@@ -2007,6 +2012,7 @@ function exportLoopWAV(){
   showToast('Rendering loop');
   return renderMixdown(true).then(buf=>{
     _downloadAudio(new Blob([bufferToWav(buf)],{type:'audio/wav'}),'sound_studio_loop.wav');
+    jvdsKeepState('downloaded');
     showToast('Loop WAV exported!');
     return buf.length;
   }).catch(()=>{ showToast('Export failed'); return 0; });
@@ -2039,6 +2045,7 @@ async function exportOGG(){
   const blob=new Blob(chunks,{type:mime});
   if(!blob.size){ showToast('OGG encoding failed , try Loop WAV','error'); return 0; }
   _downloadAudio(blob,'sound_studio_export.ogg');
+  jvdsKeepState('downloaded');
   showToast('OGG exported!');
   return blob.size;
 }
@@ -2274,7 +2281,7 @@ function queueAutosave(){
   _ssAutoT=setTimeout(doAutosave,1500);
 }
 function doAutosave(){
-  try{ localStorage.setItem(SS_AUTO_KEY,JSON.stringify({bpm,steps,swing,tracks,grid,ts:Date.now()})); }
+  try{ localStorage.setItem(SS_AUTO_KEY,JSON.stringify({bpm,steps,swing,tracks,grid,ts:Date.now()})); jvdsKeepState('autosaved'); }
   catch(e){/* full or blocked */}
 }
 window.addEventListener('beforeunload',doAutosave);
@@ -2414,6 +2421,7 @@ function exportProject(){
   a.download='sound_studio_project.json';
   a.click();
   URL.revokeObjectURL(a.href);
+  jvdsKeepState('downloaded');
   showToast('Project downloaded ✓');
 }
 function importProjectFile(){
@@ -2718,6 +2726,20 @@ function refreshLibrary(){
     });
   });
 }
+// A2628: one clear save/export state so learners can see their sound is kept.
+function jvdsKeepState(state){
+  const conf={
+    dirty:{t:'Not saved yet',bg:'rgba(255,255,255,.06)',bd:'var(--border2)',fg:'var(--muted)'},
+    saved:{t:'Kept on this device',bg:'rgba(34,197,94,.16)',bd:'rgba(34,197,94,.5)',fg:'#4ade80'},
+    autosaved:{t:'Autosaved on this device',bg:'rgba(34,197,94,.1)',bd:'rgba(34,197,94,.35)',fg:'#4ade80'},
+    downloaded:{t:'Downloaded - keep the file safe',bg:'rgba(124,58,237,.18)',bd:'rgba(124,58,237,.55)',fg:'#c4b5fd'},
+    blocked:{t:'Saving is blocked here - Download instead',bg:'rgba(239,68,68,.16)',bd:'rgba(239,68,68,.5)',fg:'#fca5a5'}
+  };
+  const c=conf[state]||conf.dirty;
+  document.querySelectorAll('[data-keep-pill]').forEach(el=>{el.textContent=c.t;el.style.background=c.bg;el.style.borderColor=c.bd;el.style.color=c.fg;});
+  document.querySelectorAll('[data-keep-state]').forEach(el=>el.setAttribute('data-state',state));
+}
+try{ if(localStorage.getItem(SS_AUTO_KEY)) jvdsKeepState('autosaved'); }catch(e){}
 function saveToLibrary(){
   const nameEl=document.getElementById('projName');
   const name=(nameEl&&nameEl.value.trim())||projectName||'Untitled song';
@@ -2725,6 +2747,7 @@ function saveToLibrary(){
   if(currentLibId) rec.id=currentLibId;
   libPut(rec).then(saved=>{
     currentLibId=saved.id||null; projectName=name;
+    jvdsKeepState('saved');
     showToast('Saved "'+name+'"');
     refreshLibrary();
   });

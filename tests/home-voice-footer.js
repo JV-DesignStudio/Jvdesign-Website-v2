@@ -8,7 +8,7 @@
  *      computers). The mixed-tone lines the b0795e38 redesign retired must
  *      not return. The live hero games figure must match the registry.
  *   2. Footer: partials/footer-content.html stays a clean three column
- *      Explore / For Parents / Socials grid with no duplicated links, and
+ *      Explore / More / Socials grid with no duplicated links, and
  *      every page that embeds it gets the current copy.
  *
  * The browser pass measures real layout at 390px and 1440px: no sideways
@@ -22,11 +22,10 @@ const http = require('http');
 
 const ROOT = path.join(__dirname, '..');
 const HOME = path.join(ROOT, 'index.html');
-const PARENTS = path.join(ROOT, 'pages', 'parents.html');
 const FOOTER = path.join(ROOT, 'partials', 'footer-content.html');
 const STATS = path.join(ROOT, 'content', 'stats.json');
 
-const COLUMN_TITLES = ['Explore', 'For Parents', 'Socials'];
+const COLUMN_TITLES = ['Explore', 'More', 'Socials'];
 const TRUST_PROMISES = ['no account', 'no install', 'school computer', 'free'];
 const RETIRED_COPY = [
   'Big feelings. Brave little steps.',
@@ -67,7 +66,6 @@ for (const gone of RETIRED_COPY) {
 
 const footnotes = text(home).toLowerCase();
 ok('homepage states it is free to use', /free/.test(footnotes));
-ok('homepage links adults to the parent guide', /href=["']\/parents["']/.test(home) && /family|families|parent|teacher|educator/i.test(homeText));
 
 /* ── 2. Homepage counts match the generated stats ─────────────── */
 
@@ -93,7 +91,7 @@ const footer = norm(fs.readFileSync(FOOTER, 'utf8'));
 const columns = [...footer.matchAll(/<nav class="footer-col" aria-label="([^"]+)">([\s\S]*?)<\/nav>/gi)];
 ok('footer has exactly three columns', columns.length === 3, 'found ' + columns.length);
 const titles = columns.map(c => c[1].trim());
-ok('footer columns are Explore / For Parents / Socials',
+ok('footer columns are Explore / More / Socials',
    titles.length === 3 && COLUMN_TITLES.every((t, i) => titles[i] === t), titles.join(' | '));
 
 const footerAnchors = [...footer.matchAll(/<a\s([^>]*)>([\s\S]*?)<\/a>/gi)]
@@ -107,16 +105,29 @@ for (const a of internal) {
   ok('footer link "' + a.label + '" is not duplicated', !seen.has(a.href), 'also: ' + (seen.get(a.href) || ''));
   seen.set(a.href, a.label);
 }
-// A column may link once to its own section landing page (the For Parents
-// heading sits above a For Parents guide link), but must not repeat its title.
+// A column may link once to its own section landing page, but must not repeat
+// its own title.
 ok('no footer link repeats its own column title',
    !columns.some(c => (c[2].match(new RegExp('>' + text(c[1]).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '</a>', 'gi')) || []).length > 1));
 
-const exists = route => {
+const redirects = new Map();
+try {
+  for (const line of fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8').split(/\r?\n/)) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length >= 2 && parts[0].startsWith('/')) redirects.set(parts[0], parts[1]);
+  }
+} catch {}
+const fileExists = route => {
   const clean = route.split('#')[0].split('?')[0];
   if (!clean) return true;
   const target = clean.endsWith('/') ? path.join(ROOT, clean, 'index.html') : path.join(ROOT, clean);
   return fs.existsSync(target) || fs.existsSync(target + '.html') || fs.existsSync(path.join(target, 'index.html'));
+};
+const exists = route => {
+  const clean = route.split('#')[0].split('?')[0];
+  if (fileExists(route)) return true;
+  const mapped = redirects.get(clean);
+  return !!mapped && mapped !== clean && fileExists(mapped);
 };
 for (const a of internal) ok('footer link resolves: ' + a.href, exists(a.href), a.label);
 
@@ -124,8 +135,6 @@ for (const a of internal) ok('footer link resolves: ' + a.href, exists(a.href), 
 
 const builtFooter = footer.trim();
 ok('index.html embeds the current footer copy', home.includes(builtFooter));
-ok('pages/parents.html embeds the current footer copy',
-   norm(fs.readFileSync(PARENTS, 'utf8')).includes(builtFooter));
 
 console.log('\nA366 home voice + footer: ' + passes + ' static checks passed, ' + failures.length + ' failed');
 

@@ -1,1 +1,1 @@
-window.location.replace('/pages/parent-guide.html');
+window.location.replace('/');

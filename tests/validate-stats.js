@@ -71,7 +71,6 @@ const mGames = parseInt(marketing.games.display.replace(/[^0-9]/g, ''), 10);
 const gameCountPages = [
   ['index.html',          /heroGameCount[^>]*>(\d+)</],
   ['arcade.html',         /(twelve|thirteen|\d+) hand-picked/i],
-  ['pages/parents.html',  /stat-num[^>]*>(\d+)<[^>]*>[\s\S]*?Browser Games/],
   ['pages/about.html',    /stat-num[^>]*>(\d+)<[^>]*>[\s\S]*?Browser Games|pillar-sub[^>]*>(\d+) listed games/],
   ['pages/press.html',    /pressGameCount[^>]*>(\d+)</],
 ];

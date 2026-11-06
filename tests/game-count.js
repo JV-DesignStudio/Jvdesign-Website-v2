@@ -24,7 +24,7 @@ const m = idx.match(/id="heroGameCount"[^>]*>(\d+)/);
 check('homepage hero game stat derives from the registry id', !!m && +m[1] === registry, m ? ('fallback ' + m[1]) : 'missing id');
 check('homepage loads games-registry.js', /games-registry\.js/.test(idx));
 
-const statFiles = ['pages/press.html', 'pages/parent-guide.html', 'tools/parent-guide.html', 'pages/discovery_session.html', 'pages/about.html'];
+const statFiles = ['pages/press.html', 'pages/discovery_session.html', 'pages/about.html'];
 const re = /(\d+)\s+(?:free\s+|listed\s+|playable\s+|browser\s+)*games/gi;
 for (const rel of statFiles) {
   const h = fs.readFileSync(path.join(root, rel), 'utf8');
