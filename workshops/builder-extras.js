@@ -295,10 +295,8 @@
     ctx.textAlign = 'center';
     ctx.fillText('Free · Browser-based · jvdesignstudio.co.uk', 500, 388);
 
-    var a = document.createElement('a');
-    a.href = oc.toDataURL('image/png');
-    a.download = name.toLowerCase().replace(/\s+/g, '-') + '-stats-card.png';
-    a.click();
+    if(window.JVDS_DOWNLOAD){window.JVDS_DOWNLOAD(oc,name.toLowerCase().replace(/\s+/g,'-')+'-stats-card.png');}
+    else{var a=document.createElement('a');a.href=oc.toDataURL('image/png');a.download=name.toLowerCase().replace(/\s+/g,'-')+'-stats-card.png';a.click();}
     toast('Stats card exported!');
   };
 

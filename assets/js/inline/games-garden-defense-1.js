@@ -3,7 +3,8 @@
   const canvas=document.getElementById('game');
   const ctx=canvas.getContext('2d');
   const COLS=6, ROWS=5;
-  const BW=1120, BH=900;                 // logical resolution
+  const BW=1120, BH=900;
+  if(window.JVDS_DPR){var _r=canvas.getBoundingClientRect();window.JVDS_DPR(canvas,ctx,BW,BH,_r.width,_r.height);addEventListener('resize',function(){var _r2=canvas.getBoundingClientRect();window.JVDS_DPR(canvas,ctx,BW,BH,_r2.width,_r2.height);});}                 // logical resolution
   const CELL=BW/COLS;                    // ~186.6 wide
   const CH=BH/ROWS;                      // 180 tall
   const audio=new AudioEffects(0.6);
@@ -61,11 +62,20 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     {id:'starter',icon:'🌻',title:'Sun Cache',desc:'Begin the next wave with 90 extra sun.',apply:()=>{sun+=90;}}
   ];
 
+  const GD_MODES=[
+    {id:'sprout',label:'Sprout',sun:200,hpMult:0.7,spdMult:0.8,desc:'Extra sun, weaker pests'},
+    {id:'garden',label:'Garden',sun:150,hpMult:1,spdMult:1,desc:'Standard defense'},
+    {id:'thorns',label:'Thorns',sun:100,hpMult:1.3,spdMult:1.15,desc:'Less sun, tougher pests'}
+  ];
+  let gdModeId='garden';
+  function gdMode(){return GD_MODES.find(m=>m.id===gdModeId)||GD_MODES[1]}
+
   function reset(){
+    var gm=gdMode();
     grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
     pests=[]; shots=[]; suns=[]; floats=[]; deaths=[];
     guards=Array(ROWS).fill(true);
-    sun=150; waveIdx=0; score=0; running=true; paused=false; victoryShown=false;
+    sun=gm.sun; waveIdx=0; score=0; running=true; paused=false; victoryShown=false;
     selected=null; spawnQ=[]; betweenTimer=2.2; lastT=performance.now(); upgradeOpen=false; upgradeChoices=[];
     upgrades={sun:0,quick:0,combo:0};
     stats={killed:0,placed:0,bestBoom:0,sunCollected:0,bestStreak:0,waveStartGuards:5,waveStartSun:150};
@@ -219,7 +229,7 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     if(!running) return;
     const i=parseInt(e.key)-1;
     if(i>=0 && i<PICK_ORDER.length){ selectPlant(PICK_ORDER[i]); }
-    else if(e.key===' '){ e.preventDefault(); togglePause(); }
+    else if(e.key===' '||e.code==='Escape'){ e.preventDefault(); togglePause(); }
     else if(e.key==='d'||e.key==='D'){ selectPlant('shovel'); }
     else if(e.key==='s'||e.key==='S'){ const sb=document.getElementById('speedBtn'); if(sb) sb.click(); }
   });
@@ -404,9 +414,10 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
   }
 
   function spawnPest(type,row,hpMult){
-    const d=PESTS[type];
-    const hp=Math.round(d.hp*(hpMult||1));
-    pests.push({type,row,x:BW+CELL*0.4+Math.random()*40, hp,maxHp:hp,spd:d.spd,dmg:d.dmg,pts:d.pts,ic:d.ic,slowT:0,chewT:0,hitT:0,wob:Math.random()*6,boss:d.boss});
+    const d=PESTS[type]; var gm=gdMode();
+    const hp=Math.round(d.hp*(hpMult||1)*gm.hpMult);
+    const spd=d.spd*gm.spdMult;
+    pests.push({type,row,x:BW+CELL*0.4+Math.random()*40, hp,maxHp:hp,spd:spd,dmg:d.dmg,pts:d.pts,ic:d.ic,slowT:0,chewT:0,hitT:0,wob:Math.random()*6,boss:d.boss});
     if(d.boss){ banner('🕷️ Boss incoming!'); ScreenShake.shake(canvas,8,300); }
   }
   function fireShot(r,c,ptype){
@@ -851,11 +862,15 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     flashHint(u.title+' chosen! '+u.desc);
     updateHUD();
   }
+  var savedVol=parseFloat(localStorage.getItem('jvds_volume'));if(isNaN(savedVol))savedVol=60;
+  function applyVol(v){savedVol=v;localStorage.setItem('jvds_volume',v);audio.setMasterVolume(v/100);soundOn=v>0;var sb=document.getElementById('soundBtn');if(sb){sb.textContent=v>0?'🔊':'🔇';sb.setAttribute('aria-label',v>0?'Sound on':'Sound off')}var vs=document.getElementById('volSlider');if(vs)vs.value=v;var vv=document.getElementById('volVal');if(vv)vv.textContent=v+'%'}
   function togglePause(){
     if(!running || upgradeOpen) return;
     paused=!paused;
     document.getElementById('pauseBtn').textContent=paused?'▶':'⏸';
     document.getElementById('pauseBtn').setAttribute('aria-label',paused?'Resume game':'Pause game');
+    var pm=document.getElementById('pauseMenu');
+    if(pm){if(paused){pm.setAttribute('aria-hidden','false');document.getElementById('volSlider').value=savedVol;document.getElementById('volVal').textContent=savedVol+'%';var rb=document.getElementById('resumeBtn');if(rb)rb.focus()}else{pm.setAttribute('aria-hidden','true')}}
     if(!paused) lastT=performance.now();
   }
 
@@ -927,9 +942,11 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
   document.getElementById('againBtn').onclick=begin;
   document.getElementById('pauseBtn').onclick=togglePause;
   document.getElementById('speedBtn').onclick=function(){ speedMult=speedMult===1?2:1; this.textContent=speedMult+'×'; this.setAttribute('aria-label','Game speed: '+(speedMult===1?'normal':'fast')); beep('tap'); };
-  document.getElementById('soundBtn').textContent=soundOn?'🔊':'🔇';
-  document.getElementById('soundBtn').setAttribute('aria-label',soundOn?'Sound on':'Sound off');
-  document.getElementById('soundBtn').onclick=function(){ soundOn=!soundOn; this.textContent=soundOn?'🔊':'🔇'; this.setAttribute('aria-label',soundOn?'Sound on':'Sound off'); localStorage.setItem('soundEnabled',soundOn?'true':'false'); };
+  applyVol(savedVol);
+  document.getElementById('soundBtn').onclick=function(){applyVol(savedVol>0?0:60)};
+  document.getElementById('resumeBtn').onclick=togglePause;
+  document.getElementById('restartPause').onclick=function(){if(paused)togglePause();begin()};
+  document.getElementById('volSlider').oninput=function(){applyVol(+this.value)};
 
   // expose for integration script + lightweight read-only debug snapshot
   window.__gd={

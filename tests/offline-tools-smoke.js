@@ -29,7 +29,7 @@ const HUBS = [
   { path: '/workshops/my-first-python-game.html', css: '/style-workshop-bundle.css' },
   { path: '/workshops/my-first-cpp-game.html', css: '/style-workshop-bundle.css' }
 ];
-const CLEAN_URLS = { '/workshop': '/pages/workshop.html', '/dev-tools': '/pages/dev-tools.html', '/learn/': '/learn/index.html', '/games': '/arcade.html' };
+const CLEAN_URLS = { '/workshop': '/pages/workshop.html', '/create': '/pages/dev-tools.html', '/dev-tools': '/pages/dev-tools.html', '/learn/': '/learn/index.html', '/games': '/arcade.html' };
 
 const mime = {
   '.html': 'text/html; charset=utf-8',

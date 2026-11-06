@@ -40,9 +40,17 @@ const GOAL_DEFS=[
   ['alllanes','Compose notes in all 4 lanes',    m=>m.allLanes],
 ];
 const CW=540,CH=480,LW=CW/4,HIT_Y=CH-90,HIT_WIN=52,PERF_WIN=20;
+(function(){var _c=document.getElementById('gc');if(_c&&window.JVDS_DPR){var _x=_c.getContext('2d'),_r=_c.getBoundingClientRect();window.JVDS_DPR(_c,_x,CW,CH,_r.width,_r.height);addEventListener('resize',function(){var _r2=_c.getBoundingClientRect();window.JVDS_DPR(_c,_x,CW,CH,_r2.width,_r2.height);})}})();
 
 let meta=readMeta(),beat=presetBeat('starter'),gs=null,animId=null,audioCtx=null;
-let prevInt=null,prevBeat=0;
+let prevInt=null,prevBeat=0,bPaused=false;
+var savedVol=parseFloat(localStorage.getItem('jvds_volume'));if(isNaN(savedVol))savedVol=50;
+function applyVol(v){savedVol=v;localStorage.setItem('jvds_volume',v);var sb=document.getElementById('soundBtn');if(sb)sb.textContent=v>0?'🔊':'🔇';var vs=document.getElementById('volSlider');if(vs){vs.value=v}var vv=document.getElementById('volVal');if(vv)vv.textContent=v+'%'}
+function toggleSound(){applyVol(savedVol>0?0:50)}
+var pauseStart=0;
+function showPauseMenu(){if(!gs||gs.done)return;bPaused=true;pauseStart=performance.now();var m=document.getElementById('pauseMenu');if(m){m.setAttribute('aria-hidden','false');document.getElementById('volSlider').value=savedVol;document.getElementById('volVal').textContent=savedVol+'%';var rb=document.getElementById('resumeBtn');if(rb)rb.focus()}}
+function hidePauseMenu(){bPaused=false;var m=document.getElementById('pauseMenu');if(m)m.setAttribute('aria-hidden','true');if(gs&&!gs.done&&pauseStart){var offset=performance.now()-pauseStart;gs.t0+=offset;pauseStart=0}if(gs&&!gs.done){if(animId)cancelAnimationFrame(animId);var last2=performance.now();(function reloop(now){if(bPaused)return;var dt=now-last2;last2=now;tick(now,dt);draw();if(!gs.done)animId=requestAnimationFrame(reloop);else finishBattle();})(performance.now());}}
+function toggleBPause(){if(bPaused)hidePauseMenu();else showPauseMenu()}
 
 function emptyBeat(){return Array.from({length:4},()=>Array(8).fill(false))}
 function presetBeat(name){const b=emptyBeat(),sets={starter:[[0,0],[0,4],[1,2],[1,6],[2,1],[2,3],[2,5],[2,7],[3,6]],dance:[[0,0],[0,2],[0,4],[0,6],[1,2],[1,6],[2,1],[2,3],[2,5],[2,7],[3,0],[3,4]],boss:[[0,0],[1,0],[2,1],[3,2],[0,3],[1,4],[2,4],[3,5],[0,6],[1,7],[2,7]],syncopate:[[0,0],[2,1],[1,2],[3,3],[0,4],[2,5],[1,6],[3,7],[2,7]],finale:[[0,0],[1,0],[2,1],[3,1],[0,2],[1,3],[2,4],[3,4],[0,5],[1,6],[2,6],[3,7]]};(sets[name]||sets.starter).forEach(([r,c])=>b[r][c]=true);return b}
@@ -153,6 +161,7 @@ function startBattle(){
   if(animId)cancelAnimationFrame(animId);
   let last=performance.now();
   function loop(now){
+    if(bPaused)return;
     const dt=now-last;last=now;
     tick(now,dt);
     draw();
@@ -391,7 +400,8 @@ function finishBattle(){
 
 // ── INPUT ──
 document.addEventListener('keydown',e=>{
-  if(!gs||gs.done)return;
+  if(e.code==='Escape'){e.preventDefault();if(gs&&!gs.done)toggleBPause();return}
+  if(!gs||gs.done||bPaused)return;
   const i=['a','s','d','f'].indexOf(e.key.toLowerCase());
   if(i>=0){e.preventDefault();tapLane(i)}
 });
@@ -421,3 +431,10 @@ function renderGoals(){
 buildGrid();
 renderGoals();
 document.getElementById('h-best').textContent=meta.best;
+document.getElementById('soundBtn').onclick=toggleSound;
+document.getElementById('pauseBtn').onclick=toggleBPause;
+document.getElementById('resumeBtn').onclick=hidePauseMenu;
+document.getElementById('restartPause').onclick=function(){hidePauseMenu();stopBattle();startBattle()};
+document.getElementById('volSlider').oninput=function(){applyVol(+this.value)};
+addEventListener('blur',function(){if(gs&&!gs.done&&!bPaused)showPauseMenu()});
+applyVol(savedVol);

@@ -74,6 +74,7 @@ copyRewrite(
     // Sibling tools only exist on the main site
     ['href="icon-generator.html"',         'href="'+SITE+'/tools/icon-generator.html"'],
     ['href="../pages/dev-tools.html',      'href="'+SITE+'/pages/dev-tools.html'],
+    ['href="/create"',                     'href="'+SITE+'/create"'],
     // Shared assets are bundled locally at root
     ['href="../logo.png',                  'href="/logo.png'],
     ['href="../style-shared.css',          'href="/style-shared.css'],

@@ -5,7 +5,10 @@
     const stations = [...document.querySelectorAll('.station')];
     const canvas = $('chefCanvas');
     const ctx = canvas.getContext('2d');
+    if(window.JVDS_DPR){var _r=canvas.getBoundingClientRect();window.JVDS_DPR(canvas,ctx,760,460,_r.width,_r.height);addEventListener('resize',function(){var _r2=canvas.getBoundingClientRect();window.JVDS_DPR(canvas,ctx,760,460,_r2.width,_r2.height);});}
     const audio = window.AudioEffects ? new AudioEffects(.45) : null;
+    var savedVol=parseFloat(localStorage.getItem('jvds_volume'));if(isNaN(savedVol))savedVol=45;if(audio)audio.setMasterVolume(savedVol/100);
+    function applyVol(v){savedVol=v;localStorage.setItem('jvds_volume',v);if(audio)audio.setMasterVolume(v/100);var vs=$('volSlider');if(vs)vs.value=v;var vv=$('volVal');if(vv)vv.textContent=v+'%'}
 
     const recipes = [
       { name:'Moon Noodles', icon:'🍜', value:95, steps:['prep','grill','plate'], note:'chop veg, flash fry, sparkle plate' },
@@ -18,6 +21,13 @@
     const stationEmoji = { prep:'🔪', grill:'🔥', bake:'🥐', plate:'✨' };
     const stationLabel = { prep:'Prep', grill:'Grill', bake:'Bake', plate:'Plate' };
     const pos = { prep:[126,138], grill:[352,104], bake:[584,142], plate:[382,324] };
+    const MODES=[
+      {id:'easy',label:'Brunch',time:150,goal:300,patience:1.3,cookSpeed:0.8,rushChance:.10,desc:'Longer shift, patient customers'},
+      {id:'normal',label:'Lunch Rush',time:120,goal:450,patience:1,cookSpeed:1,rushChance:.20,desc:'Standard shift'},
+      {id:'hard',label:'Dinner Service',time:90,goal:600,patience:0.7,cookSpeed:1.4,rushChance:.30,desc:'Short shift, impatient crowd'}
+    ];
+    let modeId='normal';
+    function curMode(){return MODES.find(m=>m.id===modeId)||MODES[1]}
 
     let running=false, paused=false, time=120, coins=0, rep=3, combo=1, goal=450, queue=[], active=null, stepIndex=0, chef={x:382,y:324,tx:382,ty:324}, particles=[], cook=null, last=performance.now(), spawnTick=0;
 
@@ -53,9 +63,12 @@
 
     function makeOrder(){
       const r=recipes[Math.floor(Math.random()*recipes.length)];
+      const m=curMode();
       const vip=Math.random()<.18;
-      const rush=Math.random()<.20;
-      return { id:crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), recipe:r, face:moods[Math.floor(Math.random()*moods.length)], patience:rush?48:vip?82:68, max:rush?48:vip?82:68, vip, rush, age:0 };
+      const rush=Math.random()<m.rushChance;
+      const basePat=rush?48:vip?82:68;
+      const pat=Math.round(basePat*m.patience);
+      return { id:crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random()), recipe:r, face:moods[Math.floor(Math.random()*moods.length)], patience:pat, max:pat, vip, rush, age:0 };
     }
     function fillQueue(){ while(queue.length<4) queue.push(makeOrder()); }
 
@@ -68,7 +81,7 @@
       $('queueCount').textContent=queue.length+' waiting';
       $('stars').textContent='★★★'.slice(0, starsEarned()) + '☆☆☆'.slice(starsEarned());
       $('goalText').textContent='£'+goal;
-      $('shiftText').textContent= running ? (paused?'Paused':'Lunch Rush · '+Math.ceil(time)+'s') : 'Lunch Rush · 120s';
+      $('shiftText').textContent= running ? (paused?'Paused':curMode().label+' · '+Math.ceil(time)+'s') : curMode().label+' · '+curMode().time+'s';
       $('startBtn').textContent = running ? 'Shift running' : 'Start shift';
       $('pauseBtn').textContent = paused ? '▶' : '⏸';
       $('ticketName').textContent = active ? active.recipe.icon+' '+active.recipe.name : 'No ticket selected';
@@ -106,7 +119,8 @@
     }
 
     function startCook(st){
-      cook={station:st, needle:0, dir:1, speed: st==='grill'?1.65:1.25};
+      var cs=curMode().cookSpeed;
+      cook={station:st, needle:0, dir:1, speed: (st==='grill'?1.65:1.25)*cs};
       $('cookMeter').hidden=false;
       setHint('Stop the timing bar in the green to get a perfect cook bonus.');
     }
@@ -144,7 +158,8 @@
       running=true; paused=false; if(queue.length===0) fillQueue(); if(storyRun&&!storyRun.running) storyRun.begin(); setHint('Shift started. Pick the most urgent customer and run the recipe steps.'); render();
     }
     function reset(){
-      running=false; paused=false; time=120; coins=0; rep=3; combo=1; queue=[]; active=null; stepIndex=0; cook=null; particles=[]; chef={x:382,y:324,tx:382,ty:324}; $('cookMeter').hidden=true; fillQueue(); setHint('Pick a customer order, then tap the station that matches the glowing recipe step.'); render();
+      var m=curMode();
+      running=false; paused=false; time=m.time; goal=m.goal; coins=0; rep=3; combo=1; queue=[]; active=null; stepIndex=0; cook=null; particles=[]; chef={x:382,y:324,tx:382,ty:324}; $('cookMeter').hidden=true; fillQueue(); setHint('Pick a customer order, then tap the station that matches the glowing recipe step.'); render();
     }
     function finish(){
       running=false; paused=true; saveScore();
@@ -187,11 +202,21 @@
     $('stopCook').onclick=stopCook;
     $('startBtn').onclick=start;
     $('resetBtn').onclick=reset;
-    $('pauseBtn').onclick=()=>{ if(!running) return; paused=!paused; render(); };
+    function togglePause(){if(!running)return;paused=!paused;$('pauseBtn').textContent=paused?'▶':'⏸';var pm=$('pauseMenu');if(pm){if(paused){pm.setAttribute('aria-hidden','false');$('volSlider').value=savedVol;$('volVal').textContent=savedVol+'%';var rb=$('resumeBtn');if(rb)rb.focus()}else{pm.setAttribute('aria-hidden','true')}}if(!paused)last=performance.now();render()}
+    $('pauseBtn').onclick=togglePause;
     document.addEventListener('keydown',e=>{
+      if(e.code==='Escape'){e.preventDefault();togglePause();return}
+      if(paused)return;
       const map={Digit1:'prep',Digit2:'grill',Digit3:'bake',Digit4:'plate',Space:'stop'};
       if(map[e.code]==='stop') stopCook(); else if(map[e.code]) useStation(map[e.code]);
     });
+    $('resumeBtn').onclick=function(){if(paused)togglePause()};
+    $('restartPause').onclick=function(){if(paused)togglePause();reset()};
+    $('volSlider').oninput=function(){applyVol(+this.value)};
+    addEventListener('blur',function(){if(running&&!paused)togglePause()});
+    applyVol(savedVol);
+    function renderModes(){$('modeRow').innerHTML=MODES.map(m=>'<button class="'+(m.id===modeId?'sel':'')+'" data-mode="'+m.id+'" type="button" title="'+m.desc+'">'+m.label+'</button>').join('');document.querySelectorAll('#modeRow button').forEach(b=>b.onclick=function(){modeId=b.dataset.mode;renderModes();if(!running)reset()})}
+    renderModes();
     reset(); requestAnimationFrame(tick);
   })();
   

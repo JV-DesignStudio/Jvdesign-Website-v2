@@ -1,1 +1,1 @@
-window.location.replace('/pages/dev-tools.html');
+window.location.replace('/create');

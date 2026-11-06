@@ -14,7 +14,7 @@ const ENTRY_ROUTES = [
   '/workshops/start-here.html',
   '/browse.html',
   '/me.html',
-  '/dev-tools'
+  '/create'
 ];
 
 const mime = {
@@ -69,7 +69,7 @@ function resolveFile(urlPath) {
     const fileFor = route => {
       const clean = route.replace(/^\//, '');
       if (fs.existsSync(path.join(root, clean))) return path.join(root, clean);
-      const alias = { 'dev-tools': 'pages/dev-tools.html' }[clean];
+      const alias = { 'create': 'pages/dev-tools.html' }[clean];
       return alias ? path.join(root, alias) : null;
     };
     for (const route of ENTRY_ROUTES) {

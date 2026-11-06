@@ -20,7 +20,7 @@
 
   var SESSION_PREFIX = 'jvds_funnel_';
   var NAMES = { start: 'first_create_start', complete: 'first_create_complete', share: 'first_create_share' };
-  var HUB_PAGES = ['/', '/index.html', '/arcade.html', '/workshop.html', '/dev-tools.html', '/dev-tools', '/learn-hub.html'];
+  var HUB_PAGES = ['/', '/index.html', '/arcade.html', '/workshop.html', '/create', '/dev-tools.html', '/dev-tools', '/learn-hub.html'];
   var GAME_SECTION = /^\/(games)\//;
 
   function section() {
