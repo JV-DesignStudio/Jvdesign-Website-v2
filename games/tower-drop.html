@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uqB05LSnWjIHyitxcGkcsKIb2aa06BafC8WACrbTnfo=' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/43vF5StaXZtqy7l08Nu45myzj+PLb23dRRFnc2yw8M=' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <title>Tower Drop | JVDS Arcade</title>
 <meta name="description" content="Tower Drop is a one-button stacking game. Tap to drop the swinging platform and build the tallest tower you can. Starring Pip.">
 <link rel="canonical" href="https://jvdesignstudio.co.uk/games/tower-drop.html">
 <link rel="icon" href="../logo.png" type="image/png">
+<script src="../assets/js/perf-sentinel.js"></script>
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
@@ -193,6 +194,7 @@
 
   var scale = 1;
   var dpr = 1;
+  var lowPerf = false;
   var floors = [];
   var platform = { cx: VW / 2, w: 150, y: 0 };
   var phase = 0;
@@ -313,7 +315,7 @@
     var w = Math.max(120, stage.clientWidth - 16);
     var h = Math.max(120, stage.clientHeight - 16);
     scale = Math.min(w / VW, h / VH);
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, lowPerf ? 1 : 2);
     canvas.width = Math.round(VW * scale * dpr);
     canvas.height = Math.round(VH * scale * dpr);
     canvas.style.width = Math.round(VW * scale) + 'px';
@@ -850,22 +852,24 @@
   function drawBackground() {
     ctx.drawImage(bgLayer, 0, 0, VW, VH);
 
-    for (var i = 0; i < stars.length; i++) {
-      var st = stars[i];
-      ctx.globalAlpha = 0.2 + 0.35 * (0.5 + 0.5 * Math.sin(clock * 1.6 + st.p));
-      ctx.fillStyle = '#e9d5ff';
-      ctx.beginPath();
-      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
-      ctx.fill();
+    if (!lowPerf) {
+      for (var i = 0; i < stars.length; i++) {
+        var st = stars[i];
+        ctx.globalAlpha = 0.2 + 0.35 * (0.5 + 0.5 * Math.sin(clock * 1.6 + st.p));
+        ctx.fillStyle = '#e9d5ff';
+        ctx.beginPath();
+        ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      for (var c = 0; c < clouds.length; c++) drawCloud(clouds[c]);
+
+      drawGlow(glowPurple, VW / 2, BASE_Y + cam, 700, 0.6);
     }
-    ctx.globalAlpha = 1;
-
-    for (var c = 0; c < clouds.length; c++) drawCloud(clouds[c]);
-
-    drawGlow(glowPurple, VW / 2, BASE_Y + cam, 700, 0.6);
     drawHill(VH - 24 + cam * 0.16, '#241a3f', 24, 88, 0);
     drawHill(VH + 8 + cam * 0.3, '#1b1430', 32, 68, 44);
-    drawMotes();
+    if (!lowPerf) drawMotes();
   }
 
   function drawCloud(c) {
@@ -975,11 +979,11 @@
     }
     ctx.globalAlpha = 1;
 
-    drawGlow(skinGlow, platform.cx, y + h / 2, Math.max(110, platform.w * 1.5), 0.55);
+    if (!lowPerf) drawGlow(skinGlow, platform.cx, y + h / 2, Math.max(110, platform.w * 1.5), 0.55);
 
     ctx.save();
     ctx.shadowColor = 'rgba(' + sk.glow + ',0.55)';
-    ctx.shadowBlur = 16;
+    ctx.shadowBlur = lowPerf ? 0 : 16;
     var grd = ctx.createLinearGradient(0, y, 0, y + h);
     grd.addColorStop(0, sk.top);
     grd.addColorStop(1, sk.bot);
@@ -999,6 +1003,7 @@
   }
 
   function drawDebris() {
+    if (lowPerf) return;
     for (var i = 0; i < debris.length; i++) {
       var p = debris[i];
       var alpha = Math.max(0, Math.min(1, p.life / 0.6));
@@ -1029,6 +1034,7 @@
   }
 
   function drawBursts() {
+    if (lowPerf) return;
     for (var i = 0; i < bursts.length; i++) {
       var b = bursts[i];
       var t = 1 - b.life / b.max;
@@ -1044,6 +1050,7 @@
   }
 
   function drawSparks() {
+    if (lowPerf) return;
     for (var i = 0; i < sparks.length; i++) {
       var k = sparks[i];
       ctx.globalAlpha = Math.max(0, k.life / k.max);
@@ -1215,6 +1222,10 @@
 
   window.addEventListener('resize', resize);
   if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+  window.addEventListener('jvds:quality', function (e) {
+    lowPerf = !!(e.detail && e.detail.level === 'low');
+    resize();
+  });
 
   window.__towerDrop = {
     snapshot: function () {
