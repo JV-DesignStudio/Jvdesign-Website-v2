@@ -77,6 +77,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       page.on('console', m => {
         if (m.type() === 'error' && !/favicon|net::ERR_|Failed to load resource|ERR_ABORTED/i.test(m.text())) errors.push(m.text());
       });
+      // Tools may guard unsaved work with a beforeunload prompt; accept it so a
+      // journey reload never hangs (the work was saved before reopening).
+      page.on('dialog', d => { d.accept().catch(() => {}); });
       await page.setViewport({ width: vp.w, height: vp.h, isMobile: vp.w < 700, hasTouch: true, deviceScaleFactor: vp.w < 700 ? 2 : 1 });
       await page.evaluateOnNewDocument(() => {
         try {
@@ -364,6 +367,178 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
       assert.deepEqual(errors, [], label + ': page errors ' + errors.slice(0, 2).join(' | '));
       await page.close();
       console.log('PASS: ' + label + ' quiz answer, check and rotation');
+    }
+
+    // ── Journey 4: flagship creators, create -> save -> export -> reopen at 390 ──
+    // A2622: a layout check is not a task. Each tool must actually keep the work,
+    // make a real file, and bring the work back after a reload on a phone.
+    const os = require('node:os');
+    const downloadDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jvds-mobile-journey-'));
+    const clearDownloads = () => {
+      for (const f of fs.readdirSync(downloadDir)) {
+        try { fs.unlinkSync(path.join(downloadDir, f)); } catch (e) {}
+      }
+    };
+    const waitDownload = async (re, ms) => {
+      const end = Date.now() + (ms || 15000);
+      while (Date.now() < end) {
+        const hit = fs.readdirSync(downloadDir).filter(f => re.test(f) && !/\.crdownload$/i.test(f));
+        if (hit.length) return hit[0];
+        await sleep(120);
+      }
+      return '';
+    };
+    const enableDownloads = async page => {
+      await page.__cdp.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: downloadDir });
+    };
+    const resetStorage = async page => page.evaluate(() => {
+      try {
+        localStorage.clear();
+        localStorage.setItem('jvds-cookie-consent', 'declined');
+      } catch (e) {}
+    });
+
+    // 4a Pixel Studio: paint something, save it, export a PNG, reopen it.
+    try {
+      const label = 'pixel-studio 390';
+      const { page, errors } = await open('/tools/pixel-studio.html', { w: 390, h: 844 });
+      await enableDownloads(page);
+      await resetStorage(page);
+      await page.evaluate(() => {
+        const px = new Uint8Array(2 * 2 * 4);
+        for (let i = 0; i < px.length; i += 4) { px[i] = 220; px[i + 3] = 255; }
+        window.applyProject({
+          v: 3, cW: 2, cH: 2, fps: 8,
+          layers: [{ name: 'Layer 1', visible: true, opacity: 100 }],
+          frames: [[Array.from(px)]],
+          frameMeta: [{ clip: 'default', hold: 1 }],
+          animLoop: true, exportOrigin: 0
+        });
+      });
+      assert.equal(await page.evaluate(() => window.saveProject()), true, label + ': saveProject did not report success');
+      assert.equal(await page.evaluate(() => !!localStorage.getItem('jvds_pixel')), true, label + ': save did not write jvds_pixel');
+      clearDownloads();
+      await page.evaluate(() => window.exportPNG());
+      assert.ok(await waitDownload(/\.png$/i, 15000), label + ': exportPNG produced no PNG download');
+      const broken = await page.evaluate(() => {
+        const orig = Storage.prototype.setItem;
+        Storage.prototype.setItem = function () { const e = new Error('blocked'); e.name = 'SecurityError'; throw e; };
+        let ok;
+        try { ok = window.saveProject(); } finally { Storage.prototype.setItem = orig; }
+        return { ok, flag: window._projectSaved };
+      });
+      assert.equal(broken.ok, false, label + ': a blocked save was reported as success');
+      assert.equal(broken.flag, false, label + ': a blocked save left _projectSaved true');
+      await page.reload({ waitUntil: 'load', timeout: 40000 });
+      const reopened = await page.evaluate(() => {
+        const raw = localStorage.getItem('jvds_pixel');
+        if (!raw) return { ok: false };
+        window.applyProject(JSON.parse(raw));
+        const d = window.flattenFrame(0).getContext('2d').getImageData(0, 0, 1, 1).data;
+        return { ok: true, r: d[0], a: d[3] };
+      });
+      assert.ok(reopened.ok && reopened.a > 0 && reopened.r > 0, label + ': saved sprite did not reopen (' + JSON.stringify(reopened) + ')');
+      assert.ok((await overflow(page)) <= 1, label + ': sideways scrolling');
+      assert.deepEqual(errors, [], label + ': page errors ' + errors.slice(0, 2).join(' | '));
+      await page.close();
+      console.log('PASS: ' + label + ' create, save, export PNG, reopen');
+    } catch (err) {
+      failures.push(err.stack || err.message);
+    }
+
+    // 4b Story Editor: name/create a story, save a slot, export the script, reopen it.
+    try {
+      const label = 'story-editor 390';
+      const { page, errors } = await open('/tools/story-editor.html', { w: 390, h: 844 });
+      await enableDownloads(page);
+      await resetStorage(page);
+      const created = await page.evaluate(() => {
+        const inp = document.getElementById('storyNameInput');
+        inp.value = 'Mobile Journey Story';
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        window.saveStory();
+        const slots = window.getSlots().filter(Boolean);
+        return { count: slots.length, name: (slots[0] || {}).name };
+      });
+      assert.ok(created.count >= 1, label + ': saveStory wrote no slot');
+      assert.equal(created.name, 'Mobile Journey Story', label + ': saved story name is wrong (' + created.name + ')');
+      clearDownloads();
+      await page.evaluate(() => window.exportScript());
+      assert.ok(await waitDownload(/\.txt$/i, 15000), label + ': exportScript produced no .txt download');
+      const broken = await page.evaluate(() => {
+        const orig = Storage.prototype.setItem;
+        Storage.prototype.setItem = function () { throw new Error('blocked'); };
+        let threw = false;
+        try { window.saveStory(); } catch (e) { threw = true; } finally { Storage.prototype.setItem = orig; }
+        return threw;
+      });
+      assert.equal(broken, true, label + ': a blocked story save threw nothing');
+      // Story Editor guards unsaved work with a beforeunload prompt; the save
+      // succeeded above, so clear the dirty flag before reopening the page.
+      await page.evaluate(() => { try { dirty = false; } catch (e) {} });
+      await page.reload({ waitUntil: 'load', timeout: 40000 });
+      const reopened = await page.evaluate(() => {
+        const slots = window.getSlots();
+        const idx = slots.findIndex(Boolean);
+        if (idx < 0) return { ok: false };
+        window.loadFromSlot(idx);
+        const name = (typeof storyName === 'string') ? storyName : (document.getElementById('storyNameInput') || {}).value;
+        return { ok: true, name };
+      });
+      assert.ok(reopened.ok && reopened.name === 'Mobile Journey Story', label + ': story did not reopen (' + JSON.stringify(reopened) + ')');
+      assert.ok((await overflow(page)) <= 1, label + ': sideways scrolling');
+      assert.deepEqual(errors, [], label + ': page errors ' + errors.slice(0, 2).join(' | '));
+      await page.close();
+      console.log('PASS: ' + label + ' create, save, export script, reopen');
+    } catch (err) {
+      failures.push(err.stack || err.message);
+    }
+
+    // 4c Sound Studio: add a note, autosave, export a WAV, reopen the session.
+    try {
+      const label = 'sound-studio 390';
+      const { page, errors } = await open('/tools/sound-studio.html', { w: 390, h: 844 });
+      await enableDownloads(page);
+      await resetStorage(page);
+      const created = await page.evaluate(() => {
+        const cell = document.querySelector('.step-cell');
+        if (cell) cell.click();
+        window.doAutosave();
+        const raw = localStorage.getItem('jvds_sound_auto');
+        let d = null;
+        try { d = JSON.parse(raw); } catch (e) {}
+        const on = !!(d && Array.isArray(d.grid) && d.grid.some(r => Array.isArray(r) && r.some(c => c && c.on)));
+        return { saved: !!raw, on };
+      });
+      assert.ok(created.saved, label + ': autosave wrote no session');
+      assert.ok(created.on, label + ': no note was saved');
+      clearDownloads();
+      await page.evaluate(() => window.exportWAV());
+      assert.ok(await waitDownload(/\.wav$/i, 25000), label + ': exportWAV produced no WAV download');
+      const broken = await page.evaluate(() => {
+        const before = localStorage.getItem('jvds_sound_auto');
+        const orig = Storage.prototype.setItem;
+        Storage.prototype.setItem = function () { throw new Error('blocked'); };
+        try { window.doAutosave(); } finally { Storage.prototype.setItem = orig; }
+        return { before, after: localStorage.getItem('jvds_sound_auto') };
+      });
+      assert.equal(broken.after, broken.before, label + ': a blocked autosave looked successful');
+      await page.reload({ waitUntil: 'load', timeout: 40000 });
+      const reopened = await page.evaluate(() => {
+        const raw = localStorage.getItem('jvds_sound_auto');
+        let d = null;
+        try { d = JSON.parse(raw); } catch (e) {}
+        const usable = !!(d && Array.isArray(d.grid) && d.grid.some(r => Array.isArray(r) && r.some(c => c && c.on)));
+        if (usable) { try { window.doRestore(); } catch (e) {} }
+        return { usable };
+      });
+      assert.ok(reopened.usable, label + ': saved sound did not reopen');
+      assert.ok((await overflow(page)) <= 1, label + ': sideways scrolling');
+      assert.deepEqual(errors, [], label + ': page errors ' + errors.slice(0, 2).join(' | '));
+      await page.close();
+      console.log('PASS: ' + label + ' create, save, export WAV, reopen');
+    } catch (err) {
+      failures.push(err.stack || err.message);
     }
   } catch (err) {
     failures.push(err.stack || err.message);

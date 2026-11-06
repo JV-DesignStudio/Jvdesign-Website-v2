@@ -32,8 +32,11 @@ function loadJson(rel) {
 }
 
 function fileExists(rel) {
-  // rel is an absolute-style site path e.g. /games/rustfall.html
-  return fs.existsSync(path.join(ROOT, rel.replace(/^\//, '')));
+  // rel is an absolute-style site path e.g. /games/rustfall.html.
+  // Catalogue entries may legitimately carry a query or hash
+  // (/workshops/3d-builder.html?preset=rocket), so check the file itself.
+  const clean = String(rel).split(/[?#]/)[0];
+  return fs.existsSync(path.join(ROOT, clean.replace(/^\//, '')));
 }
 
 function isNoindex(rel) {
@@ -256,6 +259,64 @@ checkCatalogue(
 
 // ---------- engine hubs ----------
 checkEngineHubs();
+
+// ---------- generated counts ----------
+// content/stats.json is generated from the catalogues. If it drifts, the
+// homepage and every STAT marker show the wrong total without any file missing.
+function checkStats() {
+  const stats = loadJson('content/stats.json');
+  const counts = {
+    workshops: loadJson('content/workshops.json').length,
+    tools: loadJson('content/tools.json').length,
+    games: loadJson('content/games.json').length,
+    books: loadJson('content/books.json').length,
+  };
+  console.log('\n--- content/stats.json ---');
+  let bad = 0;
+  for (const [key, n] of Object.entries(counts)) {
+    if (stats[key] !== n) {
+      warn('stats', `${key}: stats says ${stats[key]}, catalogue has ${n} - run npm run build`);
+      bad++;
+    }
+  }
+  if (!bad) ok('stats', 'catalogue counts match content/stats.json');
+  return counts;
+}
+
+// The homepage carries two kinds of count: JSON-LD numberOfItems (exact) and
+// static hero fallbacks (workshops and tools round up to the nearest ten with a
+// plus). Both must agree with the catalogue so a learner never sees a stale
+// total after content changes.
+function checkHomepageCounts(counts) {
+  console.log('\n--- index.html counts ---');
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  let bad = 0;
+  const items = html.match(/"numberOfItems"\s*:\s*(\d+)/);
+  if (!items) {
+    warn('homepage', 'no JSON-LD numberOfItems found');
+    bad++;
+  } else if (Number(items[1]) !== counts.workshops) {
+    warn('homepage', `JSON-LD numberOfItems ${items[1]} != ${counts.workshops} workshops`);
+    bad++;
+  }
+  const hero = (id, want) => {
+    const re = new RegExp('id="' + id + '"[^>]*>([^<]+)<');
+    const m = html.match(re);
+    if (!m) { warn('homepage', `hero stat ${id} not found`); bad++; return; }
+    if (m[1].trim() !== want) {
+      warn('homepage', `${id} shows ${m[1].trim()}, expected ${want}`);
+      bad++;
+    }
+  };
+  hero('heroWorkshopCount', (Math.floor(counts.workshops / 10) * 10) + '+');
+  hero('heroToolCount', counts.tools + '+');
+  hero('heroGameCount', String(counts.games));
+  if (!bad) ok('homepage', `counts match the catalogues (${counts.workshops} workshops, ${counts.tools} tools, ${counts.games} games)`);
+  return bad;
+}
+
+const catalogueCounts = checkStats();
+checkHomepageCounts(catalogueCounts);
 
 // ---------- summary ----------
 console.log('\n' + '='.repeat(50));
