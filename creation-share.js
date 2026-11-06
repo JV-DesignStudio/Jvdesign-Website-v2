@@ -261,7 +261,7 @@
   btn.type = 'button';
   btn.textContent = 'Share your creation';
   btn.title = 'Share what you made';
-  btn.setAttribute('aria-label', 'Share what you made');
+  btn.setAttribute('aria-label', 'Share your creation');
   btn.addEventListener('click', share);
   if (window.JVDSDock) window.JVDSDock.add(btn);
   else document.body.appendChild(btn);

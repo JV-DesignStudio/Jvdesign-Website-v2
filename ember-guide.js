@@ -171,8 +171,8 @@
     btn.type='button';
     btn.setAttribute('data-ember-floating','1');
     btn.title='Ember quick guide';
-    btn.setAttribute('aria-label','Show Ember guide');
-    btn.style.cssText='position:fixed;right:14px;bottom:'+(hasBottomBar?'64px':'14px')+';z-index:9997;background:var(--mascot-ember,#F2637A);color:#fff;border:none;border-radius:999px;padding:10px 16px;font-family:Fredoka,cursive;font-weight:700;font-size:.82rem;box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer;display:inline-flex;align-items:center;gap:6px';
+    btn.setAttribute('aria-label','Ember help');
+    btn.style.cssText='position:fixed;right:14px;bottom:'+(hasBottomBar?'64px':'14px')+';z-index:9997;background:var(--mascot-ember,#F2637A);color:#1a1208;border:none;border-radius:999px;padding:10px 16px;font-family:Fredoka,cursive;font-weight:700;font-size:.82rem;box-shadow:0 6px 20px rgba(0,0,0,.18);cursor:pointer;display:inline-flex;align-items:center;gap:6px';
     btn.innerHTML='<img src="/assets/mascots/ember-badge.webp" alt="" width="22" height="22" style="border-radius:50%;border:2px solid #fff;background:#fff"> Help';
     btn.addEventListener('click', function(){ openAt(0); });
     document.body.appendChild(btn);

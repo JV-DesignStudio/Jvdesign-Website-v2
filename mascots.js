@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const coach = document.createElement('div');
       coach.className = 'mascot-coach' + (isTool ? ' mascot-coach--tool' : '');
       coach.style.setProperty('--mascot-accent', mascot==='ember' ? 'var(--mascot-ember)' : (mascot==='pip' ? 'var(--mascot-pip)' : 'var(--mascot-lumo)'));
-      coach.innerHTML = `<img src="${img}" alt="${name}"><div class="mascot-coach-body"><strong>${name} says:</strong> ${line}</div><button class="mascot-coach-dismiss" aria-label="Dismiss">Got it</button>`;
+      coach.innerHTML = `<img src="${img}" alt="${name}"><div class="mascot-coach-body"><strong>${name} says:</strong> ${line}</div><button class="mascot-coach-dismiss" aria-label="Got it">Got it</button>`;
       coachHost.insertAdjacentElement('afterend', coach);
       coach.querySelector('.mascot-coach-dismiss').addEventListener('click', () => {
         coach.remove();
