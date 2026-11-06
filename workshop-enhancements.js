@@ -858,6 +858,7 @@
 
   loadScript('/assets/js/workshop-hud.js');
   loadScript('/workshops/keep-progress.js');
+  loadScript('/assets/js/workshop-course-nav.js');
 
   var isArticlePage = !!(document.body && (document.body.dataset.workshopKey || document.body.dataset.profileId));
   if (isArticlePage) loadScript('/assets/js/workshop-reader.js');
