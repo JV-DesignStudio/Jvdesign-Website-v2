@@ -1,1 +1,1 @@
-window.WORKSHOP_TOTAL=5;window.WORKSHOP_KEY='jvds-mugen-world-ep8-stage-v2';window.WORKSHOP_PROFILE_ID='mugen-world-ep8-stage';
+window.WORKSHOP_TOTAL=6;window.WORKSHOP_KEY='jvds-mugen-world-ep8-stage-v2';window.WORKSHOP_PROFILE_ID='mugen-world-ep8-stage';
