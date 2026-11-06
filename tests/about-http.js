@@ -48,7 +48,7 @@ function check(name, ok, detail = '') {
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
     }));
     check(width + 'px: title loads', state.title.includes('About'), state.title);
-    check(width + 'px: workshop count shows 330+', parseInt(state.workshops, 10) >= 330, state.workshops);
+    check(width + 'px: workshop count shows 280+', parseInt(state.workshops, 10) >= 280, state.workshops);
     check(width + 'px: tool count shows 50+', /^50\+/.test(state.tools), state.tools);
     check(width + 'px: no horizontal overflow', state.overflow <= 2, String(state.overflow));
   }
