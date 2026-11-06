@@ -27,7 +27,7 @@ const entityOf = (label) => {
   if (/tools?/.test(l)) return 'tools';
   return null;
 };
-for (const f of ['index.html', 'pages/about.html', 'pages/learn-hub.html', 'pages/parents.html']) {
+for (const f of ['index.html', 'pages/about.html', 'pages/learn-hub.html']) {
   const html = read(f);
   let m;
   while ((m = statRe.exec(html))) {
@@ -51,7 +51,7 @@ const n = (read('index.html').match(/"numberOfItems"\s*:\s*(\d+)/) || [])[1];
 check(`index.html numberOfItems ${n} matches stats.workshops ${stats.workshops}`, Number(n) === stats.workshops);
 
 // no page may reintroduce a contradicting games count
-for (const f of ['index.html', 'pages/about.html', 'pages/press.html', 'pages/parent-guide.html']) {
+for (const f of ['index.html', 'pages/about.html', 'pages/press.html']) {
   const bad = (read(f).match(/\b40\s+(?:free\s+|listed\s+|browser\s+)?games?/i) || [])[0];
   check(`${f}: no stale "40 games" copy`, !bad, bad || '');
 }

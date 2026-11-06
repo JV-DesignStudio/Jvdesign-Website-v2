@@ -74,15 +74,27 @@ const redirects = fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8');
 if (/NOT APPLIED|ignores this file/.test(redirects)) fail('_redirects still carries a NOT APPLIED marker');
 else ok('_redirects has no NOT APPLIED marker');
 const rules = redirects.split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
+const ruleMap = new Map();
+for (const r of rules) {
+  const [from, to] = r.split(/\s+/);
+  if (from && to && from.startsWith('/')) ruleMap.set(from, to);
+}
+const targetExists = (to, seen = new Set()) => {
+  const clean = to.replace(/^\//, '').split('#')[0].split('?')[0];
+  const file = path.join(ROOT, clean);
+  const fileHtml = file.endsWith('.html') ? file : file + '.html';
+  if (fs.existsSync(file) || fs.existsSync(fileHtml)) return true;
+  if (seen.has(to)) return false;
+  seen.add(to);
+  const next = ruleMap.get(to);
+  return next ? targetExists(next, seen) : false;
+};
 const r301 = rules.filter((l) => /\s301!?(\s|$)/.test(l));
 if (r301.length >= 1) ok(r301.length + ' 301 rule(s), e.g. ' + r301[0].split(/\s+/).slice(0, 2).join(' -> '));
 else fail('no 301 rule in _redirects');
 for (const r of r301) {
   const to = r.split(/\s+/)[1];
-  const clean = to.replace(/^\//, '').split('#')[0].split('?')[0];
-  const file = path.join(ROOT, clean);
-  const fileHtml = file.endsWith('.html') ? file : file + '.html';
-  if (fs.existsSync(file) || fs.existsSync(fileHtml)) ok('redirect target exists: ' + to);
+  if (targetExists(to)) ok('redirect target exists: ' + to);
   else fail('redirect target missing: ' + to);
 }
 try {

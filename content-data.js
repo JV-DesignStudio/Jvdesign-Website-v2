@@ -450,7 +450,7 @@ window.JVDS_CONTENT = {
     {
       "id": "gdevelop-platformer-workshop",
       "title": "Platformer , Build a Platformer in GDevelop",
-      "desc": "Build a Platformer game in GDevelop! A free parent & child workshop. Platforms, player, enemies. No coding needed. Ages 8+.",
+      "desc": "Build a Platformer game in GDevelop! A free grown-up & child workshop. Platforms, player, enemies. No coding needed. Ages 8+.",
       "engine": "GDevelop",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -466,7 +466,7 @@ window.JVDS_CONTENT = {
     {
       "id": "gdevelop-pointclick-workshop",
       "title": "Point &amp; Click , Build an Adventure in GDevelop",
-      "desc": "Build a Point & Click adventure in GDevelop! A free parent & child workshop. Inventory, puzzles, dialogue. No coding needed. Ages 8+.",
+      "desc": "Build a Point & Click adventure in GDevelop! A free grown-up & child workshop. Inventory, puzzles, dialogue. No coding needed. Ages 8+.",
       "engine": "GDevelop",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -482,7 +482,7 @@ window.JVDS_CONTENT = {
     {
       "id": "gdevelop-pong-workshop",
       "title": "Pong Clone , Build a Pong Game in GDevelop",
-      "desc": "Build your first GDevelop game! A free parent & child workshop. Create paddles, a bouncing ball and score tracking. No coding needed. Ages 8+.",
+      "desc": "Build your first GDevelop game! A free grown-up & child workshop. Create paddles, a bouncing ball and score tracking. No coding needed. Ages 8+.",
       "engine": "GDevelop",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -496,7 +496,7 @@ window.JVDS_CONTENT = {
     {
       "id": "gdevelop-snake-workshop",
       "title": "Snake , Build a Snake Game in GDevelop",
-      "desc": "Build a Snake game in GDevelop! A free parent & child workshop. Direction, growth and game over. No coding needed. Ages 8+.",
+      "desc": "Build a Snake game in GDevelop! A free grown-up & child workshop. Direction, growth and game over. No coding needed. Ages 8+.",
       "engine": "GDevelop",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -510,7 +510,7 @@ window.JVDS_CONTENT = {
     {
       "id": "gdevelop-shooter-workshop",
       "title": "Space Shooter , Build a Shooter in GDevelop",
-      "desc": "Build a Space Shooter in GDevelop! A free parent & child workshop. Bullets, spawning, waves. No coding needed. Ages 8+.",
+      "desc": "Build a Space Shooter in GDevelop! A free grown-up & child workshop. Bullets, spawning, waves. No coding needed. Ages 8+.",
       "engine": "GDevelop",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -526,7 +526,7 @@ window.JVDS_CONTENT = {
     {
       "id": "gdevelop-adventure-workshop",
       "title": "Top-Down Adventure , Build an RPG in GDevelop",
-      "desc": "Build a Top-Down Adventure in GDevelop! A free parent & child workshop. Movement, NPCs, quests. No coding needed. Ages 8+.",
+      "desc": "Build a Top-Down Adventure in GDevelop! A free grown-up & child workshop. Movement, NPCs, quests. No coding needed. Ages 8+.",
       "engine": "GDevelop",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -750,7 +750,7 @@ window.JVDS_CONTENT = {
     {
       "id": "my-first-3d-prints-fidget-toy",
       "title": "My First 3D Prints, Fidget Toy",
-      "desc": "Free parent & child TinkerCad workshop. Design and 3D print your first fidget toy. No experience needed. Ages 8+.",
+      "desc": "Free grown-up & child TinkerCad workshop. Design and 3D print your first fidget toy. No experience needed. Ages 8+.",
       "engine": "General",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -888,7 +888,7 @@ window.JVDS_CONTENT = {
     {
       "id": "my-first-gdevelop-game",
       "title": "My First GDevelop Game",
-      "desc": "6 free parent & child GDevelop workshops. Build a Pong, Snake, Platformer, Shooter, Point & Click and Top-Down Adventure no coding needed. Ages 8+.",
+      "desc": "6 free grown-up & child GDevelop workshops. Build a Pong, Snake, Platformer, Shooter, Point & Click and Top-Down Adventure no coding needed. Ages 8+.",
       "engine": "General",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -973,7 +973,7 @@ window.JVDS_CONTENT = {
     {
       "id": "my-first-pico8-game",
       "title": "My First Pico-8 Game",
-      "desc": "6 free parent & child Pico-8 workshops. Build Pong, Snake, a dungeon crawler, space shooter, match-3 and platformer no experience needed. Ages 8+.",
+      "desc": "6 free grown-up & child Pico-8 workshops. Build Pong, Snake, a dungeon crawler, space shooter, match-3 and platformer no experience needed. Ages 8+.",
       "engine": "General",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -1040,7 +1040,7 @@ window.JVDS_CONTENT = {
     {
       "id": "my-first-roblox-studio-game",
       "title": "My First Roblox Studio Game",
-      "desc": "13 free parent & child Roblox Studio workshops. Build an obby, tycoon, simulator, battle game, horror maze, pirate adventure, RPG and a Fall Guys style party game, no experience needed. Ages 7+.",
+      "desc": "13 free grown-up & child Roblox Studio workshops. Build an obby, tycoon, simulator, battle game, horror maze, pirate adventure, RPG and a Fall Guys style party game, no experience needed. Ages 7+.",
       "engine": "General",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -1061,7 +1061,7 @@ window.JVDS_CONTENT = {
     {
       "id": "my-first-scratch-game",
       "title": "My First Scratch Game",
-      "desc": "6 free parent & child Scratch workshops. Build a platformer, quiz, catch game, maze, story and clicker no experience needed. Ages 7+.",
+      "desc": "6 free grown-up & child Scratch workshops. Build a platformer, quiz, catch game, maze, story and clicker no experience needed. Ages 7+.",
       "engine": "General",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -1094,8 +1094,8 @@ window.JVDS_CONTENT = {
     },
     {
       "id": "my-first-series",
-      "title": "My First Series Parent & Child Game Building Workshops",
-      "desc": "Free parent & child game building workshops. No experience needed. Build real games together in Godot, Scratch, Roblox, Minecraft, Unity, Unreal & GameMaker. Ages 5+.",
+      "title": "My First Series Grown-up & Child Game Building Workshops",
+      "desc": "Free grown-up & child game building workshops. No experience needed. Build real games together in Godot, Scratch, Roblox, Minecraft, Unity, Unreal & GameMaker. Ages 5+.",
       "engine": "General",
       "difficulty": "beginner",
       "ageRange": "4-6",
@@ -1150,7 +1150,7 @@ window.JVDS_CONTENT = {
     {
       "id": "my-first-video-game",
       "title": "My First Video Game",
-      "desc": "9 free parent & child Godot workshops. Build a racing game, platformer, shooter, survivors game, Donkey Kong clone, Zelda adventure, and a 3-part FNAF-style horror game. No experience needed. Ages 5+.",
+      "desc": "9 free grown-up & child Godot workshops. Build a racing game, platformer, shooter, survivors game, Donkey Kong clone, Zelda adventure, and a 3-part FNAF-style horror game. No experience needed. Ages 5+.",
       "engine": "General",
       "difficulty": "beginner",
       "ageRange": "4-6",
@@ -2610,7 +2610,7 @@ window.JVDS_CONTENT = {
     {
       "id": "pico8-dungeon-workshop",
       "title": "Build a Dungeon Crawler in Pico-8",
-      "desc": "Build a dungeon crawler in Pico-8! A free parent & child workshop. Explore rooms, fight enemies, manage health with real Lua code. Ages 8+.",
+      "desc": "Build a dungeon crawler in Pico-8! A free grown-up & child workshop. Explore rooms, fight enemies, manage health with real Lua code. Ages 8+.",
       "engine": "PICO-8",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -2624,7 +2624,7 @@ window.JVDS_CONTENT = {
     {
       "id": "pico8-match3-workshop",
       "title": "Build a Match-3 Game in Pico-8",
-      "desc": "Build a Match-3 puzzle game in Pico-8! A free parent & child workshop. Swap gems, create combos, race the clock with real Lua code. Ages 8+.",
+      "desc": "Build a Match-3 puzzle game in Pico-8! A free grown-up & child workshop. Swap gems, create combos, race the clock with real Lua code. Ages 8+.",
       "engine": "PICO-8",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -2640,7 +2640,7 @@ window.JVDS_CONTENT = {
     {
       "id": "pico8-platformer-workshop",
       "title": "Build a Platformer in Pico-8",
-      "desc": "Build a platformer in Pico-8! A free parent & child workshop. Gravity, jumping, enemies, coins and a finish flag with real Lua code. Ages 8+.",
+      "desc": "Build a platformer in Pico-8! A free grown-up & child workshop. Gravity, jumping, enemies, coins and a finish flag with real Lua code. Ages 8+.",
       "engine": "PICO-8",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -2656,7 +2656,7 @@ window.JVDS_CONTENT = {
     {
       "id": "pico8-pong-workshop",
       "title": "Build a Pong Clone in Pico-8",
-      "desc": "Build your first Pico-8 game! A free parent & child workshop. Create paddles, a bouncing ball and score tracking with real Lua code. Ages 8+.",
+      "desc": "Build your first Pico-8 game! A free grown-up & child workshop. Create paddles, a bouncing ball and score tracking with real Lua code. Ages 8+.",
       "engine": "PICO-8",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -2670,7 +2670,7 @@ window.JVDS_CONTENT = {
     {
       "id": "pico8-snake-workshop",
       "title": "Build a Snake Game in Pico-8",
-      "desc": "Build a Snake game in Pico-8! A free parent & child workshop. Learn grid movement, growth mechanics and collision detection with real Lua code. Ages 8+.",
+      "desc": "Build a Snake game in Pico-8! A free grown-up & child workshop. Learn grid movement, growth mechanics and collision detection with real Lua code. Ages 8+.",
       "engine": "PICO-8",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -2684,7 +2684,7 @@ window.JVDS_CONTENT = {
     {
       "id": "pico8-shooter-workshop",
       "title": "Build a Space Shooter in Pico-8",
-      "desc": "Build a space shooter in Pico-8! A free parent & child workshop. Pilot a ship, fire bullets, defeat enemies with real Lua code. Ages 8+.",
+      "desc": "Build a space shooter in Pico-8! A free grown-up & child workshop. Pilot a ship, fire bullets, defeat enemies with real Lua code. Ages 8+.",
       "engine": "PICO-8",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -2928,7 +2928,7 @@ window.JVDS_CONTENT = {
     {
       "id": "roblox-horror-workshop",
       "title": "Haunted Escape! Build a Horror Maze in Roblox Studio",
-      "desc": "Build a Roblox horror maze game! Dark corridors, a chasing ghost, key collecting and a countdown timer. Free parent & child workshop. Ages 10+.",
+      "desc": "Build a Roblox horror maze game! Dark corridors, a chasing ghost, key collecting and a countdown timer. Free grown-up & child workshop. Ages 10+.",
       "engine": "Roblox",
       "difficulty": "beginner",
       "ageRange": "10-14",
@@ -2944,7 +2944,7 @@ window.JVDS_CONTENT = {
     {
       "id": "roblox-adventure-workshop",
       "title": "Island Quest! Build an RPG Adventure Game in Roblox Studio",
-      "desc": "Build a Roblox RPG island adventure! Talk to NPCs, complete quests, collect loot and defeat a final boss. Free parent & child workshop. Ages 9+.",
+      "desc": "Build a Roblox RPG island adventure! Talk to NPCs, complete quests, collect loot and defeat a final boss. Free grown-up & child workshop. Ages 9+.",
       "engine": "Roblox",
       "difficulty": "beginner",
       "ageRange": "10+",
@@ -2960,7 +2960,7 @@ window.JVDS_CONTENT = {
     {
       "id": "roblox-tycoon-workshop",
       "title": "Money Factory! Build a Tycoon in Roblox Studio",
-      "desc": "Build your first Roblox Tycoon game! A free parent & child workshop. Droppers, collectors, buy pads and a cash GUI. No experience needed.",
+      "desc": "Build your first Roblox Tycoon game! A free grown-up & child workshop. Droppers, collectors, buy pads and a cash GUI. No experience needed.",
       "engine": "Roblox",
       "difficulty": "beginner",
       "ageRange": "10+",
@@ -2976,7 +2976,7 @@ window.JVDS_CONTENT = {
     {
       "id": "roblox-simulator-workshop",
       "title": "Pet Clicker! Build a Simulator in Roblox Studio",
-      "desc": "Build a Roblox Pet Simulator! Click to earn coins, hatch egg pets and level up. Free parent & child workshop in Roblox Studio.",
+      "desc": "Build a Roblox Pet Simulator! Click to earn coins, hatch egg pets and level up. Free grown-up & child workshop in Roblox Studio.",
       "engine": "Roblox",
       "difficulty": "beginner",
       "ageRange": "10+",
@@ -3248,7 +3248,7 @@ window.JVDS_CONTENT = {
     {
       "id": "roblox-battle-workshop",
       "title": "Sword Fight! Build a Battle Arena in Roblox Studio",
-      "desc": "Build a Roblox Sword Fight multiplayer battle arena! Health bars, kill leaderboard, respawn and weapon shop. Free parent & child workshop.",
+      "desc": "Build a Roblox Sword Fight multiplayer battle arena! Health bars, kill leaderboard, respawn and weapon shop. Free grown-up & child workshop.",
       "engine": "Roblox",
       "difficulty": "beginner",
       "ageRange": "10+",
@@ -3262,7 +3262,7 @@ window.JVDS_CONTENT = {
     {
       "id": "roblox-collapse-obby-workshop",
       "title": "World Collapse! Build a Glitch Obby in Roblox Studio",
-      "desc": "Build a Roblox obby where the world crumbles behind you! 30-second collapse, coins, enemies, trampolines, time-freeze and a boss level. Free parent & child workshop. Ages 7+.",
+      "desc": "Build a Roblox obby where the world crumbles behind you! 30-second collapse, coins, enemies, trampolines, time-freeze and a boss level. Free grown-up & child workshop. Ages 7+.",
       "engine": "Roblox",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3278,7 +3278,7 @@ window.JVDS_CONTENT = {
     {
       "id": "scratch-clicker-workshop",
       "title": "Click Frenzy! Build an Idle Clicker Game in Scratch",
-      "desc": "Build an idle clicker game in Scratch! A free parent & child workshop. Click for coins, buy upgrades and unlock auto-earners. Ages 8+.",
+      "desc": "Build an idle clicker game in Scratch! A free grown-up & child workshop. Click for coins, buy upgrades and unlock auto-earners. Ages 8+.",
       "engine": "Scratch",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3292,7 +3292,7 @@ window.JVDS_CONTENT = {
     {
       "id": "scratch-catch-workshop",
       "title": "Don't Drop It! Build a Fruit Catch Game in Scratch",
-      "desc": "Build your first Scratch game! A free parent & child workshop. Move a basket to catch falling fruit, add a score counter and game-over screen. Ages 7+.",
+      "desc": "Build your first Scratch game! A free grown-up & child workshop. Move a basket to catch falling fruit, add a score counter and game-over screen. Ages 7+.",
       "engine": "Scratch",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3306,7 +3306,7 @@ window.JVDS_CONTENT = {
     {
       "id": "scratch-maze-workshop",
       "title": "Find the Exit! Build a Maze Game in Scratch",
-      "desc": "Build a maze game in Scratch! A free parent & child workshop. Draw walls, collect keys, unlock exits across 3 levels. Ages 7+.",
+      "desc": "Build a maze game in Scratch! A free grown-up & child workshop. Draw walls, collect keys, unlock exits across 3 levels. Ages 7+.",
       "engine": "Scratch",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3320,7 +3320,7 @@ window.JVDS_CONTENT = {
     {
       "id": "scratch-platformer-workshop",
       "title": "Jump &amp; Run! Build a Platformer in Scratch",
-      "desc": "Build a side-scrolling platformer in Scratch! A free parent & child workshop. Gravity, jumping, platforms, coins and a finish flag. Ages 7+.",
+      "desc": "Build a side-scrolling platformer in Scratch! A free grown-up & child workshop. Gravity, jumping, platforms, coins and a finish flag. Ages 7+.",
       "engine": "Scratch",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3336,7 +3336,7 @@ window.JVDS_CONTENT = {
     {
       "id": "scratch-quiz-workshop",
       "title": "Know It All! Build a Quiz Game in Scratch",
-      "desc": "Build a quiz game in Scratch! A free parent & child workshop. 10 questions, timer, score and results screen. Ages 7+.",
+      "desc": "Build a quiz game in Scratch! A free grown-up & child workshop. 10 questions, timer, score and results screen. Ages 7+.",
       "engine": "Scratch",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3378,7 +3378,7 @@ window.JVDS_CONTENT = {
     {
       "id": "scratch-story-workshop",
       "title": "Your Story! Build an Interactive Adventure in Scratch",
-      "desc": "Build a branching story game in Scratch! A free parent & child workshop. Add choices, animated characters and multiple endings. Ages 8+.",
+      "desc": "Build a branching story game in Scratch! A free grown-up & child workshop. Add choices, animated characters and multiple endings. Ages 8+.",
       "engine": "Scratch",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3814,7 +3814,7 @@ window.JVDS_CONTENT = {
     {
       "id": "tinkercad-ep7-keychain",
       "title": "Custom Keychain",
-      "desc": "Design a personalized keychain with your name in TinkerCAD. Free parent & child workshop. Ages 8+.",
+      "desc": "Design a personalized keychain with your name in TinkerCAD. Free grown-up & child workshop. Ages 8+.",
       "engine": "TinkerCAD",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3828,7 +3828,7 @@ window.JVDS_CONTENT = {
     {
       "id": "tinkercad-ep1-spinner",
       "title": "Fidget Spinner",
-      "desc": "Design a working fidget spinner in TinkerCAD with proper weight distribution and export it for 3D printing. Free parent & child workshop, no experience needed. Ages 8+.",
+      "desc": "Design a working fidget spinner in TinkerCAD with proper weight distribution and export it for 3D printing. Free grown-up & child workshop, no experience needed. Ages 8+.",
       "engine": "TinkerCAD",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3860,7 +3860,7 @@ window.JVDS_CONTENT = {
     {
       "id": "tinkercad-ep8-shapes",
       "title": "Geometric Shape Set",
-      "desc": "Create a complete geometric shape set with storage tray in TinkerCAD. Free parent & child workshop combining everything from all 8 episodes. Ages 8+.",
+      "desc": "Create a complete geometric shape set with storage tray in TinkerCAD. Free grown-up & child workshop combining everything from all 8 episodes. Ages 8+.",
       "engine": "TinkerCAD",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3888,7 +3888,7 @@ window.JVDS_CONTENT = {
     {
       "id": "tinkercad-ep6-marblerun",
       "title": "Marble Run",
-      "desc": "Build a marble run with ramps, funnels, and zigzag channels in TinkerCAD. Free parent & child 3D printing workshop. Ages 8+.",
+      "desc": "Build a marble run with ramps, funnels, and zigzag channels in TinkerCAD. Free grown-up & child 3D printing workshop. Ages 8+.",
       "engine": "TinkerCAD",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3904,7 +3904,7 @@ window.JVDS_CONTENT = {
     {
       "id": "tinkercad-ep4-pattern",
       "title": "Pattern Pop-It",
-      "desc": "Design a unique pop-it with custom shapes, creative patterns, and mixed bubble sizes in TinkerCAD. Free parent & child 3D printing workshop. Ages 8+.",
+      "desc": "Design a unique pop-it with custom shapes, creative patterns, and mixed bubble sizes in TinkerCAD. Free grown-up & child 3D printing workshop. Ages 8+.",
       "engine": "TinkerCAD",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3920,7 +3920,7 @@ window.JVDS_CONTENT = {
     {
       "id": "tinkercad-ep5-phonestand",
       "title": "Phone Stand",
-      "desc": "Build a functional phone stand in TinkerCAD! Learn about angles, stability, hollowing and cable management. Free parent & child 3D printing workshop. Ages 8+.",
+      "desc": "Build a functional phone stand in TinkerCAD! Learn about angles, stability, hollowing and cable management. Free grown-up & child 3D printing workshop. Ages 8+.",
       "engine": "TinkerCAD",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -3936,7 +3936,7 @@ window.JVDS_CONTENT = {
     {
       "id": "tinkercad-ep2-popit",
       "title": "Pop-It Fidget",
-      "desc": "Design a pop-it fidget toy with custom holes in TinkerCAD. Learn duplicate, hole, and align features. Free parent & child workshop. Ages 8+.",
+      "desc": "Design a pop-it fidget toy with custom holes in TinkerCAD. Learn duplicate, hole, and align features. Free grown-up & child workshop. Ages 8+.",
       "engine": "TinkerCAD",
       "difficulty": "beginner",
       "ageRange": "7-9",
@@ -4675,15 +4675,6 @@ window.JVDS_CONTENT = {
       ]
     },
     {
-      "id": "parent-guide",
-      "title": "Parent and Teacher Guide: Free Game Dev for Kids",
-      "desc": "A free guide for parents and teachers: how to start young people making games on any school computer. No install, no account.",
-      "category": "Reference",
-      "tags": [],
-      "comingSoon": false,
-      "url": "/tools/parent-guide.html"
-    },
-    {
       "id": "particle-designer",
       "title": "Particle Designer: Free Game Effects Maker",
       "desc": "Create particle effects for your game in the browser: sparks, smoke and explosions. Tune and export them. Free, no install.",
@@ -4872,7 +4863,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/rocket-builder.html",
+      "url": "/workshops/3d-builder.html?preset=rocket",
       "aliases": [
         "rocket maker"
       ]
@@ -4888,7 +4879,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/robot-builder.html",
+      "url": "/workshops/3d-builder.html?preset=robot",
       "aliases": [
         "robot maker"
       ]
@@ -4904,7 +4895,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/castle-builder.html",
+      "url": "/workshops/3d-builder.html?preset=castle",
       "aliases": [
         "fortress builder"
       ]
@@ -4920,7 +4911,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/space-station-builder.html",
+      "url": "/workshops/3d-builder.html?preset=space-station",
       "aliases": [
         "orbital outpost builder"
       ]
@@ -4936,7 +4927,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/fairy-tale-builder.html",
+      "url": "/workshops/3d-builder.html?preset=fairy-tale",
       "aliases": [
         "cottage builder"
       ]
@@ -4952,7 +4943,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/pirate-ship-builder.html",
+      "url": "/workshops/3d-builder.html?preset=pirate-ship",
       "aliases": [
         "ship builder"
       ]
@@ -4968,7 +4959,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/steampunk-airship-builder.html",
+      "url": "/workshops/3d-builder.html?preset=steampunk-airship",
       "aliases": [
         "airship builder"
       ]
@@ -4984,7 +4975,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/race-car-builder.html",
+      "url": "/workshops/3d-builder.html?preset=race-car",
       "aliases": [
         "car builder"
       ]
@@ -5000,7 +4991,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/submarine-builder.html",
+      "url": "/workshops/3d-builder.html?preset=submarine",
       "aliases": [
         "sub builder"
       ]
@@ -5016,7 +5007,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/pirate-cannon-builder.html",
+      "url": "/workshops/3d-builder.html?preset=pirate-cannon",
       "aliases": [
         "cannon builder"
       ]
@@ -5032,7 +5023,7 @@ window.JVDS_CONTENT = {
         "Export"
       ],
       "comingSoon": false,
-      "url": "/workshops/phone-stand-builder.html",
+      "url": "/workshops/3d-builder.html?preset=phone-stand",
       "aliases": [
         "3d print builder"
       ]
@@ -5594,10 +5585,10 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-05T20:31:22.000Z",
+    "generated": "2026-11-06T12:00:35.000Z",
     "workshops": 282,
     "games": 14,
-    "tools": 50,
+    "tools": 49,
     "books": 5,
     "engines": {
       "Blender": 11,
@@ -5626,7 +5617,7 @@ window.JVDS_CONTENT = {
       "General": 4,
       "Build & Ship": 3,
       "Make Art": 5,
-      "Reference": 20,
+      "Reference": 19,
       "Plan & Write": 4,
       "Build Worlds": 13,
       "Make Audio": 1

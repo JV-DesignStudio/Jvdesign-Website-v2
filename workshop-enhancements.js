@@ -324,30 +324,6 @@
     else if (header) header.appendChild(btn);
   }
 
-  // ── LESSON PLAN LINK (A802) ─────────────────────────────────────────────
-  // Workshops with a printable teacher plan on /teachers expose it here,
-  // next to the teacher toggle, so a teacher finds it without hunting.
-  var LESSON_PLANS = {
-    'scratch-catch-workshop': 'plan-scratch-catch',
-    'python-catch-workshop': 'plan-python-catch',
-    'js-snake-workshop': 'plan-js-snake'
-  };
-  function initLessonPlanLink() {
-    var seg = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
-    var anchor = LESSON_PLANS[seg];
-    if (!anchor || document.getElementById('lessonPlanBtn')) return;
-    var header = document.querySelector('.header-inner');
-    if (!header) return;
-    var a = document.createElement('a');
-    a.id = 'lessonPlanBtn';
-    a.href = '/teachers#' + anchor;
-    a.className = 'teacher-toggle-btn lesson-plan-btn';
-    a.textContent = '📋 Lesson plan';
-    a.title = 'Open the printable teacher lesson plan for this workshop';
-    var navToggle = document.getElementById('navToggle');
-    if (header && navToggle) header.insertBefore(a, navToggle);
-    else header.appendChild(a);
-  }
 
   // ── STUCK? COLLAPSIBLES ──────────────────────────────────────────────────────
   function initStuckSections() {
@@ -777,7 +753,6 @@
   function init() {
     initCopyButtons();
     initTeacherMode();
-    initLessonPlanLink();
     initStuckSections();
     initStickyProgress();
     initLearningMap();

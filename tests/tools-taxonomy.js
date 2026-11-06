@@ -24,7 +24,7 @@ const refIds = [
   'scratch-cheatsheet', 'gamemaker-cheatsheet', 'godot-cheatsheet', 'unity-cheatsheet',
   'unreal-cheatsheet', 'gdevelop-cheatsheet', 'defold-cheatsheet', 'pico8-cheatsheet',
   'minecraft-cheatsheet', 'roblox-cheatsheet', 'keyboard-shortcuts', 'glossary',
-  'scratch-starter-guide', 'unity-starter-setup', 'parent-guide', 'gallery'
+  'scratch-starter-guide', 'unity-starter-setup', 'gallery'
 ];
 const MISFILED = new Set(['Make Audio', 'Make Art']);
 for (const id of refIds) {

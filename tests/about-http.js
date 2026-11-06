@@ -49,7 +49,7 @@ function check(name, ok, detail = '') {
     }));
     check(width + 'px: title loads', state.title.includes('About'), state.title);
     check(width + 'px: workshop count shows 280+', parseInt(state.workshops, 10) >= 280, state.workshops);
-    check(width + 'px: tool count shows 50+', /^50\+/.test(state.tools), state.tools);
+    check(width + 'px: tool count shows 49+', /^49\+/.test(state.tools), state.tools);
     check(width + 'px: no horizontal overflow', state.overflow <= 2, String(state.overflow));
   }
   check('no runtime errors', errors.length === 0, errors.join(' | '));

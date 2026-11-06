@@ -40,7 +40,7 @@ const entityOf = (label) => {
 
 // 2) Headline stat elements must show the canonical display string.
 // pages/learn-hub.html is a redirect to /workshop and carries no stats.
-const STAT_FILES = ['index.html', 'pages/about.html', 'pages/parents.html'];
+const STAT_FILES = ['index.html', 'pages/about.html'];
 const STAT_RE = /class="[^"]*(?:hero-stat-num|stat-num|stat-val)[^"]*">\s*([^<]+?)\s*<\/div>\s*<div class="[^"]*(?:hero-stat-label|stat-label|stat-lbl)[^"]*">\s*([^<]+?)\s*<\/div>/g;
 for (const f of STAT_FILES) {
   const html = read(f);
@@ -68,7 +68,7 @@ const FORBID = [
   [/\b(?:30|60)\s+(?:free\s+|creative\s+|focused\s+)?tools?/i, 'stale tools count'],
   [/\b6\s+books?\s/i, 'stale books count (should be 5)'],
 ];
-const MARKET_PAGES = ['index.html', 'pages/about.html', 'pages/learn-hub.html', 'pages/parents.html', 'pages/parent-guide.html', 'pages/press.html', 'pages/teachers.html', 'pages/workshop.html', 'pages/downloads.html', 'tools/parent-guide.html'];
+const MARKET_PAGES = ['index.html', 'pages/about.html', 'pages/learn-hub.html', 'pages/press.html', 'pages/workshop.html', 'pages/downloads.html'];
 for (const f of MARKET_PAGES) {
   const html = read(f);
   for (const [re, what] of FORBID) {

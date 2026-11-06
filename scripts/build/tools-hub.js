@@ -124,6 +124,7 @@ ${steps}
 function build() {
   const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'tools.json'), 'utf8'));
   const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'tools-hub.json'), 'utf8'));
+  const marketing = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'marketing.json'), 'utf8'));
   const byId = {};
   catalog.forEach(t => { byId[t.id] = t; });
 
@@ -159,6 +160,7 @@ ${cards.join('\n')}
   if (unlisted.length) throw new Error(`tools-hub: cards not in any pipeline: ${unlisted.join(', ')}`);
 
   const stats = [
+    `<span class="cta-stat-chip">${esc(marketing.tools.display)} Free Tools</span>`,
     `<span class="cta-stat-chip">${core} Core Tools</span>`,
     `<span class="cta-stat-chip">${merged} Tools Merged In</span>`,
     ...(cfg.staticStats || []).map(s => `<span class="cta-stat-chip">${esc(s)}</span>`),

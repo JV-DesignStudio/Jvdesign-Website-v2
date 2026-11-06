@@ -303,7 +303,7 @@ function generateTools() {
   }
   // A1409: 3D asset builders live in workshops/ but are Tools (they export assets).
   for (const b of BUILDERS) {
-    tools.push({ id: b.id, title: b.title, desc: b.desc, category: 'Build Worlds', tags: b.tags || ['3D'], comingSoon: false, url: `/workshops/${b.id}.html` });
+    tools.push({ id: b.id, title: b.title, desc: b.desc, category: 'Build Worlds', tags: b.tags || ['3D'], comingSoon: false, url: `/workshops/3d-builder.html?preset=${b.id.replace(/-builder$/, '')}` });
   }
   console.log(`  tools.json: ${tools.length} entries (indexable, noindex excluded)`);
   return tools;

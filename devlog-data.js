@@ -55,10 +55,7 @@ const POSTS = [
         emoji: '🍎',
         title: 'For Teachers: a curriculum map and a safeguarding sheet',
         excerpt: 'A new For Teachers home gathers free, no-install lessons, maps workshops to the KS2 and KS3 curriculum, and adds a printable safeguarding sheet.',
-        links: [
-            { label: 'Visit For Teachers', href: '/teachers' },
-            { label: 'Read the safeguarding sheet', href: '/teachers#safeguarding' }
-        ],
+        links: [],
         content: 'Teachers now have a home of their own. The For Teachers page gathers ready-made lesson plans, each with an age range, a time estimate and a printable copy, and links straight into the workshop it uses.\n\nAlongside the plans there is a curriculum map that lines each workshop up against the KS2 and KS3 computing curriculum, so it is quick to see where a session fits. There is also a printable safeguarding sheet for the IT lead or DSL, in plain language. It sets out exactly what the site does and does not do: no accounts, no personal data needed to learn, work saved in the browser only, and no adverts on the website.\n\nThe For Teachers link now sits in the main menu, and a parent and teacher guide covers how to get started at home or in class. As ever, everything is free and works on school computers with no install and no admin rights.'
     },
 

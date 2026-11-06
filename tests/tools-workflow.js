@@ -16,7 +16,7 @@ const fail = (m) => { fails++; console.log('  [FAIL] ' + m); };
 const tools = JSON.parse(fs.readFileSync(path.join(ROOT, 'content', 'tools.json'), 'utf8'));
 const classify = (id) => {
   const l = id.toLowerCase();
-  if (/cheat|glossary|worksheet|shortcut|reference|starter-setup|starter-guide|guide|gallery|parent-guide/.test(l)) return 'reference';
+  if (/cheat|glossary|worksheet|shortcut|reference|starter-setup|starter-guide|guide|gallery/.test(l)) return 'reference';
   if (/tracker|quest-board/.test(l)) return 'board';
   if (['asset-packs', 'certificate', 'code-snippet-generator', 'game-idea-generator', 'game-logo-maker'].includes(id)) return 'utility';
   return 'create';
@@ -25,16 +25,30 @@ const classify = (id) => {
 let checked = 0;
 const problems = [];
 for (const t of tools) {
-  const rel = (t.url || '').replace(/^\//, '');
+  const rel = (t.url || '').replace(/^\//, '').split('?')[0].split('#')[0];
   const file = path.join(ROOT, rel);
   if (!fs.existsSync(file)) { problems.push(`${t.id}: catalogued file missing (${rel})`); continue; }
   const html = fs.readFileSync(file, 'utf8');
+  let scan = html;
+  for (const m of html.matchAll(/["'](\/assets\/js\/builders\/[^"']+\.js)["']/g)) {
+    const mod = path.join(ROOT, m[1].replace(/^\//, ''));
+    if (fs.existsSync(mod)) scan += '\n' + fs.readFileSync(mod, 'utf8');
+  }
+  const key = t.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+  for (const m of html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)) {
+    const src = m[1];
+    if (!/assets\/js\/inline\//.test(src)) continue;
+    const base = path.basename(src).toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!base.includes(key)) continue;
+    const mod = path.join(ROOT, src.replace(/^\.\.\//, '').replace(/^\//, ''));
+    if (fs.existsSync(mod)) scan += '\n' + fs.readFileSync(mod, 'utf8');
+  }
   checked++;
   const kind = classify(t.id);
   const noindex = /<meta\s+name=["']robots["'][^>]*noindex/i.test(html);
   if (noindex) problems.push(`${t.id}: catalogued but noindex (should be public or removed)`);
-  const hasSave = /localStorage|IndexedDB|autosave|saveProject/i.test(html);
-  const hasExport = /export|download/i.test(html);
+  const hasSave = /localStorage|IndexedDB|autosave|saveProject/i.test(scan);
+  const hasExport = /export|download/i.test(scan);
   if (kind === 'create' && (!hasSave || !hasExport)) {
     problems.push(`${t.id}: create tool missing ${!hasSave ? 'browser save' : 'export/download'}`);
   }
