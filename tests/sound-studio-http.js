@@ -420,6 +420,11 @@ let failures = 0;
       songMode=false;
       document.body.classList.remove('song-mode');
       document.getElementById('loopsSelect').value='1';
+      // A2108: put one note on an odd step so swing actually moves audio.
+      setSteps(16);
+      for(let ti=0;ti<tracks.length;ti++) for(let s=0;s<steps;s++) grid[ti][s]={on:false,note:'C',len:1,vel:1,oct:tracks[ti].oct};
+      grid[4][1]={on:true,note:'C',len:1,vel:1,oct:tracks[4].oct};
+      patterns[currentPattern].grid=grid;
       setSwing(0);
       const base=await renderMixdown(true);
       out.zero=swingOffset(0);
@@ -432,14 +437,17 @@ let failures = 0;
       const swung=await renderMixdown(true);
       out.baseLen=base.length; out.swungLen=swung.length;
       const a=base.getChannelData(0), b=swung.getChannelData(0);
-      let diff=0;
-      for(let i=0;i<Math.min(a.length,b.length,40000);i+=37) diff+=Math.abs(a[i]-b[i]);
-      out.diff=diff;
+      // A2108: the render is seeded, so the only difference is the swing timing.
+      // Scan the whole buffer (sparse stride) and keep the largest sample delta.
+      let diff=0, maxd=0;
+      const len=Math.min(a.length,b.length);
+      for(let i=0;i<len;i+=3){ const d=Math.abs(a[i]-b[i]); diff+=d; if(d>maxd) maxd=d; }
+      out.diff=diff; out.maxd=maxd;
       setSwing(0);
     }catch(e){ out.error=e.message; }
     return out;
   });
-  check('swing delays odd steps and keeps the loop length', !swingTest.error && swingTest.zero===0 && Math.abs(swingTest.on-swingTest.stepSec*0.4)<1e-6 && swingTest.baseLen===swingTest.swungLen && swingTest.diff>1e-4 && swingTest.slider==='40' && swingTest.label==='40%' && Math.abs(swingTest.model-0.4)<1e-9, JSON.stringify(swingTest));
+  check('swing delays odd steps and keeps the loop length', !swingTest.error && swingTest.zero===0 && Math.abs(swingTest.on-swingTest.stepSec*0.4)<1e-6 && swingTest.baseLen===swingTest.swungLen && swingTest.diff>1e-4 && swingTest.maxd>0.05 && swingTest.slider==='40' && swingTest.label==='40%' && Math.abs(swingTest.model-0.4)<1e-9, JSON.stringify(swingTest));
 
   const quantTest = await page.evaluate(()=>{
     const out={};

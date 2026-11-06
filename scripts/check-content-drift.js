@@ -10,6 +10,7 @@ const path = require('path');
 
 const ROOT    = path.resolve(__dirname, '..');
 const STRICT  = process.argv.includes('--strict');
+const ENGINE_HUBS_ONLY = process.argv.includes('--engine-hubs');
 const { GAME_ORPHANS } = require('./lib/paths');
 const GAME_ORPHAN_SET = new Set(GAME_ORPHANS.map((p) => '/' + p.replace(/^\/+/, '')));
 
@@ -52,6 +53,45 @@ function listHtmlFiles(dir) {
   return fs.readdirSync(abs)
     .filter(f => f.endsWith('.html'))
     .map(f => `/${dir}/${f}`);
+}
+
+// Engine hubs are generated from content/engine-hubs.json joined with
+// content/workshops.json. generate-engine-hubs.js silently drops an unknown id,
+// which makes a whole section and its Pip callout vanish while the build still
+// passes. Fail loudly instead (A2615).
+function checkEngineHubs() {
+  const hubs = loadJson('content/engine-hubs.json');
+  const workshops = loadJson('content/workshops.json');
+  const known = new Set((workshops || []).map((w) => w.id));
+  console.log(`\n--- content/engine-hubs.json (${(hubs.engines || []).length} engines) ---`);
+  let missing = 0;
+  for (const engine of hubs.engines || []) {
+    for (const section of engine.sections || []) {
+      for (const id of section.workshops || []) {
+        if (!known.has(id)) {
+          warn('engine-hubs', `${engine.id}/${section.id || section.title}: ${id} - MISSING from content/workshops.json`);
+          missing++;
+        }
+      }
+    }
+    for (const id of Object.keys(engine.notes || {})) {
+      if (!known.has(id)) {
+        warn('engine-hubs', `${engine.id}/notes: ${id} - MISSING from content/workshops.json`);
+        missing++;
+      }
+    }
+  }
+  if (!missing) ok('engine-hubs', 'every hub section id is in the workshop catalogue');
+  return missing;
+}
+
+if (ENGINE_HUBS_ONLY) {
+  const missing = checkEngineHubs();
+  console.log('\n' + '='.repeat(50));
+  console.log(missing === 0
+    ? 'check-engine-hubs: no missing ids.'
+    : `check-engine-hubs: ${missing} missing id(s).`);
+  process.exit(missing === 0 ? 0 : 1);
 }
 
 function checkCatalogue(name, entries, dirHint, opts = {}) {
@@ -213,6 +253,9 @@ checkCatalogue(
     ],
   }
 );
+
+// ---------- engine hubs ----------
+checkEngineHubs();
 
 // ---------- summary ----------
 console.log('\n' + '='.repeat(50));

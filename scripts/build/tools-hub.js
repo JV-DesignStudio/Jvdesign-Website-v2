@@ -47,6 +47,9 @@ function renderCard(tool, card, pipelineTitle) {
     : (card.note ? `        <p class="tool-merged">${esc(card.note)}</p>\n` : '');
   const tags = (card.tags || []).map(t => `<span class="tool-tag">${esc(t)}</span>`).join('');
   const outputs = (card.outputs || []).map(o => `<span class="tool-output-badge">${esc(o)}</span>`).join('');
+  const limits = card.limits ? `        <p class="tool-limits"><b>Limits</b> ${esc(card.limits)}</p>\n` : '';
+  const mouse = card.mouseRecommended ? '            <span class="tool-input-badge">\uD83D\uDDB1\uFE0F Mouse recommended</span>\n' : '';
+  const touch = (card.mouseRecommended && card.touchNote) ? `        <p class="tool-touch-note">${esc(card.touchNote)}</p>\n` : '';
   return `<a href="${esc(relUrl(tool.url))}" class="tool-card reveal" data-tool-card data-category="${esc(card.pipeline)}" data-search="${esc(searchText(tool, card, pipelineTitle))}">
     <div class="tool-thumb">
         <span class="tool-year">2026</span>
@@ -56,12 +59,12 @@ function renderCard(tool, card, pipelineTitle) {
         <div class="tool-meta">
             <span class="tool-type">${esc(pipelineTitle)}</span>
             <span class="tool-difficulty" data-difficulty="${esc(card.difficulty || 'beginner')}">${esc(difficultyLabel(card.difficulty))}</span>
-        </div>
+${mouse}        </div>
         <h3 class="tool-title">${esc(name)}</h3>
         <p class="tool-desc">${esc(card.cardDesc)}</p>
 ${merged}        <div class="tool-tags">${tags}</div>
         <div class="tool-outputs">${outputs}</div>
-        <span class="tool-cta">Open Tool →</span>
+${limits}${touch}        <span class="tool-cta">Open Tool →</span>
     </div>
 </a>`;
 }
@@ -90,12 +93,13 @@ function renderIntentPaths(cfg, byId) {
       }
       const href = relUrl(tool.url) + (s.anchor ? '#' + s.anchor : '');
       const finish = isFinish ? `\n                    <span class="intent-finish">${esc(s.finish)}</span>` : '';
+      const limit = s.limit ? `\n                            <span class="intent-limit">${esc(s.limit)}</span>` : '';
       return `                <li class="intent-step${isFinish ? ' intent-step--finish' : ''}">
                     <a href="${esc(href)}" class="intent-step-link">
                         <span class="intent-step-num" aria-hidden="true">${i + 1}</span>
                         <span class="intent-step-body">
                             <strong>${esc(s.title)}</strong>
-                            <span>${esc(s.desc)}</span>
+                            <span>${esc(s.desc)}</span>${limit}
                         </span>${finish}
                     </a>
                 </li>`;
@@ -113,7 +117,8 @@ ${steps}
     </article>`;
   });
 
-  return `<div class="intent-grid">\n${blocks.join('\n')}\n</div>\n`;
+  return `<div class="intent-grid">\n${blocks.join('\n')}\n</div>\n` +
+    (cfg.intentNote ? `<p class="intent-limits-note">${esc(cfg.intentNote)}</p>\n` : '');
 }
 
 function build() {

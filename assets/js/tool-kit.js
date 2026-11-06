@@ -21,6 +21,13 @@
     'fairy-tale-builder': 1, 'pirate-ship-builder': 1, 'steampunk-airship-builder': 1,
     'race-car-builder': 1, 'submarine-builder': 1, 'pirate-cannon-builder': 1, 'phone-stand-builder': 1
   };
+  var MOUSE_RECOMMENDED = {
+    'pixel-studio': 'Use the Eraser button and the -/+ zoom buttons. Right-click erase and wheel zoom need a mouse.',
+    'level-designer': 'Tap to place tiles and use the -/+ zoom buttons. Drag-painting is smoother with a mouse.',
+    'arcade-game-maker': 'Use the Erase button and tap to paint. Fine tile painting is easier with a mouse or stylus.',
+    'buildlab': 'Use the Build/Orbit touch toggle and the zoom buttons. Precise placement is easier with a mouse.',
+    'minecraft-skin-editor': 'Tap to paint and use the zoom bar. Precise 64x64 skin edits are easier with a mouse or stylus.'
+  };
 
   function read(key) {
     try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; }
@@ -87,7 +94,7 @@
   }
 
   function renderBadges() {
-    if (!/dev-tools/.test(location.pathname)) return;
+    if (!/(dev-tools|^\/create)/.test(location.pathname)) return;
     var host = document.getElementById('my-stuff') || document.querySelector('main');
     if (!host || document.getElementById('first-creation-progress')) return;
     var state = read(BADGE_KEY) || {};
@@ -148,7 +155,7 @@
   }
 
   function decorateHubCards() {
-    if (!/dev-tools/.test(location.pathname)) return;
+    if (!/(dev-tools|^\/create)/.test(location.pathname)) return;
     fetch('/content/tool-weights.json', { cache: 'force-cache' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (weights) {
@@ -181,12 +188,35 @@
     host.insertBefore(badge, host.firstChild);
   }
 
+  function injectMouseRecommended() {
+    var id = toolId();
+    if (!id) return;
+    id = id.replace(/-landing$/, '');
+    var note = MOUSE_RECOMMENDED[id];
+    if (!note || document.getElementById('mouse-recommended')) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'mouse-recommended';
+    wrap.className = 'mouse-rec';
+    wrap.setAttribute('role', 'note');
+    wrap.style.cssText = 'max-width:1100px;margin:10px auto;padding:8px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--gold-lt,#faf1e0);border:1px solid var(--gold,#c98a2e);border-radius:10px;font-size:.82rem;line-height:1.4;color:var(--charcoal,#1a1208)';
+    wrap.innerHTML = '<span style="font-weight:800;white-space:nowrap">\uD83D\uDDB1\uFE0F Mouse recommended</span><span>' + esc(note) + '</span>';
+    var main = document.querySelector('main');
+    if (main) {
+      main.insertBefore(wrap, main.firstChild);
+    } else {
+      var header = document.querySelector('.site-header');
+      if (header && header.parentNode) header.parentNode.insertBefore(wrap, header.nextSibling);
+      else document.body.insertBefore(wrap, document.body.firstChild);
+    }
+  }
+
   function init() {
     applyAccessibility();
     renderBadges();
     injectNextStep();
     decorateHubCards();
     injectOfflineBadge();
+    injectMouseRecommended();
     hookAnalytics();
     document.addEventListener('jvds:first-creation', renderBadges);
   }

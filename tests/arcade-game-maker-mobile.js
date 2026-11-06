@@ -169,22 +169,45 @@ async function waitStable(page) {
       const z = document.getElementById('tc-joy-zone');
       return !!z && z.getBoundingClientRect().width > 0;
     }, { timeout: 10000 });
-    const zr = await page.evaluate(() => { const r = document.getElementById('tc-joy-zone').getBoundingClientRect(); return { x: r.left + r.width * 0.6, y: r.top + Math.min(r.height * 0.5, 320) }; });
-    // Guard: a welcome layer must not be the element under the touch point.
-    await page.waitForFunction((p) => {
-      const el = document.elementFromPoint(p.x, p.y);
-      return !!el && !!el.closest('#tc-joy-zone');
-    }, { timeout: 10000 }, zr).catch(() => {});
-    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: zr.x, y: zr.y, id: 1 }] });
-    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: zr.x - 60, y: zr.y, id: 1 }] });
-    await page.waitForFunction(() => {
-      const j = document.getElementById('tc-joystick');
-      return !!j && j.classList.contains('joy-active') && typeof touchInput === 'object' && touchInput.left === true;
-    }, { timeout: 8000 }).catch(() => {});
-    const joy = await page.evaluate(() => ({
-      active: document.getElementById('tc-joystick').classList.contains('joy-active'),
-      left: typeof touchInput === 'object' && touchInput.left === true
-    }));
+    // The game re-lays out its touch controls while it boots, so wait for the
+    // joystick zone to settle before dragging. Retry the drag if a layout pass
+    // clears joy-active between touchStart and touchMove (known flake).
+    let zr = null;
+    for (let i = 0; i < 20; i++) {
+      const found = await page.evaluate(() => {
+        const r = document.getElementById('tc-joy-zone');
+        if (!r || getComputedStyle(r).display === 'none') return null;
+        const b = r.getBoundingClientRect();
+        return b.width > 0 ? { x: b.left + b.width * 0.6, y: b.top + Math.min(b.height * 0.5, 320) } : null;
+      });
+      if (found) {
+        zr = found;
+        await new Promise(r => setTimeout(r, 400));
+        const stable = await page.evaluate((p) => {
+          const el = document.elementFromPoint(p.x, p.y);
+          const z = document.getElementById('tc-joy-zone');
+          return !!el && !!el.closest('#tc-joy-zone') && !!z && getComputedStyle(z).display !== 'none' && z.getBoundingClientRect().width > 0;
+        }, zr);
+        if (stable) break;
+      }
+      await new Promise(r => setTimeout(r, 100));
+    }
+    if (!zr) throw new Error('joystick zone never settled');
+    let joy = { active: false, left: false };
+    for (let attempt = 0; attempt < 3 && !(joy.left === true && joy.active === true); attempt++) {
+      await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: zr.x, y: zr.y, id: 1 }] });
+      await new Promise(r => setTimeout(r, 120));
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: zr.x - 60, y: zr.y, id: 1 }] });
+      await new Promise(r => setTimeout(r, 160));
+      joy = await page.evaluate(() => ({
+        active: document.getElementById('tc-joystick').classList.contains('joy-active'),
+        left: typeof touchInput === 'object' && touchInput.left === true
+      }));
+      if (!(joy.left === true && joy.active === true)) {
+        await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await new Promise(r => setTimeout(r, 180));
+      }
+    }
     await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await page.waitForFunction(() => {
       const j = document.getElementById('tc-joystick');
