@@ -14,7 +14,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Er0PNRzBcrqdqC8CCk2akNm1ImhJoPbw/sD1gEJWzQo=' 'sha256-/f/2wN8GKE6LZTXPT+7cGCABc8HAS9GZOMQg3c3DS4s=' 'sha256-qOK71QcbB9zC7hO78mh35zJlBtky+Ah1zfNHNVRL7hY=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Er0PNRzBcrqdqC8CCk2akNm1ImhJoPbw/sD1gEJWzQo=' 'sha256-CYF4lXPAIf3LqNBSqKqtXgcpuvNXi0GDS7EC3VLQwkM=' 'sha256-qOK71QcbB9zC7hO78mh35zJlBtky+Ah1zfNHNVRL7hY=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -159,7 +159,7 @@
         <rect x="308" y="265" width="24" height="18" rx="3" fill="#F4B6C2" opacity="0.85"/>
       </svg>
     </div>
-    <div class="board" id="board" role="grid" aria-label="Cozy cafe match board">×2</div>
+    <div class="board" id="board" role="grid" tabindex="0" aria-rowcount="8" aria-colcount="8" aria-label="Cozy cafe match board. Use arrow keys to move, Enter or Space to select a tile.">×2</div>
     <div class="combo-badge" id="comboBadge">
       <div class="combo-count" id="comboCount">×2</div>
       <div class="combo-tier" id="comboTier">Combo</div>
@@ -960,6 +960,12 @@ function buildBoardOnce() {
       tile.className = 'tile';
       tile.dataset.r = r;
       tile.dataset.c = c;
+      tile.id = 'tile-' + r + '-' + c;
+      tile.setAttribute('role', 'gridcell');
+      tile.setAttribute('aria-rowindex', r + 1);
+      tile.setAttribute('aria-colindex', c + 1);
+      tile.setAttribute('aria-selected', 'false');
+      tile.setAttribute('aria-label', 'Tile, row ' + (r + 1) + ', column ' + (c + 1));
       boardEl.appendChild(tile);
     }
   }
@@ -981,6 +987,8 @@ function render() {
         (cell && cell.power ? ' ' + cell.power : '') +
         (cell && cell.frost ? ' frosted' : '') +
         (isSelected ? ' selected' : '');
+      tile.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+      tile.setAttribute('aria-label', (cell ? TILE_DATA[cell.type].label : 'Empty') + ', row ' + (r + 1) + ', column ' + (c + 1));
 
       // Only update innerHTML if the visual content actually changed
       const desiredHTML = (cell && cell.power !== 'rainbow') ? renderTileSVG(cell.type) : '';
@@ -2609,6 +2617,8 @@ let kbCursor = null;
 document.addEventListener('keydown', (e) => {
   if (document.querySelector('.modal-backdrop.show')) return;
   if (busy) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
   Audio.init();
 
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d'].includes(e.key)) {
@@ -2641,7 +2651,12 @@ function renderKBCursor() {
   if (kbCursor) {
     const idx = kbCursor.r * GRID_SIZE + kbCursor.c;
     const el = boardEl.children[idx];
-    if (el) el.classList.add('kb-cursor');
+    if (el) {
+      el.classList.add('kb-cursor');
+      boardEl.setAttribute('aria-activedescendant', el.id);
+    }
+  } else {
+    boardEl.removeAttribute('aria-activedescendant');
   }
 }
 
