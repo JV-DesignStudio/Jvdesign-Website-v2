@@ -4,10 +4,25 @@ let studioMode='draw';
 const EASY_PAL=['#000000','#ffffff','#f59e0b','#ef4444','#10b981','#3b82f6','#a855f7','#ec4899','#facc15','#84cc16','#06b6d4','#f43f5e','#6b7280','#92400e','#1e1b4b','#f5e6d3'];
 let easyMode=false;
 
+function psSetTop(open){
+  document.body.classList.toggle('ps-top-open', !!open);
+  const tab=document.getElementById('psTopTab');
+  const label=document.getElementById('psTopTabLabel');
+  if(tab) tab.setAttribute('aria-expanded', open?'true':'false');
+  if(label) label.textContent=open?'Close menu':'Studio menu';
+  if(typeof autoZoom==='function'){
+    setTimeout(function(){ autoZoom(); resizeCanvases(); renderAll(); }, 280);
+  }
+}
+window.psToggleTop=function(){ psSetTop(!document.body.classList.contains('ps-top-open')); };
+window.psOpenTop=function(){ psSetTop(true); };
+window.psCloseTop=function(){ psSetTop(false); };
+
 function setStudioMode(mode){
   // 'simple' is a legacy alias for 'draw'
   if(mode==='simple') mode='draw';
   studioMode=mode;
+  document.body.classList.toggle('ps-character-mode', mode==='character');
   document.querySelectorAll('#studioMode [data-mode]').forEach(b=>{
     const on=b.dataset.mode===mode;
     b.setAttribute('aria-selected', on?'true':'false');
@@ -370,7 +385,9 @@ const origExportPNG = typeof exportPNG !== 'undefined' ? exportPNG : null;
       // restore mode ('simple' legacy alias -> 'draw')
       let m=null; try{m=localStorage.getItem('jvds_pixel_mode');}catch(e){}
       if(m==='simple') m='draw';
-      if(m && ['draw','character','animate'].includes(m)) setStudioMode(m);
+      const hashMode=(location.hash||'').replace('#','');
+      if(['draw','character','animate'].includes(hashMode)) setStudioMode(hashMode);
+      else if(m && ['draw','character','animate'].includes(m)) setStudioMode(m);
       else setStudioMode('draw');
       checkMissionParam();
       // handle import from easy
