@@ -8,6 +8,12 @@ const http = require('http');
 const assert = require('assert/strict');
 const puppeteer = require('puppeteer');
 
+// A2612: the hub must not point at the removed -canvas ids.
+const { assertHubData } = require('./lib/engine-hub');
+assertHubData('scratch', {
+  absent: ['scratch-catch-canvas', 'scratch-platformer-canvas', 'scratch-maze-canvas', 'scratch-quiz-canvas', 'scratch-clicker-canvas']
+});
+
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',

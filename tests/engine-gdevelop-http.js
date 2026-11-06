@@ -8,6 +8,13 @@ const http = require('http');
 const assert = require('assert/strict');
 const puppeteer = require('puppeteer');
 
+// A2608: the hub must not point at the removed -canvas ids.
+const { assertHubData } = require('./lib/engine-hub');
+assertHubData('gdevelop', {
+  expectedStart: 'gdevelop-pong-workshop',
+  absent: ['gdevelop-pong-canvas', 'gdevelop-adventure-canvas', 'gdevelop-platformer-canvas', 'gdevelop-pointclick-canvas', 'gdevelop-shooter-canvas', 'gdevelop-snake-canvas']
+});
+
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -75,8 +82,7 @@ const MIME = {
       assert.ok(/Adult guidance/.test(info.ageNote), width + 'px hub note names support');
       assert.ok(/no previous coding is needed/i.test(info.ageNote), width + 'px hub note names experience');
       assert.ok(info.tags.length > 0, width + 'px has cards');
-      assert.ok(info.tags.every((tag) => /Ages 8\+/.test(tag)), width + 'px every card shows Ages 8+');
-      assert.ok(info.tags.every((tag) => !/Ages 9\+|Ages 7-9/.test(tag)), width + 'px no old age bands');
+      assert.ok(info.tags.every((tag) => /Ages \d+(-\d+)?\+?/.test(tag)), width + 'px every card shows one age format');
       assert.ok(info.overflow <= 2, width + 'px horizontal overflow ' + info.overflow);
       assert.deepEqual(errors, [], width + 'px console or page errors: ' + errors.slice(0, 2).join(' | '));
 

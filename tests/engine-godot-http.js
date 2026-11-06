@@ -8,6 +8,12 @@ const http = require('http');
 const assert = require('assert/strict');
 const puppeteer = require('puppeteer');
 
+// A2613: the hub must not point at the removed -canvas id.
+const { assertHubData } = require('./lib/engine-hub');
+assertHubData('godot', {
+  absent: ['godot-racing-canvas']
+});
+
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',

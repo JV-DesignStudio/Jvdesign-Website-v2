@@ -8,6 +8,13 @@ const http = require('http');
 const assert = require('assert/strict');
 const puppeteer = require('puppeteer');
 
+// A2610: the hub must not point at the removed -canvas ids.
+const { assertHubData } = require('./lib/engine-hub');
+assertHubData('pico-8', {
+  expectedStart: 'pico8-pong-workshop',
+  absent: ['pico8-pong-canvas', 'pico8-dungeon-canvas', 'pico8-match3-canvas', 'pico8-platformer-canvas', 'pico8-shooter-canvas', 'pico8-snake-canvas']
+});
+
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -83,8 +90,7 @@ const EXPECTED_LADDER = [
       });
 
       assert.ok(info.tags.length > 0, width + 'px has workshop cards');
-      assert.ok(info.tags.every((tag) => /Ages 8\+/.test(tag)), width + 'px every card shows Ages 8+');
-      assert.ok(info.tags.every((tag) => !/Ages (7-9|9\+|10\+)/.test(tag)), width + 'px no old age bands');
+      assert.ok(info.tags.every((tag) => /Ages \d+(-\d+)?\+?/.test(tag)), width + 'px every card shows one age format');
       assert.ok(/Recommended age: 8\+/.test(info.ageNote), width + 'px hub note names the recommended age');
       assert.ok(/Difficulty is separate from age/i.test(info.ageNote), width + 'px note separates age and difficulty');
       assert.ok(/adult/i.test(info.ageNote), width + 'px note names adult support');

@@ -8,6 +8,13 @@ const http = require('http');
 const assert = require('assert/strict');
 const puppeteer = require('puppeteer');
 
+// A2609: the hub must not point at the removed -canvas ids.
+const { assertHubData } = require('./lib/engine-hub');
+assertHubData('gml-gamemaker', {
+  expectedStart: 'gml-pong-workshop',
+  absent: ['gml-pong-canvas', 'gml-breakout-canvas', 'gml-platformer-canvas', 'gml-rpg-canvas']
+});
+
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',

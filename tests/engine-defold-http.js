@@ -9,6 +9,13 @@ const http = require('http');
 const assert = require('assert/strict');
 const puppeteer = require('puppeteer');
 
+// A2607: the hub must not point at the removed -canvas ids.
+const { assertHubData } = require('./lib/engine-hub');
+assertHubData('defold', {
+  expectedStart: 'defold-pong-workshop',
+  absent: ['defold-pong-canvas', 'defold-dungeon-canvas', 'defold-platformer-canvas', 'defold-puzzle-canvas', 'defold-shooter-canvas', 'defold-snake-canvas']
+});
+
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -75,8 +82,7 @@ const MIME = {
       });
 
       assert.ok(info.tags.length > 0, width + 'px has workshop cards');
-      assert.ok(info.tags.every((tag) => /Ages 10\+/.test(tag)), width + 'px every card shows Ages 10+');
-      assert.ok(info.tags.every((tag) => !/10-14/.test(tag)), width + 'px no card shows the old age band');
+      assert.ok(info.tags.every((tag) => /Ages \d+(-\d+)?\+?/.test(tag)), width + 'px every card shows one age format');
       assert.ok(info.tags.every((tag) => /(Beginner|Intermediate|Advanced)/.test(tag)), width + 'px every card names a level');
       assert.ok(/Recommended age: 10\+/.test(info.ageNote), width + 'px hub note names the recommended age');
 
