@@ -143,6 +143,32 @@ function say(voice, engine) {
     + '  </div>';
 }
 
+function renderReadiness(engine) {
+  const r = engine.readiness;
+  if (!r || !Array.isArray(r.projects) || !r.projects.length) return '';
+  const projects = r.projects.map((p) => {
+    const checks = (p.checks || []).map((c) => '        <li>' + esc(c) + '</li>').join('\n');
+    const route = (cls, item) => item
+      ? '        <a class="hp-route hp-route--' + cls + '" href="' + esc(item.href) + '">\n'
+        + '          <span class="hp-route-label">' + esc(item.label) + '</span>\n'
+        + '          <span class="hp-route-text">' + esc(item.text) + '</span>\n'
+        + '        </a>'
+      : '';
+    return '      <article class="hp-project">\n'
+      + '        <h3>' + esc(p.name) + '</h3>\n'
+      + '        <ul class="hp-checks">\n' + checks + '\n        </ul>\n'
+      + '        <div class="hp-routes">\n'
+      + [route('guided', p.guided), route('independent', p.independent)].filter(Boolean).join('\n')
+      + '\n        </div>\n'
+      + '      </article>';
+  }).join('\n');
+  return '  <section class="hub-readiness" aria-labelledby="s-readiness">\n'
+    + '    <h2 id="s-readiness">' + esc(r.title || 'Are you ready for this project?') + '</h2>\n'
+    + '    <p>' + esc(r.blurb || '') + '</p>\n'
+    + '    <div class="hp-projects">\n' + projects + '\n    </div>\n'
+    + '  </section>';
+}
+
 function renderSections(engine, byId, showInstallPill) {
   const blocks = [];
   engine.sections.forEach((s, si) => {
@@ -214,6 +240,23 @@ function renderPage(engine, byId) {
 
   // A1925: optional self-check that points a learner at the next workshop.
   // The steps live in the config and are read by the page script.
+  const readiness = renderReadiness(engine);
+  const readinessCss = readiness
+    ? '.hub-readiness{max-width:1000px;margin:18px auto 0;padding:0 20px}\n'
+      + '.hub-readiness h2{font-family:Fredoka,\'Baloo 2\',cursive;font-size:1.2rem;margin:0 0 6px;color:var(--text-primary)}\n'
+      + '.hub-readiness>p{margin:0 0 12px;font-size:.88rem;line-height:1.5;color:var(--text-secondary)}\n'
+      + '.hp-projects{display:grid;gap:12px}\n'
+      + '.hp-project{background:var(--bg-secondary);border:1.5px solid var(--border-lt);border-radius:12px;padding:14px 16px}\n'
+      + '.hp-project h3{margin:0 0 8px;font-size:1rem;color:var(--text-primary)}\n'
+      + '.hp-checks{margin:0 0 12px;padding-left:20px;font-size:.86rem;line-height:1.55;color:var(--text-primary)}\n'
+      + '.hp-routes{display:grid;gap:8px}\n'
+      + '.hp-route{display:block;padding:10px 12px;border-radius:9px;border:1.5px solid var(--border-lt);background:var(--bg-tertiary);text-decoration:none}\n'
+      + '.hp-route:hover{border-color:var(--teal)}\n'
+      + '.hp-route-label{display:block;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--teal-dk)}\n'
+      + '.hp-route-text{display:block;margin-top:3px;font-size:.86rem;line-height:1.45;color:var(--text-primary)}\n'
+      + '@media(min-width:640px){.hp-routes{grid-template-columns:1fr 1fr}}'
+    : '';
+
   const checkpoint = engine.checkpoint
     ? (() => {
       const cp = engine.checkpoint;
@@ -340,7 +383,7 @@ ${marker('head-icons', readPartial('head-icons'))}
 .hp-skill input{flex:0 0 auto;width:18px;height:18px;margin-top:2px;accent-color:var(--teal-dk)}
 .hp-next{margin:10px 0 0;padding-top:10px;border-top:1px solid var(--border-lt);font-size:.88rem;line-height:1.5;color:var(--text-secondary)}
 .hp-next a{font-weight:800;color:var(--teal-dk)}
-@media(max-width:640px){.hub-say{flex-direction:column;align-items:center;text-align:center}}
+${readinessCss ? readinessCss + '\n' : ''}@media(max-width:640px){.hub-say{flex-direction:column;align-items:center;text-align:center}}
 </style>
 ${jsonld}
 </head>
@@ -371,7 +414,7 @@ ${ladder}
 
 ${checkpoint}
 
-${filterBar}
+${readiness ? readiness + '\n\n' : ''}${filterBar}
 
   <div class="hub-body">
 ${renderSections(engine, byId, mixedInstall)}
