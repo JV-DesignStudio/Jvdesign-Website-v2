@@ -26,7 +26,8 @@ function safePath(urlPath) {
   return file.startsWith(root) ? file : null;
 }
 
-const DEPS = ['/tools/arcade-game-maker.html', '/phaser-arcade-physics.min.js', '/src/arcade-maker/genres.js'];
+const DEPS = ['/tools/arcade-game-maker.html', '/phaser-arcade-physics.min.js', '/src/arcade-maker/genres.js',
+  '/assets/js/ui-delegate.js', '/style-shared.css?v=17', '/assets/css/tokens.css', '/assets/css/studio-shell.css?v=1'];
 
 (async () => {
   let offline = false;
@@ -59,15 +60,21 @@ const DEPS = ['/tools/arcade-game-maker.html', '/phaser-arcade-physics.min.js', 
     const page = await browser.newPage();
     const base = `http://127.0.0.1:${port}`;
 
-    // Register + control on a light page.
+    // Register + control on a light page. Seed a stale cache first so the
+    // activate handler has something to retire (A2676 versioned cleanup).
     await page.goto(base + '/tools/code-snippet-generator.html', { waitUntil: 'domcontentloaded' });
-    await page.evaluate(async () => {
+    const staleRemoved = await page.evaluate(async () => {
+      const stale = await caches.open('jvds-v1');
+      await stale.put('/stale-entry.txt', new Response('stale'));
       await navigator.serviceWorker.register('/sw.js');
       await navigator.serviceWorker.ready;
       if (!navigator.serviceWorker.controller) {
         await new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true }));
       }
+      const keys = await caches.keys();
+      return { staleGone: !keys.includes('jvds-v1'), keys };
     });
+    check('a cache version bump removes stale jvds caches', staleRemoved.staleGone === true, JSON.stringify(staleRemoved.keys));
     const cacheKey = await page.evaluate(() => caches.keys().then(k => k.find(x => /^jvds-v\d+$/.test(x))));
     assert.ok(cacheKey, 'no jvds cache created');
 
@@ -106,6 +113,22 @@ const DEPS = ['/tools/arcade-game-maker.html', '/phaser-arcade-physics.min.js', 
     await page.waitForSelector('#runGameBtn', { timeout: 20000 });
     const title = await page.title();
     check('maker fully loads with the network down', !!title && !/OFFLINE|503/i.test(await page.content().then(c => c.slice(0, 2000))), title);
+
+    // A2676: boot and play a real game with no network at all.
+    await page.evaluate(() => {
+      const g = document.getElementById('genreMode');
+      if (g) g.value = 'SHOOTER';
+      if (typeof onGenreChange === 'function') onGenreChange();
+      if (typeof compileAndBootEngine === 'function') { compileAndBootEngine._lastRun = 0; compileAndBootEngine(); }
+      const io = document.getElementById('introOverlay');
+      if (io && io.classList.contains('show') && typeof closeIntro === 'function') closeIntro();
+    });
+    await page.waitForFunction(() => !!(window._phaserGame && document.querySelector('#game-container canvas')), { timeout: 30000 });
+    const boot = await page.evaluate(() => ({
+      game: !!window._phaserGame,
+      scenes: (window._phaserGame && window._phaserGame.scene) ? window._phaserGame.scene.getScenes(true).length : 0
+    }));
+    check('a game boots and plays with the network down', boot.game === true && boot.scenes >= 1, JSON.stringify(boot));
   } catch (err) {
     failures.push(err.message);
   } finally {

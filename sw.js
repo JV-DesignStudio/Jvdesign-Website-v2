@@ -1,3 +1,7 @@
+// JVDesignStudio Service Worker v47 - A2676: the Arcade Game Maker on-demand
+// precache now includes its UI scripts, shared CSS, fonts and manifest, so the
+// maker boots and plays a game with the network fully down. Resiliant per-file
+// caching keeps one missing asset from cancelling the whole maker offline pack.
 // JVDesignStudio Service Worker v46 - A2656: precache the shared immersive
 // studio chrome (tab CSS + JS) so every interactive studio keeps its full
 // workspace offline on a school network.
@@ -27,7 +31,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v46';
+const CACHE='jvds-v47';
 const CORE=[
   '/',
   '/offline.html',
@@ -170,7 +174,29 @@ const MAKER_DEPS=[
   '/src/arcade-maker/liveConfig.js',
   '/src/arcade-maker/GameAudio.js',
   '/src/arcade-maker/genres.js',
-  '/src/arcade-maker/achievements.js'
+  '/src/arcade-maker/achievements.js',
+  // A2676: the rest of the maker shell, so a dropped connection still leaves a
+  // usable editor rather than an unstyled page with unclickable controls.
+  '/assets/js/theme-init.js',
+  '/assets/js/jvds-manifest.js',
+  '/assets/js/ui-delegate.js',
+  '/assets/js/tool-kit.js',
+  '/jvds-project-bundle.js',
+  '/make-a-game-journey.js',
+  '/compat-badge.js',
+  '/nav.js?v=20',
+  '/style-shared.css?v=17',
+  '/style-mascots.css',
+  '/ember-guide.css',
+  '/assets/css/tokens.css',
+  '/assets/css/immersive-tool.css',
+  '/assets/css/studio-shell.css?v=1',
+  '/assets/fonts/inter-400-normal-latin-6ab57b19.woff2',
+  '/assets/fonts/fredoka-400-normal-latin-a4a694ae.woff2',
+  '/arcade.webmanifest',
+  '/logo.png',
+  '/icons/icon-192.png',
+  '/apple-touch-icon.png'
 ];
 
 // A1691: GitHub Pages serves the clean nav URLs (for example /workshop, /dev-tools,
@@ -224,9 +250,18 @@ self.addEventListener('message',e=>{
   const d=e.data||{};
   if(d.type==='precache-maker'){
     e.waitUntil(
-      caches.open(CACHE).then(c=>c.addAll(MAKER_DEPS)).then(()=>{
-        try{ if(e.source&&e.source.postMessage) e.source.postMessage({type:'precache-maker-done'}); }catch(_e){}
-      }).catch(err=>console.warn('[SW] maker precache failed',err))
+      caches.open(CACHE)
+        .then(async c=>{
+          // A2676: cache each dependency on its own. A single blocked or moved
+          // asset must not cancel the whole offline pack for the maker.
+          const results=await Promise.allSettled(MAKER_DEPS.map(url=>c.add(url)));
+          const failed=MAKER_DEPS.filter((_,i)=>results[i].status==='rejected');
+          if(failed.length) console.warn('[SW] maker precache skipped',failed.join(', '));
+        })
+        .then(()=>{
+          try{ if(e.source&&e.source.postMessage) e.source.postMessage({type:'precache-maker-done'}); }catch(_e){}
+        })
+        .catch(err=>console.warn('[SW] maker precache failed',err))
     );
   }
 });
