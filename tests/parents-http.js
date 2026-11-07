@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// pages/parents.html retired: it must redirect to the homepage and stay noindex.
+// pages/parents.html retired: it must redirect to the trust page and stay noindex.
 const fs = require('fs');
 const path = require('path');
 
@@ -8,8 +8,8 @@ const s = fs.readFileSync(file, 'utf8');
 let failures = 0;
 const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (!ok) failures++; };
 
-check('meta refresh points home', /http-equiv=["']refresh["'][^>]*url=\//i.test(s));
-check('canonical points home', /rel=["']canonical["'][^>]*href=["']https:\/\/jvdesignstudio\.co\.uk\/["']/i.test(s));
+check('meta refresh points to the trust page', /http-equiv=["']refresh["'][^>]*url=\/trust/i.test(s));
+check('canonical points to the trust page', /rel=["']canonical["'][^>]*href=["']https:\/\/jvdesignstudio\.co\.uk\/trust["']/i.test(s));
 check('page is noindex', /name=["']robots["'][^>]*content=["'][^"']*noindex/i.test(s));
 check('page has no retired-page links', !/href=["'][^"']*(\/parents|\/teachers)/i.test(s));
 

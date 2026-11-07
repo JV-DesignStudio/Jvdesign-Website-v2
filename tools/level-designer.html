@@ -34,7 +34,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-3fJNGQFaIpDgp77EcnTLNreNnAhVRru0bMcX6RjSLDw=' 'sha256-crGzby7zxVXn4eBwE+mekETSm4guphpS3aQleX4Q+1U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4V+f4eu9d4tg0FdtxduNSW9/6ZWHWx2vQJ0DA1GMuU4=' 'sha256-WESjGIM+Hz9l/0Yds7UajRb7GY8ubz68o6DBPhQoUWg=' 'sha256-3XBmXc+XEYLW7gCBi7hMGlroT3tr1IwzoyZqwgXDSrY=' 'sha256-crGzby7zxVXn4eBwE+mekETSm4guphpS3aQleX4Q+1U=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -76,6 +76,7 @@
 }
 </script>
 <link rel="stylesheet" href="/assets/css/immersive-tool.css">
+<link rel="stylesheet" href="/assets/css/studio-shell.css?v=1">
 </head>
 <body>
 <noscript><div style="position:fixed;inset:0;background:#0f1117;color:#f0f0f0;display:flex;align-items:center;justify-content:center;font-family:sans-serif;font-size:1rem;text-align:center;padding:2rem;z-index:99999;">This tool requires JavaScript. Please enable JavaScript in your browser.</div></noscript>
@@ -171,7 +172,7 @@
       <div class="pt">Tools</div>
       <div class="tool-grid" id="toolGrid">
         <div class="tb on" data-tool="draw"   data-on="setTool" data-on-arg="draw" data-on-plain  ><span class="ico">&#9999;&#65039;</span>Draw<span class="kbd">D</span></div>
-        <div class="tb"    data-tool="erase"  data-on="setTool" data-on-arg="erase" data-on-plain ><span class="ico">&#129529;</span>Erase<span class="kbd">E</span></div>
+        <div class="tb"    data-tool="erase"  data-on="setTool" data-on-arg="erase" data-on-plain title="Erase sets the tile to Empty. Empty space is never auto-filled."><span class="ico">&#129529;</span>Erase<span class="kbd">E</span></div>
         <div class="tb"    data-tool="fill"   data-on="setTool" data-on-arg="fill" data-on-plain  ><span class="ico">&#129695;</span>Fill<span class="kbd">F</span></div>
         <div class="tb"    data-tool="pick"   data-on="setTool" data-on-arg="pick" data-on-plain  ><span class="ico">&#128167;</span>Pick<span class="kbd">G</span></div>
         <div class="tb"    data-tool="rect"   data-on="setTool" data-on-arg="rect" data-on-plain  ><span class="ico">&#9645;</span>Rect<span class="kbd">R</span></div>
@@ -196,7 +197,9 @@
       <div style="font-size:.48rem;color:var(--muted);line-height:1.7;">
          Solid tiles (Ground, Grass) → Platform<br>
         Hazard tiles (Spike, Lava) → Kills player<br>
-        Other tiles (Coins, Enemies) → Ignored
+        Other tiles (Coins, Enemies) → Ignored<br>
+        <span style="color:var(--text);">Erase</span> clears a tile to <strong>Empty</strong>. Empty space is never auto-filled.<br>
+        <span style="color:var(--text);">Background</span> layer art (clouds, sky) never collides.
       </div>
     </div>
     <div class="pdiv"></div>
@@ -624,6 +627,7 @@ let canvas,cursorCanvas,pathCanvas,ctx,cursorCtx,pathCtx;
 let spaceHeld=false;
 let longPressTimer=null,autosaveTimer=null;
 let lastCursorCell={x:-1,y:-1};
+let isHovering=false;
 
 const SAVE_KEY='jvds_level_slots_v2';
 const STAMPS_KEY='jvds_stamps';
@@ -640,7 +644,14 @@ function init(){
   initLayerData();buildTileCatTabs();buildTilePalette('all');buildSizeButtons();
   buildThemeGrid();renderLayerList();autoZoom();resizeCanvases();addDefaultTerrain();
   setupEvents();renderSaveSlots();loadStamps();renderStamps();
-  updateStats();updateUndoRedoBtns();renderUndoHistory();startAutosave();checkShareParam();offerRestore();
+  updateStats();updateUndoRedoBtns();renderUndoHistory();startAutosave();
+  const starter=new URLSearchParams(location.search).get('starter');
+  if(starter){
+    const keys=Object.keys(LD_TEMPLATES);
+    const pick=starter==='random'?keys[Math.floor(Math.random()*keys.length)]:starter;
+    if(LD_TEMPLATES[pick]){ applyTemplate(pick); return; }
+  }
+  checkShareParam();offerRestore();
 }
 function initLayerData(){layers.forEach(l=>{if(!l.data)l.data=new Array(gridW*gridH).fill(0);});}
 function idx(x,y){return y*gridW+x;}
@@ -735,6 +746,9 @@ function drawTile(x,y,tileId){
   if(tileProps[pk]){ctx.fillStyle='rgba(167,139,250,.9)';ctx.beginPath();ctx.arc(px+sz-3,py+3,3,0,Math.PI*2);ctx.fill();}
 }
 function drawGrid(){
+  // Grid snapping context appears under the pointer, so the canvas stays clean
+  // when nobody is painting.
+  if(!isHovering&&!isPainting)return;
   const pw=gridW*TS*zoomLevel,ph=gridH*TS*zoomLevel;
   ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=0.5;
   for(let x=0;x<=gridW;x++){ctx.beginPath();ctx.moveTo(x*TS*zoomLevel,0);ctx.lineTo(x*TS*zoomLevel,ph);ctx.stroke();}
@@ -817,13 +831,55 @@ function updateViewportMarker(){
   el.style.width=(VP_W*TS*zoomLevel)+'px';el.style.height=(VP_H*TS*zoomLevel)+'px';
 }
 
-function setCell(x,y,tileId){if(x<0||y<0||x>=gridW||y>=gridH)return;if(layers[currentLayer].locked){showToast('Layer is locked');return;}layers[currentLayer].data[idx(x,y)]=tileId;}
+const MAX_ENEMIES=50, MAX_PICKUPS=100;
+let _capToastAt=0;
+function countTileType(pred){
+  let n=0;
+  layers.forEach(l=>l.data.forEach(t=>{if(t){const def=getTile(t);if(def&&pred(def))n++;}}));
+  return n;
+}
+function countEntities(){
+  return {
+    enemies: countTileType(t=>t.type==='enemy'),
+    pickups: countTileType(t=>t.type==='pickup'),
+  };
+}
+function _capWarn(kind,cap){
+  const now=Date.now();
+  if(now-_capToastAt<1400)return;
+  _capToastAt=now;
+  showToast('Limit reached: '+cap+'/'+cap+' '+kind+'. Leave room to play!');
+}
+function setCell(x,y,tileId){
+  if(x<0||y<0||x>=gridW||y>=gridH)return;
+  if(layers[currentLayer].locked){showToast('Layer is locked');return;}
+  const cur=layers[currentLayer].data[idx(x,y)];
+  if(tileId&&tileId!==cur){
+    const nt=getTile(tileId), ct=getTile(cur);
+    if(nt.type==='enemy'&&(!ct||ct.type!=='enemy')&&countTileType(t=>t.type==='enemy')>=MAX_ENEMIES){_capWarn('enemies',MAX_ENEMIES);return;}
+    if(nt.type==='pickup'&&(!ct||ct.type!=='pickup')&&countTileType(t=>t.type==='pickup')>=MAX_PICKUPS){_capWarn('pickups',MAX_PICKUPS);return;}
+  }
+  layers[currentLayer].data[idx(x,y)]=tileId;
+  scheduleLdAutosave();
+}
 function getCell(x,y){if(x<0||y<0||x>=gridW||y>=gridH)return 0;return layers[currentLayer].data[idx(x,y)];}
 function floodFill(sx,sy,newTile){
   if(layers[currentLayer].locked){showToast('Layer is locked');return;}
   const old=getCell(sx,sy);if(old===newTile)return;
+  const nt=getTile(newTile);
+  let remaining=Infinity;
+  if(nt.type==='enemy'){remaining=Math.max(0,MAX_ENEMIES-countTileType(t=>t.type==='enemy'));if(!remaining){_capWarn('enemies',MAX_ENEMIES);return;}}
+  if(nt.type==='pickup'){remaining=Math.max(0,MAX_PICKUPS-countTileType(t=>t.type==='pickup'));if(!remaining){_capWarn('pickups',MAX_PICKUPS);return;}}
   const stack=[[sx,sy]],vis=new Uint8Array(gridW*gridH);
-  while(stack.length){const[x,y]=stack.pop();if(x<0||y<0||x>=gridW||y>=gridH)continue;const i=idx(x,y);if(vis[i]||layers[currentLayer].data[i]!==old)continue;vis[i]=1;layers[currentLayer].data[i]=newTile;stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);}
+  while(stack.length){
+    if(remaining<=0){_capWarn(nt.type==='enemy'?'enemies':'pickups',nt.type==='enemy'?MAX_ENEMIES:MAX_PICKUPS);break;}
+    const[x,y]=stack.pop();if(x<0||y<0||x>=gridW||y>=gridH)continue;
+    const i=idx(x,y);if(vis[i]||layers[currentLayer].data[i]!==old)continue;
+    vis[i]=1;layers[currentLayer].data[i]=newTile;
+    if(nt.type==='enemy'||nt.type==='pickup')remaining--;
+    stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+  }
+  scheduleLdAutosave();
 }
 function drawLine2(x0,y0,x1,y1,tile){
   let dx=Math.abs(x1-x0),dy=Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1,err=dx-dy;
@@ -923,6 +979,7 @@ function setupEvents(){
   }
   function pointerMove(e){
     e.preventDefault();
+    if(!isHovering){isHovering=true;renderAll();}
     if(longPressTimer&&e.touches){clearTimeout(longPressTimer);longPressTimer=null;}
     if(!e.touches&&e.buttons===0){isPainting=false;panStart=null;}
     const src=e.touches?(e.touches.length>1?{clientX:(e.touches[0].clientX+e.touches[1].clientX)/2,clientY:(e.touches[0].clientY+e.touches[1].clientY)/2}:e.touches[0]):e;
@@ -993,7 +1050,7 @@ function setupEvents(){
     isPainting=false;renderAll();updateStats();
   }
   c.addEventListener('mousedown',pointerDown);c.addEventListener('mousemove',pointerMove);document.addEventListener('mouseup',pointerUp);
-  c.addEventListener('mouseleave',()=>{cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);document.getElementById('posInfo').textContent='x:- y:-';});
+  c.addEventListener('mouseleave',()=>{cursorCtx.clearRect(0,0,cursorCanvas.width,cursorCanvas.height);document.getElementById('posInfo').textContent='x:- y:-';isHovering=false;renderAll();});
   c.addEventListener('contextmenu',e=>e.preventDefault());
   c.addEventListener('touchstart',pointerDown,{passive:false});c.addEventListener('touchmove',pointerMove,{passive:false});c.addEventListener('touchend',pointerUp,{passive:false});
   c.addEventListener('wheel',e=>{e.preventDefault();changeZoom(e.deltaY<0?1:-1);},{passive:false});
@@ -1137,9 +1194,25 @@ function deleteSlot(i){const s=getSlots()[i];if(!s)return;openModal('Delete save
 function quickSave(){saveToSlot(0);}
 function quickLoad(){const slots=getSlots();if(!slots[0]){showToast('No save in slot 1');return;}loadFromSlot(0);}
 
+let _ldSaveTimer=null;
+function _ldBuildAutosave(){
+  return {
+    version:'1.0',
+    name:getLevelName(),gridW,gridH,themeId:currentTheme.id,
+    layers:layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:Array.from(l.data)})),
+    enemyPaths,tileProps,ts:Date.now()
+  };
+}
+function _ldWriteAutosave(){
+  try{localStorage.setItem('jvds_level_autosave',JSON.stringify(_ldBuildAutosave()));}catch(e){}
+}
+function scheduleLdAutosave(){
+  clearTimeout(_ldSaveTimer);
+  _ldSaveTimer=setTimeout(_ldWriteAutosave,2000);
+}
 function startAutosave(){
   clearInterval(autosaveTimer);
-  autosaveTimer=setInterval(()=>{try{localStorage.setItem('jvds_level_autosave',JSON.stringify({name:getLevelName(),gridW,gridH,themeId:currentTheme.id,layers:layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:Array.from(l.data)})),enemyPaths,tileProps,ts:Date.now()}));}catch(e){}},120000);
+  autosaveTimer=setInterval(_ldWriteAutosave,120000);
 }
 
 // ----------------------------------------------
@@ -1270,7 +1343,12 @@ function updateStats(){
   layers.forEach(l=>l.data.forEach(t=>{if(t>0){total++;const tile=getTile(t);if(tile)types[tile.type]=(types[tile.type]||0)+1;}}));
   const box=document.getElementById('statsBox');if(!box)return;
   const typeStr=Object.entries(types).map(([k,v])=>'<strong>'+v+'</strong> '+k).join('<br>');
-  box.innerHTML='<strong>'+gridW+'x'+gridH+'</strong>  <strong>'+total+'</strong> tiles<br>'+typeStr;
+  const ents=countEntities();
+  const entStyle=(n,cap)=>n>=cap?' style="color:#f87171;font-weight:700;"':'';
+  box.innerHTML='<strong>'+gridW+'x'+gridH+'</strong>  <strong>'+total+'</strong> tiles<br>'+typeStr+
+    '<div style="margin-top:3px;border-top:1px solid var(--border);padding-top:2px;">'+
+    '<span'+entStyle(ents.enemies,MAX_ENEMIES)+'>Enemies: '+ents.enemies+'/'+MAX_ENEMIES+'</span><br>'+
+    '<span'+entStyle(ents.pickups,MAX_PICKUPS)+'>Pickups: '+ents.pickups+'/'+MAX_PICKUPS+'</span></div>';
 }
 
 function exportPNG(){
@@ -1328,7 +1406,7 @@ function sendToGameMaker(){
     showToast('Sent to Game Maker' + (bits.length ? ' (' + bits.join(', ') + ')' : '') + '. Open Game Maker > Assets > Import Last.');
   } catch(e) { showToast('Export failed, level may be too large'); }
 }
-function getLevelData(){return{meta:{name:getLevelName(),width:gridW,height:gridH,tileSize:TILE_SIZE,theme:currentTheme.id,creator:'JVDesignStudio Level Designer',site:'jvdesignstudio.co.uk',exported:new Date().toISOString()},tileDefs:TILES.filter(t=>t.id>0).map(t=>({id:t.id,label:t.label,type:t.type,solid:t.solid,color:t.color})),layers:layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:l.data})),enemyPaths,tileProps};}
+function getLevelData(){return{schemaVersion:'1.0',meta:{schemaVersion:'1.0',name:getLevelName(),width:gridW,height:gridH,tileSize:TILE_SIZE,theme:currentTheme.id,creator:'JVDesignStudio Level Designer',site:'jvdesignstudio.co.uk',exported:new Date().toISOString()},tileDefs:TILES.filter(t=>t.id>0).map(t=>({id:t.id,label:t.label,type:t.type,solid:t.solid,color:t.color})),layers:layers.map(l=>({name:l.name,visible:l.visible,locked:l.locked,data:l.data})),enemyPaths,tileProps};}
 function exportJSON(){const data=getLevelData();const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(data.meta.name.replace(/\s+/g,'_')||'level')+'.json';a.click();showToast('JSON exported!');}
 function exportGodot(){
   const data=getLevelData();
