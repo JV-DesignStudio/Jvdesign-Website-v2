@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-bcjUPnb92Bctj5Tt1D82CU7to3aWc/FkTjjKe4JTk+w=' 'sha256-h9tim976Wvoa6q7+CKzmWn9sUPc3sHFq4ykjRgaCN8c=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-VcfROjTBKJg+BfQl0GDrhMC0rXWY1L1MVAje3k9r5bk=' 'sha256-h9tim976Wvoa6q7+CKzmWn9sUPc3sHFq4ykjRgaCN8c=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -1763,6 +1763,9 @@ window.csgBuildCanvas=csgBuildCanvas;
 window.csgExportImage=csgExportImage;
 
 // ── STARTER LIBRARY (A2772) ──
+// A2792: the random-starter link must wait until the library has merged, or it
+// picks from the built-in set and its flash is wiped by the later re-render.
+let csgStartersReady=false;
 function mergeStarters(list){
   if(!Array.isArray(list)||!list.length) return;
   const ids=new Set(SNIPPETS.map(function(s){ return s.id; }));
@@ -1780,14 +1783,15 @@ function mergeStarters(list){
 }
 function seedStarters(){
   const starters=window.CSG_STARTERS;
-  if(!Array.isArray(starters)||!starters.length) return;
-  if(!window.indexedDB){ mergeStarters(starters); return; }
+  if(!Array.isArray(starters)||!starters.length){ csgStartersReady=true; return; }
+  if(!window.indexedDB){ mergeStarters(starters); csgStartersReady=true; return; }
   let finished=false;
   const finish=function(list){
     if(finished) return;
     finished=true;
     clearTimeout(timer);
     mergeStarters(list&&list.length?list:starters);
+    csgStartersReady=true;
   };
   const timer=setTimeout(function(){ finish(starters); },1400);
   try{
@@ -1870,7 +1874,15 @@ window.addEventListener('hashchange',()=>{
     buildCats();renderSnippets();
   }
 });
-try{ if(new URLSearchParams(location.search).get('starter')==='random') setTimeout(surpriseMe,300); }catch(e){}
+try{
+  if(new URLSearchParams(location.search).get('starter')==='random'){
+    var tries=0;
+    (function waitForStarters(){
+      if(csgStartersReady){ surpriseMe(); return; }
+      if(tries++ < 40) setTimeout(waitForStarters,100);
+    })();
+  }
+}catch(e){}
 maybeShowWelcome();
 seedStarters();
 try{
