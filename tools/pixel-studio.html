@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4hzGzLswIYE2TgOgztOOB1J1CR3/EgmBdvCNzynum1U=' 'sha256-B/d/7T+18v21ZKuua2SmSP1BqhbRF2tcqj9+gNJuVs0=' 'sha256-fm+cbMDhwEy/SCToazJj+BPbXKVKE4nNrBM8fX23Y8g=' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-GXcjEK+a4MKPfItDTNm61gaplPzCtNaZlKL4a2ffehs=' 'sha256-GnuRqDr0adm5DkHFB2tSTtTeyyRgNWFsjhejBD5zDuk=' 'sha256-pcbfc8HYonNbNQHDmW7zrrow3njY1FkbP9NpFSUDPFM=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4hzGzLswIYE2TgOgztOOB1J1CR3/EgmBdvCNzynum1U=' 'sha256-B/d/7T+18v21ZKuua2SmSP1BqhbRF2tcqj9+gNJuVs0=' 'sha256-fm+cbMDhwEy/SCToazJj+BPbXKVKE4nNrBM8fX23Y8g=' 'sha256-4O/ck9yifH96xBeNFQY1B8kCp8efyn0X7lF/yWNSPys=' 'sha256-GXcjEK+a4MKPfItDTNm61gaplPzCtNaZlKL4a2ffehs=' 'sha256-GnuRqDr0adm5DkHFB2tSTtTeyyRgNWFsjhejBD5zDuk=' 'sha256-8lA2Mm/2fYCEdjWd0RLb2BtaBwYqbr8A7iCYOEG43AM=' 'sha256-EwVm19iJYyMlAGXeEqRH10P5q08RJyzIw2ykpAdcvXo=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -3665,6 +3665,29 @@ window.addEventListener('focus',acceptPendingBundle);
     var cs=document.getElementById('onionCheck');
     if(cs && !cs.checked){ cs.checked=true; onionSkin=true; renderAll(); }
   };
+  // A2779: the shared "Make a game" pill and the cookie banner are fixed to the
+  // bottom, so on phones and short landscape they land on top of the bottom-bar
+  // controls (tools, brush size, undo, Save/Export). Lift both above the bar
+  // whenever the bar is showing, and follow the bar when a taller tab opens.
+  function positionBottomOverlays(){
+    var bar=document.getElementById('bottom-bar');
+    var barVisible=!!bar&&getComputedStyle(bar).display!=='none';
+    if(barVisible) document.documentElement.style.setProperty('--ps-bb-h', Math.round(bar.getBoundingClientRect().height)+'px');
+    else document.documentElement.style.removeProperty('--ps-bb-h');
+    var pill=document.getElementById('mj-pill');
+    if(!pill) return;
+    if(!barVisible){ pill.style.removeProperty('bottom'); return; }
+    var lift=Math.max(0, window.innerHeight-bar.getBoundingClientRect().top+10);
+    pill.style.bottom=lift+'px';
+  }
+  window.addEventListener('resize', positionBottomOverlays);
+  document.addEventListener('DOMContentLoaded', function(){
+    positionBottomOverlays();
+    var bar=document.getElementById('bottom-bar');
+    if(bar&&'ResizeObserver' in window) new ResizeObserver(positionBottomOverlays).observe(bar);
+  });
+  // The pill is injected by a deferred script, so watch for it to appear.
+  if('MutationObserver' in window) new MutationObserver(positionBottomOverlays).observe(document.body,{childList:true});
   // auto-tick on first paint
   document.addEventListener('pointerdown', function onFirstDraw(e){
     if(e.target.closest('#main-canvas')){

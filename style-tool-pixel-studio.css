@@ -49,8 +49,17 @@ body:not(.ps-top-open) #psTopChrome>.studio-notice-drawer{display:none!important
 #tool-next-step,.jvds-tools-footer{display:none!important;}
 
 /* LEFT PANEL */
-#left-panel{width:160px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
-#right-panel{width:160px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+/* A2779: the side columns hold a lot of controls, so scroll them with a
+   scrollbar a finger or trackpad can actually grab, and never let a child
+   with a wide intrinsic size clip the panel sideways. */
+#left-panel{width:160px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.28) transparent;}
+#right-panel{width:160px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.28) transparent;}
+#left-panel::-webkit-scrollbar,#right-panel::-webkit-scrollbar{width:10px;height:10px;}
+#left-panel::-webkit-scrollbar-track,#right-panel::-webkit-scrollbar-track{background:transparent;}
+#left-panel::-webkit-scrollbar-thumb,#right-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.24);border-radius:6px;border:2px solid var(--panel);}
+#left-panel::-webkit-scrollbar-thumb:hover,#right-panel::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.42);}
+#left-panel .ps,#right-panel .ps,#left-panel .ps-group,#right-panel .ps-group{min-width:0;}
+#right-panel input[type=range],#right-panel .row-btns .lb{min-width:0;}
 
 /* CANVAS AREA */
 #canvas-area{flex:1;min-width:0;position:relative;overflow:hidden;background:#111118;display:flex;align-items:center;justify-content:center;}
@@ -72,7 +81,7 @@ body:not(.ps-top-open) #psTopChrome>.studio-notice-drawer{display:none!important
 .tb .ico{font-size:1rem;line-height:1;}
 
 /* COLOURS */
-.pal{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;margin-bottom:5px;}
+.pal{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;margin-bottom:5px;}
 .sw{aspect-ratio:1;border-radius:3px;cursor:pointer;border:1.5px solid transparent;transition:transform .1s;}
 .sw:hover{transform:scale(1.15);}
 .sw.on{border-color:white;transform:scale(1.15);}
@@ -238,8 +247,12 @@ body.ps-mission-done .mascot-coach{display:none!important;}
 /* Mobile active-tool status bar (phone layout only) */
 #mob-status{display:none;}
 
-/* MOBILE */
-@media(max-width:699px){
+/* MOBILE
+   A2779: a phone held in landscape is wider than 699px, so the old width-only
+   query fell back to the desktop shell. That squeezed 1,400px of controls into
+   a 150px column on a 390px-tall screen. Touch devices with a short viewport
+   now get the same tabbed bottom bar as phones in portrait. */
+@media(max-width:699px), (pointer:coarse) and (max-height:560px){
   /* The injected next-step panel is in normal flow and steals ~250px from the
      fixed-height editor, leaving the drawing area too short to use. The editor
      keeps its own next-step guidance in the bottom bar on phones. */
@@ -256,6 +269,10 @@ body.ps-mission-done .mascot-coach{display:none!important;}
   .classic-actions{width:100%;overflow-x:auto;padding-bottom:2px;justify-content:flex-start!important;flex-wrap:nowrap!important;}
   #left-panel,#right-panel{display:none!important;}
   #bottom-bar{display:flex!important;padding-bottom:env(safe-area-inset-bottom);}
+  /* A2779: the consent banner is fixed to the bottom and used to cover the
+     bottom-bar controls (Export PNG, Load Sprite). Sit it on top of the bar
+     instead; --ps-bb-h is the bar's live height set from the page script. */
+  #cookie-banner{bottom:var(--ps-bb-h,0px)!important;}
   /* A1790: keep the remaining floating actions above the bottom bar in the
      first-mission finish state so no control is covered. --ps-bb-lift is set
      from the bar's real top, because the bar does not always touch the
@@ -281,15 +298,20 @@ body.ps-mission-done .mascot-coach{display:none!important;}
   #bb5 .layer-item{padding:9px 6px;}
   #mob-status{display:flex;align-items:center;gap:8px;padding:3px 12px;background:var(--panel);border-top:1px solid var(--border2);font-size:.68rem;color:var(--muted);flex-shrink:0;min-height:26px;}
 }
-@media(min-width:700px) and (max-width:899px){
+@media(min-width:700px) and (max-width:1099px){
   /* Tablets: keep the desktop shell but give the panels readable, touch-friendly
-     sizing instead of squeezing them to 130px with 0.45rem labels. */
-  #left-panel,#right-panel{width:150px;}
+     sizing. A2779: 150px was narrower than the palette and zoom rows, so their
+     content was clipped. Let the column grow with the screen instead. */
+  #left-panel,#right-panel{width:clamp(180px,24vw,210px);}
   .tb{padding:6px 3px;font-size:.5rem;}
   .tb .ico{font-size:.95rem;}
   .pt{font-size:.52rem;}
+  .zoom-row{flex-wrap:wrap;}
+  /* Keep the always-visible Keep block from hiding half the tools on a tablet
+     by dropping the longest plain-text hint there. */
+  #left-sticky>div:last-child{display:none;}
 }
-@media(min-width:700px){
+@media(min-width:700px) and (min-height:561px){
   #bottom-bar{display:none!important;}
   .pal{grid-template-columns:repeat(8,1fr);}
   #left-sticky .ab-grid{grid-template-columns:repeat(3,1fr);}
@@ -297,14 +319,38 @@ body.ps-mission-done .mascot-coach{display:none!important;}
 @media(min-width:1100px){
   #left-panel,#right-panel{width:176px;}
 }
+/* A2779: on a short touch viewport the tabbed bar must leave most of the
+   screen to the canvas, so trim the tab strip, hide the duplicate status row
+   and cap the panel height. */
+@media(max-height:560px) and (pointer:coarse){
+  /* A persisted character mode shows the tall character strip in the top
+     chrome; at 70vh on a 390px-tall phone it left the canvas at 0px. Cap it so
+     the drawing area always keeps usable height. */
+  .ps-top-chrome{max-height:34vh;}
+  #mob-status{display:none;}
+  .bb-tab{padding:6px 1px;font-size:.58rem;}
+  .bb-content{min-height:0;max-height:min(30vh,150px);padding:4px 8px;}
+  .bb-tb{min-width:40px;min-height:40px;padding:5px 6px;}
+  #bb0 .z-btn{width:32px;height:32px;font-size:1rem;}
+  #bbBrush{width:80px;height:32px;}
+  .frame-thumb{width:34px;height:34px;}
+  #bb3 .ab{padding:7px 10px;}
+}
 
 
 
 /* Touch target safety */
 @media(pointer:coarse){
-  .tb,.bb-tb,.tool-btn,.shape-btn,.char-btn,.tb-btn,.sw,.bb-sw,.colour-swatch,.seq-cell,.loop-dot,.pad,.kit-btn,button {
+  /* A2779: .sw is left out on purpose. Forcing 44px on a square swatch made a
+     6-column palette 264px wide, which clipped inside the 150px tablet column. */
+  .tb,.bb-tb,.tool-btn,.shape-btn,.char-btn,.tb-btn,.bb-sw,.colour-swatch,.seq-cell,.loop-dot,.pad,.kit-btn,button {
     min-height:44px;
   }
+  /* The palette stays a touch target but fits the panel: six columns at least
+     24px each, scaled to whatever width the column has. The desktop 8-column
+     rule would make every touch swatch too small and overflow the panel. */
+  .pal{grid-template-columns:repeat(6,minmax(0,1fr));}
+  .pal .sw{min-height:24px;}
   .seq-cell{ height:44px !important; min-height:44px !important; }
   .z-btn,.lb{ min-width:32px; min-height:44px; }
 }

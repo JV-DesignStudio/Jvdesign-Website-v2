@@ -309,6 +309,66 @@ const ok = (name, cond) => { console.log((cond ? 'PASS ' : 'FAIL ') + name); if 
   await new Promise(r => setTimeout(r, 100));
   ok('tap: touch on header is harmless', errors.filter(e => e.includes('pageerror')).length === 0);
 
+  // 12. Tablet + landscape layout (A2779). The side panels used to clip their own
+  // controls (palette swatches, zoom row, opacity slider), and a phone held in
+  // landscape fell into the narrow desktop shell because its width was over
+  // 699px. Tablets must keep the side shell with nothing clipped; a short touch
+  // viewport must switch to the tabbed bottom bar.
+  for (const vp of [{ w: 768, h: 1024, shell: 'side' }, { w: 1024, h: 768, shell: 'side' }, { w: 844, h: 390, shell: 'bar' }]) {
+    const lp = await browser.newPage();
+    await lp.setViewport({ width: vp.w, height: vp.h, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+    // Start in the draw shell: a previous page in this run may have persisted
+    // character mode, which shows the tall character strip and is not the
+    // layout these checks are about.
+    await lp.evaluateOnNewDocument(() => { try { localStorage.setItem('jvds-cookie-consent', 'declined'); localStorage.setItem('jvds_pixel_mode', 'draw'); } catch (e) {} });
+    await lp.goto('http://127.0.0.1:8127/tools/pixel-studio.html', { waitUntil: 'networkidle2', timeout: 30000 });
+    await new Promise(r => setTimeout(r, 900));
+    await lp.evaluate(() => {
+      document.querySelectorAll('.modal-overlay').forEach(o => { o.classList.remove('open'); o.style.display = 'none'; });
+      const cb = document.getElementById('cookie-banner'); if (cb) cb.remove();
+    });
+    await new Promise(r => setTimeout(r, 200));
+    const m = await lp.evaluate(() => {
+      const box = el => { if (!el) return null; const r = el.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), display: getComputedStyle(el).display, sw: el.scrollWidth, cw: el.clientWidth }; };
+      const pal = document.getElementById('palette');
+      let palOverflow = 0;
+      const panelRect = document.getElementById('left-panel').getBoundingClientRect();
+      if (pal && pal.getBoundingClientRect().width > 0) {
+        // Compare with the panel edge, not the palette edge: the selected swatch
+        // is scaled 1.15 and pokes a couple of pixels into the panel padding.
+        for (const sw of pal.children) { if (sw.getBoundingClientRect().right > panelRect.right - 1) palOverflow++; }
+      }
+      return {
+        lp: box(document.getElementById('left-panel')),
+        rp: box(document.getElementById('right-panel')),
+        bb: box(document.getElementById('bottom-bar')),
+        ca: box(document.getElementById('canvas-area')),
+        mc: box(document.getElementById('main-canvas')),
+        palOverflow,
+        docOverflow: document.documentElement.scrollWidth - window.innerWidth
+      };
+    });
+    const tag = vp.w + 'x' + vp.h;
+    ok(tag + ': no horizontal page overflow', m.docOverflow <= 2);
+    ok(tag + ': canvas keeps real height (' + m.ca.h + 'px)', m.ca.h > 140 && m.mc.h > 0);
+    if (vp.shell === 'side') {
+      ok(tag + ': side panels stay visible', m.lp.display !== 'none' && m.rp.display !== 'none');
+      ok(tag + ': left panel content not clipped (' + m.lp.sw + '/' + m.lp.cw + ')', m.lp.sw <= m.lp.cw + 2);
+      ok(tag + ': right panel content not clipped (' + m.rp.sw + '/' + m.rp.cw + ')', m.rp.sw <= m.rp.cw + 2);
+      ok(tag + ': palette stays inside the panel', m.palOverflow === 0);
+    } else {
+      ok(tag + ': short landscape uses the bottom bar', m.bb.display !== 'none' && m.lp.display === 'none' && m.rp.display === 'none');
+      ok(tag + ': bottom bar leaves room for the canvas (' + m.bb.h + 'px bar)', m.bb.h < 170);
+    }
+    const pill = await lp.evaluate(() => {
+      const p = document.getElementById('mj-pill'), bar = document.getElementById('bottom-bar');
+      if (!p || !bar || getComputedStyle(bar).display === 'none') return null;
+      return { pillBottom: p.getBoundingClientRect().bottom, barTop: bar.getBoundingClientRect().top };
+    });
+    if (pill) ok(tag + ': Make a game pill sits above the bottom bar', pill.pillBottom <= pill.barTop + 1);
+    await lp.close();
+  }
+
   console.log('');
   if (errors.length) {
     console.log('RUNTIME ERRORS:');
