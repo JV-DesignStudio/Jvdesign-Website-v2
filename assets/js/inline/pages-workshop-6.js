@@ -41,6 +41,17 @@
         var currentQuery = '';
         var noInstallOnly = false;
 
+        // A2793: "works here" mode. The choice sticks per device so a learner on a
+        // school PC does not have to turn it back on on every visit.
+        var NEEDS_KEY = 'jvds_works_here';
+        var NEEDS_LABEL = { browser: 'Runs in browser', install: 'Needs install', account: 'Needs account' };
+        function readNeedsPref() {
+            try { return localStorage.getItem(NEEDS_KEY) === '1'; } catch (e) { return false; }
+        }
+        function saveNeedsPref(on) {
+            try { localStorage.setItem(NEEDS_KEY, on ? '1' : '0'); } catch (e) {}
+        }
+
         // Map the finder's select values to the exact data-engine values on the cards.
         // This stops Java matching JavaScript and keeps the count honest.
         var TOOL_ENGINE = {
@@ -69,11 +80,37 @@
         var ENGINE_HREF = /godot|unity|unreal|blender|mugen|minecraft|tinkercad|cpp|java-|python|defold|gdevelop|gml|pico8|pico-8|openrct2|roblox/i;
         var BROWSER_HREF = /js-|javascript|browser|builder|pixel-studio|three\.?js|scratch/i;
 
+        // A2793: trust the generated data-needs first, then fall back to the old
+        // href heuristic for any card that predates it. data-studio cards are
+        // browser studios even when the engine name suggests an install.
         function runtime(card) {
+            var needs = card.getAttribute('data-needs');
+            if (needs === 'browser' || needs === 'install' || needs === 'account') return needs;
+            if (card.getAttribute('data-studio') === 'true') return 'browser';
             var hay = (card.getAttribute('href') || '') + ' ' + (card.textContent || '');
-            if (ENGINE_HREF.test(hay)) return 'engine';
+            if (ENGINE_HREF.test(hay)) return 'install';
             if (BROWSER_HREF.test(hay)) return 'browser';
             return 'browser';
+        }
+        function paintNeedsBadges() {
+            Array.prototype.forEach.call(cards, function(card) {
+                if (card.querySelector('.ws-needs-badge')) return;
+                var body = card.querySelector('.course-body');
+                if (!body) return;
+                var need = runtime(card);
+                var badge = document.createElement('div');
+                badge.className = 'ws-needs-badge ws-needs-' + need;
+                badge.textContent = NEEDS_LABEL[need] || NEEDS_LABEL.browser;
+                if (need === 'browser') {
+                    badge.style.cssText = 'display:inline-block;margin-top:6px;font-size:.6rem;font-weight:800;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:var(--teal-lt,rgba(112,163,167,.16));color:var(--teal-dk,#3d6b6e);border:1px solid var(--teal,rgba(112,163,167,.5));';
+                } else {
+                    badge.style.cssText = 'display:inline-block;margin-top:6px;font-size:.6rem;font-weight:800;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:var(--gold-lt,rgba(201,138,46,.14));color:var(--gold,#8a5a12);border:1px solid var(--gold,rgba(201,138,46,.5));';
+                }
+                badge.title = need === 'browser'
+                    ? 'You can start this right now in your browser.'
+                    : 'You need to install something first. Use No install to see what runs right now.';
+                body.appendChild(badge);
+            });
         }
         function ageLimit(filter) {
             if (filter === '4-5') return 5;
@@ -176,6 +213,7 @@
                 any = true;
                 activeChips.appendChild(makeChip('No install', function() {
                     noInstallOnly = false;
+                    saveNeedsPref(false);
                     if (noInstallBtn) { noInstallBtn.classList.remove('active'); noInstallBtn.setAttribute('aria-pressed', 'false'); }
                     applyFilters(); focusEl(noInstallBtn);
                 }));
@@ -241,6 +279,7 @@
             if (difficulty) difficulty.value = '';
             if (search) search.value = '';
             currentQuery = ''; noInstallOnly = false;
+            saveNeedsPref(false);
             setAge('all');
             if (noInstallBtn) { noInstallBtn.classList.remove('active'); noInstallBtn.setAttribute('aria-pressed', 'false'); }
             applyFilters();
@@ -252,6 +291,7 @@
         if (noInstallBtn) {
             noInstallBtn.addEventListener('click', function() {
                 noInstallOnly = !noInstallOnly;
+                saveNeedsPref(noInstallOnly);
                 this.classList.toggle('active', noInstallOnly);
                 this.setAttribute('aria-pressed', noInstallOnly ? 'true' : 'false');
                 applyFilters();
@@ -265,7 +305,14 @@
                 applyFilters();
             });
         });
-        if (search) search.addEventListener('input', function() { currentQuery = this.value.trim().toLowerCase(); applyFilters(); });
+        var searchTimer = 0;
+        if (search) search.addEventListener('input', function() {
+            if (searchTimer) clearTimeout(searchTimer);
+            searchTimer = setTimeout(function() {
+                currentQuery = search.value.trim().toLowerCase();
+                applyFilters();
+            }, 120);
+        });
         if (clear) clear.addEventListener('click', function() { currentQuery = ''; if (search) { search.value = ''; search.focus(); } applyFilters(); });
 
         var noResultsReset = document.getElementById('workshopNoResultsReset');
@@ -297,6 +344,18 @@
             });
         });
 
+        // A2793: restore the saved "works here" choice, or honour ?works-here=1
+        // from the install-only page banner, then label every card.
+        try {
+            var worksHere = new URLSearchParams(location.search).get('works-here') === '1';
+            noInstallOnly = worksHere ? true : readNeedsPref();
+            if (worksHere) saveNeedsPref(true);
+        } catch (e) {}
+        if (noInstallBtn) {
+            noInstallBtn.classList.toggle('active', noInstallOnly);
+            noInstallBtn.setAttribute('aria-pressed', noInstallOnly ? 'true' : 'false');
+        }
+        paintNeedsBadges();
         applyFilters();
     })();
 

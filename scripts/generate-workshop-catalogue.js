@@ -17,6 +17,7 @@ const ROOT = path.resolve(__dirname, '..');
 const DATA = path.join(ROOT, 'content', 'workshops.json');
 const OUTCOMES = path.join(ROOT, 'content', 'workshop-outcomes.json');
 const ENGINE_HUBS = path.join(ROOT, 'content', 'engine-hubs.json');
+const NEEDS = path.join(ROOT, 'content', 'workshop-needs.json');
 const HUB = path.join(ROOT, 'pages', 'workshop.html');
 const START = '<!-- CATALOGUE:START -->';
 const END = '<!-- CATALOGUE:END -->';
@@ -29,7 +30,6 @@ const esc = (s) => String(s == null ? '' : s)
   .replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
 
-const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
 const ENGINE_META = {
   'Scratch': { emoji: '🐱', color: '#FF7700' },
@@ -64,10 +64,25 @@ function loadOutcomes() {
   }
 }
 
+// A2793: what does a learner need before they can start?
+// - browser: runs in the browser with nothing to install
+// - install: needs a free desktop engine or tool installed first
+// - account: runs in the browser but needs a login (a barrier on school PCs)
+// Browser studios (ids ending -studio / -mod-studio) are always browser.
+// content/workshops.json can override any entry with an explicit "needs" field.
+const BROWSER_ENGINES = new Set(['Scratch', 'JavaScript', 'General', 'TinkerCAD']);
+function needsFor(entry, isStudio) {
+  const explicit = entry && entry.needs;
+  if (explicit === 'browser' || explicit === 'install' || explicit === 'account') return explicit;
+  if (isStudio) return 'browser';
+  if (BROWSER_ENGINES.has(entry && entry.engine)) return 'browser';
+  return 'install';
+}
+
 function card(e, outcomes) {
   const href = '../' + String(e.url).replace(/^\//, '');
   const isStudio = /-(?:mod-)?studio$/.test(e.id || '');
-  const badge = (isStudio ? '🛠 Browser studio · ' : '') + [e.engine, e.levelLabel || cap(e.difficulty), 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
+  const badge = (isStudio ? '🛠 Browser studio · ' : '') + [e.engine, 'Ages ' + e.ageRange].filter(Boolean).join(' · ');
   const desc = e.desc || ('Interactive build-along for ' + e.title + '.');
   const outcome = outcomes.get(e.id);
   const outcomeLine = outcome
@@ -77,6 +92,7 @@ function card(e, outcomes) {
     + ' data-engine="' + esc(e.engine) + '"'
     + ' data-difficulty="' + esc(e.difficulty) + '"'
     + ' data-age="' + esc(e.ageRange) + '"'
+    + ' data-needs="' + needsFor(e, isStudio) + '"'
     + (isStudio ? ' data-studio="true"' : '')
     + ' data-cat="tutorial">\n'
     + '      <div class="course-body">\n'
@@ -93,7 +109,7 @@ function section(entries, outcomes) {
     + '  <div class="ws-section-head reveal">\n'
     + '    <span class="ws-section-icon">📖</span>\n'
     + '    <div>\n'
-    + '      <div class="ws-section-label">Complete Catalogue</div>\n'
+    + '      <h2 class="ws-section-label">Complete Catalogue</h2>\n'
     + '      <div class="ws-section-sub">Every workshop A to Z, generated from the content data so nothing is missed. Use the finder above to filter by tool, level or age.</div>\n'
     + '    </div>\n'
     + '    <span class="ws-section-count">' + entries.length + ' Workshops</span>\n'
@@ -157,11 +173,40 @@ function splice(html, startMarker, endMarker, want) {
   return { have, want, html: html.slice(0, html.indexOf(startMarker)) + want + html.slice(html.indexOf(endMarker) + endMarker.length) };
 }
 
+function needsManifest(entries) {
+  const studios = new Map();
+  for (const e of entries) {
+    const isStudio = /-(?:mod-)?studio$/.test(e.id || '');
+    if (isStudio && !studios.has(e.engine)) studios.set(e.engine, e);
+  }
+  return entries.map((e) => {
+    const isStudio = /-(?:mod-)?studio$/.test(e.id || '');
+    const needs = needsFor(e, isStudio);
+    const alt = needs === 'install' ? studios.get(e.engine) : null;
+    return {
+      url: e.url,
+      id: e.id,
+      engine: e.engine,
+      needs,
+      alternative: alt ? { title: alt.title, url: alt.url } : null
+    };
+  });
+}
+
 function generate({ checkOnly = false } = {}) {
   const entries = JSON.parse(fs.readFileSync(DATA, 'utf8'));
   const outcomes = loadOutcomes();
   let html = fs.readFileSync(HUB, 'utf8');
   let changed = false;
+
+  const needsJson = JSON.stringify(needsManifest(entries), null, 2) + '\n';
+  let needsChanged = true;
+  try {
+    needsChanged = fs.readFileSync(NEEDS, 'utf8') !== needsJson;
+  } catch {
+    needsChanged = true;
+  }
+  if (needsChanged && !checkOnly) fs.writeFileSync(NEEDS, needsJson);
 
   const blocks = [
     [BROWSE_START, BROWSE_END, BROWSE_START + '\n' + browse(entries) + '\n' + BROWSE_END],
@@ -178,7 +223,7 @@ function generate({ checkOnly = false } = {}) {
   }
 
   if (changed && !checkOnly) fs.writeFileSync(HUB, html);
-  return { changed, count: entries.length };
+  return { changed: changed || needsChanged, count: entries.length };
 }
 
 function main() {
@@ -186,15 +231,15 @@ function main() {
   const { changed, count } = generate({ checkOnly });
   if (checkOnly) {
     if (changed) {
-      console.log('  [FAIL] catalogue/browse drift: regenerate with node scripts/generate-workshop-catalogue.js');
+      console.log('  [FAIL] catalogue/browse/needs drift: regenerate with node scripts/generate-workshop-catalogue.js');
       process.exit(1);
     }
-    console.log('  [PASS] catalogue + browse in sync (' + count + ' cards)');
+    console.log('  [PASS] catalogue + browse + needs in sync (' + count + ' cards)');
     return;
   }
   console.log(changed
-    ? '  [OK] wrote catalogue + browse blocks for ' + count + ' workshops into pages/workshop.html'
-    : '  [PASS] catalogue + browse already in sync (' + count + ' cards)');
+    ? '  [OK] wrote catalogue + browse + needs for ' + count + ' workshops'
+    : '  [PASS] catalogue + browse + needs already in sync (' + count + ' cards)');
 }
 
 if (require.main === module) main();
