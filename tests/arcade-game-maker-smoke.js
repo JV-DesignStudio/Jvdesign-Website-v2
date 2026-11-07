@@ -74,6 +74,21 @@ function record(name, ok, detail){ results.push({name,ok,detail}); console.log((
   record('inline runtime runs under that CSP', csp.inlineRuns === true);
   record('no inline event handler attributes in source', csp.handlers === 0, 'found ' + csp.handlers);
 
+  // A2708: top-level learner code must be dry-run in a Worker with a hard timeout.
+  console.log('\n▸ user code sandbox');
+  const sandbox = await page.evaluate(async ()=>{
+    const t0 = Date.now();
+    const res = await _validateUserCodeInWorker('while(true){}', 400);
+    const validateMs = Date.now() - t0;
+    const compiled = await _compileUserCode('while(true){}');
+    return { res, validateMs, compiled, status: ((document.getElementById('codeStatus')||{}).textContent)||'' };
+  });
+  record('infinite loop rejected by worker', sandbox.res && sandbox.res.ok===false, JSON.stringify(sandbox.res));
+  record('worker terminated within timeout', sandbox.validateMs < 1500, sandbox.validateMs+'ms');
+  record('main thread compile returns false', sandbox.compiled === false);
+  record('inline error shown', /Timed out|infinite loop|while/i.test(sandbox.status), sandbox.status.slice(0,80));
+  await page.evaluate(()=>{ _userCodeFns=null; _userCode=''; const ed=document.getElementById('customCodeEditor'); if(ed) ed.value=''; _setCodeStatus(''); });
+
   // Check critical patches are present
   const hasHaptics = await page.evaluate(()=> typeof _triggerHaptic==='function' && /hapticIntensity/.test(_triggerHaptic.toString()));
   record('haptics intensity wrapper exists', hasHaptics);

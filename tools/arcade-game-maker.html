@@ -89,7 +89,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-0XvzgVYypIx/b+hRzd3monEV6l8RUTmOGiWiLiq8HRk=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-pJaoOmSdxxLLJTtBkeN9OsKbjqM9f+UAK4o4BP8QP9M=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-0XvzgVYypIx/b+hRzd3monEV6l8RUTmOGiWiLiq8HRk=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-zeir4yJ5/7D2rnApbNht4yZO0djtqRK+/iWa5lRky9U=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -4299,9 +4299,82 @@ let _userCodeFirstRun = false; // flag: call onCreate on first step after boot
 let _userCodeErrMsg = '';      // A2140: last runtime error, so a broken onUpdate is visible
 let _userCodeErrAt = 0;
 
-function _compileUserCode(src) {
-    _userCode = src.trim();
-    if (!_userCode) { _userCodeFns = null; _setCodeStatus(''); return; }
+// A2708: learner code is dry-run in a throwaway Worker before anything touches
+// the main thread. A top-level while(true) would otherwise freeze the tab and
+// can force a Chromebook reboot, because _compileUserCode executes the factory.
+// The Worker runs the code as its own script (no eval) so it works under the
+// page CSP, and a hard timeout terminates it.
+function _buildUserCodeValidatorSource(src, token) {
+    return [
+        'var __agmDone = false;',
+        'function __agmPost(ok, extra) {',
+        '  if (__agmDone) return;',
+        '  __agmDone = true;',
+        '  var m = { __agmToken: ' + JSON.stringify(token) + ', ok: ok };',
+        '  if (extra) for (var k in extra) m[k] = extra[k];',
+        '  self.postMessage(m);',
+        '}',
+        'try {',
+        '  (function () {',
+        src,
+        '  })();',
+        '} catch (err) {',
+        '  // A runtime error against the Worker globals is not proof the code is',
+        '  // broken; the main-thread compile reports the real message if it fails.',
+        '  __agmPost(true, { warning: String((err && err.message) || err) });',
+        '}',
+        '__agmPost(true);'
+    ].join('\n');
+}
+
+function _validateUserCodeInWorker(src, timeoutMs) {
+    return new Promise(function(resolve) {
+        var blob, url, worker, timer, done = false;
+        var token = 'agm' + Date.now() + Math.random().toString(36).slice(2);
+        function finish(result) {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            try { worker.terminate(); } catch (e) {}
+            try { URL.revokeObjectURL(url); } catch (e) {}
+            resolve(result);
+        }
+        try {
+            blob = new Blob([_buildUserCodeValidatorSource(src, token)], { type: 'application/javascript' });
+            url = URL.createObjectURL(blob);
+            worker = new Worker(url);
+        } catch (e) {
+            // file:// or a browser that blocks blob workers: never stop play just
+            // because the Worker could not start, the main-thread compile still runs.
+            return resolve({ ok: true, skipped: true });
+        }
+        timer = setTimeout(function() {
+            finish({ ok: false, error: 'Timed out after ' + timeoutMs + 'ms. Check for an infinite loop, like while(true){}.' });
+        }, timeoutMs);
+        worker.onmessage = function(ev) {
+            var data = ev.data || {};
+            if (data.__agmToken !== token) return;
+            finish(data);
+        };
+        worker.onerror = function(ev) {
+            var msg = (ev && ev.message) ? ev.message : 'Could not check the code.';
+            finish({ ok: false, error: String(msg).replace(/^Uncaught\s+/, '') });
+        };
+    });
+}
+
+async function _compileUserCode(src) {
+    _userCode = (src || '').trim();
+    if (!_userCode) { _userCodeFns = null; _setCodeStatus(''); return true; }
+    _setCodeStatus('Checking code…', '');
+    const check = await _validateUserCodeInWorker(_userCode, 1500);
+    if (!check.ok) {
+        _userCodeFns = null;
+        _userCodeErrMsg = check.error || 'Code check failed';
+        _userCodeErrAt = Date.now();
+        _setCodeStatus('✗ ' + _userCodeErrMsg, 'err');
+        return false;
+    }
     try {
         // Wrap in a Function so declarations are scoped; globals still visible
         const factory = new Function(`
@@ -4315,9 +4388,12 @@ function _compileUserCode(src) {
         _userCodeErrMsg = ''; _userCodeErrAt = 0;
         const has = [_userCodeFns.onCreate && 'onCreate', _userCodeFns.onUpdate && 'onUpdate'].filter(Boolean);
         _setCodeStatus('✓ Compiled' + (has.length ? ', ' + has.join(', ') + ' ready' : '') + '. Hit ▶ Apply & Run', 'ok');
+        return true;
     } catch(e) {
         _userCodeFns = null;
+        _userCodeErrMsg = e.message; _userCodeErrAt = Date.now();
         _setCodeStatus('✗ ' + e.message, 'err');
+        return false;
     }
 }
 function _setCodeStatus(msg, cls) {
@@ -4326,10 +4402,12 @@ function _setCodeStatus(msg, cls) {
 }
 function applyAndRunCode() {
     const src = (document.getElementById('customCodeEditor') || {}).value || '';
-    _compileUserCode(src);
     localStorage.setItem('jv_user_code', src);
-    _userCodeFirstRun = true;
-    compileAndBootEngine();
+    _compileUserCode(src).then(function(ok) {
+        if (!ok) { showToast('Code check failed, game not started'); return; }
+        _userCodeFirstRun = true;
+        compileAndBootEngine();
+    });
 }
 const _CODE_SNIPPETS = {
     score:   '// Award points\nscene.score = (scene.score||0) + 10;\nif(scene.scoreText) scene.scoreText.setText(\'Score: \'+scene.score);\nGameAudio.play(\'score\');',
@@ -7743,6 +7821,95 @@ function _a11yTrapFocus(container) {
     container._trapHandler = handler;
     container.addEventListener('keydown', handler);
 }
+// ── ENGINE RESILIENCE (A2671, A2672, A2674, A2679) ───────────────────────────
+// Shared by the studio preview and the exported single-file game.
+const _AGM_MAX_DELTA = 50;              // ms, clamp after a background tab returns
+const _AGM_DEBUG_BODY = 0xFF00FF;       // magenta, high contrast for deuteranomaly
+const _AGM_DEBUG_VELOCITY = 0x00FFFF;   // cyan
+
+function _buildPhaserConfig(data) {
+    return {
+        // Phaser.AUTO picks WebGL when it can and Canvas when it cannot.
+        // A previous context loss forces CANVAS so outdated or heavily
+        // restricted school machines stay playable instead of going black.
+        type: window.__forceCanvasRenderer ? Phaser.CANVAS : Phaser.AUTO,
+        parent: 'game-container',
+        backgroundColor: '#05030f',
+        scale: { mode:Phaser.Scale.FIT, autoCenter:Phaser.Scale.CENTER_BOTH, width:GW, height:GH },
+        physics: { default:'arcade', arcade:{
+            debug:false,
+            debugBodyColor:_AGM_DEBUG_BODY,
+            debugStaticBodyColor:_AGM_DEBUG_BODY,
+            debugVelocityColor:_AGM_DEBUG_VELOCITY
+        } },
+        // A2671: smoothStep plus a hard clamp. Returning from a throttled tab
+        // used to hand Phaser a multi-second delta, so bodies tunnelled through
+        // walls. panicMax calms the first frames, the clamp below fixes the rest.
+        fps: { smoothStep:true, panicMax:_AGM_MAX_DELTA },
+        maxDelta: _AGM_MAX_DELTA,
+        input: { gamepad: true },
+        render: { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
+        disableVisibilityHandler: true,
+        scene: getScene(data)
+    };
+}
+
+// Wrap the time step so the delta handed to scenes can never exceed 50ms.
+function _clampGameDelta(game) {
+    try {
+        const loop = game && game.loop;
+        if (!loop || loop.__agmDeltaClamped) return false;
+        loop.__agmDeltaClamped = true;
+        const base = typeof loop.smoothDelta === 'function' ? loop.smoothDelta.bind(loop) : function(d){ return d; };
+        loop.smoothDelta = function(delta) {
+            const smoothed = base(delta);
+            return Math.min(Number.isFinite(smoothed) ? smoothed : delta, _AGM_MAX_DELTA);
+        };
+        return true;
+    } catch (e) { return false; }
+}
+
+// A2672: iOS Safari and Chrome suspend the audio context when the page has
+// been idle. Resume it on the next real input on the canvas, so sound comes
+// back without a reload.
+function _resumeGameAudio() {
+    try {
+        const ac = (typeof GameAudio !== 'undefined' && GameAudio.getCtx) ? GameAudio.getCtx() : null;
+        if (ac && ac.state === 'suspended' && typeof ac.resume === 'function') ac.resume();
+    } catch (e) {}
+}
+
+function _bindGameAudioResume(canvas) {
+    _resumeGameAudio();
+    try {
+        if (canvas && !canvas.__agmAudioResumeBound) {
+            canvas.__agmAudioResumeBound = true;
+            canvas.addEventListener('pointerdown', _resumeGameAudio);
+            canvas.addEventListener('touchstart', _resumeGameAudio, { passive:true });
+        }
+    } catch (e) {}
+    if (!window.__agmAudioResumeDocBound) {
+        window.__agmAudioResumeDocBound = true;
+        document.addEventListener('keydown', _resumeGameAudio, true);
+        document.addEventListener('pointerdown', _resumeGameAudio, true);
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) _resumeGameAudio();
+        });
+    }
+}
+
+function _bindVisibilityDeltaReset() {
+    if (window.__agmVisDeltaBound) return;
+    window.__agmVisDeltaBound = true;
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) return;
+        try {
+            const g = currentPhaserGame || window._phaserGame;
+            if (g && g.loop && typeof g.loop.resetDelta === 'function') g.loop.resetDelta();
+        } catch (e) {}
+    });
+}
+
 function _launchPhaserGame() {
     const data = _engineData;
     // Catch impossible settings (jump 0, speed 0) with an in-character nudge
@@ -7814,21 +7981,12 @@ function _launchPhaserGame() {
         try {
             _gameStartTime = Date.now();
             window._phaserGame = null;
-            currentPhaserGame = new Phaser.Game({
-                // Phaser.AUTO picks WebGL when it can and Canvas when it cannot.
-                // A previous context loss forces CANVAS so outdated or heavily
-                // restricted school machines stay playable instead of going black.
-                type: window.__forceCanvasRenderer ? Phaser.CANVAS : Phaser.AUTO,
-                parent: 'game-container',
-                backgroundColor: '#05030f',
-                scale: { mode:Phaser.Scale.FIT, autoCenter:Phaser.Scale.CENTER_BOTH, width:GW, height:GH },
-                physics: { default:'arcade', arcade:{ debug:false } },
-                input: { gamepad: true },
-                render: { preserveDrawingBuffer: true, failIfMajorPerformanceCaveat: false },
-                disableVisibilityHandler: true,
-                scene: getScene(data)
-            });
+            currentPhaserGame = new Phaser.Game(_buildPhaserConfig(data));
             window._phaserGame = currentPhaserGame;
+            // A2671/A2672: clamp the returned-tab delta and re-arm audio on input.
+            _clampGameDelta(currentPhaserGame);
+            _bindVisibilityDeltaReset();
+            _bindGameAudioResume(currentPhaserGame.canvas);
             // WebGL context loss is common on locked-down or outdated machines.
             // Rebuild once on the Canvas renderer rather than leaving a dead canvas.
             try {
@@ -9066,6 +9224,14 @@ function getScene(data) {
             try { _applyScenePlacement(this, data); }
             catch (e) { console.warn('Placed entities:', e); }
         }
+        shutdown() {
+            // A2674: a stopped scene must drop its keyboard and pointer
+            // listeners. Left behind, the next Play can fire two handlers for
+            // one physical key press, which looks like a double jump.
+            try { if (super.shutdown) super.shutdown.apply(this, arguments); } catch (e) {}
+            try { if (this.input && this.input.keyboard) this.input.keyboard.removeAllListeners(); } catch (e) {}
+            try { if (this.input) this.input.removeAllListeners(); } catch (e) {}
+        }
     };
 }
 
@@ -9281,11 +9447,18 @@ function _togglePhysicsDebug() {
             if (!s.physics || !s.physics.world) return;
             on = !s.physics.world.drawDebug;
             s.physics.world.drawDebug = on;
+            // A2679: magenta bodies and cyan velocity stay readable with
+            // deuteranomaly, unlike the default green and red.
+            try {
+                s.physics.world.defaults.bodyDebugColor = _AGM_DEBUG_BODY;
+                s.physics.world.defaults.staticBodyDebugColor = _AGM_DEBUG_BODY;
+                s.physics.world.defaults.velocityDebugColor = _AGM_DEBUG_VELOCITY;
+            } catch (e) {}
             if (on && !s.physics.world.debugGraphic) s.physics.world.createDebugGraphic();
             else if (s.physics.world.debugGraphic) s.physics.world.debugGraphic.clear();
         });
     } catch (e) {}
-    showToast(on ? '🟩 Hitboxes ON (green = body, red = touching)' : 'Hitboxes off', on ? 'success' : undefined, 2500);
+    showToast(on ? '🟪 Hitboxes ON (magenta = body, cyan = velocity)' : 'Hitboxes off', on ? 'success' : undefined, 2500);
 }
 
 // ?debugState=true drops a deliberately chaotic scene into the studio so the
@@ -18918,20 +19091,25 @@ function __playerBoot(){
     if(Array.isArray(_c.bossPhases)) { _bossPhases=_c.bossPhases; liveConfig.bossPhases=_c.bossPhases.slice(); }
     // Run the creator's own code inside their own exported game. The file already
     // carries the engine, so this adds no new trust boundary; the export CSP
-    // allows eval only when this code exists.
+    // allows eval only when this code exists. A2708: check it in a Worker first so
+    // a saved infinite loop cannot freeze the player.
+    var _userCodeReady = Promise.resolve();
     if(_c.userCode){
         var _ce=$('customCodeEditor'); if(_ce) _ce.value=_c.userCode;
-        if(typeof _compileUserCode==='function') _compileUserCode(_c.userCode);
+        if(typeof _compileUserCode==='function') _userCodeReady = Promise.resolve(_compileUserCode(_c.userCode));
     }
     // A1504: show the creator's challenge and enable one-tap remix in the export.
     if(_c.challenge){ window._sharedFrom={name:'The maker',score:_c.challenge}; }
     if(_c.remixUrl){ window.__exportRemixUrl=_c.remixUrl; }
     gameState.lives=liveConfig.lives;
     _updateHeartsDisplay(gameState.lives,liveConfig.lives);
-    if(typeof onGenreChange==='function')        onGenreChange();
-    if(typeof compileAndBootEngine==='function') compileAndBootEngine();
-    if(typeof setupTouchControls==='function')   setupTouchControls();
-    if(typeof updateTouchLayout==='function')     updateTouchLayout(_c.genre);
+    _userCodeReady.then(function(){
+        if(typeof onGenreChange==='function')        onGenreChange();
+        if(typeof compileAndBootEngine==='function') compileAndBootEngine();
+        if(typeof setupTouchControls==='function')   setupTouchControls();
+        if(typeof updateTouchLayout==='function')     updateTouchLayout(_c.genre);
+    });
+    return _userCodeReady;
 }
 window.__playerBoot=__playerBoot;
 window.addEventListener('DOMContentLoaded',function(){
