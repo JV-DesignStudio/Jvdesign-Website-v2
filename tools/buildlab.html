@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-foml45yrpQR6hy454R8AqhquSLkRB6sKt8NtFs2woo4=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-v6aoH8/CrtZk90029/0VeAOOHJ9Bv7wLqWYPMUTawzY=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -145,6 +145,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
 <style>/* A2599: keep one-finger orbit and placement inside the 3D viewport */
 #viewport canvas{touch-action:none}</style>
 <link rel="stylesheet" href="/assets/css/immersive-tool.css">
+<link rel="stylesheet" href="/assets/css/studio-shell.css?v=1">
 </head>
 <body>
 <h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0">BuildLab: Free 3D Block Builder for Roblox, Blender and Unreal</h1>
@@ -228,6 +229,8 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
     <div class="panel-section">
       <div class="panel-title">Colour</div>
       <div class="colour-grid" id="colourGrid"></div>
+      <div style="font-size:.58rem;color:var(--muted);margin:9px 0 4px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;" title="Distinct for protanopia and deuteranopia">Colourblind-safe</div>
+      <div class="colour-grid" id="colourSafeGrid" aria-label="Colourblind-safe colours"></div>
       <div class="custom-colour">
         <input aria-label="Custom colour" type="color" id="customColour" value="#e94560" data-on="setCustomColour" data-on-event="input" data-on-args="value">
         <span>Custom colour</span>
@@ -256,6 +259,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       <strong>BuildLab</strong>
       <span id="engineStatus">3D engine loading...</span>
       <span id="autosaveStatus" style="margin-left:8px;padding:1px 8px;border-radius:999px;background:rgba(0,212,170,.15);border:1px solid rgba(0,212,170,.35);font-size:.68rem;white-space:nowrap;">Not saved yet</span>
+      <span id="lastSavedNotice" style="margin-left:6px;font-size:.6rem;color:var(--muted);white-space:nowrap;"></span>
     </div>
     <div class="crosshair"></div>
     <div class="vp-toast" id="toast"></div>
@@ -331,6 +335,29 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       <div id="engineExportGuide" style="font-size:.7rem;color:var(--muted);line-height:1.6;margin-bottom:8px;padding:7px 9px;background:rgba(0,0,0,.18);border-radius:6px;">
         Pick your engine above, then export below.
       </div>
+      <div id="exportFileNames" style="font-size:.66rem;color:var(--muted);line-height:1.7;margin-bottom:8px;">
+        <div>RBXM downloads as <strong data-export-file="rbxm" style="color:var(--accent3);font-weight:700;">My_Build.rbxm</strong></div>
+        <div>GLTF downloads as <strong data-export-file="gltf" style="color:#8ad4ff;font-weight:700;">My_Build.glb</strong></div>
+        <div>OBJ+MTL downloads as <strong data-export-file="objmtl" style="color:#8ad4ff;font-weight:700;">My_Build.obj + My_Build.mtl</strong></div>
+      </div>
+      <details id="importGuide" style="margin:0 0 8px;padding:6px 9px;background:rgba(0,0,0,.18);border-radius:6px;">
+        <summary style="cursor:pointer;font-size:.7rem;font-weight:700;color:var(--accent3);">How to open your file</summary>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-top:8px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <img src="/tools/assets/buildlab-import-roblox.svg" alt="Roblox Studio: Model tab, Insert, From Local File" width="108" height="65" style="flex:0 0 auto;border-radius:5px;border:1px solid rgba(255,255,255,.12);">
+            <div style="font-size:.66rem;line-height:1.45;color:var(--muted);"><strong style="color:var(--text);">Roblox Studio</strong><br>Model tab, Insert, From Local File.</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <img src="/tools/assets/buildlab-import-blender.svg" alt="Blender: File, Import, glTF or Wavefront OBJ" width="108" height="65" style="flex:0 0 auto;border-radius:5px;border:1px solid rgba(255,255,255,.12);">
+            <div style="font-size:.66rem;line-height:1.45;color:var(--muted);"><strong style="color:var(--text);">Blender</strong><br>File, Import, glTF (.glb) or Wavefront (.obj).</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <img src="/tools/assets/buildlab-import-unreal.svg" alt="Unreal Engine: File, Import Into Level, pick the OBJ" width="108" height="65" style="flex:0 0 auto;border-radius:5px;border:1px solid rgba(255,255,255,.12);">
+            <div style="font-size:.66rem;line-height:1.45;color:var(--muted);"><strong style="color:var(--text);">Unreal Engine</strong><br>File, Import Into Level, pick the .obj.</div>
+          </div>
+          <div style="font-size:.62rem;color:var(--muted);margin-top:2px;">Your file saves to the Downloads folder on this device.</div>
+        </div>
+      </details>
       <button class="action-btn btn-secondary" style="background:rgba(0,212,170,.12);color:var(--accent3);border:1px solid rgba(0,212,170,.3);font-size:.8rem;" data-on="exportPreviewRBXM" data-on-plain>🔵 Export RBXM (Roblox)</button>
       <button class="action-btn btn-secondary" style="background:rgba(91,192,248,.12);color:#5bc0f8;border:1px solid rgba(91,192,248,.3);font-size:.8rem;" data-on="exportPreviewGLTF" data-on-plain>🎨 Export GLTF (.glb) - Godot / Unity / Unreal</button>
       <button class="action-btn btn-secondary" style="background:rgba(91,192,248,.06);color:#5bc0f8;border:1px solid rgba(91,192,248,.15);font-size:.8rem;" data-on="exportPreviewOBJMTL" data-on-plain>🖥️ Export OBJ+MTL - Blender / Maya</button>
@@ -1008,6 +1035,29 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       <button class="mob-action-btn" style="background:rgba(91,192,248,.14);color:#5bc0f8;border:1px solid rgba(91,192,248,.35);" data-on="exportPreviewGLTF" data-on-plain>&#x1F3A8; GLTF (.glb)</button>
       <button class="mob-action-btn" style="background:rgba(91,192,248,.08);color:#5bc0f8;border:1px solid rgba(91,192,248,.2);" data-on="exportPreviewOBJMTL" data-on-plain>&#x1F5A5;&#xFE0F; OBJ+MTL</button>
       <button class="mob-action-btn" style="background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--border);" data-on="exportPreviewOBJ" data-on-plain>&#x1F4C4; OBJ Only</button>
+      <div style="grid-column:1 / -1;font-size:.64rem;color:var(--muted);line-height:1.7;padding:2px 2px 0;">
+        <div>RBXM downloads as <strong data-export-file="rbxm" style="color:var(--accent3);">My_Build.rbxm</strong></div>
+        <div>GLTF downloads as <strong data-export-file="gltf" style="color:#8ad4ff;">My_Build.glb</strong></div>
+        <div>OBJ+MTL downloads as <strong data-export-file="objmtl" style="color:#8ad4ff;">My_Build.obj + My_Build.mtl</strong></div>
+      </div>
+      <details id="mobImportGuide" style="grid-column:1 / -1;padding:6px 8px;background:rgba(0,0,0,.18);border-radius:6px;">
+        <summary style="cursor:pointer;font-size:.68rem;font-weight:700;color:var(--accent3);">How to open your file</summary>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-top:8px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <img src="/tools/assets/buildlab-import-roblox.svg" alt="Roblox Studio: Model tab, Insert, From Local File" width="96" height="58" style="flex:0 0 auto;border-radius:5px;border:1px solid rgba(255,255,255,.12);">
+            <div style="font-size:.64rem;line-height:1.45;color:var(--muted);"><strong style="color:var(--text);">Roblox Studio</strong><br>Model tab, Insert, From Local File.</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <img src="/tools/assets/buildlab-import-blender.svg" alt="Blender: File, Import, glTF or Wavefront OBJ" width="96" height="58" style="flex:0 0 auto;border-radius:5px;border:1px solid rgba(255,255,255,.12);">
+            <div style="font-size:.64rem;line-height:1.45;color:var(--muted);"><strong style="color:var(--text);">Blender</strong><br>File, Import, glTF (.glb) or Wavefront (.obj).</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <img src="/tools/assets/buildlab-import-unreal.svg" alt="Unreal Engine: File, Import Into Level, pick the OBJ" width="96" height="58" style="flex:0 0 auto;border-radius:5px;border:1px solid rgba(255,255,255,.12);">
+            <div style="font-size:.64rem;line-height:1.45;color:var(--muted);"><strong style="color:var(--text);">Unreal Engine</strong><br>File, Import Into Level, pick the .obj.</div>
+          </div>
+          <div style="font-size:.6rem;color:var(--muted);margin-top:2px;">Your file saves to the Downloads folder on this device.</div>
+        </div>
+      </details>
       <button class="mob-action-btn" style="background:rgba(0,212,170,.1);color:var(--accent3);border:1px solid rgba(0,212,170,.25);" data-on="triggerImportOBJ" data-on-plain>&#x1F4C4; Import OBJ</button>
       <button class="mob-action-btn" style="background:rgba(91,192,248,.1);color:#5bc0f8;border:1px solid rgba(91,192,248,.25);" data-on="triggerImportGLTF" data-on-plain>&#x1F3A8; Import GLTF</button>
       <button class="mob-action-btn" style="background:rgba(245,166,35,.08);color:var(--accent2);border:1px solid rgba(245,166,35,.2);" data-on="triggerImportRBLX" data-on-plain>&#x1F535; Import RBXM</button>
@@ -1051,6 +1101,18 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
     <div class="modal-btns">
       <button class="modal-cancel" data-on="closeModal" data-on-arg="nameModal" data-on-plain>Cancel</button>
       <button class="modal-ok" data-on="saveName" data-on-plain>Save Name ?</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Recover unsaved work -->
+<div class="modal-overlay" id="recoveryModal" role="dialog" aria-modal="true" aria-labelledby="recoveryTitle">
+  <div class="modal">
+    <p class="panel-title" id="recoveryTitle" style="font-size:.9rem;margin-bottom:8px;">&#x1F5C2;&#xFE0F; We found an unsaved build</p>
+    <p id="recoverySummary" style="font-size:.8rem;line-height:1.6;color:var(--muted);margin-bottom:14px;">Your last build was saved on this device.</p>
+    <div class="modal-btns">
+      <button class="modal-cancel" data-on="discardRecovery" data-on-plain>Discard</button>
+      <button class="modal-ok" data-on="restoreRecovery" data-on-plain>Restore it</button>
     </div>
   </div>
 </div>
@@ -1232,12 +1294,21 @@ const COLOURS = [
   '#9b59b6','#ff6b6b','#ffd93d','#6bcb77','#4d96ff',
   '#ff922b','#f06595','#ffffff','#aaaaaa','#403B33',
 ];
+// Okabe-Ito palette: high contrast for protanopia and deuteranopia, so the
+// colours stay distinguishable for red-green colour vision deficiency.
+const COLOURS_SAFE = [
+  '#e69f00','#56b4e9','#009e73','#f0e442',
+  '#0072b2','#d55e00','#cc79a7','#000000',
+];
 const COLOUR_NAMES = {
   '#e94560':'Red','#f5a623':'Orange','#f9f900':'Yellow',
   '#00d4aa':'Teal','#5bc0f8':'Sky Blue','#9b59b6':'Purple',
   '#ff6b6b':'Coral','#ffd93d':'Gold','#6bcb77':'Green',
   '#4d96ff':'Blue','#ff922b':'Amber','#f06595':'Pink',
   '#ffffff':'White','#aaaaaa':'Silver','#403B33':'Brown',
+  '#e69f00':'Safe Orange','#56b4e9':'Safe Sky Blue','#009e73':'Safe Green',
+  '#f0e442':'Safe Yellow','#0072b2':'Safe Blue','#d55e00':'Safe Red',
+  '#cc79a7':'Safe Purple','#000000':'Black',
 };
 
 // -------------------------------------------------------
@@ -3718,13 +3789,20 @@ function setShape(shape) {
 }
 
 function buildColourPalette() {
-  const grid = document.getElementById('colourGrid');
-  COLOURS.forEach(c => {
+  buildSwatchGrid('colourGrid', COLOURS);
+  buildSwatchGrid('colourSafeGrid', COLOURS_SAFE);
+}
+
+function buildSwatchGrid(gridId, colours) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  colours.forEach(c => {
     const sw = document.createElement('div');
     sw.className = 'colour-swatch' + (c === currentColour ? ' selected' : '');
     sw.style.background = c;
     sw.title = (COLOUR_NAMES[c] || c);
     sw.setAttribute('aria-label', COLOUR_NAMES[c] || c);
+    sw.setAttribute('role', 'button');
     sw.onclick = () => {
       currentColour = c;
       document.querySelectorAll('.colour-swatch').forEach(s => s.classList.remove('selected'));
@@ -3781,6 +3859,7 @@ function updateStats() {
     countEl.title = '';
   }
   autosave();
+  updateExportFileNames();
   // keep outliner in sync with stats
   if (typeof renderOutliner === 'function') {
     try { renderOutliner(); } catch(e) {}
@@ -3825,6 +3904,7 @@ function openNameModal() {
 }
 function saveName() {
   buildName = document.getElementById('buildNameInput').value.trim() || 'My Build';
+  updateExportFileNames();
   closeModal('nameModal');
   toast('Named: ' + buildName);
 }
@@ -6444,17 +6524,43 @@ function loadFromHash() {
 
 let _autosaveTimer = null;
 let _savedAt = null;
+// Autosaves older than this get a Restore/Discard prompt on load instead of
+// silently loading, so a build from a previous session is never a surprise.
+const RECOVERY_AGE_MS = 60000;
+
 function paintSaveStatus(iso) {
+  _savedAt = iso || null;
   const el = document.getElementById('autosaveStatus');
   if (!el) return;
-  if (!iso) { el.textContent = 'Not saved yet'; return; }
+  if (!iso) { el.textContent = 'Not saved yet'; paintLastSaved(null); return; }
   const d = new Date(iso);
-  if (isNaN(d.getTime())) { el.textContent = 'Not saved yet'; return; }
+  if (isNaN(d.getTime())) { el.textContent = 'Not saved yet'; paintLastSaved(null); return; }
   const hh = String(d.getHours()).padStart(2, '0');
   const mm = String(d.getMinutes()).padStart(2, '0');
   el.textContent = 'Saved locally at ' + hh + ':' + mm;
   el.title = 'This build is saved in your browser on this device only.';
+  paintLastSaved(iso);
 }
+
+// Subtle relative text ("Saved just now", "Saved 3 min ago") so learners get
+// peace of mind without reading the clock.
+function paintLastSaved(iso) {
+  const rel = document.getElementById('lastSavedNotice');
+  if (!rel) return;
+  if (!iso) { rel.textContent = ''; return; }
+  const at = new Date(iso).getTime();
+  if (isNaN(at)) { rel.textContent = ''; return; }
+  const age = Date.now() - at;
+  const mins = Math.max(0, Math.floor(age / 60000));
+  if (mins < 1) rel.textContent = 'Saved just now';
+  else if (mins < 60) rel.textContent = 'Saved ' + mins + ' min ago';
+  else {
+    const d = new Date(iso);
+    rel.textContent = 'Saved ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+  rel.title = 'Autosaved in this browser. Close the tab and it is kept on this device.';
+}
+setInterval(() => { if (_savedAt) paintLastSaved(_savedAt); }, 30000);
 function autosave() {
   clearTimeout(_autosaveTimer);
   _autosaveTimer = setTimeout(() => {
@@ -6576,6 +6682,22 @@ function profilePoint(profile, x, y, z) {
   const scale = profile.scale * blockMetres;
   const sx = x * scale, sy = y * scale, sz = z * scale;
   return profile.axis === 'z' ? [sx, -sz, sy] : [sx, sy, sz];
+}
+
+// The exact file(s) each export will download, shown in the quick-export panel
+// and in the preview so learners know what to look for in their Downloads folder.
+function exportFileLabel(format) {
+  const base = String(buildName || 'My_Build').trim().replace(/\s+/g, '_') || 'My_Build';
+  if (format === 'objmtl') return base + '.obj + ' + base + '.mtl';
+  if (format === 'rbxm') return base + '.rbxm';
+  if (format === 'gltf') return base + '.glb';
+  return base + '.obj';
+}
+
+function updateExportFileNames() {
+  document.querySelectorAll('[data-export-file]').forEach(el => {
+    el.textContent = exportFileLabel(el.getAttribute('data-export-file'));
+  });
 }
 
 function setEngineContext(engine) {
@@ -6799,7 +6921,8 @@ function showExportPreview(format, exportFn) {
   }
 
   let html = '<div style="text-align:left;">';
-  html += '<div style="margin-bottom:8px;"><strong>' + (formatNames[format] || format) + '</strong></div>';
+  html += '<div style="margin-bottom:2px;"><strong>' + (formatNames[format] || format) + '</strong></div>';
+  html += '<div style="margin-bottom:8px;">Downloads as <strong style="color:var(--accent3);">' + escapeHTML(exportFileLabel(format)) + '</strong></div>';
   html += '<div>' + count + ' blocks';
   if (mergedPartCount !== count) html += ' &middot; ' + mergedPartCount + ' merged parts';
   html += ' &middot; ' + colours + ' colours &middot; ~' + estKB + 'KB</div>';
@@ -7116,6 +7239,7 @@ function bootBuilder() {
     syncMergeToggles();
     syncOriginToggles();
     syncBlockScaleUI();
+    updateExportFileNames();
     if (loadFromHash()) {
       toast('🔗 Loaded shared build');
     } else if (restoreAutosave()) {
@@ -7137,6 +7261,8 @@ if (document.readyState === 'loading') {
 // -- expose globals for inline handlers (module scope -> window) - core
 window.setEngineContext = setEngineContext;
 window.pickStarter = pickStarter;
+window.updateExportFileNames = updateExportFileNames;
+window.exportFileLabel = exportFileLabel;
 
 // -------------------------------------------------------
 // BUILD CHALLENGE MODE
@@ -7513,26 +7639,30 @@ function showTutorialStep() {
   // Build mobile colour grid once page is ready
   function buildMobColours() {
     var src = document.getElementById('colourGrid');
+    var safe = document.getElementById('colourSafeGrid');
     var dst = document.getElementById('mobColourGrid');
     if (!src || !dst) { setTimeout(buildMobColours, 200); return; }
-    // Clone swatches and re-wire onclick
+    // Clone swatches (including the colourblind-safe row) and re-wire onclick
     dst.innerHTML = '';
-    src.querySelectorAll('.colour-swatch').forEach(function(sw){
-      var clone = sw.cloneNode(true);
-      clone.className = clone.className.replace('colour-swatch','mob-colour-swatch');
-      var col = sw.style.background;
-      clone.onclick = function(){
-        // Set colour via existing function
-        var hex = rgbToHex(col) || col;
-        currentColour = hex;
-        document.querySelectorAll('.mob-colour-swatch').forEach(function(s){s.classList.remove('selected');});
-        clone.classList.add('selected');
-        document.querySelectorAll('.colour-swatch').forEach(function(s){
-          s.classList.toggle('selected', s.style.background === col);
-        });
-        mobClose();
-      };
-      dst.appendChild(clone);
+    [src, safe].forEach(function(grid){
+      if (!grid) return;
+      grid.querySelectorAll('.colour-swatch').forEach(function(sw){
+        var clone = sw.cloneNode(true);
+        clone.className = clone.className.replace('colour-swatch','mob-colour-swatch');
+        var col = sw.style.background;
+        clone.onclick = function(){
+          // Set colour via existing function
+          var hex = rgbToHex(col) || col;
+          currentColour = hex;
+          document.querySelectorAll('.mob-colour-swatch').forEach(function(s){s.classList.remove('selected');});
+          clone.classList.add('selected');
+          document.querySelectorAll('.colour-swatch').forEach(function(s){
+            s.classList.toggle('selected', s.style.background === col);
+          });
+          mobClose();
+        };
+        dst.appendChild(clone);
+      });
     });
   }
 
