@@ -96,7 +96,12 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   await player.waitForFunction(()=>window.__exportMode===true, {timeout:20000});
   check('exported game boots in export mode', true);
 
-  // Start the game (title screen -> play), then let the loop run.
+  // Start the game (title screen -> play), then let the loop run. Wait for the
+  // title screen itself instead of assuming __exportMode implies it is ready.
+  await player.waitForFunction(()=>{
+    const ov = document.getElementById('introOverlay');
+    return !!(ov && ov.classList.contains('show') && typeof closeIntro === 'function');
+  }, {timeout:20000}).catch(()=>{});
   await player.evaluate(()=>{
     const ov = document.getElementById('introOverlay');
     if (ov && ov.classList.contains('show')) { if (typeof closeIntro === 'function') closeIntro(); else ov.classList.remove('show'); }

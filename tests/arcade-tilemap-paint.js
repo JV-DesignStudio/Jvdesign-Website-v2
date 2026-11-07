@@ -63,6 +63,9 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
     const g = document.getElementById('genreMode'); if (g) g.value = 'PLATFORMER';
     try { if (typeof onGenreChange === 'function') onGenreChange(); } catch(e){}
     const lmg = document.getElementById('levelMapGroup'); if (lmg) lmg.style.display = '';
+    // The tilemap editor sits inside the collapsible "More options" section, so
+    // expand it before measuring or the canvas has no layout box.
+    try { if (typeof _applyBuildMore === 'function') _applyBuildMore(true); } catch(e){}
     try { if (typeof tmSetTool === 'function') tmSetTool(1); } catch(e){}
     const cv = document.getElementById('tilemapCanvas'); if (cv) cv.scrollIntoView({block:'center'});
   });

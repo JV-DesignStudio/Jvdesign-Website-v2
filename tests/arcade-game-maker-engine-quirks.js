@@ -128,9 +128,32 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     check('debug toggle draws with the new colours', dbg.drawDebug === true && dbg.graphic === true, JSON.stringify({ drawDebug: dbg.drawDebug, graphic: dbg.graphic }));
     check('debug defaults are magenta and cyan', dbg.body === 0xFF00FF && dbg.staticBody === 0xFF00FF && dbg.velocity === 0x00FFFF, JSON.stringify(dbg));
 
+    // A2692: Escape leaves a focused canvas and returns focus to the panel.
+    const focus = await page.evaluate(async () => {
+      const wo = document.getElementById('welcome-overlay'); if (wo) wo.classList.remove('show');
+      const previous = document.getElementById('runGameBtn');
+      previous.focus();
+      const focusedBefore = document.activeElement === previous;
+      const canvas = document.querySelector('#game-container canvas');
+      canvas.setAttribute('tabindex', '0');
+      canvas.dispatchEvent(new MouseEvent('mousedown', { bubbles:true, cancelable:true }));
+      const remembered = _canvasReturnFocus === previous;
+      const onCanvas = document.activeElement === canvas;
+      canvas.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape', bubbles:true, cancelable:true }));
+      await new Promise(r => setTimeout(r, 100));
+      const afterId = document.activeElement && (document.activeElement.id || document.activeElement.tagName);
+      const paused = _gamePaused;
+      if (_gamePaused && typeof resumeGame === 'function') resumeGame();
+      await new Promise(r => setTimeout(r, 150));
+      return { focusedBefore, remembered, onCanvas, afterId, paused };
+    });
+    check('Escape leaves the canvas and restores panel focus', focus.focusedBefore === true && focus.remembered === true && focus.onCanvas === true && focus.afterId === 'runGameBtn' && focus.paused === true, JSON.stringify(focus));
+
     // A2674: shutdown removes keyboard and pointer listeners.
     const listeners = await page.evaluate(async () => {
-      const sc = window._phaserGame.scene.getScenes(true)[0];
+      const scenes = window._phaserGame.scene.getScenes(true);
+      const sc = scenes[0] || window._phaserGame.scene.getScenes(false)[0];
+      if (!sc) return null;
       const noop = function(){};
       sc.input.keyboard.on('keydown', noop);
       sc.input.on('pointerdown', noop);
@@ -139,9 +162,9 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       await new Promise(r => setTimeout(r, 250));
       return { before, afterKeyboard: sc.input.keyboard.eventNames().length, afterInput: sc.input.eventNames().length };
     });
-    check('listeners exist before shutdown', listeners.before.keyboard > 0, JSON.stringify(listeners.before));
-    check('keyboard listeners removed on shutdown', listeners.afterKeyboard === 0, String(listeners.afterKeyboard));
-    check('pointer listeners removed on shutdown', listeners.afterInput === 0, String(listeners.afterInput));
+    check('listeners exist before shutdown', listeners && listeners.before.keyboard > 0, listeners ? JSON.stringify(listeners.before) : 'no scene');
+    check('keyboard listeners removed on shutdown', !!listeners && listeners.afterKeyboard === 0, listeners ? String(listeners.afterKeyboard) : 'no scene');
+    check('pointer listeners removed on shutdown', !!listeners && listeners.afterInput === 0, listeners ? String(listeners.afterInput) : 'no scene');
 
     check('no page errors during the run', jsErrors.length === 0, jsErrors.slice(0, 2).join(' | '));
   } finally {

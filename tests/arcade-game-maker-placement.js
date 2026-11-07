@@ -22,7 +22,7 @@ const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', 
   '.webp':'image/webp', '.woff':'font/woff', '.woff2':'font/woff2', '.mp3':'audio/mpeg', '.wav':'audio/wav' };
 
 const PLACEMENT_GENRES = ['SHOOTER','PLATFORMER','RUNNER','DODGE','INVADERS','ASTEROIDS','ROGUELIKE','WAVESURVIVAL','BEAT','DEFENSE'];
-const ENTITIES = { coins:[[2,3]], enemies:[[5,4]], spawn:[6,2], goal:[10,10] };
+const ENTITIES = { coins:[[2,3]], enemies:[[5,6]], spawn:[6,2], goal:[10,10] };
 
 let failures = 0;
 function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?' , '+detail:'')); if(!ok) failures++; }

@@ -48,6 +48,7 @@ function check(name, ok, detail) {
   await page.setViewport({ width: 1280, height: 900 });
   await page.goto(`${origin}/tools/error-guide.html`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForSelector('.error-card');
+  await page.waitForFunction(() => window.ErrorGuide, { timeout: 5000 });
 
   /* ── structure + a11y ── */
   const struct = await page.evaluate(() => ({
@@ -87,7 +88,7 @@ function check(name, ok, detail) {
   /* ── search filters ── */
   await page.click('#searchInput');
   await page.type('#searchInput', 'null reference');
-  await new Promise(r => setTimeout(r, 100));
+  await page.waitForFunction(() => /found/.test(document.querySelector('#searchCount').textContent), { timeout: 5000 });
   const search = await page.evaluate(() => ({
     sections: document.querySelectorAll('.engine-section.visible').length,
     cards: document.querySelectorAll('.error-card:not(.hidden)').length,
@@ -101,7 +102,7 @@ function check(name, ok, detail) {
 
   /* ── no-results state ── */
   await page.evaluate(() => { const i = document.getElementById('searchInput'); i.value = 'zzzznomatch'; i.dispatchEvent(new Event('input', {bubbles:true})); });
-  await new Promise(r => setTimeout(r, 100));
+  await page.waitForFunction(() => !document.getElementById('noResults').hidden, { timeout: 5000 });
   const empty = await page.evaluate(() => ({
     cards: document.querySelectorAll('.error-card:not(.hidden)').length,
     shown: !document.getElementById('noResults').hidden,
@@ -132,6 +133,99 @@ function check(name, ok, detail) {
   await page.evaluate(() => document.querySelector('#engine-python .error-card code.copyable').click());
   const codeCopied = await page.$eval('#engine-python .error-card code.copyable', el => el.classList.contains('copied'));
   check('clicking a code snippet copies it', codeCopied);
+
+  /* ── paste sanitizer + dynamic capture group ── */
+  const workerReady = await page.evaluate(() => window.ErrorGuide.workerUsed === true);
+  check('search worker is available', workerReady);
+
+  const sanitized = await page.evaluate(() => window.ErrorGuide.sanitize(
+    "TypeError: Cannot read properties of undefined (reading 'velocity')\n" +
+    '    at game.js:12:4\n' +
+    'C:/Users/student/Desktop/game.js\n' +
+    '0x00A4F 2026-11-07T12:34:56Z'
+  ));
+  check('paste sanitizer keeps the error signature',
+    sanitized.includes('Cannot read properties of undefined') && !sanitized.includes('C:/Users') && !sanitized.includes('0x00A4F') && !sanitized.includes('2026-11-07'),
+    sanitized);
+
+  const capture = await page.evaluate(async () => {
+    const log = "TypeError: Cannot read properties of undefined (reading 'velocity')\n" +
+      '    at game.js:12:4\n' +
+      'C:/Users/student/Desktop/game.js\n' +
+      '0x00A4F 2026-11-07T12:34:56Z';
+    const matches = await window.ErrorGuide.search(log);
+    const hit = matches.find(m => m.id === 'javascript-typeerror-cannot-read-properties-of-undefined');
+    return { ids: matches.map(m => m.id), groups: hit ? hit.groups : [] };
+  });
+  check('dynamic variable is captured from the paste', capture.groups.includes('velocity'), JSON.stringify(capture));
+
+  await page.evaluate(groups => window.ErrorGuide.openDiagnosis('javascript-typeerror-cannot-read-properties-of-undefined', groups), capture.groups);
+  await page.waitForFunction(() => {
+    const panel = document.querySelector('#egDiagnosis');
+    return panel && !panel.hidden && /velocity/.test(document.querySelector('#egPlain').textContent);
+  }, { timeout: 5000 });
+  const diagnosis = await page.evaluate(() => {
+    const label = document.querySelector('#egChecklist label');
+    return {
+      live: document.querySelector('#egDiagnosis').getAttribute('aria-live'),
+      plain: document.querySelector('#egPlain').textContent,
+      checks: document.querySelectorAll('#egChecklist input[type=checkbox]').length,
+      labelHeight: label ? label.getBoundingClientRect().height : 0,
+      snippet: document.querySelector('#egSnippet').getAttribute('href') || '',
+      doneDisabled: document.querySelector('#egDone').disabled
+    };
+  });
+  check('diagnosis explains the captured variable in plain words', /velocity/.test(diagnosis.plain), diagnosis.plain);
+  check('diagnosis is an aria-live region', diagnosis.live === 'polite', diagnosis.live);
+  check('action plan renders the checklist', diagnosis.checks >= 1, String(diagnosis.checks));
+  check('checklist labels meet the 44px touch target', diagnosis.labelHeight >= 44, diagnosis.labelHeight + 'px');
+  check('snippet handoff points at the generator template', diagnosis.snippet.includes('code-snippet-generator.html#snippet=js-emitter'), diagnosis.snippet);
+  check('Bug squashed starts disabled', diagnosis.doneDisabled === true, String(diagnosis.doneDisabled));
+
+  await page.evaluate(() => {
+    document.querySelectorAll('#egChecklist input[type=checkbox]').forEach(c => {
+      c.checked = true;
+      c.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+  const doneEnabled = await page.$eval('#egDone', el => !el.disabled);
+  check('Bug squashed unlocks after every check', doneEnabled);
+
+  await page.evaluate(() => {
+    window.__bugSquashed = null;
+    window.addEventListener('bug_squashed', e => { window.__bugSquashed = e.detail; }, { once: true });
+    document.querySelector('#egDone').click();
+  });
+  const squashed = await page.evaluate(() => window.__bugSquashed);
+  check('resolved bug posts bug_squashed with the engine', squashed && squashed.engine === 'javascript', JSON.stringify(squashed));
+
+  await page.evaluate(() => document.querySelector('#egSquash').click());
+  const ticket = await page.evaluate(() => {
+    const plan = JSON.parse(localStorage.getItem('qb-data-v1') || 'null');
+    return plan && plan.cards ? plan.cards.find(c => /The Ghost Variable/.test(c.title)) : null;
+  });
+  check('Squash the Bug writes a Game Planner ticket', !!ticket, ticket ? ticket.title : 'none');
+
+  await page.evaluate(() => document.querySelector('#egClose').click());
+  const closed = await page.evaluate(() => document.querySelector('#egDiagnosis').hidden);
+  check('Back to search closes the diagnosis', closed);
+
+  /* ── symptom grid + touch targets ── */
+  const touch = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll('.symptom-card')];
+    const grid = document.querySelector('#symptomGrid');
+    const widths = cards.map(c => c.getBoundingClientRect().width);
+    const heights = cards.map(c => c.getBoundingClientRect().height);
+    return {
+      count: cards.length,
+      minWidth: widths.length ? Math.min(...widths) : 0,
+      minHeight: heights.length ? Math.min(...heights) : 0,
+      gap: getComputedStyle(grid).gap
+    };
+  });
+  check('symptom grid offers at least six no-console symptoms', touch.count >= 6, String(touch.count));
+  check('symptom cards meet the 44px touch target', touch.minWidth >= 44 && touch.minHeight >= 44, touch.minWidth + 'x' + touch.minHeight);
+  check('symptom cards keep an 8px gap', touch.gap === '8px', touch.gap);
 
   /* ── mobile fit ── */
   await page.setViewport({ width: 390, height: 844, isMobile: true });

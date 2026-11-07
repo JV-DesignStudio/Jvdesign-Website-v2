@@ -31,7 +31,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v47';
+const CACHE='jvds-v48';
 const CORE=[
   '/',
   '/offline.html',
@@ -89,6 +89,16 @@ const CORE=[
   '/style-tool-story-editor.css',
   '/tools/code-snippet-generator.html',
   '/style-tool-code-snippet-generator.css',
+  '/tools/error-guide.html',
+  '/style-tool-error-guide.css',
+  '/assets/js/inline/tools-error-guide-2.js',
+  '/assets/js/error-guide-worker.js',
+  '/data/error-guide/errors-scratch.json',
+  '/data/error-guide/errors-roblox.json',
+  '/data/error-guide/errors-godot.json',
+  '/data/error-guide/errors-unity.json',
+  '/data/error-guide/errors-python.json',
+  '/data/error-guide/errors-javascript.json',
   // A831: self-hosted Prism so the Code Snippet Generator highlights offline.
   '/assets/vendor/prism/prism.min.js',
   '/assets/vendor/prism/prism-jvds.css',
@@ -175,6 +185,7 @@ const MAKER_DEPS=[
   '/src/arcade-maker/GameAudio.js',
   '/src/arcade-maker/genres.js',
   '/src/arcade-maker/achievements.js',
+  '/src/arcade-maker/bus.js',
   // A2676: the rest of the maker shell, so a dropped connection still leaves a
   // usable editor rather than an unstyled page with unclickable controls.
   '/assets/js/theme-init.js',
