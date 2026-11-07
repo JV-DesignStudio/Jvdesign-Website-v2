@@ -218,6 +218,12 @@ try {
     } else if (entry.mode === 'canvas') {
       if (!/workshop-canvas-engine\.js/.test(src)) completionMissing.push(entry.id + ' (canvas engine not loaded)');
     }
+    if (entry.evidence) {
+      const hasBlock = src.includes(`data-workshop-evidence="${entry.id}"`);
+      const hasPrompt = src.includes(entry.evidence.prompt);
+      const hasScript = /workshop-evidence\.js/.test(src);
+      if (!hasBlock || !hasPrompt || !hasScript) completionMissing.push(entry.id + ' (no local evidence step)');
+    }
   });
   console.log(`- Workshop completion condition: ${registry.workshops.filter(w => w.mode !== 'reference').length - completionMissing.length}/${registry.workshops.filter(w => w.mode !== 'reference').length} tutorials have a finish screen and next step`);
   if (completionMissing.length) console.log('  Missing: ' + completionMissing.join(', '));

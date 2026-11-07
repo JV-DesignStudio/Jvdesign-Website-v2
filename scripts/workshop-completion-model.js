@@ -160,6 +160,18 @@ const CONDITION = {
   reference: { code: 'none', text: 'Reference page, no step tracking.', selector: '' }
 };
 
+/* A2341: engines that cannot run in the browser. The steps are still tracked,
+   but finishing a step no longer proves a learner made anything, so each course
+   asks for one saved piece of evidence. The learner confirms it and the tick is
+   kept in localStorage; nothing is uploaded and no account is needed. */
+const EXTERNAL_EVIDENCE = {
+  'Blender': 'Save your .blend file, or export a PNG render of the scene you made.',
+  'Unity': 'Save your Unity project, or take a screenshot of your game running in the Game view.',
+  'Unreal': 'Save your Unreal project, or take a screenshot of your level or Blueprint graph.',
+  'Roblox': 'Save your place in Roblox Studio, or take a screenshot of your game in Play mode.',
+  'Minecraft': 'Save your world, or take a screenshot of your build in the game.'
+};
+
 const CONDITION_OVERRIDES = {
   'build-a-game-15-min': 'your Dot Smash game plays in the browser and you can change the speed or target.',
   'castle-siege-blueprint': 'your castle siege blueprint is wired and the level runs when you press Launch.',
@@ -186,6 +198,11 @@ function build() {
     if (!src) { skipped.push({ id: entry.id, reason: 'page missing' }); continue; }
     const mode = classify(entry, src);
     const cond = CONDITION[mode];
+    const catalogue = catalogueById[entry.id];
+    const engine = catalogue ? catalogue.engine : '';
+    const evidence = mode !== 'reference' && EXTERNAL_EVIDENCE[engine]
+      ? { engine, prompt: EXTERNAL_EVIDENCE[engine] }
+      : null;
     workshops.push({
       id: entry.id,
       url: entry.url,
@@ -197,6 +214,7 @@ function build() {
       finishSelector: cond.selector,
       storageKey: storageKeyFor(mode, src),
       hasFinishBanner: /id=["']finishBanner["']/.test(src),
+      evidence,
       next: mode === 'reference' ? null : resolveNext(entry, src, catalogueById)
     });
   }
@@ -204,4 +222,4 @@ function build() {
   return { workshops, skipped, modes: CONDITION };
 }
 
-module.exports = { build, REFERENCE_IDS, ENGINE_HUBS, CONDITION, readPage, storageKey, storageKeyFor };
+module.exports = { build, REFERENCE_IDS, ENGINE_HUBS, EXTERNAL_EVIDENCE, CONDITION, readPage, storageKey, storageKeyFor };

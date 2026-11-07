@@ -32,31 +32,50 @@ const esc = (s) => String(s == null ? '' : s)
   .replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;');
 
+function evidenceBlock(entry) {
+  const ev = entry.evidence;
+  return [
+    `<div class="ws-evidence" data-workshop-evidence="${esc(entry.id)}" data-evidence-engine="${esc(ev.engine)}">`,
+    '  <p class="ws-evidence-title">Show what you made</p>',
+    `  <p class="ws-evidence-prompt">${esc(ev.prompt)}</p>`,
+    '  <label class="ws-evidence-check"><input type="checkbox" data-ws-evidence-check> I have saved this evidence</label>',
+    '  <p class="ws-evidence-status" data-ws-evidence-status aria-live="polite">Your tick is saved on this device only.</p>',
+    '</div>'
+  ].join('\n');
+}
+
 function inlineBlock(entry) {
   const next = entry.next;
-  return [
+  const rows = [
     START,
     `<div class="ws-finish" data-workshop-finish="${esc(entry.id)}">`,
-    `  <p class="ws-finish-condition">Finished when: ${esc(entry.conditionText)}</p>`,
+    `  <p class="ws-finish-condition">Finished when: ${esc(entry.conditionText)}</p>`
+  ];
+  if (entry.evidence) rows.push(evidenceBlock(entry));
+  rows.push(
     '  <div class="ws-finish-actions">',
     `    <a class="ws-finish-next" href="${esc(next.url)}">Next step: ${esc(next.label)} &rarr;</a>`,
     '    <a class="ws-finish-progress" href="my-progress.html">See my progress</a>',
     '  </div>',
     '</div>',
     END
-  ].join('\n');
+  );
+  return rows.join('\n');
 }
 
 function closingBlock(entry) {
   const next = entry.next;
-  return [
+  const rows = [
     START,
     `<section class="ws-finish" id="wsFinish" aria-labelledby="ws-finish-title" data-workshop-finish="${esc(entry.id)}">`,
     '  <div class="ws-finish-inner">',
     '    <p class="ws-finish-kicker"><img src="/assets/mascots/echo-badge.webp" alt="" width="22" height="22" loading="lazy"> Echo\'s finish line</p>',
     '    <h2 class="ws-finish-title" id="ws-finish-title">You\'re finished when...</h2>',
     `    <p class="ws-finish-condition">${esc(entry.conditionText)}</p>`,
-    '    <p class="ws-finish-body">That is the proof you finished: the thing you made plays or opens outside this page. Save or download it, then show it to someone.</p>',
+    '    <p class="ws-finish-body">That is the proof you finished: the thing you made plays or opens outside this page. Save or download it, then show it to someone.</p>'
+  ];
+  if (entry.evidence) rows.push(evidenceBlock(entry));
+  rows.push(
     '    <div class="ws-finish-actions">',
     `      <a class="ws-finish-next" href="${esc(next.url)}">Next step: ${esc(next.label)} &rarr;</a>`,
     '      <a class="ws-finish-progress" href="my-progress.html">See my progress</a>',
@@ -64,7 +83,8 @@ function closingBlock(entry) {
     '  </div>',
     '</section>',
     END
-  ].join('\n');
+  );
+  return rows.join('\n');
 }
 
 function blockMatches(block, entry, bannerMode, html) {
@@ -80,6 +100,9 @@ function blockMatches(block, entry, bannerMode, html) {
   }
   if (!block.includes('href="' + esc(entry.next.url) + '"')) return false;
   if (!block.includes('my-progress.html')) return false;
+  const hasEvidence = block.includes('data-workshop-evidence="' + esc(entry.id) + '"');
+  if (!!entry.evidence !== hasEvidence) return false;
+  if (entry.evidence && !block.includes(esc(entry.evidence.prompt))) return false;
   return true;
 }
 
@@ -130,6 +153,13 @@ function ensureStepRestore(html, key) {
   return html;
 }
 
+function ensureEvidenceScript(html) {
+  if (/workshop-evidence\.js/.test(html)) return html;
+  const end = html.lastIndexOf('</body>');
+  if (end >= 0) return html.slice(0, end) + '<script defer src="workshop-evidence.js"></script>\n' + html.slice(end);
+  return html;
+}
+
 function apply(options) {
   const check = !!(options && options.check);
   const data = JSON.parse(fs.readFileSync(DATA, 'utf8'));
@@ -166,7 +196,8 @@ function apply(options) {
     /* Leave a hand-tuned block alone when it already says the right thing.
        Builder-shell pages use their own utility classes, so rewriting a
        matching block would churn another task's work. */
-    if (blockMatches(existing, entry, bannerMode, original)) { clean.push(entry.id); continue; }
+    if (blockMatches(existing, entry, bannerMode, original)
+      && (!entry.evidence || /workshop-evidence\.js/.test(original))) { clean.push(entry.id); continue; }
     /* Always start from a page with no stamped block, then place the current
        one. That keeps a mode change (a page moving to the shared canvas
        engine, or a builder later gaining a finish banner) clean instead of
@@ -177,6 +208,7 @@ function apply(options) {
 
     if (!next) next = insertClosing(stripped, want);
     if (!next) { failed.push(entry.id + ' (no insert point)'); continue; }
+    if (entry.evidence) next = ensureEvidenceScript(next);
     if (entry.mode === 'steps') next = ensureStepRestore(next, entry.storageKey);
     if (next === original) { clean.push(entry.id); continue; }
     if (check) { stale.push(entry.id); continue; }
