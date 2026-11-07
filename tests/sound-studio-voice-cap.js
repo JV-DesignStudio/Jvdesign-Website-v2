@@ -27,7 +27,7 @@ function check(name, ok, detail) {
       return { max: MAX_VOICES, atCap, tooMany, afterReset: liveVoices };
     });
     check('MAX_VOICES is defined', Number.isFinite(res.max) && res.max > 0, JSON.stringify(res));
-    check('extra voices are dropped at the cap', res.atCap === res.max && res.tooMany === false, JSON.stringify(res));
+    check('extra voices stay at the cap (stolen, never exceeded)', res.atCap === res.max && res.tooMany === false, JSON.stringify(res));
     check('resetAudio clears the voice count', res.afterReset === 0, JSON.stringify(res));
     check('no runtime errors', errors.length === 0, errors.slice(0, 2).join(' | '));
     await ctx.close();
