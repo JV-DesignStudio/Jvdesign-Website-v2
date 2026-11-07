@@ -69,6 +69,27 @@ ${limits}${touch}        <span class="tool-cta">Open Tool →</span>
 </a>`;
 }
 
+function renderQuickStart(path, byId) {
+  const quick = path.quickStart;
+  if (!Array.isArray(quick) || quick.length !== 3) {
+    throw new Error(`tools-hub: intentPath "${path.id}" needs exactly 3 quickStart entries, found ${Array.isArray(quick) ? quick.length : 0}`);
+  }
+  const kinds = quick.map(o => o.kind).sort().join(',');
+  if (kinds !== 'random,remix,template') {
+    throw new Error(`tools-hub: intentPath "${path.id}" quickStart must be one template, one remix and one random entry`);
+  }
+  const links = quick.map(o => {
+    const tool = byId[o.tool];
+    if (!tool) throw new Error(`tools-hub: intentPath "${path.id}" quickStart names "${o.tool}" which is not in content/tools.json`);
+    const href = relUrl(tool.url) + (o.query ? '?' + o.query : '') + (o.hash ? '#' + o.hash : '');
+    return `            <a class="intent-quick intent-quick--${esc(o.kind)}" href="${esc(href)}" data-quick="${esc(o.kind)}">${esc(o.label)}</a>`;
+  }).join('\n');
+  return `        <div class="intent-quickstart" aria-label="Start with something ready">
+            <span class="intent-quickstart-label">Skip the blank page</span>
+${links}
+        </div>`;
+}
+
 function renderIntentPaths(cfg, byId) {
   const paths = Array.isArray(cfg.intentPaths) ? cfg.intentPaths : [];
   if (paths.length !== 4) throw new Error(`tools-hub: expected 4 intentPaths, found ${paths.length}`);
@@ -104,6 +125,7 @@ function renderIntentPaths(cfg, byId) {
                     </a>
                 </li>`;
     }).join('\n');
+    const quick = renderQuickStart(p, byId);
 
     return `    <article class="intent-path" data-intent="${esc(p.id)}">
         <div class="intent-head">
@@ -111,6 +133,7 @@ function renderIntentPaths(cfg, byId) {
             <h3 class="intent-title">${esc(p.title)}</h3>
             <p class="intent-blurb">${esc(p.blurb)}</p>
         </div>
+${quick}
         <ol class="intent-steps">
 ${steps}
         </ol>
