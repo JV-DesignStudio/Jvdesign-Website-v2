@@ -56,10 +56,65 @@ const server = http.createServer((req, res) => {
     const out = [];
     const ok = (name, cond) => out.push((cond ? 'PASS ' : 'FAIL ') + name);
 
-    ['draw','erase','fill','pick','rect','line','move','select','path','stamp'].forEach(t => {
+    ['draw','erase','fill','pick','rect','line','move','select','path','stamp','collision'].forEach(t => {
       try { setTool(t); } catch (e) { out.push('FAIL setTool(' + t + ') threw: ' + e.message); }
     });
-    ok('all 10 tools switch cleanly', true);
+    ok('all 11 tools switch cleanly', true);
+
+    // Three drawing layers keep their own tiles (Background / Terrain / Objects).
+    const stack = [];
+    for (let li = 0; li < 3; li++) {
+      currentLayer = li;
+      pushUndo('stack-' + li);
+      setCell(1, 1, li + 1);
+      stack.push(getCell(1, 1));
+    }
+    ok('three layers stack independently', stack[0] === 1 && stack[1] === 2 && stack[2] === 3);
+    currentLayer = 1;
+
+    setTool('draw');
+
+    // A2070: collision brush, Tiled .tmj, CSV matrices, JS arrays and tileset drop.
+    setTool('collision');
+    setCollisionMode('solid');
+    setCollisionCell(2, 2, 1);
+    setCollisionCell(3, 2, 2);
+    ok('collision brush paints solid + hazard', effectiveCollisionAt(2, 2) === 1 && effectiveCollisionAt(3, 2) === 2 && collisionCounts().painted === 2);
+    pushUndo('collision-test');
+    setCollisionCell(2, 2, -1);
+    ok('collision erase overrides tile rules', effectiveCollisionAt(2, 2) === 0);
+    undo();
+    ok('collision undo restores cell', effectiveCollisionAt(2, 2) === 1);
+
+    const atlas = buildTileAtlas();
+    const tm = buildTiledMap(atlas);
+    const tileLayers = tm.layers.filter(l => l.type === 'tilelayer');
+    const collisionLayer = tm.layers.find(l => l.type === 'objectgroup');
+    ok('Tiled map has stacked layers + collision objects',
+      tm.type === 'map' && tm.width === gridW && tm.height === gridH && tm.tilesets.length === 1 &&
+      tileLayers.length === layers.length && !!collisionLayer && collisionLayer.objects.length >= 1);
+    ok('Tiled tile data has one gid per cell', tileLayers.every(l => l.data.length === gridW * gridH));
+    ok('Tiled gids are valid', tileLayers.every(l => l.data.every(v => Number.isInteger(v) && v >= 0 && v <= tm.tilesets[0].tilecount)));
+    ok('Tiled map JSON round-trips', JSON.parse(JSON.stringify(tm)).layers.length === tm.layers.length);
+
+    const csvRows = buildCollisionCSV().split('\n');
+    ok('collision CSV matrix rows/cols', csvRows.length === gridH && csvRows.every(r => r.split(',').length === gridW));
+    const jsArrays = buildJSArrays();
+    ok('JS arrays include collision + layer arrays',
+      /export const collision = \[/.test(jsArrays) && /export const tileWidth = 24;/.test(jsArrays) &&
+      (jsArrays.match(/export const /g) || []).length >= layers.length + 5);
+
+    const pngB64 = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAPoAAAD6AG1e1JrAAAARUlEQVRYhe3XsREAMAhC0YxIzXRuarZImlfYeyfC52S6P+dYIE4wRFhvuIworHiEUcXxApJAsgGlheWrmEQ1G+W0z3VwAROdJIjCnJG2AAAAAElFTkSuQmCC';
+    const bin = atob(pngB64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const dt = new DataTransfer();
+    dt.items.add(new File([bytes], 'drop-test.png', { type: 'image/png' }));
+    const drop = document.getElementById('tilesetDrop');
+    drop.dispatchEvent(new DragEvent('dragover', { dataTransfer: dt, bubbles: true, cancelable: true }));
+    drop.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+    await new Promise(r => setTimeout(r, 400));
+    ok('drag-drop tileset populates palette', !!tilesetImage && tilesetCols === 2 && document.querySelectorAll('#tilePalette .tile-btn').length >= 4);
     setTool('draw');
 
     pushUndo('test'); setCell(5, 5, 3); renderAll();
