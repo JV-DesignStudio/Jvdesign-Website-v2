@@ -89,7 +89,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-0XvzgVYypIx/b+hRzd3monEV6l8RUTmOGiWiLiq8HRk=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-qOV46ksYdZh1PvkJ9xxZ2IQcgWwXbomJS0Vygy2dZdE=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-0XvzgVYypIx/b+hRzd3monEV6l8RUTmOGiWiLiq8HRk=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-l4HZe25IVRr3HC7PsD1iYwhZNBNgLwXXgBgojJq1jZw=' 'sha256-soMnbQ9XGU6gcYMErPjXngYwrtH/oudj+/E73anSrcI=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -24698,6 +24698,8 @@ window.addEventListener('DOMContentLoaded', ()=>{
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
         // Escape closes any open modal
         if (e.key === 'Escape') {
+            // A2692: Escape leaves a focused canvas before it closes a modal.
+            if (typeof _exitCanvasPlay === 'function' && _exitCanvasPlay()) return;
             if (document.getElementById('nodePicker')?.classList.contains('open')) { _nodeCloseP(); return; }
             if (document.getElementById('handbookModal')?.classList.contains('open')) { closeHandbook(); return; }
             closeShortcutsModal(); return;
@@ -24902,14 +24904,57 @@ function _bossSet(i,field,val){if(_bossPhases[i]){_bossPhases[i][field]=val;_sav
 function _dbgSelfTest(){_runGenreSelfTest();_elRemove('debugModal');}
 </script>
 <script>
+    // A2692: keep track of the UI control the learner came from, so Escape can
+    // hand focus back after a canvas playtest instead of leaving it stranded.
+    let _canvasReturnFocus = null;
+    function _rememberCanvasReturnFocus() {
+        const active = document.activeElement;
+        if (active && active !== document.body && !(active.closest && active.closest('#game-container'))) {
+            _canvasReturnFocus = active;
+        }
+    }
+    function _restoreFocusAfterCanvas() {
+        const target = (_canvasReturnFocus && document.contains(_canvasReturnFocus))
+            ? _canvasReturnFocus
+            : (document.getElementById('runGameBtn') || document.getElementById('studioPanel'));
+        _canvasReturnFocus = null;
+        try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+        try { if (target && target.focus) target.focus(); } catch (e) {}
+        return target;
+    }
+    function _exitCanvasPlay() {
+        const gc = document.getElementById('game-container');
+        const active = document.activeElement;
+        const inside = !!(gc && active && gc.contains(active));
+        if (!inside) return false;
+        if (!_gamePaused && typeof togglePause === 'function') {
+            try { togglePause(); } catch (e) {}
+        }
+        _restoreFocusAfterCanvas();
+        return true;
+    }
     // Bulletproof click-to-play hardware focus hook
 document.getElementById('game-container')?.addEventListener('mousedown', function() {
+  _rememberCanvasReturnFocus();
   const canvas = this.querySelector('canvas');
   if (canvas) {
     canvas.setAttribute('tabindex', '0'); 
     canvas.focus();
   }
 });
+// A2692: while the game owns focus, Escape exits to the UI and Tab stays on the
+// canvas. Once focus leaves, Tab reaches the panel controls again.
+document.getElementById('game-container')?.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    _exitCanvasPlay();
+    return;
+  }
+  if (e.key === 'Tab' && currentPhaserGame && !_gamePaused) {
+    e.preventDefault();
+  }
+}, true);
 // ── SW UPDATE BANNER ─────────────────────────────────────────────────────────
 function _showUpdateBanner() {
     let b = document.getElementById('swUpdateBanner');
