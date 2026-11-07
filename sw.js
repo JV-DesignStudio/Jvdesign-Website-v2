@@ -31,7 +31,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v48';
+const CACHE='jvds-v49';
 const CORE=[
   '/',
   '/offline.html',
@@ -89,6 +89,11 @@ const CORE=[
   '/style-tool-story-editor.css',
   '/tools/code-snippet-generator.html',
   '/style-tool-code-snippet-generator.css',
+  '/style-code-snippet-theme.css',
+  '/tools/csg-tokenizer.js',
+  '/tools/csg-worker.js',
+  '/tools/csg-explainers.js',
+  '/tools/csg-starters.js',
   '/tools/error-guide.html',
   '/style-tool-error-guide.css',
   '/assets/js/inline/tools-error-guide-2.js',
@@ -99,15 +104,8 @@ const CORE=[
   '/data/error-guide/errors-unity.json',
   '/data/error-guide/errors-python.json',
   '/data/error-guide/errors-javascript.json',
-  // A831: self-hosted Prism so the Code Snippet Generator highlights offline.
-  '/assets/vendor/prism/prism.min.js',
-  '/assets/vendor/prism/prism-jvds.css',
-  '/assets/vendor/prism/components/prism-c.min.js',
-  '/assets/vendor/prism/components/prism-cpp.min.js',
-  '/assets/vendor/prism/components/prism-csharp.min.js',
-  '/assets/vendor/prism/components/prism-python.min.js',
-  '/assets/vendor/prism/components/prism-lua.min.js',
-  '/assets/vendor/prism/components/prism-java.min.js',
+  // A2774: the Code Snippet Generator uses its own zero-dependency tokenizer,
+  // so the old Prism bundles are no longer precached.
   // A781: self-hosted export libraries so precached tools work offline with no CDN.
   '/assets/vendor/jszip/jszip.min.js',
   '/assets/vendor/gifenc/gifenc.esm.js',

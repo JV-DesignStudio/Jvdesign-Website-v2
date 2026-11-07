@@ -34,10 +34,11 @@ const pills = pillTags.map((tag) => {
 
 // A1679: Palette Studio moved from a Resource Bank pill into the Asset Pipeline.
 ok('hub has 28 core tool cards', cards.length === 28, 'found ' + cards.length);
-// 26 pills: A797 retired the roblox-builder redirect-stub pill (24 -> 23); the four
+// 25 pills: A797 retired the roblox-builder redirect-stub pill (24 -> 23); the four
 // Studio Extras entries (settings, challenges, drafts, monthly) bring it to 27
-// (A1669); Palette Studio moved into the Asset Pipeline grid (A1679).
-ok('hub has 26 reference pills', pills.length === 26, 'found ' + pills.length);
+// (A1669); Palette Studio moved into the Asset Pipeline grid (A1679), and the
+// Parent & Teacher Guide pill retired with its page, leaving 25.
+ok('hub has 25 reference pills', pills.length === 25, 'found ' + pills.length);
 ok('every core card has data-search', cards.every((c) => c.search.length > 0));
 ok('every reference pill has data-search', pills.every((p) => p.search.length > 0),
   pills.filter((p) => !p.search).map((p) => p.title).join(', ') || 'all present');

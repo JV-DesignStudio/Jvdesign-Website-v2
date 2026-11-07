@@ -50,7 +50,7 @@
       '.create-timer button:hover{filter:brightness(1.04)}' +
       '.create-timer button[data-act="dismiss"]{min-width:36px;padding:5px 8px;font-size:1rem;line-height:1}' +
       '.create-timer.is-expired{border-color:var(--gold,#c98a2e);background:var(--gold-lt,#faf1e0)}' +
-      '.hub-project-timer{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-top:10px;padding:9px 16px;border-radius:999px;border:1.5px solid var(--jv-line);background:var(--jv-surface-2);color:var(--jv-text);font:inherit;font-weight:800;font-size:.85rem;cursor:pointer}' +
+      '.hub-project-timer{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:10px 0 0 8px;padding:9px 16px;border-radius:999px;border:1.5px solid var(--jv-line);background:var(--jv-surface-2);color:var(--jv-text);font:inherit;font-weight:800;font-size:.85rem;cursor:pointer}' +
       '.hub-project-timer:hover{border-color:var(--jv-ember);background:var(--jv-ember-soft)}' +
       '@media(prefers-reduced-motion:reduce){.create-timer,.create-timer *{animation:none!important;transition:none!important}}' +
       '@media(max-width:420px){.create-timer{right:10px;bottom:10px}.create-timer button{padding:5px 8px}}';
@@ -166,13 +166,14 @@
   }
 
   function injectStartButton() {
+    ensureCss();
     var host = document.querySelector('#first-project .hub-project-inner') || document.getElementById('first-project');
     if (!host || document.getElementById('startQuickTimer')) return;
     var b = document.createElement('button');
     b.id = 'startQuickTimer';
     b.type = 'button';
     b.className = 'hub-project-timer';
-    b.textContent = '\u23F1 Start a 15-minute timer';
+    b.textContent = 'Start a 15-minute timer';
     b.addEventListener('click', function () {
       if (state && state.mode === 'running') pause();
       else if (state && state.mode === 'paused') resume();

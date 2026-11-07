@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-dChqKOfxy3uANGPDKr0ccc2/NA7314RXC5WIGFihpJA=' 'sha256-XGMjHmYFdP20jVpIprXB9rPe8hstiIuW/4rNSHd20tU=' 'sha256-h9tim976Wvoa6q7+CKzmWn9sUPc3sHFq4ykjRgaCN8c=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-uXVrEx8nxQo5AB9AkTCWzuqHHklCGquN4ANUQ+IfnO8=' 'sha256-dTT5xJPQkXSkHw3fSvawidsnBMsiWP7aaImatvkskKE=' 'sha256-bcjUPnb92Bctj5Tt1D82CU7to3aWc/FkTjjKe4JTk+w=' 'sha256-h9tim976Wvoa6q7+CKzmWn9sUPc3sHFq4ykjRgaCN8c=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -40,12 +40,8 @@
 <link rel="stylesheet" href="../style-shared.css?v=17">
 <link rel="stylesheet" href="/style-mascots.css">
 <link rel="stylesheet" href="/ember-guide.css">
-<link rel="stylesheet" href="/assets/vendor/prism/prism-jvds.css">
-<style>
-/* Prism base only, token colours come from prism-jvds.css (light + dark, offline) */
-pre[class*="language-"],code[class*="language-"]{text-shadow:none;font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.6;}
-</style>
 <link rel="stylesheet" href="../style-tool-code-snippet-generator.css?v=17">
+<link rel="stylesheet" href="../style-code-snippet-theme.css?v=1">
 <noscript><link rel="stylesheet" href="../style-tool-code-snippet-generator.css?v=17"></noscript>
 <script type="application/ld+json">
 {
@@ -176,7 +172,7 @@ pre[class*="language-"],code[class*="language-"]{text-shadow:none;font-family:'J
 
 <div class="ember-note">
   <img src="/assets/mascots/ember-badge.webp" alt="Ember" width="44" height="44">
-  <p><strong>Ember says</strong> start with Movement, then Collision. Copy one snippet at a time and run your game after each change, so you always know what worked.</p>
+  <p><strong>Ember says</strong> start with Movement, then Collision. Tap any code line and <strong>Echo</strong> will explain it in plain English. Copy one snippet at a time and run your game after each change, so you always know what worked.</p>
 </div>
 
 <div class="wrap">
@@ -205,6 +201,9 @@ pre[class*="language-"],code[class*="language-"]{text-shadow:none;font-family:'J
     </a>
   </div>
 </section>
+<script src="/tools/csg-tokenizer.js"></script>
+<script src="/tools/csg-explainers.js"></script>
+<script src="/tools/csg-starters.js"></script>
 <script>
 const SNIPPETS=[
   {id:'gd-move',cat:'Movement',lang:'gdscript',title:'2D Character Movement',desc:'GDScript character body with WASD/arrow input',
@@ -1139,7 +1138,7 @@ function getValues(s){ if(!genState[s.id]) genState[s.id]=defaultsFor(s); return
 function applyParams(tpl,vals){ return tpl.replace(/\{\{(\w+)\}\}/g,(m,k)=> (vals[k]!=null?String(vals[k]):'')); }
 function currentCode(s){ return applyParams(s.code, getValues(s)); }
 
-const cats=[...new Set(SNIPPETS.map(s=>s.cat))];
+let cats=[...new Set(SNIPPETS.map(s=>s.cat))];
 let currentLang='all';
 let currentCat='all';
 let currentQuery='';
@@ -1270,8 +1269,8 @@ function applyHash(){
   }
   return any;
 }
-// GDScript/Luau map to Python grammar - syntax is Python-inspired, highlights reasonably well
-const LANG_PRISM={gdscript:'python',luau:'lua',csharp:'csharp',js:'javascript',py:'python',java:'java',cpp:'cpp',gml:'javascript',defold:'lua',godotcs:'csharp',phaser:'javascript',maker:'javascript'};
+// Tokenizer language aliases (A2774). GDScript and Luau each have their own rules.
+const LANG_HL={gdscript:'gdscript',luau:'luau',csharp:'csharp',js:'js',py:'py',java:'java',cpp:'cpp',gml:'gml',defold:'luau',godotcs:'csharp',phaser:'js',maker:'js'};
 // Each language points at the workshop that teaches it (A832)
 const WORKSHOP_LINKS={
   gdscript:{slug:'my-first-godot-game-canvas.html',name:'My First Godot Game'},
@@ -1292,10 +1291,15 @@ function workshopFor(s){ return s.workshop || WORKSHOP_LINKS[s.lang] || null; }
 function paramField(s,p,val){
   const id='opt-'+s.id+'-'+p.key;
   if(p.type==='number'){
-    return `<label class="opt"><span>${p.label}</span><input type="number" data-sid="${s.id}" data-key="${p.key}" id="${id}" value="${val}"${p.min!=null?' min="'+p.min+'"':''}${p.max!=null?' max="'+p.max+'"':''}${p.step!=null?' step="'+p.step+'"':''}></label>`;
+    const num=Number(val);
+    const min=p.min!=null?p.min:(num<0?num*2:0);
+    const max=p.max!=null?p.max:(num<0?0:Math.max(num*2,1));
+    const step=p.step!=null?p.step:1;
+    const safe=Math.min(Math.max(num,min),max);
+    return `<label class="opt opt-range"><span>${p.label}</span><input type="range" data-sid="${s.id}" data-key="${p.key}" id="${id}" value="${safe}" min="${min}" max="${max}" step="${step}"><output class="opt-val" data-out="${id}">${safe}</output></label>`;
   }
   if(p.type==='color'){
-    return `<label class="opt"><span>${p.label}</span><input type="color" data-sid="${s.id}" data-key="${p.key}" id="${id}" value="${val}"></label>`;
+    return `<label class="opt opt-color"><span>${p.label}</span><input type="color" data-sid="${s.id}" data-key="${p.key}" id="${id}" value="${val}"><output class="opt-val" data-out="${id}">${val}</output></label>`;
   }
   if(p.type==='select'){
     return `<label class="opt"><span>${p.label}</span><select data-sid="${s.id}" data-key="${p.key}" id="${id}">${(p.options||[]).map(o=>`<option value="${o}"${o===val?' selected':''}>${o}</option>`).join('')}</select></label>`;
@@ -1305,10 +1309,9 @@ function paramField(s,p,val){
 function optionsPanel(s){
   if(!s.params||!s.params.length) return '';
   const vals=getValues(s);
-  return `<div class="snippet-opts">${s.params.map(p=>paramField(s,p,vals[p.key])).join('')}<button class="opt-reset" data-on="resetSnippet" data-on-args="s:${encodeURIComponent(s.id)}" title="Reset this snippet to its default values">Reset</button></div>`;
+  return `<div class="snippet-opts"><div class="opts-head" style="flex:1 0 100%;display:flex;align-items:baseline;gap:8px;font-size:.68rem"><strong style="color:var(--text)">Tweak it</strong><span style="color:var(--muted)">changes update the code</span></div>${s.params.map(p=>paramField(s,p,vals[p.key])).join('')}<button class="opt-reset" data-on="resetSnippet" data-on-args="s:${encodeURIComponent(s.id)}" title="Reset this snippet to its default values">Reset all</button></div>`;
 }
 function cardHtml(s){
-  const prismLang=LANG_PRISM[s.lang]||'plaintext';
   const w=workshopFor(s);
   const learn=w?`<div class="snippet-learn"><a class="learn-link" href="/workshops/${w.slug}">📚 Learn this in ${w.name}</a><span class="build-next">Build next: use it in a real game in that workshop.</span></div>`:'';
   const on=isPinned(s.id);
@@ -1319,13 +1322,15 @@ function cardHtml(s){
         <div class="snippet-tools">
           <button class="pin-btn${on?' on':''}" type="button" data-pin-id="${s.id}" aria-pressed="${on?'true':'false'}" aria-label="${on?'Remove '+s.title+' from saved snippets':'Save '+s.title+' to saved snippets'}" title="${on?'Saved':'Save to favourites'}">${on?'★':'☆'}</button>
           <span class="lang-badge">${s.lang.toUpperCase()}</span>
+          <button class="mini-btn save-img-btn" type="button" data-img-id="${s.id}" title="Save this snippet as an image">Image</button>
+          <button class="mini-btn board-btn" type="button" data-board-id="${s.id}" title="Send this snippet to your Game Planner">Board</button>
           <button class="copy-btn" data-on="copyCode" data-on-args="this|s:${encodeURIComponent(s.id)}">Copy</button>
         </div>
       </div>
       <div class="snippet-desc">${s.desc}</div>
       ${optionsPanel(s)}
       ${learn}
-      <pre class="code-block" style="margin:0;padding:0;background:transparent;"><code class="language-${prismLang}" id="code-${s.id}" style="display:block;"></code></pre>
+      <pre class="code-block" style="margin:0;padding:0;background:transparent;"><code class="csg-code" id="code-${s.id}" data-lang="${LANG_HL[s.lang]||'plain'}" style="display:block;"></code></pre>
     </div>`;
 }
 function filteredSnippets(){
@@ -1341,10 +1346,24 @@ function renderSnippets(){
   el.innerHTML=filtered.length?filtered.map(cardHtml).join(''):'<div class="snippets-empty">No snippets match. Try a different word or category.</div>';
   filtered.forEach(s=>{
     const codeEl=document.getElementById('code-'+s.id);
-    if(codeEl){ codeEl.textContent=currentCode(s); adaptedCode[s.id]=codeEl.textContent; }
+    const code=currentCode(s);
+    if(codeEl) codeEl.textContent=code;
+    adaptedCode[s.id]=code;
+    paintCode(s,code);
   });
   updateResultCount(filtered.length);
-  if(typeof Prism!=='undefined') filtered.forEach(s=>{ const c=document.getElementById('code-'+s.id); if(c) Prism.highlightElement(c); });
+}
+function paintCode(s,code){
+  const codeEl=document.getElementById('code-'+s.id);
+  if(!codeEl) return;
+  s._hlToken=(s._hlToken||0)+1;
+  const token=s._hlToken;
+  highlightCode(code, s.lang).then(result=>{
+    if(token!==s._hlToken) return;
+    const target=document.getElementById('code-'+s.id);
+    if(!target) return;
+    target.innerHTML=result.lines.map((line,i)=>`<span class="code-line" data-line="${i+1}" tabindex="0" aria-label="Line ${i+1}. Show Echo's explanation">${line||' '}</span>`).join('');
+  }).catch(()=>{});
 }
 function onParamInput(e){
   const t=e.target;
@@ -1354,12 +1373,13 @@ function onParamInput(e){
   const s=snippetById(sid);
   if(!s) return;
   getValues(s)[key]=t.value;
+  const out=document.querySelector('output[data-out="opt-'+sid+'-'+key+'"]');
+  if(out) out.textContent=t.value;
   const codeEl=document.getElementById('code-'+sid);
-  if(codeEl){
-    codeEl.textContent=currentCode(s);
-    adaptedCode[sid]=codeEl.textContent;
-    if(typeof Prism!=='undefined') Prism.highlightElement(codeEl);
-  }
+  const code=currentCode(s);
+  if(codeEl) codeEl.textContent=code;
+  adaptedCode[sid]=code;
+  paintCode(s,code);
 }
 function resetSnippet(id){
   const s=snippetById(id);
@@ -1369,7 +1389,12 @@ function resetSnippet(id){
 }
 function copyCode(btn,id){
   const code=adaptedCode[id]!=null?adaptedCode[id]:'';
-  navigator.clipboard.writeText(code).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1500);}).catch(()=>{});
+  navigator.clipboard.writeText(code).then(()=>{
+    btn.textContent='Copied!';
+    setTimeout(()=>btn.textContent='Copy',1500);
+    const s=snippetById(id);
+    if(s) postActivity('copy',s);
+  }).catch(()=>{});
 }
 function copyAll(){
   const filtered=filteredSnippets();
@@ -1384,6 +1409,25 @@ document.getElementById('snippets').addEventListener('change',onParamInput);
 document.getElementById('snippets').addEventListener('click', function(e){
   const btn = e.target.closest && e.target.closest('.pin-btn');
   if(btn) togglePin(btn.getAttribute('data-pin-id'));
+});
+
+// Image export and Game Planner handoff.
+document.getElementById('snippets').addEventListener('click', function(e){
+  const img = e.target.closest && e.target.closest('.save-img-btn');
+  if(img){
+    e.preventDefault();
+    const label=img.textContent;
+    img.disabled=true;
+    img.textContent='...';
+    try{ csgExportImage(img.getAttribute('data-img-id')); }
+    finally{ setTimeout(function(){ img.disabled=false; img.textContent=label; },600); }
+    return;
+  }
+  const board = e.target.closest && e.target.closest('.board-btn');
+  if(board){
+    e.preventDefault();
+    sendToBoard(board.getAttribute('data-board-id'));
+  }
 });
 
 // Surprise me: jump to a random snippet and clear the filters so it is visible.
@@ -1448,6 +1492,328 @@ function downloadMD() {
   showToast(`Downloaded ${filtered.length} snippet${filtered.length !== 1 ? 's' : ''}!`);
 }
 
+// ── HIGHLIGHTING (A2774/A2776) ──
+let hlWorker=null, hlWorkerBroken=false, hlSeq=0, lastHighlightTransport='local';
+const hlPending=new Map();
+function getHLWorker(){
+  if(hlWorkerBroken) return null;
+  if(hlWorker) return hlWorker;
+  try{
+    hlWorker=new Worker('/tools/csg-worker.js');
+    hlWorker.onmessage=function(e){
+      const p=hlPending.get(e.data.id);
+      if(!p) return;
+      hlPending.delete(e.data.id);
+      if(e.data.error) p.reject(new Error(e.data.error));
+      else p.resolve(e.data.lines);
+    };
+    hlWorker.onerror=function(){
+      hlWorkerBroken=true;
+      hlPending.forEach(function(p){ p.reject(new Error('worker error')); });
+      hlPending.clear();
+    };
+    return hlWorker;
+  }catch(e){ hlWorkerBroken=true; return null; }
+}
+function workerHighlight(code,lang){
+  return new Promise(function(resolve,reject){
+    const w=getHLWorker();
+    if(!w) return reject(new Error('no worker'));
+    const id=++hlSeq;
+    hlPending.set(id,{resolve:resolve,reject:reject});
+    w.postMessage({type:'highlight',id:id,code:code,lang:lang});
+    setTimeout(function(){
+      if(!hlPending.has(id)) return;
+      hlPending.delete(id);
+      reject(new Error('worker timeout'));
+    },4000);
+  });
+}
+function highlightCode(code,lang){
+  const local=function(){ lastHighlightTransport='local'; return {lines:(window.CSGHighlight?CSGHighlight.lines(code,lang):String(code).split('\n')),transport:'local'}; };
+  if(code.length>=1200 && typeof Worker!=='undefined' && !hlWorkerBroken){
+    lastHighlightTransport='worker';
+    return workerHighlight(code,lang).then(function(lines){ return {lines:lines,transport:'worker'}; }).catch(function(){ return local(); });
+  }
+  return Promise.resolve(local());
+}
+window.csgHighlight=function(code,lang){ return highlightCode(code,lang||'js'); };
+window.csgHighlightTransport=function(){ return lastHighlightTransport; };
+
+// ── SKILL TREE ACTIVITY HOOK (A2773) ──
+function activityMessage(action,s){
+  if(!s) return null;
+  return {type:'jvds:activity',source:'code-snippet-generator',action:action,snippetId:s.id,lang:s.lang};
+}
+function postActivity(action,s){
+  try{
+    if(window.parent===window) return;
+    const msg=activityMessage(action,s);
+    if(msg) window.parent.postMessage(msg,window.location.origin);
+  }catch(e){}
+}
+window.csgActivityMessage=function(action,id){ return activityMessage(action,snippetById(id)); };
+
+// ── ECHO LINE EXPLAINERS (A2767) ──
+function showExplain(lineEl,sid){
+  const s=snippetById(sid);
+  if(!s||!window.CSGExplainers) return;
+  const ex=window.CSGExplainers.explain(s.lang,lineEl.textContent);
+  let tip=document.getElementById('csgExplainTip');
+  if(!tip){
+    tip=document.createElement('div');
+    tip.id='csgExplainTip';
+    tip.className='explain-tip';
+    tip.setAttribute('role','tooltip');
+    document.body.appendChild(tip);
+  }
+  tip.innerHTML='<strong>'+(ex.who||'Echo')+' says</strong><p>'+ex.text+'</p>';
+  const r=lineEl.getBoundingClientRect();
+  tip.style.display='block';
+  const tw=Math.min(290,window.innerWidth-24);
+  tip.style.maxWidth=tw+'px';
+  let left=r.left;
+  if(left+tw>window.innerWidth-12) left=window.innerWidth-12-tw;
+  if(left<12) left=12;
+  let top=r.bottom+8;
+  if(top+tip.offsetHeight>window.innerHeight-12) top=Math.max(12,r.top-tip.offsetHeight-8);
+  tip.style.left=left+'px';
+  tip.style.top=top+'px';
+  document.querySelectorAll('.code-line.explaining').forEach(function(el){ el.classList.remove('explaining'); });
+  lineEl.classList.add('explaining');
+}
+function hideExplain(){
+  const tip=document.getElementById('csgExplainTip');
+  if(tip) tip.style.display='none';
+  document.querySelectorAll('.code-line.explaining').forEach(function(el){ el.classList.remove('explaining'); });
+}
+document.getElementById('snippets').addEventListener('click',function(e){
+  const line=e.target.closest&&e.target.closest('.code-line');
+  if(!line) return;
+  const card=line.closest('.snippet-card');
+  if(card) showExplain(line,card.getAttribute('data-sid'));
+});
+document.getElementById('snippets').addEventListener('focusin',function(e){
+  const line=e.target.closest&&e.target.closest('.code-line');
+  if(!line) return;
+  const card=line.closest('.snippet-card');
+  if(card) showExplain(line,card.getAttribute('data-sid'));
+});
+document.addEventListener('click',function(e){
+  if(e.target.closest&&(e.target.closest('.code-line')||e.target.closest('.explain-tip'))) return;
+  hideExplain();
+});
+window.addEventListener('scroll',hideExplain,{passive:true});
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') hideExplain(); });
+
+// ── CANVAS IMAGE EXPORT (A2770) ──
+function fileSlug(value){
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,48)||'snippet';
+}
+function drawPip(ctx,x,y,size){
+  const px=['..gg...','.gggg..','gGWGgg.','ggggggg','.g.g.g.','g..g..g'];
+  const colours={g:'#7AC74F',G:'#0F2410',W:'#F0EAD6'};
+  for(let r=0;r<px.length;r++){
+    for(let c=0;c<px[r].length;c++){
+      const ch=px[r][c];
+      if(ch==='.') continue;
+      ctx.fillStyle=colours[ch]||'#7AC74F';
+      ctx.fillRect(x+c*size,y+r*size,size,size);
+    }
+  }
+}
+function csgBuildCanvas(id){
+  const s=snippetById(id);
+  if(!s) return null;
+  const code=adaptedCode[id]!=null?adaptedCode[id]:currentCode(s);
+  const lines=code.split('\n');
+  const scale=2, pad=36, header=78, footer=56, lineH=22;
+  let fontSize=15;
+  const probe=document.createElement('canvas').getContext('2d');
+  const widest=function(size){
+    probe.font=size+'px "JetBrains Mono", monospace';
+    let w=0;
+    lines.forEach(function(l){ w=Math.max(w,probe.measureText(l).width); });
+    return w;
+  };
+  let width=Math.min(1100,Math.max(640,Math.ceil(widest(fontSize)+pad*2)));
+  while(fontSize>10&&widest(fontSize)>width-pad*2) fontSize-=1;
+  const bodyH=Math.max(60,lines.length*lineH);
+  const height=header+bodyH+footer;
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.round(width*scale);
+  canvas.height=Math.round(height*scale);
+  const ctx=canvas.getContext('2d');
+  ctx.scale(scale,scale);
+  const grad=ctx.createLinearGradient(0,0,width,height);
+  grad.addColorStop(0,'#241F1B');
+  grad.addColorStop(1,'#15120E');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,width,height);
+  ctx.fillStyle='rgba(240,234,214,.05)';
+  ctx.fillRect(0,0,width,52);
+  ['#F2637A','#F5C842','#34D399'].forEach(function(col,i){
+    ctx.beginPath();
+    ctx.arc(pad+i*20,26,6,0,Math.PI*2);
+    ctx.fillStyle=col;
+    ctx.fill();
+  });
+  ctx.fillStyle='#F0EAD6';
+  ctx.font='700 16px Inter, sans-serif';
+  ctx.fillText(s.title,pad+72,32);
+  const langLabel=s.lang.toUpperCase();
+  ctx.fillStyle='rgba(240,234,214,.6)';
+  ctx.font='600 11px Inter, sans-serif';
+  ctx.fillText(langLabel,width-pad-ctx.measureText(langLabel).width,32);
+  ctx.strokeStyle='rgba(240,234,214,.12)';
+  ctx.beginPath();
+  ctx.moveTo(pad,52);
+  ctx.lineTo(width-pad,52);
+  ctx.stroke();
+  ctx.font=fontSize+'px "JetBrains Mono", monospace';
+  ctx.fillStyle='#F0EAD6';
+  ctx.textBaseline='top';
+  lines.forEach(function(l,i){ ctx.fillText(l,pad,header+6+i*lineH); });
+  ctx.textBaseline='alphabetic';
+  ctx.strokeStyle='rgba(240,234,214,.12)';
+  ctx.beginPath();
+  ctx.moveTo(pad,height-footer+8);
+  ctx.lineTo(width-pad,height-footer+8);
+  ctx.stroke();
+  drawPip(ctx,width-pad-104,height-34,2);
+  ctx.fillStyle='rgba(240,234,214,.72)';
+  ctx.font='700 12px Inter, sans-serif';
+  ctx.fillText('Made in JVDesignStudio',width-pad-90,height-26);
+  return canvas;
+}
+function csgExportImage(id){
+  const s=snippetById(id);
+  if(!s) return false;
+  let canvas=null;
+  try{ canvas=csgBuildCanvas(id); }catch(e){ canvas=null; }
+  if(!canvas){ showToast('Could not make the image.'); return false; }
+  const save=function(blob){
+    if(!blob){ showToast('Could not make the image.'); return; }
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=fileSlug(s.title)+'-jvds.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); },5000);
+    showToast('Image saved. Share it with pride.');
+    postActivity('export-image',s);
+  };
+  if(canvas.toBlob) canvas.toBlob(save,'image/png');
+  else{
+    const a=document.createElement('a');
+    a.href=canvas.toDataURL('image/png');
+    a.download=fileSlug(s.title)+'-jvds.png';
+    a.click();
+    postActivity('export-image',s);
+  }
+  return true;
+}
+
+// ── SEND TO THE GAME PLANNER (A2771) ──
+const TRACKER_KEY='qb-data-v1';
+function defaultTracker(){
+  return {columns:[
+    {id:'todo',title:'To Do',colour:'#42d3b2'},
+    {id:'doing',title:'In Progress',colour:'#f5c842'},
+    {id:'done',title:'Complete',colour:'#9eacc4'}
+  ],cards:[],nextId:1};
+}
+function showTrackerToast(){
+  let t=document.getElementById('csg-toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='csg-toast';
+    t.className='toast';
+    document.body.appendChild(t);
+  }
+  t.innerHTML='Added to your <a href="/tools/quest-board.html" style="color:inherit;text-decoration:underline">Game Planner</a>';
+  t.style.opacity=1;
+  clearTimeout(t._t);
+  t._t=setTimeout(function(){ t.style.opacity=0; },3200);
+}
+function sendToBoard(id){
+  const s=snippetById(id);
+  if(!s) return false;
+  const code=adaptedCode[id]!=null?adaptedCode[id]:currentCode(s);
+  const md='### '+s.title+' ('+s.lang.toUpperCase()+')\n\n'+s.desc+'\n\n```'+(MD_FENCE[s.lang]||s.lang)+'\n'+code+'\n```';
+  let data=null;
+  try{ data=JSON.parse(localStorage.getItem(TRACKER_KEY)||'null'); }catch(e){ data=null; }
+  if(!data||typeof data!=='object') data=defaultTracker();
+  if(!Array.isArray(data.columns)||!data.columns.length) data.columns=defaultTracker().columns;
+  if(!Array.isArray(data.cards)) data.cards=[];
+  const maxId=data.cards.reduce(function(m,c){
+    return Math.max(m,Number(String(c&&c.id||'').replace(/\D/g,''))||0);
+  },0);
+  const next=Math.max(Number(data.nextId)||1,maxId+1);
+  data.cards.push({id:'q'+next,title:'Code: '+s.title,desc:md,colId:'todo',priority:'med',createdAt:new Date().toISOString()});
+  data.nextId=next+1;
+  try{ localStorage.setItem(TRACKER_KEY,JSON.stringify(data)); }
+  catch(e){ showToast('Could not reach the Game Planner. Storage may be full.'); return false; }
+  showTrackerToast();
+  return true;
+}
+window.csgSendToBoard=sendToBoard;
+window.csgBuildCanvas=csgBuildCanvas;
+window.csgExportImage=csgExportImage;
+
+// ── STARTER LIBRARY (A2772) ──
+function mergeStarters(list){
+  if(!Array.isArray(list)||!list.length) return;
+  const ids=new Set(SNIPPETS.map(function(s){ return s.id; }));
+  let added=0;
+  list.forEach(function(s){
+    if(!s||!s.id||ids.has(s.id)) return;
+    SNIPPETS.push(s);
+    ids.add(s.id);
+    added+=1;
+  });
+  if(!added) return;
+  cats=[...new Set(SNIPPETS.map(function(s){ return s.cat; }))];
+  buildCats();
+  renderSnippets();
+}
+function seedStarters(){
+  const starters=window.CSG_STARTERS;
+  if(!Array.isArray(starters)||!starters.length) return;
+  if(!window.indexedDB){ mergeStarters(starters); return; }
+  let finished=false;
+  const finish=function(list){
+    if(finished) return;
+    finished=true;
+    clearTimeout(timer);
+    mergeStarters(list&&list.length?list:starters);
+  };
+  const timer=setTimeout(function(){ finish(starters); },1400);
+  try{
+    const req=indexedDB.open('jvds-csg-db',1);
+    req.onupgradeneeded=function(){
+      const db=req.result;
+      if(!db.objectStoreNames.contains('snippets')) db.createObjectStore('snippets',{keyPath:'id'});
+    };
+    req.onerror=function(){ finish(starters); };
+    req.onsuccess=function(){
+      const db=req.result;
+      try{
+        const tx=db.transaction('snippets','readwrite');
+        const store=tx.objectStore('snippets');
+        starters.forEach(function(s){ store.put(s); });
+        tx.oncomplete=function(){
+          const getAll=db.transaction('snippets').objectStore('snippets').getAll();
+          getAll.onsuccess=function(){ finish(getAll.result||starters); };
+          getAll.onerror=function(){ finish(starters); };
+        };
+        tx.onerror=function(){ finish(starters); };
+      }catch(e){ finish(starters); }
+    };
+  }catch(e){ finish(starters); }
+}
+
 // ── WELCOME MODAL ──
 const CSG_SEEN_KEY = 'jvds_code_snippet_seen_v1';
 function openHelp() {
@@ -1506,25 +1872,12 @@ window.addEventListener('hashchange',()=>{
 });
 try{ if(new URLSearchParams(location.search).get('starter')==='random') setTimeout(surpriseMe,300); }catch(e){}
 maybeShowWelcome();
-</script>
-<script src="/assets/vendor/prism/prism.min.js"></script>
-<script src="/assets/vendor/prism/components/prism-c.min.js"></script>
-<script src="/assets/vendor/prism/components/prism-cpp.min.js"></script>
-<script src="/assets/vendor/prism/components/prism-csharp.min.js"></script>
-<script src="/assets/vendor/prism/components/prism-python.min.js"></script>
-<script src="/assets/vendor/prism/components/prism-lua.min.js"></script>
-<script src="/assets/vendor/prism/components/prism-java.min.js"></script>
-<script>
-// Prism loads after the first render pass, so highlight once it is ready.
-(function(){
-  function highlight(){
-    if(!window.Prism) return;
-    var els=document.querySelectorAll('code[class*="language-"]');
-    for(var i=0;i<els.length;i++) Prism.highlightElement(els[i]);
+seedStarters();
+try{
+  if('serviceWorker' in navigator && location.hostname !== '127.0.0.1'){
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
   }
-  if(document.readyState==='complete') highlight();
-  else window.addEventListener('load',highlight);
-})();
+}catch(e){}
 </script>
 <!-- WELCOME MODAL -->
 <div class="modal-overlay" id="csgWelcomeModal" role="dialog" aria-modal="true" aria-labelledby="csgWelcomeTitle">
@@ -1553,6 +1906,8 @@ maybeShowWelcome();
       <div>🟢 <strong>Godot?</strong> Select <em>GDScript</em> for node-based patterns using Godot 4</div>
       <div>⬜ <strong>Unity?</strong> Select <em>C#</em> for MonoBehaviour and singleton patterns</div>
       <div>⬇ <strong>Download</strong> saves all visible snippets as a .md reference file</div>
+      <div>💬 <strong>Echo</strong> explains any code line when you tap or focus it</div>
+      <div>🖼 <strong>Image</strong> saves a shareable picture, <strong>Board</strong> sends the snippet to your Game Planner</div>
     </div>
     <div style="font-size:.68rem;color:var(--muted);border-top:1px solid rgba(255,255,255,.08);padding-top:10px;margin-bottom:14px;">Press <kbd style="padding:1px 5px;border:1px solid rgba(255,255,255,.15);border-radius:4px;background:rgba(255,255,255,.06);">?</kbd> any time to reopen this guide.</div>
     <div class="modal-btns">

@@ -22,7 +22,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-tzNDtSVRrOdcjNgnq16l5p/f4wwg+Pcw6EP3n+gjnzk=' 'sha256-2vw+zreL/cBdrzYrjp6B3FR+jY58YAdfbSRnPIN4a40=' 'sha256-9Y9MQhp3G58H9DY7yGk8b5sgTeB9GEAeaKGP21mMgB8=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-tzNDtSVRrOdcjNgnq16l5p/f4wwg+Pcw6EP3n+gjnzk=' 'sha256-2vw+zreL/cBdrzYrjp6B3FR+jY58YAdfbSRnPIN4a40=' 'sha256-LOuXAmomd9Ma12K39XLRQMhJfXsaXd0XF4Jjfps8fhc=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -602,7 +602,7 @@
   <div class="modal gdd-qr-modal">
     <h2 id="gddQrTitle">Scan to open this plan</h2>
     <div class="gdd-qr-box"><img id="gddQrImg" alt="QR code for this game plan" width="220" height="220"></div>
-    <p class="gdd-qr-note">Anyone with this code can open a copy of your plan. Your drawing stays on this device.</p>
+    <p class="gdd-qr-note" id="gddQrNote">Anyone with this code can open a copy of your plan. Your drawing stays on this device.</p>
     <input id="gddQrUrl" type="text" readonly aria-label="Share link">
     <div class="modal-btns">
       <button class="m-ok" data-on="copyGddShareLink" data-on-plain>Copy link</button>
@@ -824,7 +824,6 @@ function init(){
   trackProgress();
   initCounters();
   offerGddRestore();
-  restoreDoodle();
 }
 
 // ══════════════════════════════════════
@@ -1907,10 +1906,11 @@ function clearAll(){
   clearTimeout(_gddAutoT);
   try{ localStorage.removeItem('jvds_gdd'); }catch(e){}
   try{ localStorage.removeItem(GDD_AUTO_KEY); }catch(e){}
-  gddIdbDel('docs','auto');
-  gddIdbDel('docs','saved');
-  gddIdbDel('assets','doodle');
-  location.reload();
+  Promise.all([
+    gddIdbDel('docs','auto'),
+    gddIdbDel('docs','saved'),
+    gddIdbDel('assets','doodle'),
+  ]).then(()=>location.reload()).catch(()=>location.reload());
 }
 
 // ══════════════════════════════════════
@@ -2050,8 +2050,19 @@ function unpackShare(code){
   if(bin===null) throw new Error('bad payload');
   return JSON.parse(decodeURIComponent(escape(bin)));
 }
+function compactForShare(d){
+  const out={};
+  Object.keys(d||{}).forEach(k=>{
+    const v=d[k];
+    if(v===undefined||v===null||v==='') return;
+    if(typeof v==='string'){ if(v.trim()) out[k]=v; return; }
+    if(Array.isArray(v)){ if(v.length) out[k]=v; return; }
+    out[k]=v;
+  });
+  return out;
+}
 function buildShareUrl(){
-  const data={v:2,ts:Date.now(),d:getTextData()};
+  const data={v:2,ts:Date.now(),d:compactForShare(getTextData())};
   return location.origin+location.pathname+'#gdd='+packShare(data);
 }
 function copyToClipboard(url,msg){
@@ -2073,13 +2084,25 @@ function showGddQr(){
     const urlEl=document.getElementById('gddQrUrl');
     if(urlEl) urlEl.value=url;
     const img=document.getElementById('gddQrImg');
+    const note=document.getElementById('gddQrNote');
+    let drew=false;
     if(img && typeof qrcode==='function'){
-      const qr=qrcode(0,'M');
-      qr.addData(url);
-      qr.make();
-      img.src=qr.createDataURL(5,8);
-    }else if(img){
-      img.removeAttribute('src');
+      for(const ecc of ['M','L']){
+        try{
+          const qr=qrcode(0,ecc);
+          qr.addData(url);
+          qr.make();
+          img.src=qr.createDataURL(5,8);
+          drew=true;
+          break;
+        }catch(e){ drew=false; }
+      }
+    }
+    if(!drew && img) img.removeAttribute('src');
+    if(note){
+      note.textContent=drew
+        ? 'Anyone with this code can open a copy of your plan. Your drawing stays on this device.'
+        : 'This plan is too big for a QR code. Copy the link below instead.';
     }
     const modal=document.getElementById('gddQrModal');
     if(modal) modal.classList.add('open');

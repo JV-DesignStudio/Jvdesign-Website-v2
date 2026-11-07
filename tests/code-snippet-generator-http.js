@@ -129,17 +129,17 @@ let failures = 0;
   // A1602: Phaser 3 and Arcade Game Maker sets
   const pm = await page.evaluate(()=>{
     filterCat('all'); document.getElementById('langSel').value='phaser'; filterLang();
-    const ph={cards:document.querySelectorAll('.snippet-card').length,badges:[...new Set([...document.querySelectorAll('.lang-badge')].map(b=>b.textContent))]};
+    const ph={cards:document.querySelectorAll('.snippet-card').length,badges:[...new Set([...document.querySelectorAll('.lang-badge')].map(b=>b.textContent))],ids:SNIPPETS.filter(s=>s.lang==='phaser').map(s=>s.id)};
     document.getElementById('langSel').value='maker'; filterLang();
     const mk={cards:document.querySelectorAll('.snippet-card').length,badges:[...new Set([...document.querySelectorAll('.lang-badge')].map(b=>b.textContent))],ids:SNIPPETS.filter(s=>s.lang==='maker').map(s=>s.id)};
     return {ph,mk,code:adaptedCode['maker-move']||''};
   });
-  check('Phaser 3 set renders (4 snippets, JS badge)', pm.ph.cards===4 && pm.ph.badges.length===1 && pm.ph.badges[0]==='PHASER', JSON.stringify(pm.ph));
+  check('Phaser 3 set renders with the core snippets and a PHASER badge', pm.ph.cards>=4 && ['phaser-move','phaser-collide','phaser-score','phaser-save'].every(id=>pm.ph.ids.includes(id)) && pm.ph.badges.length===1 && pm.ph.badges[0]==='PHASER', JSON.stringify(pm.ph));
   check('Game Maker set renders (4 snippets, Maker badge)', pm.mk.cards===4 && pm.mk.badges.length===1 && pm.mk.badges[0]==='MAKER' && pm.mk.ids.includes('maker-move'), JSON.stringify(pm.mk));
   check('Game Maker snippet uses the maker API (onUpdate + globals)', /onUpdate\(scene\)/.test(pm.code) && /liveConfig/.test(pm.code), pm.code.split('\n')[1]||'');
   await page.evaluate(()=>{ document.getElementById('langSel').value='all'; filterLang(); });
 
-  // A831: offline check, Prism is self-hosted and the timer snippet is correct
+  // A2774: offline check, the page uses its own tokenizer and loads nothing from a CDN
   const offline = await browser.newPage();
   const offlineErrors = [];
   offline.on('pageerror', e => offlineErrors.push('pageerror: ' + e.message));
@@ -158,20 +158,21 @@ let failures = 0;
   await offline.setViewport({ width: 1280, height: 900 });
   await offline.goto('http://127.0.0.1:' + port + '/tools/code-snippet-generator.html', { waitUntil: 'load', timeout: 20000 });
   await new Promise(resolve => setTimeout(resolve, 900));
-  const offlinePrism = await offline.evaluate(() => ({
+  const offlineChecks = await offline.evaluate(() => ({
     prismLoaded: typeof window.Prism !== 'undefined',
-    tokens: document.querySelectorAll('code[class*="language-"] .token').length,
-    langs: ['lua', 'python', 'csharp', 'java', 'cpp', 'javascript'].filter(l => window.Prism && window.Prism.languages[l]),
+    prismScripts: Array.from(document.querySelectorAll('script[src]')).filter(s => /prism/i.test(s.getAttribute('src') || '')).length,
+    tokens: document.querySelectorAll('code .tok').length,
+    lines: document.querySelectorAll('code .code-line').length,
     cdnScript: Array.from(document.querySelectorAll('script[src]')).some(s => /cdnjs|jsdelivr|unpkg/.test(s.getAttribute('src') || '')),
     cdnCss: Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some(l => /cdnjs|jsdelivr|unpkg/.test(l.getAttribute('href') || '')),
     timerBug: /clearInterval\(this\)/.test(document.body.innerHTML),
     timerFixed: /clearInterval\(countdown\)/.test(document.body.innerHTML)
   }));
-  check('offline: self-hosted Prism loads', offlinePrism.prismLoaded);
-  check('offline: code is highlighted with the network off', offlinePrism.tokens > 0, String(offlinePrism.tokens));
-  check('offline: grammars available (lua/python/csharp/java/cpp)', offlinePrism.langs.length >= 5, offlinePrism.langs.join(','));
-  check('offline: no CDN script or stylesheet tags remain', !offlinePrism.cdnScript && !offlinePrism.cdnCss, 'script=' + offlinePrism.cdnScript + ' css=' + offlinePrism.cdnCss);
-  check('offline: timer snippet clears a real interval handle', !offlinePrism.timerBug && offlinePrism.timerFixed);
+  check('offline: no Prism scripts load', !offlineChecks.prismLoaded && offlineChecks.prismScripts === 0, 'loaded=' + offlineChecks.prismLoaded + ' scripts=' + offlineChecks.prismScripts);
+  check('offline: code is highlighted with the network off', offlineChecks.tokens > 0, String(offlineChecks.tokens));
+  check('offline: code is split into explainable lines', offlineChecks.lines > 0, String(offlineChecks.lines));
+  check('offline: no CDN script or stylesheet tags remain', !offlineChecks.cdnScript && !offlineChecks.cdnCss, 'script=' + offlineChecks.cdnScript + ' css=' + offlineChecks.cdnCss);
+  check('offline: timer snippet clears a real interval handle', !offlineChecks.timerBug && offlineChecks.timerFixed);
   check('offline: zero runtime errors', offlineErrors.length === 0, offlineErrors.join(' | '));
   await offline.close();
 
@@ -186,6 +187,80 @@ let failures = 0;
   check('every snippet has a workshop link', learn.links===learn.cards && learn.links>=50, JSON.stringify({links:learn.links,cards:learn.cards}));
   const missing = learn.hrefs.filter(h=>!fs.existsSync(path.join(root, h.replace(/^\//,''))));
   check('workshop links point to real pages', missing.length===0, JSON.stringify(missing));
+
+  // A2768: sliders with live values
+  const slider = await page.evaluate(()=>{
+    filterCat('all');
+    const input=document.querySelector('input[data-sid="cs-move"][data-key="speed"]');
+    return {type:input?input.type:'', out:(document.querySelector('output[data-out="opt-cs-move-speed"]')||{}).textContent||''};
+  });
+  check('numeric options use sliders with live values', slider.type==='range' && slider.out.trim()!=='', JSON.stringify(slider));
+
+  // A2767: Echo line explainer
+  await new Promise(resolve=>setTimeout(resolve, 400));
+  await page.evaluate(()=>{
+    const line=document.querySelector('[data-sid="cs-move"] .code-line');
+    if(line) line.click();
+  });
+  const explainer = await page.evaluate(()=>{
+    const tip=document.getElementById('csgExplainTip');
+    return {open:!!tip && getComputedStyle(tip).display!=='none', text:tip?tip.textContent:''};
+  });
+  check('Echo explains a line in plain English', explainer.open && /Echo|Ember/i.test(explainer.text) && explainer.text.length>30, explainer.text.slice(0,70));
+  await page.keyboard.press('Escape');
+  const closed = await page.evaluate(()=>{ const tip=document.getElementById('csgExplainTip'); return !tip || getComputedStyle(tip).display==='none'; });
+  check('the line explainer closes on Escape', closed);
+
+  // A2769: calm studio syntax theme
+  const themeColour = await page.evaluate(()=>{
+    const fn=document.querySelector('.tok-fn');
+    return fn?getComputedStyle(fn).color:'';
+  });
+  check('studio syntax theme colours functions teal', themeColour==='rgb(112, 163, 167)', themeColour);
+
+  // A2770: canvas image export
+  const canvasCheck = await page.evaluate(()=>{
+    const c=csgBuildCanvas('cs-move');
+    if(!c) return null;
+    return {w:c.width,h:c.height,bytes:c.toDataURL('image/png').length};
+  });
+  check('canvas export renders a shareable image', !!canvasCheck && canvasCheck.w>600 && canvasCheck.h>200 && canvasCheck.bytes>5000, JSON.stringify(canvasCheck));
+
+  // A2771: send to the Game Planner
+  const boardCheck = await page.evaluate(()=>{
+    localStorage.removeItem('qb-data-v1');
+    const ok=csgSendToBoard('cs-move');
+    const data=JSON.parse(localStorage.getItem('qb-data-v1')||'null');
+    const card=data&&data.cards&&data.cards[0];
+    return {ok:!!ok,cards:data&&data.cards?data.cards.length:0,markdown:!!card&&/```/.test(card.desc),col:card?card.colId:''};
+  });
+  check('Send to Dev Board adds a markdown task', boardCheck.ok && boardCheck.cards===1 && boardCheck.markdown && boardCheck.col==='todo', JSON.stringify(boardCheck));
+
+  // A2772: IndexedDB starter libraries
+  await new Promise(resolve=>setTimeout(resolve, 700));
+  const starterCheck = await page.evaluate(()=>({
+    count:SNIPPETS.filter(s=>String(s.id).indexOf('starter-')===0).length,
+    godot:SNIPPETS.some(s=>s.id==='starter-godot-controller'),
+    phaser:SNIPPETS.some(s=>s.id==='starter-phaser-scene'),
+    python:SNIPPETS.some(s=>s.id==='starter-python-adventure')
+  }));
+  check('starter libraries load and merge', starterCheck.count>=6 && starterCheck.godot && starterCheck.phaser && starterCheck.python, JSON.stringify(starterCheck));
+
+  // A2776: Web Worker offload for large scripts
+  const workerCheck = await page.evaluate(async ()=>{
+    const big=Array.from({length:500},(_,i)=>'const value'+i+' = '+i+';').join('\n');
+    const result=await csgHighlight(big,'js');
+    return {lines:result.lines.length, transport:csgHighlightTransport()};
+  });
+  check('large scripts parse in a Web Worker', workerCheck.lines===500 && workerCheck.transport==='worker', JSON.stringify(workerCheck));
+
+  // A2773: skill tree activity message shape
+  const activity = await page.evaluate(()=>csgActivityMessage('copy','cs-move'));
+  check('activity messages carry snippet id and language', !!activity && activity.type==='jvds:activity' && activity.snippetId==='cs-move' && activity.lang==='csharp', JSON.stringify(activity));
+
+  // A2775: the service worker precaches the snippet engine
+  const swCache = fs.readFileSync(path.join(root,'sw.js'),'utf8');
+  check('service worker precaches the snippet engine', /csg-tokenizer\.js/.test(swCache) && /csg-worker\.js/.test(swCache) && /code-snippet-generator\.html/.test(swCache));
 
   check('zero runtime errors', errors.length === 0, errors.join(' | '));
   await browser.close();
