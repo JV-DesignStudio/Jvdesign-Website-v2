@@ -43,8 +43,8 @@
 <link rel="preconnect" href="https://www.google-analytics.com">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <link rel="stylesheet" href="../style-shared.css?v=17">
-<link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=7">
-<noscript><link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=7"></noscript>
+<link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=8">
+<noscript><link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=8"></noscript>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Minecraft Skin Editor","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/minecraft-skin-editor.html","description":"Paint a Minecraft skin pixel by pixel in the browser, preview it on a 3D player and export a PNG. Free, no install, no account.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
 </script>
@@ -128,14 +128,15 @@
     <div class="ms-brief-copy">
       <p class="ms-kicker">Create with Ember</p>
       <h1 id="msTitle">Minecraft Skin Editor</h1>
-      <p>Paint the 64x64 skin texture pixel by pixel, watch it appear on a 3D player, then export a PNG to use in Minecraft. It saves on this device as you go.</p>
+      <p>Tap the player to paint, add stickers, then save your skin for Minecraft. It saves on this device as you go.</p>
     </div>
     <div class="ms-brief-actions">
+      <button type="button" class="ms-help" id="msModeBtn" aria-pressed="false">Full editor</button>
       <button type="button" class="ms-help" id="msHelpBtn">How it works</button>
     </div>
   </section>
 
-  <div class="ms-app">
+  <div class="ms-app ms-kid">
     <div class="ms-sheet-backdrop" id="msSheetBackdrop" hidden></div>
     <aside class="ms-side" id="msSide" aria-label="Skin editor controls">
       <div class="ms-sheet-head">
@@ -144,10 +145,10 @@
       </div>
       <div class="ms-card ms-ember">
         <img src="../games/chars/ember.png" alt="" width="42" height="42" loading="lazy">
-        <p><strong>Ember says:</strong> start with a base skin, then change a few pixels at a time. Small edits make a big difference.</p>
+        <p><strong>Ember says:</strong> <span id="msEmberLine">tap the player to paint. Drag to turn it around.</span></p>
       </div>
 
-      <div class="ms-card">
+      <div class="ms-card ms-advanced">
         <h2>Tools</h2>
         <div class="ms-grid2" id="msToolGrid" role="group" aria-label="Drawing tools"></div>
         <div class="ms-divider"></div>
@@ -165,39 +166,42 @@
       </div>
 
       <div class="ms-card">
-        <h2>Colour</h2>
-        <div class="ms-color-hero">
-          <input type="color" id="msColor" value="#3fa9d8" aria-label="Paint colour">
-          <div class="ms-color-meta">
-            <span class="ms-color-val" id="msColorVal">#3FA9D8</span>
-            <span class="ms-color-sub">Active colour</span>
+        <h2>Colours</h2>
+        <div class="ms-crayons" id="msCrayons" role="group" aria-label="Crayon colours"></div>
+        <div class="ms-advanced">
+          <div class="ms-color-hero">
+            <input type="color" id="msColor" value="#3fa9d8" aria-label="Paint colour">
+            <div class="ms-color-meta">
+              <span class="ms-color-val" id="msColorVal">#3FA9D8</span>
+              <span class="ms-color-sub">Active colour</span>
+            </div>
           </div>
+          <div class="ms-hsl" role="group" aria-label="HSL colour sliders">
+            <div class="ms-hsl-row">
+              <span class="ms-hsl-label" aria-hidden="true">H</span>
+              <input type="range" id="msHue" class="ms-hsl-range ms-hue-range" min="0" max="360" value="200" aria-label="Hue">
+              <span class="ms-hsl-val" id="msHueVal">200</span>
+            </div>
+            <div class="ms-hsl-row">
+              <span class="ms-hsl-label" aria-hidden="true">S</span>
+              <input type="range" id="msSat" class="ms-hsl-range" min="0" max="100" value="60" aria-label="Saturation">
+              <span class="ms-hsl-val" id="msSatVal">60</span>
+            </div>
+            <div class="ms-hsl-row">
+              <span class="ms-hsl-label" aria-hidden="true">L</span>
+              <input type="range" id="msLit" class="ms-hsl-range" min="0" max="100" value="55" aria-label="Lightness">
+              <span class="ms-hsl-val" id="msLitVal">55</span>
+            </div>
+            <div class="ms-hsl-row">
+              <span class="ms-hsl-label" aria-hidden="true">#</span>
+              <input type="text" id="msHexInput" class="ms-text-input ms-hex-input" placeholder="#3FA9D8" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Hex colour value">
+            </div>
+          </div>
+          <label class="ms-fieldlabel">Recent</label>
+          <div class="ms-swatches ms-color-history" id="msColorHistory" role="group" aria-label="Recent colours"></div>
+          <label class="ms-fieldlabel" style="margin-top:8px">Palette</label>
+          <div class="ms-swatches" id="msSwatches" role="group" aria-label="Quick colours"></div>
         </div>
-        <div class="ms-hsl" role="group" aria-label="HSL colour sliders">
-          <div class="ms-hsl-row">
-            <span class="ms-hsl-label" aria-hidden="true">H</span>
-            <input type="range" id="msHue" class="ms-hsl-range ms-hue-range" min="0" max="360" value="200" aria-label="Hue">
-            <span class="ms-hsl-val" id="msHueVal">200</span>
-          </div>
-          <div class="ms-hsl-row">
-            <span class="ms-hsl-label" aria-hidden="true">S</span>
-            <input type="range" id="msSat" class="ms-hsl-range" min="0" max="100" value="60" aria-label="Saturation">
-            <span class="ms-hsl-val" id="msSatVal">60</span>
-          </div>
-          <div class="ms-hsl-row">
-            <span class="ms-hsl-label" aria-hidden="true">L</span>
-            <input type="range" id="msLit" class="ms-hsl-range" min="0" max="100" value="55" aria-label="Lightness">
-            <span class="ms-hsl-val" id="msLitVal">55</span>
-          </div>
-          <div class="ms-hsl-row">
-            <span class="ms-hsl-label" aria-hidden="true">#</span>
-            <input type="text" id="msHexInput" class="ms-text-input ms-hex-input" placeholder="#3FA9D8" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Hex colour value">
-          </div>
-        </div>
-        <label class="ms-fieldlabel">Recent</label>
-        <div class="ms-swatches ms-color-history" id="msColorHistory" role="group" aria-label="Recent colours"></div>
-        <label class="ms-fieldlabel" style="margin-top:8px">Palette</label>
-        <div class="ms-swatches" id="msSwatches" role="group" aria-label="Quick colours"></div>
       </div>
 
       <div class="ms-card">
@@ -227,6 +231,7 @@
           <button type="button" class="ms-btn danger" id="msClearBtn" style="grid-column:1 / -1">Clear skin</button>
           <button type="button" class="ms-btn" id="msSkinGalleryBtn" style="grid-column:1 / -1">🖼 Skin Gallery</button>
         </div>
+        <div class="ms-advanced">
         <label class="ms-fieldlabel" style="margin-top:10px">Copy / paste part</label>
         <div class="ms-grid2">
           <select id="msCopyPartSel" class="ms-select" aria-label="Source part to copy">
@@ -263,13 +268,14 @@
           <button type="button" class="ms-btn" id="msPastePartBtn">Paste</button>
         </div>
         <p class="ms-hint">Copy an arm, paste it to the other arm to clone. Pastes as many pixels as fit.</p>
+        </div>
       </div>
     </aside>
 
     <!-- mobile view switcher tabs (hidden on desktop via CSS) -->
     <div class="ms-view-tabs" id="msViewTabs" role="tablist" aria-label="Switch between 2D painting and 3D preview">
-      <button type="button" class="ms-view-tab active" id="msTab2D" role="tab" aria-selected="true">🖌️ 2D Paint</button>
-      <button type="button" class="ms-view-tab" id="msTab3D" role="tab" aria-selected="false">🧊 3D Preview</button>
+      <button type="button" class="ms-view-tab" id="msTab2D" role="tab" aria-selected="false">🖌️ Flat</button>
+      <button type="button" class="ms-view-tab active" id="msTab3D" role="tab" aria-selected="true">🧊 Paint 3D</button>
       <button type="button" class="ms-view-tab ms-view-tab--more" id="msTabMore" role="tab" aria-selected="false" aria-haspopup="dialog" aria-expanded="false" aria-controls="msSide">More</button>
     </div>
 
@@ -309,7 +315,21 @@
       </div>
     </div>
 
-    <div class="ms-main" data-view="2d">
+    <div class="ms-main" data-view="3d">
+      <div class="ms-kid-toolbar" id="msKidToolbar">
+        <div class="ms-kid-toolrow" role="group" aria-label="Tools">
+          <button type="button" class="ms-kid-tool on" data-tool="pencil" aria-label="Paintbrush" title="Paintbrush">🖌️</button>
+          <button type="button" class="ms-kid-tool" data-tool="fill" aria-label="Paint bucket" title="Paint bucket">🪣</button>
+          <button type="button" class="ms-kid-tool" data-tool="eraser" aria-label="Eraser" title="Eraser">🧽</button>
+          <button type="button" class="ms-kid-tool on" id="msKidSymmetry" aria-pressed="true" aria-label="Mirror painting" title="Mirror painting">🪞</button>
+          <button type="button" class="ms-kid-tool" id="msKidStamps" aria-expanded="false" aria-label="Stamps" title="Stamps">⭐</button>
+        </div>
+        <div class="ms-crayons-strip" id="msCrayonsStrip" role="group" aria-label="Crayon colours"></div>
+        <div class="ms-stamp-drawer" id="msStampDrawer" hidden>
+          <p class="ms-stamp-title">Pick a sticker, then tap the player</p>
+          <div class="ms-stamp-grid" id="msStampGrid"></div>
+        </div>
+      </div>
       <section class="ms-card ms-paintwrap" aria-label="Paint area">
         <div class="paint-stage" id="msPaintStage">
           <div id="msCanvasWrap">
@@ -338,7 +358,7 @@
           <label class="ms-check"><input type="checkbox" id="msShowGrid" checked> Grid</label>
           <label class="ms-check"><input type="checkbox" id="msShowOverlay" checked> Layers</label>
         </div>
-        <p class="ms-hint">Drag to turn · scroll/pinch to zoom · hover to highlight a part on the texture</p>
+        <p class="ms-hint">Tap the player to paint · drag to turn · double-tap a part to zoom in on it</p>
       </section>
     </div>
   </div>
@@ -358,11 +378,12 @@
   <div class="ms-modal" id="msModal" role="dialog" aria-modal="true" aria-labelledby="msModalTitle">
     <div class="ms-modal-box">
       <h2 id="msModalTitle">How the Skin Editor works</h2>
-      <p>A Minecraft skin is a small picture (64x64 pixels) that wraps around your player. Here is how to make one in a few minutes.</p>
+      <p>A Minecraft skin is a small picture that wraps around your player. Here is how to make one.</p>
       <ol>
-        <li><b>Pick a base.</b> Choose Classic, Blank or another template, or import a skin you already have.</li>
-        <li><b>Paint.</b> Use the pencil and quick colours. The 3D player updates as you paint so you can see the front, back and sides.</li>
-        <li><b>Export.</b> Press Export PNG and keep the file. Put it in your Minecraft skin folder to use in game.</li>
+        <li><b>Pick a player.</b> Tap a base skin to start with something solid.</li>
+        <li><b>Tap to paint.</b> Choose a crayon, then tap the player. Drag to turn it around. Double-tap an arm or leg to paint just that part.</li>
+        <li><b>Add stickers.</b> Tap the star, pick a face or a heart, then tap the player.</li>
+        <li><b>Save and export.</b> Press Save and Export to keep your PNG.</li>
       </ol>
       <p>Everything happens in your browser. Nothing is uploaded, and your skin is saved on this device.</p>
       <div class="ms-row" style="margin-top:14px;justify-content:flex-end">
@@ -377,6 +398,7 @@
 <div id="msMagnifier" aria-hidden="true" role="presentation"><canvas id="msMagCanvas" width="96" height="96"></canvas></div>
 
 <div id="msToast" role="status" aria-live="polite"></div>
+<div id="msConfetti" aria-hidden="true"></div>
 
 <!-- BUILD:footer-tools -->
 <footer class="jvds-tools-footer">
@@ -395,7 +417,7 @@
 <script defer src="../tool-analytics.js"></script>
 <script defer src="/ember-guide.js"></script>
 <script src="../assets/vendor/three/three.min.js"></script>
-<script src="../assets/js/inline/tools-minecraft-skin-editor-1.js"></script>
+<script src="../assets/js/inline/tools-minecraft-skin-editor-1.js?v=2"></script>
 <script defer src="/mascots.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>

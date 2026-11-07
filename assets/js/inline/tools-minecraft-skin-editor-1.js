@@ -51,15 +51,23 @@
     showGrid: true,
     showOverlay: true,
     autoRotate: true,
-    symmetry: false,
+    symmetry: true,
     showLabels: false,
-    walkAnim: false
+    walkAnim: false,
+    mode: 'kid',
+    stamp: null
   };
   var LS_KEY = 'jvds_minecraft_skin';
   var alexModel = false;
   var colorHistory = [];
   var MAX_HISTORY = 8;
   var partClipboard = null;
+  // kid-mode (digital toy) state
+  var _isolatedPart = null;
+  var _isoVis = null;
+  var _lastTap = { part: null, t: 0, x: 0, y: 0, painted: false };
+  var _raycaster3d = null, _mouse3d = null;
+  var applyView = null;
 
   // ---- view pan / zoom (canvas viewport) -------------------------------------
   var viewScale = 1, viewPanX = 0, viewPanY = 0;
@@ -1139,14 +1147,15 @@
     if (colorInput) colorInput.value = hex;
     if (colorVal) colorVal.textContent = hex.toUpperCase();
     highlightSwatch(hex);
+    if (state.stamp) clearStamp();
     if (state.tool === 'eraser' || state.tool === 'eyedropper') setTool('pencil');
     addToHistory(hex);
     updateHslSliders();
   }
   function highlightSwatch(hex) {
-    if (!swatchWrap) return;
-    Array.prototype.forEach.call(swatchWrap.children, function (b) {
-      b.classList.toggle('on', (b.getAttribute('data-color') || '').toLowerCase() === hex.toLowerCase());
+    var want = String(hex || '').toLowerCase();
+    Array.prototype.forEach.call(document.querySelectorAll('.ms-swatch, .ms-crayon'), function (b) {
+      b.classList.toggle('on', (b.getAttribute('data-color') || '').toLowerCase() === want);
     });
   }
   function setTool(name) {
@@ -1162,8 +1171,36 @@
     Array.prototype.forEach.call(document.querySelectorAll('.ms-strip-btn[data-tool]'), function (b) {
       b.classList.toggle('on', b.getAttribute('data-tool') === name);
     });
+    Array.prototype.forEach.call(document.querySelectorAll('.ms-kid-tool[data-tool]'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-tool') === name);
+    });
     overlayCanvas.style.cursor = name === 'eyedropper' ? 'copy' : name === 'eraser' ? 'cell' : name === 'hand' ? 'grab' : 'crosshair';
     if (name !== 'hand') _handPanning = false;
+    updateEmberLine();
+  }
+
+  var EMBER_LINES = {
+    pencil: 'tap the player to paint. Drag to turn it around.',
+    fill: 'tap a part to fill it with your colour.',
+    eraser: 'tap to rub the colour away.',
+    eyedropper: 'tap a colour to copy it.',
+    hand: 'drag to move the flat picture.'
+  };
+  function updateEmberLine() {
+    var line = document.getElementById('msEmberLine');
+    if (!line) return;
+    if (state.stamp) {
+      line.textContent = 'pick a sticker, then tap the player.';
+    } else {
+      line.textContent = EMBER_LINES[state.tool] || 'tap the player to paint.';
+    }
+  }
+  function setSymmetry(on) {
+    state.symmetry = !!on;
+    var a = document.getElementById('msSymmetryBtn');
+    if (a) { a.classList.toggle('on', state.symmetry); a.setAttribute('aria-pressed', state.symmetry ? 'true' : 'false'); }
+    var b = document.getElementById('msKidSymmetry');
+    if (b) { b.classList.toggle('on', state.symmetry); b.setAttribute('aria-pressed', state.symmetry ? 'true' : 'false'); }
   }
   function setBrush(n) {
     state.brush = n;
@@ -1184,6 +1221,66 @@
     '#7cb342', '#e8c34a', '#e07a6b', '#b03a5b', '#7a3fb0', '#e05fa0',
     '#00e0d0', '#5a3a1a'
   ];
+
+  // Big crayon box: bright favourites, skin tones and Minecraft-ish colours.
+  var CRAYONS = [
+    '#e53935', '#fb8c00', '#fdd835', '#43a047', '#1e88e5', '#8e24aa',
+    '#d81b60', '#00acc1', '#6d4c41', '#000000', '#ffffff', '#9e9e9e',
+    '#fddbb4', '#e8b88a', '#c9905f', '#9b6343', '#6b3e26', '#3a2a1a',
+    '#7cb342', '#5decf5', '#e8c34a', '#b03a5b', '#3b5ea8', '#2f6f3f'
+  ];
+
+  // Sticker stamps. Each pixel is a character in the rows below; '.' is clear.
+  var STAMPS = [
+    { id: 'creeper', label: 'Creeper face', w: 8, h: 8, colors: { c: '#111111' }, rows: [
+      '........',
+      '.cc..cc.',
+      '.cc..cc.',
+      '...cc...',
+      '..cccc..',
+      '..c..c..',
+      '..cccc..',
+      '........'
+    ] },
+    { id: 'googly', label: 'Googly eyes', w: 6, h: 4, colors: { w: '#ffffff', b: '#111111' }, rows: [
+      'ww..ww',
+      'wb..wb',
+      'ww..ww',
+      '......'
+    ] },
+    { id: 'zombie', label: 'Zombie mouth', w: 6, h: 3, colors: { d: '#2a1a10' }, rows: [
+      '......',
+      'd.dd.d',
+      '.dddd.'
+    ] },
+    { id: 'heart', label: 'Heart', w: 7, h: 6, colors: { r: '#e53935' }, rows: [
+      '.rr.rr.',
+      'rrrrrrr',
+      'rrrrrrr',
+      '.rrrrr.',
+      '..rrr..',
+      '...r...'
+    ] },
+    { id: 'star', label: 'Star', w: 7, h: 7, colors: { g: '#fdd835' }, rows: [
+      '...g...',
+      '..ggg..',
+      'ggggggg',
+      '.ggggg.',
+      '..ggg..',
+      '.gg.gg.',
+      'g.....g'
+    ] },
+    { id: 'armour', label: 'Armour plate', w: 6, h: 6, colors: { m: '#9aa3ad', d: '#5a5f66' }, rows: [
+      'mmmmmm',
+      'm.dd.m',
+      'mm..mm',
+      'mm..mm',
+      'm.dd.m',
+      'mmmmmm'
+    ] }
+  ];
+  var STAMP_MAP = {};
+  STAMPS.forEach(function (s) { STAMP_MAP[s.id] = s; });
 
   function buildControls() {
     var TOOLS = [
@@ -1253,6 +1350,265 @@
       });
     }
     highlightSwatch(state.color);
+    buildCrayons();
+    buildStamps();
+  }
+
+  // ---- crayon box + sticker stamps ----------------------------------------
+  function makeCrayon(hex) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ms-crayon';
+    b.style.background = hex;
+    b.setAttribute('data-color', hex);
+    b.setAttribute('aria-label', 'Colour ' + hex);
+    b.title = hex;
+    b.addEventListener('click', function () { setColor(hex); });
+    return b;
+  }
+  function buildCrayons() {
+    var side = document.getElementById('msCrayons');
+    var strip = document.getElementById('msCrayonsStrip');
+    if (side) { side.innerHTML = ''; CRAYONS.forEach(function (h) { side.appendChild(makeCrayon(h)); }); }
+    if (strip) { strip.innerHTML = ''; CRAYONS.forEach(function (h) { strip.appendChild(makeCrayon(h)); }); }
+    highlightSwatch(state.color);
+  }
+
+  function drawStampPreview(ctx, s) {
+    ctx.clearRect(0, 0, s.w, s.h);
+    for (var y = 0; y < s.h; y++) {
+      var row = s.rows[y] || '';
+      for (var x = 0; x < s.w; x++) {
+        var ch = row.charAt(x);
+        if (!ch || ch === '.') continue;
+        var col = s.colors[ch];
+        if (!col) continue;
+        ctx.fillStyle = col;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  function buildStamps() {
+    var grid = document.getElementById('msStampGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    STAMPS.forEach(function (s) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ms-stamp';
+      b.setAttribute('data-stamp', s.id);
+      b.setAttribute('aria-label', s.label);
+      b.title = s.label;
+      var cv = document.createElement('canvas');
+      cv.width = s.w; cv.height = s.h;
+      drawStampPreview(cv.getContext('2d'), s);
+      b.appendChild(cv);
+      b.addEventListener('click', function () { setStamp(s.id); });
+      grid.appendChild(b);
+    });
+  }
+  function syncStampUI() {
+    Array.prototype.forEach.call(document.querySelectorAll('.ms-stamp'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-stamp') === state.stamp);
+    });
+    var btn = document.getElementById('msKidStamps');
+    if (btn) btn.classList.toggle('on', !!state.stamp);
+  }
+  function setStamp(id) {
+    state.stamp = state.stamp === id ? null : id;
+    syncStampUI();
+    updateEmberLine();
+    if (state.stamp) {
+      setTool('pencil');
+      toast(STAMP_MAP[id] ? STAMP_MAP[id].label + ' ready' : 'Sticker ready');
+    } else {
+      toast('Sticker off');
+    }
+  }
+  function clearStamp() {
+    if (!state.stamp) return;
+    state.stamp = null;
+    syncStampUI();
+    updateEmberLine();
+  }
+  function applyStamp(name, px, py) {
+    var s = STAMP_MAP[name];
+    if (!s) return;
+    var info = findFace(px, py);
+    if (!info) return;
+    var r = info.rect;
+    var ox = px - Math.floor(s.w / 2);
+    var oy = py - Math.floor(s.h / 2);
+    ox = Math.max(r[0], Math.min(r[0] + r[2] - s.w, ox));
+    oy = Math.max(r[1], Math.min(r[1] + r[3] - s.h, oy));
+    pushUndo();
+    for (var y = 0; y < s.h; y++) {
+      for (var x = 0; x < s.w; x++) {
+        var ch = (s.rows[y] || '').charAt(x);
+        if (!ch || ch === '.') continue;
+        var col = s.colors[ch];
+        if (!col) continue;
+        var tx = ox + x, ty = oy + y;
+        if (tx < r[0] || ty < r[1] || tx >= r[0] + r[2] || ty >= r[1] + r[3]) continue;
+        var rgb = hexToRgb(col);
+        setPixel(tx, ty, rgb[0], rgb[1], rgb[2], 255);
+      }
+    }
+    renderAll(); scheduleAutosave();
+    toast('Sticker added');
+  }
+
+  // ---- direct 3D painting --------------------------------------------------
+  function uvToPixel(uv) {
+    var x = Math.floor(uv.x * SIZE);
+    var y = Math.floor((1 - uv.y) * SIZE);
+    return [Math.max(0, Math.min(SIZE - 1, x)), Math.max(0, Math.min(SIZE - 1, y))];
+  }
+  function get3DHit(clientX, clientY) {
+    var canvas = document.getElementById('ms3D');
+    if (!canvas || !threeOk || !camera || !_player || !window.THREE) return null;
+    if (!_raycaster3d) { _raycaster3d = new THREE.Raycaster(); _mouse3d = new THREE.Vector2(); }
+    var rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    _mouse3d.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    _mouse3d.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    _raycaster3d.setFromCamera(_mouse3d, camera);
+    var hits = _raycaster3d.intersectObjects(_player.children, true);
+    for (var i = 0; i < hits.length; i++) {
+      var obj = hits[i].object;
+      while (obj && !(obj.userData && obj.userData.part)) obj = obj.parent;
+      if (!obj || !obj.userData || !obj.userData.part || obj.visible === false) continue;
+      var uv = hits[i].uv;
+      if (!uv) continue;
+      var p = uvToPixel(uv);
+      var part = obj.userData.part;
+      var isOverlay = part === 'HAT' || part === 'JACKET' || /_OUT$/.test(part);
+      var alpha = data[(p[1] * SIZE + p[0]) * 4 + 3];
+      if (isOverlay && alpha < 128) continue;
+      return { part: part, px: p[0], py: p[1] };
+    }
+    return null;
+  }
+  function paintPixelAt(x, y) {
+    if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return;
+    pushUndo();
+    if (state.tool === 'fill') {
+      floodFill(x, y);
+      if (state.symmetry) {
+        var sp = symmetricPixel(x, y);
+        if (sp) floodFill(sp[0], sp[1]);
+      }
+    } else {
+      // paintDot paints with state.rgba, which is transparent for the eraser.
+      paintDot(x, y);
+    }
+    renderAll(); scheduleAutosave();
+  }
+  function handle3DTap(e) {
+    var hit = get3DHit(e.clientX, e.clientY);
+    if (!hit) { if (_isolatedPart) clearIsolation(); return; }
+    var now = Date.now();
+    if (_lastTap.part === hit.part && (now - _lastTap.t) < 360 &&
+        Math.hypot(e.clientX - _lastTap.x, e.clientY - _lastTap.y) < 44) {
+      if (_lastTap.painted && undoStack.length) { data = undoStack.pop(); renderAll(); }
+      toggleIsolation(hit.part);
+      _lastTap = { part: null, t: 0, x: 0, y: 0, painted: false };
+      return;
+    }
+    _lastTap = { part: hit.part, t: now, x: e.clientX, y: e.clientY, painted: true };
+    if (state.stamp) applyStamp(state.stamp, hit.px, hit.py);
+    else paintPixelAt(hit.px, hit.py);
+  }
+
+  var PART_FAMILY = {
+    HEAD: 'HEAD', HAT: 'HEAD', BODY: 'BODY', JACKET: 'BODY',
+    RARM: 'RARM', RARM_OUT: 'RARM', LARM: 'LARM', LARM_OUT: 'LARM',
+    RLEG: 'RLEG', RLEG_OUT: 'RLEG', LLEG: 'LLEG', LLEG_OUT: 'LLEG'
+  };
+  var FAMILY_LABEL = { HEAD: 'head', BODY: 'body', RARM: 'arm', LARM: 'arm', RLEG: 'leg', LLEG: 'leg' };
+  function toggleIsolation(part) {
+    if (!_player) return;
+    if (_isolatedPart && PART_FAMILY[_isolatedPart] === PART_FAMILY[part]) {
+      clearIsolation(); toast('Whole player'); return;
+    }
+    if (!_isoVis) {
+      _isoVis = {};
+      _player.traverse(function (o) {
+        if (o.userData && o.userData.part) _isoVis[o.userData.part + ':' + o.id] = o.visible;
+      });
+    }
+    var fam = PART_FAMILY[part] || part;
+    _player.traverse(function (o) {
+      if (!o.userData || !o.userData.part) return;
+      o.visible = (PART_FAMILY[o.userData.part] || o.userData.part) === fam;
+    });
+    _isolatedPart = part;
+    toast('Just the ' + (FAMILY_LABEL[fam] || 'part') + '. Tap the background to show all.');
+  }
+  function clearIsolation() {
+    if (_isoVis && _player) {
+      _player.traverse(function (o) {
+        if (o.userData && o.userData.part) {
+          var k = o.userData.part + ':' + o.id;
+          if (_isoVis[k] !== undefined) o.visible = _isoVis[k];
+        }
+      });
+    }
+    _isoVis = null; _isolatedPart = null;
+  }
+
+  // ---- celebration --------------------------------------------------------
+  var _reducedMotion = false;
+  try { _reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+  function celebrate() {
+    var host = document.getElementById('msConfetti');
+    if (host && !_reducedMotion) {
+      host.innerHTML = '';
+      for (var i = 0; i < 48; i++) {
+        var d = document.createElement('i');
+        d.className = 'ms-confetti-piece';
+        d.style.left = (Math.random() * 100) + '%';
+        d.style.background = CRAYONS[i % CRAYONS.length];
+        d.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+        d.style.animationDelay = (Math.random() * 0.3) + 's';
+        host.appendChild(d);
+      }
+      setTimeout(function () { host.innerHTML = ''; }, 3300);
+    }
+    var ember = document.querySelector('.ms-ember');
+    if (ember && !_reducedMotion) {
+      ember.classList.add('cheer');
+      setTimeout(function () { ember.classList.remove('cheer'); }, 1500);
+    }
+    var line = document.getElementById('msEmberLine');
+    if (line) line.textContent = 'you did it! Your skin is ready for Minecraft.';
+  }
+
+  // ---- mode switch (kid toy vs full editor) -------------------------------
+  function setMode(mode, silent) {
+    state.mode = mode === 'full' ? 'full' : 'kid';
+    var app = document.querySelector('.ms-app');
+    if (app) {
+      app.classList.toggle('ms-kid', state.mode === 'kid');
+      app.classList.toggle('ms-full', state.mode === 'full');
+    }
+    var btn = document.getElementById('msModeBtn');
+    if (btn) {
+      btn.textContent = state.mode === 'kid' ? 'Full editor' : 'Kid mode';
+      btn.setAttribute('aria-pressed', state.mode === 'full' ? 'true' : 'false');
+    }
+    try { localStorage.setItem(LS_KEY + '_mode', state.mode); } catch (e) {}
+    if (state.mode === 'kid') {
+      clearIsolation();
+      if (applyView) applyView('3d');
+      update3DVisibility();
+      setTimeout(resize3D, 60);
+    } else if (applyView) {
+      if (isCompact()) applyView('2d');
+      update3DVisibility();
+      setTimeout(resize3D, 60);
+    }
+    if (!silent) toast(state.mode === 'kid' ? 'Big buttons on' : 'Full editor on');
   }
 
   // ---- import / export ----------------------------------------------------
@@ -1318,6 +1674,7 @@
       if (!blob) { toast('Could not build the PNG'); return; }
       saveBlob(blob, 'minecraft-skin.png');
       toast('Exported minecraft-skin.png');
+      celebrate();
       if (window.ToolXP && typeof window.ToolXP.award === 'function') {
         window.ToolXP.award('export', 25, 3, 'Skin exported');
       }
@@ -1694,21 +2051,36 @@
   function init3DControls() {
     var canvas = document.getElementById('ms3D');
     if (!canvas) return;
+    // Tap paints the player; drag orbits it. A second finger is always an orbit.
+    var _threeDown = null;
+    var _threePtrs = new Set();
     canvas.addEventListener('pointerdown', function (e) {
+      _threePtrs.add(e.pointerId);
       dragging = true; lastX = e.clientX; lastY = e.clientY;
+      _threeDown = { x: e.clientX, y: e.clientY, t: Date.now(), moved: _threePtrs.size > 1 };
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     });
     canvas.addEventListener('pointermove', function (e) {
-      if (!dragging || !threeOk) return;
+      if (_threeDown && (Math.abs(e.clientX - _threeDown.x) > 7 || Math.abs(e.clientY - _threeDown.y) > 7)) {
+        _threeDown.moved = true;
+      }
+      if (!dragging || !threeOk || !_threeDown || !_threeDown.moved) return;
       var dx = e.clientX - lastX, dy = e.clientY - lastY;
       lastX = e.clientX; lastY = e.clientY;
       pivot.rotation.y += dx * 0.01;
       pivot.rotation.x = Math.max(-0.5, Math.min(0.5, pivot.rotation.x + dy * 0.006));
     });
-    function stop() { dragging = false; }
+    function stop(e) {
+      _threePtrs.delete(e.pointerId);
+      var wasTap = _threeDown && !_threeDown.moved && (Date.now() - _threeDown.t) < 600 && _threePtrs.size === 0;
+      _threeDown = null;
+      dragging = false;
+      if (wasTap && threeOk) handle3DTap(e);
+    }
     canvas.addEventListener('pointerup', stop);
-    canvas.addEventListener('pointercancel', stop);
-    canvas.addEventListener('pointerleave', stop);
+    canvas.addEventListener('pointercancel', function (e) {
+      _threePtrs.delete(e.pointerId); _threeDown = null; dragging = false;
+    });
     canvas.addEventListener('wheel', function (e) {
       if (!threeOk) return;
       e.preventDefault();
@@ -1775,6 +2147,27 @@
       update3DVisibility();
       if (view === '3d') setTimeout(resize3D, 60);
     }
+    applyView = setView;
+    var byId = function (id) { return document.getElementById(id); };
+    if (byId('msModeBtn')) byId('msModeBtn').addEventListener('click', function () {
+      setMode(state.mode === 'kid' ? 'full' : 'kid');
+    });
+    // kid tool row
+    Array.prototype.forEach.call(document.querySelectorAll('.ms-kid-tool[data-tool]'), function (b) {
+      b.addEventListener('click', function () { clearStamp(); setTool(b.getAttribute('data-tool')); });
+    });
+    if (byId('msKidSymmetry')) byId('msKidSymmetry').addEventListener('click', function () {
+      setSymmetry(!state.symmetry);
+      toast(state.symmetry ? 'Mirror painting on' : 'Mirror painting off');
+    });
+    if (byId('msKidStamps')) byId('msKidStamps').addEventListener('click', function () {
+      var drawer = byId('msStampDrawer');
+      var btn = byId('msKidStamps');
+      if (!drawer) return;
+      var open = drawer.hidden;
+      drawer.hidden = !open;
+      if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
     if (colorInput) colorInput.addEventListener('input', function () { setColor(colorInput.value); });
     var byId = function (id) { return document.getElementById(id); };
 
@@ -1899,8 +2292,7 @@
 
     var symmBtn = byId('msSymmetryBtn');
     if (symmBtn) symmBtn.addEventListener('click', function () {
-      state.symmetry = !state.symmetry;
-      symmBtn.classList.toggle('on', state.symmetry);
+      setSymmetry(!state.symmetry);
       toast(state.symmetry ? 'Symmetry on' : 'Symmetry off');
     });
 
@@ -2038,9 +2430,7 @@
       else if (e.key === '+' || e.key === '=') zoomIn();
       else if (e.key === '-' || e.key === '_') zoomOut();
       else if (e.key === 's') {
-        state.symmetry = !state.symmetry;
-        var sb = document.getElementById('msSymmetryBtn');
-        if (sb) sb.classList.toggle('on', state.symmetry);
+        setSymmetry(!state.symmetry);
         toast(state.symmetry ? 'Symmetry on' : 'Symmetry off');
       }
       else if (e.key === 'l') {
@@ -2104,7 +2494,13 @@
     loadAlexPref();
     loadColorHistory();
     loadSkinSlots();
+    try {
+      var savedMode = localStorage.getItem(LS_KEY + '_mode');
+      state.mode = savedMode === 'full' ? 'full' : 'kid';
+    } catch (e) { state.mode = 'kid'; }
     wire();
+    setSymmetry(state.symmetry);
+    updateEmberLine();
     renderColorHistory();
     updateHslSliders();
     initCanvasPanZoom();
@@ -2115,6 +2511,7 @@
     if (!hadSaved) { templateClassic(); renderAll(); markTemplate('classic'); }
     renderAll();
     updateUndoButtons();
+    setMode(state.mode, true);
     initGuide();
     // Phones start on the head: 64 px of texture squeezed into 340 px is too small
     // for a finger, an 8x8 face at part zoom is comfortable.
@@ -2152,6 +2549,21 @@
     undo: undo,
     redo: redo,
     exportSkin: exportSkin,
-    toDataURL: function () { syncOffscreen(); return off.toDataURL('image/png'); }
+    toDataURL: function () { syncOffscreen(); return off.toDataURL('image/png'); },
+    // kid-mode helpers for tests and other tools
+    setMode: setMode,
+    getMode: function () { return state.mode; },
+    getState: function () {
+      return { mode: state.mode, tool: state.tool, symmetry: state.symmetry, stamp: state.stamp, brush: state.brush };
+    },
+    paintPixel: function (x, y) { paintPixelAt(x, y); },
+    uvToPixel: uvToPixel,
+    setStamp: setStamp,
+    applyStamp: applyStamp,
+    setSymmetry: setSymmetry,
+    toggleIsolation: function (part) { toggleIsolation(part); },
+    clearIsolation: clearIsolation,
+    getIsolated: function () { return _isolatedPart; },
+    celebrate: celebrate
   };
 })();

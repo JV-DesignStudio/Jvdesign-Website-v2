@@ -23,6 +23,21 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
    const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    const downloads=[];
    window.downloadBlob=(blob,name)=>{downloads.push({name,size:blob&&blob.size});};
+   // default view is the kid "digital toy": 3D first, big crayons, 3 tools, mirror on
+   const kidDefaults={
+     mode:api.getMode(),
+     appKid:document.querySelector('.ms-app').classList.contains('ms-kid'),
+     paintHidden:getComputedStyle(document.querySelector('.ms-paintwrap')).display==='none',
+     view:api.getView(),
+     crayons:document.querySelectorAll('#msCrayons .ms-crayon').length,
+     stripCrayons:document.querySelectorAll('#msCrayonsStrip .ms-crayon').length,
+     kidTools:document.querySelectorAll('.ms-kid-tool[data-tool]').length,
+     stamps:document.querySelectorAll('#msStampGrid .ms-stamp').length,
+     symmetry:api.getState().symmetry
+   };
+   const uvMap=api.uvToPixel({x:0.5,y:0.5});
+   api.setMode('full');
+   await sleep(90);
    const overlay=document.getElementById('msOverlay');
    const paintAt=(px,py,id=1,type='mouse')=>{
      const r=overlay.getBoundingClientRect();
@@ -89,6 +104,23 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      return { rightArm:px(45,21), leftArm:px(38,53), body:px(21,21), lower:px(45,50) };
    })();
 
+   // direct paint helper mirrors to the other arm, and stickers land on the model
+   api.applyTemplate('blank');
+   api.setColor('#1e88e5');
+   api.setTool('pencil');
+   api.paintPixel(45,21);
+   const symmetryData=api.getData();
+   const symAt=(x,y)=>{const i=(y*64+x)*4;return [symmetryData[i],symmetryData[i+1],symmetryData[i+2],symmetryData[i+3]];};
+   const symmetryPaint={right:symAt(45,21),left:symAt(38,53)};
+
+   api.applyTemplate('blank');
+   api.setStamp('heart');
+   api.applyStamp('heart',11,12);
+   const stampData=api.getData();
+   let stampPainted=false;
+   for(let k=3;k<stampData.length;k+=4){ if(stampData[k]>0){ stampPainted=true; break; } }
+   api.setStamp(null);
+
    // hand tool pans the view without painting
    api.applyTemplate('blank');
    api.setTool('hand');
@@ -126,6 +158,8 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
    // export from the thumb bar saves and downloads
    document.getElementById('msStripExport').click();
    await sleep(450);
+   const confetti=document.querySelectorAll('.ms-confetti-piece').length;
+   const reducedMotion=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
    let saved=null; try{ saved=localStorage.getItem('jvds_minecraft_skin'); }catch(e){}
    const savedOk=!!saved&&saved.indexOf('data:image/png')===0;
 
@@ -159,6 +193,12 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
    return {
      title:document.title,
      apiSize:api.size,
+     kidDefaults,
+     uvMap,
+     symmetryPaint,
+     stampPainted,
+     confetti,
+     reducedMotion,
      paintCanvas:document.getElementById('msSkin').width+'x'+document.getElementById('msSkin').height,
      painted,
      filled,
@@ -190,6 +230,16 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  check('title loads', data.title.includes('Minecraft Skin Editor'), data.title);
  check('paint canvas initialized', !data.paintCanvas.startsWith('0x'), data.paintCanvas);
  check('public API exposes 64px sketch', data.apiSize===64, String(data.apiSize));
+ check('opens as the kid toy by default', data.kidDefaults.mode==='kid' && data.kidDefaults.appKid===true, JSON.stringify(data.kidDefaults));
+ check('3D player is the default paint view', data.kidDefaults.view.threeVisible===true && data.kidDefaults.paintHidden===true, JSON.stringify(data.kidDefaults.view));
+ check('kid mode shows 24 crayons in both boxes', data.kidDefaults.crayons===24 && data.kidDefaults.stripCrayons===24, JSON.stringify({side:data.kidDefaults.crayons,strip:data.kidDefaults.stripCrayons}));
+ check('kid mode exposes 3 big tools', data.kidDefaults.kidTools===3, String(data.kidDefaults.kidTools));
+ check('kid mode shows 6 stickers', data.kidDefaults.stamps===6, String(data.kidDefaults.stamps));
+ check('mirror painting is on by default', data.kidDefaults.symmetry===true, String(data.kidDefaults.symmetry));
+ check('UV centre maps to the middle pixel', data.uvMap[0]===32 && data.uvMap[1]===32, JSON.stringify(data.uvMap));
+ check('direct paint mirrors to the other arm', data.symmetryPaint.right[2]>200 && data.symmetryPaint.left[2]>200 && data.symmetryPaint.right[3]>200 && data.symmetryPaint.left[3]>200, JSON.stringify(data.symmetryPaint));
+ check('a sticker paints the model', data.stampPainted===true);
+ check('export fires confetti', data.reducedMotion || data.confetti>0, String(data.confetti));
  check('mobile opens on a body part, not the whole texture', data.view.part==='HEAD' && data.view.scale>=3, JSON.stringify(data.view));
  check('each skin pixel is finger sized on mobile', data.pxPerSkinPixel>=30, data.pxPerSkinPixel+' CSS px');
  check('pencil paints the chosen colour', data.painted.r>200 && data.painted.g<60 && data.painted.b<60 && data.painted.a>200, JSON.stringify(data.painted));
@@ -224,6 +274,8 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
    const api=window.JVDSMinecraftSkin;
    const downloads=[];
    window.downloadBlob=(blob,name)=>{downloads.push(name);};
+   api.setMode('full');
+   await new Promise(r=>setTimeout(r,90));
    const overlay=document.getElementById('msOverlay');
    const paintAt=(px,py)=>{
      const r=overlay.getBoundingClientRect();
@@ -267,6 +319,8 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  await new Promise(r=>setTimeout(r,1400));
  const land=await page.evaluate(async()=>{
    const api=window.JVDSMinecraftSkin;
+   api.setMode('full');
+   await new Promise(r=>setTimeout(r,90));
    const disp=s=>getComputedStyle(document.querySelector(s)).display;
    const rect=s=>{const b=document.querySelector(s).getBoundingClientRect();return {w:+b.width.toFixed(0),h:+b.height.toFixed(0),top:+b.top.toFixed(0),bottom:+b.bottom.toFixed(0)};};
    const overlay=document.getElementById('msOverlay');
