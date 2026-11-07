@@ -55,7 +55,9 @@
     showLabels: false,
     walkAnim: false,
     mode: 'kid',
-    stamp: null
+    stamp: null,
+    sound: true,
+    linesOn: true
   };
   var LS_KEY = 'jvds_minecraft_skin';
   var alexModel = false;
@@ -68,6 +70,11 @@
   var _lastTap = { part: null, t: 0, x: 0, y: 0, painted: false };
   var _raycaster3d = null, _mouse3d = null;
   var applyView = null;
+  var _targetMesh = null, _hoverBox = null, _cursorTimer = null;
+  var _ghostMat = null;
+  var _emberImg = null;
+  var paintMask = null; // 64x64 allow-map for colour-by-numbers starters
+  var _audioCtx = null, _lastPop = 0;
 
   // ---- view pan / zoom (canvas viewport) -------------------------------------
   var viewScale = 1, viewPanX = 0, viewPanY = 0;
@@ -145,8 +152,10 @@
   function updateUndoButtons() {
     var u = document.getElementById('msUndoBtn');
     var r = document.getElementById('msRedoBtn');
+    var k = document.getElementById('msKidUndo');
     if (u) u.disabled = undoStack.length === 0;
     if (r) r.disabled = redoStack.length === 0;
+    if (k) k.disabled = undoStack.length === 0;
   }
 
   // ---- colour helpers -----------------------------------------------------
@@ -157,6 +166,80 @@
   }
   function rgbToHex(r, g, b) {
     return '#' + [r, g, b].map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join('');
+  }
+
+  // ---- tiny Web Audio helper (no files, no autoplay) ---------------------
+  var LS_SOUND_KEY = LS_KEY + '_sound';
+  function audioAllowed() {
+    if (!state.sound) return false;
+    try {
+      if (window.navigator && navigator.userActivation && !navigator.userActivation.hasBeenActive) return false;
+    } catch (e) {}
+    return true;
+  }
+  function ensureAudio() {
+    if (!audioAllowed()) return null;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!_audioCtx) _audioCtx = new AC();
+      if (_audioCtx.state === 'suspended' && _audioCtx.resume) _audioCtx.resume();
+      return _audioCtx;
+    } catch (e) { return null; }
+  }
+  function tone(freq, dur, type, vol, slideTo, delay) {
+    var ctx = ensureAudio();
+    if (!ctx) return;
+    try {
+      var t0 = ctx.currentTime + (delay || 0);
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.setValueAtTime(freq, t0);
+      if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t0 + dur);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(vol || 0.06, t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t0); osc.stop(t0 + dur + 0.02);
+    } catch (e) {}
+  }
+  function playPop() {
+    var now = Date.now();
+    if (now - _lastPop < 45) return;
+    _lastPop = now;
+    tone(420 + Math.random() * 180, 0.08, 'sine', 0.055, 260 + Math.random() * 120);
+  }
+  function playSquish() { tone(190, 0.12, 'triangle', 0.05, 95); }
+  function playClick() { tone(720 + Math.random() * 120, 0.05, 'square', 0.03, 900); }
+  function playNope() { tone(220, 0.12, 'sine', 0.04, 160); }
+  function playChime() {
+    tone(523, 0.16, 'sine', 0.06, null, 0);
+    tone(659, 0.16, 'sine', 0.06, null, 0.12);
+    tone(784, 0.22, 'sine', 0.06, null, 0.24);
+    tone(1046, 0.3, 'sine', 0.05, null, 0.38);
+  }
+  function playSplash() {
+    tone(520, 0.18, 'sine', 0.05, 120);
+    tone(320, 0.22, 'triangle', 0.04, 90, 0.04);
+    tone(900, 0.08, 'sine', 0.03, 1600, 0.02);
+  }
+  function loadSoundPref() {
+    try { var v = localStorage.getItem(LS_SOUND_KEY); state.sound = v !== '0'; } catch (e) {}
+  }
+  function updateSoundUI() {
+    var b = document.getElementById('msSoundBtn');
+    if (!b) return;
+    b.textContent = state.sound ? '🔔' : '🔕';
+    b.setAttribute('aria-pressed', state.sound ? 'true' : 'false');
+    b.setAttribute('aria-label', state.sound ? 'Sound on' : 'Sound off');
+    b.title = state.sound ? 'Sound on' : 'Sound off';
+  }
+  function setSound(on) {
+    state.sound = !!on;
+    try { localStorage.setItem(LS_SOUND_KEY, state.sound ? '1' : '0'); } catch (e) {}
+    updateSoundUI();
+    if (state.sound) playClick();
   }
 
   // ---- HSL helpers -----------------------------------------------------------
@@ -236,6 +319,7 @@
     var half = Math.floor(state.brush / 2);
     for (var dy = -half; dy < state.brush - half; dy++) {
       for (var dx = -half; dx < state.brush - half; dx++) {
+        if (!maskAllows(cx + dx, cy + dy)) continue;
         setPixel(cx + dx, cy + dy, r, g, b, a);
       }
     }
@@ -260,19 +344,48 @@
       if (e2 < dx) { err += dx; y0 += sy; }
     }
   }
-  function floodFill(x, y) {
-    if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return;
+  function floodFill(x, y, rect) {
+    var minX = 0, minY = 0, maxX = SIZE - 1, maxY = SIZE - 1;
+    if (rect) {
+      minX = rect[0]; minY = rect[1];
+      maxX = rect[0] + rect[2] - 1; maxY = rect[1] + rect[3] - 1;
+    }
+    if (x < minX || x > maxX || y < minY || y > maxY) return;
+    if (!maskAllows(x, y)) return;
     var target = getPixel(x, y);
     var repl = state.rgba;
     if (target[0] === repl[0] && target[1] === repl[1] && target[2] === repl[2] && target[3] === repl[3]) return;
     var stack = [[x, y]];
     while (stack.length) {
       var p = stack.pop(), px = p[0], py = p[1];
-      if (px < 0 || py < 0 || px >= SIZE || py >= SIZE) continue;
+      if (px < minX || py < minY || px > maxX || py > maxY) continue;
+      if (!maskAllows(px, py)) continue;
       var cur = getPixel(px, py);
       if (cur[0] !== target[0] || cur[1] !== target[1] || cur[2] !== target[2] || cur[3] !== target[3]) continue;
       setPixel(px, py, repl[0], repl[1], repl[2], repl[3]);
       stack.push([px + 1, py], [px - 1, py], [px, py + 1], [px, py - 1]);
+    }
+  }
+
+  // The bucket fills one face, never the neighbouring face that shares a UV
+  // seam. In kid mode it fills the whole face so a tap always does something.
+  function fillAt(x, y) {
+    var info = findFace(x, y);
+    if (!info) return;
+    if (!maskAllows(x, y)) return;
+    var sp, pi;
+    if (state.mode === 'kid') {
+      fillRectMasked(info.rect, state.rgba);
+      if (state.symmetry) {
+        sp = symmetricPixel(x, y);
+        if (sp) { pi = findFace(sp[0], sp[1]); if (pi) fillRectMasked(pi.rect, state.rgba); }
+      }
+      return;
+    }
+    floodFill(x, y, info.rect);
+    if (state.symmetry) {
+      sp = symmetricPixel(x, y);
+      if (sp) { pi = findFace(sp[0], sp[1]); floodFill(sp[0], sp[1], pi ? pi.rect : null); }
     }
   }
   // ---- symmetry helpers ---------------------------------------------------
@@ -334,6 +447,31 @@
     return [mRect[0] + mlx, mRect[1] + info.ly];
   }
 
+  // ---- colour-by-numbers mask ---------------------------------------------
+  function maskAllows(x, y) {
+    if (!paintMask || !state.linesOn) return true;
+    if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return false;
+    return paintMask[y * SIZE + x] === 1;
+  }
+  function buildMaskFromTemplate(id) {
+    var spec = TEMPLATE_MASKS[id];
+    if (!spec) { paintMask = null; return; }
+    paintMask = new Uint8Array(SIZE * SIZE);
+    for (var y = 0; y < SIZE; y++) {
+      for (var x = 0; x < SIZE; x++) {
+        paintMask[y * SIZE + x] = data[(y * SIZE + x) * 4 + 3] > 0 ? 1 : 0;
+      }
+    }
+    (spec.block || []).forEach(function (r) {
+      for (var yy = r[1]; yy < r[1] + r[3]; yy++) {
+        for (var xx = r[0]; xx < r[0] + r[2]; xx++) {
+          if (xx >= 0 && yy >= 0 && xx < SIZE && yy < SIZE) paintMask[yy * SIZE + xx] = 0;
+        }
+      }
+    });
+  }
+  function clearMask() { paintMask = null; }
+
   // ---- highlighted part (driven by 3D hover) ------------------------------
   var highlightedPart = null;
 
@@ -346,7 +484,42 @@
   function clearSkin() {
     pushUndo();
     for (var i = 0; i < data.length; i++) data[i] = 0;
+    clearMask();
     renderAll(); scheduleAutosave(); toast('Skin cleared');
+  }
+
+  function washFX() {
+    if (_reducedMotion) return;
+    var host = document.getElementById('msWashFX');
+    if (host) {
+      host.innerHTML = '';
+      for (var i = 0; i < 26; i++) {
+        var b = document.createElement('i');
+        b.className = 'ms-bubble';
+        var s = 10 + Math.random() * 28;
+        b.style.left = (Math.random() * 100) + '%';
+        b.style.bottom = '-12%';
+        b.style.width = b.style.height = s + 'px';
+        b.style.animationDelay = (Math.random() * 0.35) + 's';
+        b.style.animationDuration = (0.9 + Math.random() * 0.9) + 's';
+        host.appendChild(b);
+      }
+      setTimeout(function () { host.innerHTML = ''; }, 2300);
+    }
+    var stage = document.querySelector('.ms-preview-stage');
+    if (stage) {
+      stage.classList.add('ms-washing');
+      setTimeout(function () { stage.classList.remove('ms-washing'); }, 750);
+    }
+  }
+  function washToy() {
+    pushUndo();
+    for (var i = 0; i < data.length; i++) data[i] = 0;
+    clearMask();
+    markTemplate('');
+    renderAll(); scheduleAutosave();
+    washFX(); playSplash();
+    toast('Washed! Ready for a fresh toy.');
   }
 
   // ---- region rectangles (skin layout, 64x64) -----------------------------
@@ -422,6 +595,16 @@
     var a = (rgba[3] === undefined) ? 255 : rgba[3];
     for (var yy = y; yy < y + h; yy++) {
       for (var xx = x; xx < x + w; xx++) setPixel(xx, yy, rgba[0], rgba[1], rgba[2], a);
+    }
+  }
+  function fillRectMasked(rect, rgba) {
+    var x = rect[0], y = rect[1], w = rect[2], h = rect[3];
+    var a = (rgba[3] === undefined) ? 255 : rgba[3];
+    for (var yy = y; yy < y + h; yy++) {
+      for (var xx = x; xx < x + w; xx++) {
+        if (!maskAllows(xx, yy)) continue;
+        setPixel(xx, yy, rgba[0], rgba[1], rgba[2], a);
+      }
     }
   }
   function fillGroup(group, rgba) { facesOf(group).forEach(function (r) { fillRect(r, rgba); }); }
@@ -536,7 +719,53 @@
     fillRect([32, 44, 8, 4], white);
   }
 
+  // Half-finished heroes: the suit is filled in but a key detail is left plain
+  // so the child can add a logo, spots or a face with stamps.
+  function templateSuperhero() {
+    var blue = hexToRgb('#1e5bd8'), red = hexToRgb('#e53935'), skin = hexToRgb('#e8b88a');
+    var white = [245, 245, 245], dark = [22, 22, 34];
+    clearData();
+    fillGroup(HEAD, skin); fillGroup(BODY, blue); fillGroup(RARM, blue); fillGroup(LARM, blue);
+    fillGroup(RLEG, red); fillGroup(LLEG, red);
+    // eye mask across the front
+    fillRect([8, 11, 8, 3], red);
+    facePixel(10, 12, white); facePixel(11, 12, dark); facePixel(13, 12, dark); facePixel(14, 12, white);
+    // plain chest panel waiting for a logo sticker
+    fillRect([21, 21, 6, 6], hexToRgb('#2f6fd8'));
+    // cape on the jacket layer
+    fillRect(JACKET.back, red); fillRect(JACKET.top, red);
+  }
+  function templateDino() {
+    var green = hexToRgb('#4c9a2a'), green2 = hexToRgb('#3a7a1f'), belly = hexToRgb('#c8e6a0');
+    var dark = [20, 40, 18];
+    clearData();
+    fillGroup(HEAD, green); fillGroup(BODY, green); fillGroup(RARM, green); fillGroup(LARM, green);
+    fillGroup(RLEG, green2); fillGroup(LLEG, green2);
+    // plain belly, ready for spots
+    fillRect(BODY.front, belly);
+    // eyes and nostrils stay put
+    facePixel(10, 11, dark); facePixel(11, 11, dark); facePixel(13, 11, dark); facePixel(14, 11, dark);
+    facePixel(11, 13, dark); facePixel(12, 13, dark);
+    // little tail on the jacket back
+    fillRect([32, 44, 8, 4], green2);
+  }
+  function templateSpace() {
+    var suit = hexToRgb('#dce8f0'), dark = hexToRgb('#3a4a56'), skin = hexToRgb('#e8b88a');
+    var accent = hexToRgb('#e07a6b');
+    clearData();
+    fillGroup(HEAD, skin); fillGroup(BODY, suit); fillGroup(RARM, suit); fillGroup(LARM, suit);
+    fillGroup(RLEG, suit); fillGroup(LLEG, suit);
+    // helmet rim with a bare face waiting for eyes and a mouth
+    fillRect([8, 8, 8, 1], dark); fillRect([8, 15, 8, 1], dark);
+    fillRect([8, 9, 1, 6], dark); fillRect([15, 9, 1, 6], dark);
+    // chest stripes
+    fillRect([20, 20, 8, 1], accent); fillRect([20, 30, 8, 1], accent);
+  }
+
   var TEMPLATES = [
+    { id: 'superhero',  label: 'Superhero',  fn: templateSuperhero },
+    { id: 'dino',       label: 'Dino',       fn: templateDino },
+    { id: 'space',      label: 'Space',      fn: templateSpace },
     { id: 'classic',    label: 'Classic',    fn: templateClassic },
     { id: 'zombie',     label: 'Zombie',     fn: templateZombie },
     { id: 'robot',      label: 'Robot',      fn: templateRobot },
@@ -546,6 +775,14 @@
     { id: 'fox',        label: 'Fox',        fn: templateFox },
     { id: 'blank',      label: 'Blank',      fn: templateBlank }
   ];
+  // Guided starters keep the crayon inside the character. The mask is built
+  // from the opaque template pixels, then these detail rects are protected.
+  var TEMPLATE_MASKS = {
+    superhero: { block: [[10, 12, 2, 2], [13, 12, 2, 2]] },
+    dino:      { block: [[10, 11, 2, 2], [13, 11, 2, 2], [11, 13, 2, 2]] },
+    space:     { block: [[8, 8, 8, 1], [8, 15, 8, 1]] },
+    knight:    { block: [[9, 12, 6, 2], [21, 22, 6, 1], [23, 20, 2, 5]] }
+  };
   function markTemplate(id) {
     Array.prototype.forEach.call(document.querySelectorAll('.ms-template-btn'), function (b) {
       b.classList.toggle('on', b.getAttribute('data-template') === id);
@@ -556,9 +793,11 @@
     if (!t) return;
     pushUndo();
     t.fn();
+    buildMaskFromTemplate(id);
     renderAll(); scheduleAutosave();
     markTemplate(id);
-    toast(t.label + ' base applied');
+    toast(t.label + (paintMask ? ' ready. Colour inside the lines.' : ' base applied'));
+    playPop();
   }
 
   // ---- rendering ----------------------------------------------------------
@@ -1067,14 +1306,17 @@
       if (_isTouchDraw) showMagnifier(e.clientX, e.clientY, p[0], p[1]);
       return;
     }
+    if (!maskAllows(p[0], p[1])) { blockedFeedback(); return; }
     pushUndo();
     drawing = true;
     strokeDirty = true;
     activePointerId = e.pointerId;
     lastPt = p;
-    paintDot(p[0], p[1]);
+    if (state.tool === 'fill') fillAt(p[0], p[1]);
+    else paintDot(p[0], p[1]);
     hover.x = p[0]; hover.y = p[1];
     repaintPixels(); renderOverlay(); updateTexture();
+    if (state.tool === 'eraser') playSquish(); else playPop();
     if (_isTouchDraw) showMagnifier(e.clientX, e.clientY, p[0], p[1]);
     try { overlayCanvas.setPointerCapture(e.pointerId); } catch (err) {}
   }
@@ -1202,6 +1444,13 @@
     var b = document.getElementById('msKidSymmetry');
     if (b) { b.classList.toggle('on', state.symmetry); b.setAttribute('aria-pressed', state.symmetry ? 'true' : 'false'); }
   }
+  function setAutoRotate(on) {
+    state.autoRotate = !!on;
+    var cb = document.getElementById('msAutoRotate');
+    if (cb) cb.checked = state.autoRotate;
+    var b = document.getElementById('msKidSpin');
+    if (b) { b.classList.toggle('on', state.autoRotate); b.setAttribute('aria-pressed', state.autoRotate ? 'true' : 'false'); }
+  }
   function setBrush(n) {
     state.brush = n;
     Array.prototype.forEach.call(brushGrid.children, function (b) {
@@ -1211,6 +1460,12 @@
     if (stripBrush) {
       stripBrush.textContent = n + 'px';
       stripBrush.setAttribute('aria-label', 'Brush size ' + n + (n === 1 ? ' pixel' : ' pixels'));
+    }
+    var kidBrush = document.getElementById('msKidBrush');
+    if (kidBrush) {
+      var dot = kidBrush.querySelector('.ms-brush-dot');
+      if (dot) { dot.style.width = dot.style.height = (6 + n * 4) + 'px'; }
+      kidBrush.setAttribute('aria-label', 'Brush size ' + n + (n === 1 ? ' pixel' : ' pixels'));
     }
     renderOverlay();
   }
@@ -1320,7 +1575,7 @@
         b.style.background = hex;
         b.setAttribute('data-color', hex);
         b.setAttribute('aria-label', 'Colour ' + hex);
-        b.addEventListener('click', function () { setColor(hex); });
+        b.addEventListener('click', function () { setColor(hex); playClick(); });
         swatchWrap.appendChild(b);
       });
     }
@@ -1363,7 +1618,7 @@
     b.setAttribute('data-color', hex);
     b.setAttribute('aria-label', 'Colour ' + hex);
     b.title = hex;
-    b.addEventListener('click', function () { setColor(hex); });
+    b.addEventListener('click', function () { setColor(hex); playClick(); });
     return b;
   }
   function buildCrayons() {
@@ -1450,12 +1705,14 @@
         if (!col) continue;
         var tx = ox + x, ty = oy + y;
         if (tx < r[0] || ty < r[1] || tx >= r[0] + r[2] || ty >= r[1] + r[3]) continue;
+        if (!maskAllows(tx, ty)) continue;
         var rgb = hexToRgb(col);
         setPixel(tx, ty, rgb[0], rgb[1], rgb[2], 255);
       }
     }
     renderAll(); scheduleAutosave();
     toast('Sticker added');
+    playPop();
   }
 
   // ---- direct 3D painting --------------------------------------------------
@@ -1485,24 +1742,50 @@
       var isOverlay = part === 'HAT' || part === 'JACKET' || /_OUT$/.test(part);
       var alpha = data[(p[1] * SIZE + p[0]) * 4 + 3];
       if (isOverlay && alpha < 128) continue;
-      return { part: part, px: p[0], py: p[1] };
+      var normal = new THREE.Vector3(0, 0, 1);
+      if (hits[i].face) normal.copy(hits[i].face.normal).transformDirection(obj.matrixWorld).normalize();
+      return {
+        part: part, px: p[0], py: p[1],
+        point: hits[i].point.clone(), normal: normal, object: obj
+      };
     }
     return null;
   }
+
+  function show3DCursor(hit) {
+    if (!_targetMesh) return;
+    if (!hit) { _targetMesh.visible = false; return; }
+    _targetMesh.position.copy(hit.point).addScaledVector(hit.normal, 0.06);
+    _targetMesh.lookAt(hit.point.clone().add(hit.normal));
+    _targetMesh.visible = true;
+  }
+  function blockedFeedback() {
+    playNope();
+    var stage = document.querySelector('.ms-app.ms-kid .ms-preview-stage') || document.getElementById('msPaintStage');
+    if (stage) {
+      stage.classList.remove('ms-blocked');
+      void stage.offsetWidth;
+      stage.classList.add('ms-blocked');
+      setTimeout(function () { stage.classList.remove('ms-blocked'); }, 420);
+    }
+  }
+  function set3DHighlight(hit) {
+    if (!_hoverBox) return;
+    if (hit && hit.object) {
+      _hoverBox.setFromObject(hit.object);
+      _hoverBox.visible = true;
+    } else {
+      _hoverBox.visible = false;
+    }
+  }
   function paintPixelAt(x, y) {
     if (x < 0 || y < 0 || x >= SIZE || y >= SIZE) return;
+    if (!maskAllows(x, y)) { blockedFeedback(); return; }
     pushUndo();
-    if (state.tool === 'fill') {
-      floodFill(x, y);
-      if (state.symmetry) {
-        var sp = symmetricPixel(x, y);
-        if (sp) floodFill(sp[0], sp[1]);
-      }
-    } else {
-      // paintDot paints with state.rgba, which is transparent for the eraser.
-      paintDot(x, y);
-    }
+    if (state.tool === 'fill') fillAt(x, y);
+    else paintDot(x, y); // paintDot uses state.rgba, transparent for the eraser
     renderAll(); scheduleAutosave();
+    if (state.tool === 'eraser') playSquish(); else playPop();
   }
   function handle3DTap(e) {
     var hit = get3DHit(e.clientX, e.clientY);
@@ -1511,6 +1794,7 @@
     if (_lastTap.part === hit.part && (now - _lastTap.t) < 360 &&
         Math.hypot(e.clientX - _lastTap.x, e.clientY - _lastTap.y) < 44) {
       if (_lastTap.painted && undoStack.length) { data = undoStack.pop(); renderAll(); }
+      setAutoRotate(false);
       toggleIsolation(hit.part);
       _lastTap = { part: null, t: 0, x: 0, y: 0, painted: false };
       return;
@@ -1518,6 +1802,12 @@
     _lastTap = { part: hit.part, t: now, x: e.clientX, y: e.clientY, painted: true };
     if (state.stamp) applyStamp(state.stamp, hit.px, hit.py);
     else paintPixelAt(hit.px, hit.py);
+    // Painting is a precision job: stop the player turning under the finger.
+    setAutoRotate(false);
+    show3DCursor(hit);
+    set3DHighlight(hit);
+    clearTimeout(_cursorTimer);
+    _cursorTimer = setTimeout(function () { show3DCursor(null); set3DHighlight(null); }, 900);
   }
 
   var PART_FAMILY = {
@@ -1534,13 +1824,15 @@
     if (!_isoVis) {
       _isoVis = {};
       _player.traverse(function (o) {
-        if (o.userData && o.userData.part) _isoVis[o.userData.part + ':' + o.id] = o.visible;
+        var p = o.userData && (o.userData.part || o.userData.ghostPart);
+        if (p) _isoVis[p + ':' + o.id] = o.visible;
       });
     }
     var fam = PART_FAMILY[part] || part;
     _player.traverse(function (o) {
-      if (!o.userData || !o.userData.part) return;
-      o.visible = (PART_FAMILY[o.userData.part] || o.userData.part) === fam;
+      var p = o.userData && (o.userData.part || o.userData.ghostPart);
+      if (!p) return;
+      o.visible = (PART_FAMILY[p] || p) === fam;
     });
     _isolatedPart = part;
     toast('Just the ' + (FAMILY_LABEL[fam] || 'part') + '. Tap the background to show all.');
@@ -1548,8 +1840,9 @@
   function clearIsolation() {
     if (_isoVis && _player) {
       _player.traverse(function (o) {
-        if (o.userData && o.userData.part) {
-          var k = o.userData.part + ':' + o.id;
+        var p = o.userData && (o.userData.part || o.userData.ghostPart);
+        if (p) {
+          var k = p + ':' + o.id;
           if (_isoVis[k] !== undefined) o.visible = _isoVis[k];
         }
       });
@@ -1600,6 +1893,8 @@
     try { localStorage.setItem(LS_KEY + '_mode', state.mode); } catch (e) {}
     if (state.mode === 'kid') {
       clearIsolation();
+      setAutoRotate(false);
+      if (state.brush < 2) setBrush(2);
       if (applyView) applyView('3d');
       update3DVisibility();
       setTimeout(resize3D, 60);
@@ -1659,6 +1954,7 @@
       return;
     }
     pushUndo();
+    clearMask();
     if (w === 64 && h === 32) {
       convertLegacySkin(img);
     } else {
@@ -1673,8 +1969,10 @@
     var finish = function (blob) {
       if (!blob) { toast('Could not build the PNG'); return; }
       saveBlob(blob, 'minecraft-skin.png');
-      toast('Exported minecraft-skin.png');
+      toast('Saved your skin and a card for a grown-up');
       celebrate();
+      playChime();
+      exportPolaroid();
       if (window.ToolXP && typeof window.ToolXP.award === 'function') {
         window.ToolXP.award('export', 25, 3, 'Skin exported');
       }
@@ -1701,17 +1999,139 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
   }
 
+  // ---- parent handoff card -------------------------------------------------
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function frontViewCanvas(size) {
+    var c = document.createElement('canvas');
+    c.width = c.height = size;
+    var ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    var sc = size / 32;
+    drawFrontView(off, ctx, sc, (size - 16 * sc) / 2, 0);
+    return c;
+  }
+  function buildPolaroidCanvas() {
+    var W = 800, H = 600;
+    var c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    var g = c.getContext('2d');
+
+    var grad = g.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#141a12');
+    grad.addColorStop(1, '#1e2a18');
+    g.fillStyle = grad; g.fillRect(0, 0, W, H);
+
+    g.fillStyle = '#f7f1e3';
+    roundRectPath(g, 28, 28, W - 56, H - 56, 26); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 3; g.stroke();
+
+    g.fillStyle = '#1a1208';
+    g.font = '800 26px Inter, system-ui, sans-serif';
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    g.fillText('Your Minecraft skin', 60, 80);
+
+    var panelX = 60, panelY = 100, panelW = 360, panelH = 360;
+    g.fillStyle = '#e9e2d2';
+    roundRectPath(g, panelX, panelY, panelW, panelH, 18); g.fill();
+
+    var drew3D = false;
+    if (threeOk && renderer && scene && camera) {
+      try {
+        clearIsolation();
+        renderer.setSize(panelW, panelH, false);
+        camera.aspect = panelW / panelH;
+        camera.updateProjectionMatrix();
+        renderer.render(scene, camera);
+        g.drawImage(renderer.domElement, panelX, panelY, panelW, panelH);
+        drew3D = true;
+      } catch (e) { drew3D = false; }
+      try { resize3D(); renderer.render(scene, camera); } catch (e) {}
+    }
+    if (!drew3D) {
+      var fv = frontViewCanvas(panelH);
+      g.drawImage(fv, panelX + (panelW - panelH) / 2, panelY, panelH, panelH);
+    }
+
+    g.fillStyle = '#e9e2d2';
+    roundRectPath(g, 60, 476, 190, 90, 14); g.fill();
+    g.imageSmoothingEnabled = false;
+    g.drawImage(off, 68, 484, 74, 74);
+    g.imageSmoothingEnabled = true;
+    g.fillStyle = '#5a5244';
+    g.font = '700 12px Inter, sans-serif'; g.textAlign = 'left';
+    g.fillText('minecraft-skin.png', 152, 512);
+    g.font = '400 11px Inter, sans-serif';
+    g.fillText('choose this file', 152, 530);
+
+    var x = 470, y = 120;
+    g.textAlign = 'left';
+    g.fillStyle = '#1a1208';
+    g.font = '800 22px Inter, sans-serif';
+    g.fillText('For a grown-up', x, y);
+    var steps = [
+      ['1', 'Open Minecraft'],
+      ['2', 'Go to Dressing Room'],
+      ['3', 'Choose minecraft-skin.png']
+    ];
+    y += 50;
+    steps.forEach(function (s) {
+      g.beginPath(); g.fillStyle = '#70a3a7'; g.arc(x + 18, y, 18, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff'; g.font = '800 20px Inter, sans-serif'; g.textAlign = 'center';
+      g.fillText(s[0], x + 18, y + 7);
+      g.textAlign = 'left'; g.fillStyle = '#1a1208';
+      g.font = '600 18px Inter, sans-serif';
+      g.fillText(s[1], x + 46, y + 6);
+      y += 54;
+    });
+
+    g.fillStyle = '#1a1208'; g.font = '800 18px Inter, sans-serif';
+    g.fillText('JVDesignStudio', x, 470);
+    g.fillStyle = '#6b6254'; g.font = '400 13px Inter, sans-serif';
+    g.fillText('Free, no install, no account.', x, 492);
+
+    if (_emberImg && _emberImg.complete && _emberImg.naturalWidth) {
+      g.save();
+      g.beginPath(); g.arc(x + 250, 500, 44, 0, Math.PI * 2); g.clip();
+      g.drawImage(_emberImg, x + 208, 458, 88, 88);
+      g.restore();
+      g.beginPath(); g.strokeStyle = '#70a3a7'; g.lineWidth = 3;
+      g.arc(x + 250, 500, 44, 0, Math.PI * 2); g.stroke();
+    }
+    return c;
+  }
+  function exportPolaroid() {
+    try {
+      var c = buildPolaroidCanvas();
+      if (c.toBlob) c.toBlob(function (blob) { if (blob) saveBlob(blob, 'minecraft-skin-card.png'); }, 'image/png');
+      else {
+        var url = c.toDataURL('image/png');
+        var bin = atob(url.split(',')[1]);
+        var arr = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        saveBlob(new Blob([arr], { type: 'image/png' }), 'minecraft-skin-card.png');
+      }
+    } catch (e) {}
+  }
+
   // ---- localStorage -------------------------------------------------------
   var autosaveTimer = null;
   function scheduleAutosave() {
     clearTimeout(autosaveTimer);
-    autosaveTimer = setTimeout(saveSkin, 700);
+    autosaveTimer = setTimeout(function () { saveSkin(true); }, 700);
   }
   function saveSkin(silent) {
     try {
       offCtx.putImageData(makeImageData(), 0, 0);
       localStorage.setItem(LS_KEY, off.toDataURL('image/png'));
-      if (!silent) toast('Skin saved on this device');
+      if (!silent) { toast('Skin saved on this device'); playChime(); }
     } catch (e) { if (!silent) toast('Could not save'); }
   }
   function loadSkin() {
@@ -1764,7 +2184,7 @@
       b.style.background = hex;
       b.setAttribute('data-color', hex);
       b.setAttribute('aria-label', 'Recent colour ' + hex);
-      b.addEventListener('click', function () { setColor(hex); });
+      b.addEventListener('click', function () { setColor(hex); playClick(); });
       el.appendChild(b);
     });
   }
@@ -1882,11 +2302,18 @@
     return { u0: u0, u1: u1, v0: v0, v1: v1 };
   }
 
+  function addGhost(w, h, d, x, y, z, faces, partName, parent) {
+    var gm = new THREE.Mesh(makeBox(w * 0.88, h * 0.88, d * 0.88, x, y, z, faces), _ghostMat);
+    gm.userData.ghostPart = partName;
+    (parent || _player).add(gm);
+    return gm;
+  }
+
   function init3D() {
     var canvas = document.getElementById('ms3D');
     if (!canvas || !window.THREE) { showPreviewFallback(); return; }
     try {
-      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
     } catch (e) { showPreviewFallback(); return; }
     if (!renderer) { showPreviewFallback(); return; }
 
@@ -1912,6 +2339,8 @@
 
     _baseMat = new THREE.MeshLambertMaterial({ map: skinTexture, alphaTest: 0.02, side: THREE.FrontSide });
     _overMat = new THREE.MeshLambertMaterial({ map: skinTexture, alphaTest: 0.5, side: THREE.FrontSide });
+    // A soft mannequin under the skin so a washed or blank toy is still visible.
+    _ghostMat = new THREE.MeshBasicMaterial({ color: 0x4a4f58, transparent: true, opacity: 0.55 });
 
     _player = new THREE.Group();
     _player.position.y = -16;
@@ -1923,8 +2352,10 @@
     }
     // absolute y positions (feet at 0): legs 6, body 18, head 28, arms 18
     addBox(8, 8, 8, 0, 28, 0, HEAD, _baseMat, 'HEAD');
+    addGhost(8, 8, 8, 0, 28, 0, HEAD, 'HEAD');
     addBox(8.5, 8.5, 8.5, 0, 28, 0, HAT, _overMat, 'HAT');
     addBox(8, 12, 4, 0, 18, 0, BODY, _baseMat, 'BODY');
+    addGhost(8, 12, 4, 0, 18, 0, BODY, 'BODY');
     addBox(8.25, 12.25, 4.25, 0, 18, 0, JACKET, _overMat, 'JACKET');
     // Leg pivots at hip joint (y=12 = bottom of body) for walk animation
     _rLegPivot = new THREE.Group(); _rLegPivot.position.set( 2, 12, 0); _player.add(_rLegPivot);
@@ -1932,6 +2363,8 @@
     function mkLeg(geo, mat, part) { var m = new THREE.Mesh(geo, mat); m.userData.part = part; return m; }
     _rLegPivot.add(mkLeg(makeBox(4,    12,    4,    0, -6, 0, RLEG),     _baseMat, 'RLEG'));
     _lLegPivot.add(mkLeg(makeBox(4,    12,    4,    0, -6, 0, LLEG),     _baseMat, 'LLEG'));
+    addGhost(4, 12, 4, 0, -6, 0, RLEG, 'RLEG', _rLegPivot);
+    addGhost(4, 12, 4, 0, -6, 0, LLEG, 'LLEG', _lLegPivot);
     _rLegPivot.add(mkLeg(makeBox(4.25, 12.25, 4.25, 0, -6, 0, RLEG_OUT), _overMat, 'RLEG_OUT'));
     _lLegPivot.add(mkLeg(makeBox(4.25, 12.25, 4.25, 0, -6, 0, LLEG_OUT), _overMat, 'LLEG_OUT'));
     // arms are built separately so they can be swapped on Alex/Steve toggle
@@ -1941,6 +2374,23 @@
     pivot.position.set(0, 16, 0);
     pivot.add(_player);
     scene.add(pivot);
+
+    // Tap target: a single-pixel square that sits on the face under the pointer.
+    var targetMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.5,
+      side: THREE.DoubleSide, depthTest: false, depthWrite: false
+    });
+    _targetMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), targetMat);
+    _targetMesh.renderOrder = 999;
+    _targetMesh.visible = false;
+    scene.add(_targetMesh);
+
+    // Hover outline around the part that will be painted.
+    _hoverBox = new THREE.BoxHelper(_player, 0x6fe6dc);
+    _hoverBox.material.depthTest = false;
+    _hoverBox.material.transparent = true;
+    _hoverBox.visible = false;
+    scene.add(_hoverBox);
 
     threeOk = true;
     update3DVisibility();
@@ -1980,7 +2430,9 @@
     var lom = mkMesh(makeBox(rOutW, 12.25, 4.25, 0, -6, 0, LARM_OUT), _overMat, 'LARM_OUT');
     _rArmPivot.add(rm); _rArmPivot.add(rom);
     _lArmPivot.add(lm); _lArmPivot.add(lom);
-    _armMeshes = [rm, lm, rom, lom];
+    var rgm = addGhost(w, 12, 4, 0, -6, 0, rUV, 'RARM', _rArmPivot);
+    var lgm = addGhost(w, 12, 4, 0, -6, 0, lUV, 'LARM', _lArmPivot);
+    _armMeshes = [rm, lm, rom, lom, rgm, lgm];
   }
   function rebuildArms() {
     if (!threeOk) return;
@@ -2051,16 +2503,123 @@
   function init3DControls() {
     var canvas = document.getElementById('ms3D');
     if (!canvas) return;
-    // Tap paints the player; drag orbits it. A second finger is always an orbit.
+    // Mouse: tap paints, drag turns. Touch: one finger paints, two fingers
+    // turn and pinch to zoom. A second finger rolls back the first dot so a
+    // spin attempt never leaves a smear on the face.
     var _threeDown = null;
     var _threePtrs = new Set();
+    var _touchPts = new Map();
+    var _touchMode = null;
+    var _touchStroke = null;
+    var _touchGesture = null;
+
+    function paintHitAt(hit) {
+      if (!hit) return false;
+      if (!maskAllows(hit.px, hit.py)) { blockedFeedback(); return false; }
+      if (state.stamp) { applyStamp(state.stamp, hit.px, hit.py); return true; }
+      if (state.tool === 'fill') {
+        pushUndo(); fillAt(hit.px, hit.py);
+        renderAll(); scheduleAutosave(); playPop();
+        return true;
+      }
+      pushUndo();
+      paintDot(hit.px, hit.py);
+      renderAll(); scheduleAutosave();
+      if (state.tool === 'eraser') playSquish(); else playPop();
+      return true;
+    }
+
+    function touchDown(e) {
+      _touchPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      if (_touchPts.size === 1 && !_touchGesture) {
+        setAutoRotate(false);
+        _touchMode = 'paint';
+        _touchStroke = { beforeLen: undoStack.length, last: null };
+        var hit = get3DHit(e.clientX, e.clientY);
+        if (hit) {
+          var painted = paintHitAt(hit);
+          if (painted) {
+            show3DCursor(hit); set3DHighlight(hit);
+            _touchStroke.last = { x: hit.px, y: hit.py };
+          }
+        }
+        return;
+      }
+      if (_touchPts.size >= 2) {
+        if (_touchStroke && undoStack.length > _touchStroke.beforeLen) {
+          data = undoStack.pop();
+          renderAll();
+        }
+        _touchStroke = null;
+        _touchMode = 'gesture';
+        var pts = Array.from(_touchPts.values());
+        var a = pts[0], b = pts[1];
+        _touchGesture = {
+          dist: Math.hypot(b.x - a.x, b.y - a.y) || 1,
+          mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+        };
+        setAutoRotate(false);
+      }
+    }
+
+    function touchMove(e) {
+      if (!_touchPts.has(e.pointerId)) return;
+      _touchPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (_touchMode === 'gesture' && _touchPts.size >= 2) {
+        e.preventDefault();
+        var pts = Array.from(_touchPts.values());
+        var a = pts[0], b = pts[1];
+        var dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        var mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        if (_touchGesture) {
+          pivot.rotation.y += (mid.x - _touchGesture.mid.x) * 0.01;
+          pivot.rotation.x = Math.max(-0.5, Math.min(0.5, pivot.rotation.x + (mid.y - _touchGesture.mid.y) * 0.006));
+          camDist = Math.max(28, Math.min(110, camDist * (_touchGesture.dist / dist)));
+          if (camera) camera.position.z = camDist;
+        }
+        _touchGesture = { dist: dist, mid: mid };
+        return;
+      }
+      if (_touchMode === 'paint' && _touchPts.size === 1 && _touchStroke) {
+        if (state.stamp || state.tool === 'fill') return;
+        e.preventDefault();
+        var hit = get3DHit(e.clientX, e.clientY);
+        if (!hit || !maskAllows(hit.px, hit.py)) return;
+        if (_touchStroke.last && _touchStroke.last.x === hit.px && _touchStroke.last.y === hit.py) return;
+        paintDot(hit.px, hit.py);
+        renderAll(); scheduleAutosave();
+        if (state.tool === 'eraser') playSquish(); else playPop();
+        _touchStroke.last = { x: hit.px, y: hit.py };
+        show3DCursor(hit); set3DHighlight(hit);
+      }
+    }
+
+    function touchUp(e) {
+      _touchPts.delete(e.pointerId);
+      if (_touchMode === 'gesture') {
+        if (_touchPts.size < 2) _touchGesture = null;
+        if (_touchPts.size === 0) { _touchMode = 'idle'; _touchStroke = null; }
+        return;
+      }
+      if (_touchPts.size === 0) {
+        if (_touchStroke && _touchStroke.last) scheduleAutosave();
+        _touchStroke = null;
+        _touchMode = 'idle';
+        clearTimeout(_cursorTimer);
+        _cursorTimer = setTimeout(function () { show3DCursor(null); set3DHighlight(null); }, 900);
+      }
+    }
+
     canvas.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch') { touchDown(e); return; }
       _threePtrs.add(e.pointerId);
       dragging = true; lastX = e.clientX; lastY = e.clientY;
       _threeDown = { x: e.clientX, y: e.clientY, t: Date.now(), moved: _threePtrs.size > 1 };
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
     });
     canvas.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'touch') { touchMove(e); return; }
       if (_threeDown && (Math.abs(e.clientX - _threeDown.x) > 7 || Math.abs(e.clientY - _threeDown.y) > 7)) {
         _threeDown.moved = true;
       }
@@ -2071,6 +2630,7 @@
       pivot.rotation.x = Math.max(-0.5, Math.min(0.5, pivot.rotation.x + dy * 0.006));
     });
     function stop(e) {
+      if (e.pointerType === 'touch') { touchUp(e); return; }
       _threePtrs.delete(e.pointerId);
       var wasTap = _threeDown && !_threeDown.moved && (Date.now() - _threeDown.t) < 600 && _threePtrs.size === 0;
       _threeDown = null;
@@ -2079,6 +2639,10 @@
     }
     canvas.addEventListener('pointerup', stop);
     canvas.addEventListener('pointercancel', function (e) {
+      if (e.pointerType === 'touch') {
+        _touchPts.delete(e.pointerId); _touchStroke = null; _touchGesture = null; _touchMode = 'idle';
+        return;
+      }
       _threePtrs.delete(e.pointerId); _threeDown = null; dragging = false;
     });
     canvas.addEventListener('wheel', function (e) {
@@ -2087,39 +2651,17 @@
       camDist = Math.max(28, Math.min(110, camDist + (e.deltaY > 0 ? 4 : -4)));
       camera.position.z = camDist;
     }, { passive: false });
-    var pinch = null;
-    canvas.addEventListener('touchmove', function (e) {
-      if (e.touches.length === 2) {
-        e.preventDefault();
-        var d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        if (pinch) {
-          camDist = Math.max(28, Math.min(110, camDist + (pinch - d) * 0.25));
-          if (camera) camera.position.z = camDist;
-        }
-        pinch = d;
-      }
-    }, { passive: false });
-    canvas.addEventListener('touchend', function () { pinch = null; });
-
-    // 3D hover → highlight body part on 2D canvas
-    var raycaster3D = new THREE.Raycaster();
-    var mouse3D = new THREE.Vector2();
+    // 3D hover: show where the tap lands and outline the part it belongs to
     canvas.addEventListener('pointermove', function (e) {
-      if (!threeOk || dragging) return;
-      var rect3 = canvas.getBoundingClientRect();
-      mouse3D.x = ((e.clientX - rect3.left) / rect3.width) * 2 - 1;
-      mouse3D.y = -((e.clientY - rect3.top) / rect3.height) * 2 + 1;
-      raycaster3D.setFromCamera(mouse3D, camera);
-      var hits = raycaster3D.intersectObjects(_player ? [_player] : scene.children, true);
-      var found = null;
-      for (var hi = 0; hi < hits.length; hi++) {
-        var obj = hits[hi].object;
-        while (obj && !obj.userData.part) obj = obj.parent;
-        if (obj && obj.userData.part) { found = obj.userData.part; break; }
-      }
-      setHighlightedPart(found);
+      if (!threeOk || e.pointerType === 'touch') return;
+      var hit = dragging ? null : get3DHit(e.clientX, e.clientY);
+      if (state.mode !== 'kid') setHighlightedPart(hit ? hit.part : null);
+      set3DHighlight(hit);
+      show3DCursor(hit);
     });
-    canvas.addEventListener('pointerleave', function () { setHighlightedPart(null); });
+    canvas.addEventListener('pointerleave', function () {
+      setHighlightedPart(null); set3DHighlight(null); show3DCursor(null);
+    });
 
     if (window.ResizeObserver) {
       var ro = new ResizeObserver(function () { resize3D(); });
@@ -2155,6 +2697,17 @@
     // kid tool row
     Array.prototype.forEach.call(document.querySelectorAll('.ms-kid-tool[data-tool]'), function (b) {
       b.addEventListener('click', function () { clearStamp(); setTool(b.getAttribute('data-tool')); });
+    });
+    if (byId('msKidUndo')) byId('msKidUndo').addEventListener('click', function () { undo(); playClick(); });
+    if (byId('msKidWash')) byId('msKidWash').addEventListener('click', washToy);
+    if (byId('msSoundBtn')) byId('msSoundBtn').addEventListener('click', function () { setSound(!state.sound); });
+    if (byId('msKidBrush')) byId('msKidBrush').addEventListener('click', function () {
+      setBrush(state.brush >= 4 ? 1 : state.brush + 1);
+      toast('Brush ' + state.brush + 'px');
+    });
+    if (byId('msKidSpin')) byId('msKidSpin').addEventListener('click', function () {
+      setAutoRotate(!state.autoRotate);
+      toast(state.autoRotate ? 'Spinning' : 'Held still');
     });
     if (byId('msKidSymmetry')) byId('msKidSymmetry').addEventListener('click', function () {
       setSymmetry(!state.symmetry);
@@ -2204,7 +2757,7 @@
     // mobile skin-tone swatches
     var toneBtns = document.querySelectorAll('.ms-tone-btn[data-tone]');
     Array.prototype.forEach.call(toneBtns, function (b) {
-      b.addEventListener('click', function () { setColor(b.getAttribute('data-tone')); });
+      b.addEventListener('click', function () { setColor(b.getAttribute('data-tone')); playClick(); });
     });
 
     // mobile part picker: zoom the paint stage onto one body part
@@ -2365,10 +2918,13 @@
     var overToggle = byId('msShowOverlay');
     if (overToggle) overToggle.addEventListener('change', function () {
       state.showOverlay = overToggle.checked;
-      if (pivot) pivot.children.forEach(function (g) { g.children.forEach(function (m, i) { if (i % 2 === 1) m.visible = state.showOverlay; }); });
+      if (_player) _player.traverse(function (o) {
+        var p = o.userData && o.userData.part;
+        if (p && (p === 'HAT' || p === 'JACKET' || /_OUT$/.test(p))) o.visible = state.showOverlay;
+      });
     });
     var rotToggle = byId('msAutoRotate');
-    if (rotToggle) rotToggle.addEventListener('change', function () { state.autoRotate = rotToggle.checked; });
+    if (rotToggle) rotToggle.addEventListener('change', function () { setAutoRotate(rotToggle.checked); });
 
     // mobile view tabs
     if (byId('msTab2D')) byId('msTab2D').addEventListener('click', function () { setView('2d'); });
@@ -2493,19 +3049,25 @@
     } catch (_) {}
     loadAlexPref();
     loadColorHistory();
+    loadSoundPref();
     loadSkinSlots();
     try {
       var savedMode = localStorage.getItem(LS_KEY + '_mode');
       state.mode = savedMode === 'full' ? 'full' : 'kid';
     } catch (e) { state.mode = 'kid'; }
+    if (state.mode === 'kid') { state.autoRotate = false; state.brush = 2; }
     wire();
     setSymmetry(state.symmetry);
+    setAutoRotate(state.autoRotate);
+    setBrush(state.brush);
+    updateSoundUI();
     updateEmberLine();
     renderColorHistory();
     updateHslSliders();
     initCanvasPanZoom();
     init3DControls();
     init3D();
+    try { _emberImg = new Image(); _emberImg.src = '../games/chars/ember.png'; } catch (e) {}
     applyZoom(); // resize canvases to stored zoom level before first render
     var hadSaved = loadSkin();
     if (!hadSaved) { templateClassic(); renderAll(); markTemplate('classic'); }
@@ -2544,7 +3106,10 @@
     applyTemplate: applyTemplate,
     focusPart: focusPart,
     getView: function () {
-      return { scale: viewScale, panX: viewPanX, panY: viewPanY, part: currentPart, threeVisible: threeVisible };
+      return {
+        scale: viewScale, panX: viewPanX, panY: viewPanY, part: currentPart, threeVisible: threeVisible,
+        rotationY: pivot ? pivot.rotation.y : 0, camDist: camDist
+      };
     },
     undo: undo,
     redo: redo,
@@ -2554,7 +3119,10 @@
     setMode: setMode,
     getMode: function () { return state.mode; },
     getState: function () {
-      return { mode: state.mode, tool: state.tool, symmetry: state.symmetry, stamp: state.stamp, brush: state.brush };
+      return {
+        mode: state.mode, tool: state.tool, symmetry: state.symmetry, stamp: state.stamp,
+        brush: state.brush, autoRotate: state.autoRotate, sound: state.sound, hasMask: !!paintMask
+      };
     },
     paintPixel: function (x, y) { paintPixelAt(x, y); },
     uvToPixel: uvToPixel,
@@ -2564,6 +3132,11 @@
     toggleIsolation: function (part) { toggleIsolation(part); },
     clearIsolation: clearIsolation,
     getIsolated: function () { return _isolatedPart; },
+    has3DTarget: function () { return !!(_targetMesh && _hoverBox); },
+    buildPolaroid: buildPolaroidCanvas,
+    wash: washToy,
+    setSound: setSound,
+    getMask: function () { return paintMask; },
     celebrate: celebrate
   };
 })();

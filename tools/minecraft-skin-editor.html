@@ -43,8 +43,8 @@
 <link rel="preconnect" href="https://www.google-analytics.com">
 <link rel="stylesheet" href="/assets/fonts/fonts.css">
 <link rel="stylesheet" href="../style-shared.css?v=17">
-<link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=8">
-<noscript><link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=8"></noscript>
+<link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=10">
+<noscript><link rel="stylesheet" href="../style-tool-minecraft-skin-editor.css?v=10"></noscript>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Minecraft Skin Editor","applicationCategory":"DesignApplication","operatingSystem":"Any (browser-based)","url":"https://jvdesignstudio.co.uk/tools/minecraft-skin-editor.html","description":"Paint a Minecraft skin pixel by pixel in the browser, preview it on a 3D player and export a PNG. Free, no install, no account.","offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},"creator":{"@type":"Organization","name":"JVDesignStudio","url":"https://jvdesignstudio.co.uk"}}
 </script>
@@ -131,6 +131,7 @@
       <p>Tap the player to paint, add stickers, then save your skin for Minecraft. It saves on this device as you go.</p>
     </div>
     <div class="ms-brief-actions">
+      <button type="button" class="ms-help ms-sound" id="msSoundBtn" aria-pressed="true" aria-label="Sound on" title="Sound on">🔔</button>
       <button type="button" class="ms-help" id="msModeBtn" aria-pressed="false">Full editor</button>
       <button type="button" class="ms-help" id="msHelpBtn">How it works</button>
     </div>
@@ -205,9 +206,9 @@
       </div>
 
       <div class="ms-card">
-        <h2>Base skin</h2>
+        <h2>Dress up</h2>
         <div class="ms-grid2" id="msTemplateGrid"></div>
-        <p class="ms-hint">A base skin fills in the whole texture so you always start with something solid.</p>
+        <p class="ms-hint">Pick a toy, then colour it in. Some toys keep your paint inside the lines.</p>
       </div>
 
       <div class="ms-card">
@@ -321,7 +322,11 @@
           <button type="button" class="ms-kid-tool on" data-tool="pencil" aria-label="Paintbrush" title="Paintbrush">🖌️</button>
           <button type="button" class="ms-kid-tool" data-tool="fill" aria-label="Paint bucket" title="Paint bucket">🪣</button>
           <button type="button" class="ms-kid-tool" data-tool="eraser" aria-label="Eraser" title="Eraser">🧽</button>
+          <button type="button" class="ms-kid-tool ms-kid-wide" id="msKidUndo" aria-label="Oops! Undo the last thing" title="Oops! Undo"><span class="ms-kid-emoji" aria-hidden="true">😮</span><span class="ms-kid-label">Oops!</span></button>
+          <button type="button" class="ms-kid-tool ms-kid-wide" id="msKidWash" aria-label="Wash the toy and start again" title="Wash the toy"><span class="ms-kid-emoji" aria-hidden="true">🫧</span><span class="ms-kid-label">Wash</span></button>
+          <button type="button" class="ms-kid-tool ms-kid-brush" id="msKidBrush" aria-label="Brush size 2 pixels" title="Brush size"><span class="ms-brush-dot" aria-hidden="true"></span></button>
           <button type="button" class="ms-kid-tool on" id="msKidSymmetry" aria-pressed="true" aria-label="Mirror painting" title="Mirror painting">🪞</button>
+          <button type="button" class="ms-kid-tool" id="msKidSpin" aria-pressed="false" aria-label="Turn the player" title="Turn the player">🔄</button>
           <button type="button" class="ms-kid-tool" id="msKidStamps" aria-expanded="false" aria-label="Stamps" title="Stamps">⭐</button>
         </div>
         <div class="ms-crayons-strip" id="msCrayonsStrip" role="group" aria-label="Crayon colours"></div>
@@ -358,7 +363,7 @@
           <label class="ms-check"><input type="checkbox" id="msShowGrid" checked> Grid</label>
           <label class="ms-check"><input type="checkbox" id="msShowOverlay" checked> Layers</label>
         </div>
-        <p class="ms-hint">Tap the player to paint · drag to turn · double-tap a part to zoom in on it</p>
+        <p class="ms-hint">One finger paints · two fingers turn and pinch · double-tap a part to zoom in</p>
       </section>
     </div>
   </div>
@@ -380,10 +385,11 @@
       <h2 id="msModalTitle">How the Skin Editor works</h2>
       <p>A Minecraft skin is a small picture that wraps around your player. Here is how to make one.</p>
       <ol>
-        <li><b>Pick a player.</b> Tap a base skin to start with something solid.</li>
-        <li><b>Tap to paint.</b> Choose a crayon, then tap the player. Drag to turn it around. Double-tap an arm or leg to paint just that part.</li>
+        <li><b>Pick a toy.</b> Tap a starter to dress up a hero, dino or space explorer.</li>
+        <li><b>Paint.</b> One finger paints. Two fingers turn the player and pinch to zoom. Double-tap an arm or leg to paint just that part.</li>
         <li><b>Add stickers.</b> Tap the star, pick a face or a heart, then tap the player.</li>
-        <li><b>Save and export.</b> Press Save and Export to keep your PNG.</li>
+        <li><b>Oops or Wash.</b> Oops undoes the last thing. Wash starts again with a fresh toy.</li>
+        <li><b>Save and export.</b> Press Save and Export to keep your skin and a picture card for a grown-up.</li>
       </ol>
       <p>Everything happens in your browser. Nothing is uploaded, and your skin is saved on this device.</p>
       <div class="ms-row" style="margin-top:14px;justify-content:flex-end">
@@ -399,6 +405,7 @@
 
 <div id="msToast" role="status" aria-live="polite"></div>
 <div id="msConfetti" aria-hidden="true"></div>
+<div id="msWashFX" aria-hidden="true"></div>
 
 <!-- BUILD:footer-tools -->
 <footer class="jvds-tools-footer">
@@ -417,7 +424,7 @@
 <script defer src="../tool-analytics.js"></script>
 <script defer src="/ember-guide.js"></script>
 <script src="../assets/vendor/three/three.min.js"></script>
-<script src="../assets/js/inline/tools-minecraft-skin-editor-1.js?v=2"></script>
+<script src="../assets/js/inline/tools-minecraft-skin-editor-1.js?v=4"></script>
 <script defer src="/mascots.js"></script>
 <script defer src="/feedback-widget.js"></script>
 <script defer src="/jvds-funnel.js"></script>

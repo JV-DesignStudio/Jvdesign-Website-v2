@@ -33,7 +33,19 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      stripCrayons:document.querySelectorAll('#msCrayonsStrip .ms-crayon').length,
      kidTools:document.querySelectorAll('.ms-kid-tool[data-tool]').length,
      stamps:document.querySelectorAll('#msStampGrid .ms-stamp').length,
-     symmetry:api.getState().symmetry
+     symmetry:api.getState().symmetry,
+     brush:api.getState().brush,
+     autoRotate:api.getState().autoRotate,
+     kidUndo:!!document.getElementById('msKidUndo'),
+     kidBrush:!!document.getElementById('msKidBrush'),
+     kidSpin:!!document.getElementById('msKidSpin'),
+     wash:!!document.getElementById('msKidWash'),
+     soundBtn:!!document.getElementById('msSoundBtn'),
+     sound:api.getState().sound,
+     oopsText:((document.getElementById('msKidUndo')||{}).textContent||'').trim(),
+     templateLabels:Array.from(document.querySelectorAll('#msTemplateGrid .ms-template-btn span')).map(s=>s.textContent),
+     partStripHidden:getComputedStyle(document.getElementById('msPartStrip')).display==='none',
+     hasTarget:api.has3DTarget()
    };
    const uvMap=api.uvToPixel({x:0.5,y:0.5});
    api.setMode('full');
@@ -56,6 +68,7 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
    const d=api.getData();
    const i=(10*64+10)*4;
    const painted={r:d[i],g:d[i+1],b:d[i+2],a:d[i+3]};
+   const kidUndoEnabled=!document.getElementById('msKidUndo').disabled;
 
    // template thumbnails and mini player
    const templateThumbs=Array.from(document.querySelectorAll('#msTemplateGrid canvas'));
@@ -103,6 +116,61 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      const px=(x,y)=>{const i=(y*64+x)*4;return [ld[i],ld[i+1],ld[i+2],ld[i+3]];};
      return { rightArm:px(45,21), leftArm:px(38,53), body:px(21,21), lower:px(45,50) };
    })();
+
+   // fill stays inside the tapped face instead of leaking across the UV seam
+   api.applyTemplate('blank');
+   api.setColor('#43a047');
+   api.setTool('fill');
+   api.paintPixel(10,12);
+   const fillData=api.getData();
+   const fillAt=(x,y)=>fillData[(y*64+x)*4+3];
+   const fillClip={front:fillAt(10,12),seam:fillAt(7,12),outside:fillAt(46,21)};
+
+   // kid fill covers the whole face, even around different coloured pixels
+   api.setMode('kid');
+   await sleep(70);
+   api.applyTemplate('blank');
+   api.setColor('#43a047');
+   api.setTool('fill');
+   api.paintPixel(25,25);
+   const kidFill=api.getData();
+   const kf=(x,y)=>kidFill[(y*64+x)*4+3];
+   let wholeFaceFilled=true;
+   for(let y=20;y<32;y++){ for(let x=20;x<28;x++){ if(kf(x,y)<200) wholeFaceFilled=false; } }
+   const kidFillChecks={bodyWhole:wholeFaceFilled,neighbour:kf(16,20)};
+   api.setMode('full');
+   await sleep(70);
+
+   // guided starter mask: detail pixels are blocked, armour pixels are open
+   api.applyTemplate('knight');
+   const maskOn=!!api.getMask();
+   api.setColor('#e53935'); api.setTool('pencil'); api.setBrush(1);
+   const beforeMask=Uint8ClampedArray.from(api.getData());
+   api.paintPixel(10,12);
+   const afterBlocked=api.getData();
+   let blockedChanged=false;
+   for(let k=0;k<afterBlocked.length;k++){ if(afterBlocked[k]!==beforeMask[k]){ blockedChanged=true; break; } }
+   api.paintPixel(21,26);
+   const afterAllowed=api.getData();
+   let allowedChanged=false;
+   for(let k=0;k<afterAllowed.length;k++){ if(afterAllowed[k]!==beforeMask[k]){ allowedChanged=true; break; } }
+   const maskChecks={on:maskOn,blocked:blockedChanged,allowed:allowedChanged};
+
+   // Oops button undoes the last paint
+   api.applyTemplate('blank');
+   api.setColor('#e53935'); api.setTool('pencil'); api.setBrush(1);
+   api.paintPixel(24,24);
+   const oopsBefore=api.getData()[((24*64)+24)*4+3];
+   document.getElementById('msKidUndo').click();
+   const oopsAfter=api.getData()[((24*64)+24)*4+3];
+   const oopsWorks=oopsBefore>0&&oopsAfter===0;
+
+   // Wash button removes every pixel and the mask
+   document.getElementById('msKidWash').click();
+   const washed=api.getData();
+   let washClear=true;
+   for(let k=3;k<washed.length;k+=4){ if(washed[k]!==0){ washClear=false; break; } }
+   const washChecks={clear:washClear,mask:api.getMask()===null};
 
    // direct paint helper mirrors to the other arm, and stickers land on the model
    api.applyTemplate('blank');
@@ -186,6 +254,62 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
    const c3=document.getElementById('ms3D');
    const stage3=document.getElementById('ms3DStage');
    const previewVisible=!!c3&&c3.style.display!=='none'&&stage3.clientWidth>0&&api.getView().threeVisible;
+
+   // tapping the 3D player paints the texture (raycast → 64x64 pixel)
+   let threeDTapPainted=false;
+   if(previewVisible&&!document.querySelector('.ms-prev-fallback')){
+     api.applyTemplate('blank');
+     api.setColor('#e53935');
+     api.setTool('pencil');
+     api.setBrush(1);
+     const before3=Uint8ClampedArray.from(api.getData());
+     const rr=c3.getBoundingClientRect();
+     const tapOpts={bubbles:true,cancelable:true,clientX:rr.left+rr.width*0.5,clientY:rr.top+rr.height*0.45,pointerId:41,pointerType:'mouse',isPrimary:true,button:0};
+     c3.dispatchEvent(new PointerEvent('pointerdown',tapOpts));
+     c3.dispatchEvent(new PointerEvent('pointerup',tapOpts));
+     await sleep(140);
+     const after3=api.getData();
+     let diff=0; for(let k=0;k<after3.length;k++){ if(after3[k]!==before3[k]) diff++; }
+     threeDTapPainted=diff>0;
+   }
+
+   // touch rules: one finger paints, two fingers turn and never paint
+   let oneFingerPainted=false, twoFingerClean=false, twoFingerTurned=false;
+   if(previewVisible&&!document.querySelector('.ms-prev-fallback')){
+     const rr2=c3.getBoundingClientRect();
+     const tx=rr2.left+rr2.width*0.5, ty=rr2.top+rr2.height*0.45;
+     const te=(type,id,x,y)=>new PointerEvent(type,{bubbles:true,cancelable:true,clientX:x,clientY:y,pointerId:id,pointerType:'touch',isPrimary:id===51,button:0});
+
+     api.applyTemplate('blank');
+     api.setColor('#43a047'); api.setTool('pencil'); api.setBrush(1);
+     const beforeTouch=Uint8ClampedArray.from(api.getData());
+     c3.dispatchEvent(te('pointerdown',51,tx,ty));
+     c3.dispatchEvent(te('pointerup',51,tx,ty));
+     await sleep(150);
+     const touch1=api.getData();
+     let d1=0; for(let k=0;k<touch1.length;k++){ if(touch1[k]!==beforeTouch[k]) d1++; }
+     oneFingerPainted=d1>0;
+
+     api.applyTemplate('blank');
+     const before2=Uint8ClampedArray.from(api.getData());
+     const rot0=api.getView().rotationY;
+     c3.dispatchEvent(te('pointerdown',61,tx-30,ty));
+     c3.dispatchEvent(te('pointerdown',62,tx+30,ty));
+     c3.dispatchEvent(te('pointermove',61,tx+10,ty));
+     c3.dispatchEvent(te('pointermove',62,tx+70,ty));
+     c3.dispatchEvent(te('pointerup',61,tx+10,ty));
+     c3.dispatchEvent(te('pointerup',62,tx+70,ty));
+     await sleep(130);
+     const after2=api.getData();
+     let d2=0; for(let k=0;k<after2.length;k++){ if(after2[k]!==before2[k]) d2++; }
+     twoFingerClean=d2===0;
+     twoFingerTurned=Math.abs(api.getView().rotationY-rot0)>0.02;
+   }
+
+   // the parent handoff card is 800x600
+   let cardOk=false;
+   try{ const card=api.buildPolaroid(); cardOk=card.width===800&&card.height===600; }catch(e){}
+
    document.getElementById('msTab2D').click();
    await sleep(120);
    const pausedOn2D=api.getView().threeVisible===false;
@@ -195,6 +319,17 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      apiSize:api.size,
      kidDefaults,
      uvMap,
+     fillClip,
+     kidFillChecks,
+     kidUndoEnabled,
+     threeDTapPainted,
+     maskChecks,
+     oopsWorks,
+     washChecks,
+     oneFingerPainted,
+     twoFingerClean,
+     twoFingerTurned,
+     cardOk,
      symmetryPaint,
      stampPainted,
      confetti,
@@ -240,6 +375,24 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  check('direct paint mirrors to the other arm', data.symmetryPaint.right[2]>200 && data.symmetryPaint.left[2]>200 && data.symmetryPaint.right[3]>200 && data.symmetryPaint.left[3]>200, JSON.stringify(data.symmetryPaint));
  check('a sticker paints the model', data.stampPainted===true);
  check('export fires confetti', data.reducedMotion || data.confetti>0, String(data.confetti));
+ check('kid mode starts with a 2px brush and no spin', data.kidDefaults.brush===2 && data.kidDefaults.autoRotate===false, JSON.stringify({brush:data.kidDefaults.brush,autoRotate:data.kidDefaults.autoRotate}));
+ check('kid toolbar has undo, brush and spin', data.kidDefaults.kidUndo && data.kidDefaults.kidBrush && data.kidDefaults.kidSpin);
+ check('kid mode hides the 2D part strip', data.kidDefaults.partStripHidden===true);
+ check('3D tap target helpers are ready', data.kidDefaults.hasTarget || data.fallbackPresent);
+ check('undo lights up after painting', data.kidUndoEnabled===true);
+ check('fill is clipped to the tapped face', data.fillClip.front>200 && data.fillClip.seam===0 && data.fillClip.outside===0, JSON.stringify(data.fillClip));
+ check('kid fill covers the whole face', data.kidFillChecks.bodyWhole===true && data.kidFillChecks.neighbour===0, JSON.stringify(data.kidFillChecks));
+ check('tapping the 3D player paints', data.threeDTapPainted===true || data.fallbackPresent, String(data.threeDTapPainted));
+ check('kid mode shows Oops and Wash', data.kidDefaults.wash===true && /Oops/.test(data.kidDefaults.oopsText), JSON.stringify({wash:data.kidDefaults.wash,undo:data.kidDefaults.oopsText}));
+ check('sound is on with a visible toggle', data.kidDefaults.soundBtn===true && data.kidDefaults.sound===true);
+ check('dress-up starters include hero, dino and space', ['Superhero','Dino','Space'].every(n=>data.kidDefaults.templateLabels.indexOf(n)!==-1), JSON.stringify(data.kidDefaults.templateLabels));
+ check('starter mask blocks details and allows armour', data.maskChecks.on===true && data.maskChecks.blocked===false && data.maskChecks.allowed===true, JSON.stringify(data.maskChecks));
+ check('Oops button undoes the last paint', data.oopsWorks===true);
+ check('wash clears paint and mask', data.washChecks.clear===true && data.washChecks.mask===true, JSON.stringify(data.washChecks));
+ check('parent card is 800x600', data.cardOk===true);
+ check('one finger touch paints', data.oneFingerPainted===true);
+ check('two fingers turn without painting', data.twoFingerClean===true && data.twoFingerTurned===true, JSON.stringify({clean:data.twoFingerClean,turned:data.twoFingerTurned}));
+ check('export downloads the parent card', data.downloads.includes('minecraft-skin-card.png'), data.downloads.join(', '));
  check('mobile opens on a body part, not the whole texture', data.view.part==='HEAD' && data.view.scale>=3, JSON.stringify(data.view));
  check('each skin pixel is finger sized on mobile', data.pxPerSkinPixel>=30, data.pxPerSkinPixel+' CSS px');
  check('pencil paints the chosen colour', data.painted.r>200 && data.painted.g<60 && data.painted.b<60 && data.painted.a>200, JSON.stringify(data.painted));
@@ -256,7 +409,7 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  check('save writes the skin to localStorage', data.savedOk);
  check('two-finger pinch does not paint', data.pinchPainted===false, JSON.stringify(data.pinchPainted));
  check('hand tool pans without painting', data.handPainted===false && data.handPanned===true, JSON.stringify({painted:data.handPainted,panned:data.handPanned}));
- check('base skin thumbnails render', data.templateCount===8 && data.thumbHasPixels===true, JSON.stringify({count:data.templateCount,pixels:data.thumbHasPixels}));
+ check('base skin thumbnails render', data.templateCount===11 && data.thumbHasPixels===true, JSON.stringify({count:data.templateCount,pixels:data.thumbHasPixels}));
  check('mini player renders the current skin', data.miniHasPixels===true);
  check('mini player opens the 3D preview', data.miniOpens3D===true);
  check('More opens the controls sheet with the file card', data.sheetOpen && data.exportCardVisible, JSON.stringify({open:data.sheetOpen,card:data.exportCardVisible}));
