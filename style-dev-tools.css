@@ -5,21 +5,29 @@
    ============================================================ */
 
 body {
+    /* A2787: a darker Ember fill so white text/buttons pass WCAG AA in both
+       themes (white on --jv-ember is only 3.07:1). */
+    --ember-fill: #A61E36;
     font-family: var(--jv-font-body, 'Inter', sans-serif);
     background: var(--jv-bg);
     color: var(--jv-text);
     overflow-x: hidden;
+    /* A2789: hidden creates a scroll container that stops position: sticky
+       working on phones. clip prevents sideways scroll without doing that. */
+    overflow-x: clip;
 }
 
 /* Active nav chip */
 .nav-link[data-page~="dev-tools"] {
     background: var(--jv-ember-soft);
-    color: var(--jv-ember-ink);
+    /* A2791: the site header is always near-black here, so the dark Ember ink
+       made the Create chip only 2.07:1. Use the brighter Ember for the label. */
+    color: var(--jv-ember);
     border: 1px solid rgba(242,99,122,0.35);
 }
 .nav-link[data-page~="dev-tools"]:hover {
     background: rgba(242,99,122,0.22);
-    color: var(--jv-ember);
+    color: #fff;
 }
 
 /* ── Hero ── */
@@ -144,7 +152,7 @@ body {
     line-height: 1.05;
     margin-bottom: 18px;
 }
-.hero-title .accent { color: var(--jv-ember); }
+.hero-title .accent { color: var(--jv-ember-ink); }
 .hero-sub {
     font-size: clamp(0.95rem, 2vw, 1.1rem);
     color: var(--jv-text-muted);
@@ -179,7 +187,7 @@ body {
     font-family: var(--jv-font-display);
     font-size: 2.2rem;
     font-weight: 700;
-    color: var(--jv-ember);
+    color: var(--jv-ember-ink);
     line-height: 1;
 }
 .hero-stat-label {
@@ -444,10 +452,10 @@ body {
     transform: translateY(-2px);
 }
 .filter-btn.active {
-    background: var(--jv-ember);
-    border-color: var(--jv-ember);
+    background: var(--ember-fill);
+    border-color: var(--ember-fill);
     color: #fff;
-    box-shadow: 0 4px 16px rgba(242,99,122,0.25);
+    box-shadow: 0 4px 16px rgba(166,30,54,0.28);
 }
 
 /* ── Category sections ── */
@@ -528,20 +536,23 @@ body {
     white-space: nowrap;
 }
 .tool-difficulty[data-difficulty="beginner"] {
-    color: #16a34a;
+    color: #166534;
     background: rgba(34,197,94,0.15);
     border-color: rgba(34,197,94,0.4);
 }
 .tool-difficulty[data-difficulty="intermediate"] {
-    color: #ca8a04;
+    color: #854d0e;
     background: rgba(234,179,8,0.15);
     border-color: rgba(234,179,8,0.4);
 }
 .tool-difficulty[data-difficulty="advanced"] {
-    color: #dc2626;
+    color: #b91c1c;
     background: rgba(239,68,68,0.15);
     border-color: rgba(239,68,68,0.4);
 }
+[data-theme="dark"] .tool-difficulty[data-difficulty="beginner"] { color: #86efac; }
+[data-theme="dark"] .tool-difficulty[data-difficulty="intermediate"] { color: #fde047; }
+[data-theme="dark"] .tool-difficulty[data-difficulty="advanced"] { color: #fca5a5; }
 
 /* ── Tool cards ── */
 .tools-grid {
@@ -924,7 +935,7 @@ body {
     z-index: 1;
 }
 .btn-primary {
-    background: var(--jv-ember);
+    background: var(--ember-fill);
     color: #fff;
     font-weight: 700;
     border-radius: var(--jv-radius-md);
@@ -943,7 +954,7 @@ body {
 }
 /* Legacy alias kept for inline usage in HTML */
 .btn-purple {
-    background: var(--jv-ember);
+    background: var(--ember-fill);
     color: #fff;
     font-weight: 700;
     border-radius: var(--jv-radius-md);
@@ -1099,7 +1110,7 @@ body {
 .intent-step-body .intent-limit{font-size:.68rem;line-height:1.35;color:var(--jv-ember-ink);font-weight:600}
 .intent-limits-note{max-width:1050px;margin:14px auto 0;font-size:.78rem;line-height:1.45;color:var(--jv-text-muted);text-align:center}
 .intent-step--finish .intent-step-link{border-color:rgba(242,99,122,.4);background:var(--jv-ember-soft)}
-.intent-finish{margin-left:auto;align-self:center;flex:0 0 auto;font-size:.64rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--jv-ember);border-radius:var(--jv-radius-pill);padding:3px 8px;white-space:nowrap}
+.intent-finish{margin-left:auto;align-self:center;flex:0 0 auto;font-size:.64rem;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--ember-fill);border-radius:var(--jv-radius-pill);padding:3px 8px;white-space:nowrap}
 .browse-bar{max-width:1200px;margin:0 auto 34px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .browse-bar-head{display:flex;flex-direction:column;gap:2px;min-width:0}
 .browse-bar .section-eyebrow{margin-bottom:0}
@@ -1332,4 +1343,79 @@ body > .cta-strip { padding: 40px 24px !important; margin-top: 26px; border-radi
     .tool-thumb { height: 150px !important; min-height: 0; }
     .reference-library { padding: 16px !important; }
     .cta-strip { padding: 32px 16px !important; }
+}
+
+/* A2789: keep search and filters reachable while scrolling the 28-card shelf. */
+.browse-bar {
+    position: sticky;
+    top: 68px;
+    z-index: 60;
+    background: var(--jv-bg);
+    padding: 10px 0 8px;
+    border-bottom: 1px solid var(--jv-line);
+    box-shadow: 0 8px 16px rgba(0,0,0,.06);
+}
+.browse-bar-tools {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+.tool-search-sticky {
+    flex: 0 1 220px;
+    min-width: 150px;
+    padding: 8px 14px;
+    border-radius: var(--jv-radius-pill);
+    border: 1.5px solid var(--jv-line);
+    background: var(--jv-surface);
+    color: var(--jv-text);
+    font: inherit;
+    font-size: .85rem;
+    outline: none;
+}
+.tool-search-sticky:focus {
+    border-color: var(--jv-ember);
+    box-shadow: 0 0 0 3px var(--jv-ember-soft);
+}
+#tools, .tool-category { scroll-margin-top: 140px; }
+
+/* A2789: longer shelves start compact, with an explicit Show all control. */
+.tool-category.is-collapsed .tools-grid > .tool-card:nth-child(n+7) { display: none !important; }
+.cat-more {
+    display: block;
+    margin: 18px auto 0;
+    font: inherit;
+    font-size: .85rem;
+    font-weight: 800;
+    color: var(--jv-ember-ink);
+    background: var(--jv-ember-soft);
+    border: 1.5px solid rgba(242,99,122,.3);
+    border-radius: var(--jv-radius-pill);
+    padding: 9px 20px;
+    cursor: pointer;
+}
+.cat-more:hover { background: rgba(242,99,122,.2); }
+.cat-more:focus-visible { outline: 3px solid var(--jv-focus); outline-offset: 3px; }
+.tools-section.is-searching .cat-more { display: none; }
+@media (max-width: 900px) {
+    .browse-bar { align-items: stretch; }
+    .browse-bar-tools { justify-content: flex-start; }
+    .tool-search-sticky { flex: 1 1 100%; max-width: none; }
+}
+@media (max-width: 700px) {
+    .browse-bar { padding: 8px 0 6px; }
+    .browse-bar-head { display: none; }
+    .browse-bar .hero-filter-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        max-width: 100%;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+        mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+    }
+    .browse-bar .hero-filter-chips .filter-btn { flex: 0 0 auto; }
 }
