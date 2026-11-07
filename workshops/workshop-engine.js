@@ -36,6 +36,34 @@ var TOTAL = window.WORKSHOP_TOTAL;
 var STORAGE_KEY = window.WORKSHOP_KEY;
 var PROFILE_ID = window.WORKSHOP_PROFILE_ID;
 
+/* A2301: count failed tries per step so My Progress can show where a learner
+   gets stuck. Stored locally under jvds_step_fails, read by
+   workshops/stuck-report.js and scripts/stuck-summary.js. No network. */
+function recordStepFail(step, source, title) {
+  try {
+    var workshop = location.pathname.split('/').pop() || 'workshop';
+    var key = 'jvds_step_fails';
+    var all = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!Array.isArray(all)) all = [];
+    var id = String(step);
+    var hit = null;
+    for (var i = 0; i < all.length; i++) {
+      if (all[i] && all[i].workshop === workshop && String(all[i].step) === id) { hit = all[i]; break; }
+    }
+    var now = new Date().toISOString();
+    if (hit) {
+      hit.count = (hit.count || 0) + 1;
+      hit.lastAt = now;
+      if (source) hit.source = source;
+      if (title) hit.title = title;
+    } else {
+      all.push({ workshop: workshop, step: id, source: source || 'step', title: title || '', count: 1, firstAt: now, lastAt: now });
+    }
+    all.sort(function (a, b) { return String(a.lastAt || '').localeCompare(String(b.lastAt || '')); });
+    localStorage.setItem(key, JSON.stringify(all.slice(-200)));
+  } catch (e) {}
+}
+
 /* A2304: completed step numbers are saved by index, so inserting a step would
    shift old progress onto the wrong step. A page can bump data-workshop-version
    (default 1) when its steps change. Saves with no version are treated as the
@@ -292,6 +320,7 @@ function checkQuiz(btn) {
     fb.className = 'quiz-feedback wrong show';
     fb.innerHTML = '<span class="fb-icon">❌</span><span>Not quite, try again!</span>';
     streak = 0;
+    recordStepFail(gate.id || 'quiz', 'quiz');
     updateXpDisplay();
     setTimeout(function() {
       selected.classList.remove('wrong', 'selected');
@@ -431,6 +460,7 @@ function passCodeChallenge(challenge, btn) {
 function failCodeChallenge(challenge, btn, detail) {
   var fb = challenge.querySelector('.cc-feedback');
   var hint = challenge.querySelector('.cc-hint');
+  recordStepFail(challenge.getAttribute('data-step') || challenge.id || 'code', 'code');
   fb.className = 'cc-feedback wrong show';
   if (detail) {
     fb.innerHTML = '<span class="fb-icon">❌</span><span></span>';
@@ -504,6 +534,7 @@ function checkConceptFill(btn) {
   } else {
     fb.className = 'cf-feedback wrong show';
     fb.innerHTML = '<span class="fb-icon">❌</span><span>Some blanks are not right, try again!</span>';
+    recordStepFail(wrap.getAttribute('data-step') || wrap.id || 'fill', 'fill');
     streak = 0; updateXpDisplay(); totalQuizzes++;
   }
   saveProgress();

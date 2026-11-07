@@ -333,6 +333,38 @@ var predictText = {};
 var predictPassed = {};
 /* A2284: optional explain-it-back answer, kept with the step. */
 var explainText = {};
+
+/* A2301: count failed tries per step so My Progress can show where a learner
+   gets stuck. Stored locally under jvds_step_fails, read by
+   workshops/stuck-report.js and scripts/stuck-summary.js. No network. */
+function recordStepFail(step, source, title) {
+  try {
+    var workshop = location.pathname.split('/').pop() || 'workshop';
+    var key = 'jvds_step_fails';
+    var all = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!Array.isArray(all)) all = [];
+    var id = String(step);
+    var hit = null;
+    for (var i = 0; i < all.length; i++) {
+      if (all[i] && all[i].workshop === workshop && String(all[i].step) === id) { hit = all[i]; break; }
+    }
+    var now = new Date().toISOString();
+    if (hit) {
+      hit.count = (hit.count || 0) + 1;
+      hit.lastAt = now;
+      if (source) hit.source = source;
+      if (title) hit.title = title;
+    } else {
+      all.push({ workshop: workshop, step: id, source: source || 'step', title: title || '', count: 1, firstAt: now, lastAt: now });
+    }
+    all.sort(function (a, b) { return String(a.lastAt || '').localeCompare(String(b.lastAt || '')); });
+    localStorage.setItem(key, JSON.stringify(all.slice(-200)));
+  } catch (e) {}
+}
+function stepTitle(num) {
+  var step = STEPS.find(function (s) { return s.num === num; });
+  return step ? step.title : '';
+}
 var cwXpLocal = 0;
 /* A2264: steps may carry an executable test. The test runs inside the same
    sandboxed preview as the learner's code and reports pass/fail back here.
@@ -1444,6 +1476,7 @@ function contentError(raw) {
 
 function failStep(num, message) {
   attempts[num] = (attempts[num] || 0) + 1;
+  recordStepFail(num, 'apply', stepTitle(num));
   saveState();
   renderSteps();
   var fb = document.getElementById('feedback-' + num);
@@ -1533,6 +1566,7 @@ function passStep(num, step) {
 
 function failStepTest(num, detail) {
   attempts[num] = (attempts[num] || 0) + 1;
+  recordStepFail(num, 'apply', stepTitle(num));
   saveState();
   renderSteps();
   var fb = document.getElementById('feedback-' + num);
@@ -1684,6 +1718,7 @@ function checkPredict(num) {
     answer = String(p.answer || '').split('|')[0];
   }
   predictPassed[num] = true;
+  if (!ok) recordStepFail(num, 'predict', step.title);
   saveState();
   renderSteps();
   var newFb = document.getElementById('predict-fb-' + num);
@@ -1759,6 +1794,7 @@ function checkQuiz(num) {
   } else {
     fb.className = 'cw-quiz-fb fail';
     fb.textContent = 'Not quite - try again!';
+    recordStepFail(num, 'quiz', step.title);
     var opts = document.querySelectorAll('#quiz-opts-' + num + ' .cw-quiz-opt');
     opts.forEach(function(el, i) {
       if (i === quizSelected[num]) el.className = 'cw-quiz-opt wrong';
@@ -1779,6 +1815,7 @@ function checkFills(num) {
     }
   });
   var fb = document.getElementById('fills-fb-' + num);
+  if (!allCorrect) recordStepFail(num, 'fill', step.title);
   fb.textContent = allCorrect ? '✓ All correct!' : 'Some blanks need fixing.';
   fb.style.color = allCorrect ? '#4ade80' : '#ff7b93';
 }
