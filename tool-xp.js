@@ -61,6 +61,52 @@
     }, 2600);
   }
 
+  // A2796: after a download, offer the one-tap "Take it home" path. Shared
+  // school PCs can wipe localStorage, so this is the moment to keep a copy.
+  function showTakeHome() {
+    if (window.__jvdsTakeHome) return;
+    window.__jvdsTakeHome = true;
+    window.JVDS_TAKE_HOME_ARMED = true;
+    try {
+      if (sessionStorage.getItem('jvds_take_home_seen') === '1') return;
+      sessionStorage.setItem('jvds_take_home_seen', '1');
+    } catch (e) {}
+    if (location.pathname === '/me.html' || !document.body) return;
+
+    var wrap = document.createElement('div');
+    wrap.id = 'jvds-take-home';
+    wrap.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:99998;display:flex;align-items:center;gap:6px;padding:6px 6px 6px 14px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);box-shadow:0 8px 24px rgba(124,58,237,.42);';
+    var link = document.createElement('a');
+    link.href = '/me.html#keep';
+    link.textContent = 'Take it home';
+    link.style.cssText = 'color:#fff;font:800 .82rem/1.15 Nunito,Inter,sans-serif;text-decoration:none;white-space:nowrap;';
+    link.addEventListener('click', disarmUnload, { once: true });
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Dismiss Take it home');
+    close.textContent = '\u00d7';
+    close.style.cssText = 'background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:999px;width:22px;height:22px;font:700 .8rem/1 sans-serif;cursor:pointer;';
+    close.addEventListener('click', function () {
+      wrap.remove();
+      disarmUnload();
+    });
+    wrap.appendChild(link);
+    wrap.appendChild(close);
+    document.body.appendChild(wrap);
+
+    if (!navigator.webdriver) {
+      window.addEventListener('beforeunload', unloadGuard);
+    }
+  }
+  function unloadGuard(e) {
+    if (!window.JVDS_TAKE_HOME_ARMED) return;
+    e.preventDefault();
+    e.returnValue = '';
+  }
+  function disarmUnload() {
+    window.JVDS_TAKE_HOME_ARMED = false;
+  }
+
   var _lastAward = {};
   var ToolXP = {
     toolId: TOOL_ID,
@@ -125,7 +171,7 @@
   var origClick = HTMLAnchorElement.prototype.click;
   HTMLAnchorElement.prototype.click = function () {
     if (this.hasAttribute && this.hasAttribute('download')) {
-      setTimeout(function () { ToolXP.award('export', 25, 3, 'Creation exported!'); }, 60);
+      setTimeout(function () { ToolXP.award('export', 25, 3, 'Creation exported!'); showTakeHome(); }, 60);
     }
     return origClick.apply(this, arguments);
   };
@@ -133,7 +179,7 @@
   // ── Export XP: real user clicks on download links ──
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('a[download]') : null;
-    if (a) ToolXP.award('export', 25, 3, 'Creation exported!');
+    if (a) { ToolXP.award('export', 25, 3, 'Creation exported!'); showTakeHome(); }
   });
 
   // ── A289 Mobile touch handling: prevent scroll trap on canvases and add touch->mouse fallback for tools that only listen for mouse ──

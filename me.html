@@ -31,6 +31,42 @@
 <link rel="stylesheet" href="/style-mascots.css">
 <link rel="stylesheet" href="style-me.css?v=18">
 <noscript><link rel="stylesheet" href="style-me.css?v=18"></noscript>
+<style>
+/* A2796: Keep and play */
+.keep-hero,.keep-report,.keep-arcade{background:var(--card,#fff);border:1.5px solid var(--border,rgba(64,59,51,.14));border-radius:14px;padding:18px;margin:0 0 18px}
+.keep-hero h2,.keep-arcade h2{margin:0 0 6px}
+.keep-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.keep-actions .tab{min-height:44px}
+.keep-primary{background:var(--teal-dk,#4e7d80);color:#fff;border:none;border-radius:999px;padding:11px 18px;font-weight:800;cursor:pointer}
+.report-card{background:#fff;color:#1a1208;border:1.5px solid #d9d0c2;border-radius:12px;padding:22px;max-width:820px}
+.report-head{display:flex;gap:14px;align-items:center;border-bottom:2px solid #1a1208;padding-bottom:10px;margin-bottom:14px}
+.report-head h2{margin:0;font-family:Fredoka,Inter,sans-serif}
+.report-body{display:grid;grid-template-columns:180px 1fr;gap:18px;align-items:start}
+.report-art img{width:100%;max-width:180px;image-rendering:pixelated;border-radius:10px;border:1px solid #d9d0c2}
+.report-lines label{display:block;font-weight:800;font-size:.82rem;margin-bottom:10px}
+.report-lines textarea{width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border:1.5px solid #d9d0c2;border-radius:8px;font:inherit;font-size:.9rem;resize:vertical;color:#1a1208;background:#fff}
+.report-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid #d9d0c2;margin-top:14px;padding-top:10px;font-size:.78rem;color:#3d3224}
+.arcade-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:14px}
+.arcade-card{background:var(--card,#fff);border:1.5px solid var(--border,rgba(64,59,51,.14));border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.arcade-card strong{font-size:.95rem}
+.arcade-card small{color:var(--charcoal-lt,#3d3224)}
+.arcade-card .arcade-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.arcade-modal{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:14px}
+.arcade-modal[hidden]{display:none}
+.arcade-modal-box{width:min(960px,100%);height:min(80vh,720px);background:#111;border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.arcade-modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:#1a1a1a;color:#fff}
+.arcade-modal-head .tab{background:#2a2a2a;color:#fff;border:1px solid #444;border-radius:999px;padding:8px 14px;cursor:pointer}
+#arcadeFrame{flex:1;width:100%;border:0;background:#000}
+#arcadeCanvas{flex:1;width:100%;height:100%;min-height:280px;background:#000;image-rendering:pixelated}
+#arcadeFrame[hidden],#arcadeCanvas[hidden]{display:none}
+@media(max-width:640px){.report-body{grid-template-columns:1fr}.report-art img{max-width:120px}}
+@media print{
+  body.report-printing *{visibility:hidden!important}
+  body.report-printing #reportCard,body.report-printing #reportCard *{visibility:visible!important}
+  body.report-printing #reportCard{position:absolute;left:0;top:0;width:100%;max-width:none;border:0;border-radius:0;padding:0;margin:0}
+  body.report-printing .no-print{display:none!important}
+}
+</style>
     <!-- Open Graph -->
     <meta property="og:type"        content="website">
     <meta property="og:url"         content="https://jvdesignstudio.co.uk/me.html">
@@ -154,6 +190,7 @@
 
   <div class="tabs" role="tablist">
     <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="keep">Keep &amp; play</button>
     <button class="tab" data-tab="workshops">Workshops</button>
     <button class="tab" data-tab="games">Best scores</button>
     <button class="tab" data-tab="quests">Quests & achievements</button>
@@ -162,6 +199,64 @@
 
   <div id="panel-overview" class="panel active">
     <div id="overviewContent"></div>
+  </div>
+  <div id="panel-keep" class="panel">
+    <section class="keep-hero" id="keep" aria-labelledby="keepTitle">
+      <h2 id="keepTitle">Take it home</h2>
+      <p class="muted">School computers can wipe this browser. Keep a copy before you leave, and your work can come back on any machine.</p>
+      <div class="keep-actions">
+        <button type="button" class="tab keep-primary" data-on="exportBackup" data-on-plain>Download my backpack</button>
+        <button type="button" class="tab" data-on="copyCode" data-on-plain>Copy my code</button>
+        <button type="button" class="tab" data-on="printReport" data-on-plain>Show your grown-up</button>
+      </div>
+      <p id="keepMsg" class="muted" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="keep-report" id="reportSection" aria-labelledby="reportTitle">
+      <div class="report-card" id="reportCard">
+        <div class="report-head">
+          <img src="/logo.png" alt="JVDesignStudio" width="72" height="64">
+          <div>
+            <h2 id="reportTitle">My making report</h2>
+            <p id="reportMeta" class="muted" style="margin:2px 0 0"></p>
+          </div>
+        </div>
+        <div class="report-body">
+          <div class="report-art" id="reportArt"></div>
+          <div class="report-lines">
+            <label for="reportMade">What I made
+              <textarea id="reportMade" rows="2" maxlength="220" placeholder="I made..."></textarea>
+            </label>
+            <label for="reportLearned">What I learned
+              <textarea id="reportLearned" rows="2" maxlength="220" placeholder="I learned..."></textarea>
+            </label>
+            <label for="reportNext">What I will try next
+              <textarea id="reportNext" rows="2" maxlength="220" placeholder="Next time I will..."></textarea>
+            </label>
+          </div>
+        </div>
+        <div class="report-foot">
+          <span>Ask me about it. I can explain what I changed and why.</span>
+          <span id="reportDate"></span>
+        </div>
+      </div>
+      <div class="keep-actions no-print">
+        <button type="button" class="tab keep-primary" data-on="printReport" data-on-plain>Print or save as PDF</button>
+        <span class="muted">Tip: choose "Save as PDF" in the print box to keep a copy.</span>
+      </div>
+    </section>
+
+    <section class="keep-arcade" id="myArcade" aria-labelledby="arcadeTitle">
+      <div class="section-head"><h2 id="arcadeTitle">My Arcade</h2><div class="sh-line"></div><div class="sh-count" id="arcadeCount"></div></div>
+      <p class="muted">Play your saved sprites and game projects. Your latest Pixel Studio creations appear here automatically, and you can add an Arcade Game Maker project file. Everything stays on this device and travels in your backpack.</p>
+      <div class="keep-actions">
+        <label class="tab keep-primary" style="cursor:pointer">Add a project
+          <input id="arcadeFile" type="file" accept=".json,application/json" style="display:none">
+        </label>
+      </div>
+      <p id="arcadeMsg" class="muted" role="status" aria-live="polite"></p>
+      <div id="arcadeGrid" class="arcade-grid"></div>
+    </section>
   </div>
   <div id="panel-workshops" class="panel">
     <div class="section-head"><h2>🎓 Completed Workshops</h2><div class="sh-line"></div><div class="sh-count" id="wsCount"></div></div>
@@ -213,6 +308,17 @@
       </div>
       <p id="backupMsg" class="muted" role="status" aria-live="polite" style="margin-top:8px"></p>
     </details>
+  </div>
+</div>
+
+<div class="arcade-modal" id="arcadeModal" role="dialog" aria-modal="true" aria-labelledby="arcadeModalTitle" hidden>
+  <div class="arcade-modal-box">
+    <div class="arcade-modal-head">
+      <strong id="arcadeModalTitle">Playing your game</strong>
+      <button type="button" class="tab" data-on="closeArcade" data-on-plain>Close</button>
+    </div>
+    <canvas id="arcadeCanvas" width="320" height="320" hidden></canvas>
+    <iframe id="arcadeFrame" title="Your game" sandbox="allow-scripts allow-pointer-lock allow-downloads" hidden></iframe>
   </div>
 </div>
 
@@ -292,6 +398,8 @@
 <script defer src="quest-system.js"></script>
 <script defer src="cosmetics.js"></script>
 <script defer src="jvds-store.js"></script>
+<script defer src="/jvds-project-bundle.js"></script>
+<script defer src="/assets/js/my-studio-keep.js"></script>
 <script>
 (function(){
   try{ if(window.MigrateKeys) MigrateKeys.run(); }catch(e){}
