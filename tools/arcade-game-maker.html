@@ -89,7 +89,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-0XvzgVYypIx/b+hRzd3monEV6l8RUTmOGiWiLiq8HRk=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-zeir4yJ5/7D2rnApbNht4yZO0djtqRK+/iWa5lRky9U=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-0XvzgVYypIx/b+hRzd3monEV6l8RUTmOGiWiLiq8HRk=' 'sha256-hKRcBFx3/doABk4AUW9LWjDhSu10/CQhudFVdSbOfH4=' 'sha256-qOV46ksYdZh1PvkJ9xxZ2IQcgWwXbomJS0Vygy2dZdE=' 'sha256-0UwRM+07FdcuBbhUjcPynAb8TMtKZ4MTGjRGDcR+xcU=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -4213,6 +4213,40 @@ function _phaserSrcUrl() {
     try { return tag || new URL(PHASER_SRC, location.href).href; } catch (e) { return PHASER_SRC; }
 }
 
+// A2707: Phaser draws text to the canvas once, so if Fredoka or Inter has not
+// loaded the HUD keeps the fallback font for the whole session. Wait for the
+// webfonts before the first frame, with a short timeout so a blocked font can
+// never stop play. The promise is cached so restarts do not wait again.
+let _gameFontsPromise = null;
+function _waitForGameFonts(timeoutMs) {
+    if (_gameFontsPromise) return _gameFontsPromise;
+    const limit = Math.max(0, Number(timeoutMs) || 1200);
+    _gameFontsPromise = new Promise(function(resolve) {
+        let done = false;
+        let timer = null;
+        const finish = function() {
+            if (done) return;
+            done = true;
+            if (timer) clearTimeout(timer);
+            resolve();
+        };
+        timer = setTimeout(finish, limit);
+        try {
+            if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
+                document.fonts.ready.then(function() {
+                    if (!document.fonts.load) { finish(); return; }
+                    Promise.all(['Fredoka', 'Inter'].map(function(family) {
+                        return document.fonts.load('16px "' + family + '"').catch(function() {});
+                    })).then(finish).catch(finish);
+                }).catch(finish);
+            } else {
+                finish();
+            }
+        } catch (e) { finish(); }
+    });
+    return _gameFontsPromise;
+}
+
 // ── EVENTS RUNTIME STATE ──────────────────────────────────────────────────────
 const _evtFired = new Set();   // IDs of one-shot rules that have already triggered this session
 
@@ -7978,6 +8012,10 @@ function _launchPhaserGame() {
             });
             return;
         }
+        // A2707: wait for the HUD fonts before Phaser paints its first frame.
+        _waitForGameFonts(1200).then(_startGameNow).catch(_startGameNow);
+    };
+    const _startGameNow = () => {
         try {
             _gameStartTime = Date.now();
             window._phaserGame = null;
