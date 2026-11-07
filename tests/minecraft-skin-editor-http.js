@@ -274,7 +274,7 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
    }
 
    // touch rules: one finger paints, two fingers turn and never paint
-   let oneFingerPainted=false, twoFingerClean=false, twoFingerTurned=false;
+   let oneFingerPainted=false, twoFingerClean=false, twoFingerTurned=false, doubleTouchIso=false;
    if(previewVisible&&!document.querySelector('.ms-prev-fallback')){
      const rr2=c3.getBoundingClientRect();
      const tx=rr2.left+rr2.width*0.5, ty=rr2.top+rr2.height*0.45;
@@ -304,6 +304,19 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      let d2=0; for(let k=0;k<after2.length;k++){ if(after2[k]!==before2[k]) d2++; }
      twoFingerClean=d2===0;
      twoFingerTurned=Math.abs(api.getView().rotationY-rot0)>0.02;
+
+     // double-tap a part to isolate it (touch path)
+     api.clearIsolation();
+     api.applyTemplate('blank');
+     const isoBefore=api.getIsolated();
+     c3.dispatchEvent(te('pointerdown',71,tx,ty));
+     c3.dispatchEvent(te('pointerup',71,tx,ty));
+     await sleep(60);
+     c3.dispatchEvent(te('pointerdown',72,tx,ty));
+     c3.dispatchEvent(te('pointerup',72,tx,ty));
+     await sleep(140);
+     doubleTouchIso=isoBefore===null&&api.getIsolated()!==null;
+     api.clearIsolation();
    }
 
    // the parent handoff card is 800x600
@@ -329,6 +342,7 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
      oneFingerPainted,
      twoFingerClean,
      twoFingerTurned,
+     doubleTouchIso,
      cardOk,
      symmetryPaint,
      stampPainted,
@@ -392,6 +406,7 @@ let failures=0;function check(name, ok, detail=''){console.log((ok?'PASS ':'FAIL
  check('parent card is 800x600', data.cardOk===true);
  check('one finger touch paints', data.oneFingerPainted===true);
  check('two fingers turn without painting', data.twoFingerClean===true && data.twoFingerTurned===true, JSON.stringify({clean:data.twoFingerClean,turned:data.twoFingerTurned}));
+ check('double-tap a part to isolate it on touch', data.doubleTouchIso===true || data.fallbackPresent);
  check('export downloads the parent card', data.downloads.includes('minecraft-skin-card.png'), data.downloads.join(', '));
  check('mobile opens on a body part, not the whole texture', data.view.part==='HEAD' && data.view.scale>=3, JSON.stringify(data.view));
  check('each skin pixel is finger sized on mobile', data.pxPerSkinPixel>=30, data.pxPerSkinPixel+' CSS px');

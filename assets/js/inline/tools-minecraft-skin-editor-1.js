@@ -68,6 +68,7 @@
   var _isolatedPart = null;
   var _isoVis = null;
   var _lastTap = { part: null, t: 0, x: 0, y: 0, painted: false };
+  var _lastTouchTap = { part: null, t: 0, x: 0, y: 0, painted: false, undoLenBefore: 0 };
   var _raycaster3d = null, _mouse3d = null;
   var applyView = null;
   var _targetMesh = null, _hoverBox = null, _cursorTimer = null;
@@ -517,6 +518,7 @@
     for (var i = 0; i < data.length; i++) data[i] = 0;
     clearMask();
     markTemplate('');
+    _lastTouchTap = { part: null, t: 0, x: 0, y: 0, painted: false, undoLenBefore: 0 };
     renderAll(); scheduleAutosave();
     washFX(); playSplash();
     toast('Washed! Ready for a fresh toy.');
@@ -794,6 +796,7 @@
     pushUndo();
     t.fn();
     buildMaskFromTemplate(id);
+    _lastTouchTap = { part: null, t: 0, x: 0, y: 0, painted: false, undoLenBefore: 0 };
     renderAll(); scheduleAutosave();
     markTemplate(id);
     toast(t.label + (paintMask ? ' ready. Colour inside the lines.' : ' base applied'));
@@ -2512,6 +2515,7 @@
     var _touchMode = null;
     var _touchStroke = null;
     var _touchGesture = null;
+    var _pendingIso = null;
 
     function paintHitAt(hit) {
       if (!hit) return false;
@@ -2538,8 +2542,23 @@
         _touchStroke = { beforeLen: undoStack.length, last: null };
         var hit = get3DHit(e.clientX, e.clientY);
         if (hit) {
+          var now = Date.now();
+          // Defer the double-tap until the finger lifts, so a second finger
+          // landing to rotate cancels it instead of isolating a part.
+          if (_lastTouchTap.part === hit.part && (now - _lastTouchTap.t) < 360 &&
+              Math.hypot(e.clientX - _lastTouchTap.x, e.clientY - _lastTouchTap.y) < 18) {
+            _pendingIso = { hit: hit, undoLenBefore: _lastTouchTap.undoLenBefore };
+            _touchStroke = null;
+            _touchMode = 'pending-iso';
+            return;
+          }
+          var beforeLen = _touchStroke.beforeLen;
           var painted = paintHitAt(hit);
           if (painted) {
+            _lastTouchTap = {
+              part: hit.part, t: now, x: e.clientX, y: e.clientY,
+              painted: true, undoLenBefore: beforeLen
+            };
             show3DCursor(hit); set3DHighlight(hit);
             _touchStroke.last = { x: hit.px, y: hit.py };
           }
@@ -2547,6 +2566,10 @@
         return;
       }
       if (_touchPts.size >= 2) {
+        if (_pendingIso) {
+          _pendingIso = null;
+          _lastTouchTap = { part: null, t: 0, x: 0, y: 0, painted: false, undoLenBefore: 0 };
+        }
         if (_touchStroke && undoStack.length > _touchStroke.beforeLen) {
           data = undoStack.pop();
           renderAll();
@@ -2600,6 +2623,19 @@
       if (_touchMode === 'gesture') {
         if (_touchPts.size < 2) _touchGesture = null;
         if (_touchPts.size === 0) { _touchMode = 'idle'; _touchStroke = null; }
+        return;
+      }
+      if (_touchMode === 'pending-iso') {
+        if (_touchPts.size === 0) {
+          if (_pendingIso) {
+            if (undoStack.length > _pendingIso.undoLenBefore) { data = undoStack.pop(); renderAll(); }
+            toggleIsolation(_pendingIso.hit.part);
+            _pendingIso = null;
+          }
+          _touchMode = 'idle';
+          _touchStroke = null;
+          _lastTouchTap = { part: null, t: 0, x: 0, y: 0, painted: false, undoLenBefore: 0 };
+        }
         return;
       }
       if (_touchPts.size === 0) {
