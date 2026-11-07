@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-yrffJ/NLb9lNGu/Bs2UgMHbdzynyRW/GB1BhRXUuS1o=' 'sha256-Uys4iDQIlTJGrrJLbCLMwuQ2n7MTxLgzLMrFCNiEJ/8=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-28yrWE7xwOOKFU2h5rRND/p+cuUWgALupbV+kpHGJqw=' 'sha256-Uys4iDQIlTJGrrJLbCLMwuQ2n7MTxLgzLMrFCNiEJ/8=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -289,6 +289,7 @@ body.mode-sfx #arrange-bar{display:none!important;}
 }
 </style>
 <link rel="stylesheet" href="/assets/css/immersive-tool.css">
+<link rel="stylesheet" href="/assets/css/studio-shell.css?v=1">
 </head>
 <body>
 <noscript><div style="position:fixed;inset:0;background:#0a0a12;color:#f0f0f0;display:flex;align-items:center;justify-content:center;font-family:sans-serif;font-size:1rem;text-align:center;padding:2rem;z-index:99999;">This tool requires JavaScript. Please enable JavaScript in your browser.</div></noscript>
@@ -511,6 +512,7 @@ body.mode-sfx #arrange-bar{display:none!important;}
           <div class="knob-label" title="How long the sound fades out after the note ends">Release <span id="relVal">0.2s</span></div>
           <input type="range" class="kn" min="0.01" max="3" step="0.01" value="0.2" id="relKnob" aria-label="Release" data-on="setEnv" data-on-event="input" data-on-args="s:release|nval">
         </div>
+        <canvas id="envCanvas" width="240" height="64" role="img" aria-label="Envelope shape" style="display:block;width:100%;max-width:240px;height:64px;margin:8px auto 0;border-radius:8px;border:1px solid var(--border2,rgba(255,255,255,.12));background:var(--panel3,#0f0f18);"></canvas>
       </div>
 
       <div class="ipseg ipseg-pitch">
@@ -1048,21 +1050,13 @@ function playNote(track, time, dur=0.15, step=null, gridRef=null){
     ws.curve=curve;
     const prev=dest; dest=ws; prev.connect(ws);
   }
-  if(t.fx.reverb){
-    const conv=ac.createConvolver();
-    txNodes.push(conv);
-    const len=ac.sampleRate*1.5;
-    const buf=ac.createBuffer(2,len,ac.sampleRate);
-    for(let c=0;c<2;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);}
-    conv.buffer=buf;
-    const prev=dest; dest=conv; prev.connect(conv);
-  }
   const panner = ac.createStereoPanner();
   txNodes.push(panner);
   panner.pan.value = Math.max(-1, Math.min(1, t.pan||0));
   dest.connect(panner);
   panner.connect(getMaster());
   const liveFx = getLiveBuses(ac);
+  if(t.fx.reverb){ const s=ac.createGain(); txNodes.push(s); s.gain.value=0.7; panner.connect(s); s.connect(liveFx.reverb); }
   if(t.sendReverb>0){ const s=ac.createGain(); txNodes.push(s); s.gain.value=t.sendReverb; panner.connect(s); s.connect(liveFx.reverb); }
   if(t.sendDelay>0){ const s=ac.createGain(); txNodes.push(s); s.gain.value=t.sendDelay; panner.connect(s); s.connect(liveFx.delay); }
 
@@ -1677,6 +1671,7 @@ function updateInstPanel(){
   document.getElementById('decKnob').value=t.env.decay;  document.getElementById('decVal').textContent=t.env.decay.toFixed(2)+'s';
   document.getElementById('susKnob').value=t.env.sustain; document.getElementById('susVal').textContent=t.env.sustain.toFixed(2);
   document.getElementById('relKnob').value=t.env.release; document.getElementById('relVal').textContent=t.env.release.toFixed(2)+'s';
+  drawEnv();
   // Pitch
   document.getElementById('octKnob').value=t.oct; document.getElementById('octVal').textContent=t.oct;
   document.getElementById('detKnob').value=t.detune; document.getElementById('detVal').textContent=t.detune+'';
@@ -1708,6 +1703,34 @@ function setEnv(k,v){
   tracks[activeTrack].env[k]=v;
   const map={attack:['attVal',v.toFixed(3)+'s'],decay:['decVal',v.toFixed(2)+'s'],sustain:['susVal',v.toFixed(2)],release:['relVal',v.toFixed(2)+'s']};
   if(map[k]){ const el=document.getElementById(map[k][0]); if(el) el.textContent=map[k][1]; }
+  drawEnv();
+}
+function drawEnv(){
+  const cv=document.getElementById('envCanvas');
+  if(!cv) return;
+  const t=tracks[activeTrack];
+  if(!t||!t.env) return;
+  const g=cv.getContext('2d');
+  if(!g) return;
+  const W=cv.width,H=cv.height,pad=8;
+  const iw=W-pad*2,ih=H-pad*2,base=pad+ih;
+  g.clearRect(0,0,W,H);
+  g.strokeStyle='rgba(255,255,255,.14)'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(pad,base); g.lineTo(pad+iw,base); g.stroke();
+  const a=Math.max(0.001,Math.min(1,t.env.attack));
+  const d=Math.max(0.001,Math.min(2,t.env.decay));
+  const s=Math.max(0,Math.min(1,t.env.sustain));
+  const r=Math.max(0.001,Math.min(3,t.env.release));
+  const seg=Math.max(0.001,a+d+0.25+r);
+  const xA=pad+(a/seg)*iw;
+  const xD=xA+(d/seg)*iw;
+  const xS=xD+(0.25/seg)*iw;
+  const xR=pad+iw;
+  const yS=base-s*ih;
+  g.beginPath();
+  g.moveTo(pad,base); g.lineTo(xA,pad); g.lineTo(xD,yS); g.lineTo(xS,yS); g.lineTo(xR,base);
+  g.strokeStyle='#a78bfa'; g.lineWidth=2; g.lineJoin='round'; g.stroke();
+  g.lineTo(pad,base); g.closePath(); g.fillStyle='rgba(124,58,237,.18)'; g.fill();
 }
 function setOct(v){
   if(!tracks[activeTrack]) return;
@@ -1766,9 +1789,11 @@ function setSteps(n){
   pushHistory();
   steps=n;
   patterns.forEach(p=>{
-    p.grid=tracks.map((_,ti)=>
-      Array.from({length:steps},(_,si)=>p.grid[ti]&&p.grid[ti][si]?p.grid[ti][si]:{on:false,note:'C',len:1,vel:1,oct:tracks[ti].oct})
-    );
+    p.grid=tracks.map((_,ti)=>{
+      const row=p.grid&&p.grid[ti]?p.grid[ti]:[];
+      const len=Math.max(steps,row.length);
+      return Array.from({length:len},(_,si)=>row[si]||{on:false,note:'C',len:1,vel:1,oct:tracks[ti].oct});
+    });
   });
   grid=patterns[currentPattern].grid;
   buildGrid();
@@ -1893,7 +1918,8 @@ function pianoDown(e){
   if(cover){
     const c=cover.c;
     const right=(cover.s0+(c.len||1))*PR_CW;
-    if(right-x<=7){ _pianoState.drag={mode:'resize',s0:cover.s0}; }
+    const handle=(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches)?16:8;
+    if(right-x<=handle){ _pianoState.drag={mode:'resize',s0:cover.s0}; }
     else { _pianoState.drag={mode:'move',s0:cover.s0,offStep:s-cover.s0}; }
     _pianoState.selStep=cover.s0;
     document.getElementById('pianoVel').value=Math.round((c.vel==null?1:c.vel)*127);
@@ -2050,6 +2076,22 @@ async function exportOGG(){
   return blob.size;
 }
 
+function foldLoopTail(buffer, loopLen){
+  loopLen=Math.max(1,Math.min(loopLen, buffer.length));
+  let out;
+  try{
+    out=new AudioBuffer({length:loopLen, numberOfChannels:buffer.numberOfChannels, sampleRate:buffer.sampleRate});
+  }catch(e){
+    const oc=new OfflineAudioContext(1,1,buffer.sampleRate);
+    out=oc.createBuffer(buffer.numberOfChannels, loopLen, buffer.sampleRate);
+  }
+  for(let c=0;c<buffer.numberOfChannels;c++){
+    const src=buffer.getChannelData(c), dst=out.getChannelData(c);
+    for(let i=0;i<loopLen;i++) dst[i]=src[i];
+    for(let i=loopLen;i<buffer.length;i++) dst[(i-loopLen)%loopLen]+=src[i];
+  }
+  return out;
+}
 async function renderMixdown(exactLoop){
   const loops=Math.max(1,Math.min(8,+document.getElementById('loopsSelect').value||2));
   const sr=44100;
@@ -2065,7 +2107,13 @@ async function renderMixdown(exactLoop){
     for(let l=0;l<loops;l++) for(let s=0;s<steps;s++) seq.push({p:currentPattern,s});
   }
   if(!seq.length) seq=[{p:currentPattern,s:0}];
-  const duration=seq.length*secPerStep + (exactLoop?0:2); // +2s tail so release/reverb rings out (trimmed for loop exports)
+  const loopSeconds=seq.length*secPerStep;
+  const loopTail=seq.some(item=>{
+    const pat=patterns[item.p]||patterns[currentPattern];
+    const pg=pat?pat.grid:grid;
+    return tracks.some((t,ti)=>t.fx&&t.fx.reverb&&pg&&pg[ti]&&pg[ti][item.s]&&pg[ti][item.s].on);
+  }) || tracks.some(t=>(t.sendReverb||0)>0||(t.sendDelay||0)>0);
+  const duration=loopSeconds + ((exactLoop && !loopTail)?0:2);
   const offline=new OfflineAudioContext(2,Math.ceil(sr*duration),sr);
   const master=offline.createGain();
   const limiter=offline.createDynamicsCompressor();
@@ -2086,8 +2134,9 @@ async function renderMixdown(exactLoop){
     });
   });
   const rendered=await offline.startRendering();
-  if(normalizeExport) normalizeBuffer(rendered);
-  return rendered;
+  const out=(exactLoop && loopTail) ? foldLoopTail(rendered, Math.round(sr*loopSeconds)) : rendered;
+  if(normalizeExport) normalizeBuffer(out);
+  return out;
 }
 function normalizeBuffer(buffer){
   let peak=0;
@@ -2133,6 +2182,7 @@ function renderNote(ac, ti, time, dur, step, gridRef, bus){
   panner.pan.value=Math.max(-1,Math.min(1,t.pan||0));
   gain.connect(panner);
   panner.connect(bus.master);
+  if(t.fx.reverb){ const s=ac.createGain(); s.gain.value=0.7; panner.connect(s); s.connect(bus.reverb); }
   if(t.sendReverb>0){ const s=ac.createGain(); s.gain.value=t.sendReverb; panner.connect(s); s.connect(bus.reverb); }
   if(t.sendDelay>0){ const s=ac.createGain(); s.gain.value=t.sendDelay; panner.connect(s); s.connect(bus.delay); }
 
@@ -2571,8 +2621,12 @@ function copySoundShareLink(){
     const url=location.origin+location.pathname+'#song='+b64;
     history.replaceState(null,'','#song='+b64);
     _shareHashLock=true;
+    const hasCustom=(typeof mySamples!=='undefined' && mySamples.length>0);
+    const copiedMsg=hasCustom
+      ? 'Link copied. Custom sounds cannot be shared via link. Only synthesized notes will be shared.'
+      : '🔗 Share link copied. Anyone who opens it gets your song.';
     if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(url).then(()=>showToast('🔗 Share link copied. Anyone who opens it gets your song.')).catch(()=>prompt('Copy this link:',url));
+      navigator.clipboard.writeText(url).then(()=>showToast(copiedMsg,hasCustom?'warn':'info',hasCustom?7000:2200)).catch(()=>prompt('Copy this link:',url));
     } else { prompt('Copy this link:',url); }
   }catch(e){ showToast('Could not make a share link'); }
 }
@@ -2811,10 +2865,12 @@ function bbTab(i,btn){
 // ------------------------------------------
 // TOAST
 // ------------------------------------------
-function showToast(msg){
+function showToast(msg,type,duration){
   const t=document.getElementById('toast');
+  if(!t) return;
   t.textContent=msg;t.style.opacity=1;
-  clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,2200);
+  t.dataset.type=type||'';
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,duration||2200);
 }
 
 // ------------------------------------------
@@ -2909,7 +2965,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   updateInstPanel();
   updateArrangeBar();
   const hadShare=tryRestoreShareSong();
-  if(!hadShare) offerRestore();
+  const starter=new URLSearchParams(location.search).get('starter');
+  if(starter){
+    const keys=['groove','fourfloor','lofi','blank'];
+    const pick=starter==='random'?keys[Math.floor(Math.random()*keys.length)]:starter;
+    if(keys.indexOf(pick)>=0) _loadSoundTemplate(pick);
+    else if(!hadShare) offerRestore();
+  } else if(!hadShare) offerRestore();
   buildSfxShelf();
   updateMeters();
   drawViz();

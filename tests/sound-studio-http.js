@@ -171,6 +171,17 @@ let failures = 0;
   await page.evaluate(()=>{ window.copySoundShareLink(); });
   const shareHash = await page.evaluate(()=>location.hash.slice(0,6));
   check('share link stores song in hash', shareHash==='#song=', shareHash);
+  const shareWarn = await page.evaluate(async()=>{
+    const before=mySamples.length;
+    if(!mySamples.length) mySamples.push({id:'unit-warn',name:'unit-warn',bytes:1});
+    try{ Object.defineProperty(navigator,'clipboard',{value:{writeText:()=>Promise.resolve()},configurable:true}); }catch(e){}
+    copySoundShareLink();
+    await new Promise(r=>setTimeout(r,20));
+    const txt=(document.getElementById('toast')||{}).textContent||'';
+    if(before===0) mySamples.pop();
+    return {has:/Custom sounds cannot be shared via link/.test(txt), txt};
+  });
+  check('share link warns that custom sounds are not shared', shareWarn.has, JSON.stringify(shareWarn));
   const lib = await page.evaluate(async()=>{
     document.getElementById('projName').value='Unit Test Song';
     await window.saveToLibrary();
@@ -243,6 +254,19 @@ let failures = 0;
   check('piano roll resizes note length', pr.resized>=3, String(pr.resized));
   check('piano roll sets velocity', Math.abs(pr.vel-40/127)<0.02, String(pr.vel));
   check('piano roll moves a note', pr.moved.old===false && pr.moved.at===true, JSON.stringify(pr.moved));
+
+  const env = await page.evaluate(()=>{
+    const cv=document.getElementById('envCanvas');
+    if(!cv) return {has:false};
+    const g=cv.getContext('2d');
+    const painted=()=>Array.from(g.getImageData(0,0,cv.width,cv.height).data).reduce((a,b)=>a+b,0);
+    const orig=tracks[activeTrack]['env'].attack;
+    setEnv('attack',0.001); const a=painted();
+    setEnv('attack',1); const b=painted();
+    setEnv('attack',orig);
+    return {has:true,w:cv.width,h:cv.height,painted:a>0,changed:a!==b};
+  });
+  check('ADSR canvas draws and redraws with the envelope', env.has && env.w>0 && env.h>0 && env.painted && env.changed, JSON.stringify(env));
 
   // A822: SFX lab
   const lab = await page.evaluate(async()=>{
@@ -484,19 +508,24 @@ let failures = 0;
       songMode=false;
       document.body.classList.remove('song-mode');
       document.getElementById('loopsSelect').value='1';
+      setSteps(16);
+      grid[0][12]={on:true,note:'C',len:1,vel:1,oct:tracks[0].oct};
+      patterns[currentPattern].grid=grid;
       setSteps(8);
-      out.rows=grid.every(r=>r.length===8);
-      out.patterns=patterns.every(p=>p.grid.every(r=>r.length===8));
+      out.rows=grid.every(r=>r.length>=8);
+      out.patterns=patterns.every(p=>p.grid.every(r=>r.length>=8));
+      out.hidden=!!(grid[0][12]&&grid[0][12].on);
       const buf=await renderMixdown(true);
       out.len=buf.length;
       out.expected=Math.round(8*((60/bpm)/4)*44100);
       setSteps(16);
+      out.restored=!!(grid[0][12]&&grid[0][12].on);
       out.after=grid.every(r=>r.length===16);
       out.select=document.getElementById('stepsSelect').value;
     }catch(e){ out.error=e.message; }
     return out;
   });
-  check('sequence length 8/16/32 resizes the grid and the render', !lengthTest.error && lengthTest.rows && lengthTest.patterns && Math.abs(lengthTest.len-lengthTest.expected)<=8 && lengthTest.after && lengthTest.select==='16', JSON.stringify(lengthTest));
+  check('sequence length 8/16/32 resizes the render and keeps hidden notes', !lengthTest.error && lengthTest.rows && lengthTest.patterns && lengthTest.hidden && Math.abs(lengthTest.len-lengthTest.expected)<=8 && lengthTest.restored && lengthTest.after && lengthTest.select==='16', JSON.stringify(lengthTest));
 
   // A2106: per-track mixer (pan, solo, sends, limiter, normalize)
   const mixSolo = await page.evaluate(async()=>{
