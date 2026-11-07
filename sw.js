@@ -31,7 +31,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v49';
+const CACHE='jvds-v50';
 const CORE=[
   '/',
   '/offline.html',
@@ -85,6 +85,18 @@ const CORE=[
   '/style-tool-icon-generator.css',
   '/tools/gdd-builder.html',
   '/style-tool-gdd-builder.css',
+  '/style-tool-gdd-builder.css?v=20',
+  // A-major: the GDD builder's fonts, icons and QR helper are proactively
+  // cached so a first offline visit still has the full editor and art picker.
+  '/qrcode-generator.js',
+  '/assets/css/studio-shell.css?v=1',
+  '/assets/fonts/inter-400-normal-latin-6ab57b19.woff2',
+  '/assets/fonts/fredoka-400-normal-latin-a4a694ae.woff2',
+  '/assets/mascots/echo-badge.webp',
+  '/assets/mascots/stardust-badge.webp',
+  '/assets/mascots/barnaby-badge.webp',
+  '/favicon.ico',
+  '/apple-touch-icon.png',
   '/tools/story-editor.html',
   '/style-tool-story-editor.css',
   '/tools/code-snippet-generator.html',
@@ -293,6 +305,17 @@ self.addEventListener('fetch',e=>{
     let timer;
     const p = Promise.race([fetch(req), new Promise((_,rej)=>{ timer=setTimeout(()=>rej(new Error('timeout')), ms); })]);
     return p.finally(()=> clearTimeout(timer));
+  }
+  // Stale-while-revalidate for the GDD builder: a school Chromebook gets the
+  // cached editor instantly, and the refreshed copy is ready for next session.
+  if(url.pathname==='/tools/gdd-builder.html'&&(e.request.mode==='navigate'||url.pathname.endsWith('.html'))){
+    const refresh=cachePromise.then(async cache=>{
+      try{ return await remember(cache,e.request,await fetchWithTimeout(e.request,5000)); }
+      catch(err){ return await cache.match(e.request)||new Response('Offline',{status:503,headers:{'Content-Type':'text/plain'}}); }
+    });
+    e.waitUntil(refresh.then(()=>{}));
+    e.respondWith(cachePromise.then(async cache=>await cache.match(e.request)||refresh));
+    return;
   }
   // Navigation: only race timeout when a cached response exists; otherwise wait for network (slow school net with no cache would wrongly show offline.html).
   if(e.request.mode==='navigate'||url.pathname.endsWith('.html')||url.pathname==='/'){
