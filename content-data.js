@@ -656,6 +656,54 @@ window.JVDS_CONTENT = {
       "url": "/workshops/castle-siege-blueprint.html"
     },
     {
+      "id": "my-first-browser-game-run-sheet",
+      "title": "Classroom run-sheet: My First Browser Game",
+      "desc": "A printable one-page classroom run-sheet for the My First Browser Game course. Materials, timings, outcome and what to do when a learner is stuck.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/my-first-browser-game-run-sheet.html"
+    },
+    {
+      "id": "my-first-scratch-game-run-sheet",
+      "title": "Classroom run-sheet: My First Scratch Game",
+      "desc": "A printable one-page classroom run-sheet for the My First Scratch Game course. Materials, timings, outcome and what to do when a learner is stuck.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/my-first-scratch-game-run-sheet.html"
+    },
+    {
+      "id": "my-first-video-game-run-sheet",
+      "title": "Classroom run-sheet: My First Video Game",
+      "desc": "A printable one-page classroom run-sheet for the My First Video Game course in Godot. Materials, timings, outcome and what to do when a learner is stuck.",
+      "engine": "General",
+      "difficulty": "beginner",
+      "ageRange": "10+",
+      "type": "series",
+      "tags": [
+        "series"
+      ],
+      "steps": 0,
+      "themeColor": "#BC4749",
+      "cover": "og/learn.webp",
+      "url": "/workshops/my-first-video-game-run-sheet.html"
+    },
+    {
       "id": "cyber-security",
       "title": "Cyber Defender! Understand Cyber Crime and Stay Safe Online",
       "desc": "A free Lumo-led cyber security workshop. Learn what cyber crime is, who the threat actors are, how attacks work and how to stay safe. Quizzes and XP included.",
@@ -4305,7 +4353,7 @@ window.JVDS_CONTENT = {
       "desc": "Two ways to hold the Citadel with Ember: a Quick Night (three waves, then Malgrath) or a Deep Night (endless waves, a boss every five, the full upgrade shop).",
       "kids": false,
       "age": "Ages 10-15",
-      "character": "Ember",
+      "character": null,
       "url": "/games/arcane_citadel.html"
     },
     {
@@ -4387,7 +4435,7 @@ window.JVDS_CONTENT = {
       "desc": "Read the ranger clue, then tap only the critters that fit the habitat, movement or behaviour. Quick sorting fun, but watch out for hazards.",
       "kids": true,
       "age": "Ages 5-9",
-      "character": "Echo",
+      "character": null,
       "url": "/games/critter-whack.html"
     },
     {
@@ -5585,8 +5633,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-08T11:42:11.000Z",
-    "workshops": 282,
+    "generated": "2026-11-08T20:24:01.000Z",
+    "workshops": 285,
     "games": 14,
     "tools": 49,
     "books": 5,
@@ -5595,7 +5643,7 @@ window.JVDS_CONTENT = {
       "C++": 10,
       "Defold": 7,
       "GDevelop": 7,
-      "General": 51,
+      "General": 54,
       "GML/GameMaker": 6,
       "Godot": 17,
       "Java": 8,
