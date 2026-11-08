@@ -333,6 +333,8 @@ var predictText = {};
 var predictPassed = {};
 /* A2284: optional explain-it-back answer, kept with the step. */
 var explainText = {};
+/* A2292: a large paste asks one short what-does-this-line-do question. */
+var pasteNudge = {};
 
 /* A2301: count failed tries per step so My Progress can show where a learner
    gets stuck. Stored locally under jvds_step_fails, read by
@@ -423,6 +425,13 @@ var LIVE_CSS = '<style id="cw-live-style">' +
   '.cw-expect{margin:0 0 10px;font-size:.84rem;color:rgba(232,234,242,.82);line-height:1.45}' +
   '.cw-expect strong{color:#9ccfd2}' +
   '.cw-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}' +
+  '.cw-paste-nudge{padding:12px 14px;border-radius:11px;background:rgba(255,176,32,.1);border:1px solid rgba(255,176,32,.4)}' +
+  '.cw-paste-nudge-head{font-family:Fredoka,cursive;font-size:.95rem;color:#ffb020;margin-bottom:6px}' +
+  '.cw-paste-nudge-q{font-size:.86rem;color:#e8eaf2;line-height:1.5;margin:0 0 9px}' +
+  '.cw-paste-nudge-q code{background:rgba(255,255,255,.1);border-radius:4px;padding:1px 5px;font-size:.78rem;word-break:break-word}' +
+  '.cw-paste-nudge-answer{width:100%;box-sizing:border-box;padding:9px 11px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(0,0,0,.25);color:#fff;font:inherit;resize:vertical;min-height:52px}' +
+  '.cw-paste-nudge-actions{margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}' +
+  '.cw-paste-nudge-fb{font-size:.8rem;color:#ffb020}' +
   '</style>';
 function ensureLiveStyle() {
   try { if (!document.getElementById('cw-live-style') && document.head) document.head.insertAdjacentHTML('beforeend', LIVE_CSS); } catch (e) {}
@@ -1091,6 +1100,16 @@ function renderSteps() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(updateCanvas, 350);
       });
+      // A2292: a big paste is allowed, but it asks one short question before
+      // the step can be marked done. Small edits and typing never trigger it.
+      ta.addEventListener('paste', function(e) {
+        var text = '';
+        try { text = (e.clipboardData || window.clipboardData).getData('text') || ''; } catch (err) {}
+        var lines = text.split(/\r?\n/).filter(function(l) { return l.trim(); }).length;
+        if (text.length >= 160 || lines >= 5) {
+          pasteNudge[step.num] = { line: firstPastedLine(text), answered: false };
+        }
+      });
       // A2009: this editor used to swallow Tab to insert two spaces, which
       // trapped keyboard users inside the textarea. Check my code, Show
       // Solution and the Knowledge Check were then unreachable, so Tab now moves
@@ -1486,8 +1505,53 @@ function failStep(num, message) {
   }
 }
 
+/* A2292: the first useful line from a pasted chunk, for the nudge question. */
+function firstPastedLine(text) {
+  var lines = String(text || '').split(/\r?\n/);
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    if (/^(\/\/|#|\*|\/\*|<!--)/.test(line)) continue;
+    return shortText(line, 90);
+  }
+  return '';
+}
+
+function showPasteNudge(num) {
+  var fb = document.getElementById('feedback-' + num);
+  if (!fb) return;
+  var nudge = pasteNudge[num] || {};
+  var line = nudge.line ? '<code>' + escapeHtml(nudge.line) + '</code>' : 'the code you pasted';
+  fb.className = 'cw-feedback cw-paste-nudge';
+  fb.innerHTML = '<div class="cw-paste-nudge-head">Quick check before we mark this done</div>' +
+    '<p class="cw-paste-nudge-q">You pasted a big chunk of code. In your own words, what does this line do? ' + line + '</p>' +
+    '<textarea class="cw-paste-nudge-answer" id="paste-answer-' + num + '" rows="2" placeholder="One short sentence is enough..."></textarea>' +
+    '<div class="cw-paste-nudge-actions">' +
+      '<button type="button" class="cw-btn cw-btn-check" data-cw="answerPaste" data-cw-arg="' + num + '">Continue</button>' +
+      '<span class="cw-paste-nudge-fb" id="paste-fb-' + num + '" role="status" aria-live="polite"></span>' +
+    '</div>';
+  var answer = document.getElementById('paste-answer-' + num);
+  if (answer) { try { answer.focus({ preventScroll: true }); } catch (e) { answer.focus(); } }
+}
+
+function answerPaste(num) {
+  var answer = document.getElementById('paste-answer-' + num);
+  var fb = document.getElementById('paste-fb-' + num);
+  var words = answer ? answer.value.trim().split(/\s+/).filter(Boolean) : [];
+  if (words.length < 3) {
+    if (fb) fb.textContent = 'Add a few words so we know you read it. Nothing is blocked.';
+    if (answer) answer.focus();
+    return;
+  }
+  if (pasteNudge[num]) pasteNudge[num].answered = true;
+  var box = document.getElementById('feedback-' + num);
+  if (box) { box.className = 'cw-feedback'; box.textContent = ''; }
+  checkStep(num);
+}
+
 function checkStep(num) {
   if (completed[num] || cwStepTests[num]) return;
+  if (pasteNudge[num] && !pasteNudge[num].answered) { showPasteNudge(num); return; }
   var step = STEPS.find(function(s) { return s.num === num; });
   var raw = editors[num].value;
   var code = raw.toLowerCase();
@@ -1837,6 +1901,7 @@ function showSolution(num) {
 function resetStep(num) {
   var step = STEPS.find(function(s) { return s.num === num; });
   editors[num].value = step.starter;
+  delete pasteNudge[num];
   updateCanvas();
   var fb = document.getElementById('feedback-' + num);
   fb.className = 'cw-feedback';
@@ -1873,6 +1938,7 @@ document.getElementById('canvasPanel').addEventListener('click', function(e) {
 /* Expose public API for onclick handlers */
 window.CW = {
   checkStep: checkStep,
+  answerPaste: answerPaste,
   showSolution: showSolution,
   resetStep: resetStep,
   selectQuiz: selectQuiz,
@@ -1920,6 +1986,7 @@ document.addEventListener('click', function(e) {
   var action = el.getAttribute('data-cw');
   var arg = Number(el.getAttribute('data-cw-arg'));
   if (action === 'checkStep') checkStep(arg);
+  else if (action === 'answerPaste') answerPaste(arg);
   else if (action === 'showSolution') showSolution(arg);
   else if (action === 'resetStep') resetStep(arg);
   else if (action === 'checkFills') checkFills(arg);
