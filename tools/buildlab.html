@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-qXM6kIsBMG+uLKFFg0f0mYR8OwlW8E43BcWiKZLz/88=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-4Qd6ZPevDrqxSjJ68jY7GNMtsaf40Ym4nFePpAMU/Fk=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -6942,30 +6942,124 @@ function decodeBuildData(arr) {
   }));
 }
 
+// A2752: byte-level LZW with fixed 12-bit codes. 256 is the clear code, 257+
+// are dictionary entries. The decoder mirrors the encoder exactly, including the
+// dictionary reset at 4096 entries, so a compressed link restores byte-for-byte.
+function _b64urlFromBytes(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function _bytesFromB64url(code) {
+  const bin = atob(String(code).replace(/-/g, '+').replace(/_/g, '/'));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+function _lzwEncode(bytes) {
+  const out = [];
+  let acc = 0, bits = 0;
+  const push = (code) => {
+    acc |= code << bits; bits += 12;
+    while (bits >= 8) { out.push(acc & 255); acc >>>= 8; bits -= 8; }
+  };
+  push(256);
+  if (!bytes.length) { if (bits > 0) out.push(acc & 255); return out; }
+  let dict = new Map();
+  let next = 257;
+  let w = bytes[0];
+  for (let i = 1; i < bytes.length; i++) {
+    const c = bytes[i];
+    const key = w * 256 + c;
+    if (dict.has(key)) { w = dict.get(key); continue; }
+    push(w);
+    if (next < 4096) { dict.set(key, next++); }
+    else { push(256); dict = new Map(); next = 257; }
+    w = c;
+  }
+  push(w);
+  if (bits > 0) out.push(acc & 255);
+  return out;
+}
+function _lzwDecode(bytes) {
+  const out = [];
+  let acc = 0, bits = 0, pos = 0;
+  const read = () => {
+    while (bits < 12) {
+      if (pos >= bytes.length) return -1;
+      acc |= bytes[pos++] << bits; bits += 8;
+    }
+    const code = acc & 0xFFF; acc >>>= 12; bits -= 12; return code;
+  };
+  let dict = [];
+  let next = 257;
+  let prev = null;
+  const reset = () => {
+    dict = [];
+    for (let i = 0; i < 256; i++) dict[i] = [i];
+    dict[256] = null;
+    next = 257;
+    prev = null;
+  };
+  reset();
+  let code;
+  while ((code = read()) !== -1) {
+    if (code === 256) { reset(); continue; }
+    let entry;
+    if (code < next && dict[code]) entry = dict[code];
+    else if (code === next && prev) entry = prev.concat(prev[0]);
+    else return null;
+    for (let i = 0; i < entry.length; i++) out.push(entry[i]);
+    if (prev && next < 4096) dict[next++] = prev.concat(entry[0]);
+    prev = entry;
+  }
+  return Uint8Array.from(out);
+}
+function _compressSharePayload(payload) {
+  try {
+    return '~' + _b64urlFromBytes(_lzwEncode(new TextEncoder().encode(JSON.stringify(payload))));
+  } catch (e) { return null; }
+}
+function _decompressShareCode(code) {
+  const bytes = _lzwDecode(_bytesFromB64url(String(code).slice(1)));
+  if (!bytes) return null;
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
 // Compact share payload shared by the link, the copy/paste share code and
-// the asset bundle. Returns { code, count, url } or null when empty.
+// the asset bundle. Returns { code, compressed, count, url } or null when empty.
 function buildSharePayload() {
   const data = encodeBuildData();
   const imports = serializeImportedParts();
   if (!data.length && !imports.length) return null;
-  function encode(payload) {
+  function encodeLegacy(payload) {
     return btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
   const payload = {n: buildName, v: 2, b: data, g: groups.map(group => group.name), im: imports};
-  let code = encode(payload);
+  let code = _compressSharePayload(payload) || encodeLegacy(payload);
   // Share codes are pasted text. If imported geometry makes the code too big,
   // drop the imports and tell the receiver to ask for a .buildlab file.
   if (code.length > 7000 && imports.length) {
     payload.im = [];
     payload.ib = true;
-    code = encode(payload);
+    code = _compressSharePayload(payload) || encodeLegacy(payload);
   }
-  return { code, count: data.length + payload.im.length, url: location.origin + location.pathname + '#b=' + code };
+  // A tiny build can be shorter uncompressed. Keep whichever is smaller.
+  let legacyLen = code.length;
+  if (code.charAt(0) === '~') {
+    const legacy = encodeLegacy(payload);
+    legacyLen = legacy.length;
+    if (legacy.length < code.length) code = legacy;
+  }
+  return { code, compressed: code.charAt(0) === '~', count: data.length + payload.im.length, legacyLen, url: location.origin + location.pathname + '#b=' + code };
 }
 function decodeShareCode(code) {
   try {
-    const data = JSON.parse(decodeURIComponent(escape(atob(String(code).replace(/-/g, '+').replace(/_/g, '/')))));
+    const raw = String(code).trim();
+    const data = raw.charAt(0) === '~'
+      ? _decompressShareCode(raw)
+      : JSON.parse(decodeURIComponent(escape(atob(raw.replace(/-/g, '+').replace(/_/g, '/')))));
     if (!data) return null;
     if (!Array.isArray(data.blocks) && !Array.isArray(data.b) && !Array.isArray(data.im)) return null;
     if (!Array.isArray(data.b) && Array.isArray(data.blocks)) data.b = data.blocks;
@@ -7011,12 +7105,15 @@ function importShareCodeData(data) {
 }
 function shareBuild() {
   const p = buildSharePayload();
-  if (!p) { toast('Nothing to share yet!'); return; }
+  if (!p) { toast('Nothing to share yet!'); return { ok: false, reason: 'empty' }; }
   const url = p.url;
 
-  if (url.length > 8000) {
-    toast('Build too large to share (' + p.count + ' blocks). Save to a slot instead.');
-    return;
+  if (url.length > (window.JVDS_SHARE_URL_MAX || 8000)) {
+    // A2752: the link is too long for chat or a QR, so use the copy/paste code.
+    const message = 'This build is too big for a link (' + p.count + ' blocks). Using a share code instead.';
+    toast(message);
+    copyShareCode();
+    return { ok: false, fallback: 'code', message, count: p.count, urlLen: url.length };
   }
   if (p.count > 150) {
     toast('Large build (' + p.count + ' blocks) - link may break on some apps');
@@ -7028,6 +7125,7 @@ function shareBuild() {
   } else {
     fallback();
   }
+  return { ok: true, code: p.code, url, count: p.count };
 }
 
 // Copy/paste share code (A1401 pattern) for locked-down school devices where
@@ -7056,7 +7154,7 @@ function importShareCode() {
 }
 
 function loadFromHash() {
-  const m = location.hash.match(/#b=([A-Za-z0-9\-_]+)/);
+  const m = location.hash.match(/#b=([~A-Za-z0-9\-_]+)/);
   if (!m) return false;
   const data = decodeShareCode(m[1]);
   if (!data) return false;
