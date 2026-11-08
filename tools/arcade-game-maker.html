@@ -89,7 +89,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-0XvzgVYypIx/b+hRzd3monEV6l8RUTmOGiWiLiq8HRk=' 'sha256-shFumLgQdmxbnQ+yqblDAzODeHorFyHCY/XA7GUP6tE=' 'sha256-BIrRPna1FwTkK61r4OLTj7CeHHEHmke0nwBCfEYSxnM=' 'sha256-soMnbQ9XGU6gcYMErPjXngYwrtH/oudj+/E73anSrcI=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-X8kxIAfigBvaWdSQu+c4h+/RQv/DWbNKKZW0DWaRlSU=' 'sha256-Jtt1zp6cs5WoV0M16DnbXbI03/mYgTb83u5JL2ILC8I=' 'sha256-0XvzgVYypIx/b+hRzd3monEV6l8RUTmOGiWiLiq8HRk=' 'sha256-shFumLgQdmxbnQ+yqblDAzODeHorFyHCY/XA7GUP6tE=' 'sha256-5whJC6vgdXcrsb35NQeCvcFhx6LG/Elqet84Cw15P30=' 'sha256-soMnbQ9XGU6gcYMErPjXngYwrtH/oudj+/E73anSrcI=' 'sha256-uY3LHPwVc6/KQ6Dp4ykjLzqKPULHBzlgtwzl7gSiamk=' 'sha256-7Lprzbs4UjCQ5VDQ/9u+xiM2Xx0tjcSptyeNKH66wIQ=' 'sha256-QuZFDgCjONG3Ra4/HkpQF8PEhuPjtXO0G/0HD+HKJxY=' 'sha256-rsxavFBC3+9OZ1C4OSepdEXyuyoQsaOARYK46IZSXQU=' 'unsafe-eval' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -7348,6 +7348,10 @@ function getPayload() {
 }
 
 // ── PHASER ENGINE ─────────────────────────────────────────────────────────────
+// A2714: one documented render order. Backgrounds sit at 0 or below, hazards
+// under collectibles, the player above both, and HUD text at UI. Pause and
+// level-clear overlays use UI + 10 so they cover the HUD.
+const DEPTH = Object.freeze({ BACKGROUND: 0, HAZARD: 1, COLLECTIBLE: 2, PLAYER: 10, UI: 100 });
 // Per-genre world size , set by _launchPhaserGame before each Phaser boot
 let GW = 640, GH = 400;
 const GENRE_DIMS = { FLAPPY:{w:400,h:640}, HOPPER:{w:400,h:640}, DODGE:{w:400,h:640}, RHYTHM:{w:400,h:640}, PINBALL:{w:400,h:640}, MEMORY:{w:400,h:640}, CLICKER:{w:400,h:640}, SNAKE:{w:400,h:640}, PAPERTOSS:{w:400,h:640} };
@@ -8137,6 +8141,11 @@ function _buildPhaserConfig(data) {
             debugBodyColor:_AGM_DEBUG_BODY,
             debugStaticBodyColor:_AGM_DEBUG_BODY,
             debugVelocityColor:_AGM_DEBUG_VELOCITY,
+            // A2694: fixed 1/60 physics step. The render loop can run at 60, 90
+            // or 144Hz, but movement is always integrated in the same 1/60 slice,
+            // so the same input produces the same run on every screen.
+            fps:60,
+            fixedStep:true,
             // A2685: Phaser uses an RTree for broad-phase collision checks, so
             // bullets and enemies only test nearby bodies as the counts scale.
             useTree:true,
@@ -8145,7 +8154,9 @@ function _buildPhaserConfig(data) {
         // A2671: smoothStep plus a hard clamp. Returning from a throttled tab
         // used to hand Phaser a multi-second delta, so bodies tunnelled through
         // walls. panicMax calms the first frames, the clamp below fixes the rest.
-        fps: { smoothStep:true, panicMax:_AGM_MAX_DELTA },
+        // A2694: target 60 with smoothStep interpolates rendering between the
+        // fixed physics steps instead of capping the display at 60.
+        fps: { target:60, smoothStep:true, panicMax:_AGM_MAX_DELTA },
         maxDelta: _AGM_MAX_DELTA,
         input: { gamepad: true },
         // A2673: at a fractional browser zoom, nearest-neighbour sampling and
@@ -11354,7 +11365,8 @@ function sceneCustom(data) {
             this.input.on('pointerdown', () => { this._sbPointerHold = true; });
             this.input.on('pointerup', () => { this._sbPointerHold = false; });
             this._drawBg();
-            this.scoreText = this._makeScoreText();
+            this.scoreText = this._makeScoreText().setDepth(DEPTH.UI).setScrollFactor(0);
+            if (this._timerText) this._timerText.setDepth(DEPTH.UI).setScrollFactor(0);
             this.cursors = this.input.keyboard.createCursorKeys();
             this.wasd = this.input.keyboard.addKeys({ up:'W', left:'A', down:'S', right:'D' });
             this.jumpKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -11395,7 +11407,7 @@ function sceneCustom(data) {
             } else {
                 _sx = GW / 2; _sy = GH / 2;
             }
-            this.actor = this.physics.add.sprite(_sx, _sy, 'player');
+            this.actor = this.physics.add.sprite(_sx, _sy, 'player').setDepth(DEPTH.PLAYER);
             this.actor.setDisplaySize(size, size);
             this.actor.body.setSize(Math.round(size*0.8), Math.round(size*0.8), true);
             this.actor.setCollideWorldBounds(true);
@@ -11439,7 +11451,7 @@ function sceneCustom(data) {
                 const s = this.stars.create(x, y, gold ? '_custom_star_gold' : '_custom_star');
                 s.setData('gold', gold);
                 s.body.setCircle(9, 0, 0);
-                s.setDepth(2);
+                s.setDepth(DEPTH.COLLECTIBLE);
             }
 
             this.enemies = this.physics.add.group({ allowGravity:false });
@@ -11473,7 +11485,7 @@ function sceneCustom(data) {
                 if (!data.enemySprite) e.setTint(fast ? 0xf97316 : 0xef4444);
                 e.setData('speed', this._enemySpeed * (fast ? 1.6 : 1));
                 e.setData('fast', fast);
-                e.setDepth(3);
+                e.setDepth(DEPTH.HAZARD);
                 this._setupEnemyAnim(e);
                 this._sbConfigureEnemyBody(e);
             }
@@ -11487,7 +11499,7 @@ function sceneCustom(data) {
                 this._goal = this.physics.add.image(_cellX(gp[0]), _cellY(gp[1]), '_custom_goal');
                 this._goal.body.setCircle(9, 0, 0);
                 this._goal.body.allowGravity = false;
-                this._goal.setDepth(2);
+                this._goal.setDepth(DEPTH.COLLECTIBLE);
                 this.physics.add.overlap(this.actor, this._goal, () => {
                     if (this._done) return;
                     this._done = true;
@@ -11649,7 +11661,7 @@ function sceneCustom(data) {
                 const s = this.stars.create(p[0], p[1], p[2] ? '_custom_star_gold' : '_custom_star');
                 s.setData('gold', !!p[2]);
                 s.body.setCircle(9, 0, 0);
-                s.setDepth(2);
+                s.setDepth(DEPTH.COLLECTIBLE);
             });
             (cp.enemies || []).forEach(p => {
                 const e = this.enemies.create(p[0], p[1], 'enemy');
@@ -11658,7 +11670,7 @@ function sceneCustom(data) {
                 e.body.setSize(fast ? 18 : 22, fast ? 18 : 22, true);
                 e.setData('speed', Number(p[2]) || 0);
                 e.setData('fast', fast);
-                e.setDepth(3);
+                e.setDepth(DEPTH.HAZARD);
                 this._sbConfigureEnemyBody(e);
             });
             this.score = Number(cp.score) || 0;
@@ -11674,7 +11686,7 @@ function sceneCustom(data) {
                 this._goal = this.physics.add.image(cp.goal[0], cp.goal[1], '_custom_goal');
                 this._goal.body.setCircle(9, 0, 0);
                 this._goal.body.allowGravity = false;
-                this._goal.setDepth(2);
+                this._goal.setDepth(DEPTH.COLLECTIBLE);
                 this.physics.add.overlap(this.actor, this._goal, () => {
                     if (this._done) return;
                     this._done = true;
@@ -11852,7 +11864,7 @@ function _sbSpawnStar(scene) {
     const s = scene.stars.create(Phaser.Math.Between(28, GW - 28), Phaser.Math.Between(40, GH - 28), '_custom_star');
     s.setData('gold', false);
     s.body.setCircle(9, 0, 0);
-    s.setDepth(2);
+    s.setDepth(DEPTH.COLLECTIBLE);
 }
 function _sbRunRuleActions(scene, r, vars) {
     for (const a of (r.actions || [])) {
@@ -12885,7 +12897,8 @@ function scenePlatformer(data) {
             this._buildScrollBg();
             this._initParallax();
             _initWeather(this);
-            this.scoreText = this._makeScoreText().setScrollFactor(0);
+            this.scoreText = this._makeScoreText().setScrollFactor(0).setDepth(DEPTH.UI);
+            if (this._timerText) this._timerText.setDepth(DEPTH.UI).setScrollFactor(0);
             this.cursors   = this.input.keyboard.createCursorKeys();
             this.platforms = this.physics.add.staticGroup();
             this._movPlats = this.physics.add.group(); // kinematic moving platforms
@@ -12893,7 +12906,7 @@ function scenePlatformer(data) {
             this._coinGrp  = this.physics.add.group();
             this._buildLevel();
 
-            this.actor = this.physics.add.sprite(this._tmSpawnX||80, this._tmSpawnY||(GH-80), 'player');
+            this.actor = this.physics.add.sprite(this._tmSpawnX||80, this._tmSpawnY||(GH-80), 'player').setDepth(DEPTH.PLAYER);
             { const _s=Math.round(24*(liveConfig.playerScale||1)); this.actor.setDisplaySize(_s,_s); this.actor.body.setSize(Math.round(_s*.78),Math.round(_s*.78),true); }
             this._tint(this.actor, 0, 0xffffff); this._setupActorAnim(this.actor);
             this.actor.setCollideWorldBounds(true).body.setGravityY(liveConfig.gravity);
@@ -13065,7 +13078,7 @@ function scenePlatformer(data) {
                 const tx=(i%TM_COLS)*TW+TW/2, ty=Math.floor(i/TM_COLS)*TH+TH/2;
                 if(v===2) {
                     // Hazard/spike tile, immovable, tagged so stomp is blocked
-                    const h=this.hazards.create(tx,ty,'block').setDisplaySize(TW-1,TH-1);
+                    const h=this.hazards.create(tx,ty,'block').setDisplaySize(TW-1,TH-1).setDepth(DEPTH.HAZARD);
                     h.setTint(hazCol); h.body.allowGravity=false; h.setImmovable(true);
                     h.setData('isSpike', true);
                 } else {
@@ -13076,7 +13089,7 @@ function scenePlatformer(data) {
                 // Exact painted coin tiles from World Builder
                 ents.coins.forEach(([cx,cy]) => {
                     const tx=cx*TW+TW/2, ty=cy*TH+TH/2;
-                    const c=this._coinGrp.create(tx,ty,'block').setDisplaySize(9,9);
+                    const c=this._coinGrp.create(tx,ty,'block').setDisplaySize(9,9).setDepth(DEPTH.COLLECTIBLE);
                     c.body.allowGravity=false; c.setTint(0xfbbf24);
                     this.tweens.add({targets:c, y:ty-5, duration:700+Math.random()*300, yoyo:true, repeat:-1, ease:'Sine.easeInOut'});
                 });
@@ -13091,7 +13104,7 @@ function scenePlatformer(data) {
                     if(Math.random() > 0.22) return;                    // ~22% chance
                     const tx=(i%TM_COLS)*TW+TW/2, ty=Math.floor(i/TM_COLS)*TH - TH*0.65;
                     const isGold = Math.random() < 0.15;
-                    const c = this._coinGrp.create(tx, ty, 'block').setDisplaySize(isGold?12:9, isGold?12:9);
+                    const c = this._coinGrp.create(tx, ty, 'block').setDisplaySize(isGold?12:9, isGold?12:9).setDepth(DEPTH.COLLECTIBLE);
                     c.body.allowGravity = false;
                     c.setTint(isGold ? 0xffd700 : 0xfbbf24);
                     c.setData('gold', isGold);
@@ -13103,7 +13116,7 @@ function scenePlatformer(data) {
                 ents.enemies.forEach(([ex,ey]) => {
                     if (_sbInSafeZone(ex, ey, _spawnCell)) return;
                     const tx=ex*TW+TW/2, ty=ey*TH+TH/2;
-                    const e=this.hazards.create(tx,ty,'enemy');
+                    const e=this.hazards.create(tx,ty,'enemy').setDepth(DEPTH.HAZARD);
                     e.setDisplaySize(Math.min(TW-2,26),Math.min(TH-2,26));
                     if(e.body){ e.body.allowGravity=false; e.body.setImmovable(false); }
                     e.setData('isSpike', false);
@@ -13138,12 +13151,12 @@ function scenePlatformer(data) {
                     const p = this.platforms.create(px, py, 'block');
                     p.setDisplaySize(tileW - 2, tileH - 2).setTint(solidCol).refreshBody();
                 } else if (t.type === 'spike') {
-                    const h = this.hazards.create(px, py, 'block');
+                    const h = this.hazards.create(px, py, 'block').setDepth(DEPTH.HAZARD);
                     h.setDisplaySize(tileW - 2, tileH - 2).setTint(0xef4444);
                     h.body.allowGravity = false; h.setImmovable(true);
                     h.setData('isSpike', true);
                 } else if (t.type === 'coin') {
-                    const c = this._coinGrp.create(px, py - tileH * 0.3, 'block');
+                    const c = this._coinGrp.create(px, py - tileH * 0.3, 'block').setDepth(DEPTH.COLLECTIBLE);
                     c.setDisplaySize(10, 10).setTint(0xfbbf24);
                     c.body.allowGravity = false;
                     this.tweens.add({ targets: c, y: c.y - 5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -13304,7 +13317,7 @@ function scenePlatformer(data) {
             const _eCnt = liveConfig.platformerEnemyCount;
             while (!this._isTilemapMode && _eCnt > 0 && this.actor.x + 600 > this._nextEnemyX && this._nextEnemyX < WORLD_W - 200) {
                 const isFast = this._bestX > 800 && Math.random() < 0.35;
-                const h = this.hazards.create(this._nextEnemyX, GH-55, 'enemy');
+                const h = this.hazards.create(this._nextEnemyX, GH-55, 'enemy').setDepth(DEPTH.HAZARD);
                 h.setDisplaySize(isFast?18:24, isFast?18:24); h.body.setSize(isFast?15:20, isFast?15:20, true);
                 if (!data.enemySprite) h.setTint(isFast ? 0xef4444 : themeInt(1, 0xa78bfa));
                 h.setVelocityX(-liveConfig.enemySpeed * (isFast ? 0.8 : 0.45)); h.body.allowGravity=true;
@@ -13317,7 +13330,7 @@ function scenePlatformer(data) {
             while (!this._isTilemapMode && this.actor.x + 700 > this._nextCoinX && this._nextCoinX < WORLD_W - 100) {
                 const isGold = Math.random() < 0.18;
                 const cy = Phaser.Math.Between(Math.round(GH*0.35), GH-90);
-                const c = this._coinGrp.create(this._nextCoinX, cy, 'block').setDisplaySize(isGold?13:10, isGold?13:10);
+                const c = this._coinGrp.create(this._nextCoinX, cy, 'block').setDisplaySize(isGold?13:10, isGold?13:10).setDepth(DEPTH.COLLECTIBLE);
                 c.body.allowGravity = false; c.setTint(isGold ? 0xffd700 : 0xfbbf24);
                 c.setData('gold', isGold);
                 this._nextCoinX += Phaser.Math.Between(70, 180);
@@ -13343,7 +13356,7 @@ function scenePlatformer(data) {
                     liveConfig.speed = this._origSpeed; liveConfig.enemySpeed = this._origESpeed; liveConfig.spawnDelay = this._origSpawn;
                     const vt = this.add.text(this.actor.x, GH/2, '🏆 WORLD CLEAR!',
                         {fontSize:'32px',fill:'#fbbf24',fontFamily:"'Fredoka One',sans-serif",stroke:'#000',strokeThickness:5})
-                        .setOrigin(0.5).setDepth(20).setScrollFactor(0);
+                        .setOrigin(0.5).setDepth(DEPTH.UI + 10).setScrollFactor(0);
                     this.tweens.add({targets:vt,scaleX:1.2,scaleY:1.2,duration:400,yoyo:true,
                         onComplete:()=>{ this.time.delayedCall(600,()=>showVictory(this.score)); }});
                 } else {
@@ -13353,14 +13366,14 @@ function scenePlatformer(data) {
                     liveConfig.enemySpeed   = Math.round(this._origESpeed * (1 + lvl * 0.18));
                     liveConfig.gravity      = Math.round(liveConfig.gravity * 1.05);
                     const lvlTxt = ['','','🌟 Level 2','🔥 Level 3'][liveConfig.platLevel];
-                    const card = this.add.rectangle(GW/2, GH/2, 280, 110, 0x0a0c18, 0.92).setDepth(19).setScrollFactor(0);
+                    const card = this.add.rectangle(GW/2, GH/2, 280, 110, 0x0a0c18, 0.92).setDepth(DEPTH.UI + 10).setScrollFactor(0);
                     const vt = this.add.text(GW/2, GH/2-22, `LEVEL ${lvl} CLEAR!`,
                         {fontSize:'26px',fill:'#fbbf24',fontFamily:"'Fredoka One',sans-serif",stroke:'#000',strokeThickness:5})
-                        .setOrigin(0.5).setDepth(20).setScrollFactor(0);
+                        .setOrigin(0.5).setDepth(DEPTH.UI + 10).setScrollFactor(0);
                     const subTxt = this.add.text(GW/2, GH/2+8, `Score: ${this.score.toLocaleString()}  |  Next: ${lvlTxt}`,
-                        {fontSize:'12px',fill:'#94a3b8',fontFamily:"'Fredoka',sans-serif"}).setOrigin(0.5).setDepth(20).setScrollFactor(0);
+                        {fontSize:'12px',fill:'#94a3b8',fontFamily:"'Fredoka',sans-serif"}).setOrigin(0.5).setDepth(DEPTH.UI + 10).setScrollFactor(0);
                     const hint = this.add.text(GW/2, GH/2+28, 'Get ready, enemies are faster!',
-                        {fontSize:'10px',fill:'#ef4444',fontFamily:"'Fredoka',sans-serif"}).setOrigin(0.5).setDepth(20).setScrollFactor(0);
+                        {fontSize:'10px',fill:'#ef4444',fontFamily:"'Fredoka',sans-serif"}).setOrigin(0.5).setDepth(DEPTH.UI + 10).setScrollFactor(0);
                     this.time.delayedCall(2000, () => {
                         [card,vt,subTxt,hint].forEach(o=>{ if(o.active) o.destroy(); });
                         compileAndBootEngine();
@@ -25936,6 +25949,43 @@ window.addEventListener('load', function () {
 <script defer src="/assets/js/create-timer.js"></script>
 <script defer src="/assets/js/hash-size-watchdog.js"></script>
 <script src="/assets/js/immersive-tool.js" defer></script>
+<script>
+// A2690: Blueprint sliders announce their setting name and value once the drag
+// settles, so a screen reader hears one useful message instead of a stream of
+// numbers. The shared #jvds-announce region is role=status, aria-live=polite,
+// aria-atomic=true, so the whole message is read as one unit.
+(function () {
+  var timer = null;
+  function clean(text) {
+    return String(text || '')
+      .replace(/[\u{1F000}-\u{1FAFF}\u2600-\u27BF\u{2B00}-\u{2BFF}\uFE0F]/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  function announceTweak(input) {
+    var row = input.closest('.tweak-row');
+    if (!row) return;
+    var region = document.getElementById('jvds-announce');
+    if (!region) return;
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      var labelEl = row.querySelector('.tweak-label');
+      var valEl = row.querySelector('.tweak-val');
+      var name = clean(labelEl ? labelEl.textContent : '') || clean(input.getAttribute('aria-label')) || 'Setting';
+      var value = clean(valEl ? valEl.textContent : input.value);
+      var unit = '';
+      if (/\(ms\)/i.test(name) && !/\bms\b/i.test(value)) unit = ' milliseconds';
+      region.textContent = name + ' ' + value + unit;
+    }, 400);
+  }
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== 'INPUT' || t.type !== 'range') return;
+    if (!t.closest('.bp-card')) return;
+    announceTweak(t);
+  });
+})();
+</script>
 </body>
 </html>
 

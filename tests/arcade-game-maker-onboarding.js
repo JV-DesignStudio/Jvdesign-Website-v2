@@ -85,6 +85,30 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   });
   check('returning visit opens no onboarding modal', second.welcome === false && second.tour === false);
 
+  // A2690: a Blueprint slider announces its setting name and value once the drag settles.
+  const announce = await page.evaluate(async () => {
+    const input = document.querySelector('.bp-card input[type="range"]');
+    if (!input) return { has: false };
+    const row = input.closest('.tweak-row');
+    const name = row ? row.querySelector('.tweak-label').textContent.trim() : '';
+    input.value = String(Math.round((Number(input.min) + Number(input.max)) / 2));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 700));
+    const region = document.getElementById('jvds-announce');
+    return {
+      has: true,
+      live: region ? region.getAttribute('aria-live') : null,
+      atomic: region ? region.getAttribute('aria-atomic') : null,
+      text: region ? region.textContent : '',
+      name,
+      value: input.value
+    };
+  });
+  check('Blueprint slider announces setting name and value',
+    announce.has && announce.live === 'polite' && announce.atomic === 'true' &&
+    announce.text.includes(announce.value) && announce.text.includes(announce.name.split('(')[0].trim()),
+    JSON.stringify(announce));
+
   check('no uncaught JS errors', jsErrors.length === 0, jsErrors.slice(0,2).join(' | '));
 
   await browser.close();
