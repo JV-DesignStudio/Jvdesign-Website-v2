@@ -1,6 +1,6 @@
 // A1454: little_steps.html boots and, on a phone, gets on-screen controls from
 // the shared engine runtime (rt.touch) that drive the game through real key
-// events. Desktop must stay control-free. Run: node tests/little-steps-http.js
+// events. Desktop must stay control-free. Run: node tests/little_steps-http.js
 const fs = require('fs');
 const http = require('http');
 const path = require('path');

@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const audio = window.AudioEffects ? new AudioEffects(.5) : null;
 const sys = window.GameSystem ? new GameSystem('stardust-ruins','Stardust Ruins','stardust') : null;
-const storyRun = window.StoryRun ? new StoryRun({
+const storyRun = window.__storyRun = window.StoryRun ? new StoryRun({
   id:'stardust-ruins', gameSystem:sys, title:'Stardust Ruins', character:'Stardust',
   open:'Stardust found ancient ruins and the walls glow with symbol sequences.',
   objective:'Remember and repeat the glowing symbols to unlock each ruin.',

@@ -3,7 +3,7 @@ const C = document.getElementById('game'), ctx = C.getContext('2d');
 const $ = id => document.getElementById(id);
 const audio = window.AudioEffects ? new AudioEffects(.5) : null;
 const sys = window.GameSystem ? new GameSystem('little-steps','Little Steps','pip') : null;
-const storyRun = window.StoryRun ? new StoryRun({
+const storyRun = window.__storyRun = window.StoryRun ? new StoryRun({
   id:'little-steps', gameSystem:sys, title:'Little Steps', character:'Pip',
   open:'Pip is at the start of a forest trail and camp is waiting at the end.',
   objective:'Walk through the trail, collect stars, and reach camp.',

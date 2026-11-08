@@ -26,13 +26,13 @@ const GAMES = [
   { file: 'voidrush.html', id: 'void-rush', character: 'Echo' },
   { file: 'crypt-crawlers.html', id: 'crypt-crawlers', character: 'Ember' },
   { file: 'ember-smash.html', id: 'ember-smash', character: 'Ember' },
-  { file: 'little_steps.html', id: 'little-steps', character: 'Echo' },
+  { file: 'little_steps.html', id: 'little-steps', character: 'Pip' },
   { file: 'critter-whack.html', id: 'critter-whack', character: 'Echo' },
   { file: 'lumo-dash.html', id: 'lumo-dash', character: 'Lumo' },
   { file: 'nibble-quest.html', id: 'nibble-quest', character: 'Pip' },
   { file: 'stack-attack.html', id: 'stack-attack', character: 'Ember' },
-  { file: 'nova-siege.html', id: 'nova-siege', character: 'Pip' },
-  { file: 'sky_high_with_friends.html', id: 'sky-high-friends', character: 'Echo' }
+  { file: 'nova-siege.html', id: 'nova-siege', character: 'Pip' }
+  // Sky High With Friends is HIDDEN and does not use the shared StoryRun layer.
 ];
 
 let failures = 0;
