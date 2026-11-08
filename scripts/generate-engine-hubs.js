@@ -143,6 +143,16 @@ function say(voice, engine) {
     + '  </div>';
 }
 
+function renderLegacyNotice(engine) {
+  if (!engine.legacy) return '';
+  return '  <aside class="hub-legacy" role="note" aria-label="Legacy engine notice">\n'
+    + '    <p><strong>Legacy engine hub.</strong> We now focus on three engines: Scratch, Godot and browser JavaScript. '
+    + 'This ' + esc(engine.name) + ' hub stays online and every workshop still works, but we are not adding new lessons or fixes. '
+    + 'New learners should start with the <a href="engine-scratch.html">Scratch hub</a>, the '
+    + '<a href="engine-godot.html">Godot hub</a> or the <a href="engine-javascript.html">JavaScript hub</a>.</p>\n'
+    + '  </aside>';
+}
+
 function renderReadiness(engine) {
   const r = engine.readiness;
   if (!r || !Array.isArray(r.projects) || !r.projects.length) return '';
@@ -240,6 +250,12 @@ function renderPage(engine, byId) {
 
   // A1925: optional self-check that points a learner at the next workshop.
   // The steps live in the config and are read by the page script.
+  const legacyNotice = renderLegacyNotice(engine);
+  const legacyCss = engine.legacy
+    ? '.hub-legacy{max-width:820px;margin:14px auto 0;padding:12px 16px;background:var(--gold-lt,#faf1e0);border:1.5px solid var(--gold,#c98a2e);border-radius:12px;font-size:.88rem;line-height:1.5;color:var(--text-primary)}\n'
+      + '.hub-legacy p{margin:0}\n'
+      + '.hub-legacy a{color:var(--teal-dk);font-weight:800}'
+    : '';
   const readiness = renderReadiness(engine);
   const readinessCss = readiness
     ? '.hub-readiness{max-width:1000px;margin:18px auto 0;padding:0 20px}\n'
@@ -375,7 +391,7 @@ ${marker('head-icons', readPartial('head-icons'))}
 .course-cover--browser{display:flex;align-items:center;justify-content:center;font-size:2.6rem;line-height:1}
 .hub-foot{max-width:820px;margin:26px auto 44px;padding:0 20px;text-align:center;color:var(--text-secondary)}
 .hub-foot a{color:var(--teal);font-weight:800}
-.hub-checkpoint{max-width:820px;margin:18px auto 0;padding:14px 18px;background:var(--bg-secondary);border:1.5px solid var(--border-lt);border-radius:12px}
+${legacyCss ? legacyCss + '\n' : ''}.hub-checkpoint{max-width:820px;margin:18px auto 0;padding:14px 18px;background:var(--bg-secondary);border:1.5px solid var(--border-lt);border-radius:12px}
 .hub-checkpoint h2{font-family:Fredoka,'Baloo 2',cursive;font-size:1.15rem;margin:0 0 6px;color:var(--text-primary)}
 .hub-checkpoint>p{margin:0 0 10px;font-size:.86rem;line-height:1.5;color:var(--text-secondary)}
 .hp-skills{display:grid;gap:2px}
@@ -408,7 +424,7 @@ ${marker('nav-content', readPartial('nav-content'))}
     ${engine.ageNote ? '<p class="hub-age-note">' + esc(engine.ageNote) + '</p>' : ''}
   </section>
 
-${say('lumo', engine)}
+${legacyNotice ? legacyNotice + '\n\n' : ''}${say('lumo', engine)}
 
 ${ladder}
 

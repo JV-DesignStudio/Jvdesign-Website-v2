@@ -286,5 +286,15 @@ try {
   console.log('  Could not check workshop debugging tasks: ' + err.message);
 }
 
-const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0 || coverage.missing_title.length > 0 || coverage.missing_description.length > 0 || coverage.missing_canonical.length > 0 || coverage.missing_age.length > 0 || outcomeMissing.length > 0 || standardMissing.length > 0 || completionMissing.length > 0 || releaseMissing.length > 0 || contentIntegrity.issues.length > 0 || debugging.missing.length > 0 || debugging.stale.length > 0;
+let engineSurface = { ok: true, supported: ['Scratch', 'Godot', 'JavaScript'], legacy: 0, baselineCards: 0, issues: [] };
+try {
+  engineSurface = require('./scripts/check-engine-surface.js').run();
+  console.log(`- Engine surface: ${engineSurface.supported.join(', ')} supported, ${engineSurface.legacy} legacy hubs, ${engineSurface.baselineCards} grandfathered legacy cards`);
+  if (!engineSurface.ok) engineSurface.issues.forEach(issue => console.log('  ' + issue));
+} catch (err) {
+  engineSurface = { ok: false, supported: [], legacy: 0, baselineCards: 0, issues: ['engine surface check failed: ' + err.message] };
+  console.log('  Could not check engine surface: ' + err.message);
+}
+
+const hasFailures = results.missing_key.length > 0 || results.missing_functions.length > 0 || results.errors.length > 0 || coverage.missing_title.length > 0 || coverage.missing_description.length > 0 || coverage.missing_canonical.length > 0 || coverage.missing_age.length > 0 || outcomeMissing.length > 0 || standardMissing.length > 0 || completionMissing.length > 0 || releaseMissing.length > 0 || contentIntegrity.issues.length > 0 || debugging.missing.length > 0 || debugging.stale.length > 0 || !engineSurface.ok;
 if (hasFailures) process.exitCode = 1;
