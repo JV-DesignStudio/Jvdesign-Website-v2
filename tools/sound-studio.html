@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-mBkqDr8I0aPOas100cnVCJTv6TGgAHcbBZ2X17yEgLM=' 'sha256-ckdvs1l2bs65QBZUxx0COEioc8vBT9OBeGMQ3A82lxA=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VAPQlamJWgXJpLLNn0EBIQIo/0NBQZBTk2dcybItOXo=' 'sha256-KLWd3TMV+NR7J3KLbn4zQh9aduZFTvf+pF/Jh9ZpelM=' 'sha256-OgQIjU762rYXcm7enROJuZYTIvTqbD158NAIeQoRltw=' 'sha256-ckdvs1l2bs65QBZUxx0COEioc8vBT9OBeGMQ3A82lxA=' 'sha256-AZyNJ/vG4JDtJDwGwbhIpx+4aKINqwemCB07NcwLL+g=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -973,11 +973,24 @@ function setMasterVol(v){ getCtx(); masterGain.gain.value=v; }
 function fadeMaster(target, seconds){
   if(!ctx || !masterFade) return;
   const now=ctx.currentTime;
+  const dur=Math.max(0.005,seconds);
   try{
     masterFade.gain.cancelScheduledValues(now);
     masterFade.gain.setValueAtTime(masterFade.gain.value, now);
-    masterFade.gain.linearRampToValueAtTime(target, now+Math.max(0.005,seconds));
+    masterFade.gain.linearRampToValueAtTime(target, now+dur);
   }catch(e){}
+  // A2759: a suspended context (iOS before resume) or headless audio never
+  // advances currentTime, so the ramp above would never run and the bus could
+  // stay silent. If the clock has not moved by the end of the fade, settle the
+  // gain directly. A running context advances past now+dur, so it keeps the ramp.
+  setTimeout(()=>{
+    try{
+      if(!ctx || ctx.state!=='running' || ctx.currentTime<=now+0.001){
+        masterFade.gain.cancelScheduledValues(ctx?ctx.currentTime:0);
+        masterFade.gain.value=target;
+      }
+    }catch(e){}
+  }, Math.max(30, dur*1000+20));
 }
 function fadeInMaster(){ fadeMaster(1,0.02); }
 function fadeOutMaster(){ fadeMaster(0,0.03); }
@@ -1025,7 +1038,18 @@ function getLiveBuses(ac){
 }
 function syncDelayToTempo(){
   if(!liveBuses || !liveBuses.delayNode || !ctx) return;
-  try{ liveBuses.delayNode.delayTime.setTargetAtTime(_echoSeconds(), ctx.currentTime, 0.05); }catch(e){}
+  const target=_echoSeconds(), now=ctx.currentTime;
+  try{ liveBuses.delayNode.delayTime.setTargetAtTime(target, now, 0.05); }catch(e){}
+  // A2838: setTargetAtTime needs a running clock. A suspended context or
+  // headless audio never advances currentTime, so settle the delay directly.
+  setTimeout(()=>{
+    try{
+      if(!ctx || ctx.state!=='running' || ctx.currentTime<=now+0.001){
+        liveBuses.delayNode.delayTime.cancelScheduledValues(ctx?ctx.currentTime:0);
+        liveBuses.delayNode.delayTime.value=target;
+      }
+    }catch(e){}
+  }, 120);
 }
 
 // ------------------------------------------
