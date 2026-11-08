@@ -39,73 +39,8 @@
     return (capData()[TOOL_ID + ':' + action] || 0) < max;
   }
 
-  function showXPToast(text) {
-    var t = document.createElement('div');
-    t.className = 'jvds-xp-toast';
-    t.textContent = text;
-    t.style.cssText =
-      'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);' +
-      'background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;' +
-      'padding:10px 22px;border-radius:999px;font:700 .85rem/1.2 Nunito,Inter,sans-serif;' +
-      'box-shadow:0 8px 24px rgba(124,58,237,.45);z-index:99999;pointer-events:none;' +
-      'opacity:0;transition:opacity .3s,transform .3s;';
-    document.body.appendChild(t);
-    requestAnimationFrame(function () {
-      t.style.opacity = '1';
-      t.style.transform = 'translateX(-50%) translateY(0)';
-    });
-    setTimeout(function () {
-      t.style.opacity = '0';
-      t.style.transform = 'translateX(-50%) translateY(16px)';
-      setTimeout(function () { t.remove(); }, 350);
-    }, 2600);
-  }
-
-  // A2796: after a download, offer the one-tap "Take it home" path. Shared
-  // school PCs can wipe localStorage, so this is the moment to keep a copy.
-  function showTakeHome() {
-    if (window.__jvdsTakeHome) return;
-    window.__jvdsTakeHome = true;
-    window.JVDS_TAKE_HOME_ARMED = true;
-    try {
-      if (sessionStorage.getItem('jvds_take_home_seen') === '1') return;
-      sessionStorage.setItem('jvds_take_home_seen', '1');
-    } catch (e) {}
-    if (location.pathname === '/me.html' || !document.body) return;
-
-    var wrap = document.createElement('div');
-    wrap.id = 'jvds-take-home';
-    wrap.style.cssText = 'position:fixed;left:14px;bottom:14px;z-index:99998;display:flex;align-items:center;gap:6px;padding:6px 6px 6px 14px;border-radius:999px;background:linear-gradient(135deg,#7c3aed,#5b21b6);box-shadow:0 8px 24px rgba(124,58,237,.42);';
-    var link = document.createElement('a');
-    link.href = '/me.html#keep';
-    link.textContent = 'Take it home';
-    link.style.cssText = 'color:#fff;font:800 .82rem/1.15 Nunito,Inter,sans-serif;text-decoration:none;white-space:nowrap;';
-    link.addEventListener('click', disarmUnload, { once: true });
-    var close = document.createElement('button');
-    close.type = 'button';
-    close.setAttribute('aria-label', 'Dismiss Take it home');
-    close.textContent = '\u00d7';
-    close.style.cssText = 'background:rgba(255,255,255,.18);border:0;color:#fff;border-radius:999px;width:22px;height:22px;font:700 .8rem/1 sans-serif;cursor:pointer;';
-    close.addEventListener('click', function () {
-      wrap.remove();
-      disarmUnload();
-    });
-    wrap.appendChild(link);
-    wrap.appendChild(close);
-    document.body.appendChild(wrap);
-
-    if (!navigator.webdriver) {
-      window.addEventListener('beforeunload', unloadGuard);
-    }
-  }
-  function unloadGuard(e) {
-    if (!window.JVDS_TAKE_HOME_ARMED) return;
-    e.preventDefault();
-    e.returnValue = '';
-  }
-  function disarmUnload() {
-    window.JVDS_TAKE_HOME_ARMED = false;
-  }
+  /* A2903: no fixed XP toast and no "Take it home" pill on tool pages. XP and
+     quest progress still accrue; the tool's own toolbar stays the finish step. */
 
   var _lastAward = {};
   var ToolXP = {
@@ -122,11 +57,7 @@
       trackQuestProgress(action);
       if (!underCap(action, maxPerDay)) return false;
       bumpCap(action);
-      var result = playerProfile.addXP(xp, 'tool:' + TOOL_ID + ':' + action);
-      showXPToast('+' + xp + ' XP, ' + (label || action));
-      if (result && result.levelUp) {
-        setTimeout(function () { showXPToast('🎉 Level ' + result.newLevel + '!'); }, 1200);
-      }
+      playerProfile.addXP(xp, 'tool:' + TOOL_ID + ':' + action);
       return true;
     }
   };
@@ -153,10 +84,6 @@
       if (!forThisTool) return;
       var awarded = questSystem.awardQuest(quest.id, playerProfile);
       if (!awarded) return;
-      var rw = awarded.rewards || {};
-      // Toasts share one screen position: wait for the export XP toast and any
-      // level-up toast (starts at 1.2s, lasts ~2.6s) to clear first.
-      setTimeout(function () { showXPToast((rw.badge || awarded.title) + ' unlocked! +' + (rw.xp || 0) + ' XP'); }, 4000);
       try { document.dispatchEvent(new CustomEvent('jvds:quest-awarded', { detail: { questId: awarded.id } })); } catch (e) {}
     });
   }
@@ -171,7 +98,7 @@
   var origClick = HTMLAnchorElement.prototype.click;
   HTMLAnchorElement.prototype.click = function () {
     if (this.hasAttribute && this.hasAttribute('download')) {
-      setTimeout(function () { ToolXP.award('export', 25, 3, 'Creation exported!'); showTakeHome(); }, 60);
+      setTimeout(function () { ToolXP.award('export', 25, 3, 'Creation exported!'); }, 60);
     }
     return origClick.apply(this, arguments);
   };
@@ -179,7 +106,7 @@
   // ── Export XP: real user clicks on download links ──
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('a[download]') : null;
-    if (a) { ToolXP.award('export', 25, 3, 'Creation exported!'); showTakeHome(); }
+    if (a) { ToolXP.award('export', 25, 3, 'Creation exported!'); }
   });
 
   // ── A289 Mobile touch handling: prevent scroll trap on canvases and add touch->mouse fallback for tools that only listen for mouse ──

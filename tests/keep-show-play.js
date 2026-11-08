@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /*
  * tests/keep-show-play.js
- * A2796: My Studio's Keep & play area and the tool-page Take it home pill.
+ * A2796/A2903: My Studio's Keep & play area, with no floating Take it home
+ * pill left over the tool workspace.
  * Run: node tests/keep-show-play.js
  */
 const fs = require('fs');
@@ -34,7 +35,7 @@ assert.ok(me.includes('id="arcadeGrid"'), 'me.html has the arcade grid');
 assert.ok(me.includes('id="arcadeCanvas"'), 'me.html has the sprite player');
 assert.ok(me.includes('/assets/js/my-studio-keep.js'), 'me.html loads the keep script');
 const toolXp = fs.readFileSync(path.join(ROOT, 'tool-xp.js'), 'utf8');
-assert.ok(toolXp.includes('jvds-take-home'), 'tool-xp.js has the take-home pill');
+assert.ok(!toolXp.includes('jvds-take-home'), 'tool-xp.js has no floating take-home pill');
 
 (async () => {
   const server = http.createServer((req, res) => {
@@ -179,7 +180,7 @@ assert.ok(toolXp.includes('jvds-take-home'), 'tool-xp.js has the take-home pill'
     assert.deepEqual(errors, [], 'no errors on My Studio');
     await page.close();
 
-    // 5. Take it home pill after an export on a tool page
+    // 5. A2903: an export must not float a Take it home pill over the tool.
     const tool = await open('/tools/pixel-studio.html');
     await tool.page.evaluate(() => {
       const a = document.createElement('a');
@@ -189,17 +190,17 @@ assert.ok(toolXp.includes('jvds-take-home'), 'tool-xp.js has the take-home pill'
       a.click();
       a.remove();
     });
-    await tool.page.waitForSelector('#jvds-take-home', { timeout: 8000 });
-    const pill = await tool.page.evaluate(() => ({
-      href: document.querySelector('#jvds-take-home a').getAttribute('href'),
+    await new Promise((r) => setTimeout(r, 800));
+    const floating = await tool.page.evaluate(() => ({
+      pill: !!document.getElementById('jvds-take-home'),
       armed: !!window.JVDS_TAKE_HOME_ARMED
     }));
-    assert.equal(pill.href, '/me.html#keep', 'pill links to the keep panel');
-    assert.ok(pill.armed, 'close nudge is armed for real browsers');
+    assert.equal(floating.pill, false, 'no take-home pill over the tool');
+    assert.equal(floating.armed, false, 'no close nudge armed on the tool');
     assert.deepEqual(tool.errors, [], 'no errors on the tool page');
     await tool.page.close();
 
-    console.log('\nPASS keep-show-play: take it home, printable report, safe sprite/game arcade and tool pill (1440/390)');
+    console.log('\nPASS keep-show-play: printable report, safe sprite/game arcade, no floating tool pill (1440/390)');
   } finally {
     try { fs.unlinkSync(spritePath); } catch (e) {}
     try { fs.unlinkSync(gamePath); } catch (e) {}

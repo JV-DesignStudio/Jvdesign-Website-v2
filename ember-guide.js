@@ -160,6 +160,9 @@
       bbBtn.addEventListener('click', function(){ openAt(0); });
       bbFile.appendChild(bbBtn);
     }
+    // A2903: tool pages keep Help in the toolbar; never float a chip over the
+    // workspace. Other page types may still get the fallback chip.
+    if(/^\/tools\//.test(location.pathname)) return;
     // Floating chip only if no header Help exists (so we don't duplicate)
     if(document.querySelector('[data-on="EmberGuide.show"], [onclick*="EmberGuide.show"]')) return;
     var isCheatsheet = /cheatsheet|glossary|guide/i.test(cfg.id || '');

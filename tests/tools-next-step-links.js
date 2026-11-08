@@ -26,6 +26,8 @@ function check(name, ok, detail = '') {
 
 const TOOLS = ['pixel-studio', 'sound-studio', 'level-designer', 'arcade-game-maker', 'colour-palette'];
 
+/* A2903: tool pages no longer inject a cross-tool "What to try next" block. */
+
 (async () => {
   await new Promise((resolve) => server.listen(port, resolve));
   const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -43,18 +45,12 @@ const TOOLS = ['pixel-studio', 'sound-studio', 'level-designer', 'arcade-game-ma
     await page.setViewport({ width, height: width === 390 ? 844 : 900 });
     for (const id of TOOLS) {
       await page.goto('http://127.0.0.1:' + port + '/tools/' + id + '.html', { waitUntil: 'domcontentloaded', timeout: 20000 });
-      await page.waitForSelector('#tool-next-step', { timeout: 6000 }).catch(() => {});
+      await new Promise((r) => setTimeout(r, 900));
       const state = await page.evaluate(() => ({
         present: !!document.getElementById('tool-next-step'),
-        links: Array.from(document.querySelectorAll('#tool-next-step a')).map((a) => a.getAttribute('href')),
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
       }));
-      check(width + 'px ' + id + ': next-step block', state.present);
-      check(width + 'px ' + id + ': at least two links', state.links.length >= 2, String(state.links.length));
-      check(width + 'px ' + id + ': no self link', !state.links.some((h) => h && h.endsWith('/' + id + '.html')), state.links.join(','));
-      await page.evaluate(() => {});
-      const missing = state.links.filter((h) => h && h.startsWith('/tools/') && !fs.existsSync(path.join(root, h.replace(/^\//, '').split('#')[0])));
-      check(width + 'px ' + id + ': all targets exist', missing.length === 0, missing.join(','));
+      check(width + 'px ' + id + ': no cross-tool next-step block', !state.present);
       check(width + 'px ' + id + ': no horizontal overflow', state.overflow <= 2, String(state.overflow));
     }
   }
@@ -63,5 +59,5 @@ const TOOLS = ['pixel-studio', 'sound-studio', 'level-designer', 'arcade-game-ma
   await browser.close();
   server.close();
   if (failures) { console.log('\n' + failures + ' FAILURE(S)'); process.exit(1); }
-  console.log('\nALL TOOL NEXT-STEP CHECKS PASSED');
+  console.log('\nALL TOOL FOCUS CHECKS PASSED (no cross-tool next-step block)');
 })().catch((e) => { console.error(e); server.close(); process.exit(1); });
