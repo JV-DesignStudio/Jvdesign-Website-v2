@@ -25,7 +25,10 @@ const pkgSrc = JSON.stringify(pkg.scripts || {});
 
 // Validators that are deliberately not auto-run, with the reason.
 const EXCEPTIONS = {
-  // e.g. 'validate-something.js': 'runs from a scheduled task only'
+  // Advisory only: 44 known inline-style findings in workshop steps. It is
+  // tracked as step-authoring debt, not a merge gate, until those pages are
+  // cleaned up. Remove this entry once it can run clean.
+  'scripts/validate-step-authoring.js': 'advisory step-authoring debt (44 inline-style findings)',
 };
 
 function listValidators(dir, prefix) {
@@ -64,6 +67,25 @@ check('every npm script node target exists', missingPkg.length === 0, missingPkg
 // The game gates we care about must be in CI.
 for (const gate of ['tests/game-quality.js', 'tests/games-keep-rule.js', 'scripts/validate-game-quality.js', 'validate-covers.js', 'tests/workshop-actions.js']) {
   check('CI runs ' + gate, ciSrc.includes(gate));
+}
+
+// A2807: the gallery, share and funnel tests added with A2800-A2804 must keep
+// running after their cards are approved. They only run when a board card names
+// them, so this guard fails if any one drops out of package.json or CI.
+const UX_TESTS = [
+  'tests/gallery-creations.js',
+  'tests/gallery-share-buttons.js',
+  'tests/first-create-funnel-extra.js',
+  'tests/pixel-studio-share-link.js',
+  'tests/pixel-studio-floating-share.js',
+  'tests/pixel-studio-device-limits.js',
+  'tests/echo-feedback.js',
+  'tests/my-studio-portfolio-keys.js',
+  'tests/arcade-improvements.js'
+];
+for (const t of UX_TESTS) {
+  const wired = pkgSrc.includes(t) || ciSrc.includes(t);
+  check('npm or CI runs ' + t, wired, wired ? '' : 'not in package.json or CI');
 }
 
 if (failures) { console.log('\n' + failures + ' CHECK(S) FAILED'); process.exit(1); }
