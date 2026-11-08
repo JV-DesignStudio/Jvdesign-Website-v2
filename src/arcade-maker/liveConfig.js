@@ -88,6 +88,8 @@ const liveConfig = {
     a11yCaptions:   true,
     a11yReducedMotion: false,
     a11yAssist:     false,
+    // A2710: a short rewind instead of a hard game over in Flappy and Platformer.
+    rewindEnabled:  true,
     // ── Visual Themes ─────────────────────────────────────────────
     theme: 'space',
     // ── Parallax Backgrounds ──────────────────────────────────────
