@@ -21,6 +21,9 @@ const server=http.createServer((req,res)=>{
 const window={};
 eval(fs.readFileSync(path.join(root,'games-registry.js'),'utf8'));
 const games=window.JVDS_GAMES||[];
+// HIDDEN games are intentionally left out of the arcade grid (tests/game-quality.js),
+// and classroom games render in their own section, so the grid count is the rest.
+const visible=games.filter(g=>String(g.quality||'').toUpperCase()!=='HIDDEN'&&!g.classroom);
 
 (async()=>{
   server.listen(0);
@@ -67,7 +70,7 @@ const games=window.JVDS_GAMES||[];
       cabs:document.querySelectorAll('#grid .cab').length,
       hrefs:[...document.querySelectorAll('#grid .cab')].map(a=>a.getAttribute('href'))
     }));
-    check('arcade renders every card',arc.cabs===games.length,arc.cabs+' vs '+games.length);
+    check('arcade renders every card',arc.cabs===visible.length,arc.cabs+' vs '+visible.length+' visible');
     const missing=arc.hrefs.filter(h=>!h||!fs.existsSync(path.join(root,h.replace(/^\.\.\//,''))));
     check('every arcade card links a real game file',missing.length===0,missing.join(', '));
   } finally { await browser.close(); await new Promise(r=>server.close(r)); }

@@ -128,12 +128,13 @@ async function browserChecks(browser, base, width, games) {
 
 (async () => {
   const games = registry();
+  const visible = games.filter(g => String(g.quality || '').toUpperCase() !== 'HIDDEN');
   staticChecks(games);
   await imageChecks(games);
   await galleryChecks();
   await withServer(async ({ base, browser }) => {
-    await browserChecks(browser, base, 390, games);
-    await browserChecks(browser, base, 1440, games);
+    await browserChecks(browser, base, 390, visible);
+    await browserChecks(browser, base, 1440, visible);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL GAME THUMB CHECKS PASSED');
   process.exit(failures ? 1 : 0);
