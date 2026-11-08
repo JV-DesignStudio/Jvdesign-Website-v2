@@ -77,6 +77,9 @@ function generateWorkshops() {
 
   for (const file of files) {
     const slug = slugFromFilename(file);
+    // Keep nested workshop pages (for example workshops/run-sheets/*.html)
+    // addressable at their real path, not a flattened root URL.
+    const rel = path.relative(path.join(ROOT, 'workshops'), file).split(path.sep).join('/');
     const html = read(file);
     if (!html) continue;
 
@@ -179,7 +182,7 @@ function generateWorkshops() {
       steps,
       themeColor: tc,
       cover: cover,
-      url: `/workshops/${slug}.html`
+      url: `/workshops/${rel}`
     });
 
     if (!engines[engine]) engines[engine] = 0;

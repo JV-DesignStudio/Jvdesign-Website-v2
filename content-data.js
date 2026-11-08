@@ -669,7 +669,7 @@ window.JVDS_CONTENT = {
       "steps": 0,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/my-first-browser-game-run-sheet.html"
+      "url": "/workshops/run-sheets/my-first-browser-game-run-sheet.html"
     },
     {
       "id": "my-first-scratch-game-run-sheet",
@@ -685,7 +685,7 @@ window.JVDS_CONTENT = {
       "steps": 0,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/my-first-scratch-game-run-sheet.html"
+      "url": "/workshops/run-sheets/my-first-scratch-game-run-sheet.html"
     },
     {
       "id": "my-first-video-game-run-sheet",
@@ -701,7 +701,7 @@ window.JVDS_CONTENT = {
       "steps": 0,
       "themeColor": "#BC4749",
       "cover": "og/learn.webp",
-      "url": "/workshops/my-first-video-game-run-sheet.html"
+      "url": "/workshops/run-sheets/my-first-video-game-run-sheet.html"
     },
     {
       "id": "cyber-security",
@@ -1350,50 +1350,6 @@ window.JVDS_CONTENT = {
       "themeColor": "#FF7700",
       "cover": "/og/learn.webp",
       "url": "/workshops/start-here.html"
-    },
-    {
-      "id": "learn",
-      "title": "Teen Learn Code, Create & Level Up",
-      "desc": "Free game-building courses for teens aged 13+. JavaScript, Python, Godot, Roblox, MUGEN build real games from scratch. No paywalls, no fluff.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10-14",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#BC4749",
-      "cover": "/og/learn.webp",
-      "url": "/workshops/learn.html"
-    },
-    {
-      "id": "learning-lab",
-      "title": "The Learning Lab: Free Browser Mini-Games for School Subjects",
-      "desc": "Sixteen free browser mini-games covering Computing, Maths, English, Science, Geography, History, Music and more. No login, no download.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "10-14",
-      "type": "workshop",
-      "tags": [
-        "narrative"
-      ],
-      "steps": 6,
-      "themeColor": "#BC4749",
-      "cover": "/og/learning-lab.webp",
-      "url": "/workshops/learning-lab.html"
-    },
-    {
-      "id": "tiny-learners",
-      "title": "Tiny Learners: Free Tap-to-Learn Games for Ages 4-6",
-      "desc": "Fifteen free tap-to-learn activities and a drawing studio for ages 4-6. Count, colour, match shapes and phonics with no typing needed.",
-      "engine": "General",
-      "difficulty": "beginner",
-      "ageRange": "4-6",
-      "type": "workshop",
-      "tags": [],
-      "steps": 6,
-      "themeColor": "#FF6B6B",
-      "cover": "/og/tiny-learners.webp",
-      "url": "/workshops/tiny-learners.html"
     },
     {
       "id": "voxel-studio",
@@ -5633,8 +5589,8 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-08T20:24:01.000Z",
-    "workshops": 285,
+    "generated": "2026-11-08T21:02:59.000Z",
+    "workshops": 282,
     "games": 14,
     "tools": 49,
     "books": 5,
@@ -5643,7 +5599,7 @@ window.JVDS_CONTENT = {
       "C++": 10,
       "Defold": 7,
       "GDevelop": 7,
-      "General": 54,
+      "General": 51,
       "GML/GameMaker": 6,
       "Godot": 17,
       "Java": 8,
