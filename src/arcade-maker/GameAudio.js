@@ -12,6 +12,13 @@ const GameAudio = {
         customBuffers: { shoot:null, jump:null, hit:null, score:null, levelup:null, death:null, powerup:null, victory:null },
         musicNodes: [], musicTimeout: null, musicStep: 0,
         customMusic: null, _musicSource: null,
+        // A2697: stereo position for the next effect (0 = centre). Reset after
+        // each play() so only the sound that asked for a position pans.
+        _pan: 0,
+        // A2698: background music runs through one gain bus so a loud effect can
+        // duck it without touching the individual note gains.
+        _musicBus: null, _duckActive: false, _duckUntil: 0, _duckToken: 0, _duckTimer: null,
+        DUCK_EVENTS: { hit: 1, death: 1, powerup: 1 },
     
         getCtx() {
             if (!this.ctx) this.ctx = new (window.AudioContext||window.webkitAudioContext)();
@@ -19,19 +26,93 @@ const GameAudio = {
             return this.ctx;
         },
     
-        play(event) {
-            if (!this.sfxEnabled) return;
+        _audioAvailable() {
+            return typeof window !== 'undefined' && !!(window.AudioContext || window.webkitAudioContext);
+        },
+    
+        // Route one mono node to the speakers, optionally through a StereoPanner.
+        _connectOutAt(node, pan) {
+            const ac = this.ctx;
+            if (pan && ac && typeof ac.createStereoPanner === 'function') {
+                const p = ac.createStereoPanner();
+                p.pan.value = Math.max(-1, Math.min(1, pan));
+                node.connect(p); p.connect(ac.destination);
+                return p;
+            }
+            node.connect(ac.destination);
+            return node;
+        },
+        _connectOut(node) { return this._connectOutAt(node, this._pan || 0); },
+    
+        _getMusicBus() {
+            const ac = this.getCtx();
+            if (!this._musicBus) {
+                this._musicBus = ac.createGain();
+                this._musicBus.gain.value = 1;
+                this._musicBus.connect(ac.destination);
+            }
+            return this._musicBus;
+        },
+    
+        // A2698: lower music by `depth` (0.4 = about 40 percent quieter) for `ms`
+        // while a loud effect plays. Overlapping hits do not stack the duck.
+        duckMusic(depth, ms) {
+            if (!(this.musicTimeout || this._musicSource)) return;
+            if (this._duckActive) return;
+            const ac = this.ctx;
+            if (!ac) return;
+            const bus = this._getMusicBus();
+            const d = typeof depth === 'number' ? depth : 0.4;
+            const hold = typeof ms === 'number' ? ms : 500;
+            const now = ac.currentTime;
+            const target = Math.max(0.05, 1 - d);
+            this._duckActive = true;
+            this._duckUntil = now + hold / 1000;
+            try {
+                bus.gain.cancelScheduledValues(now);
+                bus.gain.setValueAtTime(bus.gain.value, now);
+                bus.gain.linearRampToValueAtTime(target, now + 0.05);
+                bus.gain.setValueAtTime(target, Math.max(now + 0.06, this._duckUntil - 0.15));
+                bus.gain.linearRampToValueAtTime(1, this._duckUntil);
+            } catch (e) {}
+            const token = ++this._duckToken;
+            clearTimeout(this._duckTimer);
+            this._duckTimer = setTimeout(() => {
+                if (token !== this._duckToken) return;
+                this._duckActive = false;
+                try {
+                    const t = ac.currentTime;
+                    bus.gain.cancelScheduledValues(t);
+                    bus.gain.setValueAtTime(1, t);
+                } catch (e) {}
+            }, hold + 40);
+        },
+    
+        play(event, opts) {
+            if (!this.sfxEnabled || !this._audioAvailable()) return;
             const s = this.sounds[event];
             if (s === 'off') return;
-            if (this.customBuffers[event]) { this._playBuffer(this.customBuffers[event]); return; }
-            const fn = this['_snd_' + s];
-            if (fn) fn.call(this);
+            const prevPan = this._pan;
+            this._pan = (opts && typeof opts.x === 'number' && isFinite(opts.x))
+                ? Math.max(-1, Math.min(1, opts.x)) : 0;
+            try {
+                if (this.DUCK_EVENTS[event] && !(opts && opts.preview)) this.duckMusic();
+                if (this.customBuffers[event]) { this._playBuffer(this.customBuffers[event]); return; }
+                const fn = this['_snd_' + s];
+                if (fn) fn.call(this);
+            } finally {
+                this._pan = prevPan;
+            }
         },
+    
+        // A2697: convenience wrapper for gameplay sounds tied to an x position.
+        // x is -1 (left edge) to 1 (right edge); omit it for centre / UI sounds.
+        playAt(event, x) { return this.play(event, { x }); },
     
         previewSlot(event) {
             const saved = this.sfxEnabled;
             this.sfxEnabled = true;
-            this.play(event);
+            this.play(event, { preview: true });
             this.sfxEnabled = saved;
         },
         previewMusic() {
@@ -61,7 +142,7 @@ const GameAudio = {
             const _pitchVariance = window._sfxPitchVariance || 0;
             const _randomDetune = _pitchVariance > 0 ? (Math.random() * 2 - 1) * _pitchVariance * 100 : 0;
             o.detune.value = (window._soundPackDetune || 0) + _randomDetune;
-            o.connect(g); g.connect(ac.destination);
+            o.connect(g); this._connectOut(g);
             o.frequency.setValueAtTime(freq0, t);
             if (freq1) o.frequency.exponentialRampToValueAtTime(freq1, t + dur * 0.8);
             g.gain.setValueAtTime(this.volume * this.sfxVol * vol, t);
@@ -75,7 +156,7 @@ const GameAudio = {
             const d = buf.getChannelData(0);
             for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
             const src = ac.createBufferSource(), g = ac.createGain();
-            src.buffer = buf; src.connect(g); g.connect(ac.destination);
+            src.buffer = buf; src.connect(g); this._connectOut(g);
             g.gain.setValueAtTime(this.volume * this.sfxVol * vol, t);
             g.gain.exponentialRampToValueAtTime(0.001, t + dur);
             src.start(t);
@@ -88,7 +169,7 @@ const GameAudio = {
             const ac = this.getCtx(), t = ac.currentTime + 0.01;
             [800,600,400].forEach((f,i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
-                o.type = 'square'; o.connect(g); g.connect(ac.destination);
+                o.type = 'square'; o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i * 0.03;
                 g.gain.setValueAtTime((this.volume * this.sfxVol) * 0.15, st);
@@ -117,7 +198,7 @@ const GameAudio = {
             const ac = this.getCtx(), t = ac.currentTime + 0.01;
             [523, 784].forEach((f, i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
-                o.connect(g); g.connect(ac.destination);
+                o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i * 0.07;
                 g.gain.setValueAtTime((this.volume * this.sfxVol) * 0.22, st);
@@ -130,7 +211,7 @@ const GameAudio = {
             const ac = this.getCtx(), t = ac.currentTime + 0.01;
             [523, 659, 784, 1047].forEach((f, i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
-                o.connect(g); g.connect(ac.destination);
+                o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i * 0.055;
                 g.gain.setValueAtTime((this.volume * this.sfxVol) * 0.18, st);
@@ -148,7 +229,7 @@ const GameAudio = {
             [523,659,784,1047].forEach((f,i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
                 o.type = window._soundPackType||'square'; o.detune.value=window._soundPackDetune||0;
-                o.connect(g); g.connect(ac.destination);
+                o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i * 0.09;
                 g.gain.setValueAtTime((this.volume * this.sfxVol)*0.22, st);
@@ -162,7 +243,7 @@ const GameAudio = {
             [392,494,587,784,988].forEach((f,i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
                 o.type = window._soundPackType||'triangle'; o.detune.value=window._soundPackDetune||0;
-                o.connect(g); g.connect(ac.destination);
+                o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i * 0.08;
                 g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
@@ -177,7 +258,7 @@ const GameAudio = {
                 [f1,f2,f3].forEach(f => {
                     const o = ac.createOscillator(), g = ac.createGain();
                     o.type = window._soundPackType||'sine'; o.detune.value=window._soundPackDetune||0;
-                    o.connect(g); g.connect(ac.destination); o.frequency.value = f;
+                    o.connect(g); this._connectOut(g); o.frequency.value = f;
                     const st = t + i * 0.25;
                     g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime((this.volume * this.sfxVol)*0.14, st+0.06);
                     g.gain.exponentialRampToValueAtTime(0.001, st+0.45);
@@ -191,7 +272,7 @@ const GameAudio = {
             [330,392,494,659].forEach((f,i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
                 o.type = window._soundPackType||'square'; o.detune.value=window._soundPackDetune||0;
-                o.connect(g); g.connect(ac.destination);
+                o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i*0.07;
                 g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
@@ -206,7 +287,7 @@ const GameAudio = {
             [440,350,280,220].forEach((f,i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
                 o.type = window._soundPackType||'sawtooth'; o.detune.value=window._soundPackDetune||0;
-                o.connect(g); g.connect(ac.destination);
+                o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i*0.1;
                 g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
@@ -223,7 +304,7 @@ const GameAudio = {
             [392,523,659,784].forEach((f,i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
                 o.type = window._soundPackType||'triangle'; o.detune.value=window._soundPackDetune||0;
-                o.connect(g); g.connect(ac.destination);
+                o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i*0.065;
                 g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
@@ -240,7 +321,7 @@ const GameAudio = {
             [523,659,784,880,1047].forEach((f,i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
                 o.type = window._soundPackType||'square'; o.detune.value=window._soundPackDetune||0;
-                o.connect(g); g.connect(ac.destination);
+                o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i*0.1;
                 g.gain.setValueAtTime((this.volume * this.sfxVol)*0.22, st);
@@ -254,7 +335,7 @@ const GameAudio = {
             [392,494,587,784,987].forEach((f,i) => {
                 const o = ac.createOscillator(), g = ac.createGain();
                 o.type = window._soundPackType||'square'; o.detune.value=window._soundPackDetune||0;
-                o.connect(g); g.connect(ac.destination);
+                o.connect(g); this._connectOut(g);
                 o.frequency.value = f;
                 const st = t + i*0.08;
                 g.gain.setValueAtTime((this.volume * this.sfxVol)*0.2, st);
@@ -265,11 +346,12 @@ const GameAudio = {
     
         _playBuffer(dataUrl) {
             const ac = this.getCtx();
+            const pan = this._pan || 0; // capture now: decoding finishes after play() resets _pan
             // fetch() does not support data: URLs in Firefox/Safari, decode base64 directly.
             const _decode = (ab) => {
                 ac.decodeAudioData(ab).then(buf => {
                     const src = ac.createBufferSource(), g = ac.createGain();
-                    src.buffer = buf; src.connect(g); g.connect(ac.destination);
+                    src.buffer = buf; src.connect(g); this._connectOutAt(g, pan);
                     g.gain.value = (this.volume * this.sfxVol); src.start();
                 }).catch(() => {});
             };
@@ -309,7 +391,7 @@ const GameAudio = {
                 if (ni !== null && ni !== undefined) {
                     const o = ac.createOscillator(), g = ac.createGain();
                     o.type = style === 'space' ? 'sine' : 'square';
-                    o.connect(g); g.connect(ac.destination);
+                    o.connect(g); g.connect(this._getMusicBus());
                     o.frequency.value = p.notes[ni];
                     const t = ac.currentTime;
                     g.gain.setValueAtTime((this.volume * this.musicVol) * 0.08, t);
@@ -326,6 +408,18 @@ const GameAudio = {
             if (this.musicTimeout) clearTimeout(this.musicTimeout);
             this.musicTimeout = null;
             if (this._musicSource) { try { this._musicSource.stop(); } catch(e) {} this._musicSource = null; }
+            // A2698: pause, mute and restart must always bring music back to full.
+            this._duckActive = false;
+            this._duckUntil = 0;
+            clearTimeout(this._duckTimer);
+            this._duckTimer = null;
+            if (this._musicBus) {
+                try {
+                    const t = this.ctx.currentTime;
+                    this._musicBus.gain.cancelScheduledValues(t);
+                    this._musicBus.gain.setValueAtTime(1, t);
+                } catch (e) {}
+            }
         },
     
         _playCustomMusic() {
@@ -334,7 +428,7 @@ const GameAudio = {
                 if (this._musicSource) { try { this._musicSource.stop(); } catch(e) {} }
                 const src = ac.createBufferSource(), g = ac.createGain();
                 src.buffer = buf; src.loop = true;
-                src.connect(g); g.connect(ac.destination);
+                src.connect(g); this._connectOut(g);
                 g.gain.value = this.volume * this.musicVol * 0.5;
                 src.start(); this._musicSource = src;
             };
