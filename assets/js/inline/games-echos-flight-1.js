@@ -6,10 +6,13 @@ const audio = window.AudioEffects ? new AudioEffects(.5) : null;
 if (localStorage.getItem('soundEnabled') === 'false' && audio) audio.setMasterVolume(0);
 const sys = window.GameSystem ? new GameSystem('echo-flight', "Echo's Swim", 'echo') : null;
 const KEY = 'echo_swim_flappy_v1';
+const a11y = document.getElementById('a11yStatus');
+function announce(text){ if (a11y) a11y.textContent = text; }
 
 // ---- state -------------------------------------------------------------
 let vw = 0, vh = 0, dpr = 1;
 let state = 'menu';               // menu | waiting | playing | over
+let paused = false;
 let echo, gates, bubbles, sparkles, trail, pops;
 let score = 0, passed = 0, collected = 0;
 let spawnX = 0, speed = 0, last = 0, trailTimer = 0, scroll = 0, shake = 0;
@@ -136,16 +139,21 @@ function updateDailyHint(){
 function beginSwim(){
   reset();
   state = 'waiting';
+  paused = false;
   $('startScreen').classList.add('hidden');
   $('endScreen').classList.add('hidden');
   $('hint').classList.add('show');
+  $('pauseBtn').textContent = 'Pause';
+  $('pauseBtn').setAttribute('aria-label', 'Pause game');
   echo.vy = 0;
   try { sys && sys.beginRun && sys.beginRun(); } catch(e){}
+  announce('Swim started. Tap or press Space to swim up.');
 }
 
 function flap(){
   if (state === 'menu') { beginSwim(); return; }
   if (state === 'over' ) return;
+  if (paused) return;
   if (state === 'waiting') { state = 'playing'; $('hint').classList.remove('show'); }
   if (state === 'playing'){
     echo.vy = -Math.max(368, vh * 0.52);
@@ -188,6 +196,7 @@ function step(dt){
       pops.push({ x: echo.x + 8, y: echo.y - 26, text: '+1', life: .9 });
       if (audio) { try { audio.playSuccess(); } catch(e){} }
       sparkle(echo.x, echo.y);
+      if (passed % 5 === 0) announce('Score ' + score + '. ' + passed + ' gates.');
     }
   }
   for (const b of bubbles){
@@ -254,6 +263,7 @@ function bump(g){
   hearts--;
   updateHud();
   if (hearts <= 0) return crash();
+  announce('Bonk. ' + hearts + ' heart' + (hearts === 1 ? '' : 's') + ' left.');
   invuln = 1.15;
   // slide Echo back into the gap and give a soft upward bounce
   const mid = g.top + g.gap / 2;
@@ -268,6 +278,9 @@ function bump(g){
 
 function crash(){
   state = 'over';
+  paused = false;
+  $('pauseBtn').textContent = 'Pause';
+  $('pauseBtn').setAttribute('aria-label', 'Pause game');
   if (audio) { try { audio.playError(); } catch(e){} }
   for (let i = 0; i < 12; i++) sparkle(echo.x, echo.y);
   if (score > echoBest){ echoBest = score; saveBest(echoBest); }
@@ -295,6 +308,7 @@ function crash(){
   $('dailyLine').textContent = dailyMsg;
   $('endScreen').classList.remove('hidden');
   updateHud();
+  announce('Run over. Score ' + score + '. Gates ' + passed + '. Best ' + echoBest + '.');
 }
 
 function updateHud(){
@@ -671,9 +685,21 @@ function drawEcho(e, t){
 }
 
 // ---- input -------------------------------------------------------------
+function togglePause(){
+  if (state !== 'playing' && state !== 'waiting') return;
+  paused = !paused;
+  const b = $('pauseBtn');
+  if (b){
+    b.textContent = paused ? 'Resume' : 'Pause';
+    b.setAttribute('aria-label', paused ? 'Resume game' : 'Pause game');
+  }
+  announce(paused ? 'Paused.' : 'Resumed.');
+}
+
 function pointerFlap(e){ if (e) e.preventDefault(); flap(); }
 C.addEventListener('pointerdown', pointerFlap);
 document.addEventListener('keydown', function(e){
+  if (e.code === 'KeyP' || e.key === 'Escape') { e.preventDefault(); togglePause(); return; }
   if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW'){
     e.preventDefault();
     if (state === 'over') { beginSwim(); } else { flap(); }
@@ -681,6 +707,7 @@ document.addEventListener('keydown', function(e){
 });
 $('startBtn').addEventListener('click', beginSwim);
 $('againBtn').addEventListener('click', beginSwim);
+$('pauseBtn').addEventListener('click', togglePause);
 $('soundBtn').addEventListener('click', function(){
   const on = localStorage.getItem('soundEnabled') !== 'false';
   localStorage.setItem('soundEnabled', on ? 'false' : 'true');
@@ -700,6 +727,7 @@ if (location.search.indexOf('debug') !== -1){
       const ahead = gates.filter(function(g){ return g.x + 72 > echo.x; }).sort(function(a, b){ return a.x - b.x; })[0];
       return {
         phase: state,
+        paused: paused,
         y: echo ? echo.y : 0,
         passed: passed,
         score: score,
@@ -720,7 +748,7 @@ updateDailyHint();
 requestAnimationFrame(function frame(ts){
   const dt = Math.min(0.033, (ts - last) / 1000 || 0.016);
   last = ts;
-  step(dt);
+  if (!paused) step(dt);
   requestAnimationFrame(frame);
 });
 requestAnimationFrame(draw);

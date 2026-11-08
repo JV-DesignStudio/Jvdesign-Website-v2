@@ -53,7 +53,32 @@ for (const file of registryFiles) {
   check(!/<meta[^>]+http-equiv=["']refresh["']/i.test(html), file, 'registry game is a redirect, not the game');
 }
 
-console.log(`Arcade game QA: ${files.length} pages scanned, ${registryFiles.length} registry targets checked`);
+// A2010/A2844: every published game must have an audible shell: a live status
+// region, a labelled play field, and a pause control.
+const qBlock = registrySrc.match(/window\.JVDS_GAME_QUALITY\s*=\s*\{([\s\S]*?)\}/);
+const quality = {};
+if (qBlock) for (const m of qBlock[1].matchAll(/"([^"]+)"\s*:\s*"([^"]+)"/g)) quality[m[1]] = m[2];
+const registryEntries = [...registrySrc.matchAll(/\{\s*"id"\s*:\s*"([^"]+)"[\s\S]*?"file"\s*:\s*"([^"]+\.html)"/g)].map(m => ({ id: m[1], file: m[2] }));
+let a11yChecked = 0;
+for (const { id, file } of registryEntries) {
+  if (String(quality[id] || '').toUpperCase() === 'HIDDEN') continue;
+  const full = path.join(GAME_DIR, file);
+  if (!fs.existsSync(full)) continue;
+  a11yChecked++;
+  const html = fs.readFileSync(full, 'utf8');
+  let code = html;
+  for (const m of html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+\.js)["']/gi)) {
+    const src = m[1];
+    if (/^(https?:)?\/\//.test(src)) continue;
+    const target = src.startsWith('/') ? path.join(ROOT, src) : path.resolve(GAME_DIR, src);
+    try { code += '\n' + fs.readFileSync(target, 'utf8'); } catch (e) {}
+  }
+  check(/aria-live|role=["']status["']/i.test(code), file, 'missing a live status region (aria-live / role=status)');
+  check(/<canvas[^>]*aria-label/i.test(html) || /aria-label=["'][^"']*play field/i.test(html), file, 'missing a labelled play field');
+  check(/pause|autoPause/i.test(code), file, 'missing a pause control');
+}
+
+console.log(`Arcade game QA: ${files.length} pages scanned, ${registryFiles.length} registry targets checked, ${a11yChecked} published games checked for the a11y baseline`);
 if (failures.length) failures.forEach(f => console.log(`  [FAIL] ${f}`));
 else console.log('  [PASS] static game-page contract + every registry target is a game');
 notes.forEach(n => console.log(`  [INFO] ${n}`));

@@ -100,6 +100,23 @@ const AUTOPILOT = async (want) => {
       ok(vp.name + ': gates add to the score', run && run.score >= run.passed, run ? JSON.stringify({ score: run.score, passed: run.passed }) : '');
       ok(vp.name + ': autopilot never auto-ended the run', run && run.phase !== 'over', run ? 'phase=' + run.phase : '');
 
+      // Pause freezes the run, resume carries on, and both are announced.
+      const paused = await page.evaluate(() => {
+        const b = document.getElementById('pauseBtn');
+        b.click();
+        const s = window.__echoSwim.state();
+        return { text: b.textContent, paused: s.paused, live: document.getElementById('a11yStatus').textContent };
+      });
+      ok(vp.name + ': pause freezes the run', paused.paused === true && /Resume/i.test(paused.text), JSON.stringify(paused));
+      const resumed = await page.evaluate(() => {
+        const b = document.getElementById('pauseBtn');
+        b.click();
+        const s = window.__echoSwim.state();
+        return { text: b.textContent, paused: s.paused, live: document.getElementById('a11yStatus').textContent };
+      });
+      ok(vp.name + ': resume continues the run', resumed.paused === false && /Pause/i.test(resumed.text), JSON.stringify(resumed));
+      ok(vp.name + ': pause and resume are announced', /Paused/i.test(paused.live) && /Resumed/i.test(resumed.live), paused.live + ' / ' + resumed.live);
+
       // Wall hits are forgiving: a coral graze costs a life and bounces Echo
       // back into the gap instead of instantly ending the swim.
       const wall = await page.evaluate(async () => {
@@ -180,6 +197,8 @@ const AUTOPILOT = async (want) => {
     const html = fs.readFileSync(path.join(ROOT, 'games', 'echos-flight.html'), 'utf8');
     ok('rebuild drops the story-run overlay that ended the old run', !/story-run\.js/.test(html) && !/StoryRun/.test(html));
     ok('rebuild is one tap with two overlays (start + end), no extra layers', (html.match(/class="overlay/g) || []).length === 2);
+    ok('a11y: pause button and live status region exist', /id="pauseBtn"/.test(html) && /id="a11yStatus"[^>]*aria-live="polite"/.test(html));
+    ok('a11y: canvas has a play-field label', /<canvas[^>]*aria-label="[^"]*play field"/i.test(html));
   } finally {
     await browser.close();
     server.close();
