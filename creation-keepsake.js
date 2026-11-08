@@ -58,6 +58,7 @@
     '#jk-keep-export:focus-visible{outline:3px solid #BC4749;outline-offset:2px}',
     '#jk-keep-cert{color:#e7c98a;text-decoration:none;font-weight:700;white-space:nowrap}',
     '#jk-keep-cert:hover{text-decoration:underline}',
+    '#jvds-keepsake-strip .jk-echo{font-size:.66rem;color:#e7c98a;font-weight:600;line-height:1.35;margin-top:2px;display:block}',
     '@media (max-width:560px){#jvds-keepsake-strip{padding:7px 10px;gap:8px}#jvds-keepsake-strip .jk-sub{display:none}}'
   ].join('');
 
@@ -171,6 +172,19 @@
     strip.style.bottom = (base + 52) + 'px';
   }
 
+  /* A2803: Echo's line arrives with a separate deferred script, so wait for it. */
+  function setEcho(tries) {
+    tries = tries || 0;
+    var el = document.getElementById('jk-echo-line');
+    if (!el) return;
+    if (window.EchoFeedback && typeof window.EchoFeedback.line === 'function' && window.EchoFeedback.has(TOOL)) {
+      el.textContent = window.EchoFeedback.line(TOOL);
+      return;
+    }
+    if (tries < 24) setTimeout(function () { setEcho(tries + 1); }, 150);
+    else el.remove();
+  }
+
   function build() {
     var style = document.createElement('style');
     style.id = 'jvds-keepsake-style';
@@ -185,12 +199,14 @@
       '<span class="jk-txt">' +
       '<b>Your work saves on this device</b>' +
       '<span class="jk-sub">No account needed. On shared PCs, export to keep it forever.</span>' +
+      '<span class="jk-echo" id="jk-echo-line"></span>' +
       '</span>' +
       '<button id="jk-keep-export" type="button" title="Export to keep">Export to keep</button>' +
       '<a id="jk-keep-cert" href="/tools/certificate.html" title="Get a certificate">Certificate</a>';
     if (window.JVDSDock) window.JVDSDock.add(strip);
     else document.body.appendChild(strip);
     document.getElementById('jk-keep-export').addEventListener('click', exportNow);
+    setEcho();
     place();
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, { passive: true });

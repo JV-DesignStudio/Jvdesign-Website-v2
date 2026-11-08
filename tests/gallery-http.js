@@ -45,11 +45,11 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   });
   await page.setViewport({width:1280,height:900});
   await page.goto(BASE+'pages/gallery.html', {waitUntil:'domcontentloaded'});
-  await page.waitForSelector('.gl-card', {timeout:15000});
+  await page.waitForSelector('#galleryGrid .gl-card', {timeout:15000});
 
   const r = await page.evaluate(()=>({
     title: document.title,
-    cards: Array.from(document.querySelectorAll('.gl-card')).map(c=>({
+    cards: Array.from(document.querySelectorAll('#galleryGrid .gl-card')).map(c=>({
       id: c.getAttribute('data-id'),
       title: (c.querySelector('.gl-title')||{}).textContent||'',
       quality: (c.querySelector('.gl-q')||{}).textContent||'',
@@ -69,7 +69,7 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   check('every card offers Make your own', r.cards.every(c=>c.make));
 
   // Play the first game in-page (programmatic click: the handler delegates).
-  await page.evaluate(()=>{ document.querySelector('.gl-play').click(); });
+  await page.evaluate(()=>{ document.querySelector('#galleryGrid .gl-play').click(); });
   await new Promise(res=>setTimeout(res,300));
   const playing = await page.evaluate(()=>({
     playing: document.body.classList.contains('gl-playing'),

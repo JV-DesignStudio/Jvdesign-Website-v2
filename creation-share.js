@@ -18,6 +18,10 @@
   if (window.JVDSShare) return;
   if (!/^\/tools\//.test(location.pathname)) return;
 
+  // A2802: protect share links on every tool page, including ones that are not
+  // creation tools (for example the gallery's own Share buttons).
+  guardClipboard();
+
   // A1547: same copy/paste project code on every tool, so work survives a wiped
   // school computer. Loaded here so no tool page needs its own copy.
   (function loadProjectCode() {
@@ -39,6 +43,14 @@
     'code-snippet-generator': 1, 'buildlab': 1
   };
   if (!CREATORS[TOOL]) return;
+
+  // A2803: one specific Echo next step on every creator tool.
+  (function loadEcho() {
+    var s = document.createElement('script');
+    s.src = '/echo-feedback.js';
+    s.defer = true;
+    document.head.appendChild(s);
+  })();
 
   // A676: same shared save/export keepsake strip on every curated create tool.
   (function loadKeepsake() {
@@ -191,18 +203,31 @@
     catch (e) { try { clipboard.writeText = guardedWrite; } catch (e2) {} }
   }
 
+  // A2804: a tool that can encode its creation registers a link builder here,
+  // so the big floating Share button does not send an empty tool URL.
+  function creationUrl() {
+    try {
+      if (typeof window.JVDSCreationLink === 'function') {
+        var u = window.JVDSCreationLink();
+        if (typeof u === 'string' && u.indexOf(location.origin) === 0) return u;
+      }
+    } catch (e) {}
+    return '';
+  }
+
   function share() {
     return warningDialog().then(function (goAhead) {
       if (!goAhead) return false;
       announce();
-      var payload = { title: 'Made by me in ' + NAME, text: message(), url: TOOL_URL };
+      var link = creationUrl() || TOOL_URL;
+      var payload = { title: 'Made by me in ' + NAME, text: message(), url: link };
       if (navigator.share) {
         try {
           return navigator.share(payload).catch(function () { /* user cancelled */ });
         } catch (e) {}
       }
-      return copy(message()).then(function (ok) {
-        toast(ok ? 'Share link copied. Send it to show what you made.' : 'Share this link: ' + TOOL_URL);
+      return copy(link === TOOL_URL ? message() : link).then(function (ok) {
+        toast(ok ? 'Share link copied. Send it to show what you made.' : 'Share this link: ' + link);
         return ok;
       });
     });
@@ -287,5 +312,4 @@
   // A1998: tools with their own share flow (for example the Arcade Game Maker)
   // can ask the same question before they build a link.
   window.JVDSShareWarning = { confirm: warningDialog };
-  guardClipboard();
 })();

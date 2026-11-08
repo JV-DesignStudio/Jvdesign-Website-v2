@@ -31,7 +31,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1kqN6nHQMHf5Vep5jwtzO9iplnQwnwkQijFz9bkrRuc=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Y1Uwiuiu1tu2TYdP5hZUm0NFL+AdFgmJWPRKMbAJEkk=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -122,6 +122,13 @@
     <p class="gl-loading">Loading the gallery…</p>
   </div>
 
+  <section id="creationsSection" hidden aria-labelledby="creationsTitle">
+    <h2 class="gl-h2" id="creationsTitle">Creations made by the community</h2>
+    <p class="gl-sub">Sprites, art and stories, opened in the tool that made them.</p>
+    <div class="gl-grid" id="creationsGrid"></div>
+    <p class="gl-note">Made art, a story or a song? Open it in its tool, press <b>Share</b>, then send the link on the <a href="/contact">contact page</a>. A person checks every creation before it appears.</p>
+  </section>
+
 </main>
 
 <!-- Full-screen play stage -->
@@ -199,8 +206,11 @@
 (function () {
   'use strict';
   var DATA = '../gallery-games.json';
+  var CREATIONS = '../gallery-creations.json';
   var MAKER = '../tools/arcade-game-maker.html';
   var grid = document.getElementById('galleryGrid');
+  var creationsSection = document.getElementById('creationsSection');
+  var creationsGrid = document.getElementById('creationsGrid');
   var stage = document.getElementById('playStage');
   var frame = document.getElementById('playFrame');
   var loading = document.getElementById('playLoading');
@@ -228,6 +238,26 @@
         '<div class="gl-actions">' +
           '<button type="button" class="gl-play" data-file="' + esc(g.file) + '" data-title="' + esc(g.title) + '">▶ Play</button>' +
           '<a class="gl-make" href="' + MAKER + '">Make your own</a>' +
+        '</div>' +
+      '</div></article>';
+  }
+
+  function creationCard(c) {
+    var art = c.thumb
+      ? '<img src="' + esc(c.thumb) + '" alt="" loading="lazy" decoding="async">'
+      : '';
+    var open = c.link
+      ? '<a class="gl-play" style="text-align:center;text-decoration:none" href="' + esc(c.link) + '" target="_blank" rel="noopener">Open it</a>'
+      : '';
+    return '<article class="gl-card" data-id="' + esc(c.id) + '">' +
+      '<div class="gl-art" style="background:' + esc(c.bg || '#10131f') + '">' + art +
+        '<span class="gl-q ready">' + (c.sample ? 'SAMPLE' : 'CREATE') + '</span></div>' +
+      '<div class="gl-body">' +
+        '<h3 class="gl-title">' + esc(c.title) + '</h3>' +
+        '<p class="gl-meta">' + esc(c.author || 'A young creator') + ' &middot; ' + esc(c.tool || 'Pixel Studio') + '</p>' +
+        '<p class="gl-desc">' + esc(c.desc || '') + '</p>' +
+        '<div class="gl-actions">' + open +
+          '<a class="gl-make" href="' + esc(c.tool_url || '../tools/pixel-studio.html') + '">Make your own</a>' +
         '</div>' +
       '</div></article>';
   }
@@ -272,6 +302,19 @@
     .catch(function () {
       grid.innerHTML = '<p class="gl-empty">The gallery could not load right now. Please try again in a moment.</p>';
     });
+
+  // A2805: moderated non-game creations, opened in the tool that made them.
+  if (creationsSection && creationsGrid) {
+    fetch(CREATIONS, { cache: 'no-cache' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var list = (data && data.creations) || [];
+        if (!list.length) return;
+        creationsGrid.innerHTML = list.map(creationCard).join('');
+        creationsSection.hidden = false;
+      })
+      .catch(function () {});
+  }
 })();
 </script>
 </body>

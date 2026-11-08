@@ -369,7 +369,7 @@ const origExportPNG = typeof exportPNG !== 'undefined' ? exportPNG : null;
     // wrap export for mission
     if(typeof exportPNG==='function' && !exportPNG._wrapped){
       const orig=exportPNG;
-      window.exportPNG=function(){ const r=orig.apply(this,arguments); missionProgress=4; updateMissionProgress(); try{ localStorage.setItem('jvds_mission_done','1')}catch(e){}; showToast('Mission complete! PNG exported ✓'); return r; };
+      window.exportPNG=function(){ const r=orig.apply(this,arguments); if(r!==false){ missionProgress=4; updateMissionProgress(); try{ localStorage.setItem('jvds_mission_done','1')}catch(e){}; showToast('Mission complete! PNG exported ✓'); } return r; };
       window.exportPNG._wrapped=true;
     }
     // also wrap stamp to update progress

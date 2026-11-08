@@ -65,7 +65,7 @@
   // Nothing leaves the device, so this works without consent. The GA4 events
   // above stay consent-gated as before.
   var LOCAL_KEY = 'jvds_funnel_local';
-  var LOCAL_STEPS = ['home_first_make_opened', 'studio_opened', 'first_pixel_painted', 'first_save', 'first_export'];
+  var LOCAL_STEPS = ['home_first_make_opened', 'studio_opened', 'first_pixel_painted', 'first_save', 'first_export', 'first_share', 'first_keep', 'return_visit'];
 
   function readLocal() {
     try {
@@ -127,7 +127,13 @@
   }, true);
 
   window.addEventListener('jvds:created', function () { JVDSFunnel.complete({ trigger: 'event' }); });
-  window.addEventListener('jvds:shared', function () { JVDSFunnel.share({ trigger: 'event' }); });
+  window.addEventListener('jvds:shared', function () {
+    JVDSFunnel.share({ trigger: 'event' });
+    localStep('first_share', { surface: section() });
+  });
+  window.addEventListener('jvds:backpack-downloaded', function () {
+    localStep('first_keep', { surface: 'site' });
+  });
 
   if (navigator.share && !navigator._jvdsFunnelWrapped) {
     try {
@@ -174,6 +180,17 @@
       if (ok) markSent('return_visit');
     }
     try { localStorage.setItem(VISIT_KEY, '1'); } catch(e) {}
+  })();
+
+  // Local return: a genuinely new day, not the second page of the same session.
+  (function localReturn() {
+    try {
+      var DAY_KEY = 'jvds_funnel_last_day';
+      var today = new Date().toISOString().slice(0, 10);
+      var last = localStorage.getItem(DAY_KEY);
+      if (last && last !== today) localStep('return_visit', { surface: section() });
+      localStorage.setItem(DAY_KEY, today);
+    } catch (e) {}
   })();
 
   // A2618: wire the local first-creation steps without editing each tool page.

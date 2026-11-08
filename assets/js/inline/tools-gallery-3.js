@@ -1,6 +1,8 @@
 const DB='jvds-gallery-v1', STORE='creations';
 const $=s=>document.getElementById(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function galleryToast(text){const t=document.createElement('div');t.setAttribute('role','status');t.textContent=text;t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9002;max-width:280px;background:#28241e;color:#f5efe0;border:1px solid rgba(240,234,214,.18);border-radius:10px;padding:10px 14px;font:600 .8rem/1.4 Inter,system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.35)';document.body.appendChild(t);setTimeout(()=>{t.style.transition='opacity .3s';t.style.opacity='0';setTimeout(()=>t.remove(),320);},2600);}
+function shareCreation(url){if(!url)return;try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(()=>galleryToast('Share link copied'),()=>prompt('Copy this link:',url));}else{prompt('Copy this link:',url);}}catch(e){prompt('Copy this link:',url);}}
 function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
 let filter='all';
 async function getAll(){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const st=tx.objectStore(STORE);const req=st.getAll();req.onsuccess=()=>res(req.result||[]);req.onerror=()=>rej(req.error);tx.oncomplete=()=>db.close();});}
@@ -16,11 +18,13 @@ async function render(){
   if(!filtered.length){grid.innerHTML='<div class="empty">No '+filter+' creations. Try All.</div>';return;}
   filtered.sort((a,b)=>b.created-a.created).forEach(it=>{
     const el=document.createElement('article');el.className='card';
-    el.innerHTML=`<div class="thumb">${it.image?`<img src="${esc(it.image)}" alt="${esc(it.title)}" loading="lazy">`:`<span style="color:var(--muted);font-size:2rem">🎨</span>`}</div><div class="meta"><strong>${esc(it.title)}</strong><span>${esc(it.tool)} • ${esc(it.character)} • ${new Date(it.created).toLocaleDateString()}</span><p style="margin:6px 0 0;color:var(--muted);font-size:.85rem">${esc(it.notes||'')}</p><div style="margin-top:8px;display:flex;gap:8px"><button class="btn" data-del="${it.id}" style="min-height:32px;padding:0 10px">Delete</button><button class="btn" data-view="${it.id}" style="min-height:32px;padding:0 10px">View</button></div></div>`;
+    el.innerHTML=`<div class="thumb">${it.image?`<img src="${esc(it.image)}" alt="${esc(it.title)}" loading="lazy">`:`<span style="color:var(--muted);font-size:2rem">🎨</span>`}</div><div class="meta"><strong>${esc(it.title)}</strong><span>${esc(it.tool)} • ${esc(it.character)} • ${new Date(it.created).toLocaleDateString()}</span><p style="margin:6px 0 0;color:var(--muted);font-size:.85rem">${esc(it.notes||'')}</p><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-del="${it.id}" style="min-height:32px;padding:0 10px">Delete</button><button class="btn" data-view="${it.id}" style="min-height:32px;padding:0 10px">View</button>${it.share?`<button class="btn" data-share="${esc(it.share)}" style="min-height:32px;padding:0 10px">Share</button><button class="btn" data-open="${esc(it.share)}" style="min-height:32px;padding:0 10px">Open</button>`:''}</div></div>`;
     grid.appendChild(el);
   });
   grid.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(confirm('Delete?')){await remove(+b.dataset.del);render();}});
   grid.querySelectorAll('[data-view]').forEach(b=>b.onclick=async()=>{const db=await openDB();const tx=db.transaction(STORE,'readonly');const req=tx.objectStore(STORE).get(+b.dataset.view);req.onsuccess=()=>{const it=req.result;if(it&&it.image){const w=window.open();if(w&&w.document){const img=w.document.createElement('img');img.src=it.image;img.alt=it.title||'Creation';img.style.maxWidth='100%';w.document.body.appendChild(img);}}}});
+  grid.querySelectorAll('[data-share]').forEach(b=>b.onclick=()=>shareCreation(b.getAttribute('data-share')));
+  grid.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{const u=b.getAttribute('data-open');if(u)window.open(u,'_blank','noopener');});
 }
 document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{document.querySelectorAll('.chip').forEach(x=>{x.classList.remove('on');x.setAttribute('aria-selected','false')});c.classList.add('on');c.setAttribute('aria-selected','true');filter=c.dataset.filter;render();});
 $('btnAdd').onclick=()=>$('dlg').showModal();
@@ -65,7 +69,7 @@ function collectToolItems(){
   const sa=get('jvds_sprite_anim');
   if(sa){ try{ const d=JSON.parse(sa); if(d&&isImg(d.sheet)) out.push({title:d.sheetName||'Sprite Animator sheet',tool:'pixel',character:'ember',notes:'Sprite Animator project',image:d.sheet,created:Date.now(),src:'jvds_sprite_anim'}); }catch(e){} }
   const ks=get('jvds_pixel_keepsake');
-  if(ks){ try{ const arr=JSON.parse(ks); if(Array.isArray(arr)) arr.forEach((k,i)=>{ if(k&&isImg(k.thumb)) out.push({title:k.title||('Keepsake '+(i+1)),tool:'pixel',character:'ember',notes:'Keepsake',image:k.thumb,created:Date.now(),src:'jvds_pixel_keepsake:'+(k.id||i)}); }); }catch(e){} }
+  if(ks){ try{ const arr=JSON.parse(ks); if(Array.isArray(arr)) arr.forEach((k,i)=>{ if(k&&isImg(k.thumb)) out.push({title:k.title||('Keepsake '+(i+1)),tool:'pixel',character:'ember',notes:'Keepsake',image:k.thumb,share:(typeof k.share==='string'?k.share:''),created:Date.now(),src:'jvds_pixel_keepsake:'+(k.id||i)}); }); }catch(e){} }
   for(let i=0;i<5;i++){ const raw=get('jv_arcade_slot_'+i); if(!raw) continue; try{ const d=JSON.parse(raw); if(d&&isImg(d.thumbnail)) out.push({title:d.title||('Arcade game '+(i+1)),tool:'other',character:'pip',notes:(d.genre?d.genre+' ':'')+'arcade game',image:d.thumbnail,created:Date.now(),src:'jv_arcade_slot_'+i}); }catch(e){} }
   const aa=get('jv_arcade_autosave');
   if(aa){ try{ const d=JSON.parse(aa); if(d&&isImg(d.thumbnail)) out.push({title:d.title||'Arcade autosave',tool:'other',character:'pip',notes:'Arcade autosave',image:d.thumbnail,created:Date.now(),src:'jv_arcade_autosave'}); }catch(e){} }
