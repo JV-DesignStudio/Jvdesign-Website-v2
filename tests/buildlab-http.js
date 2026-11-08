@@ -118,12 +118,11 @@ const TEMPLATES = ['robot','creature','house','car','tower','tree','sword','ches
         await pause(250);
 
         const companion = await page.evaluate(() => {
-          const c = document.querySelector('.mascot-companion'), tb = document.getElementById('mobToolbar');
-          if (!c || !tb) return null;
-          const cb = c.getBoundingClientRect(), tbb = tb.getBoundingClientRect();
-          return { display: getComputedStyle(c).display, bottom: Math.round(cb.bottom), toolbarTop: Math.round(tbb.top) };
+          const c = document.querySelector('.mascot-companion');
+          return c ? { display: getComputedStyle(c).display } : null;
         });
-        check('mobile: Ember companion clears the toolbar', !!(companion && companion.display !== 'none' && companion.bottom <= companion.toolbarTop + 2), JSON.stringify(companion));
+        /* A2902: tool pages no longer float a companion over the toolbar. */
+        check('mobile: no floating Ember companion over the toolbar', !companion || companion.display === 'none', JSON.stringify(companion));
 
         await page.evaluate(() => window.mobTab('tools'));
         await pause(300);

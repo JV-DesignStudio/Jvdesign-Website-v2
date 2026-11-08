@@ -153,15 +153,9 @@
     style.textContent = CSS;
     document.head.appendChild(style);
 
-    pill = document.createElement('button');
-    pill.id = 'mj-pill';
-    pill.className = 'mj-pill';
-    pill.type = 'button';
-    pill.setAttribute('aria-haspopup', 'dialog');
-    pill.innerHTML = '<span class="mj-pill-dot" aria-hidden="true"></span>' +
-      'Make a game <b>' + CFG.step + '/3</b>';
-    pill.addEventListener('click', open);
-    document.body.appendChild(pill);
+    /* A2902: no fixed "Make a game" pill on tool pages. The path stays
+       available from an explicit #make-a-game link or hand-off, so the tool
+       itself is never sharing the screen with a cross-tool prompt. */
 
     sheet = document.createElement('div');
     sheet.id = 'mj-sheet';

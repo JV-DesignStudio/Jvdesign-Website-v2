@@ -360,12 +360,12 @@ const ok = (name, cond) => { console.log((cond ? 'PASS ' : 'FAIL ') + name); if 
       ok(tag + ': short landscape uses the bottom bar', m.bb.display !== 'none' && m.lp.display === 'none' && m.rp.display === 'none');
       ok(tag + ': bottom bar leaves room for the canvas (' + m.bb.h + 'px bar)', m.bb.h < 170);
     }
-    const pill = await lp.evaluate(() => {
-      const p = document.getElementById('mj-pill'), bar = document.getElementById('bottom-bar');
-      if (!p || !bar || getComputedStyle(bar).display === 'none') return null;
-      return { pillBottom: p.getBoundingClientRect().bottom, barTop: bar.getBoundingClientRect().top };
-    });
-    if (pill) ok(tag + ': Make a game pill sits above the bottom bar', pill.pillBottom <= pill.barTop + 1);
+    const focus = await lp.evaluate(() => ({
+      pill: !!document.getElementById('mj-pill'),
+      dock: !!document.getElementById('jvds-action-dock')
+    }));
+    ok(tag + ': no floating Make a game pill', !focus.pill);
+    ok(tag + ': no floating action dock', !focus.dock);
     await lp.close();
   }
 

@@ -166,13 +166,15 @@ async function runFinishFlow(page) {
   ok('step 3 done: next-actions bar appears', s3.nextActionsVisible);
   ok('step 3 done: Play button in next-actions', s3.playBtn);
 
-  // A811: finishing the mission reveals the share/feedback buttons again
+  // A2902: the tool page never mounts the floating helpers, before or after
+  // the mission; the tool's own bottom-bar controls are the finish step.
   const focus2 = await page.evaluate(() => {
     const vis = s => { const el = document.querySelector(s); return el ? getComputedStyle(el).display !== 'none' : false; };
-    return { psFocus: document.body.classList.contains('ps-focus'), fb: vis('#jvfb-btn'), share: vis('#jvds-share-btn') };
+    return { psFocus: document.body.classList.contains('ps-focus'), fb: vis('#jvfb-btn'), share: vis('#jvds-share-btn'), dock: !!document.getElementById('jvds-action-dock') };
   });
   ok('390px: focus mode clears when mission done', !focus2.psFocus);
-  ok('390px: share/feedback revealed at finish', focus2.share || focus2.fb);
+  ok('390px: no floating share/feedback at finish', !focus2.share && !focus2.fb);
+  ok('390px: no action dock at finish', !focus2.dock);
 
   // A1790: the finish step must not bury the bottom-bar keep controls
   await runFinishFlow(page);

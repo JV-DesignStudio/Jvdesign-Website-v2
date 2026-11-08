@@ -222,8 +222,9 @@
     btn.title = 'Move your work to another device';
     btn.setAttribute('aria-label', 'Move your work to another device with a project code');
     btn.addEventListener('click', open);
+    /* A2902: no floating move-code pill on tool pages. A shared dock may host
+       it; the JVDSToolProject API stays available either way. */
     if (window.JVDSDock) window.JVDSDock.add(btn);
-    else document.body.appendChild(btn);
     place();
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, { passive: true });

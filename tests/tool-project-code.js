@@ -1,7 +1,7 @@
-// A1547: copy/paste project code on tool pages (tool-project-code.js).
-// Verifies the shared control is injected on a tool page, a code round-trips a
-// saved key, secrets/per-device keys are excluded, the dialog opens, and there
-// is no horizontal overflow at 390/1440.
+// A1547/A2902: copy/paste project code on tool pages (tool-project-code.js).
+// Verifies the API exists on a tool page, a code round-trips a saved key,
+// secrets/per-device keys are excluded, no floating control or dock mounts,
+// and there is no horizontal overflow at 390/1440.
 //
 // Run: node tests/tool-project-code.js
 const fs = require('fs');
@@ -36,10 +36,15 @@ const check = (name, ok, extra = '') => { console.log((ok ? 'PASS ' : 'FAIL ') +
     const page = await browser.newPage();
     await page.setViewport({ width: 1440, height: 900 });
     await page.goto(base + '/tools/colour-palette.html', { waitUntil: 'load', timeout: 25000 });
-    await page.waitForFunction('window.JVDSToolProject && !!document.getElementById("jvds-project-btn")', { timeout: 8000 });
+    await page.waitForFunction('window.JVDSToolProject', { timeout: 8000 });
     await new Promise(r => setTimeout(r, 200));
 
-    check('control injected on a tool page', await page.evaluate(() => !!document.getElementById('jvds-project-btn')));
+    const mounted = await page.evaluate(() => ({
+      button: !!document.getElementById('jvds-project-btn'),
+      dock: !!document.getElementById('jvds-action-dock')
+    }));
+    check('no floating project control on a tool page', !mounted.button);
+    check('no action dock on a tool page', !mounted.dock);
 
     const roundtrip = await page.evaluate(() => {
       try { localStorage.clear(); } catch (e) {}
@@ -60,12 +65,6 @@ const check = (name, ok, extra = '') => { console.log((ok ? 'PASS ' : 'FAIL ') +
     check('code excludes secrets and per-device keys', roundtrip.excluded);
     check('load code restores the key', roundtrip.n >= 1 && /"n":7/.test(roundtrip.restored || ''), 'restored=' + roundtrip.restored);
 
-    await page.click('#jvds-project-btn');
-    await new Promise(r => setTimeout(r, 150));
-    check('dialog opens on click', await page.evaluate(() => {
-      const m = document.getElementById('jvds-project-modal');
-      return !!m && getComputedStyle(m).display !== 'none' && !!m.querySelector('#jvds-project-copy');
-    }));
     const ov = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     check('no horizontal overflow @1440', ov <= 1, 'overflow=' + ov);
 

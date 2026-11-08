@@ -288,8 +288,9 @@
   btn.title = 'Share what you made';
   btn.setAttribute('aria-label', 'Share your creation');
   btn.addEventListener('click', share);
+  /* A2902: tools use their own toolbar. Only add the button when a shared
+     dock exists; never fall back to a floating pill on a tool page. */
   if (window.JVDSDock) window.JVDSDock.add(btn);
-  else document.body.appendChild(btn);
   place();
   window.addEventListener('resize', place);
   window.addEventListener('scroll', place, { passive: true });

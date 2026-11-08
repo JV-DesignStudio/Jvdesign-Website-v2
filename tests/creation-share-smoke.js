@@ -1,6 +1,7 @@
-// Creation share: a consistent Share action appears on creation tools at
-// 390/1440, shares a make-your-own message with the tool link, and fires
-// jvds:shared. Also checks the arcade maker's shared-output CTA points home.
+// Creation share: the JVDSShare API still shares a make-your-own message with
+// the tool link and fires jvds:shared at 390/1440. A2902 keeps the floating
+// Share pill off tool pages, so the API is exercised directly. Also checks the
+// arcade maker's shared-output CTA points home.
 const puppeteer = require('puppeteer');
 const http = require('http');
 const fs = require('fs');
@@ -50,27 +51,16 @@ async function checkTool(browser, url, width) {
   });
   await new Promise(r => setTimeout(r, 150));
 
-  const shareVisible = () => page.evaluate(() => {
+  const shareAbsent = await page.evaluate(() => {
     const b = document.getElementById('jvds-share-btn');
-    if (!b) return false;
+    if (!b) return true;
     const r = b.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
+    return r.width === 0 || r.height === 0 || getComputedStyle(b).display === 'none';
   });
-  let visible = await shareVisible();
-  // Some creation tools (Pixel Studio) hide the share button behind a first-run
-  // welcome dialog so it does not cover onboarding. Step through that dialog.
-  if (!visible) {
-    await page.evaluate(() => {
-      const dlg = document.querySelector('.modal-overlay.open, .modal.open, [role="dialog"]');
-      if (!dlg) return;
-      const b = [...dlg.querySelectorAll('button,a')].find(x => /start|got it|let.?s|continue|begin|close|skip/i.test(x.textContent || ''));
-      if (b) b.click();
-    });
-    for (let i = 0; i < 25 && !visible; i++) { await new Promise(r => setTimeout(r, 100)); visible = await shareVisible(); }
-  }
+  const apiReady = await page.evaluate(() => !!(window.JVDSShare && typeof window.JVDSShare.share === 'function'));
   let shared = null, event = false;
-  if (visible) {
-    await page.evaluate(() => document.getElementById('jvds-share-btn').click());
+  if (apiReady) {
+    await page.evaluate(() => { window.JVDSShare.share(); });
     await new Promise(r => setTimeout(r, 200));
     /* A1998: sharing asks first. Confirm the public-link warning. */
     const confirm = await page.$('#jvds-share-warn .jvds-share-warn-go');
@@ -78,12 +68,11 @@ async function checkTool(browser, url, width) {
       await confirm.click();
       await new Promise(r => setTimeout(r, 200));
     }
-    const s = await page.evaluate(() => window.__shared);
-    shared = s;
+    shared = await page.evaluate(() => window.__shared);
     event = await page.evaluate(() => window.__sharedEvent);
   }
   await page.close();
-  return { url, width, visible, event, errors: errors.length, text: shared && shared.text, url2: shared && shared.url };
+  return { url, width, shareAbsent, apiReady, event, errors: errors.length, text: shared && shared.text, url2: shared && shared.url };
 }
 
 (async () => {
@@ -109,7 +98,7 @@ async function checkTool(browser, url, width) {
 
   let pass = controlAbsent && arcadeCta;
   for (const r of results) {
-    const ok = r.visible && r.event && r.errors === 0 &&
+    const ok = r.shareAbsent && r.apiReady && r.event && r.errors === 0 &&
       r.text && /Make your own/i.test(r.text) && /jvdesignstudio\.co\.uk\/tools\//.test(r.text) &&
       r.url2 && /jvdesignstudio\.co\.uk\/tools\//.test(r.url2);
     if (!ok) pass = false;

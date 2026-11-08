@@ -198,8 +198,9 @@
   btn.title = 'Download this creation as one file that opens offline';
   btn.setAttribute('aria-label', 'Download this creation as a standalone HTML file');
   btn.addEventListener('click', exportNow);
+  /* A2902: no floating download pill on tool pages. The tool's own export is
+     the route; the JVDSStandalone API stays available. */
   if (window.JVDSDock && typeof window.JVDSDock.add === 'function') window.JVDSDock.add(btn);
-  else document.body.appendChild(btn);
 
   window.JVDSStandalone = {
     tool: TOOL,

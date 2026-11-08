@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-/* A1998: a learner must see who can open a share link before the link is
-   created. This loads a real creator tool, stubs the clipboard, and checks:
-     - pressing Share opens a warning dialog and does not share yet,
+/* A1998/A2902: a learner must see who can open a share link before the link is
+   created. This loads a real creator tool, calls the JVDSShare API (the
+   floating pill is gone from tool pages), stubs the clipboard, and checks:
+     - Share opens a warning dialog and does not share yet,
      - the dialog names the audience and the save / download / share difference,
      - Cancel and Escape create no link,
      - confirming creates the link exactly once. */
@@ -82,10 +83,10 @@ function resolveFile(urlPath) {
       Object.defineProperty(navigator, 'share', { configurable: true, value: undefined });
     });
     await page.goto(base + TOOL_PATH, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#jvds-share-btn', { timeout: 15000 });
+    await page.waitForFunction(() => !!(window.JVDSShare && window.JVDSShare.share), { timeout: 15000 });
 
     // 1. Share opens the warning and creates nothing yet.
-    await page.click('#jvds-share-btn');
+    await page.evaluate(() => { window.JVDSShare.share(); });
     await page.waitForSelector('#jvds-share-warn', { timeout: 5000 });
     let state = await page.evaluate(() => ({
       text: document.getElementById('jvds-share-warn').innerText,
@@ -114,7 +115,7 @@ function resolveFile(urlPath) {
     console.log('PASS: Cancel creates no link');
 
     // 3. Escape creates nothing.
-    await page.click('#jvds-share-btn');
+    await page.evaluate(() => { window.JVDSShare.share(); });
     await page.waitForSelector('#jvds-share-warn', { timeout: 5000 });
     await page.keyboard.press('Escape');
     await page.waitForFunction(() => !document.getElementById('jvds-share-warn'), { timeout: 5000 });
@@ -124,7 +125,7 @@ function resolveFile(urlPath) {
     console.log('PASS: Escape creates no link');
 
     // 4. Confirming creates the link once.
-    await page.click('#jvds-share-btn');
+    await page.evaluate(() => { window.JVDSShare.share(); });
     await page.waitForSelector('#jvds-share-warn', { timeout: 5000 });
     await page.click('.jvds-share-warn-go');
     await page.waitForFunction(() => window.__clipboard.length === 1, { timeout: 5000 });

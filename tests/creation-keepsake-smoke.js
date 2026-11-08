@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-/* A676: rendered check that the shared keepsake strip appears on curated create
-   tools at 390 and 1440, sits inside the viewport, and wires the export action. */
+/* A676/A2902: rendered check that curated create tools keep their save/export
+   flow, expose the JVDSKeepsake API, and do not mount a floating keepsake strip
+   or shared action dock at 390 and 1440. */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -73,39 +74,29 @@ function createServer() {
           const result = await page.evaluate(() => {
             const strip = document.getElementById('jvds-keepsake-strip');
             const dock = document.getElementById('jvds-action-dock');
-            const btn = document.getElementById('jk-keep-export');
-            const cert = document.getElementById('jk-keep-cert');
-            const rect = strip ? strip.getBoundingClientRect() : null;
             return {
               hasStrip: Boolean(strip),
-              hasBtn: Boolean(btn),
-              btnText: btn ? btn.textContent.trim() : '',
-              certHref: cert ? cert.getAttribute('href') : '',
-              inDock: Boolean(strip && dock && dock.contains(strip)),
-              dockHidden: !dock || getComputedStyle(dock).display === 'none',
-              position: strip ? getComputedStyle(strip).position : '',
-              inside: rect ? (rect.left >= -1 && rect.right <= window.innerWidth + 1) : false,
+              hasDock: Boolean(dock),
+              visibleStrip: !!(strip && strip.getBoundingClientRect().width > 0 && getComputedStyle(strip).display !== 'none'),
+              api: !!(window.JVDSKeepsake && typeof window.JVDSKeepsake.exportNow === 'function'),
               overflow: Math.max(0, document.documentElement.scrollWidth - window.innerWidth)
             };
           });
 
-          if (!result.hasStrip) failures.push(`${label}: keepsake strip missing`);
-          if (!result.hasBtn) failures.push(`${label}: export button missing`);
-          if (!/Export to keep/.test(result.btnText)) failures.push(`${label}: export label "${result.btnText}"`);
-          if (!/certificate\.html/.test(result.certHref)) failures.push(`${label}: certificate link missing`);
-          if (!result.inDock) failures.push(`${label}: strip is not in the shared action dock`);
-          if (!result.dockHidden && result.position === 'fixed') failures.push(`${label}: strip still floats separately (${result.position})`);
-          if (!result.dockHidden && !result.inside) failures.push(`${label}: docked strip outside viewport`);
+          if (result.hasStrip) failures.push(`${label}: floating keepsake strip should not mount on tools`);
+          if (result.hasDock) failures.push(`${label}: action dock should not mount on tools`);
+          if (result.visibleStrip) failures.push(`${label}: keepsake strip is visible`);
+          if (!result.api) failures.push(`${label}: JVDSKeepsake API missing`);
           if (result.overflow > 4) failures.push(`${label}: horizontal overflow ${result.overflow}px`);
           if (pageErrors.length) failures.push(`${label}: page errors: ${pageErrors.slice(0, 2).join(' | ')}`);
 
-          if (result.hasBtn) {
+          if (result.api) {
             const wired = await page.evaluate(async () => {
               window.__kept = false;
               window.__called = false;
               window.addEventListener('jvds:keepsake-export', () => { window.__kept = true; });
               window.JVDSKeepsakeExport = function () { window.__called = true; };
-              document.getElementById('jk-keep-export').click();
+              window.JVDSKeepsake.exportNow();
               await new Promise(r => setTimeout(r, 120));
               return { kept: window.__kept, called: window.__called };
             });

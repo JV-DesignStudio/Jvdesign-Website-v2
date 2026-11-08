@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /*
  * tests/make-a-game-journey.js , A1718
- * The visible three-step path must carry art from Pixel Studio to Sprite
- * Animator to the Arcade Game Maker, so a learner can draw a character once
- * and reach a playable game. Run:
+ * The three-step path must carry art from Pixel Studio to Sprite Animator to
+ * the Arcade Game Maker, so a learner can draw a character once and reach a
+ * playable game. A2902 removed the floating entry pill, so the path opens from
+ * an explicit #make-a-game link. Run:
  *   node tests/make-a-game-journey.js
  */
 const http = require('http');
@@ -62,7 +63,7 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   check('entry link opens the make-a-game sheet', true);
   check('sheet lists three steps', await page.evaluate(() => document.querySelectorAll('#mj-steps .mj-step').length) === 3);
   check('step 1 is the current step', await activeStep() === 1);
-  check('a Make a game pill is available', await page.evaluate(() => !!document.getElementById('mj-pill')));
+  check('no floating Make a game pill on the tool', await page.evaluate(() => !document.getElementById('mj-pill')));
   check('next button offers to animate', await page.evaluate(() => /animate/i.test(document.getElementById('mj-next').textContent)));
 
   // Wait for Pixel Studio to finish initialising (the sheet opens at
@@ -120,7 +121,7 @@ function check(name, ok, detail){ console.log((ok?'PASS ':'FAIL ')+name+(detail?
   // ── 5. Phone width on the entry page has no horizontal scroll ─────────────
   await page.goto(BASE + 'tools/pixel-studio.html#make-a-game', { waitUntil: 'domcontentloaded' });
   await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
-  await page.waitForSelector('#mj-pill', { timeout: 20000 });
+  await page.waitForSelector('#mj-sheet.open', { timeout: 20000 });
   const noScroll = await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
   check('390px: no horizontal scroll', noScroll === true);
 

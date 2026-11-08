@@ -1,5 +1,6 @@
-// Feedback widget: renders on tools + workshops at 390/1440, saves locally with
-// no account, submits a consent-gated event, and stays off non-tool pages.
+// Feedback widget: renders on workshops at 390/1440, saves locally with no
+// account, submits a consent-gated event, stays off tool pages (A2902 keeps
+// tools focused on their own toolbar) and stays off non-tool pages.
 const puppeteer = require('puppeteer');
 const http = require('http');
 const fs = require('fs');
@@ -91,10 +92,15 @@ async function runPage(browser, url, width) {
   await new Promise(r => server.listen(8137, r));
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
 
-  const pages = ['/tools/pixel-studio.html', '/workshops/build-a-game-15-min.html'];
-  const results = [];
-  for (const url of pages) {
-    for (const width of [390, 1440]) results.push(await runPage(browser, url, width));
+  const workshopResults = [];
+  for (const width of [390, 1440]) {
+    workshopResults.push(await runPage(browser, '/workshops/build-a-game-15-min.html', width));
+  }
+
+  // A2902: tool pages must not mount the dock or feedback button at all.
+  const toolResults = [];
+  for (const width of [390, 1440]) {
+    toolResults.push(await runPage(browser, '/tools/pixel-studio.html', width));
   }
 
   // Control: a non-tool/workshop page must not show the widget.
@@ -105,10 +111,15 @@ async function runPage(browser, url, width) {
   await control.close();
 
   let pass = controlAbsent;
-  for (const r of results) {
+  for (const r of workshopResults) {
     const ok = r.visible && r.opened && r.dialog && r.recorded && r.event && r.note && r.noteEvent && r.errors === 0;
     if (!ok) pass = false;
     console.log(`${r.width}px ${r.url} -> ${ok ? 'PASS' : 'FAIL'} ${JSON.stringify(r)}`);
+  }
+  for (const r of toolResults) {
+    const ok = !r.visible && r.errors === 0;
+    if (!ok) pass = false;
+    console.log(`${r.width}px ${r.url} -> ${ok ? 'PASS' : 'FAIL'} (tool has no dock) ${JSON.stringify(r)}`);
   }
   console.log('control (index.html hides widget):', controlAbsent ? 'PASS' : 'FAIL');
   console.log(pass ? 'FEEDBACK WIDGET SMOKE PASSED' : 'FAILURES PRESENT');

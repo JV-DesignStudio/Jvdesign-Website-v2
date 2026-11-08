@@ -21,6 +21,20 @@
   if (!SECTION && forced !== 'on') return;
   SECTION = SECTION || 'page';
 
+  /* A2902: tool pages stay focused on the tool. The tool's own toolbar owns
+     save, export and share, so the shared action dock is not mounted here.
+     The no-op dock keeps the other helpers from falling back to floating
+     pills, while their APIs stay available to the tool itself. */
+  if (SECTION === 'tools') {
+    window.JVDSDock = {
+      el: function () { return null; },
+      add: function (el) { if (el && el.parentNode) el.parentNode.removeChild(el); return el; },
+      place: function () {},
+      sync: function () {}
+    };
+    return;
+  }
+
   var STORE_KEY = 'jvds-feedback';
   var MAX_NOTE = 140;
   var MAX_ENTRIES = 100;

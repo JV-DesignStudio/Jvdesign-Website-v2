@@ -203,9 +203,11 @@
       '</span>' +
       '<button id="jk-keep-export" type="button" title="Export to keep">Export to keep</button>' +
       '<a id="jk-keep-cert" href="/tools/certificate.html" title="Get a certificate">Certificate</a>';
+    /* A2902: no floating finish strip on tool pages. The tool's own save and
+       export controls are the finish step; only a shared dock may host this. */
     if (window.JVDSDock) window.JVDSDock.add(strip);
-    else document.body.appendChild(strip);
-    document.getElementById('jk-keep-export').addEventListener('click', exportNow);
+    var keepExport = strip.querySelector('#jk-keep-export');
+    if (keepExport) keepExport.addEventListener('click', exportNow);
     setEcho();
     place();
     window.addEventListener('resize', place);

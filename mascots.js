@@ -185,9 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (getGuide()) personalizeHome();
   }
 
-  // ── Persistent companion (workshop / tool pages) ──
-  if (isWorkshop || isTool){
-    const guide=getGuide()|| (isTool ? 'ember' : 'lumo');
+  // ── Persistent companion (workshop pages only) ──
+  // A2902: tool pages stay clear of floating characters; the tool is the
+  // main attraction and its own UI carries the guidance.
+  if (isWorkshop){
+    const guide=getGuide() || 'lumo';
     const cfg=MASCOT_CFG[guide] || MASCOT_CFG.lumo;
     addCompanion(cfg);
   }

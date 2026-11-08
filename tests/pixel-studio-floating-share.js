@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /*
  * tests/pixel-studio-floating-share.js
- * A2804: the big floating Share button sends the creation, not an empty tool URL.
+ * A2804/A2902: the Pixel Studio share action sends the creation, not an empty
+ * tool URL. The floating button is gone from tool pages, so the JVDSShare API
+ * is called directly.
  *   - with nothing drawn it falls back to the tool link
  *   - with a sprite drawn it shares the #art= creation link
  *   - the share still carries the Make your own text and fires jvds:shared
@@ -51,7 +53,7 @@ function check(name, ok, detail) {
   await page.setViewport({ width: 1440, height: 900 });
 
   async function clickShare() {
-    await page.evaluate(() => document.getElementById('jvds-share-btn').click());
+    await page.evaluate(() => { window.JVDSShare.share(); });
     await page.waitForSelector('#jvds-share-warn', { timeout: 5000 });
     await page.evaluate(() => document.querySelector('.jvds-share-warn-go').click());
     await new Promise(r => setTimeout(r, 250));
@@ -64,12 +66,12 @@ function check(name, ok, detail) {
     await page.reload({ waitUntil: 'networkidle2', timeout: 30000 });
     await new Promise(r => setTimeout(r, 700));
 
-    // Nothing drawn: the floating share falls back to the tool URL.
+    // Nothing drawn: the share falls back to the tool URL.
     const empty = await clickShare();
     check('empty canvas shares the tool link', empty.shared && empty.shared.url === TOOL_URL, empty.shared && empty.shared.url);
     check('the fallback still fires jvds:shared', empty.event === true, '');
 
-    // Draw: the floating share now carries the creation.
+    // Draw: the share now carries the creation.
     const link = await page.evaluate(() => {
       setCanvasSize(8, 8, false);
       frames = [[new ImageData(8, 8)]];

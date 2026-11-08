@@ -5,7 +5,7 @@
  * .html" action that packages a creation as a single offline file.
  *
  * Checks, per tool at 390 and 1440:
- *   - the action button and window.JVDSStandalone exist
+ *   - window.JVDSStandalone exists and no floating button or dock mounts
  *   - the built HTML has no external src/href and no external script/link
  *   - malformed input and empty frames fail safely (return null)
  *   - the generated pixel page boots offline with no network request
@@ -71,7 +71,7 @@ function hasExternalRefs(html) {
           api: !!(window.JVDSStandalone && typeof window.JVDSStandalone.exportNow === 'function'),
           script: [...document.scripts].some((s) => /\/creation-standalone\.js/.test(s.src))
         }));
-        check(pagePath + ' ' + width + 'px: standalone button exists', state.button);
+        check(pagePath + ' ' + width + 'px: no floating standalone button', !state.button);
         check(pagePath + ' ' + width + 'px: JVDSStandalone API exists', state.api);
         check(pagePath + ' ' + width + 'px: shared script is loaded', state.script);
         check(pagePath + ' ' + width + 'px: no uncaught JS errors', errors.length === 0, errors.join(' | '));

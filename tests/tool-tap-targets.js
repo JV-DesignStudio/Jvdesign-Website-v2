@@ -1,11 +1,11 @@
 /* Tool tap targets (A1463).
 
    A1432's mobile matrix flagged tool-page controls below the 44px touch
-   guideline (WCAG 2.5.5): the primary export/save buttons (.exp-btn), the
-   floating feedback/share widgets (#jvfb-btn, #jvds-share-btn) and the
+   guideline (WCAG 2.5.5): the primary export/save buttons (.exp-btn) and the
    first-make colour swatches (.fm-swatch). This test loads the affected pages
    at a phone portrait and a phone landscape viewport and asserts every such
-   control is at least 44px tall.
+   control is at least 44px tall. A2902 also asserts the floating feedback,
+   share and dock controls no longer mount on tool pages.
 
    Run: node tests/tool-tap-targets.js
 */
@@ -86,25 +86,25 @@ async function measure(page, sel){
         await page.close();
       }
 
-      // Floating feedback + share widgets on a live creation tool.
+      // A2902: no floating feedback, share or dock controls on a tool page.
       const page = await browser.newPage();
       await page.setViewport({width:vp.w,height:vp.h,deviceScaleFactor:1,isMobile:vp.m,hasTouch:vp.m});
       await page.goto('http://127.0.0.1:'+port+'/tools/bitmap-font-maker.html', {waitUntil:'load', timeout:30000}).catch(()=>{});
-      for (let i=0;i<20;i++){ const ok = await page.evaluate(()=>!!document.getElementById('jvfb-btn')&&!!document.getElementById('jvds-share-btn')); if(ok) break; await pause(200); }
-      const widgets = await page.evaluate(()=>{
+      await pause(700);
+      const floating = await page.evaluate(()=>{
+        const ids = ['jvds-action-dock','jvfb-btn','jvds-share-btn','jvds-project-btn'];
         const out = {};
-        for (const id of ['jvfb-btn','jvds-share-btn']) {
+        for (const id of ids) {
           const el = document.getElementById(id);
-          if (!el) { out[id] = null; continue; }
+          if (!el) { out[id] = false; continue; }
           const r = el.getBoundingClientRect();
-          out[id] = Math.round(r.height*10)/10;
+          const cs = getComputedStyle(el);
+          out[id] = cs.display !== 'none' && cs.visibility !== 'hidden' && r.width > 0 && r.height > 0;
         }
         return out;
       });
-      for (const id of ['jvfb-btn','jvds-share-btn']) {
-        const h = widgets[id];
-        if (h === null) { console.log('SKIP '+vp.label+' #'+id+' (not present)'); continue; }
-        check(vp.label+' #'+id+' >= '+MIN+'px tall', h >= MIN, 'h='+h);
+      for (const id of Object.keys(floating)) {
+        check(vp.label+' #'+id+' does not float over the tool', !floating[id]);
       }
       await page.close();
     }
