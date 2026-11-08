@@ -4305,8 +4305,8 @@ window.JVDS_CONTENT = {
       "desc": "Two ways to hold the Citadel with Ember: a Quick Night (three waves, then Malgrath) or a Deep Night (endless waves, a boss every five, the full upgrade shop).",
       "kids": false,
       "age": "Ages 10-15",
-      "character": null,
-      "url": "/games/arcane_citadel_page.html"
+      "character": "Ember",
+      "url": "/games/arcane_citadel.html"
     },
     {
       "id": "tower-defence",
@@ -4387,8 +4387,8 @@ window.JVDS_CONTENT = {
       "desc": "Read the ranger clue, then tap only the critters that fit the habitat, movement or behaviour. Quick sorting fun, but watch out for hazards.",
       "kids": true,
       "age": "Ages 5-9",
-      "character": null,
-      "url": "/games/critter-whack-page.html"
+      "character": "Echo",
+      "url": "/games/critter-whack.html"
     },
     {
       "id": "crossy-crew",
@@ -5585,7 +5585,7 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-08T00:01:11.000Z",
+    "generated": "2026-11-08T11:42:11.000Z",
     "workshops": 282,
     "games": 14,
     "tools": 49,

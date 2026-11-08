@@ -16,7 +16,7 @@ const ROOT = path.resolve(__dirname, '..');
 
 const PAGES = [
   { file: 'tools/bitmap-font-maker.html',         section: 'Tools',    page: 'Bitmap Font Maker' },
-  { file: 'games/arcane_citadel_page.html',       section: 'Games',    page: 'Arcane Citadel' },
+  { file: 'tools/quest-board-page.html',          section: 'Tools',    page: 'Quest Board' },
   { file: 'workshops/barrel-blast-workshop.html', section: 'Workshop', page: 'Barrel Blast' },
 ];
 

@@ -1,9 +1,14 @@
-/* Critter Whack landing-page parity (A1671).
+/* Critter Whack redirect + game parity (A2836).
 
-   games/critter-whack-page.html is the registry file for the critter-whack
-   arcade card and embeds games/critter-whack.html, which is "Critter Whack:
-   Ranger Sort". This pins the public landing copy to the game it actually
-   plays: Ranger Sort, Echo present, no stale whack-a-mole / bombs copy.
+   The game used to be a marketing landing page (critter-whack-page.html) that
+   embedded the real game in an iframe. A2836 rebuilt critter-whack.html as a
+   fullscreen game and turned the old landing page into a redirect, so the
+   Arcade card launches the game directly.
+
+   This pins:
+     - the old page redirects to the game (no iframe, no landing copy)
+     - the game page is Ranger Sort, names Echo, and fits both widths
+     - no browser errors
 
    Run: node tests/critter-whack-page-http.js
 */
@@ -22,9 +27,18 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 });
 
-const BANNED = /whack-a-mole|whack a mole|\bbombs?\b|bonk|duck back down|30 seconds of chaos/i;
-
 (async () => {
+  // Static: the old landing page must be a redirect, not an iframe wrapper.
+  const oldHtml = fs.readFileSync(path.join(root, 'games/critter-whack-page.html'), 'utf8');
+  check('old page redirects to the game', /http-equiv=["']refresh["'][^>]*url=critter-whack\.html/i.test(oldHtml));
+  check('old page canonical points at the game', /rel=["']canonical["'][^>]*games\/critter-whack\.html/i.test(oldHtml));
+  check('old page is noindex', /name=["']robots["'][^>]*noindex/i.test(oldHtml));
+  check('old page no longer embeds an iframe', !/<iframe\b/i.test(oldHtml));
+
+  const gameHtml = fs.readFileSync(path.join(root, 'games/critter-whack.html'), 'utf8');
+  check('game page has no iframe', !/<iframe\b/i.test(gameHtml));
+  check('game page has no landing redirect', !/http-equiv=["']refresh["']/i.test(gameHtml));
+
   server.listen(0);
   await new Promise(r => server.once('listening', r));
   const base = 'http://127.0.0.1:' + server.address().port;
@@ -37,7 +51,7 @@ const BANNED = /whack-a-mole|whack a mole|\bbombs?\b|bonk|duck back down|30 seco
     page.on('request', r => r.url().startsWith(base) || r.url().startsWith('data:') ? r.continue() : r.abort());
 
     await page.setViewport({ width: 1440, height: 900 });
-    await page.goto(base + '/games/critter-whack-page.html', { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await page.goto(base + '/games/critter-whack.html', { waitUntil: 'domcontentloaded', timeout: 20000 });
     await new Promise(r => setTimeout(r, 600));
     const d = await page.evaluate(() => {
       const meta = n => { const e = document.querySelector(n); return e ? (e.getAttribute('content') || '') : ''; };
@@ -45,27 +59,22 @@ const BANNED = /whack-a-mole|whack a mole|\bbombs?\b|bonk|duck back down|30 seco
         title: document.title,
         desc: meta('meta[name="description"]'),
         og: meta('meta[property="og:description"]'),
-        text: document.body.innerText,
-        iframe: (document.querySelector('iframe') || {}).getAttribute ? document.querySelector('iframe').getAttribute('src') : '',
-        echo: !!document.querySelector('meta[property="og:description"]') && /Echo/.test(document.querySelector('meta[property="og:description"]').content),
+        body: document.body.innerText,
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
       };
     });
-    check('page loads with a Ranger Sort title', /Ranger Sort/.test(d.title), d.title);
-    check('meta description describes Ranger Sort', /ranger clue|sort/i.test(d.desc) && !BANNED.test(d.desc), d.desc.slice(0, 70));
-    check('og:description is Ranger Sort and names Echo', /ranger clue|sort/i.test(d.og) && /Echo/.test(d.og), d.og.slice(0, 70));
-    check('body copy is Ranger Sort', /ranger/i.test(d.text) && /habitat|movement|behaviour/i.test(d.text));
-    check('body copy drops the old whack-a-mole wording', !BANNED.test(d.text));
-    check('body names Echo (registry character)', /Echo/.test(d.text));
-    check('embeds the Ranger Sort game', /critter-whack\.html$/.test(d.iframe), d.iframe);
-    check('desktop 1440 no overflow', d.overflow <= 2, 'overflow=' + d.overflow);
+    check('game title is Ranger Sort', /Ranger Sort/.test(d.title), d.title);
+    check('meta description describes the sorting game', /ranger clue|sort/i.test(d.desc), d.desc.slice(0, 70));
+    check('og:description names Echo', /Echo/.test(d.og), d.og.slice(0, 70));
+    check('body names Echo', /Echo/.test(d.body));
+    check('desktop 1440 no horizontal overflow', d.overflow <= 2, 'overflow=' + d.overflow);
     check('desktop no browser errors', errors.length === 0, errors.slice(0, 2).join(' | '));
 
     await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await new Promise(r => setTimeout(r, 600));
     const mob = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    check('phone 390 no overflow', mob <= 2, 'overflow=' + mob);
+    check('phone 390 no horizontal overflow', mob <= 2, 'overflow=' + mob);
   } finally { await browser.close(); await new Promise(r => server.close(r)); }
   console.log(failures ? ('\n' + failures + ' FAILED') : '\nALL PASS');
   process.exit(failures ? 1 : 0);

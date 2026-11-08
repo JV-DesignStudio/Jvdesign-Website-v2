@@ -42,11 +42,11 @@
     { id: 'gem-match',      title: 'Gem Match',                 file: 'gem_match.html' },
     { id: 'highway-dodge',  title: 'Highway Dodge',             file: 'highway-dodge.html' },
     { id: 'sky-high-friends', title: 'Sky High With Friends',   file: 'sky_high_with_friends.html' },
-    { id: 'critter-whack',  title: 'Critter Whack: Ranger Sort', file: 'critter-whack-page.html' },
+    { id: 'critter-whack',  title: 'Critter Whack: Ranger Sort', file: 'critter-whack.html' },
     { id: 'crossy-crew',    title: 'Crossy Crew',               file: 'crossy-crew.html' },
     { id: 'stardust-snake', title: 'Stardust Snake',            file: 'stardust-snake.html' },
     { id: 'tower-defence',  title: 'Tower Defence',             file: 'tower-defence.html' },
-    { id: 'arcane-citadel', title: 'Arcane Citadel',            file: 'arcane_citadel_page.html' },
+    { id: 'arcane-citadel', title: 'Arcane Citadel',            file: 'arcane_citadel.html' },
   ];
 
   function pickNextGame(currentId) {

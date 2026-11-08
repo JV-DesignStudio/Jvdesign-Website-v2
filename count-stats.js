@@ -24,8 +24,7 @@ const GAME_PATTERNS = [
   /^lumo_firefly_night/,
   /^pips_night_sky/,
   /^pip_star_connect/,
-  /^arcane_citadel(?!_page)/,   // game file, not the promo page
-  /^arcane_citadel_page/,
+  /^arcane_citadel(?!_page)/,   // game file, not the promo redirect
   /^gem_match/,
   /^cozy.cafe.match.game/,
   /^cozy.biscuit.clicker/,

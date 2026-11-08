@@ -39,9 +39,23 @@ for (const file of files) {
   if (isWrapper && hasSystem) notes.push(`${file}: iframe wrapper`);
 }
 
-console.log(`Arcade game QA: ${files.length} pages scanned`);
+// A2839: the Nova Siege contract. Whatever games-registry.js points at must be
+// the game itself: no landing page, no iframe wrapper, no redirect. The arcade
+// card should open straight into a playable field.
+const registrySrc = fs.readFileSync(path.join(ROOT, 'games-registry.js'), 'utf8');
+const registryFiles = [...new Set([...registrySrc.matchAll(/"file"\s*:\s*"([^"]+\.html)"/g)].map(m => m[1]))];
+for (const file of registryFiles) {
+  const full = path.join(GAME_DIR, file);
+  if (!fs.existsSync(full)) { check(false, file, 'registry target is missing on disk'); continue; }
+  const html = fs.readFileSync(full, 'utf8');
+  check(!/(?:-|_)page\.html$/i.test(file), file, 'registry points at a landing/wrapper page, not the game');
+  check(!/<iframe\b/i.test(html), file, 'registry game embeds an iframe landing wrapper');
+  check(!/<meta[^>]+http-equiv=["']refresh["']/i.test(html), file, 'registry game is a redirect, not the game');
+}
+
+console.log(`Arcade game QA: ${files.length} pages scanned, ${registryFiles.length} registry targets checked`);
 if (failures.length) failures.forEach(f => console.log(`  [FAIL] ${f}`));
-else console.log('  [PASS] static game-page contract');
+else console.log('  [PASS] static game-page contract + every registry target is a game');
 notes.forEach(n => console.log(`  [INFO] ${n}`));
 
 async function browserSmoke() {

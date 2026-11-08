@@ -38,7 +38,7 @@ for (const id of flagshipIds) {
 }
 
 const polishSignals = {
-  'games/arcane_citadel_page.html': [/quality-panel/, /hero-badges/, /boss-card/]
+  'games/arcane_citadel.html': [/quality-panel/, /gameCanvas/]
 };
 
 // Inline scripts were externalised to assets/js/inline/* (A1485/A1510), so the

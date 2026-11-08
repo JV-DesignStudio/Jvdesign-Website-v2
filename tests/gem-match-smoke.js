@@ -132,7 +132,14 @@ const FIND_AND_SWAP = () => {
       await page.close();
     }
 
-    const html = fs.readFileSync(path.join(ROOT, 'games', 'gem_match.html'), 'utf8');
+    let html = fs.readFileSync(path.join(ROOT, 'games', 'gem_match.html'), 'utf8');
+    // The game logic was externalised to assets/js/inline/*; fold those in so
+    // these static checks follow the shipped code, not just the headline page.
+    for (const m of html.matchAll(/<script[^>]*\ssrc=["']([^"']*assets\/js\/inline\/[^"']+)["']/gi)) {
+      const src = m[1];
+      const p = src.startsWith('/') ? path.join(ROOT, src) : path.resolve(path.join(ROOT, 'games'), src);
+      if (fs.existsSync(p)) html += '\n' + fs.readFileSync(p, 'utf8');
+    }
     ok('goal copy present', /1,?500/.test(html) && /Fever/i.test(html));
     ok('time-up overlay and Play Again are wired', /id="goOverlay"/.test(html) && /id="btnAgain"/.test(html) && /goOverlay\.classList\.add\('show'\)/.test(html));
     ok('runs on the shared GameSystem', /GameSystem/.test(html) && /GameUI/.test(html));

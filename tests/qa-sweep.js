@@ -15,8 +15,8 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 const PAGES = [
   'index.html',
   'games/gem_match.html',
-  'games/arcane_citadel_page.html',
-  'games/critter-whack-page.html',
+  'games/arcane_citadel.html',
+  'games/critter-whack.html',
   'arcade.html',
   'pages/workshop.html',
   'workshops/scratch-catch-workshop.html',

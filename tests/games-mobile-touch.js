@@ -29,7 +29,18 @@ function check(name, ok, detail=''){ console.log((ok?'PASS ':'FAIL ')+name+(deta
 const registry = fs.readFileSync(path.join(root,'games-registry.js'),'utf8');
 const GAMES = [...new Set([...registry.matchAll(/"file"\s*:\s*"([^"]+\.html)"/g)].map(m=>m[1]))];
 const arcadeHtml = fs.readFileSync(path.join(root,'arcade.html'),'utf8');
-const FLAGSHIP = ['arcane_citadel_page.html','gem_match.html','nova-siege.html','sky_high_with_friends.html','echos-flight.html','highway-dodge.html'];
+const FLAGSHIP = ['arcane_citadel.html','gem_match.html','nova-siege.html','sky_high_with_friends.html','echos-flight.html','highway-dodge.html'];
+// A2839: every catalogue game should own the screen like Nova Siege, so the page
+// must not scroll vertically at phone portrait, phone landscape or desktop.
+// These four predate the rule. They are tracked debt, not a silent exception:
+// any new scroller fails immediately, and --strict / STRICT_FULLSCREEN=1 makes
+// the debt fail too once it has been converted.
+const FULLSCREEN_DEBT = new Set([
+  // Empty since A2840: all catalogue games own the screen. Add a file here only
+  // with a tracking card, and remove it once the game passes --strict.
+]);
+const STRICT_FULLSCREEN = process.env.STRICT_FULLSCREEN === '1' || process.argv.includes('--strict');
+const debtSeen = new Set();
 
 function wireErrors(page){
   const errors=[];
@@ -45,7 +56,7 @@ const overflow = page => page.evaluate(()=>document.documentElement.scrollWidth-
 
   // 1) Sweep every catalogue game at phone and desktop.
   check('line-up lists games to test', GAMES.length>=8, String(GAMES.length));
-  for (const vp of [{name:'phone',width:390,height:844,isMobile:true,hasTouch:true},{name:'desktop',width:1440,height:900}]) {
+  for (const vp of [{name:'phone',width:390,height:844,isMobile:true,hasTouch:true},{name:'phone-landscape',width:844,height:390,isMobile:true,hasTouch:true},{name:'desktop',width:1440,height:900}]) {
     let bad=0;
     for (const f of GAMES) {
       const page = await browser.newPage();
@@ -55,13 +66,37 @@ const overflow = page => page.evaluate(()=>document.documentElement.scrollWidth-
         await page.goto(`http://127.0.0.1:${port}/games/${f}`, {waitUntil:'domcontentloaded', timeout:20000});
         await new Promise(r=>setTimeout(r,700));
         const meta = await page.evaluate(()=>{ const v=document.querySelector('meta[name="viewport"]'); return v?v.getAttribute('content'):''; });
-        const ov = await overflow(page);
-        const ok = /width=device-width/.test(meta) && !/user-scalable\s*=\s*no|maxim(?:um)?-scale\s*=\s*1/i.test(meta) && ov<=2 && errors.length===0;
-        if(!ok){ bad++; check(`${f} @ ${vp.name}`, false, `viewport="${meta}" overflow=${ov} errors=${errors.slice(0,1).join('')}`); }
+        const metrics = await page.evaluate(()=>({
+          overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          scrollH: document.documentElement.scrollHeight,
+          vh: window.innerHeight
+        }));
+        const ok = /width=device-width/.test(meta) && !/user-scalable\s*=\s*no|maxim(?:um)?-scale\s*=\s*1/i.test(meta) && metrics.overflowX<=2 && errors.length===0;
+        if(!ok){ bad++; check(`${f} @ ${vp.name}`, false, `viewport="${meta}" overflowX=${metrics.overflowX} errors=${errors.slice(0,1).join('')}`); }
+        const vertical = metrics.scrollH - metrics.vh;
+        if (vertical > 2) {
+          if (FULLSCREEN_DEBT.has(f) && !STRICT_FULLSCREEN) {
+            debtSeen.add(`${f} @ ${vp.name}: ${vertical}px`);
+          } else {
+            bad++; check(`${f} @ ${vp.name}: playfield fits without vertical scroll`, false, `scrollH=${metrics.scrollH} vh=${metrics.vh}`);
+          }
+        }
       } catch(e){ bad++; check(`${f} @ ${vp.name}`, false, 'nav: '+e.message.slice(0,50)); }
       await page.close();
     }
-    check(`${vp.name}: all ${GAMES.length} catalogue games load with a valid viewport, no overflow, no errors`, bad===0, bad+' failing');
+    check(`${vp.name}: all ${GAMES.length} catalogue games load with a valid viewport, no horizontal overflow, no vertical scroll, no errors`, bad===0, bad+' failing');
+  }
+
+  if (debtSeen.size) {
+    console.log('\n[DEBT] known non-fullscreen catalogue games (tracked, not failing):');
+    [...debtSeen].forEach(line => console.log('  - ' + line));
+    if (!STRICT_FULLSCREEN) console.log('  Convert these to the Nova Siege shell, then remove them from FULLSCREEN_DEBT.');
+  }
+  if (!STRICT_FULLSCREEN) {
+    for (const f of FULLSCREEN_DEBT) {
+      const stillDebt = [...debtSeen].some(line => line.startsWith(f + ' @ '));
+      if (!stillDebt) console.log(`[DEBT-CLEARED] ${f} now fits the viewport; remove it from FULLSCREEN_DEBT.`);
+    }
   }
 
   // 2) Deep checks on a flagship subset.
