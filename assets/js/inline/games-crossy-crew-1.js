@@ -72,7 +72,13 @@ function seededFrom(seedStr) {
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
-function rand() { return seededRand ? seededRand() : Math.random(); }
+// Daily rows each get their own stream (see makeRow), so a row looks the same
+// no matter which order the player uncovers rows in.
+let activeRowRand = null;
+function rand() {
+  if (activeRowRand) return activeRowRand();
+  return seededRand ? seededRand() : Math.random();
+}
 
 // ── Daily challenge + streak ──────────────────────────────────────────────
 function getDayKey() {
@@ -152,6 +158,49 @@ function applyCrewPerk() {
   perkPowerMul = selectedChar === 'stardust' ? 1.25 : 1;
   perkMagnetRange = selectedChar === 'lumo' ? 3 : 2;
 }
+
+// ── Pixel Studio skin ─────────────────────────────────────────────────────
+// Pixel Studio sends a transparent PNG to localStorage under jvds_sprite_player.
+// If it is there, let the learner play as their own character.
+let pixelSkin = null, pixelSkinUrl = '', pixelSkinOn = false;
+
+function readPixelSkinUrl() {
+  try { return localStorage.getItem('jvds_sprite_player') || ''; } catch (e) { return ''; }
+}
+function initPixelSkin() {
+  pixelSkinUrl = readPixelSkinUrl();
+  try { pixelSkinOn = localStorage.getItem('jvds_cc_skin') === 'pixel'; } catch (e) { pixelSkinOn = false; }
+  if (!pixelSkinUrl) pixelSkinOn = false;
+  if (pixelSkinUrl) {
+    const img = new Image();
+    img.onload = () => { pixelSkin = img; renderSkinButton(); updateCrewUI(); };
+    img.onerror = () => { pixelSkin = null; pixelSkinOn = false; renderSkinButton(); };
+    img.src = pixelSkinUrl;
+  } else {
+    pixelSkin = null;
+  }
+  renderSkinButton();
+}
+function renderSkinButton() {
+  const wrap = $('skinRow');
+  if (!wrap) return;
+  if (!pixelSkinUrl) { wrap.innerHTML = ''; wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  wrap.innerHTML = '<button type="button" class="crew-btn' + (pixelSkinOn ? ' selected' : '') + '" id="skinBtn" aria-pressed="' + (pixelSkinOn ? 'true' : 'false') + '" title="Play as the character you made in Pixel Studio"><span style="font-size:26px">🎨</span><span>My character</span></button>';
+  const btn = $('skinBtn');
+  if (btn) btn.onclick = () => {
+    pixelSkinOn = !pixelSkinOn;
+    try { localStorage.setItem('jvds_cc_skin', pixelSkinOn ? 'pixel' : 'off'); } catch (e) { storageOk = false; }
+    renderSkinButton();
+    updateCrewUI();
+    toast(pixelSkinOn ? 'Your character is hopping!' : 'Back to Pip');
+    announce(pixelSkinOn ? 'Your Pixel Studio character will hop.' : 'Using Pip again.');
+  };
+}
+// If Pixel Studio is open in another tab, pick up a freshly sent character.
+window.addEventListener('focus', () => {
+  if (readPixelSkinUrl() !== pixelSkinUrl) initPixelSkin();
+});
 
 // ── Badges, records and daily best ────────────────────────────────────────
 const BADGES = [
@@ -233,6 +282,7 @@ try { const g = localStorage.getItem('jvds_cc_ghost'); if (g) ghostPath = JSON.p
 let lastBiomeName = '';
 let hopAnim = 0;
 let vignette = null, vigKey = '';
+let lightGrad = null, lightKey = '';
 
 const MISSION = [10, 25, 50, 100];
 const milestones = window.JVDSShowcase ? new JVDSShowcase.Milestones(MISSION, function (m) {
@@ -287,7 +337,10 @@ window.__crossy = {
   get dailyGoal() { return dailyGoal; },
   get dailyBest() { return dailyBest; },
   get badges() { return Object.assign({}, unlockedBadges); },
-  get storageOk() { return storageOk; }
+  get storageOk() { return storageOk; },
+  get px() { return player ? player.x : null; },
+  get onLog() { return !!(player && player.onLog); },
+  get pixelSkin() { return pixelSkinOn; }
 };
 // Narrow test hooks so the browser suite can reach the new systems without
 // poking at canvas pixels. Not used by gameplay.
@@ -323,7 +376,27 @@ window.__crossyTest = {
     r.items = []; r.hasCoin = -1; r.hasGolden = -1; r.hasPower = null;
   },
   forcePowerRow: () => { const r = getRow(player.row); r.hasPower = { col: player.col, kind: 'shield' }; },
-  rowInfo: n => { const r = getRow(n); return { type: r.type, checkpoint: !!r.checkpoint, golden: r.hasGolden != null ? r.hasGolden : -1, coin: r.hasCoin != null ? r.hasCoin : -1, power: r.hasPower || null }; }
+  rowInfo: n => { const r = getRow(n); return { type: r.type, checkpoint: !!r.checkpoint, golden: r.hasGolden != null ? r.hasGolden : -1, coin: r.hasCoin != null ? r.hasCoin : -1, power: r.hasPower || null }; },
+  rowDetail: n => {
+    const r = getRow(n);
+    return {
+      type: r.type,
+      speed: r.speed || 0,
+      items: (r.items || []).length,
+      logs: r.type === RIVER ? (r.items || []).map(it => ({ x: it.x, w: it.w })) : []
+    };
+  },
+  difficultyAt: n => rowDifficulty(n, false),
+  forceRiverRow: opts => {
+    opts = opts || {};
+    const r = getRow(player.row + 1);
+    r.type = RIVER;
+    r.items = [{ x: opts.x != null ? opts.x : player.col - .5, w: opts.w || 3, h: .68 }];
+    r.speed = opts.speed || 1.2;
+    r.decor = r.decor || [];
+    r.hasCoin = -1; r.hasGolden = -1; r.hasPower = null;
+    return r;
+  }
 };
 
 const ROAD = 'road', RIVER = 'river', GRASS = 'grass', SAFE = 'safe', RAIL = 'rail';
@@ -344,7 +417,9 @@ const BIOMES = [
 ];
 function biomeAt(row) { return BIOMES[Math.floor(Math.max(0, row) / 40) % BIOMES.length]; }
 
-const pick = a => a[Math.floor(Math.random() * a.length)];
+// Cosmetic choices also pull from the run's RNG so Daily runs look the same
+// for everyone, not just play the same.
+const pick = a => a[Math.floor(rand() * a.length)];
 function rnd(seed) { const x = Math.sin(seed * 12.9898) * 43758.5453; return x - Math.floor(x); }
 function shade(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
@@ -354,6 +429,7 @@ function shade(hex, amt) {
 }
 
 let lastCanvasW = 0, lastCanvasH = 0;
+let fitDirty = true;
 function fit() {
   const r = C.getBoundingClientRect();
   dpr = Math.min(devicePixelRatio || 1, 2);
@@ -367,8 +443,18 @@ function fit() {
     lastCanvasW = W; lastCanvasH = H;
     C.width = W; C.height = H;
     vigKey = '';
+    lightKey = '';
   }
 }
+// Layout is event-driven rather than measured every frame. getBoundingClientRect
+// forces a reflow, which is painful on a school Chromebook.
+function requestFit() { fitDirty = true; }
+if (typeof ResizeObserver !== 'undefined') {
+  try { new ResizeObserver(requestFit).observe(C); } catch (e) {}
+}
+window.addEventListener('resize', requestFit, { passive: true });
+window.addEventListener('orientationchange', requestFit, { passive: true });
+document.addEventListener('fullscreenchange', requestFit);
 
 function rr(x, y, w, h, r) {
   r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
@@ -464,10 +550,31 @@ function maybePower(index) {
   return null;
 }
 
+// Difficulty climbs to 1.0 by row 100, then keeps creeping up to 1.5 by about
+// row 250 so an endless run never goes flat, and is finally capped so it stays
+// playable instead of impossible.
+function rowDifficulty(index, faster) {
+  const base = Math.min(1, Math.max(0, index) / 100);
+  const late = Math.min(.5, Math.max(0, index - 100) / 300);
+  return base + late + (faster ? .18 : 0);
+}
+
 function makeRow(index) {
+  // Daily runs need row N to be identical however it is reached, so each row
+  // gets a stream seeded from the day and the row index.
+  const prev = activeRowRand;
+  activeRowRand = seededRand ? seededFrom(runSeed + ':' + index) : null;
+  try {
+    return buildRow(index);
+  } finally {
+    activeRowRand = prev;
+  }
+}
+
+function buildRow(index) {
   if (index <= 0) return { type: SAFE, items: [], decor: makeDecor(SAFE, 0), hasCoin: -1, index };
 
-  const difficulty = Math.min(1, index / 100) + (modeCfg && modeCfg.faster ? .18 : 0);
+  const difficulty = rowDifficulty(index, !!(modeCfg && modeCfg.faster));
   const biome = biomeAt(index);
   const practice = !!(modeCfg && modeCfg.noHazards);
   const r = rand();
@@ -509,8 +616,12 @@ function makeRow(index) {
     const dir = rand() < .5 ? 1 : -1;
     const roadMult = biome.name === 'Desert' ? 1.1 : biome.name === 'Snow' ? .88 : 1;
     const slowMul = modeCfg && modeCfg.slow ? .6 : 1;
-    const spd = (0.55 + rand() * .7 + difficulty * 1.2) * dir * roadMult * slowMul;
-    const count = 2 + Math.floor(rand() * 2 + difficulty);
+    // Past the midpoint some lanes turn into a fast lane with fewer vehicles:
+    // a readable pattern change instead of only "more traffic".
+    const fastLane = difficulty > .8 && rand() < .3;
+    const spd = (fastLane ? 0.8 + rand() * .5 + difficulty * 1.3
+                          : 0.55 + rand() * .7 + difficulty * 1.2) * dir * roadMult * slowMul;
+    const count = Math.min(fastLane ? 3 : 4, 2 + Math.floor(rand() * 2 + difficulty));
     const gap = COLS / count;
     const cars = [];
     for (let i = 0; i < count; i++) {
@@ -529,23 +640,16 @@ function makeRow(index) {
     const dir = rand() < .5 ? 1 : -1;
     const riverMult = biome.name === 'Beach' ? 1.15 : 1;
     const spd = (0.4 + rand() * .5 + difficulty * .7) * dir * riverMult;
-    const count = 2 + Math.floor(rand() * 2);
-    const gap = COLS / count;
+    // Lay logs out left to right. Starting on screen and never pushing a log
+    // past the board means every river row always has somewhere to land.
     const logs = [];
-    for (let i = 0; i < count; i++) {
-      logs.push({
-        x: i * gap + (rand() - .5) * .9,
-        w: Math.max(1.2, 1.5 + rand() * 1.4 - difficulty * .3),
-        h: .68
-      });
+    let x = -rand() * .5;
+    while (x < COLS) {
+      const w = Math.max(1.3, 2.0 + rand() * 1.3 - Math.min(.6, difficulty * .4));
+      logs.push({ x, w, h: .68 });
+      x += w + Math.min(1.8, 0.9 + rand() * (1.0 + difficulty * .5));
     }
-    // enforce minimum 1.5-col gap between log right-edge and next log left-edge
-    logs.sort((a, b) => a.x - b.x);
-    for (let i = 1; i < logs.length; i++) {
-      const prev = logs[i - 1], cur = logs[i];
-      const minLeft = prev.x + prev.w + 1.5;
-      if (cur.x < minLeft) cur.x = minLeft;
-    }
+    if (!logs.length) logs.push({ x: COLS * .5 - 1.5, w: 3, h: .68 });
     return { type: RIVER, items: logs, speed: spd, biome, decor: makeDecor(RIVER, index), index, hasCoin: coinChance() < .3 ? Math.floor(rand() * COLS) : -1 };
   }
 
@@ -587,6 +691,8 @@ function reset() {
   if (milestones) milestones.reset();
   if (shake) shake.reset();
   syncPlayerPos();
+  player.x = player.targetX;
+  player.y = player.targetY;
   echo = { col: player.col, row: player.row, x: player.targetX, y: player.targetY, targetX: player.targetX, targetY: player.targetY, facing: 'up', hopAnim: 0 };
 }
 
@@ -922,6 +1028,8 @@ function revive() {
   $('endScreen').classList.add('hidden');
   last = performance.now();
   syncPlayerPos();
+  player.x = player.targetX;
+  player.y = player.targetY;
   hud();
   toast('Second chance!');
   announce('Second chance. Back on solid ground at row ' + player.row + ' with ' + coins + ' coins left.');
@@ -955,6 +1063,19 @@ function showEnd(reason) {
     lbWrap.style.display = lb.length ? '' : 'none';
   }
   $('endScreen').classList.remove('hidden');
+}
+
+// Echo's job is improve, so the game-over card gets one honest, gentle next step
+// based on what actually happened in the run.
+function echoTip() {
+  if (modeCfg && modeCfg.noHazards) return 'Echo says: try Classic next. The rivers and trains teach the timing that makes you braver.';
+  if (maxCombo === 0) return 'Echo says: hop forward just as a car sweeps past to start a combo. Risky, but that is where the big points hide.';
+  if (goldenCaught === 0) return 'Echo says: scan each row before you hop. A golden fly is worth 200 points.';
+  if (coins < REVIVE_COST) return 'Echo says: try to hold 3 coins. They buy one second chance when it matters.';
+  if (furthest < 10) return 'Echo says: ten rows is the first goal. Short runs build the timing.';
+  if (bestDistance && furthest < bestDistance) return 'Echo says: your best is ' + bestDistance + ' rows and this run reached ' + furthest + '. One more try.';
+  if (furthest >= 25) return 'Echo says: you are getting far. Try One Life next for bragging rights.';
+  return 'Echo says: keep going. The next milestone is close.';
 }
 
 // StoryRun owns the game-over modal, so add the run summary and crew controls
@@ -1004,6 +1125,11 @@ function enhanceEndModal(reason) {
     : 'All four crew members are unlocked. ') + 'Next goal: reach ' + nextRowTarget + ' rows.';
   wrap.appendChild(next);
 
+  const tip = document.createElement('p');
+  tip.className = 'cc-end-tip';
+  tip.textContent = echoTip();
+  wrap.appendChild(tip);
+
   const actions = document.createElement('div');
   actions.className = 'cc-end-actions';
   const share = document.createElement('button');
@@ -1046,6 +1172,7 @@ function returnToCrewSelect() {
   $('endScreen').classList.add('hidden');
   $('saveMeScreen').classList.add('hidden');
   updateCrewUI();
+  renderSkinButton();
   updateDailyHint();
   $('startScreen').classList.remove('hidden');
   hud();
@@ -1097,7 +1224,7 @@ function updateCrewUI() {
   if (!wrap) return;
   wrap.innerHTML = CREW.map(c => {
     const unlocked = isUnlocked(c);
-    const sel = selectedChar === c.id;
+    const sel = selectedChar === c.id && !pixelSkinOn;
     let progressHtml = '';
     if (!unlocked && c.unlock) {
       const pct = Math.min(100, Math.round(best / c.unlock.n * 100));
@@ -1163,7 +1290,7 @@ function updateModeUI() {
     else if (mode === 'daily') goal.textContent = 'Daily goal ' + dailyGoal + ' hops';
     else if (mode === 'onelife') goal.textContent = 'No second chance, ' + modeScoreMul + 'x score';
     else if (mode === 'practice') goal.textContent = 'No best score, gentle roads';
-    else goal.textContent = 'Daily: hop ' + dailyGoal + ' steps';
+    else goal.textContent = 'Endless: keep hopping';
   }
   const wrap = $('modeSelect');
   if (wrap) wrap.querySelectorAll('.mode-btn').forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.mode === mode ? 'true' : 'false'));
@@ -1187,6 +1314,27 @@ function updateRecordUI() {
   const note = $('storageNote');
   if (note) note.style.display = storageOk ? 'none' : '';
   renderBadges();
+}
+
+function drawPixelSkin() {
+  const px = player.x || player.targetX;
+  const py = player.y || player.targetY;
+  const t = hopAnim > 0 ? Math.sin(hopAnim / .15 * Math.PI) : 0;
+  const bounce = reduceMotion ? 0 : t * 8;
+  const size = Math.min(cellW, cellH) * .82;
+  const cx = px, cy = py + cellH / 2 - bounce;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.22)';
+  ctx.beginPath(); ctx.ellipse(px, py + cellH * .8, size * .4, cellH * .12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.imageSmoothingEnabled = false;
+  if (player.facing === 'left') {
+    ctx.translate(cx, cy);
+    ctx.scale(-1, 1);
+    ctx.drawImage(pixelSkin, -size / 2, -size / 2, size, size);
+  } else {
+    ctx.drawImage(pixelSkin, cx - size / 2, cy - size / 2, size, size);
+  }
+  ctx.restore();
 }
 
 function drawPlayerEcho() {
@@ -1428,15 +1576,32 @@ function update(dt) {
       const spd = row.speed * speedScale;
       row.items.forEach(item => {
         item.x += spd * dt;
-        if (row.speed > 0 && item.x > COLS + item.w) item.x = -item.w - Math.random() * 2;
-        if (row.speed < 0 && item.x + item.w < -item.w) item.x = COLS + Math.random() * 2;
+        // Fixed wrap points keep Daily runs reproducible: using Math.random here
+        // would make the same seed drift apart as the run plays.
+        if (row.speed > 0 && item.x > COLS + item.w) item.x = -item.w - .5;
+        if (row.speed < 0 && item.x + item.w < -item.w) item.x = COLS + .5;
       });
     }
   }
 
   const pRow = getRow(player.row);
-  const px = player.col * cellW + cellW / 2;
   const safe = graceT > 0;
+  const settling = hopAnim > 0;
+
+  // River landings resolve at the destination so a well-timed hop is never
+  // punished by the in-between pixels; the sprite then rides the log smoothly.
+  if (pRow.type === RIVER && settling) player.x = player.targetX;
+  if (!player.onLog) {
+    player.x += (player.targetX - player.x) * Math.min(1, dt * 20);
+    if (!settling) player.x = player.targetX;
+  }
+  player.targetY = screenY(player.row);
+  player.y += (player.targetY - player.y) * Math.min(1, dt * 20);
+  if (!settling) player.y = player.targetY;
+
+  // While a hop is still resolving, hazards test the destination. Once settled
+  // they test the sprite, so riding a log is honest about where Pip really is.
+  const px = settling ? player.targetX : player.x;
 
   if (!safe && pRow.type === ROAD) {
     for (const car of pRow.items) {
@@ -1459,38 +1624,26 @@ function update(dt) {
   }
 
   if (pRow.type === RIVER) {
-    let onAny = false;
+    let onLog = null;
     for (const log of pRow.items) {
       const logL = log.x * cellW, logR = logL + log.w * cellW;
-      if (px > logL + 2 && px < logR - 2) {
-        onAny = true;
-        player.onLog = log;
-        break;
-      }
+      if (px > logL + 2 && px < logR - 2) { onLog = log; break; }
     }
-    if (!onAny) {
-      player.onLog = null;
+    player.onLog = onLog;
+    if (!onLog) {
       if (!safe) { die('Fell in the river!'); return; }
+    } else if (!settling) {
+      // Continuous ride: the sprite moves with the log instead of snapping to
+      // column centres, and the grid column follows the sprite for pickups.
+      player.x += pRow.speed * speedScale * cellW * dt;
+      const minX = cellW * .5, maxX = W - cellW * .5;
+      player.x = Math.max(minX, Math.min(maxX, player.x));
+      player.targetX = player.x;
+      player.col = Math.max(0, Math.min(COLS - 1, Math.floor(player.x / cellW)));
     }
   } else {
     player.onLog = null;
   }
-
-  if (player.onLog) {
-    const logSpeed = getRow(player.row).speed * speedScale;
-    const newX = px + logSpeed * cellW * dt;
-    const newCol = Math.floor(newX / cellW);
-    if (newCol < 0 || newCol >= COLS) {
-      // clamp to edge instead of killing - feels fairer
-      player.col = Math.max(0, Math.min(COLS - 1, newCol));
-    } else {
-      player.col = newCol;
-    }
-  }
-
-  syncPlayerPos();
-  player.x += (player.targetX - player.x) * Math.min(1, dt * 15);
-  player.y += (player.targetY - player.y) * Math.min(1, dt * 15);
 
   if (magnetT > 0) collectNearbyCoins();
 
@@ -2565,7 +2718,8 @@ function draw() {
   if (running) drawGhostDelta();
   if (player.alive) drawEcho();
   if (player.alive) {
-    if (selectedChar === 'pip') drawPlayer();
+    if (pixelSkinOn && pixelSkin && pixelSkin.complete && pixelSkin.naturalWidth) drawPixelSkin();
+    else if (selectedChar === 'pip') drawPlayer();
     else if (selectedChar === 'echo') drawPlayerEcho();
     else if (selectedChar === 'stardust') drawPlayerStardust();
     else if (selectedChar === 'lumo') drawPlayerLumo();
@@ -2604,10 +2758,14 @@ function draw() {
   if (tint) { ctx.fillStyle = tint; ctx.fillRect(0, 0, W, H); }
 
   // Screen-space key light from the top-left; the lower edge falls into shade.
-  const lightGrad = ctx.createLinearGradient(0, 0, W * .9, H);
-  lightGrad.addColorStop(0, 'rgba(255,255,255,.05)');
-  lightGrad.addColorStop(.5, 'rgba(255,255,255,0)');
-  lightGrad.addColorStop(1, 'rgba(0,0,0,.10)');
+  const lightK = W + 'x' + H;
+  if (lightKey !== lightK) {
+    lightKey = lightK;
+    lightGrad = ctx.createLinearGradient(0, 0, W * .9, H);
+    lightGrad.addColorStop(0, 'rgba(255,255,255,.05)');
+    lightGrad.addColorStop(.5, 'rgba(255,255,255,0)');
+    lightGrad.addColorStop(1, 'rgba(0,0,0,.10)');
+  }
   ctx.fillStyle = lightGrad;
   ctx.fillRect(0, 0, W, H);
 
@@ -2706,7 +2864,7 @@ function loop(now) {
   }
   const dt = Math.min(.05, (now - last) / 1000);
   last = now;
-  fit();
+  if (fitDirty) { fitDirty = false; fit(); }
   update(dt);
   draw();
   requestAnimationFrame(loop);
@@ -2855,6 +3013,7 @@ fit();
 $('bestHud').textContent = best;
 requestAnimationFrame(loop);
 buildCrewSelect();
+initPixelSkin();
 buildModeSelect();
 updateDailyHint();
 updateRecordUI();
