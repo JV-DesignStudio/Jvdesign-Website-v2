@@ -20,4 +20,11 @@ node scripts/check-staged-dashes.js || {
 # Override once with ALLOW_BROAD_COMMIT=1 (or git commit --no-verify).
 node scripts/check-staged-scope.js || exit 1
 
+# Dev log guard: bot drafts must stay private, and every new post needs a real
+# captured image and working links. Only runs when devlog-data.js is staged.
+if git diff --cached --name-only | grep -q '^devlog-data.js$'; then
+  node report-devlog-drafts.js || exit 1
+  node tests/devlog-media.js || exit 1
+fi
+
 exit 0

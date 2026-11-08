@@ -13,14 +13,16 @@
  *   node scripts/scrub-devlog-drafts.js --write   (apply)
  */
 const fs = require('fs');
-const { DEVLOG, readSource, parseEntries, markersIn, isInternalText } = require('./lib/devlog-guard');
+const { DEVLOG, readSource, parseEntries, markersIn, softMarkersIn, isInternalText } = require('./lib/devlog-guard');
 
 const WRITE = process.argv.includes('--write');
 const text = readSource();
 const { closeBracket, entries } = parseEntries(text);
 
 const draftIdx = [];
-entries.forEach((e, i) => { if (markersIn(e.raw).length || isInternalText(e.title)) draftIdx.push(i); });
+entries.forEach((e, i) => {
+  if (markersIn(e.raw).length || softMarkersIn(e.raw, e.id).length || isInternalText(e.title)) draftIdx.push(i);
+});
 
 if (!draftIdx.length) { console.log('✓ no draft entries to remove'); process.exit(0); }
 

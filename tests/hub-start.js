@@ -28,7 +28,7 @@ function check(name, ok, detail='') {
 }
 
 const HUBS = [
-  {name:'Workshops', page:'/pages/workshop.html', band:'.ws-first-project', catalogue:'#workshop-finder'},
+  {name:'Workshops', page:'/pages/workshop.html', band:'.ws-welcome-actions', catalogue:'#workshop-finder'},
   {name:'Tools', page:'/pages/dev-tools.html', band:'.hub-start', catalogue:'#tools'},
   {name:'Arcade', page:'/arcade.html', band:'.hub-start', catalogue:'#grid'},
 ];

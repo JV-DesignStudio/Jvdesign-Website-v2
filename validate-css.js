@@ -30,6 +30,7 @@ const { IGNORE_DIRS } = require('./scripts/lib/paths');
 const ROOT = __dirname;
 const PORT = 0; // random available port, never collides with another run
 const CONCURRENCY = 5;
+const GATE_ONLY = process.argv.includes('--gate-only');
 
 /* ── Sprawl gate (A1637) ────────────────────────────────────────────────────
  * css-gate-baseline.json records the allowed set of bespoke style-*.css files
@@ -179,6 +180,11 @@ function staticStyleChecks(css) {
     console.log(`✗ validate-css: ${staticBroken.length} static CSS problem(s):\n`);
     staticBroken.forEach(b => console.log('  ' + b));
     process.exit(1);
+  }
+
+  if (GATE_ONLY) {
+    console.log('✓ validate-css: sprawl gate and static checks passed (browser parse skipped)');
+    process.exit(0);
   }
 
   const files = pages.map(f => path.relative(ROOT, f).split(path.sep).join('/'));

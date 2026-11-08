@@ -13,7 +13,8 @@ const bad = findUnpublishable(posts).sort((a, b) => Number(b.id) - Number(a.id))
 
 console.log(`devlog-data.js: ${posts.length} posts, ${bad.length} not publication-clean`);
 for (const p of bad) {
-  console.log(`  id ${p.id ?? '?'}  [${p.markers.length ? p.markers.join(', ') : 'internal-text'}]  ${p.title.slice(0, 72)}`);
+  const marks = (p.markers || []).concat(p.softMarkers || []);
+  console.log(`  id ${p.id ?? '?'}  [${marks.length ? marks.join(', ') : 'internal-text'}]  ${p.title.slice(0, 72)}`);
 }
 
 if (bad.length) {

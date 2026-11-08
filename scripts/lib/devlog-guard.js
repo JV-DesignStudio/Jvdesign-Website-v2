@@ -23,13 +23,28 @@ const MARKERS = [
   ['local path', /F:\/Website\//i],
   ['source task', /Source task\s*:/i],
   ['draft file', /Draft file\s*:/i],
+  ['draft label', /(?:^|\n)\s*Draft\s*:/i],
   ['when approved', /WHEN APPROVED\s*:/i],
   ['promote target', /Target\s*:\s*devlog-data\.js/i],
+  ['proposed entry', /PROPOSED ENTRY\s*:/i],
+  ['original task', /ORIGINAL TASK/i],
+  // Board evidence machinery must never reach a reader-facing post.
+  ['evidence text', /\bEvidence\s*:/i],
+  ['roadmap execution', /Roadmap execution\s*:/i],
   // Board machinery (AGENTS.md: never publish ticket titles, drift fixes or evidence text)
   ['board machinery', /Created via board web UI/i],
   ['ready to claim', /ready to claim/i],
   ['auto-flagged', /auto-flagged/i],
   ['admin annotation', /\[[^\]]*\b(josh|force|opencode)\b[^\]]*\]/i],
+];
+
+// Softer, id-scoped checks. Legacy hand-written posts may legitimately mention a
+// filename, so these only apply to new posts (the bot-draft era).
+const SOFT_MARKER_MIN_ID = 525;
+const SOFT_BODY_MARKERS = [
+  ['ticket id', /\bA\d{3,}\b/],
+  ['file path', /(?:^|\s)(?:scripts|tests|partials|src|www|assets|tools|workshops|games|pages)\/[\w./-]+\.(?:js|css|html|json)\b/i],
+  ['windows path', /[A-Z]:\\/],
 ];
 
 // Titles are what readers see in the feed, so they get their own stricter gate.
@@ -110,10 +125,19 @@ function markersIn(raw) {
   return MARKERS.filter(([, re]) => re.test(raw)).map(([name]) => name);
 }
 
+function softMarkersIn(raw, id) {
+  if (Number(id) < SOFT_MARKER_MIN_ID) return [];
+  return SOFT_BODY_MARKERS.filter(([, re]) => re.test(raw)).map(([name]) => name);
+}
+
 function loadPosts(srcPath) {
   const text = readSource(srcPath);
   const parsed = parseEntries(text);
-  return parsed.entries.map(e => ({ ...e, markers: markersIn(e.raw) }));
+  return parsed.entries.map(e => ({
+    ...e,
+    markers: markersIn(e.raw),
+    softMarkers: softMarkersIn(e.raw, e.id),
+  }));
 }
 
 function findDrafts(posts) {
@@ -134,6 +158,7 @@ function isInternalText(...parts) {
 function isPublicationClean(post) {
   // Title is what readers see in the feed and on cards, so gate on title (plus hard markers).
   return post && post.markers.length === 0 &&
+    (post.softMarkers || []).length === 0 &&
     titleMarkers(post.title).length === 0 &&
     !isInternalText(post.title);
 }
@@ -141,4 +166,4 @@ function findUnpublishable(posts) {
   return posts.filter(p => !isPublicationClean(p));
 }
 
-module.exports = { ROOT, DEVLOG, MARKERS, TITLE_MARKERS, titleMarkers, INTERNAL_WORDS, INTERNAL_FILE, readSource, parseEntries, markersIn, loadPosts, findDrafts, isInternalText, isPublicationClean, findUnpublishable };
+module.exports = { ROOT, DEVLOG, MARKERS, TITLE_MARKERS, SOFT_BODY_MARKERS, SOFT_MARKER_MIN_ID, titleMarkers, INTERNAL_WORDS, INTERNAL_FILE, readSource, parseEntries, markersIn, softMarkersIn, loadPosts, findDrafts, isInternalText, isPublicationClean, findUnpublishable };

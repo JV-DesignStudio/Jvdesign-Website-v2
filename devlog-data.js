@@ -6,65 +6,15 @@
 
 const POSTS = [
     {
-        id: 528,
+        id: 529,
         date: '7 November 2026',
-        tag: 'tools',
-        emoji: '🔧',
-        title: 'Evee: private phone access over Tailscale/LAN',
-        excerpt: 'Evee currently binds 127.0.0.1 and security.require_token rejects every non-local client, so she cannot be reached from a phone.',
-        content: 'Evee currently binds 127.0.0.1 and security.require_token rejects every non-local client, so she cannot be reached from a phone. Add an opt-in remote mode: EVEE_HOST/EVEE_REMOTE settings, allow only private and Tailscale address ranges, add a token login page for remote devices, keep the auto-cookie only on localhost, rate-limit bad logins, and add an online launcher plus docs. The board stays on the same private network. No public port and no token in a URL. Evidence: [object Object]'
+        tag: 'apps',
+        emoji: '⚙️',
+        title: 'Rustfall: a fairer fight, a clearer screen, a safer save',
+        excerpt: 'Boss doors now ask before you descend, the final boss no longer hides forty thousand health, and quitting mid-run keeps your place.',
+        image: '/assets/devlog/529-games-rustfall.webp',
+        content: 'Rustfall has had a large quality pass, and almost all of it is about trust: trusting that the game is fair, that you can read what is happening, and that your progress is safe.\n\nBoss doors now ask. Walking into the exit used to sweep you into the next zone the instant you touched it, sometimes before you had picked up the boss loot. Now a card asks Descend or Stay, names the next zone and biome, and warns that anything left on the floor is lost. Stay moves you off the door so you can look around first.\n\nThe fight reads more clearly. Rare and legendary drops throw a coloured light beam into the air, damage arrows remember which way you were hit from, and enemy attacks that are winding up show an orange warning. Bullets leave trails that match their element, and fire, ice, acid and shock leave matching marks on the walls. Heavy guns, submachine guns and melee each have their own impact, so you can feel what you are holding without opening a menu.\n\nThe balance is fairer. The final boss was quietly carrying about forty thousand health; it now sits near nine thousand, and the early bosses are unchanged. Fire rates are capped per weapon type, so a submachine gun feels like one and Rapid is a real upgrade instead of a trap. Every enemy family gained a weaker ranged enemy and a support enemy, so the first floors no longer send the same five clones.\n\nAccessibility and sound grew up too. A new Reduce Motion setting turns off screen shake, dash trails, footstep dust and biome weather. Colourblind mode adds a shape or symbol to every element and rarity cue. Menu sounds now have their own volume, separate from the world, and the music dips under boss entrances and deaths.\n\nFinally, the game keeps your place. Quitting in the middle of a run, or in the middle of the opening prologue, resumes exactly where you left off. A level-up choice you have not picked yet is still waiting when you come back. On Android, the Back button no longer leaves you staring at a blank screen after a death or a win.\n\nTry a run this week and tell us which biome feels best with its new weather.'
     },
-
-    {
-        id: 527,
-        date: '7 November 2026',
-        tag: 'tools',
-        emoji: '🔧',
-        title: 'Add auto-save to LocalStorage with visual status indicator for BuildLab',
-        excerpt: 'BuildLab (tools/buildlab.html) workspaces lose student progress if a browser window is accidentally closed or refreshed during a 30-minute lesson.',
-        content: 'BuildLab (tools/buildlab.html) workspaces lose student progress if a browser window is accidentally closed or refreshed during a 30-minute lesson. Implement automatic local session saving with a visible "Saved locally at HH:MM" status badge. Evidence: [object Object]'
-    },
-
-    {
-        id: 526,
-        date: '7 November 2026',
-        tag: 'update',
-        emoji: '🔧',
-        title: 'Restructure Learning Lab into a 15-minute quick start',
-        excerpt: 'workshops/learning-lab.html opens with long prerequisite and navigation prose, which delays the first output.',
-        content: 'workshops/learning-lab.html opens with long prerequisite and navigation prose, which delays the first output. Restructure it into three steps: choose a target, run it in a live sandbox, then export or play. Keep Lumo guidance. Also add the First 3 Minutes entry quest Quest 01: Canvas Colour Swap. Change ctx.fillStyle from #000000 to #70A3A7 and verify the canvas pixel readout. Evidence: [object Object]'
-    },
-
-    {
-        id: 525,
-        date: '7 November 2026',
-        tag: 'tools',
-        emoji: '🔧',
-        title: 'Build the shared quest step runtime on top of player-profile',
-        excerpt: 'Add a small quest engine used by every workshop: a step object with prompt, starter code, target value and a pass/fail check; a run button; a live result panel;',
-        content: 'Add a small quest engine used by every workshop: a step object with prompt, starter code, target value and a pass/fail check; a run button; a live result panel; and an XP award on pass. Reuse the existing player-profile.js addXP, completeQuest and getQuestProgress plus jvds-store.js, and do not fork a second level curve. Keep it vanilla JS with no CDN. Evidence: [object Object]'
-    },
-
-    {
-        id: 524,
-        date: '7 November 2026',
-        tag: 'site',
-        emoji: '🔧',
-        title: 'Self-host web fonts and remove the Google Fonts CDN',
-        excerpt: 'The site makes 76 references to fonts.googleapis.com and fonts.gstatic.com and ships no local font files or @font-face rules.',
-        content: 'The site makes 76 references to fonts.googleapis.com and fonts.gstatic.com and ships no local font files or @font-face rules. Hardened school networks block those domains and the calls leak student IPs. Download WOFF2 subsets for the fonts actually used, bundle them under assets/fonts/, and load them with local @font-face plus font-display:swap.\n\nRoadmap execution: Phase 4, Self-host WOFF2 web fonts locally. FILE /index.html. Download local WOFF2 subsets for Inter and supporting typefaces into /assets/fonts/ and replace external Google Font references. ACCEPTANCE: zero-external-requests PASS in browser network inspector on initial cold page load. Evidence: [object Object]'
-    },
-
-    {
-        id: 523,
-        date: '7 November 2026',
-        tag: 'update',
-        emoji: '🔧',
-        title: 'Flagship Quest 01: dual-pane Learning Lab + Mario physics template',
-        excerpt: 'Build one golden dual-pane quest template that combines workshops/learning-lab.html (instant code runner) with workshops/jump-jump-mario-workshop.html (live jum',
-        content: 'Build one golden dual-pane quest template that combines workshops/learning-lab.html (instant code runner) with workshops/jump-jump-mario-workshop.html (live jump arc and real-time sliders). Left pane edits code and values, right pane renders the canvas, with a client-side assertion runner and a local XP counter. This is the proof of concept before any other workshop migration. Related cards: A2073 (split-screen IDE and CodeEvaluator), A2555 (shared quest step runtime), A2495 (live tweak sliders).\n\nRoadmap execution: Phase 1, Build dual-pane quest workspace shell. FILE /js/quest-core/layout.js. ACCEPTANCE: quest-layout-audit PASS verifying dual-pane resizing and touch tab switching on 390px mobile viewport.\nRoadmap execution: Phase 1, Convert Mario Jump Physics to Flagship Quest 01. FILE /workshops/jump-jump-mario-workshop.html. ACCEPTANCE: mario-quest-conversion PASS verifying instant canvas arc updates and test evaluation on slider tweaks. Evidence: [object Object]'
-    },
-
 
     {
         id: 522,
