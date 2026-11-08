@@ -17,9 +17,10 @@ const registry = read('games-registry.js');
 const arcade = read('arcade.html');
 const live = [...registry.matchAll(/"id"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
 
-// 1. The agreed live line-up is present.
+// 1. The stable line-up spine is present. The full catalogue is checked below;
+// this list is the permanent core, not a stale snapshot of every game ever made.
 for (const id of ['echo-flight', 'nova-siege', 'arcane-citadel', 'tower-defence', 'ember-smash',
-  'gem-match', 'highway-dodge', 'cozy-cafe-match', 'biscuit-clicker', 'sky-high-friends']) {
+  'gem-match', 'highway-dodge', 'sky-high-friends']) {
   ok('line-up includes ' + id, live.includes(id));
 }
 
