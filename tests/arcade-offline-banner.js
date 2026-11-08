@@ -132,15 +132,30 @@ function safePath(urlPath) {
       const b = document.getElementById('offlineBanner');
       return b && !b.hidden && /games you have opened are ready to play/i.test(b.textContent);
     }, { timeout: 15000 });
-    const offlineBanner = await page.evaluate(() => {
+    const offlineBanner = await page.evaluate(async () => {
       const b = document.getElementById('offlineBanner');
-      return { hidden: b.hidden, text: b.textContent, online: navigator.onLine };
+      const games = (window.JVDS_GAMES || []).filter(g =>
+        !g.classroom && String(g.quality || '').toUpperCase() !== 'HIDDEN');
+      const names = await caches.keys();
+      const key = names.find(x => /^jvds-v\d+$/.test(x));
+      let cached = 0;
+      if (key) {
+        const cache = await caches.open(key);
+        for (const g of games) {
+          if (await cache.match('/games/' + g.file)) cached++;
+        }
+      }
+      const pills = document.querySelectorAll('.cab[data-game] .cab-offline').length;
+      return { hidden: b.hidden, text: b.textContent, online: navigator.onLine, cached, pills };
     });
     assert.equal(offlineBanner.online, false, 'page did not read the browser offline state');
     assert.equal(offlineBanner.hidden, false, 'offline banner stayed hidden while disconnected');
-    assert.match(offlineBanner.text, /1 of \d+ games you have opened are ready to play/i, 'offline banner did not report the real cached count: ' + offlineBanner.text);
+    const reported = Number((offlineBanner.text.match(/(\d+) of \d+ games you have opened are ready to play/i) || [])[1]);
+    assert.ok(reported >= 1, 'offline banner did not report the real cached count: ' + offlineBanner.text);
+    assert.equal(reported, offlineBanner.cached, 'offline banner count does not match the cache: ' + reported + ' vs ' + offlineBanner.cached);
+    assert.equal(reported, offlineBanner.pills, 'offline banner count does not match the Ready offline pills: ' + reported + ' vs ' + offlineBanner.pills);
     assert.doesNotMatch(offlineBanner.text, /every game/i);
-    console.log('PASS: offline banner is shown and states "1 of N games you have opened are ready to play"');
+    console.log('PASS: offline banner is shown and counts the ' + reported + ' cached game(s) exactly');
 
     // 5. The labelled game itself opens and starts from cache with no network.
     await page.goto(base + GAME_PATH, { waitUntil: 'domcontentloaded' });
