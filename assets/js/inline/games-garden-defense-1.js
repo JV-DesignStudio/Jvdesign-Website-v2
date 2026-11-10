@@ -3,8 +3,7 @@
   const canvas=document.getElementById('game');
   const ctx=canvas.getContext('2d');
   const COLS=6, ROWS=5;
-  const BW=1120, BH=900;
-  if(window.JVDS_DPR){var _r=canvas.getBoundingClientRect();window.JVDS_DPR(canvas,ctx,BW,BH,_r.width,_r.height);addEventListener('resize',function(){var _r2=canvas.getBoundingClientRect();window.JVDS_DPR(canvas,ctx,BW,BH,_r2.width,_r2.height);});}                 // logical resolution
+  const BW=1120, BH=900;                 // logical resolution
   const CELL=BW/COLS;                    // ~186.6 wide
   const CH=BH/ROWS;                      // 180 tall
   const audio=new AudioEffects(0.6);
@@ -62,20 +61,11 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     {id:'starter',icon:'🌻',title:'Sun Cache',desc:'Begin the next wave with 90 extra sun.',apply:()=>{sun+=90;}}
   ];
 
-  const GD_MODES=[
-    {id:'sprout',label:'Sprout',sun:200,hpMult:0.7,spdMult:0.8,desc:'Extra sun, weaker pests'},
-    {id:'garden',label:'Garden',sun:150,hpMult:1,spdMult:1,desc:'Standard defense'},
-    {id:'thorns',label:'Thorns',sun:100,hpMult:1.3,spdMult:1.15,desc:'Less sun, tougher pests'}
-  ];
-  let gdModeId='garden';
-  function gdMode(){return GD_MODES.find(m=>m.id===gdModeId)||GD_MODES[1]}
-
   function reset(){
-    var gm=gdMode();
     grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
     pests=[]; shots=[]; suns=[]; floats=[]; deaths=[];
     guards=Array(ROWS).fill(true);
-    sun=gm.sun; waveIdx=0; score=0; running=true; paused=false; victoryShown=false;
+    sun=150; waveIdx=0; score=0; running=true; paused=false; victoryShown=false;
     selected=null; spawnQ=[]; betweenTimer=2.2; lastT=performance.now(); upgradeOpen=false; upgradeChoices=[];
     upgrades={sun:0,quick:0,combo:0};
     stats={killed:0,placed:0,bestBoom:0,sunCollected:0,bestStreak:0,waveStartGuards:5,waveStartSun:150};
@@ -229,7 +219,7 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     if(!running) return;
     const i=parseInt(e.key)-1;
     if(i>=0 && i<PICK_ORDER.length){ selectPlant(PICK_ORDER[i]); }
-    else if(e.key===' '||e.code==='Escape'){ e.preventDefault(); togglePause(); }
+    else if(e.key===' '){ e.preventDefault(); togglePause(); }
     else if(e.key==='d'||e.key==='D'){ selectPlant('shovel'); }
     else if(e.key==='s'||e.key==='S'){ const sb=document.getElementById('speedBtn'); if(sb) sb.click(); }
   });
@@ -414,10 +404,9 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
   }
 
   function spawnPest(type,row,hpMult){
-    const d=PESTS[type]; var gm=gdMode();
-    const hp=Math.round(d.hp*(hpMult||1)*gm.hpMult);
-    const spd=d.spd*gm.spdMult;
-    pests.push({type,row,x:BW+CELL*0.4+Math.random()*40, hp,maxHp:hp,spd:spd,dmg:d.dmg,pts:d.pts,ic:d.ic,slowT:0,chewT:0,hitT:0,wob:Math.random()*6,boss:d.boss});
+    const d=PESTS[type];
+    const hp=Math.round(d.hp*(hpMult||1));
+    pests.push({type,row,x:BW+CELL*0.4+Math.random()*40, hp,maxHp:hp,spd:d.spd,dmg:d.dmg,pts:d.pts,ic:d.ic,slowT:0,chewT:0,hitT:0,wob:Math.random()*6,boss:d.boss});
     if(d.boss){ banner('🕷️ Boss incoming!'); ScreenShake.shake(canvas,8,300); }
   }
   function fireShot(r,c,ptype){
@@ -464,225 +453,219 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     const nowMs=performance.now();
     ctx.clearRect(0,0,BW,BH);
 
-    // ── Lawn: textured stripes with depth gradient ──
+    // ── Lawn: high-contrast alternating rows ──
     for(let r=0;r<ROWS;r++){
       const y=r*CH;
-      // Base stripe with subtle vertical gradient per row
       const lg=ctx.createLinearGradient(0,y,0,y+CH);
-      if(r%2===0){ lg.addColorStop(0,'#91d474'); lg.addColorStop(0.5,'#84c866'); lg.addColorStop(1,'#78ba58'); }
-      else       { lg.addColorStop(0,'#86ca68'); lg.addColorStop(0.5,'#79bc5b'); lg.addColorStop(1,'#6eae50'); }
+      if(r%2===0){ lg.addColorStop(0,'#7ecf5a'); lg.addColorStop(0.5,'#6bbe48'); lg.addColorStop(1,'#5aad38'); }
+      else       { lg.addColorStop(0,'#5aad38'); lg.addColorStop(0.5,'#4d9c2e'); lg.addColorStop(1,'#408c24'); }
       ctx.fillStyle=lg; ctx.fillRect(0,y,BW,CH);
-      ctx.strokeStyle='rgba(255,255,220,.22)'; ctx.lineWidth=3;
-      ctx.beginPath(); ctx.moveTo(0,y+3); ctx.lineTo(BW,y+3); ctx.stroke();
 
-      // Subtle soil edge at bottom of each row
-      ctx.fillStyle='rgba(90,60,30,0.08)';
-      ctx.fillRect(0,y+CH-3,BW,3);
+      // Strong soil divider between rows
+      ctx.fillStyle='rgba(70,45,20,0.35)';
+      ctx.fillRect(0,y+CH-4,BW,4);
+      ctx.fillStyle='rgba(255,255,220,0.15)';
+      ctx.fillRect(0,y,BW,2);
 
-      // Guard zone glow
+      // Guard zone: bright golden strip
       if(guards[r]){
-        const gg=ctx.createLinearGradient(0,y,CELL*0.35,y);
-        gg.addColorStop(0,'rgba(255,239,158,0.18)'); gg.addColorStop(1,'rgba(255,239,158,0)');
-        ctx.fillStyle=gg; ctx.fillRect(0,y,CELL*0.35,CH);
+        const gg=ctx.createLinearGradient(0,y,CELL*0.45,y);
+        gg.addColorStop(0,'rgba(255,230,100,0.45)'); gg.addColorStop(1,'rgba(255,230,100,0)');
+        ctx.fillStyle=gg; ctx.fillRect(0,y,CELL*0.45,CH);
       }
     }
 
-    // ── Storybook garden details: soft path lip, lane plaques and warm sun wash ──
+    // ── Sunlight wash ──
     const sunWash=ctx.createLinearGradient(0,0,BW,BH);
-    sunWash.addColorStop(0,'rgba(255,247,177,0.16)'); sunWash.addColorStop(0.45,'rgba(255,255,255,0)'); sunWash.addColorStop(1,'rgba(33,80,38,0.10)');
+    sunWash.addColorStop(0,'rgba(255,247,177,0.22)'); sunWash.addColorStop(0.45,'rgba(255,255,255,0)'); sunWash.addColorStop(1,'rgba(20,60,30,0.15)');
     ctx.fillStyle=sunWash; ctx.fillRect(0,0,BW,BH);
-    ctx.fillStyle='rgba(90,58,26,0.18)';
-    roundRect(4,8,CELL*0.24,BH-16,18); ctx.fill();
-    ctx.fillStyle='rgba(255,231,139,0.16)';
-    roundRect(CELL*0.03,16,CELL*0.16,BH-32,16); ctx.fill();
+
+    // ── Left defence path ──
+    ctx.fillStyle='rgba(90,58,26,0.3)';
+    roundRect(2,4,CELL*0.28,BH-8,18); ctx.fill();
+    ctx.fillStyle='rgba(255,231,139,0.25)';
+    roundRect(CELL*0.02,10,CELL*0.2,BH-20,14); ctx.fill();
+
+    // ── Row labels: bigger, solid bg ──
     for(let r=0;r<ROWS;r++){
       const ly=r*CH+CH/2;
-      ctx.fillStyle='rgba(255,255,255,0.20)';
-      roundRect(CELL*0.35,ly-12,64,24,12); ctx.fill();
-      ctx.fillStyle='rgba(46,90,36,0.70)'; ctx.font='800 18px Fredoka, sans-serif';
-      ctx.fillText('ROW '+(r+1),CELL*0.35+32,ly+1);
+      ctx.fillStyle='rgba(255,255,255,0.55)';
+      roundRect(CELL*0.32,ly-16,76,32,14); ctx.fill();
+      ctx.fillStyle='rgba(30,70,20,0.92)'; ctx.font='800 22px Fredoka, sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('ROW '+(r+1),CELL*0.32+38,ly+1);
     }
 
-    // ── Grass texture specks ──
+    // ── Grass texture ──
     for(const d of DECOR){
-      ctx.fillStyle=d.d?`rgba(46,90,36,${d.a})`:`rgba(255,255,255,${d.a})`;
+      ctx.fillStyle=d.d?`rgba(30,70,20,${d.a*1.5})`:`rgba(255,255,255,${d.a*1.2})`;
       ctx.beginPath();ctx.ellipse(d.x,d.y,d.w,d.w*0.35,0,0,Math.PI*2);ctx.fill();
     }
 
-    // ── Tiny flowers ──
+    // ── Flowers ──
     for(const f of (window.__gdFlowers||[])){
       ctx.fillStyle=f.c;
       ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fill();
     }
 
-    // ── Right hedge (pest entrance) with leaf texture ──
-    ctx.fillStyle='rgba(255,255,255,0.28)';
-    roundRect(BW-72,16,56,BH-32,22); ctx.fill();
-    ctx.fillStyle='rgba(88,62,31,0.22)';
-    roundRect(BW-56,24,34,BH-48,16); ctx.fill();
-    const hg=ctx.createLinearGradient(BW-82,0,BW,0);
-    hg.addColorStop(0,'rgba(46,80,30,0)'); hg.addColorStop(0.35,'rgba(38,66,26,0.26)');
-    hg.addColorStop(1,'rgba(20,45,18,0.82)');
-    ctx.fillStyle=hg; ctx.fillRect(BW-82,0,82,BH);
-    // Hedge leaf detail
-    ctx.fillStyle='rgba(60,110,40,0.15)';
-    for(let y=10;y<BH;y+=24){ ctx.beginPath(); ctx.arc(BW-18,y+Math.sin(y)*4,9,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(BW-44,y+14+Math.cos(y)*4,7,0,Math.PI*2); ctx.fill(); }
+    // ── Right hedge (pest entrance) ──
+    ctx.fillStyle='rgba(255,255,255,0.35)';
+    roundRect(BW-78,10,62,BH-20,22); ctx.fill();
+    ctx.fillStyle='rgba(88,62,31,0.3)';
+    roundRect(BW-60,18,40,BH-36,14); ctx.fill();
+    const hgr=ctx.createLinearGradient(BW-90,0,BW,0);
+    hgr.addColorStop(0,'rgba(30,60,20,0)'); hgr.addColorStop(0.3,'rgba(30,60,20,0.35)');
+    hgr.addColorStop(1,'rgba(15,35,12,0.9)');
+    ctx.fillStyle=hgr; ctx.fillRect(BW-90,0,90,BH);
+    ctx.fillStyle='rgba(50,100,35,0.25)';
+    for(let y=8;y<BH;y+=20){ ctx.beginPath(); ctx.arc(BW-16,y+Math.sin(y)*3,10,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(BW-42,y+12+Math.cos(y)*3,8,0,Math.PI*2); ctx.fill(); }
 
-    // ── Grid lines (softer) ──
-    ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1.5;
+    // ── Grid lines: visible dashed ──
+    ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=2; ctx.setLineDash([12,8]);
     for(let c=1;c<COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,BH);ctx.stroke();}
-    ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.lineWidth=1;
+    ctx.setLineDash([]);
+    ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=2;
     for(let r=1;r<ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CH);ctx.lineTo(BW,r*CH);ctx.stroke();}
 
-    // ── Danger pulse on threatened rows ──
+    // ── Danger pulse: wider, brighter ──
     for(let r=0;r<ROWS;r++){
-      if(pests.some(z=>z.row===r && z.x<CELL*1.6)){
-        const a=0.12+0.08*Math.sin(nowMs/120);
-        const dg=ctx.createLinearGradient(0,0,CELL*1.5,0);
-        dg.addColorStop(0,`rgba(220,50,50,${a})`); dg.addColorStop(1,'rgba(220,50,50,0)');
-        ctx.fillStyle=dg; ctx.fillRect(0,r*CH,CELL*1.5,CH);
+      if(pests.some(z=>z.row===r && z.x<CELL*2)){
+        const a=0.2+0.12*Math.sin(nowMs/100);
+        const dg=ctx.createLinearGradient(0,0,CELL*2,0);
+        dg.addColorStop(0,`rgba(220,40,40,${a})`); dg.addColorStop(1,'rgba(220,40,40,0)');
+        ctx.fillStyle=dg; ctx.fillRect(0,r*CH,CELL*2,CH);
       }
     }
 
-    // ── Hover highlight ──
+    // ── Hover highlight: brighter ──
     if(hoverCell && running && !paused){
-      ctx.fillStyle='rgba(255,255,255,0.16)';
-      roundRect(hoverCell.col*CELL+8, hoverCell.row*CH+8, CELL-16, CH-16, 18); ctx.fill();
-      ctx.strokeStyle='rgba(255,246,168,0.65)'; ctx.lineWidth=4; roundRect(hoverCell.col*CELL+10, hoverCell.row*CH+10, CELL-20, CH-20, 18); ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.28)';
+      roundRect(hoverCell.col*CELL+6, hoverCell.row*CH+6, CELL-12, CH-12, 16); ctx.fill();
+      ctx.strokeStyle='rgba(255,246,100,0.85)'; ctx.lineWidth=5; roundRect(hoverCell.col*CELL+8, hoverCell.row*CH+8, CELL-16, CH-16, 16); ctx.stroke();
     }
 
     ctx.textAlign='center'; ctx.textBaseline='middle';
 
-    // ── Placement ghost ──
+    // ── Placement ghost: stronger ──
     if(hoverCell && selected && selected!=='shovel' && running && !paused){
       const {col,row}=hoverCell;
       const ok=!grid[row][col] && sun>=PLANTS[selected].cost && cooldowns[selected]<=0;
-      ctx.fillStyle=ok?'rgba(120,193,78,0.25)':'rgba(214,60,60,0.2)';
-      roundRect(col*CELL+4,row*CH+4,CELL-8,CH-8,8); ctx.fill();
-      ctx.globalAlpha=0.5;
-      ctx.shadowColor='rgba(255,255,255,.45)'; ctx.shadowBlur=8;
-      ctx.font='72px serif'; ctx.fillText(PLANTS[selected].ic,col*CELL+CELL/2,row*CH+CH/2+4);
+      ctx.fillStyle=ok?'rgba(100,200,60,0.4)':'rgba(220,50,50,0.35)';
+      roundRect(col*CELL+4,row*CH+4,CELL-8,CH-8,10); ctx.fill();
+      ctx.globalAlpha=0.6;
+      ctx.font='80px serif'; ctx.fillText(PLANTS[selected].ic,col*CELL+CELL/2,row*CH+CH/2+4);
       ctx.globalAlpha=1;
     } else if(hoverCell && selected==='shovel' && running && !paused){
       const {col,row}=hoverCell;
-      ctx.fillStyle='rgba(122,82,48,0.2)';
-      roundRect(col*CELL+4,row*CH+4,CELL-8,CH-8,8); ctx.fill();
+      ctx.fillStyle='rgba(140,90,50,0.35)';
+      roundRect(col*CELL+4,row*CH+4,CELL-8,CH-8,10); ctx.fill();
     }
 
-    // ── Guards (Lumo fireflies) with glow + pulse ──
+    // ── Guards (Lumo fireflies): brighter glow ──
     for(let r=0;r<ROWS;r++){
       if(guards[r]){
         const gy=r*CH+CH*0.5+Math.sin(nowMs/450+r)*5;
-        // Outer glow
-        const glow=ctx.createRadialGradient(CELL*0.14,gy,2,CELL*0.14,gy,40);
-        glow.addColorStop(0,'rgba(255,246,168,0.5)'); glow.addColorStop(0.5,'rgba(255,246,168,0.15)');
-        glow.addColorStop(1,'rgba(255,246,168,0)');
-        ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(CELL*0.14,gy,40,0,Math.PI*2); ctx.fill();
-        // Inner pulse
-        const pa=0.3+0.2*Math.sin(nowMs/300);
-        ctx.fillStyle=`rgba(255,246,168,${pa})`;
-        ctx.beginPath(); ctx.arc(CELL*0.14,gy,14,0,Math.PI*2); ctx.fill();
-        // Emoji
-        ctx.font='42px serif';
-        ctx.globalAlpha=0.95;
-        ctx.strokeStyle='rgba(0,0,0,0.38)'; ctx.lineWidth=6; ctx.lineJoin='round'; ctx.strokeText('🐛', CELL*0.14, gy);
+        const glow=ctx.createRadialGradient(CELL*0.14,gy,4,CELL*0.14,gy,50);
+        glow.addColorStop(0,'rgba(255,240,120,0.7)'); glow.addColorStop(0.4,'rgba(255,240,120,0.3)');
+        glow.addColorStop(1,'rgba(255,240,120,0)');
+        ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(CELL*0.14,gy,50,0,Math.PI*2); ctx.fill();
+        const pa=0.5+0.3*Math.sin(nowMs/250);
+        ctx.fillStyle=`rgba(255,240,120,${pa})`;
+        ctx.beginPath(); ctx.arc(CELL*0.14,gy,18,0,Math.PI*2); ctx.fill();
+        ctx.font='48px serif';
+        ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.lineWidth=8; ctx.lineJoin='round';
+        ctx.strokeText('🐛', CELL*0.14, gy);
         ctx.fillText('🐛', CELL*0.14, gy);
-        ctx.globalAlpha=1;
       }
     }
 
-    // ── Plants with shadow + glow ──
+    // ── Plants: solid bg disc, bigger emoji, thicker outlines ──
     for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
       const pl=grid[r][c]; if(!pl) continue;
       const d=PLANTS[pl.type];
       const x=c*CELL+CELL/2, y=r*CH+CH/2;
       const sway=Math.sin(nowMs/600+pl.sway)*0.04;
-      const sc=1+(pl.pop>0?pl.pop*0.18:0)+(d.produce&&pl.prodT<1?0.06*Math.sin(nowMs/90):0);
-      const rx=pl.recoil>0?-pl.recoil*9:0;
+      const sc=1+(pl.pop>0?pl.pop*0.2:0)+(d.produce&&pl.prodT<1?0.08*Math.sin(nowMs/90):0);
+      const rx=pl.recoil>0?-pl.recoil*10:0;
 
-      // raised soil mound and shadow under plant
-      const mound=ctx.createRadialGradient(x,y+28,4,x,y+28,54);
-      mound.addColorStop(0,'rgba(100,66,31,0.30)'); mound.addColorStop(0.55,'rgba(118,82,40,0.18)'); mound.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=mound; ctx.beginPath(); ctx.ellipse(x,y+30,48,18,0,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='rgba(0,0,0,0.13)';
-      ctx.beginPath(); ctx.ellipse(x,y+31,25,8,0,0,Math.PI*2); ctx.fill();
+      // Soil mound
+      const mound=ctx.createRadialGradient(x,y+26,6,x,y+26,58);
+      mound.addColorStop(0,'rgba(90,55,25,0.4)'); mound.addColorStop(0.5,'rgba(100,70,35,0.2)'); mound.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=mound; ctx.beginPath(); ctx.ellipse(x,y+28,52,20,0,0,Math.PI*2); ctx.fill();
 
-      // Plant-type specific glow
+      // Plant bg disc for contrast
+      ctx.fillStyle='rgba(255,255,240,0.55)';
+      ctx.beginPath(); ctx.arc(x,y,CELL*0.3,0,Math.PI*2); ctx.fill();
+
+      // Plant-type glow (stronger)
       if(d.produce){
-        // Sunflower: warm golden aura
-        const sg=ctx.createRadialGradient(x,y,4,x,y,48);
-        sg.addColorStop(0,'rgba(255,207,63,0.18)'); sg.addColorStop(1,'rgba(255,207,63,0)');
-        ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(x,y,48,0,Math.PI*2); ctx.fill();
+        const sg=ctx.createRadialGradient(x,y,6,x,y,55);
+        sg.addColorStop(0,'rgba(255,207,63,0.35)'); sg.addColorStop(1,'rgba(255,207,63,0)');
+        ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(x,y,55,0,Math.PI*2); ctx.fill();
       }
       if(d.pierce){
-        // Glow Bulb: cyan aura
-        const g=ctx.createRadialGradient(x,y,4,x,y,48);
-        g.addColorStop(0,'rgba(180,255,240,0.3)'); g.addColorStop(1,'rgba(180,255,240,0)');
-        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,48,0,Math.PI*2); ctx.fill();
+        const g=ctx.createRadialGradient(x,y,6,x,y,55);
+        g.addColorStop(0,'rgba(140,255,230,0.45)'); g.addColorStop(1,'rgba(140,255,230,0)');
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,55,0,Math.PI*2); ctx.fill();
       }
       if(d.slow){
-        // Frost Bud: ice blue mist
-        const fg=ctx.createRadialGradient(x,y,4,x,y,40);
-        fg.addColorStop(0,'rgba(180,220,255,0.2)'); fg.addColorStop(1,'rgba(180,220,255,0)');
-        ctx.fillStyle=fg; ctx.beginPath(); ctx.arc(x,y,40,0,Math.PI*2); ctx.fill();
+        const fg=ctx.createRadialGradient(x,y,6,x,y,48);
+        fg.addColorStop(0,'rgba(160,210,255,0.35)'); fg.addColorStop(1,'rgba(160,210,255,0)');
+        ctx.fillStyle=fg; ctx.beginPath(); ctx.arc(x,y,48,0,Math.PI*2); ctx.fill();
       }
 
       ctx.save(); ctx.translate(x+rx,y); ctx.rotate(sway); ctx.scale(sc,sc);
-      ctx.font='72px serif';
-      ctx.strokeStyle='rgba(0,0,0,0.38)'; ctx.lineWidth=7; ctx.lineJoin='round'; ctx.strokeText(d.ic,0,4);
+      ctx.font='80px serif';
+      ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.lineWidth=9; ctx.lineJoin='round'; ctx.strokeText(d.ic,0,4);
       ctx.fillText(d.ic,0,4);
-      ctx.shadowBlur=0;
       ctx.restore();
 
-      // HP bar with rounded ends
+      // HP bar: taller, outlined
       if(pl.hp<pl.maxHp){
-        const bx=x-CELL*0.32, by=y+CH*0.30, bw=CELL*0.64, bh=8;
-        ctx.fillStyle='rgba(0,0,0,0.25)';
-        roundRect(bx,by,bw,bh,4); ctx.fill();
+        const bx=x-CELL*0.34, by=y+CH*0.32, bw=CELL*0.68, bh=12;
+        ctx.fillStyle='rgba(0,0,0,0.5)';
+        roundRect(bx,by,bw,bh,6); ctx.fill();
         const pct=Math.max(0,pl.hp/pl.maxHp);
-        const hc=pct>0.5?'#7ad06a':pct>0.25?'#e8c94a':'#e85454';
+        const hc=pct>0.5?'#5ee04a':pct>0.25?'#eed83a':'#ef4444';
         ctx.fillStyle=hc;
-        roundRect(bx,by,bw*pct,bh,4); ctx.fill();
+        roundRect(bx,by,bw*pct,bh,6); ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=1.5;
+        roundRect(bx,by,bw,bh,6); ctx.stroke();
       }
     }
 
-    // ── Suns with enhanced glow + sparkle ──
+    // ── Suns: bigger, brighter ──
     for(const s of suns){
       const wob=Math.sin(nowMs/200+s.x)*3;
       const fade=s.life<1.5?Math.max(0.3,s.life/1.5):1;
-      // Outer glow
-      const g=ctx.createRadialGradient(s.x,s.y+wob,4,s.x,s.y+wob,44);
-      g.addColorStop(0,`rgba(255,226,122,${0.5*fade})`); g.addColorStop(0.5,`rgba(255,226,122,${0.15*fade})`);
-      g.addColorStop(1,'rgba(255,226,122,0)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y+wob,44,0,Math.PI*2); ctx.fill();
-      // Sparkle ring
-      ctx.strokeStyle=`rgba(255,255,200,${0.3*fade})`; ctx.lineWidth=1.5;
-      const sr=18+3*Math.sin(nowMs/150+s.x);
+      const g=ctx.createRadialGradient(s.x,s.y+wob,6,s.x,s.y+wob,52);
+      g.addColorStop(0,`rgba(255,226,100,${0.65*fade})`); g.addColorStop(0.4,`rgba(255,226,100,${0.2*fade})`);
+      g.addColorStop(1,'rgba(255,226,100,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y+wob,52,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle=`rgba(255,255,180,${0.4*fade})`; ctx.lineWidth=2;
+      const sr=20+4*Math.sin(nowMs/140+s.x);
       ctx.beginPath(); ctx.arc(s.x,s.y+wob,sr,0,Math.PI*2); ctx.stroke();
       ctx.globalAlpha=fade;
-      ctx.font='54px serif'; ctx.fillText('☀️',s.x,s.y+wob);
+      ctx.font='60px serif'; ctx.fillText('☀️',s.x,s.y+wob);
       ctx.globalAlpha=1;
     }
 
-    // ── Shots: glowing pellets with enhanced trails ──
+    // ── Shots: thicker trails, bigger glow ──
     for(const s of shots){
       const col=s.pierce?'#9ff5e2':(s.slow?'#bfe8ff':'#b8e986');
       const core=s.pierce?'#e8fffa':(s.slow?'#eaf7ff':'#e4ffc7');
-      // Trail
-      const tg=ctx.createLinearGradient(s.x-60,s.y,s.x,s.y);
-      tg.addColorStop(0,'rgba(255,255,255,0)'); tg.addColorStop(0.5,col+'66'); tg.addColorStop(1,col+'cc');
-      ctx.strokeStyle=tg; ctx.lineWidth=s.pierce?8:5; ctx.lineCap='round';
-      ctx.beginPath(); ctx.moveTo(s.x-60,s.y); ctx.lineTo(s.x-6,s.y); ctx.stroke();
-      // Core glow
-      const g=ctx.createRadialGradient(s.x,s.y,1,s.x,s.y,s.pierce?16:12);
+      const tg=ctx.createLinearGradient(s.x-80,s.y,s.x,s.y);
+      tg.addColorStop(0,'rgba(255,255,255,0)'); tg.addColorStop(0.4,col+'88'); tg.addColorStop(1,col+'dd');
+      ctx.strokeStyle=tg; ctx.lineWidth=s.pierce?12:8; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(s.x-80,s.y); ctx.lineTo(s.x-6,s.y); ctx.stroke();
+      const g=ctx.createRadialGradient(s.x,s.y,2,s.x,s.y,s.pierce?22:16);
       g.addColorStop(0,core); g.addColorStop(0.4,col); g.addColorStop(1,col+'00');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y,s.pierce?16:12,0,Math.PI*2); ctx.fill();
-      // Bright center dot
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y,s.pierce?22:16,0,Math.PI*2); ctx.fill();
       ctx.fillStyle='#fff';
-      ctx.beginPath(); ctx.arc(s.x,s.y,s.pierce?3:2,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.pierce?4:3,0,Math.PI*2); ctx.fill();
     }
 
-    // ── Pests with shadow + walking bounce ──
+    // ── Pests: bigger plates, thicker outlines, larger HP bars ──
     let boss=null;
     for(const z of pests){
       if(z.boss) boss=z;
@@ -690,86 +673,85 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
       const big=z.boss?1.5:1;
       const chewSq=z.chew?1+0.12*Math.sin(nowMs/70):1;
       // Shadow
-      ctx.fillStyle='rgba(0,0,0,0.1)';
-      ctx.beginPath(); ctx.ellipse(z.x,y+24*big,16*big,5*big,0,0,Math.PI*2); ctx.fill();
-      // High-contrast target plate keeps pests readable over the lawn.
+      ctx.fillStyle='rgba(0,0,0,0.18)';
+      ctx.beginPath(); ctx.ellipse(z.x,y+26*big,20*big,7*big,0,0,Math.PI*2); ctx.fill();
+      // Target plate: solid, high contrast
       ctx.save();
-      ctx.globalAlpha=.92;
-      ctx.fillStyle=z.boss?'#32143d':'#fff7d6';
-      ctx.strokeStyle=z.boss?'#f0a3ff':'#b43d35';
-      ctx.lineWidth=z.boss?6:4;
-      ctx.beginPath(); ctx.arc(z.x,y,40*big,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=z.boss?'#3a1548':'#fff5cc';
+      ctx.strokeStyle=z.boss?'#e880ff':'#cc3333';
+      ctx.lineWidth=z.boss?7:5;
+      ctx.beginPath(); ctx.arc(z.x,y,44*big,0,Math.PI*2); ctx.fill(); ctx.stroke();
       ctx.restore();
       // Pest body
       ctx.save(); ctx.translate(z.x,y); ctx.scale(-big*chewSq,big*(2-chewSq));
-      ctx.shadowColor='rgba(30,20,10,.7)'; ctx.shadowBlur=7;
-      ctx.font='76px serif'; ctx.lineWidth=5; ctx.strokeStyle='rgba(38,27,18,.9)';
+      ctx.font='82px serif'; ctx.lineWidth=7; ctx.strokeStyle='rgba(30,20,10,.95)';
       ctx.strokeText(z.ic,0,4); ctx.fillText(z.ic,0,4);
       ctx.restore();
-      // Hit flash ring
+      // Hit flash
       if(z.hitT>0){
-        ctx.strokeStyle=`rgba(255,255,255,${z.hitT/0.15*0.9})`;
-        ctx.lineWidth=5; ctx.beginPath(); ctx.arc(z.x,y,40*big,0,Math.PI*2); ctx.stroke();
+        ctx.strokeStyle=`rgba(255,255,255,${z.hitT/0.15})`;
+        ctx.lineWidth=6; ctx.beginPath(); ctx.arc(z.x,y,44*big,0,Math.PI*2); ctx.stroke();
       }
-      // HP bar
+      // HP bar: bigger
       if(z.hp<z.maxHp && !z.boss){
-        const bx=z.x-CELL*0.3, by=y-CH*0.34, bw=CELL*0.6, bh=14;
-        ctx.fillStyle='rgba(31,24,16,0.72)';
-        roundRect(bx,by,bw,bh,4); ctx.fill();
+        const bx=z.x-CELL*0.32, by=y-CH*0.36, bw=CELL*0.64, bh=18;
+        ctx.fillStyle='rgba(20,15,10,0.8)';
+        roundRect(bx,by,bw,bh,6); ctx.fill();
         const pct=Math.max(0,z.hp/z.maxHp);
-        const hc=z.slowT>0?'#48a9e8':'#e74444';
+        const hc=z.slowT>0?'#48a9e8':'#ef4444';
         ctx.fillStyle=hc;
-        roundRect(bx,by,bw*pct,bh,4); ctx.fill();
-        ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=1;
-        roundRect(bx,by,bw,bh,4); ctx.stroke();
+        roundRect(bx,by,bw*pct,bh,6); ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=2;
+        roundRect(bx,by,bw,bh,6); ctx.stroke();
       }
     }
 
-    // ── Death poofs with spin + fade ──
+    // ── Death poofs ──
     for(const d of deaths){
       ctx.save();ctx.translate(d.x,d.y);ctx.rotate(d.rot);ctx.globalAlpha=Math.max(0,d.t/0.45);
-      ctx.font='54px serif';ctx.fillText(d.ic,0,0);ctx.restore();
+      ctx.font='58px serif';ctx.fillText(d.ic,0,0);ctx.restore();
     }
     ctx.globalAlpha=1;
 
-    // ── Boss health banner ──
+    // ── Boss health banner: taller ──
     if(boss){
-      const w=BW*0.5, x=(BW-w)/2, y=18;
-      ctx.fillStyle='rgba(0,0,0,0.5)'; roundRect(x-14,y-12,w+28,34,16); ctx.fill();
-      bar(x,y,w,12,boss.hp/boss.maxHp,'#c95cff');
-      ctx.fillStyle='#fff';ctx.font='700 20px Fredoka, sans-serif';
-      ctx.fillText('🕷️ Boss',x+w/2,y-0+22);
+      const w=BW*0.55, x=(BW-w)/2, y=20;
+      ctx.fillStyle='rgba(0,0,0,0.65)'; roundRect(x-18,y-16,w+36,42,18); ctx.fill();
+      bar(x,y,w,16,boss.hp/boss.maxHp,'#c95cff');
+      ctx.fillStyle='#fff';ctx.font='700 24px Fredoka, sans-serif';
+      ctx.fillText('🕷️ Boss',x+w/2,y+26);
     }
 
-    // ── Next-wave countdown ──
+    // ── Next-wave countdown: bigger ──
     if(running && !paused && spawnQ.length===0 && pests.length===0 && betweenTimer<4.4){
-      ctx.fillStyle='rgba(0,0,0,0.4)'; roundRect(BW/2-160,BH/2-38,320,76,20); ctx.fill();
-      ctx.fillStyle='#fff';ctx.font='700 34px Fredoka, sans-serif';
+      ctx.fillStyle='rgba(0,0,0,0.55)'; roundRect(BW/2-180,BH/2-44,360,88,22); ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='700 40px Fredoka, sans-serif';
       ctx.fillText('Next wave in '+Math.ceil(betweenTimer)+'…',BW/2,BH/2+2);
     }
 
-    // ── Floating texts ──
+    // ── Floating texts: thicker outlines ──
     for(const f of floats){
       const a=Math.min(1,f.t/0.9*1.4);
       ctx.globalAlpha=a;
-      ctx.font='800 '+f.size+'px Fredoka, sans-serif';
-      ctx.strokeStyle='rgba(0,0,0,0.45)';ctx.lineWidth=5;ctx.strokeText(f.txt,f.x,f.y);
+      ctx.font='900 '+(f.size+4)+'px Fredoka, sans-serif';
+      ctx.strokeStyle='rgba(0,0,0,0.7)';ctx.lineWidth=7;ctx.lineJoin='round';ctx.strokeText(f.txt,f.x,f.y);
       ctx.fillStyle=f.col;ctx.fillText(f.txt,f.x,f.y);
       ctx.globalAlpha=1;
     }
 
-    // ── Vignette overlay for depth ──
+    // ── Vignette ──
     const vg=ctx.createRadialGradient(BW/2,BH/2,BW*0.3,BW/2,BH/2,BW*0.75);
-    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.12)');
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.15)');
     ctx.fillStyle=vg; ctx.fillRect(0,0,BW,BH);
 
     // ── Paused veil ──
     if(paused){
-      ctx.fillStyle='rgba(11,42,26,0.6)';ctx.fillRect(0,0,BW,BH);
-      ctx.fillStyle='#fff';ctx.font='700 64px Fredoka, sans-serif';
+      ctx.fillStyle='rgba(8,30,18,0.7)';ctx.fillRect(0,0,BW,BH);
+      ctx.fillStyle='#fff';ctx.font='700 72px Fredoka, sans-serif';
+      ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=6;ctx.strokeText('⏸ Paused',BW/2,BH/2-20);
       ctx.fillText('⏸ Paused',BW/2,BH/2-20);
-      ctx.font='600 26px Fredoka, sans-serif';
-      ctx.fillText('Tap ⏸ or press Space',BW/2,BH/2+40);
+      ctx.font='600 30px Fredoka, sans-serif';
+      ctx.fillText('Tap ⏸ or press Space',BW/2,BH/2+44);
     }
   }
   function bar(x,y,w,h,pct,col){
@@ -862,15 +844,11 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     flashHint(u.title+' chosen! '+u.desc);
     updateHUD();
   }
-  var savedVol=parseFloat(localStorage.getItem('jvds_volume'));if(isNaN(savedVol))savedVol=60;
-  function applyVol(v){savedVol=v;localStorage.setItem('jvds_volume',v);audio.setMasterVolume(v/100);soundOn=v>0;var sb=document.getElementById('soundBtn');if(sb){sb.textContent=v>0?'🔊':'🔇';sb.setAttribute('aria-label',v>0?'Sound on':'Sound off')}var vs=document.getElementById('volSlider');if(vs)vs.value=v;var vv=document.getElementById('volVal');if(vv)vv.textContent=v+'%'}
   function togglePause(){
     if(!running || upgradeOpen) return;
     paused=!paused;
     document.getElementById('pauseBtn').textContent=paused?'▶':'⏸';
     document.getElementById('pauseBtn').setAttribute('aria-label',paused?'Resume game':'Pause game');
-    var pm=document.getElementById('pauseMenu');
-    if(pm){if(paused){pm.setAttribute('aria-hidden','false');document.getElementById('volSlider').value=savedVol;document.getElementById('volVal').textContent=savedVol+'%';var rb=document.getElementById('resumeBtn');if(rb)rb.focus()}else{pm.setAttribute('aria-hidden','true')}}
     if(!paused) lastT=performance.now();
   }
 
@@ -900,7 +878,7 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
     document.getElementById('endTitle').textContent = endTitleTxt;
     document.getElementById('endMsg').textContent = won
       ? `You held all five waves with ${guards.filter(Boolean).length} guard(s) to spare. The garden is safe!${newBest?' New best score! 🎉':''}`
-      :s*`The pests broke through on wave ${Math.min(waveIdx,10)}. Replant and try again!${newBest?' New best score! 🎉':''}`;
+      : `The pests broke through on wave ${Math.min(waveIdx,10)}. Replant and try again!${newBest?' New best score! 🎉':''}`;
     gdAnnounce(endTitleTxt+', final score '+score+'.');
     const challengeBonus=(waveGoals&&waveGoals.guard?150:0)+(waveGoals&&waveGoals.economy?150:0)+(waveGoals&&waveGoals.streak?200:0);
     if(challengeBonus){score+=challengeBonus; window.__gsScore=(window.__gsScore||0)+challengeBonus;}
@@ -942,11 +920,9 @@ function loadBest(){try{var s=(window.GameSystem&&window.GameSystem.getScoreStat
   document.getElementById('againBtn').onclick=begin;
   document.getElementById('pauseBtn').onclick=togglePause;
   document.getElementById('speedBtn').onclick=function(){ speedMult=speedMult===1?2:1; this.textContent=speedMult+'×'; this.setAttribute('aria-label','Game speed: '+(speedMult===1?'normal':'fast')); beep('tap'); };
-  applyVol(savedVol);
-  document.getElementById('soundBtn').onclick=function(){applyVol(savedVol>0?0:60)};
-  document.getElementById('resumeBtn').onclick=togglePause;
-  document.getElementById('restartPause').onclick=function(){if(paused)togglePause();begin()};
-  document.getElementById('volSlider').oninput=function(){applyVol(+this.value)};
+  document.getElementById('soundBtn').textContent=soundOn?'🔊':'🔇';
+  document.getElementById('soundBtn').setAttribute('aria-label',soundOn?'Sound on':'Sound off');
+  document.getElementById('soundBtn').onclick=function(){ soundOn=!soundOn; this.textContent=soundOn?'🔊':'🔇'; this.setAttribute('aria-label',soundOn?'Sound on':'Sound off'); localStorage.setItem('soundEnabled',soundOn?'true':'false'); };
 
   // expose for integration script + lightweight read-only debug snapshot
   window.__gd={
