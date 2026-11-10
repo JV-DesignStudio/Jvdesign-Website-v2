@@ -4445,6 +4445,19 @@ window.JVDS_CONTENT = {
       "age": "Ages 6-12",
       "character": "Stardust",
       "url": "/games/stardust-snake.html"
+    },
+    {
+      "id": "pips-cozy-cove",
+      "title": "Pip's Cozy Cove",
+      "tag": "Cozy Fishing",
+      "emoji": "🐢",
+      "category": "Cozy",
+      "bg": "linear-gradient(135deg,#a8dadc,#3f6f73)",
+      "desc": "A calm fishing game with Pip the little turtle: cast a line, wait for a nibble, pull at the right moment and fill your bucket with carp, pufferfish, squid and the rare starfish.",
+      "kids": true,
+      "age": "Ages 6-12",
+      "character": "Pip",
+      "url": "/games/pips-cozy-cove.html"
     }
   ],
   "tools": [
@@ -5589,9 +5602,9 @@ window.JVDS_CONTENT = {
     }
   ],
   "stats": {
-    "generated": "2026-11-09T13:34:34.000Z",
+    "generated": "2026-11-09T19:23:24.000Z",
     "workshops": 282,
-    "games": 14,
+    "games": 15,
     "tools": 49,
     "books": 5,
     "engines": {

@@ -353,7 +353,31 @@ window.JVDS_GAMES = [
     "learning": "Planning · Hand-eye coordination · Patience"
   ,
     "learnHref": "/workshops/scratch-maze-workshop.html",
-    "learnLabel": "Build a grid game in Scratch"}
+    "learnLabel": "Build a grid game in Scratch"},
+  {
+    "id": "pips-cozy-cove",
+    "thumb": "assets/game-thumbs/pips-cozy-cove.webp",
+    "cat": "Cozy",
+    "file": "pips-cozy-cove.html",
+    "title": "Pip's Cozy Cove",
+    "tag": "Cozy Fishing",
+    "emoji": "🐢",
+    "bg": "linear-gradient(135deg,#a8dadc,#3f6f73)",
+    "kids": true,
+    "desc": "A calm fishing game with Pip the little turtle: cast a line, wait for a nibble, pull at the right moment and fill your bucket with carp, pufferfish, squid and the rare starfish.",
+    "difficulty": "Relaxing",
+    "session": "2-5 min",
+    "controls": "Click, tap or press Space on Cast line, then Pull when a fish bites",
+    "storyHook": "Pip has found a quiet dock and the water is full of small surprises.",
+    "character": "Pip",
+    "objective": "Cast, wait for a bite and pull in time to fill your bucket.",
+    "finishLine": "Your bucket is saved on this device, your best score stays and the cove is ready for another quiet cast.",
+    "arcadeSession": "2-5 min",
+    "age": "Ages 6-12",
+    "learning": "Patience · Timing · Focus",
+    "learnHref": "/workshops/scratch-catch-workshop.html",
+    "learnLabel": "Build a catch game in Scratch"
+  }
 ];
 
 /* ── Public quality labels (A1424) ────────────────────────────────────────
@@ -379,7 +403,8 @@ window.JVDS_GAME_QUALITY = {
   "crossy-crew": "READY",
   "stardust-snake": "READY",
   "lumo-hive": "BETA",
-  "lumo-firefly": "BETA"
+  "lumo-firefly": "BETA",
+  "pips-cozy-cove": "BETA"
 };
 /* ── Release test records (A1956) ─────────────────────────────────────────
    Every READY game must have an entry here with a testDate (ISO date) and
