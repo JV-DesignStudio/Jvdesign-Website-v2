@@ -23,7 +23,7 @@
      Keep in sync with the Content-Security-Policy line in _headers, minus
      frame-ancestors (browsers ignore that directive in <meta> and log noise). -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-tTHav1+OoW/M8qX40+s9ZEm7GazMpMtfJV9A0tUIwk0=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LsoITTIpJWdr6CoB75Mi51QQCKonDEdjClW1yFgB3RQ=' 'sha256-g7iTB65E1RXWm7nVpnQWmK6eNBtU9AVUovfDtzraESA=' 'sha256-3koYKELDgNtHE5fOtTAwXd3eqlyoDUl/i4Ao1lXIl/I=' 'sha256-f10HUP3ZmLc/BXsX0VV5TT4t+sDOv3izci3F3B4/XSQ=' 'sha256-mFyULexZL7xxoyGGihdTo6us/osrCD4pvBuaIdgKkmE=' 'sha256-oRkxd0nKDZjWEGtNEY+a9vwrqEMKS6EaLabpbKXewGA=' blob: https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://placehold.co https://img.itch.zone https://img.youtube.com https://unavatar.io https://labs.phaser.io https://www.googletagmanager.com https://www.google-analytics.com; media-src 'self' blob:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com https://labs.phaser.io https://is.gd; frame-src 'self' blob: https://www.youtube.com https://www.youtube-nocookie.com https://itch.io; object-src 'none'; base-uri 'self'; form-action 'self' https://formspree.io; worker-src 'self' blob:; child-src 'self' blob:">
 <link rel="stylesheet" href="/assets/css/tokens.css">
 <script defer src="/assets/js/ui-delegate.js"></script>
 <script defer src="/compat-badge.js"></script>
@@ -143,7 +143,10 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
 }
 </script>
 <style>/* A2599: keep one-finger orbit and placement inside the 3D viewport */
-#viewport canvas{touch-action:none}</style>
+#viewport canvas{touch-action:none}
+/* Keep outliner text readable over the live 3D canvas. */
+#outlinerList>div>span,#outlinerList>div>button,#outlinerGroups>div{text-shadow:0 1px 2px rgba(0,0,0,.75)}
+#outlinerList>div{backdrop-filter:blur(2px)}</style>
 <link rel="stylesheet" href="/assets/css/immersive-tool.css">
 <link rel="stylesheet" href="/assets/css/studio-shell.css?v=1">
 </head>
@@ -637,6 +640,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
             <div style="display:flex;gap:6px;align-items:center;">
               <label style="flex:1;font-size:.68rem;color:var(--muted);display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="shadowToggle" checked data-on="toggleShadows" data-on-event="change" data-on-args="checked"> Shadows</label>
               <label style="flex:1;font-size:.68rem;color:var(--muted);display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="envToggle" checked data-on="toggleEnv" data-on-event="change" data-on-args="checked"> HDRI</label>
+              <label style="flex:1;font-size:.68rem;color:var(--muted);display:flex;align-items:center;gap:4px;cursor:pointer;" title="Draw repeated blocks in batches. Turn off if a very old device shows odd shapes."><input type="checkbox" id="instancingToggle" checked data-on="setInstancingEnabled" data-on-event="change" data-on-args="checked"> Instanced</label>
             </div>
           </div>
           <button class="action-btn btn-secondary" data-on="resetLighting" data-on-plain>&#x1F504; Reset Lighting</button>
@@ -679,6 +683,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
               <div style="margin-bottom:4px;"><strong style="color:#00d4aa;">&#x1F535; Roblox</strong> &rarr; Export RBLX, open in Roblox Studio</div>
               <div style="margin-bottom:4px;"><strong style="color:#5bc0f8;">&#x1F4E6; GLTF (.glb)</strong> &rarr; Blender, Unreal, Godot, Unity &mdash; universal</div>
               <div style="margin-bottom:4px;"><strong style="color:#f5a623;">&#x1F5A5; OBJ / MTL</strong> &rarr; Unreal, Blender, Godot, Maya &mdash; drag &amp; import</div>
+              <div style="font-size:.64rem;color:var(--muted);opacity:.85;">Note: OBJ does not store Metallic or Roughness. Use GLTF for shiny materials.</div>
             </div>
             <label style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);margin-bottom:4px;cursor:pointer;"><input type="checkbox" data-merge-toggle data-on="toggleMergeExport" data-on-event="change" data-on-args="checked" style="accent-color:var(--accent3);"> Merge blocks by material (fewer parts)</label>
             <label style="display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted);margin-bottom:8px;cursor:pointer;"><input type="checkbox" data-cull-toggle data-on="toggleCullExport" data-on-event="change" data-on-args="checked" style="accent-color:var(--accent3);"> Cull hidden faces (lighter exports)</label>
@@ -689,6 +694,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
             <button class="action-btn btn-secondary" style="background:rgba(0,212,170,.12);color:var(--accent3);border:1px solid rgba(0,212,170,.3);font-size:.8rem;" data-on="exportBundle" data-on-plain title="Download one zip: model + README + preview photo">&#x1F4E6; Asset bundle (.zip)</button>
             <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportManifest" data-on-plain title="Parts, names, bounds, materials and triangle counts for a pipeline">&#x1F4CB; Manifest (.json)</button>
             <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="exportCollisionProxy" data-on-plain title="One collision box per part, same units as the model">&#x1F6E1;&#xFE0F; Collision proxy (.obj)</button>
+            <button class="action-btn btn-secondary" style="background:rgba(245,166,35,.1);color:var(--accent2);border:1px solid rgba(245,166,35,.25);font-size:.8rem;" data-on="exportSTL" data-on-plain title="Sits the model on the print bed, starts at 0 and centres X/Z. 1 block = your block scale in millimetres.">&#x1F5A8;&#xFE0F; 3D print (.stl)</button>
           </div>
           <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
             <div class="panel-title" style="font-size:.65rem;">Import Formats</div>
@@ -758,10 +764,10 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
           </div>
           <div class="prop-row" style="flex-direction:row;gap:6px;align-items:center;">
             <div style="flex:1;"><div class="prop-label">Copies</div>
-              <input type="number" class="prop-num" id="arrayCount" min="1" max="20" step="1" value="3" aria-label="Array copies" style="width:100%;">
+              <input type="number" class="prop-num" id="arrayCount" min="1" max="20" step="1" value="3" aria-label="Array copies" data-on="updateArrayPreview" data-on-event="input" data-on-plain style="width:100%;">
             </div>
             <div style="flex:1;"><div class="prop-label">Step (m)</div>
-              <input type="number" class="prop-num" id="arrayStep" min="0.1" max="20" step="0.1" value="1" aria-label="Array step in metres" style="width:100%;">
+              <input type="number" class="prop-num" id="arrayStep" min="0.1" max="20" step="0.1" value="1" aria-label="Array step in metres" data-on="updateArrayPreview" data-on-event="input" data-on-plain style="width:100%;">
             </div>
           </div>
           <button class="action-btn btn-secondary" style="font-size:.8rem;" data-on="arraySelected" data-on-plain>&#x1F4DA; Duplicate Array</button>
@@ -1088,10 +1094,12 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       <button class="mob-action-btn" style="background:rgba(91,192,248,.14);color:#5bc0f8;border:1px solid rgba(91,192,248,.35);" data-on="exportPreviewGLTF" data-on-plain>&#x1F3A8; GLTF (.glb)</button>
       <button class="mob-action-btn" style="background:rgba(91,192,248,.08);color:#5bc0f8;border:1px solid rgba(91,192,248,.2);" data-on="exportPreviewOBJMTL" data-on-plain>&#x1F5A5;&#xFE0F; OBJ+MTL</button>
       <button class="mob-action-btn" style="background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--border);" data-on="exportPreviewOBJ" data-on-plain>&#x1F4C4; OBJ Only</button>
+      <button class="mob-action-btn" style="background:rgba(245,166,35,.1);color:var(--accent2);border:1px solid rgba(245,166,35,.25);" data-on="exportSTL" data-on-plain>&#x1F5A8;&#xFE0F; 3D Print STL</button>
       <div style="grid-column:1 / -1;font-size:.64rem;color:var(--muted);line-height:1.7;padding:2px 2px 0;">
         <div>RBXM downloads as <strong data-export-file="rbxm" style="color:var(--accent3);">My_Build.rbxm</strong></div>
         <div>GLTF downloads as <strong data-export-file="gltf" style="color:#8ad4ff;">My_Build.glb</strong></div>
         <div>OBJ+MTL downloads as <strong data-export-file="objmtl" style="color:#8ad4ff;">My_Build.obj + My_Build.mtl</strong></div>
+        <div style="margin-top:3px;">OBJ keeps colour but not Metallic or Roughness. Use GLTF for shiny materials.</div>
       </div>
       <details id="mobImportGuide" style="grid-column:1 / -1;padding:6px 8px;background:rgba(0,0,0,.18);border-radius:6px;">
         <summary style="cursor:pointer;font-size:.68rem;font-weight:700;color:var(--accent3);">How to open your file</summary>
@@ -1228,6 +1236,7 @@ if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
       <div style="background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);border-radius:8px;padding:7px;font-size:.68rem;line-height:1.4;"><b style="color:var(--accent3);">2</b> Tap the grid to add blocks</div>
       <div style="background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);border-radius:8px;padding:7px;font-size:.68rem;line-height:1.4;"><b style="color:var(--accent3);">3</b> Tap Export to save it</div>
     </div>
+    <div style="font-size:.7rem;color:#c4b5fd;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:8px;padding:7px 9px;margin-bottom:12px;">Lumo says: start with one block, then build outward. You can undo anything.</div>
     <div class="prop-label" style="margin-bottom:6px;">Try one of these</div>
     <div id="starterGallery" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
       <button type="button" data-on="pickStarter" data-on-arg="robot" data-on-plain style="padding:6px 10px;font-size:.72rem;background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;">&#x1F916; Robot</button>
@@ -1311,6 +1320,81 @@ function getPooledMaterial(colour, metalness=0.1, roughness=0.55, opacity=1) {
   // (geometry bounds are per-shape, not material)
   materialCache.set(key, m);
   return m;
+}
+
+// Instanced rendering. The logical block meshes stay the source of truth for
+// selection, export and walk mode; repeated identical blocks are drawn through
+// one InstancedMesh per geometry/material so weak GPUs skip thousands of draw
+// calls. Small scenes keep normal meshes.
+const INSTANCE_THRESHOLD = 120;
+let instancedLayer = null;
+let instancedHidden = new Set();
+let instancingEnabled = true;
+try { instancingEnabled = localStorage.getItem('buildlab_instancing') !== '0'; } catch (e) {}
+let _instanceTimer = null;
+window._instanceStats = { batches: 0, hidden: 0, blocks: 0 };
+
+function markInstancesDirty() {
+  if (!scene) return;
+  if (_instanceTimer) return;
+  _instanceTimer = setTimeout(() => { _instanceTimer = null; rebuildInstancedLayer(); }, 80);
+}
+
+function rebuildInstancedLayer() {
+  if (!scene || !instancedLayer) return;
+  instancedHidden.forEach(mesh => {
+    if (mesh && mesh.parent) mesh.visible = !mesh.userData.hidden;
+  });
+  instancedHidden.clear();
+  instancedLayer.children.slice().forEach(child => {
+    instancedLayer.remove(child);
+    if (child.dispose) { try { child.dispose(); } catch (e) {} }
+  });
+  if (!instancingEnabled || blocks.length < INSTANCE_THRESHOLD) {
+    window._instanceStats = { batches: 0, hidden: 0, blocks: blocks.length };
+    requestRender();
+    return;
+  }
+  const skip = new Set(selectedBlocks);
+  if (selectedBlock) skip.add(selectedBlock);
+  const buckets = new Map();
+  blocks.forEach(mesh => {
+    const d = mesh.userData;
+    if (d.isImported || d.hidden || mesh.parent !== scene || skip.has(mesh)) return;
+    const metal = d.metalness !== undefined ? d.metalness : (mesh.material ? (mesh.material.metalness || 0) : 0.1);
+    const rough = d.roughness !== undefined ? d.roughness : (mesh.material && mesh.material.roughness !== undefined ? mesh.material.roughness : 0.55);
+    const opacity = d.opacity !== undefined ? d.opacity : 1;
+    const key = [d.shape || 'box', d.w || 1, d.h || 1, d.d || 1, d.colour || '', metal, rough, opacity].join('|');
+    let bucket = buckets.get(key);
+    if (!bucket) { bucket = []; buckets.set(key, bucket); }
+    bucket.push(mesh);
+  });
+  let batches = 0;
+  buckets.forEach(list => {
+    if (list.length < 2) return;
+    const first = list[0];
+    const inst = new THREE.InstancedMesh(first.geometry, first.material, list.length);
+    inst.castShadow = true;
+    inst.receiveShadow = true;
+    inst.frustumCulled = false;
+    list.forEach((mesh, i) => {
+      mesh.updateWorldMatrix(true, false);
+      inst.setMatrixAt(i, mesh.matrixWorld);
+      mesh.visible = false;
+      instancedHidden.add(mesh);
+    });
+    inst.instanceMatrix.needsUpdate = true;
+    instancedLayer.add(inst);
+    batches++;
+  });
+  window._instanceStats = { batches, hidden: instancedHidden.size, blocks: blocks.length };
+  requestRender();
+}
+
+function setInstancingEnabled(on) {
+  instancingEnabled = !!on;
+  try { localStorage.setItem('buildlab_instancing', instancingEnabled ? '1' : '0'); } catch (e) {}
+  rebuildInstancedLayer();
 }
 
 // Gizmo/Transform controls
@@ -1420,6 +1504,10 @@ function init() {
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x1a1a2e);
+  instancedLayer = new THREE.Group();
+  instancedLayer.name = 'InstancedBlocks';
+  instancedLayer.userData.isInstancedLayer = true;
+  scene.add(instancedLayer);
   scene.fog = new THREE.FogExp2(0x1a1a2e, (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ? 0.018 : 0.025);
 
   viewAspect = (vp.clientWidth || 800) / (vp.clientHeight || 600);
@@ -1472,6 +1560,7 @@ function init() {
       // share codes agree with the live GLB/OBJ transforms.
       setTimeout(() => { try { bakeGizmoTransform(); } catch (err) { console.warn('gizmo bake failed', err); } }, 0);
     }
+    markInstancesDirty();
     requestRender();
   });
   scene.add(transformControls);
@@ -2707,7 +2796,9 @@ function bakeGizmoTransform() {
 }
 
 function selectBlock(mesh) {
+  clearArrayPreview();
   selectedBlock = mesh;
+  markInstancesDirty();
   mesh.updateWorldMatrix(true, false);
   window.highlight.position.setFromMatrixPosition(mesh.matrixWorld);
   window.highlight.quaternion.setFromRotationMatrix(mesh.matrixWorld);
@@ -2788,11 +2879,14 @@ function moveBlockY(dir) {
   window.highlight.position.copy(selectedBlock.position);
   const yBase = Math.round(selectedBlock.position.y - (selectedBlock.userData.h||1)/2);
   document.getElementById('propYVal').textContent = yBase;
+  markInstancesDirty();
   requestRender();
   toast(dir > 0 ? '⬆ Moved up' : '⬇ Moved down');
 }
 
 function deselectBlock() {
+  clearArrayPreview();
+  markInstancesDirty();
   selectedBlock = null;
   selectedBlocks = [];
   clearMultiHighlights();
@@ -2919,6 +3013,7 @@ function nudgeStep() {
 }
 
 function updateMultiHighlights() {
+  markInstancesDirty();
   clearMultiHighlights();
   selectedBlocks.forEach(mesh => {
     const box = new THREE.BoxGeometry(
@@ -3852,6 +3947,7 @@ function tgPointerMove(e) {
 function tgPointerUp(e) {
   if (!_tgDrag || e.pointerId !== _tgDrag.pointerId) return;
   _tgDrag = null;
+  markInstancesDirty();
   if (typeof toast === 'function') toast('Updated');
 }
 
@@ -4321,6 +4417,7 @@ function escapeHTML(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+let _echoWarned = false;
 function updateStats() {
   document.getElementById('blockCount').textContent = blocks.length;
   if (typeof checkMilestone === 'function') checkMilestone(blocks.length);
@@ -4342,21 +4439,26 @@ function updateStats() {
   if (blocks.length > 500) {
     countEl.style.color = '#e94560';
     countEl.title = 'Performance may degrade above 500 blocks';
+    if (!_echoWarned) {
+      _echoWarned = true;
+      toast('Echo says: that is a lot of blocks. Your game might run slowly.');
+    }
   } else if (blocks.length > 300) {
     countEl.style.color = '#f5a623';
     countEl.title = 'Getting heavy - consider grouping or exporting';
   } else {
     countEl.style.color = '';
     countEl.title = '';
+    _echoWarned = false;
   }
   autosave();
   updateExportFileNames();
   updateScaleReadout();
   if (humanScaleOn) positionHumanScaleRef();
-  // keep outliner in sync with stats
-  if (typeof renderOutliner === 'function') {
-    try { renderOutliner(); } catch(e) {}
-  }
+  // Keep the outliner in sync, but coalesce bulk changes (templates, arrays,
+  // undo restores) into one render instead of one per block.
+  if (typeof scheduleOutlinerRender === 'function') scheduleOutlinerRender();
+  if (typeof markInstancesDirty === 'function') markInstancesDirty();
   // update measurement badge
   const meas = document.getElementById('vpMeasure');
   if (meas) {
@@ -4374,7 +4476,7 @@ function updateStats() {
 
 function clearAll(silent=false) {
   if (!silent && blocks.length && !confirm('Delete all ' + blocks.length + ' blocks? You can undo with Ctrl+Z.')) return;
-  if (!silent && blocks.length) pushHistory();
+  if (blocks.length) pushHistory();
   [...blocks].forEach(b => {
     scene.remove(b);
     if (!b.userData.isImported) { b.geometry.dispose(); b.material.dispose(); }
@@ -4421,10 +4523,99 @@ function closeModal(id) {
   blSyncModalClass();
 }
 
+// localStorage has a small hard cap (~5 MB). Small builds still go there so a
+// refresh is instant, but every save is also mirrored into IndexedDB. If the
+// browser refuses the localStorage copy, the IndexedDB copy still holds the
+// build, so work is not silently lost.
+const BUILD_DB_NAME = 'jvds-buildlab';
+const BUILD_DB_STORE = 'kv';
+let _buildDbPromise = null;
+
+function buildDb() {
+  if (!('indexedDB' in window)) return Promise.resolve(null);
+  if (_buildDbPromise) return _buildDbPromise;
+  _buildDbPromise = new Promise(resolve => {
+    let req;
+    try { req = indexedDB.open(BUILD_DB_NAME, 1); } catch (e) { resolve(null); return; }
+    req.onupgradeneeded = () => { try { req.result.createObjectStore(BUILD_DB_STORE); } catch (e) {} };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+    req.onblocked = () => resolve(null);
+  });
+  return _buildDbPromise;
+}
+
+async function idbSet(key, value) {
+  const db = await buildDb();
+  if (!db) return false;
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction(BUILD_DB_STORE, 'readwrite');
+      tx.objectStore(BUILD_DB_STORE).put(value, key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+      tx.onabort = () => resolve(false);
+    } catch (e) { resolve(false); }
+  });
+}
+
+async function idbGet(key) {
+  const db = await buildDb();
+  if (!db) return null;
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction(BUILD_DB_STORE, 'readonly');
+      const req = tx.objectStore(BUILD_DB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result === undefined ? null : req.result);
+      req.onerror = () => resolve(null);
+    } catch (e) { resolve(null); }
+  });
+}
+
+async function idbDel(key) {
+  const db = await buildDb();
+  if (!db) return false;
+  return new Promise(resolve => {
+    try {
+      const tx = db.transaction(BUILD_DB_STORE, 'readwrite');
+      tx.objectStore(BUILD_DB_STORE).delete(key);
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    } catch (e) { resolve(false); }
+  });
+}
+
+let _slotsFallback = null; // IndexedDB copy used only when localStorage is full
 function getSlots() {
+  if (_slotsFallback) return _slotsFallback;
   try { return JSON.parse(localStorage.getItem('jvds_builder_saves') || '[]'); } catch { return []; }
 }
-function setSlots(slots) { localStorage.setItem('jvds_builder_saves', JSON.stringify(slots)); }
+// On boot, pull the IndexedDB copy when localStorage previously refused a save.
+async function hydrateSlotsFromIdb() {
+  let marker = null;
+  try { marker = localStorage.getItem('jvds_builder_saves_idb'); } catch (e) {}
+  if (marker !== '1' || _slotsFallback) return;
+  try {
+    const stored = await idbGet('slots');
+    if (Array.isArray(stored) && stored.length) {
+      _slotsFallback = stored;
+      renderSaveSlots();
+    }
+  } catch (e) {}
+}
+function setSlots(slots) {
+  let localOk = false;
+  try {
+    localStorage.setItem('jvds_builder_saves', JSON.stringify(slots));
+    localOk = true;
+    try { localStorage.removeItem('jvds_builder_saves_idb'); } catch (e) {}
+  } catch (e) {
+    try { localStorage.setItem('jvds_builder_saves_idb', '1'); } catch (_) {}
+  }
+  _slotsFallback = localOk ? null : slots;
+  idbSet('slots', slots);
+  return localOk;
+}
 
 function saveToSlot(idx) {
   const slots = getSlots();
@@ -4450,9 +4641,8 @@ function saveToSlot(idx) {
       m: p.metalness, r: p.roughness, o: p.opacity
     }))
   };
-  try {
-    setSlots(slots);
-  } catch (e) {
+  const saved = setSlots(slots);
+  if (!saved && !_slotsFallback) {
     toast('This build is too large for browser save. Export .buildlab instead.');
     return;
   }
@@ -4669,7 +4859,7 @@ function downloadOBJText(text) {
   a.download = buildName.replace(/\s+/g,'_') + '.obj';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-  toast('Exported ' + buildName + '.obj (' + profile.unitShort + ')');
+  toast('Ember says: your OBJ is ready. ' + buildName + '.obj (' + profile.unitShort + ')');
 }
 function exportOBJFallback(){
   downloadOBJText(buildOBJText());
@@ -4891,7 +5081,7 @@ function exportRBXM() {
   a.href = URL.createObjectURL(new Blob([rbxm], { type: 'application/xml' }));
   a.download = buildName.replace(/\s+/g,'_') + '.rbxm';
   a.click();
-  toast('Exported ' + buildName + '.rbxm, import in Roblox Studio!');
+  toast('Ember says: your RBXM is ready. Import it in Roblox Studio!');
 }
 
 // -------------------------------------------------------
@@ -4969,7 +5159,7 @@ function exportGLTF() {
     link.download = buildName.replace(/\s+/g, '_') + ext;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    toast('Exported ' + buildName + ext + ' (' + profile.unitShort + ')');
+    toast('Ember says: your ' + ext + ' is ready (' + profile.unitShort + ')');
   };
 
   // Export the profile group (not lights/grid/gizmo). This GLTFExporter build
@@ -5083,8 +5273,92 @@ function exportOBJWithMTL() {
   mtlLink.download = buildName.replace(/\s+/g, '_') + '.mtl';
   setTimeout(() => { mtlLink.click(); URL.revokeObjectURL(mtlUrl); }, 100);
 
-  toast('Exported .obj + .mtl with full materials!');
+  toast('Ember says: your OBJ and MTL are ready with full materials!');
 }
+// Build a binary STL for 3D printing. Vertices are scaled from the builder's
+// block size to millimetres, centred on X/Z and dropped onto the print bed
+// (lowest Y at 0) so the model rotates and slices correctly in any slicer.
+function buildSTLBinary(opts) {
+  opts = opts || {};
+  const parts = collectExportParts();
+  if (!parts.length) return null;
+  const scale = (opts.scale || blockMetres || 1) * 1000;
+  const triangles = [];
+  const v = new THREE.Vector3();
+  const min = new THREE.Vector3(Infinity, Infinity, Infinity);
+  const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+  parts.forEach(part => {
+    const geo = part.mesh.geometry.clone();
+    geo.applyMatrix4(part.mesh.matrixWorld);
+    const pos = geo.attributes.position;
+    const idx = geo.index;
+    const count = idx ? idx.count : pos.count;
+    const readVertex = (i, out) => {
+      const k = idx ? idx.getX(i) : i;
+      out.set(pos.getX(k) * scale, pos.getY(k) * scale, pos.getZ(k) * scale);
+      return out;
+    };
+    for (let i = 0; i + 2 < count; i += 3) {
+      const a = readVertex(i, new THREE.Vector3());
+      const b = readVertex(i + 1, new THREE.Vector3());
+      const c = readVertex(i + 2, new THREE.Vector3());
+      triangles.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+      min.min(a).min(b).min(c);
+      max.max(a).max(b).max(c);
+    }
+    geo.dispose();
+  });
+  if (!triangles.length) return null;
+  const cx = (min.x + max.x) / 2;
+  const cz = (min.z + max.z) / 2;
+  const count = triangles.length / 9;
+  const buffer = new ArrayBuffer(84 + count * 50);
+  const dv = new DataView(buffer);
+  dv.setUint32(80, count, true);
+  let offset = 84;
+  const ax = new THREE.Vector3(), bx = new THREE.Vector3(), cxv = new THREE.Vector3();
+  const ab = new THREE.Vector3(), ac = new THREE.Vector3(), normal = new THREE.Vector3();
+  for (let i = 0; i < count; i++) {
+    const base = i * 9;
+    ax.set(triangles[base] - cx, triangles[base + 1] - min.y, triangles[base + 2] - cz);
+    bx.set(triangles[base + 3] - cx, triangles[base + 4] - min.y, triangles[base + 5] - cz);
+    cxv.set(triangles[base + 6] - cx, triangles[base + 7] - min.y, triangles[base + 8] - cz);
+    ab.subVectors(bx, ax);
+    ac.subVectors(cxv, ax);
+    normal.crossVectors(ab, ac).normalize();
+    dv.setFloat32(offset, normal.x, true); offset += 4;
+    dv.setFloat32(offset, normal.y, true); offset += 4;
+    dv.setFloat32(offset, normal.z, true); offset += 4;
+    [ax, bx, cxv].forEach(point => {
+      dv.setFloat32(offset, point.x, true); offset += 4;
+      dv.setFloat32(offset, point.y, true); offset += 4;
+      dv.setFloat32(offset, point.z, true); offset += 4;
+    });
+    dv.setUint16(offset, 0, true); offset += 2;
+  }
+  return {
+    buffer,
+    triangles: count,
+    scale,
+    size: { x: max.x - min.x, y: max.y - min.y, z: max.z - min.z }
+  };
+}
+
+function exportSTL() {
+  if (!blocks.some(b => !b.userData.hidden)) { toast('Nothing to export!'); return; }
+  let stl;
+  try { stl = buildSTLBinary(); } catch (e) { toast('Could not build the STL. Try a smaller model.'); return; }
+  if (!stl) { toast('Nothing to export!'); return; }
+  const blob = new Blob([stl.buffer], { type: 'model/stl' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = buildName.replace(/\s+/g, '_') + '.stl';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  toast('Ember says: your 3D print file is ready. 1 block = ' + Math.round(stl.scale) + ' mm.');
+}
+
 // Worker path for large builds (>200 blocks) - keeps UI responsive
 let _exportWorker = null;
 function getExportWorker(){
@@ -5576,6 +5850,7 @@ function toggleShadows(on) {
   if (renderer) renderer.shadowMap.enabled = !!on;
   if (directionalLight) directionalLight.castShadow = !!on;
   blocks.forEach(m=>{ m.castShadow=!!on; m.receiveShadow=!!on; });
+  if (instancedLayer) instancedLayer.children.forEach(m=>{ m.castShadow=!!on; m.receiveShadow=!!on; });
   requestRender(300);
   toast(on ? 'Shadows on' : 'Shadows off');
 }
@@ -5700,6 +5975,7 @@ function updateMaterial(prop, val) {
     document.getElementById('propOpacityVal').textContent = curO.toFixed(1);
     const mp = document.getElementById('mobPropOpacityVal'); if (mp) mp.textContent = curO.toFixed(1);
   }
+  markInstancesDirty();
   renderer.render(scene, camera);
 }
 
@@ -5738,12 +6014,112 @@ function applyPreset(name) {
 }
 
 // -------------------------------------------------------
-// UNDO / REDO HISTORY
+// UNDO / REDO HISTORY (delta/command history)
 // -------------------------------------------------------
-let undoStack = [], redoStack = [];
+// Each step stores only what changed since the previous step (diffStates).
+// One full snapshot is kept as the base, so a big build can keep deep history
+// without cloning every block record for every action.
+let redoStack = []; // full snapshots, only populated while undoing
+let historyBase = null; // full state at the oldest retained step
+let historyDeltas = []; // diffs between consecutive pushed states
+let historyLastState = null; // full state at the last push (diff source)
 let undoLabels = [];
 const HISTORY_MAX = 30;
 let _lastHistoryKey = null, _lastHistoryTime = 0;
+
+function historyEnsureId(mesh) {
+  if (!mesh.userData.blockId) mesh.userData.blockId = 'b_' + Math.random().toString(36).slice(2, 9);
+  return mesh.userData.blockId;
+}
+
+function historyRecordKey(record, fallbackIndex) {
+  return record.blockId || (record.ud && record.ud.blockId) || ('__i' + fallbackIndex);
+}
+
+// Compare only the serialisable fields: imported records carry a live mesh
+// reference, which must not make every snapshot look changed.
+function historyRecordSig(record) {
+  const copy = {};
+  for (const key in record) { if (key !== 'mesh') copy[key] = record[key]; }
+  return JSON.stringify(copy);
+}
+
+function historyIndex(state) {
+  const map = new Map();
+  state.blocks.forEach((record, i) => map.set(historyRecordKey(record, i), record));
+  return map;
+}
+
+function diffStates(prev, next) {
+  const prevMap = historyIndex(prev);
+  const nextMap = historyIndex(next);
+  const changed = [];
+  nextMap.forEach((record, id) => {
+    const old = prevMap.get(id);
+    if (!old || historyRecordSig(old) !== historyRecordSig(record)) changed.push(record);
+  });
+  const removed = [];
+  prevMap.forEach((_record, id) => { if (!nextMap.has(id)) removed.push(id); });
+  const prevOrder = prev.blocks.map((r, i) => historyRecordKey(r, i));
+  const nextOrder = next.blocks.map((r, i) => historyRecordKey(r, i));
+  const orderChanged = prevOrder.length !== nextOrder.length
+    || prevOrder.some((id, i) => id !== nextOrder[i]);
+  const groupsChanged = JSON.stringify(prev.groups) !== JSON.stringify(next.groups);
+  return {
+    changed,
+    removed,
+    order: orderChanged ? nextOrder : undefined,
+    groups: groupsChanged ? next.groups : undefined
+  };
+}
+
+function applyStateDiff(state, diff) {
+  if (!diff) return state;
+  const map = historyIndex(state);
+  (diff.removed || []).forEach(id => map.delete(id));
+  (diff.changed || []).forEach(record => map.set(historyRecordKey(record, 0), record));
+  const order = diff.order || state.blocks.map((r, i) => historyRecordKey(r, i));
+  const blocks = order.map(id => map.get(id)).filter(Boolean);
+  return { blocks, groups: diff.groups !== undefined ? diff.groups : state.groups };
+}
+
+// Rebuild the full state at history slot `index` by replaying the small diffs.
+function historyState(index) {
+  let state = historyBase;
+  for (let i = 1; i <= index; i++) state = applyStateDiff(state, historyDeltas[i - 1]);
+  return state;
+}
+
+// Append one pushed state. The newest delta is the effect of the previous
+// action, so only changed blocks are retained.
+function historyAppend(state, label) {
+  if (!historyBase) {
+    historyBase = state;
+    historyLastState = state;
+    undoLabels.push(label);
+    return;
+  }
+  historyDeltas.push(diffStates(historyLastState, state));
+  historyLastState = state;
+  undoLabels.push(label);
+  while (undoLabels.length > HISTORY_MAX) {
+    undoLabels.shift();
+    const first = historyDeltas.shift();
+    if (first) historyBase = applyStateDiff(historyBase, first);
+  }
+}
+
+// Drop the newest pushed state and point the diff source at the new top.
+function historyPop() {
+  undoLabels.pop();
+  if (historyDeltas.length) historyDeltas.pop();
+  if (!undoLabels.length) {
+    historyBase = null;
+    historyLastState = null;
+    return;
+  }
+  historyLastState = historyState(undoLabels.length - 1);
+}
 
 function historyLabel(key) {
   const labels = {
@@ -5789,6 +6165,7 @@ function renderHistoryList() {
 function captureState() {
   return {
     blocks: blocks.map(b => {
+      historyEnsureId(b);
       if (b.userData.isImported) {
         return {
           imported: true,
@@ -5825,8 +6202,9 @@ function captureState() {
   };
 }
 
-// Snapshot the pre-mutation state. `key` coalesces rapid repeats (e.g. slider
-// drags) so an entire drag becomes a single undo step.
+// Record the pre-mutation state. `key` coalesces rapid repeats (e.g. slider
+// drags) so an entire drag becomes a single undo step. Only the delta from the
+// previous step is retained; see diffStates.
 function pushHistory(key) {
   const now = Date.now();
   if (key && key === _lastHistoryKey && (now - _lastHistoryTime) < 900) {
@@ -5835,11 +6213,33 @@ function pushHistory(key) {
   }
   _lastHistoryKey = key || null;
   _lastHistoryTime = now;
-  undoStack.push(captureState());
-  undoLabels.push(historyLabel(key));
-  if (undoStack.length > HISTORY_MAX) { undoStack.shift(); undoLabels.shift(); }
+  historyAppend(captureState(), historyLabel(key));
   redoStack = [];
   renderHistoryList();
+}
+
+// Update a live block mesh from a history record in place. Reusing the mesh is
+// what keeps a 1,000-block undo cheap: only the blocks that actually changed are
+// touched, instead of rebuilding the whole scene.
+function applyRecordToMesh(mesh, r) {
+  const d = mesh.userData;
+  d.w = r.w || 1; d.h = r.h || 1; d.d = r.d || 1;
+  if (r.colour) d.colour = r.colour;
+  if (r.shape) d.shape = r.shape;
+  d.rot = r.rot || 0; d.rotX = r.rotX || 0; d.rotZ = r.rotZ || 0;
+  d.metalness = r.metalness !== undefined ? r.metalness : 0.1;
+  d.roughness = r.roughness !== undefined ? r.roughness : 0.55;
+  d.opacity = r.opacity !== undefined ? r.opacity : 1;
+  d.blockName = r.blockName || '';
+  d.robloxMaterial = r.robloxMat || '';
+  d.locked = !!r.locked;
+  d.hidden = !!r.hidden;
+  if (r.blockId) d.blockId = r.blockId;
+  mesh.position.set(r.x, r.y + d.h / 2, r.z);
+  mesh.rotation.set(d.rotX * Math.PI / 180, d.rot * Math.PI / 180, d.rotZ * Math.PI / 180);
+  mesh.geometry = getCachedGeometry(d.shape, d.w, d.h, d.d);
+  mesh.material = getPooledMaterial(d.colour, d.metalness, d.roughness, d.opacity);
+  mesh.visible = !d.hidden;
 }
 
 function restoreState(state) {
@@ -5852,35 +6252,33 @@ function restoreState(state) {
   // Separate imported vs native records
   const importedRecords = records.filter(r => r.imported);
   const nativeRecords = records.filter(r => !r.imported);
-
-  // Remove all native blocks - pooled geometries/materials are shared, do not dispose
-  blocks.filter(b => !b.userData.isImported).forEach(b => {
-    scene.remove(b);
-    // geometry is cached (getCachedGeometry) - keep in cache
-    // material is pooled (getPooledMaterial) - keep in cache
-  });
+  const wantedIds = new Set(nativeRecords.map((r, i) => r.blockId || ('__i' + i)));
   const wantedImported = new Set(importedRecords.map(r => r.mesh).filter(Boolean));
-  blocks.filter(b => b.userData.isImported && !wantedImported.has(b)).forEach(b => {
+
+  // Remove only native blocks that are absent from the target state.
+  blocks.slice().forEach(b => {
+    if (b.userData.isImported || wantedIds.has(b.userData.blockId)) return;
     if (b.parent && b.parent !== scene) b.parent.remove(b);
     scene.remove(b);
+    blocks = blocks.filter(x => x !== b);
   });
-  blocks = blocks.filter(b => b.userData.isImported && wantedImported.has(b));
+  // Remove imported meshes that are absent from the target state.
+  blocks.slice().forEach(b => {
+    if (!b.userData.isImported || wantedImported.has(b)) return;
+    if (b.parent && b.parent !== scene) b.parent.remove(b);
+    scene.remove(b);
+    blocks = blocks.filter(x => x !== b);
+  });
 
-  // Add back from records
-  nativeRecords.forEach(r => {
-    const m = addBlock(r.x, r.y, r.z, r.w, r.h, r.d, r.colour, r.shape, r.rot, r.rotX, r.rotZ);
-    // apply pooled material with correct params
-    const mat = getPooledMaterial(r.colour || '#e94560', r.metalness ?? 0.1, r.roughness ?? 0.55, r.opacity ?? 1);
-    m.material = mat;
-    m.userData.metalness = r.metalness ?? 0.1;
-    m.userData.roughness = r.roughness ?? 0.55;
-    m.userData.opacity = r.opacity ?? 1;
-    m.userData.locked = !!r.locked;
-    m.userData.hidden = !!r.hidden;
-    m.visible = !m.userData.hidden;
-    if (r.blockName) m.userData.blockName = r.blockName;
-    if (r.robloxMat) m.userData.robloxMaterial = r.robloxMat;
-    if (r.blockId) m.userData.blockId = r.blockId;
+  // Update existing meshes in place; create only blocks that are new.
+  nativeRecords.forEach((r, i) => {
+    const id = r.blockId || ('__i' + i);
+    let mesh = blocks.find(b => !b.userData.isImported && b.userData.blockId === id);
+    if (!mesh) {
+      mesh = addBlock(r.x, r.y, r.z, r.w, r.h, r.d, r.colour, r.shape, r.rot, r.rotX, r.rotZ);
+      if (mesh && r.blockId) mesh.userData.blockId = r.blockId;
+    }
+    if (mesh) applyRecordToMesh(mesh, r);
   });
 
   // Re-add imported meshes that were deleted since the snapshot, and restore
@@ -5899,12 +6297,21 @@ function restoreState(state) {
     b.updateMatrixWorld(true);
   });
 
+  // Restore the block order from the snapshot (used by the outliner and export).
+  if (blocks.length === records.length) {
+    const byId = new Map();
+    blocks.forEach(b => byId.set(b.userData.blockId, b));
+    const ordered = records.map((r, i) => byId.get(r.blockId || (r.ud && r.ud.blockId) || ('__i' + i))).filter(Boolean);
+    if (ordered.length === records.length) blocks = ordered;
+  }
+
   // Restore groups if available - rebuild true THREE.Group hierarchy
   // clear old groups
   groupObjects.forEach(gObj=>{ try{ const kids=[...gObj.children]; kids.forEach(m=>{ gObj.remove(m); scene.add(m); }); scene.remove(gObj);}catch(e){} });
   groupObjects = [];
   if (savedGroups) {
-    groups = savedGroups;
+    // Clone so restoring a history step cannot mutate the stored snapshot.
+    groups = JSON.parse(JSON.stringify(savedGroups));
     // rebuild THREE.Groups
     groups.forEach(g=>{
       const gObj = new THREE.Group();
@@ -5925,15 +6332,16 @@ function restoreState(state) {
   }
 
   updateStats();
-  try{ renderOutliner(); }catch(e){}
   requestRender();
 }
 
 function undo() {
-  if (undoStack.length === 0) { toast('Nothing to undo'); return; }
+  if (!undoLabels.length) { toast('Nothing to undo'); return; }
   redoStack.push(captureState());
-  const label = undoLabels.pop();
-  restoreState(undoStack.pop());
+  const label = undoLabels[undoLabels.length - 1];
+  const state = historyState(undoLabels.length - 1);
+  historyPop();
+  restoreState(state);
   _lastHistoryKey = null;
   renderHistoryList();
   toast('↩ Undo' + (label ? ': ' + label : ''));
@@ -5941,26 +6349,27 @@ function undo() {
 
 function redo() {
   if (redoStack.length === 0) { toast('Nothing to redo'); return; }
-  undoStack.push(captureState());
-  undoLabels.push('Redo');
-  if (undoStack.length > HISTORY_MAX) { undoStack.shift(); undoLabels.shift(); }
-  restoreState(redoStack.pop());
+  const target = redoStack.pop();
+  // Mirror the old snapshot stack: push the current state, then restore the
+  // redo target. The pushed state becomes the next undo step.
+  historyAppend(captureState(), 'Redo');
+  restoreState(target);
   _lastHistoryKey = null;
   renderHistoryList();
   toast('↪ Redo');
 }
 
 function jumpToHistory(index) {
-  if (!Number.isFinite(index) || index < 0 || index >= undoStack.length) return;
+  if (!Number.isFinite(index) || index < 0 || index >= undoLabels.length) return;
   // Save the current state, then move every later state onto the redo stack so
   // undo/redo still step correctly from the restored point.
   redoStack.push(captureState());
-  while (undoStack.length - 1 > index) {
-    redoStack.push(undoStack.pop());
-    undoLabels.pop();
+  while (undoLabels.length - 1 > index) {
+    redoStack.push(historyState(undoLabels.length - 1));
+    historyPop();
   }
-  const state = undoStack.pop();
-  undoLabels.pop();
+  const state = historyState(undoLabels.length - 1);
+  historyPop();
   restoreState(state);
   _lastHistoryKey = null;
   renderHistoryList();
@@ -6731,6 +7140,15 @@ function highlightGroup(idx) {
 // -------------------------------------------------------
 // OUTLINER - Scene Hierarchy v2
 // -------------------------------------------------------
+let _outlinerTimer = null;
+function scheduleOutlinerRender() {
+  if (_outlinerTimer) return;
+  _outlinerTimer = setTimeout(() => {
+    _outlinerTimer = null;
+    try { renderOutliner(); } catch (e) {}
+  }, 16);
+}
+
 function renderOutliner() {
   const list = document.getElementById('outlinerList');
   const gList = document.getElementById('outlinerGroups');
@@ -6738,6 +7156,7 @@ function renderOutliner() {
   const count = document.getElementById('outlinerCount');
   const searchEl = document.getElementById('outlinerSearch');
   if (!list) return;
+  bindOutlinerEvents();
   const shapeIcon = { box:'🟦', cylinder:'🛢️', sphere:'🔵', cone:'🔶', pyramid:'🔺', wedge:'📐', flat:'◻️' };
   const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
   if (count) count.textContent = blocks.length + (blocks.length===1 ? ' block' : ' blocks');
@@ -6762,7 +7181,7 @@ function renderOutliner() {
   }
   if (!blocks.length) {
     list.innerHTML = '';
-    if (empty) { empty.textContent = 'No blocks yet. Click grid to add.'; empty.style.display = ''; }
+    if (empty) { empty.textContent = 'No blocks yet. Click the grid to add one. Lumo says start small, then build outward.'; empty.style.display = ''; }
     return;
   }
   // filter
@@ -6793,36 +7212,6 @@ function renderOutliner() {
     row.dataset.blockId = id;
     row.style.cssText = 'display:flex;align-items:center;gap:3px;padding:4px 5px;border-radius:8px;cursor:pointer;border:1px solid ' + (isSel ? 'rgba(0,212,170,.38)' : 'transparent') + ';background:' + (isSel ? 'rgba(0,212,170,.10)' : 'rgba(255,255,255,.03)') + ';opacity:' + vis + ';transition:background .12s;';
     row.title = (d.blockName ? d.blockName + ' , ' : '') + d.shape + ' ' + d.w+'×'+d.h+'×'+d.d + ' @ ' + mesh.position.x.toFixed(1)+','+(mesh.position.y-(d.h||1)/2).toFixed(1)+','+mesh.position.z.toFixed(1);
-    row.onclick = (e) => {
-      if (e.target.closest('button')) return;
-      if (locked && !window._ctrlHeld) { toast('Locked - Ctrl+click to override'); return; }
-      if (window._ctrlHeld) toggleMultiSelect(mesh);
-      else { selectedBlocks = [mesh]; selectBlock(mesh); updateMultiHighlights(); }
-      renderOutliner();
-    };
-    row.ondblclick = (e) => {
-      if (e.target.closest('button')) return;
-      const nv = prompt('Rename block:', d.blockName || '');
-      if (nv !== null) { d.blockName = nv.slice(0,32); updateBlockName(d.blockName); selectBlock(mesh); renderOutliner(); }
-    };
-    row.ondragstart = (e) => { e.dataTransfer.setData('text/plain', id); row.style.opacity='0.4'; };
-    row.ondragend = () => { row.style.opacity=vis; };
-    row.ondragover = (e) => { e.preventDefault(); row.style.outline='1px dashed var(--accent3)'; };
-    row.ondragleave = () => { row.style.outline=''; };
-    row.ondrop = (e) => {
-      e.preventDefault(); row.style.outline='';
-      const srcId = e.dataTransfer.getData('text/plain');
-      if (!srcId || srcId===id) return;
-      const srcIdx = blocks.findIndex(b=>b.userData.blockId===srcId);
-      const dstIdx = blocks.findIndex(b=>b.userData.blockId===id);
-      if (srcIdx<0||dstIdx<0) return;
-      pushHistory();
-      const [m] = blocks.splice(srcIdx,1);
-      const newDst = blocks.findIndex(b=>b.userData.blockId===id);
-      blocks.splice(newDst,0,m);
-      renderOutliner();
-      toast('Reordered');
-    };
     const swatch = `<span style="width:10px;height:10px;border-radius:3px;flex-shrink:0;background:${escapeHTML(d.colour)};border:1px solid rgba(255,255,255,.18);display:inline-block;"></span>`;
     const icon = `<span style="font-size:.7rem;">${shapeIcon[d.shape]||'🟦'}</span>`;
     const label = `<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.66rem;color:var(--text);">${escapeHTML(name)}${locked ? ' 🔒' : ''}</span>`;
@@ -6831,6 +7220,72 @@ function renderOutliner() {
     const dupBtn = `<button data-on="duplicateSingleBlock" data-on-args="s:${encodeURIComponent(id)}" title="Duplicate" style="padding:2px 5px;border-radius:5px;border:1px solid var(--border);background:rgba(255,255,255,.06);font-size:.62rem;cursor:pointer;flex-shrink:0;">⎘</button>`;
     row.innerHTML = swatch + icon + label + visBtn + lockBtn + dupBtn;
     list.appendChild(row);
+  });
+}
+
+// One delegated listener set for every outliner row. Rendering thousands of
+// rows no longer creates thousands of separate click and drag handler closures.
+function bindOutlinerEvents() {
+  const list = document.getElementById('outlinerList');
+  if (!list || list.dataset.delegated === '1') return;
+  list.dataset.delegated = '1';
+  const rowOf = target => (target && target.closest ? target.closest('#outlinerList [data-block-id]') : null);
+  const meshOf = row => blocks.find(b => b.userData.blockId === row.dataset.blockId);
+  list.addEventListener('click', e => {
+    const row = rowOf(e.target);
+    if (!row || (e.target.closest && e.target.closest('button'))) return;
+    const mesh = meshOf(row);
+    if (!mesh) return;
+    if (mesh.userData.locked && !window._ctrlHeld) { toast('Locked - Ctrl+click to override'); return; }
+    if (window._ctrlHeld) toggleMultiSelect(mesh);
+    else { selectedBlocks = [mesh]; selectBlock(mesh); updateMultiHighlights(); }
+    renderOutliner();
+  });
+  list.addEventListener('dblclick', e => {
+    const row = rowOf(e.target);
+    if (!row || (e.target.closest && e.target.closest('button'))) return;
+    const mesh = meshOf(row);
+    if (!mesh) return;
+    const nv = prompt('Rename block:', mesh.userData.blockName || '');
+    if (nv !== null) { mesh.userData.blockName = nv.slice(0, 32); updateBlockName(mesh.userData.blockName); selectBlock(mesh); renderOutliner(); }
+  });
+  list.addEventListener('dragstart', e => {
+    const row = rowOf(e.target);
+    if (!row) return;
+    e.dataTransfer.setData('text/plain', row.dataset.blockId);
+    row.style.opacity = '0.4';
+  });
+  list.addEventListener('dragend', e => {
+    const row = rowOf(e.target);
+    if (row) row.style.opacity = '';
+  });
+  list.addEventListener('dragover', e => {
+    const row = rowOf(e.target);
+    if (!row) return;
+    e.preventDefault();
+    row.style.outline = '1px dashed var(--accent3)';
+  });
+  list.addEventListener('dragleave', e => {
+    const row = rowOf(e.target);
+    if (row) row.style.outline = '';
+  });
+  list.addEventListener('drop', e => {
+    const row = rowOf(e.target);
+    if (!row) return;
+    e.preventDefault();
+    row.style.outline = '';
+    const srcId = e.dataTransfer.getData('text/plain');
+    const id = row.dataset.blockId;
+    if (!srcId || srcId === id) return;
+    const srcIdx = blocks.findIndex(b => b.userData.blockId === srcId);
+    const dstIdx = blocks.findIndex(b => b.userData.blockId === id);
+    if (srcIdx < 0 || dstIdx < 0) return;
+    pushHistory();
+    const [m] = blocks.splice(srcIdx, 1);
+    const newDst = blocks.findIndex(b => b.userData.blockId === id);
+    blocks.splice(newDst, 0, m);
+    renderOutliner();
+    toast('Reordered');
   });
 }
 
@@ -7115,6 +7570,7 @@ function setArrayAxis(axis) {
   document.querySelectorAll('.array-axis-btn').forEach(b => b.classList.remove('active'));
   const btn = document.querySelector('.array-axis-btn[data-axis="' + axis + '"]');
   if (btn) btn.classList.add('active');
+  updateArrayPreview();
   toast('Array axis: ' + axis.toUpperCase());
 }
 
@@ -7148,7 +7604,66 @@ function cloneBlockAtWorld(mesh, position) {
   return m;
 }
 
+// Lightweight wireframe ghosts show what the array will add before a learner
+// commits. Thousands of real blocks are only created when they press Apply.
+let arrayPreviewGroup = null;
+let arrayPreviewMat = null;
+
+function clearArrayPreview() {
+  if (!arrayPreviewGroup) return;
+  arrayPreviewGroup.children.slice().forEach(child => {
+    if (child.geometry) child.geometry.dispose();
+  });
+  arrayPreviewGroup.clear();
+  if (arrayPreviewMat) { arrayPreviewMat.dispose(); arrayPreviewMat = null; }
+  arrayPreviewGroup.visible = false;
+  requestRender();
+}
+
+function arrayParams() {
+  const countEl = document.getElementById('arrayCount');
+  const stepEl = document.getElementById('arrayStep');
+  return {
+    sel: selectedBlocks.length ? selectedBlocks : (selectedBlock ? [selectedBlock] : []),
+    count: Math.max(1, Math.min(20, parseInt(countEl ? countEl.value : '3', 10) || 3)),
+    step: Math.max(0.1, parseFloat(stepEl ? stepEl.value : '1') || 1)
+  };
+}
+
+function updateArrayPreview() {
+  const { sel, count, step } = arrayParams();
+  if (!sel.length || sel.length > 60) { clearArrayPreview(); return; }
+  if (!arrayPreviewGroup) {
+    arrayPreviewGroup = new THREE.Group();
+    arrayPreviewGroup.name = 'arrayPreview';
+    scene.add(arrayPreviewGroup);
+  }
+  arrayPreviewGroup.children.slice().forEach(child => { if (child.geometry) child.geometry.dispose(); });
+  arrayPreviewGroup.clear();
+  if (arrayPreviewMat) arrayPreviewMat.dispose();
+  arrayPreviewMat = new THREE.MeshBasicMaterial({ color: 0x00d4aa, wireframe: true, transparent: true, opacity: 0.5, depthWrite: false });
+  sel.forEach(mesh => {
+    mesh.updateWorldMatrix(true, false);
+    const base = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
+    const w = mesh.userData.w || 1, h = mesh.userData.h || 1, d = mesh.userData.d || 1;
+    for (let i = 1; i <= count; i++) {
+      const offset = new THREE.Vector3();
+      if (arrayAxis === 'x') offset.x = step * i;
+      else if (arrayAxis === 'y') offset.y = step * i;
+      else offset.z = step * i;
+      const ghost = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), arrayPreviewMat);
+      ghost.position.copy(base).add(offset);
+      ghost.castShadow = false;
+      ghost.receiveShadow = false;
+      arrayPreviewGroup.add(ghost);
+    }
+  });
+  arrayPreviewGroup.visible = true;
+  requestRender(400);
+}
+
 function arraySelected() {
+  clearArrayPreview();
   const sel = selectedBlocks.length ? selectedBlocks : (selectedBlock ? [selectedBlock] : []);
   if (!sel.length) { toast('Select blocks first'); return; }
   const countEl = document.getElementById('arrayCount');
@@ -7544,29 +8059,45 @@ function paintLastSaved(iso) {
   rel.title = 'Autosaved in this browser. Close the tab and it is kept on this device.';
 }
 setInterval(() => { if (_savedAt) paintLastSaved(_savedAt); }, 30000);
+function buildAutosavePayload() {
+  return {
+    name: buildName,
+    blocks: encodeBuildData(),
+    groups: groups.map(group => group.name),
+    imports: serializeImportedParts(),
+    savedAt: new Date().toISOString()
+  };
+}
+
 function autosave() {
   clearTimeout(_autosaveTimer);
-  _autosaveTimer = setTimeout(() => {
+  _autosaveTimer = setTimeout(async () => {
+    let payload;
     try {
-      _savedAt = new Date().toISOString();
-      localStorage.setItem('buildlab_autosave', JSON.stringify({
-        name: buildName,
-        blocks: encodeBuildData(),
-        groups: groups.map(group => group.name),
-        imports: serializeImportedParts(),
-        savedAt: _savedAt
-      }));
-      paintSaveStatus(_savedAt);
+      payload = buildAutosavePayload();
     } catch (e) {
       const el = document.getElementById('autosaveStatus');
       if (el) { el.textContent = 'Could not save on this device'; el.title = 'Storage is full or blocked.'; }
+      return;
+    }
+    _savedAt = payload.savedAt;
+    paintSaveStatus(_savedAt);
+    let localOk = false;
+    try { localStorage.setItem('buildlab_autosave', JSON.stringify(payload)); localOk = true; } catch (e) {}
+    const idbOk = await idbSet('autosave', payload);
+    try {
+      if (localOk) localStorage.removeItem('buildlab_autosave_idb');
+      else if (idbOk) localStorage.setItem('buildlab_autosave_idb', '1');
+    } catch (e) {}
+    if (!localOk && !idbOk) {
+      const el = document.getElementById('autosaveStatus');
+      if (el) { el.textContent = 'Could not save on this device'; el.title = 'Storage is full or blocked. Export a .buildlab file to keep this build.'; }
     }
   }, 800);
 }
 
-function restoreAutosave() {
+function applyAutosaveData(d) {
   try {
-    const d = JSON.parse(localStorage.getItem('buildlab_autosave') || 'null');
     const hasBlocks = d && Array.isArray(d.blocks) && d.blocks.length;
     const hasImports = d && Array.isArray(d.imports) && d.imports.length;
     if (!d || (!hasBlocks && !hasImports)) return false;
@@ -7601,20 +8132,43 @@ function restoreAutosave() {
   } catch (e) { return false; }
 }
 
+function restoreAutosave() {
+  try { return applyAutosaveData(JSON.parse(localStorage.getItem('buildlab_autosave') || 'null')); } catch (e) { return false; }
+}
+
+async function restoreAutosaveAsync() {
+  if (restoreAutosave()) return true;
+  // Only use the IndexedDB copy when localStorage could not hold the autosave.
+  let marker = null;
+  try { marker = localStorage.getItem('buildlab_autosave_idb'); } catch (e) {}
+  if (marker !== '1') return false;
+  try { return applyAutosaveData(await idbGet('autosave')); } catch (e) { return false; }
+}
+
+function autosaveMetaFrom(d) {
+  if (!d) return null;
+  const parts = (Array.isArray(d.blocks) ? d.blocks.length : 0) + (Array.isArray(d.imports) ? d.imports.length : 0);
+  if (!parts) return null;
+  const at = d.savedAt ? new Date(d.savedAt).getTime() : 0;
+  return {
+    name: d.name || 'your build',
+    parts,
+    savedAt: d.savedAt || null,
+    age: at ? (Date.now() - at) : Infinity
+  };
+}
+
 function peekAutosave() {
-  try {
-    const d = JSON.parse(localStorage.getItem('buildlab_autosave') || 'null');
-    if (!d) return null;
-    const parts = (Array.isArray(d.blocks) ? d.blocks.length : 0) + (Array.isArray(d.imports) ? d.imports.length : 0);
-    if (!parts) return null;
-    const at = d.savedAt ? new Date(d.savedAt).getTime() : 0;
-    return {
-      name: d.name || 'your build',
-      parts,
-      savedAt: d.savedAt || null,
-      age: at ? (Date.now() - at) : Infinity
-    };
-  } catch (e) { return null; }
+  try { return autosaveMetaFrom(JSON.parse(localStorage.getItem('buildlab_autosave') || 'null')); } catch (e) { return null; }
+}
+
+async function peekAutosaveAsync() {
+  const local = peekAutosave();
+  if (local) return local;
+  let marker = null;
+  try { marker = localStorage.getItem('buildlab_autosave_idb'); } catch (e) {}
+  if (marker !== '1') return null;
+  try { return autosaveMetaFrom(await idbGet('autosave')); } catch (e) { return null; }
 }
 
 function recoveryAgeText(meta) {
@@ -7639,14 +8193,15 @@ function showRecoveryPrompt(meta) {
   blOpenModal('recoveryModal');
 }
 
-function restoreRecovery() {
+async function restoreRecovery() {
   closeModal('recoveryModal');
-  if (restoreAutosave()) toast('🔄 Restored your last build');
+  if (await restoreAutosaveAsync()) toast('🔄 Restored your last build');
   else { paintSaveStatus(null); toast('Could not restore that build.'); }
 }
 
 function discardRecovery() {
-  try { localStorage.removeItem('buildlab_autosave'); } catch (e) {}
+  try { localStorage.removeItem('buildlab_autosave'); localStorage.removeItem('buildlab_autosave_idb'); } catch (e) {}
+  idbDel('autosave');
   paintSaveStatus(null);
   closeModal('recoveryModal');
   toast('Started fresh.');
@@ -8267,7 +8822,7 @@ let _builderBooted = false;
 function bootBuilder() {
   if (_builderBooted) return; // guard against double-init
   _builderBooted = true;
-  requestAnimationFrame(() => {
+  requestAnimationFrame(async () => {
     let started = false;
     try {
       started = init();
@@ -8286,16 +8841,19 @@ function bootBuilder() {
     updateHumanScaleButton();
     if (humanScaleOn) setHumanScale(true, true);
     renderHistoryList();
+    hydrateSlotsFromIdb();
+    const instancingToggle = document.getElementById('instancingToggle');
+    if (instancingToggle) instancingToggle.checked = instancingEnabled;
     loadCameraBookmarks();
     bindWalkControls();
     updateWalkButton();
     if (loadFromHash()) {
       toast('🔗 Loaded shared build');
     } else {
-      const meta = peekAutosave();
+      const meta = await peekAutosaveAsync();
       if (meta && meta.age > RECOVERY_AGE_MS) {
         showRecoveryPrompt(meta);
-      } else if (restoreAutosave()) {
+      } else if (await restoreAutosaveAsync()) {
         toast('🔄 Restored your last session');
       } else if (!localStorage.getItem('jvds_buildlab_seen_v1')) {
         localStorage.setItem('jvds_buildlab_seen_v1', '1');
@@ -8330,6 +8888,17 @@ window.getScaleReadout = () => (document.getElementById('scaleReadout')?.textCon
 window.jumpToHistory = jumpToHistory;
 window.renderHistoryList = renderHistoryList;
 window.getHistoryLabels = () => undoLabels.slice();
+window.getHistoryStats = () => ({
+  steps: undoLabels.length,
+  entryBytes: JSON.stringify(historyDeltas).length,
+  baseBytes: JSON.stringify(historyBase || { blocks: [], groups: [] }).length
+});
+window.getHistoryDebug = () => ({
+  baseBlocks: historyBase ? historyBase.blocks.length : 0,
+  lastBlocks: historyLastState ? historyLastState.blocks.length : 0,
+  labels: undoLabels.slice(),
+  deltas: historyDeltas.map(d => ({ changed: d.changed.length, removed: d.removed.length, order: d.order ? d.order.length : null }))
+});
 window.toggleWalkMode = toggleWalkMode;
 window.enterWalkMode = enterWalkMode;
 window.exitWalkMode = exitWalkMode;
@@ -8590,19 +9159,20 @@ Object.assign(window, {
   quickBuild, setCameraView, frameAll, zoomIn, zoomOut, openWelcome, clearAll, addToAssetLibrary, clearAssetLibrary, renderAssetLibrary, insertAssetFromLibrary, loadAssetFromLibrary,
   centreBuildAtOrigin, pivotBuildToBase, toggleMergeExport, collectExportParts, mergedExportGroups, getPolyStats, bakeGizmoTransform,
   toggleCullExport, syncCullToggles, culledPartGroups, culledExportGroups, getMeshCullStats,
+  setInstancingEnabled, rebuildInstancedLayer, markInstancesDirty,
   toggleOriginBase, exportOriginOffset, pivotStatus, gizmoSnapState, updateGizmoSnaps,
   buildPreflight, refreshExportPreview,
   buildManifest, exportManifest, buildCollisionOBJText, exportCollisionProxy, serializeImportedParts, loadImportedParts, rebuildGroups, groupIndexForBlock,
   buildProjectData, loadProjectData, addImportedPartFromData,
-  restoreAutosave, autosave, pushHistory,
+  restoreAutosave, restoreAutosaveAsync, autosave, pushHistory, getSlots, hydrateSlotsFromIdb,
   setBlockScale, syncBlockScaleUI,
   toggleOrtho,
   multiSelectionActive, beginMultiTransform, applyMultiTransform, endMultiTransform, attachSelectionGizmo,
-  toggleMobileMulti, mobileSelection, nudgeSelection, rotateSelectionY, deleteSelectionMobile,
-  setArrayAxis, arraySelected, cloneBlockAtWorld,
+  toggleMobileMulti, toggleMultiSelect, mobileSelection, nudgeSelection, rotateSelectionY, deleteSelectionMobile,
+  setArrayAxis, arraySelected, cloneBlockAtWorld, updateArrayPreview, clearArrayPreview,
   clearMeasure, addMeasurePoint, measureDistance,
   saveProjectFile, loadProjectFile, handleProjectFile: handleProjectFileV3, handleImportOBJ, handleImportGLTF, handleImportRBLX, triggerImportOBJ, triggerImportGLTF, triggerImportRBLX,
-  showExportPreview, exportRBXM, exportGLTF, exportOBJ, exportOBJWithMTL, exportOBJFallback, exportScreenshot, shareBuild, renderOutliner, toggleBlockVisibility, toggleBlockLock, duplicateSingleBlock, isolateSelection, deleteSelectedOrAll, focusOutlinerSelection,
+  showExportPreview, exportRBXM, exportGLTF, exportOBJ, exportOBJWithMTL, exportOBJFallback, exportSTL, buildSTLBinary, exportScreenshot, shareBuild, renderOutliner, toggleBlockVisibility, toggleBlockLock, duplicateSingleBlock, isolateSelection, deleteSelectedOrAll, focusOutlinerSelection,
   buildOBJText, dataURLtoBlob, renderPreviewBlob, loadJSZip, bundleSafeName, bundlePlainText, buildBundleReadme, buildBundleZip, exportBundle,
   buildSharePayload, decodeShareCode, importShareCodeData, getShareCode, copyShareCode, importShareCode, loadFromHash,
   updateAmbientLight, updateDirectionalLight, resetLighting, toggleShadows, toggleEnv, applyEnvPreset, envState,
@@ -8612,6 +9182,8 @@ Object.assign(window, {
 });
 try{
   Object.defineProperty(window,'blocks',{get:()=>blocks, set:v=>{ blocks=v; }, configurable:true});
+  Object.defineProperty(window,'selectedBlock',{get:()=>selectedBlock, configurable:true});
+  Object.defineProperty(window,'selectedBlocks',{get:()=>selectedBlocks, configurable:true});
   Object.defineProperty(window,'groups',{get:()=>groups, set:v=>{ groups=v; }, configurable:true});
   Object.defineProperty(window,'groupObjects',{get:()=>groupObjects, configurable:true});
   Object.defineProperty(window,'scene',{get:()=>scene, configurable:true});
