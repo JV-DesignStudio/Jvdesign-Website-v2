@@ -103,6 +103,8 @@ async function capture(browser, base, game, sharp) {
       if (t) { const b = await t.boundingBox(); if (b) await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2); }
     }
     await new Promise(r => setTimeout(r, 1500));
+    // Hide the first-run onboarding card so it does not cover the play field.
+    await page.evaluate(() => { try { window.JVDSOnboarding?.hide?.(); } catch (e) { } });
 
     await page.evaluate(sel => {
       document.querySelectorAll(sel).forEach(el => el.remove());
@@ -113,7 +115,16 @@ async function capture(browser, base, game, sharp) {
     if (!target) return { id: game.id, ok: false, why: 'no play area' };
     const buf = await target.screenshot({ type: 'png' });
     const file = path.join(OUT, game.id + '.webp');
-    await sharp(buf).resize({ width: 640, withoutEnlargement: true }).webp({ quality: 82 }).toFile(file);
+    // Portrait games (Hive, tower defence) need a landscape card crop. Take a
+    // 16:9 band around the upper-middle play area instead of the whole column.
+    const rawMeta = await sharp(buf).metadata();
+    let pipeline = sharp(buf);
+    if (rawMeta.width && rawMeta.height && rawMeta.height > rawMeta.width * 1.15) {
+      const cropH = Math.round(rawMeta.width * 9 / 16);
+      const top = Math.max(0, Math.round((rawMeta.height - cropH) * 0.06));
+      pipeline = pipeline.extract({ left: 0, top, width: rawMeta.width, height: cropH });
+    }
+    await pipeline.resize({ width: 640, withoutEnlargement: true }).webp({ quality: 82 }).toFile(file);
     const meta = await sharp(file).metadata();
     // Quality gate: a real play-field shot is roughly portrait/square/16:9, not a
     // thin banner and not a long full page. Bad crops fall back to the cover.
@@ -200,6 +211,14 @@ function syncRegistry(text, keptSet, allIds) {
       }
     }
   }
-  fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(kept.sort(), null, 2));
+  let keptSet = new Set(kept);
+  if (only) {
+    // --only must not drop the other captured thumbs from the manifest.
+    try {
+      const prev = JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'));
+      prev.forEach(id => keptSet.add(id));
+    } catch (e) { }
+  }
+  fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify([...keptSet].sort(), null, 2));
   console.log('kept ' + kept.length + '/' + games.length);
 })().catch(e => { console.error(e); process.exit(1); });

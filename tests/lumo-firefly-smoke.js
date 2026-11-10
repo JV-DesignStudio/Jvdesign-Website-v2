@@ -52,7 +52,7 @@ function staticChecks() {
   check('page has no inline game script', !/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/i.test(html));
   check('page is indexable for the sitemap', !/<meta[^>]+name=["']robots["'][^>]*noindex/i.test(html));
   check('registry lists lumo-firefly with Lumo', /"id":\s*"lumo-firefly"/.test(reg) && /"character":\s*"Lumo"/.test(reg));
-  check('registry gives the game a BETA label', /"lumo-firefly":\s*"BETA"/.test(reg));
+  check('registry gives the game a READY label', /"lumo-firefly":\s*"READY"/.test(reg));
   check('the game is no longer an orphan', !/lumo_firefly_night\.html/.test(paths));
   check('the service worker precaches the page', /\/games\/lumo_firefly_night\.html/.test(sw));
   check('the thumbnail exists', fs.existsSync(path.join(root, 'assets/game-thumbs/lumo-firefly.webp')));

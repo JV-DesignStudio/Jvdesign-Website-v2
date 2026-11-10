@@ -163,7 +163,7 @@ const covers = {
     <circle cx="360" cy="80" r="2.5" fill="#fbbf24" opacity="0.6"/>
   `),
   'lumo-hive-cover.png': cover([480, 270], '#2e1065', '#7c3aed', "LUMO'S HIVE STRIKE", '#a855f7', `
-    <g opacity="0.35" fill="none" stroke="#c4b5fd" stroke-width="2">
+    <g opacity="0.3" fill="none" stroke="#c4b5fd" stroke-width="2">
       <path d="M60 40 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z"/>
       <path d="M110 24 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z"/>
       <path d="M96 82 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z"/>
@@ -171,14 +171,54 @@ const covers = {
       <path d="M404 70 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z"/>
       <path d="M330 96 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z"/>
     </g>
-    <circle cx="250" cy="150" r="88" fill="#f59e0b" opacity="0.9"/>
-    <path d="M212 118 L226 74 L246 112 Z" fill="#f97316"/>
-    <path d="M288 118 L274 74 L254 112 Z" fill="#f97316"/>
-    <circle cx="250" cy="150" r="58" fill="#fbbf24"/>
-    <path d="M222 156 q28 30 56 0 q-6 34 -28 38 q-22 -4 -28 -38 Z" fill="#fff7ed"/>
-    <circle cx="230" cy="142" r="6" fill="#1a1208"/>
-    <circle cx="270" cy="142" r="6" fill="#1a1208"/>
-    <circle cx="250" cy="160" r="6" fill="#1a1208"/>
+    <g stroke="#4cc9f0" stroke-width="2.5" stroke-dasharray="6 5" opacity="0.8">
+      <path d="M96 190 L150 168 M150 168 L206 190 M296 178 L350 162"/>
+    </g>
+    <circle cx="150" cy="168" r="13" fill="#0ea5e9" opacity="0.9"/>
+    <circle cx="350" cy="162" r="13" fill="#0ea5e9" opacity="0.9"/>
+    <circle cx="250" cy="142" r="72" fill="#f59e0b" opacity="0.9"/>
+    <path d="M218 116 L230 76 L248 110 Z" fill="#f97316"/>
+    <path d="M282 116 L270 76 L252 110 Z" fill="#f97316"/>
+    <circle cx="250" cy="142" r="48" fill="#fbbf24"/>
+    <path d="M226 148 q24 26 48 0 q-5 30 -24 34 q-19 -4 -24 -34 Z" fill="#fff7ed"/>
+    <circle cx="233" cy="136" r="5" fill="#1a1208"/>
+    <circle cx="267" cy="136" r="5" fill="#1a1208"/>
+    <g>
+      <path d="M86 238 l13 -7 l13 7 v11 l-13 7 l-13 -7 Z" fill="#c98a2e" stroke="#fde68a" stroke-width="3"/>
+      <rect x="97" y="207" width="4" height="22" fill="#fbbf24"/>
+      <path d="M352 232 l13 -7 l13 7 v11 l-13 7 l-13 -7 Z" fill="#c98a2e" stroke="#fde68a" stroke-width="3"/>
+      <rect x="363" y="201" width="4" height="22" fill="#fbbf24"/>
+    </g>
+    <circle cx="120" cy="170" r="5" fill="#fbbf24" opacity="0.95"/>
+    <circle cx="300" cy="196" r="4" fill="#fbbf24" opacity="0.9"/>
+  `),
+  'lumo-firefly-cover.png': cover([480, 270], '#0f172a', '#14532d', "LUMO'S FIREFLY", '#fde047', `
+    <g opacity="0.95">
+      <path d="M70 76 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z" fill="#f59e0b"/>
+      <path d="M112 52 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z" fill="#22c55e"/>
+      <path d="M154 76 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z" fill="#38bdf8"/>
+      <path d="M196 52 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z" fill="#f472b6"/>
+      <path d="M238 76 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z" fill="#a78bfa"/>
+      <path d="M280 52 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z" fill="#f59e0b"/>
+      <path d="M322 76 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z" fill="#22c55e"/>
+      <path d="M364 52 l16 -9 l16 9 v18 l-16 9 l-16 -9 Z" fill="#38bdf8"/>
+    </g>
+    <g fill="rgba(15,23,42,.55)">
+      <circle cx="86" cy="76" r="3"/><circle cx="128" cy="52" r="3"/><circle cx="170" cy="76" r="3"/>
+      <circle cx="212" cy="52" r="3"/><circle cx="254" cy="76" r="3"/><circle cx="296" cy="52" r="3"/>
+      <circle cx="338" cy="76" r="3"/><circle cx="380" cy="52" r="3"/>
+    </g>
+    <line x1="24" y1="212" x2="456" y2="212" stroke="#f43f5e" stroke-width="2" stroke-dasharray="8 6" opacity="0.7"/>
+    <circle cx="240" cy="152" r="40" fill="#fde047" opacity="0.16"/>
+    <circle cx="240" cy="152" r="15" fill="#fde047"/>
+    <ellipse cx="226" cy="145" rx="12" ry="6" fill="#fff" opacity="0.65" transform="rotate(-25 226 145)"/>
+    <ellipse cx="254" cy="145" rx="12" ry="6" fill="#fff" opacity="0.65" transform="rotate(25 254 145)"/>
+    <circle cx="235" cy="152" r="2" fill="#422006"/>
+    <circle cx="245" cy="152" r="2" fill="#422006"/>
+    <circle cx="240" cy="238" r="12" fill="#a274b9"/>
+    <circle cx="233" cy="233" r="2.5" fill="#231027"/>
+    <circle cx="247" cy="233" r="2.5" fill="#231027"/>
+    <circle cx="256" cy="222" r="4" fill="#fde047" opacity="0.95"/>
   `),
   'tower-defence-cover.png': cover([480, 270], '#0f766e', '#22c55e', 'TOWER DEFENCE', '#0d9488', `
     <path d="M0 210 q120 -34 240 0 q120 34 240 0 v60 H0 Z" fill="#166534"/>

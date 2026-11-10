@@ -68,6 +68,11 @@
     showToast._t = setTimeout(() => t.classList.remove('show'), 1200);
   }
 
+  function announce(msg) {
+    const el = $('srStatus');
+    if (el) el.textContent = String(msg).slice(0, 200);
+  }
+
   // ── STATE ─────────────────────────────────────────────────────────────────
   let gameState = 'idle'; // idle | playing | waveclear | dead
   let score = 0, wave = 1, lives = 3, combo = 1, comboTimer = 0;
@@ -80,6 +85,109 @@
   let bestCombo = 1, perfectWaves = 0, bossesKilled = 0;
   let waveSpeed = 1, waveDiveRate = 1, waveHpBonus = 0, waveDoubleDive = false, waveLabel = '';
   let best = parseInt(localStorage.getItem('jvds_lhs_best') || '0');
+
+  // ── RUN MODES, HONEY BANK, RELICS, BOONS, TURRETS ─────────────────────────
+  // The Hive is a tactical formation defence: linked formations, a honey
+  // economy, boon drafting and buildable turrets. It shares nothing with the
+  // Firefly puzzle beyond Lumo himself.
+  const MODE_IDS = ['campaign', 'endless', 'daily', 'bossrush'];
+  const MODE_LABEL = { campaign: 'Campaign', endless: 'Endless', daily: 'Daily', bossrush: 'Boss Rush' };
+  const savedMode = (() => { try { return localStorage.getItem('jvds_lhs_mode'); } catch (e) { return null; } })();
+  let mode = MODE_IDS.includes(savedMode) ? savedMode : 'campaign';
+  const LS_BANK = 'jvds_lhs_bank', LS_RELICS = 'jvds_lhs_relics', LS_DAILY = 'jvds_lhs_daily';
+  let bankedHoney = 0;
+  try { bankedHoney = Math.max(0, parseInt(localStorage.getItem(LS_BANK) || '0', 10) || 0); } catch (e) { }
+  let relics = {};
+  try { relics = JSON.parse(localStorage.getItem(LS_RELICS) || '{}') || {}; } catch (e) { relics = {}; }
+  let dailyBest = 0, dailyDate = '';
+  try {
+    const d = JSON.parse(localStorage.getItem(LS_DAILY) || '{}');
+    dailyBest = (d && d.best) | 0; dailyDate = (d && d.date) || '';
+  } catch (e) { }
+  let honey = 0, runHoney = 0, turrets = [], boons = {}, boonPicks = [], turretSlots = 2, turretShots = 0;
+  let forgeOpen = false, forgeChoices = [], forgePicked = false, forgeNext = null;
+  let bossPhase = 1, bossRushKills = 0;
+  let coachT = 0, coachStep = 0;
+  let coachDone = false;
+  try { coachDone = localStorage.getItem('jvds_lhs_coach') === '1'; } catch (e) { }
+  const COACH_LINES = [
+    'Move with A/D or the buttons. Space fires.',
+    'The glowing ring is the anchor: kill it first.',
+    'Perfect waves bank honey for the Garden Forge.'
+  ];
+  let seedRng = Math.random, runSeed = '';
+
+  function hashSeed(text) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function todayKey() { return new Date().toISOString().slice(0, 10); }
+  function rand() { return seedRng(); }
+  function seedRun(value) {
+    runSeed = value || '';
+    seedRng = value ? mulberry32(hashSeed(value)) : Math.random;
+  }
+
+  const RELICS = [
+    { id: 'shield', name: 'Extra Shield', icon: '🛡️', desc: 'Start each run with one more shield.', max: 3, base: 120 },
+    { id: 'honey', name: 'Spring Stores', icon: '🍯', desc: 'Start each run with +20 honey.', max: 4, base: 80 },
+    { id: 'focus', name: 'Quick Spark', icon: '🔮', desc: 'Charge the Logic Beam 10% faster.', max: 3, base: 100 },
+    { id: 'turret', name: 'Turret Blueprint', icon: '🏹', desc: 'Unlock one more turret slot at the start.', max: 1, base: 220 },
+    { id: 'reroll', name: 'Forge Reroll', icon: '🎲', desc: 'One free boon reroll each run.', max: 2, base: 150 },
+    { id: 'combo', name: 'Long Chain', icon: '🔗', desc: 'Combos last a little longer.', max: 3, base: 90 }
+  ];
+  const BOONS = [
+    { id: 'sting', name: 'Sharp Stinger', icon: '⚡', max: 5, rarity: 'common', desc: '+1 bullet damage.' },
+    { id: 'rapid', name: 'Quickdraw', icon: '💨', max: 4, rarity: 'common', desc: 'Shoot faster.' },
+    { id: 'twin', name: 'Twin Sting', icon: '✨', max: 4, rarity: 'rare', desc: '+1 shot per volley.' },
+    { id: 'hull', name: 'Honey Wall', icon: '🛡️', max: 3, rarity: 'rare', desc: '+1 shield now and one more max.' },
+    { id: 'focus', name: 'Deep Focus', icon: '🔮', max: 4, rarity: 'common', desc: 'Logic Beam charges faster.' },
+    { id: 'slow', name: 'Sleepy Pollen', icon: '🌙', max: 3, rarity: 'common', desc: 'Dives and enemy shots slow down.' },
+    { id: 'sweet', name: 'Sweet Tooth', icon: '🍯', max: 4, rarity: 'common', desc: '+25% honey from kills.' },
+    { id: 'combo', name: 'Chain Keeper', icon: '🔗', max: 3, rarity: 'rare', desc: 'Combos last longer.' },
+    { id: 'pierce', name: 'Barbed Shot', icon: '➡️', max: 3, rarity: 'epic', desc: 'Shots pierce +1 bee.' },
+    { id: 'homing', name: 'Scent Trail', icon: '🎯', max: 3, rarity: 'epic', desc: 'Shots curve toward bees.' },
+    { id: 'turret', name: 'Turret Nest', icon: '🏹', max: 2, rarity: 'rare', desc: 'Unlock another turret slot and build one free.' },
+    { id: 'link', name: 'Link Breaker', icon: '💠', max: 3, rarity: 'rare', desc: 'Linked bees take full damage and pay bonus honey.' }
+  ];
+  const EVOLUTIONS = [
+    { id: 'storm', name: 'Needle Storm', info: 'Shots pierce and hit much harder', need: () => boonLv('sting') >= 3 && boonLv('pierce') >= 1 },
+    { id: 'guard', name: 'Hive Guard', info: 'Turrets fire twice as fast', need: () => boonLv('turret') >= 1 && turrets.length >= 2 },
+    { id: 'swarm', name: 'Twin Swarm', info: 'Volleys fan out and gain a shot', need: () => boonLv('twin') >= 3 },
+    { id: 'beam', name: 'Radiant Beam', info: 'The Logic Beam also restores a shield', need: () => boonLv('focus') >= 3 }
+  ];
+
+  function relicLv(id) { return Math.max(0, relics[id] | 0); }
+  function boonLv(id) { return Math.max(0, boons[id] | 0); }
+  function hasEvo(id) { return boonPicks.includes('evo:' + id); }
+  function saveBank() {
+    try { localStorage.setItem(LS_BANK, String(Math.max(0, Math.round(bankedHoney)))); } catch (e) { }
+  }
+  function saveRelics() {
+    try { localStorage.setItem(LS_RELICS, JSON.stringify(relics)); } catch (e) { }
+  }
+  function saveDaily() {
+    try { localStorage.setItem(LS_DAILY, JSON.stringify({ date: dailyDate, best: dailyBest })); } catch (e) { }
+  }
+  function relicCost(r) { return r.base + r.base * relicLv(r.id); }
+  function honeyMult() { return 1 + 0.25 * boonLv('sweet'); }
+  function bulletDamage() { return 1 + boonLv('sting') + (hasEvo('storm') ? 1 : 0); }
+  function shotsPerVolley() { return 1 + boonLv('twin'); }
+  function comboWindow() { return 2.2 + boonLv('combo') * 0.45 + relicLv('combo') * 0.2; }
+  function focusRate() { return 1 + boonLv('focus') * 0.25 + relicLv('focus') * 0.1; }
+  function slowFactor() { return Math.max(0.55, 1 - boonLv('slow') * 0.12); }
+  function maxShields() { return 3 + relicLv('shield') + boonLv('hull'); }
+  function turretSlotCount() { return Math.min(3, 2 + relicLv('turret') + boonLv('turret')); }
+  function turretX(slot) { return 68 + slot * 112; }
 
   const lumo = { x: W / 2, y: PLAYER_Y, invT: 0, flash: 0 };
   let bullets = []; // {x,y,vy,owner,c}
@@ -136,13 +244,286 @@
         enemies.push({
           row: r, col: c, type, hp, maxHp: hp,
           x: fx, y: fy - 350,
-          fx, fy,
+          fx, fy, uid: r * COLS + c,
           state: 'enter',
           enterDelay: (r * COLS + c) * 0.038,
-          divePath: null, angle: 0, shootCool: 0, warnT: 0
+          divePath: null, angle: 0, shootCool: 0, warnT: 0,
+          link: null, anchor: false
         });
       }
     }
+    assignLinks();
+  }
+
+  // ── HIVE LINKS ─────────────────────────────────────────────────────────────
+  // One or two bees per wave are anchors. Bees around an anchor share armour
+  // while it lives, so the player has to read the formation and pick the
+  // glowing target first. Breaking a link pays honey and opens the cluster.
+  function assignLinks() {
+    const pool = enemies.filter(e => e.state === 'enter');
+    const anchors = [];
+    const wanted = wave >= 6 ? 2 : 1;
+    for (let i = 0; i < wanted && pool.length; i++) {
+      const pick = pool[Math.floor(rand() * pool.length)];
+      if (!pick || pick.anchor) continue;
+      pick.anchor = true;
+      pick.hp += 1; pick.maxHp += 1;
+      anchors.push(pick);
+    }
+    if (!anchors.length) return;
+    for (const e of enemies) {
+      if (e.anchor) continue;
+      let best = null, bestD = 1e9;
+      for (const a of anchors) {
+        if (!a) continue;
+        const d = Math.abs(a.row - e.row) + Math.abs(a.col - e.col);
+        if (d < bestD) { bestD = d; best = a; }
+      }
+      if (best && bestD <= 2) e.link = best;
+    }
+  }
+
+  function breakLinks(anchor) {
+    let freed = 0;
+    for (const e of enemies) {
+      if (e.link === anchor) { e.link = null; freed++; }
+    }
+    if (freed > 0) {
+      burst(anchor.x, anchor.y, '#4cc9f0', '#fef08a', 14);
+      spawnFloater(anchor.x, anchor.y - 18, 'LINK BROKEN', '#4cc9f0');
+      addHoney(1 + Math.floor(freed / 2));
+    }
+    return freed;
+  }
+
+  // ── HONEY / TURRETS ────────────────────────────────────────────────────────
+  function addHoney(n) {
+    const amount = Math.max(0, Math.round(n * honeyMult()));
+    if (!amount) return 0;
+    honey += amount; runHoney += amount; hud();
+    return amount;
+  }
+
+  function spendHoney(n) {
+    if (honey < n) return false;
+    honey -= n; hud();
+    return true;
+  }
+
+  function buildTurret(slot, free) {
+    if (slot < 0 || slot >= turretSlotCount()) return false;
+    if (turrets.some(t => t.slot === slot)) return false;
+    if (!free) { if (!spendHoney(25)) return false; }
+    turrets.push({ slot, x: turretX(slot), y: PLAYER_Y - 4, level: 1, cool: 0.3 });
+    showToast('🏹 Honey turret built');
+    return true;
+  }
+
+  function upgradeTurret(slot) {
+    const t = turrets.find(tu => tu.slot === slot);
+    if (!t || t.level >= 3) return false;
+    if (!spendHoney(30 * t.level)) return false;
+    t.level++;
+    showToast('🏹 Turret up to level ' + t.level);
+    return true;
+  }
+
+  function turretDamage() { return 1 + (boonLv('turret') > 0 ? 1 : 0); }
+  function turretRate(t) {
+    const base = 1.25 - t.level * 0.22;
+    return Math.max(0.18, hasEvo('guard') ? base * 0.5 : base);
+  }
+
+  function nearestEnemyTo(x, y) {
+    let best = null, bd = 1e9;
+    for (const e of enemies) {
+      if (e.state === 'enter' && e.enterDelay > 0) continue;
+      const d = Math.hypot(e.x - x, e.y - y);
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (boss) {
+      const d = Math.hypot(boss.x - x, boss.y - y);
+      if (d < bd) { bd = d; best = boss; }
+    }
+    return best;
+  }
+
+  // ── BOONS / EVOLUTIONS / FORGE ─────────────────────────────────────────────
+  function boonDef(id) { return BOONS.find(b => b.id === id) || null; }
+
+  function applyBoon(id) {
+    const def = boonDef(id);
+    if (!def) return false;
+    boons[id] = Math.min(def.max, boonLv(id) + 1);
+    if (id === 'hull') { lives = Math.min(maxShields(), lives + 1); }
+    if (id === 'turret') {
+      turretSlots = turretSlotCount();
+      const empty = [];
+      for (let s = 0; s < turretSlotCount(); s++) if (!turrets.some(t => t.slot === s)) empty.push(s);
+      if (empty.length) buildTurret(empty[0], true);
+    }
+    checkEvolutions();
+    hud();
+    return true;
+  }
+
+  function checkEvolutions() {
+    for (const evo of EVOLUTIONS) {
+      if (hasEvo(evo.id)) continue;
+      if (evo.need()) {
+        boonPicks.push('evo:' + evo.id);
+        if (evo.id === 'beam') lives = Math.min(maxShields(), lives + 1);
+        showToast('Evolution: ' + evo.name);
+        spawnFloater(W / 2, H * 0.4, evo.name.toUpperCase(), '#fbbf24');
+        sfx('playLevelUp');
+      }
+    }
+  }
+
+  function boonChoices() {
+    const pool = BOONS.filter(b => boonLv(b.id) < b.max);
+    const out = [];
+    const weights = { common: 6, rare: 3, epic: 1 };
+    let guard = 0;
+    while (out.length < 3 && pool.length && guard < 40) {
+      guard++;
+      let total = 0;
+      for (const b of pool) total += weights[b.rarity] || 1;
+      let roll = rand() * total, chosen = pool[0];
+      for (const b of pool) { roll -= weights[b.rarity] || 1; if (roll <= 0) { chosen = b; break; } }
+      if (!out.some(x => x.id === chosen.id)) out.push(chosen);
+    }
+    return out;
+  }
+
+  function openForge(next) {
+    forgeOpen = true;
+    forgeNext = next || null;
+    forgePicked = false;
+    forgeChoices = boonChoices();
+    gameState = 'forge';
+    for (const k in keys) keys[k] = false;
+    leftHeld.v = false; rightHeld.v = false;
+    renderForge();
+    const el = $('forge'); if (el) el.classList.remove('hidden');
+    announce('Garden Forge. Choose a boon or build a turret.');
+  }
+
+  function closeForge() {
+    forgeOpen = false;
+    $('forge')?.classList.add('hidden');
+    const next = forgeNext; forgeNext = null;
+    if (typeof next === 'function') next();
+  }
+
+  function renderForge() {
+    const row = $('boonRow');
+    if (row) {
+      row.innerHTML = '';
+      forgeChoices.forEach((b) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'boon ' + (b.rarity === 'epic' ? 'epic' : '');
+        btn.disabled = forgePicked;
+        btn.style.opacity = forgePicked ? '0.45' : '1';
+        btn.innerHTML = '<span class="bicon">' + b.icon + '</span><b>' + b.name + '</b><small>' + b.desc + '</small><span class="rare">' + b.rarity + '</span>';
+        btn.onclick = () => {
+          if (forgePicked) return;
+          forgePicked = true;
+          applyBoon(b.id);
+          renderForge();
+          sfx('playSuccess');
+        };
+        row.appendChild(btn);
+      });
+    }
+    const shop = $('turretShop');
+    if (shop) {
+      shop.innerHTML = '';
+      for (let s = 0; s < turretSlotCount(); s++) {
+        const t = turrets.find(tu => tu.slot === s);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'turret-btn';
+        if (!t) {
+          btn.textContent = '🏹 Build turret · 25 honey';
+          btn.disabled = honey < 25;
+          btn.onclick = () => { if (buildTurret(s)) { renderForge(); hud(); } };
+        } else if (t.level < 3) {
+          btn.textContent = '🏹 Turret Lv' + t.level + ' → ' + (t.level + 1) + ' · ' + (30 * t.level) + ' honey';
+          btn.disabled = honey < 30 * t.level;
+          btn.onclick = () => { if (upgradeTurret(s)) { renderForge(); hud(); } };
+        } else {
+          btn.textContent = '🏹 Turret Lv3 (max)';
+          btn.disabled = true;
+        }
+        shop.appendChild(btn);
+      }
+    }
+    const h = $('forgeHoney'); if (h) h.textContent = 'Honey: ' + honey;
+    const sub = $('forgeSub');
+    if (sub) sub.textContent = forgePicked ? 'Boon chosen. Spend honey on turrets, then return to the hive.' : 'Choose one garden boon, then spend honey on turrets.';
+    const go = $('forgeGo'); if (go) go.textContent = forgePicked ? 'Back to the hive' : 'Skip the boon (+10 honey)';
+  }
+
+  function relicChoices() { return RELICS; }
+
+  function renderLedger() {
+    const list = $('relicList');
+    if (list) {
+      list.innerHTML = '';
+      RELICS.forEach((r) => {
+        const lvl = relicLv(r.id);
+        const maxed = lvl >= r.max;
+        const cost = relicCost(r);
+        const row = document.createElement('div');
+        row.className = 'relic' + (maxed ? ' maxed' : '');
+        row.innerHTML = '<div><b>' + r.icon + ' ' + r.name + ' · ' + lvl + '/' + r.max + '</b><small>' + r.desc + '</small></div>';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = maxed ? 'MAX' : (cost + ' 🍯');
+        btn.disabled = maxed || bankedHoney < cost;
+        btn.onclick = () => {
+          if (maxed || bankedHoney < cost) return;
+          bankedHoney -= cost;
+          relics[r.id] = lvl + 1;
+          saveBank(); saveRelics();
+          renderLedger(); updateBankLine(); hud();
+          sfx('playLevelUp');
+        };
+        row.appendChild(btn);
+        list.appendChild(row);
+      });
+    }
+    const bank = $('ledgerBank'); if (bank) bank.textContent = 'Hive bank: ' + bankedHoney + ' honey';
+  }
+
+  function updateBankLine() {
+    const el = $('bankLine');
+    if (el) el.textContent = 'Hive bank: ' + bankedHoney + ' honey · Relics ' + RELICS.reduce((n, r) => n + relicLv(r.id), 0) + '/' + RELICS.reduce((n, r) => n + r.max, 0);
+    const dh = $('dailyHint');
+    if (dh) {
+      const key = todayKey();
+      const streak = typeof streakData !== 'undefined' && streakData ? streakData.streak : 0;
+      const doneToday = typeof streakData !== 'undefined' && streakData && streakData.doneToday;
+      dh.textContent = mode === 'daily'
+        ? 'Daily hive ' + key + (dailyDate === key ? ' · best ' + dailyBest : ' · not played yet') + ' · streak ' + streak + (doneToday ? ' (done today)' : '')
+        : (mode === 'bossrush' ? 'Five queens, no formations. Bring turrets.' : (mode === 'endless' ? 'Endless: the hive never stops.' : 'Campaign: ten waves, then the Logic Garden is safe.'));
+    }
+    document.querySelectorAll('#modeRow .mode-pill').forEach((b) => {
+      const on = b.dataset.mode === mode;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function setMode(m) {
+    if (!MODE_IDS.includes(m)) return;
+    if (gameState === 'playing' || gameState === 'waveclear' || gameState === 'forge') { showToast('Finish this run first'); return; }
+    mode = m;
+    try { localStorage.setItem('jvds_lhs_mode', mode); } catch (e) { }
+    updateBankLine();
+    sfx('playTap');
   }
 
   // ── IDLE FORMATION ────────────────────────────────────────────────────────
@@ -167,14 +548,38 @@
 
   // ── BOSS ──────────────────────────────────────────────────────────────────
   function spawnBoss() {
-    const maxHp = 10 + wave * 2;
-    boss = { x: W / 2, y: 80, vx: 55 + wave * 3, hp: maxHp, maxHp, invT: 0, shootCool: 0 };
+    const hpBase = mode === 'bossrush' ? 14 + bossRushKills * 6 + wave * 2 : 10 + wave * 2;
+    const maxHp = Math.round(hpBase * (1 + (mode === 'daily' ? 0.1 : 0)));
+    bossPhase = 1;
+    boss = { x: W / 2, y: 80, vx: 55 + wave * 3, hp: maxHp, maxHp, invT: 0, shootCool: 0, phase: 1, phaseFlash: 0 };
     enemies = [];
+    announce('Queen boss. Watch for phase changes at two thirds and one third health.');
+  }
+
+  function phaseShift(n) {
+    if (!boss) return;
+    boss.phaseFlash = 0.6;
+    shakeUntil = performance.now() + 260;
+    showToast(n === 2 ? '👑 Queen phase 2' : '👑 Queen phase 3');
+    burst(boss.x, boss.y, '#f97316', '#fef08a', 18);
+    sfx('playLevelUp');
+    announce('Queen phase ' + n + '.');
+  }
+
+  function beginCoach() {
+    if (coachDone) { coachT = 0; return; }
+    coachT = 13;
+    coachStep = 0;
+    announce('Coach: ' + COACH_LINES[0]);
+  }
+  function finishCoach() {
+    coachT = 0;
+    if (!coachDone) { coachDone = true; try { localStorage.setItem('jvds_lhs_coach', '1'); } catch (e) { } }
   }
 
   // ── START / END ────────────────────────────────────────────────────────────
   function startGame() {
-    score = 0; wave = 1; lives = 3; combo = 1; comboTimer = 0;
+    score = 0; wave = 1; combo = 1; comboTimer = 0;
     shootCool = 0; rapidT = 0; multiT = 0;
     won = false; wavePerfect = true; goldFlash = 0; shakeUntil = 0; finalWaveT = 0;
     hitStopT = 0; focus = 0; beamT = 0; paused = false;
@@ -182,30 +587,58 @@
     bullets = []; particles = []; floaters = []; powerups = [];
     lumo.x = W / 2; lumo.invT = 0; lumo.flash = 0;
     boss = null;
-    applyWaveMods();
-    buildFormation();
-    diveTimer = 0; nextDive = 2.8;
+    boons = {}; boonPicks = []; turrets = []; honey = relicLv('honey') * 20; runHoney = 0; turretShots = 0;
+    turretSlots = turretSlotCount();
+    for (let s = 0; s < relicLv('turret'); s++) buildTurret(s, true);
+    lives = maxShields();
+    bossRushKills = 0; bossPhase = 1;
+    forgeOpen = false; forgePicked = false; forgeChoices = []; forgeNext = null;
+    $('forge')?.classList.add('hidden');
+    $('ledger')?.classList.add('hidden');
+    $('endScreen')?.classList.add('hidden');
+    seedRun(mode === 'daily' ? 'lumo-hive-' + todayKey() : '');
+    if (mode === 'bossrush') {
+      spawnBoss();
+    } else {
+      applyWaveMods();
+      buildFormation();
+      diveTimer = 0; nextDive = 2.8;
+    }
     gameState = 'playing';
+    beginCoach();
     $('startScreen').classList.add('hidden');
-    $('endScreen').classList.add('hidden');
     $('againBtn').textContent = 'Try Again';
     music.start();
     sys?.beginRun?.();
     hud();
+    updateBankLine();
   }
 
   function endGame(victory) {
     gameState = 'dead';
     music.stop();
     if (score > best) { best = score; localStorage.setItem('jvds_lhs_best', best); }
+    const banked = Math.floor(runHoney * 0.5) + (victory ? 25 : 0) + Math.floor(wave * 2);
+    bankedHoney += Math.max(0, banked);
+    saveBank();
+    if (mode === 'daily') {
+      const key = todayKey();
+      if (dailyDate !== key) { dailyDate = key; dailyBest = 0; }
+      if (score > dailyBest) dailyBest = score;
+      saveDaily();
+    }
+    const bankEl = $('endBank');
+    if (bankEl) bankEl.textContent = '+' + banked + ' honey banked · Hive bank ' + bankedHoney;
     hud();
+    updateBankLine();
     checkDailyOnEnd(score);
     if (victory) {
       $('endTitle').textContent = 'You protected the Logic Garden!';
       $('endStats').innerHTML =
         `<div><b>${score}</b><small>Score</small></div>` +
         `<div><b>${best}</b><small>Best</small></div>` +
-        `<div><b>W${wave}</b><small>Wave</small></div>`;
+        `<div><b>W${wave}</b><small>Wave</small></div>` +
+        `<div><b>${bossesKilled}</b><small>Queens</small></div>`;
       $('againBtn').textContent = 'Play Again';
     } else {
       const stars = score > 3000 ? '★★★' : score > 1200 ? '★★☆' : score > 400 ? '★☆☆' : '☆☆☆';
@@ -213,6 +646,7 @@
       $('endStats').innerHTML =
         `<div><b>${score}</b><small>Score</small></div>` +
         `<div><b>W${wave}</b><small>Wave</small></div>` +
+        `<div><b>${honey}</b><small>Honey</small></div>` +
         `<div><b>${stars}</b><small>Rating</small></div>`;
       $('againBtn').textContent = 'Try Again';
     }
@@ -220,6 +654,65 @@
     $('endScreen').classList.remove('hidden');
     sys?.addScore?.(score);
     sys?.saveState?.();
+  }
+
+  function makeRunCard() {
+    const cw = 540, ch = 620;
+    const c = document.createElement('canvas');
+    c.width = cw; c.height = ch;
+    const g = c.getContext('2d');
+    const grd = g.createLinearGradient(0, 0, 0, ch);
+    grd.addColorStop(0, '#1b0b3a'); grd.addColorStop(0.55, '#2e1065'); grd.addColorStop(1, '#0d0620');
+    g.fillStyle = grd; g.fillRect(0, 0, cw, ch);
+    g.strokeStyle = 'rgba(196,132,252,.16)'; g.lineWidth = 1.5;
+    const hr = 22, hw = Math.sqrt(3) * hr, vh = 1.5 * hr;
+    for (let row = 0, cy = 10; cy < ch + hr; cy += vh, row++) {
+      const off = row % 2 ? hw / 2 : 0;
+      for (let cx = off; cx < cw + hw; cx += hw) {
+        g.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const a = Math.PI / 3 * i - Math.PI / 6;
+          const px = cx + hr * Math.cos(a), py = cy + hr * Math.sin(a);
+          if (i === 0) g.moveTo(px, py); else g.lineTo(px, py);
+        }
+        g.closePath(); g.stroke();
+      }
+    }
+    g.strokeStyle = '#7c3aed'; g.lineWidth = 3; g.strokeRect(18, 18, cw - 36, ch - 36);
+    g.textAlign = 'center';
+    g.fillStyle = '#e879f9'; g.font = '900 34px system-ui';
+    g.fillText("LUMO'S", cw / 2, 78);
+    g.fillText('HIVE STRIKE', cw / 2, 116);
+    g.fillStyle = '#fbbf24'; g.font = '800 16px system-ui';
+    g.fillText('RUN CARD', cw / 2, 150);
+    g.fillStyle = '#f8fafc'; g.font = '900 58px system-ui';
+    g.fillText(String(score), cw / 2, 232);
+    g.fillStyle = '#c4b5fd'; g.font = '700 14px system-ui';
+    g.fillText('SCORE', cw / 2, 258);
+    g.fillStyle = '#e2e8f0'; g.font = '600 18px system-ui';
+    g.fillText('Wave ' + wave + ' · ' + bossesKilled + ' queen' + (bossesKilled === 1 ? '' : 's') + ' · ' + honey + ' honey', cw / 2, 312);
+    g.fillText((MODE_LABEL[mode] || mode) + ' · ' + lives + ' shield' + (lives === 1 ? '' : 's'), cw / 2, 340);
+    const boonText = Object.keys(boons).filter(id => boons[id] > 0).map(id => {
+      const def = BOONS.find(b => b.id === id);
+      return (def ? def.name : id) + ' x' + boons[id];
+    }).join(', ');
+    g.fillStyle = '#fbbf24'; g.font = '600 14px system-ui';
+    g.fillText('Boons: ' + (boonText || 'none'), cw / 2, 384, cw - 80);
+    g.fillStyle = '#7dd3fc'; g.font = '600 14px system-ui';
+    g.fillText('Turrets: ' + turrets.length + ' · Honey banked: ' + bankedHoney, cw / 2, 410, cw - 80);
+    g.fillStyle = '#94a3b8'; g.font = '600 13px system-ui';
+    g.fillText('JVDesignStudio · ' + new Date().toLocaleDateString(), cw / 2, ch - 40);
+    return c;
+  }
+
+  function downloadRunCard() {
+    try {
+      const c = makeRunCard();
+      const a = document.createElement('a');
+      a.href = c.toDataURL('image/png');
+      a.download = 'lumo-hive-run-' + score + '.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } catch (e) { }
   }
 
   function buildMedals(victory) {
@@ -253,6 +746,7 @@
     $('waveHud').textContent = wave;
     $('comboHud').textContent = 'x' + combo;
     $('livesHud').textContent = '🛡️'.repeat(Math.max(0, lives)) || '💀';
+    const honeyEl = $('honeyHud'); if (honeyEl) honeyEl.textContent = honey;
     $('bestHud').textContent = best;
   }
 
@@ -312,15 +806,19 @@
   function tryShoot() {
     if (paused || gameState !== 'playing' || shootCool > 0) return;
     if (focus >= 100) { fireLogicBeam(); return; }
-    shootCool = rapidT > 0 ? 0.11 : 0.26;
+    const rateBase = rapidT > 0 ? 0.11 : 0.26;
+    shootCool = Math.max(0.055, rateBase - boonLv('rapid') * 0.03);
     lumo.flash = 0.18;
     const vy = -530;
-    if (multiT > 0) {
-      bullets.push({ x: lumo.x - 9, y: lumo.y - 28, vy, owner: 'player', c: '#c084fc' });
-      bullets.push({ x: lumo.x, y: lumo.y - 32, vy, owner: 'player', c: '#e879f9' });
-      bullets.push({ x: lumo.x + 9, y: lumo.y - 28, vy, owner: 'player', c: '#c084fc' });
-    } else {
-      bullets.push({ x: lumo.x, y: lumo.y - 30, vy, owner: 'player', c: '#e879f9' });
+    const dmg = bulletDamage();
+    const pierce = boonLv('pierce') + (hasEvo('storm') ? 1 : 0);
+    const shots = multiT > 0 ? 3 : shotsPerVolley();
+    for (let i = 0; i < shots; i++) {
+      const off = i === 0 ? 0 : (i % 2 ? -1 : 1) * Math.ceil(i / 2) * 10;
+      bullets.push({
+        x: lumo.x + off, y: lumo.y - 30 - Math.abs(off) * 0.2, vy,
+        owner: 'player', c: off ? '#c084fc' : '#e879f9', dmg, pierce, hitUids: {}
+      });
     }
     sfx('playTap');
   }
@@ -334,6 +832,7 @@
     hitStopT = 0.05;
     shakeUntil = performance.now() + 220;
     sfx('playLevelUp');
+    if (hasEvo('beam')) lives = Math.min(maxShields(), lives + 1);
     for (let i = bullets.length - 1; i >= 0; i--) {
       if (bullets[i].owner === 'enemy') bullets.splice(i, 1);
     }
@@ -350,15 +849,16 @@
       spawnFloater(boss.x, boss.y, '+180');
       if (boss.hp <= 0) finishBoss();
     }
+    hud();
   }
 
   // ── DIVE AI ────────────────────────────────────────────────────────────────
   function makeDivePath(e) {
     const p0 = { x: e.fx + formX, y: e.fy };
-    const p1 = { x: p0.x + (Math.random() - 0.5) * 130, y: p0.y + 110 };
-    const p2 = { x: lumo.x + (Math.random() - 0.5) * 90, y: H - 90 };
-    const p3 = { x: lumo.x + (Math.random() - 0.5) * 25, y: H + 60 };
-    return { p0, p1, p2, p3, t: 0, spd: 0.42 + wave * 0.018 + Math.random() * 0.18 };
+    const p1 = { x: p0.x + (rand() - 0.5) * 130, y: p0.y + 110 };
+    const p2 = { x: lumo.x + (rand() - 0.5) * 90, y: H - 90 };
+    const p3 = { x: lumo.x + (rand() - 0.5) * 25, y: H + 60 };
+    return { p0, p1, p2, p3, t: 0, spd: 0.42 + wave * 0.018 + rand() * 0.18 };
   }
 
   function bezier(path, t) {
@@ -374,7 +874,7 @@
     const pool = enemies.filter(e => e.state === 'form' && e.warnT <= 0);
     if (!pool.length) return;
     const lower = pool.filter(e => e.row >= 2);
-    const e = (lower.length ? lower : pool)[Math.floor(Math.random() * (lower.length || pool.length))];
+    const e = (lower.length ? lower : pool)[Math.floor(rand() * (lower.length || pool.length))];
     e.warnT = 0.38;
   }
 
@@ -418,6 +918,7 @@
     }
     if (gameState === 'idle') updateIdle(dt);
     else if (gameState === 'playing' || gameState === 'waveclear') update(dt);
+    else if (gameState === 'forge') { /* frozen while the forge is open */ }
     draw();
     requestAnimationFrame(loop);
   }
@@ -445,7 +946,29 @@
     if (rapidT > 0) rapidT -= dt;
     if (multiT > 0) multiT -= dt;
     if (goldFlash > 0) goldFlash = Math.max(0, goldFlash - dt * 1.6);
+    if (coachT > 0) {
+      coachT -= dt;
+      const before = coachStep;
+      coachStep = Math.min(2, Math.floor((13 - Math.max(0, coachT)) / 4.1));
+      if (coachStep !== before) announce('Coach: ' + COACH_LINES[coachStep]);
+      if (coachT <= 0) finishCoach();
+    }
 
+    // Honey turrets auto-fire at the nearest bee
+    for (const t of turrets) {
+      t.cool -= dt;
+      if (t.cool > 0) continue;
+      const target = nearestEnemyTo(t.x, t.y);
+      if (!target) { t.cool = 0.2; continue; }
+      const ang = Math.atan2(target.y - t.y, target.x - t.x);
+      const speed = 560;
+      bullets.push({
+        x: t.x, y: t.y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed,
+        owner: 'player', dmg: turretDamage(), pierce: 0, hitUids: {}, c: '#fbbf24', turret: true
+      });
+      turretShots++;
+      t.cool = turretRate(t);
+    }
     // Combo decay
     if (combo > 1) {
       comboTimer -= dt;
@@ -459,10 +982,10 @@
       return;
     }
 
-    // Wave clear countdown
+    // Wave clear countdown, then the Garden Forge opens
     if (gameState === 'waveclear') {
       waveClearT -= dt;
-      if (waveClearT <= 0) nextWave();
+      if (waveClearT <= 0) openForge(() => nextWave());
       return;
     }
 
@@ -476,10 +999,10 @@
       diveTimer += dt;
       if (diveTimer >= nextDive) {
         diveTimer = 0;
-        nextDive = (1.6 + Math.random() * 2.0) * waveDiveRate;
+        nextDive = (1.6 + rand() * 2.0) * waveDiveRate;
         triggerDive();
-        if (waveDoubleDive && Math.random() < 0.6) triggerDive();
-        else if (wave >= 3 && Math.random() < 0.35) triggerDive();
+        if (waveDoubleDive && rand() < 0.6) triggerDive();
+        else if (wave >= 3 && rand() < 0.35) triggerDive();
       }
     }
 
@@ -513,7 +1036,7 @@
         }
       } else if (e.state === 'dive') {
         const p = e.divePath;
-        p.t += p.spd * dt;
+        p.t += p.spd * dt * slowFactor();
         const pos = bezier(p, Math.min(1, p.t));
         e.angle = Math.atan2(pos.y - e.y, pos.x - e.x);
         e.x = pos.x; e.y = pos.y;
@@ -538,58 +1061,97 @@
       }
     }
 
-    // ── Boss update ─────────────────────────────────────────────────────────
+    // ── Boss update: a three-phase queen ────────────────────────────────────
     if (boss) {
       if (boss.invT > 0) boss.invT -= dt;
-      boss.x += boss.vx * dt;
+      if (boss.phaseFlash > 0) boss.phaseFlash -= dt;
+      const pct = boss.hp / boss.maxHp;
+      if (pct <= 0.66 && boss.phase < 2) { boss.phase = 2; phaseShift(2); }
+      if (pct <= 0.33 && boss.phase < 3) { boss.phase = 3; phaseShift(3); }
+      boss.x += boss.vx * dt * (1 + (boss.phase - 1) * 0.3);
       if (boss.x < 45 || boss.x > W - 45) boss.vx *= -1;
 
-      boss.shootCool -= dt;
-      const rate = boss.hp < boss.maxHp * 0.5 ? 0.5 : 0.85;
+      boss.shootCool -= dt * slowFactor();
       if (boss.shootCool <= 0) {
-        boss.shootCool = rate;
-        const spread = boss.hp < boss.maxHp * 0.5 ? [-18, 0, 18] : [0];
-        spread.forEach(ox => {
-          bullets.push({ x: boss.x + ox, y: boss.y + 38, vy: 270 + wave * 10, owner: 'enemy', c: '#f97316' });
-        });
+        if (boss.phase === 1) {
+          boss.shootCool = 0.85;
+          bullets.push({ x: boss.x, y: boss.y + 38, vy: 270 + wave * 10, owner: 'enemy', c: '#f97316' });
+          bullets.push({ x: boss.x - 20, y: boss.y + 34, vx: -70, vy: 250 + wave * 10, owner: 'enemy', c: '#f97316' });
+          bullets.push({ x: boss.x + 20, y: boss.y + 34, vx: 70, vy: 250 + wave * 10, owner: 'enemy', c: '#f97316' });
+        } else if (boss.phase === 2) {
+          boss.shootCool = 0.6;
+          for (let k = -2; k <= 2; k++) bullets.push({ x: boss.x + k * 16, y: boss.y + 34, vx: k * 34, vy: 255 + wave * 10, owner: 'enemy', c: '#fb7185' });
+          if (enemies.length < 10 && rand() < 0.5) {
+            enemies.push({
+              row: 4, col: 0, type: 'drone', hp: 1, maxHp: 1, x: boss.x - 30, y: boss.y,
+              fx: boss.x - 30, fy: boss.y, uid: 900 + bossesKilled * 10 + enemies.length,
+              state: 'dive', enterDelay: 0,
+              divePath: { p0: { x: boss.x - 30, y: boss.y }, p1: { x: boss.x - 60, y: H * 0.3 }, p2: { x: lumo.x, y: H - 70 }, p3: { x: lumo.x, y: H + 60 }, t: 0, spd: 0.45 },
+              angle: 0, shootCool: 0.4, warnT: 0, link: null, anchor: false
+            });
+          }
+        } else {
+          boss.shootCool = 0.42;
+          const baseAng = Math.atan2(lumo.y - boss.y, lumo.x - boss.x);
+          for (let k = -3; k <= 3; k++) {
+            const a = baseAng + k * 0.18;
+            bullets.push({ x: boss.x, y: boss.y + 30, vx: Math.cos(a) * 285, vy: Math.sin(a) * 285, owner: 'enemy', c: '#f43f5e' });
+          }
+        }
       }
 
-      // Boss body collision
       if (lumo.invT <= 0 && Math.hypot(boss.x - lumo.x, boss.y - lumo.y) < 38) hitPlayer();
     }
 
     // ── Bullet updates ──────────────────────────────────────────────────────
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i];
-      b.y += b.vy * dt;
-      if (b.y < -12 || b.y > H + 12) { bullets.splice(i, 1); continue; }
+      if (b.owner === 'player' && boonLv('homing') > 0) {
+        const target = nearestEnemyTo(b.x, b.y);
+        if (target) {
+          const cur = Math.atan2(b.vy, b.vx || 0);
+          const want = Math.atan2(target.y - b.y, target.x - b.x);
+          const diff = Math.atan2(Math.sin(want - cur), Math.cos(want - cur));
+          const turn = Math.min(Math.abs(diff), 0.09 * boonLv('homing') * dt);
+          const a2 = cur + Math.sign(diff) * turn;
+          const sp = Math.hypot(b.vx || 0, b.vy) || 530;
+          b.vx = Math.cos(a2) * sp; b.vy = Math.sin(a2) * sp;
+        }
+      }
+      b.x += (b.vx || 0) * dt;
+      b.y += b.vy * dt * (b.owner === 'enemy' ? slowFactor() : 1);
+      if (b.y < -12 || b.y > H + 12 || b.x < -20 || b.x > W + 20) { bullets.splice(i, 1); continue; }
 
       if (b.owner === 'player') {
+        const dmg = b.dmg || 1;
         // Hit boss
         if (boss && boss.invT <= 0 && Math.hypot(b.x - boss.x, b.y - boss.y) < 34) {
           bullets.splice(i, 1);
-          boss.hp--;
-          boss.invT = 0.1;
+          boss.hp -= dmg;
+          boss.invT = 0.08;
           burst(boss.x, boss.y, '#f97316', '#fef08a', 6);
           sfx('playPop');
-          addScore(30);
-          spawnFloater(boss.x, boss.y, '+30');
+          addScore(30 * dmg);
+          spawnFloater(boss.x, boss.y, '+' + (30 * dmg));
           addFocus(4);
           if (boss.hp <= 0) finishBoss();
           continue;
         }
 
-        // Hit enemy
+        // Hit enemy. Linked bees share armour until their anchor falls.
         let hit = false;
         for (let j = enemies.length - 1; j >= 0; j--) {
           const e = enemies[j];
           if (e.state === 'enter' && e.enterDelay > 0) continue;
+          if (b.hitUids && b.hitUids[e.uid]) continue;
           const r = e.type === 'queen' ? 14 : e.type === 'guard' ? 12 : 10;
           if (Math.hypot(b.x - e.x, b.y - e.y) < r + 5) {
-            bullets.splice(i, 1);
+            if (b.hitUids) b.hitUids[e.uid] = 1;
             sfx('playPop');
-            const dead = damageEnemy(e, 1);
+            const dead = damageEnemy(e, dmg);
             if (dead) enemies.splice(j, 1);
+            if (b.pierce > 0) b.pierce--;
+            else bullets.splice(i, 1);
             hit = true;
             break;
           }
@@ -649,24 +1211,32 @@
   }
 
   function damageEnemy(e, dmg) {
-    e.hp -= dmg;
+    let amount = dmg;
+    if (e.link && e.link.hp > 0) {
+      if (boonLv('link') <= 0) amount = Math.max(1, Math.floor(amount / 2));
+      burst(e.x, e.y, '#4cc9f0', '#fef08a', 2);
+    }
+    e.hp -= amount;
     burst(e.x, e.y, typeColor(e.type), '#fef08a', 4);
     if (e.hp > 0) return false;
+    const wasAnchor = e.anchor;
     const gained = Math.round(typeScore(e.type) * combo);
     const prevCombo = combo;
     addScore(gained);
     spawnFloater(e.x, e.y, '+' + gained);
     bumpCombo();
     if (combo > 3 && combo > prevCombo) spawnFloater(e.x, e.y - 16, 'x' + combo, '#c084fc');
-    hexBurst(e.x, e.y, typeColor(e.type), 6 + Math.floor(Math.random() * 3));
+    hexBurst(e.x, e.y, typeColor(e.type), 6 + Math.floor(rand() * 3));
     addFocus(e.type === 'queen' ? 22 : e.type === 'guard' ? 14 : 8);
-    if (Math.random() < 0.15) dropPowerup(e.x, e.y);
+    addHoney(e.type === 'queen' ? 5 : e.type === 'guard' ? 2 : 1);
+    if (wasAnchor) breakLinks(e);
+    if (rand() < 0.15) dropPowerup(e.x, e.y);
     return true;
   }
 
   function addFocus(amount) {
     if (focus >= 100) return;
-    focus = Math.min(100, focus + amount);
+    focus = Math.min(100, focus + amount * focusRate());
     if (focus >= 100) sfx('playLevelUp');
   }
 
@@ -680,7 +1250,14 @@
     hitStopT = 0.09;
     bossesKilled++;
     boss = null;
-    if (wave >= 10) {
+    if (mode === 'bossrush') {
+      bossRushKills++;
+      if (bossRushKills >= 5) { winGame(); return; }
+      showToast('Queen ' + bossRushKills + ' of 5 down. Forge opens.');
+      beginWaveClear();
+      return;
+    }
+    if ((mode === 'campaign' || mode === 'daily') && wave >= 10) {
       winGame();
     } else {
       showToast('Queen defeated! +600');
@@ -706,7 +1283,7 @@
 
   function bumpCombo() {
     combo = Math.min(8, combo + 1);
-    comboTimer = 2.2;
+    comboTimer = comboWindow();
     if (combo > bestCombo) bestCombo = combo;
     if (combo >= 2) sfx('playCombo', combo);
     hud();
@@ -714,27 +1291,30 @@
 
   function dropPowerup(px, py) {
     const types = ['rapid', 'shield', 'multi'];
-    powerups.push({ x: px, y: py, type: types[Math.floor(Math.random() * 3)] });
+    powerups.push({ x: px, y: py, type: types[Math.floor(rand() * 3)] });
   }
 
   function applyPowerup(type) {
     sfx('playSuccess');
     if (type === 'rapid') { rapidT = 7; showToast('⚡ Rapid fire!'); }
-    else if (type === 'shield') { lives = Math.min(3, lives + 1); hud(); showToast('🛡️ Shield restored!'); }
+    else if (type === 'shield') { lives = Math.min(maxShields(), lives + 1); hud(); showToast('🛡️ Shield restored!'); }
     else if (type === 'multi') { multiT = 8; showToast('✨ Multi-shot!'); }
   }
 
   function beginWaveClear() {
+    if (gameState !== 'playing') return;
     gameState = 'waveclear';
-    waveClearT = 1.6;
+    waveClearT = 1.2;
     addScore(100 * wave);
-    if (wavePerfect) {
+    const perfect = wavePerfect;
+    addHoney(perfect ? 4 : 1);
+    if (perfect) {
       perfectWaves++;
       goldFlash = 1;
       addFocus(10);
-      showToast('Wave Clear! ✨');
+      showToast('Perfect wave! +4 honey');
     } else {
-      showToast('Wave ' + wave + ' cleared! ✨');
+      showToast('Wave ' + wave + ' cleared! +1 honey');
     }
     sfx('playSuccess');
   }
@@ -746,23 +1326,29 @@
     bullets = bullets.filter(b => b.owner === 'player');
     powerups = [];
     boss = null;
-    let holdFinal = false;
-    if (wave % 5 === 0) {
+    if (mode === 'bossrush') {
       spawnBoss();
       sfx('playLevelUp');
-      if (wave >= 10) {
+      showToast('👑 Queen ' + (bossRushKills + 1) + ' of 5');
+      gameState = 'playing';
+    } else if (wave % 5 === 0) {
+      spawnBoss();
+      sfx('playLevelUp');
+      if ((mode === 'campaign' || mode === 'daily') && wave >= 10) {
         finalWaveT = 2.0;
-        holdFinal = true;
+        gameState = 'waveclear';
       } else {
         showToast('👑 Queen Boss!');
+        gameState = 'playing';
       }
     } else {
       buildFormation();
       diveTimer = 0; nextDive = 2.2 * waveDiveRate;
       showToast('Wave ' + wave + (waveLabel ? ': ' + waveLabel : ''));
+      gameState = 'playing';
     }
-    gameState = holdFinal ? 'waveclear' : 'playing';
     hud();
+    updateBankLine();
   }
 
   function winGame() {
@@ -841,6 +1427,20 @@
     }
     x.textBaseline = 'alphabetic';
 
+    // Honey turrets sit on the garden floor
+    for (const t of turrets) drawTurret(t);
+
+    // Hive links: a cyan thread from each anchor to its linked bees
+    for (const e of enemies) {
+      if (!e.link || e.link.hp <= 0) continue;
+      if (e.link.state === 'enter' && e.link.enterDelay > 0) continue;
+      x.strokeStyle = 'rgba(76,201,240,0.45)';
+      x.lineWidth = 1.5;
+      x.setLineDash([4, 4]);
+      x.beginPath(); x.moveTo(e.x, e.y); x.lineTo(e.link.x, e.link.y); x.stroke();
+      x.setLineDash([]);
+    }
+
     // Enemies
     for (const e of enemies) {
       if (e.state === 'enter' && e.enterDelay > 0) continue;
@@ -853,13 +1453,14 @@
     // Bullets
     for (const b of bullets) {
       if (b.owner === 'player') {
-        x.strokeStyle = 'rgba(192,132,252,0.5)';
+        const pc = b.turret ? '#fbbf24' : '#c084fc';
+        x.strokeStyle = b.turret ? 'rgba(251,191,36,0.5)' : 'rgba(192,132,252,0.5)';
         x.lineWidth = 2.5;
         x.lineCap = 'round';
         x.beginPath(); x.moveTo(b.x, b.y + 10); x.lineTo(b.x, b.y); x.stroke();
         const g = x.createRadialGradient(b.x, b.y, 0, b.x, b.y, 6);
-        g.addColorStop(0, '#f5d0fe');
-        g.addColorStop(0.45, '#c084fc');
+        g.addColorStop(0, '#fef9c3');
+        g.addColorStop(0.45, pc);
         g.addColorStop(1, 'rgba(192,132,252,0)');
         x.fillStyle = g;
         x.beginPath(); x.arc(b.x, b.y, 6, 0, Math.PI * 2); x.fill();
@@ -986,7 +1587,26 @@
       if (multiT > 0) { x.fillText('✨ ' + multiT.toFixed(1) + 's', px2, H - 8); }
     }
 
+    if (coachT > 0 && gameState === 'playing') drawCoach();
+
     x.restore();
+  }
+
+  function drawCoach() {
+    const msg = COACH_LINES[Math.min(2, coachStep)];
+    const boxW = W - 40;
+    const y = H * 0.56;
+    x.fillStyle = 'rgba(6,4,18,.84)';
+    x.strokeStyle = 'rgba(192,132,252,.5)';
+    x.lineWidth = 1.5;
+    x.beginPath(); x.rect(W / 2 - boxW / 2, y - 26, boxW, 48); x.fill(); x.stroke();
+    x.textAlign = 'center';
+    x.fillStyle = '#fef08a';
+    x.font = 'bold 11px system-ui';
+    x.fillText('LUMO SAYS', W / 2, y - 9);
+    x.fillStyle = '#e2e8f0';
+    x.font = '12px system-ui';
+    x.fillText(msg, W / 2, y + 11);
   }
 
   function drawGardenFloor() {
@@ -1002,6 +1622,25 @@
         x.stroke();
       }
     }
+  }
+
+  function drawTurret(t) {
+    x.save();
+    x.translate(t.x, t.y);
+    x.fillStyle = 'rgba(74,45,8,.9)';
+    x.beginPath(); x.ellipse(0, 7, 17, 6, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#c98a2e';
+    x.strokeStyle = '#fde68a';
+    x.lineWidth = 1.5;
+    hexPath(0, 0, 10);
+    x.fill(); x.stroke();
+    x.fillStyle = '#fbbf24';
+    x.fillRect(-2, -14 - t.level * 2, 4, 12 + t.level * 2);
+    for (let i = 0; i < t.level; i++) {
+      x.fillStyle = '#fef9c3';
+      x.beginPath(); x.arc(-6 + i * 6, 12, 1.8, 0, Math.PI * 2); x.fill();
+    }
+    x.restore();
   }
 
   function drawBee(e, offsetX) {
@@ -1078,6 +1717,20 @@
       }
     }
 
+    // Hive link marker: anchors pulse cyan, linked bees wear a thin ring
+    if (e.anchor) {
+      const pulse = 0.55 + Math.sin(performance.now() * 0.008) * 0.35;
+      x.strokeStyle = 'rgba(76,201,240,' + pulse.toFixed(3) + ')';
+      x.lineWidth = 2.5;
+      x.beginPath(); x.arc(0, 0, r + 9, 0, Math.PI * 2); x.stroke();
+      x.fillStyle = '#4cc9f0';
+      x.beginPath(); x.arc(0, -r - 8, 2.5, 0, Math.PI * 2); x.fill();
+    } else if (e.link && e.link.hp > 0) {
+      x.strokeStyle = 'rgba(76,201,240,0.55)';
+      x.lineWidth = 1.2;
+      x.beginPath(); x.arc(0, 0, r + 4, 0, Math.PI * 2); x.stroke();
+    }
+
     // Dive telegraph
     if (e.warnT > 0) {
       const pulse = 0.55 + Math.sin(performance.now() * 0.03) * 0.35;
@@ -1144,10 +1797,17 @@
     const bx = b.x - bw / 2, by2 = b.y + 46;
     x.fillStyle = 'rgba(0,0,0,.55)'; x.fillRect(bx - 1, by2 - 1, bw + 2, bh + 2);
     const hpPct = b.hp / b.maxHp;
-    const barCol = hpPct > 0.5 ? '#a855f7' : '#ef4444';
+    const barCol = hpPct > 0.33 ? '#a855f7' : '#ef4444';
     x.fillStyle = barCol; x.fillRect(bx, by2, bw * hpPct, bh);
     x.font = '10px system-ui'; x.textAlign = 'center'; x.fillStyle = '#fef08a';
-    x.fillText('QUEEN  ' + b.hp + '/' + b.maxHp, b.x, by2 + bh + 10);
+    x.fillText('QUEEN  ' + b.hp + '/' + b.maxHp + '  ·  PHASE ' + (b.phase || 1), b.x, by2 + bh + 10);
+    if (b.phaseFlash > 0) {
+      x.globalAlpha = Math.min(1, b.phaseFlash * 2);
+      x.strokeStyle = '#fbbf24';
+      x.lineWidth = 3;
+      x.beginPath(); x.arc(b.x, b.y, 52 + (0.6 - b.phaseFlash) * 60, 0, Math.PI * 2); x.stroke();
+      x.globalAlpha = 1;
+    }
   }
 
   function drawLumo() {
@@ -1407,6 +2067,19 @@
   // ── UI WIRING ───────────────────────────────────────────────────────────────
   $('playBtn').onclick = startGame;
   $('againBtn').onclick = startGame;
+  $('runCardBtn').onclick = downloadRunCard;
+  document.querySelectorAll('#modeRow .mode-pill').forEach(btn => {
+    btn.onclick = () => setMode(btn.dataset.mode);
+  });
+  const ledgerBtn = $('ledgerBtn');
+  if (ledgerBtn) ledgerBtn.onclick = () => { renderLedger(); $('ledger')?.classList.remove('hidden'); };
+  const ledgerClose = $('ledgerClose');
+  if (ledgerClose) ledgerClose.onclick = () => { $('ledger')?.classList.add('hidden'); updateBankLine(); };
+  const forgeGo = $('forgeGo');
+  if (forgeGo) forgeGo.onclick = () => {
+    if (!forgePicked && forgeChoices.length) { forgePicked = true; addHoney(10); }
+    closeForge();
+  };
   $('htpLink').onclick = () => {
     helpOrigin = 'start';
     pauseGame();
@@ -1417,6 +2090,8 @@
     $('howToPlay').classList.add('hidden');
     if (helpOrigin === 'play') {
       resumeGame();
+    } else if (helpOrigin === 'forge') {
+      paused = false;
     } else if (helpOrigin === 'end') {
       paused = false;
     } else {
@@ -1425,7 +2100,7 @@
     }
   };
   $('helpBtn').onclick = () => {
-    helpOrigin = (gameState === 'playing' || gameState === 'waveclear') ? 'play' : (gameState === 'dead' ? 'end' : 'start');
+    helpOrigin = (gameState === 'playing' || gameState === 'waveclear') ? 'play' : gameState === 'forge' ? 'forge' : (gameState === 'dead' ? 'end' : 'start');
     pauseGame();
     $('howToPlay').classList.remove('hidden');
   };
@@ -1433,7 +2108,7 @@
     soundMuted = !soundMuted;
     $('soundBtn').textContent = soundMuted ? '🔇' : '🔊';
     if (soundMuted) music.stop();
-    else if (gameState === 'playing' || gameState === 'waveclear') music.start();
+    else if (gameState === 'playing' || gameState === 'waveclear' || gameState === 'forge') music.start();
   };
   document.querySelectorAll('[data-go]').forEach(el => {
     el.addEventListener('click', () => { location.href = el.dataset.go; });
@@ -1464,7 +2139,7 @@
   const hint = document.createElement('p');
   hint.id = 'logicHint';
   hint.style.cssText = 'font-size:12px;color:#c084fc;font-weight:700;max-width:300px;';
-  hint.textContent = 'Chain kills to charge the Logic Beam, then shoot to unleash it.';
+  hint.textContent = 'Break the glowing hive anchor first, then bank honey for boons and turrets.';
   if ($('startScreen') && $('playBtn')) $('startScreen').insertBefore(hint, $('playBtn'));
 
   const tipGrid = document.querySelector('#howToPlay .tip-grid');
@@ -1476,7 +2151,44 @@
   }
 
   buildIdleFormation();
-  updateDailyHint();
+  updateBankLine();
   hud();
   requestAnimationFrame(loop);
+
+  // Test + tooling hooks. The deep page test drives the run through these.
+  window.__lumoHive = {
+    state: () => ({
+      gameState, mode, wave, score, lives, honey, bankedHoney, combo, best, focus,
+      boons: Object.assign({}, boons), boonPicks: boonPicks.slice(),
+      turrets: turrets.map(t => ({ slot: t.slot, level: t.level })),
+      turretSlots: turretSlotCount(), bossPhase: boss ? boss.phase : 0, bossHp: boss ? boss.hp : 0,
+      bossMax: boss ? boss.maxHp : 0, bullets: bullets.length, turretShots,
+      bossAlive: !!boss, forgeOpen, forgePicked, enemies: enemies.length,
+      anchors: enemies.filter(e => e.anchor).length, linked: enemies.filter(e => e.link && e.link.hp > 0).length,
+      seed: runSeed, dailyBest, forgeChoices: forgeChoices.map(b => b.id), relics: Object.assign({}, relics),
+      coachActive: coachT > 0, coachStep, coachDone
+    }),
+    start: startGame,
+    setMode,
+    chooseBoon: (id) => { const ok = applyBoon(id); if (ok) forgePicked = true; return ok; },
+    clearWave: () => { enemies = []; boss = null; beginWaveClear(); return gameState; },
+    forceForge: () => openForge(() => nextWave()),
+    continueForge: () => { forgePicked = true; closeForge(); },
+    addHoney: (n) => addHoney(n),
+    buildTurret: (slot) => buildTurret(slot, false),
+    upgradeTurret: (slot) => upgradeTurret(slot),
+    addRelic: (id) => { relics[id] = (relics[id] | 0) + 1; saveRelics(); return relics[id]; },
+    setBank: (n) => { bankedHoney = Math.max(0, n | 0); saveBank(); updateBankLine(); return bankedHoney; },
+    damageEnemy: (dmg) => { const e = enemies.find(en => en.state !== 'enter' || en.enterDelay <= 0); if (!e) return null; const before = e.hp; const dead = damageEnemy(e, dmg); if (dead) enemies.splice(enemies.indexOf(e), 1); return { before, after: e.hp, dead }; },
+    killAnchor: () => { const a = enemies.find(e => e.anchor); if (!a) return false; a.hp = 1; const dead = damageEnemy(a, 1); if (dead) enemies.splice(enemies.indexOf(a), 1); return true; },
+    spawnBoss,
+    damageBoss: (n) => { if (!boss) return 0; boss.hp -= n; if (boss.hp <= 0) finishBoss(); return boss ? boss.hp : 0; },
+    hurt: () => hitPlayer(),
+    addScore: (n) => addScore(n),
+    win: () => winGame(),
+    lose: () => endGame(false),
+    makeRunCard: () => { try { return makeRunCard().toDataURL('image/png'); } catch (e) { return ''; } },
+    forgeChoices: () => forgeChoices.map(b => b.id),
+    endCoach: () => { finishCoach(); return coachDone; }
+  };
 })();

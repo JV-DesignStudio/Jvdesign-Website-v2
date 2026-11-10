@@ -1,3 +1,11 @@
+// JVDesignStudio Service Worker v54 - A2920: refresh the Lumo games again for
+// the first-run coach, shape cues, run cards, lanterns and new thumbnails.
+// JVDesignStudio Service Worker v53 - A2918: precache Pip's Cozy Cove page,
+// styles, script and thumbnail so the fishing game opens and plays with the
+// network fully down after one online visit.
+// JVDesignStudio Service Worker v52 - A2919: refresh both Lumo games so the
+// tactical Hive Strike rework and the Firefly hex match puzzle reach returning
+// players on their next online load.
 // JVDesignStudio Service Worker v48 - A2917: refresh Lumo's Firefly Shooter's
 // page, CSS and script so the end-of-run book card, self-hosted fonts and
 // larger touch targets reach returning players on their next online load.
@@ -34,7 +42,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v51';
+const CACHE='jvds-v54';
 const CORE=[
   '/',
   '/offline.html',
@@ -164,6 +172,10 @@ const CORE=[
   '/games/lumo_firefly_night.html',
   '/style-game-lumo_firefly_night.css',
   '/assets/js/inline/games-lumo-firefly-night-1.js',
+  '/games/pips-cozy-cove.html',
+  '/style-game-pips-cozy-cove.css',
+  '/assets/js/inline/games-pips-cozy-cove.js',
+  '/assets/game-thumbs/pips-cozy-cove.webp',
   '/story-run.js',
   '/story-run.css',
   '/game-system.js',

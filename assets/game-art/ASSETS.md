@@ -60,6 +60,7 @@ and bottom, so copies stack without a seam.
 
 - [ ] `highway-dodge-cover.png` (highest traffic, do first)
 - [ ] `lumo-hive-cover.png`
+- [ ] `lumo-firefly-cover.png`
 - [ ] `tower-defence-cover.png`
 - [ ] `crossy-crew-cover.png`
 - [ ] `nova-siege-cover.png`
