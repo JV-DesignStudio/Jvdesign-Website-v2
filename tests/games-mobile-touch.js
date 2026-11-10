@@ -29,7 +29,7 @@ function check(name, ok, detail=''){ console.log((ok?'PASS ':'FAIL ')+name+(deta
 const registry = fs.readFileSync(path.join(root,'games-registry.js'),'utf8');
 const GAMES = [...new Set([...registry.matchAll(/"file"\s*:\s*"([^"]+\.html)"/g)].map(m=>m[1]))];
 const arcadeHtml = fs.readFileSync(path.join(root,'arcade.html'),'utf8');
-const FLAGSHIP = ['arcane_citadel.html','gem_match.html','nova-siege.html','sky_high_with_friends.html','echos-flight.html','highway-dodge.html'];
+const FLAGSHIP = ['arcane_citadel.html','gem_match.html','nova-siege.html','sky_high_with_friends.html','echos-flight.html','highway-dodge.html','lumo-hive.html','lumo_firefly_night.html'];
 // A2839: every catalogue game should own the screen like Nova Siege, so the page
 // must not scroll vertically at phone portrait, phone landscape or desktop.
 // These four predate the rule. They are tracked debt, not a silent exception:
