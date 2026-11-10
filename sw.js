@@ -1,3 +1,6 @@
+// JVDesignStudio Service Worker v48 - A2917: refresh Lumo's Firefly Shooter's
+// page, CSS and script so the end-of-run book card, self-hosted fonts and
+// larger touch targets reach returning players on their next online load.
 // JVDesignStudio Service Worker v47 - A2676: the Arcade Game Maker on-demand
 // precache now includes its UI scripts, shared CSS, fonts and manifest, so the
 // maker boots and plays a game with the network fully down. Resiliant per-file
@@ -31,7 +34,7 @@
 // v36 (A781): self-host JSZip + gifenc so precached tools export offline without any CDN.
 // v38 (A1691): precache the core entry and hub pages (+ their CSS and shared scripts)
 // and alias the clean nav URLs, so the whole site opens offline after one online visit.
-const CACHE='jvds-v50';
+const CACHE='jvds-v51';
 const CORE=[
   '/',
   '/offline.html',

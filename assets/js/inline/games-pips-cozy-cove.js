@@ -22,6 +22,7 @@
     sound: document.getElementById('soundBtn'),
     reset: document.getElementById('resetBtn'),
     bobber: document.getElementById('bobber'),
+    rod: document.getElementById('rod'),
     pip: document.getElementById('pip'),
     score: document.getElementById('scoreHud'),
     best: document.getElementById('bestHud'),
@@ -167,6 +168,7 @@
     els.action.textContent = 'Cast line';
     els.action.classList.remove('is-bite');
     els.bobber.hidden = true;
+    els.rod.hidden = true;
     els.bobber.classList.remove('bite-shake');
     els.pip.classList.remove('casting');
   }
@@ -193,6 +195,7 @@
     els.action.textContent = 'Reel in';
     els.action.classList.remove('is-bite');
     els.bobber.hidden = false;
+    els.rod.hidden = false;
     els.bobber.classList.remove('bite-shake');
     els.pip.classList.add('casting');
     setStatus('Waiting for a bite...');

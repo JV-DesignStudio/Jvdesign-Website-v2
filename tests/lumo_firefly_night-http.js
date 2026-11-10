@@ -38,6 +38,7 @@ async function viewport(browser, base, width, height) {
     diffPills: document.querySelectorAll('#diffPills .pill').length,
     modePills: document.querySelectorAll('#modePills .pill').length,
     live: !!document.getElementById('srStatus'),
+    fonts: !!document.querySelector('link[href*="assets/fonts/fonts.css"]'),
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
   }));
   check(width + 'px: page responds 200', responses[base + '/games/lumo_firefly_night.html?seed=http'] === 200 || Object.entries(responses).some(([u, s]) => /lumo_firefly_night\.html/.test(u) && s === 200), '');
@@ -45,6 +46,7 @@ async function viewport(browser, base, width, height) {
   check(width + 'px: game canvas and start controls render', info.canvas && info.start && info.startMain, JSON.stringify(info));
   check(width + 'px: pace and run modes are present', info.diffPills === 3 && info.modePills === 2, info.diffPills + '/' + info.modePills);
   check(width + 'px: screen-reader status region exists', info.live);
+  check(width + 'px: self-hosted fonts are linked', info.fonts);
   check(width + 'px: no sideways scrolling', info.overflow <= 2, String(info.overflow));
 
   await page.evaluate(() => document.getElementById('start').click());
@@ -59,6 +61,7 @@ async function viewport(browser, base, width, height) {
 (async () => {
   await withServer(async ({ base, browser }) => {
     await viewport(browser, base, 390, 844);
+    await viewport(browser, base, 844, 390);
     await viewport(browser, base, 1440, 900);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL LUMO FIREFLY HTTP CHECKS PASSED');

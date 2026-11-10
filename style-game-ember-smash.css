@@ -28,10 +28,16 @@ button,a{font:inherit}
 .hero aside strong{display:block;font-size:1.1rem;margin:4px 0}
 .game{display:grid;grid-template-columns:minmax(0,1fr) 300px;grid-template-areas:"stage hud" "stage tips";gap:16px;align-items:start}
 .panel{border:1px solid rgba(255,255,255,.14);border-radius:30px;background:rgba(255,255,255,.1);box-shadow:0 22px 65px rgba(0,0,0,.26);overflow:hidden;backdrop-filter:blur(12px)}
-.hud{grid-area:hud;padding:16px;display:grid;gap:10px;align-content:start}
-.hud>div{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.12);border-radius:18px;padding:12px}
-.hud span{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:#ffb0c4;font-weight:950}
-.hud strong{font-size:1.25rem}
+.hud{grid-area:hud;padding:14px;display:flex;flex-direction:column;gap:10px}
+.hud-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.hud .stat{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;background:rgba(255,255,255,.12);border-radius:14px;padding:9px 12px}
+.hud .stat span{font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;color:#ffb0c4;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud .stat strong{font-size:1.2rem;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud-actions{display:flex;flex-wrap:wrap;gap:8px}
+.hud-actions button{flex:1 1 120px;margin:0}
+@media(min-width:600px){
+  .hud .stat{flex-direction:row;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 14px}
+}
 .primary,.ghost{border:0;border-radius:17px;padding:12px;color:white;font-weight:950;cursor:pointer}
 .primary{background:linear-gradient(135deg,#f0567a,#ffcf5c);color:#2a0a14}
 .ghost{background:#3a2030}
@@ -102,15 +108,16 @@ canvas{display:block;width:100%;aspect-ratio:900/600;border-radius:22px;touch-ac
 .toast.good{background:#166534}
 .toast.bad{background:#991b1b}
 @media(max-width:1050px){.game{grid-template-columns:1fr;grid-template-areas:"hud" "stage" "tips"}
-.hud{grid-template-columns:repeat(4,1fr)}
-.hud .primary,.hud .ghost,.hud p{grid-column:span 2}
 }
 @media(max-width:680px){.shell{width:calc(100% - 18px);padding-top:10px}
 .brand small{display:none}
 .hero{grid-template-columns:1fr;padding:18px;border-radius:24px}
 .hero h1{font-size:2.2rem}
-.hud{grid-template-columns:1fr 1fr;border-radius:24px}
-.hud p{grid-column:span 2}
+.hud{padding:10px;border-radius:24px}
+.hud .stat{padding:7px 8px;border-radius:11px}
+.hud .stat span{font-size:.58rem;letter-spacing:.04em}
+.hud .stat strong{font-size:1rem}
+.hud-actions button{flex:1 1 30%;font-size:.85rem;padding:11px 8px}
 .stage{padding:8px;border-radius:24px}
 canvas,.complete{border-radius:18px}
 .tips{display:none}
@@ -128,18 +135,16 @@ html.jvds-immersive #arcade-menu{display:none!important}
    the HUD. Tuck it into the bottom-right corner instead. */
 html.jvds-immersive #gs-controls{top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom));right:calc(12px + env(safe-area-inset-right))}
 html.jvds-immersive .game{flex:1;min-height:0;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"hud" "stage";align-items:stretch;gap:8px;padding:8px;width:100%}
-html.jvds-immersive .hud{grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;border-radius:16px}
-html.jvds-immersive .hud>div{padding:8px 10px;border-radius:12px}
-html.jvds-immersive .hud .primary,html.jvds-immersive .hud .ghost{grid-column:span 2;margin:0}
+html.jvds-immersive .hud{gap:8px;padding:8px;border-radius:16px}
+html.jvds-immersive .hud .stat{padding:8px 10px;border-radius:12px}
+html.jvds-immersive .hud-actions button{margin:0}
 html.jvds-immersive .hud p{display:none}
 html.jvds-immersive .stage{padding:0;display:flex;align-items:center;justify-content:center;min-height:0;overflow:hidden;border:0;background:transparent;box-shadow:none;border-radius:0}
 html.jvds-immersive canvas{border-radius:14px}
 /* The shared toast defaults to top:18px, which lands on the story bar in play. */
 html.jvds-immersive .toast{top:auto;bottom:calc(96px + env(safe-area-inset-bottom))}
 @media(max-width:680px){
-  html.jvds-immersive .hud{grid-template-columns:1fr 1fr}
-  html.jvds-immersive .hud>div{gap:8px}
-  html.jvds-immersive .hud .primary,html.jvds-immersive .hud .ghost{grid-column:span 1}
+  html.jvds-immersive .hud .stat{padding:7px 8px}
   /* Keep the story bar clear of the shell's Exit button in the top-right. */
   html.jvds-immersive .shell>.storyrun{padding-right:calc(140px + env(safe-area-inset-right))}
   html.jvds-immersive .shell>.storyrun .sr-title{display:none}
@@ -188,9 +193,9 @@ html,body{height:100%;overflow:hidden}
 .shell>.storyrun .sr-story{display:none}
 .hero,.tips{display:none!important}
 .game{flex:1;min-height:0;display:grid;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"hud" "stage";align-items:stretch;gap:8px;padding:8px;width:100%}
-.hud{grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;border-radius:16px}
-.hud>div{padding:8px 10px;border-radius:12px}
-.hud .primary,.hud .ghost{grid-column:span 2;margin:0}
+.hud{gap:8px;padding:8px;border-radius:16px}
+.hud .stat{padding:8px 10px;border-radius:12px}
+.hud-actions button{margin:0}
 .hud p{display:none}
 .stage{padding:0;display:flex;align-items:center;justify-content:center;min-height:0;overflow:hidden;border:0;background:transparent;box-shadow:none;border-radius:0}
 .stage canvas{width:auto;height:auto;max-width:100%;max-height:100%;border-radius:14px}
@@ -199,9 +204,11 @@ html,body{height:100%;overflow:hidden}
    on top of the top bar at phone widths, so drop it like Nova Siege does. */
 #gs-controls,#arcade-menu{display:none!important}
 @media (max-height:520px) and (orientation:landscape){
-  .game{grid-template-columns:150px minmax(0,1fr);grid-template-rows:1fr;grid-template-areas:"hud stage"}
-  .hud{grid-template-columns:1fr;align-content:start;overflow:auto;max-height:100%}
-  .hud>div{padding:4px 8px}
-  .hud .primary,.hud .ghost{grid-column:auto}
+  .game,html.jvds-immersive .game{grid-template-columns:190px minmax(0,1fr);grid-template-rows:1fr;grid-template-areas:"hud stage"}
+  .hud,html.jvds-immersive .hud{padding:6px;overflow:auto;max-height:100%}
+  .hud-stats{grid-template-columns:1fr;gap:5px}
+  .hud .stat,html.jvds-immersive .hud .stat{padding:4px 8px}
+  .hud-actions{flex-direction:column}
+  .hud-actions button{flex:1 1 auto;padding:7px 10px}
   .stage canvas{max-width:100%;max-height:100%}
 }

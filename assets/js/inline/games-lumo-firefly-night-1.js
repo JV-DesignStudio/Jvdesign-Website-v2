@@ -14,6 +14,8 @@
   const sys = window.GameSystem ? new GameSystem('lumo-firefly', 'Lumo Firefly Shooter', 'lumo') : null;
   const reducedQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   let reduceMotion = !!(reducedQuery && reducedQuery.matches);
+  const coarseQuery = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
+  let coarsePointer = !!(coarseQuery && coarseQuery.matches);
 
   const DIFF = {
     cozy: { label: 'Cozy', spawn: 1.25, speed: 0.82, damage: 0.7, target: 0.8 },
@@ -492,6 +494,35 @@
     const stats = card.querySelector('.sr-stats');
     if (stats && stats.parentNode) stats.parentNode.insertBefore(line, stats.nextSibling);
     else card.insertBefore(line, card.querySelector('.sr-again'));
+
+    const book = document.createElement('div');
+    book.className = 'ff-book-card';
+    const cover = document.createElement('img');
+    cover.src = '../lumo-front-cover-concept-v001.webp';
+    cover.alt = 'Cover of Lumo and the Grumble-Grit';
+    cover.width = 76;
+    cover.height = 76;
+    cover.loading = 'lazy';
+    cover.decoding = 'async';
+    const copy = document.createElement('div');
+    copy.className = 'ff-book-copy';
+    const kicker = document.createElement('span');
+    kicker.className = 'ff-book-kicker';
+    kicker.textContent = result === 'success' ? 'The story continues' : 'Lumo has more light to give';
+    const text = document.createElement('p');
+    text.textContent = result === 'success'
+      ? 'The garden is safe. Read how Lumo faces the Grumble-Grit in his book.'
+      : 'The garden dimmed, but Lumo never gives up. Meet the Grumble-Grit in his book.';
+    const link = document.createElement('a');
+    link.className = 'ff-book-link';
+    link.href = '/books/lumo_and_the_grumble_grit.html';
+    link.textContent = 'Read the book';
+    copy.appendChild(kicker);
+    copy.appendChild(text);
+    copy.appendChild(link);
+    book.appendChild(cover);
+    book.appendChild(copy);
+    card.insertBefore(book, card.querySelector('.sr-back') || null);
   }
 
   function hideStart() {
@@ -593,6 +624,23 @@
     if (!rect.width || !rect.height) return;
     aim.x = Math.max(0, Math.min(W, (clientX - rect.left) / rect.width * W));
     aim.y = Math.max(0, Math.min(H, (clientY - rect.top) / rect.height * H));
+  }
+
+  function canvasScale() {
+    const rect = canvas.getBoundingClientRect();
+    return rect.width ? W / rect.width : 1;
+  }
+
+  function logicalScreenPx(px) {
+    return Math.max(1, Math.min(220, px * canvasScale()));
+  }
+
+  function tapRadius() {
+    return coarsePointer ? Math.max(44, logicalScreenPx(44)) : 30;
+  }
+
+  function hitPadding() {
+    return coarsePointer ? Math.max(9, logicalScreenPx(6)) : 9;
   }
 
   function shoot() {
@@ -822,6 +870,7 @@
   }
 
   function updateShots(dt) {
+    const pad = hitPadding();
     for (let i = shots.length - 1; i >= 0; i--) {
       const shot = shots[i];
       shot.x += shot.vx * dt;
@@ -834,7 +883,7 @@
       let hit = false;
       for (let j = bugs.length - 1; j >= 0; j--) {
         const bug = bugs[j];
-        if (Math.hypot(shot.x - bug.x, shot.y - bug.y) <= bug.r + 9) {
+        if (Math.hypot(shot.x - bug.x, shot.y - bug.y) <= bug.r + pad) {
           shots.splice(i, 1);
           shotsHit++;
           hitBug(bug, j);
@@ -845,7 +894,7 @@
       if (hit) continue;
       for (let j = drops.length - 1; j >= 0; j--) {
         const drop = drops[j];
-        if (Math.hypot(shot.x - drop.x, shot.y - drop.y) <= drop.r + 9) {
+        if (Math.hypot(shot.x - drop.x, shot.y - drop.y) <= drop.r + pad) {
           collectDrop(drop);
           drops.splice(j, 1);
           shots.splice(i, 1);
@@ -1112,14 +1161,15 @@
     event.preventDefault();
     aimAt(event.clientX, event.clientY);
     if (!run || paused || finished) return;
-    const flyIndex = bugs.findIndex(bug => bug.type === 'firefly' && Math.hypot(aim.x - bug.x, aim.y - bug.y) < 30);
+    const radius = tapRadius();
+    const flyIndex = bugs.findIndex(bug => bug.type === 'firefly' && Math.hypot(aim.x - bug.x, aim.y - bug.y) < radius);
     if (flyIndex >= 0) {
       collectFirefly(bugs[flyIndex]);
       bugs.splice(flyIndex, 1);
       updateHud(true);
       return;
     }
-    const dropIndex = drops.findIndex(drop => Math.hypot(aim.x - drop.x, aim.y - drop.y) < 30);
+    const dropIndex = drops.findIndex(drop => Math.hypot(aim.x - drop.x, aim.y - drop.y) < radius);
     if (dropIndex >= 0) {
       collectDrop(drops[dropIndex]);
       drops.splice(dropIndex, 1);
@@ -1185,7 +1235,7 @@
   $('a11yBox').addEventListener('change', event => {
     textMode = !!event.target.checked;
     lsSet('jvds_lumo_textmode', textMode ? '1' : '0');
-    if (textMode) announce('Read game events aloud is on.');
+    if (textMode) announce('Screen-reader game messages on.');
     else { const el = $('srStatus'); if (el) el.textContent = ''; }
   });
   $('hapticsBox').addEventListener('change', event => {
@@ -1225,6 +1275,11 @@
     };
     if (reducedQuery.addEventListener) reducedQuery.addEventListener('change', onMotionChange);
     else if (reducedQuery.addListener) reducedQuery.addListener(onMotionChange);
+  }
+  if (coarseQuery) {
+    const onPointerChange = event => { coarsePointer = event.matches; };
+    if (coarseQuery.addEventListener) coarseQuery.addEventListener('change', onPointerChange);
+    else if (coarseQuery.addListener) coarseQuery.addListener(onPointerChange);
   }
   window.addEventListener('resize', fit);
   if (window.ResizeObserver) new ResizeObserver(fit).observe(canvas);
@@ -1270,6 +1325,8 @@
       hapticsOn,
       textMode,
       reduceMotion,
+      coarsePointer,
+      tapRadius: tapRadius(),
       bugs: bugs.map(bug => bug.type),
       drops: drops.map(drop => drop.type),
       startShown: !$('startScreen')?.classList.contains('hidden'),

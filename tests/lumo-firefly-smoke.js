@@ -43,6 +43,7 @@ function staticChecks() {
   const reg = fs.readFileSync(path.join(root, 'games-registry.js'), 'utf8');
   const paths = fs.readFileSync(path.join(root, 'scripts/lib/paths.js'), 'utf8');
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const js = fs.readFileSync(path.join(root, 'assets/js/inline/games-lumo-firefly-night-1.js'), 'utf8');
 
   check('page loads the shared engine', /game-system\.js/.test(html) && /game-system\.css/.test(html));
   check('page loads the story run layer', /story-run\.js/.test(html) && /story-run\.css/.test(html));
@@ -55,6 +56,9 @@ function staticChecks() {
   check('the game is no longer an orphan', !/lumo_firefly_night\.html/.test(paths));
   check('the service worker precaches the page', /\/games\/lumo_firefly_night\.html/.test(sw));
   check('the thumbnail exists', fs.existsSync(path.join(root, 'assets/game-thumbs/lumo-firefly.webp')));
+  check('page loads the self-hosted fonts', /assets\/fonts\/fonts\.css/.test(html));
+  check('the a11y toggle names screen-reader messages', /Screen-reader game messages/.test(html) && !/Read game events aloud/.test(html));
+  check('the game script links the Lumo book', /lumo_and_the_grumble_grit\.html/.test(js));
 }
 
 async function mainFlow(browser, base) {
@@ -65,6 +69,7 @@ async function mainFlow(browser, base) {
   check('phone: start briefing shows first', boot.startShown && !boot.running, JSON.stringify({ startShown: boot.startShown, running: boot.running }));
   check('phone: start screen offers pace and run modes', await page.evaluate(() => !!document.querySelector('#diffPills .pill') && document.querySelectorAll('#modePills .pill').length === 2));
   check('phone: no sideways scrolling', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+  check('phone: coarse pointer raises the tap radius', boot.coarsePointer === true && boot.tapRadius >= 44, JSON.stringify({ coarsePointer: boot.coarsePointer, tapRadius: boot.tapRadius }));
 
   await page.evaluate(() => document.getElementById('start').click());
   await sleep(300);
@@ -127,6 +132,15 @@ async function mainFlow(browser, base) {
   check('phone: the result carries stars and best', await page.evaluate(() => !!document.querySelector('.sr-modal.show .ff-modal-extra') && /Best/.test(document.querySelector('.sr-modal.show .ff-modal-extra').textContent)), '');
   check('phone: the run summary records three waves', await page.evaluate(() => document.getElementById('sumWaves').textContent) === '3', await page.evaluate(() => document.getElementById('sumWaves').textContent));
   check('phone: the best score updates', won.best >= 4000, 'best=' + won.best);
+  check('phone: a win offers the Lumo book', await page.evaluate(() => {
+    const card = document.querySelector('.sr-modal.show .ff-book-card');
+    const link = card && card.querySelector('.ff-book-link');
+    const kicker = card && card.querySelector('.ff-book-kicker');
+    const cover = card && card.querySelector('img');
+    return !!link && /lumo_and_the_grumble_grit\.html/.test(link.getAttribute('href')) &&
+      /story continues/i.test(kicker ? kicker.textContent : '') &&
+      !!cover && /lumo-front-cover-concept-v001\.webp/.test(cover.getAttribute('src'));
+  }));
 
   await page.evaluate(() => document.querySelector('.sr-modal.show .sr-again').click());
   await sleep(400);
@@ -268,12 +282,33 @@ async function desktopCheck(browser, base) {
   await page.close();
 }
 
+async function bookCardFlow(browser, base) {
+  const { page, errors } = await openGame(browser, base, 390, 844, '?seed=book');
+  await page.evaluate(() => window.__lumoFirefly.start());
+  await sleep(200);
+  await page.evaluate(() => window.__lumoFirefly.damage(200));
+  await sleep(300);
+  const lost = await page.evaluate(snap);
+  check('book: a lost run shows the result modal', lost.finished && lost.result === 'fail' && lost.modal, JSON.stringify({ finished: lost.finished, result: lost.result, modal: lost.modal }));
+  check('book: a lost run offers the Lumo book with recovery copy', await page.evaluate(() => {
+    const card = document.querySelector('.sr-modal.show .ff-book-card');
+    const link = card && card.querySelector('.ff-book-link');
+    const kicker = card && card.querySelector('.ff-book-kicker');
+    return !!link && /lumo_and_the_grumble_grit\.html/.test(link.getAttribute('href')) &&
+      /read the book/i.test(link.textContent) &&
+      /more light/i.test(kicker ? kicker.textContent : '');
+  }));
+  check('book: no page errors', errors.length === 0, errors.slice(0, 2).join(' | '));
+  await page.close();
+}
+
 (async () => {
   staticChecks();
   await withServer(async ({ base, browser }) => {
     await mainFlow(browser, base);
     await optionsFlow(browser, base);
     await reducedMotionFlow(browser, base);
+    await bookCardFlow(browser, base);
     await desktopCheck(browser, base);
   });
   console.log(failures ? '\n' + failures + ' FAILURE(S)' : '\nALL LUMO FIREFLY CHECKS PASSED');
