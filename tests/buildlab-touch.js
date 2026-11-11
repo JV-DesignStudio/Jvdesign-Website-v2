@@ -57,7 +57,7 @@ const pause = ms => new Promise(r=>setTimeout(r, ms));
     }));
     check('mobile: isTouchUI() reports touch', boot.isTouch === true, String(boot.isTouch));
     check('mobile: touch gizmo overlay exists', boot.gizmo);
-    check('mobile: three handles (move, up, size)', boot.handles === 3, String(boot.handles));
+    check('mobile: four handles (move, up, size, rotate)', boot.handles === 4, String(boot.handles));
 
     // Build a model, select a block, pick the Move tool.
     const shown = await page.evaluate(async ()=>{
@@ -131,6 +131,24 @@ const pause = ms => new Promise(r=>setTimeout(r, ms));
     await fire('pointerup', rs.x + 180, rs.y + 180, 9);
     const afterW = await page.evaluate(()=>window.blocks[0].userData.w);
     check('mobile: dragging SIZE grows the block', afterW > rs.w, 'before='+rs.w+' after='+afterW);
+
+    // Rotate: switch back to Move, drag the TURN handle sideways.
+    const rot = await page.evaluate(()=>{
+      window.setTool('move');
+      const mesh = window.blocks[0];
+      window.selectBlock(mesh);
+      window.updateTouchGizmo();
+      const el = document.querySelector('#touchGizmo [data-tg="rotate"]');
+      const r = el.getBoundingClientRect();
+      return { shown: getComputedStyle(el).display !== 'none', x:r.x+r.width/2, y:r.y+r.height/2, before: mesh.userData.rot || 0 };
+    });
+    check('mobile: TURN handle visible in Move mode', rot.shown, String(rot.shown));
+    await page.evaluate(()=>{ window.__tgHandle = 'rotate'; });
+    await fire('pointerdown', rot.x, rot.y, 10);
+    await fire('pointermove', rot.x + 96, rot.y, 10);
+    await fire('pointerup', rot.x + 96, rot.y, 10);
+    const afterRot = await page.evaluate(()=>window.blocks[0].userData.rot || 0);
+    check('mobile: dragging TURN rotates the block', Math.abs(afterRot - rot.before) > 10, 'before='+rot.before+' after='+afterRot);
 
     // Gizmo hides when the tool is not move/resize, or when nothing is selected.
     const hidden = await page.evaluate(()=>{

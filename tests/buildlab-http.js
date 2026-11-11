@@ -88,20 +88,35 @@ const TEMPLATES = ['robot','creature','house','car','tower','tree','sword','ches
           await new Promise(res=>setTimeout(res, 90));
           const b = window.blocks || [];
           let minY = Infinity, maxY = -Infinity, bad = 0, outside = 0;
+          const boxes = [];
           b.forEach(x=>{
-            const h = x.userData.h || 1, w = x.userData.w || 1;
             if (!Number.isFinite(x.position.x) || !Number.isFinite(x.position.y) || !Number.isFinite(x.position.z)) bad++;
-            const bottom = x.position.y - h/2, top = x.position.y + h/2;
-            if (bottom < minY) minY = bottom;
-            if (top > maxY) maxY = top;
+            // Use real world bounds so rotated parts (car wheels) are measured
+            // correctly instead of pretending every block is upright.
+            const box = new window.THREE.Box3().setFromObject(x);
+            boxes.push(box);
+            if (box.min.y < minY) minY = box.min.y;
+            if (box.max.y > maxY) maxY = box.max.y;
             if (Math.abs(x.position.y) > 400 || Math.abs(x.position.x) > 200) outside++;
           });
-          return {ok:true, count:b.length, minY, maxY, bad, outside, name: document.getElementById('buildNameInput')?.value || ''};
+          // Every major part should touch the model, not float beside it.
+          const parent = b.map((_,i)=>i);
+          const find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
+          const union = (i,j) => { i=find(i); j=find(j); if(i!==j) parent[j]=i; };
+          const eps = 0.03;
+          for(let i=0;i<boxes.length;i++) for(let j=i+1;j<boxes.length;j++){
+            const a=boxes[i], c=boxes[j];
+            if(a.min.x <= c.max.x+eps && a.max.x >= c.min.x-eps &&
+               a.min.y <= c.max.y+eps && a.max.y >= c.min.y-eps &&
+               a.min.z <= c.max.z+eps && a.max.z >= c.min.z-eps) union(i,j);
+          }
+          const components = new Set(b.map((_,i)=>find(i))).size;
+          return {ok:true, count:b.length, minY, maxY, bad, outside, components, name: document.getElementById('buildNameInput')?.value || ''};
         }, type);
         if (!r.ok) { check(vp.name+' '+type+': builds', false, r.reason); continue; }
         const grounded = Math.abs(r.minY) <= 0.02;
-        check(vp.name+' '+type+': builds grounded blocks', r.count>0 && grounded && r.bad===0 && r.outside===0,
-          'blocks='+r.count+' minY='+(r.minY==null?'null':r.minY.toFixed(3))+' bad='+r.bad+' outside='+r.outside);
+        check(vp.name+' '+type+': builds grounded, connected blocks', r.count>0 && grounded && r.bad===0 && r.outside===0 && r.components===1,
+          'blocks='+r.count+' minY='+(r.minY==null?'null':r.minY.toFixed(3))+' parts='+r.components+' bad='+r.bad+' outside='+r.outside);
       }
 
       if (vp.name === 'mobile') {
