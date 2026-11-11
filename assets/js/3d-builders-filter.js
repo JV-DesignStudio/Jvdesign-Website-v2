@@ -13,6 +13,7 @@
     'space-station-builder': 'space',
     'robot-builder': 'characters',
     'pirate-ship-builder': 'vehicles',
+    'pirate-cannon-builder': 'vehicles',
     'steampunk-airship-builder': 'vehicles',
     'race-car-builder': 'vehicles',
     'submarine-builder': 'vehicles',
@@ -25,7 +26,7 @@
     'blender-mod-studio': 'studio'
   };
 
-  var cards = [].slice.call(grid.querySelectorAll('.bcard'));
+  var cards = [].slice.call(document.querySelectorAll('.builders-grid > .bcard'));
   var q = document.getElementById('bf-q');
   var chips = [].slice.call(document.querySelectorAll('#bf-chips .bf-chip'));
   var count = document.getElementById('bf-count');
@@ -35,7 +36,8 @@
   // Tag each card with its type and a lowercased name, once.
   cards.forEach(function (card) {
     var href = card.getAttribute('href') || '';
-    var slug = (href.split('/').pop() || '').replace(/\.html$/, '');
+    var preset = (href.match(/[?&]preset=([^&]+)/) || [])[1];
+    var slug = preset ? decodeURIComponent(preset) + '-builder' : (href.split('/').pop() || '').replace(/\.html$/, '');
     var name = card.querySelector('.bcard-name');
     card.setAttribute('data-type', TYPES[slug] || 'studio');
     if (name) card.setAttribute('data-name', name.textContent.trim().toLowerCase());

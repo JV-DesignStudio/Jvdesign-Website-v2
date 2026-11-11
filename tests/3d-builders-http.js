@@ -37,7 +37,7 @@ const visibleCards = (page) => page.evaluate(() =>
   const opens = (raw.match(/<a[\s>]/g) || []).length;
   const closes = (raw.match(/<\/a>/g) || []).length;
   check('every anchor is closed', opens === closes, opens + ' open vs ' + closes + ' close');
-  check('14 builder cards in source', (raw.match(/class="bcard"/g) || []).length === 14);
+  check('15 builder cards in source', (raw.match(/class="bcard"/g) || []).length === 15);
 
   server.listen(0); await new Promise(r => server.once('listening', r));
   const base = 'http://127.0.0.1:' + server.address().port;
@@ -49,7 +49,7 @@ const visibleCards = (page) => page.evaluate(() =>
     await page.waitForSelector('.builders-grid > .bcard');
 
     const total = await page.evaluate(() => document.querySelectorAll('.builders-grid > .bcard').length);
-    check('14 cards render', total === 14, 'cards=' + total);
+    check('15 cards render', total === 15, 'cards=' + total);
     check('no card nests another card', await page.evaluate(() =>
       document.querySelectorAll('.bcard .bcard, a.bcard a').length) === 0);
 
@@ -57,15 +57,15 @@ const visibleCards = (page) => page.evaluate(() =>
     const hrefs = await page.evaluate(() => [].slice.call(document.querySelectorAll('a.bcard'))
       .map(a => a.getAttribute('href')));
     const missing = hrefs.filter(h => {
-      const rel = h.replace(/^\.\.\//, '').replace(/^\//, '');
+      const rel = h.replace(/^\.\.\//, '').replace(/^\//, '').split(/[?#]/)[0];
       return !fs.existsSync(path.join(ROOT, rel));
     });
     check('every builder link resolves', missing.length === 0, missing.join(', '));
 
-    check('filter shows all by default', await visibleCards(page) === 14);
+    check('filter shows all by default', await visibleCards(page) === 15);
     await page.click('#bf-chips .bf-chip[data-type="vehicles"]');
     await new Promise(r => setTimeout(r, 60));
-    check('Vehicles filter narrows to 4', await visibleCards(page) === 4);
+    check('Vehicles filter narrows to 5', await visibleCards(page) === 5);
     await page.click('#bf-chips .bf-chip[data-type="all"]');
     await page.type('#bf-q', 'rocket');
     await new Promise(r => setTimeout(r, 60));
@@ -75,13 +75,13 @@ const visibleCards = (page) => page.evaluate(() =>
       q.value = ''; q.dispatchEvent(new Event('input'));
     });
     await new Promise(r => setTimeout(r, 60));
-    check('clearing search restores all', await visibleCards(page) === 14);
+    check('clearing search restores all', await visibleCards(page) === 15);
     check('count readout updates', await page.evaluate(() => {
       const q = document.getElementById('bf-q');
       q.value = 'zzz'; q.dispatchEvent(new Event('input'));
       const t = document.getElementById('bf-count').textContent;
       q.value = ''; q.dispatchEvent(new Event('input'));
-      return /0 of 14/.test(t);
+      return /0 of 15/.test(t);
     }));
 
     // A1919: every builder carries an age recommendation and a challenge level,
@@ -186,3 +186,4 @@ const visibleCards = (page) => page.evaluate(() =>
   console.log('\n' + (failures ? 'FAILED ' + failures : 'ALL 3D-BUILDERS HUB CHECKS PASSED'));
   process.exit(failures ? 1 : 0);
 })();
+
